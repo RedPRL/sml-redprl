@@ -1,0 +1,10 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  lib/sml-typed-abts/abt.mlb
+  lib/sml-telescopes/telescopes.mlb
+  lib/cmlib/cmlib.mlb
+
+  src/development.sig
+in
+  signature DEVELOPMENT
+end

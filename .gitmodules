@@ -1,0 +1,9 @@
+[submodule "lib/sml-typed-abts"]
+	path = lib/sml-typed-abts
+	url = https://github.com/JonPRL/sml-typed-abts.git
+[submodule "lib/cmlib"]
+	path = lib/cmlib
+	url = https://github.com/standardml/cmlib.git
+[submodule "lib/sml-telescopes"]
+	path = lib/sml-telescopes
+	url = https://github.com/jonsterling/sml-telescopes.git
