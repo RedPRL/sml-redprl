@@ -1,0 +1,12 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../lib/sml-typed-abts/abt.mlb
+  ../lib/sml-telescopes/telescopes.mlb
+  ../lib/cmlib/cmlib.mlb
+
+  development/development.sig
+  development/development.fun
+in
+  signature DEVELOPMENT
+  functor Development
+end
