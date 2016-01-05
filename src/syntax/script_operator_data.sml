@@ -2,11 +2,12 @@ structure ScriptOperatorData =
 struct
   type metadata = TacticMetadata.t
 
-  type intro_params =
-    {rule : int option}
+  type then_params =
+    {bindings : int}
 
   type thenf_params =
-    {focus : int}
+    {focus : int,
+     bindings : int}
 
   type thenl_params =
     {length : int}
@@ -15,16 +16,15 @@ struct
   type 'i hyp_params =
     {target : 'i}
 
-  (* In the old system, tactics like [ELIM] would take
-   * a list of fresh names to use, but not we need only take a
-   * number from which we can compute a valence, since we have a
-   * proper treatment of nominal binding. *)
   type 'i elim_params =
-    {target : 'i,
-     bindings : int}
+    {target : 'i}
+
+  type intro_params =
+    {rule : int option,
+     term : bool}
 
   datatype 'i script_operator =
-      THEN
+      THEN of then_params
     | THENF of thenf_params
     | THENL of thenl_params
     | INTRO of intro_params * metadata

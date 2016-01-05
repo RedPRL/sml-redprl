@@ -16,16 +16,19 @@ struct
     infix 5 <> ->>
     infix 6 * ^
   in
-    fun arity THEN =
+    fun arity (THEN {bindings}) =
           [ [] * [] <> TAC
-          , [] * [] <> TAC
+          , (EXP ^ bindings) * [] <> TAC
           ] ->> TAC
-      | arity (THENF _) =
+      | arity (THENF {bindings,...}) =
           [ [] * [] <> TAC
-          , [] * [] <> TAC
+          , (EXP ^ bindings) * [] <> TAC
           ] ->> TAC
       | arity (THENL {length}) =
           ([] * [] <> TAC) ^ (length + 1)
+            ->> TAC
+      | arity (INTRO ({term,...}, _)) =
+          (if term then [[] * [] <> EXP] else [])
             ->> TAC
       | arity _ =
           raise Fail "tbi"
