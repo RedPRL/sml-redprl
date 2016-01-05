@@ -24,3 +24,22 @@ also by Sterling & Morrison.
 This is the repository for the nascent development of Red JonPRL. Currently, there are
 only bits and pieces, but eventually, enough kit will be here that we can start migrating
 the JonPRL sources to the new order.
+
+### How do I build it?
+
+First, fetch all submodules. If you are cloning for the first time, use
+
+    git clone --recursive git@github.com:JonPRL/sml-red-jonprl.git
+
+If you have already cloned, then be sure to make sure all submodules are up to date,
+as follows:
+
+    git submodule update --init --recursive
+
+Next, make sure that you have the [MLton compiler](http://mlton.org/) for Standard
+ML installed. Then, simply run
+
+    mlton jonprl.mlb
+
+There is not currently any executable to be run, as the project is in early
+development.
