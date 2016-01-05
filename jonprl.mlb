@@ -5,6 +5,8 @@ local
   lib/cmlib/cmlib.mlb
 
   src/development.sig
+  src/development.fun
 in
   signature DEVELOPMENT
+  functor Development
 end

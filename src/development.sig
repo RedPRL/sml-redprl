@@ -1,15 +1,30 @@
+(* A development is an equational signature. *)
 signature DEVELOPMENT =
 sig
+  type opid = string
+
   structure Abt : ABT
+  structure Telescope : TELESCOPE
+    where type label = opid
 
-  type opid
-  type symctx = Abt.symbol * Abt.sort
+  type symctx = (Abt.symbol * Abt.sort) list
 
-  datatype decl =
-      DEFN of opid * symctx * Abt.metacontext * Abt.abt
-    | THM of opid * symctx * Abt.abt
+  (* the abstract type of valid declarations *)
+  type decl
+  type development = decl Telescope.telescope
 
-  type development = decl list
+  (* A declaration [Op[Y](Theta) := M] is valid in case
+   * [M] is a closed term that takes symbols in [Y] and metavariables
+   * in [Theta].
+   *
+   * The data of a declaration can be used to generate a family of operators,
+   * taking its index in [Y], and deriving its arity from [Theta]
+   * and [M]. *)
+  datatype view = DECL of symctx * Abt.metacontext * Abt.abt
 
-  val valid : development -> unit
+  (* throws [InvalidDecl] *)
+  val decl : view -> decl
+  exception InvalidDecl
+
+  val view : decl -> view
 end
