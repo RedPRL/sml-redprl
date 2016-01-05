@@ -44,7 +44,14 @@ struct
   structure Presheaf =
   struct
     type 'i t = 'i t
-    fun map _ = raise Match
+    fun map f (THEN p) = THEN p
+      | map f (THENF p) = THENF p
+      | map f (THENL p) = THENL p
+      | map f (INTRO p) = INTRO p
+      | map f (ELIM ({target, term}, m)) =
+          ELIM ({target = f target, term = term}, m)
+      | map f (HYP ({target}, m)) =
+          HYP ({target = f target}, m)
   end
 
   structure Eq =
