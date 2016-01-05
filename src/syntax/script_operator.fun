@@ -57,7 +57,15 @@ struct
   structure Eq =
   struct
     type 'i t = 'i t
-    fun eq _ = raise Match
+    fun eq f (THEN p1, THEN p2) = p1 = p2
+      | eq f (THENF p1, THENF p2) = p1 = p2
+      | eq f (THENL p1, THENL p2) = p1 = p2
+      | eq f (INTRO (p1, _), INTRO (p2, _)) = p1 = p2
+      | eq f (ELIM (p1, _), ELIM (p2, _)) =
+          f (#target p1, #target p2) andalso
+            #term p1 = #term p2
+     | eq f (HYP (p1, _), HYP (p2, _)) =
+          f (#target p1, #target p2)
   end
 
   structure Show =
