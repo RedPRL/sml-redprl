@@ -1,0 +1,9 @@
+language: sml
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -y --force-yes smlnj mlton
+install:
+  - git submodule init
+  - git submodule update --init --recursive
+script:
+  - mlton jonprl.mlb
