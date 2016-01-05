@@ -37,7 +37,9 @@ struct
           [] ->> TAC
   end
 
-  fun support _ = raise Match
+  fun support (ELIM ({target,...}, _)) = [(target, EXP)]
+    | support (HYP ({target}, _)) = [(target, EXP)]
+    | support _ = []
 
   structure Presheaf =
   struct
