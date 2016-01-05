@@ -71,6 +71,11 @@ struct
   structure Show =
   struct
     type 'i t = 'i t
-    fun toString _ = raise Match
+    fun toString f (THEN _) = "then"
+      | toString f (THENL _) = "thenl"
+      | toString f (THENF {focus,...}) = "thenf{" ^ Int.toString focus ^ "}"
+      | toString f (INTRO _) = "intro"
+      | toString f (ELIM ({target,...}, _)) = "elim[" ^ f target ^ "]"
+      | toString f (HYP ({target}, _)) = "hyp[" ^ f target ^ "]"
   end
 end
