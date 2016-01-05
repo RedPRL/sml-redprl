@@ -4,7 +4,11 @@ local
   ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
   syntax/tactic_metadata.sml
   syntax/script_operator_data.sml
+  syntax/script_operator.sig
+  syntax/script_operator.fun
 in
   structure TacticMetadata
   structure ScriptOperatorData
+  signature SCRIPT_OPERATOR
+  functor ScriptOperator
 end
