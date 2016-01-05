@@ -30,8 +30,11 @@ struct
       | arity (INTRO ({term,...}, _)) =
           (if term then [[] * [] <> EXP] else [])
             ->> TAC
-      | arity _ =
-          raise Fail "tbi"
+      | arity (ELIM ({term,...}, _)) =
+          (if term then [[] * [] <> EXP] else [])
+            ->> TAC
+      | arity (HYP _) =
+          [] ->> TAC
   end
 
   fun support _ = raise Match

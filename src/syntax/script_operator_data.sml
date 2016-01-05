@@ -17,7 +17,8 @@ struct
     {target : 'i}
 
   type 'i elim_params =
-    {target : 'i}
+    {target : 'i,
+     term : bool}
 
   type intro_params =
     {rule : int option,
