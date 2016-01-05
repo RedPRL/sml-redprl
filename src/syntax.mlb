@@ -1,7 +1,10 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-typed-abts/abt.mlb
+  ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
+  syntax/tactic_metadata.sml
   syntax/script_operator_data.sml
 in
+  structure TacticMetadata
   structure ScriptOperatorData
 end

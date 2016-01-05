@@ -39,7 +39,7 @@ as follows:
 Next, make sure that you have the [MLton compiler](http://mlton.org/) for Standard
 ML installed. Then, simply run
 
-    mlton jonprl.mlb
+    ./script/mlton.sh
 
 There is not currently any executable to be run, as the project is in early
 development.
