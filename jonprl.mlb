@@ -1,4 +1,5 @@
 local
   src/development.mlb
+  src/syntax.mlb
 in
 end

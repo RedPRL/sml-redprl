@@ -1,0 +1,7 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../lib/sml-typed-abts/abt.mlb
+  syntax/script_operator_data.sml
+in
+  structure ScriptOperatorData
+end
