@@ -18,11 +18,11 @@ struct
 
   type 'i elim_params =
     {target : 'i,
-     term : bool}
+     hasTerm : bool}
 
   type intro_params =
     {rule : int option,
-     term : bool}
+     hasTerm : bool}
 
   datatype 'i script_operator =
       THEN of then_params

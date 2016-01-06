@@ -25,11 +25,11 @@ struct
       | arity (THENL {length}) =
           ([] * [] <> TAC) ^ (length + 1)
             ->> TAC
-      | arity (INTRO ({term,...}, _)) =
-          (if term then [[] * [] <> EXP] else [])
+      | arity (INTRO ({hasTerm,...}, _)) =
+          (if hasTerm then [[] * [] <> EXP] else [])
             ->> TAC
-      | arity (ELIM ({term,...}, _)) =
-          (if term then [[] * [] <> EXP] else [])
+      | arity (ELIM ({hasTerm,...}, _)) =
+          (if hasTerm then [[] * [] <> EXP] else [])
             ->> TAC
       | arity (HYP _) =
           [] ->> TAC
@@ -46,8 +46,8 @@ struct
       | map f (THENF p) = THENF p
       | map f (THENL p) = THENL p
       | map f (INTRO p) = INTRO p
-      | map f (ELIM ({target, term}, m)) =
-          ELIM ({target = f target, term = term}, m)
+      | map f (ELIM ({target, hasTerm}, m)) =
+          ELIM ({target = f target, hasTerm = hasTerm}, m)
       | map f (HYP ({target}, m)) =
           HYP ({target = f target}, m)
   end
@@ -61,7 +61,7 @@ struct
       | eq f (INTRO (p1, _), INTRO (p2, _)) = p1 = p2
       | eq f (ELIM (p1, _), ELIM (p2, _)) =
           f (#target p1, #target p2) andalso
-            #term p1 = #term p2
+            #hasTerm p1 = #hasTerm p2
       | eq f (HYP (p1, _), HYP (p2, _)) =
           f (#target p1, #target p2)
       | eq _ _ = false

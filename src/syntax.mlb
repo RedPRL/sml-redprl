@@ -34,5 +34,8 @@ in
   structure OperatorData
   structure Operator
 
+  structure Metavariable
+  structure Variable
+  structure Symbol
   structure Abt
 end
