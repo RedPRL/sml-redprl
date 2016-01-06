@@ -7,3 +7,6 @@
 [submodule "lib/sml-telescopes"]
 	path = lib/sml-telescopes
 	url = https://github.com/jonsterling/sml-telescopes.git
+[submodule "lib/sml-lcf"]
+	path = lib/sml-lcf
+	url = https://github.com/JonPRL/sml-lcf.git
