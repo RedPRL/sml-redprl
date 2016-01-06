@@ -1,11 +1,9 @@
-functor ScriptOperator
-  (structure Arity : ARITY where type 'a Valence.Spine.t = 'a list
-   val EXP : Arity.Valence.sort
-   val TAC : Arity.Valence.sort) :> SCRIPT_OPERATOR =
+structure ScriptOperator : SCRIPT_OPERATOR =
 struct
-  open ScriptOperatorData
+  open ScriptOperatorData SortData
 
   structure Arity = Arity
+
   type 'i t = 'i script_operator
 
   local

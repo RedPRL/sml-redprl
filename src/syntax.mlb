@@ -25,5 +25,5 @@ in
   structure TacticMetadata
   structure ScriptOperatorData
   signature SCRIPT_OPERATOR
-  functor ScriptOperator
+  structure ScriptOperator
 end
