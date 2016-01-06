@@ -62,8 +62,9 @@ struct
       | eq f (ELIM (p1, _), ELIM (p2, _)) =
           f (#target p1, #target p2) andalso
             #term p1 = #term p2
-     | eq f (HYP (p1, _), HYP (p2, _)) =
+      | eq f (HYP (p1, _), HYP (p2, _)) =
           f (#target p1, #target p2)
+      | eq _ _ = false
   end
 
   structure Show =
