@@ -14,8 +14,10 @@ local
   syntax/tactic_metadata.sml
 
   syntax/script_operator_data.sml
-  syntax/script_operator.sig
-  syntax/script_operator.fun
+  syntax/script_operator.sml
+
+  syntax/operator_data.sml
+  syntax/operator.sml
 in
   structure SortData
   structure Sort
@@ -23,7 +25,10 @@ in
   structure Arity
 
   structure TacticMetadata
+
   structure ScriptOperatorData
-  signature SCRIPT_OPERATOR
   structure ScriptOperator
+
+  structure OperatorData
+  structure Operator
 end

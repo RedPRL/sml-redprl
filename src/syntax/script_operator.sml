@@ -1,4 +1,4 @@
-structure ScriptOperator : SCRIPT_OPERATOR =
+structure ScriptOperator : OPERATOR =
 struct
   open ScriptOperatorData SortData
 
