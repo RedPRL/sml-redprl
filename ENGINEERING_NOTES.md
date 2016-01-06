@@ -44,6 +44,17 @@ non-trivial to make it work at higher kind, it's just another piece of the
 codebase that is incredibly mystifying to people who don't understand what it
 is.
 
+#### Strike a balance with modularity
+
+In JonPRL, everything was highly functorized; for instance, every module would
+take as input an implementation of ABTs. We never actually took advantage of
+this at all, and to be honest, it probably made a lot of stuff look more
+abstruse than it really was. In the end, we were basically replicating the work
+of the linker.
+
+I'm thinking that this time around, we may wish to have certain "pervasive"
+features like syntax exist globally.
+
 #### Adhere to a common whitespace & lexical style
 
 The whitespace and lexical style that I prefer is used in JonPRL and the ABT
