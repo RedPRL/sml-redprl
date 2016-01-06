@@ -18,6 +18,8 @@ local
 
   syntax/operator_data.sml
   syntax/operator.sml
+
+  syntax/abt.sml
 in
   structure SortData
   structure Sort
@@ -31,4 +33,6 @@ in
 
   structure OperatorData
   structure Operator
+
+  structure Abt
 end
