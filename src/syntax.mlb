@@ -1,12 +1,27 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-typed-abts/abt.mlb
-  ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
+
+  local
+    ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
+  in
+    structure Pos
+  end
+
+  syntax/sort_data.sml
+  syntax/arity.sml
+
   syntax/tactic_metadata.sml
+
   syntax/script_operator_data.sml
   syntax/script_operator.sig
   syntax/script_operator.fun
 in
+  structure SortData
+  structure Sort
+  structure Valence
+  structure Arity
+
   structure TacticMetadata
   structure ScriptOperatorData
   signature SCRIPT_OPERATOR
