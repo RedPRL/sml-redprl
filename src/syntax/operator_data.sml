@@ -4,5 +4,6 @@ structure OperatorData =
 struct
   datatype 'i operator =
       S of 'i ScriptOperator.t
+    | VEC_LIT of Sort.t * int
 end
 

@@ -4,4 +4,5 @@ struct
       EXP (* expressions *)
     | EVD (* derivations *)
     | TAC (* tactics *)
+    | VEC of sort
 end

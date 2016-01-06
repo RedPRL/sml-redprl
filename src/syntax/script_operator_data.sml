@@ -10,7 +10,7 @@ struct
      bindings : int}
 
   type thenl_params =
-    {length : int}
+    {bindings : int}
 
   (* We use symbols/atoms to index into the context. *)
   type 'i hyp_params =

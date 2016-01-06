@@ -22,9 +22,10 @@ struct
           [ [] * [] <> TAC
           , (EXP ^ bindings) * [] <> TAC
           ] ->> TAC
-      | arity (THENL {length}) =
-          ([] * [] <> TAC) ^ (length + 1)
-            ->> TAC
+      | arity (THENL {bindings}) =
+          [ [] * [] <> TAC
+          , (EXP ^ bindings) * [] <> VEC TAC
+          ] ->> TAC
       | arity (INTRO ({hasTerm,...}, _)) =
           (if hasTerm then [[] * [] <> EXP] else [])
             ->> TAC
