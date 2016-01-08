@@ -46,9 +46,9 @@ struct
              val moduli = map (fn _ => ref 0) stack
              val stack' =
                ListPair.mapEq
-                 (fn (r, store) => fn i =>
-                   if i + 1 > ! r then
-                     (r := i + 1; store i)
+                 (fn (m, store) => fn i =>
+                   if i + 1 > ! m then
+                     (m := i + 1; store i)
                    else
                      store i)
                  (moduli, stack)
@@ -64,8 +64,8 @@ struct
                   let
                     val stack'' =
                       ListPair.mapEq
-                        (fn (r, store) => fn i =>
-                           store (i + !r))
+                        (fn (m, store) => fn i =>
+                           store (i + !m))
                         (moduli, stack)
                   in
                     go stack'' t2
