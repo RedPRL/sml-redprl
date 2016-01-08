@@ -35,7 +35,7 @@ struct
        | S (HYP ({target}, _)) $ _ =>
            R.Hyp target
        | S (INTRO ({rule, hasTerm}, _)) $ es =>
-           R.Intro rule (getTerm hasTerm es)
+           R.Intro rule (pop stack) (getTerm hasTerm es)
        | _ => raise MalformedScript "Expected tactical"
   and bind stack t1 ((us, _) \ t2) =
     case #1 (infer t2) of

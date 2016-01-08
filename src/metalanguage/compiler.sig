@@ -11,6 +11,7 @@ sig
 
   val Intro
     : int option (* rule index *)
+    -> Symbol.t list (* fresh names *)
     -> Abt.abt option (* optional argument *)
     -> tactic
 
