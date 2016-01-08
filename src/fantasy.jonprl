@@ -20,7 +20,7 @@ Def pi(A : exp, B : [exp].exp) : exp ≡ [
 // hierarchy in a purely formal sense.
 
 Thm pi-wf(i : lvl) : [
-  {A : U{i}} {B : A → U{i}} pi(A; x.B[x]) ∈ U{i}
+  {A : U{i}} {B : A → U{i}} pi(A; [x].B[x]) ∈ U{i}
 ] ≡ [
   A, B ← intros;
   unfold pi;
