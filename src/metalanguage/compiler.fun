@@ -28,10 +28,8 @@ struct
    * into ML tactics like [Elim h u... THEN t2] *)
   fun go stack m =
     case #1 (infer m) of
-         S (THEN _) $ [_ \ t1, (us, _) \ t2] =>
-           T.THEN (go (us :: stack) t1, go stack t2)
-       | S (THENL _) $ [_ \ t1, (us, _) \ ts] =>
-           T.THENL (go (us :: stack) t1, map (fn (_ \ m) => go stack m) (getVec ts))
+         S (BIND _) $ [_ \ t1, e2] =>
+           bind stack t1 e2
        | S (ELIM ({target, hasTerm}, _)) $ es =>
            R.Elim target (pop stack) (getTerm hasTerm es)
        | S (HYP ({target}, _)) $ _ =>
@@ -39,6 +37,14 @@ struct
        | S (INTRO ({rule, hasTerm}, _)) $ es =>
            R.Intro rule (getTerm hasTerm es)
        | _ => raise MalformedScript "Expected tactical"
+  and bind stack t1 ((us, _) \ t2) =
+    case #1 (infer t2) of
+         S PAR $ [_ \ ts] =>
+           T.THENL (go (us :: stack) t1, map (fn (_ \ t) => go stack t) (getVec ts))
+       | S (FOCUS {focus}) $ [_ \ t] =>
+           T.THENF (go (us :: stack) t1, focus, go stack t)
+       | _ =>
+           T.THEN (go (us :: stack) t1, go stack t2)
 
   fun compile m = go [] m
 
