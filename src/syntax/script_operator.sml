@@ -18,8 +18,12 @@ struct
           [ [] * [] <> TAC
           , (EXP ^ bindings) * [] <> TAC
           ] ->> TAC
-      | arity (PAR) =
+      | arity (PAR _) =
           [ [] * [] <> VEC TAC
+          ] ->> TAC
+      | arity (SMASH _) =
+          [ [] * [] <> TAC
+          , [] * [] <> TAC
           ] ->> TAC
       | arity (FOCUS _) =
           [ [] * [] <> TAC
@@ -42,7 +46,8 @@ struct
   struct
     type 'i t = 'i t
     fun map f (BIND p) = BIND p
-      | map f PAR = PAR
+      | map f (PAR p) = PAR p
+      | map f (SMASH p) = SMASH p
       | map f (FOCUS p) = FOCUS p
       | map f (INTRO p) = INTRO p
       | map f (ELIM ({target, hasTerm}, m)) =
@@ -55,7 +60,8 @@ struct
   struct
     type 'i t = 'i t
     fun eq f (BIND p1, BIND p2) = p1 = p2
-      | eq f (PAR, PAR) = true
+      | eq f (PAR _, PAR _) = true
+      | eq f (SMASH _, SMASH _) = true
       | eq f (FOCUS p1, FOCUS p2) = p1 = p2
       | eq f (INTRO (p1, _), INTRO (p2, _)) = p1 = p2
       | eq f (ELIM (p1, _), ELIM (p2, _)) =
@@ -70,7 +76,8 @@ struct
   struct
     type 'i t = 'i t
     fun toString f (BIND _) = "bind"
-      | toString f PAR = "par"
+      | toString f (PAR _) = "par"
+      | toString f (SMASH _) = "smash"
       | toString f (FOCUS {focus,...}) = "focus{" ^ Int.toString focus ^ "}"
       | toString f (INTRO _) = "intro"
       | toString f (ELIM ({target,...}, _)) = "elim[" ^ f target ^ "]"
