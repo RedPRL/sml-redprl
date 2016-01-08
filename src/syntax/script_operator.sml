@@ -28,11 +28,11 @@ struct
       | arity (FOCUS _) =
           [ [] * [] <> TAC
           ] ->> TAC
-      | arity (INTRO ({hasTerm,...}, _)) =
-          (if hasTerm then [[] * [] <> EXP] else [])
+      | arity (INTRO _) =
+          [[] * [] <> OPT EXP]
             ->> TAC
-      | arity (ELIM ({hasTerm,...}, _)) =
-          (if hasTerm then [[] * [] <> EXP] else [])
+      | arity (ELIM _) =
+          [[] * [] <> OPT EXP]
             ->> TAC
       | arity (HYP _) =
           [] ->> TAC
@@ -50,8 +50,8 @@ struct
       | map f (SMASH p) = SMASH p
       | map f (FOCUS p) = FOCUS p
       | map f (INTRO p) = INTRO p
-      | map f (ELIM ({target, hasTerm}, m)) =
-          ELIM ({target = f target, hasTerm = hasTerm}, m)
+      | map f (ELIM ({target}, m)) =
+          ELIM ({target = f target}, m)
       | map f (HYP ({target}, m)) =
           HYP ({target = f target}, m)
   end
@@ -65,8 +65,7 @@ struct
       | eq f (FOCUS p1, FOCUS p2) = p1 = p2
       | eq f (INTRO (p1, _), INTRO (p2, _)) = p1 = p2
       | eq f (ELIM (p1, _), ELIM (p2, _)) =
-          f (#target p1, #target p2) andalso
-            #hasTerm p1 = #hasTerm p2
+          f (#target p1, #target p2)
       | eq f (HYP (p1, _), HYP (p2, _)) =
           f (#target p1, #target p2)
       | eq _ _ = false

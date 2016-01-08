@@ -20,12 +20,19 @@ struct
          | VEC_LIT (tau, len) =>
              ([] * [] <> tau) ^ len
                ->> SortData.VEC tau
+         | OP_SOME tau =>
+             [[] * [] <> tau]
+               ->> SortData.OPT tau
+         | OP_NONE tau =>
+             [] ->> SortData.OPT tau
   end
 
   fun support theta =
     case theta of
          S theta => ScriptOperator.support theta
        | VEC_LIT (tau, len) => []
+       | OP_SOME _ => []
+       | OP_NONE _ => []
 
   structure Presheaf =
   struct
@@ -34,6 +41,10 @@ struct
       case theta of
            S theta => S (ScriptOperator.Presheaf.map f theta)
          | VEC_LIT p => VEC_LIT p
+         | OP_SOME tau => OP_SOME tau
+         | OP_NONE tau => OP_NONE tau
+
+
   end
 
   structure Eq =
@@ -45,6 +56,10 @@ struct
              ScriptOperator.Eq.eq f (theta1, theta2)
          | (VEC_LIT p1, VEC_LIT p2) =>
              p1 = p2
+         | (OP_SOME tau1, OP_SOME tau2) =>
+             tau1 = tau2
+         | (OP_NONE tau1, OP_NONE tau2) =>
+             tau1 = tau2
          | _ =>
              false
   end
@@ -58,6 +73,10 @@ struct
              ScriptOperator.Show.toString f theta
          | VEC_LIT (tau, m) =>
              "vec{" ^ Sort.Show.toString tau ^ "}"
+         | OP_SOME tau =>
+             "some{" ^ Sort.Show.toString tau ^ "}"
+         | OP_NONE tau =>
+             "none{" ^ Sort.Show.toString tau ^ "}"
   end
 
 end

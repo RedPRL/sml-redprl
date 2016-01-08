@@ -7,18 +7,16 @@ struct
     {target : 'i}
 
   type 'i elim_params =
-    {target : 'i,
-     hasTerm : bool}
+    {target : 'i}
 
   type intro_params =
-    {rule : int option,
-     hasTerm : bool}
+    {rule : int option}
 
   type bind_params =
-    { bindings : int }
+    {bindings : int}
 
   type focus_params =
-    { focus : int }
+    {focus : int}
 
   datatype 'i script_operator =
       BIND of bind_params

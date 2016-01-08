@@ -16,6 +16,7 @@ struct
       | toString EVD = "evd"
       | toString TAC = "tac"
       | toString (VEC tau) = "[" ^ toString tau ^ "]"
+      | toString (OPT tau) = toString tau ^ "?"
   end
 end
 
