@@ -53,7 +53,7 @@ struct
                      store i)
                  (moduli, stack)
 
-             (* We will first compiled [t1] such that when it runs, we
+             (* We will first compile [t1] such that when it runs, we
               * will covertly observe how much of the name stores it consumes.
               * Then, [t2] will be compiled with all the names [t1] used removed
               * from its name stores. *)
