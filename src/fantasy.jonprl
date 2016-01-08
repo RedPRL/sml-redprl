@@ -1,4 +1,4 @@
-Def pi(A : exp, B : (exp.exp)exp) : exp ≡ [
+Def pi(A : exp, B : [exp].exp) : exp ≡ [
   (x : A) B[x]
 ].
 
