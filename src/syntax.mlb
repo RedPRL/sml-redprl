@@ -16,6 +16,9 @@ local
   syntax/script_operator_data.sml
   syntax/script_operator.sml
 
+  syntax/level_operator_data.sml
+  syntax/level_operator.sml
+
   syntax/operator_data.sml
   syntax/operator.sml
 
@@ -30,6 +33,9 @@ in
 
   structure ScriptOperatorData
   structure ScriptOperator
+
+  structure LevelOperatorData
+  structure LevelOperator
 
   structure OperatorData
   structure Operator
