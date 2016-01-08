@@ -2,16 +2,6 @@ structure ScriptOperatorData =
 struct
   type metadata = TacticMetadata.t
 
-  type then_params =
-    {bindings : int}
-
-  type thenf_params =
-    {focus : int,
-     bindings : int}
-
-  type thenl_params =
-    {bindings : int}
-
   (* We use symbols/atoms to index into the context. *)
   type 'i hyp_params =
     {target : 'i}
