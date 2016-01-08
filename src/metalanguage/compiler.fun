@@ -9,7 +9,7 @@ struct
   exception MalformedScript of string
 
   fun pop [] = raise Subscript
-    | pop (x :: xs) = (x, xs)
+    | pop (x :: xs) = x
 
   fun getVec m =
     case #1 (infer m) of
@@ -33,11 +33,11 @@ struct
          S (BIND _) $ [_ \ t1, e2] =>
            bind stack t1 e2
        | S (ELIM ({target}, _)) $ [_ \ m] =>
-           R.Elim target (#1 (pop stack)) (compileOpt m)
+           R.Elim target (pop stack) (compileOpt m)
        | S (HYP ({target}, _)) $ _ =>
            R.Hyp target
        | S (INTRO ({rule}, _)) $ [_ \ m] =>
-           R.Intro rule (#1 (pop stack)) (compileOpt m)
+           R.Intro rule (pop stack) (compileOpt m)
        | S (SMASH _) $ [_ \ t1, _ \ t2] =>
            let
              (* below is something very clever / terrifying! *)
