@@ -1,5 +1,5 @@
 local
-  src/development.mlb
+  src/signature.mlb
   src/syntax.mlb
   src/metalanguage.mlb
 in

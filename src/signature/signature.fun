@@ -5,7 +5,7 @@ struct
   fun toString x = x
 end
 
-functor Development (Abt : ABT) : DEVELOPMENT =
+functor Signature (Abt : ABT) : SIGNATURE  =
 struct
   type opid = string
   structure Abt = Abt
@@ -18,12 +18,19 @@ struct
   structure Telescope = Telescope (StringLabel)
 
   type symctx = (Abt.symbol * Abt.sort) list
-  datatype decl = DECL of symctx * Abt.metacontext * Abt.abt
-  datatype view = datatype decl
 
-  type development = decl Telescope.telescope
+  type notation = unit
 
-  exception InvalidDecl
+  datatype def = DEF of symctx * Abt.metacontext * Abt.abt
+  datatype def_view = datatype def
+
+  type decl =
+    {def : def,
+     notation : notation option}
+
+  type sign = decl Telescope.telescope
+
+  exception InvalidDef
 
   fun submetacontext (Th1, Th2) =
     let
@@ -50,15 +57,15 @@ struct
       go Y1
     end
 
-  fun decl (DECL (Y, Th, m)) =
+  fun def (DEF (Y, Th, m)) =
     let
       val Y' = Abt.freeSymbols m
       val Th' = Abt.metacontext m
     in
       if submetacontext (Th', Th) andalso subsymctx (Y', Y) then
-        DECL (Y, Th, m)
+        DEF (Y, Th, m)
       else
-        raise InvalidDecl
+        raise InvalidDef
     end
 
   fun view d = d

@@ -4,9 +4,9 @@ local
   ../lib/sml-telescopes/telescopes.mlb
   ../lib/cmlib/cmlib.mlb
 
-  development/development.sig
-  development/development.fun
+  signature/signature.sig
+  signature/signature.fun
 in
-  signature DEVELOPMENT
-  functor Development
+  signature SIGNATURE
+  functor Signature
 end
