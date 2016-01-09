@@ -4,9 +4,16 @@ local
   ../lib/sml-telescopes/telescopes.mlb
   ../lib/cmlib/cmlib.mlb
 
+  signature/string_telescope.sml
   signature/signature.sig
-  signature/signature.fun
+  signature/morphism.sig
+  signature/morphism.fun
+  signature/abt_signature.fun
+  signature/string_signature.sml
 in
   signature SIGNATURE
-  functor Signature
+  signature SIGNATURE_MORPHISM
+  functor AbtSignature
+  structure StringSignature
+  functor TransportSignature
 end
