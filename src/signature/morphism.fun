@@ -18,9 +18,10 @@ struct
     let
       val Phi.S1.DEF (ys, args, tau, m) = Phi.S1.view def
       val ys' = List.map (Phi.symbol *** Phi.sort sign) ys
-      val args' = Phi.arguments sign args
+      val args' = List.map (Phi.metavariable *** Phi.valence sign) args
       val tau' = Phi.sort sign tau
-      val m' = Phi.term sign m
+      val mctx = Phi.metacontext sign args'
+      val m' = Phi.term sign (mctx, ys', tau') m
     in
       Phi.S2.def (Phi.S2.DEF (ys', args', tau', m'))
     end

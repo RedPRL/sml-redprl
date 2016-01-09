@@ -4,14 +4,15 @@ functor AstSignature
    sharing type Ast.spine = Arity.Valence.Spine.t)
   :> SIGNATURE
       where type term = Ast.ast
-      where type symbol = Ast.ast
+      where type symbol = Ast.symbol
       where type sort = Arity.Valence.sort
       where type metavariable = Ast.metavariable
       where type valence = Arity.Valence.t
+      where type notation = unit
   =
 struct
   type term = Ast.ast
-  type symbol = Ast.ast
+  type symbol = Ast.symbol
   type sort = Arity.Valence.sort
   type metavariable = Ast.metavariable
   type valence = Arity.Valence.t
@@ -34,3 +35,5 @@ struct
   fun def d = d
   fun view d = d
 end
+
+structure AstSignature = AstSignature (structure Arity = Arity and Ast = Ast)

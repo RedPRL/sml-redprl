@@ -5,6 +5,7 @@ functor AbtSignature (Abt : ABT)
       where type sort = Abt.sort
       where type metavariable = Abt.metavariable
       where type valence = Abt.valence
+      where type notation = unit
   =
 struct
   structure Arity = Abt.Operator.Arity
@@ -77,3 +78,5 @@ struct
 
   fun view d = d
 end
+
+structure AbtSignature = AbtSignature (Abt)

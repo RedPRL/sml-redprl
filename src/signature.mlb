@@ -8,13 +8,26 @@ local
   signature/signature.sig
   signature/morphism.sig
   signature/morphism.fun
-  signature/abt_signature.fun
-  signature/ast_signature.fun
+
   signature/string_signature.sml
+
+  local
+    syntax.mlb
+  in
+    signature/abt_signature.fun
+    signature/ast_signature.fun
+    signature/bind_signature_morphism.sml
+  end
 in
   signature SIGNATURE
   signature SIGNATURE_MORPHISM
+  functor AstSignature
   functor AbtSignature
   structure StringSignature
   functor TransportSignature
+
+  structure AstSignature
+  structure AbtSignature
+
+  structure BindSignatureMorphism
 end

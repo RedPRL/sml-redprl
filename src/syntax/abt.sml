@@ -10,6 +10,11 @@ structure Metacontext =
     (structure Metavariable = Metavariable
      structure Valence = Valence.Eq)
 
+structure Ast =
+  Ast
+    (structure Operator = Operator
+     structure Metavariable = Metavariable)
+
 structure Abt =
   Abt
     (structure Operator = Operator
@@ -17,3 +22,5 @@ structure Abt =
      structure Metacontext = Metacontext
      structure Variable = Variable
      structure Symbol = Symbol)
+
+structure AstToAbt = AstToAbt (structure Ast = Ast and Abt = Abt)
