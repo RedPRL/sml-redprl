@@ -27,6 +27,8 @@ struct
                ->> SortData.OPT tau
          | OP_NONE tau =>
              [] ->> SortData.OPT tau
+         | CUST (_, _, arity) =>
+             arity
   end
 
   fun support theta =
@@ -36,6 +38,7 @@ struct
        | VEC_LIT (tau, len) => []
        | OP_SOME _ => []
        | OP_NONE _ => []
+       | CUST (_, supp, _) => supp
 
   structure Presheaf =
   struct
@@ -47,8 +50,7 @@ struct
          | VEC_LIT p => VEC_LIT p
          | OP_SOME tau => OP_SOME tau
          | OP_NONE tau => OP_NONE tau
-
-
+         | CUST (opid, supp, arity) => CUST (opid, List.map (fn (u, tau) => (f u, tau)) supp, arity)
   end
 
   structure Eq =
@@ -66,6 +68,10 @@ struct
              tau1 = tau2
          | (OP_NONE tau1, OP_NONE tau2) =>
              tau1 = tau2
+         | (CUST (opid1, supp1, arity1), CUST (opid2, supp2, arity2)) =>
+             opid1 = opid2
+               andalso ListPair.allEq (fn ((u, sigma), (v, tau)) => f (u, v) andalso Sort.Eq.eq (sigma, tau)) (supp1, supp2)
+               andalso Arity.Eq.eq (arity1, arity2)
          | _ =>
              false
   end
@@ -85,6 +91,8 @@ struct
              "some{" ^ Sort.Show.toString tau ^ "}"
          | OP_NONE tau =>
              "none{" ^ Sort.Show.toString tau ^ "}"
+         | CUST (opid, supp, _) =>
+             opid
   end
 
 end
