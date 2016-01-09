@@ -11,5 +11,8 @@ struct
     | OP_SOME of Sort.t
     | OP_NONE of Sort.t
     | CUST of opid * ('i * Sort.t) list * Arity.t
+        (* it may make sense in the future to replace [opid] with ['i];
+         * then, we could seamlessly rename operators when importing one
+         * development into another. *)
 end
 
