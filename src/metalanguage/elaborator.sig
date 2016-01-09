@@ -22,9 +22,9 @@ sig
     -> tactic
 end
 
-signature COMPILER =
+signature ELABORATOR =
 sig
   structure Refiner : REFINER
 
-  val compile : Abt.abt -> Refiner.tactic
+  val elaborate : Abt.abt -> Refiner.tactic
 end

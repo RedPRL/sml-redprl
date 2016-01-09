@@ -1,9 +1,9 @@
 local
   ../lib/sml-lcf/lcf.mlb
   syntax.mlb
-  metalanguage/compiler.sig
-  metalanguage/compiler.fun
+  metalanguage/elaborator.sig
+  metalanguage/elaborator.fun
 in
   signature REFINER
-  signature COMPILER
+  signature ELABORATOR
 end

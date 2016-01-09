@@ -1,4 +1,4 @@
-functor Compiler (R : REFINER) : COMPILER =
+functor Elaborator (R : REFINER) : ELABORATOR =
 struct
   structure Refiner = R
   structure T = R.Tacticals
@@ -20,7 +20,7 @@ struct
     fn i =>
       List.nth (xs, i)
 
-  fun compileOpt m =
+  fun elaborateOpt m =
     case infer m of
          (OP_SOME _ $ [_ \ n], OPT _) => SOME n
        | (OP_NONE _ $ _, OPT _) => NONE
@@ -33,11 +33,11 @@ struct
          S (BIND _) $ [_ \ t1, e2] =>
            bind stack t1 e2
        | S (ELIM ({target}, _)) $ [_ \ m] =>
-           R.Elim target (pop stack) (compileOpt m)
+           R.Elim target (pop stack) (elaborateOpt m)
        | S (HYP ({target}, _)) $ _ =>
            R.Hyp target
        | S (INTRO ({rule}, _)) $ [_ \ m] =>
-           R.Intro rule (pop stack) (compileOpt m)
+           R.Intro rule (pop stack) (elaborateOpt m)
        | S (SMASH _) $ [_ \ t1, _ \ t2] =>
            let
              (* below is something very clever / terrifying! *)
@@ -51,9 +51,9 @@ struct
                      store i)
                  (moduli, stack)
 
-             (* We will first compile [t1] such that when it runs, we
+             (* We will first elaborate [t1] such that when it runs, we
               * will covertly observe how much of the name stores it consumes.
-              * Then, [t2] will be compiled with all the names [t1] used removed
+              * Then, [t2] will be elaborated with all the names [t1] used removed
               * from its name stores. *)
            in
              T.THEN_LAZY
@@ -79,7 +79,7 @@ struct
        | _ =>
            T.THEN (go (mkNameStore us :: stack) t1, go stack t2)
 
-  fun compile m = go [] m
+  fun elaborate m = go [] m
 
   (* TODO: treat source annotations properly *)
 end

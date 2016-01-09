@@ -13,11 +13,11 @@ local
 
   syntax/tactic_metadata.sml
 
-  syntax/script_operator_data.sml
-  syntax/script_operator.sml
+  syntax/script/operator_data.sml
+  syntax/script/operator.sml
 
-  syntax/level_operator_data.sml
-  syntax/level_operator.sml
+  syntax/level/operator_data.sml
+  syntax/level/operator.sml
 
   syntax/operator_data.sml
   syntax/operator.sml
