@@ -7,7 +7,6 @@ functor AbtSignature (Abt : ABT)
       where type valence = Abt.valence
   =
 struct
-  structure Abt = Abt
   structure Arity = Abt.Operator.Arity
   structure Valence = Arity.Valence
   structure Sort = Arity.Sort

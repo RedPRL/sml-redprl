@@ -9,6 +9,7 @@ local
   signature/morphism.sig
   signature/morphism.fun
   signature/abt_signature.fun
+  signature/ast_signature.fun
   signature/string_signature.sml
 in
   signature SIGNATURE
