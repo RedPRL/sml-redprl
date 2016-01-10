@@ -11,11 +11,6 @@ struct
   fun pop [] = raise Subscript
     | pop (x :: xs) = x
 
-  fun getVec m =
-    case #1 (infer m) of
-         VEC_LIT _ $ es => es
-       | _ => raise MalformedScript "Expected vector argument"
-
   fun mkNameStore xs =
     fn i =>
       List.nth (xs, i)
@@ -25,6 +20,12 @@ struct
          (OP_SOME _ $ [_ \ n], OPT _) => SOME n
        | (OP_NONE _ $ _, OPT _) => NONE
        | _ => raise MalformedScript "Expected SOME or NONE"
+
+  fun elaborateVec m =
+    case #1 (infer m) of
+         VEC_LIT _ $ es => List.map (fn (_ \ n) => n) es
+       | _ => raise MalformedScript "Expected vector argument"
+
 
   (* The idea is to translate scripts like [u... <- elim h; t2]
    * into ML tactics like [Elim h u... THEN t2] *)
@@ -70,10 +71,11 @@ struct
                   end)
            end
        | _ => raise MalformedScript "Expected tactical"
+
   and bind stack t1 ((us, _) \ t2) =
     case #1 (infer t2) of
          S (MULTI _) $ [_ \ ts] =>
-           T.THENL (go (mkNameStore us :: stack) t1, map (fn (_ \ t) => go stack t) (getVec ts))
+           T.THENL (go (mkNameStore us :: stack) t1, map (go stack) (elaborateVec ts))
        | S (FOCUS {focus}) $ [_ \ t] =>
            T.THENF (go (mkNameStore us :: stack) t1, focus, go stack t)
        | _ =>
