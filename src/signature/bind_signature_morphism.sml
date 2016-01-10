@@ -16,7 +16,6 @@ struct
     let
       val (symbols, sorts) = ListPair.unzip parameters
       val symbols' = List.map Symbol.named symbols
-      val sorts = List.map (fn (u, tau) => tau) parameters
       val parameters' = ListPair.zipEq (symbols', sorts)
 
       local

@@ -1,5 +1,9 @@
 functor TransportSignature (Phi : SIGNATURE_MORPHISM) :
 sig
+  (* This lifts the [Phi.decl] operation which translates
+   * just declarations into a full transformations on signatures
+   * in the obvious recursive way.
+   *)
   val transport : Phi.S1.sign -> Phi.S2.sign
 end =
 struct
