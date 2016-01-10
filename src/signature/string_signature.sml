@@ -1,11 +1,11 @@
-structure StringSignatureData =
+structure StringSignature : STRING_SIGNATURE =
 struct
   type term = string
   type goal = string
   type symbol = string
   type sort = string
   type metavariable = string
-  type valence = string
+  type valence = sort list * sort list * sort
 
   type symbols = (symbol * sort) list
   type arguments = (metavariable * valence) list
@@ -27,13 +27,8 @@ struct
      goal : term,
      script : term}
 
-  datatype decl =
-      DEF of def
-    | TAC of tac
-    | THM of thm
+  type decl = (def, tac, thm) StringSignatureDecl.decl
 
   (* A signature / [sign] is a telescope of declarations. *)
   type sign = decl StringTelescope.telescope
 end
-
-structure StringSignature : SIGNATURE = StringSignatureData

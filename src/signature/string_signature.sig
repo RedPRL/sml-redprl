@@ -16,7 +16,7 @@ sig
   type symbol = string
   type sort = string
   type metavariable = string
-  type valence = string
+  type valence = sort list * sort list * sort
 
   type symbols = (symbol * sort) list
   type arguments = (metavariable * valence) list

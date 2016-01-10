@@ -27,10 +27,11 @@ in
   signature SIGNATURE_MORPHISM
   functor TransportSignature
 
-  structure StringSignatureData
+  structure StringSignatureDecl
   signature STRING_SIGNATURE
   structure StringSignature
 
+  structure AstSignatureDecl
   signature AST_SIGNATURE
   structure AstSignature
 
