@@ -10,11 +10,13 @@ sig
   structure S2 : SIGNATURE
 
   (* In order to implement this transformation it suffices to
-   * implement this function. It describes how to
+   * implement these functions. It describes how to
    * elaborate one source declaration given all the rest of the
    * previously extended declarations. See [TransportSignature]
    * for how this is elaborated into a map between two full
    * signatures.
    *)
   val decl : S2.sign -> S1.decl -> S2.decl
+
+  val opid : S2.sign -> S1.opid -> S2.opid
 end

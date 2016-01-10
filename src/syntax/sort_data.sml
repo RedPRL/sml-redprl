@@ -7,4 +7,5 @@ struct
     | LVL (* levels *)
     | VEC of sort (* vector *)
     | OPT of sort (* optional *)
+    | OPID (* operator ids *)
 end

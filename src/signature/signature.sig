@@ -12,8 +12,11 @@
 
 signature SIGNATURE =
 sig
+  type opid
   type decl
 
+  structure Telescope : TELESCOPE where type Label.t = opid
+
   (* A signature / [sign] is a telescope of declarations. *)
-  type sign = decl StringTelescope.telescope
+  type sign = decl Telescope.telescope
 end

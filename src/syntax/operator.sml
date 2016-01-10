@@ -38,7 +38,7 @@ struct
        | VEC_LIT (tau, len) => []
        | OP_SOME _ => []
        | OP_NONE _ => []
-       | CUST (_, supp, _) => supp
+       | CUST (opid, supp, _) => (opid, SortData.OPID) :: supp
 
   structure Presheaf =
   struct
@@ -50,7 +50,7 @@ struct
          | VEC_LIT p => VEC_LIT p
          | OP_SOME tau => OP_SOME tau
          | OP_NONE tau => OP_NONE tau
-         | CUST (opid, supp, arity) => CUST (opid, List.map (fn (u, tau) => (f u, tau)) supp, arity)
+         | CUST (opid, supp, arity) => CUST (f opid, List.map (fn (u, tau) => (f u, tau)) supp, arity)
   end
 
   structure Eq =
@@ -69,7 +69,7 @@ struct
          | (OP_NONE tau1, OP_NONE tau2) =>
              tau1 = tau2
          | (CUST (opid1, supp1, arity1), CUST (opid2, supp2, arity2)) =>
-             opid1 = opid2
+             f (opid1, opid2)
                andalso ListPair.allEq (fn ((u, sigma), (v, tau)) => f (u, v) andalso Sort.Eq.eq (sigma, tau)) (supp1, supp2)
                andalso Arity.Eq.eq (arity1, arity2)
          | _ =>
@@ -92,7 +92,12 @@ struct
          | OP_NONE tau =>
              "none{" ^ Sort.Show.toString tau ^ "}"
          | CUST (opid, supp, _) =>
-             opid
+             let
+               fun spine [] = ""
+                 | spine xs = "[" ^ ListSpine.pretty f "," xs ^ "]"
+             in
+               f opid ^ spine (map #1 supp)
+             end
   end
 
 end

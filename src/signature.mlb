@@ -4,7 +4,12 @@ local
   ../lib/sml-telescopes/telescopes.mlb
   ../lib/cmlib/cmlib.mlb
 
-  signature/string_telescope.sml
+  local
+    syntax.mlb
+  in
+    signature/telescope.sml
+  end
+
   signature/signature.sig
 
   signature/morphism.sig
