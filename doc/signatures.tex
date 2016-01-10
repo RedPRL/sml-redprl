@@ -22,8 +22,8 @@
 
 \newcommand\SortSigExpr{\mathit{sigexp}}
 \newcommand\SortSigDecl{\mathit{sigdec}}
-\newcommand\SortSymCtx{\mathit{sctx}}
-\newcommand\SortMetaCtx{\mathit{mctx}}
+\newcommand\SortParams{\mathit{params}}
+\newcommand\SortArgs{\mathit{args}}
 \newcommand\SortTerm{\mathit{term}}
 \newcommand\SortTac{\mathit{tac}}
 \newcommand\SortSymBind{\mathit{symbind}}
@@ -88,15 +88,15 @@ formatted $\Optional{s}$ in the rules.
          & \EmptySig & \text{empty signature}\\
          && \ExtendSig{\SortSigExpr}{\SortSigDecl} & \text{signature extension}\\
        \SortSigDecl & ::=
-         & \DefDecl{\SortOpId}{\SortSymCtx}{\SortMetaCtx}{\SortSortId}{\SortTerm} & \text{operator definition}\\
-         && \TacDecl{\SortOpId}{\SortSymCtx}{\SortMetaCtx}{\SortTac} & \text{tactic definition}\\
-         && \ThmDecl{\SortOpId}{\SortSymCtx}{\SortMetaCtx}{\SortTerm}{\SortTac} & \text{theorem declaration}\\
-       \SortSymCtx & ::=
-         & \EmptyCtx & \text{empty symbol context}\\
-         && \ExtendCtx{\SortSymCtx}{\SortSymBind} & \text{symbol context extension}\\
-       \SortMetaCtx & ::=
-         & \EmptyCtx & \text{empty metavariable context}\\
-         && \ExtendCtx{\SortMetaCtx}{\SortMetaBind}  & \text{metavariable context extension}\\
+         & \DefDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortSortId}{\SortTerm} & \text{operator definition}\\
+         && \TacDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTac} & \text{tactic definition}\\
+         && \ThmDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm}{\SortTac} & \text{theorem declaration}\\
+       \SortParams & ::=
+         & \EmptyCtx & \text{empty parameter list}\\
+         && \ExtendCtx{\SortParams}{\SortSymBind} & \text{parameter list extension}\\
+       \SortArgs & ::=
+         & \EmptyCtx & \text{empty argument list}\\
+         && \ExtendCtx{\SortArgs}{\SortMetaBind}  & \text{argument list extension}\\
        \SortSymBind & ::=
          & \Bind{\SortSymId}{\SortSortId} & \text{symbol binding}\\
        \SortMetaBind & ::=
