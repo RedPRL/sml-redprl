@@ -72,7 +72,7 @@ struct
        | _ => raise MalformedScript "Expected tactical"
   and bind stack t1 ((us, _) \ t2) =
     case #1 (infer t2) of
-         S (PAR _) $ [_ \ ts] =>
+         S (MULTI _) $ [_ \ ts] =>
            T.THENL (go (mkNameStore us :: stack) t1, map (fn (_ \ t) => go stack t) (getVec ts))
        | S (FOCUS {focus}) $ [_ \ t] =>
            T.THENF (go (mkNameStore us :: stack) t1, focus, go stack t)

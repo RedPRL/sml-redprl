@@ -18,7 +18,7 @@ struct
           [ [] * [] <> TAC
           , (EXP ^ bindings) * [] <> TAC
           ] ->> TAC
-      | arity (PAR _) =
+      | arity (MULTI _) =
           [ [] * [] <> VEC TAC
           ] ->> TAC
       | arity (SMASH _) =
@@ -46,7 +46,7 @@ struct
   struct
     type 'i t = 'i t
     fun map f (BIND p) = BIND p
-      | map f (PAR p) = PAR p
+      | map f (MULTI p) = MULTI p
       | map f (SMASH p) = SMASH p
       | map f (FOCUS p) = FOCUS p
       | map f (INTRO p) = INTRO p
@@ -60,7 +60,7 @@ struct
   struct
     type 'i t = 'i t
     fun eq f (BIND p1, BIND p2) = p1 = p2
-      | eq f (PAR _, PAR _) = true
+      | eq f (MULTI _, MULTI _) = true
       | eq f (SMASH _, SMASH _) = true
       | eq f (FOCUS p1, FOCUS p2) = p1 = p2
       | eq f (INTRO (p1, _), INTRO (p2, _)) = p1 = p2
@@ -75,7 +75,7 @@ struct
   struct
     type 'i t = 'i t
     fun toString f (BIND _) = "bind"
-      | toString f (PAR _) = "par"
+      | toString f (MULTI _) = "par"
       | toString f (SMASH _) = "smash"
       | toString f (FOCUS {focus,...}) = "focus{" ^ Int.toString focus ^ "}"
       | toString f (INTRO _) = "intro"

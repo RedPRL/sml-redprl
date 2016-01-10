@@ -21,7 +21,7 @@ struct
   datatype 'i script_operator =
       BIND of bind_params
     | FOCUS of focus_params
-    | PAR of metadata
+    | MULTI of metadata
     | SMASH of metadata
     | INTRO of intro_params * metadata
     | ELIM of 'i elim_params * metadata
