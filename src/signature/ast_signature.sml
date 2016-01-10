@@ -1,5 +1,8 @@
 structure AstSignature : AST_SIGNATURE =
 struct
+  type opid = string
+  structure Telescope = StringTelescope
+
   type term = Ast.ast
   type symbol = Ast.symbol
   type sort = Arity.Valence.sort

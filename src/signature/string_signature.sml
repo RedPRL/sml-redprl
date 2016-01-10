@@ -1,5 +1,8 @@
 structure StringSignature : STRING_SIGNATURE =
 struct
+  type opid = string
+  structure Telescope = StringTelescope
+
   type term = string
   type goal = string
   type symbol = string

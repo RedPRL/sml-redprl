@@ -1,5 +1,8 @@
 structure AbtSignature : ABT_SIGNATURE =
 struct
+  type opid = Abt.symbol
+  structure Telescope = SymbolTelescope
+
   structure Arity = Abt.Operator.Arity
   structure Valence = Arity.Valence
   structure Sort = Arity.Sort
@@ -22,7 +25,7 @@ struct
 
   datatype decl = DEF of def
 
-  type sign = decl StringTelescope.telescope
+  type sign = decl Telescope.telescope
 
   exception InvalidDef
   exception NotFound

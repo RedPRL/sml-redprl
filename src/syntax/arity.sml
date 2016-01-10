@@ -18,6 +18,7 @@ struct
       | toString LVL = "lvl"
       | toString (VEC tau) = "[" ^ toString tau ^ "]"
       | toString (OPT tau) = toString tau ^ "?"
+      | toString OPID = "opid"
   end
 end
 
