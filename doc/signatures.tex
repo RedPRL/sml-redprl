@@ -1,0 +1,120 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{jonprl-doc}
+
+\title{Specification of \RedJonPRL{} Signatures}
+\author{Jon Sterling}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\newcommand\GrayColor[1]{{\color{Gray} #1}}
+\newcommand\Optional[1]{%
+  \color{Gray}\left\langle%
+  \normalcolor #1%
+  \color{Gray}\right\rangle%
+  \normalcolor%
+}
+
+\newcommand\SortSigExpr{\mathit{sigexp}}
+\newcommand\SortSigDecl{\mathit{sigdec}}
+\newcommand\SortSymCtx{\mathit{sctx}}
+\newcommand\SortMetaCtx{\mathit{mctx}}
+\newcommand\SortTerm{\mathit{term}}
+\newcommand\SortTac{\mathit{tac}}
+\newcommand\SortSymBind{\mathit{symbind}}
+\newcommand\SortMetaBind{\mathit{metabind}}
+
+\newcommand\SortValence{\mathit{valence}}
+\newcommand\SortSortList{\mathit{sortlist}}
+
+\newcommand\SortOpId{\mathit{opid}}
+\newcommand\SortSortId{\mathit{sortid}}
+\newcommand\SortSymId{\mathit{symid}}
+\newcommand\SortMetaId{\mathit{metaid}}
+
+\newcommand\EmptySig{\Optional{\cdot}}
+\newcommand\ExtendSig[2]{#1.\ #2}
+
+\newcommand\EmptyCtx{\Optional{\cdot}}
+\newcommand\ExtendCtx[2]{#1, #2}
+
+\newcommand\Bind[2]{#1 : #2}
+
+\newcommand\MkValence[3]{%
+  \Optional{%
+    \Optional{\{#1\}}%
+    \Optional{[#2]}%
+    .%
+  }#3%
+}
+
+\newcommand\DefDecl[5]{%
+  \mathtt{Def}\ #1%
+  \Optional{[#2]}%
+  \Optional{(#3)} %
+  : #4 = [#5]
+}
+
+\newcommand\TacDecl[4]{%
+  \mathtt{Tac}\ #1%
+  \Optional{[#2]}%
+  \Optional{(#3)} %
+  = [#4]
+}
+
+\newcommand\ThmDecl[5]{%
+  \mathtt{Thm}\ #1%
+  \Optional{[#2]}%
+  \Optional{(#3)} %
+  : [#4] ~\mathtt{by}~ [#5]
+}
+
+
+\section{Grammar}
+
+The grammar of \RedJonPRL{} signatures is presented in
+Figure~\ref{fig:grammar}. Note that an optional production of sort $s$ is
+formatted $\Optional{s}$ in the rules.
+
+\begin{figure}[h]
+  \begin{displaymath}
+    \begin{array}{rcll}
+       \SortSigExpr & ::=
+         & \EmptySig & \text{empty signature}\\
+         && \ExtendSig{\SortSigExpr}{\SortSigDecl} & \text{signature extension}\\
+       \SortSigDecl & ::=
+         & \DefDecl{\SortOpId}{\SortSymCtx}{\SortMetaCtx}{\SortSortId}{\SortTerm} & \text{operator definition}\\
+         && \TacDecl{\SortOpId}{\SortSymCtx}{\SortMetaCtx}{\SortTac} & \text{tactic definition}\\
+         && \ThmDecl{\SortOpId}{\SortSymCtx}{\SortMetaCtx}{\SortTerm}{\SortTac} & \text{theorem declaration}\\
+       \SortSymCtx & ::=
+         & \EmptyCtx & \text{empty symbol context}\\
+         && \ExtendCtx{\SortSymCtx}{\SortSymBind} & \text{symbol context extension}\\
+       \SortMetaCtx & ::=
+         & \EmptyCtx & \text{empty metavariable context}\\
+         && \ExtendCtx{\SortMetaCtx}{\SortMetaBind}  & \text{metavariable context extension}\\
+       \SortSymBind & ::=
+         & \Bind{\SortSymId}{\SortSortId} & \text{symbol binding}\\
+       \SortMetaBind & ::=
+         & \Bind{\SortMetaId}{\SortValence} & \text{metavariable binding}\\
+       \SortValence & ::=
+         & \MkValence{\SortSortList}{\SortSortList}{\SortSortId} & \text{valence}\\
+       \SortSortList & ::=
+         & \EmptyCtx & \text{empty sort list}\\
+         && \ExtendCtx{\SortSortList}{\SortSortId} & \text{sort list extension}
+     \end{array}
+  \end{displaymath}
+
+  \caption{%
+    Grammar of signature expressions. The identifier sorts $\SortOpId$,
+    $\SortSortId$, $\SortSymId$ and $\SortMetaId$ can be assumed to be arbitrary
+    strings; the sorts $\SortTerm$ and $\SortTac$ are left uninterpreted.%
+  }
+  \label{fig:grammar}
+\end{figure}
+
+\end{document}

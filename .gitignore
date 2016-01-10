@@ -1,3 +1,7 @@
 .cm
 *.out
 *.x86-darwin
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
