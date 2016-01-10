@@ -3,6 +3,9 @@ sig
   type tactic
   structure Tacticals : TACTICALS where type tactic = tactic
 
+  (* a [name_store] is a partial function from natural numbers to names;
+   * built-in rules will query from the name store when they need a fresh name.
+   *)
   type name_store = int -> Symbol.t
 
   val Elim
