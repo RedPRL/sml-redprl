@@ -1,6 +1,6 @@
 (* A signature morphism is the core part of a translation between two
  * phases of a signature. Each portion of elaboration boils down to a
- * different implementation of SIGNATURE_MORPHISM
+ * different implementation of [SIGNATURE_MORPHISM]
  *)
 signature SIGNATURE_MORPHISM =
 sig
@@ -12,7 +12,7 @@ sig
   (* In order to implement this transformation it suffices to
    * implement this function. It describes how to
    * elaborate one source declaration given all the rest of the
-   * previously extended declarations. See TransportSignature
+   * previously extended declarations. See [TransportSignature]
    * for how this is elaborated into a map between two full
    * signatures.
    *)
