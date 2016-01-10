@@ -1,5 +1,13 @@
-structure StringSignatureData =
+structure StringSignatureDecl =
 struct
+  datatype ('def, 'tac, 'thm) decl =
+      DEF of 'def
+    | TAC of 'tac
+    | THM of 'thm
+end
+
+signature STRING_SIGNATURE =
+sig
   type term = string
   type goal = string
   type symbol = string
@@ -27,13 +35,6 @@ struct
      goal : term,
      script : term}
 
-  datatype decl =
-      DEF of def
-    | TAC of tac
-    | THM of thm
-
-  (* A signature / [sign] is a telescope of declarations. *)
-  type sign = decl StringTelescope.telescope
+  include SIGNATURE
+    where type decl = (def, tac, thm) StringSignatureDecl.decl
 end
-
-structure StringSignature : SIGNATURE = StringSignatureData

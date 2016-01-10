@@ -5,30 +5,33 @@ struct
   structure S1 = AstSignature
   structure S2 = AbtSignature
 
-  type metacontext = Metacontext.t
+  open AstSignatureDecl
 
-  fun metacontext sign xs =
+  fun metacontext xs =
     case xs of
          [] => Metacontext.empty
-       | d :: xs => Metacontext.extend (metacontext sign xs) d
+       | d :: xs => Metacontext.extend (metacontext xs) d
 
-  val symbol = Abt.Symbol.named
-
-  fun metavariable x = x
-  fun sort _ tau = tau
-  fun valence _ vl = vl
-  fun notation n = n
-
-  fun term _ (mctx, sctx : S2.symbols, tau) ast =
+  fun decl sign (DEF {parameters, arguments, sort, definiens}) =
     let
-      open AstToAbt
-      val upsilon =
-        NameEnv.fromList
-          (List.map
-            (fn (u,tau) => (Symbol.Show.toString u, u))
-            sctx)
-      val gamma = NameEnv.fromList []
+      val (symbols, sorts) = ListPair.unzip parameters
+      val symbols' = List.map Symbol.named symbols
+      val sorts = List.map (fn (u, tau) => tau) parameters
+      val parameters' = ListPair.zipEq (symbols', sorts)
+
+      local
+        open AstToAbt
+        val upsilon = NameEnv.fromList (ListPair.zipEq (symbols, symbols'))
+        val gamma = NameEnv.fromList []
+        val mctx = metacontext arguments
+      in
+        val definiens' = convertOpen mctx (upsilon, gamma) (definiens, sort)
+      end
     in
-      convertOpen mctx (upsilon, gamma) (ast, tau)
+      S2.def
+        {parameters = parameters',
+         arguments = arguments,
+         sort = sort,
+         definiens = definiens'}
     end
 end

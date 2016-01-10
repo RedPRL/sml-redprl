@@ -1,12 +1,4 @@
-functor AbtSignature (Abt : ABT)
-  :> SIGNATURE
-      where type term = Abt.abt
-      where type symbol = Abt.symbol
-      where type sort = Abt.sort
-      where type metavariable = Abt.metavariable
-      where type valence = Abt.valence
-      where type notation = unit
-  =
+structure AbtSignature : ABT_SIGNATURE =
 struct
   structure Arity = Abt.Operator.Arity
   structure Valence = Arity.Valence
@@ -22,14 +14,13 @@ struct
   type arguments = (metavariable * valence) list
   type symbols = (symbol * sort) list
 
-  type notation = unit
+  type def =
+    {parameters : symbols,
+     arguments : arguments,
+     sort : sort,
+     definiens : term}
 
-  datatype def = DEF of symbols * arguments * sort * term
-  datatype def_view = datatype def
-
-  type decl =
-    {def : def,
-     notation : notation option}
+  datatype decl = DEF of def
 
   type sign = decl StringTelescope.telescope
 
@@ -64,19 +55,15 @@ struct
       go Y1
     end
 
-  fun def (DEF (Y, Th, tau, m)) =
+  fun def {parameters, arguments, sort, definiens} =
     let
-      val Y' = Abt.freeSymbols m
-      val Th' = MCtx.toList (Abt.metacontext m)
-      val (_, tau') = Abt.infer m
+      val Y' = Abt.freeSymbols definiens
+      val Th' = MCtx.toList (Abt.metacontext definiens)
+      val (_, tau') = Abt.infer definiens
     in
-      if subarguments (Th', Th) andalso subsymbols (Y', Y) andalso Sort.Eq.eq (tau, tau') then
-        DEF (Y, Th, tau, m)
+      if subarguments (Th', arguments) andalso subsymbols (Y', parameters) andalso Sort.Eq.eq (tau', sort) then
+        DEF {parameters = Y', arguments = arguments, sort = sort, definiens = definiens}
       else
         raise InvalidDef
     end
-
-  fun view d = d
 end
-
-structure AbtSignature = AbtSignature (Abt)
