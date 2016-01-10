@@ -56,7 +56,8 @@ struct
     end
 
   (* def is *almost* an identity, but it also does all the checking
-   * necessary to make sure that everything is well-sorted before hand
+   * necessary to make sure that everything is well-sorted and well-scoped
+   * before hand
    *)
   fun def {parameters, arguments, sort, definiens} =
     let

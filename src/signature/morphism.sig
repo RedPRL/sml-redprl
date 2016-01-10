@@ -9,10 +9,10 @@ sig
   (* Target *)
   structure S2 : SIGNATURE
 
-  (* In order to implement this transformation this is the
-   * only required function to implement. It describes how to
-   * elaborate one sorce declaration given all the rest of the
-   * previously elaborated declarations. See TransportSignature
+  (* In order to implement this transformation it suffices to
+   * implement this function. It describes how to
+   * elaborate one source declaration given all the rest of the
+   * previously extended declarations. See TransportSignature
    * for how this is elaborated into a map between two full
    * signatures.
    *)
