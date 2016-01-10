@@ -19,10 +19,9 @@
 
 \newcommand\GrayColor[1]{{\color{Gray} #1}}
 \newcommand\Optional[1]{%
-  \color{Gray}\left\langle%
-  \normalcolor #1%
-  \color{Gray}\right\rangle%
-  \normalcolor%
+  {\color{Gray}\langle}%
+  #1%
+  {\color{Gray}\rangle}%
 }
 
 \newcommand\SortSigExpr{\mathit{sigexp}}
