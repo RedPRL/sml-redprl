@@ -55,6 +55,9 @@ struct
       go Y1
     end
 
+  (* def is *almost* an identity, but it also does all the checking
+   * necessary to make sure that everything is well-sorted before hand
+   *)
   fun def {parameters, arguments, sort, definiens} =
     let
       val Y' = Abt.freeSymbols definiens
@@ -62,7 +65,7 @@ struct
       val (_, tau') = Abt.infer definiens
     in
       if subarguments (Th', arguments) andalso subsymbols (Y', parameters) andalso Sort.Eq.eq (tau', sort) then
-        DEF {parameters = Y', arguments = arguments, sort = sort, definiens = definiens}
+        DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
       else
         raise InvalidDef
     end
