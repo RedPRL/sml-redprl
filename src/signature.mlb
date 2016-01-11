@@ -27,6 +27,13 @@ local
     signature/abt_signature.sml
     signature/bind_signature_morphism.sml
   end
+
+  local
+    syntax.mlb
+  in
+    signature/validation_morphism.sml
+  end
+
 in
   signature SIGNATURE
   signature SIGNATURE_MORPHISM
@@ -44,4 +51,5 @@ in
   structure AbtSignature
 
   structure BindSignatureMorphism
+  structure ValidationMorphism
 end
