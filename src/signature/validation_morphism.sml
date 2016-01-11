@@ -4,6 +4,15 @@
  *  - Exists in the signature before its occurence
  *  - Actually has the arity we claim it does
  * However beyond that this pass doesn't actually modify anything
+ *
+ * NOTE: This pass doesn't really play into what is seen in the
+ * semantics of signatures. This is because there custom operators
+ * don't carry around their meta-information. We only consider terms
+ * in signatures in a context where we have all the relevant information
+ * about them so it's unnecessary. For us though this would be *very*
+ * inefficient; every inspection we make on terms needs to do some lookup
+ * on the signatures! so it's simpler to just make sort checking efficient
+ * and pay the cost of having this extra pass.
  *)
 structure ValidationMorphism : SIGNATURE_MORPHISM =
 struct
