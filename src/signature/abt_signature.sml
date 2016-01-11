@@ -73,4 +73,6 @@ struct
       else
         raise InvalidDef
     end
+
+  fun undef (DEF d) = d
 end
