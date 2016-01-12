@@ -12,21 +12,11 @@ struct
          [] => Metacontext.empty
        | d :: xs => Metacontext.extend (metacontext xs) d
 
-  fun opid sign l =
-    Symbol.named l
-
-  local
-    open SymbolTelescope SymbolTelescope.SnocView
-  in
-    fun makeOpidTable sign =
-      case out sign of
-           Empty => []
-         | Snoc (sign, l, _) => (Symbol.Show.toString l, l) :: makeOpidTable sign
-  end
-
-  fun decl sign (DEF {parameters, arguments, sort, definiens}) =
+  (* Given a AST declaration, this resolves its binding structure
+   * in the context of the signature before it (given by [opidTable]).
+   *)
+  fun bindDecl opidTable (DEF {parameters, arguments, sort, definiens}) =
     let
-      val opidTable = makeOpidTable sign
       val (localNames, sorts) = ListPair.unzip parameters
       val localSymbols = List.map Symbol.named localNames
       val parameters' = ListPair.zipEq (localSymbols, sorts)
@@ -45,5 +35,27 @@ struct
          arguments = arguments,
          sort = sort,
          definiens = definiens'}
+    end
+
+  (* This extends bindDecl to work on signatures and maintains the
+   * [opidTable] mapping string names their new symbol equivalents
+   *)
+  fun transport sign =
+    let
+      open StringTelescope.ConsView
+
+      fun go opidTable sign =
+        case out sign of
+            Empty => SymbolTelescope.empty
+          | Cons (string, decl, rest) =>
+            let
+              val lbl = Symbol.named string
+            in
+              SymbolTelescope.cons
+                  (lbl, bindDecl opidTable decl)
+                  (go ((string, lbl) :: opidTable) rest)
+            end
+    in
+      go [] sign
     end
 end

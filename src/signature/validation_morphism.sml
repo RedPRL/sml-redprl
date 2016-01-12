@@ -24,26 +24,16 @@ struct
   structure Telescope = SymbolTelescope
 
   structure DefnMap = SplayDict(structure Key = struct open Symbol; open Eq end)
-  type map = S1.decl DefnMap.dict
+
   (* TODO: Should we standardize how we report these errors?
    * Do we only want to throw back the op name?
    *)
   exception InvalidCustomOper of S1.opid
 
-  (* Given a signature turn it into an efficient random access
-   * map for looking up information about the definition
+  (* This is the main part of the transformation, it validates
+   * that the data associated with a CUST operator is actually
+   * what the definition says it is.
    *)
-  fun buildDefnMap sign =
-    let
-      fun go map sign =
-          case Telescope.ConsView.out sign of
-              Telescope.ConsView.Empty => map
-            | Telescope.ConsView.Cons (l, a, r) =>
-              go (DefnMap.insert map l a) r
-    in
-      go DefnMap.empty sign
-    end
-
   fun validate map (OperatorData.CUST (opid, params, arity)) =
     let
       val {parameters, arguments, sort, definiens} =
@@ -61,18 +51,12 @@ struct
     end
     | validate _ _ = () (* This may seem redundant but helps type inference *)
 
-  (* TODO: This is inefficient because we rebuild the dict
-   * on every call to [decl] even though we should really only
-   * need to build it once. This means we are O(n^2) not
-   * O(n) directly.
-   *
-   * Suggestion: make this pass *not a morphism* and instead define
-   * transport
+  (* This traverses a declaration and ensures that each operator
+   * that occurs in the body is correct with respect to the signature
+   * it appears in.
    *)
-  fun decl prior decl =
+  fun checkDecl map decl =
     let
-      val map = buildDefnMap prior
-
       fun go e =
         case #1 (Abt.infer e) of
             ` _ => ()
@@ -80,9 +64,24 @@ struct
           | _ $# (_, args) => List.app go args
       and goAbs (_ \ a) = go a
     in
-      go (#definiens (S1.undef decl)); decl
+      go (#definiens (S1.undef decl))
     end
 
-  (* Since we're not transforming stuff there's no work to be done here *)
-  fun opid _ i = i
+  (* This is just the straightforward extension of checkDecl to full
+   * telescopes of signatures. It also correctly updates and propogates
+   * the map through each call.
+   *)
+  fun transport sign =
+    let
+      fun go map sign =
+        case Telescope.ConsView.out sign of
+            Telescope.ConsView.Empty => ()
+          | Telescope.ConsView.Cons (l, a, s) =>
+            (checkDecl map a; go (DefnMap.insert map l a) s)
+    in
+      (* Note that since we're just validating the signature
+       * at the end we just return the input
+       *)
+      go DefnMap.empty sign; sign
+    end
 end
