@@ -13,7 +13,6 @@ local
   signature/signature.sig
 
   signature/morphism.sig
-  signature/morphism.fun
 
   signature/string_signature.sig
   signature/string_signature.sml
@@ -37,7 +36,6 @@ local
 in
   signature SIGNATURE
   signature SIGNATURE_MORPHISM
-  functor TransportSignature
 
   structure StringSignatureDecl
   signature STRING_SIGNATURE
