@@ -12,7 +12,7 @@
  * statically, and so it is necessary for members of family of operators of
  * varying arity to carry their arities.
  *)
-structure ValidationMorphism : SIGNATURE_MORPHISM =
+structure ValidationElab : SIGNATURE_ELAB =
 struct
   structure S1 = AbtSignature
   structure S2 = AbtSignature

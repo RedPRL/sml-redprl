@@ -12,7 +12,7 @@ local
 
   signature/signature.sig
 
-  signature/morphism.sig
+  signature/elab.sig
 
   signature/string_signature.sig
   signature/string_signature.sml
@@ -24,18 +24,13 @@ local
     signature/ast_signature.sml
     signature/abt_signature.sig
     signature/abt_signature.sml
-    signature/bind_signature_morphism.sml
-  end
-
-  local
-    syntax.mlb
-  in
-    signature/validation_morphism.sml
+    signature/bind_signature_elab.sml
+    signature/validation_elab.sml
   end
 
 in
   signature SIGNATURE
-  signature SIGNATURE_MORPHISM
+  signature SIGNATURE_ELAB
 
   structure StringSignatureDecl
   signature STRING_SIGNATURE
@@ -48,6 +43,6 @@ in
   signature ABT_SIGNATURE
   structure AbtSignature
 
-  structure BindSignatureMorphism
-  structure ValidationMorphism
+  structure BindSignatureElab
+  structure ValidationElab
 end

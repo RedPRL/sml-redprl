@@ -1,8 +1,8 @@
-(* A signature morphism is a translation between two
+(* A signature elaboration is a translation between two
  * phases of a signature. Each portion of elaboration comes down to
  * different implementation of [SIGNATURE_MORPHISM].
  *)
-signature SIGNATURE_MORPHISM =
+signature SIGNATURE_ELAB =
 sig
   (* Source elaboration phase *)
   structure S1 : SIGNATURE

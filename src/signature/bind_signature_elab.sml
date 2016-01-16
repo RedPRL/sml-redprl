@@ -1,6 +1,6 @@
 (* This pass takes a signature of AST terms and assigns identity to their
  * symbols and variables. *)
-structure BindSignatureMorphism : SIGNATURE_MORPHISM =
+structure BindSignatureElab : SIGNATURE_ELAB =
 struct
   structure S1 = AstSignature
   structure S2 = AbtSignature
