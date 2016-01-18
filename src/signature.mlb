@@ -18,6 +18,12 @@ local
   signature/string_signature.sml
 
   local
+    ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
+  in
+    signature/parser.sml
+  end
+
+  local
     syntax.mlb
   in
     signature/ast_signature.sig
@@ -35,6 +41,8 @@ in
   structure StringSignatureDecl
   signature STRING_SIGNATURE
   structure StringSignature
+
+  structure SignatureParser
 
   structure AstSignatureDecl
   signature AST_SIGNATURE
