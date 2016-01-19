@@ -2,6 +2,7 @@ Red JonPRL is authored by the following people:
 
 - Jon Sterling
 - Danny Gratzer
+- Eugene Akentyev
 
 We also thank the following people for their contributions to previous versions
 of JonPRL:
