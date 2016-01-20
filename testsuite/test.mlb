@@ -1,0 +1,17 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../lib/cmlib/cmlib.mlb
+  ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
+
+  local
+    ../lib/sml-telescopes/telescopes.mlb
+    ../src/signature.mlb
+    ../src/syntax.mlb
+    ../src/signature/telescope.sml
+  in
+    tests/signature/test_parser.sml
+  end
+
+in
+  structure TestSignatureParser
+end

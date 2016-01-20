@@ -21,11 +21,11 @@ struct
 
   val skipChars = repeatSkip (space <|> char #"\t" <|> char #"\n")
 
-  val opid = repeat1 anyChar wth String.implode
-  val sortid = repeat1 anyChar wth String.implode
-  val term = repeat1 anyChar wth String.implode
-  val metaid = repeat1 anyChar wth String.implode
-  val symid = repeat1 anyChar wth String.implode
+  val opid = repeat1 letter wth String.implode
+  val sortid = repeat1 letter wth String.implode
+  val term = repeat letter wth String.implode
+  val metaid = repeat1 letter wth String.implode
+  val symid = repeat1 letter wth String.implode
 
   val sortlist = separate sortid (char #"," >> space)
 
