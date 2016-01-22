@@ -8,12 +8,29 @@ struct
 
   val parsed = CharParser.parseString SignatureParser.parseSigExp input
 
-  open StringSignatureDecl
+  open AstSignatureDecl
 
-  val printDecl =
-    fn (lbl, DEF {parameters, arguments, definiens, sort}) =>
-         print ("def " ^ lbl ^ " : " ^ sort ^ " = [" ^ definiens ^ "].")
-     | _ => ()
+
+  val paramsToString =
+    ListSpine.pretty
+      (fn (u, tau) => u ^ " : " ^ Sort.Show.toString tau)
+      ","
+
+  val argsToString =
+    ListSpine.pretty
+      (fn (m, vl) => Metavariable.Show.toString m ^ " : " ^ Valence.Show.toString vl)
+      ";"
+
+  fun printDecl (lbl, DEF {parameters, arguments, definiens, sort}) =
+    print
+      ("Def "
+         ^ lbl
+         ^ "[" ^ paramsToString parameters ^ "]"
+         ^ "(" ^ argsToString arguments ^ ")"
+         ^ " : " ^ Sort.Show.toString sort
+         ^ " = ["
+         ^ Ast.Show.toString definiens
+         ^ "].\n")
 
   local
     open AstSignature.Telescope

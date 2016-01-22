@@ -1,14 +1,6 @@
 (* The grammar can be found at
    https://github.com/JonPRL/sml-red-jonprl/blob/master/doc/signatures.pdf *)
 
-signature TERM_PARSER =
-sig
-  type metavariable_table = string -> Ast.metavariable
-  val parseSort : AstSignature.sign -> Sort.t CharParser.charParser
-  val parseTerm : AstSignature.sign -> metavariable_table -> Ast.ast CharParser.charParser
-  val parseTactic : AstSignature.sign -> metavariable_table -> Ast.ast CharParser.charParser
-end
-
 functor SignatureParser (TermParser : TERM_PARSER) =
 struct
 
@@ -28,23 +20,22 @@ struct
     val nestedComments = true
     val identLetter = letter || digit
     val identStart = identLetter
-    val opStart = fail "Operators not supported" : scanner
+    val opStart = fail "no reserved ops" : scanner
     val opLetter = opStart
     val reservedNames = ["Def", "Thm", "Tac", "by"]
-    val reservedOpNames = ["="]
+    val reservedOpNames = []
     val caseSensitive = true
   end
 
   structure TokenParser = TokenParser (LangDef)
-
   open TokenParser AstSignature
 
-  val parseOpid = identifier
-  val parseMetaid = identifier
-  val parseSymid = identifier
+  val parseOpid = identifier ?? "opid"
+  val parseMetaid = identifier ?? "metaid"
+  val parseSymid = identifier ?? "symid"
 
-  val parseSort = TermParser.parseSort
-  val parseSortList = commaSep o parseSort
+  fun parseSort sign = TermParser.parseSort sign ?? "sort"
+  fun parseSortList sign = commaSep (parseSort sign) ?? "sortlist"
 
   fun parseValence sign =
     let
@@ -57,6 +48,7 @@ struct
           | (SOME (NONE, SOME s1), s2) => (([], s1), s2)
           | (SOME (NONE, NONE), s) => (([], []), s)
           | (NONE, s) => (([], []), s))
+      ?? "valence"
     end
 
   fun parseMetaBind sign =
@@ -67,8 +59,13 @@ struct
     (parseSymid << colon)
       && parseSort sign
 
-  val parseArgs = commaSep o parseMetaBind
-  val parseParams = commaSep o parseSymBind
+  fun parseArgs sign =
+    commaSep (parseMetaBind sign)
+      ?? "args"
+
+  fun parseParams sign =
+    commaSep (parseSymBind sign)
+      ?? "params"
 
   local
     structure Dict = SplayDict (structure Key = StringOrdered)
@@ -82,10 +79,10 @@ struct
 
   fun parseDefinition sign : (opid * def) charParser =
     let
-      val parseOpid' = reserved "Def" >> whiteSpace >> parseOpid
+      val parseOpid' = reserved "Def" >> parseOpid
       val parseParams' = squares (parseParams sign) || succeed []
       val parseArgs' = parens (parseArgs sign) || succeed []
-      val parseSort' = colon >> parseSort sign << reservedOp "="
+      val parseSort' = colon >> parseSort sign << symbol "="
     in
       (parseOpid' && parseParams' && parseArgs' && parseSort') -- (fn (opid, (params, (args, sort))) =>
         let
@@ -97,16 +94,16 @@ struct
               arguments = List.map (fn (m, v) => (rho m, v)) args,
               sort = sort,
               definiens = term}))
-        end)
+        end) ?? "definition"
     end
 
   fun parseTactic sign : (opid * def) charParser =
     let
-      val parseOpid' = reserved "Tac" >> whiteSpace >> parseOpid
+      val parseOpid' = reserved "Tac" >> parseOpid
       val parseParams' = squares (parseParams sign) || succeed []
       val parseArgs' = parens (parseArgs sign) || succeed []
     in
-      (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
+      (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn (opid, (params, args)) =>
         let
           val rho = makeNameStore (List.map #1 args)
         in
@@ -116,12 +113,12 @@ struct
               arguments = List.map (fn (m, v) => (rho m, v)) args,
               sort = SortData.TAC,
               definiens = term}))
-        end)
+        end) ?? "tactic"
     end
 
     fun parseTheorem sign : (opid * def) charParser =
       let
-        val parseOpid' = reserved "Thm" >> whiteSpace >> parseOpid
+        val parseOpid' = reserved "Thm" >> parseOpid
         val parseParams' = squares (parseParams sign) || succeed []
         val parseArgs' = parens (parseArgs sign) || succeed []
         open Ast
@@ -130,7 +127,7 @@ struct
         (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
           let
             val rho = makeNameStore (List.map #1 args)
-            val parseGoal = squares (TermParser.parseTerm sign rho)
+            val parseGoal = colon >> squares (TermParser.parseTerm sign rho)
             val parseScript = reserved "by" >> squares (TermParser.parseTactic sign rho)
           in
             parseGoal && parseScript wth (fn (goal, script) =>
@@ -142,22 +139,22 @@ struct
                   OperatorData.PROVE $
                     [([],[]) \ goal,
                      ([],[]) \ script]}))
-          end)
+          end) ?? "theorem"
       end
 
     fun parseSigDecl sign : (opid * decl) charParser =
       (parseDefinition sign || parseTactic sign || parseTheorem sign) -- (fn (opid, d) =>
         succeed (opid, AstSignature.def d)
           handle e => fail (exnMessage e))
+      ?? "decl"
 
     fun parseSigExp' sign =
-      opt (whiteSpace >> parseSigDecl sign << dot << whiteSpace) -- (fn odecl =>
+      opt (whiteSpace >> parseSigDecl sign << dot) -- (fn odecl =>
         case odecl of
-             NONE => succeed sign
+             NONE => succeed sign << whiteSpace << eos
            | SOME decl => parseSigExp' (AstSignature.Telescope.snoc sign decl))
 
-    val parseSigExp =
-      parseSigExp' AstSignature.Telescope.empty
-        << whiteSpace
-        << eos
+    val parseSigExp = parseSigExp' AstSignature.Telescope.empty ?? "sig"
 end
+
+structure SignatureParser = SignatureParser (TermParser)

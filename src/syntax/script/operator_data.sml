@@ -26,6 +26,7 @@ struct
     | INTRO of intro_params * metadata
     | ELIM of 'i elim_params * metadata
     | HYP of 'i hyp_params * metadata
+    | ID
 
   (* The syntax of tactic scripts is arranged such that the sequencing
    * tactical BIND may bind any number of symbols. For instance,

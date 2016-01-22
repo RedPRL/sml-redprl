@@ -29,7 +29,9 @@ local
     syntax.mlb
     ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
   in
-    signature/parser.sml
+    signature/term_parser.sig
+    signature/term_parser.sml
+    signature/parser.fun
   end
 in
   signature SIGNATURE
@@ -39,7 +41,10 @@ in
   signature AST_SIGNATURE
   structure AstSignature
 
+  signature TERM_PARSER
+  structure TermParser
   functor SignatureParser
+  structure SignatureParser
 
   signature ABT_SIGNATURE
   structure AbtSignature

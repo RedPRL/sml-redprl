@@ -1,3 +1,9 @@
-Def pi(A : exp, B : [exp].exp) : exp = [
-  asdf
+Def test[a:exp](i:lvl) : exp = [ todo ].
+
+Def test2[a:exp](i:lvl) : exp = [ todo ].
+
+Tac welp = [
+  id
 ].
+
+Thm thm(i:lvl) : [ todo ] by [ id ].
