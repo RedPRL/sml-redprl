@@ -1,9 +1,20 @@
-Def test[a:exp](i:lvl) : exp = [ todo ].
+// Each declaration takes a block of parameters in square brackets (symbols w/ sorts),
+// and a block of arguments in parentheses (metavariables with valences). Both
+// are optional.
 
-Def test2[a:exp](i:lvl) : exp = [ todo ].
+Def dfun(A : exp, B : [exp].exp) : exp = [
+  todo
+].
 
-Tac welp = [
+// Tactics can take parameters and arguments as well
+Tac welp[a:exp](M : exp) = [
   id
 ].
 
-Thm thm(i:lvl) : [ todo ] by [ id ].
+// Note how level polymorphism is introduced for a theorem throwing an *argument*.
+// In Red JonPRL's semantics, this corresponds to a generic judgment.
+Thm thm(i:lvl) : [
+  todo
+] by [
+  id
+].
