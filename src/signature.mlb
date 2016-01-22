@@ -14,15 +14,6 @@ local
 
   signature/elab.sig
 
-  signature/string_signature.sig
-  signature/string_signature.sml
-
-  local
-    ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
-  in
-    signature/parser.sml
-  end
-
   local
     syntax.mlb
   in
@@ -34,19 +25,21 @@ local
     signature/validation_elab.sml
   end
 
+  local
+    syntax.mlb
+    ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
+  in
+    signature/parser.sml
+  end
 in
   signature SIGNATURE
   signature SIGNATURE_ELAB
 
-  structure StringSignatureDecl
-  signature STRING_SIGNATURE
-  structure StringSignature
-
-  structure SignatureParser
-
   structure AstSignatureDecl
   signature AST_SIGNATURE
   structure AstSignature
+
+  functor SignatureParser
 
   signature ABT_SIGNATURE
   structure AbtSignature

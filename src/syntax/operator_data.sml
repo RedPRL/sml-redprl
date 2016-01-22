@@ -4,6 +4,7 @@ structure OperatorData =
 struct
   datatype 'i operator =
       S of 'i ScriptOperator.t
+    | PROVE
     | LVL_OP of 'i LevelOperator.t
     | VEC_LIT of Sort.t * int
     | OP_SOME of Sort.t

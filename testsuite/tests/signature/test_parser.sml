@@ -6,7 +6,7 @@ struct
   val () = OS.FileSys.chDir "testsuite/tests/signature/"
   val input = TextIO.inputAll (TextIO.openIn "signature_parser_test.jonprl")
 
-  val parsed = CharParser.parseString SignatureParser.sigexp input
+  val parsed = CharParser.parseString SignatureParser.parseSigExp input
 
   open StringSignatureDecl
 

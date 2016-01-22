@@ -1,101 +1,163 @@
 (* The grammar can be found at
    https://github.com/JonPRL/sml-red-jonprl/blob/master/doc/signatures.pdf *)
 
-structure SignatureParser =
+signature TERM_PARSER =
+sig
+  type metavariable_table = string -> Ast.metavariable
+  val parseSort : AstSignature.sign -> Sort.t CharParser.charParser
+  val parseTerm : AstSignature.sign -> metavariable_table -> Ast.ast CharParser.charParser
+  val parseTactic : AstSignature.sign -> metavariable_table -> Ast.ast CharParser.charParser
+end
+
+functor SignatureParser (TermParser : TERM_PARSER) =
 struct
 
-  open ParserCombinators
-  open CharParser
-
-  open StringSignature
-
+  open ParserCombinators CharParser
   infixr 4 << >>
   infixr 3 &&
-  infix  2 -- ##
+  infix  2 --
   infix  2 wth suchthat return guard when
   infixr 1 || <|> ??
 
-  fun inBrackets p = char #"[" >> p << char #"]"
-  fun inParentheses p = char #"(" >> p << char #")"
-  fun inBraces p = char #"{" >> p << char #"}"
+  structure LangDef :> LANGUAGE_DEF =
+  struct
+    type scanner = char charParser
+    val commentStart = SOME "(*"
+    val commentEnd = SOME "*)"
+    val commentLine = SOME "//"
+    val nestedComments = true
+    val identLetter = letter || digit
+    val identStart = identLetter
+    val opStart = fail "Operators not supported" : scanner
+    val opLetter = opStart
+    val reservedNames = ["Def", "Thm", "Tac", "by"]
+    val reservedOpNames = ["="]
+    val caseSensitive = true
+  end
 
-  val skipChars = repeatSkip (space <|> char #"\t" <|> char #"\n")
+  structure TokenParser = TokenParser (LangDef)
 
-  val opid = repeat1 letter wth String.implode
-  val sortid = repeat1 letter wth String.implode
-  val term = skipChars >> (repeat letter wth String.implode) << skipChars
-  val metaid = repeat1 letter wth String.implode
-  val symid = repeat1 letter wth String.implode
+  open TokenParser AstSignature
 
-  val sortlist = separate sortid (char #"," >> space)
+  val parseOpid = identifier
+  val parseMetaid = identifier
+  val parseSymid = identifier
 
-  val valence = opt (opt (inBraces sortlist) &&
-    opt (inBrackets sortlist) << char #".") && sortid wth
-      (fn (SOME (SOME s1, SOME s2), s3) => (s1, s2, s3)
-        | (SOME (SOME s1, NONE), s2) => (s1, [], s2)
-        | (SOME (NONE, SOME s1), s2) => ([], s1, s2)
-        | (SOME (NONE, NONE), s) => ([], [], s)
-        | (NONE, s) => ([], [], s))
+  val parseSort = TermParser.parseSort
+  val parseSortList = commaSep o parseSort
 
-  val metabind = metaid && (space >> char #":" >> space >> valence) wth
-    (fn (m, v) => (m, v))
+  fun parseValence sign =
+    let
+      val parseSymSorts = braces (parseSortList sign)
+      val parseVarSorts = squares (parseSortList sign)
+    in
+      opt ((opt parseSymSorts && opt parseVarSorts) << dot) && parseSort sign wth
+        (fn (SOME (SOME s1, SOME s2), s3) => ((s1, s2), s3)
+          | (SOME (SOME s1, NONE), s2) => ((s1, []), s2)
+          | (SOME (NONE, SOME s1), s2) => (([], s1), s2)
+          | (SOME (NONE, NONE), s) => (([], []), s)
+          | (NONE, s) => (([], []), s))
+    end
 
-  val symbind = symid && (space >> char #":" >> space >> sortid)
+  fun parseMetaBind sign =
+    (parseMetaid << colon)
+      && parseValence sign
 
-  val args = separate metabind (char #"," >> space)
-  val params = separate symbind (char #"," >> space)
+  fun parseSymBind sign =
+    (parseSymid << colon)
+      && parseSort sign
 
-  val definition : (opid * def) charParser =
-    (string "Def" >> space >> opid) && opt (inBrackets params) &&
-    opt (inParentheses args) && (space >> char #":" >> space >> sortid) &&
-    (space >> char #"=" >> space >> inBrackets term) wth
-      (fn (opid, (SOME p, (SOME a, (s, t)))) =>
-            (opid, { parameters=p, arguments=a, sort=s, definiens=t })
-        | (opid, (NONE, (SOME a, (s, t)))) =>
-            (opid, { parameters=[], arguments=a, sort=s, definiens=t })
-        | (opid, (SOME p, (NONE, (s, t)))) =>
-            (opid, { parameters=p, arguments=[], sort=s, definiens=t })
-        | (opid, (NONE, (NONE, (s, t)))) =>
-            (opid, { parameters=[], arguments=[], sort=s, definiens=t }))
+  val parseArgs = commaSep o parseMetaBind
+  val parseParams = commaSep o parseSymBind
 
-  val tactic : (opid * tac) charParser = (string "Tac" >> space >> opid) &&
-    opt (inBrackets params) && opt (inParentheses args) &&
-    (space >> char #"=" >> space >> inBrackets term) wth
-      (fn (opid, (SOME p, (SOME a, t))) =>
-            (opid, { parameters=p, arguments=a, script=t })
-        | (opid, (NONE, (SOME a, t))) =>
-            (opid, { parameters=[], arguments=a, script=t })
-        | (opid, (SOME p, (NONE, t))) =>
-            (opid, { parameters=p, arguments=[], script=t })
-        | (opid, (NONE, (NONE, t))) =>
-            (opid, { parameters=[], arguments=[], script=t }))
+  local
+    structure Dict = SplayDict (structure Key = StringOrdered)
+  in
+    val makeNameStore =
+      Dict.lookup o
+        List.foldl
+          (fn (x, d) => Dict.insert d x (Metavariable.named x))
+          Dict.empty
+  end
 
-  val theorem : (opid * thm) charParser = (string "Thm" >> space >> opid) &&
-    opt (inBrackets params) && opt (inParentheses args) &&
-    (space >> char #":" >> space >> inBrackets term) &&
-    (space >> string "by" >> space >> inBrackets term) wth
-      (fn (opid, (SOME p, (SOME a, (t1, t2)))) =>
-            (opid, { parameters=p, arguments=a, goal=t1, script=t2 })
-        | (opid, (NONE, (SOME a, (t1, t2)))) =>
-            (opid, { parameters=[], arguments=a, goal=t1, script=t2 })
-        | (opid, (SOME p, (NONE, (t1, t2)))) =>
-            (opid, { parameters=p, arguments=[], goal=t1, script=t2 })
-        | (opid, (NONE, (NONE, (t1, t2)))) =>
-            (opid, { parameters=[], arguments=[], goal=t1, script=t2 }))
+  fun parseDefinition sign : (opid * def) charParser =
+    let
+      val parseOpid' = reserved "Def" >> whiteSpace >> parseOpid
+      val parseParams' = squares (parseParams sign) || succeed []
+      val parseArgs' = parens (parseArgs sign) || succeed []
+      val parseSort' = colon >> parseSort sign << reservedOp "="
+    in
+      (parseOpid' && parseParams' && parseArgs' && parseSort') -- (fn (opid, (params, (args, sort))) =>
+        let
+          val rho = makeNameStore (List.map #1 args)
+        in
+          squares (TermParser.parseTerm sign rho) wth (fn term =>
+            (opid,
+             {parameters = params,
+              arguments = List.map (fn (m, v) => (rho m, v)) args,
+              sort = sort,
+              definiens = term}))
+        end)
+    end
 
-  val sigdec : (opid * decl) charParser =
-    (definition << skipChars) wth
-      (fn (opid, d) => (opid, StringSignatureDecl.DEF d)) ||
-    (tactic << skipChars) wth
-      (fn (opid, t) => (opid, StringSignatureDecl.TAC t)) ||
-    (theorem << skipChars) wth
-      (fn (opid, t) => (opid, StringSignatureDecl.THM t))
+  fun parseTactic sign : (opid * def) charParser =
+    let
+      val parseOpid' = reserved "Tac" >> whiteSpace >> parseOpid
+      val parseParams' = squares (parseParams sign) || succeed []
+      val parseArgs' = parens (parseArgs sign) || succeed []
+    in
+      (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
+        let
+          val rho = makeNameStore (List.map #1 args)
+        in
+          squares (TermParser.parseTactic sign rho) wth (fn term =>
+            (opid,
+             {parameters = params,
+              arguments = List.map (fn (m, v) => (rho m, v)) args,
+              sort = SortData.TAC,
+              definiens = term}))
+        end)
+    end
 
-  val sigexp : sign charParser =
-    (sepEnd sigdec (char #".") wth
-      (fn (declarations) =>
-        (foldl (fn ((l, d), b) =>
-          Telescope.cons (l, d) b) Telescope.empty declarations)))
-    << skipChars << not any
+    fun parseTheorem sign : (opid * def) charParser =
+      let
+        val parseOpid' = reserved "Thm" >> whiteSpace >> parseOpid
+        val parseParams' = squares (parseParams sign) || succeed []
+        val parseArgs' = parens (parseArgs sign) || succeed []
+        open Ast
+        infix $ \
+      in
+        (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
+          let
+            val rho = makeNameStore (List.map #1 args)
+            val parseGoal = squares (TermParser.parseTerm sign rho)
+            val parseScript = reserved "by" >> squares (TermParser.parseTactic sign rho)
+          in
+            parseGoal && parseScript wth (fn (goal, script) =>
+              (opid,
+               {parameters = params,
+                arguments = List.map (fn (m, v) => (rho m, v)) args,
+                sort = SortData.TAC,
+                definiens =
+                  OperatorData.PROVE $
+                    [([],[]) \ goal,
+                     ([],[]) \ script]}))
+          end)
+      end
 
+    fun parseSigDecl sign : (opid * decl) charParser =
+      (parseDefinition sign || parseTactic sign || parseTheorem sign) -- (fn (opid, d) =>
+        succeed (opid, AstSignature.def d)
+          handle e => fail (exnMessage e))
+
+    fun parseSigExp' sign =
+      opt (whiteSpace >> parseSigDecl sign << dot << whiteSpace) -- (fn odecl =>
+        case odecl of
+             NONE => succeed sign
+           | SOME decl => parseSigExp' (AstSignature.Telescope.snoc sign decl))
+
+    val parseSigExp =
+      parseSigExp' AstSignature.Telescope.empty
+        << whiteSpace
+        << eos
 end

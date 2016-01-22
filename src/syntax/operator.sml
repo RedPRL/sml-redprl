@@ -17,6 +17,10 @@ struct
       case theta of
            S theta =>
              ScriptOperator.arity theta
+         | PROVE =>
+             [[] * [] <> SortData.EXP,
+              [] * [] <> SortData.TAC]
+                ->> SortData.THM
          | LVL_OP theta =>
              LevelOperator.arity theta
          | VEC_LIT (tau, len) =>
@@ -34,6 +38,7 @@ struct
   fun support theta =
     case theta of
          S theta => ScriptOperator.support theta
+       | PROVE => []
        | LVL_OP theta => LevelOperator.support theta
        | VEC_LIT (tau, len) => []
        | OP_SOME _ => []
@@ -46,6 +51,7 @@ struct
     fun map f theta =
       case theta of
            S theta => S (ScriptOperator.Presheaf.map f theta)
+         | PROVE => PROVE
          | LVL_OP theta => LVL_OP (LevelOperator.Presheaf.map f theta)
          | VEC_LIT p => VEC_LIT p
          | OP_SOME tau => OP_SOME tau
@@ -60,6 +66,7 @@ struct
       case ops of
            (S theta1, S theta2) =>
              ScriptOperator.Eq.eq f (theta1, theta2)
+         | (PROVE, PROVE) => true
          | (LVL_OP theta1, LVL_OP theta2) =>
              LevelOperator.Eq.eq f (theta1, theta2)
          | (VEC_LIT p1, VEC_LIT p2) =>
@@ -83,6 +90,7 @@ struct
       case theta of
            S theta =>
              ScriptOperator.Show.toString f theta
+         | PROVE => "prove"
          | LVL_OP theta =>
              LevelOperator.Show.toString f theta
          | VEC_LIT (tau, m) =>
