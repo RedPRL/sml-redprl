@@ -3,12 +3,12 @@
 // are optional.
 
 Def dfun(A : exp, B : [exp].exp) : exp = [
-  todo
+  x
 ].
 
 // Tactics can take parameters and arguments as well
 Tac welp[a:exp](M : exp) = [
-  id
+  y
 ].
 
 // Note how level polymorphism is introduced for a theorem through an *argument*.
@@ -16,5 +16,11 @@ Tac welp[a:exp](M : exp) = [
 Thm thm(i:lvl) : [
   todo
 ] by [
-  id
+  a,c <- id;
+  d,e <- id;
+  [hyp d, hyp e];
+  #1 {
+    hyp a;
+    hyp b
+  }
 ].

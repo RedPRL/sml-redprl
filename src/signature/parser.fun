@@ -88,7 +88,7 @@ struct
         let
           val rho = makeNameStore (List.map #1 args)
         in
-          squares (TermParser.parseTerm sign rho) wth (fn term =>
+          squares (TermParser.parseTerm sign rho sort) wth (fn term =>
             (opid,
              {parameters = params,
               arguments = List.map (fn (m, v) => (rho m, v)) args,
@@ -107,7 +107,7 @@ struct
         let
           val rho = makeNameStore (List.map #1 args)
         in
-          squares (TermParser.parseTactic sign rho) wth (fn term =>
+          squares (TermParser.parseTerm sign rho SortData.TAC) wth (fn term =>
             (opid,
              {parameters = params,
               arguments = List.map (fn (m, v) => (rho m, v)) args,
@@ -127,8 +127,8 @@ struct
         (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
           let
             val rho = makeNameStore (List.map #1 args)
-            val parseGoal = colon >> squares (TermParser.parseTerm sign rho)
-            val parseScript = reserved "by" >> squares (TermParser.parseTactic sign rho)
+            val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP)
+            val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC)
           in
             parseGoal && parseScript wth (fn (goal, script) =>
               (opid,
