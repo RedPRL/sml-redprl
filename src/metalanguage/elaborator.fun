@@ -39,6 +39,8 @@ struct
            R.Hyp target
        | S (INTRO ({rule}, _)) $ [_ \ m] =>
            R.Intro rule (pop stack) (elaborateOpt m)
+       | S ID $ [] =>
+           T.ID
        | S (SMASH _) $ [_ \ t1, _ \ t2] =>
            let
              (* below is something very clever / terrifying! *)

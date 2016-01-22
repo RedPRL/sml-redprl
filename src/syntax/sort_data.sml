@@ -4,6 +4,7 @@ struct
       EXP (* expressions *)
     | EVD (* derivations *)
     | TAC (* tactics *)
+    | THM (* theorems *)
     | LVL (* levels *)
     | VEC of sort (* vector *)
     | OPT of sort (* optional *)

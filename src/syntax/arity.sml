@@ -15,6 +15,7 @@ struct
     fun toString EXP = "exp"
       | toString EVD = "evd"
       | toString TAC = "tac"
+      | toString THM = "thm"
       | toString LVL = "lvl"
       | toString (VEC tau) = "[" ^ toString tau ^ "]"
       | toString (OPT tau) = toString tau ^ "?"

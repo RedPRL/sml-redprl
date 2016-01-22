@@ -36,6 +36,8 @@ struct
             ->> TAC
       | arity (HYP _) =
           [] ->> TAC
+      | arity ID =
+          [] ->> TAC
   end
 
   fun support (ELIM ({target,...}, _)) = [(target, EXP)]
@@ -54,6 +56,8 @@ struct
           ELIM ({target = f target}, m)
       | map f (HYP ({target}, m)) =
           HYP ({target = f target}, m)
+      | map f ID =
+          ID
   end
 
   structure Eq =
@@ -68,6 +72,7 @@ struct
           f (#target p1, #target p2)
       | eq f (HYP (p1, _), HYP (p2, _)) =
           f (#target p1, #target p2)
+      | eq f (ID, ID) = true
       | eq _ _ = false
   end
 
@@ -75,11 +80,12 @@ struct
   struct
     type 'i t = 'i t
     fun toString f (BIND _) = "bind"
-      | toString f (MULTI _) = "par"
+      | toString f (MULTI _) = "multi"
       | toString f (SMASH _) = "smash"
       | toString f (FOCUS {focus,...}) = "focus{" ^ Int.toString focus ^ "}"
       | toString f (INTRO _) = "intro"
       | toString f (ELIM ({target,...}, _)) = "elim[" ^ f target ^ "]"
       | toString f (HYP ({target}, _)) = "hyp[" ^ f target ^ "]"
+      | toString f ID = "id"
   end
 end
