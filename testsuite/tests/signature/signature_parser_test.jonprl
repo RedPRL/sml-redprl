@@ -1,1 +1,3 @@
-Def pi(A : exp, B : [exp].exp) : exp = [].
+Def pi(A : exp, B : [exp].exp) : exp = [
+  asdf
+].

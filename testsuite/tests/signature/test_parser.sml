@@ -7,10 +7,27 @@ struct
   val input = TextIO.inputAll (TextIO.openIn "signature_parser_test.jonprl")
 
   val parsed = CharParser.parseString SignatureParser.sigexp input
+
+  open StringSignatureDecl
+
+  val printDecl =
+    fn (lbl, DEF {parameters, arguments, definiens, sort}) =>
+         print ("def " ^ lbl ^ " : " ^ sort ^ " = [" ^ definiens ^ "].")
+     | _ => ()
+
+  local
+    open AstSignature.Telescope
+  in
+    fun printSign sign =
+      case ConsView.out sign of
+          ConsView.Cons (l, d, sign') =>
+            (printDecl (l, d); printSign sign')
+        | ConsView.Empty => ()
+  end
+
+
   val () =
-    (case parsed of
-      (INL s) => raise Fail (message ^ ": " ^ s)
-    | (INR t) =>
-      AstSignature.Telescope.foldl (fn (StringSignatureDecl.DEF { parameters=p, arguments=a, definiens=d, sort=s }, _) =>
-        (print d; print s)) () t)
+    case parsed of
+        INL s => raise Fail (message ^ ": " ^ s)
+      | INR t => printSign t
 end
