@@ -2,16 +2,8 @@ local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-typed-abts/abt.mlb
 
-  local
-    ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
-  in
-    structure Pos
-  end
-
   syntax/sort_data.sml
   syntax/arity.sml
-
-  syntax/tactic_metadata.sml
 
   syntax/script/operator_data.sml
   syntax/script/operator.sml
@@ -28,8 +20,6 @@ in
   structure Sort
   structure Valence
   structure Arity
-
-  structure TacticMetadata
 
   structure ScriptOperatorData
   structure ScriptOperator

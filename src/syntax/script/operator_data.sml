@@ -1,7 +1,5 @@
 structure ScriptOperatorData =
 struct
-  type metadata = TacticMetadata.t
-
   (* We use symbols/atoms to index into the context. *)
   type 'i hyp_params =
     {target : 'i}
@@ -21,11 +19,11 @@ struct
   datatype 'i script_operator =
       BIND of bind_params
     | FOCUS of focus_params
-    | MULTI of metadata
-    | SMASH of metadata
-    | INTRO of intro_params * metadata
-    | ELIM of 'i elim_params * metadata
-    | HYP of 'i hyp_params * metadata
+    | MULTI
+    | SMASH
+    | INTRO of intro_params
+    | ELIM of 'i elim_params
+    | HYP of 'i hyp_params
     | ID
 
   (* The syntax of tactic scripts is arranged such that the sequencing

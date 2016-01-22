@@ -6,10 +6,10 @@ struct
   type 'i t = 'i operator
 
   local
-    fun * (a, b) = (a, b) (* symbols sorts, variable sorts *)
-    fun <> (a, b) = (a, b) (* valence *)
-    fun ->> (a, b) = (a, b) (* arity *)
-    fun ^ (x, n) = List.tabulate (n, fn _ => x)
+    fun op* (a, b) = (a, b) (* symbols sorts, variable sorts *)
+    fun op<> (a, b) = (a, b) (* valence *)
+    fun op->> (a, b) = (a, b) (* arity *)
+    fun op^ (x, n) = List.tabulate (n, fn _ => x)
     infix 5 <> ->>
     infix 6 * ^
   in
