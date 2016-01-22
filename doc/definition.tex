@@ -1,4 +1,5 @@
-\documentclass{article}
+\documentclass{report}
+\usepackage{epigraph}
 \usepackage{fullpage}
 \usepackage{proof}
 \usepackage{float}
@@ -9,80 +10,26 @@
 \usepackage{ifthen}
 \usepackage{jonprl-doc}
 
-\title{Specification of \RedJonPRL{} Signatures}
-\author{Jon Sterling}
+\title{The Definition of \RedJonPRL{},\\\emph{the people's refinement logic}}
+\author{The JonPRL Group}
 \date{\today}
 
 \begin{document}
 
 \maketitle
+\tableofcontents
 
-\newcommand\GrayColor[1]{{\color{Gray} #1}}
-\newcommand\Optional[1]{%
-  {\color{Gray}\langle}%
-  #1%
-  {\color{Gray}\rangle}%
-}
+\chapter{Signatures}
 
-\newcommand\SortSigExpr{\mathit{sigexp}}
-\newcommand\SortSigDecl{\mathit{sigdec}}
-\newcommand\SortParams{\mathit{params}}
-\newcommand\SortArgs{\mathit{args}}
-\newcommand\SortTerm{\mathit{term}}
-\newcommand\SortSymBind{\mathit{symbind}}
-\newcommand\SortMetaBind{\mathit{metabind}}
+\epigraph{\OMode{\emph{\textsf{Decisively Smash The Formalist Clique!}}}}{\textsf{Chairman Jon}}
 
-\newcommand\SortValence{\mathit{valence}}
-\newcommand\SortSortList{\mathit{sortlist}}
-
-\newcommand\SortOpId{\mathit{opid}}
-\newcommand\SortSortId{\mathit{sortid}}
-\newcommand\SortSymId{\mathit{symid}}
-\newcommand\SortMetaId{\mathit{metaid}}
-
-\newcommand\EmptySig{\Optional{\cdot}}
-\newcommand\ExtendSig[2]{#1.\ #2}
-
-\newcommand\EmptyCtx{\Optional{\cdot}}
-\newcommand\ExtendCtx[2]{#1, #2}
-
-\newcommand\Bind[2]{#1 : #2}
-
-\newcommand\Valence[3]{%
-  \Optional{%
-    \Optional{\{#1\}}%
-    \Optional{[#2]}%
-    .%
-  }#3%
-}
-
-\newcommand\DefDecl[5]{%
-  \mathtt{Def}\ #1%
-  \Optional{[#2]}%
-  \Optional{(#3)} %
-  : #4 = [#5]
-}
-
-\newcommand\TacDecl[4]{%
-  \mathtt{Tac}\ #1%
-  \Optional{[#2]}%
-  \Optional{(#3)} %
-  = [#4]
-}
-
-\newcommand\ThmDecl[5]{%
-  \mathtt{Thm}\ #1%
-  \Optional{[#2]}%
-  \Optional{(#3)} %
-  : [#4] ~\mathtt{by}~ [#5]
-}
-
+A \emph{signature} is a collection of definitions, including terms, tactics and theorems.
 
 \section{Grammar}
-\label{sec:grammar}
+\label{sec:sig-grammar}
 
 The grammar of \RedJonPRL{} signatures is presented in
-Figure~\ref{fig:grammar}. Note that an optional production of sort $s$ is
+Figure~\ref{fig:sig-grammar}. Note that an optional production of sort $s$ is
 formatted $\Optional{s}$ in the rules.
 
 \begin{figure}[H]
@@ -118,11 +65,11 @@ formatted $\Optional{s}$ in the rules.
     $\SortSortId$, $\SortSymId$ and $\SortMetaId$ can be assumed to be arbitrary
     strings; the sort $\SortTerm$ is left uninterpreted.%
   }
-  \label{fig:grammar}
+  \label{fig:sig-grammar}
 \end{figure}
 
 \section{Static Semantics}
-\label{sec:statics}
+\label{sec:sig-statics}
 
 \newcommand\SemSym{\mathrm{Sym}}
 \newcommand\SemMetavar{\mathrm{Metavar}}
@@ -147,7 +94,7 @@ formatted $\Optional{s}$ in the rules.
 
 The static semantics for \RedJonPRL{} signatures begins with a specification of
 the class of \emph{semantic} objects that will serve as the meanings for the
-\emph{syntactic} objects defined in Section~\ref{sec:grammar}. We assume an
+\emph{syntactic} objects defined in Section~\ref{sec:sig-grammar}. We assume an
 ambient abstract binding tree signature such that at least the following facts
 hold:
 
@@ -184,7 +131,7 @@ hold:
   }
 \]
 
-Then, our semantic objects are defined as in Figure~\ref{fig:semantic-objects}.
+Then, our semantic objects are defined as in Figure~\ref{fig:sig-semantic-objects}.
 
 \begin{figure}[H]
   \begin{displaymath}
@@ -202,7 +149,7 @@ Then, our semantic objects are defined as in Figure~\ref{fig:semantic-objects}.
     \end{array}
   \end{displaymath}
   \caption{Specification of the semantic objects.}
-  \label{fig:semantic-objects}
+  \label{fig:sig-semantic-objects}
 \end{figure}
 
 \newcommand\Elab[3]{%

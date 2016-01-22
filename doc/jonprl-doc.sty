@@ -12,4 +12,66 @@
   }%
 }
 
+\newcommand\GrayColor[1]{{\color{Gray} #1}}
+\newcommand\Optional[1]{%
+  {\color{Gray}\langle}%
+  #1%
+  {\color{Gray}\rangle}%
+}
+
+\newcommand\SortSigExpr{\mathit{sigexp}}
+\newcommand\SortSigDecl{\mathit{sigdec}}
+\newcommand\SortParams{\mathit{params}}
+\newcommand\SortArgs{\mathit{args}}
+\newcommand\SortTerm{\mathit{term}}
+\newcommand\SortSymBind{\mathit{symbind}}
+\newcommand\SortMetaBind{\mathit{metabind}}
+
+\newcommand\SortValence{\mathit{valence}}
+\newcommand\SortSortList{\mathit{sortlist}}
+
+\newcommand\SortOpId{\mathit{opid}}
+\newcommand\SortSortId{\mathit{sortid}}
+\newcommand\SortSymId{\mathit{symid}}
+\newcommand\SortMetaId{\mathit{metaid}}
+
+\newcommand\EmptySig{\Optional{\cdot}}
+\newcommand\ExtendSig[2]{#1.\ #2}
+
+\newcommand\EmptyCtx{\Optional{\cdot}}
+\newcommand\ExtendCtx[2]{#1, #2}
+
+\newcommand\Bind[2]{#1 : #2}
+
+\newcommand\Valence[3]{%
+  \Optional{%
+    \Optional{\{#1\}}%
+    \Optional{[#2]}%
+    .%
+  }#3%
+}
+
+\newcommand\DefDecl[5]{%
+  \mathtt{Def}\ #1%
+  \Optional{[#2]}%
+  \Optional{(#3)} %
+  : #4 = [#5]
+}
+
+\newcommand\TacDecl[4]{%
+  \mathtt{Tac}\ #1%
+  \Optional{[#2]}%
+  \Optional{(#3)} %
+  = [#4]
+}
+
+\newcommand\ThmDecl[5]{%
+  \mathtt{Thm}\ #1%
+  \Optional{[#2]}%
+  \Optional{(#3)} %
+  : [#4] ~\mathtt{by}~ [#5]
+}
+
+
+
 \endinput

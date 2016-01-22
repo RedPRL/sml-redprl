@@ -5,5 +5,6 @@
 *.fdb_latexmk
 *.fls
 *.log
+*.toc
 jonprl
 testsuite/test
