@@ -51,4 +51,7 @@ in
 
   structure BindSignatureElab
   structure ValidationElab
+
+  structure StringTelescope
+  structure SymbolTelescope
 end

@@ -1,0 +1,13 @@
+Library
+  structure TestSignatureParser
+is
+  $/basis.cm
+  ../src/cmlib.cm
+  ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.cm (bind:(anchor:libs value:../lib/))
+
+  ../lib/sml-telescopes/telescopes.cm
+  ../src/signature.cm
+  ../src/syntax.cm
+  ../src/signature.cm
+  tests/signature/test_parser.sml

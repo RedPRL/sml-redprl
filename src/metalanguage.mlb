@@ -6,4 +6,5 @@ local
 in
   signature REFINER
   signature ELABORATOR
+  functor Elaborator
 end

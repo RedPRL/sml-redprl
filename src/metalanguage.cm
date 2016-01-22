@@ -1,0 +1,9 @@
+Library
+  signature REFINER
+  signature ELABORATOR
+  functor Elaborator
+is
+  ../lib/sml-lcf/lcf.cm
+  syntax.cm
+  metalanguage/elaborator.sig
+  metalanguage/elaborator.fun
