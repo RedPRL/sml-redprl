@@ -3,8 +3,7 @@ struct
   open Sum
 
   val message = "signature_parser_test has failed"
-  val () = OS.FileSys.chDir "testsuite/tests/signature/"
-  val input = TextIO.inputAll (TextIO.openIn "signature_parser_test.jonprl")
+  val input = TextIO.inputAll (TextIO.openIn "testsuite/tests/signature/signature_parser_test.jonprl")
 
   val parsed = CharParser.parseString SignatureParser.parseSigExp input
 
