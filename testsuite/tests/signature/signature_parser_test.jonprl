@@ -11,7 +11,7 @@ Tac welp[a:exp](M : exp) = [
   id
 ].
 
-// Note how level polymorphism is introduced for a theorem throwing an *argument*.
+// Note how level polymorphism is introduced for a theorem through an *argument*.
 // In Red JonPRL's semantics, this corresponds to a generic judgment.
 Thm thm(i:lvl) : [
   todo
