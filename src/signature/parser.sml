@@ -23,7 +23,7 @@ struct
 
   val opid = repeat1 letter wth String.implode
   val sortid = repeat1 letter wth String.implode
-  val term = repeat letter wth String.implode
+  val term = skipChars >> (repeat letter wth String.implode) << skipChars
   val metaid = repeat1 letter wth String.implode
   val symid = repeat1 letter wth String.implode
 
@@ -91,9 +91,11 @@ struct
     (theorem << skipChars) wth
       (fn (opid, t) => (opid, StringSignatureDecl.THM t))
 
-  val sigexp : sign charParser = separate sigdec (char #".") wth
-    (fn (declarations) =>
-      (foldl (fn ((l, d), b) =>
-        Telescope.cons (l, d) b) Telescope.empty declarations))
+  val sigexp : sign charParser =
+    (sepEnd sigdec (char #".") wth
+      (fn (declarations) =>
+        (foldl (fn ((l, d), b) =>
+          Telescope.cons (l, d) b) Telescope.empty declarations)))
+    << skipChars << not any
 
 end
