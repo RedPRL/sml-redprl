@@ -6,6 +6,5 @@ install:
   - git submodule init
   - git submodule update --init --recursive
 script:
-  - ./script/doc.sh
   - ./script/mlton.sh
   - ./script/test.sh
