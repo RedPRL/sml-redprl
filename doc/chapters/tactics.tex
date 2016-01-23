@@ -82,22 +82,25 @@ $\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
 $\alpha$ of length $n$. Let $\KleeneEq{M}{N}$ be \emph{observational equivalence}:
 $M$ evaluate to the same value, or they diverge.
 
-Then, for any atomic tactic $t$ and judgment $\mathcal{J}$, we can calculate a
+Then, for any atomic tactic $T$ and judgment $\mathcal{J}$, we can calculate a
 uniform modulus of continuity:
 \begin{equation}
   \exists \OMode{n}\in\IMode{\MLNat}.
   \forall \Member{\alpha,\beta}{\MLStream{\MLAtom}}.
-    \IsEq{\bar{\alpha}(n)}{\bar{\beta}(n)}\implies \KleeneEq{t(\alpha,\mathcal{J})}{t(\beta,\mathcal{J})}
+    \IsEq{\bar{\alpha}(n)}{\bar{\beta}(n)}\implies \KleeneEq{T(\alpha,\mathcal{J})}{T(\beta,\mathcal{J})}
   \tag{uniform continuity}
 \end{equation}
 
 This calculation can be realized computationally in our metalanguage in a
 number of ways, but for our purposes it suffices to remark that it is a
 consequence of Brouwer's Fan Theorem, which we hold to be evident. Let
-$\Member{\UMod{t}{\mathcal{J}}}{\MLNat}$ be the uniform modulus of continuity
-for a tactic $t$ at goal $\mathcal{J}$.
+$\Member{\UMod{T}{\mathcal{J}}}{\MLNat}$ be the uniform modulus of continuity
+for a tactic $T$ at goal $\mathcal{J}$.
 
 \section{Nominal LCF}
+
+\subsection{Static Semantics}
+
 \newcommand\SortATac{\mathtt{atac}}
 \newcommand\SortBTac{\mathtt{btac}}
 \newcommand\SortTac{\mathtt{tac}}
@@ -139,7 +142,8 @@ We also provide a sort to classify hypotheses:
 
 Now, we'll define the operators of \textbf{Nominal LCF}; note that the
 operators of sort $\SortATac$ are arbitrary and are provided only for the sake
-of illustration.
+of illustration. We will consider the definition of \textbf{Nominal LCF} as
+over some signature $\Sigma$ of atomic tactics.
 
 \[
   \infer{
@@ -181,7 +185,7 @@ of illustration.
   \infer{
     \IsOperator{\Upsilon}{\mathtt{smash}_n}{
       \MkArity{
-        \MkValence{}{}{\SortATac}^n
+        \MkValence{}{}{\SortATac}^{n+1}
       }{\SortBTac}
     }
   }{
@@ -202,7 +206,7 @@ of illustration.
   \infer{
     \IsOperator{\Upsilon}{\mathtt{each}_n}{
       \MkArity{
-        \MkValence{}{}{\SortTac}^{n+1}
+        \MkValence{}{}{\SortTac}^n
       }{\SortMTac}
     }
   }{
@@ -220,6 +224,10 @@ of illustration.
   }
 \]
 
+\newcommand\TacSmash[1]{\Tuple{#1}}
+\newcommand\TacEach[1]{\llparenthesis #1\rrparenthesis}
+\newcommand\TacSeq[3]{#2\leftarrow #1; #3}
+
 For the sake of clarity, we introduce the following notational abbreviations
 for tactic expressions:
 \begin{align*}
@@ -229,12 +237,12 @@ for tactic expressions:
     \App{\mathtt{seq}_0}{\MkAbs{}{}{t_1};\MkAbs{}{}{t_2}}
   }\\
   \ADefine{
-    a_0,\dots,a_n\leftarrow t_1;t_2
+    \TacSeq{t_1}{a_0,\dots,a_n}{t_2}
   }{
   \App{\mathtt{seq}_n}{\MkAbs{}{}{t_1};\MkAbs{a_0,\dots,a_n}{}{t_2}}
   }\\
   \ADefine{
-    \langle t_1,\dots,t_n\rangle
+    \TacSmash{t_1,\dots,t_n}
   }{
     \App{\mathtt{smash}_n}{\MkAbs{}{}{t_1};\dots;\MkAbs{}{}{t_n}}
   }\\
@@ -244,7 +252,7 @@ for tactic expressions:
     \App{\mathtt{all}}{\MkAbs{}{}{t}}
   }\\
   \ADefine{
-    \llparenthesis t_1,\dots,t_n \rrparenthesis
+    \TacEach{t_1,\dots,t_n}
   }{
     \App{\mathtt{each}_n}{\MkAbs{}{}{t}}
   }\\
@@ -255,4 +263,120 @@ for tactic expressions:
   }\\
 \end{align*}
 
+\subsection{Dynamic Semantics}
+\newcommand\LCFElab[5]{%
+  \mathcal{M}\models_\IMode{\rho}
+  \IMode{#1}\parallel\IMode{#2}\vdash%
+  \IMode{#3}\;@\;\IMode{#4}\Longrightarrow\OMode{#5}%
+}
+\newcommand\LCFElabSt[6]{%
+  \mathcal{M}\models_\IMode{\rho}%
+  \IMode{#1}\parallel\IMode{#2}\vdash%
+  \IMode{#3}\;@\; \IMode{#4}\Longrightarrow\OMode{#5}%
+  \ll\IMode{#6}
+}
 
+For a signature of atomic tactics $\Sigma$, we will define a $\Sigma$-model
+$\mathcal{M}$ to be an interpretation of each atomic tactic
+$\Member{t}{\Sigma}$ into some
+$\Member{\SemBrackets{t}_\mathcal{M}}{\LCFAtomicTactic}$; additionally, the
+model shall come equipped with a sequence of fresh atoms
+$\Member{\alpha_\mathcal{M}}{\MLStream{\MLAtom}}$. Then, we can interpret all
+of \textbf{Nominal LCF} into $\mathcal{M}$, by defining an elaboration judgment
+$\LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}$ with $\Member{\mathcal{J}}{\LCFJudgment}$ and
+$\Member{P}{\MLList{\LCFJudgment}\otimes(\MLList{\LCFEvidence}\to\LCFEvidence)}$,
+such that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
+$\Member{x:\SortATac}{\Gamma}$.
+
+\[
+  \infer{
+    \LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}
+  }{
+    \LCFElabSt{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\cdot}
+  }
+\]
+
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{S}
+  }{
+    \Match{
+      \SemBrackets{t}_\mathcal{M}(S::\alpha_\mathcal{M},\mathcal{J})
+    }{
+      P
+    }
+  }
+  \qquad
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{x}{\mathcal{J}}{P}{S}
+  }{
+    \Match{
+      \rho(x)(S::\alpha_\mathcal{M},\mathcal{J})
+    }{
+      P
+    }
+  }
+\]
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t_1}{\vec{a}}{\Box t_2}
+    }{\mathcal{J}}{
+      \Pair{
+        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
+      }{
+        \lambda(\vec{x}_0,\dots,\vec{x}_n). E(F_0(\vec{x}_0), \dots, F_0(\vec{x}_n))
+      }
+    }{S}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
+        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
+      }{S;\vec{a}}\\
+      \HypJ{
+        \LCFElabSt{\Upsilon,\vec{a}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
+          \Pair{\vec{\mathcal{K}}_i}{F_i}
+        }{S}
+      }{
+        \Leq{i}{n}
+      }
+    \end{array}
+  }
+\]
+%%
+%% \[
+%%   \infer{
+%%     \LCFElabSt{\Upsilon}{\Gamma}{
+%%       \TacSeq{t}{\vec{a}}{\TacEach{t_1,\dots,t_n}}
+%%     }{
+%%       \mathtt{THENL}(T,[T_1,\dots,T_n])(\mathcal{J})
+%%     }{S}
+%%   }{
+%%     \begin{array}{l}
+%%       \LCFElabSt{\Upsilon}{\Gamma}{t}{T}{\vec{a}::S}\\
+%%       \HypJ{
+%%         \LCFElabSt{\Upsilon,\vec{a}:\SortHyp}{\Gamma}{t_i}{T_i}{S}
+%%       }{
+%%         \Leq{i}{n}
+%%       }
+%%     \end{array}
+%%   }
+%% \]
+%%
+%% \[
+%%   \infer{
+%%     \LCFElabSt{\Upsilon}{\Gamma}{
+%%       \TacSeq{t_1}{\vec{a}}{\Diamond_i t_2}
+%%     }{
+%%       \mathtt{THENF}(T_1, i, T_2)(\mathcal{J})
+%%     }{S}
+%%   }{
+%%     \begin{array}{l}
+%%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{T_1}{\vec{a}::S}\\
+%%       \LCFElabSt{\Upsilon,\vec{a}:\SortHyp}{\Gamma}{t_2}{T_2}{S}
+%%     \end{array}
+%%   }
+%% \]
+%%
