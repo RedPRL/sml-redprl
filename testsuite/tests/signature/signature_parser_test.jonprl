@@ -27,11 +27,13 @@ Tac repeat(T : tac) = [
 Thm thm(i:lvl) : [
   todo
 ] by [
-  a,c <- id;
-  d,e <- id;
-  [hyp d, hyp e];
-  #1 {
-    hyp a;
-    hyp b
-  }
+  repeat(
+    a,c <- id;
+    d,e <- id;
+    [hyp d, hyp e];
+    #1 {
+      hyp a;
+      hyp b
+    }
+  )
 ].
