@@ -31,10 +31,12 @@ struct
   local
     open SortData
   in
-    fun parseSort _ =
-      symbol "exp" return EXP
-      || symbol "lvl" return LVL
-      || symbol "tac" return TAC
+    fun parseSort _=
+      ParserCombinators.fix (fn p =>
+        symbol "exp" return EXP
+        || symbol "lvl" return LVL
+        || symbol "tac" return TAC
+        || symbol "vec" >> p wth VEC)
   end
 
   val force =
@@ -74,81 +76,86 @@ struct
     (* TODO *)
     fun parseTerm' sign rho f =
       fn EXP =>
-        fail "to be implemented"
-      | TAC =>
-        let
-          val parseId =
-            symbol "id"
-              return (S ID $ [])
+         fail "to be implemented"
+       | VEC tau =>
+         squares (commaSep (f tau))
+           wth (fn xs =>
+             VEC_LIT (tau, length xs) $
+               map (fn x => ([], []) \ x) xs)
+       | TAC =>
+         let
+           val parseId =
+             symbol "id"
+               return (S ID $ [])
 
-          val parseHyp =
-            symbol "hyp"
-              >> parseSymbol
-              wth (fn u => S (HYP {target = u}) $ [])
+           val parseHyp =
+             symbol "hyp"
+               >> parseSymbol
+               wth (fn u => S (HYP {target = u}) $ [])
 
-          fun parseVec tau =
-            commaSep (f tau)
-              wth (fn xs =>
-                VEC_LIT (tau, length xs) $
-                  map (fn x => ([],[]) \ x) xs)
+           fun parseVec tau =
+             commaSep (f tau)
+               wth (fn xs =>
+                 VEC_LIT (tau, length xs) $
+                   map (fn x => ([],[]) \ x) xs)
 
-          val parseMulti =
-            squares (parseVec TAC)
-              wth (fn v =>
-                S MULTI $ [([], []) \ v])
+           val parseMulti =
+             squares (parseVec TAC)
+               wth (fn v =>
+                 S MULTI $ [([], []) \ v])
 
-          val parseFocus =
-            symbol "#"
-              >> integer
-              && braces (f TAC)
-              wth (fn (i, tac) =>
-                S (FOCUS {focus = i}) $
-                  [([],[]) \ tac])
+           val parseFocus =
+             symbol "#"
+               >> integer
+               && braces (f TAC)
+               wth (fn (i, tac) =>
+                 S (FOCUS {focus = i}) $
+                   [([],[]) \ tac])
 
-          val parseRec =
-            symbol "rec" >> parseVariable << dot
-              && braces (f TAC)
-              wth (fn (x, tac) =>
-                S REC $
-                  [([], [x]) \ tac]
-              )
+           val parseRec =
+             symbol "rec" >> parseVariable << dot
+               && braces (f TAC)
+               wth (fn (x, tac) =>
+                 S REC $
+                   [([], [x]) \ tac]
+               )
 
-          val parseAtomic =
-            parens (f TAC)
-              || parseId
-              || parseHyp
-              || parseMulti
-              || parseFocus
-              || parseRec
+           val parseAtomic =
+             parens (f TAC)
+               || parseId
+               || parseHyp
+               || parseMulti
+               || parseFocus
+               || parseRec
 
-          datatype component =
-              BINDING of symbol list * ast
-            | ATOMIC of ast
+           datatype component =
+               BINDING of symbol list * ast
+             | ATOMIC of ast
 
-          val parseBinding =
-            commaSep parseSymbol << symbol "<-"
-              && parseAtomic
+           val parseBinding =
+             commaSep parseSymbol << symbol "<-"
+               && parseAtomic
 
-          val parseComponent =
-            try parseAtomic wth ATOMIC
-              || parseBinding wth BINDING
+           val parseComponent =
+             try parseAtomic wth ATOMIC
+               || parseBinding wth BINDING
 
-          fun makeBind t1 us t2 =
-            S (BIND {bindings = length us}) $
-              [([],[]) \ t1, (us, []) \ t2]
+           fun makeBind t1 us t2 =
+             S (BIND {bindings = length us}) $
+               [([],[]) \ t1, (us, []) \ t2]
 
-          val rec componentsToScript =
-            fn [] => fail "Expected tactic script"
-             | [ATOMIC tac] => succeed tac
-             | [BINDING _] => fail "Expected tactic after binding"
-             | ATOMIC tac :: xs => componentsToScript xs wth (makeBind tac [])
-             | BINDING (us, tac) :: xs => componentsToScript xs wth (makeBind tac us)
-        in
-          sepEnd1' parseComponent semi
-            -- componentsToScript
-        end
-      | _ =>
-        fail "to be implemented"
+           val rec componentsToScript =
+             fn [] => fail "Expected tactic script"
+              | [ATOMIC tac] => succeed tac
+              | [BINDING _] => fail "Expected tactic after binding"
+              | ATOMIC tac :: xs => componentsToScript xs wth (makeBind tac [])
+              | BINDING (us, tac) :: xs => componentsToScript xs wth (makeBind tac us)
+         in
+           sepEnd1' parseComponent semi
+             -- componentsToScript
+         end
+       | _ =>
+         fail "to be implemented"
 
     fun parseAny sign rho f tau =
       let
