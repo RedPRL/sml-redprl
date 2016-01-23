@@ -98,3 +98,161 @@ $\Member{\UMod{t}{\mathcal{J}}}{\MLNat}$ be the uniform modulus of continuity
 for a tactic $t$ at goal $\mathcal{J}$.
 
 \section{Nominal LCF}
+\newcommand\SortATac{\mathtt{atac}}
+\newcommand\SortBTac{\mathtt{btac}}
+\newcommand\SortTac{\mathtt{tac}}
+\newcommand\SortMTac{\mathtt{mtac}}
+\newcommand\SortHyp{\mathtt{hyp}}
+
+We will define the \textbf{Nominal LCF} language by specifying an abt signature
+for it; at its heart is the refactoring of the various sequencing tacticals
+$\mathtt{THEN}$, $\mathtt{THENL}$, etc.\ of LCF into a single sequencing
+tactical combined a separate notion of \emph{multi-tactic}.
+
+First, we define sorts for tactics, atomic tactics, binding tactics and multi-tactics
+respectively:
+\begin{gather*}
+  \infer{
+    \IsSort{\SortTac}
+  }{}
+  \qquad
+  \infer{
+    \IsSort{\SortATac}
+  }{}
+  \qquad
+  \infer{
+    \IsSort{\SortBTac}
+  }{}
+  \qquad
+  \infer{
+    \IsSort{\SortMTac}
+  }{}
+\end{gather*}
+
+We also provide a sort to classify hypotheses:
+\[
+  \infer{
+    \IsSort{\SortHyp}
+  }{
+  }
+\]
+
+Now, we'll define the operators of \textbf{Nominal LCF}; note that the
+operators of sort $\SortATac$ are arbitrary and are provided only for the sake
+of illustration.
+
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{id}}{
+      \MkArity{}{\SortATac}
+    }
+  }{
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{fail}}{
+      \MkArity{}{\SortATac}
+    }
+  }{
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon,a:\SortHyp}{\mathtt{elim}[a]}{
+      \MkArity{}{\SortATac}
+    }
+  }{
+  }
+\]
+
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{seq}_n}{
+      \MkArity{
+        \MkValence{}{}{\SortBTac},
+        \MkValence{\SortHyp^n}{}{\SortMTac}
+      }{\SortTac}
+    }
+  }{
+    \Member{n}{\MLNat}
+  }
+\]
+
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{smash}_n}{
+      \MkArity{
+        \MkValence{}{}{\SortATac}^n
+      }{\SortBTac}
+    }
+  }{
+    \Member{n}{\MLNat}
+  }
+\]
+
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{all}}{
+      \MkArity{
+        \MkValence{}{}{\SortTac}
+      }{\SortMTac}
+    }
+  }{
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{each}_n}{
+      \MkArity{
+        \MkValence{}{}{\SortTac}^{n+1}
+      }{\SortMTac}
+    }
+  }{
+    \Member{n}{\MLNat}
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{some}_i}{
+      \MkArity{
+        \MkValence{}{}{\SortTac}
+      }{\SortMTac}
+    }
+  }{
+    \Member{i}{\MLNat}
+  }
+\]
+
+For the sake of clarity, we introduce the following notational abbreviations
+for tactic expressions:
+\begin{align*}
+  \ADefine{
+    t_1;t_2
+  }{
+    \App{\mathtt{seq}_0}{\MkAbs{}{}{t_1};\MkAbs{}{}{t_2}}
+  }\\
+  \ADefine{
+    a_0,\dots,a_n\leftarrow t_1;t_2
+  }{
+  \App{\mathtt{seq}_n}{\MkAbs{}{}{t_1};\MkAbs{a_0,\dots,a_n}{}{t_2}}
+  }\\
+  \ADefine{
+    \langle t_1,\dots,t_n\rangle
+  }{
+    \App{\mathtt{smash}_n}{\MkAbs{}{}{t_1};\dots;\MkAbs{}{}{t_n}}
+  }\\
+  \ADefine{
+    \Box t
+  }{
+    \App{\mathtt{all}}{\MkAbs{}{}{t}}
+  }\\
+  \ADefine{
+    \llparenthesis t_1,\dots,t_n \rrparenthesis
+  }{
+    \App{\mathtt{each}_n}{\MkAbs{}{}{t}}
+  }\\
+  \ADefine{
+    \Diamond_i t
+  }{
+    \App{\mathtt{some}_i}{\MkAbs{}{}{t}}
+  }\\
+\end{align*}
+
+

@@ -82,5 +82,13 @@
 }
 
 
+\renewcommand\MkAbs[3]{%
+  \ifthenelse{\equal{#1}{}}{}{%
+    \{#1\}%
+  }%
+  \ifthenelse{\equal{#2}{}}{}{%
+    [#2]%
+  }.\, #3%
+}
 
 \endinput
