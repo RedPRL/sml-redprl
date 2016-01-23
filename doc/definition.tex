@@ -36,27 +36,27 @@ formatted $\Optional{s}$ in the rules.
   \begin{displaymath}
     \begin{array}{rcll}
        \SortSigExpr & ::=
-         & \EmptySig & \text{empty signature}\\
-         && \ExtendSig{\SortSigExpr}{\SortSigDecl} & \text{signature extension}\\
+         & \ProdEmptySig & \text{empty signature}\\
+         && \ProdExtendSig{\SortSigExpr}{\SortSigDecl} & \text{signature extension}\\
        \SortSigDecl & ::=
-         & \DefDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortSortId}{\SortTerm} & \text{operator definition}\\
-         && \TacDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm} & \text{tactic definition}\\
-         && \ThmDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm}{\SortTerm} & \text{theorem declaration}\\
+         & \ProdDefDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortSortId}{\SortTerm} & \text{operator definition}\\
+         && \ProdTacDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm} & \text{tactic definition}\\
+         && \ProdThmDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm}{\SortTerm} & \text{theorem declaration}\\
        \SortParams & ::=
-         & \EmptyCtx & \text{empty parameter list}\\
-         && \ExtendCtx{\SortParams}{\SortSymBind} & \text{parameter list extension}\\
+         & \ProdEmptyCtx & \text{empty parameter list}\\
+         && \ProdExtendCtx{\SortParams}{\SortSymBind} & \text{parameter list extension}\\
        \SortArgs & ::=
-         & \EmptyCtx & \text{empty argument list}\\
-         && \ExtendCtx{\SortArgs}{\SortMetaBind}  & \text{argument list extension}\\
+         & \ProdEmptyCtx & \text{empty argument list}\\
+         && \ProdExtendCtx{\SortArgs}{\SortMetaBind}  & \text{argument list extension}\\
        \SortSymBind & ::=
-         & \Bind{\SortSymId}{\SortSortId} & \text{symbol binding}\\
+         & \ProdBind{\SortSymId}{\SortSortId} & \text{symbol binding}\\
        \SortMetaBind & ::=
-         & \Bind{\SortMetaId}{\SortValence} & \text{metavariable binding}\\
+         & \ProdBind{\SortMetaId}{\SortValence} & \text{metavariable binding}\\
        \SortValence & ::=
-         & \Valence{\SortSortList}{\SortSortList}{\SortSortId} & \text{valence}\\
+         & \ProdValence{\SortSortList}{\SortSortList}{\SortSortId} & \text{valence}\\
        \SortSortList & ::=
-         & \EmptyCtx & \text{empty sort list}\\
-         && \ExtendCtx{\SortSortList}{\SortSortId} & \text{sort list extension}
+         & \ProdEmptyCtx & \text{empty sort list}\\
+         && \ProdExtendCtx{\SortSortList}{\SortSortId} & \text{sort list extension}
      \end{array}
   \end{displaymath}
 
@@ -79,7 +79,7 @@ formatted $\Optional{s}$ in the rules.
 \newcommand\SemArgs{\mathrm{Args}}
 \newcommand\SemTerm[3]{\mathrm{Tm}(#1,#2,#3)}
 \newcommand\SemSort{\mathrm{Sort}}
-\newcommand\SemValence{\mathrm{Valence}}
+\newcommand\SemProdValence{\mathrm{ProdValence}}
 \newcommand\SemDecl{\mathrm{Decl}}
 \newcommand\Partial[2]{#1\rightharpoonup #2}
 
@@ -139,10 +139,10 @@ Then, our semantic objects are defined as in Figure~\ref{fig:sig-semantic-object
       a,b &\in &\SemSym\\
       \MV{m},\MV{n} &\in &\SemMetavar\\
       \sigma,\tau &\in &\SemSort &\triangleq & \MkSet{\tau\mid\IsSort{\tau}}\\
-      v &\in &\SemValence &\triangleq & \MkSet{v\mid\IsValence{v}}\\
+      v &\in &\SemProdValence &\triangleq & \MkSet{v\mid\IsValence{v}}\\
       \vartheta &\in &\SemOpid  &\triangleq &\SemSym\\
       \Upsilon &\in &\SemParams &\triangleq & \Partial{\SemSym}{\SemSort}\\
-      \Theta &\in &\SemArgs &\triangleq & \Partial{\SemMetavar}{\SemValence}\\
+      \Theta &\in &\SemArgs &\triangleq & \Partial{\SemMetavar}{\SemProdValence}\\
       M,N &\in &\SemTerm{\Theta}{\Upsilon}{\tau} &\triangleq & \MkSet{M\mid\IsAbt{\Theta}{\Upsilon}{\cdot}{M}{\tau}}\\
       D &\in &\SemDecl &\triangleq & \coprod_{\Upsilon,\Theta,\tau} \SemTerm{\Theta}{\Upsilon}{\tau}\\
       \Sigma &\in &\SemSig &\triangleq & \Partial{\SemOpid}{\SemDecl}
@@ -177,7 +177,7 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
 
 \begin{gather}
   \infer{
-    \Elab{\Sigma}{\Bind{\SortSymId}{\SortSortId}}{(a, \tau)}
+    \Elab{\Sigma}{\ProdBind{\SortSymId}{\SortSortId}}{(a, \tau)}
   }{
     \Elab{\Sigma}{\SortSymId}{a} &
     \Elab{\Sigma}{\SortSortId}{\tau}
@@ -188,7 +188,7 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
 
 \begin{gather}
   \infer{
-    \Elab{\Sigma}{\Bind{\SortMetaId}{\SortValence}}{(\MV{m}, v)}
+    \Elab{\Sigma}{\ProdBind{\SortMetaId}{\SortValence}}{(\MV{m}, v)}
   }{
     \Elab{\Sigma}{\SortMetaId}{\MV{m}} &
     \Elab{\Sigma}{\SortValence}{v}
@@ -199,11 +199,11 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
 
 \begin{gather}
   \infer{
-    \Elab{\Sigma}{\EmptyCtx}{\{\}}
+    \Elab{\Sigma}{\ProdEmptyCtx}{\{\}}
   }{
   }\\[6pt]
   \infer{
-    \Elab{\Sigma}{\ExtendCtx{\SortParams}{\SortSymBind}}{
+    \Elab{\Sigma}{\ProdExtendCtx{\SortParams}{\SortSymBind}}{
       \Upsilon\cup{a \mapsto\tau}
     }
   }{
@@ -216,11 +216,11 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
 
 \begin{gather}
   \infer{
-    \Elab{\Sigma}{\EmptyCtx}{\{\}}
+    \Elab{\Sigma}{\ProdEmptyCtx}{\{\}}
   }{
   }\\[6pt]
   \infer{
-    \Elab{\Sigma}{\ExtendCtx{\SortArgs}{\SortMetaBind}}{
+    \Elab{\Sigma}{\ProdExtendCtx{\SortArgs}{\SortMetaBind}}{
       \Theta\cup{\MV{m} \mapsto v}
     }
   }{
@@ -244,7 +244,7 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
 \begin{gather}
   \infer{
     \Elab{\Sigma}{
-      \DefDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortSortId}{\SortTerm}
+      \ProdDefDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortSortId}{\SortTerm}
     }{(\vartheta,\Tuple{\Upsilon,\Theta,\tau,M})}
   }{
     \begin{array}{l}
@@ -262,7 +262,7 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
   }\\[6pt]
   \infer{
     \Elab{\Sigma}{
-      \TacDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm}
+      \ProdTacDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm}
     }{(\vartheta,\Tuple{\Upsilon,\Theta,\AbtSortTac,M})}
   }{
     \begin{array}{l}
@@ -277,7 +277,7 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
   }\\[6pt]
   \infer{
     \Elab{\Sigma}{
-      \ThmDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm_1}{\SortTerm_2}
+      \ProdThmDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm_1}{\SortTerm_2}
     }{(\vartheta,\Tuple{\Upsilon,\Theta,\AbtSortThm,\App{\OpProve}{P;M}})}
   }{
     \begin{array}{l}
@@ -300,11 +300,11 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
 
 \begin{gather}
   \infer{
-    \Elab{}{\EmptySig}{\{\}}
+    \Elab{}{\ProdEmptySig}{\{\}}
   }{
   }\\[6pt]
   \infer{
-    \Elab{}{\ExtendSig{\SortSigExpr}{\SortSigDecl}}{\Sigma\cup\vartheta\mapsto D}
+    \Elab{}{\ProdExtendSig{\SortSigExpr}{\SortSigDecl}}{\Sigma\cup\vartheta\mapsto D}
   }{
     \Elab{}{\SortSigExpr}{\Sigma} &
     \Elab{\Sigma}{\SortSigDecl}{(\vartheta, D)}
