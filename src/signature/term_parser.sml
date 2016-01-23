@@ -141,7 +141,7 @@ struct
       | _ =>
         fail "to be implemented"
 
-    fun parseAny sign rho f =
+    fun parseAny sign rho f tau =
       let
         fun parseParameters n =
           squares (separateN n parseSymbol comma)
@@ -199,11 +199,14 @@ struct
         val parseCustomApp =
           try parseCustomOperator -- (fn theta =>
             let
-              val (valences, tau) = Operator.arity theta
+              val (valences, tau') = Operator.arity theta
             in
-              parseArguments valences
-                wth (fn args =>
-                  theta $ args)
+              if tau' = tau then
+                parseArguments valences
+                  wth (fn args =>
+                    theta $ args)
+              else
+                fail "mismatched sort"
             end)
 
         fun parseMetaArguments sorts =
@@ -215,10 +218,13 @@ struct
             || (if length sorts = 0 then succeed [] else fail "")
 
         val parseMetaApp =
-          try parseMetavariable -- (fn (m, ((sigmas, taus), tau)) =>
-            parseSymbols (length sigmas)
-              && parseMetaArguments taus
-              wth (fn (us, ts) => m $# (us, ts)))
+          try parseMetavariable -- (fn (m, ((sigmas, taus), tau')) =>
+            if tau = tau' then
+              parseSymbols (length sigmas)
+                && parseMetaArguments taus
+                wth (fn (us, ts) => m $# (us, ts))
+            else
+              fail "mismatched sort")
       in
         parseCustomApp
           || parseMetaApp
@@ -228,7 +234,7 @@ struct
     fun parseTerm sign rho =
       fix' (fn f => fn tau =>
         parseTerm' sign rho f tau
-          || parseAny sign rho f)
+          || parseAny sign rho f tau)
   end
 end
 
