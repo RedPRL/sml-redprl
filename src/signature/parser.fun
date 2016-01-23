@@ -73,7 +73,7 @@ struct
     val makeNameStore =
       Dict.lookup o
         List.foldl
-          (fn (x, d) => Dict.insert d x (Metavariable.named x))
+          (fn ((x, vl : Valence.t), d) => Dict.insert d x (Metavariable.named x, vl))
           Dict.empty
   end
 
@@ -86,12 +86,12 @@ struct
     in
       (parseOpid' && parseParams' && parseArgs' && parseSort') -- (fn (opid, (params, (args, sort))) =>
         let
-          val rho = makeNameStore (List.map #1 args)
+          val rho = makeNameStore args
         in
           squares (TermParser.parseTerm sign rho sort) wth (fn term =>
             (opid,
              {parameters = params,
-              arguments = List.map (fn (m, v) => (rho m, v)) args,
+              arguments = List.map (fn (m, v) => rho m) args,
               sort = sort,
               definiens = term}))
         end) ?? "definition"
@@ -105,12 +105,12 @@ struct
     in
       (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn (opid, (params, args)) =>
         let
-          val rho = makeNameStore (List.map #1 args)
+          val rho = makeNameStore args
         in
           squares (TermParser.parseTerm sign rho SortData.TAC) wth (fn term =>
             (opid,
              {parameters = params,
-              arguments = List.map (fn (m, v) => (rho m, v)) args,
+              arguments = List.map (fn (m, v) => rho m) args,
               sort = SortData.TAC,
               definiens = term}))
         end) ?? "tactic"
@@ -126,14 +126,14 @@ struct
       in
         (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
           let
-            val rho = makeNameStore (List.map #1 args)
+            val rho = makeNameStore args
             val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP)
             val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC)
           in
             parseGoal && parseScript wth (fn (goal, script) =>
               (opid,
                {parameters = params,
-                arguments = List.map (fn (m, v) => (rho m, v)) args,
+                arguments = List.map (fn (m, v) => rho m) args,
                 sort = SortData.TAC,
                 definiens =
                   OperatorData.PROVE $

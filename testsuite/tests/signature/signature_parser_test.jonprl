@@ -6,6 +6,10 @@ Def dfun(A : exp, B : [exp].exp) : exp = [
   x
 ].
 
+Def mydef(M : [exp].exp, N : [tac].exp) : exp = [
+  dfun(N[a <- id; hyp a]; [x].M[x])
+].
+
 // Tactics can take parameters and arguments as well
 Tac welp[a:exp](M : exp) = [
   y

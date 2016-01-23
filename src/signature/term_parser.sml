@@ -1,6 +1,6 @@
 structure TermParser : TERM_PARSER =
 struct
-  type metavariable_table = string -> Ast.metavariable
+  type metavariable_table = string -> Ast.metavariable * Valence.t
 
   open ParserCombinators CharParser
   infixr 4 << >>
@@ -48,12 +48,25 @@ struct
     fn tau =>
       force (fn () => f (fix' f) tau)
 
+  fun tabulateSeparateN n p q =
+    let
+      fun go _ 0 = succeed []
+        | go 0 n = p 0 && go 1 (n - 1) wth op::
+        | go i n = q >> p i && go (i + 1) (n - 1) wth op::
+    in
+      go 0 n
+    end
+
+  fun separateN n p =
+    tabulateSeparateN n (fn _ => p)
+
+
   datatype hole = !
   fun hole ! = raise Match
 
   local
-    open Ast OperatorData ScriptOperatorData SortData
-    infix $ \
+    open AstSignature AstSignatureDecl Ast OperatorData ScriptOperatorData SortData
+    infix $ \ $#
   in
     val parseSymbol = identifier
     val parseVariable = identifier
@@ -129,8 +142,88 @@ struct
         fail "to be implemented"
 
     fun parseAny sign rho f =
-      parseVariable wth `
-      (* TODO: parse metavariable applications, custom operator applications *)
+      let
+        fun parseParameters n =
+          squares (separateN n parseSymbol comma)
+            || (if n = 0 then succeed [] else fail "")
+
+        val parseCustomOperator =
+          identifier -- (fn opid =>
+            case Telescope.find sign opid of
+                 NONE => fail "opid not in signature"
+               | SOME (DEF {parameters, arguments, sort, definiens}) =>
+                   parseParameters (length parameters) wth (fn us =>
+                     let
+                       val params = ListPair.mapEq (fn (u, (_, tau)) => (u, tau)) (us, parameters)
+                       val valences = List.map (fn (_, vl) => vl) arguments
+                       val arity = (valences, sort)
+                     in
+                       CUST (opid, params, arity)
+                     end))
+
+        fun parseSymbols n =
+          braces (separateN n parseSymbol comma)
+            || (if n = 0 then succeed [] else fail "")
+
+        fun parseVariables n =
+          squares (separateN n parseVariable comma)
+            || (if n = 0 then succeed [] else fail "")
+
+        val parseMetavariable =
+          identifier -- (fn m =>
+            succeed (rho m)
+              handle _ => fail "")
+
+        fun parseAbs ((sigmas, taus), tau) =
+          let
+            val m = length sigmas
+            val n = length taus
+            val parseDot =
+              dot return ()
+                || (if n + m = 0 then succeed () else fail "")
+          in
+            parseSymbols m
+              && parseVariables n
+              << parseDot && f tau
+              wth (fn (us, (vs, t)) => (us, vs) \ t)
+          end
+
+        fun parseArguments valences =
+          parens
+            (tabulateSeparateN
+              (length valences)
+              (fn i => parseAbs (List.nth (valences, i)))
+              semi)
+            || (if length valences = 0 then succeed [] else fail "")
+
+        val parseCustomApp =
+          try parseCustomOperator -- (fn theta =>
+            let
+              val (valences, tau) = Operator.arity theta
+            in
+              parseArguments valences
+                wth (fn args =>
+                  theta $ args)
+            end)
+
+        fun parseMetaArguments sorts =
+          squares
+            (tabulateSeparateN
+              (length sorts)
+              (fn i => f (List.nth (sorts, i)))
+              semi)
+            || (if length sorts = 0 then succeed [] else fail "")
+
+        val parseMetaApp =
+          try parseMetavariable -- (fn (m, ((sigmas, taus), tau)) =>
+            parseSymbols (length sigmas)
+              && parseMetaArguments taus
+              wth (fn (us, ts) => m $# (us, ts)))
+      in
+        parseCustomApp
+          || parseMetaApp
+          || parseVariable wth `
+      end
 
     fun parseTerm sign rho =
       fix' (fn f => fn tau =>
