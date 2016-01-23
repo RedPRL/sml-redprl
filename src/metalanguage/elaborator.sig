@@ -8,6 +8,10 @@ sig
    *)
   type name_store = int -> Symbol.t
 
+  val Rec
+    : (tactic -> tactic)
+    -> tactic
+
   val Elim
     : Symbol.t  (* target *)
     -> name_store (* fresh names *)

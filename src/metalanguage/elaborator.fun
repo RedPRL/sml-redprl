@@ -26,22 +26,32 @@ struct
          VEC_LIT _ $ es => List.map (fn (_ \ n) => n) es
        | _ => raise MalformedScript "Expected vector argument"
 
+  structure Env =
+    SplayDict
+      (structure Key =
+       struct
+         open Variable
+         open Eq
+       end)
 
   (* The idea is to translate scripts like [u... <- elim h; t2]
    * into ML tactics like [Elim h u... THEN t2] *)
-  fun go stack m =
+  fun go stack env m =
     case #1 (infer m) of
          S (BIND _) $ [_ \ t1, e2] =>
-           bind stack t1 e2
-       | S (ELIM ({target}, _)) $ [_ \ m] =>
+           bind stack env t1 e2
+       | S (ELIM {target}) $ [_ \ m] =>
            R.Elim target (pop stack) (elaborateOpt m)
-       | S (HYP ({target}, _)) $ _ =>
+       | S (HYP {target}) $ _ =>
            R.Hyp target
-       | S (INTRO ({rule}, _)) $ [_ \ m] =>
+       | S (INTRO {rule}) $ [_ \ m] =>
            R.Intro rule (pop stack) (elaborateOpt m)
        | S ID $ [] =>
            T.ID
-       | S (SMASH _) $ [_ \ t1, _ \ t2] =>
+       | S REC $ [([], [x]) \ t] =>
+           R.Rec (fn tac =>
+             go stack (Env.insert env x tac) t)
+       | S SMASH $ [_ \ t1, _ \ t2] =>
            let
              (* below is something very clever / terrifying! *)
              val moduli = map (fn _ => ref 0) stack
@@ -60,7 +70,7 @@ struct
               * from its name stores. *)
            in
              T.THEN_LAZY
-               (go stack' t1,
+               (go stack' env t1,
                 fn _ =>
                   let
                     val stack'' =
@@ -69,21 +79,22 @@ struct
                            store (i + !m))
                         (moduli, stack)
                   in
-                    go stack'' t2
+                    go stack'' env t2
                   end)
            end
+       | `x => Env.lookup env x
        | _ => raise MalformedScript "Expected tactical"
 
-  and bind stack t1 ((us, _) \ t2) =
+  and bind stack env t1 ((us, _) \ t2) =
     case #1 (infer t2) of
-         S (MULTI _) $ [_ \ ts] =>
-           T.THENL (go (mkNameStore us :: stack) t1, map (go stack) (elaborateVec ts))
+         S MULTI $ [_ \ ts] =>
+           T.THENL (go (mkNameStore us :: stack) env t1, map (go stack env) (elaborateVec ts))
        | S (FOCUS {focus}) $ [_ \ t] =>
-           T.THENF (go (mkNameStore us :: stack) t1, focus, go stack t)
+           T.THENF (go (mkNameStore us :: stack) env t1, focus, go stack env t)
        | _ =>
-           T.THEN (go (mkNameStore us :: stack) t1, go stack t2)
+           T.THEN (go (mkNameStore us :: stack) env t1, go stack env t2)
 
-  fun elaborate m = go [] m
+  fun elaborate m = go [] Env.empty m
 
   (* TODO: treat source annotations properly *)
 end

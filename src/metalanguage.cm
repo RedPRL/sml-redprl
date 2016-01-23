@@ -3,7 +3,9 @@ Library
   signature ELABORATOR
   functor Elaborator
 is
+  $/basis.cm
   ../lib/sml-lcf/lcf.cm
   syntax.cm
+  cmlib.cm
   metalanguage/elaborator.sig
   metalanguage/elaborator.fun

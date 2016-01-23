@@ -105,12 +105,21 @@ struct
                 S (FOCUS {focus = i}) $
                   [([],[]) \ tac])
 
+          val parseRec =
+            symbol "rec" >> parseVariable << dot
+              && braces (f TAC)
+              wth (fn (x, tac) =>
+                S REC $
+                  [([], [x]) \ tac]
+              )
+
           val parseAtomic =
             parens (f TAC)
               || parseId
               || parseHyp
               || parseMulti
               || parseFocus
+              || parseRec
 
           datatype component =
               BINDING of symbol list * ast

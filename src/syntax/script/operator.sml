@@ -38,6 +38,9 @@ struct
           [] ->> TAC
       | arity ID =
           [] ->> TAC
+      | arity REC =
+          [ [] * [TAC] <> TAC
+          ] ->> TAC
   end
 
   fun support (ELIM {target,...}) = [(target, EXP)]
@@ -58,6 +61,8 @@ struct
           HYP {target = f target}
       | map f ID =
           ID
+      | map f REC =
+          REC
   end
 
   structure Eq =
@@ -73,6 +78,7 @@ struct
       | eq f (HYP p1, HYP p2) =
           f (#target p1, #target p2)
       | eq f (ID, ID) = true
+      | eq f (REC, REC) = true
       | eq _ _ = false
   end
 
@@ -87,5 +93,6 @@ struct
       | toString f (ELIM {target,...}) = "elim[" ^ f target ^ "]"
       | toString f (HYP {target}) = "hyp[" ^ f target ^ "]"
       | toString f ID = "id"
+      | toString f REC = "rec"
   end
 end

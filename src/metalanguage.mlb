@@ -1,6 +1,11 @@
 local
   ../lib/sml-lcf/lcf.mlb
   syntax.mlb
+  local
+    ../lib/cmlib/cmlib.mlb
+  in
+    functor SplayDict
+  end
   metalanguage/elaborator.sig
   metalanguage/elaborator.fun
 in

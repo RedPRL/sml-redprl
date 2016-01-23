@@ -24,6 +24,7 @@ struct
     | INTRO of intro_params
     | ELIM of 'i elim_params
     | HYP of 'i hyp_params
+    | REC
     | ID
 
   (* The syntax of tactic scripts is arranged such that the sequencing
