@@ -1,0 +1,100 @@
+\chapter{Nominal LCF: a language for tactics}
+
+In a sequent calculus, left rules add hypotheses to the context; for instance,
+consider the left rule for positive conjunctions:
+\[
+  \infer[{\otimes_L^{\IMode{x},\OMode{y},\OMode{z}}}]{
+    \IMode{H,x:A\otimes B}\gg\IMode{C}
+  }{
+    \IMode{H,x:A\otimes B,y:A,z:B}\gg\IMode{
+      \IMode{\Subst{\Pair{y}{z}}{x}{C}}
+    }
+  }
+\]
+%
+
+From a proof refinement perspective (see~\cite{constable:1986}), such a rule is
+typically manifested as an ML tactic $\mathtt{\otimes_L}[x,y,z]$ which takes
+three names as parameters: the target hypothesis $\IMode{x}$, and the names to
+use for the new hypotheses $\OMode{y},\OMode{z}$. However, whilst the identity
+of the name $x$ is essential to the meaning of the tactic, the names supplied
+for the generated hypotheses can be freshly renamed with impunity.
+
+Indeed, in a proof term assignment for this sequent calculus, the corresponding
+elimination form would \emph{bind} variables $x,y$ rather than take the, as
+parameters. However, in the standard LCF tactic paradigm, it is not possible to
+reproduce this structure, because the sequencing of rules is mediated by the
+general purpose $\mathtt{THEN}$ tactical, which has no knowledge of names or
+binding.
+
+We will design a language for tactics called \textbf{Nominal LCF} which
+supports a distinction between names bound and names taken as parameters, and
+then show how it can be elaborated into standard LCF.
+
+\section{The LCF Tactic Language}
+\newcommand\MLTypeDecl[1]{\mathtt{type}\ #1}
+\newcommand\PartialFun[2]{#1\rightharpoonup #2}
+\newcommand\LCFJudgment{\mathit{judgment}}
+\newcommand\LCFEvidence{\mathit{evidence}}
+\newcommand\LCFTactic{\mathit{tactic}}
+\newcommand\MLList[1]{#1\;\mathit{list}}
+\newcommand\MLAtom{\mathbb{A}}
+\newcommand\MLNat{\mathbb{N}}
+\newcommand\MLStream[1]{{#1}^{\MLNat}}
+\newcommand\LCFAtomicTactic{\mathit{atactic}}
+\newcommand\StreamTake[2]{\bar{#1}(#2)}
+
+The essence of the LCF tactic system is captured in the following (idealized)
+ML signature:
+
+\[
+  \begin{array}{lcl}
+    \MLTypeDecl{\LCFJudgment}\\
+    \MLTypeDecl{\LCFEvidence}\\
+    \MLTypeDecl{\LCFTactic} &= &\PartialFun{\LCFJudgment}{\MLList{\LCFJudgment} \otimes (\MLList{\LCFEvidence}\to\LCFEvidence)}
+  \end{array}
+\]
+
+In other words, a tactic is a partial function that takes a goal to its
+subgoals, and specifies how to transform the evidence of its subgoals into the
+evidence for the main goal. In the case of the sequence calculus we were
+considering, \verb!judgment! would be a type of sequents.  Now, in general a
+tactic may need to consume names from a \emph{name store}, which is an infinite
+stream of \emph{atoms} or \emph{symbols}:
+
+\[
+  \begin{array}{lcl}
+    \MLTypeDecl{\MLAtom}\\
+    \MLTypeDecl{\LCFAtomicTactic} &= &\MLStream{\MLAtom} \to \LCFTactic
+  \end{array}
+\]
+
+\newcommand\KleeneEq[2]{\IMode{#1}\approx \IMode{#2}}
+\newcommand\UMod[2]{\mathsf{umod}(#1,#2)}
+
+\subsection{Atomic tactics and their uniform continuity}
+
+Left sequent rules can be coded as so-called \emph{atomic tactics}, tactics which
+consume a stream of names. In fact, every such tactic is \emph{uniformly
+continuous} in a specific sense. For an atomic sequence
+$\Member{\alpha}{\MLStream{\MLAtom}}$ and a natural number
+$\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
+$\alpha$ of length $n$. Let $\KleeneEq{M}{N}$ be \emph{observational equivalence}:
+$M$ evaluate to the same value, or they diverge.
+
+Then, for any atomic tactic $t$ and judgment $\mathcal{J}$, we can calculate a
+uniform modulus of continuity:
+\begin{equation}
+  \exists \OMode{n}\in\IMode{\MLNat}.
+  \forall \Member{\alpha,\beta}{\MLStream{\MLAtom}}.
+    \IsEq{\bar{\alpha}(n)}{\bar{\beta}(n)}\implies \KleeneEq{t(\alpha,\mathcal{J})}{t(\beta,\mathcal{J})}
+  \tag{uniform continuity}
+\end{equation}
+
+This calculation can be realized computationally in our metalanguage in a
+number of ways, but for our purposes it suffices to remark that it is a
+consequence of Brouwer's Fan Theorem, which we hold to be evident. Let
+$\Member{\UMod{t}{\mathcal{J}}}{\MLNat}$ be the uniform modulus of continuity
+for a tactic $t$ at goal $\mathcal{J}$.
+
+\section{Nominal LCF}
