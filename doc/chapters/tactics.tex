@@ -21,7 +21,7 @@ of the name $x$ is essential to the meaning of the tactic, the names supplied
 for the generated hypotheses can be freshly renamed with impunity.
 
 Indeed, in a proof term assignment for this sequent calculus, the corresponding
-elimination form would \emph{bind} variables $x,y$ rather than take the, as
+elimination form would \emph{bind} variables $x,y$ rather than take them as
 parameters. However, in the standard LCF tactic paradigm, it is not possible to
 reproduce this structure, because the sequencing of rules is mediated by the
 general purpose $\mathtt{THEN}$ tactical, which has no knowledge of names or
@@ -80,7 +80,7 @@ continuous} in a specific sense. For an atomic sequence
 $\Member{\alpha}{\MLStream{\MLAtom}}$ and a natural number
 $\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
 $\alpha$ of length $n$. Let $\KleeneEq{M}{N}$ be \emph{observational equivalence}:
-$M$ evaluate to the same value, or they diverge.
+$M$ and $N$ evaluate to equal values, or they both diverge.
 
 Then, for any atomic tactic $T$ and judgment $\mathcal{J}$, we can calculate a
 uniform modulus of continuity:
