@@ -48,7 +48,7 @@ then show how it can be elaborated into standard LCF.
 \newcommand\StreamTake[2]{\bar{#1}[#2]}
 \newcommand\StreamChop[2]{[#2]\bar{#1}}
 \newcommand\MLListSplit[2]{\mathsf{split}(#1, #2)}
-\newcommand\LCFStateSplit[3]{\mathsf{split}_{#1}^{#2}(#3)}
+\newcommand\LCFStateSplit[4]{\mathop{\mathsf{split}}\limits_{#1}^{#2}(#4, #3)}
 \DeclarePairedDelimiter{\MLLength}{\lVert}{\rVert}
 
 
@@ -365,49 +365,45 @@ $\SortTac$. To start with, we will give the elaboration rules for constants
 \]
 
 \newcommand\LCFMergeProofState[3]{%
-  \bigtriangledown_{#2\in #1} #3%
+  \bigtriangledown\limits_{#2}^{#1} #3%
 }
 
 Let $\MLListSplit{\vec{x}}{\vec{n}}$ be the operation that splits the list
 $\vec{x}$ into a list sublists of $\vec{x}$ of length $n$ for each
 $\Member{n}{\vec{n}}$. Then, for a proof state $\Member{P}{\LCFState}$ and a
-vector of proof states $\HypJ{\Member{Q_J}{\LCFState}}{\Member{J}{\Dom{P}}}$,
+vector of proof states $\HypJ{\Member{Q_i}{\LCFState}}{\LT{i}{\MLLength{P}}}$,
 we can form a new proof state collapses the two layers of subgoals into one, as follows:
 \begin{align*}
   \ADefine{
-    \LCFStateSplit{J\in\Dom{P}}{Q_J}{\vec{x}}
+    \LCFStateSplit{i}{\MLLength{P}}{Q_i}{\vec{x}}
   }{
     \MLListSplit{
       \vec{x}
     }{
       \left[
-        \MLLength{Q_J}
+        \MLLength{Q_i}
         \mid
-        J\in\Dom{P}
+        i < \MLLength{P}
       \right]
     }
   }\\
   \ADefine{
-    \LCFMergeProofState{\Dom{P}}{J}{Q_J}
+    \LCFMergeProofState{P}{i}{Q_i}
   }{
     \MLPair{
-      \bigoplus_{J\in\Dom{P}}\Dom{Q_J}
+      \bigoplus_{i\in\MLLength{P}}\Dom{Q_i}
     }{
       \lambda \vec{x}.\
       \LCFStateApply{P}{
         \left[
-          \LCFStateApply{Q_J}{\vec{y}}
+          \LCFStateApply{Q_i}{\vec{y}}
           \mid
-          \MLPair{
-            \vec{y}
-          }{
-            J
-          }
+          \MLPair{\vec{y}}{i}
           \in
           \MLPair{
-            \LCFStateSplit{J\in\Dom{P}}{Q_J}{\vec{x}}
+            \LCFStateSplit{i}{\MLLength{P}}{Q_i}{\vec{x}}
           }{
-            \Dom{P}
+            \MLNat_{\MLLength{P}}
           }
         \right]
       }
@@ -422,19 +418,19 @@ between $t_1$ and $t_2$:
 \[
   \infer{
     \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{J}{
-      \LCFMergeProofState{\Dom{P}}{K}{Q_K}
+      \LCFMergeProofState{P}{i}{Q_i}
     }{\alpha}{\mu'}
   }{
     \begin{array}{l}
       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\alpha}{\mu}\\
       \HypJ{
-        \LCFElabSt{\Upsilon}{\Gamma}{t_2}{K}{Q_K}{\StreamChop{\alpha}{\mu}}{\mu_{K}}
+        \LCFElabSt{\Upsilon}{\Gamma}{t_2}{\Dom{P}_i}{Q_i}{\StreamChop{\alpha}{\mu}}{\mu_i}
       }{
-        \Member{K}{\Dom{P}}
+        \LT{i}{\MLLength{P}}
       }
     \end{array} &
     \Match{
-      \mu + \bigsqcup_{K\in\Dom{P}}\mu_{K}
+      \mu + \bigsqcup_{i<\MLLength{P}}\mu_i
     }{\mu'}
   }
 \]
@@ -463,35 +459,34 @@ Finally, the action of the multi-tactics is defined:
 \[
   \infer{
     \LCFElabSt{\Upsilon}{\Gamma}{\Box t}{P}{
-      \LCFMergeProofState{\Dom{P}}{J}{Q_J}
+      \LCFMergeProofState{P}{i}{Q_i}
     }{\alpha}{\mu}
   }{
     \HypJ{
-      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{J}{Q_J}{\alpha}{\mu_J}
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{\Dom{P}_i}{Q_i}{\alpha}{\mu_i}
     }{
-      \Member{J}{\Dom{P}}
+      \LT{i}{\MLLength{P}}
     } &
-    \Match{\bigsqcup_{J\in\Dom{P}}\mu_J}{\mu}
+    \Match{\bigsqcup_{i<\MLLength{P}}\mu_i}{\mu}
   }
 \]
 
 \[
   \infer{
     \LCFElabSt{\Upsilon}{\Gamma}{
-      \TacEach{t_0,\dots,t_n}
+      \TacEach{t_0,\dots,t_{\MLLength{P}}}
     }{P}{
-      \LCFMergeProofState{\Dom{P}}{J_i}{Q_i}
+      \LCFMergeProofState{P}{i}{Q_i}
     }{\alpha}{\mu}
   }{
     \begin{array}{l}
-      \IMode{\MLLength{P}}\equiv\IMode{i}\\
       \HypJ{
         \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\Dom{P}_i}{Q_i}{\alpha}{\mu_i}
       }{
-        \Leq{i}{n}
+        \LT{i}{\MLLength{P}}
       }
     \end{array}&
-    \Match{\bigsqcup_{i\leq n}}{\mu}
+    \Match{\bigsqcup_{i< \MLLength{P}}}{\mu}
   }
 \]
 
@@ -500,11 +495,11 @@ Finally, the action of the multi-tactics is defined:
     \LCFElabSt{\Upsilon}{\Gamma}{
       \Diamond_i t
     }{P}{
-      \LCFMergeProofState{\Dom{P}}{J_j}{
+      \LCFMergeProofState{P}{j}{
         \left\{
           \begin{array}{lcl}
             j=i &\mapsto &Q\\
-            j\not=i &\mapsto &\MLPair{[J_j]}{\lambda [x].x}
+            j\not=i &\mapsto &\MLPair{[\Dom{P}_j]}{\lambda [x].x}
           \end{array}
         \right\}
       }
