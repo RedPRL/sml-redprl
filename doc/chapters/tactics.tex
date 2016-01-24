@@ -289,10 +289,13 @@ For a signature of atomic tactics $\Sigma$, we will define a $\Sigma$-model
 $\mathcal{M}$ to be an interpretation of each atomic tactic
 $\Member{t}{\Sigma}$ into some
 $\Member{\SemBrackets{t}_\mathcal{M}}{\LCFAtomicTactic}$; additionally, the
-model shall come equipped with a sequence of fresh atoms
-$\Member{\alpha_\mathcal{M}}{\MLStream{\MLAtom}}$. Then, we can interpret all
-of \textbf{Nominal LCF} into $\mathcal{M}$, by defining an elaboration judgment
-$\LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}$ with $\Member{\mathcal{J}}{\LCFJudgment}$ and
+model shall come equipped with free choice sequence of atoms
+$\Member{\alpha_\mathcal{M}}{\MLStream{\MLAtom}}$, such that each neighborhood
+$\IMode{\vec{u}}\ni\IMode{\alpha_\mathcal{M}}$ contains all distinct atoms.
+Then, we can interpret all of \textbf{Nominal LCF} into $\mathcal{M}$, by
+defining an elaboration judgment
+$\LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}$ with
+$\Member{\mathcal{J}}{\LCFJudgment}$ and
 $\Member{P}{\MLList{\LCFJudgment}\otimes(\MLList{\LCFEvidence}\to\LCFEvidence)}$,
 such that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
 $\Member{x:\SortATac}{\Gamma}$.
@@ -342,7 +345,9 @@ $\SortTac$. To start with, we will give the elaboration rules for constants
   }
 \]
 
-The \emph{smash} tactical is explained as follows:
+The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
+uniform continuity of atomic tactics to divide up the name store $\alpha$
+between $t_1$ and $t_2$:
 \[
   \infer{
     \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{\mathcal{J}}{
@@ -367,106 +372,130 @@ The \emph{smash} tactical is explained as follows:
     \end{array} &
     \begin{array}{l}
       \Match{\alpha}{
-        [a_0,\dots,a_\mu]\oplus\beta
+        [u_0,\dots,u_\mu]\oplus\beta
       }\\
       \Match{
-        \mu + \sum_{i\leq n}\mu_i
+        \mu + \bigsqcup{i\leq n}\mu_i
       }{\mu'}
     \end{array}
   }
 \]
 
-%%
-%% \[
-%%   \infer{
-%%     \LCFElabSt{\Upsilon}{\Gamma}{
-%%       \TacSeq{t_1}{\vec{a}}{\Box t_2}
-%%     }{\mathcal{J}}{
-%%       \Pair{
-%%         \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
-%%       }{
-%%         \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
-%%       }
-%%     }{S}
-%%   }{
-%%     \begin{array}{l}
-%%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
-%%         \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
-%%       }{\vec{a}\oplus S}\\
-%%       \HypJ{
-%%         \LCFElabSt{\Upsilon,\vec{a}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
-%%           \Pair{\vec{\mathcal{K}}_i}{F_i}
-%%         }{S}
-%%       }{
-%%         \Leq{i}{n}
-%%       }
-%%     \end{array}
-%%   }
-%% \]
-%%
-%% \[
-%%   \infer{
-%%     \LCFElabSt{\Upsilon}{\Gamma}{
-%%       \TacSeq{t}{\vec{a}}{\TacEach{t_0,\dots,t_n}}
-%%     }{\mathcal{J}}{
-%%       \Pair{
-%%         \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
-%%       }{
-%%         \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
-%%       }
-%%     }{S}
-%%   }{
-%%     \begin{array}{l}
-%%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
-%%         \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
-%%       }{\vec{a}\oplus S}\\
-%%       \HypJ{
-%%         \LCFElabSt{\Upsilon,\vec{a}:\SortHyp}{\Gamma}{t_i}{\mathcal{J}_i}{
-%%           \Pair{\vec{\mathcal{K}}_i}{F_i}
-%%         }{S}
-%%       }{
-%%         \Leq{i}{n}
-%%       }
-%%     \end{array}
-%%   }
-%% \]
-%%
-%% \[
-%%   \infer{
-%%     \LCFElabSt{\Upsilon}{\Gamma}{
-%%       \TacSeq{t_1}{\vec{a}}{\Diamond_i t_2}
-%%     }{\mathcal{J}}{
-%%       \Pair{
-%%         \vec{\mathcal{L}}
-%%         \oplus
-%%         \vec{\mathcal{K}}
-%%         \oplus
-%%         \vec{\mathcal{L'}}
-%%       }{
-%%         \lambda\vec{x}.E(\vec{y}\oplus[F]\oplus\vec{y'})
-%%       }
-%%     }{S}
-%%   }{
-%%     \begin{array}{l}
-%%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
-%%         \Pair{\vec{\mathcal{J}}}{E}
-%%       }{\vec{a}\oplus S}\\
-%%       \LCFElabSt{\Upsilon,\vec{a}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
-%%         \Pair{\vec{\mathcal{K}}}{F}
-%%       }{S}
-%%     \end{array} &
-%%     \begin{array}{l}
-%%       \Match{
-%%         \vec{\mathcal{J}}
-%%       }{
-%%         \vec{\mathcal{L}}\oplus[\vec{\mathcal{J}}_i]\oplus\vec{\mathcal{L'}}
-%%       }\\
-%%       \Match{
-%%         \vec{x}
-%%       }{
-%%         \vec{y}\oplus[\vec{x}_i]\oplus\vec{y'}
-%%       }
-%%     \end{array}
-%%   }
-%% \]
+
+Next, we define the sequencing tactical, once for each multi-tactical.
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t_1}{\vec{u}}{\Box t_2}
+    }{\mathcal{J}}{
+      \Pair{
+        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
+      }{
+        \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
+      }
+    }{\alpha}{\mu'}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
+        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
+      }{\vec{u}\oplus\alpha}{\mu}\\
+      \HypJ{
+        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
+          \Pair{\vec{\mathcal{K}}_i}{F_i}
+        }{\beta}{\mu_i}
+      }{
+        \Leq{i}{n}
+      }
+    \end{array} &
+    \begin{array}{l}
+      \Match{\vec{u}\oplus\alpha}{
+        [v_0,\dots,v_\mu]\oplus\beta
+      }\\
+      \Match{
+        \mu + \bigsqcup_{i\leq n}\mu_i
+      }{\mu'}
+    \end{array}
+  }
+\]
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t}{\vec{u}}{\TacEach{t_0,\dots,t_n}}
+    }{\mathcal{J}}{
+      \Pair{
+        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
+      }{
+        \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
+      }
+    }{\alpha}{\mu'}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
+        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
+      }{\vec{u}\oplus\alpha}{\mu}\\
+      \HypJ{
+        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\mathcal{J}_i}{
+          \Pair{\vec{\mathcal{K}}_i}{F_i}
+        }{\beta}{\mu_i}
+      }{
+        \Leq{i}{n}
+      }
+    \end{array} &
+    \begin{array}{l}
+      \Match{\vec{u}\oplus\alpha}{
+        [v_0,\dots,v_\mu]\oplus\beta
+      }\\
+      \Match{
+        \mu + \bigsqcup_{i\leq n}\mu_i
+      }{\mu'}
+    \end{array}
+  }
+\]
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
+    }{\mathcal{J}}{
+      \Pair{
+        \vec{\mathcal{J}}_<
+        \oplus
+        \vec{\mathcal{K}}
+        \oplus
+        \vec{\mathcal{J}}_>
+      }{
+        \lambda\vec{x}.E(\vec{x}_<\oplus[F]\oplus\vec{x}_>)
+      }
+    }{\alpha}{\mu'}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
+        \Pair{\vec{\mathcal{J}}}{E}
+      }{\vec{u}\oplus\alpha}{\mu_1}\\
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
+        \Pair{\vec{\mathcal{K}}}{F}
+      }{\beta}{\mu_2}
+    \end{array} &
+    \begin{array}{l}
+      \Match{\vec{u}\oplus\alpha}{
+        [v_0,\dots,v_{\mu_1}]\oplus\beta
+      }\\
+      \Match{\mu_1+\mu_2}{\mu'}
+    \end{array} &
+    \begin{array}{l}
+      \Match{
+        \vec{\mathcal{J}}
+      }{
+        \vec{\mathcal{J}}_<\oplus[\vec{\mathcal{J}}_i]\oplus\vec{\mathcal{J}}_>
+      }\\
+      \Match{
+        \vec{x}
+      }{
+        \vec{x}_<\oplus[\vec{x}_i]\oplus\vec{x}_>
+      }
+    \end{array}
+  }
+\]
 
