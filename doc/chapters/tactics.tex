@@ -37,13 +37,19 @@ then show how it can be elaborated into standard LCF.
 \newcommand\LCFJudgment{\mathit{judgment}}
 \newcommand\LCFEvidence{\mathit{evidence}}
 \newcommand\LCFState{\mathit{state}}
+\newcommand\LCFStateApply[2]{#1\star #2}
 \newcommand\LCFTactic{\mathit{tactic}}
 \newcommand\MLList[1]{#1\;\mathit{list}}
 \newcommand\MLAtom{\mathbb{A}}
 \newcommand\MLNat{\mathbb{N}}
 \newcommand\MLStream[1]{{#1}^{\MLNat}}
+\newcommand\MLPair[2]{\left(#1, #2\right)}
 \newcommand\LCFAtomicTactic{\mathit{atactic}}
 \newcommand\StreamTake[2]{\bar{#1}(#2)}
+\newcommand\MLListSplit[2]{\mathsf{split}(#1, #2)}
+\newcommand\LCFStateSplit[3]{\mathsf{split}_{#1}^{#2}(#3)}
+\DeclarePairedDelimiter{\MLLength}{\lVert}{\rVert}
+
 
 The essence of the LCF tactic system is captured in the following (idealized)
 ML signature:
@@ -52,7 +58,7 @@ ML signature:
   \begin{array}{lcl}
     \MLTypeDecl{\LCFJudgment}\\
     \MLTypeDecl{\LCFEvidence}\\
-    \MLTypeDecl{\LCFState} &= &\MLList{\LCFJudgment} \otimes (\MLList{\LCFEvidence}\to\LCFEvidence)\\
+    \MLTypeDecl{\LCFState} &= &\MLList{\LCFJudgment} \otimes (\PartialFun{\MLList{\LCFEvidence}}{\LCFEvidence})\\
     \MLTypeDecl{\LCFTactic} &= &\PartialFun{\LCFJudgment}{\LCFState}
   \end{array}
 \]
@@ -60,9 +66,14 @@ ML signature:
 In other words, a tactic is a partial function that takes a goal to its
 subgoals, and specifies how to transform the evidence of its subgoals into the
 evidence for the main goal. In the case of the sequence calculus we were
-considering, \verb!judgment! would be a type of sequents.  Now, in general a
-tactic may need to consume names from a \emph{name store}, which is an infinite
-stream of \emph{atoms} or \emph{symbols}:
+considering, \verb!judgment! would be a type of sequents. We will write
+$\Dom{P}$ for the list of subgoals $\pi_1(P)$ to a proof state
+$\Member{P}{\LCFState}$, $\MLLength{P}$ for the length of $\Dom{P}$, and
+$\LCFStateApply{P}{\vec{x}}$ for the application of the hypothetical evidence
+$\pi_2(P)$ to the concrete evidence $\Member{\vec{x}}{\MLList{\LCFEvidence}}$.
+
+Now, in general a tactic may need to consume names from a \emph{name store},
+which is an infinite stream of \emph{atoms} or \emph{symbols}:
 
 \[
   \begin{array}{lcl}
@@ -84,21 +95,21 @@ $\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
 $\alpha$ of length $n$. Let $\KleeneEq{M}{N}$ be \emph{observational
 equivalence}: $M$ and $N$ evaluate to equal values, or they both diverge.
 
-Then, for any atomic tactic $T$ and judgment $\mathcal{J}$, we can calculate a
+Then, for any atomic tactic $T$ and judgment $J$, we can calculate a
 modulus of continuity:
 \begin{equation}
   \forall \Member{\alpha}{\MLStream{\MLAtom}}.
   \exists \OMode{n}\in\IMode{\MLNat}.
   \forall \Member{\beta}{\MLStream{\MLAtom}}.
-    \IsEq{\bar{\alpha}(n)}{\bar{\beta}(n)}\implies \KleeneEq{T(\alpha,\mathcal{J})}{T(\beta,\mathcal{J})}
+    \IsEq{\bar{\alpha}(n)}{\bar{\beta}(n)}\implies \KleeneEq{T(\alpha,J)}{T(\beta,J)}
   \tag{continuity}
 \end{equation}
 
 This calculation can be realized computationally in our metalanguage in a
 number of ways, but for our purposes it suffices to remark that it is a fact
 concerning all computable stream processors. Let
-$\Member{\ModC{T}{\mathcal{J}}}{\MLNat}$ calculate the modulus of continuity
-for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ at goal $\mathcal{J}$.
+$\Member{\ModC{T}{J}}{\MLNat}$ calculate the modulus of continuity
+for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ at goal $J$.
 
 \section{Nominal LCF}
 
@@ -288,6 +299,7 @@ for tactic expressions:
   \ll\IMode{#6}
 }
 
+
 For a signature of atomic tactics $\Sigma$, we will define a $\Sigma$-model
 $\mathcal{M}$ to be an interpretation of each atomic tactic
 $\Member{t}{\Sigma}$ into some
@@ -298,8 +310,8 @@ $\IMode{\vec{u}}\ni\IMode{\alpha_\mathcal{M}}$ shall contain only distinct
 atoms.\footnote{This is an example of a \emph{spread law}
 (see~\cite{brouwer:1981}).} Then, we can interpret all of \textbf{Nominal LCF}
 into $\mathcal{M}$, by defining an elaboration judgment
-$\LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}$ with
-$\Member{\mathcal{J}}{\LCFJudgment}$ and
+$\LCFElab{\Upsilon}{\Gamma}{t}{J}{P}$ with
+$\Member{J}{\LCFJudgment}$ and
 $\Member{P}{\LCFState}$,
 such that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
 $\Member{x:\SortATac}{\Gamma}$.
@@ -307,71 +319,115 @@ $\Member{x:\SortATac}{\Gamma}$.
 First, we define the elaboration uniformly by appealing to an auxiliary judgment:
 \[
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}
+    \LCFElab{\Upsilon}{\Gamma}{t}{J}{P}
   }{
-    \LCFElabStVerbose{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha_\mathcal{M}}{\mu}
+    \LCFElabStVerbose{\Upsilon}{\Gamma}{t}{J}{P}{\alpha_\mathcal{M}}{\mu}
   }
 \]
 
 This auxiliary form of judgment is made with respect to a free choice sequence
 of names $\alpha$, and synthesizes the modulus of continuity $\mu$ of
 the tactic under consideration.  When it leads to no ambiguity, we will write
-$\LCFElabSt{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha}{\mu}$ instead of the
+$\LCFElabSt{\Upsilon}{\Gamma}{t}{J}{P}{\alpha}{\mu}$ instead of the
 more verbose
-$\LCFElabStVerbose{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha}{\mu}$; we will
+$\LCFElabStVerbose{\Upsilon}{\Gamma}{t}{J}{P}{\alpha}{\mu}$; we will
 explain this form of judgment for $t$ of sorts $\SortATac$, $\SortBTac$, and
 $\SortTac$. To start with, we will give the elaboration rules for constants
 (atomic tactics) and variables denoting atomic tactics:
 
 \[
   \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{t}{\mathcal{J}}{
-      \SemBrackets{t}_\mathcal{M}(\alpha,\mathcal{J})
+    \LCFElabSt{\Upsilon}{\Gamma}{t}{J}{
+      \SemBrackets{t}_\mathcal{M}(\alpha,J)
     }{\alpha}{\mu}
   }{
     \Match{
-      \ModC{\SemBrackets{t}_\mathcal{M}}{\mathcal{J}}(\alpha)
+      \ModC{\SemBrackets{t}_\mathcal{M}}{J}(\alpha)
     }{
       \mu
     }
   }
   \qquad
   \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{x}{\mathcal{J}}{
-      \rho(x)(\alpha,\mathcal{J})
+    \LCFElabSt{\Upsilon}{\Gamma}{x}{J}{
+      \rho(x)(\alpha,J)
     }{\alpha}{\mu}
   }{
     \Match{
-      \ModC{\rho(x)}{\mathcal{J}}(\alpha)
+      \ModC{\rho(x)}{J}(\alpha)
     }{
       \mu
     }
   }
 \]
 
+\newcommand\LCFMergeProofState[3]{%
+  \bigtriangledown_{#2\in #1} #3%
+}
+
+Let $\MLListSplit{\vec{x}}{\vec{n}}$ be the operation that splits the list
+$\vec{x}$ into a list sublists of $\vec{x}$ of length $n$ for each
+$\Member{n}{\vec{n}}$. Then, for a proof state $\Member{P}{\LCFState}$ and a
+vector of proof states $\HypJ{\Member{Q_J}{\LCFState}}{\Member{J}{\Dom{P}}}$,
+we can form a new proof state collapses the two layers of subgoals into one, as follows:
+\begin{align*}
+  \ADefine{
+    \LCFStateSplit{J\in\Dom{P}}{Q_J}{\vec{x}}
+  }{
+    \MLListSplit{
+      \vec{x}
+    }{
+      \left[
+        \MLLength{Q_J}
+        \mid
+        J\in\Dom{P}
+      \right]
+    }
+  }\\
+  \ADefine{
+    \LCFMergeProofState{\Dom{P}}{J}{Q_J}
+  }{
+    \MLPair{
+      \bigoplus_{J\in\Dom{P}}\Dom{Q_J}
+    }{
+      \lambda \vec{x}.\
+      \LCFStateApply{P}{
+        \left[
+          \LCFStateApply{Q_J}{\vec{y}}
+          \mid
+          \MLPair{
+            \vec{y}
+          }{
+            J
+          }
+          \in
+          \MLPair{
+            \LCFStateSplit{J\in\Dom{P}}{Q_J}{\vec{x}}
+          }{
+            \Dom{P}
+          }
+        \right]
+      }
+    }
+  }
+\end{align*}
+
+
 The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
 continuity of atomic tactics to divide up the name store $\alpha$
 between $t_1$ and $t_2$:
 \[
   \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{\mathcal{J}}{
-      \Pair{
-        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
-      }{
-        \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
-      }
+    \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{J}{
+      \LCFMergeProofState{\Dom{P}}{K}{Q_K}
     }{\alpha}{\mu'}
   }{
     \begin{array}{l}
-      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
-        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
-      }{\alpha}{\mu}\\
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\alpha}{\mu}\\
       \HypJ{
-        \LCFElabSt{\Upsilon}{\Gamma}{t_2}{\mathcal{J}_i}{
-          \Pair{\vec{\mathcal{K}}_i}{F_i}
-        }{\beta}{\mu_i}
+        \LCFElabSt{\Upsilon}{\Gamma}{t_2}{K}{Q_K}{\beta}{\mu_{K}}
       }{
-        \Leq{i}{n}
+        \Member{K}{\Dom{P}}
       }
     \end{array} &
     \begin{array}{l}
@@ -379,127 +435,128 @@ between $t_1$ and $t_2$:
         [u_0,\dots,u_\mu]\oplus\beta
       }\\
       \Match{
-        \mu + \bigsqcup_{i\leq n}\mu_i
+        \mu + \bigsqcup_{K\in\Dom{P}}\mu_{K}
       }{\mu'}
     \end{array}
   }
 \]
 
 
-Next, we define the sequencing tactical, once for each multi-tactical.
+Next, we define the behavior of the sequencing tactical in a single rule by
+exploiting an auxiliary form of judgment concerning the action of
+multi-tactics on proof states,
+$\LCFElabSt{\Upsilon}{\Gamma}{t}{P}{Q}{\alpha}{\mu}$ (with
+$\Member{P,Q}{\LCFState}$):
+%
+ \[
+   \infer{
+     \LCFElabSt{\Upsilon}{\Gamma}{
+       \TacSeq{t_1}{\vec{u}}{t_2}
+     }{J}{Q}{\alpha}{\mu_1+\mu_2}
+   }{
+     \begin{array}{l}
+       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\vec{u}\oplus\alpha}{\mu_1}\\
+       \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{J_i}{Q}{\beta}{\mu_2}
+     \end{array} &
+     \Match{\vec{u}\oplus\alpha}{
+       [v_0,\dots,v_{\mu_1}]\oplus\beta
+     }
+   }
+ \]
 
+Finally, the action of the multi-tactics is defined:
 \[
   \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{
-      \TacSeq{t_1}{\vec{u}}{\Box t_2}
-    }{\mathcal{J}}{
-      \Pair{
-        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
-      }{
-        \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
-      }
-    }{\alpha}{\mu'}
+    \LCFElabSt{\Upsilon}{\Gamma}{\Box t}{P}{
+      \LCFMergeProofState{\Dom{P}}{J}{Q_J}
+    }{\alpha}{\mu}
   }{
-    \begin{array}{l}
-      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
-        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
-      }{\vec{u}\oplus\alpha}{\mu}\\
-      \HypJ{
-        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
-          \Pair{\vec{\mathcal{K}}_i}{F_i}
-        }{\beta}{\mu_i}
-      }{
-        \Leq{i}{n}
-      }
-    \end{array} &
-    \begin{array}{l}
-      \Match{\vec{u}\oplus\alpha}{
-        [v_0,\dots,v_\mu]\oplus\beta
-      }\\
-      \Match{
-        \mu + \bigsqcup_{i\leq n}\mu_i
-      }{\mu'}
-    \end{array}
+    \HypJ{
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{J}{Q_J}{\beta}{\mu_J}
+    }{
+      \Member{J}{\Dom{P}}
+    } &
+    \Match{\bigsqcup_{J\in\Dom{P}}\mu_J}{\mu}
   }
 \]
 
-\[
-  \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{
-      \TacSeq{t}{\vec{u}}{\TacEach{t_0,\dots,t_n}}
-    }{\mathcal{J}}{
-      \Pair{
-        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
-      }{
-        \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
-      }
-    }{\alpha}{\mu'}
-  }{
-    \begin{array}{l}
-      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
-        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
-      }{\vec{u}\oplus\alpha}{\mu}\\
-      \HypJ{
-        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\mathcal{J}_i}{
-          \Pair{\vec{\mathcal{K}}_i}{F_i}
-        }{\beta}{\mu_i}
-      }{
-        \Leq{i}{n}
-      }
-    \end{array} &
-    \begin{array}{l}
-      \Match{\vec{u}\oplus\alpha}{
-        [v_0,\dots,v_\mu]\oplus\beta
-      }\\
-      \Match{
-        \mu + \bigsqcup_{i\leq n}\mu_i
-      }{\mu'}
-    \end{array}
-  }
-\]
+% \[
+%   \infer{
+%     \LCFElabSt{\Upsilon}{\Gamma}{
+%       \TacSeq{t}{\vec{u}}{\TacEach{t_0,\dots,t_n}}
+%     }{J}{
+%       \MLPair{
+%         \bigoplus_{i\leq n}\vec{K}_i
+%       }{
+%         \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
+%       }
+%     }{\alpha}{\mu'}
+%   }{
+%     \begin{array}{l}
+%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{
+%         \MLPair{[J_0,\dots,J_n]}{E}
+%       }{\vec{u}\oplus\alpha}{\mu}\\
+%       \HypJ{
+%         \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{J_i}{
+%           \MLPair{\vec{K}_i}{F_i}
+%         }{\beta}{\mu_i}
+%       }{
+%         \Leq{i}{n}
+%       }
+%     \end{array} &
+%     \begin{array}{l}
+%       \Match{\vec{u}\oplus\alpha}{
+%         [v_0,\dots,v_\mu]\oplus\beta
+%       }\\
+%       \Match{
+%         \mu + \bigsqcup_{i\leq n}\mu_i
+%       }{\mu'}
+%     \end{array}
+%   }
+% \]
 
-\[
-  \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{
-      \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
-    }{\mathcal{J}}{
-      \Pair{
-        \vec{\mathcal{J}}_<
-        \oplus
-        \vec{\mathcal{K}}
-        \oplus
-        \vec{\mathcal{J}}_>
-      }{
-        \lambda\vec{x}.E(\vec{x}_<\oplus[F]\oplus\vec{x}_>)
-      }
-    }{\alpha}{\mu'}
-  }{
-    \begin{array}{l}
-      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
-        \Pair{\vec{\mathcal{J}}}{E}
-      }{\vec{u}\oplus\alpha}{\mu_1}\\
-      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
-        \Pair{\vec{\mathcal{K}}}{F}
-      }{\beta}{\mu_2}
-    \end{array} &
-    \begin{array}{l}
-      \Match{\vec{u}\oplus\alpha}{
-        [v_0,\dots,v_{\mu_1}]\oplus\beta
-      }\\
-      \Match{\mu_1+\mu_2}{\mu'}
-    \end{array} &
-    \begin{array}{l}
-      \Match{
-        \vec{\mathcal{J}}
-      }{
-        \vec{\mathcal{J}}_<\oplus[\vec{\mathcal{J}}_i]\oplus\vec{\mathcal{J}}_>
-      }\\
-      \Match{
-        \vec{x}
-      }{
-        \vec{x}_<\oplus[\vec{x}_i]\oplus\vec{x}_>
-      }
-    \end{array}
-  }
-\]
+% \[
+%   \infer{
+%     \LCFElabSt{\Upsilon}{\Gamma}{
+%       \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
+%     }{J}{
+%       \MLPair{
+%         \vec{J}_<
+%         \oplus
+%         \vec{K}
+%         \oplus
+%         \vec{J}_>
+%       }{
+%         \lambda\vec{x}.E(\vec{x}_<\oplus[F]\oplus\vec{x}_>)
+%       }
+%     }{\alpha}{\mu'}
+%   }{
+%     \begin{array}{l}
+%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{
+%         \MLPair{\vec{J}}{E}
+%       }{\vec{u}\oplus\alpha}{\mu_1}\\
+%       \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{J_i}{
+%         \MLPair{\vec{K}}{F}
+%       }{\beta}{\mu_2}
+%     \end{array} &
+%     \begin{array}{l}
+%       \Match{\vec{u}\oplus\alpha}{
+%         [v_0,\dots,v_{\mu_1}]\oplus\beta
+%       }\\
+%       \Match{\mu_1+\mu_2}{\mu'}
+%     \end{array} &
+%     \begin{array}{l}
+%       \Match{
+%         \vec{J}
+%       }{
+%         \vec{J}_<\oplus[\vec{J}_i]\oplus\vec{J}_>
+%       }\\
+%       \Match{
+%         \vec{x}
+%       }{
+%         \vec{x}_<\oplus[\vec{x}_i]\oplus\vec{x}_>
+%       }
+%     \end{array}
+%   }
+% \]
 

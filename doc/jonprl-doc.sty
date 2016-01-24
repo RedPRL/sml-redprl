@@ -3,9 +3,12 @@
 \RequirePackage{graphicx}
 \RequirePackage[usenames,dvipsnames,svgnames,table]{xcolor}
 
+\RequirePackage[h]{esvect}
+
 \ExecuteOptions{}
 \ProcessOptions\relax
 
+\renewcommand\vec[1]{\protect\vv{#1}}
 \newcommand\RedJonPRL{%
   {\color{Maroon}%
     \texttt{Red \!\!JonPRL}%
