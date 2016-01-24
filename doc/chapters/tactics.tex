@@ -70,31 +70,32 @@ stream of \emph{atoms} or \emph{symbols}:
 \]
 
 \newcommand\KleeneEq[2]{\IMode{#1}\approx \IMode{#2}}
-\newcommand\UMod[2]{\mathsf{umod}(#1,#2)}
+\newcommand\ModC[2]{\mathsf{M}(#1,#2)}
 
-\subsection{Atomic tactics and their uniform continuity}
+\subsection{Atomic tactics and their continuity}
 
-Left sequent rules can be coded as so-called \emph{atomic tactics}, tactics which
-consume a stream of names. In fact, every such tactic is \emph{uniformly
-continuous} in a specific sense. For an atomic sequence
+Left sequent rules can be coded as so-called \emph{atomic tactics}, tactics
+which consume a stream of names. In fact, every such tactic is
+\emph{continuous} in a specific sense. For an atomic sequence
 $\Member{\alpha}{\MLStream{\MLAtom}}$ and a natural number
 $\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
-$\alpha$ of length $n$. Let $\KleeneEq{M}{N}$ be \emph{observational equivalence}:
-$M$ and $N$ evaluate to equal values, or they both diverge.
+$\alpha$ of length $n$. Let $\KleeneEq{M}{N}$ be \emph{observational
+equivalence}: $M$ and $N$ evaluate to equal values, or they both diverge.
 
 Then, for any atomic tactic $T$ and judgment $\mathcal{J}$, we can calculate a
-uniform modulus of continuity:
+modulus of continuity:
 \begin{equation}
+  \forall \Member{\alpha}{\MLStream{\MLAtom}}.
   \exists \OMode{n}\in\IMode{\MLNat}.
-  \forall \Member{\alpha,\beta}{\MLStream{\MLAtom}}.
+  \forall \Member{\beta}{\MLStream{\MLAtom}}.
     \IsEq{\bar{\alpha}(n)}{\bar{\beta}(n)}\implies \KleeneEq{T(\alpha,\mathcal{J})}{T(\beta,\mathcal{J})}
-  \tag{uniform continuity}
+  \tag{continuity}
 \end{equation}
 
 This calculation can be realized computationally in our metalanguage in a
-number of ways, but for our purposes it suffices to remark that it is a
-consequence of Brouwer's Fan Theorem, which we hold to be evident. Let
-$\Member{\UMod{T}{\mathcal{J}}}{\MLNat}$ be the uniform modulus of continuity
+number of ways, but for our purposes it suffices to remark that it is a fact
+concerning all computable stream processors. Let
+$\Member{\ModC{T}{\mathcal{J}}}{\MLNat}$ calculate the modulus of continuity
 for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ at goal $\mathcal{J}$.
 
 \section{Nominal LCF}
@@ -311,7 +312,7 @@ First, we define the elaboration uniformly by appealing to an auxiliary judgment
 \]
 
 This auxiliary form of judgment is made with respect to a free choice sequence
-of names $\alpha$, and synthesizes the uniform modulus of continuity $\mu$ of
+of names $\alpha$, and synthesizes the modulus of continuity $\mu$ of
 the tactic under consideration.  When it leads to no ambiguity, we will write
 $\LCFElabSt{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha}{\mu}$ instead of the
 more verbose
@@ -327,7 +328,7 @@ $\SortTac$. To start with, we will give the elaboration rules for constants
     }{\alpha}{\mu}
   }{
     \Match{
-      \UMod{\SemBrackets{t}_\mathcal{M}}{\mathcal{J}}
+      \ModC{\SemBrackets{t}_\mathcal{M}}{\mathcal{J}}(\alpha)
     }{
       \mu
     }
@@ -339,7 +340,7 @@ $\SortTac$. To start with, we will give the elaboration rules for constants
     }{\alpha}{\mu}
   }{
     \Match{
-      \UMod{\rho(x)}{\mathcal{J}}
+      \ModC{\rho(x)}{\mathcal{J}}(\alpha)
     }{
       \mu
     }
@@ -347,7 +348,7 @@ $\SortTac$. To start with, we will give the elaboration rules for constants
 \]
 
 The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
-uniform continuity of atomic tactics to divide up the name store $\alpha$
+continuity of atomic tactics to divide up the name store $\alpha$
 between $t_1$ and $t_2$:
 \[
   \infer{
