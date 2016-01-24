@@ -489,7 +489,7 @@ Finally, the action of the multi-tactics is defined:
     }{\alpha}{\mu}
   }{
     \HypJ{
-      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{J_i}{Q_{J_i}}{\beta}{\mu_{J_i}}
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{J_i}{Q_{J_i}}{\alpha}{\mu_{J_i}}
     }{
       \Member{J_i}{\Dom{P}}
     } &
@@ -497,84 +497,23 @@ Finally, the action of the multi-tactics is defined:
   }
 \]
 
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \Diamond_i t
+    }{P}{
+      \LCFMergeProofState{\Dom{P}}{J_j}{
+        \left\{
+          \begin{array}{lcl}
+            j=i &\mapsto &Q\\
+            j\not=i &\mapsto &\MLPair{[J_j]}{\lambda [x].x}
+          \end{array}
+        \right\}
+      }
+    }{\alpha}{\mu}
+  }{
+    \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{\Dom{P}_i}{Q}{\alpha}{\mu}
+  }
+\]
 
-% \[
-%   \infer{
-%     \LCFElabSt{\Upsilon}{\Gamma}{
-%       \TacSeq{t}{\vec{u}}{\TacEach{t_0,\dots,t_n}}
-%     }{J}{
-%       \MLPair{
-%         \bigoplus_{i\leq n}\vec{K}_i
-%       }{
-%         \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
-%       }
-%     }{\alpha}{\mu'}
-%   }{
-%     \begin{array}{l}
-%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{
-%         \MLPair{[J_0,\dots,J_n]}{E}
-%       }{\vec{u}\oplus\alpha}{\mu}\\
-%       \HypJ{
-%         \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{J_i}{
-%           \MLPair{\vec{K}_i}{F_i}
-%         }{\beta}{\mu_i}
-%       }{
-%         \Leq{i}{n}
-%       }
-%     \end{array} &
-%     \begin{array}{l}
-%       \Match{\vec{u}\oplus\alpha}{
-%         [v_0,\dots,v_\mu]\oplus\beta
-%       }\\
-%       \Match{
-%         \mu + \bigsqcup_{i\leq n}\mu_i
-%       }{\mu'}
-%     \end{array}
-%   }
-% \]
-
-% \[
-%   \infer{
-%     \LCFElabSt{\Upsilon}{\Gamma}{
-%       \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
-%     }{J}{
-%       \MLPair{
-%         \vec{J}_<
-%         \oplus
-%         \vec{K}
-%         \oplus
-%         \vec{J}_>
-%       }{
-%         \lambda\vec{x}.E(\vec{x}_<\oplus[F]\oplus\vec{x}_>)
-%       }
-%     }{\alpha}{\mu'}
-%   }{
-%     \begin{array}{l}
-%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{
-%         \MLPair{\vec{J}}{E}
-%       }{\vec{u}\oplus\alpha}{\mu_1}\\
-%       \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{J_i}{
-%         \MLPair{\vec{K}}{F}
-%       }{\beta}{\mu_2}
-%     \end{array} &
-%     \begin{array}{l}
-%       \Match{\vec{u}\oplus\alpha}{
-%         [v_0,\dots,v_{\mu_1}]\oplus\beta
-%       }\\
-%       \Match{\mu_1+\mu_2}{\mu'}
-%     \end{array} &
-%     \begin{array}{l}
-%       \Match{
-%         \vec{J}
-%       }{
-%         \vec{J}_<\oplus[\vec{J}_i]\oplus\vec{J}_>
-%       }\\
-%       \Match{
-%         \vec{x}
-%       }{
-%         \vec{x}_<\oplus[\vec{x}_i]\oplus\vec{x}_>
-%       }
-%     \end{array}
-%   }
-% \]
 
