@@ -108,7 +108,7 @@ for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ at goal $\mathcal{J}$.
 \newcommand\SortHyp{\mathtt{hyp}}
 
 We will define the \textbf{Nominal LCF} language by specifying an abt signature
-for it; at its heart is the refactoring of the various sequencing tacticals
+for it; at its heart is decomposition of the various sequencing tacticals
 $\mathtt{THEN}$, $\mathtt{THENL}$, etc.\ of LCF into a single sequencing
 tactical combined a separate notion of \emph{multi-tactic}.
 
@@ -291,7 +291,7 @@ $\Member{t}{\Sigma}$ into some
 $\Member{\SemBrackets{t}_\mathcal{M}}{\LCFAtomicTactic}$; additionally, the
 model shall come equipped with a free choice sequence of atoms
 $\Member{\alpha_\mathcal{M}}{\MLStream{\MLAtom}}$, such that each neighborhood
-$\IMode{\vec{u}}\ni\IMode{\alpha_\mathcal{M}}$ contains all distinct atoms.
+$\IMode{\vec{u}}\ni\IMode{\alpha_\mathcal{M}}$ shall contain only distinct atoms.
 Then, we can interpret all of \textbf{Nominal LCF} into $\mathcal{M}$, by
 defining an elaboration judgment
 $\LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}$ with
@@ -315,7 +315,7 @@ the tactic under consideration.  When it leads to no ambiguity, we will write
 $\LCFElabSt{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha}{\mu}$ instead of the
 more verbose
 $\LCFElabStVerbose{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha}{\mu}$; we will
-explain this judgment for $t$ of sorts $\SortATac$, $\SortBTac$, and
+explain this form of judgment for $t$ of sorts $\SortATac$, $\SortBTac$, and
 $\SortTac$. To start with, we will give the elaboration rules for constants
 (atomic tactics) and variables denoting atomic tactics:
 
@@ -375,7 +375,7 @@ between $t_1$ and $t_2$:
         [u_0,\dots,u_\mu]\oplus\beta
       }\\
       \Match{
-        \mu + \bigsqcup{i\leq n}\mu_i
+        \mu + \bigsqcup_{i\leq n}\mu_i
       }{\mu'}
     \end{array}
   }
