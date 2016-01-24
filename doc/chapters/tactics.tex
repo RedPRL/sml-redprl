@@ -45,7 +45,8 @@ then show how it can be elaborated into standard LCF.
 \newcommand\MLStream[1]{{#1}^{\MLNat}}
 \newcommand\MLPair[2]{\left(#1, #2\right)}
 \newcommand\LCFAtomicTactic{\mathit{atactic}}
-\newcommand\StreamTake[2]{\bar{#1}(#2)}
+\newcommand\StreamTake[2]{\bar{#1}[#2]}
+\newcommand\StreamChop[2]{[#2]\bar{#1}}
 \newcommand\MLListSplit[2]{\mathsf{split}(#1, #2)}
 \newcommand\LCFStateSplit[3]{\mathsf{split}_{#1}^{#2}(#3)}
 \DeclarePairedDelimiter{\MLLength}{\lVert}{\rVert}
@@ -92,8 +93,10 @@ which consume a stream of names. In fact, every such tactic is
 \emph{continuous} in a specific sense. For an atomic sequence
 $\Member{\alpha}{\MLStream{\MLAtom}}$ and a natural number
 $\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
-$\alpha$ of length $n$. Let $\KleeneEq{M}{N}$ be \emph{observational
-equivalence}: $M$ and $N$ evaluate to equal values, or they both diverge.
+$\alpha$ of length $n$; let $\StreamChop{\alpha}{n}$ be infinite suffix of
+$\alpha$ got by chopping off the initial prefix $\StreamTake{\alpha}{n}$. Let
+$\KleeneEq{M}{N}$ be \emph{observational equivalence}: $M$ and $N$ evaluate to
+equal values, or they both diverge.
 
 Then, for any atomic tactic $T$ and judgment $J$, we can calculate a
 modulus of continuity:
@@ -425,19 +428,14 @@ between $t_1$ and $t_2$:
     \begin{array}{l}
       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\alpha}{\mu}\\
       \HypJ{
-        \LCFElabSt{\Upsilon}{\Gamma}{t_2}{K}{Q_K}{\beta}{\mu_{K}}
+        \LCFElabSt{\Upsilon}{\Gamma}{t_2}{K}{Q_K}{\StreamChop{\alpha}{\mu}}{\mu_{K}}
       }{
         \Member{K}{\Dom{P}}
       }
     \end{array} &
-    \begin{array}{l}
-      \Match{\alpha}{
-        [u_0,\dots,u_\mu]\oplus\beta
-      }\\
-      \Match{
-        \mu + \bigsqcup_{K\in\Dom{P}}\mu_{K}
-      }{\mu'}
-    \end{array}
+    \Match{
+      \mu + \bigsqcup_{K\in\Dom{P}}\mu_{K}
+    }{\mu'}
   }
 \]
 
@@ -456,11 +454,8 @@ $\Member{P,Q}{\LCFState}$):
    }{
      \begin{array}{l}
        \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\vec{u}\oplus\alpha}{\mu_1}\\
-       \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{J_i}{Q}{\beta}{\mu_2}
+       \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{J_i}{Q}{\StreamChop{\vec{u}\oplus\alpha}{\mu_1}}{\mu_2}
      \end{array} &
-     \Match{\vec{u}\oplus\alpha}{
-       [v_0,\dots,v_{\mu_1}]\oplus\beta
-     }
    }
  \]
 
@@ -472,7 +467,7 @@ Finally, the action of the multi-tactics is defined:
     }{\alpha}{\mu}
   }{
     \HypJ{
-      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{J}{Q_J}{\beta}{\mu_J}
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{J}{Q_J}{\alpha}{\mu_J}
     }{
       \Member{J}{\Dom{P}}
     } &
