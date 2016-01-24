@@ -12,12 +12,19 @@
   }%
 }
 
+\newcommand\RedEpigram[2]{%
+  \epigraph{\OMode{\emph{\textsf{#1}}}}{\textsf{#2}}
+}
+
 \newcommand\GrayColor[1]{{\color{Gray} #1}}
 \newcommand\Optional[1]{%
   {\color{Gray}\langle}%
   #1%
   {\color{Gray}\rangle}%
 }
+
+
+%% Sorts
 
 \newcommand\SortSigExpr{\mathit{sigexp}}
 \newcommand\SortSigDecl{\mathit{sigdec}}
@@ -35,15 +42,17 @@
 \newcommand\SortSymId{\mathit{symid}}
 \newcommand\SortMetaId{\mathit{metaid}}
 
-\newcommand\EmptySig{\Optional{\cdot}}
-\newcommand\ExtendSig[2]{#1\ #2.}
+%% Grammar Productions
 
-\newcommand\EmptyCtx{\Optional{\cdot}}
-\newcommand\ExtendCtx[2]{#1, #2}
+\newcommand\ProdEmptySig{\Optional{\cdot}}
+\newcommand\ProdExtendSig[2]{#1\ #2.}
 
-\newcommand\Bind[2]{#1 : #2}
+\newcommand\ProdEmptyCtx{\Optional{\cdot}}
+\newcommand\ProdExtendCtx[2]{#1, #2}
 
-\newcommand\Valence[3]{%
+\newcommand\ProdBind[2]{#1 : #2}
+
+\newcommand\ProdValence[3]{%
   \Optional{%
     \Optional{\{#1\}}%
     \Optional{[#2]}%
@@ -51,21 +60,21 @@
   }#3%
 }
 
-\newcommand\DefDecl[5]{%
+\newcommand\ProdDefDecl[5]{%
   \mathtt{Def}\ #1%
   \Optional{[#2]}%
   \Optional{(#3)} %
   : #4 = [#5]
 }
 
-\newcommand\TacDecl[4]{%
+\newcommand\ProdTacDecl[4]{%
   \mathtt{Tac}\ #1%
   \Optional{[#2]}%
   \Optional{(#3)} %
   = [#4]
 }
 
-\newcommand\ThmDecl[5]{%
+\newcommand\ProdThmDecl[5]{%
   \mathtt{Thm}\ #1%
   \Optional{[#2]}%
   \Optional{(#3)} %
@@ -73,5 +82,13 @@
 }
 
 
+\renewcommand\MkAbs[3]{%
+  \ifthenelse{\equal{#1}{}}{}{%
+    \{#1\}%
+  }%
+  \ifthenelse{\equal{#2}{}}{}{%
+    [#2]%
+  }.\, #3%
+}
 
 \endinput

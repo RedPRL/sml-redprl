@@ -6,5 +6,7 @@
 *.fls
 *.log
 *.toc
+*.bbl
+*.blg
 jonprl
 testsuite/test

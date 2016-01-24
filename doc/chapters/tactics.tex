@@ -1,0 +1,501 @@
+\chapter{Nominal LCF: a language for tactics}
+
+In a sequent calculus, left rules add hypotheses to the context; for instance,
+consider the left rule for positive conjunctions:
+\[
+  \infer[{\otimes_L^{\IMode{x},\OMode{y},\OMode{z}}}]{
+    \IMode{H,x:A\otimes B}\gg\IMode{C}
+  }{
+    \IMode{H,x:A\otimes B,y:A,z:B}\gg\IMode{
+      \IMode{\Subst{\Pair{y}{z}}{x}{C}}
+    }
+  }
+\]
+%
+
+From a proof refinement perspective (see~\cite{constable:1986}), such a rule is
+typically manifested as an ML tactic $\mathtt{\otimes_L}[x,y,z]$ which takes
+three names as parameters: the target hypothesis $\IMode{x}$, and the names to
+use for the new hypotheses $\OMode{y},\OMode{z}$. However, whilst the identity
+of the name $x$ is essential to the meaning of the tactic, the names supplied
+for the generated hypotheses can be freshly renamed with impunity.
+
+Indeed, in a proof term assignment for this sequent calculus, the corresponding
+elimination form would \emph{bind} variables $x,y$ rather than take the, as
+parameters. However, in the standard LCF tactic paradigm, it is not possible to
+reproduce this structure, because the sequencing of rules is mediated by the
+general purpose $\mathtt{THEN}$ tactical, which has no knowledge of names or
+binding.
+
+We will design a language for tactics called \textbf{Nominal LCF} which
+supports a distinction between names bound and names taken as parameters, and
+then show how it can be elaborated into standard LCF.
+
+\section{The LCF Tactic Language}
+\newcommand\MLTypeDecl[1]{\mathtt{type}\ #1}
+\newcommand\PartialFun[2]{#1\rightharpoonup #2}
+\newcommand\LCFJudgment{\mathit{judgment}}
+\newcommand\LCFEvidence{\mathit{evidence}}
+\newcommand\LCFTactic{\mathit{tactic}}
+\newcommand\MLList[1]{#1\;\mathit{list}}
+\newcommand\MLAtom{\mathbb{A}}
+\newcommand\MLNat{\mathbb{N}}
+\newcommand\MLStream[1]{{#1}^{\MLNat}}
+\newcommand\LCFAtomicTactic{\mathit{atactic}}
+\newcommand\StreamTake[2]{\bar{#1}(#2)}
+
+The essence of the LCF tactic system is captured in the following (idealized)
+ML signature:
+
+\[
+  \begin{array}{lcl}
+    \MLTypeDecl{\LCFJudgment}\\
+    \MLTypeDecl{\LCFEvidence}\\
+    \MLTypeDecl{\LCFTactic} &= &\PartialFun{\LCFJudgment}{\MLList{\LCFJudgment} \otimes (\MLList{\LCFEvidence}\to\LCFEvidence)}
+  \end{array}
+\]
+
+In other words, a tactic is a partial function that takes a goal to its
+subgoals, and specifies how to transform the evidence of its subgoals into the
+evidence for the main goal. In the case of the sequence calculus we were
+considering, \verb!judgment! would be a type of sequents.  Now, in general a
+tactic may need to consume names from a \emph{name store}, which is an infinite
+stream of \emph{atoms} or \emph{symbols}:
+
+\[
+  \begin{array}{lcl}
+    \MLTypeDecl{\MLAtom}\\
+    \MLTypeDecl{\LCFAtomicTactic} &= &\MLStream{\MLAtom} \to \LCFTactic
+  \end{array}
+\]
+
+\newcommand\KleeneEq[2]{\IMode{#1}\approx \IMode{#2}}
+\newcommand\UMod[2]{\mathsf{umod}(#1,#2)}
+
+\subsection{Atomic tactics and their uniform continuity}
+
+Left sequent rules can be coded as so-called \emph{atomic tactics}, tactics which
+consume a stream of names. In fact, every such tactic is \emph{uniformly
+continuous} in a specific sense. For an atomic sequence
+$\Member{\alpha}{\MLStream{\MLAtom}}$ and a natural number
+$\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
+$\alpha$ of length $n$. Let $\KleeneEq{M}{N}$ be \emph{observational equivalence}:
+$M$ evaluate to the same value, or they diverge.
+
+Then, for any atomic tactic $T$ and judgment $\mathcal{J}$, we can calculate a
+uniform modulus of continuity:
+\begin{equation}
+  \exists \OMode{n}\in\IMode{\MLNat}.
+  \forall \Member{\alpha,\beta}{\MLStream{\MLAtom}}.
+    \IsEq{\bar{\alpha}(n)}{\bar{\beta}(n)}\implies \KleeneEq{T(\alpha,\mathcal{J})}{T(\beta,\mathcal{J})}
+  \tag{uniform continuity}
+\end{equation}
+
+This calculation can be realized computationally in our metalanguage in a
+number of ways, but for our purposes it suffices to remark that it is a
+consequence of Brouwer's Fan Theorem, which we hold to be evident. Let
+$\Member{\UMod{T}{\mathcal{J}}}{\MLNat}$ be the uniform modulus of continuity
+for a tactic $T$ at goal $\mathcal{J}$.
+
+\section{Nominal LCF}
+
+\subsection{Static Semantics}
+
+\newcommand\SortATac{\mathtt{atac}}
+\newcommand\SortBTac{\mathtt{btac}}
+\newcommand\SortTac{\mathtt{tac}}
+\newcommand\SortMTac{\mathtt{mtac}}
+\newcommand\SortHyp{\mathtt{hyp}}
+
+We will define the \textbf{Nominal LCF} language by specifying an abt signature
+for it; at its heart is the refactoring of the various sequencing tacticals
+$\mathtt{THEN}$, $\mathtt{THENL}$, etc.\ of LCF into a single sequencing
+tactical combined a separate notion of \emph{multi-tactic}.
+
+First, we define sorts for tactics, atomic tactics, binding tactics and multi-tactics
+respectively:
+\begin{gather*}
+  \infer{
+    \IsSort{\SortTac}
+  }{}
+  \qquad
+  \infer{
+    \IsSort{\SortATac}
+  }{}
+  \qquad
+  \infer{
+    \IsSort{\SortBTac}
+  }{}
+  \qquad
+  \infer{
+    \IsSort{\SortMTac}
+  }{}
+\end{gather*}
+
+We also provide a sort to classify hypotheses:
+\[
+  \infer{
+    \IsSort{\SortHyp}
+  }{
+  }
+\]
+
+Now, we'll define the operators of \textbf{Nominal LCF}; note that the
+operators of sort $\SortATac$ are arbitrary and are provided only for the sake
+of illustration. We will consider the definition of \textbf{Nominal LCF} as
+over some signature $\Sigma$ of atomic tactics.
+
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{id}}{
+      \MkArity{}{\SortATac}
+    }
+  }{
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{fail}}{
+      \MkArity{}{\SortATac}
+    }
+  }{
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon,a:\SortHyp}{\mathtt{elim}[a]}{
+      \MkArity{}{\SortATac}
+    }
+  }{
+  }
+\]
+
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{seq}_n}{
+      \MkArity{
+        \MkValence{}{}{\SortBTac},
+        \MkValence{\SortHyp^n}{}{\SortMTac}
+      }{\SortTac}
+    }
+  }{
+    \Member{n}{\MLNat}
+  }
+\]
+
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{smash}}{
+      \MkArity{
+        \MkValence{}{}{\SortATac},
+        \MkValence{}{}{\SortATac}
+      }{\SortBTac}
+    }
+  }{
+    \Member{n}{\MLNat}
+  }
+\]
+
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{all}}{
+      \MkArity{
+        \MkValence{}{}{\SortTac}
+      }{\SortMTac}
+    }
+  }{
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{each}_n}{
+      \MkArity{
+        \MkValence{}{}{\SortTac}^n
+      }{\SortMTac}
+    }
+  }{
+    \Member{n}{\MLNat}
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{some}_i}{
+      \MkArity{
+        \MkValence{}{}{\SortTac}
+      }{\SortMTac}
+    }
+  }{
+    \Member{i}{\MLNat}
+  }
+\]
+
+\newcommand\TacSmash[2]{#1\supsetplus #2}
+\newcommand\TacEach[1]{\llparenthesis #1\rrparenthesis}
+\newcommand\TacSeq[3]{#2\leftarrow #1; #3}
+
+For the sake of clarity, we introduce the following notational abbreviations
+for tactic expressions:
+\begin{align*}
+  \ADefine{
+    t_1;t_2
+  }{
+    \App{\mathtt{seq}_0}{\MkAbs{}{}{t_1};\MkAbs{}{}{t_2}}
+  }\\
+  \ADefine{
+    \TacSeq{t_1}{a_0,\dots,a_n}{t_2}
+  }{
+  \App{\mathtt{seq}_n}{\MkAbs{}{}{t_1};\MkAbs{a_0,\dots,a_n}{}{t_2}}
+  }\\
+  \ADefine{
+    \TacSmash{t_1}{t_2}
+  }{
+    \App{\mathtt{smash}}{\MkAbs{}{}{t_1};\MkAbs{}{}{t_n}}
+  }\\
+  \ADefine{
+    \Box t
+  }{
+    \App{\mathtt{all}}{\MkAbs{}{}{t}}
+  }\\
+  \ADefine{
+    \TacEach{t_1,\dots,t_n}
+  }{
+    \App{\mathtt{each}_n}{\MkAbs{}{}{t}}
+  }\\
+  \ADefine{
+    \Diamond_i t
+  }{
+    \App{\mathtt{some}_i}{\MkAbs{}{}{t}}
+  }\\
+\end{align*}
+
+\subsection{Dynamic Semantics}
+\newcommand\LCFElab[5]{%
+  \mathcal{M}\models_\IMode{\rho}
+  \IMode{#1}\parallel\IMode{#2}\vdash%
+  \IMode{#3}\;@\;\IMode{#4}\Longrightarrow\OMode{#5}%
+}
+
+\newcommand\LCFElabSt[7]{%
+  \mathcal{M}\models_\IMode{\rho}%
+  % \IMode{#1}\parallel\IMode{#2}\vdash%
+  \IMode{#3}\;@\; \IMode{#4}\xRightarrow{\;\OMode{#7}\;}\OMode{#5}%
+  \ll\IMode{#6}
+}
+
+\newcommand\LCFElabStVerbose[7]{%
+  \mathcal{M}\models_\IMode{\rho}%
+  \IMode{#1}\parallel\IMode{#2}\vdash%
+  \IMode{#3}\;@\; \IMode{#4}\xRightarrow{\;\OMode{#7}\;}\OMode{#5}%
+  \ll\IMode{#6}
+}
+
+For a signature of atomic tactics $\Sigma$, we will define a $\Sigma$-model
+$\mathcal{M}$ to be an interpretation of each atomic tactic
+$\Member{t}{\Sigma}$ into some
+$\Member{\SemBrackets{t}_\mathcal{M}}{\LCFAtomicTactic}$; additionally, the
+model shall come equipped with free choice sequence of atoms
+$\Member{\alpha_\mathcal{M}}{\MLStream{\MLAtom}}$, such that each neighborhood
+$\IMode{\vec{u}}\ni\IMode{\alpha_\mathcal{M}}$ contains all distinct atoms.
+Then, we can interpret all of \textbf{Nominal LCF} into $\mathcal{M}$, by
+defining an elaboration judgment
+$\LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}$ with
+$\Member{\mathcal{J}}{\LCFJudgment}$ and
+$\Member{P}{\MLList{\LCFJudgment}\otimes(\MLList{\LCFEvidence}\to\LCFEvidence)}$,
+such that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
+$\Member{x:\SortATac}{\Gamma}$.
+
+First, we define the elaboration uniformly by appealing to an auxiliary judgment:
+\[
+  \infer{
+    \LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}
+  }{
+    \LCFElabStVerbose{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha_\mathcal{M}}{\mu}
+  }
+\]
+
+This auxiliary form of judgment is made with respect to a free choice sequence
+of names $\alpha$, and synthesizes the uniform modulus of continuity $\mu$ of
+the tactic under consideration.  When it leads to no ambiguity, we will write
+$\LCFElabSt{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha}{\mu}$ instead of the
+more verbose
+$\LCFElabStVerbose{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}{\alpha}{\mu}$; we will
+explain this judgment for $t$ of sorts $\SortATac$, $\SortBTac$, and
+$\SortTac$. To start with, we will give the elaboration rules for constants
+(atomic tactics) and variables denoting atomic tactics:
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{t}{\mathcal{J}}{
+      \SemBrackets{t}_\mathcal{M}(\alpha,\mathcal{J})
+    }{\alpha}{\mu}
+  }{
+    \Match{
+      \UMod{\SemBrackets{t}_\mathcal{M}}{\mathcal{J}}
+    }{
+      \mu
+    }
+  }
+  \qquad
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{x}{\mathcal{J}}{
+      \rho(x)(\alpha,\mathcal{J})
+    }{\alpha}{\mu}
+  }{
+    \Match{
+      \UMod{\rho(x)}{\mathcal{J}}
+    }{
+      \mu
+    }
+  }
+\]
+
+The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
+uniform continuity of atomic tactics to divide up the name store $\alpha$
+between $t_1$ and $t_2$:
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{\mathcal{J}}{
+      \Pair{
+        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
+      }{
+        \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
+      }
+    }{\alpha}{\mu'}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
+        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
+      }{\alpha}{\mu}\\
+      \HypJ{
+        \LCFElabSt{\Upsilon}{\Gamma}{t_2}{\mathcal{J}_i}{
+          \Pair{\vec{\mathcal{K}}_i}{F_i}
+        }{\beta}{\mu_i}
+      }{
+        \Leq{i}{n}
+      }
+    \end{array} &
+    \begin{array}{l}
+      \Match{\alpha}{
+        [u_0,\dots,u_\mu]\oplus\beta
+      }\\
+      \Match{
+        \mu + \bigsqcup{i\leq n}\mu_i
+      }{\mu'}
+    \end{array}
+  }
+\]
+
+
+Next, we define the sequencing tactical, once for each multi-tactical.
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t_1}{\vec{u}}{\Box t_2}
+    }{\mathcal{J}}{
+      \Pair{
+        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
+      }{
+        \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
+      }
+    }{\alpha}{\mu'}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
+        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
+      }{\vec{u}\oplus\alpha}{\mu}\\
+      \HypJ{
+        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
+          \Pair{\vec{\mathcal{K}}_i}{F_i}
+        }{\beta}{\mu_i}
+      }{
+        \Leq{i}{n}
+      }
+    \end{array} &
+    \begin{array}{l}
+      \Match{\vec{u}\oplus\alpha}{
+        [v_0,\dots,v_\mu]\oplus\beta
+      }\\
+      \Match{
+        \mu + \bigsqcup_{i\leq n}\mu_i
+      }{\mu'}
+    \end{array}
+  }
+\]
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t}{\vec{u}}{\TacEach{t_0,\dots,t_n}}
+    }{\mathcal{J}}{
+      \Pair{
+        \bigoplus_{i\leq n}\vec{\mathcal{K}}_i
+      }{
+        \lambda(\vec{x}_0,\dots,\vec{x}_n). E[F_0[\vec{x}_0], \dots, F_0[\vec{x}_n]]
+      }
+    }{\alpha}{\mu'}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
+        \Pair{[\mathcal{J}_0,\dots,\mathcal{J}_n]}{E}
+      }{\vec{u}\oplus\alpha}{\mu}\\
+      \HypJ{
+        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\mathcal{J}_i}{
+          \Pair{\vec{\mathcal{K}}_i}{F_i}
+        }{\beta}{\mu_i}
+      }{
+        \Leq{i}{n}
+      }
+    \end{array} &
+    \begin{array}{l}
+      \Match{\vec{u}\oplus\alpha}{
+        [v_0,\dots,v_\mu]\oplus\beta
+      }\\
+      \Match{
+        \mu + \bigsqcup_{i\leq n}\mu_i
+      }{\mu'}
+    \end{array}
+  }
+\]
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
+    }{\mathcal{J}}{
+      \Pair{
+        \vec{\mathcal{J}}_<
+        \oplus
+        \vec{\mathcal{K}}
+        \oplus
+        \vec{\mathcal{J}}_>
+      }{
+        \lambda\vec{x}.E(\vec{x}_<\oplus[F]\oplus\vec{x}_>)
+      }
+    }{\alpha}{\mu'}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{\mathcal{J}}{
+        \Pair{\vec{\mathcal{J}}}{E}
+      }{\vec{u}\oplus\alpha}{\mu_1}\\
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\mathcal{J}_i}{
+        \Pair{\vec{\mathcal{K}}}{F}
+      }{\beta}{\mu_2}
+    \end{array} &
+    \begin{array}{l}
+      \Match{\vec{u}\oplus\alpha}{
+        [v_0,\dots,v_{\mu_1}]\oplus\beta
+      }\\
+      \Match{\mu_1+\mu_2}{\mu'}
+    \end{array} &
+    \begin{array}{l}
+      \Match{
+        \vec{\mathcal{J}}
+      }{
+        \vec{\mathcal{J}}_<\oplus[\vec{\mathcal{J}}_i]\oplus\vec{\mathcal{J}}_>
+      }\\
+      \Match{
+        \vec{x}
+      }{
+        \vec{x}_<\oplus[\vec{x}_i]\oplus\vec{x}_>
+      }
+    \end{array}
+  }
+\]
+
