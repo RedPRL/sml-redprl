@@ -480,6 +480,24 @@ Finally, the action of the multi-tactics is defined:
   }
 \]
 
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacEach{t_0,\dots,t_n}
+    }{P}{
+      \LCFMergeProofState{\Dom{P}}{J}{Q_J}
+    }{\alpha}{\mu}
+  }{
+    \HypJ{
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{J_i}{Q_{J_i}}{\beta}{\mu_{J_i}}
+    }{
+      \Member{J_i}{\Dom{P}}
+    } &
+    \Match{\bigsqcup_{J\in\Dom{P}}\mu_J}{\mu}
+  }
+\]
+
+
 % \[
 %   \infer{
 %     \LCFElabSt{\Upsilon}{\Gamma}{
