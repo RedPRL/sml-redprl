@@ -36,6 +36,7 @@ then show how it can be elaborated into standard LCF.
 \newcommand\PartialFun[2]{#1\rightharpoonup #2}
 \newcommand\LCFJudgment{\mathit{judgment}}
 \newcommand\LCFEvidence{\mathit{evidence}}
+\newcommand\LCFState{\mathit{state}}
 \newcommand\LCFTactic{\mathit{tactic}}
 \newcommand\MLList[1]{#1\;\mathit{list}}
 \newcommand\MLAtom{\mathbb{A}}
@@ -51,7 +52,8 @@ ML signature:
   \begin{array}{lcl}
     \MLTypeDecl{\LCFJudgment}\\
     \MLTypeDecl{\LCFEvidence}\\
-    \MLTypeDecl{\LCFTactic} &= &\PartialFun{\LCFJudgment}{\MLList{\LCFJudgment} \otimes (\MLList{\LCFEvidence}\to\LCFEvidence)}
+    \MLTypeDecl{\LCFState} &= &\MLList{\LCFJudgment} \otimes (\MLList{\LCFEvidence}\to\LCFEvidence)\\
+    \MLTypeDecl{\LCFTactic} &= &\PartialFun{\LCFJudgment}{\LCFState}
   \end{array}
 \]
 
@@ -298,7 +300,7 @@ atoms.\footnote{This is an example of a \emph{spread law}
 into $\mathcal{M}$, by defining an elaboration judgment
 $\LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}$ with
 $\Member{\mathcal{J}}{\LCFJudgment}$ and
-$\Member{P}{\MLList{\LCFJudgment}\otimes(\MLList{\LCFEvidence}\to\LCFEvidence)}$,
+$\Member{P}{\LCFState}$,
 such that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
 $\Member{x:\SortATac}{\Gamma}$.
 
