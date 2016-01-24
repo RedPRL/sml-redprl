@@ -291,9 +291,10 @@ $\Member{t}{\Sigma}$ into some
 $\Member{\SemBrackets{t}_\mathcal{M}}{\LCFAtomicTactic}$; additionally, the
 model shall come equipped with a free choice sequence of atoms
 $\Member{\alpha_\mathcal{M}}{\MLStream{\MLAtom}}$, such that each neighborhood
-$\IMode{\vec{u}}\ni\IMode{\alpha_\mathcal{M}}$ shall contain only distinct atoms.
-Then, we can interpret all of \textbf{Nominal LCF} into $\mathcal{M}$, by
-defining an elaboration judgment
+$\IMode{\vec{u}}\ni\IMode{\alpha_\mathcal{M}}$ shall contain only distinct
+atoms.\footnote{This is an example of a \emph{spread law}
+(see~\cite{brouwer:1981}).} Then, we can interpret all of \textbf{Nominal LCF}
+into $\mathcal{M}$, by defining an elaboration judgment
 $\LCFElab{\Upsilon}{\Gamma}{t}{\mathcal{J}}{P}$ with
 $\Member{\mathcal{J}}{\LCFJudgment}$ and
 $\Member{P}{\MLList{\LCFJudgment}\otimes(\MLList{\LCFEvidence}\to\LCFEvidence)}$,
