@@ -84,7 +84,7 @@ which is an infinite stream of \emph{atoms} or \emph{symbols}:
 \]
 
 \newcommand\KleeneEq[2]{\IMode{#1}\approx \IMode{#2}}
-\newcommand\ModC[2]{\mathsf{M}(#1,#2)}
+\newcommand\ModC[1]{\mathsf{M}(#1)}
 
 \subsection{Atomic tactics and their continuity}
 
@@ -111,8 +111,8 @@ modulus of continuity:
 This calculation can be realized computationally in our metalanguage in a
 number of ways, but for our purposes it suffices to remark that it is a fact
 concerning all computable stream processors. Let
-$\Member{\ModC{T}{J}}{\MLStream{\MLAtom}\to\MLNat}$ calculate the modulus of continuity
-for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ at goal $J$.
+$\Member{\ModC{T}}{\MLStream{\MLAtom}\to\LCFJudgment\to\MLNat}$ calculate the modulus of continuity
+for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ with name store $\alpha$.
 
 \section{Nominal LCF}
 
@@ -282,24 +282,24 @@ for tactic expressions:
 \end{align*}
 
 \subsection{Dynamic Semantics}
-\newcommand\LCFElab[5]{%
+\newcommand\LCFElab[4]{%
   \mathcal{M}\models_\IMode{\rho}
   \IMode{#1}\parallel\IMode{#2}\vdash%
-  \IMode{#3}\;@\;\IMode{#4}\Longrightarrow\OMode{#5}%
+  \IMode{#3}\Longrightarrow\OMode{#4}%
 }
 
-\newcommand\LCFElabSt[7]{%
+\newcommand\LCFElabSt[6]{%
   \mathcal{M}\models_\IMode{\rho}%
   % \IMode{#1}\parallel\IMode{#2}\vdash%
-  \IMode{#3}\;@\; \IMode{#4}\xRightarrow{\;\OMode{#7}\;}\OMode{#5}%
-  \ll\IMode{#6}
+  \IMode{#3}\xRightarrow{\;\OMode{#6}\;}\OMode{#4}%
+  \ll\IMode{#5}
 }
 
-\newcommand\LCFElabStVerbose[7]{%
+\newcommand\LCFElabStVerbose[6]{%
   \mathcal{M}\models_\IMode{\rho}%
   \IMode{#1}\parallel\IMode{#2}\vdash%
-  \IMode{#3}\;@\; \IMode{#4}\xRightarrow{\;\OMode{#7}\;}\OMode{#5}%
-  \ll\IMode{#6}
+  \IMode{#3}\xRightarrow{\;\OMode{#6}\;}\OMode{#4}%
+  \ll\IMode{#5}
 }
 
 
@@ -313,200 +313,194 @@ $\IMode{\vec{u}}\ni\IMode{\alpha_\mathcal{M}}$ shall contain only distinct
 atoms.\footnote{This is an example of a \emph{spread law}
 (see~\cite{brouwer:1981}).} Then, we can interpret all of \textbf{Nominal LCF}
 into $\mathcal{M}$, by defining an elaboration judgment
-$\LCFElab{\Upsilon}{\Gamma}{t}{J}{P}$ with
-$\Member{J}{\LCFJudgment}$ and
-$\Member{P}{\LCFState}$,
+$\LCFElab{\Upsilon}{\Gamma}{t}{T}$ with
+$\Member{T}{\LCFTactic}$,
 such that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
 $\Member{x:\SortATac}{\Gamma}$.
 
 First, we define the elaboration uniformly by appealing to an auxiliary judgment:
 \[
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{t}{J}{P}
+    \LCFElab{\Upsilon}{\Gamma}{t}{T}
   }{
-    \LCFElabStVerbose{\Upsilon}{\Gamma}{t}{J}{P}{\alpha_\mathcal{M}}{\mu}
+    \LCFElabStVerbose{\Upsilon}{\Gamma}{t}{T}{\lambda J.\alpha_\mathcal{M}}{\mu}
   }
 \]
 
-This auxiliary form of judgment is made with respect to a free choice sequence
-of names $\alpha$, and synthesizes the modulus of continuity $\mu$ of
+This auxiliary form of judgment is made with respect to a family of free choice
+sequences of names $\Member{\alpha}{\LCFJudgment\to\MLStream{\MLAtom}}$, and
+synthesizes the modulus of continuity $\Member{\mu}{\LCFJudgment\to\MLNat}$ of
 the tactic under consideration.  When it leads to no ambiguity, we will write
-$\LCFElabSt{\Upsilon}{\Gamma}{t}{J}{P}{\alpha}{\mu}$ instead of the
-more verbose
-$\LCFElabStVerbose{\Upsilon}{\Gamma}{t}{J}{P}{\alpha}{\mu}$; we will
+$\LCFElabSt{\Upsilon}{\Gamma}{t}{T}{\alpha}{\mu}$ instead of the more
+verbose $\LCFElabStVerbose{\Upsilon}{\Gamma}{t}{T}{\alpha}{\mu}$; we will
 explain this form of judgment for $t$ of sorts $\SortATac$, $\SortBTac$, and
 $\SortTac$. To start with, we will give the elaboration rules for constants
 (atomic tactics) and variables denoting atomic tactics:
 
+
 \[
   \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{t}{J}{
-      \SemBrackets{t}_\mathcal{M}(\alpha,J)
-    }{\alpha}{\mu}
-  }{
-    \Match{
-      \ModC{\SemBrackets{t}_\mathcal{M}}{J}(\alpha)
-    }{
-      \mu
+    \LCFElabSt{\Upsilon}{\Gamma}{t}{
+      \SemBrackets{t}_\mathcal{M}\circ\alpha
+    }{\alpha}{
+      \ModC{\SemBrackets{t}_\mathcal{M}}\circ \alpha
     }
+  }{
   }
   \qquad
   \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{x}{J}{
-      \rho(x)(\alpha,J)
-    }{\alpha}{\mu}
-  }{
-    \Match{
-      \ModC{\rho(x)}{J}(\alpha)
-    }{
-      \mu
+    \LCFElabSt{\Upsilon}{\Gamma}{x}{
+      \rho(x)\circ\alpha
+    }{\alpha}{
+      \ModC{\rho(x)}\circ\alpha
     }
+  }{
   }
 \]
-
-\newcommand\LCFMergeProofState[3]{%
-  \bigtriangledown\limits_{#2}^{#1} #3%
-}
-
-Let $\MLListSplit{\vec{x}}{\vec{n}}$ be the operation that splits the list
-$\vec{x}$ into a list sublists of $\vec{x}$ of length $n$ for each
-$\Member{n}{\vec{n}}$. Then, for a proof state $\Member{P}{\LCFState}$ and a
-vector of proof states $\HypJ{\Member{Q_i}{\LCFState}}{\LT{i}{\MLLength{P}}}$,
-we can form a new proof state collapses the two layers of subgoals into one, as follows:
-\begin{align*}
-  \ADefine{
-    \LCFStateSplit{i}{n}{Q_i}{\vec{x}}
-  }{
-    \MLListSplit{
-      \vec{x}
-    }{
-      \left[
-        \MLLength{Q_i}
-        \mid
-        i < n
-      \right]
-    }
-  }\\
-  \ADefine{
-    \LCFMergeProofState{P}{i}{Q_i}
-  }{
-    \MLPair{
-      \bigoplus_{i\in\MLLength{P}}\Dom{Q_i}
-    }{
-      \lambda \vec{x}.\
-      \LCFStateApply{P}{
-        \left[
-          \LCFStateApply{Q_i}{\vec{y}}
-          \mid
-          \MLPair{\vec{y}}{i}
-          \in
-          \MLPair{
-            \LCFStateSplit{i}{\MLLength{P}}{Q_i}{\vec{x}}
-          }{
-            \MLNat_{\MLLength{P}}
-          }
-        \right]
-      }
-    }
-  }
-\end{align*}
-
-
-The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
-continuity of atomic tactics to divide up the name store $\alpha$
-between $t_1$ and $t_2$:
-\[
-  \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{J}{
-      \LCFMergeProofState{P}{i}{Q_i}
-    }{\alpha}{\mu'}
-  }{
-    \begin{array}{l}
-      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\alpha}{\mu}\\
-      \HypJ{
-        \LCFElabSt{\Upsilon}{\Gamma}{t_2}{\Dom{P}_i}{Q_i}{\StreamChop{\alpha}{\mu}}{\mu_i}
-      }{
-        \LT{i}{\MLLength{P}}
-      }
-    \end{array} &
-    \Match{
-      \mu + \bigsqcup_{i<\MLLength{P}}\mu_i
-    }{\mu'}
-  }
-\]
-
-
-Next, we define the behavior of the sequencing tactical in a single rule by
-exploiting an auxiliary form of judgment concerning the action of
-multi-tactics on proof states,
-$\LCFElabSt{\Upsilon}{\Gamma}{t}{P}{Q}{\alpha}{\mu}$ (with
-$\Member{P,Q}{\LCFState}$):
 %
- \[
-   \infer{
-     \LCFElabSt{\Upsilon}{\Gamma}{
-       \TacSeq{t_1}{\vec{u}}{t_2}
-     }{J}{Q}{\alpha}{\mu_1+\mu_2}
-   }{
-     \begin{array}{l}
-       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\vec{u}\oplus\alpha}{\mu_1}\\
-       \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{J_i}{Q}{\StreamChop{\vec{u}\oplus\alpha}{\mu_1}}{\mu_2}
-     \end{array} &
-   }
- \]
-
-Finally, the action of the multi-tactics is defined:
-\[
-  \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{\Box t}{P}{
-      \LCFMergeProofState{P}{i}{Q_i}
-    }{\alpha}{\mu}
-  }{
-    \HypJ{
-      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{\Dom{P}_i}{Q_i}{\alpha}{\mu_i}
-    }{
-      \LT{i}{\MLLength{P}}
-    } &
-    \Match{\bigsqcup_{i<\MLLength{P}}\mu_i}{\mu}
-  }
-\]
-
-\[
-  \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{
-      \TacEach{t_0,\dots,t_{\MLLength{P}}}
-    }{P}{
-      \LCFMergeProofState{P}{i}{Q_i}
-    }{\alpha}{\mu}
-  }{
-    \begin{array}{l}
-      \HypJ{
-        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\Dom{P}_i}{Q_i}{\alpha}{\mu_i}
-      }{
-        \LT{i}{\MLLength{P}}
-      }
-    \end{array}&
-    \Match{\bigsqcup_{i< \MLLength{P}}}{\mu}
-  }
-\]
-
-\[
-  \infer{
-    \LCFElabSt{\Upsilon}{\Gamma}{
-      \Diamond_i t
-    }{P}{
-      \LCFMergeProofState{P}{j}{
-        \left\{
-          \begin{array}{lcl}
-            j=i &\mapsto &Q\\
-            j\not=i &\mapsto &\MLPair{[\Dom{P}_j]}{\lambda [x].x}
-          \end{array}
-        \right\}
-      }
-    }{\alpha}{\mu}
-  }{
-    \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{\Dom{P}_i}{Q}{\alpha}{\mu}
-  }
-\]
+% \newcommand\LCFMergeProofState[3]{%
+%   \bigtriangledown\limits_{#2}^{#1} #3%
+% }
+%
+% Let $\MLListSplit{\vec{x}}{\vec{n}}$ be the operation that splits the list
+% $\vec{x}$ into a list sublists of $\vec{x}$ of length $n$ for each
+% $\Member{n}{\vec{n}}$. Then, for a proof state $\Member{P}{\LCFState}$ and a
+% vector of proof states $\HypJ{\Member{Q_i}{\LCFState}}{\LT{i}{\MLLength{P}}}$,
+% we can form a new proof state collapses the two layers of subgoals into one, as follows:
+% \begin{align*}
+%   \ADefine{
+%     \LCFStateSplit{i}{n}{Q_i}{\vec{x}}
+%   }{
+%     \MLListSplit{
+%       \vec{x}
+%     }{
+%       \left[
+%         \MLLength{Q_i}
+%         \mid
+%         i < n
+%       \right]
+%     }
+%   }\\
+%   \ADefine{
+%     \LCFMergeProofState{P}{i}{Q_i}
+%   }{
+%     \MLPair{
+%       \bigoplus_{i\in\MLLength{P}}\Dom{Q_i}
+%     }{
+%       \lambda \vec{x}.\
+%       \LCFStateApply{P}{
+%         \left[
+%           \LCFStateApply{Q_i}{\vec{y}}
+%           \mid
+%           \MLPair{\vec{y}}{i}
+%           \in
+%           \MLPair{
+%             \LCFStateSplit{i}{\MLLength{P}}{Q_i}{\vec{x}}
+%           }{
+%             \MLNat_{\MLLength{P}}
+%           }
+%         \right]
+%       }
+%     }
+%   }
+% \end{align*}
+%
+%
+% The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
+% continuity of atomic tactics to divide up the name store $\alpha$
+% between $t_1$ and $t_2$:
+% \[
+%   \infer{
+%     \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{J}{
+%       \LCFMergeProofState{P}{i}{Q_i}
+%     }{\alpha}{\mu'}
+%   }{
+%     \begin{array}{l}
+%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\alpha}{\mu}\\
+%       \HypJ{
+%         \LCFElabSt{\Upsilon}{\Gamma}{t_2}{\Dom{P}_i}{Q_i}{\StreamChop{\alpha}{\mu}}{\mu_i}
+%       }{
+%         \LT{i}{\MLLength{P}}
+%       }
+%     \end{array} &
+%     \Match{
+%       \mu + \bigsqcup_{i<\MLLength{P}}\mu_i
+%     }{\mu'}
+%   }
+% \]
+%
+%
+% Next, we define the behavior of the sequencing tactical in a single rule by
+% exploiting an auxiliary form of judgment concerning the action of
+% multi-tactics on proof states,
+% $\LCFElabSt{\Upsilon}{\Gamma}{t}{P}{Q}{\alpha}{\mu}$ (with
+% $\Member{P,Q}{\LCFState}$):
+% %
+%  \[
+%    \infer{
+%      \LCFElabSt{\Upsilon}{\Gamma}{
+%        \TacSeq{t_1}{\vec{u}}{t_2}
+%      }{J}{Q}{\alpha}{\mu_1+\mu_2}
+%    }{
+%      \begin{array}{l}
+%        \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\vec{u}\oplus\alpha}{\mu_1}\\
+%        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{J_i}{Q}{\StreamChop{\vec{u}\oplus\alpha}{\mu_1}}{\mu_2}
+%      \end{array} &
+%    }
+%  \]
+%
+% Finally, the action of the multi-tactics is defined:
+% \[
+%   \infer{
+%     \LCFElabSt{\Upsilon}{\Gamma}{\Box t}{P}{
+%       \LCFMergeProofState{P}{i}{Q_i}
+%     }{\alpha}{\mu}
+%   }{
+%     \HypJ{
+%       \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{\Dom{P}_i}{Q_i}{\alpha}{\mu_i}
+%     }{
+%       \LT{i}{\MLLength{P}}
+%     } &
+%     \Match{\bigsqcup_{i<\MLLength{P}}\mu_i}{\mu}
+%   }
+% \]
+%
+% \[
+%   \infer{
+%     \LCFElabSt{\Upsilon}{\Gamma}{
+%       \TacEach{t_0,\dots,t_{\MLLength{P}}}
+%     }{P}{
+%       \LCFMergeProofState{P}{i}{Q_i}
+%     }{\alpha}{\mu}
+%   }{
+%     \begin{array}{l}
+%       \HypJ{
+%         \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\Dom{P}_i}{Q_i}{\alpha}{\mu_i}
+%       }{
+%         \LT{i}{\MLLength{P}}
+%       }
+%     \end{array}&
+%     \Match{\bigsqcup_{i< \MLLength{P}}}{\mu}
+%   }
+% \]
+%
+% \[
+%   \infer{
+%     \LCFElabSt{\Upsilon}{\Gamma}{
+%       \Diamond_i t
+%     }{P}{
+%       \LCFMergeProofState{P}{j}{
+%         \left\{
+%           \begin{array}{lcl}
+%             j=i &\mapsto &Q\\
+%             j\not=i &\mapsto &\MLPair{[\Dom{P}_j]}{\lambda [x].x}
+%           \end{array}
+%         \right\}
+%       }
+%     }{\alpha}{\mu}
+%   }{
+%     \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{\Dom{P}_i}{Q}{\alpha}{\mu}
+%   }
+% \]
 
 
