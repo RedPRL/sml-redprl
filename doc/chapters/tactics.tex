@@ -44,7 +44,7 @@ then show how it can be elaborated into standard LCF.
 \newcommand\MLNat{\mathbb{N}}
 \newcommand\MLStream[1]{{#1}^{\MLNat}}
 \newcommand\MLPair[2]{\left(#1, #2\right)}
-\newcommand\LCFAtomicTactic{\mathit{atactic}}
+\newcommand\LCFNominalTactic{\mathit{ntactic}}
 \newcommand\StreamTake[2]{\bar{#1}[#2]}
 \newcommand\StreamChop[2]{[#2]\bar{#1}}
 \newcommand\MLListSplit[2]{\mathsf{split}(#1, #2)}
@@ -73,24 +73,24 @@ $\Member{P}{\LCFState}$, $\MLLength{P}$ for the length of $\Dom{P}$, and
 $\LCFStateApply{P}{\vec{x}}$ for the application of the hypothetical evidence
 $\pi_2(P)$ to the concrete evidence $\Member{\vec{x}}{\MLList{\LCFEvidence}}$.
 
-Now, in general a tactic may need to consume names from a \emph{name store},
-which is an infinite stream of \emph{atoms} or \emph{symbols}:
-
+Now, frequently a tactic may need to consume names from a \emph{name store},
+which is an infinite stream of \emph{atoms} or \emph{symbols}. We will call
+such a tactic a \emph{nominal tactic}:
 \[
   \begin{array}{lcl}
     \MLTypeDecl{\MLAtom}\\
-    \MLTypeDecl{\LCFAtomicTactic} &= &\MLStream{\MLAtom} \to \LCFTactic
+    \MLTypeDecl{\LCFNominalTactic} &= &\MLStream{\MLAtom} \to \LCFTactic
   \end{array}
 \]
 
 \newcommand\KleeneEq[2]{\IMode{#1}\approx \IMode{#2}}
 \newcommand\ModC[1]{\mathsf{M}(#1)}
 
-\subsection{Atomic tactics and their continuity}
+\subsection{Nominal tactics and their continuity}
 
-Left sequent rules can be coded as so-called \emph{atomic tactics}, tactics
-which consume a stream of names. In fact, every such tactic is
-\emph{continuous} in a specific sense. For an atomic sequence
+Left sequent rules can be coded nominal tactics, pull the names for their bound
+variables from the supplied choice sequence of atoms In fact, every such tactic
+is \emph{continuous} in a specific sense. For a choice sequence
 $\Member{\alpha}{\MLStream{\MLAtom}}$ and a natural number
 $\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
 $\alpha$ of length $n$; let $\StreamChop{\alpha}{n}$ be infinite suffix of
@@ -98,7 +98,7 @@ $\alpha$ got by chopping off the initial prefix $\StreamTake{\alpha}{n}$. Let
 $\KleeneEq{M}{N}$ be \emph{observational equivalence}: $M$ and $N$ evaluate to
 equal values, or they both diverge.
 
-Then, for any atomic tactic $T$ and judgment $J$, we can calculate a
+Then, for any nominal tactic $T$ and judgment $J$, we can calculate a
 modulus of continuity:
 \begin{equation}
   \forall \Member{\alpha}{\MLStream{\MLAtom}}.
@@ -111,8 +111,9 @@ modulus of continuity:
 This calculation can be realized computationally in our metalanguage in a
 number of ways, but for our purposes it suffices to remark that it is a fact
 concerning all computable stream processors. Let
-$\Member{\ModC{T}}{\LCFJudgment\to\MLStream{\MLAtom}\to\MLNat}$ calculate the modulus of continuity
-for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ with name store $\alpha$.
+$\Member{\ModC{T}}{\LCFJudgment\to\MLStream{\MLAtom}\to\MLNat}$ calculate the
+modulus of continuity for a nominal tactic $\Member{T}{\LCFNominalTactic}$ with
+name store $\alpha$.
 
 \section{Nominal LCF}
 
@@ -125,8 +126,7 @@ for it; at its heart is decomposition of the various sequencing tacticals
 $\mathtt{THEN}$, $\mathtt{THENL}$, etc.\ of LCF into a single sequencing
 tactical combined a separate notion of \emph{multi-tactic}.
 
-First, we define sorts for tactics, atomic tactics, binding tactics and multi-tactics
-respectively:
+First, we define sorts for nominal tactics and multi-tactics respectively:
 \begin{gather*}
   \infer{
     \IsSort{\SortTac}
@@ -323,10 +323,10 @@ for tactic expressions:
 }
 
 We will now give a denotational semantics for \textbf{Nominal LCF} by
-interpreting every tactic expression into an atomic LCF tactic. The
+interpreting every tactic expression into an LCF nominal tactic. The
 intepretation $\LCFElab{\Upsilon}{\Gamma}{t}{\tau}{\rho}{T}$ is defined by
-recursion on $t:\SortTac$ such that $\Member{T}{\LCFAtomicTactic}$,
-presupposing that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
+recursion on $t:\SortTac$ such that $\Member{T}{\LCFNominalTactic}$,
+presupposing that $\Member{\rho(x)}{\LCFNominalTactic}$ for each
 $\Member{x:\SortTac}{\Gamma}$.  To start with, variable tactics are simply
 projected from the environment $\rho$:
 \[
@@ -380,7 +380,7 @@ $\mathtt{elim}[a]$, which will depend on the logic):
 \]
 
 The rule for the \emph{smoosh} tactical $\TacSmoosh{t_1}{t_2}$ exploits the
-continuity of atomic tactics to divide up the name store between $t_1$ and $t_2$:
+continuity of nominal tactics to divide up the name store between $t_1$ and $t_2$:
 \[
   \infer{
     \LCFElab{\Upsilon}{\Gamma}{\TacSmoosh{t_1}{t_2}}{\SortTac}{\rho}{
