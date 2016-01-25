@@ -116,8 +116,6 @@ for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ with name store $\alpha$.
 
 \section{Nominal LCF}
 
-\subsection{Static Semantics}
-
 \newcommand\SortTac{\mathtt{tac}}
 \newcommand\SortMTac{\mathtt{mtac}}
 \newcommand\SortHyp{\mathtt{hyp}}
@@ -308,7 +306,7 @@ for tactic expressions:
   }
 \end{align*}
 
-\subsection{Dynamic Semantics}
+\subsection{Denotational Semantics}
 
 \newcommand\LCFElaboration[5]{%
   \mathcal{M}%
@@ -325,13 +323,12 @@ for tactic expressions:
 }
 
 We will now give a denotational semantics for \textbf{Nominal LCF} by
-interpreting its syntax into a model $\mathcal{M}$, taking each tactic
-expression to an atomic LCF tactic. The intepretation
-$\LCFElab{\Upsilon}{\Gamma}{t}{\tau}{\rho}{T}$ is defined by recursion on
-$t:\SortTac$ such that $\Member{T}{\LCFAtomicTactic}$, presupposing that
-$\Member{\rho(x)}{\LCFAtomicTactic}$ for each $\Member{x:\SortTac}{\Gamma}$.
-To start with, variable tactics are simply projected from the
-environment $\rho$:
+interpreting every tactic expression into an atomic LCF tactic. The
+intepretation $\LCFElab{\Upsilon}{\Gamma}{t}{\tau}{\rho}{T}$ is defined by
+recursion on $t:\SortTac$ such that $\Member{T}{\LCFAtomicTactic}$,
+presupposing that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
+$\Member{x:\SortTac}{\Gamma}$.  To start with, variable tactics are simply
+projected from the environment $\rho$:
 \[
   \infer{
     \LCFElab{\Upsilon}{\Gamma}{x}{\SortTac}{\rho}{}{\rho(x)}
