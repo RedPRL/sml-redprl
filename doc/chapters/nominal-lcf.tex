@@ -215,16 +215,6 @@ arbitrary and included only for the sake of illustration.
   }{
     \Member{n}{\MLNat}
   }
-  \qquad
-  \infer{
-    \IsOperator{\Upsilon}{\mathtt{smoosh}}{
-      \MkArity{
-        \MkValence{}{}{\SortTac},
-        \MkValence{}{}{\SortTac}
-      }{\SortTac}
-    }
-  }{
-  }
 \]
 
 \[
@@ -258,7 +248,6 @@ arbitrary and included only for the sake of illustration.
   }
 \]
 
-\newcommand\TacSmoosh[2]{#1\supsetplus #2}
 \newcommand\TacEach[1]{\llparenthesis #1\rrparenthesis}
 \newcommand\TacSeq[3]{#2\leftarrow #1; #3}
 \newcommand\TacFix[2]{\mu #1. #2}
@@ -276,11 +265,6 @@ for tactic expressions:
     \TacSeq{t_1}{a_0,\dots,a_n}{t_2}
   }{
   \App{\mathtt{seq}_n}{\MkAbs{}{}{t_1};\MkAbs{a_0,\dots,a_n}{}{t_2}}
-  }\\
-  \ADefine{
-    \TacSmoosh{t_1}{t_2}
-  }{
-    \App{\mathtt{smoosh}}{\MkAbs{}{}{t_1};\MkAbs{}{}{t_n}}
   }\\
   \ADefine{
     \Box t
@@ -342,7 +326,7 @@ projected from the environment $\rho$:
   }
 \]
 
-The basic tacticals are interpreted as follows (we omit the interpretation of
+The basic tactics and tacticals are interpreted as follows (we omit the interpretation of
 $\mathtt{elim}[a]$, which will depend on the logic):
 \[
   \infer{
@@ -382,19 +366,6 @@ $\mathtt{elim}[a]$, which will depend on the logic):
       \right)
     }
   }{
-  }
-\]
-
-The rule for the \emph{smoosh} tactical $\TacSmoosh{t_1}{t_2}$ exploits the
-continuity of nominal tactics to divide up the name store between $t_1$ and $t_2$:
-\[
-  \infer{
-    \LCFElab{\Upsilon}{\Gamma}{\TacSmoosh{t_1}{t_2}}{\SortTac}{\rho}{
-      \lambda\alpha, J.\mathtt{THEN}(T_1(\alpha),\lambda J'. T_2(\StreamChop{\alpha}{\ModC{T_1}(J,\alpha)}, J'))(J)
-    }
-  }{
-    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
-    \LCFElab{\Upsilon}{\Gamma}{t_2}{\SortTac}{\rho}{T_2}
   }
 \]
 
