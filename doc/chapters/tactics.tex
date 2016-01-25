@@ -118,8 +118,6 @@ for an atomic tactic $\Member{T}{\LCFAtomicTactic}$ with name store $\alpha$.
 
 \subsection{Static Semantics}
 
-\newcommand\SortATac{\mathtt{atac}}
-\newcommand\SortBTac{\mathtt{btac}}
 \newcommand\SortTac{\mathtt{tac}}
 \newcommand\SortMTac{\mathtt{mtac}}
 \newcommand\SortHyp{\mathtt{hyp}}
@@ -137,11 +135,7 @@ respectively:
   }{}
   \qquad
   \infer{
-    \IsSort{\SortATac}
-  }{}
-  \qquad
-  \infer{
-    \IsSort{\SortBTac}
+    \IsSort{\SortTac}
   }{}
   \qquad
   \infer{
@@ -158,38 +152,39 @@ We also provide a sort to classify hypotheses:
 \]
 
 Now, we'll define the operators of \textbf{Nominal LCF}; note that the
-operators of sort $\SortATac$ are arbitrary and are provided only for the sake
+operators of sort $\SortTac$ are arbitrary and are provided only for the sake
 of illustration. We will consider the definition of \textbf{Nominal LCF} as
-over some signature $\Sigma$ of atomic tactics.
+over some signature $\Sigma$ of tactical constants.
 
 \[
   \infer{
     \IsOperator{\Upsilon}{\mathtt{id}}{
-      \MkArity{}{\SortATac}
+      \MkArity{}{\SortTac}
     }
   }{
   }
   \qquad
   \infer{
     \IsOperator{\Upsilon}{\mathtt{fail}}{
-      \MkArity{}{\SortATac}
+      \MkArity{}{\SortTac}
     }
   }{
   }
   \qquad
   \infer{
     \IsOperator{\Upsilon,a:\SortHyp}{\mathtt{elim}[a]}{
-      \MkArity{}{\SortATac}
+      \MkArity{}{\SortTac}
     }
   }{
   }
 \]
+
 \[
   \infer{
     \IsOperator{\Upsilon}{\mathtt{fix}}{
       \MkArity{
-        \MkValence{}{\SortATac}{\SortATac}
-      }{\SortATac}
+        \MkValence{}{\SortTac}{\SortTac}
+      }{\SortTac}
     }
   }{
   }
@@ -198,8 +193,8 @@ over some signature $\Sigma$ of atomic tactics.
     \IsOperator{\Upsilon}{\mathtt{let}}{
       \MkArity{
         \MkValence{}{}{\SortTac},
-        \MkValence{}{\SortATac}{\SortATac}
-      }{\SortATac}
+        \MkValence{}{\SortTac}{\SortTac}
+      }{\SortTac}
     }
   }{
   }
@@ -209,25 +204,22 @@ over some signature $\Sigma$ of atomic tactics.
   \infer{
     \IsOperator{\Upsilon}{\mathtt{seq}_n}{
       \MkArity{
-        \MkValence{}{}{\SortBTac},
+        \MkValence{}{}{\SortTac},
         \MkValence{\SortHyp^n}{}{\SortMTac}
       }{\SortTac}
     }
   }{
     \Member{n}{\MLNat}
   }
-\]
-
-\[
+  \qquad
   \infer{
-    \IsOperator{\Upsilon}{\mathtt{smash}}{
+    \IsOperator{\Upsilon}{\mathtt{smoosh}}{
       \MkArity{
-        \MkValence{}{}{\SortATac},
-        \MkValence{}{}{\SortATac}
-      }{\SortBTac}
+        \MkValence{}{}{\SortTac},
+        \MkValence{}{}{\SortTac}
+      }{\SortTac}
     }
   }{
-    \Member{n}{\MLNat}
   }
 \]
 
@@ -262,7 +254,7 @@ over some signature $\Sigma$ of atomic tactics.
   }
 \]
 
-\newcommand\TacSmash[2]{#1\supsetplus #2}
+\newcommand\TacSmoosh[2]{#1\supsetplus #2}
 \newcommand\TacEach[1]{\llparenthesis #1\rrparenthesis}
 \newcommand\TacSeq[3]{#2\leftarrow #1; #3}
 \newcommand\TacFix[2]{\mu #1. #2}
@@ -282,9 +274,9 @@ for tactic expressions:
   \App{\mathtt{seq}_n}{\MkAbs{}{}{t_1};\MkAbs{a_0,\dots,a_n}{}{t_2}}
   }\\
   \ADefine{
-    \TacSmash{t_1}{t_2}
+    \TacSmoosh{t_1}{t_2}
   }{
-    \App{\mathtt{smash}}{\MkAbs{}{}{t_1};\MkAbs{}{}{t_n}}
+    \App{\mathtt{smoosh}}{\MkAbs{}{}{t_1};\MkAbs{}{}{t_n}}
   }\\
   \ADefine{
     \Box t
@@ -318,44 +310,47 @@ for tactic expressions:
 
 \subsection{Dynamic Semantics}
 
-\newcommand\LCFElab[6]{%
+\newcommand\LCFElaboration[5]{%
   \mathcal{M}%
   \SemBrackets{
-  \IMode{#1}\parallel\IMode{#2}\vdash%
-    \IMode{#3}%
-    :\IMode{#4}
-  }_\IMode{#5}%
+    #1\parallel #2\vdash%
+    #3%
+    % :#4
+  }_{#5}%
+}
+
+\newcommand\LCFElab[6]{%
+  \LCFElaboration{\IMode{#1}}{\IMode{#2}}{\IMode{#3}}{\IMode{#4}}{\IMode{#5}}%
   \equiv\OMode{#6}%
 }
 
 We will now give a denotational semantics for \textbf{Nominal LCF} by
 interpreting its syntax into a model $\mathcal{M}$, taking each tactic
 expression to an atomic LCF tactic. The intepretation
-$\LCFElab{\Upsilon}{\Gamma}{t}{\tau}{\rho}{T}$ is defined by recursion on $t$ of sorts
-$\SortATac,\SortBTac,\SortTac$ such that $\Member{T}{\LCFAtomicTactic}$,
-presupposing that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
-$\Member{x:\SortATac}{\Gamma}$.
+$\LCFElab{\Upsilon}{\Gamma}{t}{\tau}{\rho}{T}$ is defined by recursion on
+$t:\SortTac$ such that $\Member{T}{\LCFAtomicTactic}$, presupposing that
+$\Member{\rho(x)}{\LCFAtomicTactic}$ for each $\Member{x:\SortTac}{\Gamma}$.
 To start with, variable tactics are simply projected from the
 environment $\rho$:
 \[
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{x}{\SortATac}{\rho}{}{\rho(x)}
+    \LCFElab{\Upsilon}{\Gamma}{x}{\SortTac}{\rho}{}{\rho(x)}
   }{
   }
 \]
 
-The atomic tacticals are interpreted as follows (we omit the interpretation of
+The basic tacticals are interpreted as follows (we omit the interpretation of
 $\mathtt{elim}[a]$, which will depend on the logic):
 \[
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{\mathtt{id}}{\SortATac}{\rho}{
+    \LCFElab{\Upsilon}{\Gamma}{\mathtt{id}}{\SortTac}{\rho}{
       \lambda\alpha.\mathtt{ID}
     }
   }{
   }
   \qquad
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{\mathtt{fail}}{\SortATac}{\rho}{
+    \LCFElab{\Upsilon}{\Gamma}{\mathtt{fail}}{\SortTac}{\rho}{
       \lambda\alpha.\mathtt{FAIL}
     }
   }{
@@ -363,29 +358,40 @@ $\mathtt{elim}[a]$, which will depend on the logic):
 \]
 \[
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{\TacLet{t_1}{x}{\MV{t}_2[x]}}{\SortATac}{\rho}{
+    \LCFElab{\Upsilon}{\Gamma}{\TacLet{t_1}{x}{\MV{t}_2[x]}}{\SortTac}{\rho}{
       T_2
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
-    \LCFElab{\Upsilon}{\Gamma,x:\SortATac}{\MV{t}_2[x]}{\SortATac}{
+    \LCFElab{\Upsilon}{\Gamma,x:\SortTac}{\MV{t}_2[x]}{\SortTac}{
       \rho,x\mapsto T_1
     }{
       T_2
     }
   }
 \]
+\[
+  \infer{
+    \LCFElab{\Upsilon}{\Gamma}{\TacFix{x}{\MV{t}[x]}}{\SortTac}{\rho}{
+      \mathtt{FIX}%
+      \left(\lambda T.
+        \LCFElaboration{\Upsilon}{\Gamma,x:\SortTac}{\MV{t}[x]}{\SortTac}{\rho,x\mapsto T}
+      \right)
+    }
+  }{
+  }
+\]
 
-The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
+The rule for the \emph{smoosh} tactical $\TacSmoosh{t_1}{t_2}$ exploits the
 continuity of atomic tactics to divide up the name store between $t_1$ and $t_2$:
 \[
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{\SortBTac}{\rho}{
+    \LCFElab{\Upsilon}{\Gamma}{\TacSmoosh{t_1}{t_2}}{\SortTac}{\rho}{
       \lambda\alpha.\mathtt{THEN}(T_1(\alpha),\lambda J. T_2(\StreamChop{\alpha}{\ModC{T_1}(J,\alpha)}))
     }
   }{
-    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortATac}{\rho}{T_1} &
-    \LCFElab{\Upsilon}{\Gamma}{t_2}{\SortATac}{\rho}{T_2}
+    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
+    \LCFElab{\Upsilon}{\Gamma}{t_2}{\SortTac}{\rho}{T_2}
   }
 \]
 
@@ -398,7 +404,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
       \lambda\alpha.\mathtt{THEN}(T_1(\vec{u}\oplus\alpha), T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)})
     }
   }{
-    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortBTac}{\rho}{T_1} &
+    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
     \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\SortTac}{\rho}{T_2}
   }
 \]
@@ -413,7 +419,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
         \right])
     }
   }{
-    \LCFElab{\Upsilon}{\Gamma}{t}{\SortBTac}{\rho}{T}&
+    \LCFElab{\Upsilon}{\Gamma}{t}{\SortTac}{\rho}{T}&
     \HypJ{
       \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\SortTac}{\rho}{T_i}
     }{
