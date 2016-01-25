@@ -342,165 +342,109 @@ $\SortTac$. To start with, we will give the elaboration rules for constants
   \infer{
     \LCFElabSt{\Upsilon}{\Gamma}{t}{
       \SemBrackets{t}_\mathcal{M}\circ\alpha
-    }{\alpha}{
+    }{\alpha}{\mu}
+  }{
+    \BackDefine{
+      \mu
+    }{
       \ModC{\SemBrackets{t}_\mathcal{M}}\circ \alpha
     }
-  }{
   }
   \qquad
   \infer{
     \LCFElabSt{\Upsilon}{\Gamma}{x}{
       \rho(x)\circ\alpha
-    }{\alpha}{
+    }{\alpha}{\mu}
+  }{
+    \BackDefine{
+      \mu
+    }{
       \ModC{\rho(x)}\circ\alpha
     }
-  }{
   }
 \]
-%
-% \newcommand\LCFMergeProofState[3]{%
-%   \bigtriangledown\limits_{#2}^{#1} #3%
-% }
-%
-% Let $\MLListSplit{\vec{x}}{\vec{n}}$ be the operation that splits the list
-% $\vec{x}$ into a list sublists of $\vec{x}$ of length $n$ for each
-% $\Member{n}{\vec{n}}$. Then, for a proof state $\Member{P}{\LCFState}$ and a
-% vector of proof states $\HypJ{\Member{Q_i}{\LCFState}}{\LT{i}{\MLLength{P}}}$,
-% we can form a new proof state collapses the two layers of subgoals into one, as follows:
-% \begin{align*}
-%   \ADefine{
-%     \LCFStateSplit{i}{n}{Q_i}{\vec{x}}
-%   }{
-%     \MLListSplit{
-%       \vec{x}
-%     }{
-%       \left[
-%         \MLLength{Q_i}
-%         \mid
-%         i < n
-%       \right]
-%     }
-%   }\\
-%   \ADefine{
-%     \LCFMergeProofState{P}{i}{Q_i}
-%   }{
-%     \MLPair{
-%       \bigoplus_{i\in\MLLength{P}}\Dom{Q_i}
-%     }{
-%       \lambda \vec{x}.\
-%       \LCFStateApply{P}{
-%         \left[
-%           \LCFStateApply{Q_i}{\vec{y}}
-%           \mid
-%           \MLPair{\vec{y}}{i}
-%           \in
-%           \MLPair{
-%             \LCFStateSplit{i}{\MLLength{P}}{Q_i}{\vec{x}}
-%           }{
-%             \MLNat_{\MLLength{P}}
-%           }
-%         \right]
-%       }
-%     }
-%   }
-% \end{align*}
-%
-%
-% The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
-% continuity of atomic tactics to divide up the name store $\alpha$
-% between $t_1$ and $t_2$:
-% \[
-%   \infer{
-%     \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{J}{
-%       \LCFMergeProofState{P}{i}{Q_i}
-%     }{\alpha}{\mu'}
-%   }{
-%     \begin{array}{l}
-%       \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\alpha}{\mu}\\
-%       \HypJ{
-%         \LCFElabSt{\Upsilon}{\Gamma}{t_2}{\Dom{P}_i}{Q_i}{\StreamChop{\alpha}{\mu}}{\mu_i}
-%       }{
-%         \LT{i}{\MLLength{P}}
-%       }
-%     \end{array} &
-%     \Match{
-%       \mu + \bigsqcup_{i<\MLLength{P}}\mu_i
-%     }{\mu'}
-%   }
-% \]
-%
-%
-% Next, we define the behavior of the sequencing tactical in a single rule by
-% exploiting an auxiliary form of judgment concerning the action of
-% multi-tactics on proof states,
-% $\LCFElabSt{\Upsilon}{\Gamma}{t}{P}{Q}{\alpha}{\mu}$ (with
-% $\Member{P,Q}{\LCFState}$):
-% %
-%  \[
-%    \infer{
-%      \LCFElabSt{\Upsilon}{\Gamma}{
-%        \TacSeq{t_1}{\vec{u}}{t_2}
-%      }{J}{Q}{\alpha}{\mu_1+\mu_2}
-%    }{
-%      \begin{array}{l}
-%        \LCFElabSt{\Upsilon}{\Gamma}{t_1}{J}{P}{\vec{u}\oplus\alpha}{\mu_1}\\
-%        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{J_i}{Q}{\StreamChop{\vec{u}\oplus\alpha}{\mu_1}}{\mu_2}
-%      \end{array} &
-%    }
-%  \]
-%
-% Finally, the action of the multi-tactics is defined:
-% \[
-%   \infer{
-%     \LCFElabSt{\Upsilon}{\Gamma}{\Box t}{P}{
-%       \LCFMergeProofState{P}{i}{Q_i}
-%     }{\alpha}{\mu}
-%   }{
-%     \HypJ{
-%       \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{\Dom{P}_i}{Q_i}{\alpha}{\mu_i}
-%     }{
-%       \LT{i}{\MLLength{P}}
-%     } &
-%     \Match{\bigsqcup_{i<\MLLength{P}}\mu_i}{\mu}
-%   }
-% \]
-%
-% \[
-%   \infer{
-%     \LCFElabSt{\Upsilon}{\Gamma}{
-%       \TacEach{t_0,\dots,t_{\MLLength{P}}}
-%     }{P}{
-%       \LCFMergeProofState{P}{i}{Q_i}
-%     }{\alpha}{\mu}
-%   }{
-%     \begin{array}{l}
-%       \HypJ{
-%         \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\Dom{P}_i}{Q_i}{\alpha}{\mu_i}
-%       }{
-%         \LT{i}{\MLLength{P}}
-%       }
-%     \end{array}&
-%     \Match{\bigsqcup_{i< \MLLength{P}}}{\mu}
-%   }
-% \]
-%
-% \[
-%   \infer{
-%     \LCFElabSt{\Upsilon}{\Gamma}{
-%       \Diamond_i t
-%     }{P}{
-%       \LCFMergeProofState{P}{j}{
-%         \left\{
-%           \begin{array}{lcl}
-%             j=i &\mapsto &Q\\
-%             j\not=i &\mapsto &\MLPair{[\Dom{P}_j]}{\lambda [x].x}
-%           \end{array}
-%         \right\}
-%       }
-%     }{\alpha}{\mu}
-%   }{
-%     \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t}{\Dom{P}_i}{Q}{\alpha}{\mu}
-%   }
-% \]
+
+The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
+continuity of atomic tactics to divide up the name store $\alpha$
+between $t_1$ and $t_2$:
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{
+      \mathtt{THEN}(T_1,T_2)
+    }{\alpha}{\mu}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{T_1}{\alpha}{\mu_1}\\
+      \LCFElabSt{\Upsilon}{\Gamma}{t_2}{T_2}{
+        \StreamChop{\alpha}{\mu_1}
+      }{\mu_2}
+    \end{array} &
+    \BackDefine{
+      \mu(J)
+    }{
+      \mu_1(J) + \bigsqcup_{i<\MLLength{T_1(J)}}\mu_2(\Dom{T_1(J)}_i)
+    }
+  }
+\]
 
 
+
+Next, we define the behavior of the sequencing tactical, by case on the multi-tactical:
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t_1}{\vec{u}}{\Box t_2}
+    }{
+      \mathtt{THEN}(T_1,T_2)
+    }{\alpha}{\mu}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{T_1}{\vec{u}\oplus\alpha}{\mu_1}\\
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{T_2}{\StreamChop{\vec{u}\oplus\alpha}{\mu_1}}{\mu_2}
+    \end{array} &
+    \BackDefine{
+      \mu(J)
+    }{
+      \mu_1(J) + \bigsqcup_{i<\MLLength{T_1(J)}}\mu_2(\Dom{T_1(J)}_i)
+    }
+  }
+\]
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t}{\vec{u}}{\TacEach{t_0,\dots,t_n}}
+    }{
+      \mathtt{THENL}(T, \left[T_i\mid i<n\right])
+    }{\alpha}{\mu'}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t}{T}{\vec{u}\oplus\alpha}{\mu}\\
+      \HypJ{
+        \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{T_i}{\StreamChop{\vec{u}\oplus\alpha}{\mu}}{\mu_i}
+      }{
+        \LT{i}{n}
+      }
+    \end{array} &
+    \BackDefine{
+      \mu'(J)
+    }{
+      \mu(J) + \bigsqcup_{i<\MLLength{T(J)}}\mu_i(\Dom{T(J)}_i)
+    }
+  }
+\]
+
+\[
+  \infer{
+    \LCFElabSt{\Upsilon}{\Gamma}{
+      \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
+    }{
+      \mathtt{THENF}(T_1,i,T_2)
+    }{\alpha}{\mu_1+\mu_2}
+  }{
+    \begin{array}{l}
+      \LCFElabSt{\Upsilon}{\Gamma}{t_1}{T_1}{\vec{u}\oplus\alpha}{\mu_1}\\
+      \LCFElabSt{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{T_2}{\StreamChop{\vec{u}\oplus\alpha}{\mu_1}}{\mu_2}
+    \end{array}
+  }
+\]
