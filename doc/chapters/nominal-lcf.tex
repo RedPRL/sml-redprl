@@ -390,7 +390,7 @@ continuity of nominal tactics to divide up the name store between $t_1$ and $t_2
 \[
   \infer{
     \LCFElab{\Upsilon}{\Gamma}{\TacSmoosh{t_1}{t_2}}{\SortTac}{\rho}{
-      \lambda\alpha.\mathtt{THEN}(T_1(\alpha),\lambda J. T_2(\StreamChop{\alpha}{\ModC{T_1}(J,\alpha)}, J))
+      \lambda\alpha, J.\mathtt{THEN}(T_1(\alpha),\lambda J'. T_2(\StreamChop{\alpha}{\ModC{T_1}(J,\alpha)}, J'))(J)
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
@@ -404,7 +404,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t_1}{\vec{u}}{\Box t_2}
     }{\SortTac}{\rho}{
-      \lambda\alpha.\mathtt{THEN}(T_1(\vec{u}\oplus\alpha), \lambda J. T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}, J))
+      \lambda\alpha, J.\mathtt{THEN}(T_1(\vec{u}\oplus\alpha), \lambda J'. T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}, J'))(J)
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
@@ -416,10 +416,10 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t}{\vec{u}}{\TacEach{t_0,\dots,t_n}}
     }{\SortTac}{\rho}{
-      \lambda\alpha.\mathtt{THENL}(T(\vec{u}\oplus\alpha),
+      \lambda\alpha, J.\mathtt{THENL}(T(\vec{u}\oplus\alpha),
         \left[
-          \lambda J. T_i(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T}(J,\vec{u}\oplus\alpha)}, J)\mid i<n
-        \right])
+          \lambda J'. T_i(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T}(J,\vec{u}\oplus\alpha)}, J')\mid i<n
+        \right])(J)
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t}{\SortTac}{\rho}{T}&
@@ -435,7 +435,8 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
     }{\SortTac}{\rho}{
-      \lambda\alpha.\mathtt{THENF}(T_1(\vec{u}\oplus\alpha), i, \lambda J. T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}, J))
+      \lambda\alpha, J.
+      \mathtt{THENF}(T_1(\vec{u}\oplus\alpha), i, \lambda J'. T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}, J'))(J)
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
