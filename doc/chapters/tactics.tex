@@ -67,11 +67,9 @@ ML signature:
 In other words, a tactic is a partial function that takes a goal to its
 subgoals, and specifies how to transform the evidence of its subgoals into the
 evidence for the main goal. In the case of the sequence calculus we were
-considering, \verb!judgment! would be a type of sequents. We will write
-$\Dom{P}$ for the list of subgoals $\pi_1(P)$ to a proof state
-$\Member{P}{\LCFState}$, $\MLLength{P}$ for the length of $\Dom{P}$, and
-$\LCFStateApply{P}{\vec{x}}$ for the application of the hypothetical evidence
-$\pi_2(P)$ to the concrete evidence $\Member{\vec{x}}{\MLList{\LCFEvidence}}$.
+considering, $\LCFJudgment$ would be a type of sequents.
+
+%% TODO: declare THEN, THENL, THENF
 
 Now, frequently a tactic may need to consume names from a \emph{name store},
 which is an infinite stream of \emph{atoms} or \emph{symbols}. We will call
