@@ -384,7 +384,7 @@ continuity of nominal tactics to divide up the name store between $t_1$ and $t_2
 \[
   \infer{
     \LCFElab{\Upsilon}{\Gamma}{\TacSmoosh{t_1}{t_2}}{\SortTac}{\rho}{
-      \lambda\alpha.\mathtt{THEN}(T_1(\alpha),\lambda J. T_2(\StreamChop{\alpha}{\ModC{T_1}(J,\alpha)}))
+      \lambda\alpha.\mathtt{THEN}(T_1(\alpha),\lambda J. T_2(\StreamChop{\alpha}{\ModC{T_1}(J,\alpha)}, J))
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
@@ -398,7 +398,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t_1}{\vec{u}}{\Box t_2}
     }{\SortTac}{\rho}{
-      \lambda\alpha.\mathtt{THEN}(T_1(\vec{u}\oplus\alpha), T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)})
+      \lambda\alpha.\mathtt{THEN}(T_1(\vec{u}\oplus\alpha), \lambda J. T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}, J))
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
@@ -412,7 +412,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     }{\SortTac}{\rho}{
       \lambda\alpha.\mathtt{THENL}(T(\vec{u}\oplus\alpha),
         \left[
-          T_i(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T}(J,\vec{u}\oplus\alpha)})\mid i<n
+          \lambda J. T_i(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T}(J,\vec{u}\oplus\alpha)}, J)\mid i<n
         \right])
     }
   }{
@@ -429,7 +429,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
     }{\SortTac}{\rho}{
-      \lambda\alpha.\mathtt{THENF}(T_1(\vec{u}\oplus\alpha), i, T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)})
+      \lambda\alpha.\mathtt{THENF}(T_1(\vec{u}\oplus\alpha), i, \lambda J. T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}, J))
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
