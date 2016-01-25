@@ -284,33 +284,37 @@ for tactic expressions:
 \subsection{Dynamic Semantics}
 
 \newcommand\LCFElabVerbose[4]{%
-  \mathcal{M}\models_\IMode{\rho}
-  \IMode{#1}\parallel\IMode{#2}\vdash%
-  \IMode{#3}\Longrightarrow\OMode{#4}%
+  \mathcal{M}%
+  \SemBrackets{
+    \IMode{#1}\parallel\IMode{#2}\vdash%
+    \IMode{#3}%
+  }_\IMode{\rho}%
+  \equiv\OMode{#4}%
 }
 
 \newcommand\LCFElab[4]{%
-  \mathcal{M}\models_\IMode{\rho}
+  \mathcal{M}%
+  \SemBrackets{
   % \IMode{#1}\parallel\IMode{#2}\vdash%
-  \IMode{#3}\Longrightarrow\OMode{#4}%
+    \IMode{#3}%
+  }_\IMode{\rho}%
+  \equiv\OMode{#4}%
 }
 
 For a signature of atomic tactics $\Sigma$, we will define a $\Sigma$-model
 $\mathcal{M}$ to be an interpretation of each atomic tactic
 $\Member{t}{\Sigma}$ into some
 $\Member{\SemBrackets{t}_\mathcal{M}}{\LCFAtomicTactic}$.  Then, we can
-interpret all of \textbf{Nominal LCF} into $\mathcal{M}$, by defining an
+interpret all of \textbf{Nominal LCF} into $\mathcal{M}$, by defining an algorithmic
 elaboration judgment $\LCFElabVerbose{\Upsilon}{\Gamma}{t}{T}$ with
 $\Member{T}{\LCFAtomicTactic}$, such that $\Member{\rho(x)}{\LCFAtomicTactic}$
 for each $\Member{x:\SortATac}{\Gamma}$.
 
-When
-it leads to no ambiguity, we will write
-$\LCFElab{\Upsilon}{\Gamma}{t}{T}$ instead of the more verbose
-$\LCFElabVerbose{\Upsilon}{\Gamma}{t}{T}$; we will explain this
-form of judgment for $t$ of sorts $\SortATac$, $\SortBTac$, and $\SortTac$. To
-start with, we will give the elaboration rules for constants (atomic tactics)
-and variables denoting atomic tactics:
+When it leads to no ambiguity, we will write $\LCFElab{\Upsilon}{\Gamma}{t}{T}$
+instead of the more verbose $\LCFElabVerbose{\Upsilon}{\Gamma}{t}{T}$; we will
+explain this form of judgment for $t$ of sorts $\SortATac$, $\SortBTac$, and
+$\SortTac$. To start with, we will give the elaboration rules for constants
+(atomic tactics) and variables denoting atomic tactics:
 
 \[
   \infer{
