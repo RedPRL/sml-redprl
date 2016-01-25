@@ -52,17 +52,22 @@ then show how it can be elaborated into standard LCF.
 \DeclarePairedDelimiter{\MLLength}{\lVert}{\rVert}
 
 
-The essence of the LCF tactic system is captured in the following (idealized)
-ML signature:
+The essence of the LCF tactic system is captured by fixing a type
+$\LCFJudgment$ of judgments and $\LCFEvidence$ of evidence, and then using them
+to define the notion of a proof state and a tactic:
 
-\[
-  \begin{array}{lcl}
-    \MLTypeDecl{\LCFJudgment}\\
-    \MLTypeDecl{\LCFEvidence}\\
-    \MLTypeDecl{\LCFState} &= &\MLList{\LCFJudgment} \otimes (\PartialFun{\MLList{\LCFEvidence}}{\LCFEvidence})\\
-    \MLTypeDecl{\LCFTactic} &= &\PartialFun{\LCFJudgment}{\LCFState}
-  \end{array}
-\]
+\begin{align*}
+  \ADefine{
+    \LCFState
+  }{
+    \MLList{\LCFJudgment} \otimes (\PartialFun{\MLList{\LCFEvidence}}{\LCFEvidence})
+  }\\
+  \ADefine{
+    \LCFTactic
+  }{
+    \PartialFun{\LCFJudgment}{\LCFState}
+  }
+\end{align*}
 
 In other words, a tactic is a partial function that takes a goal to its
 subgoals, and specifies how to transform the evidence of its subgoals into the
@@ -71,23 +76,25 @@ considering, $\LCFJudgment$ would be a type of sequents.
 
 %% TODO: declare THEN, THENL, THENF
 
-Now, frequently a tactic may need to consume names from a \emph{name store},
-which is an infinite stream of \emph{atoms} or \emph{symbols}. We will call
-such a tactic a \emph{nominal tactic}:
+Now, frequently a tactic may need to consume names from a name store, which can
+be represented as infinite stream (choice sequence) of \emph{atoms} or
+\emph{symbols}; let $\MLAtom$ be the type of atoms; then, a \emph{nominal
+tactic} is a function from choice sequences of atoms to tactics:
 \[
-  \begin{array}{lcl}
-    \MLTypeDecl{\MLAtom}\\
-    \MLTypeDecl{\LCFNominalTactic} &= &\MLStream{\MLAtom} \to \LCFTactic
-  \end{array}
+  \Define{
+    \LCFNominalTactic
+  }{
+    \MLStream{\MLAtom}\to\LCFTactic
+  }
 \]
 
 \newcommand\KleeneEq[2]{\IMode{#1}\approx \IMode{#2}}
 \newcommand\ModC[1]{\mathsf{M}(#1)}
 
-\subsection{Nominal tactics and their continuity}
+\paragraph{Nominal tactics and their continuity}
 
-Left sequent rules can be coded nominal tactics, pull the names for their bound
-variables from the supplied choice sequence of atoms In fact, every such tactic
+Left sequent rules can be coded nominal tactics, pulling the names for their bound
+variables from the supplied choice sequence of atoms; moreover, every such tactic
 is \emph{continuous} in a specific sense. For a choice sequence
 $\Member{\alpha}{\MLStream{\MLAtom}}$ and a natural number
 $\Member{n}{\MLNat}$, let $\StreamTake{\alpha}{n}$ be the initial segment of
