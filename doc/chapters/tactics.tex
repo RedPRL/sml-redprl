@@ -48,7 +48,7 @@ then show how it can be elaborated into standard LCF.
 \newcommand\StreamTake[2]{\bar{#1}[#2]}
 \newcommand\StreamChop[2]{[#2]\bar{#1}}
 \newcommand\MLListSplit[2]{\mathsf{split}(#1, #2)}
-\newcommand\LCFStateSplit[4]{\mathop{\mathsf{split}}\limits_{#1}^{#2}(#4, #3)}
+\newcommand\LCFStateSplit[4]{\mathsf{split}_{#1}^{#2}(#4, #3)}
 \DeclarePairedDelimiter{\MLLength}{\lVert}{\rVert}
 
 
@@ -375,7 +375,7 @@ vector of proof states $\HypJ{\Member{Q_i}{\LCFState}}{\LT{i}{\MLLength{P}}}$,
 we can form a new proof state collapses the two layers of subgoals into one, as follows:
 \begin{align*}
   \ADefine{
-    \LCFStateSplit{i}{\MLLength{P}}{Q_i}{\vec{x}}
+    \LCFStateSplit{i}{n}{Q_i}{\vec{x}}
   }{
     \MLListSplit{
       \vec{x}
@@ -383,7 +383,7 @@ we can form a new proof state collapses the two layers of subgoals into one, as 
       \left[
         \MLLength{Q_i}
         \mid
-        i < \MLLength{P}
+        i < n
       \right]
     }
   }\\
