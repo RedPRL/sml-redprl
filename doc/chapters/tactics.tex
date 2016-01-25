@@ -184,6 +184,26 @@ over some signature $\Sigma$ of atomic tactics.
   }{
   }
 \]
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{fix}}{
+      \MkArity{
+        \MkValence{}{\SortATac}{\SortATac}
+      }{\SortATac}
+    }
+  }{
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\mathtt{let}}{
+      \MkArity{
+        \MkValence{}{}{\SortTac},
+        \MkValence{}{\SortATac}{\SortATac}
+      }{\SortATac}
+    }
+  }{
+  }
+\]
 
 \[
   \infer{
@@ -245,6 +265,8 @@ over some signature $\Sigma$ of atomic tactics.
 \newcommand\TacSmash[2]{#1\supsetplus #2}
 \newcommand\TacEach[1]{\llparenthesis #1\rrparenthesis}
 \newcommand\TacSeq[3]{#2\leftarrow #1; #3}
+\newcommand\TacFix[2]{\mu #1. #2}
+\newcommand\TacLet[3]{\mathit{let}\ #2 := #1\ \mathit{in}\ #3}
 
 For the sake of clarity, we introduce the following notational abbreviations
 for tactic expressions:
@@ -279,52 +301,78 @@ for tactic expressions:
   }{
     \App{\mathtt{some}_i}{\MkAbs{}{}{t}}
   }\\
+  \ADefine{
+    \TacFix{x}{\MV{t}[x]}
+  }{
+    \App{\mathtt{fix}}{\MkAbs{}{x}{\MV{t}[x]}}
+  }\\
+  \ADefine{
+    \TacLet{t_1}{x}{\mathfrak{t}_2[x]}
+  }{
+    \App{\mathtt{let}}{
+      \MkAbs{}{}{t_1};
+      \MkAbs{}{x}{\mathfrak{t}_2[x]}
+    }
+  }
 \end{align*}
 
 \subsection{Dynamic Semantics}
 
-\newcommand\LCFElabVerbose[4]{%
+\newcommand\LCFElab[6]{%
   \mathcal{M}%
   \SemBrackets{
-    \IMode{#1}\parallel\IMode{#2}\vdash%
+  \IMode{#1}\parallel\IMode{#2}\vdash%
     \IMode{#3}%
-  }_\IMode{\rho}%
-  \equiv\OMode{#4}%
+    :\IMode{#4}
+  }_\IMode{#5}%
+  \equiv\OMode{#6}%
 }
 
-\newcommand\LCFElab[4]{%
-  \mathcal{M}%
-  \SemBrackets{
-  % \IMode{#1}\parallel\IMode{#2}\vdash%
-    \IMode{#3}%
-  }_\IMode{\rho}%
-  \equiv\OMode{#4}%
-}
-
-For a signature of atomic tactics $\Sigma$, we will define a $\Sigma$-model
-$\mathcal{M}$ to be an interpretation of each atomic tactic
-$\Member{t}{\Sigma}$ into some
-$\Member{\SemBrackets{t}_\mathcal{M}}{\LCFAtomicTactic}$.  Then, we can
-interpret all of \textbf{Nominal LCF} into $\mathcal{M}$, by defining an algorithmic
-elaboration judgment $\LCFElabVerbose{\Upsilon}{\Gamma}{t}{T}$ with
-$\Member{T}{\LCFAtomicTactic}$, such that $\Member{\rho(x)}{\LCFAtomicTactic}$
-for each $\Member{x:\SortATac}{\Gamma}$.
-
-When it leads to no ambiguity, we will write $\LCFElab{\Upsilon}{\Gamma}{t}{T}$
-instead of the more verbose $\LCFElabVerbose{\Upsilon}{\Gamma}{t}{T}$; we will
-explain this form of judgment for $t$ of sorts $\SortATac$, $\SortBTac$, and
-$\SortTac$. To start with, we will give the elaboration rules for constants
-(atomic tactics) and variables denoting atomic tactics:
-
+We will now give a denotational semantics for \textbf{Nominal LCF} by
+interpreting its syntax into a model $\mathcal{M}$, taking each tactic
+expression to an atomic LCF tactic. The intepretation
+$\LCFElab{\Upsilon}{\Gamma}{t}{\tau}{\rho}{T}$ is defined by recursion on $t$ of sorts
+$\SortATac,\SortBTac,\SortTac$ such that $\Member{T}{\LCFAtomicTactic}$,
+presupposing that $\Member{\rho(x)}{\LCFAtomicTactic}$ for each
+$\Member{x:\SortATac}{\Gamma}$.
+To start with, variable tactics are simply projected from the
+environment $\rho$:
 \[
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{t}{\SemBrackets{t}_\mathcal{M}}
+    \LCFElab{\Upsilon}{\Gamma}{x}{\SortATac}{\rho}{}{\rho(x)}
+  }{
+  }
+\]
+
+The atomic tacticals are interpreted as follows (we omit the interpretation of
+$\mathtt{elim}[a]$, which will depend on the logic):
+\[
+  \infer{
+    \LCFElab{\Upsilon}{\Gamma}{\mathtt{id}}{\SortATac}{\rho}{
+      \lambda\alpha.\mathtt{ID}
+    }
   }{
   }
   \qquad
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{x}{\rho(x)}
+    \LCFElab{\Upsilon}{\Gamma}{\mathtt{fail}}{\SortATac}{\rho}{
+      \lambda\alpha.\mathtt{FAIL}
+    }
   }{
+  }
+\]
+\[
+  \infer{
+    \LCFElab{\Upsilon}{\Gamma}{\TacLet{t_1}{x}{\MV{t}_2[x]}}{\SortATac}{\rho}{
+      T_2
+    }
+  }{
+    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
+    \LCFElab{\Upsilon}{\Gamma,x:\SortATac}{\MV{t}_2[x]}{\SortATac}{
+      \rho,x\mapsto T_1
+    }{
+      T_2
+    }
   }
 \]
 
@@ -332,60 +380,56 @@ The rule for the \emph{smash} tactical $\TacSmash{t_1}{t_2}$ exploits the
 continuity of atomic tactics to divide up the name store between $t_1$ and $t_2$:
 \[
   \infer{
-    \LCFElab{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{
+    \LCFElab{\Upsilon}{\Gamma}{\TacSmash{t_1}{t_2}}{\SortBTac}{\rho}{
       \lambda\alpha.\mathtt{THEN}(T_1(\alpha),\lambda J. T_2(\StreamChop{\alpha}{\ModC{T_1}(J,\alpha)}))
     }
   }{
-    \LCFElab{\Upsilon}{\Gamma}{t_1}{T_1} &
-    \LCFElab{\Upsilon}{\Gamma}{t_2}{T_2}
+    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortATac}{\rho}{T_1} &
+    \LCFElab{\Upsilon}{\Gamma}{t_2}{\SortATac}{\rho}{T_2}
   }
 \]
-
-
 
 Next, we define the behavior of the sequencing tactical, by case on the multi-tactical:
 \[
   \infer{
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t_1}{\vec{u}}{\Box t_2}
-    }{
+    }{\SortTac}{\rho}{
       \lambda\alpha.\mathtt{THEN}(T_1(\vec{u}\oplus\alpha), T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)})
     }
   }{
-    \LCFElab{\Upsilon}{\Gamma}{t_1}{T_1} &
-    \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{T_2}
+    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortBTac}{\rho}{T_1} &
+    \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\SortTac}{\rho}{T_2}
   }
 \]
-
 \[
   \infer{
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t}{\vec{u}}{\TacEach{t_0,\dots,t_n}}
-    }{
+    }{\SortTac}{\rho}{
       \lambda\alpha.\mathtt{THENL}(T(\vec{u}\oplus\alpha),
         \left[
           T_i(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T}(J,\vec{u}\oplus\alpha)})\mid i<n
         \right])
     }
   }{
-    \LCFElab{\Upsilon}{\Gamma}{t}{T}&
+    \LCFElab{\Upsilon}{\Gamma}{t}{\SortBTac}{\rho}{T}&
     \HypJ{
-      \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{T_i}
+      \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_i}{\SortTac}{\rho}{T_i}
     }{
       \LT{i}{n}
     }
   }
 \]
-
 \[
   \infer{
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
-    }{
+    }{\SortTac}{\rho}{
       \lambda\alpha.\mathtt{THENF}(T_1(\vec{u}\oplus\alpha), i, T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)})
     }
   }{
-    \LCFElab{\Upsilon}{\Gamma}{t_1}{T_1} &
-    \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{T_2}
+    \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
+    \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\SortTac}{\rho}{T_2}
   }
 \]
