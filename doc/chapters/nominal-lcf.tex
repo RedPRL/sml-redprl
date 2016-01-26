@@ -375,7 +375,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     \LCFElab{\Upsilon}{\Gamma}{
       \TacSeq{t_1}{\vec{u}}{\Box t_2}
     }{\SortTac}{\rho}{
-      \lambda\alpha, J.\mathtt{THEN}(T_1(\vec{u}\oplus\alpha), \lambda J'. T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}, J'))(J)
+      \lambda\alpha, J.\mathtt{THEN}(T_1(\vec{u}\oplus\alpha), T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}))(J)
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
@@ -389,7 +389,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     }{\SortTac}{\rho}{
       \lambda\alpha, J.\mathtt{THENL}(T(\vec{u}\oplus\alpha),
         \left[
-          \lambda J'. T_i(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T}(J,\vec{u}\oplus\alpha)}, J')\mid i<n
+          T_i(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T}(J,\vec{u}\oplus\alpha)})\mid i<n
         \right])(J)
     }
   }{
@@ -407,7 +407,7 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
       \TacSeq{t_1}{\vec{u}}{\Diamond_i t_2}
     }{\SortTac}{\rho}{
       \lambda\alpha, J.
-      \mathtt{THENF}(T_1(\vec{u}\oplus\alpha), i, \lambda J'. T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}, J'))(J)
+      \mathtt{THENF}(T_1(\vec{u}\oplus\alpha), i, T_2(\StreamChop{\vec{u}\oplus\alpha}{\ModC{T_1}(J,\vec{u}\oplus\alpha)}))(J)
     }
   }{
     \LCFElab{\Upsilon}{\Gamma}{t_1}{\SortTac}{\rho}{T_1} &
