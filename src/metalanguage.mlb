@@ -4,6 +4,7 @@ local
   local
     ../lib/cmlib/cmlib.mlb
   in
+    signature DICT
     functor SplayDict
   end
   metalanguage/elaborator.sig
