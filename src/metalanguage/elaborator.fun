@@ -68,6 +68,11 @@ struct
            R.Intro rule (elaborateOpt m)
        | `x => Env.lookup rho x
        | _ => raise Fail "Expected tactic"
+
+  (* Below, as an optimization, we implicitly calculate the modulus of
+   * continuity of the lhs tactic using [THEN_LAZY] rather than doing it
+   * separately as in the Definition. In this way, we can avoid executing the
+   * lhs tactic twice. *)
   and elaborateMulti rho T1 us mt =
     case #1 (infer mt) of
          S ALL $ [_ \ t2] =>
