@@ -6,11 +6,6 @@ struct
   open Abt ScriptOperatorData OperatorData SortData
   infix $ \
 
-  exception MalformedScript of string
-
-  fun pop [] = raise Subscript
-    | pop (x :: xs) = x
-
   fun mkNameStore xs =
     fn i =>
       List.nth (xs, i)
@@ -19,12 +14,12 @@ struct
     case infer m of
          (OP_SOME _ $ [_ \ n], OPT _) => SOME n
        | (OP_NONE _ $ _, OPT _) => NONE
-       | _ => raise MalformedScript "Expected SOME or NONE"
+       | _ => raise Fail "Expected SOME or NONE"
 
   fun elaborateVec m =
     case #1 (infer m) of
          VEC_LIT _ $ es => List.map (fn (_ \ n) => n) es
-       | _ => raise MalformedScript "Expected vector argument"
+       | _ => raise Fail "Expected vector argument"
 
   structure Env =
     SplayDict
@@ -34,67 +29,83 @@ struct
          open Eq
        end)
 
-  (* The idea is to translate scripts like [u... <- elim h; t2]
-   * into ML tactics like [Elim h u... THEN t2] *)
-  fun go stack env m =
-    case #1 (infer m) of
-         S (BIND _) $ [_ \ t1, e2] =>
-           bind stack env t1 e2
+  type env = Refiner.ntactic Env.dict
+
+  fun probe (alpha : R.name_store) : R.name_store * int ref =
+    let
+      val mref = ref 0
+      fun updateModulus i = if !mref < i then mref := i else ()
+      fun beta i = (updateModulus i; alpha i)
+    in
+      (beta, mref)
+    end
+
+  fun prepend us =
+    let
+      val n = List.length us
+    in
+      fn alpha => fn i =>
+        if i < n then
+          List.nth (us, i)
+        else
+          alpha (i + n)
+    end
+
+  fun bite n alpha =
+    fn i =>
+      alpha (i + n)
+
+  fun elaborate rho t =
+    case #1 (infer t) of
+         S ID $ _ => (fn _ => T.ID)
+       | S (SEQ _) $ [_ \ t, (us, _) \ mt] =>
+           elaborateMulti rho (elaborate rho t) us mt
+       | S REC $ [(_, [x]) \ t] =>
+           R.Rec (fn T => elaborate (Env.insert rho x T) t)
        | S (ELIM {target}) $ [_ \ m] =>
-           R.Elim target (pop stack) (elaborateOpt m)
-       | S (HYP {target}) $ _ =>
-           R.Hyp target
+           R.Elim target (elaborateOpt m)
        | S (INTRO {rule}) $ [_ \ m] =>
-           R.Intro rule (pop stack) (elaborateOpt m)
-       | S ID $ [] =>
-           T.ID
-       | S REC $ [([], [x]) \ t] =>
-           R.Rec (fn tac =>
-             go stack (Env.insert env x tac) t)
-       | S SMASH $ [_ \ t1, _ \ t2] =>
+           R.Intro rule (elaborateOpt m)
+       | `x => Env.lookup rho x
+       | _ => raise Fail "Expected tactic"
+  and elaborateMulti rho T1 us mt =
+    case #1 (infer mt) of
+         S ALL $ [_ \ t2] =>
            let
-             (* below is something very clever / terrifying! *)
-             val moduli = map (fn _ => ref 0) stack
-             val stack' =
-               ListPair.mapEq
-                 (fn (m, store) => fn i =>
-                   if i + 1 > ! m then
-                     (m := i + 1; store i)
-                   else
-                     store i)
-                 (moduli, stack)
-
-             (* We will first elaborate [t1] such that when it runs, we
-              * will covertly observe how much of the name stores it consumes.
-              * Then, [t2] will be elaborated with all the names [t1] used removed
-              * from its name stores. *)
+             val T2 = elaborate rho t2
            in
-             T.THEN_LAZY
-               (go stack' env t1,
-                fn _ =>
-                  let
-                    val stack'' =
-                      ListPair.mapEq
-                        (fn (m, store) => fn i =>
-                           store (i + !m))
-                        (moduli, stack)
-                  in
-                    go stack'' env t2
-                  end)
+             fn alpha =>
+               let
+                 val beta = prepend us alpha
+                 val (beta', modulus) = probe beta
+               in
+                 T.THEN_LAZY (T1 beta', fn () => T2 (bite (!modulus) beta))
+               end
            end
-       | `x => Env.lookup env x
-       | _ => raise MalformedScript "Expected tactical"
-
-  and bind stack env t1 ((us, _) \ t2) =
-    case #1 (infer t2) of
-         S MULTI $ [_ \ ts] =>
-           T.THENL (go (mkNameStore us :: stack) env t1, map (go stack env) (elaborateVec ts))
-       | S (FOCUS {focus}) $ [_ \ t] =>
-           T.THENF (go (mkNameStore us :: stack) env t1, focus, go stack env t)
-       | _ =>
-           T.THEN (go (mkNameStore us :: stack) env t1, go stack env t2)
-
-  fun elaborate m = go [] Env.empty m
-
-  (* TODO: treat source annotations properly *)
+       | S EACH $ [_ \ v] =>
+           let
+             val Ts = List.map (elaborate rho) (elaborateVec v)
+           in
+             fn alpha =>
+               let
+                 val beta = prepend us alpha
+                 val (beta', modulus) = probe beta
+               in
+                 T.THENL_LAZY (T1 beta', fn () =>
+                   List.map (fn Ti => Ti (bite (!modulus) beta)) Ts)
+               end
+           end
+       | S (FOCUS i) $ [_\ t2] =>
+           let
+             val T2 = elaborate rho t2
+           in
+             fn alpha =>
+               let
+                 val beta = prepend us alpha
+                 val (beta', modulus) = probe beta
+               in
+                 T.THENF_LAZY (T1 beta', i, fn () => T2 (bite (!modulus) beta))
+               end
+           end
+       | _ => raise Fail "Expected multitactic"
 end

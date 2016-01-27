@@ -1,37 +1,41 @@
 signature REFINER =
 sig
-  type tactic
-  structure Tacticals : TACTICALS where type tactic = tactic
+  structure Lcf : LCF
+  structure Tacticals : TACTICALS
+    where type tactic = Lcf.tactic
 
-  (* a [name_store] is a partial function from natural numbers to names;
-   * built-in rules will query from the name store when they need a fresh name.
-   *)
-  type name_store = int -> Symbol.t
+  type 'a choice_sequence = int -> 'a
+
+  (* a [name_store] is a choice sequence of names, i.e. a total function from
+   * natural numbers to symbols. *)
+  type name_store = Symbol.t choice_sequence
+
+  type ntactic = name_store -> Lcf.tactic
 
   val Rec
-    : (tactic -> tactic)
-    -> tactic
+    : (ntactic -> ntactic)
+    -> ntactic
 
   val Elim
     : Symbol.t  (* target *)
-    -> name_store (* fresh names *)
     -> Abt.abt option (* optional argument *)
-    -> tactic
+    -> ntactic
 
   val Intro
     : int option (* rule index *)
-    -> name_store (* fresh names *)
     -> Abt.abt option (* optional argument *)
-    -> tactic
+    -> ntactic
 
   val Hyp
     : Symbol.t (* target *)
-    -> tactic
+    -> ntactic
 end
 
 signature ELABORATOR =
 sig
   structure Refiner : REFINER
 
-  val elaborate : Abt.abt -> Refiner.tactic
+  structure Env : DICT where type key = Variable.t
+  type env = Refiner.ntactic Env.dict
+  val elaborate : env -> Abt.abt -> Refiner.ntactic
 end

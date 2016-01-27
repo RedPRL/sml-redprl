@@ -1,4 +1,5 @@
-Group
+Library
+  functor Elaborator
 is
   src/signature.cm
   src/syntax.cm
