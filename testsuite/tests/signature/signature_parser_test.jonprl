@@ -3,7 +3,7 @@
 // are optional.
 
 Def dfun(A : exp, B : [exp].exp) : exp = [
-  x
+  A
 ].
 
 Def myvec(A:exp) : vec exp = [
@@ -28,8 +28,8 @@ Tac repeat(T : tac) = [
 
 // Note how level polymorphism is introduced for a theorem through an *argument*.
 // In Red JonPRL's semantics, this corresponds to a generic judgment.
-Thm thm(i:lvl) : [
-  todo
+Thm thm(i:lvl, P : exp) : [
+  P
 ] by [
   repeat(
     a,b <- id;

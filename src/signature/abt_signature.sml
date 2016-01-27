@@ -70,12 +70,14 @@ struct
   fun def sign {parameters, arguments, sort, definiens} =
     let
       val Y' = Abt.freeSymbols definiens
+      val G = Abt.freeVariables definiens
       val Th' = MCtx.toList (Abt.metacontext definiens)
       val (_, tau') = Abt.infer definiens
 
       val _ =
         (guard "Metavariable not in scope" (subarguments (Th', arguments));
          guard "Symbols not in scope" (subsymbols sign (Y', parameters));
+         guard "Variables not in scope" (List.length G = 0);
          guard "Sort mismatch" (Sort.Eq.eq (tau', sort)))
     in
       DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
