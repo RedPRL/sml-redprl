@@ -35,7 +35,7 @@ struct
     let
       val mref = ref 0
       fun updateModulus i = if !mref < i then mref := i else ()
-      fun beta i = (updateModulus i; alpha i)
+      fun beta i = (updateModulus (i + 1); alpha i)
     in
       (beta, mref)
     end
