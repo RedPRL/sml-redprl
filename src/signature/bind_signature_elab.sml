@@ -15,7 +15,7 @@ struct
   (* Given a AST declaration, this resolves its binding structure
    * in the context of the signature before it (given by [opidTable]).
    *)
-  fun bindDecl opidTable (DEF {parameters, arguments, sort, definiens}) =
+  fun bindDecl opidTable sign (DEF {parameters, arguments, sort, definiens}) =
     let
       val (localNames, sorts) = ListPair.unzip parameters
       val localSymbols = List.map Symbol.named localNames
@@ -30,7 +30,7 @@ struct
         val definiens' = convertOpen mctx (upsilon, gamma) (definiens, sort)
       end
     in
-      S2.def
+      S2.def sign
         {parameters = parameters',
          arguments = arguments,
          sort = sort,
@@ -44,18 +44,20 @@ struct
     let
       open StringTelescope.ConsView
 
-      fun go opidTable sign =
+      fun go opidTable soFar sign =
         case out sign of
             Empty => SymbolTelescope.empty
-          | Cons (string, decl, rest) =>
+          | Cons (opid, decl, rest) =>
             let
-              val lbl = Symbol.named string
+              val lbl = Symbol.named opid
+              val decl' = bindDecl opidTable soFar decl
+              val soFar' = SymbolTelescope.snoc soFar (lbl, decl')
             in
               SymbolTelescope.cons
-                  (lbl, bindDecl opidTable decl)
-                  (go ((string, lbl) :: opidTable) rest)
+                  (lbl, decl')
+                  (go ((opid, lbl) :: opidTable) soFar' rest)
             end
     in
-      go [] sign
+      go [] SymbolTelescope.empty sign
     end
 end

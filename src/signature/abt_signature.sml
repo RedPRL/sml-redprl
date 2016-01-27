@@ -27,7 +27,6 @@ struct
 
   type sign = decl Telescope.telescope
 
-  exception InvalidDef
   exception NotFound
 
   fun subarguments (Th1, Th2) =
@@ -44,12 +43,15 @@ struct
       go Th1
     end
 
-  fun subsymbols (Y1, Y2) =
+  fun subsymbols sign (Y1, Y2) =
     let
       fun lookup u =
         case List.find (fn (v, _) => Symbol.Eq.eq (u, v)) Y2 of
              SOME (v, tau) => tau
-           | NONE => raise NotFound
+           | NONE =>
+               (case Telescope.find sign u of
+                    SOME _ => SortData.OPID
+                  | NONE => raise NotFound)
       fun go [] = true
         | go ((u, tau) :: us) =
             (Sort.Eq.eq (tau, lookup u) handle _ => false)
@@ -58,20 +60,25 @@ struct
       go Y1
     end
 
+  fun guard msg x =
+    if x then () else raise Fail msg
+
   (* def is *almost* an identity, but it also does all the checking
    * necessary to make sure that everything is well-sorted and well-scoped
    * before hand
    *)
-  fun def {parameters, arguments, sort, definiens} =
+  fun def sign {parameters, arguments, sort, definiens} =
     let
       val Y' = Abt.freeSymbols definiens
       val Th' = MCtx.toList (Abt.metacontext definiens)
       val (_, tau') = Abt.infer definiens
+
+      val _ =
+        (guard "Metavariable not in scope" (subarguments (Th', arguments));
+         guard "Symbols not in scope" (subsymbols sign (Y', parameters));
+         guard "Sort mismatch" (Sort.Eq.eq (tau', sort)))
     in
-      if subarguments (Th', arguments) andalso subsymbols (Y', parameters) andalso Sort.Eq.eq (tau', sort) then
-        DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
-      else
-        raise InvalidDef
+      DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
     end
 
   fun undef (DEF d) = d

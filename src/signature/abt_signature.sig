@@ -16,10 +16,6 @@ sig
 
   include SIGNATURE
 
-  exception InvalidDef
-
-  (* raises [InvalidDef] *)
-  val def   : def -> decl
-
+  val def : sign -> def -> decl
   val undef : decl -> def
 end
