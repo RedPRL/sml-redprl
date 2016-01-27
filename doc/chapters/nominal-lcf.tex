@@ -414,3 +414,37 @@ Next, we define the behavior of the sequencing tactical, by case on the multi-ta
     \LCFElab{\Upsilon,\vec{u}:\SortHyp}{\Gamma}{t_2}{\SortTac}{\rho}{T_2}
   }
 \]
+
+\subsection{Derived Forms}
+
+The syntactic distinction between tactics and multitactics makes sense from a
+semantical point of view, but it can make for a rather inconvenient concrete
+syntax for tactic scripts. However, this can be dealt with easily because it is
+always possible to convert a tactic into a multitactic, and a multitactic into
+a tactic, as follows.
+
+\begin{enumerate}
+  \item Given a tactic $\IsAbt{\cdot}{\Upsilon}{\Gamma}{t}{\SortTac}$, we have
+    $\IsAbt{\cdot}{\Upsilon}{\Gamma}{\Box t}{\SortMTac}$.
+  \item Given a multitactic $\IsAbt{\cdot}{\Upsilon}{\Gamma}{t}{\SortMTac}$,
+    we have $\IsAbt{\cdot}{\Upsilon}{\Gamma}{\mathtt{id}; t}{\SortTac}$
+\end{enumerate}
+
+\begin{thm}
+  The conversion of a tactic to a multitactic and back to a tactic is lossless.
+\end{thm}
+\begin{proof}
+  Fix a tactic
+  $\IsAbt{\cdot}{\Upsilon}{\Gamma}{t}{\SortTac}$; then we have to show for any
+  environment $\rho$ that
+  $\IsEq{\LCFElaboration{\Upsilon}{\Gamma}{t}{\SortTac}{\rho}}{\LCFElaboration{\Upsilon}{\Gamma}{\mathtt{id};\Box
+  t}{\SortTac}{\rho}}$. Let
+  $\Define{T_\rho}{\LCFElaboration{\Upsilon}{\Gamma}{t}{\SortTac}{\rho}}$; then we
+  have:
+  \begin{align*}
+    \IMode{\LCFElaboration{\Upsilon}{\Gamma}{\mathtt{id};\Box t}{\SortTac}{\rho}}
+      &= \IMode{\lambda\alpha, J.\mathtt{THEN}((\lambda\beta.\mathtt{ID})(\alpha), T_\rho(\StreamChop{\alpha}{\ModC{\lambda\beta.\mathtt{ID}}(J,\alpha)}))(J)}\\
+      &= \IMode{\lambda\alpha. \mathtt{THEN}(\mathtt{ID}, T_\rho(\alpha))}\\
+      &= \IMode{T_\rho}
+  \end{align*}
+\end{proof}
