@@ -125,6 +125,7 @@ struct
                || parseId
                || parseHyp
                || parseRec
+               || try (parseAny sign rho f TAC)
 
            val parseAll =
              parseTac
@@ -132,17 +133,11 @@ struct
                  S ALL $ [([], []) \ t])
 
            val parseMultitac =
-             parseEach
+             parens (f MTAC)
+               || parseEach
                || parseFocus
                || parseAll
-
-           val parseSeq =
-             (commaSep1 parseSymbol << symbol "<-" || succeed [])
-               && parseTac << semi
-               && parseMultitac
-               wth (fn (us, (t, mt)) =>
-                  S (SEQ (length us)) $
-                    [([],[]) \ t, (us, []) \ mt])
+               || try (parseAny sign rho f MTAC)
 
            datatype component = BINDING of symbol list * ast
 
@@ -176,7 +171,7 @@ struct
        | _ =>
          fail "to be implemented"
 
-    fun parseAny sign rho f tau =
+    and parseAny sign rho f tau =
       let
         fun parseParameters n =
           squares (separateN n parseSymbol comma)
