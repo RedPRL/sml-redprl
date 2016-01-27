@@ -1,5 +1,8 @@
-Group
+Library
+  functor Elaborator
+  structure TermParser
 is
   src/signature.cm
   src/syntax.cm
-  src/metalanguage.cm
+  src/nominal-lcf.cm
+  src/signature.cm

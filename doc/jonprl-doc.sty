@@ -3,8 +3,18 @@
 \RequirePackage{graphicx}
 \RequirePackage[usenames,dvipsnames,svgnames,table]{xcolor}
 
+\RequirePackage[h]{esvect}
+
 \ExecuteOptions{}
 \ProcessOptions\relax
+
+\renewcommand\vec[1]{\protect\vv{#1}}
+\renewcommand\bar[1]{\protect\overline{#1}}
+\newcommand\LT[2]{\IMode{#1} < \IMode{#2}}
+
+\newcommand\BackDefine[2]{%
+  \OMode{#1}\triangleq\IMode{#2}%
+}
 
 \newcommand\RedJonPRL{%
   {\color{Maroon}%

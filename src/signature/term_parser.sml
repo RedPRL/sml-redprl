@@ -36,6 +36,7 @@ struct
         symbol "exp" return EXP
         || symbol "lvl" return LVL
         || symbol "tac" return TAC
+        || symbol "mtac" return MTAC
         || symbol "vec" >> p wth VEC)
   end
 
@@ -99,17 +100,17 @@ struct
                  VEC_LIT (tau, length xs) $
                    map (fn x => ([],[]) \ x) xs)
 
-           val parseMulti =
+           val parseEach =
              squares (parseVec TAC)
                wth (fn v =>
-                 S MULTI $ [([], []) \ v])
+                 S EACH $ [([], []) \ v])
 
            val parseFocus =
              symbol "#"
                >> integer
                && braces (f TAC)
                wth (fn (i, tac) =>
-                 S (FOCUS {focus = i}) $
+                 S (FOCUS i) $
                    [([],[]) \ tac])
 
            val parseRec =
@@ -117,42 +118,60 @@ struct
                && braces (f TAC)
                wth (fn (x, tac) =>
                  S REC $
-                   [([], [x]) \ tac]
-               )
+                   [([], [x]) \ tac])
 
-           val parseAtomic =
+           val parseTac =
              parens (f TAC)
                || parseId
                || parseHyp
-               || parseMulti
-               || parseFocus
                || parseRec
 
-           datatype component =
-               BINDING of symbol list * ast
-             | ATOMIC of ast
+           val parseAll =
+             parseTac
+               wth (fn t =>
+                 S ALL $ [([], []) \ t])
 
-           val parseBinding =
-             commaSep parseSymbol << symbol "<-"
-               && parseAtomic
+           val parseMultitac =
+             parseEach
+               || parseFocus
+               || parseAll
+
+           val parseSeq =
+             (commaSep1 parseSymbol << symbol "<-" || succeed [])
+               && parseTac << semi
+               && parseMultitac
+               wth (fn (us, (t, mt)) =>
+                  S (SEQ (length us)) $
+                    [([],[]) \ t, (us, []) \ mt])
+
+           datatype component = BINDING of symbol list * ast
 
            val parseComponent =
-             try parseAtomic wth ATOMIC
-               || parseBinding wth BINDING
+             (commaSep1 parseSymbol << symbol "<-" || succeed [])
+               && parseMultitac
+               wth BINDING
 
-           fun makeBind t1 us t2 =
-             S (BIND {bindings = length us}) $
-               [([],[]) \ t1, (us, []) \ t2]
+           fun makeSeq t us mt =
+             S (SEQ (length us)) $
+               [([],[]) \ t, (us, []) \ mt]
 
-           val rec componentsToScript =
+           val multitacToTac =
+             fn (S ALL $ [_ \ t]) => t
+              | t => makeSeq (S ID $ []) [] t
+
+           val tacToMultitac =
+             fn (S (SEQ 0) $ [_ \ (S ID $ []), ([],[]) \ mt]) => mt
+              | t => S ALL $ [([],[]) \ t]
+
+           val rec compileScript =
              fn [] => fail "Expected tactic script"
-              | [ATOMIC tac] => succeed tac
-              | [BINDING _] => fail "Expected tactic after binding"
-              | ATOMIC tac :: xs => componentsToScript xs wth (makeBind tac [])
-              | BINDING (us, tac) :: xs => componentsToScript xs wth (makeBind tac us)
+              | [BINDING (_, tac)] => succeed (multitacToTac tac)
+              | BINDING (us, tac) :: ts =>
+                  compileScript ts
+                    wth makeSeq (multitacToTac tac) us o tacToMultitac
          in
            sepEnd1' parseComponent semi
-             -- componentsToScript
+             -- compileScript
          end
        | _ =>
          fail "to be implemented"
