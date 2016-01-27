@@ -16,7 +16,7 @@ struct
   in
     fun arity (SEQ n) =
           [ [] * [] <> TAC
-          , (EXP ^ n) * [] <> TAC
+          , (EXP ^ n) * [] <> MTAC
           ] ->> TAC
       | arity ALL =
           [ [] * [] <> TAC

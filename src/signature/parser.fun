@@ -134,7 +134,7 @@ struct
               (opid,
                {parameters = params,
                 arguments = List.map (fn (m, v) => rho m) args,
-                sort = SortData.TAC,
+                sort = SortData.THM,
                 definiens =
                   OperatorData.PROVE $
                     [([],[]) \ goal,
