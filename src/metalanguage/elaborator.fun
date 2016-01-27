@@ -6,10 +6,6 @@ struct
   open Abt ScriptOperatorData OperatorData SortData
   infix $ \
 
-  fun mkNameStore xs =
-    fn i =>
-      List.nth (xs, i)
-
   fun elaborateOpt m =
     case infer m of
          (OP_SOME _ $ [_ \ n], OPT _) => SOME n
