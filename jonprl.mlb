@@ -1,6 +1,6 @@
 local
   src/signature.mlb
   src/syntax.mlb
-  src/metalanguage.mlb
+  src/nominal-lcf.mlb
 in
 end

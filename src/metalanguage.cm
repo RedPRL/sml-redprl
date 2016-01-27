@@ -7,5 +7,5 @@ is
   ../lib/sml-lcf/lcf.cm
   syntax.cm
   cmlib.cm
-  metalanguage/elaborator.sig
-  metalanguage/elaborator.fun
+  nominal-lcf/elaborator.sig
+  nominal-lcf/elaborator.fun

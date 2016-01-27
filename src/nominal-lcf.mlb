@@ -7,8 +7,8 @@ local
     signature DICT
     functor SplayDict
   end
-  metalanguage/elaborator.sig
-  metalanguage/elaborator.fun
+  nominal-lcf/elaborator.sig
+  nominal-lcf/elaborator.fun
 in
   signature REFINER
   signature ELABORATOR
