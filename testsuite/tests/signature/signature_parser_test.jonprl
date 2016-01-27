@@ -10,19 +10,19 @@ Def myvec(A:exp) : vec exp = [
   [A,A,A]
 ].
 
-Def mydef(M : [exp].exp, N : [tac].exp) : exp = [
-  dfun(N[a <- id; hyp a]; [x].M[x])
+Def mydef[u:exp](M : {exp}[exp].exp, N : [tac].exp) : exp = [
+  dfun(N[id]; [x].M{u}[x])
 ].
 
 // Tactics can take parameters and arguments as well
 Tac welp[a:exp](M : exp) = [
-  y
+  hyp a
 ].
 
 // Recursion is built into the tactic language.
 Tac repeat(T : tac) = [
   rec R. {
-    (T); (R)
+    T; R
   }
 ].
 
@@ -32,12 +32,11 @@ Thm thm(i:lvl) : [
   todo
 ] by [
   repeat(
-    a,c <- id;
-    d,e <- id;
-    [hyp d, hyp e];
+    a,b <- id;
+    c,d <- id;
+    [hyp c, hyp d];
     #1 {
-      hyp a;
-      hyp b
+      hyp a; hyp b
     }
   )
 ].

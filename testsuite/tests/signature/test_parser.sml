@@ -45,5 +45,12 @@ struct
   val () =
     case parsed of
         INL s => raise Fail (message ^ ": " ^ s)
-      | INR t => printSign t
+      | INR sign =>
+          let
+            val _ = printSign sign
+            val elab = ValidationElab.transport o BindSignatureElab.transport
+            val _ = elab sign
+          in
+            ()
+          end
 end
