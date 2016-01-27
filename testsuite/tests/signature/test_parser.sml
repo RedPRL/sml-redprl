@@ -9,10 +9,9 @@ struct
 
   open AstSignatureDecl
 
-
   val paramsToString =
     ListSpine.pretty
-      (fn (u, tau) => u ^ " : " ^ Sort.Show.toString tau)
+      (fn (u, tau) => Symbol.Show.toString u ^ " : " ^ Sort.Show.toString tau)
       ","
 
   val argsToString =
@@ -20,24 +19,24 @@ struct
       (fn (m, vl) => Metavariable.Show.toString m ^ " : " ^ Valence.Show.toString vl)
       ";"
 
-  fun printDecl (lbl, DEF {parameters, arguments, definiens, sort}) =
+  fun printDecl (lbl, {parameters, arguments, definiens, sort}) =
     print
       ("Def "
-         ^ lbl
+         ^ Symbol.Show.toString lbl
          ^ "[" ^ paramsToString parameters ^ "]"
          ^ "(" ^ argsToString arguments ^ ")"
          ^ " : " ^ Sort.Show.toString sort
          ^ " = ["
-         ^ Ast.Show.toString definiens
+         ^ ShowAbt.toString definiens
          ^ "].\n")
 
   local
-    open AstSignature.Telescope
+    open AbtSignature.Telescope
   in
     fun printSign sign =
       case ConsView.out sign of
           ConsView.Cons (l, d, sign') =>
-            (printDecl (l, d); printSign sign')
+            (printDecl (l, AbtSignature.undef d); printSign sign')
         | ConsView.Empty => ()
   end
 
@@ -47,9 +46,9 @@ struct
         INL s => raise Fail (message ^ ": " ^ s)
       | INR sign =>
           let
-            val _ = printSign sign
             val elab = ValidationElab.transport o BindSignatureElab.transport
-            val _ = elab sign
+            val sign' = elab sign
+            val _ = printSign sign'
           in
             ()
           end
