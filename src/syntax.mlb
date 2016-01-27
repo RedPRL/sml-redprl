@@ -37,4 +37,6 @@ in
   structure Ast
   structure Abt
   structure AstToAbt
+  structure ShowAbt
+  structure DebugShowAbt
 end

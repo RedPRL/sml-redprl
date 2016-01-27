@@ -20,6 +20,8 @@ Library
   structure Ast
   structure Abt
   structure AstToAbt
+  structure ShowAbt
+  structure DebugShowAbt
 is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))

@@ -24,3 +24,6 @@ structure Abt =
      structure Symbol = Symbol)
 
 structure AstToAbt = AstToAbt (structure Ast = Ast and Abt = Abt)
+
+structure ShowAbt = PlainShowAbt (Abt)
+structure DebugShowAbt = DebugShowAbt (Abt)
