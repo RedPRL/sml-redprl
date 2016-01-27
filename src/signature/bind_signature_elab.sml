@@ -44,20 +44,19 @@ struct
     let
       open StringTelescope.ConsView
 
-      fun go opidTable soFar sign =
-        case out sign of
-            Empty => SymbolTelescope.empty
+      fun go opidTable (signIn : AstSignature.sign) (signOut : AbtSignature.sign) =
+        case out signIn of
+            Empty => signOut
           | Cons (opid, decl, rest) =>
             let
               val lbl = Symbol.named opid
-              val decl' = bindDecl opidTable soFar decl
-              val soFar' = SymbolTelescope.snoc soFar (lbl, decl')
+              val decl' = bindDecl opidTable signOut decl
+              val opidTable' = (opid, lbl) :: opidTable
+              val signOut' = SymbolTelescope.snoc signOut (lbl, decl')
             in
-              SymbolTelescope.cons
-                  (lbl, decl')
-                  (go ((opid, lbl) :: opidTable) soFar' rest)
+              go opidTable' rest signOut'
             end
     in
-      go [] SymbolTelescope.empty sign
+      go [] sign SymbolTelescope.empty
     end
 end
