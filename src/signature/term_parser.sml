@@ -36,6 +36,7 @@ struct
         symbol "exp" return EXP
         || symbol "lvl" return LVL
         || symbol "tac" return TAC
+        || symbol "mtac" return MTAC
         || symbol "vec" >> p wth VEC)
   end
 
@@ -99,17 +100,17 @@ struct
                  VEC_LIT (tau, length xs) $
                    map (fn x => ([],[]) \ x) xs)
 
-           val parseMulti =
+           val parseEach =
              squares (parseVec TAC)
                wth (fn v =>
-                 S MULTI $ [([], []) \ v])
+                 S EACH $ [([], []) \ v])
 
            val parseFocus =
              symbol "#"
                >> integer
                && braces (f TAC)
                wth (fn (i, tac) =>
-                 S (FOCUS {focus = i}) $
+                 S (FOCUS i) $
                    [([],[]) \ tac])
 
            val parseRec =
@@ -124,7 +125,7 @@ struct
              parens (f TAC)
                || parseId
                || parseHyp
-               || parseMulti
+               || parseEach
                || parseFocus
                || parseRec
 
@@ -141,7 +142,7 @@ struct
                || parseBinding wth BINDING
 
            fun makeBind t1 us t2 =
-             S (BIND {bindings = length us}) $
+             S (SEQ (length us)) $
                [([],[]) \ t1, (us, []) \ t2]
 
            val rec componentsToScript =
