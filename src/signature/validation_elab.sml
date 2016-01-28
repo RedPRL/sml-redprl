@@ -55,7 +55,7 @@ struct
    * that occurs in the body is correct with respect to the signature
    * it appears in.
    *)
-  fun checkDecl map decl =
+  fun checkDecl map =
     let
       fun go e =
         case #1 (Abt.infer e) of
@@ -64,7 +64,7 @@ struct
           | _ $# (_, args) => List.app go args
       and goAbs (_ \ a) = go a
     in
-      go (#definiens (S1.undef decl))
+      go o #definiens o S1.undef
     end
 
   (* This is just the straightforward extension of checkDecl to full
@@ -82,6 +82,7 @@ struct
       (* Note that since we're just validating the signature
        * at the end we just return the input
        *)
-      go DefnMap.empty sign; sign
+      go DefnMap.empty sign;
+      sign
     end
 end
