@@ -1,6 +1,6 @@
-structure ScriptOperator : OPERATOR =
+structure NominalLcfOperator : OPERATOR =
 struct
-  open ScriptOperatorData SortData
+  open NominalLcfOperatorData SortData
 
   structure Arity = Arity
 

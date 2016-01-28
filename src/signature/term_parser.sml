@@ -68,7 +68,7 @@ struct
   fun hole ! = raise Match
 
   local
-    open AstSignature AstSignatureDecl Ast OperatorData ScriptOperatorData SortData
+    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData SortData
     infix $ \ $#
   in
     val parseSymbol = identifier
@@ -87,12 +87,12 @@ struct
          let
            val parseId =
              symbol "id"
-               return (S ID $ [])
+               return (LCF ID $ [])
 
            val parseHyp =
              symbol "hyp"
                >> parseSymbol
-               wth (fn u => S (HYP {target = u}) $ [])
+               wth (fn u => LCF (HYP {target = u}) $ [])
 
            fun parseVec tau =
              commaSep (f tau)
@@ -103,21 +103,21 @@ struct
            val parseEach =
              squares (parseVec TAC)
                wth (fn v =>
-                 S EACH $ [([], []) \ v])
+                 LCF EACH $ [([], []) \ v])
 
            val parseFocus =
              symbol "#"
                >> integer
                && braces (f TAC)
                wth (fn (i, tac) =>
-                 S (FOCUS i) $
+                 LCF (FOCUS i) $
                    [([],[]) \ tac])
 
            val parseRec =
              symbol "rec" >> parseVariable << dot
                && braces (f TAC)
                wth (fn (x, tac) =>
-                 S REC $
+                 LCF REC $
                    [([], [x]) \ tac])
 
            val parseTac =
@@ -130,7 +130,7 @@ struct
            val parseAll =
              parseTac
                wth (fn t =>
-                 S ALL $ [([], []) \ t])
+                 LCF ALL $ [([], []) \ t])
 
            val parseMultitac =
              parens (f MTAC)
@@ -147,16 +147,16 @@ struct
                wth BINDING
 
            fun makeSeq t us mt =
-             S (SEQ (length us)) $
+             LCF (SEQ (length us)) $
                [([],[]) \ t, (us, []) \ mt]
 
            val multitacToTac =
-             fn (S ALL $ [_ \ t]) => t
-              | t => makeSeq (S ID $ []) [] t
+             fn (LCF ALL $ [_ \ t]) => t
+              | t => makeSeq (LCF ID $ []) [] t
 
            val tacToMultitac =
-             fn (S (SEQ 0) $ [_ \ (S ID $ []), ([],[]) \ mt]) => mt
-              | t => S ALL $ [([],[]) \ t]
+             fn (LCF (SEQ 0) $ [_ \ (LCF ID $ []), ([],[]) \ mt]) => mt
+              | t => LCF ALL $ [([],[]) \ t]
 
            val rec compileScript =
              fn [] => fail "Expected tactic script"

@@ -5,8 +5,8 @@ local
   syntax/sort_data.sml
   syntax/arity.sml
 
-  syntax/script/operator_data.sml
-  syntax/script/operator.sml
+  syntax/nominal-lcf/operator_data.sml
+  syntax/nominal-lcf/operator.sml
 
   syntax/level/operator_data.sml
   syntax/level/operator.sml
@@ -21,8 +21,8 @@ in
   structure Valence
   structure Arity
 
-  structure ScriptOperatorData
-  structure ScriptOperator
+  structure NominalLcfOperatorData
+  structure NominalLcfOperator
 
   structure LevelOperatorData
   structure LevelOperator

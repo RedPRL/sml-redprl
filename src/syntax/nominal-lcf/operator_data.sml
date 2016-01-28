@@ -1,4 +1,4 @@
-structure ScriptOperatorData =
+structure NominalLcfOperatorData =
 struct
   (* We use symbols/atoms to index into the context. *)
   type 'i hyp_params =

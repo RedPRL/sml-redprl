@@ -3,7 +3,7 @@ struct
   structure Refiner = R
   structure T = R.Tacticals
 
-  open Abt ScriptOperatorData OperatorData SortData
+  open Abt NominalLcfOperatorData OperatorData SortData
   infix $ \
 
   fun elaborateOpt m =
@@ -47,14 +47,14 @@ struct
 
   fun elaborate rho t =
     case #1 (infer t) of
-         S ID $ _ => (fn _ => T.ID)
-       | S (SEQ _) $ [_ \ t, (us, _) \ mt] =>
+         LCF ID $ _ => (fn _ => T.ID)
+       | LCF (SEQ _) $ [_ \ t, (us, _) \ mt] =>
            elaborateMulti rho (elaborate rho t) us mt
-       | S REC $ [(_, [x]) \ t] =>
+       | LCF REC $ [(_, [x]) \ t] =>
            R.Rec (fn T => elaborate (Env.insert rho x T) t)
-       | S (ELIM {target}) $ [_ \ m] =>
+       | LCF (ELIM {target}) $ [_ \ m] =>
            R.Elim target (elaborateOpt m)
-       | S (INTRO {rule}) $ [_ \ m] =>
+       | LCF (INTRO {rule}) $ [_ \ m] =>
            R.Intro rule (elaborateOpt m)
        | `x => Env.lookup rho x
        | _ => raise Fail "Expected tactic"
@@ -65,7 +65,7 @@ struct
    * lhs tactic twice. *)
   and elaborateMulti rho T1 us mt =
     case #1 (infer mt) of
-         S ALL $ [_ \ t2] =>
+         LCF ALL $ [_ \ t2] =>
            let
              val T2 = elaborate rho t2
            in
@@ -77,7 +77,7 @@ struct
                  T.THEN_LAZY (T1 beta', fn () => T2 (bite (!modulus) beta))
                end
            end
-       | S EACH $ [_ \ v] =>
+       | LCF EACH $ [_ \ v] =>
            let
              val Ts = List.map (elaborate rho) (elaborateVec v)
            in
@@ -90,7 +90,7 @@ struct
                    List.map (fn Ti => Ti (bite (!modulus) beta)) Ts)
                end
            end
-       | S (FOCUS i) $ [_\ t2] =>
+       | LCF (FOCUS i) $ [_\ t2] =>
            let
              val T2 = elaborate rho t2
            in

@@ -15,8 +15,8 @@ struct
   in
     fun arity theta =
       case theta of
-           S theta =>
-             ScriptOperator.arity theta
+           LCF theta =>
+             NominalLcfOperator.arity theta
          | PROVE =>
              [[] * [] <> SortData.EXP,
               [] * [] <> SortData.TAC]
@@ -37,7 +37,7 @@ struct
 
   fun support theta =
     case theta of
-         S theta => ScriptOperator.support theta
+         LCF theta => NominalLcfOperator.support theta
        | PROVE => []
        | LVL_OP theta => LevelOperator.support theta
        | VEC_LIT (tau, len) => []
@@ -47,7 +47,7 @@ struct
 
   fun map f theta =
     case theta of
-         S theta => S (ScriptOperator.map f theta)
+         LCF theta => LCF (NominalLcfOperator.map f theta)
        | PROVE => PROVE
        | LVL_OP theta => LVL_OP (LevelOperator.map f theta)
        | VEC_LIT p => VEC_LIT p
@@ -57,8 +57,8 @@ struct
 
   fun eq f ops =
     case ops of
-         (S theta1, S theta2) =>
-           ScriptOperator.eq f (theta1, theta2)
+         (LCF theta1, LCF theta2) =>
+           NominalLcfOperator.eq f (theta1, theta2)
        | (PROVE, PROVE) => true
        | (LVL_OP theta1, LVL_OP theta2) =>
            LevelOperator.eq f (theta1, theta2)
@@ -77,8 +77,8 @@ struct
 
   fun toString f theta =
     case theta of
-         S theta =>
-           ScriptOperator.toString f theta
+         LCF theta =>
+           NominalLcfOperator.toString f theta
        | PROVE => "prove"
        | LVL_OP theta =>
            LevelOperator.toString f theta
