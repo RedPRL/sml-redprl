@@ -8,7 +8,7 @@ structure Variable = Symbol
 structure Metacontext =
   Metacontext
     (structure Metavariable = Metavariable
-     structure Valence = Valence.Eq)
+     structure Valence = Valence)
 
 structure Ast =
   Ast

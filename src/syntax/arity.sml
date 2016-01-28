@@ -3,26 +3,19 @@ struct
   open SortData
   type t = sort
 
-  structure Eq =
-  struct
-    type t = t
-    val eq = op=
-  end
+  val eq = op=
 
-  structure Show =
-  struct
-    type t = t
-    fun toString EXP = "exp"
-      | toString EVD = "evd"
-      | toString TAC = "tac"
-      | toString MTAC = "mtac"
-      | toString THM = "thm"
-      | toString LVL = "lvl"
-      | toString (VEC tau) = "[" ^ toString tau ^ "]"
-      | toString (OPT tau) = toString tau ^ "?"
-      | toString OPID = "opid"
-  end
+  val rec toString =
+    fn EXP => "exp"
+     | EVD => "evd"
+     | TAC => "tac"
+     | MTAC => "mtac"
+     | THM => "thm"
+     | LVL => "lvl"
+     | (VEC tau) => "[" ^ toString tau ^ "]"
+     | (OPT tau) => toString tau ^ "?"
+     | OPID => "opid"
 end
 
-structure Arity = Arity (structure Sort = Sort and Spine = ListSpine)
-structure Valence = Arity.Valence
+structure Valence = Valence (structure Sort = Sort and Spine = ListSpine)
+structure Arity = Arity (Valence)

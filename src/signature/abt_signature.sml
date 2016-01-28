@@ -5,7 +5,7 @@ struct
 
   structure Arity = Abt.Operator.Arity
   structure Valence = Arity.Valence
-  structure Sort = Arity.Sort
+  structure Sort = Valence.Sort
   structure Symbol = Abt.Symbol
   structure MCtx = Abt.Metacontext
 
@@ -32,12 +32,12 @@ struct
   fun subarguments (Th1, Th2) =
     let
       fun lookup x =
-        case List.find (fn (y, v) => Abt.Metavariable.Eq.eq (x, y)) Th2 of
+        case List.find (fn (y, v) => Abt.Metavariable.eq (x, y)) Th2 of
              SOME (_, v) => v
            | NONE => raise NotFound
       fun go [] = true
         | go ((x, vl) :: xs) =
-            (Valence.Eq.eq (vl, lookup x) handle _ => false)
+            (Valence.eq (vl, lookup x) handle _ => false)
               andalso go xs
     in
       go Th1
@@ -46,7 +46,7 @@ struct
   fun subsymbols sign (Y1, Y2) =
     let
       fun lookup u =
-        case List.find (fn (v, _) => Symbol.Eq.eq (u, v)) Y2 of
+        case List.find (fn (v, _) => Symbol.eq (u, v)) Y2 of
              SOME (v, tau) => tau
            | NONE =>
                (case Telescope.find sign u of
@@ -54,7 +54,7 @@ struct
                   | NONE => raise NotFound)
       fun go [] = true
         | go ((u, tau) :: us) =
-            (Sort.Eq.eq (tau, lookup u) handle _ => false)
+            (Sort.eq (tau, lookup u) handle _ => false)
               andalso go us
     in
       go Y1
@@ -78,7 +78,7 @@ struct
         (guard "Metavariable not in scope" (subarguments (Th', arguments));
          guard "Symbols not in scope" (subsymbols sign (Y', parameters));
          guard "Variables not in scope" (List.length G = 0);
-         guard "Sort mismatch" (Sort.Eq.eq (tau', sort)))
+         guard "Sort mismatch" (Sort.eq (tau', sort)))
     in
       DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
     end

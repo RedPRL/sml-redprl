@@ -45,67 +45,54 @@ struct
        | OP_NONE _ => []
        | CUST (opid, supp, _) => (opid, SortData.OPID) :: supp
 
-  structure Presheaf =
-  struct
-    type 'i t = 'i t
-    fun map f theta =
-      case theta of
-           S theta => S (ScriptOperator.Presheaf.map f theta)
-         | PROVE => PROVE
-         | LVL_OP theta => LVL_OP (LevelOperator.Presheaf.map f theta)
-         | VEC_LIT p => VEC_LIT p
-         | OP_SOME tau => OP_SOME tau
-         | OP_NONE tau => OP_NONE tau
-         | CUST (opid, supp, arity) => CUST (f opid, List.map (fn (u, tau) => (f u, tau)) supp, arity)
-  end
+  fun map f theta =
+    case theta of
+         S theta => S (ScriptOperator.map f theta)
+       | PROVE => PROVE
+       | LVL_OP theta => LVL_OP (LevelOperator.map f theta)
+       | VEC_LIT p => VEC_LIT p
+       | OP_SOME tau => OP_SOME tau
+       | OP_NONE tau => OP_NONE tau
+       | CUST (opid, supp, arity) => CUST (f opid, List.map (fn (u, tau) => (f u, tau)) supp, arity)
 
-  structure Eq =
-  struct
-    type 'i t = 'i t
-    fun eq f ops =
-      case ops of
-           (S theta1, S theta2) =>
-             ScriptOperator.Eq.eq f (theta1, theta2)
-         | (PROVE, PROVE) => true
-         | (LVL_OP theta1, LVL_OP theta2) =>
-             LevelOperator.Eq.eq f (theta1, theta2)
-         | (VEC_LIT p1, VEC_LIT p2) =>
-             p1 = p2
-         | (OP_SOME tau1, OP_SOME tau2) =>
-             tau1 = tau2
-         | (OP_NONE tau1, OP_NONE tau2) =>
-             tau1 = tau2
-         | (CUST (opid1, supp1, arity1), CUST (opid2, supp2, arity2)) =>
-             f (opid1, opid2)
-               andalso ListPair.allEq (fn ((u, sigma), (v, tau)) => f (u, v) andalso Sort.Eq.eq (sigma, tau)) (supp1, supp2)
-               andalso Arity.Eq.eq (arity1, arity2)
-         | _ =>
-             false
-  end
+  fun eq f ops =
+    case ops of
+         (S theta1, S theta2) =>
+           ScriptOperator.eq f (theta1, theta2)
+       | (PROVE, PROVE) => true
+       | (LVL_OP theta1, LVL_OP theta2) =>
+           LevelOperator.eq f (theta1, theta2)
+       | (VEC_LIT p1, VEC_LIT p2) =>
+           p1 = p2
+       | (OP_SOME tau1, OP_SOME tau2) =>
+           tau1 = tau2
+       | (OP_NONE tau1, OP_NONE tau2) =>
+           tau1 = tau2
+       | (CUST (opid1, supp1, arity1), CUST (opid2, supp2, arity2)) =>
+           f (opid1, opid2)
+             andalso ListPair.allEq (fn ((u, sigma), (v, tau)) => f (u, v) andalso Sort.eq (sigma, tau)) (supp1, supp2)
+             andalso Arity.eq (arity1, arity2)
+       | _ =>
+           false
 
-  structure Show =
-  struct
-    type 'i t = 'i t
-    fun toString f theta =
-      case theta of
-           S theta =>
-             ScriptOperator.Show.toString f theta
-         | PROVE => "prove"
-         | LVL_OP theta =>
-             LevelOperator.Show.toString f theta
-         | VEC_LIT (tau, m) =>
-             "vec{" ^ Sort.Show.toString tau ^ "}"
-         | OP_SOME tau =>
-             "some{" ^ Sort.Show.toString tau ^ "}"
-         | OP_NONE tau =>
-             "none{" ^ Sort.Show.toString tau ^ "}"
-         | CUST (opid, supp, _) =>
-             let
-               fun spine [] = ""
-                 | spine xs = "[" ^ ListSpine.pretty f "," xs ^ "]"
-             in
-               f opid ^ spine (map #1 supp)
-             end
-  end
-
+  fun toString f theta =
+    case theta of
+         S theta =>
+           ScriptOperator.toString f theta
+       | PROVE => "prove"
+       | LVL_OP theta =>
+           LevelOperator.toString f theta
+       | VEC_LIT (tau, m) =>
+           "vec{" ^ Sort.toString tau ^ "}"
+       | OP_SOME tau =>
+           "some{" ^ Sort.toString tau ^ "}"
+       | OP_NONE tau =>
+           "none{" ^ Sort.toString tau ^ "}"
+       | CUST (opid, supp, _) =>
+           let
+             fun spine [] = ""
+               | spine xs = "[" ^ ListSpine.pretty f "," xs ^ "]"
+           in
+             f opid ^ spine (List.map #1 supp)
+           end
 end

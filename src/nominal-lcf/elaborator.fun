@@ -17,13 +17,7 @@ struct
          VEC_LIT _ $ es => List.map (fn (_ \ n) => n) es
        | _ => raise Fail "Expected vector argument"
 
-  structure Env =
-    SplayDict
-      (structure Key =
-       struct
-         open Variable
-         open Eq
-       end)
+  structure Env = SplayDict (structure Key = Variable)
 
   type env = Refiner.ntactic Env.dict
 

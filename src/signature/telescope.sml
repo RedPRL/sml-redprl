@@ -7,7 +7,7 @@ end
 
 structure SymbolLabel : LABEL =
 struct
-  open Symbol Symbol.Eq Symbol.Show
+  open Symbol
   fun prime x =
     named (toString x ^ "'")
 end

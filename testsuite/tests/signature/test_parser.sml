@@ -11,21 +11,21 @@ struct
 
   val paramsToString =
     ListSpine.pretty
-      (fn (u, tau) => Symbol.Show.toString u ^ " : " ^ Sort.Show.toString tau)
+      (fn (u, tau) => Symbol.toString u ^ " : " ^ Sort.toString tau)
       ","
 
   val argsToString =
     ListSpine.pretty
-      (fn (m, vl) => Metavariable.Show.toString m ^ " : " ^ Valence.Show.toString vl)
+      (fn (m, vl) => Metavariable.toString m ^ " : " ^ Valence.toString vl)
       ";"
 
   fun printDecl (lbl, {parameters, arguments, definiens, sort}) =
     print
       ("Def "
-         ^ Symbol.Show.toString lbl
+         ^ Symbol.toString lbl
          ^ "[" ^ paramsToString parameters ^ "]"
          ^ "(" ^ argsToString arguments ^ ")"
-         ^ " : " ^ Sort.Show.toString sort
+         ^ " : " ^ Sort.toString sort
          ^ " = ["
          ^ ShowAbt.toString definiens
          ^ "].\n")

@@ -46,48 +46,36 @@ struct
     | support (HYP {target}) = [(target, EXP)]
     | support _ = []
 
-  structure Presheaf =
-  struct
-    type 'i t = 'i t
-    fun map f =
-      fn SEQ n => SEQ n
-       | ALL => ALL
-       | EACH => EACH
-       | FOCUS i => FOCUS i
-       | INTRO p => INTRO p
-       | ELIM {target} => ELIM {target = f target}
-       | HYP {target} => HYP {target = f target}
-       | ID => ID
-       | REC => REC
-  end
+  fun map f =
+    fn SEQ n => SEQ n
+     | ALL => ALL
+     | EACH => EACH
+     | FOCUS i => FOCUS i
+     | INTRO p => INTRO p
+     | ELIM {target} => ELIM {target = f target}
+     | HYP {target} => HYP {target = f target}
+     | ID => ID
+     | REC => REC
 
-  structure Eq =
-  struct
-    type 'i t = 'i t
-    fun eq f =
-      fn (SEQ n1, SEQ n2) => n1 = n2
-       | (ALL, ALL) => true
-       | (EACH, EACH) => true
-       | (FOCUS i1, FOCUS i2) => i1 = i2
-       | (ELIM p1, ELIM p2) => f (#target p1, #target p2)
-       | (HYP p1, HYP p2) => f (#target p1, #target p2)
-       | (ID, ID) => true
-       | (REC, REC) => true
-       | _ => false
-  end
+  fun eq f =
+    fn (SEQ n1, SEQ n2) => n1 = n2
+     | (ALL, ALL) => true
+     | (EACH, EACH) => true
+     | (FOCUS i1, FOCUS i2) => i1 = i2
+     | (ELIM p1, ELIM p2) => f (#target p1, #target p2)
+     | (HYP p1, HYP p2) => f (#target p1, #target p2)
+     | (ID, ID) => true
+     | (REC, REC) => true
+     | _ => false
 
-  structure Show =
-  struct
-    type 'i t = 'i t
-    fun toString f =
-      fn (SEQ _) => "seq"
-       | ALL => "all"
-       | EACH => "each"
-       | FOCUS i => "some[" ^ Int.toString i ^ "]"
-       | INTRO _ => "intro"
-       | ELIM {target} => "elim[" ^ f target ^ "]"
-       | HYP {target} => "hyp[" ^ f target ^ "]"
-       | ID => "id"
-       | REC => "rec"
-  end
+  fun toString f =
+    fn (SEQ _) => "seq"
+     | ALL => "all"
+     | EACH => "each"
+     | FOCUS i => "some[" ^ Int.toString i ^ "]"
+     | INTRO _ => "intro"
+     | ELIM {target} => "elim[" ^ f target ^ "]"
+     | HYP {target} => "hyp[" ^ f target ^ "]"
+     | ID => "id"
+     | REC => "rec"
 end

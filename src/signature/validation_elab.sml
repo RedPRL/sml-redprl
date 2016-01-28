@@ -22,8 +22,7 @@ struct
 
 
   structure Telescope = SymbolTelescope
-
-  structure DefnMap = SplayDict(structure Key = struct open Symbol; open Eq end)
+  structure DefnMap = SplayDict(structure Key = Symbol)
 
   (* TODO: Should we standardize how we report these errors?
    * Do we only want to throw back the op name?
@@ -42,10 +41,10 @@ struct
           | SOME x => S1.undef x
       val sorts = ListPair.zipEq (List.map #2 params, List.map #2 parameters)
       val () =
-        if List.all Sort.Eq.eq sorts then () else raise InvalidCustomOper opid
+        if List.all Sort.eq sorts then () else raise InvalidCustomOper opid
       val expectedArity = (List.map #2 arguments, sort)
       val () =
-        if Arity.Eq.eq (expectedArity, arity) then () else raise InvalidCustomOper opid
+        if Arity.eq (expectedArity, arity) then () else raise InvalidCustomOper opid
     in
       ()
     end

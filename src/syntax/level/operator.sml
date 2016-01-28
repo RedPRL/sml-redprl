@@ -12,27 +12,14 @@ struct
   fun support (LBASE i) = [(i, LVL)]
     | support LSUCC = []
 
-  structure Presheaf =
-  struct
-    type 'i t = 'i t
-    fun map f (LBASE i) = LBASE (f i)
-      | map f LSUCC = LSUCC
-  end
+  fun map f (LBASE i) = LBASE (f i)
+    | map f LSUCC = LSUCC
 
-  structure Eq =
-  struct
-    type 'i t = 'i t
+  fun eq f (LBASE i, LBASE j) = f (i, j)
+    | eq f (LSUCC, LSUCC) = true
+    | eq _ _ = false
 
-    fun eq f (LBASE i, LBASE j) = f (i, j)
-      | eq f (LSUCC, LSUCC) = true
-      | eq _ _ = false
-  end
-
-  structure Show =
-  struct
-    type 'i t = 'i t
-    fun toString f (LBASE i) = "lbase[" ^ f i ^ "]"
-      | toString f LSUCC = "lsucc"
-  end
+  fun toString f (LBASE i) = "lbase[" ^ f i ^ "]"
+    | toString f LSUCC = "lsucc"
 
 end
