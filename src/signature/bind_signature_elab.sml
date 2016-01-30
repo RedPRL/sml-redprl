@@ -25,9 +25,9 @@ struct
 
       local
         open AstToAbt
-        val upsilon = List.foldl (fn ((u,tau),m) => NameEnv.insert m u tau) NameEnv.empty (opidTable @ ListPair.zipEq (localNames, localSymbols))
+        val upsilon = List.foldl (fn ((u,tau),m) => NameEnv.insert m u tau) opidTable (ListPair.zipEq (localNames, localSymbols))
         val gamma = NameEnv.empty
-        val mctx = List.foldl (fn (x,m) => MetaCtx.extend m x) MetaCtx.empty arguments
+        val mctx = List.foldl (fn (x, m) => MetaCtx.extend m x) MetaCtx.empty arguments
       in
         val definiens' = convertOpen mctx (upsilon, gamma) (definiens, sort)
       end
@@ -44,7 +44,7 @@ struct
    *)
   fun transport sign =
     let
-      open StringTelescope.ConsView
+      open AstToAbt StringTelescope.ConsView
 
       fun go opidTable (signIn : AstSignature.sign) (signOut : AbtSignature.sign) =
         case out signIn of
@@ -53,12 +53,12 @@ struct
             let
               val lbl = Symbol.named opid
               val decl' = bindDecl opidTable signOut decl
-              val opidTable' = (opid, lbl) :: opidTable
+              val opidTable' = NameEnv.insert opidTable opid lbl
               val signOut' = SymbolTelescope.snoc signOut (lbl, decl')
             in
               go opidTable' rest signOut'
             end
     in
-      go [] sign SymbolTelescope.empty
+      go NameEnv.empty sign SymbolTelescope.empty
     end
 end
