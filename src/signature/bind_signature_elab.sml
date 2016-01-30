@@ -7,10 +7,12 @@ struct
 
   open AstSignatureDecl
 
-  fun metacontext xs =
-    case xs of
-         [] => Metacontext.empty
-       | d :: xs => Metacontext.extend (metacontext xs) d
+  structure MetaCtx =
+  struct
+    open Abt.MetaCtx
+    structure Util = ContextUtil (structure Ctx = Abt.MetaCtx and Elem = Valence)
+    open Util
+  end
 
   (* Given a AST declaration, this resolves its binding structure
    * in the context of the signature before it (given by [opidTable]).
@@ -23,9 +25,9 @@ struct
 
       local
         open AstToAbt
-        val upsilon = NameEnv.fromList (opidTable @ ListPair.zipEq (localNames, localSymbols))
-        val gamma = NameEnv.fromList []
-        val mctx = metacontext arguments
+        val upsilon = List.foldl (fn ((u,tau),m) => NameEnv.insert m u tau) NameEnv.empty (opidTable @ ListPair.zipEq (localNames, localSymbols))
+        val gamma = NameEnv.empty
+        val mctx = List.foldl (fn (x,m) => MetaCtx.extend m x) MetaCtx.empty arguments
       in
         val definiens' = convertOpen mctx (upsilon, gamma) (definiens, sort)
       end

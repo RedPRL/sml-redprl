@@ -31,7 +31,6 @@ in
   structure Operator
 
   structure Metavariable
-  structure Metacontext
   structure Variable
   structure Symbol
   structure Ast

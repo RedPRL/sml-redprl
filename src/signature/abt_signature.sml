@@ -7,7 +7,7 @@ struct
   structure Valence = Arity.Valence
   structure Sort = Valence.Sort
   structure Symbol = Abt.Symbol
-  structure MCtx = Abt.Metacontext
+  structure MCtx = Abt.MetaCtx
 
   type term = Abt.abt
   type symbol = Abt.symbol
@@ -69,9 +69,9 @@ struct
    *)
   fun def sign {parameters, arguments, sort, definiens} =
     let
-      val Y' = Abt.freeSymbols definiens
-      val G = Abt.freeVariables definiens
-      val Th' = MCtx.toList (Abt.metacontext definiens)
+      val Y' = Abt.SymCtx.toList (Abt.symctx definiens)
+      val G = Abt.VarCtx.toList (Abt.varctx definiens)
+      val Th' = Abt.MetaCtx.toList (Abt.metactx definiens)
       val (_, tau') = Abt.infer definiens
 
       val _ =
