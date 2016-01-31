@@ -4,5 +4,5 @@ Library
 is
   src/signature.cm
   src/syntax.cm
-  src/nominal-lcf.cm
+  src/nominal-lcf.cm (bind:(anchor:libs value:lib))
   src/signature.cm

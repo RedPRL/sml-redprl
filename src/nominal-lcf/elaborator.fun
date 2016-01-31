@@ -59,10 +59,9 @@ struct
        | `x => Env.lookup rho x
        | _ => raise Fail "Expected tactic"
 
-  (* Below, as an optimization, we implicitly calculate the modulus of
-   * continuity of the lhs tactic using [THEN_LAZY] rather than doing it
-   * separately as in the Definition. In this way, we can avoid executing the
-   * lhs tactic twice. *)
+  (* Below, as an optimization, we lazily execute the first tactic whilst
+   * calculating its modulus of continuity, rather than executing it twice
+   * as in the Definition. *)
   and elaborateMulti rho T1 us mt =
     case #1 (infer mt) of
          LCF ALL $ [_ \ t2] =>
@@ -72,9 +71,14 @@ struct
              fn alpha =>
                let
                  val beta = prepend us alpha
-                 val (beta', modulus) = probe beta
                in
-                 T.THEN_LAZY (T1 beta', fn () => T2 (bite (!modulus) beta))
+                 fn jdg =>
+                   let
+                     val (beta', modulus) = probe beta
+                     val st = T1 beta' jdg
+                   in
+                     T.THEN (fn _ => st, T2 (bite (!modulus) beta)) jdg
+                   end
                end
            end
        | LCF EACH $ [_ \ v] =>
@@ -84,10 +88,14 @@ struct
              fn alpha =>
                let
                  val beta = prepend us alpha
-                 val (beta', modulus) = probe beta
                in
-                 T.THENL_LAZY (T1 beta', fn () =>
-                   List.map (fn Ti => Ti (bite (!modulus) beta)) Ts)
+                 fn jdg =>
+                   let
+                     val (beta', modulus) = probe beta
+                     val st = T1 beta' jdg
+                   in
+                     T.THENL(fn _ => st, List.map (fn Ti => Ti (bite (!modulus) beta)) Ts) jdg
+                   end
                end
            end
        | LCF (FOCUS i) $ [_\ t2] =>
@@ -97,9 +105,14 @@ struct
              fn alpha =>
                let
                  val beta = prepend us alpha
-                 val (beta', modulus) = probe beta
                in
-                 T.THENF_LAZY (T1 beta', i, fn () => T2 (bite (!modulus) beta))
+                 fn jdg =>
+                   let
+                     val (beta', modulus) = probe beta
+                     val st = T1 beta' jdg
+                   in
+                     T.THENF (fn _ => st, i, T2 (bite (!modulus) beta)) jdg
+                   end
                end
            end
        | _ => raise Fail "Expected multitactic"

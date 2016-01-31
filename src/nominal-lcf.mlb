@@ -1,5 +1,7 @@
 local
-  ../lib/sml-lcf/lcf.mlb
+  $(SML_LIB)/basis/basis.mlb
+  ../lib/sml-dependent-lcf/dependent_lcf.mlb
+
   syntax.mlb
   local
     ../lib/cmlib/cmlib.mlb
@@ -7,6 +9,7 @@ local
     signature DICT
     functor SplayDict
   end
+
   nominal-lcf/elaborator.sig
   nominal-lcf/elaborator.fun
 in

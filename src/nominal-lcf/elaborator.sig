@@ -1,8 +1,6 @@
 signature REFINER =
 sig
-  structure Lcf : LCF
   structure Tacticals : TACTICALS
-    where type tactic = Lcf.tactic
 
   type 'a choice_sequence = int -> 'a
 
@@ -10,7 +8,7 @@ sig
    * natural numbers to symbols. *)
   type name_store = Symbol.t choice_sequence
 
-  type ntactic = name_store -> Lcf.tactic
+  type ntactic = name_store -> Tacticals.Lcf.tactic
 
   val Rec
     : (ntactic -> ntactic)
