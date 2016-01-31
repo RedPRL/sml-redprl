@@ -4,7 +4,7 @@ Library
   functor Elaborator
 is
   $/basis.cm
-  ../lib/sml-lcf/lcf.cm
+  ../lib/sml-dependent-lcf/dependent_lcf.cm
   syntax.cm
   cmlib.cm
   nominal-lcf/elaborator.sig
