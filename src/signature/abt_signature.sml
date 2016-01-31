@@ -1,5 +1,7 @@
 structure AbtSignature : ABT_SIGNATURE =
 struct
+  structure Abt = Abt
+
   type opid = Abt.symbol
   structure Telescope = SymbolTelescope
 

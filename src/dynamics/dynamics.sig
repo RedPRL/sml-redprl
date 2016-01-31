@@ -1,13 +1,12 @@
 signature DYNAMICS =
 sig
-  structure Abt : ABT
   structure SmallStep : SMALL_STEP
   structure Signature : ABT_SIGNATURE
 
-  type abt = Abt.abt
+  type abt = Signature.Abt.abt
   type 'a step = 'a SmallStep.t
   type sign = Signature.sign
-  type env = Abt.varenv
+  type env = Signature.Abt.varenv
 
   datatype 'a closure = <: of 'a * env
   exception STUCK of abt
