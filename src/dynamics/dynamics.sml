@@ -10,9 +10,6 @@ struct
   type sign = Signature.sign
   type 'a env = 'a Abt.VarCtx.dict
 
-  datatype 'a closure = <: of 'a * 'a closure env
-  exception STUCK of abt
-
   open SmallStep
 
   datatype 'a closure = <: of 'a * 'a closure env
