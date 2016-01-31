@@ -45,7 +45,7 @@ struct
       into (pattern ~> definiens)
     end
 
-  fun stepCust sign (opid, params, arity) (m <: rho) =
+  fun stepCust sign (opid, arity) (m <: rho) =
     let
       val def = Signature.undef (T.lookup sign opid)
       val rule = rewriteRuleFromDef (opid, arity) def
@@ -58,7 +58,7 @@ struct
     case out m of
          `x => ret (Env.lookup rho x)
        | CUST (opid, params, arity) $ args =>
-           stepCust sign (opid, params, arity) (m <: rho)
+           stepCust sign (opid, arity) (m <: rho)
        | _ => ?hole
 
 end
