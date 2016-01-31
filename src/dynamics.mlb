@@ -1,6 +1,7 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-typed-abts/abt.mlb
+  ../lib/sml-typed-abts/abt-patterns.mlb
   syntax.mlb
   signature.mlb
   dynamics/small_step.sig

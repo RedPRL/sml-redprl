@@ -9,6 +9,7 @@ Library
 is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm
+  ../lib/sml-typed-abts/abt-patterns.cm
   syntax.cm
   signature.cm
   dynamics/small_step.sig
