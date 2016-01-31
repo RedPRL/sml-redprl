@@ -24,38 +24,41 @@ struct
   exception hole
   fun ?x = raise x
 
-  structure Pattern = Pattern (Abt)
-  structure RewriteRule = RewriteRule (structure Abt = Abt and Pattern = Pattern)
-
   fun @@ (f,x) = f x
   infix 0 @@
 
-  fun patternFromDef (opid, arity) (def : Signature.def) : Pattern.pattern =
-    let
-      open Pattern infix 2 $@
-      val {parameters, arguments, ...} = def
-      val theta = CUST (opid, parameters, arity)
-    in
-      into @@ theta $@ List.map (fn (x,_) => MVAR x) arguments
-    end
+  local
+    structure Pattern = Pattern (Abt)
+    structure RewriteRule = RewriteRule (structure Abt = Abt and Pattern = Pattern)
 
-  fun rewriteRuleFromDef (opid, arity) (def : Signature.def) : RewriteRule.rule =
-    let
-      open RewriteRule infix 2 ~>
-      val {definiens,...} = def
-      val pattern = patternFromDef (opid, arity) def
-    in
-      into @@ pattern ~> definiens
-    end
+    fun patternFromDef (opid, arity) (def : Signature.def) : Pattern.pattern =
+      let
+        open Pattern infix 2 $@
+        val {parameters, arguments, ...} = def
+        val theta = CUST (opid, parameters, arity)
+      in
+        into @@ theta $@ List.map (fn (x,_) => MVAR x) arguments
+      end
 
-  fun stepCust sign (opid, arity) (m <: rho) =
-    let
-      val def = Signature.undef @@ T.lookup sign opid
-      val rule = rewriteRuleFromDef (opid, arity) def
-      val compiled = RewriteRule.compile rule
-    in
-      ret @@ RewriteRule.compile rule m <: rho
-    end
+    fun rewriteRuleFromDef (opid, arity) (def : Signature.def) : RewriteRule.rule =
+      let
+        open RewriteRule infix 2 ~>
+        val {definiens,...} = def
+        val pattern = patternFromDef (opid, arity) def
+      in
+        into @@ pattern ~> definiens
+      end
+
+  in
+    fun stepCust sign (opid, arity) (m <: rho) =
+      let
+        val def = Signature.undef @@ T.lookup sign opid
+        val rule = rewriteRuleFromDef (opid, arity) def
+        val compiled = RewriteRule.compile rule
+      in
+        ret @@ RewriteRule.compile rule m <: rho
+      end
+  end
 
   fun step sign (m <: rho) : abt closure step =
     case out m of
