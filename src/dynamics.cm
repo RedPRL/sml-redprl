@@ -15,3 +15,5 @@ is
   dynamics/small_step.sml
   dynamics/dynamics.sig
   dynamics/dynamics.sml
+  dynamics/dynamics_util.sig
+  dynamics/dynamics_util.fun

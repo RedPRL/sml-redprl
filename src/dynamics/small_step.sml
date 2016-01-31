@@ -4,6 +4,8 @@ struct
       STEP of 'a
     | FINAL
 
+  val ret = STEP
+
   fun map f =
     fn STEP a => STEP (f a)
      | FINAL => FINAL
