@@ -11,5 +11,8 @@ in
   signature SMALL_STEP
   structure SmallStep
   signature DYNAMICS
+  signature DYNAMICS_UTIL
   structure Dynamics
+  functor DynamicsUtil
+  structure DynamicsUtil
 end
