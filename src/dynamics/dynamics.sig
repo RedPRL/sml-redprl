@@ -11,5 +11,5 @@ sig
   datatype 'a closure = <: of 'a * 'a closure env
 
   val step : sign -> abt closure -> abt closure step
-  exception STUCK of abt
+  exception Stuck of abt closure
 end

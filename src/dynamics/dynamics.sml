@@ -15,7 +15,7 @@ struct
   datatype 'a closure = <: of 'a * 'a closure env
   infix 2 <:
 
-  exception STUCK of abt
+  exception Stuck of abt closure
 
   structure T = Signature.Telescope
   open Abt OperatorData
@@ -66,5 +66,6 @@ struct
        | CUST (opid, params, arity) $ args =>
            stepCust sign (opid, arity) @@ m <: rho
        | _ => ?hole
-
+    handle _ =>
+      raise Stuck @@ m <: rho
 end
