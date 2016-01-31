@@ -13,7 +13,7 @@ struct
   open SmallStep
 
   datatype 'a closure = <: of 'a * 'a closure env
-  infix <:
+  infix 2 <:
 
   exception STUCK of abt
 
@@ -27,38 +27,41 @@ struct
   structure Pattern = Pattern (Abt)
   structure RewriteRule = RewriteRule (structure Abt = Abt and Pattern = Pattern)
 
+  fun @@ (f,x) = f x
+  infix 0 @@
+
   fun patternFromDef (opid, arity) (def : Signature.def) : Pattern.pattern =
     let
-      open Pattern infix $@
+      open Pattern infix 2 $@
       val {parameters, arguments, ...} = def
       val theta = CUST (opid, parameters, arity)
     in
-      into (theta $@ List.map (fn (x,_) => MVAR x) arguments)
+      into @@ theta $@ List.map (fn (x,_) => MVAR x) arguments
     end
 
   fun rewriteRuleFromDef (opid, arity) (def : Signature.def) : RewriteRule.rule =
     let
-      open RewriteRule infix ~>
+      open RewriteRule infix 2 ~>
       val {definiens,...} = def
       val pattern = patternFromDef (opid, arity) def
     in
-      into (pattern ~> definiens)
+      into @@ pattern ~> definiens
     end
 
   fun stepCust sign (opid, arity) (m <: rho) =
     let
-      val def = Signature.undef (T.lookup sign opid)
+      val def = Signature.undef @@ T.lookup sign opid
       val rule = rewriteRuleFromDef (opid, arity) def
       val compiled = RewriteRule.compile rule
     in
-      ret (RewriteRule.compile rule m <: rho)
+      ret @@ RewriteRule.compile rule m <: rho
     end
 
   fun step sign (m <: rho) : abt closure step =
     case out m of
-         `x => ret (Env.lookup rho x)
+         `x => ret @@ Env.lookup rho x
        | CUST (opid, params, arity) $ args =>
-           stepCust sign (opid, arity) (m <: rho)
+           stepCust sign (opid, arity) @@ m <: rho
        | _ => ?hole
 
 end
