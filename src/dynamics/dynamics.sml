@@ -8,11 +8,14 @@ struct
   type abt = Abt.abt
   type 'a step = 'a SmallStep.t
   type sign = Signature.sign
-  type env = Abt.varenv
+  type 'a env = 'a Abt.VarCtx.dict
+
+  datatype 'a closure = <: of 'a * 'a closure env
+  exception STUCK of abt
 
   open SmallStep
 
-  datatype 'a closure = <: of 'a * env
+  datatype 'a closure = <: of 'a * 'a closure env
   infix <:
 
   exception STUCK of abt
@@ -20,9 +23,12 @@ struct
   exception hole
   fun ?x = raise x
 
+  fun force (m <: rho) =
+    Abt.substEnv (Env.map force rho) m
+
   fun step sign (m <: rho) : abt closure step =
     ?hole
 
   fun step' sign m =
-    step sign (m <: Env.empty)
+    SmallStep.map force (step sign (m <: Env.empty))
 end
