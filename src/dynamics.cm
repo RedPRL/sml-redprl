@@ -1,0 +1,14 @@
+Library
+  signature SMALL_STEP
+  structure SmallStep
+  signature DYNAMICS
+  structure Dynamics
+is
+  $/basis.cm
+  ../lib/sml-typed-abts/abt.cm
+  syntax.cm
+  signature.cm
+  dynamics/small_step.sig
+  dynamics/small_step.sml
+  dynamics/dynamics.sig
+  dynamics/dynamics.sml

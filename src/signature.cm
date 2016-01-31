@@ -1,6 +1,5 @@
 Library
   signature SIGNATURE
-  signature SIGNATURE_ELAB
 
   structure AstSignatureDecl
   signature AST_SIGNATURE
@@ -13,9 +12,6 @@ Library
 
   signature ABT_SIGNATURE
   structure AbtSignature
-
-  structure BindSignatureElab
-  structure ValidationElab
 
   structure StringTelescope
   structure SymbolTelescope
@@ -30,13 +26,10 @@ is
 
   signature/telescope.sml
   signature/signature.sig
-  signature/elab.sig
   signature/ast_signature.sig
   signature/ast_signature.sml
   signature/abt_signature.sig
   signature/abt_signature.sml
-  signature/bind_signature_elab.sml
-  signature/validation_elab.sml
 
   signature/term_parser.sig
   signature/term_parser.sml

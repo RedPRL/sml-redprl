@@ -1,0 +1,15 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../lib/sml-typed-abts/abt.mlb
+  syntax.mlb
+  signature.mlb
+  dynamics/small_step.sig
+  dynamics/small_step.sml
+  dynamics/dynamics.sig
+  dynamics/dynamics.sml
+in
+  signature SMALL_STEP
+  structure SmallStep
+  signature DYNAMICS
+  structure Dynamics
+end
