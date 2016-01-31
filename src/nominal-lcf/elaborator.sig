@@ -36,4 +36,5 @@ sig
   structure Env : DICT where type key = Variable.t
   type env = Refiner.ntactic Env.dict
   val elaborate : env -> Abt.abt -> Refiner.ntactic
+  val elaborate' : Abt.abt -> Refiner.ntactic
 end

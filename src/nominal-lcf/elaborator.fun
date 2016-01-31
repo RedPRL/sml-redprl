@@ -116,4 +116,7 @@ struct
                end
            end
        | _ => raise Fail "Expected multitactic"
+
+  val elaborate' =
+    elaborate Env.empty
 end
