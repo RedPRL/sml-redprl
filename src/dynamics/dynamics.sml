@@ -16,7 +16,8 @@ struct
   type 'a varenv = 'a Abt.VarCtx.dict
   type 'a metaenv = 'a Signature.Abt.MetaCtx.dict
 
-  datatype 'a closure = <: of 'a * (abs closure metaenv * symenv * abt closure varenv)
+  datatype 'a closure = <: of 'a * env
+  withtype env = abs closure metaenv * symenv * abt closure varenv
   infix 2 <:
 
   exception Stuck of abt closure
@@ -63,13 +64,10 @@ struct
     let
       val e <: (mrho', srho', rho') = MetaCtx.lookup mrho x
       val (vs', xs) \ m = outb e
-      val srho'' = List.foldl (fn ((u,v),r) => SymCtx.insert r u v) SymCtx.empty (ListPair.zipEq (vs', us))
-      val rho'' = List.foldl (fn ((x,m),r) => VarCtx.insert r x (m <: (mrho', srho', rho'))) VarCtx.empty (ListPair.zipEq (xs, ms))
-      val rho''' = VarCtx.union rho' rho'' (fn _ => raise Stuck cl)
-      val srho''' = SymCtx.union srho' srho'' (fn _ => raise Stuck cl)
-      val m' = Abt.renameEnv srho m
+      val srho'' = List.foldl (fn ((u,v),r) => SymCtx.insert r u v) srho' (ListPair.zipEq (vs', us))
+      val rho'' = List.foldl (fn ((x,m),r) => VarCtx.insert r x (m <: (mrho', srho', rho'))) rho' (ListPair.zipEq (xs, ms))
     in
-      ret @@ m <: (mrho', srho'', rho''')
+      ret @@ m <: (mrho', srho'', rho'')
     end
 
   (* Built-in computation rules *)
