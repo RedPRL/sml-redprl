@@ -37,8 +37,17 @@ struct
       force o go o initiate
     end
 
-  fun eval' sign : abt -> abt =
+  fun evalClosed sign : abt -> abt =
     eval sign empty
+
+  fun evalOpen sign m =
+    let
+      open Abt
+      val srho = SymEnv.foldl (fn (u,_,r) => SymEnv.insert r u u) SymEnv.empty (symctx m)
+      val rho = Env.foldl (fn (x,tau,r) => Env.insert r x (check' (` x, tau))) Env.empty (varctx m)
+    in
+      eval sign (MetaEnv.empty, srho, rho) m
+    end
 end
 
 structure DynamicsUtil = DynamicsUtil (Dynamics)

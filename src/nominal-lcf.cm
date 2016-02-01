@@ -7,5 +7,7 @@ is
   ../lib/sml-dependent-lcf/dependent_lcf.cm
   syntax.cm
   cmlib.cm
+  signature.cm
+  dynamics.cm
   nominal-lcf/elaborator.sig
   nominal-lcf/elaborator.fun
