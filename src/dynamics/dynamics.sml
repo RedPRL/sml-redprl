@@ -44,7 +44,7 @@ struct
     fun stepCust sign (opid, arity) (cl as m <: (mrho, srho, rho)) =
       let
         open Unify infix <*>
-        val def = Signature.undef @@ T.lookup sign opid
+        val def as {definiens, ...}= Signature.undef @@ T.lookup sign opid
         val pat = patternFromDef (opid, arity) def
         val (srho', mrho') = unify (pat <*> m)
         val srho'' = SymCtx.union srho srho' (fn _ => raise Stuck cl)
@@ -53,7 +53,7 @@ struct
             (MetaCtx.map (fn e => e <: (mrho, srho, rho)) mrho') (* todo: check this? *)
             (fn _ => raise Stuck cl)
       in
-        ret @@ m <: (mrho'', srho'', rho)
+        ret @@ definiens <: (mrho'', srho'', rho)
       end
   end
 
