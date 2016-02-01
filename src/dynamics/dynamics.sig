@@ -8,8 +8,8 @@ sig
   type sign = Signature.sign
 
   type 'a env = 'a Signature.Abt.VarCtx.dict
-  datatype 'a closure = <: of 'a * 'a closure env
+  datatype closure = <: of abt * (closure env * Signature.Abt.metaenv)
 
-  val step : sign -> abt closure -> abt closure step
-  exception Stuck of abt closure
+  val step : sign -> closure -> closure step
+  exception Stuck of closure
 end

@@ -3,7 +3,6 @@ struct
   structure Abt = Abt
   structure SmallStep = SmallStep
   structure Signature = AbtSignature
-  structure Env = Abt.VarCtx
 
   type abt = Abt.abt
   type 'a step = 'a SmallStep.t
@@ -12,14 +11,14 @@ struct
 
   open SmallStep
 
-  datatype 'a closure = <: of 'a * 'a closure env
+  datatype closure = <: of abt * (closure env * Signature.Abt.metaenv)
   infix 2 <:
 
-  exception Stuck of abt closure
+  exception Stuck of closure
 
   structure T = Signature.Telescope
   open Abt OperatorData
-  infix $ \
+  infix $ \ $#
 
   exception hole
   fun ?x = raise x
@@ -29,7 +28,7 @@ struct
 
   local
     structure Pattern = Pattern (Abt)
-    structure RewriteRule = RewriteRule (structure Abt = Abt and Pattern = Pattern)
+    structure Unify = AbtLinearUnification (structure Abt = Abt and Pattern = Pattern)
 
     fun patternFromDef (opid, arity) (def : Signature.def) : Pattern.pattern =
       let
@@ -39,32 +38,35 @@ struct
       in
         into @@ theta $@ List.map (fn (x,_) => MVAR x) arguments
       end
-
-    fun rewriteRuleFromDef (opid, arity) (def : Signature.def) : RewriteRule.rule =
-      let
-        open RewriteRule infix 2 ~>
-        val {definiens,...} = def
-        val pattern = patternFromDef (opid, arity) def
-      in
-        into @@ pattern ~> definiens
-      end
-
   in
-    fun stepCust sign (opid, arity) (m <: rho) =
+    fun stepCust sign (opid, arity) (cl as m <: (rho, mrho)) =
       let
+        open Unify infix <*>
         val def = Signature.undef @@ T.lookup sign opid
-        val rule = rewriteRuleFromDef (opid, arity) def
-        val compiled = RewriteRule.compile rule
+        val pat = patternFromDef (opid, arity) def
+        val (srho, mrho') = unify (pat <*> m)
+        val mrho'' = Abt.MetaCtx.union mrho mrho' (fn _ => raise Stuck cl)
+        (* todo: do I need to apply srho to the metaenv? *)
       in
-        ret @@ RewriteRule.compile rule m <: rho
+        ret @@ Abt.renameEnv srho m <: (rho, mrho'')
       end
   end
 
-  fun step sign (m <: rho) : abt closure step =
+  fun step sign (cl as m <: (rho, mrho)) : closure step =
     case out m of
-         `x => ret @@ Env.lookup rho x
+         `x => ret @@ VarCtx.lookup rho x
+       | x $# (us, ms) =>
+           let
+             val (vs', xs) \ m = outb @@ MetaCtx.lookup mrho x
+             val srho = List.foldl (fn ((u,v),r) => SymCtx.insert r u v) SymCtx.empty (ListPair.zipEq (vs', us))
+             val rho' = List.foldl (fn ((x,m),r) => VarCtx.insert r x (m <: (rho, mrho))) VarCtx.empty (ListPair.zipEq (xs, ms))
+             val rho'' = Abt.VarCtx.union rho rho' (fn _ => raise Stuck cl)
+             val m' = Abt.renameEnv srho m
+           in
+             ret @@ m <: (rho'', mrho)
+           end
        | CUST (opid, params, arity) $ args =>
-           stepCust sign (opid, arity) @@ m <: rho
+           stepCust sign (opid, arity) @@ m <: (rho, mrho)
        | LVL_OP _  $ _ => FINAL
        | LCF _ $ _ => FINAL
        | PROVE $ [_ \ a, _ \ b] => FINAL
@@ -73,5 +75,5 @@ struct
        | OP_SOME _ $ _ => FINAL
        | _ => ?hole
     handle _ =>
-      raise Stuck @@ m <: rho
+      raise Stuck @@ m <: (rho, mrho)
 end
