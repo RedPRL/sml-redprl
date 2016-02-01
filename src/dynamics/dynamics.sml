@@ -13,10 +13,10 @@ struct
   open Abt OperatorData SmallStep
   infix $ \ $#
 
-  type 'a env = 'a Abt.VarCtx.dict
+  type 'a varenv = 'a Abt.VarCtx.dict
   type 'a metaenv = 'a Signature.Abt.MetaCtx.dict
 
-  datatype 'a closure = <: of 'a * (abt closure env * abs closure metaenv)
+  datatype 'a closure = <: of 'a * (abs closure metaenv * abt closure varenv)
   infix 2 <:
 
   exception Stuck of abt closure
@@ -41,7 +41,7 @@ struct
         into @@ theta $@ List.map (fn (x,_) => MVAR x) arguments
       end
   in
-    fun stepCust sign (opid, arity) (cl as m <: (rho, mrho)) =
+    fun stepCust sign (opid, arity) (cl as m <: (mrho, rho)) =
       let
         open Unify infix <*>
         val def = Signature.undef @@ T.lookup sign opid
@@ -49,30 +49,30 @@ struct
         val (srho, mrho') = unify (pat <*> m)
         val mrho'' =
           MetaCtx.union mrho
-            (MetaCtx.map (fn e => e <: (rho,mrho)) mrho') (* todo: check this? *)
+            (MetaCtx.map (fn e => e <: (mrho, rho)) mrho') (* todo: check this? *)
             (fn _ => raise Stuck cl)
         (* todo: do I need to apply srho to the metaenv? *)
       in
-        ret @@ Abt.renameEnv srho m <: (rho, mrho'')
+        ret @@ Abt.renameEnv srho m <: (mrho'', rho)
       end
   end
 
-  fun step sign (cl as m <: (rho, mrho)) : abt closure step =
+  fun step sign (cl as m <: (mrho, rho)) : abt closure step =
     case out m of
          `x => ret @@ VarCtx.lookup rho x
        | x $# (us, ms) =>
            let
-             val e <: (rho', mrho') = MetaCtx.lookup mrho x
+             val e <: (mrho', rho') = MetaCtx.lookup mrho x
              val (vs', xs) \ m = outb e
              val srho = List.foldl (fn ((u,v),r) => SymCtx.insert r u v) SymCtx.empty (ListPair.zipEq (vs', us))
-             val rho'' = List.foldl (fn ((x,m),r) => VarCtx.insert r x (m <: (rho', mrho'))) VarCtx.empty (ListPair.zipEq (xs, ms))
+             val rho'' = List.foldl (fn ((x,m),r) => VarCtx.insert r x (m <: (mrho', rho'))) VarCtx.empty (ListPair.zipEq (xs, ms))
              val rho''' = Abt.VarCtx.union rho' rho'' (fn _ => raise Stuck cl)
              val m' = Abt.renameEnv srho m
            in
-             ret @@ m <: (rho''', mrho')
+             ret @@ m <: (mrho', rho''')
            end
        | CUST (opid, params, arity) $ args =>
-           stepCust sign (opid, arity) @@ m <: (rho, mrho)
+           stepCust sign (opid, arity) @@ m <: (mrho, rho)
        | LVL_OP _  $ _ => FINAL
        | LCF _ $ _ => FINAL
        | PROVE $ [_ \ a, _ \ b] => FINAL
@@ -81,5 +81,5 @@ struct
        | OP_SOME _ $ _ => FINAL
        | _ => ?hole
     handle _ =>
-      raise Stuck @@ m <: (rho, mrho)
+      raise Stuck @@ m <: (mrho, rho)
 end
