@@ -5,16 +5,17 @@ struct
 
   structure Env = Abt.VarCtx
   structure MetaEnv = Abt.MetaCtx
+  structure SymEnv = Abt.SymCtx
 
   val empty =
-    (MetaEnv.empty, Env.empty)
+    (MetaEnv.empty, SymEnv.empty, Env.empty)
 
-  fun force (m <: (mrho, rho)) =
+  fun force (m <: (mrho, srho, rho)) =
     let
       val mrho' = MetaEnv.map forceB mrho
       val rho' = Env.map force rho
     in
-      Abt.metasubstEnv mrho' (Abt.substEnv rho' m)
+      Abt.renameEnv srho (Abt.substEnv rho' (Abt.metasubstEnv mrho' m))
     end
   and forceB (e <: env) =
     Abt.mapAbs (fn m => force (m <: env)) e
@@ -24,14 +25,14 @@ struct
       force
       (step sign (m <: empty))
 
-  fun eval sign (mrho, rho) : abt -> abt =
+  fun eval sign (mrho, srho, rho) : abt -> abt =
     let
       fun go cl =
         case step sign cl of
              FINAL => cl
            | STEP cl' => go cl'
       fun initiate m =
-        m <: (MetaEnv.map (fn x => x <: empty) mrho, Env.map (fn x => x <: empty) rho)
+        m <: (MetaEnv.map (fn x => x <: empty) mrho, srho, Env.map (fn x => x <: empty) rho)
     in
       force o go o initiate
     end
