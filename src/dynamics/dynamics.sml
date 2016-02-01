@@ -10,7 +10,7 @@ struct
   type sign = Signature.sign
 
   structure T = Signature.Telescope
-  open Abt OperatorData SmallStep
+  open Abt SmallStep
   infix $ \ $#
 
   type 'a varenv = 'a Abt.VarCtx.dict
@@ -29,9 +29,20 @@ struct
   fun @@ (f,x) = f x
   infix 0 @@
 
+  fun <$> (f,x) = SmallStep.map f x
+  infix <$>
+
+  fun <#> (x,f) = SmallStep.map f x
+  infix <#>
+
+  fun >>= (x,f) = SmallStep.bind f x
+  infix >>=
+
+
   local
     structure Pattern = Pattern (Abt)
     structure Unify = AbtLinearUnification (structure Abt = Abt and Pattern = Pattern)
+    open OperatorData
 
     fun patternFromDef (opid, arity) (def : Signature.def) : Pattern.pattern =
       let
@@ -70,19 +81,6 @@ struct
       ret @@ m <: (mrho', srho'', rho'')
     end
 
-  (* Built-in computation rules *)
-  fun stepOp sign theta args (m <: (mrho, srho, rho)) =
-    case theta $ args of
-         CUST (opid, params, arity) $ args =>
-           stepCust sign (opid, arity) @@ m <: (mrho, srho, rho)
-       | LVL_OP _  $ _ => FINAL
-       | LCF _ $ _ => FINAL
-       | PROVE $ [_ \ a, _ \ b] => FINAL
-       | VEC_LIT _ $ _ => FINAL
-       | OP_NONE _ $ _ => FINAL
-       | OP_SOME _ $ _ => FINAL
-       | _ => ?hole
-
   fun step sign (cl as m <: (mrho, srho, rho)) : abt closure step =
     case out m of
          `x => ret @@ VarCtx.lookup rho x
@@ -96,4 +94,22 @@ struct
            end
     handle _ =>
       raise Stuck @@ m <: (mrho, srho, rho)
+
+  (* built-in computation rules *)
+  and stepOp sign theta args (m <: (mrho, srho, rho)) =
+    let
+      open OperatorData
+      val psi = metactx m
+    in
+      case theta $ args of
+           CUST (opid, params, arity) $ args =>
+             stepCust sign (opid, arity) @@ m <: (mrho, srho, rho)
+         | LVL_OP _  $ _ => FINAL
+         | LCF theta $ args => FINAL
+         | PROVE $ [_ \ a, _ \ b] => FINAL
+         | VEC_LIT _ $ _ => FINAL
+         | OP_NONE _ $ _ => FINAL
+         | OP_SOME _ $ _ => FINAL
+         | _ => ?hole
+    end
 end
