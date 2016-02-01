@@ -64,8 +64,8 @@ struct
     let
       val e <: (mrho', srho', rho') = MetaCtx.lookup mrho x
       val (vs', xs) \ m = outb e
-      val srho'' = List.foldl (fn ((u,v),r) => SymCtx.insert r u v) srho' (ListPair.zipEq (vs', us))
-      val rho'' = List.foldl (fn ((x,m),r) => VarCtx.insert r x (m <: (mrho', srho', rho'))) rho' (ListPair.zipEq (xs, ms))
+      val srho'' = ListPair.foldlEq  (fn (u,v,r) => SymCtx.insert r u v) srho' (vs', us)
+      val rho'' = ListPair.foldlEq (fn (x,m,r) => VarCtx.insert r x (m <: (mrho', srho', rho'))) rho' (xs, ms)
     in
       ret @@ m <: (mrho', srho'', rho'')
     end
