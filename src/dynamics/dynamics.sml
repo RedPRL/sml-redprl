@@ -41,10 +41,11 @@ struct
         into @@ theta $@ List.map (fn (x,_) => MVAR x) arguments
       end
   in
+    (* computation rules for user-defined operators *)
     fun stepCust sign (opid, arity) (cl as m <: (mrho, srho, rho)) =
       let
         open Unify infix <*>
-        val def as {definiens, ...}= Signature.undef @@ T.lookup sign opid
+        val def as {definiens, ...} = Signature.undef @@ T.lookup sign opid
         val pat = patternFromDef (opid, arity) def
         val (srho', mrho') = unify (pat <*> m)
         val srho'' = SymCtx.union srho srho' (fn _ => raise Stuck cl)
@@ -57,6 +58,21 @@ struct
       end
   end
 
+  (* second-order substitution via environments *)
+  fun stepMeta sign x (us, ms) (cl as m <: (mrho, srho, rho)) =
+    let
+      val e <: (mrho', srho', rho') = MetaCtx.lookup mrho x
+      val (vs', xs) \ m = outb e
+      val srho'' = List.foldl (fn ((u,v),r) => SymCtx.insert r u v) SymCtx.empty (ListPair.zipEq (vs', us))
+      val rho'' = List.foldl (fn ((x,m),r) => VarCtx.insert r x (m <: (mrho', srho', rho'))) VarCtx.empty (ListPair.zipEq (xs, ms))
+      val rho''' = VarCtx.union rho' rho'' (fn _ => raise Stuck cl)
+      val srho''' = SymCtx.union srho' srho'' (fn _ => raise Stuck cl)
+      val m' = Abt.renameEnv srho m
+    in
+      ret @@ m <: (mrho', srho'', rho''')
+    end
+
+  (* Built-in computation rules *)
   fun stepOp sign theta args (m <: (mrho, srho, rho)) =
     case theta $ args of
          CUST (opid, params, arity) $ args =>
@@ -72,24 +88,10 @@ struct
   fun step sign (cl as m <: (mrho, srho, rho)) : abt closure step =
     case out m of
          `x => ret @@ VarCtx.lookup rho x
-       | x $# (us, ms) =>
-           let
-             val e <: (mrho', srho', rho') = MetaCtx.lookup mrho x
-             val (vs', xs) \ m = outb e
-             val srho'' = List.foldl (fn ((u,v),r) => SymCtx.insert r u v) SymCtx.empty (ListPair.zipEq (vs', us))
-             val rho'' = List.foldl (fn ((x,m),r) => VarCtx.insert r x (m <: (mrho', srho', rho'))) VarCtx.empty (ListPair.zipEq (xs, ms))
-             val rho''' = VarCtx.union rho' rho'' (fn _ => raise Stuck cl)
-             val srho''' = SymCtx.union srho' srho'' (fn _ => raise Stuck cl)
-             val m' = Abt.renameEnv srho m
-           in
-             ret @@ m <: (mrho', srho'', rho''')
-           end
+       | x $# (us, ms) => stepMeta sign x (us, ms) cl
        | theta $ args =>
            let
-             fun f u =
-               case SymCtx.find srho u of
-                    SOME v => v
-                  | NONE => u
+             fun f u = SymCtx.lookup srho u handle _ => u
              val theta' = Operator.map f theta
            in
              stepOp sign theta' args (m <: (mrho, srho, rho))
