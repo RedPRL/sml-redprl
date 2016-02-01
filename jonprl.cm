@@ -6,6 +6,8 @@ Library
   structure SmallStep
   signature DYNAMICS
   structure Dynamics
+  signature DYNAMICS_UTIL
+  structure DynamicsUtil
 is
   src/signature.cm
   src/syntax.cm

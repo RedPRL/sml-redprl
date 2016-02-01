@@ -7,7 +7,7 @@ sig
 
   val step' : sign -> abt -> abt step
 
-  val eval : sign -> abt env -> abt -> abt
+  val eval : sign -> (Signature.Abt.varenv * Signature.Abt.metaenv) -> abt -> abt
   val eval' : sign -> abt -> abt
 end
 
