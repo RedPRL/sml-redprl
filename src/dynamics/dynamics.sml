@@ -60,7 +60,7 @@ struct
   end
 
   (* second-order substitution via environments *)
-  fun stepMeta sign x (us, ms) (cl as m <: (mrho, srho, rho)) =
+  fun stepMeta x (us, ms) (cl as m <: (mrho, srho, rho)) =
     let
       val e <: (mrho', srho', rho') = MetaCtx.lookup mrho x
       val (vs', xs) \ m = outb e
@@ -86,7 +86,7 @@ struct
   fun step sign (cl as m <: (mrho, srho, rho)) : abt closure step =
     case out m of
          `x => ret @@ VarCtx.lookup rho x
-       | x $# (us, ms) => stepMeta sign x (us, ms) cl
+       | x $# (us, ms) => stepMeta x (us, ms) cl
        | theta $ args =>
            let
              fun f u = SymCtx.lookup srho u handle _ => u
