@@ -65,6 +65,12 @@ struct
          `x => ret @@ Env.lookup rho x
        | CUST (opid, params, arity) $ args =>
            stepCust sign (opid, arity) @@ m <: rho
+       | LVL_OP _  $ _ => FINAL
+       | LCF _ $ _ => FINAL
+       | PROVE $ [_ \ a, _ \ b] => FINAL
+       | VEC_LIT _ $ _ => FINAL
+       | OP_NONE _ $ _ => FINAL
+       | OP_SOME _ $ _ => FINAL
        | _ => ?hole
     handle _ =>
       raise Stuck @@ m <: rho
