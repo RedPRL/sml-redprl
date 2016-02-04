@@ -11,6 +11,9 @@ local
   syntax/level/operator_data.sml
   syntax/level/operator.sml
 
+  syntax/ctt/operator_data.sml
+  syntax/ctt/operator.sml
+
   syntax/operator_data.sml
   syntax/operator.sml
 
@@ -26,6 +29,9 @@ in
 
   structure LevelOperatorData
   structure LevelOperator
+
+  structure CttOperatorData
+  structure CttOperator
 
   structure OperatorData
   structure Operator

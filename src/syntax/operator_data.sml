@@ -6,6 +6,7 @@ struct
       LCF of 'i NominalLcfOperator.t
     | PROVE
     | LVL_OP of 'i LevelOperator.t
+    | CTT of 'i CttOperator.t
     | VEC_LIT of Sort.t * int
     | OP_SOME of Sort.t
     | OP_NONE of Sort.t
