@@ -1,6 +1,8 @@
 local
-  src/signature.mlb
   src/syntax.mlb
+  src/signature.mlb
+  src/dynamics.mlb
+  src/signature-elab.mlb
   src/nominal-lcf.mlb
 in
 end

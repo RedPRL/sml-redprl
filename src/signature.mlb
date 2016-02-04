@@ -12,8 +12,6 @@ local
 
   signature/signature.sig
 
-  signature/elab.sig
-
   local
     syntax.mlb
   in
@@ -21,8 +19,6 @@ local
     signature/ast_signature.sml
     signature/abt_signature.sig
     signature/abt_signature.sml
-    signature/bind_signature_elab.sml
-    signature/validation_elab.sml
   end
 
   local
@@ -35,7 +31,6 @@ local
   end
 in
   signature SIGNATURE
-  signature SIGNATURE_ELAB
 
   structure AstSignatureDecl
   signature AST_SIGNATURE
@@ -48,9 +43,6 @@ in
 
   signature ABT_SIGNATURE
   structure AbtSignature
-
-  structure BindSignatureElab
-  structure ValidationElab
 
   structure StringTelescope
   structure SymbolTelescope

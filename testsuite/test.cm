@@ -7,7 +7,7 @@ is
   ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.cm (bind:(anchor:libs value:../lib/))
 
   ../lib/sml-telescopes/telescopes.cm
-  ../src/signature.cm
   ../src/syntax.cm
   ../src/signature.cm
+  ../src/signature-elab.cm
   tests/signature/test_parser.sml

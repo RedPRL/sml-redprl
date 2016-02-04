@@ -1,5 +1,6 @@
 signature ABT_SIGNATURE =
 sig
+  structure Abt : ABT
   type term = Abt.abt
   type symbol = Abt.symbol
   type sort = Abt.sort
