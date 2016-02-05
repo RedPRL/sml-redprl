@@ -35,9 +35,6 @@ struct
   type name_store = symbol choice_sequence
   type ntactic = name_store -> Tacticals.Lcf.tactic
 
-  fun Rec f alpha jdg =
-    f (Rec f) alpha jdg
-
   fun Elim i _ =
     raise Fail "To be implemented"
 

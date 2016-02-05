@@ -48,13 +48,17 @@ struct
     DynamicsUtil.evalOpen sign t
       handle _ => t
 
+
+  fun Rec f alpha jdg =
+    f (Rec f) alpha jdg
+
   fun elaborate sign rho t =
     case out (evalOpen sign t) of
          LCF ID $ _ => (fn _ => T.ID)
        | LCF (SEQ _) $ [_ \ t, (us, _) \ mt] =>
            elaborateMulti sign rho (elaborate sign rho t) us mt
        | LCF REC $ [(_, [x]) \ t] =>
-           R.Rec (fn T => elaborate sign (VarCtx.insert rho x T) t)
+           Rec (fn T => elaborate sign (VarCtx.insert rho x T) t)
        | LCF (ELIM {target}) $ [_ \ m] =>
            R.Elim target (elaborateOpt (evalOpen sign m))
        | LCF (INTRO {rule}) $ [_ \ m] =>

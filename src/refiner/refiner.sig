@@ -15,17 +15,13 @@ sig
 
   type ntactic = name_store -> Tacticals.Lcf.tactic
 
-  val Rec
-    : (ntactic -> ntactic)
-    -> ntactic
-
   val Elim
-    : symbol       (* target *)
+    : symbol      (* target *)
     -> abt option (* optional argument *)
     -> ntactic
 
   val Intro
-    : int option   (* rule index *)
+    : int option  (* rule index *)
     -> abt option (* optional argument *)
     -> ntactic
 
