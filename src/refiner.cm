@@ -4,6 +4,7 @@ Library
 is
   $/basis.cm
   ../lib/sml-dependent-lcf/dependent_lcf.cm
+  ../lib/sml-typed-abts/abt.cm
   ../lib/sml-telescopes/telescopes.cm
   syntax.cm
   cmlib.cm

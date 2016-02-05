@@ -37,6 +37,11 @@ struct
           [] ->> TAC
       | arity ID =
           [] ->> TAC
+      | arity FAIL =
+          [] ->> TAC
+      | arity (TRACE tau) =
+          [ [] * [] <> tau
+          ] ->> TAC
       | arity REC =
           [ [] * [TAC] <> TAC
           ] ->> TAC
@@ -55,6 +60,8 @@ struct
      | ELIM {target} => ELIM {target = f target}
      | HYP {target} => HYP {target = f target}
      | ID => ID
+     | FAIL => FAIL
+     | TRACE tau => TRACE tau
      | REC => REC
 
   fun eq f =
@@ -65,6 +72,8 @@ struct
      | (ELIM p1, ELIM p2) => f (#target p1, #target p2)
      | (HYP p1, HYP p2) => f (#target p1, #target p2)
      | (ID, ID) => true
+     | (FAIL, FAIL) => true
+     | (TRACE tau1, TRACE tau2) => tau1 = tau2
      | (REC, REC) => true
      | _ => false
 
@@ -77,5 +86,7 @@ struct
      | ELIM {target} => "elim[" ^ f target ^ "]"
      | HYP {target} => "hyp[" ^ f target ^ "]"
      | ID => "id"
+     | FAIL => "fail"
+     | TRACE tau => "trace{" ^ Sort.toString tau ^ "}"
      | REC => "rec"
 end

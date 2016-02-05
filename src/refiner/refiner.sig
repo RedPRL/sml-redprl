@@ -1,11 +1,15 @@
 signature REFINER =
 sig
+  structure Abt : ABT
   structure Telescope : TELESCOPE
   structure Tacticals : TACTICALS
   sharing type Tacticals.Lcf.ctx = Telescope.telescope
+  sharing type Tacticals.Lcf.evidence = Abt.abs
+  sharing type Telescope.Label.t = Abt.Metavariable.t
 
-  type abt
-  type symbol
+  type symbol = Abt.symbol
+  type metavariable = Abt.metavariable
+  type abt = Abt.abt
 
   type 'a choice_sequence = int -> 'a
 

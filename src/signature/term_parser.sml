@@ -31,13 +31,14 @@ struct
   local
     open SortData
   in
-    fun parseSort _=
+    fun parseSort _ =
       ParserCombinators.fix (fn p =>
         symbol "exp" return EXP
         || symbol "lvl" return LVL
         || symbol "tac" return TAC
         || symbol "mtac" return MTAC
-        || symbol "vec" >> p wth VEC)
+        || symbol "vec" >> p wth VEC
+        || symbol "str" return STR)
   end
 
   val force =
@@ -83,11 +84,26 @@ struct
            wth (fn xs =>
              VEC_LIT (tau, length xs) $
                map (fn x => ([], []) \ x) xs)
+       | STR =>
+         stringLiteral
+           wth (fn str =>
+             STR_LIT str $ [])
        | TAC =>
          let
            val parseId =
              symbol "id"
                return (LCF ID $ [])
+
+           val parseFail =
+             symbol "fail"
+               return (LCF FAIL $ [])
+
+           val parseTrace =
+             symbol "trace"
+               >> (braces (parseSort sign) || succeed SortData.STR)
+               -- (fn tau =>
+                f tau wth (fn m =>
+                  LCF (TRACE tau) $ [([],[]) \ m]))
 
            val parseHyp =
              symbol "hyp"
@@ -123,6 +139,8 @@ struct
            val parseTac =
              parens (f TAC)
                || parseId
+               || parseFail
+               || parseTrace
                || parseHyp
                || parseRec
                || try (parseAny sign rho f TAC)

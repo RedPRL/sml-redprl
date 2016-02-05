@@ -1,5 +1,7 @@
 structure Refiner : REFINER =
 struct
+  structure Abt = Abt
+
   structure Kit =
   struct
     structure Tm = Abt

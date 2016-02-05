@@ -42,6 +42,8 @@ struct
   local
     structure Pattern = Pattern (Abt)
     structure Unify = AbtLinearUnification (structure Abt = Abt and Pattern = Pattern)
+    structure SymEnvUtil = ContextUtil (structure Ctx = SymCtx and Elem = Symbol)
+    structure AbsEq = struct type t = Abt.abs val eq = Abt.eqAbs end
     open OperatorData
 
     fun patternFromDef (opid, arity) (def : Signature.def) : Pattern.pattern =
@@ -60,7 +62,7 @@ struct
         val def as {definiens, ...} = Signature.undef @@ T.lookup sign opid
         val pat = patternFromDef (opid, arity) def
         val (srho', mrho') = unify (pat <*> m)
-        val srho'' = SymCtx.union srho srho' (fn _ => raise Stuck cl)
+        val srho'' = SymEnvUtil.union (srho, srho') handle _ => raise Stuck cl
         val mrho'' =
           MetaCtx.union mrho
             (MetaCtx.map (fn e => e <: (mrho, srho, rho)) mrho') (* todo: check this? *)

@@ -10,4 +10,5 @@ struct
     | VEC of sort (* vector *)
     | OPT of sort (* optional *)
     | OPID (* operator ids *)
+    | STR (* strings *)
 end

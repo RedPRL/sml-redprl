@@ -15,6 +15,7 @@ struct
      | (VEC tau) => "[" ^ toString tau ^ "]"
      | (OPT tau) => toString tau ^ "?"
      | OPID => "opid"
+     | STR => "str"
 end
 
 structure Valence = Valence (structure Sort = Sort and Spine = ListSpine)

@@ -29,6 +29,8 @@ struct
          | VEC_LIT (tau, len) =>
              ([] * [] <> tau) ^ len
                ->> SortData.VEC tau
+         | STR_LIT str =>
+             [] ->> SortData.STR
          | OP_SOME tau =>
              [[] * [] <> tau]
                ->> SortData.OPT tau
@@ -45,6 +47,7 @@ struct
        | PROVE => []
        | LVL_OP theta => LevelOperator.support theta
        | VEC_LIT (tau, len) => []
+       | STR_LIT _ => []
        | OP_SOME _ => []
        | OP_NONE _ => []
        | CUST (opid, supp, _) => (opid, SortData.OPID) :: supp
@@ -56,6 +59,7 @@ struct
        | PROVE => PROVE
        | LVL_OP theta => LVL_OP (LevelOperator.map f theta)
        | VEC_LIT p => VEC_LIT p
+       | STR_LIT p => STR_LIT p
        | OP_SOME tau => OP_SOME tau
        | OP_NONE tau => OP_NONE tau
        | CUST (opid, supp, arity) => CUST (f opid, List.map (fn (u, tau) => (f u, tau)) supp, arity)
@@ -70,6 +74,8 @@ struct
        | (LVL_OP theta1, LVL_OP theta2) =>
            LevelOperator.eq f (theta1, theta2)
        | (VEC_LIT p1, VEC_LIT p2) =>
+           p1 = p2
+       | (STR_LIT p1, STR_LIT p2) =>
            p1 = p2
        | (OP_SOME tau1, OP_SOME tau2) =>
            tau1 = tau2
@@ -93,6 +99,8 @@ struct
            LevelOperator.toString f theta
        | VEC_LIT (tau, m) =>
            "vec{" ^ Sort.toString tau ^ "}"
+       | STR_LIT str =>
+           "\"" ^ str ^ "\""
        | OP_SOME tau =>
            "some{" ^ Sort.toString tau ^ "}"
        | OP_NONE tau =>

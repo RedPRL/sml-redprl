@@ -6,8 +6,8 @@ sig
   type abt = Signature.Abt.abt
 
   structure Refiner : REFINER
-    where type symbol = symbol
-    where type abt = abt
+    where type Abt.Symbol.t = symbol
+    where type Abt.abt = abt
 
   type env = Refiner.ntactic Signature.Abt.VarCtx.dict
 

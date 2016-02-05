@@ -1,6 +1,7 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-telescopes/telescopes.mlb
+  ../lib/sml-typed-abts/abt.mlb
   ../lib/sml-dependent-lcf/dependent_lcf.mlb
 
   syntax.mlb

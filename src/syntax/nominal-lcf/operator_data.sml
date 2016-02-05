@@ -17,5 +17,5 @@ struct
     | INTRO of intro_params
     | ELIM of 'i elim_params
     | HYP of 'i hyp_params
-    | ID
+    | ID | FAIL | TRACE of Sort.t
 end

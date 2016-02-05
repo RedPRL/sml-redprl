@@ -26,6 +26,10 @@ Tac repeat(T : tac) = [
   }
 ].
 
+Tac complete(T : tac) = [
+  T; fail
+].
+
 // // Note how level polymorphism is introduced for a theorem through an *argument*.
 // // In Red JonPRL's semantics, this corresponds to a generic judgment.
 // Thm thm(i:lvl, P : exp) : [
