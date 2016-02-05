@@ -1,6 +1,7 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-typed-abts/abt.mlb
+  ../lib/sml-telescopes/telescopes.mlb
 
   syntax/sort_data.sml
   syntax/arity.sml
@@ -18,6 +19,19 @@ local
   syntax/operator.sml
 
   syntax/abt.sml
+
+  local
+    local
+      ../lib/cmlib/cmlib.mlb
+    in
+      structure StringOrdered
+    end
+  in
+    syntax/telescope.sml
+  end
+
+  syntax/sequent.sig
+  syntax/sequent.sml
 in
   structure SortData
   structure Sort
@@ -44,4 +58,9 @@ in
   structure AstToAbt
   structure ShowAbt
   structure DebugShowAbt
+
+  structure StringTelescope
+  structure SymbolTelescope
+  signature SEQUENT
+  structure Sequent
 end

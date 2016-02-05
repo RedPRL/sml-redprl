@@ -1,7 +1,7 @@
 Library
   signature REFINER
-  signature ELABORATOR
-  functor Elaborator
+  signature LCF_ELABORATOR
+  functor LcfElaborator
 is
   $/basis.cm
   ../lib/sml-dependent-lcf/dependent_lcf.cm

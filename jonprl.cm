@@ -1,13 +1,15 @@
 Library
-  functor Elaborator
+  functor LcfElaborator
   structure TermParser
   signature ABT_SIGNATURE
   structure BindSignatureElab
+  functor RefineElab
   structure SmallStep
   signature DYNAMICS
   structure Dynamics
   signature DYNAMICS_UTIL
   structure DynamicsUtil
+  structure Sequent
 is
   src/signature.cm
   src/syntax.cm

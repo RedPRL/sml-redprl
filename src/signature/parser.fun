@@ -138,7 +138,8 @@ struct
                 definiens =
                   OperatorData.PROVE $
                     [([],[]) \ goal,
-                     ([],[]) \ script]}))
+                     ([],[]) \ script,
+                     ([],[]) \ (OperatorData.OP_NONE SortData.EXP $ [])]}))
           end) ?? "theorem"
       end
 

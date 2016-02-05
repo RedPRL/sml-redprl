@@ -32,7 +32,7 @@ sig
     -> ntactic
 end
 
-signature ELABORATOR =
+signature LCF_ELABORATOR =
 sig
   structure Signature : ABT_SIGNATURE
 

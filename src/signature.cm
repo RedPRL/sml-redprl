@@ -12,9 +12,6 @@ Library
 
   signature ABT_SIGNATURE
   structure AbtSignature
-
-  structure StringTelescope
-  structure SymbolTelescope
 is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm
@@ -24,7 +21,6 @@ is
   cmlib.cm
   syntax.cm
 
-  signature/telescope.sml
   signature/signature.sig
   signature/ast_signature.sig
   signature/ast_signature.sml

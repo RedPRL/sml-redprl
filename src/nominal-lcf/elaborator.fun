@@ -1,4 +1,4 @@
-functor Elaborator (R : REFINER where type symbol = Symbol.t and type abt = Abt.abt) : ELABORATOR =
+functor LcfElaborator (R : REFINER where type symbol = Symbol.t and type abt = Abt.abt) : LCF_ELABORATOR =
 struct
   structure Refiner = R
   structure Signature = AbtSignature

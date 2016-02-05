@@ -106,7 +106,7 @@ struct
              stepCust sign (opid, arity) @@ m <: (mrho, srho, rho)
          | LVL_OP _  $ _ => FINAL
          | LCF theta $ args => FINAL
-         | PROVE $ [_ \ a, _ \ b] => FINAL
+         | PROVE $ _ => FINAL
          | VEC_LIT _ $ _ => FINAL
          | OP_NONE _ $ _ => FINAL
          | OP_SOME _ $ _ => FINAL

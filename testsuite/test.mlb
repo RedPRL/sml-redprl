@@ -9,7 +9,6 @@ local
     ../src/signature.mlb
     ../src/signature-elab.mlb
     ../src/syntax.mlb
-    ../src/signature/telescope.sml
   in
     tests/signature/test_parser.sml
   end

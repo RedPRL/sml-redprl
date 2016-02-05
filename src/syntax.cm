@@ -24,9 +24,16 @@ Library
   structure AstToAbt
   structure ShowAbt
   structure DebugShowAbt
+
+  structure StringTelescope
+  structure SymbolTelescope
+  signature SEQUENT
+  structure Sequent
 is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-telescopes/telescopes.cm
+  cmlib.cm
 
   syntax/sort_data.sml
   syntax/arity.sml
@@ -44,3 +51,7 @@ is
   syntax/operator.sml
 
   syntax/abt.sml
+
+  syntax/telescope.sml
+  syntax/sequent.sig
+  syntax/sequent.sml

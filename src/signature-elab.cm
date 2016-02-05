@@ -2,12 +2,15 @@ Library
   signature SIGNATURE_ELAB
   structure BindSignatureElab
   structure ValidationElab
+  functor RefineElab
 is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm
   cmlib.cm
   syntax.cm
   signature.cm
+  nominal-lcf.cm
   signature-elab/elab.sig
   signature-elab/bind_signature_elab.sml
   signature-elab/validation_elab.sml
+  signature-elab/refine_elab.fun

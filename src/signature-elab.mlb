@@ -4,11 +4,14 @@ local
   ../lib/cmlib/cmlib.mlb
   syntax.mlb
   signature.mlb
+  nominal-lcf.mlb
   signature-elab/elab.sig
   signature-elab/bind_signature_elab.sml
   signature-elab/validation_elab.sml
+  signature-elab/refine_elab.fun
 in
   signature SIGNATURE_ELAB
   structure BindSignatureElab
   structure ValidationElab
+  functor RefineElab
 end

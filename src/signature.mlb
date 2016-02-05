@@ -4,12 +4,6 @@ local
   ../lib/sml-telescopes/telescopes.mlb
   ../lib/cmlib/cmlib.mlb
 
-  local
-    syntax.mlb
-  in
-    signature/telescope.sml
-  end
-
   signature/signature.sig
 
   local
@@ -43,7 +37,4 @@ in
 
   signature ABT_SIGNATURE
   structure AbtSignature
-
-  structure StringTelescope
-  structure SymbolTelescope
 end

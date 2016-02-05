@@ -16,6 +16,6 @@ local
   nominal-lcf/elaborator.fun
 in
   signature REFINER
-  signature ELABORATOR
-  functor Elaborator
+  signature LCF_ELABORATOR
+  functor LcfElaborator
 end

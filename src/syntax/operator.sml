@@ -21,7 +21,8 @@ struct
              CttOperator.arity theta
          | PROVE =>
              [[] * [] <> SortData.EXP,
-              [] * [] <> SortData.TAC]
+              [] * [] <> SortData.TAC,
+              [] * [] <> SortData.OPT SortData.EXP]
                 ->> SortData.THM
          | LVL_OP theta =>
              LevelOperator.arity theta

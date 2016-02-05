@@ -1,7 +1,9 @@
 Library
   signature DICT
   functor SplayDict
+  functor HashTable
   structure StringOrdered
+  structure IntHashable
   structure Sum
 is
   ../lib/cmlib/cmlib.cm
