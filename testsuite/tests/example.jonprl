@@ -1,4 +1,9 @@
-// Recursion is built into the tactic language.
+// All forms are declaration are elaborated into definitions of operators
+// of a particular sort along with computation rules which are available
+// to Red JonPRL's evaluator.
+
+// Tacticals are easily defined from within JonPRL's computation system.
+// Here are a few examples:
 Tac repeat(T : tac) = [
   rec R. {
     T; R
@@ -13,10 +18,27 @@ Def id(M : exp) : exp = [
   M
 ].
 
-Thm example : [~{exp}(Ax; id(id(Ax)))] by [
-  csym; ceval
+// In addition, operators can take symbolic parameters (in brackets, as in PFPL);
+// furthermore, the arguments of operators may bind both symbols (in braces) and
+// variables (in brackets). Arguments of an operator are treated as metavariables
+// of the appropriate valence in the body of the definiens.
+Def welp[a:exp](E : {exp}[exp].exp) : exp = [
+  E{a}[Ax]
 ].
 
-Thm extractTest : [~{exp}(extract(example); Ax)] by [
+// Theorems may be both parametric and general. Let's prove an easy theorem by exploiting the
+// computation rule for [welp].
+Thm example[a:exp] : [~(Ax; welp[a]({b}[x].id(x)))] by [
+  csym; // first we flip the equation so that we can apply the evaluator
+  ceval // now we evaluate until we hit a canonical form
+].
+
+// Every proof is related to the evidence semantics of Computational Type Theory by
+// an "extract"; a theorem in JonPRL, like every other declaration form, is a
+// definitional extension of the ambient signature, and is elaborated so as to include
+// its extract. There is a non-canonical operator that can be used to pull out the
+// extract of a theorem. We can prove that the extract of the [example] theorem is
+// the trivial term [Ax]:
+Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] by [
   ceval
 ].
