@@ -60,7 +60,7 @@ struct
 
   fun elaborate sign rho t =
     let
-      val t' = evalOpen sign t
+      val t' = evalOpen sign t handle _ => t
     in
       case out t' of
            LCF ID $ _ => (fn _ => T.ID)
