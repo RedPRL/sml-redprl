@@ -90,13 +90,13 @@ struct
 
            val parseCApprox =
              symbol "<="
-               >> braces (parseSort sign)
+               >> (braces (parseSort sign) || succeed EXP)
                -- (fn tau =>
                  parens (f tau << semi && f tau) wth (fn (m1, m2) =>
                    CTT (CAPPROX tau) $ [([],[]) \ m1, ([],[]) \ m2]))
            val parseCEquiv =
              symbol "~"
-               >> braces (parseSort sign)
+               >> (braces (parseSort sign) || succeed EXP)
                -- (fn tau =>
                  parens (f tau << semi && f tau) wth (fn (m1, m2) =>
                    CTT (CEQUIV tau) $ [([],[]) \ m1, ([],[]) \ m2]))
