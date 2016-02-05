@@ -12,10 +12,12 @@ local
 
   signature.mlb
   dynamics.mlb
+  refiner.mlb
   nominal-lcf/elaborator.sig
   nominal-lcf/elaborator.fun
 in
   signature REFINER
   signature LCF_ELABORATOR
   functor LcfElaborator
+  structure LcfElaborator
 end

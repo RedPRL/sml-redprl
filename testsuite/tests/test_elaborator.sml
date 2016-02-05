@@ -1,9 +1,9 @@
-structure TestSignatureParser =
+structure TestElaborator =
 struct
   open Sum
 
   val message = "signature_parser_test has failed"
-  val input = TextIO.inputAll (TextIO.openIn "testsuite/tests/signature/signature_parser_test.jonprl")
+  val input = TextIO.inputAll (TextIO.openIn "testsuite/tests/example.jonprl")
 
   val parsed = CharParser.parseString SignatureParser.parseSigExp input
 
@@ -46,7 +46,7 @@ struct
         INL s => raise Fail (message ^ ": " ^ s)
       | INR sign =>
           let
-            val elab = ValidationElab.transport o BindSignatureElab.transport
+            val elab = RefineElab.transport o ValidationElab.transport o BindSignatureElab.transport
             val sign' = elab sign
             val _ = printSign sign'
           in

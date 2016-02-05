@@ -10,9 +10,9 @@ local
     ../src/signature-elab.mlb
     ../src/syntax.mlb
   in
-    tests/signature/test_parser.sml
+    tests/test_elaborator.sml
   end
 
 in
-  structure TestSignatureParser
+  structure TestElaborator
 end

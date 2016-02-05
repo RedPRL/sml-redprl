@@ -123,3 +123,5 @@ struct
   fun elaborate' sign =
     elaborate sign VarCtx.empty
 end
+
+structure LcfElaborator = LcfElaborator (Refiner)

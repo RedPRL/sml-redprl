@@ -1,0 +1,12 @@
+Library
+  signature REFINER
+  structure Refiner
+is
+  $/basis.cm
+  ../lib/sml-dependent-lcf/dependent_lcf.cm
+  ../lib/sml-telescopes/telescopes.cm
+  syntax.cm
+  cmlib.cm
+  dynamics.cm
+  refiner/refiner.sig
+  refiner/refiner.sml

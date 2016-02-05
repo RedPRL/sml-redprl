@@ -1,5 +1,5 @@
 Library
-  structure TestSignatureParser
+  structure TestElaborator
 is
   $/basis.cm
   ../src/cmlib.cm
@@ -10,4 +10,4 @@ is
   ../src/syntax.cm
   ../src/signature.cm
   ../src/signature-elab.cm
-  tests/signature/test_parser.sml
+  tests/test_elaborator.sml

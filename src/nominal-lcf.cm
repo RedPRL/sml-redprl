@@ -1,7 +1,7 @@
 Library
-  signature REFINER
   signature LCF_ELABORATOR
   functor LcfElaborator
+  structure LcfElaborator
 is
   $/basis.cm
   ../lib/sml-dependent-lcf/dependent_lcf.cm
@@ -9,5 +9,6 @@ is
   cmlib.cm
   signature.cm
   dynamics.cm
+  refiner.cm
   nominal-lcf/elaborator.sig
   nominal-lcf/elaborator.fun

@@ -1,19 +1,11 @@
-signature LCF_ELABORATOR' =
-  LCF_ELABORATOR
-    where type Signature.Abt.abt = Abt.abt
-    where type 'i Signature.Abt.Operator.t = 'i Operator.t
-    where type Signature.Abt.Operator.Arity.Valence.Sort.t = Sort.t
-    where type 'a Signature.Abt.Operator.Arity.Valence.Spine.t = 'a list
-    where type Refiner.Tacticals.Lcf.judgment = Sequent.sequent
-    where type Refiner.Tacticals.Lcf.evidence = Abt.abt
-    where type 'a Refiner.Tacticals.Lcf.ctx = 'a SymbolTelescope.telescope
-
-functor RefineElab (E : LCF_ELABORATOR') : SIGNATURE_ELAB =
+structure RefineElab : SIGNATURE_ELAB =
 struct
+  structure E = LcfElaborator
   structure S1 = E.Signature and S2 = E.Signature
 
   open E E.Signature
-  structure T = Signature.Telescope and SD = SortData and ST = SymbolTelescope
+  structure T = Signature.Telescope and SD = SortData
+  structure Ctx = E.Refiner.Telescope
 
   exception hole
   fun ?e = raise e
@@ -48,15 +40,15 @@ struct
                  | OP_NONE _ $ _ =>
                      let
                        val alpha = makeNameStore ()
-                       val goal = ST.empty >> prop
+                       val goal = SymbolTelescope.empty >> prop
                        val (psi, vld) = E.elaborate' sign script alpha goal
                      in
-                       case ST.ConsView.out psi of
-                            ST.ConsView.Empty =>
+                       case Ctx.ConsView.out psi of
+                            Ctx.ConsView.Empty =>
                               let
                                 val phi = metactx definiens
-                                val evd = vld (ST.empty)
-                                val prf = PROVE $ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd]
+                                val evd = vld (Ctx.empty)
+                                val prf = PROVE $ [([],[]) \ prop, ([],[]) \ script, outb evd]
                               in
                                 def sign
                                   {parameters = parameters,

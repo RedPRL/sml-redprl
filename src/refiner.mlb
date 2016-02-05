@@ -1,0 +1,13 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../lib/sml-telescopes/telescopes.mlb
+  ../lib/sml-dependent-lcf/dependent_lcf.mlb
+
+  syntax.mlb
+  dynamics.mlb
+  refiner/refiner.sig
+  refiner/refiner.sml
+in
+  signature REFINER
+  structure Refiner
+end

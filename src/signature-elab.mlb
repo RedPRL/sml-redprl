@@ -8,10 +8,10 @@ local
   signature-elab/elab.sig
   signature-elab/bind_signature_elab.sml
   signature-elab/validation_elab.sml
-  signature-elab/refine_elab.fun
+  signature-elab/refine_elab.sml
 in
   signature SIGNATURE_ELAB
   structure BindSignatureElab
   structure ValidationElab
-  functor RefineElab
+  structure RefineElab
 end

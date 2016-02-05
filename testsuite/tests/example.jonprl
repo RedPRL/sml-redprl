@@ -26,17 +26,17 @@ Tac repeat(T : tac) = [
   }
 ].
 
-// Note how level polymorphism is introduced for a theorem through an *argument*.
-// In Red JonPRL's semantics, this corresponds to a generic judgment.
-Thm thm(i:lvl, P : exp) : [
-  P
-] by [
-  repeat(
-    a,b <- id;
-    c,d <- id;
-    [hyp c, hyp d];
-    #1 {
-      hyp a; hyp b
-    }
-  )
-].
+// // Note how level polymorphism is introduced for a theorem through an *argument*.
+// // In Red JonPRL's semantics, this corresponds to a generic judgment.
+// Thm thm(i:lvl, P : exp) : [
+//   P
+// ] by [
+//   repeat(
+//     a,b <- id;
+//     c,d <- id;
+//     [hyp c, hyp d];
+//     #1 {
+//       hyp a; hyp b
+//     }
+//   )
+// ].
