@@ -37,7 +37,7 @@ struct
         || symbol "lvl" return LVL
         || symbol "tac" return TAC
         || symbol "mtac" return MTAC
-        || symbol "vec" >> p wth VEC
+        || symbol "vec" >> braces p wth VEC
         || symbol "str" return STR)
   end
 
@@ -79,6 +79,11 @@ struct
     fun parseTerm' sign rho f =
       fn EXP =>
          let
+           val parseExtract =
+             symbol "extract" >> parens (f THM)
+               wth (fn m =>
+                 EXTRACT $ [([],[]) \ m])
+
            val parseAx =
              symbol "Ax"
                return (CTT AX $ [])
@@ -99,6 +104,7 @@ struct
            parseAx
              || parseCApprox
              || parseCEquiv
+             || parseExtract
          end
        | VEC tau =>
          squares (commaSep (f tau))

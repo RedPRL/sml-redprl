@@ -16,3 +16,7 @@ Def id(M : exp) : exp = [
 Thm example : [~{exp}(Ax; id(id(Ax)))] by [
   csym; ceval
 ].
+
+Thm extractTest : [~{exp}(extract(example); Ax)] by [
+  ceval
+].

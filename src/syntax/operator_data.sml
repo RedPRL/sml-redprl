@@ -5,6 +5,7 @@ struct
   datatype 'i operator =
       LCF of 'i NominalLcfOperator.t
     | REFINE
+    | EXTRACT
     | LVL_OP of 'i LevelOperator.t
     | CTT of 'i CttOperator.t
     | VEC_LIT of Sort.t * int

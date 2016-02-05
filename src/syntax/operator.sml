@@ -24,6 +24,9 @@ struct
               [] * [] <> SortData.TAC,
               [] * [] <> SortData.OPT SortData.EXP]
                 ->> SortData.THM
+         | EXTRACT =>
+             [[] * [] <> SortData.THM]
+                ->> SortData.EXP
          | LVL_OP theta =>
              LevelOperator.arity theta
          | VEC_LIT (tau, len) =>
@@ -45,6 +48,7 @@ struct
          LCF theta => NominalLcfOperator.support theta
        | CTT theta => CttOperator.support theta
        | REFINE => []
+       | EXTRACT => []
        | LVL_OP theta => LevelOperator.support theta
        | VEC_LIT (tau, len) => []
        | STR_LIT _ => []
@@ -57,6 +61,7 @@ struct
          LCF theta => LCF (NominalLcfOperator.map f theta)
        | CTT theta => CTT (CttOperator.map f theta)
        | REFINE => REFINE
+       | EXTRACT => EXTRACT
        | LVL_OP theta => LVL_OP (LevelOperator.map f theta)
        | VEC_LIT p => VEC_LIT p
        | STR_LIT p => STR_LIT p
@@ -71,6 +76,7 @@ struct
        | (CTT theta1, CTT theta2) =>
            CttOperator.eq f (theta1, theta2)
        | (REFINE, REFINE) => true
+       | (EXTRACT, EXTRACT) => true
        | (LVL_OP theta1, LVL_OP theta2) =>
            LevelOperator.eq f (theta1, theta2)
        | (VEC_LIT p1, VEC_LIT p2) =>
@@ -95,6 +101,7 @@ struct
        | CTT theta =>
            CttOperator.toString f theta
        | REFINE => "refine"
+       | EXTRACT => "extract"
        | LVL_OP theta =>
            LevelOperator.toString f theta
        | VEC_LIT (tau, m) =>

@@ -98,22 +98,39 @@ struct
       raise Stuck @@ m <: (mrho, srho, rho)
 
   (* built-in computation rules *)
-  and stepOp sign theta args (m <: (mrho, srho, rho)) =
+  and stepOp sign theta args (cl as m <: _) =
     let
       open OperatorData
-      val psi = metactx m
     in
       case theta $ args of
            CUST (opid, params, arity) $ args =>
-             stepCust sign (opid, arity) @@ m <: (mrho, srho, rho)
+             stepCust sign (opid, arity) cl
          | LVL_OP _  $ _ => FINAL
          | LCF theta $ args => FINAL
          | REFINE $ _ => FINAL
+         | EXTRACT $ [_ \ r] =>
+             stepExtract sign r cl
          | VEC_LIT _ $ _ => FINAL
          | STR_LIT _ $ _ => FINAL
          | OP_NONE _ $ _ => FINAL
          | OP_SOME _ $ _ => FINAL
          | CTT AX $ _ => FINAL
          | _ => ?hole
+    end
+
+  and stepExtract sign r (m <: env) =
+    let
+      open OperatorData SortData
+    in
+      case step sign (r <: env) of
+           FINAL =>
+             (case out r of
+                  REFINE $ [_,_,_\evd] =>
+                    (case out evd of
+                          OP_SOME _ $ [_ \ evd] => ret @@ evd <: env
+                        | _ => raise Stuck (evd <: env))
+                | _ => raise Stuck (r <: env))
+         | STEP (r' <: env) =>
+             ret @@ check' (EXTRACT $ [([],[]) \ r'], EXP) <: env
     end
 end
