@@ -35,7 +35,6 @@ struct
   type name_store = symbol choice_sequence
   type ntactic = name_store -> Tacticals.Lcf.tactic
 
-  (* TODO: is this treating names properly? *)
   fun Rec f alpha jdg =
     f (Rec f) alpha jdg
 
