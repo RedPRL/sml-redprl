@@ -136,7 +136,7 @@ struct
                 arguments = List.map (fn (m, v) => rho m) args,
                 sort = SortData.THM,
                 definiens =
-                  OperatorData.PROVE $
+                  OperatorData.REFINE $
                     [([],[]) \ goal,
                      ([],[]) \ script,
                      ([],[]) \ (OperatorData.OP_NONE SortData.EXP $ [])]}))

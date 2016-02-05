@@ -9,5 +9,6 @@ is
   syntax.cm
   cmlib.cm
   dynamics.cm
+  signature.cm
   refiner/refiner.sig
   refiner/refiner.sml

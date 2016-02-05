@@ -1,10 +1,10 @@
 structure RefineElab : SIGNATURE_ELAB =
 struct
   structure E = LcfElaborator
-  structure S1 = E.Signature and S2 = E.Signature
+  structure S1 = AbtSignature and S2 = AbtSignature
 
-  open E E.Signature
-  structure T = Signature.Telescope and SD = SortData
+  open E AbtSignature
+  structure T = AbtSignature.Telescope and SD = SortData
   structure Ctx = E.Refiner.Telescope
 
   exception hole
@@ -32,7 +32,7 @@ struct
   in
     fun elabThm sign (d as {parameters, arguments, sort, definiens}) : decl =
       case out definiens of
-           PROVE $ [_ \ prop, _ \ script, _ \ extract] =>
+           REFINE $ [_ \ prop, _ \ script, _ \ extract] =>
              (* If an extract has already been computed, then skip; otherwise
               * we run the proof script to compute its extract. *)
              (case out extract of
@@ -41,14 +41,15 @@ struct
                      let
                        val alpha = makeNameStore ()
                        val goal = SymbolTelescope.empty >> prop
-                       val (psi, vld) = E.elaborate' sign script alpha goal
+                       val st as (psi, vld) = E.elaborate' sign script alpha goal
                      in
                        case Ctx.ConsView.out psi of
                             Ctx.ConsView.Empty =>
                               let
                                 val phi = metactx definiens
-                                val evd = vld (Ctx.empty)
-                                val prf = PROVE $ [([],[]) \ prop, ([],[]) \ script, outb evd]
+                                val _ \ evd = outb (vld Ctx.empty)
+                                val evd' = check phi (OP_SOME SortData.EXP $ [([],[]) \ evd], SortData.OPT SortData.EXP)
+                                val prf = REFINE $ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd']
                               in
                                 def sign
                                   {parameters = parameters,
@@ -56,7 +57,10 @@ struct
                                    sort = sort,
                                    definiens = check phi (prf, SortData.THM)}
                               end
-                          | _ => raise Fail "Incomplete proof" (* TODO: print subgoals *)
+                          | _ => raise Fail
+                                   ("Incomplete proof:\n\n"
+                                      ^ E.Refiner.Tacticals.Lcf.stateToString st
+                                      ^ "\n\n")
                      end
                  | _ => raise Fail "Expected either OP_SOME or OP_NONE")
          | _ => def sign d

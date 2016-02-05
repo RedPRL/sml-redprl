@@ -1,11 +1,10 @@
 signature REFINER =
 sig
-  structure Abt : ABT
   structure Telescope : TELESCOPE
+    where type Label.t = Abt.metavariable
   structure Tacticals : TACTICALS
-  sharing type Tacticals.Lcf.ctx = Telescope.telescope
-  sharing type Tacticals.Lcf.evidence = Abt.abs
-  sharing type Telescope.Label.t = Abt.Metavariable.t
+    where type Lcf.evidence = Abt.abs
+    where type 'a Lcf.ctx = 'a Telescope.telescope
 
   type symbol = Abt.symbol
   type metavariable = Abt.metavariable
@@ -32,6 +31,14 @@ sig
   val Hyp
     : symbol (* target *)
     -> ntactic
+
+  val CStep
+    : AbtSignature.sign
+    -> int
+    -> ntactic
+
+  val CSym : ntactic
+  val CEval : AbtSignature.sign -> ntactic
 end
 
 

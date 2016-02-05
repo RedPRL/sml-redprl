@@ -1,7 +1,6 @@
-functor LcfElaborator (R : REFINER where type Abt.Symbol.t = Symbol.t and type Abt.abt = Abt.abt and type Abt.Metavariable.t = Metavariable.t) : LCF_ELABORATOR =
+functor LcfElaborator (R : REFINER) : LCF_ELABORATOR =
 struct
   structure Refiner = R
-  structure Signature = AbtSignature
   structure T = R.Tacticals
 
   open Abt NominalLcfOperatorData OperatorData SortData
@@ -77,6 +76,12 @@ struct
              R.Hyp target
          | LCF (INTRO {rule}) $ [_ \ m] =>
              R.Intro rule (elaborateOpt (evalOpen sign m))
+         | LCF (CSTEP i) $ [] =>
+             R.CStep sign i
+         | LCF CSYM $ [] =>
+             R.CSym
+         | LCF CEVAL $ [] =>
+             R.CEval sign
          | `x => VarCtx.lookup rho x
          | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t ^ " which evaluated to " ^ DebugShowAbt.toString t')
     end

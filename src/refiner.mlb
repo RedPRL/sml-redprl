@@ -6,6 +6,7 @@ local
 
   syntax.mlb
   dynamics.mlb
+  signature.mlb
   refiner/refiner.sig
   refiner/refiner.sml
 in

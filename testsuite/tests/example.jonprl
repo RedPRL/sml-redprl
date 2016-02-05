@@ -1,24 +1,3 @@
-// Each declaration takes a block of parameters in square brackets (symbols w/ sorts),
-// and a block of arguments in parentheses (metavariables with valences). Both
-// are optional.
-
-Def dfun(A : exp, B : [exp].exp) : exp = [
-  A
-].
-
-Def myvec(A:exp) : vec exp = [
-  [A,A,A]
-].
-
-Def mydef[u:exp](M : {exp}[exp].exp, N : [tac].exp) : exp = [
-  dfun(N[id]; [x].M{u}[x])
-].
-
-// Tactics can take parameters and arguments as well
-Tac welp[a:exp](M : exp) = [
-  hyp a
-].
-
 // Recursion is built into the tactic language.
 Tac repeat(T : tac) = [
   rec R. {
@@ -30,17 +9,10 @@ Tac complete(T : tac) = [
   T; fail
 ].
 
-// // Note how level polymorphism is introduced for a theorem through an *argument*.
-// // In Red JonPRL's semantics, this corresponds to a generic judgment.
-// Thm thm(i:lvl, P : exp) : [
-//   P
-// ] by [
-//   repeat(
-//     a,b <- id;
-//     c,d <- id;
-//     [hyp c, hyp d];
-//     #1 {
-//       hyp a; hyp b
-//     }
-//   )
-// ].
+Def id(M : exp) : exp = [
+  M
+].
+
+Thm example : [~{exp}(Ax; id(id(Ax)))] by [
+  csym; ceval
+].

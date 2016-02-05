@@ -7,6 +7,7 @@ struct
   type t = ctt_operator
 
   local
+    open SortData
     fun op* (a, b) = (a, b) (* symbols sorts, variable sorts *)
     fun op<> (a, b) = (a, b) (* valence *)
     fun op->> (a, b) = (a, b) (* arity *)
@@ -17,20 +18,24 @@ struct
       fn CAPPROX tau =>
            [[] * [] <> tau,
             [] * [] <> tau]
-             ->> SortData.EXP
+             ->> EXP
        | CEQUIV tau =>
            [[] * [] <> tau,
             [] * [] <> tau]
-             ->> SortData.EXP
+             ->> EXP
+       | AX =>
+           [] ->> EXP
   end
 
   val eq : t * t -> bool = op=
 
   val toString =
     fn CAPPROX tau =>
-         "capprox{" ^ Sort.toString tau ^ "}"
+         "<={" ^ Sort.toString tau ^ "}"
      | CEQUIV tau =>
-         "cequiv{" ^ Sort.toString tau ^ "}"
+         "~{" ^ Sort.toString tau ^ "}"
+     | AX =>
+         "Ax"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)

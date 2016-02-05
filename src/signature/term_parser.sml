@@ -69,7 +69,7 @@ struct
   fun hole ! = raise Match
 
   local
-    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData SortData
+    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData SortData
     infix $ \ $#
   in
     val parseSymbol = identifier
@@ -78,7 +78,28 @@ struct
     (* TODO *)
     fun parseTerm' sign rho f =
       fn EXP =>
-         fail "to be implemented"
+         let
+           val parseAx =
+             symbol "Ax"
+               return (CTT AX $ [])
+
+           val parseCApprox =
+             symbol "<="
+               >> braces (parseSort sign)
+               -- (fn tau =>
+                 parens (f tau << semi && f tau) wth (fn (m1, m2) =>
+                   CTT (CAPPROX tau) $ [([],[]) \ m1, ([],[]) \ m2]))
+           val parseCEquiv =
+             symbol "~"
+               >> braces (parseSort sign)
+               -- (fn tau =>
+                 parens (f tau << semi && f tau) wth (fn (m1, m2) =>
+                   CTT (CEQUIV tau) $ [([],[]) \ m1, ([],[]) \ m2]))
+         in
+           parseAx
+             || parseCApprox
+             || parseCEquiv
+         end
        | VEC tau =>
          squares (commaSep (f tau))
            wth (fn xs =>
@@ -97,6 +118,22 @@ struct
            val parseFail =
              symbol "fail"
                return (LCF FAIL $ [])
+
+           val parseCStep =
+             symbol "cstep" >> (braces integer || succeed 1)
+               wth (fn i => LCF (CSTEP i) $ [])
+
+           val parseCRefl =
+             symbol "crefl"
+               return (LCF (CSTEP 0) $ [])
+
+           val parseCSym =
+             symbol "csym"
+               return (LCF CSYM $ [])
+
+           val parseCEval =
+             symbol "ceval"
+               return (LCF CEVAL $ [])
 
            val parseTrace =
              symbol "trace"
@@ -140,6 +177,10 @@ struct
              parens (f TAC)
                || parseId
                || parseFail
+               || parseCStep
+               || parseCRefl
+               || parseCEval
+               || parseCSym
                || parseTrace
                || parseHyp
                || parseRec

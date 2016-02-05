@@ -20,10 +20,24 @@ struct
   and forceB (e <: env) =
     Abt.mapAbs (fn m => force (m <: env)) e
 
-  fun step' sign m : abt step =
+  fun stepn sign n =
+    let
+      fun go i cl =
+        if i < n then
+          case step sign cl of
+               FINAL => cl
+             | STEP cl' => go (i + 1) cl'
+        else
+          cl
+    in
+      fn m => force (go 0 (m <: empty))
+    end
+
+  fun step' sign m =
     SmallStep.map
       force
       (step sign (m <: empty))
+
 
   fun eval sign (mrho, srho, rho) : abt -> abt =
     let

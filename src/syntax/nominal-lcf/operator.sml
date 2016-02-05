@@ -45,6 +45,12 @@ struct
       | arity REC =
           [ [] * [TAC] <> TAC
           ] ->> TAC
+      | arity (CSTEP _) =
+          [] ->> TAC
+      | arity CSYM =
+          [] ->> TAC
+      | arity CEVAL =
+          [] ->> TAC
   end
 
   fun support (ELIM {target,...}) = [(target, EXP)]
@@ -63,6 +69,9 @@ struct
      | FAIL => FAIL
      | TRACE tau => TRACE tau
      | REC => REC
+     | CSTEP i => CSTEP i
+     | CSYM => CSYM
+     | CEVAL => CEVAL
 
   fun eq f =
     fn (SEQ n1, SEQ n2) => n1 = n2
@@ -75,13 +84,16 @@ struct
      | (FAIL, FAIL) => true
      | (TRACE tau1, TRACE tau2) => tau1 = tau2
      | (REC, REC) => true
+     | (CSTEP n1, CSTEP n2) => n1 = n2
+     | (CSYM, CSYM) => true
+     | (CEVAL, CEVAL) => true
      | _ => false
 
   fun toString f =
     fn (SEQ _) => "seq"
      | ALL => "all"
      | EACH => "each"
-     | FOCUS i => "some[" ^ Int.toString i ^ "]"
+     | FOCUS i => "some{" ^ Int.toString i ^ "}"
      | INTRO _ => "intro"
      | ELIM {target} => "elim[" ^ f target ^ "]"
      | HYP {target} => "hyp[" ^ f target ^ "]"
@@ -89,4 +101,7 @@ struct
      | FAIL => "fail"
      | TRACE tau => "trace{" ^ Sort.toString tau ^ "}"
      | REC => "rec"
+     | CSTEP n => "cstep{" ^ Int.toString n ^ "}"
+     | CSYM => "csym"
+     | CEVAL => "ceval"
 end

@@ -18,4 +18,5 @@ struct
     | ELIM of 'i elim_params
     | HYP of 'i hyp_params
     | ID | FAIL | TRACE of Sort.t
+    | CSTEP of int | CEVAL | CSYM
 end

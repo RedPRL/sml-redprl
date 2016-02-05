@@ -4,7 +4,7 @@ structure OperatorData =
 struct
   datatype 'i operator =
       LCF of 'i NominalLcfOperator.t
-    | PROVE
+    | REFINE
     | LVL_OP of 'i LevelOperator.t
     | CTT of 'i CttOperator.t
     | VEC_LIT of Sort.t * int
