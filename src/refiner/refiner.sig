@@ -20,12 +20,10 @@ sig
 
   val Elim
     : symbol      (* target *)
-    -> abt option (* optional argument *)
     -> ntactic
 
   val Intro
     : int option  (* rule index *)
-    -> abt option (* optional argument *)
     -> ntactic
 
   val Hyp

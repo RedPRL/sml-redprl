@@ -51,11 +51,9 @@ struct
           [ [] * [] <> TAC
           ] ->> MTAC
       | arity (INTRO _) =
-          [[] * [] <> OPT EXP]
-            ->> TAC
+          [] ->> TAC
       | arity (ELIM _) =
-          [[] * [] <> OPT EXP]
-            ->> TAC
+          [] ->> TAC
       | arity (HYP _) =
           [] ->> TAC
       | arity ID =
