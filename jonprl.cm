@@ -11,6 +11,7 @@ Library
   structure DynamicsUtil
   structure Sequent
   structure Refiner
+  structure SignatureParser
 is
   src/signature.cm
   src/syntax.cm

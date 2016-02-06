@@ -80,9 +80,12 @@ struct
       fn EXP =>
          let
            val parseExtract =
-             symbol "extract" >> parens (f THM)
-               wth (fn m =>
-                 EXTRACT $ [([],[]) \ m])
+             symbol "extract"
+               >> (braces (parseSort sign) || succeed EXP)
+               -- (fn tau =>
+                 parens (f (THM tau))
+                   wth (fn m =>
+                     EXTRACT tau $ [([],[]) \ m]))
 
            val parseAx =
              symbol "Ax"

@@ -121,25 +121,26 @@ struct
         val parseOpid' = reserved "Thm" >> parseOpid
         val parseParams' = squares (parseParams sign) || succeed []
         val parseArgs' = parens (parseArgs sign) || succeed []
+        val parseSort' = (colon >> parseSort sign) || succeed SortData.EXP
         open Ast
         infix $ \
       in
         (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
           let
             val rho = makeNameStore args
-            val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP)
+            val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP) && parseSort'
             val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC)
           in
-            parseGoal && parseScript wth (fn (goal, script) =>
+            parseGoal && parseScript wth (fn ((goal, tau), script) =>
               (opid,
                {parameters = params,
                 arguments = List.map (fn (m, v) => rho m) args,
-                sort = SortData.THM,
+                sort = SortData.THM tau,
                 definiens =
-                  OperatorData.REFINE $
+                  OperatorData.REFINE tau$
                     [([],[]) \ goal,
                      ([],[]) \ script,
-                     ([],[]) \ (OperatorData.OP_NONE SortData.EXP $ [])]}))
+                     ([],[]) \ (OperatorData.OP_NONE tau $ [])]}))
           end) ?? "theorem"
       end
 

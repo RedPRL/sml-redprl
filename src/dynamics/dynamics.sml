@@ -110,9 +110,9 @@ struct
              step sign (l <: env) <#> (fn l' <: env =>
                check (metactx l') (LVL_OP LSUCC $ [([],[]) \ l'], LVL) <: env)
          | LCF theta $ args => FINAL
-         | REFINE $ _ => FINAL
-         | EXTRACT $ [_ \ r] =>
-             stepExtract sign r cl
+         | REFINE _ $ _ => FINAL
+         | EXTRACT tau $ [_ \ r] =>
+             stepExtract sign tau r cl
          | VEC_LIT _ $ _ => FINAL
          | STR_LIT _ $ _ => FINAL
          | OP_NONE _ $ _ => FINAL
@@ -125,19 +125,19 @@ struct
          | _ => ?hole
     end
 
-  and stepExtract sign r (m <: env) =
+  and stepExtract sign tau r (m <: env) =
     let
       open OperatorData SortData
     in
       case step sign (r <: env) of
            FINAL =>
              (case out r of
-                  REFINE $ [_,_,_\evd] =>
+                  REFINE _ $ [_,_,_\evd] =>
                     (case out evd of
                           OP_SOME _ $ [_ \ evd] => ret @@ evd <: env
                         | _ => raise Stuck (evd <: env))
                 | _ => raise Stuck (r <: env))
          | STEP (r' <: env) =>
-             ret @@ check' (EXTRACT $ [([],[]) \ r'], EXP) <: env
+             ret @@ check' (EXTRACT tau $ [([],[]) \ r'], tau) <: env
     end
 end

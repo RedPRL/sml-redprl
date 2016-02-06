@@ -32,7 +32,7 @@ struct
   in
     fun elabThm sign (d as {parameters, arguments, sort, definiens}) : decl =
       case out definiens of
-           REFINE $ [_ \ prop, _ \ script, _ \ extract] =>
+           REFINE tau $ [_ \ prop, _ \ script, _ \ extract] =>
              (* If an extract has already been computed, then skip; otherwise
               * we run the proof script to compute its extract. *)
              (case out extract of
@@ -49,13 +49,13 @@ struct
                                 val phi = metactx definiens
                                 val _ \ evd = outb (vld Ctx.empty)
                                 val evd' = check phi (OP_SOME SortData.EXP $ [([],[]) \ evd], SortData.OPT SortData.EXP)
-                                val prf = REFINE $ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd']
+                                val prf = REFINE tau $ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd']
                               in
                                 def sign
                                   {parameters = parameters,
                                    arguments = arguments,
                                    sort = sort,
-                                   definiens = check phi (prf, SortData.THM)}
+                                   definiens = check phi (prf, SortData.THM tau)}
                               end
                           | _ => raise Fail
                                    ("Incomplete proof:\n\n"
@@ -68,7 +68,7 @@ struct
 
   fun elab sign d : decl =
     case #sort d of
-         SD.THM => elabThm sign d
+         SD.THM tau => elabThm sign d
        | _ => def sign d
 
 

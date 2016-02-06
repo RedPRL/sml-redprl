@@ -5,7 +5,7 @@ struct
     | EVD (* derivations *)
     | TAC (* tactics *)
     | MTAC (* multitactics *)
-    | THM (* theorems *)
+    | THM  of sort (* theorems *)
     | LVL (* levels *)
     | VEC of sort (* vector *)
     | OPT of sort (* optional *)

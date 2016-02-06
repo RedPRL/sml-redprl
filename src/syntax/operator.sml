@@ -4,8 +4,8 @@ structure OperatorData =
 struct
   datatype 'i operator =
       LCF of 'i NominalLcfOperator.t
-    | REFINE
-    | EXTRACT
+    | REFINE of Sort.t
+    | EXTRACT of Sort.t
     | LVL_OP of 'i LevelOperator.t
     | CTT of 'i CttOperator.t
     | VEC_LIT of Sort.t * int
@@ -36,14 +36,14 @@ struct
              NominalLcfOperator.arity theta
          | CTT theta =>
              CttOperator.arity theta
-         | REFINE =>
+         | REFINE tau =>
              [[] * [] <> SortData.EXP,
               [] * [] <> SortData.TAC,
-              [] * [] <> SortData.OPT SortData.EXP]
-                ->> SortData.THM
-         | EXTRACT =>
-             [[] * [] <> SortData.THM]
-                ->> SortData.EXP
+              [] * [] <> SortData.OPT tau]
+                ->> SortData.THM tau
+         | EXTRACT tau =>
+             [[] * [] <> SortData.THM tau]
+                ->> tau
          | LVL_OP theta =>
              LevelOperator.arity theta
          | VEC_LIT (tau, len) =>
@@ -64,8 +64,8 @@ struct
     case theta of
          LCF theta => NominalLcfOperator.support theta
        | CTT theta => CttOperator.support theta
-       | REFINE => []
-       | EXTRACT => []
+       | REFINE _ => []
+       | EXTRACT _ => []
        | LVL_OP theta => LevelOperator.support theta
        | VEC_LIT (tau, len) => []
        | STR_LIT _ => []
@@ -77,8 +77,8 @@ struct
     case theta of
          LCF theta => LCF (NominalLcfOperator.map f theta)
        | CTT theta => CTT (CttOperator.map f theta)
-       | REFINE => REFINE
-       | EXTRACT => EXTRACT
+       | REFINE tau => REFINE tau
+       | EXTRACT tau => EXTRACT tau
        | LVL_OP theta => LVL_OP (LevelOperator.map f theta)
        | VEC_LIT p => VEC_LIT p
        | STR_LIT p => STR_LIT p
@@ -92,8 +92,10 @@ struct
            NominalLcfOperator.eq f (theta1, theta2)
        | (CTT theta1, CTT theta2) =>
            CttOperator.eq f (theta1, theta2)
-       | (REFINE, REFINE) => true
-       | (EXTRACT, EXTRACT) => true
+       | (REFINE tau1, REFINE tau2) =>
+           Sort.eq (tau1, tau2)
+       | (EXTRACT tau1, EXTRACT tau2) =>
+           Sort.eq (tau1, tau2)
        | (LVL_OP theta1, LVL_OP theta2) =>
            LevelOperator.eq f (theta1, theta2)
        | (VEC_LIT p1, VEC_LIT p2) =>
@@ -117,8 +119,8 @@ struct
            NominalLcfOperator.toString f theta
        | CTT theta =>
            CttOperator.toString f theta
-       | REFINE => "refine"
-       | EXTRACT => "extract"
+       | REFINE tau => "refine{" ^ Sort.toString tau ^ "}"
+       | EXTRACT tau => "extract{" ^ Sort.toString tau ^ "}"
        | LVL_OP theta =>
            LevelOperator.toString f theta
        | VEC_LIT (tau, m) =>
