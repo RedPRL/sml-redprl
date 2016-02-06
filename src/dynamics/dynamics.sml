@@ -98,9 +98,9 @@ struct
       raise Stuck @@ m <: (mrho, srho, rho)
 
   (* built-in computation rules *)
-  and stepOp sign theta args (cl as m <: _) =
+  and stepOp sign theta args (cl as m <: env) =
     let
-      open OperatorData
+      open OperatorData CttOperatorData SortData
     in
       case theta $ args of
            CUST (opid, params, arity) $ args =>
@@ -115,6 +115,9 @@ struct
          | OP_NONE _ $ _ => FINAL
          | OP_SOME _ $ _ => FINAL
          | CTT AX $ _ => FINAL
+         | CTT UNIV $ [_ \ l] =>
+             step sign (l <: env) <#> (fn (l' <: env) =>
+               check (metactx l') (CTT UNIV $ [([],[]) \ l'], EXP) <: env)
          | _ => ?hole
     end
 
