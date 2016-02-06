@@ -5,6 +5,7 @@ struct
     | CEQUIV of Sort.t
     | UNIV
     | EQ of Sort.t
+    | MEMBER of Sort.t
     | AX
 end
 
@@ -38,6 +39,10 @@ struct
             [] * [] <> tau,
             [] * [] <> EXP]
              ->> EXP
+       | MEMBER tau =>
+           [[] * [] <> tau,
+            [] * [] <> EXP]
+             ->> EXP
        | UNIV =>
            [[] * [] <> LVL]
              ->> EXP
@@ -54,6 +59,8 @@ struct
          "~{" ^ Sort.toString tau ^ "}"
      | EQ tau =>
          "={" ^ Sort.toString tau ^ "}"
+     | MEMBER tau =>
+         "member{" ^ Sort.toString tau ^ "}"
      | AX =>
          "Ax"
      | UNIV =>

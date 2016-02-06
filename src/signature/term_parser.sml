@@ -124,6 +124,13 @@ struct
                  parens (f tau << semi && f tau << semi && f EXP) wth (fn (m1, (m2, a)) =>
                    CTT (EQ tau) $ [([],[]) \ m1, ([],[]) \ m2, ([],[]) \ a]))
 
+           val parseMember =
+             symbol "member"
+               >> (braces (parseSort sign) || succeed EXP)
+               -- (fn tau =>
+                 parens (f tau << semi && f EXP) wth (fn (m, a) =>
+                   CTT (MEMBER tau) $ [([],[]) \ m, ([],[]) \ a]))
+
            val parseCEquiv =
              symbol "~"
                >> (braces (parseSort sign) || succeed EXP)
@@ -137,6 +144,7 @@ struct
              || parseExtract
              || parseUniv
              || parseEq
+             || parseMember
          end
        | VEC tau =>
          squares (commaSep (f tau))
