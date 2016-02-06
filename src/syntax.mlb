@@ -6,16 +6,9 @@ local
   syntax/sort_data.sml
   syntax/arity.sml
 
-  syntax/nominal-lcf/operator_data.sml
   syntax/nominal-lcf/operator.sml
-
-  syntax/level/operator_data.sml
   syntax/level/operator.sml
-
-  syntax/ctt/operator_data.sml
   syntax/ctt/operator.sml
-
-  syntax/operator_data.sml
   syntax/operator.sml
 
   syntax/abt.sml

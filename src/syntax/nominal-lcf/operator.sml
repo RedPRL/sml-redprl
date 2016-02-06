@@ -1,3 +1,26 @@
+structure NominalLcfOperatorData =
+struct
+  (* We use symbols/atoms to index into the context. *)
+  type 'i hyp_params =
+    {target : 'i}
+
+  type 'i elim_params =
+    {target : 'i}
+
+  type intro_params =
+    {rule : int option}
+
+  datatype 'i script_operator =
+      SEQ of int
+    | ALL | EACH | FOCUS of int
+    | REC
+    | INTRO of intro_params
+    | ELIM of 'i elim_params
+    | HYP of 'i hyp_params
+    | ID | FAIL | TRACE of Sort.t
+    | CSTEP of int | CEVAL | CSYM
+end
+
 structure NominalLcfOperator : OPERATOR =
 struct
   open NominalLcfOperatorData SortData
@@ -105,3 +128,4 @@ struct
      | CSYM => "csym"
      | CEVAL => "ceval"
 end
+
