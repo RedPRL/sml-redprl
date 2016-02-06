@@ -4,6 +4,7 @@ struct
       CAPPROX of Sort.t
     | CEQUIV of Sort.t
     | UNIV
+    | EQ of Sort.t
     | AX
 end
 
@@ -32,6 +33,11 @@ struct
            [[] * [] <> tau,
             [] * [] <> tau]
              ->> EXP
+       | EQ tau =>
+           [[] * [] <> tau,
+            [] * [] <> tau,
+            [] * [] <> EXP]
+             ->> EXP
        | UNIV =>
            [[] * [] <> LVL]
              ->> EXP
@@ -46,6 +52,8 @@ struct
          "<={" ^ Sort.toString tau ^ "}"
      | CEQUIV tau =>
          "~{" ^ Sort.toString tau ^ "}"
+     | EQ tau =>
+         "={" ^ Sort.toString tau ^ "}"
      | AX =>
          "Ax"
      | UNIV =>

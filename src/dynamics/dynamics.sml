@@ -118,6 +118,7 @@ struct
          | OP_NONE _ $ _ => FINAL
          | OP_SOME _ $ _ => FINAL
          | CTT AX $ _ => FINAL
+         | CTT (EQ _) $ _ => FINAL
          | CTT UNIV $ [_ \ l] =>
              step sign (l <: env) <#> (fn l' <: env =>
                check (metactx l') (CTT UNIV $ [([],[]) \ l'], EXP) <: env)

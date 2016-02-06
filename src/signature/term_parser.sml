@@ -100,6 +100,13 @@ struct
                  parens (f tau << semi && f tau) wth (fn (m1, m2) =>
                    CTT (CAPPROX tau) $ [([],[]) \ m1, ([],[]) \ m2]))
 
+           val parseEq =
+             symbol "="
+               >> (braces (parseSort sign) || succeed EXP)
+               -- (fn tau =>
+                 parens (f tau << semi && f tau << semi && f EXP) wth (fn (m1, (m2, a)) =>
+                   CTT (EQ tau) $ [([],[]) \ m1, ([],[]) \ m2, ([],[]) \ a]))
+
            val parseCEquiv =
              symbol "~"
                >> (braces (parseSort sign) || succeed EXP)
@@ -112,6 +119,7 @@ struct
              || parseCEquiv
              || parseExtract
              || parseUniv
+             || parseEq
          end
        | VEC tau =>
          squares (commaSep (f tau))
