@@ -19,3 +19,4 @@ is
   src/dynamics.cm
   src/refiner.cm
   src/signature-elab.cm
+  src/frontend.cm

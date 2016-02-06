@@ -4,5 +4,6 @@ local
   src/dynamics.mlb
   src/signature-elab.mlb
   src/nominal-lcf.mlb
+  src/frontend.mlb
 in
 end

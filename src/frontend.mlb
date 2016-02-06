@@ -9,11 +9,10 @@ local
     ../src/signature.mlb
     ../src/signature-elab.mlb
     ../src/syntax.mlb
-    ../src/frontend/frontend.sml
   in
-    tests/test_elaborator.sml
+    frontend/frontend.sml
   end
 
+  frontend/main.sml
 in
-  structure TestElaborator
 end
