@@ -10,4 +10,5 @@ is
   ../src/syntax.cm
   ../src/signature.cm
   ../src/signature-elab.cm
+  ../src/frontend.cm
   tests/test_elaborator.sml
