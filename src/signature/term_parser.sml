@@ -88,12 +88,18 @@ struct
              symbol "Ax"
                return (CTT AX $ [])
 
+           val parseUniv =
+             symbol "Univ" >> braces (f LVL)
+               wth (fn i =>
+                 CTT UNIV $ [([],[]) \ i])
+
            val parseCApprox =
              symbol "<="
                >> (braces (parseSort sign) || succeed EXP)
                -- (fn tau =>
                  parens (f tau << semi && f tau) wth (fn (m1, m2) =>
                    CTT (CAPPROX tau) $ [([],[]) \ m1, ([],[]) \ m2]))
+
            val parseCEquiv =
              symbol "~"
                >> (braces (parseSort sign) || succeed EXP)
@@ -105,6 +111,7 @@ struct
              || parseCApprox
              || parseCEquiv
              || parseExtract
+             || parseUniv
          end
        | VEC tau =>
          squares (commaSep (f tau))
