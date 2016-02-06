@@ -41,5 +41,7 @@ ML installed. Then, simply run
 
     ./script/mlton.sh
 
-There is not currently any executable to be run, as the project is in early
-development.
+Then, a binary will be placed in `./bin/jonprl`, which you may run as
+follows
+
+    ./bin/jonprl my-development.jonprl
