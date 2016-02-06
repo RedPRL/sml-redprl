@@ -22,6 +22,13 @@ struct
              @@ "Expected level expression, but got "
               ^ DebugShowAbt.toString i
 
+  (* Find the basis of a level hierarchy *)
+  fun levelGetBase i =
+    case destLevel i of
+         LVL_OP LSUCC $ [_ \ i] =>
+           levelGetBase i
+       | _ => i
+
   fun compareLevels (i, j) =
     let
       val i' = destLevel i
@@ -30,17 +37,29 @@ struct
       if Abt.eq (i, j) then
         EQUAL
       else
-        case (i', j') of
-             (LVL_OP (LBASE u) $ _, LVL_OP (LBASE v) $ _) =>
-               raise Fail "Levels lie in different hierarchies"
-           | (LVL_OP (LBASE u) $ _, _) =>
-               LESS
-           | (_, LVL_OP (LBASE u) $ _) =>
-               GREATER
-           | (LVL_OP LSUCC $ [_ \ i''], LVL_OP LSUCC $ [_ \ j'']) =>
-               compareLevels (i'', j'')
-           | _ =>
-               raise Fail "Levels incomparable"
+        let
+          val b1 = levelGetBase i
+          val b2 = levelGetBase j
+          exception Incomparable
+        in
+          if Abt.eq (b1, b2) then
+            case (i', j') of
+                 (LVL_OP LSUCC $ [_ \ i''], LVL_OP LSUCC $ [_ \ j'']) =>
+                   compareLevels (i'', j'')
+               | (LVL_OP LSUCC $ [_ \ i''], _) =>
+                   GREATER
+               | (_, LVL_OP LSUCC $ [_ \ i'']) =>
+                   LESS
+               | _ => raise Incomparable
+          else
+            raise Incomparable
+        end
+        handle Incomparable =>
+          raise Fail
+            @@ "Levels incomparable: "
+             ^ DebugShowAbt.toString i
+             ^ " vs. "
+             ^ DebugShowAbt.toString j
     end
 
 

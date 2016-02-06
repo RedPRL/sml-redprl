@@ -69,7 +69,7 @@ struct
   fun hole ! = raise Match
 
   local
-    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData SortData
+    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData SortData
     infix $ \ $#
   in
     val parseSymbol = identifier
@@ -77,7 +77,21 @@ struct
 
     (* TODO *)
     fun parseTerm' sign rho f =
-      fn EXP =>
+      fn LVL =>
+         let
+           val parseBase =
+             symbol "lbase" >> brackets parseSymbol
+               wth (fn u =>
+                 LVL_OP (LBASE u) $ [])
+           val parseSucc =
+             symbol "lsuc" >> parens (f LVL)
+               wth (fn l =>
+                 LVL_OP LSUCC $ [([],[]) \ l])
+         in
+           try parseSucc
+             || parseBase
+         end
+       | EXP =>
          let
            val parseExtract =
              symbol "extract"
@@ -159,6 +173,11 @@ struct
              symbol "ceval"
                return (LCF CEVAL $ [])
 
+           val parseEq =
+             symbol "eq" >> (opt (braces integer))
+               wth (fn rule =>
+                 LCF (NominalLcfOperatorData.EQ {rule = rule}) $ [])
+
            val parseTrace =
              symbol "trace"
                >> (braces (parseSort sign) || succeed SortData.STR)
@@ -205,6 +224,7 @@ struct
                || parseCRefl
                || parseCEval
                || parseCSym
+               || parseEq
                || parseTrace
                || parseHyp
                || parseRec
