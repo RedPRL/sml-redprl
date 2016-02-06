@@ -2,36 +2,9 @@ structure Refiner : REFINER =
 struct
   structure Abt = Abt and Ctx = SymbolTelescope and Signature = AbtSignature
 
-  structure Kit =
-  struct
-    structure Tm = Abt
-    open Abt
-
-    type judgment = Sequent.sequent
-    type evidence = abs
-
-    fun judgmentToString s =
-      "{" ^ Sequent.toString s ^ "}"
-
-    fun evidenceValence _ = (([],[]), SortData.EXP)
-
-    fun evidenceToString e =
-      let
-        infix \
-        val _ \ m = outb e
-      in
-        DebugShowAbt.toString m
-      end
-
-    open Sequent infix >>
-    fun substJudgment (x, e) (H >> P) =
-      Ctx.map H (metasubst (e,x))
-        >> metasubst (e, x) P
-  end
-
   open Abt
 
-  structure Lcf = DependentLcf (Kit)
+  structure Lcf = DependentLcf (Judgment)
   structure Telescope = Lcf.T and T = Lcf.T
   structure Tacticals = Tacticals(Lcf)
 
