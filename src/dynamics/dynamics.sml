@@ -100,12 +100,15 @@ struct
   (* built-in computation rules *)
   and stepOp sign theta args (cl as m <: env) =
     let
-      open OperatorData CttOperatorData SortData
+      open OperatorData CttOperatorData LevelOperatorData SortData
     in
       case theta $ args of
            CUST (opid, params, arity) $ args =>
              stepCust sign (opid, arity) cl
-         | LVL_OP _  $ _ => FINAL
+         | LVL_OP (LBASE _) $ _ => FINAL
+         | LVL_OP LSUCC $ [_ \ l] =>
+             step sign (l <: env) <#> (fn l' <: env =>
+               check (metactx l') (LVL_OP LSUCC $ [([],[]) \ l'], LVL) <: env)
          | LCF theta $ args => FINAL
          | REFINE $ _ => FINAL
          | EXTRACT $ [_ \ r] =>
@@ -116,7 +119,7 @@ struct
          | OP_SOME _ $ _ => FINAL
          | CTT AX $ _ => FINAL
          | CTT UNIV $ [_ \ l] =>
-             step sign (l <: env) <#> (fn (l' <: env) =>
+             step sign (l <: env) <#> (fn l' <: env =>
                check (metactx l') (CTT UNIV $ [([],[]) \ l'], EXP) <: env)
          | _ => ?hole
     end
