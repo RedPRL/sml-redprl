@@ -8,6 +8,9 @@ local
   dynamics.mlb
   signature.mlb
   refiner/judgment.sml
+  refiner/refiner_kit.sml
+  refiner/rules/univ.sig
+  refiner/rules/univ.sml
   refiner/refiner.sig
   refiner/refiner.sml
 in

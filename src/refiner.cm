@@ -13,4 +13,7 @@ is
   signature.cm
   refiner/judgment.sml
   refiner/refiner.sig
+  refiner/refiner_kit.sml
+  refiner/rules/univ.sig
+  refiner/rules/univ.sml
   refiner/refiner.sml

@@ -1,16 +1,7 @@
 structure Refiner : REFINER =
 struct
-  structure Abt = Abt and Ctx = SymbolTelescope and Signature = AbtSignature
-
-  open Abt
-
-  structure Lcf = DependentLcf (Judgment)
-  structure Telescope = Lcf.T and T = Lcf.T
-  structure Tacticals = Tacticals(Lcf)
-
-  type 'a choice_sequence = int -> 'a
-  type name_store = symbol choice_sequence
-  type ntactic = name_store -> Tacticals.Lcf.tactic
+  structure Abt = Abt
+  open RefinerKit
 
   open Sequent infix >> $ \
 
@@ -20,8 +11,15 @@ struct
   fun Intro r _ =
     raise Fail "To be implemented"
 
-  fun Eq r _ =
-    raise Fail "To be implemented"
+  local
+    open OperatorData CttOperatorData
+  in
+    fun Eq r alpha (jdg as H >> P) =
+      case out P of
+           CTT (EQ _) $ _ =>
+             UnivRules.Eq alpha jdg
+         | _ => raise Fail "Eq not applicable"
+  end
 
   fun Hyp i _ (H >> P) =
     let
@@ -33,22 +31,6 @@ struct
       else
         raise Fail "Failed to unify with hypothesis"
     end
-
-  exception hole
-  fun ?x = raise x
-
-  local
-    val counter = ref 0
-  in
-    fun newMeta str =
-      let
-        val i = !counter
-      in
-        counter := i + 1;
-        Metavariable.named ("?" ^ str ^ Int.toString i)
-      end
-  end
-
 
   local
     open OperatorData CttOperatorData
