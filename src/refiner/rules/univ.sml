@@ -5,7 +5,7 @@ struct
 
   fun destEq m =
     case out m of
-         CTT (EQ tau) $ [_ \ m, _ \ n, _ \ a] => (tau,m,n,a)
+         CTT (EQ EXP) $ [_ \ m, _ \ n, _ \ a] => (m,n,a)
        | _ => raise Fail @@ "Expected equality type, but got " ^ DebugShowAbt.toString m
 
   fun destUniv m =
@@ -85,7 +85,7 @@ struct
 
   fun Eq alpha (H >> P) =
     let
-      val (tau, m, n, a) = destEq P
+      val (m, n, a) = destEq P
       val (i, j, k) = (destUniv m, destUniv n, destUniv a)
       val () = assertLevelEq (i, j)
       val () = assertLevelLt (i, k)
