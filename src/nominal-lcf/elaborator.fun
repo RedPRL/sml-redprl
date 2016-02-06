@@ -76,6 +76,8 @@ struct
              R.Hyp target
          | LCF (INTRO {rule}) $ [] =>
              R.Intro rule
+         | LCF (EQ {rule}) $ [] =>
+             R.Eq rule
          | LCF (CSTEP i) $ [] =>
              R.CStep sign i
          | LCF CSYM $ [] =>

@@ -47,6 +47,9 @@ struct
   fun Intro r _ =
     raise Fail "To be implemented"
 
+  fun Eq r _ =
+    raise Fail "To be implemented"
+
   fun Hyp i _ (H >> P) =
     let
       val Q = Ctx.lookup H i

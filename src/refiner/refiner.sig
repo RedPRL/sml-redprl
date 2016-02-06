@@ -26,6 +26,10 @@ sig
     : int option  (* rule index *)
     -> ntactic
 
+  val Eq
+    : int option (* rule index *)
+    -> ntactic
+
   val Hyp
     : symbol (* target *)
     -> ntactic

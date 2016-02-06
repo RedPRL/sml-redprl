@@ -10,11 +10,16 @@ struct
   type intro_params =
     {rule : int option}
 
+  type eq_params =
+    {rule : int option}
+
+
   datatype 'i script_operator =
       SEQ of int
     | ALL | EACH | FOCUS of int
     | REC
     | INTRO of intro_params
+    | EQ of eq_params
     | ELIM of 'i elim_params
     | HYP of 'i hyp_params
     | ID | FAIL | TRACE of Sort.t
@@ -52,6 +57,8 @@ struct
           ] ->> MTAC
       | arity (INTRO _) =
           [] ->> TAC
+      | arity (EQ _) =
+          [] ->> TAC
       | arity (ELIM _) =
           [] ->> TAC
       | arity (HYP _) =
@@ -84,6 +91,7 @@ struct
      | EACH => EACH
      | FOCUS i => FOCUS i
      | INTRO p => INTRO p
+     | EQ p => EQ p
      | ELIM {target} => ELIM {target = f target}
      | HYP {target} => HYP {target = f target}
      | ID => ID
@@ -115,7 +123,8 @@ struct
      | ALL => "all"
      | EACH => "each"
      | FOCUS i => "some{" ^ Int.toString i ^ "}"
-     | INTRO _ => "intro"
+     | INTRO {rule} => "intro" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
+     | EQ {rule} => "eq" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
      | ELIM {target} => "elim[" ^ f target ^ "]"
      | HYP {target} => "hyp[" ^ f target ^ "]"
      | ID => "id"
