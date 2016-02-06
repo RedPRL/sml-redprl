@@ -42,3 +42,8 @@ Thm example[a:exp] : [~(Ax; welp[a]({b}[x].id(x)))] by [
 Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] by [
   ceval
 ].
+
+Thm univTest(i : lvl) : [=(Univ{i}; Univ{i}; Univ{lsuc(i)})] by [
+  eq
+].
+

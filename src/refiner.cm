@@ -1,5 +1,6 @@
 Library
   signature REFINER
+  structure Judgment
   structure Refiner
 is
   $/basis.cm
@@ -10,5 +11,9 @@ is
   cmlib.cm
   dynamics.cm
   signature.cm
+  refiner/judgment.sml
   refiner/refiner.sig
+  refiner/refiner_kit.sml
+  refiner/rules/univ.sig
+  refiner/rules/univ.sml
   refiner/refiner.sml

@@ -20,12 +20,14 @@ sig
 
   val Elim
     : symbol      (* target *)
-    -> abt option (* optional argument *)
     -> ntactic
 
   val Intro
     : int option  (* rule index *)
-    -> abt option (* optional argument *)
+    -> ntactic
+
+  val Eq
+    : int option (* rule index *)
     -> ntactic
 
   val Hyp
@@ -39,6 +41,7 @@ sig
 
   val CSym : ntactic
   val CEval : AbtSignature.sign -> ntactic
+
 end
 
 

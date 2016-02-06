@@ -69,7 +69,7 @@ struct
   fun hole ! = raise Match
 
   local
-    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData SortData
+    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData SortData
     infix $ \ $#
   in
     val parseSymbol = identifier
@@ -77,16 +77,38 @@ struct
 
     (* TODO *)
     fun parseTerm' sign rho f =
-      fn EXP =>
+      fn LVL =>
+         let
+           val parseBase =
+             symbol "lbase" >> brackets parseSymbol
+               wth (fn u =>
+                 LVL_OP (LBASE u) $ [])
+           val parseSucc =
+             symbol "lsuc" >> parens (f LVL)
+               wth (fn l =>
+                 LVL_OP LSUCC $ [([],[]) \ l])
+         in
+           try parseSucc
+             || parseBase
+         end
+       | EXP =>
          let
            val parseExtract =
-             symbol "extract" >> parens (f THM)
-               wth (fn m =>
-                 EXTRACT $ [([],[]) \ m])
+             symbol "extract"
+               >> (braces (parseSort sign) || succeed EXP)
+               -- (fn tau =>
+                 parens (f (THM tau))
+                   wth (fn m =>
+                     EXTRACT tau $ [([],[]) \ m]))
 
            val parseAx =
              symbol "Ax"
                return (CTT AX $ [])
+
+           val parseUniv =
+             symbol "Univ" >> braces (f LVL)
+               wth (fn i =>
+                 CTT UNIV $ [([],[]) \ i])
 
            val parseCApprox =
              symbol "<="
@@ -94,6 +116,14 @@ struct
                -- (fn tau =>
                  parens (f tau << semi && f tau) wth (fn (m1, m2) =>
                    CTT (CAPPROX tau) $ [([],[]) \ m1, ([],[]) \ m2]))
+
+           val parseEq =
+             symbol "="
+               >> (braces (parseSort sign) || succeed EXP)
+               -- (fn tau =>
+                 parens (f tau << semi && f tau << semi && f EXP) wth (fn (m1, (m2, a)) =>
+                   CTT (EQ tau) $ [([],[]) \ m1, ([],[]) \ m2, ([],[]) \ a]))
+
            val parseCEquiv =
              symbol "~"
                >> (braces (parseSort sign) || succeed EXP)
@@ -105,6 +135,8 @@ struct
              || parseCApprox
              || parseCEquiv
              || parseExtract
+             || parseUniv
+             || parseEq
          end
        | VEC tau =>
          squares (commaSep (f tau))
@@ -140,6 +172,11 @@ struct
            val parseCEval =
              symbol "ceval"
                return (LCF CEVAL $ [])
+
+           val parseEq =
+             symbol "eq" >> (opt (braces integer))
+               wth (fn rule =>
+                 LCF (NominalLcfOperatorData.EQ {rule = rule}) $ [])
 
            val parseTrace =
              symbol "trace"
@@ -187,6 +224,7 @@ struct
                || parseCRefl
                || parseCEval
                || parseCSym
+               || parseEq
                || parseTrace
                || parseHyp
                || parseRec

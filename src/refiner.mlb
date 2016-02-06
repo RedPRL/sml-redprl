@@ -7,9 +7,14 @@ local
   syntax.mlb
   dynamics.mlb
   signature.mlb
+  refiner/judgment.sml
+  refiner/refiner_kit.sml
+  refiner/rules/univ.sig
+  refiner/rules/univ.sml
   refiner/refiner.sig
   refiner/refiner.sml
 in
   signature REFINER
+  structure Judgment
   structure Refiner
 end

@@ -10,7 +10,7 @@ struct
      | EVD => "evd"
      | TAC => "tac"
      | MTAC => "mtac"
-     | THM => "thm"
+     | (THM tau) => "thm{" ^ toString tau ^ "}"
      | LVL => "lvl"
      | (VEC tau) => "[" ^ toString tau ^ "]"
      | (OPT tau) => toString tau ^ "?"

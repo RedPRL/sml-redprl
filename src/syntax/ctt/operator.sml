@@ -1,3 +1,13 @@
+structure CttOperatorData =
+struct
+  datatype ctt_operator =
+      CAPPROX of Sort.t
+    | CEQUIV of Sort.t
+    | UNIV
+    | EQ of Sort.t
+    | AX
+end
+
 structure CttSimpleOperator =
 struct
   open CttOperatorData
@@ -23,6 +33,14 @@ struct
            [[] * [] <> tau,
             [] * [] <> tau]
              ->> EXP
+       | EQ tau =>
+           [[] * [] <> tau,
+            [] * [] <> tau,
+            [] * [] <> EXP]
+             ->> EXP
+       | UNIV =>
+           [[] * [] <> LVL]
+             ->> EXP
        | AX =>
            [] ->> EXP
   end
@@ -34,8 +52,12 @@ struct
          "<={" ^ Sort.toString tau ^ "}"
      | CEQUIV tau =>
          "~{" ^ Sort.toString tau ^ "}"
+     | EQ tau =>
+         "={" ^ Sort.toString tau ^ "}"
      | AX =>
          "Ax"
+     | UNIV =>
+         "Univ"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)
