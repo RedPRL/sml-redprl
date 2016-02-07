@@ -137,6 +137,12 @@ struct
                -- (fn tau =>
                  parens (f tau << semi && f tau) wth (fn (m1, m2) =>
                    CTT (CEQUIV tau) $ [([],[]) \ m1, ([],[]) \ m2]))
+
+           val parseBase =
+             symbol "Base"
+               >> (braces (parseSort sign) || succeed EXP)
+               wth (fn tau =>
+                 CTT (BASE tau) $ [])
          in
            parseAx
              || parseCApprox
@@ -145,6 +151,7 @@ struct
              || parseUniv
              || parseEq
              || parseMember
+             || parseBase
          end
        | VEC tau =>
          squares (commaSep (f tau))

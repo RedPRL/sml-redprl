@@ -47,3 +47,10 @@ Thm univTest(i : lvl) : [=(Univ{i}; Univ{i}; Univ{lsuc(i)})] by [
   eq
 ].
 
+Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ{i})] by [
+  eq
+].
+
+Thm baseMemberEq : [=(Ax; Ax; Base)] by [
+  eq; ceval
+].

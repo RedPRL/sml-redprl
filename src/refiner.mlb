@@ -11,6 +11,8 @@ local
   refiner/refiner_kit.sml
   refiner/rules/univ.sig
   refiner/rules/univ.sml
+  refiner/rules/base.sig
+  refiner/rules/base.sml
   refiner/refiner.sig
   refiner/refiner.sml
 in

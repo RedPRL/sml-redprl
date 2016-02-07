@@ -12,22 +12,25 @@ struct
     raise Fail "To be implemented"
 
   local
-    open OperatorData CttOperatorData
+    open OperatorData CttOperatorData Tacticals
+    infix ORELSE
   in
     fun Eq r alpha (jdg as H >> P) =
       case out P of
            CTT (EQ _) $ _ =>
-             UnivRules.Eq alpha jdg
+             (UnivRules.Eq alpha
+               ORELSE BaseRules.TypeEq alpha
+               ORELSE BaseRules.MemberEq alpha) jdg
          | _ => raise Fail "Eq not applicable"
   end
 
   fun Hyp i _ (H >> P) =
     let
-      val Q = Ctx.lookup H i
+      val (Q, tau) = Ctx.lookup H i
     in
       if Abt.eq (P, Q) then
         (T.empty, fn rho =>
-          abtToAbs (check' (`i , SortData.EXP)))
+          abtToAbs (check' (`i , tau)))
       else
         raise Fail "Failed to unify with hypothesis"
     end
@@ -36,7 +39,18 @@ struct
     open OperatorData CttOperatorData
     fun destCEquiv P =
       case (metactx P, out P) of
-           (theta, CTT (CEQUIV tau) $ [_ \ m, _ \ n]) => (theta, tau, m, n)
+           (theta, CTT (CEQUIV tau) $ [_ \ m, _ \ n]) =>
+             let
+               val tau1 = sort m
+               val tau2 = sort n
+               val () =
+                 if tau1 = tau2 andalso tau = tau1 then
+                   ()
+                 else
+                   raise Fail "Incompatible sorts in CEquiv"
+             in
+               (theta, tau, m, n)
+             end
          | _ => raise Fail "Expected CEquiv"
     val ax = check' (CTT AX $ [], SortData.EXP)
   in

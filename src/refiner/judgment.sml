@@ -21,6 +21,6 @@ struct
 
   open Sequent infix >>
   fun substJudgment (x, e) (H >> P) =
-    SymbolTelescope.map H (metasubst (e,x))
+    SymbolTelescope.map H (fn (Q, tau) => (metasubst (e,x) Q, tau))
       >> metasubst (e, x) P
 end

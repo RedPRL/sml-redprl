@@ -50,4 +50,18 @@ struct
     destruct m theta
 
   infix ^!
+
+  local
+    open OperatorData CttOperatorData SortData
+  in
+    fun destEq m =
+      case out m of
+           CTT (EQ EXP) $ [_ \ m, _ \ n, _ \ a] => (m,n,a)
+         | _ => raise Fail @@ "Expected equality type, but got " ^ DebugShowAbt.toString m
+
+    fun destUniv m =
+      case out m of
+           CTT UNIV $ [_ \ i] => i
+         | _ => raise Fail @@ "Expected universe, but got " ^ DebugShowAbt.toString m
+  end
 end

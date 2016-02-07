@@ -3,6 +3,7 @@ struct
   datatype ctt_operator =
       CAPPROX of Sort.t
     | CEQUIV of Sort.t
+    | BASE of Sort.t
     | UNIV
     | EQ of Sort.t
     | MEMBER of Sort.t
@@ -34,6 +35,8 @@ struct
            [[] * [] <> tau,
             [] * [] <> tau]
              ->> EXP
+       | BASE tau =>
+           [] ->> EXP
        | EQ tau =>
            [[] * [] <> tau,
             [] * [] <> tau,
@@ -57,6 +60,8 @@ struct
          "<={" ^ Sort.toString tau ^ "}"
      | CEQUIV tau =>
          "~{" ^ Sort.toString tau ^ "}"
+     | BASE tau =>
+         "Base{" ^ Sort.toString tau ^ "}"
      | EQ tau =>
          "={" ^ Sort.toString tau ^ "}"
      | MEMBER tau =>
