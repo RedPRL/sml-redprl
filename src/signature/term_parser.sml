@@ -234,6 +234,10 @@ struct
                >> squares (parseSymbol && ((colon >> parseSort sign) || succeed EXP))
                wth (fn (u, tau) => LCF (ELIM (u, tau)) $ [])
 
+           val parseIntro =
+             symbol "intro"
+               return (LCF (INTRO {rule = NONE}) $ [])
+
            val parseUnhide =
              symbol "unhide"
                >> squares (parseSymbol && ((colon >> parseSort sign) || succeed EXP))
@@ -276,6 +280,7 @@ struct
                || parseTrace
                || parseHyp
                || parseElim
+               || parseIntro
                || parseUnhide
                || parseRec
                || parseRewriteGoal

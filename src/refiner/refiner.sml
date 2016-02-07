@@ -8,8 +8,8 @@ struct
   fun Elim i _ =
     raise Fail "To be implemented"
 
-  fun Intro r _ =
-    raise Fail "To be implemented"
+  fun Intro r alpha =
+    SquashRules.Intro alpha
 
   local
     open OperatorData CttOperatorData Tacticals
