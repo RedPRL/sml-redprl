@@ -51,9 +51,10 @@ struct
         (newMeta "",
          makeEqSequent H (m1, m2, a))
 
+      val bm = subst (m1, x) b
       val squashGoal =
         (newMeta "",
-         H >> (makeSquash (#metactx H) tau a, TRIV))
+         H >> (makeSquash (#metactx H) tau bm, TRIV))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau), x) b
