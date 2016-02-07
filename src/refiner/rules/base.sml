@@ -45,4 +45,28 @@ struct
       (subgoals', fn rho =>
         abtToAbs (check' (CTT AX $ [], TRIV)))
     end
+
+  fun Elim h alpha (H >> (P, sigma)) =
+    let
+      val (base, tau) = Ctx.lookup (#hypctx H) h
+      val _ = destBase base
+      val htm = check' (`h, tau)
+
+      val z = alpha 0
+      val ctx' =
+        Ctx.interposeAfter
+          (#hypctx H)
+          (h, Ctx.snoc Ctx.empty (z, (makeCEquiv (#metactx H) (htm, htm), TRIV)))
+      val H' =
+        {metactx = #metactx H,
+         symctx = #symctx H,
+         hypctx = ctx'}
+      val goal =
+        (newMeta "",
+         H' >> (P, sigma))
+      val psi = T.snoc T.empty goal
+    in
+      (psi, fn rho =>
+        mapAbs (subst (makeAx, z)) (T.lookup rho (#1 goal)))
+    end
 end

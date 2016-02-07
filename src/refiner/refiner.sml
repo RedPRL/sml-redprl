@@ -5,8 +5,8 @@ struct
 
   open Sequent infix >> $ \
 
-  fun Elim i _ =
-    raise Fail "To be implemented"
+  fun Elim i alpha =
+    BaseRules.Elim i alpha
 
   fun Intro r alpha =
     SquashRules.Intro alpha
