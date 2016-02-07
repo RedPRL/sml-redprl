@@ -23,7 +23,7 @@ struct
   fun main (_, args) =
     let
       val (opts, files) = List.partition (String.isPrefix "--") args
-      val jonprlFiles = List.filter (String.isSuffix ".jonprl") files
+      val jonprlFiles = List.filter (fn x => String.isSuffix ".prl" x orelse String.isSuffix ".jonprl" x) files
       val mode = getMode opts
     in
       (case mode of
