@@ -1,12 +1,12 @@
 structure NominalLcfOperatorData =
 struct
   (* We use symbols/atoms to index into the context. *)
+
   type intro_params =
     {rule : int option}
 
   type eq_params =
     {rule : int option}
-
 
   datatype 'i script_operator =
       SEQ of int
