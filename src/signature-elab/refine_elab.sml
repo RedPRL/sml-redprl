@@ -44,7 +44,7 @@ struct
                          {metactx = List.foldl (fn ((x,vl), psi) => MetaCtx.insert psi x vl) MetaCtx.empty arguments,
                           symctx = List.foldl (fn ((u,tau), upsilon) => SymCtx.insert upsilon u tau) SymCtx.empty parameters,
                           hypctx = SymbolTelescope.empty}
-                       val goal = context >> (prop, sort)
+                       val goal = context >> (prop, tau)
                        val st as (psi, vld) = E.elaborate' sign script alpha goal
                      in
                        case Ctx.ConsView.out psi of
@@ -52,7 +52,7 @@ struct
                               let
                                 val phi = metactx definiens
                                 val _ \ evd = outb (vld Ctx.empty)
-                                val evd' = check phi (OP_SOME SortData.EXP $ [([],[]) \ evd], SortData.OPT SortData.EXP)
+                                val evd' = check phi (OP_SOME tau $ [([],[]) \ evd], SortData.OPT tau)
                                 val prf = REFINE tau $ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd']
                               in
                                 def sign
