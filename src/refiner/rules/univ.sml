@@ -74,7 +74,8 @@ struct
 
   fun Eq alpha (H >> (P, _)) =
     let
-      val (m, n, a) = destEq P
+      val (tau, m, n, a) = destEq P
+      val () = if tau = EXP then () else raise Fail "Expected exp"
       val (i, j, k) = (destUniv m, destUniv n, destUniv a)
       val () = assertLevelEq (i, j)
       val () = assertLevelLt (i, k)

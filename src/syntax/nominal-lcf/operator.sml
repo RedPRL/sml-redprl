@@ -1,12 +1,6 @@
 structure NominalLcfOperatorData =
 struct
   (* We use symbols/atoms to index into the context. *)
-  type 'i hyp_params =
-    {target : 'i}
-
-  type 'i elim_params =
-    {target : 'i}
-
   type intro_params =
     {rule : int option}
 
@@ -20,8 +14,7 @@ struct
     | REC
     | INTRO of intro_params
     | EQ of eq_params
-    | ELIM of 'i elim_params
-    | HYP of 'i hyp_params
+    | ELIM of 'i * Sort.t | HYP of 'i * Sort.t | UNHIDE of 'i * Sort.t
     | ID | FAIL | TRACE of Sort.t
     | CSTEP of int | CEVAL | CSYM
     | REWRITE_GOAL of Sort.t | EVAL_GOAL
@@ -64,6 +57,8 @@ struct
           [] ->> TAC
       | arity (HYP _) =
           [] ->> TAC
+      | arity (UNHIDE _) =
+          [] ->> TAC
       | arity ID =
           [] ->> TAC
       | arity FAIL =
@@ -87,8 +82,9 @@ struct
           [] ->> TAC
   end
 
-  fun support (ELIM {target,...}) = [(target, EXP)]
-    | support (HYP {target}) = [(target, EXP)]
+  fun support (ELIM (target, tau)) = [(target, tau)]
+    | support (HYP (target, tau)) = [(target, tau)]
+    | support (UNHIDE (target, tau)) = [(target, tau)]
     | support _ = []
 
   fun map f =
@@ -98,8 +94,9 @@ struct
      | FOCUS i => FOCUS i
      | INTRO p => INTRO p
      | EQ p => EQ p
-     | ELIM {target} => ELIM {target = f target}
-     | HYP {target} => HYP {target = f target}
+     | ELIM (target, tau) => ELIM (f target, tau)
+     | HYP (target, tau) => HYP (f target, tau)
+     | UNHIDE (target, tau) => UNHIDE (f target, tau)
      | ID => ID
      | FAIL => FAIL
      | TRACE tau => TRACE tau
@@ -115,8 +112,9 @@ struct
      | (ALL, ALL) => true
      | (EACH, EACH) => true
      | (FOCUS i1, FOCUS i2) => i1 = i2
-     | (ELIM p1, ELIM p2) => f (#target p1, #target p2)
-     | (HYP p1, HYP p2) => f (#target p1, #target p2)
+     | (ELIM (u, sigma), ELIM (v, tau)) => f (u, v) andalso sigma = tau
+     | (HYP (u, sigma), HYP (v, tau)) => f (u, v) andalso sigma = tau
+     | (UNHIDE (u, sigma), UNHIDE (v, tau)) => f (u, v) andalso sigma = tau
      | (ID, ID) => true
      | (FAIL, FAIL) => true
      | (TRACE tau1, TRACE tau2) => tau1 = tau2
@@ -135,8 +133,9 @@ struct
      | FOCUS i => "some{" ^ Int.toString i ^ "}"
      | INTRO {rule} => "intro" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
      | EQ {rule} => "eq" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
-     | ELIM {target} => "elim[" ^ f target ^ "]"
-     | HYP {target} => "hyp[" ^ f target ^ "]"
+     | ELIM (target,tau) => "elim[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
+     | HYP (target, tau) => "hyp[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
+     | UNHIDE (target, tau) => "unhide[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | ID => "id"
      | FAIL => "fail"
      | TRACE tau => "trace{" ^ Sort.toString tau ^ "}"

@@ -34,6 +34,11 @@ sig
     : symbol (* target *)
     -> ntactic
 
+
+  val Unhide
+    : symbol (* target *)
+    -> ntactic
+
   val CStep
     : AbtSignature.sign
     -> int

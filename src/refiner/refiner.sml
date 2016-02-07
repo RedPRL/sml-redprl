@@ -20,7 +20,8 @@ struct
            CTT (EQ _) $ _ =>
              (UnivRules.Eq alpha
                ORELSE BaseRules.TypeEq alpha
-               ORELSE BaseRules.MemberEq alpha) jdg
+               ORELSE BaseRules.MemberEq alpha
+               ORELSE SquashRules.TypeEq alpha) jdg
          | _ => raise Fail "Eq not applicable"
   end
 
@@ -34,6 +35,9 @@ struct
       else
         raise Fail "Failed to unify with hypothesis"
     end
+
+  val Unhide =
+    SquashRules.Unhide
 
   local
     open OperatorData CttOperatorData SortData

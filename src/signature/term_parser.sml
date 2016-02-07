@@ -209,8 +209,18 @@ struct
 
            val parseHyp =
              symbol "hyp"
-               >> parseSymbol
-               wth (fn u => LCF (HYP {target = u}) $ [])
+               >> squares (parseSymbol && ((colon >> parseSort sign) || succeed EXP))
+               wth (fn (u, tau) => LCF (HYP (u, tau)) $ [])
+
+           val parseElim =
+             symbol "elim"
+               >> squares (parseSymbol && ((colon >> parseSort sign) || succeed EXP))
+               wth (fn (u, tau) => LCF (ELIM (u, tau)) $ [])
+
+           val parseUnhide =
+             symbol "unhide"
+               >> squares (parseSymbol && ((colon >> parseSort sign) || succeed EXP))
+               wth (fn (u, tau) => LCF (UNHIDE (u, tau)) $ [])
 
            fun parseVec tau =
              commaSep (f tau)
@@ -248,6 +258,8 @@ struct
                || parseEq
                || parseTrace
                || parseHyp
+               || parseElim
+               || parseUnhide
                || parseRec
                || parseRewriteGoal
                || parseEvalGoal

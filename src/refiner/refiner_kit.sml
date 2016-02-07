@@ -56,7 +56,7 @@ struct
   in
     fun destEq m =
       case out m of
-           CTT (EQ EXP) $ [_ \ m, _ \ n, _ \ a] => (m,n,a)
+           CTT (EQ tau) $ [_ \ m, _ \ n, _ \ a] => (tau, m,n,a)
          | _ => raise Fail @@ "Expected equality type, but got " ^ DebugShowAbt.toString m
 
     fun destUniv m =

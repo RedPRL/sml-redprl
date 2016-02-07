@@ -18,4 +18,6 @@ is
   refiner/rules/univ.sml
   refiner/rules/base.sig
   refiner/rules/base.sml
+  refiner/rules/squash.sig
+  refiner/rules/squash.sml
   refiner/refiner.sml

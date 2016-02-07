@@ -13,7 +13,8 @@ struct
 
   fun TypeEq alpha (H >> (P, _)) =
     let
-      val (m,n,a) = destEq P
+      val (tau, m,n,a) = destEq P
+      val () = if tau = EXP then () else raise Fail "Expected exp"
       val (tau1, tau2) = (destBase m, destBase n)
       val i = destUniv a
     in
@@ -23,7 +24,9 @@ struct
 
   fun MemberEq alpha (H >> (P, _)) =
     let
-      val (m,n,a) = destEq P
+      val (tau, m,n,a) = destEq P
+      val () = if tau = EXP then () else raise Fail "Expected exp"
+
       val tau = destBase a
       val subgoals =
         VarCtx.foldl

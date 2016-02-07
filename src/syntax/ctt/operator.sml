@@ -8,7 +8,7 @@ struct
     | EQ of Sort.t
     | MEMBER of Sort.t
     | AX
-    | SQUASH
+    | SQUASH of Sort.t
 end
 
 structure CttSimpleOperator =
@@ -52,7 +52,7 @@ struct
              ->> EXP
        | AX =>
            [] ->> EXP
-       | SQUASH =>
+       | SQUASH tau =>
            [[] * [] <> EXP]
              ->> EXP
   end
@@ -74,8 +74,8 @@ struct
          "Ax"
      | UNIV =>
          "Univ"
-     | SQUASH =>
-         "Squash"
+     | SQUASH tau =>
+         "Squash{" ^ Sort.toString tau ^ "}"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)

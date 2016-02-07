@@ -70,10 +70,12 @@ struct
              elaborateMulti sign rho (elaborate sign rho t) us mt
          | LCF REC $ [(_, [x]) \ t] =>
              Rec (fn T => elaborate sign (VarCtx.insert rho x T) t)
-         | LCF (ELIM {target}) $ [] =>
+         | LCF (ELIM (target, _)) $ [] =>
              R.Elim target
-         | LCF (HYP {target}) $ [] =>
+         | LCF (HYP (target, _)) $ [] =>
              R.Hyp target
+         | LCF (UNHIDE (target, _)) $ [] =>
+             R.Unhide target
          | LCF (INTRO {rule}) $ [] =>
              R.Intro rule
          | LCF (EQ {rule}) $ [] =>
