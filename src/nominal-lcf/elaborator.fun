@@ -84,6 +84,8 @@ struct
              R.CSym
          | LCF CEVAL $ [] =>
              R.CEval sign
+         | LCF (REWRITE_GOAL tau) $ [_ \ m] =>
+             R.RewriteGoal m
          | `x => VarCtx.lookup rho x
          | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t ^ " which evaluated to " ^ DebugShowAbt.toString t')
     end

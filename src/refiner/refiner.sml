@@ -36,7 +36,7 @@ struct
     end
 
   local
-    open OperatorData CttOperatorData
+    open OperatorData CttOperatorData SortData
     fun destCEquiv P =
       case (metactx P, out P) of
            (theta, CTT (CEQUIV tau) $ [_ \ m, _ \ n]) =>
@@ -52,13 +52,13 @@ struct
                (theta, tau, m, n)
              end
          | _ => raise Fail "Expected CEquiv"
-    val ax = check' (CTT AX $ [], SortData.EXP)
+    val ax = check' (CTT AX $ [], EXP)
   in
     fun CSym _ (H >> P) =
       let
         val (theta, tau, m, n) = destCEquiv P
         val x = newMeta "ceq"
-        val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ n, ([],[]) \ m], SortData.EXP)
+        val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ n, ([],[]) \ m], EXP)
         val psi = T.snoc T.empty (x, Ctx.empty >> subgoal)
       in
         (psi, fn rho =>
@@ -76,7 +76,7 @@ struct
          else
            let
              val x = newMeta "ceq"
-             val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], SortData.EXP)
+             val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
              val psi = T.snoc T.empty (x, Ctx.empty >> subgoal)
            in
              (psi, fn rho =>
@@ -95,12 +95,25 @@ struct
          else
            let
              val x = newMeta "ceq"
-             val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], SortData.EXP)
+             val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
              val psi = T.snoc T.empty (x, Ctx.empty >> subgoal)
            in
              (psi, fn rho =>
                abtToAbs ax)
            end)
+      end
+
+
+    fun RewriteGoal Q _ (H >> P) =
+      let
+        val (theta, tau) = (metactx P, sort P)
+        val ceqGoal =
+          (newMeta "ceq",
+           H >> check theta (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP))
+        val mainGoal = (newMeta "main", H >> Q)
+        val psi = T.snoc (T.snoc T.empty ceqGoal) mainGoal
+      in
+        (psi, fn rho => T.lookup rho (#1 mainGoal))
       end
 
   end

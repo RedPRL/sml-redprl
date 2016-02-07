@@ -200,6 +200,13 @@ struct
                 f tau wth (fn m =>
                   LCF (TRACE tau) $ [([],[]) \ m]))
 
+           val parseRewriteGoal =
+             symbol "rewrite-goal"
+               >> (braces (parseSort sign) || succeed SortData.EXP)
+               -- (fn tau =>
+                 f tau wth (fn m =>
+                   LCF (REWRITE_GOAL tau) $ [([],[]) \ m]))
+
            val parseHyp =
              symbol "hyp"
                >> parseSymbol
@@ -243,6 +250,7 @@ struct
                || parseTrace
                || parseHyp
                || parseRec
+               || parseRewriteGoal
                || try (parseAny sign rho f TAC)
 
            val parseAll =

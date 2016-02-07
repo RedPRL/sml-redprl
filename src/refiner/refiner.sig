@@ -39,8 +39,16 @@ sig
     -> int
     -> ntactic
 
-  val CSym : ntactic
-  val CEval : AbtSignature.sign -> ntactic
+  val CSym
+    : ntactic
+
+  val CEval
+    : AbtSignature.sign
+    -> ntactic
+
+  val RewriteGoal
+    : abt
+    -> ntactic
 
 end
 
