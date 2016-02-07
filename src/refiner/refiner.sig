@@ -34,7 +34,6 @@ sig
     : symbol (* target *)
     -> ntactic
 
-
   val Unhide
     : symbol (* target *)
     -> ntactic

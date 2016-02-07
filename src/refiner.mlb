@@ -9,6 +9,8 @@ local
   signature.mlb
   refiner/judgment.sml
   refiner/refiner_kit.sml
+  refiner/rules/cequiv.sig
+  refiner/rules/cequiv.sml
   refiner/rules/univ.sig
   refiner/rules/univ.sml
   refiner/rules/base.sig

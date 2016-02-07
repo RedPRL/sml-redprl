@@ -64,6 +64,22 @@ struct
            CTT (UNIV tau) $ [_ \ i] => (tau, i)
          | _ => raise Fail @@ "Expected universe, but got " ^ DebugShowAbt.toString m
 
+    fun destCEquiv P =
+      case (out P) of
+           CTT (CEQUIV tau) $ [_ \ m, _ \ n] =>
+             let
+               val tau1 = sort m
+               val tau2 = sort n
+               val () =
+                 if tau1 = tau2 andalso tau = tau1 then
+                   ()
+                 else
+                   raise Fail "Incompatible sorts in CEquiv"
+             in
+               (tau, m, n)
+             end
+         | _ => raise Fail "Expected CEquiv"
+
     fun makeEq mctx (m,n,a) =
       check
         mctx
@@ -97,6 +113,7 @@ struct
       in
         H' >> (check' (CTT (BASE LVL) $ [], EXP), LVL)
       end
+
 
     val makeAx = check' (CTT AX $ [], TRIV)
   end

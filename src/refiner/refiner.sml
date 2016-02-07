@@ -52,74 +52,11 @@ struct
   val Unhide =
     SquashRules.Unhide
 
+  open CEquivRules
+
   local
     open OperatorData CttOperatorData SortData
-    fun destCEquiv P =
-      case (out P) of
-           CTT (CEQUIV tau) $ [_ \ m, _ \ n] =>
-             let
-               val tau1 = sort m
-               val tau2 = sort n
-               val () =
-                 if tau1 = tau2 andalso tau = tau1 then
-                   ()
-                 else
-                   raise Fail "Incompatible sorts in CEquiv"
-             in
-               (tau, m, n)
-             end
-         | _ => raise Fail "Expected CEquiv"
-    val ax = check' (CTT AX $ [], TRIV)
   in
-    fun CSym _ (H >> (P, _)) =
-      let
-        val (tau, m, n) = destCEquiv P
-        val x = newMeta ""
-        val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ n, ([],[]) \ m], EXP)
-        val psi = T.snoc T.empty (x, H >> (subgoal, TRIV))
-      in
-        (psi, fn rho =>
-          abtToAbs ax)
-      end
-
-    fun CStep sign i _ (H >> (P, _)) =
-      let
-        val (tau, m, n) = destCEquiv P
-        val m' = DynamicsUtil.stepn sign i m
-      in
-        (if Abt.eq (m', n) then
-          (T.empty, fn rho =>
-            abtToAbs ax)
-         else
-           let
-             val x = newMeta ""
-             val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
-             val psi = T.snoc T.empty (x, H >> (subgoal, TRIV))
-           in
-             (psi, fn rho =>
-               abtToAbs ax)
-           end)
-      end
-
-    fun CEval sign _ (H >> (P, _)) =
-      let
-        val (tau, m, n) = destCEquiv P
-        val m' = DynamicsUtil.evalOpen sign m
-      in
-        (if Abt.eq (m', n) then
-          (T.empty, fn rho =>
-            abtToAbs ax)
-         else
-           let
-             val x = newMeta ""
-             val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
-             val psi = T.snoc T.empty (x, H >> (subgoal, TRIV))
-           in
-             (psi, fn rho =>
-               abtToAbs ax)
-           end)
-      end
-
 
     fun RewriteGoal Q _ (H >> (P, sigma)) =
       let
