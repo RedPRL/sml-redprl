@@ -113,7 +113,7 @@ struct
         val tau = sort P
         val ceqGoal =
           (newMeta "",
-           H >> (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), sigma))
+           H >> (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP))
         val mainGoal = (newMeta "", H >> (Q, sigma))
         val psi = T.snoc (T.snoc T.empty ceqGoal) mainGoal
       in
