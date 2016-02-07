@@ -137,6 +137,22 @@ struct
                >> (braces (parseSort sign) || succeed EXP)
                wth (fn tau =>
                  CTT (BASE tau) $ [])
+
+           val parseSquash =
+             symbol "Squash"
+               >> (braces (parseSort sign) || succeed EXP)
+               -- (fn tau =>
+                 parens (f tau) wth (fn a =>
+                   CTT (SQUASH tau) $ [([],[]) \ a]))
+
+           val parseSpecies =
+             braces
+               (parseSort sign
+                  && parseVariable << colon
+                  && f EXP << symbol "|"
+                  && f EXP)
+               wth (fn (tau, (x, (a, b))) =>
+                 CTT (SPECIES tau) $ [([],[]) \ a, ([],[x]) \ b])
          in
            parseCApprox
              || parseCEquiv
@@ -144,6 +160,8 @@ struct
              || parseEq
              || parseMember
              || parseBase
+             || parseSquash
+             || parseSpecies
          end
        | VEC tau =>
          squares (commaSep (f tau))

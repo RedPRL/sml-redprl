@@ -125,6 +125,7 @@ struct
              step sign (l <: env) <#> (fn l' <: env =>
                check (metactx l') (CTT (UNIV tau) $ [([],[]) \ l'], EXP) <: env)
          | CTT (SQUASH _) $ _ => FINAL
+         | CTT (SPECIES _) $ _ => FINAL
          | CTT (BASE _) $ _ => FINAL
          | _ => ?hole
     end

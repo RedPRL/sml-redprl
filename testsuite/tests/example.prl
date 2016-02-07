@@ -62,3 +62,7 @@ Tac crefl = [
 Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
   eq; crefl
 ].
+
+Def speciesExample : exp = [
+  { triv x : Base{triv} | ~{triv}(x; Ax) }
+].
