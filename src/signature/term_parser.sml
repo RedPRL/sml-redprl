@@ -300,23 +300,23 @@ struct
                || parseAll
                || try (parseAny sign rho f MTAC)
 
-           datatype component = BINDING of symbol list * ast
+           datatype component = BINDING of (symbol * sort) list * ast
 
            val parseComponent =
-             (commaSep1 parseSymbol << symbol "<-" || succeed [])
+             (commaSep1 (parseSymbol << colon && parseSort sign) << symbol "<-" || succeed [])
                && parseMultitac
                wth BINDING
 
-           fun makeSeq t us mt =
-             LCF (SEQ (length us)) $
-               [([],[]) \ t, (us, []) \ mt]
+           fun makeSeq t (us : (symbol * sort) list) mt =
+             LCF (SEQ (map #2 us)) $
+               [([],[]) \ t, (map #1 us, []) \ mt]
 
            val multitacToTac =
              fn (LCF ALL $ [_ \ t]) => t
               | t => makeSeq (LCF ID $ []) [] t
 
            val tacToMultitac =
-             fn (LCF (SEQ 0) $ [_ \ (LCF ID $ []), ([],[]) \ mt]) => mt
+             fn (LCF (SEQ []) $ [_ \ (LCF ID $ []), ([],[]) \ mt]) => mt
               | t => LCF ALL $ [([],[]) \ t]
 
            val rec compileScript =

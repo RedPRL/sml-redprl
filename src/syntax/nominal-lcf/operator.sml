@@ -9,7 +9,7 @@ struct
     {rule : int option}
 
   datatype 'i script_operator =
-      SEQ of int
+      SEQ of Sort.t list
     | ALL | EACH | FOCUS of int
     | REC
     | INTRO of intro_params
@@ -37,9 +37,9 @@ struct
     infix 5 <> ->>
     infix 6 * ^
   in
-    fun arity (SEQ n) =
+    fun arity (SEQ sorts) =
           [ [] * [] <> TAC
-          , (EXP ^ n) * [] <> MTAC
+          , sorts * [] <> MTAC
           ] ->> TAC
       | arity ALL =
           [ [] * [] <> TAC
@@ -92,7 +92,7 @@ struct
     | support _ = []
 
   fun map f =
-    fn SEQ n => SEQ n
+    fn SEQ sorts => SEQ sorts
      | ALL => ALL
      | EACH => EACH
      | FOCUS i => FOCUS i
@@ -113,7 +113,7 @@ struct
      | WITNESS tau => WITNESS tau
 
   fun eq f =
-    fn (SEQ n1, SEQ n2) => n1 = n2
+    fn (SEQ sorts1, SEQ sorts2) => sorts1 = sorts2
      | (ALL, ALL) => true
      | (EACH, EACH) => true
      | (FOCUS i1, FOCUS i2) => i1 = i2
