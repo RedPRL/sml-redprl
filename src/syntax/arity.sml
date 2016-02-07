@@ -7,7 +7,7 @@ struct
 
   val rec toString =
     fn EXP => "exp"
-     | EVD => "evd"
+     | TRIV => "triv"
      | TAC => "tac"
      | MTAC => "mtac"
      | (THM tau) => "thm{" ^ toString tau ^ "}"

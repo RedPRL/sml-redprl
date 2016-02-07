@@ -24,7 +24,7 @@ struct
       val psi = T.snoc T.empty (newMeta "", H >> (goal, EXP))
     in
       (psi, fn rho =>
-        abtToAbs (check' (CTT AX $ [], EXP)))
+        abtToAbs (check' (CTT AX $ [], TRIV)))
     end
 
   fun Intro _ (H >> (P, _)) =
@@ -33,7 +33,7 @@ struct
       val psi = T.snoc T.empty (newMeta "", H >> (Q, tau))
     in
       (psi, fn rho =>
-        abtToAbs (check' (CTT AX $ [], EXP)))
+        abtToAbs (check' (CTT AX $ [], TRIV)))
     end
 
   fun Unhide h _ (H >> (P, tau)) =

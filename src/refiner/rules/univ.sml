@@ -82,6 +82,6 @@ struct
       val () = assertLevelLt (i, k)
     in
       (T.empty, fn rho =>
-        abtToAbs (check' (CTT AX $ [], EXP)))
+        abtToAbs (check' (CTT AX $ [], TRIV)))
     end
 end

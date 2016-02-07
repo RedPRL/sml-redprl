@@ -22,16 +22,19 @@ Def id(M : exp) : exp = [
 // furthermore, the arguments of operators may bind both symbols (in braces) and
 // variables (in brackets). Arguments of an operator are treated as metavariables
 // of the appropriate valence in the body of the definiens.
-Def welp[a:exp](E : {exp}[exp].exp) : exp = [
+Def welp[a:exp](E : {exp}[triv].exp) : exp = [
   E{a}[Ax]
 ].
 
+
+
 // Theorems may be both parametric and general. Let's prove an easy theorem by exploiting the
 // computation rule for [welp].
-Thm example[a:exp] : [~(Ax; welp[a]({b}[x].id(x)))] by [
-  csym; // first we flip the equation so that we can apply the evaluator
-  ceval // now we evaluate until we hit a canonical form
+Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : triv by [
+  csym;
+  ceval
 ].
+
 
 // Every proof is related to the evidence semantics of Computational Type Theory by
 // an "extract"; a theorem in JonPRL, like every other declaration form, is a
@@ -39,28 +42,23 @@ Thm example[a:exp] : [~(Ax; welp[a]({b}[x].id(x)))] by [
 // its extract. There is a non-canonical operator that can be used to pull out the
 // extract of a theorem. We can prove that the extract of the [example] theorem is
 // the trivial term [Ax]:
-Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] by [
+Thm extractTest[z:exp] : [~{triv}(extract{triv}(example[z]); Ax)] : triv by [
   ceval
 ].
 
-Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] by [
+Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] : triv by [
   eq
 ].
 
-Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] by [
-  eq
-].
 
-Thm baseMemberEq : [=(Ax; Ax; Base)] by [
-  eq; ceval
+Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] : triv by [
+  eq
 ].
 
 Tac crefl = [
   cstep{0}
 ].
 
-Thm exampleUnfoldMember : [member(Ax; Base)] by [
-  eval-goal;
-  eq;
-  crefl
+Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
+  eq; crefl
 ].

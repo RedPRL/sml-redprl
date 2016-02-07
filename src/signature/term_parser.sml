@@ -34,6 +34,7 @@ struct
     fun parseSort _ =
       ParserCombinators.fix (fn p =>
         symbol "exp" return EXP
+        || symbol "triv" return TRIV
         || symbol "lvl" return LVL
         || symbol "tac" return TAC
         || symbol "mtac" return MTAC
@@ -91,20 +92,11 @@ struct
            try parseSucc
              || parseBase
          end
+       | TRIV =>
+           symbol "Ax"
+             return (CTT AX $ [])
        | EXP =>
          let
-           val parseExtract =
-             symbol "extract"
-               >> (braces (parseSort sign) || succeed EXP)
-               -- (fn tau =>
-                 parens (f (THM tau))
-                   wth (fn m =>
-                     EXTRACT tau $ [([],[]) \ m]))
-
-           val parseAx =
-             symbol "Ax"
-               return (CTT AX $ [])
-
            val parseUniv =
              symbol "Univ"
                >> (braces (parseSort sign) || succeed EXP)
@@ -146,10 +138,8 @@ struct
                wth (fn tau =>
                  CTT (BASE tau) $ [])
          in
-           parseAx
-             || parseCApprox
+           parseCApprox
              || parseCEquiv
-             || parseExtract
              || parseUniv
              || parseEq
              || parseMember
@@ -331,6 +321,14 @@ struct
                        CUST (opid, params, arity)
                      end))
 
+        val parseExtract =
+          symbol "extract"
+            >> (braces (parseSort sign) || succeed EXP)
+            -- (fn tau =>
+              parens (f (THM tau))
+                wth (fn m =>
+                  EXTRACT tau $ [([],[]) \ m]))
+
         fun parseSymbols n =
           braces (separateN n parseSymbol comma)
             || (if n = 0 then succeed [] else fail "")
@@ -397,6 +395,7 @@ struct
               fail "mismatched sort")
       in
         parseCustomApp
+          || parseExtract
           || parseMetaApp
           || parseVariable wth `
       end

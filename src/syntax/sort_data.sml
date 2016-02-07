@@ -2,7 +2,7 @@ structure SortData =
 struct
   datatype sort =
       EXP (* expressions *)
-    | EVD (* derivations *)
+    | TRIV (* triviality *)
     | TAC (* tactics *)
     | MTAC (* multitactics *)
     | THM  of sort (* theorems *)

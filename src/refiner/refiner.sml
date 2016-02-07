@@ -56,14 +56,14 @@ struct
                (tau, m, n)
              end
          | _ => raise Fail "Expected CEquiv"
-    val ax = check' (CTT AX $ [], EXP)
+    val ax = check' (CTT AX $ [], TRIV)
   in
     fun CSym _ (H >> (P, _)) =
       let
         val (tau, m, n) = destCEquiv P
         val x = newMeta ""
         val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ n, ([],[]) \ m], EXP)
-        val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
+        val psi = T.snoc T.empty (x, H >> (subgoal, TRIV))
       in
         (psi, fn rho =>
           abtToAbs ax)
@@ -81,7 +81,7 @@ struct
            let
              val x = newMeta ""
              val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
-             val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
+             val psi = T.snoc T.empty (x, H >> (subgoal, TRIV))
            in
              (psi, fn rho =>
                abtToAbs ax)
@@ -100,7 +100,7 @@ struct
            let
              val x = newMeta ""
              val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
-             val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
+             val psi = T.snoc T.empty (x, H >> (subgoal, TRIV))
            in
              (psi, fn rho =>
                abtToAbs ax)

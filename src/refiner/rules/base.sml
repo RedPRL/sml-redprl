@@ -14,18 +14,16 @@ struct
   fun TypeEq alpha (H >> (P, _)) =
     let
       val (tau, m,n,a) = destEq P
-      val () = if tau = EXP then () else raise Fail "Expected exp"
       val (tau1, tau2) = (destBase m, destBase n)
       val i = destUniv a
     in
       (T.empty, fn rho =>
-        abtToAbs (check' (CTT AX $ [], EXP)))
+        abtToAbs (check' (CTT AX $ [], TRIV)))
     end
 
   fun MemberEq alpha (H >> (P, _)) =
     let
       val (tau, m,n,a) = destEq P
-      val () = if tau = EXP then () else raise Fail "Expected exp"
 
       val tau = destBase a
       val subgoals =
@@ -45,6 +43,6 @@ struct
       val subgoals' = T.snoc subgoals (newMeta "", H >> (mainGoal, EXP))
     in
       (subgoals', fn rho =>
-        abtToAbs (check' (CTT AX $ [], EXP)))
+        abtToAbs (check' (CTT AX $ [], TRIV)))
     end
 end
