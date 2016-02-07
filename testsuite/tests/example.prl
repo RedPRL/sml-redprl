@@ -63,6 +63,12 @@ Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
   eq; crefl
 ].
 
+// Species, or set comprehensions, are types that restrict the inhabitants of
+// a type by a predicate. Because this is a multi-sorted type theory, we must specify
+// what syntactic sort is being refined by the type being restricted. In this example,
+// we are restricting the [exp] sort, which contains type expressions.
 Def speciesExample : exp = [
-  { triv x : Base{triv} | ~{triv}(x; Ax) }
+  { exp x : Base{exp} | ~{exp}(x; Base{triv}) }
+].
+
 ].
