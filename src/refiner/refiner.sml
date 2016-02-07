@@ -27,6 +27,17 @@ struct
          | _ => raise Fail "Eq not applicable"
   end
 
+  fun Witness m alpha (H >> (P, _)) =
+    let
+      val goal =
+        (newMeta "",
+         makeMemberSequent H (m, P))
+      val psi = T.snoc T.empty goal
+    in
+      (psi, fn rho =>
+        abtToAbs m)
+    end
+
   fun Hyp i _ (H >> (P, _)) =
     let
       val (Q, tau) = Ctx.lookup (#hypctx H) i

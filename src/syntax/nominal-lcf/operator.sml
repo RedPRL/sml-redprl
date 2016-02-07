@@ -18,6 +18,7 @@ struct
     | ID | FAIL | TRACE of Sort.t
     | CSTEP of int | CEVAL | CSYM
     | REWRITE_GOAL of Sort.t | EVAL_GOAL
+    | WITNESS of Sort.t
 end
 
 structure NominalLcfOperator : OPERATOR =
@@ -80,6 +81,9 @@ struct
           ] ->> TAC
       | arity EVAL_GOAL =
           [] ->> TAC
+      | arity (WITNESS tau) =
+          [ [] * [] <> tau
+          ] ->> TAC
   end
 
   fun support (ELIM (target, tau)) = [(target, tau)]
@@ -106,6 +110,7 @@ struct
      | CEVAL => CEVAL
      | REWRITE_GOAL tau => REWRITE_GOAL tau
      | EVAL_GOAL => EVAL_GOAL
+     | WITNESS tau => WITNESS tau
 
   fun eq f =
     fn (SEQ n1, SEQ n2) => n1 = n2
@@ -124,6 +129,7 @@ struct
      | (CEVAL, CEVAL) => true
      | (REWRITE_GOAL tau1, REWRITE_GOAL tau2) => tau1 = tau2
      | (EVAL_GOAL, EVAL_GOAL) => true
+     | (WITNESS tau1, WITNESS tau2) => tau1 = tau2
      | _ => false
 
   fun toString f =
@@ -145,5 +151,6 @@ struct
      | CEVAL => "ceval"
      | REWRITE_GOAL tau => "rewrite-goal{" ^ Sort.toString tau ^ "}"
      | EVAL_GOAL => "eval-goal"
+     | WITNESS tau => "witness{" ^ Sort.toString tau ^ "}"
 end
 

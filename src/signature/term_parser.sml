@@ -217,6 +217,13 @@ struct
              symbol "eval-goal"
                return (LCF EVAL_GOAL $ [])
 
+           val parseWitness =
+             symbol "witness"
+               >> (braces (parseSort sign))
+               -- (fn tau =>
+                 f tau wth (fn m =>
+                   LCF (WITNESS tau) $ [([],[]) \ m]))
+
            val parseHyp =
              symbol "hyp"
                >> squares (parseSymbol && ((colon >> parseSort sign) || succeed EXP))
@@ -273,6 +280,7 @@ struct
                || parseRec
                || parseRewriteGoal
                || parseEvalGoal
+               || parseWitness
                || try (parseAny sign rho f TAC)
 
            val parseAll =

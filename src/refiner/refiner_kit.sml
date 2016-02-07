@@ -63,5 +63,42 @@ struct
       case out m of
            CTT (UNIV tau) $ [_ \ i] => (tau, i)
          | _ => raise Fail @@ "Expected universe, but got " ^ DebugShowAbt.toString m
+
+    fun makeEq mctx (m,n,a) =
+      check
+        mctx
+        (CTT (EQ (sort m)) $ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a],
+         EXP)
+
+    fun makeMember mctx (m,a) =
+      check
+        mctx
+        (CTT (MEMBER (sort m)) $ [([],[]) \ m, ([],[]) \ a],
+         EXP)
+
+    fun makeSquash mctx tau a =
+      check
+        mctx
+        (CTT (SQUASH tau) $ [([],[]) \ a],
+         EXP)
+
+    fun makeEqSequent H args =
+      H >> (makeEq (#metactx H) args, TRIV)
+
+    fun makeMemberSequent H args =
+      H >> (makeMember (#metactx H) args, TRIV)
+
+    fun makeLevelSequent (H : Sequent.context) =
+      let
+        val H' =
+          {metactx = #metactx H,
+           symctx = #symctx H,
+           hypctx = Ctx.empty}
+      in
+        H' >> (check' (CTT (BASE LVL) $ [], EXP), LVL)
+      end
+
+    val makeAx = check' (CTT AX $ [], TRIV)
   end
+
 end

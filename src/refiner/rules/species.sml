@@ -11,41 +11,6 @@ struct
              @@ "Expected Species but got "
               ^ DebugShowAbt.toString m
 
-  fun makeEq mctx (m,n,a) =
-    check
-      mctx
-      (CTT (EQ (sort m)) $ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a],
-       EXP)
-
-  fun makeMember mctx (m,a) =
-    check
-      mctx
-      (CTT (MEMBER (sort m)) $ [([],[]) \ m, ([],[]) \ a],
-       EXP)
-
-  fun makeSquash mctx tau a =
-    check
-      mctx
-      (CTT (SQUASH tau) $ [([],[]) \ a],
-       EXP)
-
-  fun makeEqSequent H args =
-    H >> (makeEq (#metactx H) args, TRIV)
-
-  fun makeMemberSequent H args =
-    H >> (makeMember (#metactx H) args, TRIV)
-
-  fun makeLevelSequent (H : Sequent.context) =
-    let
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.empty}
-    in
-      H' >> (check' (CTT (BASE LVL) $ [], EXP), LVL)
-    end
-
-
   fun TypeEq alpha (H >> (P, _)) =
     let
       val (tau,s1,s2,univ) = destEq P
@@ -75,7 +40,7 @@ struct
         T.snoc (T.snoc T.empty goal1) goal2
     in
       (psi, fn rho =>
-        abtToAbs (check' (CTT AX $ [], TRIV)))
+        abtToAbs makeAx)
     end
 
   fun MemberEq alpha (H >> (P, _)) =
@@ -120,6 +85,6 @@ struct
       val psi = T.empty @> tyGoal @> squashGoal @> lvlGoal @> tyfunGoal
     in
       (psi, fn rho =>
-        abtToAbs @@ check' (CTT AX $ [], TRIV))
+        abtToAbs makeAx)
     end
 end

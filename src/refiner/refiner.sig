@@ -59,6 +59,10 @@ sig
     : AbtSignature.sign
     -> ntactic
 
+  val Witness
+    : abt
+    -> ntactic
+
 end
 
 

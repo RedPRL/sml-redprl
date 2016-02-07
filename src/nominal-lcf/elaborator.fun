@@ -90,6 +90,8 @@ struct
              R.RewriteGoal m
          | LCF EVAL_GOAL $ [] =>
              R.EvalGoal sign
+         | LCF (WITNESS tau) $ [_ \ m] =>
+             R.Witness m
          | `x => VarCtx.lookup rho x
          | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t ^ " which evaluated to " ^ DebugShowAbt.toString t')
     end
