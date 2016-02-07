@@ -124,6 +124,7 @@ struct
          | CTT UNIV $ [_ \ l] =>
              step sign (l <: env) <#> (fn l' <: env =>
                check (metactx l') (CTT UNIV $ [([],[]) \ l'], EXP) <: env)
+         | CTT SQUASH $ _ => FINAL
          | _ => ?hole
     end
 

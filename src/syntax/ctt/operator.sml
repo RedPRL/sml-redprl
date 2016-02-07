@@ -8,6 +8,7 @@ struct
     | EQ of Sort.t
     | MEMBER of Sort.t
     | AX
+    | SQUASH
 end
 
 structure CttSimpleOperator =
@@ -51,6 +52,9 @@ struct
              ->> EXP
        | AX =>
            [] ->> EXP
+       | SQUASH =>
+           [[] * [] <> EXP]
+             ->> EXP
   end
 
   val eq : t * t -> bool = op=
@@ -70,6 +74,8 @@ struct
          "Ax"
      | UNIV =>
          "Univ"
+     | SQUASH =>
+         "Squash"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)
