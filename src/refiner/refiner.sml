@@ -21,7 +21,8 @@ struct
              (UnivRules.Eq alpha
                ORELSE BaseRules.TypeEq alpha
                ORELSE BaseRules.MemberEq alpha
-               ORELSE SquashRules.TypeEq alpha) jdg
+               ORELSE SquashRules.TypeEq alpha
+               ORELSE SpeciesRules.TypeEq alpha) jdg
          | _ => raise Fail "Eq not applicable"
   end
 

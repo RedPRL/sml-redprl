@@ -20,4 +20,6 @@ is
   refiner/rules/base.sml
   refiner/rules/squash.sig
   refiner/rules/squash.sml
+  refiner/rules/species.sig
+  refiner/rules/species.sml
   refiner/refiner.sml
