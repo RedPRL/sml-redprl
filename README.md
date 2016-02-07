@@ -44,4 +44,4 @@ ML installed. Then, simply run
 Then, a binary will be placed in `./bin/jonprl`, which you may run as
 follows
 
-    ./bin/jonprl my-development.jonprl
+    ./bin/jonprl my-development.prl
