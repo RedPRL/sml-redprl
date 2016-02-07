@@ -21,6 +21,7 @@ struct
              (UnivRules.Eq alpha
                ORELSE BaseRules.TypeEq alpha
                ORELSE BaseRules.MemberEq alpha
+               ORELSE CEquivRules.TypeEq alpha
                ORELSE SquashRules.TypeEq alpha
                ORELSE SpeciesRules.TypeEq alpha
                ORELSE SpeciesRules.MemberEq alpha) jdg
@@ -53,6 +54,14 @@ struct
     SquashRules.Unhide
 
   open CEquivRules
+
+  local
+    open CEquivRules
+  in
+    val CStep = CStep
+    val CEval = CEval
+    val CSym = CSym
+  end
 
   local
     open OperatorData CttOperatorData SortData

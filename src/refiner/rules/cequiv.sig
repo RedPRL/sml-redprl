@@ -1,5 +1,8 @@
 signature CEQUIV_RULES =
 sig
+  val TypeEq
+    : RefinerKit.ntactic
+
   val CStep
     : AbtSignature.sign
     -> int

@@ -86,6 +86,12 @@ struct
         (CTT (EQ (sort m)) $ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a],
          EXP)
 
+    fun makeCEquiv mctx (m,n) =
+      check
+        mctx
+        (CTT (CEQUIV (sort m)) $ [([],[]) \ m, ([],[]) \ n],
+         EXP)
+
     fun makeMember mctx (m,a) =
       check
         mctx
