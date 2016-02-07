@@ -61,7 +61,7 @@ struct
 
     fun destUniv m =
       case out m of
-           CTT UNIV $ [_ \ i] => i
+           CTT (UNIV tau) $ [_ \ i] => (tau, i)
          | _ => raise Fail @@ "Expected universe, but got " ^ DebugShowAbt.toString m
   end
 end

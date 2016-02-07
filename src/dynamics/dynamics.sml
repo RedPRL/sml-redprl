@@ -121,9 +121,9 @@ struct
          | CTT (EQ _) $ _ => FINAL
          | CTT (MEMBER tau) $ [_ \ x, _ \ a] =>
              ret @@ check (metactx m) (CTT (EQ tau) $ [([],[]) \ x, ([],[]) \ x, ([],[]) \ a], EXP) <: env
-         | CTT UNIV $ [_ \ l] =>
+         | CTT (UNIV tau) $ [_ \ l] =>
              step sign (l <: env) <#> (fn l' <: env =>
-               check (metactx l') (CTT UNIV $ [([],[]) \ l'], EXP) <: env)
+               check (metactx l') (CTT (UNIV tau) $ [([],[]) \ l'], EXP) <: env)
          | CTT (SQUASH _) $ _ => FINAL
          | _ => ?hole
     end

@@ -76,7 +76,8 @@ struct
     let
       val (tau, m, n, a) = destEq P
       val () = if tau = EXP then () else raise Fail "Expected exp"
-      val (i, j, k) = (destUniv m, destUniv n, destUniv a)
+      val ((tau1, i), (tau2, j), (tau3, k)) = (destUniv m, destUniv n, destUniv a)
+      val () = if tau1 = tau2 andalso tau2 = tau3 then () else raise Fail "Sort mismatch"
       val () = assertLevelEq (i, j)
       val () = assertLevelLt (i, k)
     in

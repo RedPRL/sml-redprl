@@ -106,9 +106,11 @@ struct
                return (CTT AX $ [])
 
            val parseUniv =
-             symbol "Univ" >> braces (f LVL)
-               wth (fn i =>
-                 CTT UNIV $ [([],[]) \ i])
+             symbol "Univ"
+               >> (braces (parseSort sign) || succeed EXP)
+               && (parens (f LVL))
+               wth (fn (tau, i) =>
+                 CTT (UNIV tau) $ [([],[]) \ i])
 
            val parseCApprox =
              symbol "<="

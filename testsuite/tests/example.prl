@@ -43,11 +43,11 @@ Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] by [
   ceval
 ].
 
-Thm univTest(i : lvl) : [=(Univ{i}; Univ{i}; Univ{lsuc(i)})] by [
+Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] by [
   eq
 ].
 
-Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ{i})] by [
+Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] by [
   eq
 ].
 
