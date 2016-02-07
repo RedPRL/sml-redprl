@@ -1,7 +1,7 @@
 structure Main =
 struct
   datatype mode =
-    PRINT_DEVELOPMENT
+      PRINT_DEVELOPMENT
     | HELP
 
   local
