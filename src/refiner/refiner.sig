@@ -50,6 +50,10 @@ sig
     : abt
     -> ntactic
 
+  val EvalGoal
+    : AbtSignature.sign
+    -> ntactic
+
 end
 
 

@@ -55,9 +55,12 @@ Thm baseMemberEq : [=(Ax; Ax; Base)] by [
   eq; ceval
 ].
 
+Tac crefl = [
+  cstep{0}
+].
+
 Thm exampleUnfoldMember : [member(Ax; Base)] by [
-  rewrite-goal =(Ax; Ax; Base);
-  [ ceval
-  , eq; crefl
-  ]
+  eval-goal;
+  eq;
+  crefl
 ].

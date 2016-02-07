@@ -176,10 +176,6 @@ struct
              symbol "cstep" >> (braces integer || succeed 1)
                wth (fn i => LCF (CSTEP i) $ [])
 
-           val parseCRefl =
-             symbol "crefl"
-               return (LCF (CSTEP 0) $ [])
-
            val parseCSym =
              symbol "csym"
                return (LCF CSYM $ [])
@@ -206,6 +202,10 @@ struct
                -- (fn tau =>
                  f tau wth (fn m =>
                    LCF (REWRITE_GOAL tau) $ [([],[]) \ m]))
+
+           val parseEvalGoal =
+             symbol "eval-goal"
+               return (LCF EVAL_GOAL $ [])
 
            val parseHyp =
              symbol "hyp"
@@ -243,7 +243,6 @@ struct
                || parseId
                || parseFail
                || parseCStep
-               || parseCRefl
                || parseCEval
                || parseCSym
                || parseEq
@@ -251,6 +250,7 @@ struct
                || parseHyp
                || parseRec
                || parseRewriteGoal
+               || parseEvalGoal
                || try (parseAny sign rho f TAC)
 
            val parseAll =

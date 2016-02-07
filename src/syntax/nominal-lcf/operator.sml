@@ -23,7 +23,8 @@ struct
     | ELIM of 'i elim_params
     | HYP of 'i hyp_params
     | ID | FAIL | TRACE of Sort.t
-    | CSTEP of int | CEVAL | CSYM | REWRITE_GOAL of Sort.t
+    | CSTEP of int | CEVAL | CSYM
+    | REWRITE_GOAL of Sort.t | EVAL_GOAL
 end
 
 structure NominalLcfOperator : OPERATOR =
@@ -82,6 +83,8 @@ struct
       | arity (REWRITE_GOAL tau) =
           [ [] * [] <> tau
           ] ->> TAC
+      | arity EVAL_GOAL =
+          [] ->> TAC
   end
 
   fun support (ELIM {target,...}) = [(target, EXP)]
@@ -105,6 +108,7 @@ struct
      | CSYM => CSYM
      | CEVAL => CEVAL
      | REWRITE_GOAL tau => REWRITE_GOAL tau
+     | EVAL_GOAL => EVAL_GOAL
 
   fun eq f =
     fn (SEQ n1, SEQ n2) => n1 = n2
@@ -121,6 +125,7 @@ struct
      | (CSYM, CSYM) => true
      | (CEVAL, CEVAL) => true
      | (REWRITE_GOAL tau1, REWRITE_GOAL tau2) => tau1 = tau2
+     | (EVAL_GOAL, EVAL_GOAL) => true
      | _ => false
 
   fun toString f =
@@ -140,5 +145,6 @@ struct
      | CSYM => "csym"
      | CEVAL => "ceval"
      | REWRITE_GOAL tau => "rewrite-goal{" ^ Sort.toString tau ^ "}"
+     | EVAL_GOAL => "eval-goal"
 end
 

@@ -57,7 +57,7 @@ struct
     fun CSym _ (H >> (P, _)) =
       let
         val (tau, m, n) = destCEquiv P
-        val x = newMeta "ceq"
+        val x = newMeta ""
         val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ n, ([],[]) \ m], EXP)
         val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
       in
@@ -75,7 +75,7 @@ struct
             abtToAbs ax)
          else
            let
-             val x = newMeta "ceq"
+             val x = newMeta ""
              val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
              val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
            in
@@ -87,14 +87,14 @@ struct
     fun CEval sign _ (H >> (P, _)) =
       let
         val (tau, m, n) = destCEquiv P
-        val m' = DynamicsUtil.evalClosed sign m
+        val m' = DynamicsUtil.evalOpen sign m
       in
         (if Abt.eq (m', n) then
           (T.empty, fn rho =>
             abtToAbs ax)
          else
            let
-             val x = newMeta "ceq"
+             val x = newMeta ""
              val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
              val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
            in
@@ -108,12 +108,22 @@ struct
       let
         val tau = sort P
         val ceqGoal =
-          (newMeta "ceq",
+          (newMeta "",
            H >> (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), sigma))
-        val mainGoal = (newMeta "main", H >> (Q, sigma))
+        val mainGoal = (newMeta "", H >> (Q, sigma))
         val psi = T.snoc (T.snoc T.empty ceqGoal) mainGoal
       in
         (psi, fn rho => T.lookup rho (#1 mainGoal))
+      end
+
+    fun EvalGoal sign _ (H >> (P, sigma)) =
+      let
+        val Q = DynamicsUtil.evalOpen sign P
+        val x = newMeta ""
+        val psi = T.snoc T.empty (x, H >> (Q, sigma))
+      in
+        (psi, fn rho =>
+           T.lookup rho x)
       end
 
   end

@@ -29,7 +29,7 @@ struct
         VarCtx.foldl
           (fn (x, tau, tl) =>
             let
-              val meta = newMeta ("base_" ^ Variable.toString x)
+              val meta = newMeta (Variable.toString x)
               val xtm = check' (`x, tau)
               val base = check' (CTT (BASE tau) $ [], EXP)
               val goal = check' (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
@@ -39,7 +39,7 @@ struct
           T.empty
           (varctx m)
       val mainGoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP)
-      val subgoals' = T.snoc subgoals (newMeta "ceq", H >> (mainGoal, EXP))
+      val subgoals' = T.snoc subgoals (newMeta "", H >> (mainGoal, EXP))
     in
       (subgoals', fn rho =>
         abtToAbs (check' (CTT AX $ [], EXP)))
