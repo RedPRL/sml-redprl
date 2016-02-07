@@ -14,6 +14,7 @@ struct
 
   val helpMessage =
     "A proof assistant based on Computational Type Theory\n" ^
+    "\n  ~ Long Live the Anti-Realist Struggle! ~ \n\n" ^
     "Usage\n" ^
     "  jonprl <file>...\n" ^
     "  jonprl --help\n" ^
@@ -26,13 +27,18 @@ struct
       val jonprlFiles = List.filter (fn x => String.isSuffix ".prl" x orelse String.isSuffix ".jonprl" x) files
       val mode = getMode opts
     in
-      (case mode of
+      case mode of
            PRINT_DEVELOPMENT => (map Frontend.processFile jonprlFiles; OS.Process.success)
-         | HELP => (print helpMessage; OS.Process.success))
-      handle E => (print (exnMessage E); OS.Process.failure)
+         | HELP => (print helpMessage; OS.Process.success)
     end
+    handle E =>
+      (print (exnMessage E);
+       OS.Process.failure)
 
-  val _ = OS.Process.exit (main (CommandLine.name (),
-                                 CommandLine.arguments ()))
+  val _ =
+    OS.Process.exit
+      (main
+        (CommandLine.name (),
+         CommandLine.arguments ()))
 
 end
