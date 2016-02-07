@@ -3,13 +3,16 @@ struct
   structure Tm = Abt
   open Abt
 
-  type judgment = Sequent.sequent
+  open Sequent
+
+  type judgment = sequent
   type evidence = abs
 
   fun judgmentToString s =
     "{" ^ Sequent.toString s ^ "}"
 
-  fun evidenceValence _ = (([],[]), SortData.EXP)
+  infix >>
+  fun evidenceValence (_ >> (_, tau)) = (([],[]), tau)
 
   fun evidenceToString e =
     let
@@ -20,7 +23,13 @@ struct
     end
 
   open Sequent infix >>
-  fun substJudgment (x, e) (H >> P) =
-    SymbolTelescope.map H (fn (Q, tau) => (metasubst (e,x) Q, tau))
-      >> metasubst (e, x) P
+  fun substJudgment (x, e) (H >> (P, tau)) =
+    let
+      val H' =
+        {metactx = #metactx H,
+         symctx = #symctx H,
+         hypctx = SymbolTelescope.map (#hypctx H) (fn (Q, tau) => (metasubst (e, x) Q, tau))}
+    in
+      H' >> (metasubst (e, x) P, tau)
+    end
 end

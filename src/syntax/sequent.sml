@@ -1,13 +1,18 @@
 structure Sequent : SEQUENT =
 struct
   type prop = Abt.abt
-  type context = (prop * Abt.sort) SymbolTelescope.telescope
+  type sort = Abt.sort
 
-  datatype sequent = >> of context * prop
+  type context =
+    {metactx : Abt.metactx,
+     symctx : Abt.symctx,
+     hypctx : (prop * sort) SymbolTelescope.telescope}
+
+  datatype sequent = >> of context * (prop * sort)
   infix >>
 
-  fun toString (H >> P) =
-    SymbolTelescope.toString (fn (m, tau) => DebugShowAbt.toString m) H
+  fun toString (H >> (P, tau)) =
+    SymbolTelescope.toString (fn (m, tau) => DebugShowAbt.toString m) (#hypctx H)
       ^ " >> "
       ^ DebugShowAbt.toString P
 end

@@ -72,7 +72,7 @@ struct
               ^ " < "
               ^ DebugShowAbt.toString j
 
-  fun Eq alpha (H >> P) =
+  fun Eq alpha (H >> (P, _)) =
     let
       val (m, n, a) = destEq P
       val (i, j, k) = (destUniv m, destUniv n, destUniv a)

@@ -15,7 +15,7 @@ struct
     open OperatorData CttOperatorData Tacticals
     infix ORELSE
   in
-    fun Eq r alpha (jdg as H >> P) =
+    fun Eq r alpha (jdg as H >> (P, _)) =
       case out P of
            CTT (EQ _) $ _ =>
              (UnivRules.Eq alpha
@@ -24,9 +24,9 @@ struct
          | _ => raise Fail "Eq not applicable"
   end
 
-  fun Hyp i _ (H >> P) =
+  fun Hyp i _ (H >> (P, _)) =
     let
-      val (Q, tau) = Ctx.lookup H i
+      val (Q, tau) = Ctx.lookup (#hypctx H) i
     in
       if Abt.eq (P, Q) then
         (T.empty, fn rho =>
@@ -38,8 +38,8 @@ struct
   local
     open OperatorData CttOperatorData SortData
     fun destCEquiv P =
-      case (metactx P, out P) of
-           (theta, CTT (CEQUIV tau) $ [_ \ m, _ \ n]) =>
+      case (out P) of
+           CTT (CEQUIV tau) $ [_ \ m, _ \ n] =>
              let
                val tau1 = sort m
                val tau2 = sort n
@@ -49,25 +49,25 @@ struct
                  else
                    raise Fail "Incompatible sorts in CEquiv"
              in
-               (theta, tau, m, n)
+               (tau, m, n)
              end
          | _ => raise Fail "Expected CEquiv"
     val ax = check' (CTT AX $ [], EXP)
   in
-    fun CSym _ (H >> P) =
+    fun CSym _ (H >> (P, _)) =
       let
-        val (theta, tau, m, n) = destCEquiv P
+        val (tau, m, n) = destCEquiv P
         val x = newMeta "ceq"
-        val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ n, ([],[]) \ m], EXP)
-        val psi = T.snoc T.empty (x, Ctx.empty >> subgoal)
+        val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ n, ([],[]) \ m], EXP)
+        val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
       in
         (psi, fn rho =>
           abtToAbs ax)
       end
 
-    fun CStep sign i _ (H >> P) =
+    fun CStep sign i _ (H >> (P, _)) =
       let
-        val (theta, tau, m, n) = destCEquiv P
+        val (tau, m, n) = destCEquiv P
         val m' = DynamicsUtil.stepn sign i m
       in
         (if Abt.eq (m', n) then
@@ -76,17 +76,17 @@ struct
          else
            let
              val x = newMeta "ceq"
-             val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
-             val psi = T.snoc T.empty (x, Ctx.empty >> subgoal)
+             val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
+             val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
            in
              (psi, fn rho =>
                abtToAbs ax)
            end)
       end
 
-    fun CEval sign _ (H >> P) =
+    fun CEval sign _ (H >> (P, _)) =
       let
-        val (theta, tau, m, n) = destCEquiv P
+        val (tau, m, n) = destCEquiv P
         val m' = DynamicsUtil.evalClosed sign m
       in
         (if Abt.eq (m', n) then
@@ -95,8 +95,8 @@ struct
          else
            let
              val x = newMeta "ceq"
-             val subgoal = check theta (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
-             val psi = T.snoc T.empty (x, Ctx.empty >> subgoal)
+             val subgoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m', ([],[]) \ n], EXP)
+             val psi = T.snoc T.empty (x, H >> (subgoal, EXP))
            in
              (psi, fn rho =>
                abtToAbs ax)
@@ -104,13 +104,13 @@ struct
       end
 
 
-    fun RewriteGoal Q _ (H >> P) =
+    fun RewriteGoal Q _ (H >> (P, sigma)) =
       let
-        val (theta, tau) = (metactx P, sort P)
+        val tau = sort P
         val ceqGoal =
           (newMeta "ceq",
-           H >> check theta (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP))
-        val mainGoal = (newMeta "main", H >> Q)
+           H >> (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), sigma))
+        val mainGoal = (newMeta "main", H >> (Q, sigma))
         val psi = T.snoc (T.snoc T.empty ceqGoal) mainGoal
       in
         (psi, fn rho => T.lookup rho (#1 mainGoal))

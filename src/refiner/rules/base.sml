@@ -11,7 +11,7 @@ struct
              @@ "Expected Base but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (H >> P) =
+  fun TypeEq alpha (H >> (P, _)) =
     let
       val (m,n,a) = destEq P
       val (tau1, tau2) = (destBase m, destBase n)
@@ -21,11 +21,10 @@ struct
         abtToAbs (check' (CTT AX $ [], EXP)))
     end
 
-  fun MemberEq alpha (H >> P) =
+  fun MemberEq alpha (H >> (P, _)) =
     let
       val (m,n,a) = destEq P
       val tau = destBase a
-      val psi = metactx P
       val subgoals =
         VarCtx.foldl
           (fn (x, tau, tl) =>
@@ -35,12 +34,12 @@ struct
               val base = check' (CTT (BASE tau) $ [], EXP)
               val goal = check' (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
             in
-              T.snoc tl (meta, H >> goal)
+              T.snoc tl (meta, H >> (goal, EXP))
             end)
           T.empty
           (varctx m)
-      val mainGoal = check psi (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP)
-      val subgoals' = T.snoc subgoals (newMeta "ceq", H >> mainGoal)
+      val mainGoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP)
+      val subgoals' = T.snoc subgoals (newMeta "ceq", H >> (mainGoal, EXP))
     in
       (subgoals', fn rho =>
         abtToAbs (check' (CTT AX $ [], EXP)))
