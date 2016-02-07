@@ -71,4 +71,10 @@ Def speciesExample : exp = [
   { exp x : Base{exp} | ~{exp}(x; Base{triv}) }
 ].
 
+(*
+Thm speciesWf(i : lvl) : [member({ exp x : Base{exp} | ~{exp}(x; Base{triv})}; Univ(i))] : triv by [
+  eval-goal; // unfold member
+  x <- eq;   // apply the equality rule, using [x] for the hypothesis
+  #0 { eq }  // apply the equality rule to the first subgoal
 ].
+*)
