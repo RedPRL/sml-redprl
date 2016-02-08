@@ -109,6 +109,13 @@ struct
           | CTT (CAPPROX _) $ _ => lbase
           | CTT (EQ _) $ _ => lbase
           | CTT (SQUASH _) $ [_ \ a] => inferTypeLevel H a (* we may be able to make this just [lbase] *)
+          | `x =>
+              let
+                val (univ, _) = Ctx.lookup (#hypctx H) x
+                val (_, i) = destUniv univ
+              in
+                i
+              end
           | _ => raise Fail "Level inference heuristic failed"
     end
 
