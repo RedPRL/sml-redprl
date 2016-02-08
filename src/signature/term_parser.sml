@@ -348,12 +348,6 @@ struct
          in
            sepEnd1' parseComponent semi
              -- compileScript
-             wth (fn t =>
-               let
-                 val _ = print ("Parsed: " ^ Ast.toString t ^ "\n\n")
-               in
-                 t
-               end)
          end
        | _ =>
          fail "to be implemented"
