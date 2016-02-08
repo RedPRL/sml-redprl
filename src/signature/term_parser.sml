@@ -269,6 +269,11 @@ struct
                  LCF REC $
                    [([], [x]) \ tac])
 
+           val parseOrElse =
+             braces (f TAC) << symbol "||" && braces (f TAC)
+               wth (fn (t1, t2) =>
+                 LCF ORELSE $ [([],[]) \ t1, ([],[]) \ t2])
+
            val parseTac =
              parens (f TAC)
                || parseId
@@ -286,6 +291,7 @@ struct
                || parseRewriteGoal
                || parseEvalGoal
                || parseWitness
+               || parseOrElse
                || try (parseAny sign rho f TAC)
 
            val parseAll =

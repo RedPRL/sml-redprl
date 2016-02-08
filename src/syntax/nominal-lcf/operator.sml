@@ -10,6 +10,7 @@ struct
 
   datatype 'i script_operator =
       SEQ of Sort.t list
+    | ORELSE
     | ALL | EACH | FOCUS of int
     | REC
     | INTRO of intro_params
@@ -40,6 +41,10 @@ struct
     fun arity (SEQ sorts) =
           [ [] * [] <> TAC
           , sorts * [] <> MTAC
+          ] ->> TAC
+      | arity ORELSE =
+          [ [] * [] <> TAC
+          , [] * [] <> TAC
           ] ->> TAC
       | arity ALL =
           [ [] * [] <> TAC
@@ -93,6 +98,7 @@ struct
 
   fun map f =
     fn SEQ sorts => SEQ sorts
+     | ORELSE => ORELSE
      | ALL => ALL
      | EACH => EACH
      | FOCUS i => FOCUS i
@@ -114,6 +120,7 @@ struct
 
   fun eq f =
     fn (SEQ sorts1, SEQ sorts2) => sorts1 = sorts2
+     | (ORELSE, ORELSE) => true
      | (ALL, ALL) => true
      | (EACH, EACH) => true
      | (FOCUS i1, FOCUS i2) => i1 = i2
@@ -134,6 +141,7 @@ struct
 
   fun toString f =
     fn (SEQ _) => "seq"
+     | ORELSE => "orelse"
      | ALL => "all"
      | EACH => "each"
      | FOCUS i => "some{" ^ Int.toString i ^ "}"

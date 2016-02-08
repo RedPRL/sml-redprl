@@ -70,6 +70,14 @@ struct
              elaborateMulti sign rho (elaborate sign rho t) us mt
          | LCF REC $ [(_, [x]) \ t] =>
              Rec (fn T => elaborate sign (VarCtx.insert rho x T) t)
+         | LCF ORELSE $ [_ \ t1, _ \ t2] =>
+             let
+               val T1 = elaborate sign rho t1
+               val T2 = elaborate sign rho t2
+             in
+               fn alpha =>
+                 T.ORELSE (T1 alpha, T2 alpha)
+             end
          | LCF (ELIM (target, _)) $ [] =>
              R.Elim target
          | LCF (HYP (target, _)) $ [] =>
