@@ -79,3 +79,7 @@ Tac try(t : tac) = [
 Thm speciesTest : [member{triv}(Ax; {x : Base{triv} | ~{triv}(x; Ax) })] : triv by [
   repeat(auto)
 ].
+
+Thm demo : [{x : Base{triv} | ~{triv}(x; Ax)}] : triv by [
+  repeat(auto)
+].
