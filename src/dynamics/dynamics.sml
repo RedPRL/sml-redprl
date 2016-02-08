@@ -105,7 +105,7 @@ struct
       case theta $ args of
            CUST (opid, params, arity) $ args =>
              stepCust sign (opid, arity) cl
-         | LVL_OP (LBASE _) $ _ => FINAL
+         | LVL_OP LBASE $ _ => FINAL
          | LVL_OP LSUCC $ [_ \ l] =>
              step sign (l <: env) <#> (fn l' <: env =>
                check (metactx l') (LVL_OP LSUCC $ [([],[]) \ l'], LVL) <: env)
