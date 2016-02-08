@@ -321,30 +321,12 @@ struct
              fn (LCF ALL $ [_ \ t]) => t
               | t => makeSeq t [] (LCF ID $ [])
 
-           val tacToMultitac =
-             fn (LCF (SEQ []) $ [_ \ mt, ([],[]) \ (LCF ID $ [])]) => mt
-              | t => LCF ALL $ [([],[]) \ t]
-
-           fun ensureTac m =
-             case m of
-                  LCF ALL $ _ => multitacToTac m
-                | LCF EACH $ _ => multitacToTac m
-                | LCF (FOCUS _) $ _ => multitacToTac m
-                | _ => m
-
-           fun ensureMultitac m =
-             case m of
-                  LCF ALL $ _ => m
-                | LCF EACH $ _ => m
-                | LCF (FOCUS _) $ _ => m
-                | _ => tacToMultitac m
-
            val rec compileScript =
              fn [] => fail "Expected tactic script"
-              | [BINDING (_, tac)] => succeed (ensureTac tac)
+              | [BINDING (_, tac)] => succeed (multitacToTac tac)
               | BINDING (us, tac) :: ts =>
                   compileScript ts
-                    wth makeSeq (ensureMultitac tac) us o ensureTac
+                    wth makeSeq tac us
          in
            sepEnd1' parseComponent semi
              -- compileScript
