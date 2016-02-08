@@ -39,8 +39,8 @@ struct
     infix 6 * ^
   in
     fun arity (SEQ sorts) =
-          [ [] * [] <> TAC
-          , sorts * [] <> MTAC
+          [ [] * [] <> MTAC
+          , sorts * [] <> TAC
           ] ->> TAC
       | arity ORELSE =
           [ [] * [] <> TAC

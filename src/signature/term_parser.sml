@@ -319,18 +319,14 @@ struct
 
            val multitacToTac =
              fn (LCF ALL $ [_ \ t]) => t
-              | t => makeSeq (LCF ID $ []) [] t
-
-           val tacToMultitac =
-             fn (LCF (SEQ []) $ [_ \ (LCF ID $ []), ([],[]) \ mt]) => mt
-              | t => LCF ALL $ [([],[]) \ t]
+              | t => makeSeq t [] (LCF ID $ [])
 
            val rec compileScript =
              fn [] => fail "Expected tactic script"
               | [BINDING (_, tac)] => succeed (multitacToTac tac)
               | BINDING (us, tac) :: ts =>
                   compileScript ts
-                    wth makeSeq (multitacToTac tac) us o tacToMultitac
+                    wth makeSeq tac us
          in
            sepEnd1' parseComponent semi
              -- compileScript

@@ -10,6 +10,8 @@ Tac repeat(T : tac) = [
   }
 ].
 
+
+
 Tac complete(T : tac) = [
   T; fail
 ].
@@ -27,14 +29,12 @@ Def welp[a:exp](E : {exp}[triv].exp) : exp = [
 ].
 
 
-
 // Theorems may be both parametric and general. Let's prove an easy theorem by exploiting the
 // computation rule for [welp].
 Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : triv by [
   csym;
   ceval
 ].
-
 
 // Every proof is related to the evidence semantics of Computational Type Theory by
 // an "extract"; a theorem in JonPRL, like every other declaration form, is a
@@ -63,6 +63,7 @@ Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
   eq; crefl
 ].
 
+
 // Species, or set comprehensions, are types that restrict the inhabitants of
 // a type by a predicate. Because this is a multi-sorted type theory, we must specify
 // what syntactic sort is being refined by the type being restricted. In this example,
@@ -74,13 +75,18 @@ Def speciesExample : exp = [
 Thm speciesTest(i : lvl) : [member{triv}(Ax; {triv x : Base{triv} | ~{triv}(x; Ax)})] : triv by [
   eval-goal;
   x:triv <- eq;
-  [ eq; crefl
-  , intro; crefl
-  , witness{lvl} i; eval-goal; eq; crefl
+  // note how a universe level did not need to be supplied to the
+  // [eq] tactic; instead, a subgoal for a universe level is generated,
+  // and it is propagated to the following type-functionality subgoal using
+  // Dependent LCF.
+  [ eq
+  , intro
+  , witness{lvl} i; eval-goal; eq
   , eval-goal; eq;
-    [ y:triv <- elim[x:triv];
+    #0 {
+      y:triv <- elim[x:triv];
       hyp[y:triv]
-    , crefl
-    ]
-  ]
+    }
+  ];
+  crefl
 ].

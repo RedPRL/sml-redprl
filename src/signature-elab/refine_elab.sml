@@ -5,7 +5,7 @@ struct
 
   open E AbtSignature
   structure T = AbtSignature.Telescope and SD = SortData
-  structure Ctx = E.Refiner.Telescope
+  structure Ctx = E.Refiner.Tacticals.Lcf.T
 
   exception hole
   fun ?e = raise e
