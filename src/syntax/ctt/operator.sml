@@ -9,7 +9,7 @@ struct
     | MEMBER of Sort.t
     | AX
     | SQUASH of Sort.t
-    | SPECIES of Sort.t
+    | SPECIES of Sort.t * Sort.t
 end
 
 structure CttSimpleOperator =
@@ -56,7 +56,7 @@ struct
        | SQUASH tau =>
            [[] * [] <> EXP]
              ->> EXP
-       | SPECIES tau =>
+       | SPECIES (tau, _) =>
            [[] * [] <> EXP,
             [] * [tau] <> EXP]
              ->> EXP
@@ -81,8 +81,8 @@ struct
          "Univ{" ^ Sort.toString tau ^ "}"
      | SQUASH tau =>
          "Squash{" ^ Sort.toString tau ^ "}"
-     | SPECIES tau =>
-         "Species{" ^ Sort.toString tau ^ "}"
+     | SPECIES (tau1, tau2) =>
+         "Species{" ^ Sort.toString tau1 ^ ", " ^ Sort.toString tau2 ^ "}"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)

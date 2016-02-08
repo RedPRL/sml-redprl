@@ -150,9 +150,10 @@ struct
                (parseSort sign
                   && parseVariable << colon
                   && f EXP << symbol "|"
+                  && parseSort sign
                   && f EXP)
-               wth (fn (tau, (x, (a, b))) =>
-                 CTT (SPECIES tau) $ [([],[]) \ a, ([],[x]) \ b])
+               wth (fn (tau1, (x, (a, (tau2, b)))) =>
+                 CTT (SPECIES (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
          in
            parseCApprox
              || parseCEquiv

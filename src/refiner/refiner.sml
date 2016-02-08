@@ -8,13 +8,15 @@ struct
   fun Elim i alpha =
     BaseRules.Elim i alpha
 
-  fun Intro r alpha =
-    SquashRules.Intro alpha
 
   local
     open OperatorData CttOperatorData Tacticals
     infix ORELSE
   in
+    fun Intro r alpha =
+      SquashRules.Intro alpha
+        ORELSE SpeciesRules.Intro alpha
+
     fun Eq r alpha (jdg as H >> (P, _)) =
       case out P of
            CTT (EQ _) $ _ =>
