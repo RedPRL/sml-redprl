@@ -72,7 +72,7 @@ struct
               ^ " < "
               ^ DebugShowAbt.toString j
 
-  fun Eq alpha (H >> (P, _)) =
+  fun Eq alpha (H >> TRUE (P, _)) =
     let
       val (tau, m, n, a) = destEq P
       val () = if tau = EXP then () else raise Fail "Expected exp"
@@ -82,6 +82,7 @@ struct
       val () = assertLevelLt (i, k)
     in
       (T.empty, fn rho =>
-        abtToAbs (check' (CTT AX $ [], TRIV)))
+        abtToAbs makeAx)
     end
+    | Eq _ _ = raise Match
 end

@@ -14,7 +14,7 @@ struct
              @@ "Expected Species but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (H >> (P, _)) =
+  fun TypeEq alpha (H >> TRUE (P, _)) =
     let
       val (tau,s1,s2,univ) = destEq P
       val (_, _, a1, x1, b1) = destSpecies s1
@@ -45,8 +45,9 @@ struct
       (psi, fn rho =>
         abtToAbs makeAx)
     end
+    | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (H >> (P, _)) =
+  fun MemberEq alpha (H >> TRUE (P, _)) =
     let
       val (_, m1, m2, sp) = destEq P
       val (tau1, tau2, a, x, b) = destSpecies sp
@@ -57,7 +58,7 @@ struct
       val bm = subst (m1, x) b
       val squashGoal =
         (newMeta "",
-         H >> (makeSquash (#metactx H) tau2 bm, TRIV))
+         H >> TRUE (makeSquash (#metactx H) tau2 bm, TRIV))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
@@ -90,18 +91,19 @@ struct
       (psi, fn rho =>
         abtToAbs makeAx)
     end
+    | MemberEq _ _ = raise Match
 
-  fun Intro alpha (H >> (P, _)) =
+  fun Intro alpha (H >> TRUE (P, _)) =
     let
       val (tau1, tau2, a, x, b) = destSpecies P
 
       val mainGoal =
         (newMeta "",
-         H >> (a, tau1))
+         H >> TRUE (a, tau1))
 
       val predGoal =
         (newMeta "",
-         H >> (makeSquash (#metactx H) tau1 a, TRIV))
+         H >> TRUE (makeSquash (#metactx H) tau1 a, TRIV))
 
       val lvlGoal = (newMeta "", makeLevelSequent H)
 
@@ -134,4 +136,5 @@ struct
       (psi, fn rho =>
         T.lookup rho (#1 mainGoal))
     end
+    | Intro _ _ = raise Match
 end

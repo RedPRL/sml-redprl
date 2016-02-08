@@ -94,7 +94,7 @@ struct
       fn LVL =>
          let
            val parseBase =
-             symbol "lbase" >> brackets parseSymbol
+             symbol "lbase" >> squares parseSymbol
                wth (fn u =>
                  LVL_OP (LBASE u) $ [])
            val parseSucc =

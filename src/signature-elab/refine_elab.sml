@@ -44,7 +44,7 @@ struct
                          {metactx = List.foldl (fn ((x,vl), psi) => MetaCtx.insert psi x vl) MetaCtx.empty arguments,
                           symctx = List.foldl (fn ((u,tau), upsilon) => SymCtx.insert upsilon u tau) SymCtx.empty parameters,
                           hypctx = SymbolTelescope.empty}
-                       val goal = context >> (prop, tau)
+                       val goal = context >> TRUE (prop, tau)
                        val st as (psi, vld) = E.elaborate' sign script alpha goal
                      in
                        case Ctx.ConsView.out psi of

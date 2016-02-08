@@ -12,7 +12,8 @@ struct
     "{" ^ Sequent.toString s ^ "}"
 
   infix >>
-  fun evidenceValence (_ >> (_, tau)) = (([],[]), tau)
+  fun evidenceValence (_ >> TRUE (_, tau)) = (([],[]), tau)
+    | evidenceValence (_ >> TYPE _) = (([],[]), SortData.LVL)
 
   fun evidenceToString e =
     let
@@ -23,13 +24,17 @@ struct
     end
 
   open Sequent infix >>
-  fun substJudgment (x, e) (H >> (P, tau)) =
+  fun substConcl (x, e) =
+    fn TRUE (P, tau) => TRUE (metasubst (e,x) P, tau)
+     | TYPE (P, tau) => TYPE (metasubst (e,x) P, tau)
+
+  fun substJudgment (x, e) (H >> concl) =
     let
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
          hypctx = SymbolTelescope.map (#hypctx H) (fn (Q, tau) => (metasubst (e, x) Q, tau))}
     in
-      H' >> (metasubst (e, x) P, tau)
+      H' >> substConcl (x, e) concl
     end
 end

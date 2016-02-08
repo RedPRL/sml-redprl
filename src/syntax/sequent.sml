@@ -13,14 +13,22 @@ struct
    * produced, and [P] is a type that refines [tau] which shall classify the
    * evidence. *)
 
+  datatype concl =
+      TRUE of prop * sort
+    | TYPE of prop * sort
+
   (* The meaning of the sequent with respect to its context of metavariables is
    * essentially the following: If the metavariables are replaced by closed abstractions
    * that respect computation, then the sequent is evident. *)
-  datatype sequent = >> of context * (prop * sort)
+  datatype sequent = >> of context * concl
   infix >>
 
-  fun toString (H >> (P, tau)) =
+  val conclToString =
+    fn TRUE (P, tau) => DebugShowAbt.toString P ^ " true"
+     | TYPE (P, tau) => DebugShowAbt.toString P ^ " type"
+
+  fun toString (H >> concl) =
     SymbolTelescope.toString (fn (m, tau) => DebugShowAbt.toString m) (#hypctx H)
       ^ " >> "
-      ^ DebugShowAbt.toString P
+      ^ conclToString concl
 end
