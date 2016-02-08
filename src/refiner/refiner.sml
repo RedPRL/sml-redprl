@@ -97,6 +97,40 @@ struct
       end
       | EvalGoal _ _ _ = raise Match
 
+    local
+      open LevelOperatorData
+      val lbase = check' (LVL_OP LBASE $ [], LVL)
+    in
+      fun inferTypeLevel (H : Sequent.context) P =
+        case out P of
+            CTT (UNIV _) $ [_ \ i] => check (#metactx H) (LVL_OP LSUCC $ [([],[]) \ i], LVL)
+          | CTT (BASE _) $ _ => lbase
+          | CTT (CEQUIV _) $ _ => lbase
+          | CTT (CAPPROX _) $ _ => lbase
+          | CTT (EQ _) $ _ => lbase
+          | CTT (SQUASH _) $ [_ \ a] => inferTypeLevel H a (* we may be able to make this just [lbase] *)
+          | _ => raise Fail "Level inference heuristic failed"
+    end
+
+    fun ProveIsType alpha =
+      fn jdg as H >> TYPE (P, tau) =>
+          Tacticals.THENF
+            (TypeRules.Intro alpha, 0, Witness (inferTypeLevel H P) alpha)
+            jdg
+       | _ => raise Match
   end
 
+  local
+    open Tacticals
+    infix @@
+    infix 2 THEN ORELSE
+  in
+    fun AutoStep sign alpha : Lcf.tactic =
+        TRY @@
+          ProveIsType alpha
+            ORELSE Intro NONE alpha
+            ORELSE Eq NONE alpha
+            ORELSE EvalGoal sign alpha
+            ORELSE CStep sign 0 alpha
+  end
 end

@@ -257,6 +257,10 @@ struct
              symbol "intro"
                return (LCF (INTRO {rule = NONE}) $ [])
 
+           val parseAuto =
+             symbol "auto"
+               return (LCF AUTO $ [])
+
            val parseUnhide =
              symbol "unhide"
                >> squares (parseSymbol && ((colon >> parseSort sign) || succeed EXP))
@@ -306,6 +310,7 @@ struct
                || parseElim
                || parseIntro
                || parseUnhide
+               || parseAuto
                || parseRec
                || parseRewriteGoal
                || parseEvalGoal

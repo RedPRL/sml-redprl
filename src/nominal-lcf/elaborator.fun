@@ -105,6 +105,8 @@ struct
              R.EvalGoal sign
          | LCF (WITNESS tau) $ [_ \ m] =>
              R.Witness m
+         | LCF AUTO $ [] =>
+             R.AutoStep sign
          | LCF REC $ [(_, [x]) \ t] =>
              Rec (fn T => elaborate sign (VarCtx.insert rho x T) t)
          | `x => VarCtx.lookup rho x

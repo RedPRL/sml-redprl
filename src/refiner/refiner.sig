@@ -60,6 +60,10 @@ sig
     : abt
     -> ntactic
 
+  val AutoStep
+    : AbtSignature.sign
+    -> ntactic
+
 end
 
 
