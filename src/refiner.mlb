@@ -11,6 +11,8 @@ local
   refiner/refiner_kit.sml
   refiner/rules/cequiv.sig
   refiner/rules/cequiv.sml
+  refiner/rules/type.sig
+  refiner/rules/type.sml
   refiner/rules/univ.sig
   refiner/rules/univ.sml
   refiner/rules/base.sig

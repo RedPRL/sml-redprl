@@ -44,7 +44,7 @@ struct
       val subgoals' = T.snoc subgoals (newMeta "", H >> TRUE (mainGoal, EXP))
     in
       (subgoals', fn rho =>
-        abtToAbs (check' (CTT AX $ [], TRIV)))
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 

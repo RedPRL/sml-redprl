@@ -16,6 +16,7 @@ struct
     fun Intro r alpha =
       SquashRules.Intro alpha
         ORELSE SpeciesRules.Intro alpha
+        ORELSE TypeRules.Intro alpha
 
     fun Eq r alpha (jdg as H >> TRUE (P, _)) =
       (case out P of

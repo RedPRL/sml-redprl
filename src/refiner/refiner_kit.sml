@@ -120,8 +120,8 @@ struct
         H' >> TRUE (check' (CTT (BASE LVL) $ [], EXP), LVL)
       end
 
-
     val makeAx = check' (CTT AX $ [], TRIV)
   end
 
+  fun @> (t,g) = T.snoc t g
 end

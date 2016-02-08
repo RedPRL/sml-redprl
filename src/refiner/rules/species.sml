@@ -1,10 +1,7 @@
 structure SpeciesRules : SPECIES_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ >> $ $# \
-
-  fun @> (t,g) = T.snoc t g
-  infix @>
+  infix @@ >> $ $# \ @>
 
   fun destSpecies m =
     case out m of
@@ -63,30 +60,16 @@ struct
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
 
-      val lvlGoal = (newMeta "", makeLevelSequent H)
-
       val H' =
-        {metactx = MetaCtx.insert (#metactx H) (#1 lvlGoal) (([],[]), LVL),
+        {metactx = #metactx H,
          symctx = #symctx H,
          hypctx = Ctx.snoc (#hypctx H) (z, (a, tau1))}
 
-      val lvlHole =
-        check
-          (#metactx H')
-          (#1 lvlGoal $# ([], []),
-           LVL)
-
-      val univ =
-        check
-          (#metactx H')
-          (CTT (UNIV tau2) $ [([],[]) \ lvlHole],
-           EXP)
-
       val tyfunGoal =
         (newMeta "",
-         makeMemberSequent H' (bz, univ))
+         H' >> TYPE (bz, tau2))
 
-      val psi = T.empty @> tyGoal @> squashGoal @> lvlGoal @> tyfunGoal
+      val psi = T.empty @> tyGoal @> squashGoal @> tyfunGoal
     in
       (psi, fn rho =>
         abtToAbs makeAx)
@@ -105,33 +88,19 @@ struct
         (newMeta "",
          H >> TRUE (makeSquash (#metactx H) tau1 a, TRIV))
 
-      val lvlGoal = (newMeta "", makeLevelSequent H)
-
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
 
       val H' =
-        {metactx = MetaCtx.insert (#metactx H) (#1 lvlGoal) (([],[]), LVL),
+        {metactx = #metactx H,
          symctx = #symctx H,
          hypctx = Ctx.snoc (#hypctx H) (z, (a, tau1))}
 
-      val lvlHole =
-        check
-          (#metactx H')
-          (#1 lvlGoal $# ([], []),
-           LVL)
-
-      val univ =
-        check
-          (#metactx H')
-          (CTT (UNIV tau2) $ [([],[]) \ lvlHole],
-           EXP)
-
       val tyfunGoal =
         (newMeta "",
-         makeMemberSequent H' (bz, univ))
+         H' >> TYPE (bz, tau2))
 
-      val psi = T.empty @> mainGoal @> predGoal @> lvlGoal @> tyfunGoal
+      val psi = T.empty @> mainGoal @> predGoal @> tyfunGoal
     in
       (psi, fn rho =>
         T.lookup rho (#1 mainGoal))
