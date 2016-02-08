@@ -2,6 +2,7 @@ functor LcfElaborator (R : REFINER) : LCF_ELABORATOR =
 struct
   structure Refiner = R
   structure T = R.Tacticals
+  structure MT = Multitacticals (R.Tacticals.Lcf)
 
   open Abt NominalLcfOperatorData OperatorData SortData
   infix $ \
@@ -120,7 +121,7 @@ struct
                  val st = T alpha' jdg
                  val beta = prepend us (bite (!modulus) alpha)
                in
-                 T.THEN (fn _ => st, elaborate sign rho t' beta) jdg
+                 MT.ALL (elaborate sign rho t' beta) st
                end)
          | LCF EACH $ [_ \ v] =>
              let
@@ -132,7 +133,7 @@ struct
                    val st = T alpha' jdg
                    val beta = prepend us (bite (!modulus) alpha)
                  in
-                   T.THENL (fn _ => st, List.map (fn T => T beta) Ts) jdg
+                   MT.EACH (List.map (fn T => T beta) Ts) st
                  end
              end
          | LCF (FOCUS i) $ [_ \ t'] =>
@@ -142,7 +143,7 @@ struct
                  val st = T alpha' jdg
                  val beta = prepend us (bite (!modulus) alpha)
                in
-                 T.THENF (fn _ => st, i, elaborate sign rho t' beta) jdg
+                 MT.FOCUS i (elaborate sign rho t' beta) st
                end)
          | _ => raise Fail ("Expecting multitac but got " ^ DebugShowAbt.toString mt')
     end
