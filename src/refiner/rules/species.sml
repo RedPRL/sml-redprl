@@ -84,21 +84,28 @@ struct
         (newMeta "",
          H >> TRUE (a, tau1))
 
+      val H' =
+        {metactx = MetaCtx.insert (#metactx H) (#1 mainGoal) (([],[]), tau1),
+         symctx = #symctx H,
+         hypctx = #hypctx H}
+
+      val mainHole = check (#metactx H') (#1 mainGoal $# ([],[]), tau1)
+      val pred = subst (mainHole, x) b
       val predGoal =
         (newMeta "",
-         H >> TRUE (makeSquash (#metactx H) tau1 a, TRIV))
+         H >> TRUE (makeSquash (#metactx H) tau2 pred, TRIV))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (z, (a, tau1))}
+      val H'' =
+        {metactx = #metactx H',
+         symctx = #symctx H',
+         hypctx = Ctx.snoc (#hypctx H') (z, (a, tau1))}
 
       val tyfunGoal =
         (newMeta "",
-         H' >> TYPE (bz, tau2))
+         H'' >> TYPE (bz, tau2))
 
       val psi = T.empty @> mainGoal @> predGoal @> tyfunGoal
     in
