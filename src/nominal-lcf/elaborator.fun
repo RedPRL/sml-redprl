@@ -49,27 +49,31 @@ struct
   fun Rec f alpha jdg =
     f (Rec f) alpha jdg
 
+  structure Tele = R.Tacticals.Lcf.T
+
   fun Trace m jdg =
     let
       val x = Abt.Metavariable.named "?"
-      val psi = R.Telescope.snoc R.Telescope.empty (x, jdg)
+      val psi = Tele.snoc Tele.empty (x, jdg)
     in
       print (DebugShowAbt.toString m ^ "\n");
-      (psi, fn rho => R.Telescope.lookup rho x)
+      (psi, fn rho => Tele.lookup rho x)
     end
 
-  fun elaborate sign rho t =
+  fun collectSeqs sign rho t =
+    case out t of
+         LCF (SEQ _) $ [_ \ mt, (us, _) \ t] => (us, mt) :: collectSeqs sign rho t
+       | _ => [([], check (metactx t) (LCF ALL $ [([],[]) \ t], MTAC))]
+
+  fun elaborate sign rho t : Refiner.ntactic =
     let
       val t' = evalOpen sign t handle _ => t
     in
       case out t' of
-           LCF ID $ _ => (fn _ => T.ID)
+           LCF (SEQ _) $ _ => foldl (fn (t, T) => elaborateM sign rho T t) (fn _ => T.ID) (collectSeqs sign rho t')
+         | LCF ID $ _ => (fn _ => T.ID)
          | LCF FAIL $ _ => (fn _ => fn _ => raise Fail "Fail")
          | LCF (TRACE _) $ [_ \ m] => (fn _ => Trace m)
-         | LCF (SEQ _) $ [_ \ t, (us, _) \ mt] =>
-             elaborateMulti sign rho (elaborate sign rho t) us mt
-         | LCF REC $ [(_, [x]) \ t] =>
-             Rec (fn T => elaborate sign (VarCtx.insert rho x T) t)
          | LCF ORELSE $ [_ \ t1, _ \ t2] =>
              let
                val T1 = elaborate sign rho t1
@@ -104,63 +108,44 @@ struct
          | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t ^ " which evaluated to " ^ DebugShowAbt.toString t')
     end
 
-  (* Below, as an optimization, we lazily execute the first tactic whilst
-   * calculating its modulus of continuity, rather than executing it twice
-   * as in the Definition. *)
-  and elaborateMulti sign rho T1 us mt =
-    case out (evalOpen sign mt) of
-         LCF ALL $ [_ \ t2] =>
-           let
-             val T2 = elaborate sign rho t2
-           in
-             fn alpha =>
+  and elaborateM sign rho T (us, mt) =
+    let
+      val mt' = evalOpen sign mt handle _ => mt
+    in
+      case out mt' of
+           LCF ALL $ [_ \ t'] =>
+             (fn alpha => fn jdg =>
                let
-                 val beta = prepend us alpha
+                 val (alpha', modulus) = probe alpha
+                 val st = T alpha' jdg
+                 val beta = prepend us (bite (!modulus) alpha)
                in
-                 fn jdg =>
-                   let
-                     val (beta', modulus) = probe beta
-                     val st = T1 beta' jdg
-                   in
-                     T.THEN (fn _ => st, T2 (bite (!modulus) beta)) jdg
-                   end
-               end
-           end
-       | LCF EACH $ [_ \ v] =>
-           let
-             val Ts = List.map (elaborate sign rho) (elaborateVec (evalOpen sign v))
-           in
-             fn alpha =>
+                 T.THEN (fn _ => st, elaborate sign rho t' beta) jdg
+               end)
+         | LCF EACH $ [_ \ v] =>
+             let
+               val Ts = List.map (elaborate sign rho) (elaborateVec (evalOpen sign v))
+             in
+               fn alpha => fn jdg =>
+                 let
+                   val (alpha', modulus) = probe alpha
+                   val st = T alpha' jdg
+                   val beta = prepend us (bite (!modulus) alpha)
+                 in
+                   T.THENL (fn _ => st, List.map (fn T => T beta) Ts) jdg
+                 end
+             end
+         | LCF (FOCUS i) $ [_ \ t'] =>
+             (fn alpha => fn jdg =>
                let
-                 val beta = prepend us alpha
+                 val (alpha', modulus) = probe alpha
+                 val st = T alpha' jdg
+                 val beta = prepend us (bite (!modulus) alpha)
                in
-                 fn jdg =>
-                   let
-                     val (beta', modulus) = probe beta
-                     val st = T1 beta' jdg
-                   in
-                     T.THENL (fn _ => st, List.map (fn Ti => Ti (bite (!modulus) beta)) Ts) jdg
-                   end
-               end
-           end
-       | LCF (FOCUS i) $ [_\ t2] =>
-           let
-             val T2 = elaborate sign rho t2
-           in
-             fn alpha =>
-               let
-                 val beta = prepend us alpha
-               in
-                 fn jdg =>
-                   let
-                     val (beta', modulus) = probe beta
-                     val st = T1 beta' jdg
-                   in
-                     T.THENF (fn _ => st, i, T2 (bite (!modulus) beta)) jdg
-                   end
-               end
-           end
-       | _ => raise Fail "Expected multitactic"
+                 T.THENF (fn _ => st, i, elaborate sign rho t' beta) jdg
+               end)
+         | _ => raise Fail ("Expecting multitac but got " ^ DebugShowAbt.toString mt')
+    end
 
   fun elaborate' sign =
     elaborate sign VarCtx.empty

@@ -1,10 +1,8 @@
 signature REFINER =
 sig
-  structure Telescope : TELESCOPE
-    where type Label.t = Abt.metavariable
   structure Tacticals : TACTICALS
-    where type Lcf.evidence = Abt.abs
-    where type 'a Lcf.ctx = 'a Telescope.telescope
+    where type Lcf.J.Tm.abt = Abt.abt
+    where type Lcf.J.Tm.Metavariable.t = Abt.metavariable
 
   type symbol = Abt.symbol
   type metavariable = Abt.metavariable
