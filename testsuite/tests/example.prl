@@ -69,10 +69,10 @@ Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
 // what syntactic sort is being refined by the type being restricted. In this example,
 // we are restricting the [exp] sort, which contains type expressions.
 Def speciesExample : exp = [
-  { exp x : Base{exp} | triv ~{exp}(x; Base{triv}) }
+  { x : Base{exp} | ~{exp}(x; Base{triv}) }
 ].
 
-Thm speciesTest(i : lvl) : [member{triv}(Ax; {triv x : Base{triv} | triv ~{triv}(x; Ax)})] : triv by [
+Thm speciesTest(i : lvl) : [member{triv}(Ax; {x : Base{triv} | ~{triv}(x; Ax) })] : triv by [
   eval-goal;
   x:triv <- eq;
   // note how a universe level did not need to be supplied to the

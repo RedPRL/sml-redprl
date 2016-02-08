@@ -73,6 +73,19 @@ struct
     open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData SortData
     infix $ \ $#
   in
+    val rec inferRefinedSort =
+      fn CTT (BASE tau) $ _ => tau
+       | CTT (UNIV _) $ _ => EXP
+       | CTT (CEQUIV _) $ _ => TRIV
+       | CTT (CAPPROX _) $ _ => TRIV
+       | CTT (EQ _) $ _ => TRIV
+       | _ => raise Fail "Could not infer refined sort"
+
+    fun inferRefinedSort' m =
+      succeed (inferRefinedSort m)
+        handle e => fail (exnMessage e)
+
+
     val parseSymbol = identifier
     val parseVariable = identifier
 
@@ -111,6 +124,28 @@ struct
                  parens (f tau << semi && f tau) wth (fn (m1, m2) =>
                    CTT (CAPPROX tau) $ [([],[]) \ m1, ([],[]) \ m2]))
 
+           val parseCEquiv =
+             symbol "~"
+               >> (braces (parseSort sign) || succeed EXP)
+               -- (fn tau =>
+                 parens (f tau << semi && f tau) wth (fn (m1, m2) =>
+                   CTT (CEQUIV tau) $ [([],[]) \ m1, ([],[]) \ m2]))
+
+           val parseBase =
+             symbol "Base"
+               >> (braces (parseSort sign) || succeed EXP)
+               wth (fn tau =>
+                 CTT (BASE tau) $ [])
+
+           fun @@ (f,x) = f x
+           infix @@
+
+           val parseRefinement =
+             f EXP -- (fn a =>
+               ((symbol "<:" >> parseSort sign) || inferRefinedSort' a)
+                 wth (fn tau =>
+                   (a,tau)))
+
            val parseEq =
              symbol "="
                >> (braces (parseSort sign) || succeed EXP)
@@ -125,35 +160,18 @@ struct
                  parens (f tau << semi && f EXP) wth (fn (m, a) =>
                    CTT (MEMBER tau) $ [([],[]) \ m, ([],[]) \ a]))
 
-           val parseCEquiv =
-             symbol "~"
-               >> (braces (parseSort sign) || succeed EXP)
-               -- (fn tau =>
-                 parens (f tau << semi && f tau) wth (fn (m1, m2) =>
-                   CTT (CEQUIV tau) $ [([],[]) \ m1, ([],[]) \ m2]))
-
-           val parseBase =
-             symbol "Base"
-               >> (braces (parseSort sign) || succeed EXP)
-               wth (fn tau =>
-                 CTT (BASE tau) $ [])
-
            val parseSquash =
-             symbol "Squash"
-               >> (braces (parseSort sign) || succeed EXP)
-               -- (fn tau =>
-                 parens (f tau) wth (fn a =>
-                   CTT (SQUASH tau) $ [([],[]) \ a]))
+             symbol "Squash" >> parens parseRefinement
+               wth (fn (a, tau) =>
+                  CTT (SQUASH tau) $ [([],[]) \ a])
 
            val parseSpecies =
-             braces
-               (parseSort sign
-                  && parseVariable << colon
-                  && f EXP << symbol "|"
-                  && parseSort sign
-                  && f EXP)
-               wth (fn (tau1, (x, (a, (tau2, b)))) =>
-                 CTT (SPECIES (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
+             braces @@
+               parseVariable << colon
+                 && parseRefinement << symbol "|"
+                 && parseRefinement
+                 wth (fn (x, ((a,tau1), (b,tau2))) =>
+                   CTT (SPECIES (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
          in
            parseCApprox
              || parseCEquiv
