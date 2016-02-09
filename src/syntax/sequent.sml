@@ -24,11 +24,26 @@ struct
   infix >>
 
   val conclToString =
-    fn TRUE (P, tau) => DebugShowAbt.toString P ^ " true"
-     | TYPE (P, tau) => DebugShowAbt.toString P ^ " type"
+    fn TRUE (P, tau) => ShowAbt.toString P ^ " true"
+     | TYPE (P, tau) => ShowAbt.toString P ^ " type"
+
+  fun hypothesesToString H =
+    let
+      open SymbolTelescope open ConsView
+      val rec go =
+        fn Empty => ""
+         | Cons (x, (a, tau), tl) =>
+             let
+               val hyp = Symbol.toString x ^ " : " ^ ShowAbt.toString a
+             in
+               hyp ^ "\n" ^ go (out tl)
+             end
+    in
+      go (out H)
+    end
 
   fun toString (H >> concl) =
-    SymbolTelescope.toString (fn (m, tau) => DebugShowAbt.toString m) (#hypctx H)
-      ^ " >> "
+    hypothesesToString (#hypctx H)
+      ^ "\226\138\162 "
       ^ conclToString concl
 end

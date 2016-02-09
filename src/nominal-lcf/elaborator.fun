@@ -57,7 +57,7 @@ struct
       val x = Abt.Metavariable.named "?"
       val psi = Tele.snoc Tele.empty (x, jdg)
     in
-      print (DebugShowAbt.toString m ^ "\n");
+      print (ShowAbt.toString m ^ "\n");
       (psi, fn rho => Tele.lookup rho x)
     end
 

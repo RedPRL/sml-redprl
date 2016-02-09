@@ -3,7 +3,31 @@ struct
   structure Abt = Abt
   open RefinerKit
 
-  open Sequent infix >> $ \
+  open Sequent infix >> $ \ @@
+
+  structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
+
+  fun stateToString (psi, vld) =
+    let
+      open T.ConsView
+      fun go i =
+        fn Empty => (T.empty, "")
+         | Cons (x, jdg, tl) =>
+             let
+               val var = Metavariable.named ("?" ^ Int.toString i)
+               val goal = "\nHOLE " ^ Metavariable.toString var ^ "\n--------------------------------------------\n" ^ Judgment.judgmentToString jdg
+               val vartm = HoleUtil.makeHole (var, Judgment.evidenceValence jdg)
+               val tl' = Telescope.map tl @@ Judgment.substJudgment (x, vartm)
+               val (rho, rest) = go (i + 1) (out tl')
+             in
+               (T.snoc rho (x, vartm), goal ^ "\n" ^ rest)
+             end
+
+      val (env, subgoals) = go 0 @@ out psi
+      val preamble = Judgment.evidenceToString (vld env)
+    in
+      "WITNESS:\n============================================\n\n" ^ preamble ^ "\n\n" ^ subgoals
+    end
 
   fun Elim i alpha =
     BaseRules.Elim i alpha
@@ -136,7 +160,6 @@ struct
 
   local
     open Tacticals
-    infix @@
     infix 2 THEN ORELSE
   in
     fun AutoStep sign alpha : Lcf.tactic =

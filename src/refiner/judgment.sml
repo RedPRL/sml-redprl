@@ -9,7 +9,7 @@ struct
   type evidence = abs
 
   fun judgmentToString s =
-    "{" ^ Sequent.toString s ^ "}"
+    Sequent.toString s
 
   infix >>
   fun evidenceValence (_ >> TRUE (_, tau)) = (([],[]), tau)
@@ -20,7 +20,7 @@ struct
       infix \
       val _ \ m = outb e
     in
-      DebugShowAbt.toString m
+      ShowAbt.toString m
     end
 
   open Sequent infix >>
