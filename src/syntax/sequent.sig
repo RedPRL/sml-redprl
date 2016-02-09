@@ -4,7 +4,11 @@ sig
   type prop
   type sort
 
-  datatype sequent = >> of context * (prop * sort)
+  datatype concl =
+      TRUE of prop * sort
+    | TYPE of prop * sort
+
+  datatype sequent = >> of context * concl
 
   val toString : sequent -> string
 end

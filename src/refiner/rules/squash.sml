@@ -11,7 +11,7 @@ struct
              @@ "Expected Squash but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq _ (H >> (P, _)) =
+  fun TypeEq _ (H >> TRUE (P, _)) =
     let
       val (tau,a,b,univ) = destEq P
       val (_, a') = destSquash a
@@ -21,22 +21,24 @@ struct
         check
           (#metactx H)
           (CTT (EQ tau) $ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ], EXP)
-      val psi = T.snoc T.empty (newMeta "", H >> (goal, EXP))
+      val psi = T.snoc T.empty (newMeta "", H >> TRUE (goal, EXP))
     in
       (psi, fn rho =>
-        abtToAbs (check' (CTT AX $ [], TRIV)))
+        abtToAbs makeAx)
     end
+    | TypeEq _ _ = raise Match
 
-  fun Intro _ (H >> (P, _)) =
+  fun Intro _ (H >> TRUE (P, _)) =
     let
       val (tau, Q) = destSquash P
-      val psi = T.snoc T.empty (newMeta "", H >> (Q, tau))
+      val psi = T.snoc T.empty (newMeta "", H >> TRUE (Q, tau))
     in
       (psi, fn rho =>
-        abtToAbs (check' (CTT AX $ [], TRIV)))
+        abtToAbs makeAx)
     end
+    | Intro _ _ = raise Match
 
-  fun Unhide h _ (H >> (P, tau)) =
+  fun Unhide h _ (H >> TRUE (P, tau)) =
     let
       val _ = destEq P
       val (Q, sigma) = Ctx.lookup (#hypctx H) h
@@ -47,10 +49,11 @@ struct
          hypctx = Ctx.modify (#hypctx H) (h, fn _ => (Q', tau'))}
 
       val x = newMeta ""
-      val psi = T.snoc T.empty (x, H' >> (P, tau))
+      val psi = T.snoc T.empty (x, H' >> TRUE (P, tau))
     in
       (psi, fn rho =>
         T.lookup rho x)
     end
+    | Unhide _ _ _ = raise Match
 
 end

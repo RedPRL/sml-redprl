@@ -1,10 +1,7 @@
 structure SpeciesRules : SPECIES_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ >> $ $# \
-
-  fun @> (t,g) = T.snoc t g
-  infix @>
+  infix @@ >> $ $# \ @>
 
   fun destSpecies m =
     case out m of
@@ -14,7 +11,7 @@ struct
              @@ "Expected Species but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (H >> (P, _)) =
+  fun TypeEq alpha (H >> TRUE (P, _)) =
     let
       val (tau,s1,s2,univ) = destEq P
       val (_, _, a1, x1, b1) = destSpecies s1
@@ -45,8 +42,9 @@ struct
       (psi, fn rho =>
         abtToAbs makeAx)
     end
+    | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (H >> (P, _)) =
+  fun MemberEq alpha (H >> TRUE (P, _)) =
     let
       val (_, m1, m2, sp) = destEq P
       val (tau1, tau2, a, x, b) = destSpecies sp
@@ -57,81 +55,62 @@ struct
       val bm = subst (m1, x) b
       val squashGoal =
         (newMeta "",
-         H >> (makeSquash (#metactx H) tau2 bm, TRIV))
+         H >> TRUE (makeSquash (#metactx H) tau2 bm, TRIV))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
 
-      val lvlGoal = (newMeta "", makeLevelSequent H)
-
       val H' =
-        {metactx = MetaCtx.insert (#metactx H) (#1 lvlGoal) (([],[]), LVL),
+        {metactx = #metactx H,
          symctx = #symctx H,
          hypctx = Ctx.snoc (#hypctx H) (z, (a, tau1))}
 
-      val lvlHole =
-        check
-          (#metactx H')
-          (#1 lvlGoal $# ([], []),
-           LVL)
-
-      val univ =
-        check
-          (#metactx H')
-          (CTT (UNIV tau2) $ [([],[]) \ lvlHole],
-           EXP)
-
       val tyfunGoal =
         (newMeta "",
-         makeMemberSequent H' (bz, univ))
+         H' >> TYPE (bz, tau2))
 
-      val psi = T.empty @> tyGoal @> squashGoal @> lvlGoal @> tyfunGoal
+      val psi = T.empty @> tyGoal @> squashGoal @> tyfunGoal
     in
       (psi, fn rho =>
         abtToAbs makeAx)
     end
+    | MemberEq _ _ = raise Match
 
-  fun Intro alpha (H >> (P, _)) =
+  fun Intro alpha (H >> TRUE (P, _)) =
     let
       val (tau1, tau2, a, x, b) = destSpecies P
 
       val mainGoal =
         (newMeta "",
-         H >> (a, tau1))
+         H >> TRUE (a, tau1))
 
+      val H' =
+        {metactx = MetaCtx.insert (#metactx H) (#1 mainGoal) (([],[]), tau1),
+         symctx = #symctx H,
+         hypctx = #hypctx H}
+
+      val mainHole = check (#metactx H') (#1 mainGoal $# ([],[]), tau1)
+      val pred = subst (mainHole, x) b
       val predGoal =
         (newMeta "",
-         H >> (makeSquash (#metactx H) tau1 a, TRIV))
-
-      val lvlGoal = (newMeta "", makeLevelSequent H)
+         H >> TRUE (makeSquash (#metactx H) tau2 pred, TRIV))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
 
-      val H' =
-        {metactx = MetaCtx.insert (#metactx H) (#1 lvlGoal) (([],[]), LVL),
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (z, (a, tau1))}
-
-      val lvlHole =
-        check
-          (#metactx H')
-          (#1 lvlGoal $# ([], []),
-           LVL)
-
-      val univ =
-        check
-          (#metactx H')
-          (CTT (UNIV tau2) $ [([],[]) \ lvlHole],
-           EXP)
+      val H'' =
+        {metactx = #metactx H',
+         symctx = #symctx H',
+         hypctx = Ctx.snoc (#hypctx H') (z, (a, tau1))}
 
       val tyfunGoal =
         (newMeta "",
-         makeMemberSequent H' (bz, univ))
+         H'' >> TYPE (bz, tau2))
 
-      val psi = T.empty @> mainGoal @> predGoal @> lvlGoal @> tyfunGoal
+      val psi = T.empty @> mainGoal @> predGoal @> tyfunGoal
     in
       (psi, fn rho =>
         T.lookup rho (#1 mainGoal))
     end
+    | Intro _ _ = raise Match
 end

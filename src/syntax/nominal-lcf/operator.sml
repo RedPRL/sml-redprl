@@ -16,6 +16,7 @@ struct
     | INTRO of intro_params
     | EQ of eq_params
     | ELIM of 'i * Sort.t | HYP of 'i * Sort.t | UNHIDE of 'i * Sort.t
+    | AUTO
     | ID | FAIL | TRACE of Sort.t
     | CSTEP of int | CEVAL | CSYM
     | REWRITE_GOAL of Sort.t | EVAL_GOAL
@@ -65,6 +66,8 @@ struct
           [] ->> TAC
       | arity (UNHIDE _) =
           [] ->> TAC
+      | arity AUTO =
+          [] ->> TAC
       | arity ID =
           [] ->> TAC
       | arity FAIL =
@@ -107,6 +110,7 @@ struct
      | ELIM (target, tau) => ELIM (f target, tau)
      | HYP (target, tau) => HYP (f target, tau)
      | UNHIDE (target, tau) => UNHIDE (f target, tau)
+     | AUTO => AUTO
      | ID => ID
      | FAIL => FAIL
      | TRACE tau => TRACE tau
@@ -127,6 +131,7 @@ struct
      | (ELIM (u, sigma), ELIM (v, tau)) => f (u, v) andalso sigma = tau
      | (HYP (u, sigma), HYP (v, tau)) => f (u, v) andalso sigma = tau
      | (UNHIDE (u, sigma), UNHIDE (v, tau)) => f (u, v) andalso sigma = tau
+     | (AUTO, AUTO) => true
      | (ID, ID) => true
      | (FAIL, FAIL) => true
      | (TRACE tau1, TRACE tau2) => tau1 = tau2
@@ -150,6 +155,7 @@ struct
      | ELIM (target,tau) => "elim[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | HYP (target, tau) => "hyp[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | UNHIDE (target, tau) => "unhide[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
+     | AUTO => "auto"
      | ID => "id"
      | FAIL => "fail"
      | TRACE tau => "trace{" ^ Sort.toString tau ^ "}"

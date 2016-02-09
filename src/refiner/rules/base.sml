@@ -11,7 +11,7 @@ struct
              @@ "Expected Base but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (H >> (P, _)) =
+  fun TypeEq alpha (H >> TRUE (P, _)) =
     let
       val (tau, m,n,a) = destEq P
       val (tau1, tau2) = (destBase m, destBase n)
@@ -20,8 +20,9 @@ struct
       (T.empty, fn rho =>
         abtToAbs (check' (CTT AX $ [], TRIV)))
     end
+    | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (H >> (P, _)) =
+  fun MemberEq alpha (H >> TRUE (P, _)) =
     let
       val (tau, m,n,a) = destEq P
 
@@ -35,18 +36,19 @@ struct
               val base = check' (CTT (BASE tau) $ [], EXP)
               val goal = check' (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
             in
-              T.snoc tl (meta, H >> (goal, EXP))
+              T.snoc tl (meta, H >> TRUE (goal, EXP))
             end)
           T.empty
           (varctx m)
       val mainGoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP)
-      val subgoals' = T.snoc subgoals (newMeta "", H >> (mainGoal, EXP))
+      val subgoals' = T.snoc subgoals (newMeta "", H >> TRUE (mainGoal, EXP))
     in
       (subgoals', fn rho =>
-        abtToAbs (check' (CTT AX $ [], TRIV)))
+        abtToAbs makeAx)
     end
+    | MemberEq _ _ = raise Match
 
-  fun Elim h alpha (H >> (P, sigma)) =
+  fun Elim h alpha (H >> TRUE (P, sigma)) =
     let
       val (base, tau) = Ctx.lookup (#hypctx H) h
       val _ = destBase base
@@ -63,10 +65,11 @@ struct
          hypctx = ctx'}
       val goal =
         (newMeta "",
-         H' >> (P, sigma))
+         H' >> TRUE (P, sigma))
       val psi = T.snoc T.empty goal
     in
       (psi, fn rho =>
         mapAbs (subst (makeAx, z)) (T.lookup rho (#1 goal)))
     end
+    | Elim _ _ _ = raise Match
 end

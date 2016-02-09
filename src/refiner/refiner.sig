@@ -16,6 +16,8 @@ sig
 
   type ntactic = name_store -> Tacticals.Lcf.tactic
 
+  val stateToString : Tacticals.Lcf.judgment Tacticals.Lcf.state -> string
+
   val Elim
     : symbol      (* target *)
     -> ntactic
@@ -58,6 +60,10 @@ sig
 
   val Witness
     : abt
+    -> ntactic
+
+  val AutoStep
+    : AbtSignature.sign
     -> ntactic
 
 end

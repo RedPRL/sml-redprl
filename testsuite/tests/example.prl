@@ -72,21 +72,14 @@ Def speciesExample : exp = [
   { x : Base{exp} | ~{exp}(x; Base{triv}) }
 ].
 
-Thm speciesTest(i : lvl) : [member{triv}(Ax; {x : Base{triv} | ~{triv}(x; Ax) })] : triv by [
-  eval-goal;
-  x:triv <- eq;
-  // note how a universe level did not need to be supplied to the
-  // [eq] tactic; instead, a subgoal for a universe level is generated,
-  // and it is propagated to the following type-functionality subgoal using
-  // Dependent LCF.
-  [ eq
-  , intro
-  , witness{lvl} i; eval-goal; eq
-  , eval-goal; eq;
-    #0 {
-      y:triv <- elim[x:triv];
-      hyp[y:triv]
-    }
-  ];
-  crefl
+Tac try(t : tac) = [
+  {t} || {id}
+].
+
+Thm speciesTest : [member{triv}(Ax; {x : Base{triv} | ~{triv}(x; Ax) })] : triv by [
+  repeat(auto)
+].
+
+Thm demo : [{x : Base{triv} | ~{triv}(x; Ax)}] : triv by [
+  repeat(auto)
 ].

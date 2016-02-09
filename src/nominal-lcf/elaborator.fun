@@ -57,7 +57,7 @@ struct
       val x = Abt.Metavariable.named "?"
       val psi = Tele.snoc Tele.empty (x, jdg)
     in
-      print (DebugShowAbt.toString m ^ "\n");
+      print (ShowAbt.toString m ^ "\n");
       (psi, fn rho => Tele.lookup rho x)
     end
 
@@ -105,6 +105,10 @@ struct
              R.EvalGoal sign
          | LCF (WITNESS tau) $ [_ \ m] =>
              R.Witness m
+         | LCF AUTO $ [] =>
+             R.AutoStep sign
+         | LCF REC $ [(_, [x]) \ t] =>
+             Rec (fn T => elaborate sign (VarCtx.insert rho x T) t)
          | `x => VarCtx.lookup rho x
          | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t ^ " which evaluated to " ^ DebugShowAbt.toString t')
     end

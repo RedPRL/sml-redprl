@@ -1,7 +1,7 @@
 structure LevelOperatorData =
 struct
   datatype 'i level_operator =
-      LBASE of 'i
+      LBASE
     | LSUCC
 end
 
@@ -13,20 +13,20 @@ struct
 
   type 'i t = 'i level_operator
 
-  fun arity (LBASE i) = ([], LVL)
+  fun arity LBASE = ([], LVL)
     | arity LSUCC = ([(([], []), LVL)], LVL)
 
-  fun support (LBASE i) = [(i, LVL)]
+  fun support LBASE = []
     | support LSUCC = []
 
-  fun map f (LBASE i) = LBASE (f i)
+  fun map f LBASE = LBASE
     | map f LSUCC = LSUCC
 
-  fun eq f (LBASE i, LBASE j) = f (i, j)
+  fun eq f (LBASE, LBASE) = true
     | eq f (LSUCC, LSUCC) = true
     | eq _ _ = false
 
-  fun toString f (LBASE i) = "lbase[" ^ f i ^ "]"
+  fun toString f LBASE = "lbase"
     | toString f LSUCC = "lsucc"
 
 end
