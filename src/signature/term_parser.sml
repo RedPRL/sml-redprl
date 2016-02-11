@@ -239,7 +239,7 @@ struct
 
            val parseWitness =
              symbol "witness"
-               >> (braces (parseSort sign))
+               >> (braces (parseSort sign) || succeed SortData.EXP)
                -- (fn tau =>
                  f tau wth (fn m =>
                    LCF (WITNESS tau) $ [([],[]) \ m]))

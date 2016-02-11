@@ -81,5 +81,5 @@ Thm speciesTest : [member(Ax; {x : Base | ~(x; Ax) })] : exp by [
 ].
 
 Thm demo : [{x : Base | ~(x; Ax)}] : exp by [
-  auto; #0 { witness{exp} Ax }; repeat(auto)
+  auto; #0 { witness Ax }; repeat(auto)
 ].
