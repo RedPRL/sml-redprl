@@ -105,10 +105,10 @@ struct
          EXP)
 
     fun makeEqSequent H args =
-      H >> TRUE (makeEq (#metactx H) args, TRIV)
+      H >> TRUE (makeEq (#metactx H) args, EXP)
 
     fun makeMemberSequent H args =
-      H >> TRUE (makeMember (#metactx H) args, TRIV)
+      H >> TRUE (makeMember (#metactx H) args, EXP)
 
     fun makeLevelSequent (H : Sequent.context) =
       let
@@ -120,7 +120,7 @@ struct
         H' >> TRUE (check' (CTT (BASE LVL) $ [], EXP), LVL)
       end
 
-    val makeAx = check' (CTT AX $ [], TRIV)
+    val makeAx = check' (CTT AX $ [], EXP)
   end
 
   fun @> (t,g) = T.snoc t g

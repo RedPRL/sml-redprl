@@ -24,14 +24,14 @@ Def id(M : exp) : exp = [
 // furthermore, the arguments of operators may bind both symbols (in braces) and
 // variables (in brackets). Arguments of an operator are treated as metavariables
 // of the appropriate valence in the body of the definiens.
-Def welp[a:exp](E : {exp}[triv].exp) : exp = [
+Def welp[a:exp](E : {exp}[exp].exp) : exp = [
   E{a}[Ax]
 ].
 
 
 // Theorems may be both parametric and general. Let's prove an easy theorem by exploiting the
 // computation rule for [welp].
-Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : triv by [
+Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : exp by [
   csym;
   ceval
 ].
@@ -41,17 +41,17 @@ Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : triv by [
 // definitional extension of the ambient signature, and is elaborated so as to include
 // its extract. There is a non-canonical operator that can be used to pull out the
 // extract of a theorem. We can prove that the extract of the [example] theorem is
-// the trivial term [Ax]:
-Thm extractTest[z:exp] : [~{triv}(extract{triv}(example[z]); Ax)] : triv by [
+// the expial term [Ax]:
+Thm extractTest[z:exp] : [~{exp}(extract{exp}(example[z]); Ax)] : exp by [
   ceval
 ].
 
-Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] : triv by [
+Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] : exp by [
   eq
 ].
 
 
-Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] : triv by [
+Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] : exp by [
   eq
 ].
 
@@ -59,7 +59,7 @@ Tac crefl = [
   cstep{0}
 ].
 
-Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
+Thm baseMemberEq : [={exp}(Ax; Ax; Base{exp})] : exp by [
   eq; crefl
 ].
 
@@ -69,17 +69,17 @@ Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
 // what syntactic sort is being refined by the type being restricted. In this example,
 // we are restricting the [exp] sort, which contains type expressions.
 Def speciesExample : exp = [
-  { x : Base{exp} | ~{exp}(x; Base{triv}) }
+  { x : Base{exp} | ~{exp}(x; Base{exp}) }
 ].
 
 Tac try(t : tac) = [
   {t} || {id}
 ].
 
-Thm speciesTest : [member{triv}(Ax; {x : Base{triv} | ~{triv}(x; Ax) })] : triv by [
+Thm speciesTest : [member{exp}(Ax; {x : Base{exp} | ~{exp}(x; Ax) })] : exp by [
   repeat(auto)
 ].
 
-Thm demo : [{x : Base{triv} | ~{triv}(x; Ax)}] : triv by [
+Thm demo : [{x : Base{exp} | ~{exp}(x; Ax)}] : exp by [
   repeat(auto)
 ].

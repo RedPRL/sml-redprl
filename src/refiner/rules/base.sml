@@ -18,7 +18,7 @@ struct
       val i = destUniv a
     in
       (T.empty, fn rho =>
-        abtToAbs (check' (CTT AX $ [], TRIV)))
+        abtToAbs makeAx)
     end
     | TypeEq _ _ = raise Match
 
@@ -58,7 +58,7 @@ struct
       val ctx' =
         Ctx.interposeAfter
           (#hypctx H)
-          (h, Ctx.snoc Ctx.empty (z, (makeCEquiv (#metactx H) (htm, htm), TRIV)))
+          (h, Ctx.snoc Ctx.empty (z, (makeCEquiv (#metactx H) (htm, htm), EXP)))
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
