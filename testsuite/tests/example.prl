@@ -42,7 +42,7 @@ Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : exp by [
 // its extract. There is a non-canonical operator that can be used to pull out the
 // extract of a theorem. We can prove that the extract of the [example] theorem is
 // the expial term [Ax]:
-Thm extractTest[z:exp] : [~{exp}(extract{exp}(example[z]); Ax)] : exp by [
+Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] : exp by [
   ceval
 ].
 
@@ -59,7 +59,7 @@ Tac crefl = [
   cstep{0}
 ].
 
-Thm baseMemberEq : [={exp}(Ax; Ax; Base{exp})] : exp by [
+Thm baseMemberEq : [=(Ax; Ax; Base)] : exp by [
   eq; crefl
 ].
 
@@ -69,17 +69,17 @@ Thm baseMemberEq : [={exp}(Ax; Ax; Base{exp})] : exp by [
 // what syntactic sort is being refined by the type being restricted. In this example,
 // we are restricting the [exp] sort, which contains type expressions.
 Def speciesExample : exp = [
-  { x : Base{exp} | ~{exp}(x; Base{exp}) }
+  { x : Base | ~(x; Base) }
 ].
 
 Tac try(t : tac) = [
   {t} || {id}
 ].
 
-Thm speciesTest : [member{exp}(Ax; {x : Base{exp} | ~{exp}(x; Ax) })] : exp by [
+Thm speciesTest : [member(Ax; {x : Base | ~(x; Ax) })] : exp by [
   repeat(auto)
 ].
 
-Thm demo : [{x : Base{exp} | ~{exp}(x; Ax)}] : exp by [
-  repeat(auto)
+Thm demo : [{x : Base | ~(x; Ax)}] : exp by [
+  auto; #0 { witness{exp} Ax }; repeat(auto)
 ].
