@@ -149,13 +149,6 @@ struct
              (TypeRules.Intro alpha, 0, Witness (inferTypeLevel H P) alpha)
              jdg
        | _ => raise Match
-
-    fun TrivIntro alpha =
-      fn jdg as H >> TRUE (P, _) =>
-           (case out P of
-                CTT (BASE SortData.TRIV) $ _ => Witness makeAx alpha jdg
-              | _ => raise Match)
-       | _ => raise Match
   end
 
   local
@@ -168,7 +161,6 @@ struct
             ORELSE Intro NONE alpha
             ORELSE Eq NONE alpha
             ORELSE CStep sign 0 alpha
-            ORELSE TrivIntro alpha
             ORELSE EvalGoal sign alpha
   end
 end

@@ -34,7 +34,6 @@ struct
     fun parseSort _ =
       ParserCombinators.fix (fn p =>
         symbol "exp" return EXP
-        || symbol "triv" return TRIV
         || symbol "lvl" return LVL
         || symbol "tac" return TAC
         || symbol "mtac" return MTAC
@@ -76,9 +75,9 @@ struct
     val rec inferRefinedSort =
       fn CTT (BASE tau) $ _ => tau
        | CTT (UNIV _) $ _ => EXP
-       | CTT (CEQUIV _) $ _ => TRIV
-       | CTT (CAPPROX _) $ _ => TRIV
-       | CTT (EQ _) $ _ => TRIV
+       | CTT (CEQUIV _) $ _ => EXP
+       | CTT (CAPPROX _) $ _ => EXP
+       | CTT (EQ _) $ _ => EXP
        | _ => raise Fail "Could not infer refined sort"
 
     fun inferRefinedSort' m =
@@ -105,11 +104,12 @@ struct
            try parseSucc
              || parseBase
          end
-       | TRIV =>
-           symbol "Ax"
-             return (CTT AX $ [])
        | EXP =>
          let
+           val parseAx =
+             symbol "Ax"
+               return (CTT AX $ [])
+
            val parseUniv =
              symbol "Univ"
                >> (braces (parseSort sign) || succeed EXP)
@@ -175,6 +175,7 @@ struct
          in
            parseCApprox
              || parseCEquiv
+             || parseAx
              || parseUniv
              || parseEq
              || parseMember
@@ -238,7 +239,7 @@ struct
 
            val parseWitness =
              symbol "witness"
-               >> (braces (parseSort sign))
+               >> (braces (parseSort sign) || succeed SortData.EXP)
                -- (fn tau =>
                  f tau wth (fn m =>
                    LCF (WITNESS tau) $ [([],[]) \ m]))

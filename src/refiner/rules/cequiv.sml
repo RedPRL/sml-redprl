@@ -12,10 +12,10 @@ struct
       val () = if tau1 = tau2 then () else raise Fail "CEquiv.TypeEq: sort mismatch"
       val goal1 =
         (newMeta "",
-         H >> TRUE (makeCEquiv (#metactx H) (m1, m2), TRIV))
+         H >> TRUE (makeCEquiv (#metactx H) (m1, m2), EXP))
       val goal2 =
         (newMeta "",
-         H >> TRUE (makeCEquiv (#metactx H) (n1, n2), TRIV))
+         H >> TRUE (makeCEquiv (#metactx H) (n1, n2), EXP))
       val psi = T.snoc (T.snoc T.empty goal1) goal2
     in
       (psi, fn rho =>
@@ -28,7 +28,7 @@ struct
       val (tau, m, n) = destCEquiv P
       val x = newMeta ""
       val subgoal = makeCEquiv (#metactx H) (n,m)
-      val psi = T.snoc T.empty (x, H >> TRUE (subgoal, TRIV))
+      val psi = T.snoc T.empty (x, H >> TRUE (subgoal, EXP))
     in
       (psi, fn rho =>
         abtToAbs makeAx)
@@ -47,7 +47,7 @@ struct
          let
            val x = newMeta ""
            val subgoal = makeCEquiv (#metactx H) (m', n)
-           val psi = T.snoc T.empty (x, H >> TRUE (subgoal, TRIV))
+           val psi = T.snoc T.empty (x, H >> TRUE (subgoal, EXP))
          in
            (psi, fn rho =>
              abtToAbs makeAx)
@@ -67,7 +67,7 @@ struct
          let
            val x = newMeta ""
            val subgoal = makeCEquiv (#metactx H) (m', n)
-           val psi = T.snoc T.empty (x, H >> TRUE (subgoal, TRIV))
+           val psi = T.snoc T.empty (x, H >> TRUE (subgoal, EXP))
          in
            (psi, fn rho =>
              abtToAbs makeAx)

@@ -55,7 +55,7 @@ struct
       val bm = subst (m1, x) b
       val squashGoal =
         (newMeta "",
-         H >> TRUE (makeSquash (#metactx H) tau2 bm, TRIV))
+         H >> TRUE (makeSquash (#metactx H) tau2 bm, EXP))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
@@ -93,7 +93,7 @@ struct
       val pred = subst (mainHole, x) b
       val predGoal =
         (newMeta "",
-         H >> TRUE (makeSquash (#metactx H) tau2 pred, TRIV))
+         H >> TRUE (makeSquash (#metactx H) tau2 pred, EXP))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b

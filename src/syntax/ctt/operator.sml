@@ -52,7 +52,7 @@ struct
            [[] * [] <> LVL]
              ->> EXP
        | AX =>
-           [] ->> TRIV
+           [] ->> EXP
        | SQUASH tau =>
            [[] * [] <> EXP]
              ->> EXP

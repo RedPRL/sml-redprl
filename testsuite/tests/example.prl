@@ -24,14 +24,14 @@ Def id(M : exp) : exp = [
 // furthermore, the arguments of operators may bind both symbols (in braces) and
 // variables (in brackets). Arguments of an operator are treated as metavariables
 // of the appropriate valence in the body of the definiens.
-Def welp[a:exp](E : {exp}[triv].exp) : exp = [
+Def welp[a:exp](E : {exp}[exp].exp) : exp = [
   E{a}[Ax]
 ].
 
 
 // Theorems may be both parametric and general. Let's prove an easy theorem by exploiting the
 // computation rule for [welp].
-Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : triv by [
+Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] by [
   csym;
   ceval
 ].
@@ -42,16 +42,16 @@ Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : triv by [
 // its extract. There is a non-canonical operator that can be used to pull out the
 // extract of a theorem. We can prove that the extract of the [example] theorem is
 // the trivial term [Ax]:
-Thm extractTest[z:exp] : [~{triv}(extract{triv}(example[z]); Ax)] : triv by [
+Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] by [
   ceval
 ].
 
-Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] : triv by [
+Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] by [
   eq
 ].
 
 
-Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] : triv by [
+Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] by [
   eq
 ].
 
@@ -59,7 +59,7 @@ Tac crefl = [
   cstep{0}
 ].
 
-Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
+Thm baseMemberEq : [=(Ax; Ax; Base)] by [
   eq; crefl
 ].
 
@@ -69,17 +69,17 @@ Thm baseMemberEq : [={triv}(Ax; Ax; Base{triv})] : triv by [
 // what syntactic sort is being refined by the type being restricted. In this example,
 // we are restricting the [exp] sort, which contains type expressions.
 Def speciesExample : exp = [
-  { x : Base{exp} | ~{exp}(x; Base{triv}) }
+  { x : Base | ~(x; Base) }
 ].
 
 Tac try(t : tac) = [
   {t} || {id}
 ].
 
-Thm speciesTest : [member{triv}(Ax; {x : Base{triv} | ~{triv}(x; Ax) })] : triv by [
+Thm speciesTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
   repeat(auto)
 ].
 
-Thm demo : [{x : Base{triv} | ~{triv}(x; Ax)}] : triv by [
-  repeat(auto)
+Thm demo : [{x : Base | ~(x; Ax)}] by [
+  auto; #0 { witness Ax }; repeat(auto)
 ].
