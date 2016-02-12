@@ -31,7 +31,7 @@ Def welp[a:exp](E : {exp}[exp].exp) : exp = [
 
 // Theorems may be both parametric and general. Let's prove an easy theorem by exploiting the
 // computation rule for [welp].
-Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : exp by [
+Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] by [
   csym;
   ceval
 ].
@@ -41,17 +41,17 @@ Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] : exp by [
 // definitional extension of the ambient signature, and is elaborated so as to include
 // its extract. There is a non-canonical operator that can be used to pull out the
 // extract of a theorem. We can prove that the extract of the [example] theorem is
-// the expial term [Ax]:
-Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] : exp by [
+// the trivial term [Ax]:
+Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] by [
   ceval
 ].
 
-Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] : exp by [
+Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] by [
   eq
 ].
 
 
-Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] : exp by [
+Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] by [
   eq
 ].
 
@@ -59,7 +59,7 @@ Tac crefl = [
   cstep{0}
 ].
 
-Thm baseMemberEq : [=(Ax; Ax; Base)] : exp by [
+Thm baseMemberEq : [=(Ax; Ax; Base)] by [
   eq; crefl
 ].
 
@@ -76,10 +76,10 @@ Tac try(t : tac) = [
   {t} || {id}
 ].
 
-Thm speciesTest : [member(Ax; {x : Base | ~(x; Ax) })] : exp by [
+Thm speciesTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
   repeat(auto)
 ].
 
-Thm demo : [{x : Base | ~(x; Ax)}] : exp by [
+Thm demo : [{x : Base | ~(x; Ax)}] by [
   auto; #0 { witness Ax }; repeat(auto)
 ].
