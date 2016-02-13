@@ -6,8 +6,12 @@
   "Keymap for `red-jonprl-mode'.")
 
 (defvar red-jonprl-syntax-table
-  (let ((st (make-syntax-table)))
-    st)
+  (let ((table (make-syntax-table)))
+    ; C++-style comment start
+    (modify-syntax-entry ?\/ ". 12b" table)
+    ; end comment on line-break
+    (modify-syntax-entry ?\n "> b" table)
+    table)
   "Syntax table for `red-jonprl-mode'.")
 
 (defvar red-jonprl-vernacular-keywords-regexp
@@ -32,7 +36,6 @@
 
 (defun red-jonprl-font-lock-defaults ()
   `((,red-jonprl-vernacular-keywords-regexp . font-lock-keyword-face)
-    ("^\\s-*\\(//.*\\)$" . font-lock-comment-face)
     (,red-jonprl-builtin-constants-regexp . font-lock-constant-face)
     (,red-jonprl-sorts-regexp . font-lock-type-face)
     (,red-jonprl-tactic-name-regexp . font-lock-function-name-face)))
