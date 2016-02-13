@@ -14,8 +14,8 @@
   '(("\\<Def\\>\\|\\<Thm\\>\\|\\<Tac\\>" . font-lock-keyword-face)
     ("^\\s-*\\(//.*\\)$" . font-lock-comment-face)
     ("\\<exp\\>\\|\\<lvl\\>\\|\\<tac\\>" . font-lock-type-face)
-    ("\\<Base\\>\\|\\<lbase\\>\\|\\<lsuc\\>\\|\\<Ax\\>\\|\\<Univ\\>\\|\\<member\\>\\|\\<Squash\\>\\|\\<Species\\>" . font-lock-constant-face)
-    ("\\<auto\\>\\|\\<eval-goal\\>\\|\\<ceval\\>\\|\\<cstep\\>\\|\\<witness\\>" . font-lock-function-name-face)
+    ("\\<Base\\>\\|\\<lbase\\>\\|\\<lsuc\\>\\|\\<Ax\\>\\|\\<Univ\\>\\|\\<member\\>\\|\\<Squash\\>\\|\\<Species\\>\\|\\<extract\\>" . font-lock-constant-face)
+    ("\\<auto\\>\\|\\<eval-goal\\>\\|\\<ceval\\>\\|\\<csym\\>\\|\\<cstep\\>\\|\\<witness\\>\\|\\<trace\\>" . font-lock-function-name-face)
     )
   "Highlighting specification for `red-jonprl-mode'.")
 
