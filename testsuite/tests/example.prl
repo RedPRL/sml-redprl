@@ -37,7 +37,7 @@ Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] by [
 ].
 
 // Every proof is related to the evidence semantics of Computational Type Theory by
-// an "extract"; a theorem in JonPRL, like every other declaration form, is a
+// an 'extract'; a theorem in JonPRL, like every other declaration form, is a
 // definitional extension of the ambient signature, and is elaborated so as to include
 // its extract. There is a non-canonical operator that can be used to pull out the
 // extract of a theorem. We can prove that the extract of the [example] theorem is
@@ -62,7 +62,6 @@ Tac crefl = [
 Thm baseMemberEq : [=(Ax; Ax; Base)] by [
   eq; crefl
 ].
-
 
 // Species, or set comprehensions, are types that restrict the inhabitants of
 // a type by a predicate. Because this is a multi-sorted type theory, we must specify
