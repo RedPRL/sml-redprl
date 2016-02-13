@@ -13,6 +13,9 @@ of JonPRL:
 - Darin Morrison
 - James Wilcox
 
+Special thanks to David Christiansen for answering all my obnoxious questions
+about Emacs.
+
 Finally, we thank the following people for their guidance and encouragement:
 
 - Bob Harper
