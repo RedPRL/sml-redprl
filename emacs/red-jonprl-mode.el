@@ -1,4 +1,4 @@
- ;;; red-jonprl-mode.el --- Red-Jonprl-Mode major mode
+ ;;; red-jonprl-mode.el --- Red-Jonprl major mode
 
 (defvar red-jonprl-map
   (let ((map (make-sparse-keymap)))
@@ -37,6 +37,12 @@
     (,red-jonprl-sorts-regexp . font-lock-type-face)
     (,red-jonprl-tactic-name-regexp . font-lock-function-name-face)))
 
+(defun red-jonprl-imenu-generic-expression ()
+  "To generate a table of contents for a Red JonPRL signature"
+  '(("Definitions" "^Def\\s-+\\(\\w+\\)" 1)
+    ("Theorems" "^Thm\\s-+\\(\\w+\\)" 1)
+    ("Tactics" "^Tac\\s-+\\(\\w+\\)" 1)))
+
 (define-derived-mode red-jonprl-mode fundamental-mode "red-jonprl"
   :syntax-table red-jonprl-syntax-table
   (setq-local comment-start "// ")
@@ -44,13 +50,9 @@
   (setq-local indent-tabs-mode nil)
   (setq-local tab-width 2)
   (setq-local font-lock-defaults '((red-jonprl-font-lock-defaults)))
-  (setq-local imenu-generic-expression
-              '(("Theorems" "^Thm\\s-+\\(\\w+\\)" 1)
-                ("Definitions" "^Def\\s-+\\(\\w+\\)" 1)
-                ("Tactics" "^Tac\\s-+\\(\\w+\\)" 1)))
-  )
+  (setq-local imenu-generic-expression (red-jonprl-imenu-generic-expression)))
 
+(push '("\\.prl\\'" . red-jonprl-mode) auto-mode-alist)
 
 (provide 'red-jonprl-mode)
-(push '("\\.prl\\'" . red-jonprl-mode) auto-mode-alist)
  ;;; red-jonprl-mode.el ends here
