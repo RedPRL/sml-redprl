@@ -131,6 +131,7 @@ struct
          | CTT (ENSEMBLE _) $ _ => FINAL
          | CTT (BASE _) $ _ => FINAL
          | ATM (ATOM _) $ _ => FINAL
+         | ATM (TOKEN _) $ _ => FINAL
          | _ => ?hole
     end
 
