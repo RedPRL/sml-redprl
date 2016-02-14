@@ -101,7 +101,7 @@ struct
   end
 
   local
-    open OperatorData CttOperatorData SortData
+    open OperatorData CttOperatorData AtomsOperatorData SortData
   in
 
     fun RewriteGoal Q _ (H >> TRUE (P, sigma)) =
@@ -140,6 +140,7 @@ struct
           | CTT (CAPPROX _) $ _ => lbase
           | CTT (EQ _) $ _ => lbase
           | CTT (SQUASH _) $ [_ \ a] => inferTypeLevel H a (* we may be able to make this just [lbase] *)
+          | ATM (ATOM _) $ _ => lbase
           | `x =>
               let
                 val (univ, _) = Ctx.lookup (#hypctx H) x
