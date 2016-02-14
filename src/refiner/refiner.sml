@@ -57,6 +57,7 @@ struct
                ORELSE EnsembleRules.MemberEq alpha
                ORELSE AtomRules.TypeEq alpha
                ORELSE AtomRules.MemberEq alpha
+               ORELSE AtomRules.TestEq alpha
                ORELSE PiRules.TypeEq alpha
                ORELSE PiRules.MemberEq alpha
                ORELSE PiRules.ElimEq alpha
