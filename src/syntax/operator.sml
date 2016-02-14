@@ -8,6 +8,7 @@ struct
     | EXTRACT of Sort.t
     | LVL_OP of 'i LevelOperator.t
     | CTT of 'i CttOperator.t
+    | ATM of 'i AtomsOperator.t
     | VEC_LIT of Sort.t * int
     | STR_LIT of string
     | OP_SOME of Sort.t
@@ -36,6 +37,8 @@ struct
              NominalLcfOperator.arity theta
          | CTT theta =>
              CttOperator.arity theta
+         | ATM theta =>
+             AtomsOperator.arity theta
          | REFINE tau =>
              [[] * [] <> SortData.EXP,
               [] * [] <> SortData.TAC,
@@ -64,6 +67,7 @@ struct
     case theta of
          LCF theta => NominalLcfOperator.support theta
        | CTT theta => CttOperator.support theta
+       | ATM theta => AtomsOperator.support theta
        | REFINE _ => []
        | EXTRACT _ => []
        | LVL_OP theta => LevelOperator.support theta
@@ -77,6 +81,7 @@ struct
     case theta of
          LCF theta => LCF (NominalLcfOperator.map f theta)
        | CTT theta => CTT (CttOperator.map f theta)
+       | ATM theta => ATM (AtomsOperator.map f theta)
        | REFINE tau => REFINE tau
        | EXTRACT tau => EXTRACT tau
        | LVL_OP theta => LVL_OP (LevelOperator.map f theta)
@@ -92,6 +97,8 @@ struct
            NominalLcfOperator.eq f (theta1, theta2)
        | (CTT theta1, CTT theta2) =>
            CttOperator.eq f (theta1, theta2)
+       | (ATM theta1, ATM theta2) =>
+           AtomsOperator.eq f (theta1, theta2)
        | (REFINE tau1, REFINE tau2) =>
            Sort.eq (tau1, tau2)
        | (EXTRACT tau1, EXTRACT tau2) =>
@@ -119,6 +126,8 @@ struct
            NominalLcfOperator.toString f theta
        | CTT theta =>
            CttOperator.toString f theta
+       | ATM theta =>
+           AtomsOperator.toString f theta
        | REFINE tau => "refine{" ^ Sort.toString tau ^ "}"
        | EXTRACT tau => "extract{" ^ Sort.toString tau ^ "}"
        | LVL_OP theta =>

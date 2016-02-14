@@ -21,6 +21,8 @@ local
   refiner/rules/squash.sml
   refiner/rules/ensemble.sig
   refiner/rules/ensemble.sml
+  refiner/rules/atom.sig
+  refiner/rules/atom.sml
   refiner/refiner.sig
   refiner/refiner.sml
 in
