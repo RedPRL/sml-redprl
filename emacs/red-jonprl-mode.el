@@ -16,7 +16,7 @@
 
 (defvar red-jonprl-vernacular-keywords-regexp
   (regexp-opt
-   '("Def" "Thm" "Tac")
+   '("Def" "Thm" "Sym" "Tac")
    'words))
 
 (defvar red-jonprl-builtin-constants-regexp
@@ -44,6 +44,7 @@
   "To generate a table of contents for a Red JonPRL signature"
   '(("Definitions" "^Def\\s-+\\(\\w+\\)" 1)
     ("Theorems" "^Thm\\s-+\\(\\w+\\)" 1)
+    ("Symbols" "^Sym\\s-+\\(\\w+\\)" 1)
     ("Tactics" "^Tac\\s-+\\(\\w+\\)" 1)))
 
 (define-derived-mode red-jonprl-mode fundamental-mode "red-jonprl"

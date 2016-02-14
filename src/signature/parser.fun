@@ -22,7 +22,7 @@ struct
     val identStart = identLetter
     val opStart = fail "no reserved ops" : scanner
     val opLetter = opStart
-    val reservedNames = ["Def", "Thm", "Tac", "by"]
+    val reservedNames = ["Def", "Thm", "Tac", "Sym", "by"]
     val reservedOpNames = []
     val caseSensitive = true
   end
@@ -148,10 +148,15 @@ struct
       (parseDefinition sign || parseTactic sign || parseTheorem sign) -- (fn (opid, d) =>
         succeed (opid, AstSignature.def d)
           handle e => fail (exnMessage e))
-      ?? "decl"
+      ?? "sigdecl"
+
+    fun parseSymDecl sign : (symbol * decl) charParser =
+      reserved "Sym" >> parseSymBind sign wth (fn (u, tau) =>
+          (u, AstSignature.symdcl tau))
+      ?? "symdecl"
 
     fun parseSigExp' sign =
-      opt (whiteSpace >> parseSigDecl sign << dot) -- (fn odecl =>
+      opt (whiteSpace >> (parseSigDecl sign || parseSymDecl sign) << dot) -- (fn odecl =>
         case odecl of
              NONE => succeed sign << whiteSpace << eos
            | SOME decl => parseSigExp' (AstSignature.Telescope.snoc sign decl))

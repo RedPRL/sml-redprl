@@ -13,7 +13,7 @@ struct
       (fn (m, vl) => Metavariable.toString m ^ " : " ^ Valence.toString vl)
       ";"
 
-  fun printDecl (lbl, {parameters, arguments, definiens, sort}) =
+  fun printDef (lbl, {parameters, arguments, definiens, sort}) =
     print
       ("Def "
          ^ Symbol.toString lbl
@@ -24,13 +24,24 @@ struct
          ^ ShowAbt.toString definiens
          ^ "].\n")
 
+  fun printSymDcl (lbl, tau) =
+    print
+      ("Sym "
+         ^ Symbol.toString lbl
+         ^ " : "
+         ^ Sort.toString tau
+         ^ ".\n")
+
   local
+    open AbtSignature
     open AbtSignature.Telescope
   in
     fun printSign sign =
       case ConsView.out sign of
-          ConsView.Cons (l, d, sign') =>
-            (printDecl (l, AbtSignature.undef d); printSign sign')
+          ConsView.Cons (l, dcl, sign') =>
+            ((case dcl of
+                 Decl.DEF d => printDef (l, d)
+               | Decl.SYMDCL tau => printSymDcl (l, tau)); printSign sign')
         | ConsView.Empty => ()
   end
 

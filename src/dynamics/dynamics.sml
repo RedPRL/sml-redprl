@@ -59,7 +59,10 @@ struct
     fun stepCust sign (opid, arity) (cl as m <: (mrho, srho, rho)) =
       let
         open Unify infix <*>
-        val def as {definiens, ...} = Signature.undef @@ T.lookup sign opid
+        val def as {definiens, ...} =
+          case T.lookup sign opid of
+               Signature.Decl.DEF d => d
+             | _ => raise Fail "Expected DEF"
         val pat = patternFromDef (opid, arity) def
         val (srho', mrho') = unify (pat <*> m)
         val srho'' = SymEnvUtil.union (srho, srho') handle _ => raise Stuck cl

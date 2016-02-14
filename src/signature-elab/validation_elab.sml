@@ -33,12 +33,12 @@ struct
    * that the data associated with a CUST operator is actually
    * what the definition says it is.
    *)
-  fun validate map (OperatorData.CUST (opid, params, arity)) =
+  fun validate (map : S2.def DefnMap.dict) (OperatorData.CUST (opid, params, arity)) =
     let
       val {parameters, arguments, sort, definiens} =
         case DefnMap.find map opid of
             NONE => raise InvalidCustomOper opid
-          | SOME x => S1.undef x
+          | SOME d => d
       val sorts = ListPair.zipEq (List.map #2 params, List.map #2 parameters)
       val () =
         if List.all Sort.eq sorts then () else raise InvalidCustomOper opid
@@ -50,11 +50,11 @@ struct
     end
     | validate _ _ = () (* This may seem redundant but helps type inference *)
 
-  (* This traverses a declaration and ensures that each operator
+  (* This traverses a definition and ensures that each operator
    * that occurs in the body is correct with respect to the signature
    * it appears in.
    *)
-  fun checkDecl map =
+  fun checkDef map : S2.def -> unit =
     let
       fun go e =
         case #1 (Abt.infer e) of
@@ -63,10 +63,10 @@ struct
           | _ $# (_, args) => List.app go args
       and goAbs (_ \ a) = go a
     in
-      go o #definiens o S1.undef
+      go o #definiens
     end
 
-  (* This is just the straightforward extension of checkDecl to full
+  (* This is just the straightforward extension of checkDef to full
    * telescopes of signatures. It also correctly updates and propogates
    * the map through each call.
    *)
@@ -75,8 +75,10 @@ struct
       fun go map sign =
         case Telescope.ConsView.out sign of
             Telescope.ConsView.Empty => ()
-          | Telescope.ConsView.Cons (l, a, s) =>
-            (checkDecl map a; go (DefnMap.insert map l a) s)
+          | Telescope.ConsView.Cons (l, S1.Decl.DEF d, s) =>
+            (checkDef map d; go (DefnMap.insert map l d) s)
+          | Telescope.ConsView.Cons (l, _, s) =>
+              go map s
     in
       (* Note that since we're just validating the signature
        * at the end we just return the input

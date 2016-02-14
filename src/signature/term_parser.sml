@@ -369,6 +369,7 @@ struct
           identifier -- (fn opid =>
             case Telescope.find sign opid of
                  NONE => fail "opid not in signature"
+               | SOME (SYMDCL _) => fail "opid not in signature"
                | SOME (DEF {parameters, arguments, sort, definiens}) =>
                    parseParameters (length parameters) wth (fn us =>
                      let

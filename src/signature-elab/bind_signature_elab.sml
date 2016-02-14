@@ -38,6 +38,8 @@ struct
          sort = sort,
          definiens = definiens'}
     end
+    | bindDecl opidTable sign (SYMDCL sort) =
+      S2.symdcl sign sort
 
   (* This extends bindDecl to work on signatures and maintains the
    * [opidTable] mapping string names their new symbol equivalents
