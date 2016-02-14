@@ -9,6 +9,7 @@ local
   syntax/nominal-lcf/operator.sml
   syntax/level/operator.sml
   syntax/ctt/operator.sml
+  syntax/atoms/operator.sml
   syntax/operator.sml
 
   syntax/abt.sml
@@ -39,6 +40,9 @@ in
 
   structure CttOperatorData
   structure CttOperator
+
+  structure AtomsOperatorData
+  structure AtomsOperator
 
   structure OperatorData
   structure Operator

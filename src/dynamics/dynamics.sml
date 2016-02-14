@@ -103,7 +103,7 @@ struct
   (* built-in computation rules *)
   and stepOp sign theta args (cl as m <: env) =
     let
-      open OperatorData CttOperatorData LevelOperatorData SortData
+      open OperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData
     in
       case theta $ args of
            CUST (opid, params, arity) $ args =>
@@ -130,6 +130,7 @@ struct
          | CTT (SQUASH _) $ _ => FINAL
          | CTT (ENSEMBLE _) $ _ => FINAL
          | CTT (BASE _) $ _ => FINAL
+         | ATM (ATOM _) $ _ => FINAL
          | _ => ?hole
     end
 

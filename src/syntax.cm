@@ -13,6 +13,9 @@ Library
   structure CttOperatorData
   structure CttOperator
 
+  structure AtomsOperatorData
+  structure AtomsOperator
+
   structure OperatorData
   structure Operator
 
@@ -42,6 +45,7 @@ is
 
   syntax/level/operator.sml
   syntax/ctt/operator.sml
+  syntax/atoms/operator.sml
 
   syntax/operator.sml
 
