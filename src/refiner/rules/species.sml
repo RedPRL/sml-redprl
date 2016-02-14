@@ -113,4 +113,40 @@ struct
         T.lookup rho (#1 mainGoal))
     end
     | Intro _ _ = raise Match
+
+  fun Elim i alpha (H >> TRUE (P, tau)) =
+    let
+      val (sp, _) = Ctx.lookup (#hypctx H) i
+      val (tau1, tau2, a, x, bx) = destSpecies sp
+      val (z1, z2) = (alpha 0, alpha 1)
+      val z1tm = check' (`z1, tau1)
+      val bz1 = makeSquash (#metactx H) tau2 (subst (z1tm, x) bx)
+      val hyps =
+        Ctx.interposeAfter
+          (#hypctx H)
+          (i, Ctx.snoc (Ctx.snoc Ctx.empty (z1, (a, tau1))) (z2, (bz1, tau2)))
+      val hyps' =
+        Ctx.mapAfter
+          hyps
+          (i, fn (p,tau) => (subst (z1tm, i) p, tau))
+
+      val H' =
+        {metactx = #metactx H,
+         symctx = #symctx H,
+         hypctx = hyps'}
+
+      val P' = subst (z1tm, i) P
+
+      val goal =
+        (newMeta "",
+         H' >> TRUE (P', tau))
+
+      val psi = T.empty @> goal
+    in
+      (psi, fn rho =>
+        mapAbs
+          (subst (check' (`i, tau1), z1))
+          (T.lookup rho (#1 goal)))
+    end
+    | Elim _ _ _ = raise Match
 end

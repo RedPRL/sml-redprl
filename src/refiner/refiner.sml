@@ -29,14 +29,15 @@ struct
       "WITNESS:\n============================================\n\n" ^ preamble ^ "\n\n" ^ subgoals
     end
 
-  fun Elim i alpha =
-    BaseRules.Elim i alpha
-
 
   local
     open OperatorData CttOperatorData Tacticals
     infix ORELSE
   in
+    fun Elim i alpha =
+      BaseRules.Elim i alpha
+        ORELSE SpeciesRules.Elim i alpha
+
     fun Intro r alpha =
       SquashRules.Intro alpha
         ORELSE SpeciesRules.Intro alpha
