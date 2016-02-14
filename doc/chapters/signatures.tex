@@ -17,10 +17,13 @@ formatted $\Optional{s}$ in the rules.
        \SortSigExpr & ::=
          & \ProdEmptySig & \text{empty signature}\\
          && \ProdExtendSig{\SortSigExpr}{\SortSigDecl} & \text{signature extension}\\
+         && \ProdExtendSig{\SortSigExpr}{\SortSymDecl} & \\
        \SortSigDecl & ::=
          & \ProdDefDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortSortId}{\SortTerm} & \text{operator definition}\\
          && \ProdTacDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm} & \text{tactic definition}\\
          && \ProdThmDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm}{\SortTerm} & \text{theorem declaration}\\
+       \SortSymDecl & ::=
+         & \ProdSymDecl{\SortSymBind} & \text{symbol declaration}\\
        \SortParams & ::=
          & \ProdEmptyCtx & \text{empty parameter list}\\
          && \ProdExtendCtx{\SortParams}{\SortSymBind} & \text{parameter list extension}\\
@@ -61,6 +64,7 @@ formatted $\Optional{s}$ in the rules.
 \newcommand\SemProdValence{\mathrm{ProdValence}}
 \newcommand\SemDecl{\mathrm{Decl}}
 \newcommand\Partial[2]{#1\rightharpoonup #2}
+\newcommand\FinArr[2]{#1\xrightarrow{\mathrm{fin}} #2}
 
 \newcommand\SemExprs{\mathbf{E}}
 \newcommand\AbtSortTac{\mathtt{tac}}
@@ -120,11 +124,11 @@ Then, our semantic objects are defined as in Figure~\ref{fig:sig-semantic-object
       \sigma,\tau &\in &\SemSort &\triangleq & \MkSet{\tau\mid\IsSort{\tau}}\\
       v &\in &\SemProdValence &\triangleq & \MkSet{v\mid\IsValence{v}}\\
       \vartheta &\in &\SemOpid  &\triangleq &\SemSym\\
-      \Upsilon &\in &\SemParams &\triangleq & \Partial{\SemSym}{\SemSort}\\
-      \Theta &\in &\SemArgs &\triangleq & \Partial{\SemMetavar}{\SemProdValence}\\
+      \Upsilon &\in &\SemParams &\triangleq & \FinArr{\SemSym}{\SemSort}\\
+      \Theta &\in &\SemArgs &\triangleq & \FinArr{\SemMetavar}{\SemProdValence}\\
       M,N &\in &\SemTerm{\Theta}{\Upsilon}{\tau} &\triangleq & \MkSet{M\mid\IsAbt{\Theta}{\Upsilon}{\cdot}{M}{\tau}}\\
       D &\in &\SemDecl &\triangleq & \coprod_{\Upsilon,\Theta,\tau} \SemTerm{\Theta}{\Upsilon}{\tau}\\
-      \Sigma &\in &\SemSig &\triangleq & \Partial{\SemOpid}{\SemDecl}
+      \Sigma &\in &\SemSig &\triangleq & \left(\FinArr{\SemOpid}{\SemDecl}\right) \cap \left(\FinArr{\SemSym}{\SemSort}\right)
     \end{array}
   \end{displaymath}
   \caption{Specification of the semantic objects.}
@@ -142,10 +146,11 @@ $\Elab{E}{A}{A'}$, which means that the syntactic object $A$ elaborates to the
 semantic object $A'$ in the environment $E$. Let the
 $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
 \[
-  \Define{\Upsilon_\Sigma(\vartheta)}{
+  \Define{\Upsilon_\Sigma(u)}{
     \left\{
       \begin{array}{ll}
-        \AbtSortOpid & \textit{if}\quad \vartheta\in\mathbf{dom}(\Sigma)\\
+        \AbtSortOpid & \textit{if}\quad u\equiv \vartheta \in\mathbf{dom}(\Sigma)\\
+        \tau & \textit{if}\quad \Sigma(u)\equiv \tau\\
         \bot & \textit{otherwise}
       \end{array}
     \right.
@@ -208,17 +213,17 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
   }
 \end{gather}
 
-\subsection*{Operator Identifiers\hfill \framebox{$\Elab{\Sigma}{\SortOpId}{\vartheta}$}}
+\subsection*{Symbols \hfill \framebox{$\Elab{\Sigma}{\SortSymId}{u}$}}
 
 \begin{gather}
   \infer{
-    \Elab{\Sigma}{\SortOpId}{\vartheta}
+    \Elab{\Sigma}{\SortSymId}{u}
   }{
-    \IMode{\vartheta}\not\in\IMode{\mathbf{dom}(\Sigma)}
+    \IMode{u}\not\in\IMode{\mathbf{dom}(\Sigma)}
   }
 \end{gather}
 
-\subsection*{Declarations\hfill \framebox{$\Elab{\Sigma}{\SortSigDecl}{(\vartheta,D)}$}}
+\subsection*{Operator Declarations\hfill \framebox{$\Elab{\Sigma}{\SortSigDecl}{(\vartheta,D)}$}}
 
 \begin{gather}
   \infer{
@@ -275,6 +280,17 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
   }
 \end{gather}
 
+\subsection*{Symbol Declarations\hfill \framebox{$\Elab{\Sigma}{\SortSymDecl}{(u,\sigma)}$}}
+\begin{gather}
+  \infer{
+    \Elab{\Sigma}{
+      \ProdSymDecl{\SortSymBind}
+    }{(u,\sigma)}
+  }{
+    \Elab{\Sigma}{\SortSymBind}{(u,\sigma)}
+  }
+\end{gather}
+
 \subsection*{Signatures\hfill \framebox{$\Elab{}{\SortSigExpr}{\Sigma}$}}
 
 \begin{gather}
@@ -287,6 +303,12 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
   }{
     \Elab{}{\SortSigExpr}{\Sigma} &
     \Elab{\Sigma}{\SortSigDecl}{(\vartheta, D)}
+  }\qquad
+  \infer{
+    \Elab{}{\ProdExtendSig{\SortSigExpr}{\SortSymDecl}}{\Sigma\cup u\mapsto \sigma}
+  }{
+    \Elab{}{\SortSigExpr}{\Sigma} &
+    \Elab{\Sigma}{\SortSymDecl}{(u, \sigma)}
   }
 \end{gather}
 

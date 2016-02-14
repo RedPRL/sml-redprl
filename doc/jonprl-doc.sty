@@ -1,6 +1,7 @@
 \ProvidesPackage{jonprl-doc}
 
 \RequirePackage{graphicx}
+\RequirePackage{mathtools}
 \RequirePackage[usenames,dvipsnames,svgnames,table]{xcolor}
 
 \RequirePackage[h]{esvect}
@@ -38,6 +39,7 @@
 
 \newcommand\SortSigExpr{\mathit{sigexp}}
 \newcommand\SortSigDecl{\mathit{sigdec}}
+\newcommand\SortSymDecl{\mathit{symdec}}
 \newcommand\SortParams{\mathit{params}}
 \newcommand\SortArgs{\mathit{args}}
 \newcommand\SortTerm{\mathit{term}}
@@ -91,6 +93,10 @@
   : [#4] ~\mathtt{by}~ [#5]
 }
 
+
+\newcommand\ProdSymDecl[1]{%
+  \mathtt{Sym}\ #1%
+}
 
 \renewcommand\MkAbs[3]{%
   \ifthenelse{\equal{#1}{}}{}{%
