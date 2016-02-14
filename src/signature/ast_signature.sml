@@ -20,6 +20,7 @@ struct
 
   type decl = def AstSignatureDecl.decl
   val def = AstSignatureDecl.DEF
+  val symdcl = AstSignatureDecl.SYMDCL
 
   type sign = decl StringTelescope.telescope
 end

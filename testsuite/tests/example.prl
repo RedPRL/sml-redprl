@@ -10,6 +10,7 @@ Tac repeat(T : tac) = [
   }
 ].
 
+Sym testsymdecl : exp.
 
 
 Tac complete(T : tac) = [

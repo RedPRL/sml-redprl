@@ -12,6 +12,7 @@ Library
   structure Sequent
   structure Refiner
   structure SignatureParser
+  structure ValidationElab
 is
   src/signature.cm
   src/syntax.cm

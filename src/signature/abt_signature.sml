@@ -25,7 +25,12 @@ struct
      sort : sort,
      definiens : term}
 
-  datatype decl = DEF of def
+  structure Decl =
+  struct
+    datatype decl = DEF of def | SYMDCL of sort
+  end
+
+  open Decl
 
   type sign = decl Telescope.telescope
 
@@ -52,7 +57,8 @@ struct
              SOME (v, tau) => tau
            | NONE =>
                (case Telescope.find sign u of
-                    SOME _ => SortData.OPID
+                    SOME (DEF _) => SortData.OPID
+                  | SOME (SYMDCL tau) => tau
                   | NONE => raise NotFound)
       fun go [] = true
         | go ((u, tau) :: us) =
@@ -85,5 +91,8 @@ struct
       DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
     end
 
-  fun undef (DEF d) = d
+  fun symdcl sign sort =
+    SYMDCL sort
+
+  fun viewDecl d = d
 end

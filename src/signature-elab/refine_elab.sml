@@ -81,7 +81,8 @@ struct
       open T.ConsView
       fun go res =
         fn Empty => res
-         | Cons (x,d,xs) => go (T.snoc res (x, elab res (undef d))) (out xs)
+         | Cons (x, Decl.DEF d,xs) => go (T.snoc res (x, elab res d)) (out xs)
+         | Cons (x, Decl.SYMDCL tau, xs) => go (T.snoc res (x, Decl.SYMDCL tau)) (out xs)
     in
       go T.empty (out sign)
     end

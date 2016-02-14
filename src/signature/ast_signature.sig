@@ -1,6 +1,8 @@
 structure AstSignatureDecl =
 struct
-  datatype 'd decl = DEF of 'd
+  datatype 'd decl =
+      DEF of 'd
+    | SYMDCL of Sort.t
 end
 
 (* At this stage, a signature has only one form of declaration, definitions.
@@ -12,9 +14,9 @@ signature AST_SIGNATURE =
 sig
   type term = Ast.ast
   type symbol = Ast.symbol
-  type sort = Arity.Valence.sort
+  type sort = Sort.t
   type metavariable = Ast.metavariable
-  type valence = Arity.Valence.t
+  type valence = Valence.t
 
   type arguments = (metavariable * valence) list
   type symbols = (symbol * sort) list
@@ -29,4 +31,5 @@ sig
     where type decl = def AstSignatureDecl.decl
 
   val def : def -> decl
+  val symdcl : sort -> decl
 end
