@@ -144,10 +144,14 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        mapAbs
-          (subst (check' (`i, tau1), z1) o
-           subst (makeAx, z2))
-          (T.lookup rho (#1 goal)))
+        let
+          val itm = check' (`i, tau1)
+          val varEnv = VarCtx.insert (VarCtx.insert VarCtx.empty z1 itm) z2 makeAx
+        in
+          mapAbs
+            (substEnv varEnv)
+            (T.lookup rho (#1 goal))
+        end)
     end
     | Elim _ _ _ = raise Match
 end
