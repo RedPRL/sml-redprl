@@ -158,7 +158,7 @@ struct
 
       val ceqGoal =
         (newMeta "",
-         H''' >> TRUE (makeCEquiv (?hole) (c, subst (n1, z) codHole), EXP))
+         H''' >> TRUE (makeCEquiv mctx' (c, subst (n1, z) codHole), EXP))
 
       val goal1 =
         (newMeta "",
