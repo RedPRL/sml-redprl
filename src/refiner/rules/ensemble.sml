@@ -1,21 +1,21 @@
-structure SpeciesRules : SPECIES_RULES =
+structure EnsembleRules : ENSEMBLE_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
   infix @@ >> $ $# \ @>
 
-  fun destSpecies m =
+  fun destEnsemble m =
     case out m of
-         CTT (SPECIES (tau1, tau2)) $ [_ \ a, (_, [x]) \ b] => (tau1, tau2, a, x, b)
+         CTT (ENSEMBLE (tau1, tau2)) $ [_ \ a, (_, [x]) \ b] => (tau1, tau2, a, x, b)
        | _ =>
            raise Fail
-             @@ "Expected Species but got "
+             @@ "Expected Ensemble but got "
               ^ DebugShowAbt.toString m
 
   fun TypeEq alpha (H >> TRUE (P, _)) =
     let
       val (tau,s1,s2,univ) = destEq P
-      val (_, _, a1, x1, b1) = destSpecies s1
-      val (_, _, a2, x2, b2) = destSpecies s2
+      val (_, _, a1, x1, b1) = destEnsemble s1
+      val (_, _, a2, x2, b2) = destEnsemble s2
       val _ = destUniv univ
 
       val goal1 =
@@ -46,8 +46,8 @@ struct
 
   fun MemberEq alpha (H >> TRUE (P, _)) =
     let
-      val (_, m1, m2, sp) = destEq P
-      val (tau1, tau2, a, x, b) = destSpecies sp
+      val (_, m1, m2, ensemble) = destEq P
+      val (tau1, tau2, a, x, b) = destEnsemble ensemble
       val tyGoal =
         (newMeta "",
          makeEqSequent H (m1, m2, a))
@@ -78,7 +78,7 @@ struct
 
   fun Intro alpha (H >> TRUE (P, _)) =
     let
-      val (tau1, tau2, a, x, b) = destSpecies P
+      val (tau1, tau2, a, x, b) = destEnsemble P
 
       val mainGoal =
         (newMeta "",
@@ -116,8 +116,8 @@ struct
 
   fun Elim i alpha (H >> TRUE (P, tau)) =
     let
-      val (sp, _) = Ctx.lookup (#hypctx H) i
-      val (tau1, tau2, a, x, bx) = destSpecies sp
+      val (ensemble, _) = Ctx.lookup (#hypctx H) i
+      val (tau1, tau2, a, x, bx) = destEnsemble ensemble
       val (z1, z2) = (alpha 0, alpha 1)
       val z1tm = check' (`z1, tau1)
       val bz1 = makeSquash (#metactx H) tau2 (subst (z1tm, x) bx)

@@ -1,4 +1,4 @@
-signature SPECIES_RULES =
+signature ENSEMBLE_RULES =
 sig
   val TypeEq : RefinerKit.ntactic
   val MemberEq : RefinerKit.ntactic

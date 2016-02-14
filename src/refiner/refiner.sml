@@ -36,11 +36,11 @@ struct
   in
     fun Elim i alpha =
       BaseRules.Elim i alpha
-        ORELSE SpeciesRules.Elim i alpha
+        ORELSE EnsembleRules.Elim i alpha
 
     fun Intro r alpha =
       SquashRules.Intro alpha
-        ORELSE SpeciesRules.Intro alpha
+        ORELSE EnsembleRules.Intro alpha
         ORELSE TypeRules.Intro alpha
 
     fun Eq r alpha (jdg as H >> TRUE (P, _)) =
@@ -51,8 +51,8 @@ struct
                ORELSE BaseRules.MemberEq alpha
                ORELSE CEquivRules.TypeEq alpha
                ORELSE SquashRules.TypeEq alpha
-               ORELSE SpeciesRules.TypeEq alpha
-               ORELSE SpeciesRules.MemberEq alpha) jdg
+               ORELSE EnsembleRules.TypeEq alpha
+               ORELSE EnsembleRules.MemberEq alpha) jdg
          | _ => raise Fail "Eq not applicable")
       | Eq _ _ _ = raise Match
   end

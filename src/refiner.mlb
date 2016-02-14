@@ -19,8 +19,8 @@ local
   refiner/rules/base.sml
   refiner/rules/squash.sig
   refiner/rules/squash.sml
-  refiner/rules/species.sig
-  refiner/rules/species.sml
+  refiner/rules/ensemble.sig
+  refiner/rules/ensemble.sml
   refiner/refiner.sig
   refiner/refiner.sml
 in

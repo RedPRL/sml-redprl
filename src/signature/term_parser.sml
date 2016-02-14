@@ -165,13 +165,13 @@ struct
                wth (fn (a, tau) =>
                   CTT (SQUASH tau) $ [([],[]) \ a])
 
-           val parseSpecies =
+           val parseEnsemble =
              braces @@
                parseVariable << colon
                  && parseRefinement << symbol "|"
                  && parseRefinement
                  wth (fn (x, ((a,tau1), (b,tau2))) =>
-                   CTT (SPECIES (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
+                   CTT (ENSEMBLE (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
          in
            parseCApprox
              || parseCEquiv
@@ -181,7 +181,7 @@ struct
              || parseMember
              || parseBase
              || parseSquash
-             || parseSpecies
+             || parseEnsemble
          end
        | VEC tau =>
          squares (commaSep (f tau))

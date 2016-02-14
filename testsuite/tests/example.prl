@@ -63,11 +63,11 @@ Thm baseMemberEq : [=(Ax; Ax; Base)] by [
   eq; crefl
 ].
 
-// Species, or set comprehensions, are types that restrict the inhabitants of
+// Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
 // a type by a predicate. Because this is a multi-sorted type theory, we must specify
 // what syntactic sort is being refined by the type being restricted. In this example,
 // we are restricting the [exp] sort, which contains type expressions.
-Def speciesExample : exp = [
+Def ensembleExample : exp = [
   { x : Base | ~(x; Base) }
 ].
 
@@ -75,7 +75,7 @@ Tac try(t : tac) = [
   {t} || {id}
 ].
 
-Thm speciesTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
+Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
   repeat(auto)
 ].
 
