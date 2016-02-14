@@ -21,7 +21,7 @@
 
 (defvar red-jonprl-builtin-constants-regexp
   (regexp-opt
-   '("Base" "lbase" "lsuc" "Ax" "Univ" "member" "Squash" "Ensemble" "extract")
+   '("Base" "lbase" "lsuc" "Ax" "Univ" "member" "Squash" "Ensemble" "extract" "Atom")
    'words))
 
 (defvar red-jonprl-sorts-regexp
