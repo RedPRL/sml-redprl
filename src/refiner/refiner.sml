@@ -52,7 +52,9 @@ struct
                ORELSE CEquivRules.TypeEq alpha
                ORELSE SquashRules.TypeEq alpha
                ORELSE EnsembleRules.TypeEq alpha
-               ORELSE EnsembleRules.MemberEq alpha) jdg
+               ORELSE EnsembleRules.MemberEq alpha
+               ORELSE AtomRules.TypeEq alpha
+               ORELSE AtomRules.MemberEq alpha) jdg
          | _ => raise Fail "Eq not applicable")
       | Eq _ _ _ = raise Match
   end
