@@ -150,6 +150,14 @@ struct
                wth (fn (u, tau) =>
                  ATM (TOKEN (u,tau)) $ [])
 
+           val parseTest =
+             symbol "ifeq"
+               >> (braces (parseSort sign << comma && parseSort sign) || succeed (EXP, EXP))
+               -- (fn (sigma, tau) =>
+                 parens (f EXP << semi && f EXP << semi && f tau << semi && f tau)
+                   wth (fn (t1, (t2, (yes, no))) =>
+                     ATM (TEST (EXP, EXP)) $ [([],[]) \ t1, ([],[]) \ t2, ([],[]) \ yes, ([],[]) \ no]))
+
            fun @@ (f,x) = f x
            infix @@
 
@@ -195,6 +203,7 @@ struct
              || parseBase
              || parseAtom
              || parseToken
+             || parseTest
              || parseSquash
              || parseEnsemble
          end

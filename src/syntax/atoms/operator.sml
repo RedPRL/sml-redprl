@@ -3,6 +3,7 @@ struct
   datatype 'i atoms_operator =
       ATOM of Sort.t
     | TOKEN of 'i * Sort.t
+    | TEST of Sort.t * Sort.t
 end
 
 structure AtomsOperator : OPERATOR =
@@ -24,25 +25,36 @@ struct
            [] ->> EXP
        | TOKEN (tau, u) =>
            [] ->> EXP
+       | TEST (sigma, tau) =>
+           [[] * [] <> EXP,
+            [] * [] <> EXP,
+            [] * [] <> tau,
+            [] * [] <> tau]
+             ->> tau
   end
 
   val support =
     fn ATOM tau => []
      | TOKEN (u,tau) => [(u,tau)]
+     | TEST _ => []
 
   fun map f =
     fn ATOM tau => ATOM tau
      | TOKEN (u,tau) => TOKEN (f u, tau)
+     | TEST (sigma, tau) => TEST (sigma, tau)
 
   fun eq f =
     fn (ATOM tau1, ATOM tau2) =>
           tau1 = tau2
      | (TOKEN (u, tau1), TOKEN (v, tau2)) =>
           tau1 = tau2 andalso f (u,v)
-    | _ => false
+     | (TEST (sigma1, tau1), TEST (sigma2, tau2)) =>
+          sigma1 = sigma2 andalso tau1 = tau2
+     | _ => false
 
   fun toString f =
     fn ATOM tau => "Atom{" ^ Sort.toString tau ^ "}"
-     | TOKEN (u,tau) => "'" ^ f u ^ ":" ^ Sort.toString tau
+     | TOKEN (u, tau) => "'" ^ f u ^ ":" ^ Sort.toString tau
+     | TEST (sigma, tau) => "ifeq{" ^ Sort.toString sigma ^ "," ^ Sort.toString tau ^ "}"
 end
 

@@ -132,12 +132,50 @@ struct
          | CTT (BASE _) $ _ => FINAL
          | ATM (ATOM _) $ _ => FINAL
          | ATM (TOKEN _) $ _ => FINAL
+         | ATM (TEST (sigma,tau)) $ [_ \ tok1, _ \ tok2, _ \ yes, _ \ no] =>
+             stepAtomTest sign (sigma, tau) (tok1, tok2) (yes, no) (m <: env)
          | _ => ?hole
+    end
+
+  and stepAtomTest sign (sigma,tau) (tok1, tok2) (yes, no) (m <: env) =
+    let
+      open OperatorData AtomsOperatorData SortData
+      val psi = metactx m
+
+      fun makeTest (a,b) =
+        check psi
+          (ATM (TEST (sigma,tau)) $
+             [([],[]) \ a,
+              ([],[]) \ b,
+              ([],[]) \ yes,
+              ([],[]) \ no],
+           tau)
+
+      fun destToken m =
+        case out m of
+             ATM (TOKEN (u, tau)) $ [] => (u, tau)
+           | _ => raise Stuck (m <: env)
+    in
+      case step sign (tok1 <: env) of
+           FINAL =>
+             (case step sign (tok2 <: env) of
+                   FINAL =>
+                     let
+                       val (u1, _) = destToken tok1
+                       val (u2, _) = destToken tok2
+                     in
+                       ret @@ (if Symbol.eq (u1, u2) then yes else no) <: env
+                     end
+                 | STEP (tok2' <: env) =>
+                     ret @@ makeTest (tok1, tok2') <: env)
+         | STEP (tok1' <: env) =>
+             ret @@ makeTest (tok1', tok2) <: env
     end
 
   and stepExtract sign tau r (m <: env) =
     let
       open OperatorData SortData
+      val psi = metactx m
     in
       case step sign (r <: env) of
            FINAL =>
@@ -148,6 +186,6 @@ struct
                         | _ => raise Stuck (evd <: env))
                 | _ => raise Stuck (r <: env))
          | STEP (r' <: env) =>
-             ret @@ check' (EXTRACT tau $ [([],[]) \ r'], tau) <: env
+             ret @@ check psi (EXTRACT tau $ [([],[]) \ r'], tau) <: env
     end
 end
