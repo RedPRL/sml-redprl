@@ -136,6 +136,13 @@ struct
          | CTT LAM $ _ => FINAL
          | CTT AP $ [_ \ f, _ \ x] =>
              stepAp sign (f, x) (m <: env)
+         | CTT VOID $ [] => FINAL
+         | CTT NOT $ [_ \ a] =>
+             let
+               val void = check' (CTT VOID $ [], EXP)
+             in
+               ret @@ check (metactx m) (CTT FUN $ [([],[]) \ a, ([],[]) \ void], EXP) <: env
+             end
          | ATM (ATOM _) $ _ => FINAL
          | ATM (TOKEN _) $ _ => FINAL
          | ATM (TEST (sigma,tau)) $ [_ \ tok1, _ \ tok2, _ \ yes, _ \ no] =>

@@ -37,6 +37,7 @@ struct
     fun Elim i alpha =
       BaseRules.Elim i alpha
         ORELSE EnsembleRules.Elim i alpha
+        ORELSE VoidRules.Elim i alpha
 
     fun Intro r alpha =
       SquashRules.Intro alpha
@@ -58,7 +59,8 @@ struct
                ORELSE AtomRules.MemberEq alpha
                ORELSE PiRules.TypeEq alpha
                ORELSE PiRules.MemberEq alpha
-               ORELSE PiRules.ElimEq alpha) jdg
+               ORELSE PiRules.ElimEq alpha
+               ORELSE VoidRules.TypeEq alpha) jdg
          | _ => raise Fail "Eq not applicable")
       | Eq _ _ _ = raise Match
   end

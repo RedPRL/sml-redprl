@@ -11,6 +11,7 @@ struct
     | SQUASH of Sort.t
     | ENSEMBLE of Sort.t * Sort.t
     | DFUN | FUN | LAM | AP
+    | VOID | NOT
 end
 
 structure CttSimpleOperator =
@@ -76,6 +77,11 @@ struct
            [[] * [] <> EXP,
             [] * [] <> EXP]
              ->> EXP
+       | VOID =>
+           [] ->> EXP
+       | NOT =>
+           [[] * [] <> EXP]
+             ->> EXP
   end
 
   val eq : t * t -> bool = op=
@@ -107,6 +113,10 @@ struct
          "lam"
      | AP =>
          "ap"
+     | VOID =>
+         "Void"
+     | NOT =>
+         "not"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)
