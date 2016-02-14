@@ -145,7 +145,8 @@ struct
     in
       (psi, fn rho =>
         mapAbs
-          (subst (check' (`i, tau1), z1))
+          (subst (check' (`i, tau1), z1) o
+           subst (makeAx, z2))
           (T.lookup rho (#1 goal)))
     end
     | Elim _ _ _ = raise Match
