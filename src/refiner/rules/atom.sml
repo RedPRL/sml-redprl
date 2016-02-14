@@ -1,4 +1,4 @@
-structure AtomRules =
+structure AtomRules : ATOM_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData AtomsOperatorData SortData
   infix @@ >> $ $# \ @>
@@ -11,6 +11,9 @@ struct
              @@ "Expected Atom but got "
               ^ DebugShowAbt.toString m
 
+  fun makeAtom tau =
+    check' (ATM (ATOM tau) $ [], EXP)
+
   fun destToken m =
     case out m of
          ATM (TOKEN (u,tau)) $ [] => (u,tau)
@@ -18,6 +21,16 @@ struct
            raise Fail
              @@ "Expected Token but got "
               ^ DebugShowAbt.toString m
+
+  fun destTest m =
+    case out m of
+         ATM (TEST (sigma, tau)) $ [_ \ t1, _ \ t2, _ \ yes, _ \ no] =>
+           (sigma, tau, t1, t2, yes, no)
+       | _ =>
+           raise Fail
+             @@ "Expected Test but got "
+              ^ DebugShowAbt.toString m
+
 
   fun TypeEq _ (H >> TRUE (P, _)) =
     let
@@ -48,4 +61,39 @@ struct
         abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
+
+  (* The following can only be implemented after we have implication / negation:
+  fun TestEq _ (H >> TRUE (P, _)) =
+    let
+      val (_, test1, test2, a) = destEq P
+      val (sigma, tau, t1, t2, yes, no) = destTest test1
+      val (sigma', tau', t1', t2', yes', no') = destTest test2
+
+      val _ = if sigma = sigma' andalso tau = tau' then () else raise Match
+
+      val goal1 =
+        (newMeta "",
+         makeEqSequent H (t1, t1', makeAtom sigma))
+
+      val goal2 =
+        (newMeta "",
+         makeEqSequent H (t2, t2', makeAtom sigma))
+
+      val Hyes =
+        {metactx = #metactx H,
+         symctx = #symctx H,
+         hypctx = Ctx.snoc (#hypctx H) (?hole, ?hole)}
+
+      val Hno =
+        {metactx = #metactx H,
+         symctx = #symctx H,
+         hypctx = ?hole}
+
+      val psi = T.empty @> goal1 @> goal2 @> ?hole @> ?hole
+    in
+      (?hole, fn rho =>
+        abtToAbs makeAx)
+    end
+    | TestEq _ _ = raise Match
+    *)
 end
