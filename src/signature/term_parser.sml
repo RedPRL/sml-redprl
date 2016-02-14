@@ -69,7 +69,7 @@ struct
   fun hole ! = raise Match
 
   local
-    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData SortData
+    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData
     infix $ \ $#
   in
     val rec inferRefinedSort =
@@ -137,6 +137,19 @@ struct
                wth (fn tau =>
                  CTT (BASE tau) $ [])
 
+           val parseAtom =
+             symbol "Atom"
+               >> (braces (parseSort sign) || succeed EXP)
+               wth (fn tau =>
+                 ATM (ATOM tau) $ [])
+
+           val parseToken =
+             symbol "'"
+               >> parseSymbol
+               && ((colon >> parseSort sign) || succeed EXP)
+               wth (fn (u, tau) =>
+                 ATM (TOKEN (u,tau)) $ [])
+
            fun @@ (f,x) = f x
            infix @@
 
@@ -180,6 +193,8 @@ struct
              || parseEq
              || parseMember
              || parseBase
+             || parseAtom
+             || parseToken
              || parseSquash
              || parseEnsemble
          end
