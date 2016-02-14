@@ -104,6 +104,12 @@ struct
         (CTT (SQUASH tau) $ [([],[]) \ a],
          EXP)
 
+    fun makeUniv lvl =
+      check
+        (metactx lvl)
+        (CTT (UNIV EXP) $ [([],[]) \ lvl],
+         EXP)
+
     fun makeEqSequent H args =
       H >> TRUE (makeEq (#metactx H) args, EXP)
 

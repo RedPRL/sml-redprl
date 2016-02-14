@@ -98,8 +98,87 @@ struct
       val (_, ap1, ap2, c) = destEq P
       val (m1, n1) = destAp ap1
       val (m2, n2) = destAp ap2
+
+      val lvlGoal =
+        (newMeta "",
+         makeLevelSequent H)
+
+      val H' =
+        {metactx = MetaCtx.insert (#metactx H) (#1 lvlGoal) (([],[]), LVL),
+         symctx = #symctx H,
+         hypctx = #hypctx H}
+
+      val lvlHole =
+        check
+          (#metactx H')
+          (#1 lvlGoal $# ([], []),
+           LVL)
+
+      val domGoal =
+        (newMeta "",
+         H' >> TRUE (makeUniv lvlHole, EXP))
+
+      val mctx = MetaCtx.insert (#metactx H') (#1 domGoal) (([],[]), EXP)
+
+      val domHole =
+        check
+          mctx
+          (#1 domGoal $# ([],[]),
+           EXP)
+
+      val z = alpha 0
+
+      val H'' =
+        {metactx = mctx,
+         symctx = #symctx H',
+         hypctx = Ctx.snoc (#hypctx H') (z, (domHole, EXP))}
+
+      val codGoal =
+        (newMeta "",
+         H'' >> TRUE (makeUniv lvlHole, EXP))
+
+      val mctx' = MetaCtx.insert mctx (#1 codGoal) (([],[]), EXP)
+
+      val codHole =
+        check
+          mctx'
+          (#1 codGoal $# ([],[]),
+           EXP)
+
+      val dfun =
+        check
+          mctx'
+          (CTT DFUN $ [([],[]) \ domHole, ([],[z]) \ codHole],
+           EXP)
+
+      val H''' =
+        {metactx = mctx',
+         symctx = #symctx H,
+         hypctx = #hypctx H}
+
+      val ceqGoal =
+        (newMeta "",
+         H''' >> TRUE (makeCEquiv (?hole) (c, subst (n1, z) codHole), EXP))
+
+      val goal1 =
+        (newMeta "",
+         makeEqSequent H''' (m1, m2, dfun))
+
+      val goal2 =
+        (newMeta "",
+         makeEqSequent H''' (n1, n2, domHole))
+
+      val psi =
+        T.empty
+          @> lvlGoal
+          @> domGoal
+          @> codGoal
+          @> ceqGoal
+          @> goal1
+          @> goal2
     in
-      ?hole
+      (psi, fn rho =>
+        abtToAbs makeAx)
     end
     | ElimEq _ _ = raise Match
 
