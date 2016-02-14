@@ -137,6 +137,30 @@ struct
                wth (fn tau =>
                  CTT (BASE tau) $ [])
 
+           val parseDFun =
+             symbol "dfun"
+               >> parens (f EXP << semi && squares parseVariable << dot && f EXP)
+               wth (fn (a, (x, b)) =>
+                 CTT DFUN $ [([],[]) \ a, ([],[x]) \ b])
+
+           val parseFun =
+             symbol "fun"
+               >> parens (f EXP << semi && f EXP)
+               wth (fn (a, b) =>
+                 CTT FUN $ [([],[]) \ a, ([],[]) \ b])
+
+           val parseLam =
+             symbol "lam"
+               >> parens (squares parseVariable << dot && f EXP)
+               wth (fn (x, m) =>
+                 CTT LAM $ [([],[x]) \ m])
+
+           val parseAp =
+             symbol "ap"
+               >> parens (f EXP << semi && f EXP)
+               wth (fn (m, n) =>
+                 CTT AP $ [([],[]) \ m, ([],[]) \ n])
+
            val parseAtom =
              symbol "Atom"
                >> (braces (parseSort sign) || succeed EXP)
@@ -201,6 +225,10 @@ struct
              || parseEq
              || parseMember
              || parseBase
+             || parseDFun
+             || parseFun
+             || parseLam
+             || parseAp
              || parseAtom
              || parseToken
              || parseTest

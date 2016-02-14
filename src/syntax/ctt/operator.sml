@@ -10,6 +10,7 @@ struct
     | AX
     | SQUASH of Sort.t
     | ENSEMBLE of Sort.t * Sort.t
+    | DFUN | FUN | LAM | AP
 end
 
 structure CttSimpleOperator =
@@ -60,6 +61,21 @@ struct
            [[] * [] <> EXP,
             [] * [tau] <> EXP]
              ->> EXP
+       | DFUN =>
+           [[] * [] <> EXP,
+            [] * [EXP] <> EXP]
+             ->> EXP
+       | FUN =>
+           [[] * [] <> EXP,
+            [] * [] <> EXP]
+             ->> EXP
+       | LAM =>
+           [[] * [EXP] <> EXP]
+             ->> EXP
+       | AP =>
+           [[] * [] <> EXP,
+            [] * [] <> EXP]
+             ->> EXP
   end
 
   val eq : t * t -> bool = op=
@@ -83,6 +99,14 @@ struct
          "Squash{" ^ Sort.toString tau ^ "}"
      | ENSEMBLE (tau1, tau2) =>
          "Ensemble{" ^ Sort.toString tau1 ^ ", " ^ Sort.toString tau2 ^ "}"
+     | DFUN =>
+         "dfun"
+     | FUN =>
+         "fun"
+     | LAM =>
+         "lam"
+     | AP =>
+         "ap"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)
