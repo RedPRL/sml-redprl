@@ -41,6 +41,7 @@ struct
     fun Intro r alpha =
       SquashRules.Intro alpha
         ORELSE EnsembleRules.Intro alpha
+        ORELSE PiRules.Intro alpha
         ORELSE TypeRules.Intro alpha
 
     fun Eq r alpha (jdg as H >> TRUE (P, _)) =

@@ -182,4 +182,39 @@ struct
     end
     | ElimEq _ _ = raise Match
 
+  fun Intro alpha (H >> TRUE (P, _)) =
+    let
+      val (a, x, bx) = destDFun P
+
+      val z = alpha 0
+      val ztm = check' (`z, EXP)
+      val bz = subst (ztm, x) bx
+
+      val H' =
+        {metactx = #metactx H,
+         symctx = #symctx H,
+         hypctx = Ctx.snoc (#hypctx H) (z, (a, EXP))}
+
+      val goal =
+        (newMeta "",
+         H' >> TRUE (bz, EXP))
+
+      val wfGoal =
+        (newMeta "",
+         H >> TYPE (a, EXP))
+
+      val psi = T.empty @> goal @> wfGoal
+    in
+      (psi, fn rho =>
+        let
+          val _ \ mz = outb @@ T.lookup rho (#1 goal)
+        in
+          abtToAbs @@
+            check
+              (#metactx H)
+              (CTT LAM $ [([],[z]) \ mz], EXP)
+        end)
+    end
+    | Intro _ _ = raise Match
+
 end
