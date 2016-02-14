@@ -56,7 +56,8 @@ struct
                ORELSE AtomRules.TypeEq alpha
                ORELSE AtomRules.MemberEq alpha
                ORELSE PiRules.TypeEq alpha
-               ORELSE PiRules.MemberEq alpha) jdg
+               ORELSE PiRules.MemberEq alpha
+               ORELSE PiRules.ElimEq alpha) jdg
          | _ => raise Fail "Eq not applicable")
       | Eq _ _ _ = raise Match
   end
