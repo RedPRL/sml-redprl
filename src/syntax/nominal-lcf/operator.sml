@@ -41,7 +41,7 @@ struct
   in
     fun arity (SEQ sorts) =
           [ [] * [] <> MTAC
-          , sorts * [] <> TAC
+          , sorts * sorts <> TAC
           ] ->> TAC
       | arity ORELSE =
           [ [] * [] <> TAC

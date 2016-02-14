@@ -391,8 +391,12 @@ struct
                wth BINDING
 
            fun makeSeq t (us : (symbol * sort) list) mt =
-             LCF (SEQ (map #2 us)) $
-               [([],[]) \ t, (map #1 us, []) \ mt]
+             let
+               val us1 = map #1 us
+             in
+               LCF (SEQ (map #2 us)) $
+                 [([],[]) \ t, (us1, us1) \ mt]
+             end
 
            val multitacToTac =
              fn (LCF ALL $ [_ \ t]) => t
