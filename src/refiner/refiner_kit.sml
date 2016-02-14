@@ -54,6 +54,12 @@ struct
   local
     open OperatorData CttOperatorData SortData
   in
+    fun destVar m =
+      case out m of
+           `x => x
+         | _ => raise Fail @@ "Expected variable, but got " ^ DebugShowAbt.toString m
+
+
     fun destEq m =
       case out m of
            CTT (EQ tau) $ [_ \ m, _ \ n, _ \ a] => (tau, m,n,a)
@@ -109,6 +115,7 @@ struct
         (metactx lvl)
         (CTT (UNIV EXP) $ [([],[]) \ lvl],
          EXP)
+
 
     fun makeEqSequent H args =
       H >> TRUE (makeEq (#metactx H) args, EXP)

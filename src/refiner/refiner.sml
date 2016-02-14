@@ -45,10 +45,25 @@ struct
         ORELSE PiRules.Intro alpha
         ORELSE TypeRules.Intro alpha
 
+    fun HypEq alpha (H >> TRUE (P, _)) =
+      let
+        val (_, m, n, a) = destEq P
+        val x = destVar m
+        val y = destVar n
+        val _ = if Variable.eq (x, y) then () else raise Match
+        val (Q, _) = Ctx.lookup (#hypctx H) x
+        val _ = if Abt.eq (P,Q) then () else raise Match
+      in
+        (T.empty, fn rho =>
+          abtToAbs makeAx)
+      end
+      | HypEq _ _ = raise Match
+
     fun Eq r alpha (jdg as H >> TRUE (P, _)) =
       (case out P of
            CTT (EQ _) $ _ =>
-             (UnivRules.Eq alpha
+             (HypEq alpha
+               ORELSE UnivRules.Eq alpha
                ORELSE BaseRules.TypeEq alpha
                ORELSE BaseRules.MemberEq alpha
                ORELSE CEquivRules.TypeEq alpha
