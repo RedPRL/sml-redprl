@@ -31,7 +31,7 @@
 
 (defvar red-jonprl-tactic-name-regexp
   (regexp-opt
-   '("auto" "eval-goal" "ceval" "csym" "cstep" "witness" "trace" "intro" "elim" "eq")
+   '("auto" "eval-goal" "ceval" "csym" "cstep" "witness" "trace" "intro" "elim" "eq" "id" "normalize" "unfold")
    'words))
 
 (defun red-jonprl-font-lock-defaults ()
