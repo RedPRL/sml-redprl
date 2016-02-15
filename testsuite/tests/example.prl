@@ -83,3 +83,26 @@ Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
 Thm demo : [{x : Base | ~(x; Ax)}] by [
   auto; #0 { witness Ax }; repeat(auto)
 ].
+
+// let's declare some symbols (nominal atoms). new symbols are always fresh.
+Sym mysym : exp.
+Sym mysym2 : exp.
+Sym yes : exp.
+Sym no : exp.
+
+// atoms can be compared for equality; here, we show that two of our
+// declared atoms are distinct.
+Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
+  ceval
+].
+
+Thm lamTest : [fun(Atom; Atom)] by [
+  eval-goal;
+  z:exp <- intro;
+  [ witness ifeq(z; 'mysym; 'yes; 'no)
+  , repeat(auto)
+  ];
+  eval-goal;
+  auto; auto
+].
+
