@@ -12,8 +12,15 @@ struct
     Sequent.toString s
 
   infix >>
-  fun evidenceValence (_ >> TRUE (_, tau)) = (([],[]), tau)
-    | evidenceValence (_ >> TYPE _) = (([],[]), SortData.LVL)
+  val rec evidenceValence =
+    fn _ >> TRUE (_, tau) => (([],[]), tau)
+     | _ >> TYPE _ => (([],[]), SortData.LVL)
+     | GENERAL (xs, s) =>
+         let
+           val ((ssorts,vsorts),tau) = evidenceValence s
+         in
+           ((ssorts, vsorts @ List.map #2 xs), tau)
+         end
 
   fun evidenceToString e =
     let
@@ -37,4 +44,5 @@ struct
     in
       H' >> substConcl (x, e) concl
     end
+    | substJudgment (x, e) (GENERAL (xs, s)) = GENERAL (xs, substJudgment (x,e) s)
 end

@@ -8,7 +8,9 @@ sig
       TRUE of prop * sort
     | TYPE of prop * sort
 
-  datatype sequent = >> of context * concl
+  datatype sequent =
+      >> of context * concl
+    | GENERAL of (Abt.variable * sort) list * sequent
 
   val toString : sequent -> string
 end

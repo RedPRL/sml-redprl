@@ -20,7 +20,9 @@ struct
   (* The meaning of the sequent with respect to its context of metavariables is
    * essentially the following: If the metavariables are replaced by closed abstractions
    * that respect computation, then the sequent is evident. *)
-  datatype sequent = >> of context * concl
+  datatype sequent =
+      >> of context * concl
+    | GENERAL of (Abt.variable * sort) list * sequent
   infix >>
 
   val conclToString =
@@ -43,7 +45,9 @@ struct
     end
 
   fun toString (H >> concl) =
-    hypothesesToString (#hypctx H)
-      ^ "\226\138\162 "
-      ^ conclToString concl
+        hypothesesToString (#hypctx H)
+          ^ "\226\138\162 "
+          ^ conclToString concl
+    | toString (GENERAL (xs, seq)) =
+        "| " ^ toString seq
 end

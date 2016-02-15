@@ -3,7 +3,7 @@ struct
   structure Abt = Abt
   open RefinerKit
 
-  open Sequent infix >> $ \ @@
+  open Sequent infix >> $ \ @@ @>
 
   structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
 
@@ -39,11 +39,28 @@ struct
         ORELSE EnsembleRules.Elim i alpha
         ORELSE VoidRules.Elim i alpha
 
+    fun GeneralIntro alpha (GENERAL (xs, s)) =
+      let
+        val goal = (newMeta "", s)
+        val psi = T.empty @> goal
+      in
+        (psi, fn rho =>
+          let
+            val ((us,ys) \ m, ((ssorts, vsorts), tau)) = inferb @@ T.lookup rho (#1 goal)
+            val mctx = metactx m
+            val vl = ((ssorts, vsorts @ List.map #2 xs), tau)
+          in
+            checkb mctx ((us, ys @ List.map #1 xs) \ m, vl)
+          end)
+      end
+      | GeneralIntro _ _ = raise Match
+
     fun Intro r alpha =
       SquashRules.Intro alpha
         ORELSE EnsembleRules.Intro alpha
         ORELSE PiRules.Intro alpha
         ORELSE TypeRules.Intro alpha
+        ORELSE GeneralIntro alpha
 
     fun HypEq alpha (H >> TRUE (P, _)) =
       let
