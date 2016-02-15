@@ -139,6 +139,47 @@ struct
     open OperatorData CttOperatorData AtomsOperatorData SortData
   in
 
+    fun Unfold sign opid _ (H >> TRUE (P, tau)) =
+      let
+        open SmallStep DynamicsUtil
+        fun go m =
+          case out m of
+               CUST (opid', _, _) $ _ =>
+                 if Symbol.eq (opid, opid') then
+                   case step' sign m of
+                        FINAL => m
+                      | STEP m' => m'
+                 else
+                   m
+             | _ => m
+
+        val P' = go (Abt.deepMapSubterms go P)
+        val goal =
+          (newMeta "",
+           H >> TRUE (P', tau))
+        val psi = T.empty @> goal
+      in
+        (psi, fn rho =>
+          T.lookup rho (#1 goal))
+      end
+      | Unfold _ _ _ _ = raise Match
+
+    fun Normalize sign _ (H >> TRUE (P, tau)) =
+      let
+        open SmallStep DynamicsUtil
+        fun go m = evalOpen sign m handle _ => m
+
+        val P' = go (Abt.deepMapSubterms go P)
+        val goal =
+          (newMeta "",
+           H >> TRUE (P', tau))
+        val psi = T.empty @> goal
+      in
+        (psi, fn rho =>
+          T.lookup rho (#1 goal))
+      end
+      | Normalize _ _ _ = raise Match
+
     fun RewriteGoal Q _ (H >> TRUE (P, sigma)) =
       let
         val tau = sort P

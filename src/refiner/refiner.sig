@@ -66,6 +66,15 @@ sig
     : AbtSignature.sign
     -> ntactic
 
+  val Unfold
+    : AbtSignature.sign
+    -> symbol
+    -> ntactic
+
+  val Normalize
+    : AbtSignature.sign
+    -> ntactic
+
 end
 
 

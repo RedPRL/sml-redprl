@@ -290,6 +290,17 @@ struct
              symbol "eval-goal"
                return (LCF EVAL_GOAL $ [])
 
+           val parseUnfold =
+             symbol "unfold"
+               >> parseSymbol
+               wth (fn opid =>
+                 LCF (UNFOLD opid) $ [])
+
+           val parseNormalize =
+             symbol "normalize"
+               wth (fn opid =>
+                 LCF NORMALIZE $ [])
+
            val parseWitness =
              symbol "witness"
                >> (braces (parseSort sign) || succeed SortData.EXP)
@@ -369,6 +380,8 @@ struct
                || parseRewriteGoal
                || parseEvalGoal
                || parseWitness
+               || parseUnfold
+               || parseNormalize
                || parseOrElse
                || try (parseAny sign rho f TAC)
 

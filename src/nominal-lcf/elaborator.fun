@@ -105,6 +105,10 @@ struct
              R.EvalGoal sign
          | LCF (WITNESS tau) $ [_ \ m] =>
              R.Witness m
+         | LCF (UNFOLD opid) $ [] =>
+             R.Unfold sign opid
+         | LCF NORMALIZE $ [] =>
+             R.Normalize sign
          | LCF AUTO $ [] =>
              R.AutoStep sign
          | LCF REC $ [(_, [x]) \ t] =>

@@ -19,8 +19,9 @@ struct
     | AUTO
     | ID | FAIL | TRACE of Sort.t
     | CSTEP of int | CEVAL | CSYM
-    | REWRITE_GOAL of Sort.t | EVAL_GOAL
+    | REWRITE_GOAL of Sort.t | EVAL_GOAL | NORMALIZE
     | WITNESS of Sort.t
+    | UNFOLD of 'i
 end
 
 structure NominalLcfOperator : OPERATOR =
@@ -92,11 +93,16 @@ struct
       | arity (WITNESS tau) =
           [ [] * [] <> tau
           ] ->> TAC
+      | arity (UNFOLD i) =
+          [] ->> TAC
+      | arity NORMALIZE =
+          [] ->> TAC
   end
 
   fun support (ELIM (target, tau)) = [(target, tau)]
     | support (HYP (target, tau)) = [(target, tau)]
     | support (UNHIDE (target, tau)) = [(target, tau)]
+    | support (UNFOLD i) = [(i, SortData.OPID)]
     | support _ = []
 
   fun map f =
@@ -121,6 +127,8 @@ struct
      | REWRITE_GOAL tau => REWRITE_GOAL tau
      | EVAL_GOAL => EVAL_GOAL
      | WITNESS tau => WITNESS tau
+     | UNFOLD i => UNFOLD (f i)
+     | NORMALIZE => NORMALIZE
 
   fun eq f =
     fn (SEQ sorts1, SEQ sorts2) => sorts1 = sorts2
@@ -142,6 +150,8 @@ struct
      | (REWRITE_GOAL tau1, REWRITE_GOAL tau2) => tau1 = tau2
      | (EVAL_GOAL, EVAL_GOAL) => true
      | (WITNESS tau1, WITNESS tau2) => tau1 = tau2
+     | (UNFOLD i, UNFOLD j) => f (i, j)
+     | (NORMALIZE, NORMALIZE) => true
      | _ => false
 
   fun toString f =
@@ -166,5 +176,7 @@ struct
      | REWRITE_GOAL tau => "rewrite-goal{" ^ Sort.toString tau ^ "}"
      | EVAL_GOAL => "eval-goal"
      | WITNESS tau => "witness{" ^ Sort.toString tau ^ "}"
+     | UNFOLD i => "unfold[" ^ f i ^ "]"
+     | NORMALIZE => "normalize"
 end
 
