@@ -386,7 +386,7 @@ struct
            datatype component = BINDING of (symbol * sort) list * ast
 
            val parseComponent =
-             (commaSep1 (parseSymbol << colon && parseSort sign) << symbol "<-" || succeed [])
+             (commaSep1 (parseSymbol && ((colon >> parseSort sign) || succeed EXP)) << symbol "<-" || succeed [])
                && parseMultitac
                wth BINDING
 
