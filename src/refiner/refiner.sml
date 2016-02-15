@@ -51,8 +51,8 @@ struct
         val x = destVar m
         val y = destVar n
         val _ = if Variable.eq (x, y) then () else raise Match
-        val (Q, _) = Ctx.lookup (#hypctx H) x
-        val _ = if Abt.eq (P,Q) then () else raise Match
+        val (a', _) = Ctx.lookup (#hypctx H) x
+        val _ = if Abt.eq (a,a') then () else raise Match
       in
         (T.empty, fn rho =>
           abtToAbs makeAx)
@@ -62,8 +62,7 @@ struct
     fun Eq r alpha (jdg as H >> TRUE (P, _)) =
       (case out P of
            CTT (EQ _) $ _ =>
-             (HypEq alpha
-               ORELSE UnivRules.Eq alpha
+             (UnivRules.Eq alpha
                ORELSE BaseRules.TypeEq alpha
                ORELSE BaseRules.MemberEq alpha
                ORELSE CEquivRules.TypeEq alpha
@@ -76,7 +75,8 @@ struct
                ORELSE PiRules.TypeEq alpha
                ORELSE PiRules.MemberEq alpha
                ORELSE PiRules.ElimEq alpha
-               ORELSE VoidRules.TypeEq alpha) jdg
+               ORELSE VoidRules.TypeEq alpha
+               ORELSE HypEq alpha) jdg
          | _ => raise Fail "Eq not applicable")
       | Eq _ _ _ = raise Match
   end
