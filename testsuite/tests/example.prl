@@ -81,7 +81,7 @@ Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
 ].
 
 Thm demo : [{x : Base | ~(x; Ax)}] by [
-  auto; #0 { witness Ax }; repeat(auto)
+  auto; #0 { witness [Ax] }; repeat(auto)
 ].
 
 // let's declare some symbols (nominal atoms). new symbols are always fresh.
@@ -99,7 +99,7 @@ Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
 Thm lamTest : [fun(Atom; Atom)] by [
   eval-goal;
   z <- intro;
-  [ witness ifeq(z; 'mysym; 'yes; 'no)
+  [ witness [ifeq(z; 'mysym; 'yes; 'no)]
   , repeat(auto)
   ];
   eval-goal;

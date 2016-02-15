@@ -2,6 +2,8 @@ structure Sequent : SEQUENT =
 struct
   type prop = Abt.abt
   type sort = Abt.sort
+  type expr = Abt.abt
+  type operator = Abt.operator
 
   type context =
     {metactx : Abt.metactx,
@@ -49,5 +51,5 @@ struct
           ^ "\226\138\162 "
           ^ conclToString concl
     | toString (GENERAL (xs, seq)) =
-        "| " ^ toString seq
+        "...| " ^ toString seq
 end

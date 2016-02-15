@@ -13,8 +13,10 @@ struct
 
   infix >>
   val rec evidenceValence =
-    fn _ >> TRUE (_, tau) => (([],[]), tau)
-     | _ >> TYPE _ => (([],[]), SortData.LVL)
+    fn H >> concl =>
+         (case concl of
+             TRUE (_, tau) => (([],[]), tau)
+           | TYPE _ => (([],[]), SortData.LVL))
      | GENERAL (xs, s) =>
          let
            val ((ssorts,vsorts),tau) = evidenceValence s

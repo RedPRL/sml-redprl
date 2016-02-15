@@ -36,6 +36,7 @@ struct
         symbol "exp" return EXP
         || symbol "lvl" return LVL
         || symbol "tac" return TAC
+        || symbol "thm" >> braces p wth THM
         || symbol "mtac" return MTAC
         || symbol "vec" >> braces p wth VEC
         || symbol "str" return STR)
@@ -293,7 +294,7 @@ struct
              symbol "witness"
                >> (braces (parseSort sign) || succeed SortData.EXP)
                -- (fn tau =>
-                 f tau wth (fn m =>
+                 squares (f tau) wth (fn m =>
                    LCF (WITNESS tau) $ [([],[]) \ m]))
 
            val parseHyp =

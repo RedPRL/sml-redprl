@@ -3,7 +3,7 @@ struct
   structure Abt = Abt
   open RefinerKit
 
-  open Sequent infix >> $ \ @@ @>
+  open Sequent infix >> $ \ @@ @> $#
 
   structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
 

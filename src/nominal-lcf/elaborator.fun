@@ -140,7 +140,7 @@ struct
                    val st = T alpha' jdg
                    val beta = prepend us' (bite (!modulus) alpha)
                  in
-                   MT.EACH (List.map (fn T => T beta) Ts) st
+                   MT.EACH' (List.map (fn T => T beta) Ts) st
                  end
              end
          | LCF (FOCUS i) $ [_ \ t'] =>
