@@ -75,11 +75,7 @@ struct
   in
     val rec inferRefinedSort =
       fn CTT (BASE tau) $ _ => tau
-       | CTT (UNIV _) $ _ => EXP
-       | CTT (CEQUIV _) $ _ => EXP
-       | CTT (CAPPROX _) $ _ => EXP
-       | CTT (EQ _) $ _ => EXP
-       | _ => raise Fail "Could not infer refined sort"
+       | _ => EXP
 
     fun inferRefinedSort' m =
       succeed (inferRefinedSort m)
