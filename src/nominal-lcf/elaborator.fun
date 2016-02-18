@@ -55,7 +55,7 @@ struct
   fun Trace m jdg =
     let
       val x = Abt.Metavariable.named "?"
-      val psi = Tele.snoc Tele.empty (x, jdg)
+      val psi = Tele.snoc Tele.empty x jdg
     in
       print (ShowAbt.toString m ^ "\n");
       (psi, fn rho => Tele.lookup rho x)

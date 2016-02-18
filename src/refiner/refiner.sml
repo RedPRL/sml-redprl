@@ -11,16 +11,16 @@ struct
     let
       open T.ConsView
       fun go i =
-        fn Empty => (T.empty, "")
-         | Cons (x, jdg, tl) =>
+        fn EMPTY => (T.empty, "")
+         | CONS (x, jdg, tl) =>
              let
                val var = Metavariable.named ("?" ^ Int.toString i)
                val goal = "\nHOLE " ^ Metavariable.toString var ^ "\n--------------------------------------------\n" ^ Judgment.judgmentToString jdg
                val vartm = HoleUtil.makeHole (var, Judgment.evidenceValence jdg)
-               val tl' = Telescope.map tl @@ Judgment.substJudgment (x, vartm)
+               val tl' = Telescope.map (Judgment.substJudgment (x, vartm)) tl
                val (rho, rest) = go (i + 1) (out tl')
              in
-               (T.snoc rho (x, vartm), goal ^ "\n" ^ rest)
+               (T.snoc rho x vartm, goal ^ "\n" ^ rest)
              end
 
       val (env, subgoals) = go 0 @@ out psi
@@ -103,7 +103,7 @@ struct
       val goal =
         (newMeta "",
          makeMemberSequent H (m, P))
-      val psi = T.snoc T.empty goal
+      val psi = T.empty @> goal
     in
       (psi, fn rho =>
         abtToAbs m)
@@ -187,7 +187,7 @@ struct
           (newMeta "",
            H >> TRUE (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP))
         val mainGoal = (newMeta "", H >> TRUE (Q, sigma))
-        val psi = T.snoc (T.snoc T.empty ceqGoal) mainGoal
+        val psi = T.empty @> ceqGoal @> mainGoal
       in
         (psi, fn rho => T.lookup rho (#1 mainGoal))
       end
@@ -197,7 +197,7 @@ struct
       let
         val Q = DynamicsUtil.evalOpen sign P
         val x = newMeta ""
-        val psi = T.snoc T.empty (x, H >> TRUE (Q, sigma))
+        val psi = T.empty @> (x, H >> TRUE (Q, sigma))
       in
         (psi, fn rho =>
            T.lookup rho x)

@@ -159,7 +159,7 @@ struct
       opt (whiteSpace >> (parseSigDecl sign || parseSymDecl sign) << dot) -- (fn odecl =>
         case odecl of
              NONE => succeed sign << whiteSpace << eos
-           | SOME decl => parseSigExp' (AstSignature.Telescope.snoc sign decl))
+           | SOME (x,decl) => parseSigExp' (AstSignature.Telescope.snoc sign x decl))
 
     val parseSigExp = parseSigExp' AstSignature.Telescope.empty ?? "sig"
 end

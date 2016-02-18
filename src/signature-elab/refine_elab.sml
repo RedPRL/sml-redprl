@@ -48,7 +48,7 @@ struct
                        val st as (psi, vld) = E.elaborate' sign script alpha goal
                      in
                        case Ctx.ConsView.out psi of
-                            Ctx.ConsView.Empty =>
+                            Ctx.ConsView.EMPTY =>
                               let
                                 val phi = metactx definiens
                                 val _ \ evd = outb (vld Ctx.empty)
@@ -80,9 +80,9 @@ struct
     let
       open T.ConsView
       fun go res =
-        fn Empty => res
-         | Cons (x, Decl.DEF d,xs) => go (T.snoc res (x, elab res d)) (out xs)
-         | Cons (x, Decl.SYMDCL tau, xs) => go (T.snoc res (x, Decl.SYMDCL tau)) (out xs)
+        fn EMPTY => res
+         | CONS (x, Decl.DEF d,xs) => go (T.snoc res x (elab res d)) (out xs)
+         | CONS (x, Decl.SYMDCL tau, xs) => go (T.snoc res x (Decl.SYMDCL tau)) (out xs)
     in
       go T.empty (out sign)
     end

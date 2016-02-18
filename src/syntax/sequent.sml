@@ -35,8 +35,8 @@ struct
     let
       open SymbolTelescope open ConsView
       val rec go =
-        fn Empty => ""
-         | Cons (x, (a, tau), tl) =>
+        fn EMPTY => ""
+         | CONS (x, (a, tau), tl) =>
              let
                val hyp = Symbol.toString x ^ " : " ^ ShowAbt.toString a
              in

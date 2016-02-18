@@ -46,7 +46,7 @@ struct
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (z, (a1, EXP))}
+         hypctx = Ctx.snoc (#hypctx H) z (a1, EXP)}
 
       val goal2 =
         (newMeta "",
@@ -76,7 +76,7 @@ struct
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (z, (a, EXP))}
+         hypctx = Ctx.snoc (#hypctx H) z (a, EXP)}
 
       val goal1 =
         (newMeta "",
@@ -131,7 +131,7 @@ struct
       val H'' =
         {metactx = mctx,
          symctx = #symctx H',
-         hypctx = Ctx.snoc (#hypctx H') (z, (domHole, EXP))}
+         hypctx = Ctx.snoc (#hypctx H') z (domHole, EXP)}
 
       val codGoal =
         (newMeta "",
@@ -193,7 +193,7 @@ struct
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (z, (a, EXP))}
+         hypctx = Ctx.snoc (#hypctx H) z (a, EXP)}
 
       val goal =
         (newMeta "",

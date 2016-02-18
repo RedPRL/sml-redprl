@@ -87,12 +87,12 @@ struct
       val Hyes =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (z, (toksEq, EXP))}
+         hypctx = Ctx.snoc (#hypctx H) z (toksEq, EXP)}
 
       val Hno =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (z, (toksNotEq, EXP))}
+         hypctx = Ctx.snoc (#hypctx H) z (toksNotEq, EXP)}
 
       val goalYes =
         (newMeta "",

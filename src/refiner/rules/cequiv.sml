@@ -1,7 +1,7 @@
 structure CEquivRules : CEQUIV_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix >> $ \
+  infix >> $ \ @>
 
   fun TypeEq _ (H >> TRUE (P, _)) =
     let
@@ -16,7 +16,7 @@ struct
       val goal2 =
         (newMeta "",
          H >> TRUE (makeCEquiv (#metactx H) (n1, n2), EXP))
-      val psi = T.snoc (T.snoc T.empty goal1) goal2
+      val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
         abtToAbs makeAx)
@@ -28,7 +28,7 @@ struct
       val (tau, m, n) = destCEquiv P
       val x = newMeta ""
       val subgoal = makeCEquiv (#metactx H) (n,m)
-      val psi = T.snoc T.empty (x, H >> TRUE (subgoal, EXP))
+      val psi = T.empty @> (x, H >> TRUE (subgoal, EXP))
     in
       (psi, fn rho =>
         abtToAbs makeAx)
@@ -47,7 +47,7 @@ struct
          let
            val x = newMeta ""
            val subgoal = makeCEquiv (#metactx H) (m', n)
-           val psi = T.snoc T.empty (x, H >> TRUE (subgoal, EXP))
+           val psi = T.empty @> (x, H >> TRUE (subgoal, EXP))
          in
            (psi, fn rho =>
              abtToAbs makeAx)
@@ -67,7 +67,7 @@ struct
          let
            val x = newMeta ""
            val subgoal = makeCEquiv (#metactx H) (m', n)
-           val psi = T.snoc T.empty (x, H >> TRUE (subgoal, EXP))
+           val psi = T.empty @> (x, H >> TRUE (subgoal, EXP))
          in
            (psi, fn rho =>
              abtToAbs makeAx)

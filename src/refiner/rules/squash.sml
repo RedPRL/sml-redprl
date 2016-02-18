@@ -1,7 +1,7 @@
 structure SquashRules : SQUASH_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ $ \ >>
+  infix @@ $ \ >> @>
 
   fun destSquash m =
     case out m of
@@ -21,7 +21,7 @@ struct
         check
           (#metactx H)
           (CTT (EQ tau) $ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ], EXP)
-      val psi = T.snoc T.empty (newMeta "", H >> TRUE (goal, EXP))
+      val psi = T.empty @> (newMeta "", H >> TRUE (goal, EXP))
     in
       (psi, fn rho =>
         abtToAbs makeAx)
@@ -31,7 +31,7 @@ struct
   fun Intro _ (H >> TRUE (P, _)) =
     let
       val (tau, Q) = destSquash P
-      val psi = T.snoc T.empty (newMeta "", H >> TRUE (Q, tau))
+      val psi = T.empty @> (newMeta "", H >> TRUE (Q, tau))
     in
       (psi, fn rho =>
         abtToAbs makeAx)
@@ -46,10 +46,10 @@ struct
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.modify (#hypctx H) (h, fn _ => (Q', tau'))}
+         hypctx = Ctx.modify h (fn _ => (Q', tau')) (#hypctx H)}
 
       val x = newMeta ""
-      val psi = T.snoc T.empty (x, H' >> TRUE (P, tau))
+      val psi = T.empty @> (x, H' >> TRUE (P, tau))
     in
       (psi, fn rho =>
         T.lookup rho x)

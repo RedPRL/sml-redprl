@@ -1,7 +1,7 @@
 structure BaseRules : BASE_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ >> $ \
+  infix @@ >> $ \ @>
 
   fun destBase m =
     case out m of
@@ -36,12 +36,12 @@ struct
               val base = check' (CTT (BASE tau) $ [], EXP)
               val goal = check' (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
             in
-              T.snoc tl (meta, H >> TRUE (goal, EXP))
+              tl @> (meta, H >> TRUE (goal, EXP))
             end)
           T.empty
           (varctx m)
       val mainGoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP)
-      val subgoals' = T.snoc subgoals (newMeta "", H >> TRUE (mainGoal, EXP))
+      val subgoals' = subgoals @> (newMeta "", H >> TRUE (mainGoal, EXP))
     in
       (subgoals', fn rho =>
         abtToAbs makeAx)
@@ -58,7 +58,7 @@ struct
       val ctx' =
         Ctx.interposeAfter
           (#hypctx H)
-          (h, Ctx.snoc Ctx.empty (z, (makeCEquiv (#metactx H) (htm, htm), EXP)))
+          (h, Ctx.snoc Ctx.empty z (makeCEquiv (#metactx H) (htm, htm), EXP))
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
@@ -66,7 +66,7 @@ struct
       val goal =
         (newMeta "",
          H' >> TRUE (P, sigma))
-      val psi = T.snoc T.empty goal
+      val psi = T.empty @> goal
     in
       (psi, fn rho =>
         mapAbs (subst (makeAx, z)) (T.lookup rho (#1 goal)))

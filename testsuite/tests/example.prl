@@ -107,10 +107,21 @@ Thm lamTest : [fun(Atom; Atom)] by [
 ].
 
 
-Def domain(i : lvl) : exp = [
-  fun(Atom; Univ(i))
+Def record(el : [exp].exp) : exp = [
+  dfun(Atom; [l]. el[l])
 ].
 
-Thm domainWf(i : lvl) : [member(domain(i); Univ(lsuc(i)))] by [
-  normalize; repeat(auto)
+Sym foo : exp.
+Sym bar : exp.
+
+Def exampleRecordTy : exp = [
+  record([l]. ifeq(l; 'foo; Atom; ifeq(l; 'bar; Atom; Base)))
+].
+
+Def exampleRecord : exp = [
+  lam([l]. ifeq(l; 'foo; 'mysym; ifeq(l; 'bar; 'mysym2; Ax)))
+].
+
+Thm exampleRecordWf : [member(exampleRecord; exampleRecordTy)] by [
+  normalize; auto; auto; auto; normalize; auto; auto; normalize
 ].

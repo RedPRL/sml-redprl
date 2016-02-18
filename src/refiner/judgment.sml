@@ -42,7 +42,7 @@ struct
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = SymbolTelescope.map (#hypctx H) (fn (Q, tau) => (metasubst (e, x) Q, tau))}
+         hypctx = SymbolTelescope.map (fn (Q, tau) => (metasubst (e, x) Q, tau)) (#hypctx H)}
     in
       H' >> substConcl (x, e) concl
     end

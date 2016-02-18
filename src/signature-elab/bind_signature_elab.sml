@@ -50,13 +50,13 @@ struct
 
       fun go opidTable (signIn : AstSignature.sign) (signOut : AbtSignature.sign) =
         case out signIn of
-            Empty => signOut
-          | Cons (opid, decl, rest) =>
+            EMPTY => signOut
+          | CONS (opid, decl, rest) =>
             let
               val lbl = Symbol.named opid
               val decl' = bindDecl opidTable signOut decl
               val opidTable' = NameEnv.insert opidTable opid lbl
-              val signOut' = SymbolTelescope.snoc signOut (lbl, decl')
+              val signOut' = SymbolTelescope.snoc signOut lbl decl'
             in
               go opidTable' rest signOut'
             end

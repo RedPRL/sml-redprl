@@ -30,14 +30,13 @@ struct
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (x, (a1, tau))}
+         hypctx = Ctx.snoc (#hypctx H) x (a1, tau)}
 
       val goal2 =
         (newMeta "",
          makeEqSequent H' (b1x, b2x, univ))
 
-      val psi =
-        T.snoc (T.snoc T.empty goal1) goal2
+      val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
         abtToAbs makeAx)
@@ -63,7 +62,7 @@ struct
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (z, (a, tau1))}
+         hypctx = Ctx.snoc (#hypctx H) z (a, tau1)}
 
       val tyfunGoal =
         (newMeta "",
@@ -101,7 +100,7 @@ struct
       val H'' =
         {metactx = #metactx H',
          symctx = #symctx H',
-         hypctx = Ctx.snoc (#hypctx H') (z, (a, tau1))}
+         hypctx = Ctx.snoc (#hypctx H') z (a, tau1)}
 
       val tyfunGoal =
         (newMeta "",
@@ -124,11 +123,11 @@ struct
       val hyps =
         Ctx.interposeAfter
           (#hypctx H)
-          (i, Ctx.snoc (Ctx.snoc Ctx.empty (z1, (a, tau1))) (z2, (bz1, tau2)))
+          (i, Ctx.snoc (Ctx.snoc Ctx.empty z1 (a, tau1)) z2 (bz1, tau2))
       val hyps' =
-        Ctx.mapAfter
+        Ctx.modifyAfter i
+          (fn (p,tau) => (subst (z1tm, i) p, tau))
           hyps
-          (i, fn (p,tau) => (subst (z1tm, i) p, tau))
 
       val H' =
         {metactx = #metactx H,

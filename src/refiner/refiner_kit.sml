@@ -136,5 +136,5 @@ struct
     val makeAx = check' (CTT AX $ [], EXP)
   end
 
-  fun @> (t,g) = T.snoc t g
+  fun @> (t,(x,y)) = T.snoc t x y
 end
