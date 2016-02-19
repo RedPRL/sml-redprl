@@ -121,7 +121,3 @@ Def exampleRecordTy : exp = [
 Def exampleRecord : exp = [
   lam([l]. ifeq(l; 'foo; 'mysym; ifeq(l; 'bar; 'mysym2; Ax)))
 ].
-
-Thm exampleRecordWf : [member(exampleRecord; exampleRecordTy)] by [
-  normalize; auto; auto; auto; normalize; auto; auto; normalize
-].
