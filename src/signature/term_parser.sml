@@ -268,6 +268,10 @@ struct
                wth (fn rule =>
                  LCF (NominalLcfOperatorData.EQ {rule = rule}) $ [])
 
+           val parseExt =
+             symbol "eq"
+               return (LCF EXT $ [])
+
            val parseTrace =
              symbol "trace"
                >> (braces (parseSort sign) || succeed SortData.STR)
@@ -366,6 +370,7 @@ struct
                || parseCEval
                || parseCSym
                || parseEq
+               || parseExt
                || parseTrace
                || parseHyp
                || parseElim

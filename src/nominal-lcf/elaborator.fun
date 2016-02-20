@@ -93,6 +93,8 @@ struct
              R.Intro rule
          | LCF (EQ {rule}) $ [] =>
              R.Eq rule
+         | LCF EXT $ [] =>
+             R.Ext
          | LCF (CSTEP i) $ [] =>
              R.CStep sign i
          | LCF CSYM $ [] =>
