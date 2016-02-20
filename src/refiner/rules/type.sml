@@ -33,9 +33,9 @@ struct
     in
       (psi, fn rho =>
         let
-          val _ \ ev = outb @@ T.lookup rho (#1 lvlGoal)
+          val _ \ lvl = outb @@ T.lookup rho (#1 lvlGoal)
         in
-          makeEvidence G H ev
+          makeEvidence G H lvl
         end)
     end
     | Intro _ _ = raise Match
