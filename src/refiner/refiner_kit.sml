@@ -58,8 +58,12 @@ struct
       val (_, tau) = vl
       val mctx = MetaCtx.insert (#metactx H) x vl
       fun h us ms = check mctx (x $# (us, ms), tau)
+      val H' =
+        {metactx = mctx,
+         symctx = #symctx H,
+         hypctx = #hypctx H}
     in
-      ((x,jdg), h, mctx)
+      ((x,jdg), h, H)
     end
 
   local

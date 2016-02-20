@@ -7,27 +7,19 @@ struct
 
   fun Intro _ (G |> H >> TYPE (P, tau)) =
     let
-      val lvlGoal = (newMeta "", [] |> makeLevelSequent H)
-      val H' =
-        {metactx = MetaCtx.insert (#metactx H) (#1 lvlGoal) (([],[]), LVL),
-         symctx = #symctx H,
-         hypctx = #hypctx H}
-
-      val lvlHole =
-        check
-          (#metactx H')
-          (#1 lvlGoal $# ([], []),
-           LVL)
+      val (lvlGoal, lvlHole, H) =
+        makeGoal @@
+          [] |> makeLevelSequent H
 
       val univ =
         check
-          (#metactx H')
-          (CTT (UNIV tau) $ [([],[]) \ lvlHole],
+          (#metactx H)
+          (CTT (UNIV tau) $ [([],[]) \ lvlHole [] []],
            EXP)
 
-      val memGoal =
-        (newMeta "",
-         [] |> makeMemberSequent H' (P, univ))
+      val (memGoal, _, _)  =
+        makeGoal @@
+          [] |> makeMemberSequent H (P, univ)
 
       val psi = T.empty @> lvlGoal @> memGoal
     in

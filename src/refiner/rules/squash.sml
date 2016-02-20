@@ -19,11 +19,14 @@ struct
       val (_, a') = destSquash a
       val (_, b') = destSquash b
       val _ = destUniv univ
-      val goal =
+      val eq =
         check
           (#metactx H)
           (CTT (EQ tau) $ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ], EXP)
-      val psi = T.empty @> (newMeta "", [] |> H >> TRUE (goal, EXP))
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> H >> TRUE (eq, EXP)
+      val psi = T.empty @> goal
     in
       (psi, fn rho =>
         makeEvidence G H makeAx)
@@ -33,7 +36,10 @@ struct
   fun Intro _ (G |> H >> TRUE (P, _)) =
     let
       val (tau, Q) = destSquash P
-      val psi = T.empty @> (newMeta "", [] |> H >> TRUE (Q, tau))
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> H >> TRUE (Q, tau)
+      val psi = T.empty @> goal
     in
       (psi, fn rho =>
         makeEvidence G H makeAx)
@@ -50,12 +56,15 @@ struct
          symctx = #symctx H,
          hypctx = Ctx.modify h (fn _ => (Q', tau')) (#hypctx H)}
 
-      val x = newMeta ""
-      val psi = T.empty @> (x, [] |> H' >> TRUE (P, tau))
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> H' >> TRUE (P, tau)
+
+      val psi = T.empty @> goal
     in
       (psi, fn rho =>
         let
-          val _ \ ev = outb @@ T.lookup rho x
+          val _ \ ev = outb @@ T.lookup rho (#1 goal)
         in
           makeEvidence G H ev
         end)

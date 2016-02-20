@@ -86,9 +86,9 @@ struct
 
   fun Witness m alpha (G |> H >> TRUE (P, _)) =
     let
-      val goal =
-        (newMeta "",
-         [] |> makeMemberSequent H (m, P))
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> makeMemberSequent H (m, P)
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
@@ -141,9 +141,10 @@ struct
              | _ => m
 
         val P' = go (Abt.deepMapSubterms go P)
-        val goal =
-          (newMeta "",
-           [] |> H >> TRUE (P', tau))
+        val (goal, _, _) =
+          makeGoal @@
+            [] |> H >> TRUE (P', tau)
+
         val psi = T.empty @> goal
       in
         (psi, fn rho =>
@@ -161,9 +162,9 @@ struct
         fun go m = evalOpen sign m handle _ => m
 
         val P' = go (Abt.deepMapSubterms go P)
-        val goal =
-          (newMeta "",
-           [] |> H >> TRUE (P', tau))
+        val (goal, _, _) =
+          makeGoal @@
+            [] |> H >> TRUE (P', tau)
         val psi = T.empty @> goal
       in
         (psi, fn rho =>
@@ -178,10 +179,14 @@ struct
     fun RewriteGoal Q _ (G |> H >> TRUE (P, sigma)) =
       let
         val tau = sort P
-        val ceqGoal =
-          (newMeta "",
-           [] |> H >> TRUE (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP))
-        val mainGoal = (newMeta "", [] |> H >> TRUE (Q, sigma))
+        val (ceqGoal, _, _) =
+          makeGoal @@
+            [] |> H >> TRUE (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP)
+
+        val (mainGoal, _, _) =
+          makeGoal @@
+            [] |> H >> TRUE (Q, sigma)
+
         val psi = T.empty @> ceqGoal @> mainGoal
       in
         (psi, fn rho =>

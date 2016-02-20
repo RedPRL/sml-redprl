@@ -72,13 +72,13 @@ struct
 
       val _ = if sigma = sigma' andalso tau = tau' then () else raise Match
 
-      val goal1 =
-        (newMeta "",
-         [] |> makeEqSequent H (t1, t1', makeAtom sigma))
+      val (goal1, _, H) =
+        makeGoal @@
+          [] |> makeEqSequent H (t1, t1', makeAtom sigma)
 
-      val goal2 =
-        (newMeta "",
-         [] |> makeEqSequent H (t2, t2', makeAtom sigma))
+      val (goal2, _, H) =
+        makeGoal @@
+          [] |> makeEqSequent H (t2, t2', makeAtom sigma)
 
       val z = alpha 0
 
@@ -96,13 +96,13 @@ struct
          symctx = #symctx H,
          hypctx = Ctx.snoc (#hypctx H) z (toksNotEq, EXP)}
 
-      val goalYes =
-        (newMeta "",
-         [(z, EXP)] |> makeEqSequent Hyes (yes, yes', a))
+      val (goalYes, _, _) =
+        makeGoal @@
+          [(z, EXP)] |> makeEqSequent Hyes (yes, yes', a)
 
-      val goalNo =
-        (newMeta "",
-         [(z, EXP)] |> makeEqSequent Hno (no, no', a))
+      val (goalNo, _, _) =
+        makeGoal @@
+          [(z, EXP)] |> makeEqSequent Hno (no, no', a)
 
       val psi = T.empty @> goal1 @> goal2 @> goalYes @> goalNo
     in

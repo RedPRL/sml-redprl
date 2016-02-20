@@ -20,9 +20,9 @@ struct
       val (_, _, a2, x2, b2) = destEnsemble s2
       val _ = destUniv univ
 
-      val goal1 =
-        (newMeta "",
-         [] |> makeEqSequent H (a1,a2,univ))
+      val (goal1, _, H) =
+        makeGoal @@
+          [] |> makeEqSequent H (a1,a2,univ)
 
       val x = alpha 0
       val xtm = check' (`x, tau)
@@ -34,9 +34,9 @@ struct
          symctx = #symctx H,
          hypctx = Ctx.snoc (#hypctx H) x (a1, tau)}
 
-      val goal2 =
-        (newMeta "",
-         [] |> makeEqSequent H' (b1x, b2x, univ))
+      val (goal2, _, H') =
+        makeGoal @@
+          [] |> makeEqSequent H' (b1x, b2x, univ)
 
       val psi = T.empty @> goal1 @> goal2
     in
@@ -49,14 +49,15 @@ struct
     let
       val (_, m1, m2, ensemble) = destEq P
       val (tau1, tau2, a, x, b) = destEnsemble ensemble
-      val tyGoal =
-        (newMeta "",
-         [] |> makeEqSequent H (m1, m2, a))
+
+      val (tyGoal, _, H) =
+        makeGoal @@
+          [] |> makeEqSequent H (m1, m2, a)
 
       val bm = subst (m1, x) b
-      val squashGoal =
-        (newMeta "",
-         [] |> H >> TRUE (makeSquash (#metactx H) tau2 bm, EXP))
+      val (squashGoal, _, H) =
+        makeGoal @@
+          [] |> H >> TRUE (makeSquash (#metactx H) tau2 bm, EXP)
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
@@ -66,9 +67,9 @@ struct
          symctx = #symctx H,
          hypctx = Ctx.snoc (#hypctx H) z (a, tau1)}
 
-      val tyfunGoal =
-        (newMeta "",
-         [(z,tau1)] |> H' >> TYPE (bz, tau2))
+      val (tyfunGoal, _, _) =
+        makeGoal @@
+          [(z,tau1)] |> H' >> TYPE (bz, tau2)
 
       val psi = T.empty @> tyGoal @> squashGoal @> tyfunGoal
     in
@@ -81,32 +82,26 @@ struct
     let
       val (tau1, tau2, a, x, b) = destEnsemble P
 
-      val mainGoal =
-        (newMeta "",
-         [] |> H >> TRUE (a, tau1))
+      val (mainGoal, mainHole, H) =
+        makeGoal @@
+          [] |> H >> TRUE (a, tau1)
 
-      val H' =
-        {metactx = MetaCtx.insert (#metactx H) (#1 mainGoal) (([],[]), tau1),
-         symctx = #symctx H,
-         hypctx = #hypctx H}
-
-      val mainHole = check (#metactx H') (#1 mainGoal $# ([],[]), tau1)
-      val pred = subst (mainHole, x) b
-      val predGoal =
-        (newMeta "",
-         [] |> H >> TRUE (makeSquash (#metactx H) tau2 pred, EXP))
+      val pred = subst (mainHole [] [], x) b
+      val (predGoal, _, H) =
+        makeGoal @@
+          [] |> H >> TRUE (makeSquash (#metactx H) tau2 pred, EXP)
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
 
-      val H'' =
-        {metactx = #metactx H',
-         symctx = #symctx H',
-         hypctx = Ctx.snoc (#hypctx H') z (a, tau1)}
+      val H' =
+        {metactx = #metactx H,
+         symctx = #symctx H,
+         hypctx = Ctx.snoc (#hypctx H) z (a, tau1)}
 
-      val tyfunGoal =
-        (newMeta "",
-         [(z,tau1)] |> H'' >> TYPE (bz, tau2))
+      val (tyfunGoal, _, _) =
+        makeGoal @@
+          [(z,tau1)] |> H' >> TYPE (bz, tau2)
 
       val psi = T.empty @> mainGoal @> predGoal @> tyfunGoal
     in
@@ -139,9 +134,9 @@ struct
 
       val P' = subst (z1tm, i) P
 
-      val goal =
-        (newMeta "",
-         [(z1, tau1), (z2, tau2)] |> H' >> TRUE (P', tau))
+      val (goal, _, _) =
+        makeGoal @@
+          [(z1, tau1), (z2, tau2)] |> H' >> TRUE (P', tau)
 
       val psi = T.empty @> goal
     in

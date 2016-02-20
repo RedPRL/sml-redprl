@@ -1,7 +1,7 @@
 structure CEquivRules : CEQUIV_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix $ \ @>
+  infix $ \ @> @@
   infix 4 >>
   infix 3 |>
 
@@ -12,12 +12,15 @@ struct
       val (tau1, m1, n1) = destCEquiv ceq1
       val (tau2, m2, n2) = destCEquiv ceq2
       val () = if tau1 = tau2 then () else raise Fail "CEquiv.TypeEq: sort mismatch"
-      val goal1 =
-        (newMeta "",
-         [] |> H >> TRUE (makeCEquiv (#metactx H) (m1, m2), EXP))
-      val goal2 =
-        (newMeta "",
-         [] |> H >> TRUE (makeCEquiv (#metactx H) (n1, n2), EXP))
+
+      val (goal1, _, H) =
+        makeGoal @@
+          [] |> H >> TRUE (makeCEquiv (#metactx H) (m1, m2), EXP)
+
+      val (goal2, _, _) =
+        makeGoal @@
+         [] |> H >> TRUE (makeCEquiv (#metactx H) (n1, n2), EXP)
+
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
@@ -28,9 +31,10 @@ struct
   fun CSym _ (G |> H >> TRUE (P, _)) =
     let
       val (tau, m, n) = destCEquiv P
-      val x = newMeta ""
-      val subgoal = makeCEquiv (#metactx H) (n,m)
-      val psi = T.empty @> (x, [] |> H >> TRUE (subgoal, EXP))
+      val (subgoal, _, _) =
+        makeGoal @@
+          [] |> H >> TRUE (makeCEquiv (#metactx H) (n,m), EXP)
+      val psi = T.empty @> subgoal
     in
       (psi, fn rho =>
         makeEvidence G H makeAx)
@@ -47,9 +51,10 @@ struct
           makeEvidence G H makeAx)
        else
          let
-           val x = newMeta ""
-           val subgoal = makeCEquiv (#metactx H) (m', n)
-           val psi = T.empty @> (x, [] |> H >> TRUE (subgoal, EXP))
+           val (subgoal, _, _) =
+             makeGoal @@
+               [] |> H >> TRUE (makeCEquiv (#metactx H) (m', n), EXP)
+           val psi = T.empty @> subgoal
          in
            (psi, fn rho =>
              makeEvidence G H makeAx)
@@ -67,9 +72,10 @@ struct
           makeEvidence G H makeAx)
        else
          let
-           val x = newMeta ""
-           val subgoal = makeCEquiv (#metactx H) (m', n)
-           val psi = T.empty @> (x, [] |> H >> TRUE (subgoal, EXP))
+           val (subgoal, _, _) =
+             makeGoal @@
+               [] |> H >> TRUE (makeCEquiv (#metactx H) (m', n), EXP)
+           val psi = T.empty @> subgoal
          in
            (psi, fn rho =>
              makeEvidence G H makeAx)

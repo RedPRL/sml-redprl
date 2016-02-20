@@ -33,7 +33,7 @@ struct
         VarCtx.foldl
           (fn (x, tau, tl) =>
             let
-              val meta = newMeta (Variable.toString x)
+              val meta = newMeta ""
               val xtm = check' (`x, tau)
               val base = check' (CTT (BASE tau) $ [], EXP)
               val goal = check' (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
@@ -42,8 +42,12 @@ struct
             end)
           T.empty
           (varctx m)
-      val mainGoal = check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP)
-      val subgoals' = subgoals @> (newMeta "", [] |> H >> TRUE (mainGoal, EXP))
+
+      val (mainGoal, _, _) =
+        makeGoal @@
+          [] |> H >> TRUE (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP), EXP)
+
+      val subgoals' = subgoals @> mainGoal
     in
       (subgoals', fn rho =>
         makeEvidence G H makeAx)
@@ -61,13 +65,16 @@ struct
         Ctx.interposeAfter
           (#hypctx H)
           (h, Ctx.snoc Ctx.empty z (makeCEquiv (#metactx H) (htm, htm), EXP))
+
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
          hypctx = ctx'}
-      val goal =
-        (newMeta "",
-         [(z,EXP)] |> H' >> TRUE (P, sigma))
+
+      val (goal, _, _) =
+        makeGoal @@
+          [(z,EXP)] |> H' >> TRUE (P, sigma)
+
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
