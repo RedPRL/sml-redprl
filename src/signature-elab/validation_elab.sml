@@ -72,12 +72,13 @@ struct
    *)
   fun transport sign =
     let
+      open Telescope.ConsView
       fun go map sign =
-        case Telescope.ConsView.out sign of
-            Telescope.ConsView.Empty => ()
-          | Telescope.ConsView.Cons (l, S1.Decl.DEF d, s) =>
+        case out sign of
+            EMPTY => ()
+          | CONS (l, S1.Decl.DEF d, s) =>
             (checkDef map d; go (DefnMap.insert map l d) s)
-          | Telescope.ConsView.Cons (l, _, s) =>
+          | CONS (l, _, s) =>
               go map s
     in
       (* Note that since we're just validating the signature

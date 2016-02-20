@@ -130,11 +130,42 @@ struct
          | CTT (SQUASH _) $ _ => FINAL
          | CTT (ENSEMBLE _) $ _ => FINAL
          | CTT (BASE _) $ _ => FINAL
+         | CTT DFUN $ _ => FINAL
+         | CTT FUN $ [_ \ a, _ \ b] =>
+             ret @@ check (metactx m) (CTT DFUN $ [([],[]) \ a, ([],[Variable.named "x"]) \ b], EXP) <: env
+         | CTT LAM $ _ => FINAL
+         | CTT AP $ [_ \ f, _ \ x] =>
+             stepAp sign (f, x) (m <: env)
+         | CTT VOID $ [] => FINAL
+         | CTT NOT $ [_ \ a] =>
+             let
+               val void = check' (CTT VOID $ [], EXP)
+             in
+               ret @@ check (metactx m) (CTT FUN $ [([],[]) \ a, ([],[]) \ void], EXP) <: env
+             end
          | ATM (ATOM _) $ _ => FINAL
          | ATM (TOKEN _) $ _ => FINAL
          | ATM (TEST (sigma,tau)) $ [_ \ tok1, _ \ tok2, _ \ yes, _ \ no] =>
              stepAtomTest sign (sigma, tau) (tok1, tok2) (yes, no) (m <: env)
          | _ => ?hole
+    end
+
+  and stepAp sign (f, n) (m <: env) =
+    let
+      open OperatorData CttOperatorData SortData
+    in
+      case step sign (f <: env) of
+           FINAL =>
+             (case out f of
+                   CTT LAM $ [(_,[x]) \ e] =>
+                     let
+                       val (mrho, srho, vrho) = env
+                     in
+                       ret @@ e <: (mrho, srho, VarCtx.insert vrho x (n <: env))
+                     end
+                 | _ => raise Match)
+         | STEP (f' <: env) =>
+             ret @@ check (metactx m) (CTT AP $ [([],[]) \ f', ([],[]) \ n], EXP) <: env
     end
 
   and stepAtomTest sign (sigma,tau) (tok1, tok2) (yes, no) (m <: env) =

@@ -55,7 +55,7 @@ struct
   fun Trace m jdg =
     let
       val x = Abt.Metavariable.named "?"
-      val psi = Tele.snoc Tele.empty (x, jdg)
+      val psi = Tele.snoc Tele.empty x jdg
     in
       print (ShowAbt.toString m ^ "\n");
       (psi, fn rho => Tele.lookup rho x)
@@ -63,8 +63,8 @@ struct
 
   fun collectSeqs sign rho t =
     case out t of
-         LCF (SEQ _) $ [_ \ mt, (us, _) \ t] => (us, mt) :: collectSeqs sign rho t
-       | _ => [([], check (metactx t) (LCF ALL $ [([],[]) \ t], MTAC))]
+         LCF (SEQ _) $ [_ \ mt, (us, xs) \ t] => ((us,xs), mt) :: collectSeqs sign rho t
+       | _ => [(([], []), check (metactx t) (LCF ALL $ [([],[]) \ t], MTAC))]
 
   fun elaborate sign rho t : Refiner.ntactic =
     let
@@ -93,6 +93,8 @@ struct
              R.Intro rule
          | LCF (EQ {rule}) $ [] =>
              R.Eq rule
+         | LCF EXT $ [] =>
+             R.Ext
          | LCF (CSTEP i) $ [] =>
              R.CStep sign i
          | LCF CSYM $ [] =>
@@ -105,6 +107,10 @@ struct
              R.EvalGoal sign
          | LCF (WITNESS tau) $ [_ \ m] =>
              R.Witness m
+         | LCF (UNFOLD opid) $ [] =>
+             R.Unfold sign opid
+         | LCF NORMALIZE $ [] =>
+             R.Normalize sign
          | LCF AUTO $ [] =>
              R.AutoStep sign
          | LCF REC $ [(_, [x]) \ t] =>
@@ -113,17 +119,20 @@ struct
          | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t ^ " which evaluated to " ^ DebugShowAbt.toString t')
     end
 
-  and elaborateM sign rho T (us, mt) =
+  and elaborateM sign rho T ((us, xs), mt) =
     let
-      val mt' = evalOpen sign mt handle _ => mt
+      val srho = ListPair.foldl (fn (u,x,acc) => SymCtx.insert acc u x) SymCtx.empty (us, xs)
+      val us' = xs
+      val mt' = Abt.renameEnv srho mt
+      val mt'' = evalOpen sign mt' handle _ => mt'
     in
-      case out mt' of
+      case out mt'' of
            LCF ALL $ [_ \ t'] =>
              (fn alpha => fn jdg =>
                let
                  val (alpha', modulus) = probe alpha
                  val st = T alpha' jdg
-                 val beta = prepend us (bite (!modulus) alpha)
+                 val beta = prepend us' (bite (!modulus) alpha)
                in
                  MT.ALL (elaborate sign rho t' beta) st
                end)
@@ -135,9 +144,9 @@ struct
                  let
                    val (alpha', modulus) = probe alpha
                    val st = T alpha' jdg
-                   val beta = prepend us (bite (!modulus) alpha)
+                   val beta = prepend us' (bite (!modulus) alpha)
                  in
-                   MT.EACH (List.map (fn T => T beta) Ts) st
+                   MT.EACH' (List.map (fn T => T beta) Ts) st
                  end
              end
          | LCF (FOCUS i) $ [_ \ t'] =>
@@ -145,11 +154,11 @@ struct
                let
                  val (alpha', modulus) = probe alpha
                  val st = T alpha' jdg
-                 val beta = prepend us (bite (!modulus) alpha)
+                 val beta = prepend us' (bite (!modulus) alpha)
                in
                  MT.FOCUS i (elaborate sign rho t' beta) st
                end)
-         | _ => raise Fail ("Expecting multitac but got " ^ DebugShowAbt.toString mt')
+         | _ => raise Fail ("Expecting multitac but got " ^ DebugShowAbt.toString mt'')
     end
 
   fun elaborate' sign =

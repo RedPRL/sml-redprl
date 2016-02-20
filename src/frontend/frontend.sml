@@ -38,11 +38,11 @@ struct
   in
     fun printSign sign =
       case ConsView.out sign of
-          ConsView.Cons (l, dcl, sign') =>
+          ConsView.CONS (l, dcl, sign') =>
             ((case dcl of
                  Decl.DEF d => printDef (l, d)
                | Decl.SYMDCL tau => printSymDcl (l, tau)); printSign sign')
-        | ConsView.Empty => ()
+        | ConsView.EMPTY => ()
   end
 
   fun processFile fileName =

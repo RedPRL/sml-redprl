@@ -1,7 +1,9 @@
 structure AtomRules : ATOM_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData AtomsOperatorData SortData
-  infix @@ >> $ $# \ @>
+  infix @@ $ $# \ @>
+  infix 4 >>
+  infix 3 |>
 
   fun destAtom m =
     case out m of
@@ -32,7 +34,7 @@ struct
               ^ DebugShowAbt.toString m
 
 
-  fun TypeEq _ (H >> TRUE (P, _)) =
+  fun TypeEq _ (G |> H >> TRUE (P, _)) =
     let
       val (_, atm1, atm2, univ) = destEq P
       val (sigma, lvl) = destUniv univ
@@ -41,11 +43,11 @@ struct
       val _ = if sigma = EXP andalso tau1 = tau2 then () else raise Match
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq _ (H >> TRUE (P, _)) =
+  fun MemberEq _ (G |> H >> TRUE (P, _)) =
     let
       val (_,tok1,tok2,atm) = destEq P
       val tau = destAtom atm
@@ -58,12 +60,11 @@ struct
           raise Match
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | MemberEq _ _ = raise Match
 
-  (* The following can only be implemented after we have implication / negation:
-  fun TestEq _ (H >> TRUE (P, _)) =
+  fun TestEq alpha (G |> H >> TRUE (P, _)) =
     let
       val (_, test1, test2, a) = destEq P
       val (sigma, tau, t1, t2, yes, no) = destTest test1
@@ -71,29 +72,42 @@ struct
 
       val _ = if sigma = sigma' andalso tau = tau' then () else raise Match
 
-      val goal1 =
-        (newMeta "",
-         makeEqSequent H (t1, t1', makeAtom sigma))
+      val (goal1, _, H) =
+        makeGoal @@
+          [] |> makeEqSequent H (t1, t1', makeAtom sigma)
 
-      val goal2 =
-        (newMeta "",
-         makeEqSequent H (t2, t2', makeAtom sigma))
+      val (goal2, _, H) =
+        makeGoal @@
+          [] |> makeEqSequent H (t2, t2', makeAtom sigma)
+
+      val z = alpha 0
+
+      val atomTy = makeAtom sigma
+      val toksEq = makeEq (#metactx H) (t1, t1', atomTy)
+      val toksNotEq = check (#metactx H) (CTT NOT $ [([],[]) \ toksEq], EXP)
 
       val Hyes =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) (?hole, ?hole)}
+         hypctx = Ctx.snoc (#hypctx H) z (toksEq, EXP)}
 
       val Hno =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = ?hole}
+         hypctx = Ctx.snoc (#hypctx H) z (toksNotEq, EXP)}
 
-      val psi = T.empty @> goal1 @> goal2 @> ?hole @> ?hole
+      val (goalYes, _, _) =
+        makeGoal @@
+          [(z, EXP)] |> makeEqSequent Hyes (yes, yes', a)
+
+      val (goalNo, _, _) =
+        makeGoal @@
+          [(z, EXP)] |> makeEqSequent Hno (no, no', a)
+
+      val psi = T.empty @> goal1 @> goal2 @> goalYes @> goalNo
     in
-      (?hole, fn rho =>
-        abtToAbs makeAx)
+      (psi, fn rho =>
+        makeEvidence G H makeAx)
     end
     | TestEq _ _ = raise Match
-    *)
 end

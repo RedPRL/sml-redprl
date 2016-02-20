@@ -23,6 +23,10 @@ local
   refiner/rules/ensemble.sml
   refiner/rules/atom.sig
   refiner/rules/atom.sml
+  refiner/rules/pi.sig
+  refiner/rules/pi.sml
+  refiner/rules/void.sig
+  refiner/rules/void.sml
   refiner/refiner.sig
   refiner/refiner.sml
 in

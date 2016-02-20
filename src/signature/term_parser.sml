@@ -36,6 +36,7 @@ struct
         symbol "exp" return EXP
         || symbol "lvl" return LVL
         || symbol "tac" return TAC
+        || symbol "thm" >> braces p wth THM
         || symbol "mtac" return MTAC
         || symbol "vec" >> braces p wth VEC
         || symbol "str" return STR)
@@ -74,11 +75,7 @@ struct
   in
     val rec inferRefinedSort =
       fn CTT (BASE tau) $ _ => tau
-       | CTT (UNIV _) $ _ => EXP
-       | CTT (CEQUIV _) $ _ => EXP
-       | CTT (CAPPROX _) $ _ => EXP
-       | CTT (EQ _) $ _ => EXP
-       | _ => raise Fail "Could not infer refined sort"
+       | _ => EXP
 
     fun inferRefinedSort' m =
       succeed (inferRefinedSort m)
@@ -136,6 +133,30 @@ struct
                >> (braces (parseSort sign) || succeed EXP)
                wth (fn tau =>
                  CTT (BASE tau) $ [])
+
+           val parseDFun =
+             symbol "dfun"
+               >> parens (f EXP << semi && squares parseVariable << dot && f EXP)
+               wth (fn (a, (x, b)) =>
+                 CTT DFUN $ [([],[]) \ a, ([],[x]) \ b])
+
+           val parseFun =
+             symbol "fun"
+               >> parens (f EXP << semi && f EXP)
+               wth (fn (a, b) =>
+                 CTT FUN $ [([],[]) \ a, ([],[]) \ b])
+
+           val parseLam =
+             symbol "lam"
+               >> parens (squares parseVariable << dot && f EXP)
+               wth (fn (x, m) =>
+                 CTT LAM $ [([],[x]) \ m])
+
+           val parseAp =
+             symbol "ap"
+               >> parens (f EXP << semi && f EXP)
+               wth (fn (m, n) =>
+                 CTT AP $ [([],[]) \ m, ([],[]) \ n])
 
            val parseAtom =
              symbol "Atom"
@@ -201,6 +222,10 @@ struct
              || parseEq
              || parseMember
              || parseBase
+             || parseDFun
+             || parseFun
+             || parseLam
+             || parseAp
              || parseAtom
              || parseToken
              || parseTest
@@ -243,6 +268,10 @@ struct
                wth (fn rule =>
                  LCF (NominalLcfOperatorData.EQ {rule = rule}) $ [])
 
+           val parseExt =
+             symbol "eq"
+               return (LCF EXT $ [])
+
            val parseTrace =
              symbol "trace"
                >> (braces (parseSort sign) || succeed SortData.STR)
@@ -261,11 +290,22 @@ struct
              symbol "eval-goal"
                return (LCF EVAL_GOAL $ [])
 
+           val parseUnfold =
+             symbol "unfold"
+               >> parseSymbol
+               wth (fn opid =>
+                 LCF (UNFOLD opid) $ [])
+
+           val parseNormalize =
+             symbol "normalize"
+               wth (fn opid =>
+                 LCF NORMALIZE $ [])
+
            val parseWitness =
              symbol "witness"
                >> (braces (parseSort sign) || succeed SortData.EXP)
                -- (fn tau =>
-                 f tau wth (fn m =>
+                 squares (f tau) wth (fn m =>
                    LCF (WITNESS tau) $ [([],[]) \ m]))
 
            val parseHyp =
@@ -330,6 +370,7 @@ struct
                || parseCEval
                || parseCSym
                || parseEq
+               || parseExt
                || parseTrace
                || parseHyp
                || parseElim
@@ -340,6 +381,8 @@ struct
                || parseRewriteGoal
                || parseEvalGoal
                || parseWitness
+               || parseUnfold
+               || parseNormalize
                || parseOrElse
                || try (parseAny sign rho f TAC)
 
@@ -358,13 +401,17 @@ struct
            datatype component = BINDING of (symbol * sort) list * ast
 
            val parseComponent =
-             (commaSep1 (parseSymbol << colon && parseSort sign) << symbol "<-" || succeed [])
+             (commaSep1 (parseSymbol && ((colon >> parseSort sign) || succeed EXP)) << symbol "<-" || succeed [])
                && parseMultitac
                wth BINDING
 
            fun makeSeq t (us : (symbol * sort) list) mt =
-             LCF (SEQ (map #2 us)) $
-               [([],[]) \ t, (map #1 us, []) \ mt]
+             let
+               val us1 = map #1 us
+             in
+               LCF (SEQ (map #2 us)) $
+                 [([],[]) \ t, (us1, us1) \ mt]
+             end
 
            val multitacToTac =
              fn (LCF ALL $ [_ \ t]) => t

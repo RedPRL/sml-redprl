@@ -1,7 +1,10 @@
 structure SquashRules : SQUASH_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ $ \ >>
+  infix @@ $ \ @>
+  infix 2 //
+  infix 4 >>
+  infix 3 |>
 
   fun destSquash m =
     case out m of
@@ -11,34 +14,40 @@ struct
              @@ "Expected Squash but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq _ (H >> TRUE (P, _)) =
+  fun TypeEq _ (G |> H >> TRUE (P, _)) =
     let
       val (tau,a,b,univ) = destEq P
       val (_, a') = destSquash a
       val (_, b') = destSquash b
       val _ = destUniv univ
-      val goal =
+      val eq =
         check
           (#metactx H)
           (CTT (EQ tau) $ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ], EXP)
-      val psi = T.snoc T.empty (newMeta "", H >> TRUE (goal, EXP))
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> H >> TRUE (eq, EXP)
+      val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun Intro _ (H >> TRUE (P, _)) =
+  fun Intro _ (G |> H >> TRUE (P, _)) =
     let
       val (tau, Q) = destSquash P
-      val psi = T.snoc T.empty (newMeta "", H >> TRUE (Q, tau))
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> H >> TRUE (Q, tau)
+      val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | Intro _ _ = raise Match
 
-  fun Unhide h _ (H >> TRUE (P, tau)) =
+  fun Unhide h _ (G |> H >> TRUE (P, tau)) =
     let
       val _ = destEq P
       val (Q, sigma) = Ctx.lookup (#hypctx H) h
@@ -46,13 +55,17 @@ struct
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
-         hypctx = Ctx.modify (#hypctx H) (h, fn _ => (Q', tau'))}
+         hypctx = Ctx.modify h (fn _ => (Q', tau')) (#hypctx H)}
 
-      val x = newMeta ""
-      val psi = T.snoc T.empty (x, H' >> TRUE (P, tau))
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> H' >> TRUE (P, tau)
+
+      val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        T.lookup rho x)
+        makeEvidence G H @@
+          T.lookup rho (#1 goal) // ([], []))
     end
     | Unhide _ _ _ = raise Match
 

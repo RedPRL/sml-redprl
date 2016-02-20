@@ -21,7 +21,7 @@
 
 (defvar red-jonprl-builtin-constants-regexp
   (regexp-opt
-   '("Base" "lbase" "lsuc" "Ax" "Univ" "member" "Squash" "Ensemble" "extract" "Atom" "ifeq")
+   '("Base" "lbase" "lsuc" "Ax" "Univ" "member" "Squash" "Ensemble" "extract" "Atom" "ifeq" "dfun" "fun" "lam" "ap")
    'words))
 
 (defvar red-jonprl-sorts-regexp
@@ -31,7 +31,7 @@
 
 (defvar red-jonprl-tactic-name-regexp
   (regexp-opt
-   '("auto" "eval-goal" "ceval" "csym" "cstep" "witness" "trace")
+   '("auto" "eval-goal" "ceval" "csym" "cstep" "witness" "trace" "intro" "elim" "eq" "id" "normalize" "unfold")
    'words))
 
 (defun red-jonprl-font-lock-defaults ()

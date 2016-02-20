@@ -30,6 +30,9 @@ sig
     : int option (* rule index *)
     -> ntactic
 
+  val Ext
+    : ntactic
+
   val Hyp
     : symbol (* target *)
     -> ntactic
@@ -63,6 +66,15 @@ sig
     -> ntactic
 
   val AutoStep
+    : AbtSignature.sign
+    -> ntactic
+
+  val Unfold
+    : AbtSignature.sign
+    -> symbol
+    -> ntactic
+
+  val Normalize
     : AbtSignature.sign
     -> ntactic
 

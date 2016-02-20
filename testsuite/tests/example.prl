@@ -81,5 +81,53 @@ Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
 ].
 
 Thm demo : [{x : Base | ~(x; Ax)}] by [
-  auto; #0 { witness Ax }; repeat(auto)
+  auto; #0 { witness [Ax] }; repeat(auto)
 ].
+
+// let's declare some symbols (nominal atoms). new symbols are always fresh.
+Sym mysym : exp.
+Sym mysym2 : exp.
+Sym yes : exp.
+Sym no : exp.
+
+// atoms can be compared for equality; here, we show that two of our
+// declared atoms are distinct.
+Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
+  ceval
+].
+
+Thm lamTest : [fun(Atom; Atom)] by [
+  normalize;
+  z <- intro;
+  [ witness [ifeq(z; 'mysym; 'yes; 'no)]
+  , repeat(auto)
+  ];
+  normalize;
+  auto; auto
+].
+
+Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
+  eval-goal;
+  eq;
+  [ witness{lvl} [lbase]
+  , witness [Atom]
+  , witness [Atom]
+  ]; repeat(auto);
+].
+
+//
+//
+//Def record(el : [exp].exp) : exp = [
+//  dfun(Atom; [l]. el[l])
+//].
+//
+//Sym foo : exp.
+//Sym bar : exp.
+//
+//Def exampleRecordTy : exp = [
+//  record([l]. ifeq(l; 'foo; Atom; ifeq(l; 'bar; Atom; Base)))
+//].
+//
+//Def exampleRecord : exp = [
+//  lam([l]. ifeq(l; 'foo; 'mysym; ifeq(l; 'bar; 'mysym2; Ax)))
+//].

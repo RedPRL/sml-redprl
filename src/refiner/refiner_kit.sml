@@ -25,7 +25,10 @@ struct
   fun @@ (f,x) = f x
   infix 0 @@
 
-  open Abt Sequent infix $ \ >>
+  open Abt Sequent
+  infix $ $# \
+  infix 4 >>
+  infix 3 |>
 
   (* for development *)
   exception hole
@@ -46,14 +49,32 @@ struct
         raise Fail @@ "Expected " ^ Operator.toString (fn _ => "-") theta
   end
 
-  fun ^! (m, theta) =
-    destruct m theta
+  structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
 
-  infix ^!
+  fun makeGoal (jdg as G |> H >> _) =
+    let
+      val x = newMeta ""
+      val vl = Judgment.evidenceValence jdg
+      val (_, tau) = vl
+      val mctx = MetaCtx.insert (#metactx H) x vl
+      fun h us ms = check mctx (x $# (us, ms), tau)
+      val H' =
+        {metactx = mctx,
+         symctx = #symctx H,
+         hypctx = #hypctx H}
+    in
+      ((x,jdg), h, H)
+    end
 
   local
     open OperatorData CttOperatorData SortData
   in
+    fun destVar m =
+      case out m of
+           `x => x
+         | _ => raise Fail @@ "Expected variable, but got " ^ DebugShowAbt.toString m
+
+
     fun destEq m =
       case out m of
            CTT (EQ tau) $ [_ \ m, _ \ n, _ \ a] => (tau, m,n,a)
@@ -104,6 +125,13 @@ struct
         (CTT (SQUASH tau) $ [([],[]) \ a],
          EXP)
 
+    fun makeUniv lvl =
+      check
+        (metactx lvl)
+        (CTT (UNIV EXP) $ [([],[]) \ lvl],
+         EXP)
+
+
     fun makeEqSequent H args =
       H >> TRUE (makeEq (#metactx H) args, EXP)
 
@@ -121,7 +149,18 @@ struct
       end
 
     val makeAx = check' (CTT AX $ [], EXP)
+
+    fun makeEvidence G (H : context) m =
+      let
+        val (xs, taus) = ListPair.unzip G
+      in
+        checkb
+          (#metactx H)
+          (([], xs) \ m,
+           (([], taus), sort m))
+      end
+
   end
 
-  fun @> (t,g) = T.snoc t g
+  fun @> (t,(x,y)) = T.snoc t x y
 end

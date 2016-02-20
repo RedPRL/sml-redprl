@@ -15,12 +15,14 @@ struct
     | REC
     | INTRO of intro_params
     | EQ of eq_params
+    | EXT
     | ELIM of 'i * Sort.t | HYP of 'i * Sort.t | UNHIDE of 'i * Sort.t
     | AUTO
     | ID | FAIL | TRACE of Sort.t
     | CSTEP of int | CEVAL | CSYM
-    | REWRITE_GOAL of Sort.t | EVAL_GOAL
+    | REWRITE_GOAL of Sort.t | EVAL_GOAL | NORMALIZE
     | WITNESS of Sort.t
+    | UNFOLD of 'i
 end
 
 structure NominalLcfOperator : OPERATOR =
@@ -41,7 +43,7 @@ struct
   in
     fun arity (SEQ sorts) =
           [ [] * [] <> MTAC
-          , sorts * [] <> TAC
+          , sorts * sorts <> TAC
           ] ->> TAC
       | arity ORELSE =
           [ [] * [] <> TAC
@@ -59,6 +61,8 @@ struct
       | arity (INTRO _) =
           [] ->> TAC
       | arity (EQ _) =
+          [] ->> TAC
+      | arity EXT =
           [] ->> TAC
       | arity (ELIM _) =
           [] ->> TAC
@@ -92,11 +96,16 @@ struct
       | arity (WITNESS tau) =
           [ [] * [] <> tau
           ] ->> TAC
+      | arity (UNFOLD i) =
+          [] ->> TAC
+      | arity NORMALIZE =
+          [] ->> TAC
   end
 
   fun support (ELIM (target, tau)) = [(target, tau)]
     | support (HYP (target, tau)) = [(target, tau)]
     | support (UNHIDE (target, tau)) = [(target, tau)]
+    | support (UNFOLD i) = [(i, SortData.OPID)]
     | support _ = []
 
   fun map f =
@@ -107,6 +116,7 @@ struct
      | FOCUS i => FOCUS i
      | INTRO p => INTRO p
      | EQ p => EQ p
+     | EXT => EXT
      | ELIM (target, tau) => ELIM (f target, tau)
      | HYP (target, tau) => HYP (f target, tau)
      | UNHIDE (target, tau) => UNHIDE (f target, tau)
@@ -121,6 +131,8 @@ struct
      | REWRITE_GOAL tau => REWRITE_GOAL tau
      | EVAL_GOAL => EVAL_GOAL
      | WITNESS tau => WITNESS tau
+     | UNFOLD i => UNFOLD (f i)
+     | NORMALIZE => NORMALIZE
 
   fun eq f =
     fn (SEQ sorts1, SEQ sorts2) => sorts1 = sorts2
@@ -142,6 +154,8 @@ struct
      | (REWRITE_GOAL tau1, REWRITE_GOAL tau2) => tau1 = tau2
      | (EVAL_GOAL, EVAL_GOAL) => true
      | (WITNESS tau1, WITNESS tau2) => tau1 = tau2
+     | (UNFOLD i, UNFOLD j) => f (i, j)
+     | (NORMALIZE, NORMALIZE) => true
      | _ => false
 
   fun toString f =
@@ -152,6 +166,7 @@ struct
      | FOCUS i => "some{" ^ Int.toString i ^ "}"
      | INTRO {rule} => "intro" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
      | EQ {rule} => "eq" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
+     | EXT => "ext"
      | ELIM (target,tau) => "elim[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | HYP (target, tau) => "hyp[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | UNHIDE (target, tau) => "unhide[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
@@ -166,5 +181,7 @@ struct
      | REWRITE_GOAL tau => "rewrite-goal{" ^ Sort.toString tau ^ "}"
      | EVAL_GOAL => "eval-goal"
      | WITNESS tau => "witness{" ^ Sort.toString tau ^ "}"
+     | UNFOLD i => "unfold[" ^ f i ^ "]"
+     | NORMALIZE => "normalize"
 end
 

@@ -2,6 +2,9 @@ structure Sequent : SEQUENT =
 struct
   type prop = Abt.abt
   type sort = Abt.sort
+  type expr = Abt.abt
+  type var = Abt.variable
+  type operator = Abt.operator
 
   type context =
     {metactx : Abt.metactx,
@@ -20,8 +23,15 @@ struct
   (* The meaning of the sequent with respect to its context of metavariables is
    * essentially the following: If the metavariables are replaced by closed abstractions
    * that respect computation, then the sequent is evident. *)
-  datatype sequent = >> of context * concl
-  infix >>
+  datatype sequent =
+      >> of context * concl
+
+  datatype generic =
+      |> of (var * sort) list * sequent
+
+  infix 4 >>
+  infix 3 |>
+
 
   val conclToString =
     fn TRUE (P, tau) => ShowAbt.toString P ^ " true"
@@ -31,8 +41,8 @@ struct
     let
       open SymbolTelescope open ConsView
       val rec go =
-        fn Empty => ""
-         | Cons (x, (a, tau), tl) =>
+        fn EMPTY => ""
+         | CONS (x, (a, tau), tl) =>
              let
                val hyp = Symbol.toString x ^ " : " ^ ShowAbt.toString a
              in
@@ -42,8 +52,8 @@ struct
       go (out H)
     end
 
-  fun toString (H >> concl) =
-    hypothesesToString (#hypctx H)
-      ^ "\226\138\162 "
-      ^ conclToString concl
+  fun toString (G |> H >> concl) =
+        hypothesesToString (#hypctx H)
+          ^ "\226\138\162 "
+          ^ conclToString concl
 end
