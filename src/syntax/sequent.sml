@@ -24,7 +24,6 @@ struct
    * that respect computation, then the sequent is evident. *)
   datatype sequent =
       >> of context * concl
-    | GENERAL of (Abt.variable * sort) list * sequent
   infix >>
 
   val conclToString =
@@ -50,6 +49,4 @@ struct
         hypothesesToString (#hypctx H)
           ^ "\226\138\162 "
           ^ conclToString concl
-    | toString (GENERAL (xs, seq)) =
-        "...| " ^ toString seq
 end

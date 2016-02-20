@@ -17,12 +17,6 @@ struct
          (case concl of
              TRUE (_, tau) => (([],[]), tau)
            | TYPE _ => (([],[]), SortData.LVL))
-     | GENERAL (xs, s) =>
-         let
-           val ((ssorts,vsorts),tau) = evidenceValence s
-         in
-           ((ssorts, vsorts @ List.map #2 xs), tau)
-         end
 
   fun evidenceToString e =
     let
@@ -46,5 +40,4 @@ struct
     in
       H' >> substConcl (x, e) concl
     end
-    | substJudgment (x, e) (GENERAL (xs, s)) = GENERAL (xs, substJudgment (x,e) s)
 end

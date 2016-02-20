@@ -10,7 +10,6 @@ sig
 
   datatype sequent =
       >> of context * concl
-    | GENERAL of (Abt.variable * sort) list * sequent
 
   val toString : sequent -> string
 end
