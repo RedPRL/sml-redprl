@@ -71,12 +71,11 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        let
-          val (_, [z]) \ mz = outb @@ T.lookup rho (#1 goal)
-        in
-          makeEvidence G H @@
-            subst (makeAx, z) mz
-        end)
+        case outb @@ T.lookup rho (#1 goal) of
+             (_, [z]) \ mz =>
+               makeEvidence G H @@
+                 subst (makeAx, z) mz
+           | _ => raise Match)
     end
     | Elim _ _ _ = raise Match
 end

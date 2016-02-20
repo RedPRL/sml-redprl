@@ -146,14 +146,16 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        let
-          val itm = check' (`i, tau1)
-          val ([], [a,b]) \ m = outb @@ T.lookup rho (#1 goal)
-          val varEnv = VarCtx.insert (VarCtx.insert VarCtx.empty a itm) b makeAx
-        in
-          makeEvidence G H @@
-            substEnv varEnv m
-        end)
+        case outb @@ T.lookup rho (#1 goal) of
+             (_, [a,b]) \ m =>
+               let
+                 val itm = check' (`i, tau1)
+                 val varEnv = VarCtx.insert (VarCtx.insert VarCtx.empty a itm) b makeAx
+               in
+                 makeEvidence G H @@
+                   substEnv varEnv m
+               end
+           | _ => raise Match)
     end
     | Elim _ _ _ = raise Match
 end
