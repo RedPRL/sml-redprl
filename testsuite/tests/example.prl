@@ -106,6 +106,15 @@ Thm lamTest : [fun(Atom; Atom)] by [
   auto; auto
 ].
 
+Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
+  eval-goal;
+  eq;
+  [ witness{lvl} [lbase]
+  , witness [Atom]
+  , witness [Atom]
+  ]; repeat(auto);
+].
+
 //
 //
 //Def record(el : [exp].exp) : exp = [

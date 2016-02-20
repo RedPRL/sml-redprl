@@ -129,6 +129,7 @@ struct
            EXP)
 
       val z = alpha 0
+      val ztm = check' (`z, EXP)
 
       val H'' =
         {metactx = mctx,
@@ -139,12 +140,12 @@ struct
         (newMeta "",
          [(z,EXP)] |> H'' >> TRUE (makeUniv lvlHole, EXP))
 
-      val mctx' = MetaCtx.insert mctx (#1 codGoal) (([],[]), EXP)
+      val mctx' = MetaCtx.insert mctx (#1 codGoal) (([],[EXP]), EXP)
 
       val codHole =
         check
           mctx'
-          (#1 codGoal $# ([],[]),
+          (#1 codGoal $# ([],[ztm]),
            EXP)
 
       val dfun =
