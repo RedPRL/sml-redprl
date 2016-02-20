@@ -1,7 +1,36 @@
 structure RefinerKit =
 struct
   structure Ctx = SymbolTelescope and Signature = AbtSignature
-  structure Lcf = DependentLcf (Judgment)
+  structure Lcf =
+  struct
+    structure Lcf = DependentLcf (Judgment)
+    open Lcf
+
+    structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
+
+    fun stateToString (psi, vld) =
+      let
+        open T.ConsView
+        fun go i =
+          fn EMPTY => (T.empty, "")
+           | CONS (x, jdg, tl) =>
+               let
+                 val var = Metavariable.named ("?" ^ Int.toString i)
+                 val goal = "\nHOLE " ^ Metavariable.toString var ^ "\n--------------------------------------------\n" ^ Judgment.judgmentToString jdg
+                 val vartm = HoleUtil.makeHole (var, Judgment.evidenceValence jdg)
+                 val tl' = T.map (Judgment.substJudgment (x, vartm)) tl
+                 val (rho, rest) = go (i + 1) (out tl')
+               in
+                 (T.snoc rho x vartm, goal ^ "\n" ^ rest)
+               end
+
+        val (env, subgoals) = go 0 (out psi)
+        val preamble = Judgment.evidenceToString (vld env)
+      in
+        "WITNESS:\n============================================\n\n" ^ preamble ^ "\n\n" ^ subgoals
+      end
+  end
+
   structure Telescope = Lcf.T and T = Lcf.T
   structure Tacticals = Tacticals(Lcf)
 
