@@ -25,7 +25,10 @@ struct
   fun @@ (f,x) = f x
   infix 0 @@
 
-  open Abt Sequent infix $ \ >>
+  open Abt Sequent
+  infix $ $# \
+  infix 4 >>
+  infix 3 |>
 
   (* for development *)
   exception hole
@@ -46,10 +49,18 @@ struct
         raise Fail @@ "Expected " ^ Operator.toString (fn _ => "-") theta
   end
 
-  fun ^! (m, theta) =
-    destruct m theta
+  structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
 
-  infix ^!
+  fun makeGoal (jdg as G |> H >> _) =
+    let
+      val x = newMeta ""
+      val vl = Judgment.evidenceValence jdg
+      val (_, tau) = vl
+      val mctx = MetaCtx.insert (#metactx H) x vl
+      fun h us ms = check mctx (x $# (us, ms), tau)
+    in
+      ((x,jdg), h, mctx)
+    end
 
   local
     open OperatorData CttOperatorData SortData
