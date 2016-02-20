@@ -1,7 +1,9 @@
 structure PiRules : PI_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ >> $ $# \ @>
+  infix @@ $ $# \ @>
+  infix 4 >>
+  infix 3 |>
 
   fun destDFun m =
     case out m of
@@ -27,7 +29,7 @@ struct
              @@ "Expected Ap but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (H >> TRUE (P, _)) =
+  fun TypeEq alpha (G |> H >> TRUE (P, _)) =
     let
       val (_, dfun1, dfun2, univ) = destEq P
       val _ = destUniv univ
@@ -36,7 +38,7 @@ struct
 
       val goal1 =
         (newMeta "",
-         makeEqSequent H (a1,a2,univ))
+         [] |> makeEqSequent H (a1,a2,univ))
 
       val z = alpha 0
       val ztm = check' (`z, EXP)
@@ -50,16 +52,16 @@ struct
 
       val goal2 =
         (newMeta "",
-         makeEqSequent H' (b1z, b2z, univ))
+         [(z,EXP)] |> makeEqSequent H' (b1z, b2z, univ))
 
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (H >> TRUE (P, _)) =
+  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
     let
       val (_, lam1, lam2, dfun) = destEq P
       val (a, x, bx) = destDFun dfun
@@ -80,20 +82,20 @@ struct
 
       val goal1 =
         (newMeta "",
-         makeEqSequent H' (m1z, m2z, bz))
+         [(z,EXP)] |> makeEqSequent H' (m1z, m2z, bz))
 
       val goal2 =
         (newMeta "",
-         H >> TYPE (a, EXP))
+         [] |> H >> TYPE (a, EXP))
 
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | MemberEq _ _ = raise Match
 
-  fun ElimEq alpha (H >> TRUE (P, _)) =
+  fun ElimEq alpha (G |> H >> TRUE (P, _)) =
     let
       val (_, ap1, ap2, c) = destEq P
       val (m1, n1) = destAp ap1
@@ -101,7 +103,7 @@ struct
 
       val lvlGoal =
         (newMeta "",
-         makeLevelSequent H)
+         [] |> makeLevelSequent H)
 
       val H' =
         {metactx = MetaCtx.insert (#metactx H) (#1 lvlGoal) (([],[]), LVL),
@@ -116,7 +118,7 @@ struct
 
       val domGoal =
         (newMeta "",
-         H' >> TRUE (makeUniv lvlHole, EXP))
+         [] |> H' >> TRUE (makeUniv lvlHole, EXP))
 
       val mctx = MetaCtx.insert (#metactx H') (#1 domGoal) (([],[]), EXP)
 
@@ -135,7 +137,7 @@ struct
 
       val codGoal =
         (newMeta "",
-         H'' >> TRUE (makeUniv lvlHole, EXP))
+         [(z,EXP)] |> H'' >> TRUE (makeUniv lvlHole, EXP))
 
       val mctx' = MetaCtx.insert mctx (#1 codGoal) (([],[]), EXP)
 
@@ -158,15 +160,15 @@ struct
 
       val ceqGoal =
         (newMeta "",
-         H''' >> TRUE (makeCEquiv mctx' (c, subst (n1, z) codHole), EXP))
+         [] |> H''' >> TRUE (makeCEquiv mctx' (c, subst (n1, z) codHole), EXP))
 
       val goal1 =
         (newMeta "",
-         makeEqSequent H''' (m1, m2, dfun))
+         [] |> makeEqSequent H''' (m1, m2, dfun))
 
       val goal2 =
         (newMeta "",
-         makeEqSequent H''' (n1, n2, domHole))
+         [] |> makeEqSequent H''' (n1, n2, domHole))
 
       val psi =
         T.empty
@@ -178,11 +180,11 @@ struct
           @> goal2
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | ElimEq _ _ = raise Match
 
-  fun Intro alpha (H >> TRUE (P, _)) =
+  fun Intro alpha (G |> H >> TRUE (P, _)) =
     let
       val (a, x, bx) = destDFun P
 
@@ -197,24 +199,31 @@ struct
 
       val goal =
         (newMeta "",
-         H' >> TRUE (bz, EXP))
+         [(z,EXP)] |> H' >> TRUE (bz, EXP))
 
       val wfGoal =
         (newMeta "",
-         H >> TYPE (a, EXP))
+         [] |> H >> TYPE (a, EXP))
 
       val psi = T.empty @> goal @> wfGoal
     in
       (psi, fn rho =>
         let
-          val _ \ mz = outb @@ T.lookup rho (#1 goal)
+          val ev = outb @@ T.lookup rho (#1 goal)
         in
-          abtToAbs @@
+          makeEvidence G H @@
             check
               (#metactx H)
-              (CTT LAM $ [([],[z]) \ mz], EXP)
+              (CTT LAM $ [ev], EXP)
         end)
     end
     | Intro _ _ = raise Match
+
+  fun Elim i alpha (G |> H >> TRUE (P, _)) =
+    let
+    in
+      ?hole
+    end
+    | Elim _ _ _ = raise Match
 
 end

@@ -1,7 +1,9 @@
 structure UnivRules : UNIV_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix $ \ ^! @@ >>
+  infix $ \ ^! @@
+  infix 4 >>
+  infix 3 |>
 
   fun destLevel i =
     case infer i of
@@ -72,7 +74,7 @@ struct
               ^ " < "
               ^ DebugShowAbt.toString j
 
-  fun Eq alpha (H >> TRUE (P, _)) =
+  fun Eq alpha (G |> H >> TRUE (P, _)) =
     let
       val (tau, m, n, a) = destEq P
       val () = if tau = EXP then () else raise Fail "Expected exp"
@@ -82,7 +84,7 @@ struct
       val () = assertLevelLt (i, k)
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | Eq _ _ = raise Match
 end

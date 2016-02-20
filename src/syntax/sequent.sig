@@ -3,6 +3,7 @@ sig
   type context
   type prop
   type sort
+  type var
 
   datatype concl =
       TRUE of prop * sort
@@ -11,5 +12,8 @@ sig
   datatype sequent =
       >> of context * concl
 
-  val toString : sequent -> string
+  datatype generic =
+      |> of (var * sort) list * sequent
+
+  val toString : generic -> string
 end

@@ -1,7 +1,9 @@
 structure EnsembleRules : ENSEMBLE_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ >> $ $# \ @>
+  infix @@ $ $# \ @>
+  infix 3 >>
+  infix 2 |>
 
   fun destEnsemble m =
     case out m of
@@ -11,7 +13,7 @@ struct
              @@ "Expected Ensemble but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (H >> TRUE (P, _)) =
+  fun TypeEq alpha (G |> H >> TRUE (P, _)) =
     let
       val (tau,s1,s2,univ) = destEq P
       val (_, _, a1, x1, b1) = destEnsemble s1
@@ -20,7 +22,7 @@ struct
 
       val goal1 =
         (newMeta "",
-         makeEqSequent H (a1,a2,univ))
+         [] |> makeEqSequent H (a1,a2,univ))
 
       val x = alpha 0
       val xtm = check' (`x, tau)
@@ -34,27 +36,27 @@ struct
 
       val goal2 =
         (newMeta "",
-         makeEqSequent H' (b1x, b2x, univ))
+         [] |> makeEqSequent H' (b1x, b2x, univ))
 
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (H >> TRUE (P, _)) =
+  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
     let
       val (_, m1, m2, ensemble) = destEq P
       val (tau1, tau2, a, x, b) = destEnsemble ensemble
       val tyGoal =
         (newMeta "",
-         makeEqSequent H (m1, m2, a))
+         [] |> makeEqSequent H (m1, m2, a))
 
       val bm = subst (m1, x) b
       val squashGoal =
         (newMeta "",
-         H >> TRUE (makeSquash (#metactx H) tau2 bm, EXP))
+         [] |> H >> TRUE (makeSquash (#metactx H) tau2 bm, EXP))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
@@ -66,22 +68,22 @@ struct
 
       val tyfunGoal =
         (newMeta "",
-         H' >> TYPE (bz, tau2))
+         [(z,tau1)] |> H' >> TYPE (bz, tau2))
 
       val psi = T.empty @> tyGoal @> squashGoal @> tyfunGoal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        makeEvidence G H makeAx)
     end
     | MemberEq _ _ = raise Match
 
-  fun Intro alpha (H >> TRUE (P, _)) =
+  fun Intro alpha (G |> H >> TRUE (P, _)) =
     let
       val (tau1, tau2, a, x, b) = destEnsemble P
 
       val mainGoal =
         (newMeta "",
-         H >> TRUE (a, tau1))
+         [] |> H >> TRUE (a, tau1))
 
       val H' =
         {metactx = MetaCtx.insert (#metactx H) (#1 mainGoal) (([],[]), tau1),
@@ -92,7 +94,7 @@ struct
       val pred = subst (mainHole, x) b
       val predGoal =
         (newMeta "",
-         H >> TRUE (makeSquash (#metactx H) tau2 pred, EXP))
+         [] |> H >> TRUE (makeSquash (#metactx H) tau2 pred, EXP))
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
@@ -104,7 +106,7 @@ struct
 
       val tyfunGoal =
         (newMeta "",
-         H'' >> TYPE (bz, tau2))
+         [(z,tau1)] |> H'' >> TYPE (bz, tau2))
 
       val psi = T.empty @> mainGoal @> predGoal @> tyfunGoal
     in
@@ -113,7 +115,7 @@ struct
     end
     | Intro _ _ = raise Match
 
-  fun Elim i alpha (H >> TRUE (P, tau)) =
+  fun Elim i alpha (G |> H >> TRUE (P, tau)) =
     let
       val (ensemble, _) = Ctx.lookup (#hypctx H) i
       val (tau1, tau2, a, x, bx) = destEnsemble ensemble
@@ -124,6 +126,7 @@ struct
         Ctx.interposeAfter
           (#hypctx H)
           (i, Ctx.snoc (Ctx.snoc Ctx.empty z1 (a, tau1)) z2 (bz1, tau2))
+
       val hyps' =
         Ctx.modifyAfter i
           (fn (p,tau) => (subst (z1tm, i) p, tau))
@@ -138,18 +141,18 @@ struct
 
       val goal =
         (newMeta "",
-         H' >> TRUE (P', tau))
+         [(z1, tau1), (z2, tau2)] |> H' >> TRUE (P', tau))
 
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
         let
           val itm = check' (`i, tau1)
-          val varEnv = VarCtx.insert (VarCtx.insert VarCtx.empty z1 itm) z2 makeAx
+          val ([], [a,b]) \ m = outb @@ T.lookup rho (#1 goal)
+          val varEnv = VarCtx.insert (VarCtx.insert VarCtx.empty a itm) b makeAx
         in
-          mapAbs
-            (substEnv varEnv)
-            (T.lookup rho (#1 goal))
+          makeEvidence G H @@
+            substEnv varEnv m
         end)
     end
     | Elim _ _ _ = raise Match

@@ -3,6 +3,7 @@ struct
   type prop = Abt.abt
   type sort = Abt.sort
   type expr = Abt.abt
+  type var = Abt.variable
   type operator = Abt.operator
 
   type context =
@@ -24,7 +25,13 @@ struct
    * that respect computation, then the sequent is evident. *)
   datatype sequent =
       >> of context * concl
-  infix >>
+
+  datatype generic =
+      |> of (var * sort) list * sequent
+
+  infix 4 >>
+  infix 3 |>
+
 
   val conclToString =
     fn TRUE (P, tau) => ShowAbt.toString P ^ " true"
@@ -45,7 +52,7 @@ struct
       go (out H)
     end
 
-  fun toString (H >> concl) =
+  fun toString (G |> H >> concl) =
         hypothesesToString (#hypctx H)
           ^ "\226\138\162 "
           ^ conclToString concl

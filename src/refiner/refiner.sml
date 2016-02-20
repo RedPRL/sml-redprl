@@ -3,7 +3,10 @@ struct
   structure Abt = Abt
   open RefinerKit
 
-  open Sequent infix >> $ \ @@ @> $#
+  open Sequent
+  infix $ \ @@ @> $#
+  infix 4 >>
+  infix 3 |>
 
   structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
 
@@ -45,7 +48,7 @@ struct
         ORELSE PiRules.Intro alpha
         ORELSE TypeRules.Intro alpha
 
-    fun HypEq alpha (H >> TRUE (P, _)) =
+    fun HypEq alpha (G |> H >> TRUE (P, _)) =
       let
         val (_, m, n, a) = destEq P
         val x = destVar m
@@ -55,11 +58,11 @@ struct
         val _ = if Abt.eq (a,a') then () else raise Match
       in
         (T.empty, fn rho =>
-          abtToAbs makeAx)
+          makeEvidence G H makeAx)
       end
       | HypEq _ _ = raise Match
 
-    fun Eq r alpha (jdg as H >> TRUE (P, _)) =
+    fun Eq r alpha (jdg as _ |> _ >> TRUE (P, _)) =
       (case out P of
            CTT (EQ _) $ _ =>
              (UnivRules.Eq alpha
@@ -81,25 +84,26 @@ struct
       | Eq _ _ _ = raise Match
   end
 
-  fun Witness m alpha (H >> TRUE (P, _)) =
+  fun Witness m alpha (G |> H >> TRUE (P, _)) =
     let
       val goal =
         (newMeta "",
-         makeMemberSequent H (m, P))
+         [] |> makeMemberSequent H (m, P))
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        abtToAbs m)
+        makeEvidence G H m)
     end
     | Witness _ _ _ = raise Match
 
-  fun Hyp i _ (H >> TRUE (P, _)) =
+  fun Hyp i _ (G |> H >> TRUE (P, _)) =
     let
       val (Q, tau) = Ctx.lookup (#hypctx H) i
     in
       if Abt.eq (P, Q) then
         (T.empty, fn rho =>
-          abtToAbs (check' (`i , tau)))
+          makeEvidence G H @@
+            check' (`i , tau))
       else
         raise Fail "Failed to unify with hypothesis"
     end
@@ -122,7 +126,7 @@ struct
     open OperatorData CttOperatorData AtomsOperatorData SortData
   in
 
-    fun Unfold sign opid _ (H >> TRUE (P, tau)) =
+    fun Unfold sign opid _ (G |> H >> TRUE (P, tau)) =
       let
         open SmallStep DynamicsUtil
         fun go m =
@@ -139,15 +143,19 @@ struct
         val P' = go (Abt.deepMapSubterms go P)
         val goal =
           (newMeta "",
-           H >> TRUE (P', tau))
+           [] |> H >> TRUE (P', tau))
         val psi = T.empty @> goal
       in
         (psi, fn rho =>
-          T.lookup rho (#1 goal))
+          let
+            val _ \ ev = outb @@ T.lookup rho (#1 goal)
+          in
+            makeEvidence G H ev
+          end)
       end
       | Unfold _ _ _ _ = raise Match
 
-    fun Normalize sign _ (H >> TRUE (P, tau)) =
+    fun Normalize sign _ (G |> H >> TRUE (P, tau)) =
       let
         open SmallStep DynamicsUtil
         fun go m = evalOpen sign m handle _ => m
@@ -155,35 +163,48 @@ struct
         val P' = go (Abt.deepMapSubterms go P)
         val goal =
           (newMeta "",
-           H >> TRUE (P', tau))
+           [] |> H >> TRUE (P', tau))
         val psi = T.empty @> goal
       in
         (psi, fn rho =>
-          T.lookup rho (#1 goal))
+          let
+            val _ \ ev = outb @@ T.lookup rho (#1 goal)
+          in
+            makeEvidence G H ev
+          end)
       end
       | Normalize _ _ _ = raise Match
 
-    fun RewriteGoal Q _ (H >> TRUE (P, sigma)) =
+    fun RewriteGoal Q _ (G |> H >> TRUE (P, sigma)) =
       let
         val tau = sort P
         val ceqGoal =
           (newMeta "",
-           H >> TRUE (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP))
-        val mainGoal = (newMeta "", H >> TRUE (Q, sigma))
+           [] |> H >> TRUE (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP))
+        val mainGoal = (newMeta "", [] |> H >> TRUE (Q, sigma))
         val psi = T.empty @> ceqGoal @> mainGoal
       in
-        (psi, fn rho => T.lookup rho (#1 mainGoal))
+        (psi, fn rho =>
+          let
+            val _ \ ev = outb @@ T.lookup rho (#1 mainGoal)
+          in
+            makeEvidence G H ev
+          end)
       end
       | RewriteGoal _ _ _ = raise Match
 
-    fun EvalGoal sign _ (H >> TRUE (P, sigma)) =
+    fun EvalGoal sign _ (G |> H >> TRUE (P, sigma)) =
       let
         val Q = DynamicsUtil.evalOpen sign P
         val x = newMeta ""
-        val psi = T.empty @> (x, H >> TRUE (Q, sigma))
+        val psi = T.empty @> (x, [] |> H >> TRUE (Q, sigma))
       in
         (psi, fn rho =>
-           T.lookup rho x)
+          let
+            val _ \ ev = outb @@ T.lookup rho x
+          in
+            makeEvidence G H ev
+          end)
       end
       | EvalGoal _ _ _ = raise Match
 
@@ -211,7 +232,7 @@ struct
     end
 
     fun ProveIsType alpha =
-      fn jdg as H >> TYPE (P, tau) =>
+      fn jdg as _ |> H >> TYPE (P, tau) =>
            Tacticals.THENF
              (TypeRules.Intro alpha, 0, Witness (inferTypeLevel H P) alpha)
              jdg

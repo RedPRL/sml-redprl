@@ -134,6 +134,17 @@ struct
       end
 
     val makeAx = check' (CTT AX $ [], EXP)
+
+    fun makeEvidence G (H : context) m =
+      let
+        val (xs, taus) = ListPair.unzip G
+      in
+        checkb
+          (#metactx H)
+          (([], xs) \ m,
+           (([], taus), sort m))
+      end
+
   end
 
   fun @> (t,(x,y)) = T.snoc t x y

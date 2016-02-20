@@ -5,18 +5,20 @@ struct
 
   open Sequent
 
-  type judgment = sequent
+  type judgment = generic
   type evidence = abs
 
   fun judgmentToString s =
     Sequent.toString s
 
-  infix >>
+  infix 4 >>
+  infix 3 |>
+
   val rec evidenceValence =
-    fn H >> concl =>
+    fn G |> H >> concl =>
          (case concl of
-             TRUE (_, tau) => (([],[]), tau)
-           | TYPE _ => (([],[]), SortData.LVL))
+             TRUE (_, tau) => (([], List.map #2 G), tau)
+           | TYPE _ => (([], List.map #2 G), SortData.LVL))
 
   fun evidenceToString e =
     let
@@ -26,18 +28,17 @@ struct
       ShowAbt.toString m
     end
 
-  open Sequent infix >>
   fun substConcl (x, e) =
     fn TRUE (P, tau) => TRUE (metasubst (e,x) P, tau)
      | TYPE (P, tau) => TYPE (metasubst (e,x) P, tau)
 
-  fun substJudgment (x, e) (H >> concl) =
+  fun substJudgment (x, e) (G |> H >> concl) =
     let
       val H' =
         {metactx = #metactx H,
          symctx = #symctx H,
          hypctx = SymbolTelescope.map (fn (Q, tau) => (metasubst (e, x) Q, tau)) (#hypctx H)}
     in
-      H' >> substConcl (x, e) concl
+      G |> H' >> substConcl (x, e) concl
     end
 end
