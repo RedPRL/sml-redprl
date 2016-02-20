@@ -2,6 +2,7 @@ structure PiRules : PI_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
   infix @@ $ $# \ @>
+  infix 2 //
   infix 4 >>
   infix 3 |>
 
@@ -233,19 +234,11 @@ struct
     in
       (psi, fn rho =>
         let
-          val sb = T.lookup rho (#1 goal1)
-          val tb = T.lookup rho (#1 goal2)
+          val s = T.lookup rho (#1 goal1) // ([],[])
+          val fs = check (metactx s) (CTT AP $ [([],[]) \ ftm, ([],[]) \ s], EXP)
         in
-          case (outb sb, outb tb) of
-               (_ \ s, (_, [x,y]) \ t) =>
-                 let
-                   val fs = check (metactx s) (CTT AP $ [([],[]) \ ftm, ([],[]) \ s], EXP)
-                   val env = VarCtx.insert (VarCtx.insert VarCtx.empty x fs) y makeAx
-                 in
-                   makeEvidence G H @@
-                     substEnv env t
-                 end
-             | _ => raise Match
+          makeEvidence G H @@
+            T.lookup rho (#1 goal2) // ([], [fs, makeAx])
         end)
     end
     | Elim _ _ _ = raise Match

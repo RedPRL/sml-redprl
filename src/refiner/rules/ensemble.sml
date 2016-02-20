@@ -2,6 +2,7 @@ structure EnsembleRules : ENSEMBLE_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
   infix @@ $ $# \ @>
+  infix 2 //
   infix 3 >>
   infix 2 |>
 
@@ -141,16 +142,12 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        case outb @@ T.lookup rho (#1 goal) of
-             (_, [a,b]) \ m =>
-               let
-                 val itm = check' (`i, tau1)
-                 val varEnv = VarCtx.insert (VarCtx.insert VarCtx.empty a itm) b makeAx
-               in
-                 makeEvidence G H @@
-                   substEnv varEnv m
-               end
-           | _ => raise Match)
+        let
+          val itm = check' (`i, tau1)
+        in
+          makeEvidence G H @@
+            T.lookup rho (#1 goal) // ([], [itm, makeAx])
+        end)
     end
     | Elim _ _ _ = raise Match
 end

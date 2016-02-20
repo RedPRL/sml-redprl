@@ -2,6 +2,7 @@ structure SquashRules : SQUASH_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
   infix @@ $ \ @>
+  infix 2 //
   infix 4 >>
   infix 3 |>
 
@@ -63,11 +64,8 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        let
-          val _ \ ev = outb @@ T.lookup rho (#1 goal)
-        in
-          makeEvidence G H ev
-        end)
+        makeEvidence G H @@
+          T.lookup rho (#1 goal) // ([], []))
     end
     | Unhide _ _ _ = raise Match
 

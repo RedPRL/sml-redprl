@@ -2,6 +2,7 @@ structure TypeRules : TYPE_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
   infix $ $# \ @> @@
+  infix 2 //
   infix 4 >>
   infix 3 |>
 
@@ -24,11 +25,8 @@ struct
       val psi = T.empty @> lvlGoal @> memGoal
     in
       (psi, fn rho =>
-        let
-          val _ \ lvl = outb @@ T.lookup rho (#1 lvlGoal)
-        in
-          makeEvidence G H lvl
-        end)
+        makeEvidence G H @@
+          T.lookup rho (#1 lvlGoal) // ([],[]))
     end
     | Intro _ _ = raise Match
 end

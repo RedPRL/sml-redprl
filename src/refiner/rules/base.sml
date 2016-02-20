@@ -2,6 +2,7 @@ structure BaseRules : BASE_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
   infix @@ $ \ @>
+  infix 2 //
   infix 4 >>
   infix 3 |>
 
@@ -78,11 +79,8 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        case outb @@ T.lookup rho (#1 goal) of
-             (_, [z]) \ mz =>
-               makeEvidence G H @@
-                 subst (makeAx, z) mz
-           | _ => raise Match)
+        makeEvidence G H @@
+          T.lookup rho (#1 goal) // ([], [makeAx]))
     end
     | Elim _ _ _ = raise Match
 end

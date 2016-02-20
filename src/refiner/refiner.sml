@@ -5,6 +5,7 @@ struct
 
   open Sequent
   infix $ \ @@ @> $#
+  infix 2 //
   infix 4 >>
   infix 3 |>
 
@@ -148,11 +149,8 @@ struct
         val psi = T.empty @> goal
       in
         (psi, fn rho =>
-          let
-            val _ \ ev = outb @@ T.lookup rho (#1 goal)
-          in
-            makeEvidence G H ev
-          end)
+          makeEvidence G H @@
+            T.lookup rho (#1 goal) // ([],[]))
       end
       | Unfold _ _ _ _ = raise Match
 
@@ -168,11 +166,8 @@ struct
         val psi = T.empty @> goal
       in
         (psi, fn rho =>
-          let
-            val _ \ ev = outb @@ T.lookup rho (#1 goal)
-          in
-            makeEvidence G H ev
-          end)
+          makeEvidence G H @@
+            T.lookup rho (#1 goal) // ([],[]))
       end
       | Normalize _ _ _ = raise Match
 
@@ -190,11 +185,8 @@ struct
         val psi = T.empty @> ceqGoal @> mainGoal
       in
         (psi, fn rho =>
-          let
-            val _ \ ev = outb @@ T.lookup rho (#1 mainGoal)
-          in
-            makeEvidence G H ev
-          end)
+          makeEvidence G H @@
+            T.lookup rho (#1 mainGoal) // ([],[]))
       end
       | RewriteGoal _ _ _ = raise Match
 
@@ -205,11 +197,8 @@ struct
         val psi = T.empty @> (x, [] |> H >> TRUE (Q, sigma))
       in
         (psi, fn rho =>
-          let
-            val _ \ ev = outb @@ T.lookup rho x
-          in
-            makeEvidence G H ev
-          end)
+          makeEvidence G H @@
+            T.lookup rho x // ([],[]))
       end
       | EvalGoal _ _ _ = raise Match
 
