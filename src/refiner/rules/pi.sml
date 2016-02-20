@@ -30,6 +30,12 @@ struct
              @@ "Expected Ap but got "
               ^ DebugShowAbt.toString m
 
+  fun makeAp mctx m n =
+    check
+      mctx
+      (CTT AP $ [([],[]) \ m, ([],[]) \ n], EXP)
+
+
   fun TypeEq alpha (G |> H >> TRUE (P, _)) =
     let
       val (_, dfun1, dfun2, univ) = destEq P
@@ -216,7 +222,7 @@ struct
 
       val bs = subst (s [] [], x) bx
       val ftm = check' (`f, EXP)
-      val fs = check (#metactx H) (CTT AP $ [([],[]) \ ftm, ([],[]) \ s [] []], EXP)
+      val fs = makeAp (#metactx H) ftm (s [] [])
       val yeqfs = makeEq (#metactx H) (ytm, fs, bs)
 
       val hctx = Ctx.snoc (Ctx.snoc Ctx.empty y (bs, EXP)) z (yeqfs, EXP)
@@ -235,12 +241,47 @@ struct
       (psi, fn rho =>
         let
           val s = T.lookup rho (#1 goal1) // ([],[])
-          val fs = check (metactx s) (CTT AP $ [([],[]) \ ftm, ([],[]) \ s], EXP)
+          val fs = makeAp (metactx s) ftm s
         in
           makeEvidence G H @@
             T.lookup rho (#1 goal2) // ([], [fs, makeAx])
         end)
     end
     | Elim _ _ _ = raise Match
+
+  fun Ext alpha (jdg as G |> H >> TRUE (P, _)) =
+    let
+      val (_, f, g, dfun) = destEq P
+      val (a, x, bx) = destDFun dfun
+
+      val z = alpha 0
+      val ztm = check' (`z, EXP)
+      val bz = subst (ztm, x) bx
+      val fz = makeAp (#metactx H) f ztm
+      val gz = makeAp (#metactx H) g ztm
+
+      val H' =
+        {metactx = #metactx H,
+         symctx = #symctx H,
+         hypctx = Ctx.snoc (#hypctx H) z (a, EXP)}
+
+      val (mainGoal, _, H') =
+        makeGoal @@
+          [(z,EXP)] |> makeEqSequent H' (fz, gz, bz)
+
+      val (fwfGoal, _, H) =
+        makeGoal @@
+          [] |> makeMemberSequent H (f, dfun)
+
+      val (gwfGoal, _, _) =
+        makeGoal @@
+          [] |> makeMemberSequent H (g, dfun)
+
+      val psi = T.empty @> mainGoal @> fwfGoal @> gwfGoal
+    in
+      (psi, fn rho =>
+        makeEvidence G H makeAx)
+    end
+    | Ext _ _ = raise Match
 
 end

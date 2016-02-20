@@ -83,6 +83,13 @@ struct
                ORELSE HypEq alpha) jdg
          | _ => raise Fail "Eq not applicable")
       | Eq _ _ _ = raise Match
+
+    fun Ext alpha (jdg as _ |> _ >> TRUE (P, _)) =
+      (case out P of
+           CTT (EQ _) $ _ =>
+             PiRules.Ext alpha jdg
+        | _ => raise Fail "Ext not applicable")
+      | Ext _ _ = raise Match
   end
 
   fun Witness m alpha (G |> H >> TRUE (P, _)) =

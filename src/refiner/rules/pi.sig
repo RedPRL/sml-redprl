@@ -6,4 +6,5 @@ sig
 
   val Intro : RefinerKit.ntactic
   val Elim : RefinerKit.symbol -> RefinerKit.ntactic
+  val Ext : RefinerKit.ntactic
 end
