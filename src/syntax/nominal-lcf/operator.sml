@@ -12,6 +12,7 @@ struct
       SEQ of Sort.t list
     | ORELSE
     | ALL | EACH | FOCUS of int
+    | PROGRESS
     | REC
     | INTRO of intro_params
     | EQ of eq_params
@@ -48,6 +49,9 @@ struct
       | arity ORELSE =
           [ [] * [] <> TAC
           , [] * [] <> TAC
+          ] ->> TAC
+      | arity PROGRESS =
+          [ [] * [] <> TAC
           ] ->> TAC
       | arity ALL =
           [ [] * [] <> TAC
@@ -111,6 +115,7 @@ struct
   fun map f =
     fn SEQ sorts => SEQ sorts
      | ORELSE => ORELSE
+     | PROGRESS => PROGRESS
      | ALL => ALL
      | EACH => EACH
      | FOCUS i => FOCUS i
@@ -161,6 +166,7 @@ struct
   fun toString f =
     fn (SEQ _) => "seq"
      | ORELSE => "orelse"
+     | PROGRESS => "progress"
      | ALL => "all"
      | EACH => "each"
      | FOCUS i => "some{" ^ Int.toString i ^ "}"

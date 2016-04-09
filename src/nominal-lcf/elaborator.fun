@@ -83,6 +83,8 @@ struct
                fn alpha =>
                  T.ORELSE (T1 alpha, T2 alpha)
              end
+         | LCF PROGRESS $ [_ \ t] =>
+             T.PROGRESS o elaborate sign rho t
          | LCF (ELIM (target, _)) $ [] =>
              R.Elim target
          | LCF (HYP (target, _)) $ [] =>

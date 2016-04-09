@@ -362,6 +362,11 @@ struct
                wth (fn (t1, t2) =>
                  LCF ORELSE $ [([],[]) \ t1, ([],[]) \ t2])
 
+           val parseProgress =
+             symbol "progress" >> parens (f TAC)
+               wth (fn t =>
+                 LCF PROGRESS $ [([],[]) \ t])
+
            val parseTac =
              parens (f TAC)
                || parseId
@@ -383,6 +388,7 @@ struct
                || parseWitness
                || parseUnfold
                || parseNormalize
+               || parseProgress
                || parseOrElse
                || try (parseAny sign rho f TAC)
 
