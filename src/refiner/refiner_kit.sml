@@ -18,7 +18,7 @@ struct
                  val var = Metavariable.named ("?" ^ Int.toString i)
                  val goal = "\nHOLE " ^ Metavariable.toString var ^ "\n--------------------------------------------\n" ^ Judgment.judgmentToString jdg
                  val vartm = HoleUtil.makeHole (var, Judgment.evidenceValence jdg)
-                 val tl' = T.map (Judgment.substJudgment (x, vartm)) tl
+                 val tl' = T.map (Judgment.substEvidence (vartm, x)) tl
                  val (rho, rest) = go (i + 1) (out tl')
                in
                  (T.snoc rho x vartm, goal ^ "\n" ^ rest)
