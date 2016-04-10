@@ -83,7 +83,7 @@ struct
       val z = alpha 0
 
       val atomTy = makeAtom sigma
-      val toksEq = makeEq (#metactx H) (t1, t1', atomTy)
+      val toksEq = makeEq (#metactx H) (t1, t2, atomTy)
       val toksNotEq = check (#metactx H) (CTT NOT $ [([],[]) \ toksEq], EXP)
 
       val Hyes =
