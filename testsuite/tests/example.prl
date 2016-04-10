@@ -2,11 +2,15 @@
 // of a particular sort along with computation rules which are available
 // to Red JonPRL's evaluator.
 
+Tac try(T : tac) = [
+  {T} || {id}
+].
+
 // Tacticals are easily defined from within JonPRL's computation system.
 // Here are a few examples:
 Tac repeat(T : tac) = [
   rec R. {
-    progress(T); R
+    try(progress(T); R)
   }
 ].
 
@@ -70,10 +74,6 @@ Thm baseMemberEq : [=(Ax; Ax; Base)] by [
 // we are restricting the [exp] sort, which contains type expressions.
 Def ensembleExample : exp = [
   { x : Base | ~(x; Base) }
-].
-
-Tac try(t : tac) = [
-  {t} || {id}
 ].
 
 Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
