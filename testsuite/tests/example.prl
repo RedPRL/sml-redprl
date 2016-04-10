@@ -6,7 +6,7 @@
 // Here are a few examples:
 Tac repeat(T : tac) = [
   rec R. {
-    T; R
+    progress(T); R
   }
 ].
 
@@ -107,27 +107,26 @@ Thm lamTest : [fun(Atom; Atom)] by [
 ].
 
 Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
-  eval-goal;
-  eq;
+  auto; eq;
   [ witness{lvl} [lbase]
   , witness [Atom]
   , witness [Atom]
   ]; repeat(auto);
 ].
 
-//
-//
-//Def record(el : [exp].exp) : exp = [
-//  dfun(Atom; [l]. el[l])
-//].
-//
-//Sym foo : exp.
-//Sym bar : exp.
-//
-//Def exampleRecordTy : exp = [
-//  record([l]. ifeq(l; 'foo; Atom; ifeq(l; 'bar; Atom; Base)))
-//].
-//
-//Def exampleRecord : exp = [
-//  lam([l]. ifeq(l; 'foo; 'mysym; ifeq(l; 'bar; 'mysym2; Ax)))
-//].
+
+
+Def record(el : [exp].exp) : exp = [
+  dfun(Atom; [l]. el[l])
+].
+
+Sym foo : exp.
+Sym bar : exp.
+
+Def exampleRecordTy : exp = [
+  record([l]. ifeq(l; 'foo; Atom; ifeq(l; 'bar; Atom; Base)))
+].
+
+Def exampleRecord : exp = [
+  lam([l]. ifeq(l; 'foo; 'mysym; ifeq(l; 'bar; 'mysym2; Ax)))
+].
