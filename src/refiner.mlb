@@ -9,6 +9,8 @@ local
   signature.mlb
   refiner/judgment.sml
   refiner/refiner_kit.sml
+  refiner/target.sig
+  refiner/target.sml
   refiner/rules/cequiv.sig
   refiner/rules/cequiv.sml
   refiner/rules/type.sig
@@ -33,4 +35,5 @@ in
   signature REFINER
   structure Judgment
   structure Refiner
+  structure Target
 end

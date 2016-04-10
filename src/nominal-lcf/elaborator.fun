@@ -106,13 +106,13 @@ struct
          | LCF (REWRITE_GOAL tau) $ [_ \ m] =>
              R.RewriteGoal m
          | LCF EVAL_GOAL $ [] =>
-             R.EvalGoal sign
+             R.EvalGoal sign Target.TARGET_CONCL
          | LCF (WITNESS tau) $ [_ \ m] =>
              R.Witness m
          | LCF (UNFOLD opid) $ [] =>
-             R.Unfold sign opid
+             R.Unfold sign opid Target.TARGET_CONCL
          | LCF NORMALIZE $ [] =>
-             R.Normalize sign
+             R.Normalize sign Target.TARGET_CONCL
          | LCF AUTO $ [] =>
              R.AutoStep sign
          | LCF REC $ [(_, [x]) \ t] =>

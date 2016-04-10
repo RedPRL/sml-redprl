@@ -109,8 +109,7 @@ struct
   local
     open OperatorData CttOperatorData AtomsOperatorData SortData
   in
-
-    fun Unfold sign opid _ (G |> H >> TRUE (P, tau)) =
+    fun Unfold sign opid target _ jdg =
       let
         open SmallStep DynamicsUtil
         fun go m =
@@ -123,36 +122,28 @@ struct
                  else
                    m
              | _ => m
-
-        val P' = go (Abt.deepMapSubterms go P)
-        val (goal, _, _) =
-          makeGoal @@
-            [] |> H >> TRUE (P', tau)
-
+        val deepGo = go o Abt.deepMapSubterms go
+        val jdg' = Target.targetRewrite deepGo target jdg
+        val (goal, _, _) = makeGoal jdg'
         val psi = T.empty @> goal
       in
         (psi, fn rho =>
-          makeEvidence G H @@
-            T.lookup rho (#1 goal) // ([],[]))
+          T.lookup rho (#1 goal))
       end
-      | Unfold _ _ _ _ = raise Match
 
-    fun Normalize sign _ (G |> H >> TRUE (P, tau)) =
+    fun Normalize sign target _ jdg =
       let
         open SmallStep DynamicsUtil
         fun go m = evalOpen sign m handle _ => m
+        val deepGo = go o Abt.deepMapSubterms go
 
-        val P' = go (Abt.deepMapSubterms go P)
-        val (goal, _, _) =
-          makeGoal @@
-            [] |> H >> TRUE (P', tau)
+        val jdg' = Target.targetRewrite deepGo target jdg
+        val (goal, _, _) = makeGoal jdg'
         val psi = T.empty @> goal
       in
         (psi, fn rho =>
-          makeEvidence G H @@
-            T.lookup rho (#1 goal) // ([],[]))
+          T.lookup rho (#1 goal))
       end
-      | Normalize _ _ _ = raise Match
 
     fun RewriteGoal Q _ (G |> H >> TRUE (P, sigma)) =
       let
@@ -173,17 +164,15 @@ struct
       end
       | RewriteGoal _ _ _ = raise Match
 
-    fun EvalGoal sign _ (G |> H >> TRUE (P, sigma)) =
+    fun EvalGoal sign target _ jdg =
       let
-        val Q = DynamicsUtil.evalOpen sign P
-        val x = newMeta ""
-        val psi = T.empty @> (x, [] |> H >> TRUE (Q, sigma))
+        val jdg' = Target.targetRewrite (DynamicsUtil.evalOpen sign) target jdg
+        val (goal, _, _) = makeGoal jdg'
+        val psi = T.empty @> goal
       in
         (psi, fn rho =>
-          makeEvidence G H @@
-            T.lookup rho x // ([],[]))
+          T.lookup rho (#1 goal))
       end
-      | EvalGoal _ _ _ = raise Match
 
     local
       open LevelOperatorData
@@ -226,6 +215,6 @@ struct
             ORELSE Intro NONE alpha
             ORELSE Eq NONE alpha
             ORELSE CStep sign 0 alpha
-            ORELSE EvalGoal sign alpha
+            ORELSE EvalGoal sign Target.TARGET_CONCL alpha
   end
 end

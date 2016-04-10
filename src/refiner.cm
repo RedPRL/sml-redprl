@@ -2,6 +2,7 @@ Library
   signature REFINER
   structure Judgment
   structure Refiner
+  structure Target
 is
   $/basis.cm
   ../lib/sml-dependent-lcf/dependent_lcf.cm
@@ -14,6 +15,8 @@ is
   refiner/judgment.sml
   refiner/refiner.sig
   refiner/refiner_kit.sml
+  refiner/target.sig
+  refiner/target.sml
   refiner/rules/cequiv.sig
   refiner/rules/cequiv.sml
   refiner/rules/type.sig

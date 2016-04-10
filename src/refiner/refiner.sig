@@ -57,6 +57,7 @@ sig
 
   val EvalGoal
     : AbtSignature.sign
+    -> Target.target
     -> ntactic
 
   val Witness
@@ -70,10 +71,12 @@ sig
   val Unfold
     : AbtSignature.sign
     -> symbol
+    -> Target.target
     -> ntactic
 
   val Normalize
     : AbtSignature.sign
+    -> Target.target
     -> ntactic
 
 end
