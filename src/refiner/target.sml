@@ -15,7 +15,7 @@ struct
     fn TRUE (p, tau) => TRUE (f p, tau)
      | TYPE (p, tau) => TYPE (f p, tau)
 
-  fun targetRewrite f target (goal as (G |> H >> concl)) =
+  fun targetRewrite f target (G |> H >> concl) =
     case target of
         TARGET_HYP sym =>
           let

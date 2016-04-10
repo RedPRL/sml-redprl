@@ -21,9 +21,10 @@ struct
     | AUTO
     | ID | FAIL | TRACE of Sort.t
     | CSTEP of int | CEVAL | CSYM
-    | REWRITE_GOAL of Sort.t | EVAL_GOAL | NORMALIZE
+    | REWRITE_GOAL of Sort.t | EVAL_GOAL | NORMALIZE of 'i option
     | WITNESS of Sort.t
     | UNFOLD of 'i
+    | HYP_VAR of 'i
 end
 
 structure NominalLcfOperator : OPERATOR =
@@ -44,7 +45,7 @@ struct
   in
     fun arity (SEQ sorts) =
           [ [] * [] <> MTAC
-          , sorts * sorts <> TAC
+          , sorts * [] <> TAC
           ] ->> TAC
       | arity ORELSE =
           [ [] * [] <> TAC
@@ -102,14 +103,22 @@ struct
           ] ->> TAC
       | arity (UNFOLD i) =
           [] ->> TAC
-      | arity NORMALIZE =
+      | arity (NORMALIZE _) =
           [] ->> TAC
+
+      | arity (HYP_VAR _) =
+          [] ->> EXP
   end
 
   fun support (ELIM (target, tau)) = [(target, tau)]
     | support (HYP (target, tau)) = [(target, tau)]
     | support (UNHIDE (target, tau)) = [(target, tau)]
     | support (UNFOLD i) = [(i, SortData.OPID)]
+    | support (NORMALIZE oi) =
+        (case oi of
+             SOME i => [(i, SortData.EXP)] (* TODO: sort *)
+           | NONE => [])
+    | support (HYP_VAR i) = [(i, SortData.EXP)]
     | support _ = []
 
   fun map f =
@@ -137,7 +146,8 @@ struct
      | EVAL_GOAL => EVAL_GOAL
      | WITNESS tau => WITNESS tau
      | UNFOLD i => UNFOLD (f i)
-     | NORMALIZE => NORMALIZE
+     | HYP_VAR i => HYP_VAR (f i)
+     | NORMALIZE i => NORMALIZE (Option.map f i)
 
   fun eq f =
     fn (SEQ sorts1, SEQ sorts2) => sorts1 = sorts2
@@ -160,7 +170,12 @@ struct
      | (EVAL_GOAL, EVAL_GOAL) => true
      | (WITNESS tau1, WITNESS tau2) => tau1 = tau2
      | (UNFOLD i, UNFOLD j) => f (i, j)
-     | (NORMALIZE, NORMALIZE) => true
+     | (HYP_VAR i, HYP_VAR j) => f (i, j)
+     | (NORMALIZE oi, NORMALIZE oj) =>
+         (case (oi, oj) of
+             (SOME i, SOME j) => f (i, j)
+           | (NONE, NONE) => true
+           | _ => false)
      | _ => false
 
   fun toString f =
@@ -188,6 +203,7 @@ struct
      | EVAL_GOAL => "eval-goal"
      | WITNESS tau => "witness{" ^ Sort.toString tau ^ "}"
      | UNFOLD i => "unfold[" ^ f i ^ "]"
-     | NORMALIZE => "normalize"
+     | HYP_VAR i => "@" ^ f i
+     | NORMALIZE oi => "normalize" ^ (case oi of NONE => "" | SOME i => "[" ^ f i ^ "]")
 end
 

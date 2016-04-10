@@ -5,7 +5,7 @@ struct
   structure MT = Multitacticals (R.Tacticals.Lcf)
 
   open Abt NominalLcfOperatorData OperatorData SortData
-  infix $ \
+  infix $ $# \
 
   fun elaborateOpt m =
     case infer m of
@@ -63,12 +63,47 @@ struct
 
   fun collectSeqs sign rho t =
     case out t of
-         LCF (SEQ _) $ [_ \ mt, (us, xs) \ t] => ((us,xs), mt) :: collectSeqs sign rho t
-       | _ => [(([], []), check (metactx t) (LCF ALL $ [([],[]) \ t], MTAC))]
+         LCF (SEQ _) $ [_ \ mt, (us, _) \ t] => (us, mt) :: collectSeqs sign rho t
+       | _ => [([], check (metactx t) (LCF ALL $ [([],[]) \ t], MTAC))]
+
+  local
+    fun go syms m =
+      let
+        val (m', tau) = infer m
+        val psi = metactx m
+      in
+        case m' of
+           LCF (HYP_VAR a) $ _ =>
+             if SymCtx.member syms a then
+               m
+             else
+               check' (`a, EXP)
+         | theta $ es =>
+             check psi (theta $ List.map (goAbs syms) es, tau)
+         | x $# (us, ms) =>
+             check psi (x $# (us, List.map (go syms) ms), tau)
+         | _ => m
+      end
+    and goAbs syms ((us,xs) \ m) =
+      let
+        val syms' = List.foldl (fn (u, acc) => SymCtx.insert acc u ()) syms us
+      in
+        (us,xs) \ go syms' m
+      end
+  in
+    (* Replace hypothesis-references @u with variables `u; this will *only* expand
+     * unbound hyp-refs. *)
+    fun expandHypVars x =
+      go SymCtx.empty x
+  end
+
+  val optionToTarget =
+    fn NONE => Target.TARGET_CONCL
+     | SOME a => Target.TARGET_HYP a
 
   fun elaborate sign rho t : Refiner.ntactic =
     let
-      val t' = evalOpen sign t handle _ => t
+      val t' = expandHypVars (evalOpen sign t handle _ => t)
     in
       case out t' of
            LCF (SEQ _) $ _ => foldl (fn (t, T) => elaborateM sign rho T t) (fn _ => T.ID) (collectSeqs sign rho t')
@@ -111,8 +146,8 @@ struct
              R.Witness m
          | LCF (UNFOLD opid) $ [] =>
              R.Unfold sign opid Target.TARGET_CONCL
-         | LCF NORMALIZE $ [] =>
-             R.Normalize sign Target.TARGET_CONCL
+         | LCF (NORMALIZE targ) $ [] =>
+             R.Normalize sign (optionToTarget targ)
          | LCF AUTO $ [] =>
              R.AutoStep sign
          | LCF REC $ [(_, [x]) \ t] =>
@@ -121,20 +156,17 @@ struct
          | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t ^ " which evaluated to " ^ DebugShowAbt.toString t')
     end
 
-  and elaborateM sign rho T ((us, xs), mt) =
+  and elaborateM sign rho T (us, mt) =
     let
-      val srho = ListPair.foldl (fn (u,x,acc) => SymCtx.insert acc u x) SymCtx.empty (us, xs)
-      val us' = xs
-      val mt' = Abt.renameEnv srho mt
-      val mt'' = evalOpen sign mt' handle _ => mt'
+      val mt' = evalOpen sign mt handle _ => mt
     in
-      case out mt'' of
+      case out mt' of
            LCF ALL $ [_ \ t'] =>
              (fn alpha => fn jdg =>
                let
                  val (alpha', modulus) = probe alpha
                  val st = T alpha' jdg
-                 val beta = prepend us' (bite (!modulus) alpha)
+                 val beta = prepend us (bite (!modulus) alpha)
                in
                  MT.ALL (elaborate sign rho t' beta) st
                end)
@@ -146,7 +178,7 @@ struct
                  let
                    val (alpha', modulus) = probe alpha
                    val st = T alpha' jdg
-                   val beta = prepend us' (bite (!modulus) alpha)
+                   val beta = prepend us (bite (!modulus) alpha)
                  in
                    MT.EACH' (List.map (fn T => T beta) Ts) st
                  end
@@ -156,11 +188,11 @@ struct
                let
                  val (alpha', modulus) = probe alpha
                  val st = T alpha' jdg
-                 val beta = prepend us' (bite (!modulus) alpha)
+                 val beta = prepend us (bite (!modulus) alpha)
                in
                  MT.FOCUS i (elaborate sign rho t' beta) st
                end)
-         | _ => raise Fail ("Expecting multitac but got " ^ DebugShowAbt.toString mt'')
+         | _ => raise Fail ("Expecting multitac but got " ^ DebugShowAbt.toString mt')
     end
 
   fun elaborate' sign =

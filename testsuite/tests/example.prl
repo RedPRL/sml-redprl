@@ -99,7 +99,7 @@ Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
 Thm lamTest : [fun(Atom; Atom)] by [
   normalize;
   z <- intro;
-  [ witness [ifeq(z; 'mysym; 'yes; 'no)]
+  [ witness [ifeq(@z; 'mysym; 'yes; 'no)]
   , repeat(auto)
   ];
   normalize;
@@ -107,14 +107,14 @@ Thm lamTest : [fun(Atom; Atom)] by [
 ].
 
 Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
-  auto; eq;
+  auto;
+  l <- eq;
   [ witness{lvl} [lbase]
   , witness [Atom]
   , witness [Atom]
-  ]; repeat(auto);
+  ];
+  repeat(auto)
 ].
-
-
 
 Def record(el : [exp].exp) : exp = [
   dfun(Atom; [l]. el[l])

@@ -103,6 +103,10 @@ struct
          end
        | EXP =>
          let
+           val parseHypVar =
+             symbol "@" >> parseSymbol
+               wth (fn u => LCF (HYP_VAR u) $ [])
+
            val parseAx =
              symbol "Ax"
                return (CTT AX $ [])
@@ -231,6 +235,7 @@ struct
              || parseTest
              || parseSquash
              || parseEnsemble
+             || parseHypVar
          end
        | VEC tau =>
          squares (commaSep (f tau))
@@ -296,10 +301,14 @@ struct
                wth (fn opid =>
                  LCF (UNFOLD opid) $ [])
 
+           val parseTarget =
+             opt (squares parseSymbol)
+
            val parseNormalize =
              symbol "normalize"
-               wth (fn opid =>
-                 LCF NORMALIZE $ [])
+               >> parseTarget
+               wth (fn targ =>
+                 LCF (NORMALIZE targ) $ [])
 
            val parseWitness =
              symbol "witness"
@@ -416,7 +425,7 @@ struct
                val us1 = map #1 us
              in
                LCF (SEQ (map #2 us)) $
-                 [([],[]) \ t, (us1, us1) \ mt]
+                 [([],[]) \ t, (us1, []) \ mt]
              end
 
            val multitacToTac =
