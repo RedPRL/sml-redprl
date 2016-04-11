@@ -21,9 +21,9 @@ struct
     | AUTO
     | ID | FAIL | TRACE of Sort.t
     | CSTEP of int | CEVAL | CSYM
-    | REWRITE_GOAL of Sort.t | EVAL_GOAL | NORMALIZE of 'i option
+    | REWRITE_GOAL of Sort.t | EVAL_GOAL of 'i option | NORMALIZE of 'i option
     | WITNESS of Sort.t
-    | UNFOLD of 'i
+    | UNFOLD of 'i * 'i option
     | HYP_VAR of 'i
 end
 
@@ -96,12 +96,12 @@ struct
       | arity (REWRITE_GOAL tau) =
           [ [] * [] <> tau
           ] ->> TAC
-      | arity EVAL_GOAL =
+      | arity (EVAL_GOAL _) =
           [] ->> TAC
       | arity (WITNESS tau) =
           [ [] * [] <> tau
           ] ->> TAC
-      | arity (UNFOLD i) =
+      | arity (UNFOLD _) =
           [] ->> TAC
       | arity (NORMALIZE _) =
           [] ->> TAC
@@ -113,7 +113,11 @@ struct
   fun support (ELIM (target, tau)) = [(target, tau)]
     | support (HYP (target, tau)) = [(target, tau)]
     | support (UNHIDE (target, tau)) = [(target, tau)]
-    | support (UNFOLD i) = [(i, SortData.OPID)]
+    | support (UNFOLD (i, oj)) =
+        [(i, SortData.OPID)] @
+          (case oj of
+               SOME i => [(i, SortData.EXP)]
+             | NONE => [])
     | support (NORMALIZE oi) =
         (case oi of
              SOME i => [(i, SortData.EXP)] (* TODO: sort *)
@@ -143,11 +147,11 @@ struct
      | CSYM => CSYM
      | CEVAL => CEVAL
      | REWRITE_GOAL tau => REWRITE_GOAL tau
-     | EVAL_GOAL => EVAL_GOAL
      | WITNESS tau => WITNESS tau
-     | UNFOLD i => UNFOLD (f i)
+     | EVAL_GOAL oi => EVAL_GOAL (Option.map f oi)
+     | UNFOLD (i, oj) => UNFOLD (f i, Option.map f oj)
+     | NORMALIZE oi => NORMALIZE (Option.map f oi)
      | HYP_VAR i => HYP_VAR (f i)
-     | NORMALIZE i => NORMALIZE (Option.map f i)
 
   fun eq f =
     fn (SEQ sorts1, SEQ sorts2) => sorts1 = sorts2
@@ -167,15 +171,24 @@ struct
      | (CSYM, CSYM) => true
      | (CEVAL, CEVAL) => true
      | (REWRITE_GOAL tau1, REWRITE_GOAL tau2) => tau1 = tau2
-     | (EVAL_GOAL, EVAL_GOAL) => true
      | (WITNESS tau1, WITNESS tau2) => tau1 = tau2
-     | (UNFOLD i, UNFOLD j) => f (i, j)
-     | (HYP_VAR i, HYP_VAR j) => f (i, j)
+     | (EVAL_GOAL oi, EVAL_GOAL oj) =>
+         (case (oi, oj) of
+             (SOME i, SOME j) => f (i, j)
+           | (NONE, NONE) => true
+           | _ => false)
+     | (UNFOLD (i1, oj1), UNFOLD (i2, oj2)) =>
+         f (i1, i2) andalso
+           (case (oj1, oj2) of
+               (SOME j1, SOME j2) => f (j1, j2)
+             | (NONE, NONE) => true
+             | _ => false)
      | (NORMALIZE oi, NORMALIZE oj) =>
          (case (oi, oj) of
              (SOME i, SOME j) => f (i, j)
            | (NONE, NONE) => true
            | _ => false)
+     | (HYP_VAR i, HYP_VAR j) => f (i, j)
      | _ => false
 
   fun toString f =
@@ -200,10 +213,10 @@ struct
      | CSYM => "csym"
      | CEVAL => "ceval"
      | REWRITE_GOAL tau => "rewrite-goal{" ^ Sort.toString tau ^ "}"
-     | EVAL_GOAL => "eval-goal"
+     | EVAL_GOAL oi => "eval-goal" ^ (case oi of NONE => "" | SOME i => " in " ^ f i)
      | WITNESS tau => "witness{" ^ Sort.toString tau ^ "}"
-     | UNFOLD i => "unfold[" ^ f i ^ "]"
+     | UNFOLD (i, oj) => "unfold[" ^ f i ^ "]" ^ (case oj of NONE => "" | SOME j => " in " ^ f j)
+     | NORMALIZE oi => "normalize" ^ (case oi of NONE => "" | SOME i => " in " ^ f i)
      | HYP_VAR i => "@" ^ f i
-     | NORMALIZE oi => "normalize" ^ (case oi of NONE => "" | SOME i => "[" ^ f i ^ "]")
 end
 

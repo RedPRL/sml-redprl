@@ -291,18 +291,21 @@ struct
                  f tau wth (fn m =>
                    LCF (REWRITE_GOAL tau) $ [([],[]) \ m]))
 
+           val parseTarget =
+             opt (symbol "in" >> parseSymbol)
+
            val parseEvalGoal =
-             symbol "eval-goal"
-               return (LCF EVAL_GOAL $ [])
+             symbol "eval"
+               >> parseTarget
+               wth (fn targ =>
+                 LCF (EVAL_GOAL targ) $ [])
 
            val parseUnfold =
              symbol "unfold"
                >> parseSymbol
-               wth (fn opid =>
-                 LCF (UNFOLD opid) $ [])
-
-           val parseTarget =
-             opt (squares parseSymbol)
+               && parseTarget
+               wth (fn (opid, targ) =>
+                 LCF (UNFOLD (opid, targ)) $ [])
 
            val parseNormalize =
              symbol "normalize"

@@ -103,7 +103,7 @@ Thm lamTest : [fun(Atom; Atom)] by [
   , repeat(auto)
   ];
   normalize;
-  auto; auto
+  repeat(auto)
 ].
 
 Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [

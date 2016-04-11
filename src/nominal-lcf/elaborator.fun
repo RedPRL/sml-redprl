@@ -140,12 +140,12 @@ struct
              R.CEval sign
          | LCF (REWRITE_GOAL tau) $ [_ \ m] =>
              R.RewriteGoal m
-         | LCF EVAL_GOAL $ [] =>
-             R.EvalGoal sign Target.TARGET_CONCL
+         | LCF (EVAL_GOAL targ) $ [] =>
+             R.EvalGoal sign (optionToTarget targ)
          | LCF (WITNESS tau) $ [_ \ m] =>
              R.Witness m
-         | LCF (UNFOLD opid) $ [] =>
-             R.Unfold sign opid Target.TARGET_CONCL
+         | LCF (UNFOLD (opid, targ)) $ [] =>
+             R.Unfold sign opid (optionToTarget targ)
          | LCF (NORMALIZE targ) $ [] =>
              R.Normalize sign (optionToTarget targ)
          | LCF AUTO $ [] =>
