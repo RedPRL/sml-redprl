@@ -423,17 +423,17 @@ struct
                && parseMultitac
                wth BINDING
 
-           fun makeSeq t (us : (symbol * sort) list) mt =
+           fun makeSeq mt (us : (symbol * sort) list) t =
              let
                val us1 = map #1 us
              in
                LCF (SEQ (map #2 us)) $
-                 [([],[]) \ t, (us1, []) \ mt]
+                 [([],[]) \ mt, (us1, []) \ t]
              end
 
            val multitacToTac =
              fn (LCF ALL $ [_ \ t]) => t
-              | t => makeSeq t [] (LCF ID $ [])
+              | mt => makeSeq mt [] (LCF ID $ [])
 
            val rec compileScript =
              fn [] => fail "Expected tactic script"

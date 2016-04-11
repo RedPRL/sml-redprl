@@ -62,11 +62,6 @@ struct
       (psi, fn rho => Tele.lookup rho x)
     end
 
-  fun collectSeqs sign rho t =
-    case out t of
-         LCF (SEQ _) $ [_ \ mt, (us, _) \ t] => (us, mt) :: collectSeqs sign rho t
-       | _ => [([], check (metactx t) (LCF ALL $ [([],[]) \ t], MTAC))]
-
   local
     fun go syms m =
       let
@@ -172,7 +167,7 @@ struct
   and elaborateMultitactic sign rho m : Refiner.nmultitactic =
     let
       val (m', tau) = infer (evalOpen sign m handle _ => m)
-      val _ = case tau of MTAC => () | _ => raise Fail "elaborateMTac called on wrong sort"
+      val _ = case tau of MTAC => () | _ => raise Fail "elaborateMultitactic called on wrong sort"
     in
       case m' of
            LCF ALL $ [_ \ t] =>
