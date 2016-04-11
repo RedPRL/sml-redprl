@@ -2,6 +2,7 @@ functor LcfElaborator (R : REFINER) : LCF_ELABORATOR =
 struct
   structure Refiner = R
   structure T = R.Tacticals
+  structure Lcf = R.Tacticals.Lcf
   structure MT = Multitacticals (R.Tacticals.Lcf)
 
   open Abt NominalLcfOperatorData OperatorData SortData
@@ -93,33 +94,45 @@ struct
   in
     (* Replace hypothesis-references @u with variables `u; this will *only* expand
      * unbound hyp-refs. *)
-    fun expandHypVars x =
-      go SymCtx.empty x
+   val expandHypVars =
+      go SymCtx.empty
   end
 
   val optionToTarget =
     fn NONE => Target.TARGET_CONCL
      | SOME a => Target.TARGET_HYP a
 
-  fun elaborate sign rho t : Refiner.ntactic =
+  fun extendTactic (T : Refiner.ntactic) : Refiner.nmultitactic =
+    fn alpha => Lcf.subst (fn _ => T alpha)
+
+  fun contractTactic (M : Refiner.nmultitactic) : Refiner.ntactic =
+    fn alpha => fn jdg =>
+      let
+        val x = Metavariable.named "?x"
+        val psi = Tele.snoc Tele.empty x jdg
+      in
+        M alpha (psi, fn rho => Tele.lookup rho x)
+      end
+
+  fun elaborateTactic sign rho t : Refiner.ntactic =
     let
-      val t' = expandHypVars (evalOpen sign t handle _ => t)
+      val (t', tau) = infer (evalOpen sign t handle _ => t)
     in
-      case out t' of
-           LCF (SEQ _) $ _ => foldl (fn (t, T) => elaborateM sign rho T t) (fn _ => T.ID) (collectSeqs sign rho t')
+      case t' of
+           LCF ORELSE $ [([],[]) \ t1, ([],[]) \ t2] =>
+             let
+               val T1 = elaborateStmt sign rho t1
+               val T2 = elaborateStmt sign rho t2
+             in
+               fn alpha => fn jdg =>
+                 T1 alpha jdg
+                   handle _ => T2 alpha jdg
+             end
          | LCF ID $ _ => (fn _ => T.ID)
          | LCF FAIL $ _ => (fn _ => fn _ => raise Fail "Fail")
          | LCF (TRACE _) $ [_ \ m] => (fn _ => Trace m)
-         | LCF ORELSE $ [_ \ t1, _ \ t2] =>
-             let
-               val T1 = elaborate sign rho t1
-               val T2 = elaborate sign rho t2
-             in
-               fn alpha =>
-                 T.ORELSE (T1 alpha, T2 alpha)
-             end
          | LCF PROGRESS $ [_ \ t] =>
-             T.PROGRESS o elaborate sign rho t
+             T.PROGRESS o elaborateStmt sign rho t
          | LCF (ELIM (target, _)) $ [] =>
              R.Elim target
          | LCF (HYP (target, _)) $ [] =>
@@ -151,49 +164,59 @@ struct
          | LCF AUTO $ [] =>
              R.AutoStep sign
          | LCF REC $ [(_, [x]) \ t] =>
-             Rec (fn T => elaborate sign (VarCtx.insert rho x T) t)
+             Rec (fn T => elaborateStmt sign (VarCtx.insert rho x T) t)
          | `x => VarCtx.lookup rho x
-         | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t ^ " which evaluated to " ^ DebugShowAbt.toString t')
+         | _ => raise Fail ("Expected tactic, got: " ^ DebugShowAbt.toString t)
     end
 
-  and elaborateM sign rho T (us, mt) =
+  and elaborateMultitactic sign rho m : Refiner.nmultitactic =
     let
-      val mt' = evalOpen sign mt handle _ => mt
+      val (m', tau) = infer (evalOpen sign m handle _ => m)
+      val _ = case tau of MTAC => () | _ => raise Fail "elaborateMTac called on wrong sort"
     in
-      case out mt' of
-           LCF ALL $ [_ \ t'] =>
-             (fn alpha => fn jdg =>
-               let
-                 val (alpha', modulus) = probe alpha
-                 val st = T alpha' jdg
-                 val beta = prepend us (bite (!modulus) alpha)
-               in
-                 MT.ALL (elaborate sign rho t' beta) st
-               end)
-         | LCF EACH $ [_ \ v] =>
+      case m' of
+           LCF ALL $ [_ \ t] =>
+             extendTactic (elaborateStmt sign rho t)
+         | LCF EACH $ [_ \ vec] =>
              let
-               val Ts = List.map (elaborate sign rho) (elaborateVec (evalOpen sign v))
+               val Ts = List.map (elaborateStmt sign rho) (elaborateVec (evalOpen sign vec))
              in
-               fn alpha => fn jdg =>
-                 let
-                   val (alpha', modulus) = probe alpha
-                   val st = T alpha' jdg
-                   val beta = prepend us (bite (!modulus) alpha)
-                 in
-                   MT.EACH' (List.map (fn T => T beta) Ts) st
-                 end
+               fn alpha =>
+                 MT.EACH' (List.map (fn T => T alpha) Ts)
              end
-         | LCF (FOCUS i) $ [_ \ t'] =>
-             (fn alpha => fn jdg =>
-               let
-                 val (alpha', modulus) = probe alpha
-                 val st = T alpha' jdg
-                 val beta = prepend us (bite (!modulus) alpha)
-               in
-                 MT.FOCUS i (elaborate sign rho t' beta) st
-               end)
-         | _ => raise Fail ("Expecting multitac but got " ^ DebugShowAbt.toString mt')
+         | LCF (FOCUS i) $ [_ \ t] =>
+             MT.FOCUS i o elaborateStmt sign rho t
+         | _ => raise Fail "Unrecognized multitactic"
     end
+
+  and elaborateStmt sign rho : abt -> Refiner.ntactic =
+    let
+      fun go t =
+        let
+          val (t', tau) = infer (expandHypVars (evalOpen sign t handle _ => t))
+          val _ = case tau of TAC => () | _ => raise Fail "elaborateStmt called on wrong sort"
+        in
+          case t' of
+               LCF (SEQ taus) $ [([],[]) \ m, (us, _) \ t] => (us, elaborateMultitactic sign rho m) :: go t
+             | _ => [([], extendTactic (elaborateTactic sign rho t))]
+        end
+    in
+      contractTactic
+        o List.foldr
+            (fn ((us, front : Refiner.nmultitactic), rest : Refiner.nmultitactic) => fn alpha => fn st =>
+              let
+                val beta = prepend us alpha
+                val (beta', modulus) = probe (prepend us beta)
+                val st' = front beta' st
+              in
+                rest (bite (!modulus) beta) st'
+              end)
+            (fn _ => fn st => st)
+        o go
+    end
+
+  fun elaborate sign rho t : Refiner.ntactic =
+    elaborateStmt sign rho t
 
   fun elaborate' sign =
     elaborate sign VarCtx.empty
