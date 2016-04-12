@@ -171,7 +171,7 @@ struct
     in
       case m' of
            LCF ALL $ [_ \ t] =>
-             extendTactic (elaborateStmt sign rho t)
+             MT.ALL o elaborateStmt sign rho t
          | LCF EACH $ [_ \ vec] =>
              let
                val Ts = List.map (elaborateStmt sign rho) (elaborateVec (evalOpen sign vec))
