@@ -16,8 +16,6 @@ struct
   (* signature *)
   type env = tactic Syn.VarCtx.dict
 
-  type ('syn, 'sem) interp = Syn.sign * env -> 'syn -> 'sem
-
   local
     open Abt OperatorData NominalLcfOperatorData
     infix $ \
@@ -32,9 +30,6 @@ struct
         print (ShowAbt.toString m ^ "\n");
         (psi, fn rho => Tele.lookup rho x)
       end
-
-    fun Rec f alpha jdg =
-      f (Rec f) alpha jdg
 
     val optionToTarget =
       fn NONE => Target.TARGET_CONCL
