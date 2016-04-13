@@ -23,13 +23,8 @@ struct
     exception InvalidRule
 
     fun Trace m jdg =
-      let
-        val x = Abt.Metavariable.named "?"
-        val psi = Tele.snoc Tele.empty x jdg
-      in
-        print (ShowAbt.toString m ^ "\n");
-        (psi, fn rho => Tele.lookup rho x)
-      end
+      (print (ShowAbt.toString m ^ "\n");
+       Lcf.return jdg)
 
     val optionToTarget =
       fn NONE => Target.TARGET_CONCL
