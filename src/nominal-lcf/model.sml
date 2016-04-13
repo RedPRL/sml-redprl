@@ -5,11 +5,12 @@ struct
   structure T = R.Tacticals
   structure Lcf = T.Lcf
   structure Tele = Lcf.T
+  structure Spr = UniversalSpread
 
-  type 'a seq = int -> 'a
+  type 'a nominal = Syn.atom Spr.point -> 'a
 
-  type tactic = Syn.symbol seq -> Lcf.tactic
-  type multitactic = Syn.symbol seq -> Lcf.multitactic
+  type tactic = Lcf.tactic nominal
+  type multitactic = Lcf.multitactic nominal
 
   (* signature *)
   type env = tactic Syn.VarCtx.dict
@@ -20,7 +21,7 @@ struct
     open Abt OperatorData NominalLcfOperatorData
     infix $ \
   in
-    exception InvalidTactic
+    exception InvalidRule
 
     fun Trace m jdg =
       let
@@ -38,22 +39,11 @@ struct
       fn NONE => Target.TARGET_CONCL
        | SOME a => Target.TARGET_HYP a
 
-    fun tacticR f (sign, rho) tac =
+    fun rule (sign, rho) tac =
       case out tac of
-           LCF ORELSE $ [_ \ t1, _ \ t2] =>
-             let
-               val T1 = f (sign, rho) t1
-               val T2 = f (sign, rho) t2
-             in
-               fn alpha => fn jdg =>
-                 T1 alpha jdg
-                   handle _ => T2 alpha jdg
-             end
-         | LCF ID $ _ => (fn _ => T.ID)
+           LCF ID $ _ => (fn _ => T.ID)
          | LCF FAIL $ _ => (fn _ => fn _ => raise Fail "Fail")
          | LCF (TRACE _) $ [_ \ m] => (fn _ => Trace m)
-         | LCF PROGRESS $ [_ \ t] =>
-             T.PROGRESS o f (sign, rho) t
          | LCF (ELIM (target, _)) $ [] =>
              R.Elim target
          | LCF (HYP (target, _)) $ [] =>
@@ -84,9 +74,7 @@ struct
              R.Normalize sign (optionToTarget targ)
          | LCF AUTO $ [] =>
              R.AutoStep sign
-         | LCF REC $ [(_, [x]) \ t] =>
-             Rec (fn T => f (sign, VarCtx.insert rho x T) t)
-         | _ => raise InvalidTactic
+         | _ => raise InvalidRule
   end
 
 end

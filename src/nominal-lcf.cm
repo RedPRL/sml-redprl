@@ -1,24 +1,16 @@
 Library
-  signature NOMINAL_LCF_SYNTAX
-  signature NOMINAL_LCF_MODEL
-  signature NOMINAL_LCF_SEMANTICS
-  functor NominalLcfSemantics
-
   structure NominalLcfSyntax
   structure NominalLcfModel
   structure NominalLcfSemantics
 is
   $/basis.cm
   ../lib/sml-dependent-lcf/dependent_lcf.cm
+  ../lib/sml-dependent-lcf/nominal_lcf.cm
   syntax.cm
   cmlib.cm
   signature.cm
   dynamics.cm
   refiner.cm
-
-  nominal-lcf/syntax.sig
-  nominal-lcf/semantics.sig
-  nominal-lcf/semantics.fun
 
   nominal-lcf/syntax.sml
   nominal-lcf/model.sml

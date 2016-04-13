@@ -5,9 +5,10 @@ struct
 
   infix $ \ $#
 
-  type statement = abt
-  type multitactic = abt
+  type atom = symbol
+  type rule = abt
   type tactic = abt
+  type multitactic = abt
   type sign = AbtSignature.sign
 
   exception hole
@@ -54,14 +55,14 @@ struct
          O.VEC_LIT _ $ es => List.map (fn (_ \ n) => n) es
        | _ => raise Fail "Expected vector argument"
 
-  structure Multi =
+  structure Multitactic =
   struct
     exception InvalidMultitactic
 
     datatype view =
-        ALL of statement
-      | EACH of statement list
-      | FOCUS of int * statement
+        ALL of tactic
+      | EACH of tactic list
+      | FOCUS of int * tactic
 
     fun out sign mtac =
       case Abt.out (expandHypVars (evalOpen sign mtac)) of
@@ -71,7 +72,7 @@ struct
          | _ => raise InvalidMultitactic
   end
 
-  structure Stmt =
+  structure Tactic =
   struct
     exception InvalidStatement
 
@@ -79,7 +80,10 @@ struct
 
     datatype view =
         SEQ of multitactic binding list
-      | TAC of tactic
+      | ORELSE of tactic * tactic
+      | REC of variable * tactic
+      | PROGRESS of tactic
+      | RULE of rule
       | VAR of variable
 
     fun collect stmt =
@@ -94,8 +98,11 @@ struct
       in
         case Abt.out stmt' of
              O.LCF (N.SEQ _) $ _ => SEQ (collect stmt')
+           | O.LCF N.ORELSE $ [_ \ tac1, _ \ tac2] => ORELSE (tac1, tac2)
+           | O.LCF N.REC $ [(_, [x]) \ tac] => REC (x, tac)
+           | O.LCF N.PROGRESS $ [_ \ tac] => PROGRESS tac
            | `x => VAR x
-           | _ => TAC stmt'
+           | _ => RULE stmt'
       end
   end
 end

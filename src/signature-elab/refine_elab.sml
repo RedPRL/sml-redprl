@@ -47,7 +47,7 @@ struct
                           symctx = List.foldl (fn ((u,tau), upsilon) => SymCtx.insert upsilon u tau) SymCtx.empty parameters,
                           hypctx = SymbolTelescope.empty}
                        val goal = [] |> context >> TRUE (prop, tau)
-                       val st as (psi, vld) = E.statement (sign, VarCtx.empty) script alpha goal
+                       val st as (psi, vld) = E.tactic (sign, VarCtx.empty) script alpha goal
                      in
                        case Ctx.ConsView.out psi of
                             Ctx.ConsView.EMPTY =>

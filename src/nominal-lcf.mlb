@@ -1,6 +1,7 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-dependent-lcf/dependent_lcf.mlb
+  ../lib/sml-dependent-lcf/nominal_lcf.mlb
 
   syntax.mlb
   local
@@ -14,19 +15,10 @@ local
   dynamics.mlb
   refiner.mlb
 
-  nominal-lcf/syntax.sig
-  nominal-lcf/semantics.sig
-  nominal-lcf/semantics.fun
-
   nominal-lcf/syntax.sml
   nominal-lcf/model.sml
   nominal-lcf/semantics.sml
 in
-  signature NOMINAL_LCF_SYNTAX
-  signature NOMINAL_LCF_MODEL
-  signature NOMINAL_LCF_SEMANTICS
-  functor NominalLcfSemantics
-
   structure NominalLcfSyntax
   structure NominalLcfModel
   structure NominalLcfSemantics
