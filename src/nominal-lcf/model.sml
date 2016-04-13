@@ -4,6 +4,7 @@ struct
   structure Syn = NominalLcfSyntax
   structure T = R.Tacticals
   structure Lcf = T.Lcf
+  structure MT = Multitacticals (Lcf)
   structure Tele = Lcf.T
   structure Spr = UniversalSpread
 
