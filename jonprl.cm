@@ -1,5 +1,4 @@
 Library
-  functor LcfElaborator
   structure TermParser
   signature ABT_SIGNATURE
   structure BindSignatureElab

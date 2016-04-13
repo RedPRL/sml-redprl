@@ -10,6 +10,7 @@ is
   syntax.cm
   signature.cm
   nominal-lcf.cm
+  refiner.cm
   signature-elab/elab.sig
   signature-elab/bind_signature_elab.sml
   signature-elab/validation_elab.sml

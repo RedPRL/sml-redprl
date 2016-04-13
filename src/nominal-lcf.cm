@@ -1,14 +1,17 @@
 Library
-  signature LCF_ELABORATOR
-  functor LcfElaborator
-  structure LcfElaborator
+  structure NominalLcfSyntax
+  structure NominalLcfModel
+  structure NominalLcfSemantics
 is
   $/basis.cm
   ../lib/sml-dependent-lcf/dependent_lcf.cm
+  ../lib/sml-dependent-lcf/nominal_lcf.cm
   syntax.cm
   cmlib.cm
   signature.cm
   dynamics.cm
   refiner.cm
-  nominal-lcf/elaborator.sig
-  nominal-lcf/elaborator.fun
+
+  nominal-lcf/syntax.sml
+  nominal-lcf/model.sml
+  nominal-lcf/semantics.sml

@@ -15,6 +15,7 @@ sig
   type name_store = symbol choice_sequence
 
   type ntactic = name_store -> Tacticals.Lcf.tactic
+  type nmultitactic = name_store -> Tacticals.Lcf.multitactic
 
   val Elim
     : symbol      (* target *)

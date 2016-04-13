@@ -1,11 +1,11 @@
 structure RefineElab : SIGNATURE_ELAB =
 struct
-  structure E = LcfElaborator
+  structure E = NominalLcfSemantics
   structure S1 = AbtSignature and S2 = AbtSignature
 
-  open E AbtSignature
+  open AbtSignature
   structure T = AbtSignature.Telescope and SD = SortData
-  structure Ctx = E.Refiner.Tacticals.Lcf.T
+  structure Ctx = Refiner.Tacticals.Lcf.T
 
   exception hole
   fun ?e = raise e
@@ -47,7 +47,7 @@ struct
                           symctx = List.foldl (fn ((u,tau), upsilon) => SymCtx.insert upsilon u tau) SymCtx.empty parameters,
                           hypctx = SymbolTelescope.empty}
                        val goal = [] |> context >> TRUE (prop, tau)
-                       val st as (psi, vld) = E.elaborate' sign script alpha goal
+                       val st as (psi, vld) = E.tactic (sign, VarCtx.empty) script alpha goal
                      in
                        case Ctx.ConsView.out psi of
                             Ctx.ConsView.EMPTY =>
@@ -65,7 +65,7 @@ struct
                               end
                           | _ => raise Fail
                                    ("Incomplete proof:\n\n"
-                                      ^ E.Refiner.Tacticals.Lcf.stateToString st
+                                      ^ Refiner.Tacticals.Lcf.stateToString st
                                       ^ "\n\n")
                      end
                  | _ => raise Fail "Expected either OP_SOME or OP_NONE")

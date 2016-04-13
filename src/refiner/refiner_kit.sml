@@ -37,6 +37,7 @@ struct
   type 'a choice_sequence = int -> 'a
   type name_store = Abt.symbol choice_sequence
   type ntactic = name_store -> Tacticals.Lcf.tactic
+  type nmultitactic = name_store -> Tacticals.Lcf.multitactic
 
   local
     val counter = ref 0
