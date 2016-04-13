@@ -4,6 +4,7 @@ local
   ../lib/cmlib/cmlib.mlb
   syntax.mlb
   signature.mlb
+  refiner.mlb
   nominal-lcf.mlb
   signature-elab/elab.sig
   signature-elab/bind_signature_elab.sml
