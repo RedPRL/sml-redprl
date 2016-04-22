@@ -1,8 +1,6 @@
 signature REFINER =
 sig
-  structure Tacticals : TACTICALS
-    where type Lcf.J.Tm.abt = Abt.abt
-    where type Lcf.J.Tm.Metavariable.t = Abt.metavariable
+  structure Lcf : DEPENDENT_LCF
 
   type symbol = Abt.symbol
   type metavariable = Abt.metavariable
@@ -14,8 +12,8 @@ sig
    * natural numbers to symbols. *)
   type name_store = symbol choice_sequence
 
-  type ntactic = name_store -> Tacticals.Lcf.tactic
-  type nmultitactic = name_store -> Tacticals.Lcf.multitactic
+  type ntactic = name_store -> Lcf.tactic
+  type nmultitactic = name_store -> Lcf.multitactic
 
   val Elim
     : symbol      (* target *)

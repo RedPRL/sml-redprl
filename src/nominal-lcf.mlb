@@ -1,5 +1,6 @@
 local
   $(SML_LIB)/basis/basis.mlb
+  ../lib/sml-dependent-lcf/lcf.mlb
   ../lib/sml-dependent-lcf/dependent_lcf.mlb
   ../lib/sml-dependent-lcf/nominal_lcf.mlb
 

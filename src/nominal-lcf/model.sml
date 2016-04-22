@@ -2,8 +2,11 @@ structure NominalLcfModel : NOMINAL_LCF_MODEL =
 struct
   structure R = Refiner
   structure Syn = NominalLcfSyntax
-  structure T = R.Tacticals
-  structure Lcf = T.Lcf
+  structure T = RefinerKit.Tacticals
+  structure Lcf = RefinerKit.Lcf
+
+  structure LcfUtil = LcfUtil (Lcf)
+
   structure MT = Multitacticals (Lcf)
   structure Tele = Lcf.T
   structure Spr = UniversalSpread
@@ -24,7 +27,7 @@ struct
 
     fun Trace m jdg =
       (print (ShowAbt.toString m ^ "\n");
-       Lcf.return jdg)
+       LcfUtil.unit jdg)
 
     val optionToTarget =
       fn NONE => Target.TARGET_CONCL

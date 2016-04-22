@@ -5,7 +5,7 @@ struct
 
   open AbtSignature
   structure T = AbtSignature.Telescope and SD = SortData
-  structure Ctx = Refiner.Tacticals.Lcf.T
+  structure Ctx = RefinerKit.Lcf.T
 
   exception hole
   fun ?e = raise e
@@ -65,7 +65,7 @@ struct
                               end
                           | _ => raise Fail
                                    ("Incomplete proof:\n\n"
-                                      ^ Refiner.Tacticals.Lcf.stateToString st
+                                      ^ RefinerKit.Tacticals.Lcf.stateToString st
                                       ^ "\n\n")
                      end
                  | _ => raise Fail "Expected either OP_SOME or OP_NONE")
