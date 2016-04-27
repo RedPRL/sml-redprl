@@ -41,7 +41,7 @@ ML installed. Then, simply run
 
     ./script/mlton.sh
 
-Then, a binary will be placed in `./bin/jonprl`, which you may run as
+Then, a binary will be placed in `./bin/redprl`, which you may run as
 follows
 
-    ./bin/jonprl my-development.prl
+    ./bin/redprl my-development.prl

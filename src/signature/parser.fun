@@ -1,5 +1,5 @@
-(* The grammar can be found at
-   https://github.com/JonPRL/sml-red-jonprl/blob/master/doc/signatures.pdf *)
+(* Grammar Specification:
+ * https://github.com/RedPRL/sml-redprl/blob/master/doc/definition.pdf *)
 
 functor SignatureParser (TermParser : TERM_PARSER) =
 struct
