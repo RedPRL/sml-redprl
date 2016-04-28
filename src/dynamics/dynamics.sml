@@ -56,7 +56,7 @@ struct
       end
   in
     (* computation rules for user-defined operators *)
-    fun stepCust sign (opid, arity) (cl as m <: (mrho, srho, rho)) =
+    fun stepCust sign (opid, arity) (cl as m <: (mrho, srho, vrho)) =
       let
         open Unify infix <*>
         val def as {definiens, ...} =
@@ -68,37 +68,37 @@ struct
         val srho'' = SymEnvUtil.union (srho, srho') handle _ => raise Stuck cl
         val mrho'' =
           MetaCtx.union mrho
-            (MetaCtx.map (fn e => e <: (mrho, srho, rho)) mrho') (* todo: check this? *)
+            (MetaCtx.map (fn e => e <: (mrho, srho, vrho)) mrho') (* todo: check this? *)
             (fn _ => raise Stuck cl)
       in
-        ret @@ definiens <: (mrho'', srho'', rho)
+        ret @@ definiens <: (mrho'', srho'', vrho)
       end
   end
 
   (* second-order substitution via environments *)
-  fun stepMeta x (us, ms) (cl as m <: (mrho, srho, rho)) =
+  fun stepMeta x (us, ms) (cl as m <: (mrho, srho, vrho)) =
     let
-      val e <: (mrho', srho', rho') = MetaCtx.lookup mrho x
+      val e <: (mrho', srho', vrho') = MetaCtx.lookup mrho x
       val (vs', xs) \ m = outb e
       val srho'' = ListPair.foldlEq  (fn (u,v,r) => SymCtx.insert r u v) srho' (vs', us)
-      val rho'' = ListPair.foldlEq (fn (x,m,r) => VarCtx.insert r x (m <: (mrho', srho', rho'))) rho' (xs, ms)
+      val vrho'' = ListPair.foldlEq (fn (x,m,r) => VarCtx.insert r x (m <: (mrho', srho', vrho'))) vrho' (xs, ms)
     in
-      ret @@ m <: (mrho', srho'', rho'')
+      ret @@ m <: (mrho', srho'', vrho'')
     end
 
-  fun step sign (cl as m <: (mrho, srho, rho)) : abt closure step =
+  fun step sign (cl as m <: (mrho, srho, vrho)) : abt closure step =
     case out m of
-         `x => ret @@ VarCtx.lookup rho x
+         `x => ret @@ VarCtx.lookup vrho x
        | x $# (us, ms) => stepMeta x (us, ms) cl
        | theta $ args =>
            let
              fun f u = SymCtx.lookup srho u handle _ => u
              val theta' = Operator.map f theta
            in
-             stepOp sign theta' args (m <: (mrho, srho, rho))
+             stepOp sign theta' args (m <: (mrho, srho, vrho))
            end
     handle _ =>
-      raise Stuck @@ m <: (mrho, srho, rho)
+      raise Stuck @@ m <: (mrho, srho, vrho)
 
   (* built-in computation rules *)
   and stepOp sign theta args (cl as m <: env) =
