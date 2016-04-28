@@ -22,7 +22,7 @@ struct
       val _ = destUniv univ
       val eq =
         check
-          (#metactx H)
+          (getMetas H)
           (CTT (EQ tau) $ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ], EXP)
       val (goal, _, _) =
         makeGoal @@
@@ -50,12 +50,9 @@ struct
   fun Unhide h _ (G |> H >> TRUE (P, tau)) =
     let
       val _ = destEq P
-      val (Q, sigma) = Ctx.lookup (#hypctx H) h
+      val (Q, sigma) = Ctx.lookup (getHyps H) h
       val (tau', Q') = destSquash Q
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.modify h (fn _ => (Q', tau')) (#hypctx H)}
+      val H' = updateHyps (Ctx.modify h (fn _ => (Q', tau'))) H
 
       val (goal, _, _) =
         makeGoal @@

@@ -1,15 +1,57 @@
-structure Sequent : SEQUENT =
+structure Sequent :> SEQUENT
+  where type prop = Abt.abt
+  where type sort = Abt.sort
+  where type var = Abt.variable
+  where type metactx = Abt.metactx
+  where type symctx = Abt.symctx
+  where type hypctx = (Abt.abt * Abt.sort) SymbolTelescope.telescope =
 struct
   type prop = Abt.abt
   type sort = Abt.sort
-  type expr = Abt.abt
   type var = Abt.variable
-  type operator = Abt.operator
 
-  type context =
-    {metactx : Abt.metactx,
-     symctx : Abt.symctx,
-     hypctx : (prop * sort) SymbolTelescope.telescope}
+  type metactx = Abt.metactx
+  type symctx = Abt.symctx
+  type hypctx = (prop * sort) SymbolTelescope.telescope
+
+  datatype context =
+    CONTEXT of
+      {metactx : metactx,
+       symctx : symctx,
+       hypctx : hypctx}
+
+   val emptyContext =
+     CONTEXT
+       {metactx = Abt.MetaCtx.empty,
+        symctx = Abt.SymCtx.empty,
+        hypctx = SymbolTelescope.empty}
+
+   fun getHyps (CONTEXT {hypctx,...}) =
+     hypctx
+
+   fun getSyms (CONTEXT {symctx,...}) =
+     symctx
+
+   fun getMetas (CONTEXT {metactx,...}) =
+     metactx
+
+    fun updateHyps f (CONTEXT {metactx, symctx, hypctx}) =
+      CONTEXT
+        {metactx = metactx,
+         symctx = symctx,
+         hypctx = f hypctx}
+
+    fun updateSyms f (CONTEXT {metactx, symctx, hypctx}) =
+      CONTEXT
+        {metactx = metactx,
+         symctx = f symctx,
+         hypctx = hypctx}
+
+    fun updateMetas f (CONTEXT {metactx, symctx, hypctx}) =
+      CONTEXT
+        {metactx = f metactx,
+         symctx = symctx,
+         hypctx = hypctx}
 
   (* A sequent consists in a context (of metavariables, symbols and hypotheses)
    * and a conclusion [(P,tau)], where [tau] is the sort of the evidence to be
@@ -32,7 +74,6 @@ struct
   infix 4 >>
   infix 3 |>
 
-
   val conclToString =
     fn TRUE (P, tau) => ShowAbt.toString P ^ " true"
      | TYPE (P, tau) => ShowAbt.toString P ^ " type"
@@ -53,7 +94,7 @@ struct
     end
 
   fun toString (G |> H >> concl) =
-        hypothesesToString (#hypctx H)
+        hypothesesToString (getHyps H)
           ^ "\226\138\162 "
           ^ conclToString concl
 end

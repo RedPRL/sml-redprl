@@ -30,10 +30,7 @@ struct
       val b1x = subst (xtm, x1) b1
       val b2x = subst (xtm, x2) b2
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) x (a1, tau)}
+      val H' = updateHyps (fn xs => Ctx.snoc xs x (a1, tau)) H
 
       val (goal2, _, H') =
         makeGoal @@
@@ -58,15 +55,12 @@ struct
       val bm = subst (m1, x) b
       val (squashGoal, _, H) =
         makeGoal @@
-          [] |> H >> TRUE (makeSquash (#metactx H) tau2 bm, EXP)
+          [] |> H >> TRUE (makeSquash (getMetas H) tau2 bm, EXP)
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) z (a, tau1)}
+      val H' = updateHyps (fn xs => Ctx.snoc xs z (a, tau1)) H
 
       val (tyfunGoal, _, _) =
         makeGoal @@
@@ -90,15 +84,12 @@ struct
       val pred = subst (mainHole [] [], x) b
       val (predGoal, _, H) =
         makeGoal @@
-          [] |> H >> TRUE (makeSquash (#metactx H) tau2 pred, EXP)
+          [] |> H >> TRUE (makeSquash (getMetas H) tau2 pred, EXP)
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) z (a, tau1)}
+      val H' = updateHyps (fn xs => Ctx.snoc xs z (a, tau1)) H
 
       val (tyfunGoal, _, _) =
         makeGoal @@
@@ -113,14 +104,14 @@ struct
 
   fun Elim i alpha (G |> H >> TRUE (P, tau)) =
     let
-      val (ensemble, _) = Ctx.lookup (#hypctx H) i
+      val (ensemble, _) = Ctx.lookup (getHyps H) i
       val (tau1, tau2, a, x, bx) = destEnsemble ensemble
       val (z1, z2) = (alpha 0, alpha 1)
       val z1tm = check' (`z1, tau1)
-      val bz1 = makeSquash (#metactx H) tau2 (subst (z1tm, x) bx)
+      val bz1 = makeSquash (getMetas H) tau2 (subst (z1tm, x) bx)
       val hyps =
         Ctx.interposeAfter
-          (#hypctx H)
+          (getHyps H)
           (i, Ctx.snoc (Ctx.snoc Ctx.empty z1 (a, tau1)) z2 (bz1, tau2))
 
       val hyps' =
@@ -128,11 +119,7 @@ struct
           (fn (p,tau) => (subst (z1tm, i) p, tau))
           hyps
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = hyps'}
-
+      val H' = updateHyps (fn _ => hyps') H
       val P' = subst (z1tm, i) P
 
       val (goal, _, _) =

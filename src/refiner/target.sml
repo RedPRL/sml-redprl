@@ -19,12 +19,7 @@ struct
     case target of
         TARGET_HYP sym =>
           let
-            val hyps = #hypctx H
-            val hyps' = SymbolTelescope.modify sym (fn (x, tau) => (f x, tau)) hyps
-            val H' =
-              {metactx = #metactx H,
-               symctx = #symctx H,
-               hypctx = hyps'}
+            val H' = updateHyps (SymbolTelescope.modify sym (fn (x, tau) => (f x, tau))) H
           in
             G |> H' >> concl
           end

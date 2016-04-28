@@ -15,11 +15,11 @@ struct
 
       val (goal1, _, H) =
         makeGoal @@
-          [] |> H >> TRUE (makeCEquiv (#metactx H) (m1, m2), EXP)
+          [] |> H >> TRUE (makeCEquiv (getMetas H) (m1, m2), EXP)
 
       val (goal2, _, _) =
         makeGoal @@
-         [] |> H >> TRUE (makeCEquiv (#metactx H) (n1, n2), EXP)
+         [] |> H >> TRUE (makeCEquiv (getMetas H) (n1, n2), EXP)
 
       val psi = T.empty @> goal1 @> goal2
     in
@@ -33,7 +33,7 @@ struct
       val (tau, m, n) = destCEquiv P
       val (subgoal, _, _) =
         makeGoal @@
-          [] |> H >> TRUE (makeCEquiv (#metactx H) (n,m), EXP)
+          [] |> H >> TRUE (makeCEquiv (getMetas H) (n,m), EXP)
       val psi = T.empty @> subgoal
     in
       (psi, fn rho =>
@@ -53,7 +53,7 @@ struct
          let
            val (subgoal, _, _) =
              makeGoal @@
-               [] |> H >> TRUE (makeCEquiv (#metactx H) (m', n), EXP)
+               [] |> H >> TRUE (makeCEquiv (getMetas H) (m', n), EXP)
            val psi = T.empty @> subgoal
          in
            (psi, fn rho =>
@@ -74,7 +74,7 @@ struct
          let
            val (subgoal, _, _) =
              makeGoal @@
-               [] |> H >> TRUE (makeCEquiv (#metactx H) (m', n), EXP)
+               [] |> H >> TRUE (makeCEquiv (getMetas H) (m', n), EXP)
            val psi = T.empty @> subgoal
          in
            (psi, fn rho =>

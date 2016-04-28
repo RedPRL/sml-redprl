@@ -40,23 +40,20 @@ struct
   fun substEvidenceEnv rho (G |> H >> concl) =
     let
       infix \
-      val hypctx' = SymbolTelescope.map (fn (Q, tau) => (metasubstEnv rho Q, tau)) (#hypctx H)
       val concl' = substConcl rho concl
-      val metactx' =
+
+      val goHyps = SymbolTelescope.map (fn (Q, tau) => (metasubstEnv rho Q, tau))
+      val goMetas =
         MetaCtx.foldl
           (fn (k, vl, acc) =>
              case Option.map outb (MetaCtx.find rho k) of
                  NONE => MetaCtx.insert acc k vl
                | SOME (_ \ m) => MetaCtxUtil.union (acc, metactx m))
           MetaCtx.empty
-          (#metactx H)
 
-      val H' =
-        {metactx = metactx',
-         symctx = #symctx H,
-         hypctx = hypctx'}
+      val goCtx = updateHyps goHyps o updateMetas goMetas
     in
-      G |> H' >> substConcl rho concl
+      G |> goCtx H >> substConcl rho concl
     end
 
   fun singletonEnv (e, x) =
@@ -77,7 +74,7 @@ struct
       hyps
 
   fun judgmentMetactx (G |> H >> concl) =
-    MetaCtxUtil.union (hypsMetactx (#hypctx H), MetaCtxUtil.union (#metactx H, conclMetactx concl))
+    MetaCtxUtil.union (hypsMetactx (getHyps H), MetaCtxUtil.union (getMetas H, conclMetactx concl))
 
   (* Code review needed below: *)
 
@@ -110,7 +107,7 @@ struct
 
   fun unifyJudgment' (G1 |> H1 >> concl1, G2 |> H2 >> concl2) : Abt.Unify.renaming =
     let
-      val (mrho1, srho1, vrho1) = unifyHypotheses (#hypctx H1, #hypctx H2)
+      val (mrho1, srho1, vrho1) = unifyHypotheses (getHyps H1, getHyps H2)
       val (mrho2, srho2, vrho2) = unifyConcl (concl1, concl2)
     in
       (MetaRenUtil.union (mrho1, mrho2),

@@ -46,7 +46,7 @@ struct
 
       val (mainGoal, _, _) =
         makeGoal @@
-          [] |> H >> TRUE (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP), EXP)
+          [] |> H >> TRUE (check (getMetas H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP), EXP)
 
       val subgoals' = subgoals @> mainGoal
     in
@@ -57,20 +57,17 @@ struct
 
   fun Elim h alpha (G |> H >> TRUE (P, sigma)) =
     let
-      val (base, tau) = Ctx.lookup (#hypctx H) h
+      val (base, tau) = Ctx.lookup (getHyps H) h
       val _ = destBase base
       val htm = check' (`h, tau)
 
       val z = alpha 0
       val ctx' =
         Ctx.interposeAfter
-          (#hypctx H)
-          (h, Ctx.snoc Ctx.empty z (makeCEquiv (#metactx H) (htm, htm), EXP))
+          (getHyps H)
+          (h, Ctx.snoc Ctx.empty z (makeCEquiv (getMetas H) (htm, htm), EXP))
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = ctx'}
+      val H' = updateHyps (fn _ => ctx') H
 
       val (goal, _, _) =
         makeGoal @@

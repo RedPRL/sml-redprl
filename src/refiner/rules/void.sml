@@ -27,7 +27,7 @@ struct
 
   fun Elim i _ (G |> H >> TRUE (P, _)) =
     let
-      val (void, _) = Ctx.lookup (#hypctx H) i
+      val (void, _) = Ctx.lookup (getHyps H) i
       val _ = destVoid void
     in
       (T.empty, fn rho =>

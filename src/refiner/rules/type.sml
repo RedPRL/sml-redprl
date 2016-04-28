@@ -14,7 +14,7 @@ struct
 
       val univ =
         check
-          (#metactx H)
+          (getMetas H)
           (CTT (UNIV tau) $ [([],[]) \ lvlHole [] []],
            EXP)
 

@@ -31,7 +31,7 @@ struct
         val x = destVar m
         val y = destVar n
         val _ = if Variable.eq (x, y) then () else raise Match
-        val (a', _) = Ctx.lookup (#hypctx H) x
+        val (a', _) = Ctx.lookup (getHyps H) x
         val _ = if Abt.eq (a,a') then () else raise Match
       in
         (T.empty, fn rho =>
@@ -82,7 +82,7 @@ struct
 
   fun Hyp i _ (G |> H >> TRUE (P, _)) =
     let
-      val (Q, tau) = Ctx.lookup (#hypctx H) i
+      val (Q, tau) = Ctx.lookup (getHyps H) i
     in
       if Abt.eq (P, Q) then
         (T.empty, fn rho =>
@@ -150,7 +150,7 @@ struct
         val tau = sort P
         val (ceqGoal, _, _) =
           makeGoal @@
-            [] |> H >> TRUE (check (#metactx H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP)
+            [] |> H >> TRUE (check (getMetas H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP)
 
         val (mainGoal, _, _) =
           makeGoal @@
@@ -180,7 +180,7 @@ struct
     in
       fun inferTypeLevel (H : Sequent.context) P =
         case out P of
-            CTT (UNIV _) $ [_ \ i] => check (#metactx H) (LVL_OP LSUCC $ [([],[]) \ i], LVL)
+            CTT (UNIV _) $ [_ \ i] => check (getMetas H) (LVL_OP LSUCC $ [([],[]) \ i], LVL)
           | CTT (BASE _) $ _ => lbase
           | CTT (CEQUIV _) $ _ => lbase
           | CTT (CAPPROX _) $ _ => lbase
@@ -189,7 +189,7 @@ struct
           | ATM (ATOM _) $ _ => lbase
           | `x =>
               let
-                val (univ, _) = Ctx.lookup (#hypctx H) x
+                val (univ, _) = Ctx.lookup (getHyps H) x
                 val (_, i) = destUniv univ
               in
                 i

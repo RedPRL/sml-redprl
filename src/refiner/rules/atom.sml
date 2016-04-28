@@ -83,18 +83,11 @@ struct
       val z = alpha 0
 
       val atomTy = makeAtom sigma
-      val toksEq = makeEq (#metactx H) (t1, t2, atomTy)
-      val toksNotEq = check (#metactx H) (CTT NOT $ [([],[]) \ toksEq], EXP)
+      val toksEq = makeEq (getMetas H) (t1, t2, atomTy)
+      val toksNotEq = check (getMetas H) (CTT NOT $ [([],[]) \ toksEq], EXP)
 
-      val Hyes =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) z (toksEq, EXP)}
-
-      val Hno =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) z (toksNotEq, EXP)}
+      val Hyes = updateHyps (fn xs => Ctx.snoc xs z (toksEq, EXP)) H
+      val Hno = updateHyps (fn xs => Ctx.snoc xs z (toksNotEq, EXP)) H
 
       val (goalYes, _, _) =
         makeGoal @@

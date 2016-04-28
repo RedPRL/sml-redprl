@@ -86,12 +86,9 @@ struct
       val x = newMeta ""
       val vl = Judgment.evidenceValence jdg
       val (_, tau) = vl
-      val mctx = MetaCtx.insert (#metactx H) x vl
+      val mctx = MetaCtx.insert (getMetas H) x vl
       fun h us ms = check mctx (x $# (us, ms), tau)
-      val H' =
-        {metactx = mctx,
-         symctx = #symctx H,
-         hypctx = #hypctx H}
+      val H' = updateMetas (fn _ => mctx) H
     in
       ((x,jdg), h, H)
     end
@@ -163,17 +160,14 @@ struct
 
 
     fun makeEqSequent H args =
-      H >> TRUE (makeEq (#metactx H) args, EXP)
+      H >> TRUE (makeEq (getMetas H) args, EXP)
 
     fun makeMemberSequent H args =
-      H >> TRUE (makeMember (#metactx H) args, EXP)
+      H >> TRUE (makeMember (getMetas H) args, EXP)
 
     fun makeLevelSequent (H : Sequent.context) =
       let
-        val H' =
-          {metactx = #metactx H,
-           symctx = #symctx H,
-           hypctx = Ctx.empty}
+        val H' = updateHyps (fn _ => Ctx.empty) H
       in
         H' >> TRUE (check' (CTT (BASE LVL) $ [], EXP), LVL)
       end
@@ -185,7 +179,7 @@ struct
         val (xs, taus) = ListPair.unzip G
       in
         checkb
-          (#metactx H)
+          (getMetas H)
           (([], xs) \ m,
            (([], taus), sort m))
       end

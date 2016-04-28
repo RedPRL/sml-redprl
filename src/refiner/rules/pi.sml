@@ -52,10 +52,7 @@ struct
       val b1z = subst (ztm, x) b1x
       val b2z = subst (ztm, y) b2y
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) z (a1, EXP)}
+      val H' = updateHyps (fn xs => Ctx.snoc xs z (a1, EXP)) H
 
       val (goal2, _, H') =
         makeGoal @@
@@ -82,10 +79,7 @@ struct
       val m1z = subst (ztm, y1) m1
       val m2z = subst (ztm, y2) m2
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) z (a, EXP)}
+      val H' = updateHyps (fn xs => Ctx.snoc xs z (a, EXP)) H
 
       val (goal1, _, H') =
         makeGoal @@
@@ -112,24 +106,16 @@ struct
         makeGoal @@
           [] |> makeLevelSequent H
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = #hypctx H}
-
       val univ = makeUniv @@ lvlHole [] []
 
       val (domGoal, domHole, H') =
         makeGoal @@
-          [] |> H' >> TRUE (univ, EXP)
+          [] |> H >> TRUE (univ, EXP)
 
       val z = alpha 0
       val ztm = check' (`z, EXP)
 
-      val H'' =
-        {metactx = #metactx H',
-         symctx = #symctx H',
-         hypctx = Ctx.snoc (#hypctx H') z (domHole [] [], EXP)}
+      val H'' = updateHyps (fn xs => Ctx.snoc xs z (domHole [] [], EXP)) H'
 
       val (codGoal, codHole, H'') =
         makeGoal @@
@@ -137,18 +123,15 @@ struct
 
       val dfun =
         check
-          (#metactx H'')
+          (getMetas H'')
           (CTT DFUN $ [([],[]) \ domHole [] [], ([],[z]) \ codHole [] [ztm]],
            EXP)
 
-      val H''' =
-        {metactx = #metactx H'',
-         symctx = #symctx H,
-         hypctx = #hypctx H}
+      val H''' = updateMetas (fn _ => getMetas H'') H
 
       val (ceqGoal, _, _) =
         makeGoal @@
-          [] |> H''' >> TRUE (makeCEquiv (#metactx H''') (c, codHole [] [n1]), EXP)
+          [] |> H''' >> TRUE (makeCEquiv (getMetas H''') (c, codHole [] [n1]), EXP)
 
       val (goal1, _, _) =
         makeGoal @@
@@ -180,10 +163,7 @@ struct
       val ztm = check' (`z, EXP)
       val bz = subst (ztm, x) bx
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) z (a, EXP)}
+      val H' = updateHyps (fn xs => Ctx.snoc xs z (a, EXP)) H
 
       val (goal, _, _) =
         makeGoal @@
@@ -201,7 +181,7 @@ struct
         in
           makeEvidence G H @@
             check
-              (#metactx H)
+              (getMetas H)
               (CTT LAM $ [ev], EXP)
         end)
     end
@@ -209,7 +189,7 @@ struct
 
   fun Elim f alpha (G |> H >> TRUE (P, tau)) =
     let
-      val (dfun, _) = Ctx.lookup (#hypctx H) f
+      val (dfun, _) = Ctx.lookup (getHyps H) f
       val (a, x, bx) = destDFun dfun
 
       val y = alpha 0
@@ -222,15 +202,12 @@ struct
 
       val bs = subst (s [] [], x) bx
       val ftm = check' (`f, EXP)
-      val fs = makeAp (#metactx H) ftm (s [] [])
-      val yeqfs = makeEq (#metactx H) (ytm, fs, bs)
+      val fs = makeAp (getMetas H) ftm (s [] [])
+      val yeqfs = makeEq (getMetas H) (ytm, fs, bs)
 
       val hctx = Ctx.snoc (Ctx.snoc Ctx.empty y (bs, EXP)) z (yeqfs, EXP)
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.interposeAfter (#hypctx H) (f, hctx)}
+      val H' = updateHyps (fn xs => Ctx.interposeAfter xs (f, hctx)) H
 
       val (goal2, _, _) =
         makeGoal @@
@@ -257,13 +234,10 @@ struct
       val z = alpha 0
       val ztm = check' (`z, EXP)
       val bz = subst (ztm, x) bx
-      val fz = makeAp (#metactx H) f ztm
-      val gz = makeAp (#metactx H) g ztm
+      val fz = makeAp (getMetas H) f ztm
+      val gz = makeAp (getMetas H) g ztm
 
-      val H' =
-        {metactx = #metactx H,
-         symctx = #symctx H,
-         hypctx = Ctx.snoc (#hypctx H) z (a, EXP)}
+      val H' = updateHyps (fn xs => Ctx.snoc xs z (a, EXP)) H
 
       val (mainGoal, _, H') =
         makeGoal @@
