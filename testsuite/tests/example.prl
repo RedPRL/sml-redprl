@@ -136,22 +136,29 @@ Sym lid : lbl.
 Sym rid : lbl.
 Sym assoc : lbl.
 
-Def MONOIDSTRUCT(i : lvl) : rcd = [
+Def MonoidStruct(i : lvl) : exp = [
   { car : Univ(i)
   , unit : car
   , op : fun(car; fun(car; Univ(i)))
   }
 ].
 
-Def MONOIDLAWS(M : exp) : rcd = [
+
+Def MonoidLaws(M : exp) : exp = [
   { lid : dfun(#car M; [x]. =(ap(ap(#op M; #unit M); x); x; #car M))
   , rid : dfun(#car M; [x]. =(ap(ap(#op M; x); #unit M); x; #car M))
   , assoc : dfun(#car M; [x]. dfun(#car M; [y]. dfun(#car M; [z]. =(ap(ap(#op M; x); ap(ap(#op M; y); z)); ap(ap(#op M; ap(ap(#op M; x); y)); z); #car M))))
   }
 ].
 
+
 Def Monoid(i : lvl) : exp = [
-  { M : record(MONOIDSTRUCT(i)) | record(MONOIDLAWS(M)) }
+  { M : MonoidStruct(i) | MonoidLaws(M) }
+].
+
+Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
+  repeat(normalize; auto);
+  cum; auto
 ].
 
 
@@ -159,9 +166,9 @@ Sym fst : lbl.
 Sym snd : lbl.
 
 Def Sg(A : exp, B : [exp].exp) : exp = [
-  record({fst : A, snd : B[fst]})
+  {fst : A, snd : B[fst]}
 ].
 
-Thm RecordTest(i : lvl) : [member(record({foo : Atom}); Univ(i))] by [
+Thm RecordTest(i : lvl) : [member({foo : Atom}; Univ(i))] by [
   repeat(auto)
 ].

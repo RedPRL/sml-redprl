@@ -1,13 +1,9 @@
 structure RecordOperatorData =
 struct
   datatype 'i rcd_operator =
-      DESC_NIL
-    | DESC_CONS of 'i
-    | NIL
+      RECORD of 'i
     | CONS of 'i
     | PROJ of 'i
-    | RECORD
-    | RECORD_DESC
 end
 
 structure RecordOperator : OPERATOR =
@@ -25,14 +21,10 @@ struct
     infix 6 * ^
   in
     val arity =
-      fn DESC_NIL =>
-           [] ->> RCD_DESC
-       | DESC_CONS lbl =>
+      fn RECORD lbl =>
            [[] * [] <> EXP,
-            [] * [EXP] <> RCD_DESC]
-             ->> RCD_DESC
-       | NIL =>
-           [] ->> EXP
+            [] * [EXP] <> EXP]
+             ->> EXP
        | CONS lbl =>
            [[] * [] <> EXP,
             [] * [] <> EXP]
@@ -40,49 +32,26 @@ struct
        | PROJ lbl =>
            [[] * [] <> EXP]
              ->> EXP
-       | RECORD =>
-           [[] * [] <> RCD_DESC]
-             ->> EXP
-       | RECORD_DESC =>
-           [[] * [] <> LVL]
-             ->> EXP
-
   end
 
   val support =
-    fn DESC_NIL => []
-     | DESC_CONS lbl => [(lbl, SortData.RCD_LBL)]
-     | NIL => []
+    fn RECORD lbl => [(lbl, SortData.RCD_LBL)]
      | CONS lbl => [(lbl, SortData.RCD_LBL)]
      | PROJ lbl => [(lbl, SortData.RCD_LBL)]
-     | RECORD => []
-     | RECORD_DESC => []
 
   fun eq f =
-    fn (DESC_NIL, DESC_NIL) => true
-     | (DESC_CONS l1, DESC_CONS l2) => f (l1, l2)
-     | (NIL, NIL) => true
+    fn (RECORD l1, RECORD l2) => f (l1, l2)
      | (CONS l1, CONS l2) => f (l1, l2)
      | (PROJ l1, PROJ l2) => f (l1, l2)
-     | (RECORD, RECORD) => true
-     | (RECORD_DESC, RECORD_DESC) => true
      | _ => false
 
   fun toString f =
-    fn DESC_NIL => "rdesc-nil"
-     | DESC_CONS lbl => "rdesc-cons[" ^ f lbl ^ "]"
-     | NIL => "rnil"
+    fn RECORD lbl => "rcd[" ^ f lbl ^ "]"
      | CONS lbl => "rcons[" ^ f lbl ^ "]"
      | PROJ lbl => "proj[" ^ f lbl ^ "]"
-     | RECORD => "record"
-     | RECORD_DESC => "record-desc"
 
   fun map f =
-    fn DESC_NIL => DESC_NIL
-     | DESC_CONS lbl => DESC_CONS (f lbl)
-     | NIL => NIL
+    fn RECORD lbl => RECORD (f lbl)
      | CONS lbl => CONS (f lbl)
      | PROJ lbl => PROJ (f lbl)
-     | RECORD => RECORD
-     | RECORD_DESC => RECORD_DESC
 end

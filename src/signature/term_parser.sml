@@ -40,8 +40,7 @@ struct
         || symbol "mtac" return MTAC
         || symbol "vec" >> braces p wth VEC
         || symbol "str" return STR
-        || symbol "lbl" return RCD_LBL
-        || symbol "rcd" return RCD_DESC)
+        || symbol "lbl" return RCD_LBL)
   end
 
   val force =
@@ -221,18 +220,8 @@ struct
                  wth (fn (x, ((a,tau1), (b,tau2))) =>
                    CTT (ENSEMBLE (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
 
-           val parseRecord =
-              symbol "record"
-                >> parens (f RCD_DESC)
-                wth (fn r =>
-                  RCD RECORD $ [([],[]) \ r])
-
-           val parseRcdNil =
-             symbol "rnil"
-               return (RCD NIL $ [])
-
            val parseRcdCons =
-             symbol "rcons"
+             symbol "cons"
                >> squares parseSymbol
                && parens (f EXP << semi && f EXP)
                wth (fn (lbl, (hd, tl)) =>
@@ -256,7 +245,24 @@ struct
            in
              val parseRcdLiteral =
                braces (commaSep parseRcdItem)
-                 wth (List.foldl rcons (RCD NIL $ []))
+                 wth (List.foldl rcons (CTT AX $ []))
+           end
+
+           local
+             val parseRecordItem =
+               parseSymbol
+                 << colon
+                 && f EXP
+
+             fun record ((lbl, m), tl) =
+               RCD (RECORD lbl) $ [([], []) \ m, ([], [lbl]) \ tl]
+
+             val makeAx = CTT AX $ []
+             val makeUnit = CTT (CEQUIV EXP) $ [([],[]) \ makeAx, ([],[]) \ makeAx]  (* TODO! *)
+           in
+             val parseRecordTy =
+               braces (commaSep parseRecordItem)
+                 wth (List.foldr record makeUnit)
            end
          in
            parseCApprox
@@ -275,26 +281,12 @@ struct
              || parseTest
              || parseSquash
              || parseEnsemble
-             || parseRecord
-             || parseRcdNil
+             || parseRecordTy
              || parseRcdCons
-             || try parseRcdLiteral
+             || parseRcdLiteral
              || parseRcdProj
              || parseHypVar
          end
-       | RCD_DESC =>
-           let
-             val parseDescItem =
-               parseSymbol
-                 << colon
-                 && f EXP
-
-             fun dcons ((lbl, m), tl) =
-               RCD (DESC_CONS lbl) $ [([], []) \ m, ([], [lbl]) \ tl]
-           in
-             braces (commaSep parseDescItem)
-               wth (List.foldr dcons (RCD DESC_NIL $ []))
-           end
        | VEC tau =>
          squares (commaSep (f tau))
            wth (fn xs =>
@@ -332,8 +324,12 @@ struct
                  LCF (NominalLcfOperatorData.EQ {rule = rule}) $ [])
 
            val parseExt =
-             symbol "eq"
+             symbol "ext"
                return (LCF EXT $ [])
+
+           val parseCum =
+             symbol "cum"
+               return (LCF CUM $ [])
 
            val parseTrace =
              symbol "trace"
@@ -447,6 +443,7 @@ struct
                || parseEq
                || parseExt
                || parseTrace
+               || parseCum
                || parseHyp
                || parseElim
                || parseIntro
