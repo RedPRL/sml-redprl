@@ -30,6 +30,9 @@ sig
   val Ext
     : ntactic
 
+  val Cum
+    : ntactic
+
   val Hyp
     : symbol (* target *)
     -> ntactic

@@ -99,6 +99,9 @@ struct
   val Unhide =
     SquashRules.Unhide
 
+  val Cum =
+    UnivRules.Cum
+
   open CEquivRules
 
   local

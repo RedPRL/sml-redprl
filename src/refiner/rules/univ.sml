@@ -3,15 +3,15 @@ struct
   open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
   infix $ \ ^! @@
   infix 4 >>
-  infix 3 |>
+  infix 3 |> @>
 
   fun destLevel i =
     case infer i of
          (view, LVL) => view
        | _ =>
-           raise Fail
-             @@ "Expected level expression, but got "
-              ^ DebugShowAbt.toString i
+         raise Fail
+           @@ "Expected level expression, but got "
+            ^ DebugShowAbt.toString i
 
   (* Find the basis of a level hierarchy *)
   fun levelGetBase i =
@@ -19,6 +19,15 @@ struct
          LVL_OP LSUCC $ [_ \ i] =>
            levelGetBase i
        | _ => i
+
+  fun destLSucc i =
+    case destLevel i of
+         LVL_OP LSUCC $ [_ \ i] =>
+           i
+       | _ =>
+         raise Fail
+           @@ "Expected LSUCC, but got "
+            ^ DebugShowAbt.toString i
 
   fun compareLevels (i, j) =
     let
@@ -87,4 +96,28 @@ struct
         makeEvidence G H makeAx)
     end
     | Eq _ _ = raise Match
+
+  fun Cum alpha (G |> H >> TRUE (P, _)) =
+    let
+      val (tau, m, n, a) = destEq P
+      val () = if tau = EXP then () else raise Fail "Expected exp"
+      val (tau, i) = destUniv a
+      val j = destLSucc i
+      val univ =
+        check
+          (metactx a)
+          (CTT (UNIV EXP) $ [([],[]) \ j],
+           tau)
+
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> makeEqSequent H (m, n, univ)
+
+      val psi = T.empty @> goal
+    in
+      (psi, fn rho =>
+        makeEvidence G H makeAx)
+    end
+    | Cum _ _ = raise Match
+
 end
