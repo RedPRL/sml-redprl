@@ -221,6 +221,12 @@ struct
                  wth (fn (x, ((a,tau1), (b,tau2))) =>
                    CTT (ENSEMBLE (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
 
+           val parseRecord =
+              symbol "record"
+                >> parens (f RCD_DESC)
+                wth (fn r =>
+                  RCD RECORD $ [([],[]) \ r])
+
            val parseRcdNil =
              symbol "rnil"
                return (RCD NIL $ [])
@@ -269,6 +275,7 @@ struct
              || parseTest
              || parseSquash
              || parseEnsemble
+             || parseRecord
              || parseRcdNil
              || parseRcdCons
              || try parseRcdLiteral

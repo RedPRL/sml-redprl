@@ -136,7 +136,7 @@ Sym lid : lbl.
 Sym rid : lbl.
 Sym assoc : lbl.
 
-Def MONOID(i : lvl) : rcd = [
+Def MONOIDSTRUCT(i : lvl) : rcd = [
   { car : Univ(i)
   , unit : car
   , op : fun(car; fun(car; Univ(i)))
@@ -144,4 +144,15 @@ Def MONOID(i : lvl) : rcd = [
   , rid : dfun(car; [x]. =(ap(ap(op; x); unit); x; car))
   , assoc : dfun(car; [x]. dfun(car; [y]. dfun(car; [z]. =(ap(ap(op; x); ap(ap(op; y); z)); ap(ap(op; ap(ap(op; x); y)); z); car))))
   }
+].
+
+Def MONOIDLAWS(M : exp) : rcd = [
+  { lid : dfun(rproj[car](M); [x]. =(ap(ap(rproj[op](M); rproj[unit](M)); x); x; rproj[car](M)))
+  , rid : dfun(rproj[car](M); [x]. =(ap(ap(rproj[op](M); x); rproj[unit](M)); x; rproj[car](M)))
+  , assoc : dfun(rproj[car](M); [x]. dfun(rproj[car](M); [y]. dfun(rproj[car](M); [z]. =(ap(ap(rproj[op](M); x); ap(ap(rproj[op](M); y); z)); ap(ap(rproj[op](M); ap(ap(rproj[op](M); x); y)); z); rproj[car](M)))))
+  }
+].
+
+Def Monoid(i : lvl) : exp = [
+  { M : record(MONOIDSTRUCT(i)) | record(MONOIDLAWS(M)) }
 ].
