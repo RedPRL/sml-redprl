@@ -120,9 +120,28 @@ Sym foo : lbl.
 Sym bar : lbl.
 
 Def exampleRecord : exp = [
-  #{foo = Ax, bar = Ax}
+  { foo = Ax
+  , bar = Ax
+  }
 ].
 
 Thm recordProjTest : [~(rproj[foo](exampleRecord); Ax)] by [
   normalize; auto
+].
+
+Sym car : lbl.
+Sym op : lbl.
+Sym unit : lbl.
+Sym lid : lbl.
+Sym rid : lbl.
+Sym assoc : lbl.
+
+Def MONOID(i : lvl) : rcd = [
+  { car : Univ(i)
+  , unit : car
+  , op : fun(car; fun(car; Univ(i)))
+  , lid : dfun(car; [x]. =(ap(ap(op; unit); x); x; car))
+  , rid : dfun(car; [x]. =(ap(ap(op; x); unit); x; car))
+  , assoc : dfun(car; [x]. dfun(car; [y]. dfun(car; [z]. =(ap(ap(op; x); ap(ap(op; y); z)); ap(ap(op; ap(ap(op; x); y)); z); car))))
+  }
 ].

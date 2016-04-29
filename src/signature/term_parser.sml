@@ -249,11 +249,9 @@ struct
                RCD (CONS lbl) $ [([],[]) \ m, ([],[]) \ tl]
            in
              val parseRcdLiteral =
-               symbol "#"
-                 >> braces (commaSep parseRcdItem)
+               braces (commaSep parseRcdItem)
                  wth (List.foldl rcons (RCD NIL $ []))
            end
-
          in
            parseCApprox
              || parseCEquiv
@@ -273,10 +271,23 @@ struct
              || parseEnsemble
              || parseRcdNil
              || parseRcdCons
-             || parseRcdLiteral
+             || try parseRcdLiteral
              || parseRcdProj
              || parseHypVar
          end
+       | RCD_DESC =>
+           let
+             val parseDescItem =
+               parseSymbol
+                 << colon
+                 && f EXP
+
+             fun dcons ((lbl, m), tl) =
+               RCD (DESC_CONS lbl) $ [([], []) \ m, ([], [lbl]) \ tl]
+           in
+             braces (commaSep parseDescItem)
+               wth (List.foldr dcons (RCD DESC_NIL $ []))
+           end
        | VEC tau =>
          squares (commaSep (f tau))
            wth (fn xs =>
