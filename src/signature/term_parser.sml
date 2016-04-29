@@ -239,9 +239,9 @@ struct
                  RCD (CONS lbl) $ [([],[]) \ hd, ([],[]) \ tl])
 
            val parseRcdProj =
-             symbol "rproj"
-               >> squares parseSymbol
-               && parens (f EXP)
+             symbol "#"
+               >> parseSymbol
+               && f EXP
                wth (fn (lbl, rcd) =>
                  RCD (PROJ lbl) $ [([],[]) \ rcd])
 

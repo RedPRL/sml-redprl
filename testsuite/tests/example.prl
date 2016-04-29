@@ -125,7 +125,7 @@ Def exampleRecord : exp = [
   }
 ].
 
-Thm recordProjTest : [~(rproj[foo](exampleRecord); Ax)] by [
+Thm recordProjTest : [~(#foo exampleRecord; Ax)] by [
   normalize; auto
 ].
 
@@ -140,16 +140,13 @@ Def MONOIDSTRUCT(i : lvl) : rcd = [
   { car : Univ(i)
   , unit : car
   , op : fun(car; fun(car; Univ(i)))
-  , lid : dfun(car; [x]. =(ap(ap(op; unit); x); x; car))
-  , rid : dfun(car; [x]. =(ap(ap(op; x); unit); x; car))
-  , assoc : dfun(car; [x]. dfun(car; [y]. dfun(car; [z]. =(ap(ap(op; x); ap(ap(op; y); z)); ap(ap(op; ap(ap(op; x); y)); z); car))))
   }
 ].
 
 Def MONOIDLAWS(M : exp) : rcd = [
-  { lid : dfun(rproj[car](M); [x]. =(ap(ap(rproj[op](M); rproj[unit](M)); x); x; rproj[car](M)))
-  , rid : dfun(rproj[car](M); [x]. =(ap(ap(rproj[op](M); x); rproj[unit](M)); x; rproj[car](M)))
-  , assoc : dfun(rproj[car](M); [x]. dfun(rproj[car](M); [y]. dfun(rproj[car](M); [z]. =(ap(ap(rproj[op](M); x); ap(ap(rproj[op](M); y); z)); ap(ap(rproj[op](M); ap(ap(rproj[op](M); x); y)); z); rproj[car](M)))))
+  { lid : dfun(#car M; [x]. =(ap(ap(#op M; #unit M); x); x; #car M))
+  , rid : dfun(#car M; [x]. =(ap(ap(#op M; x); #unit M); x; #car M))
+  , assoc : dfun(#car M; [x]. dfun(#car M; [y]. dfun(#car M; [z]. =(ap(ap(#op M; x); ap(ap(#op M; y); z)); ap(ap(#op M; ap(ap(#op M; x); y)); z); #car M))))
   }
 ].
 
