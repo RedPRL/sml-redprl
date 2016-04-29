@@ -61,7 +61,7 @@ formatted $\Optional{s}$ in the rules.
 \newcommand\SemArgs{\mathrm{Args}}
 \newcommand\SemTerm[3]{\mathrm{Tm}(#1,#2,#3)}
 \newcommand\SemSort{\mathrm{Sort}}
-\newcommand\SemProdValence{\mathrm{ProdValence}}
+\newcommand\SemValence{\mathrm{Valence}}
 \newcommand\SemDecl{\mathrm{Decl}}
 \newcommand\Partial[2]{#1\rightharpoonup #2}
 \newcommand\FinArr[2]{#1\xrightarrow{\mathrm{fin}} #2}
@@ -122,10 +122,10 @@ Then, our semantic objects are defined as in Figure~\ref{fig:sig-semantic-object
       a,b &\in &\SemSym\\
       \MV{m},\MV{n} &\in &\SemMetavar\\
       \sigma,\tau &\in &\SemSort &\triangleq & \MkSet{\tau\mid\IsSort{\tau}}\\
-      v &\in &\SemProdValence &\triangleq & \MkSet{v\mid\IsValence{v}}\\
+      v &\in &\SemValence &\triangleq & \MkSet{v\mid\IsValence{v}}\\
       \vartheta &\in &\SemOpid  &\triangleq &\SemSym\\
       \Upsilon &\in &\SemParams &\triangleq & \FinArr{\SemSym}{\SemSort}\\
-      \Theta &\in &\SemArgs &\triangleq & \FinArr{\SemMetavar}{\SemProdValence}\\
+      \Theta &\in &\SemArgs &\triangleq & \FinArr{\SemMetavar}{\SemValence}\\
       M,N &\in &\SemTerm{\Theta}{\Upsilon}{\tau} &\triangleq & \MkSet{M\mid\IsAbt{\Theta}{\Upsilon}{\cdot}{M}{\tau}}\\
       D &\in &\SemDecl &\triangleq & \coprod_{\Upsilon,\Theta,\tau} \SemTerm{\Theta}{\Upsilon}{\tau}\\
       \Sigma &\in &\SemSig &\triangleq & \left(\FinArr{\SemOpid}{\SemDecl}\right) \cap \left(\FinArr{\SemSym}{\SemSort}\right)
