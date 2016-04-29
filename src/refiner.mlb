@@ -35,6 +35,8 @@ local
   refiner/rules/atom.sml
   refiner/rules/pi.sig
   refiner/rules/pi.sml
+  refiner/rules/dep_isect.sig
+  refiner/rules/dep_isect.sml
   refiner/rules/void.sig
   refiner/rules/void.sml
   refiner/refiner.sig

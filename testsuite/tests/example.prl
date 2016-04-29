@@ -6,6 +6,7 @@ Tac try(T : tac) = [
   {T} || {id}
 ].
 
+
 // Tacticals are easily defined from within JonPRL's computation system.
 // Here are a few examples:
 Tac repeat(T : tac) = [
@@ -13,6 +14,11 @@ Tac repeat(T : tac) = [
     try(progress(T); R)
   }
 ].
+
+Tac bang = [
+  repeat(normalize; auto)
+].
+
 
 Sym testsymdecl : exp.
 
@@ -127,7 +133,7 @@ Def exampleRecord : exp = [
 ].
 
 Thm recordProjTest : [~(#foo exampleRecord; Ax)] by [
-  normalize; auto
+  bang
 ].
 
 Sym car : lbl.
@@ -158,7 +164,7 @@ Def Monoid(i : lvl) : exp = [
 ].
 
 Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
-  repeat(normalize; auto);
+  bang;
   cum; auto
 ].
 
@@ -175,5 +181,13 @@ Def Unit : exp = [
 ].
 
 Thm RecordTest[u:exp](i : lvl) : [=({foo = Ax, bar = 'u, baz = Ax}; {bar = 'u, foo = Ax}; {bar : Atom, foo : Unit})] by [
-  repeat(normalize; auto);
+  bang
+].
+
+Def DepIsectEx1 : exp = [
+  disect({foo : Univ(lbase)}; [self]. {bar : #foo self})
+].
+
+Thm DepIsectEx2 : [ member({foo = Unit, bar = Ax}; DepIsectEx1) ] by [
+  bang
 ].

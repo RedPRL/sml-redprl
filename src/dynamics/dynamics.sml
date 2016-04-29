@@ -138,6 +138,7 @@ struct
          | CTT (BASE _) $ _ => FINAL
          | CTT (TOP _) $ _ => FINAL
          | CTT DFUN $ _ => FINAL
+         | CTT DEP_ISECT $ _ => FINAL
          | CTT FUN $ [_ \ a, _ \ b] =>
              ret @@ check (metactx m) (CTT DFUN $ [([],[]) \ a, ([],[Variable.named "x"]) \ b], EXP) <: env
          | CTT LAM $ _ => FINAL
