@@ -39,7 +39,9 @@ struct
         || symbol "thm" >> braces p wth THM
         || symbol "mtac" return MTAC
         || symbol "vec" >> braces p wth VEC
-        || symbol "str" return STR)
+        || symbol "str" return STR
+        || symbol "lbl" return RCD_LBL
+        || symbol "rcd" return RCD_DESC)
   end
 
   val force =
@@ -70,7 +72,7 @@ struct
   fun hole ! = raise Match
 
   local
-    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData
+    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData RecordOperatorData
     infix $ \ $#
   in
     val rec inferRefinedSort =
@@ -218,6 +220,40 @@ struct
                  && parseRefinement
                  wth (fn (x, ((a,tau1), (b,tau2))) =>
                    CTT (ENSEMBLE (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
+
+           val parseRcdNil =
+             symbol "rnil"
+               return (RCD NIL $ [])
+
+           val parseRcdCons =
+             symbol "rcons"
+               >> squares parseSymbol
+               && parens (f EXP << semi && f EXP)
+               wth (fn (lbl, (hd, tl)) =>
+                 RCD (CONS lbl) $ [([],[]) \ hd, ([],[]) \ tl])
+
+           val parseRcdProj =
+             symbol "rproj"
+               >> squares parseSymbol
+               && parens (f EXP)
+               wth (fn (lbl, rcd) =>
+                 RCD (PROJ lbl) $ [([],[]) \ rcd])
+
+           local
+             val parseRcdItem =
+               parseSymbol
+                 << symbol "="
+                 && f EXP
+
+             fun rcons ((lbl, m), tl) =
+               RCD (CONS lbl) $ [([],[]) \ m, ([],[]) \ tl]
+           in
+             val parseRcdLiteral =
+               symbol "#"
+                 >> braces (commaSep parseRcdItem)
+                 wth (List.foldl rcons (RCD NIL $ []))
+           end
+
          in
            parseCApprox
              || parseCEquiv
@@ -235,6 +271,10 @@ struct
              || parseTest
              || parseSquash
              || parseEnsemble
+             || parseRcdNil
+             || parseRcdCons
+             || parseRcdLiteral
+             || parseRcdProj
              || parseHypVar
          end
        | VEC tau =>

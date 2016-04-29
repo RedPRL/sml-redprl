@@ -15,6 +15,8 @@ struct
      | (OPT tau) => toString tau ^ "?"
      | OPID => "opid"
      | STR => "str"
+     | RCD_DESC => "record"
+     | RCD_LBL => "lbl"
 end
 
 structure Valence = Valence (structure Sort = Sort and Spine = ListSpine)

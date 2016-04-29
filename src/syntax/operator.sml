@@ -8,6 +8,7 @@ struct
     | EXTRACT of Sort.t
     | LVL_OP of 'i LevelOperator.t
     | CTT of 'i CttOperator.t
+    | RCD of 'i RecordOperator.t
     | ATM of 'i AtomsOperator.t
     | VEC_LIT of Sort.t * int
     | STR_LIT of string
@@ -37,6 +38,8 @@ struct
              NominalLcfOperator.arity theta
          | CTT theta =>
              CttOperator.arity theta
+         | RCD theta =>
+             RecordOperator.arity theta
          | ATM theta =>
              AtomsOperator.arity theta
          | REFINE tau =>
@@ -67,6 +70,7 @@ struct
     case theta of
          LCF theta => NominalLcfOperator.support theta
        | CTT theta => CttOperator.support theta
+       | RCD theta => RecordOperator.support theta
        | ATM theta => AtomsOperator.support theta
        | REFINE _ => []
        | EXTRACT _ => []
@@ -81,6 +85,7 @@ struct
     case theta of
          LCF theta => LCF (NominalLcfOperator.map f theta)
        | CTT theta => CTT (CttOperator.map f theta)
+       | RCD theta => RCD (RecordOperator.map f theta)
        | ATM theta => ATM (AtomsOperator.map f theta)
        | REFINE tau => REFINE tau
        | EXTRACT tau => EXTRACT tau
@@ -97,6 +102,8 @@ struct
            NominalLcfOperator.eq f (theta1, theta2)
        | (CTT theta1, CTT theta2) =>
            CttOperator.eq f (theta1, theta2)
+       | (RCD theta1, RCD theta2) =>
+           RecordOperator.eq f (theta1, theta2)
        | (ATM theta1, ATM theta2) =>
            AtomsOperator.eq f (theta1, theta2)
        | (REFINE tau1, REFINE tau2) =>
@@ -126,6 +133,8 @@ struct
            NominalLcfOperator.toString f theta
        | CTT theta =>
            CttOperator.toString f theta
+       | RCD theta =>
+           RecordOperator.toString f theta
        | ATM theta =>
            AtomsOperator.toString f theta
        | REFINE tau => "refine{" ^ Sort.toString tau ^ "}"
