@@ -14,6 +14,14 @@ struct
              @@ "Expected RECORD but got "
               ^ DebugShowAbt.toString m
 
+  fun destProj m =
+    case out m of
+         RCD (PROJ lbl) $ [_ \ rcd] => (lbl, rcd)
+       | _ =>
+           raise Fail
+             @@ "Expected PROJ but got "
+              ^ DebugShowAbt.toString m
+
   fun makeProj lbl m =
     check
       (metactx m)
@@ -73,5 +81,33 @@ struct
         makeEvidence G H makeAx)
     end
     | MemberEq _ _ = raise Match
+
+  fun ProjEq alpha (G |> H >> TRUE (P, _)) =
+    let
+      val (_, p1, p2, ty) = destEq P
+      val (lbl1, rcd1) = destProj p1
+      val (lbl2, rcd2) = destProj p2
+      val _ = if Symbol.eq (lbl1, lbl2) then () else raise Match
+
+      val (lvlGoal, lvlHole, H') =
+        makeGoal @@
+          [] |> makeLevelSequent H
+
+      val univ = makeUniv @@ lvlHole [] []
+
+      val (tyGoal, tyHole, H'') =
+        makeGoal @@
+          [] |> H' >> TRUE (univ, EXP)
+
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> makeEqSequent H'' (rcd1, rcd2, tyHole [] [])
+
+      val psi = T.empty @> lvlGoal @> tyGoal @> goal
+    in
+      (psi, fn rho =>
+        makeEvidence G H makeAx)
+    end
+    | ProjEq _ _ = raise Match
 
 end
