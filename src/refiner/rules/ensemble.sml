@@ -14,32 +14,13 @@ struct
              @@ "Expected Ensemble but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (G |> H >> TRUE (P, _)) =
+  fun TypeEq alpha (goal as (G |> H >> TRUE (P, _))) =
     let
-      val (tau,s1,s2,univ) = destEq P
-      val (_, _, a1, x1, b1) = destEnsemble s1
-      val (_, _, a2, x2, b2) = destEnsemble s2
-      val _ = destUniv univ
-
-      val (goal1, _, H) =
-        makeGoal @@
-          [] |> makeEqSequent H (a1,a2,univ)
-
-      val x = alpha 0
-      val xtm = check' (`x, tau)
-      val b1x = subst (xtm, x1) b1
-      val b2x = subst (xtm, x2) b2
-
-      val H' = updateHyps (fn xs => Ctx.snoc xs x (a1, tau)) H
-
-      val (goal2, _, H') =
-        makeGoal @@
-          [] |> makeEqSequent H' (b1x, b2x, univ)
-
-      val psi = T.empty @> goal1 @> goal2
+      val (_,s1,s2,univ) = destEq P
+      val (sigma1, tau1, a1, x1, b1) = destEnsemble s1
+      val (sigma1, tau1, a2, x2, b2) = destEnsemble s2
     in
-      (psi, fn rho =>
-        makeEvidence G H makeAx)
+      QuantifierKit.TypeEq (CTT (ENSEMBLE (sigma1, tau1))) alpha goal
     end
     | TypeEq _ _ = raise Match
 

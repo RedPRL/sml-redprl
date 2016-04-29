@@ -36,34 +36,7 @@ struct
       (CTT AP $ [([],[]) \ m, ([],[]) \ n], EXP)
 
 
-  fun TypeEq alpha (G |> H >> TRUE (P, _)) =
-    let
-      val (_, dfun1, dfun2, univ) = destEq P
-      val _ = destUniv univ
-      val (a1, x, b1x) = destDFun dfun1
-      val (a2, y, b2y) = destDFun dfun2
-
-      val (goal1, _, H) =
-        makeGoal @@
-          [] |> makeEqSequent H (a1,a2,univ)
-
-      val z = alpha 0
-      val ztm = check' (`z, EXP)
-      val b1z = subst (ztm, x) b1x
-      val b2z = subst (ztm, y) b2y
-
-      val H' = updateHyps (fn xs => Ctx.snoc xs z (a1, EXP)) H
-
-      val (goal2, _, H') =
-        makeGoal @@
-          [(z,EXP)] |> makeEqSequent H' (b1z, b2z, univ)
-
-      val psi = T.empty @> goal1 @> goal2
-    in
-      (psi, fn rho =>
-        makeEvidence G H makeAx)
-    end
-    | TypeEq _ _ = raise Match
+  val TypeEq = QuantifierKit.TypeEq (CTT DFUN)
 
   fun MemberEq alpha (G |> H >> TRUE (P, _)) =
     let

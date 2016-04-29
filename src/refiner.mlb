@@ -13,6 +13,8 @@ local
   refiner/refiner_kit.sml
   refiner/target.sig
   refiner/target.sml
+  refiner/rules/quantifier_kit.sig
+  refiner/rules/quantifier_kit.sml
   refiner/rules/cequiv.sig
   refiner/rules/cequiv.sml
   refiner/rules/type.sig
