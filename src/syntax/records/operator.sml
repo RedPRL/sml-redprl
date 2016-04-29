@@ -7,6 +7,7 @@ struct
     | CONS of 'i
     | PROJ of 'i
     | RECORD
+    | RECORD_DESC
 end
 
 structure RecordOperator : OPERATOR =
@@ -42,6 +43,9 @@ struct
        | RECORD =>
            [[] * [] <> RCD_DESC]
              ->> EXP
+       | RECORD_DESC =>
+           [[] * [] <> LVL]
+             ->> EXP
 
   end
 
@@ -52,6 +56,7 @@ struct
      | CONS lbl => [(lbl, SortData.RCD_LBL)]
      | PROJ lbl => [(lbl, SortData.RCD_LBL)]
      | RECORD => []
+     | RECORD_DESC => []
 
   fun eq f =
     fn (DESC_NIL, DESC_NIL) => true
@@ -60,6 +65,7 @@ struct
      | (CONS l1, CONS l2) => f (l1, l2)
      | (PROJ l1, PROJ l2) => f (l1, l2)
      | (RECORD, RECORD) => true
+     | (RECORD_DESC, RECORD_DESC) => true
      | _ => false
 
   fun toString f =
@@ -69,6 +75,7 @@ struct
      | CONS lbl => "rcons[" ^ f lbl ^ "]"
      | PROJ lbl => "proj[" ^ f lbl ^ "]"
      | RECORD => "record"
+     | RECORD_DESC => "record-desc"
 
   fun map f =
     fn DESC_NIL => DESC_NIL
@@ -77,4 +84,5 @@ struct
      | CONS lbl => CONS (f lbl)
      | PROJ lbl => PROJ (f lbl)
      | RECORD => RECORD
+     | RECORD_DESC => RECORD_DESC
 end

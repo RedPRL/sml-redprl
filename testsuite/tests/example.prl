@@ -153,3 +153,15 @@ Def MONOIDLAWS(M : exp) : rcd = [
 Def Monoid(i : lvl) : exp = [
   { M : record(MONOIDSTRUCT(i)) | record(MONOIDLAWS(M)) }
 ].
+
+
+Sym fst : lbl.
+Sym snd : lbl.
+
+Def Sg(A : exp, B : [exp].exp) : exp = [
+  record({fst : A, snd : B[fst]})
+].
+
+Thm RecordTest(i : lvl) : [member(record({foo : Atom}); Univ(i))] by [
+  repeat(auto)
+].

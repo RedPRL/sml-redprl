@@ -49,6 +49,9 @@ struct
                ORELSE SquashRules.TypeEq alpha
                ORELSE EnsembleRules.TypeEq alpha
                ORELSE EnsembleRules.MemberEq alpha
+               ORELSE RecordRules.TypeEq alpha
+               ORELSE RecordRules.DescNilEq alpha
+               ORELSE RecordRules.DescConsEq alpha
                ORELSE AtomRules.TypeEq alpha
                ORELSE AtomRules.MemberEq alpha
                ORELSE AtomRules.TestEq alpha
