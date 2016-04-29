@@ -39,7 +39,8 @@ struct
         || symbol "thm" >> braces p wth THM
         || symbol "mtac" return MTAC
         || symbol "vec" >> braces p wth VEC
-        || symbol "str" return STR)
+        || symbol "str" return STR
+        || symbol "lbl" return RCD_LBL)
   end
 
   val force =
@@ -70,7 +71,7 @@ struct
   fun hole ! = raise Match
 
   local
-    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData
+    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData RecordOperatorData
     infix $ \ $#
   in
     val rec inferRefinedSort =
@@ -218,6 +219,50 @@ struct
                  && parseRefinement
                  wth (fn (x, ((a,tau1), (b,tau2))) =>
                    CTT (ENSEMBLE (tau1, tau2)) $ [([],[]) \ a, ([],[x]) \ b])
+
+           val parseRcdCons =
+             symbol "cons"
+               >> squares parseSymbol
+               && parens (f EXP << semi && f EXP)
+               wth (fn (lbl, (hd, tl)) =>
+                 RCD (CONS lbl) $ [([],[]) \ hd, ([],[]) \ tl])
+
+           val parseRcdProj =
+             symbol "#"
+               >> parseSymbol
+               && f EXP
+               wth (fn (lbl, rcd) =>
+                 RCD (PROJ lbl) $ [([],[]) \ rcd])
+
+           local
+             val parseRcdItem =
+               parseSymbol
+                 << symbol "="
+                 && f EXP
+
+             fun rcons ((lbl, m), tl) =
+               RCD (CONS lbl) $ [([],[]) \ m, ([],[]) \ tl]
+           in
+             val parseRcdLiteral =
+               braces (commaSep parseRcdItem)
+                 wth (List.foldl rcons (CTT AX $ []))
+           end
+
+           local
+             val parseRecordItem =
+               parseSymbol
+                 << colon
+                 && f EXP
+
+             fun record ((lbl, m), tl) =
+               RCD (RECORD lbl) $ [([], []) \ m, ([], [lbl]) \ tl]
+
+             val makeTop = CTT (TOP EXP) $ []
+           in
+             val parseRecordTy =
+               braces (commaSep parseRecordItem)
+                 wth (List.foldr record makeTop)
+           end
          in
            parseCApprox
              || parseCEquiv
@@ -235,6 +280,10 @@ struct
              || parseTest
              || parseSquash
              || parseEnsemble
+             || parseRecordTy
+             || parseRcdCons
+             || parseRcdLiteral
+             || parseRcdProj
              || parseHypVar
          end
        | VEC tau =>
@@ -274,8 +323,12 @@ struct
                  LCF (NominalLcfOperatorData.EQ {rule = rule}) $ [])
 
            val parseExt =
-             symbol "eq"
+             symbol "ext"
                return (LCF EXT $ [])
+
+           val parseCum =
+             symbol "cum"
+               return (LCF CUM $ [])
 
            val parseTrace =
              symbol "trace"
@@ -389,6 +442,7 @@ struct
                || parseEq
                || parseExt
                || parseTrace
+               || parseCum
                || parseHyp
                || parseElim
                || parseIntro

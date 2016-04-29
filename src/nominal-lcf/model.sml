@@ -50,6 +50,8 @@ struct
              R.Eq rule
          | LCF EXT $ [] =>
              R.Ext
+         | LCF CUM $ [] =>
+             R.Cum
          | LCF (CSTEP i) $ [] =>
              R.CStep sign i
          | LCF CSYM $ [] =>

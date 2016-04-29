@@ -56,7 +56,7 @@ struct
       end
   in
     (* computation rules for user-defined operators *)
-    fun stepCust sign (opid, arity) (cl as m <: (mrho, srho, rho)) =
+    fun stepCust sign (opid, arity) (cl as m <: (mrho, srho, vrho)) =
       let
         open Unify infix <*>
         val def as {definiens, ...} =
@@ -68,42 +68,44 @@ struct
         val srho'' = SymEnvUtil.union (srho, srho') handle _ => raise Stuck cl
         val mrho'' =
           MetaCtx.union mrho
-            (MetaCtx.map (fn e => e <: (mrho, srho, rho)) mrho') (* todo: check this? *)
+            (MetaCtx.map (fn e => e <: (mrho, srho, vrho)) mrho') (* todo: check this? *)
             (fn _ => raise Stuck cl)
       in
-        ret @@ definiens <: (mrho'', srho'', rho)
+        ret @@ definiens <: (mrho'', srho'', vrho)
       end
   end
 
   (* second-order substitution via environments *)
-  fun stepMeta x (us, ms) (cl as m <: (mrho, srho, rho)) =
+  fun stepMeta x (us, ms) (cl as m <: (mrho, srho, vrho)) =
     let
-      val e <: (mrho', srho', rho') = MetaCtx.lookup mrho x
+      val e <: (mrho', srho', vrho') = MetaCtx.lookup mrho x
       val (vs', xs) \ m = outb e
       val srho'' = ListPair.foldlEq  (fn (u,v,r) => SymCtx.insert r u v) srho' (vs', us)
-      val rho'' = ListPair.foldlEq (fn (x,m,r) => VarCtx.insert r x (m <: (mrho', srho', rho'))) rho' (xs, ms)
+      val vrho'' = ListPair.foldlEq (fn (x,m,r) => VarCtx.insert r x (m <: (mrho', srho', vrho'))) vrho' (xs, ms)
     in
-      ret @@ m <: (mrho', srho'', rho'')
+      ret @@ m <: (mrho', srho'', vrho'')
     end
 
-  fun step sign (cl as m <: (mrho, srho, rho)) : abt closure step =
+  fun step sign (cl as m <: (mrho, srho, vrho)) : abt closure step =
     case out m of
-         `x => ret @@ VarCtx.lookup rho x
+         `x => ret @@ VarCtx.lookup vrho x
        | x $# (us, ms) => stepMeta x (us, ms) cl
        | theta $ args =>
            let
              fun f u = SymCtx.lookup srho u handle _ => u
              val theta' = Operator.map f theta
            in
-             stepOp sign theta' args (m <: (mrho, srho, rho))
+             stepOp sign theta' args (m <: (mrho, srho, vrho))
            end
+           (*
     handle _ =>
-      raise Stuck @@ m <: (mrho, srho, rho)
+      raise Stuck @@ m <: (mrho, srho, vrho)
+      *)
 
   (* built-in computation rules *)
   and stepOp sign theta args (cl as m <: env) =
     let
-      open OperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData
+      open OperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData RecordOperatorData
     in
       case theta $ args of
            CUST (opid, params, arity) $ args =>
@@ -112,7 +114,10 @@ struct
          | LVL_OP LSUCC $ [_ \ l] =>
              step sign (l <: env) <#> (fn l' <: env =>
                check (metactx l') (LVL_OP LSUCC $ [([],[]) \ l'], LVL) <: env)
-         | LCF theta $ args => FINAL
+         | LCF _ $ _ => FINAL
+         | RCD (PROJ lbl) $ [_ \ rcd] =>
+             stepRcdProj sign (lbl, rcd) (m <: env)
+         | RCD _ $ _ => FINAL
          | REFINE _ $ _ => FINAL
          | EXTRACT tau $ [_ \ r] =>
              stepExtract sign tau r cl
@@ -122,6 +127,7 @@ struct
          | OP_SOME _ $ _ => FINAL
          | CTT AX $ _ => FINAL
          | CTT (EQ _) $ _ => FINAL
+         | CTT (CEQUIV _) $ _ => FINAL
          | CTT (MEMBER tau) $ [_ \ x, _ \ a] =>
              ret @@ check (metactx m) (CTT (EQ tau) $ [([],[]) \ x, ([],[]) \ x, ([],[]) \ a], EXP) <: env
          | CTT (UNIV tau) $ [_ \ l] =>
@@ -130,6 +136,7 @@ struct
          | CTT (SQUASH _) $ _ => FINAL
          | CTT (ENSEMBLE _) $ _ => FINAL
          | CTT (BASE _) $ _ => FINAL
+         | CTT (TOP _) $ _ => FINAL
          | CTT DFUN $ _ => FINAL
          | CTT FUN $ [_ \ a, _ \ b] =>
              ret @@ check (metactx m) (CTT DFUN $ [([],[]) \ a, ([],[Variable.named "x"]) \ b], EXP) <: env
@@ -154,18 +161,37 @@ struct
     let
       open OperatorData CttOperatorData SortData
     in
-      case step sign (f <: env) of
-           FINAL =>
-             (case out f of
-                   CTT LAM $ [(_,[x]) \ e] =>
-                     let
-                       val (mrho, srho, vrho) = env
-                     in
-                       ret @@ e <: (mrho, srho, VarCtx.insert vrho x (n <: env))
-                     end
-                 | _ => raise Match)
-         | STEP (f' <: env) =>
-             ret @@ check (metactx m) (CTT AP $ [([],[]) \ f', ([],[]) \ n], EXP) <: env
+      ret
+        (case step sign (f <: env) of
+             FINAL =>
+               (case out f of
+                     CTT LAM $ [(_,[x]) \ e] =>
+                       let
+                         val (mrho, srho, vrho) = env
+                       in
+                         e <: (mrho, srho, VarCtx.insert vrho x (n <: env))
+                       end
+                   | _ => raise Match)
+           | STEP (f' <: env) =>
+               check (metactx m) (CTT AP $ [([],[]) \ f', ([],[]) \ n], EXP) <: env)
+    end
+
+  and stepRcdProj sign (lbl, rcd) (m <: env) =
+    let
+      open OperatorData RecordOperatorData SortData
+    in
+      ret
+        (case step sign (rcd <: env) of
+             FINAL =>
+               (case out rcd of
+                     RCD (CONS lbl') $ [_ \ hd, _ \ tl] =>
+                         if Symbol.eq (lbl, lbl') then
+                           hd <: env
+                         else
+                           check (metactx m) (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
+                   | _ => raise Stuck @@ m <: env)
+           | STEP (rcd' <: env) =>
+               check (metactx m) (RCD (PROJ lbl) $ [([],[]) \ rcd'], EXP) <: env)
     end
 
   and stepAtomTest sign (sigma,tau) (tok1, tok2) (yes, no) (m <: env) =

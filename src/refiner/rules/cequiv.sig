@@ -15,4 +15,7 @@ sig
     : AbtSignature.sign
     -> RefinerKit.ntactic
 
+  val MemberEq
+    : RefinerKit.ntactic
+
 end

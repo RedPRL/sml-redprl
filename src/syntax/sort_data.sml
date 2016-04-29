@@ -10,4 +10,5 @@ struct
     | OPT of sort (* optional *)
     | OPID (* operator ids *)
     | STR (* strings *)
+    | RCD_LBL (* record labels *)
 end

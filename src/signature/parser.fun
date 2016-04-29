@@ -22,7 +22,7 @@ struct
     val identStart = identLetter
     val opStart = fail "no reserved ops" : scanner
     val opLetter = opStart
-    val reservedNames = ["Def", "Thm", "Tac", "Sym", "by"]
+    val reservedNames = ["Def", "Thm", "Tac", "Sym", "Record", "by"]
     val reservedOpNames = []
     val caseSensitive = true
   end
@@ -116,52 +116,52 @@ struct
         end) ?? "tactic"
     end
 
-    fun parseTheorem sign : (opid * def) charParser =
-      let
-        val parseOpid' = reserved "Thm" >> parseOpid
-        val parseParams' = squares (parseParams sign) || succeed []
-        val parseArgs' = parens (parseArgs sign) || succeed []
-        val parseSort' = (colon >> parseSort sign) || succeed SortData.EXP
-        open Ast
-        infix $ \
-      in
-        (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
-          let
-            val rho = makeNameStore args
-            val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP) && parseSort'
-            val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC)
-          in
-            parseGoal && parseScript wth (fn ((goal, tau), script) =>
-              (opid,
-               {parameters = params,
-                arguments = List.map (fn (m, v) => rho m) args,
-                sort = SortData.THM tau,
-                definiens =
-                  OperatorData.REFINE tau$
-                    [([],[]) \ goal,
-                     ([],[]) \ script,
-                     ([],[]) \ (OperatorData.OP_NONE tau $ [])]}))
-          end) ?? "theorem"
-      end
+  fun parseTheorem sign : (opid * def) charParser =
+    let
+      val parseOpid' = reserved "Thm" >> parseOpid
+      val parseParams' = squares (parseParams sign) || succeed []
+      val parseArgs' = parens (parseArgs sign) || succeed []
+      val parseSort' = (colon >> parseSort sign) || succeed SortData.EXP
+      open Ast
+      infix $ \
+    in
+      (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
+        let
+          val rho = makeNameStore args
+          val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP) && parseSort'
+          val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC)
+        in
+          parseGoal && parseScript wth (fn ((goal, tau), script) =>
+            (opid,
+             {parameters = params,
+              arguments = List.map (fn (m, v) => rho m) args,
+              sort = SortData.THM tau,
+              definiens =
+                OperatorData.REFINE tau$
+                  [([],[]) \ goal,
+                   ([],[]) \ script,
+                   ([],[]) \ (OperatorData.OP_NONE tau $ [])]}))
+        end) ?? "theorem"
+    end
 
-    fun parseSigDecl sign : (opid * decl) charParser =
-      (parseDefinition sign || parseTactic sign || parseTheorem sign) -- (fn (opid, d) =>
-        succeed (opid, AstSignature.def d)
-          handle e => fail (exnMessage e))
-      ?? "sigdecl"
+  fun parseSigDecl sign : (opid * decl) charParser =
+    (parseDefinition sign || parseTactic sign || parseTheorem sign) -- (fn (opid, d) =>
+      succeed (opid, AstSignature.def d)
+        handle e => fail (exnMessage e))
+    ?? "sigdecl"
 
-    fun parseSymDecl sign : (symbol * decl) charParser =
-      reserved "Sym" >> parseSymBind sign wth (fn (u, tau) =>
-          (u, AstSignature.symdcl tau))
-      ?? "symdecl"
+  fun parseSymDecl sign : (symbol * decl) charParser =
+    reserved "Sym" >> parseSymBind sign wth (fn (u, tau) =>
+        (u, AstSignature.symdcl tau))
+    ?? "symdecl"
 
-    fun parseSigExp' sign =
-      opt (whiteSpace >> (parseSigDecl sign || parseSymDecl sign) << dot) -- (fn odecl =>
-        case odecl of
-             NONE => succeed sign << whiteSpace << eos
-           | SOME (x,decl) => parseSigExp' (AstSignature.Telescope.snoc sign x decl))
+  fun parseSigExp' sign =
+    opt (whiteSpace >> (parseSigDecl sign || parseSymDecl sign) << dot) -- (fn odecl =>
+      case odecl of
+           NONE => succeed sign << whiteSpace << eos
+         | SOME (x,decl) => parseSigExp' (AstSignature.Telescope.snoc sign x decl))
 
-    val parseSigExp = parseSigExp' AstSignature.Telescope.empty ?? "sig"
+  val parseSigExp = parseSigExp' AstSignature.Telescope.empty ?? "sig"
 end
 
 structure SignatureParser = SignatureParser (TermParser)

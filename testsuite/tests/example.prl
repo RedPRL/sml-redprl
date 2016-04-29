@@ -116,21 +116,64 @@ Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
   repeat(auto)
 ].
 
-Def record(el : [exp].exp) : exp = [
-  dfun(Atom; [l]. el[l])
-].
-
-Sym foo : exp.
-Sym bar : exp.
-
-Def exampleRecordTy : exp = [
-  record([l]. ifeq(l; 'foo; Atom; ifeq(l; 'bar; Atom; Base)))
-].
+Sym foo : lbl.
+Sym bar : lbl.
+Sym baz : lbl.
 
 Def exampleRecord : exp = [
-  lam([l]. ifeq(l; 'foo; 'mysym; ifeq(l; 'bar; 'mysym2; Ax)))
+  { foo = Ax
+  , bar = Ax
+  }
 ].
 
-Thm exampleRecordTyWf : [member(exampleRecordTy; Univ(lbase))] by [
-  normalize; repeat(auto)
+Thm recordProjTest : [~(#foo exampleRecord; Ax)] by [
+  normalize; auto
+].
+
+Sym car : lbl.
+Sym op : lbl.
+Sym unit : lbl.
+Sym lid : lbl.
+Sym rid : lbl.
+Sym assoc : lbl.
+
+Def MonoidStruct(i : lvl) : exp = [
+  { car : Univ(i)
+  , unit : car
+  , op : fun(car; fun(car; Univ(i)))
+  }
+].
+
+
+Def MonoidLaws(M : exp) : exp = [
+  { lid : dfun(#car M; [x]. =(ap(ap(#op M; #unit M); x); x; #car M))
+  , rid : dfun(#car M; [x]. =(ap(ap(#op M; x); #unit M); x; #car M))
+  , assoc : dfun(#car M; [x]. dfun(#car M; [y]. dfun(#car M; [z]. =(ap(ap(#op M; x); ap(ap(#op M; y); z)); ap(ap(#op M; ap(ap(#op M; x); y)); z); #car M))))
+  }
+].
+
+
+Def Monoid(i : lvl) : exp = [
+  { M : MonoidStruct(i) | MonoidLaws(M) }
+].
+
+Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
+  repeat(normalize; auto);
+  cum; auto
+].
+
+
+Sym fst : lbl.
+Sym snd : lbl.
+
+Def Sg(A : exp, B : [exp].exp) : exp = [
+  {fst : A, snd : B[fst]}
+].
+
+Def Unit : exp = [
+  ~(Ax; Ax)
+].
+
+Thm RecordTest[u:exp](i : lvl) : [=({foo = Ax, bar = 'u, baz = Ax}; {bar = 'u, foo = Ax}; {bar : Atom, foo : Unit})] by [
+  repeat(normalize; auto);
 ].
