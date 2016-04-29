@@ -4,6 +4,7 @@ struct
       CAPPROX of Sort.t
     | CEQUIV of Sort.t
     | BASE of Sort.t
+    | TOP of Sort.t
     | UNIV of Sort.t
     | EQ of Sort.t
     | MEMBER of Sort.t
@@ -40,6 +41,8 @@ struct
             [] * [] <> tau]
              ->> EXP
        | BASE tau =>
+           [] ->> EXP
+       | TOP tau =>
            [] ->> EXP
        | EQ tau =>
            [[] * [] <> tau,
@@ -93,6 +96,8 @@ struct
          "~{" ^ Sort.toString tau ^ "}"
      | BASE tau =>
          "Base{" ^ Sort.toString tau ^ "}"
+     | TOP tau =>
+         "Top{" ^ Sort.toString tau ^ "}"
      | EQ tau =>
          "={" ^ Sort.toString tau ^ "}"
      | MEMBER tau =>

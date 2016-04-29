@@ -45,11 +45,15 @@ struct
              (UnivRules.Eq alpha
                ORELSE BaseRules.TypeEq alpha
                ORELSE BaseRules.MemberEq alpha
+               ORELSE TopRules.TypeEq alpha
+               ORELSE TopRules.MemberEq alpha
                ORELSE CEquivRules.TypeEq alpha
+               ORELSE CEquivRules.MemberEq alpha
                ORELSE SquashRules.TypeEq alpha
                ORELSE EnsembleRules.TypeEq alpha
                ORELSE EnsembleRules.MemberEq alpha
                ORELSE RecordRules.TypeEq alpha
+               ORELSE RecordRules.MemberEq alpha
                ORELSE AtomRules.TypeEq alpha
                ORELSE AtomRules.MemberEq alpha
                ORELSE AtomRules.TestEq alpha

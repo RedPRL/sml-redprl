@@ -28,6 +28,8 @@ is
   refiner/rules/univ.sml
   refiner/rules/base.sig
   refiner/rules/base.sml
+  refiner/rules/top.sig
+  refiner/rules/top.sml
   refiner/rules/squash.sig
   refiner/rules/squash.sml
   refiner/rules/ensemble.sig

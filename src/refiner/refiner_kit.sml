@@ -102,6 +102,11 @@ struct
          | _ => raise Fail @@ "Expected variable, but got " ^ DebugShowAbt.toString m
 
 
+    fun destAx m =
+      case out m of
+           CTT AX $ _ => ()
+         | _ => raise Fail @@ "Expected Ax, but got " ^ DebugShowAbt.toString m
+
     fun destEq m =
       case out m of
            CTT (EQ tau) $ [_ \ m, _ \ n, _ \ a] => (tau, m,n,a)

@@ -14,6 +14,11 @@ struct
              @@ "Expected RECORD but got "
               ^ DebugShowAbt.toString m
 
+  fun makeProj lbl m =
+    check
+      (metactx m)
+      (RCD (PROJ lbl) $ [([],[]) \ m], EXP)
+
   fun TypeEq alpha (G |> H >> TRUE (P, _)) =
     let
       val (_,ty1,ty2,univ) = destEq P
@@ -44,5 +49,29 @@ struct
         makeEvidence G H makeAx)
     end
     | TypeEq _ _ = raise Match
+
+  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
+    let
+      val (_, rcd1, rcd2, ty) = destEq P
+      val (lbl, a, x, bx) = destRecord ty
+
+      val proj1 = makeProj lbl rcd1
+      val proj2 = makeProj lbl rcd2
+      val bproj1 = subst (proj1, x) bx
+
+      val (goal1, _, H') =
+        makeGoal @@
+          [] |> makeEqSequent H (proj1, proj2, a)
+
+      val (goal2, _, _) =
+        makeGoal @@
+          [] |> makeEqSequent H' (rcd1, rcd2, bproj1)
+
+      val psi = T.empty @> goal1 @> goal2
+    in
+      (psi, fn rho =>
+        makeEvidence G H makeAx)
+    end
+    | MemberEq _ _ = raise Match
 
 end

@@ -257,12 +257,11 @@ struct
              fun record ((lbl, m), tl) =
                RCD (RECORD lbl) $ [([], []) \ m, ([], [lbl]) \ tl]
 
-             val makeAx = CTT AX $ []
-             val makeUnit = CTT (CEQUIV EXP) $ [([],[]) \ makeAx, ([],[]) \ makeAx]  (* TODO! *)
+             val makeTop = CTT (TOP EXP) $ []
            in
              val parseRecordTy =
                braces (commaSep parseRecordItem)
-                 wth (List.foldr record makeUnit)
+                 wth (List.foldr record makeTop)
            end
          in
            parseCApprox

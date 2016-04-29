@@ -28,6 +28,22 @@ struct
     end
     | TypeEq _ _ = raise Match
 
+  fun MemberEq _ (G |> H >> TRUE (P, _)) =
+    let
+      val (_, m, n, ty) = destEq P
+      val _ = destCEquiv ty
+      val _ = destAx m
+      val _ = destAx n
+      val (goal, _, _) =
+        makeGoal @@
+          [] |> H >> TRUE (ty, EXP)
+      val psi = T.empty @> goal
+    in
+      (psi, fn rho =>
+        makeEvidence G H makeAx)
+    end
+    | MemberEq _ _ = raise Match
+
   fun CSym _ (G |> H >> TRUE (P, _)) =
     let
       val (tau, m, n) = destCEquiv P

@@ -118,6 +118,7 @@ Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
 
 Sym foo : lbl.
 Sym bar : lbl.
+Sym baz : lbl.
 
 Def exampleRecord : exp = [
   { foo = Ax
@@ -169,6 +170,10 @@ Def Sg(A : exp, B : [exp].exp) : exp = [
   {fst : A, snd : B[fst]}
 ].
 
-Thm RecordTest(i : lvl) : [member({foo : Atom}; Univ(i))] by [
-  repeat(auto)
+Def Unit : exp = [
+  ~(Ax; Ax)
+].
+
+Thm RecordTest[u:exp](i : lvl) : [=({foo = Ax, bar = 'u, baz = Ax}; {bar = 'u, foo = Ax}; {bar : Atom, foo : Unit})] by [
+  repeat(normalize; auto);
 ].

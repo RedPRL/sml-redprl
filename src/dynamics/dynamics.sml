@@ -136,6 +136,7 @@ struct
          | CTT (SQUASH _) $ _ => FINAL
          | CTT (ENSEMBLE _) $ _ => FINAL
          | CTT (BASE _) $ _ => FINAL
+         | CTT (TOP _) $ _ => FINAL
          | CTT DFUN $ _ => FINAL
          | CTT FUN $ [_ \ a, _ \ b] =>
              ret @@ check (metactx m) (CTT DFUN $ [([],[]) \ a, ([],[Variable.named "x"]) \ b], EXP) <: env
