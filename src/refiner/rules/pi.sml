@@ -63,63 +63,37 @@ struct
     end
     | MemberEq _ _ = raise Match
 
-  fun ElimEq alpha (G |> H >> EQ_MEM (ap1, ap2, c)) =
+  fun ApNeutral alpha (G |> H >> EQ_NEU (ap1, ap2)) =
     let
-      val (m1, n1) = destAp ap1
-      val (m2, n2) = destAp ap2
+      val (r1, m1) = destAp ap1
+      val (r2, m2) = destAp ap2
 
-      val (lvlGoal, lvlHole, H) =
+      val (tyGoal, tyHole, H') =
         makeGoal @@
-          [] |> makeLevelSequent H
+          [] |> H >> EQ_NEU (r1, r2)
 
-      val univ = makeUniv @@ lvlHole [] []
-
-      val (domGoal, domHole, H') =
-        makeGoal @@
-          [] |> H >> TRUE (univ, EXP)
-
-      val z = alpha 0
-      val ztm = check' (`z, EXP)
-
-      val H'' = updateHyps (fn xs => Ctx.snoc xs z (domHole [] [], EXP)) H'
-
-      val (codGoal, codHole, H'') =
-        makeGoal @@
-          [(z,EXP)] |> H'' >> TRUE (univ, EXP)
-
-      val dfun =
+      val dom =
         check
-          (getMetas H'')
-          (CTT DFUN $ [([],[]) \ domHole [] [], ([],[z]) \ codHole [] [ztm]],
-           EXP)
+          (getMetas H)
+          (CTT DFUN_DOM $ [([],[]) \ tyHole [] []], EXP)
 
-      val H''' = updateMetas (fn _ => getMetas H'') H
-
-      val (ceqGoal, _, _) =
+      val (chkGoal, _, _) =
         makeGoal @@
-          [] |> H''' >> TRUE (makeCEquiv (getMetas H''') (c, codHole [] [n1]), EXP)
+          [] |> H >> EQ_MEM (m1, m2, dom)
 
-      val (goal1, _, _) =
-        makeGoal @@
-          [] |> makeEqSequent H''' (m1, m2, dfun)
-
-      val (goal2, _, _) =
-        makeGoal @@
-          [] |> makeEqSequent H''' (n1, n2, domHole [] [])
-
-      val psi =
-        T.empty
-          @> lvlGoal
-          @> domGoal
-          @> codGoal
-          @> ceqGoal
-          @> goal1
-          @> goal2
+      val psi = T.empty @> tyGoal @> chkGoal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        let
+          val ty = T.lookup rho (#1 tyGoal) // ([],[])
+        in
+          makeEvidence G H @@
+            check
+              (getMetas H)
+              (CTT DFUN_COD $ [([],[]) \ ty, ([],[]) \ r1], EXP)
+        end)
     end
-    | ElimEq _ _ = raise Match
+    | ApNeutral _ _ = raise Match
 
   fun Intro alpha (G |> H >> TRUE (P, _)) =
     let

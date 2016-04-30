@@ -80,31 +80,25 @@ struct
     end
     | MemberEq _ _ = raise Match
 
-  fun ProjEq alpha (G |> H >> EQ_MEM (p1, p2, ty)) =
+  fun ProjNeutral alpha (G |> H >> EQ_NEU (p1, p2)) =
     let
       val (lbl1, rcd1) = destProj p1
       val (lbl2, rcd2) = destProj p2
       val _ = if Symbol.eq (lbl1, lbl2) then () else raise Match
 
-      val (lvlGoal, lvlHole, H') =
+      val (tyGoal, tyHole, H') =
         makeGoal @@
-          [] |> makeLevelSequent H
-
-      val univ = makeUniv @@ lvlHole [] []
-
-      val (tyGoal, tyHole, H'') =
-        makeGoal @@
-          [] |> H' >> TRUE (univ, EXP)
+          [] |> H >> EQ_NEU (rcd1, rcd2)
 
       val (goal, _, _) =
         makeGoal @@
-          [] |> makeEqSequent H'' (rcd1, rcd2, tyHole [] [])
+          [] |> makeEqSequent H' (rcd1, rcd2, tyHole [] [])
 
-      val psi = T.empty @> lvlGoal @> tyGoal @> goal
+      val psi = T.empty @> tyGoal @> goal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        makeEvidence G H @@
+          T.lookup rho (#1 tyGoal) // ([],[]))
     end
-    | ProjEq _ _ = raise Match
-
+    | ProjNeutral _ _ = raise Match
 end

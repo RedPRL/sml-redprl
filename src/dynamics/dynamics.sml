@@ -144,6 +144,10 @@ struct
          | CTT LAM $ _ => FINAL
          | CTT AP $ [_ \ f, _ \ x] =>
              stepAp sign (f, x) (m <: env)
+         | CTT DFUN_DOM $ [_ \ dfun ] =>
+             stepDFunDom sign dfun (m <: env)
+         | CTT DFUN_COD $ [_ \ dfun, _ \ n ] =>
+             stepDFunCod sign (dfun, n) (m <: env)
          | CTT VOID $ [] => FINAL
          | CTT NOT $ [_ \ a] =>
              let
@@ -172,11 +176,44 @@ struct
                        in
                          e <: (mrho, srho, VarCtx.insert vrho x (n <: env))
                        end
-                   | _ => raise Match)
+                   | _ => raise Stuck (m <: env))
            | STEP (f' <: env) =>
                check (metactx m) (CTT AP $ [([],[]) \ f', ([],[]) \ n], EXP) <: env)
     end
 
+  and stepDFunDom sign dfun (m <: env) =
+    let
+      open OperatorData CttOperatorData SortData
+    in
+      ret
+        (case step sign (dfun <: env) of
+              FINAL =>
+                (case out dfun of
+                      CTT DFUN $ [_ \ a, _] =>
+                        a <: env
+                    | _ => raise Stuck (m <: env))
+            | STEP (dfun' <: env) =>
+                check (metactx m) (CTT DFUN_DOM $ [([],[]) \ dfun'], EXP) <: env)
+    end
+
+  and stepDFunCod sign (dfun, n) (m <: env) =
+    let
+      open OperatorData CttOperatorData SortData
+    in
+      ret
+        (case step sign (dfun <: env) of
+              FINAL =>
+                (case out dfun of
+                      CTT DFUN $ [_ \ _, (_, [x]) \ bx] =>
+                        let
+                          val (mrho, srho, vrho) = env
+                        in
+                          bx <: (mrho, srho, VarCtx.insert vrho x (n <: env))
+                        end
+                    | _ => raise Stuck (m <: env))
+            | STEP (dfun' <: env) =>
+                check (metactx m) (CTT DFUN_COD $ [([],[]) \ dfun', ([],[]) \ n], EXP) <: env)
+    end
   and stepRcdProj sign (lbl, rcd) (m <: env) =
     let
       open OperatorData RecordOperatorData SortData

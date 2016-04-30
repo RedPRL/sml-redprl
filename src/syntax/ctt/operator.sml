@@ -12,6 +12,7 @@ struct
     | SQUASH of Sort.t
     | ENSEMBLE of Sort.t * Sort.t
     | DFUN | FUN | LAM | AP
+    | DFUN_DOM | DFUN_COD
     | DEP_ISECT
     | VOID | NOT
 end
@@ -81,6 +82,13 @@ struct
            [[] * [] <> EXP,
             [] * [] <> EXP]
              ->> EXP
+       | DFUN_DOM =>
+           [[] * [] <> EXP]
+             ->> EXP
+       | DFUN_COD =>
+           [[] * [] <> EXP,
+            [] * [] <> EXP]
+             ->> EXP
        | DEP_ISECT =>
            [[] * [] <> EXP,
             [] * [EXP] <> EXP]
@@ -123,6 +131,10 @@ struct
          "lam"
      | AP =>
          "ap"
+     | DFUN_DOM =>
+         "dfun-dom"
+     | DFUN_COD =>
+         "dfun-cod"
      | DEP_ISECT =>
          "disect"
      | VOID =>

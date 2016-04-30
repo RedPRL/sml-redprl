@@ -27,6 +27,9 @@ sig
     : int option (* rule index *)
     -> ntactic
 
+  val CheckInfer
+    : ntactic
+
   val Ext
     : ntactic
 

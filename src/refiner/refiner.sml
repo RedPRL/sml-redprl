@@ -57,20 +57,19 @@ struct
           makeGoal @@
             [] |> H >> EQ_NEU (r, s)
 
+        val tau = Abt.sort r
+
         val (lvlGoal, lvlHole, H'') =
           makeGoal @@
-            [] |> makeLevelSequent H'
+            [] |> H' >> TYPE (a, tau)
 
-        val H''' = updateMetas (fn _ => getMetas H'') H'
-
-        val tau = Abt.sort r
-        val univ = check (getMetas H''') (CTT (UNIV tau) $ [([],[]) \ lvlHole [][]], SortData.EXP)
+        val univ = check (getMetas H'') (CTT (UNIV tau) $ [([],[]) \ lvlHole [][]], SortData.EXP)
 
         val (eqGoal, _, _) =
           makeGoal @@
-            [] |> H''' >> EQ_MEM (a, tyHole [] [], univ)
+            [] |> H'' >> EQ_MEM (a, tyHole [] [], univ)
 
-        val psi = T.empty @> tyGoal @> lvlGoal
+        val psi = T.empty @> tyGoal @> lvlGoal @> eqGoal
       in
         (psi, fn rho =>
           makeEvidence G H makeAx)
@@ -95,11 +94,13 @@ struct
             ORELSE AtomRules.TestEq alpha
             ORELSE PiRules.TypeEq alpha
             ORELSE PiRules.MemberEq alpha
-            ORELSE PiRules.ElimEq alpha
             ORELSE DepIsectRules.TypeEq alpha
             ORELSE DepIsectRules.MemberEq alpha
             ORELSE VoidRules.TypeEq alpha
-            ORELSE HypEq alpha
+            ORELSE HypEq alpha) jdg
+      | Eq r alpha (jdg as _ |> _ >> EQ_NEU _) =
+          (RecordRules.ProjNeutral alpha
+            ORELSE PiRules.ApNeutral alpha
             ORELSE HypNeutral alpha) jdg
       | Eq _ _ _ = raise Match
 

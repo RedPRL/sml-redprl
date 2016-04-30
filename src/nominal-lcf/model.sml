@@ -50,6 +50,8 @@ struct
              R.Eq rule
          | LCF EXT $ [] =>
              R.Ext
+         | LCF CHKINF $ [] =>
+             R.CheckInfer
          | LCF CUM $ [] =>
              R.Cum
          | LCF (CSTEP i) $ [] =>

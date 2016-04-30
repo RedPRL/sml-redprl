@@ -112,14 +112,9 @@ Thm lamTest : [fun(Atom; Atom)] by [
   repeat(auto)
 ].
 
-Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
-  auto;
-  l <- intro; eq;
-  [ witness{lvl} [lbase]
-  , witness [Atom]
-  , witness [Atom]
-  ];
-  bang
+Thm apEqTest : [dfun(fun(Atom; Atom); [f]. member(ap(f; 'mysym); Atom))] by [
+  bang; #1 { witness{lvl} [lbase] };
+  bang; chk-inf; bang
 ].
 
 Sym foo : lbl.

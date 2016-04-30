@@ -329,6 +329,10 @@ struct
                wth (fn rule =>
                  LCF (NominalLcfOperatorData.EQ {rule = rule}) $ [])
 
+           val parseChkInf =
+             symbol "chk-inf"
+               return (LCF CHKINF $ [])
+
            val parseExt =
              symbol "ext"
                return (LCF EXT $ [])
@@ -447,6 +451,7 @@ struct
                || parseCEval
                || parseCSym
                || parseEq
+               || parseChkInf
                || parseExt
                || parseTrace
                || parseCum

@@ -16,6 +16,7 @@ struct
     | REC
     | INTRO of intro_params
     | EQ of eq_params
+    | CHKINF
     | EXT
     | CUM
     | ELIM of 'i * Sort.t | HYP of 'i * Sort.t | UNHIDE of 'i * Sort.t
@@ -67,6 +68,8 @@ struct
       | arity (INTRO _) =
           [] ->> TAC
       | arity (EQ _) =
+          [] ->> TAC
+      | arity CHKINF =
           [] ->> TAC
       | arity EXT =
           [] ->> TAC
@@ -138,6 +141,7 @@ struct
      | INTRO p => INTRO p
      | EQ p => EQ p
      | EXT => EXT
+     | CHKINF => CHKINF
      | CUM => CUM
      | ELIM (target, tau) => ELIM (f target, tau)
      | HYP (target, tau) => HYP (f target, tau)
@@ -205,6 +209,7 @@ struct
      | INTRO {rule} => "intro" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
      | EQ {rule} => "eq" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
      | EXT => "ext"
+     | CHKINF => "chk-inf"
      | CUM => "cum"
      | ELIM (target,tau) => "elim[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | HYP (target, tau) => "hyp[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
