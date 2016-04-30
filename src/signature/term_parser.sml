@@ -338,7 +338,7 @@ struct
                return (LCF EXT $ [])
 
            val parseCum =
-             symbol "cum"
+             symbol "cumulativity"
                return (LCF CUM $ [])
 
            val parseTrace =

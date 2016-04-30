@@ -161,7 +161,7 @@ Def Monoid(i : lvl) : exp = [
 ].
 
 Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
-  bang; cum; auto
+  bang; cumulativity; auto
 ].
 
 
