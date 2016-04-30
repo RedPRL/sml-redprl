@@ -145,6 +145,12 @@ struct
                wth (fn (a, (x, b)) =>
                  CTT DFUN $ [([],[]) \ a, ([],[x]) \ b])
 
+           val parseDepIsect =
+             symbol "disect"
+               >> parens (f EXP << semi && squares parseVariable << dot && f EXP)
+               wth (fn (a, (x, b)) =>
+                 CTT DEP_ISECT$ [([],[]) \ a, ([],[x]) \ b])
+
            val parseFun =
              symbol "fun"
                >> parens (f EXP << semi && f EXP)
@@ -272,6 +278,7 @@ struct
              || parseMember
              || parseBase
              || parseDFun
+             || parseDepIsect
              || parseFun
              || parseLam
              || parseAp

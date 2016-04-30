@@ -60,6 +60,8 @@ struct
                ORELSE PiRules.TypeEq alpha
                ORELSE PiRules.MemberEq alpha
                ORELSE PiRules.ElimEq alpha
+               ORELSE DepIsectRules.TypeEq alpha
+               ORELSE DepIsectRules.MemberEq alpha
                ORELSE VoidRules.TypeEq alpha
                ORELSE HypEq alpha) jdg
          | _ => raise Fail "Eq not applicable")

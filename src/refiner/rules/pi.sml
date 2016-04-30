@@ -6,13 +6,8 @@ struct
   infix 4 >>
   infix 3 |>
 
-  fun destDFun m =
-    case out m of
-         CTT DFUN $ [_ \ a, (_, [x]) \ b] => (a, x, b)
-       | _ =>
-           raise Fail
-             @@ "Expected DFun but got "
-              ^ DebugShowAbt.toString m
+  val destDFun =
+    QuantifierKit.destQuantifier (CTT DFUN)
 
   fun destLam m =
     case out m of

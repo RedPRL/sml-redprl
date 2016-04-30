@@ -8,9 +8,11 @@ struct
 
   fun Intro _ (G |> H >> TYPE (P, tau)) =
     let
-      val (lvlGoal, lvlHole, H) =
+      val (lvlGoal, lvlHole, H') =
         makeGoal @@
           [] |> makeLevelSequent H
+
+      val H'' = updateMetas (fn _ => getMetas H') H
 
       val univ =
         check
@@ -20,7 +22,7 @@ struct
 
       val (memGoal, _, _)  =
         makeGoal @@
-          [] |> makeMemberSequent H (P, univ)
+          [] |> makeMemberSequent H'' (P, univ)
 
       val psi = T.empty @> lvlGoal @> memGoal
     in
