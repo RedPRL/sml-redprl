@@ -83,10 +83,8 @@ struct
               ^ " < "
               ^ DebugShowAbt.toString j
 
-  fun Eq alpha (G |> H >> TRUE (P, _)) =
+  fun Eq alpha (G |> H >> EQ_MEM (m, n, a)) =
     let
-      val (tau, m, n, a) = destEq P
-      val () = if tau = EXP then () else raise Fail "Expected exp"
       val ((tau1, i), (tau2, j), (tau3, k)) = (destUniv m, destUniv n, destUniv a)
       val () = if tau1 = tau2 andalso tau2 = tau3 then () else raise Fail "Sort mismatch"
       val () = assertLevelEq (i, j)
@@ -97,10 +95,8 @@ struct
     end
     | Eq _ _ = raise Match
 
-  fun Cum alpha (G |> H >> TRUE (P, _)) =
+  fun Cum alpha (G |> H >> EQ_MEM (m, n, a)) =
     let
-      val (tau, m, n, a) = destEq P
-      val () = if tau = EXP then () else raise Fail "Expected exp"
       val (tau, i) = destUniv a
       val j = destLSucc i
       val univ =

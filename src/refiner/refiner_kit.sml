@@ -163,9 +163,8 @@ struct
         (CTT (UNIV EXP) $ [([],[]) \ lvl],
          EXP)
 
-
     fun makeEqSequent H args =
-      H >> TRUE (makeEq (getMetas H) args, EXP)
+      H >> EQ_MEM args
 
     fun makeMemberSequent H args =
       H >> TRUE (makeMember (getMetas H) args, EXP)

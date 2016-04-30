@@ -14,9 +14,8 @@ struct
              @@ "Expected Ensemble but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (goal as (G |> H >> TRUE (P, _))) =
+  fun TypeEq alpha (goal as (G |> H >> EQ_MEM (s1, s2, univ))) =
     let
-      val (_,s1,s2,univ) = destEq P
       val (sigma1, tau1, a1, x1, b1) = destEnsemble s1
       val (sigma1, tau1, a2, x2, b2) = destEnsemble s2
     in
@@ -24,9 +23,8 @@ struct
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
+  fun MemberEq alpha (G |> H >> EQ_MEM (m1, m2, ensemble)) =
     let
-      val (_, m1, m2, ensemble) = destEq P
       val (tau1, tau2, a, x, b) = destEnsemble ensemble
 
       val (tyGoal, _, H) =

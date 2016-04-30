@@ -14,9 +14,8 @@ struct
              @@ "Expected Top but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (G |> H >> TRUE (P, _)) =
+  fun TypeEq alpha (G |> H >> EQ_MEM (m, n, a)) =
     let
-      val (tau, m,n,a) = destEq P
       val (tau1, tau2) = (destTop m, destTop n)
       val i = destUniv a
     in
@@ -25,9 +24,8 @@ struct
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
+  fun MemberEq alpha (G |> H >> EQ_MEM (_, _, a)) =
     let
-      val (_,_,_,a) = destEq P
       val _ = destTop a
     in
       (T.empty, fn rho =>

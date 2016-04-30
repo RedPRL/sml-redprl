@@ -34,9 +34,8 @@ struct
               ^ DebugShowAbt.toString m
 
 
-  fun TypeEq _ (G |> H >> TRUE (P, _)) =
+  fun TypeEq _ (G |> H >> EQ_MEM (atm1, atm2, univ)) =
     let
-      val (_, atm1, atm2, univ) = destEq P
       val (sigma, lvl) = destUniv univ
       val tau1 = destAtom atm1
       val tau2 = destAtom atm2
@@ -47,9 +46,8 @@ struct
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq _ (G |> H >> TRUE (P, _)) =
+  fun MemberEq _ (G |> H >> EQ_MEM (tok1, tok2, atm)) =
     let
-      val (_,tok1,tok2,atm) = destEq P
       val tau = destAtom atm
       val (u1,tau1) = destToken tok1
       val (u2,tau2) = destToken tok2
@@ -64,9 +62,8 @@ struct
     end
     | MemberEq _ _ = raise Match
 
-  fun TestEq alpha (G |> H >> TRUE (P, _)) =
+  fun TestEq alpha (G |> H >> EQ_MEM (test1, test2, a)) =
     let
-      val (_, test1, test2, a) = destEq P
       val (sigma, tau, t1, t2, yes, no) = destTest test1
       val (sigma', tau', t1', t2', yes', no') = destTest test2
 

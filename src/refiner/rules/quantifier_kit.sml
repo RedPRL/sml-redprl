@@ -25,9 +25,8 @@ struct
            ^ DebugShowAbt.toString m
   end
 
-  fun TypeEq theta alpha (G |> H >> TRUE (P, _)) =
+  fun TypeEq theta alpha (G |> H >> EQ_MEM (quant1, quant2, univ)) =
     let
-      val (_, quant1, quant2, univ) = destEq P
       val _ = destUniv univ
       val (a1, x, b1x) = destQuantifier theta quant1
       val (a2, y, b2y) = destQuantifier theta quant2

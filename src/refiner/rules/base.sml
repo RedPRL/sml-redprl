@@ -14,9 +14,8 @@ struct
              @@ "Expected Base but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq alpha (G |> H >> TRUE (P, _)) =
+  fun TypeEq alpha (G |> H >> EQ_MEM (m, n, a)) =
     let
-      val (tau, m,n,a) = destEq P
       val (tau1, tau2) = (destBase m, destBase n)
       val i = destUniv a
     in
@@ -25,10 +24,8 @@ struct
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
+  fun MemberEq alpha (G |> H >> EQ_MEM (m, n, a)) =
     let
-      val (tau, m,n,a) = destEq P
-
       val tau = destBase a
       val subgoals =
         VarCtx.foldl
