@@ -13,17 +13,9 @@ struct
            @@ "Expected level expression, but got "
             ^ DebugShowAbt.toString i
 
-  (* Find the basis of a level hierarchy *)
-  fun levelGetBase i =
-    case destLevel i of
-         LVL_OP LSUCC $ [_ \ i] =>
-           levelGetBase i
-       | _ => i
-
   fun destLSucc i =
     case destLevel i of
-         LVL_OP LSUCC $ [_ \ i] =>
-           i
+         LVL_OP LSUCC $ [_ \ i] => i
        | _ =>
          raise Fail
            @@ "Expected LSUCC, but got "
@@ -38,21 +30,16 @@ struct
         EQUAL
       else
         let
-          val b1 = levelGetBase i
-          val b2 = levelGetBase j
           exception Incomparable
         in
-          if Abt.eq (b1, b2) then
-            case (i', j') of
-                 (LVL_OP LSUCC $ [_ \ i''], LVL_OP LSUCC $ [_ \ j'']) =>
-                   compareLevels (i'', j'')
-               | (LVL_OP LSUCC $ [_ \ i''], _) =>
-                   GREATER
-               | (_, LVL_OP LSUCC $ [_ \ i'']) =>
-                   LESS
-               | _ => raise Incomparable
-          else
-            raise Incomparable
+          case (i', j') of
+               (LVL_OP LSUCC $ [_ \ i''], LVL_OP LSUCC $ [_ \ j'']) =>
+                 compareLevels (i'', j'')
+             | (LVL_OP LSUCC $ [_ \ i''], _) =>
+                 GREATER
+             | (_, LVL_OP LSUCC $ [_ \ i'']) =>
+                 LESS
+             | _ => raise Incomparable
         end
         handle Incomparable =>
           raise Fail
