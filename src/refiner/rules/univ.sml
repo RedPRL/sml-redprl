@@ -86,7 +86,8 @@ struct
   fun Eq alpha (G |> H >> EQ_MEM (m, n, a)) =
     let
       val ((tau1, i), (tau2, j), (tau3, k)) = (destUniv m, destUniv n, destUniv a)
-      val () = if tau1 = tau2 andalso tau2 = tau3 then () else raise Fail "Sort mismatch"
+      val () = if tau3 = EXP then () else raise Fail "Sort mismatch"
+      val () = if tau1 = tau2 then () else raise Fail "Sort mismatch"
       val () = assertLevelEq (i, j)
       val () = assertLevelLt (i, k)
     in
