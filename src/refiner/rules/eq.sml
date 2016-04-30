@@ -11,7 +11,7 @@ struct
       val (_, m, n, a) = destEq P
       val (goal, _, _) =
         makeGoal @@
-          G |> H >> EQ_MEM (m, n, a)
+          [] |> H >> EQ_MEM (m, n, a)
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
