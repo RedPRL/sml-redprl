@@ -19,7 +19,7 @@ struct
          (case concl of
              TRUE (_, tau) => (([], List.map #2 G), tau)
            | TYPE _ => (([], List.map #2 G), SortData.LVL)
-           | EQ_MEM _ => (([],[]), SortData.EXP))
+           | EQ_MEM _ => (([], List.map #2 G), SortData.EXP)
 
   fun evidenceToString e =
     let

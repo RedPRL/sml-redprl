@@ -15,7 +15,8 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-         T.lookup rho (#1 goal))
+        makeEvidence G H @@
+          T.lookup rho (#1 goal) // ([],[]))
     end
     | Intro _ _ = raise Match
 
