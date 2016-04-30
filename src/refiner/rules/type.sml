@@ -34,7 +34,6 @@ struct
 
   fun Synth _ (G |> H >> SYN r) =
     let
-      val _ = print "\n\nSYNTH!\n\n"
       val (lvlGoal, _, _) =
         makeGoal @@
           [] |> H >> TYPE (r, EXP)

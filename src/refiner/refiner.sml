@@ -44,19 +44,20 @@ struct
 
     fun IsType alpha =
       AtomRules.IsType alpha
+        ORELSE BaseRules.IsType alpha
         ORELSE PiRules.IsType alpha
         ORELSE EnsembleRules.IsType alpha
+        ORELSE DepIsectRules.IsType alpha
         ORELSE CEquivRules.IsType alpha
         ORELSE RecordRules.IsType alpha
+        ORELSE UnivRules.IsType alpha
 
-    (* TODO! need to use nominal LCF version of THEN! *)
+    (* TODO! need to use Nominal LCF version of THEN, or else names will get
+     * muddled ! *)
     fun Synth alpha =
       HypSynth alpha
         ORELSE PiRules.ApSynth alpha
-        ORELSE TypeRules.Synth alpha
-        (*
         ORELSE (THEN (TypeRules.Synth alpha, IsType alpha))
-        *)
 
     fun Intro alpha =
       SquashRules.Intro alpha
@@ -64,7 +65,6 @@ struct
         ORELSE PiRules.Intro alpha
         ORELSE EqRules.Intro alpha
         ORELSE MemRules.Intro alpha
-        (* TODO: move these elsewhere: *)
 
     val CheckInfer = SynthRules.CheckToSynth
 

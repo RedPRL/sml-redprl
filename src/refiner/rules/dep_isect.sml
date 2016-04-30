@@ -10,6 +10,9 @@ struct
   val destDepIsect =
     QuantifierKit.destQuantifier (CTT DEP_ISECT)
 
+  val IsType =
+    QuantifierKit.IsType (CTT DEP_ISECT)
+
   val TypeEq =
     QuantifierKit.TypeEq (CTT DEP_ISECT)
 

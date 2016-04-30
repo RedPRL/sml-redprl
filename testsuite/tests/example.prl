@@ -119,7 +119,6 @@ Thm apEqTest : [dfun(fun(Atom; Atom); [f]. member(ap(f; 'mysym); Atom))] by [
   bang; chk-inf; bang
 ].
 
-
 Sym foo : lbl.
 Sym bar : lbl.
 Sym baz : lbl.

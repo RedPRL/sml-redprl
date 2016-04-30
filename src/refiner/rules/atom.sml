@@ -33,7 +33,6 @@ struct
              @@ "Expected Test but got "
               ^ DebugShowAbt.toString m
 
-
   fun IsType _ (G |> H >> TYPE (atm, EXP)) =
     let
       val _ = destAtom atm
