@@ -74,48 +74,51 @@ Thm baseMemberEq : [=(Ax; Ax; Base)] by [
   bang
 ].
 
-// Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
-// a type by a predicate. Because this is a multi-sorted type theory, we must specify
-// what syntactic sort is being refined by the type being restricted. In this example,
-// we are restricting the [exp] sort, which contains type expressions.
-Def ensembleExample : exp = [
-  { x : Base | ~(x; Base) }
-].
 
-Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
-  bang
-].
 
-Thm demo : [{x : Base | ~(x; Ax)}] by [
-  auto; #0 { witness [Ax] }; repeat(auto)
-].
 
-// let's declare some symbols (nominal atoms). new symbols are always fresh.
-Sym mysym : exp.
-Sym mysym2 : exp.
-Sym yes : exp.
-Sym no : exp.
 
-// atoms can be compared for equality; here, we show that two of our
-// declared atoms are distinct.
-Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
-  ceval
-].
+ // Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
+ // a type by a predicate. Because this is a multi-sorted type theory, we must specify
+ // what syntactic sort is being refined by the type being restricted. In this example,
+ // we are restricting the [exp] sort, which contains type expressions.
+ Def ensembleExample : exp = [
+   { x : Base | ~(x; Base) }
+ ].
+
+ Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
+   bang
+ ].
+
+ Thm demo : [{x : Base | ~(x; Ax)}] by [
+   bang; #0 { witness [Ax] }; bang
+ ].
+
+
+ // let's declare some symbols (nominal atoms). new symbols are always fresh.
+ Sym mysym : exp.
+ Sym mysym2 : exp.
+ Sym yes : exp.
+ Sym no : exp.
+
+ // atoms can be compared for equality; here, we show that two of our
+ // declared atoms are distinct.
+ Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
+   bang
+ ].
 
 Thm lamTest : [fun(Atom; Atom)] by [
   normalize;
   z <- intro;
   [ witness [ifeq(@z; 'mysym; 'yes; 'no)]
-  , repeat(auto)
-  ];
-  normalize;
-  repeat(auto)
+  ]; bang
 ].
 
+
 Thm apEqTest : [dfun(fun(Atom; Atom); [f]. member(ap(f; 'mysym); Atom))] by [
-  bang; #1 { witness{lvl} [lbase] };
   bang; chk-inf; bang
 ].
+
 
 Sym foo : lbl.
 Sym bar : lbl.

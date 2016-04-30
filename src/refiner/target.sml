@@ -15,7 +15,9 @@ struct
     fn TRUE (p, tau) => TRUE (f p, tau)
      | TYPE (p, tau) => TYPE (f p, tau)
      | EQ_MEM (m, n, a) => EQ_MEM (f m, f n, f a)
-     | EQ_NEU (r, s) => EQ_NEU (f r, f s)
+     | MEM (m, a) => MEM (f m, f a)
+     | EQ_SYN (r, s) => EQ_SYN (f r, f s)
+     | SYN r => SYN (f r)
 
   fun targetRewrite f target (G |> H >> concl) =
     case target of

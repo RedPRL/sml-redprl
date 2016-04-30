@@ -20,8 +20,7 @@ sig
     -> ntactic
 
   val Intro
-    : int option  (* rule index *)
-    -> ntactic
+    : ntactic
 
   val Eq
     : int option (* rule index *)

@@ -12,9 +12,9 @@ struct
     | SQUASH of Sort.t
     | ENSEMBLE of Sort.t * Sort.t
     | DFUN | FUN | LAM | AP
-    | DFUN_DOM | DFUN_COD
     | DEP_ISECT
     | VOID | NOT
+    | DFUN_DOM | DFUN_COD | UNIV_GET_LVL
 end
 
 structure CttSimpleOperator =
@@ -82,13 +82,6 @@ struct
            [[] * [] <> EXP,
             [] * [] <> EXP]
              ->> EXP
-       | DFUN_DOM =>
-           [[] * [] <> EXP]
-             ->> EXP
-       | DFUN_COD =>
-           [[] * [] <> EXP,
-            [] * [] <> EXP]
-             ->> EXP
        | DEP_ISECT =>
            [[] * [] <> EXP,
             [] * [EXP] <> EXP]
@@ -98,6 +91,16 @@ struct
        | NOT =>
            [[] * [] <> EXP]
              ->> EXP
+       | DFUN_DOM =>
+           [[] * [] <> EXP]
+             ->> EXP
+       | DFUN_COD =>
+           [[] * [] <> EXP,
+            [] * [] <> EXP]
+             ->> EXP
+       | UNIV_GET_LVL =>
+           [[] * [] <> EXP]
+             ->> LVL
   end
 
   val eq : t * t -> bool = op=
@@ -131,16 +134,18 @@ struct
          "lam"
      | AP =>
          "ap"
-     | DFUN_DOM =>
-         "dfun-dom"
-     | DFUN_COD =>
-         "dfun-cod"
      | DEP_ISECT =>
          "disect"
      | VOID =>
          "Void"
      | NOT =>
          "not"
+     | DFUN_DOM =>
+         "dfun-dom"
+     | DFUN_COD =>
+         "dfun-cod"
+     | UNIV_GET_LVL =>
+         "univ-get-lvl"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)

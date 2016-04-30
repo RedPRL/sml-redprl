@@ -1,6 +1,6 @@
 structure RecordRules : RECORD_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData RecordOperatorData SortData
+  open RefinerKit OperatorData CttOperatorData RecordOperatorData LevelOperatorData SortData
   infix @@ $ $# \ @>
   infix 2 //
   infix 3 >>
@@ -26,6 +26,37 @@ struct
     check
       (metactx m)
       (RCD (PROJ lbl) $ [([],[]) \ m], EXP)
+
+  fun IsType alpha (goal as (G |> H >> TYPE (ty, EXP))) =
+    let
+      val (lbl, a, x, bx) = destRecord ty
+
+      val (goalA, holeA, H') =
+        makeGoal @@
+          [] |> H >> TYPE (a, EXP)
+
+      val Hx = updateHyps (fn xs => Ctx.snoc xs x (a, EXP)) H'
+
+      val (goalB, _, H') =
+        makeGoal @@
+          [] |> Hx >> TYPE (bx, EXP)
+
+      val psi = T.empty @> goalA @> goalB
+    in
+      (psi, fn rho =>
+        let
+          val l1 = T.lookup rho (#1 goalA) // ([],[])
+          val l2 = T.lookup rho (#1 goalB) // ([],[])
+          (* is this necessary?: *)
+          val _ = if VarCtx.member (varctx l2) x then raise Fail "Variable free in level expr" else ()
+        in
+          makeEvidence G H @@
+            check
+              (getMetas H')
+              (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
+        end)
+    end
+    | IsType _ _ = raise Match
 
   fun TypeEq alpha (G |> H >> EQ_MEM (ty1, ty2, univ)) =
     let
@@ -80,19 +111,17 @@ struct
     end
     | MemberEq _ _ = raise Match
 
-  fun ProjNeutral alpha (G |> H >> EQ_NEU (p1, p2)) =
+  fun ProjSynth alpha (G |> H >> SYN p) =
     let
-      val (lbl1, rcd1) = destProj p1
-      val (lbl2, rcd2) = destProj p2
-      val _ = if Symbol.eq (lbl1, lbl2) then () else raise Match
+      val (lbl, rcd) = destProj p
 
       val (tyGoal, tyHole, H') =
         makeGoal @@
-          [] |> H >> EQ_NEU (rcd1, rcd2)
+          [] |> H >> SYN rcd
 
       val (goal, _, _) =
         makeGoal @@
-          [] |> makeEqSequent H' (rcd1, rcd2, tyHole [] [])
+          [] |> H' >> MEM (rcd, tyHole [] [])
 
       val psi = T.empty @> tyGoal @> goal
     in
@@ -100,5 +129,5 @@ struct
         makeEvidence G H @@
           T.lookup rho (#1 tyGoal) // ([],[]))
     end
-    | ProjNeutral _ _ = raise Match
+    | ProjSynth _ _ = raise Match
 end

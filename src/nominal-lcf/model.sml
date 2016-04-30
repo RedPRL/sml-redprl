@@ -45,7 +45,7 @@ struct
          | LCF (UNHIDE (target, _)) $ [] =>
              R.Unhide target
          | LCF (INTRO {rule}) $ [] =>
-             R.Intro rule
+             R.Intro (* rule *)
          | LCF (EQ {rule}) $ [] =>
              R.Eq rule
          | LCF EXT $ [] =>

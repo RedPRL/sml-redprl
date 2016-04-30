@@ -6,7 +6,7 @@ struct
   infix 4 >>
   infix 3 |>
 
-  fun Intro _ (G |> H >> TYPE (P, tau)) =
+  fun Intro _ (G |> H >> TYPE (a, tau)) =
     let
       val (lvlGoal, lvlHole, H') =
         makeGoal @@
@@ -22,7 +22,7 @@ struct
 
       val (memGoal, _, _)  =
         makeGoal @@
-          [] |> makeMemberSequent H'' (P, univ)
+          [] |> makeMemberSequent H'' (a, univ)
 
       val psi = T.empty @> lvlGoal @> memGoal
     in
@@ -31,4 +31,22 @@ struct
           T.lookup rho (#1 lvlGoal) // ([],[]))
     end
     | Intro _ _ = raise Match
+
+  fun Synth _ (G |> H >> SYN r) =
+    let
+      val _ = print "\n\nSYNTH!\n\n"
+      val (lvlGoal, _, _) =
+        makeGoal @@
+          [] |> H >> TYPE (r, EXP)
+      val psi = T.empty @> lvlGoal
+    in
+      (psi, fn rho =>
+        let
+          val lvl = T.lookup rho (#1 lvlGoal) // ([],[])
+        in
+          makeEvidence G H @@
+            makeUniv lvl
+        end)
+    end
+    | Synth _ _ = raise Match
 end

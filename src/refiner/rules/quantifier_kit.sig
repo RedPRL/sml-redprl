@@ -6,6 +6,10 @@ sig
     : unit Abt.Operator.t
     -> RefinerKit.ntactic
 
+  val IsType
+    : unit Abt.Operator.t
+    -> RefinerKit.ntactic
+
   val destQuantifier
     : unit Abt.Operator.t
     -> Abt.abt

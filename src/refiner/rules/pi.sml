@@ -31,6 +31,7 @@ struct
       (CTT AP $ [([],[]) \ m, ([],[]) \ n], EXP)
 
 
+  val IsType = QuantifierKit.IsType (CTT DFUN)
   val TypeEq = QuantifierKit.TypeEq (CTT DFUN)
 
   fun MemberEq alpha (G |> H >> EQ_MEM (lam1, lam2, dfun)) =
@@ -63,14 +64,13 @@ struct
     end
     | MemberEq _ _ = raise Match
 
-  fun ApNeutral alpha (G |> H >> EQ_NEU (ap1, ap2)) =
+  fun ApSynth alpha (G |> H >> SYN ap) =
     let
-      val (r1, m1) = destAp ap1
-      val (r2, m2) = destAp ap2
+      val (r, m) = destAp ap
 
       val (tyGoal, tyHole, H') =
         makeGoal @@
-          [] |> H >> EQ_NEU (r1, r2)
+          [] |> H >> SYN r
 
       val dom =
         check
@@ -79,7 +79,7 @@ struct
 
       val (chkGoal, _, _) =
         makeGoal @@
-          [] |> H >> EQ_MEM (m1, m2, dom)
+          [] |> H >> MEM (m, dom)
 
       val psi = T.empty @> tyGoal @> chkGoal
     in
@@ -90,10 +90,10 @@ struct
           makeEvidence G H @@
             check
               (getMetas H)
-              (CTT DFUN_COD $ [([],[]) \ ty, ([],[]) \ r1], EXP)
+              (CTT DFUN_COD $ [([],[]) \ ty, ([],[]) \ r], EXP)
         end)
     end
-    | ApNeutral _ _ = raise Match
+    | ApSynth _ _ = raise Match
 
   fun Intro alpha (G |> H >> TRUE (P, _)) =
     let

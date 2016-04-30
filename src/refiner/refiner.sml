@@ -19,13 +19,6 @@ struct
         ORELSE EnsembleRules.Elim i alpha
         ORELSE VoidRules.Elim i alpha
 
-    fun Intro r alpha =
-      SquashRules.Intro alpha
-        ORELSE EnsembleRules.Intro alpha
-        ORELSE PiRules.Intro alpha
-        ORELSE TypeRules.Intro alpha
-        ORELSE EqRules.Intro alpha
-
     fun HypEq alpha (G |> H >> EQ_MEM (m, n, a)) =
       let
         val x = destVar m
@@ -39,45 +32,45 @@ struct
       end
       | HypEq _ _ = raise Match
 
-    fun HypNeutral alpha (G |> H >> EQ_NEU (r, s)) =
+    fun HypSynth alpha (G |> H >> SYN r) =
       let
         val x = destVar r
-        val y = destVar s
-        val _ = if Variable.eq (x, y) then () else raise Match
         val (a, _) = Ctx.lookup (getHyps H) x
       in
         (T.empty, fn rho =>
           makeEvidence G H a)
       end
-      | HypNeutral _ _ = raise Match
+      | HypSynth _ _ = raise Match
 
-    fun CheckInfer alpha (G |> H >> EQ_MEM (r, s, a)) =
-      let
-        val (tyGoal, tyHole, H') =
-          makeGoal @@
-            [] |> H >> EQ_NEU (r, s)
+    fun IsType alpha =
+      AtomRules.IsType alpha
+        ORELSE PiRules.IsType alpha
+        ORELSE EnsembleRules.IsType alpha
+        ORELSE CEquivRules.IsType alpha
+        ORELSE RecordRules.IsType alpha
 
-        val tau = Abt.sort r
+    (* TODO! need to use nominal LCF version of THEN! *)
+    fun Synth alpha =
+      HypSynth alpha
+        ORELSE PiRules.ApSynth alpha
+        ORELSE TypeRules.Synth alpha
+        (*
+        ORELSE (THEN (TypeRules.Synth alpha, IsType alpha))
+        *)
 
-        val (lvlGoal, lvlHole, H'') =
-          makeGoal @@
-            [] |> H' >> TYPE (a, tau)
+    fun Intro alpha =
+      SquashRules.Intro alpha
+        ORELSE EnsembleRules.Intro alpha
+        ORELSE PiRules.Intro alpha
+        ORELSE EqRules.Intro alpha
+        ORELSE MemRules.Intro alpha
+        (* TODO: move these elsewhere: *)
 
-        val univ = check (getMetas H'') (CTT (UNIV tau) $ [([],[]) \ lvlHole [][]], SortData.EXP)
-
-        val (eqGoal, _, _) =
-          makeGoal @@
-            [] |> H'' >> EQ_MEM (a, tyHole [] [], univ)
-
-        val psi = T.empty @> tyGoal @> lvlGoal @> eqGoal
-      in
-        (psi, fn rho =>
-          makeEvidence G H makeAx)
-      end
-      | CheckInfer _ _ = raise Match
+    val CheckInfer = SynthRules.CheckToSynth
 
     fun Eq r alpha (jdg as _ |> _ >> EQ_MEM _) =
-          (UnivRules.Eq alpha
+          (HypEq alpha
+            ORELSE UnivRules.Eq alpha
             ORELSE BaseRules.TypeEq alpha
             ORELSE BaseRules.MemberEq alpha
             ORELSE TopRules.TypeEq alpha
@@ -96,12 +89,9 @@ struct
             ORELSE PiRules.MemberEq alpha
             ORELSE DepIsectRules.TypeEq alpha
             ORELSE DepIsectRules.MemberEq alpha
-            ORELSE VoidRules.TypeEq alpha
-            ORELSE HypEq alpha) jdg
-      | Eq r alpha (jdg as _ |> _ >> EQ_NEU _) =
-          (RecordRules.ProjNeutral alpha
-            ORELSE PiRules.ApNeutral alpha
-            ORELSE HypNeutral alpha) jdg
+            ORELSE VoidRules.TypeEq alpha) jdg
+      | Eq r alpha (jdg as _ |> _ >> EQ_SYN _) =
+          SynthRules.SynthEqIntro alpha jdg
       | Eq _ _ _ = raise Match
 
     fun Ext alpha (jdg as _ |> _ >> TRUE (P, _)) =
@@ -142,8 +132,6 @@ struct
 
   val Cum =
     UnivRules.Cum
-
-  open CEquivRules
 
   local
     open CEquivRules
@@ -220,48 +208,19 @@ struct
         (psi, fn rho =>
           T.lookup rho (#1 goal))
       end
-
-    local
-      open LevelOperatorData
-      val lbase = check' (LVL_OP LBASE $ [], LVL)
-    in
-      fun inferTypeLevel (H : Sequent.context) P =
-        case out P of
-            CTT (UNIV _) $ [_ \ i] => check (getMetas H) (LVL_OP LSUCC $ [([],[]) \ i], LVL)
-          | CTT (BASE _) $ _ => lbase
-          | CTT (CEQUIV _) $ _ => lbase
-          | CTT (CAPPROX _) $ _ => lbase
-          | CTT (EQ _) $ _ => lbase
-          | CTT (SQUASH _) $ [_ \ a] => inferTypeLevel H a (* we may be able to make this just [lbase] *)
-          | ATM (ATOM _) $ _ => lbase
-          | `x =>
-              let
-                val (univ, _) = Ctx.lookup (getHyps H) x
-                val (_, i) = destUniv univ
-              in
-                i
-              end
-          | _ => raise Fail "Level inference heuristic failed"
-    end
-
-    fun ProveIsType alpha =
-      fn jdg as _ |> H >> TYPE (P, tau) =>
-           Tacticals.THENF
-             (TypeRules.Intro alpha, 0, Witness (inferTypeLevel H P) alpha)
-             jdg
-       | _ => raise Match
   end
 
   local
     open Tacticals
-    infix 2 THEN ORELSE
+    infix 2 ORELSE
   in
     fun AutoStep sign alpha : Lcf.tactic =
         TRY @@
-          ProveIsType alpha
-            ORELSE Intro NONE alpha
+          IsType alpha
+            ORELSE Intro alpha
             ORELSE Eq NONE alpha
-            ORELSE CStep sign 0 alpha
-            ORELSE EvalGoal sign Target.TARGET_CONCL alpha
+            ORELSE PROGRESS (EvalGoal sign Target.TARGET_CONCL alpha)
+            ORELSE PROGRESS (CStep sign 0 alpha)
+            ORELSE Synth alpha
   end
 end

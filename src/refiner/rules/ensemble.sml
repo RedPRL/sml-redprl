@@ -1,6 +1,6 @@
 structure EnsembleRules : ENSEMBLE_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData SortData
+  open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
   infix @@ $ $# \ @>
   infix 2 //
   infix 3 >>
@@ -13,6 +13,37 @@ struct
            raise Fail
              @@ "Expected Ensemble but got "
               ^ DebugShowAbt.toString m
+
+  fun IsType alpha (goal as (G |> H >> TYPE (ty, sigma))) =
+    let
+      val (sigma', tau, a, x, bx) = destEnsemble ty
+      val _ = if Sort.eq (sigma, sigma') then () else raise Fail "Sort mismatch"
+
+      val (goalA, holeA, H') =
+        makeGoal @@
+          [] |> H >> TYPE (a, sigma)
+
+      val Hx = updateHyps (fn xs => Ctx.snoc xs x (a, sigma)) H'
+
+      val (goalB, _, H') =
+        makeGoal @@
+          [] |> Hx >> TYPE (bx, tau)
+
+      val psi = T.empty @> goalA @> goalB
+    in
+      (psi, fn rho =>
+        let
+          val l1 = T.lookup rho (#1 goalA) // ([],[])
+          val l2 = T.lookup rho (#1 goalB) // ([],[])
+          (* TODO: do we need to ensure that x is not free in l2? *)
+        in
+          makeEvidence G H @@
+            check
+              (getMetas H')
+              (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
+        end)
+    end
+    | IsType _ _ = raise Match
 
   fun TypeEq alpha (goal as (G |> H >> EQ_MEM (s1, s2, univ))) =
     let
