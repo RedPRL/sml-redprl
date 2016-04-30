@@ -1,6 +1,7 @@
 signature SEQUENT =
 sig
   type prop
+  type expr
   type sort
   type var
 
@@ -22,6 +23,7 @@ sig
   datatype concl =
       TRUE of prop * sort
     | TYPE of prop * sort
+    | EQ_MEM of expr * expr * prop
 
   datatype sequent =
       >> of context * concl

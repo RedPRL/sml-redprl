@@ -5,9 +5,8 @@ struct
   infix 4 >>
   infix 3 |>
 
-  fun TypeEq _ (G |> H >> TRUE (P, _)) =
+  fun TypeEq _ (G |> H >> EQ_MEM (ceq1, ceq2, univ)) =
     let
-      val (_, ceq1, ceq2, univ) = destEq P
       val i = destUniv univ
       val (tau1, m1, n1) = destCEquiv ceq1
       val (tau2, m2, n2) = destCEquiv ceq2
@@ -28,9 +27,8 @@ struct
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq _ (G |> H >> TRUE (P, _)) =
+  fun MemberEq _ (G |> H >> EQ_MEM (m, n, ty)) =
     let
-      val (_, m, n, ty) = destEq P
       val _ = destCEquiv ty
       val _ = destAx m
       val _ = destAx n

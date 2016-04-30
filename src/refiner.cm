@@ -46,4 +46,6 @@ is
   refiner/rules/dep_isect.sml
   refiner/rules/void.sig
   refiner/rules/void.sml
+  refiner/rules/eq.sig
+  refiner/rules/eq.sml
   refiner/refiner.sml

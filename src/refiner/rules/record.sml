@@ -27,9 +27,8 @@ struct
       (metactx m)
       (RCD (PROJ lbl) $ [([],[]) \ m], EXP)
 
-  fun TypeEq alpha (G |> H >> TRUE (P, _)) =
+  fun TypeEq alpha (G |> H >> EQ_MEM (ty1, ty2, univ)) =
     let
-      val (_,ty1,ty2,univ) = destEq P
       val (tau, lvl) = destUniv univ
       val _ = if Sort.eq (tau, EXP) then () else raise Match
 
@@ -58,9 +57,8 @@ struct
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
+  fun MemberEq alpha (G |> H >> EQ_MEM (rcd1, rcd2, ty)) =
     let
-      val (_, rcd1, rcd2, ty) = destEq P
       val (lbl, a, x, bx) = destRecord ty
 
       val proj1 = makeProj lbl rcd1
@@ -82,9 +80,8 @@ struct
     end
     | MemberEq _ _ = raise Match
 
-  fun ProjEq alpha (G |> H >> TRUE (P, _)) =
+  fun ProjEq alpha (G |> H >> EQ_MEM (p1, p2, ty)) =
     let
-      val (_, p1, p2, ty) = destEq P
       val (lbl1, rcd1) = destProj p1
       val (lbl2, rcd2) = destProj p2
       val _ = if Symbol.eq (lbl1, lbl2) then () else raise Match

@@ -14,12 +14,11 @@ struct
              @@ "Expected Squash but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq _ (G |> H >> TRUE (P, _)) =
+  fun TypeEq _ (G |> H >> EQ_MEM (a,b,univ)) =
     let
-      val (tau,a,b,univ) = destEq P
       val (_, a') = destSquash a
       val (_, b') = destSquash b
-      val _ = destUniv univ
+      val (tau, _) = destUniv univ
       val eq =
         check
           (getMetas H)
@@ -47,16 +46,15 @@ struct
     end
     | Intro _ _ = raise Match
 
-  fun Unhide h _ (G |> H >> TRUE (P, tau)) =
+  fun Unhide h _ (G |> H >> EQ_MEM (m, n, a)) =
     let
-      val _ = destEq P
       val (Q, sigma) = Ctx.lookup (getHyps H) h
       val (tau', Q') = destSquash Q
       val H' = updateHyps (Ctx.modify h (fn _ => (Q', tau'))) H
 
       val (goal, _, _) =
         makeGoal @@
-          [] |> H' >> TRUE (P, tau)
+          [] |> H' >> EQ_MEM (m, n, a)
 
       val psi = T.empty @> goal
     in

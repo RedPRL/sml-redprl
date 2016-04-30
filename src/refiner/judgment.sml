@@ -18,7 +18,8 @@ struct
     fn G |> H >> concl =>
          (case concl of
              TRUE (_, tau) => (([], List.map #2 G), tau)
-           | TYPE _ => (([], List.map #2 G), SortData.LVL))
+           | TYPE _ => (([], List.map #2 G), SortData.LVL)
+           | EQ_MEM _ => (([],[]), SortData.EXP))
 
   fun evidenceToString e =
     let
@@ -31,6 +32,7 @@ struct
   fun substConcl rho =
     fn TRUE (P, tau) => TRUE (metasubstEnv rho P, tau)
      | TYPE (P, tau) => TYPE (metasubstEnv rho P, tau)
+     | EQ_MEM (M, N, A) => EQ_MEM (metasubstEnv rho M, metasubstEnv rho N, metasubstEnv rho A)
 
   structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Valence)
   structure MetaRenUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Metavariable)
@@ -66,6 +68,8 @@ struct
   val conclMetactx =
     fn TRUE (p, _) => metactx p
      | TYPE (p, _) => metactx p
+     | EQ_MEM (m, n, a) =>
+         MetaCtxUtil.union (MetaCtxUtil.union (metactx m, metactx n), metactx a)
 
   fun hypsMetactx hyps =
     SymbolTelescope.foldl
@@ -100,19 +104,30 @@ struct
       go (MetaCtx.empty, SymCtx.empty, VarCtx.empty) (out tele1, out tele2)
     end
 
+  fun mergeUnification (mrho1, srho1, vrho1) (mrho2, srho2, vrho2) =
+    (MetaRenUtil.union (mrho1, mrho2),
+     SymRenUtil.union (srho1, srho2),
+     VarRenUtil.union (vrho1, vrho2))
+
   val unifyConcl =
     fn (TRUE (p1, _), TRUE (p2, _)) => Abt.Unify.unify (p1, p2)
      | (TYPE (p1, _), TYPE (p2, _)) => Abt.Unify.unify (p1, p2)
+     | (EQ_MEM (m1, n1, a1), EQ_MEM (m2, n2, a2)) =>
+         let
+           val rho1 = Abt.Unify.unify (m1, m2)
+           val rho2 = Abt.Unify.unify (n1, n2)
+           val rho3 = Abt.Unify.unify (a1, a2)
+         in
+           mergeUnification (mergeUnification rho1 rho2) rho3
+         end
      | _ => raise Abt.Unify.UnificationFailed
 
   fun unifyJudgment' (G1 |> H1 >> concl1, G2 |> H2 >> concl2) : Abt.Unify.renaming =
     let
-      val (mrho1, srho1, vrho1) = unifyHypotheses (getHyps H1, getHyps H2)
-      val (mrho2, srho2, vrho2) = unifyConcl (concl1, concl2)
+      val rho1 = unifyHypotheses (getHyps H1, getHyps H2)
+      val rho2 = unifyConcl (concl1, concl2)
     in
-      (MetaRenUtil.union (mrho1, mrho2),
-       SymRenUtil.union (srho1, srho2),
-       VarRenUtil.union (vrho1, vrho2))
+      mergeUnification rho1 rho2
     end
 
   fun unifyJudgment (jdg1, jdg2) =

@@ -58,12 +58,12 @@ Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] by [
 ].
 
 Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] by [
-  eq
+  bang
 ].
 
 
 Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] by [
-  eq
+  bang
 ].
 
 Tac crefl = [
@@ -71,7 +71,7 @@ Tac crefl = [
 ].
 
 Thm baseMemberEq : [=(Ax; Ax; Base)] by [
-  eq; crefl
+  bang
 ].
 
 // Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
@@ -83,7 +83,7 @@ Def ensembleExample : exp = [
 ].
 
 Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
-  repeat(auto)
+  bang
 ].
 
 Thm demo : [{x : Base | ~(x; Ax)}] by [
@@ -114,12 +114,12 @@ Thm lamTest : [fun(Atom; Atom)] by [
 
 Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
   auto;
-  l <- eq;
+  l <- intro; eq;
   [ witness{lvl} [lbase]
   , witness [Atom]
   , witness [Atom]
   ];
-  repeat(auto)
+  bang
 ].
 
 Sym foo : lbl.
@@ -164,8 +164,7 @@ Def Monoid(i : lvl) : exp = [
 ].
 
 Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
-  bang;
-  cum; auto
+  bang; cum; auto
 ].
 
 

@@ -13,9 +13,8 @@ struct
   val TypeEq =
     QuantifierKit.TypeEq (CTT DEP_ISECT)
 
-  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
+  fun MemberEq alpha (G |> H >> EQ_MEM (m1, m2, ty)) =
     let
-      val (_, m1, m2, ty) = destEq P
       val (a, x, bx) = destDepIsect ty
       val bm1 = subst (m1, x) bx
 

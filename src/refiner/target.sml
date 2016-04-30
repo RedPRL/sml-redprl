@@ -14,6 +14,7 @@ struct
   fun mapConcl f =
     fn TRUE (p, tau) => TRUE (f p, tau)
      | TYPE (p, tau) => TYPE (f p, tau)
+     | EQ_MEM (m, n, a) => EQ_MEM (f m, f n, f a)
 
   fun targetRewrite f target (G |> H >> concl) =
     case target of

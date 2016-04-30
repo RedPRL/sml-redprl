@@ -1,4 +1,5 @@
 structure Sequent :> SEQUENT
+  where type expr = Abt.abt
   where type prop = Abt.abt
   where type sort = Abt.sort
   where type var = Abt.variable
@@ -7,6 +8,7 @@ structure Sequent :> SEQUENT
   where type hypctx = (Abt.abt * Abt.sort) SymbolTelescope.telescope =
 struct
   type prop = Abt.abt
+  type expr = Abt.abt
   type sort = Abt.sort
   type var = Abt.variable
 
@@ -61,6 +63,7 @@ struct
   datatype concl =
       TRUE of prop * sort
     | TYPE of prop * sort
+    | EQ_MEM of expr * expr * prop
 
   (* The meaning of the sequent with respect to its context of metavariables is
    * essentially the following: If the metavariables are replaced by closed abstractions
@@ -75,8 +78,9 @@ struct
   infix 3 |>
 
   val conclToString =
-    fn TRUE (P, tau) => ShowAbt.toString P ^ " true"
-     | TYPE (P, tau) => ShowAbt.toString P ^ " type"
+    fn TRUE (a, tau) => ShowAbt.toString a ^ " true"
+     | TYPE (a, tau) => ShowAbt.toString a ^ " type"
+     | EQ_MEM (m, n, a) => ShowAbt.toString m ^ " = " ^ ShowAbt.toString n ^ " : " ^ ShowAbt.toString a
 
   fun hypothesesToString H =
     let

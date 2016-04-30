@@ -13,9 +13,8 @@ struct
              @@ "Expected Void but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq _ (G |> H >> TRUE (P, _)) =
+  fun TypeEq _ (G |> H >> EQ_MEM (void1, void2, univ)) =
     let
-      val (_, void1, void2, univ) = destEq P
       val _ = destUniv univ
       val _ = destVoid void1
       val _ = destVoid void2

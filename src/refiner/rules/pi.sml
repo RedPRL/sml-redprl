@@ -33,9 +33,8 @@ struct
 
   val TypeEq = QuantifierKit.TypeEq (CTT DFUN)
 
-  fun MemberEq alpha (G |> H >> TRUE (P, _)) =
+  fun MemberEq alpha (G |> H >> EQ_MEM (lam1, lam2, dfun)) =
     let
-      val (_, lam1, lam2, dfun) = destEq P
       val (a, x, bx) = destDFun dfun
       val (y1, m1) = destLam lam1
       val (y2, m2) = destLam lam2
@@ -64,9 +63,8 @@ struct
     end
     | MemberEq _ _ = raise Match
 
-  fun ElimEq alpha (G |> H >> TRUE (P, _)) =
+  fun ElimEq alpha (G |> H >> EQ_MEM (ap1, ap2, c)) =
     let
-      val (_, ap1, ap2, c) = destEq P
       val (m1, n1) = destAp ap1
       val (m2, n2) = destAp ap2
 
@@ -194,9 +192,8 @@ struct
     end
     | Elim _ _ _ = raise Match
 
-  fun Ext alpha (jdg as G |> H >> TRUE (P, _)) =
+  fun Ext alpha (jdg as G |> H >> EQ_MEM (f, g, dfun)) =
     let
-      val (_, f, g, dfun) = destEq P
       val (a, x, bx) = destDFun dfun
 
       val z = alpha 0

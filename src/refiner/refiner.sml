@@ -24,10 +24,10 @@ struct
         ORELSE EnsembleRules.Intro alpha
         ORELSE PiRules.Intro alpha
         ORELSE TypeRules.Intro alpha
+        ORELSE EqRules.Intro alpha
 
-    fun HypEq alpha (G |> H >> TRUE (P, _)) =
+    fun HypEq alpha (G |> H >> EQ_MEM (m, n, a)) =
       let
-        val (_, m, n, a) = destEq P
         val x = destVar m
         val y = destVar n
         val _ = if Variable.eq (x, y) then () else raise Match
@@ -39,32 +39,29 @@ struct
       end
       | HypEq _ _ = raise Match
 
-    fun Eq r alpha (jdg as _ |> _ >> TRUE (P, _)) =
-      (case out P of
-           CTT (EQ _) $ _ =>
-             (UnivRules.Eq alpha
-               ORELSE BaseRules.TypeEq alpha
-               ORELSE BaseRules.MemberEq alpha
-               ORELSE TopRules.TypeEq alpha
-               ORELSE TopRules.MemberEq alpha
-               ORELSE CEquivRules.TypeEq alpha
-               ORELSE CEquivRules.MemberEq alpha
-               ORELSE SquashRules.TypeEq alpha
-               ORELSE EnsembleRules.TypeEq alpha
-               ORELSE EnsembleRules.MemberEq alpha
-               ORELSE RecordRules.TypeEq alpha
-               ORELSE RecordRules.MemberEq alpha
-               ORELSE AtomRules.TypeEq alpha
-               ORELSE AtomRules.MemberEq alpha
-               ORELSE AtomRules.TestEq alpha
-               ORELSE PiRules.TypeEq alpha
-               ORELSE PiRules.MemberEq alpha
-               ORELSE PiRules.ElimEq alpha
-               ORELSE DepIsectRules.TypeEq alpha
-               ORELSE DepIsectRules.MemberEq alpha
-               ORELSE VoidRules.TypeEq alpha
-               ORELSE HypEq alpha) jdg
-         | _ => raise Fail "Eq not applicable")
+    fun Eq r alpha (jdg as _ |> _ >> EQ_MEM _) =
+          (UnivRules.Eq alpha
+            ORELSE BaseRules.TypeEq alpha
+            ORELSE BaseRules.MemberEq alpha
+            ORELSE TopRules.TypeEq alpha
+            ORELSE TopRules.MemberEq alpha
+            ORELSE CEquivRules.TypeEq alpha
+            ORELSE CEquivRules.MemberEq alpha
+            ORELSE SquashRules.TypeEq alpha
+            ORELSE EnsembleRules.TypeEq alpha
+            ORELSE EnsembleRules.MemberEq alpha
+            ORELSE RecordRules.TypeEq alpha
+            ORELSE RecordRules.MemberEq alpha
+            ORELSE AtomRules.TypeEq alpha
+            ORELSE AtomRules.MemberEq alpha
+            ORELSE AtomRules.TestEq alpha
+            ORELSE PiRules.TypeEq alpha
+            ORELSE PiRules.MemberEq alpha
+            ORELSE PiRules.ElimEq alpha
+            ORELSE DepIsectRules.TypeEq alpha
+            ORELSE DepIsectRules.MemberEq alpha
+            ORELSE VoidRules.TypeEq alpha
+            ORELSE HypEq alpha) jdg
       | Eq _ _ _ = raise Match
 
     fun Ext alpha (jdg as _ |> _ >> TRUE (P, _)) =
