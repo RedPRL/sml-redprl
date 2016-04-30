@@ -20,6 +20,7 @@ struct
              TRUE (_, tau) => (([], List.map #2 G), tau)
            | TYPE _ => (([], List.map #2 G), SortData.LVL)
            | EQ_MEM _ => (([], List.map #2 G), SortData.EXP)
+           | EQ_NEU _ => (([], List.map #2 G), SortData.EXP))
 
   fun evidenceToString e =
     let
@@ -30,9 +31,10 @@ struct
     end
 
   fun substConcl rho =
-    fn TRUE (P, tau) => TRUE (metasubstEnv rho P, tau)
-     | TYPE (P, tau) => TYPE (metasubstEnv rho P, tau)
-     | EQ_MEM (M, N, A) => EQ_MEM (metasubstEnv rho M, metasubstEnv rho N, metasubstEnv rho A)
+    fn TRUE (a, tau) => TRUE (metasubstEnv rho a, tau)
+     | TYPE (a, tau) => TYPE (metasubstEnv rho a, tau)
+     | EQ_MEM (m, n, a) => EQ_MEM (metasubstEnv rho m, metasubstEnv rho n, metasubstEnv rho a)
+     | EQ_NEU (r, s) => EQ_NEU (metasubstEnv rho r, metasubstEnv rho s)
 
   structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Valence)
   structure MetaRenUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Metavariable)
@@ -68,8 +70,8 @@ struct
   val conclMetactx =
     fn TRUE (p, _) => metactx p
      | TYPE (p, _) => metactx p
-     | EQ_MEM (m, n, a) =>
-         MetaCtxUtil.union (MetaCtxUtil.union (metactx m, metactx n), metactx a)
+     | EQ_MEM (m, n, a) => MetaCtxUtil.union (MetaCtxUtil.union (metactx m, metactx n), metactx a)
+     | EQ_NEU (r, s) => MetaCtxUtil.union (metactx r, metactx s)
 
   fun hypsMetactx hyps =
     SymbolTelescope.foldl
@@ -119,6 +121,13 @@ struct
            val rho3 = Abt.Unify.unify (a1, a2)
          in
            mergeUnification (mergeUnification rho1 rho2) rho3
+         end
+     | (EQ_NEU (r1, s1), EQ_NEU (r2, s2)) =>
+         let
+           val rho1 = Abt.Unify.unify (r1, r2)
+           val rho2 = Abt.Unify.unify (s1, s2)
+         in
+           mergeUnification rho1 rho2
          end
      | _ => raise Abt.Unify.UnificationFailed
 

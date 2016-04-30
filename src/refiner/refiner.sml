@@ -39,6 +39,44 @@ struct
       end
       | HypEq _ _ = raise Match
 
+    fun HypNeutral alpha (G |> H >> EQ_NEU (r, s)) =
+      let
+        val x = destVar r
+        val y = destVar s
+        val _ = if Variable.eq (x, y) then () else raise Match
+        val (a, _) = Ctx.lookup (getHyps H) x
+      in
+        (T.empty, fn rho =>
+          makeEvidence G H a)
+      end
+      | HypNeutral _ _ = raise Match
+
+    fun CheckInfer alpha (G |> H >> EQ_MEM (r, s, a)) =
+      let
+        val (tyGoal, tyHole, H') =
+          makeGoal @@
+            [] |> H >> EQ_NEU (r, s)
+
+        val (lvlGoal, lvlHole, H'') =
+          makeGoal @@
+            [] |> makeLevelSequent H'
+
+        val H''' = updateMetas (fn _ => getMetas H'') H'
+
+        val tau = Abt.sort r
+        val univ = check (getMetas H''') (CTT (UNIV tau) $ [([],[]) \ lvlHole [][]], SortData.EXP)
+
+        val (eqGoal, _, _) =
+          makeGoal @@
+            [] |> H''' >> EQ_MEM (a, tyHole [] [], univ)
+
+        val psi = T.empty @> tyGoal @> lvlGoal
+      in
+        (psi, fn rho =>
+          makeEvidence G H makeAx)
+      end
+      | CheckInfer _ _ = raise Match
+
     fun Eq r alpha (jdg as _ |> _ >> EQ_MEM _) =
           (UnivRules.Eq alpha
             ORELSE BaseRules.TypeEq alpha
@@ -61,7 +99,8 @@ struct
             ORELSE DepIsectRules.TypeEq alpha
             ORELSE DepIsectRules.MemberEq alpha
             ORELSE VoidRules.TypeEq alpha
-            ORELSE HypEq alpha) jdg
+            ORELSE HypEq alpha
+            ORELSE HypNeutral alpha) jdg
       | Eq _ _ _ = raise Match
 
     fun Ext alpha (jdg as _ |> _ >> TRUE (P, _)) =

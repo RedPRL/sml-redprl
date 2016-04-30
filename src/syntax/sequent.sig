@@ -24,6 +24,7 @@ sig
       TRUE of prop * sort
     | TYPE of prop * sort
     | EQ_MEM of expr * expr * prop
+    | EQ_NEU of expr * expr
 
   datatype sequent =
       >> of context * concl
