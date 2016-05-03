@@ -14,15 +14,16 @@ struct
   infix 4 >>
   infix 3 |>
 
-  val rec evidenceValence =
-    fn G |> H >> concl =>
-         (case concl of
-             TRUE (_, tau) => (([], List.map #2 G), tau)
-           | TYPE _ => (([], List.map #2 G), SortData.LVL)
-           | EQ_MEM _ => (([], List.map #2 G), SortData.EXP)
-           | MEM _ => (([], List.map #2 G), SortData.EXP)
-           | EQ_SYN _ => (([], List.map #2 G), SortData.EXP)
-           | SYN _ => (([], List.map #2 G), SortData.EXP))
+  val conclEvidenceSort =
+    fn TRUE (_, tau) => tau
+     | TYPE _ => SortData.LVL
+     | EQ_MEM _ => SortData.EXP
+     | MEM _ => SortData.EXP
+     | EQ_SYN _ => SortData.EXP
+     | SYN _ => SortData.EXP
+
+  fun evidenceValence (G |> H >> concl) =
+    (([], List.map #2 G), conclEvidenceSort concl)
 
   fun evidenceToString e =
     let
