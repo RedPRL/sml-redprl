@@ -82,12 +82,11 @@ struct
       succeed (inferRefinedSort m)
         handle e => fail (exnMessage e)
 
-
     val parseSymbol = identifier
     val parseVariable = identifier
 
     (* TODO *)
-    fun parseTerm' sign rho f =
+    fun parseTerm' sign rho f : sort -> ast fixityitem charParser =
       fn LVL =>
          let
            val parseBase =
@@ -99,8 +98,8 @@ struct
                wth (fn l =>
                  LVL_OP LSUCC $ [([],[]) \ l])
          in
-           try parseSucc
-             || parseBase
+           (try parseSucc
+             || parseBase) wth Atm
          end
        | EXP =>
          let
@@ -236,7 +235,7 @@ struct
            val parseRcdProj =
              symbol "#"
                >> parseSymbol
-               && f EXP
+               && parens (f EXP)
                wth (fn (lbl, rcd) =>
                  RCD (PROJ lbl) $ [([],[]) \ rcd])
 
@@ -269,39 +268,43 @@ struct
                braces (commaSep parseRecordItem)
                  wth (List.foldr record makeTop)
            end
+
+           val parseAtomic =
+            (parseCApprox
+              || parseCEquiv
+              || parseAx
+              || parseUniv
+              || parseEq
+              || parseMember
+              || parseBase
+              || parseDFun
+              || parseDepIsect
+              || parseFun
+              || parseLam
+              || parseAp
+              || parseAtom
+              || parseToken
+              || parseTest
+              || parseSquash
+              || parseEnsemble
+              || parseRecordTy
+              || parseRcdCons
+              || parseRcdLiteral
+              || parseRcdProj
+              || parseHypVar) wth Atm
          in
-           parseCApprox
-             || parseCEquiv
-             || parseAx
-             || parseUniv
-             || parseEq
-             || parseMember
-             || parseBase
-             || parseDFun
-             || parseDepIsect
-             || parseFun
-             || parseLam
-             || parseAp
-             || parseAtom
-             || parseToken
-             || parseTest
-             || parseSquash
-             || parseEnsemble
-             || parseRecordTy
-             || parseRcdCons
-             || parseRcdLiteral
-             || parseRcdProj
-             || parseHypVar
+           parseAtomic
          end
        | VEC tau =>
          squares (commaSep (f tau))
            wth (fn xs =>
              VEC_LIT (tau, length xs) $
                map (fn x => ([], []) \ x) xs)
+           wth Atm
        | STR =>
          stringLiteral
-           wth (fn str =>
-             STR_LIT str $ [])
+           wth (fn str => STR_LIT str $ [])
+           wth Atm
        | TAC =>
          let
            val parseId =
@@ -508,8 +511,8 @@ struct
                   compileScript ts
                     wth makeSeq tac us
          in
-           sepEnd1' parseComponent semi
-             -- compileScript
+           (sepEnd1' parseComponent semi
+             -- compileScript) wth Atm
          end
        | _ =>
          fail "to be implemented"
@@ -616,8 +619,14 @@ struct
 
     fun parseTerm sign rho =
       fix' (fn f => fn tau =>
-        parseTerm' sign rho f tau
-          || parseAny sign rho f tau)
+        let
+          val p =
+            parseTerm' sign rho f tau
+              || (parseAny sign rho f tau wth Atm)
+          val p' = spaces >> parsefixityadj p Left (fn (m, n) => CTT AP $ [([],[]) \ m, ([],[]) \ n]) << spaces
+        in
+          p' || parens p'
+        end)
   end
 end
 
