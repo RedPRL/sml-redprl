@@ -111,9 +111,9 @@ struct
            CUST (opid, params, arity) $ args =>
              stepCust sign (opid, arity) cl
          | LVL_OP LBASE $ _ => FINAL
-         | LVL_OP LSUCC $ [_ \ l] =>
-             step sign (l <: env) <#> (fn l' <: env =>
-               check (metactx l') (LVL_OP LSUCC $ [([],[]) \ l'], LVL) <: env)
+         | LVL_OP LSUCC $ [_ \ l] => FINAL
+         | LVL_OP LSUP $ [_ \ l1, _ \ l2] =>
+             stepLvlSup sign (l1, l2) (m <: env)
          | LCF _ $ _ => FINAL
          | RCD (PROJ lbl) $ [_ \ rcd] =>
              stepRcdProj sign (lbl, rcd) (m <: env)
@@ -130,9 +130,7 @@ struct
          | CTT (CEQUIV _) $ _ => FINAL
          | CTT (MEMBER tau) $ [_ \ x, _ \ a] =>
              ret @@ check (metactx m) (CTT (EQ tau) $ [([],[]) \ x, ([],[]) \ x, ([],[]) \ a], EXP) <: env
-         | CTT (UNIV tau) $ [_ \ l] =>
-             step sign (l <: env) <#> (fn l' <: env =>
-               check (metactx l') (CTT (UNIV tau) $ [([],[]) \ l'], EXP) <: env)
+         | CTT (UNIV tau) $ [_ \ l] => FINAL
          | CTT (SQUASH _) $ _ => FINAL
          | CTT (ENSEMBLE _) $ _ => FINAL
          | CTT (BASE _) $ _ => FINAL
@@ -151,6 +149,12 @@ struct
              in
                ret @@ check (metactx m) (CTT FUN $ [([],[]) \ a, ([],[]) \ void], EXP) <: env
              end
+         | CTT DFUN_DOM $ [_ \ dfun] =>
+             stepDFunDom sign dfun (m <: env)
+         | CTT DFUN_COD $ [_ \ dfun, _ \ n] =>
+             stepDFunCod sign (dfun, n) (m <: env)
+         | CTT UNIV_GET_LVL $ [_ \ univ] =>
+             stepUnivGetLvl sign univ (m <: env)
          | ATM (ATOM _) $ _ => FINAL
          | ATM (TOKEN _) $ _ => FINAL
          | ATM (TEST (sigma,tau)) $ [_ \ tok1, _ \ tok2, _ \ yes, _ \ no] =>
@@ -172,27 +176,97 @@ struct
                        in
                          e <: (mrho, srho, VarCtx.insert vrho x (n <: env))
                        end
-                   | _ => raise Match)
+                   | _ => raise Stuck (m <: env))
            | STEP (f' <: env) =>
                check (metactx m) (CTT AP $ [([],[]) \ f', ([],[]) \ n], EXP) <: env)
+    end
+
+  and stepDFunDom sign dfun (m <: env) =
+    let
+      open OperatorData CttOperatorData SortData
+    in
+      ret
+        (case step sign (dfun <: env) of
+              FINAL =>
+                (case out dfun of
+                      CTT DFUN $ [_ \ a, _] =>
+                        a <: env
+                    | _ => raise Stuck (m <: env))
+            | STEP (dfun' <: env) =>
+                check (metactx m) (CTT DFUN_DOM $ [([],[]) \ dfun'], EXP) <: env)
+    end
+
+  and stepDFunCod sign (dfun, n) (m <: env) =
+    let
+      open OperatorData CttOperatorData SortData
+    in
+      ret
+        (case step sign (dfun <: env) of
+              FINAL =>
+                (case out dfun of
+                      CTT DFUN $ [_ \ _, (_, [x]) \ bx] =>
+                        let
+                          val (mrho, srho, vrho) = env
+                        in
+                          bx <: (mrho, srho, VarCtx.insert vrho x (n <: env))
+                        end
+                    | _ => raise Stuck (m <: env))
+            | STEP (dfun' <: env) =>
+                check (metactx m) (CTT DFUN_COD $ [([],[]) \ dfun', ([],[]) \ n], EXP) <: env)
+    end
+
+  and stepUnivGetLvl sign univ (m <: env) =
+    let
+      open OperatorData CttOperatorData SortData
+    in
+      ret
+        (case step sign (univ <: env) of
+              FINAL =>
+                (case out univ of
+                      CTT (UNIV tau) $ [_ \ lvl] =>
+                        lvl <: env
+                    | _ => raise Stuck (m <: env))
+            | STEP (univ' <: env) =>
+                check (metactx m) (CTT UNIV_GET_LVL $ [([],[]) \ univ'], LVL) <: env)
+    end
+
+  and stepLvlSup sign (l1, l2) (m <: env) =
+    let
+      open OperatorData LevelOperatorData SortData
+      fun makeSup x y =
+        check (metactx m) (LVL_OP LSUP $ [([],[]) \ x, ([],[]) \ y], LVL)
+      fun makeSucc x =
+        check (metactx m) (LVL_OP LSUCC $ [([],[]) \ x], LVL)
+    in
+      case step sign (l1 <: env) of
+           FINAL =>
+             (case step sign (l2 <: env) of
+                   FINAL =>
+                     (case (out l1, out l2) of
+                           (LVL_OP LSUCC $ _, LVL_OP LBASE $ _) => ret @@ l1 <: env
+                         | (LVL_OP LSUCC $ [_ \ l3], LVL_OP LSUCC $ [_ \ l4]) => ret @@ makeSucc (makeSup l3 l4) <: env
+                         | (LVL_OP LBASE $ _, LVL_OP LBASE $ _) => ret @@ l1 <: env
+                         | (LVL_OP LBASE $ _, LVL_OP LSUCC $ _) => ret @@ l2 <: env
+                         | _ => raise Stuck (m <: env))
+                 | STEP (l2' <: env) => ret @@ makeSup l1 l2' <: env)
+         | STEP (l1' <: env) => ret @@ makeSup l1' l2 <: env
     end
 
   and stepRcdProj sign (lbl, rcd) (m <: env) =
     let
       open OperatorData RecordOperatorData SortData
     in
-      ret
-        (case step sign (rcd <: env) of
-             FINAL =>
-               (case out rcd of
-                     RCD (CONS lbl') $ [_ \ hd, _ \ tl] =>
-                         if Symbol.eq (lbl, lbl') then
-                           hd <: env
-                         else
-                           check (metactx m) (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
-                   | _ => raise Stuck @@ m <: env)
-           | STEP (rcd' <: env) =>
-               check (metactx m) (RCD (PROJ lbl) $ [([],[]) \ rcd'], EXP) <: env)
+      (case step sign (rcd <: env) of
+           FINAL =>
+             (case out rcd of
+                   RCD (CONS lbl') $ [_ \ hd, _ \ tl] =>
+                       if Symbol.eq (lbl, lbl') then
+                         ret @@ hd <: env
+                       else
+                         ret @@ check (metactx m) (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
+                 | _ => raise Stuck @@ m <: env)
+         | STEP (rcd' <: env) =>
+             ret @@ check (metactx m) (RCD (PROJ lbl) $ [([],[]) \ rcd'], EXP) <: env)
     end
 
   and stepAtomTest sign (sigma,tau) (tok1, tok2) (yes, no) (m <: env) =

@@ -64,6 +64,9 @@ struct
       TRUE of prop * sort
     | TYPE of prop * sort
     | EQ_MEM of expr * expr * prop
+    | MEM of expr * prop
+    | EQ_SYN of expr * expr
+    | SYN of expr
 
   (* The meaning of the sequent with respect to its context of metavariables is
    * essentially the following: If the metavariables are replaced by closed abstractions
@@ -81,6 +84,9 @@ struct
     fn TRUE (a, tau) => ShowAbt.toString a ^ " true"
      | TYPE (a, tau) => ShowAbt.toString a ^ " type"
      | EQ_MEM (m, n, a) => ShowAbt.toString m ^ " = " ^ ShowAbt.toString n ^ " : " ^ ShowAbt.toString a
+     | MEM (m, a) => ShowAbt.toString m ^ " : " ^ ShowAbt.toString a
+     | EQ_SYN (r, s) => ShowAbt.toString r ^ " = " ^ ShowAbt.toString s ^ " synth"
+     | SYN r => ShowAbt.toString r ^ " synth"
 
   fun hypothesesToString H =
     let

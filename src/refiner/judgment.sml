@@ -14,12 +14,16 @@ struct
   infix 4 >>
   infix 3 |>
 
-  val rec evidenceValence =
-    fn G |> H >> concl =>
-         (case concl of
-             TRUE (_, tau) => (([], List.map #2 G), tau)
-           | TYPE _ => (([], List.map #2 G), SortData.LVL)
-           | EQ_MEM _ => (([], List.map #2 G), SortData.EXP))
+  val conclEvidenceSort =
+    fn TRUE (_, tau) => tau
+     | TYPE _ => SortData.LVL
+     | EQ_MEM _ => SortData.EXP
+     | MEM _ => SortData.EXP
+     | EQ_SYN _ => SortData.EXP
+     | SYN _ => SortData.EXP
+
+  fun evidenceValence (G |> H >> concl) =
+    (([], List.map #2 G), conclEvidenceSort concl)
 
   fun evidenceToString e =
     let
@@ -30,9 +34,12 @@ struct
     end
 
   fun substConcl rho =
-    fn TRUE (P, tau) => TRUE (metasubstEnv rho P, tau)
-     | TYPE (P, tau) => TYPE (metasubstEnv rho P, tau)
-     | EQ_MEM (M, N, A) => EQ_MEM (metasubstEnv rho M, metasubstEnv rho N, metasubstEnv rho A)
+    fn TRUE (a, tau) => TRUE (metasubstEnv rho a, tau)
+     | TYPE (a, tau) => TYPE (metasubstEnv rho a, tau)
+     | EQ_MEM (m, n, a) => EQ_MEM (metasubstEnv rho m, metasubstEnv rho n, metasubstEnv rho a)
+     | MEM (m, a) => MEM (metasubstEnv rho m, metasubstEnv rho a)
+     | EQ_SYN (r, s) => EQ_SYN (metasubstEnv rho r, metasubstEnv rho s)
+     | SYN r => SYN (metasubstEnv rho r)
 
   structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Valence)
   structure MetaRenUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Metavariable)
@@ -68,8 +75,10 @@ struct
   val conclMetactx =
     fn TRUE (p, _) => metactx p
      | TYPE (p, _) => metactx p
-     | EQ_MEM (m, n, a) =>
-         MetaCtxUtil.union (MetaCtxUtil.union (metactx m, metactx n), metactx a)
+     | EQ_MEM (m, n, a) => MetaCtxUtil.union (MetaCtxUtil.union (metactx m, metactx n), metactx a)
+     | MEM (m, a) => MetaCtxUtil.union (metactx m, metactx a)
+     | EQ_SYN (r, s) => MetaCtxUtil.union (metactx r, metactx s)
+     | SYN r => metactx r
 
   fun hypsMetactx hyps =
     SymbolTelescope.foldl
@@ -120,6 +129,22 @@ struct
          in
            mergeUnification (mergeUnification rho1 rho2) rho3
          end
+     | (MEM (m1, a1), MEM (m2, a2)) =>
+         let
+           val rho1 = Abt.Unify.unify (m1, m2)
+           val rho2 = Abt.Unify.unify (a1, a2)
+         in
+           mergeUnification rho1 rho2
+         end
+     | (EQ_SYN (r1, s1), EQ_SYN (r2, s2)) =>
+         let
+           val rho1 = Abt.Unify.unify (r1, r2)
+           val rho2 = Abt.Unify.unify (s1, s2)
+         in
+           mergeUnification rho1 rho2
+         end
+     | (SYN r1, SYN r2) =>
+         Abt.Unify.unify (r1, r2)
      | _ => raise Abt.Unify.UnificationFailed
 
   fun unifyJudgment' (G1 |> H1 >> concl1, G2 |> H2 >> concl2) : Abt.Unify.renaming =

@@ -3,9 +3,8 @@
 // to Red JonPRL's evaluator.
 
 Tac try(T : tac) = [
-  {T} || {id}
+  T || id
 ].
-
 
 // Tacticals are easily defined from within JonPRL's computation system.
 // Here are a few examples:
@@ -74,52 +73,49 @@ Thm baseMemberEq : [=(Ax; Ax; Base)] by [
   bang
 ].
 
-// Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
-// a type by a predicate. Because this is a multi-sorted type theory, we must specify
-// what syntactic sort is being refined by the type being restricted. In this example,
-// we are restricting the [exp] sort, which contains type expressions.
-Def ensembleExample : exp = [
-  { x : Base | ~(x; Base) }
-].
 
-Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
-  bang
-].
 
-Thm demo : [{x : Base | ~(x; Ax)}] by [
-  auto; #0 { witness [Ax] }; repeat(auto)
-].
 
-// let's declare some symbols (nominal atoms). new symbols are always fresh.
-Sym mysym : exp.
-Sym mysym2 : exp.
-Sym yes : exp.
-Sym no : exp.
 
-// atoms can be compared for equality; here, we show that two of our
-// declared atoms are distinct.
-Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
-  ceval
-].
+ // Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
+ // a type by a predicate. Because this is a multi-sorted type theory, we must specify
+ // what syntactic sort is being refined by the type being restricted. In this example,
+ // we are restricting the [exp] sort, which contains type expressions.
+ Def ensembleExample : exp = [
+   { x : Base | ~(x; Base) }
+ ].
+
+ Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
+   bang
+ ].
+
+ Thm demo : [{x : Base | ~(x; Ax)}] by [
+   bang; #0 { witness [Ax] }; bang
+ ].
+
+
+ // let's declare some symbols (nominal atoms). new symbols are always fresh.
+ Sym mysym : exp.
+ Sym mysym2 : exp.
+ Sym yes : exp.
+ Sym no : exp.
+
+ // atoms can be compared for equality; here, we show that two of our
+ // declared atoms are distinct.
+ Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
+   bang
+ ].
 
 Thm lamTest : [fun(Atom; Atom)] by [
   normalize;
   z <- intro;
   [ witness [ifeq(@z; 'mysym; 'yes; 'no)]
-  , repeat(auto)
-  ];
-  normalize;
-  repeat(auto)
+  ]; bang
 ].
 
-Thm apEqTest : [member(ap(lam([x].x); 'mysym); Atom)] by [
-  auto;
-  l <- intro; eq;
-  [ witness{lvl} [lbase]
-  , witness [Atom]
-  , witness [Atom]
-  ];
-  bang
+
+Thm apEqTest : [dfun(fun(Atom; Atom); [f]. member(f 'mysym; Atom))] by [
+  bang; chk-inf; bang
 ].
 
 Sym foo : lbl.
@@ -132,9 +128,12 @@ Def exampleRecord : exp = [
   }
 ].
 
-Thm recordProjTest : [~(#foo exampleRecord; Ax)] by [
+Thm recordProjTest : [~(exampleRecord.foo; Ax)] by [
   bang
 ].
+
+
+
 
 Sym car : lbl.
 Sym op : lbl.
@@ -152,19 +151,18 @@ Def MonoidStruct(i : lvl) : exp = [
 
 
 Def MonoidLaws(M : exp) : exp = [
-  { lid : dfun(#car M; [x]. =(ap(ap(#op M; #unit M); x); x; #car M))
-  , rid : dfun(#car M; [x]. =(ap(ap(#op M; x); #unit M); x; #car M))
-  , assoc : dfun(#car M; [x]. dfun(#car M; [y]. dfun(#car M; [z]. =(ap(ap(#op M; x); ap(ap(#op M; y); z)); ap(ap(#op M; ap(ap(#op M; x); y)); z); #car M))))
+  { lid : dfun(M.car; [x]. =((M.op) (M.unit) x; x; M.car))
+  , rid : dfun(M.car; [x]. =((M.op) x (M.unit); x; M.car))
+  , assoc : dfun(M.car; [x]. dfun(M.car; [y]. dfun(M.car; [z]. =((M.op) x ((M.op) y z); (M.op) ((M.op) x y) z; M.car))))
   }
 ].
-
 
 Def Monoid(i : lvl) : exp = [
   { M : MonoidStruct(i) | MonoidLaws(M) }
 ].
 
 Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
-  bang; cum; auto
+  bang; cumulativity; auto
 ].
 
 
@@ -184,9 +182,10 @@ Thm RecordTest[u:exp](i : lvl) : [=({foo = Ax, bar = 'u, baz = Ax}; {bar = 'u, f
 ].
 
 Def DepIsectEx1 : exp = [
-  disect({foo : Univ(lbase)}; [self]. {bar : #foo self})
+  disect({foo : Univ(lbase)}; [self]. {bar : self.foo})
 ].
 
 Thm DepIsectEx2 : [ member({foo = Unit, bar = Ax}; DepIsectEx1) ] by [
   bang
 ].
+

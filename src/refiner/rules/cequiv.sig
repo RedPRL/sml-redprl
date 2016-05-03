@@ -1,5 +1,8 @@
 signature CEQUIV_RULES =
 sig
+  val IsType
+    : RefinerKit.ntactic
+
   val TypeEq
     : RefinerKit.ntactic
 

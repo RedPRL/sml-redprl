@@ -1,6 +1,6 @@
 structure AtomRules : ATOM_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData AtomsOperatorData SortData
+  open RefinerKit OperatorData CttOperatorData AtomsOperatorData LevelOperatorData SortData
   infix @@ $ $# \ @>
   infix 4 >>
   infix 3 |>
@@ -33,6 +33,15 @@ struct
              @@ "Expected Test but got "
               ^ DebugShowAbt.toString m
 
+  fun IsType _ (G |> H >> TYPE (atm, EXP)) =
+    let
+      val _ = destAtom atm
+    in
+      (T.empty, fn rho =>
+        makeEvidence G H @@
+          check' (LVL_OP LBASE $ [], LVL))
+    end
+    | IsType _ _ = raise Match
 
   fun TypeEq _ (G |> H >> EQ_MEM (atm1, atm2, univ)) =
     let

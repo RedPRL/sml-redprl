@@ -34,7 +34,7 @@ struct
   val parseMetaid = identifier ?? "metaid"
   val parseSymid = identifier ?? "symid"
 
-  fun parseSort sign = TermParser.parseSort sign ?? "sort"
+  fun parseSort sign = SortParser.parseSort sign ?? "sort"
   fun parseSortList sign = commaSep (parseSort sign) ?? "sortlist"
 
   fun parseValence sign =
@@ -97,6 +97,15 @@ struct
         end) ?? "definition"
     end
 
+
+  local
+    open Ast OperatorData NominalLcfOperatorData
+    infix $ \
+  in
+    val defaultTac =
+      LCF ID $ []
+  end
+
   fun parseTactic sign : (opid * def) charParser =
     let
       val parseOpid' = reserved "Tac" >> parseOpid
@@ -106,8 +115,9 @@ struct
       (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn (opid, (params, args)) =>
         let
           val rho = makeNameStore args
+          val parseDefiniens = TermParser.parseTerm sign rho SortData.TAC || spaces return defaultTac
         in
-          squares (TermParser.parseTerm sign rho SortData.TAC) wth (fn term =>
+          squares parseDefiniens wth (fn term =>
             (opid,
              {parameters = params,
               arguments = List.map (fn (m, v) => rho m) args,
@@ -129,7 +139,7 @@ struct
         let
           val rho = makeNameStore args
           val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP) && parseSort'
-          val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC)
+          val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC || spaces return defaultTac)
         in
           parseGoal && parseScript wth (fn ((goal, tau), script) =>
             (opid,

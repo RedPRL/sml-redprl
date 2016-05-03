@@ -19,6 +19,12 @@ local
     syntax.mlb
     ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
   in
+    signature/parser/token_parser.sml
+    signature/parser/sort.sml
+    signature/parser/generic.sml
+    signature/parser/lvl.sml
+    signature/parser/tac.sml
+    signature/parser/expr.sml
     signature/term_parser.sig
     signature/term_parser.sml
     signature/parser.fun

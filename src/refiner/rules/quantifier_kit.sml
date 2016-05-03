@@ -1,6 +1,6 @@
 structure QuantifierKit : QUANTIFIER_KIT =
 struct
-  open RefinerKit SortData
+  open RefinerKit SortData OperatorData LevelOperatorData
   infix @@ $ $# \ @>
   infix 2 //
   infix 4 >>
@@ -24,6 +24,37 @@ struct
            ^ " but got "
            ^ DebugShowAbt.toString m
   end
+
+  fun IsType quant alpha (goal as (G |> H >> TYPE (ty, EXP))) =
+    let
+      val (a, x, bx) = destQuantifier quant ty
+
+      val (goalA, holeA, H') =
+        makeGoal @@
+          [] |> H >> TYPE (a, EXP)
+
+      val Hx = updateHyps (fn xs => Ctx.snoc xs x (a, EXP)) H'
+
+      val (goalB, _, H') =
+        makeGoal @@
+          [] |> Hx >> TYPE (bx, EXP)
+
+      val psi = T.empty @> goalA @> goalB
+    in
+      (psi, fn rho =>
+        let
+          val l1 = T.lookup rho (#1 goalA) // ([],[])
+          val l2 = T.lookup rho (#1 goalB) // ([],[])
+          (* is this necessary?: *)
+          val _ = if VarCtx.member (varctx l2) x then raise Fail "Variable free in level expr" else ()
+        in
+          makeEvidence G H @@
+            check
+              (getMetas H')
+              (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
+        end)
+    end
+    | IsType _ _ _ = raise Match
 
   fun TypeEq theta alpha (G |> H >> EQ_MEM (quant1, quant2, univ)) =
     let
