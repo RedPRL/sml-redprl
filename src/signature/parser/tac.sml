@@ -153,8 +153,7 @@ struct
             LCF PROGRESS $ [([],[]) \ t])
 
       val parseAtomicTac =
-        (parens (f TAC)
-          || parseId
+        (parseId
           || parseFail
           || parseCStep
           || parseCEval
@@ -176,7 +175,7 @@ struct
           || parseUnfold
           || parseNormalize
           || parseProgress
-          || try (GenericParser.parseGeneric sign rho f TAC)) wth Atm
+          || GenericParser.parseGeneric sign rho f TAC) wth Atm
 
       val parseFixityTac =
         parseOrElse wth Opr
@@ -201,8 +200,7 @@ struct
     in
       (parseEach
         || parseFocus
-        || parseAll
-        || try (GenericParser.parseGeneric sign rho f MTAC)) wth Atm
+        || parseAll) wth Atm
     end
 
   fun parseTac sign rho f =
