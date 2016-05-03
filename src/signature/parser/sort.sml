@@ -21,7 +21,7 @@ struct
       || symbol "tac" return TAC
       || symbol "thm" >> braces p wth THM
       || symbol "mtac" return MTAC
-      || symbol "vec" >> braces p wth VEC
+      || squares p wth VEC
       || symbol "str" return STR
       || symbol "lbl" return RCD_LBL)
 end
