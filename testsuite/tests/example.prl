@@ -6,7 +6,6 @@ Tac try(T : tac) = [
   {T} || {id}
 ].
 
-
 // Tacticals are easily defined from within JonPRL's computation system.
 // Here are a few examples:
 Tac repeat(T : tac) = [
@@ -154,10 +153,11 @@ Def MonoidStruct(i : lvl) : exp = [
 Def MonoidLaws(M : exp) : exp = [
   { lid : dfun(#car(M); [x]. =(#op(M) #unit(M) x; x; #car(M)))
   , rid : dfun(#car(M); [x]. =(#op(M) x #unit(M); x; #car(M)))
-  , assoc : dfun(#car(M); [x]. dfun(#car(M); [y]. dfun(#car(M); [z]. =(ap(#op(M) x; #op(M) y z); ap(ap(#op(M); #op(M) x y); z); #car(M)))))
+  , assoc : dfun(#car(M); [x]. dfun(#car(M); [y]. dfun(#car(M); [z]. =(#op(M) x (#op(M) y z); #op(M) (#op(M) x y) z; #car(M)))))
   }
 ].
 
+(*
 
 Def Monoid(i : lvl) : exp = [
   { M : MonoidStruct(i) | MonoidLaws(M) }
@@ -190,3 +190,4 @@ Def DepIsectEx1 : exp = [
 Thm DepIsectEx2 : [ member({foo = Unit, bar = Ax}; DepIsectEx1) ] by [
   bang
 ].
+*)

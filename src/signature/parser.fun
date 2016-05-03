@@ -34,7 +34,7 @@ struct
   val parseMetaid = identifier ?? "metaid"
   val parseSymid = identifier ?? "symid"
 
-  fun parseSort sign = TermParser.parseSort sign ?? "sort"
+  fun parseSort sign = SortParser.parseSort sign ?? "sort"
   fun parseSortList sign = commaSep (parseSort sign) ?? "sortlist"
 
   fun parseValence sign =

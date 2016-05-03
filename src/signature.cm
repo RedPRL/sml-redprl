@@ -27,6 +27,12 @@ is
   signature/abt_signature.sig
   signature/abt_signature.sml
 
+  signature/parser/sort.sml
+  signature/parser/generic.sml
+  signature/parser/lvl.sml
+  signature/parser/tac.sml
+  signature/parser/expr.sml
+  signature/parser/token_parser.sml
   signature/term_parser.sig
   signature/term_parser.sml
   signature/parser.fun
