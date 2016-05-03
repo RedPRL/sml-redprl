@@ -3,7 +3,7 @@
 // to Red JonPRL's evaluator.
 
 Tac try(T : tac) = [
-  {T} || {id}
+  T || id
 ].
 
 // Tacticals are easily defined from within JonPRL's computation system.

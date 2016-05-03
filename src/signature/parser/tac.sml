@@ -143,9 +143,9 @@ struct
               [([], [x]) \ tac])
 
       val parseOrElse =
-        braces (f TAC) << symbol "||" && braces (f TAC)
-          wth (fn (t1, t2) =>
-            LCF ORELSE $ [([],[]) \ t1, ([],[]) \ t2])
+        symbol "||"
+          return Infix (Right, 7, fn (m, n) =>
+            LCF ORELSE $ [([],[]) \ m, ([],[]) \ n])
 
       val parseProgress =
         symbol "progress" >> parens (f TAC)
@@ -153,7 +153,7 @@ struct
             LCF PROGRESS $ [([],[]) \ t])
 
       val parseAtomicTac =
-        parens (f TAC)
+        (parens (f TAC)
           || parseId
           || parseFail
           || parseCStep
@@ -176,11 +176,13 @@ struct
           || parseUnfold
           || parseNormalize
           || parseProgress
-          || parseOrElse
-          || try (GenericParser.parseGeneric sign rho f TAC)
+          || try (GenericParser.parseGeneric sign rho f TAC)) wth Atm
+
+      val parseFixityTac =
+        parseOrElse wth Opr
 
       val parseAll =
-        parseAtomicTac
+        parsefixity (parseFixityTac || parseAtomicTac)
           wth (fn t =>
             LCF ALL $ [([], []) \ t])
 
