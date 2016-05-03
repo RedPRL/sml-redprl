@@ -128,7 +128,7 @@ Def exampleRecord : exp = [
   }
 ].
 
-Thm recordProjTest : [~(#foo(exampleRecord); Ax)] by [
+Thm recordProjTest : [~(exampleRecord.foo; Ax)] by [
   bang
 ].
 
@@ -151,13 +151,11 @@ Def MonoidStruct(i : lvl) : exp = [
 
 
 Def MonoidLaws(M : exp) : exp = [
-  { lid : dfun(#car(M); [x]. =(#op(M) #unit(M) x; x; #car(M)))
-  , rid : dfun(#car(M); [x]. =(#op(M) x #unit(M); x; #car(M)))
-  , assoc : dfun(#car(M); [x]. dfun(#car(M); [y]. dfun(#car(M); [z]. =(#op(M) x (#op(M) y z); #op(M) (#op(M) x y) z; #car(M)))))
+  { lid : dfun(M.car; [x]. =((M.op) (M.unit) x; x; M.car))
+  , rid : dfun(M.car; [x]. =((M.op) x (M.unit); x; M.car))
+  , assoc : dfun(M.car; [x]. dfun(M.car; [y]. dfun(M.car; [z]. =((M.op) x ((M.op) y z); (M.op) ((M.op) x y) z; M.car))))
   }
 ].
-
-(*
 
 Def Monoid(i : lvl) : exp = [
   { M : MonoidStruct(i) | MonoidLaws(M) }
@@ -184,10 +182,10 @@ Thm RecordTest[u:exp](i : lvl) : [=({foo = Ax, bar = 'u, baz = Ax}; {bar = 'u, f
 ].
 
 Def DepIsectEx1 : exp = [
-  disect({foo : Univ(lbase)}; [self]. {bar : #foo(self)})
+  disect({foo : Univ(lbase)}; [self]. {bar : self.foo})
 ].
 
 Thm DepIsectEx2 : [ member({foo = Unit, bar = Ax}; DepIsectEx1) ] by [
   bang
 ].
-*)
+

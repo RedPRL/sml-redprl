@@ -218,7 +218,16 @@ struct
          || parseRcdLiteral
          || parseRcdProj
          || parseHypVar) wth Atm
+
+      val parsePostfixProj =
+        symbol "."
+          >> parseSymbol
+          wth (fn lbl =>
+            Postfix (12, fn m => RCD (PROJ lbl) $ [([],[]) \ m]))
+
+      val parseFixity =
+        parsePostfixProj wth Opr
     in
-      parseAtomic
+      parseAtomic || parseFixity
     end
 end
