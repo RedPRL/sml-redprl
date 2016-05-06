@@ -11,19 +11,27 @@ The grammar of \RedPRL{} signatures is presented in
 Figure~\ref{fig:sig-grammar}. Note that an optional production of sort $s$ is
 formatted $\Optional{s}$ in the rules.
 
-\begin{figure}[H]
+\begin{figure}
   \begin{displaymath}
     \begin{array}{rcll}
        \SortSigExpr & ::=
          & \ProdEmptySig & \text{empty signature}\\
-         && \ProdExtendSig{\SortSigExpr}{\SortSigDecl} & \text{signature extension}\\
-         && \ProdExtendSig{\SortSigExpr}{\SortSymDecl} & \\
+         && \ProdExtendSig{\SortSigExpr}{\SortSymDecl} & \text{signature extension}\\
+         && \ProdExtendSig{\SortSigExpr}{\SortSigDecl} \\
+         && \ProdExtendSig{\SortSigExpr}{\SortRcdDecl} \\
+       \SortSymDecl & ::=
+         & \ProdSymDecl{\SortSymBind} & \text{symbol declaration}\\
        \SortSigDecl & ::=
          & \ProdDefDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortSortId}{\SortTerm} & \text{operator definition}\\
          && \ProdTacDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm} & \text{tactic definition}\\
          && \ProdThmDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortTerm}{\SortTerm} & \text{theorem declaration}\\
-       \SortSymDecl & ::=
-         & \ProdSymDecl{\SortSymBind} & \text{symbol declaration}\\
+       \SortRcdDecl & ::=
+         & \ProdRcdDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortRcdRows} & \text{record declaration}\\
+       \SortRcdRows & ::=
+         & \ProdEmptyCtx & \text{empty record rows}\\
+         && \ProdExtendCtx{\SortRcdRows}{\SortRowDecl} & \text{record rows extension}\\
+       \SortRowDecl & ::=
+         & \ProdBind{\SortSymId}{\SortTerm} & \text{record row}\\
        \SortParams & ::=
          & \ProdEmptyCtx & \text{empty parameter list}\\
          && \ProdExtendCtx{\SortParams}{\SortSymBind} & \text{parameter list extension}\\
@@ -54,9 +62,11 @@ formatted $\Optional{s}$ in the rules.
 \label{sec:sig-statics}
 
 \newcommand\SemSym{\mathrm{Sym}}
+\newcommand\SemVar{\mathrm{Var}}
 \newcommand\SemMetavar{\mathrm{Metavar}}
 \newcommand\SemOpid{\mathrm{Opid}}
 \newcommand\SemSig{\mathrm{Sig}}
+\newcommand\SemCtx{\mathrm{Ctx}}
 \newcommand\SemParams{\mathrm{Params}}
 \newcommand\SemArgs{\mathrm{Args}}
 \newcommand\SemTerm[3]{\mathrm{Tm}(#1,#2,#3)}
@@ -67,11 +77,16 @@ formatted $\Optional{s}$ in the rules.
 \newcommand\FinArr[2]{#1\xrightarrow{\mathrm{fin}} #2}
 
 \newcommand\SemExprs{\mathbf{E}}
+\newcommand\AbtSortLbl{\mathtt{lbl}}
 \newcommand\AbtSortTac{\mathtt{tac}}
 \newcommand\AbtSortThm{\mathtt{thm}}
 \newcommand\AbtSortExp{\mathtt{exp}}
 \newcommand\AbtSortOpid{\mathtt{opid}}
 \newcommand\OpProve{\mathtt{prove}}
+\newcommand\OpDepIsect{\mathtt{depIsect}}
+\newcommand\OpSingRcd[1]{\mathtt{singl}[#1]}
+\newcommand\OpTop{\mathtt{top}}
+\newcommand\OpProj[1]{\mathtt{proj}[#1]}
 
 \newcommand\OpCust
 
@@ -80,7 +95,6 @@ the class of \emph{semantic} objects that will serve as the meanings for the
 \emph{syntactic} objects defined in Section~\ref{sec:sig-grammar}. We assume an
 ambient abstract binding tree signature such that at least the following facts
 hold:
-
 \[
   \infer{
     \IsSort{\AbtSortTac}
@@ -101,6 +115,11 @@ hold:
     \IsSort{\AbtSortOpid}
   }{
   }
+  \qquad
+  \infer{
+    \IsSort{\AbtSortLbl}
+  }{
+  }
 \]
 \[
   \infer{
@@ -112,21 +131,62 @@ hold:
     }
   }{
   }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\OpDepIsect}{
+      \MkArity{
+        \MkValence{}{}{\AbtSortExp},
+        \MkValence{}{\AbtSortExp}{\AbtSortExp}
+      }{\AbtSortExp}
+    }
+  }{
+  }
 \]
-
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\OpSingRcd{u}}{
+      \MkArity{
+        \MkValence{}{}{\AbtSortExp}
+      }{\AbtSortExp}
+    }
+  }{
+    \Lookup{\Upsilon}{u}{\AbtSortLbl}
+  }
+  \qquad
+  \infer{
+    \IsOperator{\Upsilon}{\OpProj{u}}{
+      \MkArity{
+        \MkValence{}{}{\AbtSortExp}
+      }{\AbtSortExp}
+    }
+  }{
+    \Lookup{\Upsilon}{u}{\AbtSortLbl}
+  }
+\]
+\[
+  \infer{
+    \IsOperator{\Upsilon}{\OpTop}{
+      \MkArity{}{\AbtSortExp}
+    }
+  }{
+  }
+\]
+%
 Then, our semantic objects are defined as in Figure~\ref{fig:sig-semantic-objects}.
 
-\begin{figure}[H]
+\begin{figure}
   \begin{displaymath}
     \begin{array}{rclcl}
-      a,b &\in &\SemSym\\
+      u,v &\in &\SemSym\\
+      x,y &\in &\SemVar\\
       \MV{m},\MV{n} &\in &\SemMetavar\\
       \sigma,\tau &\in &\SemSort &\triangleq & \MkSet{\tau\mid\IsSort{\tau}}\\
       v &\in &\SemValence &\triangleq & \MkSet{v\mid\IsValence{v}}\\
       \vartheta &\in &\SemOpid  &\triangleq &\SemSym\\
       \Upsilon &\in &\SemParams &\triangleq & \FinArr{\SemSym}{\SemSort}\\
+      \Gamma,\Delta &\in &\SemCtx &\triangleq & \FinArr{\SemVar}{\SemSort}\\
       \Theta &\in &\SemArgs &\triangleq & \FinArr{\SemMetavar}{\SemValence}\\
-      M,N &\in &\SemTerm{\Theta}{\Upsilon}{\tau} &\triangleq & \MkSet{M\mid\IsAbt{\Theta}{\Upsilon}{\cdot}{M}{\tau}}\\
+      M,N,A,B,C &\in &\SemTerm{\Theta}{\Upsilon}{\tau} &\triangleq & \MkSet{M\mid\IsAbt{\Theta}{\Upsilon}{\cdot}{M}{\tau}}\\
       D &\in &\SemDecl &\triangleq & \coprod_{\Upsilon,\Theta,\tau} \SemTerm{\Theta}{\Upsilon}{\tau}\\
       \Sigma &\in &\SemSig &\triangleq & \left(\FinArr{\SemOpid}{\SemDecl}\right) \cap \left(\FinArr{\SemSym}{\SemSort}\right)
     \end{array}
@@ -139,6 +199,12 @@ Then, our semantic objects are defined as in Figure~\ref{fig:sig-semantic-object
   \IMode{#1}\vdash%
   \IMode{#2}\Longrightarrow%
   \OMode{#3}
+}
+
+\newcommand\ElabWthCtx[6]{%
+  \IMode{#4}\vdash^{\IMode{#2}\parallel\IMode{#3}}_{\IMode{#1}}%
+  \IMode{#5}\Longrightarrow%
+  \OMode{#6}%
 }
 
 A \emph{natural semantics} hinges on the elaboration judgment
@@ -223,6 +289,18 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
   }
 \end{gather}
 
+\subsection*{Symbol Declarations\hfill \framebox{$\Elab{\Sigma}{\SortSymDecl}{(u,\sigma)}$}}
+\begin{gather}
+  \infer{
+    \Elab{\Sigma}{
+      \ProdSymDecl{\SortSymBind}
+    }{(u,\sigma)}
+  }{
+    \Elab{\Sigma}{\SortSymBind}{(u,\sigma)}
+  }
+\end{gather}
+
+
 \subsection*{Operator Declarations\hfill \framebox{$\Elab{\Sigma}{\SortSigDecl}{(\vartheta,D)}$}}
 
 \begin{gather}
@@ -280,16 +358,71 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
   }
 \end{gather}
 
-\subsection*{Symbol Declarations\hfill \framebox{$\Elab{\Sigma}{\SortSymDecl}{(u,\sigma)}$}}
+\subsection*{Row Declarations\hfill \framebox{$\ElabWthCtx{\Theta}{\Upsilon}{\Gamma}{\Sigma}{\SortRowDecl}{A}$}}
+
 \begin{gather}
   \infer{
-    \Elab{\Sigma}{
-      \ProdSymDecl{\SortSymBind}
-    }{(u,\sigma)}
+    \ElabWthCtx{\Theta}{\Upsilon}{\Gamma}{\Sigma}{\ProdBind{\SortSymId}{\SortTerm}}{\App{\OpSingRcd{u}}{A}}
   }{
-    \Elab{\Sigma}{\SortSymBind}{(u,\sigma)}
+    \begin{array}{l}
+      \Elab{\Sigma}{\SortSymId}{u}\\
+      \Elab{\Sigma}{\SortTerm}{A}
+    \end{array}&
+    \IsAbt{\Theta}{\Upsilon_\Sigma\oplus\Upsilon}{\Gamma}{A}{\AbtSortExp}
   }
 \end{gather}
+
+\subsection*{Record Rows\hfill \framebox{$\ElabWthCtx{\Theta}{\Upsilon}{\Gamma}{\Sigma}{\SortRcdRows}{(\Sigma', \Delta, A)}$}}
+
+\begin{gather}
+  \infer{
+    \ElabWthCtx{\Theta}{\Upsilon}{\Gamma}{\Sigma}{\ProdEmptyCtx}{(\Sigma, \Gamma, \App{\OpTop}{})}
+  }{}\\[6pt]
+  \infer{
+    \ElabWthCtx{\Theta}{\Upsilon}{\Gamma}{\Sigma}{\ProdExtendCtx{\SortRcdRows}{\SortRowDecl}}{
+      (\Sigma'', \Delta', C)
+    }
+  }{
+    \begin{array}{l}
+      \ElabWthCtx{\Theta}{\Upsilon}{\Gamma}{\Sigma}{\SortRcdRows}{(\Sigma', \Delta, A)}\\
+      \ElabWthCtx{\Theta}{\Upsilon}{\Delta}{\Sigma'}{\SortRowDecl}{B}
+    \end{array} &
+    \begin{array}{l}
+      \Define{\Sigma''}{\Sigma'\cup u\mapsto\AbtSortLbl}\\
+      \Define{\Delta'}{\Delta\cup u\mapsto\AbtSortExp}\\
+    \end{array} &
+    \Define{C}{
+      \App{\OpDepIsect}{
+        A;
+        \MkAbs{}{r}{
+          \Subst{
+            \App{\OpProj{u}}{r}
+          }{u}{B}
+        }
+      }
+    }
+  }\\[6pt]
+\end{gather}
+
+\subsection*{Record Declarations\hfill \framebox{$\Elab{\Sigma}{\SortRcdDecl}{\Sigma'}$}}
+
+\begin{gather}
+  \infer{
+    \Elab{\Sigma}{\ProdRcdDecl{\SortOpId}{\SortParams}{\SortArgs}{\SortRcdRows}}{
+      \Sigma'\cup \vartheta\mapsto \Tuple{\Upsilon, \Theta, \AbtSortExp, A}
+    }
+  }{
+    \begin{array}{l}
+      \Elab{\Sigma}{\SortParams}{\Upsilon}\\
+      \Elab{\Sigma}{\SortArgs}{\Theta}\\
+      \Elab{\Sigma}{\SortOpId}{\vartheta}
+    \end{array} &
+    \begin{array}{l}
+      \ElabWthCtx{\Theta}{\Upsilon}{\cdot}{\Sigma}{\SortRcdRows}{(\Sigma', \Gamma, A)}
+    \end{array}
+  }
+\end{gather}
+
 
 \subsection*{Signatures\hfill \framebox{$\Elab{}{\SortSigExpr}{\Sigma}$}}
 
@@ -303,12 +436,18 @@ $\Member{\Upsilon_\Sigma}{\SemParams}$ be defined as follows:
   }{
     \Elab{}{\SortSigExpr}{\Sigma} &
     \Elab{\Sigma}{\SortSigDecl}{(\vartheta, D)}
-  }\qquad
+  }\\[6pt]
   \infer{
     \Elab{}{\ProdExtendSig{\SortSigExpr}{\SortSymDecl}}{\Sigma\cup u\mapsto \sigma}
   }{
     \Elab{}{\SortSigExpr}{\Sigma} &
     \Elab{\Sigma}{\SortSymDecl}{(u, \sigma)}
+  }\\
+  \infer{
+    \Elab{}{\ProdExtendSig{\SortSigExpr}{\SortRcdDecl}}{\Sigma'}
+  }{
+    \Elab{}{\SortSigExpr}{\Sigma} &
+    \Elab{\Sigma}{\SortRcdDecl}{\Sigma'}
   }
 \end{gather}
 

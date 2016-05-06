@@ -22,7 +22,7 @@
 \newcommand\RedPRL{{\color{Revolutionary}\textbf{Red}}PRL}
 
 \newcommand\RedEpigram[2]{%
-  \epigraph{\OMode{\emph{\textsf{#1}}}}{\textsf{#2}}
+  \epigraph{\OMode{\emph{\textit{#1}}}}{\textbf{#2}}
 }
 
 \newcommand\GrayColor[1]{{\color{Gray} #1}}
@@ -38,11 +38,14 @@
 \newcommand\SortSigExpr{\mathit{sigexp}}
 \newcommand\SortSigDecl{\mathit{sigdec}}
 \newcommand\SortSymDecl{\mathit{symdec}}
+\newcommand\SortRcdDecl{\mathit{rcddec}}
 \newcommand\SortParams{\mathit{params}}
 \newcommand\SortArgs{\mathit{args}}
 \newcommand\SortTerm{\mathit{term}}
 \newcommand\SortSymBind{\mathit{symbind}}
 \newcommand\SortMetaBind{\mathit{metabind}}
+\newcommand\SortRcdRows{\mathit{rows}}
+\newcommand\SortRowDecl{\mathit{row}}
 
 \newcommand\SortValence{\mathit{valence}}
 \newcommand\SortSortList{\mathit{sortlist}}
@@ -87,10 +90,16 @@
 \newcommand\ProdThmDecl[5]{%
   \mathtt{Thm}\ #1%
   \Optional{[#2]}%
-  \Optional{(#3)} %
+  \Optional{(#3)}%
   : [#4] ~\mathtt{by}~ [#5]
 }
 
+\newcommand\ProdRcdDecl[4]{%
+  \mathtt{Rcd}\ #1%
+  \Optional{[#2]}%
+  \Optional{(#3)}%
+  = \{#4\}
+}
 
 \newcommand\ProdSymDecl[1]{%
   \mathtt{Sym}\ #1%
