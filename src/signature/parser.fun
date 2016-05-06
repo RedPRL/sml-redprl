@@ -162,7 +162,7 @@ struct
 
   fun parseSymDecl sign : (symbol * decl) charParser =
     reserved "Sym" >> parseSymBind sign wth (fn (u, tau) =>
-        (u, AstSignature.symdcl tau))
+        (u, AstSignature.symDecl tau))
     ?? "symdecl"
 
   fun parseSigExp' sign =
