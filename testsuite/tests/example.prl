@@ -132,30 +132,18 @@ Thm recordProjTest : [~(exampleRecord.foo; Ax)] by [
   bang
 ].
 
+Record MonoidStruct(i : lvl) = {
+  car : Univ(i),
+  unit : car,
+  op : fun(car; fun(car; Univ(i)))
+}.
 
+Record MonoidLaws(M : exp) = {
+  lid : dfun(M.car; [x]. =((M.op) (M.unit) x; x; M.car)),
+  rid : dfun(M.car; [x]. =((M.op) x (M.unit); x; M.car)),
+  assoc : dfun(M.car; [x]. dfun(M.car; [y]. dfun(M.car; [z]. =((M.op) x ((M.op) y z); (M.op) ((M.op) x y) z; M.car))))
+}.
 
-
-Sym car : lbl.
-Sym op : lbl.
-Sym unit : lbl.
-Sym lid : lbl.
-Sym rid : lbl.
-Sym assoc : lbl.
-
-Def MonoidStruct(i : lvl) : exp = [
-  { car : Univ(i)
-  , unit : car
-  , op : fun(car; fun(car; Univ(i)))
-  }
-].
-
-
-Def MonoidLaws(M : exp) : exp = [
-  { lid : dfun(M.car; [x]. =((M.op) (M.unit) x; x; M.car))
-  , rid : dfun(M.car; [x]. =((M.op) x (M.unit); x; M.car))
-  , assoc : dfun(M.car; [x]. dfun(M.car; [y]. dfun(M.car; [z]. =((M.op) x ((M.op) y z); (M.op) ((M.op) x y) z; M.car))))
-  }
-].
 
 Def Monoid(i : lvl) : exp = [
   { M : MonoidStruct(i) | MonoidLaws(M) }
@@ -163,14 +151,6 @@ Def Monoid(i : lvl) : exp = [
 
 Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
   bang; cumulativity; auto
-].
-
-
-Sym fst : lbl.
-Sym snd : lbl.
-
-Def Sg(A : exp, B : [exp].exp) : exp = [
-  {fst : A, snd : B[fst]}
 ].
 
 Def Unit : exp = [
@@ -188,4 +168,11 @@ Def DepIsectEx1 : exp = [
 Thm DepIsectEx2 : [ member({foo = Unit, bar = Ax}; DepIsectEx1) ] by [
   bang
 ].
+
+
+// We can define Sigma types directly as records.
+Record Sg(A : exp, B : [exp].exp) = {
+  fst : A,
+  snd : B[fst]
+}.
 
