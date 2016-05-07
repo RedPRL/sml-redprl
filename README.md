@@ -13,11 +13,17 @@ including:
 - a dependent version of the LCF apparatus to support refinement rules
   whose premises depend on each other's evidence
 
+### Literature and background on RedPRL
+
 RedPRL is a proof assistant for Nominal Multi-Sorted Computational Type Theory,
 whose semantics are defined in Sterling & Morrison's
 [Type Refinements for the Working Class](https://github.com/jonsterling/type-refinements-for-the-working-class). The syntactic framework is described in
 [Syntax and Semantics of Abstract Binding Trees](https://github.com/jonsterling/syntax-and-semantics-of-abts),
 also by Sterling & Morrison.
+
+Finally, the Nominal LCF language, which provides support for well-scoped
+tactic scripts, is defined in Sterling's [Nominal LCF: A Language for Generic
+Proof](https://github.com/jonsterling/nominal-lcf-paper).
 
 ### What is this repository?
 
