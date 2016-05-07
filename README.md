@@ -1,3 +1,7 @@
+![PRL: We Can Prove It](https://pbs.twimg.com/media/Ch1klO6U4AAlj62.jpg)
+
+(image courtesy of [@tranngocma](http://twitter.com/tranngocma))
+
 ### What is RedPRL?
 
 *RedPRL* is the People's Refinement Logic, a next-generation homage
