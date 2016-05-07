@@ -11,7 +11,7 @@ including:
 - a multi-sorted version of abstract binding trees (immediate)
 - support for nominal abstraction and unguessable atoms (immediate)
 - a dependent version of the LCF apparatus to support refinement rules
-  for existential judgments (long-term)
+  whose premises depend on each other's evidence
 
 RedPRL is a proof assistant for Nominal Multi-Sorted Computational Type Theory,
 whose semantics are defined in Sterling & Morrison's
@@ -21,9 +21,10 @@ also by Sterling & Morrison.
 
 ### What is this repository?
 
-This is the repository for the nascent development of RedPRL. Currently, there are
-only bits and pieces, but eventually, enough kit will be here that we can start migrating
-the JonPRL sources to the new order.
+This is the repository for the nascent development of RedPRL. RedPRL is an
+experiment which is constantly changing; we do not yet have strong
+documentation, but we have an IRC channel on Freenode (#redprl) where we
+encourage anyone to ask any question, no matter how silly it may seem.
 
 ### How do I build it?
 
