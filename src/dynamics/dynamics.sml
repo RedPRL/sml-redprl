@@ -363,12 +363,7 @@ struct
   and pushDownNuB (sigma, tau) env u ((us, xs) \ m) =
     let
       open OperatorData CttOperatorData
-      val u' =
-        if List.exists (fn v => compareSymbols env (u, v)) us then
-          Variable.named "a"
-        else
-          u
     in
-      (us, xs) \ check (metactx m) (CTT (NU (sigma, tau)) $ [([u'], []) \ m], tau)
+      (us, xs) \ check (metactx m) (CTT (NU (sigma, tau)) $ [([u], []) \ m], tau)
     end
 end
