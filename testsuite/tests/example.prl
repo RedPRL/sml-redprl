@@ -182,3 +182,8 @@ Record Sg(A : exp, B : [exp].exp) = {
 Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang
 ].
+
+// Fresh names are always distinct! Therefore, the following test evaluates to 'no.
+Thm symgenTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
+  bang
+].
