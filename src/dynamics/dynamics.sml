@@ -332,6 +332,9 @@ struct
                        let
                          val us = Operator.support theta
                        in
+                         (* If the symbol is part of the support of the head operator, then
+                          * we cannot proceed; otherwise, the symbol generation is pushed down
+                          * into the subterms of the operator. *)
                          if List.exists (fn (v, _) => compareSymbols env (u, v)) us then
                            ret @@ m <: env
                          else
@@ -340,6 +343,8 @@ struct
                    | _ => ret @@ pushDownNu (sigma, tau) env u t <: env)
              | STEP t' =>
                  let
+                   (* If t was non-canonical, try computing it with a fresh variable 'a' and then
+                    * re-embed the result in the nu-expression, replacing 'a' in the result with 'u'. *)
                    val (mrho, srho, vrho) = env
                    val a = Symbol.named "a"
                    val srho' = SymCtx.insert srho u a
