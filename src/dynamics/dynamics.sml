@@ -344,12 +344,24 @@ struct
                    val a = Symbol.named "a"
                    val srho' = SymCtx.insert srho u a
                    val env' = (mrho, srho', vrho)
-                   val srho'' = SymCtx.insert srho a u
-                   val env''' = (mrho, srho'', vrho)
                  in
                    case step sign (t <: env') of
-                      FINAL => raise Fail "Impossible?"
-                    | STEP (t' <: env'') => ret @@ check (metactx m) (CTT (NU (sigma, tau)) $ [([u], []) \ t'], tau) <: env'''
+                      FINAL =>
+                        let
+                          val (mrho', srho'', vrho') = env'
+                          val srho''' = SymCtx.insert srho a u
+                          val env''' = (mrho', srho''', vrho')
+                        in
+                          ret @@ check (metactx m) (CTT (NU (sigma, tau)) $ [([u], []) \ t], tau) <: env'''
+                        end
+                    | STEP (t' <: env'') =>
+                        let
+                          val (mrho', srho'', vrho') = env''
+                          val srho''' = SymCtx.insert srho a u
+                          val env''' = (mrho', srho''', vrho')
+                        in
+                          ret @@ check (metactx m) (CTT (NU (sigma, tau)) $ [([u], []) \ t'], tau) <: env'''
+                        end
                  end)
        | _ => raise Stuck @@ m <: env
     end
