@@ -45,6 +45,7 @@ struct
     fun IsType alpha =
       AtomRules.IsType alpha
         ORELSE BaseRules.IsType alpha
+        ORELSE TopRules.IsType alpha
         ORELSE PiRules.IsType alpha
         ORELSE EnsembleRules.IsType alpha
         ORELSE DepIsectRules.IsType alpha

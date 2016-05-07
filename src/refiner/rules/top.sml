@@ -1,6 +1,6 @@
 structure TopRules : TOP_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData SortData
+  open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
   infix @@ $ \ @>
   infix 2 //
   infix 4 >>
@@ -13,6 +13,16 @@ struct
            raise Fail
              @@ "Expected Top but got "
               ^ DebugShowAbt.toString m
+
+  fun IsType _ (G |> H >> TYPE (ty, EXP)) =
+    let
+      val _ = destTop ty
+    in
+      (T.empty, fn rho =>
+        makeEvidence G H @@
+          check' (LVL_OP LBASE $ [], LVL))
+    end
+    | IsType _ _ = raise Match
 
   fun TypeEq alpha (G |> H >> EQ_MEM (m, n, a)) =
     let
