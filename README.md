@@ -8,8 +8,8 @@ Danny Gratzer and Vincent Rahli.
 The purpose of RedPRL is to consolidate several advances in refinement logics,
 including:
 
-- a multi-sorted version of abstract binding trees (immediate)
-- support for nominal abstraction and unguessable atoms (immediate)
+- a multi-sorted version of abstract binding trees
+- support for nominal abstraction and unguessable atoms
 - a dependent version of the LCF apparatus to support refinement rules
   whose premises depend on each other's evidence
 
