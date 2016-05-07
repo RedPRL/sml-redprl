@@ -38,6 +38,44 @@ struct
   fun >>= (x,f) = SmallStep.bind f x
   infix >>=
 
+  fun asApp m =
+    case out m of
+       theta $ es => (theta, es)
+     | _ => raise Fail "Expected operator"
+
+  val subterms =
+    #2 o asApp
+
+
+  local
+    fun listModifyItem n f =
+      let
+        fun go i =
+          fn [] => []
+           | y :: ys => (if i = n then f y else y) :: go (i + 1) ys
+      in
+        go 0
+      end
+  in
+    fun inspectArgument step (m <: env) i k =
+      let
+        val (theta, es) = asApp m
+        val _ \ n = List.nth (es, i)
+      in
+        case step (n <: env) of
+           FINAL =>
+             (case out n of
+                 view as (theta' $ es') => k view
+               | _ => raise Fail "Expected operator")
+         | STEP (n' <: env') =>
+             STEP @@
+               check
+                 (metactx m)
+                 (theta $ listModifyItem i (fn (us, xs) \ a => (us,xs) \ n') es,
+                  sort m)
+               <: env'
+      end
+  end
 
   local
     structure Pattern = Pattern (Abt)
@@ -61,14 +99,14 @@ struct
         open Unify infix <*>
         val def as {definiens, ...} =
           case T.lookup sign opid of
-               Signature.Decl.DEF d => d
-             | _ => raise Fail "Expected DEF"
+             Signature.Decl.DEF d => d
+           | _ => raise Fail "Expected DEF"
         val pat = patternFromDef (opid, arity) def
         val (srho', mrho') = unify (pat <*> m)
         val srho'' = SymEnvUtil.union (srho, srho') handle _ => raise Stuck cl
         val mrho'' =
           MetaCtx.union mrho
-            (MetaCtx.map (fn e => e <: (mrho, srho, vrho)) mrho') (* todo: check this? *)
+            (MetaCtx.map (fn e => e <: (mrho, srho, vrho)) mrho')
             (fn _ => raise Stuck cl)
       in
         ret @@ definiens <: (mrho'', srho'', vrho)
@@ -88,19 +126,15 @@ struct
 
   fun step sign (cl as m <: (mrho, srho, vrho)) : abt closure step =
     case out m of
-         `x => ret @@ VarCtx.lookup vrho x
-       | x $# (us, ms) => stepMeta x (us, ms) cl
-       | theta $ args =>
-           let
-             fun f u = SymCtx.lookup srho u handle _ => u
-             val theta' = Operator.map f theta
-           in
-             stepOp sign theta' args (m <: (mrho, srho, vrho))
-           end
-           (*
-    handle _ =>
-      raise Stuck @@ m <: (mrho, srho, vrho)
-      *)
+       `x => ret @@ VarCtx.lookup vrho x
+     | x $# (us, ms) => stepMeta x (us, ms) cl
+     | theta $ args =>
+         let
+           fun f u = SymCtx.lookup srho u handle _ => u
+           val theta' = Operator.map f theta
+         in
+           stepOp sign theta' args (m <: (mrho, srho, vrho))
+         end
 
   (* built-in computation rules *)
   and stepOp sign theta args (cl as m <: env) =
@@ -108,216 +142,169 @@ struct
       open OperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData RecordOperatorData
     in
       case theta $ args of
-           CUST (opid, params, arity) $ args =>
-             stepCust sign (opid, arity) cl
-         | LVL_OP LBASE $ _ => FINAL
-         | LVL_OP LSUCC $ [_ \ l] => FINAL
-         | LVL_OP LSUP $ [_ \ l1, _ \ l2] =>
-             stepLvlSup sign (l1, l2) (m <: env)
-         | LCF _ $ _ => FINAL
-         | RCD (PROJ lbl) $ [_ \ rcd] =>
-             stepRcdProj sign (lbl, rcd) (m <: env)
-         | RCD _ $ _ => FINAL
-         | REFINE _ $ _ => FINAL
-         | EXTRACT tau $ [_ \ r] =>
-             stepExtract sign tau r cl
-         | VEC_LIT _ $ _ => FINAL
-         | STR_LIT _ $ _ => FINAL
-         | OP_NONE _ $ _ => FINAL
-         | OP_SOME _ $ _ => FINAL
-         | CTT AX $ _ => FINAL
-         | CTT (EQ _) $ _ => FINAL
-         | CTT (CEQUIV _) $ _ => FINAL
-         | CTT (MEMBER tau) $ [_ \ x, _ \ a] =>
-             ret @@ check (metactx m) (CTT (EQ tau) $ [([],[]) \ x, ([],[]) \ x, ([],[]) \ a], EXP) <: env
-         | CTT (UNIV tau) $ [_ \ l] => FINAL
-         | CTT (SQUASH _) $ _ => FINAL
-         | CTT (ENSEMBLE _) $ _ => FINAL
-         | CTT (BASE _) $ _ => FINAL
-         | CTT (TOP _) $ _ => FINAL
-         | CTT DFUN $ _ => FINAL
-         | CTT DEP_ISECT $ _ => FINAL
-         | CTT FUN $ [_ \ a, _ \ b] =>
-             ret @@ check (metactx m) (CTT DFUN $ [([],[]) \ a, ([],[Variable.named "x"]) \ b], EXP) <: env
-         | CTT LAM $ _ => FINAL
-         | CTT AP $ [_ \ f, _ \ x] =>
-             stepAp sign (f, x) (m <: env)
-         | CTT VOID $ [] => FINAL
-         | CTT NOT $ [_ \ a] =>
-             let
-               val void = check' (CTT VOID $ [], EXP)
-             in
-               ret @@ check (metactx m) (CTT FUN $ [([],[]) \ a, ([],[]) \ void], EXP) <: env
-             end
-         | CTT DFUN_DOM $ [_ \ dfun] =>
-             stepDFunDom sign dfun (m <: env)
-         | CTT DFUN_COD $ [_ \ dfun, _ \ n] =>
-             stepDFunCod sign (dfun, n) (m <: env)
-         | CTT UNIV_GET_LVL $ [_ \ univ] =>
-             stepUnivGetLvl sign univ (m <: env)
-         | ATM (ATOM _) $ _ => FINAL
-         | ATM (TOKEN _) $ _ => FINAL
-         | ATM (TEST (sigma,tau)) $ [_ \ tok1, _ \ tok2, _ \ yes, _ \ no] =>
-             stepAtomTest sign (sigma, tau) (tok1, tok2) (yes, no) (m <: env)
-         | _ => ?hole
+         CUST (opid, params, arity) $ args =>
+           stepCust sign (opid, arity) cl
+       | LVL_OP LBASE $ _ => FINAL
+       | LVL_OP LSUCC $ [_ \ l] => FINAL
+       | LVL_OP LSUP $ _ =>
+           stepLvlSup sign (m <: env)
+       | LCF _ $ _ => FINAL
+       | RCD (PROJ lbl) $ [_ \ rcd] =>
+           stepRcdProj sign lbl (m <: env)
+       | RCD _ $ _ => FINAL
+       | REFINE _ $ _ => FINAL
+       | EXTRACT tau $ [_ \ r] =>
+           stepExtract sign tau r cl
+       | VEC_LIT _ $ _ => FINAL
+       | STR_LIT _ $ _ => FINAL
+       | OP_NONE _ $ _ => FINAL
+       | OP_SOME _ $ _ => FINAL
+       | CTT AX $ _ => FINAL
+       | CTT (EQ _) $ _ => FINAL
+       | CTT (CEQUIV _) $ _ => FINAL
+       | CTT (MEMBER tau) $ [_ \ x, _ \ a] =>
+           ret @@ check (metactx m) (CTT (EQ tau) $ [([],[]) \ x, ([],[]) \ x, ([],[]) \ a], EXP) <: env
+       | CTT (UNIV tau) $ [_ \ l] => FINAL
+       | CTT (SQUASH _) $ _ => FINAL
+       | CTT (ENSEMBLE _) $ _ => FINAL
+       | CTT (BASE _) $ _ => FINAL
+       | CTT (TOP _) $ _ => FINAL
+       | CTT DFUN $ _ => FINAL
+       | CTT DEP_ISECT $ _ => FINAL
+       | CTT FUN $ [_ \ a, _ \ b] =>
+           ret @@ check (metactx m) (CTT DFUN $ [([],[]) \ a, ([],[Variable.named "x"]) \ b], EXP) <: env
+       | CTT LAM $ _ => FINAL
+       | CTT AP $ _ =>
+           stepAp sign (m <: env)
+       | CTT VOID $ [] => FINAL
+       | CTT NOT $ [_ \ a] =>
+           let
+             val void = check' (CTT VOID $ [], EXP)
+           in
+             ret @@ check (metactx m) (CTT FUN $ [([],[]) \ a, ([],[]) \ void], EXP) <: env
+           end
+       | CTT DFUN_DOM $ _ =>
+           stepDFunDom sign (m <: env)
+       | CTT DFUN_COD $ _ =>
+           stepDFunCod sign (m <: env)
+       | CTT UNIV_GET_LVL $ _ =>
+           stepUnivGetLvl sign (m <: env)
+       | ATM (ATOM _) $ _ => FINAL
+       | ATM (TOKEN _) $ _ => FINAL
+       | ATM (TEST _) $ _ =>
+           stepAtomTest sign (m <: env)
+       | _ => ?hole
     end
 
-  and stepAp sign (f, n) (m <: env) =
+  and stepAp sign (ap <: env) =
     let
       open OperatorData CttOperatorData SortData
     in
-      ret
-        (case step sign (f <: env) of
-             FINAL =>
-               (case out f of
-                     CTT LAM $ [(_,[x]) \ e] =>
-                       let
-                         val (mrho, srho, vrho) = env
-                       in
-                         e <: (mrho, srho, VarCtx.insert vrho x (n <: env))
-                       end
-                   | _ => raise Stuck (m <: env))
-           | STEP (f' <: env) =>
-               check (metactx m) (CTT AP $ [([],[]) \ f', ([],[]) \ n], EXP) <: env)
+      inspectArgument (step sign) (ap <: env) 0
+        (fn CTT LAM $ [(_,[x]) \ mx] =>
+              let
+                val _ \ n = List.nth (subterms ap, 1)
+                val (mrho, srho, vrho) = env
+              in
+                ret @@ mx <: (mrho, srho, VarCtx.insert vrho x (n <: env))
+              end
+          | _ => raise Stuck (ap <: env))
     end
 
-  and stepDFunDom sign dfun (m <: env) =
+  and stepDFunDom sign (dom <: env) =
     let
       open OperatorData CttOperatorData SortData
     in
-      ret
-        (case step sign (dfun <: env) of
-              FINAL =>
-                (case out dfun of
-                      CTT DFUN $ [_ \ a, _] =>
-                        a <: env
-                    | _ => raise Stuck (m <: env))
-            | STEP (dfun' <: env) =>
-                check (metactx m) (CTT DFUN_DOM $ [([],[]) \ dfun'], EXP) <: env)
+      inspectArgument (step sign) (dom <: env) 0
+        (fn CTT DFUN $ [_ \ a, _] => ret @@ a <: env
+          | _ => raise Stuck @@ dom <: env)
     end
 
-  and stepDFunCod sign (dfun, n) (m <: env) =
+  and stepDFunCod sign (cod <: env) =
     let
       open OperatorData CttOperatorData SortData
     in
-      ret
-        (case step sign (dfun <: env) of
-              FINAL =>
-                (case out dfun of
-                      CTT DFUN $ [_ \ _, (_, [x]) \ bx] =>
-                        let
-                          val (mrho, srho, vrho) = env
-                        in
-                          bx <: (mrho, srho, VarCtx.insert vrho x (n <: env))
-                        end
-                    | _ => raise Stuck (m <: env))
-            | STEP (dfun' <: env) =>
-                check (metactx m) (CTT DFUN_COD $ [([],[]) \ dfun', ([],[]) \ n], EXP) <: env)
+      inspectArgument (step sign) (cod <: env) 0
+        (fn CTT DFUN $ [_ \ _, (_, [x]) \ bx] =>
+              let
+                val _ \ n = List.nth (subterms cod, 1)
+                val (mrho, srho, vrho) = env
+              in
+                ret @@ bx <: (mrho, srho, VarCtx.insert vrho x (n <: env))
+              end
+          | _ => raise Stuck @@ cod <: env)
     end
 
-  and stepUnivGetLvl sign univ (m <: env) =
+  and stepUnivGetLvl sign (getLvl <: env) =
     let
       open OperatorData CttOperatorData SortData
     in
-      ret
-        (case step sign (univ <: env) of
-              FINAL =>
-                (case out univ of
-                      CTT (UNIV tau) $ [_ \ lvl] =>
-                        lvl <: env
-                    | _ => raise Stuck (m <: env))
-            | STEP (univ' <: env) =>
-                check (metactx m) (CTT UNIV_GET_LVL $ [([],[]) \ univ'], LVL) <: env)
+      inspectArgument (step sign) (getLvl <: env) 0
+        (fn CTT (UNIV tau) $ [_ \ lvl] => ret @@ lvl <: env
+          | _ => raise Stuck @@ getLvl <: env)
     end
 
-  and stepLvlSup sign (l1, l2) (m <: env) =
+  and stepLvlSup sign (m <: env) =
     let
       open OperatorData LevelOperatorData SortData
-      fun makeSup x y =
-        check (metactx m) (LVL_OP LSUP $ [([],[]) \ x, ([],[]) \ y], LVL)
-      fun makeSucc x =
-        check (metactx m) (LVL_OP LSUCC $ [([],[]) \ x], LVL)
+      val psi = metactx m
+      fun makeSup x y = check psi (LVL_OP LSUP $ [([],[]) \ x, ([],[]) \ y], LVL)
+      fun makeSucc x = check psi (LVL_OP LSUCC $ [([],[]) \ x], LVL)
+      val _ \ l1 = List.nth (subterms m, 0)
+      val _ \ l2 = List.nth (subterms m, 1)
     in
       case step sign (l1 <: env) of
-           FINAL =>
-             (case step sign (l2 <: env) of
-                   FINAL =>
-                     (case (out l1, out l2) of
-                           (LVL_OP LSUCC $ _, LVL_OP LBASE $ _) => ret @@ l1 <: env
-                         | (LVL_OP LSUCC $ [_ \ l3], LVL_OP LSUCC $ [_ \ l4]) => ret @@ makeSucc (makeSup l3 l4) <: env
-                         | (LVL_OP LBASE $ _, LVL_OP LBASE $ _) => ret @@ l1 <: env
-                         | (LVL_OP LBASE $ _, LVL_OP LSUCC $ _) => ret @@ l2 <: env
-                         | _ => raise Stuck (m <: env))
-                 | STEP (l2' <: env) => ret @@ makeSup l1 l2' <: env)
-         | STEP (l1' <: env) => ret @@ makeSup l1' l2 <: env
+         FINAL =>
+           (case step sign (l2 <: env) of
+               FINAL =>
+                 (case (out l1, out l2) of
+                     (LVL_OP LSUCC $ _, LVL_OP LBASE $ _) => ret @@ l1 <: env
+                   | (LVL_OP LSUCC $ [_ \ l3], LVL_OP LSUCC $ [_ \ l4]) => ret @@ makeSucc (makeSup l3 l4) <: env
+                   | (LVL_OP LBASE $ _, LVL_OP LBASE $ _) => ret @@ l1 <: env
+                   | (LVL_OP LBASE $ _, LVL_OP LSUCC $ _) => ret @@ l2 <: env
+                   | _ => raise Stuck (m <: env))
+             | STEP (l2' <: env) => ret @@ makeSup l1 l2' <: env)
+       | STEP (l1' <: env) => ret @@ makeSup l1' l2 <: env
     end
 
-  and stepRcdProj sign (lbl, rcd) (m <: env) =
+  and stepRcdProj sign lbl (proj <: env) =
     let
       open OperatorData RecordOperatorData SortData
     in
-      (case step sign (rcd <: env) of
-           FINAL =>
-             (case out rcd of
-                   RCD (CONS lbl') $ [_ \ hd, _ \ tl] =>
-                       if Symbol.eq (lbl, lbl') then
-                         ret @@ hd <: env
-                       else
-                         ret @@ check (metactx m) (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
-                 | _ => raise Stuck @@ m <: env)
-         | STEP (rcd' <: env) =>
-             ret @@ check (metactx m) (RCD (PROJ lbl) $ [([],[]) \ rcd'], EXP) <: env)
+      inspectArgument (step sign) (proj <: env) 0
+        (fn RCD (CONS lbl') $ [_ \ hd, _ \ tl] =>
+              if Symbol.eq (lbl, lbl') then
+                ret @@ hd <: env
+              else
+                ret @@ check (metactx proj) (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
+          | _ => raise Stuck @@ proj <: env)
     end
 
-  and stepAtomTest sign (sigma,tau) (tok1, tok2) (yes, no) (m <: env) =
+  and stepAtomTest sign (m <: env) =
     let
       open OperatorData AtomsOperatorData SortData
-      val psi = metactx m
-
-      fun makeTest (a,b) =
-        check psi
-          (ATM (TEST (sigma,tau)) $
-             [([],[]) \ a,
-              ([],[]) \ b,
-              ([],[]) \ yes,
-              ([],[]) \ no],
-           tau)
-
-      fun destToken m =
-        case out m of
-             ATM (TOKEN (u, tau)) $ [] => (u, tau)
-           | _ => raise Stuck (m <: env)
+      val es = subterms m
+      val _ \ yes = List.nth (es, 2)
+      val _ \ no = List.nth (es, 3)
     in
-      case step sign (tok1 <: env) of
-           FINAL =>
-             (case step sign (tok2 <: env) of
-                   FINAL =>
-                     let
-                       val (u1, _) = destToken tok1
-                       val (u2, _) = destToken tok2
-                     in
-                       ret @@ (if Symbol.eq (u1, u2) then yes else no) <: env
-                     end
-                 | STEP (tok2' <: env) =>
-                     ret @@ makeTest (tok1, tok2') <: env)
-         | STEP (tok1' <: env) =>
-             ret @@ makeTest (tok1', tok2) <: env
+      inspectArgument (step sign) (m <: env) 0
+        (fn ATM (TOKEN (u1, _)) $ _ =>
+              inspectArgument (step sign) (m <: env) 1
+                (fn ATM (TOKEN (u2, _)) $ _ =>
+                      ret @@ (if Symbol.eq (u1, u2) then yes else no) <: env
+                  | _ => raise Stuck @@ m <: env)
+          | _ => raise Stuck @@ m <: env)
     end
 
   and stepExtract sign tau r (m <: env) =
     let
       open OperatorData SortData
-      val psi = metactx m
     in
-      case step sign (r <: env) of
-           FINAL =>
-             (case out r of
-                  REFINE _ $ [_,_,_\evd] =>
-                    (case out evd of
-                          OP_SOME _ $ [_ \ evd] => ret @@ evd <: env
-                        | _ => raise Stuck (evd <: env))
-                | _ => raise Stuck (r <: env))
-         | STEP (r' <: env) =>
-             ret @@ check psi (EXTRACT tau $ [([],[]) \ r'], tau) <: env
+      inspectArgument (step sign) (m <: env) 0
+        (fn REFINE _ $ [_, _, _ \ evd] =>
+              (case out evd of
+                  OP_SOME _ $ [_ \ evd] => ret @@ evd <: env
+                | _ => raise Stuck (evd <: env))
+          | _ => raise Stuck @@ m <: env)
     end
 end
