@@ -4,7 +4,6 @@ structure Sequent :> SEQUENT
   where type sort = Abt.sort
   where type var = Abt.variable
   where type metactx = Abt.metactx
-  where type symctx = Abt.symctx
   where type hypctx = (Abt.abt * Abt.sort) SymbolTelescope.telescope =
 struct
   type prop = Abt.abt
@@ -13,47 +12,33 @@ struct
   type var = Abt.variable
 
   type metactx = Abt.metactx
-  type symctx = Abt.symctx
   type hypctx = (prop * sort) SymbolTelescope.telescope
 
   datatype context =
     CONTEXT of
       {metactx : metactx,
-       symctx : symctx,
        hypctx : hypctx}
 
-   val emptyContext =
-     CONTEXT
-       {metactx = Abt.MetaCtx.empty,
-        symctx = Abt.SymCtx.empty,
-        hypctx = SymbolTelescope.empty}
+  val emptyContext =
+    CONTEXT
+      {metactx = Abt.MetaCtx.empty,
+       hypctx = SymbolTelescope.empty}
 
-   fun getHyps (CONTEXT {hypctx,...}) =
-     hypctx
+  fun getHyps (CONTEXT {hypctx,...}) =
+    hypctx
 
-   fun getSyms (CONTEXT {symctx,...}) =
-     symctx
+  fun getMetas (CONTEXT {metactx,...}) =
+    metactx
 
-   fun getMetas (CONTEXT {metactx,...}) =
-     metactx
+  fun updateHyps f (CONTEXT {metactx, hypctx}) =
+    CONTEXT
+      {metactx = metactx,
+       hypctx = f hypctx}
 
-    fun updateHyps f (CONTEXT {metactx, symctx, hypctx}) =
-      CONTEXT
-        {metactx = metactx,
-         symctx = symctx,
-         hypctx = f hypctx}
-
-    fun updateSyms f (CONTEXT {metactx, symctx, hypctx}) =
-      CONTEXT
-        {metactx = metactx,
-         symctx = f symctx,
-         hypctx = hypctx}
-
-    fun updateMetas f (CONTEXT {metactx, symctx, hypctx}) =
-      CONTEXT
-        {metactx = f metactx,
-         symctx = symctx,
-         hypctx = hypctx}
+  fun updateMetas f (CONTEXT {metactx, hypctx}) =
+    CONTEXT
+      {metactx = f metactx,
+       hypctx = hypctx}
 
   (* A sequent consists in a context (of metavariables, symbols and hypotheses)
    * and a conclusion [(P,tau)], where [tau] is the sort of the evidence to be

@@ -43,8 +43,7 @@ struct
                      let
                        val alpha = makeNameStore ()
                        fun goMetas xs = List.foldl (fn ((x,vl), psi) => MetaCtx.insert psi x vl) xs arguments
-                       fun goSyms xs = List.foldl (fn ((u,tau), upsilon) => SymCtx.insert upsilon u tau) xs parameters
-                       val context = updateMetas goMetas (updateSyms goSyms emptyContext)
+                       val context = updateMetas goMetas emptyContext
                        val goal = [] |> context >> TRUE (prop, tau)
                        val st as (psi, vld) = E.tactic (sign, VarCtx.empty) script alpha goal
                      in
