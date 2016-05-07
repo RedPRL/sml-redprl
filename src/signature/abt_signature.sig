@@ -17,13 +17,13 @@ sig
 
   structure Decl :
   sig
-    datatype decl = DEF of def | SYMDCL of sort
+    datatype decl = DEF of def | SYM_DECL of sort
   end
 
   include SIGNATURE
 
   val def : sign -> def -> decl
-  val symdcl : sign -> sort -> decl
+  val symDecl : sign -> sort -> decl
 
   val viewDecl : decl -> Decl.decl
 end

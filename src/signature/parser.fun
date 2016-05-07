@@ -99,11 +99,17 @@ struct
 
 
   local
-    open Ast OperatorData NominalLcfOperatorData
+    open Ast OperatorData NominalLcfOperatorData CttOperatorData RecordOperatorData SortData
     infix $ \
   in
     val defaultTac =
       LCF ID $ []
+
+    val recordTop =
+      CTT (TOP EXP) $ []
+
+    fun recordCons (lbl, a) b =
+      RCD (RECORD lbl) $ [([],[]) \ a, ([], [lbl]) \ b]
   end
 
   fun parseTactic sign : (opid * def) charParser =
@@ -162,14 +168,48 @@ struct
 
   fun parseSymDecl sign : (symbol * decl) charParser =
     reserved "Sym" >> parseSymBind sign wth (fn (u, tau) =>
-        (u, AstSignature.symdcl tau))
+        (u, AstSignature.symDecl tau))
     ?? "symdecl"
 
+  fun parseRcdDecl sign : AstSignature.sign charParser =
+    let
+      val parseOpid' = reserved "Record" >> parseOpid
+      val parseParams' = squares (parseParams sign) || succeed []
+      val parseArgs' = parens (parseArgs sign) || succeed []
+      open Ast
+      infix $ \
+    in
+      (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn (opid, (params, args)) =>
+        let
+          val rho = makeNameStore args
+          val parseTerm' = TermParser.parseTerm sign rho SortData.EXP
+          val parseRow = parseSymid << colon && parseTerm'
+          val parseRows = braces (commaSep parseRow)
+        in
+          parseRows wth (fn rows =>
+            let
+              val sign' = List.foldr (fn ((lbl, a), sign') => AstSignature.Telescope.snoc sign' lbl (AstSignature.symDecl SortData.RCD_LBL)) sign rows
+              val definiens = List.foldr (fn ((lbl, a), b) => recordCons (lbl, a) b) recordTop rows
+              val def =
+               {parameters = params,
+                arguments = List.map (fn (m, v) => rho m) args,
+                sort = SortData.EXP,
+                definiens = definiens}
+            in
+              AstSignature.Telescope.snoc sign' opid (AstSignature.def def)
+            end)
+        end)
+    end
+
+  fun parseSigExtension sign : AstSignature.sign charParser =
+    parseRcdDecl sign
+      || (parseSigDecl sign || parseSymDecl sign) wth (fn (u, dcl) => AstSignature.Telescope.snoc sign u dcl)
+
   fun parseSigExp' sign =
-    opt (whiteSpace >> (parseSigDecl sign || parseSymDecl sign) << dot) -- (fn odecl =>
-      case odecl of
+    opt (whiteSpace >> parseSigExtension sign << dot) -- (fn osign =>
+      case osign of
            NONE => succeed sign << whiteSpace << eos
-         | SOME (x,decl) => parseSigExp' (AstSignature.Telescope.snoc sign x decl))
+         | SOME sign' => parseSigExp' sign')
 
   val parseSigExp = parseSigExp' AstSignature.Telescope.empty ?? "sig"
 end

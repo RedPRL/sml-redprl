@@ -42,20 +42,22 @@ struct
         squares (separateN n parseSymbol comma)
           || (if n = 0 then succeed [] else fail "")
 
+      fun parseOperatorFromDefn opid {parameters, arguments, sort, definiens} =
+        parseParameters (length parameters) wth (fn us =>
+          let
+            val params = ListPair.mapEq (fn (u, (_, tau)) => (u, tau)) (us, parameters)
+            val valences = List.map (fn (_, vl) => vl) arguments
+            val arity = (valences, sort)
+          in
+            CUST (opid, params, arity)
+          end)
+
       val parseCustomOperator =
         identifier -- (fn opid =>
           case Telescope.find sign opid of
                NONE => fail "opid not in signature"
-             | SOME (SYMDCL _) => fail "opid not in signature"
-             | SOME (DEF {parameters, arguments, sort, definiens}) =>
-                 parseParameters (length parameters) wth (fn us =>
-                   let
-                     val params = ListPair.mapEq (fn (u, (_, tau)) => (u, tau)) (us, parameters)
-                     val valences = List.map (fn (_, vl) => vl) arguments
-                     val arity = (valences, sort)
-                   in
-                     CUST (opid, params, arity)
-                   end))
+             | SOME (SYM_DECL _) => fail "opid not in signature"
+             | SOME (DEF defn) => parseOperatorFromDefn opid defn)
 
       fun parseSymbols n =
         braces (separateN n parseSymbol comma)

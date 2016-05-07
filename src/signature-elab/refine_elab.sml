@@ -83,7 +83,7 @@ struct
       fun go res =
         fn EMPTY => res
          | CONS (x, Decl.DEF d,xs) => go (T.snoc res x (elab res d)) (out xs)
-         | CONS (x, Decl.SYMDCL tau, xs) => go (T.snoc res x (Decl.SYMDCL tau)) (out xs)
+         | CONS (x, Decl.SYM_DECL tau, xs) => go (T.snoc res x (Decl.SYM_DECL tau)) (out xs)
     in
       go T.empty (out sign)
     end

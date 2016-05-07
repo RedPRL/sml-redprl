@@ -41,7 +41,7 @@ struct
           ConsView.CONS (l, dcl, sign') =>
             ((case dcl of
                  Decl.DEF d => printDef (l, d)
-               | Decl.SYMDCL tau => printSymDcl (l, tau)); printSign sign')
+               | Decl.SYM_DECL tau => printSymDcl (l, tau)); printSign sign')
         | ConsView.EMPTY => ()
   end
 
