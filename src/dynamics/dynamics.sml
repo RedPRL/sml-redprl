@@ -365,9 +365,9 @@ struct
       open OperatorData CttOperatorData
       val u' =
         if List.exists (fn v => compareSymbols env (u, v)) us then
-          u
-        else
           Variable.named "a"
+        else
+          u
     in
       (us, xs) \ check (metactx m) (CTT (NU (sigma, tau)) $ [([u'], []) \ m], tau)
     end
