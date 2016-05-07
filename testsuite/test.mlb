@@ -2,7 +2,7 @@ local
   $(SML_LIB)/basis/basis.mlb
   ../lib/cmlib/cmlib.mlb
   ../lib/sml-typed-abts/abt.mlb
-  ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
+  ../lib/sml-typed-abts/lib/sml-parcom/parcom.mlb
 
   local
     ../lib/sml-telescopes/telescopes.mlb

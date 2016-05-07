@@ -1,7 +1,7 @@
 Group is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm
-  ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.cm
+  ../lib/sml-typed-abts/lib/sml-parcom/parcom.cm
   syntax.cm
   cmlib.cm
   signature.cm

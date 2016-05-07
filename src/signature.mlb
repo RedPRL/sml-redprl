@@ -17,7 +17,7 @@ local
 
   local
     syntax.mlb
-    ../lib/sml-typed-abts/lib/sml-parcom-wrapper/parcom.mlb
+    ../lib/sml-typed-abts/lib/sml-parcom/parcom.mlb
   in
     signature/parser/token_parser.sml
     signature/parser/sort.sml
