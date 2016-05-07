@@ -158,8 +158,12 @@ struct
        | LVL_OP LSUP $ _ =>
            stepLvlSup sign (m <: env)
        | LCF _ $ _ => FINAL
-       | RCD (PROJ lbl) $ [_ \ rcd] =>
+       | RCD (PROJ lbl) $ _ =>
            stepRcdProj sign lbl (m <: env)
+       | RCD SINGL_GET_TY $ _ =>
+           stepRcdSinglGetTy sign (m <: env)
+       | RCD (RECORD lbl) $ _ =>
+           stepRcdRecord sign lbl (m <: env)
        | RCD _ $ _ => FINAL
        | REFINE _ $ _ => FINAL
        | EXTRACT tau $ [_ \ r] =>
@@ -289,6 +293,34 @@ struct
               else
                 ret @@ check (metactx proj) (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
           | _ => raise Stuck @@ proj <: env)
+    end
+
+  and stepRcdSinglGetTy sign (proj <: env) =
+    let
+      open OperatorData RecordOperatorData SortData
+    in
+      inspectArgument (step sign) (proj <: env) 0
+        (fn RCD (SINGL _) $ [_ \ a] => ret @@ a <: env
+          | _ => raise Stuck @@ proj <: env)
+    end
+
+  and stepRcdRecord sign lbl (rcd <: env) =
+    let
+      open OperatorData CttOperatorData RecordOperatorData SortData
+    in
+      case out rcd of
+         RCD (RECORD lbl) $ [_ \ a , (_, [x]) \ bx] =>
+           let
+             val psi = metactx rcd
+             fun depIsect a x bx = check psi (CTT DEP_ISECT $ [([],[]) \ a, ([],[x]) \ bx], EXP)
+             val singl = check psi (RCD (SINGL lbl) $ [([],[]) \ a], EXP)
+             val self = Variable.named "self"
+             val proj = check psi (RCD (PROJ lbl) $ [([],[]) \ check' (`self, EXP)], EXP)
+             val bself = subst (proj, x) bx
+           in
+             ret @@ depIsect singl self bself <: env
+           end
+       | _ => raise Stuck @@ rcd <: env
     end
 
   and stepAtomTest sign (m <: env) =

@@ -75,10 +75,11 @@ struct
 
   fun IsType alpha (G |> H >> TYPE (ty, EXP)) =
     let
-      val (tau', lvl) = destUniv ty
+      val (tau, lvl) = destUniv ty
+      val lvl' = check (metactx lvl) (LVL_OP LSUCC $ [([],[]) \ lvl], LVL)
     in
       (T.empty, fn rho =>
-        makeEvidence G H lvl)
+        makeEvidence G H lvl')
     end
     | IsType _ _ = raise Match
 

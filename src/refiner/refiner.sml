@@ -58,6 +58,7 @@ struct
     fun Synth alpha =
       HypSynth alpha
         ORELSE PiRules.ApSynth alpha
+        ORELSE RecordRules.ProjSynth alpha
         ORELSE (THEN (TypeRules.Synth alpha, IsType alpha))
 
     fun Intro alpha =

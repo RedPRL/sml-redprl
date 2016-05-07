@@ -150,8 +150,10 @@ Def Monoid(i : lvl) : exp = [
 ].
 
 Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
-  bang; cumulativity; auto
+  bang; cumulativity;
+  chk-inf; bang
 ].
+
 
 Def Unit : exp = [
   ~(Ax; Ax)
