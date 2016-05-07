@@ -77,6 +77,15 @@ struct
       end
   end
 
+  fun compareSymbols env (u, v) =
+    let
+      val (_, srho, _) = env
+      val u' = SymCtx.lookup srho u handle _ => u
+      val v' = SymCtx.lookup srho v handle _ => v
+    in
+      Symbol.eq (u', v')
+    end
+
   local
     structure Pattern = Pattern (Abt)
     structure Unify = AbtLinearUnification (structure Abt = Abt and Pattern = Pattern)
@@ -189,6 +198,8 @@ struct
            stepDFunCod sign (m <: env)
        | CTT UNIV_GET_LVL $ _ =>
            stepUnivGetLvl sign (m <: env)
+       | CTT (NU _) $ _ =>
+           stepNu sign (m <: env)
        | ATM (ATOM _) $ _ => FINAL
        | ATM (TOKEN _) $ _ => FINAL
        | ATM (TEST _) $ _ =>
@@ -273,7 +284,7 @@ struct
     in
       inspectArgument (step sign) (proj <: env) 0
         (fn RCD (CONS lbl') $ [_ \ hd, _ \ tl] =>
-              if Symbol.eq (lbl, lbl') then
+              if compareSymbols env (lbl, lbl') then
                 ret @@ hd <: env
               else
                 ret @@ check (metactx proj) (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
@@ -291,7 +302,7 @@ struct
         (fn ATM (TOKEN (u1, _)) $ _ =>
               inspectArgument (step sign) (m <: env) 1
                 (fn ATM (TOKEN (u2, _)) $ _ =>
-                      ret @@ (if Symbol.eq (u1, u2) then yes else no) <: env
+                      ret @@ (if compareSymbols env (u1, u2) then yes else no) <: env
                   | _ => raise Stuck @@ m <: env)
           | _ => raise Stuck @@ m <: env)
     end
@@ -306,5 +317,58 @@ struct
                   OP_SOME _ $ [_ \ evd] => ret @@ evd <: env
                 | _ => raise Stuck (evd <: env))
           | _ => raise Stuck @@ m <: env)
+    end
+
+  and stepNu sign (m <: env) =
+    let
+      open OperatorData CttOperatorData
+    in
+      case out m of
+         CTT (NU (sigma, tau)) $ [([u], _) \ t] =>
+           (case step sign (t <: env) of
+               FINAL =>
+                 (case out t of
+                     theta $ _ =>
+                       let
+                         val us = Operator.support theta
+                       in
+                         if List.exists (fn (v, _) => compareSymbols env (u, v)) us then
+                           ret @@ m <: env
+                         else
+                           ret @@ pushDownNu (sigma, tau) env u t <: env
+                       end
+                   | _ => ret @@ pushDownNu (sigma, tau) env u t <: env)
+             | STEP t' =>
+                 let
+                   val (mrho, srho, vrho) = env
+                   val a = Symbol.named "a"
+                   val srho' = SymCtx.insert srho u a
+                   val env' = (mrho, srho', vrho)
+                   val srho'' = SymCtx.insert srho a u
+                   val env''' = (mrho, srho'', vrho)
+                 in
+                   case step sign (t <: env') of
+                      FINAL => raise Fail "Impossible?"
+                    | STEP (t' <: env'') => ret @@ check (metactx m) (CTT (NU (sigma, tau)) $ [([u], []) \ t'], tau) <: env'''
+                 end)
+       | _ => raise Stuck @@ m <: env
+    end
+
+  and pushDownNu (sigma, tau) env u m =
+    case infer m of
+       (theta $ es, tau) =>
+         check (metactx m) (theta $ List.map (pushDownNuB (sigma, tau) env u) es, tau)
+     | _ => raise Fail "Impossible"
+
+  and pushDownNuB (sigma, tau) env u ((us, xs) \ m) =
+    let
+      open OperatorData CttOperatorData
+      val u' =
+        if List.exists (fn v => compareSymbols env (u, v)) us then
+          u
+        else
+          Variable.named "a"
+    in
+      (us, xs) \ check (metactx m) (CTT (NU (sigma, tau)) $ [([u'], []) \ m], tau)
     end
 end

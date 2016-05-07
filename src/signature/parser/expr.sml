@@ -29,6 +29,12 @@ struct
 
   fun parseExpr sign f =
     let
+      val parseNu =
+        symbol "nu"
+          >> (braces (SortParser.parseSort sign) || succeed EXP)
+          && parens (braces parseSymbol << dot && f EXP)
+          wth (fn (sigma, (u, m)) => CTT (NU (sigma, EXP)) $ [([u], []) \ m])
+
       val parseHypVar =
         symbol "@" >> parseSymbol
           wth (fn u => LCF (HYP_VAR u) $ [])
@@ -217,7 +223,8 @@ struct
          || parseRcdCons
          || parseRcdLiteral
          || parseRcdProj
-         || parseHypVar) wth Atm
+         || parseHypVar
+         || parseNu) wth Atm
 
       val parsePostfixProj =
         symbol "."

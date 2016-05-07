@@ -176,3 +176,9 @@ Record Sg(A : exp, B : [exp].exp) = {
   snd : B[fst]
 }.
 
+
+// our first benign effect! the nu operator is generates a "fresh name" that can be used
+// in the inner computation.
+Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
+  bang
+].

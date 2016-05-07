@@ -15,6 +15,7 @@ struct
     | DEP_ISECT
     | VOID | NOT
     | DFUN_DOM | DFUN_COD | UNIV_GET_LVL
+    | NU of Sort.t * Sort.t
 end
 
 structure CttSimpleOperator =
@@ -101,6 +102,9 @@ struct
        | UNIV_GET_LVL =>
            [[] * [] <> EXP]
              ->> LVL
+       | NU (sigma, tau) =>
+           [[sigma] * [] <> tau]
+             ->> tau
   end
 
   val eq : t * t -> bool = op=
@@ -146,6 +150,8 @@ struct
          "dfun-cod"
      | UNIV_GET_LVL =>
          "univ-get-lvl"
+     | NU (sigma, tau) =>
+         "nu{" ^ Sort.toString sigma ^ "," ^ Sort.toString tau ^ "}"
 end
 
 structure CttOperator = SimpleOperator (CttSimpleOperator)
