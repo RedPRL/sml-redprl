@@ -139,6 +139,14 @@ case the following presuppositions obtain:
   \item $\IsAbs{\Theta}{\Upsilon}{\Dom{H}\setminus \Gamma}{S}{\MkValence{}{\Gamma}{\tau}}$
 \end{enumerate}
 
+Notice that the synthesis of a sequent judgment is always an \emph{abstraction}
+/ binder, which allows a rule to single out some portion $\Gamma$ of the
+hypothetical context $H$ for later substitution. This provides a hygienic way
+to to express refinement rules which introduce a new hypothesis, such as the
+introduction rule for functions. More generally, the binding of
+variables in the synthesis to a judgment is an essential part of the
+Dependent~LCF apparatus.
+
 The meaning of the sequent judgment is given inductively by a collection of
 formal rules, which are then related to the \emph{intended semantics} of
 Nominal Computational Type Theory by a soundness theorem.
