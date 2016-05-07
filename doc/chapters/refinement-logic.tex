@@ -1,0 +1,170 @@
+\chapter{The Refinement Logic}
+
+\newcommand\PRLSequent[6]{
+  \IMode{#1}\mid%
+  \IMode{#2}\gg_{\IMode{#3}}^{\IMode{#4}}%
+  \IMode{#5}\leadsto%
+  \OMode{#6}%
+}
+
+\newcommand\IsHypCtx[3]{
+  \IMode{#1}\triangleright%
+  \IMode{#2}\parallel%
+  \IMode{#3}\ \mathit{hypctx}%
+}
+
+\section{Forms of Judgment}
+
+\subsection{Hypothesis Contexts}
+First, we develop the syntax of hypothesis contexts with respect to a
+metavariable context $\IsMetaCtx{\Theta}$ and a symbol context
+$\IsSymCtx{\Upsilon}$:
+
+\[
+  \infer{
+    \IsHypCtx{\Theta}{\Upsilon}{\cdot}
+  }{}
+  \qquad
+  \infer{
+    \IsHypCtx{\Theta}{\Upsilon}{H, x:_\tau A}
+  }{
+    \begin{array}{l}
+      \IsHypCtx{\Theta}{\Upsilon}{H}\\
+      \IsAbt{\Theta}{\Upsilon}{\Dom{H}}{A}{\AbtSortExp}
+    \end{array}&
+    \NotIn{x}{H}
+  }
+\]
+
+The \emph{domain} $\IsVarCtx{\Dom{H}}$ of a hypothesis context
+$\IsHypCtx{\Theta}{\Upsilon}{H}$ is defined as follows:
+\begin{align*}
+  \ADefine{\Dom{\cdot}}{\cdot}\\
+  \ADefine{\Dom{H,x:_\tau A}}{\Dom{H}, x : \tau}
+\end{align*}
+
+\subsection{Hypothetico-General Sequents}
+
+\RedPRL's refinement logic is organized around several forms of \emph{sequent},
+which are schematized as follows, depending on the form of conclusion:
+\[
+  \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{\textit{conclusion}}{\textit{synthesis}}
+\]
+
+\newcommand\IsConcl[5]{%
+  \IMode{#1}\triangleright%
+  \IMode{#2}\parallel%
+  \IMode{#3}\vdash%
+  \lfloor\IMode{#4}\rfloor\ \mathit{concl}%
+  \leadsto \OMode{#5}%
+}
+
+\subsubsection{Forms of Conclusion}
+The form of synthesis depends on the particular form of conclusion (categorical
+judgment); we formalize this with the
+$\IsConcl{\Theta}{\Upsilon}{\Gamma}{C}{\tau}$ judgment form, defined as
+follows:
+
+\[
+  \infer[\text{Truth}]{
+    \IsConcl{\Theta}{\Upsilon}{\Gamma}{A\ \textit{true}_\tau}{\tau}
+  }{
+    \IsAbt{\Theta}{\Upsilon}{\Gamma}{A}{\AbtSortExp}
+  }
+\]
+
+
+\[
+  \infer[\text{Equality}]{
+    \IsConcl{\Theta}{\Upsilon}{\Gamma}{M = N \in_\tau A}{\AbtSortExp}
+  }{
+    \begin{array}{l}
+      \IsAbt{\Theta}{\Upsilon}{\Gamma}{M}{\tau}\\
+      \IsAbt{\Theta}{\Upsilon}{\Gamma}{N}{\tau}
+    \end{array} &
+    \IsAbt{\Theta}{\Upsilon}{\Gamma}{A}{\AbtSortExp}
+  }
+\]
+
+\[
+  \infer[\text{Membership}]{
+    \IsConcl{\Theta}{\Upsilon}{\Gamma}{M \in_\tau A}{\AbtSortExp}
+  }{
+    \IsAbt{\Theta}{\Upsilon}{\Gamma}{M}{\tau} &
+    \IsAbt{\Theta}{\Upsilon}{\Gamma}{A}{\AbtSortExp}
+  }
+\]
+
+\[
+  \infer[\text{Membership Synthesis}]{
+    \IsConcl{\Theta}{\Upsilon}{\Gamma}{R\ \textit{synth}_\tau}{\AbtSortExp}
+  }{
+    \IsAbt{\Theta}{\Upsilon}{\Gamma}{R}{\tau} &
+    \IsAbt{\Theta}{\Upsilon}{\Gamma}{A}{\AbtSortExp}
+  }
+\]
+
+\[
+  \infer[\text{Equality Synthesis}]{
+    \IsConcl{\Theta}{\Upsilon}{\Gamma}{R = S\ \textit{synth}_\tau}{\AbtSortExp}
+  }{
+    \begin{array}{l}
+      \IsAbt{\Theta}{\Upsilon}{\Gamma}{R}{\tau}\\
+      \IsAbt{\Theta}{\Upsilon}{\Gamma}{S}{\tau}
+    \end{array} &
+    \IsAbt{\Theta}{\Upsilon}{\Gamma}{A}{\AbtSortExp}
+  }
+\]
+
+\[
+  \infer[\text{Level Synthesis}]{
+    \IsConcl{\Theta}{\Upsilon}{\Gamma}{A\ \textit{type}}{\AbtSortLvl}
+  }{
+    \IsAbt{\Theta}{\Upsilon}{\Gamma}{A}{\AbtSortExp}
+  }
+\]
+
+\subsubsection{Syntax of Sequents}
+
+Now that we have enumerated the forms of conclusion, we can precisely give the
+syntax of the sequent judgment. We will say that the sequent
+$\PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{C}{S}$ is a meaningful judgment in
+case the following presuppositions obtain:
+\begin{enumerate}
+  \item $\IsMetaCtx{\Theta}$
+  \item $\IsSymCtx{\Upsilon}$
+  \item $\IsHypCtx{\Theta}{\Upsilon}{H}$
+  \item $\IsVarCtx{\Gamma}$ and $\IMode{\Gamma}\subseteq\IMode{\Dom{H}}$
+  \item $\IsConcl{\Theta}{\Upsilon}{\Dom{H}}{C}{\tau}$
+  \item $\IsAbs{\Theta}{\Upsilon}{\Dom{H}\setminus \Gamma}{S}{\MkValence{}{\Gamma}{\tau}}$
+\end{enumerate}
+
+The meaning of the sequent judgment is given inductively by a collection of
+formal rules, which are then related to the \emph{intended semantics} of
+Nominal Computational Type Theory by a soundness theorem.
+
+\section{Selected Rules}
+
+\[
+  \infer{
+    \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{M \in_\tau A}{\MkAbs{}{\vec{x}}{\mathtt{Ax}}}
+  }{
+    \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{M = M \in_\tau A}{\MkAbs{}{\vec{x}}{\mathtt{Ax}}}
+  }
+\]
+
+\[
+  \infer{
+    \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{R = S\ \textit{synth}_\tau}{\MkAbs{}{\vec{x}}{A_1}}
+  }{
+    \begin{array}{l}
+      \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{R\ \textit{synth}_\tau}{\MkAbs{}{\vec{x}}{A_1}}\\
+      \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{S\ \textit{synth}_\tau}{\MkAbs{}{\vec{x}}{A_2}}
+    \end{array}
+    \begin{array}{l}
+      \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{A_1\ \textit{type}}{\MkAbs{}{\vec{x}}{i}}\\
+      \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{A_1=A_2\in_\AbtSortExp \mathbb{U}_i}{\MkAbs{}{\vec{x}}{\mathtt{Ax}}}
+    \end{array}
+  }
+\]
+
