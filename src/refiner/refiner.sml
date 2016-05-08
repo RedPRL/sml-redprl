@@ -225,5 +225,6 @@ struct
             ORELSE PROGRESS (EvalGoal sign Target.TARGET_CONCL alpha)
             ORELSE PROGRESS (CStep sign 0 alpha)
             ORELSE Synth alpha
+            ORELSE GenericRules.Intro alpha
   end
 end

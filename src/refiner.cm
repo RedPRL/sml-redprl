@@ -22,6 +22,8 @@ is
   refiner/target.sml
   refiner/rules/quantifier_kit.sig
   refiner/rules/quantifier_kit.sml
+  refiner/rules/generic.sig
+  refiner/rules/generic.sml
   refiner/rules/synth.sig
   refiner/rules/synth.sml
   refiner/rules/mem.sig
