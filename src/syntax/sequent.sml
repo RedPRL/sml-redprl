@@ -53,14 +53,9 @@ struct
     | EQ_SYN of expr * expr
     | SYN of expr
 
-  (* The meaning of the sequent with respect to its context of metavariables is
-   * essentially the following: If the metavariables are replaced by closed abstractions
-   * that respect computation, then the sequent is evident. *)
-  datatype sequent =
-      >> of context * concl
-
-  datatype generic =
-      |> of (var * sort) list * sequent
+  datatype judgment =
+      >> of context * concl (* categorical sequent *)
+    | |> of (var * sort) list * judgment (* generic sequent *)
 
   infix 4 >>
   infix 3 |>
@@ -88,7 +83,8 @@ struct
       go (out H)
     end
 
-  fun toString (G |> H >> concl) =
+  fun toString (G |> jdg) = toString jdg
+    | toString (H >> concl) =
         hypothesesToString (getHyps H)
           ^ "\226\138\162 "
           ^ conclToString concl

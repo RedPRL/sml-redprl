@@ -25,11 +25,9 @@ sig
     | EQ_SYN of expr * expr
     | SYN of expr
 
-  datatype sequent =
-      >> of context * concl
+  datatype judgment =
+      >> of context * concl (* categorical sequent *)
+    | |> of (var * sort) list * judgment (* generic sequent *)
 
-  datatype generic =
-      |> of (var * sort) list * sequent
-
-  val toString : generic -> string
+  val toString : judgment -> string
 end

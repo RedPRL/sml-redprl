@@ -5,7 +5,6 @@ struct
 
   open Sequent
 
-  type judgment = generic
   type evidence = abs
 
   fun judgmentToString s =
@@ -22,8 +21,14 @@ struct
      | EQ_SYN _ => SortData.EXP
      | SYN _ => SortData.EXP
 
-  fun evidenceValence (G |> H >> concl) =
-    (([], List.map #2 G), conclEvidenceSort concl)
+  val rec evidenceValence =
+    fn H >> concl => (([],[]), conclEvidenceSort concl)
+     | G |> jdg =>
+         let
+           val ((sigmas, taus), tau) = evidenceValence jdg
+         in
+           ((sigmas, List.map #2 G @ taus), tau)
+         end
 
   fun evidenceToString e =
     let
@@ -46,24 +51,27 @@ struct
   structure SymRenUtil = ContextUtil (structure Ctx = SymCtx and Elem = Symbol)
   structure VarRenUtil = ContextUtil (structure Ctx = VarCtx and Elem = Variable)
 
-  fun substEvidenceEnv rho (G |> H >> concl) =
-    let
-      infix \
-      val concl' = substConcl rho concl
+  fun substEvidenceEnv rho =
+    fn H >> concl =>
+         let
+           infix \
+           val concl' = substConcl rho concl
 
-      val goHyps = SymbolTelescope.map (fn (Q, tau) => (metasubstEnv rho Q, tau))
-      val goMetas =
-        MetaCtx.foldl
-          (fn (k, vl, acc) =>
-             case Option.map outb (MetaCtx.find rho k) of
-                 NONE => MetaCtx.insert acc k vl
-               | SOME (_ \ m) => MetaCtxUtil.union (acc, metactx m))
-          MetaCtx.empty
+           val goHyps = SymbolTelescope.map (fn (Q, tau) => (metasubstEnv rho Q, tau))
+           val goMetas =
+             MetaCtx.foldl
+               (fn (k, vl, acc) =>
+                  case Option.map outb (MetaCtx.find rho k) of
+                      NONE => MetaCtx.insert acc k vl
+                    | SOME (_ \ m) => MetaCtxUtil.union (acc, metactx m))
+               MetaCtx.empty
 
-      val goCtx = updateHyps goHyps o updateMetas goMetas
-    in
-      G |> goCtx H >> substConcl rho concl
-    end
+           val goCtx = updateHyps goHyps o updateMetas goMetas
+         in
+           goCtx H >> substConcl rho concl
+         end
+     | G |> jdg =>
+         G |> substEvidenceEnv rho jdg
 
   fun singletonEnv (e, x) =
     MetaCtx.insert MetaCtx.empty x e
@@ -86,8 +94,9 @@ struct
       MetaCtx.empty
       hyps
 
-  fun judgmentMetactx (G |> H >> concl) =
-    MetaCtxUtil.union (hypsMetactx (getHyps H), MetaCtxUtil.union (getMetas H, conclMetactx concl))
+  val rec judgmentMetactx =
+    fn H >> concl => MetaCtxUtil.union (hypsMetactx (getHyps H), MetaCtxUtil.union (getMetas H, conclMetactx concl))
+     | G |> jdg => judgmentMetactx jdg
 
   (* Code review needed below: *)
 
@@ -147,13 +156,28 @@ struct
          Abt.Unify.unify (r1, r2)
      | _ => raise Abt.Unify.UnificationFailed
 
-  fun unifyJudgment' (G1 |> H1 >> concl1, G2 |> H2 >> concl2) : Abt.Unify.renaming =
-    let
-      val rho1 = unifyHypotheses (getHyps H1, getHyps H2)
-      val rho2 = unifyConcl (concl1, concl2)
-    in
-      mergeUnification rho1 rho2
-    end
+  val rec unifyJudgment' =
+    fn (H1 >> concl1, H2 >> concl2) =>
+         let
+           val rho1 = unifyHypotheses (getHyps H1, getHyps H2)
+           val rho2 = unifyConcl (concl1, concl2)
+         in
+           mergeUnification rho1 rho2
+         end
+    | (G1 |> jdg1, G2 |> jdg2) =>
+        let
+          val _ =
+            ListPair.appEq
+              (fn ((x, sigma), (y, tau)) =>
+                 if Variable.eq (x, y) andalso Sort.eq (sigma, tau) then
+                   ()
+                 else
+                   raise Abt.Unify.UnificationFailed)
+              (G1, G2)
+        in
+          unifyJudgment' (jdg1, jdg2)
+        end
+    | _ => raise Abt.Unify.UnificationFailed
 
   fun unifyJudgment (jdg1, jdg2) =
     SOME (unifyJudgment' (jdg1, jdg2))
