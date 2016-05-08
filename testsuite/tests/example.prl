@@ -135,7 +135,7 @@ Thm recordProjTest : [~(exampleRecord.foo; Ax)] by [
 Record MonoidStruct(i : lvl) = {
   car : Univ(i),
   unit : car,
-  op : fun(car; fun(car; Univ(i)))
+  op : fun(car; fun(car; car))
 }.
 
 Record MonoidLaws(M : exp) = {
