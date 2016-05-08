@@ -13,24 +13,24 @@ struct
              @@ "Expected Void but got "
               ^ DebugShowAbt.toString m
 
-  fun TypeEq _ (G |> H >> EQ_MEM (void1, void2, univ)) =
+  fun TypeEq _ (H >> EQ_MEM (void1, void2, univ)) =
     let
       val _ = destUniv univ
       val _ = destVoid void1
       val _ = destVoid void2
     in
       (T.empty, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun Elim i _ (G |> H >> TRUE (P, _)) =
+  fun Elim i _ (H >> TRUE (P, _)) =
     let
       val (void, _) = Ctx.lookup (getHyps H) i
       val _ = destVoid void
     in
       (T.empty, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | Elim _ _ _ = raise Match
 

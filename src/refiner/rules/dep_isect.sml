@@ -16,23 +16,23 @@ struct
   val TypeEq =
     QuantifierKit.TypeEq (CTT DEP_ISECT)
 
-  fun MemberEq alpha (G |> H >> EQ_MEM (m1, m2, ty)) =
+  fun MemberEq alpha (H >> EQ_MEM (m1, m2, ty)) =
     let
       val (a, x, bx) = destDepIsect ty
       val bm1 = subst (m1, x) bx
 
       val (goal1, _, H') =
         makeGoal @@
-          [] |> makeEqSequent H (m1, m2, a)
+          makeEqSequent H (m1, m2, a)
 
       val (goal2, _, _) =
         makeGoal @@
-          [] |> makeEqSequent H' (m1, m2, bm1)
+          makeEqSequent H' (m1, m2, bm1)
 
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 end

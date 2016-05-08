@@ -81,11 +81,15 @@ struct
 
   structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
 
-  fun makeGoal (jdg as G |> H >> _) =
+  fun goalHypCtx (H >> _) = H
+    | goalHypCtx (G |> jdg) = goalHypCtx jdg
+
+  fun makeGoal jdg =
     let
       val x = newMeta ""
       val vl = Judgment.evidenceValence jdg
       val (_, tau) = vl
+      val H = goalHypCtx jdg
       val mctx = MetaCtx.insert (getMetas H) x vl
       fun h us ms = check mctx (x $# (us, ms), tau)
       val H' = updateMetas (fn _ => mctx) H
@@ -177,6 +181,9 @@ struct
       end
 
     val makeAx = check' (CTT AX $ [], EXP)
+
+    fun abtToAbs m =
+      checkb (metactx m) (([],[]) \ m, (([],[]), sort m))
 
     fun makeEvidence G (H : context) m =
       let

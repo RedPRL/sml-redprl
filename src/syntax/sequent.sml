@@ -83,7 +83,9 @@ struct
       go (out H)
     end
 
-  fun toString (G |> jdg) = toString jdg
+  fun toString (G |> jdg) =
+        "[" ^ ListSpine.pretty (fn (x, _) => Variable.toString x) "," G ^ "] |\n"
+          ^ toString jdg
     | toString (H >> concl) =
         hypothesesToString (getHyps H)
           ^ "\226\138\162 "

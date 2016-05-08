@@ -73,17 +73,17 @@ struct
 
   end
 
-  fun IsType alpha (G |> H >> TYPE (ty, EXP)) =
+  fun IsType alpha (H >> TYPE (ty, EXP)) =
     let
       val (tau, lvl) = destUniv ty
       val lvl' = check (metactx lvl) (LVL_OP LSUCC $ [([],[]) \ lvl], LVL)
     in
       (T.empty, fn rho =>
-        makeEvidence G H lvl')
+        abtToAbs lvl')
     end
     | IsType _ _ = raise Match
 
-  fun Eq alpha (G |> H >> EQ_MEM (m, n, a)) =
+  fun Eq alpha (H >> EQ_MEM (m, n, a)) =
     let
       val ((tau1, i), (tau2, j), (tau3, k)) = (destUniv m, destUniv n, destUniv a)
       val () = if tau3 = EXP then () else raise Fail "Sort mismatch"
@@ -92,11 +92,11 @@ struct
       val () = LvlUtil.assertLevelLt (i, k)
     in
       (T.empty, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | Eq _ _ = raise Match
 
-  fun Cum alpha (G |> H >> EQ_MEM (m, n, a)) =
+  fun Cum alpha (H >> EQ_MEM (m, n, a)) =
     let
       val (tau, i) = destUniv a
       val j = LvlUtil.destLSucc i
@@ -108,12 +108,12 @@ struct
 
       val (goal, _, _) =
         makeGoal @@
-          [] |> makeEqSequent H (m, n, univ)
+          makeEqSequent H (m, n, univ)
 
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | Cum _ _ = raise Match
 

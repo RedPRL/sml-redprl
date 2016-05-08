@@ -14,20 +14,20 @@ struct
              @@ "Expected Ensemble but got "
               ^ DebugShowAbt.toString m
 
-  fun IsType alpha (goal as (G |> H >> TYPE (ty, sigma))) =
+  fun IsType alpha (goal as (H >> TYPE (ty, sigma))) =
     let
       val (sigma', tau, a, x, bx) = destEnsemble ty
       val _ = if Sort.eq (sigma, sigma') then () else raise Fail "Sort mismatch"
 
       val (goalA, holeA, H') =
         makeGoal @@
-          [] |> H >> TYPE (a, sigma)
+          H >> TYPE (a, sigma)
 
       val Hx = updateHyps (fn xs => Ctx.snoc xs x (a, sigma)) H'
 
       val (goalB, _, H') =
         makeGoal @@
-          [] |> Hx >> TYPE (bx, tau)
+          Hx >> TYPE (bx, tau)
 
       val psi = T.empty @> goalA @> goalB
     in
@@ -37,7 +37,7 @@ struct
           val l2 = T.lookup rho (#1 goalB) // ([],[])
           (* TODO: do we need to ensure that x is not free in l2? *)
         in
-          makeEvidence G H @@
+          abtToAbs @@
             check
               (getMetas H')
               (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
@@ -45,7 +45,7 @@ struct
     end
     | IsType _ _ = raise Match
 
-  fun TypeEq alpha (goal as (G |> H >> EQ_MEM (s1, s2, univ))) =
+  fun TypeEq alpha (goal as (H >> EQ_MEM (s1, s2, univ))) =
     let
       val (sigma1, tau1, a1, x1, b1) = destEnsemble s1
       val (sigma1, tau1, a2, x2, b2) = destEnsemble s2
@@ -54,18 +54,18 @@ struct
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (G |> H >> EQ_MEM (m1, m2, ensemble)) =
+  fun MemberEq alpha (H >> EQ_MEM (m1, m2, ensemble)) =
     let
       val (tau1, tau2, a, x, b) = destEnsemble ensemble
 
       val (tyGoal, _, H) =
         makeGoal @@
-          [] |> makeEqSequent H (m1, m2, a)
+          makeEqSequent H (m1, m2, a)
 
       val bm = subst (m1, x) b
       val (squashGoal, _, H) =
         makeGoal @@
-          [] |> H >> TRUE (makeSquash (getMetas H) tau2 bm, EXP)
+          H >> TRUE (makeSquash (getMetas H) tau2 bm, EXP)
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
@@ -79,22 +79,22 @@ struct
       val psi = T.empty @> tyGoal @> squashGoal @> tyfunGoal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 
-  fun Intro alpha (G |> H >> TRUE (P, _)) =
+  fun Intro alpha (H >> TRUE (P, _)) =
     let
       val (tau1, tau2, a, x, b) = destEnsemble P
 
       val (mainGoal, mainHole, H) =
         makeGoal @@
-          [] |> H >> TRUE (a, tau1)
+          H >> TRUE (a, tau1)
 
       val pred = subst (mainHole [] [], x) b
       val (predGoal, _, H) =
         makeGoal @@
-          [] |> H >> TRUE (makeSquash (getMetas H) tau2 pred, EXP)
+          H >> TRUE (makeSquash (getMetas H) tau2 pred, EXP)
 
       val z = alpha 0
       val bz = subst (check' (`z, tau1), x) b
@@ -112,7 +112,7 @@ struct
     end
     | Intro _ _ = raise Match
 
-  fun Elim i alpha (G |> H >> TRUE (P, tau)) =
+  fun Elim i alpha (H >> TRUE (P, tau)) =
     let
       val (ensemble, _) = Ctx.lookup (getHyps H) i
       val (tau1, tau2, a, x, bx) = destEnsemble ensemble
@@ -142,7 +142,7 @@ struct
         let
           val itm = check' (`i, tau1)
         in
-          makeEvidence G H @@
+          abtToAbs @@
             T.lookup rho (#1 goal) // ([], [itm, makeAx])
         end)
     end

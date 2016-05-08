@@ -34,7 +34,7 @@ struct
   val IsType = QuantifierKit.IsType (CTT DFUN)
   val TypeEq = QuantifierKit.TypeEq (CTT DFUN)
 
-  fun MemberEq alpha (G |> H >> EQ_MEM (lam1, lam2, dfun)) =
+  fun MemberEq alpha (H >> EQ_MEM (lam1, lam2, dfun)) =
     let
       val (a, x, bx) = destDFun dfun
       val (y1, m1) = destLam lam1
@@ -55,22 +55,22 @@ struct
 
       val (goal2, _, _) =
         makeGoal @@
-          [] |> H >> TYPE (a, EXP)
+          H >> TYPE (a, EXP)
 
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 
-  fun ApSynth alpha (G |> H >> SYN ap) =
+  fun ApSynth alpha (H >> SYN ap) =
     let
       val (r, m) = destAp ap
 
       val (tyGoal, tyHole, H') =
         makeGoal @@
-          [] |> H >> SYN r
+          H >> SYN r
 
       val dom =
         check
@@ -79,7 +79,7 @@ struct
 
       val (chkGoal, _, _) =
         makeGoal @@
-          [] |> H >> MEM (m, dom)
+          H >> MEM (m, dom)
 
       val psi = T.empty @> tyGoal @> chkGoal
     in
@@ -87,7 +87,7 @@ struct
         let
           val ty = T.lookup rho (#1 tyGoal) // ([],[])
         in
-          makeEvidence G H @@
+          abtToAbs @@
             check
               (getMetas H)
               (CTT DFUN_COD $ [([],[]) \ ty, ([],[]) \ r], EXP)
@@ -95,7 +95,7 @@ struct
     end
     | ApSynth _ _ = raise Match
 
-  fun Intro alpha (G |> H >> TRUE (P, _)) =
+  fun Intro alpha (H >> TRUE (P, _)) =
     let
       val (a, x, bx) = destDFun P
 
@@ -111,7 +111,7 @@ struct
 
       val (wfGoal, _, _) =
         makeGoal @@
-          [] |> H >> TYPE (a, EXP)
+          H >> TYPE (a, EXP)
 
       val psi = T.empty @> goal @> wfGoal
     in
@@ -119,7 +119,7 @@ struct
         let
           val ev = outb @@ T.lookup rho (#1 goal)
         in
-          makeEvidence G H @@
+          abtToAbs @@
             check
               (getMetas H)
               (CTT LAM $ [ev], EXP)
@@ -127,7 +127,7 @@ struct
     end
     | Intro _ _ = raise Match
 
-  fun Elim f alpha (G |> H >> TRUE (P, tau)) =
+  fun Elim f alpha (H >> TRUE (P, tau)) =
     let
       val (dfun, _) = Ctx.lookup (getHyps H) f
       val (a, x, bx) = destDFun dfun
@@ -138,7 +138,7 @@ struct
 
       val (goal1, s, H) =
         makeGoal @@
-          [] |> H >> TRUE (a, EXP)
+          H >> TRUE (a, EXP)
 
       val bs = subst (s [] [], x) bx
       val ftm = check' (`f, EXP)
@@ -160,13 +160,13 @@ struct
           val s = T.lookup rho (#1 goal1) // ([],[])
           val fs = makeAp (metactx s) ftm s
         in
-          makeEvidence G H @@
+          abtToAbs @@
             T.lookup rho (#1 goal2) // ([], [fs, makeAx])
         end)
     end
     | Elim _ _ _ = raise Match
 
-  fun Ext alpha (jdg as G |> H >> EQ_MEM (f, g, dfun)) =
+  fun Ext alpha (jdg as H >> EQ_MEM (f, g, dfun)) =
     let
       val (a, x, bx) = destDFun dfun
 
@@ -184,16 +184,16 @@ struct
 
       val (fwfGoal, _, H) =
         makeGoal @@
-          [] |> makeMemberSequent H (f, dfun)
+          makeMemberSequent H (f, dfun)
 
       val (gwfGoal, _, _) =
         makeGoal @@
-          [] |> makeMemberSequent H (g, dfun)
+          makeMemberSequent H (g, dfun)
 
       val psi = T.empty @> mainGoal @> fwfGoal @> gwfGoal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | Ext _ _ = raise Match
 

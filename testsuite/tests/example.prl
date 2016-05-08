@@ -46,6 +46,7 @@ Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] by [
   ceval
 ].
 
+
 // Every proof is related to the evidence semantics of Computational Type Theory by
 // an 'extract'; a theorem in JonPRL, like every other declaration form, is a
 // definitional extension of the ambient signature, and is elaborated so as to include
@@ -77,40 +78,40 @@ Thm baseMemberEq : [=(Ax; Ax; Base)] by [
 
 
 
- // Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
- // a type by a predicate. Because this is a multi-sorted type theory, we must specify
- // what syntactic sort is being refined by the type being restricted. In this example,
- // we are restricting the [exp] sort, which contains type expressions.
- Def ensembleExample : exp = [
-   { x : Base | ~(x; Base) }
- ].
+// Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
+// a type by a predicate. Because this is a multi-sorted type theory, we must specify
+// what syntactic sort is being refined by the type being restricted. In this example,
+// we are restricting the [exp] sort, which contains type expressions.
+Def ensembleExample : exp = [
+  { x : Base | ~(x; Base) }
+].
 
- Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
-   bang
- ].
+Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
+  bang
+].
 
- Thm demo : [{x : Base | ~(x; Ax)}] by [
-   bang; #0 { witness [Ax] }; bang
- ].
+Thm demo : [{x : Base | ~(x; Ax)}] by [
+  bang; #0 { witness [Ax] }; bang
+].
 
 
- // let's declare some symbols (nominal atoms). new symbols are always fresh.
- Sym mysym : exp.
- Sym mysym2 : exp.
- Sym yes : exp.
- Sym no : exp.
+// let's declare some symbols (nominal atoms). new symbols are always fresh.
+Sym mysym : exp.
+Sym mysym2 : exp.
+Sym yes : exp.
+Sym no : exp.
 
- // atoms can be compared for equality; here, we show that two of our
- // declared atoms are distinct.
- Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
-   bang
- ].
+// atoms can be compared for equality; here, we show that two of our
+// declared atoms are distinct.
+Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
+  bang
+].
 
 Thm lamTest : [fun(Atom; Atom)] by [
   normalize;
   z <- intro;
-  [ witness [ifeq(@z; 'mysym; 'yes; 'no)]
-  ]; bang
+  #0 { auto; witness [ifeq(@z; 'mysym; 'yes; 'no)] };
+  bang
 ].
 
 

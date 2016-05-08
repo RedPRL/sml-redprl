@@ -25,19 +25,19 @@ struct
            ^ DebugShowAbt.toString m
   end
 
-  fun IsType quant alpha (goal as (G |> H >> TYPE (ty, EXP))) =
+  fun IsType quant alpha (goal as (H >> TYPE (ty, EXP))) =
     let
       val (a, x, bx) = destQuantifier quant ty
 
       val (goalA, holeA, H') =
         makeGoal @@
-          [] |> H >> TYPE (a, EXP)
+          H >> TYPE (a, EXP)
 
       val Hx = updateHyps (fn xs => Ctx.snoc xs x (a, EXP)) H'
 
       val (goalB, _, H') =
         makeGoal @@
-          [] |> Hx >> TYPE (bx, EXP)
+          Hx >> TYPE (bx, EXP)
 
       val psi = T.empty @> goalA @> goalB
     in
@@ -48,7 +48,7 @@ struct
           (* is this necessary?: *)
           val _ = if VarCtx.member (varctx l2) x then raise Fail "Variable free in level expr" else ()
         in
-          makeEvidence G H @@
+          abtToAbs @@
             check
               (getMetas H')
               (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
@@ -56,7 +56,7 @@ struct
     end
     | IsType _ _ _ = raise Match
 
-  fun TypeEq theta alpha (G |> H >> EQ_MEM (quant1, quant2, univ)) =
+  fun TypeEq theta alpha (H >> EQ_MEM (quant1, quant2, univ)) =
     let
       val _ = destUniv univ
       val (a1, x, b1x) = destQuantifier theta quant1
@@ -64,7 +64,7 @@ struct
 
       val (goal1, _, H) =
         makeGoal @@
-          [] |> makeEqSequent H (a1,a2,univ)
+          makeEqSequent H (a1,a2,univ)
 
       val z = alpha 0
       val ztm = check' (`z, EXP)
@@ -80,7 +80,7 @@ struct
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | TypeEq _ _ _ = raise Match
 end

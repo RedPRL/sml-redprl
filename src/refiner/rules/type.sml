@@ -6,11 +6,11 @@ struct
   infix 4 >>
   infix 3 |>
 
-  fun Intro _ (G |> H >> TYPE (a, tau)) =
+  fun Intro _ (H >> TYPE (a, tau)) =
     let
       val (lvlGoal, lvlHole, H') =
         makeGoal @@
-          [] |> makeLevelSequent H
+          makeLevelSequent H
 
       val H'' = updateMetas (fn _ => getMetas H') H
 
@@ -22,21 +22,20 @@ struct
 
       val (memGoal, _, _)  =
         makeGoal @@
-          [] |> makeMemberSequent H'' (a, univ)
+          makeMemberSequent H'' (a, univ)
 
       val psi = T.empty @> lvlGoal @> memGoal
     in
       (psi, fn rho =>
-        makeEvidence G H @@
-          T.lookup rho (#1 lvlGoal) // ([],[]))
+        T.lookup rho (#1 lvlGoal))
     end
     | Intro _ _ = raise Match
 
-  fun Synth _ (G |> H >> TYPE (a, tau)) =
+  fun Synth _ (H >> TYPE (a, tau)) =
     let
       val (univGoal, _, _) =
         makeGoal @@
-          [] |> H >> SYN a
+          H >> SYN a
       val psi = T.empty @> univGoal
     in
       (psi, fn rho =>
@@ -44,7 +43,7 @@ struct
            val univ = T.lookup rho (#1 univGoal) // ([],[])
            val lvl = check (metactx univ) (CTT UNIV_GET_LVL $ [([],[]) \ univ], LVL)
          in
-           makeEvidence G H @@ lvl
+           abtToAbs lvl
          end)
     end
     | Synth _ _ = raise Match

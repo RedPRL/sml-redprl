@@ -7,8 +7,6 @@ struct
   infix $ \ @@ @> $#
   infix 2 //
   infix 4 >>
-  infix 3 |>
-
 
   local
     open OperatorData CttOperatorData Tacticals
@@ -19,7 +17,7 @@ struct
         ORELSE EnsembleRules.Elim i alpha
         ORELSE VoidRules.Elim i alpha
 
-    fun HypEq alpha (G |> H >> EQ_MEM (m, n, a)) =
+    fun HypEq alpha (H >> EQ_MEM (m, n, a)) =
       let
         val x = destVar m
         val y = destVar n
@@ -28,17 +26,17 @@ struct
         val _ = if Abt.eq (a,a') then () else raise Match
       in
         (T.empty, fn rho =>
-          makeEvidence G H makeAx)
+          abtToAbs makeAx)
       end
       | HypEq _ _ = raise Match
 
-    fun HypSynth alpha (G |> H >> SYN r) =
+    fun HypSynth alpha (H >> SYN r) =
       let
         val x = destVar r
         val (a, _) = Ctx.lookup (getHyps H) x
       in
         (T.empty, fn rho =>
-          makeEvidence G H a)
+           abtToAbs a)
       end
       | HypSynth _ _ = raise Match
 
@@ -71,7 +69,7 @@ struct
 
     val CheckInfer = SynthRules.CheckToSynth
 
-    fun Eq r alpha (jdg as _ |> _ >> EQ_MEM _) =
+    fun Eq r alpha (jdg as _ >> EQ_MEM _) =
           (HypEq alpha
             ORELSE UnivRules.Eq alpha
             ORELSE BaseRules.TypeEq alpha
@@ -93,11 +91,11 @@ struct
             ORELSE DepIsectRules.TypeEq alpha
             ORELSE DepIsectRules.MemberEq alpha
             ORELSE VoidRules.TypeEq alpha) jdg
-      | Eq r alpha (jdg as _ |> _ >> EQ_SYN _) =
+      | Eq r alpha (jdg as _ >> EQ_SYN _) =
           SynthRules.SynthEqIntro alpha jdg
       | Eq _ _ _ = raise Match
 
-    fun Ext alpha (jdg as _ |> _ >> TRUE (P, _)) =
+    fun Ext alpha (jdg as _ >> TRUE (P, _)) =
       (case out P of
            CTT (EQ _) $ _ =>
              PiRules.Ext alpha jdg
@@ -105,26 +103,25 @@ struct
       | Ext _ _ = raise Match
   end
 
-  fun Witness m alpha (G |> H >> TRUE (P, _)) =
+  fun Witness m alpha (H >> TRUE (P, _)) =
     let
       val (goal, _, _) =
         makeGoal @@
-          [] |> makeMemberSequent H (m, P)
+          makeMemberSequent H (m, P)
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        makeEvidence G H m)
+        abtToAbs m)
     end
     | Witness _ _ _ = raise Match
 
-  fun Hyp i _ (G |> H >> TRUE (P, _)) =
+  fun Hyp i _ (H >> TRUE (P, _)) =
     let
       val (Q, tau) = Ctx.lookup (getHyps H) i
     in
       if Abt.eq (P, Q) then
         (T.empty, fn rho =>
-          makeEvidence G H @@
-            check' (`i , tau))
+           abtToAbs @@ check' (`i , tau))
       else
         raise Fail "Failed to unify with hypothesis"
     end
@@ -183,22 +180,21 @@ struct
           T.lookup rho (#1 goal))
       end
 
-    fun RewriteGoal Q _ (G |> H >> TRUE (P, sigma)) =
+    fun RewriteGoal Q _ (H >> TRUE (P, sigma)) =
       let
         val tau = sort P
         val (ceqGoal, _, _) =
           makeGoal @@
-            [] |> H >> TRUE (check (getMetas H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP)
+            H >> TRUE (check (getMetas H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP)
 
         val (mainGoal, _, _) =
           makeGoal @@
-            [] |> H >> TRUE (Q, sigma)
+            H >> TRUE (Q, sigma)
 
         val psi = T.empty @> ceqGoal @> mainGoal
       in
         (psi, fn rho =>
-          makeEvidence G H @@
-            T.lookup rho (#1 mainGoal) // ([],[]))
+          T.lookup rho (#1 mainGoal))
       end
       | RewriteGoal _ _ _ = raise Match
 

@@ -33,17 +33,17 @@ struct
              @@ "Expected Test but got "
               ^ DebugShowAbt.toString m
 
-  fun IsType _ (G |> H >> TYPE (atm, EXP)) =
+  fun IsType _ (H >> TYPE (atm, EXP)) =
     let
       val _ = destAtom atm
     in
       (T.empty, fn rho =>
-        makeEvidence G H @@
+        abtToAbs @@
           check' (LVL_OP LBASE $ [], LVL))
     end
     | IsType _ _ = raise Match
 
-  fun TypeEq _ (G |> H >> EQ_MEM (atm1, atm2, univ)) =
+  fun TypeEq _ (H >> EQ_MEM (atm1, atm2, univ)) =
     let
       val (sigma, lvl) = destUniv univ
       val tau1 = destAtom atm1
@@ -51,11 +51,11 @@ struct
       val _ = if sigma = EXP andalso tau1 = tau2 then () else raise Match
     in
       (T.empty, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq _ (G |> H >> EQ_MEM (tok1, tok2, atm)) =
+  fun MemberEq _ (H >> EQ_MEM (tok1, tok2, atm)) =
     let
       val tau = destAtom atm
       val (u1,tau1) = destToken tok1
@@ -67,11 +67,11 @@ struct
           raise Match
     in
       (T.empty, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 
-  fun TestEq alpha (G |> H >> EQ_MEM (test1, test2, a)) =
+  fun TestEq alpha (H >> EQ_MEM (test1, test2, a)) =
     let
       val (sigma, tau, t1, t2, yes, no) = destTest test1
       val (sigma', tau', t1', t2', yes', no') = destTest test2
@@ -80,11 +80,11 @@ struct
 
       val (goal1, _, H) =
         makeGoal @@
-          [] |> makeEqSequent H (t1, t1', makeAtom sigma)
+          makeEqSequent H (t1, t1', makeAtom sigma)
 
       val (goal2, _, H) =
         makeGoal @@
-          [] |> makeEqSequent H (t2, t2', makeAtom sigma)
+          makeEqSequent H (t2, t2', makeAtom sigma)
 
       val z = alpha 0
 
@@ -106,7 +106,7 @@ struct
       val psi = T.empty @> goal1 @> goal2 @> goalYes @> goalNo
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | TestEq _ _ = raise Match
 end

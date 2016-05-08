@@ -5,7 +5,7 @@ struct
   infix 4 >>
   infix 3 |>
 
-  fun IsType alpha (G |> H >> TYPE (ceq, _)) =
+  fun IsType alpha (H >> TYPE (ceq, _)) =
     let
       val (tau, m, n) = destCEquiv ceq
       val base =
@@ -14,19 +14,19 @@ struct
           (CTT (BASE tau) $ [], EXP)
       val (goal1, _, H') =
         makeGoal @@
-          [] |> H >> MEM (m, base)
+          H >> MEM (m, base)
       val (goal2, _, H'') =
         makeGoal @@
-          [] |> H >> MEM (n, base)
+          H >> MEM (n, base)
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        makeEvidence G H @@
+        abtToAbs @@
           check' (LVL_OP LBASE $ [], LVL))
     end
     | IsType _ _ = raise Match
 
-  fun TypeEq _ (G |> H >> EQ_MEM (ceq1, ceq2, univ)) =
+  fun TypeEq _ (H >> EQ_MEM (ceq1, ceq2, univ)) =
     let
       val i = destUniv univ
       val (tau1, m1, n1) = destCEquiv ceq1
@@ -35,85 +35,85 @@ struct
 
       val (goal1, _, H) =
         makeGoal @@
-          [] |> H >> TRUE (makeCEquiv (getMetas H) (m1, m2), EXP)
+          H >> TRUE (makeCEquiv (getMetas H) (m1, m2), EXP)
 
       val (goal2, _, _) =
         makeGoal @@
-         [] |> H >> TRUE (makeCEquiv (getMetas H) (n1, n2), EXP)
+         H >> TRUE (makeCEquiv (getMetas H) (n1, n2), EXP)
 
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq _ (G |> H >> EQ_MEM (m, n, ty)) =
+  fun MemberEq _ (H >> EQ_MEM (m, n, ty)) =
     let
       val _ = destCEquiv ty
       val _ = destAx m
       val _ = destAx n
       val (goal, _, _) =
         makeGoal @@
-          [] |> H >> TRUE (ty, EXP)
+          H >> TRUE (ty, EXP)
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 
-  fun CSym _ (G |> H >> TRUE (P, _)) =
+  fun CSym _ (H >> TRUE (P, _)) =
     let
       val (tau, m, n) = destCEquiv P
       val (subgoal, _, _) =
         makeGoal @@
-          [] |> H >> TRUE (makeCEquiv (getMetas H) (n,m), EXP)
+          H >> TRUE (makeCEquiv (getMetas H) (n,m), EXP)
       val psi = T.empty @> subgoal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | CSym _ _ = raise Match
 
-  fun CStep sign i _ (G |> H >> TRUE (P, _)) =
+  fun CStep sign i _ (H >> TRUE (P, _)) =
     let
       val (tau, m, n) = destCEquiv P
       val m' = DynamicsUtil.stepn sign i m
     in
       (if Abt.eq (m', n) then
         (T.empty, fn rho =>
-          makeEvidence G H makeAx)
+          abtToAbs makeAx)
        else
          let
            val (subgoal, _, _) =
              makeGoal @@
-               [] |> H >> TRUE (makeCEquiv (getMetas H) (m', n), EXP)
+               H >> TRUE (makeCEquiv (getMetas H) (m', n), EXP)
            val psi = T.empty @> subgoal
          in
            (psi, fn rho =>
-             makeEvidence G H makeAx)
+             abtToAbs makeAx)
          end)
     end
     | CStep _ _ _ _ = raise Match
 
-  fun CEval sign _ (G |> H >> TRUE (P, _)) =
+  fun CEval sign _ (H >> TRUE (P, _)) =
     let
       val (tau, m, n) = destCEquiv P
       val m' = DynamicsUtil.evalOpen sign m
     in
       (if Abt.eq (m', n) then
         (T.empty, fn rho =>
-          makeEvidence G H makeAx)
+          abtToAbs makeAx)
        else
          let
            val (subgoal, _, _) =
              makeGoal @@
-               [] |> H >> TRUE (makeCEquiv (getMetas H) (m', n), EXP)
+               H >> TRUE (makeCEquiv (getMetas H) (m', n), EXP)
            val psi = T.empty @> subgoal
          in
            (psi, fn rho =>
-             makeEvidence G H makeAx)
+             abtToAbs makeAx)
          end)
     end
     | CEval _ _ _ = raise Match

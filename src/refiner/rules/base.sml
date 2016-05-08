@@ -14,27 +14,27 @@ struct
              @@ "Expected Base but got "
               ^ DebugShowAbt.toString m
 
-  fun IsType _ (G |> H >> TYPE (ty, EXP)) =
+  fun IsType _ (H >> TYPE (ty, EXP)) =
     let
       val _ = destBase ty
     in
       (T.empty, fn rho =>
-        makeEvidence G H @@
+        abtToAbs @@
           check' (LVL_OP LBASE $ [], LVL))
     end
     | IsType _ _ = raise Match
 
-  fun TypeEq alpha (G |> H >> EQ_MEM (m, n, a)) =
+  fun TypeEq alpha (H >> EQ_MEM (m, n, a)) =
     let
       val (tau1, tau2) = (destBase m, destBase n)
       val i = destUniv a
     in
       (T.empty, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (G |> H >> EQ_MEM (m, n, a)) =
+  fun MemberEq alpha (H >> EQ_MEM (m, n, a)) =
     let
       val tau = destBase a
       val subgoals =
@@ -46,23 +46,23 @@ struct
               val base = check' (CTT (BASE tau) $ [], EXP)
               val goal = check' (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
             in
-              tl @> (meta, [] |> H >> TRUE (goal, EXP))
+              tl @> (meta, H >> TRUE (goal, EXP))
             end)
           T.empty
           (varctx m)
 
       val (mainGoal, _, _) =
         makeGoal @@
-          [] |> H >> TRUE (check (getMetas H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP), EXP)
+          H >> TRUE (check (getMetas H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP), EXP)
 
       val subgoals' = subgoals @> mainGoal
     in
       (subgoals', fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 
-  fun Elim h alpha (G |> H >> TRUE (P, sigma)) =
+  fun Elim h alpha (H >> TRUE (P, sigma)) =
     let
       val (base, tau) = Ctx.lookup (getHyps H) h
       val _ = destBase base
@@ -83,7 +83,7 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        makeEvidence G H @@
+        abtToAbs @@
           T.lookup rho (#1 goal) // ([], [makeAx]))
     end
     | Elim _ _ _ = raise Match

@@ -6,17 +6,16 @@ struct
   infix 4 >>
   infix 3 |>
 
-  fun Intro alpha (G |> H >> TRUE (P, _)) =
+  fun Intro alpha (H >> TRUE (P, _)) =
     let
       val (_, m, n, a) = destEq P
       val (goal, _, _) =
         makeGoal @@
-          [] |> H >> EQ_MEM (m, n, a)
+          H >> EQ_MEM (m, n, a)
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        makeEvidence G H @@
-          T.lookup rho (#1 goal) // ([],[]))
+        T.lookup rho (#1 goal))
     end
     | Intro _ _ = raise Match
 

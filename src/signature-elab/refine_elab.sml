@@ -13,7 +13,6 @@ struct
   local
     open Abt OperatorData Sequent infix $ \
     infix 4 >>
-    infix 3 |>
 
     structure NameStore = HashTable (structure Key = IntHashable)
 
@@ -44,7 +43,7 @@ struct
                        val alpha = makeNameStore ()
                        fun goMetas xs = List.foldl (fn ((x,vl), psi) => MetaCtx.insert psi x vl) xs arguments
                        val context = updateMetas goMetas emptyContext
-                       val goal = [] |> context >> TRUE (prop, tau)
+                       val goal = context >> TRUE (prop, tau)
                        val st as (psi, vld) = E.tactic (sign, VarCtx.empty) script alpha goal
                      in
                        case Ctx.ConsView.out psi of

@@ -19,13 +19,17 @@ struct
      | EQ_SYN (r, s) => EQ_SYN (f r, f s)
      | SYN r => SYN (f r)
 
-  fun targetRewrite f target (G |> H >> concl) =
-    case target of
-        TARGET_HYP sym =>
-          let
-            val H' = updateHyps (SymbolTelescope.modify sym (fn (x, tau) => (f x, tau))) H
-          in
-            G |> H' >> concl
-          end
-      | TARGET_CONCL => G |> H >> mapConcl f concl
+  fun targetRewrite f target =
+    fn H >> concl =>
+         (case target of
+              TARGET_HYP sym =>
+                let
+                  val H' = updateHyps (SymbolTelescope.modify sym (fn (x, tau) => (f x, tau))) H
+                in
+                  H' >> concl
+                end
+            | TARGET_CONCL => H >> mapConcl f concl)
+     | G |> jdg =>
+         G |> targetRewrite f target jdg
+
 end

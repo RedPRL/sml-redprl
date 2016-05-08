@@ -27,23 +27,22 @@ struct
       (metactx m)
       (RCD (PROJ lbl) $ [([],[]) \ m], EXP)
 
-  fun IsType alpha (goal as (G |> H >> TYPE (ty, EXP))) =
+  fun IsType alpha (goal as (H >> TYPE (ty, EXP))) =
     let
       val (lbl, a) = destSingl ty
 
       val (goalA, holeA, H') =
         makeGoal @@
-          [] |> H >> TYPE (a, EXP)
+          H >> TYPE (a, EXP)
 
       val psi = T.empty @> goalA
     in
       (psi, fn rho =>
-        makeEvidence G H @@
-          T.lookup rho (#1 goalA) // ([],[]))
+          T.lookup rho (#1 goalA))
     end
     | IsType _ _ = raise Match
 
-  fun TypeEq alpha (G |> H >> EQ_MEM (ty1, ty2, univ)) =
+  fun TypeEq alpha (H >> EQ_MEM (ty1, ty2, univ)) =
     let
       val (tau, lvl) = destUniv univ
       val _ = if Sort.eq (tau, EXP) then () else raise Match
@@ -54,16 +53,16 @@ struct
 
       val (goal, _, _) =
         makeGoal @@
-          [] |> makeEqSequent H (a1, a2, makeUniv lvl)
+          makeEqSequent H (a1, a2, makeUniv lvl)
 
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (G |> H >> EQ_MEM (rcd1, rcd2, ty)) =
+  fun MemberEq alpha (H >> EQ_MEM (rcd1, rcd2, ty)) =
     let
       val (lbl, a) = destSingl ty
 
@@ -72,25 +71,25 @@ struct
 
       val (goal, _, _) =
         makeGoal @@
-          [] |> makeEqSequent H (proj1, proj2, a)
+          makeEqSequent H (proj1, proj2, a)
 
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 
   (* H >> R.lbl synth ~> A
    *   H >> R synth ~> singl[lbl](A)
    *)
-  fun ProjSynth alpha (G |> H >> SYN p) =
+  fun ProjSynth alpha (H >> SYN p) =
     let
       val (lbl, rcd) = destProj p
 
       val (tyGoal, tyHole, H') =
         makeGoal @@
-          [] |> H >> SYN rcd
+          H >> SYN rcd
 
       val psi = T.empty @> tyGoal
     in
@@ -98,7 +97,7 @@ struct
         let
           val ty = T.lookup rho (#1 tyGoal) // ([],[])
         in
-          makeEvidence G H @@
+          abtToAbs @@
             check (metactx ty) (RCD SINGL_GET_TY $ [([],[]) \ ty], EXP)
         end)
     end

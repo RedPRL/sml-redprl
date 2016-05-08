@@ -14,32 +14,32 @@ struct
              @@ "Expected Top but got "
               ^ DebugShowAbt.toString m
 
-  fun IsType _ (G |> H >> TYPE (ty, EXP)) =
+  fun IsType _ (H >> TYPE (ty, EXP)) =
     let
       val _ = destTop ty
     in
       (T.empty, fn rho =>
-        makeEvidence G H @@
+        abtToAbs @@
           check' (LVL_OP LBASE $ [], LVL))
     end
     | IsType _ _ = raise Match
 
-  fun TypeEq alpha (G |> H >> EQ_MEM (m, n, a)) =
+  fun TypeEq alpha (H >> EQ_MEM (m, n, a)) =
     let
       val (tau1, tau2) = (destTop m, destTop n)
       val i = destUniv a
     in
       (T.empty, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | TypeEq _ _ = raise Match
 
-  fun MemberEq alpha (G |> H >> EQ_MEM (_, _, a)) =
+  fun MemberEq alpha (H >> EQ_MEM (_, _, a)) =
     let
       val _ = destTop a
     in
       (T.empty, fn rho =>
-        makeEvidence G H makeAx)
+        abtToAbs makeAx)
     end
     | MemberEq _ _ = raise Match
 end
