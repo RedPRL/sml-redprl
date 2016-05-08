@@ -59,4 +59,21 @@ struct
            T.lookup rho (#1 rgoal) // ([],[]))
     end
     | SynthEqIntro _ _ = raise Match
+
+  fun SynthType _ (G |> H >> SYN r) =
+    let
+      val (lvlGoal, _, _) =
+        makeGoal @@
+          [] |> H >> TYPE (r, EXP)
+      val psi = T.empty @> lvlGoal
+    in
+      (psi, fn rho =>
+        let
+          val lvl = T.lookup rho (#1 lvlGoal) // ([],[])
+        in
+          makeEvidence G H @@
+            makeUniv lvl
+        end)
+    end
+    | SynthType _ _ = raise Match
 end

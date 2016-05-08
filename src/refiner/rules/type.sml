@@ -32,20 +32,20 @@ struct
     end
     | Intro _ _ = raise Match
 
-  fun Synth _ (G |> H >> SYN r) =
+  fun Synth _ (G |> H >> TYPE (a, tau)) =
     let
-      val (lvlGoal, _, _) =
+      val (univGoal, _, _) =
         makeGoal @@
-          [] |> H >> TYPE (r, EXP)
-      val psi = T.empty @> lvlGoal
+          [] |> H >> SYN a
+      val psi = T.empty @> univGoal
     in
       (psi, fn rho =>
-        let
-          val lvl = T.lookup rho (#1 lvlGoal) // ([],[])
-        in
-          makeEvidence G H @@
-            makeUniv lvl
-        end)
+         let
+           val univ = T.lookup rho (#1 univGoal) // ([],[])
+           val lvl = check (metactx univ) (CTT UNIV_GET_LVL $ [([],[]) \ univ], LVL)
+         in
+           makeEvidence G H @@ lvl
+         end)
     end
     | Synth _ _ = raise Match
 end

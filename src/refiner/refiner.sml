@@ -52,14 +52,15 @@ struct
         ORELSE CEquivRules.IsType alpha
         ORELSE RecordRules.IsType alpha
         ORELSE UnivRules.IsType alpha
+        ORELSE TypeRules.Synth alpha
 
     (* TODO! need to use Nominal LCF version of THEN, or else names will get
      * muddled ! *)
-    fun Synth alpha =
+    and Synth alpha =
       HypSynth alpha
         ORELSE PiRules.ApSynth alpha
         ORELSE RecordRules.ProjSynth alpha
-        ORELSE (THEN (TypeRules.Synth alpha, IsType alpha))
+        ORELSE (THEN (SynthRules.SynthType alpha, IsType alpha))
 
     fun Intro alpha =
       SquashRules.Intro alpha
