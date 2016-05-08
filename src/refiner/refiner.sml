@@ -121,7 +121,7 @@ struct
     in
       if Abt.eq (P, Q) then
         (T.empty, fn rho =>
-           abtToAbs @@ check' (`i , tau))
+           abtToAbs @@ check (`i , tau))
       else
         raise Fail "Failed to unify with hypothesis"
     end
@@ -185,7 +185,7 @@ struct
         val tau = sort P
         val (ceqGoal, _, _) =
           makeGoal @@
-            H >> TRUE (check (getMetas H) (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP)
+            H >> TRUE (check (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP)
 
         val (mainGoal, _, _) =
           makeGoal @@

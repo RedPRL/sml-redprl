@@ -41,24 +41,21 @@ struct
                  | OP_NONE _ $ _ =>
                      let
                        val alpha = makeNameStore ()
-                       fun goMetas xs = List.foldl (fn ((x,vl), psi) => MetaCtx.insert psi x vl) xs arguments
-                       val context = updateMetas goMetas emptyContext
-                       val goal = context >> TRUE (prop, tau)
-                       val st as (psi, vld) = E.tactic (sign, VarCtx.empty) script alpha goal
+                       val goal = emptyContext >> TRUE (prop, tau)
+                       val st as (psi, vld) = E.tactic (sign, Variable.Ctx.empty) script alpha goal
                      in
                        case Ctx.ConsView.out psi of
                             Ctx.ConsView.EMPTY =>
                               let
-                                val phi = metactx definiens
                                 val _ \ evd = outb (vld Ctx.empty)
-                                val evd' = check phi (OP_SOME tau $ [([],[]) \ evd], SortData.OPT tau)
-                                val prf = REFINE tau $ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd']
+                                val evd' = check (OP_SOME tau $ [([],[]) \ evd], SortData.OPT tau)
+                                val prf = check (REFINE tau $ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd'], SortData.THM tau)
                               in
                                 def sign
                                   {parameters = parameters,
                                    arguments = arguments,
                                    sort = sort,
-                                   definiens = check phi (prf, SortData.THM tau)}
+                                   definiens = prf}
                               end
                           | _ => raise Fail
                                    ("Incomplete proof:\n\n"

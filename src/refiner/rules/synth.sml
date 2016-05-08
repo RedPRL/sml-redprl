@@ -18,10 +18,7 @@ struct
         makeGoal @@
           H' >> TYPE (a, tau)
 
-      val univ =
-        check
-          (getMetas H'')
-          (CTT (UNIV tau) $ [([],[]) \ lvlHole [][]], EXP)
+      val univ = check (CTT (UNIV tau) $ [([],[]) \ lvlHole [][]], EXP)
 
       val (eqGoal, _, _) =
         makeGoal @@

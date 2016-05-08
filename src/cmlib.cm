@@ -5,6 +5,7 @@ Library
   structure StringOrdered
   structure IntHashable
   structure Sum
+  structure Susp
 is
   ../lib/cmlib/cmlib.cm
 

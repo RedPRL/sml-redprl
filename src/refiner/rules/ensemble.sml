@@ -37,10 +37,7 @@ struct
           val l2 = T.lookup rho (#1 goalB) // ([],[])
           (* TODO: do we need to ensure that x is not free in l2? *)
         in
-          abtToAbs @@
-            check
-              (getMetas H')
-              (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
+          abtToAbs @@ check (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
         end)
     end
     | IsType _ _ = raise Match
@@ -65,10 +62,10 @@ struct
       val bm = subst (m1, x) b
       val (squashGoal, _, H) =
         makeGoal @@
-          H >> TRUE (makeSquash (getMetas H) tau2 bm, EXP)
+          H >> TRUE (makeSquash tau2 bm, EXP)
 
       val z = alpha 0
-      val bz = subst (check' (`z, tau1), x) b
+      val bz = subst (check (`z, tau1), x) b
 
       val H' = updateHyps (fn xs => Ctx.snoc xs z (a, tau1)) H
 
@@ -94,10 +91,10 @@ struct
       val pred = subst (mainHole [] [], x) b
       val (predGoal, _, H) =
         makeGoal @@
-          H >> TRUE (makeSquash (getMetas H) tau2 pred, EXP)
+          H >> TRUE (makeSquash tau2 pred, EXP)
 
       val z = alpha 0
-      val bz = subst (check' (`z, tau1), x) b
+      val bz = subst (check (`z, tau1), x) b
 
       val H' = updateHyps (fn xs => Ctx.snoc xs z (a, tau1)) H
 
@@ -117,8 +114,8 @@ struct
       val (ensemble, _) = Ctx.lookup (getHyps H) i
       val (tau1, tau2, a, x, bx) = destEnsemble ensemble
       val (z1, z2) = (alpha 0, alpha 1)
-      val z1tm = check' (`z1, tau1)
-      val bz1 = makeSquash (getMetas H) tau2 (subst (z1tm, x) bx)
+      val z1tm = check (`z1, tau1)
+      val bz1 = makeSquash tau2 (subst (z1tm, x) bx)
       val hyps =
         Ctx.interposeAfter
           (getHyps H)
@@ -140,7 +137,7 @@ struct
     in
       (psi, fn rho =>
         let
-          val itm = check' (`i, tau1)
+          val itm = check (`i, tau1)
         in
           abtToAbs @@
             T.lookup rho (#1 goal) // ([], [itm, makeAx])

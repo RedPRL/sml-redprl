@@ -48,10 +48,7 @@ struct
           (* is this necessary?: *)
           val _ = if VarCtx.member (varctx l2) x then raise Fail "Variable free in level expr" else ()
         in
-          abtToAbs @@
-            check
-              (getMetas H')
-              (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
+          abtToAbs @@ check (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
         end)
     end
     | IsType _ _ _ = raise Match
@@ -67,7 +64,7 @@ struct
           makeEqSequent H (a1,a2,univ)
 
       val z = alpha 0
-      val ztm = check' (`z, EXP)
+      val ztm = check (`z, EXP)
       val b1z = subst (ztm, x) b1x
       val b2z = subst (ztm, y) b2y
 

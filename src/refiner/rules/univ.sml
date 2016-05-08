@@ -76,7 +76,7 @@ struct
   fun IsType alpha (H >> TYPE (ty, EXP)) =
     let
       val (tau, lvl) = destUniv ty
-      val lvl' = check (metactx lvl) (LVL_OP LSUCC $ [([],[]) \ lvl], LVL)
+      val lvl' = check (LVL_OP LSUCC $ [([],[]) \ lvl], LVL)
     in
       (T.empty, fn rho =>
         abtToAbs lvl')
@@ -100,11 +100,7 @@ struct
     let
       val (tau, i) = destUniv a
       val j = LvlUtil.destLSucc i
-      val univ =
-        check
-          (metactx a)
-          (CTT (UNIV EXP) $ [([],[]) \ j],
-           tau)
+      val univ = check (CTT (UNIV EXP) $ [([],[]) \ j], tau)
 
       val (goal, _, _) =
         makeGoal @@

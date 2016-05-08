@@ -8,10 +8,7 @@ struct
   fun IsType alpha (H >> TYPE (ceq, _)) =
     let
       val (tau, m, n) = destCEquiv ceq
-      val base =
-        check
-          (metactx ceq)
-          (CTT (BASE tau) $ [], EXP)
+      val base = check (CTT (BASE tau) $ [], EXP)
       val (goal1, _, H') =
         makeGoal @@
           H >> MEM (m, base)
@@ -21,8 +18,7 @@ struct
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        abtToAbs @@
-          check' (LVL_OP LBASE $ [], LVL))
+        abtToAbs @@ check (LVL_OP LBASE $ [], LVL))
     end
     | IsType _ _ = raise Match
 
@@ -35,11 +31,11 @@ struct
 
       val (goal1, _, H) =
         makeGoal @@
-          H >> TRUE (makeCEquiv (getMetas H) (m1, m2), EXP)
+          H >> TRUE (makeCEquiv (m1, m2), EXP)
 
       val (goal2, _, _) =
         makeGoal @@
-         H >> TRUE (makeCEquiv (getMetas H) (n1, n2), EXP)
+         H >> TRUE (makeCEquiv (n1, n2), EXP)
 
       val psi = T.empty @> goal1 @> goal2
     in
@@ -68,7 +64,7 @@ struct
       val (tau, m, n) = destCEquiv P
       val (subgoal, _, _) =
         makeGoal @@
-          H >> TRUE (makeCEquiv (getMetas H) (n,m), EXP)
+          H >> TRUE (makeCEquiv (n,m), EXP)
       val psi = T.empty @> subgoal
     in
       (psi, fn rho =>
@@ -88,7 +84,7 @@ struct
          let
            val (subgoal, _, _) =
              makeGoal @@
-               H >> TRUE (makeCEquiv (getMetas H) (m', n), EXP)
+               H >> TRUE (makeCEquiv (m', n), EXP)
            val psi = T.empty @> subgoal
          in
            (psi, fn rho =>
@@ -109,7 +105,7 @@ struct
          let
            val (subgoal, _, _) =
              makeGoal @@
-               H >> TRUE (makeCEquiv (getMetas H) (m', n), EXP)
+               H >> TRUE (makeCEquiv (m', n), EXP)
            val psi = T.empty @> subgoal
          in
            (psi, fn rho =>

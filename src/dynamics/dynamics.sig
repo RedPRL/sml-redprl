@@ -8,8 +8,8 @@ sig
   type symbol = Signature.Abt.symbol
   type 'a step = 'a SmallStep.t
   type sign = Signature.sign
-  type 'a metaenv = 'a Signature.Abt.MetaCtx.dict
-  type 'a varenv = 'a Signature.Abt.VarCtx.dict
+  type 'a metaenv = 'a Signature.Abt.Metavariable.Ctx.dict
+  type 'a varenv = 'a Signature.Abt.Variable.Ctx.dict
   type symenv = Signature.Abt.symenv
 
   datatype 'a closure = <: of 'a * (abs closure metaenv * symenv * abt closure varenv)

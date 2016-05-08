@@ -46,6 +46,7 @@ struct
      | EQ_SYN (r, s) => EQ_SYN (metasubstEnv rho r, metasubstEnv rho s)
      | SYN r => SYN (metasubstEnv rho r)
 
+  structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
   structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Valence)
   structure MetaRenUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Metavariable)
   structure SymRenUtil = ContextUtil (structure Ctx = SymCtx and Elem = Symbol)
@@ -58,17 +59,8 @@ struct
            val concl' = substConcl rho concl
 
            val goHyps = SymbolTelescope.map (fn (Q, tau) => (metasubstEnv rho Q, tau))
-           val goMetas =
-             MetaCtx.foldl
-               (fn (k, vl, acc) =>
-                  case Option.map outb (MetaCtx.find rho k) of
-                      NONE => MetaCtx.insert acc k vl
-                    | SOME (_ \ m) => MetaCtxUtil.union (acc, metactx m))
-               MetaCtx.empty
-
-           val goCtx = updateHyps goHyps o updateMetas goMetas
          in
-           goCtx H >> substConcl rho concl
+           updateHyps goHyps H >> substConcl rho concl
          end
      | G |> jdg =>
          G |> substEvidenceEnv rho jdg
@@ -93,10 +85,6 @@ struct
       (fn ((p, _), acc) => MetaCtxUtil.union (acc, metactx p))
       MetaCtx.empty
       hyps
-
-  val rec judgmentMetactx =
-    fn H >> concl => MetaCtxUtil.union (hypsMetactx (getHyps H), MetaCtxUtil.union (getMetas H, conclMetactx concl))
-     | G |> jdg => judgmentMetactx jdg
 
   (* Code review needed below: *)
 

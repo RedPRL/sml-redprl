@@ -1,6 +1,8 @@
 structure RefinerKit =
 struct
   structure Ctx = SymbolTelescope and Signature = AbtSignature
+  structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
+
   structure Lcf =
   struct
     structure Lcf = DependentLcf (Judgment)
@@ -90,9 +92,7 @@ struct
       val vl = Judgment.evidenceValence jdg
       val (_, tau) = vl
       val H = goalHypCtx jdg
-      val mctx = MetaCtx.insert (getMetas H) x vl
-      fun h us ms = check mctx (x $# (us, ms), tau)
-      val H' = updateMetas (fn _ => mctx) H
+      fun h us ms = check (x $# (us, ms), tau)
     in
       ((x,jdg), h, H)
     end
@@ -137,33 +137,28 @@ struct
              end
          | _ => raise Fail "Expected CEquiv"
 
-    fun makeEq mctx (m,n,a) =
+    fun makeEq (m,n,a) =
       check
-        mctx
         (CTT (EQ (sort m)) $ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a],
          EXP)
 
-    fun makeCEquiv mctx (m,n) =
+    fun makeCEquiv (m,n) =
       check
-        mctx
         (CTT (CEQUIV (sort m)) $ [([],[]) \ m, ([],[]) \ n],
          EXP)
 
-    fun makeMember mctx (m,a) =
+    fun makeMember (m,a) =
       check
-        mctx
         (CTT (MEMBER (sort m)) $ [([],[]) \ m, ([],[]) \ a],
          EXP)
 
-    fun makeSquash mctx tau a =
+    fun makeSquash tau a =
       check
-        mctx
         (CTT (SQUASH tau) $ [([],[]) \ a],
          EXP)
 
     fun makeUniv lvl =
       check
-        (metactx lvl)
         (CTT (UNIV EXP) $ [([],[]) \ lvl],
          EXP)
 
@@ -171,26 +166,25 @@ struct
       H >> EQ_MEM args
 
     fun makeMemberSequent H args =
-      H >> TRUE (makeMember (getMetas H) args, EXP)
+      H >> TRUE (makeMember args, EXP)
 
     fun makeLevelSequent (H : Sequent.context) =
       let
         val H' = updateHyps (fn _ => Ctx.empty) H
       in
-        H' >> TRUE (check' (CTT (BASE LVL) $ [], EXP), LVL)
+        H' >> TRUE (check (CTT (BASE LVL) $ [], EXP), LVL)
       end
 
-    val makeAx = check' (CTT AX $ [], EXP)
+    val makeAx = check (CTT AX $ [], EXP)
 
     fun abtToAbs m =
-      checkb (metactx m) (([],[]) \ m, (([],[]), sort m))
+      checkb (([],[]) \ m, (([],[]), sort m))
 
     fun makeEvidence G (H : context) m =
       let
         val (xs, taus) = ListPair.unzip G
       in
         checkb
-          (getMetas H)
           (([], xs) \ m,
            (([], taus), sort m))
       end

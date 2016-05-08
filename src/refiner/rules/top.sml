@@ -20,7 +20,7 @@ struct
     in
       (T.empty, fn rho =>
         abtToAbs @@
-          check' (LVL_OP LBASE $ [], LVL))
+          check (LVL_OP LBASE $ [], LVL))
     end
     | IsType _ _ = raise Match
 
