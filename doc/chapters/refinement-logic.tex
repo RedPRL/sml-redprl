@@ -1,10 +1,14 @@
 \chapter{The Refinement Logic}
 
-\newcommand\PRLSequent[6]{
-  \IMode{#1}\mid%
-  \IMode{#2}\gg_{\IMode{#3}}^{\IMode{#4}}%
-  \IMode{#5}\leadsto%
-  \OMode{#6}%
+\newcommand\PRLSequent[5]{
+  \IMode{#1}\gg_{\IMode{#2}}^{\IMode{#3}}%
+  \IMode{#4}\leadsto%
+  \OMode{#5}%
+}
+
+\newcommand\GenericPRLSequent[6]{
+  [\IMode{#1}]\mid%
+  \PRLSequent{#2}{#3}{#4}{#5}{#6}%
 }
 
 \newcommand\IsHypCtx[3]{
@@ -48,7 +52,14 @@ $\IsHypCtx{\Theta}{\Upsilon}{H}$ is defined as follows:
 \RedPRL's refinement logic is organized around several forms of \emph{sequent},
 which are schematized as follows, depending on the form of conclusion:
 \[
-  \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{\textit{conclusion}}{\textit{synthesis}}
+  \PRLSequent{H}{\Theta}{\Upsilon}{\textit{conclusion}}{\textit{synthesis}}
+  \tag{Sequent}
+\]
+
+We also use a \emph{generic sequent} which closes over variables in $\Gamma$:
+\[
+  \GenericPRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{\textit{conclusion}}{\textit{synthesis}}
+  \tag{Generic Sequent}
 \]
 
 \newcommand\IsConcl[5]{%
@@ -128,18 +139,34 @@ follows:
 
 Now that we have enumerated the forms of conclusion, we can precisely give the
 syntax of the sequent judgment. We will say that the sequent
-$\PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{C}{S}$ is a meaningful judgment in
+$\PRLSequent{H}{\Theta}{\Upsilon}{C}{S}$ is a meaningful judgment in
 case the following presuppositions obtain:
+\begin{enumerate}
+  \item $\IsMetaCtx{\Theta}$
+  \item $\IsSymCtx{\Upsilon}$
+  \item $\IsHypCtx{\Theta}{\Upsilon}{H}$
+  % \item $\IsVarCtx{\Gamma}$ and $\IMode{\Gamma}\subseteq\IMode{\Dom{H}}$
+  \item $\IsConcl{\Theta}{\Upsilon}{\Dom{H}}{C}{\tau}$
+  \item $\IsAbs{\Theta}{\Upsilon}{\Dom{H}}{S}{\tau}$
+\end{enumerate}
+
+The meaning of the sequent judgment is given inductively by a collection of
+formal rules, which are then related to the \emph{intended semantics} of
+Nominal Computational Type Theory by a soundness theorem.
+
+\subsubsection{Syntax of Generic Sequents}
+
+The generic sequent $\GenericPRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{C}{E}$ is presupposes the following:
 \begin{enumerate}
   \item $\IsMetaCtx{\Theta}$
   \item $\IsSymCtx{\Upsilon}$
   \item $\IsHypCtx{\Theta}{\Upsilon}{H}$
   \item $\IsVarCtx{\Gamma}$ and $\IMode{\Gamma}\subseteq\IMode{\Dom{H}}$
   \item $\IsConcl{\Theta}{\Upsilon}{\Dom{H}}{C}{\tau}$
-  \item $\IsAbs{\Theta}{\Upsilon}{\Dom{H}\setminus \Gamma}{S}{\MkValence{}{\Gamma}{\tau}}$
+  \item $\IsAbs{\Theta}{\Upsilon}{\Dom{H}\setminus\Gamma}{E}{\MkValence{}{\Gamma}{\tau}}$
 \end{enumerate}
 
-Notice that the synthesis of a sequent judgment is always an \emph{abstraction}
+Notice that the synthesis of a \emph{generic} sequent is always an \emph{abstraction}
 / binder, which allows a rule to single out some portion $\Gamma$ of the
 hypothetical context $H$ for later substitution. This provides a hygienic way
 to to express refinement rules which introduce a new hypothesis, such as the
@@ -147,31 +174,41 @@ introduction rule for functions. More generally, the binding of
 variables in the synthesis to a judgment is an essential part of the
 Dependent~LCF apparatus.
 
-The meaning of the sequent judgment is given inductively by a collection of
-formal rules, which are then related to the \emph{intended semantics} of
-Nominal Computational Type Theory by a soundness theorem.
-
 \section{Selected Rules}
 
+The \emph{generic sequent} is introduced as follows, by closing synthesis of the corresponding
+regular sequent in an abstraction of the variables in $\Gamma$.
 \[
   \infer{
-    \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{M \in_\tau A}{\MkAbs{}{\vec{x}}{\mathtt{Ax}}}
+    \GenericPRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{C}{
+      \MkAbs{}{\vec{x}}{\Subst{\vec{x}}{\Gamma}{S}}
+    }
   }{
-    \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{M = M \in_\tau A}{\MkAbs{}{\vec{x}}{\mathtt{Ax}}}
+    \PRLSequent{H}{\Theta}{\Upsilon}{C}{S}
   }
 \]
 
+Membership in checking-mode is defined in terms of equality.
 \[
   \infer{
-    \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{R = S\ \textit{synth}_\tau}{\MkAbs{}{\vec{x}}{A_1}}
+    \PRLSequent{H}{\Theta}{\Upsilon}{M \in_\tau A}{\mathtt{Ax}}
+  }{
+    \PRLSequent{H}{\Theta}{\Upsilon}{M = M \in_\tau A}{\mathtt{Ax}}
+  }
+\]
+
+Dually, equality synthesis is defined in terms of membership synthesis.
+\[
+  \infer{
+    \PRLSequent{H}{\Theta}{\Upsilon}{R = S\ \textit{synth}_\tau}{A_1}
   }{
     \begin{array}{l}
-      \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{R\ \textit{synth}_\tau}{\MkAbs{}{\vec{x}}{A_1}}\\
-      \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{S\ \textit{synth}_\tau}{\MkAbs{}{\vec{x}}{A_2}}
+      \PRLSequent{H}{\Theta}{\Upsilon}{R\ \textit{synth}_\tau}{A_1}\\
+      \PRLSequent{H}{\Theta}{\Upsilon}{S\ \textit{synth}_\tau}{A_2}
     \end{array}
     \begin{array}{l}
-      \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{A_1\ \textit{type}}{\MkAbs{}{\vec{x}}{i}}\\
-      \PRLSequent{\Gamma}{H}{\Theta}{\Upsilon}{A_1=A_2\in_\AbtSortExp \mathbb{U}_i}{\MkAbs{}{\vec{x}}{\mathtt{Ax}}}
+      \PRLSequent{H}{\Theta}{\Upsilon}{A_1\ \textit{type}}{i}\\
+      \PRLSequent{H}{\Theta}{\Upsilon}{A_1=A_2\in_\AbtSortExp \mathbb{U}_i}{\mathtt{Ax}}
     \end{array}
   }
 \]
