@@ -263,7 +263,6 @@ struct
   and stepLvlSup sign (m <: env) =
     let
       open OperatorData LevelOperatorData SortData
-      val psi = metactx m
       fun makeSup x y = check (LVL_OP LSUP $ [([],[]) \ x, ([],[]) \ y], LVL)
       fun makeSucc x = check (LVL_OP LSUCC $ [([],[]) \ x], LVL)
       val _ \ l1 = List.nth (subterms m, 0)
@@ -312,7 +311,6 @@ struct
       case out rcd of
          RCD (RECORD lbl) $ [_ \ a , (_, [x]) \ bx] =>
            let
-             val psi = metactx rcd
              fun depIsect a x bx = check (CTT DEP_ISECT $ [([],[]) \ a, ([],[x]) \ bx], EXP)
              val singl = check (RCD (SINGL lbl) $ [([],[]) \ a], EXP)
              val self = Variable.named "self"
