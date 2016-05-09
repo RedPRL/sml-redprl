@@ -183,7 +183,7 @@ struct
        | CTT DFUN $ _ => FINAL
        | CTT DEP_ISECT $ _ => FINAL
        | CTT FUN $ [_ \ a, _ \ b] =>
-           ret @@ CTT DFUN $$ [([],[]) \ a, ([],[Variable.named "x"]) \ b] <: env
+           ret @@ CTT DFUN $$ [([],[]) \ a, ([],[Variable.fresh (varctx m) "x"]) \ b] <: env
        | CTT LAM $ _ => FINAL
        | CTT AP $ _ =>
            stepAp sign (m <: env)
@@ -310,7 +310,7 @@ struct
            let
              fun depIsect a x bx = CTT DEP_ISECT $$ [([],[]) \ a, ([],[x]) \ bx]
              val singl = RCD (SINGL lbl) $$ [([],[]) \ a]
-             val self = Variable.named "self"
+             val self = Variable.fresh (varctx rcd) "self"
              val proj = RCD (PROJ lbl) $$ [([],[]) \ check (`self, EXP)]
              val bself = subst (proj, x) bx
            in
@@ -369,12 +369,12 @@ struct
                            ret @@ pushDownNu (sigma, tau) env u t <: env
                        end
                    | _ => ret @@ pushDownNu (sigma, tau) env u t <: env)
-             | STEP t' =>
+             | STEP (t' <: _) =>
                  let
                    (* If t was non-canonical, try computing it with a fresh variable 'a' and then
                     * re-embed the result in the nu-expression, replacing 'a' in the result with 'u'. *)
                    val (mrho, srho, vrho) = env
-                   val a = Symbol.named "a"
+                   val a = Symbol.fresh (symctx t') "a"
                    val srho' = SymCtx.insert srho u a
                    val env' = (mrho, srho', vrho)
                  in
