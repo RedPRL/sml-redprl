@@ -11,7 +11,8 @@ struct
   fun ?e = raise e
 
   local
-    open Abt OperatorData Sequent infix $ \
+    open Abt OperatorData Sequent
+    infix $ $$ \
     infix 4 >>
 
     structure NameStore = HashTable (structure Key = IntHashable)
@@ -48,8 +49,8 @@ struct
                             Ctx.ConsView.EMPTY =>
                               let
                                 val _ \ evd = outb (vld Ctx.empty)
-                                val evd' = check (OP_SOME tau $ [([],[]) \ evd], SortData.OPT tau)
-                                val prf = check (REFINE tau $ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd'], SortData.THM tau)
+                                val evd' = OP_SOME tau $$ [([],[]) \ evd]
+                                val prf = REFINE tau $$ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd']
                               in
                                 def sign
                                   {parameters = parameters,

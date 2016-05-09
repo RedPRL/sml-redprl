@@ -1,7 +1,8 @@
 structure UnivRules : UNIV_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix $ \ ^! @@
+  infix 0 @@
+  infix 1 $ $$ \ ^!
   infix 4 >>
   infix 3 |> @>
 
@@ -76,7 +77,7 @@ struct
   fun IsType alpha (H >> TYPE (ty, EXP)) =
     let
       val (tau, lvl) = destUniv ty
-      val lvl' = check (LVL_OP LSUCC $ [([],[]) \ lvl], LVL)
+      val lvl' = LVL_OP LSUCC $$ [([],[]) \ lvl]
     in
       (T.empty, fn rho =>
         abtToAbs lvl')
@@ -100,7 +101,7 @@ struct
     let
       val (tau, i) = destUniv a
       val j = LvlUtil.destLSucc i
-      val univ = check (CTT (UNIV EXP) $ [([],[]) \ j], tau)
+      val univ = CTT (UNIV EXP) $$ [([],[]) \ j]
 
       val (goal, _, _) =
         makeGoal @@

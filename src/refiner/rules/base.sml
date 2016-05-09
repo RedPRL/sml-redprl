@@ -1,7 +1,8 @@
 structure BaseRules : BASE_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix @@ $ \ @>
+  infix 0 @@
+  infix 1 $ $$ \ @>
   infix 2 //
   infix 4 >>
   infix 3 |>
@@ -20,7 +21,7 @@ struct
     in
       (T.empty, fn rho =>
         abtToAbs @@
-          check (LVL_OP LBASE $ [], LVL))
+          LVL_OP LBASE $$ [])
     end
     | IsType _ _ = raise Match
 
@@ -43,8 +44,8 @@ struct
             let
               val meta = newMeta ""
               val xtm = check (`x, tau)
-              val base = check (CTT (BASE tau) $ [], EXP)
-              val goal = check (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
+              val base = CTT (BASE tau) $$ []
+              val goal = CTT (MEMBER tau) $$ [([],[]) \ xtm, ([],[]) \ base]
             in
               tl @> (meta, H >> TRUE (goal, EXP))
             end)
@@ -53,7 +54,7 @@ struct
 
       val (mainGoal, _, _) =
         makeGoal @@
-          H >> TRUE (check (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP), EXP)
+          H >> TRUE (CTT (CEQUIV tau) $$ [([],[]) \ m, ([],[]) \ n], EXP)
 
       val subgoals' = subgoals @> mainGoal
     in

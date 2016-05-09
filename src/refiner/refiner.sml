@@ -4,7 +4,7 @@ struct
   open RefinerKit
 
   open Sequent
-  infix $ \ @@ @> $#
+  infix $ $$ \ @@ @> $#
   infix 2 //
   infix 4 >>
 
@@ -185,7 +185,7 @@ struct
         val tau = sort P
         val (ceqGoal, _, _) =
           makeGoal @@
-            H >> TRUE (check (CTT (CEQUIV tau) $ [([],[]) \ P, ([],[]) \ Q], EXP), EXP)
+            H >> TRUE (CTT (CEQUIV tau) $$ [([],[]) \ P, ([],[]) \ Q], EXP)
 
         val (mainGoal, _, _) =
           makeGoal @@

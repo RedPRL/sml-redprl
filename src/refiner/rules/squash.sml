@@ -1,7 +1,8 @@
 structure SquashRules : SQUASH_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ $ \ @>
+  infix 0 @@
+  infix 1 $ $$ \ @>
   infix 2 //
   infix 4 >>
   infix 3 |>
@@ -19,7 +20,7 @@ struct
       val (_, a') = destSquash a
       val (_, b') = destSquash b
       val (tau, _) = destUniv univ
-      val eq = check (CTT (EQ tau) $ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ], EXP)
+      val eq = CTT (EQ tau) $$ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ]
       val (goal, _, _) =
         makeGoal @@
           H >> TRUE (eq, EXP)

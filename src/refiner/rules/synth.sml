@@ -1,7 +1,8 @@
 structure SynthRules : SYNTH_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData RecordOperatorData SortData
-  infix @@ $ $# \ @>
+  infix 0 @@
+  infix 1 $ $$ $# \ @>
   infix 2 //
   infix 3 >>
   infix 2 |>
@@ -18,7 +19,7 @@ struct
         makeGoal @@
           H' >> TYPE (a, tau)
 
-      val univ = check (CTT (UNIV tau) $ [([],[]) \ lvlHole [][]], EXP)
+      val univ = CTT (UNIV tau) $$ [([],[]) \ lvlHole [][]]
 
       val (eqGoal, _, _) =
         makeGoal @@

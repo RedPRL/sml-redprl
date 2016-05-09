@@ -1,14 +1,15 @@
 structure CEquivRules : CEQUIV_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix $ \ @> @@
+  infix 0 @@
+  infix 1 $ $$ \ @>
   infix 4 >>
   infix 3 |>
 
   fun IsType alpha (H >> TYPE (ceq, _)) =
     let
       val (tau, m, n) = destCEquiv ceq
-      val base = check (CTT (BASE tau) $ [], EXP)
+      val base = CTT (BASE tau) $$ []
       val (goal1, _, H') =
         makeGoal @@
           H >> MEM (m, base)
@@ -18,7 +19,7 @@ struct
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        abtToAbs @@ check (LVL_OP LBASE $ [], LVL))
+        abtToAbs @@ LVL_OP LBASE $$ [])
     end
     | IsType _ _ = raise Match
 

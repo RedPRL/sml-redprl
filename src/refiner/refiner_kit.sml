@@ -58,7 +58,7 @@ struct
   infix 0 @@
 
   open Abt Sequent
-  infix $ $# \
+  infix $ $$ $# \
   infix 4 >>
   infix 3 |>
 
@@ -138,29 +138,19 @@ struct
          | _ => raise Fail "Expected CEquiv"
 
     fun makeEq (m,n,a) =
-      check
-        (CTT (EQ (sort m)) $ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a],
-         EXP)
+      CTT (EQ (sort m)) $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
 
     fun makeCEquiv (m,n) =
-      check
-        (CTT (CEQUIV (sort m)) $ [([],[]) \ m, ([],[]) \ n],
-         EXP)
+      CTT (CEQUIV (sort m)) $$ [([],[]) \ m, ([],[]) \ n]
 
     fun makeMember (m,a) =
-      check
-        (CTT (MEMBER (sort m)) $ [([],[]) \ m, ([],[]) \ a],
-         EXP)
+      CTT (MEMBER (sort m)) $$ [([],[]) \ m, ([],[]) \ a]
 
     fun makeSquash tau a =
-      check
-        (CTT (SQUASH tau) $ [([],[]) \ a],
-         EXP)
+      CTT (SQUASH tau) $$ [([],[]) \ a]
 
     fun makeUniv lvl =
-      check
-        (CTT (UNIV EXP) $ [([],[]) \ lvl],
-         EXP)
+      CTT (UNIV EXP) $$ [([],[]) \ lvl]
 
     fun makeEqSequent H args =
       H >> EQ_MEM args
@@ -172,13 +162,10 @@ struct
       let
         val H' = updateHyps (fn _ => Ctx.empty) H
       in
-        H' >> TRUE (check (CTT (BASE LVL) $ [], EXP), LVL)
+        H' >> TRUE (CTT (BASE LVL) $$ [], LVL)
       end
 
-    val makeAx = check (CTT AX $ [], EXP)
-
-    fun abtToAbs m =
-      checkb (([],[]) \ m, (([],[]), sort m))
+    val makeAx = CTT AX $$ []
 
     fun makeEvidence G (H : context) m =
       let

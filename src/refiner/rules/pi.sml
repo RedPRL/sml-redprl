@@ -1,7 +1,8 @@
 structure PiRules : PI_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ $ $# \ @>
+  infix 0 @@
+  infix 1 $ $$ $# \ @>
   infix 2 //
   infix 4 >>
   infix 3 |>
@@ -26,7 +27,7 @@ struct
               ^ DebugShowAbt.toString m
 
   fun makeAp m n =
-    check (CTT AP $ [([],[]) \ m, ([],[]) \ n], EXP)
+    CTT AP $$ [([],[]) \ m, ([],[]) \ n]
 
   val IsType = QuantifierKit.IsType (CTT DFUN)
   val TypeEq = QuantifierKit.TypeEq (CTT DFUN)
@@ -69,7 +70,7 @@ struct
         makeGoal @@
           H >> SYN r
 
-      val dom = check (CTT DFUN_DOM $ [([],[]) \ tyHole [] []], EXP)
+      val dom = CTT DFUN_DOM $$ [([],[]) \ tyHole [] []]
 
       val (chkGoal, _, _) =
         makeGoal @@
@@ -81,7 +82,7 @@ struct
         let
           val ty = T.lookup rho (#1 tyGoal) // ([],[])
         in
-          abtToAbs @@ check (CTT DFUN_COD $ [([],[]) \ ty, ([],[]) \ r], EXP)
+          abtToAbs @@ CTT DFUN_COD $$ [([],[]) \ ty, ([],[]) \ r]
         end)
     end
     | ApSynth _ _ = raise Match
@@ -110,7 +111,7 @@ struct
         let
           val ev = outb @@ T.lookup rho (#1 goal)
         in
-          abtToAbs @@ check (CTT LAM $ [ev], EXP)
+          abtToAbs @@ CTT LAM $$ [ev]
         end)
     end
     | Intro _ _ = raise Match

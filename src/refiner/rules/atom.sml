@@ -1,7 +1,8 @@
 structure AtomRules : ATOM_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData AtomsOperatorData LevelOperatorData SortData
-  infix @@ $ $# \ @>
+  infix 0 @@
+  infix 2 $ $$ $# \ @>
   infix 4 >>
   infix 3 |>
 
@@ -14,7 +15,7 @@ struct
               ^ DebugShowAbt.toString m
 
   fun makeAtom tau =
-    check (ATM (ATOM tau) $ [], EXP)
+    ATM (ATOM tau) $$ []
 
   fun destToken m =
     case out m of
@@ -39,7 +40,7 @@ struct
     in
       (T.empty, fn rho =>
         abtToAbs @@
-          check (LVL_OP LBASE $ [], LVL))
+          LVL_OP LBASE $$ [])
     end
     | IsType _ _ = raise Match
 
@@ -90,7 +91,7 @@ struct
 
       val atomTy = makeAtom sigma
       val toksEq = makeEq (t1, t2, atomTy)
-      val toksNotEq = check (CTT NOT $ [([],[]) \ toksEq], EXP)
+      val toksNotEq = CTT NOT $$ [([],[]) \ toksEq]
 
       val Hyes = updateHyps (fn xs => Ctx.snoc xs z (toksEq, EXP)) H
       val Hno = updateHyps (fn xs => Ctx.snoc xs z (toksNotEq, EXP)) H

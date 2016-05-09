@@ -4,7 +4,7 @@ struct
   structure SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
   structure O = OperatorData and N = NominalLcfOperatorData and S = SortData
 
-  infix $ \ $#
+  infix $ $$ \ $#
 
   type atom = symbol
   type rule = abt
@@ -31,7 +31,7 @@ struct
              else
                check (`a, S.EXP)
          | theta $ es =>
-             check (theta $ List.map (goAbs syms) es, tau)
+             theta $$ List.map (goAbs syms) es
          | x $# (us, ms) =>
              check (x $# (us, List.map (go syms) ms), tau)
          | _ => m
@@ -89,7 +89,7 @@ struct
       case Abt.out stmt of
            O.LCF (N.SEQ _) $ [_ \ mtac, (us, _) \ stmt] =>
              (us, mtac) :: collect stmt
-         | _ => [([], Abt.check (O.LCF N.ALL $ [([],[]) \ stmt], S.MTAC))]
+         | _ => [([], O.LCF N.ALL $$ [([],[]) \ stmt])]
 
     fun out sign stmt =
       let

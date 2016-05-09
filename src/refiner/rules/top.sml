@@ -1,7 +1,8 @@
 structure TopRules : TOP_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix @@ $ \ @>
+  infix 0 @@
+  infix 1 $ $$ \ @>
   infix 2 //
   infix 4 >>
   infix 3 |>
@@ -20,7 +21,7 @@ struct
     in
       (T.empty, fn rho =>
         abtToAbs @@
-          check (LVL_OP LBASE $ [], LVL))
+          LVL_OP LBASE $$ [])
     end
     | IsType _ _ = raise Match
 

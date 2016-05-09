@@ -1,7 +1,8 @@
 structure QuantifierKit : QUANTIFIER_KIT =
 struct
   open RefinerKit SortData OperatorData LevelOperatorData
-  infix @@ $ $# \ @>
+  infix 0 @@
+  infix 1 $ $$ $# \ @>
   infix 2 //
   infix 4 >>
   infix 3 |>
@@ -48,7 +49,7 @@ struct
           (* is this necessary?: *)
           val _ = if VarCtx.member (varctx l2) x then raise Fail "Variable free in level expr" else ()
         in
-          abtToAbs @@ check (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
+          abtToAbs @@ LVL_OP LSUP $$ [([],[]) \ l1, ([],[]) \ l2]
         end)
     end
     | IsType _ _ _ = raise Match

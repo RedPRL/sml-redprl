@@ -1,7 +1,8 @@
 structure RecordRules : RECORD_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData RecordOperatorData LevelOperatorData SortData
-  infix @@ $ $# \ @>
+  infix 0 @@
+  infix 1 $ $$ $# \ @>
   infix 2 //
   infix 3 >>
   infix 2 |>
@@ -23,7 +24,7 @@ struct
               ^ DebugShowAbt.toString m
 
   fun makeProj lbl m =
-    check (RCD (PROJ lbl) $ [([],[]) \ m], EXP)
+    RCD (PROJ lbl) $$ [([],[]) \ m]
 
   fun IsType alpha (goal as (H >> TYPE (ty, EXP))) =
     let
@@ -96,7 +97,7 @@ struct
           val ty = T.lookup rho (#1 tyGoal) // ([],[])
         in
           abtToAbs @@
-            check (RCD SINGL_GET_TY $ [([],[]) \ ty], EXP)
+            RCD SINGL_GET_TY $$ [([],[]) \ ty]
         end)
     end
     | ProjSynth _ _ = raise Match

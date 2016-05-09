@@ -1,7 +1,8 @@
 structure EnsembleRules : ENSEMBLE_RULES =
 struct
   open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix @@ $ $# \ @>
+  infix 0 @@
+  infix 1 $ $$ $# \ @>
   infix 2 //
   infix 3 >>
   infix 2 |>
@@ -37,7 +38,7 @@ struct
           val l2 = T.lookup rho (#1 goalB) // ([],[])
           (* TODO: do we need to ensure that x is not free in l2? *)
         in
-          abtToAbs @@ check (LVL_OP LSUP $ [([],[]) \ l1, ([],[]) \ l2], LVL)
+          abtToAbs @@ LVL_OP LSUP $$ [([],[]) \ l1, ([],[]) \ l2]
         end)
     end
     | IsType _ _ = raise Match
