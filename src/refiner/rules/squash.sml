@@ -19,10 +19,7 @@ struct
       val (_, a') = destSquash a
       val (_, b') = destSquash b
       val (tau, _) = destUniv univ
-      val eq =
-        check
-          (getMetas H)
-          (CTT (EQ tau) $ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ], EXP)
+      val eq = check (CTT (EQ tau) $ [([],[]) \ a', ([],[]) \ b', ([],[]) \ univ], EXP)
       val (goal, _, _) =
         makeGoal @@
           H >> TRUE (eq, EXP)

@@ -20,7 +20,7 @@ struct
     in
       (T.empty, fn rho =>
         abtToAbs @@
-          check' (LVL_OP LBASE $ [], LVL))
+          check (LVL_OP LBASE $ [], LVL))
     end
     | IsType _ _ = raise Match
 
@@ -42,9 +42,9 @@ struct
           (fn (x, tau, tl) =>
             let
               val meta = newMeta ""
-              val xtm = check' (`x, tau)
-              val base = check' (CTT (BASE tau) $ [], EXP)
-              val goal = check' (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
+              val xtm = check (`x, tau)
+              val base = check (CTT (BASE tau) $ [], EXP)
+              val goal = check (CTT (MEMBER tau) $ [([],[]) \ xtm, ([],[]) \ base], EXP)
             in
               tl @> (meta, H >> TRUE (goal, EXP))
             end)
@@ -53,7 +53,7 @@ struct
 
       val (mainGoal, _, _) =
         makeGoal @@
-          H >> TRUE (check (getMetas H) (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP), EXP)
+          H >> TRUE (check (CTT (CEQUIV tau) $ [([],[]) \ m, ([],[]) \ n], EXP), EXP)
 
       val subgoals' = subgoals @> mainGoal
     in
@@ -66,13 +66,13 @@ struct
     let
       val (base, tau) = Ctx.lookup (getHyps H) h
       val _ = destBase base
-      val htm = check' (`h, tau)
+      val htm = check (`h, tau)
 
       val z = alpha 0
       val ctx' =
         Ctx.interposeAfter
           (getHyps H)
-          (h, Ctx.snoc Ctx.empty z (makeCEquiv (getMetas H) (htm, htm), EXP))
+          (h, Ctx.snoc Ctx.empty z (makeCEquiv (htm, htm), EXP))
 
       val H' = updateHyps (fn _ => ctx') H
 

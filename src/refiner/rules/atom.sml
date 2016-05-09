@@ -14,7 +14,7 @@ struct
               ^ DebugShowAbt.toString m
 
   fun makeAtom tau =
-    check' (ATM (ATOM tau) $ [], EXP)
+    check (ATM (ATOM tau) $ [], EXP)
 
   fun destToken m =
     case out m of
@@ -39,7 +39,7 @@ struct
     in
       (T.empty, fn rho =>
         abtToAbs @@
-          check' (LVL_OP LBASE $ [], LVL))
+          check (LVL_OP LBASE $ [], LVL))
     end
     | IsType _ _ = raise Match
 
@@ -89,8 +89,8 @@ struct
       val z = alpha 0
 
       val atomTy = makeAtom sigma
-      val toksEq = makeEq (getMetas H) (t1, t2, atomTy)
-      val toksNotEq = check (getMetas H) (CTT NOT $ [([],[]) \ toksEq], EXP)
+      val toksEq = makeEq (t1, t2, atomTy)
+      val toksNotEq = check (CTT NOT $ [([],[]) \ toksEq], EXP)
 
       val Hyes = updateHyps (fn xs => Ctx.snoc xs z (toksEq, EXP)) H
       val Hno = updateHyps (fn xs => Ctx.snoc xs z (toksNotEq, EXP)) H

@@ -12,17 +12,11 @@ struct
         makeGoal @@
           makeLevelSequent H
 
-      val H'' = updateMetas (fn _ => getMetas H') H
-
-      val univ =
-        check
-          (getMetas H)
-          (CTT (UNIV tau) $ [([],[]) \ lvlHole [] []],
-           EXP)
+      val univ = check (CTT (UNIV tau) $ [([],[]) \ lvlHole [] []], EXP)
 
       val (memGoal, _, _)  =
         makeGoal @@
-          makeMemberSequent H'' (a, univ)
+          makeMemberSequent H' (a, univ)
 
       val psi = T.empty @> lvlGoal @> memGoal
     in
@@ -41,7 +35,7 @@ struct
       (psi, fn rho =>
          let
            val univ = T.lookup rho (#1 univGoal) // ([],[])
-           val lvl = check (metactx univ) (CTT UNIV_GET_LVL $ [([],[]) \ univ], LVL)
+           val lvl = check (CTT UNIV_GET_LVL $ [([],[]) \ univ], LVL)
          in
            abtToAbs lvl
          end)

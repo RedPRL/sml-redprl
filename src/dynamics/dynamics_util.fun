@@ -3,9 +3,9 @@ struct
   open D D.SmallStep D.Signature
   infix <:
 
-  structure Env = Abt.VarCtx
-  structure MetaEnv = Abt.MetaCtx
-  structure SymEnv = Abt.SymCtx
+  structure Env = Abt.Variable.Ctx
+  structure MetaEnv = Abt.Metavariable.Ctx
+  structure SymEnv = Abt.Symbol.Ctx
 
   val empty =
     (MetaEnv.empty, SymEnv.empty, Env.empty)
@@ -58,7 +58,7 @@ struct
     let
       open Abt
       val srho = SymEnv.foldl (fn (u,_,r) => SymEnv.insert r u u) SymEnv.empty (symctx m)
-      val rho = Env.foldl (fn (x,tau,r) => Env.insert r x (check' (` x, tau))) Env.empty (varctx m)
+      val rho = Env.foldl (fn (x,tau,r) => Env.insert r x (check (` x, tau))) Env.empty (varctx m)
     in
       eval sign (MetaEnv.empty, srho, rho) m
     end

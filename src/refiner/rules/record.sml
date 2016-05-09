@@ -23,9 +23,7 @@ struct
               ^ DebugShowAbt.toString m
 
   fun makeProj lbl m =
-    check
-      (metactx m)
-      (RCD (PROJ lbl) $ [([],[]) \ m], EXP)
+    check (RCD (PROJ lbl) $ [([],[]) \ m], EXP)
 
   fun IsType alpha (goal as (H >> TYPE (ty, EXP))) =
     let
@@ -98,7 +96,7 @@ struct
           val ty = T.lookup rho (#1 tyGoal) // ([],[])
         in
           abtToAbs @@
-            check (metactx ty) (RCD SINGL_GET_TY $ [([],[]) \ ty], EXP)
+            check (RCD SINGL_GET_TY $ [([],[]) \ ty], EXP)
         end)
     end
     | ProjSynth _ _ = raise Match

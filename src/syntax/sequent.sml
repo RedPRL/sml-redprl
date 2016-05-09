@@ -14,31 +14,36 @@ struct
   type metactx = Abt.metactx
   type hypctx = (prop * sort) SymbolTelescope.telescope
 
+  structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
+  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Valence)
+
   datatype context =
     CONTEXT of
-      {metactx : metactx,
+      {metactx : metactx Susp.susp,
        hypctx : hypctx}
+
+  fun hypsMetactx H =
+    SymbolTelescope.foldl
+      (fn ((a, _), psi) => MetaCtxUtil.union (psi, Abt.metactx a))
+      MetaCtx.empty
+      H
 
   val emptyContext =
     CONTEXT
-      {metactx = Abt.MetaCtx.empty,
+      {metactx = Susp.delay (fn _ => MetaCtx.empty),
        hypctx = SymbolTelescope.empty}
 
   fun getHyps (CONTEXT {hypctx,...}) =
     hypctx
 
-  fun getMetas (CONTEXT {metactx,...}) =
-    metactx
-
   fun updateHyps f (CONTEXT {metactx, hypctx}) =
-    CONTEXT
-      {metactx = metactx,
-       hypctx = f hypctx}
-
-  fun updateMetas f (CONTEXT {metactx, hypctx}) =
-    CONTEXT
-      {metactx = f metactx,
-       hypctx = hypctx}
+    let
+      val H = f hypctx
+    in
+      CONTEXT
+        {metactx = Susp.delay (fn _ => hypsMetactx H),
+         hypctx = H}
+    end
 
   (* A sequent consists in a context (of metavariables, symbols and hypotheses)
    * and a conclusion [(P,tau)], where [tau] is the sort of the evidence to be
@@ -59,6 +64,18 @@ struct
 
   infix 4 >>
   infix 3 |>
+
+  val conclMetactx =
+    fn TRUE (p, _) => Abt.metactx p
+     | TYPE (p, _) => Abt.metactx p
+     | EQ_MEM (m, n, a) => MetaCtxUtil.union (MetaCtxUtil.union (Abt.metactx m, Abt.metactx n), Abt.metactx a)
+     | MEM (m, a) => MetaCtxUtil.union (Abt.metactx m, Abt.metactx a)
+     | EQ_SYN (r, s) => MetaCtxUtil.union (Abt.metactx r, Abt.metactx s)
+     | SYN r => Abt.metactx r
+
+  val rec judgmentMetactx =
+    fn G |> jdg => judgmentMetactx jdg
+     | CONTEXT {hypctx,...} >> concl => MetaCtxUtil.union (hypsMetactx hypctx, conclMetactx concl)
 
   val conclToString =
     fn TRUE (a, tau) => ShowAbt.toString a ^ " true"

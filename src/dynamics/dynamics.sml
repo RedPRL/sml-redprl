@@ -13,8 +13,10 @@ struct
   open Abt SmallStep
   infix $ \ $#
 
-  type 'a varenv = 'a Abt.VarCtx.dict
-  type 'a metaenv = 'a Signature.Abt.MetaCtx.dict
+  structure SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx and MetaCtx = Metavariable.Ctx
+
+  type 'a varenv = 'a Abt.Variable.Ctx.dict
+  type 'a metaenv = 'a Signature.Abt.Metavariable.Ctx.dict
 
   datatype 'a closure = <: of 'a * env
   withtype env = abs closure metaenv * symenv * abt closure varenv
@@ -70,7 +72,6 @@ struct
          | STEP (n' <: env') =>
              STEP @@
                check
-                 (metactx m)
                  (theta $ listModifyItem i (fn (us, xs) \ a => (us,xs) \ n') es,
                   sort m)
                <: env'
@@ -127,7 +128,7 @@ struct
     let
       val e <: (mrho', srho', vrho') = MetaCtx.lookup mrho x
       val (vs', xs) \ m = outb e
-      val srho'' = ListPair.foldlEq  (fn (u,v,r) => SymCtx.insert r u v) srho' (vs', us)
+      val srho'' = ListPair.foldlEq  (fn (v,(u, _),r) => SymCtx.insert r v u) srho' (vs', us)
       val vrho'' = ListPair.foldlEq (fn (x,m,r) => VarCtx.insert r x (m <: (mrho', srho', vrho'))) vrho' (xs, ms)
     in
       ret @@ m <: (mrho', srho'', vrho'')
@@ -176,7 +177,7 @@ struct
        | CTT (EQ _) $ _ => FINAL
        | CTT (CEQUIV _) $ _ => FINAL
        | CTT (MEMBER tau) $ [_ \ x, _ \ a] =>
-           ret @@ check (metactx m) (CTT (EQ tau) $ [([],[]) \ x, ([],[]) \ x, ([],[]) \ a], EXP) <: env
+           ret @@ check (CTT (EQ tau) $ [([],[]) \ x, ([],[]) \ x, ([],[]) \ a], EXP) <: env
        | CTT (UNIV tau) $ [_ \ l] => FINAL
        | CTT (SQUASH _) $ _ => FINAL
        | CTT (ENSEMBLE _) $ _ => FINAL
@@ -185,16 +186,16 @@ struct
        | CTT DFUN $ _ => FINAL
        | CTT DEP_ISECT $ _ => FINAL
        | CTT FUN $ [_ \ a, _ \ b] =>
-           ret @@ check (metactx m) (CTT DFUN $ [([],[]) \ a, ([],[Variable.named "x"]) \ b], EXP) <: env
+           ret @@ check (CTT DFUN $ [([],[]) \ a, ([],[Variable.named "x"]) \ b], EXP) <: env
        | CTT LAM $ _ => FINAL
        | CTT AP $ _ =>
            stepAp sign (m <: env)
        | CTT VOID $ [] => FINAL
        | CTT NOT $ [_ \ a] =>
            let
-             val void = check' (CTT VOID $ [], EXP)
+             val void = check (CTT VOID $ [], EXP)
            in
-             ret @@ check (metactx m) (CTT FUN $ [([],[]) \ a, ([],[]) \ void], EXP) <: env
+             ret @@ check (CTT FUN $ [([],[]) \ a, ([],[]) \ void], EXP) <: env
            end
        | CTT DFUN_DOM $ _ =>
            stepDFunDom sign (m <: env)
@@ -262,9 +263,8 @@ struct
   and stepLvlSup sign (m <: env) =
     let
       open OperatorData LevelOperatorData SortData
-      val psi = metactx m
-      fun makeSup x y = check psi (LVL_OP LSUP $ [([],[]) \ x, ([],[]) \ y], LVL)
-      fun makeSucc x = check psi (LVL_OP LSUCC $ [([],[]) \ x], LVL)
+      fun makeSup x y = check (LVL_OP LSUP $ [([],[]) \ x, ([],[]) \ y], LVL)
+      fun makeSucc x = check (LVL_OP LSUCC $ [([],[]) \ x], LVL)
       val _ \ l1 = List.nth (subterms m, 0)
       val _ \ l2 = List.nth (subterms m, 1)
     in
@@ -291,7 +291,7 @@ struct
               if compareSymbols env (lbl, lbl') then
                 ret @@ hd <: env
               else
-                ret @@ check (metactx proj) (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
+                ret @@ check (RCD (PROJ lbl) $ [([],[]) \ tl], EXP) <: env
           | _ => raise Stuck @@ proj <: env)
     end
 
@@ -311,11 +311,10 @@ struct
       case out rcd of
          RCD (RECORD lbl) $ [_ \ a , (_, [x]) \ bx] =>
            let
-             val psi = metactx rcd
-             fun depIsect a x bx = check psi (CTT DEP_ISECT $ [([],[]) \ a, ([],[x]) \ bx], EXP)
-             val singl = check psi (RCD (SINGL lbl) $ [([],[]) \ a], EXP)
+             fun depIsect a x bx = check (CTT DEP_ISECT $ [([],[]) \ a, ([],[x]) \ bx], EXP)
+             val singl = check (RCD (SINGL lbl) $ [([],[]) \ a], EXP)
              val self = Variable.named "self"
-             val proj = check psi (RCD (PROJ lbl) $ [([],[]) \ check' (`self, EXP)], EXP)
+             val proj = check (RCD (PROJ lbl) $ [([],[]) \ check (`self, EXP)], EXP)
              val bself = subst (proj, x) bx
            in
              ret @@ depIsect singl self bself <: env
@@ -389,7 +388,7 @@ struct
                           val srho''' = SymCtx.insert srho a u
                           val env''' = (mrho', srho''', vrho')
                         in
-                          ret @@ check (metactx m) (CTT (NU (sigma, tau)) $ [([u], []) \ t], tau) <: env'''
+                          ret @@ check (CTT (NU (sigma, tau)) $ [([u], []) \ t], tau) <: env'''
                         end
                     | STEP (t' <: env'') =>
                         let
@@ -397,7 +396,7 @@ struct
                           val srho''' = SymCtx.insert srho a u
                           val env''' = (mrho', srho''', vrho')
                         in
-                          ret @@ check (metactx m) (CTT (NU (sigma, tau)) $ [([u], []) \ t'], tau) <: env'''
+                          ret @@ check (CTT (NU (sigma, tau)) $ [([u], []) \ t'], tau) <: env'''
                         end
                  end)
        | _ => raise Stuck @@ m <: env
@@ -406,13 +405,13 @@ struct
   and pushDownNu (sigma, tau) env u m =
     case infer m of
        (theta $ es, tau) =>
-         check (metactx m) (theta $ List.map (pushDownNuB (sigma, tau) env u) es, tau)
+         check (theta $ List.map (pushDownNuB (sigma, tau) env u) es, tau)
      | _ => raise Fail "Impossible"
 
   and pushDownNuB (sigma, tau) env u ((us, xs) \ m) =
     let
       open OperatorData CttOperatorData
     in
-      (us, xs) \ check (metactx m) (CTT (NU (sigma, tau)) $ [([u], []) \ m], tau)
+      (us, xs) \ check (CTT (NU (sigma, tau)) $ [([u], []) \ m], tau)
     end
 end

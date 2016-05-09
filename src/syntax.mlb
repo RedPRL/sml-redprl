@@ -26,7 +26,15 @@ local
   end
 
   syntax/sequent.sig
-  syntax/sequent.sml
+  local
+    local
+      ../lib/cmlib/cmlib.mlb
+    in
+      structure Susp
+    end
+  in
+    syntax/sequent.sml
+  end
 in
   structure SortData
   structure Sort

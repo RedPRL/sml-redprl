@@ -18,7 +18,6 @@ struct
           val (xs', taus') = ListPair.unzip G
         in
           checkb
-            (metactx m)
             ((us, xs' @ xs) \ m,
              ((sigmas, taus' @ taus), tau))
         end)

@@ -11,11 +11,9 @@ sig
   type context
 
   val emptyContext : context
-  val getHyps : context -> hypctx
-  val getMetas : context -> metactx
 
+  val getHyps : context -> hypctx
   val updateHyps : (hypctx -> hypctx) -> context -> context
-  val updateMetas : (metactx -> metactx) -> context -> context
 
   datatype concl =
       TRUE of prop * sort
@@ -28,6 +26,8 @@ sig
   datatype judgment =
       >> of context * concl (* categorical sequent *)
     | |> of (var * sort) list * judgment (* generic sequent *)
+
+  val judgmentMetactx : judgment -> metactx
 
   val toString : judgment -> string
 end

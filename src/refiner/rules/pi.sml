@@ -25,11 +25,8 @@ struct
              @@ "Expected Ap but got "
               ^ DebugShowAbt.toString m
 
-  fun makeAp mctx m n =
-    check
-      mctx
-      (CTT AP $ [([],[]) \ m, ([],[]) \ n], EXP)
-
+  fun makeAp m n =
+    check (CTT AP $ [([],[]) \ m, ([],[]) \ n], EXP)
 
   val IsType = QuantifierKit.IsType (CTT DFUN)
   val TypeEq = QuantifierKit.TypeEq (CTT DFUN)
@@ -41,7 +38,7 @@ struct
       val (y2, m2) = destLam lam2
 
       val z = alpha 0
-      val ztm = check' (`z, EXP)
+      val ztm = check (`z, EXP)
 
       val bz = subst (ztm, x) bx
       val m1z = subst (ztm, y1) m1
@@ -72,10 +69,7 @@ struct
         makeGoal @@
           H >> SYN r
 
-      val dom =
-        check
-          (getMetas H)
-          (CTT DFUN_DOM $ [([],[]) \ tyHole [] []], EXP)
+      val dom = check (CTT DFUN_DOM $ [([],[]) \ tyHole [] []], EXP)
 
       val (chkGoal, _, _) =
         makeGoal @@
@@ -87,10 +81,7 @@ struct
         let
           val ty = T.lookup rho (#1 tyGoal) // ([],[])
         in
-          abtToAbs @@
-            check
-              (getMetas H)
-              (CTT DFUN_COD $ [([],[]) \ ty, ([],[]) \ r], EXP)
+          abtToAbs @@ check (CTT DFUN_COD $ [([],[]) \ ty, ([],[]) \ r], EXP)
         end)
     end
     | ApSynth _ _ = raise Match
@@ -100,7 +91,7 @@ struct
       val (a, x, bx) = destDFun P
 
       val z = alpha 0
-      val ztm = check' (`z, EXP)
+      val ztm = check (`z, EXP)
       val bz = subst (ztm, x) bx
 
       val H' = updateHyps (fn xs => Ctx.snoc xs z (a, EXP)) H
@@ -119,10 +110,7 @@ struct
         let
           val ev = outb @@ T.lookup rho (#1 goal)
         in
-          abtToAbs @@
-            check
-              (getMetas H)
-              (CTT LAM $ [ev], EXP)
+          abtToAbs @@ check (CTT LAM $ [ev], EXP)
         end)
     end
     | Intro _ _ = raise Match
@@ -134,16 +122,16 @@ struct
 
       val y = alpha 0
       val z = alpha 1
-      val ytm = check' (`y, EXP)
+      val ytm = check (`y, EXP)
 
       val (goal1, s, H) =
         makeGoal @@
           H >> TRUE (a, EXP)
 
       val bs = subst (s [] [], x) bx
-      val ftm = check' (`f, EXP)
-      val fs = makeAp (getMetas H) ftm (s [] [])
-      val yeqfs = makeEq (getMetas H) (ytm, fs, bs)
+      val ftm = check (`f, EXP)
+      val fs = makeAp ftm (s [] [])
+      val yeqfs = makeEq (ytm, fs, bs)
 
       val hctx = Ctx.snoc (Ctx.snoc Ctx.empty y (bs, EXP)) z (yeqfs, EXP)
 
@@ -158,7 +146,7 @@ struct
       (psi, fn rho =>
         let
           val s = T.lookup rho (#1 goal1) // ([],[])
-          val fs = makeAp (metactx s) ftm s
+          val fs = makeAp ftm s
         in
           abtToAbs @@
             T.lookup rho (#1 goal2) // ([], [fs, makeAx])
@@ -171,10 +159,10 @@ struct
       val (a, x, bx) = destDFun dfun
 
       val z = alpha 0
-      val ztm = check' (`z, EXP)
+      val ztm = check (`z, EXP)
       val bz = subst (ztm, x) bx
-      val fz = makeAp (getMetas H) f ztm
-      val gz = makeAp (getMetas H) g ztm
+      val fz = makeAp f ztm
+      val gz = makeAp g ztm
 
       val H' = updateHyps (fn xs => Ctx.snoc xs z (a, EXP)) H
 

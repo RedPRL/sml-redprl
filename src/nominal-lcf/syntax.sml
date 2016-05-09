@@ -1,6 +1,7 @@
 structure NominalLcfSyntax : NOMINAL_LCF_SYNTAX =
 struct
   open Abt
+  structure SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
   structure O = OperatorData and N = NominalLcfOperatorData and S = SortData
 
   infix $ \ $#
@@ -18,23 +19,21 @@ struct
     DynamicsUtil.evalOpen sign t
       handle _ => t
 
-
   local
     fun go syms m =
       let
         val (m', tau) = infer m
-        val psi = metactx m
       in
         case m' of
            O.LCF (N.HYP_VAR a) $ _ =>
              if SymCtx.member syms a then
                m
              else
-               check' (`a, S.EXP)
+               check (`a, S.EXP)
          | theta $ es =>
-             check psi (theta $ List.map (goAbs syms) es, tau)
+             check (theta $ List.map (goAbs syms) es, tau)
          | x $# (us, ms) =>
-             check psi (x $# (us, List.map (go syms) ms), tau)
+             check (x $# (us, List.map (go syms) ms), tau)
          | _ => m
       end
     and goAbs syms ((us,xs) \ m) =
@@ -90,7 +89,7 @@ struct
       case Abt.out stmt of
            O.LCF (N.SEQ _) $ [_ \ mtac, (us, _) \ stmt] =>
              (us, mtac) :: collect stmt
-         | _ => [([], Abt.check (Abt.metactx stmt) (O.LCF N.ALL $ [([],[]) \ stmt], S.MTAC))]
+         | _ => [([], Abt.check (O.LCF N.ALL $ [([],[]) \ stmt], S.MTAC))]
 
     fun out sign stmt =
       let
