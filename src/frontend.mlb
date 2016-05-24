@@ -9,8 +9,11 @@ local
     ../src/signature.mlb
     ../src/signature-elab.mlb
     ../src/syntax.mlb
+    ../lib/json.sml
   in
+    frontend/json-wrapper.sml
     frontend/frontend.sml
+    frontend/interactive.sml
   end
 
   frontend/main.sml

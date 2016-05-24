@@ -2,9 +2,12 @@ Group is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm
   ../lib/sml-typed-abts/lib/sml-parcom/parcom.cm
+  ../lib/json.sml
   syntax.cm
   cmlib.cm
   signature.cm
   signature-elab.cm
+  frontend/json-wrapper.sml
   frontend/frontend.sml
+  frontend/interactive.sml
   frontend/main.sml
