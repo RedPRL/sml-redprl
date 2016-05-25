@@ -13,3 +13,6 @@
 [submodule "lib/sml-dependent-lcf"]
 	path = lib/sml-dependent-lcf
 	url = https://github.com/JonPRL/sml-dependent-lcf.git
+[submodule "lib/sml-json"]
+	path = lib/sml-json
+	url = git@github.com:ak3n/sml-json

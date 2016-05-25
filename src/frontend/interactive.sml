@@ -2,14 +2,14 @@ structure Interactive =
 struct
   val version = "0.0.1"
 
-  open JsonWrapper
+  open Json
 
   datatype command =
     Stop
   | GetVersion
 
   fun getCommand obj =
-    case getValueByKey obj "cmd" of
+    case Json.getValueByKey obj "cmd" of
       SOME (Pair (_, String s)) =>
         (case s of
           "stop" => Stop
@@ -17,7 +17,7 @@ struct
         | _ => raise (Fail "Unknown command"))
     | _ => raise (Fail "Command is not specified")
 
-  fun printMessage m = print ("{\"msg\": \"" ^ m ^ "\"}")
+  fun printMessage m = print ("{\"msg\": \"" ^ m ^ "\"}\n")
 
   fun handleCommand command =
     case command of
