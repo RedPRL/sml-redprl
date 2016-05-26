@@ -8,5 +8,6 @@ Group is
   signature.cm
   signature-elab.cm
   frontend/frontend.sml
+  interactive/commands.sml
   frontend/interactive.sml
   frontend/main.sml

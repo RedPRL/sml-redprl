@@ -6,13 +6,18 @@ local
 
   local
     ../lib/sml-telescopes/telescopes.mlb
-    ../lib/sml-json/json.mlb
     ../src/signature.mlb
     ../src/signature-elab.mlb
     ../src/syntax.mlb
   in
     frontend/frontend.sml
-    frontend/interactive.sml
+
+    local
+      ../lib/sml-json/json.mlb
+      interactive/commands.sml
+    in
+      frontend/interactive.sml
+    end
   end
 
   frontend/main.sml
