@@ -14,7 +14,7 @@ local
 
     local
       ../lib/sml-json/json.mlb
-      interactive/commands.sml
+      interactive.mlb
     in
       frontend/interactive.sml
     end

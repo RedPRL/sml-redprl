@@ -1,6 +1,6 @@
 structure Interactive =
 struct
-  fun runLoop() =
+  fun runLoop sessions =
     let
       val inputLine =
         case TextIO.inputLine TextIO.stdIn of
@@ -8,9 +8,9 @@ struct
         | NONE => ""
       val jsonObj = Json.parse inputLine
       val command = Commands.getCommand jsonObj
+      val newSessions = Commands.handleCommand command sessions
     in
-      Commands.handleCommand command;
-      runLoop()
+      runLoop newSessions
     end
-    handle (Fail msg) => (Commands.printMessage msg; runLoop())
+    handle (Fail msg) => (Commands.printMessage msg; runLoop sessions)
 end

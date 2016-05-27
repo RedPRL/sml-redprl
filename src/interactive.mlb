@@ -1,0 +1,11 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../lib/cmlib/cmlib.mlb
+  ../lib/sml-json/json.mlb
+
+  interactive/sessions.sml
+  interactive/commands.sml
+in
+  structure Sessions
+  structure Commands
+end
