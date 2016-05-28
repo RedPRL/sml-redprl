@@ -2,14 +2,9 @@
 // of a particular sort along with computation rules which are available
 // to Red JonPRL's evaluator.
 
-Tac try(T : tac) = [ term  term ].
-
-Thm j[par : exp](arg : exp) : [term] by [
-  term term term term term
-  term term term
+Tac try(T : tac) = [
+  T || id
 ].
-
-Thm welp[p : exp](i : lvl) : [term] by [ term ].
 
 // Tacticals are easily defined from within JonPRL's computation system.
 // Here are a few examples:
