@@ -8,7 +8,7 @@ struct
     | SINGL_GET_TY
 end
 
-structure RecordOperator : OPERATOR =
+structure RecordOperator : ABT_OPERATOR =
 struct
   open RecordOperatorData
   structure Arity = Arity

@@ -154,4 +154,4 @@ struct
          "nu{" ^ Sort.toString sigma ^ "," ^ Sort.toString tau ^ "}"
 end
 
-structure CttOperator = SimpleOperator (CttSimpleOperator)
+structure CttOperator = AbtSimpleOperator (CttSimpleOperator)

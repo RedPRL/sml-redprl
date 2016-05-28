@@ -29,7 +29,7 @@ struct
     | HYP_VAR of 'i
 end
 
-structure NominalLcfOperator : OPERATOR =
+structure NominalLcfOperator : ABT_OPERATOR =
 struct
   open NominalLcfOperatorData SortData
 

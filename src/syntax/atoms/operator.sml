@@ -6,7 +6,7 @@ struct
     | TEST of Sort.t * Sort.t
 end
 
-structure AtomsOperator : OPERATOR =
+structure AtomsOperator : ABT_OPERATOR =
 struct
   open AtomsOperatorData SortData
   structure Arity = Arity

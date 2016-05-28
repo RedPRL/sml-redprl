@@ -17,7 +17,7 @@ struct
     | CUST of 'i * ('i * Sort.t) list * Arity.t
 end
 
-structure Operator : OPERATOR =
+structure Operator : ABT_OPERATOR =
 struct
   open OperatorData
   structure Arity = Arity

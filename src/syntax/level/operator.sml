@@ -6,7 +6,7 @@ struct
     | LSUP
 end
 
-structure LevelOperator : OPERATOR =
+structure LevelOperator : ABT_OPERATOR =
 struct
   open LevelOperatorData SortData
 

@@ -1,6 +1,6 @@
-structure Metavariable = Symbol ()
+structure Metavariable = AbtSymbol ()
 
-structure Symbol = Symbol ()
+structure Symbol = AbtSymbol ()
 
 (* it will come in handy for variables and symbols to be of the same type *)
 structure Variable = Symbol

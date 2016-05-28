@@ -1,4 +1,4 @@
-structure Sort :> SORT where type t = SortData.sort =
+structure Sort :> ABT_SORT where type t = SortData.sort =
 struct
   open SortData
   type t = sort
@@ -18,5 +18,5 @@ struct
      | RCD_LBL => "lbl"
 end
 
-structure Valence = Valence (structure Sort = Sort and Spine = ListSpine)
-structure Arity = Arity (Valence)
+structure Valence = AbtValence (structure Sort = Sort and Spine = ListSpine)
+structure Arity = AbtArity (Valence)
