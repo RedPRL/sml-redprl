@@ -5,11 +5,11 @@ struct
   type opid = Abt.symbol
   structure Telescope = SymbolTelescope
 
-  structure Arity = Abt.Operator.Arity
-  structure Valence = Arity.Valence
-  structure Sort = Valence.Sort
-  structure Symbol = Abt.Symbol
-  structure MCtx = Abt.Metavariable.Ctx
+  structure Arity = Abt.O.Ar
+  structure Valence = Arity.Vl
+  structure Sort = Valence.S
+  structure Symbol = Abt.Sym
+  structure MCtx = Abt.Metavar.Ctx
 
   type term = Abt.abt
   type symbol = Abt.symbol
@@ -39,7 +39,7 @@ struct
   fun subarguments (Th1, Th2) =
     let
       fun lookup x =
-        case List.find (fn (y, v) => Abt.Metavariable.eq (x, y)) Th2 of
+        case List.find (fn (y, v) => Abt.Metavar.eq (x, y)) Th2 of
              SOME (_, v) => v
            | NONE => raise NotFound
       fun go [] = true
@@ -77,9 +77,9 @@ struct
    *)
   fun def sign {parameters, arguments, sort, definiens} =
     let
-      val Y' = Abt.Symbol.Ctx.toList (Abt.symctx definiens)
-      val G = Abt.Variable.Ctx.toList (Abt.varctx definiens)
-      val Th' = Abt.Metavariable.Ctx.toList (Abt.metactx definiens)
+      val Y' = Abt.Sym.Ctx.toList (Abt.symctx definiens)
+      val G = Abt.Var.Ctx.toList (Abt.varctx definiens)
+      val Th' = Abt.Metavar.Ctx.toList (Abt.metactx definiens)
       val (_, tau') = Abt.infer definiens
 
       val _ =

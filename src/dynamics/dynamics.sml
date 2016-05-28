@@ -16,8 +16,8 @@ struct
 
   structure SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx and MetaCtx = Metavariable.Ctx
 
-  type 'a varenv = 'a Abt.Variable.Ctx.dict
-  type 'a metaenv = 'a Signature.Abt.Metavariable.Ctx.dict
+  type 'a varenv = 'a Abt.Var.Ctx.dict
+  type 'a metaenv = 'a Signature.Abt.Metavar.Ctx.dict
 
   datatype 'a closure = <: of 'a * env
   withtype env = abs closure metaenv * symenv * abt closure varenv

@@ -3,9 +3,9 @@ struct
   open D D.SmallStep D.Signature
   infix <:
 
-  structure Env = Abt.Variable.Ctx
-  structure MetaEnv = Abt.Metavariable.Ctx
-  structure SymEnv = Abt.Symbol.Ctx
+  structure Env = Abt.Var.Ctx
+  structure MetaEnv = Abt.Metavar.Ctx
+  structure SymEnv = Abt.Sym.Ctx
 
   val empty =
     (MetaEnv.empty, SymEnv.empty, Env.empty)

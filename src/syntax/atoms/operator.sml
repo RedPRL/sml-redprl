@@ -9,7 +9,7 @@ end
 structure AtomsOperator : ABT_OPERATOR =
 struct
   open AtomsOperatorData SortData
-  structure Arity = Arity
+  structure Ar = Arity
   type 'i t = 'i atoms_operator
 
   local
@@ -57,4 +57,3 @@ struct
      | TOKEN (u, tau) => "'" ^ f u ^ ":" ^ Sort.toString tau
      | TEST (sigma, tau) => "ifeq{" ^ Sort.toString sigma ^ "," ^ Sort.toString tau ^ "}"
 end
-

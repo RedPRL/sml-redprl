@@ -8,14 +8,14 @@ structure Variable = Symbol
 structure Ast =
   Ast
     (structure Operator = Operator
-     structure Metavariable = Metavariable)
+     structure Metavar = Metavariable)
 
 structure Abt =
   Abt
-    (structure Operator = Operator
-     structure Metavariable = Metavariable
-     structure Variable = Variable
-     structure Symbol = Symbol)
+    (structure O = Operator
+     structure Metavar = Metavariable
+     structure Var = Variable
+     structure Sym = Symbol)
 
 structure AstToAbt = AstToAbt (structure Ast = Ast and Abt = Abt)
 
