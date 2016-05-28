@@ -18,5 +18,5 @@ struct
      | RCD_LBL => "lbl"
 end
 
-structure Valence = AbtValence (structure Sort = Sort and Spine = ListSpine)
+structure Valence = AbtValence (structure S = Sort and Sp = ListSpine)
 structure Arity = AbtArity (Valence)

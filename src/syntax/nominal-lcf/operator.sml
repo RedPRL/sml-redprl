@@ -33,7 +33,7 @@ structure NominalLcfOperator : ABT_OPERATOR =
 struct
   open NominalLcfOperatorData SortData
 
-  structure Arity = Arity
+  structure Ar = Arity
 
   type 'i t = 'i script_operator
 
@@ -229,4 +229,3 @@ struct
      | NORMALIZE oi => "normalize" ^ (case oi of NONE => "" | SOME i => " in " ^ f i)
      | HYP_VAR i => "@" ^ f i
 end
-

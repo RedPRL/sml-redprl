@@ -20,7 +20,7 @@ end
 structure Operator : ABT_OPERATOR =
 struct
   open OperatorData
-  structure Arity = Arity
+  structure Ar = Arity
 
   type 'i t = 'i operator
 

@@ -22,7 +22,7 @@ structure CttSimpleOperator =
 struct
   open CttOperatorData
 
-  structure Arity = Arity
+  structure Ar = Arity
 
   type t = ctt_operator
 

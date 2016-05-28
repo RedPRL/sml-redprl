@@ -9,8 +9,8 @@ struct
 
   structure MetaCtx =
   struct
-    open Abt.Metavariable.Ctx
-    structure Util = ContextUtil (structure Ctx = Abt.Metavariable.Ctx and Elem = Valence)
+    open Abt.Metavar.Ctx
+    structure Util = ContextUtil (structure Ctx = Abt.Metavar.Ctx and Elem = Valence)
     open Util
   end
 

@@ -10,7 +10,7 @@ structure LevelOperator : ABT_OPERATOR =
 struct
   open LevelOperatorData SortData
 
-  structure Arity = Arity
+  structure Ar = Arity
 
   type 'i t = 'i level_operator
 

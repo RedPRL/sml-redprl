@@ -11,7 +11,7 @@ end
 structure RecordOperator : ABT_OPERATOR =
 struct
   open RecordOperatorData
-  structure Arity = Arity
+  structure Ar = Arity
   type 'i t = 'i rcd_operator
 
   local
