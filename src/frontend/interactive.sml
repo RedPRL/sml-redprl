@@ -12,5 +12,5 @@ struct
     in
       runLoop newSessions
     end
-    handle (Fail msg) => (Commands.printMessage msg; runLoop sessions)
+    handle E => (Commands.printMessage (exnMessage E); runLoop sessions)
 end
