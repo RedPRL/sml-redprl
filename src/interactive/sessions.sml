@@ -1,8 +1,11 @@
 structure Sessions =
 struct
+  type sessionId = string
+
   datatype session =
     (* sessionId,  *)
-    Session of string
+    Session of sessionId
 
-  fun generateSessionId() = "new session id"
+  (* Use current time as a session id *)
+  fun generateSessionId() = Time.toString(Time.now())
 end

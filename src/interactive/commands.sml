@@ -9,7 +9,7 @@ struct
     Stop
   | GetVersion
   | NewSession
-  | CloseSession of string (* sessionId *)
+  | CloseSession of sessionId
 
   fun getValueByKeyOrFail obj key =
     case Json.getValueByKey obj key of
@@ -27,7 +27,8 @@ struct
         | _ => raise (Fail "Unknown command"))
     | _ => raise (Fail "Command is not specified")
 
-  fun printMessage m = print ("{\"msg\": \"" ^ m ^ "\"}\n")
+  fun printKeyValue k v = print ("{\"" ^ k ^ "\": \"" ^ v ^ "\"}\n")
+  val printMessage = printKeyValue "msg"
 
   fun handleCommand command sessions =
     case command of
@@ -37,8 +38,13 @@ struct
       let
         val sessionId = generateSessionId()
       in
-        (Session sessionId)::sessions
+        printKeyValue "sessionId" sessionId; (Session sessionId)::sessions
       end
-    | CloseSession s => (print s; sessions)
+    | CloseSession s =>
+      let
+        val newSessions = List.filter (fn (Session sessionId) => not (sessionId = s)) sessions
+      in
+        newSessions
+      end
 
 end
