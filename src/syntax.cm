@@ -13,6 +13,10 @@ Library
   structure NominalLcfOperators
   structure NominalLcfV
 
+  structure LevelOperators
+  structure LevelV
+  structure LevelK
+
 (*
   structure LevelOperatorData
   structure LevelOperator

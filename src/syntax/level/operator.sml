@@ -1,38 +1,54 @@
-structure LevelOperatorData =
+structure LevelOperators =
 struct
-  datatype 'i level_operator =
+  datatype level_value =
       LBASE
     | LSUCC
-    | LSUP
+
+  datatype level_cont =
+      LSUP0
+    | LSUP1
+    | LSUCC_K
 end
 
-structure LevelOperator : ABT_OPERATOR =
+structure SimpleLevelV : ABT_SIMPLE_OPERATOR =
 struct
-  open LevelOperatorData SortData
-
+  open LevelOperators SortData ArityNotation
   structure Ar = Arity
 
-  type 'i t = 'i level_operator
+  type t = level_value
 
-  fun arity LBASE = ([], LVL)
-    | arity LSUCC = ([(([], []), LVL)], LVL)
-    | arity LSUP = ([(([],[]), LVL), (([],[]), LVL)], LVL)
+  infix <> ->>
+  val arity =
+    fn LBASE => [] ->> LVL
+     | LSUCC => [[] * [] <> LVL] ->> LVL
 
-  fun support LBASE = []
-    | support LSUCC = []
-    | support LSUP = []
+  val eq : t * t -> bool = op=
 
-  fun map f LBASE = LBASE
-    | map f LSUCC = LSUCC
-    | map f LSUP = LSUP
-
-  fun eq f (LBASE, LBASE) = true
-    | eq f (LSUCC, LSUCC) = true
-    | eq f (LSUP, LSUP) = true
-    | eq _ _ = false
-
-  fun toString f LBASE = "lbase"
-    | toString f LSUCC = "lsucc"
-    | toString f LSUP = "lsup"
-
+  val toString =
+    fn LBASE => "lbase"
+     | LSUCC => "lsucc"
 end
+
+structure SimpleLevelK : ABT_SIMPLE_OPERATOR =
+struct
+  open LevelOperators SortData ArityNotation
+  structure Ar = Arity
+
+  type t = level_cont
+
+  infix <> ->>
+  val arity =
+    fn LSUP0 => [[] * [] <> LVL] ->> LVL
+     | LSUP1 => [[] * [] <> LVL] ->> LVL
+     | LSUCC_K => [] ->> LVL
+
+  val eq : t * t -> bool = op=
+
+  val toString =
+    fn LSUP0 => "lsup0"
+     | LSUP1 => "lsup1"
+     | LSUCC_K => "lsucc!"
+end
+
+structure LevelV = AbtSimpleOperator (SimpleLevelV)
+structure LevelK = AbtSimpleOperator (SimpleLevelK)
