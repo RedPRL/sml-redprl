@@ -100,6 +100,12 @@ struct
    | TOKEN of symbol * RS.sort
    | IF_EQ of RS.sort * 'a * 'a * 'a * 'a
 
+   | RCD_CONS of symbol * 'a * 'a
+   | RCD_SINGL of symbol * 'a
+   | RECORD_TY of symbol * 'a * 'a
+   | RCD_PROJ of symbol * 'a
+   | SINGL_GET_TY of 'a
+
   infix 3 $ $$
   infix 2 \
 
@@ -118,8 +124,14 @@ struct
     fun intoAtmV th es =
       ret RS.EXP @@ O.V (ATM_V th) $$ es
 
+    fun intoRcdV th es =
+      ret RS.EXP @@ O.V (RCD_V th) $$ es
+
     fun intoCttD th es =
       O.D (CTT_D th) $$ es
+
+    fun intoRcdD th es =
+      O.D (RCD_D th) $$ es
 
     fun cutCtt (sigma, tau) th es m =
       O.CUT (sigma, tau) $$ [([],[]) \ O.K (CTT_K th) $$ es, ([],[]) \ m]
@@ -129,6 +141,9 @@ struct
 
     fun cutLvl th es m =
       O.CUT (RS.LVL, RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
+
+    fun cutRcd th es m =
+      O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K (RCD_K th) $$ es, ([],[]) \ m]
 
   in
     val into =
@@ -184,6 +199,17 @@ struct
           intoAtmV (AtomOperators.TOKEN (u, tau)) []
        | IF_EQ (tau, t1, t2, m, n) =>
           cutAtm (RS.EXP, tau) (AtomOperators.TEST0 tau) [([],[]) \ t2, ([],[]) \ m, ([],[]) \ n] t1
+       | RCD_CONS (u, m, n) =>
+          intoRcdV (RecordOperators.CONS u) [([],[]) \ m, ([],[]) \ n]
+       | RCD_SINGL (u, m) =>
+          intoRcdV (RecordOperators.SINGL u) [([],[]) \ m]
+       | RECORD_TY (u, a, b) =>
+          intoRcdD (RecordOperators.RECORD u) [([],[]) \ a, ([],[]) \ b]
+       | RCD_PROJ (u, m) =>
+          cutRcd (RecordOperators.PROJ u) [] m
+       | SINGL_GET_TY a =>
+          cutRcd RecordOperators.SINGL_GET_TY [] a
+
 
     local
       fun outVal v =
@@ -206,6 +232,8 @@ struct
          | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
          | O.V (ATM_V (AtomOperators.ATOM tau)) $ _ => ATOM tau
          | O.V (ATM_V (AtomOperators.TOKEN (u, tau))) $ _ => TOKEN (u, tau)
+         | O.V (RCD_V (RecordOperators.CONS u)) $ [_ \ m, _ \ n] => RCD_CONS (u, m, n)
+         | O.V (RCD_V (RecordOperators.SINGL u)) $ [_ \ a] =>  RCD_SINGL (u, a)
          | _ => raise Fail "outVal expected value"
 
       fun outCut k m =
@@ -219,12 +247,15 @@ struct
          | O.K (LVL_K LevelOperators.LSUP1) $ [_ \ n] => LSUP (n, m)
          | O.K (ATM_K (AtomOperators.TEST0 tau)) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (tau, m, t2, l, r)
          | O.K (ATM_K (AtomOperators.TEST1 tau)) $ [_ \ t1, _ \ l, _ \ r] => IF_EQ (tau, t1, m, l, r)
+         | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
+         | O.K (RCD_K RecordOperators.SINGL_GET_TY) $ [] => SINGL_GET_TY m
          | _ => raise Fail "outCut expected continuation"
 
       fun outDef th es =
         case (th, es) of
            (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
          | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
+         | (RCD_D (RecordOperators.RECORD u), [_ \ a, _ \ b]) => RECORD_TY (u, a, b)
          | _ => raise Fail "outDef expected definitional extension"
 
     in
