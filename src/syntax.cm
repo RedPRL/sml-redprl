@@ -3,15 +3,18 @@ Library
   structure Sort
   structure Valence
   structure Arity
+  structure ArityNotation
 
+  structure CttOperators
+  structure CttV
+
+
+(*
   structure NominalLcfOperatorData
   structure NominalLcfOperator
 
   structure LevelOperatorData
   structure LevelOperator
-
-  structure CttOperatorData
-  structure CttOperator
 
   structure RecordOperatorData
   structure RecordOperator
@@ -35,6 +38,7 @@ Library
   structure SymbolTelescope
   signature SEQUENT
   structure Sequent
+  *)
 is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
