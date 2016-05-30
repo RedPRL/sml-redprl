@@ -43,6 +43,8 @@ Library
   structure ShowAbt
   structure DebugShowAbt
 
+  functor RedPRLSyntax
+
   structure StringTelescope
   structure SymbolTelescope
   signature SEQUENT
@@ -67,6 +69,8 @@ is
   syntax/operator.sml
 
   syntax/abt.sml
+
+  syntax/syntax.fun
 
   syntax/telescope.sml
   syntax/sequent.sig
