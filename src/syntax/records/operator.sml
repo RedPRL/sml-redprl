@@ -2,6 +2,7 @@ structure RecordOperators =
 struct
   datatype 'i rcd_val =
      CONS of 'i
+   | SINGL of 'i
 
   datatype 'i rcd_cont =
      PROJ of 'i
@@ -20,19 +21,26 @@ struct
 
   infix <> ->>
 
-  fun arity (CONS lbl) =
-    [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+  val arity =
+    fn CONS lbl => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | SINGL lbl => [[] * [] <> EXP] ->> EXP
 
-  fun support (CONS lbl) =
-    [(lbl, RCD_LBL)]
+  val support =
+    fn CONS lbl => [(lbl, RCD_LBL)]
+     | SINGL lbl => [(lbl, RCD_LBL)]
 
-  fun eq  _ _ = true
+  fun eq f =
+    fn (CONS l1, CONS l2) => f (l1, l2)
+     | (SINGL l1, SINGL l2) => f (l1, l2)
+     | _ => false
 
-  fun toString f (CONS lbl) =
-    "rcons[" ^ f lbl ^ "]"
+  fun toString f =
+    fn CONS lbl => "rcons[" ^ f lbl ^ "]"
+     | SINGL lbl => "rsing[" ^ f lbl ^ "]"
 
-  fun map f (CONS lbl) =
-    CONS (f lbl)
+  fun map f =
+    fn CONS lbl => CONS (f lbl)
+     | SINGL lbl => SINGL (f lbl)
 end
 
 structure RecordK :
