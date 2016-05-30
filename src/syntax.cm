@@ -26,12 +26,12 @@ Library
   structure AtomV
   structure AtomK
 
+  structure RedPRLOperators
+  structure RedPRLV
+  structure RedPRLK
+  structure RedPRLD
+
 (*
-  structure AtomsOperator
-
-  structure OperatorData
-  structure Operator
-
   structure Metavariable
   structure Variable
   structure Symbol
