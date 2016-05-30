@@ -200,8 +200,6 @@ struct
            stepDFunCod sign (m <: env)
        | CTT UNIV_GET_LVL $ _ =>
            stepUnivGetLvl sign (m <: env)
-       | CTT (NU _) $ _ =>
-           stepNu sign (m <: env)
        | ATM (ATOM _) $ _ => FINAL
        | ATM (TOKEN _) $ _ => FINAL
        | ATM (TEST _) $ _ =>
@@ -345,70 +343,5 @@ struct
                   OP_SOME _ $ [_ \ evd] => ret @@ evd <: env
                 | _ => raise Stuck (evd <: env))
           | _ => raise Stuck @@ m <: env)
-    end
-
-  and stepNu sign (m <: env) =
-    let
-      open OperatorData CttOperatorData
-    in
-      case out m of
-         CTT (NU (sigma, tau)) $ [([u], _) \ t] =>
-           (case step sign (t <: env) of
-               FINAL =>
-                 (case out t of
-                     theta $ _ =>
-                       let
-                         val us = Operator.support theta
-                       in
-                         (* If the symbol is part of the support of the head operator, then
-                          * we cannot proceed; otherwise, the symbol generation is pushed down
-                          * into the subterms of the operator. *)
-                         if List.exists (fn (v, _) => compareSymbols env (u, v)) us then
-                           ret @@ m <: env
-                         else
-                           ret @@ pushDownNu (sigma, tau) env u t <: env
-                       end
-                   | _ => ret @@ pushDownNu (sigma, tau) env u t <: env)
-             | STEP (t' <: _) =>
-                 let
-                   (* If t was non-canonical, try computing it with a fresh variable 'a' and then
-                    * re-embed the result in the nu-expression, replacing 'a' in the result with 'u'. *)
-                   val (mrho, srho, vrho) = env
-                   val a = Symbol.fresh (symctx t') "a"
-                   val srho' = SymCtx.insert srho u a
-                   val env' = (mrho, srho', vrho)
-                 in
-                   case step sign (t <: env') of
-                      FINAL =>
-                        let
-                          val (mrho', srho'', vrho') = env'
-                          val srho''' = SymCtx.insert srho a u
-                          val env''' = (mrho', srho''', vrho')
-                        in
-                          ret @@ CTT (NU (sigma, tau)) $$ [([u], []) \ t] <: env'''
-                        end
-                    | STEP (t' <: env'') =>
-                        let
-                          val (mrho', srho'', vrho') = env''
-                          val srho''' = SymCtx.insert srho a u
-                          val env''' = (mrho', srho''', vrho')
-                        in
-                          ret @@ CTT (NU (sigma, tau)) $$ [([u], []) \ t'] <: env'''
-                        end
-                 end)
-       | _ => raise Stuck @@ m <: env
-    end
-
-  and pushDownNu (sigma, tau) env u m =
-    case out m of
-       theta $ es =>
-         theta $$ List.map (pushDownNuB (sigma, tau) env u) es
-     | _ => raise Fail "Impossible"
-
-  and pushDownNuB (sigma, tau) env u ((us, xs) \ m) =
-    let
-      open OperatorData CttOperatorData
-    in
-      (us, xs) \ CTT (NU (sigma, tau)) $$ [([u], []) \ m]
     end
 end
