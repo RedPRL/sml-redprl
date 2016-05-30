@@ -22,11 +22,11 @@ Library
   structure RecordK
   structure RecordD
 
-(*
-  structure RecordOperatorData
-  structure RecordOperator
+  structure AtomOperators
+  structure AtomV
+  structure AtomK
 
-  structure AtomsOperatorData
+(*
   structure AtomsOperator
 
   structure OperatorData
