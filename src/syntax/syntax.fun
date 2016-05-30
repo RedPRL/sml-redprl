@@ -71,16 +71,16 @@ struct
   structure RS = SortData
 
   datatype 'a view =
-     CAPPROX of O.S.atomic * 'a * 'a
-   | CEQUIV of O.S.atomic * 'a * 'a
-   | BASE of O.S.atomic
-   | TOP of O.S.atomic
-   | UNIV of O.S.atomic
+     CAPPROX of RS.sort * 'a * 'a
+   | CEQUIV of RS.sort * 'a * 'a
+   | BASE of RS.sort
+   | TOP of RS.sort
+   | UNIV of RS.sort
    | UNIV_GET_LVL of 'a
-   | MEMBER of O.S.atomic * 'a * 'a
-   | EQ of O.S.atomic * 'a * 'a * 'a
+   | MEMBER of RS.sort * 'a * 'a
+   | EQ of RS.sort * 'a * 'a * 'a
    | AX
-   | SQUASH of O.S.atomic * 'a
+   | SQUASH of RS.sort * 'a
    | DFUN of 'a * variable * 'a
    | FUN of 'a * 'a
    | NOT of 'a
@@ -88,9 +88,13 @@ struct
    | AP of 'a * 'a
    | DFUN_DOM of 'a
    | DFUN_COD of 'a * 'a
-   | ENSEMBLE of O.S.atomic * O.S.atomic * 'a * variable * 'a
+   | ENSEMBLE of RS.sort * RS.sort * 'a * variable * 'a
    | DEP_ISECT of 'a * variable * 'a
    | VOID
+
+   | LBASE
+   | LSUCC of 'a
+   | LSUP of 'a * 'a
 
 
   infix 3 $ $$
@@ -100,17 +104,23 @@ struct
     fun @@ (f, x) = f x
     infix @@
 
+    open RedPRLOperators
+
     fun ret tau m =
       O.RET tau $$ [([],[]) \ m]
 
     fun intoCttV th es =
-      ret RS.EXP @@ O.V (RedPRLOperators.CTT_V th) $$ es
+      ret RS.EXP @@ O.V (CTT_V th) $$ es
 
     fun intoCttD th es =
-      O.D (RedPRLOperators.CTT_D th) $$ es
+      O.D (CTT_D th) $$ es
 
     fun cutCtt (sigma, tau) th es m =
-      O.CUT (sigma, tau) $$ [([],[]) \ O.K (RedPRLOperators.CTT_K th) $$ es, ([],[]) \ m]
+      O.CUT (sigma, tau) $$ [([],[]) \ O.K (CTT_K th) $$ es, ([],[]) \ m]
+
+    fun cutLvl th es m =
+      O.CUT (RS.LVL, RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
+
   in
     val into =
       fn CAPPROX (tau, m, n) =>
@@ -153,10 +163,15 @@ struct
           intoCttV CttOperators.DEP_ISECT [([],[]) \ a, ([],[x]) \ bx]
        | VOID =>
           intoCttV CttOperators.VOID []
+       | LBASE =>
+          ret RS.LVL @@ O.V (LVL_V 0) $$ []
+       | LSUCC m =>
+          cutLvl LevelOperators.LSUCC [] m
+       | LSUP (m, n) =>
+          cutLvl LevelOperators.LSUP0 [([],[]) \ n] m
+
 
     local
-      open RedPRLOperators
-
       fun outVal v =
         case View.out v of
            O.V (CTT_V (CttOperators.CAPPROX tau)) $ [_ \ m, _ \ n] => CAPPROX (tau, m, n)
@@ -181,6 +196,9 @@ struct
          | O.K (CTT_K CttOperators.DFUN_DOM) $ _ => DFUN_DOM m
          | O.K (CTT_K CttOperators.DFUN_COD) $ [_ \ b] => DFUN_COD (m, b)
          | O.K (CTT_K CttOperators.UNIV_GET_LVL) $ _ => UNIV_GET_LVL m
+         | O.K (LVL_K LevelOperators.LSUCC) $ _ => LSUCC m
+         | O.K (LVL_K LevelOperators.LSUP0) $ [_ \ n] => LSUP (m, n)
+         | O.K (LVL_K LevelOperators.LSUP1) $ [_ \ n] => LSUP (n, m)
          | _ => raise Fail "outCut expected continuation"
 
       fun outDef th es =
