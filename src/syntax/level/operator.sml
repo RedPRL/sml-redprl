@@ -13,7 +13,7 @@ end
 structure SimpleLevelV : ABT_SIMPLE_OPERATOR =
 struct
   open LevelOperators SortData ArityNotation
-  structure Ar = Arity
+  structure Ar = RedPRLAtomicArity
 
   type t = level_value
 
@@ -32,7 +32,7 @@ end
 structure SimpleLevelK : ABT_SIMPLE_OPERATOR =
 struct
   open LevelOperators SortData ArityNotation
-  structure Ar = Arity
+  structure Ar = RedPRLAtomicArity
 
   type t = level_cont
 

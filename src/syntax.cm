@@ -1,8 +1,8 @@
 Library
   structure SortData
-  structure Sort
-  structure Valence
-  structure Arity
+  structure RedPRLAtomicSort
+  structure RedPRLAtomicValence
+  structure RedPRLAtomicArity
   structure ArityNotation
 
   structure CttOperators

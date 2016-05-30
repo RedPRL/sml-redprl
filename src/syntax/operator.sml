@@ -3,6 +3,8 @@
 
 structure RedPRLOperators =
 struct
+  structure Sort = RedPRLAtomicSort
+
   datatype 'i redprl_value =
      LCF of 'i NominalLcfV.t
    | LVL_V of 'i LevelV.t
@@ -29,7 +31,7 @@ end
 
 structure RedPRLV : ABT_OPERATOR =
 struct
-  structure Ar = Arity
+  structure Ar = RedPRLAtomicArity
 
   open RedPRLOperators ArityNotation
   type 'i t = 'i redprl_value
@@ -111,7 +113,7 @@ end
 
 structure RedPRLK : ABT_OPERATOR =
 struct
-  structure Ar = Arity
+  structure Ar = RedPRLAtomicArity
 
   open RedPRLOperators ArityNotation
   type 'i t = 'i redprl_cont
@@ -157,7 +159,7 @@ end
 
 structure RedPRLD : ABT_OPERATOR =
 struct
-  structure Ar = Arity
+  structure Ar = RedPRLAtomicArity
 
   open RedPRLOperators ArityNotation
   type 'i t = 'i redprl_def

@@ -2,6 +2,8 @@ structure NominalLcfOperators =
 struct
   (* We use symbols/atoms to index into the context. *)
 
+  structure Sort = RedPRLAtomicSort
+
   type intro_params =
     {rule : int option}
 
@@ -33,7 +35,7 @@ structure NominalLcfV : ABT_OPERATOR =
 struct
   open NominalLcfOperators SortData
 
-  structure Ar = Arity
+  structure Ar = RedPRLAtomicArity
   type 'i t = 'i script_operator
 
   open ArityNotation

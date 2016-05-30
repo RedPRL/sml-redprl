@@ -1,4 +1,4 @@
-structure Sort :> ABT_SORT where type t = SortData.sort =
+structure RedPRLAtomicSort :> ABT_SORT where type t = SortData.sort =
 struct
   open SortData
   type t = sort
@@ -25,5 +25,5 @@ struct
   fun op->> (a, b) = (a, b) (* arity *)
 end
 
-structure Valence = AbtValence (structure S = Sort and Sp = ListSpine)
-structure Arity = AbtArity (Valence)
+structure RedPRLAtomicValence = AbtValence (structure S = RedPRLAtomicSort and Sp = ListSpine)
+structure RedPRLAtomicArity = AbtArity (RedPRLAtomicValence)

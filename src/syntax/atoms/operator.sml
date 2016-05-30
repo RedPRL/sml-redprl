@@ -1,5 +1,7 @@
 structure AtomOperators =
 struct
+  structure Sort = RedPRLAtomicSort
+
   datatype 'i atom_value =
       ATOM of Sort.t
     | TOKEN of 'i * Sort.t
@@ -13,7 +15,7 @@ end
 structure AtomV : ABT_OPERATOR =
 struct
   open AtomOperators SortData ArityNotation
-  structure Ar = Arity
+  structure Ar = RedPRLAtomicArity
 
   type 'i t = 'i atom_value
   infix <> ->>
@@ -43,7 +45,7 @@ end
 structure SimpleAtomK : ABT_SIMPLE_OPERATOR =
 struct
   open AtomOperators SortData ArityNotation
-  structure Ar = Arity
+  structure Ar = RedPRLAtomicArity
 
   type t = atom_cont
   infix <> ->>
