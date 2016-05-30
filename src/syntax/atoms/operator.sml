@@ -7,8 +7,8 @@ struct
     | TOKEN of 'i * Sort.t
 
   datatype atom_cont =
-      TEST0 of Sort.t * Sort.t
-    | TEST1 of Sort.t * Sort.t
+      TEST0 of Sort.t
+    | TEST1 of Sort.t
 end
 
 
@@ -51,27 +51,25 @@ struct
   infix <> ->>
 
   val arity =
-    fn TEST0 (sigma, tau) =>
+    fn TEST0 tau =>
          [[] * [] <> EXP,
           [] * [] <> tau,
           [] * [] <> tau]
             ->> tau
-     | TEST1 (sigma, tau) =>
+     | TEST1 tau =>
          [[] * [] <> EXP,
           [] * [] <> tau,
           [] * [] <> tau]
             ->> tau
 
   val eq =
-    fn (TEST0 (sigma, tau), TEST0 (sigma', tau')) =>
-         sigma = sigma' andalso tau = tau'
-     | (TEST1 (sigma, tau), TEST1 (sigma', tau')) =>
-         sigma = sigma' andalso tau = tau'
+    fn (TEST0 tau, TEST0 tau') => tau = tau'
+     | (TEST1 tau, TEST1 tau') => tau = tau'
      | _ => false
 
   val toString =
-    fn TEST0 (sigma, tau) => "ifeq0{" ^ Sort.toString sigma ^ "," ^ Sort.toString tau ^ "}"
-     | TEST1 (sigma, tau) => "ifeq0{" ^ Sort.toString sigma ^ "," ^ Sort.toString tau ^ "}"
+    fn TEST0 tau => "ifeq0{" ^ Sort.toString tau ^ "}"
+     | TEST1 tau => "ifeq0{" ^ Sort.toString tau ^ "}"
 end
 
 structure AtomK :
@@ -84,7 +82,7 @@ struct
   open O AtomOperators SortData
 
   val input =
-    fn TEST0 (sigma, tau) => EXP
-     | TEST1 (sigma, tau) => EXP
+    fn TEST0 _ => EXP
+     | TEST1 _ => EXP
 
 end

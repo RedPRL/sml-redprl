@@ -96,13 +96,16 @@ struct
    | LSUCC of 'a
    | LSUP of 'a * 'a
 
+   | ATOM of RS.sort
+   | TOKEN of symbol * RS.sort
+   | IF_EQ of RS.sort * 'a * 'a * 'a * 'a
 
   infix 3 $ $$
   infix 2 \
 
   local
     fun @@ (f, x) = f x
-    infix @@
+    infixr @@
 
     open RedPRLOperators
 
@@ -112,11 +115,17 @@ struct
     fun intoCttV th es =
       ret RS.EXP @@ O.V (CTT_V th) $$ es
 
+    fun intoAtmV th es =
+      ret RS.EXP @@ O.V (ATM_V th) $$ es
+
     fun intoCttD th es =
       O.D (CTT_D th) $$ es
 
     fun cutCtt (sigma, tau) th es m =
       O.CUT (sigma, tau) $$ [([],[]) \ O.K (CTT_K th) $$ es, ([],[]) \ m]
+
+    fun cutAtm (sigma, tau) th es m =
+      O.CUT (sigma, tau) $$ [([],[]) \ O.K (ATM_K th) $$ es, ([],[]) \ m]
 
     fun cutLvl th es m =
       O.CUT (RS.LVL, RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
@@ -169,7 +178,12 @@ struct
           cutLvl LevelOperators.LSUCC [] m
        | LSUP (m, n) =>
           cutLvl LevelOperators.LSUP0 [([],[]) \ n] m
-
+       | ATOM tau =>
+          intoAtmV (AtomOperators.ATOM tau) []
+       | TOKEN (u, tau) =>
+          intoAtmV (AtomOperators.TOKEN (u, tau)) []
+       | IF_EQ (tau, t1, t2, m, n) =>
+          cutAtm (RS.EXP, tau) (AtomOperators.TEST0 tau) [([],[]) \ t2, ([],[]) \ m, ([],[]) \ n] t1
 
     local
       fun outVal v =
@@ -188,6 +202,10 @@ struct
          | O.V (CTT_V CttOperators.LAM) $ [(_, [x]) \ mx] => LAM (x, mx)
          | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
          | O.V (CTT_V CttOperators.VOID) $ _ => VOID
+         | O.V (LVL_V 0) $ _ => LBASE
+         | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
+         | O.V (ATM_V (AtomOperators.ATOM tau)) $ _ => ATOM tau
+         | O.V (ATM_V (AtomOperators.TOKEN (u, tau))) $ _ => TOKEN (u, tau)
          | _ => raise Fail "outVal expected value"
 
       fun outCut k m =
@@ -199,6 +217,8 @@ struct
          | O.K (LVL_K LevelOperators.LSUCC) $ _ => LSUCC m
          | O.K (LVL_K LevelOperators.LSUP0) $ [_ \ n] => LSUP (m, n)
          | O.K (LVL_K LevelOperators.LSUP1) $ [_ \ n] => LSUP (n, m)
+         | O.K (ATM_K (AtomOperators.TEST0 tau)) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (tau, m, t2, l, r)
+         | O.K (ATM_K (AtomOperators.TEST1 tau)) $ [_ \ t1, _ \ l, _ \ r] => IF_EQ (tau, t1, m, l, r)
          | _ => raise Fail "outCut expected continuation"
 
       fun outDef th es =
