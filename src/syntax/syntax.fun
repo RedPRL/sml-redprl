@@ -106,6 +106,12 @@ struct
    | RCD_PROJ of symbol * 'a
    | SINGL_GET_TY of 'a
 
+   | REFINE_SCRIPT of RS.sort * 'a * 'a * 'a
+   | VEC_LITERAL of RS.sort * 'a list
+   | STR_LITERAL of string
+   | OPT_SOME of RS.sort * 'a
+   | OPT_NONE of RS.sort
+
   infix 3 $ $$
   infix 2 \
 
@@ -209,6 +215,16 @@ struct
           cutRcd (RecordOperators.PROJ u) [] m
        | SINGL_GET_TY a =>
           cutRcd RecordOperators.SINGL_GET_TY [] a
+       | REFINE_SCRIPT (tau, m, s, e) =>
+          ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
+       | VEC_LITERAL (tau, ms) =>
+          ret (RS.VEC tau) @@ O.V (VEC_LIT (tau, List.length ms)) $$ List.map (fn m => ([],[]) \ m) ms
+       | STR_LITERAL str =>
+          ret RS.STR @@ O.V (STR_LIT str) $$ []
+       | OPT_SOME (tau, m) =>
+          ret (RS.OPT tau) @@ O.V (OP_SOME tau) $$ [([],[]) \ m]
+       | OPT_NONE tau =>
+          ret (RS.OPT tau) @@ O.V (OP_NONE tau) $$ []
 
 
     local
