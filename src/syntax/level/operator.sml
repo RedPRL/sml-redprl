@@ -1,13 +1,9 @@
 structure LevelOperators =
 struct
-  datatype level_value =
-      LBASE
-    | LSUCC
-
   datatype level_cont =
       LSUP0
     | LSUP1
-    | LSUCC_K
+    | LSUCC
 end
 
 structure SimpleLevelV : ABT_SIMPLE_OPERATOR =
@@ -15,18 +11,13 @@ struct
   open LevelOperators SortData ArityNotation
   structure Ar = RedPRLAtomicArity
 
-  type t = level_value
+  type t = int
 
   infix <> ->>
-  val arity =
-    fn LBASE => [] ->> LVL
-     | LSUCC => [[] * [] <> LVL] ->> LVL
+  fun arity _ = [] ->> LVL
 
   val eq : t * t -> bool = op=
-
-  val toString =
-    fn LBASE => "lbase"
-     | LSUCC => "lsucc"
+  val toString = Int.toString
 end
 
 structure SimpleLevelK : ABT_SIMPLE_OPERATOR =
@@ -40,14 +31,14 @@ struct
   val arity =
     fn LSUP0 => [[] * [] <> LVL] ->> LVL
      | LSUP1 => [[] * [] <> LVL] ->> LVL
-     | LSUCC_K => [] ->> LVL
+     | LSUCC => [] ->> LVL
 
   val eq : t * t -> bool = op=
 
   val toString =
     fn LSUP0 => "lsup0"
      | LSUP1 => "lsup1"
-     | LSUCC_K => "lsucc!"
+     | LSUCC => "lsucc"
 end
 
 structure LevelV = AbtSimpleOperator (SimpleLevelV)
@@ -64,5 +55,5 @@ struct
   val input =
     fn LSUP0 => LVL
      | LSUP1 => LVL
-     | LSUCC_K => LVL
+     | LSUCC => LVL
 end
