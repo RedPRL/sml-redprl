@@ -5,19 +5,37 @@ structure Symbol = AbtSymbol ()
 (* it will come in handy for variables and symbols to be of the same type *)
 structure Variable = Symbol
 
-structure Ast =
+structure RedPRLSort =
+  LcsSort
+    (structure AtomicSort = RedPRLAtomicSort
+     val opidSort = SOME SortData.OPID)
+
+structure RedPRLOperator =
+  LcsOperator
+    (structure V = RedPRLV and K = RedPRLK and D = RedPRLD
+     val opidSort = SOME SortData.OPID
+     val input = RedPRLK.input)
+
+structure RedPRLArity = RedPRLOperator.Ar
+structure RedPRLValence = RedPRLArity.Vl
+
+structure RedPRLAst =
   Ast
-    (structure Operator = Operator
+    (structure Operator = RedPRLOperator
      structure Metavar = Metavariable)
 
-structure Abt =
+
+structure RedPRLAbt =
   Abt
-    (structure O = Operator
+    (structure O = RedPRLOperator
      structure Metavar = Metavariable
      structure Var = Variable
      structure Sym = Symbol)
 
-structure AstToAbt = AstToAbt (structure Ast = Ast and Abt = Abt)
+structure RedPRLAstToAbt =
+  AstToAbt
+    (structure Ast = RedPRLAst
+     structure Abt = RedPRLAbt)
 
-structure ShowAbt = PlainShowAbt (Abt)
-structure DebugShowAbt = DebugShowAbt (Abt)
+structure ShowAbt = PlainShowAbt (RedPRLAbt)
+structure DebugShowAbt = DebugShowAbt (RedPRLAbt)

@@ -111,7 +111,11 @@ struct
      | OP_NONE tau => OP_NONE tau
 end
 
-structure RedPRLK : ABT_OPERATOR =
+structure RedPRLK :
+sig
+   include ABT_OPERATOR
+   val input : 'i t -> RedPRLAtomicSort.t
+end =
 struct
   structure Ar = RedPRLAtomicArity
 
@@ -126,6 +130,13 @@ struct
      | CTT_K th => CttK.arity th
      | RCD_K th => RecordK.arity th
      | ATM_K th => AtomK.arity th
+
+  val input =
+    fn EXTRACT tau => SortData.THM tau
+     | LVL_K th => LevelK.input th
+     | CTT_K th => CttK.input th
+     | RCD_K th => RecordK.input th
+     | ATM_K th => AtomK.input th
 
   val support =
     fn EXTRACT tau => []

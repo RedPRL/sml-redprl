@@ -35,7 +35,11 @@ struct
     CONS (f lbl)
 end
 
-structure RecordK : ABT_OPERATOR =
+structure RecordK :
+sig
+  include ABT_OPERATOR
+  val input : 'i t -> RedPRLAtomicArity.sort
+end =
 struct
   open RecordOperators ArityNotation SortData
   structure Ar = RedPRLAtomicArity
@@ -47,6 +51,10 @@ struct
   val arity =
     fn PROJ lbl => [] ->> EXP
      | SINGL_GET_TY => [] ->> EXP
+
+  val input =
+    fn PROJ _ => EXP
+     | SINGL_GET_TY => EXP
 
   val support =
     fn PROJ lbl => [(lbl, RCD_LBL)]

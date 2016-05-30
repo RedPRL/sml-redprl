@@ -1,7 +1,7 @@
 structure CttOperators =
 struct
   structure Sort = RedPRLAtomicSort
-  
+
   datatype ctt_value =
       CAPPROX of Sort.t
     | CEQUIV of Sort.t
@@ -150,5 +150,20 @@ struct
 end
 
 structure CttV = AbtSimpleOperator (CttSimpleV)
-structure CttK = AbtSimpleOperator (CttSimpleK)
 structure CttD = AbtSimpleOperator (CttSimpleD)
+
+structure CttK :
+sig
+  include ABT_OPERATOR
+  val input : 'i t -> RedPRLAtomicArity.sort
+end =
+struct
+   structure O = AbtSimpleOperator (CttSimpleK)
+   open O CttOperators SortData
+
+   val input =
+     fn AP => EXP
+      | DFUN_DOM => EXP
+      | DFUN_COD => EXP
+      | UNIV_GET_LVL => EXP
+end

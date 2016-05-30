@@ -51,4 +51,18 @@ struct
 end
 
 structure LevelV = AbtSimpleOperator (SimpleLevelV)
-structure LevelK = AbtSimpleOperator (SimpleLevelK)
+
+structure LevelK :
+sig
+  include ABT_OPERATOR
+  val input : 'i t -> RedPRLAtomicArity.sort
+end =
+struct
+  structure O = AbtSimpleOperator (SimpleLevelK)
+  open O SortData LevelOperators
+
+  val input =
+    fn LSUP0 => LVL
+     | LSUP1 => LVL
+     | LSUCC_K => LVL
+end

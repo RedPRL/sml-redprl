@@ -74,4 +74,17 @@ struct
      | TEST1 (sigma, tau) => "ifeq0{" ^ Sort.toString sigma ^ "," ^ Sort.toString tau ^ "}"
 end
 
-structure AtomK = AbtSimpleOperator (SimpleAtomK)
+structure AtomK :
+sig
+  include ABT_OPERATOR
+  val input : 'i t -> RedPRLAtomicSort.t
+end =
+struct
+  structure O = AbtSimpleOperator (SimpleAtomK)
+  open O AtomOperators SortData
+
+  val input =
+    fn TEST0 (sigma, tau) => EXP
+     | TEST1 (sigma, tau) => EXP
+
+end

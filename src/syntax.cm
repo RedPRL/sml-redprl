@@ -31,13 +31,15 @@ Library
   structure RedPRLK
   structure RedPRLD
 
-(*
   structure Metavariable
   structure Variable
   structure Symbol
-  structure Ast
-  structure Abt
-  structure AstToAbt
+
+  structure RedPRLOperator
+  structure RedPRLAst
+  structure RedPRLAbt
+  structure RedPRLAstToAbt
+
   structure ShowAbt
   structure DebugShowAbt
 
@@ -45,10 +47,10 @@ Library
   structure SymbolTelescope
   signature SEQUENT
   structure Sequent
-  *)
 is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-typed-abts/abt-lcs.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-telescopes/telescopes.cm
   cmlib.cm
 

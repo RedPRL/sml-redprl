@@ -1,21 +1,20 @@
 structure Sequent :> SEQUENT
-  where type expr = Abt.abt
-  where type prop = Abt.abt
-  where type sort = Abt.sort
-  where type var = Abt.variable
-  where type metactx = Abt.metactx
-  where type hypctx = (Abt.abt * Abt.sort) SymbolTelescope.telescope =
+  where type expr = RedPRLAbt.abt
+  where type prop = RedPRLAbt.abt
+  where type sort = RedPRLAbt.sort
+  where type var = RedPRLAbt.variable
+  where type metactx = RedPRLAbt.metactx
+  where type hypctx = (RedPRLAbt.abt * RedPRLAbt.sort) SymbolTelescope.telescope =
 struct
-  type prop = Abt.abt
-  type expr = Abt.abt
-  type sort = Abt.sort
-  type var = Abt.variable
+  open RedPRLAbt
+  type prop = abt
+  type expr = abt
+  type var = variable
 
-  type metactx = Abt.metactx
   type hypctx = (prop * sort) SymbolTelescope.telescope
 
   structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
-  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Valence)
+  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = RedPRLValence)
 
   datatype context =
     CONTEXT of
@@ -24,7 +23,7 @@ struct
 
   fun hypsMetactx H =
     SymbolTelescope.foldl
-      (fn ((a, _), psi) => MetaCtxUtil.union (psi, Abt.metactx a))
+      (fn ((a, _), psi) => MetaCtxUtil.union (psi, metactx a))
       MetaCtx.empty
       H
 
@@ -66,12 +65,12 @@ struct
   infix 3 |>
 
   val conclMetactx =
-    fn TRUE (p, _) => Abt.metactx p
-     | TYPE (p, _) => Abt.metactx p
-     | EQ_MEM (m, n, a) => MetaCtxUtil.union (MetaCtxUtil.union (Abt.metactx m, Abt.metactx n), Abt.metactx a)
-     | MEM (m, a) => MetaCtxUtil.union (Abt.metactx m, Abt.metactx a)
-     | EQ_SYN (r, s) => MetaCtxUtil.union (Abt.metactx r, Abt.metactx s)
-     | SYN r => Abt.metactx r
+    fn TRUE (p, _) => metactx p
+     | TYPE (p, _) => metactx p
+     | EQ_MEM (m, n, a) => MetaCtxUtil.union (MetaCtxUtil.union (metactx m, metactx n), metactx a)
+     | MEM (m, a) => MetaCtxUtil.union (metactx m, metactx a)
+     | EQ_SYN (r, s) => MetaCtxUtil.union (metactx r, metactx s)
+     | SYN r => metactx r
 
   val rec judgmentMetactx =
     fn G |> jdg => judgmentMetactx jdg
