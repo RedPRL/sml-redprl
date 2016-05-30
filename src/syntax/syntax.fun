@@ -19,7 +19,7 @@ sig
 
   val check : sort -> term view -> term
   val $$ : symbol operator * term bview spine -> term
-  val infer : term -> term view * sort
+  val out : term -> term view
 end
 
 functor AbtSyntaxView (Abt : ABT) : SYNTAX_VIEW =
@@ -60,9 +60,6 @@ struct
     fn Ast.`x => `x
      | Ast.$ (th, es) => $ (th, List.map (fn Ast.\ ((us, xs), m) => \ ((us, xs), m)) es)
      | Ast.$# (x, (us, ms)) => $# (x, (List.map (fn u => (u, ())) us, ms))
-
-  fun infer m =
-    (out m, ())
 end
 
 functor RedPRLSyntax (View : SYNTAX_VIEW where type 'a operator = 'a RedPRLOperator.t where type 'a spine = 'a list) =
@@ -90,12 +87,13 @@ struct
    | LAM of variable * 'a
    | AP of 'a * 'a
    | DFUN_DOM of 'a
+   | DFUN_COD of 'a * 'a
    | ENSEMBLE of O.S.atomic * O.S.atomic * 'a * variable * 'a
    | DEP_ISECT of 'a * variable * 'a
    | VOID
 
 
-  infix 3 $$
+  infix 3 $ $$
   infix 2 \
 
   local
@@ -149,11 +147,56 @@ struct
           cutCtt (RS.EXP, RS.EXP) CttOperators.AP [([],[]) \ n] m
        | DFUN_DOM a =>
           cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_DOM [] a
+       | DFUN_COD (a, b) =>
+          cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_COD [([],[]) \ b] a
        | DEP_ISECT (a, x, bx) =>
           intoCttV CttOperators.DEP_ISECT [([],[]) \ a, ([],[x]) \ bx]
        | VOID =>
           intoCttV CttOperators.VOID []
 
+    local
+      open RedPRLOperators
+
+      fun outVal v =
+        case View.out v of
+           O.V (CTT_V (CttOperators.CAPPROX tau)) $ [_ \ m, _ \ n] => CAPPROX (tau, m, n)
+         | O.V (CTT_V (CttOperators.CEQUIV tau)) $ [_ \ m, _ \ n] => CEQUIV (tau, m, n)
+         | O.V (CTT_V (CttOperators.BASE tau)) $ _ => BASE tau
+         | O.V (CTT_V (CttOperators.TOP tau)) $ _ => TOP tau
+         | O.V (CTT_V (CttOperators.UNIV tau)) $ _ => UNIV tau
+         | O.V (CTT_V (CttOperators.MEMBER tau)) $ [_ \ m, _ \ a] => MEMBER (tau, m, a)
+         | O.V (CTT_V (CttOperators.EQ tau)) $ [_ \ m, _ \ n, _ \ a] => EQ (tau, m, n, a)
+         | O.V (CTT_V CttOperators.AX) $ _ => AX
+         | O.V (CTT_V (CttOperators.SQUASH tau)) $ [_ \ a] => SQUASH (tau, a)
+         | O.V (CTT_V CttOperators.DFUN) $ [_ \ a, (_, [x]) \ bx] => DFUN (a, x, bx)
+         | O.V (CTT_V (CttOperators.ENSEMBLE (sigma, tau))) $ [_ \ a, (_, [x]) \ bx] => ENSEMBLE (sigma, tau, a, x, bx)
+         | O.V (CTT_V CttOperators.LAM) $ [(_, [x]) \ mx] => LAM (x, mx)
+         | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
+         | O.V (CTT_V CttOperators.VOID) $ _ => VOID
+         | _ => raise Fail "outVal expected value"
+
+      fun outCut k m =
+        case View.out k of
+           O.K (CTT_K CttOperators.AP) $ [_ \ n] => AP (m, n)
+         | O.K (CTT_K CttOperators.DFUN_DOM) $ _ => DFUN_DOM m
+         | O.K (CTT_K CttOperators.DFUN_COD) $ [_ \ b] => DFUN_COD (m, b)
+         | O.K (CTT_K CttOperators.UNIV_GET_LVL) $ _ => UNIV_GET_LVL m
+         | _ => raise Fail "outCut expected continuation"
+
+      fun outDef th es =
+        case (th, es) of
+           (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
+         | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
+         | _ => raise Fail "outDef expected definitional extension"
+
+    in
+      fun out m =
+        case View.out m of
+           O.RET _ $ [_ \ v] => outVal v
+         | O.CUT _ $ [_ \ k, _ \ m] => outCut k m
+         | O.D th $ es => outDef th es
+         | _ => raise Fail "Syntax view expected application expression"
+    end
   end
 end
 
