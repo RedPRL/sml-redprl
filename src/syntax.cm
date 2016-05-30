@@ -17,10 +17,12 @@ Library
   structure LevelV
   structure LevelK
 
-(*
-  structure LevelOperatorData
-  structure LevelOperator
+  structure RecordOperators
+  structure RecordV
+  structure RecordK
+  structure RecordD
 
+(*
   structure RecordOperatorData
   structure RecordOperator
 
