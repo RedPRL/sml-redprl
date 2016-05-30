@@ -69,7 +69,7 @@ struct
 
   val toString =
     fn TEST0 tau => "ifeq0{" ^ Sort.toString tau ^ "}"
-     | TEST1 tau => "ifeq0{" ^ Sort.toString tau ^ "}"
+     | TEST1 tau => "ifeq1{" ^ Sort.toString tau ^ "}"
 end
 
 structure AtomK :
