@@ -47,6 +47,7 @@ struct
     structure Ctt = CttOperators
       and Lvl = LevelOperators
       and Atm = AtomOperators
+      and Rcd = RecordOperators
       and Syn = RedPrlAbtSyntax
 
     fun pushV (cl : abt closure, x) (mrho, srho, vrho) =
@@ -99,13 +100,39 @@ struct
        | (ATM_K (Atm.TEST1 ((u, sigma), tau)) `$ [_ \ l, _ \ r], ATM_V (Atm.TOKEN (v, _)) `$ _) =>
            (if Sym.eq (u, v) then l else r) <: env <| ks
 
+       (* Compute projection from a record; if the head label matches, return that; otherwise, keep working through the record. *)
+       | (RCD_K (Rcd.PROJ lbl) `$ _, RCD_V (Rcd.CONS lbl') `$ [_ \ hd, _ \ tl]) =>
+           if Sym.eq (lbl, lbl') then
+             hd <: env <| ks
+           else
+             tl <: env <| (unquoteK k <: env) :: ks
+
+       (* Lisp-style introspection on singleton record type *)
+       | (RCD_K SINGL_GET_TY `$ _, RCD_V (Rcd.SINGL _) `$ [_ \ a]) =>
+            a <: env <| ks
+
        | _ => raise Fail "Unhandled cut"
+
 
     (* Expand a definitional extension *)
     fun delta sign (d <: env) =
       case d of
+       (* independent functions are defined in terms of dependent functions *)
          CTT_D Ctt.FUN `$ [_ \ a, _ \ b] => Syn.into (Syn.DFUN (a, Var.named "x", b)) <: env
+
+       (* negation is implication of the empty type *)
        | CTT_D Ctt.NOT `$ [_ \ a] => Syn.into (Syn.FUN (a, Syn.into Syn.VOID)) <: env
+
+       (* record types are built compositionally using dependent intersection *)
+       | RCD_D (Rcd.RECORD lbl) `$ [_ \ a, (_, [x]) \ bx] =>
+           let
+             val self = Var.named "self"
+             val selfTm = check (`self, S.EXP SortData.EXP)
+             val singl = Syn.into (Syn.RCD_SINGL (lbl, a))
+             val proj = Syn.into (Syn.RCD_PROJ (lbl, selfTm))
+           in
+             Syn.into (Syn.DEP_ISECT (singl, self, bx)) <: pushV (proj <: env, x) env
+           end
        | _ => raise Fail "Unhandled definitional extension"
   end
 end
