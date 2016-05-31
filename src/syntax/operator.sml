@@ -18,8 +18,8 @@ struct
    | OP_NONE of Sort.t
 
   datatype 'i redprl_cont =
-     EXTRACT0 of Sort.t
-   | EXTRACT1 of Sort.t
+     EXTRACT of Sort.t
+   | FROM_SOME of Sort.t
    | LVL_K of 'i LevelK.t
    | CTT_K of 'i CttK.t
    | RCD_K of 'i RecordK.t
@@ -126,32 +126,32 @@ struct
   infix <> ->>
 
   val arity =
-    fn EXTRACT0 tau => [] ->> tau
-     | EXTRACT1 tau => [] ->> tau
+    fn EXTRACT tau => [] ->> tau
+     | FROM_SOME tau => [] ->> tau
      | LVL_K th => LevelK.arity th
      | CTT_K th => CttK.arity th
      | RCD_K th => RecordK.arity th
      | ATM_K th => AtomK.arity th
 
   val input =
-    fn EXTRACT0 tau => SortData.THM tau
-     | EXTRACT1 tau => SortData.OPT tau
+    fn EXTRACT tau => SortData.THM tau
+     | FROM_SOME tau => SortData.OPT tau
      | LVL_K th => LevelK.input th
      | CTT_K th => CttK.input th
      | RCD_K th => RecordK.input th
      | ATM_K th => AtomK.input th
 
   val support =
-    fn EXTRACT0 tau => []
-     | EXTRACT1 tau => []
+    fn EXTRACT tau => []
+     | FROM_SOME tau => []
      | LVL_K th => LevelK.support th
      | CTT_K th => CttK.support th
      | RCD_K th => RecordK.support th
      | ATM_K th => AtomK.support th
 
   fun eq f =
-    fn (EXTRACT0 sigma, EXTRACT0 tau) => sigma = tau
-     | (EXTRACT1 sigma, EXTRACT1 tau) => sigma = tau
+    fn (EXTRACT sigma, EXTRACT tau) => sigma = tau
+     | (FROM_SOME sigma, FROM_SOME tau) => sigma = tau
      | (LVL_K th1, LVL_K th2) => LevelK.eq f (th1, th2)
      | (CTT_K th1, CTT_K th2) => CttK.eq f (th1, th2)
      | (RCD_K th1, RCD_K th2) => RecordK.eq f (th1, th2)
@@ -159,16 +159,16 @@ struct
      | _ => false
 
   fun toString f =
-    fn EXTRACT0 tau => "extract"
-     | EXTRACT1 tau => "extract1"
+    fn EXTRACT tau => "extract"
+     | FROM_SOME tau => "extract1"
      | LVL_K th => LevelK.toString f th
      | CTT_K th => CttK.toString f th
      | RCD_K th => RecordK.toString f th
      | ATM_K th => AtomK.toString f th
 
   fun map f =
-    fn EXTRACT0 tau => EXTRACT0 tau
-     | EXTRACT1 tau => EXTRACT1 tau
+    fn EXTRACT tau => EXTRACT tau
+     | FROM_SOME tau => FROM_SOME tau
      | LVL_K th => LVL_K (LevelK.map f th)
      | CTT_K th => CTT_K (CttK.map f th)
      | RCD_K th => RCD_K (RecordK.map f th)

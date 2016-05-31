@@ -88,6 +88,7 @@ struct
        | (CTT_K Ctt.UNIV_GET_LVL `$ _, CTT_V (Ctt.UNIV _) `$ [_ \ i]) =>
            i <: env <| ks
 
+       (* The level successor operator is eager *)
        | (LVL_K Lvl.LSUCC `$ _, LVL_V i `$ _) =>
            Syn.lvl (i + 1) <: env <| ks
 
@@ -123,14 +124,14 @@ struct
            a <: env <| ks
 
        (* Extract the witness from a refined theorem object. *)
-       | (EXTRACT0 tau `$ _, REFINE _ `$ [_, _, _ \ e]) =>
+       | (EXTRACT tau `$ _, REFINE _ `$ [_, _, _ \ e]) =>
            let
-             val k = K (EXTRACT1 tau) $$ []
+             val k = K (FROM_SOME tau) $$ []
            in
              e <: env <| (k <: env) :: ks
            end
 
-       | (EXTRACT1 tau `$ _, OP_SOME _ `$ [_ \ e]) =>
+       | (FROM_SOME tau `$ _, OP_SOME _ `$ [_ \ e]) =>
            e <: env <| ks
 
        | _ => raise Fail "Unhandled cut"
