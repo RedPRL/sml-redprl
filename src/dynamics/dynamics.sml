@@ -21,20 +21,9 @@ struct
 
   datatype 'o pat = `$ of 'o * M.expr M.Cl.Abt.bview list
 
-  type vpat = M.Cl.Abt.symbol O.L.V.t pat
-  type kpat = M.Cl.Abt.symbol O.L.K.t pat
-  type dpat = M.Cl.Abt.symbol O.L.D.t pat
-
-  local
-    infix `$ $$ \
-    open O Abt
-  in
-    fun unquoteV (theta `$ es) =
-      V theta $$ es
-
-    fun unquoteK (theta `$ es) =
-      K theta $$ es
-  end
+  type vpat = M.Cl.Abt.symbol RedPrlOperator.L.V.t pat
+  type kpat = M.Cl.Abt.symbol RedPrlOperator.L.K.t pat
+  type dpat = M.Cl.Abt.symbol RedPrlOperator.L.D.t pat
 
   structure Sig =
   struct
@@ -51,9 +40,38 @@ struct
        | _ => raise Fail "no such definitional extension in signature"
   end
 
-  fun plug _ = raise Match
-  fun delta _ = raise Match
+  local
+    infix `$ $$ \ <: <|
+    open O M Abt Cl RedPrlOperators
+    structure Ctt = CttOperators and Syn = RedPrlAbtSyntax
 
+    fun pushV (cl : abt closure, x) (mrho, srho, vrho) =
+      (mrho, srho, Var.Ctx.insert vrho x cl)
+
+    fun unquoteV (theta `$ es) =
+      V theta $$ es
+
+    fun unquoteK (theta `$ es) =
+      K theta $$ es
+  in
+    fun plug sign ((v : vpat, k : kpat) <: env) ks =
+      case (k, v) of
+         (CTT_K Ctt.AP `$ [_ \ n], CTT_V Ctt.LAM `$ [(_, [x]) \ mx]) =>
+           mx <: pushV (n <: env, x) env <| ks
+       | (CTT_K Ctt.DFUN_DOM `$ _, CTT_V Ctt.DFUN `$ [_ \ a, _]) =>
+           a <: env <| ks
+       | (CTT_K Ctt.DFUN_COD `$ [_ \ m], CTT_V Ctt.DFUN `$ [_, (_, [x]) \ bx]) =>
+           bx <: pushV (m <: env, x) env <| ks
+       | (CTT_K Ctt.UNIV_GET_LVL `$ _, CTT_V (Ctt.UNIV _) `$ [_ \ i]) =>
+           i <: env <| ks
+       | _ => raise Fail "Unhandled cut"
+
+    fun delta sign (d <: env) =
+      case d of
+         CTT_D Ctt.FUN `$ [_ \ a, _ \ b] => Syn.into (Syn.DFUN (a, Var.named "x", b)) <: env
+       | CTT_D Ctt.NOT `$ [_ \ a] => Syn.into (Syn.FUN (a, Syn.into Syn.VOID)) <: env
+       | _ => raise Fail "Unhandled definitional extension"
+  end
 end
 
 structure RedPrlDynamics = LcsDynamics (RedPrlDynamicsBasis)
