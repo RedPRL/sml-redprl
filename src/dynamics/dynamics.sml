@@ -54,18 +54,23 @@ struct
     fun unquoteK (theta `$ es) =
       K theta $$ es
   in
+    (* Plug a value into a continuation *)
     fun plug sign ((v : vpat, k : kpat) <: env) ks =
       case (k, v) of
+       (* Lambda application*)
          (CTT_K Ctt.AP `$ [_ \ n], CTT_V Ctt.LAM `$ [(_, [x]) \ mx]) =>
            mx <: pushV (n <: env, x) env <| ks
+       (* Lisp-style term introspection; get the domain or codomain of a Pi type *)
        | (CTT_K Ctt.DFUN_DOM `$ _, CTT_V Ctt.DFUN `$ [_ \ a, _]) =>
            a <: env <| ks
        | (CTT_K Ctt.DFUN_COD `$ [_ \ m], CTT_V Ctt.DFUN `$ [_, (_, [x]) \ bx]) =>
            bx <: pushV (m <: env, x) env <| ks
+       (* Get the level of a universe*)
        | (CTT_K Ctt.UNIV_GET_LVL `$ _, CTT_V (Ctt.UNIV _) `$ [_ \ i]) =>
            i <: env <| ks
        | _ => raise Fail "Unhandled cut"
 
+    (* Expand a definitional extension *)
     fun delta sign (d <: env) =
       case d of
          CTT_D Ctt.FUN `$ [_ \ a, _ \ b] => Syn.into (Syn.DFUN (a, Var.named "x", b)) <: env
