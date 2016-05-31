@@ -41,9 +41,12 @@ struct
   end
 
   local
-    infix `$ $$ \ <: <|
+    infix 4 `$ $$ <: <|
+    infix 3 \
     open O M Abt Cl RedPrlOperators
-    structure Ctt = CttOperators and Syn = RedPrlAbtSyntax
+    structure Ctt = CttOperators
+      and Lvl = LevelOperators
+      and Syn = RedPrlAbtSyntax
 
     fun pushV (cl : abt closure, x) (mrho, srho, vrho) =
       (mrho, srho, Var.Ctx.insert vrho x cl)
@@ -60,14 +63,30 @@ struct
        (* Lambda application*)
          (CTT_K Ctt.AP `$ [_ \ n], CTT_V Ctt.LAM `$ [(_, [x]) \ mx]) =>
            mx <: pushV (n <: env, x) env <| ks
+
        (* Lisp-style term introspection; get the domain or codomain of a Pi type *)
        | (CTT_K Ctt.DFUN_DOM `$ _, CTT_V Ctt.DFUN `$ [_ \ a, _]) =>
            a <: env <| ks
        | (CTT_K Ctt.DFUN_COD `$ [_ \ m], CTT_V Ctt.DFUN `$ [_, (_, [x]) \ bx]) =>
            bx <: pushV (m <: env, x) env <| ks
+
        (* Get the level of a universe*)
        | (CTT_K Ctt.UNIV_GET_LVL `$ _, CTT_V (Ctt.UNIV _) `$ [_ \ i]) =>
            i <: env <| ks
+
+       | (LVL_K Lvl.LSUCC `$ _, LVL_V i `$ _) =>
+           Syn.lvl (i + 1) <: env <| ks
+
+       (* Compute the least upper bound / supremum of two universe levels. We compute in two steps. *)
+       | (LVL_K Lvl.LSUP0 `$ [_ \ n], LVL_V i `$ _) =>
+           let
+             val k = K (LVL_K (Lvl.LSUP1 i)) $$ []
+           in
+             n <: env <| (k <: env) :: ks
+           end
+       | (LVL_K (Lvl.LSUP1 i) `$ _, LVL_V j `$ _) =>
+           Syn.lvl (Int.max (i, j)) <: env <| ks
+
        | _ => raise Fail "Unhandled cut"
 
     (* Expand a definitional extension *)

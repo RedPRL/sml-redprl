@@ -2,7 +2,7 @@ structure LevelOperators =
 struct
   datatype level_cont =
       LSUP0
-    | LSUP1
+    | LSUP1 of int
     | LSUCC
 end
 
@@ -30,14 +30,14 @@ struct
   infix <> ->>
   val arity =
     fn LSUP0 => [[] * [] <> LVL] ->> LVL
-     | LSUP1 => [[] * [] <> LVL] ->> LVL
+     | LSUP1 _ => [] ->> LVL
      | LSUCC => [] ->> LVL
 
   val eq : t * t -> bool = op=
 
   val toString =
     fn LSUP0 => "lsup0"
-     | LSUP1 => "lsup1"
+     | LSUP1 i => "lsup1{" ^ Int.toString i ^ "}"
      | LSUCC => "lsucc"
 end
 
@@ -54,6 +54,6 @@ struct
 
   val input =
     fn LSUP0 => LVL
-     | LSUP1 => LVL
+     | LSUP1 _ => LVL
      | LSUCC => LVL
 end
