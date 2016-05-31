@@ -58,6 +58,17 @@ struct
 
     fun unquoteK (theta `$ es) =
       K theta $$ es
+
+
+    fun symEq env (u, v) =
+      let
+        val (_, srho, _) = env
+        val u' = Sym.Ctx.lookup srho u handle _ => u
+        val v' = Sym.Ctx.lookup srho v handle _ => v
+      in
+        Symbol.eq (u', v')
+      end
+
   in
     (* Plug a value into a continuation *)
     fun plug sign ((v : vpat, k : kpat) <: env) ks =
@@ -98,11 +109,11 @@ struct
              t2 <: env <| (k <: env) :: ks
            end
        | (ATM_K (Atm.TEST1 ((u, sigma), tau)) `$ [_ \ l, _ \ r], ATM_V (Atm.TOKEN (v, _)) `$ _) =>
-           (if Sym.eq (u, v) then l else r) <: env <| ks
+           (if symEq env (u, v) then l else r) <: env <| ks
 
        (* Compute projection from a record; if the head label matches, return that; otherwise, keep working through the record. *)
        | (RCD_K (Rcd.PROJ lbl) `$ _, RCD_V (Rcd.CONS lbl') `$ [_ \ hd, _ \ tl]) =>
-           if Sym.eq (lbl, lbl') then
+           if symEq env (lbl, lbl') then
              hd <: env <| ks
            else
              tl <: env <| (unquoteK k <: env) :: ks
