@@ -15,7 +15,7 @@ end
 structure RecordV : ABT_OPERATOR =
 struct
   open RecordOperators ArityNotation SortData
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
   type 'i t = 'i rcd_val
 
@@ -46,11 +46,11 @@ end
 structure RecordK :
 sig
   include ABT_OPERATOR
-  val input : 'i t -> RedPRLAtomicArity.sort
+  val input : 'i t -> RedPrlAtomicArity.sort
 end =
 struct
   open RecordOperators ArityNotation SortData
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
   type 'i t = 'i rcd_cont
 
@@ -85,7 +85,7 @@ end
 structure RecordD : ABT_OPERATOR =
 struct
   open RecordOperators ArityNotation SortData
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
   type 'i t = 'i rcd_def
 

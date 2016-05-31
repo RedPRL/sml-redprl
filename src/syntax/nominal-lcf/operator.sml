@@ -2,7 +2,7 @@ structure NominalLcfOperators =
 struct
   (* We use symbols/atoms to index into the context. *)
 
-  structure Sort = RedPRLAtomicSort
+  structure Sort = RedPrlAtomicSort
 
   datatype 'i script_operator =
       SEQ of Sort.t list
@@ -29,7 +29,7 @@ structure NominalLcfV : ABT_OPERATOR =
 struct
   open NominalLcfOperators SortData
 
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
   type 'i t = 'i script_operator
 
   open ArityNotation

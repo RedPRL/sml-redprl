@@ -5,37 +5,39 @@ structure Symbol = AbtSymbol ()
 (* it will come in handy for variables and symbols to be of the same type *)
 structure Variable = Symbol
 
-structure RedPRLSort =
+structure RedPrlSort =
   LcsSort
-    (structure AtomicSort = RedPRLAtomicSort
+    (structure AtomicSort = RedPrlAtomicSort
      val opidSort = SOME SortData.OPID)
 
-structure RedPRLOperator =
-  LcsOperator
-    (structure V = RedPRLV and K = RedPRLK and D = RedPRLD
-     val opidSort = SOME SortData.OPID
-     val input = RedPRLK.input)
+structure RedPrlLcs =
+struct
+  structure V = RedPrlV and K = RedPrlK and D = RedPrlD
+  val opidSort = SOME SortData.OPID
+  val input = RedPrlK.input
+end
 
-structure RedPRLArity = RedPRLOperator.Ar
-structure RedPRLValence = RedPRLArity.Vl
+structure RedPrlOperator = LcsOperator (RedPrlLcs)
+structure RedPrlArity = RedPrlOperator.Ar
+structure RedPrlValence = RedPrlArity.Vl
 
-structure RedPRLAst =
+structure RedPrlAst =
   Ast
-    (structure Operator = RedPRLOperator
+    (structure Operator = RedPrlOperator
      structure Metavar = Metavariable)
 
 
-structure RedPRLAbt =
+structure RedPrlAbt =
   Abt
-    (structure O = RedPRLOperator
+    (structure O = RedPrlOperator
      structure Metavar = Metavariable
      structure Var = Variable
      structure Sym = Symbol)
 
-structure RedPRLAstToAbt =
+structure RedPrlAstToAbt =
   AstToAbt
-    (structure Ast = RedPRLAst
-     structure Abt = RedPRLAbt)
+    (structure Ast = RedPrlAst
+     structure Abt = RedPrlAbt)
 
-structure ShowAbt = PlainShowAbt (RedPRLAbt)
-structure DebugShowAbt = DebugShowAbt (RedPRLAbt)
+structure ShowAbt = PlainShowAbt (RedPrlAbt)
+structure DebugShowAbt = DebugShowAbt (RedPrlAbt)

@@ -1,5 +1,5 @@
 (* Grammar Specification:
- * https://github.com/RedPRL/sml-redprl/blob/master/doc/definition.pdf *)
+ * https://github.com/RedPrl/sml-redprl/blob/master/doc/definition.pdf *)
 
 functor SignatureParser (TermParser : TERM_PARSER) =
 struct

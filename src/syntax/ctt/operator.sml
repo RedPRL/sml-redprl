@@ -1,6 +1,6 @@
 structure CttOperators =
 struct
-  structure Sort = RedPRLAtomicSort
+  structure Sort = RedPrlAtomicSort
 
   datatype ctt_value =
       CAPPROX of Sort.t
@@ -30,7 +30,7 @@ end
 structure CttSimpleV =
 struct
   open CttOperators
-  structure Ar = RedPRLAtomicArity and Sort = RedPRLAtomicSort
+  structure Ar = RedPrlAtomicArity and Sort = RedPrlAtomicSort
   type t = ctt_value
 
   open SortData ArityNotation
@@ -105,7 +105,7 @@ end
 
 structure CttSimpleD : ABT_SIMPLE_OPERATOR =
 struct
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
   open CttOperators
 
   type t = ctt_def
@@ -126,7 +126,7 @@ end
 
 structure CttSimpleK : ABT_SIMPLE_OPERATOR =
 struct
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
   open CttOperators
   type t = ctt_cont
@@ -155,7 +155,7 @@ structure CttD = AbtSimpleOperator (CttSimpleD)
 structure CttK :
 sig
   include ABT_OPERATOR
-  val input : 'i t -> RedPRLAtomicArity.sort
+  val input : 'i t -> RedPrlAtomicArity.sort
 end =
 struct
    structure O = AbtSimpleOperator (CttSimpleK)

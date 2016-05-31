@@ -1,12 +1,12 @@
 structure Sequent :> SEQUENT
-  where type expr = RedPRLAbt.abt
-  where type prop = RedPRLAbt.abt
-  where type sort = RedPRLAbt.sort
-  where type var = RedPRLAbt.variable
-  where type metactx = RedPRLAbt.metactx
-  where type hypctx = (RedPRLAbt.abt * RedPRLAbt.sort) SymbolTelescope.telescope =
+  where type expr = RedPrlAbt.abt
+  where type prop = RedPrlAbt.abt
+  where type sort = RedPrlAbt.sort
+  where type var = RedPrlAbt.variable
+  where type metactx = RedPrlAbt.metactx
+  where type hypctx = (RedPrlAbt.abt * RedPrlAbt.sort) SymbolTelescope.telescope =
 struct
-  open RedPRLAbt
+  open RedPrlAbt
   type prop = abt
   type expr = abt
   type var = variable
@@ -14,7 +14,7 @@ struct
   type hypctx = (prop * sort) SymbolTelescope.telescope
 
   structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
-  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = RedPRLValence)
+  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = RedPrlValence)
 
   datatype context =
     CONTEXT of

@@ -62,12 +62,12 @@ struct
      | Ast.$# (x, (us, ms)) => $# (x, (List.map (fn u => (u, ())) us, ms))
 end
 
-functor RedPRLSyntax (View : SYNTAX_VIEW where type 'a operator = 'a RedPRLOperator.t where type 'a spine = 'a list) =
+functor RedPrlSyntax (View : SYNTAX_VIEW where type 'a operator = 'a RedPrlOperator.t where type 'a spine = 'a list) =
 struct
 
   open View
 
-  structure O = RedPRLOperator
+  structure O = RedPrlOperator
   structure RS = SortData
 
   datatype 'a view =
@@ -148,7 +148,7 @@ struct
     fun @@ (f, x) = f x
     infixr @@
 
-    open RedPRLOperators
+    open RedPrlOperators
 
     fun ret tau m = O.RET tau $$ [([],[]) \ m]
     fun intoCttV th es = ret RS.EXP @@ O.V (CTT_V th) $$ es
@@ -338,5 +338,5 @@ struct
   end
 end
 
-structure RedPRLAbtSyntax = RedPRLSyntax (AbtSyntaxView (RedPRLAbt))
-structure RedPRLAstSyntax = RedPRLSyntax (AstSyntaxView (RedPRLAst))
+structure RedPrlAbtSyntax = RedPrlSyntax (AbtSyntaxView (RedPrlAbt))
+structure RedPrlAstSyntax = RedPrlSyntax (AstSyntaxView (RedPrlAst))

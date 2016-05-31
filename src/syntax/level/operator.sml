@@ -9,7 +9,7 @@ end
 structure SimpleLevelV : ABT_SIMPLE_OPERATOR =
 struct
   open LevelOperators SortData ArityNotation
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
   type t = int
 
@@ -23,7 +23,7 @@ end
 structure SimpleLevelK : ABT_SIMPLE_OPERATOR =
 struct
   open LevelOperators SortData ArityNotation
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
   type t = level_cont
 
@@ -46,7 +46,7 @@ structure LevelV = AbtSimpleOperator (SimpleLevelV)
 structure LevelK :
 sig
   include ABT_OPERATOR
-  val input : 'i t -> RedPRLAtomicArity.sort
+  val input : 'i t -> RedPrlAtomicArity.sort
 end =
 struct
   structure O = AbtSimpleOperator (SimpleLevelK)

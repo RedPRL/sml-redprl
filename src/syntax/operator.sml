@@ -1,9 +1,9 @@
 (* This is the sum type containing all the operators in JonPRL's
  * programming language. *)
 
-structure RedPRLOperators =
+structure RedPrlOperators =
 struct
-  structure Sort = RedPRLAtomicSort
+  structure Sort = RedPrlAtomicSort
 
   datatype 'i redprl_value =
      LCF of 'i NominalLcfV.t
@@ -29,11 +29,11 @@ struct
    | RCD_D of 'i RecordD.t
 end
 
-structure RedPRLV : ABT_OPERATOR =
+structure RedPrlV : ABT_OPERATOR =
 struct
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
-  open RedPRLOperators ArityNotation
+  open RedPrlOperators ArityNotation
   type 'i t = 'i redprl_value
 
   infix <> ->>
@@ -111,15 +111,15 @@ struct
      | OP_NONE tau => OP_NONE tau
 end
 
-structure RedPRLK :
+structure RedPrlK :
 sig
    include ABT_OPERATOR
-   val input : 'i t -> RedPRLAtomicSort.t
+   val input : 'i t -> RedPrlAtomicSort.t
 end =
 struct
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
-  open RedPRLOperators ArityNotation
+  open RedPrlOperators ArityNotation
   type 'i t = 'i redprl_cont
 
   infix <> ->>
@@ -168,11 +168,11 @@ struct
      | ATM_K th => ATM_K (AtomK.map f th)
 end
 
-structure RedPRLD : ABT_OPERATOR =
+structure RedPrlD : ABT_OPERATOR =
 struct
-  structure Ar = RedPRLAtomicArity
+  structure Ar = RedPrlAtomicArity
 
-  open RedPRLOperators ArityNotation
+  open RedPrlOperators ArityNotation
   type 'i t = 'i redprl_def
 
   val arity =

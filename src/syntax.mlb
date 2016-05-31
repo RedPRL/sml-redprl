@@ -39,9 +39,9 @@ local
   end
 in
   structure SortData
-  structure RedPRLAtomicSort
-  structure RedPRLAtomicValence
-  structure RedPRLAtomicArity
+  structure RedPrlAtomicSort
+  structure RedPrlAtomicValence
+  structure RedPrlAtomicArity
   structure ArityNotation
 
   structure CttOperators
@@ -65,26 +65,27 @@ in
   structure AtomV
   structure AtomK
 
-  structure RedPRLOperators
-  structure RedPRLV
-  structure RedPRLK
-  structure RedPRLD
+  structure RedPrlOperators
+  structure RedPrlV
+  structure RedPrlK
+  structure RedPrlD
 
   structure Metavariable
   structure Variable
   structure Symbol
 
-  structure RedPRLOperator
-  structure RedPRLAst
-  structure RedPRLAbt
-  structure RedPRLAstToAbt
+  structure RedPrlLcs
+  structure RedPrlOperator
+  structure RedPrlAst
+  structure RedPrlAbt
+  structure RedPrlAstToAbt
 
   structure ShowAbt
   structure DebugShowAbt
 
-  functor RedPRLSyntax
-  structure RedPRLAstSyntax
-  structure RedPRLAbtSyntax
+  functor RedPrlSyntax
+  structure RedPrlAstSyntax
+  structure RedPrlAbtSyntax
 
   structure StringTelescope
   structure SymbolTelescope
