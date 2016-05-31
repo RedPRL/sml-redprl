@@ -6,9 +6,9 @@ struct
       ATOM of Sort.t
     | TOKEN of 'i * Sort.t
 
-  datatype atom_cont =
+  datatype 'i atom_cont =
       TEST0 of Sort.t
-    | TEST1 of Sort.t
+    | TEST1 of ('i * Sort.t) * Sort.t
 end
 
 
@@ -42,12 +42,16 @@ struct
      | TOKEN (u, tau) => TOKEN (f u, tau)
 end
 
-structure SimpleAtomK : ABT_SIMPLE_OPERATOR =
+structure AtomK :
+sig
+  include ABT_OPERATOR
+  val input : 'i t -> RedPrlAtomicSort.t
+end =
 struct
   open AtomOperators SortData ArityNotation
   structure Ar = RedPrlAtomicArity
 
-  type t = atom_cont
+  type 'i t = 'i atom_cont
   infix <> ->>
 
   val arity =
@@ -56,33 +60,29 @@ struct
           [] * [] <> tau,
           [] * [] <> tau]
             ->> tau
-     | TEST1 tau =>
-         [[] * [] <> EXP,
-          [] * [] <> tau,
+     | TEST1 (_, tau) =>
+         [[] * [] <> tau,
           [] * [] <> tau]
             ->> tau
-
-  val eq =
-    fn (TEST0 tau, TEST0 tau') => tau = tau'
-     | (TEST1 tau, TEST1 tau') => tau = tau'
-     | _ => false
-
-  val toString =
-    fn TEST0 tau => "ifeq0{" ^ Sort.toString tau ^ "}"
-     | TEST1 tau => "ifeq1{" ^ Sort.toString tau ^ "}"
-end
-
-structure AtomK :
-sig
-  include ABT_OPERATOR
-  val input : 'i t -> RedPrlAtomicSort.t
-end =
-struct
-  structure O = AbtSimpleOperator (SimpleAtomK)
-  open O AtomOperators SortData
 
   val input =
     fn TEST0 _ => EXP
      | TEST1 _ => EXP
 
+  val support =
+    fn TEST0 _ => []
+     | TEST1 ((u, sigma), _) => [(u, sigma)]
+
+  fun map f =
+    fn TEST0 tau => TEST0 tau
+     | TEST1 ((u, sigma), tau) => TEST1 ((f u, sigma), tau)
+
+  fun eq f =
+    fn (TEST0 tau, TEST0 tau') => tau = tau'
+     | (TEST1 ((u, sigma), tau), TEST1 ((v, sigma'), tau')) => f (u, v) andalso sigma = sigma' andalso tau = tau'
+     | _ => false
+
+  fun toString f =
+    fn TEST0 tau => "ifeq0{" ^ Sort.toString tau ^ "}"
+     | TEST1 ((u, _), tau) => "ifeq1{" ^ Sort.toString tau ^ "}[" ^ f u ^ "]"
 end

@@ -313,7 +313,7 @@ struct
          | O.K (LVL_K LevelOperators.LSUP0) $ [_ \ n] => LSUP (m, n)
          | O.K (LVL_K (LevelOperators.LSUP1 i)) $ [] => LSUP (m, ret RS.LVL (O.V (LVL_V i) $$ []))
          | O.K (ATM_K (AtomOperators.TEST0 tau)) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (tau, m, t2, l, r)
-         | O.K (ATM_K (AtomOperators.TEST1 tau)) $ [_ \ t1, _ \ l, _ \ r] => IF_EQ (tau, t1, m, l, r)
+         | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (tau, into (TOKEN (u, sigma)), m, l, r)
          | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
          | O.K (RCD_K RecordOperators.SINGL_GET_TY) $ [] => SINGL_GET_TY m
          | _ => raise Fail "outCut expected continuation"
