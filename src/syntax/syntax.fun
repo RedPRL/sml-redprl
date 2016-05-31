@@ -107,6 +107,7 @@ struct
    | SINGL_GET_TY of 'a
 
    | REFINE_SCRIPT of RS.sort * 'a * 'a * 'a
+   | EXTRACT_WITNESS of RS.sort * 'a
    | VEC_LITERAL of RS.sort * 'a list
    | STR_LITERAL of string
    | OPT_SOME of RS.sort * 'a
@@ -200,6 +201,7 @@ struct
        | SINGL_GET_TY a => cutRcd RecordOperators.SINGL_GET_TY [] a
 
        | REFINE_SCRIPT (tau, m, s, e) => ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
+       | EXTRACT_WITNESS (tau, m) => O.CUT (RS.THM tau, tau) $$ [([],[]) \ O.K (EXTRACT0 tau) $$ [], ([],[]) \ m]
        | VEC_LITERAL (tau, ms) => ret (RS.VEC tau) @@ O.V (VEC_LIT (tau, List.length ms)) $$ List.map (fn m => ([],[]) \ m) ms
        | STR_LITERAL str => ret RS.STR @@ O.V (STR_LIT str) $$ []
        | OPT_SOME (tau, m) => ret (RS.OPT tau) @@ O.V (OP_SOME tau) $$ [([],[]) \ m]
@@ -316,6 +318,7 @@ struct
          | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (tau, into (TOKEN (u, sigma)), m, l, r)
          | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
          | O.K (RCD_K RecordOperators.SINGL_GET_TY) $ [] => SINGL_GET_TY m
+         | O.K (EXTRACT0 tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
          | _ => raise Fail "outCut expected continuation"
 
       and outDef th es =

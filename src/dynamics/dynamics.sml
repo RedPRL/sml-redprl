@@ -101,7 +101,7 @@ struct
        | (LVL_K (Lvl.LSUP1 i) `$ _, LVL_V j `$ _) =>
            Syn.lvl (Int.max (i, j)) <: env <| ks
 
-       (* Compute an equailty test on symbol references / atoms. We do this in two steps, as with level suprema. *)
+       (* Compute an equality test on symbol references / atoms. We do this in two steps, as with level suprema. *)
        | (ATM_K (Atm.TEST0 tau) `$ [_ \ t2, _ \ l, _ \ r], ATM_V (Atm.TOKEN (u, sigma)) `$ _) =>
            let
              val k = K (ATM_K (Atm.TEST1 ((u, sigma), tau))) $$ [([],[]) \ l, ([],[]) \ r]
@@ -120,7 +120,18 @@ struct
 
        (* Lisp-style introspection on singleton record type *)
        | (RCD_K SINGL_GET_TY `$ _, RCD_V (Rcd.SINGL _) `$ [_ \ a]) =>
-            a <: env <| ks
+           a <: env <| ks
+
+       (* Extract the witness from a refined theorem object. *)
+       | (EXTRACT0 tau `$ _, REFINE _ `$ [_, _, _ \ e]) =>
+           let
+             val k = K (EXTRACT1 tau) $$ []
+           in
+             e <: env <| (k <: env) :: ks
+           end
+
+       | (EXTRACT1 tau `$ _, OP_SOME _ `$ [_ \ e]) =>
+           e <: env <| ks
 
        | _ => raise Fail "Unhandled cut"
 
