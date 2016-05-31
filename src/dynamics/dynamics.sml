@@ -46,6 +46,7 @@ struct
     open O M Abt Cl RedPrlOperators
     structure Ctt = CttOperators
       and Lvl = LevelOperators
+      and Atm = AtomOperators
       and Syn = RedPrlAbtSyntax
 
     fun pushV (cl : abt closure, x) (mrho, srho, vrho) =
@@ -60,7 +61,8 @@ struct
     (* Plug a value into a continuation *)
     fun plug sign ((v : vpat, k : kpat) <: env) ks =
       case (k, v) of
-       (* Lambda application*)
+
+       (* Lambda application *)
          (CTT_K Ctt.AP `$ [_ \ n], CTT_V Ctt.LAM `$ [(_, [x]) \ mx]) =>
            mx <: pushV (n <: env, x) env <| ks
 
@@ -86,6 +88,16 @@ struct
            end
        | (LVL_K (Lvl.LSUP1 i) `$ _, LVL_V j `$ _) =>
            Syn.lvl (Int.max (i, j)) <: env <| ks
+
+       (* Compute an equailty test on symbol references / atoms. We do this in two steps, as with level suprema. *)
+       | (ATM_K (Atm.TEST0 tau) `$ [_ \ t2, _ \ l, _ \ r], ATM_V (Atm.TOKEN (u, sigma)) `$ _) =>
+           let
+             val k = K (ATM_K (Atm.TEST1 ((u, sigma), tau))) $$ [([],[]) \ l, ([],[]) \ r]
+           in
+             t2 <: env <| (k <: env) :: ks
+           end
+       | (ATM_K (Atm.TEST1 ((u, sigma), tau)) `$ [_ \ l, _ \ r], ATM_V (Atm.TOKEN (v, _)) `$ _) =>
+           (if Sym.eq (u, v) then l else r) <: env <| ks
 
        | _ => raise Fail "Unhandled cut"
 
