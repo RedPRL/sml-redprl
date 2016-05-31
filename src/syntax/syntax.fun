@@ -112,6 +112,35 @@ struct
    | OPT_SOME of RS.sort * 'a
    | OPT_NONE of RS.sort
 
+   | TAC_SEQ of 'a * (symbol * RS.sort) list * 'a
+   | TAC_ORELSE of 'a * 'a
+   | MTAC_ALL of 'a
+   | MTAC_EACH of 'a list
+   | MTAC_FOCUS of int * 'a
+   | TAC_PROGRESS of 'a
+   | TAC_REC of variable * 'a
+   | TAC_INTRO of int option
+   | TAC_EQ of int option
+   | TAC_EXT
+   | TAC_CUM
+   | TAC_ELIM of symbol * RS.sort
+   | TAC_HYP of symbol * RS.sort
+   | TAC_UNHIDE of symbol * RS.sort
+   | TAC_AUTO
+   | TAC_ID
+   | TAC_FAIL
+   | TAC_TRACE of RS.sort * 'a
+   | TAC_CSTEP of int
+   | TAC_CEVAL
+   | TAC_CSYM
+   | TAC_REWRITE_GOAL of RS.sort * 'a
+   | TAC_EVAL_GOAL of symbol option
+   | TAC_NORMALIZE of symbol option
+   | TAC_WITNESS of RS.sort * 'a
+   | TAC_UNFOLD of symbol * symbol option
+   | HYP_REF of symbol
+
+
   infix 3 $ $$
   infix 2 \
 
@@ -121,111 +150,93 @@ struct
 
     open RedPRLOperators
 
-    fun ret tau m =
-      O.RET tau $$ [([],[]) \ m]
-
-    fun intoCttV th es =
-      ret RS.EXP @@ O.V (CTT_V th) $$ es
-
-    fun intoAtmV th es =
-      ret RS.EXP @@ O.V (ATM_V th) $$ es
-
-    fun intoRcdV th es =
-      ret RS.EXP @@ O.V (RCD_V th) $$ es
-
-    fun intoCttD th es =
-      O.D (CTT_D th) $$ es
-
-    fun intoRcdD th es =
-      O.D (RCD_D th) $$ es
-
-    fun cutCtt (sigma, tau) th es m =
-      O.CUT (sigma, tau) $$ [([],[]) \ O.K (CTT_K th) $$ es, ([],[]) \ m]
-
-    fun cutAtm (sigma, tau) th es m =
-      O.CUT (sigma, tau) $$ [([],[]) \ O.K (ATM_K th) $$ es, ([],[]) \ m]
-
-    fun cutLvl th es m =
-      O.CUT (RS.LVL, RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
-
-    fun cutRcd th es m =
-      O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K (RCD_K th) $$ es, ([],[]) \ m]
-
+    fun ret tau m = O.RET tau $$ [([],[]) \ m]
+    fun intoCttV th es = ret RS.EXP @@ O.V (CTT_V th) $$ es
+    fun intoAtmV th es = ret RS.EXP @@ O.V (ATM_V th) $$ es
+    fun intoRcdV th es = ret RS.EXP @@ O.V (RCD_V th) $$ es
+    fun intoCttD th es = O.D (CTT_D th) $$ es
+    fun intoRcdD th es = O.D (RCD_D th) $$ es
+    fun intoTacV th es = ret RS.TAC @@ O.V (LCF th) $$ es
+    fun intoMTacV th es = ret RS.MTAC @@ O.V (LCF th) $$ es
+    fun cutCtt (sigma, tau) th es m = O.CUT (sigma, tau) $$ [([],[]) \ O.K (CTT_K th) $$ es, ([],[]) \ m]
+    fun cutAtm (sigma, tau) th es m = O.CUT (sigma, tau) $$ [([],[]) \ O.K (ATM_K th) $$ es, ([],[]) \ m]
+    fun cutLvl th es m = O.CUT (RS.LVL, RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
+    fun cutRcd th es m = O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K (RCD_K th) $$ es, ([],[]) \ m]
   in
-    val into =
-      fn CAPPROX (tau, m, n) =>
-          intoCttV (CttOperators.CAPPROX tau) [([],[]) \ m, ([],[]) \ n]
-       | CEQUIV (tau, m, n) =>
-          intoCttV (CttOperators.CEQUIV tau) [([],[]) \ m, ([],[]) \ n]
-       | BASE tau =>
-          intoCttV (CttOperators.BASE tau) []
-       | TOP tau =>
-          intoCttV (CttOperators.TOP tau) []
-       | UNIV tau =>
-          intoCttV (CttOperators.UNIV tau) []
-       | UNIV_GET_LVL a =>
-          cutCtt (RS.EXP, RS.LVL) CttOperators.UNIV_GET_LVL [] a
-       | MEMBER (tau, m, a) =>
-          intoCttV (CttOperators.MEMBER tau) [([],[]) \ m, ([],[]) \ a]
-       | EQ (tau, m, n, a) =>
-          intoCttV (CttOperators.EQ tau) [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-       | AX =>
-          intoCttV CttOperators.AX []
-       | SQUASH (tau, a) =>
-          intoCttV (CttOperators.SQUASH tau) [([],[]) \ a]
-       | DFUN (a, x, bx) =>
-          intoCttV CttOperators.DFUN [([],[]) \ a, ([],[x]) \ bx]
-       | FUN (a, b) =>
-          intoCttD CttOperators.FUN [([],[]) \ a, ([],[]) \ b]
-       | NOT a =>
-          intoCttD CttOperators.NOT [([],[]) \ a]
-       | ENSEMBLE (sigma, tau, a, x, bx) =>
-          intoCttV (CttOperators.ENSEMBLE (sigma, tau)) [([],[]) \ a, ([],[x]) \ bx]
-       | LAM (x, mx) =>
-          intoCttV CttOperators.LAM [([],[x]) \ mx]
-       | AP (m, n) =>
-          cutCtt (RS.EXP, RS.EXP) CttOperators.AP [([],[]) \ n] m
-       | DFUN_DOM a =>
-          cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_DOM [] a
-       | DFUN_COD (a, b) =>
-          cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_COD [([],[]) \ b] a
-       | DEP_ISECT (a, x, bx) =>
-          intoCttV CttOperators.DEP_ISECT [([],[]) \ a, ([],[x]) \ bx]
-       | VOID =>
-          intoCttV CttOperators.VOID []
-       | LBASE =>
-          ret RS.LVL @@ O.V (LVL_V 0) $$ []
-       | LSUCC m =>
-          cutLvl LevelOperators.LSUCC [] m
-       | LSUP (m, n) =>
-          cutLvl LevelOperators.LSUP0 [([],[]) \ n] m
-       | ATOM tau =>
-          intoAtmV (AtomOperators.ATOM tau) []
-       | TOKEN (u, tau) =>
-          intoAtmV (AtomOperators.TOKEN (u, tau)) []
-       | IF_EQ (tau, t1, t2, m, n) =>
-          cutAtm (RS.EXP, tau) (AtomOperators.TEST0 tau) [([],[]) \ t2, ([],[]) \ m, ([],[]) \ n] t1
-       | RCD_CONS (u, m, n) =>
-          intoRcdV (RecordOperators.CONS u) [([],[]) \ m, ([],[]) \ n]
-       | RCD_SINGL (u, m) =>
-          intoRcdV (RecordOperators.SINGL u) [([],[]) \ m]
-       | RECORD_TY (u, a, b) =>
-          intoRcdD (RecordOperators.RECORD u) [([],[]) \ a, ([],[]) \ b]
-       | RCD_PROJ (u, m) =>
-          cutRcd (RecordOperators.PROJ u) [] m
-       | SINGL_GET_TY a =>
-          cutRcd RecordOperators.SINGL_GET_TY [] a
-       | REFINE_SCRIPT (tau, m, s, e) =>
-          ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
-       | VEC_LITERAL (tau, ms) =>
-          ret (RS.VEC tau) @@ O.V (VEC_LIT (tau, List.length ms)) $$ List.map (fn m => ([],[]) \ m) ms
-       | STR_LITERAL str =>
-          ret RS.STR @@ O.V (STR_LIT str) $$ []
-       | OPT_SOME (tau, m) =>
-          ret (RS.OPT tau) @@ O.V (OP_SOME tau) $$ [([],[]) \ m]
-       | OPT_NONE tau =>
-          ret (RS.OPT tau) @@ O.V (OP_NONE tau) $$ []
+    val rec into =
+      fn CAPPROX (tau, m, n) => intoCttV (CttOperators.CAPPROX tau) [([],[]) \ m, ([],[]) \ n]
+       | CEQUIV (tau, m, n) => intoCttV (CttOperators.CEQUIV tau) [([],[]) \ m, ([],[]) \ n]
+       | BASE tau => intoCttV (CttOperators.BASE tau) []
+       | TOP tau => intoCttV (CttOperators.TOP tau) []
+       | UNIV tau => intoCttV (CttOperators.UNIV tau) []
+       | UNIV_GET_LVL a => cutCtt (RS.EXP, RS.LVL) CttOperators.UNIV_GET_LVL [] a
+       | MEMBER (tau, m, a) => intoCttV (CttOperators.MEMBER tau) [([],[]) \ m, ([],[]) \ a]
+       | EQ (tau, m, n, a) => intoCttV (CttOperators.EQ tau) [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
+       | AX => intoCttV CttOperators.AX []
+       | SQUASH (tau, a) => intoCttV (CttOperators.SQUASH tau) [([],[]) \ a]
+       | DFUN (a, x, bx) => intoCttV CttOperators.DFUN [([],[]) \ a, ([],[x]) \ bx]
+       | FUN (a, b) => intoCttD CttOperators.FUN [([],[]) \ a, ([],[]) \ b]
+       | NOT a => intoCttD CttOperators.NOT [([],[]) \ a]
+       | ENSEMBLE (sigma, tau, a, x, bx) => intoCttV (CttOperators.ENSEMBLE (sigma, tau)) [([],[]) \ a, ([],[x]) \ bx]
+       | LAM (x, mx) => intoCttV CttOperators.LAM [([],[x]) \ mx]
+       | AP (m, n) => cutCtt (RS.EXP, RS.EXP) CttOperators.AP [([],[]) \ n] m
+       | DFUN_DOM a => cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_DOM [] a
+       | DFUN_COD (a, b) => cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_COD [([],[]) \ b] a
+       | DEP_ISECT (a, x, bx) => intoCttV CttOperators.DEP_ISECT [([],[]) \ a, ([],[x]) \ bx]
+       | VOID => intoCttV CttOperators.VOID []
 
+       | LBASE => ret RS.LVL @@ O.V (LVL_V 0) $$ []
+       | LSUCC m => cutLvl LevelOperators.LSUCC [] m
+       | LSUP (m, n) => cutLvl LevelOperators.LSUP0 [([],[]) \ n] m
+
+       | ATOM tau => intoAtmV (AtomOperators.ATOM tau) []
+       | TOKEN (u, tau) => intoAtmV (AtomOperators.TOKEN (u, tau)) []
+       | IF_EQ (tau, t1, t2, m, n) => cutAtm (RS.EXP, tau) (AtomOperators.TEST0 tau) [([],[]) \ t2, ([],[]) \ m, ([],[]) \ n] t1
+
+       | RCD_CONS (u, m, n) => intoRcdV (RecordOperators.CONS u) [([],[]) \ m, ([],[]) \ n]
+       | RCD_SINGL (u, m) => intoRcdV (RecordOperators.SINGL u) [([],[]) \ m]
+       | RECORD_TY (u, a, b) => intoRcdD (RecordOperators.RECORD u) [([],[]) \ a, ([],[]) \ b]
+       | RCD_PROJ (u, m) => cutRcd (RecordOperators.PROJ u) [] m
+       | SINGL_GET_TY a => cutRcd RecordOperators.SINGL_GET_TY [] a
+
+       | REFINE_SCRIPT (tau, m, s, e) => ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
+       | VEC_LITERAL (tau, ms) => ret (RS.VEC tau) @@ O.V (VEC_LIT (tau, List.length ms)) $$ List.map (fn m => ([],[]) \ m) ms
+       | STR_LITERAL str => ret RS.STR @@ O.V (STR_LIT str) $$ []
+       | OPT_SOME (tau, m) => ret (RS.OPT tau) @@ O.V (OP_SOME tau) $$ [([],[]) \ m]
+       | OPT_NONE tau => ret (RS.OPT tau) @@ O.V (OP_NONE tau) $$ []
+
+       | TAC_SEQ (t1, us, t2) =>
+           let
+             val (hyps, sorts) = ListPair.unzip us
+           in
+             intoTacV (NominalLcfOperators.SEQ sorts) [([],[]) \ t1, (hyps, []) \ t2]
+           end
+      | TAC_ORELSE (t1, t2) => intoTacV NominalLcfOperators.ORELSE [([],[]) \ t1, ([],[]) \ t2]
+      | MTAC_ALL t => intoMTacV NominalLcfOperators.ALL [([],[]) \ t]
+      | MTAC_EACH ts => intoMTacV NominalLcfOperators.EACH [([],[]) \ into (VEC_LITERAL (RS.TAC, ts))]
+      | MTAC_FOCUS (i, t) => intoMTacV (NominalLcfOperators.FOCUS i) [([],[]) \ t]
+      | TAC_PROGRESS t => intoTacV NominalLcfOperators.PROGRESS [([],[]) \ t]
+      | TAC_REC (x, tx) => intoTacV NominalLcfOperators.REC [([],[x]) \ tx]
+      | TAC_INTRO r => intoTacV (NominalLcfOperators.INTRO r) []
+      | TAC_EQ r => intoTacV (NominalLcfOperators.EQ r) []
+      | TAC_EXT => intoTacV NominalLcfOperators.EXT []
+      | TAC_CUM => intoTacV NominalLcfOperators.CUM []
+      | TAC_ELIM (u, tau) => intoTacV (NominalLcfOperators.ELIM (u, tau)) []
+      | TAC_UNHIDE (u, tau) => intoTacV (NominalLcfOperators.UNHIDE (u, tau)) []
+      | TAC_AUTO => intoTacV NominalLcfOperators.AUTO []
+      | TAC_ID => intoTacV NominalLcfOperators.ID []
+      | TAC_FAIL => intoTacV NominalLcfOperators.FAIL []
+      | TAC_TRACE (tau, m) => intoTacV (NominalLcfOperators.TRACE tau) [([],[]) \ m]
+      | TAC_CSTEP n => intoTacV (NominalLcfOperators.CSTEP n) []
+      | TAC_CEVAL => intoTacV NominalLcfOperators.CEVAL []
+      | TAC_CSYM => intoTacV NominalLcfOperators.CSYM []
+      | TAC_REWRITE_GOAL (tau, m) => intoTacV (NominalLcfOperators.REWRITE_GOAL tau) [([],[]) \ m]
+      | TAC_EVAL_GOAL u => intoTacV (NominalLcfOperators.EVAL_GOAL u) []
+      | TAC_NORMALIZE u => intoTacV (NominalLcfOperators.NORMALIZE u) []
+      | TAC_WITNESS (tau, m) => intoTacV (NominalLcfOperators.WITNESS tau) [([],[]) \ m]
+      | TAC_UNFOLD (u, v) => intoTacV (NominalLcfOperators.UNFOLD (u, v)) []
+      | HYP_REF u => ret RS.EXP @@ O.V (LCF (NominalLcfOperators.HYP_VAR u)) $$ []
+      | _ => raise Fail "Stupid SML/NJ says this is non-exhaustive, but doesn't tell me which cases I am missing!"
 
     local
       fun outVal v =
@@ -244,15 +255,55 @@ struct
          | O.V (CTT_V CttOperators.LAM) $ [(_, [x]) \ mx] => LAM (x, mx)
          | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
          | O.V (CTT_V CttOperators.VOID) $ _ => VOID
+
          | O.V (LVL_V 0) $ _ => LBASE
          | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
+
          | O.V (ATM_V (AtomOperators.ATOM tau)) $ _ => ATOM tau
          | O.V (ATM_V (AtomOperators.TOKEN (u, tau))) $ _ => TOKEN (u, tau)
+
          | O.V (RCD_V (RecordOperators.CONS u)) $ [_ \ m, _ \ n] => RCD_CONS (u, m, n)
          | O.V (RCD_V (RecordOperators.SINGL u)) $ [_ \ a] =>  RCD_SINGL (u, a)
+
+         | O.V (VEC_LIT (tau, _)) $ es => VEC_LITERAL (tau, List.map (fn _ \ m => m) es)
+         | O.V (STR_LIT str) $ _ => STR_LITERAL str
+         | O.V (OP_SOME tau) $ [_ \ m] => OPT_SOME (tau, m)
+         | O.V (OP_NONE tau) $ _ => OPT_NONE tau
+         | O.V (REFINE tau) $ [_ \ m, _ \ s, _ \ e] => REFINE_SCRIPT (tau, m, s, e)
+
+         | O.V (LCF (NominalLcfOperators.SEQ sorts)) $ [_ \ t1, (hyps, _) \ t2] => TAC_SEQ (t1, ListPair.zip (hyps, sorts), t2)
+         | O.V (LCF NominalLcfOperators.ORELSE) $ [_ \ t1, _ \ t2] => TAC_ORELSE (t1, t2)
+         | O.V (LCF NominalLcfOperators.ALL) $ [_ \ t] => MTAC_ALL t
+         | O.V (LCF NominalLcfOperators.EACH) $ [_ \ vec] =>
+             (case out vec of
+                 VEC_LITERAL (tau, ts) => MTAC_EACH ts
+               | _ => raise Fail "Expected vector literal")
+         | O.V (LCF (NominalLcfOperators.FOCUS i)) $ [_ \ t] => MTAC_FOCUS (i, t)
+         | O.V (LCF NominalLcfOperators.PROGRESS) $ [_ \ t] => TAC_PROGRESS t
+         | O.V (LCF NominalLcfOperators.REC) $ [(_, [x]) \ tx] => TAC_REC (x, tx)
+         | O.V (LCF (NominalLcfOperators.INTRO r)) $ _ => TAC_INTRO r
+         | O.V (LCF (NominalLcfOperators.EQ r)) $ _ => TAC_EQ r
+         | O.V (LCF NominalLcfOperators.EXT) $ _ => TAC_EXT
+         | O.V (LCF NominalLcfOperators.CUM) $ _ => TAC_CUM
+         | O.V (LCF (NominalLcfOperators.ELIM (u, tau))) $ _ => TAC_ELIM (u, tau)
+         | O.V (LCF (NominalLcfOperators.HYP (u, tau))) $ _ => TAC_HYP (u, tau)
+         | O.V (LCF (NominalLcfOperators.UNHIDE (u, tau))) $ _ => TAC_UNHIDE (u, tau)
+         | O.V (LCF NominalLcfOperators.AUTO) $ _ => TAC_AUTO
+         | O.V (LCF NominalLcfOperators.ID) $ _ => TAC_ID
+         | O.V (LCF NominalLcfOperators.FAIL) $ _ => TAC_FAIL
+         | O.V (LCF (NominalLcfOperators.TRACE tau)) $ [_ \ m] => TAC_TRACE (tau, m)
+         | O.V (LCF (NominalLcfOperators.CSTEP n)) $ [_ \ m] => TAC_CSTEP n
+         | O.V (LCF NominalLcfOperators.CEVAL) $ _ => TAC_CEVAL
+         | O.V (LCF NominalLcfOperators.CSYM) $ _ => TAC_CSYM
+         | O.V (LCF (NominalLcfOperators.REWRITE_GOAL tau)) $ [_ \ m] => TAC_REWRITE_GOAL (tau, m)
+         | O.V (LCF (NominalLcfOperators.EVAL_GOAL u)) $ _ => TAC_EVAL_GOAL u
+         | O.V (LCF (NominalLcfOperators.NORMALIZE u)) $ _ => TAC_NORMALIZE u
+         | O.V (LCF (NominalLcfOperators.WITNESS tau)) $ [_ \ m] => TAC_WITNESS (tau, m)
+         | O.V (LCF (NominalLcfOperators.UNFOLD (u, v))) $ _ => TAC_UNFOLD (u, v)
+         | O.V (LCF (NominalLcfOperators.HYP_VAR h)) $ _ => HYP_REF h
          | _ => raise Fail "outVal expected value"
 
-      fun outCut k m =
+      and outCut k m =
         case View.out k of
            O.K (CTT_K CttOperators.AP) $ [_ \ n] => AP (m, n)
          | O.K (CTT_K CttOperators.DFUN_DOM) $ _ => DFUN_DOM m
@@ -267,20 +318,22 @@ struct
          | O.K (RCD_K RecordOperators.SINGL_GET_TY) $ [] => SINGL_GET_TY m
          | _ => raise Fail "outCut expected continuation"
 
-      fun outDef th es =
+      and outDef th es =
         case (th, es) of
            (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
          | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
          | (RCD_D (RecordOperators.RECORD u), [_ \ a, _ \ b]) => RECORD_TY (u, a, b)
          | _ => raise Fail "outDef expected definitional extension"
 
-    in
-      fun out m =
+     and out m  =
         case View.out m of
            O.RET _ $ [_ \ v] => outVal v
          | O.CUT _ $ [_ \ k, _ \ m] => outCut k m
          | O.D th $ es => outDef th es
          | _ => raise Fail "Syntax view expected application expression"
+
+    in
+      val out = out
     end
   end
 end

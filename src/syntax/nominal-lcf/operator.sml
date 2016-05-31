@@ -4,20 +4,14 @@ struct
 
   structure Sort = RedPRLAtomicSort
 
-  type intro_params =
-    {rule : int option}
-
-  type eq_params =
-    {rule : int option}
-
   datatype 'i script_operator =
       SEQ of Sort.t list
     | ORELSE
     | ALL | EACH | FOCUS of int
     | PROGRESS
     | REC
-    | INTRO of intro_params
-    | EQ of eq_params
+    | INTRO of int option
+    | EQ of int option
     | CHKINF
     | EXT
     | CUM
@@ -201,8 +195,8 @@ struct
      | ALL => "all"
      | EACH => "each"
      | FOCUS i => "some{" ^ Int.toString i ^ "}"
-     | INTRO {rule} => "intro" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
-     | EQ {rule} => "eq" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
+     | INTRO rule => "intro" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
+     | EQ rule => "eq" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
      | EXT => "ext"
      | CHKINF => "chk-inf"
      | CUM => "cum"
