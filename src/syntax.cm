@@ -44,6 +44,8 @@ Library
   structure DebugShowAbt
 
   functor RedPRLSyntax
+  structure RedPRLAbtSyntax
+  structure RedPRLAstSyntax
 
   structure StringTelescope
   structure SymbolTelescope

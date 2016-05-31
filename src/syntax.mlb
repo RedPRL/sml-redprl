@@ -1,6 +1,7 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-typed-abts/abt.mlb
+  ../lib/sml-typed-abts/abt-lcs.mlb
   ../lib/sml-telescopes/telescopes.mlb
 
   syntax/sort_data.sml
@@ -14,6 +15,7 @@ local
   syntax/operator.sml
 
   syntax/abt.sml
+  syntax/syntax.fun
 
   local
     local
@@ -37,36 +39,52 @@ local
   end
 in
   structure SortData
-  structure Sort
-  structure Valence
-  structure Arity
+  structure RedPRLAtomicSort
+  structure RedPRLAtomicValence
+  structure RedPRLAtomicArity
+  structure ArityNotation
 
-  structure NominalLcfOperatorData
-  structure NominalLcfOperator
+  structure CttOperators
+  structure CttV
+  structure CttK
+  structure CttD
 
-  structure LevelOperatorData
-  structure LevelOperator
+  structure NominalLcfOperators
+  structure NominalLcfV
 
-  structure CttOperatorData
-  structure CttOperator
+  structure LevelOperators
+  structure LevelV
+  structure LevelK
 
-  structure RecordOperatorData
-  structure RecordOperator
+  structure RecordOperators
+  structure RecordV
+  structure RecordK
+  structure RecordD
 
-  structure AtomsOperatorData
-  structure AtomsOperator
+  structure AtomOperators
+  structure AtomV
+  structure AtomK
 
-  structure OperatorData
-  structure Operator
+  structure RedPRLOperators
+  structure RedPRLV
+  structure RedPRLK
+  structure RedPRLD
 
   structure Metavariable
   structure Variable
   structure Symbol
-  structure Ast
-  structure Abt
-  structure AstToAbt
+
+  structure RedPRLOperator
+  structure RedPRLAst
+  structure RedPRLAbt
+  structure RedPRLAstToAbt
+
   structure ShowAbt
   structure DebugShowAbt
+
+  functor RedPRLSyntax
+  structure RedPRLAstSyntax
+  structure RedPRLAbtSyntax
 
   structure StringTelescope
   structure SymbolTelescope
