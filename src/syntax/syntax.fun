@@ -142,8 +142,12 @@ struct
    | TAC_UNFOLD of symbol * symbol option
    | HYP_REF of symbol
 
+  datatype 'a open_view =
+      APP of 'a view
+    | VAR of variable
+    | MVAR of metavariable * (symbol * sort) list * 'a list
 
-  infix 3 $ $$
+  infix 3 $ $$ $#
   infix 2 \
 
   local
@@ -165,6 +169,7 @@ struct
     fun cutLvl th es m = O.CUT (RS.LVL, RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
     fun cutRcd th es m = O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K (RCD_K th) $$ es, ([],[]) \ m]
   in
+
     val rec into =
       fn CAPPROX (tau, m, n) => intoCttV (CttOperators.CAPPROX tau) [([],[]) \ m, ([],[]) \ n]
        | CEQUIV (tau, m, n) => intoCttV (CttOperators.CEQUIV tau) [([],[]) \ m, ([],[]) \ n]
@@ -331,7 +336,7 @@ struct
          | (RCD_D (RecordOperators.RECORD u), [_ \ a, _ \ b]) => RECORD_TY (u, a, b)
          | _ => raise Fail "outDef expected definitional extension"
 
-     and out m  =
+      and out m  =
         case View.out m of
            O.RET _ $ [_ \ v] => outVal v
          | O.CUT _ $ [_ \ k, _ \ m] => outCut k m
@@ -340,6 +345,11 @@ struct
 
     in
       val out = out
+      fun outOpen m =
+        case View.out m of
+           `x => VAR x
+         | x $# (us, ms) => MVAR (x, us, ms)
+         | _ => APP (out m)
 
       fun lvl i =
         O.RET RS.LVL $$ [([],[]) \ O.V (LVL_V i) $$ []]
