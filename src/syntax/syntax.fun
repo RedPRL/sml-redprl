@@ -75,7 +75,7 @@ struct
    | CEQUIV of RS.sort * 'a * 'a
    | BASE of RS.sort
    | TOP of RS.sort
-   | UNIV of RS.sort
+   | UNIV of RS.sort * 'a
    | UNIV_GET_LVL of 'a
    | MEMBER of RS.sort * 'a * 'a
    | EQ of RS.sort * 'a * 'a * 'a
@@ -124,6 +124,7 @@ struct
    | TAC_EQ of int option
    | TAC_EXT
    | TAC_CUM
+   | TAC_CHKINF
    | TAC_ELIM of symbol * RS.sort
    | TAC_HYP of symbol * RS.sort
    | TAC_UNHIDE of symbol * RS.sort
@@ -169,7 +170,7 @@ struct
        | CEQUIV (tau, m, n) => intoCttV (CttOperators.CEQUIV tau) [([],[]) \ m, ([],[]) \ n]
        | BASE tau => intoCttV (CttOperators.BASE tau) []
        | TOP tau => intoCttV (CttOperators.TOP tau) []
-       | UNIV tau => intoCttV (CttOperators.UNIV tau) []
+       | UNIV (tau, lvl) => intoCttV (CttOperators.UNIV tau) [([],[]) \ lvl]
        | UNIV_GET_LVL a => cutCtt (RS.EXP, RS.LVL) CttOperators.UNIV_GET_LVL [] a
        | MEMBER (tau, m, a) => intoCttV (CttOperators.MEMBER tau) [([],[]) \ m, ([],[]) \ a]
        | EQ (tau, m, n, a) => intoCttV (CttOperators.EQ tau) [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
@@ -223,6 +224,7 @@ struct
       | TAC_EQ r => intoTacV (NominalLcfOperators.EQ r) []
       | TAC_EXT => intoTacV NominalLcfOperators.EXT []
       | TAC_CUM => intoTacV NominalLcfOperators.CUM []
+      | TAC_CHKINF => intoTacV NominalLcfOperators.CHKINF []
       | TAC_ELIM (u, tau) => intoTacV (NominalLcfOperators.ELIM (u, tau)) []
       | TAC_UNHIDE (u, tau) => intoTacV (NominalLcfOperators.UNHIDE (u, tau)) []
       | TAC_AUTO => intoTacV NominalLcfOperators.AUTO []
@@ -247,7 +249,7 @@ struct
          | O.V (CTT_V (CttOperators.CEQUIV tau)) $ [_ \ m, _ \ n] => CEQUIV (tau, m, n)
          | O.V (CTT_V (CttOperators.BASE tau)) $ _ => BASE tau
          | O.V (CTT_V (CttOperators.TOP tau)) $ _ => TOP tau
-         | O.V (CTT_V (CttOperators.UNIV tau)) $ _ => UNIV tau
+         | O.V (CTT_V (CttOperators.UNIV tau)) $ [_ \ lvl] => UNIV (tau, lvl)
          | O.V (CTT_V (CttOperators.MEMBER tau)) $ [_ \ m, _ \ a] => MEMBER (tau, m, a)
          | O.V (CTT_V (CttOperators.EQ tau)) $ [_ \ m, _ \ n, _ \ a] => EQ (tau, m, n, a)
          | O.V (CTT_V CttOperators.AX) $ _ => AX
@@ -287,6 +289,7 @@ struct
          | O.V (LCF (NominalLcfOperators.EQ r)) $ _ => TAC_EQ r
          | O.V (LCF NominalLcfOperators.EXT) $ _ => TAC_EXT
          | O.V (LCF NominalLcfOperators.CUM) $ _ => TAC_CUM
+         | O.V (LCF NominalLcfOperators.CHKINF) $ _ => TAC_CHKINF
          | O.V (LCF (NominalLcfOperators.ELIM (u, tau))) $ _ => TAC_ELIM (u, tau)
          | O.V (LCF (NominalLcfOperators.HYP (u, tau))) $ _ => TAC_HYP (u, tau)
          | O.V (LCF (NominalLcfOperators.UNHIDE (u, tau))) $ _ => TAC_UNHIDE (u, tau)

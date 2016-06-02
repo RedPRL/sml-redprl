@@ -73,7 +73,7 @@ struct
     val makeNameStore =
       Dict.lookup o
         List.foldl
-          (fn ((x, vl : Valence.t), d) => Dict.insert d x (Metavariable.named x, vl))
+          (fn ((x, vl : RedPrlAtomicValence.t), d) => Dict.insert d x (Metavariable.named x, vl))
           Dict.empty
   end
 
@@ -98,18 +98,19 @@ struct
     end
 
 
+  structure Syn = RedPrlAstSyntax
+
   local
-    open Ast OperatorData NominalLcfOperatorData CttOperatorData RecordOperatorData SortData
-    infix $ \
+    open SortData
   in
     val defaultTac =
-      LCF ID $ []
+      Syn.into Syn.TAC_ID
 
     val recordTop =
-      CTT (TOP EXP) $ []
+      Syn.into (Syn.TOP EXP)
 
     fun recordCons (lbl, a) b =
-      RCD (RECORD lbl) $ [([],[]) \ a, ([], [lbl]) \ b]
+      Syn.into (Syn.RCD_CONS (lbl, a, b))
   end
 
   fun parseTactic sign : (opid * def) charParser =
@@ -138,8 +139,6 @@ struct
       val parseParams' = squares (parseParams sign) || succeed []
       val parseArgs' = parens (parseArgs sign) || succeed []
       val parseSort' = (colon >> parseSort sign) || succeed SortData.EXP
-      open Ast
-      infix $ \
     in
       (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
         let
@@ -153,10 +152,7 @@ struct
               arguments = List.map (fn (m, v) => rho m) args,
               sort = SortData.THM tau,
               definiens =
-                OperatorData.REFINE tau$
-                  [([],[]) \ goal,
-                   ([],[]) \ script,
-                   ([],[]) \ (OperatorData.OP_NONE tau $ [])]}))
+                Syn.into (Syn.REFINE_SCRIPT (tau, goal, script, Syn.into (Syn.OPT_NONE tau)))}))
         end) ?? "theorem"
     end
 
@@ -176,8 +172,6 @@ struct
       val parseOpid' = reserved "Record" >> parseOpid
       val parseParams' = squares (parseParams sign) || succeed []
       val parseArgs' = parens (parseArgs sign) || succeed []
-      open Ast
-      infix $ \
     in
       (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn (opid, (params, args)) =>
         let

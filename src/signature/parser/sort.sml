@@ -2,7 +2,7 @@ structure SortParser :
 sig
   val parseSort
     : AstSignature.sign
-    -> Sort.t CharParser.charParser
+    -> RedPrlAtomicSort.t CharParser.charParser
 end =
 struct
   open CharParser ParserCombinators RedTokenParser SortData

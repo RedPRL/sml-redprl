@@ -1,5 +1,7 @@
 structure AstSignature : AST_SIGNATURE =
 struct
+  structure Ast = RedPrlAst and Arity = RedPrlAtomicArity
+
   type opid = string
   structure Telescope = StringTelescope
 

@@ -1,6 +1,7 @@
 structure TermParser : TERM_PARSER =
 struct
-  type metavariable_table = string -> Ast.metavariable * Valence.t
+  structure Ast = RedPrlAst
+  type metavariable_table = string -> Ast.metavariable * RedPrlAtomicValence.t
 
   open ParserCombinators CharParser
   infixr 4 << >>
@@ -29,7 +30,7 @@ struct
   val force =
     ParserCombinators.$
 
-  type 'a parser_family = Sort.t -> 'a charParser
+  type 'a parser_family = RedPrlAtomicSort.t -> 'a charParser
   type 'a endo = 'a -> 'a
 
   (* to fix a recursive family of parsers *)
@@ -39,8 +40,8 @@ struct
 
 
   local
-    open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData RecordOperatorData
-    infix $ \ $#
+    open AstSignature AstSignatureDecl SortData
+    structure Syn = RedPrlAstSyntax
   in
     val parseSymbol = identifier
     val parseVariable = identifier
@@ -54,9 +55,9 @@ struct
         -- (fn tau' =>
           parens (f (THM tau))
             wth (fn m =>
-              EXTRACT tau' $ [([],[]) \ m]))
+              Syn.into (Syn.EXTRACT_WITNESS (tau, m))))
 
-    fun parseTerm' sign rho f tau : ast fixityitem charParser =
+    fun parseTerm' sign rho f tau =
       let
         fun liftParser p =
           parseExtract sign f tau wth Atm
@@ -68,13 +69,11 @@ struct
          | EXP => liftParser @@ ExprParser.parseExpr sign f
          | VEC tau =>
            squares (commaSep (f tau))
-             wth (fn xs =>
-               VEC_LIT (tau, length xs) $
-                 map (fn x => ([], []) \ x) xs)
+             wth (fn xs => Syn.into (Syn.VEC_LITERAL (tau, xs)))
              wth Atm
          | STR =>
            stringLiteral
-             wth (fn str => STR_LIT str $ [])
+             wth (Syn.into o Syn.STR_LITERAL)
              wth Atm
          | MTAC => liftParser @@ TacParser.parseMultitac sign rho f
          | TAC => liftParser @@ TacParser.parseTac sign rho f
@@ -86,8 +85,7 @@ struct
         let
           val p = parseTerm' sign rho f tau
         in
-          spaces >> parsefixityadj p Left (fn (m, n) => CTT AP $ [([],[]) \ m, ([],[]) \ n]) << spaces
+          spaces >> parsefixityadj p Left (Syn.into o Syn.AP) << spaces
         end)
   end
 end
-

@@ -1,18 +1,25 @@
 structure GenericParser :
 sig
-  type metavariable_table = string -> Ast.metavariable * Valence.t
+  type metavariable_table = string -> AstSignature.metavariable * AstSignature.valence
   val parseGeneric
     : AstSignature.sign
     -> metavariable_table
-    -> (Sort.t -> Ast.ast CharParser.charParser)
-    -> Sort.t
-    -> Ast.ast CharParser.charParser
+    -> (AstSignature.sort -> AstSignature.term CharParser.charParser)
+    -> AstSignature.sort
+    -> AstSignature.term CharParser.charParser
 end =
 struct
-  type metavariable_table = string -> Ast.metavariable * Valence.t
+  structure Valence = RedPrlAtomicValence
+
+  structure Ar = RedPrlOperator.Ar
+  structure S = RedPrlOperator.S
 
   open CharParser ParserCombinators RedTokenParser
-  open AstSignature AstSignatureDecl Ast OperatorData NominalLcfOperatorData CttOperatorData AtomsOperatorData SortData RecordOperatorData
+  open AstSignature AstSignatureDecl SortData
+  open RedPrlAst
+
+  type metavariable_table = string -> metavariable * Valence.t
+
   infix $ \ $#
 
   infixr 4 << >>
@@ -49,7 +56,7 @@ struct
             val valences = List.map (fn (_, vl) => vl) arguments
             val arity = (valences, sort)
           in
-            CUST (opid, params, arity)
+            RedPrlOperator.CUSTOM (opid, params, arity)
           end)
 
       val parseCustomOperator =
@@ -94,13 +101,21 @@ struct
             semi)
           || (if length valences = 0 then succeed [] else fail "")
 
+
+      val extractSort =
+        fn (S.EXP tau) => tau
+         | _ => raise Fail "Expected EXP"
+
+      fun extractValence ((xs, ys), z) =
+        ((List.map extractSort xs, List.map extractSort ys), extractSort z)
+
       val parseCustomApp =
         try parseCustomOperator -- (fn theta =>
           let
-            val (valences, tau') = Operator.arity theta
+            val (valences, tau') : RedPrlOperator.Ar.t = RedPrlOperator.arity theta
           in
-            if tau' = tau then
-              parseArguments valences
+            if extractSort tau' = tau then
+              parseArguments (List.map extractValence valences)
                 wth (fn args =>
                   theta $ args)
             else
