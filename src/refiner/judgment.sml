@@ -1,7 +1,7 @@
 structure Judgment : ABT_JUDGMENT =
 struct
-  structure Tm = Abt
-  open Abt
+  structure Tm = RedPrlAbt
+  open Tm
 
   open Sequent
 
@@ -21,13 +21,14 @@ struct
      | EQ_SYN _ => SortData.EXP
      | SYN _ => SortData.EXP
 
+  structure RS = RedPrlOperator.S
   val rec evidenceValence =
-    fn H >> concl => (([],[]), conclEvidenceSort concl)
+    fn H >> concl => (([],[]), RS.EXP (conclEvidenceSort concl))
      | G |> jdg =>
          let
            val ((sigmas, taus), tau) = evidenceValence jdg
          in
-           ((sigmas, List.map #2 G @ taus), tau)
+           ((sigmas, List.map (RS.EXP o #2) G @ taus), tau)
          end
 
   fun evidenceToString e =
@@ -47,7 +48,7 @@ struct
      | SYN r => SYN (metasubstEnv rho r)
 
   structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
-  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Valence)
+  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Tm.O.Ar.Vl)
   structure MetaRenUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Metavariable)
   structure SymRenUtil = ContextUtil (structure Ctx = SymCtx and Elem = Symbol)
   structure VarRenUtil = ContextUtil (structure Ctx = VarCtx and Elem = Variable)
@@ -88,7 +89,7 @@ struct
 
   (* Code review needed below: *)
 
-  fun unifyHypotheses (tele1, tele2) : Abt.Unify.renaming =
+  fun unifyHypotheses (tele1, tele2) : Tm.Unify.renaming =
     let
       open SymbolTelescope.ConsView
       fun go (mrho, srho, vrho) =
@@ -96,7 +97,7 @@ struct
          | (CONS (x1, (a1, _), tele1') , CONS (x2, (a2, _), tele2')) =>
              if Variable.eq (x1, x2) then
                let
-                 val (mrho', srho', vrho') = Abt.Unify.unify (a1, a2)
+                 val (mrho', srho', vrho') = Tm.Unify.unify (a1, a2)
                  val mrho'' = MetaRenUtil.union (mrho, mrho')
                  val srho'' = SymRenUtil.union (srho, srho')
                  val vrho'' = VarRenUtil.union (vrho, vrho')
@@ -104,8 +105,8 @@ struct
                  go (mrho'', srho'', vrho'') (out tele1', out tele2')
                end
              else
-               raise Abt.Unify.UnificationFailed
-         | _ => raise Abt.Unify.UnificationFailed
+               raise Tm.Unify.UnificationFailed
+         | _ => raise Tm.Unify.UnificationFailed
     in
       go (MetaCtx.empty, SymCtx.empty, VarCtx.empty) (out tele1, out tele2)
     end
@@ -116,33 +117,33 @@ struct
      VarRenUtil.union (vrho1, vrho2))
 
   val unifyConcl =
-    fn (TRUE (p1, _), TRUE (p2, _)) => Abt.Unify.unify (p1, p2)
-     | (TYPE (p1, _), TYPE (p2, _)) => Abt.Unify.unify (p1, p2)
+    fn (TRUE (p1, _), TRUE (p2, _)) => Tm.Unify.unify (p1, p2)
+     | (TYPE (p1, _), TYPE (p2, _)) => Tm.Unify.unify (p1, p2)
      | (EQ_MEM (m1, n1, a1), EQ_MEM (m2, n2, a2)) =>
          let
-           val rho1 = Abt.Unify.unify (m1, m2)
-           val rho2 = Abt.Unify.unify (n1, n2)
-           val rho3 = Abt.Unify.unify (a1, a2)
+           val rho1 = Tm.Unify.unify (m1, m2)
+           val rho2 = Tm.Unify.unify (n1, n2)
+           val rho3 = Tm.Unify.unify (a1, a2)
          in
            mergeUnification (mergeUnification rho1 rho2) rho3
          end
      | (MEM (m1, a1), MEM (m2, a2)) =>
          let
-           val rho1 = Abt.Unify.unify (m1, m2)
-           val rho2 = Abt.Unify.unify (a1, a2)
+           val rho1 = Tm.Unify.unify (m1, m2)
+           val rho2 = Tm.Unify.unify (a1, a2)
          in
            mergeUnification rho1 rho2
          end
      | (EQ_SYN (r1, s1), EQ_SYN (r2, s2)) =>
          let
-           val rho1 = Abt.Unify.unify (r1, r2)
-           val rho2 = Abt.Unify.unify (s1, s2)
+           val rho1 = Tm.Unify.unify (r1, r2)
+           val rho2 = Tm.Unify.unify (s1, s2)
          in
            mergeUnification rho1 rho2
          end
      | (SYN r1, SYN r2) =>
-         Abt.Unify.unify (r1, r2)
-     | _ => raise Abt.Unify.UnificationFailed
+         Tm.Unify.unify (r1, r2)
+     | _ => raise Tm.Unify.UnificationFailed
 
   val rec unifyJudgment' =
     fn (H1 >> concl1, H2 >> concl2) =>
@@ -157,15 +158,15 @@ struct
           val _ =
             ListPair.appEq
               (fn ((x, sigma), (y, tau)) =>
-                 if Variable.eq (x, y) andalso Sort.eq (sigma, tau) then
+                 if Variable.eq (x, y) andalso sigma = tau then
                    ()
                  else
-                   raise Abt.Unify.UnificationFailed)
+                   raise Tm.Unify.UnificationFailed)
               (G1, G2)
         in
           unifyJudgment' (jdg1, jdg2)
         end
-    | _ => raise Abt.Unify.UnificationFailed
+    | _ => raise Tm.Unify.UnificationFailed
 
   fun unifyJudgment (jdg1, jdg2) =
     SOME (unifyJudgment' (jdg1, jdg2))

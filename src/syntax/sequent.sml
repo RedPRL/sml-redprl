@@ -1,12 +1,13 @@
 structure Sequent :> SEQUENT
   where type expr = RedPrlAbt.abt
   where type prop = RedPrlAbt.abt
-  where type sort = RedPrlAbt.sort
+  where type sort = RedPrlAtomicSort.t
   where type var = RedPrlAbt.variable
   where type metactx = RedPrlAbt.metactx
-  where type hypctx = (RedPrlAbt.abt * RedPrlAbt.sort) SymbolTelescope.telescope =
+  where type hypctx = (RedPrlAbt.abt * RedPrlAtomicSort.t) SymbolTelescope.telescope =
 struct
   open RedPrlAbt
+  type sort = RedPrlAtomicSort.t
   type prop = abt
   type expr = abt
   type var = variable
