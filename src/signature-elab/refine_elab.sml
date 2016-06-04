@@ -2,6 +2,7 @@ structure RefineElab : SIGNATURE_ELAB =
 struct
   structure E = NominalLcfSemantics
   structure S1 = AbtSignature and S2 = AbtSignature
+  structure Syn = RedPrlAbtSyntax
 
   open AbtSignature
   structure T = AbtSignature.Telescope and SD = SortData
@@ -11,7 +12,7 @@ struct
   fun ?e = raise e
 
   local
-    open Abt OperatorData Sequent
+    open RedPrlAbt Sequent
     infix $ $$ \
     infix 4 >>
 
@@ -33,13 +34,13 @@ struct
       end
   in
     fun elabThm sign (d as {parameters, arguments, sort, definiens}) : decl =
-      case out definiens of
-           REFINE tau $ [_ \ prop, _ \ script, _ \ extract] =>
+      case Syn.out definiens of
+           Syn.REFINE_SCRIPT (tau, prop, script, extract) =>
              (* If an extract has already been computed, then skip; otherwise
               * we run the proof script to compute its extract. *)
-             (case out extract of
-                   OP_SOME _ $ _ => def sign d
-                 | OP_NONE _ $ _ =>
+             (case Syn.out extract of
+                   Syn.OPT_SOME _ => def sign d
+                 | Syn.OPT_NONE _ =>
                      let
                        val alpha = makeNameStore ()
                        val goal = emptyContext >> TRUE (prop, tau)
@@ -49,8 +50,8 @@ struct
                             Ctx.ConsView.EMPTY =>
                               let
                                 val _ \ evd = outb (vld Ctx.empty)
-                                val evd' = OP_SOME tau $$ [([],[]) \ evd]
-                                val prf = REFINE tau $$ [([],[]) \ prop, ([],[]) \ script, ([],[]) \ evd']
+                                val evd' = Syn.into (Syn.OPT_SOME (tau, evd))
+                                val prf = Syn.into (Syn.REFINE_SCRIPT (tau, prop, script, evd'))
                               in
                                 def sign
                                   {parameters = parameters,
