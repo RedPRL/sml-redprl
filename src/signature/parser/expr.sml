@@ -22,7 +22,7 @@ struct
 
   fun inferRefinedSort' m =
     succeed (inferRefinedSort m)
-      handle e => fail (exnMessage e)
+      handle e => succeed SortData.EXP
 
   val parseSymbol = identifier
   val parseVariable = identifier
