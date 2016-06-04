@@ -8,30 +8,30 @@ struct
 
   structure LvlUtil =
   struct
-    fun compareLevels (i, j) =
+    datatype view = @+ of RedPrlAbt.abt * int
+    infix @+
+    exception Incomparable
+
+    fun compareView (b1 @+ k1, b2 @+ k2) =
+      if RedPrlAbt.eq (b1, b2) then
+        Int.compare (k1, k2)
+      else
+        raise Incomparable
+
+    fun lsucc (b @+ k) =
+      b @+ k + 1
+
+    fun viewLevel lvl =
       let
-        val RS.EXP LVL = sort i
-        val RS.EXP LVL = sort j
+        val RS.EXP LVL = sort lvl
       in
-        if RedPrlAbt.eq (i, j) then
-          EQUAL
-        else
-          let
-            exception Incomparable
-          in
-            case (Syn.out i, Syn.out j) of
-               (Syn.LSUCC i', Syn.LSUCC j') => compareLevels (i', j')
-             | (Syn.LSUCC _, _) => GREATER
-             | (_, Syn.LSUCC _) => LESS
-             | _ => raise Incomparable
-          end
-          handle Incomparable =>
-            raise Fail
-              @@ "Levels incomparable: "
-               ^ DebugShowAbt.toString i
-               ^ " vs. "
-               ^ DebugShowAbt.toString j
+        case Syn.outOpen lvl of
+           Syn.APP (Syn.LSUCC lvl') => lsucc @@ viewLevel lvl'
+         | _ => lvl @+ 0
       end
+
+    fun compareLevels (i, j) =
+      compareView (viewLevel i, viewLevel j)
 
     fun assertLevelEq (i, j) =
       case compareLevels (i, j) of
