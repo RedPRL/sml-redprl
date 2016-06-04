@@ -111,7 +111,7 @@ struct
       H >> EQ_MEM args
 
     fun makeMemberSequent H (m, a) =
-      H >> TRUE (Syn.into (Syn.MEMBER (getAtomicSort m, m, a)), raise Match)
+      H >> TRUE (Syn.into (Syn.MEMBER (getAtomicSort m, m, a)), EXP)
 
     fun makeLevelSequent (H : Sequent.context) =
       let
