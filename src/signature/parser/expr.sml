@@ -178,7 +178,7 @@ struct
             && f EXP
 
         fun record ((lbl, m), tl) =
-          Syn.into (Syn.RECORD_TY (lbl, m, tl))
+          Syn.into (Syn.RECORD_TY (lbl, m, lbl, tl))
       in
         val parseRecordTy =
           braces (commaSep parseRecordItem)

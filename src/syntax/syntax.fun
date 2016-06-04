@@ -102,7 +102,7 @@ struct
 
    | RCD_CONS of symbol * 'a * 'a
    | RCD_SINGL of symbol * 'a
-   | RECORD_TY of symbol * 'a * 'a
+   | RECORD_TY of symbol * 'a * variable * 'a
    | RCD_PROJ of symbol * 'a
    | SINGL_GET_TY of 'a
 
@@ -202,7 +202,7 @@ struct
 
        | RCD_CONS (u, m, n) => intoRcdV (RecordOperators.CONS u) [([],[]) \ m, ([],[]) \ n]
        | RCD_SINGL (u, m) => intoRcdV (RecordOperators.SINGL u) [([],[]) \ m]
-       | RECORD_TY (u, a, b) => intoRcdD (RecordOperators.RECORD u) [([],[]) \ a, ([],[]) \ b]
+       | RECORD_TY (u, a, x, bx) => intoRcdD (RecordOperators.RECORD u) [([],[]) \ a, ([],[x]) \ bx]
        | RCD_PROJ (u, m) => cutRcd (RecordOperators.PROJ u) [] m
        | SINGL_GET_TY a => cutRcd RecordOperators.SINGL_GET_TY [] a
 
@@ -333,7 +333,7 @@ struct
            (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
          | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
          | (CTT_D (CttOperators.MEMBER tau), [_ \ m, _ \ a]) => MEMBER (tau, m, a)
-         | (RCD_D (RecordOperators.RECORD u), [_ \ a, _ \ b]) => RECORD_TY (u, a, b)
+         | (RCD_D (RecordOperators.RECORD u), [_ \ a, (_,[x]) \ bx]) => RECORD_TY (u, a, x, bx)
          | _ => raise Fail "outDef expected definitional extension"
 
       and out m  =

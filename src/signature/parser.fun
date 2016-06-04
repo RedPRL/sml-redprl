@@ -109,8 +109,8 @@ struct
     val recordTop =
       Syn.into (Syn.TOP EXP)
 
-    fun recordCons (lbl, a) b =
-      Syn.into (Syn.RCD_CONS (lbl, a, b))
+    fun recordTyCons (lbl, a) b =
+      Syn.into (Syn.RECORD_TY (lbl, a, lbl, b))
   end
 
   fun parseTactic sign : (opid * def) charParser =
@@ -183,7 +183,7 @@ struct
           parseRows wth (fn rows =>
             let
               val sign' = List.foldr (fn ((lbl, a), sign') => AstSignature.Telescope.snoc sign' lbl (AstSignature.symDecl SortData.RCD_LBL)) sign rows
-              val definiens = List.foldr (fn ((lbl, a), b) => recordCons (lbl, a) b) recordTop rows
+              val definiens = List.foldr (fn ((lbl, a), b) => recordTyCons (lbl, a) b) recordTop rows
               val def =
                {parameters = params,
                 arguments = List.map (fn (m, v) => rho m) args,
