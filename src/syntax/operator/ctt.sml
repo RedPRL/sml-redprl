@@ -9,7 +9,6 @@ struct
     | TOP of Sort.t
     | UNIV of Sort.t
     | EQ of Sort.t
-    | MEMBER of Sort.t
     | AX
     | SQUASH of Sort.t
     | ENSEMBLE of Sort.t * Sort.t
@@ -18,7 +17,7 @@ struct
     | VOID
 
   datatype ctt_def =
-     NOT | FUN
+     NOT | FUN | MEMBER of Sort.t
 
   datatype ctt_cont =
      AP
@@ -52,10 +51,6 @@ struct
      | EQ tau =>
          [[] * [] <> tau,
           [] * [] <> tau,
-          [] * [] <> EXP]
-           ->> EXP
-     | MEMBER tau =>
-         [[] * [] <> tau,
           [] * [] <> EXP]
            ->> EXP
      | UNIV tau =>
@@ -92,7 +87,6 @@ struct
      | BASE tau => "Base{" ^ Sort.toString tau ^ "}"
      | TOP tau => "Top{" ^ Sort.toString tau ^ "}"
      | EQ tau => "={" ^ Sort.toString tau ^ "}"
-     | MEMBER tau => "member{" ^ Sort.toString tau ^ "}"
      | AX => "Ax"
      | UNIV tau => "Univ{" ^ Sort.toString tau ^ "}"
      | SQUASH tau => "Squash{" ^ Sort.toString tau ^ "}"
@@ -116,12 +110,14 @@ struct
   val arity =
     fn NOT => [[] * [] <> EXP] ->> EXP
      | FUN => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | MEMBER tau => [[] * [] <> tau, [] * [] <> EXP] ->> EXP
 
   val eq : t * t -> bool = op=
 
   val toString =
     fn NOT => "not"
      | FUN => "fun"
+     | MEMBER tau => "member{" ^ Sort.toString tau ^ "}"
 end
 
 structure CttSimpleK : ABT_SIMPLE_OPERATOR =

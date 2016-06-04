@@ -177,7 +177,7 @@ struct
        | TOP tau => intoCttV (CttOperators.TOP tau) []
        | UNIV (tau, lvl) => intoCttV (CttOperators.UNIV tau) [([],[]) \ lvl]
        | UNIV_GET_LVL a => cutCtt (RS.EXP, RS.LVL) CttOperators.UNIV_GET_LVL [] a
-       | MEMBER (tau, m, a) => intoCttV (CttOperators.MEMBER tau) [([],[]) \ m, ([],[]) \ a]
+       | MEMBER (tau, m, a) => intoCttD (CttOperators.MEMBER tau) [([],[]) \ m, ([],[]) \ a]
        | EQ (tau, m, n, a) => intoCttV (CttOperators.EQ tau) [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
        | AX => intoCttV CttOperators.AX []
        | SQUASH (tau, a) => intoCttV (CttOperators.SQUASH tau) [([],[]) \ a]
@@ -255,7 +255,6 @@ struct
          | O.V (CTT_V (CttOperators.BASE tau)) $ _ => BASE tau
          | O.V (CTT_V (CttOperators.TOP tau)) $ _ => TOP tau
          | O.V (CTT_V (CttOperators.UNIV tau)) $ [_ \ lvl] => UNIV (tau, lvl)
-         | O.V (CTT_V (CttOperators.MEMBER tau)) $ [_ \ m, _ \ a] => MEMBER (tau, m, a)
          | O.V (CTT_V (CttOperators.EQ tau)) $ [_ \ m, _ \ n, _ \ a] => EQ (tau, m, n, a)
          | O.V (CTT_V CttOperators.AX) $ _ => AX
          | O.V (CTT_V (CttOperators.SQUASH tau)) $ [_ \ a] => SQUASH (tau, a)
@@ -333,6 +332,7 @@ struct
         case (th, es) of
            (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
          | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
+         | (CTT_D (CttOperators.MEMBER tau), [_ \ m, _ \ a]) => MEMBER (tau, m, a)
          | (RCD_D (RecordOperators.RECORD u), [_ \ a, _ \ b]) => RECORD_TY (u, a, b)
          | _ => raise Fail "outDef expected definitional extension"
 

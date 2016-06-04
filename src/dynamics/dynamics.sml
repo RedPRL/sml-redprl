@@ -146,6 +146,10 @@ struct
        (* negation is implication of the empty type *)
        | CTT_D Ctt.NOT `$ [_ \ a] => Syn.into (Syn.FUN (a, Syn.into Syn.VOID)) <: env
 
+       (* membership is reflexive equality *)
+       | CTT_D (Ctt.MEMBER tau) `$ [_ \ m, _ \ a] =>
+           Syn.into (Syn.EQ (tau, m, m, a)) <: env
+
        (* record types are built compositionally using dependent intersection *)
        | RCD_D (Rcd.RECORD lbl) `$ [_ \ a, (_, [x]) \ bx] =>
            let
