@@ -55,7 +55,9 @@ Library
   structure Sequent
 is
   $/basis.cm
+  ../lib/sml-unparse/unparse.cm
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-typed-abts/abt-unparser.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt-lcs.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-telescopes/telescopes.cm
   cmlib.cm

@@ -77,13 +77,14 @@ struct
     fn G |> jdg => judgmentMetactx jdg
      | CONTEXT {hypctx,...} >> concl => MetaCtxUtil.union (hypsMetactx hypctx, conclMetactx concl)
 
+  structure Syn = RedPrlAbtSyntax
   val conclToString =
-    fn TRUE (a, tau) => ShowAbt.toString a ^ " true"
-     | TYPE (a, tau) => ShowAbt.toString a ^ " type"
-     | EQ_MEM (m, n, a) => ShowAbt.toString m ^ " = " ^ ShowAbt.toString n ^ " : " ^ ShowAbt.toString a
-     | MEM (m, a) => ShowAbt.toString m ^ " : " ^ ShowAbt.toString a
-     | EQ_SYN (r, s) => ShowAbt.toString r ^ " = " ^ ShowAbt.toString s ^ " synth"
-     | SYN r => ShowAbt.toString r ^ " synth"
+    fn TRUE (a, tau) => Syn.toString a ^ " true"
+     | TYPE (a, tau) => Syn.toString a ^ " type"
+     | EQ_MEM (m, n, a) => Syn.toString m ^ " = " ^ Syn.toString n ^ " : " ^ Syn.toString a
+     | MEM (m, a) => Syn.toString m ^ " : " ^ Syn.toString a
+     | EQ_SYN (r, s) => Syn.toString r ^ " = " ^ Syn.toString s ^ " synth"
+     | SYN r => Syn.toString r ^ " synth"
 
   fun hypothesesToString H =
     let
@@ -92,7 +93,7 @@ struct
         fn EMPTY => ""
          | CONS (x, (a, tau), tl) =>
              let
-               val hyp = Symbol.toString x ^ " : " ^ ShowAbt.toString a
+               val hyp = Symbol.toString x ^ " : " ^ Syn.toString a
              in
                hyp ^ "\n" ^ go (out tl)
              end

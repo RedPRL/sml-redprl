@@ -362,5 +362,52 @@ struct
   end
 end
 
-structure RedPrlAbtSyntax = RedPrlSyntax (AbtSyntaxView (RedPrlAbt))
 structure RedPrlAstSyntax = RedPrlSyntax (AstSyntaxView (RedPrlAst))
+
+structure RedPrlAbtSyntax =
+struct
+  local
+    structure Syn = RedPrlSyntax (AbtSyntaxView (RedPrlAbt))
+    structure UnparseAbt = UnparseAbt (structure Abt = RedPrlAbt and Unparse = Unparse)
+    open Unparse
+    open Syn
+
+    fun @@ (f, x) = f x
+    infixr 0 @@
+
+    fun unparse m =
+      UnparseAbt.unparse (fn n => SOME (inner n) handle _ => NONE) m
+
+    and inner m =
+      case out m of
+         MEMBER (_, m, a) => infix' (Non, 0, "\226\136\136") (unparse m, unparse a)
+       | EQ (_, m, n, a) => atom @@ toString m ^ " = "  ^ toString n ^ " \226\136\136 " ^ toString a
+       | CEQUIV (_, m, n) => infix' (Non, 0, "~") (unparse m, unparse n)
+       | AX => atom "Ax"
+       | RCD_CONS (lbl, a, b) => infix' (Right, 5, "\226\136\183") (infix' (Non, 5, "=") (atom (Symbol.toString lbl), unparse a), unparse b)
+       | RCD_SINGL (lbl, a) => atom @@ "{" ^ parens (done (infix' (Non, 100, ":") (atom (Symbol.toString lbl), unparse a))) ^ "}"
+       | RCD_PROJ (lbl, m) => postfix (4, ". " ^ Symbol.toString lbl) (unparse m)
+       | RECORD_TY (lbl, a, x, bx) =>
+           let
+             val b' = RedPrlAbt.subst (RedPrlAbt.check (`lbl, RedPrlOperator.S.EXP SortData.EXP), x) bx
+             val decl = infix' (Non, 100, ":") (atom (Symbol.toString lbl), unparse a)
+             val rcd = infix' (Left, 0, ",") (decl, unparse b')
+           in
+             atom @@ "{" ^ parens (done rcd) ^ "}"
+           end
+       | DEP_ISECT (a, x, bx) => infix' (Non, 0, "\226\139\130") (infix' (Non, 100, ":") (atom (Variable.toString x), unparse a), unparse bx)
+       | UNIV (_, lvl) => atom @@ "\240\157\149\140{" ^ toString lvl ^ "}"
+       | LBASE => atom "0"
+       | LSUCC l => adj (atom "s", unparse l)
+       | FUN (a, b) => infix' (Right, 7, "\226\134\146") (unparse a, unparse b)
+       | ATOM _ => atom "atom"
+       | TOKEN (u, _) => atom @@ "'" ^ Symbol.toString u
+       | TOP _ => atom @@ "\226\138\164"
+       | _ => raise Match
+
+    and toString m = parens (done (unparse m))
+  in
+    open Syn
+    val toString = toString
+  end
+end

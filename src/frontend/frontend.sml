@@ -21,7 +21,7 @@ struct
          ^ "(" ^ argsToString arguments ^ ")"
          ^ " : " ^ RedPrlAtomicSort.toString sort
          ^ " = ["
-         ^ ShowAbt.toString definiens
+         ^ RedPrlAbtSyntax.toString definiens
          ^ "].\n")
 
   fun printSymDcl (lbl, tau) =

@@ -36,7 +36,7 @@ struct
       infix \
       val _ \ m = outb e
     in
-      ShowAbt.toString m
+      RedPrlAbtSyntax.toString m
     end
 
   fun substConcl rho =
