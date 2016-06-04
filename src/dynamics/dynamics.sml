@@ -158,7 +158,12 @@ struct
              val singl = Syn.into (Syn.RCD_SINGL (lbl, a))
              val proj = Syn.into (Syn.RCD_PROJ (lbl, selfTm))
            in
-             Syn.into (Syn.DEP_ISECT (singl, self, bx)) <: pushV (proj <: env, x) env
+             (* TODO: replace with an explicit substitution!
+                originaly, this added (proj / x) to the environment, which I thought would
+                be harmless since x is not free anywhere but bx, but some very strange
+                behavior occured. I'm not sure why!
+             *)
+             Syn.into (Syn.DEP_ISECT (singl, self, subst (proj, x) bx)) <: env
            end
        | _ => raise Fail "Unhandled definitional extension"
   end
