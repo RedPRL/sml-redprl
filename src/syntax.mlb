@@ -1,7 +1,9 @@
 local
   $(SML_LIB)/basis/basis.mlb
+  ../lib/sml-unparse/unparse.mlb
   ../lib/sml-typed-abts/abt.mlb
   ../lib/sml-typed-abts/abt-lcs.mlb
+  ../lib/sml-typed-abts/abt-unparser.mlb
   ../lib/sml-telescopes/telescopes.mlb
 
   syntax/sort_data.sml
