@@ -106,7 +106,7 @@ struct
           -- (fn (sigma, tau) =>
             parens (f EXP << semi && f EXP << semi && f tau << semi && f tau)
               wth (fn (t1, (t2, (yes, no))) =>
-                Syn.into (Syn.IF_EQ (EXP, t1, t2, yes, no))))
+                Syn.into (Syn.IF_EQ (EXP, EXP, t1, t2, yes, no))))
 
       fun @@ (f,x) = f x
       infix @@
