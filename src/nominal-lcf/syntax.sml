@@ -89,9 +89,10 @@ struct
       | VAR of variable
 
     fun collect t =
-      case Syn.out t of
+      (case Syn.out t of
            Syn.TAC_SEQ (mt, us, t') => (List.map #1 us, mt) :: collect t'
-         | _ => [([], Syn.into (Syn.MTAC_ALL t))]
+         | _ => raise Match)
+      handle _ => [([], Syn.into (Syn.MTAC_ALL t))]
 
     fun out sign t =
       let
