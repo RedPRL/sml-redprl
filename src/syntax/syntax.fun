@@ -351,6 +351,11 @@ struct
          | x $# (us, ms) => MVAR (x, us, ms)
          | _ => APP (out m)
 
+      fun destVar m =
+        case View.out m of
+            `x => x
+          | _ => raise Match
+
       fun lvl i =
         O.RET RS.LVL $$ [([],[]) \ O.V (LVL_V i) $$ []]
     end
