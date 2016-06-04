@@ -1,7 +1,8 @@
 structure GenericRules : GENERIC_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData RecordOperatorData SortData
-  infix @@ $ $# \ @>
+  open RefinerKit SortData
+  infixr 0 @@
+  infix 0 $ $# \ @>
   infix 2 //
   infix 3 >>
   infix 2 |>
@@ -19,7 +20,7 @@ struct
         in
           checkb
             ((us, xs' @ xs) \ m,
-             ((sigmas, taus' @ taus), tau))
+             ((sigmas, List.map RS.EXP taus' @ taus), tau))
         end)
     end
     | Intro _ _ = raise Match
