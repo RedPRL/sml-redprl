@@ -1,24 +1,21 @@
 structure EnsembleRules : ENSEMBLE_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix 0 @@
+  open RefinerKit
+  infixr 0 @@
   infix 1 $ $$ $# \ @>
   infix 2 //
   infix 3 >>
   infix 2 |>
 
   fun destEnsemble m =
-    case out m of
-         CTT (ENSEMBLE (tau1, tau2)) $ [_ \ a, (_, [x]) \ b] => (tau1, tau2, a, x, b)
-       | _ =>
-           raise Fail
-             @@ "Expected Ensemble but got "
-              ^ DebugShowAbt.toString m
+    case Syn.out m of
+       Syn.ENSEMBLE (_, _, a, x, bx) => (a, x, bx)
+     | _ => raise Match
 
   fun IsType alpha (goal as (H >> TYPE (ty, sigma))) =
     let
-      val (sigma', tau, a, x, bx) = destEnsemble ty
-      val _ = if Sort.eq (sigma, sigma') then () else raise Fail "Sort mismatch"
+      val Syn.ENSEMBLE (sigma', tau, a, x, bx) = Syn.out ty
+      val _ = if sigma = sigma' then () else raise Fail "Sort mismatch"
 
       val (goalA, holeA, H') =
         makeGoal @@
@@ -38,23 +35,24 @@ struct
           val l2 = T.lookup rho (#1 goalB) // ([],[])
           (* TODO: do we need to ensure that x is not free in l2? *)
         in
-          abtToAbs @@ LVL_OP LSUP $$ [([],[]) \ l1, ([],[]) \ l2]
+          abtToAbs @@ Syn.into @@ Syn.LSUP (l1, l2)
         end)
     end
     | IsType _ _ = raise Match
 
   fun TypeEq alpha (goal as (H >> EQ_MEM (s1, s2, univ))) =
     let
-      val (sigma1, tau1, a1, x1, b1) = destEnsemble s1
-      val (sigma1, tau1, a2, x2, b2) = destEnsemble s2
+      (* TODO: What are the following lines doing? Delete these once sober *)
+      val Syn.ENSEMBLE (sigma1, tau1, a1, x1, b1) = Syn.out s1
+      val Syn.ENSEMBLE (sigma1, tau1, a2, x2, b2) = Syn.out s2
     in
-      QuantifierKit.TypeEq (CTT (ENSEMBLE (sigma1, tau1))) alpha goal
+      QuantifierKit.TypeEq destEnsemble alpha goal
     end
     | TypeEq _ _ = raise Match
 
   fun MemberEq alpha (H >> EQ_MEM (m1, m2, ensemble)) =
     let
-      val (tau1, tau2, a, x, b) = destEnsemble ensemble
+      val Syn.ENSEMBLE (tau1, tau2, a, x, b) = Syn.out ensemble
 
       val (tyGoal, _, H) =
         makeGoal @@
@@ -63,10 +61,10 @@ struct
       val bm = subst (m1, x) b
       val (squashGoal, _, H) =
         makeGoal @@
-          H >> TRUE (makeSquash tau2 bm, EXP)
+          H >> TRUE (Syn.into (Syn.SQUASH (tau2, bm)), SortData.EXP)
 
       val z = alpha 0
-      val bz = subst (check (`z, tau1), x) b
+      val bz = subst (check (`z, RS.EXP tau1), x) b
 
       val H' = updateHyps (fn xs => Ctx.snoc xs z (a, tau1)) H
 
@@ -77,25 +75,26 @@ struct
       val psi = T.empty @> tyGoal @> squashGoal @> tyfunGoal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | MemberEq _ _ = raise Match
 
   fun Intro alpha (H >> TRUE (P, _)) =
     let
-      val (tau1, tau2, a, x, b) = destEnsemble P
+      val Syn.ENSEMBLE (tau1, tau2, a, x, b) = Syn.out P
 
       val (mainGoal, mainHole, H) =
         makeGoal @@
           H >> TRUE (a, tau1)
 
       val pred = subst (mainHole [] [], x) b
+
       val (predGoal, _, H) =
         makeGoal @@
-          H >> TRUE (makeSquash tau2 pred, EXP)
+          H >> TRUE (Syn.into (Syn.SQUASH (tau2, pred)), SortData.EXP)
 
       val z = alpha 0
-      val bz = subst (check (`z, tau1), x) b
+      val bz = subst (check (`z, RS.EXP tau1), x) b
 
       val H' = updateHyps (fn xs => Ctx.snoc xs z (a, tau1)) H
 
@@ -113,10 +112,10 @@ struct
   fun Elim i alpha (H >> TRUE (P, tau)) =
     let
       val (ensemble, _) = Ctx.lookup (getHyps H) i
-      val (tau1, tau2, a, x, bx) = destEnsemble ensemble
+      val Syn.ENSEMBLE (tau1, tau2, a, x, bx) = Syn.out ensemble
       val (z1, z2) = (alpha 0, alpha 1)
-      val z1tm = check (`z1, tau1)
-      val bz1 = makeSquash tau2 (subst (z1tm, x) bx)
+      val z1tm = check (`z1, RS.EXP tau1)
+      val bz1 = Syn.into @@ Syn.SQUASH (tau2, (subst (z1tm, x) bx))
       val hyps =
         Ctx.interposeAfter
           (getHyps H)
@@ -138,10 +137,10 @@ struct
     in
       (psi, fn rho =>
         let
-          val itm = check (`i, tau1)
+          val itm = check (`i, RS.EXP tau1)
         in
           abtToAbs @@
-            T.lookup rho (#1 goal) // ([], [itm, makeAx])
+            T.lookup rho (#1 goal) // ([], [itm, Syn.into Syn.AX])
         end)
     end
     | Elim _ _ _ = raise Match

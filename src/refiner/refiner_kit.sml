@@ -1,5 +1,7 @@
 structure RefinerKit =
 struct
+  structure RS = RedPrlOperator.S
+  structure Syn = RedPrlAbtSyntax
   structure Ctx = SymbolTelescope and Signature = AbtSignature
   structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
 
@@ -8,7 +10,7 @@ struct
     structure Lcf = DependentLcf (Judgment)
     open Lcf
 
-    structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
+    structure HoleUtil = HoleUtil (structure Tm = RedPrlAbt and J = Judgment and T = T)
 
     fun stateToString (psi, vld) =
       let
@@ -37,7 +39,7 @@ struct
   structure Tacticals = Tacticals(Lcf)
 
   type 'a choice_sequence = int -> 'a
-  type name_store = Abt.symbol choice_sequence
+  type name_store = RedPrlAbt.symbol choice_sequence
   type ntactic = name_store -> Tacticals.Lcf.tactic
   type nmultitactic = name_store -> Tacticals.Lcf.multitactic
 
@@ -57,7 +59,7 @@ struct
   fun @@ (f,x) = f x
   infix 0 @@
 
-  open Abt Sequent
+  open RedPrlAbt Sequent
   infix $ $$ $# \
   infix 4 >>
   infix 3 |>
@@ -69,19 +71,19 @@ struct
   local
     exception Destruct
   in
-    fun destruct m (theta : unit Operator.t) =
+    fun destruct m (theta : unit O.t) =
       case out m of
            theta' $ es =>
-             if Operator.eq (fn _ => true) (Operator.map (fn _ => ()) theta', theta) then
-               (Operator.support theta', es)
+             if O.eq (fn _ => true) (O.map (fn _ => ()) theta', theta) then
+               (O.support theta', es)
              else
                raise Destruct
          | _ => raise Destruct
       handle Destruct =>
-        raise Fail @@ "Expected " ^ Operator.toString (fn _ => "-") theta
+        raise Fail @@ "Expected " ^ O.toString (fn _ => "-") theta
   end
 
-  structure HoleUtil = HoleUtil (structure Tm = Abt and J = Judgment and T = T)
+  structure HoleUtil = HoleUtil (structure Tm = RedPrlAbt and J = Judgment and T = T)
 
   fun goalHypCtx (H >> _) = H
     | goalHypCtx (G |> jdg) = goalHypCtx jdg
@@ -98,74 +100,25 @@ struct
     end
 
   local
-    open OperatorData CttOperatorData SortData
+    open SortData
+    fun getAtomicSort m =
+      case sort m of
+         RedPrlOperator.S.EXP tau => tau
+       | _ => raise Match
   in
-    fun destVar m =
-      case out m of
-           `x => x
-         | _ => raise Fail @@ "Expected variable, but got " ^ DebugShowAbt.toString m
-
-
-    fun destAx m =
-      case out m of
-           CTT AX $ _ => ()
-         | _ => raise Fail @@ "Expected Ax, but got " ^ DebugShowAbt.toString m
-
-    fun destEq m =
-      case out m of
-           CTT (EQ tau) $ [_ \ m, _ \ n, _ \ a] => (tau, m,n,a)
-         | _ => raise Fail @@ "Expected equality type, but got " ^ DebugShowAbt.toString m
-
-    fun destUniv m =
-      case out m of
-           CTT (UNIV tau) $ [_ \ i] => (tau, i)
-         | _ => raise Fail @@ "Expected universe, but got " ^ DebugShowAbt.toString m
-
-    fun destCEquiv P =
-      case (out P) of
-           CTT (CEQUIV tau) $ [_ \ m, _ \ n] =>
-             let
-               val tau1 = sort m
-               val tau2 = sort n
-               val () =
-                 if tau1 = tau2 andalso tau = tau1 then
-                   ()
-                 else
-                   raise Fail "Incompatible sorts in CEquiv"
-             in
-               (tau, m, n)
-             end
-         | _ => raise Fail "Expected CEquiv"
-
-    fun makeEq (m,n,a) =
-      CTT (EQ (sort m)) $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-
-    fun makeCEquiv (m,n) =
-      CTT (CEQUIV (sort m)) $$ [([],[]) \ m, ([],[]) \ n]
-
-    fun makeMember (m,a) =
-      CTT (MEMBER (sort m)) $$ [([],[]) \ m, ([],[]) \ a]
-
-    fun makeSquash tau a =
-      CTT (SQUASH tau) $$ [([],[]) \ a]
-
-    fun makeUniv lvl =
-      CTT (UNIV EXP) $$ [([],[]) \ lvl]
 
     fun makeEqSequent H args =
       H >> EQ_MEM args
 
-    fun makeMemberSequent H args =
-      H >> TRUE (makeMember args, EXP)
+    fun makeMemberSequent H (m, a) =
+      H >> TRUE (Syn.into (Syn.MEMBER (getAtomicSort m, m, a)), raise Match)
 
     fun makeLevelSequent (H : Sequent.context) =
       let
         val H' = updateHyps (fn _ => Ctx.empty) H
       in
-        H' >> TRUE (CTT (BASE LVL) $$ [], LVL)
+        H' >> TRUE (Syn.into (Syn.BASE LVL), LVL)
       end
-
-    val makeAx = CTT AX $$ []
 
     fun makeEvidence G (H : context) m =
       let
