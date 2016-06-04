@@ -385,24 +385,73 @@ struct
        | CEQUIV (_, m, n) => infix' (Non, 0, "~") (unparse m, unparse n)
        | AX => atom "Ax"
        | RCD_CONS (lbl, a, b) => infix' (Right, 5, "\226\136\183") (infix' (Non, 5, "=") (atom (Symbol.toString lbl), unparse a), unparse b)
-       | RCD_SINGL (lbl, a) => atom @@ "{" ^ parens (done (infix' (Non, 100, ":") (atom (Symbol.toString lbl), unparse a))) ^ "}"
+       | RCD_SINGL (lbl, a) => atom @@ "{" ^ parens (done (infix' (Non, 0, ":") (atom (Symbol.toString lbl), unparse a))) ^ "}"
        | RCD_PROJ (lbl, m) => postfix (4, ". " ^ Symbol.toString lbl) (unparse m)
        | RECORD_TY (lbl, a, x, bx) =>
            let
              val b' = RedPrlAbt.subst (RedPrlAbt.check (`lbl, RedPrlOperator.S.EXP SortData.EXP), x) bx
-             val decl = infix' (Non, 100, ":") (atom (Symbol.toString lbl), unparse a)
+             val decl = infix' (Non, 0, ":") (atom (Symbol.toString lbl), unparse a)
              val rcd = infix' (Left, 0, ",") (decl, unparse b')
            in
              atom @@ "{" ^ parens (done rcd) ^ "}"
            end
-       | DEP_ISECT (a, x, bx) => infix' (Non, 0, "\226\139\130") (infix' (Non, 100, ":") (atom (Variable.toString x), unparse a), unparse bx)
+       | DEP_ISECT (a, x, bx) => infix' (Non, 0, "\226\139\130") (infix' (Non, 0, ":") (atom (Variable.toString x), unparse a), unparse bx)
        | UNIV (_, lvl) => atom @@ "\240\157\149\140{" ^ toString lvl ^ "}"
        | LBASE => atom "0"
        | LSUCC l => adj (atom "s", unparse l)
        | FUN (a, b) => infix' (Right, 7, "\226\134\146") (unparse a, unparse b)
+       | DFUN (a, x, bx) =>
+           let
+             val dom = infix' (Non, 0, ":") (atom (Symbol.toString x), unparse a)
+             val dom' = atom @@ "(" ^ parens (done dom) ^ ")"
+             val cod = unparse bx
+           in
+             infix' (Right, 7, "\226\134\146") (dom', cod)
+           end
        | ATOM _ => atom "atom"
        | TOKEN (u, _) => atom @@ "'" ^ Symbol.toString u
        | TOP _ => atom @@ "\226\138\164"
+       | AP (m, n) => adj (unparse m, unparse n)
+       | LAM (x, mx) => prefix (0, "\206\187" ^ Variable.toString x ^ ".") (unparse mx)
+       | BASE _ => atom "Base"
+       | IF_EQ (_, _, t1, t2, l, r) =>
+           atom
+             @@ "if "
+              ^ toString t1
+              ^ " = "
+              ^ toString t2
+              ^ " then "
+              ^ toString l
+              ^ " else "
+              ^ toString r
+       | MTAC_ALL m => unparse m
+       | MTAC_EACH ts => atom @@ "[" ^ ListSpine.pretty toString "," ts ^ "]"
+       | MTAC_FOCUS (i, t) => atom @@ "#" ^ Int.toString i ^ " {" ^ toString t ^ "}"
+       | TAC_SEQ (t1, bindings, t2) =>
+           let
+             val us = "[" ^ List.foldl (fn ((u, _), s) => Symbol.toString u ^ (if s = "" then "" else ", ") ^ s) "" bindings ^ "]"
+             val t1' =
+               case bindings of
+                  [] => unparse t1
+                 | _ => infix' (Right, 7, "\226\134\144") (atom us, unparse t1)
+           in
+             infix' (Left, 7, ";") (t1', unparse t2)
+           end
+       | REFINE_SCRIPT (_, goal, script, extract) =>
+           atom
+             @@ "refine ["
+              ^ toString goal
+              ^ "] with ["
+              ^ toString script
+              ^ "] ~> ["
+              ^ (case out extract of OPT_SOME (_, m) => toString m | _ => toString extract)
+              ^ "]"
+       | TAC_CEVAL => atom "ceval"
+       | TAC_CSYM => atom "csym"
+       | TAC_WITNESS (_, m) => atom @@ "witness [" ^ toString m ^ "]"
+       | TAC_CHKINF => atom "chkinf"
+       | OPT_SOME (_, m) => atom @@ "some(" ^ toString m ^ ")"
+       | OPT_NONE _ => atom "none"
        | _ => raise Match
 
     and toString m = parens (done (unparse m))
