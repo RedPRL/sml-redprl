@@ -98,7 +98,7 @@ struct
 
    | ATOM of RS.sort
    | TOKEN of symbol * RS.sort
-   | IF_EQ of RS.sort * 'a * 'a * 'a * 'a
+   | IF_EQ of RS.sort * RS.sort * 'a * 'a * 'a * 'a
 
    | RCD_CONS of symbol * 'a * 'a
    | RCD_SINGL of symbol * 'a
@@ -198,7 +198,7 @@ struct
 
        | ATOM tau => intoAtmV (AtomOperators.ATOM tau) []
        | TOKEN (u, tau) => intoAtmV (AtomOperators.TOKEN (u, tau)) []
-       | IF_EQ (tau, t1, t2, m, n) => cutAtm (RS.EXP, tau) (AtomOperators.TEST0 tau) [([],[]) \ t2, ([],[]) \ m, ([],[]) \ n] t1
+       | IF_EQ (sigma, tau, t1, t2, m, n) => cutAtm (RS.EXP, tau) (AtomOperators.TEST0 (sigma, tau)) [([],[]) \ t2, ([],[]) \ m, ([],[]) \ n] t1
 
        | RCD_CONS (u, m, n) => intoRcdV (RecordOperators.CONS u) [([],[]) \ m, ([],[]) \ n]
        | RCD_SINGL (u, m) => intoRcdV (RecordOperators.SINGL u) [([],[]) \ m]
@@ -322,8 +322,8 @@ struct
          | O.K (LVL_K LevelOperators.LSUCC) $ _ => LSUCC m
          | O.K (LVL_K LevelOperators.LSUP0) $ [_ \ n] => LSUP (m, n)
          | O.K (LVL_K (LevelOperators.LSUP1 i)) $ [] => LSUP (m, ret RS.LVL (O.V (LVL_V i) $$ []))
-         | O.K (ATM_K (AtomOperators.TEST0 tau)) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (tau, m, t2, l, r)
-         | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (tau, into (TOKEN (u, sigma)), m, l, r)
+         | O.K (ATM_K (AtomOperators.TEST0 (sigma, tau))) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (sigma, tau, m, t2, l, r)
+         | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (sigma, tau, into (TOKEN (u, sigma)), m, l, r)
          | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
          | O.K (RCD_K RecordOperators.SINGL_GET_TY) $ [] => SINGL_GET_TY m
          | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)

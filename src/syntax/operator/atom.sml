@@ -7,7 +7,7 @@ struct
     | TOKEN of 'i * Sort.t
 
   datatype 'i atom_cont =
-      TEST0 of Sort.t
+      TEST0 of Sort.t * Sort.t
     | TEST1 of ('i * Sort.t) * Sort.t
 end
 
@@ -55,7 +55,7 @@ struct
   infix <> ->>
 
   val arity =
-    fn TEST0 tau =>
+    fn TEST0 (_, tau) =>
          [[] * [] <> EXP,
           [] * [] <> tau,
           [] * [] <> tau]
@@ -74,7 +74,7 @@ struct
      | TEST1 ((u, sigma), _) => [(u, sigma)]
 
   fun map f =
-    fn TEST0 tau => TEST0 tau
+    fn TEST0 (sigma, tau) => TEST0 (sigma, tau)
      | TEST1 ((u, sigma), tau) => TEST1 ((f u, sigma), tau)
 
   fun eq f =
@@ -83,6 +83,6 @@ struct
      | _ => false
 
   fun toString f =
-    fn TEST0 tau => "ifeq0{" ^ Sort.toString tau ^ "}"
+    fn TEST0 (sigma, tau) => "ifeq0{" ^ Sort.toString tau ^ "}"
      | TEST1 ((u, _), tau) => "ifeq1{" ^ Sort.toString tau ^ "}[" ^ f u ^ "]"
 end
