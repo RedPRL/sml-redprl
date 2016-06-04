@@ -1,6 +1,6 @@
 structure MemRules : MEM_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData RecordOperatorData SortData
+  open RefinerKit
   infix @@ $ $# \ @>
   infix 2 //
   infix 3 >>

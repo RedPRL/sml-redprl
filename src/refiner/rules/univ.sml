@@ -1,48 +1,29 @@
 structure UnivRules : UNIV_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix 0 @@
+  open RefinerKit SortData
+  infixr 0 @@
   infix 1 $ $$ \ ^!
   infix 4 >>
   infix 3 |> @>
 
   structure LvlUtil =
   struct
-    fun destLevel i =
-      case infer i of
-           (view, LVL) => view
-         | _ =>
-           raise Fail
-             @@ "Expected level expression, but got "
-              ^ DebugShowAbt.toString i
-
-    fun destLSucc i =
-      case destLevel i of
-           LVL_OP LSUCC $ [_ \ i] => i
-         | _ =>
-           raise Fail
-             @@ "Expected LSUCC, but got "
-              ^ DebugShowAbt.toString i
-
     fun compareLevels (i, j) =
       let
-        val i' = destLevel i
-        val j' = destLevel j
+        val RS.EXP LVL = sort i
+        val RS.EXP LVL = sort j
       in
-        if Abt.eq (i, j) then
+        if RedPrlAbt.eq (i, j) then
           EQUAL
         else
           let
             exception Incomparable
           in
-            case (i', j') of
-                 (LVL_OP LSUCC $ [_ \ i''], LVL_OP LSUCC $ [_ \ j'']) =>
-                   compareLevels (i'', j'')
-               | (LVL_OP LSUCC $ [_ \ i''], _) =>
-                   GREATER
-               | (_, LVL_OP LSUCC $ [_ \ i'']) =>
-                   LESS
-               | _ => raise Incomparable
+            case (Syn.out i, Syn.out j) of
+               (Syn.LSUCC i', Syn.LSUCC j') => compareLevels (i', j')
+             | (Syn.LSUCC _, _) => GREATER
+             | (_, Syn.LSUCC _) => LESS
+             | _ => raise Incomparable
           end
           handle Incomparable =>
             raise Fail
@@ -76,8 +57,8 @@ struct
 
   fun IsType alpha (H >> TYPE (ty, EXP)) =
     let
-      val (tau, lvl) = destUniv ty
-      val lvl' = LVL_OP LSUCC $$ [([],[]) \ lvl]
+      val Syn.UNIV (tau, lvl) = Syn.out ty
+      val lvl' = Syn.into @@ Syn.LSUCC lvl
     in
       (T.empty, fn rho =>
         abtToAbs lvl')
@@ -86,22 +67,22 @@ struct
 
   fun Eq alpha (H >> EQ_MEM (m, n, a)) =
     let
-      val ((tau1, i), (tau2, j), (tau3, k)) = (destUniv m, destUniv n, destUniv a)
+      val (Syn.UNIV (tau1, i), Syn.UNIV (tau2, j), Syn.UNIV (tau3, k)) = (Syn.out m, Syn.out n, Syn.out a)
       val () = if tau3 = EXP then () else raise Fail "Sort mismatch"
       val () = if tau1 = tau2 then () else raise Fail "Sort mismatch"
       val () = LvlUtil.assertLevelEq (i, j)
       val () = LvlUtil.assertLevelLt (i, k)
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | Eq _ _ = raise Match
 
   fun Cum alpha (H >> EQ_MEM (m, n, a)) =
     let
-      val (tau, i) = destUniv a
-      val j = LvlUtil.destLSucc i
-      val univ = CTT (UNIV EXP) $$ [([],[]) \ j]
+      val Syn.UNIV (tau, i) = Syn.out a
+      val Syn.LSUCC j = Syn.out i
+      val univ = Syn.into @@ Syn.UNIV (EXP, j)
 
       val (goal, _, _) =
         makeGoal @@
@@ -110,7 +91,7 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | Cum _ _ = raise Match
 
