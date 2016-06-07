@@ -11,4 +11,5 @@ struct
     | OPID (* operator ids *)
     | STR (* strings *)
     | RCD_LBL (* record labels *)
+    | UNIT (* the unit sort *)
 end

@@ -16,6 +16,7 @@ struct
      | OPID => "opid"
      | STR => "str"
      | RCD_LBL => "lbl"
+     | UNIT => "unit"
 end
 
 structure ArityNotation =

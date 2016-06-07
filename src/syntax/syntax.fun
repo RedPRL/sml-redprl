@@ -92,6 +92,9 @@ struct
    | DEP_ISECT of 'a * variable * 'a
    | VOID
 
+   | FRESH of RS.sort * RS.sort * symbol * 'a
+   | DUMMY
+
    | LBASE
    | LSUCC of 'a
    | LSUP of 'a * 'a
@@ -192,6 +195,9 @@ struct
        | DEP_ISECT (a, x, bx) => intoCttV CttOperators.DEP_ISECT [([],[]) \ a, ([],[x]) \ bx]
        | VOID => intoCttV CttOperators.VOID []
 
+       | FRESH (sigma, tau, u, m) => cutCtt (RS.UNIT, tau) (CttOperators.FRESH (sigma, tau)) [([u], []) \ m] (into DUMMY)
+       | DUMMY => intoCttV CttOperators.DUMMY []
+
        | LBASE => ret RS.LVL @@ O.V (LVL_V 0) $$ []
        | LSUCC m => cutLvl LevelOperators.LSUCC [] m
        | LSUP (m, n) => cutLvl LevelOperators.LSUP0 [([],[]) \ n] m
@@ -263,6 +269,7 @@ struct
          | O.V (CTT_V CttOperators.LAM) $ [(_, [x]) \ mx] => LAM (x, mx)
          | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
          | O.V (CTT_V CttOperators.VOID) $ _ => VOID
+         | O.V (CTT_V CttOperators.DUMMY) $ _ => DUMMY
 
          | O.V (LVL_V 0) $ _ => LBASE
          | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
@@ -318,6 +325,8 @@ struct
          | O.K (CTT_K CttOperators.DFUN_DOM) $ _ => DFUN_DOM m
          | O.K (CTT_K CttOperators.DFUN_COD) $ [_ \ b] => DFUN_COD (m, b)
          | O.K (CTT_K CttOperators.UNIV_GET_LVL) $ _ => UNIV_GET_LVL m
+         | O.K (CTT_K (CttOperators.FRESH (sigma, tau))) $ [([u], _) \ m] => FRESH (sigma, tau, u, m)
+         | O.K (CTT_K (CttOperators.FRESH_K ((u, sigma), tau))) $ _ => FRESH (sigma, tau, u, m)
          | O.K (LVL_K LevelOperators.LSUCC) $ _ => LSUCC m
          | O.K (LVL_K LevelOperators.LSUP0) $ [_ \ n] => LSUP (m, n)
          | O.K (LVL_K (LevelOperators.LSUP1 i)) $ [] => LSUP (m, ret RS.LVL (O.V (LVL_V i) $$ []))
