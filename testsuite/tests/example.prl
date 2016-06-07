@@ -183,3 +183,11 @@ Record Sg(A : exp, B : [exp].exp) = {
   snd : B[fst]
 }.
 
+
+Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
+  bang
+].
+
+Thm symgenTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
+  bang
+].
