@@ -87,6 +87,38 @@ struct
        | (CTT_K Ctt.UNIV_GET_LVL `$ _, CTT_V (Ctt.UNIV _) `$ [_ \ i]) =>
            i <: env <| ks
 
+       | (CTT_K (Ctt.FRESH (sigma, tau)) `$ [([u], _) \ e <: envE], _) =>
+           (case Abt.out e of
+               Abt.$ (RET _, [_ \ e']) =>
+                 (case Abt.out e' of
+                     Abt.$ (theta, es) =>
+                       let
+                         val supp = support theta
+                         fun wrap m = Syn.into (Syn.FRESH (sigma, tau, u, m))
+                       in
+                         if List.exists (fn (v, _) => symEq envE (u, v)) supp then
+                           wrap e <: envE <| ks
+                         else
+                           Abt.$$ (theta, List.map (Abt.mapb wrap) es) <: envE <| ks
+                       end
+                   | _ => raise Match)
+             | _ =>
+               let
+                 val v = Abt.Var.fresh (Abt.varctx e) "probe"
+                 val k = CTT_K (Ctt.FRESH_K ((v, sigma), tau)) `$ []
+                 val (mrho, srho, vrho) = envE
+                 val env' = (mrho, Abt.Sym.Ctx.insert srho u v, vrho)
+               in
+                 e <: env' <| k :: ks
+               end)
+       | (CTT_K (Ctt.FRESH_K ((u, sigma), tau)) `$ _, v) =>
+           let
+             val m = RET tau $$ [([],[]) \ unquoteV v]
+             val k = CTT_K (Ctt.FRESH (sigma, tau)) `$ [([u], []) \ m <: env]
+           in
+             Syn.into Syn.DUMMY <: env <| k :: ks
+           end
+
        (* The level successor operator is eager *)
        | (LVL_K Lvl.LSUCC `$ _, LVL_V i `$ _) =>
            Syn.lvl (i + 1) <: env <| ks
