@@ -4,7 +4,7 @@ struct
   structure Cl = LcsClosure (Abt)
 
   structure M = LcsMachine
-    (structure Cl = Cl
+    (structure Cl = Cl and K = RedPrlOperator.L.K
      open O Cl Abt infix $ $# \ <:
 
      fun isNeutral (r <: (env as (mrho, srho, vrho))) =
@@ -19,11 +19,10 @@ struct
           RET _ $ _ => true
         | _ => isNeutral (m <: env))
 
-  datatype 'o pat = `$ of 'o * M.expr M.Cl.Abt.bview list
 
-  type vpat = M.Cl.Abt.symbol RedPrlOperator.L.V.t pat
-  type kpat = M.Cl.Abt.symbol RedPrlOperator.L.K.t pat
-  type dpat = M.Cl.Abt.symbol RedPrlOperator.L.D.t pat
+  type vpat = (M.Cl.Abt.symbol O.L.V.t, M.expr) M.pat
+  type kpat = (M.Cl.Abt.symbol O.L.K.t, M.expr Cl.closure) M.pat
+  type dpat = (M.Cl.Abt.symbol O.L.D.t, M.expr) M.pat
 
   structure Sig =
   struct
@@ -71,18 +70,18 @@ struct
 
   in
     (* Plug a value into a continuation *)
-    fun plug sign ((v : vpat, k : kpat) <: env) ks =
+    fun plug sign (v <: env, k) ks =
       case (k, v) of
 
        (* Lambda application *)
-         (CTT_K Ctt.AP `$ [_ \ n], CTT_V Ctt.LAM `$ [(_, [x]) \ mx]) =>
-           mx <: pushV (n <: env, x) env <| ks
+         (CTT_K Ctt.AP `$ [_ \ (n <: env')], CTT_V Ctt.LAM `$ [(_, [x]) \ mx]) =>
+           mx <: pushV (n <: env', x) env <| ks
 
        (* Lisp-style term introspection; get the domain or codomain of a Pi type *)
        | (CTT_K Ctt.DFUN_DOM `$ _, CTT_V Ctt.DFUN `$ [_ \ a, _]) =>
            a <: env <| ks
-       | (CTT_K Ctt.DFUN_COD `$ [_ \ m], CTT_V Ctt.DFUN `$ [_, (_, [x]) \ bx]) =>
-           bx <: pushV (m <: env, x) env <| ks
+       | (CTT_K Ctt.DFUN_COD `$ [_ \ m <: env'], CTT_V Ctt.DFUN `$ [_, (_, [x]) \ bx]) =>
+           bx <: pushV (m <: env', x) env <| ks
 
        (* Get the level of a universe*)
        | (CTT_K Ctt.UNIV_GET_LVL `$ _, CTT_V (Ctt.UNIV _) `$ [_ \ i]) =>
@@ -93,11 +92,11 @@ struct
            Syn.lvl (i + 1) <: env <| ks
 
        (* Compute the least upper bound / supremum of two universe levels. We compute in two steps. *)
-       | (LVL_K Lvl.LSUP0 `$ [_ \ n], LVL_V i `$ _) =>
+       | (LVL_K Lvl.LSUP0 `$ [_ \ n <: env'], LVL_V i `$ _) =>
            let
-             val k = K (LVL_K (Lvl.LSUP1 i)) $$ []
+             val k = LVL_K (Lvl.LSUP1 i) `$ []
            in
-             n <: env <| (k <: env) :: ks
+             n <: env' <| k :: ks
            end
        | (LVL_K (Lvl.LSUP1 i) `$ _, LVL_V j `$ _) =>
            Syn.lvl (Int.max (i, j)) <: env <| ks
@@ -105,19 +104,19 @@ struct
        (* Compute an equality test on symbol references / atoms. We do this in two steps, as with level suprema. *)
        | (ATM_K (Atm.TEST0 (sigma, tau)) `$ [_ \ t2, _ \ l, _ \ r], ATM_V (Atm.TOKEN (u, _)) `$ _) =>
            let
-             val k = K (ATM_K (Atm.TEST1 ((u, sigma), tau))) $$ [([],[]) \ l, ([],[]) \ r]
+             val k = ATM_K (Atm.TEST1 ((u, sigma), tau)) `$ [([],[]) \ l, ([],[]) \ r]
            in
-             t2 <: env <| (k <: env) :: ks
+             t2 <| k :: ks
            end
        | (ATM_K (Atm.TEST1 ((u, sigma), tau)) `$ [_ \ l, _ \ r], ATM_V (Atm.TOKEN (v, _)) `$ _) =>
-           (if symEq env (u, v) then l else r) <: env <| ks
+           (if symEq env (u, v) then l else r) <| ks
 
        (* Compute projection from a record; if the head label matches, return that; otherwise, keep working through the record. *)
        | (RCD_K (Rcd.PROJ lbl) `$ _, RCD_V (Rcd.CONS lbl') `$ [_ \ hd, _ \ tl]) =>
            if symEq env (lbl, lbl') then
              hd <: env <| ks
            else
-             tl <: env <| (unquoteK k <: env) :: ks
+             tl <: env <| (RCD_K (Rcd.PROJ lbl) `$ []) :: ks
 
        (* Lisp-style introspection on singleton record type *)
        | (RCD_K SINGL_GET_TY `$ _, RCD_V (Rcd.SINGL _) `$ [_ \ a]) =>
@@ -126,9 +125,9 @@ struct
        (* Extract the witness from a refined theorem object. *)
        | (EXTRACT tau `$ _, REFINE _ `$ [_, _, _ \ e]) =>
            let
-             val k = K (FROM_SOME tau) $$ []
+             val k = FROM_SOME tau `$ []
            in
-             e <: env <| (k <: env) :: ks
+             e <: env <| k :: ks
            end
 
        | (FROM_SOME tau `$ _, OP_SOME _ `$ [_ \ e]) =>
@@ -157,13 +156,11 @@ struct
              val selfTm = check (`self, S.EXP SortData.EXP)
              val singl = Syn.into (Syn.RCD_SINGL (lbl, a))
              val proj = Syn.into (Syn.RCD_PROJ (lbl, selfTm))
+
+             (* using an explicit substitution:*)
+             val bproj = ESUBST ([], [SortData.EXP], SortData.EXP) $$ [([],[x]) \ bx, ([],[]) \ proj]
            in
-             (* TODO: replace with an explicit substitution!
-                originaly, this added (proj / x) to the environment, which I thought would
-                be harmless since x is not free anywhere but bx, but some very strange
-                behavior occured. I'm not sure why!
-             *)
-             Syn.into (Syn.DEP_ISECT (singl, self, subst (proj, x) bx)) <: env
+             Syn.into (Syn.DEP_ISECT (singl, self, bproj)) <: env
            end
        | _ => raise Fail "Unhandled definitional extension"
   end
