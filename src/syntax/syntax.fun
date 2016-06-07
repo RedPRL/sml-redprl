@@ -20,6 +20,8 @@ sig
   val check : sort -> term view -> term
   val $$ : symbol operator * term bview spine -> term
   val out : term -> term view
+
+  val debugToString : term -> string
 end
 
 functor AbtSyntaxView (Abt : ABT) : SYNTAX_VIEW =
@@ -28,6 +30,9 @@ struct
   type 'a operator = 'a Abt.O.t
   type term = abt
   fun check tau m = Abt.check (m, tau)
+
+  structure Show = DebugShowAbt (Abt)
+  val debugToString = Show.toString
 end
 
 functor AstSyntaxView (Ast : AST where type 'a spine = 'a list) : SYNTAX_VIEW =
@@ -60,6 +65,8 @@ struct
     fn Ast.`x => `x
      | Ast.$ (th, es) => $ (th, List.map (fn Ast.\ ((us, xs), m) => \ ((us, xs), m)) es)
      | Ast.$# (x, (us, ms)) => $# (x, (List.map (fn u => (u, ())) us, ms))
+
+  fun debugToString _ = "[not implemented]"
 end
 
 functor RedPrlSyntax (View : SYNTAX_VIEW where type 'a operator = 'a RedPrlOperator.t where type 'a spine = 'a list) =
@@ -196,7 +203,7 @@ struct
        | VOID => intoCttV CttOperators.VOID []
 
        | FRESH (sigma, tau, u, m) => cutCtt (RS.UNIT, tau) (CttOperators.FRESH (sigma, tau)) [([u], []) \ m] (into DUMMY)
-       | DUMMY => intoCttV CttOperators.DUMMY []
+       | DUMMY => ret RS.UNIT @@ O.V (CTT_V CttOperators.DUMMY) $$ []
 
        | LBASE => ret RS.LVL @@ O.V (LVL_V 0) $$ []
        | LSUCC m => cutLvl LevelOperators.LSUCC [] m
@@ -308,7 +315,7 @@ struct
          | O.V (LCF NominalLcfOperators.ID) $ _ => TAC_ID
          | O.V (LCF NominalLcfOperators.FAIL) $ _ => TAC_FAIL
          | O.V (LCF (NominalLcfOperators.TRACE tau)) $ [_ \ m] => TAC_TRACE (tau, m)
-         | O.V (LCF (NominalLcfOperators.CSTEP n)) $ [_ \ m] => TAC_CSTEP n
+         | O.V (LCF (NominalLcfOperators.CSTEP n)) $ _ => TAC_CSTEP n
          | O.V (LCF NominalLcfOperators.CEVAL) $ _ => TAC_CEVAL
          | O.V (LCF NominalLcfOperators.CSYM) $ _ => TAC_CSYM
          | O.V (LCF (NominalLcfOperators.REWRITE_GOAL tau)) $ [_ \ m] => TAC_REWRITE_GOAL (tau, m)
@@ -317,7 +324,7 @@ struct
          | O.V (LCF (NominalLcfOperators.WITNESS tau)) $ [_ \ m] => TAC_WITNESS (tau, m)
          | O.V (LCF (NominalLcfOperators.UNFOLD (u, v))) $ _ => TAC_UNFOLD (u, v)
          | O.V (LCF (NominalLcfOperators.HYP_VAR h)) $ _ => HYP_REF h
-         | _ => raise Fail "outVal expected value"
+         | _ => raise Fail ("outVal expected value, but got: " ^ View.debugToString v)
 
       and outCut k m =
         case View.out k of
@@ -423,6 +430,7 @@ struct
        | AP (m, n) => adj (unparse m, unparse n)
        | LAM (x, mx) => prefix (0, "\206\187" ^ Variable.toString x ^ ".") (unparse mx)
        | BASE _ => atom "Base"
+       | FRESH (_, _, u, m) => prefix (0, "\206\189" ^ Symbol.toString u ^ ".") (unparse m)
        | IF_EQ (_, _, t1, t2, l, r) =>
            atom
              @@ "if "

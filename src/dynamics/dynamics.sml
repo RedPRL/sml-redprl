@@ -99,7 +99,7 @@ struct
                          if List.exists (fn (v, _) => symEq envE (u, v)) supp then
                            wrap e <: envE <| ks
                          else
-                           Abt.$$ (theta, List.map (Abt.mapb wrap) es) <: envE <| ks
+                           RET tau $$ [([],[]) \ theta $$ List.map (Abt.mapb wrap) es] <: envE <| ks
                        end
                    | _ => raise Match)
              | _ =>
