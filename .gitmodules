@@ -13,3 +13,6 @@
 [submodule "lib/sml-dependent-lcf"]
 	path = lib/sml-dependent-lcf
 	url = https://github.com/JonPRL/sml-dependent-lcf.git
+[submodule "lib/sml-unparse"]
+	path = lib/sml-unparse
+	url = https://github.com/RedPRL/sml-unparse.git

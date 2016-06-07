@@ -1,13 +1,13 @@
 structure LvlParser :
 sig
   val parseLevel
-    : (Sort.t -> Ast.ast CharParser.charParser)
-    -> Ast.ast ParserCombinators.fixityitem CharParser.charParser
+    : (AstSignature.sort -> AstSignature.term CharParser.charParser)
+    -> AstSignature.term ParserCombinators.fixityitem CharParser.charParser
 end =
 struct
-  open CharParser ParserCombinators RedTokenParser
-  open Ast OperatorData LevelOperatorData SortData
-  infix $ \ $#
+  open CharParser ParserCombinators RedTokenParser SortData
+
+  structure Syn = RedPrlAstSyntax
 
   infixr 4 << >>
   infixr 3 &&
@@ -19,12 +19,11 @@ struct
     let
       val parseBase =
         symbol "lbase"
-          wth (fn u =>
-            LVL_OP LBASE $ [])
+        return Syn.into Syn.LBASE
+
       val parseSucc =
         symbol "lsuc" >> parens (f LVL)
-          wth (fn l =>
-            LVL_OP LSUCC $ [([],[]) \ l])
+          wth (Syn.into o Syn.LSUCC)
     in
       (try parseSucc
         || parseBase) wth Atm

@@ -1,45 +1,28 @@
 structure PiRules : PI_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData SortData
-  infix 0 @@
+  open RefinerKit SortData
+  infixr 0 @@
   infix 1 $ $$ $# \ @>
   infix 2 //
   infix 4 >>
   infix 3 |>
 
-  val destDFun =
-    QuantifierKit.destQuantifier (CTT DFUN)
+  fun destDFun m =
+    case Syn.out m of
+       Syn.DFUN (a, x, bx) => (a, x, bx)
+     | _ => raise Match
 
-  fun destLam m =
-    case out m of
-         CTT LAM $ [(_, [x]) \ m] => (x, m)
-       | _ =>
-           raise Fail
-             @@ "Expected Lam but got "
-              ^ DebugShowAbt.toString m
-
-  fun destAp m =
-    case out m of
-         CTT AP $ [_ \ m, _ \ n] => (m, n)
-       | _ =>
-           raise Fail
-             @@ "Expected Ap but got "
-              ^ DebugShowAbt.toString m
-
-  fun makeAp m n =
-    CTT AP $$ [([],[]) \ m, ([],[]) \ n]
-
-  val IsType = QuantifierKit.IsType (CTT DFUN)
-  val TypeEq = QuantifierKit.TypeEq (CTT DFUN)
+  val IsType = QuantifierKit.IsType destDFun
+  val TypeEq = QuantifierKit.TypeEq destDFun
 
   fun MemberEq alpha (H >> EQ_MEM (lam1, lam2, dfun)) =
     let
-      val (a, x, bx) = destDFun dfun
-      val (y1, m1) = destLam lam1
-      val (y2, m2) = destLam lam2
+      val Syn.DFUN (a, x, bx) = Syn.out dfun
+      val Syn.LAM (y1, m1) = Syn.out lam1
+      val Syn.LAM (y2, m2) = Syn.out lam2
 
       val z = alpha 0
-      val ztm = check (`z, EXP)
+      val ztm = check (`z, RS.EXP EXP)
 
       val bz = subst (ztm, x) bx
       val m1z = subst (ztm, y1) m1
@@ -58,19 +41,19 @@ struct
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | MemberEq _ _ = raise Match
 
   fun ApSynth alpha (H >> SYN ap) =
     let
-      val (r, m) = destAp ap
+      val Syn.AP (r, m) = Syn.out ap
 
       val (tyGoal, tyHole, H') =
         makeGoal @@
           H >> SYN r
 
-      val dom = CTT DFUN_DOM $$ [([],[]) \ tyHole [] []]
+      val dom = Syn.into @@ Syn.DFUN_DOM @@ tyHole [] []
 
       val (chkGoal, _, _) =
         makeGoal @@
@@ -82,7 +65,7 @@ struct
         let
           val ty = T.lookup rho (#1 tyGoal) // ([],[])
         in
-          abtToAbs @@ CTT DFUN_COD $$ [([],[]) \ ty, ([],[]) \ r]
+          abtToAbs @@ Syn.into @@ Syn.DFUN_COD (ty, r)
         end)
     end
     | ApSynth _ _ = raise Match
@@ -92,7 +75,7 @@ struct
       val (a, x, bx) = destDFun P
 
       val z = alpha 0
-      val ztm = check (`z, EXP)
+      val ztm = check (`z, RS.EXP EXP)
       val bz = subst (ztm, x) bx
 
       val H' = updateHyps (fn xs => Ctx.snoc xs z (a, EXP)) H
@@ -109,9 +92,9 @@ struct
     in
       (psi, fn rho =>
         let
-          val ev = outb @@ T.lookup rho (#1 goal)
+          val (_, [x]) \ mx = outb @@ T.lookup rho (#1 goal)
         in
-          abtToAbs @@ CTT LAM $$ [ev]
+          abtToAbs @@ Syn.into @@ Syn.LAM (x, mx)
         end)
     end
     | Intro _ _ = raise Match
@@ -123,16 +106,16 @@ struct
 
       val y = alpha 0
       val z = alpha 1
-      val ytm = check (`y, EXP)
+      val ytm = check (`y, RS.EXP EXP)
 
       val (goal1, s, H) =
         makeGoal @@
           H >> TRUE (a, EXP)
 
       val bs = subst (s [] [], x) bx
-      val ftm = check (`f, EXP)
-      val fs = makeAp ftm (s [] [])
-      val yeqfs = makeEq (ytm, fs, bs)
+      val ftm = check (`f, RS.EXP EXP)
+      val fs = Syn.into @@ Syn.AP (ftm, s [] [])
+      val yeqfs = Syn.into @@ Syn.EQ (EXP, ytm, fs, bs)
 
       val hctx = Ctx.snoc (Ctx.snoc Ctx.empty y (bs, EXP)) z (yeqfs, EXP)
 
@@ -147,10 +130,10 @@ struct
       (psi, fn rho =>
         let
           val s = T.lookup rho (#1 goal1) // ([],[])
-          val fs = makeAp ftm s
+          val fs = Syn.into @@ Syn.AP (ftm, s)
         in
           abtToAbs @@
-            T.lookup rho (#1 goal2) // ([], [fs, makeAx])
+            T.lookup rho (#1 goal2) // ([], [fs, Syn.into Syn.AX])
         end)
     end
     | Elim _ _ _ = raise Match
@@ -160,10 +143,10 @@ struct
       val (a, x, bx) = destDFun dfun
 
       val z = alpha 0
-      val ztm = check (`z, EXP)
+      val ztm = check (`z, RS.EXP EXP)
       val bz = subst (ztm, x) bx
-      val fz = makeAp f ztm
-      val gz = makeAp g ztm
+      val fz = Syn.into @@ Syn.AP (f, ztm)
+      val gz = Syn.into @@ Syn.AP (g, ztm)
 
       val H' = updateHyps (fn xs => Ctx.snoc xs z (a, EXP)) H
 
@@ -182,7 +165,7 @@ struct
       val psi = T.empty @> mainGoal @> fwfGoal @> gwfGoal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | Ext _ _ = raise Match
 

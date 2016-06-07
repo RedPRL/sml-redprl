@@ -1,7 +1,7 @@
 structure TypeRules : TYPE_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData SortData
-  infix 0 @@
+  open RefinerKit SortData
+  infixr 0 @@
   infix 1 $ $$ $# \ @>
   infix 2 //
   infix 4 >>
@@ -13,7 +13,7 @@ struct
         makeGoal @@
           makeLevelSequent H
 
-      val univ = CTT (UNIV tau) $$ [([],[]) \ lvlHole [] []]
+      val univ = Syn.into @@ Syn.UNIV (tau, lvlHole [] [])
 
       val (memGoal, _, _)  =
         makeGoal @@
@@ -36,7 +36,7 @@ struct
       (psi, fn rho =>
          let
            val univ = T.lookup rho (#1 univGoal) // ([],[])
-           val lvl = CTT UNIV_GET_LVL $$ [([],[]) \ univ]
+           val lvl = Syn.into @@ Syn.UNIV_GET_LVL univ
          in
            abtToAbs lvl
          end)

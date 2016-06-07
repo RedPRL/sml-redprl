@@ -1,36 +1,29 @@
 structure VoidRules : VOID_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData SortData
-  infix @@ $ $# \ @>
+  open RefinerKit SortData
+  infixr 0 @@
+  infix 0 $ $# \ @>
   infix 4 >>
   infix 3 |>
 
-  fun destVoid m =
-    case out m of
-         CTT VOID $ [] => ()
-       | _ =>
-           raise Fail
-             @@ "Expected Void but got "
-              ^ DebugShowAbt.toString m
-
   fun TypeEq _ (H >> EQ_MEM (void1, void2, univ)) =
     let
-      val _ = destUniv univ
-      val _ = destVoid void1
-      val _ = destVoid void2
+      val Syn.UNIV _ = Syn.out univ
+      val Syn.VOID = Syn.out void1
+      val Syn.VOID = Syn.out void2
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | TypeEq _ _ = raise Match
 
   fun Elim i _ (H >> TRUE (P, _)) =
     let
       val (void, _) = Ctx.lookup (getHyps H) i
-      val _ = destVoid void
+      val Syn.VOID = Syn.out void
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | Elim _ _ _ = raise Match
 

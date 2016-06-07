@@ -1,34 +1,15 @@
 structure RecordRules : RECORD_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData RecordOperatorData LevelOperatorData SortData
-  infix 0 @@
+  open RefinerKit SortData
+  infixr 0 @@
   infix 1 $ $$ $# \ @>
   infix 2 //
   infix 3 >>
   infix 2 |>
 
-  fun destSingl m =
-    case out m of
-         RCD (SINGL lbl) $ [_ \ a] => (lbl, a)
-       | _ =>
-           raise Fail
-             @@ "Expected SINGL but got "
-              ^ DebugShowAbt.toString m
-
-  fun destProj m =
-    case out m of
-         RCD (PROJ lbl) $ [_ \ rcd] => (lbl, rcd)
-       | _ =>
-           raise Fail
-             @@ "Expected PROJ but got "
-              ^ DebugShowAbt.toString m
-
-  fun makeProj lbl m =
-    RCD (PROJ lbl) $$ [([],[]) \ m]
-
   fun IsType alpha (goal as (H >> TYPE (ty, EXP))) =
     let
-      val (lbl, a) = destSingl ty
+      val Syn.RCD_SINGL (lbl, a) = Syn.out ty
 
       val (goalA, holeA, H') =
         makeGoal @@
@@ -43,30 +24,30 @@ struct
 
   fun TypeEq alpha (H >> EQ_MEM (ty1, ty2, univ)) =
     let
-      val (tau, lvl) = destUniv univ
-      val _ = if Sort.eq (tau, EXP) then () else raise Match
+      val Syn.UNIV (tau, lvl) = Syn.out univ
+      val _ = if tau = EXP then () else raise Match
 
-      val (lbl1, a1) = destSingl ty1
-      val (lbl2, a2) = destSingl ty2
+      val Syn.RCD_SINGL (lbl1, a1) = Syn.out ty1
+      val Syn.RCD_SINGL (lbl2, a2) = Syn.out ty2
       val _ = if Symbol.eq (lbl1, lbl2) then () else raise Match
 
       val (goal, _, _) =
         makeGoal @@
-          makeEqSequent H (a1, a2, makeUniv lvl)
+          makeEqSequent H (a1, a2, Syn.into @@ Syn.UNIV (EXP, lvl))
 
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | TypeEq _ _ = raise Match
 
   fun MemberEq alpha (H >> EQ_MEM (rcd1, rcd2, ty)) =
     let
-      val (lbl, a) = destSingl ty
+      val Syn.RCD_SINGL (lbl, a) = Syn.out ty
 
-      val proj1 = makeProj lbl rcd1
-      val proj2 = makeProj lbl rcd2
+      val proj1 = Syn.into @@ Syn.RCD_PROJ (lbl, rcd1)
+      val proj2 = Syn.into @@ Syn.RCD_PROJ (lbl, rcd2)
 
       val (goal, _, _) =
         makeGoal @@
@@ -75,7 +56,7 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | MemberEq _ _ = raise Match
 
@@ -84,7 +65,7 @@ struct
    *)
   fun ProjSynth alpha (H >> SYN p) =
     let
-      val (lbl, rcd) = destProj p
+      val Syn.RCD_PROJ (lbl, rcd) = Syn.out p
 
       val (tyGoal, tyHole, H') =
         makeGoal @@
@@ -96,8 +77,7 @@ struct
         let
           val ty = T.lookup rho (#1 tyGoal) // ([],[])
         in
-          abtToAbs @@
-            RCD SINGL_GET_TY $$ [([],[]) \ ty]
+          abtToAbs @@ Syn.into @@ Syn.SINGL_GET_TY ty
         end)
     end
     | ProjSynth _ _ = raise Match

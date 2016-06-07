@@ -1,6 +1,6 @@
 structure Refiner : REFINER =
 struct
-  structure Abt = Abt
+  structure Abt = RedPrlAbt
   open RefinerKit
 
   open Sequent
@@ -9,7 +9,7 @@ struct
   infix 4 >>
 
   local
-    open OperatorData CttOperatorData Tacticals
+    open Tacticals
     infix ORELSE
   in
     fun Elim i alpha =
@@ -19,20 +19,20 @@ struct
 
     fun HypEq alpha (H >> EQ_MEM (m, n, a)) =
       let
-        val x = destVar m
-        val y = destVar n
+        val x = Syn.destVar m
+        val y = Syn.destVar n
         val _ = if Variable.eq (x, y) then () else raise Match
         val (a', _) = Ctx.lookup (getHyps H) x
         val _ = if Abt.eq (a,a') then () else raise Match
       in
         (T.empty, fn rho =>
-          abtToAbs makeAx)
+          abtToAbs @@ Syn.into Syn.AX)
       end
       | HypEq _ _ = raise Match
 
     fun HypSynth alpha (H >> SYN r) =
       let
-        val x = destVar r
+        val x = Syn.destVar r
         val (a, _) = Ctx.lookup (getHyps H) x
       in
         (T.empty, fn rho =>
@@ -96,9 +96,8 @@ struct
       | Eq _ _ _ = raise Match
 
     fun Ext alpha (jdg as _ >> TRUE (P, _)) =
-      (case out P of
-           CTT (EQ _) $ _ =>
-             PiRules.Ext alpha jdg
+      (case Syn.out P of
+           Syn.EQ _ => PiRules.Ext alpha jdg
         | _ => raise Fail "Ext not applicable")
       | Ext _ _ = raise Match
   end
@@ -121,7 +120,7 @@ struct
     in
       if Abt.eq (P, Q) then
         (T.empty, fn rho =>
-           abtToAbs @@ check (`i , tau))
+           abtToAbs @@ check (`i , RS.EXP tau))
       else
         raise Fail "Failed to unify with hypothesis"
     end
@@ -142,18 +141,16 @@ struct
   end
 
   local
-    open OperatorData CttOperatorData AtomsOperatorData SortData
+    exception TODO
+    open SortData
   in
     fun Unfold sign opid target _ jdg =
       let
-        open SmallStep DynamicsUtil
         fun go m =
           case out m of
-               CUST (opid', _, _) $ _ =>
+               RedPrlOperator.CUSTOM (opid', _, _) $ _ =>
                  if Symbol.eq (opid, opid') then
-                   case step' sign m of
-                        FINAL => m
-                      | STEP m' => m'
+                   RedPrlDynamics.stepN sign 1 m
                  else
                    m
              | _ => m
@@ -168,8 +165,7 @@ struct
 
     fun Normalize sign target _ jdg =
       let
-        open SmallStep DynamicsUtil
-        fun go m = evalOpen sign m handle _ => m
+        fun go m = RedPrlDynamics.eval sign m handle _ => m
         val deepGo = go o Abt.deepMapSubterms go
 
         val jdg' = Target.targetRewrite deepGo target jdg
@@ -182,10 +178,10 @@ struct
 
     fun RewriteGoal Q _ (H >> TRUE (P, sigma)) =
       let
-        val tau = sort P
+        val RS.EXP tau = sort P
         val (ceqGoal, _, _) =
           makeGoal @@
-            H >> TRUE (CTT (CEQUIV tau) $$ [([],[]) \ P, ([],[]) \ Q], EXP)
+            H >> TRUE (Syn.into @@ Syn.CEQUIV (tau, P, Q), EXP)
 
         val (mainGoal, _, _) =
           makeGoal @@
@@ -200,7 +196,7 @@ struct
 
     fun EvalGoal sign target _ jdg =
       let
-        val jdg' = Target.targetRewrite (DynamicsUtil.evalOpen sign) target jdg
+        val jdg' = Target.targetRewrite (RedPrlDynamics.eval sign) target jdg
         val (goal, _, _) = makeGoal jdg'
         val psi = T.empty @> goal
       in

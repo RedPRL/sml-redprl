@@ -6,6 +6,8 @@ Tac try(T : tac) = [
   T || id
 ].
 
+
+
 // Tacticals are easily defined from within JonPRL's computation system.
 // Here are a few examples:
 Tac repeat(T : tac) = [
@@ -90,6 +92,7 @@ Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
   bang
 ].
 
+
 Thm demo : [{x : Base | ~(x; Ax)}] by [
   bang; #0 { witness [Ax] }; bang
 ].
@@ -139,6 +142,7 @@ Record MonoidStruct(i : lvl) = {
   op : fun(car; fun(car; car))
 }.
 
+
 Record MonoidLaws(M : exp) = {
   lid : dfun(M.car; [x]. =((M.op) (M.unit) x; x; M.car)),
   rid : dfun(M.car; [x]. =((M.op) x (M.unit); x; M.car)),
@@ -180,13 +184,10 @@ Record Sg(A : exp, B : [exp].exp) = {
 }.
 
 
-// our first benign effect! the nu operator is generates a "fresh name" that can be used
-// in the inner computation.
 Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang
 ].
 
-// Fresh names are always distinct! Therefore, the following test evaluates to 'no.
 Thm symgenTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
   bang
 ].

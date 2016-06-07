@@ -9,10 +9,13 @@ struct
 
   structure MetaCtx =
   struct
-    open Abt.Metavar.Ctx
-    structure Util = ContextUtil (structure Ctx = Abt.Metavar.Ctx and Elem = Valence)
+    open RedPrlAbt.Metavar.Ctx
+    structure Util = ContextUtil (structure Ctx = RedPrlAbt.Metavar.Ctx and Elem = RedPrlAbt.O.Ar.Vl)
     open Util
   end
+
+  fun liftValence ((ssorts, vsorts), tau) =
+    ((List.map RedPrlOperator.S.EXP ssorts, List.map RedPrlOperator.S.EXP vsorts), RedPrlOperator.S.EXP tau)
 
   (* Given a AST declaration, this resolves its binding structure
    * in the context of the signature before it (given by [opidTable]).
@@ -24,12 +27,12 @@ struct
       val parameters' = ListPair.zipEq (localSymbols, sorts)
 
       local
-        open AstToAbt
+        open RedPrlAstToAbt
         val upsilon = List.foldl (fn ((u,tau),m) => NameEnv.insert m u tau) opidTable (ListPair.zipEq (localNames, localSymbols))
         val gamma = NameEnv.empty
-        val mctx = List.foldl (fn (x, m) => MetaCtx.extend m x) MetaCtx.empty arguments
+        val mctx = List.foldl (fn ((x, vl), m) => MetaCtx.extend m (x, liftValence vl)) MetaCtx.empty arguments
       in
-        val definiens' = convertOpen mctx (upsilon, gamma) (definiens, sort)
+        val definiens' = convertOpen mctx (upsilon, gamma) (definiens, RedPrlOperator.S.EXP sort)
       end
     in
       S2.def sign
@@ -46,7 +49,7 @@ struct
    *)
   fun transport sign =
     let
-      open AstToAbt StringTelescope.ConsView
+      open RedPrlAstToAbt StringTelescope.ConsView
 
       fun go opidTable (signIn : AstSignature.sign) (signOut : AbtSignature.sign) =
         case out signIn of

@@ -3,11 +3,6 @@ Library
   signature ABT_SIGNATURE
   structure BindSignatureElab
   structure RefineElab
-  structure SmallStep
-  signature DYNAMICS
-  structure Dynamics
-  signature DYNAMICS_UTIL
-  structure DynamicsUtil
   structure Sequent
   structure Refiner
   structure SignatureParser

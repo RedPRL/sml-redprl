@@ -1,21 +1,10 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-typed-abts/abt.mlb
-  ../lib/sml-typed-abts/abt-patterns.mlb
+  ../lib/sml-typed-abts/abt-lcs.mlb
   syntax.mlb
   signature.mlb
-  dynamics/small_step.sig
-  dynamics/small_step.sml
-  dynamics/dynamics.sig
   dynamics/dynamics.sml
-  dynamics/dynamics_util.sig
-  dynamics/dynamics_util.fun
 in
-  signature SMALL_STEP
-  structure SmallStep
-  signature DYNAMICS
-  signature DYNAMICS_UTIL
-  structure Dynamics
-  functor DynamicsUtil
-  structure DynamicsUtil
+  structure RedPrlDynamics
 end

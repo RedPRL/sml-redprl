@@ -1,66 +1,37 @@
 structure AtomRules : ATOM_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData AtomsOperatorData LevelOperatorData SortData
-  infix 0 @@
+  open RefinerKit SortData
+  infixr 0 @@
   infix 2 $ $$ $# \ @>
   infix 4 >>
   infix 3 |>
 
-  fun destAtom m =
-    case out m of
-         ATM (ATOM tau) $ [] => tau
-       | _ =>
-           raise Fail
-             @@ "Expected Atom but got "
-              ^ DebugShowAbt.toString m
-
-  fun makeAtom tau =
-    ATM (ATOM tau) $$ []
-
-  fun destToken m =
-    case out m of
-         ATM (TOKEN (u,tau)) $ [] => (u,tau)
-       | _ =>
-           raise Fail
-             @@ "Expected Token but got "
-              ^ DebugShowAbt.toString m
-
-  fun destTest m =
-    case out m of
-         ATM (TEST (sigma, tau)) $ [_ \ t1, _ \ t2, _ \ yes, _ \ no] =>
-           (sigma, tau, t1, t2, yes, no)
-       | _ =>
-           raise Fail
-             @@ "Expected Test but got "
-              ^ DebugShowAbt.toString m
-
   fun IsType _ (H >> TYPE (atm, EXP)) =
     let
-      val _ = destAtom atm
+      val Syn.ATOM _ = Syn.out atm
     in
       (T.empty, fn rho =>
-        abtToAbs @@
-          LVL_OP LBASE $$ [])
+        abtToAbs @@ Syn.into Syn.LBASE)
     end
     | IsType _ _ = raise Match
 
   fun TypeEq _ (H >> EQ_MEM (atm1, atm2, univ)) =
     let
-      val (sigma, lvl) = destUniv univ
-      val tau1 = destAtom atm1
-      val tau2 = destAtom atm2
+      val Syn.UNIV (sigma, lvl) = Syn.out univ
+      val Syn.ATOM tau1 = Syn.out atm1
+      val Syn.ATOM tau2 = Syn.out atm2
       val _ = if sigma = EXP andalso tau1 = tau2 then () else raise Match
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | TypeEq _ _ = raise Match
 
   fun MemberEq _ (H >> EQ_MEM (tok1, tok2, atm)) =
     let
-      val tau = destAtom atm
-      val (u1,tau1) = destToken tok1
-      val (u2,tau2) = destToken tok2
+      val Syn.ATOM tau = Syn.out atm
+      val Syn.TOKEN (u1,tau1) = Syn.out tok1
+      val Syn.TOKEN (u2,tau2) = Syn.out tok2
       val _ =
         if Symbol.eq (u1,u2) andalso tau1 = tau2 andalso tau = tau1 then
           ()
@@ -68,30 +39,31 @@ struct
           raise Match
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | MemberEq _ _ = raise Match
 
   fun TestEq alpha (H >> EQ_MEM (test1, test2, a)) =
     let
-      val (sigma, tau, t1, t2, yes, no) = destTest test1
-      val (sigma', tau', t1', t2', yes', no') = destTest test2
+      val Syn.IF_EQ (sigma, tau, t1, t2, yes, no) = Syn.out test1
+      val Syn.IF_EQ (sigma', tau', t1', t2', yes', no') = Syn.out test2
 
       val _ = if sigma = sigma' andalso tau = tau' then () else raise Match
 
+      val atomTy = Syn.into @@ Syn.ATOM sigma
+
       val (goal1, _, H) =
         makeGoal @@
-          makeEqSequent H (t1, t1', makeAtom sigma)
+          makeEqSequent H (t1, t1', atomTy)
 
       val (goal2, _, H) =
         makeGoal @@
-          makeEqSequent H (t2, t2', makeAtom sigma)
+          makeEqSequent H (t2, t2', atomTy)
 
       val z = alpha 0
 
-      val atomTy = makeAtom sigma
-      val toksEq = makeEq (t1, t2, atomTy)
-      val toksNotEq = CTT NOT $$ [([],[]) \ toksEq]
+      val toksEq = Syn.into @@ Syn.EQ (EXP, t1, t2, atomTy)
+      val toksNotEq = Syn.into @@ Syn.NOT toksEq
 
       val Hyes = updateHyps (fn xs => Ctx.snoc xs z (toksEq, EXP)) H
       val Hno = updateHyps (fn xs => Ctx.snoc xs z (toksNotEq, EXP)) H
@@ -107,7 +79,7 @@ struct
       val psi = T.empty @> goal1 @> goal2 @> goalYes @> goalNo
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | TestEq _ _ = raise Match
 end

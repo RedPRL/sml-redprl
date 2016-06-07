@@ -2,7 +2,7 @@ structure AstSignatureDecl =
 struct
   datatype 'd decl =
       DEF of 'd
-    | SYM_DECL of Sort.t
+    | SYM_DECL of RedPrlAtomicSort.t
 end
 
 (* All terms and expressions are treated as abstract syntax trees, and variables
@@ -11,11 +11,11 @@ end
  * signature elaboration, [ABT_SIGNATURE]. *)
 signature AST_SIGNATURE =
 sig
-  type term = Ast.ast
-  type symbol = Ast.symbol
-  type sort = Sort.t
-  type metavariable = Ast.metavariable
-  type valence = Valence.t
+  type term = RedPrlAst.ast
+  type symbol = RedPrlAst.symbol
+  type sort = RedPrlAtomicSort.t
+  type metavariable = RedPrlAst.metavariable
+  type valence = RedPrlAtomicValence.t
 
   type arguments = (metavariable * valence) list
   type symbols = (symbol * sort) list

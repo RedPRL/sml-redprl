@@ -3,9 +3,9 @@ sig
   structure Abt : ABT
   type term = Abt.abt
   type symbol = Abt.symbol
-  type sort = Abt.sort
+  type sort
+  type valence
   type metavariable = Abt.metavariable
-  type valence = Abt.valence
   type arguments = (metavariable * valence) list
   type symbols = (symbol * sort) list
 
