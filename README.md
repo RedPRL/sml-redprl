@@ -25,9 +25,6 @@ whose semantics are defined in Sterling & Morrison's
 [Syntax and Semantics of Abstract Binding Trees](https://github.com/jonsterling/syntax-and-semantics-of-abts),
 also by Sterling & Morrison.
 
-Finally, the Nominal LCF language, which provides support for well-scoped
-tactic scripts, is defined in Sterling's [Nominal LCF: A Language for Generic
-Proof](https://github.com/jonsterling/nominal-lcf-paper).
 
 ### What is this repository?
 
