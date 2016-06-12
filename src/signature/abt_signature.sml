@@ -1,21 +1,21 @@
 structure AbtSignature : ABT_SIGNATURE =
 struct
-  structure Abt = Abt
+  structure Abt = RedPrlAbt
 
   type opid = Abt.symbol
   structure Telescope = SymbolTelescope
 
-  structure Arity = Abt.Operator.Arity
-  structure Valence = Arity.Valence
-  structure Sort = Valence.Sort
-  structure Symbol = Abt.Symbol
-  structure MCtx = Abt.Metavariable.Ctx
+  structure Arity = RedPrlAtomicArity
+  structure Valence = Arity.Vl
+  structure Sort = Valence.S
+  structure Symbol = Abt.Sym
+  structure MCtx = Abt.Metavar.Ctx
 
   type term = Abt.abt
   type symbol = Abt.symbol
-  type sort = Abt.sort
+  type sort = Sort.t
   type metavariable = Abt.metavariable
-  type valence = Abt.valence
+  type valence = Valence.t
   type arguments = (metavariable * valence) list
   type symbols = (symbol * sort) list
 
@@ -39,12 +39,12 @@ struct
   fun subarguments (Th1, Th2) =
     let
       fun lookup x =
-        case List.find (fn (y, v) => Abt.Metavariable.eq (x, y)) Th2 of
-             SOME (_, v) => v
+        case List.find (fn (y, v) => Abt.Metavar.eq (x, y)) Th2 of
+             SOME (_, ((us, xs), tau)) => ((List.map RedPrlOperator.S.EXP us, List.map RedPrlOperator.S.EXP xs), RedPrlOperator.S.EXP tau)
            | NONE => raise NotFound
       fun go [] = true
         | go ((x, vl) :: xs) =
-            (Valence.eq (vl, lookup x) handle _ => false)
+            (Abt.O.Ar.Vl.eq (vl, lookup x) handle _ => false)
               andalso go xs
     in
       go Th1
@@ -62,7 +62,7 @@ struct
                   | NONE => raise NotFound)
       fun go [] = true
         | go ((u, tau) :: us) =
-            (Sort.eq (tau, lookup u) handle _ => false)
+            (Abt.O.Ar.Vl.S.eq (tau, RedPrlOperator.S.EXP (lookup u)) handle _ => false)
               andalso go us
     in
       go Y1
@@ -77,16 +77,16 @@ struct
    *)
   fun def sign {parameters, arguments, sort, definiens} =
     let
-      val Y' = Abt.Symbol.Ctx.toList (Abt.symctx definiens)
-      val G = Abt.Variable.Ctx.toList (Abt.varctx definiens)
-      val Th' = Abt.Metavariable.Ctx.toList (Abt.metactx definiens)
+      val Y' = Abt.Sym.Ctx.toList (Abt.symctx definiens)
+      val G = Abt.Var.Ctx.toList (Abt.varctx definiens)
+      val Th' = Abt.Metavar.Ctx.toList (Abt.metactx definiens)
       val (_, tau') = Abt.infer definiens
 
       val _ =
         (guard "Metavariable not in scope" (subarguments (Th', arguments));
          guard "Symbols not in scope" (subsymbols sign (Y', parameters));
          guard "Variables not in scope" (List.length G = 0);
-         guard "Sort mismatch" (Sort.eq (tau', sort)))
+         guard "Sort mismatch" (Abt.O.Ar.Vl.S.eq (tau', RedPrlOperator.S.EXP sort)))
     in
       DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
     end

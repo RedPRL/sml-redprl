@@ -1,12 +1,8 @@
-structure NominalLcfOperatorData =
+structure NominalLcfOperators =
 struct
   (* We use symbols/atoms to index into the context. *)
 
-  type intro_params =
-    {rule : int option}
-
-  type eq_params =
-    {rule : int option}
+  structure Sort = RedPrlAtomicSort
 
   datatype 'i script_operator =
       SEQ of Sort.t list
@@ -14,8 +10,8 @@ struct
     | ALL | EACH | FOCUS of int
     | PROGRESS
     | REC
-    | INTRO of intro_params
-    | EQ of eq_params
+    | INTRO of int option
+    | EQ of int option
     | CHKINF
     | EXT
     | CUM
@@ -29,92 +25,85 @@ struct
     | HYP_VAR of 'i
 end
 
-structure NominalLcfOperator : OPERATOR =
+structure NominalLcfV : ABT_OPERATOR =
 struct
-  open NominalLcfOperatorData SortData
+  open NominalLcfOperators SortData
 
-  structure Arity = Arity
-
+  structure Ar = RedPrlAtomicArity
   type 'i t = 'i script_operator
 
-  local
-    fun op* (a, b) = (a, b) (* symbols sorts, variable sorts *)
-    fun op<> (a, b) = (a, b) (* valence *)
-    fun op->> (a, b) = (a, b) (* arity *)
-    fun op^ (x, n) = List.tabulate (n, fn _ => x)
-    infix 5 <> ->>
-    infix 6 * ^
-  in
-    fun arity (SEQ sorts) =
-          [ [] * [] <> MTAC
-          , sorts * [] <> TAC
-          ] ->> TAC
-      | arity ORELSE =
-          [ [] * [] <> TAC
-          , [] * [] <> TAC
-          ] ->> TAC
-      | arity PROGRESS =
-          [ [] * [] <> TAC
-          ] ->> TAC
-      | arity ALL =
-          [ [] * [] <> TAC
-          ] ->> MTAC
-      | arity EACH =
-          [ [] * [] <> VEC TAC
-          ] ->> MTAC
-      | arity (FOCUS i) =
-          [ [] * [] <> TAC
-          ] ->> MTAC
-      | arity (INTRO _) =
-          [] ->> TAC
-      | arity (EQ _) =
-          [] ->> TAC
-      | arity CHKINF =
-          [] ->> TAC
-      | arity EXT =
-          [] ->> TAC
-      | arity CUM =
-          [] ->> TAC
-      | arity (ELIM _) =
-          [] ->> TAC
-      | arity (HYP _) =
-          [] ->> TAC
-      | arity (UNHIDE _) =
-          [] ->> TAC
-      | arity AUTO =
-          [] ->> TAC
-      | arity ID =
-          [] ->> TAC
-      | arity FAIL =
-          [] ->> TAC
-      | arity (TRACE tau) =
-          [ [] * [] <> tau
-          ] ->> TAC
-      | arity REC =
-          [ [] * [TAC] <> TAC
-          ] ->> TAC
-      | arity (CSTEP _) =
-          [] ->> TAC
-      | arity CSYM =
-          [] ->> TAC
-      | arity CEVAL =
-          [] ->> TAC
-      | arity (REWRITE_GOAL tau) =
-          [ [] * [] <> tau
-          ] ->> TAC
-      | arity (EVAL_GOAL _) =
-          [] ->> TAC
-      | arity (WITNESS tau) =
-          [ [] * [] <> tau
-          ] ->> TAC
-      | arity (UNFOLD _) =
-          [] ->> TAC
-      | arity (NORMALIZE _) =
-          [] ->> TAC
+  open ArityNotation
+  infix 5 <> ->>
+  infix 6 *
 
-      | arity (HYP_VAR _) =
-          [] ->> EXP
-  end
+  fun arity (SEQ sorts) =
+        [ [] * [] <> MTAC
+        , sorts * [] <> TAC
+        ] ->> TAC
+    | arity ORELSE =
+        [ [] * [] <> TAC
+        , [] * [] <> TAC
+        ] ->> TAC
+    | arity PROGRESS =
+        [ [] * [] <> TAC
+        ] ->> TAC
+    | arity ALL =
+        [ [] * [] <> TAC
+        ] ->> MTAC
+    | arity EACH =
+        [ [] * [] <> VEC TAC
+        ] ->> MTAC
+    | arity (FOCUS i) =
+        [ [] * [] <> TAC
+        ] ->> MTAC
+    | arity (INTRO _) =
+        [] ->> TAC
+    | arity (EQ _) =
+        [] ->> TAC
+    | arity CHKINF =
+        [] ->> TAC
+    | arity EXT =
+        [] ->> TAC
+    | arity CUM =
+        [] ->> TAC
+    | arity (ELIM _) =
+        [] ->> TAC
+    | arity (HYP _) =
+        [] ->> TAC
+    | arity (UNHIDE _) =
+        [] ->> TAC
+    | arity AUTO =
+        [] ->> TAC
+    | arity ID =
+        [] ->> TAC
+    | arity FAIL =
+        [] ->> TAC
+    | arity (TRACE tau) =
+        [ [] * [] <> tau
+        ] ->> TAC
+    | arity REC =
+        [ [] * [TAC] <> TAC
+        ] ->> TAC
+    | arity (CSTEP _) =
+        [] ->> TAC
+    | arity CSYM =
+        [] ->> TAC
+    | arity CEVAL =
+        [] ->> TAC
+    | arity (REWRITE_GOAL tau) =
+        [ [] * [] <> tau
+        ] ->> TAC
+    | arity (EVAL_GOAL _) =
+        [] ->> TAC
+    | arity (WITNESS tau) =
+        [ [] * [] <> tau
+        ] ->> TAC
+    | arity (UNFOLD _) =
+        [] ->> TAC
+    | arity (NORMALIZE _) =
+        [] ->> TAC
+    | arity (HYP_VAR _) =
+        [] ->> EXP
 
   fun support (ELIM (target, tau)) = [(target, tau)]
     | support (HYP (target, tau)) = [(target, tau)]
@@ -206,8 +195,8 @@ struct
      | ALL => "all"
      | EACH => "each"
      | FOCUS i => "some{" ^ Int.toString i ^ "}"
-     | INTRO {rule} => "intro" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
-     | EQ {rule} => "eq" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
+     | INTRO rule => "intro" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
+     | EQ rule => "eq" ^ (case rule of NONE => "" | SOME i => "{" ^ Int.toString i ^ "}")
      | EXT => "ext"
      | CHKINF => "chk-inf"
      | CUM => "cum"
@@ -229,4 +218,3 @@ struct
      | NORMALIZE oi => "normalize" ^ (case oi of NONE => "" | SOME i => " in " ^ f i)
      | HYP_VAR i => "@" ^ f i
 end
-

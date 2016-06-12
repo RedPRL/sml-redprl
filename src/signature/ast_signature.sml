@@ -1,13 +1,15 @@
 structure AstSignature : AST_SIGNATURE =
 struct
+  structure Ast = RedPrlAst and Arity = RedPrlAtomicArity
+
   type opid = string
   structure Telescope = StringTelescope
 
   type term = Ast.ast
   type symbol = Ast.symbol
-  type sort = Arity.Valence.sort
+  type sort = Arity.Vl.sort
   type metavariable = Ast.metavariable
-  type valence = Arity.Valence.t
+  type valence = Arity.Vl.t
 
   type arguments = (metavariable * valence) list
   type symbols = (symbol * sort) list

@@ -1,19 +1,23 @@
 local
   $(SML_LIB)/basis/basis.mlb
+  ../lib/sml-unparse/unparse.mlb
   ../lib/sml-typed-abts/abt.mlb
+  ../lib/sml-typed-abts/abt-lcs.mlb
+  ../lib/sml-typed-abts/abt-unparser.mlb
   ../lib/sml-telescopes/telescopes.mlb
 
   syntax/sort_data.sml
   syntax/arity.sml
 
-  syntax/nominal-lcf/operator.sml
-  syntax/level/operator.sml
-  syntax/ctt/operator.sml
-  syntax/records/operator.sml
-  syntax/atoms/operator.sml
+  syntax/operator/nominal_lcf.sml
+  syntax/operator/level.sml
+  syntax/operator/ctt.sml
+  syntax/operator/record.sml
+  syntax/operator/atom.sml
   syntax/operator.sml
 
   syntax/abt.sml
+  syntax/syntax.fun
 
   local
     local
@@ -37,36 +41,53 @@ local
   end
 in
   structure SortData
-  structure Sort
-  structure Valence
-  structure Arity
+  structure RedPrlAtomicSort
+  structure RedPrlAtomicValence
+  structure RedPrlAtomicArity
+  structure ArityNotation
 
-  structure NominalLcfOperatorData
-  structure NominalLcfOperator
+  structure CttOperators
+  structure CttV
+  structure CttK
+  structure CttD
 
-  structure LevelOperatorData
-  structure LevelOperator
+  structure NominalLcfOperators
+  structure NominalLcfV
 
-  structure CttOperatorData
-  structure CttOperator
+  structure LevelOperators
+  structure LevelV
+  structure LevelK
 
-  structure RecordOperatorData
-  structure RecordOperator
+  structure RecordOperators
+  structure RecordV
+  structure RecordK
+  structure RecordD
 
-  structure AtomsOperatorData
-  structure AtomsOperator
+  structure AtomOperators
+  structure AtomV
+  structure AtomK
 
-  structure OperatorData
-  structure Operator
+  structure RedPrlOperators
+  structure RedPrlV
+  structure RedPrlK
+  structure RedPrlD
 
   structure Metavariable
   structure Variable
   structure Symbol
-  structure Ast
-  structure Abt
-  structure AstToAbt
+
+  structure RedPrlLcs
+  structure RedPrlOperator
+  structure RedPrlAst
+  structure RedPrlAbt
+  structure RedPrlAstToAbt
+
   structure ShowAbt
   structure DebugShowAbt
+
+  functor RedPrlSyntax
+  structure RedPrlAstSyntax
+  structure RedPrlAbtSyntax
 
   structure StringTelescope
   structure SymbolTelescope

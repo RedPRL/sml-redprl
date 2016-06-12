@@ -1,414 +1,201 @@
-structure Dynamics : DYNAMICS =
+structure RedPrlDynamicsBasis : LCS_DYNAMICS_BASIS =
 struct
-  structure Abt = Abt
-  structure SmallStep = SmallStep
-  structure Signature = AbtSignature
+  structure Abt = RedPrlAbt and O = RedPrlOperator
+  structure Cl = LcsClosure (Abt)
 
-  type abt = Abt.abt
-  type abs = Abt.abs
-  type 'a step = 'a SmallStep.t
-  type sign = Signature.sign
+  structure M = LcsMachine
+    (structure Cl = Cl and K = RedPrlOperator.L.K
+     open O Cl Abt infix $ $# \ <:
 
-  structure T = Signature.Telescope
-  open Abt SmallStep
-  infix 3 $ $$ $#
-  infix 2 \
+     fun isNeutral (r <: (env as (mrho, srho, vrho))) =
+       case out r of
+          `x => not (Abt.Var.Ctx.member vrho x)
+        | x $# _ => not (Abt.Metavar.Ctx.member mrho x)
+        | CUT _ $ [_, _ \ r'] => isNeutral (r' <: env)
+        | _ => false
 
-  structure SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx and MetaCtx = Metavariable.Ctx
-
-  type 'a varenv = 'a Abt.Variable.Ctx.dict
-  type 'a metaenv = 'a Signature.Abt.Metavariable.Ctx.dict
-
-  datatype 'a closure = <: of 'a * env
-  withtype env = abs closure metaenv * symenv * abt closure varenv
-  infix 2 <:
-
-  exception Stuck of abt closure
+     fun isFinal (m <: env) =
+       case out m of
+          RET _ $ _ => true
+        | _ => isNeutral (m <: env))
 
 
-  exception hole
-  fun ?x = raise x
+  type vpat = (M.Cl.Abt.symbol O.L.V.t, M.expr) M.pat
+  type kpat = (M.Cl.Abt.symbol O.L.K.t, M.expr Cl.closure) M.pat
+  type dpat = (M.Cl.Abt.symbol O.L.D.t, M.expr) M.pat
 
-  fun @@ (f,x) = f x
-  infix 0 @@
+  structure Sig =
+  struct
+    open AbtSignature
+    type t = sign
+    val empty = Telescope.empty
 
-  fun <$> (f,x) = SmallStep.map f x
-  infix <$>
+    fun define sign opid d =
+      Telescope.snoc sign opid (def sign d)
 
-  fun <#> (x,f) = SmallStep.map f x
-  infix <#>
-
-  fun >>= (x,f) = SmallStep.bind f x
-  infix >>=
-
-  fun asApp m =
-    case out m of
-       theta $ es => (theta, es)
-     | _ => raise Fail "Expected operator"
-
-  val subterms =
-    #2 o asApp
-
-
-  local
-    fun listModifyItem n f =
-      let
-        fun go i =
-          fn [] => []
-           | y :: ys => (if i = n then f y else y) :: go (i + 1) ys
-      in
-        go 0
-      end
-  in
-    fun inspectArgument step (m <: env) i k =
-      let
-        val (theta, es) = asApp m
-        val _ \ n = List.nth (es, i)
-      in
-        case step (n <: env) of
-           FINAL =>
-             (case out n of
-                 view as (theta' $ es') => k view
-               | _ => raise Fail "Expected operator")
-         | STEP (n' <: env') =>
-             STEP @@ theta $$ listModifyItem i (fn (us, xs) \ a => (us,xs) \ n') es <: env'
-      end
+    fun lookup sign opid =
+      case Telescope.lookup sign opid of
+         Decl.DEF d => d
+       | _ => raise Fail "no such definitional extension in signature"
   end
 
-  fun compareSymbols env (u, v) =
-    let
-      val (_, srho, _) = env
-      val u' = SymCtx.lookup srho u handle _ => u
-      val v' = SymCtx.lookup srho v handle _ => v
-    in
-      Symbol.eq (u', v')
-    end
-
   local
-    structure Pattern = Pattern (Abt)
-    structure Unify = AbtLinearUnification (structure Abt = Abt and Pattern = Pattern)
-    structure SymEnvUtil = ContextUtil (structure Ctx = SymCtx and Elem = Symbol)
-    structure AbsEq = struct type t = Abt.abs val eq = Abt.eqAbs end
-    open OperatorData
+    infix 4 `$ $$ <: <|
+    infix 3 \
+    open O M Abt Cl RedPrlOperators
+    structure Ctt = CttOperators
+      and Lvl = LevelOperators
+      and Atm = AtomOperators
+      and Rcd = RecordOperators
+      and Syn = RedPrlAbtSyntax
 
-    fun patternFromDef (opid, arity) (def : Signature.def) : Pattern.pattern =
+    fun pushV (cl : abt closure, x) (mrho, srho, vrho) =
+      (mrho, srho, Var.Ctx.insert vrho x cl)
+
+    fun unquoteV (theta `$ es) =
+      V theta $$ es
+
+    fun unquoteK (theta `$ es) =
+      K theta $$ es
+
+
+    fun symEq env (u, v) =
       let
-        open Pattern infix 2 $@
-        val {parameters, arguments, ...} = def
-        val theta = CUST (opid, parameters, arity)
+        val (_, srho, _) = env
+        val u' = Sym.Ctx.lookup srho u handle _ => u
+        val v' = Sym.Ctx.lookup srho v handle _ => v
       in
-        into @@ theta $@ List.map (fn (x,_) => MVAR x) arguments
+        Symbol.eq (u', v')
       end
+
   in
-    (* computation rules for user-defined operators *)
-    fun stepCust sign (opid, arity) (cl as m <: (mrho, srho, vrho)) =
-      let
-        open Unify infix <*>
-        val def as {definiens, ...} =
-          case T.lookup sign opid of
-             Signature.Decl.DEF d => d
-           | _ => raise Fail "Expected DEF"
-        val pat = patternFromDef (opid, arity) def
-        val (srho', mrho') = unify (pat <*> m)
-        val srho'' = SymEnvUtil.union (srho, srho') handle _ => raise Stuck cl
-        val mrho'' =
-          MetaCtx.union mrho
-            (MetaCtx.map (fn e => e <: (mrho, srho, vrho)) mrho')
-            (fn _ => raise Stuck cl)
-      in
-        ret @@ definiens <: (mrho'', srho'', vrho)
-      end
-  end
+    (* Plug a value into a continuation *)
+    fun plug sign (v <: env, k) ks =
+      case (k, v) of
 
-  (* second-order substitution via environments *)
-  fun stepMeta x (us, ms) (cl as m <: (mrho, srho, vrho)) =
-    let
-      val e <: (mrho', srho', vrho') = MetaCtx.lookup mrho x
-      val (vs', xs) \ m = outb e
-      val srho'' = ListPair.foldlEq  (fn (v,(u, _),r) => SymCtx.insert r v u) srho' (vs', us)
-      val vrho'' = ListPair.foldlEq (fn (x,m,r) => VarCtx.insert r x (m <: (mrho', srho', vrho'))) vrho' (xs, ms)
-    in
-      ret @@ m <: (mrho', srho'', vrho'')
-    end
+       (* Lambda application *)
+         (CTT_K Ctt.AP `$ [_ \ (n <: env')], CTT_V Ctt.LAM `$ [(_, [x]) \ mx]) =>
+           mx <: pushV (n <: env', x) env <| ks
 
-  fun step sign (cl as m <: (mrho, srho, vrho)) : abt closure step =
-    case out m of
-       `x => ret @@ VarCtx.lookup vrho x
-     | x $# (us, ms) => stepMeta x (us, ms) cl
-     | theta $ args =>
-         let
-           fun f u = SymCtx.lookup srho u handle _ => u
-           val theta' = Operator.map f theta
-         in
-           stepOp sign theta' args (m <: (mrho, srho, vrho))
-         end
+       (* Lisp-style term introspection; get the domain or codomain of a Pi type *)
+       | (CTT_K Ctt.DFUN_DOM `$ _, CTT_V Ctt.DFUN `$ [_ \ a, _]) =>
+           a <: env <| ks
+       | (CTT_K Ctt.DFUN_COD `$ [_ \ m <: env'], CTT_V Ctt.DFUN `$ [_, (_, [x]) \ bx]) =>
+           bx <: pushV (m <: env', x) env <| ks
 
-  (* built-in computation rules *)
-  and stepOp sign theta args (cl as m <: env) =
-    let
-      open OperatorData CttOperatorData LevelOperatorData AtomsOperatorData SortData RecordOperatorData
-    in
-      case theta $ args of
-         CUST (opid, params, arity) $ args =>
-           stepCust sign (opid, arity) cl
-       | LVL_OP LBASE $ _ => FINAL
-       | LVL_OP LSUCC $ [_ \ l] => FINAL
-       | LVL_OP LSUP $ _ =>
-           stepLvlSup sign (m <: env)
-       | LCF _ $ _ => FINAL
-       | RCD (PROJ lbl) $ _ =>
-           stepRcdProj sign lbl (m <: env)
-       | RCD SINGL_GET_TY $ _ =>
-           stepRcdSinglGetTy sign (m <: env)
-       | RCD (RECORD lbl) $ _ =>
-           stepRcdRecord sign lbl (m <: env)
-       | RCD _ $ _ => FINAL
-       | REFINE _ $ _ => FINAL
-       | EXTRACT tau $ [_ \ r] =>
-           stepExtract sign tau r cl
-       | VEC_LIT _ $ _ => FINAL
-       | STR_LIT _ $ _ => FINAL
-       | OP_NONE _ $ _ => FINAL
-       | OP_SOME _ $ _ => FINAL
-       | CTT AX $ _ => FINAL
-       | CTT (EQ _) $ _ => FINAL
-       | CTT (CEQUIV _) $ _ => FINAL
-       | CTT (MEMBER tau) $ [_ \ x, _ \ a] =>
-           ret @@ CTT (EQ tau) $$ [([],[]) \ x, ([],[]) \ x, ([],[]) \ a] <: env
-       | CTT (UNIV tau) $ [_ \ l] => FINAL
-       | CTT (SQUASH _) $ _ => FINAL
-       | CTT (ENSEMBLE _) $ _ => FINAL
-       | CTT (BASE _) $ _ => FINAL
-       | CTT (TOP _) $ _ => FINAL
-       | CTT DFUN $ _ => FINAL
-       | CTT DEP_ISECT $ _ => FINAL
-       | CTT FUN $ [_ \ a, _ \ b] =>
-           ret @@ CTT DFUN $$ [([],[]) \ a, ([],[Variable.fresh (varctx m) "x"]) \ b] <: env
-       | CTT LAM $ _ => FINAL
-       | CTT AP $ _ =>
-           stepAp sign (m <: env)
-       | CTT VOID $ [] => FINAL
-       | CTT NOT $ [_ \ a] =>
-           let
-             val void = CTT VOID $$ []
-           in
-             ret @@ CTT FUN $$ [([],[]) \ a, ([],[]) \ void] <: env
-           end
-       | CTT DFUN_DOM $ _ =>
-           stepDFunDom sign (m <: env)
-       | CTT DFUN_COD $ _ =>
-           stepDFunCod sign (m <: env)
-       | CTT UNIV_GET_LVL $ _ =>
-           stepUnivGetLvl sign (m <: env)
-       | CTT (NU _) $ _ =>
-           stepNu sign (m <: env)
-       | ATM (ATOM _) $ _ => FINAL
-       | ATM (TOKEN _) $ _ => FINAL
-       | ATM (TEST _) $ _ =>
-           stepAtomTest sign (m <: env)
-       | _ => ?hole
-    end
+       (* Get the level of a universe*)
+       | (CTT_K Ctt.UNIV_GET_LVL `$ _, CTT_V (Ctt.UNIV _) `$ [_ \ i]) =>
+           i <: env <| ks
 
-  and stepAp sign (ap <: env) =
-    let
-      open OperatorData CttOperatorData SortData
-    in
-      inspectArgument (step sign) (ap <: env) 0
-        (fn CTT LAM $ [(_,[x]) \ mx] =>
-              let
-                val _ \ n = List.nth (subterms ap, 1)
-                val (mrho, srho, vrho) = env
-              in
-                ret @@ mx <: (mrho, srho, VarCtx.insert vrho x (n <: env))
-              end
-          | _ => raise Stuck (ap <: env))
-    end
-
-  and stepDFunDom sign (dom <: env) =
-    let
-      open OperatorData CttOperatorData SortData
-    in
-      inspectArgument (step sign) (dom <: env) 0
-        (fn CTT DFUN $ [_ \ a, _] => ret @@ a <: env
-          | _ => raise Stuck @@ dom <: env)
-    end
-
-  and stepDFunCod sign (cod <: env) =
-    let
-      open OperatorData CttOperatorData SortData
-    in
-      inspectArgument (step sign) (cod <: env) 0
-        (fn CTT DFUN $ [_ \ _, (_, [x]) \ bx] =>
-              let
-                val _ \ n = List.nth (subterms cod, 1)
-                val (mrho, srho, vrho) = env
-              in
-                ret @@ bx <: (mrho, srho, VarCtx.insert vrho x (n <: env))
-              end
-          | _ => raise Stuck @@ cod <: env)
-    end
-
-  and stepUnivGetLvl sign (getLvl <: env) =
-    let
-      open OperatorData CttOperatorData SortData
-    in
-      inspectArgument (step sign) (getLvl <: env) 0
-        (fn CTT (UNIV tau) $ [_ \ lvl] => ret @@ lvl <: env
-          | _ => raise Stuck @@ getLvl <: env)
-    end
-
-  and stepLvlSup sign (m <: env) =
-    let
-      open OperatorData LevelOperatorData SortData
-      fun makeSup x y = LVL_OP LSUP $$ [([],[]) \ x, ([],[]) \ y]
-      fun makeSucc x = LVL_OP LSUCC $$ [([],[]) \ x]
-      val _ \ l1 = List.nth (subterms m, 0)
-      val _ \ l2 = List.nth (subterms m, 1)
-    in
-      case step sign (l1 <: env) of
-         FINAL =>
-           (case step sign (l2 <: env) of
-               FINAL =>
-                 (case (out l1, out l2) of
-                     (LVL_OP LSUCC $ _, LVL_OP LBASE $ _) => ret @@ l1 <: env
-                   | (LVL_OP LSUCC $ [_ \ l3], LVL_OP LSUCC $ [_ \ l4]) => ret @@ makeSucc (makeSup l3 l4) <: env
-                   | (LVL_OP LBASE $ _, LVL_OP LBASE $ _) => ret @@ l1 <: env
-                   | (LVL_OP LBASE $ _, LVL_OP LSUCC $ _) => ret @@ l2 <: env
-                   | _ => raise Stuck (m <: env))
-             | STEP (l2' <: env) => ret @@ makeSup l1 l2' <: env)
-       | STEP (l1' <: env) => ret @@ makeSup l1' l2 <: env
-    end
-
-  and stepRcdProj sign lbl (proj <: env) =
-    let
-      open OperatorData RecordOperatorData SortData
-    in
-      inspectArgument (step sign) (proj <: env) 0
-        (fn RCD (CONS lbl') $ [_ \ hd, _ \ tl] =>
-              if compareSymbols env (lbl, lbl') then
-                ret @@ hd <: env
-              else
-                ret @@ RCD (PROJ lbl) $$ [([],[]) \ tl] <: env
-          | _ => raise Stuck @@ proj <: env)
-    end
-
-  and stepRcdSinglGetTy sign (proj <: env) =
-    let
-      open OperatorData RecordOperatorData SortData
-    in
-      inspectArgument (step sign) (proj <: env) 0
-        (fn RCD (SINGL _) $ [_ \ a] => ret @@ a <: env
-          | _ => raise Stuck @@ proj <: env)
-    end
-
-  and stepRcdRecord sign lbl (rcd <: env) =
-    let
-      open OperatorData CttOperatorData RecordOperatorData SortData
-    in
-      case out rcd of
-         RCD (RECORD lbl) $ [_ \ a , (_, [x]) \ bx] =>
-           let
-             fun depIsect a x bx = CTT DEP_ISECT $$ [([],[]) \ a, ([],[x]) \ bx]
-             val singl = RCD (SINGL lbl) $$ [([],[]) \ a]
-             val self = Variable.fresh (varctx rcd) "self"
-             val proj = RCD (PROJ lbl) $$ [([],[]) \ check (`self, EXP)]
-             val bself = subst (proj, x) bx
-           in
-             ret @@ depIsect singl self bself <: env
-           end
-       | _ => raise Stuck @@ rcd <: env
-    end
-
-  and stepAtomTest sign (m <: env) =
-    let
-      open OperatorData AtomsOperatorData SortData
-      val es = subterms m
-      val _ \ yes = List.nth (es, 2)
-      val _ \ no = List.nth (es, 3)
-    in
-      inspectArgument (step sign) (m <: env) 0
-        (fn ATM (TOKEN (u1, _)) $ _ =>
-              inspectArgument (step sign) (m <: env) 1
-                (fn ATM (TOKEN (u2, _)) $ _ =>
-                      ret @@ (if compareSymbols env (u1, u2) then yes else no) <: env
-                  | _ => raise Stuck @@ m <: env)
-          | _ => raise Stuck @@ m <: env)
-    end
-
-  and stepExtract sign tau r (m <: env) =
-    let
-      open OperatorData SortData
-    in
-      inspectArgument (step sign) (m <: env) 0
-        (fn REFINE _ $ [_, _, _ \ evd] =>
-              (case out evd of
-                  OP_SOME _ $ [_ \ evd] => ret @@ evd <: env
-                | _ => raise Stuck (evd <: env))
-          | _ => raise Stuck @@ m <: env)
-    end
-
-  and stepNu sign (m <: env) =
-    let
-      open OperatorData CttOperatorData
-    in
-      case out m of
-         CTT (NU (sigma, tau)) $ [([u], _) \ t] =>
-           (case step sign (t <: env) of
-               FINAL =>
-                 (case out t of
-                     theta $ _ =>
+       | (CTT_K (Ctt.FRESH (sigma, tau)) `$ [([u], _) \ e <: envE], _) =>
+           (case Abt.out e of
+               Abt.$ (RET _, [_ \ e']) =>
+                 (case Abt.out e' of
+                     Abt.$ (theta, es) =>
                        let
-                         val us = Operator.support theta
+                         val supp = support theta
+                         fun wrap m = Syn.into (Syn.FRESH (sigma, tau, u, m))
                        in
-                         (* If the symbol is part of the support of the head operator, then
-                          * we cannot proceed; otherwise, the symbol generation is pushed down
-                          * into the subterms of the operator. *)
-                         if List.exists (fn (v, _) => compareSymbols env (u, v)) us then
-                           ret @@ m <: env
+                         if List.exists (fn (v, _) => symEq envE (u, v)) supp then
+                           wrap e <: envE <| ks
                          else
-                           ret @@ pushDownNu (sigma, tau) env u t <: env
+                           RET tau $$ [([],[]) \ theta $$ List.map (Abt.mapb wrap) es] <: envE <| ks
                        end
-                   | _ => ret @@ pushDownNu (sigma, tau) env u t <: env)
-             | STEP (t' <: _) =>
-                 let
-                   (* If t was non-canonical, try computing it with a fresh variable 'a' and then
-                    * re-embed the result in the nu-expression, replacing 'a' in the result with 'u'. *)
-                   val (mrho, srho, vrho) = env
-                   val a = Symbol.fresh (symctx t') "a"
-                   val srho' = SymCtx.insert srho u a
-                   val env' = (mrho, srho', vrho)
-                 in
-                   case step sign (t <: env') of
-                      FINAL =>
-                        let
-                          val (mrho', srho'', vrho') = env'
-                          val srho''' = SymCtx.insert srho a u
-                          val env''' = (mrho', srho''', vrho')
-                        in
-                          ret @@ CTT (NU (sigma, tau)) $$ [([u], []) \ t] <: env'''
-                        end
-                    | STEP (t' <: env'') =>
-                        let
-                          val (mrho', srho'', vrho') = env''
-                          val srho''' = SymCtx.insert srho a u
-                          val env''' = (mrho', srho''', vrho')
-                        in
-                          ret @@ CTT (NU (sigma, tau)) $$ [([u], []) \ t'] <: env'''
-                        end
-                 end)
-       | _ => raise Stuck @@ m <: env
-    end
+                   | _ => raise Match)
+             | _ =>
+               let
+                 val v = Abt.Var.fresh (Abt.varctx e) "probe"
+                 val k = CTT_K (Ctt.FRESH_K ((v, sigma), tau)) `$ []
+                 val (mrho, srho, vrho) = envE
+                 val env' = (mrho, Abt.Sym.Ctx.insert srho u v, vrho)
+               in
+                 e <: env' <| k :: ks
+               end)
+       | (CTT_K (Ctt.FRESH_K ((u, sigma), tau)) `$ _, v) =>
+           let
+             val m = RET tau $$ [([],[]) \ unquoteV v]
+             val k = CTT_K (Ctt.FRESH (sigma, tau)) `$ [([u], []) \ m <: env]
+           in
+             Syn.into Syn.DUMMY <: env <| k :: ks
+           end
 
-  and pushDownNu (sigma, tau) env u m =
-    case out m of
-       theta $ es =>
-         theta $$ List.map (pushDownNuB (sigma, tau) env u) es
-     | _ => raise Fail "Impossible"
+       (* The level successor operator is eager *)
+       | (LVL_K Lvl.LSUCC `$ _, LVL_V i `$ _) =>
+           Syn.lvl (i + 1) <: env <| ks
 
-  and pushDownNuB (sigma, tau) env u ((us, xs) \ m) =
-    let
-      open OperatorData CttOperatorData
-    in
-      (us, xs) \ CTT (NU (sigma, tau)) $$ [([u], []) \ m]
-    end
+       (* Compute the least upper bound / supremum of two universe levels. We compute in two steps. *)
+       | (LVL_K Lvl.LSUP0 `$ [_ \ n <: env'], LVL_V i `$ _) =>
+           let
+             val k = LVL_K (Lvl.LSUP1 i) `$ []
+           in
+             n <: env' <| k :: ks
+           end
+       | (LVL_K (Lvl.LSUP1 i) `$ _, LVL_V j `$ _) =>
+           Syn.lvl (Int.max (i, j)) <: env <| ks
+
+       (* Compute an equality test on symbol references / atoms. We do this in two steps, as with level suprema. *)
+       | (ATM_K (Atm.TEST0 (sigma, tau)) `$ [_ \ t2, _ \ l, _ \ r], ATM_V (Atm.TOKEN (u, _)) `$ _) =>
+           let
+             val k = ATM_K (Atm.TEST1 ((u, sigma), tau)) `$ [([],[]) \ l, ([],[]) \ r]
+           in
+             t2 <| k :: ks
+           end
+       | (ATM_K (Atm.TEST1 ((u, sigma), tau)) `$ [_ \ l, _ \ r], ATM_V (Atm.TOKEN (v, _)) `$ _) =>
+           (if symEq env (u, v) then l else r) <| ks
+
+       (* Compute projection from a record; if the head label matches, return that; otherwise, keep working through the record. *)
+       | (RCD_K (Rcd.PROJ lbl) `$ _, RCD_V (Rcd.CONS lbl') `$ [_ \ hd, _ \ tl]) =>
+           if symEq env (lbl, lbl') then
+             hd <: env <| ks
+           else
+             tl <: env <| (RCD_K (Rcd.PROJ lbl) `$ []) :: ks
+
+       (* Lisp-style introspection on singleton record type *)
+       | (RCD_K SINGL_GET_TY `$ _, RCD_V (Rcd.SINGL _) `$ [_ \ a]) =>
+           a <: env <| ks
+
+       (* Extract the witness from a refined theorem object. *)
+       | (EXTRACT tau `$ _, REFINE _ `$ [_, _, _ \ e]) =>
+           let
+             val k = FROM_SOME tau `$ []
+           in
+             e <: env <| k :: ks
+           end
+
+       | (FROM_SOME tau `$ _, OP_SOME _ `$ [_ \ e]) =>
+           e <: env <| ks
+
+       | _ => raise Fail "Unhandled cut"
+
+
+    (* Expand a definitional extension *)
+    fun delta sign (d <: env) =
+      case d of
+       (* independent functions are defined in terms of dependent functions *)
+         CTT_D Ctt.FUN `$ [_ \ a, _ \ b] => Syn.into (Syn.DFUN (a, Var.named "x", b)) <: env
+
+       (* negation is implication of the empty type *)
+       | CTT_D Ctt.NOT `$ [_ \ a] => Syn.into (Syn.FUN (a, Syn.into Syn.VOID)) <: env
+
+       (* membership is reflexive equality *)
+       | CTT_D (Ctt.MEMBER tau) `$ [_ \ m, _ \ a] =>
+           Syn.into (Syn.EQ (tau, m, m, a)) <: env
+
+       (* record types are built compositionally using dependent intersection *)
+       | RCD_D (Rcd.RECORD lbl) `$ [_ \ a, (_, [x]) \ bx] =>
+           let
+             val self = Var.named "self"
+             val selfTm = check (`self, S.EXP SortData.EXP)
+             val singl = Syn.into (Syn.RCD_SINGL (lbl, a))
+             val proj = Syn.into (Syn.RCD_PROJ (lbl, selfTm))
+
+             (* using an explicit substitution:*)
+             val bproj = ESUBST ([], [SortData.EXP], SortData.EXP) $$ [([],[x]) \ bx, ([],[]) \ proj]
+           in
+             Syn.into (Syn.DEP_ISECT (singl, self, bproj)) <: env
+           end
+       | _ => raise Fail "Unhandled definitional extension"
+  end
 end
+
+structure RedPrlDynamics = LcsDynamics (RedPrlDynamicsBasis)

@@ -1,20 +1,23 @@
 structure DepIsectRules : DEP_ISECT_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData SortData
+  open RefinerKit SortData
 
-  infix @@ $ $# \ @>
+  infixr 0 @@
+  infix 0 $ $# \ @>
   infix 2 //
   infix 4 >>
   infix 3 |>
 
-  val destDepIsect =
-    QuantifierKit.destQuantifier (CTT DEP_ISECT)
+  fun destDepIsect m =
+    case Syn.out m of
+       Syn.DEP_ISECT (a, x, bx) => (a, x, bx)
+     | _ => raise Match
 
   val IsType =
-    QuantifierKit.IsType (CTT DEP_ISECT)
+    QuantifierKit.IsType destDepIsect
 
   val TypeEq =
-    QuantifierKit.TypeEq (CTT DEP_ISECT)
+    QuantifierKit.TypeEq destDepIsect
 
   fun MemberEq alpha (H >> EQ_MEM (m1, m2, ty)) =
     let
@@ -32,7 +35,7 @@ struct
       val psi = T.empty @> goal1 @> goal2
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | MemberEq _ _ = raise Match
 end

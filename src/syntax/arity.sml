@@ -1,4 +1,4 @@
-structure Sort :> SORT where type t = SortData.sort =
+structure RedPrlAtomicSort :> ABT_SORT where type t = SortData.sort =
 struct
   open SortData
   type t = sort
@@ -16,7 +16,15 @@ struct
      | OPID => "opid"
      | STR => "str"
      | RCD_LBL => "lbl"
+     | UNIT => "unit"
 end
 
-structure Valence = Valence (structure Sort = Sort and Spine = ListSpine)
-structure Arity = Arity (Valence)
+structure ArityNotation =
+struct
+  fun op* (a, b) = (a, b) (* symbols sorts, variable sorts *)
+  fun op<> (a, b) = (a, b) (* valence *)
+  fun op->> (a, b) = (a, b) (* arity *)
+end
+
+structure RedPrlAtomicValence = AbtValence (structure S = RedPrlAtomicSort and Sp = ListSpine)
+structure RedPrlAtomicArity = AbtArity (RedPrlAtomicValence)

@@ -1,25 +1,26 @@
 structure TacParser :
 sig
-  type metavariable_table = string -> Ast.metavariable * Valence.t
+  type metavariable_table = string -> AstSignature.metavariable * RedPrlAtomicValence.t
 
   val parseMultitac
     : AstSignature.sign
     -> metavariable_table
-    -> (Sort.t -> Ast.ast CharParser.charParser)
-    -> Ast.ast ParserCombinators.fixityitem CharParser.charParser
+    -> (AstSignature.sort -> AstSignature.term CharParser.charParser)
+    -> AstSignature.term ParserCombinators.fixityitem CharParser.charParser
 
   val parseTac
     : AstSignature.sign
     -> metavariable_table
-    -> (Sort.t -> Ast.ast CharParser.charParser)
-    -> Ast.ast ParserCombinators.fixityitem CharParser.charParser
+    -> (AstSignature.sort -> AstSignature.term CharParser.charParser)
+    -> AstSignature.term ParserCombinators.fixityitem CharParser.charParser
 end =
 struct
-  type metavariable_table = string -> Ast.metavariable * Valence.t
+  structure Ast = RedPrlAst
+  structure Syn = RedPrlAstSyntax
+  type metavariable_table = string -> Ast.metavariable * AstSignature.valence
 
   open CharParser ParserCombinators RedTokenParser
-  open Ast OperatorData NominalLcfOperatorData CttOperatorData AtomsOperatorData SortData RecordOperatorData
-  infix $ \ $#
+  (*infix $ \ $#*)
 
   infixr 4 << >>
   infixr 3 &&
@@ -34,54 +35,53 @@ struct
     let
       val parseId =
         symbol "id"
-          return (LCF ID $ [])
+          return (Syn.into Syn.TAC_ID)
 
       val parseFail =
         symbol "fail"
-          return (LCF FAIL $ [])
+          return (Syn.into Syn.TAC_FAIL)
 
       val parseCStep =
         symbol "cstep" >> (braces integer || succeed 1)
-          wth (fn i => LCF (CSTEP i) $ [])
+          wth (Syn.into o Syn.TAC_CSTEP)
 
       val parseCSym =
         symbol "csym"
-          return (LCF CSYM $ [])
+          return (Syn.into Syn.TAC_CSYM)
 
       val parseCEval =
         symbol "ceval"
-          return (LCF CEVAL $ [])
+          return (Syn.into Syn.TAC_CEVAL)
 
       val parseEq =
         symbol "eq" >> (opt (braces integer))
-          wth (fn rule =>
-            LCF (NominalLcfOperatorData.EQ {rule = rule}) $ [])
+          wth (Syn.into o Syn.TAC_EQ)
 
       val parseChkInf =
         symbol "chk-inf"
-          return (LCF CHKINF $ [])
+          return (Syn.into Syn.TAC_CHKINF)
 
       val parseExt =
         symbol "ext"
-          return (LCF EXT $ [])
+          return (Syn.into Syn.TAC_EXT)
 
       val parseCum =
         symbol "cumulativity"
-          return (LCF CUM $ [])
+          return (Syn.into Syn.TAC_CUM)
 
       val parseTrace =
         symbol "trace"
           >> (braces (SortParser.parseSort sign) || succeed SortData.STR)
           -- (fn tau =>
            f tau wth (fn m =>
-             LCF (TRACE tau) $ [([],[]) \ m]))
+             Syn.into (Syn.TAC_TRACE (tau, m))))
 
       val parseRewriteGoal =
         symbol "rewrite-goal"
           >> (braces (SortParser.parseSort sign) || succeed SortData.EXP)
           -- (fn tau =>
             f tau wth (fn m =>
-              LCF (REWRITE_GOAL tau) $ [([],[]) \ m]))
+              Syn.into (Syn.TAC_REWRITE_GOAL (tau, m))))
 
       val parseTarget =
         opt (symbol "in" >> parseSymbol)
@@ -90,67 +90,63 @@ struct
         symbol "eval"
           >> parseTarget
           wth (fn targ =>
-            LCF (EVAL_GOAL targ) $ [])
+            Syn.into (Syn.TAC_EVAL_GOAL targ))
 
       val parseUnfold =
         symbol "unfold"
           >> parseSymbol
           && parseTarget
           wth (fn (opid, targ) =>
-            LCF (UNFOLD (opid, targ)) $ [])
+            Syn.into (Syn.TAC_UNFOLD (opid, targ)))
 
       val parseNormalize =
         symbol "normalize"
           >> parseTarget
           wth (fn targ =>
-            LCF (NORMALIZE targ) $ [])
+            Syn.into (Syn.TAC_NORMALIZE targ))
 
       val parseWitness =
         symbol "witness"
           >> (braces (SortParser.parseSort sign) || succeed SortData.EXP)
           -- (fn tau =>
             squares (f tau) wth (fn m =>
-              LCF (WITNESS tau) $ [([],[]) \ m]))
+              Syn.into (Syn.TAC_WITNESS (tau, m))))
 
       val parseHyp =
         symbol "hyp"
-          >> squares (parseSymbol && ((colon >> SortParser.parseSort sign) || succeed EXP))
-          wth (fn (u, tau) => LCF (HYP (u, tau)) $ [])
+          >> squares (parseSymbol && ((colon >> SortParser.parseSort sign) || succeed SortData.EXP))
+          wth (Syn.into o Syn.TAC_HYP)
 
       val parseElim =
         symbol "elim"
-          >> squares (parseSymbol && ((colon >> SortParser.parseSort sign) || succeed EXP))
-          wth (fn (u, tau) => LCF (ELIM (u, tau)) $ [])
+          >> squares (parseSymbol && ((colon >> SortParser.parseSort sign) || succeed SortData.EXP))
+          wth (Syn.into o Syn.TAC_ELIM)
 
       val parseIntro =
         symbol "intro"
-          return (LCF (INTRO {rule = NONE}) $ [])
+          return (Syn.into (Syn.TAC_INTRO NONE))
 
       val parseAuto =
         symbol "auto"
-          return (LCF AUTO $ [])
+          return (Syn.into Syn.TAC_AUTO)
 
       val parseUnhide =
         symbol "unhide"
-          >> squares (parseSymbol && ((colon >> SortParser.parseSort sign) || succeed EXP))
-          wth (fn (u, tau) => LCF (UNHIDE (u, tau)) $ [])
+          >> squares (parseSymbol && ((colon >> SortParser.parseSort sign) || succeed SortData.EXP))
+          wth (Syn.into o Syn.TAC_UNHIDE)
 
       val parseRec =
         symbol "rec" >> parseVariable << dot
-          && braces (f TAC)
-          wth (fn (x, tac) =>
-            LCF REC $
-              [([], [x]) \ tac])
+          && braces (f SortData.TAC)
+          wth (Syn.into o Syn.TAC_REC)
 
       val parseOrElse =
         symbol "||"
-          return Infix (Right, 7, fn (m, n) =>
-            LCF ORELSE $ [([],[]) \ m, ([],[]) \ n])
+          return Infix (Right, 7, Syn.into o Syn.TAC_ORELSE)
 
       val parseProgress =
-        symbol "progress" >> parens (f TAC)
-          wth (fn t =>
-            LCF PROGRESS $ [([],[]) \ t])
+        symbol "progress" >> parens (f SortData.TAC)
+          wth (Syn.into o Syn.TAC_PROGRESS)
 
       val parseAtomicTac =
         (parseId
@@ -175,28 +171,27 @@ struct
           || parseUnfold
           || parseNormalize
           || parseProgress
-          || GenericParser.parseGeneric sign rho f TAC) wth Atm
+          || GenericParser.parseGeneric sign rho f SortData.TAC) wth Atm
 
       val parseFixityTac =
         parseOrElse wth Opr
 
       val parseAll =
         parsefixity (parseFixityTac || parseAtomicTac)
-          wth (fn t =>
-            LCF ALL $ [([], []) \ t])
+          wth (Syn.into o Syn.MTAC_ALL)
 
       val parseEach =
-        f (VEC TAC)
+        f (SortData.VEC SortData.TAC)
           wth (fn v =>
-            LCF EACH $ [([], []) \ v])
+            case Syn.out v of
+               Syn.VEC_LITERAL (_, xs) => Syn.into (Syn.MTAC_EACH xs)
+             | _ => raise Match)
 
       val parseFocus =
         symbol "#"
           >> integer
-          && braces (f TAC)
-          wth (fn (i, tac) =>
-            LCF (FOCUS i) $
-              [([],[]) \ tac])
+          && braces (f SortData.TAC)
+          wth (Syn.into o Syn.MTAC_FOCUS)
     in
       (parseEach
         || parseFocus
@@ -205,6 +200,7 @@ struct
 
   fun parseTac sign rho f =
     let
+      open RedPrlAst SortData
       datatype component = BINDING of (symbol * sort) list * ast
 
       val parseComponent =
@@ -213,16 +209,12 @@ struct
           wth BINDING
 
       fun makeSeq mt (us : (symbol * sort) list) t =
-        let
-          val us1 = map #1 us
-        in
-          LCF (SEQ (map #2 us)) $
-            [([],[]) \ mt, (us1, []) \ t]
-        end
+          Syn.into (Syn.TAC_SEQ (mt, us, t))
 
-      val multitacToTac =
-        fn (LCF ALL $ [_ \ t]) => t
-         | mt => makeSeq mt [] (LCF ID $ [])
+      fun multitacToTac tm =
+        case Syn.out tm of
+           Syn.MTAC_ALL t => t
+         | _ => makeSeq tm [] (Syn.into Syn.TAC_ID)
 
       val rec compileScript =
         fn [] => fail "Expected tactic script"

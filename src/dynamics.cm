@@ -1,20 +1,9 @@
 Library
-  signature SMALL_STEP
-  structure SmallStep
-  signature DYNAMICS
-  signature DYNAMICS_UTIL
-  structure Dynamics
-  functor DynamicsUtil
-  structure DynamicsUtil
+  structure RedPrlDynamics
 is
   $/basis.cm
   ../lib/sml-typed-abts/abt.cm
-  ../lib/sml-typed-abts/abt-patterns.cm
+  ../lib/sml-typed-abts/abt-lcs.cm
   syntax.cm
   signature.cm
-  dynamics/small_step.sig
-  dynamics/small_step.sml
-  dynamics/dynamics.sig
   dynamics/dynamics.sml
-  dynamics/dynamics_util.sig
-  dynamics/dynamics_util.fun

@@ -2,9 +2,9 @@ signature REFINER =
 sig
   structure Lcf : DEPENDENT_LCF
 
-  type symbol = Abt.symbol
-  type metavariable = Abt.metavariable
-  type abt = Abt.abt
+  type symbol = RedPrlAbt.symbol
+  type metavariable = RedPrlAbt.metavariable
+  type abt = RedPrlAbt.abt
 
   type 'a choice_sequence = int -> 'a
 
@@ -84,5 +84,3 @@ sig
     -> ntactic
 
 end
-
-

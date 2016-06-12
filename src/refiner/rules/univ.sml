@@ -1,56 +1,37 @@
 structure UnivRules : UNIV_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData LevelOperatorData SortData
-  infix 0 @@
+  open RefinerKit SortData
+  infixr 0 @@
   infix 1 $ $$ \ ^!
   infix 4 >>
   infix 3 |> @>
 
   structure LvlUtil =
   struct
-    fun destLevel i =
-      case infer i of
-           (view, LVL) => view
-         | _ =>
-           raise Fail
-             @@ "Expected level expression, but got "
-              ^ DebugShowAbt.toString i
+    datatype view = @+ of RedPrlAbt.abt * int
+    infix @+
+    exception Incomparable
 
-    fun destLSucc i =
-      case destLevel i of
-           LVL_OP LSUCC $ [_ \ i] => i
-         | _ =>
-           raise Fail
-             @@ "Expected LSUCC, but got "
-              ^ DebugShowAbt.toString i
+    fun compareView (b1 @+ k1, b2 @+ k2) =
+      if RedPrlAbt.eq (b1, b2) then
+        Int.compare (k1, k2)
+      else
+        raise Incomparable
+
+    fun lsucc (b @+ k) =
+      b @+ k + 1
+
+    fun viewLevel lvl =
+      let
+        val RS.EXP LVL = sort lvl
+      in
+        case Syn.outOpen lvl of
+           Syn.APP (Syn.LSUCC lvl') => lsucc @@ viewLevel lvl'
+         | _ => lvl @+ 0
+      end
 
     fun compareLevels (i, j) =
-      let
-        val i' = destLevel i
-        val j' = destLevel j
-      in
-        if Abt.eq (i, j) then
-          EQUAL
-        else
-          let
-            exception Incomparable
-          in
-            case (i', j') of
-                 (LVL_OP LSUCC $ [_ \ i''], LVL_OP LSUCC $ [_ \ j'']) =>
-                   compareLevels (i'', j'')
-               | (LVL_OP LSUCC $ [_ \ i''], _) =>
-                   GREATER
-               | (_, LVL_OP LSUCC $ [_ \ i'']) =>
-                   LESS
-               | _ => raise Incomparable
-          end
-          handle Incomparable =>
-            raise Fail
-              @@ "Levels incomparable: "
-               ^ DebugShowAbt.toString i
-               ^ " vs. "
-               ^ DebugShowAbt.toString j
-      end
+      compareView (viewLevel i, viewLevel j)
 
     fun assertLevelEq (i, j) =
       case compareLevels (i, j) of
@@ -76,8 +57,8 @@ struct
 
   fun IsType alpha (H >> TYPE (ty, EXP)) =
     let
-      val (tau, lvl) = destUniv ty
-      val lvl' = LVL_OP LSUCC $$ [([],[]) \ lvl]
+      val Syn.UNIV (tau, lvl) = Syn.out ty
+      val lvl' = Syn.into @@ Syn.LSUCC lvl
     in
       (T.empty, fn rho =>
         abtToAbs lvl')
@@ -86,22 +67,22 @@ struct
 
   fun Eq alpha (H >> EQ_MEM (m, n, a)) =
     let
-      val ((tau1, i), (tau2, j), (tau3, k)) = (destUniv m, destUniv n, destUniv a)
+      val (Syn.UNIV (tau1, i), Syn.UNIV (tau2, j), Syn.UNIV (tau3, k)) = (Syn.out m, Syn.out n, Syn.out a)
       val () = if tau3 = EXP then () else raise Fail "Sort mismatch"
       val () = if tau1 = tau2 then () else raise Fail "Sort mismatch"
       val () = LvlUtil.assertLevelEq (i, j)
       val () = LvlUtil.assertLevelLt (i, k)
     in
       (T.empty, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | Eq _ _ = raise Match
 
   fun Cum alpha (H >> EQ_MEM (m, n, a)) =
     let
-      val (tau, i) = destUniv a
-      val j = LvlUtil.destLSucc i
-      val univ = CTT (UNIV EXP) $$ [([],[]) \ j]
+      val Syn.UNIV (tau, i) = Syn.out a
+      val Syn.LSUCC j = Syn.out i
+      val univ = Syn.into @@ Syn.UNIV (EXP, j)
 
       val (goal, _, _) =
         makeGoal @@
@@ -110,7 +91,7 @@ struct
       val psi = T.empty @> goal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | Cum _ _ = raise Match
 

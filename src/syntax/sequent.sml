@@ -1,21 +1,21 @@
 structure Sequent :> SEQUENT
-  where type expr = Abt.abt
-  where type prop = Abt.abt
-  where type sort = Abt.sort
-  where type var = Abt.variable
-  where type metactx = Abt.metactx
-  where type hypctx = (Abt.abt * Abt.sort) SymbolTelescope.telescope =
+  where type expr = RedPrlAbt.abt
+  where type prop = RedPrlAbt.abt
+  where type sort = RedPrlAtomicSort.t
+  where type var = RedPrlAbt.variable
+  where type metactx = RedPrlAbt.metactx
+  where type hypctx = (RedPrlAbt.abt * RedPrlAtomicSort.t) SymbolTelescope.telescope =
 struct
-  type prop = Abt.abt
-  type expr = Abt.abt
-  type sort = Abt.sort
-  type var = Abt.variable
+  open RedPrlAbt
+  type sort = RedPrlAtomicSort.t
+  type prop = abt
+  type expr = abt
+  type var = variable
 
-  type metactx = Abt.metactx
   type hypctx = (prop * sort) SymbolTelescope.telescope
 
   structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
-  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Valence)
+  structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = RedPrlValence)
 
   datatype context =
     CONTEXT of
@@ -24,7 +24,7 @@ struct
 
   fun hypsMetactx H =
     SymbolTelescope.foldl
-      (fn ((a, _), psi) => MetaCtxUtil.union (psi, Abt.metactx a))
+      (fn ((a, _), psi) => MetaCtxUtil.union (psi, metactx a))
       MetaCtx.empty
       H
 
@@ -66,24 +66,25 @@ struct
   infix 3 |>
 
   val conclMetactx =
-    fn TRUE (p, _) => Abt.metactx p
-     | TYPE (p, _) => Abt.metactx p
-     | EQ_MEM (m, n, a) => MetaCtxUtil.union (MetaCtxUtil.union (Abt.metactx m, Abt.metactx n), Abt.metactx a)
-     | MEM (m, a) => MetaCtxUtil.union (Abt.metactx m, Abt.metactx a)
-     | EQ_SYN (r, s) => MetaCtxUtil.union (Abt.metactx r, Abt.metactx s)
-     | SYN r => Abt.metactx r
+    fn TRUE (p, _) => metactx p
+     | TYPE (p, _) => metactx p
+     | EQ_MEM (m, n, a) => MetaCtxUtil.union (MetaCtxUtil.union (metactx m, metactx n), metactx a)
+     | MEM (m, a) => MetaCtxUtil.union (metactx m, metactx a)
+     | EQ_SYN (r, s) => MetaCtxUtil.union (metactx r, metactx s)
+     | SYN r => metactx r
 
   val rec judgmentMetactx =
     fn G |> jdg => judgmentMetactx jdg
      | CONTEXT {hypctx,...} >> concl => MetaCtxUtil.union (hypsMetactx hypctx, conclMetactx concl)
 
+  structure Syn = RedPrlAbtSyntax
   val conclToString =
-    fn TRUE (a, tau) => ShowAbt.toString a ^ " true"
-     | TYPE (a, tau) => ShowAbt.toString a ^ " type"
-     | EQ_MEM (m, n, a) => ShowAbt.toString m ^ " = " ^ ShowAbt.toString n ^ " : " ^ ShowAbt.toString a
-     | MEM (m, a) => ShowAbt.toString m ^ " : " ^ ShowAbt.toString a
-     | EQ_SYN (r, s) => ShowAbt.toString r ^ " = " ^ ShowAbt.toString s ^ " synth"
-     | SYN r => ShowAbt.toString r ^ " synth"
+    fn TRUE (a, tau) => Syn.toString a ^ " true"
+     | TYPE (a, tau) => Syn.toString a ^ " type"
+     | EQ_MEM (m, n, a) => Syn.toString m ^ " = " ^ Syn.toString n ^ " : " ^ Syn.toString a
+     | MEM (m, a) => Syn.toString m ^ " : " ^ Syn.toString a
+     | EQ_SYN (r, s) => Syn.toString r ^ " = " ^ Syn.toString s ^ " synth"
+     | SYN r => Syn.toString r ^ " synth"
 
   fun hypothesesToString H =
     let
@@ -92,7 +93,7 @@ struct
         fn EMPTY => ""
          | CONS (x, (a, tau), tl) =>
              let
-               val hyp = Symbol.toString x ^ " : " ^ ShowAbt.toString a
+               val hyp = Symbol.toString x ^ " : " ^ Syn.toString a
              in
                hyp ^ "\n" ^ go (out tl)
              end

@@ -1,18 +1,15 @@
 signature QUANTIFIER_KIT =
 sig
+
+  type quantifier_destruct = RedPrlAbt.abt -> RedPrlAbt.abt * RedPrlAbt.variable * RedPrlAbt.abt
+
   (* Standard type-equality rule for quantifiers, like Pi, Sigma, Ensemble,
    * Isect, etc. *)
   val TypeEq
-    : unit Abt.Operator.t
+    : quantifier_destruct
     -> RefinerKit.ntactic
 
   val IsType
-    : unit Abt.Operator.t
+    : quantifier_destruct
     -> RefinerKit.ntactic
-
-  val destQuantifier
-    : unit Abt.Operator.t
-    -> Abt.abt
-    -> Abt.abt * Abt.variable * Abt.abt
 end
-

@@ -17,7 +17,7 @@ struct
   structure S1 = AbtSignature
   structure S2 = AbtSignature
 
-  open Abt
+  open RedPrlAbt
   infix $ \ $#
 
 
@@ -33,7 +33,7 @@ struct
    * that the data associated with a CUST operator is actually
    * what the definition says it is.
    *)
-  fun validate (map : S2.def DefnMap.dict) (OperatorData.CUST (opid, params, arity)) =
+  fun validate (map : S2.def DefnMap.dict) (RedPrlOperator.CUSTOM (opid, params, arity)) =
     let
       val {parameters, arguments, sort, definiens} =
         case DefnMap.find map opid of
@@ -41,10 +41,10 @@ struct
           | SOME d => d
       val sorts = ListPair.zipEq (List.map #2 params, List.map #2 parameters)
       val () =
-        if List.all Sort.eq sorts then () else raise InvalidCustomOper opid
+        if List.all RedPrlAtomicSort.eq sorts then () else raise InvalidCustomOper opid
       val expectedArity = (List.map #2 arguments, sort)
       val () =
-        if Arity.eq (expectedArity, arity) then () else raise InvalidCustomOper opid
+        if RedPrlAtomicArity.eq (expectedArity, arity) then () else raise InvalidCustomOper opid
     in
       ()
     end
@@ -57,7 +57,7 @@ struct
   fun checkDef map : S2.def -> unit =
     let
       fun go e =
-        case #1 (Abt.infer e) of
+        case #1 (RedPrlAbt.infer e) of
             ` _ => ()
           | oper $ args => (validate map oper; List.app goAbs args)
           | _ $# (_, args) => List.app go args

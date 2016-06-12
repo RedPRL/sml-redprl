@@ -1,23 +1,43 @@
-structure Metavariable = Symbol ()
+structure Metavariable = AbtSymbol ()
 
-structure Symbol = Symbol ()
+structure Symbol = AbtSymbol ()
 
 (* it will come in handy for variables and symbols to be of the same type *)
 structure Variable = Symbol
 
-structure Ast =
+structure RedPrlSort =
+  LcsSort
+    (structure AtomicSort = RedPrlAtomicSort
+     val opidSort = SOME SortData.OPID)
+
+structure RedPrlLcs =
+struct
+  structure V = RedPrlV and K = RedPrlK and D = RedPrlD
+  val opidSort = SOME SortData.OPID
+  val input = RedPrlK.input
+end
+
+structure RedPrlOperator = LcsOperator (RedPrlLcs)
+structure RedPrlArity = RedPrlOperator.Ar
+structure RedPrlValence = RedPrlArity.Vl
+
+structure RedPrlAst =
   Ast
-    (structure Operator = Operator
-     structure Metavariable = Metavariable)
+    (structure Operator = RedPrlOperator
+     structure Metavar = Metavariable)
 
-structure Abt =
+
+structure RedPrlAbt =
   Abt
-    (structure Operator = Operator
-     structure Metavariable = Metavariable
-     structure Variable = Variable
-     structure Symbol = Symbol)
+    (structure O = RedPrlOperator
+     structure Metavar = Metavariable
+     structure Var = Variable
+     structure Sym = Symbol)
 
-structure AstToAbt = AstToAbt (structure Ast = Ast and Abt = Abt)
+structure RedPrlAstToAbt =
+  AstToAbt
+    (structure Ast = RedPrlAst
+     structure Abt = RedPrlAbt)
 
-structure ShowAbt = PlainShowAbt (Abt)
-structure DebugShowAbt = DebugShowAbt (Abt)
+structure ShowAbt = PlainShowAbt (RedPrlAbt)
+structure DebugShowAbt = DebugShowAbt (RedPrlAbt)

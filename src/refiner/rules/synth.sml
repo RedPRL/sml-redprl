@@ -1,7 +1,7 @@
 structure SynthRules : SYNTH_RULES =
 struct
-  open RefinerKit OperatorData CttOperatorData RecordOperatorData SortData
-  infix 0 @@
+  open RefinerKit SortData
+  infixr 0 @@
   infix 1 $ $$ $# \ @>
   infix 2 //
   infix 3 >>
@@ -13,13 +13,13 @@ struct
         makeGoal @@
           H >> EQ_SYN (r, s)
 
-      val tau = Abt.sort r
+      val RS.EXP tau = RedPrlAbt.sort r
 
       val (lvlGoal, lvlHole, H'') =
         makeGoal @@
           H' >> TYPE (a, tau)
 
-      val univ = CTT (UNIV tau) $$ [([],[]) \ lvlHole [][]]
+      val univ = Syn.into @@ Syn.UNIV (tau, lvlHole [] [])
 
       val (eqGoal, _, _) =
         makeGoal @@
@@ -28,7 +28,7 @@ struct
       val psi = T.empty @> tyGoal @> lvlGoal @> eqGoal
     in
       (psi, fn rho =>
-        abtToAbs makeAx)
+        abtToAbs @@ Syn.into Syn.AX)
     end
     | CheckToSynth _ _ = raise Match
 
@@ -68,7 +68,8 @@ struct
         let
           val lvl = T.lookup rho (#1 lvlGoal) // ([],[])
         in
-          abtToAbs @@ makeUniv lvl
+          (* TODO: is EXP right? *)
+          abtToAbs o Syn.into @@ Syn.UNIV (EXP, lvl)
         end)
     end
     | SynthType _ _ = raise Match

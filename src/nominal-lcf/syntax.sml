@@ -1,8 +1,10 @@
 structure NominalLcfSyntax : NOMINAL_LCF_SYNTAX =
 struct
-  open Abt
+  open RedPrlAbt
+  structure Syn = RedPrlAbtSyntax
+
   structure SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
-  structure O = OperatorData and N = NominalLcfOperatorData and S = SortData
+  structure O = RedPrlOperator and RO = RedPrlOperators and N = NominalLcfOperators and S = SortData
 
   infix $ $$ \ $#
 
@@ -16,26 +18,32 @@ struct
   fun ?e = raise e
 
   fun evalOpen sign t =
-    DynamicsUtil.evalOpen sign t
+    RedPrlDynamics.eval sign t
       handle _ => t
 
   local
     fun go syms m =
+      (case Syn.out m of
+         Syn.HYP_REF a =>
+           if SymCtx.member syms a then
+             m
+           else
+             check (`a, O.S.EXP S.EXP)
+       | _ => raise Match)
+      handle _ => goStruct syms m
+
+    and goStruct syms m =
       let
         val (m', tau) = infer m
       in
-        case m' of
-           O.LCF (N.HYP_VAR a) $ _ =>
-             if SymCtx.member syms a then
-               m
-             else
-               check (`a, S.EXP)
-         | theta $ es =>
+        case out m of
+           theta $ es =>
              theta $$ List.map (goAbs syms) es
          | x $# (us, ms) =>
              check (x $# (us, List.map (go syms) ms), tau)
          | _ => m
       end
+
     and goAbs syms ((us,xs) \ m) =
       let
         val syms' = List.foldl (fn (u, acc) => SymCtx.insert acc u ()) syms us
@@ -49,11 +57,6 @@ struct
       go SymCtx.empty
   end
 
-  fun outVec vec =
-    case Abt.out vec of
-         O.VEC_LIT _ $ es => List.map (fn (_ \ n) => n) es
-       | _ => raise Fail "Expected vector argument"
-
   structure Multitactic =
   struct
     exception InvalidMultitactic
@@ -64,10 +67,10 @@ struct
       | FOCUS of int * tactic
 
     fun out sign mtac =
-      case Abt.out (expandHypVars (evalOpen sign mtac)) of
-           O.LCF N.ALL $ [_ \ stmt] => ALL stmt
-         | O.LCF N.EACH $ [_ \ vec] => EACH (outVec vec)
-         | O.LCF (N.FOCUS i) $ [_ \ stmt] => FOCUS (i, stmt)
+      case Syn.out (expandHypVars (evalOpen sign mtac)) of
+           Syn.MTAC_ALL t => ALL t
+         | Syn.MTAC_EACH ts => EACH ts
+         | Syn.MTAC_FOCUS (u, t) => FOCUS (u, t)
          | _ => raise InvalidMultitactic
   end
 
@@ -85,23 +88,26 @@ struct
       | RULE of rule
       | VAR of variable
 
-    fun collect stmt =
-      case Abt.out stmt of
-           O.LCF (N.SEQ _) $ [_ \ mtac, (us, _) \ stmt] =>
-             (us, mtac) :: collect stmt
-         | _ => [([], O.LCF N.ALL $$ [([],[]) \ stmt])]
+    fun collect t =
+      (case Syn.out t of
+           Syn.TAC_SEQ (mt, us, t') => (List.map #1 us, mt) :: collect t'
+         | _ => raise Match)
+      handle _ => [([], Syn.into (Syn.MTAC_ALL t))]
 
-    fun out sign stmt =
+    fun out sign t =
       let
-        val stmt' = expandHypVars (evalOpen sign stmt)
+        val t' = expandHypVars (evalOpen sign t)
       in
-        case Abt.out stmt' of
-             O.LCF (N.SEQ _) $ _ => SEQ (collect stmt')
-           | O.LCF N.ORELSE $ [_ \ tac1, _ \ tac2] => ORELSE (tac1, tac2)
-           | O.LCF N.REC $ [(_, [x]) \ tac] => REC (x, tac)
-           | O.LCF N.PROGRESS $ [_ \ tac] => PROGRESS tac
-           | `x => VAR x
-           | _ => RULE stmt'
+        case Syn.outOpen t' of
+           Syn.VAR x => VAR x
+         | Syn.APP view =>
+             (case view of
+                 Syn.TAC_SEQ _ => SEQ (collect t')
+               | Syn.TAC_ORELSE (t1, t2) => ORELSE (t1, t2)
+               | Syn.TAC_REC (x, t) => REC (x, t)
+               | Syn.TAC_PROGRESS t => PROGRESS t
+               | _ => RULE t')
+         | _ => RULE t'
       end
   end
 end
