@@ -1,27 +1,26 @@
+structure RedPrlClosure = LcsClosure (RedPrlAbt)
+structure RedPrlMachine = LcsMachine
+  (structure Cl = RedPrlClosure and K = RedPrlOperator.L.K
+   open RedPrlOperator Cl RedPrlAbt infix $ $# \ <:
+
+   fun isNeutral (r <: (env as (mrho, srho, vrho))) =
+     case out r of
+        `x => not (Abt.Var.Ctx.member vrho x)
+      | x $# _ => not (Abt.Metavar.Ctx.member mrho x)
+      | CUT _ $ [_, _ \ r'] => isNeutral (r' <: env)
+      | _ => false
+
+   fun isFinal (m <: env) =
+     case out m of
+        RET _ $ _ => true
+      | _ => isNeutral (m <: env))
+
 structure RedPrlDynamicsBasis : LCS_DYNAMICS_BASIS =
 struct
-  structure Abt = RedPrlAbt and O = RedPrlOperator
-  structure Cl = LcsClosure (Abt)
-
-  structure M = LcsMachine
-    (structure Cl = Cl and K = RedPrlOperator.L.K
-     open O Cl Abt infix $ $# \ <:
-
-     fun isNeutral (r <: (env as (mrho, srho, vrho))) =
-       case out r of
-          `x => not (Abt.Var.Ctx.member vrho x)
-        | x $# _ => not (Abt.Metavar.Ctx.member mrho x)
-        | CUT _ $ [_, _ \ r'] => isNeutral (r' <: env)
-        | _ => false
-
-     fun isFinal (m <: env) =
-       case out m of
-          RET _ $ _ => true
-        | _ => isNeutral (m <: env))
-
+  structure Abt = RedPrlAbt and O = RedPrlOperator and M = RedPrlMachine
 
   type vpat = (M.Cl.Abt.symbol O.L.V.t, M.expr) M.pat
-  type kpat = (M.Cl.Abt.symbol O.L.K.t, M.expr Cl.closure) M.pat
+  type kpat = (M.Cl.Abt.symbol O.L.K.t, M.expr M.Cl.closure) M.pat
   type dpat = (M.Cl.Abt.symbol O.L.D.t, M.expr) M.pat
 
   structure Sig =
@@ -42,7 +41,7 @@ struct
   local
     infix 4 `$ $$ <: <|
     infix 3 \
-    open O M Abt Cl RedPrlOperators
+    open O M Abt M.Cl RedPrlOperators
     structure Ctt = CttOperators
       and Lvl = LevelOperators
       and Atm = AtomOperators
@@ -194,6 +193,7 @@ struct
            in
              Syn.into (Syn.DEP_ISECT (singl, self, bproj)) <: env
            end
+
        | _ => raise Fail "Unhandled definitional extension"
   end
 end
