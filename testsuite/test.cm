@@ -7,8 +7,8 @@ is
   ../lib/sml-typed-abts/lib/sml-parcom/parcom.cm (bind:(anchor:libs value:../lib/))
 
   ../lib/sml-telescopes/telescopes.cm
-  ../src/syntax.cm
-  ../src/signature.cm
-  ../src/signature-elab.cm
-  ../src/frontend.cm
+  ../src/syntax.cm (bind:(anchor:libs value:../lib/))
+  ../src/signature.cm (bind:(anchor:libs value:../lib/))
+  ../src/signature-elab.cm (bind:(anchor:libs value:../lib/))
+  ../src/frontend.cm (bind:(anchor:libs value:../lib/))
   tests/test_elaborator.sml
