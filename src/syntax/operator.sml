@@ -142,7 +142,7 @@ struct
      | RCD_K th => RecordK.arity th
      | ATM_K th => AtomK.arity th
      | THROW => [] ->> SortData.EXP
-     | CATCH a => [[] <> [] * SortData.EXP] ->> SortData.EXP
+     | CATCH a => [[] <> [SortData.EXP] * SortData.EXP] ->> SortData.EXP
 
   val input =
     fn EXTRACT tau => SortData.THM tau
