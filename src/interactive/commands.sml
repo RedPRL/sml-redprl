@@ -9,29 +9,37 @@ struct
   datatype command =
     Stop
   | GetVersion
-  | NewSession
+  | NewSession of string option
   | CloseSession of sessionId
   | AddFiles of sessionId * (filename list)
 
-  fun getValueByKeyOrFail obj key =
+  fun getValueByKey obj key =
     case Json.getValueByKey obj key of
-      SOME (Pair (_, v)) => v
-    | _ => raise Fail ("Missing attribute: " ^ key)
+      SOME (Pair (_, v)) => SOME v
+    | _ => NONE
+
+  fun getValueByKeyOrFail obj key =
+    case getValueByKey obj key of
+      SOME v => v
+    | NONE => raise Fail ("Missing attribute: " ^ key)
 
   fun getCommand obj =
     case Json.getValueByKey obj "cmd" of
       SOME (Pair (_, String s)) =>
         (case s of
           "stop" => Stop
-        | "getVersion" => GetVersion
-        | "newSession" => NewSession
-        | "closeSession" =>
-          (case getValueByKeyOrFail obj "sessionId" of
+        | "get_version" => GetVersion
+        | "new_session" =>
+          (case getValueByKey obj "name" of
+            SOME (String s) => NewSession (SOME s)
+          | _ => NewSession NONE)
+        | "close_session" =>
+          (case getValueByKeyOrFail obj "session_id" of
             String s => CloseSession s
           | _ => raise (Fail "Wrong type of sessionId"))
-        | "addFiles" =>
+        | "add_files" =>
           let
-            val sessionId = getValueByKeyOrFail obj "sessionId"
+            val sessionId = getValueByKeyOrFail obj "session_id"
             val filenames = getValueByKeyOrFail obj "filenames"
           in
             case (sessionId, filenames) of
@@ -48,11 +56,13 @@ struct
     case command of
       Stop => OS.Process.exit OS.Process.success
     | GetVersion => (printMessage version; sessions)
-    | NewSession =>
+    | NewSession name =>
       let
-        val sessionId = generateSessionId()
+        val sessionId = case name of
+          SOME s => s
+        | NONE => generateSessionId()
       in
-        printKeyValue "sessionId" sessionId; (Session (sessionId, []))::sessions
+        printKeyValue "session_id" sessionId; (Session (sessionId, []))::sessions
       end
     | CloseSession s =>
       let
