@@ -1,4 +1,75 @@
-functor RedPrlSyntax (View : ABT_SYNTAX_VIEW where type 'a operator = 'a RedPrlOperator.t where type 'a spine = 'a list) =
+signature SYNTAX_VIEW =
+sig
+  type symbol
+  type variable
+  type metavariable
+  type sort
+  type 'a operator
+  type 'a spine
+
+  type term
+
+  datatype 'a bview =
+     \ of (symbol spine * variable spine) * 'a
+
+  datatype 'a view =
+     ` of variable
+   | $ of symbol operator * 'a bview spine
+   | $# of metavariable * ((symbol * sort) spine * 'a spine)
+
+  val check : sort -> term view -> term
+  val $$ : symbol operator * term bview spine -> term
+  val out : term -> term view
+
+  val debugToString : term -> string
+end
+
+functor AbtSyntaxView (Abt : ABT) : SYNTAX_VIEW =
+struct
+  open Abt
+  type 'a operator = 'a Abt.O.t
+  type term = abt
+  fun check tau m = Abt.check (m, tau)
+
+  structure Show = DebugShowAbt (Abt)
+  val debugToString = Show.toString
+end
+
+functor AstSyntaxView (Ast : AST where type 'a spine = 'a list) : SYNTAX_VIEW =
+struct
+  type symbol = Ast.symbol
+  type variable = Ast.variable
+  type metavariable = Ast.metavariable
+  type sort = unit
+  type 'a operator = 'a Ast.operator
+  type 'a spine = 'a Ast.spine
+
+  type term = Ast.ast
+
+  datatype 'a bview =
+     \ of (symbol spine * variable spine) * 'a
+
+  datatype 'a view =
+     ` of variable
+   | $ of symbol operator * 'a bview spine
+   | $# of metavariable * ((symbol * sort) spine * 'a spine)
+
+  fun check () =
+    fn `x => Ast.` x
+     | $ (th, es) => Ast.$ (th, List.map (fn \ ((us,xs), m) => Ast.\ ((us, xs), m)) es)
+     | $# (x, (us, ms)) => Ast.$# (x, (List.map #1 us, ms))
+
+  fun $$ (th, es) = check () ($ (th, es))
+
+  val out =
+    fn Ast.`x => `x
+     | Ast.$ (th, es) => $ (th, List.map (fn Ast.\ ((us, xs), m) => \ ((us, xs), m)) es)
+     | Ast.$# (x, (us, ms)) => $# (x, (List.map (fn u => (u, ())) us, ms))
+
+  fun debugToString _ = "[not implemented]"
+end
+
+functor RedPrlSyntax (View : SYNTAX_VIEW where type 'a operator = 'a RedPrlOperator.t where type 'a spine = 'a list) =
 struct
 
   open View
@@ -401,10 +472,8 @@ struct
        | _ => raise Match
 
     and toString m = parens (done (unparse m))
-
-    val prettyToString = toString
   in
     open Syn
-    val toString = prettyToString
+    val toString = toString
   end
 end
