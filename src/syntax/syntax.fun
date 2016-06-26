@@ -100,6 +100,9 @@ struct
    | VOID
 
    | FRESH of RS.sort * RS.sort * symbol * 'a
+   | EXN_VAL of symbol * 'a
+   | RAISE of 'a
+   | TRY of symbol * 'a * variable * 'a
    | DUMMY
 
    | LBASE
@@ -203,6 +206,9 @@ struct
        | VOID => intoCttV CttOperators.VOID []
 
        | FRESH (sigma, tau, u, m) => cutCtt (RS.UNIT, tau) (CttOperators.FRESH (sigma, tau)) [([u], []) \ m] (into DUMMY)
+       | EXN_VAL (a, m) => ret RS.EXP @@ O.V (EXN a) $$ [([],[]) \ m]
+       | TRY (a, m, x, nx) => O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K (CATCH a) $$ [([],[x]) \ nx], ([],[]) \ m]
+       | RAISE m => O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K THROW $$ [], ([],[]) \ m]
        | DUMMY => ret RS.UNIT @@ O.V (CTT_V CttOperators.DUMMY) $$ []
 
        | LBASE => ret RS.LVL @@ O.V (LVL_V 0) $$ []
@@ -277,6 +283,7 @@ struct
          | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
          | O.V (CTT_V CttOperators.VOID) $ _ => VOID
          | O.V (CTT_V CttOperators.DUMMY) $ _ => DUMMY
+         | O.V (EXN a) $ [_ \ m] => EXN_VAL (a, m)
 
          | O.V (LVL_V 0) $ _ => LBASE
          | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
@@ -342,6 +349,8 @@ struct
          | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
          | O.K (RCD_K RecordOperators.SINGL_GET_TY) $ [] => SINGL_GET_TY m
          | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
+         | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)
+         | O.K THROW $ _ => RAISE m
          | _ => raise Fail "outCut expected continuation"
 
       and outDef th es =

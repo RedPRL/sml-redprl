@@ -39,7 +39,7 @@ struct
   end
 
   local
-    infix 4 `$ $$ <: <|
+    infix 4 `$ $$ <: <| |> ?|>
     infix 3 \
     open O M Abt M.Cl RedPrlOperators
     structure Ctt = CttOperators
@@ -164,7 +164,30 @@ struct
        | (FROM_SOME tau `$ _, OP_SOME _ `$ [_ \ e]) =>
            e <: env <| ks
 
+       | (THROW `$ _, EXN a `$ [_ \ e]) =>
+           let
+             val m = RET SortData.EXP $$ [([],[]) \ unquoteV v]
+           in
+             m <: env ?|> ks
+           end
+
+       | (CATCH _ `$ _, _) =>
+           let
+             val m = RET SortData.EXP $$ [([],[]) \ unquoteV v]
+           in
+             m <: env |> ks
+           end
+
        | _ => raise Fail "Unhandled cut"
+
+    fun catch sign (v <: env, k) st =
+      case (v, k) of
+         (EXN a `$ [_ \ m], CATCH b `$ [(_,[x]) \ nx <: env']) =>
+           if symEq env (a, b) then
+             SOME (nx <: pushV (m <: env, x) env' <| st)
+           else
+             NONE
+       | _ => NONE
 
 
     (* Expand a definitional extension *)
