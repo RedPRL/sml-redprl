@@ -6,8 +6,6 @@ Tac try(T : tac) = [
   T || id
 ].
 
-
-
 // Tacticals are easily defined from within JonPRL's computation system.
 // Here are a few examples:
 Tac repeat(T : tac) = [
@@ -69,10 +67,13 @@ Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang
 ].
 
-
 Sym yes : exp.
 Sym no : exp.
 
 Thm symgenTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
-  bang
+  ceval
+].
+
+Thm symgenTest3 : [nu({a}. nu({b}. ~(ifeq('a; 'b; 'yes; 'no); 'no)))] by [
+  eval; ceval; csym; ceval
 ].
