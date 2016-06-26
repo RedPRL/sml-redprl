@@ -30,6 +30,23 @@ struct
   fun parseExpr sign f =
     let
 
+      val parseExn =
+        symbol "exn"
+          >> squares parseSymbol
+          && parens (f EXP)
+          wth (Syn.into o Syn.EXN_VAL)
+
+      val parseRaise =
+        symbol "raise"
+          >> parens (f EXP)
+          wth (Syn.into o Syn.RAISE)
+
+      val parseTry =
+        symbol "try"
+          >> squares parseSymbol
+          && parens (f EXP << semi && squares parseVariable << dot && f EXP)
+          wth (fn (a, (m, (x, nx))) => Syn.into (Syn.TRY (a, m, x, nx)))
+
       val parseNu =
         symbol "nu"
           >> (braces (SortParser.parseSort sign) || succeed EXP)
@@ -215,7 +232,10 @@ struct
          || parseRcdLiteral
          || parseRcdProj
          || parseHypVar
-         || parseNu) wth Atm
+         || parseNu
+         || parseExn
+         || parseRaise
+         || parseTry) wth Atm
 
       val parsePostfixProj =
         symbol "."
