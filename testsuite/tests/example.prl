@@ -28,113 +28,6 @@ Tac complete(T : tac) = [
   T; fail
 ].
 
-Def id(M : exp) : exp = [
-  M
-].
-
-// In addition, operators can take symbolic parameters (in brackets, as in PFPL);
-// furthermore, the arguments of operators may bind both symbols (in braces) and
-// variables (in brackets). Arguments of an operator are treated as metavariables
-// of the appropriate valence in the body of the definiens.
-Def welp[a:exp](E : {exp}[exp].exp) : exp = [
-  E{a}[Ax]
-].
-
-
-// Theorems may be both parametric and general. Let's prove an easy theorem by exploiting the
-// computation rule for [welp].
-Thm example[a:exp] : [~(Base; welp[a]({b}[x].Base))] by [
-  csym;
-  ceval
-].
-
-
-// Every proof is related to the evidence semantics of Computational Type Theory by
-// an 'extract'; a theorem in JonPRL, like every other declaration form, is a
-// definitional extension of the ambient signature, and is elaborated so as to include
-// its extract. There is a non-canonical operator that can be used to pull out the
-// extract of a theorem. We can prove that the extract of the [example] theorem is
-// the trivial term [Ax]:
-Thm extractTest[z:exp] : [~(extract(example[z]); Ax)] by [
-  ceval
-].
-
-Thm univTest(i : lvl) : [=(Univ(i); Univ(i); Univ(lsuc(i)))] by [
-  bang
-].
-
-
-Thm baseTypeEq(i : lvl) : [=(Base; Base; Univ(i))] by [
-  bang
-].
-
-Tac crefl = [
-  cstep{0}
-].
-
-Thm baseMemberEq : [=(Ax; Ax; Base)] by [
-  bang
-].
-
-
-
-
-
-// Ensembles, or subtype comprehensions, are types that restrict the inhabitants of
-// a type by a predicate. Because this is a multi-sorted type theory, we must specify
-// what syntactic sort is being refined by the type being restricted. In this example,
-// we are restricting the [exp] sort, which contains type expressions.
-Def ensembleExample : exp = [
-  { x : Base | ~(x; Base) }
-].
-
-Thm ensembleTest : [member(Ax; {x : Base | ~(x; Ax) })] by [
-  bang
-].
-
-
-Thm demo : [{x : Base | ~(x; Ax)}] by [
-  bang; #0 { witness [Ax] }; bang
-].
-
-
-// let's declare some symbols (nominal atoms). new symbols are always fresh.
-Sym mysym : exp.
-Sym mysym2 : exp.
-Sym yes : exp.
-Sym no : exp.
-
-// atoms can be compared for equality; here, we show that two of our
-// declared atoms are distinct.
-Thm atomTest : [~(ifeq('mysym; 'mysym2; 'yes; 'no); 'no)] by [
-  bang
-].
-
-Thm lamTest : [fun(Atom; Atom)] by [
-  normalize;
-  z <- intro;
-  #0 { auto; witness [ifeq(@z; 'mysym; 'yes; 'no)] };
-  bang
-].
-
-
-Thm apEqTest : [dfun(fun(Atom; Atom); [f]. member(f 'mysym; Atom))] by [
-  bang; chk-inf; bang
-].
-
-Sym foo : lbl.
-Sym bar : lbl.
-Sym baz : lbl.
-
-Def exampleRecord : exp = [
-  { foo = Ax
-  , bar = Ax
-  }
-].
-
-Thm recordProjTest : [~(exampleRecord.foo; Ax)] by [
-  bang
-].
 
 Record MonoidStruct(i : lvl) = {
   car : Univ(i),
@@ -164,18 +57,6 @@ Def Unit : exp = [
   ~(Ax; Ax)
 ].
 
-Thm RecordTest[u:exp](i : lvl) : [=({foo = Ax, bar = 'u, baz = Ax}; {bar = 'u, foo = Ax}; {bar : Atom, foo : Unit})] by [
-  bang
-].
-
-Def DepIsectEx1 : exp = [
-  disect({foo : Univ(lbase)}; [self]. {bar : self.foo})
-].
-
-Thm DepIsectEx2 : [ member({foo = Unit, bar = Ax}; DepIsectEx1) ] by [
-  bang
-].
-
 
 // We can define Sigma types directly as records.
 Record Sg(A : exp, B : [exp].exp) = {
@@ -187,6 +68,10 @@ Record Sg(A : exp, B : [exp].exp) = {
 Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang
 ].
+
+
+Sym yes : exp.
+Sym no : exp.
 
 Thm symgenTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
   bang
