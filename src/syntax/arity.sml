@@ -17,6 +17,7 @@ struct
      | STR => "str"
      | RCD_LBL => "lbl"
      | UNIT => "unit"
+     | EXN => "exn"
 end
 
 structure ArityNotation =

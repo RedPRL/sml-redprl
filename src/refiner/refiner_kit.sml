@@ -132,4 +132,5 @@ struct
   end
 
   fun @> (t,(x,y)) = T.snoc t x y
+  fun <@ ((x,y), t) = T.cons x y t
 end

@@ -16,6 +16,7 @@ struct
    | STR_LIT of string
    | OP_SOME of Sort.t
    | OP_NONE of Sort.t
+   | EXN of 'i
 
   datatype 'i redprl_cont =
      EXTRACT of Sort.t
@@ -24,6 +25,8 @@ struct
    | CTT_K of 'i CttK.t
    | RCD_K of 'i RecordK.t
    | ATM_K of 'i AtomK.t
+   | THROW
+   | CATCH of 'i
 
   datatype 'i redprl_def =
      CTT_D of 'i CttD.t
@@ -60,6 +63,8 @@ struct
            ->> SortData.OPT tau
      | OP_NONE tau =>
          [] ->> SortData.OPT tau
+     | EXN _ =>
+         [[] * [] <> SortData.EXP] ->> SortData.EXP
 
   val support =
     fn LCF theta => NominalLcfV.support theta
@@ -72,6 +77,7 @@ struct
      | STR_LIT _ => []
      | OP_SOME _ => []
      | OP_NONE _ => []
+     | EXN i => [(i, SortData.EXN)]
 
   fun eq f =
     fn (LCF th1, LCF th2) => NominalLcfV.eq f (th1, th2)
@@ -84,6 +90,7 @@ struct
      | (STR_LIT s1, STR_LIT s2) => s1 = s2
      | (OP_SOME sigma, OP_SOME tau) => sigma = tau
      | (OP_NONE sigma, OP_NONE tau) => sigma = tau
+     | (EXN a, EXN b) => f (a, b)
      | _ => false
 
   fun toString f =
@@ -97,6 +104,7 @@ struct
      | STR_LIT str => "\"" ^ str ^ "\""
      | OP_SOME tau => "some{" ^ Sort.toString tau ^ "}"
      | OP_NONE tau => "none{" ^ Sort.toString tau ^ "}"
+     | EXN a => "exn[" ^ f a ^ "]"
 
 
   fun map f =
@@ -110,6 +118,7 @@ struct
      | STR_LIT str => STR_LIT str
      | OP_SOME tau => OP_SOME tau
      | OP_NONE tau => OP_NONE tau
+     | EXN a => EXN (f a)
 end
 
 structure RedPrlK :
@@ -123,7 +132,7 @@ struct
   open RedPrlOperators ArityNotation
   type 'i t = 'i redprl_cont
 
-  infix <> ->>
+  infix 9 <> ->>
 
   val arity =
     fn EXTRACT tau => [] ->> tau
@@ -132,6 +141,8 @@ struct
      | CTT_K th => CttK.arity th
      | RCD_K th => RecordK.arity th
      | ATM_K th => AtomK.arity th
+     | THROW => [] ->> SortData.EXP
+     | CATCH a => [[] <> [SortData.EXP] * SortData.EXP] ->> SortData.EXP
 
   val input =
     fn EXTRACT tau => SortData.THM tau
@@ -140,6 +151,8 @@ struct
      | CTT_K th => CttK.input th
      | RCD_K th => RecordK.input th
      | ATM_K th => AtomK.input th
+     | THROW => SortData.EXP
+     | CATCH _ => SortData.EXP
 
   val support =
     fn EXTRACT tau => []
@@ -148,6 +161,8 @@ struct
      | CTT_K th => CttK.support th
      | RCD_K th => RecordK.support th
      | ATM_K th => AtomK.support th
+     | THROW => []
+     | CATCH a => [(a, SortData.EXN)]
 
   fun eq f =
     fn (EXTRACT sigma, EXTRACT tau) => sigma = tau
@@ -156,6 +171,8 @@ struct
      | (CTT_K th1, CTT_K th2) => CttK.eq f (th1, th2)
      | (RCD_K th1, RCD_K th2) => RecordK.eq f (th1, th2)
      | (ATM_K th1, ATM_K th2) => AtomK.eq f (th1, th2)
+     | (THROW, THROW) => true
+     | (CATCH a, CATCH b) => f (a, b)
      | _ => false
 
   fun toString f =
@@ -165,6 +182,8 @@ struct
      | CTT_K th => CttK.toString f th
      | RCD_K th => RecordK.toString f th
      | ATM_K th => AtomK.toString f th
+     | THROW => "throw"
+     | CATCH a => "catch[" ^ f a ^ "]"
 
   fun map f =
     fn EXTRACT tau => EXTRACT tau
@@ -173,6 +192,8 @@ struct
      | CTT_K th => CTT_K (CttK.map f th)
      | RCD_K th => RCD_K (RecordK.map f th)
      | ATM_K th => ATM_K (AtomK.map f th)
+     | THROW => THROW
+     | CATCH a => CATCH (f a)
 end
 
 structure RedPrlD : ABT_OPERATOR =

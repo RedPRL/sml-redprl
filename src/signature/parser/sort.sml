@@ -23,5 +23,6 @@ struct
       || symbol "mtac" return MTAC
       || squares p wth VEC
       || symbol "str" return STR
-      || symbol "lbl" return RCD_LBL)
+      || symbol "lbl" return RCD_LBL
+      || symbol "exn" return EXN)
 end

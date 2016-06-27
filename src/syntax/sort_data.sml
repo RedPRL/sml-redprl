@@ -12,4 +12,5 @@ struct
     | STR (* strings *)
     | RCD_LBL (* record labels *)
     | UNIT (* the unit sort *)
+    | EXN (* exception names *)
 end

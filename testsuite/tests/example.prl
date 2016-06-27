@@ -62,6 +62,12 @@ Record Sg(A : exp, B : [exp].exp) = {
   snd : B[fst]
 }.
 
+Thm SigmaTest : [Sg(Base; [x]. ~(x; Ax))] by [
+  unfold Sg;
+  repeat(intro);
+  #0 { witness [Ax] };
+  bang
+].
 
 Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang
@@ -75,5 +81,13 @@ Thm symgenTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
 ].
 
 Thm symgenTest3 : [nu({a}. nu({b}. ~(ifeq('a; 'b; 'yes; 'no); 'no)))] by [
+  eval; ceval; csym; ceval
+].
+
+Thm exnTest : [nu{exn}({a}. ~(try[a](raise(exn[a](Ax)); [z].'yes); 'yes))] by [
+  eval; ceval; csym; ceval
+].
+
+Thm exnTest2 : [nu{exn}({a}. try[a](raise(exn[a](Ax)); [z]. ~(z; Ax)))] by [
   eval; ceval; csym; ceval
 ].

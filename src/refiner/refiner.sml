@@ -66,6 +66,8 @@ struct
         ORELSE PiRules.Intro alpha
         ORELSE EqRules.Intro alpha
         ORELSE MemRules.Intro alpha
+        ORELSE RecordRules.IntroRecord alpha
+        ORELSE RecordRules.IntroSingl alpha
 
     val CheckInfer = SynthRules.CheckToSynth
 
