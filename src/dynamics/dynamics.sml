@@ -190,6 +190,7 @@ struct
              NONE
        | _ => NONE
 
+    val throw = Syn.into o Syn.RAISE
 
     (* Expand a definitional extension *)
     fun delta sign (d <: env) =
