@@ -440,6 +440,8 @@ struct
        | LAM (x, mx) => prefix (0, "\206\187" ^ Variable.toString x ^ ".") (unparse mx)
        | BASE _ => atom "Base"
        | FRESH (_, _, u, m) => prefix (0, "\206\189" ^ Symbol.toString u ^ ".") (unparse m)
+       | RAISE e => atom @@ "throw(" ^ toString e ^ ")"
+       | TRY (a, m, x, nx) => atom @@ "try[" ^ Symbol.toString a ^ "](" ^ toString m ^ ") with " ^ Variable.toString x ^ "." ^ toString nx
        | IF_EQ (_, _, t1, t2, l, r) =>
            atom
              @@ "if "

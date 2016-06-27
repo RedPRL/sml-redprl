@@ -91,3 +91,8 @@ Thm exnTest : [nu{exn}({a}. ~(try[a](raise(exn[a](Ax)); [z].'yes); 'yes))] by [
 Thm exnTest2 : [nu{exn}({a}. try[a](raise(exn[a](Ax)); [z]. ~(z; Ax)))] by [
   eval; ceval; csym; ceval
 ].
+
+Sym fail : exn.
+Thm exnTest3 : [~(try[fail](ifeq(raise(exn[fail](Ax)); 'yes; 'yes; 'no); [z]. z); Ax)] by [
+  ceval
+].
