@@ -93,7 +93,7 @@ struct
                      Abt.$ (theta, es) =>
                        let
                          val supp = support theta
-                         fun wrap m = Syn.into (Syn.FRESH (sigma, tau, u, m))
+                         fun wrap m = Syn.into (Syn.FRESH (sigma, tau, u, Cl.force (m <: envE)))
                        in
                          if List.exists (fn (v, _) => symEq envE (u, v)) supp then
                            wrap e <: envE <| ks
