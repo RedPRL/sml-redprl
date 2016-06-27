@@ -62,6 +62,12 @@ Record Sg(A : exp, B : [exp].exp) = {
   snd : B[fst]
 }.
 
+Thm SigmaTest : [Sg(Base; [x]. ~(x; Ax))] by [
+  unfold Sg;
+  repeat(intro);
+  #0 { witness [Ax] };
+  bang
+].
 
 Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang
