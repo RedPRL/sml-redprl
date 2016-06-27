@@ -103,13 +103,14 @@ struct
                    | _ => raise Match)
              | _ =>
                let
-                 val v = Abt.Var.fresh (Abt.varctx e) "probe"
-                 val k = CTT_K (Ctt.FRESH_K ((v, sigma), tau)) `$ []
+                 val probe = Abt.Var.fresh (Abt.varctx e) ("probe-" ^ Symbol.toString u)
+                 val k = CTT_K (Ctt.FRESH_K ((probe, sigma), tau)) `$ []
                  val (mrho, srho, vrho) = envE
-                 val env' = (mrho, Abt.Sym.Ctx.insert srho u v, vrho)
+                 val env' = (mrho, Abt.Sym.Ctx.insert srho u probe, vrho)
                in
                  e <: env' <| k :: ks
                end)
+
        | (CTT_K (Ctt.FRESH_K ((u, sigma), tau)) `$ _, v) =>
            let
              val m = RET tau $$ [([],[]) \ unquoteV v]
