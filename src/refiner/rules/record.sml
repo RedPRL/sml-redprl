@@ -116,6 +116,8 @@ struct
     end
     | IntroSingl _ _ = raise Match
 
+  (* TODO: account for case where R synth ~> rs, with rs some not-necessarily-singleton record type. *)
+
   (* H >> R.lbl synth ~> A
    *   H >> R synth ~> singl[lbl](A)
    *)

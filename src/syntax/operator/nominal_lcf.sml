@@ -14,6 +14,7 @@ struct
     | EQ of int option
     | CHKINF
     | EXT
+    | ETA of 'i * Sort.t
     | CUM
     | ELIM of 'i * Sort.t | HYP of 'i * Sort.t | UNHIDE of 'i * Sort.t
     | AUTO
@@ -68,6 +69,8 @@ struct
         [] ->> TAC
     | arity (ELIM _) =
         [] ->> TAC
+    | arity (ETA _) =
+        [] ->> TAC
     | arity (HYP _) =
         [] ->> TAC
     | arity (UNHIDE _) =
@@ -106,6 +109,7 @@ struct
         [] ->> EXP
 
   fun support (ELIM (target, tau)) = [(target, tau)]
+    | support (ETA (target, tau)) = [(target, tau)]
     | support (HYP (target, tau)) = [(target, tau)]
     | support (UNHIDE (target, tau)) = [(target, tau)]
     | support (UNFOLD (i, oj)) =
@@ -133,6 +137,7 @@ struct
      | CHKINF => CHKINF
      | CUM => CUM
      | ELIM (target, tau) => ELIM (f target, tau)
+     | ETA (target, tau) => ETA (f target, tau)
      | HYP (target, tau) => HYP (f target, tau)
      | UNHIDE (target, tau) => UNHIDE (f target, tau)
      | AUTO => AUTO
@@ -201,6 +206,7 @@ struct
      | CHKINF => "chk-inf"
      | CUM => "cum"
      | ELIM (target,tau) => "elim[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
+     | ETA (target,tau) => "eta[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | HYP (target, tau) => "hyp[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | UNHIDE (target, tau) => "unhide[" ^ f target ^ " : " ^ Sort.toString tau ^ "]"
      | AUTO => "auto"

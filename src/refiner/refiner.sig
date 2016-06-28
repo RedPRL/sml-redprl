@@ -19,6 +19,10 @@ sig
     : symbol      (* target *)
     -> ntactic
 
+  val Eta
+    : symbol
+    -> ntactic
+
   val Intro
     : ntactic
 

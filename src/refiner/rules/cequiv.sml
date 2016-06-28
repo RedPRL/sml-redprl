@@ -60,6 +60,23 @@ struct
     end
     | MemberEq _ _ = raise Match
 
+  fun Eta z _ (goal as H >> _) =
+    let
+      val (cequiv, _) = Ctx.lookup (getHyps H) z
+      val Syn.CEQUIV _ = Syn.out cequiv
+      val (goal', _, _) =
+        makeGoal @@
+          Target.targetRewrite
+            (subst (Syn.into Syn.AX, z))
+            Target.TARGET_CONCL
+            goal
+      val psi = T.empty @> goal'
+    in
+      (psi, fn rho =>
+        T.lookup rho (#1 goal'))
+    end
+    | Eta _ _ _ = raise Match
+
   fun CSym _ (H >> TRUE (P, _)) =
     let
       val Syn.CEQUIV (tau, m, n) = Syn.out P

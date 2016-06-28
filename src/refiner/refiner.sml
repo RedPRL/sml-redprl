@@ -17,6 +17,9 @@ struct
         ORELSE EnsembleRules.Elim i alpha
         ORELSE VoidRules.Elim i alpha
 
+    fun Eta i alpha =
+      CEquivRules.Eta i alpha
+
     fun HypEq alpha (H >> EQ_MEM (m, n, a)) =
       let
         val x = Syn.destVar m
@@ -50,6 +53,7 @@ struct
         ORELSE CEquivRules.IsType alpha
         ORELSE RecordRules.IsType alpha
         ORELSE UnivRules.IsType alpha
+        ORELSE EqRules.IsType alpha
         ORELSE TypeRules.Synth alpha
 
     (* TODO! need to use Nominal LCF version of THEN, or else names will get
@@ -68,6 +72,7 @@ struct
         ORELSE MemRules.Intro alpha
         ORELSE RecordRules.IntroRecord alpha
         ORELSE RecordRules.IntroSingl alpha
+        ORELSE GenericRules.Intro alpha
 
     val CheckInfer = SynthRules.CheckToSynth
 

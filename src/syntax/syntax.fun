@@ -139,6 +139,7 @@ struct
    | TAC_CUM
    | TAC_CHKINF
    | TAC_ELIM of symbol * RS.sort
+   | TAC_ETA of symbol * RS.sort
    | TAC_HYP of symbol * RS.sort
    | TAC_UNHIDE of symbol * RS.sort
    | TAC_AUTO
@@ -250,6 +251,7 @@ struct
       | TAC_CUM => intoTacV NominalLcfOperators.CUM []
       | TAC_CHKINF => intoTacV NominalLcfOperators.CHKINF []
       | TAC_ELIM (u, tau) => intoTacV (NominalLcfOperators.ELIM (u, tau)) []
+      | TAC_ETA (u, tau) => intoTacV (NominalLcfOperators.ETA (u, tau)) []
       | TAC_UNHIDE (u, tau) => intoTacV (NominalLcfOperators.UNHIDE (u, tau)) []
       | TAC_AUTO => intoTacV NominalLcfOperators.AUTO []
       | TAC_ID => intoTacV NominalLcfOperators.ID []
@@ -316,6 +318,7 @@ struct
          | O.V (LCF NominalLcfOperators.CUM) $ _ => TAC_CUM
          | O.V (LCF NominalLcfOperators.CHKINF) $ _ => TAC_CHKINF
          | O.V (LCF (NominalLcfOperators.ELIM (u, tau))) $ _ => TAC_ELIM (u, tau)
+         | O.V (LCF (NominalLcfOperators.ETA (u, tau))) $ _ => TAC_ETA (u, tau)
          | O.V (LCF (NominalLcfOperators.HYP (u, tau))) $ _ => TAC_HYP (u, tau)
          | O.V (LCF (NominalLcfOperators.UNHIDE (u, tau))) $ _ => TAC_UNHIDE (u, tau)
          | O.V (LCF NominalLcfOperators.AUTO) $ _ => TAC_AUTO
