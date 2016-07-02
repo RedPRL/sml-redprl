@@ -2,7 +2,7 @@ structure Commands =
 struct
   val version = "0.0.1"
 
-  open Json
+  structure J = Json
   open Sessions
   open Sum
 
@@ -13,29 +13,24 @@ struct
   | CloseSession of sessionId
   | AddFiles of sessionId * (filename list)
 
-  fun getValueByKey obj key =
-    case Json.getValueByKey obj key of
-      SOME (Pair (_, v)) => SOME v
-    | _ => NONE
-
   fun getValueByKeyOrFail obj key =
-    case getValueByKey obj key of
+    case J.getValueByKey obj key of
       SOME v => v
     | NONE => raise Fail ("Missing attribute: " ^ key)
 
   fun getCommand obj =
-    case Json.getValueByKey obj "cmd" of
-      SOME (Pair (_, String s)) =>
+    case J.getValueByKey obj "cmd" of
+      SOME (J.String s) =>
         (case s of
           "stop" => Stop
         | "get_version" => GetVersion
         | "new_session" =>
-          (case getValueByKey obj "name" of
-            SOME (String s) => NewSession (SOME s)
+          (case J.getValueByKey obj "name" of
+            SOME (J.String s) => NewSession (SOME s)
           | _ => NewSession NONE)
         | "close_session" =>
           (case getValueByKeyOrFail obj "session_id" of
-            String s => CloseSession s
+            J.String s => CloseSession s
           | _ => raise (Fail "Wrong type of sessionId"))
         | "add_files" =>
           let
@@ -43,7 +38,7 @@ struct
             val filenames = getValueByKeyOrFail obj "filenames"
           in
             case (sessionId, filenames) of
-              (String s, Array a) => AddFiles (s, (List.map (fn (String s) => s) a))
+              (J.String s, J.Array a) => AddFiles (s, (List.map (fn (J.String s) => s) a))
             | _ => raise (Fail "Wrong type of arguments")
           end
         | _ => raise (Fail "Unknown command"))
