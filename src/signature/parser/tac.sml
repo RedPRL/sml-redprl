@@ -122,6 +122,11 @@ struct
           >> squares (parseSymbol && ((colon >> SortParser.parseSort sign) || succeed SortData.EXP))
           wth (Syn.into o Syn.TAC_ELIM)
 
+      val parseEta =
+        symbol "eta"
+          >> squares (parseSymbol && ((colon >> SortParser.parseSort sign) || succeed SortData.EXP))
+          wth (Syn.into o Syn.TAC_ETA)
+
       val parseIntro =
         symbol "intro"
           return (Syn.into (Syn.TAC_INTRO NONE))
@@ -161,6 +166,7 @@ struct
           || parseCum
           || parseHyp
           || parseElim
+          || parseEta
           || parseIntro
           || parseUnhide
           || parseAuto

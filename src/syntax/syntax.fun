@@ -100,6 +100,9 @@ struct
    | VOID
 
    | FRESH of RS.sort * RS.sort * symbol * 'a
+   | EXN_VAL of symbol * 'a
+   | RAISE of 'a
+   | TRY of symbol * 'a * variable * 'a
    | DUMMY
 
    | LBASE
@@ -136,6 +139,7 @@ struct
    | TAC_CUM
    | TAC_CHKINF
    | TAC_ELIM of symbol * RS.sort
+   | TAC_ETA of symbol * RS.sort
    | TAC_HYP of symbol * RS.sort
    | TAC_UNHIDE of symbol * RS.sort
    | TAC_AUTO
@@ -203,6 +207,9 @@ struct
        | VOID => intoCttV CttOperators.VOID []
 
        | FRESH (sigma, tau, u, m) => cutCtt (RS.UNIT, tau) (CttOperators.FRESH (sigma, tau)) [([u], []) \ m] (into DUMMY)
+       | EXN_VAL (a, m) => ret RS.EXP @@ O.V (EXN a) $$ [([],[]) \ m]
+       | TRY (a, m, x, nx) => O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K (CATCH a) $$ [([],[x]) \ nx], ([],[]) \ m]
+       | RAISE m => O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K THROW $$ [], ([],[]) \ m]
        | DUMMY => ret RS.UNIT @@ O.V (CTT_V CttOperators.DUMMY) $$ []
 
        | LBASE => ret RS.LVL @@ O.V (LVL_V 0) $$ []
@@ -244,6 +251,7 @@ struct
       | TAC_CUM => intoTacV NominalLcfOperators.CUM []
       | TAC_CHKINF => intoTacV NominalLcfOperators.CHKINF []
       | TAC_ELIM (u, tau) => intoTacV (NominalLcfOperators.ELIM (u, tau)) []
+      | TAC_ETA (u, tau) => intoTacV (NominalLcfOperators.ETA (u, tau)) []
       | TAC_UNHIDE (u, tau) => intoTacV (NominalLcfOperators.UNHIDE (u, tau)) []
       | TAC_AUTO => intoTacV NominalLcfOperators.AUTO []
       | TAC_ID => intoTacV NominalLcfOperators.ID []
@@ -277,6 +285,7 @@ struct
          | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
          | O.V (CTT_V CttOperators.VOID) $ _ => VOID
          | O.V (CTT_V CttOperators.DUMMY) $ _ => DUMMY
+         | O.V (EXN a) $ [_ \ m] => EXN_VAL (a, m)
 
          | O.V (LVL_V 0) $ _ => LBASE
          | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
@@ -309,6 +318,7 @@ struct
          | O.V (LCF NominalLcfOperators.CUM) $ _ => TAC_CUM
          | O.V (LCF NominalLcfOperators.CHKINF) $ _ => TAC_CHKINF
          | O.V (LCF (NominalLcfOperators.ELIM (u, tau))) $ _ => TAC_ELIM (u, tau)
+         | O.V (LCF (NominalLcfOperators.ETA (u, tau))) $ _ => TAC_ETA (u, tau)
          | O.V (LCF (NominalLcfOperators.HYP (u, tau))) $ _ => TAC_HYP (u, tau)
          | O.V (LCF (NominalLcfOperators.UNHIDE (u, tau))) $ _ => TAC_UNHIDE (u, tau)
          | O.V (LCF NominalLcfOperators.AUTO) $ _ => TAC_AUTO
@@ -342,6 +352,8 @@ struct
          | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
          | O.K (RCD_K RecordOperators.SINGL_GET_TY) $ [] => SINGL_GET_TY m
          | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
+         | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)
+         | O.K THROW $ _ => RAISE m
          | _ => raise Fail "outCut expected continuation"
 
       and outDef th es =
@@ -431,6 +443,8 @@ struct
        | LAM (x, mx) => prefix (0, "\206\187" ^ Variable.toString x ^ ".") (unparse mx)
        | BASE _ => atom "Base"
        | FRESH (_, _, u, m) => prefix (0, "\206\189" ^ Symbol.toString u ^ ".") (unparse m)
+       | RAISE e => atom @@ "throw(" ^ toString e ^ ")"
+       | TRY (a, m, x, nx) => atom @@ "try[" ^ Symbol.toString a ^ "](" ^ toString m ^ ") with " ^ Variable.toString x ^ "." ^ toString nx
        | IF_EQ (_, _, t1, t2, l, r) =>
            atom
              @@ "if "

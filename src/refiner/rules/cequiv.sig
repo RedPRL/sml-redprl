@@ -21,4 +21,8 @@ sig
   val MemberEq
     : RefinerKit.ntactic
 
+  val Eta
+    : RefinerKit.symbol
+    -> RefinerKit.ntactic
+
 end

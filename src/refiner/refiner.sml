@@ -6,7 +6,7 @@ struct
   open Sequent
   infix $ $$ \ @@ @> $#
   infix 2 //
-  infix 4 >>
+  infix 4 >> |>
 
   local
     open Tacticals
@@ -16,6 +16,9 @@ struct
       BaseRules.Elim i alpha
         ORELSE EnsembleRules.Elim i alpha
         ORELSE VoidRules.Elim i alpha
+
+    fun Eta i alpha =
+      CEquivRules.Eta i alpha
 
     fun HypEq alpha (H >> EQ_MEM (m, n, a)) =
       let
@@ -40,16 +43,23 @@ struct
       end
       | HypSynth _ _ = raise Match
 
+
+    fun IsType' alpha (goal as H >> TYPE (a, _)) =
+        (case Syn.out a of
+            Syn.ATOM _ => AtomRules.IsType alpha goal
+          | Syn.TOP _ => TopRules.IsType alpha goal
+          | Syn.DFUN _ => PiRules.IsType alpha goal
+          | Syn.ENSEMBLE _ => EnsembleRules.IsType alpha goal
+          | Syn.DEP_ISECT _ => DepIsectRules.IsType alpha goal
+          | Syn.CEQUIV _ => CEquivRules.IsType alpha goal
+          | Syn.RCD_SINGL _ => RecordRules.IsType alpha goal
+          | Syn.UNIV _ => UnivRules.IsType alpha goal
+          | Syn.EQ _ => EqRules.IsType alpha goal
+          | _ => raise Match)
+      | IsType' _ _ = raise Match
+
     fun IsType alpha =
-      AtomRules.IsType alpha
-        ORELSE BaseRules.IsType alpha
-        ORELSE TopRules.IsType alpha
-        ORELSE PiRules.IsType alpha
-        ORELSE EnsembleRules.IsType alpha
-        ORELSE DepIsectRules.IsType alpha
-        ORELSE CEquivRules.IsType alpha
-        ORELSE RecordRules.IsType alpha
-        ORELSE UnivRules.IsType alpha
+      IsType' alpha
         ORELSE TypeRules.Synth alpha
 
     (* TODO! need to use Nominal LCF version of THEN, or else names will get
@@ -60,37 +70,46 @@ struct
         ORELSE RecordRules.ProjSynth alpha
         ORELSE (THEN (SynthRules.SynthType alpha, IsType alpha))
 
-    fun Intro alpha =
-      SquashRules.Intro alpha
-        ORELSE EnsembleRules.Intro alpha
-        ORELSE PiRules.Intro alpha
-        ORELSE EqRules.Intro alpha
-        ORELSE MemRules.Intro alpha
+    fun Intro alpha (goal as G |> _) = GenericRules.Intro alpha goal
+      | Intro alpha (goal as H >> TRUE (a, _)) =
+        (case Syn.out a of
+            Syn.SQUASH _ => SquashRules.Intro alpha goal
+          | Syn.ENSEMBLE _ => EnsembleRules.Intro alpha goal
+          | Syn.DFUN _ => PiRules.Intro alpha goal
+          | Syn.EQ _ => EqRules.Intro alpha goal
+          | Syn.RCD_SINGL _ => RecordRules.IntroSingl alpha goal
+          | Syn.RECORD_TY _ => RecordRules.IntroRecord alpha goal
+          | _ => raise Match
+          )
+      | Intro alpha (goal as H >> MEM _) = MemRules.Intro alpha goal
+      | Intro _ _ = raise Match
 
     val CheckInfer = SynthRules.CheckToSynth
 
-    fun Eq r alpha (jdg as _ >> EQ_MEM _) =
-          (HypEq alpha
-            ORELSE UnivRules.Eq alpha
-            ORELSE BaseRules.TypeEq alpha
-            ORELSE BaseRules.MemberEq alpha
-            ORELSE TopRules.TypeEq alpha
-            ORELSE TopRules.MemberEq alpha
-            ORELSE CEquivRules.TypeEq alpha
-            ORELSE CEquivRules.MemberEq alpha
-            ORELSE SquashRules.TypeEq alpha
-            ORELSE EnsembleRules.TypeEq alpha
-            ORELSE EnsembleRules.MemberEq alpha
-            ORELSE RecordRules.TypeEq alpha
-            ORELSE RecordRules.MemberEq alpha
-            ORELSE AtomRules.TypeEq alpha
-            ORELSE AtomRules.MemberEq alpha
-            ORELSE AtomRules.TestEq alpha
-            ORELSE PiRules.TypeEq alpha
-            ORELSE PiRules.MemberEq alpha
-            ORELSE DepIsectRules.TypeEq alpha
-            ORELSE DepIsectRules.MemberEq alpha
-            ORELSE VoidRules.TypeEq alpha) jdg
+    fun Eq r alpha (goal as _ >> EQ_MEM (m, n, a)) =
+      (case (Syn.outOpen m, Syn.outOpen n, Syn.out a) of
+          (Syn.VAR _, _, _) => HypEq alpha goal
+        | (Syn.APP (Syn.UNIV _), _, _) => UnivRules.Eq alpha goal
+        | (Syn.APP (Syn.BASE _), _, _) => BaseRules.TypeEq alpha goal
+        | (_, _, Syn.BASE _) => BaseRules.MemberEq alpha goal
+        | (Syn.APP (Syn.TOP _), _, _) => TopRules.TypeEq alpha goal
+        | (_, _, Syn.TOP _) => TopRules.MemberEq alpha goal
+        | (Syn.APP (Syn.CEQUIV _), _, _) => CEquivRules.TypeEq alpha goal
+        | (_, _, Syn.CEQUIV _) => CEquivRules.MemberEq alpha goal
+        | (Syn.APP (Syn.SQUASH _), _, _) => SquashRules.TypeEq alpha goal
+        | (Syn.APP (Syn.ENSEMBLE _), _, _) => EnsembleRules.TypeEq alpha goal
+        | (_, _, Syn.ENSEMBLE _) => EnsembleRules.MemberEq alpha goal
+        | (Syn.APP (Syn.RCD_SINGL _), _, _) => RecordRules.TypeEq alpha goal
+        | (_, _, Syn.RCD_SINGL _) => RecordRules.MemberEq alpha goal
+        | (Syn.APP (Syn.ATOM _), _, _) => AtomRules.TypeEq alpha goal
+        | (_, _, Syn.ATOM _) => AtomRules.MemberEq alpha goal
+        | (Syn.APP (Syn.IF_EQ _), _, _) => AtomRules.TestEq alpha goal
+        | (Syn.APP (Syn.DFUN _), _, _) => PiRules.TypeEq alpha goal
+        | (_, _, Syn.DFUN _) => PiRules.MemberEq alpha goal
+        | (Syn.APP (Syn.DEP_ISECT _), _, _) => DepIsectRules.TypeEq alpha goal
+        | (_, _, Syn.DEP_ISECT _) => DepIsectRules.MemberEq alpha goal
+        | (Syn.APP Syn.VOID, _, _) => VoidRules.TypeEq alpha goal
+        | _ => raise Match)
       | Eq r alpha (jdg as _ >> EQ_SYN _) =
           SynthRules.SynthEqIntro alpha jdg
       | Eq _ _ _ = raise Match

@@ -36,6 +36,7 @@ struct
        | RSyn.TAC_FAIL => (fn _ => fn _ => raise Fail "Fail")
        | RSyn.TAC_TRACE (_, m) => (fn _ => Trace m)
        | RSyn.TAC_ELIM (u, _) => R.Elim u
+       | RSyn.TAC_ETA (u, _) => R.Eta u
        | RSyn.TAC_HYP (u, _) => R.Hyp u
        | RSyn.TAC_UNHIDE (u, _) => R.Unhide u
        | RSyn.TAC_INTRO _ => R.Intro

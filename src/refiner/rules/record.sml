@@ -2,7 +2,7 @@ structure RecordRules : RECORD_RULES =
 struct
   open RefinerKit SortData
   infixr 0 @@
-  infix 1 $ $$ $# \ @>
+  infix 1 $ $$ $# \ @> <@
   infix 2 //
   infix 3 >>
   infix 2 |>
@@ -59,6 +59,64 @@ struct
         abtToAbs @@ Syn.into Syn.AX)
     end
     | MemberEq _ _ = raise Match
+
+
+  fun accumulateRecordGoals H ty =
+    case Syn.out ty of
+       Syn.RECORD_TY (lbl, a, x, bx) =>
+         let
+           val singl = Syn.into @@ Syn.RCD_SINGL (lbl, a)
+           val ((goalName, goal), goalHole, H') = makeGoal @@ H >> TRUE (singl, EXP)
+           val proj = Syn.into @@ Syn.RCD_PROJ (lbl, goalHole [] [])
+           val b' = subst (proj, x) bx
+         in
+           (goalName, (lbl, goal)) <@ accumulateRecordGoals H' b'
+         end
+     | Syn.TOP _ => T.empty
+     | _ => raise Fail "Could not match record type"
+
+  fun IntroRecord alpha (H >> TRUE (ty, _)) =
+    let
+      val psi = accumulateRecordGoals H ty
+    in
+      (T.map #2 psi, fn rho =>
+        let
+          fun go t =
+            let
+              open T.ConsView
+            in
+              case out t of
+                 EMPTY => Syn.into Syn.AX
+               | CONS (x, (lbl, _), t) =>
+                   let
+                     val m = T.lookup rho x // ([],[])
+                     val proj = Syn.into @@ Syn.RCD_PROJ (lbl, m)
+                   in
+                     Syn.into @@ Syn.RCD_CONS (lbl, proj, go t)
+                   end
+            end
+        in
+          abtToAbs @@ go psi
+        end)
+    end
+    | IntroRecord _ _ = raise Match
+
+  fun IntroSingl alpha (H >> TRUE (ty, tau)) =
+    let
+      val Syn.RCD_SINGL (lbl, a) = Syn.out ty
+      val (goal, _, _) = makeGoal @@ H >> TRUE (a, tau)
+      val psi = T.empty @> goal
+    in
+      (psi, fn rho =>
+         let
+           val m = T.lookup rho (#1 goal) // ([],[])
+         in
+           abtToAbs @@ Syn.into @@ Syn.RCD_CONS (lbl, m, Syn.into Syn.AX)
+         end)
+    end
+    | IntroSingl _ _ = raise Match
+
+  (* TODO: account for case where R synth ~> rs, with rs some not-necessarily-singleton record type. *)
 
   (* H >> R.lbl synth ~> A
    *   H >> R synth ~> singl[lbl](A)

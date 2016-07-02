@@ -6,8 +6,6 @@ Tac try(T : tac) = [
   T || id
 ].
 
-
-
 // Tacticals are easily defined from within JonPRL's computation system.
 // Here are a few examples:
 Tac repeat(T : tac) = [
@@ -64,15 +62,37 @@ Record Sg(A : exp, B : [exp].exp) = {
   snd : B[fst]
 }.
 
+Thm SigmaTest : [Sg(Base; [x]. ~(x; Ax))] by [
+  unfold Sg;
+  repeat(intro);
+  #0 { witness [Ax] };
+  bang
+].
 
 Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang
 ].
 
-
 Sym yes : exp.
 Sym no : exp.
 
 Thm symgenTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
-  bang
+  ceval
+].
+
+Thm symgenTest3 : [nu({a}. nu({b}. ~(ifeq('a; 'b; 'yes; 'no); 'no)))] by [
+  eval; ceval; csym; ceval
+].
+
+Thm exnTest : [nu{exn}({a}. ~(try[a](raise(exn[a](Ax)); [z].'yes); 'yes))] by [
+  eval; ceval; csym; ceval
+].
+
+Thm exnTest2 : [nu{exn}({a}. try[a](raise(exn[a](Ax)); [z]. ~(z; Ax)))] by [
+  eval; ceval; csym; ceval
+].
+
+Sym fail : exn.
+Thm exnTest3 : [~(try[fail](ifeq(raise(exn[fail](Ax)); 'yes; 'yes; 'no); [z]. z); Ax)] by [
+  ceval
 ].
