@@ -16,3 +16,6 @@
 [submodule "lib/sml-unparse"]
 	path = lib/sml-unparse
 	url = https://github.com/RedPRL/sml-unparse.git
+[submodule "lib/sml-json"]
+	path = lib/sml-json
+	url = https://github.com/RedPRL/sml-json.git
