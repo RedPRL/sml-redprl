@@ -103,8 +103,7 @@ struct
      | TEST1 ((u, _), tau) => "ifeq1{" ^ Sort.toString tau ^ "}[" ^ f u ^ "]"
 
   local
-    structure J = Json
-    structure S = RedPrlAtomicSortJson
+    structure J = Json and S = RedPrlAtomicSortJson
   in
     fun encode f =
       fn TEST0 (sigma, tau) => J.Obj [("test0", J.Obj [("sorts", J.Array [S.encode sigma, S.encode tau])])]
