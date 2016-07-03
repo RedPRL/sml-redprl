@@ -12,7 +12,7 @@ struct
      RECORD of 'i
 end
 
-structure RecordV : ABT_OPERATOR =
+structure RecordV : JSON_ABT_OPERATOR =
 struct
   open RecordOperators ArityNotation SortData
   structure Ar = RedPrlAtomicArity
@@ -41,11 +41,23 @@ struct
   fun map f =
     fn CONS lbl => CONS (f lbl)
      | SINGL lbl => SINGL (f lbl)
+
+  structure J = Json and S = RedPrlAtomicSortJson
+
+  fun encode f =
+    fn CONS lbl => J.Obj [("cons", f lbl)]
+     | SINGL lbl => J.Obj [("singl", f lbl)]
+
+  fun decode f =
+    fn J.Obj [("cons", lbl)] => Option.map CONS (f lbl)
+     | J.Obj [("singl", lbl)] => Option.map SINGL (f lbl)
+     | _ => NONE
 end
+
 
 structure RecordK :
 sig
-  include ABT_OPERATOR
+  include JSON_ABT_OPERATOR
   val input : 'i t -> RedPrlAtomicArity.sort
 end =
 struct
@@ -80,9 +92,20 @@ struct
   fun map f =
     fn PROJ lbl => PROJ (f lbl)
      | SINGL_GET_TY => SINGL_GET_TY
+
+  structure J = Json and S = RedPrlAtomicSortJson
+
+  fun encode f =
+    fn PROJ lbl => J.Obj [("proj", f lbl)]
+     | SINGL_GET_TY => J.String "singl_get_ty"
+
+  fun decode f =
+    fn J.Obj [("proj", lbl)] => Option.map PROJ (f lbl)
+     | J.String "singl_get_ty" => SOME SINGL_GET_TY
+     | _ => NONE
 end
 
-structure RecordD : ABT_OPERATOR =
+structure RecordD : JSON_ABT_OPERATOR =
 struct
   open RecordOperators ArityNotation SortData
   structure Ar = RedPrlAtomicArity
@@ -106,4 +129,13 @@ struct
 
   fun map f (RECORD lbl) =
     RECORD (f lbl)
+
+  structure J = Json and S = RedPrlAtomicSortJson
+
+  fun encode f (RECORD lbl) =
+    J.Obj [("record", f lbl)]
+
+  fun decode f =
+    fn J.Obj [("record", lbl)] => Option.map RECORD (f lbl)
+     | _ => NONE
 end
