@@ -1,6 +1,7 @@
 Library
   structure SortData
   structure RedPrlAtomicSort
+  structure RedPrlAtomicSortJson
   structure RedPrlAtomicValence
   structure RedPrlAtomicArity
   structure ArityNotation
@@ -59,6 +60,8 @@ is
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt-unparser.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt-lcs.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-typed-abts/abt-json.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-json/json.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-telescopes/telescopes.cm
   cmlib.cm
 

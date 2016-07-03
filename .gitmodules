@@ -19,3 +19,6 @@
 [submodule "lib/sml-json"]
 	path = lib/sml-json
 	url = https://github.com/RedPRL/sml-json.git
+[submodule "lib/sml-parcom"]
+	path = lib/sml-parcom
+	url = https://github.com/RedPRL/sml-parcom.git

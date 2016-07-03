@@ -1,7 +1,9 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-unparse/unparse.mlb
+  ../lib/sml-json/json.mlb
   ../lib/sml-typed-abts/abt.mlb
+  ../lib/sml-typed-abts/abt-json.mlb
   ../lib/sml-typed-abts/abt-lcs.mlb
   ../lib/sml-typed-abts/abt-unparser.mlb
   ../lib/sml-telescopes/telescopes.mlb
@@ -42,6 +44,7 @@ local
 in
   structure SortData
   structure RedPrlAtomicSort
+  structure RedPrlAtomicSortJson
   structure RedPrlAtomicValence
   structure RedPrlAtomicArity
   structure ArityNotation
