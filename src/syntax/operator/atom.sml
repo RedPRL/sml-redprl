@@ -11,8 +11,7 @@ struct
     | TEST1 of ('i * Sort.t) * Sort.t
 end
 
-
-structure AtomV : ABT_OPERATOR =
+structure AtomV : JSON_ABT_OPERATOR =
 struct
   open AtomOperators SortData ArityNotation
   structure Ar = RedPrlAtomicArity
@@ -40,11 +39,28 @@ struct
   fun map f =
     fn ATOM tau => ATOM tau
      | TOKEN (u, tau) => TOKEN (f u, tau)
+
+  local
+    structure J = Json
+    structure S = RedPrlAtomicSortJson
+  in
+    fun encode f =
+      fn ATOM tau => J.Obj [("atom", S.encode tau)]
+       | TOKEN (u, tau) => J.Obj [("token", f u), ("sort", S.encode tau)]
+
+    fun decode f =
+      fn J.Obj [("atom", tau)] => Option.map ATOM (S.decode tau)
+       | J.Obj [("token", u), ("sort", tau)] =>
+           (case (f u, raise Match) of
+               (SOME u', SOME tau') => SOME (TOKEN (u', tau'))
+             | _ => NONE)
+       | _ => NONE
+  end
 end
 
 structure AtomK :
 sig
-  include ABT_OPERATOR
+  include JSON_ABT_OPERATOR
   val input : 'i t -> RedPrlAtomicSort.t
 end =
 struct
@@ -85,4 +101,24 @@ struct
   fun toString f =
     fn TEST0 (sigma, tau) => "ifeq0{" ^ Sort.toString tau ^ "}"
      | TEST1 ((u, _), tau) => "ifeq1{" ^ Sort.toString tau ^ "}[" ^ f u ^ "]"
+
+  local
+    structure J = Json
+    structure S = RedPrlAtomicSortJson
+  in
+    fun encode f =
+      fn TEST0 (sigma, tau) => J.Obj [("test0", J.Obj [("sorts", J.Array [S.encode sigma, S.encode tau])])]
+       | TEST1 ((u, sigma), tau) => J.Obj [("test1", J.Obj [("sym", f u), ("sorts", J.Array [S.encode sigma, S.encode tau])])]
+
+    fun decode f =
+      fn J.Obj [("test0", J.Obj [("sorts", J.Array [sigma, tau])])] =>
+           (case (S.decode sigma, S.decode tau) of
+               (SOME sigma', SOME tau') => SOME (TEST0 (sigma', tau'))
+             | _ => NONE)
+       | J.Obj [("test1", J.Obj [("sym", u), ("sorts", J.Array [sigma, tau])])] =>
+           (case (f u, S.decode sigma, S.decode tau) of
+               (SOME u', SOME sigma', SOME tau') => SOME (TEST1 ((u', sigma'), tau'))
+             | _ => NONE)
+       | _ => NONE
+  end
 end

@@ -68,6 +68,8 @@ is
   syntax/sort_data.sml
   syntax/arity.sml
 
+  syntax/json_abt_operator.sig
+
   syntax/operator/nominal_lcf.sml
   syntax/operator/level.sml
   syntax/operator/ctt.sml
