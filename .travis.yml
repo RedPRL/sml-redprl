@@ -7,4 +7,5 @@ install:
   - git submodule update --init --recursive
 script:
   - ./script/test.sh
+  - ./script/mlton.sh
   - python3 script/test_interactive.py
