@@ -33,7 +33,7 @@ struct
    | RCD_D of 'i RecordD.t
 end
 
-structure RedPrlV : ABT_OPERATOR =
+structure RedPrlV : JSON_ABT_OPERATOR =
 struct
   structure Ar = RedPrlAtomicArity
 
@@ -119,11 +119,40 @@ struct
      | OP_SOME tau => OP_SOME tau
      | OP_NONE tau => OP_NONE tau
      | EXN a => EXN (f a)
+
+  structure J = Json and S = RedPrlAtomicSortJson
+
+  fun encode f =
+    fn LCF theta => J.Obj [("lcf", NominalLcfV.encode f theta)]
+     | LVL_V theta => J.Obj [("lvl", LevelV.encode f theta)]
+     | CTT_V theta => J.Obj [("ctt", CttV.encode f theta)]
+     | RCD_V theta => J.Obj [("rcd", RecordV.encode f theta)]
+     | ATM_V theta => J.Obj [("atm", AtomV.encode f theta)]
+     | REFINE tau => J.Obj [("refine", S.encode tau)]
+     | VEC_LIT (tau, len) => J.Obj [("vec", J.Array [S.encode tau, J.Int len])]
+     | STR_LIT str => J.Obj [("str", J.String str)]
+     | OP_SOME tau => J.Obj [("some", S.encode tau)]
+     | OP_NONE tau => J.Obj [("none", S.encode tau)]
+     | EXN a => J.Obj [("exn", f a)]
+
+  fun decode f =
+    fn J.Obj [("lcf", theta)] => Option.map LCF (NominalLcfV.decode f theta)
+     | J.Obj [("lvl", theta)] => Option.map LVL_V (LevelV.decode f theta)
+     | J.Obj [("ctt", theta)] => Option.map CTT_V (CttV.decode f theta)
+     | J.Obj [("rcd", theta)] => Option.map RCD_V (RecordV.decode f theta)
+     | J.Obj [("atm", theta)] => Option.map ATM_V (AtomV.decode f theta)
+     | J.Obj [("refine", tau)] => Option.map REFINE (S.decode tau)
+     | J.Obj [("vec", J.Array [tau, J.Int len])] => Option.map (fn tau' => VEC_LIT (tau', len)) (S.decode tau)
+     | J.Obj [("str", J.String str)] => SOME (STR_LIT str)
+     | J.Obj [("some", tau)] => Option.map OP_SOME (S.decode tau)
+     | J.Obj [("none", tau)] => Option.map OP_NONE (S.decode tau)
+     | J.Obj [("exn", a)] => Option.map EXN (f a)
+     | _ => NONE
 end
 
 structure RedPrlK :
 sig
-   include ABT_OPERATOR
+   include JSON_ABT_OPERATOR
    val input : 'i t -> RedPrlAtomicSort.t
 end =
 struct
@@ -194,9 +223,32 @@ struct
      | ATM_K th => ATM_K (AtomK.map f th)
      | THROW => THROW
      | CATCH a => CATCH (f a)
+
+  structure J = Json and S = RedPrlAtomicSortJson
+
+  fun encode f =
+    fn EXTRACT tau => J.Obj [("extract", S.encode tau)]
+     | FROM_SOME tau => J.Obj [("from_some", S.encode tau)]
+     | LVL_K th => J.Obj [("lvl", LevelK.encode f th)]
+     | CTT_K th => J.Obj [("ctt", CttK.encode f th)]
+     | RCD_K th => J.Obj [("rcd", RecordK.encode f th)]
+     | ATM_K th => J.Obj [("atm", AtomK.encode f th)]
+     | THROW => J.String "throw"
+     | CATCH a => J.Obj [("catch", f a)]
+
+  fun decode f =
+    fn J.Obj [("extract", tau)] => Option.map EXTRACT (S.decode tau)
+     | J.Obj [("from_some", tau)] => Option.map FROM_SOME (S.decode tau)
+     | J.Obj [("lvl", th)] => Option.map LVL_K (LevelK.decode f th)
+     | J.Obj [("ctt", th)] => Option.map CTT_K (CttK.decode f th)
+     | J.Obj [("rcd", th)] => Option.map RCD_K (RecordK.decode f th)
+     | J.Obj [("atm", th)] => Option.map ATM_K (AtomK.decode f th)
+     | J.String "throw" => SOME THROW
+     | J.Obj [("catch", a)] => Option.map CATCH (f a)
+     | _ => NONE
 end
 
-structure RedPrlD : ABT_OPERATOR =
+structure RedPrlD : JSON_ABT_OPERATOR =
 struct
   structure Ar = RedPrlAtomicArity
 
@@ -223,4 +275,15 @@ struct
   fun map f =
     fn CTT_D th => CTT_D (CttD.map f th)
      | RCD_D th => RCD_D (RecordD.map f th)
+
+  structure J = Json and S = RedPrlAtomicSortJson
+
+  fun encode f =
+    fn CTT_D th => J.Obj [("ctt", CttD.encode f th)]
+     | RCD_D th => J.Obj [("rcd", RecordD.encode f th)]
+
+  fun decode f =
+    fn J.Obj [("ctt", th)] => Option.map CTT_D (CttD.decode f th)
+     | J.Obj [("rcd", th)] => Option.map RCD_D (RecordD.decode f th)
+     | _ => NONE
 end
