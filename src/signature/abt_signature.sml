@@ -65,7 +65,7 @@ struct
       fn DEF def => encodeDef def
        | SYM_DECL tau => J.Obj [("sym_decl", AS.encode tau)]
 
-    fun go sign =
+    fun encode' sign =
       case out sign of
          EMPTY => []
        | CONS (sym, decl, sign') =>
@@ -73,10 +73,75 @@ struct
            val lbl = Symbol.toString sym
            val obj = encodeDecl decl
          in
-           (lbl, obj) :: go sign'
+           (lbl, obj) :: encode' sign'
+         end
+
+    structure RS = RedPrlOperator.S
+
+    fun liftValence ((ssorts, vsorts), tau) =
+      ((List.map RS.EXP ssorts, List.map RS.EXP vsorts), RS.EXP tau)
+
+    fun decodeDecl env ctx sign =
+      fn J.Obj [("sym_decl", tau)] => SYM_DECL (Option.valOf (AS.decode tau))
+       | J.Obj [("parameters", J.Array params), ("arguments", J.Array args), ("sort", sort), ("definiens", definiens)] =>
+         let
+           val decodeParamBinding =
+             fn J.Obj [("sym", J.String u), ("sort", tau)] =>
+                (Abt.Sym.named u, Option.valOf (AS.decode tau))
+              | _ => raise Match
+
+           val decodeArgBinding =
+             fn J.Obj [("metavar", x), ("valence", vl)] => raise Match
+              | _ => raise Match
+
+           val params' = List.map decodeParamBinding params
+           val args' = List.map decodeArgBinding args
+           val sort' = Option.valOf (AS.decode sort)
+
+           val (menv, senv, venv) = env
+           val (mctx, sctx, vctx) = ctx
+
+           val (menv', mctx') = List.foldl (fn ((x, vl), (e, c)) => (NE.insert e (Abt.Metavar.toString x) x, Abt.Metavar.Ctx.insert c x (liftValence vl))) (menv, mctx) args'
+           val (senv', sctx') = List.foldl (fn ((u, tau), (e, c)) => (NE.insert e (Abt.Sym.toString u) u, Abt.Sym.Ctx.insert c u (RS.EXP tau))) (senv, sctx) params'
+
+           val env' = (menv', senv', venv)
+           val ctx' = (mctx', sctx', vctx)
+
+           val definiens' = AJ.decode env' ctx' definiens
+         in
+           DEF {parameters = params', arguments = args', sort = sort', definiens = definiens'}
+         end
+       | m => raise Fail ("Failed to decode decl, " ^ J.toString m)
+
+    fun decode' env ctx sign =
+      fn [] => sign
+       | (lbl, obj) :: xs =>
+         let
+           val decl = decodeDecl env ctx sign obj
+
+           val sym = Abt.Sym.named lbl
+           val (menv, senv, venv) = env
+           val (mctx, sctx, vctx) = ctx
+
+           val sign' = Telescope.snoc sign sym decl
+
+           val senv' = NE.insert senv lbl sym
+           val env' = (menv, senv', venv)
+
+           val tau = case decl of SYM_DECL tau => tau | _ => SortData.OPID
+           val sctx' = Abt.Sym.Ctx.insert sctx sym (RS.EXP tau)
+
+           val ctx' = (mctx, sctx', vctx)
+         in
+           decode' env' ctx' sign' xs
          end
   in
-    fun encode sign = J.Obj (go sign)
+    fun encode sign =
+      J.Obj (encode' sign)
+
+    val decode =
+      fn J.Obj xs => decode' (NE.empty, NE.empty, NE.empty) (Abt.Metavar.Ctx.empty, Abt.Sym.Ctx.empty, Abt.Var.Ctx.empty) Telescope.empty xs
+       | _ => raise Fail "Decode failed!"
   end
 
   exception NotFound
