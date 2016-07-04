@@ -127,12 +127,79 @@ struct
      | MEMBER tau => "member{" ^ Sort.toString tau ^ "}"
 end
 
-structure CttV = AbtSimpleOperator (CttSimpleV)
-structure CttD = AbtSimpleOperator (CttSimpleD)
+structure CttV : JSON_ABT_OPERATOR =
+struct
+  structure O = AbtSimpleOperator (CttSimpleV)
+  structure J = Json and S = RedPrlAtomicSortJson
+
+  open O
+
+  local
+    open CttOperators
+  in
+    fun encode f =
+      fn CAPPROX tau => J.Obj [("capprox", S.encode tau)]
+       | CEQUIV tau => J.Obj [("cequiv", S.encode tau)]
+       | BASE tau => J.Obj [("base", S.encode tau)]
+       | TOP tau => J.Obj [("top", S.encode tau)]
+       | UNIV tau => J.Obj [("univ", S.encode tau)]
+       | EQ tau => J.Obj [("eq", S.encode tau)]
+       | AX => J.String "ax"
+       | SQUASH tau => J.Obj [("squash", S.encode tau)]
+       | ENSEMBLE (sigma, tau) => J.Obj [("ensemble", J.Array [S.encode sigma, S.encode tau])]
+       | DFUN => J.String "dfun"
+       | LAM => J.String "lam"
+       | DEP_ISECT => J.String "dep_isect"
+       | VOID => J.String "void"
+       | DUMMY => J.String "dummy"
+
+    fun decode f =
+      fn J.Obj [("capprox", tau)] => Option.map CAPPROX (S.decode tau)
+       | J.Obj [("cequiv", tau)] => Option.map CEQUIV (S.decode tau)
+       | J.Obj [("base", tau)] => Option.map BASE (S.decode tau)
+       | J.Obj [("top", tau)] => Option.map TOP (S.decode tau)
+       | J.Obj [("univ", tau)] => Option.map UNIV (S.decode tau)
+       | J.Obj [("eq", tau)] => Option.map EQ (S.decode tau)
+       | J.String "ax" => SOME AX
+       | J.Obj [("squash", tau)] => Option.map SQUASH (S.decode tau)
+       | J.Obj [("ensemble", J.Array [sigma, tau])] =>
+           (case (S.decode sigma, S.decode tau) of
+               (SOME sigma', SOME tau') => SOME (ENSEMBLE (sigma', tau'))
+             | _ => NONE)
+      | J.String "dfun" => SOME DFUN
+      | J.String "lam" => SOME LAM
+      | J.String "dep_isect" => SOME DEP_ISECT
+      | J.String "void" => SOME VOID
+      | J.String "dummy" => SOME DUMMY
+      | _ => NONE
+  end
+end
+
+structure CttD : JSON_ABT_OPERATOR =
+struct
+  structure O = AbtSimpleOperator (CttSimpleD)
+  open O
+
+  local
+    structure J = Json and S = RedPrlAtomicSortJson
+    open CttOperators
+  in
+    fun encode f =
+      fn NOT => J.String "not"
+       | FUN => J.String "fun"
+       | MEMBER tau => J.Obj [("member", S.encode tau)]
+
+    fun decode f =
+      fn J.String "not" => SOME NOT
+       | J.String "FUN" => SOME FUN
+       | J.Obj [("member", tau)] => Option.map MEMBER (S.decode tau)
+       | _ => NONE
+  end
+end
 
 structure CttK :
 sig
-  include ABT_OPERATOR
+  include JSON_ABT_OPERATOR
   val input : 'i t -> RedPrlAtomicArity.sort
 end =
 struct
@@ -192,4 +259,31 @@ struct
       | UNIV_GET_LVL => EXP
       | FRESH (sigma, tau) => UNIT
       | FRESH_K ((u, sigma), tau) => tau
+
+  local
+    structure J = Json and S = RedPrlAtomicSortJson
+  in
+    fun encode f =
+      fn AP => J.String "ap"
+       | DFUN_DOM => J.String "dfun_dom"
+       | DFUN_COD => J.String "dfun_cod"
+       | UNIV_GET_LVL => J.String "univ_get_lvl"
+       | FRESH (sigma, tau) => J.Obj [("fresh", J.Array [S.encode sigma, S.encode tau])]
+       | FRESH_K ((u, sigma), tau) => J.Obj [("fresh_k", J.Array [f u, S.encode sigma, S.encode tau])]
+
+    fun decode f =
+      fn J.String "ap" => SOME AP
+       | J.String "dfun_dom" => SOME DFUN_DOM
+       | J.String "dfun_cod" => SOME DFUN_COD
+       | J.String "univ_get_lvl" => SOME UNIV_GET_LVL
+       | J.Obj [("fresh", J.Array [sigma, tau])] =>
+           (case (S.decode sigma, S.decode tau) of
+               (SOME sigma', SOME tau') => SOME (FRESH (sigma', tau'))
+             | _ => NONE)
+       | J.Obj [("fresh_k", J.Array [u, sigma, tau])] =>
+           (case (f u, S.decode sigma, S.decode tau) of
+               (SOME u', SOME sigma', SOME tau') => SOME (FRESH_K ((u', sigma'), tau'))
+             | _ => NONE)
+       | _ => NONE
+  end
 end

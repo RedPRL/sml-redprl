@@ -14,6 +14,7 @@ Library
   structure AbtSignature
 is
   $/basis.cm
+  ../lib/sml-json/json.cm
   ../lib/sml-typed-abts/abt.cm
   ../lib/sml-telescopes/telescopes.cm
   ../lib/sml-typed-abts/lib/sml-parcom/parcom.cm (bind:(anchor:libs value:../lib/))

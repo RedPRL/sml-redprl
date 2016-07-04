@@ -1,7 +1,9 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/sml-unparse/unparse.mlb
+  ../lib/sml-json/json.mlb
   ../lib/sml-typed-abts/abt.mlb
+  ../lib/sml-typed-abts/abt-json.mlb
   ../lib/sml-typed-abts/abt-lcs.mlb
   ../lib/sml-typed-abts/abt-unparser.mlb
   ../lib/sml-telescopes/telescopes.mlb
@@ -9,6 +11,7 @@ local
   syntax/sort_data.sml
   syntax/arity.sml
 
+  syntax/json_abt_operator.sig
   syntax/operator/nominal_lcf.sml
   syntax/operator/level.sml
   syntax/operator/ctt.sml
@@ -42,6 +45,7 @@ local
 in
   structure SortData
   structure RedPrlAtomicSort
+  structure RedPrlAtomicSortJson
   structure RedPrlAtomicValence
   structure RedPrlAtomicArity
   structure ArityNotation
@@ -80,6 +84,7 @@ in
   structure RedPrlOperator
   structure RedPrlAst
   structure RedPrlAbt
+  structure RedPrlAbtJson
   structure RedPrlAstToAbt
 
   structure ShowAbt

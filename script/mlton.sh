@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+LIBS=$(pwd)/lib
 
 mkdir -p bin
-mlton -mlb-path-map mlb-path-map -output bin/redprl src/frontend.mlb
+mlton -mlb-path-var "LIBS $LIBS" -output bin/redprl src/frontend.mlb
