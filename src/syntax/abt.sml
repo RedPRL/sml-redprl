@@ -6,9 +6,30 @@ structure Symbol = AbtSymbol ()
 structure Variable = Symbol
 
 structure RedPrlSort =
-  LcsSort
-    (structure AtomicSort = RedPrlAtomicSort
-     val opidSort = SOME SortData.OPID)
+struct
+  local
+    structure S = LcsSort (structure AtomicSort = RedPrlAtomicSort val opidSort = SOME SortData.OPID)
+    structure J = Json and AS = RedPrlAtomicSortJson
+
+    fun ** (SOME a, SOME b) = SOME (a, b)
+      | ** _ = NONE
+
+    infix **
+  in
+    open S
+
+    val encodeSort =
+      fn EXP tau => J.Obj [("exp", AS.encode tau)]
+       | VAL tau => J.Obj [("val", AS.encode tau)]
+       | CONT (sigma, tau) => J.Obj [("cont", J.Array [AS.encode sigma, AS.encode tau])]
+
+    val decodeSort =
+      fn J.Obj [("exp", tau)] => Option.map EXP (AS.decode tau)
+       | J.Obj [("val", tau)] => Option.map VAL (AS.decode tau)
+       | J.Obj [("cont", J.Array [sigma, tau])] => Option.map CONT (AS.decode sigma ** AS.decode tau)
+       | _ => NONE
+  end
+end
 
 structure RedPrlLcs =
 struct
