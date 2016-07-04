@@ -1,5 +1,6 @@
 Group is
   $/basis.cm
+  ../lib/sml-json/json.cm
   ../lib/sml-typed-abts/abt.cm
   ../lib/sml-typed-abts/lib/sml-parcom/parcom.cm
   syntax.cm

@@ -43,6 +43,13 @@ struct
                  Decl.DEF d => printDef (l, d)
                | Decl.SYM_DECL tau => printSymDcl (l, tau)); printSign sign')
         | ConsView.EMPTY => ()
+
+    fun dumpSignJson sign =
+      let
+        val json = encode sign
+      in
+        print (Json.toString json)
+      end
   end
 
   fun processFile fileName =

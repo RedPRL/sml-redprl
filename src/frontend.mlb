@@ -5,6 +5,7 @@ local
   ../lib/sml-typed-abts/lib/sml-parcom/parcom.mlb
 
   local
+    ../lib/sml-json/json.mlb
     ../lib/sml-telescopes/telescopes.mlb
     ../src/signature.mlb
     ../src/signature-elab.mlb
