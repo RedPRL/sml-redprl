@@ -124,6 +124,37 @@ structure RedPrlAbt =
      structure Var = Variable
      structure Sym = Symbol)
 
+structure RedPrlAbtJsonKit : ABT_JSON_KIT =
+struct
+  structure Abt = RedPrlAbt
+
+  local
+    structure J = Json and AS = RedPrlAtomicSortJson
+    open RedPrlOperator.S
+
+    fun ** (SOME a, SOME b) = SOME (a, b)
+      | ** _ = NONE
+
+    infix **
+  in
+    val encodeSort =
+      fn EXP tau => J.Obj [("exp", AS.encode tau)]
+       | VAL tau => J.Obj [("val", AS.encode tau)]
+       | CONT (sigma, tau) => J.Obj [("cont", J.Array [AS.encode sigma, AS.encode tau])]
+
+    val decodeSort =
+      fn J.Obj [("exp", tau)] => Option.map EXP (AS.decode tau)
+       | J.Obj [("val", tau)] => Option.map VAL (AS.decode tau)
+       | J.Obj [("cont", J.Array [sigma, tau])] => Option.map CONT (AS.decode sigma ** AS.decode tau)
+       | _ => NONE
+  end
+
+  val encodeOperator = RedPrlOperator.encode
+  val decodeOperator = RedPrlOperator.decode
+end
+
+structure RedPrlAbtJson = AbtJson (RedPrlAbtJsonKit)
+
 structure RedPrlAstToAbt =
   AstToAbt
     (structure Ast = RedPrlAst

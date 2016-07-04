@@ -37,7 +37,6 @@ Library
   structure Symbol
 
   structure RedPrlLcs
-  structure RedPrlSort
   structure RedPrlOperator
   structure RedPrlAst
   structure RedPrlAbt
