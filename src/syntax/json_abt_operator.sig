@@ -5,3 +5,11 @@ sig
   val encode : ('a -> Json.json_value) -> 'a t -> Json.json_value
   val decode : (Json.json_value -> 'a option) -> Json.json_value -> 'a t option
 end
+
+signature JSON_LCS_OPERATOR =
+sig
+  include LCS_OPERATOR
+
+  val encode : ('a -> Json.json_value) -> 'a t -> Json.json_value
+  val decode : (Json.json_value -> 'a option) -> Json.json_value -> 'a t option
+end
