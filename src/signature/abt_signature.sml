@@ -34,6 +34,51 @@ struct
 
   type sign = decl Telescope.telescope
 
+  local
+    structure J = Json and AJ = RedPrlAbtJson and AS = RedPrlAtomicSortJson
+    structure NE = AJ.NameEnv
+    open Telescope.ConsView
+
+    val encodeSym = J.String o Abt.Sym.toString
+    val encodeMetavar = J.String o Abt.Metavar.toString
+
+    fun encodeValence ((ssorts, vsorts), tau) =
+      J.Obj
+        [("syms", J.Array (List.map AS.encode ssorts)),
+         ("vars", J.Array (List.map AS.encode vsorts)),
+         ("sort", AS.encode tau)]
+
+    fun encodeParam (u, tau) =
+      J.Obj [("sym", encodeSym u), ("sort", AS.encode tau)]
+
+    fun encodeArg (x, vl) =
+      J.Obj [("metavar", encodeMetavar x), ("valence", encodeValence vl)]
+
+    fun encodeDef {parameters, arguments, sort, definiens} =
+      J.Obj
+        [("parameters", J.Array (List.map encodeParam parameters)),
+         ("arguments", J.Array (List.map encodeArg arguments)),
+         ("sort", AS.encode sort),
+         ("definiens", AJ.encode definiens)]
+
+    val encodeDecl =
+      fn DEF def => encodeDef def
+       | SYM_DECL tau => J.Obj [("sym_decl", AS.encode tau)]
+
+    fun go sign =
+      case out sign of
+         EMPTY => []
+       | CONS (sym, decl, sign') =>
+         let
+           val lbl = Symbol.toString sym
+           val obj = encodeDecl decl
+         in
+           (lbl, obj) :: go sign'
+         end
+  in
+    fun encode sign = J.Obj (go sign)
+  end
+
   exception NotFound
 
   fun subarguments (Th1, Th2) =

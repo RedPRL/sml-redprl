@@ -84,6 +84,7 @@ in
   structure RedPrlOperator
   structure RedPrlAst
   structure RedPrlAbt
+  structure RedPrlAbtJson
   structure RedPrlAstToAbt
 
   structure ShowAbt
