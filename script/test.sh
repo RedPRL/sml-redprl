@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-mlton -mlb-path-map mlb-path-map testsuite/test.mlb
+LIBS=$(pwd)/lib
+
+mlton -mlb-path-var "LIBS $LIBS" testsuite/test.mlb
 ./testsuite/test
