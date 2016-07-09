@@ -1,2 +1,0 @@
-{"cmd": "new_session", "name": "add_files"}
-{"cmd": "add_files", "session_id": "add_files", "filenames": ["testsuite/tests/example.prl"]}

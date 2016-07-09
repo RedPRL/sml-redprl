@@ -1,16 +1,16 @@
 local
   $(SML_LIB)/basis/basis.mlb
   ../lib/cmlib/cmlib.mlb
+  ../lib/sml-typed-abts/abt.mlb
   ../lib/sml-typed-abts/lib/sml-parcom/parcom.mlb
   ../lib/sml-json/json.mlb
   ../lib/sml-telescopes/telescopes.mlb
   ../src/signature.mlb
   ../src/signature-elab.mlb
   ../src/syntax.mlb
+  ../src/frontend/frontend.sml
 
-  interactive/sessions.sml
   interactive/commands.sml
 in
-  structure Sessions
   structure Commands
 end
