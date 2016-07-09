@@ -26,7 +26,7 @@ struct
     | HYP_VAR of 'i
 end
 
-structure NominalLcfV : ABT_OPERATOR =
+structure NominalLcfV : JSON_ABT_OPERATOR =
 struct
   open NominalLcfOperators SortData
 
@@ -223,4 +223,91 @@ struct
      | UNFOLD (i, oj) => "unfold[" ^ f i ^ "]" ^ (case oj of NONE => "" | SOME j => " in " ^ f j)
      | NORMALIZE oi => "normalize" ^ (case oi of NONE => "" | SOME i => " in " ^ f i)
      | HYP_VAR i => "@" ^ f i
+
+  structure J = Json and S = RedPrlAtomicSortJson
+
+
+  fun encodeOpt f =
+    fn SOME x => f x
+     | NONE => J.Null
+
+  fun decodeOpt f =
+    fn J.Null => NONE
+     | m => Option.map SOME (f m)
+
+  fun encode f =
+    fn SEQ taus => J.Obj [("seq", J.Array (List.map S.encode taus))]
+     | ORELSE => J.String "orelse"
+     | ALL => J.String "all"
+     | EACH => J.String "each"
+     | FOCUS i => J.Obj [("focus", J.Int i)]
+     | PROGRESS => J.String "progress"
+     | REC => J.String "rec"
+     | INTRO i => J.Obj [("intro", encodeOpt J.Int i)]
+     | EQ i => J.Obj [("eq", encodeOpt J.Int i)]
+     | CHKINF => J.String "chkinf"
+     | CUM => J.String "cum"
+     | EXT => J.String "ext"
+     | ETA (a, tau) => J.Obj [("eta", J.Array [f a, S.encode tau])]
+     | ELIM (a, tau) => J.Obj [("elim", J.Array [f a, S.encode tau])]
+     | HYP (a, tau) => J.Obj [("hyp", J.Array [f a, S.encode tau])]
+     | UNHIDE (a, tau) => J.Obj [("unhide", J.Array [f a, S.encode tau])]
+     | AUTO => J.String "auto"
+     | ID => J.String "id"
+     | FAIL => J.String "fail"
+     | TRACE tau => J.Obj [("trace", S.encode tau)]
+     | CSTEP i => J.Obj [("cstep", J.Int i)]
+     | CEVAL => J.String "ceval"
+     | CSYM => J.String "csym"
+     | REWRITE_GOAL tau => J.Obj [("rewrite_goal", S.encode tau)]
+     | EVAL_GOAL a => J.Obj [("eval_goal", encodeOpt f a)]
+     | NORMALIZE a => J.Obj [("normalize", encodeOpt f a)]
+     | WITNESS tau => J.Obj [("witness", S.encode tau)]
+     | UNFOLD (a, b) => J.Obj [("unfold", J.Array [f a, encodeOpt f b])]
+     | HYP_VAR a => J.Obj [("hyp_var", f a)]
+
+  fun traverseOpt f xs =
+    SOME (List.map (Option.valOf o f) xs)
+      handle _ => NONE
+
+  val decodeInt =
+    fn J.Int i => SOME i
+     | _ => NONE
+
+  fun ** (SOME a, SOME b) = SOME (a, b)
+    | ** _ = NONE
+
+  infix **
+
+  fun decode f =
+    fn J.Obj [("seq", J.Array taus)] => Option.map SEQ (traverseOpt S.decode taus)
+     | J.String "orelse" => SOME ORELSE
+     | J.String "all" => SOME ALL
+     | J.String "each" => SOME EACH
+     | J.Obj [("focus", J.Int i)] => SOME (FOCUS i)
+     | J.String "progress" => SOME PROGRESS
+     | J.String "rec" => SOME REC
+     | J.Obj [("intro", i)] => Option.map INTRO (decodeOpt decodeInt i)
+     | J.Obj [("eq", i)] => Option.map EQ (decodeOpt decodeInt i)
+     | J.String "chkinf" => SOME CHKINF
+     | J.String "cum" => SOME CUM
+     | J.String "ext" => SOME EXT
+     | J.Obj [("eta", J.Array [a, tau])] => Option.map ETA (f a ** S.decode tau)
+     | J.Obj [("elim", J.Array [a, tau])] => Option.map ELIM (f a ** S.decode tau)
+     | J.Obj [("hyp", J.Array [a, tau])] => Option.map HYP (f a ** S.decode tau)
+     | J.Obj [("unhide", J.Array [a, tau])] => Option.map UNHIDE (f a ** S.decode tau)
+     | J.String "auto" => SOME AUTO
+     | J.String "id" => SOME ID
+     | J.String "fail" => SOME FAIL
+     | J.Obj [("trace", tau)] => Option.map TRACE (S.decode tau)
+     | J.Obj [("cstep", J.Int i)] => SOME (CSTEP i)
+     | J.String "ceval" => SOME CEVAL
+     | J.String "csym" => SOME CSYM
+     | J.Obj [("rewrite_goal", tau)] => Option.map REWRITE_GOAL (S.decode tau)
+     | J.Obj [("eval_goal", a)] => Option.map EVAL_GOAL (decodeOpt f a)
+     | J.Obj [("normalize", a)] => Option.map NORMALIZE (decodeOpt f a)
+     | J.Obj [("witness", tau)] => Option.map WITNESS (S.decode tau)
+     | J.Obj [("unfold", J.Array [a, b])] => Option.map UNFOLD (f a ** decodeOpt f b)
+     | J.Obj [("hyp_var", a)] => Option.map HYP_VAR (f a)
+     | _ => NONE
 end

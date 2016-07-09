@@ -50,6 +50,13 @@ struct
         | ConsView.EMPTY => ""
 
     fun printSign sign = print (signToString sign)
+
+    fun dumpSignJson sign =
+      let
+        val json = encode sign
+      in
+        print (Json.toString json)
+      end
   end
 
   fun processFile fileName =

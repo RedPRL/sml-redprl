@@ -41,11 +41,26 @@ struct
      | LSUCC => "lsucc"
 end
 
-structure LevelV = AbtSimpleOperator (SimpleLevelV)
+structure LevelV : JSON_ABT_OPERATOR =
+struct
+  local
+    structure O = AbtSimpleOperator (SimpleLevelV)
+    structure J = Json and S = RedPrlAtomicSortJson
+    open LevelOperators
+  in
+    open O
+
+    fun encode f i = J.Obj [("lvl", J.Int i)]
+
+    fun decode f =
+      fn J.Obj [("lvl", J.Int i)] => SOME i
+       | _ => NONE
+  end
+end
 
 structure LevelK :
 sig
-  include ABT_OPERATOR
+  include JSON_ABT_OPERATOR
   val input : 'i t -> RedPrlAtomicArity.sort
 end =
 struct
@@ -56,4 +71,17 @@ struct
     fn LSUP0 => LVL
      | LSUP1 _ => LVL
      | LSUCC => LVL
+
+  structure J = Json and S = RedPrlAtomicSortJson
+
+  fun encode f =
+    fn LSUP0 => J.String "lsup0"
+     | LSUP1 i => J.Obj [("lsup1", J.Int i)]
+     | LSUCC => J.String "lsucc"
+
+  fun decode f =
+    fn J.String "lsup0" => SOME LSUP0
+     | J.Obj [("lsup1", J.Int i)] => SOME (LSUP1 i)
+     | J.String "lsucc" => SOME LSUCC
+     | _ => NONE
 end

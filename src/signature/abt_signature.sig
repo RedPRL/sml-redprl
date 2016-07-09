@@ -26,4 +26,6 @@ sig
   val symDecl : sign -> sort -> decl
 
   val viewDecl : decl -> Decl.decl
+
+  val encode : sign -> Json.json_value
 end
