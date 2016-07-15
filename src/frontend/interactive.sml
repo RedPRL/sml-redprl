@@ -2,7 +2,7 @@ structure Interactive =
 struct
   fun runLoop() =
     let
-      val _ = print "> "
+      val _ = print "redprl:> "
       val input = TextIO.inputLine TextIO.stdIn
     in
       case input of
