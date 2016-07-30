@@ -12,6 +12,13 @@ local
     ../src/syntax.mlb
   in
     frontend/frontend.sml
+
+    local
+      ../lib/sml-json/json.mlb
+      interactive.mlb
+    in
+      frontend/interactive.sml
+    end
   end
 
   frontend/main.sml

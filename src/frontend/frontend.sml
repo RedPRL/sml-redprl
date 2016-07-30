@@ -13,36 +13,43 @@ struct
       (fn (m, vl) => Metavariable.toString m ^ " : " ^ RedPrlAtomicValence.toString vl)
       ";"
 
-  fun printDef (lbl, {parameters, arguments, definiens, sort}) =
-    print
-      ("Def "
-         ^ Symbol.toString lbl
-         ^ "[" ^ paramsToString parameters ^ "]"
-         ^ "(" ^ argsToString arguments ^ ")"
-         ^ " : " ^ RedPrlAtomicSort.toString sort
-         ^ " = ["
-         ^ RedPrlAbtSyntax.toString definiens
-         ^ "].\n")
+  fun defToString (lbl, {parameters, arguments, definiens, sort}) =
+    "Def "
+       ^ Symbol.toString lbl
+       ^ "[" ^ paramsToString parameters ^ "]"
+       ^ "(" ^ argsToString arguments ^ ")"
+       ^ " : " ^ RedPrlAtomicSort.toString sort
+       ^ " = ["
+       ^ RedPrlAbtSyntax.toString definiens
+       ^ "].\n"
+
+  fun printDef (lbl, d) =
+    print (defToString (lbl, d))
+
+  fun symToString (lbl, tau) =
+    "Sym "
+       ^ Symbol.toString lbl
+       ^ " : "
+       ^ RedPrlAtomicSort.toString tau
+       ^ ".\n"
 
   fun printSymDcl (lbl, tau) =
-    print
-      ("Sym "
-         ^ Symbol.toString lbl
-         ^ " : "
-         ^ RedPrlAtomicSort.toString tau
-         ^ ".\n")
+    print (symToString (lbl, tau))
+
 
   local
     open AbtSignature
     open AbtSignature.Telescope
   in
-    fun printSign sign =
+    fun signToString sign =
       case ConsView.out sign of
           ConsView.CONS (l, dcl, sign') =>
             ((case dcl of
-                 Decl.DEF d => printDef (l, d)
-               | Decl.SYM_DECL tau => printSymDcl (l, tau)); printSign sign')
-        | ConsView.EMPTY => ()
+                 Decl.DEF d => defToString (l, d)
+               | Decl.SYM_DECL tau => symToString (l, tau)) ^ signToString sign')
+        | ConsView.EMPTY => ""
+
+    fun printSign sign = print (signToString sign)
 
     fun dumpSignJson sign =
       let
