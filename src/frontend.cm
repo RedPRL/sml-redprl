@@ -3,9 +3,12 @@ Group is
   ../lib/sml-json/json.cm
   ../lib/sml-typed-abts/abt.cm
   ../lib/sml-typed-abts/lib/sml-parcom/parcom.cm
+  ../lib/sml-json/json.cm
   syntax.cm
   cmlib.cm
   signature.cm
   signature-elab.cm
   frontend/frontend.sml
+  interactive/commands.sml
+  frontend/interactive.sml
   frontend/main.sml
