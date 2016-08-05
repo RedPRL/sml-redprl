@@ -41,25 +41,19 @@ struct
           (1, l) => printMessage (String.implode list)
         | (n, l) =>
           let
-            val l1 = if List.length list < size
-              then list else List.take (list, size)
-            val l2 = if List.length list < size
-              then [] else List.drop (list, size)
-            in
-              (
-                printMessage (String.implode l1);
-                print "redprl:> ";
-                TextIO.inputLine TextIO.stdIn;
-                printPart (n - 1) l2
-              )
+            val l1 = if List.length list < size then list else List.take (list, size)
+            val l2 = if List.length list < size then [] else List.drop (list, size)
+          in
+            printMessage (String.implode l1);
+            print "redprl:> ";
+            TextIO.inputLine TextIO.stdIn;
+            printPart (n - 1) l2
             end
     in
-      (
-        print ("{\"amount\": "  ^ Int.toString num ^ " }\n");
-        print "redprl:> ";
-        TextIO.inputLine TextIO.stdIn;
-        printPart num list
-      )
+      print ("{\"amount\": "  ^ Int.toString num ^ " }\n");
+      print "redprl:> ";
+      TextIO.inputLine TextIO.stdIn;
+      printPart num list
     end
 
   fun handleCommand command =
