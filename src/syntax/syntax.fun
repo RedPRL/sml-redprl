@@ -21,8 +21,6 @@ sig
   val $$ : symbol operator * term bview spine -> term
   val out : term -> term view
 
-  val variable : string -> variable
-
   val debugToString : term -> string
 end
 
@@ -35,7 +33,6 @@ struct
 
   structure Show = DebugShowAbt (Abt)
   val debugToString = Show.toString
-  val variable = Var.named
 end
 
 functor AstSyntaxView (Ast : AST where type 'a spine = 'a list) : SYNTAX_VIEW =
@@ -48,8 +45,6 @@ struct
   type 'a spine = 'a Ast.spine
 
   type term = Ast.ast
-
-  fun variable x = x
 
   datatype 'a bview =
      \ of (symbol spine * variable spine) * 'a
