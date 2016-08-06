@@ -45,9 +45,8 @@ Def Monoid(i : lvl) : exp = [
   { M : MonoidStruct(i) | MonoidLaws(M) }
 ].
 
-Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
-  bang; cumulativity;
-  chk-inf; bang
+Thm MonoidStructWf : [member(MonoidStruct(lbase); Univ(lsuc(lbase)))] by [
+  bang; cumulativity; bang
 ].
 
 
@@ -64,10 +63,10 @@ Record Sg(A : exp, B : [exp].exp) = {
 
 Thm SigmaTest : [Sg(Base; [x]. ~(x; Ax))] by [
   unfold Sg;
-  repeat(intro);
-  #0 { witness [Ax] };
+  intro; [ witness [Ax] ];
   bang
 ].
+
 
 Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang

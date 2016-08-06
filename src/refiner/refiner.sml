@@ -52,7 +52,7 @@ struct
           | Syn.ENSEMBLE _ => EnsembleRules.IsType alpha goal
           | Syn.DEP_ISECT _ => DepIsectRules.IsType alpha goal
           | Syn.CEQUIV _ => CEquivRules.IsType alpha goal
-          | Syn.RCD_SINGL _ => RecordRules.IsType alpha goal
+          | Syn.RECORD_TY _ => RecordRules.IsType alpha goal
           | Syn.UNIV _ => UnivRules.IsType alpha goal
           | Syn.EQ _ => EqRules.IsType alpha goal
           | _ => raise Match)
@@ -77,10 +77,9 @@ struct
           | Syn.ENSEMBLE _ => EnsembleRules.Intro alpha goal
           | Syn.DFUN _ => PiRules.Intro alpha goal
           | Syn.EQ _ => EqRules.Intro alpha goal
-          | Syn.RCD_SINGL _ => RecordRules.IntroSingl alpha goal
-          | Syn.RECORD_TY _ => RecordRules.IntroRecord alpha goal
-          | _ => raise Match
-          )
+          | Syn.RECORD_TY _ => RecordRules.Intro alpha goal
+          | Syn.TOP SortData.EXP => TopRules.IntroTrivial alpha goal
+          | _ => raise Match)
       | Intro alpha (goal as H >> MEM _) = MemRules.Intro alpha goal
       | Intro _ _ = raise Match
 
@@ -99,8 +98,8 @@ struct
         | (Syn.APP (Syn.SQUASH _), _, _) => SquashRules.TypeEq alpha goal
         | (Syn.APP (Syn.ENSEMBLE _), _, _) => EnsembleRules.TypeEq alpha goal
         | (_, _, Syn.ENSEMBLE _) => EnsembleRules.MemberEq alpha goal
-        | (Syn.APP (Syn.RCD_SINGL _), _, _) => RecordRules.TypeEq alpha goal
-        | (_, _, Syn.RCD_SINGL _) => RecordRules.MemberEq alpha goal
+        | (Syn.APP (Syn.RECORD_TY _), _, _) => RecordRules.TypeEq alpha goal
+        | (_, _, Syn.RECORD_TY _) => RecordRules.MemberEq alpha goal
         | (Syn.APP (Syn.ATOM _), _, _) => AtomRules.TypeEq alpha goal
         | (_, _, Syn.ATOM _) => AtomRules.MemberEq alpha goal
         | (Syn.APP (Syn.IF_EQ _), _, _) => AtomRules.TestEq alpha goal
