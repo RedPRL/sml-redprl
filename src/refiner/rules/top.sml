@@ -35,4 +35,13 @@ struct
         abtToAbs @@ Syn.into Syn.AX)
     end
     | MemberEq _ _ = raise Match
+
+  fun IntroTrivial alpha (H >> TRUE (ty, EXP)) =
+    let
+      val Syn.TOP EXP = Syn.out ty
+    in
+      (T.empty, fn rho =>
+         abtToAbs @@ Syn.into Syn.AX)
+    end
+    | IntroTrivial _ _ = raise Match
 end

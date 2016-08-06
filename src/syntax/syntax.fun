@@ -117,7 +117,7 @@ struct
    | RCD_SINGL of symbol * 'a
    | RECORD_TY of symbol * 'a * variable * 'a
    | RCD_PROJ of symbol * 'a
-   | SINGL_GET_TY of 'a
+   | RCD_PROJ_TY of symbol * 'a * 'a
 
    | REFINE_SCRIPT of RS.sort * 'a * 'a * 'a
    | EXTRACT_WITNESS of RS.sort * 'a
@@ -221,10 +221,11 @@ struct
        | IF_EQ (sigma, tau, t1, t2, m, n) => cutAtm (RS.EXP, tau) (AtomOperators.TEST0 (sigma, tau)) [([],[]) \ t2, ([],[]) \ m, ([],[]) \ n] t1
 
        | RCD_CONS (u, m, n) => intoRcdV (RecordOperators.CONS u) [([],[]) \ m, ([],[]) \ n]
-       | RCD_SINGL (u, m) => intoRcdV (RecordOperators.SINGL u) [([],[]) \ m]
-       | RECORD_TY (u, a, x, bx) => intoRcdD (RecordOperators.RECORD u) [([],[]) \ a, ([],[x]) \ bx]
+       | RCD_SINGL (u, a) => intoRcdD (RecordOperators.SINGL u) [([],[]) \ a]
+
+       | RECORD_TY (u, a, x, bx) => intoRcdV (RecordOperators.RECORD u) [([],[]) \ a, ([],[x]) \ bx]
        | RCD_PROJ (u, m) => cutRcd (RecordOperators.PROJ u) [] m
-       | SINGL_GET_TY a => cutRcd RecordOperators.SINGL_GET_TY [] a
+       | RCD_PROJ_TY (u, a, m) => cutRcd (RecordOperators.PROJ_TY u) [([],[]) \ m] a
 
        | REFINE_SCRIPT (tau, m, s, e) => ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
        | EXTRACT_WITNESS (tau, m) => O.CUT (RS.THM tau, tau) $$ [([],[]) \ O.K (EXTRACT tau) $$ [], ([],[]) \ m]
@@ -294,7 +295,7 @@ struct
          | O.V (ATM_V (AtomOperators.TOKEN (u, tau))) $ _ => TOKEN (u, tau)
 
          | O.V (RCD_V (RecordOperators.CONS u)) $ [_ \ m, _ \ n] => RCD_CONS (u, m, n)
-         | O.V (RCD_V (RecordOperators.SINGL u)) $ [_ \ a] =>  RCD_SINGL (u, a)
+         | O.V (RCD_V (RecordOperators.RECORD u)) $ [_ \ a, (_,[x]) \ bx] => RECORD_TY (u, a, x, bx)
 
          | O.V (VEC_LIT (tau, _)) $ es => VEC_LITERAL (tau, List.map (fn _ \ m => m) es)
          | O.V (STR_LIT str) $ _ => STR_LITERAL str
@@ -350,7 +351,7 @@ struct
          | O.K (ATM_K (AtomOperators.TEST0 (sigma, tau))) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (sigma, tau, m, t2, l, r)
          | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (sigma, tau, into (TOKEN (u, sigma)), m, l, r)
          | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
-         | O.K (RCD_K RecordOperators.SINGL_GET_TY) $ [] => SINGL_GET_TY m
+         | O.K (RCD_K (RecordOperators.PROJ_TY u)) $ [_ \ rcd] => RCD_PROJ_TY (u, m, rcd)
          | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
          | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)
          | O.K THROW $ _ => RAISE m
@@ -361,10 +362,10 @@ struct
            (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
          | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
          | (CTT_D (CttOperators.MEMBER tau), [_ \ m, _ \ a]) => MEMBER (tau, m, a)
-         | (RCD_D (RecordOperators.RECORD u), [_ \ a, (_,[x]) \ bx]) => RECORD_TY (u, a, x, bx)
+         | (RCD_D (RecordOperators.SINGL u), [_ \ a]) => RCD_SINGL (u, a)
          | _ => raise Fail "outDef expected definitional extension"
 
-      and out m  =
+      and out m =
         case View.out m of
            O.RET _ $ [_ \ v] => outVal v
          | O.CUT _ $ [_ \ k, _ \ m] => outCut k m
@@ -413,7 +414,6 @@ struct
        | CEQUIV (_, m, n) => infix' (Non, 0, "~") (unparse m, unparse n)
        | AX => atom "Ax"
        | RCD_CONS (lbl, a, b) => infix' (Right, 5, "\226\136\183") (infix' (Non, 5, "=") (atom (Symbol.toString lbl), unparse a), unparse b)
-       | RCD_SINGL (lbl, a) => atom @@ "{" ^ parens (done (infix' (Non, 0, ":") (atom (Symbol.toString lbl), unparse a))) ^ "}"
        | RCD_PROJ (lbl, m) => postfix (4, ". " ^ Symbol.toString lbl) (unparse m)
        | RECORD_TY (lbl, a, x, bx) =>
            let

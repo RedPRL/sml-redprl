@@ -150,9 +150,15 @@ struct
            else
              tl <: env <| (RCD_K (Rcd.PROJ lbl) `$ []) :: ks
 
-       (* Lisp-style introspection on singleton record type *)
-       | (RCD_K SINGL_GET_TY `$ _, RCD_V (Rcd.SINGL _) `$ [_ \ a]) =>
-           a <: env <| ks
+       | (RCD_K (Rcd.PROJ_TY lbl) `$ [_ \ rcd <: env'], RCD_V (Rcd.RECORD lbl') `$ [_ \ a, ([],[x]) \ bx]) =>
+           if symEq env (lbl, lbl') then
+             a <: env <| ks
+           else
+             let
+               val proj = Syn.into (Syn.RCD_PROJ (lbl', rcd))
+             in
+               bx <: pushV (proj <: env', x) env <| (RCD_K (Rcd.PROJ_TY lbl) `$ [([],[]) \ rcd <: env']) :: ks
+             end
 
        (* Extract the witness from a refined theorem object. *)
        | (EXTRACT tau `$ _, REFINE _ `$ [_, _, _ \ e]) =>
@@ -205,18 +211,11 @@ struct
        | CTT_D (Ctt.MEMBER tau) `$ [_ \ m, _ \ a] =>
            Syn.into (Syn.EQ (tau, m, m, a)) <: env
 
-       (* record types are built compositionally using dependent intersection *)
-       | RCD_D (Rcd.RECORD lbl) `$ [_ \ a, (_, [x]) \ bx] =>
+       | RCD_D (Rcd.SINGL lbl) `$ [_ \ a] =>
            let
-             val self = Var.named "self"
-             val selfTm = check (`self, S.EXP SortData.EXP)
-             val singl = Syn.into (Syn.RCD_SINGL (lbl, a))
-             val proj = Syn.into (Syn.RCD_PROJ (lbl, selfTm))
-
-             (* using an explicit substitution:*)
-             val bproj = ESUBST ([], [SortData.EXP], SortData.EXP) $$ [([],[x]) \ bx, ([],[]) \ proj]
+             val x = Var.named "_"
            in
-             Syn.into (Syn.DEP_ISECT (singl, self, bproj)) <: env
+             Syn.into (Syn.RECORD_TY (lbl, a, x, Syn.into Syn.AX)) <: env
            end
 
        | _ => raise Fail "Unhandled definitional extension"
