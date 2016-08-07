@@ -164,13 +164,14 @@ struct
        | (CUB_K Cub.COE `$ [_ \ r <: rEnv, _ \ r' <: r'Env, _ \ m <: mEnv], ty) =>
            let
              val u = List.hd us
+
+             (* TODO: figure out if we really need to bypass the environment like we're doing here *)
+             val starting = Cl.force (r <: rEnv)
+             val ending = Cl.force (r' <: r'Env)
            in
              case ty of
                 CTT_V DFUN `$ [_ \ a, ([x], _) \ bx] =>
                   let
-                    (* TODO: figure out if we really need to bypass the environment like we're doing here *)
-                    val starting = Cl.force (r <: rEnv)
-                    val ending = Cl.force (r' <: r'Env)
                     val xtm = Syn.var (x, SortData.EXP)
 
                     val a' = Cl.force (a <: env)
@@ -185,6 +186,32 @@ struct
                     Cl.new lam <| ks
                   end
               | _ => raise Fail "Failed to apply cubical coercion"
+           end
+
+       | (CUB_K Cub.HCOM `$ [_ \ r <: rEnv, _ \ r' <: r'Env, _ \ cap <: capEnv, _ \ tube <: tubeEnv], ty) =>
+           let
+             val capDim = Cl.force (r <: rEnv)
+             val cmpDim = Cl.force (r' <: r'Env)
+             val cap' = Cl.force (cap <: capEnv)
+             val tube' = Cl.force (tube <: tubeEnv)
+             val slices = Syn.outTubeSlices tube'
+           in
+             case ty of
+                CTT_V DFUN `$ [_ \ a, ([x], _) \ bx] =>
+                  let
+                    val xtm = Syn.var (x, SortData.EXP)
+
+                    val a' = Cl.force (a <: env)
+                    val bx' = Cl.force (bx <: env)
+
+                    val slices' = List.map (fn (extent, (v, n0), (w, n1)) => (extent, (v, Syn.into (Syn.AP (n0, xtm))), (w, Syn.into (Syn.AP (n1, xtm))))) slices
+                    val app = Syn.into (Syn.AP (cap', xtm))
+                    val hcom = Syn.into (Syn.HCOM (bx', (capDim, cmpDim), app, slices'))
+                    val lam = Syn.into (Syn.LAM (x, hcom))
+                  in
+                    Cl.new lam <| ks
+                  end
+              | _ => raise Fail "Failed to apply kan composition coercion"
            end
 
        (* Extract the witness from a refined theorem object. *)

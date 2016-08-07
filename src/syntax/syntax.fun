@@ -371,6 +371,16 @@ struct
          | O.V (LCF (NominalLcfOperators.HYP_VAR h)) $ _ => HYP_REF h
          | _ => raise Fail ("outVal expected value, but got: " ^ View.debugToString v)
 
+     and outTubeSlice s =
+       case View.out s of
+          O.V (CUB_V CubicalOperators.TUBE_SLICE_LIT) $ [_ \ extent, ([u], _) \ n0, ([v], _) \ n1] => (extent, (u, n0), (v, n1))
+        | _ => raise Fail "Expected tube slice literal"
+
+     and outTubeSlices vec =
+       case out vec of
+          VEC_LITERAL (_, slices) => List.map outTubeSlice slices
+        | _ => raise Fail "Expected vector literal of tube slices"
+
       and outCut k (us, m) =
         case View.out k of
            O.K (CTT_K CttOperators.AP) $ [_ \ n] => AP (m, n)
@@ -389,13 +399,7 @@ struct
          | O.K (CUB_K CubicalOperators.COE) $ [_ \ r, _ \ r', _ \ cap] => COE ((List.hd us, m), (r, r'), cap)
          | O.K (CUB_K CubicalOperators.HCOM) $ [_ \ r, _ \ r', _ \ cap, _ \ vec] =>
              let
-               val outTubeSlice =
-                 fn O.V (CUB_V CubicalOperators.TUBE_SLICE_LIT) $ [_ \ extent, ([u], _) \ n0, ([v], _) \ n1] => (extent, (u, n0), (v, n1))
-                  | _ => raise Fail "Expected tube slice literal"
-               val slices =
-                 case out vec of
-                    VEC_LITERAL (_, slices) => List.map (outTubeSlice o View.out) slices
-                  | _ => raise Fail "Expected vector literal of tube slices"
+              val slices = outTubeSlices vec
              in
                HCOM (m, (r, r'), cap, slices)
              end
@@ -421,6 +425,8 @@ struct
 
     in
       val out = out
+      val outTubeSlices = outTubeSlices
+
       fun outOpen m =
         case View.out m of
            `x => VAR x
