@@ -536,5 +536,15 @@ struct
   in
     open Syn
     val toString = toString
+
+    fun substDimension (r, u) =
+      let
+        fun go m =
+          case out m of
+             DIMREF v => if Symbol.eq (u, v) then r else m
+           | _ => m
+      in
+        go o RedPrlAbt.deepMapSubterms go
+      end
   end
 end
