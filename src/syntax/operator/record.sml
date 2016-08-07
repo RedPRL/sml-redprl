@@ -59,7 +59,7 @@ end
 structure RecordK :
 sig
   include JSON_ABT_OPERATOR
-  val input : 'i t -> RedPrlAtomicArity.sort
+  val input : 'i t -> RedPrlAtomicArity.sort list * RedPrlAtomicArity.sort
 end =
 struct
   open RecordOperators ArityNotation SortData
@@ -74,8 +74,8 @@ struct
      | PROJ_TY lbl => [[] * [] <> EXP] ->> EXP
 
   val input =
-    fn PROJ _ => EXP
-     | PROJ_TY _ => EXP
+    fn PROJ _ => ([], EXP)
+     | PROJ_TY _ => ([], EXP)
 
   val support =
     fn PROJ lbl => [(lbl, RCD_LBL)]

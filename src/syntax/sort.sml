@@ -13,6 +13,7 @@ struct
     | RCD_LBL (* record labels *)
     | UNIT (* the unit sort *)
     | EXN (* exception names *)
+
     | DIM (* cubical dimension names *)
 end
 

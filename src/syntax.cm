@@ -27,6 +27,11 @@ Library
   structure AtomV
   structure AtomK
 
+  structure CubicalOperators
+  structure CubicalV
+  structure CubicalK
+  structure CubicalD
+
   structure RedPrlOperators
   structure RedPrlV
   structure RedPrlK
@@ -75,6 +80,7 @@ is
   syntax/operator/ctt.sml
   syntax/operator/atom.sml
   syntax/operator/record.sml
+  syntax/operator/cubical.sml
 
   syntax/operator.sml
 

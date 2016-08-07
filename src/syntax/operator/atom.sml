@@ -61,7 +61,7 @@ end
 structure AtomK :
 sig
   include JSON_ABT_OPERATOR
-  val input : 'i t -> RedPrlAtomicSort.t
+  val input : 'i t -> RedPrlAtomicSort.t list * RedPrlAtomicSort.t
 end =
 struct
   open AtomOperators SortData ArityNotation
@@ -82,8 +82,8 @@ struct
             ->> tau
 
   val input =
-    fn TEST0 _ => EXP
-     | TEST1 _ => EXP
+    fn TEST0 _ => ([], EXP)
+     | TEST1 _ => ([], EXP)
 
   val support =
     fn TEST0 _ => []

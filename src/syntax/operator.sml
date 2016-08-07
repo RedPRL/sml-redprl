@@ -11,6 +11,7 @@ struct
    | CTT_V of 'i CttV.t
    | RCD_V of 'i RecordV.t
    | ATM_V of 'i AtomV.t
+   | CUB_V of 'i CubicalV.t
    | REFINE of Sort.t
    | VEC_LIT of Sort.t * int
    | STR_LIT of string
@@ -25,12 +26,14 @@ struct
    | CTT_K of 'i CttK.t
    | RCD_K of 'i RecordK.t
    | ATM_K of 'i AtomK.t
+   | CUB_K of 'i CubicalK.t
    | THROW
    | CATCH of 'i
 
   datatype 'i redprl_def =
      CTT_D of 'i CttD.t
    | RCD_D of 'i RecordD.t
+   | CUB_D of 'i CubicalK.t
 end
 
 structure RedPrlV : JSON_ABT_OPERATOR =
@@ -153,7 +156,7 @@ end
 structure RedPrlK :
 sig
    include JSON_ABT_OPERATOR
-   val input : 'i t -> RedPrlAtomicSort.t
+   val input : 'i t -> RedPrlAtomicSort.t list * RedPrlAtomicSort.t
 end =
 struct
   structure Ar = RedPrlAtomicArity
@@ -174,14 +177,14 @@ struct
      | CATCH a => [[] <> [SortData.EXP] * SortData.EXP] ->> SortData.EXP
 
   val input =
-    fn EXTRACT tau => SortData.THM tau
-     | FROM_SOME tau => SortData.OPT tau
+    fn EXTRACT tau => ([], SortData.THM tau)
+     | FROM_SOME tau => ([], SortData.OPT tau)
      | LVL_K th => LevelK.input th
      | CTT_K th => CttK.input th
      | RCD_K th => RecordK.input th
      | ATM_K th => AtomK.input th
-     | THROW => SortData.EXP
-     | CATCH _ => SortData.EXP
+     | THROW => ([], SortData.EXP)
+     | CATCH _ => ([], SortData.EXP)
 
   val support =
     fn EXTRACT tau => []

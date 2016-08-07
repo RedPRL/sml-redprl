@@ -178,10 +178,10 @@ struct
     fun intoRcdD th es = O.D (RCD_D th) $$ es
     fun intoTacV th es = ret RS.TAC @@ O.V (LCF th) $$ es
     fun intoMTacV th es = ret RS.MTAC @@ O.V (LCF th) $$ es
-    fun cutCtt (sigma, tau) th es m = O.CUT (sigma, tau) $$ [([],[]) \ O.K (CTT_K th) $$ es, ([],[]) \ m]
-    fun cutAtm (sigma, tau) th es m = O.CUT (sigma, tau) $$ [([],[]) \ O.K (ATM_K th) $$ es, ([],[]) \ m]
-    fun cutLvl th es m = O.CUT (RS.LVL, RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
-    fun cutRcd th es m = O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K (RCD_K th) $$ es, ([],[]) \ m]
+    fun cutCtt (sigma, tau) th es m = O.CUT (([], sigma), tau) $$ [([],[]) \ O.K (CTT_K th) $$ es, ([],[]) \ m]
+    fun cutAtm (sigma, tau) th es m = O.CUT (([], sigma), tau) $$ [([],[]) \ O.K (ATM_K th) $$ es, ([],[]) \ m]
+    fun cutLvl th es m = O.CUT (([], RS.LVL), RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
+    fun cutRcd th es m = O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K (RCD_K th) $$ es, ([],[]) \ m]
   in
 
     val rec into =
@@ -208,8 +208,8 @@ struct
 
        | FRESH (sigma, tau, u, m) => cutCtt (RS.UNIT, tau) (CttOperators.FRESH (sigma, tau)) [([u], []) \ m] (into DUMMY)
        | EXN_VAL (a, m) => ret RS.EXP @@ O.V (EXN a) $$ [([],[]) \ m]
-       | TRY (a, m, x, nx) => O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K (CATCH a) $$ [([],[x]) \ nx], ([],[]) \ m]
-       | RAISE m => O.CUT (RS.EXP, RS.EXP) $$ [([],[]) \ O.K THROW $$ [], ([],[]) \ m]
+       | TRY (a, m, x, nx) => O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K (CATCH a) $$ [([],[x]) \ nx], ([],[]) \ m]
+       | RAISE m => O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K THROW $$ [], ([],[]) \ m]
        | DUMMY => ret RS.UNIT @@ O.V (CTT_V CttOperators.DUMMY) $$ []
 
        | LBASE => ret RS.LVL @@ O.V (LVL_V 0) $$ []
@@ -228,7 +228,7 @@ struct
        | RCD_PROJ_TY (u, a, m) => cutRcd (RecordOperators.PROJ_TY u) [([],[]) \ m] a
 
        | REFINE_SCRIPT (tau, m, s, e) => ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
-       | EXTRACT_WITNESS (tau, m) => O.CUT (RS.THM tau, tau) $$ [([],[]) \ O.K (EXTRACT tau) $$ [], ([],[]) \ m]
+       | EXTRACT_WITNESS (tau, m) => O.CUT (([], RS.THM tau), tau) $$ [([],[]) \ O.K (EXTRACT tau) $$ [], ([],[]) \ m]
        | VEC_LITERAL (tau, ms) => ret (RS.VEC tau) @@ O.V (VEC_LIT (tau, List.length ms)) $$ List.map (fn m => ([],[]) \ m) ms
        | STR_LITERAL str => ret RS.STR @@ O.V (STR_LIT str) $$ []
        | OPT_SOME (tau, m) => ret (RS.OPT tau) @@ O.V (OP_SOME tau) $$ [([],[]) \ m]
@@ -337,7 +337,7 @@ struct
          | O.V (LCF (NominalLcfOperators.HYP_VAR h)) $ _ => HYP_REF h
          | _ => raise Fail ("outVal expected value, but got: " ^ View.debugToString v)
 
-      and outCut k m =
+      and outCut k (us, m) =
         case View.out k of
            O.K (CTT_K CttOperators.AP) $ [_ \ n] => AP (m, n)
          | O.K (CTT_K CttOperators.DFUN_DOM) $ _ => DFUN_DOM m
@@ -368,7 +368,7 @@ struct
       and out m =
         case View.out m of
            O.RET _ $ [_ \ v] => outVal v
-         | O.CUT _ $ [_ \ k, _ \ m] => outCut k m
+         | O.CUT _ $ [_ \ k, (us, []) \ m] => outCut k (us, m)
          | O.D th $ es => outDef th es
          | _ => raise Fail "Syntax view expected application expression"
 
