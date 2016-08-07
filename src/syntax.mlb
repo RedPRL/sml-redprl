@@ -75,7 +75,6 @@ in
   structure CubicalOperators
   structure CubicalV
   structure CubicalK
-  structure CubicalD
 
   structure RedPrlOperators
   structure RedPrlV

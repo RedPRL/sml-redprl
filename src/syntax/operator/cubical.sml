@@ -13,10 +13,6 @@ struct
   datatype 'i cub_cont =
      COE
    | HCOM (* homogeneous kan composition *)
-
-  (* definitional extensions *)
-  datatype 'i cub_def =
-     COM (* heterogeneous kan composition *)
 end
 
 structure CubicalV : JSON_ABT_OPERATOR =
@@ -138,10 +134,3 @@ struct
     fn COE => ([DIM], EXP)
      | HCOM => ([], EXP)
 end
-
-(*
-
-structure CubicalD : JSON_ABT_OPERATOR =
-struct
-end*)
-structure CubicalD = struct end
