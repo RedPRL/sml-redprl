@@ -33,7 +33,6 @@ struct
   datatype 'i redprl_def =
      CTT_D of 'i CttD.t
    | RCD_D of 'i RecordD.t
-   | CUB_D of 'i CubicalK.t
 end
 
 structure RedPrlV : JSON_ABT_OPERATOR =
@@ -51,6 +50,7 @@ struct
      | CTT_V theta => CttV.arity theta
      | RCD_V theta => RecordV.arity theta
      | ATM_V theta => AtomV.arity theta
+     | CUB_V theta => CubicalV.arity theta
      | REFINE tau =>
          [[] * [] <> SortData.EXP,
           [] * [] <> SortData.TAC,
@@ -75,6 +75,7 @@ struct
      | CTT_V theta => CttV.support theta
      | RCD_V theta => RecordV.support theta
      | ATM_V theta => AtomV.support theta
+     | CUB_V theta => CubicalV.support theta
      | REFINE _ => []
      | VEC_LIT (tau, len) => []
      | STR_LIT _ => []
@@ -88,6 +89,7 @@ struct
      | (CTT_V th1, CTT_V th2) => CttV.eq f (th1, th2)
      | (RCD_V th1, RCD_V th2) => RecordV.eq f (th1, th2)
      | (ATM_V th1, ATM_V th2) => AtomV.eq f (th1, th2)
+     | (CUB_V th1, CUB_V th2) => CubicalV.eq f (th1, th2)
      | (REFINE sigma, REFINE tau) => sigma = tau
      | (VEC_LIT p1, VEC_LIT p2) => p1 = p2
      | (STR_LIT s1, STR_LIT s2) => s1 = s2
@@ -102,6 +104,7 @@ struct
      | CTT_V theta => CttV.toString f theta
      | RCD_V theta => RecordV.toString f theta
      | ATM_V theta => AtomV.toString f theta
+     | CUB_V theta => CubicalV.toString f theta
      | REFINE tau => "refine{" ^ Sort.toString tau ^ "}"
      | VEC_LIT (tau, len) => "vec{" ^ Sort.toString tau ^ "}"
      | STR_LIT str => "\"" ^ str ^ "\""
@@ -116,6 +119,7 @@ struct
      | CTT_V theta => CTT_V (CttV.map f theta)
      | RCD_V theta => RCD_V (RecordV.map f theta)
      | ATM_V theta => ATM_V (AtomV.map f theta)
+     | CUB_V theta => CUB_V (CubicalV.map f theta)
      | REFINE tau => REFINE tau
      | VEC_LIT (tau, len) => VEC_LIT (tau, len)
      | STR_LIT str => STR_LIT str
@@ -131,6 +135,7 @@ struct
      | CTT_V theta => J.Obj [("ctt", CttV.encode f theta)]
      | RCD_V theta => J.Obj [("rcd", RecordV.encode f theta)]
      | ATM_V theta => J.Obj [("atm", AtomV.encode f theta)]
+     | CUB_V theta => J.Obj [("cub", CubicalV.encode f theta)]
      | REFINE tau => J.Obj [("refine", S.encode tau)]
      | VEC_LIT (tau, len) => J.Obj [("vec", J.Array [S.encode tau, J.Int len])]
      | STR_LIT str => J.Obj [("str", J.String str)]
@@ -144,6 +149,7 @@ struct
      | J.Obj [("ctt", theta)] => Option.map CTT_V (CttV.decode f theta)
      | J.Obj [("rcd", theta)] => Option.map RCD_V (RecordV.decode f theta)
      | J.Obj [("atm", theta)] => Option.map ATM_V (AtomV.decode f theta)
+     | J.Obj [("cub", theta)] => Option.map CUB_V (CubicalV.decode f theta)
      | J.Obj [("refine", tau)] => Option.map REFINE (S.decode tau)
      | J.Obj [("vec", J.Array [tau, J.Int len])] => Option.map (fn tau' => VEC_LIT (tau', len)) (S.decode tau)
      | J.Obj [("str", J.String str)] => SOME (STR_LIT str)
@@ -173,6 +179,7 @@ struct
      | CTT_K th => CttK.arity th
      | RCD_K th => RecordK.arity th
      | ATM_K th => AtomK.arity th
+     | CUB_K th => CubicalK.arity th
      | THROW => [] ->> SortData.EXP
      | CATCH a => [[] <> [SortData.EXP] * SortData.EXP] ->> SortData.EXP
 
@@ -183,6 +190,7 @@ struct
      | CTT_K th => CttK.input th
      | RCD_K th => RecordK.input th
      | ATM_K th => AtomK.input th
+     | CUB_K th => CubicalK.input th
      | THROW => ([], SortData.EXP)
      | CATCH _ => ([], SortData.EXP)
 
@@ -193,6 +201,7 @@ struct
      | CTT_K th => CttK.support th
      | RCD_K th => RecordK.support th
      | ATM_K th => AtomK.support th
+     | CUB_K th => CubicalK.support th
      | THROW => []
      | CATCH a => [(a, SortData.EXN)]
 
@@ -203,6 +212,7 @@ struct
      | (CTT_K th1, CTT_K th2) => CttK.eq f (th1, th2)
      | (RCD_K th1, RCD_K th2) => RecordK.eq f (th1, th2)
      | (ATM_K th1, ATM_K th2) => AtomK.eq f (th1, th2)
+     | (CUB_K th1, CUB_K th2) => CubicalK.eq f (th1, th2)
      | (THROW, THROW) => true
      | (CATCH a, CATCH b) => f (a, b)
      | _ => false
@@ -214,6 +224,7 @@ struct
      | CTT_K th => CttK.toString f th
      | RCD_K th => RecordK.toString f th
      | ATM_K th => AtomK.toString f th
+     | CUB_K th => CubicalK.toString f th
      | THROW => "throw"
      | CATCH a => "catch[" ^ f a ^ "]"
 
@@ -224,6 +235,7 @@ struct
      | CTT_K th => CTT_K (CttK.map f th)
      | RCD_K th => RCD_K (RecordK.map f th)
      | ATM_K th => ATM_K (AtomK.map f th)
+     | CUB_K th => CUB_K (CubicalK.map f th)
      | THROW => THROW
      | CATCH a => CATCH (f a)
 
@@ -236,6 +248,7 @@ struct
      | CTT_K th => J.Obj [("ctt", CttK.encode f th)]
      | RCD_K th => J.Obj [("rcd", RecordK.encode f th)]
      | ATM_K th => J.Obj [("atm", AtomK.encode f th)]
+     | CUB_K th => J.Obj [("cub", CubicalK.encode f th)]
      | THROW => J.String "throw"
      | CATCH a => J.Obj [("catch", f a)]
 
@@ -246,6 +259,7 @@ struct
      | J.Obj [("ctt", th)] => Option.map CTT_K (CttK.decode f th)
      | J.Obj [("rcd", th)] => Option.map RCD_K (RecordK.decode f th)
      | J.Obj [("atm", th)] => Option.map ATM_K (AtomK.decode f th)
+     | J.Obj [("cub", th)] => Option.map CUB_K (CubicalK.decode f th)
      | J.String "throw" => SOME THROW
      | J.Obj [("catch", a)] => Option.map CATCH (f a)
      | _ => NONE
