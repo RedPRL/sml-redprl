@@ -46,6 +46,7 @@ struct
       and Lvl = LevelOperators
       and Atm = AtomOperators
       and Rcd = RecordOperators
+      and Cub = CubicalOperators
       and Syn = RedPrlAbtSyntax
 
     fun pushV (cl : abt closure, x) (mrho, srho, vrho) =
@@ -69,7 +70,7 @@ struct
 
   in
     (* Plug a value into a continuation *)
-    fun plug sign (v <: env, k) ks =
+    fun plug sign ((us, v <: env), k) ks =
       case (k, v) of
 
        (* Lambda application *)
@@ -159,6 +160,32 @@ struct
              in
                bx <: pushV (proj <: env', x) env <| (RCD_K (Rcd.PROJ_TY lbl) `$ [([],[]) \ rcd <: env']) :: ks
              end
+
+       | (CUB_K Cub.COE `$ [_ \ r <: rEnv, _ \ r' <: r'Env, _ \ m <: mEnv], ty) =>
+           let
+             val u = List.hd us
+           in
+             case ty of
+                CTT_V DFUN `$ [_ \ a, ([x], _) \ bx] =>
+                  let
+                    (* TODO: figure out if we really need to bypass the environment like we're doing here *)
+                    val starting = Cl.force (r <: rEnv)
+                    val ending = Cl.force (r' <: r'Env)
+                    val xtm = Syn.var (x, SortData.EXP)
+
+                    val a' = Cl.force (a <: env)
+                    val bx' = Cl.force (bx <: env)
+
+                    val coex = Syn.into (Syn.COE ((u, a'), (ending, Syn.into (Syn.DIMREF u)), xtm))
+                    val bcoe = subst (coex, x) bx'
+                    val app = Syn.into (Syn.AP (Cl.force (m <: mEnv), coex))
+                    val coe = Syn.into (Syn.COE ((u, bcoe), (starting, ending), app))
+                    val lam = Syn.into (Syn.LAM (x, coe))
+                  in
+                    Cl.new lam <| ks
+                  end
+              | _ => raise Fail "Failed to apply cubical coercion"
+           end
 
        (* Extract the witness from a refined theorem object. *)
        | (EXTRACT tau `$ _, REFINE _ `$ [_, _, _ \ e]) =>

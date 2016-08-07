@@ -451,6 +451,9 @@ struct
     fun @@ (f, x) = f x
     infixr 0 @@
 
+    fun var (x, tau) =
+      RedPrlAbt.check (`x, RedPrlOperator.S.EXP tau)
+
     fun unparse m =
       UnparseAbt.unparse (fn n => SOME (inner n) handle _ => NONE) m
 
@@ -464,7 +467,7 @@ struct
        | RCD_PROJ (lbl, m) => postfix (4, ". " ^ Symbol.toString lbl) (unparse m)
        | RECORD_TY (lbl, a, x, bx) =>
            let
-             val b' = RedPrlAbt.subst (RedPrlAbt.check (`lbl, RedPrlOperator.S.EXP SortData.EXP), x) bx
+             val b' = RedPrlAbt.subst (var (lbl, SortData.EXP), x) bx
              val decl = infix' (Non, 0, ":") (atom (Symbol.toString lbl), unparse a)
              val rcd = infix' (Left, 0, ",") (decl, unparse b')
            in
@@ -536,6 +539,7 @@ struct
   in
     open Syn
     val toString = toString
+    val var = var
 
     fun substDimension (r, u) =
       let
