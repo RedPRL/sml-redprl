@@ -32,13 +32,14 @@ struct
       val subgoals =
         VarCtx.foldl
           (fn (x, RS.EXP tau, tl) =>
-            let
-              val meta = newMeta ""
-              val xtm = check (`x, RS.EXP tau)
-              val goal = Syn.into @@ Syn.MEMBER (tau, xtm, a)
-            in
-              tl @> (meta, H >> TRUE (goal, EXP))
-            end)
+                let
+                  val meta = newMeta ""
+                  val xtm = check (`x, RS.EXP tau)
+                  val goal = Syn.into @@ Syn.MEMBER (tau, xtm, a)
+                in
+                  tl @> (meta, H >> TRUE (goal, EXP))
+                end
+            | _ => raise Match)
           T.empty
           (varctx m)
 
