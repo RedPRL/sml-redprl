@@ -5,6 +5,8 @@ struct
   (* values *)
   datatype 'i cub_value =
      DIMREF of 'i (* dimension references *)
+   | DIM0
+   | DIM1
 
   (* computations/continuations *)
   datatype 'i cub_cont =
@@ -26,18 +28,29 @@ struct
 
   val arity =
     fn DIMREF a => [] ->> DIM
+     | DIM0 => [] ->> DIM
+     | DIM1 => [] ->> DIM
 
   val support =
     fn DIMREF a => [(a, DIM)]
+     | DIM0 => []
+     | DIM1 => []
 
   fun eq f =
     fn (DIMREF a, DIMREF b) => f (a, b)
+     | (DIM0, DIM0) => true
+     | (DIM1, DIM1) => true
+     | _ => false
 
   fun toString f =
     fn DIMREF a => "dim[" ^ f a ^ "]"
+     | DIM0 => "dim0"
+     | DIM1 => "dim1"
 
   fun map f =
     fn DIMREF a => DIMREF (f a)
+     | DIM0 => DIM0
+     | DIM1 => DIM1
 
   local
     structure J = Json
@@ -45,9 +58,13 @@ struct
   in
     fun encode f =
       fn DIMREF a => J.Obj [("dim", f a)]
+       | DIM0 => J.String "dim0"
+       | DIM1 => J.String "dim1"
 
     fun decode f =
       fn J.Obj [("dim", a)] => Option.map DIMREF (f a)
+       | J.String "dim0" => SOME DIM0
+       | J.String "dim1" => SOME DIM1
        | _ => NONE
   end
 end
