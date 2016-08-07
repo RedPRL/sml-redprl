@@ -8,7 +8,7 @@ local
   ../lib/sml-typed-abts/abt-unparser.mlb
   ../lib/sml-telescopes/telescopes.mlb
 
-  syntax/sort_data.sml
+  syntax/sort.sml
   syntax/arity.sml
 
   syntax/json_abt_operator.sig

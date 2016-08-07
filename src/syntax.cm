@@ -65,7 +65,7 @@ is
   ../lib/sml-telescopes/telescopes.cm
   cmlib.cm
 
-  syntax/sort_data.sml
+  syntax/sort.sml
   syntax/arity.sml
 
   syntax/json_abt_operator.sig
