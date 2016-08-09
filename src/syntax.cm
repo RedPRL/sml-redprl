@@ -27,8 +27,13 @@ Library
   structure AtomV
   structure AtomK
 
+  signature DIM
+  signature DIM_SPAN
+  signature DIM_VEC
+
   structure Dim
   structure DimSpan
+  structure DimVec
 
   structure CubicalOperators
   structure CubicalK
@@ -75,6 +80,9 @@ is
   syntax/arity.sml
 
   syntax/json_abt_operator.sig
+
+  syntax/dim.sig
+  syntax/dim.sml
 
   syntax/operator/nominal_lcf.sml
   syntax/operator/level.sml

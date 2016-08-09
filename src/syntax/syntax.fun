@@ -529,33 +529,6 @@ struct
     val toString = toString
     val var = var
 
-    fun substDim (r, u) r' =
-      case r' of
-         Dim.NAME v =>
-           if Symbol.eq (u, v) then
-             (true, r)
-           else
-             (false, r')
-       | _ => (false, r')
-
-    fun substDimSpan (r, u) {starting, ending} =
-      let
-        val (didSubst1, starting') = substDim (r, u) starting
-        val (didSubst2, ending') = substDim (r, u) ending
-      in
-        (didSubst1 orelse didSubst2, DimSpan.new (starting', ending'))
-      end
-
-    fun substDimVec (r, u) =
-      fn [] => (false, [])
-       | r' :: rs =>
-           let
-             val (didSubst, r'') = substDim (r, u) r'
-             val (didSubst', rs') = substDimVec (r, u) rs
-           in
-             (didSubst orelse didSubst', r'' :: rs')
-           end
-
     (* Note: any canonical kan composites must be made non-canonical when affected by a dimension substitution *)
     fun termSubstDim (r, u) =
       let
@@ -563,15 +536,15 @@ struct
           case outOpen m of
              APP (COE ((v, a), span, m)) =>
                let
-                 val (_, span') = substDimSpan (r, u) span
+                 val (_, span') = DimSpan.subst Symbol.eq (r, u) span
                in
                  Syn.into @@ COE ((v, a), span', m)
                end
            | APP (HCOM (a, span, cap, tube)) =>
                let
                  val (extent, pairs) = ListPair.unzip tube
-                 val (didSubstExtent, extent') = substDimVec (r, u) extent
-                 val (didSubstSpan, span') = substDimSpan (r, u) span
+                 val (didSubstExtent, extent') = DimVec.subst Symbol.eq (r, u) extent
+                 val (didSubstSpan, span') = DimSpan.subst Symbol.eq (r, u) span
                  val tube' = ListPair.zip (extent', pairs)
                in
                  Syn.into @@ HCOM (a, span', cap, tube')
