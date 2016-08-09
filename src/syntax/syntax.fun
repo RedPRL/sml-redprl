@@ -562,6 +562,13 @@ struct
                in
                  Syn.into @@ HCOM (a, span', cap, tube')
                end
+
+           | APP (ID_APP (m, r')) =>
+               let
+                 val (_, r'') = Dim.subst Symbol.eq (r, u) r'
+               in
+                 Syn.into @@ ID_APP (m, r'')
+               end
            | _ => m
       in
         go o RedPrlAbt.deepMapSubterms go
