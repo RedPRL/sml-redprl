@@ -530,29 +530,68 @@ struct
     val toString = toString
     val var = var
 
+    fun substDim (r, u) r' =
+      case r' of
+         Dim.NAME v =>
+           if Symbol.eq (u, v) then
+             (true, r)
+           else
+             (false, r')
+       | _ => (false, r')
+
+    fun substDimSpan (r, u) {starting, ending} =
+      let
+        val (didSubst1, starting') = substDim (r, u) starting
+        val (didSubst2, ending') = substDim (r, u) ending
+      in
+        (didSubst1 orelse didSubst2, DimSpan.new (starting', ending'))
+      end
+
+    fun substDimVec (r, u) =
+      fn [] => (false, [])
+       | r' :: rs =>
+           let
+             val (didSubst, r'') = substDim (r, u) r'
+             val (didSubst', rs') = substDimVec (r, u) rs
+           in
+             (didSubst orelse didSubst', r'' :: rs')
+           end
+
     (* Note: any canonical kan composites must be made non-canonical when affected by a dimension substitution *)
-    (*fun substDimension (r, u) =
+    fun termSubstDim (r, u) =
       let
         fun go m =
-          case out m of
-             DIMREF v => if Symbol.eq (u, v) then r else m
+          case outOpen m of
+             APP (COE ((v, a), span, m)) =>
+               let
+                 val (_, span') = substDimSpan (r, u) span
+               in
+                 Syn.into @@ COE ((v, a), span', m)
+               end
+           | APP (HCOM (a, span, cap, tube)) =>
+               let
+                 val (extent, pairs) = ListPair.unzip tube
+                 val (didSubstExtent, extent') = substDimVec (r, u) extent
+                 val (didSubstSpan, span') = substDimSpan (r, u) span
+                 val tube' = ListPair.zip (extent', pairs)
+               in
+                 Syn.into @@ HCOM (a, span', cap, tube')
+               end
            | _ => m
       in
         go o RedPrlAbt.deepMapSubterms go
-      end*)
+      end
 
-    (* heterogeneous kan composition *)
-    (*fun heteroCom ((u, ty), (r : term, r' : term), cap, tube : term tube_slice list) =
+    fun heteroCom ((u, ty), span : symbol DimSpan.t, cap, tube : term tube_slice list) =
       let
-        fun coe v m = into @@ COE ((u, ty), (v, r'), m)
-        fun updateFace (v, face) = (v, coe (into @@ DIMREF v) face)
-
-        val ty' = substDimension (r', u) ty
-        val cap' = coe r cap
-        val tube' = List.map (fn (extent, face0, face1) => (extent, updateFace face0, updateFace face1)) tube
+        fun coe r m = into @@ COE ((u, ty), DimSpan.new (r, #ending span), m)
+        fun updateFace (v, face) = (v, coe (Dim.NAME v) face)
+        val ty' = termSubstDim (#ending span, u) ty
+        val cap' = coe (#starting span) cap
+        val tube' = List.map (fn (extent, (face0, face1)) => (extent, (updateFace face0, updateFace face1))) tube
       in
-        into @@ HCOM (ty', (r, r'), cap', tube')
-      end*)
+        into @@ HCOM (ty', span, cap', tube')
+      end
 
   end
 end
