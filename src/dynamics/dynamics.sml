@@ -161,11 +161,18 @@ struct
                bx <: pushV (proj <: env', x) env <| (RCD_K (Rcd.PROJ_TY lbl) `$ [([],[]) \ rcd <: env']) :: ks
              end
 
+       | (CUB_K (Cub.ID_APP r) `$ [], CUB_V Cub.ID_ABS `$ [([u], _) \ m]) =>
+           let
+             val mr = Syn.substDim (r, u) m
+           in
+             mr <: env <| ks
+           end
 
        (* TODO: figure out if we really need to bypass the environment like we're doing here *)
        | (CUB_K (Cub.COE span) `$ [_ \ m <: mEnv], ty) =>
            let
              val u = List.hd us
+             val m' = Cl.force (m <: mEnv)
 
              (* TODO: apply appropriate dimension renamings to 'span'? *)
            in
@@ -174,15 +181,22 @@ struct
                   let
                     val xtm = Syn.var (x, SortData.EXP)
 
-                    val m' = Cl.force (m <: mEnv)
-
                     val coex = Syn.into (Syn.COE ((u, a), DimSpan.new (#ending span, Dim.NAME u), xtm))
                     val bcoe = subst (coex, x) bx
                     val app = Syn.into (Syn.AP (m', coex))
                     val coe = Syn.into (Syn.COE ((u, bcoe), span, app))
                     val lam = Syn.into (Syn.LAM (x, coe))
                   in
-                    Cl.new lam <| ks
+                    Cl.new lam |> ks
+                  end
+              | Syn.ID ((v, a), p1, p2) =>
+                  let
+                    val app = Syn.into (Syn.ID_APP (m', Dim.NAME v))
+                    val tube = [(Dim.NAME v, ((u, p1), (u, p2)))]
+                    val com = Syn.heteroCom ((u, a), span, app, tube)
+                    val abs = Syn.into (Syn.ID_ABS (v, com))
+                  in
+                    Cl.new abs |> ks
                   end
               | _ => raise Fail "Failed to apply cubical coercion"
            end
@@ -206,7 +220,22 @@ struct
                     val hcom = Syn.into (Syn.HCOM (bx, span, app, tube))
                     val lam = Syn.into (Syn.LAM (x, hcom))
                   in
-                    Cl.new lam <| ks
+                    Cl.new lam |> ks
+                  end
+              | Syn.ID ((u, a), p1, p2) =>
+                  let
+                    val app = Syn.into (Syn.ID_APP (cap', Dim.NAME u))
+                    val faces' = List.map (fn b \ face <: faceEnv => b \ Syn.into (Syn.ID_APP (Cl.force (face <: faceEnv), Dim.NAME u))) faces
+                    val tube =
+                      let
+                        val w = Symbol.named "_"
+                      in
+                        makeTube extents faces' @ [(Dim.NAME u, ((w, p1), (w, p2)))]
+                      end
+                    val hcom = Syn.into (Syn.HCOM (a, span, app, tube))
+                    val abs = Syn.into (Syn.ID_ABS (u, hcom))
+                  in
+                    Cl.new abs |> ks
                   end
               | _ => raise Fail "Failed to apply kan composition"
            end

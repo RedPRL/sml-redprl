@@ -36,6 +36,7 @@ Library
   structure DimVec
 
   structure CubicalOperators
+  structure CubicalV
   structure CubicalK
 
   structure RedPrlOperators

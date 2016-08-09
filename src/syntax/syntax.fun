@@ -124,6 +124,10 @@ struct
    | COE of (symbol * 'a) * symbol DimSpan.t * 'a
    | HCOM of 'a * symbol DimSpan.t * 'a * 'a tube_slice list
 
+   | ID of (symbol * 'a) * 'a * 'a (* identification type *)
+   | ID_ABS of symbol * 'a (* identification abstraction *)
+   | ID_APP of 'a * symbol Dim.t (* identification application *)
+
    | REFINE_SCRIPT of RS.sort * 'a * 'a * 'a
    | EXTRACT_WITNESS of RS.sort * 'a
    | VEC_LITERAL of RS.sort * 'a list
@@ -251,6 +255,11 @@ struct
                [([],[]) \ hcom,
                 ([],[]) \ a]
            end
+
+       | ID ((u, a), m, n) => ret RS.EXP @@ O.V (CUB_V CubicalOperators.ID) $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
+       | ID_ABS (u, m) => ret RS.EXP @@ O.V (CUB_V CubicalOperators.ID_ABS) $$ [([u],[]) \ m]
+       | ID_APP (m, r) => O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K (CUB_K (CubicalOperators.ID_APP r)) $$ [], ([],[]) \ m]
+
        | REFINE_SCRIPT (tau, m, s, e) => ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
        | EXTRACT_WITNESS (tau, m) => O.CUT (([], RS.THM tau), tau) $$ [([],[]) \ O.K (EXTRACT tau) $$ [], ([],[]) \ m]
        | VEC_LITERAL (tau, ms) => ret (RS.VEC tau) @@ O.V (VEC_LIT (tau, List.length ms)) $$ List.map (fn m => ([],[]) \ m) ms
@@ -321,6 +330,9 @@ struct
          | O.V (RCD_V (RecordOperators.CONS u)) $ [_ \ m, _ \ n] => RCD_CONS (u, m, n)
          | O.V (RCD_V (RecordOperators.RECORD u)) $ [_ \ a, (_,[x]) \ bx] => RECORD_TY (u, a, x, bx)
 
+         | O.V (CUB_V CubicalOperators.ID) $ [([u], _) \ a, _ \ m, _ \ n] => ID ((u, a), m, n)
+         | O.V (CUB_V CubicalOperators.ID_ABS) $ [([u], _) \ m] => ID_ABS (u, m)
+
          | O.V (VEC_LIT (tau, _)) $ es => VEC_LITERAL (tau, List.map (fn _ \ m => m) es)
          | O.V (STR_LIT str) $ _ => STR_LITERAL str
          | O.V (OP_SOME tau) $ [_ \ m] => OPT_SOME (tau, m)
@@ -386,6 +398,7 @@ struct
              in
                HCOM (m, span, cap, readTubes extents tubes)
              end
+         | O.K (CUB_K (CubicalOperators.ID_APP r)) $ [] => ID_APP (m, r)
          | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
          | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)
          | O.K THROW $ _ => RAISE m
@@ -530,7 +543,7 @@ struct
     val var = var
 
     (* Note: any canonical kan composites must be made non-canonical when affected by a dimension substitution *)
-    fun termSubstDim (r, u) =
+    fun substDim (r, u) =
       let
         fun go m =
           case outOpen m of
@@ -558,7 +571,7 @@ struct
       let
         fun coe r m = into @@ COE ((u, ty), DimSpan.new (r, #ending span), m)
         fun updateFace (v, face) = (v, coe (Dim.NAME v) face)
-        val ty' = termSubstDim (#ending span, u) ty
+        val ty' = substDim (#ending span, u) ty
         val cap' = coe (#starting span) cap
         val tube' = List.map (fn (extent, (face0, face1)) => (extent, (updateFace face0, updateFace face1))) tube
       in
