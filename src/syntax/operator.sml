@@ -11,7 +11,7 @@ struct
    | CTT_V of 'i CttV.t
    | RCD_V of 'i RecordV.t
    | ATM_V of 'i AtomV.t
-   | CUB_V of 'i CubicalV.t
+   (*| CUB_V of 'i CubicalV.t*)
    | REFINE of Sort.t
    | VEC_LIT of Sort.t * int
    | STR_LIT of string
@@ -50,7 +50,7 @@ struct
      | CTT_V theta => CttV.arity theta
      | RCD_V theta => RecordV.arity theta
      | ATM_V theta => AtomV.arity theta
-     | CUB_V theta => CubicalV.arity theta
+     (*| CUB_V theta => CubicalV.arity theta*)
      | REFINE tau =>
          [[] * [] <> SortData.EXP,
           [] * [] <> SortData.TAC,
@@ -75,7 +75,7 @@ struct
      | CTT_V theta => CttV.support theta
      | RCD_V theta => RecordV.support theta
      | ATM_V theta => AtomV.support theta
-     | CUB_V theta => CubicalV.support theta
+     (*| CUB_V theta => CubicalV.support theta*)
      | REFINE _ => []
      | VEC_LIT (tau, len) => []
      | STR_LIT _ => []
@@ -89,7 +89,7 @@ struct
      | (CTT_V th1, CTT_V th2) => CttV.eq f (th1, th2)
      | (RCD_V th1, RCD_V th2) => RecordV.eq f (th1, th2)
      | (ATM_V th1, ATM_V th2) => AtomV.eq f (th1, th2)
-     | (CUB_V th1, CUB_V th2) => CubicalV.eq f (th1, th2)
+     (*| (CUB_V th1, CUB_V th2) => CubicalV.eq f (th1, th2)*)
      | (REFINE sigma, REFINE tau) => sigma = tau
      | (VEC_LIT p1, VEC_LIT p2) => p1 = p2
      | (STR_LIT s1, STR_LIT s2) => s1 = s2
@@ -104,7 +104,7 @@ struct
      | CTT_V theta => CttV.toString f theta
      | RCD_V theta => RecordV.toString f theta
      | ATM_V theta => AtomV.toString f theta
-     | CUB_V theta => CubicalV.toString f theta
+     (*| CUB_V theta => CubicalV.toString f theta*)
      | REFINE tau => "refine{" ^ Sort.toString tau ^ "}"
      | VEC_LIT (tau, len) => "vec{" ^ Sort.toString tau ^ "}"
      | STR_LIT str => "\"" ^ str ^ "\""
@@ -119,7 +119,7 @@ struct
      | CTT_V theta => CTT_V (CttV.map f theta)
      | RCD_V theta => RCD_V (RecordV.map f theta)
      | ATM_V theta => ATM_V (AtomV.map f theta)
-     | CUB_V theta => CUB_V (CubicalV.map f theta)
+     (*| CUB_V theta => CUB_V (CubicalV.map f theta)*)
      | REFINE tau => REFINE tau
      | VEC_LIT (tau, len) => VEC_LIT (tau, len)
      | STR_LIT str => STR_LIT str
@@ -135,7 +135,7 @@ struct
      | CTT_V theta => J.Obj [("ctt", CttV.encode f theta)]
      | RCD_V theta => J.Obj [("rcd", RecordV.encode f theta)]
      | ATM_V theta => J.Obj [("atm", AtomV.encode f theta)]
-     | CUB_V theta => J.Obj [("cub", CubicalV.encode f theta)]
+     (*| CUB_V theta => J.Obj [("cub", CubicalV.encode f theta)]*)
      | REFINE tau => J.Obj [("refine", S.encode tau)]
      | VEC_LIT (tau, len) => J.Obj [("vec", J.Array [S.encode tau, J.Int len])]
      | STR_LIT str => J.Obj [("str", J.String str)]
@@ -149,7 +149,7 @@ struct
      | J.Obj [("ctt", theta)] => Option.map CTT_V (CttV.decode f theta)
      | J.Obj [("rcd", theta)] => Option.map RCD_V (RecordV.decode f theta)
      | J.Obj [("atm", theta)] => Option.map ATM_V (AtomV.decode f theta)
-     | J.Obj [("cub", theta)] => Option.map CUB_V (CubicalV.decode f theta)
+     (*| J.Obj [("cub", theta)] => Option.map CUB_V (CubicalV.decode f theta)*)
      | J.Obj [("refine", tau)] => Option.map REFINE (S.decode tau)
      | J.Obj [("vec", J.Array [tau, J.Int len])] => Option.map (fn tau' => VEC_LIT (tau', len)) (S.decode tau)
      | J.Obj [("str", J.String str)] => SOME (STR_LIT str)

@@ -88,52 +88,10 @@ structure CubicalOperators =
 struct
   structure Sort = RedPrlAtomicSort
 
-  (* values *)
-  datatype 'i cub_value =
-     TUBE_SLICE_LIT of 'i Dim.t (* TODO: remove *)
-
   (* computations/continuations *)
   datatype 'i cub_cont =
      COE of 'i DimSpan.t
    | HCOM of 'i Dim.t list * 'i DimSpan.t (* homogeneous kan composition *)
-end
-
-structure CubicalV : JSON_ABT_OPERATOR =
-struct
-  open CubicalOperators SortData ArityNotation
-  structure Ar = RedPrlAtomicArity
-
-  type 'i t = 'i cub_value
-  infix <> ->>
-
-  val arity =
-    fn TUBE_SLICE_LIT extent =>
-         [[DIM] * [] <> EXP, (* the 0 face *)
-          [DIM] * [] <> EXP] (* the 1 face *)
-             ->> TUBE_SLICE
-
-  val support =
-    fn TUBE_SLICE_LIT extent => Dim.support extent
-
-  fun eq f =
-    fn (TUBE_SLICE_LIT extent1, TUBE_SLICE_LIT extent2) => Dim.eq f (extent1, extent2)
-
-  fun toString f =
-    fn TUBE_SLICE_LIT extent => "tube[" ^ Dim.toString f extent ^ "]"
-
-  fun map f =
-    fn TUBE_SLICE_LIT extent => TUBE_SLICE_LIT (Dim.map f extent)
-
-  local
-    structure J = Json and S = RedPrlAtomicSortJson
-  in
-    fun encode f =
-      fn TUBE_SLICE_LIT extent => J.Obj [("tube", Dim.encode f extent)]
-
-    fun decode f =
-      fn J.Obj [("tube", extent)] => Option.map TUBE_SLICE_LIT (Dim.decode f extent)
-       | _ => NONE
-  end
 end
 
 structure CubicalK :

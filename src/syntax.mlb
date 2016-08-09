@@ -74,9 +74,8 @@ in
 
   structure Dim
   structure DimSpan
-  
+
   structure CubicalOperators
-  structure CubicalV
   structure CubicalK
 
   structure RedPrlOperators
