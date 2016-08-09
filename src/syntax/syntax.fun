@@ -376,16 +376,15 @@ struct
          | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (sigma, tau, into (TOKEN (u, sigma)), m, l, r)
          | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
          | O.K (RCD_K (RecordOperators.PROJ_TY u)) $ [_ \ rcd] => RCD_PROJ_TY (u, m, rcd)
-         | O.K (CUB_K (CubicalOperators.COE dimSpan)) $ [_ \ m] => COE ((List.hd us, m), dimSpan, m)
+         | O.K (CUB_K (CubicalOperators.COE dimSpan)) $ [_ \ n] => COE ((List.hd us, m), dimSpan, n)
          | O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $ ((_ \ cap) :: tubes) =>
              let
-               val ty = raise Match
                fun readTubes [] [] = []
                  | readTubes (r :: rs) ((([u], _) \ face0) :: (([v], _) \ face1) :: faces) =
                      (r, ((u, face0), (v, face1))) :: readTubes rs faces
                  | readTubes _ _ = raise Fail "Improper length of hcom tubes"
              in
-               HCOM (ty, span, cap, readTubes extents tubes)
+               HCOM (m, span, cap, readTubes extents tubes)
              end
          | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
          | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)

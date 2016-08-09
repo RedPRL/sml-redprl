@@ -167,10 +167,7 @@ struct
            let
              val u = List.hd us
 
-             (* TODO: apply appropriate dimension renamings? *)
-             val r = #starting span
-             val r' = #ending span
-
+             (* TODO: apply appropriate dimension renamings to 'span'? *)
            in
              case Syn.out (Cl.force (unquoteV ty <: env)) of
                 Syn.DFUN (a, x, bx) =>
@@ -179,10 +176,10 @@ struct
 
                     val m' = Cl.force (m <: mEnv)
 
-                    val coex = Syn.into (Syn.COE ((u, a), DimSpan.new (r', Dim.NAME u), xtm))
+                    val coex = Syn.into (Syn.COE ((u, a), DimSpan.new (#ending span, Dim.NAME u), xtm))
                     val bcoe = subst (coex, x) bx
                     val app = Syn.into (Syn.AP (m', coex))
-                    val coe = Syn.into (Syn.COE ((u, bcoe), DimSpan.new (r, r'), app))
+                    val coe = Syn.into (Syn.COE ((u, bcoe), span, app))
                     val lam = Syn.into (Syn.LAM (x, coe))
                   in
                     Cl.new lam <| ks
@@ -192,9 +189,6 @@ struct
 
        | (CUB_K (Cub.HCOM (extents, span)) `$ ((_ \ cap <: capEnv) :: faces), ty) =>
            let
-             (* TODO: apply appropriate dimension renamings? *)
-             val r = #starting span
-             val r' = #ending span
              val cap' = Cl.force (cap <: capEnv)
 
              fun makeTube [] [] = []
@@ -209,7 +203,7 @@ struct
                     val faces' = List.map (fn (b \ face <: faceEnv) => b \ Syn.into (Syn.AP (Cl.force (face <: faceEnv), xtm))) faces
                     val tube = makeTube extents faces'
                     val app = Syn.into (Syn.AP (cap', xtm))
-                    val hcom = Syn.into (Syn.HCOM (raise Match, span, app, tube))
+                    val hcom = Syn.into (Syn.HCOM (bx, span, app, tube))
                     val lam = Syn.into (Syn.LAM (x, hcom))
                   in
                     Cl.new lam <| ks
