@@ -77,7 +77,7 @@ struct
   structure O = RedPrlOperator
   structure RS = SortData
 
-  type 'a tube_slice = 'a * (symbol * 'a) * (symbol * 'a) (* extent, face0, face1 *)
+  type 'a tube_slice = symbol Dim.t * ((symbol * 'a) * (symbol * 'a)) (* extent, face0, face1 *)
 
   datatype 'a view =
      CAPPROX of RS.sort * 'a * 'a
@@ -121,12 +121,8 @@ struct
    | RCD_PROJ of symbol * 'a
    | RCD_PROJ_TY of symbol * 'a * 'a
 
-   | DIMREF of symbol
-   | DIM0
-   | DIM1
-   | TUBE_SLICE of 'a tube_slice (* TODO: remove *)
-   | COE of (symbol * 'a) * ('a * 'a) * 'a
-   | HCOM of 'a * ('a * 'a) * 'a * 'a tube_slice list
+   | COE of (symbol * 'a) * symbol DimSpan.t * 'a
+   | HCOM of 'a * symbol DimSpan.t * 'a * 'a tube_slice list
 
    | REFINE_SCRIPT of RS.sort * 'a * 'a * 'a
    | EXTRACT_WITNESS of RS.sort * 'a
@@ -179,6 +175,10 @@ struct
 
     open RedPrlOperators
 
+    fun flatMap f =
+      fn [] => []
+       | x :: xs => f x @ flatMap f xs
+
     fun ret tau m = O.RET tau $$ [([],[]) \ m]
     fun intoCttV th es = ret RS.EXP @@ O.V (CTT_V th) $$ es
     fun intoAtmV th es = ret RS.EXP @@ O.V (ATM_V th) $$ es
@@ -191,9 +191,6 @@ struct
     fun cutAtm (sigma, tau) th es m = O.CUT (([], sigma), tau) $$ [([],[]) \ O.K (ATM_K th) $$ es, ([],[]) \ m]
     fun cutLvl th es m = O.CUT (([], RS.LVL), RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
     fun cutRcd th es m = O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K (RCD_K th) $$ es, ([],[]) \ m]
-
-    fun makeTubeSlice (r, (u, n0), (v, n1)) =
-       ret RS.TUBE_SLICE @@ O.V (CUB_V CubicalOperators.TUBE_SLICE_LIT) $$ [([],[]) \ r, ([u],[]) \ n0, ([v],[]) \ n1]
 
   in
 
@@ -240,21 +237,19 @@ struct
        | RCD_PROJ (u, m) => cutRcd (RecordOperators.PROJ u) [] m
        | RCD_PROJ_TY (u, a, m) => cutRcd (RecordOperators.PROJ_TY u) [([],[]) \ m] a
 
-       | DIMREF u => ret RS.DIM @@ O.V (CUB_V (CubicalOperators.DIMREF u)) $$ []
-       | DIM0 => ret RS.DIM @@ O.V (CUB_V CubicalOperators.DIM0) $$ []
-       | DIM1 => ret RS.DIM @@ O.V (CUB_V CubicalOperators.DIM1) $$ []
-       | COE ((u, a), (r, r'), m) =>
+       | COE ((u, a), dimSpan, m) =>
            O.CUT (([RS.DIM], RS.EXP), RS.EXP) $$
-             [([],[]) \ O.K (CUB_K CubicalOperators.COE) $$ [([],[]) \ r, ([],[]) \ r', ([],[]) \ m],
+             [([],[]) \ O.K (CUB_K (CubicalOperators.COE dimSpan)) $$ [([],[]) \ m],
               ([u], []) \ a]
-       | HCOM (a, (r, r'), cap, slices) =>
+       | HCOM (a, span, cap, tubes) =>
            let
-             val slicesVec =
-               into @@ VEC_LITERAL (RS.TUBE_SLICE, List.map makeTubeSlice slices)
+             val (extents, pairs) = ListPair.unzip tubes
+             val tubes' = flatMap (fn ((u, face0), (v, face1)) => [([u],[]) \ face0, ([v],[]) \ face1]) pairs
+             val hcom = O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $$ (([],[]) \ cap) :: tubes'
            in
              O.CUT (([], RS.EXP), RS.EXP) $$
-               [([],[]) \ O.K (CUB_K CubicalOperators.HCOM) $$ [([],[]) \ r, ([],[]) \ r', ([],[]) \ cap, ([],[]) \ slicesVec],
-                ([],[]) \ (raise Match)]
+               [([],[]) \ hcom,
+                ([],[]) \ a]
            end
        | REFINE_SCRIPT (tau, m, s, e) => ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
        | EXTRACT_WITNESS (tau, m) => O.CUT (([], RS.THM tau), tau) $$ [([],[]) \ O.K (EXTRACT tau) $$ [], ([],[]) \ m]
@@ -326,11 +321,6 @@ struct
          | O.V (RCD_V (RecordOperators.CONS u)) $ [_ \ m, _ \ n] => RCD_CONS (u, m, n)
          | O.V (RCD_V (RecordOperators.RECORD u)) $ [_ \ a, (_,[x]) \ bx] => RECORD_TY (u, a, x, bx)
 
-         | O.V (CUB_V (CubicalOperators.DIMREF u)) $ _ => DIMREF u
-         | O.V (CUB_V CubicalOperators.DIM0) $ _ => DIM0
-         | O.V (CUB_V CubicalOperators.DIM1) $ _ => DIM1
-         | O.V (CUB_V CubicalOperators.TUBE_SLICE_LIT) $ [_ \ r, ([u], _) \ n0, ([v], _) \ n1] => TUBE_SLICE (r, (u, n0), (v, n1))
-
          | O.V (VEC_LIT (tau, _)) $ es => VEC_LITERAL (tau, List.map (fn _ \ m => m) es)
          | O.V (STR_LIT str) $ _ => STR_LITERAL str
          | O.V (OP_SOME tau) $ [_ \ m] => OPT_SOME (tau, m)
@@ -371,16 +361,6 @@ struct
          | O.V (LCF (NominalLcfOperators.HYP_VAR h)) $ _ => HYP_REF h
          | _ => raise Fail ("outVal expected value, but got: " ^ View.debugToString v)
 
-     and outTubeSlice s =
-       case View.out s of
-          O.V (CUB_V CubicalOperators.TUBE_SLICE_LIT) $ [_ \ extent, ([u], _) \ n0, ([v], _) \ n1] => (extent, (u, n0), (v, n1))
-        | _ => raise Fail "Expected tube slice literal"
-
-     and outTubeSlices vec =
-       case out vec of
-          VEC_LITERAL (_, slices) => List.map outTubeSlice slices
-        | _ => raise Fail "Expected vector literal of tube slices"
-
       and outCut k (us, m) =
         case View.out k of
            O.K (CTT_K CttOperators.AP) $ [_ \ n] => AP (m, n)
@@ -396,12 +376,16 @@ struct
          | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (sigma, tau, into (TOKEN (u, sigma)), m, l, r)
          | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
          | O.K (RCD_K (RecordOperators.PROJ_TY u)) $ [_ \ rcd] => RCD_PROJ_TY (u, m, rcd)
-         | O.K (CUB_K CubicalOperators.COE) $ [_ \ r, _ \ r', _ \ cap] => COE ((List.hd us, m), (r, r'), cap)
-         | O.K (CUB_K CubicalOperators.HCOM) $ [_ \ r, _ \ r', _ \ cap, _ \ vec] =>
+         | O.K (CUB_K (CubicalOperators.COE dimSpan)) $ [_ \ m] => COE ((List.hd us, m), dimSpan, m)
+         | O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $ ((_ \ cap) :: tubes) =>
              let
-              val slices = outTubeSlices vec
+               val ty = raise Match
+               fun readTubes [] [] = []
+                 | readTubes (r :: rs) ((([u], _) \ face0) :: (([v], _) \ face1) :: faces) =
+                     (r, ((u, face0), (v, face1))) :: readTubes rs faces
+                 | readTubes _ _ = raise Fail "Improper length of hcom tubes"
              in
-               HCOM (m, (r, r'), cap, slices)
+               HCOM (ty, span, cap, readTubes extents tubes)
              end
          | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
          | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)
@@ -425,7 +409,6 @@ struct
 
     in
       val out = out
-      val outTubeSlices = outTubeSlices
 
       fun outOpen m =
         case View.out m of
@@ -547,7 +530,8 @@ struct
     val toString = toString
     val var = var
 
-    fun substDimension (r, u) =
+    (* Note: any canonical kan composites must be made non-canonical when affected by a dimension substitution *)
+    (*fun substDimension (r, u) =
       let
         fun go m =
           case out m of
@@ -555,10 +539,10 @@ struct
            | _ => m
       in
         go o RedPrlAbt.deepMapSubterms go
-      end
+      end*)
 
     (* heterogeneous kan composition *)
-    fun heteroCom ((u, ty), (r : term, r' : term), cap, tube : term tube_slice list) =
+    (*fun heteroCom ((u, ty), (r : term, r' : term), cap, tube : term tube_slice list) =
       let
         fun coe v m = into @@ COE ((u, ty), (v, r'), m)
         fun updateFace (v, face) = (v, coe (into @@ DIMREF v) face)
@@ -568,7 +552,7 @@ struct
         val tube' = List.map (fn (extent, face0, face1) => (extent, updateFace face0, updateFace face1)) tube
       in
         into @@ HCOM (ty', (r, r'), cap', tube')
-      end
+      end*)
 
   end
 end

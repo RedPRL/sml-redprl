@@ -27,6 +27,9 @@ Library
   structure AtomV
   structure AtomK
 
+  structure Dim
+  structure DimSpan
+
   structure CubicalOperators
   structure CubicalV
   structure CubicalK
