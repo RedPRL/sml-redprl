@@ -33,7 +33,7 @@ struct
       case mode of
            PRINT_DEVELOPMENT => (map Frontend.processFile redprlFiles; OS.Process.success)
          | HELP => (print helpMessage; OS.Process.success)
-         | INTERACTIVE => (Interactive.runLoop(); OS.Process.success)
+         | INTERACTIVE => (Interactive.runLoop; OS.Process.success)
     end
     handle E =>
       (print (exnMessage E);
