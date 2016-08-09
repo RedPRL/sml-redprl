@@ -556,5 +556,19 @@ struct
       in
         go o RedPrlAbt.deepMapSubterms go
       end
+
+    (* heterogeneous kan composition *)
+    fun heteroCom ((u, ty), (r : term, r' : term), cap, tube : term tube_slice list) =
+      let
+        fun coe v m = into @@ COE ((u, ty), (v, r'), m)
+        fun updateFace (v, face) = (v, coe (into @@ DIMREF v) face)
+
+        val ty' = substDimension (r', u) ty
+        val cap' = coe r cap
+        val tube' = List.map (fn (extent, face0, face1) => (extent, updateFace face0, updateFace face1)) tube
+      in
+        into @@ HCOM (ty', (r, r'), cap', tube')
+      end
+
   end
 end
