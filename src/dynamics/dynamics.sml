@@ -161,26 +161,28 @@ struct
                bx <: pushV (proj <: env', x) env <| (RCD_K (Rcd.PROJ_TY lbl) `$ [([],[]) \ rcd <: env']) :: ks
              end
 
-       | (CUB_K Cub.COE `$ [_ \ r <: rEnv, _ \ r' <: r'Env, _ \ m <: mEnv], ty) =>
+
+       (* TODO: figure out if we really need to bypass the environment like we're doing here *)
+       | (CUB_K (Cub.COE span) `$ [_ \ m <: mEnv], ty) =>
            let
              val u = List.hd us
 
-             (* TODO: figure out if we really need to bypass the environment like we're doing here *)
-             val starting = Cl.force (r <: rEnv)
-             val ending = Cl.force (r' <: r'Env)
+             (* TODO: apply appropriate dimension renamings? *)
+             val r = #starting span
+             val r' = #ending span
+
            in
-             case ty of
-                CTT_V DFUN `$ [_ \ a, ([x], _) \ bx] =>
+             case Syn.out (Cl.force (unquoteV ty <: env)) of
+                Syn.DFUN (a, x, bx) =>
                   let
                     val xtm = Syn.var (x, SortData.EXP)
 
-                    val a' = Cl.force (a <: env)
-                    val bx' = Cl.force (bx <: env)
+                    val m' = Cl.force (m <: mEnv)
 
-                    val coex = Syn.into (Syn.COE ((u, a'), (ending, Syn.into (Syn.DIMREF u)), xtm))
-                    val bcoe = subst (coex, x) bx'
-                    val app = Syn.into (Syn.AP (Cl.force (m <: mEnv), coex))
-                    val coe = Syn.into (Syn.COE ((u, bcoe), (starting, ending), app))
+                    val coex = Syn.into (Syn.COE ((u, a), DimSpan.new (r', Dim.NAME u), xtm))
+                    val bcoe = subst (coex, x) bx
+                    val app = Syn.into (Syn.AP (m', coex))
+                    val coe = Syn.into (Syn.COE ((u, bcoe), DimSpan.new (r, r'), app))
                     val lam = Syn.into (Syn.LAM (x, coe))
                   in
                     Cl.new lam <| ks
@@ -188,30 +190,31 @@ struct
               | _ => raise Fail "Failed to apply cubical coercion"
            end
 
-       | (CUB_K Cub.HCOM `$ [_ \ r <: rEnv, _ \ r' <: r'Env, _ \ cap <: capEnv, _ \ tube <: tubeEnv], ty) =>
+       | (CUB_K (Cub.HCOM (extents, span)) `$ ((_ \ cap <: capEnv) :: faces), ty) =>
            let
-             val capDim = Cl.force (r <: rEnv)
-             val cmpDim = Cl.force (r' <: r'Env)
+             (* TODO: apply appropriate dimension renamings? *)
+             val r = #starting span
+             val r' = #ending span
              val cap' = Cl.force (cap <: capEnv)
-             val tube' = Cl.force (tube <: tubeEnv)
-             val slices = Syn.outTubeSlices tube'
+
+             fun makeTube [] [] = []
+               | makeTube (r :: rs) ((([u],_) \ face0) :: (([v],_) \ face1) :: faces) =
+                   (r, ((u, face0), (v, face1))) :: makeTube rs faces
+               | makeTube _ _ = raise Fail "Failed to makeTube"
            in
-             case ty of
-                CTT_V DFUN `$ [_ \ a, ([x], _) \ bx] =>
+             case Syn.out (Cl.force (unquoteV ty <: env)) of
+                Syn.DFUN (a, x, bx) =>
                   let
                     val xtm = Syn.var (x, SortData.EXP)
-
-                    val a' = Cl.force (a <: env)
-                    val bx' = Cl.force (bx <: env)
-
-                    val slices' = List.map (fn (extent, (v, n0), (w, n1)) => (extent, (v, Syn.into (Syn.AP (n0, xtm))), (w, Syn.into (Syn.AP (n1, xtm))))) slices
+                    val faces' = List.map (fn (b \ face <: faceEnv) => b \ Syn.into (Syn.AP (Cl.force (face <: faceEnv), xtm))) faces
+                    val tube = makeTube extents faces'
                     val app = Syn.into (Syn.AP (cap', xtm))
-                    val hcom = Syn.into (Syn.HCOM (bx', (capDim, cmpDim), app, slices'))
+                    val hcom = Syn.into (Syn.HCOM (raise Match, span, app, tube))
                     val lam = Syn.into (Syn.LAM (x, hcom))
                   in
                     Cl.new lam <| ks
                   end
-              | _ => raise Fail "Failed to apply kan composition coercion"
+              | _ => raise Fail "Failed to apply kan composition"
            end
 
        (* Extract the witness from a refined theorem object. *)
