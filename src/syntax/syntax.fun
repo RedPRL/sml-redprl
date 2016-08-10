@@ -576,7 +576,8 @@ struct
     val toString = toString
     val var = var
 
-    (* Note: any canonical kan composites must be made non-canonical when affected by a dimension substitution *)
+    (* Note: any canonical kan composites are automatically made non-canonical when affected by a dimension substitution;
+       this is guaranteed by the syntax view abstraction above. *)
     fun substDim (r, u) =
       let
         fun go m =
@@ -596,7 +597,6 @@ struct
                in
                  Syn.into @@ HCOM (a, span', cap, tube')
                end
-
            | APP (ID_APP (m, r')) =>
                let
                  val (_, r'') = Dim.subst Symbol.eq (r, u) r'
