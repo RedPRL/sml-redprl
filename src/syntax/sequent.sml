@@ -5,6 +5,7 @@ structure Sequent :> SEQUENT
   where type prop = RedPrlAbt.abt
   where type sort = RedPrlAtomicSort.t
   where type var = RedPrlAbt.variable
+  where type sym = RedPrlAbt.symbol
   where type metactx = RedPrlAbt.metactx
   where type hypctx = (RedPrlAbt.abt * RedPrlAtomicSort.t) SymbolTelescope.telescope
   where type dimctx = DimCtx.set =
@@ -14,6 +15,7 @@ struct
   type prop = abt
   type expr = abt
   type var = variable
+  type sym = symbol
 
   structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
   structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = RedPrlValence)
@@ -67,7 +69,7 @@ struct
 
   datatype judgment =
       >> of context * concl (* categorical sequent *)
-    | |> of (var * sort) list * judgment (* generic sequent *)
+    | |> of ((sym * sort) list * (var * sort) list) * judgment (* parametric-generic sequent *)
 
   infix 4 >>
   infix 3 |>
@@ -108,8 +110,9 @@ struct
       go (out H)
     end
 
-  fun toString (G |> jdg) =
-        "[" ^ ListSpine.pretty (fn (x, _) => Variable.toString x) "," G ^ "] |\n"
+  fun toString ((Y, G) |> jdg) =
+        "{" ^ ListSpine.pretty (fn (u, _) => Symbol.toString u) "," Y ^ "}"
+          ^ "[" ^ ListSpine.pretty (fn (x, _) => Variable.toString x) "," G ^ "] |\n"
           ^ toString jdg
     | toString (H >> concl) =
         hypothesesToString (getHyps H)

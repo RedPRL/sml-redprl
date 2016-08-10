@@ -8,7 +8,7 @@ struct
   infix 3 |>
 
   type quantifier_destruct = RedPrlAbt.abt -> RedPrlAbt.abt * RedPrlAbt.variable * RedPrlAbt.abt
-  
+
   fun IsType destruct alpha (goal as (H >> TYPE (ty, EXP))) =
     let
       val (a, x, bx) = destruct ty
@@ -56,7 +56,7 @@ struct
 
       val (goal2, _, H') =
         makeGoal @@
-          [(z, SortData.EXP)] |> makeEqSequent H' (b1z, b2z, univ)
+          ([], [(z, SortData.EXP)]) |> makeEqSequent H' (b1z, b2z, univ)
 
       val psi = T.empty @> goal1 @> goal2
     in

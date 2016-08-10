@@ -32,7 +32,7 @@ struct
 
       val (goal1, _, H') =
         makeGoal @@
-          [(z,EXP)] |> makeEqSequent H' (m1z, m2z, bz)
+          ([], [(z,EXP)]) |> makeEqSequent H' (m1z, m2z, bz)
 
       val (goal2, _, _) =
         makeGoal @@
@@ -82,7 +82,7 @@ struct
 
       val (goal, _, _) =
         makeGoal @@
-          [(z,EXP)] |> H' >> TRUE (bz, EXP)
+          ([], [(z,EXP)]) |> H' >> TRUE (bz, EXP)
 
       val (wfGoal, _, _) =
         makeGoal @@
@@ -123,7 +123,7 @@ struct
 
       val (goal2, _, _) =
         makeGoal @@
-          [(y,EXP), (z, EXP)] |> H' >> TRUE (P, tau)
+          ([], [(y,EXP), (z, EXP)]) |> H' >> TRUE (P, tau)
 
       val psi = T.empty @> goal1 @> goal2
     in
@@ -152,7 +152,7 @@ struct
 
       val (mainGoal, _, H') =
         makeGoal @@
-          [(z,EXP)] |> makeEqSequent H' (fz, gz, bz)
+          ([], [(z,EXP)]) |> makeEqSequent H' (fz, gz, bz)
 
       val (fwfGoal, _, H) =
         makeGoal @@

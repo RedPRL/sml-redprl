@@ -70,7 +70,7 @@ struct
 
       val (goal, _, _) =
         makeGoal @@
-          [(z,EXP)] |> H' >> TRUE (P, sigma)
+          ([], [(z,EXP)]) |> H' >> TRUE (P, sigma)
 
       val psi = T.empty @> goal
     in

@@ -7,7 +7,7 @@ struct
   infix 3 >>
   infix 2 |>
 
-  fun Intro alpha (G |> jdg) =
+  fun Intro alpha ((Y, G) |> jdg) =
     let
       val (goal, _, _) =
         makeGoal jdg
@@ -16,11 +16,12 @@ struct
       (psi, fn rho =>
         let
           val ((us, xs) \ m, ((sigmas, taus), tau)) = inferb @@ T.lookup rho (#1 goal)
+          val (us', sigmas') = ListPair.unzip Y
           val (xs', taus') = ListPair.unzip G
         in
           checkb
-            ((us, xs' @ xs) \ m,
-             ((sigmas, List.map RS.EXP taus' @ taus), tau))
+            ((us' @ us, xs' @ xs) \ m,
+             ((List.map RS.EXP sigmas' @ sigmas, List.map RS.EXP taus' @ taus), tau))
         end)
     end
     | Intro _ _ = raise Match
