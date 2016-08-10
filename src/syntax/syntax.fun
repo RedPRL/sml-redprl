@@ -502,7 +502,8 @@ struct
        | RCD_PROJ (lbl, m) => postfix (4, ". " ^ Symbol.toString lbl) (unparse m)
        | RECORD_TY (lbl, a, x, bx) =>
            let
-             val b' = RedPrlAbt.subst (var (lbl, SortData.EXP), x) bx
+             val lblVar = Variable.named (Symbol.toString lbl)
+             val b' = RedPrlAbt.subst (var (lblVar, SortData.EXP), x) bx
              val decl = infix' (Non, 0, ":") (atom (Symbol.toString lbl), unparse a)
              val rcd = infix' (Left, 0, ",") (decl, unparse b')
            in
@@ -515,7 +516,7 @@ struct
        | FUN (a, b) => infix' (Right, 7, "\226\134\146") (unparse a, unparse b)
        | DFUN (a, x, bx) =>
            let
-             val dom = infix' (Non, 0, ":") (atom (Symbol.toString x), unparse a)
+             val dom = infix' (Non, 0, ":") (atom (Variable.toString x), unparse a)
              val dom' = atom @@ "(" ^ parens (done dom) ^ ")"
              val cod = unparse bx
            in

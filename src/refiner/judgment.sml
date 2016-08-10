@@ -95,7 +95,7 @@ struct
       fun go (mrho, srho, vrho) =
         fn (EMPTY, EMPTY) => (mrho, srho, vrho)
          | (CONS (x1, (a1, _), tele1') , CONS (x2, (a2, _), tele2')) =>
-             if Variable.eq (x1, x2) then
+             if Symbol.eq (x1, x2) then
                let
                  val (mrho', srho', vrho') = Tm.Unify.unify (a1, a2)
                  val mrho'' = MetaRenUtil.union (mrho, mrho')
