@@ -7,6 +7,7 @@ sig
 
   type metactx (* metavariable context *)
   type hypctx (* hypothesis contexts *)
+  type dimctx (* dimension contexts *)
 
   type context
 

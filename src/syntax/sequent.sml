@@ -1,10 +1,13 @@
+structure DimCtx = SplaySet (structure Elem = Symbol)
+
 structure Sequent :> SEQUENT
   where type expr = RedPrlAbt.abt
   where type prop = RedPrlAbt.abt
   where type sort = RedPrlAtomicSort.t
   where type var = RedPrlAbt.variable
   where type metactx = RedPrlAbt.metactx
-  where type hypctx = (RedPrlAbt.abt * RedPrlAtomicSort.t) SymbolTelescope.telescope =
+  where type hypctx = (RedPrlAbt.abt * RedPrlAtomicSort.t) SymbolTelescope.telescope
+  where type dimctx = DimCtx.set =
 struct
   open RedPrlAbt
   type sort = RedPrlAtomicSort.t
@@ -12,15 +15,17 @@ struct
   type expr = abt
   type var = variable
 
-  type hypctx = (prop * sort) SymbolTelescope.telescope
-
   structure MetaCtx = Metavariable.Ctx and SymCtx = Symbol.Ctx and VarCtx = Variable.Ctx
   structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = RedPrlValence)
+
+  type hypctx = (prop * sort) SymbolTelescope.telescope
+  type dimctx = DimCtx.set
 
   datatype context =
     CONTEXT of
       {metactx : metactx Susp.susp,
-       hypctx : hypctx}
+       hypctx : hypctx,
+       dimctx : dimctx}
 
   fun hypsMetactx H =
     SymbolTelescope.foldl
@@ -31,18 +36,20 @@ struct
   val emptyContext =
     CONTEXT
       {metactx = Susp.delay (fn _ => MetaCtx.empty),
-       hypctx = SymbolTelescope.empty}
+       hypctx = SymbolTelescope.empty,
+       dimctx = DimCtx.empty}
 
   fun getHyps (CONTEXT {hypctx,...}) =
     hypctx
 
-  fun updateHyps f (CONTEXT {metactx, hypctx}) =
+  fun updateHyps f (CONTEXT {metactx, hypctx, dimctx}) =
     let
       val H = f hypctx
     in
       CONTEXT
         {metactx = Susp.delay (fn _ => hypsMetactx H),
-         hypctx = H}
+         hypctx = H,
+         dimctx = dimctx}
     end
 
   (* A sequent consists in a context (of metavariables, symbols and hypotheses)

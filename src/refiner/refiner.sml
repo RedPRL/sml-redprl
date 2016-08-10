@@ -16,6 +16,7 @@ struct
       BaseRules.Elim i alpha
         ORELSE EnsembleRules.Elim i alpha
         ORELSE VoidRules.Elim i alpha
+        ORELSE BoolRules.Elim i alpha
 
     fun Eta i alpha =
       CEquivRules.Eta i alpha
@@ -55,6 +56,8 @@ struct
           | Syn.RECORD_TY _ => RecordRules.IsType alpha goal
           | Syn.UNIV _ => UnivRules.IsType alpha goal
           | Syn.EQ _ => EqRules.IsType alpha goal
+
+          | Syn.BOOL => BoolRules.IsType alpha goal
           | _ => raise Match)
       | IsType' _ _ = raise Match
 
@@ -108,6 +111,8 @@ struct
         | (Syn.APP (Syn.DEP_ISECT _), _, _) => DepIsectRules.TypeEq alpha goal
         | (_, _, Syn.DEP_ISECT _) => DepIsectRules.MemberEq alpha goal
         | (Syn.APP Syn.VOID, _, _) => VoidRules.TypeEq alpha goal
+        | (Syn.APP Syn.BOOL, _, _) => BoolRules.TypeEq alpha goal
+        | (_, _, Syn.BOOL) => BoolRules.MemberEq alpha goal
         | _ => raise Match)
       | Eq r alpha (jdg as _ >> EQ_SYN _) =
           SynthRules.SynthEqIntro alpha jdg

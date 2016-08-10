@@ -10,7 +10,7 @@ local
 
   syntax/option_util.sig
   syntax/option_util.sml
-  
+
   syntax/sort.sml
   syntax/arity.sml
 
@@ -45,6 +45,7 @@ local
       ../lib/cmlib/cmlib.mlb
     in
       structure Susp
+      functor SplaySet
     end
   in
     syntax/sequent.sml
