@@ -15,7 +15,6 @@ struct
     | EXN (* exception names *)
 
     | DIM (* cubical dimension names *)
-    | TUBE_SLICE (* a component of a kan composition tube: an extent and two tube faces *)
 end
 
 structure RedPrlAtomicSort :> ABT_SORT where type t = SortData.sort =
@@ -39,7 +38,6 @@ struct
      | UNIT => "unit"
      | EXN => "exn"
      | DIM => "dim"
-     | TUBE_SLICE => "tube-slice"
 end
 
 structure RedPrlAtomicSortJson =
@@ -59,7 +57,6 @@ struct
        | UNIT => J.String "unit"
        | EXN => J.String "exn"
        | DIM => J.String "dim"
-       | TUBE_SLICE => J.String "tube-slice"
        | THM tau => J.Obj [("thm", encode tau)]
        | VEC tau => J.Obj [("vec", encode tau)]
        | OPT tau => J.Obj [("opt", encode tau)]
@@ -75,7 +72,6 @@ struct
        | J.String "unit" => SOME UNIT
        | J.String "exn" => SOME EXN
        | J.String "dim" => SOME DIM
-       | J.String "tube-slice" => SOME TUBE_SLICE
        | J.Obj [("thm", tau)] => Option.map THM (decode tau)
        | J.Obj [("vec", tau)] => Option.map THM (decode tau)
        | J.Obj [("opt", tau)] => Option.map OPT (decode tau)
