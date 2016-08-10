@@ -198,6 +198,7 @@ struct
                   in
                     Cl.new abs |> ks
                   end
+              | Syn.BOOL => m <: mEnv <| ks
               | _ => raise Fail "Failed to apply cubical coercion"
            end
 
@@ -209,15 +210,24 @@ struct
                | makeTube (r :: rs) ((([u],_) \ face0) :: (([v],_) \ face1) :: faces) =
                    (r, ((u, face0), (v, face1))) :: makeTube rs faces
                | makeTube _ _ = raise Fail "Failed to makeTube"
+
+             (* Find the first constant (0,1) extent and return the corresponding tube face *)
+             val rec findProjectedTubeFace =
+               fn [] => NONE
+                | (Dim.DIM0, (face0, _)) :: tube => SOME face0
+                | (Dim.DIM1, (_, face1)) :: tube => SOME face1
+                | _ :: tube => findProjectedTubeFace tube
+
+             val tube = makeTube extents faces
            in
              case Syn.out (Cl.force (unquoteV ty <: env)) of
                 Syn.DFUN (a, x, bx) =>
                   let
                     val xtm = Syn.var (x, SortData.EXP)
                     val faces' = List.map (fn (b \ face <: faceEnv) => b \ Syn.into (Syn.AP (Cl.force (face <: faceEnv), xtm))) faces
-                    val tube = makeTube extents faces'
+                    val tube' = makeTube extents faces'
                     val app = Syn.into (Syn.AP (cap', xtm))
-                    val hcom = Syn.into (Syn.HCOM (bx, span, app, tube))
+                    val hcom = Syn.into (Syn.HCOM (bx, span, app, tube'))
                     val lam = Syn.into (Syn.LAM (x, hcom))
                   in
                     Cl.new lam |> ks
@@ -226,17 +236,27 @@ struct
                   let
                     val app = Syn.into (Syn.ID_APP (cap', Dim.NAME u))
                     val faces' = List.map (fn b \ face <: faceEnv => b \ Syn.into (Syn.ID_APP (Cl.force (face <: faceEnv), Dim.NAME u))) faces
-                    val tube =
+                    val tube' =
                       let
                         val w = Symbol.named "_"
                       in
                         makeTube extents faces' @ [(Dim.NAME u, ((w, p1), (w, p2)))]
                       end
-                    val hcom = Syn.into (Syn.HCOM (a, span, app, tube))
+                    val hcom = Syn.into (Syn.HCOM (a, span, app, tube'))
                     val abs = Syn.into (Syn.ID_ABS (u, hcom))
                   in
                     Cl.new abs |> ks
                   end
+              | Syn.BOOL =>
+                  (case findProjectedTubeFace tube of
+                      SOME (w, face <: faceEnv) => Syn.substDim (#ending span, w) face <: faceEnv <| ks
+                    | NONE =>
+                        if Dim.eq Symbol.eq (#starting span, #ending span) then
+                          cap <: capEnv <| ks
+                        else
+                          (* In this case, the syntax abstraction will have represented the hcom as canonical, so we should never
+                             step to this state in the machine. *)
+                          raise Fail "This case is impossible")
               | _ => raise Fail "Failed to apply kan composition"
            end
 
