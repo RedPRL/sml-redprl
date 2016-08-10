@@ -266,7 +266,7 @@ struct
              val spanIsTrivial = Dim.eq symbolEq (#starting span, #ending span)
            in
              case (outOpen a, extentsAsNames, spanIsTrivial) of
-                (APP BOOL, SOME vs, true) => ret RS.EXP @@ O.V (CUB_V (CubicalOperators.BOOL_HCOM (vs, span))) $$ []
+                (APP BOOL, SOME vs, false) => ret RS.EXP @@ O.V (CUB_V (CubicalOperators.BOOL_HCOM (vs, span))) $$ []
               | _ =>
                   O.CUT (([], RS.EXP), RS.EXP) $$
                     [([],[]) \ O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $$ (([],[]) \ cap) :: tubes',
