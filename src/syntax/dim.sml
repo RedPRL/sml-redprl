@@ -121,17 +121,12 @@ struct
 
   local
     structure J = Json
-
-    (* TODO: remove copy-pasta and make OptionUtil public *)
-    fun traverseOpt f xs =
-      SOME (List.map (Option.valOf o f) xs)
-        handle _ => NONE
   in
     fun encode f =
       J.Array o List.map (Dim.encode f)
 
     fun decode f =
-      fn J.Array rs => traverseOpt (Dim.decode f) rs
+      fn J.Array rs => OptionUtil.traverseOpt (Dim.decode f) rs
        | _ => NONE
   end
 

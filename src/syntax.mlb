@@ -8,6 +8,9 @@ local
   ../lib/sml-typed-abts/abt-unparser.mlb
   ../lib/sml-telescopes/telescopes.mlb
 
+  syntax/option_util.sig
+  syntax/option_util.sml
+  
   syntax/sort.sml
   syntax/arity.sml
 

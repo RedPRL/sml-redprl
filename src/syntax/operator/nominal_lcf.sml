@@ -266,18 +266,13 @@ struct
      | UNFOLD (a, b) => J.Obj [("unfold", J.Array [f a, encodeOpt f b])]
      | HYP_VAR a => J.Obj [("hyp_var", f a)]
 
-  fun traverseOpt f xs =
-    SOME (List.map (Option.valOf o f) xs)
-      handle _ => NONE
+  open OptionUtil
+  infix **
 
   val decodeInt =
     fn J.Int i => SOME i
      | _ => NONE
 
-  fun ** (SOME a, SOME b) = SOME (a, b)
-    | ** _ = NONE
-
-  infix **
 
   fun decode f =
     fn J.Obj [("seq", J.Array taus)] => Option.map SEQ (traverseOpt S.decode taus)

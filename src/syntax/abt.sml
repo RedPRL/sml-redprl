@@ -5,16 +5,6 @@ structure Symbol = AbtSymbol ()
 (* it will come in handy for variables and symbols to be of the same type *)
 structure Variable = Symbol
 
-structure OptionUtil =
-struct
-  fun traverseOpt f xs =
-    SOME (List.map (Option.valOf o f) xs)
-      handle _ => NONE
-
-  fun ** (SOME a, SOME b) = SOME (a, b)
-    | ** _ = NONE
-end
-
 structure Semivalence =
 struct
   structure J = Json and AS = RedPrlAtomicSortJson

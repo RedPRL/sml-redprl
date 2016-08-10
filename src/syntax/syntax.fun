@@ -21,6 +21,8 @@ sig
   val $$ : symbol operator * term bview spine -> term
   val out : term -> term view
 
+  val symbolEq : symbol * symbol -> bool
+
   val debugToString : term -> string
 end
 
@@ -33,6 +35,7 @@ struct
 
   structure Show = DebugShowAbt (Abt)
   val debugToString = Show.toString
+  val symbolEq = Sym.eq
 end
 
 functor AstSyntaxView (Ast : AST where type 'a spine = 'a list) : SYNTAX_VIEW =
@@ -65,6 +68,8 @@ struct
     fn Ast.`x => `x
      | Ast.$ (th, es) => $ (th, List.map (fn Ast.\ ((us, xs), m) => \ ((us, xs), m)) es)
      | Ast.$# (x, (us, ms)) => $# (x, (List.map (fn u => (u, ())) us, ms))
+
+  val symbolEq : symbol * symbol -> bool = op=
 
   fun debugToString _ = "[not implemented]"
 end
@@ -123,6 +128,11 @@ struct
 
    | COE of (symbol * 'a) * symbol DimSpan.t * 'a
    | HCOM of 'a * symbol DimSpan.t * 'a * 'a tube_slice list
+
+   | BOOL
+   | BOOL_TT
+   | BOOL_FF
+   | BOOL_IF of (variable * 'a) * 'a * 'a * 'a
 
    | ID of (symbol * 'a) * 'a * 'a (* identification type *)
    | ID_ABS of symbol * 'a (* identification abstraction *)
@@ -187,6 +197,7 @@ struct
     fun intoCttV th es = ret RS.EXP @@ O.V (CTT_V th) $$ es
     fun intoAtmV th es = ret RS.EXP @@ O.V (ATM_V th) $$ es
     fun intoRcdV th es = ret RS.EXP @@ O.V (RCD_V th) $$ es
+    fun intoCubV th es = ret RS.EXP @@ O.V (CUB_V th) $$ es
     fun intoCttD th es = O.D (CTT_D th) $$ es
     fun intoRcdD th es = O.D (RCD_D th) $$ es
     fun intoTacV th es = ret RS.TAC @@ O.V (LCF th) $$ es
@@ -198,8 +209,9 @@ struct
 
   in
 
-    val rec into =
-      fn CAPPROX (tau, m, n) => intoCttV (CttOperators.CAPPROX tau) [([],[]) \ m, ([],[]) \ n]
+    fun into tm =
+      case tm of
+         CAPPROX (tau, m, n) => intoCttV (CttOperators.CAPPROX tau) [([],[]) \ m, ([],[]) \ n]
        | CEQUIV (tau, m, n) => intoCttV (CttOperators.CEQUIV tau) [([],[]) \ m, ([],[]) \ n]
        | BASE tau => intoCttV (CttOperators.BASE tau) []
        | TOP tau => intoCttV (CttOperators.TOP tau) []
@@ -249,16 +261,31 @@ struct
            let
              val (extents, pairs) = ListPair.unzip tubes
              val tubes' = flatMap (fn ((u, face0), (v, face1)) => [([u],[]) \ face0, ([v],[]) \ face1]) pairs
-             val hcom = O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $$ (([],[]) \ cap) :: tubes'
+
+             val extentsAsNames = OptionUtil.traverseOpt (fn Dim.NAME u => SOME u | _ => NONE) extents
+             val spanIsTrivial = Dim.eq symbolEq (#starting span, #ending span)
            in
-             O.CUT (([], RS.EXP), RS.EXP) $$
-               [([],[]) \ hcom,
-                ([],[]) \ a]
+             case (outOpen a, extentsAsNames, spanIsTrivial) of
+                (APP BOOL, SOME vs, true) => ret RS.EXP @@ O.V (CUB_V (CubicalOperators.BOOL_HCOM (vs, span))) $$ []
+              | _ =>
+                  O.CUT (([], RS.EXP), RS.EXP) $$
+                    [([],[]) \ O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $$ (([],[]) \ cap) :: tubes',
+                     ([],[]) \ a ]
            end
 
        | ID ((u, a), m, n) => ret RS.EXP @@ O.V (CUB_V CubicalOperators.ID) $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | ID_ABS (u, m) => ret RS.EXP @@ O.V (CUB_V CubicalOperators.ID_ABS) $$ [([u],[]) \ m]
        | ID_APP (m, r) => O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K (CUB_K (CubicalOperators.ID_APP r)) $$ [], ([],[]) \ m]
+
+       | BOOL => intoCubV CubicalOperators.BOOL []
+       | BOOL_TT => intoCubV CubicalOperators.BOOL_TT []
+       | BOOL_FF => intoCubV CubicalOperators.BOOL_FF []
+       | BOOL_IF ((x, a), b, t, f) =>
+           let
+             val k = O.K (CUB_K CubicalOperators.BOOL_IF) $$ [([],[x]) \ a, ([],[]) \ t, ([],[]) \ f]
+           in
+             O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ k, ([],[]) \ b]
+           end
 
        | REFINE_SCRIPT (tau, m, s, e) => ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
        | EXTRACT_WITNESS (tau, m) => O.CUT (([], RS.THM tau), tau) $$ [([],[]) \ O.K (EXTRACT tau) $$ [], ([],[]) \ m]
@@ -302,140 +329,147 @@ struct
       | HYP_REF u => ret RS.EXP @@ O.V (LCF (NominalLcfOperators.HYP_VAR u)) $$ []
       | _ => raise Fail "Stupid SML/NJ says this is non-exhaustive, but doesn't tell me which cases I am missing!"
 
-    local
-      fun outVal v =
-        case View.out v of
-           O.V (CTT_V (CttOperators.CAPPROX tau)) $ [_ \ m, _ \ n] => CAPPROX (tau, m, n)
-         | O.V (CTT_V (CttOperators.CEQUIV tau)) $ [_ \ m, _ \ n] => CEQUIV (tau, m, n)
-         | O.V (CTT_V (CttOperators.BASE tau)) $ _ => BASE tau
-         | O.V (CTT_V (CttOperators.TOP tau)) $ _ => TOP tau
-         | O.V (CTT_V (CttOperators.UNIV tau)) $ [_ \ lvl] => UNIV (tau, lvl)
-         | O.V (CTT_V (CttOperators.EQ tau)) $ [_ \ m, _ \ n, _ \ a] => EQ (tau, m, n, a)
-         | O.V (CTT_V CttOperators.AX) $ _ => AX
-         | O.V (CTT_V (CttOperators.SQUASH tau)) $ [_ \ a] => SQUASH (tau, a)
-         | O.V (CTT_V CttOperators.DFUN) $ [_ \ a, (_, [x]) \ bx] => DFUN (a, x, bx)
-         | O.V (CTT_V (CttOperators.ENSEMBLE (sigma, tau))) $ [_ \ a, (_, [x]) \ bx] => ENSEMBLE (sigma, tau, a, x, bx)
-         | O.V (CTT_V CttOperators.LAM) $ [(_, [x]) \ mx] => LAM (x, mx)
-         | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
-         | O.V (CTT_V CttOperators.VOID) $ _ => VOID
-         | O.V (CTT_V CttOperators.DUMMY) $ _ => DUMMY
-         | O.V (EXN a) $ [_ \ m] => EXN_VAL (a, m)
+    and outVal v =
+      case View.out v of
+         O.V (CTT_V (CttOperators.CAPPROX tau)) $ [_ \ m, _ \ n] => CAPPROX (tau, m, n)
+       | O.V (CTT_V (CttOperators.CEQUIV tau)) $ [_ \ m, _ \ n] => CEQUIV (tau, m, n)
+       | O.V (CTT_V (CttOperators.BASE tau)) $ _ => BASE tau
+       | O.V (CTT_V (CttOperators.TOP tau)) $ _ => TOP tau
+       | O.V (CTT_V (CttOperators.UNIV tau)) $ [_ \ lvl] => UNIV (tau, lvl)
+       | O.V (CTT_V (CttOperators.EQ tau)) $ [_ \ m, _ \ n, _ \ a] => EQ (tau, m, n, a)
+       | O.V (CTT_V CttOperators.AX) $ _ => AX
+       | O.V (CTT_V (CttOperators.SQUASH tau)) $ [_ \ a] => SQUASH (tau, a)
+       | O.V (CTT_V CttOperators.DFUN) $ [_ \ a, (_, [x]) \ bx] => DFUN (a, x, bx)
+       | O.V (CTT_V (CttOperators.ENSEMBLE (sigma, tau))) $ [_ \ a, (_, [x]) \ bx] => ENSEMBLE (sigma, tau, a, x, bx)
+       | O.V (CTT_V CttOperators.LAM) $ [(_, [x]) \ mx] => LAM (x, mx)
+       | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
+       | O.V (CTT_V CttOperators.VOID) $ _ => VOID
+       | O.V (CTT_V CttOperators.DUMMY) $ _ => DUMMY
+       | O.V (EXN a) $ [_ \ m] => EXN_VAL (a, m)
 
-         | O.V (LVL_V 0) $ _ => LBASE
-         | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
+       | O.V (LVL_V 0) $ _ => LBASE
+       | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
 
-         | O.V (ATM_V (AtomOperators.ATOM tau)) $ _ => ATOM tau
-         | O.V (ATM_V (AtomOperators.TOKEN (u, tau))) $ _ => TOKEN (u, tau)
+       | O.V (ATM_V (AtomOperators.ATOM tau)) $ _ => ATOM tau
+       | O.V (ATM_V (AtomOperators.TOKEN (u, tau))) $ _ => TOKEN (u, tau)
 
-         | O.V (RCD_V (RecordOperators.CONS u)) $ [_ \ m, _ \ n] => RCD_CONS (u, m, n)
-         | O.V (RCD_V (RecordOperators.RECORD u)) $ [_ \ a, (_,[x]) \ bx] => RECORD_TY (u, a, x, bx)
+       | O.V (RCD_V (RecordOperators.CONS u)) $ [_ \ m, _ \ n] => RCD_CONS (u, m, n)
+       | O.V (RCD_V (RecordOperators.RECORD u)) $ [_ \ a, (_,[x]) \ bx] => RECORD_TY (u, a, x, bx)
 
-         | O.V (CUB_V CubicalOperators.ID) $ [([u], _) \ a, _ \ m, _ \ n] => ID ((u, a), m, n)
-         | O.V (CUB_V CubicalOperators.ID_ABS) $ [([u], _) \ m] => ID_ABS (u, m)
+       | O.V (CUB_V CubicalOperators.ID) $ [([u], _) \ a, _ \ m, _ \ n] => ID ((u, a), m, n)
+       | O.V (CUB_V CubicalOperators.ID_ABS) $ [([u], _) \ m] => ID_ABS (u, m)
 
-         | O.V (VEC_LIT (tau, _)) $ es => VEC_LITERAL (tau, List.map (fn _ \ m => m) es)
-         | O.V (STR_LIT str) $ _ => STR_LITERAL str
-         | O.V (OP_SOME tau) $ [_ \ m] => OPT_SOME (tau, m)
-         | O.V (OP_NONE tau) $ _ => OPT_NONE tau
-         | O.V (REFINE tau) $ [_ \ m, _ \ s, _ \ e] => REFINE_SCRIPT (tau, m, s, e)
+       | O.V (CUB_V CubicalOperators.BOOL) $ _ => BOOL
+       | O.V (CUB_V CubicalOperators.BOOL_TT) $ _ => BOOL_TT
+       | O.V (CUB_V CubicalOperators.BOOL_FF) $ _ => BOOL_FF
+       | O.V (CUB_V (CubicalOperators.BOOL_HCOM (extents, span))) $ (cap :: tubes) =>
+           let
+             val extents' = List.map Dim.NAME extents
+             val k = O.K (CUB_K (CubicalOperators.HCOM (extents', span))) $$ (cap :: tubes)
+           in
+             outCut k ([], into BOOL)
+           end
 
-         | O.V (LCF (NominalLcfOperators.SEQ sorts)) $ [_ \ t1, (hyps, _) \ t2] => TAC_SEQ (t1, ListPair.zip (hyps, sorts), t2)
-         | O.V (LCF NominalLcfOperators.ORELSE) $ [_ \ t1, _ \ t2] => TAC_ORELSE (t1, t2)
-         | O.V (LCF NominalLcfOperators.ALL) $ [_ \ t] => MTAC_ALL t
-         | O.V (LCF NominalLcfOperators.EACH) $ [_ \ vec] =>
-             (case out vec of
-                 VEC_LITERAL (tau, ts) => MTAC_EACH ts
-               | _ => raise Fail "Expected vector literal")
-         | O.V (LCF (NominalLcfOperators.FOCUS i)) $ [_ \ t] => MTAC_FOCUS (i, t)
-         | O.V (LCF NominalLcfOperators.PROGRESS) $ [_ \ t] => TAC_PROGRESS t
-         | O.V (LCF NominalLcfOperators.REC) $ [(_, [x]) \ tx] => TAC_REC (x, tx)
-         | O.V (LCF (NominalLcfOperators.INTRO r)) $ _ => TAC_INTRO r
-         | O.V (LCF (NominalLcfOperators.EQ r)) $ _ => TAC_EQ r
-         | O.V (LCF NominalLcfOperators.EXT) $ _ => TAC_EXT
-         | O.V (LCF NominalLcfOperators.CUM) $ _ => TAC_CUM
-         | O.V (LCF NominalLcfOperators.CHKINF) $ _ => TAC_CHKINF
-         | O.V (LCF (NominalLcfOperators.ELIM (u, tau))) $ _ => TAC_ELIM (u, tau)
-         | O.V (LCF (NominalLcfOperators.ETA (u, tau))) $ _ => TAC_ETA (u, tau)
-         | O.V (LCF (NominalLcfOperators.HYP (u, tau))) $ _ => TAC_HYP (u, tau)
-         | O.V (LCF (NominalLcfOperators.UNHIDE (u, tau))) $ _ => TAC_UNHIDE (u, tau)
-         | O.V (LCF NominalLcfOperators.AUTO) $ _ => TAC_AUTO
-         | O.V (LCF NominalLcfOperators.ID) $ _ => TAC_ID
-         | O.V (LCF NominalLcfOperators.FAIL) $ _ => TAC_FAIL
-         | O.V (LCF (NominalLcfOperators.TRACE tau)) $ [_ \ m] => TAC_TRACE (tau, m)
-         | O.V (LCF (NominalLcfOperators.CSTEP n)) $ _ => TAC_CSTEP n
-         | O.V (LCF NominalLcfOperators.CEVAL) $ _ => TAC_CEVAL
-         | O.V (LCF NominalLcfOperators.CSYM) $ _ => TAC_CSYM
-         | O.V (LCF (NominalLcfOperators.REWRITE_GOAL tau)) $ [_ \ m] => TAC_REWRITE_GOAL (tau, m)
-         | O.V (LCF (NominalLcfOperators.EVAL_GOAL u)) $ _ => TAC_EVAL_GOAL u
-         | O.V (LCF (NominalLcfOperators.NORMALIZE u)) $ _ => TAC_NORMALIZE u
-         | O.V (LCF (NominalLcfOperators.WITNESS tau)) $ [_ \ m] => TAC_WITNESS (tau, m)
-         | O.V (LCF (NominalLcfOperators.UNFOLD (u, v))) $ _ => TAC_UNFOLD (u, v)
-         | O.V (LCF (NominalLcfOperators.HYP_VAR h)) $ _ => HYP_REF h
-         | _ => raise Fail ("outVal expected value, but got: " ^ View.debugToString v)
+       | O.V (VEC_LIT (tau, _)) $ es => VEC_LITERAL (tau, List.map (fn _ \ m => m) es)
+       | O.V (STR_LIT str) $ _ => STR_LITERAL str
+       | O.V (OP_SOME tau) $ [_ \ m] => OPT_SOME (tau, m)
+       | O.V (OP_NONE tau) $ _ => OPT_NONE tau
+       | O.V (REFINE tau) $ [_ \ m, _ \ s, _ \ e] => REFINE_SCRIPT (tau, m, s, e)
 
-      and outCut k (us, m) =
-        case View.out k of
-           O.K (CTT_K CttOperators.AP) $ [_ \ n] => AP (m, n)
-         | O.K (CTT_K CttOperators.DFUN_DOM) $ _ => DFUN_DOM m
-         | O.K (CTT_K CttOperators.DFUN_COD) $ [_ \ b] => DFUN_COD (m, b)
-         | O.K (CTT_K CttOperators.UNIV_GET_LVL) $ _ => UNIV_GET_LVL m
-         | O.K (CTT_K (CttOperators.FRESH (sigma, tau))) $ [([u], _) \ m] => FRESH (sigma, tau, u, m)
-         | O.K (CTT_K (CttOperators.FRESH_K ((u, sigma), tau))) $ _ => FRESH (sigma, tau, u, m)
-         | O.K (LVL_K LevelOperators.LSUCC) $ _ => LSUCC m
-         | O.K (LVL_K LevelOperators.LSUP0) $ [_ \ n] => LSUP (m, n)
-         | O.K (LVL_K (LevelOperators.LSUP1 i)) $ [] => LSUP (m, ret RS.LVL (O.V (LVL_V i) $$ []))
-         | O.K (ATM_K (AtomOperators.TEST0 (sigma, tau))) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (sigma, tau, m, t2, l, r)
-         | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (sigma, tau, into (TOKEN (u, sigma)), m, l, r)
-         | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
-         | O.K (RCD_K (RecordOperators.PROJ_TY u)) $ [_ \ rcd] => RCD_PROJ_TY (u, m, rcd)
-         | O.K (CUB_K (CubicalOperators.COE dimSpan)) $ [_ \ n] => COE ((List.hd us, m), dimSpan, n)
-         | O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $ ((_ \ cap) :: tubes) =>
-             let
-               fun readTubes [] [] = []
-                 | readTubes (r :: rs) ((([u], _) \ face0) :: (([v], _) \ face1) :: faces) =
-                     (r, ((u, face0), (v, face1))) :: readTubes rs faces
-                 | readTubes _ _ = raise Fail "Improper length of hcom tubes"
-             in
-               HCOM (m, span, cap, readTubes extents tubes)
-             end
-         | O.K (CUB_K (CubicalOperators.ID_APP r)) $ [] => ID_APP (m, r)
-         | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
-         | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)
-         | O.K THROW $ _ => RAISE m
-         | _ => raise Fail "outCut expected continuation"
+       | O.V (LCF (NominalLcfOperators.SEQ sorts)) $ [_ \ t1, (hyps, _) \ t2] => TAC_SEQ (t1, ListPair.zip (hyps, sorts), t2)
+       | O.V (LCF NominalLcfOperators.ORELSE) $ [_ \ t1, _ \ t2] => TAC_ORELSE (t1, t2)
+       | O.V (LCF NominalLcfOperators.ALL) $ [_ \ t] => MTAC_ALL t
+       | O.V (LCF NominalLcfOperators.EACH) $ [_ \ vec] =>
+           (case out vec of
+               VEC_LITERAL (tau, ts) => MTAC_EACH ts
+             | _ => raise Fail "Expected vector literal")
+       | O.V (LCF (NominalLcfOperators.FOCUS i)) $ [_ \ t] => MTAC_FOCUS (i, t)
+       | O.V (LCF NominalLcfOperators.PROGRESS) $ [_ \ t] => TAC_PROGRESS t
+       | O.V (LCF NominalLcfOperators.REC) $ [(_, [x]) \ tx] => TAC_REC (x, tx)
+       | O.V (LCF (NominalLcfOperators.INTRO r)) $ _ => TAC_INTRO r
+       | O.V (LCF (NominalLcfOperators.EQ r)) $ _ => TAC_EQ r
+       | O.V (LCF NominalLcfOperators.EXT) $ _ => TAC_EXT
+       | O.V (LCF NominalLcfOperators.CUM) $ _ => TAC_CUM
+       | O.V (LCF NominalLcfOperators.CHKINF) $ _ => TAC_CHKINF
+       | O.V (LCF (NominalLcfOperators.ELIM (u, tau))) $ _ => TAC_ELIM (u, tau)
+       | O.V (LCF (NominalLcfOperators.ETA (u, tau))) $ _ => TAC_ETA (u, tau)
+       | O.V (LCF (NominalLcfOperators.HYP (u, tau))) $ _ => TAC_HYP (u, tau)
+       | O.V (LCF (NominalLcfOperators.UNHIDE (u, tau))) $ _ => TAC_UNHIDE (u, tau)
+       | O.V (LCF NominalLcfOperators.AUTO) $ _ => TAC_AUTO
+       | O.V (LCF NominalLcfOperators.ID) $ _ => TAC_ID
+       | O.V (LCF NominalLcfOperators.FAIL) $ _ => TAC_FAIL
+       | O.V (LCF (NominalLcfOperators.TRACE tau)) $ [_ \ m] => TAC_TRACE (tau, m)
+       | O.V (LCF (NominalLcfOperators.CSTEP n)) $ _ => TAC_CSTEP n
+       | O.V (LCF NominalLcfOperators.CEVAL) $ _ => TAC_CEVAL
+       | O.V (LCF NominalLcfOperators.CSYM) $ _ => TAC_CSYM
+       | O.V (LCF (NominalLcfOperators.REWRITE_GOAL tau)) $ [_ \ m] => TAC_REWRITE_GOAL (tau, m)
+       | O.V (LCF (NominalLcfOperators.EVAL_GOAL u)) $ _ => TAC_EVAL_GOAL u
+       | O.V (LCF (NominalLcfOperators.NORMALIZE u)) $ _ => TAC_NORMALIZE u
+       | O.V (LCF (NominalLcfOperators.WITNESS tau)) $ [_ \ m] => TAC_WITNESS (tau, m)
+       | O.V (LCF (NominalLcfOperators.UNFOLD (u, v))) $ _ => TAC_UNFOLD (u, v)
+       | O.V (LCF (NominalLcfOperators.HYP_VAR h)) $ _ => HYP_REF h
+       | _ => raise Fail ("outVal expected value, but got: " ^ View.debugToString v)
 
-      and outDef th es =
-        case (th, es) of
-           (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
-         | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
-         | (CTT_D (CttOperators.MEMBER tau), [_ \ m, _ \ a]) => MEMBER (tau, m, a)
-         | (RCD_D (RecordOperators.SINGL u), [_ \ a]) => RCD_SINGL (u, a)
-         | _ => raise Fail "outDef expected definitional extension"
+    and outCut k (us, m) =
+      case View.out k of
+         O.K (CTT_K CttOperators.AP) $ [_ \ n] => AP (m, n)
+       | O.K (CTT_K CttOperators.DFUN_DOM) $ _ => DFUN_DOM m
+       | O.K (CTT_K CttOperators.DFUN_COD) $ [_ \ b] => DFUN_COD (m, b)
+       | O.K (CTT_K CttOperators.UNIV_GET_LVL) $ _ => UNIV_GET_LVL m
+       | O.K (CTT_K (CttOperators.FRESH (sigma, tau))) $ [([u], _) \ m] => FRESH (sigma, tau, u, m)
+       | O.K (CTT_K (CttOperators.FRESH_K ((u, sigma), tau))) $ _ => FRESH (sigma, tau, u, m)
+       | O.K (LVL_K LevelOperators.LSUCC) $ _ => LSUCC m
+       | O.K (LVL_K LevelOperators.LSUP0) $ [_ \ n] => LSUP (m, n)
+       | O.K (LVL_K (LevelOperators.LSUP1 i)) $ [] => LSUP (m, ret RS.LVL (O.V (LVL_V i) $$ []))
+       | O.K (ATM_K (AtomOperators.TEST0 (sigma, tau))) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (sigma, tau, m, t2, l, r)
+       | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (sigma, tau, into (TOKEN (u, sigma)), m, l, r)
+       | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
+       | O.K (RCD_K (RecordOperators.PROJ_TY u)) $ [_ \ rcd] => RCD_PROJ_TY (u, m, rcd)
+       | O.K (CUB_K (CubicalOperators.COE dimSpan)) $ [_ \ n] => COE ((List.hd us, m), dimSpan, n)
+       | O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $ ((_ \ cap) :: tubes) =>
+           let
+             fun readTubes [] [] = []
+               | readTubes (r :: rs) ((([u], _) \ face0) :: (([v], _) \ face1) :: faces) =
+                   (r, ((u, face0), (v, face1))) :: readTubes rs faces
+               | readTubes _ _ = raise Fail "Improper length of hcom tubes"
+           in
+             HCOM (m, span, cap, readTubes extents tubes)
+           end
+       | O.K (CUB_K (CubicalOperators.ID_APP r)) $ [] => ID_APP (m, r)
+       | O.K (CUB_K CubicalOperators.BOOL_IF) $ [(_,[x]) \ a, _ \ l, _ \ r] => BOOL_IF ((x, a), m, l, r)
+       | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
+       | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)
+       | O.K THROW $ _ => RAISE m
+       | _ => raise Fail "outCut expected continuation"
 
-      and out m =
-        case View.out m of
-           O.RET _ $ [_ \ v] => outVal v
-         | O.CUT _ $ [_ \ k, (us, []) \ m] => outCut k (us, m)
-         | O.D th $ es => outDef th es
-         | _ => raise Fail "Syntax view expected application expression"
+    and outDef th es =
+      case (th, es) of
+         (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
+       | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
+       | (CTT_D (CttOperators.MEMBER tau), [_ \ m, _ \ a]) => MEMBER (tau, m, a)
+       | (RCD_D (RecordOperators.SINGL u), [_ \ a]) => RCD_SINGL (u, a)
+       | _ => raise Fail "outDef expected definitional extension"
 
-    in
-      val out = out
+    and out m =
+      case View.out m of
+         O.RET _ $ [_ \ v] => outVal v
+       | O.CUT _ $ [_ \ k, (us, []) \ m] => outCut k (us, m)
+       | O.D th $ es => outDef th es
+       | _ => raise Fail "Syntax view expected application expression"
 
-      fun outOpen m =
-        case View.out m of
-           `x => VAR x
-         | x $# (us, ms) => MVAR (x, us, ms)
-         | _ => APP (out m)
+    and outOpen m =
+      case View.out m of
+         `x => VAR x
+       | x $# (us, ms) => MVAR (x, us, ms)
+       | _ => APP (out m)
 
-      fun destVar m =
-        case View.out m of
-            `x => x
-          | _ => raise Match
+    fun destVar m =
+      case View.out m of
+          `x => x
+        | _ => raise Match
 
-      fun lvl i =
-        O.RET RS.LVL $$ [([],[]) \ O.V (LVL_V i) $$ []]
-    end
+    fun lvl i =
+      O.RET RS.LVL $$ [([],[]) \ O.V (LVL_V i) $$ []]
   end
 end
 
