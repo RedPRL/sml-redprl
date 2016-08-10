@@ -68,6 +68,12 @@ struct
         Symbol.eq (u', v')
       end
 
+    fun makeTube [] [] = []
+      | makeTube (r :: rs) ((([u],_) \ face0) :: (([v],_) \ face1) :: faces) =
+          (r, ((u, face0), (v, face1))) :: makeTube rs faces
+      | makeTube _ _ = raise Fail "Failed to makeTube"
+
+
   in
     (* Plug a value into a continuation *)
     fun plug sign ((us, v <: env), k) ks =
@@ -206,11 +212,6 @@ struct
            let
              val cap' = Cl.force (cap <: capEnv)
 
-             fun makeTube [] [] = []
-               | makeTube (r :: rs) ((([u],_) \ face0) :: (([v],_) \ face1) :: faces) =
-                   (r, ((u, face0), (v, face1))) :: makeTube rs faces
-               | makeTube _ _ = raise Fail "Failed to makeTube"
-
              (* Find the first constant (0,1) extent and return the corresponding tube face *)
              val rec findProjectedTubeFace =
                fn [] => NONE
@@ -258,6 +259,37 @@ struct
                              step to this state in the machine. *)
                           raise Fail "This case is impossible")
               | _ => raise Fail "Failed to apply kan composition"
+           end
+
+       | (CUB_K Cub.BOOL_IF `$ [_, _ \ t, _], CUB_V Cub.BOOL_TT `$ _) => t <| ks
+       | (CUB_K Cub.BOOL_IF `$ [_, _, _ \ f], CUB_V Cub.BOOL_FF `$ _) => f <| ks
+       | (CUB_K Cub.BOOL_IF `$ [(_,[x]) \ a <: aEnv, _ \ t <: tEnv, _ \ f <: fEnv], CUB_V (Cub.BOOL_HCOM (extents, span)) `$ (_ \ cap) :: faces) =>
+           let
+             val a' = Cl.force (a <: aEnv)
+             val t' = Cl.force (t <: tEnv)
+             val f' = Cl.force (f <: fEnv)
+
+             val com =
+               let
+                 val w = Symbol.new ()
+                 val extents' = List.map Dim.NAME extents
+
+                 val hcom =
+                   let
+                     val span' = DimSpan.new (#starting span, Dim.NAME w)
+                     val tube = makeTube extents' faces
+                   in
+                     Syn.into (Syn.HCOM (Syn.into Syn.BOOL, span', cap, tube))
+                   end
+
+                 val a'' = subst (hcom, x) a'
+                 fun makeIf m = Syn.into (Syn.BOOL_IF ((x, a'), m, t', f'))
+                 val tube = makeTube extents' (List.map (Abt.mapb makeIf) faces)
+               in
+                 Syn.heteroCom ((w, a''), span, makeIf cap, tube)
+               end
+           in
+             com <: env <| ks
            end
 
        (* Extract the witness from a refined theorem object. *)
