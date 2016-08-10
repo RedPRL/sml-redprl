@@ -61,16 +61,16 @@ end
 structure LevelK :
 sig
   include JSON_ABT_OPERATOR
-  val input : 'i t -> RedPrlAtomicArity.sort
+  val input : 'i t -> RedPrlAtomicArity.sort list * RedPrlAtomicArity.sort
 end =
 struct
   structure O = AbtSimpleOperator (SimpleLevelK)
   open O SortData LevelOperators
 
   val input =
-    fn LSUP0 => LVL
-     | LSUP1 _ => LVL
-     | LSUCC => LVL
+    fn LSUP0 => ([], LVL)
+     | LSUP1 _ => ([], LVL)
+     | LSUCC => ([], LVL)
 
   structure J = Json and S = RedPrlAtomicSortJson
 

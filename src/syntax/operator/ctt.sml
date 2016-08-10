@@ -200,7 +200,7 @@ end
 structure CttK :
 sig
   include JSON_ABT_OPERATOR
-  val input : 'i t -> RedPrlAtomicArity.sort
+  val input : 'i t -> RedPrlAtomicArity.sort list * RedPrlAtomicArity.sort
 end =
 struct
    open CttOperators SortData
@@ -253,12 +253,12 @@ struct
       | FRESH_K ((u, _), _) => "\206\189[" ^ f u ^ "]"
 
    val input =
-     fn AP => EXP
-      | DFUN_DOM => EXP
-      | DFUN_COD => EXP
-      | UNIV_GET_LVL => EXP
-      | FRESH (sigma, tau) => UNIT
-      | FRESH_K ((u, sigma), tau) => tau
+     fn AP => ([], EXP)
+      | DFUN_DOM => ([], EXP)
+      | DFUN_COD => ([], EXP)
+      | UNIV_GET_LVL => ([], EXP)
+      | FRESH (sigma, tau) => ([], UNIT)
+      | FRESH_K ((u, sigma), tau) => ([], tau)
 
   local
     structure J = Json and S = RedPrlAtomicSortJson

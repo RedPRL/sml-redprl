@@ -8,8 +8,14 @@ local
   ../lib/sml-typed-abts/abt-unparser.mlb
   ../lib/sml-telescopes/telescopes.mlb
 
+  syntax/option_util.sig
+  syntax/option_util.sml
+  
   syntax/sort.sml
   syntax/arity.sml
+
+  syntax/dim.sig
+  syntax/dim.sml
 
   syntax/json_abt_operator.sig
   syntax/operator/nominal_lcf.sml
@@ -17,6 +23,7 @@ local
   syntax/operator/ctt.sml
   syntax/operator/record.sml
   syntax/operator/atom.sml
+  syntax/operator/cubical.sml
   syntax/operator.sml
 
   syntax/abt.sml
@@ -70,6 +77,18 @@ in
   structure AtomOperators
   structure AtomV
   structure AtomK
+
+  signature DIM
+  signature DIM_SPAN
+  signature DIM_VEC
+
+  structure Dim
+  structure DimSpan
+  structure DimVec
+
+  structure CubicalOperators
+  structure CubicalV
+  structure CubicalK
 
   structure RedPrlOperators
   structure RedPrlV

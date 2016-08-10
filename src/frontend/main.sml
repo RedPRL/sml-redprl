@@ -16,7 +16,7 @@ struct
 
   val helpMessage =
     "A proof assistant for Computational Type Theory\n" ^
-    "\n  ~ Long Live the Anti-Realist Struggle! ~ \n\n" ^
+    "\n  ~ Uphold Cubical Thought! ~ \n\n" ^
     "Usage\n" ^
     "  redprl <file>...\n" ^
     "  redprl --help\n" ^

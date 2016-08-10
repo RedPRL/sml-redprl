@@ -13,6 +13,8 @@ struct
     | RCD_LBL (* record labels *)
     | UNIT (* the unit sort *)
     | EXN (* exception names *)
+
+    | DIM (* cubical dimension names *)
 end
 
 structure RedPrlAtomicSort :> ABT_SORT where type t = SortData.sort =
@@ -35,6 +37,7 @@ struct
      | RCD_LBL => "lbl"
      | UNIT => "unit"
      | EXN => "exn"
+     | DIM => "dim"
 end
 
 structure RedPrlAtomicSortJson =
@@ -53,6 +56,7 @@ struct
        | RCD_LBL => J.String "lbl"
        | UNIT => J.String "unit"
        | EXN => J.String "exn"
+       | DIM => J.String "dim"
        | THM tau => J.Obj [("thm", encode tau)]
        | VEC tau => J.Obj [("vec", encode tau)]
        | OPT tau => J.Obj [("opt", encode tau)]
@@ -67,6 +71,7 @@ struct
        | J.String "lbl" => SOME RCD_LBL
        | J.String "unit" => SOME UNIT
        | J.String "exn" => SOME EXN
+       | J.String "dim" => SOME DIM
        | J.Obj [("thm", tau)] => Option.map THM (decode tau)
        | J.Obj [("vec", tau)] => Option.map THM (decode tau)
        | J.Obj [("opt", tau)] => Option.map OPT (decode tau)

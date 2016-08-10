@@ -5,6 +5,20 @@ structure Symbol = AbtSymbol ()
 (* it will come in handy for variables and symbols to be of the same type *)
 structure Variable = Symbol
 
+structure Semivalence =
+struct
+  structure J = Json and AS = RedPrlAtomicSortJson
+  open OptionUtil
+  infix **
+
+  fun encode (sigmas, sigma) =
+    J.Obj [("syms", J.Array (List.map AS.encode sigmas)), ("sort", AS.encode sigma)]
+
+  val decode =
+    fn J.Obj [("syms", J.Array sigmas), ("sort", sigma)] => traverseOpt AS.decode sigmas ** AS.decode sigma
+     | _ => NONE
+end
+
 structure RedPrlSort =
 struct
   local
@@ -21,12 +35,12 @@ struct
     val encodeSort =
       fn EXP tau => J.Obj [("exp", AS.encode tau)]
        | VAL tau => J.Obj [("val", AS.encode tau)]
-       | CONT (sigma, tau) => J.Obj [("cont", J.Array [AS.encode sigma, AS.encode tau])]
+       | CONT (svl, tau) => J.Obj [("cont", J.Array [Semivalence.encode svl, AS.encode tau])]
 
     val decodeSort =
       fn J.Obj [("exp", tau)] => Option.map EXP (AS.decode tau)
        | J.Obj [("val", tau)] => Option.map VAL (AS.decode tau)
-       | J.Obj [("cont", J.Array [sigma, tau])] => Option.map CONT (AS.decode sigma ** AS.decode tau)
+       | J.Obj [("cont", J.Array [svl, tau])] => Option.map CONT (Semivalence.decode svl ** AS.decode tau)
        | _ => NONE
   end
 end
@@ -44,16 +58,8 @@ struct
     structure O = LcsOperator (RedPrlLcs)
     structure J = Json and AS = RedPrlAtomicSortJson and V = RedPrlV and K = RedPrlK and D = RedPrlD
   in
-    open O
-
-    fun ** (SOME a, SOME b) = SOME (a, b)
-      | ** _ = NONE
-
+    open O OptionUtil
     infix **
-
-  fun traverseOpt f xs =
-    SOME (List.map (Option.valOf o f) xs)
-      handle _ => NONE
 
     fun encodeSymAnn f (a, tau) =
       J.Array [f a, AS.encode tau]
@@ -86,7 +92,7 @@ struct
        | K th => J.Obj [("k", K.encode f th)]
        | D th => J.Obj [("d", D.encode f th)]
        | RET tau => J.Obj [("ret", AS.encode tau)]
-       | CUT (sigma, tau) => J.Obj [("cut", J.Array [AS.encode sigma, AS.encode tau])]
+       | CUT (svl, tau) => J.Obj [("cut", J.Array [Semivalence.encode svl, AS.encode tau])]
        | ESUBST (symAnns, varSorts, tau) => J.Obj [("esubst", J.Obj [("syms", J.Array (List.map (encodeSymAnn f) symAnns)), ("vars", J.Array (List.map AS.encode varSorts)), ("sort", AS.encode tau)])]
        | CUSTOM (opid, params, arity) => J.Obj [("custom", J.Obj [("opid", f opid), ("params", J.Array (List.map (encodeSymAnn f) params)), ("arity", encodeArity arity)])]
 
@@ -95,7 +101,7 @@ struct
        | J.Obj [("k", th)] => Option.map K (K.decode f th)
        | J.Obj [("d", th)] => Option.map D (D.decode f th)
        | J.Obj [("ret", tau)] => Option.map RET (AS.decode tau)
-       | J.Obj [("cut", J.Array [sigma, tau])] => Option.map CUT (AS.decode sigma ** AS.decode tau)
+       | J.Obj [("cut", J.Array [svl, tau])] => Option.map CUT (Semivalence.decode svl ** AS.decode tau)
        | J.Obj [("esubst", J.Obj [("syms", J.Array syms), ("vars", J.Array vars), ("sort", sort)])] =>
            Option.map
              (fn ((x, y), z) => ESUBST (x, y, z))
@@ -140,12 +146,12 @@ struct
     val encodeSort =
       fn EXP tau => J.Obj [("exp", AS.encode tau)]
        | VAL tau => J.Obj [("val", AS.encode tau)]
-       | CONT (sigma, tau) => J.Obj [("cont", J.Array [AS.encode sigma, AS.encode tau])]
+       | CONT (svl, tau) => J.Obj [("cont", J.Array [Semivalence.encode svl, AS.encode tau])]
 
     val decodeSort =
       fn J.Obj [("exp", tau)] => Option.map EXP (AS.decode tau)
        | J.Obj [("val", tau)] => Option.map VAL (AS.decode tau)
-       | J.Obj [("cont", J.Array [sigma, tau])] => Option.map CONT (AS.decode sigma ** AS.decode tau)
+       | J.Obj [("cont", J.Array [svl, tau])] => Option.map CONT (Semivalence.decode svl ** AS.decode tau)
        | _ => NONE
   end
 
