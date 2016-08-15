@@ -1,12 +1,12 @@
 // All forms are declaration are elaborated into definitions of operators
 // of a particular sort along with computation rules which are available
-// to Red JonPRL's evaluator.
+// to RedPRL's evaluator.
 
 Tac try(T : tac) = [
   T || id
 ].
 
-// Tacticals are easily defined from within JonPRL's computation system.
+// Tacticals are easily defined from within RedPRL's computation system.
 // Here are a few examples:
 Tac repeat(T : tac) = [
   rec R. {
@@ -21,11 +21,9 @@ Tac bang = [
 
 Sym testsymdecl : exp.
 
-
 Tac complete(T : tac) = [
   T; fail
 ].
-
 
 Record MonoidStruct(i : lvl) = {
   car : Univ(i),
@@ -46,7 +44,7 @@ Def Monoid(i : lvl) : exp = [
 ].
 
 Thm MonoidStructWf : [member(MonoidStruct(lbase); Univ(lsuc(lbase)))] by [
-  bang; cumulativity; bang
+  bang; cumulativity; auto
 ].
 
 
@@ -54,6 +52,10 @@ Def Unit : exp = [
   ~(Ax; Ax)
 ].
 
+
+Def complicated[u:exn,v:lbl](M : {exp,lbl}[exp].exp, N : exp, L : {exn}.exp, R : [exp].exp) : exp = [
+  Ax
+].
 
 // We can define Sigma types directly as records.
 Record Sg(A : exp, B : [exp].exp) = {
@@ -89,6 +91,7 @@ Thm exnTest : [nu{exn}({a}. ~(try[a](raise(exn[a](Ax)); [z].'yes); 'yes))] by [
 
 Thm exnTest2 : [nu{exn}({a}. try[a](raise(exn[a](Ax)); [z]. ~(z; Ax)))] by [
   eval; ceval; csym; ceval
+  // asdfasdf
 ].
 
 Sym fail : exn.
