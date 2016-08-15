@@ -119,20 +119,6 @@
           nil
         (list start-pos end-pos candidates)))))
 
-(defun redprl-compile-buffer ()
-  "Load the current file into Zombie."
-  (interactive)
-  (let* ((filename (buffer-file-name))
-         (dir (file-name-directory filename))
-         (file (file-name-nondirectory filename))
-         (command (concat zombie-trellys-command " " file))
-
-         ;; Emacs compile config stuff - these are special vars
-         (compilation-buffer-name-function
-          'zombie-trellys--compilation-buffer-name-function)
-         (default-directory dir))
-    (compile command)))
-
 (defun redprl--compilation-buffer-name-function (_mode)
   "Compute a buffer name for the redprl-mode compilation buffer."
   "*redprl*")
