@@ -157,7 +157,8 @@
   "Major mode for editing RedPRL proofs.
 \\{redprl-mode-map}"
 
-  (set (make-variable-buffer-local 'comment-start) "// ")
+  (set (make-local-variable 'comment-start) "// ")
+  
   (setq font-lock-defaults '((redprl-mode-font-lock-keywords) nil nil))
 
   (set (make-local-variable 'imenu-generic-expression)
