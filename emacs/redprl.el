@@ -164,11 +164,11 @@
   (setq font-lock-defaults '((redprl-mode-font-lock-keywords) nil nil))
 
   (set (make-local-variable 'imenu-generic-expression)
-       `(("Def" (rx-to-string ,redprl-def-name-regexp) 1)
-         ("Thm" (rx-to-string ,redprl-thm-name-regexp) 1)
-         ("Tac" (rx-to-string ,redprl-tac-name-regexp) 1)
-         ("Sym" (rx-to-string ,redprl-sym-name-regexp) 1)
-         ("Record" (rx-to-string ,redprl-record-name-regexp) 1)))
+       `(("Def" ,(rx-to-string redprl-def-name-regexp) 1)
+         ("Thm" ,(rx-to-string redprl-thm-name-regexp) 1)
+         ("Tac" ,(rx-to-string redprl-tac-name-regexp) 1)
+         ("Sym" ,(rx-to-string redprl-sym-name-regexp) 1)
+         ("Record" ,(rx-to-string redprl-record-name-regexp) 1)))
 
   ;; Bind mode-specific commands to keys
   (define-key redprl-mode-map (kbd "C-c C-l") 'redprl-compile-buffer)
