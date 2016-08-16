@@ -70,7 +70,7 @@ struct
 
       val (tyfunGoal, _, _) =
         makeGoal @@
-          [(z,tau1)] |> H' >> TYPE (bz, tau2)
+          ([], [(z,tau1)]) |> H' >> TYPE (bz, tau2)
 
       val psi = T.empty @> tyGoal @> squashGoal @> tyfunGoal
     in
@@ -100,7 +100,7 @@ struct
 
       val (tyfunGoal, _, _) =
         makeGoal @@
-          [(z,tau1)] |> H' >> TYPE (bz, tau2)
+          ([], [(z,tau1)]) |> H' >> TYPE (bz, tau2)
 
       val psi = T.empty @> mainGoal @> predGoal @> tyfunGoal
     in
@@ -131,7 +131,7 @@ struct
 
       val (goal, _, _) =
         makeGoal @@
-          [(z1, tau1), (z2, tau2)] |> H' >> TRUE (P', tau)
+          ([], [(z1, tau1), (z2, tau2)]) |> H' >> TRUE (P', tau)
 
       val psi = T.empty @> goal
     in

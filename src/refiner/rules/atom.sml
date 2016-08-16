@@ -70,11 +70,11 @@ struct
 
       val (goalYes, _, _) =
         makeGoal @@
-          [(z, EXP)] |> makeEqSequent Hyes (yes, yes', a)
+          ([], [(z, EXP)]) |> makeEqSequent Hyes (yes, yes', a)
 
       val (goalNo, _, _) =
         makeGoal @@
-          [(z, EXP)] |> makeEqSequent Hno (no, no', a)
+          ([], [(z, EXP)]) |> makeEqSequent Hno (no, no', a)
 
       val psi = T.empty @> goal1 @> goal2 @> goalYes @> goalNo
     in

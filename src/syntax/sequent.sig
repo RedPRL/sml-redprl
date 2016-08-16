@@ -4,9 +4,11 @@ sig
   type expr
   type sort
   type var
+  type sym
 
   type metactx (* metavariable context *)
   type hypctx (* hypothesis contexts *)
+  type dimctx (* dimension contexts *)
 
   type context
 
@@ -25,7 +27,7 @@ sig
 
   datatype judgment =
       >> of context * concl (* categorical sequent *)
-    | |> of (var * sort) list * judgment (* generic sequent *)
+    | |> of ((sym * sort) list * (var * sort) list) * judgment (* generic sequent *)
 
   val judgmentMetactx : judgment -> metactx
 

@@ -1,6 +1,7 @@
 Library
   signature DICT
   functor SplayDict
+  functor SplaySet
   functor HashTable
   structure StringOrdered
   structure IntHashable
@@ -8,4 +9,3 @@ Library
   structure Susp
 is
   ../lib/cmlib/cmlib.cm
-

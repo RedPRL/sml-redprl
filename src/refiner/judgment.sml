@@ -24,11 +24,11 @@ struct
   structure RS = RedPrlOperator.S
   val rec evidenceValence =
     fn H >> concl => (([],[]), RS.EXP (conclEvidenceSort concl))
-     | G |> jdg =>
+     | (Y, G) |> jdg =>
          let
            val ((sigmas, taus), tau) = evidenceValence jdg
          in
-           ((sigmas, List.map (RS.EXP o #2) G @ taus), tau)
+           ((List.map (RS.EXP o #2) Y @ sigmas, List.map (RS.EXP o #2) G @ taus), tau)
          end
 
   fun evidenceToString e =
@@ -153,7 +153,7 @@ struct
          in
            mergeUnification rho1 rho2
          end
-    | (G1 |> jdg1, G2 |> jdg2) =>
+    | ((Y1, G1) |> jdg1, (Y2, G2) |> jdg2) =>
         let
           val _ =
             ListPair.appEq
@@ -163,6 +163,14 @@ struct
                  else
                    raise Tm.Unify.UnificationFailed)
               (G1, G2)
+          val _ =
+            ListPair.appEq
+              (fn ((u, sigma), (v, tau)) =>
+                 if Symbol.eq (u, v) andalso sigma = tau then
+                   ()
+                 else
+                   raise Tm.Unify.UnificationFailed)
+              (Y1, Y2)
         in
           unifyJudgment' (jdg1, jdg2)
         end
