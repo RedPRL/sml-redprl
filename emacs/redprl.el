@@ -131,7 +131,7 @@
 
 (defun redprl--compilation-buffer-name-function (_mode)
   "Compute a buffer name for the redprl-mode compilation buffer."
-  "*redprl*")
+  "*RedPRL*")
 
 (defun redprl-compile-buffer ()
   "Load the current file into RedPRL."
