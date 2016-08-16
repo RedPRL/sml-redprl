@@ -182,7 +182,7 @@
                                    redprl--revolutionary-sayings)))
     (message "%s" revolutionary-saying)))
 
-;; ###autoload
+;;;###autoload
 (define-derived-mode redprl-mode prog-mode "RedPRL"
   "Major mode for editing RedPRL proofs.
 \\{redprl-mode-map}"
@@ -205,7 +205,7 @@
   (set (make-local-variable 'completion-at-point-functions)
        '(redprl-completion-at-point)))
 
-;; ###autoload
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.prl\\'" . redprl-mode))
 
 
