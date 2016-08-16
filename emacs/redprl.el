@@ -46,6 +46,10 @@
   '((t (:inherit font-lock-type-face))) "Face for RedPRL's built-in sorts."
   :group 'redprl)
 
+(defface redprl-atom-face
+  '((t (:inherit font-lock-constant-face))) "Face for RedPRL's atoms."
+  :group 'redprl)
+
 (defcustom redprl-command "redprl"
   "The command to be run for RedPRL."
   :group 'redprl
@@ -106,7 +110,11 @@
     (,(regexp-opt redprl-keywords 'words) 0 'redprl-declaration-keyword-face)
 
     ;; Built-in sorts
-    (,(regexp-opt redprl-builtin-sorts 'words) 0 'redprl-sort-face)))
+    (,(regexp-opt redprl-builtin-sorts 'words) 0 'redprl-sort-face)
+
+    ;; Atoms
+    (,(rx "'" (+ word)) 0 'redprl-atom-face)
+    ))
 
 (defun redprl-defined-names ()
   "Find all names defined in this buffer."
