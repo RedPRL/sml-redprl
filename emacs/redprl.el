@@ -3,6 +3,8 @@
 ;; Copyright (C) 2016  Jonathan Sterling
 
 ;; Author: Jonathan Sterling <jon@jonmsterling.com>
+;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
+;; Version: 0.0.1
 ;; Keywords: languages
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -20,7 +22,15 @@
 
 ;;; Commentary:
 
+;; This is a major mode for editing RedPRL developments.  The current
+;; editing features include simple syntax highlighting, imenu, and
+;; completion support.  Additionally, there is a command to run RedPRL
+;; in a compilation buffer.
 ;;
+;; RedPRL can be obtained from https://github.com/RedPRL/sml-redprl .
+;;
+;; Make sure to set the variable `redprl-command' to the location of the
+;; redprl binary.
 
 ;;; Code:
 
@@ -36,12 +46,22 @@
   '((t (:inherit font-lock-type-face))) "Face for RedPRL's built-in sorts."
   :group 'redprl)
 
+(defface redprl-atom-face
+  '((t (:inherit font-lock-constant-face))) "Face for RedPRL's atoms."
+  :group 'redprl)
+
 (defcustom redprl-command "redprl"
   "The command to be run for RedPRL."
   :group 'redprl
   :type 'string
   :tag "Command for RedPRL"
   :options '("redprl"))
+
+(defcustom redprl-mode-hook '(redprl-display-revolutionary-saying)
+  "Hook to be run on starting `redprl-mode'."
+  :group 'redprl
+  :type 'hook
+  :options '(redprl-display-revolutionary-saying))
 
 (defvar redprl-mode-syntax-table
   (let ((table (make-syntax-table)))
@@ -57,7 +77,6 @@
 (defconst redprl-keywords
   '("Def" "Thm" "Tac" "Sym" "Record")
   "RedPRL's keywords.")
-
 
 (defconst redprl-builtin-sorts
   '("exp" "exn" "lbl" "lvl")
@@ -91,7 +110,11 @@
     (,(regexp-opt redprl-keywords 'words) 0 'redprl-declaration-keyword-face)
 
     ;; Built-in sorts
-    (,(regexp-opt redprl-builtin-sorts 'words) 0 'redprl-sort-face)))
+    (,(regexp-opt redprl-builtin-sorts 'words) 0 'redprl-sort-face)
+
+    ;; Atoms
+    (,(rx "'" (+ word)) 0 'redprl-atom-face)
+    ))
 
 (defun redprl-defined-names ()
   "Find all names defined in this buffer."
@@ -119,9 +142,13 @@
           nil
         (list start-pos end-pos candidates)))))
 
+(defconst redprl--compilation-buffer-name
+  "*RedPRL*"
+  "The name to use for RedPRL compilation buffers.")
+
 (defun redprl--compilation-buffer-name-function (_mode)
-  "Compute a buffer name for the redprl-mode compilation buffer."
-  "*redprl*")
+  "Compute a buffer name for the `redprl-mode' compilation buffer."
+  redprl--compilation-buffer-name)
 
 (defun redprl-compile-buffer ()
   "Load the current file into RedPRL."
@@ -130,32 +157,46 @@
     (if filename
         (progn
           (when (buffer-modified-p) (save-buffer))
-          (let*
-              ((dir (file-name-directory filename))
-               (file (file-name-nondirectory filename))
-               (command (concat redprl-command " " file))
+          (let* ((dir (file-name-directory filename))
+                 (file (file-name-nondirectory filename))
+                 (command (concat redprl-command " " file))
 
-               ;; Emacs compile config stuff - these are special vars
-               (compilation-buffer-name-function
-                'redprl--compilation-buffer-name-function)
-               (default-directory dir))
+                 ;; Emacs compile config stuff - these are special vars
+                 (compilation-buffer-name-function
+                  'redprl--compilation-buffer-name-function)
+                 (default-directory dir))
             (compile command)))
       (error "Buffer has no file name"))))
 
 
+(defconst redprl--revolutionary-sayings
+  '("Decisively Smash the Formalist Clique!"
+    "Long Live the Anti-Realist Struggle!"
+    "We Can Prove It!")
+  "Words of encouragement to be displayed when RedPRL is initially launched.")
 
-;; ###autoload
-(define-derived-mode redprl-mode prog-mode "RedPRL" "Major mode for editing RedPRL proofs."
+(defun redprl-display-revolutionary-saying ()
+  "Display a revolutionary saying to hearten RedPRL users."
+  (interactive)
+  (let ((revolutionary-saying (nth (random (length redprl--revolutionary-sayings))
+                                   redprl--revolutionary-sayings)))
+    (message "%s" revolutionary-saying)))
 
-  (set (make-variable-buffer-local 'comment-start) "// ")
+;;;###autoload
+(define-derived-mode redprl-mode prog-mode "RedPRL"
+  "Major mode for editing RedPRL proofs.
+\\{redprl-mode-map}"
+
+  (set (make-local-variable 'comment-start) "// ")
+  
   (setq font-lock-defaults '((redprl-mode-font-lock-keywords) nil nil))
 
   (set (make-local-variable 'imenu-generic-expression)
-       `(("Def" (rx-to-string ,redprl-def-name-regexp) 1)
-         ("Thm" (rx-to-string ,redprl-thm-name-regexp) 1)
-         ("Tac" (rx-to-string ,redprl-tac-name-regexp) 1)
-         ("Sym" (rx-to-string ,redprl-sym-name-regexp) 1)
-         ("Record" (rx-to-string ,redprl-record-name-regexp) 1)))
+       `(("Def" ,(rx-to-string redprl-def-name-regexp) 1)
+         ("Thm" ,(rx-to-string redprl-thm-name-regexp) 1)
+         ("Tac" ,(rx-to-string redprl-tac-name-regexp) 1)
+         ("Sym" ,(rx-to-string redprl-sym-name-regexp) 1)
+         ("Record" ,(rx-to-string redprl-record-name-regexp) 1)))
 
   ;; Bind mode-specific commands to keys
   (define-key redprl-mode-map (kbd "C-c C-l") 'redprl-compile-buffer)
@@ -164,7 +205,7 @@
   (set (make-local-variable 'completion-at-point-functions)
        '(redprl-completion-at-point)))
 
-;; ###autoload
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.prl\\'" . redprl-mode))
 
 
