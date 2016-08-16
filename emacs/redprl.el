@@ -53,6 +53,12 @@
   :tag "Command for RedPRL"
   :options '("redprl"))
 
+(defcustom redprl-mode-hook '(redprl-display-revolutionary-saying)
+  "Hook to be run on starting `redprl-mode'."
+  :group 'redprl
+  :type 'hook
+  :options '(redprl-display-revolutionary-saying))
+
 (defvar redprl-mode-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?- "w" table)
@@ -67,7 +73,6 @@
 (defconst redprl-keywords
   '("Def" "Thm" "Tac" "Sym" "Record")
   "RedPRL's keywords.")
-
 
 (defconst redprl-builtin-sorts
   '("exp" "exn" "lbl" "lvl")
@@ -129,9 +134,13 @@
           nil
         (list start-pos end-pos candidates)))))
 
+(defconst redprl--compilation-buffer-name
+  "*RedPRL*"
+  "The name to use for RedPRL compilation buffers.")
+
 (defun redprl--compilation-buffer-name-function (_mode)
-  "Compute a buffer name for the redprl-mode compilation buffer."
-  "*RedPRL*")
+  "Compute a buffer name for the `redprl-mode' compilation buffer."
+  redprl--compilation-buffer-name)
 
 (defun redprl-compile-buffer ()
   "Load the current file into RedPRL."
@@ -140,19 +149,30 @@
     (if filename
         (progn
           (when (buffer-modified-p) (save-buffer))
-          (let*
-              ((dir (file-name-directory filename))
-               (file (file-name-nondirectory filename))
-               (command (concat redprl-command " " file))
+          (let* ((dir (file-name-directory filename))
+                 (file (file-name-nondirectory filename))
+                 (command (concat redprl-command " " file))
 
-               ;; Emacs compile config stuff - these are special vars
-               (compilation-buffer-name-function
-                'redprl--compilation-buffer-name-function)
-               (default-directory dir))
+                 ;; Emacs compile config stuff - these are special vars
+                 (compilation-buffer-name-function
+                  'redprl--compilation-buffer-name-function)
+                 (default-directory dir))
             (compile command)))
       (error "Buffer has no file name"))))
 
 
+(defconst redprl--revolutionary-sayings
+  '("Decisively Smash the Formalist Clique!"
+    "Long Live the Anti-Realist Struggle!"
+    "We Can Prove It!")
+  "Words of encouragement to be displayed when RedPRL is initially launched.")
+
+(defun redprl-display-revolutionary-saying ()
+  "Display a revolutionary saying to hearten RedPRL users."
+  (interactive)
+  (let ((revolutionary-saying (nth (random (length redprl--revolutionary-sayings))
+                                   redprl--revolutionary-sayings)))
+    (message "%s" revolutionary-saying)))
 
 ;; ###autoload
 (define-derived-mode redprl-mode prog-mode "RedPRL"
