@@ -54,6 +54,7 @@
     table)
   "Syntax table for RedPRL.")
 
+
 (defconst redprl-keywords
   '("Def" "Thm" "Tac" "Sym" "Record")
   "RedPRL's keywords.")
@@ -144,11 +145,22 @@
 
 
 
+(defcustom redprl-pretty-symbols
+  '(("Def" . (?𝕯 (Br . Bl) ?𝖊 (Br . Bl) ?𝖋))
+    ("Tac" . (?𝕿 (Br . Bl) ?𝖆 (Br . Bl) ?𝖈))
+    ("Thm" . (?𝕿 (Br . Bl) ?𝖍 (Br . Bl) ?𝖒))
+    ("Sym" . (?𝕾 (Br . Bl) ?𝖞 (Br . Bl) ?𝖒))
+    ("Record" . (?𝕽 (Br . Bl) ?𝖊 (Br . Bl) ?𝖈 (Br . Bl) ?𝖔 (Br . Bl) ?𝖗 (Br . Bl) ?𝖉)))
+  "Pretty replacement symbols for RedPRL syntax."
+  :type '(alist :value-type string :key-type character)
+  :group 'redprl)
+
 ;; ###autoload
 (define-derived-mode redprl-mode prog-mode "RedPRL" "Major mode for editing RedPRL proofs."
 
   (set (make-variable-buffer-local 'comment-start) "// ")
   (setq font-lock-defaults '((redprl-mode-font-lock-keywords) nil nil))
+  (setq-local prettify-symbols-alist redprl-pretty-symbols)
 
   (set (make-local-variable 'imenu-generic-expression)
        `(("Def" (rx-to-string ,redprl-def-name-regexp) 1)
