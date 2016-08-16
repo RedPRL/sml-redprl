@@ -43,7 +43,7 @@ Def Monoid(i : lvl) : exp = [
   { M : MonoidStruct(i) | MonoidLaws(M) }
 ].
 
-Thm MonoidStructWf : [member(MonoidStruct(lbase); Univ(lsuc(lbase)))] by [
+Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
   bang; cumulativity; auto
 ].
 
