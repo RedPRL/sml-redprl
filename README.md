@@ -53,3 +53,26 @@ Then, a binary will be placed in `./bin/redprl`, which you may run as
 follows
 
     ./bin/redprl my-development.prl
+
+### Editor Support
+
+RedPRL is presently supported in Atom and Emacs.
+
+#### Atom
+
+The Atom plugin is available at [atom.io](https://atom.io/packages/language-redprl).
+
+### Emacs
+
+[![MELPA](https://melpa.org/packages/redprl-badge.svg)](https://melpa.org/#/redprl)
+
+The Emacs mode is a part of this repository. Additionally, it is available in [MELPA](https://melpa.org/#/redprl).
+
+The easiest way to install the package is from MELPA, using their [getting started](https://melpa.org/#/getting-started) instructions. The package is named `redprl`. It will probably be necessary to set the customization variable `redprl-command` to the path to the `redprl` binary.
+
+When `redprl-mode` is installed, files ending in `.prl` will automatically open in the mode. If they do not, run `M-x redprl-mode`. The mode supports the following features:
+
+ * Press `C-c C-l` to send the current development to RedPRL.
+ * Imenu (or wrappers such as `helm-imenu` can be used to jump to definitions in the buffer.
+ * Completion is supported for names of declarations in the current buffer.
+
