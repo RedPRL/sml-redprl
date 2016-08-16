@@ -55,8 +55,6 @@
   "Syntax table for RedPRL.")
 
 
-;; 𝕯𝖊𝖋
-
 (defconst redprl-keywords
   '("Def" "Thm" "Tac" "Sym" "Record")
   "RedPRL's keywords.")
