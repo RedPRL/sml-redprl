@@ -73,6 +73,6 @@ The easiest way to install the package is from MELPA, using their [getting start
 When `redprl-mode` is installed, files ending in `.prl` will automatically open in the mode. If they do not, run `M-x redprl-mode`. The mode supports the following features:
 
  * Press `C-c C-l` to send the current development to RedPRL.
- * Imenu (or wrappers such as `helm-imenu` can be used to jump to definitions in the buffer.
+ * Imenu (or wrappers such as `helm-imenu`) can be used to jump to definitions in the buffer.
  * Completion is supported for names of declarations in the current buffer.
 
