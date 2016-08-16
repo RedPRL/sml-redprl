@@ -153,7 +153,9 @@
 
 
 ;; ###autoload
-(define-derived-mode redprl-mode prog-mode "RedPRL" "Major mode for editing RedPRL proofs."
+(define-derived-mode redprl-mode prog-mode "RedPRL"
+  "Major mode for editing RedPRL proofs.
+\\{redprl-mode-map}"
 
   (set (make-variable-buffer-local 'comment-start) "// ")
   (setq font-lock-defaults '((redprl-mode-font-lock-keywords) nil nil))
