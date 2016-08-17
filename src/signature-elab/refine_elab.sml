@@ -8,9 +8,6 @@ struct
   structure T = AbtSignature.Telescope and SD = SortData
   structure Ctx = RefinerKit.Lcf.T
 
-  exception hole
-  fun ?e = raise e
-
   local
     open RedPrlAbt Sequent
     infix $ $$ \
@@ -59,10 +56,17 @@ struct
                                    sort = sort,
                                    definiens = prf}
                               end
-                          | _ => raise Fail
-                                   ("Incomplete proof:\n\n"
-                                      ^ RefinerKit.Tacticals.Lcf.stateToString st
-                                      ^ "\n\n")
+                          | _ =>
+                            let
+                              val annotation : Pos.t option = Abt.getAnnotation script
+                              val proofState = RefinerKit.Tacticals.Lcf.stateToString st
+                              val location =
+                                  case Abt.getAnnotation script of
+                                      SOME pos => Pos.toString pos
+                                   |  NONE => "unknown location"
+                            in
+                              raise Fail ("Incomplete proof @ " ^ location ^ ":\n\n" ^ RefinerKit.Tacticals.Lcf.stateToString st ^ "\n\n")
+                            end
                      end
                  | _ => raise Fail "Expected either OP_SOME or OP_NONE")
          | _ => def sign d
