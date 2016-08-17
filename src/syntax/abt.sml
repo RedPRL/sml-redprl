@@ -118,9 +118,11 @@ structure RedPrlArity = RedPrlOperator.Ar
 structure RedPrlValence = RedPrlArity.Vl
 
 structure RedPrlAst =
-  Ast
-    (structure Operator = RedPrlOperator
-     structure Metavar = Metavariable)
+  AstUtil
+    (Ast
+      (structure Operator = RedPrlOperator
+       structure Metavar = Metavariable
+       type annotation = Pos.t))
 
 
 structure RedPrlAbt =
@@ -128,7 +130,8 @@ structure RedPrlAbt =
     (structure O = RedPrlOperator
      structure Metavar = Metavariable
      structure Var = Variable
-     structure Sym = Symbol)
+     structure Sym = Symbol
+     type annotation = Pos.t)
 
 structure RedPrlAbtJsonKit : ABT_JSON_KIT =
 struct

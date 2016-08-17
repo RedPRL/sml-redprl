@@ -8,9 +8,17 @@ local
   ../lib/sml-typed-abts/abt-unparser.mlb
   ../lib/sml-telescopes/telescopes.mlb
 
+  local
+    ../lib/cmlib/cmlib.mlb
+  in
+    structure StringOrdered
+    structure Susp
+    structure Pos
+  end
+
   syntax/option_util.sig
   syntax/option_util.sml
-  
+
   syntax/sort.sml
   syntax/arity.sml
 
@@ -28,27 +36,10 @@ local
 
   syntax/abt.sml
   syntax/syntax.fun
-
-  local
-    local
-      ../lib/cmlib/cmlib.mlb
-    in
-      structure StringOrdered
-    end
-  in
-    syntax/telescope.sml
-  end
+  syntax/telescope.sml
 
   syntax/sequent.sig
-  local
-    local
-      ../lib/cmlib/cmlib.mlb
-    in
-      structure Susp
-    end
-  in
-    syntax/sequent.sml
-  end
+  syntax/sequent.sml
 in
   structure SortData
   structure RedPrlAtomicSort

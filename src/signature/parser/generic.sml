@@ -20,7 +20,7 @@ struct
 
   type metavariable_table = string -> metavariable * Valence.t
 
-  infix $ \ $#
+  infix $ $$ \ $# $$#
 
   infixr 4 << >>
   infixr 3 &&
@@ -117,7 +117,7 @@ struct
             if extractSort tau' = tau then
               parseArguments (List.map extractValence valences)
                 wth (fn args =>
-                  theta $ args)
+                  theta $$ args)
             else
               fail "mismatched sort"
           end)
@@ -135,13 +135,13 @@ struct
           if tau = tau' then
             parseSymbols (length sigmas)
               && parseMetaArguments taus
-              wth (fn (us, ts) => m $# (us, ts))
+              wth (fn (us, ts) => m $$# (us, ts))
           else
             fail "mismatched sort")
     in
       parseCustomApp
         || parseMetaApp
-        || parseVariable wth `
+        || parseVariable wth ``
         || parens (f tau)
     end
 end

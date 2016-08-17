@@ -44,7 +44,9 @@ Def Monoid(i : lvl) : exp = [
 ].
 
 Thm MonoidStructWf(i : lvl) : [member(MonoidStruct(i); Univ(lsuc(i)))] by [
-  bang; cumulativity; auto
+  bang;
+  cumulativity;
+  auto
 ].
 
 
@@ -52,10 +54,6 @@ Def Unit : exp = [
   ~(Ax; Ax)
 ].
 
-
-Def complicated[u:exn,v:lbl](M : {exp,lbl}[exp].exp, N : exp, L : {exn}.exp, R : [exp].exp) : exp = [
-  Ax
-].
 
 // We can define Sigma types directly as records.
 Record Sg(A : exp, B : [exp].exp) = {
@@ -86,15 +84,21 @@ Thm symgenTest3 : [nu({a}. nu({b}. ~(ifeq('a; 'b; 'yes; 'no); 'no)))] by [
 ].
 
 Thm exnTest : [nu{exn}({a}. ~(try[a](raise(exn[a](Ax)); [z].'yes); 'yes))] by [
-  eval; ceval; csym; ceval
+   eval; ceval; csym; ceval
 ].
 
 Thm exnTest2 : [nu{exn}({a}. try[a](raise(exn[a](Ax)); [z]. ~(z; Ax)))] by [
   eval; ceval; csym; ceval
-  // asdfasdf
 ].
 
 Sym fail : exn.
 Thm exnTest3 : [~(try[fail](ifeq(raise(exn[fail](Ax)); 'yes; 'yes; 'no); [z]. z); Ax)] by [
   ceval
+].
+
+Thm UnitMonoidStruct : [MonoidStruct(lbase)] by [
+  unfold MonoidStruct;
+  repeat(intro);
+  #0 { witness [ Unit ] };
+  bang
 ].

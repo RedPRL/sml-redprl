@@ -49,6 +49,8 @@ struct
 
   type term = Ast.ast
 
+  structure Ast = AstUtil (Ast)
+
   datatype 'a bview =
      \ of (symbol spine * variable spine) * 'a
 
@@ -58,16 +60,16 @@ struct
    | $# of metavariable * ((symbol * sort) spine * 'a spine)
 
   fun check () =
-    fn `x => Ast.` x
-     | $ (th, es) => Ast.$ (th, List.map (fn \ ((us,xs), m) => Ast.\ ((us, xs), m)) es)
-     | $# (x, (us, ms)) => Ast.$# (x, (List.map #1 us, ms))
+    fn `x => Ast.`` x
+     | $ (th, es) => Ast.$$ (th, List.map (fn \ ((us,xs), m) => Ast.\ ((us, xs), m)) es)
+     | $# (x, (us, ms)) => Ast.$$# (x, (List.map #1 us, ms))
 
   fun $$ (th, es) = check () ($ (th, es))
 
   val out =
-    fn Ast.`x => `x
-     | Ast.$ (th, es) => $ (th, List.map (fn Ast.\ ((us, xs), m) => \ ((us, xs), m)) es)
-     | Ast.$# (x, (us, ms)) => $# (x, (List.map (fn u => (u, ())) us, ms))
+    (fn Ast.`x => `x
+      | Ast.$ (th, es) => $ (th, List.map (fn Ast.\ ((us, xs), m) => \ ((us, xs), m)) es)
+      | Ast.$# (x, (us, ms)) => $# (x, (List.map (fn u => (u, ())) us, ms))) o Ast.out
 
   val symbolEq : symbol * symbol -> bool = op=
 

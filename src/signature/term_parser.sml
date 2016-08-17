@@ -80,12 +80,17 @@ struct
          | _ => liftParser (fail "Not implemented")
       end
 
-    fun parseTerm sign rho =
-      fix' (fn f => fn tau =>
-        let
-          val p = parseTerm' sign rho f tau
-        in
-          spaces >> parsefixityadj p Left (Syn.into o Syn.AP) << spaces
-        end)
+    fun parseTerm sign rho sigma =
+      let
+        val parser =
+          fix' (fn f => fn tau =>
+            let
+              val p = parseTerm' sign rho f tau
+            in
+              spaces >> parsefixityadj p Left (Syn.into o Syn.AP) << spaces
+            end)
+      in
+        !! (parser sigma) wth (fn (m, pos) => Ast.annotate pos m)
+      end
   end
 end

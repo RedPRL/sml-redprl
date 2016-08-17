@@ -6,6 +6,7 @@ Library
   structure IntHashable
   structure Sum
   structure Susp
+  structure Pos
 is
   ../lib/cmlib/cmlib.cm
 
