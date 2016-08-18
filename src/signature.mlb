@@ -5,6 +5,7 @@ local
   ../lib/sml-telescopes/telescopes.mlb
   ../lib/cmlib/cmlib.mlb
 
+  signature/exception.sml
   signature/signature.sig
 
   local
@@ -44,4 +45,6 @@ in
 
   signature ABT_SIGNATURE
   structure AbtSignature
+
+  structure RedPrlExn
 end

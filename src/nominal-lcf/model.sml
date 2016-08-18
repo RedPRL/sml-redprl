@@ -1,8 +1,4 @@
-structure NominalLcfModel :
-sig
-  include NOMINAL_LCF_MODEL
-  exception RefinementError of Pos.t option * exn
-end =
+structure NominalLcfModel : NOMINAL_LCF_MODEL =
 struct
   structure R = Refiner
   structure Syn = NominalLcfSyntax
@@ -59,9 +55,7 @@ struct
        | RSyn.TAC_AUTO => R.AutoStep sign
        | _ => raise InvalidRule
 
-  exception RefinementError of Pos.t option * exn
-
   fun rule (sign, rho) (tac : RedPrlAbt.abt) alpha goal =
     rule' (sign, rho) tac alpha goal
-      handle exn => raise RefinementError (RedPrlAbt.getAnnotation tac, exn)
+      handle exn => raise RedPrlExn.wrap (RedPrlAbt.getAnnotation tac) exn
 end

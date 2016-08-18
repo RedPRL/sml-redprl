@@ -1,6 +1,8 @@
 Library
   signature SIGNATURE
 
+  structure RedPrlExn
+
   structure AstSignatureDecl
   signature AST_SIGNATURE
   structure AstSignature
@@ -21,6 +23,8 @@ is
 
   cmlib.cm
   syntax.cm
+
+  signature/exception.sml
 
   signature/signature.sig
   signature/ast_signature.sig

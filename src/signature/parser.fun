@@ -98,7 +98,7 @@ struct
     end
 
 
-  structure Syn = RedPrlAstSyntax
+  structure Syn = RedPrlAstSyntax and Ast = RedPrlAst
 
   local
     open SortData
@@ -145,7 +145,7 @@ struct
         let
           val rho = makeNameStore args
           val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP) && parseSort'
-          val parseDefaultTac = !! spaces wth (fn (_, pos) => RedPrlAst.annotate pos defaultTac)
+          val parseDefaultTac = !! spaces wth (fn (_, pos) => Ast.annotate pos defaultTac)
           val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC || parseDefaultTac)
         in
           parseGoal && parseScript wth (fn ((goal, tau), script) =>
@@ -153,8 +153,7 @@ struct
              {parameters = params,
               arguments = List.map (fn (m, v) => rho m) args,
               sort = SortData.THM tau,
-              definiens =
-                Syn.into (Syn.REFINE_SCRIPT (tau, goal, script, Syn.into (Syn.OPT_NONE tau)))}))
+              definiens = Ast.setAnnotation (Ast.getAnnotation script) (Syn.into (Syn.REFINE_SCRIPT (tau, goal, script, Syn.into (Syn.OPT_NONE tau))))}))
         end) ?? "theorem"
     end
 

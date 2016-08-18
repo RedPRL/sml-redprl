@@ -8,10 +8,6 @@ struct
   structure T = AbtSignature.Telescope and SD = SortData
   structure Ctx = RefinerKit.Lcf.T
 
-  datatype 'a elab_result =
-      SUCCESS of 'a
-    | FAILURE of Pos.t option * string
-
   local
     open RedPrlAbt Sequent
     infix $ $$ \
@@ -37,7 +33,7 @@ struct
     fun errorMessage pos msg =
       Pos.toString pos ^ ": " ^ msg
   in
-    fun elabThm sign (d as {parameters, arguments, sort, definiens}) : decl elab_result =
+    fun elabThm sign (d as {parameters, arguments, sort, definiens}) : decl =
       case Syn.out definiens of
            Syn.REFINE_SCRIPT (tau, prop, script, extract) =>
              let
@@ -45,8 +41,8 @@ struct
              in
                (* If an extract has already been computed, then skip; otherwise
                 * we run the proof script to compute its extract. *)
-               (case Syn.out extract of
-                    Syn.OPT_SOME _ => SUCCESS (def sign d)
+               case Syn.out extract of
+                    Syn.OPT_SOME _ => def sign d
                   | Syn.OPT_NONE _ =>
                       let
                         val alpha = makeNameStore ()
@@ -60,61 +56,41 @@ struct
                                  val evd' = Syn.into (Syn.OPT_SOME (tau, evd))
                                  val prf = Syn.into (Syn.REFINE_SCRIPT (tau, prop, script, evd'))
                                in
-                                 SUCCESS
-                                   (def sign
-                                     {parameters = parameters,
-                                      arguments = arguments,
-                                      sort = sort,
-                                      definiens = prf})
+                                 def sign
+                                   {parameters = parameters,
+                                    arguments = arguments,
+                                    sort = sort,
+                                    definiens = prf}
                                end
                            | _ =>
                              let
                                val annotation : Pos.t option = Abt.getAnnotation script
                                val proofState = RefinerKit.Tacticals.Lcf.stateToString st
                              in
-                               FAILURE (pos, "Refinement Failed\n\n" ^ RefinerKit.Tacticals.Lcf.stateToString st)
+                               raise RedPrlExn.RedPrlExn (pos, "Refinement Failed\n\n" ^ RefinerKit.Tacticals.Lcf.stateToString st)
                              end
                         end
-                    | _ => FAILURE (pos, "Expected either OP_SOME or OP_NONE"))
-                  handle Fail msg => FAILURE (pos, msg)
-                       | NominalLcfModel.RefinementError (pos, exn) => FAILURE (pos, exnMessage exn)
-                       | exn => FAILURE (pos, exnMessage exn)
+                    | _ => raise RedPrlExn.RedPrlExn (pos, "Expected either OP_SOME or OP_NONE")
              end
          | _ =>
            let
              val pos = Abt.getAnnotation definiens
            in
-             SUCCESS (def sign d)
-               handle Fail msg => FAILURE (pos, msg)
-                    | exn => FAILURE (pos, exnMessage exn)
+             def sign d handle exn => raise RedPrlExn.wrap pos exn
            end
   end
 
-  fun elab sign d : decl elab_result =
+  fun elab sign d : decl =
     case #sort d of
          SD.THM tau => elabThm sign d
-       | _ => SUCCESS (def sign d)
+       | _ => def sign d
 
   fun transport sign =
     let
       open T.ConsView
       fun go res =
         fn EMPTY => res
-         | CONS (x, Decl.DEF d,xs) =>
-             (case elab res d of
-                  SUCCESS d' => go (T.snoc res x d') (out xs)
-                | FAILURE (pos, msg) =>
-                    let
-                      fun printErr str = TextIO.output (TextIO.stdErr, str)
-                      val pos =
-                        case pos of
-                           SOME pos => pos
-                         | NONE => Pos.pos (Coord.init "-") (Coord.init "-")
-                      val errorMessage = Pos.toString pos ^ ": " ^ msg
-                    in
-                      printErr errorMessage;
-                      OS.Process.exit OS.Process.failure
-                    end)
+         | CONS (x, Decl.DEF d,xs) => go (T.snoc res x (elab res d)) (out xs)
          | CONS (x, Decl.SYM_DECL tau, xs) => go (T.snoc res x (Decl.SYM_DECL tau)) (out xs)
     in
       go T.empty (out sign)

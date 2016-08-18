@@ -65,8 +65,13 @@ struct
       val stream = CoordinatedStream.coordinate (fn x => Stream.hd x = #"\n" handle Stream.Empty => false) (Coord.init fileName) (Stream.fromString input)
       val parsed = CharParser.parseChars SignatureParser.parseSigExp stream
     in
-      case parsed of
-          INL s => raise Fail ("Parsing of " ^ fileName ^ " has failed: " ^ s)
+      (case parsed of
+          INL s =>
+            let
+              val pos = Pos.pos (Coord.init fileName) (Coord.init fileName)
+            in
+              raise RedPrlExn.RedPrlExn (SOME pos, "Parsing of " ^ fileName ^ " has failed: " ^ s)
+            end
         | INR sign =>
             let
               val elab = RefineElab.transport o ValidationElab.transport o BindSignatureElab.transport
@@ -74,6 +79,9 @@ struct
               val _ = printSign sign'
             in
               ()
-            end
+            end)
+        handle exn =>
+          (TextIO.output (TextIO.stdErr, RedPrlExn.toString exn);
+           OS.Process.exit OS.Process.failure)
     end
 end

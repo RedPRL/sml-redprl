@@ -22,24 +22,29 @@ struct
    *)
   fun bindDecl opidTable sign (DEF {parameters, arguments, sort, definiens}) =
     let
-      val (localNames, sorts) = ListPair.unzip parameters
-      val localSymbols = List.map Symbol.named localNames
-      val parameters' = ListPair.zipEq (localSymbols, sorts)
-
-      local
-        open RedPrlAstToAbt
-        val upsilon = List.foldl (fn ((u,tau),m) => NameEnv.insert m u tau) opidTable (ListPair.zipEq (localNames, localSymbols))
-        val gamma = NameEnv.empty
-        val mctx = List.foldl (fn ((x, vl), m) => MetaCtx.extend m (x, liftValence vl)) MetaCtx.empty arguments
-      in
-        val definiens' = convertOpen mctx (upsilon, gamma) (definiens, RedPrlOperator.S.EXP sort)
-      end
+      val pos = RedPrlAst.getAnnotation definiens
     in
-      S2.def sign
-        {parameters = parameters',
-         arguments = arguments,
-         sort = sort,
-         definiens = definiens'}
+      let
+        val (localNames, sorts) = ListPair.unzip parameters
+        val localSymbols = List.map Symbol.named localNames
+        val parameters' = ListPair.zipEq (localSymbols, sorts)
+
+        local
+          open RedPrlAstToAbt
+          val upsilon = List.foldl (fn ((u,tau),m) => NameEnv.insert m u tau) opidTable (ListPair.zipEq (localNames, localSymbols))
+          val gamma = NameEnv.empty
+          val mctx = List.foldl (fn ((x, vl), m) => MetaCtx.extend m (x, liftValence vl)) MetaCtx.empty arguments
+        in
+          val definiens' = convertOpen mctx (upsilon, gamma) (definiens, RedPrlOperator.S.EXP sort)
+        end
+      in
+        S2.def sign
+          {parameters = parameters',
+           arguments = arguments,
+           sort = sort,
+           definiens = definiens'}
+      end
+      handle exn => raise RedPrlExn.wrap pos exn
     end
     | bindDecl opidTable sign (SYM_DECL sort) =
       S2.symDecl sign sort

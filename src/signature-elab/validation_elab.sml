@@ -57,10 +57,11 @@ struct
   fun checkDef map : S2.def -> unit =
     let
       fun go e =
-        case #1 (RedPrlAbt.infer e) of
+        (case #1 (RedPrlAbt.infer e) of
             ` _ => ()
           | oper $ args => (validate map oper; List.app goAbs args)
-          | _ $# (_, args) => List.app go args
+          | _ $# (_, args) => List.app go args)
+        handle exn => raise RedPrlExn.wrap (RedPrlAbt.getAnnotation e) exn
       and goAbs (_ \ a) = go a
     in
       go o #definiens

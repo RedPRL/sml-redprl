@@ -100,5 +100,5 @@ Thm UnitMonoidStruct : [MonoidStruct(lbase)] by [
   unfold MonoidStruct;
   repeat(intro);
   #0 { witness [ Unit ] };
-  repeat(auto)
+  repeat(auto);s
 ].
