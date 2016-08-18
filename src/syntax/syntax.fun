@@ -6,6 +6,7 @@ sig
   type sort
   type 'a operator
   type 'a spine
+  type annotation
 
   type term
 
@@ -20,6 +21,9 @@ sig
   val check : sort -> term view -> term
   val $$ : symbol operator * term bview spine -> term
   val out : term -> term view
+
+  val annotate : annotation -> term -> term
+  val getAnnotation : term -> annotation option
 
   val symbolEq : symbol * symbol -> bool
 
@@ -40,6 +44,8 @@ end
 
 functor AstSyntaxView (Ast : AST where type 'a spine = 'a list) : SYNTAX_VIEW =
 struct
+  structure Ast = AstUtil (Ast)
+
   type symbol = Ast.symbol
   type variable = Ast.variable
   type metavariable = Ast.metavariable
@@ -48,8 +54,10 @@ struct
   type 'a spine = 'a Ast.spine
 
   type term = Ast.ast
+  type annotation = Ast.annotation
 
-  structure Ast = AstUtil (Ast)
+  val annotate = Ast.annotate
+  val getAnnotation = Ast.getAnnotation
 
   datatype 'a bview =
      \ of (symbol spine * variable spine) * 'a
@@ -195,7 +203,12 @@ struct
       fn [] => []
        | x :: xs => f x @ flatMap f xs
 
-    fun ret tau m = O.RET tau $$ [([],[]) \ m]
+    fun inheritAnn m n =
+      case getAnnotation m of
+         SOME ann => annotate ann n
+       | NONE => n
+
+    fun ret tau m = inheritAnn m (O.RET tau $$ [([],[]) \ m])
     fun intoCttV th es = ret RS.EXP @@ O.V (CTT_V th) $$ es
     fun intoAtmV th es = ret RS.EXP @@ O.V (ATM_V th) $$ es
     fun intoRcdV th es = ret RS.EXP @@ O.V (RCD_V th) $$ es
@@ -457,7 +470,7 @@ struct
          O.RET _ $ [_ \ v] => outVal v
        | O.CUT _ $ [_ \ k, (us, []) \ m] => outCut k (us, m)
        | O.D th $ es => outDef th es
-       | _ => raise Fail "Syntax view expected application expression"
+       | _ => raise Fail ("Syntax view expected application expression, but got " ^ View.debugToString m)
 
     and outOpen m =
       case View.out m of
@@ -622,5 +635,12 @@ struct
         into @@ HCOM (ty', span, cap', tube')
       end
 
+  fun getAnnotation m =
+    case RedPrlAbt.getAnnotation m of
+       SOME ann => SOME ann
+     | NONE =>
+         (case RedPrlAbt.out m of
+             RedPrlAbt.$ (RedPrlOperator.RET _, [RedPrlAbt.\ (_, m')]) => getAnnotation m'
+           | _ => NONE)
   end
 end

@@ -122,7 +122,8 @@ struct
       (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn (opid, (params, args)) =>
         let
           val rho = makeNameStore args
-          val parseDefiniens = TermParser.parseTerm sign rho SortData.TAC || spaces return defaultTac
+          val parseDefaultTac = !! spaces wth (fn (_, pos) => RedPrlAst.annotate pos defaultTac)
+          val parseDefiniens = TermParser.parseTerm sign rho SortData.TAC || parseDefaultTac
         in
           squares parseDefiniens wth (fn term =>
             (opid,
@@ -144,7 +145,8 @@ struct
         let
           val rho = makeNameStore args
           val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP) && parseSort'
-          val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC || spaces return defaultTac)
+          val parseDefaultTac = !! spaces wth (fn (_, pos) => RedPrlAst.annotate pos defaultTac)
+          val parseScript = reserved "by" >> squares (TermParser.parseTerm sign rho SortData.TAC || parseDefaultTac)
         in
           parseGoal && parseScript wth (fn ((goal, tau), script) =>
             (opid,

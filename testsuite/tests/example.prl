@@ -97,8 +97,5 @@ Thm exnTest3 : [~(try[fail](ifeq(raise(exn[fail](Ax)); 'yes; 'yes; 'no); [z]. z)
 ].
 
 Thm UnitMonoidStruct : [MonoidStruct(lbase)] by [
-  unfold MonoidStruct;
-  repeat(intro);
-  #0 { witness [ Unit ] };
-  bang
+  id; eq
 ].

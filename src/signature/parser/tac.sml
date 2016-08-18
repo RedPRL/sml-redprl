@@ -31,6 +31,12 @@ struct
   val parseSymbol = identifier
   val parseVariable = identifier
 
+  fun inheritAnn m n =
+    case Ast.getAnnotation m of
+       SOME ann => Ast.annotate ann n
+     | NONE => n
+
+
   fun parseMultitac sign rho f =
     let
       val parseId =
@@ -154,43 +160,43 @@ struct
           wth (Syn.into o Syn.TAC_PROGRESS)
 
       val parseAtomicTac =
-        (parseId
-          || parseFail
-          || parseCStep
-          || parseCEval
-          || parseCSym
-          || parseEq
-          || parseChkInf
-          || parseExt
-          || parseTrace
-          || parseCum
-          || parseHyp
-          || parseElim
-          || parseEta
-          || parseIntro
-          || parseUnhide
-          || parseAuto
-          || parseRec
-          || parseRewriteGoal
-          || parseEvalGoal
-          || parseWitness
-          || parseUnfold
-          || parseNormalize
-          || parseProgress
-          || GenericParser.parseGeneric sign rho f SortData.TAC) wth Atm
+        !! (parseId
+            || parseFail
+            || parseCStep
+            || parseCEval
+            || parseCSym
+            || parseEq
+            || parseChkInf
+            || parseExt
+            || parseTrace
+            || parseCum
+            || parseHyp
+            || parseElim
+            || parseEta
+            || parseIntro
+            || parseUnhide
+            || parseAuto
+            || parseRec
+            || parseRewriteGoal
+            || parseEvalGoal
+            || parseWitness
+            || parseUnfold
+            || parseNormalize
+            || parseProgress
+            || GenericParser.parseGeneric sign rho f SortData.TAC) wth (fn (t, pos) => Atm (Ast.annotate pos t))
 
       val parseFixityTac =
         parseOrElse wth Opr
 
       val parseAll =
-        parsefixity (parseFixityTac || parseAtomicTac)
-          wth (Syn.into o Syn.MTAC_ALL)
+        !! (parsefixity (parseFixityTac || parseAtomicTac))
+          wth (fn (t, pos) => Ast.annotate pos (Syn.into (Syn.MTAC_ALL t)))
 
       val parseEach =
         f (SortData.VEC SortData.TAC)
           wth (fn v =>
             case Syn.out v of
-               Syn.VEC_LITERAL (_, xs) => Syn.into (Syn.MTAC_EACH xs)
+               Syn.VEC_LITERAL (_, xs) => inheritAnn v (Syn.into (Syn.MTAC_EACH xs))
              | _ => raise Match)
 
       val parseFocus =
@@ -199,9 +205,9 @@ struct
           && braces (f SortData.TAC)
           wth (Syn.into o Syn.MTAC_FOCUS)
     in
-      (parseEach
+      !! (parseEach
         || parseFocus
-        || parseAll) wth Atm
+        || parseAll) wth (fn (t, pos) => Atm (Ast.annotate pos t))
     end
 
   fun parseTac sign rho f =
@@ -215,11 +221,11 @@ struct
           wth BINDING
 
       fun makeSeq mt (us : (symbol * sort) list) t =
-          Syn.into (Syn.TAC_SEQ (mt, us, t))
+          inheritAnn mt (Syn.into (Syn.TAC_SEQ (mt, us, t)))
 
       fun multitacToTac tm =
         case Syn.out tm of
-           Syn.MTAC_ALL t => t
+           Syn.MTAC_ALL t => inheritAnn tm t
          | _ => makeSeq tm [] (Syn.into Syn.TAC_ID)
 
       val rec compileScript =
@@ -229,8 +235,8 @@ struct
              compileScript ts
                wth makeSeq tac us
     in
-      (sepEnd1' parseComponent semi
-        -- compileScript) wth Atm
+      !! (sepEnd1' parseComponent semi
+        -- compileScript) wth (fn (t, pos) => Atm (Ast.annotate pos t))
     end
 
 end

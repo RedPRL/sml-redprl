@@ -188,7 +188,7 @@
 \\{redprl-mode-map}"
 
   (set (make-local-variable 'comment-start) "// ")
-  
+
   (setq font-lock-defaults '((redprl-mode-font-lock-keywords) nil nil))
 
   (set (make-local-variable 'imenu-generic-expression)
@@ -201,13 +201,26 @@
   ;; Bind mode-specific commands to keys
   (define-key redprl-mode-map (kbd "C-c C-l") 'redprl-compile-buffer)
 
+  (eval-after-load 'flycheck
+    '(progn
+       (flycheck-define-checker redprl
+         "A redprl proof checker."
+         :command ("redprl" source)
+         :error-patterns
+         ((error line-start
+                 (file-name) ":" line "." column "-" (+ num) "." (+ num) ": "
+                 (message (+ anything) )
+                 line-end))
+         :modes redprl-mode)
+
+       (add-to-list 'flycheck-checkers 'redprl)))
+
 
   (set (make-local-variable 'completion-at-point-functions)
        '(redprl-completion-at-point)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.prl\\'" . redprl-mode))
-
 
 (provide 'redprl)
 ;;; redprl.el ends here
