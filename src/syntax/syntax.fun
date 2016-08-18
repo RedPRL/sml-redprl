@@ -6,7 +6,6 @@ sig
   type sort
   type 'a operator
   type 'a spine
-  type annotation
 
   type term
 
@@ -21,9 +20,6 @@ sig
   val check : sort -> term view -> term
   val $$ : symbol operator * term bview spine -> term
   val out : term -> term view
-
-  val annotate : annotation -> term -> term
-  val getAnnotation : term -> annotation option
 
   val symbolEq : symbol * symbol -> bool
 
@@ -54,10 +50,6 @@ struct
   type 'a spine = 'a Ast.spine
 
   type term = Ast.ast
-  type annotation = Ast.annotation
-
-  val annotate = Ast.annotate
-  val getAnnotation = Ast.getAnnotation
 
   datatype 'a bview =
      \ of (symbol spine * variable spine) * 'a

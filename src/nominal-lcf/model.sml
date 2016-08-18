@@ -63,5 +63,5 @@ struct
 
   fun rule (sign, rho) (tac : RedPrlAbt.abt) alpha goal =
     rule' (sign, rho) tac alpha goal
-      handle exn => raise RefinementError (RSyn.getAnnotation tac, exn)
+      handle exn => raise RefinementError (RedPrlAbt.getAnnotation tac, exn)
 end
