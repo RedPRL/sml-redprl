@@ -1,4 +1,8 @@
-structure RefineElab : SIGNATURE_ELAB =
+structure RefineElab :
+sig
+  include SIGNATURE_ELAB
+  val execute : S2.sign -> (S2.opid * S2.decl -> unit) -> (exn -> unit) -> unit
+end =
 struct
   structure E = NominalLcfSemantics
   structure S1 = AbtSignature and S2 = AbtSignature
@@ -81,8 +85,32 @@ struct
       open T.ConsView
       fun go res =
         fn EMPTY => res
-         | CONS (x, Decl.DEF d,xs) => go (T.snoc res x (elab res d)) (out xs)
+         | CONS (x, Decl.DEF d, xs) => go (T.snoc res x (elab res d)) (out xs)
          | CONS (x, Decl.SYM_DECL tau, xs) => go (T.snoc res x (Decl.SYM_DECL tau)) (out xs)
+    in
+      go T.empty (out sign)
+    end
+
+  fun execute sign succeed fail =
+    let
+      open T.ConsView
+      fun go res =
+        fn EMPTY => ()
+         | CONS (x, Decl.DEF d, xs) =>
+             (let
+                val res' =
+                  let
+                    val d' = elab res d
+                  in
+                    succeed (x, d');
+                    T.snoc res x d'
+                  end handle exn => (fail exn; res)
+              in
+                go res' (out xs)
+              end)
+        | CONS (x, d as Decl.SYM_DECL tau, xs) =>
+            (succeed (x, d);
+             go (T.snoc res x d) (out xs))
     in
       go T.empty (out sign)
     end

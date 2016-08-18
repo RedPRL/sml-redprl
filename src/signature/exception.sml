@@ -3,7 +3,7 @@ struct
   exception RedPrlExn of Pos.t option * string
 
   val rec toString =
-    fn RedPrlExn (SOME pos, exn) => Pos.toString pos ^ ": " ^ exn
+    fn RedPrlExn (SOME pos, msg) => Pos.toString pos ^ ": " ^ msg
      | RedPrlExn (NONE, msg) => msg
      | Fail msg => msg
      | exn => exnMessage exn

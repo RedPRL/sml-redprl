@@ -68,30 +68,35 @@ Thm SigmaTest : [Sg(Base; [x]. ~(x; Ax))] by [
 ].
 
 
-Thm symgenTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
+Thm gensymTest : [~(nu{lbl}({l}. {l = Unit}.l); Unit)] by [
   bang
 ].
 
 Sym yes : exp.
 Sym no : exp.
 
-Thm symgenTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
+Thm gensymTest2 : [~(nu({a}. nu({b}. ifeq('a; 'b; 'yes; 'no))); 'no)] by [
   ceval
 ].
 
-Thm symgenTest3 : [nu({a}. nu({b}. ~(ifeq('a; 'b; 'yes; 'no); 'no)))] by [
+Tac gensymHelper = [
   eval; ceval; csym; ceval
+].
+
+Thm gensymTest3 : [nu({a}. nu({b}. ~(ifeq('a; 'b; 'yes; 'no); 'no)))] by [
+  gensymHelper
 ].
 
 Thm exnTest : [nu{exn}({a}. ~(try[a](raise(exn[a](Ax)); [z].'yes); 'yes))] by [
-   eval; ceval; csym; ceval
+  gensymHelper
 ].
 
 Thm exnTest2 : [nu{exn}({a}. try[a](raise(exn[a](Ax)); [z]. ~(z; Ax)))] by [
-  eval; ceval; csym; ceval
+  gensymHelper
 ].
 
 Sym fail : exn.
+
 Thm exnTest3 : [~(try[fail](ifeq(raise(exn[fail](Ax)); 'yes; 'yes; 'no); [z]. z); Ax)] by [
   ceval
 ].
