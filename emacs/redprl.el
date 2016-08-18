@@ -204,7 +204,7 @@
   (eval-after-load 'flycheck
     '(progn
        (flycheck-define-checker redprl
-         "A redprl proof checker."
+         "A RedPRL proof checker."
          :command ("redprl" source)
          :error-patterns
          ((error line-start
