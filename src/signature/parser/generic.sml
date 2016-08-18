@@ -49,7 +49,7 @@ struct
         squares (separateN n parseSymbol comma)
           || (if n = 0 then succeed [] else fail "")
 
-      fun parseOperatorFromDefn opid {parameters, arguments, sort, definiens} =
+      fun parseOperatorFromDefn opid {parameters, arguments, sort, definiens, pos} =
         parseParameters (length parameters) wth (fn us =>
           let
             val params = ListPair.mapEq (fn (u, (_, tau)) => (u, tau)) (us, parameters)

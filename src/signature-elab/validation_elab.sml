@@ -35,16 +35,14 @@ struct
    *)
   fun validate (map : S2.def DefnMap.dict) (RedPrlOperator.CUSTOM (opid, params, arity)) =
     let
-      val {parameters, arguments, sort, definiens} =
+      val {parameters, arguments, sort, definiens, pos} =
         case DefnMap.find map opid of
             NONE => raise InvalidCustomOper opid
           | SOME d => d
       val sorts = ListPair.zipEq (List.map #2 params, List.map #2 parameters)
-      val () =
-        if List.all RedPrlAtomicSort.eq sorts then () else raise InvalidCustomOper opid
+      val () = if List.all RedPrlAtomicSort.eq sorts then () else raise InvalidCustomOper opid
       val expectedArity = (List.map #2 arguments, sort)
-      val () =
-        if RedPrlAtomicArity.eq (expectedArity, arity) then () else raise InvalidCustomOper opid
+      val () = if RedPrlAtomicArity.eq (expectedArity, arity) then () else raise InvalidCustomOper opid
     in
       ()
     end

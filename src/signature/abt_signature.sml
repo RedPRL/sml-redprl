@@ -23,7 +23,8 @@ struct
     {parameters : symbols,
      arguments : arguments,
      sort : sort,
-     definiens : term}
+     definiens : term,
+     pos : Pos.t option}
 
   structure Decl =
   struct
@@ -54,7 +55,7 @@ struct
     fun encodeArg (x, vl) =
       J.Obj [("metavar", encodeMetavar x), ("valence", encodeValence vl)]
 
-    fun encodeDef {parameters, arguments, sort, definiens} =
+    fun encodeDef {parameters, arguments, sort, definiens, pos} =
       J.Obj
         [("parameters", J.Array (List.map encodeParam parameters)),
          ("arguments", J.Array (List.map encodeArg arguments)),
@@ -109,7 +110,7 @@ struct
 
            val definiens' = AJ.decode env' ctx' definiens
          in
-           DEF {parameters = params', arguments = args', sort = sort', definiens = definiens'}
+           DEF {parameters = params', arguments = args', sort = sort', definiens = definiens', pos = NONE}
          end
        | m => raise Fail ("Failed to decode decl, " ^ J.toString m)
 
@@ -185,13 +186,12 @@ struct
    * necessary to make sure that everything is well-sorted and well-scoped
    * before hand
    *)
-  fun def sign {parameters, arguments, sort, definiens} =
+  fun def sign {parameters, arguments, sort, definiens, pos} =
     let
       val Y' = Abt.Sym.Ctx.toList (Abt.symctx definiens)
       val G = Abt.Var.Ctx.toList (Abt.varctx definiens)
       val Th' = Abt.Metavar.Ctx.toList (Abt.metactx definiens)
       val (_, tau') = Abt.infer definiens
-      val pos = RedPrlAbt.getAnnotation definiens
 
       val _ =
         (guard pos "Metavariable not in scope" (subarguments (Th', arguments));
@@ -199,7 +199,7 @@ struct
          guard pos "Variables not in scope" (List.length G = 0);
          guard pos "Sort mismatch" (Abt.O.Ar.Vl.S.eq (tau', RedPrlOperator.S.EXP sort)))
     in
-      DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
+      DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens, pos = pos}
     end
 
   fun symDecl sign sort =

@@ -13,7 +13,8 @@ sig
     {parameters : symbols,
      arguments : arguments,
      sort : sort,
-     definiens : term}
+     definiens : term,
+     pos : Pos.t option}
 
   structure Decl :
   sig

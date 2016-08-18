@@ -209,10 +209,7 @@
          "A RedPRL proof checker."
          :command ("redprl" source)
          :error-patterns
-         ((error line-start
-                 (file-name) ":" line "." column "-" (+ num) "." (+ num) ": "
-                 (message (+ anything) )
-                 line-end))
+         ((error line-start (optional "Parse error at ") (file-name) ":" line "." column "-" (+ num) "." (+ num) ": " (message (+ anything) ) line-end))
          :modes redprl-mode)
 
        (add-to-list 'flycheck-checkers 'redprl)))

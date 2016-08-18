@@ -18,7 +18,8 @@ struct
     {parameters : symbols,
      arguments : arguments,
      sort : sort,
-     definiens : term}
+     definiens : term,
+     pos : Pos.t option}
 
   type decl = def AstSignatureDecl.decl
   val def = AstSignatureDecl.DEF

@@ -13,7 +13,7 @@ struct
       (fn (m, vl) => Metavariable.toString m ^ " : " ^ RedPrlAtomicValence.toString vl)
       ";"
 
-  fun defToString (lbl, {parameters, arguments, definiens, sort}) =
+  fun defToString (lbl, {parameters, arguments, definiens, sort, pos}) =
     "Def "
        ^ Symbol.toString lbl
        ^ "[" ^ paramsToString parameters ^ "]"
@@ -66,12 +66,7 @@ struct
       val parsed = CharParser.parseChars SignatureParser.parseSigExp stream
     in
       (case parsed of
-          INL s =>
-            let
-              val pos = Pos.pos (Coord.init fileName) (Coord.init fileName)
-            in
-              raise RedPrlExn.RedPrlExn (SOME pos, "Parsing of " ^ fileName ^ " has failed: " ^ s)
-            end
+          INL s => raise RedPrlExn.RedPrlExn (NONE, s)
         | INR sign =>
             let
               val elab = RefineElab.transport o ValidationElab.transport o BindSignatureElab.transport

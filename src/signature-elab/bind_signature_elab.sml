@@ -20,11 +20,8 @@ struct
   (* Given a AST declaration, this resolves its binding structure
    * in the context of the signature before it (given by [opidTable]).
    *)
-  fun bindDecl opidTable sign (DEF {parameters, arguments, sort, definiens}) =
-    let
-      val pos = RedPrlAst.getAnnotation definiens
-    in
-      let
+  fun bindDecl opidTable sign (DEF {parameters, arguments, sort, definiens, pos}) =
+     (let
         val (localNames, sorts) = ListPair.unzip parameters
         val localSymbols = List.map Symbol.named localNames
         val parameters' = ListPair.zipEq (localSymbols, sorts)
@@ -42,10 +39,9 @@ struct
           {parameters = parameters',
            arguments = arguments,
            sort = sort,
-           definiens = definiens'}
-      end
-      handle exn => raise RedPrlExn.wrap pos exn
-    end
+           definiens = definiens',
+           pos = pos}
+      end handle exn => raise RedPrlExn.wrap pos exn)
     | bindDecl opidTable sign (SYM_DECL sort) =
       S2.symDecl sign sort
 

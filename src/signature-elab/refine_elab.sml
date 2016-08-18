@@ -33,51 +33,42 @@ struct
     fun errorMessage pos msg =
       Pos.toString pos ^ ": " ^ msg
   in
-    fun elabThm sign (d as {parameters, arguments, sort, definiens}) : decl =
+    fun elabThm sign (d as {parameters, arguments, sort, definiens, pos}) : decl =
       case Syn.out definiens of
            Syn.REFINE_SCRIPT (tau, prop, script, extract) =>
-             let
-               val pos = Abt.getAnnotation script
-             in
-               (* If an extract has already been computed, then skip; otherwise
-                * we run the proof script to compute its extract. *)
-               case Syn.out extract of
-                    Syn.OPT_SOME _ => def sign d
-                  | Syn.OPT_NONE _ =>
-                      let
-                        val alpha = makeNameStore ()
-                        val goal = emptyContext >> TRUE (prop, tau)
-                        val st as (psi, vld) = E.tactic (sign, Variable.Ctx.empty) script alpha goal
-                      in
-                        case Ctx.ConsView.out psi of
-                             Ctx.ConsView.EMPTY =>
-                               let
-                                 val _ \ evd = outb (vld Ctx.empty)
-                                 val evd' = Syn.into (Syn.OPT_SOME (tau, evd))
-                                 val prf = Syn.into (Syn.REFINE_SCRIPT (tau, prop, script, evd'))
-                               in
-                                 def sign
-                                   {parameters = parameters,
-                                    arguments = arguments,
-                                    sort = sort,
-                                    definiens = prf}
-                               end
-                           | _ =>
+             (* If an extract has already been computed, then skip; otherwise
+              * we run the proof script to compute its extract. *)
+             (case Syn.out extract of
+                  Syn.OPT_SOME _ => def sign d
+                | Syn.OPT_NONE _ =>
+                    let
+                      val alpha = makeNameStore ()
+                      val goal = emptyContext >> TRUE (prop, tau)
+                      val st as (psi, vld) = E.tactic (sign, Variable.Ctx.empty) script alpha goal
+                    in
+                      case Ctx.ConsView.out psi of
+                           Ctx.ConsView.EMPTY =>
                              let
-                               val annotation : Pos.t option = Abt.getAnnotation script
-                               val proofState = RefinerKit.Tacticals.Lcf.stateToString st
+                               val _ \ evd = outb (vld Ctx.empty)
+                               val evd' = Syn.into (Syn.OPT_SOME (tau, evd))
+                               val prf = Syn.into (Syn.REFINE_SCRIPT (tau, prop, script, evd'))
                              in
-                               raise RedPrlExn.RedPrlExn (pos, "Refinement Failed\n\n" ^ RefinerKit.Tacticals.Lcf.stateToString st)
+                               def sign
+                                 {parameters = parameters,
+                                  arguments = arguments,
+                                  sort = sort,
+                                  definiens = prf,
+                                  pos = pos}
                              end
-                        end
-                    | _ => raise RedPrlExn.RedPrlExn (pos, "Expected either OP_SOME or OP_NONE")
-             end
-         | _ =>
-           let
-             val pos = Abt.getAnnotation definiens
-           in
-             def sign d handle exn => raise RedPrlExn.wrap pos exn
-           end
+                         | _ =>
+                           let
+                             val proofState = RefinerKit.Tacticals.Lcf.stateToString st
+                           in
+                             raise RedPrlExn.RedPrlExn (pos, "Refinement Failed\n\n" ^ proofState)
+                           end
+                      end
+                  | _ => raise RedPrlExn.RedPrlExn (pos, "Expected either OP_SOME or OP_NONE"))
+         | _ => def sign d handle exn => raise RedPrlExn.wrap pos exn
   end
 
   fun elab sign d : decl =
