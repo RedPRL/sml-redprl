@@ -23,8 +23,7 @@ struct
     {parameters : symbols,
      arguments : arguments,
      sort : sort,
-     definiens : term,
-     pos : Pos.t option}
+     definiens : term}
 
   structure Decl =
   struct
@@ -33,7 +32,7 @@ struct
 
   open Decl
 
-  type sign = decl Telescope.telescope
+  type sign = (decl * Pos.t option) Telescope.telescope
 
   local
     structure J = Json and AJ = RedPrlAbtJson and AS = RedPrlAtomicSortJson
@@ -55,7 +54,7 @@ struct
     fun encodeArg (x, vl) =
       J.Obj [("metavar", encodeMetavar x), ("valence", encodeValence vl)]
 
-    fun encodeDef {parameters, arguments, sort, definiens, pos} =
+    fun encodeDef {parameters, arguments, sort, definiens} =
       J.Obj
         [("parameters", J.Array (List.map encodeParam parameters)),
          ("arguments", J.Array (List.map encodeArg arguments)),
@@ -69,7 +68,7 @@ struct
     fun encode' sign =
       case out sign of
          EMPTY => []
-       | CONS (sym, decl, sign') =>
+       | CONS (sym, (decl, pos), sign') =>
          let
            val lbl = Symbol.toString sym
            val obj = encodeDecl decl
@@ -110,7 +109,7 @@ struct
 
            val definiens' = AJ.decode env' ctx' definiens
          in
-           DEF {parameters = params', arguments = args', sort = sort', definiens = definiens', pos = NONE}
+           DEF {parameters = params', arguments = args', sort = sort', definiens = definiens'}
          end
        | m => raise Fail ("Failed to decode decl, " ^ J.toString m)
 
@@ -168,8 +167,8 @@ struct
              SOME (v, tau) => tau
            | NONE =>
                (case Telescope.find sign u of
-                    SOME (DEF _) => SortData.OPID
-                  | SOME (SYM_DECL tau) => tau
+                    SOME (DEF _, _) => SortData.OPID
+                  | SOME (SYM_DECL tau, _) => tau
                   | NONE => raise NotFound)
       fun go [] = true
         | go ((u, tau) :: us) =
@@ -186,7 +185,7 @@ struct
    * necessary to make sure that everything is well-sorted and well-scoped
    * before hand
    *)
-  fun def sign {parameters, arguments, sort, definiens, pos} =
+  fun def sign ({parameters, arguments, sort, definiens}, pos : Pos.t option) =
     let
       val Y' = Abt.Sym.Ctx.toList (Abt.symctx definiens)
       val G = Abt.Var.Ctx.toList (Abt.varctx definiens)
@@ -199,10 +198,10 @@ struct
          guard pos "Variables not in scope" (List.length G = 0);
          guard pos "Sort mismatch" (Abt.O.Ar.Vl.S.eq (tau', RedPrlOperator.S.EXP sort)))
     in
-      DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens, pos = pos}
+      DEF {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
     end
 
-  fun symDecl sign sort =
+  fun symDecl sign (sort, pos) =
     SYM_DECL sort
 
   fun viewDecl d = d

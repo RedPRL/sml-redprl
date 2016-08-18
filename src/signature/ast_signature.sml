@@ -18,12 +18,11 @@ struct
     {parameters : symbols,
      arguments : arguments,
      sort : sort,
-     definiens : term,
-     pos : Pos.t option}
+     definiens : term}
 
   type decl = def AstSignatureDecl.decl
   val def = AstSignatureDecl.DEF
   val symDecl = AstSignatureDecl.SYM_DECL
 
-  type sign = decl StringTelescope.telescope
+  type sign = (decl * Pos.t option) StringTelescope.telescope
 end

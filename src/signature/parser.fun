@@ -79,12 +79,12 @@ struct
 
   fun parseDefinition sign : (opid * def) charParser =
     let
-      val parseOpid' = reserved "Def" >> !! parseOpid
+      val parseOpid' = reserved "Def" >> parseOpid
       val parseParams' = squares (parseParams sign) || succeed []
       val parseArgs' = parens (parseArgs sign) || succeed []
       val parseSort' = colon >> parseSort sign << symbol "="
     in
-      (parseOpid' && parseParams' && parseArgs' && parseSort') -- (fn ((opid, pos), (params, (args, sort))) =>
+      (parseOpid' && parseParams' && parseArgs' && parseSort') -- (fn (opid, (params, (args, sort))) =>
         let
           val rho = makeNameStore args
         in
@@ -93,8 +93,7 @@ struct
              {parameters = params,
               arguments = List.map (fn (m, v) => rho m) args,
               sort = sort,
-              definiens = term,
-              pos = SOME pos}))
+              definiens = term}))
         end) ?? "definition"
     end
 
@@ -116,11 +115,11 @@ struct
 
   fun parseTactic sign : (opid * def) charParser =
     let
-      val parseOpid' = reserved "Tac" >> !! parseOpid
+      val parseOpid' = reserved "Tac" >> parseOpid
       val parseParams' = squares (parseParams sign) || succeed []
       val parseArgs' = parens (parseArgs sign) || succeed []
     in
-      (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn ((opid, pos), (params, args)) =>
+      (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn (opid, (params, args)) =>
         let
           val rho = makeNameStore args
           val parseDefaultTac = !! spaces wth (fn (_, pos) => RedPrlAst.annotate pos defaultTac)
@@ -131,19 +130,18 @@ struct
              {parameters = params,
               arguments = List.map (fn (m, v) => rho m) args,
               sort = SortData.TAC,
-              definiens = term,
-              pos = SOME pos}))
+              definiens = term}))
         end) ?? "tactic"
     end
 
   fun parseTheorem sign : (opid * def) charParser =
     let
-      val parseOpid' = reserved "Thm" >> !! parseOpid
+      val parseOpid' = reserved "Thm" >> parseOpid
       val parseParams' = squares (parseParams sign) || succeed []
       val parseArgs' = parens (parseArgs sign) || succeed []
       val parseSort' = (colon >> parseSort sign) || succeed SortData.EXP
     in
-      (parseOpid' && parseParams' && parseArgs') -- (fn ((opid, pos), (params, args)) =>
+      (parseOpid' && parseParams' && parseArgs') -- (fn (opid, (params, args)) =>
         let
           val rho = makeNameStore args
           val parseGoal = colon >> squares (TermParser.parseTerm sign rho SortData.EXP) && parseSort'
@@ -155,8 +153,7 @@ struct
              {parameters = params,
               arguments = List.map (fn (m, v) => rho m) args,
               sort = SortData.THM tau,
-              definiens = Ast.setAnnotation (Ast.getAnnotation script) (Syn.into (Syn.REFINE_SCRIPT (tau, goal, script, Syn.into (Syn.OPT_NONE tau)))),
-              pos = SOME pos}))
+              definiens = Ast.setAnnotation (Ast.getAnnotation script) (Syn.into (Syn.REFINE_SCRIPT (tau, goal, script, Syn.into (Syn.OPT_NONE tau))))}))
         end) ?? "theorem"
     end
 
@@ -173,36 +170,36 @@ struct
 
   fun parseRcdDecl sign : AstSignature.sign charParser =
     let
-      val parseOpid' = reserved "Record" >> !! parseOpid
+      val parseOpid' = reserved "Record" >> parseOpid
       val parseParams' = squares (parseParams sign) || succeed []
       val parseArgs' = parens (parseArgs sign) || succeed []
     in
-      (parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn ((opid, pos), (params, args)) =>
+      !! ((parseOpid' && parseParams' && parseArgs' << symbol "=") -- (fn (opid, (params, args)) =>
         let
           val rho = makeNameStore args
           val parseTerm' = TermParser.parseTerm sign rho SortData.EXP
           val parseRow = parseSymid << colon && parseTerm'
           val parseRows = braces (commaSep parseRow)
         in
-          parseRows wth (fn rows =>
-            let
-              val sign' = List.foldr (fn ((lbl, a), sign') => AstSignature.Telescope.snoc sign' lbl (AstSignature.symDecl SortData.RCD_LBL)) sign rows
-              val definiens = List.foldr (fn ((lbl, a), b) => recordTyCons (lbl, a) b) recordTop rows
-              val def =
-               {parameters = params,
-                arguments = List.map (fn (m, v) => rho m) args,
-                sort = SortData.EXP,
-                definiens = definiens,
-                pos = SOME pos}
-            in
-              AstSignature.Telescope.snoc sign' opid (AstSignature.def def)
-            end)
-        end)
+          braces (commaSep parseRow) wth (fn rows => (rho, opid, params, args, rows))
+        end))
+      wth (fn ((rho, opid, params, args, rows), pos : Pos.t) =>
+          let
+            val sign' = List.foldr (fn ((lbl, a), sign') => AstSignature.Telescope.snoc sign' lbl (AstSignature.symDecl SortData.RCD_LBL, SOME pos)) sign rows
+            val definiens = List.foldr (fn ((lbl, a), b) => recordTyCons (lbl, a) b) recordTop rows
+            val def =
+             {parameters = params,
+              arguments = List.map (fn (m, v) => rho m) args,
+              sort = SortData.EXP,
+              definiens = definiens}
+          in
+            AstSignature.Telescope.snoc sign' opid (AstSignature.def def, SOME pos)
+          end)
     end
 
   fun parseSigExtension sign : AstSignature.sign charParser =
     parseRcdDecl sign
-      || (parseSigDecl sign || parseSymDecl sign) wth (fn (u, dcl) => AstSignature.Telescope.snoc sign u dcl)
+      || (!! (parseSigDecl sign || parseSymDecl sign)) wth (fn ((u, dcl), pos) => AstSignature.Telescope.snoc sign u (dcl, SOME pos))
 
   fun parseSigExp' sign =
     opt (whiteSpace >> parseSigExtension sign << dot) -- (fn osign =>

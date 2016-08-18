@@ -13,7 +13,7 @@ struct
       (fn (m, vl) => Metavariable.toString m ^ " : " ^ RedPrlAtomicValence.toString vl)
       ";"
 
-  fun defToString (lbl, {parameters, arguments, definiens, sort, pos}) =
+  fun defToString (lbl, {parameters, arguments, definiens, sort}) =
     "Def "
        ^ Symbol.toString lbl
        ^ "[" ^ paramsToString parameters ^ "]"
@@ -40,7 +40,7 @@ struct
 
     fun signToString sign =
       case ConsView.out sign of
-          ConsView.CONS (l, dcl, sign') =>
+          ConsView.CONS (l, (dcl, _), sign') =>
             ((case dcl of
                  Decl.DEF d => defToString (l, d)
                | Decl.SYM_DECL tau => symToString (l, tau)) ^ signToString sign')

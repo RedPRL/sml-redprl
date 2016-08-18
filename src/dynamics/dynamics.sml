@@ -27,25 +27,15 @@ struct
   struct
     open AbtSignature
 
-    type def =
-      {parameters : symbols,
-       arguments : arguments,
-       sort : sort,
-       definiens : term}
-
     type t = sign
     val empty = Telescope.empty
 
-    fun define sign opid {parameters, arguments, sort, definiens} =
-      let
-        val d' = {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens, pos = NONE}
-      in
-        Telescope.snoc sign opid (def sign d')
-      end
+    fun define sign opid d =
+      Telescope.snoc sign opid (def sign (d, NONE), NONE)
 
     fun lookup sign opid =
       case Telescope.lookup sign opid of
-         Decl.DEF {parameters, arguments, sort, definiens, pos} => {parameters = parameters, arguments = arguments, sort = sort, definiens = definiens}
+         (Decl.DEF d, _) => d
        | _ => raise Fail "no such definitional extension in signature"
   end
 

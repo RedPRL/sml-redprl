@@ -35,7 +35,7 @@ struct
    *)
   fun validate (map : S2.def DefnMap.dict) (RedPrlOperator.CUSTOM (opid, params, arity)) =
     let
-      val {parameters, arguments, sort, definiens, pos} =
+      val {parameters, arguments, sort, definiens} =
         case DefnMap.find map opid of
             NONE => raise InvalidCustomOper opid
           | SOME d => d
@@ -75,7 +75,7 @@ struct
       fun go map sign =
         case out sign of
             EMPTY => ()
-          | CONS (l, S1.Decl.DEF d, s) =>
+          | CONS (l, (S1.Decl.DEF d, pos), s) =>
             (checkDef map d; go (DefnMap.insert map l d) s)
           | CONS (l, _, s) =>
               go map s

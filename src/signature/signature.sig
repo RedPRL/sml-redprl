@@ -18,5 +18,5 @@ sig
   structure Telescope : TELESCOPE where type Label.t = opid
 
   (* A signature / [sign] is a telescope of declarations. *)
-  type sign = decl Telescope.telescope
+  type sign = (decl * Pos.t option) Telescope.telescope
 end

@@ -24,8 +24,7 @@ sig
     {parameters : symbols,
      arguments : arguments,
      sort : sort,
-     definiens : term,
-     pos : Pos.t option}
+     definiens : term}
 
   include SIGNATURE
     where type decl = def AstSignatureDecl.decl

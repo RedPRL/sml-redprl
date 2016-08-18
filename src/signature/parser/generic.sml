@@ -49,7 +49,7 @@ struct
         squares (separateN n parseSymbol comma)
           || (if n = 0 then succeed [] else fail "")
 
-      fun parseOperatorFromDefn opid {parameters, arguments, sort, definiens, pos} =
+      fun parseOperatorFromDefn opid {parameters, arguments, sort, definiens} =
         parseParameters (length parameters) wth (fn us =>
           let
             val params = ListPair.mapEq (fn (u, (_, tau)) => (u, tau)) (us, parameters)
@@ -63,8 +63,8 @@ struct
         identifier -- (fn opid =>
           case Telescope.find sign opid of
                NONE => fail "opid not in signature"
-             | SOME (SYM_DECL _) => fail "opid not in signature"
-             | SOME (DEF defn) => parseOperatorFromDefn opid defn)
+             | SOME (SYM_DECL _, _) => fail "opid not in signature"
+             | SOME (DEF defn, _) => parseOperatorFromDefn opid defn)
 
       fun parseSymbols n =
         braces (separateN n parseSymbol comma)

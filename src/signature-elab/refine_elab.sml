@@ -37,13 +37,13 @@ struct
     fun errorMessage pos msg =
       Pos.toString pos ^ ": " ^ msg
   in
-    fun elabThm sign (d as {parameters, arguments, sort, definiens, pos}) : decl =
+    fun elabThm sign (d as {parameters, arguments, sort, definiens}, pos) : decl =
       case Syn.out definiens of
            Syn.REFINE_SCRIPT (tau, prop, script, extract) =>
              (* If an extract has already been computed, then skip; otherwise
               * we run the proof script to compute its extract. *)
              (case Syn.out extract of
-                  Syn.OPT_SOME _ => def sign d
+                  Syn.OPT_SOME _ => def sign (d, pos)
                 | Syn.OPT_NONE _ =>
                     let
                       val alpha = makeNameStore ()
@@ -58,11 +58,11 @@ struct
                                val prf = Syn.into (Syn.REFINE_SCRIPT (tau, prop, script, evd'))
                              in
                                def sign
-                                 {parameters = parameters,
-                                  arguments = arguments,
-                                  sort = sort,
-                                  definiens = prf,
-                                  pos = pos}
+                                 ({parameters = parameters,
+                                   arguments = arguments,
+                                   sort = sort,
+                                   definiens = prf},
+                                  pos)
                              end
                          | _ =>
                            let
@@ -72,21 +72,21 @@ struct
                            end
                       end
                   | _ => raise RedPrlExn.RedPrlExn (pos, "Expected either OP_SOME or OP_NONE"))
-         | _ => def sign d handle exn => raise RedPrlExn.wrap pos exn
+         | _ => def sign (d, pos) handle exn => raise RedPrlExn.wrap pos exn
   end
 
-  fun elab sign d : decl =
+  fun elab sign (d, pos) : decl =
     case #sort d of
-         SD.THM tau => elabThm sign d
-       | _ => def sign d
+         SD.THM tau => elabThm sign (d, pos)
+       | _ => def sign (d, pos)
 
   fun transport sign =
     let
       open T.ConsView
       fun go res =
         fn EMPTY => res
-         | CONS (x, Decl.DEF d, xs) => go (T.snoc res x (elab res d)) (out xs)
-         | CONS (x, Decl.SYM_DECL tau, xs) => go (T.snoc res x (Decl.SYM_DECL tau)) (out xs)
+         | CONS (x, (Decl.DEF d, pos), xs) => go (T.snoc res x (elab res (d, pos), pos)) (out xs)
+         | CONS (x, (Decl.SYM_DECL tau, pos), xs) => go (T.snoc res x (Decl.SYM_DECL tau, pos)) (out xs)
     in
       go T.empty (out sign)
     end
@@ -96,21 +96,21 @@ struct
       open T.ConsView
       fun go res =
         fn EMPTY => ()
-         | CONS (x, Decl.DEF d, xs) =>
+         | CONS (x, (Decl.DEF d, pos), xs) =>
              (let
                 val res' =
                   let
-                    val d' = elab res d
+                    val d' = elab res (d, pos)
                   in
                     succeed (x, d');
-                    T.snoc res x d'
+                    T.snoc res x (d', pos)
                   end handle exn => (fail exn; res)
               in
                 go res' (out xs)
               end)
-        | CONS (x, d as Decl.SYM_DECL tau, xs) =>
+        | CONS (x, (d as Decl.SYM_DECL tau, pos), xs) =>
             (succeed (x, d);
-             go (T.snoc res x d) (out xs))
+             go (T.snoc res x (d, pos)) (out xs))
     in
       go T.empty (out sign)
     end

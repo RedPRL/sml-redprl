@@ -13,8 +13,7 @@ sig
     {parameters : symbols,
      arguments : arguments,
      sort : sort,
-     definiens : term,
-     pos : Pos.t option}
+     definiens : term}
 
   structure Decl :
   sig
@@ -23,8 +22,8 @@ sig
 
   include SIGNATURE
 
-  val def : sign -> def -> decl
-  val symDecl : sign -> sort -> decl
+  val def : sign -> def * Pos.t option -> decl
+  val symDecl : sign -> sort * Pos.t option -> decl
 
   val viewDecl : decl -> Decl.decl
 
