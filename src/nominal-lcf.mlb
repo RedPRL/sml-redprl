@@ -10,6 +10,7 @@ local
   in
     signature DICT
     functor SplayDict
+    structure Pos
   end
 
   signature.mlb

@@ -18,7 +18,7 @@ struct
   fun ?e = raise e
 
   fun evalOpen sign t =
-    RedPrlDynamics.eval sign t
+    setAnnotation (getAnnotation t) (RedPrlDynamics.eval sign t)
       handle _ => t
 
   local
@@ -28,7 +28,7 @@ struct
            if SymCtx.member syms a then
              m
            else
-             check (`a, O.S.EXP S.EXP)
+             setAnnotation (getAnnotation m) (check (`a, O.S.EXP S.EXP))
        | _ => raise Match)
       handle _ => goStruct syms m
 
@@ -36,12 +36,13 @@ struct
       let
         val (m', tau) = infer m
       in
-        case out m of
-           theta $ es =>
-             theta $$ List.map (goAbs syms) es
-         | x $# (us, ms) =>
-             check (x $# (us, List.map (go syms) ms), tau)
-         | _ => m
+        setAnnotation (getAnnotation m)
+          (case out m of
+             theta $ es =>
+               theta $$ List.map (goAbs syms) es
+           | x $# (us, ms) =>
+               check (x $# (us, List.map (go syms) ms), tau)
+           | _ => m)
       end
 
     and goAbs syms ((us,xs) \ m) =
@@ -96,7 +97,7 @@ struct
 
     fun out sign t =
       let
-        val t' = expandHypVars (evalOpen sign t)
+        val t' = setAnnotation (getAnnotation t) (expandHypVars (evalOpen sign t))
       in
         case Syn.outOpen t' of
            Syn.VAR x => VAR x

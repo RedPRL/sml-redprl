@@ -40,6 +40,8 @@ end
 
 functor AstSyntaxView (Ast : AST where type 'a spine = 'a list) : SYNTAX_VIEW =
 struct
+  structure Ast = AstUtil (Ast)
+
   type symbol = Ast.symbol
   type variable = Ast.variable
   type metavariable = Ast.metavariable
@@ -48,8 +50,6 @@ struct
   type 'a spine = 'a Ast.spine
 
   type term = Ast.ast
-
-  structure Ast = AstUtil (Ast)
 
   datatype 'a bview =
      \ of (symbol spine * variable spine) * 'a
@@ -457,7 +457,7 @@ struct
          O.RET _ $ [_ \ v] => outVal v
        | O.CUT _ $ [_ \ k, (us, []) \ m] => outCut k (us, m)
        | O.D th $ es => outDef th es
-       | _ => raise Fail "Syntax view expected application expression"
+       | _ => raise Fail ("Syntax view expected application expression, but got " ^ View.debugToString m)
 
     and outOpen m =
       case View.out m of
@@ -621,6 +621,5 @@ struct
       in
         into @@ HCOM (ty', span, cap', tube')
       end
-
   end
 end

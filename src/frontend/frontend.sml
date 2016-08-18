@@ -62,7 +62,8 @@ struct
   fun processFile fileName =
     let
       val input = TextIO.inputAll (TextIO.openIn fileName)
-      val parsed = CharParser.parseString SignatureParser.parseSigExp input
+      val stream = CoordinatedStream.coordinate (fn x => Stream.hd x = #"\n" handle Stream.Empty => false) (Coord.init fileName) (Stream.fromString input)
+      val parsed = CharParser.parseChars SignatureParser.parseSigExp stream
     in
       case parsed of
           INL s => raise Fail ("Parsing of " ^ fileName ^ " has failed: " ^ s)
