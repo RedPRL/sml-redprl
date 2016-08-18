@@ -172,7 +172,9 @@
 (defconst redprl--revolutionary-sayings
   '("Decisively Smash the Formalist Clique!"
     "Long Live the Anti-Realist Struggle!"
-    "We Can Prove It!")
+    "We Can Prove It!"
+    "Uphold Cubical Thought!"
+    "Criticize The Old World And Build A New World Using Cubical Thought As A Weapon!")
   "Words of encouragement to be displayed when RedPRL is initially launched.")
 
 (defun redprl-display-revolutionary-saying ()
