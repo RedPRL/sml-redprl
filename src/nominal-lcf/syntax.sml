@@ -17,13 +17,8 @@ struct
   exception hole
   fun ?e = raise e
 
-  fun inheritAnn m n =
-    case Syn.getAnnotation m of
-       SOME ann => annotate ann n
-     | NONE => n
-
   fun evalOpen sign t =
-    inheritAnn t (RedPrlDynamics.eval sign t)
+    setAnnotation (getAnnotation t) (RedPrlDynamics.eval sign t)
       handle _ => t
 
   local
@@ -33,7 +28,7 @@ struct
            if SymCtx.member syms a then
              m
            else
-             inheritAnn m (check (`a, O.S.EXP S.EXP))
+             setAnnotation (getAnnotation m) (check (`a, O.S.EXP S.EXP))
        | _ => raise Match)
       handle _ => goStruct syms m
 
@@ -41,7 +36,7 @@ struct
       let
         val (m', tau) = infer m
       in
-        inheritAnn m
+        setAnnotation (getAnnotation m)
           (case out m of
              theta $ es =>
                theta $$ List.map (goAbs syms) es
@@ -102,7 +97,7 @@ struct
 
     fun out sign t =
       let
-        val t' = inheritAnn t (expandHypVars (evalOpen sign t))
+        val t' = setAnnotation (getAnnotation t) (expandHypVars (evalOpen sign t))
       in
         case Syn.outOpen t' of
            Syn.VAR x => VAR x

@@ -203,12 +203,7 @@ struct
       fn [] => []
        | x :: xs => f x @ flatMap f xs
 
-    fun inheritAnn m n =
-      case getAnnotation m of
-         SOME ann => annotate ann n
-       | NONE => n
-
-    fun ret tau m = inheritAnn m (O.RET tau $$ [([],[]) \ m])
+    fun ret tau m = O.RET tau $$ [([],[]) \ m]
     fun intoCttV th es = ret RS.EXP @@ O.V (CTT_V th) $$ es
     fun intoAtmV th es = ret RS.EXP @@ O.V (ATM_V th) $$ es
     fun intoRcdV th es = ret RS.EXP @@ O.V (RCD_V th) $$ es
@@ -634,13 +629,5 @@ struct
       in
         into @@ HCOM (ty', span, cap', tube')
       end
-
-  fun getAnnotation m =
-    case RedPrlAbt.getAnnotation m of
-       SOME ann => SOME ann
-     | NONE =>
-         (case RedPrlAbt.out m of
-             RedPrlAbt.$ (RedPrlOperator.RET _, [RedPrlAbt.\ (_, m')]) => getAnnotation m'
-           | _ => NONE)
   end
 end

@@ -31,12 +31,6 @@ struct
   val parseSymbol = identifier
   val parseVariable = identifier
 
-  fun inheritAnn m n =
-    case Ast.getAnnotation m of
-       SOME ann => Ast.annotate ann n
-     | NONE => n
-
-
   fun parseMultitac sign rho f =
     let
       val parseId =
@@ -196,7 +190,7 @@ struct
         f (SortData.VEC SortData.TAC)
           wth (fn v =>
             case Syn.out v of
-               Syn.VEC_LITERAL (_, xs) => inheritAnn v (Syn.into (Syn.MTAC_EACH xs))
+               Syn.VEC_LITERAL (_, xs) => Syn.into (Syn.MTAC_EACH xs)
              | _ => raise Match)
 
       val parseFocus =
@@ -221,11 +215,11 @@ struct
           wth BINDING
 
       fun makeSeq mt (us : (symbol * sort) list) t =
-          inheritAnn mt (Syn.into (Syn.TAC_SEQ (mt, us, t)))
+          Syn.into (Syn.TAC_SEQ (mt, us, t))
 
       fun multitacToTac tm =
         case Syn.out tm of
-           Syn.MTAC_ALL t => inheritAnn tm t
+           Syn.MTAC_ALL t => t
          | _ => makeSeq tm [] (Syn.into Syn.TAC_ID)
 
       val rec compileScript =
