@@ -56,7 +56,7 @@ struct
       printPart num list
     end
 
-  fun handleCommand command =
+  fun handleCommand oldSign command =
     case command of
       Execute code =>
         let
@@ -66,14 +66,15 @@ struct
             INL s => raise Fail s
           | INR sign =>
             let
-              val elab = RefineElab.transport o ValidationElab.transport o BindSignatureElab.transport
-              val sign' = elab sign
+              val elab = ValidationElab.transport o BindSignatureElab.transport
+              val sign' = RefineElab.transport (AbtSignature.Telescope.append (oldSign, elab sign))
               val msg = Frontend.signToString sign'
             in
-              if (String.size msg) > 650 then
+              (if (String.size msg) > 650 then
                 printInParts 650 (String.explode msg)
               else
-                printMessage msg
+                printMessage msg);
+              sign'
             end
         end
       | Chunks amount =>
@@ -92,6 +93,6 @@ struct
               end
           val code = iter amount ""
         in
-          handleCommand (Execute code)
+          handleCommand oldSign (Execute code)
         end
 end
