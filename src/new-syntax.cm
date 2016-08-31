@@ -12,3 +12,7 @@ Group is
 
   new-syntax/redprl.lex
   new-syntax/redprl.grm
+
+  new-syntax/redprl_lexer.sml
+  new-syntax/redprl_parser.sml
+

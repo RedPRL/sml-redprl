@@ -1,33 +1,46 @@
-open RedPrlAst
+structure Ast = RedPrlAst
+open Ast
+
 structure P =
 struct
   open RedPrlParamData
   open RedPrlParameterTerm
 end
 
+structure O = RedPrlOpData
+
 %%
 %header (functor RedPrlLrValsFun (structure Token : TOKEN))
 
-%term EOF
-   | IDENT of string
-   | COLON
-   | LPAREN
-   | RPAREN
-   | RBRACKET
-   | LBRACKET
-   | LSQUARE
-   | RSQUARE
-   | LTEQUALS
-   | DOT
-   | APOSTROPHE
-   | ZERO
-   | ONE
-   | HASH
-   | SEMI
+%term
+   EOF
+ | IDENT of string
+ | COLON
+ | LPAREN
+ | RPAREN
+ | RBRACKET
+ | LBRACKET
+ | LSQUARE
+ | RSQUARE
+ | LTEQUALS
+ | DOT
+ | APOSTROPHE
+ | ZERO
+ | ONE
+ | HASH
+ | SEMI
+ | COMMA
+ | LAMBDA
 
-%nonterm start of ast
-       | term  of ast
-       | param of string P.term
+%nonterm
+   start of ast
+ | term  of ast
+ | binding of ast abs
+ | bindings of ast abs list
+ | symbols of symbol list
+ | param of string P.term
+ | params of string P.term list
+ | operator of string operator
 
 %verbose
 %pos Coord.t
@@ -35,6 +48,38 @@ end
 %eop EOF
 %noshift EOF
 %name RedPrl
+%arg (fileName) : string
 %%
 
-start : term                             (term)
+start : term (term)
+
+param
+  : IDENT (P.VAR IDENT)
+  | ZERO (P.APP P.DIM0)
+  | ONE (P.APP P.DIM1)
+
+params
+  : ([])
+  | params param (params @ [param])
+
+symbols
+  : ([])
+  | symbols COMMA IDENT (symbols @ [IDENT])
+
+binding
+  : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT term (\ ((symbols1, symbols2), term))
+  | LBRACKET symbols RBRACKET DOT term (\ ((symbols, []), term))
+  | LSQUARE symbols LSQUARE DOT term (\ (([], symbols), term))
+  | term (\ (([],[]), term))
+
+bindings
+  : ([])
+  | bindings binding (bindings @ [binding])
+
+operator
+  : LAMBDA (O.MONO O.LAM)
+
+term
+  : operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | IDENT (`` IDENT)
+
