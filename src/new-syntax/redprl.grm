@@ -1,4 +1,5 @@
 structure Ast = RedPrlAst
+
 open Ast
 
 structure P =
@@ -39,6 +40,9 @@ fun makeFunApps [x] = x
  | SEMI
  | COMMA
  | LAMBDA
+ | SQUIGGLE_ARROW
+ | HCOM
+ | COE
 
 %nonterm
    start of ast
@@ -49,11 +53,13 @@ fun makeFunApps [x] = x
  | symbols of symbol list
  | param of string param
  | params of string param list
+ | extents of string param list
  | terms of ast list
  | metavar of string
  | metavarArgs of string param list * ast list
  | operator of string operator
  | funapp of ast list
+ | span of string param * string param
 
 %verbose
 %pos Coord.t
@@ -75,6 +81,10 @@ params
   : ([])
   | param ([param])
   | params COMMA param (params @ [param])
+
+extents
+  : param ([param])
+  | extents COMMA param (extents @ [param])
 
 symbols
   : ([])
@@ -108,6 +118,8 @@ metavarArgs
 
 operator
   : LAMBDA (O.MONO O.LAM)
+  | HCOM LSQUARE extents SEMI span RSQUARE (O.POLY (O.HCOM (O.TAG_NONE, extents, span)))
+  | COE LSQUARE span RSQUARE (O.POLY (O.COE (O.TAG_NONE, span)))
 
 metavar
   : HASH IDENT (IDENT)
@@ -115,6 +127,9 @@ metavar
 funapp
   : term ([term])
   | term funapp (funapp @ [term])
+
+span
+  : param SQUIGGLE_ARROW param ((param1, param2))
 
 term
   : operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
