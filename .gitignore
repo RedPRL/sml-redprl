@@ -10,3 +10,6 @@
 *.blg
 redprl
 testsuite/test
+*~
+*.grm.*
+*.lex.*

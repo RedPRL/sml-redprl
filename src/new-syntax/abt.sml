@@ -12,7 +12,7 @@ local
     type annotation = Pos.t
   end
 in
-  structure RedPrlAst = Ast (AbtKit)
+  structure RedPrlAst = AstUtil (Ast (AbtKit))
   structure RedPrlAbt = Abt (AbtKit)
   structure AstToAbt = AstToAbt (structure Ast = RedPrlAst and Abt = RedPrlAbt)
 end

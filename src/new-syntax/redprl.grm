@@ -1,0 +1,40 @@
+open RedPrlAst
+structure P =
+struct
+  open RedPrlParamData
+  open RedPrlParameterTerm
+end
+
+%%
+%header (functor RedPrlLrValsFun (structure Token : TOKEN))
+
+%term EOF
+   | IDENT of string
+   | COLON
+   | LPAREN
+   | RPAREN
+   | RBRACKET
+   | LBRACKET
+   | LSQUARE
+   | RSQUARE
+   | LTEQUALS
+   | DOT
+   | APOSTROPHE
+   | ZERO
+   | ONE
+   | HASH
+   | SEMI
+
+%nonterm start of ast
+       | term  of ast
+       | param of string P.term
+
+%verbose
+%pos Coord.t
+%start start
+%eop EOF
+%noshift EOF
+%name RedPrl
+%%
+
+start : term                             (term)

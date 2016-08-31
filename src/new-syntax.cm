@@ -1,5 +1,7 @@
 Group is
   $/basis.cm
+  $/ml-yacc-lib.cm
+
   cmlib.cm
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/basis/basis.cm (bind:(anchor:libs value:../lib/))
@@ -7,3 +9,6 @@ Group is
   new-syntax/parameter.sml
   new-syntax/operator.sml
   new-syntax/abt.sml
+
+  new-syntax/redprl.lex
+  new-syntax/redprl.grm
