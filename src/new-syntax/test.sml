@@ -24,7 +24,6 @@ struct
     let
       val lexer = RedPrlParser.makeLexer (stringreader text) ""
       val (res,_) = RedPrlParser.parse(1, lexer, error, "")
-      (* parse is complete -- skip the next token, either ; or eof *)
     in
       res
     end
@@ -32,4 +31,13 @@ struct
 
   fun test text =
     print ("\n" ^ RedPrlAst.toString (parse text) ^ "\n\n")
+
+
+  fun testFile fileName =
+    let
+      val input = TextIO.inputAll (TextIO.openIn fileName)
+    in
+      parse input
+    end
+
 end

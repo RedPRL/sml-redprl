@@ -1,4 +1,6 @@
 structure Ast = RedPrlAst
+structure Ar = RedPrlArity
+structure Vl = Ar.Vl
 
 open Ast
 
@@ -16,7 +18,6 @@ fun makeFunApp (m, n) =
 fun makeFunApps [x] = x
   | makeFunApps (x :: xs) = makeFunApp (makeFunApps xs, x)
   | makeFunApps [] = raise Fail "makeFunApps"
-
 
 %%
 %header (functor RedPrlLrValsFun (structure Token : TOKEN))
@@ -44,9 +45,15 @@ fun makeFunApps [x] = x
  | HCOM
  | COE
 
+ | DIM | EXN | LBL
+ | EXP | LVL
+
+ | DEF
+
 %nonterm
    start of ast
- | term  of ast
+ | term of ast
+ | preterm of ast
  | binder of symbol list * symbol list
  | binding of ast abs
  | bindings of ast abs list
@@ -60,6 +67,12 @@ fun makeFunApps [x] = x
  | operator of string operator
  | funapp of ast list
  | span of string param * string param
+ | psort of P.param_sort
+ | sort of O.sort
+ | psorts of P.param_sort list
+ | sorts of O.sort list
+ | binding_sig of P.param_sort list * O.sort list
+ | valence of Ar.valence
 
 %verbose
 %pos Coord.t
@@ -72,6 +85,34 @@ fun makeFunApps [x] = x
 
 start : term (term)
 
+psort
+  : DIM (P.DIM)
+  | EXN (P.EXN)
+  | LBL (P.LBL)
+
+sort
+  : EXP (O.EXP)
+  | LVL (O.LVL)
+
+sorts
+  : ([])
+  | sort ([sort])
+  | sort COMMA sorts (sort :: sorts)
+
+psorts
+  : ([])
+  | psort ([psort])
+  | psort COMMA psorts (psort :: psorts)
+
+binding_sig
+  : LBRACKET psorts RBRACKET LSQUARE sorts RSQUARE DOT (psorts, sorts)
+  | LBRACKET psorts RBRACKET DOT (psorts, [])
+  | LSQUARE sorts RSQUARE DOT ([], sorts)
+  | ([], [])
+
+valence
+  : binding_sig sort ((binding_sig, sort))
+
 param
   : IDENT (P.VAR IDENT)
   | ZERO (P.APP P.DIM0)
@@ -80,21 +121,21 @@ param
 params
   : ([])
   | param ([param])
-  | params COMMA param (params @ [param])
+  | param COMMA params (param :: params)
 
 extents
   : param ([param])
-  | extents COMMA param (extents @ [param])
+  | param COMMA extents (param :: extents)
 
 symbols
   : ([])
   | IDENT ([IDENT])
-  | symbols COMMA IDENT (symbols @ [IDENT])
+  | IDENT COMMA symbols (IDENT :: symbols)
 
 terms
   : ([])
   | term ([term])
-  | terms COMMA term (terms @ [term])
+  | term COMMA terms (term :: terms)
 
 binder
   : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT (symbols1, symbols2)
@@ -108,7 +149,7 @@ binding
 bindings
   : ([])
   | binding ([binding])
-  | bindings SEMI binding (bindings @ [binding])
+  | binding SEMI bindings (binding :: bindings)
 
 metavarArgs
   : LBRACKET params RBRACKET LSQUARE terms RSQUARE (params, terms)
@@ -120,6 +161,7 @@ operator
   : LAMBDA (O.MONO O.LAM)
   | HCOM LSQUARE extents SEMI span RSQUARE (O.POLY (O.HCOM (O.TAG_NONE, extents, span)))
   | COE LSQUARE span RSQUARE (O.POLY (O.COE (O.TAG_NONE, span)))
+  | IDENT (O.POLY (O.CUST (IDENT, NONE)))
 
 metavar
   : HASH IDENT (IDENT)
@@ -131,10 +173,11 @@ funapp
 span
   : param SQUIGGLE_ARROW param ((param1, param2))
 
-term
+term : preterm (annotate (Pos.pos preterm1left preterm1right) preterm)
+
+preterm
   : operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
-  | operator (Ast.$$ (operator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | IDENT (`` IDENT)
   | funapp (makeFunApps funapp)
-
+  | LPAREN term RPAREN (term)

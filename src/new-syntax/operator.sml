@@ -62,7 +62,7 @@ struct
      LOOP of 'a P.term
    | HCOM of type_tag * 'a extents * 'a span
    | COE of type_tag * 'a span
-   | CUST of 'a * RedPrlArity.t
+   | CUST of 'a * RedPrlArity.t option
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -133,7 +133,7 @@ struct
       fn LOOP _ => [] ->> EXP
        | HCOM hcom => arityHcom hcom
        | COE coe => arityCoe coe
-       | CUST (_, ar) => ar
+       | CUST (_, ar) => Option.valOf ar
   end
 
   val arity =
@@ -176,8 +176,8 @@ struct
              andalso spanEq f (sp1, sp2)
        | (COE (tag1, sp1), COE (tag2, sp2)) =>
            tag1 = tag2 andalso spanEq f (sp1, sp2)
-       | (CUST (opid1, ar1), CUST (opid2, ar2)) =>
-           f (opid1, opid2) andalso RedPrlArity.eq (ar1, ar2)
+       | (CUST (opid1, _), CUST (opid2, _)) =>
+           f (opid1, opid2)
        | _ => false
   end
 
@@ -255,4 +255,3 @@ struct
      | POLY th => POLY (mapPoly f th)
 
 end
-

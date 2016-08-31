@@ -42,4 +42,13 @@ whitespace = [\ \t];
 "hcom"             => (Tokens.HCOM (!pos, Coord.addchar 4 (!pos)));
 "coe"              => (Tokens.COE (!pos, Coord.addchar 3 (!pos)));
 
+"dim"              => (Tokens.DIM (!pos, Coord.addchar 3 (!pos)));
+"exn"              => (Tokens.EXN (!pos, Coord.addchar 3 (!pos)));
+"lbl"              => (Tokens.LBL (!pos, Coord.addchar 3 (!pos)));
+
+"exp"              => (Tokens.EXP (!pos, Coord.addchar 3 (!pos)));
+"lvl"              => (Tokens.LVL (!pos, Coord.addchar 3 (!pos)));
+
+"Def"              => (Tokens.DEF (!pos, Coord.addchar 3 (!pos)));
+
 {alpha}{any}*      => (Tokens.IDENT (yytext, !pos, Coord.addchar (size yytext) (!pos)));
