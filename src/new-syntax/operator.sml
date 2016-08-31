@@ -7,9 +7,10 @@ struct
    | TAC
    | LVL
 
-  datatype std_operator =
+  datatype mono_operator =
      DFUN | FUN | LAM | AP
    | BOOL | TRUE | FALSE
+   | S1 | BASE
    | AX
 
   (* We end up having separate hcom operator for the different types. This
@@ -38,16 +39,17 @@ struct
   type 'a extents = 'a P.term list
   type 'a span = 'a P.term * 'a P.term
 
-  datatype 'a cubical_operator =
-     S1 | BASE | LOOP of 'a P.term
+  datatype 'a poly_operator =
+     LOOP of 'a P.term
    | HCOM of type_tag * 'a extents * 'a span
    | COE of type_tag * 'a span
 
   (* We split our operator signature into a couple datatypes, because the implementation of
-   * some of the 2nd-order signature obligations can be made trivial for "constant" operators. *)
+   * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
+   * which we call "monomorphic". *)
   datatype 'a operator =
-     STD of std_operator
-   | CUB of 'a cubical_operator
+     MONO of mono_operator
+   | POLY of 'a poly_operator
 end
 
 structure RedPrlSort : ABT_SORT =
@@ -81,13 +83,15 @@ struct
 
   type 'a t = 'a operator
 
-  val arityStd =
+  val arityMono =
     fn DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
      | FUN => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | LAM => [[] * [EXP] <> EXP] ->> EXP
      | AP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | BOOL => [] ->> EXP
      | TRUE => [] ->> EXP
+     | S1 => [] ->> EXP
+     | BASE => [] ->> EXP
      | FALSE => [] ->> EXP
      | AX => [] ->> EXP
 
@@ -120,17 +124,15 @@ struct
         typeArgs @ [[] * [] <> EXP] ->> EXP
       end
   in
-    val arityCub =
-      fn S1 => [] ->> EXP
-       | BASE => [] ->> EXP
-       | LOOP _ => [] ->> EXP
+    val arityPoly =
+      fn LOOP _ => [] ->> EXP
        | HCOM hcom => arityHcom hcom
        | COE coe => arityCoe coe
   end
 
   val arity =
-    fn STD th => arityStd th
-     | CUB th => arityCub th
+    fn MONO th => arityMono th
+     | POLY th => arityPoly th
 
 
   local
@@ -141,10 +143,8 @@ struct
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
   in
-    val supportCub =
-      fn S1 => []
-       | BASE => []
-       | LOOP r => dimSupport r
+    val supportPoly =
+      fn LOOP r => dimSupport r
        | HCOM (_, extents, span) =>
            ListMonad.bind dimSupport extents
              @ spanSupport span
@@ -152,8 +152,8 @@ struct
   end
 
   val support =
-    fn STD th => []
-     | CUB th => supportCub th
+    fn MONO th => []
+     | POLY th => supportPoly th
 
   local
     fun spanEq f ((r1, r'1), (r2, r'2)) =
@@ -162,10 +162,8 @@ struct
     fun extentsEq f =
       ListPair.allEq (P.eq f)
   in
-    fun eqCub f =
-      fn (S1, S1) => true
-       | (BASE, BASE) => true
-       | (LOOP r, LOOP r') => P.eq f (r, r')
+    fun eqPoly f =
+      fn (LOOP r, LOOP r') => P.eq f (r, r')
        | (HCOM (tag1, exs1, sp1), HCOM (tag2, exs2, sp2)) =>
            tag1 = tag2
              andalso extentsEq f (exs1, exs2)
@@ -176,18 +174,19 @@ struct
   end
 
   fun eq f =
-    fn (STD th1, STD th2) => th1 = th2
-     | (CUB th1, CUB th2) => eqCub f (th1, th2)
+    fn (MONO th1, MONO th2) => th1 = th2
+     | (POLY th1, POLY th2) => eqPoly f (th1, th2)
      | _ => false
 
-  val toStringStd =
-    fn DFUN => "dfun"
-     | FUN => "fun"
+  val toStringMono =
+    fn DFUN => "dfun" | FUN => "fun"
      | LAM => "lam"
      | AP => "ap"
      | BOOL => "bool"
      | TRUE => "true"
      | FALSE => "false"
+     | S1 => "S1"
+     | BASE => "base"
      | AX => "ax"
 
   local
@@ -203,10 +202,8 @@ struct
        | TAG_S1 => "/S1"
        | TAG_DFUN => "/dfun"
   in
-    fun toStringCub f =
-      fn S1 => "S1"
-       | BASE => "base"
-       | LOOP r => "loop[" ^ P.toString f r ^ "]"
+    fun toStringPoly f =
+      fn LOOP r => "loop[" ^ P.toString f r ^ "]"
        | HCOM (tag, extents, span) =>
            "hcom"
              ^ tagToString tag
@@ -224,25 +221,22 @@ struct
   end
 
   fun toString f =
-    fn STD th => toStringStd th
-     | CUB th => toStringCub f th
+    fn MONO th => toStringMono th
+     | POLY th => toStringPoly f th
 
   local
     fun mapSpan f (r, r') = (P.bind f r, P.bind f r')
     fun mapExtents f = List.map (P.bind f)
   in
-    fun mapCub f =
-      fn S1 => S1
-       | BASE => BASE
-       | LOOP r => LOOP (P.bind f r)
+    fun mapPoly f =
+      fn LOOP r => LOOP (P.bind f r)
        | HCOM (tag, extents, span) => HCOM (tag, mapExtents f extents, mapSpan f span)
        | COE (tag, span) => COE (tag, mapSpan f span)
   end
 
   fun map f =
-    fn STD th => STD th
-     | CUB th => CUB (mapCub f th)
-
+    fn MONO th => MONO th
+     | POLY th => POLY (mapPoly f th)
 
 end
 
