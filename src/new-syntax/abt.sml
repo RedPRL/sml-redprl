@@ -1,0 +1,18 @@
+structure Metavar = AbtSymbol ()
+structure Var = AbtSymbol ()
+structure Sym = AbtSymbol ()
+
+local
+  structure AbtKit =
+  struct
+    structure Sym = Sym
+    structure Var = Var
+    structure Metavar = Metavar
+    structure O = RedPrlOperator and Operator = RedPrlOperator
+    type annotation = Pos.t
+  end
+in
+  structure RedPrlAst = Ast (AbtKit)
+  structure RedPrlAbt = Abt (AbtKit)
+  structure AstToAbt = AstToAbt (structure Ast = RedPrlAst and Abt = RedPrlAbt)
+end

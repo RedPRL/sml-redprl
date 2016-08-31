@@ -1,11 +1,30 @@
-structure RedPrlOpData =
+structure RedPrlSortData =
 struct
-  structure P = RedPrlParameterTerm
-
   datatype sort =
      EXP
    | TAC
    | LVL
+end
+
+structure RedPrlSort : ABT_SORT =
+struct
+  open RedPrlSortData
+
+  type t = sort
+  val eq : t * t -> bool = op=
+
+  val toString =
+    fn EXP => "exp"
+     | TAC => "tac"
+     | LVL => "lvl"
+end
+
+structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
+
+structure RedPrlOpData =
+struct
+  open RedPrlSortData
+  structure P = RedPrlParameterTerm
 
   datatype mono_operator =
      DFUN | FUN | LAM | AP
@@ -43,6 +62,7 @@ struct
      LOOP of 'a P.term
    | HCOM of type_tag * 'a extents * 'a span
    | COE of type_tag * 'a span
+   | CUST of 'a * RedPrlArity.t
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -51,21 +71,6 @@ struct
      MONO of mono_operator
    | POLY of 'a poly_operator
 end
-
-structure RedPrlSort : ABT_SORT =
-struct
-  open RedPrlOpData
-
-  type t = sort
-  val eq : t * t -> bool = op=
-
-  val toString =
-    fn EXP => "exp"
-     | TAC => "tac"
-     | LVL => "lvl"
-end
-
-structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
 
 structure ArityNotation =
 struct
@@ -128,12 +133,12 @@ struct
       fn LOOP _ => [] ->> EXP
        | HCOM hcom => arityHcom hcom
        | COE coe => arityCoe coe
+       | CUST (_, ar) => ar
   end
 
   val arity =
     fn MONO th => arityMono th
      | POLY th => arityPoly th
-
 
   local
     val dimSupport =
@@ -149,6 +154,7 @@ struct
            ListMonad.bind dimSupport extents
              @ spanSupport span
        | COE (_, span) => spanSupport span
+       | CUST (opid, _) => [(opid, OPID)]
   end
 
   val support =
@@ -170,6 +176,8 @@ struct
              andalso spanEq f (sp1, sp2)
        | (COE (tag1, sp1), COE (tag2, sp2)) =>
            tag1 = tag2 andalso spanEq f (sp1, sp2)
+       | (CUST (opid1, ar1), CUST (opid2, ar2)) =>
+           f (opid1, opid2) andalso RedPrlArity.eq (ar1, ar2)
        | _ => false
   end
 
@@ -218,6 +226,8 @@ struct
              ^ "["
              ^ spanToString f span
              ^ "]"
+       | CUST (opid, ar) =>
+           "cust[" ^ f opid ^ "]"
   end
 
   fun toString f =
@@ -227,11 +237,17 @@ struct
   local
     fun mapSpan f (r, r') = (P.bind f r, P.bind f r')
     fun mapExtents f = List.map (P.bind f)
+
+    fun mapSym f a =
+      case f a of
+         P.VAR a' => a'
+       | _ => raise Fail "Expected symbol, but got application"
   in
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)
        | HCOM (tag, extents, span) => HCOM (tag, mapExtents f extents, mapSpan f span)
        | COE (tag, span) => COE (tag, mapSpan f span)
+       | CUST (opid, ar) => CUST (mapSym f opid, ar)
   end
 
   fun map f =
