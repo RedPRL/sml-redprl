@@ -39,7 +39,6 @@ fun makeFunApps [x] = x
  | SEMI
  | COMMA
  | LAMBDA
- | FUN_APPL
 
 %nonterm
    start of ast
@@ -63,8 +62,6 @@ fun makeFunApps [x] = x
 %noshift EOF
 %name RedPrl
 %arg (fileName) : string
-
-%left FUN_APPL
 %%
 
 start : term (term)
