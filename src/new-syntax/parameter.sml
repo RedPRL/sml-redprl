@@ -1,20 +1,20 @@
-structure Param =
+structure RedPrlParamData =
 struct
-  datatype sort =
+  datatype param_sort =
      DIM
    | EXN
    | LBL
 
-  datatype 'a operator =
+  datatype 'a param_operator =
      DIM0
    | DIM1
 end
 
-structure ParamAbtSort : ABT_SORT =
+structure RedPrlParamSort : ABT_SORT =
 struct
-  open Param
+  open RedPrlParamData
 
-  type t = sort
+  type t = param_sort
   val eq : t * t -> bool = op=
 
   val toString =
@@ -23,16 +23,16 @@ struct
      | LBL => "lbl"
 end
 
-structure AbtParameter : ABT_PARAMETER =
+structure RedPrlParameter : ABT_PARAMETER =
 struct
-  open Param
-  type 'a t = 'a operator
+  open RedPrlParamData
+  type 'a t = 'a param_operator
 
   fun map f =
     fn DIM0 => DIM0
      | DIM1 => DIM1
 
-  structure Sort = ParamAbtSort
+  structure Sort = RedPrlParamSort
 
   val arity =
     fn DIM0 => (DIM0, DIM)
@@ -52,4 +52,4 @@ struct
      | DIM1 => zer
 end
 
-structure AbtParameterTerm = AbtParameterTerm (AbtParameter)
+structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)

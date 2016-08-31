@@ -1,4 +1,7 @@
 Group is
+  $/basis.cm
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-typed-abts/basis/basis.cm (bind:(anchor:libs value:../lib/))
 
   new-syntax/parameter.sml
+  new-syntax/operator.sml
