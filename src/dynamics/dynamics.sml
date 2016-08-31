@@ -176,22 +176,22 @@ struct
            end
 
        (* TODO: figure out if we really need to bypass the environment like we're doing here *)
-       | (CUB_K (Cub.COE span) `$ [_ \ m <: mEnv], ty) =>
+       | (CUB_K (Cub.COE dir) `$ [_ \ m <: mEnv], ty) =>
            let
              val u = List.hd us
              val m' = Cl.force (m <: mEnv)
 
-             (* TODO: apply appropriate dimension renamings to 'span'? *)
+             (* TODO: apply appropriate dimension renamings to 'dir'? *)
            in
              case Syn.out (Cl.force (unquoteV ty <: env)) of
                 Syn.DFUN (a, x, bx) =>
                   let
                     val xtm = Syn.var (x, SortData.EXP)
 
-                    val coex = Syn.into (Syn.COE ((u, a), DimSpan.new (#ending span, Dim.NAME u), xtm))
+                    val coex = Syn.into (Syn.COE ((u, a), DimSpan.new (#ending dir, Dim.NAME u), xtm))
                     val bcoe = subst (coex, x) bx
                     val app = Syn.into (Syn.AP (m', coex))
-                    val coe = Syn.into (Syn.COE ((u, bcoe), span, app))
+                    val coe = Syn.into (Syn.COE ((u, bcoe), dir, app))
                     val lam = Syn.into (Syn.LAM (x, coe))
                   in
                     Cl.new lam |> ks
@@ -200,7 +200,7 @@ struct
                   let
                     val app = Syn.into (Syn.ID_APP (m', Dim.NAME v))
                     val tube = [(Dim.NAME v, ((u, p1), (u, p2)))]
-                    val com = Syn.heteroCom ((u, a), span, app, tube)
+                    val com = Syn.heteroCom ((u, a), dir, app, tube)
                     val abs = Syn.into (Syn.ID_ABS (v, com))
                   in
                     Cl.new abs |> ks
@@ -209,7 +209,7 @@ struct
               | _ => raise Fail "Failed to apply cubical coercion"
            end
 
-       | (CUB_K (Cub.HCOM (extents, span)) `$ ((_ \ cap <: capEnv) :: faces), ty) =>
+       | (CUB_K (Cub.HCOM (extents, dir)) `$ ((_ \ cap <: capEnv) :: faces), ty) =>
            let
              val cap' = Cl.force (cap <: capEnv)
 
@@ -229,7 +229,7 @@ struct
                     val faces' = List.map (fn (b \ face <: faceEnv) => b \ Syn.into (Syn.AP (Cl.force (face <: faceEnv), xtm))) faces
                     val tube' = makeTube extents faces'
                     val app = Syn.into (Syn.AP (cap', xtm))
-                    val hcom = Syn.into (Syn.HCOM (bx, span, app, tube'))
+                    val hcom = Syn.into (Syn.HCOM (bx, dir, app, tube'))
                     val lam = Syn.into (Syn.LAM (x, hcom))
                   in
                     Cl.new lam |> ks
@@ -244,16 +244,16 @@ struct
                       in
                         makeTube extents faces' @ [(Dim.NAME u, ((w, p1), (w, p2)))]
                       end
-                    val hcom = Syn.into (Syn.HCOM (a, span, app, tube'))
+                    val hcom = Syn.into (Syn.HCOM (a, dir, app, tube'))
                     val abs = Syn.into (Syn.ID_ABS (u, hcom))
                   in
                     Cl.new abs |> ks
                   end
               | Syn.BOOL =>
                   (case findProjectedTubeFace tube of
-                      SOME (w, face <: faceEnv) => Syn.substDim (#ending span, w) face <: faceEnv <| ks
+                      SOME (w, face <: faceEnv) => Syn.substDim (#ending dir, w) face <: faceEnv <| ks
                     | NONE =>
-                        if Dim.eq Symbol.eq (#starting span, #ending span) then
+                        if Dim.eq Symbol.eq (#starting dir, #ending dir) then
                           cap <: capEnv <| ks
                         else
                           (* In this case, the syntax abstraction will have represented the hcom as canonical, so we should never
@@ -264,7 +264,7 @@ struct
 
        | (CUB_K Cub.BOOL_IF `$ [_, _ \ t, _], CUB_V Cub.BOOL_TT `$ _) => t <| ks
        | (CUB_K Cub.BOOL_IF `$ [_, _, _ \ f], CUB_V Cub.BOOL_FF `$ _) => f <| ks
-       | (CUB_K Cub.BOOL_IF `$ [(_,[x]) \ a <: aEnv, _ \ t <: tEnv, _ \ f <: fEnv], CUB_V (Cub.BOOL_HCOM (extents, span)) `$ (_ \ cap) :: faces) =>
+       | (CUB_K Cub.BOOL_IF `$ [(_,[x]) \ a <: aEnv, _ \ t <: tEnv, _ \ f <: fEnv], CUB_V (Cub.BOOL_HCOM (extents, dir)) `$ (_ \ cap) :: faces) =>
            let
              val a' = Cl.force (a <: aEnv)
              val t' = Cl.force (t <: tEnv)
@@ -277,17 +277,17 @@ struct
 
                  val hcom =
                    let
-                     val span' = DimSpan.new (#starting span, Dim.NAME w)
+                     val dir' = DimSpan.new (#starting dir, Dim.NAME w)
                      val tube = makeTube extents' faces
                    in
-                     Syn.into (Syn.HCOM (Syn.into Syn.BOOL, span', cap, tube))
+                     Syn.into (Syn.HCOM (Syn.into Syn.BOOL, dir', cap, tube))
                    end
 
                  val a'' = subst (hcom, x) a'
                  fun makeIf m = Syn.into (Syn.BOOL_IF ((x, a'), m, t', f'))
                  val tube = makeTube extents' (List.map (Abt.mapb makeIf) faces)
                in
-                 Syn.heteroCom ((w, a''), span, makeIf cap, tube)
+                 Syn.heteroCom ((w, a''), dir, makeIf cap, tube)
                end
            in
              com <: env <| ks

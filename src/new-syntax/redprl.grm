@@ -66,7 +66,7 @@ fun makeFunApps [x] = x
  | metavarArgs of string param list * ast list
  | operator of string operator
  | funapp of ast list
- | span of string param * string param
+ | dir of string param * string param
  | psort of P.param_sort
  | sort of O.sort
  | psorts of P.param_sort list
@@ -159,8 +159,8 @@ metavarArgs
 
 operator
   : LAMBDA (O.MONO O.LAM)
-  | HCOM LSQUARE extents SEMI span RSQUARE (O.POLY (O.HCOM (O.TAG_NONE, extents, span)))
-  | COE LSQUARE span RSQUARE (O.POLY (O.COE (O.TAG_NONE, span)))
+  | HCOM LSQUARE extents SEMI dir RSQUARE (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
+  | COE LSQUARE dir RSQUARE (O.POLY (O.COE (O.TAG_NONE, dir)))
   | IDENT (O.POLY (O.CUST (IDENT, NONE)))
 
 metavar
@@ -170,7 +170,7 @@ funapp
   : term ([term])
   | term funapp (funapp @ [term])
 
-span
+dir
   : param SQUIGGLE_ARROW param ((param1, param2))
 
 term : preterm (annotate (Pos.pos preterm1left preterm1right) preterm)

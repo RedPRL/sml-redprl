@@ -259,19 +259,19 @@ struct
            O.CUT (([RS.DIM], RS.EXP), RS.EXP) $$
              [([],[]) \ O.K (CUB_K (CubicalOperators.COE dimSpan)) $$ [([],[]) \ m],
               ([u], []) \ a]
-       | HCOM (a, span, cap, tubes) =>
+       | HCOM (a, dir, cap, tubes) =>
            let
              val (extents, pairs) = ListPair.unzip tubes
              val tubes' = flatMap (fn ((u, face0), (v, face1)) => [([u],[]) \ face0, ([v],[]) \ face1]) pairs
 
              val extentsAsNames = OptionUtil.traverseOpt (fn Dim.NAME u => SOME u | _ => NONE) extents
-             val spanIsTrivial = Dim.eq symbolEq (#starting span, #ending span)
+             val spanIsTrivial = Dim.eq symbolEq (#starting dir, #ending dir)
            in
              case (outOpen a, extentsAsNames, spanIsTrivial) of
-                (APP BOOL, SOME vs, false) => ret RS.EXP @@ O.V (CUB_V (CubicalOperators.BOOL_HCOM (vs, span))) $$ []
+                (APP BOOL, SOME vs, false) => ret RS.EXP @@ O.V (CUB_V (CubicalOperators.BOOL_HCOM (vs, dir))) $$ []
               | _ =>
                   O.CUT (([], RS.EXP), RS.EXP) $$
-                    [([],[]) \ O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $$ (([],[]) \ cap) :: tubes',
+                    [([],[]) \ O.K (CUB_K (CubicalOperators.HCOM (extents, dir))) $$ (([],[]) \ cap) :: tubes',
                      ([],[]) \ a ]
            end
 
@@ -364,10 +364,10 @@ struct
        | O.V (CUB_V CubicalOperators.BOOL) $ _ => BOOL
        | O.V (CUB_V CubicalOperators.BOOL_TT) $ _ => BOOL_TT
        | O.V (CUB_V CubicalOperators.BOOL_FF) $ _ => BOOL_FF
-       | O.V (CUB_V (CubicalOperators.BOOL_HCOM (extents, span))) $ (cap :: tubes) =>
+       | O.V (CUB_V (CubicalOperators.BOOL_HCOM (extents, dir))) $ (cap :: tubes) =>
            let
              val extents' = List.map Dim.NAME extents
-             val k = O.K (CUB_K (CubicalOperators.HCOM (extents', span))) $$ (cap :: tubes)
+             val k = O.K (CUB_K (CubicalOperators.HCOM (extents', dir))) $$ (cap :: tubes)
            in
              outCut k ([], into BOOL)
            end
@@ -428,14 +428,14 @@ struct
        | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
        | O.K (RCD_K (RecordOperators.PROJ_TY u)) $ [_ \ rcd] => RCD_PROJ_TY (u, m, rcd)
        | O.K (CUB_K (CubicalOperators.COE dimSpan)) $ [_ \ n] => COE ((List.hd us, m), dimSpan, n)
-       | O.K (CUB_K (CubicalOperators.HCOM (extents, span))) $ ((_ \ cap) :: tubes) =>
+       | O.K (CUB_K (CubicalOperators.HCOM (extents, dir))) $ ((_ \ cap) :: tubes) =>
            let
              fun readTubes [] [] = []
                | readTubes (r :: rs) ((([u], _) \ face0) :: (([v], _) \ face1) :: faces) =
                    (r, ((u, face0), (v, face1))) :: readTubes rs faces
                | readTubes _ _ = raise Fail "Improper length of hcom tubes"
            in
-             HCOM (m, span, cap, readTubes extents tubes)
+             HCOM (m, dir, cap, readTubes extents tubes)
            end
        | O.K (CUB_K (CubicalOperators.ID_APP r)) $ [] => ID_APP (m, r)
        | O.K (CUB_K CubicalOperators.BOOL_IF) $ [(_,[x]) \ a, _ \ l, _ \ r] => BOOL_IF ((x, a), m, l, r)
@@ -585,20 +585,20 @@ struct
       let
         fun go m =
           case outOpen m of
-             APP (COE ((v, a), span, m)) =>
+             APP (COE ((v, a), dir, m)) =>
                let
-                 val (_, span') = DimSpan.subst Symbol.eq (r, u) span
+                 val (_, dir') = DimSpan.subst Symbol.eq (r, u) dir
                in
-                 Syn.into @@ COE ((v, a), span', m)
+                 Syn.into @@ COE ((v, a), dir', m)
                end
-           | APP (HCOM (a, span, cap, tube)) =>
+           | APP (HCOM (a, dir, cap, tube)) =>
                let
                  val (extent, pairs) = ListPair.unzip tube
                  val (didSubstExtent, extent') = DimVec.subst Symbol.eq (r, u) extent
-                 val (didSubstSpan, span') = DimSpan.subst Symbol.eq (r, u) span
+                 val (didSubstSpan, dir') = DimSpan.subst Symbol.eq (r, u) dir
                  val tube' = ListPair.zip (extent', pairs)
                in
-                 Syn.into @@ HCOM (a, span', cap, tube')
+                 Syn.into @@ HCOM (a, dir', cap, tube')
                end
            | APP (ID_APP (m, r')) =>
                let
@@ -611,15 +611,15 @@ struct
         go o RedPrlAbt.deepMapSubterms go
       end
 
-    fun heteroCom ((u, ty), span : symbol DimSpan.t, cap, tube : term tube_slice list) =
+    fun heteroCom ((u, ty), dir : symbol DimSpan.t, cap, tube : term tube_slice list) =
       let
-        fun coe r m = into @@ COE ((u, ty), DimSpan.new (r, #ending span), m)
+        fun coe r m = into @@ COE ((u, ty), DimSpan.new (r, #ending dir), m)
         fun updateFace (v, face) = (v, coe (Dim.NAME v) face)
-        val ty' = substDim (#ending span, u) ty
-        val cap' = coe (#starting span) cap
+        val ty' = substDim (#ending dir, u) ty
+        val cap' = coe (#starting dir) cap
         val tube' = List.map (fn (extent, (face0, face1)) => (extent, (updateFace face0, updateFace face1))) tube
       in
-        into @@ HCOM (ty', span, cap', tube')
+        into @@ HCOM (ty', dir, cap', tube')
       end
   end
 end

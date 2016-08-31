@@ -56,12 +56,12 @@ struct
    | TAG_DFUN
 
   type 'a extents = 'a P.term list
-  type 'a span = 'a P.term * 'a P.term
+  type 'a dir = 'a P.term * 'a P.term
 
   datatype 'a poly_operator =
      LOOP of 'a P.term
-   | HCOM of type_tag * 'a extents * 'a span
-   | COE of type_tag * 'a span
+   | HCOM of type_tag * 'a extents * 'a dir
+   | COE of type_tag * 'a dir
    | CUST of 'a * RedPrlArity.t option
 
   (* We split our operator signature into a couple datatypes, because the implementation of
@@ -107,7 +107,7 @@ struct
        | TAG_S1 => []
        | TAG_DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP]
 
-    fun arityHcom (tag, extents, span) =
+    fun arityHcom (tag, extents, dir) =
       let
         val typeArgs = typeArgsForTag tag
         val capArg = [] * [] <> EXP
@@ -119,7 +119,7 @@ struct
         typeArgs @ capArg :: tubeArgs ->> EXP
       end
 
-    fun arityCoe (tag, span) =
+    fun arityCoe (tag, dir) =
       let
         val typeArgs =
           List.map
@@ -150,10 +150,10 @@ struct
   in
     val supportPoly =
       fn LOOP r => dimSupport r
-       | HCOM (_, extents, span) =>
+       | HCOM (_, extents, dir) =>
            ListMonad.bind dimSupport extents
-             @ spanSupport span
-       | COE (_, span) => spanSupport span
+             @ spanSupport dir
+       | COE (_, dir) => spanSupport dir
        | CUST (opid, _) => [(opid, OPID)]
   end
 
@@ -212,19 +212,19 @@ struct
   in
     fun toStringPoly f =
       fn LOOP r => "loop[" ^ P.toString f r ^ "]"
-       | HCOM (tag, extents, span) =>
+       | HCOM (tag, extents, dir) =>
            "hcom"
              ^ tagToString tag
              ^ "["
              ^ extentsToString f extents
              ^ "; "
-             ^ spanToString f span
+             ^ spanToString f dir
              ^ "]"
-       | COE (tag, span) =>
+       | COE (tag, dir) =>
            "coe"
              ^ tagToString tag
              ^ "["
-             ^ spanToString f span
+             ^ spanToString f dir
              ^ "]"
        | CUST (opid, ar) =>
            "cust[" ^ f opid ^ "]"
@@ -245,8 +245,8 @@ struct
   in
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)
-       | HCOM (tag, extents, span) => HCOM (tag, mapExtents f extents, mapSpan f span)
-       | COE (tag, span) => COE (tag, mapSpan f span)
+       | HCOM (tag, extents, dir) => HCOM (tag, mapExtents f extents, mapSpan f dir)
+       | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ar) => CUST (mapSym f opid, ar)
   end
 

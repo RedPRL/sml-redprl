@@ -52,7 +52,7 @@ struct
      | BOOL_HCOM (extents, _) => HcomUtil.hcomArity extents
 
   val support =
-    fn BOOL_HCOM (extents, span) => List.map (fn u => (u, DIM)) extents @ DimSpan.support span
+    fn BOOL_HCOM (extents, dir) => List.map (fn u => (u, DIM)) extents @ DimSpan.support dir
      | _ => []
 
   fun eq f =
@@ -72,7 +72,7 @@ struct
      | BOOL => BOOL
      | BOOL_TT => BOOL_TT
      | BOOL_FF => BOOL_FF
-     | BOOL_HCOM (extents, span) => BOOL_HCOM (List.map f extents, DimSpan.map f span)
+     | BOOL_HCOM (extents, dir) => BOOL_HCOM (List.map f extents, DimSpan.map f dir)
 
   fun toString f =
     fn ID => "id"
@@ -80,11 +80,11 @@ struct
      | BOOL => "bool"
      | BOOL_TT => "tt"
      | BOOL_FF => "ff"
-     | BOOL_HCOM (extents, span) =>
+     | BOOL_HCOM (extents, dir) =>
          "hcom-bool["
            ^ ListSpine.pretty f "," extents
            ^ "]{"
-           ^ DimSpan.toString f span
+           ^ DimSpan.toString f dir
            ^ "}"
 
   local
@@ -98,7 +98,7 @@ struct
        | BOOL => J.String "bool"
        | BOOL_TT => J.String "bool-tt"
        | BOOL_FF => J.String "bool-ff"
-       | BOOL_HCOM (extents, span) => J.Obj [("hcom-bool", J.Obj [("extents", J.Array (List.map f extents)), ("span", DimSpan.encode f span)])]
+       | BOOL_HCOM (extents, dir) => J.Obj [("hcom-bool", J.Obj [("extents", J.Array (List.map f extents)), ("dir", DimSpan.encode f dir)])]
 
     fun decode f =
       fn J.String "id" => SOME ID
@@ -106,7 +106,7 @@ struct
        | J.String "bool" => SOME BOOL
        | J.String "bool-tt" => SOME BOOL_TT
        | J.String "bool-ff" => SOME BOOL_FF
-       | J.Obj [("hcom-bool", J.Obj [("extents", J.Array es), ("span", s)])] => Option.map BOOL_HCOM (traverseOpt f es ** DimSpan.decode f s)
+       | J.Obj [("hcom-bool", J.Obj [("extents", J.Array es), ("dir", s)])] => Option.map BOOL_HCOM (traverseOpt f es ** DimSpan.decode f s)
        | _ => NONE
   end
 end
@@ -125,13 +125,13 @@ struct
 
   val arity =
     fn COE _ => [[] * [] <> EXP] ->> EXP
-     | HCOM (extents, span) => HcomUtil.hcomArity extents
+     | HCOM (extents, dir) => HcomUtil.hcomArity extents
      | ID_APP _ => [] ->> EXP
      | BOOL_IF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
   val support =
-    fn COE span => DimSpan.support span
-     | HCOM (extents, span) => List.foldl (fn (r, xs) => Dim.support r @ xs) (DimSpan.support span) extents
+    fn COE dir => DimSpan.support dir
+     | HCOM (extents, dir) => List.foldl (fn (r, xs) => Dim.support r @ xs) (DimSpan.support dir) extents
      | ID_APP r => Dim.support r
      | BOOL_IF => []
 
@@ -166,13 +166,13 @@ struct
   in
     fun encode f =
       fn COE s => J.Obj [("coe", DimSpan.encode f s)]
-       | HCOM (es, s) => J.Obj [("hcom", J.Obj [("extents", J.Array (List.map (Dim.encode f) es)), ("span", DimSpan.encode f s)])]
+       | HCOM (es, s) => J.Obj [("hcom", J.Obj [("extents", J.Array (List.map (Dim.encode f) es)), ("dir", DimSpan.encode f s)])]
        | ID_APP r => J.Obj [("id-app", Dim.encode f r)]
        | BOOL_IF => J.String "bool-if"
 
     fun decode f =
       fn J.Obj [("coe", s)] => Option.map COE (DimSpan.decode f s)
-       | J.Obj [("hcom", J.Obj [("extents", J.Array es), ("span", s)])] => Option.map HCOM (traverseOpt (Dim.decode f) es ** DimSpan.decode f s)
+       | J.Obj [("hcom", J.Obj [("extents", J.Array es), ("dir", s)])] => Option.map HCOM (traverseOpt (Dim.decode f) es ** DimSpan.decode f s)
        | J.Obj [("id-app", r)] => Option.map ID_APP (Dim.decode f r)
        | J.String "bool-if" => SOME BOOL_IF
        | _ => NONE
