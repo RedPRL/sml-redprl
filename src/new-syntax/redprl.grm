@@ -9,6 +9,14 @@ end
 
 structure O = RedPrlOpData
 
+fun makeFunApp (m, n) =
+  Ast.$$ (O.MONO O.AP, [\ (([],[]), m), \ (([],[]), n)])
+
+fun makeFunApps [x] = x
+  | makeFunApps (x :: xs) = makeFunApp (makeFunApps xs, x)
+  | makeFunApps [] = raise Fail "makeFunApps"
+
+
 %%
 %header (functor RedPrlLrValsFun (structure Token : TOKEN))
 
@@ -31,16 +39,22 @@ structure O = RedPrlOpData
  | SEMI
  | COMMA
  | LAMBDA
+ | FUN_APPL
 
 %nonterm
    start of ast
  | term  of ast
+ | binder of symbol list * symbol list
  | binding of ast abs
  | bindings of ast abs list
  | symbols of symbol list
- | param of string P.term
- | params of string P.term list
+ | param of string param
+ | params of string param list
+ | terms of ast list
+ | metavar of string
+ | metavarArgs of string param list * ast list
  | operator of string operator
+ | funapp of ast list
 
 %verbose
 %pos Coord.t
@@ -49,6 +63,8 @@ structure O = RedPrlOpData
 %noshift EOF
 %name RedPrl
 %arg (fileName) : string
+
+%left FUN_APPL
 %%
 
 start : term (term)
@@ -60,26 +76,53 @@ param
 
 params
   : ([])
-  | params param (params @ [param])
+  | param ([param])
+  | params COMMA param (params @ [param])
 
 symbols
   : ([])
+  | IDENT ([IDENT])
   | symbols COMMA IDENT (symbols @ [IDENT])
 
+terms
+  : ([])
+  | term ([term])
+  | terms COMMA term (terms @ [term])
+
+binder
+  : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT (symbols1, symbols2)
+  | LBRACKET symbols RBRACKET DOT (symbols, [])
+  | LSQUARE symbols RSQUARE DOT ([], symbols)
+  | ([], [])
+
 binding
-  : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT term (\ ((symbols1, symbols2), term))
-  | LBRACKET symbols RBRACKET DOT term (\ ((symbols, []), term))
-  | LSQUARE symbols LSQUARE DOT term (\ (([], symbols), term))
-  | term (\ (([],[]), term))
+  : binder term (\ (binder, term))
 
 bindings
   : ([])
-  | bindings binding (bindings @ [binding])
+  | binding ([binding])
+  | bindings SEMI binding (bindings @ [binding])
+
+metavarArgs
+  : LBRACKET params RBRACKET LSQUARE terms RSQUARE (params, terms)
+  | LBRACKET params RBRACKET (params, [])
+  | LSQUARE terms RSQUARE ([], terms)
+  | ([], [])
 
 operator
   : LAMBDA (O.MONO O.LAM)
 
+metavar
+  : HASH IDENT (IDENT)
+
+funapp
+  : term ([term])
+  | term funapp (funapp @ [term])
+
 term
   : operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | operator (Ast.$$ (operator, []))
+  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | IDENT (`` IDENT)
+  | funapp (makeFunApps funapp)
 

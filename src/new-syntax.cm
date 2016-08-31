@@ -16,3 +16,6 @@ Group is
   new-syntax/redprl_lexer.sml
   new-syntax/redprl_parser.sml
 
+  new-syntax/test.sml
+
+

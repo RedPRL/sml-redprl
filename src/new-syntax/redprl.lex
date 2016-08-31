@@ -24,8 +24,8 @@ whitespace = [\ \t];
 
 "("                => (Tokens.LPAREN (!pos, Coord.nextchar (!pos)));
 ")"                => (Tokens.RPAREN (!pos, Coord.nextchar (!pos)));
-"{"                => (Tokens.RBRACKET (!pos, Coord.nextchar (!pos)));
-"}"                => (Tokens.LBRACKET (!pos, Coord.nextchar (!pos)));
+"{"                => (Tokens.LBRACKET (!pos, Coord.nextchar (!pos)));
+"}"                => (Tokens.RBRACKET (!pos, Coord.nextchar (!pos)));
 "["                => (Tokens.LSQUARE (!pos, Coord.nextchar (!pos)));
 "]"                => (Tokens.RSQUARE (!pos, Coord.nextchar (!pos)));
 "."                => (Tokens.DOT (!pos, Coord.nextchar (!pos)));

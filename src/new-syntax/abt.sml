@@ -1,4 +1,4 @@
-structure Metavar = AbtSymbol ()
+structure Metavar = StringAbtSymbol
 structure Var = AbtSymbol ()
 structure Sym = AbtSymbol ()
 
