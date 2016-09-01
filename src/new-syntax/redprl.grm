@@ -1,7 +1,6 @@
 structure Ast = RedPrlAst
 structure Ar = RedPrlArity
 structure Vl = Ar.Vl
-structure Tele = AstSignature.Telescope
 
 open Ast
 
@@ -99,9 +98,9 @@ structure O = RedPrlOpData
  | declArguments of AstSignature.arguments
 
    (* a declaration in a RedPRL signature *)
- | predecl of AstSignature.opid * AstSignature.decl
+ | predecl of string * AstSignature.ast_decl
    (* a declaration, annotated with source position *)
- | decl of AstSignature.opid * (AstSignature.decl * Pos.t option)
+ | decl of string * (AstSignature.ast_decl * Pos.t option)
    (* a RedPRL signature *)
  | sign of AstSignature.sign
 
@@ -236,5 +235,5 @@ decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right
 
 sign
   : (AstSignature.empty)
-  | sign decl DOT (AstSignature.snoc sign (#1 decl) (#2 decl))
+  | sign decl DOT (AstSignature.insert sign (#1 decl) (#2 decl))
 
