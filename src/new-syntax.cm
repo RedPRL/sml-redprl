@@ -3,12 +3,16 @@ Group is
   $/ml-yacc-lib.cm
 
   cmlib.cm
+  ../lib/sml-telescopes/telescopes.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/basis/basis.cm (bind:(anchor:libs value:../lib/))
 
   new-syntax/parameter.sml
   new-syntax/operator.sml
   new-syntax/abt.sml
+
+  new-syntax/signature.sig
+  new-syntax/signature.sml
 
   new-syntax/redprl.lex
   new-syntax/redprl.grm

@@ -33,6 +33,7 @@ whitespace = [\ \t];
 ":"                => (Tokens.COLON (!pos, Coord.nextchar (!pos)));
 ";"                => (Tokens.SEMI (!pos, Coord.nextchar (!pos)));
 "#"                => (Tokens.HASH (!pos, Coord.nextchar (!pos)));
+"="                => (Tokens.EQUALS (!pos, Coord.nextchar (!pos)));
 "\'"               => (Tokens.APOSTROPHE (!pos, Coord.nextchar (!pos)));
 "0"                => (Tokens.ZERO (!pos, Coord.nextchar (!pos)));
 "1"                => (Tokens.ONE (!pos, Coord.nextchar (!pos)));
@@ -49,6 +50,9 @@ whitespace = [\ \t];
 "exp"              => (Tokens.EXP (!pos, Coord.addchar 3 (!pos)));
 "lvl"              => (Tokens.LVL (!pos, Coord.addchar 3 (!pos)));
 
-"Def"              => (Tokens.DEF (!pos, Coord.addchar 3 (!pos)));
+"Def"              => (Tokens.DCL_DEF (!pos, Coord.addchar 3 (!pos)));
+"Tac"              => (Tokens.DCL_TAC (!pos, Coord.addchar 3 (!pos)));
+"Thm"              => (Tokens.DCL_THM (!pos, Coord.addchar 3 (!pos)));
+"by "              => (Tokens.BY (!pos, Coord.addchar 2 (!pos)));
 
 {alpha}{any}*      => (Tokens.IDENT (yytext, !pos, Coord.addchar (size yytext) (!pos)));

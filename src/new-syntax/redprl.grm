@@ -1,6 +1,7 @@
 structure Ast = RedPrlAst
 structure Ar = RedPrlArity
 structure Vl = Ar.Vl
+structure Tele = AstSignature.Telescope
 
 open Ast
 
@@ -32,7 +33,7 @@ fun makeFunApps [x] = x
  | LBRACKET
  | LSQUARE
  | RSQUARE
- | LTEQUALS
+ | EQUALS
  | DOT
  | APOSTROPHE
  | ZERO
@@ -48,7 +49,8 @@ fun makeFunApps [x] = x
  | DIM | EXN | LBL
  | EXP | LVL
 
- | DEF
+ | DCL_DEF | DCL_TAC | DCL_THM
+ | BY
 
 %nonterm
    start of ast
@@ -71,8 +73,17 @@ fun makeFunApps [x] = x
  | sort of O.sort
  | psorts of P.param_sort list
  | sorts of O.sort list
- | binding_sig of P.param_sort list * O.sort list
+ | bindingSig of P.param_sort list * O.sort list
  | valence of Ar.valence
+
+ | tacticScript of ast
+
+ | declArgument of metavariable * Ar.valence
+ | declArguments of AstSignature.arguments
+
+ | predecl of AstSignature.opid * AstSignature.decl
+ | decl of AstSignature.opid * (AstSignature.decl * Pos.t option)
+ | sign of AstSignature.sign
 
 %verbose
 %pos Coord.t
@@ -104,14 +115,14 @@ psorts
   | psort ([psort])
   | psort COMMA psorts (psort :: psorts)
 
-binding_sig
+bindingSig
   : LBRACKET psorts RBRACKET LSQUARE sorts RSQUARE DOT (psorts, sorts)
   | LBRACKET psorts RBRACKET DOT (psorts, [])
   | LSQUARE sorts RSQUARE DOT ([], sorts)
   | ([], [])
 
 valence
-  : binding_sig sort ((binding_sig, sort))
+  : bindingSig sort ((bindingSig, sort))
 
 param
   : IDENT (P.VAR IDENT)
@@ -181,3 +192,27 @@ preterm
   | IDENT (`` IDENT)
   | funapp (makeFunApps funapp)
   | LPAREN term RPAREN (term)
+
+
+declArgument
+  : metavar COLON valence ((metavar, valence))
+
+declArguments
+  : ([])
+  | declArgument ([declArgument])
+  | declArgument SEMI declArguments (declArgument :: declArguments)
+
+predecl
+  : DCL_DEF IDENT LPAREN declArguments RPAREN COLON sort EQUALS LSQUARE term RSQUARE
+      (IDENT, AstSignature.DEF {arguments = declArguments, definiens = term, sort = sort})
+  | DCL_TAC IDENT LPAREN declArguments RPAREN EQUALS LSQUARE tacticScript RSQUARE
+      (IDENT, AstSignature.TAC {arguments = declArguments, script = tacticScript})
+  | DCL_THM IDENT LPAREN declArguments RPAREN COLON LSQUARE term RSQUARE BY LSQUARE tacticScript RSQUARE
+      (IDENT, AstSignature.TAC {arguments = declArguments, script = tacticScript})
+
+decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
+
+sign
+  : (Tele.empty)
+  | decl DOT sign (Tele.cons (#1 decl) (#2 decl) sign)
+
