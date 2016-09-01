@@ -55,8 +55,9 @@ structure O = RedPrlOpData
 %nonterm
    start of AstSignature.sign
 
-   (* an type-theoretic term *)
+   (* a type-theoretic term, excluding function application *)
  | preterm of ast
+   (* a type-theoretic term, including function application *)
  | atomicPreterm of ast
 
    (* a type-theoretic term, annotated with source position *)
@@ -189,9 +190,7 @@ operator
   : LAMBDA (O.MONO O.LAM)
   | HCOM LSQUARE extents SEMI dir RSQUARE (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
   | COE LSQUARE dir RSQUARE (O.POLY (O.COE (O.TAG_NONE, dir)))
-(*
   | IDENT (O.POLY (O.CUST (IDENT, NONE)))
-*)
 
 metavar
   : HASH IDENT (IDENT)
@@ -232,6 +231,6 @@ predecl
 decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
 
 sign
-  : (Tele.empty)
-  | decl DOT sign (Tele.cons (#1 decl) (#2 decl) sign)
+  : (AstSignature.empty)
+  | sign decl DOT (AstSignature.snoc sign (#1 decl) (#2 decl))
 

@@ -3,6 +3,7 @@ struct
   datatype sort =
      EXP
    | TAC
+   | THM
    | LVL
 end
 
@@ -16,6 +17,7 @@ struct
   val toString =
     fn EXP => "exp"
      | TAC => "tac"
+     | THM => "thm"
      | LVL => "lvl"
 end
 

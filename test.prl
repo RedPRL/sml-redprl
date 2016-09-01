@@ -3,5 +3,5 @@ Def welp(#A : {dim}.exp) : exp = [
 ].
 
 Def welp2(#A : {dim}.exp) : exp = [
-  (a ~ b) ~ (c ~ d)
+  (a ~ b) ~ (c ~ welp(x))
 ].

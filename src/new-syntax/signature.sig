@@ -19,7 +19,10 @@ sig
   structure Telescope : TELESCOPE where type Label.t = opid
 
   (* A signature / [sign] is a telescope of declarations. *)
-  type sign = (decl * Pos.t option) Telescope.telescope
+  type sign (* = (decl * Pos.t option) Telescope.telescope *)
+
+  val empty : sign
+  val snoc : sign -> opid -> decl * Pos.t option -> sign
 
   val toString : sign -> string
 
