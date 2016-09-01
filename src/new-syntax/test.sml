@@ -18,7 +18,7 @@ struct
         end
     end
 
-  fun error (s, pos, pos') = (raise Fail ("Parse error !" ^ s))
+  fun error (s, pos, pos') = raise Fail (Pos.toString (Pos.pos pos pos') ^ ": " ^ s)
 
   fun parse text =
     let

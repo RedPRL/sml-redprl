@@ -13,13 +13,6 @@ end
 
 structure O = RedPrlOpData
 
-fun makeFunApp (m, n) =
-  Ast.$$ (O.MONO O.AP, [\ (([],[]), m), \ (([],[]), n)])
-
-fun makeFunApps [x] = x
-  | makeFunApps (x :: xs) = makeFunApp (makeFunApps xs, x)
-  | makeFunApps [] = raise Fail "makeFunApps"
-
 %%
 %header (functor RedPrlLrValsFun (structure Token : TOKEN))
 
@@ -42,9 +35,12 @@ fun makeFunApps [x] = x
  | SEMI
  | COMMA
  | LAMBDA
+ | SQUIGGLE
  | SQUIGGLE_ARROW
  | HCOM
  | COE
+
+ | FUN_APP
 
  | DIM | EXN | LBL
  | EXP | LVL
@@ -52,15 +48,21 @@ fun makeFunApps [x] = x
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY
 
+%nonassoc SQUIGGLE
+%left FUN_APP
+
+
 %nonterm
    start of AstSignature.sign
 
    (* an type-theoretic term *)
  | preterm of ast
+ | atomicPreterm of ast
 
    (* a type-theoretic term, annotated with source position *)
  | term of ast
  | terms of ast list
+ | funapp of ast
 
    (* abt abstractions *)
  | binder of symbol list * symbol list
@@ -81,7 +83,6 @@ fun makeFunApps [x] = x
  | metavarArgs of string param list * ast list
 
  | operator of string operator
- | funapp of ast list
  | psort of P.param_sort
  | sort of O.sort
  | psorts of P.param_sort list
@@ -188,26 +189,28 @@ operator
   : LAMBDA (O.MONO O.LAM)
   | HCOM LSQUARE extents SEMI dir RSQUARE (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
   | COE LSQUARE dir RSQUARE (O.POLY (O.COE (O.TAG_NONE, dir)))
+(*
   | IDENT (O.POLY (O.CUST (IDENT, NONE)))
+*)
 
 metavar
   : HASH IDENT (IDENT)
-
-funapp
-  : term ([term])
-  | term funapp (funapp @ [term])
 
 dir
   : param SQUIGGLE_ARROW param ((param1, param2))
 
 term : preterm (annotate (Pos.pos preterm1left preterm1right) preterm)
 
-preterm
-  : operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+atomicPreterm
+  : LPAREN term RPAREN (term)
+  | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | IDENT (`` IDENT)
-  | funapp (makeFunApps funapp)
-  | LPAREN term RPAREN (term)
+  | term SQUIGGLE term %prec SQUIGGLE (Ast.$$ (O.MONO O.CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
+
+preterm
+  : term atomicPreterm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicPreterm)]))
+  | atomicPreterm (atomicPreterm)
 
 
 declArgument

@@ -1,3 +1,7 @@
 Def welp(#A : {dim}.exp) : exp = [
-  lam([x].x)
+  a b c d e ~ f e
+].
+
+Def welp2(#A : {dim}.exp) : exp = [
+  (a ~ b) ~ (c ~ d)
 ].

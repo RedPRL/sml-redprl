@@ -31,6 +31,7 @@ struct
    | BOOL | TRUE | FALSE
    | S1 | BASE
    | AX
+   | CEQ
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -99,6 +100,7 @@ struct
      | BASE => [] ->> EXP
      | FALSE => [] ->> EXP
      | AX => [] ->> EXP
+     | CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
   local
     val typeArgsForTag =
@@ -187,7 +189,8 @@ struct
      | _ => false
 
   val toStringMono =
-    fn DFUN => "dfun" | FUN => "fun"
+    fn DFUN => "dfun"
+     | FUN => "fun"
      | LAM => "lam"
      | AP => "ap"
      | BOOL => "bool"
@@ -196,6 +199,7 @@ struct
      | S1 => "S1"
      | BASE => "base"
      | AX => "ax"
+     | CEQ => "ceq"
 
   local
     fun spanToString f (r, r') =

@@ -37,6 +37,7 @@ whitespace = [\ \t];
 "\'"               => (Tokens.APOSTROPHE (!pos, Coord.nextchar (!pos)));
 "0"                => (Tokens.ZERO (!pos, Coord.nextchar (!pos)));
 "1"                => (Tokens.ONE (!pos, Coord.nextchar (!pos)));
+"~"                => (Tokens.SQUIGGLE (!pos, Coord.nextchar (!pos)));
 "~>"               => (Tokens.SQUIGGLE_ARROW (!pos, Coord.addchar 2 (!pos)));
 
 "lam"              => (Tokens.LAMBDA (!pos, Coord.addchar 3 (!pos)));
