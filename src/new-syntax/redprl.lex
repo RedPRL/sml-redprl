@@ -54,6 +54,6 @@ whitespace = [\ \t];
 "Def"              => (Tokens.DCL_DEF (!pos, Coord.addchar 3 (!pos)));
 "Tac"              => (Tokens.DCL_TAC (!pos, Coord.addchar 3 (!pos)));
 "Thm"              => (Tokens.DCL_THM (!pos, Coord.addchar 3 (!pos)));
-"by "              => (Tokens.BY (!pos, Coord.addchar 2 (!pos)));
+"by"               => (Tokens.BY (!pos, Coord.addchar 2 (!pos)));
 
 {alpha}{any}*      => (Tokens.IDENT (yytext, !pos, Coord.addchar (size yytext) (!pos)));
