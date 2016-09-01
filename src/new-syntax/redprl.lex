@@ -39,6 +39,7 @@ whitespace = [\ \t];
 "1"                => (Tokens.ONE (!pos, Coord.nextchar (!pos)));
 "~"                => (Tokens.SQUIGGLE (!pos, Coord.nextchar (!pos)));
 "~>"               => (Tokens.SQUIGGLE_ARROW (!pos, Coord.addchar 2 (!pos)));
+"->"               => (Tokens.RIGHT_ARROW (!pos, Coord.addchar 2 (!pos)));
 
 "lam"              => (Tokens.LAMBDA (!pos, Coord.addchar 3 (!pos)));
 "hcom"             => (Tokens.HCOM (!pos, Coord.addchar 4 (!pos)));
