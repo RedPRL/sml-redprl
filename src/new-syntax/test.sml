@@ -20,7 +20,7 @@ struct
 
   fun error (s, pos, pos') = (raise Fail ("Parse error !" ^ s))
 
-  fun parse text : RedPrlAst.ast =
+  fun parse text =
     let
       val lexer = RedPrlParser.makeLexer (stringreader text) ""
       val (res,_) = RedPrlParser.parse(1, lexer, error, "")
@@ -29,15 +29,17 @@ struct
     end
 
 
+    (*
   fun test text =
     print ("\n" ^ RedPrlAst.toString (parse text) ^ "\n\n")
 
+    *)
 
   fun testFile fileName =
     let
       val input = TextIO.inputAll (TextIO.openIn fileName)
     in
-      parse input
+      print ("\n" ^ AstSignature.toString (parse input))
     end
 
 end

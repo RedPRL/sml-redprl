@@ -53,22 +53,35 @@ fun makeFunApps [x] = x
  | BY
 
 %nonterm
-   start of ast
- | term of ast
+   start of AstSignature.sign
+
+   (* an type-theoretic term *)
  | preterm of ast
+
+   (* a type-theoretic term, annotated with source position *)
+ | term of ast
+ | terms of ast list
+
+   (* abt abstractions *)
  | binder of symbol list * symbol list
  | binding of ast abs
  | bindings of ast abs list
+
  | symbols of symbol list
  | param of string param
  | params of string param list
+
+   (* the extents of a Kan composition *)
  | extents of string param list
- | terms of ast list
+   (* the direction of a coercion of Kan composition *)
+ | dir of string param * string param
+
+   (* metavariables and metavariable applications *)
  | metavar of string
  | metavarArgs of string param list * ast list
+
  | operator of string operator
  | funapp of ast list
- | dir of string param * string param
  | psort of P.param_sort
  | sort of O.sort
  | psorts of P.param_sort list
@@ -81,8 +94,11 @@ fun makeFunApps [x] = x
  | declArgument of metavariable * Ar.valence
  | declArguments of AstSignature.arguments
 
+   (* a declaration in a RedPRL signature *)
  | predecl of AstSignature.opid * AstSignature.decl
+   (* a declaration, annotated with source position *)
  | decl of AstSignature.opid * (AstSignature.decl * Pos.t option)
+   (* a RedPRL signature *)
  | sign of AstSignature.sign
 
 %verbose
@@ -94,7 +110,7 @@ fun makeFunApps [x] = x
 %arg (fileName) : string
 %%
 
-start : term (term)
+start : sign (sign)
 
 psort
   : DIM (P.DIM)

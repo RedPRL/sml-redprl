@@ -1,0 +1,3 @@
+Def welp(#A : {dim}.exp) : exp = [
+  lam([x].x)
+].

@@ -21,4 +21,6 @@ sig
   (* A signature / [sign] is a telescope of declarations. *)
   type sign = (decl * Pos.t option) Telescope.telescope
 
+  val toString : sign -> string
+
 end
