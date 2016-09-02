@@ -121,6 +121,15 @@ struct
                else
                  S.STEP @@ cap <: env)
 
+     | O.POLY (O.HCOM (O.TAG_DFUN, exts, dir)) `$ (_ \ a) :: ((_,[x]) \ bx) :: cap :: tubes <: env =>
+         let
+           fun apx m = O.MONO O.AP $$ [([],[]) \ m, ([],[]) \ Abt.check (`x, O.EXP)]
+           val hcomx = O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ (([],[]) \ bx) :: List.map (mapBind apx) (cap :: tubes)
+           val lam = O.MONO O.LAM $$ [([],[x]) \ hcomx]
+         in
+           S.STEP @@ lam <: env
+         end
+
      | _ => raise Match
 
   fun cut sign =
