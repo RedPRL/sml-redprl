@@ -61,11 +61,12 @@ end
  | LEFT_ARROW
  | HCOM
  | COE
+ | UNIV
 
  | FUN_APP
 
- | DIM | EXN | LBL
- | EXP | LVL
+ | DIM | EXN | LBL | LVL
+ | EXP
 
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY
@@ -148,10 +149,10 @@ psort
   : DIM (P.DIM)
   | EXN (P.EXN)
   | LBL (P.LBL)
+  | LVL (P.LVL)
 
 sort
   : EXP (O.EXP)
-  | LVL (O.LVL)
 
 sorts
   : ([])
@@ -176,6 +177,7 @@ param
   : IDENT (P.VAR IDENT)
   | ZERO (P.APP P.DIM0)
   | ONE (P.APP P.DIM1)
+  | param APOSTROPHE (P.APP (P.LVL_SUCC param))
 
 params
   : ([])
@@ -238,6 +240,7 @@ atomicPreterm
   | term RIGHT_ARROW term (Ast.$$ (O.MONO O.FUN, [\ (([],[]), term1), \ (([],[]), term2)]))
   | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
   | term SQUIGGLE term %prec SQUIGGLE (Ast.$$ (O.MONO O.CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
+  | UNIV LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.UNIV param), []))
 
 preterm
   : term atomicPreterm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicPreterm)]))
@@ -283,7 +286,7 @@ predecl
   | DCL_TAC IDENT LPAREN declArguments RPAREN EQUALS LSQUARE tactic RSQUARE
       (IDENT, AstSignature.TAC {arguments = declArguments, script = tactic})
   | DCL_THM IDENT LPAREN declArguments RPAREN COLON LSQUARE term RSQUARE BY LSQUARE tactic RSQUARE
-      (IDENT, AstSignature.TAC {arguments = declArguments, script = tactic})
+      (IDENT, AstSignature.THM {arguments = declArguments, goal = term, script = tactic})
 
 decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
 

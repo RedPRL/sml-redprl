@@ -96,7 +96,6 @@ struct
    | MEMBER of RS.sort * 'a * 'a
    | EQ of RS.sort * 'a * 'a * 'a
    | AX
-   | SQUASH of RS.sort * 'a
    | DFUN of 'a * variable * 'a
    | FUN of 'a * 'a
    | NOT of 'a
@@ -104,8 +103,6 @@ struct
    | AP of 'a * 'a
    | DFUN_DOM of 'a
    | DFUN_COD of 'a * 'a
-   | ENSEMBLE of RS.sort * RS.sort * 'a * variable * 'a
-   | DEP_ISECT of 'a * variable * 'a
    | VOID
 
    | FRESH of RS.sort * RS.sort * symbol * 'a
@@ -222,16 +219,13 @@ struct
        | MEMBER (tau, m, a) => intoCttD (CttOperators.MEMBER tau) [([],[]) \ m, ([],[]) \ a]
        | EQ (tau, m, n, a) => intoCttV (CttOperators.EQ tau) [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
        | AX => intoCttV CttOperators.AX []
-       | SQUASH (tau, a) => intoCttV (CttOperators.SQUASH tau) [([],[]) \ a]
        | DFUN (a, x, bx) => intoCttV CttOperators.DFUN [([],[]) \ a, ([],[x]) \ bx]
        | FUN (a, b) => intoCttD CttOperators.FUN [([],[]) \ a, ([],[]) \ b]
        | NOT a => intoCttD CttOperators.NOT [([],[]) \ a]
-       | ENSEMBLE (sigma, tau, a, x, bx) => intoCttV (CttOperators.ENSEMBLE (sigma, tau)) [([],[]) \ a, ([],[x]) \ bx]
        | LAM (x, mx) => intoCttV CttOperators.LAM [([],[x]) \ mx]
        | AP (m, n) => cutCtt (RS.EXP, RS.EXP) CttOperators.AP [([],[]) \ n] m
        | DFUN_DOM a => cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_DOM [] a
        | DFUN_COD (a, b) => cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_COD [([],[]) \ b] a
-       | DEP_ISECT (a, x, bx) => intoCttV CttOperators.DEP_ISECT [([],[]) \ a, ([],[x]) \ bx]
        | VOID => intoCttV CttOperators.VOID []
 
        | FRESH (sigma, tau, u, m) => cutCtt (RS.UNIT, tau) (CttOperators.FRESH (sigma, tau)) [([u], []) \ m] (into DUMMY)
@@ -340,11 +334,8 @@ struct
        | O.V (CTT_V (CttOperators.UNIV tau)) $ [_ \ lvl] => UNIV (tau, lvl)
        | O.V (CTT_V (CttOperators.EQ tau)) $ [_ \ m, _ \ n, _ \ a] => EQ (tau, m, n, a)
        | O.V (CTT_V CttOperators.AX) $ _ => AX
-       | O.V (CTT_V (CttOperators.SQUASH tau)) $ [_ \ a] => SQUASH (tau, a)
        | O.V (CTT_V CttOperators.DFUN) $ [_ \ a, (_, [x]) \ bx] => DFUN (a, x, bx)
-       | O.V (CTT_V (CttOperators.ENSEMBLE (sigma, tau))) $ [_ \ a, (_, [x]) \ bx] => ENSEMBLE (sigma, tau, a, x, bx)
        | O.V (CTT_V CttOperators.LAM) $ [(_, [x]) \ mx] => LAM (x, mx)
-       | O.V (CTT_V CttOperators.DEP_ISECT) $ [_ \ a, (_, [x]) \ bx] => DEP_ISECT (a, x, bx)
        | O.V (CTT_V CttOperators.VOID) $ _ => VOID
        | O.V (CTT_V CttOperators.DUMMY) $ _ => DUMMY
        | O.V (EXN a) $ [_ \ m] => EXN_VAL (a, m)
@@ -511,7 +502,6 @@ struct
            in
              atom @@ "{" ^ parens (done rcd) ^ "}"
            end
-       | DEP_ISECT (a, x, bx) => infix' (Non, 0, "\226\139\130") (infix' (Non, 0, ":") (atom (Variable.toString x), unparse a), unparse bx)
        | UNIV (_, lvl) => atom @@ "\240\157\149\140{" ^ toString lvl ^ "}"
        | LBASE => atom "0"
        | LSUCC l => adj (atom "s", unparse l)

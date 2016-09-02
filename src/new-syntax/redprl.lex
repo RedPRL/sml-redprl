@@ -47,6 +47,7 @@ whitespace = [\ \t];
 "lam"              => (Tokens.LAMBDA (!pos, Coord.addchar 3 (!pos)));
 "hcom"             => (Tokens.HCOM (!pos, Coord.addchar 4 (!pos)));
 "coe"              => (Tokens.COE (!pos, Coord.addchar 3 (!pos)));
+"univ"             => (Tokens.UNIV (!pos, Coord.addchar 4 (!pos)));
 
 "dim"              => (Tokens.DIM (!pos, Coord.addchar 3 (!pos)));
 "exn"              => (Tokens.EXN (!pos, Coord.addchar 3 (!pos)));

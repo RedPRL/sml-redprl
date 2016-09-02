@@ -10,6 +10,10 @@ Def test(#A : exp; #B : [exp].exp) : exp = [
   (x : #A) -> (y : #A) -> #A -> #B[x]
 ].
 
+Thm hello() : [univ{i}] by [
+  asdf
+].
+
 Tac mytac() = [
   x <- id;
   y <- welp;

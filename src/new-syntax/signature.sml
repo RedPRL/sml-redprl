@@ -43,7 +43,7 @@ struct
          DEF {arguments, sort, definiens} =>
            "Def " ^ opid ^ "(" ^ argsToString arguments ^ ") : " ^ RedPrlSort.toString sort ^ " = [" ^ RedPrlAst.toString definiens ^ "]."
        | THM {arguments, goal, script} =>
-           "Def " ^ opid ^ "(" ^ argsToString arguments ^ ") : [" ^ RedPrlAst.toString goal ^ "] by [" ^ RedPrlAst.toString script ^ "]."
+           "Thm " ^ opid ^ "(" ^ argsToString arguments ^ ") : [" ^ RedPrlAst.toString goal ^ "] by [" ^ RedPrlAst.toString script ^ "]."
        | TAC {arguments, script} =>
            "Tac " ^ opid ^ "(" ^ argsToString arguments ^ ") = [" ^ RedPrlAst.toString script ^ "]."
   in
@@ -107,7 +107,7 @@ struct
          definiens = definiens'}
       end
 
-    fun elabThm nameEnv opid {arguments, sort, goal, script} =
+    fun elabThm nameEnv opid {arguments, goal, script} =
       let
         val metactx = List.foldl (fn ((x, vl), mctx) => MetaCtx.insert mctx x vl) MetaCtx.empty arguments
         val goal' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (goal, O.EXP)
@@ -122,7 +122,7 @@ struct
         EDEF
         {sourceOpid = opid,
          arguments = arguments,
-         sort = sort,
+         sort = O.THM,
          definiens = definiens}
       end
 
@@ -145,7 +145,7 @@ struct
       in
         case processDecl sign decl of
            DEF defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabDef nameEnv opid defn))
-         | THM {arguments, goal, script} => raise Fail "TODO!!"
+         | THM defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabThm nameEnv opid defn))
          | TAC defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabTac nameEnv opid defn))
       end
 

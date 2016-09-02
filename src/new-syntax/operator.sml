@@ -5,7 +5,6 @@ struct
    | TAC
    | MTAC
    | THM
-   | LVL
 end
 
 structure RedPrlSort : ABT_SORT =
@@ -20,7 +19,6 @@ struct
      | TAC => "tac"
      | MTAC => "mtac"
      | THM => "thm"
-     | LVL => "lvl"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -74,6 +72,7 @@ struct
    | HCOM of type_tag * 'a extents * 'a dir
    | COE of type_tag * 'a dir
    | CUST of 'a * RedPrlArity.t option
+   | UNIV of 'a P.term
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -164,6 +163,7 @@ struct
        | HCOM hcom => arityHcom hcom
        | COE coe => arityCoe coe
        | CUST (_, ar) => Option.valOf ar
+       | UNIV lvl => [] ->> EXP
   end
 
   val arity =
@@ -177,6 +177,11 @@ struct
 
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
+
+    val lvlSupport =
+      fn P.VAR a => [(a, LVL)]
+       | _ => []
+
   in
     val supportPoly =
       fn LOOP r => dimSupport r
@@ -185,6 +190,7 @@ struct
              @ spanSupport dir
        | COE (_, dir) => spanSupport dir
        | CUST (opid, _) => [(opid, OPID)]
+       | UNIV lvl => lvlSupport lvl
   end
 
   val support =
@@ -268,6 +274,7 @@ struct
              ^ "]"
        | CUST (opid, ar) =>
            "cust[" ^ f opid ^ "]"
+       | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
   end
 
   fun toString f =
@@ -282,12 +289,19 @@ struct
       case f a of
          P.VAR a' => a'
        | _ => raise Fail "Expected symbol, but got application"
+
+    fun mapLvl f a =
+      case f a of
+         P.VAR a' => P.VAR a'
+       | P.APP (LVL_SUCC a') => P.APP (LVL_SUCC a')
+       | _ => raise Fail "Expected level parameter"
   in
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)
        | HCOM (tag, extents, dir) => HCOM (tag, mapExtents f extents, mapSpan f dir)
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ar) => CUST (mapSym f opid, ar)
+       | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
   end
 
   fun map f =

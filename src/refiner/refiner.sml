@@ -49,8 +49,6 @@ struct
             Syn.ATOM _ => AtomRules.IsType alpha goal
           | Syn.TOP _ => TopRules.IsType alpha goal
           | Syn.DFUN _ => PiRules.IsType alpha goal
-          | Syn.ENSEMBLE _ => EnsembleRules.IsType alpha goal
-          | Syn.DEP_ISECT _ => DepIsectRules.IsType alpha goal
           | Syn.CEQUIV _ => CEquivRules.IsType alpha goal
           | Syn.RECORD_TY _ => RecordRules.IsType alpha goal
           | Syn.UNIV _ => UnivRules.IsType alpha goal
@@ -73,8 +71,6 @@ struct
     fun Intro alpha (goal as G |> _) = GenericRules.Intro alpha goal
       | Intro alpha (goal as H >> TRUE (a, _)) =
         (case Syn.out a of
-            Syn.SQUASH _ => SquashRules.Intro alpha goal
-          | Syn.ENSEMBLE _ => EnsembleRules.Intro alpha goal
           | Syn.DFUN _ => PiRules.Intro alpha goal
           | Syn.EQ _ => EqRules.Intro alpha goal
           | Syn.RECORD_TY _ => RecordRules.Intro alpha goal
@@ -95,9 +91,6 @@ struct
         | (_, _, Syn.TOP _) => TopRules.MemberEq alpha goal
         | (Syn.APP (Syn.CEQUIV _), _, _) => CEquivRules.TypeEq alpha goal
         | (_, _, Syn.CEQUIV _) => CEquivRules.MemberEq alpha goal
-        | (Syn.APP (Syn.SQUASH _), _, _) => SquashRules.TypeEq alpha goal
-        | (Syn.APP (Syn.ENSEMBLE _), _, _) => EnsembleRules.TypeEq alpha goal
-        | (_, _, Syn.ENSEMBLE _) => EnsembleRules.MemberEq alpha goal
         | (Syn.APP (Syn.RECORD_TY _), _, _) => RecordRules.TypeEq alpha goal
         | (_, _, Syn.RECORD_TY _) => RecordRules.MemberEq alpha goal
         | (Syn.APP (Syn.ATOM _), _, _) => AtomRules.TypeEq alpha goal
@@ -105,8 +98,6 @@ struct
         | (Syn.APP (Syn.IF_EQ _), _, _) => AtomRules.TestEq alpha goal
         | (Syn.APP (Syn.DFUN _), _, _) => PiRules.TypeEq alpha goal
         | (_, _, Syn.DFUN _) => PiRules.MemberEq alpha goal
-        | (Syn.APP (Syn.DEP_ISECT _), _, _) => DepIsectRules.TypeEq alpha goal
-        | (_, _, Syn.DEP_ISECT _) => DepIsectRules.MemberEq alpha goal
         | (Syn.APP Syn.VOID, _, _) => VoidRules.TypeEq alpha goal
         | _ => raise Match)
       | Eq r alpha (jdg as _ >> EQ_SYN _) =
