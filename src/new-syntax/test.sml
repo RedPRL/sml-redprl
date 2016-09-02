@@ -39,7 +39,7 @@ struct
     let
       val input = TextIO.inputAll (TextIO.openIn fileName)
     in
-      print ("\n" ^ AstSignature.toString (parse input))
+      print ("\n" ^ Signature.toString (parse input))
     end
 
 end

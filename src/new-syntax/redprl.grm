@@ -79,7 +79,7 @@ end
 
 
 %nonterm
-   start of AstSignature.sign
+   start of Signature.sign
 
    (* a type-theoretic term, excluding function application *)
  | preterm of ast
@@ -125,14 +125,14 @@ end
  | atomicTac of ast
 
  | declArgument of metavariable * Ar.valence
- | declArguments of AstSignature.arguments
+ | declArguments of Signature.arguments
 
    (* a declaration in a RedPRL signature *)
- | predecl of string * AstSignature.ast_decl
+ | predecl of string * Signature.ast_decl
    (* a declaration, annotated with source position *)
- | decl of string * (AstSignature.ast_decl * Pos.t option)
+ | decl of string * (Signature.ast_decl * Pos.t option)
    (* a RedPRL signature *)
- | sign of AstSignature.sign
+ | sign of Signature.sign
 
 %verbose
 %pos Coord.t
@@ -282,15 +282,15 @@ declArguments
 
 predecl
   : DCL_DEF IDENT LPAREN declArguments RPAREN COLON sort EQUALS LSQUARE term RSQUARE
-      (IDENT, AstSignature.DEF {arguments = declArguments, definiens = term, sort = sort})
+      (IDENT, Signature.DEF {arguments = declArguments, definiens = term, sort = sort})
   | DCL_TAC IDENT LPAREN declArguments RPAREN EQUALS LSQUARE tactic RSQUARE
-      (IDENT, AstSignature.TAC {arguments = declArguments, script = tactic})
+      (IDENT, Signature.TAC {arguments = declArguments, script = tactic})
   | DCL_THM IDENT LPAREN declArguments RPAREN COLON LSQUARE term RSQUARE BY LSQUARE tactic RSQUARE
-      (IDENT, AstSignature.THM {arguments = declArguments, goal = term, script = tactic})
+      (IDENT, Signature.THM {arguments = declArguments, goal = term, script = tactic})
 
 decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
 
 sign
-  : (AstSignature.empty)
-  | sign decl DOT (AstSignature.insert sign (#1 decl) (#2 decl))
+  : (Signature.empty)
+  | sign decl DOT (Signature.insert sign (#1 decl) (#2 decl))
 

@@ -5,6 +5,7 @@ Group is
   cmlib.cm
   ../lib/sml-telescopes/telescopes.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-typed-abts/abt-machine.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/basis/basis.cm (bind:(anchor:libs value:../lib/))
 
   new-syntax/parameter.sml
@@ -19,6 +20,8 @@ Group is
 
   new-syntax/redprl_lexer.sml
   new-syntax/redprl_parser.sml
+
+  new-syntax/machine.sml
 
   new-syntax/test.sml
 

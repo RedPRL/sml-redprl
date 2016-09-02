@@ -1,4 +1,4 @@
-structure AstSignature :> AST_SIGNATURE =
+structure Signature :> SIGNATURE =
 struct
   type abt = RedPrlAbt.abt
   type ast = RedPrlAst.ast

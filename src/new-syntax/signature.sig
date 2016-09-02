@@ -1,4 +1,4 @@
-signature AST_SIGNATURE =
+signature SIGNATURE =
 sig
 
   type ast = RedPrlAst.ast
