@@ -17,9 +17,20 @@ struct
 
   structure O = RedPrlOpData
 
+  structure ListUtil =
+  struct
+    fun indexSatisfyingPredicate p =
+      let
+        exception NotFound
+        fun go i [] = raise NotFound
+          | go i (x :: xs) = if p x then i else go (i + 1) xs
+      in
+        fn xs => SOME (go 0 xs) handle _ => NONE
+      end
+  end
+
   fun readParam {params,terms} =
     P.bind (Sym.Ctx.lookup params)
-
 
   fun isGeneric env r =
     case readParam env r of
@@ -30,6 +41,10 @@ struct
     case readParam env r of
        P.APP _ => true
      | _ => false
+
+  fun paramsApart env (r1, r2) =
+    not (P.eq Sym.eq (readParam env r1, readParam env r2))
+
 
   fun step sign =
     fn O.MONO O.DFUN `$ _ <: _ => S.VAL
@@ -56,9 +71,60 @@ struct
            | P.APP P.DIM1 => S.STEP @@ O.MONO O.BASE $$ [] <: env
            | P.APP _ => raise Match)
 
+
+     | O.MONO O.AX `$ _ <: _ => S.VAL
+     | O.MONO O.CEQ `$ _ <: _ => S.VAL
+     | O.MONO (O.REFINE _) `$ _ <: _ => S.VAL
+     | O.MONO O.EXTRACT `$ [_ \ thm] <: env =>
+         S.CUT
+           @@ (O.MONO O.EXTRACT `$ [([],[]) \ S.HOLE], thm)
+           <: env
+
+     | O.MONO (O.TAC_SEQ _) `$ _ <: _ => S.VAL
+     | O.MONO O.TAC_ID `$ _ <: _ => S.VAL
+     | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
+     | O.MONO (O.MTAC_EACH n) `$ _ <: _ => S.VAL
+     | O.MONO (O.MTAC_FOCUS i) `$ _ <: _ => S.VAL
+
+     | O.POLY (O.UNIV _) `$ _ <: _ => S.VAL
+
+     | (hcom as O.POLY (O.HCOM (O.TAG_NONE, exts, dir))) `$ (_ \ ty) :: cap :: tubes <: env =>
+         S.CUT
+           @@ (hcom `$ (([],[]) \ S.HOLE) :: List.map (mapBind S.%) (cap :: tubes), ty)
+           <: env
+
+     | O.POLY (O.HCOM (O.TAG_BOOL, exts, (r, r'))) `$ (_ \ cap) :: tubes <: env =>
+         (case ListUtil.indexSatisfyingPredicate (isConcrete env) exts of
+             SOME i =>
+               let
+                 val ([y],_) \ tube = List.nth (tubes, i)
+               in
+                 S.STEP @@ tube <: Cl.insertSym env y r'
+               end
+           | NONE =>
+               if paramsApart env (r,r') then
+                 S.VAL
+               else
+                 S.STEP @@ cap <: env)
+
+     | O.POLY (O.HCOM (O.TAG_S1, exts, (r, r'))) `$ (_ \ cap) :: tubes <: env =>
+         (case ListUtil.indexSatisfyingPredicate (isConcrete env) exts of
+             SOME i =>
+               let
+                 val ([y],_) \ tube = List.nth (tubes, i)
+               in
+                 S.STEP @@ tube <: Cl.insertSym env y r'
+               end
+           | NONE =>
+               if paramsApart env (r,r') then
+                 S.VAL
+               else
+                 S.STEP @@ cap <: env)
+
      | _ => raise Match
 
   fun cut sign =
-    fn (AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
+    fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
+     | (O.MONO O.EXTRACT `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE true) `$ [_, _, _ \ m] <: env) => m <: env
      | _ => raise InvalidCut
 end
