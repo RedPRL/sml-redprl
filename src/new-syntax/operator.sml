@@ -34,10 +34,11 @@ struct
    | S1 | BASE
    | AX
    | CEQ
+   | REFINE of bool | EXTRACT
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
-   * composition: first we computethe type argument to a canonical form, and then
+   * composition: first we compute the type argument to a canonical form, and then
    * further computation may proceed on the basis of the shape of that canonical form.
    *
    * To ensure that our operational semantics does not require us to inspect the subterms
@@ -103,6 +104,9 @@ struct
      | FALSE => [] ->> EXP
      | AX => [] ->> EXP
      | CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | REFINE true => [[] * [] <> EXP, [] * [] <> TAC, [] * [] <> EXP] ->> THM
+     | REFINE false => [[] * [] <> EXP, [] * [] <> TAC] ->> THM
+     | EXTRACT => [[] * [] <> THM] ->> EXP
 
   local
     val typeArgsForTag =
@@ -202,6 +206,8 @@ struct
      | BASE => "base"
      | AX => "ax"
      | CEQ => "ceq"
+     | REFINE _ => "refine"
+     | EXTRACT => "extract"
 
   local
     fun spanToString f (r, r') =
