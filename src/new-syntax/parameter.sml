@@ -5,6 +5,7 @@ struct
    | EXN
    | LBL
    | OPID
+   | HYP
 
   datatype 'a param_operator =
      DIM0
@@ -23,6 +24,7 @@ struct
      | EXN => "exn"
      | LBL => "lbl"
      | OPID => "opid"
+     | HYP => "hyp"
 end
 
 structure RedPrlParameter : ABT_PARAMETER =

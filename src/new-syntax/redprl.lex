@@ -21,6 +21,8 @@ whitespace = [\ \t];
 
 \n                 => (pos := Coord.nextline (!pos); continue ());
 {whitespace}+      => (pos := Coord.addchar (size yytext) (!pos); continue ());
+{digit}+           => (Tokens.NUMERAL (valOf (Int.fromString yytext), !pos, !pos));
+
 
 "("                => (Tokens.LPAREN (!pos, Coord.nextchar (!pos)));
 ")"                => (Tokens.RPAREN (!pos, Coord.nextchar (!pos)));
@@ -40,6 +42,7 @@ whitespace = [\ \t];
 "~"                => (Tokens.SQUIGGLE (!pos, Coord.nextchar (!pos)));
 "~>"               => (Tokens.SQUIGGLE_ARROW (!pos, Coord.addchar 2 (!pos)));
 "->"               => (Tokens.RIGHT_ARROW (!pos, Coord.addchar 2 (!pos)));
+"<-"               => (Tokens.LEFT_ARROW (!pos, Coord.addchar 2 (!pos)));
 
 "lam"              => (Tokens.LAMBDA (!pos, Coord.addchar 3 (!pos)));
 "hcom"             => (Tokens.HCOM (!pos, Coord.addchar 4 (!pos)));
@@ -56,5 +59,7 @@ whitespace = [\ \t];
 "Tac"              => (Tokens.DCL_TAC (!pos, Coord.addchar 3 (!pos)));
 "Thm"              => (Tokens.DCL_THM (!pos, Coord.addchar 3 (!pos)));
 "by"               => (Tokens.BY (!pos, Coord.addchar 2 (!pos)));
+
+"id"               => (Tokens.TAC_ID (!pos, Coord.addchar 2 (!pos)));
 
 {alpha}{any}*      => (Tokens.IDENT (yytext, !pos, Coord.addchar (size yytext) (!pos)));

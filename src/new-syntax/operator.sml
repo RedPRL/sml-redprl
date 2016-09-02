@@ -3,6 +3,7 @@ struct
   datatype sort =
      EXP
    | TAC
+   | MTAC
    | THM
    | LVL
 end
@@ -17,6 +18,7 @@ struct
   val toString =
     fn EXP => "exp"
      | TAC => "tac"
+     | MTAC => "mtac"
      | THM => "thm"
      | LVL => "lvl"
 end
@@ -34,7 +36,12 @@ struct
    | S1 | BASE
    | AX
    | CEQ
+
    | REFINE of bool | EXTRACT
+
+   | TAC_SEQ of int
+   | TAC_ID
+   | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -107,6 +114,21 @@ struct
      | REFINE true => [[] * [] <> EXP, [] * [] <> TAC, [] * [] <> EXP] ->> THM
      | REFINE false => [[] * [] <> EXP, [] * [] <> TAC] ->> THM
      | EXTRACT => [[] * [] <> THM] ->> EXP
+     | TAC_SEQ n =>
+         let
+           val hyps = List.tabulate (n, fn _ => HYP)
+         in
+           [[] * [] <> MTAC, hyps * [] <> TAC] ->> TAC
+         end
+     | TAC_ID => [] ->> TAC
+     | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
+     | MTAC_EACH n =>
+         let
+           val tacs = List.tabulate (n, fn _ => [] * [] <> TAC)
+         in
+           tacs ->> MTAC
+         end
+     | MTAC_FOCUS i => [[] * [] <> TAC] ->> MTAC
 
   local
     val typeArgsForTag =
@@ -208,6 +230,12 @@ struct
      | CEQ => "ceq"
      | REFINE _ => "refine"
      | EXTRACT => "extract"
+     | TAC_SEQ _ => "seq"
+     | TAC_ID => "id"
+     | MTAC_ALL => "all"
+     | MTAC_EACH n => "each"
+     | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
+
 
   local
     fun spanToString f (r, r') =

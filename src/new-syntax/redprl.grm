@@ -12,12 +12,33 @@ end
 
 structure O = RedPrlOpData
 
+
+structure Tac =
+struct
+  type binding = string list * ast
+  infix $$ $ \
+
+  fun makeSeq mt us t =
+    O.MONO (O.TAC_SEQ (List.length us)) $$ [([],[]) \ mt, (us,[]) \ t]
+
+  fun multitacToTac tm =
+    case out tm of
+       O.MONO O.MTAC_ALL $ [_ \ t] => t
+     | _ => makeSeq tm [] (O.MONO O.TAC_ID $$ [])
+
+  val rec compileScript =
+    fn [] => raise Fail "Expected tactic script"
+     | [(_, tac)] => multitacToTac tac
+     | (us, tac) :: ts => makeSeq tac us (compileScript ts)
+end
+
 %%
 %header (functor RedPrlLrValsFun (structure Token : TOKEN))
 
 %term
    EOF
  | IDENT of string
+ | NUMERAL of int
  | COLON
  | LPAREN
  | RPAREN
@@ -37,6 +58,7 @@ structure O = RedPrlOpData
  | SQUIGGLE
  | SQUIGGLE_ARROW
  | RIGHT_ARROW
+ | LEFT_ARROW
  | HCOM
  | COE
 
@@ -48,8 +70,10 @@ structure O = RedPrlOpData
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY
 
+ | TAC_ID
+
 %nonassoc SQUIGGLE
-%right RIGHT_ARROW
+%right LEFT_ARROW RIGHT_ARROW
 %left FUN_APP
 
 
@@ -92,7 +116,12 @@ structure O = RedPrlOpData
  | bindingSig of P.param_sort list * O.sort list
  | valence of Ar.valence
 
- | tacticScript of ast
+ | tactic of ast
+ | tactics of ast list
+ | tacticBinding of Tac.binding
+ | tacticBindings of Tac.binding list
+ | multitac of ast
+ | atomicTac of ast
 
  | declArgument of metavariable * Ar.valence
  | declArguments of AstSignature.arguments
@@ -215,6 +244,31 @@ preterm
   | atomicPreterm (atomicPreterm)
 
 
+atomicTac
+  : TAC_ID (Ast.$$ (O.MONO O.TAC_ID, []))
+  | term (term)
+
+multitac
+  : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
+  | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS NUMERAL), [\ (([],[]), tactic)]))
+  | atomicTac (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
+
+tacticBinding
+  : symbols LEFT_ARROW multitac (symbols, multitac)
+  | multitac ([], multitac)
+
+tacticBindings
+  : tacticBinding ([tacticBinding])
+  | tacticBinding SEMI tacticBindings (tacticBinding :: tacticBindings)
+
+tactic
+  : tacticBindings (Tac.compileScript tacticBindings)
+
+tactics
+  : ([])
+  | tactic ([tactic])
+  | tactic COMMA tactics (tactic :: tactics)
+
 declArgument
   : metavar COLON valence ((metavar, valence))
 
@@ -226,10 +280,10 @@ declArguments
 predecl
   : DCL_DEF IDENT LPAREN declArguments RPAREN COLON sort EQUALS LSQUARE term RSQUARE
       (IDENT, AstSignature.DEF {arguments = declArguments, definiens = term, sort = sort})
-  | DCL_TAC IDENT LPAREN declArguments RPAREN EQUALS LSQUARE tacticScript RSQUARE
-      (IDENT, AstSignature.TAC {arguments = declArguments, script = tacticScript})
-  | DCL_THM IDENT LPAREN declArguments RPAREN COLON LSQUARE term RSQUARE BY LSQUARE tacticScript RSQUARE
-      (IDENT, AstSignature.TAC {arguments = declArguments, script = tacticScript})
+  | DCL_TAC IDENT LPAREN declArguments RPAREN EQUALS LSQUARE tactic RSQUARE
+      (IDENT, AstSignature.TAC {arguments = declArguments, script = tactic})
+  | DCL_THM IDENT LPAREN declArguments RPAREN COLON LSQUARE term RSQUARE BY LSQUARE tactic RSQUARE
+      (IDENT, AstSignature.TAC {arguments = declArguments, script = tactic})
 
 decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
 

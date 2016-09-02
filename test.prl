@@ -9,3 +9,9 @@ Def welp2(#A : {dim}.exp) : exp = [
 Def test(#A : exp; #B : [exp].exp) : exp = [
   (x : #A) -> (y : #A) -> #A -> #B[x]
 ].
+
+Tac mytac() = [
+  x <- id;
+  y <- welp;
+  foo
+].
