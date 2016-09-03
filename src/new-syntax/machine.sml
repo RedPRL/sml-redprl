@@ -48,6 +48,8 @@ struct
   fun paramsApart env (r1, r2) =
     not (P.eq Sym.eq (readParam env r1, readParam env r2))
 
+  fun reverseDir (r1, r2) = (r2, r1)
+
   (* computation rules for Kan compositions at base type *)
   fun stepAtomicHcom exts (r, r') (_ \ cap) tubes env =
     case ListUtil.indexSatisfyingPredicate (isConcrete env) exts of
@@ -128,6 +130,28 @@ struct
            S.STEP @@ lam <: env
          end
 
+     | (coe as O.POLY (O.COE (O.TAG_NONE, dir))) `$ [([u],_) \ a, _ \ m] <: env =>
+         S.CUT
+           @@ (coe `$ [([u],[]) \ S.HOLE, ([],[]) \ S.% m], a)
+           <: env
+
+     | O.POLY (O.COE (O.TAG_BOOL, dir)) `$ [_ \ m] <: env =>
+         S.STEP @@ m <: env
+
+     | O.POLY (O.COE (O.TAG_S1, dir)) `$ [_ \ m] <: env =>
+         S.STEP @@ m <: env
+
+     | O.POLY (O.COE (O.TAG_DFUN, dir as (r, r'))) `$ [([u],_) \ a, ([v],[x]) \ bvx, _ \ m] <: env =>
+         let
+           fun coea r'' = O.POLY (O.COE (O.TAG_NONE, (r', r''))) $$ [([u],[]) \ a, ([],[]) \ check (`x, O.EXP)]
+           val bcoe = substVar (coea (P.pure v), x) bvx
+           val app = O.MONO O.AP $$ [([],[]) \ m, ([],[]) \ coea r]
+           val coeR = O.POLY (O.COE (O.TAG_NONE, dir)) $$ [([v],[]) \ bcoe, ([],[]) \ app]
+           val lam = O.MONO O.LAM $$ [([],[x]) \ coeR]
+         in
+           S.STEP @@ lam <: env
+         end
+
      | _ => raise Match
 
   (* [cut] tells the machine how to plug a value into a hole in a stack frame. As a rule of thumb,
@@ -156,6 +180,16 @@ struct
          in
            hcom $$ a :: b :: args <: env
          end
+
+     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.BOOL `$ _ <: env) =>
+         O.POLY (O.COE (O.TAG_BOOL, dir)) $$ [([],[]) \ Cl.force cl] <: env
+
+     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.S1 `$ _ <: env) =>
+         O.POLY (O.COE (O.TAG_S1, dir)) $$ [([],[]) \ Cl.force cl] <: env
+
+     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.DFUN `$ [_\ a, (_,[x]) \ bx] <: env) =>
+         O.POLY (O.COE (O.TAG_DFUN, dir)) $$ [([u], []) \ a, ([u],[x]) \ bx, ([],[]) \ Cl.force cl] <: env
+
      | _ => raise InvalidCut
 end
 
