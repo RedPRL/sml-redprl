@@ -135,5 +135,26 @@ struct
   fun cut sign =
     fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
      | (O.MONO O.EXTRACT `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE true) `$ [_, _, _ \ m] <: env) => m <: env
+     | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.BOOL `$ _ <: env) =>
+         let
+           val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
+           val hcom = O.POLY @@ O.HCOM (O.TAG_BOOL, exts, dir)
+         in
+           hcom $$ args <: env
+         end
+     | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.S1 `$ _ <: env) =>
+         let
+           val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
+           val hcom = O.POLY @@ O.HCOM (O.TAG_S1, exts, dir)
+         in
+           hcom $$ args <: env
+         end
+     | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.DFUN `$ [a, b] <: env) =>
+         let
+           val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
+           val hcom = O.POLY @@ O.HCOM (O.TAG_DFUN, exts, dir)
+         in
+           hcom $$ a :: b :: args <: env
+         end
      | _ => raise InvalidCut
 end
