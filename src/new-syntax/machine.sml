@@ -196,4 +196,4 @@ end
 (* From the above definitions, we are able to generate a complete machine implementation,
  * which deals with all the bureaucratic aspects of computation: variables, congruence
  * rules, etc. The supremacy of Standard ML in action! *)
-structure RedPrlMachine = AbtMachine (RedPrlMachineBasis)
+structure RedPrlMachine = AbtMachineUtil (AbtMachine (RedPrlMachineBasis))

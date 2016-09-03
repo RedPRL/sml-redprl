@@ -1,6 +1,6 @@
 structure Metavar = StringAbtSymbol
-structure Var = AbtSymbol ()
 structure Sym = AbtSymbol ()
+structure Var = Sym
 
 local
   structure AbtKit =

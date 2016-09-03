@@ -169,4 +169,7 @@ struct
       end
   end
 
+  fun check (sign, esign, _) =
+    ETelescope.foldl (fn (decl, _) => (Susp.force decl ; ())) () esign
+
 end

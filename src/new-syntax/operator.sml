@@ -73,6 +73,7 @@ struct
    | COE of type_tag * 'a dir
    | CUST of 'a * RedPrlArity.t option
    | UNIV of 'a P.term
+   | HYP_REF of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -164,6 +165,7 @@ struct
        | COE coe => arityCoe coe
        | CUST (_, ar) => Option.valOf ar
        | UNIV lvl => [] ->> EXP
+       | HYP_REF a => [] ->> EXP
   end
 
   val arity =
@@ -191,6 +193,7 @@ struct
        | COE (_, dir) => spanSupport dir
        | CUST (opid, _) => [(opid, OPID)]
        | UNIV lvl => lvlSupport lvl
+       | HYP_REF a => [(a, HYP)]
   end
 
   val support =
@@ -214,6 +217,8 @@ struct
            tag1 = tag2 andalso spanEq f (sp1, sp2)
        | (CUST (opid1, _), CUST (opid2, _)) =>
            f (opid1, opid2)
+       | (HYP_REF a, HYP_REF b) =>
+           f (a, b)
        | _ => false
   end
 
@@ -275,6 +280,7 @@ struct
        | CUST (opid, ar) =>
            "cust[" ^ f opid ^ "]"
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
+       | HYP_REF a => "@" ^ f a
   end
 
   fun toString f =
@@ -304,6 +310,7 @@ struct
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ar) => CUST (mapSym f opid, ar)
        | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
+       | HYP_REF a => HYP_REF (mapSym f a)
   end
 
   fun map f =

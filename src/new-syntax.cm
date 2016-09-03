@@ -7,6 +7,7 @@ Group is
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt-machine.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/basis/basis.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-dependent-lcf/nominal_lcf.cm (bind:(anchor:libs value:../lib/))
 
   new-syntax/parameter.sml
   new-syntax/operator.sml
@@ -22,6 +23,8 @@ Group is
   new-syntax/redprl_parser.sml
 
   new-syntax/machine.sml
+
+  new-syntax/lcf_syntax.sml
 
   new-syntax/test.sml
 

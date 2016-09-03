@@ -1,90 +1,8 @@
-signature SYNTAX_VIEW =
-sig
-  type symbol
-  type variable
-  type metavariable
-  type sort
-  type 'a operator
-  type 'a spine
-
-  type term
-
-  datatype 'a bview =
-     \ of (symbol spine * variable spine) * 'a
-
-  datatype 'a view =
-     ` of variable
-   | $ of symbol operator * 'a bview spine
-   | $# of metavariable * ((symbol * sort) spine * 'a spine)
-
-  val check : sort -> term view -> term
-  val $$ : symbol operator * term bview spine -> term
-  val out : term -> term view
-
-  val symbolEq : symbol * symbol -> bool
-
-  val debugToString : term -> string
-end
-
-functor AbtSyntaxView (Abt : ABT) : SYNTAX_VIEW =
+structure RedPrlSyntax =
 struct
-  open Abt
-  type 'a operator = 'a Abt.O.t
-  type term = abt
-  fun check tau m = Abt.check (m, tau)
-
-  structure Show = DebugShowAbt (Abt)
-  val debugToString = Show.toString
-  val symbolEq = Sym.eq
-end
-
-functor AstSyntaxView (Ast : AST where type 'a spine = 'a list) : SYNTAX_VIEW =
-struct
-  structure Ast = AstUtil (Ast)
-
-  type symbol = Ast.symbol
-  type variable = Ast.variable
-  type metavariable = Ast.metavariable
-  type sort = unit
-  type 'a operator = 'a Ast.operator
-  type 'a spine = 'a Ast.spine
-
-  type term = Ast.ast
-
-  datatype 'a bview =
-     \ of (symbol spine * variable spine) * 'a
-
-  datatype 'a view =
-     ` of variable
-   | $ of symbol operator * 'a bview spine
-   | $# of metavariable * ((symbol * sort) spine * 'a spine)
-
-  fun check () =
-    fn `x => Ast.`` x
-     | $ (th, es) => Ast.$$ (th, List.map (fn \ ((us,xs), m) => Ast.\ ((us, xs), m)) es)
-     | $# (x, (us, ms)) => Ast.$$# (x, (List.map #1 us, ms))
-
-  fun $$ (th, es) = check () ($ (th, es))
-
-  val out =
-    (fn Ast.`x => `x
-      | Ast.$ (th, es) => $ (th, List.map (fn Ast.\ ((us, xs), m) => \ ((us, xs), m)) es)
-      | Ast.$# (x, (us, ms)) => $# (x, (List.map (fn u => (u, ())) us, ms))) o Ast.out
-
-  val symbolEq : symbol * symbol -> bool = op=
-
-  fun debugToString _ = "[not implemented]"
-end
-
-functor RedPrlSyntax (View : SYNTAX_VIEW where type 'a operator = 'a RedPrlOperator.t where type 'a spine = 'a list) =
-struct
-
-  open View
 
   structure O = RedPrlOperator
   structure RS = SortData
-
-  type 'a tube_slice = symbol Dim.t * ((symbol * 'a) * (symbol * 'a)) (* extent, face0, face1 *)
 
   datatype 'a view =
      CAPPROX of RS.sort * 'a * 'a
@@ -92,9 +10,6 @@ struct
    | BASE of RS.sort
    | TOP of RS.sort
    | UNIV of RS.sort * 'a
-   | UNIV_GET_LVL of 'a
-   | MEMBER of RS.sort * 'a * 'a
-   | EQ of RS.sort * 'a * 'a * 'a
    | AX
    | DFUN of 'a * variable * 'a
    | FUN of 'a * 'a
@@ -104,16 +19,6 @@ struct
    | DFUN_DOM of 'a
    | DFUN_COD of 'a * 'a
    | VOID
-
-   | FRESH of RS.sort * RS.sort * symbol * 'a
-   | EXN_VAL of symbol * 'a
-   | RAISE of 'a
-   | TRY of symbol * 'a * variable * 'a
-   | DUMMY
-
-   | LBASE
-   | LSUCC of 'a
-   | LSUP of 'a * 'a
 
    | ATOM of RS.sort
    | TOKEN of symbol * RS.sort
@@ -125,24 +30,14 @@ struct
    | RCD_PROJ of symbol * 'a
    | RCD_PROJ_TY of symbol * 'a * 'a
 
-   | COE of (symbol * 'a) * symbol DimSpan.t * 'a
-   | HCOM of 'a * symbol DimSpan.t * 'a * 'a tube_slice list
-
    | BOOL
    | BOOL_TT
    | BOOL_FF
    | BOOL_IF of (variable * 'a) * 'a * 'a * 'a
 
-   | ID of (symbol * 'a) * 'a * 'a (* identification type *)
-   | ID_ABS of symbol * 'a (* identification abstraction *)
-   | ID_APP of 'a * symbol Dim.t (* identification application *)
-
    | REFINE_SCRIPT of RS.sort * 'a * 'a * 'a
    | EXTRACT_WITNESS of RS.sort * 'a
-   | VEC_LITERAL of RS.sort * 'a list
    | STR_LITERAL of string
-   | OPT_SOME of RS.sort * 'a
-   | OPT_NONE of RS.sort
 
    | TAC_SEQ of 'a * (symbol * RS.sort) list * 'a
    | TAC_ORELSE of 'a * 'a
@@ -181,292 +76,7 @@ struct
 
   infix 3 $ $$ $#
   infix 2 \
-
-  local
-    fun @@ (f, x) = f x
-    infixr @@
-
-    open RedPrlOperators
-
-    fun flatMap f =
-      fn [] => []
-       | x :: xs => f x @ flatMap f xs
-
-    fun ret tau m = O.RET tau $$ [([],[]) \ m]
-    fun intoCttV th es = ret RS.EXP @@ O.V (CTT_V th) $$ es
-    fun intoAtmV th es = ret RS.EXP @@ O.V (ATM_V th) $$ es
-    fun intoRcdV th es = ret RS.EXP @@ O.V (RCD_V th) $$ es
-    fun intoCubV th es = ret RS.EXP @@ O.V (CUB_V th) $$ es
-    fun intoCttD th es = O.D (CTT_D th) $$ es
-    fun intoRcdD th es = O.D (RCD_D th) $$ es
-    fun intoTacV th es = ret RS.TAC @@ O.V (LCF th) $$ es
-    fun intoMTacV th es = ret RS.MTAC @@ O.V (LCF th) $$ es
-    fun cutCtt (sigma, tau) th es m = O.CUT (([], sigma), tau) $$ [([],[]) \ O.K (CTT_K th) $$ es, ([],[]) \ m]
-    fun cutAtm (sigma, tau) th es m = O.CUT (([], sigma), tau) $$ [([],[]) \ O.K (ATM_K th) $$ es, ([],[]) \ m]
-    fun cutLvl th es m = O.CUT (([], RS.LVL), RS.LVL) $$ [([],[]) \ O.K (LVL_K th) $$ es, ([],[]) \ m]
-    fun cutRcd th es m = O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K (RCD_K th) $$ es, ([],[]) \ m]
-
-  in
-
-    fun into tm =
-      case tm of
-         CAPPROX (tau, m, n) => intoCttV (CttOperators.CAPPROX tau) [([],[]) \ m, ([],[]) \ n]
-       | CEQUIV (tau, m, n) => intoCttV (CttOperators.CEQUIV tau) [([],[]) \ m, ([],[]) \ n]
-       | BASE tau => intoCttV (CttOperators.BASE tau) []
-       | TOP tau => intoCttV (CttOperators.TOP tau) []
-       | UNIV (tau, lvl) => intoCttV (CttOperators.UNIV tau) [([],[]) \ lvl]
-       | UNIV_GET_LVL a => cutCtt (RS.EXP, RS.LVL) CttOperators.UNIV_GET_LVL [] a
-       | MEMBER (tau, m, a) => intoCttD (CttOperators.MEMBER tau) [([],[]) \ m, ([],[]) \ a]
-       | EQ (tau, m, n, a) => intoCttV (CttOperators.EQ tau) [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-       | AX => intoCttV CttOperators.AX []
-       | DFUN (a, x, bx) => intoCttV CttOperators.DFUN [([],[]) \ a, ([],[x]) \ bx]
-       | FUN (a, b) => intoCttD CttOperators.FUN [([],[]) \ a, ([],[]) \ b]
-       | NOT a => intoCttD CttOperators.NOT [([],[]) \ a]
-       | LAM (x, mx) => intoCttV CttOperators.LAM [([],[x]) \ mx]
-       | AP (m, n) => cutCtt (RS.EXP, RS.EXP) CttOperators.AP [([],[]) \ n] m
-       | DFUN_DOM a => cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_DOM [] a
-       | DFUN_COD (a, b) => cutCtt (RS.EXP, RS.EXP) CttOperators.DFUN_COD [([],[]) \ b] a
-       | VOID => intoCttV CttOperators.VOID []
-
-       | FRESH (sigma, tau, u, m) => cutCtt (RS.UNIT, tau) (CttOperators.FRESH (sigma, tau)) [([u], []) \ m] (into DUMMY)
-       | EXN_VAL (a, m) => ret RS.EXP @@ O.V (EXN a) $$ [([],[]) \ m]
-       | TRY (a, m, x, nx) => O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K (CATCH a) $$ [([],[x]) \ nx], ([],[]) \ m]
-       | RAISE m => O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K THROW $$ [], ([],[]) \ m]
-       | DUMMY => ret RS.UNIT @@ O.V (CTT_V CttOperators.DUMMY) $$ []
-
-       | LBASE => ret RS.LVL @@ O.V (LVL_V 0) $$ []
-       | LSUCC m => cutLvl LevelOperators.LSUCC [] m
-       | LSUP (m, n) => cutLvl LevelOperators.LSUP0 [([],[]) \ n] m
-
-       | ATOM tau => intoAtmV (AtomOperators.ATOM tau) []
-       | TOKEN (u, tau) => intoAtmV (AtomOperators.TOKEN (u, tau)) []
-       | IF_EQ (sigma, tau, t1, t2, m, n) => cutAtm (RS.EXP, tau) (AtomOperators.TEST0 (sigma, tau)) [([],[]) \ t2, ([],[]) \ m, ([],[]) \ n] t1
-
-       | RCD_CONS (u, m, n) => intoRcdV (RecordOperators.CONS u) [([],[]) \ m, ([],[]) \ n]
-       | RCD_SINGL (u, a) => intoRcdD (RecordOperators.SINGL u) [([],[]) \ a]
-
-       | RECORD_TY (u, a, x, bx) => intoRcdV (RecordOperators.RECORD u) [([],[]) \ a, ([],[x]) \ bx]
-       | RCD_PROJ (u, m) => cutRcd (RecordOperators.PROJ u) [] m
-       | RCD_PROJ_TY (u, a, m) => cutRcd (RecordOperators.PROJ_TY u) [([],[]) \ m] a
-
-       | COE ((u, a), dimSpan, m) =>
-           O.CUT (([RS.DIM], RS.EXP), RS.EXP) $$
-             [([],[]) \ O.K (CUB_K (CubicalOperators.COE dimSpan)) $$ [([],[]) \ m],
-              ([u], []) \ a]
-       | HCOM (a, dir, cap, tubes) =>
-           let
-             val (extents, pairs) = ListPair.unzip tubes
-             val tubes' = flatMap (fn ((u, face0), (v, face1)) => [([u],[]) \ face0, ([v],[]) \ face1]) pairs
-
-             val extentsAsNames = OptionUtil.traverseOpt (fn Dim.NAME u => SOME u | _ => NONE) extents
-             val spanIsTrivial = Dim.eq symbolEq (#starting dir, #ending dir)
-           in
-             case (outOpen a, extentsAsNames, spanIsTrivial) of
-                (APP BOOL, SOME vs, false) => ret RS.EXP @@ O.V (CUB_V (CubicalOperators.BOOL_HCOM (vs, dir))) $$ []
-              | _ =>
-                  O.CUT (([], RS.EXP), RS.EXP) $$
-                    [([],[]) \ O.K (CUB_K (CubicalOperators.HCOM (extents, dir))) $$ (([],[]) \ cap) :: tubes',
-                     ([],[]) \ a ]
-           end
-
-       | ID ((u, a), m, n) => ret RS.EXP @@ O.V (CUB_V CubicalOperators.ID) $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
-       | ID_ABS (u, m) => ret RS.EXP @@ O.V (CUB_V CubicalOperators.ID_ABS) $$ [([u],[]) \ m]
-       | ID_APP (m, r) => O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ O.K (CUB_K (CubicalOperators.ID_APP r)) $$ [], ([],[]) \ m]
-
-       | BOOL => intoCubV CubicalOperators.BOOL []
-       | BOOL_TT => intoCubV CubicalOperators.BOOL_TT []
-       | BOOL_FF => intoCubV CubicalOperators.BOOL_FF []
-       | BOOL_IF ((x, a), b, t, f) =>
-           let
-             val k = O.K (CUB_K CubicalOperators.BOOL_IF) $$ [([],[x]) \ a, ([],[]) \ t, ([],[]) \ f]
-           in
-             O.CUT (([], RS.EXP), RS.EXP) $$ [([],[]) \ k, ([],[]) \ b]
-           end
-
-       | REFINE_SCRIPT (tau, m, s, e) => ret (RS.THM tau) @@ O.V (REFINE tau) $$ [([],[]) \ m, ([],[]) \ s, ([],[]) \ e]
-       | EXTRACT_WITNESS (tau, m) => O.CUT (([], RS.THM tau), tau) $$ [([],[]) \ O.K (EXTRACT tau) $$ [], ([],[]) \ m]
-       | VEC_LITERAL (tau, ms) => ret (RS.VEC tau) @@ O.V (VEC_LIT (tau, List.length ms)) $$ List.map (fn m => ([],[]) \ m) ms
-       | STR_LITERAL str => ret RS.STR @@ O.V (STR_LIT str) $$ []
-       | OPT_SOME (tau, m) => ret (RS.OPT tau) @@ O.V (OP_SOME tau) $$ [([],[]) \ m]
-       | OPT_NONE tau => ret (RS.OPT tau) @@ O.V (OP_NONE tau) $$ []
-
-       | TAC_SEQ (t1, us, t2) =>
-           let
-             val (hyps, sorts) = ListPair.unzip us
-           in
-             intoTacV (NominalLcfOperators.SEQ sorts) [([],[]) \ t1, (hyps, []) \ t2]
-           end
-      | TAC_ORELSE (t1, t2) => intoTacV NominalLcfOperators.ORELSE [([],[]) \ t1, ([],[]) \ t2]
-      | MTAC_ALL t => intoMTacV NominalLcfOperators.ALL [([],[]) \ t]
-      | MTAC_EACH ts => intoMTacV NominalLcfOperators.EACH [([],[]) \ into (VEC_LITERAL (RS.TAC, ts))]
-      | MTAC_FOCUS (i, t) => intoMTacV (NominalLcfOperators.FOCUS i) [([],[]) \ t]
-      | TAC_PROGRESS t => intoTacV NominalLcfOperators.PROGRESS [([],[]) \ t]
-      | TAC_REC (x, tx) => intoTacV NominalLcfOperators.REC [([],[x]) \ tx]
-      | TAC_INTRO r => intoTacV (NominalLcfOperators.INTRO r) []
-      | TAC_EQ r => intoTacV (NominalLcfOperators.EQ r) []
-      | TAC_EXT => intoTacV NominalLcfOperators.EXT []
-      | TAC_CUM => intoTacV NominalLcfOperators.CUM []
-      | TAC_CHKINF => intoTacV NominalLcfOperators.CHKINF []
-      | TAC_ELIM (u, tau) => intoTacV (NominalLcfOperators.ELIM (u, tau)) []
-      | TAC_ETA (u, tau) => intoTacV (NominalLcfOperators.ETA (u, tau)) []
-      | TAC_UNHIDE (u, tau) => intoTacV (NominalLcfOperators.UNHIDE (u, tau)) []
-      | TAC_AUTO => intoTacV NominalLcfOperators.AUTO []
-      | TAC_ID => intoTacV NominalLcfOperators.ID []
-      | TAC_FAIL => intoTacV NominalLcfOperators.FAIL []
-      | TAC_TRACE (tau, m) => intoTacV (NominalLcfOperators.TRACE tau) [([],[]) \ m]
-      | TAC_CSTEP n => intoTacV (NominalLcfOperators.CSTEP n) []
-      | TAC_CEVAL => intoTacV NominalLcfOperators.CEVAL []
-      | TAC_CSYM => intoTacV NominalLcfOperators.CSYM []
-      | TAC_REWRITE_GOAL (tau, m) => intoTacV (NominalLcfOperators.REWRITE_GOAL tau) [([],[]) \ m]
-      | TAC_EVAL_GOAL u => intoTacV (NominalLcfOperators.EVAL_GOAL u) []
-      | TAC_NORMALIZE u => intoTacV (NominalLcfOperators.NORMALIZE u) []
-      | TAC_WITNESS (tau, m) => intoTacV (NominalLcfOperators.WITNESS tau) [([],[]) \ m]
-      | TAC_UNFOLD (u, v) => intoTacV (NominalLcfOperators.UNFOLD (u, v)) []
-      | HYP_REF u => ret RS.EXP @@ O.V (LCF (NominalLcfOperators.HYP_VAR u)) $$ []
-      | _ => raise Fail "Stupid SML/NJ says this is non-exhaustive, but doesn't tell me which cases I am missing!"
-
-    and outVal v =
-      case View.out v of
-         O.V (CTT_V (CttOperators.CAPPROX tau)) $ [_ \ m, _ \ n] => CAPPROX (tau, m, n)
-       | O.V (CTT_V (CttOperators.CEQUIV tau)) $ [_ \ m, _ \ n] => CEQUIV (tau, m, n)
-       | O.V (CTT_V (CttOperators.BASE tau)) $ _ => BASE tau
-       | O.V (CTT_V (CttOperators.TOP tau)) $ _ => TOP tau
-       | O.V (CTT_V (CttOperators.UNIV tau)) $ [_ \ lvl] => UNIV (tau, lvl)
-       | O.V (CTT_V (CttOperators.EQ tau)) $ [_ \ m, _ \ n, _ \ a] => EQ (tau, m, n, a)
-       | O.V (CTT_V CttOperators.AX) $ _ => AX
-       | O.V (CTT_V CttOperators.DFUN) $ [_ \ a, (_, [x]) \ bx] => DFUN (a, x, bx)
-       | O.V (CTT_V CttOperators.LAM) $ [(_, [x]) \ mx] => LAM (x, mx)
-       | O.V (CTT_V CttOperators.VOID) $ _ => VOID
-       | O.V (CTT_V CttOperators.DUMMY) $ _ => DUMMY
-       | O.V (EXN a) $ [_ \ m] => EXN_VAL (a, m)
-
-       | O.V (LVL_V 0) $ _ => LBASE
-       | O.V (LVL_V n) $ _ => LSUCC @@ ret RS.LVL @@ O.V (LVL_V (n - 1)) $$ []
-
-       | O.V (ATM_V (AtomOperators.ATOM tau)) $ _ => ATOM tau
-       | O.V (ATM_V (AtomOperators.TOKEN (u, tau))) $ _ => TOKEN (u, tau)
-
-       | O.V (RCD_V (RecordOperators.CONS u)) $ [_ \ m, _ \ n] => RCD_CONS (u, m, n)
-       | O.V (RCD_V (RecordOperators.RECORD u)) $ [_ \ a, (_,[x]) \ bx] => RECORD_TY (u, a, x, bx)
-
-       | O.V (CUB_V CubicalOperators.ID) $ [([u], _) \ a, _ \ m, _ \ n] => ID ((u, a), m, n)
-       | O.V (CUB_V CubicalOperators.ID_ABS) $ [([u], _) \ m] => ID_ABS (u, m)
-
-       | O.V (CUB_V CubicalOperators.BOOL) $ _ => BOOL
-       | O.V (CUB_V CubicalOperators.BOOL_TT) $ _ => BOOL_TT
-       | O.V (CUB_V CubicalOperators.BOOL_FF) $ _ => BOOL_FF
-       | O.V (CUB_V (CubicalOperators.BOOL_HCOM (extents, dir))) $ (cap :: tubes) =>
-           let
-             val extents' = List.map Dim.NAME extents
-             val k = O.K (CUB_K (CubicalOperators.HCOM (extents', dir))) $$ (cap :: tubes)
-           in
-             outCut k ([], into BOOL)
-           end
-
-       | O.V (VEC_LIT (tau, _)) $ es => VEC_LITERAL (tau, List.map (fn _ \ m => m) es)
-       | O.V (STR_LIT str) $ _ => STR_LITERAL str
-       | O.V (OP_SOME tau) $ [_ \ m] => OPT_SOME (tau, m)
-       | O.V (OP_NONE tau) $ _ => OPT_NONE tau
-       | O.V (REFINE tau) $ [_ \ m, _ \ s, _ \ e] => REFINE_SCRIPT (tau, m, s, e)
-
-       | O.V (LCF (NominalLcfOperators.SEQ sorts)) $ [_ \ t1, (hyps, _) \ t2] => TAC_SEQ (t1, ListPair.zip (hyps, sorts), t2)
-       | O.V (LCF NominalLcfOperators.ORELSE) $ [_ \ t1, _ \ t2] => TAC_ORELSE (t1, t2)
-       | O.V (LCF NominalLcfOperators.ALL) $ [_ \ t] => MTAC_ALL t
-       | O.V (LCF NominalLcfOperators.EACH) $ [_ \ vec] =>
-           (case out vec of
-               VEC_LITERAL (tau, ts) => MTAC_EACH ts
-             | _ => raise Fail "Expected vector literal")
-       | O.V (LCF (NominalLcfOperators.FOCUS i)) $ [_ \ t] => MTAC_FOCUS (i, t)
-       | O.V (LCF NominalLcfOperators.PROGRESS) $ [_ \ t] => TAC_PROGRESS t
-       | O.V (LCF NominalLcfOperators.REC) $ [(_, [x]) \ tx] => TAC_REC (x, tx)
-       | O.V (LCF (NominalLcfOperators.INTRO r)) $ _ => TAC_INTRO r
-       | O.V (LCF (NominalLcfOperators.EQ r)) $ _ => TAC_EQ r
-       | O.V (LCF NominalLcfOperators.EXT) $ _ => TAC_EXT
-       | O.V (LCF NominalLcfOperators.CUM) $ _ => TAC_CUM
-       | O.V (LCF NominalLcfOperators.CHKINF) $ _ => TAC_CHKINF
-       | O.V (LCF (NominalLcfOperators.ELIM (u, tau))) $ _ => TAC_ELIM (u, tau)
-       | O.V (LCF (NominalLcfOperators.ETA (u, tau))) $ _ => TAC_ETA (u, tau)
-       | O.V (LCF (NominalLcfOperators.HYP (u, tau))) $ _ => TAC_HYP (u, tau)
-       | O.V (LCF (NominalLcfOperators.UNHIDE (u, tau))) $ _ => TAC_UNHIDE (u, tau)
-       | O.V (LCF NominalLcfOperators.AUTO) $ _ => TAC_AUTO
-       | O.V (LCF NominalLcfOperators.ID) $ _ => TAC_ID
-       | O.V (LCF NominalLcfOperators.FAIL) $ _ => TAC_FAIL
-       | O.V (LCF (NominalLcfOperators.TRACE tau)) $ [_ \ m] => TAC_TRACE (tau, m)
-       | O.V (LCF (NominalLcfOperators.CSTEP n)) $ _ => TAC_CSTEP n
-       | O.V (LCF NominalLcfOperators.CEVAL) $ _ => TAC_CEVAL
-       | O.V (LCF NominalLcfOperators.CSYM) $ _ => TAC_CSYM
-       | O.V (LCF (NominalLcfOperators.REWRITE_GOAL tau)) $ [_ \ m] => TAC_REWRITE_GOAL (tau, m)
-       | O.V (LCF (NominalLcfOperators.EVAL_GOAL u)) $ _ => TAC_EVAL_GOAL u
-       | O.V (LCF (NominalLcfOperators.NORMALIZE u)) $ _ => TAC_NORMALIZE u
-       | O.V (LCF (NominalLcfOperators.WITNESS tau)) $ [_ \ m] => TAC_WITNESS (tau, m)
-       | O.V (LCF (NominalLcfOperators.UNFOLD (u, v))) $ _ => TAC_UNFOLD (u, v)
-       | O.V (LCF (NominalLcfOperators.HYP_VAR h)) $ _ => HYP_REF h
-       | _ => raise Fail ("outVal expected value, but got: " ^ View.debugToString v)
-
-    and outCut k (us, m) =
-      case View.out k of
-         O.K (CTT_K CttOperators.AP) $ [_ \ n] => AP (m, n)
-       | O.K (CTT_K CttOperators.DFUN_DOM) $ _ => DFUN_DOM m
-       | O.K (CTT_K CttOperators.DFUN_COD) $ [_ \ b] => DFUN_COD (m, b)
-       | O.K (CTT_K CttOperators.UNIV_GET_LVL) $ _ => UNIV_GET_LVL m
-       | O.K (CTT_K (CttOperators.FRESH (sigma, tau))) $ [([u], _) \ m] => FRESH (sigma, tau, u, m)
-       | O.K (CTT_K (CttOperators.FRESH_K ((u, sigma), tau))) $ _ => FRESH (sigma, tau, u, m)
-       | O.K (LVL_K LevelOperators.LSUCC) $ _ => LSUCC m
-       | O.K (LVL_K LevelOperators.LSUP0) $ [_ \ n] => LSUP (m, n)
-       | O.K (LVL_K (LevelOperators.LSUP1 i)) $ [] => LSUP (m, ret RS.LVL (O.V (LVL_V i) $$ []))
-       | O.K (ATM_K (AtomOperators.TEST0 (sigma, tau))) $ [_ \ t2, _ \ l, _ \ r] => IF_EQ (sigma, tau, m, t2, l, r)
-       | O.K (ATM_K (AtomOperators.TEST1 ((u, sigma), tau))) $ [_ \ l, _ \ r] => IF_EQ (sigma, tau, into (TOKEN (u, sigma)), m, l, r)
-       | O.K (RCD_K (RecordOperators.PROJ u)) $ [] => RCD_PROJ (u, m)
-       | O.K (RCD_K (RecordOperators.PROJ_TY u)) $ [_ \ rcd] => RCD_PROJ_TY (u, m, rcd)
-       | O.K (CUB_K (CubicalOperators.COE dimSpan)) $ [_ \ n] => COE ((List.hd us, m), dimSpan, n)
-       | O.K (CUB_K (CubicalOperators.HCOM (extents, dir))) $ ((_ \ cap) :: tubes) =>
-           let
-             fun readTubes [] [] = []
-               | readTubes (r :: rs) ((([u], _) \ face0) :: (([v], _) \ face1) :: faces) =
-                   (r, ((u, face0), (v, face1))) :: readTubes rs faces
-               | readTubes _ _ = raise Fail "Improper length of hcom tubes"
-           in
-             HCOM (m, dir, cap, readTubes extents tubes)
-           end
-       | O.K (CUB_K (CubicalOperators.ID_APP r)) $ [] => ID_APP (m, r)
-       | O.K (CUB_K CubicalOperators.BOOL_IF) $ [(_,[x]) \ a, _ \ l, _ \ r] => BOOL_IF ((x, a), m, l, r)
-       | O.K (EXTRACT tau) $ [_ \ m] => EXTRACT_WITNESS (tau, m)
-       | O.K (CATCH a) $ [(_,[x]) \ nx] => TRY (a, m, x, nx)
-       | O.K THROW $ _ => RAISE m
-       | _ => raise Fail "outCut expected continuation"
-
-    and outDef th es =
-      case (th, es) of
-         (CTT_D CttOperators.FUN, [_ \ a, _ \ b]) => FUN (a, b)
-       | (CTT_D CttOperators.NOT, [_ \ a]) => NOT a
-       | (CTT_D (CttOperators.MEMBER tau), [_ \ m, _ \ a]) => MEMBER (tau, m, a)
-       | (RCD_D (RecordOperators.SINGL u), [_ \ a]) => RCD_SINGL (u, a)
-       | _ => raise Fail "outDef expected definitional extension"
-
-    and out m =
-      case View.out m of
-         O.RET _ $ [_ \ v] => outVal v
-       | O.CUT _ $ [_ \ k, (us, []) \ m] => outCut k (us, m)
-       | O.D th $ es => outDef th es
-       | _ => raise Fail ("Syntax view expected application expression, but got " ^ View.debugToString m)
-
-    and outOpen m =
-      case View.out m of
-         `x => VAR x
-       | x $# (us, ms) => MVAR (x, us, ms)
-       | _ => APP (out m)
-
-    fun destVar m =
-      case View.out m of
-          `x => x
-        | _ => raise Match
-
-    fun lvl i =
-      O.RET RS.LVL $$ [([],[]) \ O.V (LVL_V i) $$ []]
-  end
 end
-
-structure RedPrlAstSyntax = RedPrlSyntax (AstSyntaxView (RedPrlAst))
 
 structure RedPrlAbtSyntax =
 struct
@@ -568,48 +178,4 @@ struct
     open Syn
     val toString = toString
     val var = var
-
-    (* Note: any canonical kan composites are automatically made non-canonical when affected by a dimension substitution;
-       this is guaranteed by the syntax view abstraction above. *)
-    fun substDim (r, u) =
-      let
-        fun go m =
-          case outOpen m of
-             APP (COE ((v, a), dir, m)) =>
-               let
-                 val (_, dir') = DimSpan.subst Symbol.eq (r, u) dir
-               in
-                 Syn.into @@ COE ((v, a), dir', m)
-               end
-           | APP (HCOM (a, dir, cap, tube)) =>
-               let
-                 val (extent, pairs) = ListPair.unzip tube
-                 val (didSubstExtent, extent') = DimVec.subst Symbol.eq (r, u) extent
-                 val (didSubstSpan, dir') = DimSpan.subst Symbol.eq (r, u) dir
-                 val tube' = ListPair.zip (extent', pairs)
-               in
-                 Syn.into @@ HCOM (a, dir', cap, tube')
-               end
-           | APP (ID_APP (m, r')) =>
-               let
-                 val (_, r'') = Dim.subst Symbol.eq (r, u) r'
-               in
-                 Syn.into @@ ID_APP (m, r'')
-               end
-           | _ => m
-      in
-        go o RedPrlAbt.deepMapSubterms go
-      end
-
-    fun heteroCom ((u, ty), dir : symbol DimSpan.t, cap, tube : term tube_slice list) =
-      let
-        fun coe r m = into @@ COE ((u, ty), DimSpan.new (r, #ending dir), m)
-        fun updateFace (v, face) = (v, coe (Dim.NAME v) face)
-        val ty' = substDim (#ending dir, u) ty
-        val cap' = coe (#starting dir) cap
-        val tube' = List.map (fn (extent, (face0, face1)) => (extent, (updateFace face0, updateFace face1))) tube
-      in
-        into @@ HCOM (ty', dir, cap', tube')
-      end
-  end
 end

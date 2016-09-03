@@ -19,6 +19,8 @@ sig
   val empty : sign
   val insert : sign -> string -> ast_decl * Pos.t option -> sign
 
+  val check : sign -> unit
+
   val toString : sign -> string
 
 end

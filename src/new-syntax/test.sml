@@ -28,18 +28,13 @@ struct
       res
     end
 
-
-    (*
-  fun test text =
-    print ("\n" ^ RedPrlAst.toString (parse text) ^ "\n\n")
-
-    *)
-
   fun testFile fileName =
     let
       val input = TextIO.inputAll (TextIO.openIn fileName)
+      val sign = parse input
+      val _ = Signature.check sign
     in
-      print ("\n" ^ Signature.toString (parse input))
+      print ("\n" ^ Signature.toString sign)
     end
 
 end
