@@ -73,6 +73,8 @@ end
 
  | TAC_ID
 
+ | JDG_TRUE | JDG_SYNTH
+
 %nonassoc SQUIGGLE
 %right LEFT_ARROW RIGHT_ARROW
 %left FUN_APP
@@ -116,6 +118,8 @@ end
  | sorts of O.sort list
  | bindingSig of P.param_sort list * O.sort list
  | valence of Ar.valence
+
+ | judgment of ast
 
  | tactic of ast
  | tactics of ast list
@@ -239,13 +243,17 @@ atomicPreterm
   | IDENT (`` IDENT)
   | term RIGHT_ARROW term (Ast.$$ (O.MONO O.FUN, [\ (([],[]), term1), \ (([],[]), term2)]))
   | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
-  | term SQUIGGLE term %prec SQUIGGLE (Ast.$$ (O.MONO O.CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
   | UNIV LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.UNIV param), []))
 
 preterm
   : term atomicPreterm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicPreterm)]))
   | atomicPreterm (atomicPreterm)
 
+judgment
+  : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
+  | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
+  | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term EQUALS term COLON term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
 
 atomicTac
   : TAC_ID (Ast.$$ (O.MONO O.TAC_ID, []))
@@ -285,8 +293,8 @@ predecl
       (IDENT, Signature.DEF {arguments = declArguments, definiens = term, sort = sort})
   | DCL_TAC IDENT LPAREN declArguments RPAREN EQUALS LSQUARE tactic RSQUARE
       (IDENT, Signature.TAC {arguments = declArguments, script = tactic})
-  | DCL_THM IDENT LPAREN declArguments RPAREN COLON LSQUARE term RSQUARE BY LSQUARE tactic RSQUARE
-      (IDENT, Signature.THM {arguments = declArguments, goal = term, script = tactic})
+  | DCL_THM IDENT LPAREN declArguments RPAREN COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
+      (IDENT, Signature.THM {arguments = declArguments, goal = judgment, script = tactic})
 
 decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
 

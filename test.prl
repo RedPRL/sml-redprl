@@ -1,16 +1,8 @@
-Def welp(#A : {dim}.exp) : exp = [
-  a b c d e ~ f e
-].
-
-Def welp2(#A : {dim}.exp) : exp = [
-  (a ~ b) ~ (c ~ welp(x))
-].
-
 Def test(#A : exp; #B : [exp].exp) : exp = [
   (x : #A) -> (y : #A) -> #A -> #B[x]
 ].
 
-Thm hello() : [univ{i}] by [
+Thm hello() : [univ{i} = univ{i} : univ{i'}] by [
   asdf
 ].
 

@@ -95,7 +95,6 @@ struct
 
 
      | O.MONO O.AX `$ _ <: _ => S.VAL
-     | O.MONO O.CEQ `$ _ <: _ => S.VAL
      | O.MONO (O.REFINE _) `$ _ <: _ => S.VAL
      | O.MONO O.EXTRACT `$ [_ \ thm] <: env =>
          S.CUT
@@ -107,6 +106,12 @@ struct
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_EACH n) `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_FOCUS i) `$ _ <: _ => S.VAL
+
+     | O.MONO O.JDG_EQ `$ _ <: _ => S.VAL
+     | O.MONO O.JDG_CEQ `$ _ <: _ => S.VAL
+     | O.MONO O.JDG_MEM `$ [m, a] <: env => S.STEP @@ O.MONO O.JDG_EQ $$ [m, m, a] <: env
+     | O.MONO O.JDG_TRUE `$ _ <: _ => S.VAL
+     | O.MONO O.JDG_SYNTH `$ _ <: _ => S.VAL
 
      | O.POLY (O.UNIV _) `$ _ <: _ => S.VAL
 

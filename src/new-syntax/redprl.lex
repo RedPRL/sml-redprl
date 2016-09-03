@@ -63,4 +63,7 @@ whitespace = [\ \t];
 
 "id"               => (Tokens.TAC_ID (!pos, Coord.addchar 2 (!pos)));
 
+"true"             => (Tokens.JDG_TRUE (!pos, Coord.addchar 4 (!pos)));
+"synth"            => (Tokens.JDG_SYNTH (!pos, Coord.addchar 5 (!pos)));
+
 {alpha}{any}*      => (Tokens.IDENT (yytext, !pos, Coord.addchar (size yytext) (!pos)));
