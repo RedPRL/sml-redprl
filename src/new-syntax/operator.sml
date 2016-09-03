@@ -291,10 +291,12 @@ struct
        | _ => raise Fail "Expected symbol, but got application"
 
     fun mapLvl f a =
-      case f a of
-         P.VAR a' => P.VAR a'
-       | P.APP (LVL_SUCC a') => P.APP (LVL_SUCC a')
-       | _ => raise Fail "Expected level parameter"
+      let
+        val r = f a
+        val _ = P.check LVL r
+      in
+        r
+      end
   in
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)

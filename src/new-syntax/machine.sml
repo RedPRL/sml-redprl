@@ -32,16 +32,19 @@ struct
   fun readParam {params,terms} =
     P.bind (Sym.Ctx.lookup params)
 
+  (* E ⊨ r generic *)
   fun isGeneric env r =
     case readParam env r of
        P.VAR _ => true
      | _ => false
 
+  (* E ⊨ r concrete *)
   fun isConcrete env r =
     case readParam env r of
        P.APP _ => true
      | _ => false
 
+  (* E ⊨ r # r' *)
   fun paramsApart env (r1, r2) =
     not (P.eq Sym.eq (readParam env r1, readParam env r2))
 
@@ -60,6 +63,9 @@ struct
          else
            S.STEP @@ cap <: env
 
+  (* [step] tells our machine how to proceed when computing a term: is it a value,
+   * can it step without inspecting the values of its arguments, or does it need to inspect one
+   * of its arguments (i.e. it is a cut)? *)
   fun step sign =
     fn O.MONO O.DFUN `$ _ <: _ => S.VAL
      | O.MONO O.FUN `$ [_ \ a, _ \ b] <: env =>
@@ -124,6 +130,8 @@ struct
 
      | _ => raise Match
 
+  (* [cut] tells the machine how to plug a value into a hole in a stack frame. As a rule of thumb,
+   * any time you return [CUT] in the [step] judgment, you should add a corresponding rule to [cut]. *)
   fun cut sign =
     fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
      | (O.MONO O.EXTRACT `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE true) `$ [_, _, _ \ m] <: env) => m <: env
@@ -151,4 +159,7 @@ struct
      | _ => raise InvalidCut
 end
 
+(* From the above definitions, we are able to generate a complete machine implementation,
+ * which deals with all the bureaucratic aspects of computation: variables, congruence
+ * rules, etc. The supremacy of Standard ML in action! *)
 structure RedPrlMachine = AbtMachine (RedPrlMachineBasis)
