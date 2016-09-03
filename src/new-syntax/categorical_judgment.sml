@@ -1,6 +1,6 @@
 structure CategoricalJudgment : CATEGORICAL_JUDGMENT =
 struct
-  datatype 'a judgment =
+  datatype 'a jdg =
      EQ of ('a * 'a) * 'a
    | MEM of 'a * 'a
    | TRUE of 'a
@@ -33,14 +33,14 @@ struct
     type abt = abt
     type sort = sort
 
-    val into =
+    val toAbt =
       fn EQ ((m, n), a) => O.MONO O.JDG_EQ $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
        | MEM (m, a) => O.MONO O.JDG_MEM $$ [([],[]) \ m, ([],[]) \ a]
        | TRUE a => O.MONO O.JDG_TRUE $$ [([],[]) \ a]
        | SYNTH m => O.MONO O.JDG_SYNTH $$ [([],[]) \ m]
        | CEQUIV (m, n) => O.MONO O.JDG_CEQ $$ [([],[]) \ m, ([],[]) \ n]
 
-    fun out jdg =
+    fun fromAbt jdg =
       case RedPrlAbt.out jdg of
          O.MONO O.JDG_EQ $ [_ \ m, _\ n, _ \ a] => EQ ((m, n), a)
        | O.MONO O.JDG_MEM $ [_ \ m, _ \ a] => MEM (m, a)

@@ -17,6 +17,8 @@ Group is
   new-syntax/categorical_judgment.sig
   new-syntax/categorical_judgment.sml
 
+  new-syntax/sequent.sig
+
   new-syntax/signature.sig
   new-syntax/signature.sml
 
