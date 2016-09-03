@@ -150,3 +150,5 @@ struct
          end
      | _ => raise InvalidCut
 end
+
+structure RedPrlMachine = AbtMachine (RedPrlMachineBasis)
