@@ -149,7 +149,7 @@ struct
      | O.POLY (O.COE (O.TAG_DFUN, dir as (r, r'))) `$ [([u],_) \ a, ([v],[x]) \ bvx, _ \ m] <: env =>
          let
            fun coea r'' = O.POLY (O.COE (O.TAG_NONE, (r', r''))) $$ [([u],[]) \ a, ([],[]) \ check (`x, O.EXP)]
-           val bcoe = substVar (coea (P.pure v), x) bvx
+           val bcoe = substVar (coea (P.ret v), x) bvx
            val app = O.MONO O.AP $$ [([],[]) \ m, ([],[]) \ coea r]
            val coeR = O.POLY (O.COE (O.TAG_NONE, dir)) $$ [([v],[]) \ bcoe, ([],[]) \ app]
            val lam = O.MONO O.LAM $$ [([],[x]) \ coeR]

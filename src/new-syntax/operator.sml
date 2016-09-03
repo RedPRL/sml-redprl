@@ -6,6 +6,7 @@ struct
    | MTAC
    | THM
    | JDG
+   | TRIV
 end
 
 structure RedPrlSort : ABT_SORT =
@@ -21,6 +22,7 @@ struct
      | MTAC => "mtac"
      | THM => "thm"
      | JDG => "jdg"
+     | TRIV => "triv"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -112,7 +114,7 @@ struct
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
      | FALSE => [] ->> EXP
-     | AX => [] ->> EXP
+     | AX => [] ->> TRIV
      | REFINE true => [[] * [] <> EXP, [] * [] <> TAC, [] * [] <> EXP] ->> THM
      | REFINE false => [[] * [] <> EXP, [] * [] <> TAC] ->> THM
      | EXTRACT => [[] * [] <> THM] ->> EXP

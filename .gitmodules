@@ -22,3 +22,6 @@
 [submodule "lib/sml-parcom"]
 	path = lib/sml-parcom
 	url = https://github.com/RedPRL/sml-parcom.git
+[submodule "lib/sml-cats"]
+	path = lib/sml-cats
+	url = https://github.com/RedPRL/sml-cats.git

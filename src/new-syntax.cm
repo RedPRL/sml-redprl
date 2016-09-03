@@ -3,6 +3,7 @@ Group is
   $/ml-yacc-lib.cm
 
   cmlib.cm
+  ../lib/sml-cats/cats.cm
   ../lib/sml-telescopes/telescopes.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt-machine.cm (bind:(anchor:libs value:../lib/))
@@ -12,6 +13,9 @@ Group is
   new-syntax/parameter.sml
   new-syntax/operator.sml
   new-syntax/abt.sml
+
+  new-syntax/categorical_judgment.sig
+  new-syntax/categorical_judgment.sml
 
   new-syntax/signature.sig
   new-syntax/signature.sml
