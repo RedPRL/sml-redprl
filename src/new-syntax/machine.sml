@@ -45,6 +45,20 @@ struct
   fun paramsApart env (r1, r2) =
     not (P.eq Sym.eq (readParam env r1, readParam env r2))
 
+  (* computation rules for Kan compositions at base type *)
+  fun stepAtomicHcom exts (r, r') (_ \ cap) tubes env =
+    case ListUtil.indexSatisfyingPredicate (isConcrete env) exts of
+       SOME i =>
+         let
+           val ([y],_) \ tube = List.nth (tubes, i)
+         in
+           S.STEP @@ tube <: Cl.insertSym env y r'
+         end
+     | NONE =>
+         if paramsApart env (r,r') then
+           S.VAL
+         else
+           S.STEP @@ cap <: env
 
   fun step sign =
     fn O.MONO O.DFUN `$ _ <: _ => S.VAL
@@ -93,33 +107,11 @@ struct
            @@ (hcom `$ (([],[]) \ S.HOLE) :: List.map (mapBind S.%) (cap :: tubes), ty)
            <: env
 
-     | O.POLY (O.HCOM (O.TAG_BOOL, exts, (r, r'))) `$ (_ \ cap) :: tubes <: env =>
-         (case ListUtil.indexSatisfyingPredicate (isConcrete env) exts of
-             SOME i =>
-               let
-                 val ([y],_) \ tube = List.nth (tubes, i)
-               in
-                 S.STEP @@ tube <: Cl.insertSym env y r'
-               end
-           | NONE =>
-               if paramsApart env (r,r') then
-                 S.VAL
-               else
-                 S.STEP @@ cap <: env)
+     | O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ cap :: tubes <: env =>
+         stepAtomicHcom exts dir cap tubes env
 
-     | O.POLY (O.HCOM (O.TAG_S1, exts, (r, r'))) `$ (_ \ cap) :: tubes <: env =>
-         (case ListUtil.indexSatisfyingPredicate (isConcrete env) exts of
-             SOME i =>
-               let
-                 val ([y],_) \ tube = List.nth (tubes, i)
-               in
-                 S.STEP @@ tube <: Cl.insertSym env y r'
-               end
-           | NONE =>
-               if paramsApart env (r,r') then
-                 S.VAL
-               else
-                 S.STEP @@ cap <: env)
+     | O.POLY (O.HCOM (O.TAG_S1, exts, dir)) `$ cap :: tubes <: env =>
+         stepAtomicHcom exts dir cap tubes env
 
      | O.POLY (O.HCOM (O.TAG_DFUN, exts, dir)) `$ (_ \ a) :: ((_,[x]) \ bx) :: cap :: tubes <: env =>
          let
