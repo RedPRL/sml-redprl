@@ -187,7 +187,6 @@ struct
   end
 
   fun check (sign, esign, _) =
-    (* TODO: this fold isn't working; check the telescopes lib *)
     ETelescope.foldl (fn (decl, _) => (Susp.force decl ; ())) () esign
 
 end
