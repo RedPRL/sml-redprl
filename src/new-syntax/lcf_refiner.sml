@@ -1,4 +1,8 @@
-functor LcfModel (Sig : MINI_SIGNATURE) : NOMINAL_LCF_MODEL =
+functor LcfModel (Sig : MINI_SIGNATURE) :
+sig
+  include NOMINAL_LCF_MODEL
+  structure Lcf : DEPENDENT_LCF
+end =
 struct
   structure Syn = LcfSyntax (Sig)
   structure Lcf = DependentLcf (RedPrlJudgment)
@@ -12,8 +16,15 @@ struct
   type multitactic = MT.Lcf.multitactic nominal
   type env = tactic Syn.VarCtx.dict
 
-  fun rule (sign, env) rule =
-    raise Fail "TODO!"
-end
+  open RedPrlAbt
+  infix $ \
 
-functor LcfSemantics (Sig : MINI_SIGNATURE) = NominalLcfSemantics (LcfModel (Sig))
+  structure O = RedPrlOpData
+  exception InvalidRule
+
+  fun rule (sign, env) rule =
+    case out rule of
+       `x => Var.Ctx.lookup env x
+     | O.MONO O.TAC_ID $ _ => (fn _ => T.ID)
+     | _ => raise InvalidRule
+end

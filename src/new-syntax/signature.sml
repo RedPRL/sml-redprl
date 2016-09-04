@@ -99,7 +99,9 @@ struct
 
     structure MetaCtx = RedPrlAbt.Metavar.Ctx
     structure Seq = RedPrlSequent
-    structure Refiner = LcfSemantics (MiniSig)
+
+    structure LcfModel = LcfModel (MiniSig)
+    structure Refiner = NominalLcfSemantics (LcfModel)
 
     fun metactxFromArguments args =
       List.foldl
@@ -121,25 +123,37 @@ struct
 
     fun elabThm (sign, esign, nameEnv) opid {arguments, goal, script} =
       let
-        val _ = print "Hello!"
+        open Seq RedPrlAbt RedPrlOpData infix >> \
         val metactx = metactxFromArguments arguments
-        val goal' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (goal, O.JDG)
-        val script' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (script, O.TAC)
-
-        val judgment = Seq.>> (Seq.Hyps.empty, Seq.CJ.fromAbt goal')
-        val names = fn _ => RedPrlAbt.Sym.named "?"
-        val _ = Refiner.tactic ((sign, esign, nameEnv), RedPrlAbt.Var.Ctx.empty) script' names judgment
+        val goal' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (goal, JDG)
+        val script' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (script, TAC)
+        val judgment = Hyps.empty >> CJ.fromAbt goal'
+        val names = fn i => Sym.named ("@" ^ Int.toString i)
+        val state as (subgoals, vld) = Refiner.tactic ((sign, esign, nameEnv), Var.Ctx.empty) script' names judgment
 
         local
           open RedPrlAbt infix $$ \
         in
-          val definiens = RedPrlOpData.MONO (RedPrlOpData.REFINE false) $$ [([],[]) \ goal', ([],[]) \ script']
+          val definiens =
+            if LcfModel.Lcf.T.isEmpty subgoals then
+              let
+                val _ \ evd = outb (vld (LcfModel.Lcf.T.empty))
+              in
+                MONO (REFINE true) $$ [([],[]) \ goal', ([],[]) \ script', ([],[]) \ evd]
+              end
+            else
+              let
+                val stateStr = LcfModel.Lcf.stateToString state
+              in
+                TextIO.output (TextIO.stdErr, "Refinement failed: \n\n" ^ stateStr ^ "\n\n\n");
+                MONO (REFINE false) $$ [([],[]) \ goal', ([],[]) \ script']
+              end
         end
       in
         EDEF
         {sourceOpid = opid,
          arguments = arguments,
-         sort = O.THM,
+         sort = THM,
          definiens = definiens}
       end
 

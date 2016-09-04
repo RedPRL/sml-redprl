@@ -3,7 +3,7 @@ Def test(#A : exp; #B : [exp].exp) : exp = [
 ].
 
 Thm hello() : [univ{i} = univ{i} : univ{i'}] by [
-  asdf
+  id
 ].
 
 Tac mytac() = [
