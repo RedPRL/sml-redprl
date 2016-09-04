@@ -128,4 +128,5 @@ struct
   end
 end
 
-structure RedPrlJudgment = SequentJudgment (Sequent (RedPrlCategoricalJudgment))
+structure RedPrlSequent = Sequent (RedPrlCategoricalJudgment)
+structure RedPrlJudgment = SequentJudgment (RedPrlSequent)

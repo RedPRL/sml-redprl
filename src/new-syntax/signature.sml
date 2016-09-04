@@ -2,13 +2,10 @@ structure Signature :> SIGNATURE =
 struct
   type abt = RedPrlAbt.abt
   type ast = RedPrlAst.ast
-  type symbol = RedPrlAst.symbol
   type sort = RedPrlSort.t
-  type metavariable = RedPrlAst.metavariable
   type valence = RedPrlArity.valence
 
-  type arguments = (metavariable * valence) list
-  type symbols = (symbol * sort) list
+  type arguments = (string * valence) list
 
   structure O = RedPrlOpData
 
@@ -17,11 +14,11 @@ struct
    | THM of {arguments : arguments, goal : ast, script : ast}
    | TAC of {arguments : arguments, script : ast}
 
-  (* elaborated declarations *)
-  datatype elab_decl =
-     EDEF of {sourceOpid : symbol, arguments : arguments, sort : sort, definiens : abt}
+  type opid = string
 
-  type opid = RedPrlAst.symbol
+  (* elaborated declarations *)
+  datatype elab_decl = EDEF of {sourceOpid : opid, arguments : arguments, sort : sort, definiens : abt}
+
   structure Telescope = Telescope (StringAbtSymbol)
   structure ETelescope = Telescope (RedPrlAbt.Sym)
   structure NameEnv = AstToAbt.NameEnv
@@ -93,10 +90,17 @@ struct
     end
 
     structure MetaCtx = RedPrlAbt.Metavar.Ctx
+    structure Seq = RedPrlSequent
+
+    fun metactxFromArguments args =
+      List.foldl
+        (fn ((x, vl), mctx) => MetaCtx.insert mctx x vl)
+        MetaCtx.empty
+        args
 
     fun elabDef nameEnv opid {arguments, sort, definiens} =
       let
-        val metactx = List.foldl (fn ((x, vl), mctx) => MetaCtx.insert mctx x vl) MetaCtx.empty arguments
+        val metactx = metactxFromArguments arguments
         val definiens' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (definiens, sort)
       in
         EDEF
@@ -108,9 +112,11 @@ struct
 
     fun elabThm nameEnv opid {arguments, goal, script} =
       let
-        val metactx = List.foldl (fn ((x, vl), mctx) => MetaCtx.insert mctx x vl) MetaCtx.empty arguments
+        val metactx = metactxFromArguments arguments
         val goal' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (goal, O.EXP)
         val script' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (script, O.TAC)
+
+        val judgment = Seq.>> (Seq.Hyps.empty, Seq.CJ.fromAbt goal')
 
         local
           open RedPrlAbt infix $$ \

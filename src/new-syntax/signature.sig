@@ -1,12 +1,10 @@
 signature SIGNATURE =
 sig
-
   type ast = RedPrlAst.ast
   type sort = RedPrlSort.t
-  type metavariable = RedPrlAst.metavariable
   type valence = RedPrlArity.valence
 
-  type arguments = (metavariable * valence) list
+  type arguments = (string * valence) list
 
   datatype ast_decl =
      DEF of {arguments : arguments, sort : sort, definiens : ast}
