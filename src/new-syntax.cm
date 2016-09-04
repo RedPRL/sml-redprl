@@ -35,6 +35,7 @@ Group is
   new-syntax/machine.sml
 
   new-syntax/lcf_syntax.sml
+  new-syntax/lcf_refiner.sml
 
   new-syntax/test.sml
 
