@@ -50,8 +50,6 @@ end
  | EQUALS
  | DOT
  | APOSTROPHE
- | ZERO
- | ONE
  | HASH
  | SEMI
  | COMMA
@@ -60,9 +58,8 @@ end
  | SQUIGGLE_ARROW
  | RIGHT_ARROW
  | LEFT_ARROW
- | HCOM
- | COE
- | UNIV
+
+ | HCOM | COE | UNIV | BOOL | TT | FF
 
  | FUN_APP
 
@@ -180,8 +177,7 @@ valence
 
 param
   : IDENT (P.VAR IDENT)
-  | ZERO (P.APP P.DIM0)
-  | ONE (P.APP P.DIM1)
+  | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise Fail "Invalid dimension constant"))
   | param APOSTROPHE (P.APP (P.LVL_SUCC param))
 
 params
@@ -225,8 +221,8 @@ metavarArgs
 
 operator
   : LAMBDA (O.MONO O.LAM)
-  | HCOM LSQUARE extents SEMI dir RSQUARE (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
-  | COE LSQUARE dir RSQUARE (O.POLY (O.COE (O.TAG_NONE, dir)))
+  | HCOM LBRACKET extents SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
+  | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
   | IDENT (O.POLY (O.CUST (IDENT, NONE)))
 
 metavar
@@ -245,6 +241,9 @@ atomicPreterm
   | term RIGHT_ARROW term (Ast.$$ (O.MONO O.FUN, [\ (([],[]), term1), \ (([],[]), term2)]))
   | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
   | UNIV LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.UNIV param), []))
+  | BOOL (Ast.$$ (O.MONO O.BOOL, []))
+  | TT (Ast.$$ (O.MONO O.TRUE, []))
+  | FF (Ast.$$ (O.MONO O.FALSE, []))
 
 preterm
   : term atomicPreterm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicPreterm)]))

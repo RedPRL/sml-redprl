@@ -2,7 +2,11 @@ Def test(#A : exp; #B : [exp].exp) : exp = [
   (x : #A) -> (y : #A) -> #A -> #B[x]
 ].
 
-Thm hello() : [lam([x].x) ~ lam([x].x) lam([x].x)] by [
+Thm hello() : [
+  hcom{1; 0 ~> 1}(bool; y; {z}. tt; {z}. ff)
+    ~
+  lam([x].x) ff
+] by [
   eval-goal;
   ceq/refl
 ].
