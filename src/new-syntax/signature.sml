@@ -72,8 +72,7 @@ struct
 
     (* During parsing, the arity of a custom-operator application is not known; but we can
      * derive it from the signature "so far". Prior to adding a declaration to the signature,
-     * we process its terms to fill this in. TODO: think about how to deal with the case of
-     * extending an existing signature that already passed through the binding/abt elaboration. *)
+     * we process its terms to fill this in. *)
     local
       open RedPrlAst
       infix $ $$ $# $$# \
