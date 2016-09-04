@@ -32,9 +32,8 @@ struct
     let
       val input = TextIO.inputAll (TextIO.openIn fileName)
       val sign = parse input
-      val _ = Signature.check sign
     in
-      print ("\n" ^ Signature.toString sign)
+      Signature.check sign
     end
 
 end

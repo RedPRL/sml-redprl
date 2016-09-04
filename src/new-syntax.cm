@@ -23,6 +23,9 @@ Group is
 
   new-syntax/judgment.fun
 
+  new-syntax/elab_monad.sig
+  new-syntax/elab_monad.sml
+
   new-syntax/signature.sig
   new-syntax/signature.sml
 
