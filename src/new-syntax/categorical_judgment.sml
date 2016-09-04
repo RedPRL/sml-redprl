@@ -1,11 +1,23 @@
-structure CategoricalJudgment : CATEGORICAL_JUDGMENT =
-struct
-  datatype 'a jdg =
+structure RedPrlCategoricalJudgment :
+sig
+  datatype 'a redprl_jdg =
      EQ of ('a * 'a) * 'a
    | MEM of 'a * 'a
    | TRUE of 'a
    | SYNTH of 'a
    | CEQUIV of 'a * 'a
+
+  include CATEGORICAL_JUDGMENT where type 'a jdg = 'a redprl_jdg
+end =
+struct
+  datatype 'a redprl_jdg =
+     EQ of ('a * 'a) * 'a
+   | MEM of 'a * 'a
+   | TRUE of 'a
+   | SYNTH of 'a
+   | CEQUIV of 'a * 'a
+
+  type 'a jdg = 'a redprl_jdg
 
   fun map f =
     fn EQ ((m, n), a) => EQ ((f m, f n), f a)
@@ -15,6 +27,7 @@ struct
      | CEQUIV (m, n) => CEQUIV (f m, f n)
 
   structure O = RedPrlOpData
+  structure Tm = RedPrlAbt
 
   val synthesis =
     fn EQ _ => O.TRIV
@@ -26,7 +39,7 @@ struct
   exception InvalidJudgment
 
   local
-    open RedPrlAbt
+    open Tm
     structure O = RedPrlOpData
     infix $ $$ \
   in

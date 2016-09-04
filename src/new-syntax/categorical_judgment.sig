@@ -1,27 +1,23 @@
 signature CATEGORICAL_JUDGMENT =
 sig
-  datatype 'a jdg =
-     EQ of ('a * 'a) * 'a
-   | MEM of 'a * 'a
-   | TRUE of 'a
-   | SYNTH of 'a
-   | CEQUIV of 'a * 'a
+  type 'a jdg
 
   val map : ('a -> 'b) -> 'a jdg -> 'b jdg
 
-  type abt = RedPrlAbt.abt
-  type sort = RedPrlAbt.sort
+  structure Tm : ABT
+  type abt = Tm.abt
+  type sort = Tm.sort
 
   (* What sort of term does the jdg synthesize? *)
-  val synthesis : 'a jdg -> RedPrlAbt.sort
+  val synthesis : 'a jdg -> sort
 
   val toAbt : abt jdg -> abt
   val fromAbt : abt -> abt jdg
 
   val toString : abt jdg -> string
 
-  val metactx : abt jdg -> RedPrlAbt.metactx
-  val unify : abt jdg * abt jdg -> RedPrlAbt.Unify.renaming
+  val metactx : abt jdg -> Tm.metactx
+  val unify : abt jdg * abt jdg -> Tm.Unify.renaming
 
   exception InvalidJudgment
 end

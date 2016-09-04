@@ -1,6 +1,7 @@
-structure Sequent : SEQUENT =
+functor Sequent (CJ : CATEGORICAL_JUDGMENT) : SEQUENT =
 struct
-  structure Tm = RedPrlAbt
+  structure CJ = CJ
+  structure Tm = CJ.Tm
 
   type var = Tm.variable
   type sym = Tm.symbol

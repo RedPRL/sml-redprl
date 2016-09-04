@@ -1,9 +1,11 @@
 signature SEQUENT =
 sig
-  type var = RedPrlAbt.variable
-  type sym = RedPrlAbt.symbol
-  type psort = RedPrlAbt.psort
-  type sort = RedPrlAbt.sort
+  structure CJ : CATEGORICAL_JUDGMENT
+
+  type var = CJ.Tm.variable
+  type sym = CJ.Tm.symbol
+  type psort = CJ.Tm.psort
+  type sort = CJ.Tm.sort
   type hyp = sym
 
   structure Hyps : TELESCOPE where type Label.t = hyp

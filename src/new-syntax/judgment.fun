@@ -1,9 +1,9 @@
-functor RedPrlJudgment (S : SEQUENT) : ABT_JUDGMENT =
+functor SequentJudgment (S : SEQUENT where type 'a CJ.Tm.O.Ar.Vl.Sp.t = 'a list) : ABT_JUDGMENT =
 struct
-  structure Tm = RedPrlAbt
+  structure CJ = S.CJ
+  structure Tm = CJ.Tm
   type valence = Tm.valence
 
-  structure CJ = CategoricalJudgment
   type judgment = Tm.abt CJ.jdg S.jdg
   type evidence = Tm.abs
   type metavariable = Tm.metavariable
@@ -13,6 +13,7 @@ struct
   local
     open Tm
     infix \
+    structure ShowAbt = DebugShowAbt (Tm)
   in
     fun evidenceToString e =
       case outb e of
@@ -38,15 +39,17 @@ struct
            in
              ((List.map #2 U @ sigmas, List.map #2 G @ taus), tau)
            end
+
+
     local
-      structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = RedPrlArity.Vl)
+      structure MetaCtxUtil = ContextUtil (structure Ctx = MetaCtx and Elem = Tm.O.Ar.Vl)
       val <+> = MetaCtxUtil.union
       infix <+>
     in
       fun hypsMetactx H : Tm.metactx =
         S.Hyps.foldl
           (fn (a, psi) => psi <+> CJ.metactx a)
-          MetaCtx.empty
+          (raise Match)
           H
 
       val rec judgmentMetactx : judgment -> Tm.metactx =
@@ -100,7 +103,7 @@ struct
                 val _ =
                   ListPair.appEq
                     (fn ((x, sigma), (y, tau)) =>
-                       if Tm.Var.eq (x, y) andalso sigma = tau then
+                       if Tm.Var.eq (x, y) andalso Tm.O.Ar.Vl.S.eq (sigma, tau) then
                          ()
                        else
                          raise Tm.Unify.UnificationFailed)
@@ -108,7 +111,7 @@ struct
                 val _ =
                   ListPair.appEq
                     (fn ((u, sigma), (v, tau)) =>
-                       if Tm.Sym.eq (u, v) andalso sigma = tau then
+                       if Tm.Sym.eq (u, v) andalso Tm.O.Ar.Vl.PS.eq (sigma, tau) then
                          ()
                        else
                          raise Tm.Unify.UnificationFailed)
@@ -125,4 +128,4 @@ struct
   end
 end
 
-structure RedPrlJudgment = RedPrlJudgment (Sequent)
+structure RedPrlJudgment = SequentJudgment (Sequent (RedPrlCategoricalJudgment))
