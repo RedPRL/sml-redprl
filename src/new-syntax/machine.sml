@@ -23,7 +23,10 @@ struct
       let
         exception NotFound
         fun go i [] = raise NotFound
-          | go i (x :: xs) = if p x then i else go (i + 1) xs
+          | go i (x :: xs) =
+              case p x of
+                 SOME x' => (i, x')
+               | NONE => go (i + 1) xs
       in
         fn xs => SOME (go 0 xs) handle _ => NONE
       end
@@ -44,6 +47,11 @@ struct
        P.APP _ => true
      | _ => false
 
+  fun asConcrete env r =
+    case readParam env r of
+       P.APP t => SOME t
+     | _ => NONE
+
   (* E ⊨ r # r' *)
   fun paramsApart env (r1, r2) =
     not (P.eq Sym.eq (readParam env r1, readParam env r2))
@@ -52,10 +60,11 @@ struct
 
   (* computation rules for Kan compositions at base type *)
   fun stepAtomicHcom exts (r, r') (_ \ cap) tubes env =
-    case ListUtil.indexSatisfyingPredicate (isConcrete env) exts of
-       SOME i =>
+    case ListUtil.indexSatisfyingPredicate (asConcrete env) exts of
+       SOME (i, c) =>
          let
-           val ([y],_) \ tube = List.nth (tubes, i)
+           val j = case c of P.DIM0 => i * 2 | P.DIM1 => i * 2 + 1 | _ => raise Match
+           val ([y],_) \ tube = List.nth (tubes, j)
          in
            S.STEP @@ tube <: Cl.insertSym env y r'
          end
