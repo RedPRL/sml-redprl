@@ -4,7 +4,7 @@ struct
      EXP
    | TAC
    | MTAC
-   | THM
+   | THM of sort
    | JDG
    | TRIV
 end
@@ -16,11 +16,11 @@ struct
   type t = sort
   val eq : t * t -> bool = op=
 
-  val toString =
+  val rec toString =
     fn EXP => "exp"
      | TAC => "tac"
      | MTAC => "mtac"
-     | THM => "thm"
+     | THM sort => "thm{" ^ toString sort ^ "}"
      | JDG => "jdg"
      | TRIV => "triv"
 end
@@ -38,11 +38,11 @@ struct
    | S1 | BASE
    | AX
 
-   | REFINE of bool | EXTRACT
+   | REFINE of bool * sort | EXTRACT of sort
 
    | TAC_SEQ of int
-   | TAC_ID
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
+   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_SYNTH
 
@@ -115,16 +115,18 @@ struct
      | BASE => [] ->> EXP
      | FALSE => [] ->> EXP
      | AX => [] ->> TRIV
-     | REFINE true => [[] * [] <> JDG, [] * [] <> TAC, [] * [] <> EXP] ->> THM
-     | REFINE false => [[] * [] <> JDG, [] * [] <> TAC] ->> THM
-     | EXTRACT => [[] * [] <> THM] ->> EXP
+     | REFINE (true, tau) => [[] * [] <> JDG, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
+     | REFINE (false, tau) => [[] * [] <> JDG, [] * [] <> TAC] ->> THM tau
+     | EXTRACT tau => [[] * [] <> THM tau] ->> tau
      | TAC_SEQ n =>
          let
            val hyps = List.tabulate (n, fn _ => HYP)
          in
            [[] * [] <> MTAC, hyps * [] <> TAC] ->> TAC
          end
-     | TAC_ID => [] ->> TAC
+     | RULE_ID => [] ->> TAC
+     | RULE_EVAL_GOAL => [] ->> TAC
+     | RULE_CEQUIV_REFL => [] ->> TAC
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
      | MTAC_EACH n =>
          let
@@ -248,9 +250,11 @@ struct
      | BASE => "base"
      | AX => "ax"
      | REFINE _ => "refine"
-     | EXTRACT => "extract"
+     | EXTRACT _ => "extract"
      | TAC_SEQ _ => "seq"
-     | TAC_ID => "id"
+     | RULE_ID => "id"
+     | RULE_EVAL_GOAL => "eval-goal"
+     | RULE_CEQUIV_REFL => "ceq/refl"
      | MTAC_ALL => "all"
      | MTAC_EACH n => "each"
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"

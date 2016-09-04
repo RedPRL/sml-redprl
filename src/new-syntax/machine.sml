@@ -96,20 +96,20 @@ struct
 
      | O.MONO O.AX `$ _ <: _ => S.VAL
      | O.MONO (O.REFINE _) `$ _ <: _ => S.VAL
-     | O.MONO O.EXTRACT `$ [_ \ thm] <: env =>
+     | O.MONO (O.EXTRACT tau) `$ [_ \ thm] <: env =>
          S.CUT
-           @@ (O.MONO O.EXTRACT `$ [([],[]) \ S.HOLE], thm)
+           @@ (O.MONO (O.EXTRACT tau) `$ [([],[]) \ S.HOLE], thm)
            <: env
 
      | O.MONO (O.TAC_SEQ _) `$ _ <: _ => S.VAL
-     | O.MONO O.TAC_ID `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_EACH n) `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_FOCUS i) `$ _ <: _ => S.VAL
 
      | O.MONO O.JDG_EQ `$ _ <: _ => S.VAL
      | O.MONO O.JDG_CEQ `$ _ <: _ => S.VAL
-     | O.MONO O.JDG_MEM `$ [m, a] <: env => S.STEP @@ O.MONO O.JDG_EQ $$ [m, m, a] <: env
+     | O.MONO O.JDG_MEM `$ _ <: _ => S.VAL
      | O.MONO O.JDG_TRUE `$ _ <: _ => S.VAL
      | O.MONO O.JDG_SYNTH `$ _ <: _ => S.VAL
 
@@ -163,7 +163,7 @@ struct
    * any time you return [CUT] in the [step] judgment, you should add a corresponding rule to [cut]. *)
   fun cut sign =
     fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
-     | (O.MONO O.EXTRACT `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE true) `$ [_, _, _ \ m] <: env) => m <: env
+     | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.BOOL `$ _ <: env) =>
          let
            val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args

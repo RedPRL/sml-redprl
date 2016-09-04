@@ -24,11 +24,12 @@ struct
   fun multitacToTac tm =
     case out tm of
        O.MONO O.MTAC_ALL $ [_ \ t] => t
-     | _ => makeSeq tm [] (O.MONO O.TAC_ID $$ [])
+     | _ => makeSeq tm [] (O.MONO O.RULE_ID $$ [])
 
   val rec compileScript =
-    fn [] => raise Fail "Expected tactic script"
-     | [(_, tac)] => multitacToTac tac
+    fn [] => O.MONO O.RULE_ID $$ []
+     | [([], tac)] => multitacToTac tac
+     | [(us, tac)] => makeSeq tac us (O.MONO O.RULE_ID $$ [])
      | (us, tac) :: ts => makeSeq tac us (compileScript ts)
 end
 
@@ -71,7 +72,7 @@ end
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY
 
- | TAC_ID
+ | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL
 
  | JDG_TRUE | JDG_SYNTH
 
@@ -254,9 +255,12 @@ judgment
   | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
   | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term EQUALS term COLON term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
+  | term COLON term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
 
 atomicTac
-  : TAC_ID (Ast.$$ (O.MONO O.TAC_ID, []))
+  : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
+  | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
+  | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
   | term (term)
 
 multitac
@@ -271,6 +275,7 @@ tacticBinding
 tacticBindings
   : tacticBinding ([tacticBinding])
   | tacticBinding SEMI tacticBindings (tacticBinding :: tacticBindings)
+  | ([])
 
 tactic
   : tacticBindings (Tac.compileScript tacticBindings)

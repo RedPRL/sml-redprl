@@ -61,7 +61,9 @@ whitespace = [\ \t];
 "Thm"              => (Tokens.DCL_THM (!pos, Coord.addchar 3 (!pos)));
 "by"               => (Tokens.BY (!pos, Coord.addchar 2 (!pos)));
 
-"id"               => (Tokens.TAC_ID (!pos, Coord.addchar 2 (!pos)));
+"id"               => (Tokens.RULE_ID (!pos, Coord.addchar 2 (!pos)));
+"eval-goal"        => (Tokens.RULE_EVAL_GOAL (!pos, Coord.addchar (size yytext) (!pos)));
+"ceq/refl"         => (Tokens.RULE_CEQUIV_REFL (!pos, Coord.addchar (size yytext) (!pos)));
 
 "true"             => (Tokens.JDG_TRUE (!pos, Coord.addchar 4 (!pos)));
 "synth"            => (Tokens.JDG_SYNTH (!pos, Coord.addchar 5 (!pos)));

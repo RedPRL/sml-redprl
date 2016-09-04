@@ -77,14 +77,20 @@ struct
      nameEnv = NameEnv.empty}
 
   local
-    val arityOfDecl =
-      fn DEF {arguments, sort, definiens} => (List.map #2 arguments, sort)
-       | THM {arguments, goal, script} => (List.map #2 arguments, O.THM)
-       | TAC {arguments, script} => (List.map #2 arguments, O.TAC)
+    fun arityOfDecl (EDEF {sourceOpid, arguments, sort, definiens}) =
+      (List.map #2 arguments, sort)
 
-    fun arityOfOpid (sign : ast_sign) =
-      Option.map (arityOfDecl o #1)
-        o Telescope.find sign
+    structure OptionMonad = MonadNotation (OptionMonad)
+
+    fun arityOfOpid (sign : sign) opid =
+      let
+        open OptionMonad infix >>=
+      in
+        NameEnv.find (#nameEnv sign) opid
+           >>= ETelescope.find (#elabSign sign)
+           >>= E.run
+           >>= SOME o arityOfDecl
+      end
 
     (* During parsing, the arity of a custom-operator application is not known; but we can
      * derive it from the signature "so far". Prior to adding a declaration to the signature,
@@ -96,6 +102,7 @@ struct
       fun processOp sign =
         fn O.POLY (O.CUST (opid, NONE)) => O.POLY (O.CUST (opid, arityOfOpid sign opid))
          | th => th
+
       fun processTerm sign m =
         case out m of
            `x => ``x
@@ -109,7 +116,6 @@ struct
     end
 
     structure MetaCtx = RedPrlAbt.Metavar.Ctx
-    structure Seq = RedPrlSequent
 
     structure LcfModel = LcfModel (MiniSig)
     structure Refiner = NominalLcfSemantics (LcfModel)
@@ -132,35 +138,41 @@ struct
     fun elabThm sign opid pos {arguments, goal, script} =
       E.ret () >>= (fn _ =>
         let
-          open Seq RedPrlAbt RedPrlOpData infix >> \
+          open RedPrlSequent RedPrlAbt RedPrlOpData infix >> \
           val metactx = metactxFromArguments arguments
           val goal' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (goal, JDG)
           val script' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (script, TAC)
-          val judgment = Hyps.empty >> CJ.fromAbt goal'
+
+          val catjdg = CJ.fromAbt goal'
+          val seqjdg = Hyps.empty >> catjdg
+          val sort = CJ.synthesis catjdg
           val names = fn i => Sym.named ("@" ^ Int.toString i)
-          val state as (subgoals, vld) = Refiner.tactic (sign, Var.Ctx.empty) script' names judgment
+
+          val elabProofState =
+            E.ret (Refiner.tactic (sign, Var.Ctx.empty) script' names seqjdg)
+              handle exn => E.fail (pos, exnMessage exn)
+
+          val tau = CJ.synthesis catjdg
 
           local
             open RedPrlAbt infix $$ \
           in
             val elabDefiniens =
-              if LcfModel.Lcf.T.isEmpty subgoals then
-                let
-                  val _ \ evd = outb (vld (LcfModel.Lcf.T.empty))
-                in
-                  E.ret (MONO (REFINE true) $$ [([],[]) \ goal', ([],[]) \ script', ([],[]) \ evd])
-                end
-              else
-                let
-                  val stateStr = LcfModel.Lcf.stateToString state
-                in
-                  E.warn (pos, "Refinement failed: \n\n" ^ stateStr)
-                    *> (E.ret (MONO (REFINE false) $$ [([],[]) \ goal', ([],[]) \ script']))
-                end
+              elabProofState >>= (fn state as (subgoals, vld) =>
+                if LcfModel.Lcf.T.isEmpty subgoals then
+                  (E.ret (outb (vld (LcfModel.Lcf.T.empty))) handle exn => E.fail (pos, exnMessage exn)) >>= (fn _ \ evd =>
+                    E.ret (MONO (REFINE (true, tau)) $$ [([],[]) \ goal', ([],[]) \ script', ([],[]) \ evd]))
+                else
+                  let
+                    val stateStr = LcfModel.Lcf.stateToString state
+                  in
+                    E.warn (pos, "Refinement failed: \n\n" ^ stateStr)
+                      *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal', ([],[]) \ script']))
+                  end)
           end
         in
           elabDefiniens >>= (fn definiens =>
-            E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = THM, definiens = definiens}))
+            E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = THM sort, definiens = definiens}))
         end)
 
     fun elabTac ({nameEnv,...} : sign) opid {arguments, script} =
@@ -178,7 +190,7 @@ struct
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
         fun decorate e = e >>= (fn x => E.info (pos, declToString (opid, decl)) *> E.ret x)
       in
-        case processDecl (#sourceSign sign) decl of
+        case processDecl sign decl of
            DEF defn => ETelescope.snoc esign' eopid (decorate (elabDef sign' opid defn))
          | THM defn => ETelescope.snoc esign' eopid (decorate (elabThm sign' opid pos defn))
          | TAC defn => ETelescope.snoc esign' eopid (decorate (elabTac sign' opid defn))

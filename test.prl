@@ -2,8 +2,9 @@ Def test(#A : exp; #B : [exp].exp) : exp = [
   (x : #A) -> (y : #A) -> #A -> #B[x]
 ].
 
-Thm hello() : [univ{i} = univ{i} : univ{i'}] by [
-  id
+Thm hello() : [lam([x].x) ~ lam([x].x) lam([x].x)] by [
+  eval-goal;
+  ceq/refl
 ].
 
 Tac mytac() = [
