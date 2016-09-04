@@ -115,8 +115,8 @@ struct
      | BASE => [] ->> EXP
      | FALSE => [] ->> EXP
      | AX => [] ->> TRIV
-     | REFINE true => [[] * [] <> EXP, [] * [] <> TAC, [] * [] <> EXP] ->> THM
-     | REFINE false => [[] * [] <> EXP, [] * [] <> TAC] ->> THM
+     | REFINE true => [[] * [] <> JDG, [] * [] <> TAC, [] * [] <> EXP] ->> THM
+     | REFINE false => [[] * [] <> JDG, [] * [] <> TAC] ->> THM
      | EXTRACT => [[] * [] <> THM] ->> EXP
      | TAC_SEQ n =>
          let

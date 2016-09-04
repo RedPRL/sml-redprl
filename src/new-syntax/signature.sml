@@ -123,7 +123,7 @@ struct
       let
         val _ = print "Hello!"
         val metactx = metactxFromArguments arguments
-        val goal' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (goal, O.EXP)
+        val goal' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (goal, O.JDG)
         val script' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (script, O.TAC)
 
         val judgment = Seq.>> (Seq.Hyps.empty, Seq.CJ.fromAbt goal')
