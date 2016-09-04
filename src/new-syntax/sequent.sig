@@ -2,6 +2,8 @@ signature SEQUENT =
 sig
   type var = RedPrlAbt.variable
   type sym = RedPrlAbt.symbol
+  type psort = RedPrlAbt.psort
+  type sort = RedPrlAbt.sort
   type hyp = sym
 
   structure Hyps : TELESCOPE where type Label.t = hyp
@@ -10,11 +12,8 @@ sig
 
   datatype 'a jdg =
      >> of 'a ctx * 'a
-   | |> of (var list * sym list) * 'a jdg
+   | |> of ((sym * psort) list * (var * sort) list) * 'a jdg
 
-  val map : ('a -> 'b) jdg -> 'a jdg -> 'b jdg
-
-  structure CJ : CATEGORICAL_JUDGMENT
-
-  val judgmentMetactx : RedPrlAbt.abt CJ.jdg jdg -> RedPrlAbt.metactx
+  val map : ('a -> 'b) -> 'a jdg -> 'b jdg
+  val toString : ('a -> string) -> 'a jdg -> string
 end

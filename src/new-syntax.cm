@@ -8,6 +8,7 @@ Group is
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/abt-machine.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-typed-abts/basis/basis.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-dependent-lcf/dependent_lcf.cm (bind:(anchor:libs value:../lib/))
   ../lib/sml-dependent-lcf/nominal_lcf.cm (bind:(anchor:libs value:../lib/))
 
   new-syntax/parameter.sml
@@ -18,6 +19,7 @@ Group is
   new-syntax/categorical_judgment.sml
 
   new-syntax/sequent.sig
+  new-syntax/judgment.fun
 
   new-syntax/signature.sig
   new-syntax/signature.sml

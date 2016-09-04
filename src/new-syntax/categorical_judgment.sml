@@ -48,8 +48,11 @@ struct
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO O.JDG_CEQ $ [_ \ m, _ \ n] => CEQUIV (m, n)
        | _ => raise InvalidJudgment
-
-
-
   end
+
+  val toString = ShowAbt.toString o toAbt
+  val metactx = RedPrlAbt.metactx o toAbt
+
+  fun unify (j1, j2) =
+    RedPrlAbt.Unify.unify (toAbt j1, toAbt j2)
 end

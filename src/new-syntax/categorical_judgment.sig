@@ -18,5 +18,10 @@ sig
   val toAbt : abt jdg -> abt
   val fromAbt : abt -> abt jdg
 
+  val toString : abt jdg -> string
+
+  val metactx : abt jdg -> RedPrlAbt.metactx
+  val unify : abt jdg * abt jdg -> RedPrlAbt.Unify.renaming
+
   exception InvalidJudgment
 end
