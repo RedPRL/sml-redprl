@@ -19,6 +19,8 @@ Group is
   new-syntax/categorical_judgment.sml
 
   new-syntax/sequent.sig
+  new-syntax/sequent.sml
+
   new-syntax/judgment.fun
 
   new-syntax/signature.sig

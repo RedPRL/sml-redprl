@@ -28,7 +28,6 @@ struct
 
   local
     open S
-    structure O = RedPrlOpData
     infix >> |>
   in
     val rec evidenceValence =
@@ -44,13 +43,13 @@ struct
       val <+> = MetaCtxUtil.union
       infix <+>
     in
-      fun hypsMetactx H : RedPrlArity.Vl.t MetaCtx.dict =
+      fun hypsMetactx H : Tm.metactx =
         S.Hyps.foldl
           (fn (a, psi) => psi <+> CJ.metactx a)
           MetaCtx.empty
           H
 
-      val rec judgmentMetactx : judgment -> RedPrlArity.Vl.t MetaCtx.dict =
+      val rec judgmentMetactx : judgment -> Tm.metactx =
         fn H >> catjdg => hypsMetactx H <+> CJ.metactx catjdg
          | _ |> jdg => judgmentMetactx jdg
     end
@@ -97,6 +96,7 @@ struct
                end
           | ((U1, G1) |> jdg1, (U2, G2) |> jdg2) =>
               let
+                (* TODO: this probably ought to be producing a "real" unification for these variables *)
                 val _ =
                   ListPair.appEq
                     (fn ((x, sigma), (y, tau)) =>
@@ -105,6 +105,14 @@ struct
                        else
                          raise Tm.Unify.UnificationFailed)
                     (G1, G2)
+                val _ =
+                  ListPair.appEq
+                    (fn ((u, sigma), (v, tau)) =>
+                       if Tm.Sym.eq (u, v) andalso sigma = tau then
+                         ()
+                       else
+                         raise Tm.Unify.UnificationFailed)
+                    (U1, U2)
               in
                 unifyJudgment' (jdg1, jdg2)
               end
@@ -115,6 +123,6 @@ struct
             handle _ => NONE
     end
   end
-
-
 end
+
+structure RedPrlJudgment = RedPrlJudgment (Sequent)
