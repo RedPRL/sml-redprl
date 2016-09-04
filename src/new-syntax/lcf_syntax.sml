@@ -1,5 +1,6 @@
-structure LcfSyntax : NOMINAL_LCF_SYNTAX =
+functor LcfSyntax (Sig : MINI_SIGNATURE) : NOMINAL_LCF_SYNTAX =
 struct
+  structure Machine = RedPrlMachine (Sig)
   structure Tm = RedPrlAbt open RedPrlAbt
   structure O = RedPrlOpData
   infix $ $$ \ $#
@@ -10,10 +11,10 @@ struct
   type rule = abt
   type tactic = abt
   type multitactic = abt
-  type sign = Signature.sign
+  type sign = Sig.sign
 
   fun evalOpen sign t =
-    setAnnotation (getAnnotation t) (RedPrlMachine.eval sign t)
+    setAnnotation (getAnnotation t) (Machine.eval sign t)
       handle _ => t
 
   local

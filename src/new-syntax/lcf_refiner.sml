@@ -1,10 +1,11 @@
-structure LcfModel : NOMINAL_LCF_MODEL =
+functor LcfModel (Sig : MINI_SIGNATURE) : NOMINAL_LCF_MODEL =
 struct
-  structure Syn = LcfSyntax
+  structure Syn = LcfSyntax (Sig)
   structure Lcf = DependentLcf (RedPrlJudgment)
   structure T = Tacticals (Lcf)
   structure MT = Multitacticals (Lcf)
   structure Spr = UniversalSpread
+  structure Machine = RedPrlMachine (Sig)
 
   type 'a nominal = Syn.atom Spr.point -> 'a
   type tactic = MT.Lcf.tactic nominal
@@ -15,4 +16,4 @@ struct
     raise Fail "TODO!"
 end
 
-structure LcfSemantics = NominalLcfSemantics (LcfModel)
+functor LcfSemantics (Sig : MINI_SIGNATURE) = NominalLcfSemantics (LcfModel (Sig))

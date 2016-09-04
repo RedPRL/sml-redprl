@@ -1,35 +1,43 @@
 structure Signature :> SIGNATURE =
 struct
-  type abt = RedPrlAbt.abt
-  type ast = RedPrlAst.ast
-  type sort = RedPrlSort.t
-  type valence = RedPrlArity.valence
+  structure MiniSig =
+  struct
+    type abt = RedPrlAbt.abt
+    type ast = RedPrlAst.ast
+    type sort = RedPrlSort.t
+    type valence = RedPrlArity.valence
+    type opid = RedPrlAbt.symbol
 
-  type arguments = (string * valence) list
+    type arguments = (string * valence) list
+    type entry = {sourceOpid : string, arguments : arguments, sort : sort, definiens : abt}
 
+    datatype ast_decl =
+       DEF of {arguments : arguments, sort : sort, definiens : ast}
+     | THM of {arguments : arguments, goal : ast, script : ast}
+     | TAC of {arguments : arguments, script : ast}
+
+    (* elaborated declarations *)
+    datatype elab_decl = EDEF of entry
+
+    structure Telescope = Telescope (StringAbtSymbol)
+    structure ETelescope = Telescope (RedPrlAbt.Sym)
+    structure NameEnv = AstToAbt.NameEnv
+
+    (* A signature / [sign] is a telescope of declarations. *)
+    type ast_sign = (ast_decl * Pos.t option) Telescope.telescope
+
+    (* An elaborated signature is a telescope of definitions. *)
+    type elab_sign = elab_decl Susp.susp ETelescope.telescope
+
+    type sign = ast_sign * elab_sign * RedPrlAbt.symbol NameEnv.dict
+
+    fun lookup (_, esign, _) opid =
+      case Susp.force (ETelescope.lookup esign opid) of
+         EDEF defn => defn
+  end
+
+  open MiniSig
   structure O = RedPrlOpData
-
-  datatype ast_decl =
-     DEF of {arguments : arguments, sort : sort, definiens : ast}
-   | THM of {arguments : arguments, goal : ast, script : ast}
-   | TAC of {arguments : arguments, script : ast}
-
-  type opid = string
-
-  (* elaborated declarations *)
-  datatype elab_decl = EDEF of {sourceOpid : opid, arguments : arguments, sort : sort, definiens : abt}
-
-  structure Telescope = Telescope (StringAbtSymbol)
-  structure ETelescope = Telescope (RedPrlAbt.Sym)
-  structure NameEnv = AstToAbt.NameEnv
-
-  (* A signature / [sign] is a telescope of declarations. *)
-  type ast_sign = (ast_decl * Pos.t option) Telescope.telescope
-
-  (* An elaborated signature is a telescope of definitions. *)
-  type elab_sign = elab_decl Susp.susp ETelescope.telescope
-
-  type sign = ast_sign * elab_sign * RedPrlAbt.symbol NameEnv.dict
 
   local
     val argsToString : arguments -> string =
@@ -91,6 +99,7 @@ struct
 
     structure MetaCtx = RedPrlAbt.Metavar.Ctx
     structure Seq = RedPrlSequent
+    structure Refiner = LcfSemantics (MiniSig)
 
     fun metactxFromArguments args =
       List.foldl
@@ -110,13 +119,16 @@ struct
          definiens = definiens'}
       end
 
-    fun elabThm nameEnv opid {arguments, goal, script} =
+    fun elabThm (sign, esign, nameEnv) opid {arguments, goal, script} =
       let
+        val _ = print "Hello!"
         val metactx = metactxFromArguments arguments
         val goal' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (goal, O.EXP)
         val script' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (script, O.TAC)
 
         val judgment = Seq.>> (Seq.Hyps.empty, Seq.CJ.fromAbt goal')
+        val names = fn _ => RedPrlAbt.Sym.named "?"
+        val _ = Refiner.tactic ((sign, esign, nameEnv), RedPrlAbt.Var.Ctx.empty) script' names judgment
 
         local
           open RedPrlAbt infix $$ \
@@ -150,7 +162,7 @@ struct
       in
         case processDecl sign decl of
            DEF defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabDef nameEnv opid defn))
-         | THM defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabThm nameEnv opid defn))
+         | THM defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabThm (sign, esign, nameEnv) opid defn))
          | TAC defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabTac nameEnv opid defn))
       end
 
@@ -175,6 +187,7 @@ struct
   end
 
   fun check (sign, esign, _) =
+    (* TODO: this fold isn't working; check the telescopes lib *)
     ETelescope.foldl (fn (decl, _) => (Susp.force decl ; ())) () esign
 
 end

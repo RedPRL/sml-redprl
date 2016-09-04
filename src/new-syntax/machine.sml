@@ -1,9 +1,9 @@
-structure RedPrlMachineBasis : ABT_MACHINE_BASIS =
+functor RedPrlMachineBasis (Sig : MINI_SIGNATURE) : ABT_MACHINE_BASIS =
 struct
   structure Cl = AbtClosureUtil (AbtClosure (RedPrlAbt))
   structure S = AbtMachineState (Cl)
   structure P = struct open RedPrlParamData RedPrlParameterTerm end
-  type sign = Signature.sign
+  type sign = Sig.sign
 
   exception InvalidCut
 
@@ -201,4 +201,4 @@ end
 (* From the above definitions, we are able to generate a complete machine implementation,
  * which deals with all the bureaucratic aspects of computation: variables, congruence
  * rules, etc. The supremacy of Standard ML in action! *)
-structure RedPrlMachine = AbtMachineUtil (AbtMachine (RedPrlMachineBasis))
+ functor RedPrlMachine (Sig : MINI_SIGNATURE) = AbtMachineUtil (AbtMachine (RedPrlMachineBasis (Sig)))
