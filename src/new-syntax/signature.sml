@@ -210,8 +210,12 @@ struct
         case pos of
            SOME pos => Pos.toString pos
          | NONE => "[Unknown Location]"
+
+      val lines = String.tokens (fn c => c = #"\n") msg
+      val indented = List.map (fn l => "  " ^ l ^ "\n") lines
+      val msg' = List.foldr op^ "" indented
     in
-      pos' ^ ": " ^ msg ^"\n\n"
+      pos' ^ ":\n" ^ msg' ^"\n\n"
     end
 
   val checkAlg : (elab_decl, unit) E.alg =
