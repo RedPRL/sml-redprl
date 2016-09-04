@@ -29,10 +29,13 @@ struct
     (* An elaborated signature is a telescope of definitions. *)
     type elab_sign = elab_decl Susp.susp ETelescope.telescope
 
-    type sign = ast_sign * elab_sign * RedPrlAbt.symbol NameEnv.dict
+    type sign =
+      {sourceSign : ast_sign,
+       elabSign : elab_sign,
+       nameEnv : RedPrlAbt.symbol NameEnv.dict}
 
-    fun lookup (_, esign, _) opid =
-      case Susp.force (ETelescope.lookup esign opid) of
+    fun lookup ({elabSign, ...} : sign) opid =
+      case Susp.force (ETelescope.lookup elabSign opid) of
          EDEF defn => defn
   end
 
@@ -52,18 +55,21 @@ struct
        | TAC {arguments, script} =>
            "Tac " ^ opid ^ "(" ^ argsToString arguments ^ ") = [" ^ RedPrlAst.toString script ^ "]."
   in
-    fun toString (sign, _, _) =
+    fun toString ({sourceSign,...} : sign) =
       let
         open Telescope.ConsView
         fun go EMPTY = ""
           | go (CONS (opid, (decl, _), xs)) =
               declToString (opid, decl) ^ "\n\n" ^ go (out xs)
       in
-        go (out sign)
+        go (out sourceSign)
       end
   end
 
-  val empty = (Telescope.empty, ETelescope.empty, NameEnv.empty)
+  val empty =
+    {sourceSign = Telescope.empty,
+     elabSign = ETelescope.empty,
+     nameEnv = NameEnv.empty}
 
   local
     val arityOfDecl =
@@ -109,7 +115,7 @@ struct
         MetaCtx.empty
         args
 
-    fun elabDef nameEnv opid {arguments, sort, definiens} =
+    fun elabDef ({nameEnv,...} : sign) opid {arguments, sort, definiens} =
       let
         val metactx = metactxFromArguments arguments
         val definiens' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (definiens, sort)
@@ -121,15 +127,15 @@ struct
          definiens = definiens'}
       end
 
-    fun elabThm (sign, esign, nameEnv) opid {arguments, goal, script} =
+    fun elabThm sign opid {arguments, goal, script} =
       let
         open Seq RedPrlAbt RedPrlOpData infix >> \
         val metactx = metactxFromArguments arguments
-        val goal' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (goal, JDG)
-        val script' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (script, TAC)
+        val goal' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (goal, JDG)
+        val script' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (script, TAC)
         val judgment = Hyps.empty >> CJ.fromAbt goal'
         val names = fn i => Sym.named ("@" ^ Int.toString i)
-        val state as (subgoals, vld) = Refiner.tactic ((sign, esign, nameEnv), Var.Ctx.empty) script' names judgment
+        val state as (subgoals, vld) = Refiner.tactic (sign, Var.Ctx.empty) script' names judgment
 
         local
           open RedPrlAbt infix $$ \
@@ -158,7 +164,7 @@ struct
       end
 
 
-    fun elabTac nameEnv opid {arguments, script} =
+    fun elabTac ({nameEnv,...} : sign) opid {arguments, script} =
       let
         val metactx = List.foldl (fn ((x, vl), mctx) => MetaCtx.insert mctx x vl) MetaCtx.empty arguments
         val script' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (script, O.TAC)
@@ -170,14 +176,15 @@ struct
          definiens = script'}
       end
 
-    fun elabDecl (sign, esign, nameEnv) (opid, eopid) (decl : ast_decl) : elab_sign =
+    fun elabDecl (sign : sign) (opid, eopid) (decl : ast_decl) : elab_sign =
       let
-        val esign' = ETelescope.truncateFrom esign eopid
+        val esign' = ETelescope.truncateFrom (#elabSign sign) eopid
+        val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
       in
-        case processDecl sign decl of
-           DEF defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabDef nameEnv opid defn))
-         | THM defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabThm (sign, esign, nameEnv) opid defn))
-         | TAC defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabTac nameEnv opid defn))
+        case processDecl (#sourceSign sign) decl of
+           DEF defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabDef sign' opid defn))
+         | THM defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabThm sign' opid defn))
+         | TAC defn => ETelescope.snoc esign' eopid (Susp.delay (fn () => elabTac sign' opid defn))
       end
 
     fun insertAstDecl sign opid (decl, pos) =
@@ -188,19 +195,19 @@ struct
       end
 
   in
-    fun insert (sign, esign, nameEnv) opid (decl, pos) =
+    fun insert (sign : sign) opid (decl, pos) =
       let
-        val sign' = insertAstDecl sign opid (decl, pos)
+        val sourceSign = insertAstDecl (#sourceSign sign) opid (decl, pos)
 
         val eopid = RedPrlAbt.Sym.named opid
-        val esign' = elabDecl (sign, esign, nameEnv) (opid, eopid) decl
-        val nameEnv' = NameEnv.insert nameEnv opid eopid
+        val elabSign = elabDecl sign (opid, eopid) decl
+        val nameEnv = NameEnv.insert (#nameEnv sign) opid eopid
       in
-        (sign', esign', nameEnv')
+        {sourceSign = sourceSign, elabSign = elabSign, nameEnv = nameEnv}
       end
   end
 
-  fun check (sign, esign, _) =
-    ETelescope.foldl (fn (decl, _) => (Susp.force decl ; ())) () esign
+  fun check ({elabSign,...} : sign) =
+    ETelescope.foldl (fn (decl, _) => (Susp.force decl ; ())) () elabSign
 
 end
