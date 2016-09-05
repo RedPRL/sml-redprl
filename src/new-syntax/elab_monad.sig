@@ -4,6 +4,8 @@ sig
 
   type 'a ann = Pos.t option * 'a
 
+  val wrap : (unit -> 'a) ann -> 'a t
+
   val warn : string ann -> unit t
   val info : string ann -> unit t
   val fail : string ann -> 'a t

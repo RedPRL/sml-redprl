@@ -134,7 +134,7 @@ struct
         MetaCtx.empty
         args
 
-    fun scopeCheck (sign : sign) metactx term : unit E.t =
+    fun scopeCheck (sign : sign) metactx term : Tm.abt E.t =
       let
         val termPos = Tm.getAnnotation term
         val checkSyms =
@@ -156,76 +156,74 @@ struct
         val checkMetas =
           Tm.Metavar.Ctx.foldl
             (fn (x, vl, r) =>
-               r <*
-                 (case Tm.Metavar.Ctx.find metactx x of
-                     SOME vl' => E.unless (Tm.O.Ar.Vl.eq (vl, vl'), E.warn (termPos, "Metavar valence mismatch: " ^ Tm.Metavar.toString x))
-                   | NONE => E.warn (termPos, "Unbound metavar: " ^ Tm.Metavar.toString x)))
+               r <* E.unless (Option.isSome (Tm.Metavar.Ctx.find metactx x), E.warn (termPos, "Unbound metavar: " ^ Tm.Metavar.toString x)))
             (E.ret ())
             (Tm.metactx term)
       in
-        checkVars *> checkSyms *> checkMetas
+        checkVars *> checkSyms *> checkMetas *> E.ret term
       end
+
+    fun convertToAbt sign metactx ast sort =
+      E.wrap (RedPrlAst.getAnnotation ast, fn () => AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (ast, sort))
+        >>= scopeCheck sign metactx
 
     fun elabDef (sign : sign) opid {arguments, sort, definiens} =
       E.ret () >>= (fn _ =>
         let
           val metactx = metactxFromArguments arguments
-          val definiens' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (definiens, sort)
         in
-          scopeCheck sign metactx definiens'
-            *> E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = sort, definiens = definiens'})
+          convertToAbt sign metactx definiens sort >>= (fn definiens' =>
+            E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = sort, definiens = definiens'}))
         end)
 
-    fun elabThm sign opid pos {arguments, goal, script} =
-      E.ret () >>= (fn _ =>
+    fun <&> (m, n) = m >>= (fn x => n >>= (fn y => E.ret (x, y)))
+    infix <&>
+
+    local
+      open RedPrlSequent Tm RedPrlOpData infix >> \ $$
+
+      fun names i = Sym.named ("@" ^ Int.toString i)
+
+      fun elabRefine sign (goal, script) =
         let
-          open RedPrlSequent Tm RedPrlOpData infix >> \
-          val metactx = metactxFromArguments arguments
-          val goal' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (goal, JDG)
-          val script' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (script, TAC)
-
-          val catjdg = CJ.fromAbt goal'
+          val catjdg = CJ.fromAbt goal
           val seqjdg = Hyps.empty >> catjdg
-          val sort = CJ.synthesis catjdg
-          val names = fn i => Sym.named ("@" ^ Int.toString i)
-
-          val elabProofState =
-            E.ret (Refiner.tactic (sign, Var.Ctx.empty) script' names seqjdg)
-              handle exn => E.fail (pos, exnMessage exn)
-
           val tau = CJ.synthesis catjdg
-
-          local
-            open Tm infix $$ \
-          in
-            val elabDefiniens =
-              elabProofState >>= (fn state as (subgoals, vld) =>
-                if LcfModel.Lcf.T.isEmpty subgoals then
-                  (E.ret (outb (vld (LcfModel.Lcf.T.empty))) handle exn => E.fail (pos, exnMessage exn)) >>= (fn _ \ evd =>
-                    E.ret (MONO (REFINE (true, tau)) $$ [([],[]) \ goal', ([],[]) \ script', ([],[]) \ evd]))
-                else
-                  let
-                    val stateStr = LcfModel.Lcf.stateToString state
-                  in
-                    E.warn (pos, "Refinement failed: \n\n" ^ stateStr)
-                      *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal', ([],[]) \ script']))
-                  end)
-          end
+          val pos = getAnnotation script
         in
-          scopeCheck sign metactx goal' *>
-          scopeCheck sign metactx script' *>
-          elabDefiniens >>= (fn definiens =>
-            E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = THM sort, definiens = definiens})
-        end)
+          E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (subgoals, vld) =>
+            if LcfModel.Lcf.T.isEmpty subgoals then
+              E.wrap (pos, fn _ => outb (vld (LcfModel.Lcf.T.empty))) >>= (fn _ \ evd =>
+                 E.ret (MONO (REFINE (true, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd]))
+            else
+              let
+                val stateStr = LcfModel.Lcf.stateToString state
+              in
+                E.warn (pos, "Refinement failed: \n\n" ^ stateStr)
+                  *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))
+              end)
+        end
+
+    in
+      fun elabThm sign opid pos {arguments, goal, script} =
+        E.ret () >>= (fn _ =>
+          let
+            val metactx = metactxFromArguments arguments
+            val names = fn i => Sym.named ("@" ^ Int.toString i)
+          in
+            convertToAbt sign metactx goal JDG <&> convertToAbt sign metactx script TAC
+              >>= elabRefine sign
+              >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = sort definiens, definiens = definiens})
+          end)
+    end
 
     fun elabTac (sign : sign) opid {arguments, script} =
       E.ret () >>= (fn _ =>
         let
           val metactx = metactxFromArguments arguments
-          val script' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (script, O.TAC)
         in
-          scopeCheck sign metactx script'
-            *> E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = O.TAC, definiens = script'})
+          convertToAbt sign metactx script O.TAC >>= (fn script' =>
+            E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = O.TAC, definiens = script'})
         end)
 
     fun elabDecl (sign : sign) (opid, eopid) (decl : ast_decl, pos) : elab_sign =

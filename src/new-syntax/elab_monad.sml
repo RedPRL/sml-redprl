@@ -81,6 +81,10 @@ struct
       {result = FAILURE msg,
        messages = DList.nil})
 
+  fun wrap (pos, f) =
+    ret (f ())
+    handle exn => fail (pos, exnMessage exn)
+
   type ('a, 'b) alg =
     {warn : string ann * 'b -> 'b,
      info : string ann * 'b -> 'b,
