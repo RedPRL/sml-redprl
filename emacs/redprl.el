@@ -210,12 +210,17 @@
          :command ("redprl" source)
          :error-patterns
          ((error line-start
-                 (optional "Parse error at ")
-                 (file-name) ":" line "." column "-" (+ num) "." (+ num) ": "
+                 (file-name) ":" line "." column "-" (+ num) "." (+ num) " [Error]:\n"
                  (message
                   (+ not-newline)
                   (* "\n  " (* not-newline)))
-                 line-end))
+                 line-end)
+          (warning line-start
+                   (file-name) ":" line "." column "-" (+ num) "." (+ num) " [Warning]:\n"
+                   (message
+                    (+ not-newline)
+                    (* "\n  " (* not-newline)))
+                   line-end))
          :modes redprl-mode)
 
        (add-to-list 'flycheck-checkers 'redprl)))

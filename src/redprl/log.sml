@@ -22,7 +22,7 @@ struct
       val indented = List.map (fn l => "  " ^ l ^ "\n") lines
       val msg' = List.foldr op^ "" indented
     in
-      pos' ^ " " ^ prefix ^ ":\n" ^ msg' ^"\n\n"
+      pos' ^ " [" ^ prefix ^ "]:\n" ^ msg' ^"\n\n"
     end
 
   val streamForLevel =
