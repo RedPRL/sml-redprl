@@ -168,13 +168,12 @@ struct
         >>= scopeCheck sign metactx
 
     fun elabDef (sign : sign) opid {arguments, sort, definiens} =
-      E.ret () >>= (fn _ =>
-        let
-          val metactx = metactxFromArguments arguments
-        in
-          convertToAbt sign metactx definiens sort >>= (fn definiens' =>
-            E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = sort, definiens = definiens'}))
-        end)
+      let
+        val metactx = metactxFromArguments arguments
+      in
+        convertToAbt sign metactx definiens sort >>= (fn definiens' =>
+          E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = sort, definiens = definiens'}))
+      end
 
     fun <&> (m, n) = m >>= (fn x => n >>= (fn y => E.ret (x, y)))
     infix <&>
@@ -206,25 +205,23 @@ struct
 
     in
       fun elabThm sign opid pos {arguments, goal, script} =
-        E.ret () >>= (fn _ =>
-          let
-            val metactx = metactxFromArguments arguments
-            val names = fn i => Sym.named ("@" ^ Int.toString i)
-          in
-            convertToAbt sign metactx goal JDG <&> convertToAbt sign metactx script TAC
-              >>= elabRefine sign
-              >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = sort definiens, definiens = definiens})
-          end)
+        let
+          val metactx = metactxFromArguments arguments
+          val names = fn i => Sym.named ("@" ^ Int.toString i)
+        in
+          convertToAbt sign metactx goal JDG <&> convertToAbt sign metactx script TAC
+            >>= elabRefine sign
+            >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = sort definiens, definiens = definiens})
+        end
     end
 
     fun elabTac (sign : sign) opid {arguments, script} =
-      E.ret () >>= (fn _ =>
-        let
-          val metactx = metactxFromArguments arguments
-        in
-          convertToAbt sign metactx script O.TAC >>= (fn script' =>
-            E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = O.TAC, definiens = script'})
-        end)
+      let
+        val metactx = metactxFromArguments arguments
+      in
+        convertToAbt sign metactx script O.TAC >>= (fn script' =>
+          E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = O.TAC, definiens = script'})
+      end
 
     fun elabDecl (sign : sign) (opid, eopid) (decl : ast_decl, pos) : elab_sign =
       let
@@ -233,9 +230,9 @@ struct
         fun decorate e = e >>= (fn x => E.info (pos, declToString (opid, decl)) *> E.ret x)
       in
         case processDecl sign decl of
-           DEF defn => ETelescope.snoc esign' eopid (decorate (elabDef sign' opid defn))
-         | THM defn => ETelescope.snoc esign' eopid (decorate (elabThm sign' opid pos defn))
-         | TAC defn => ETelescope.snoc esign' eopid (decorate (elabTac sign' opid defn))
+           DEF defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabDef sign' opid defn)))
+         | THM defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabThm sign' opid pos defn)))
+         | TAC defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabTac sign' opid defn)))
       end
 
     fun insertAstDecl sign opid (decl, pos) =

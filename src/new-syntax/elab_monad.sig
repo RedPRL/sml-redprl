@@ -4,6 +4,7 @@ sig
 
   type 'a ann = Pos.t option * 'a
 
+  val delay : (unit -> 'a t) -> 'a t
   val wrap : (unit -> 'a) ann -> 'a t
 
   val warn : string ann -> unit t

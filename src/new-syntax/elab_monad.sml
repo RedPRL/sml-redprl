@@ -85,6 +85,9 @@ struct
     ret (f ())
     handle exn => fail (pos, exnMessage exn)
 
+  fun delay f =
+    bind f (ret ())
+
   type ('a, 'b) alg =
     {warn : string ann * 'b -> 'b,
      info : string ann * 'b -> 'b,
