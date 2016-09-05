@@ -1,9 +1,0 @@
-local
-  src/syntax.mlb
-  src/signature.mlb
-  src/dynamics.mlb
-  src/signature-elab.mlb
-  src/nominal-lcf.mlb
-  src/frontend.mlb
-in
-end
