@@ -1,2 +1,0 @@
-structure NominalLcfSemantics =
-  NominalLcfSemantics (NominalLcfModel)
