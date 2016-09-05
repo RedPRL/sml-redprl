@@ -1,4 +1,6 @@
-Library
+local
+  $(LIBS)/cmlib/cmlib.mlb
+in
   signature DICT
   functor SplayDict
   functor HashTable
@@ -8,5 +10,5 @@ Library
   structure Susp
   structure Pos
   structure Coord
-is
-  $libs/cmlib/cmlib.cm
+end
+

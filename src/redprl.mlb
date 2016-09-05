@@ -1,0 +1,52 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/mlyacc-lib/mlyacc-lib.mlb
+
+  cmlib.mlb
+
+  $(LIBS)/sml-cats/cats.mlb
+  $(LIBS)/sml-telescopes/telescopes.mlb
+  $(LIBS)/sml-typed-abts/abt.mlb
+  $(LIBS)/sml-typed-abts/abt-machine.mlb
+  $(LIBS)/sml-typed-abts/basis/basis.mlb
+  $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
+  $(LIBS)/sml-dependent-lcf/nominal_lcf.mlb
+
+  redprl/parameter.sml
+  redprl/operator.sml
+  redprl/abt.sml
+
+  redprl/categorical_judgment.sig
+  redprl/categorical_judgment.sml
+
+  redprl/sequent.sig
+  redprl/sequent.sml
+
+  redprl/judgment.fun
+
+  redprl/elab_monad.sig
+  redprl/elab_monad.sml
+
+
+  redprl/signature.sig
+
+  ann "nonexhaustiveMatch ignore" in
+    redprl/machine.sml
+    redprl/lcf_syntax.sml
+    redprl/lcf_refiner.sml
+  end
+
+  redprl/signature.sml
+
+  redprl/redprl.grm.sig
+  redprl/redprl.grm.sml
+  redprl/redprl.lex.sml
+
+  redprl/redprl_lexer.sml
+  redprl/redprl_parser.sml
+
+in
+  structure RedPrlParser
+  structure Pos
+  structure Signature
+end
