@@ -3,7 +3,7 @@ Def test(#A : exp; #B : [exp].exp) : exp = [
 ].
 
 Thm hello() : [
-  hcom{1; 0 ~> 1}(bool; y; {z}. tt; {z}. ff)
+  hcom{1; 0 ~> 1}(bool; tt; {z}. tt; {z}. ff)
     ~
   lam([x].x) ff
 ] by [
@@ -13,6 +13,6 @@ Thm hello() : [
 
 Tac mytac() = [
   x <- id;
-  y <- welp;
-  foo
+  y <- id;
+  id
 ].

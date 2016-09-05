@@ -48,7 +48,7 @@ struct
     in
       fun hypsMetactx H : Tm.metactx =
         S.Hyps.foldl
-          (fn (a, psi) => psi <+> CJ.metactx a)
+          (fn (_, a, psi) => psi <+> CJ.metactx a)
           (raise Match)
           H
 

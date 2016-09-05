@@ -1,16 +1,21 @@
 structure Signature :> SIGNATURE =
 struct
+  structure Tm = RedPrlAbt
+  structure P = RedPrlParamData
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
-  open ElabNotation infix >>= *>
+  open ElabNotation infix >>= *> <*
+
+  fun @@ (f, x) = f x
+  infixr @@
 
   structure MiniSig =
   struct
-    type abt = RedPrlAbt.abt
+    type abt = Tm.abt
     type ast = RedPrlAst.ast
     type sort = RedPrlSort.t
     type valence = RedPrlArity.valence
-    type opid = RedPrlAbt.symbol
+    type opid = Tm.symbol
 
     type arguments = (string * valence) list
     type entry = {sourceOpid : string, arguments : arguments, sort : sort, definiens : abt}
@@ -24,7 +29,7 @@ struct
     datatype elab_decl = EDEF of entry
 
     structure Telescope = Telescope (StringAbtSymbol)
-    structure ETelescope = Telescope (RedPrlAbt.Sym)
+    structure ETelescope = Telescope (Tm.Sym)
     structure NameEnv = AstToAbt.NameEnv
 
     (* A signature / [sign] is a telescope of declarations. *)
@@ -36,7 +41,7 @@ struct
     type sign =
       {sourceSign : ast_sign,
        elabSign : elab_sign,
-       nameEnv : RedPrlAbt.symbol NameEnv.dict}
+       nameEnv : Tm.symbol NameEnv.dict}
 
     fun lookup ({elabSign, ...} : sign) opid =
       case E.run (ETelescope.lookup elabSign opid) of
@@ -103,11 +108,14 @@ struct
         fn O.POLY (O.CUST (opid, NONE)) => O.POLY (O.CUST (opid, arityOfOpid sign opid))
          | th => th
 
-      fun processTerm sign m =
+      fun processTerm' sign m =
         case out m of
            `x => ``x
          | th $ es => processOp sign th $$ List.map (fn bs \ m => bs \ processTerm sign m) es
          | x $# (ps, ms) => x $$# (ps, List.map (processTerm sign) ms)
+
+      and processTerm sign m =
+        setAnnotation (getAnnotation m) (processTerm' sign m)
     in
       fun processDecl sign =
         fn DEF {arguments, sort, definiens} => DEF {arguments = arguments, sort = sort, definiens = processTerm sign definiens}
@@ -115,7 +123,7 @@ struct
          | TAC {arguments, script} => TAC {arguments = arguments, script = processTerm sign script}
     end
 
-    structure MetaCtx = RedPrlAbt.Metavar.Ctx
+    structure MetaCtx = Tm.Metavar.Ctx
 
     structure LcfModel = LcfModel (MiniSig)
     structure Refiner = NominalLcfSemantics (LcfModel)
@@ -126,19 +134,52 @@ struct
         MetaCtx.empty
         args
 
-    fun elabDef ({nameEnv,...} : sign) opid {arguments, sort, definiens} =
+    fun scopeCheck (sign : sign) metactx term : unit E.t =
+      let
+        val termPos = Tm.getAnnotation term
+        val checkSyms =
+          Tm.Sym.Ctx.foldl
+            (fn (u, tau, r) =>
+              E.unless
+                (tau = P.OPID andalso Option.isSome (ETelescope.find (#elabSign sign) u),
+                 E.warn (termPos, "Unbound symbol: " ^ Tm.Sym.toString u))
+              *> r)
+            (E.ret ())
+            (Tm.symctx term)
+
+        val checkVars =
+          Tm.Var.Ctx.foldl
+            (fn (x, tau, r) => E.warn (termPos, "Unbound variable: " ^ Tm.Var.toString x) *> r)
+            (E.ret ())
+            (Tm.varctx term)
+
+        val checkMetas =
+          Tm.Metavar.Ctx.foldl
+            (fn (x, vl, r) =>
+               r <*
+                 (case Tm.Metavar.Ctx.find metactx x of
+                     SOME vl' => E.unless (Tm.O.Ar.Vl.eq (vl, vl'), E.warn (termPos, "Metavar valence mismatch: " ^ Tm.Metavar.toString x))
+                   | NONE => E.warn (termPos, "Unbound metavar: " ^ Tm.Metavar.toString x)))
+            (E.ret ())
+            (Tm.metactx term)
+      in
+        checkVars *> checkSyms *> checkMetas
+      end
+
+    fun elabDef (sign : sign) opid {arguments, sort, definiens} =
       E.ret () >>= (fn _ =>
         let
           val metactx = metactxFromArguments arguments
-          val definiens' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (definiens, sort)
+          val definiens' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (definiens, sort)
         in
-          E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = sort, definiens = definiens'})
+          scopeCheck sign metactx definiens'
+            *> E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = sort, definiens = definiens'})
         end)
 
     fun elabThm sign opid pos {arguments, goal, script} =
       E.ret () >>= (fn _ =>
         let
-          open RedPrlSequent RedPrlAbt RedPrlOpData infix >> \
+          open RedPrlSequent Tm RedPrlOpData infix >> \
           val metactx = metactxFromArguments arguments
           val goal' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (goal, JDG)
           val script' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (script, TAC)
@@ -155,7 +196,7 @@ struct
           val tau = CJ.synthesis catjdg
 
           local
-            open RedPrlAbt infix $$ \
+            open Tm infix $$ \
           in
             val elabDefiniens =
               elabProofState >>= (fn state as (subgoals, vld) =>
@@ -171,17 +212,20 @@ struct
                   end)
           end
         in
+          scopeCheck sign metactx goal' *>
+          scopeCheck sign metactx script' *>
           elabDefiniens >>= (fn definiens =>
-            E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = THM sort, definiens = definiens}))
+            E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = THM sort, definiens = definiens})
         end)
 
-    fun elabTac ({nameEnv,...} : sign) opid {arguments, script} =
+    fun elabTac (sign : sign) opid {arguments, script} =
       E.ret () >>= (fn _ =>
         let
-          val metactx = List.foldl (fn ((x, vl), mctx) => MetaCtx.insert mctx x vl) MetaCtx.empty arguments
-          val script' = AstToAbt.convertOpen metactx (nameEnv, NameEnv.empty) (script, O.TAC)
+          val metactx = metactxFromArguments arguments
+          val script' = AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (script, O.TAC)
         in
-          E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = O.TAC, definiens = script'})
+          scopeCheck sign metactx script'
+            *> E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = O.TAC, definiens = script'})
         end)
 
     fun elabDecl (sign : sign) (opid, eopid) (decl : ast_decl, pos) : elab_sign =
@@ -208,7 +252,7 @@ struct
       let
         val sourceSign = insertAstDecl (#sourceSign sign) opid (decl, pos)
 
-        val eopid = RedPrlAbt.Sym.named opid
+        val eopid = Tm.Sym.named opid
         val elabSign = elabDecl sign (opid, eopid) (decl, pos)
         val nameEnv = NameEnv.insert (#nameEnv sign) opid eopid
       in
@@ -238,5 +282,5 @@ struct
      fail = fn (msg, _) => TextIO.output (TextIO.stdErr, formatMessage msg)}
 
   fun check ({elabSign,...} : sign) =
-    ETelescope.foldl (fn (e, _) => E.fold checkAlg e) () elabSign
+    ETelescope.foldl (fn (_, e, _) => E.fold checkAlg e) () elabSign
 end

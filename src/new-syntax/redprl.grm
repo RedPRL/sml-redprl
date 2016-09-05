@@ -117,8 +117,10 @@ end
  | bindingSig of P.param_sort list * O.sort list
  | valence of Ar.valence
 
+ | prejudgment of ast
  | judgment of ast
 
+ | pretactic of ast
  | tactic of ast
  | tactics of ast list
  | tacticBinding of Tac.binding
@@ -249,12 +251,14 @@ preterm
   : term atomicPreterm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicPreterm)]))
   | atomicPreterm (atomicPreterm)
 
-judgment
+prejudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
   | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
   | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term EQUALS term COLON term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
   | term COLON term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
+
+judgment : prejudgment (annotate (Pos.pos prejudgment1left prejudgment1right) prejudgment)
 
 atomicTac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
@@ -276,8 +280,10 @@ tacticBindings
   | tacticBinding SEMI tacticBindings (tacticBinding :: tacticBindings)
   | ([])
 
-tactic
+pretactic
   : tacticBindings (Tac.compileScript tacticBindings)
+
+tactic : pretactic (annotate (Pos.pos pretactic1left pretactic1right) pretactic)
 
 tactics
   : ([])

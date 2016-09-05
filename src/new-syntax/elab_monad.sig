@@ -1,6 +1,6 @@
 signature ELAB_MONAD =
 sig
-  include MONAD
+  include MONAD_UTIL
 
   type 'a ann = Pos.t option * 'a
 

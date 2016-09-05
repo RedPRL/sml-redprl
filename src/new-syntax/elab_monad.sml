@@ -36,28 +36,35 @@ struct
       {result = FAILURE (NONE, exnMessage exn),
        messages = DList.nil}
 
-  fun ret a =
-    Susp.delay (fn () =>
-      {result = SUCCESS a,
-       messages = DList.nil})
+  structure Monad =
+  struct
+    type 'a t = 'a t
+    fun ret a =
+      Susp.delay (fn () =>
+        {result = SUCCESS a,
+         messages = DList.nil})
 
-  fun bind (f : 'a -> 'b t) (x : 'a t) =
-    Susp.delay (fn () =>
-      let
-        val st = force x
-      in
-        case #result st of
-           SUCCESS a =>
-             let
-               val st' = force (f a)
-             in
-               {result = #result st',
-                messages = #messages st' o #messages st}
-             end
-         | FAILURE msg =>
-             {result = FAILURE msg,
-              messages = #messages st}
-      end)
+    fun bind (f : 'a -> 'b t) (x : 'a t) =
+      Susp.delay (fn () =>
+        let
+          val st = force x
+        in
+          case #result st of
+             SUCCESS a =>
+               let
+                 val st' = force (f a)
+               in
+                 {result = #result st',
+                  messages = #messages st' o #messages st}
+               end
+           | FAILURE msg =>
+               {result = FAILURE msg,
+                messages = #messages st}
+        end)
+  end
+
+  structure MonadUtil = MonadUtil (Monad)
+  open MonadUtil
 
   fun warn msg =
     Susp.delay (fn () =>
