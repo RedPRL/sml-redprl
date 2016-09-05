@@ -31,6 +31,10 @@ struct
      | FAIL => TextIO.stdErr
 
   fun print lvl msg =
-    TextIO.output
-      (streamForLevel lvl, formatMessage lvl msg)
+    let
+      val stream = streamForLevel lvl
+    in
+      TextIO.output (stream, formatMessage lvl msg);
+      TextIO.flushOut stream
+    end
 end

@@ -2,6 +2,8 @@ local
   $(SML_LIB)/basis/basis.mlb
   redprl.mlb
   frontend/frontend.sml
-in
   frontend/main.sml
+in
+  structure Frontend
+  structure Main
 end

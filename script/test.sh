@@ -2,5 +2,8 @@
 
 LIBS=$(pwd)/lib
 
-mlton -mlb-path-var "LIBS $LIBS" testsuite/test.mlb
-./testsuite/test
+mlyacc src/redprl/redprl.grm
+mllex src/redprl/redprl.lex
+
+mlton -mlb-path-var "LIBS $LIBS" test/test.mlb
+./test/test

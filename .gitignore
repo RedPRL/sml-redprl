@@ -8,7 +8,7 @@
 *.toc
 *.bbl
 *.blg
-testsuite/test
+test/test
 *~
 *.grm.*
 *.lex.*
