@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016  Jonathan Sterling
 
 ;; Author: Jonathan Sterling <jon@jonmsterling.com>
-;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
+;; Package-Requires: ((emacs "24.3"))
 ;; Version: 0.0.1
 ;; Keywords: languages
 
