@@ -30,7 +30,6 @@ struct
     in
       Signature.check sign
     end
-    handle ParseError (pos, msg) =>
-      (RedPrlLog.print RedPrlLog.FAIL (SOME pos, msg);
-       false)
+    handle ParseError (pos, msg) => (RedPrlLog.print RedPrlLog.FAIL (SOME pos, msg); false)
+         | exn => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (Coord.init fileName) (Coord.init fileName)), exnMessage exn); false)
 end

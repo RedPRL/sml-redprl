@@ -1,5 +1,6 @@
 Library
   structure RedPrlParser
+  structure Coord
   structure Pos
   structure Signature
   structure RedPrlLog
