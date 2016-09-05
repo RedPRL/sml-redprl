@@ -1,5 +1,6 @@
-structure Frontend =
+structure Test =
 struct
+
   fun stringreader s =
     let
       val pos = ref 0
@@ -17,15 +18,22 @@ struct
         end
     end
 
-  fun error fileName (s, pos, pos') =
-    raise Fail (Pos.toString (Pos.pos (pos fileName) (pos' fileName)) ^ ": " ^ s)
+  fun error (s, pos, pos') = raise Fail (Pos.toString (Pos.pos pos pos') ^ ": " ^ s)
 
-  fun processFile fileName =
+  fun parse text =
+    let
+      val lexer = RedPrlParser.makeLexer (stringreader text) "asdfadsf"
+      val (res,_) = RedPrlParser.parse (1, lexer, error, "welp")
+    in
+      res
+    end
+
+  fun testFile fileName =
     let
       val input = TextIO.inputAll (TextIO.openIn fileName)
-      val lexer = RedPrlParser.makeLexer (stringreader input) fileName
-      val (sign,_) = RedPrlParser.parse(1, lexer, error fileName, fileName)
+      val sign = parse input
     in
       Signature.check sign
     end
+
 end

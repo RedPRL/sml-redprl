@@ -1,0 +1,340 @@
+structure Ast = RedPrlAst
+structure Ar = RedPrlArity
+structure Vl = Ar.Vl
+
+open Ast
+
+structure P =
+struct
+  open RedPrlParamData
+  open RedPrlParameterTerm
+end
+
+structure O = RedPrlOpData
+
+structure Tac =
+struct
+  type binding = string list * ast
+  infix $$ $ \
+
+  fun makeSeq mt us t =
+    O.MONO (O.TAC_SEQ (List.length us)) $$ [([],[]) \ mt, (us,[]) \ t]
+
+  fun multitacToTac tm =
+    case out tm of
+       O.MONO O.MTAC_ALL $ [_ \ t] => t
+     | _ => makeSeq tm [] (O.MONO O.RULE_ID $$ [])
+
+  val rec compileScript =
+    fn [] => O.MONO O.RULE_ID $$ []
+     | [([], tac)] => multitacToTac tac
+     | [(us, tac)] => makeSeq tac us (O.MONO O.RULE_ID $$ [])
+     | (us, tac) :: ts => makeSeq tac us (compileScript ts)
+end
+
+%%
+%header (functor RedPrlLrValsFun (structure Token : TOKEN))
+
+%term
+   EOF
+ | IDENT of string
+ | NUMERAL of int
+ | COLON
+ | LPAREN
+ | RPAREN
+ | RBRACKET
+ | LBRACKET
+ | LSQUARE
+ | RSQUARE
+ | EQUALS
+ | DOT
+ | APOSTROPHE
+ | HASH
+ | SEMI
+ | COMMA
+ | LAMBDA
+ | SQUIGGLE
+ | SQUIGGLE_ARROW
+ | RIGHT_ARROW
+ | LEFT_ARROW
+
+ | HCOM | COE | UNIV | BOOL | TT | FF
+
+ | FUN_APP
+
+ | DIM | EXN | LBL | LVL
+ | EXP
+
+ | DCL_DEF | DCL_TAC | DCL_THM
+ | BY
+
+ | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL
+
+ | JDG_TRUE | JDG_SYNTH
+
+%nonassoc SQUIGGLE
+%right LEFT_ARROW RIGHT_ARROW
+%left FUN_APP
+
+
+%nonterm
+   start of Signature.sign
+
+   (* a type-theoretic term, excluding function application *)
+ | preterm of ast
+   (* a type-theoretic term, including function application *)
+ | atomicPreterm of ast
+
+   (* a type-theoretic term, annotated with source position *)
+ | term of ast
+ | terms of ast list
+ | funapp of ast
+
+   (* abt abstractions *)
+ | binder of symbol list * symbol list
+ | binding of ast abs
+ | bindings of ast abs list
+
+ | symbols of symbol list
+ | param of string param
+ | params of string param list
+
+   (* the extents of a Kan composition *)
+ | extents of string param list
+   (* the direction of a coercion of Kan composition *)
+ | dir of string param * string param
+
+   (* metavariables and metavariable applications *)
+ | metavar of string
+ | metavarArgs of string param list * ast list
+
+ | operator of string operator
+ | customOpParams of (string param * P.param_sort option) list
+ | psort of P.param_sort
+ | sort of O.sort
+ | psorts of P.param_sort list
+ | sorts of O.sort list
+ | bindingSig of P.param_sort list * O.sort list
+ | valence of Ar.valence
+
+ | prejudgment of ast
+ | judgment of ast
+
+ | pretactic of ast
+ | tactic of ast
+ | tactics of ast list
+ | tacticBinding of Tac.binding
+ | tacticBindings of Tac.binding list
+ | multitac of ast
+ | atomicTac of ast
+
+ | declArgument of metavariable * Ar.valence
+ | declArguments of Signature.arguments
+ | declArgumentsParens of Signature.arguments
+ | declParam of string * P.param_sort
+ | declParams of string Signature.params
+ | declParamsBrackets of string Signature.params
+
+   (* a declaration in a RedPRL signature *)
+ | predecl of string * Signature.ast_decl
+   (* a declaration, annotated with source position *)
+ | decl of string * (Signature.ast_decl * Pos.t option)
+   (* a RedPRL signature *)
+ | sign of Signature.sign
+
+%verbose
+%pos (string -> Coord.t)
+%start start
+%eop EOF
+%noshift EOF
+%name RedPrl
+%arg (fileName) : string
+%%
+
+start : sign (sign)
+
+(*
+psort
+  : DIM (P.DIM)
+  | EXN (P.EXN)
+  | LBL (P.LBL)
+  | LVL (P.LVL)
+
+sort
+  : EXP (O.EXP)
+
+sorts
+  : ([])
+  | sort ([sort])
+  | sort COMMA sorts (sort :: sorts)
+
+psorts
+  : ([])
+  | psort ([psort])
+  | psort COMMA psorts (psort :: psorts)
+
+bindingSig
+  : LBRACKET psorts RBRACKET LSQUARE sorts RSQUARE DOT (psorts, sorts)
+  | LBRACKET psorts RBRACKET DOT (psorts, [])
+  | LSQUARE sorts RSQUARE DOT ([], sorts)
+  | ([], [])
+
+valence
+  : bindingSig sort ((bindingSig, sort))
+
+param
+  : IDENT (P.VAR IDENT)
+  | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise Fail "Invalid dimension constant"))
+  | param APOSTROPHE (P.APP (P.LVL_SUCC param))
+
+params
+  : ([])
+  | param ([param])
+  | param COMMA params (param :: params)
+
+extents
+  : param ([param])
+  | param COMMA extents (param :: extents)
+
+symbols
+  : ([])
+  | IDENT ([IDENT])
+  | IDENT COMMA symbols (IDENT :: symbols)
+
+terms
+  : ([])
+  | term ([term])
+  | term COMMA terms (term :: terms)
+
+binder
+  : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT (symbols1, symbols2)
+  | LBRACKET symbols RBRACKET DOT (symbols, [])
+  | LSQUARE symbols RSQUARE DOT ([], symbols)
+  | ([], [])
+
+binding
+  : binder term (\ (binder, term))
+
+bindings
+  : ([])
+  | binding ([binding])
+  | binding SEMI bindings (binding :: bindings)
+
+metavarArgs
+  : LBRACKET params RBRACKET LSQUARE terms RSQUARE (params, terms)
+  | LBRACKET params RBRACKET (params, [])
+  | LSQUARE terms RSQUARE ([], terms)
+  | ([], [])
+
+operator
+  : LAMBDA (O.MONO O.LAM)
+  | HCOM LBRACKET extents SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
+  | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
+  | IDENT customOpParams (O.POLY (O.CUST (IDENT, customOpParams, NONE)))
+
+customOpParams
+  : LBRACKET params RBRACKET (List.map (fn x => (x, NONE)) params)
+  | ([])
+
+metavar
+  : HASH IDENT (IDENT)
+
+dir
+  : param SQUIGGLE_ARROW param ((param1, param2))
+
+term : preterm (annotate (Pos.pos (preterm1left fileName) (preterm1right fileName)) preterm)
+
+atomicPreterm
+  : LPAREN term RPAREN (term)
+  | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
+  | IDENT (`` IDENT)
+  | term RIGHT_ARROW term (Ast.$$ (O.MONO O.FUN, [\ (([],[]), term1), \ (([],[]), term2)]))
+  | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
+  | UNIV LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.UNIV param), []))
+  | BOOL (Ast.$$ (O.MONO O.BOOL, []))
+  | TT (Ast.$$ (O.MONO O.TRUE, []))
+  | FF (Ast.$$ (O.MONO O.FALSE, []))
+
+preterm
+  : term atomicPreterm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicPreterm)]))
+  | atomicPreterm (atomicPreterm)
+
+prejudgment
+  : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
+  | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
+  | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term EQUALS term COLON term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
+  | term COLON term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
+
+judgment : prejudgment (annotate (Pos.pos prejudgment1left prejudgment1right) prejudgment)
+
+atomicTac
+  : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
+  | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
+  | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
+  | term (term)
+
+multitac
+  : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
+  | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS NUMERAL), [\ (([],[]), tactic)]))
+  | atomicTac (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
+
+tacticBinding
+  : symbols LEFT_ARROW multitac (symbols, multitac)
+  | multitac ([], multitac)
+
+tacticBindings
+  : tacticBinding ([tacticBinding])
+  | tacticBinding SEMI tacticBindings (tacticBinding :: tacticBindings)
+  | ([])
+
+pretactic
+  : tacticBindings (Tac.compileScript tacticBindings)
+
+tactic : pretactic (annotate (Pos.pos pretactic1left pretactic1right) pretactic)
+
+tactics
+  : ([])
+  | tactic ([tactic])
+  | tactic COMMA tactics (tactic :: tactics)
+
+declArgument
+  : metavar COLON valence ((metavar, valence))
+
+declArguments
+  : ([])
+  | declArgument ([declArgument])
+  | declArgument SEMI declArguments (declArgument :: declArguments)
+
+declArgumentsParens
+  : LPAREN declArguments RPAREN (declArguments)
+  | ([])
+
+declParam
+  : IDENT COLON psort (IDENT, psort)
+
+declParams
+  : ([])
+  | declParam ([declParam])
+  | declParam COMMA declParams (declParam :: declParams)
+
+declParamsBrackets
+  : LBRACKET declParams RBRACKET (declParams)
+  | ([])
+
+predecl
+  : DCL_DEF IDENT declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
+      (IDENT, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
+  | DCL_TAC IDENT declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
+      (IDENT, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
+  | DCL_THM IDENT declParamsBrackets declArgumentsParens COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
+      (IDENT, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = judgment, script = tactic})
+
+decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
+
+sign
+  : (Signature.empty)
+  | sign decl DOT (Signature.insert sign (#1 decl) (#2 decl))
+
+*)
