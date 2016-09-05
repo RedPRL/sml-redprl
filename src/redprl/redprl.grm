@@ -153,7 +153,6 @@ end
 
 start : sign (sign)
 
-(*
 psort
   : DIM (P.DIM)
   | EXN (P.EXN)
@@ -267,7 +266,7 @@ prejudgment
   | term EQUALS term COLON term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
   | term COLON term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
 
-judgment : prejudgment (annotate (Pos.pos prejudgment1left prejudgment1right) prejudgment)
+judgment : prejudgment (annotate (Pos.pos (prejudgment1left fileName) (prejudgment1right fileName)) prejudgment)
 
 atomicTac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
@@ -292,7 +291,7 @@ tacticBindings
 pretactic
   : tacticBindings (Tac.compileScript tacticBindings)
 
-tactic : pretactic (annotate (Pos.pos pretactic1left pretactic1right) pretactic)
+tactic : pretactic (annotate (Pos.pos (pretactic1left fileName) (pretactic1right fileName)) pretactic)
 
 tactics
   : ([])
@@ -331,10 +330,8 @@ predecl
   | DCL_THM IDENT declParamsBrackets declArgumentsParens COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
       (IDENT, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = judgment, script = tactic})
 
-decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
+decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos (predeclleft fileName) (predecl1right fileName))))
 
 sign
   : (Signature.empty)
   | sign decl DOT (Signature.insert sign (#1 decl) (#2 decl))
-
-*)
