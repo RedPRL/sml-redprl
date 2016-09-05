@@ -28,7 +28,7 @@ struct
       val mode = getMode opts
     in
       case mode of
-           PRINT_DEVELOPMENT => (map Frontend.processFile redprlFiles; OS.Process.success)
+           PRINT_DEVELOPMENT => if List.all Frontend.processFile redprlFiles then OS.Process.success else OS.Process.failure
          | HELP => (print helpMessage; OS.Process.success)
     end
     handle E =>

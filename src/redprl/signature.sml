@@ -300,27 +300,15 @@ struct
       end
   end
 
-  fun formatMessage (pos, msg) =
-    let
-      val pos' =
-        case pos of
-           SOME pos => Pos.toString pos
-         | NONE => "[Unknown Location]"
+  structure L = RedPrlLog
 
-      val lines = String.tokens (fn c => c = #"\n") msg
-      val indented = List.map (fn l => "  " ^ l ^ "\n") lines
-      val msg' = List.foldr op^ "" indented
-    in
-      pos' ^ ":\n" ^ msg' ^"\n\n"
-    end
-
-  val checkAlg : (elab_decl, unit) E.alg =
-    {warn = fn (msg, _) => TextIO.output (TextIO.stdErr, formatMessage msg),
-     info = fn (msg, _) => TextIO.output (TextIO.stdOut, formatMessage msg),
-     init = (),
-     succeed = fn _ => (),
-     fail = fn (msg, _) => TextIO.output (TextIO.stdErr, formatMessage msg)}
+  val checkAlg : (elab_decl, bool) E.alg =
+    {warn = fn (msg, r) => (L.print L.WARN msg; false),
+     info = fn (msg, r) => (L.print L.INFO msg; r),
+     init = true,
+     succeed = fn (_, r) => r,
+     fail = fn (msg, _) => (L.print L.FAIL msg; false)}
 
   fun check ({elabSign,...} : sign) =
-    ETelescope.foldl (fn (_, e, _) => E.fold checkAlg e) () elabSign
+    ETelescope.foldl (fn (_, e, r) => E.fold checkAlg e andalso r) true elabSign
 end

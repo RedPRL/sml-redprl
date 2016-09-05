@@ -2,6 +2,7 @@ Library
   structure RedPrlParser
   structure Pos
   structure Signature
+  structure RedPrlLog
 is
   $/basis.cm
   $/ml-yacc-lib.cm
@@ -30,6 +31,9 @@ is
   redprl/elab_monad.sig
   redprl/elab_monad.sml
 
+  redprl/log.sig
+  redprl/log.sml
+
   redprl/signature.sig
   redprl/signature.sml
 
@@ -43,5 +47,4 @@ is
 
   redprl/lcf_syntax.sml
   redprl/lcf_refiner.sml
-
 

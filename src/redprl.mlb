@@ -30,6 +30,9 @@ local
 
   redprl/signature.sig
 
+  redprl/log.sig
+  redprl/log.sml
+
   ann "nonexhaustiveMatch ignore" in
     redprl/machine.sml
     redprl/lcf_syntax.sml
@@ -49,4 +52,5 @@ in
   structure RedPrlParser
   structure Pos
   structure Signature
+  structure RedPrlLog
 end
