@@ -1,6 +1,0 @@
-local
-  $(SML_LIB)/basis/basis.mlb
-  ../src/frontend.mlb
-in
-  test_elaborator.sml
-end
