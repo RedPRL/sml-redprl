@@ -85,8 +85,8 @@ struct
      nameEnv = NameEnv.empty}
 
   local
-    fun arityOfDecl (EDEF {sourceOpid, arguments, params, sort, definiens}) =
-      (List.map #2 arguments, sort)
+    fun arityOfDecl (EDEF {sourceOpid, arguments, params, sort, definiens}) : Tm.psort list * Tm.O.Ar.t=
+      (List.map #2 params, (List.map #2 arguments, sort))
 
     structure OptionMonad = MonadNotation (OptionMonad)
 
@@ -108,7 +108,23 @@ struct
       infix $ $$ $# $$# \
 
       fun processOp sign =
-        fn O.POLY (O.CUST (opid, NONE)) => O.POLY (O.CUST (opid, arityOfOpid sign opid))
+        fn O.POLY (O.CUST (opid, ps, NONE)) =>
+           (case arityOfOpid sign opid of
+               SOME (psorts, ar) =>
+                 let
+                   val ps' =
+                     ListPair.mapEq
+                       (fn ((p, _), tau) =>
+                          let
+                            val _ = O.P.check tau p
+                          in
+                            (p, SOME tau)
+                          end)
+                       (ps, psorts)
+                 in
+                   O.POLY (O.CUST (opid, ps', SOME ar))
+                 end
+             | NONE => raise Fail "Encountered undefined custom operator")
          | th => th
 
       fun processTerm' sign m =
@@ -137,60 +153,68 @@ struct
         MetaCtx.empty
         args
 
-    fun elabDeclParams (params : string params) : symbol params * symbol NameEnv.dict =
-      List.foldr
-        (fn ((x, tau), (ps, env)) =>
-          let
-            val x' = Tm.Sym.named x
-          in
-            ((x', tau) :: ps, NameEnv.insert env x x')
-          end)
-        ([], NameEnv.empty)
-        params
+    fun elabDeclParams (sign : sign) (params : string params) : symbol params * Tm.symctx * symbol NameEnv.dict =
+      let
+        val (ctx0, env0) =
+          ETelescope.foldl
+            (fn (x, _, (ctx, env)) => (Tm.Sym.Ctx.insert ctx x P.OPID, NameEnv.insert env (Tm.Sym.toString x) x))
+            (Tm.Sym.Ctx.empty, NameEnv.empty)
+            (#elabSign sign)
+      in
+        List.foldr
+          (fn ((x, tau), (ps, ctx, env)) =>
+            let
+              val x' = Tm.Sym.named x
+            in
+              ((x', tau) :: ps, Tm.Sym.Ctx.insert ctx x' tau, NameEnv.insert env x x')
+            end)
+          ([], ctx0, env0)
+          params
+      end
 
-    fun scopeCheck (sign : sign) metactx term : Tm.abt E.t =
+    fun scopeCheck (metactx, symctx) term : Tm.abt E.t =
       let
         val termPos = Tm.getAnnotation term
         val checkSyms =
           Tm.Sym.Ctx.foldl
             (fn (u, tau, r) =>
-              E.unless
-                (tau = P.OPID andalso Option.isSome (ETelescope.find (#elabSign sign) u),
-                 E.warn (termPos, "Unbound symbol: " ^ Tm.Sym.toString u))
-              *> r)
+              let
+                val tau' = Tm.Sym.Ctx.find symctx u
+                val ustr = Tm.Sym.toString u
+              in
+                E.when (tau' = NONE, E.fail (termPos, "Unbound symbol: " ^ ustr))
+                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (termPos, "Symbol sort mismatch: " ^ ustr))
+                  *> r
+              end)
             (E.ret ())
             (Tm.symctx term)
 
         val checkVars =
           Tm.Var.Ctx.foldl
-            (fn (x, tau, r) => E.warn (termPos, "Unbound variable: " ^ Tm.Var.toString x) *> r)
+            (fn (x, tau, r) => E.fail (termPos, "Unbound variable: " ^ Tm.Var.toString x) *> r)
             (E.ret ())
             (Tm.varctx term)
 
         val checkMetas =
           Tm.Metavar.Ctx.foldl
             (fn (x, vl, r) =>
-               r <* E.unless (Option.isSome (Tm.Metavar.Ctx.find metactx x), E.warn (termPos, "Unbound metavar: " ^ Tm.Metavar.toString x)))
+               r <* E.unless (Option.isSome (Tm.Metavar.Ctx.find metactx x), E.fail (termPos, "Unbound metavar: " ^ Tm.Metavar.toString x)))
             (E.ret ())
             (Tm.metactx term)
       in
         checkVars *> checkSyms *> checkMetas *> E.ret term
       end
 
-    fun convertToAbt sign (metactx, env) ast sort =
-      let
-        val env = NameEnv.union (#nameEnv sign) env (fn (_,_,a) => a)
-      in
-        E.wrap (RedPrlAst.getAnnotation ast, fn () => AstToAbt.convertOpen metactx (env, NameEnv.empty) (ast, sort))
-          >>= scopeCheck sign metactx
-      end
+    fun convertToAbt (metactx, symctx, env) ast sort =
+      E.wrap (RedPrlAst.getAnnotation ast, fn () => AstToAbt.convertOpen metactx (env, NameEnv.empty) (ast, sort))
+        >>= scopeCheck (metactx, symctx)
 
     fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
       let
         val metactx = metactxFromArguments arguments
-        val (params', env) = elabDeclParams params
+        val (params', symctx, env) = elabDeclParams sign params
       in
-        convertToAbt sign (metactx, env) definiens sort >>= (fn definiens' =>
+        convertToAbt (metactx, symctx, env) definiens sort >>= (fn definiens' =>
           E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = sort, definiens = definiens'}))
       end
 
@@ -226,10 +250,10 @@ struct
       fun elabThm sign opid pos {arguments, params, goal, script} =
         let
           val metactx = metactxFromArguments arguments
-          val (params', env) = elabDeclParams params
+          val (params', symctx, env) = elabDeclParams sign params
           val names = fn i => Sym.named ("@" ^ Int.toString i)
         in
-          convertToAbt sign (metactx, env) goal JDG <&> convertToAbt sign (metactx, env) script TAC
+          convertToAbt (metactx, symctx, env) goal JDG <&> convertToAbt (metactx, symctx, env) script TAC
             >>= elabRefine sign
             >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = sort definiens, definiens = definiens})
         end
@@ -238,9 +262,9 @@ struct
     fun elabTac (sign : sign) opid {arguments, params, script} =
       let
         val metactx = metactxFromArguments arguments
-        val (params', env) = elabDeclParams params
+        val (params', symctx, env) = elabDeclParams sign params
       in
-        convertToAbt sign (metactx, env) script O.TAC >>= (fn script' =>
+        convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
           E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = O.TAC, definiens = script'})
       end
 

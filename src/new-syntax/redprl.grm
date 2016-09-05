@@ -110,6 +110,7 @@ end
  | metavarArgs of string param list * ast list
 
  | operator of string operator
+ | customOpParams of (string param * P.param_sort option) list
  | psort of P.param_sort
  | sort of O.sort
  | psorts of P.param_sort list
@@ -229,7 +230,11 @@ operator
   : LAMBDA (O.MONO O.LAM)
   | HCOM LBRACKET extents SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
-  | IDENT (O.POLY (O.CUST (IDENT, NONE)))
+  | IDENT customOpParams (O.POLY (O.CUST (IDENT, customOpParams, NONE)))
+
+customOpParams
+  : LBRACKET params RBRACKET (List.map (fn x => (x, NONE)) params)
+  | ([])
 
 metavar
   : HASH IDENT (IDENT)

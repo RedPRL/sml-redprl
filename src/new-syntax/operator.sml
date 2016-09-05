@@ -69,6 +69,7 @@ struct
    | TAG_S1
    | TAG_DFUN
 
+  type psort = RedPrlArity.Vl.PS.t
   type 'a extents = 'a P.term list
   type 'a dir = 'a P.term * 'a P.term
 
@@ -76,7 +77,7 @@ struct
      LOOP of 'a P.term
    | HCOM of type_tag * 'a extents * 'a dir
    | COE of type_tag * 'a dir
-   | CUST of 'a * RedPrlArity.t option
+   | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | UNIV of 'a P.term
    | HYP_REF of 'a
 
@@ -174,7 +175,7 @@ struct
       fn LOOP _ => [] ->> EXP
        | HCOM hcom => arityHcom hcom
        | COE coe => arityCoe coe
-       | CUST (_, ar) => Option.valOf ar
+       | CUST (_, _, ar) => Option.valOf ar
        | UNIV lvl => [] ->> EXP
        | HYP_REF a => [] ->> EXP
   end
@@ -186,14 +187,21 @@ struct
   local
     val dimSupport =
       fn P.VAR a => [(a, DIM)]
-       | _ => []
+       | P.APP t => P.freeVars t
 
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
 
     val lvlSupport =
       fn P.VAR a => [(a, LVL)]
-       | _ => []
+       | P.APP t => P.freeVars t
+
+    fun paramsSupport ps =
+      ListMonad.bind
+        (fn (P.VAR a, SOME tau) => [(a, tau)]
+          | (P.VAR a, NONE) => raise Fail "Encountered unannotated parameter in custom operator"
+          | (P.APP t, tau) => P.freeVars t)
+        ps
 
   in
     val supportPoly =
@@ -202,7 +210,7 @@ struct
            ListMonad.bind dimSupport extents
              @ spanSupport dir
        | COE (_, dir) => spanSupport dir
-       | CUST (opid, _) => [(opid, OPID)]
+       | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | UNIV lvl => lvlSupport lvl
        | HYP_REF a => [(a, HYP)]
   end
@@ -217,6 +225,9 @@ struct
 
     fun extentsEq f =
       ListPair.allEq (P.eq f)
+
+    fun paramsEq f =
+      ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
   in
     fun eqPoly f =
       fn (LOOP r, LOOP r') => P.eq f (r, r')
@@ -226,8 +237,8 @@ struct
              andalso spanEq f (sp1, sp2)
        | (COE (tag1, sp1), COE (tag2, sp2)) =>
            tag1 = tag2 andalso spanEq f (sp1, sp2)
-       | (CUST (opid1, _), CUST (opid2, _)) =>
-           f (opid1, opid2)
+       | (CUST (opid1, ps1, _), CUST (opid2, ps2, _)) =>
+           f (opid1, opid2) andalso paramsEq f (ps1, ps2)
        | (HYP_REF a, HYP_REF b) =>
            f (a, b)
        | _ => false
@@ -271,6 +282,9 @@ struct
     fun extentsToString f =
       ListSpine.pretty (P.toString f) ","
 
+    fun paramsToString f =
+      ListSpine.pretty (fn (p, _) => P.toString f p) ","
+
     val tagToString =
       fn TAG_NONE => ""
        | TAG_BOOL => "/bool"
@@ -293,8 +307,8 @@ struct
              ^ "["
              ^ spanToString f dir
              ^ "]"
-       | CUST (opid, ar) =>
-           "cust[" ^ f opid ^ "]"
+       | CUST (opid, ps, ar) =>
+           f opid ^ "{" ^ paramsToString f ps ^ "}"
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
        | HYP_REF a => "@" ^ f a
   end
@@ -306,6 +320,15 @@ struct
   local
     fun mapSpan f (r, r') = (P.bind f r, P.bind f r')
     fun mapExtents f = List.map (P.bind f)
+    fun mapParams (f : 'a -> 'b P.term) =
+      List.map
+        (fn (p, ann) =>
+           let
+             val q = P.bind f p
+             val _ = Option.map (fn tau => P.check tau q) ann
+           in
+             (q, ann)
+           end)
 
     fun mapSym f a =
       case f a of
@@ -324,7 +347,7 @@ struct
       fn LOOP r => LOOP (P.bind f r)
        | HCOM (tag, extents, dir) => HCOM (tag, mapExtents f extents, mapSpan f dir)
        | COE (tag, dir) => COE (tag, mapSpan f dir)
-       | CUST (opid, ar) => CUST (mapSym f opid, ar)
+       | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | HYP_REF a => HYP_REF (mapSym f a)
   end

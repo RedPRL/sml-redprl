@@ -33,7 +33,7 @@ struct
   end
 
   fun readParam {params,terms} =
-    P.bind (Sym.Ctx.lookup params)
+    P.bind (fn x => Option.getOpt (Sym.Ctx.find params x, P.ret x))
 
   (* E ⊨ r generic *)
   fun isGeneric env r =
