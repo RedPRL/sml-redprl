@@ -3,12 +3,10 @@ struct
   datatype mode =
       PRINT_DEVELOPMENT
     | HELP
-    | INTERACTIVE
 
   local
     fun go [] = PRINT_DEVELOPMENT
       | go ("--help" :: _) = HELP
-      | go ("--interactive" :: _) = INTERACTIVE
       | go (_ :: xs) = go xs
   in
     fun getMode args = go args
@@ -21,8 +19,7 @@ struct
     "  redprl <file>...\n" ^
     "  redprl --help\n" ^
     "Options\n" ^
-    "  --help            Print this message\n" ^
-    "  --interactive     Run RedPRL in an interactive mode for editors support\n"
+    "  --help            Print this message\n"
 
   fun main (_, args) =
     let
@@ -31,9 +28,8 @@ struct
       val mode = getMode opts
     in
       case mode of
-           PRINT_DEVELOPMENT => (map Frontend.processFile redprlFiles; OS.Process.success)
+           PRINT_DEVELOPMENT => if List.all Frontend.processFile redprlFiles then OS.Process.success else OS.Process.failure
          | HELP => (print helpMessage; OS.Process.success)
-         | INTERACTIVE => (Interactive.runLoop(); OS.Process.success)
     end
     handle E =>
       (print (exnMessage E);

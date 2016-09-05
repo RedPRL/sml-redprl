@@ -1,26 +1,9 @@
 local
   $(SML_LIB)/basis/basis.mlb
-  ../lib/cmlib/cmlib.mlb
-  ../lib/sml-typed-abts/abt.mlb
-  ../lib/sml-typed-abts/lib/sml-parcom/parcom.mlb
-
-  local
-    ../lib/sml-json/json.mlb
-    ../lib/sml-telescopes/telescopes.mlb
-    ../src/signature.mlb
-    ../src/signature-elab.mlb
-    ../src/syntax.mlb
-  in
-    frontend/frontend.sml
-
-    local
-      ../lib/sml-json/json.mlb
-      interactive.mlb
-    in
-      frontend/interactive.sml
-    end
-  end
-
+  redprl.mlb
+  frontend/frontend.sml
   frontend/main.sml
 in
+  structure Frontend
+  structure Main
 end

@@ -1,9 +1,0 @@
-Library
-  structure RedPrlDynamics
-is
-  $/basis.cm
-  ../lib/sml-typed-abts/abt.cm
-  ../lib/sml-typed-abts/abt-lcs.cm
-  syntax.cm
-  signature.cm
-  dynamics/dynamics.sml

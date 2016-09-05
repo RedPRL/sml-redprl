@@ -9,21 +9,27 @@ to [Nuprl](http://www.nuprl.org); RedPRL was preceeded by
 [JonPRL](http://www.github.com/jonsterling/jonprl), written by Jon Sterling,
 Danny Gratzer and Vincent Rahli.
 
-The purpose of RedPRL is to consolidate several advances in refinement logics,
-including:
+The purpose of RedPRL is to consolidate several advances in refinement logics
+and type theory, including:
 
 - a multi-sorted version of abstract binding trees
 - support for nominal abstraction and unguessable atoms
 - a dependent version of the LCF apparatus to support refinement rules
   whose premises depend on each other's evidence
+- [computational cubical type theory](http://www.cs.cmu.edu/~rwh/papers/chitt/draft.pdf)
 
 ### Literature and background on RedPRL
 
-RedPRL is a proof assistant for Nominal Multi-Sorted Computational Type Theory,
-whose semantics are defined in Sterling & Morrison's
-[Type Refinements for the Working Class](https://github.com/jonsterling/type-refinements-for-the-working-class). The syntactic framework is described in
-[Syntax and Semantics of Abstract Binding Trees](https://github.com/jonsterling/syntax-and-semantics-of-abts),
-also by Sterling & Morrison.
+RedPRL is (becoming) a proof assistant for Computational Cubical Type Theory,
+as described by Angiuli and Harper in [Computational Higher Type Theory II:
+Dependent Cubical Realizability](http://arxiv.org/abs/1606.09638).  The
+syntactic framework is described in a note by Jon Sterling called [Aspects of
+Cubical Type
+Theory](https://github.com/jonsterling/aspects-of-cubical-type-theory), and is
+inspired by Harper's "abstract binding trees" (Harper, [Practical Foundations
+for Programming Languages](http://www.cs.cmu.edu/~rwh/pfpl.html); Sterling &
+Morrison, [Syntax and Semantics of Abstract Binding
+Trees](https://github.com/jonsterling/syntax-and-semantics-of-abts)).
 
 
 ### What is this repository?
@@ -52,15 +58,11 @@ ML installed. Then, simply run
 Then, a binary will be placed in `./bin/redprl`, which you may run as
 follows
 
-    ./bin/redprl my-development.prl
+    ./bin/redprl test/test.prl
 
 ### Editor Support
 
 RedPRL is presently supported in Atom and Emacs.
-
-#### Atom
-
-The Atom plugin is available at [atom.io](https://atom.io/packages/language-redprl).
 
 ### Emacs
 

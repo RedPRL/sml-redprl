@@ -1,0 +1,50 @@
+Library
+  structure RedPrlParser
+  structure Pos
+  structure Signature
+  structure RedPrlLog
+is
+  $/basis.cm
+  $/ml-yacc-lib.cm
+
+  cmlib.cm
+  $libs/sml-cats/cats.cm
+  $libs/sml-telescopes/telescopes.cm
+  $libs/sml-typed-abts/abt.cm
+  $libs/sml-typed-abts/abt-machine.cm
+  $libs/sml-typed-abts/basis/basis.cm
+  $libs/sml-dependent-lcf/dependent_lcf.cm
+  $libs/sml-dependent-lcf/nominal_lcf.cm
+
+  redprl/parameter.sml
+  redprl/operator.sml
+  redprl/abt.sml
+
+  redprl/categorical_judgment.sig
+  redprl/categorical_judgment.sml
+
+  redprl/sequent.sig
+  redprl/sequent.sml
+
+  redprl/judgment.fun
+
+  redprl/elab_monad.sig
+  redprl/elab_monad.sml
+
+  redprl/log.sig
+  redprl/log.sml
+
+  redprl/signature.sig
+  redprl/signature.sml
+
+  redprl/redprl.lex
+  redprl/redprl.grm
+
+  redprl/redprl_lexer.sml
+  redprl/redprl_parser.sml
+
+  redprl/machine.sml
+
+  redprl/lcf_syntax.sml
+  redprl/lcf_refiner.sml
+

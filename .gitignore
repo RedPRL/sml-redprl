@@ -8,5 +8,8 @@
 *.toc
 *.bbl
 *.blg
-redprl
-testsuite/test
+test/test
+*~
+*.grm.*
+*.lex.*
+bin
