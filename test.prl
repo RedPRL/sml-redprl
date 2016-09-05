@@ -2,12 +2,17 @@ Def test(#A : exp; #B : [exp].exp) : exp = [
   (x : #A) -> (y : #A) -> #A -> #B[x]
 ].
 
+Def identity : exp = [
+  lam([x].x)
+].
+
 Thm hello{a:dim, b:dim} : [
   hcom{a; b ~> b}(bool; tt; {z}. tt; {z}. ff)
     ~
-  lam([x].x) tt
+  identity() tt
 ] by [
-  eval-goal
+  eval-goal;
+  ceq/refl
 ].
 
 Tac mytac() = [

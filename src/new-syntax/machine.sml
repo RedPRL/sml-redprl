@@ -35,18 +35,7 @@ struct
   fun readParam {params,terms} =
     P.bind (fn x => Option.getOpt (Sym.Ctx.find params x, P.ret x))
 
-  (* E ⊨ r generic *)
-  fun isGeneric env r =
-    case readParam env r of
-       P.VAR _ => true
-     | _ => false
-
-  (* E ⊨ r concrete *)
-  fun isConcrete env r =
-    case readParam env r of
-       P.APP _ => true
-     | _ => false
-
+  (* Extract a concrete dimension {0,1} from a dimension parameter; returns NONE in case of a dimension variable. *)
   fun asConcrete env r =
     case readParam env r of
        P.APP t => SOME t
@@ -73,6 +62,24 @@ struct
            S.VAL
          else
            S.STEP @@ cap <: env
+
+  structure ParamElem =
+  struct
+    type t = param
+    val eq = P.eq Sym.eq
+  end
+
+  structure SymEnvUtil = ContextUtil (structure Ctx = Sym.Ctx and Elem = ParamElem)
+
+  fun unifyCustomOperator (entry : Sig.entry) (ps : param list) (es : abt bview list) : metaenv * symenv =
+    let
+      val {params, arguments, ...} = entry
+      val srho = ListPair.foldl (fn ((u,_), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
+      val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
+    in
+      (mrho, srho)
+    end
+
 
   (* [step] tells our machine how to proceed when computing a term: is it a value,
    * can it step without inspecting the values of its arguments, or does it need to inspect one
@@ -123,6 +130,16 @@ struct
      | O.MONO O.JDG_SYNTH `$ _ <: _ => S.VAL
 
      | O.POLY (O.UNIV _) `$ _ <: _ => S.VAL
+
+     | (cust as O.POLY (O.CUST (opid, ps, ar))) `$ args <: env =>
+         let
+           val entry as {definiens,...} = Sig.lookup sign opid
+           val (mrho, srho) = unifyCustomOperator entry (List.map #1 ps) args
+           val definiens' = substMetaenv mrho definiens
+           val env' = {params = SymEnvUtil.union (#params env, srho), terms = #terms env}
+         in
+           S.STEP @@ definiens' <: env'
+         end
 
      | (hcom as O.POLY (O.HCOM (O.TAG_NONE, exts, dir))) `$ (_ \ ty) :: cap :: tubes <: env =>
          S.CUT
