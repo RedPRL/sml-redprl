@@ -13,17 +13,20 @@ struct
   struct
     type abt = Tm.abt
     type ast = RedPrlAst.ast
-    type sort = RedPrlSort.t
+    type sort = RedPrlAbt.sort
+    type psort = RedPrlAbt.psort
     type valence = RedPrlArity.valence
+    type symbol = Tm.symbol
     type opid = Tm.symbol
 
+    type 'a params = ('a * psort) list
     type arguments = (string * valence) list
-    type entry = {sourceOpid : string, arguments : arguments, sort : sort, definiens : abt}
+    type entry = {sourceOpid : string, params : symbol params, arguments : arguments, sort : sort, definiens : abt}
 
     datatype ast_decl =
-       DEF of {arguments : arguments, sort : sort, definiens : ast}
-     | THM of {arguments : arguments, goal : ast, script : ast}
-     | TAC of {arguments : arguments, script : ast}
+       DEF of {arguments : arguments, params : string params, sort : sort, definiens : ast}
+     | THM of {arguments : arguments, params : string params, goal : ast, script : ast}
+     | TAC of {arguments : arguments, params : string params, script : ast}
 
     (* elaborated declarations *)
     datatype elab_decl = EDEF of entry
@@ -58,11 +61,11 @@ struct
   in
     fun declToString (opid, decl) =
       case decl of
-         DEF {arguments, sort, definiens} =>
+         DEF {arguments, params, sort, definiens} =>
            "Def " ^ opid ^ "(" ^ argsToString arguments ^ ") : " ^ RedPrlSort.toString sort ^ " = [" ^ RedPrlAst.toString definiens ^ "]."
-       | THM {arguments, goal, script} =>
+       | THM {arguments, params, goal, script} =>
            "Thm " ^ opid ^ "(" ^ argsToString arguments ^ ") : [" ^ RedPrlAst.toString goal ^ "] by [" ^ RedPrlAst.toString script ^ "]."
-       | TAC {arguments, script} =>
+       | TAC {arguments, params, script} =>
            "Tac " ^ opid ^ "(" ^ argsToString arguments ^ ") = [" ^ RedPrlAst.toString script ^ "]."
 
     fun toString ({sourceSign,...} : sign) =
@@ -82,7 +85,7 @@ struct
      nameEnv = NameEnv.empty}
 
   local
-    fun arityOfDecl (EDEF {sourceOpid, arguments, sort, definiens}) =
+    fun arityOfDecl (EDEF {sourceOpid, arguments, params, sort, definiens}) =
       (List.map #2 arguments, sort)
 
     structure OptionMonad = MonadNotation (OptionMonad)
@@ -92,9 +95,9 @@ struct
         open OptionMonad infix >>=
       in
         NameEnv.find (#nameEnv sign) opid
-           >>= ETelescope.find (#elabSign sign)
-           >>= E.run
-           >>= SOME o arityOfDecl
+          >>= ETelescope.find (#elabSign sign)
+          >>= E.run
+          >>= SOME o arityOfDecl
       end
 
     (* During parsing, the arity of a custom-operator application is not known; but we can
@@ -118,9 +121,9 @@ struct
         setAnnotation (getAnnotation m) (processTerm' sign m)
     in
       fun processDecl sign =
-        fn DEF {arguments, sort, definiens} => DEF {arguments = arguments, sort = sort, definiens = processTerm sign definiens}
-         | THM {arguments, goal, script} => THM {arguments = arguments, goal = processTerm sign goal, script = processTerm sign script}
-         | TAC {arguments, script} => TAC {arguments = arguments, script = processTerm sign script}
+        fn DEF {arguments, params, sort, definiens} => DEF {arguments = arguments, params = params, sort = sort, definiens = processTerm sign definiens}
+         | THM {arguments, params, goal, script} => THM {arguments = arguments, params = params, goal = processTerm sign goal, script = processTerm sign script}
+         | TAC {arguments, params, script} => TAC {arguments = arguments, params = params, script = processTerm sign script}
     end
 
     structure MetaCtx = Tm.Metavar.Ctx
@@ -133,6 +136,17 @@ struct
         (fn ((x, vl), mctx) => MetaCtx.insert mctx x vl)
         MetaCtx.empty
         args
+
+    fun elabDeclParams (params : string params) : symbol params * symbol NameEnv.dict =
+      List.foldr
+        (fn ((x, tau), (ps, env)) =>
+          let
+            val x' = Tm.Sym.named x
+          in
+            ((x', tau) :: ps, NameEnv.insert env x x')
+          end)
+        ([], NameEnv.empty)
+        params
 
     fun scopeCheck (sign : sign) metactx term : Tm.abt E.t =
       let
@@ -163,16 +177,21 @@ struct
         checkVars *> checkSyms *> checkMetas *> E.ret term
       end
 
-    fun convertToAbt sign metactx ast sort =
-      E.wrap (RedPrlAst.getAnnotation ast, fn () => AstToAbt.convertOpen metactx (#nameEnv sign, NameEnv.empty) (ast, sort))
-        >>= scopeCheck sign metactx
+    fun convertToAbt sign (metactx, env) ast sort =
+      let
+        val env = NameEnv.union (#nameEnv sign) env (fn (_,_,a) => a)
+      in
+        E.wrap (RedPrlAst.getAnnotation ast, fn () => AstToAbt.convertOpen metactx (env, NameEnv.empty) (ast, sort))
+          >>= scopeCheck sign metactx
+      end
 
-    fun elabDef (sign : sign) opid {arguments, sort, definiens} =
+    fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
       let
         val metactx = metactxFromArguments arguments
+        val (params', env) = elabDeclParams params
       in
-        convertToAbt sign metactx definiens sort >>= (fn definiens' =>
-          E.ret (EDEF {sourceOpid = opid, arguments = arguments, sort = sort, definiens = definiens'}))
+        convertToAbt sign (metactx, env) definiens sort >>= (fn definiens' =>
+          E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = sort, definiens = definiens'}))
       end
 
     fun <&> (m, n) = m >>= (fn x => n >>= (fn y => E.ret (x, y)))
@@ -204,23 +223,25 @@ struct
         end
 
     in
-      fun elabThm sign opid pos {arguments, goal, script} =
+      fun elabThm sign opid pos {arguments, params, goal, script} =
         let
           val metactx = metactxFromArguments arguments
+          val (params', env) = elabDeclParams params
           val names = fn i => Sym.named ("@" ^ Int.toString i)
         in
-          convertToAbt sign metactx goal JDG <&> convertToAbt sign metactx script TAC
+          convertToAbt sign (metactx, env) goal JDG <&> convertToAbt sign (metactx, env) script TAC
             >>= elabRefine sign
-            >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = sort definiens, definiens = definiens})
+            >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = sort definiens, definiens = definiens})
         end
     end
 
-    fun elabTac (sign : sign) opid {arguments, script} =
+    fun elabTac (sign : sign) opid {arguments, params, script} =
       let
         val metactx = metactxFromArguments arguments
+        val (params', env) = elabDeclParams params
       in
-        convertToAbt sign metactx script O.TAC >>= (fn script' =>
-          E.ret @@ EDEF {sourceOpid = opid, arguments = arguments, sort = O.TAC, definiens = script'})
+        convertToAbt sign (metactx, env) script O.TAC >>= (fn script' =>
+          E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = O.TAC, definiens = script'})
       end
 
     fun elabDecl (sign : sign) (opid, eopid) (decl : ast_decl, pos) : elab_sign =

@@ -130,6 +130,10 @@ end
 
  | declArgument of metavariable * Ar.valence
  | declArguments of Signature.arguments
+ | declArgumentsParens of Signature.arguments
+ | declParam of string * P.param_sort
+ | declParams of string Signature.params
+ | declParamsBrackets of string Signature.params
 
    (* a declaration in a RedPRL signature *)
  | predecl of string * Signature.ast_decl
@@ -298,13 +302,29 @@ declArguments
   | declArgument ([declArgument])
   | declArgument SEMI declArguments (declArgument :: declArguments)
 
+declArgumentsParens
+  : LPAREN declArguments RPAREN (declArguments)
+  | ([])
+
+declParam
+  : IDENT COLON psort (IDENT, psort)
+
+declParams
+  : ([])
+  | declParam ([declParam])
+  | declParam COMMA declParams (declParam :: declParams)
+
+declParamsBrackets
+  : LBRACKET declParams RBRACKET (declParams)
+  | ([])
+
 predecl
-  : DCL_DEF IDENT LPAREN declArguments RPAREN COLON sort EQUALS LSQUARE term RSQUARE
-      (IDENT, Signature.DEF {arguments = declArguments, definiens = term, sort = sort})
-  | DCL_TAC IDENT LPAREN declArguments RPAREN EQUALS LSQUARE tactic RSQUARE
-      (IDENT, Signature.TAC {arguments = declArguments, script = tactic})
-  | DCL_THM IDENT LPAREN declArguments RPAREN COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
-      (IDENT, Signature.THM {arguments = declArguments, goal = judgment, script = tactic})
+  : DCL_DEF IDENT declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
+      (IDENT, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
+  | DCL_TAC IDENT declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
+      (IDENT, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
+  | DCL_THM IDENT declParamsBrackets declArgumentsParens COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
+      (IDENT, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = judgment, script = tactic})
 
 decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos predeclleft predecl1right)))
 
