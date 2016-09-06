@@ -38,8 +38,10 @@ local
 
   ann "nonexhaustiveMatch ignore" in
     redprl/machine.sml
-    redprl/lcf_syntax.sml
-    redprl/lcf_refiner.sml
+    redprl/refiner_kit.fun
+    redprl/refiner.fun
+    redprl/lcf_syntax.fun
+    redprl/lcf_model.fun
   end
 
   redprl/signature.sml
