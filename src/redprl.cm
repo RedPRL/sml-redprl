@@ -21,6 +21,7 @@ is
   redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml
+  redprl/syntax.sml
 
   redprl/error.sig
   redprl/error.sml

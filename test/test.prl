@@ -20,3 +20,8 @@ Tac mytac() = [
   y <- id;
   id
 ].
+
+Thm bad : [ tt true ] by [
+  eval-goal;
+  ceq/refl
+].
