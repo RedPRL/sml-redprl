@@ -32,7 +32,7 @@ struct
          | HELP => (print helpMessage; OS.Process.success)
     end
     handle E =>
-      (print (exnMessage E);
+      (print (RedPrlError.format E);
        OS.Process.failure)
 
   val _ =

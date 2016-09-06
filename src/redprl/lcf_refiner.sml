@@ -19,6 +19,7 @@ struct
   open RedPrlAbt
   infix $ $$ \
 
+  structure E = RedPrlError
   structure O = RedPrlOpData
   exception InvalidRule
 
@@ -42,11 +43,12 @@ struct
     fun CEquivRefl _ jdg =
       let
         val H >> CJ.CEQUIV (m, n) = jdg
+        val _ = Abt.eq (m, n)
       in
         if Abt.eq (m, n) then
           (T.empty, fn _ => abtToAbs (O.MONO O.AX $$ []))
         else
-          raise Match
+          raise E.error [E.% "Expected", E.! m, E.% "to be alpha-equivalent to", E.! n]
       end
 
   end

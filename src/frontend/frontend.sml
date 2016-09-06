@@ -31,5 +31,5 @@ struct
       Signature.check sign
     end
     handle ParseError (pos, msg) => (RedPrlLog.print RedPrlLog.FAIL (SOME pos, msg); false)
-         | exn => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (Coord.init fileName) (Coord.init fileName)), exnMessage exn); false)
+         | exn => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (Coord.init fileName) (Coord.init fileName)), RedPrlError.format exn); false)
 end

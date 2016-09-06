@@ -1,2 +1,4 @@
 Group is
+  $/basis.cm
   redprl.cm (bind:(anchor:libs value:../lib/))
+  frontend/frontend.sml

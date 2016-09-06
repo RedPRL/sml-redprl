@@ -33,7 +33,7 @@ struct
   fun force susp =
     Susp.force susp
     handle exn =>
-      {result = FAILURE (NONE, exnMessage exn),
+      {result = FAILURE (NONE, RedPrlError.format exn),
        messages = DList.empty}
 
   structure Monad =
@@ -83,7 +83,7 @@ struct
 
   fun wrap (pos, f) =
     ret (f ())
-    handle exn => fail (pos, exnMessage exn)
+    handle exn => fail (pos, RedPrlError.format exn)
 
   fun delay f =
     bind f (ret ())

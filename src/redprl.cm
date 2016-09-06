@@ -4,6 +4,7 @@ Library
   structure Pos
   structure Signature
   structure RedPrlLog
+  structure RedPrlError
 is
   $/basis.cm
   $/ml-yacc-lib.cm
@@ -20,6 +21,9 @@ is
   redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml
+
+  redprl/error.sig
+  redprl/error.sml
 
   redprl/categorical_judgment.sig
   redprl/categorical_judgment.sml

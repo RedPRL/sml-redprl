@@ -16,6 +16,9 @@ local
   redprl/operator.sml
   redprl/abt.sml
 
+  redprl/error.sig
+  redprl/error.sml
+
   redprl/categorical_judgment.sig
   redprl/categorical_judgment.sml
 
@@ -54,4 +57,5 @@ in
   structure Pos
   structure Signature
   structure RedPrlLog
+  structure RedPrlError
 end
