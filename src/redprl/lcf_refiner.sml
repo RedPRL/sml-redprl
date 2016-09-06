@@ -53,11 +53,15 @@ struct
 
   end
 
-  fun rule (sign, env) rule =
+  fun interpret (sign, env) rule =
     case out rule of
        `x => Var.Ctx.lookup env x
      | O.MONO O.RULE_ID $ _ => (fn _ => T.ID)
      | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.EvalGoal sign
      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.CEquivRefl
      | _ => raise InvalidRule
+
+  fun rule (sign, env) rule alpha goal =
+    interpret (sign, env) rule alpha goal
+    handle exn => raise RedPrlError.annotate (getAnnotation rule) exn
 end

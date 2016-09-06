@@ -8,4 +8,7 @@ sig
 
   val error : term err_frag list -> exn
   val format : exn -> string
+
+  val annotate : Pos.t option -> exn -> exn
+  val annotation : exn -> Pos.t option
 end

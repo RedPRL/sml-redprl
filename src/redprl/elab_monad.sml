@@ -33,7 +33,7 @@ struct
   fun force susp =
     Susp.force susp
     handle exn =>
-      {result = FAILURE (NONE, RedPrlError.format exn),
+      {result = FAILURE (RedPrlError.annotation exn, RedPrlError.format exn),
        messages = DList.empty}
 
   structure Monad =
@@ -81,9 +81,13 @@ struct
       {result = FAILURE msg,
        messages = DList.empty})
 
+  val optOrElse =
+    fn (NONE, x) => x
+     | (x, _) => x
+
   fun wrap (pos, f) =
     ret (f ())
-    handle exn => fail (pos, RedPrlError.format exn)
+    handle exn => fail (RedPrlError.annotation exn, RedPrlError.format exn)
 
   fun delay f =
     bind f (ret ())

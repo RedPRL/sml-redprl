@@ -125,7 +125,9 @@ end
  | tactics of ast list
  | tacticBinding of Tac.binding
  | tacticBindings of Tac.binding list
+ | premultitac of ast
  | multitac of ast
+ | atomicPretac of ast
  | atomicTac of ast
 
  | declArgument of metavariable * Ar.valence
@@ -268,16 +270,20 @@ prejudgment
 
 judgment : prejudgment (annotate (Pos.pos (prejudgment1left fileName) (prejudgment1right fileName)) prejudgment)
 
-atomicTac
+atomicPretac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
   | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
   | term (term)
 
-multitac
+atomicTac : atomicPretac (annotate (Pos.pos (atomicPretac1left fileName) (atomicPretac1right fileName)) atomicPretac)
+
+premultitac
   : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
   | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS NUMERAL), [\ (([],[]), tactic)]))
   | atomicTac (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
+
+multitac : premultitac (annotate (Pos.pos (premultitac1left fileName) (premultitac1right fileName)) premultitac)
 
 tacticBinding
   : symbols LEFT_ARROW multitac (symbols, multitac)

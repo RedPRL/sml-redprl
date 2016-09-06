@@ -118,7 +118,11 @@ struct
            <: env
 
      | O.MONO (O.TAC_SEQ _) `$ _ <: _ => S.VAL
+
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_CEQUIV_REFL `$ _ <: _ => S.VAL
+
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_EACH n) `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_FOCUS i) `$ _ <: _ => S.VAL
