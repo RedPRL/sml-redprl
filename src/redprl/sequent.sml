@@ -32,16 +32,16 @@ struct
              let
                val hyp = Tm.Sym.toString x ^ " : " ^ f a
              in
-               hyp ^ "\n" ^ go (out tl)
+               hyp ^ (if isEmpty tl then " " else ", " ^ go (out tl))
              end
     in
       go (out H)
     end
 
   fun toString f =
-    fn H >> catjdg => hypsToString f H ^ "\226\138\162 " ^ f catjdg
+    fn H >> catjdg => "{" ^ hypsToString f H ^ "\226\138\162 " ^ f catjdg ^ "}"
      | (U, G) |> jdg =>
         "{" ^ ListSpine.pretty (Tm.Sym.toString o #1) "," U ^ "}" ^
-        "[" ^ ListSpine.pretty (Tm.Var.toString o #1) "," G ^ "] |\n" ^ toString f jdg
+        "[" ^ ListSpine.pretty (Tm.Var.toString o #1) "," G ^ "] | " ^ toString f jdg
 end
 

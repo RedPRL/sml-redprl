@@ -25,6 +25,7 @@ struct
      | O.MONO O.RULE_ID $ _ => (fn _ => T.ID)
      | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.Rewrite.EvalGoal sign
      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.CEquiv.Refl
+     | O.MONO O.RULE_AUTO $ _ => Rules.Auto sign
      | _ => raise InvalidRule
 
   fun rule (sign, env) rule alpha goal =

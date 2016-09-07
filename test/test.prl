@@ -1,27 +1,7 @@
-Def test(#A : exp; #B : [exp].exp) : exp = [
-  (x : #A) -> (y : #A) -> #A -> #B[x]
+Thm boolIsType : [ bool type ] by [
+  auto
 ].
 
-Def identity : exp = [
-  lam([x].x)
-].
-
-Thm hello{a:dim, b:dim} : [
-  hcom{a; b ~> b}(bool; tt; {z}. tt; {z}. ff)
-    ~
-  identity() tt
-] by [
-  eval-goal;
-  ceq/refl
-].
-
-Tac mytac() = [
-  x <- id;
-  y <- id;
-  id
-].
-
-Thm bad : [ tt true ] by [
-  eval-goal;
-  ceq/refl
+Thm dfunIstype : [ (x : bool) -> bool type ] by [
+  auto; auto
 ].

@@ -68,9 +68,9 @@ end
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY
 
- | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL
+ | RULE_ID | RULE_AUTO | RULE_EVAL_GOAL | RULE_CEQUIV_REFL
 
- | JDG_TRUE | JDG_SYNTH
+ | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
 %nonassoc SQUIGGLE
 %right LEFT_ARROW RIGHT_ARROW
@@ -263,6 +263,7 @@ preterm
 
 prejudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
+  | term JDG_TYPE (Ast.$$ (O.MONO O.JDG_TYPE, [\ (([],[]), term)]))
   | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
   | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term EQUALS term COLON term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
@@ -272,6 +273,7 @@ judgment : prejudgment (annotate (Pos.pos (prejudgment1left fileName) (prejudgme
 
 atomicPretac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
+  | RULE_AUTO (Ast.$$ (O.MONO O.RULE_AUTO, []))
   | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
   | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
   | term (term)

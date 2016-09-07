@@ -42,9 +42,9 @@ struct
 
    | TAC_SEQ of int
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
-   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL
+   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO
 
-   | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_SYNTH
+   | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -126,6 +126,7 @@ struct
            [[] * [] <> MTAC, hyps * [] <> TAC] ->> TAC
          end
      | RULE_ID => [] ->> TAC
+     | RULE_AUTO => [] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
@@ -140,6 +141,7 @@ struct
      | JDG_CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_MEM => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_TRUE => [[] * [] <> EXP] ->> JDG
+     | JDG_TYPE => [[] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
 
   local
@@ -264,6 +266,7 @@ struct
      | EXTRACT _ => "extract"
      | TAC_SEQ _ => "seq"
      | RULE_ID => "id"
+     | RULE_AUTO => "auto"
      | RULE_EVAL_GOAL => "eval-goal"
      | RULE_CEQUIV_REFL => "ceq/refl"
      | MTAC_ALL => "all"
@@ -273,6 +276,7 @@ struct
      | JDG_CEQ => "ceq"
      | JDG_MEM => "mem"
      | JDG_TRUE => "true"
+     | JDG_TYPE => "type"
      | JDG_SYNTH => "synth"
 
   local
