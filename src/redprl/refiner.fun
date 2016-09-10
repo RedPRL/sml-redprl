@@ -128,6 +128,59 @@ struct
         raise E.error [E.% "Expected sequent judgment"]
   end
 
+  structure Truth =
+  struct
+    fun Witness tm alpha jdg =
+      let
+        val H >> CJ.TRUE ty = jdg
+        val (goal, _) = makeGoal @@ H >> CJ.MEM (tm, ty)
+        val psi = T.empty >: goal
+      in
+        (psi, fn rho =>
+          abtToAbs tm)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected truth sequent"]
+  end
+
+  structure Membership =
+  struct
+    fun Intro alpha jdg =
+      let
+        val H >> CJ.MEM (tm, ty) = jdg
+        val (goal, _) = makeGoal @@ H >> CJ.EQ ((tm, tm), ty)
+        val psi = T.empty >: goal
+      in
+        (psi, fn rho =>
+          abtToAbs @@ Syn.into Syn.AX)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected member sequent"]
+  end
+
+  structure Equality =
+  struct
+    fun Hyp alpha jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.VAR (x, _) = Syn.out m
+        val Syn.VAR (y, _) = Syn.out n
+        val _ = if Var.eq (x, y) then () else raise E.error [E.% "Equality.Hyp: variable mismatch"]
+        val catjdg = Option.valOf (Hyps.find H x) handle _ => raise E.error [E.% "Equality.Hyp: cannot find hypothesis"]
+        val ty' =
+          case catjdg of
+             CJ.TRUE ty => ty
+           | _ => raise E.error [E.% "Equality.Hyp: expected truth hypothesis"]
+      in
+        if Syn.Tm.eq (ty, ty') then
+          (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+        else
+          raise E.error [E.% @@ "Expected type of hypothesis " ^ Var.toString x ^ " to be", E.! ty, E.% "but found", E.! ty']
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected variable-equality sequent"]
+  end
+
   local
     open Tacticals infix ORELSE
 
@@ -145,10 +198,17 @@ struct
        | Syn.DFUN _ => DFun.Type
        | _ => raise E.error [E.% "Could not find typehood rule for", E.! ty]
 
+    fun StepEq sign ((m, n), ty) =
+      case Syn.out m of
+         Syn.VAR _ => Equality.Hyp
+       | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+
     fun StepJdg sign = matchGoal
       (fn _ |> _ => Generic.Intro
         | _ >> CJ.TRUE ty => StepTrue sign ty
         | _ >> CJ.TYPE ty => StepType sign ty
+        | _ >> CJ.MEM _ => Membership.Intro
+        | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
         | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString CJ.toString jdg)])
   in
     val Auto = StepJdg

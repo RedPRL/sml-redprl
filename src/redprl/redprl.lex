@@ -41,6 +41,7 @@ whitespace = [\ \t];
 "~>"               => (Tokens.SQUIGGLE_ARROW (!pos, Coord.addchar 2 o (!pos)));
 "->"               => (Tokens.RIGHT_ARROW (!pos, Coord.addchar 2 o (!pos)));
 "<-"               => (Tokens.LEFT_ARROW (!pos, Coord.addchar 2 o (!pos)));
+"@"                => (Tokens.AT_SIGN (!pos, Coord.nextchar o (!pos)));
 
 "bool"             => (Tokens.BOOL (!pos, Coord.addchar (size yytext) o (!pos)));
 "tt"               => (Tokens.TT (!pos, Coord.addchar (size yytext) o (!pos)));
@@ -68,6 +69,7 @@ whitespace = [\ \t];
 "ceq/refl"         => (Tokens.RULE_CEQUIV_REFL (!pos, Coord.addchar (size yytext) o (!pos)));
 "auto"             => (Tokens.RULE_AUTO (!pos, Coord.addchar (size yytext) o (!pos)));
 "hyp"              => (Tokens.RULE_HYP (!pos, Coord.addchar (size yytext) o (!pos)));
+"witness"          => (Tokens.RULE_WITNESS (!pos, Coord.addchar (size yytext) o (!pos)));
 
 "true"             => (Tokens.JDG_TRUE (!pos, Coord.addchar 4 o (!pos)));
 "type"             => (Tokens.JDG_TYPE (!pos, Coord.addchar 4 o (!pos)));

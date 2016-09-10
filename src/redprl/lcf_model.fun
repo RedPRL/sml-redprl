@@ -27,6 +27,7 @@ struct
      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.CEquiv.Refl
      | O.MONO O.RULE_AUTO $ _ => Rules.Auto sign
      | O.POLY (O.RULE_HYP z) $ _ => Rules.Hyp.Project z
+     | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Truth.Witness tm
      | _ => raise InvalidRule
 
   fun rule (sign, env) rule alpha goal =

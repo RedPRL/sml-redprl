@@ -42,7 +42,7 @@ struct
 
    | TAC_SEQ of int
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
-   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO
+   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_WITNESS
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
@@ -128,6 +128,7 @@ struct
          end
      | RULE_ID => [] ->> TAC
      | RULE_AUTO => [] ->> TAC
+     | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
@@ -272,6 +273,7 @@ struct
      | TAC_SEQ _ => "seq"
      | RULE_ID => "id"
      | RULE_AUTO => "auto"
+     | RULE_WITNESS => "witness"
      | RULE_EVAL_GOAL => "eval-goal"
      | RULE_CEQUIV_REFL => "ceq/refl"
      | MTAC_ALL => "all"

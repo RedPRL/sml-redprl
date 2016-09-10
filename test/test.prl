@@ -2,6 +2,20 @@ Thm boolIsType : [ bool type ] by [
   auto
 ].
 
-Thm dfunIstype : [ (x : bool) -> bool type ] by [
+Thm dfunIsType : [ (x : bool) -> bool type ] by [
   auto; auto
+].
+
+Thm dfunIsTrue : [ (x : bool) -> bool true ] by [
+  x <- auto;
+  auto;
+  hyp{x}
+].
+
+Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
+  x <- auto;
+  auto;
+  witness [@x];
+  auto;
+  auto
 ].

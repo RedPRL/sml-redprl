@@ -122,6 +122,7 @@ struct
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
      | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL
      | O.MONO O.RULE_CEQUIV_REFL `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_WITNESS `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
