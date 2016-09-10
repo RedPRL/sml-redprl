@@ -22,6 +22,7 @@ whitespace = [\ \t];
 \n                 => (pos := (Coord.nextline o (!pos)); continue ());
 {whitespace}+      => (pos := (Coord.addchar (size yytext) o (!pos)); continue ());
 {digit}+           => (Tokens.NUMERAL (valOf (Int.fromString yytext), !pos, Coord.addchar (size yytext) o (!pos)));
+"//"[^\n]*         => (continue ());
 
 
 "("                => (Tokens.LPAREN (!pos, Coord.nextchar o (!pos)));

@@ -1,3 +1,11 @@
+// Refinement proof is like a (non-deterministic) abstract machine 
+// decomposition of natural proof. In RedPRL, `auto` acts like a one-step
+// transition function for this machine; other transitions are possible,
+// and can be invoked using any of the built-in rules other than `auto`.
+
+// RedPRL has a variety of different forms of judgment, including typehood,
+// truth, membership and equality.
+
 Thm boolIsType : [ bool type ] by [
   auto
 ].
@@ -7,15 +15,20 @@ Thm dfunIsType : [ (x : bool) -> bool type ] by [
 ].
 
 Thm dfunIsTrue : [ (x : bool) -> bool true ] by [
-  x <- auto;
-  auto;
-  hyp{x}
+  // We step forward in the proof, supplying a name to be used by the
+  // dependent function introduction rule.
+  z <- auto; auto;
+  // Now, we may use our hypothesized element to discharge our goal.
+  hyp{z}
 ].
 
+// We can also prove the above theorem in a more primitive way.
 Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
-  x <- auto;
-  auto;
+  x <- auto; auto;
+  // We provide an explicit term witness of the goal, in this case,
+  // a reference to the hypothesis symbol that we bound above. Note that when
+  // we wish to refer to variables that are introduced as hypotheses, we
+  // must use references as below, since the variable itself is not in scope.
   witness [@x];
-  auto;
-  auto
+  auto; auto
 ].
