@@ -7,7 +7,7 @@ struct
   infix 1 |>
   infix 2 >> >: $$ // \
 
-  structure Rewrite =
+  structure CEquiv =
   struct
     fun EvalGoal sign _ jdg =
       let
@@ -19,10 +19,7 @@ struct
       end
       handle Bind =>
         raise E.error [E.% "Expected a computational equality sequent"]
-  end
 
-  structure CEquiv =
-  struct
     fun Refl _ jdg =
       let
         val H >> CJ.CEQUIV (m, n) = jdg
@@ -58,7 +55,7 @@ struct
         val Syn.DFUN (a, x, bx) = Syn.out dfun
 
         val z = alpha 0
-        val bz = substVar (check (`z, O.EXP), x) bx
+        val bz = substVar (Syn.into @@ Syn.VAR (z, O.EXP), x) bx
 
         val (goal1, _) = makeGoal @@ H >> CJ.TYPE a
         val (goal2, _) = makeGoal @@ Hyps.snoc H z (CJ.TRUE a) >> CJ.TYPE bz
@@ -76,7 +73,7 @@ struct
         val Syn.DFUN (a, x, bx) = Syn.out dfun
 
         val z = alpha 0
-        val bz = substVar (check (`z, O.EXP), x) bx
+        val bz = substVar (Syn.into @@ Syn.VAR (z, O.EXP), x) bx
 
         val (tyGoal, _) = makeGoal @@ H >> CJ.TYPE a
         val (goal, _) = makeGoal @@ ([],[(z, O.EXP)]) |> Hyps.snoc H z (CJ.TRUE a) >> CJ.TRUE bz
@@ -114,6 +111,23 @@ struct
         raise E.error [E.% "Expected generic judgment"]
   end
 
+  structure Hyp =
+  struct
+    fun Project z alpha jdg =
+      let
+        val H >> catjdg = jdg
+        val catjdg' = Option.valOf (Hyps.find H z) handle _ => raise E.error [E.% @@ "No such hypothesis " ^ Sym.toString z ^ "in context"]
+      in
+        if CJ.eq (catjdg, catjdg') then
+          (T.empty, fn rho =>
+            abtToAbs o Syn.into @@ Syn.VAR (z, CJ.synthesis catjdg))
+        else
+          raise E.error [E.% "Hypothesis does not match goal"]
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected sequent judgment"]
+  end
+
   local
     open Tacticals infix ORELSE
 
@@ -140,4 +154,3 @@ struct
     val Auto = StepJdg
   end
 end
-

@@ -80,6 +80,7 @@ struct
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | UNIV of 'a P.term
    | HYP_REF of 'a
+   | RULE_HYP of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -180,6 +181,7 @@ struct
        | CUST (_, _, ar) => Option.valOf ar
        | UNIV lvl => [] ->> EXP
        | HYP_REF a => [] ->> EXP
+       | RULE_HYP a => [] ->> TAC
   end
 
   val arity =
@@ -215,6 +217,7 @@ struct
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | UNIV lvl => lvlSupport lvl
        | HYP_REF a => [(a, HYP)]
+       | RULE_HYP a => [(a, HYP)]
   end
 
   val support =
@@ -242,6 +245,8 @@ struct
        | (CUST (opid1, ps1, _), CUST (opid2, ps2, _)) =>
            f (opid1, opid2) andalso paramsEq f (ps1, ps2)
        | (HYP_REF a, HYP_REF b) =>
+           f (a, b)
+       | (RULE_HYP a, RULE_HYP b) =>
            f (a, b)
        | _ => false
   end
@@ -315,6 +320,7 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
        | HYP_REF a => "@" ^ f a
+       | RULE_HYP a => "hyp{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -354,6 +360,7 @@ struct
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | HYP_REF a => HYP_REF (mapSym f a)
+       | RULE_HYP a => RULE_HYP (mapSym f a)
   end
 
   fun map f =

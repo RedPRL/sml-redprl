@@ -1,22 +1,26 @@
 structure Syntax =
 struct
-  type variable = RedPrlAbt.variable
-  type symbol = RedPrlAbt.symbol
-  type param = RedPrlAbt.param
+  structure Tm = RedPrlAbt
+  type variable = Tm.variable
+  type symbol = Tm.symbol
+  type param = Tm.param
+  type sort = Tm.sort
 
   datatype 'a view =
-     AX
+     VAR of variable * sort
+   | AX
    | BOOL | TT | FF
    | S1 | BASE | LOOP of param
    | DFUN of 'a * variable * 'a | LAM of variable * 'a
 
   local
-    open RedPrlAbt
+    open Tm
     structure O = RedPrlOpData
     infix $ $$ \
   in
     val into =
-      fn AX => O.MONO O.AX $$ []
+      fn VAR (x, tau) => check (`x, tau)
+       | AX => O.MONO O.AX $$ []
        | BOOL => O.MONO O.BOOL $$ []
        | TT => O.MONO O.TRUE $$ []
        | FF => O.MONO O.FALSE $$ []
@@ -27,8 +31,9 @@ struct
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
 
     fun out m =
-      case RedPrlAbt.out m of
-         O.MONO O.AX $ _ => AX
+      case Tm.out m of
+         `x => VAR (x, Tm.sort m)
+       | O.MONO O.AX $ _ => AX
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TRUE $ _ => TT
        | O.MONO O.FALSE $ _ => FF
