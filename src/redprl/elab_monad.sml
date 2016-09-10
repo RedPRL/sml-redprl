@@ -31,7 +31,7 @@ struct
   type 'a t = 'a state Susp.susp
 
   fun force susp =
-    Susp.force susp
+    Debug.wrap (fn _ => Susp.force susp)
     handle exn =>
       {result = FAILURE (RedPrlError.annotation exn, RedPrlError.format exn),
        messages = DList.empty}
@@ -86,7 +86,7 @@ struct
      | (x, _) => x
 
   fun wrap (pos, f) =
-    ret (f ())
+    Debug.wrap (fn _ => ret (f ()))
     handle exn => fail (RedPrlError.annotation exn, RedPrlError.format exn)
 
   fun delay f =

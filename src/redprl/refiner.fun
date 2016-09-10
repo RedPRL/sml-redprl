@@ -95,11 +95,10 @@ struct
 
   structure Generic =
   struct
-    (* TODO: this doesn't work, but it should! *)
     fun Intro alpha jdg =
       let
         val (U, G) |> jdg' = jdg
-        val (goal, _) = makeGoal jdg
+        val (goal, _) = makeGoal jdg'
         val psi = T.empty >: goal
       in
         (psi, fn rho =>
@@ -111,17 +110,34 @@ struct
              checkb ((us' @ us, xs' @ xs) \ m, ((sigmas' @ sigmas, taus' @ taus), tau))
            end)
       end
-      handle Bind => raise E.error [E.% "ASDF!"]
+      handle Bind =>
+        raise E.error [E.% "Expected generic judgment"]
   end
 
   local
     open Tacticals infix ORELSE
+
+    fun matchGoal f alpha jdg =
+      f jdg alpha jdg
+
+    fun StepTrue sign ty =
+      case Syn.out ty of
+         Syn.DFUN _ => DFun.True
+       | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
+
+    fun StepType sign ty =
+      case Syn.out ty of
+         Syn.BOOL => Bool.Type
+       | Syn.DFUN _ => DFun.Type
+       | _ => raise E.error [E.% "Could not find typehood rule for", E.! ty]
+
+    fun StepJdg sign = matchGoal
+      (fn _ |> _ => Generic.Intro
+        | _ >> CJ.TRUE ty => StepTrue sign ty
+        | _ >> CJ.TYPE ty => StepType sign ty
+        | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString CJ.toString jdg)])
   in
-    fun Auto sign alpha =
-      Bool.Type alpha
-        ORELSE DFun.Type alpha
-        ORELSE DFun.True alpha
-        ORELSE Generic.Intro alpha
+    val Auto = StepJdg
   end
 end
 

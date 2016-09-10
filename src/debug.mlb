@@ -1,0 +1,8 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  debug/debug.sig
+  debug/debug_mlton.sml
+in
+  signature DEBUG
+  structure Debug
+end

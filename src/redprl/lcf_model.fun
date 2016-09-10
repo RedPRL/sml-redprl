@@ -29,6 +29,6 @@ struct
      | _ => raise InvalidRule
 
   fun rule (sign, env) rule alpha goal =
-    interpret (sign, env) rule alpha goal
+    Debug.wrap (fn _ => interpret (sign, env) rule alpha goal)
     handle exn => raise RedPrlError.annotate (getAnnotation rule) exn
 end

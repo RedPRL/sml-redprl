@@ -22,15 +22,16 @@ struct
     "  --help            Print this message\n"
 
   fun main (_, args) =
-    let
-      val (opts, files) = List.partition (String.isPrefix "--") args
-      val redprlFiles = List.filter (fn x => String.isSuffix ".prl" x orelse String.isSuffix ".redprl" x) files
-      val mode = getMode opts
-    in
-      case mode of
-           PRINT_DEVELOPMENT => if List.all Frontend.processFile redprlFiles then OS.Process.success else OS.Process.failure
-         | HELP => (print helpMessage; OS.Process.success)
-    end
+    Debug.wrap (fn _ =>
+      let
+        val (opts, files) = List.partition (String.isPrefix "--") args
+        val redprlFiles = List.filter (fn x => String.isSuffix ".prl" x orelse String.isSuffix ".redprl" x) files
+        val mode = getMode opts
+      in
+        case mode of
+             PRINT_DEVELOPMENT => if List.all Frontend.processFile redprlFiles then OS.Process.success else OS.Process.failure
+           | HELP => (print helpMessage; OS.Process.success)
+      end)
     handle E =>
       (print (RedPrlError.format E);
        OS.Process.failure)

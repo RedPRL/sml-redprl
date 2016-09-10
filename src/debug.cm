@@ -1,0 +1,7 @@
+Library
+  signature DEBUG
+  structure Debug
+is
+  $smlnj-tdp/back-trace.cm
+  debug/debug.sig
+  debug/debug_smlnj.sml

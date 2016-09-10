@@ -1,6 +1,7 @@
 local
   $(SML_LIB)/basis/basis.mlb
   redprl.mlb
+  debug.mlb
   frontend/frontend.sml
   frontend/main.sml
 in

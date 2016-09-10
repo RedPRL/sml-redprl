@@ -12,6 +12,8 @@ local
   $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
   $(LIBS)/sml-dependent-lcf/nominal_lcf.mlb
 
+  debug.mlb
+
   redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml
