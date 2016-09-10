@@ -220,7 +220,13 @@
                    (message
                     (+ not-newline)
                     (* "\n  " (* not-newline)))
-                   line-end))
+                   line-end)
+          (info line-start
+                (file-name) ":" line "." column "-" (+ num) "." (+ num) " [Info]:\n"
+                (message
+                 (+ not-newline)
+                 (* "\n  " (* not-newline)))
+                line-end))
          :modes redprl-mode)
 
        (add-to-list 'flycheck-checkers 'redprl)))

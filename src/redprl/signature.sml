@@ -284,7 +284,7 @@ struct
       let
         val esign' = ETelescope.truncateFrom (#elabSign sign) eopid
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
-        fun decorate e = e >>= (fn x => E.info (pos, declToString (opid, decl)) *> E.ret x)
+        fun decorate e = e >>= (fn x => E.dump (pos, declToString (opid, decl)) *> E.ret x)
       in
         case processDecl sign decl of
            DEF defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabDef sign' opid defn)))
@@ -317,6 +317,7 @@ struct
   val checkAlg : (elab_decl, bool) E.alg =
     {warn = fn (msg, r) => (L.print L.WARN msg; false),
      info = fn (msg, r) => (L.print L.INFO msg; r),
+     dump = fn (msg, r) => (L.print L.DUMP msg; r),
      init = true,
      succeed = fn (_, r) => r,
      fail = fn (msg, _) => (L.print L.FAIL msg; false)}

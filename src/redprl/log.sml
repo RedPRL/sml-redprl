@@ -3,6 +3,7 @@ struct
   datatype level =
      INFO
    | WARN
+   | DUMP
    | FAIL
 
   fun formatMessage lvl (pos, msg) =
@@ -15,6 +16,7 @@ struct
       val prefix =
         case lvl of
            INFO => "Info"
+         | DUMP => "Output"
          | WARN => "Warning"
          | FAIL => "Error"
 
@@ -27,6 +29,7 @@ struct
 
   val streamForLevel =
     fn INFO => TextIO.stdOut
+     | DUMP => TextIO.stdOut
      | WARN => TextIO.stdOut
      | FAIL => TextIO.stdErr
 

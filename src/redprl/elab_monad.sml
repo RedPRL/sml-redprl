@@ -17,7 +17,8 @@ struct
   end
 
   datatype msg =
-     INFO of string ann
+     DUMP of string ann
+   | INFO of string ann
    | WARN of string ann
 
   datatype 'a res =
@@ -71,6 +72,11 @@ struct
       {result = SUCCESS (),
        messages = DList.fromList [WARN msg]})
 
+  fun dump msg =
+    Susp.delay (fn () =>
+      {result = SUCCESS (),
+       messages = DList.fromList [DUMP msg]})
+
   fun info msg =
     Susp.delay (fn () =>
       {result = SUCCESS (),
@@ -94,6 +100,7 @@ struct
 
   type ('a, 'b) alg =
     {warn : string ann * 'b -> 'b,
+     dump : string ann * 'b -> 'b,
      info : string ann * 'b -> 'b,
      fail : string ann * 'b -> 'b,
      init : 'b,
@@ -106,6 +113,7 @@ struct
       val b =
         List.foldl
           (fn (INFO msg, b) => #info alg (msg, b)
+            | (DUMP msg, b) => #dump alg (msg, b)
             | (WARN msg, b) => #warn alg (msg, b))
           (#init alg)
           messages
@@ -123,6 +131,7 @@ struct
   val runAlg : ('a, 'a option) alg =
     {warn = fn _ => NONE,
      info = fn _ => NONE,
+     dump = fn _ => NONE,
      init = NONE,
      fail = fn _ => NONE,
      succeed = fn (r, _) => SOME r}

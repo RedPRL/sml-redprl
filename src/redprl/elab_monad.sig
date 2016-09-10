@@ -8,11 +8,13 @@ sig
   val wrap : (unit -> 'a) ann -> 'a t
 
   val warn : string ann -> unit t
+  val dump : string ann -> unit t
   val info : string ann -> unit t
   val fail : string ann -> 'a t
 
   type ('a, 'b) alg =
     {warn : string ann * 'b -> 'b,
+     dump : string ann * 'b -> 'b,
      info : string ann * 'b -> 'b,
      init : 'b,
      fail : string ann * 'b -> 'b,
