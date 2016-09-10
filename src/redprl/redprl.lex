@@ -60,6 +60,7 @@ whitespace = [\ \t];
 "exp"              => (Tokens.EXP (!pos, Coord.addchar 3 o (!pos)));
 "lvl"              => (Tokens.LVL (!pos, Coord.addchar 3 o (!pos)));
 
+"Print"            => (Tokens.CMD_PRINT (!pos, Coord.addchar (size yytext) o (!pos)));
 "Def"              => (Tokens.DCL_DEF (!pos, Coord.addchar 3 o (!pos)));
 "Tac"              => (Tokens.DCL_TAC (!pos, Coord.addchar 3 o (!pos)));
 "Thm"              => (Tokens.DCL_THM (!pos, Coord.addchar 3 o (!pos)));

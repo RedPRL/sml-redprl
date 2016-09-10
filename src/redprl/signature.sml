@@ -22,52 +22,69 @@ struct
 
     type 'a params = ('a * psort) list
     type 'a arguments = ('a * valence) list
-    type entry = {sourceOpid : string, params : symbol params, arguments : metavar arguments, sort : sort, definiens : abt}
 
-    datatype ast_decl =
+    type src_opid = string
+    type entry = {sourceOpid : src_opid, params : symbol params, arguments : metavar arguments, sort : sort, definiens : abt}
+
+    datatype src_decl =
        DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
      | THM of {arguments : string arguments, params : string params, goal : ast, script : ast}
      | TAC of {arguments : string arguments, params : string params, script : ast}
 
+    datatype 'opid cmd =
+       PRINT of 'opid
+
+    type src_cmd = src_opid cmd
+
     (* elaborated declarations *)
-    datatype elab_decl = EDEF of entry
+    datatype elab_decl =
+       EDEF of entry
+     | ECMD of opid cmd
 
     structure Telescope = Telescope (StringAbtSymbol)
     structure ETelescope = Telescope (Tm.Sym)
     structure NameEnv = AstToAbt.NameEnv
 
     (* A signature / [sign] is a telescope of declarations. *)
-    type ast_sign = (ast_decl * Pos.t option) Telescope.telescope
+    type src_sign = (src_decl * Pos.t option) Telescope.telescope
 
     (* An elaborated signature is a telescope of definitions. *)
     type elab_sign = elab_decl E.t ETelescope.telescope
 
     type sign =
-      {sourceSign : ast_sign,
+      {sourceSign : src_sign,
        elabSign : elab_sign,
        nameEnv : Tm.symbol NameEnv.dict}
 
     fun lookup ({elabSign, ...} : sign) opid =
       case E.run (ETelescope.lookup elabSign opid) of
          SOME (EDEF defn) => defn
-       | NONE => raise Fail "Elaboration failed"
+       | _ => raise Fail "Elaboration failed"
   end
 
   open MiniSig
   structure O = RedPrlOpData
 
   local
-    val argsToString : string arguments -> string =
-      ListSpine.pretty (fn (x, vl) => "#" ^ x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
+    fun argsToString f =
+      ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
   in
     fun declToString (opid, decl) =
       case decl of
          DEF {arguments, params, sort, definiens} =>
-           "Def " ^ opid ^ "(" ^ argsToString arguments ^ ") : " ^ RedPrlSort.toString sort ^ " = [" ^ RedPrlAst.toString definiens ^ "]."
+           "Def " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") : " ^ RedPrlSort.toString sort ^ " = [" ^ RedPrlAst.toString definiens ^ "]."
        | THM {arguments, params, goal, script} =>
-           "Thm " ^ opid ^ "(" ^ argsToString arguments ^ ") : [" ^ RedPrlAst.toString goal ^ "] by [" ^ RedPrlAst.toString script ^ "]."
+           "Thm " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") : [" ^ RedPrlAst.toString goal ^ "] by [" ^ RedPrlAst.toString script ^ "]."
        | TAC {arguments, params, script} =>
-           "Tac " ^ opid ^ "(" ^ argsToString arguments ^ ") = [" ^ RedPrlAst.toString script ^ "]."
+           "Tac " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") = [" ^ RedPrlAst.toString script ^ "]."
+
+    fun entryToString (sign : sign) (opid, {sourceOpid, params, arguments, sort, definiens}) =
+      let
+        val src = declToString (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
+        val elab = "Def " ^ Sym.toString opid ^ "(" ^ argsToString Metavar.toString arguments ^ ") : "  ^ RedPrlSort.toString sort ^ " = [" ^ ShowAbt.toString definiens ^ "]."
+      in
+        src ^ "\n\n===>\n\n" ^ elab
+      end
 
     fun toString ({sourceSign,...} : sign) =
       let
@@ -86,7 +103,11 @@ struct
      nameEnv = NameEnv.empty}
 
   local
-    fun arityOfDecl (EDEF {sourceOpid, arguments, params, sort, definiens}) : Tm.psort list * Tm.O.Ar.t=
+    val getEntry =
+      fn EDEF entry => SOME entry
+       | _ => NONE
+
+    fun arityOfDecl ({sourceOpid, arguments, params, sort, definiens} : entry) : Tm.psort list * Tm.O.Ar.t=
       (List.map #2 params, (List.map #2 arguments, sort))
 
     structure OptionMonad = MonadNotation (OptionMonad)
@@ -98,7 +119,7 @@ struct
         NameEnv.find (#nameEnv sign) opid
           >>= ETelescope.find (#elabSign sign)
           >>= E.run
-          >>= SOME o arityOfDecl
+          >>= Option.map arityOfDecl o getEntry
       end
 
     (* During parsing, the arity of a custom-operator application is not known; but we can
@@ -280,7 +301,7 @@ struct
           E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = O.TAC, definiens = script'})
       end
 
-    fun elabDecl (sign : sign) (opid, eopid) (decl : ast_decl, pos) : elab_sign =
+    fun elabDecl (sign : sign) (opid, eopid) (decl : src_decl, pos) : elab_sign =
       let
         val esign' = ETelescope.truncateFrom (#elabSign sign) eopid
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
@@ -291,6 +312,24 @@ struct
          | THM defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabThm sign' opid pos defn)))
          | TAC defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabTac sign' opid defn)))
       end
+
+    fun elabPrint (sign : sign) (pos, opid) =
+      E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid =>
+        ETelescope.lookup (#elabSign sign) eopid >>= (fn edecl =>
+          E.ret (ECMD (PRINT eopid)) <*
+            (case edecl of
+                EDEF entry => E.info (SOME pos, entryToString sign (eopid, entry))
+              | _ => E.warn (SOME pos, "Invalid declaration name"))))
+
+    fun elabCmd (sign : sign) (cmd, pos) : elab_sign =
+      case cmd of
+         PRINT opid =>
+           let
+             val fresh = Sym.named "_"
+           in
+             ETelescope.snoc (#elabSign sign) fresh (E.delay (fn _ => elabPrint sign (pos, opid)))
+           end
+
 
     fun insertAstDecl sign opid (decl, pos) =
       let
@@ -309,6 +348,13 @@ struct
         val nameEnv = NameEnv.insert (#nameEnv sign) opid eopid
       in
         {sourceSign = sourceSign, elabSign = elabSign, nameEnv = nameEnv}
+      end
+
+    fun command (sign : sign) (cmd, pos) =
+      let
+        val elabSign = elabCmd sign (cmd, pos)
+      in
+        {sourceSign = #sourceSign sign, elabSign = elabSign, nameEnv = #nameEnv sign}
       end
   end
 

@@ -93,7 +93,7 @@ struct
 
   fun wrap (pos, f) =
     Debug.wrap (fn _ => ret (f ()))
-    handle exn => fail (RedPrlError.annotation exn, RedPrlError.format exn)
+    handle exn => fail (pos, RedPrlError.format exn)
 
   fun delay f =
     bind f (ret ())

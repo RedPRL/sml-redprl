@@ -66,6 +66,7 @@ end
  | DIM | EXN | LBL | LVL
  | EXP
 
+ | CMD_PRINT
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY
 
@@ -139,10 +140,12 @@ end
  | declParamsBrackets of string Signature.params
 
    (* a declaration in a RedPRL signature *)
- | predecl of string * Signature.ast_decl
+ | predecl of string * Signature.src_decl
    (* a declaration, annotated with source position *)
- | decl of string * (Signature.ast_decl * Pos.t option)
+ | decl of string * (Signature.src_decl * Pos.t option)
    (* a RedPRL signature *)
+ | precmd of Signature.src_cmd
+ | cmd of Signature.src_cmd * Pos.t
  | sign of Signature.sign
 
 %verbose
@@ -342,8 +345,14 @@ predecl
   | DCL_THM IDENT declParamsBrackets declArgumentsParens COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
       (IDENT, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = judgment, script = tactic})
 
-decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos (predeclleft fileName) (predecl1right fileName))))
+decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos (predecl1left fileName) (predecl1right fileName))))
+
+precmd
+  : CMD_PRINT IDENT (Signature.PRINT IDENT)
+
+cmd : precmd (precmd, (Pos.pos (precmd1left fileName) (precmd1right fileName)))
 
 sign
   : (Signature.empty)
   | sign decl DOT (Signature.insert sign (#1 decl) (#2 decl))
+  | sign cmd DOT (Signature.command sign cmd)

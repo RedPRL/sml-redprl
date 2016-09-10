@@ -1,4 +1,4 @@
-// Refinement proof is like a (non-deterministic) abstract machine 
+// Refinement proof is like a (non-deterministic) abstract machine
 // decomposition of natural proof. In RedPRL, `auto` acts like a one-step
 // transition function for this machine; other transitions are possible,
 // and can be invoked using any of the built-in rules other than `auto`.
@@ -22,6 +22,8 @@ Thm dfunIsTrue : [ (x : bool) -> bool true ] by [
   hyp{z}
 ].
 
+Print dfunIsTrue.
+
 // We can also prove the above theorem in a more primitive way.
 Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
   x <- auto; auto;
@@ -32,3 +34,6 @@ Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
   witness [@x];
   auto; auto
 ].
+
+
+Print dfunIsTrue23.
