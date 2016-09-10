@@ -12,21 +12,22 @@ struct
   structure MiniSig =
   struct
     type abt = Tm.abt
+    type metavar = Tm.metavariable
     type ast = RedPrlAst.ast
-    type sort = RedPrlAbt.sort
-    type psort = RedPrlAbt.psort
+    type sort = Tm.sort
+    type psort = Tm.psort
     type valence = RedPrlArity.valence
     type symbol = Tm.symbol
     type opid = Tm.symbol
 
     type 'a params = ('a * psort) list
-    type arguments = (string * valence) list
-    type entry = {sourceOpid : string, params : symbol params, arguments : arguments, sort : sort, definiens : abt}
+    type 'a arguments = ('a * valence) list
+    type entry = {sourceOpid : string, params : symbol params, arguments : metavar arguments, sort : sort, definiens : abt}
 
     datatype ast_decl =
-       DEF of {arguments : arguments, params : string params, sort : sort, definiens : ast}
-     | THM of {arguments : arguments, params : string params, goal : ast, script : ast}
-     | TAC of {arguments : arguments, params : string params, script : ast}
+       DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
+     | THM of {arguments : string arguments, params : string params, goal : ast, script : ast}
+     | TAC of {arguments : string arguments, params : string params, script : ast}
 
     (* elaborated declarations *)
     datatype elab_decl = EDEF of entry
@@ -56,7 +57,7 @@ struct
   structure O = RedPrlOpData
 
   local
-    val argsToString : arguments -> string =
+    val argsToString : string arguments -> string =
       ListSpine.pretty (fn (x, vl) => "#" ^ x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
   in
     fun declToString (opid, decl) =
@@ -147,10 +148,15 @@ struct
     structure LcfModel = LcfModel (MiniSig)
     structure Refiner = NominalLcfSemantics (LcfModel)
 
-    fun metactxFromArguments args =
+    fun elabDeclArguments args =
       List.foldl
-        (fn ((x, vl), mctx) => MetaCtx.insert mctx x vl)
-        MetaCtx.empty
+        (fn ((x, vl), (args', mctx)) =>
+          let
+            val x' = Metavar.named x
+          in
+            ((x', vl) :: args', MetaCtx.insert mctx x' vl)
+          end)
+        ([], MetaCtx.empty)
         args
 
     fun elabDeclParams (sign : sign) (params : string params) : symbol params * Tm.symctx * symbol NameEnv.dict =
@@ -205,17 +211,23 @@ struct
         checkVars *> checkSyms *> checkMetas *> E.ret term
       end
 
+    fun metactxToNameEnv metactx =
+      Tm.Metavar.Ctx.foldl
+        (fn (x, _, r) => AstToAbt.NameEnv.insert r (Tm.Metavar.toString x) x)
+        AstToAbt.NameEnv.empty
+        metactx
+
     fun convertToAbt (metactx, symctx, env) ast sort =
-      E.wrap (RedPrlAst.getAnnotation ast, fn () => AstToAbt.convertOpen metactx (env, NameEnv.empty) (ast, sort))
+      E.wrap (RedPrlAst.getAnnotation ast, fn () => AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort))
         >>= scopeCheck (metactx, symctx)
 
     fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
       let
-        val metactx = metactxFromArguments arguments
+        val (arguments', metactx) = elabDeclArguments arguments
         val (params', symctx, env) = elabDeclParams sign params
       in
         convertToAbt (metactx, symctx, env) definiens sort >>= (fn definiens' =>
-          E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = sort, definiens = definiens'}))
+          E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = sort, definiens = definiens'}))
       end
 
     fun <&> (m, n) = m >>= (fn x => n >>= (fn y => E.ret (x, y)))
@@ -249,23 +261,23 @@ struct
     in
       fun elabThm sign opid pos {arguments, params, goal, script} =
         let
-          val metactx = metactxFromArguments arguments
+          val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
           val names = fn i => Sym.named ("@" ^ Int.toString i)
         in
           convertToAbt (metactx, symctx, env) goal JDG <&> convertToAbt (metactx, symctx, env) script TAC
             >>= elabRefine sign
-            >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = sort definiens, definiens = definiens})
+            >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = sort definiens, definiens = definiens})
         end
     end
 
     fun elabTac (sign : sign) opid {arguments, params, script} =
       let
-        val metactx = metactxFromArguments arguments
+        val (arguments', metactx) = elabDeclArguments arguments
         val (params', symctx, env) = elabDeclParams sign params
       in
         convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
-          E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments, sort = O.TAC, definiens = script'})
+          E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = O.TAC, definiens = script'})
       end
 
     fun elabDecl (sign : sign) (opid, eopid) (decl : ast_decl, pos) : elab_sign =

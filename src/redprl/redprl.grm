@@ -131,8 +131,8 @@ end
  | atomicTac of ast
 
  | declArgument of metavariable * Ar.valence
- | declArguments of Signature.arguments
- | declArgumentsParens of Signature.arguments
+ | declArguments of string Signature.arguments
+ | declArgumentsParens of string Signature.arguments
  | declParam of string * P.param_sort
  | declParams of string Signature.params
  | declParamsBrackets of string Signature.params
