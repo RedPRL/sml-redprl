@@ -7,9 +7,6 @@
 [submodule "lib/sml-telescopes"]
 	path = lib/sml-telescopes
 	url = https://github.com/jonsterling/sml-telescopes.git
-[submodule "doc/notation"]
-	path = doc/notation
-	url = https://github.com/jonsterling/latex-common-notation.git
 [submodule "lib/sml-dependent-lcf"]
 	path = lib/sml-dependent-lcf
 	url = https://github.com/JonPRL/sml-dependent-lcf.git
