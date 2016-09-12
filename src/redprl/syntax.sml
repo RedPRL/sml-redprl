@@ -15,7 +15,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData
+    structure O = RedPrlOpData and P = RedPrlParameterTerm
     infix $ $$ \
   in
     val into =
@@ -45,5 +45,16 @@ struct
        | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] => DFUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
        | _ => raise Match
+
+    fun heteroCom (exts, dir) ((u, a), cap, tube) =
+      let
+        val (r, r') = dir
+        fun coe v m = O.POLY (O.COE (O.TAG_NONE, dir)) $$ [([u],[]) \ a, ([],[]) \ m]
+        val ty = ([],[]) \ substSymbol (r', u) a
+        val cap' = ([],[]) \ coe r cap
+        val tube' = List.map (fn ([v],_) \ n => ([v],[]) \ coe (P.ret v) n | _ => raise Fail "malformed tube") tube
+      in
+        O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ ty :: cap' :: tube'
+      end
   end
 end
