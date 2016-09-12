@@ -59,7 +59,7 @@ end
  | LEFT_ARROW
  | AT_SIGN
 
- | HCOM | COE | UNIV | BOOL | TT | FF
+ | HCOM | COE | UNIV | BOOL | TT | FF | IF
 
  | FUN_APP
 
@@ -236,6 +236,7 @@ operator
   | HCOM LBRACKET extents SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
   | IDENT customOpParams (O.POLY (O.CUST (IDENT, customOpParams, NONE)))
+  | IF (O.MONO O.IF)
 
 customOpParams
   : LBRACKET params RBRACKET (List.map (fn x => (x, NONE)) params)

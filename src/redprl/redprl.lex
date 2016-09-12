@@ -47,6 +47,7 @@ whitespace = [\ \t];
 "bool"             => (Tokens.BOOL (!pos, Coord.addchar (size yytext) o (!pos)));
 "tt"               => (Tokens.TT (!pos, Coord.addchar (size yytext) o (!pos)));
 "ff"               => (Tokens.FF (!pos, Coord.addchar (size yytext) o (!pos)));
+"if"               => (Tokens.IF (!pos, Coord.addchar (size yytext) o (!pos)));
 
 "lam"              => (Tokens.LAMBDA (!pos, Coord.addchar 3 o (!pos)));
 "hcom"             => (Tokens.HCOM (!pos, Coord.addchar 4 o (!pos)));
