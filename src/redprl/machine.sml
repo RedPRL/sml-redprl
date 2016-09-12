@@ -203,7 +203,7 @@ struct
      | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
-     | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>
+     | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (_, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>
          let
            val (r, r') = dir
            val cx' = Cl.force cx
