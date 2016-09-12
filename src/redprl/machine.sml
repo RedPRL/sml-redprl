@@ -3,6 +3,7 @@ struct
   structure Cl = AbtClosureUtil (AbtClosure (RedPrlAbt))
   structure S = AbtMachineState (Cl)
   structure P = struct open RedPrlParamData RedPrlParameterTerm end
+  structure Syn = Syntax
   type sign = Sig.sign
 
   exception InvalidCut
@@ -99,6 +100,10 @@ struct
      | O.MONO O.BOOL `$ _ <: _ => S.VAL
      | O.MONO O.TRUE `$ _ <: _ => S.VAL
      | O.MONO O.FALSE `$ _ <: _ => S.VAL
+     | O.MONO O.IF `$ [(_,[x]) \ cx, _ \ b, _ \ t, _ \ f] <: env =>
+         S.CUT
+           @@ (O.MONO O.IF `$ [([],[x]) \ S.% cx, ([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
+           <: env
 
      | O.MONO O.S1 `$ _ <: _ => S.VAL
      | O.MONO O.BASE `$ _ <: _ => S.VAL
@@ -196,6 +201,23 @@ struct
   fun cut sign =
     fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
      | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
+     | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
+     | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
+     | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>
+         let
+           val (r, r') = dir
+           val cx' = Cl.force cx
+           val t' = Cl.force t
+           val f' = Cl.force f
+
+           val v = Sym.named "v"
+           val hv = O.POLY (O.HCOM (O.TAG_BOOL, exts, (r, P.ret v))) $$ (([],[]) \ cap) :: tubes
+           val chv = substVar (hv, x) cx'
+           fun mkIf m = Syn.into @@ Syn.IF ((x, cx'), m, (t', f'))
+         in
+           Syn.heteroCom (exts, dir) ((v, chv), mkIf cap, List.map (mapBind mkIf) tubes) <: env
+         end
+
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.BOOL `$ _ <: env) =>
          let
            val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
