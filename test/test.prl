@@ -36,4 +36,4 @@ Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
 ].
 
 
-Print dfunIsTrue23.
+Print dfunIsTrue2.
