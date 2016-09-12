@@ -34,7 +34,7 @@ struct
 
   datatype mono_operator =
      DFUN | FUN | LAM | AP
-   | BOOL | TRUE | FALSE
+   | BOOL | TRUE | FALSE | IF
    | S1 | BASE
    | AX
 
@@ -113,9 +113,10 @@ struct
      | AP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | BOOL => [] ->> EXP
      | TRUE => [] ->> EXP
+     | FALSE => [] ->> EXP
+     | IF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
-     | FALSE => [] ->> EXP
      | AX => [] ->> TRIV
      | REFINE (true, tau) => [[] * [] <> JDG, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
      | REFINE (false, tau) => [[] * [] <> JDG, [] * [] <> TAC] ->> THM tau
@@ -265,6 +266,7 @@ struct
      | BOOL => "bool"
      | TRUE => "tt"
      | FALSE => "ff"
+     | IF => "if"
      | S1 => "S1"
      | BASE => "base"
      | AX => "ax"

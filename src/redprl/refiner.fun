@@ -23,11 +23,9 @@ struct
     fun Refl _ jdg =
       let
         val H >> CJ.CEQUIV (m, n) = jdg
+        val _ = assertAlphaEq (m, n)
       in
-        if Abt.eq (m, n) then
-          (T.empty, fn _ => Abt.abtToAbs @@ Syn.into Syn.AX)
-        else
-          raise E.error [E.% "Expected", E.! m, E.% "to be alpha-equivalent to", E.! n]
+        (T.empty, fn _ => Abt.abtToAbs @@ Syn.into Syn.AX)
       end
       handle Bind =>
         raise E.error [E.% "Expected a computational equality sequent"]
@@ -45,6 +43,31 @@ struct
       end
       handle Bind =>
         raise E.error [E.% "Expected typehood sequent"]
+
+    fun Elim z _ jdg =
+      let
+        val H >> CJ.TRUE cz = jdg
+        val CJ.TRUE ty = lookupHyp H z
+
+        val tt = Syn.into Syn.TT
+        val ff = Syn.into Syn.FF
+
+        val (goalT, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.TRUE (substVar (tt, z) cz)
+        val (goalF, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.TRUE (substVar (ff, z) cz)
+
+        val psi = T.empty >: goalT >: goalF
+      in
+        (psi, fn rho =>
+           let
+             val m = Syn.into @@ Syn.VAR (z, O.EXP)
+             val t = T.lookup rho (#1 goalT) // ([],[])
+             val f = T.lookup rho (#1 goalF) // ([],[])
+           in
+             abtToAbs o Syn.into @@ Syn.IF ((z, cz), m, (t, f))
+           end)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected bool elimination problem"]
   end
 
   structure DFun =
@@ -116,7 +139,7 @@ struct
     fun Project z alpha jdg =
       let
         val H >> catjdg = jdg
-        val catjdg' = Option.valOf (Hyps.find H z) handle _ => raise E.error [E.% @@ "No such hypothesis " ^ Sym.toString z ^ "in context"]
+        val catjdg' = lookupHyp H z
       in
         if CJ.eq (catjdg, catjdg') then
           (T.empty, fn rho =>
@@ -165,8 +188,8 @@ struct
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
-        val _ = if Var.eq (x, y) then () else raise E.error [E.% "Equality.Hyp: variable mismatch"]
-        val catjdg = Option.valOf (Hyps.find H x) handle _ => raise E.error [E.% "Equality.Hyp: cannot find hypothesis"]
+        val _ = assertVarEq (x, y)
+        val catjdg = lookupHyp H x
         val ty' =
           case catjdg of
              CJ.TRUE ty => ty

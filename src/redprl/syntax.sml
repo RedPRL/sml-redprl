@@ -9,7 +9,7 @@ struct
   datatype 'a view =
      VAR of variable * sort
    | AX
-   | BOOL | TT | FF
+   | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    | S1 | BASE | LOOP of param
    | DFUN of 'a * variable * 'a | LAM of variable * 'a
 
@@ -24,6 +24,7 @@ struct
        | BOOL => O.MONO O.BOOL $$ []
        | TT => O.MONO O.TRUE $$ []
        | FF => O.MONO O.FALSE $$ []
+       | IF ((x, cx), m, (t, f)) => O.MONO O.IF $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
        | S1 => O.MONO O.S1 $$ []
        | BASE => O.MONO O.BASE $$ []
        | LOOP r => O.POLY (O.LOOP r) $$ []
@@ -37,6 +38,7 @@ struct
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TRUE $ _ => TT
        | O.MONO O.FALSE $ _ => FF
+       | O.MONO O.IF $ [(_,[x]) \ cx, _ \ m, _ \ t, _ \ f] => IF ((x, cx), m, (t, f))
        | O.MONO O.S1 $ _ => S1
        | O.MONO O.BASE $ _ => BASE
        | O.POLY (O.LOOP r) $ _ => LOOP r
