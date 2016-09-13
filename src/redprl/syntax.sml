@@ -12,6 +12,7 @@ struct
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    | S1 | BASE | LOOP of param
    | DFUN of 'a * variable * 'a | LAM of variable * 'a
+   | ID_TY of (symbol * 'a) * 'a * 'a | ID_ABS of symbol * 'a | ID_AP of 'a * param
 
   local
     open Tm
@@ -30,6 +31,9 @@ struct
        | LOOP r => O.POLY (O.LOOP r) $$ []
        | DFUN (a, x, bx) => O.MONO O.DFUN $$ [([],[]) \ a, ([],[x]) \ bx]
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
+       | ID_TY ((u, a), m, n) => O.MONO O.ID_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
+       | ID_ABS (u, m) => O.MONO O.ID_ABS $$ [([u],[]) \ m]
+       | ID_AP (m, r) => O.POLY (O.ID_AP r) $$ [([],[]) \ m]
 
     fun out m =
       case Tm.out m of
@@ -44,6 +48,9 @@ struct
        | O.POLY (O.LOOP r) $ _ => LOOP r
        | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] => DFUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
+       | O.MONO O.ID_TY $ [([u],_) \ a, _ \ m, _ \ n] => ID_TY ((u, a), m, n)
+       | O.MONO O.ID_ABS $ [([u],_) \ m] => ID_ABS (u, m)
+       | O.POLY (O.ID_AP r) $ [_ \ m] => ID_AP (m, r)
        | _ => raise Match
 
     fun heteroCom (exts, dir) ((u, a), cap, tube) =

@@ -37,6 +37,7 @@ struct
    | BOOL | TRUE | FALSE | IF
    | S1 | BASE
    | AX
+   | ID_TY | ID_ABS
 
    | REFINE of bool * sort | EXTRACT of sort
 
@@ -79,6 +80,7 @@ struct
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | UNIV of 'a P.term
+   | ID_AP of 'a P.term
    | HYP_REF of 'a
    | RULE_HYP of 'a
    | RULE_ELIM of 'a
@@ -119,6 +121,8 @@ struct
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
      | AX => [] ->> TRIV
+     | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
      | REFINE (true, tau) => [[] * [] <> JDG, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
      | REFINE (false, tau) => [[] * [] <> JDG, [] * [] <> TAC] ->> THM tau
      | EXTRACT tau => [[] * [] <> THM tau] ->> tau
@@ -183,6 +187,7 @@ struct
        | COE coe => arityCoe coe
        | CUST (_, _, ar) => Option.valOf ar
        | UNIV lvl => [] ->> EXP
+       | ID_AP r => [[] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
        | RULE_HYP a => [] ->> TAC
        | RULE_ELIM a => [] ->> TAC
@@ -220,6 +225,7 @@ struct
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | UNIV lvl => lvlSupport lvl
+       | ID_AP r => dimSupport r
        | HYP_REF a => [(a, HYP)]
        | RULE_HYP a => [(a, HYP)]
        | RULE_ELIM a => [(a, HYP)]
@@ -275,6 +281,8 @@ struct
      | S1 => "S1"
      | BASE => "base"
      | AX => "ax"
+     | ID_TY => "Id"
+     | ID_ABS => "path"
      | REFINE _ => "refine"
      | EXTRACT _ => "extract"
      | TAC_SEQ _ => "seq"
@@ -328,6 +336,7 @@ struct
        | CUST (opid, ps, ar) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
+       | ID_AP r => "idap" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP a => "hyp{" ^ f a ^ "}"
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
@@ -369,6 +378,7 @@ struct
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
+       | ID_AP r => ID_AP (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP a => RULE_HYP (mapSym f a)
        | RULE_ELIM a => RULE_ELIM (mapSym f a)

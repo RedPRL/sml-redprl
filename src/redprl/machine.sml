@@ -114,8 +114,15 @@ struct
            | P.APP P.DIM1 => S.STEP @@ O.MONO O.BASE $$ [] <: env
            | P.APP _ => raise Match)
 
+     | O.MONO O.ID_TY `$ _ <: _ => S.VAL
+     | O.MONO O.ID_ABS `$ _ <: _ => S.VAL
+     | O.POLY (O.ID_AP r) `$ [_ \ m] <: env =>
+         S.CUT
+           @@ (O.POLY (O.ID_AP r) `$ [([],[]) \ S.HOLE], m)
+           <: env
 
      | O.MONO O.AX `$ _ <: _ => S.VAL
+
      | O.MONO (O.REFINE _) `$ _ <: _ => S.VAL
      | O.MONO (O.EXTRACT tau) `$ [_ \ thm] <: env =>
          S.CUT
@@ -218,6 +225,9 @@ struct
          in
            Syn.heteroCom (exts, dir) ((v, chv), mkIf cap, List.map (mapBind mkIf) tubes) <: env
          end
+
+     | (O.POLY (O.ID_AP r) `$ [_ \ S.HOLE], _ \ O.MONO O.ID_ABS `$ [([u],_) \ m] <: env) =>
+         m <: Cl.insertSym env u r
 
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.BOOL `$ _ <: env) =>
          let
