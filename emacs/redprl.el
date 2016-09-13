@@ -75,11 +75,11 @@
   "Syntax table for RedPRL.")
 
 (defconst redprl-keywords
-  '("Def" "Thm" "Tac" "Sym" "Record")
+  '("Def" "Thm" "Tac" "Sym" "Record" "Print")
   "RedPRL's keywords.")
 
 (defconst redprl-builtin-sorts
-  '("exp" "exn" "lbl" "lvl")
+  '("exp" "exn" "lbl" "lvl" "dim")
   "RedPRL's built-in sorts.")
 
 (defconst redprl-def-name-regexp
