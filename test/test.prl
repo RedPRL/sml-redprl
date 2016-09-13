@@ -37,3 +37,14 @@ Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
 
 
 Print dfunIsTrue2.
+
+// We can also (redundandly) apply the elimination rule for booleans. 
+// Observe the difference in the extracted program!
+Thm dfunIsTrue3 : [ (x : bool) -> bool true ] by [
+  x <- auto;
+  auto;
+  elim{x};
+  hyp{x}
+].
+
+Print dfunIsTrue3.

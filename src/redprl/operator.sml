@@ -81,6 +81,7 @@ struct
    | UNIV of 'a P.term
    | HYP_REF of 'a
    | RULE_HYP of 'a
+   | RULE_ELIM of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -184,6 +185,7 @@ struct
        | UNIV lvl => [] ->> EXP
        | HYP_REF a => [] ->> EXP
        | RULE_HYP a => [] ->> TAC
+       | RULE_ELIM a => [] ->> TAC
   end
 
   val arity =
@@ -220,6 +222,7 @@ struct
        | UNIV lvl => lvlSupport lvl
        | HYP_REF a => [(a, HYP)]
        | RULE_HYP a => [(a, HYP)]
+       | RULE_ELIM a => [(a, HYP)]
   end
 
   val support =
@@ -249,6 +252,8 @@ struct
        | (HYP_REF a, HYP_REF b) =>
            f (a, b)
        | (RULE_HYP a, RULE_HYP b) =>
+           f (a, b)
+       | (RULE_ELIM a, RULE_ELIM b) =>
            f (a, b)
        | _ => false
   end
@@ -325,6 +330,7 @@ struct
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP a => "hyp{" ^ f a ^ "}"
+       | RULE_ELIM a => "elim{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -365,6 +371,7 @@ struct
        | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP a => RULE_HYP (mapSym f a)
+       | RULE_ELIM a => RULE_ELIM (mapSym f a)
   end
 
   fun map f =

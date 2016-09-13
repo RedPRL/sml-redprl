@@ -205,35 +205,54 @@ struct
   end
 
   local
-    open Tacticals infix ORELSE
-
     fun matchGoal f alpha jdg =
       f jdg alpha jdg
-
-    fun StepTrue sign ty =
-      case Syn.out ty of
-         Syn.DFUN _ => DFun.True
-       | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
-
-    fun StepType sign ty =
-      case Syn.out ty of
-         Syn.BOOL => Bool.Type
-       | Syn.DFUN _ => DFun.Type
-       | _ => raise E.error [E.% "Could not find typehood rule for", E.! ty]
-
-    fun StepEq sign ((m, n), ty) =
-      case Syn.out m of
-         Syn.VAR _ => Equality.Hyp
-       | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
-
-    fun StepJdg sign = matchGoal
-      (fn _ |> _ => Generic.Intro
-        | _ >> CJ.TRUE ty => StepTrue sign ty
-        | _ >> CJ.TYPE ty => StepType sign ty
-        | _ >> CJ.MEM _ => Membership.Intro
-        | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
-        | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString CJ.toString jdg)])
   in
-    val Auto = StepJdg
+    local
+      fun StepTrue sign ty =
+        case Syn.out ty of
+           Syn.DFUN _ => DFun.True
+         | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
+
+      fun StepType sign ty =
+        case Syn.out ty of
+           Syn.BOOL => Bool.Type
+         | Syn.DFUN _ => DFun.Type
+         | _ => raise E.error [E.% "Could not find typehood rule for", E.! ty]
+
+      fun StepEq sign ((m, n), ty) =
+        case Syn.out m of
+           Syn.VAR _ => Equality.Hyp
+         | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+
+      fun StepJdg sign = matchGoal
+        (fn _ |> _ => Generic.Intro
+          | _ >> CJ.TRUE ty => StepTrue sign ty
+          | _ >> CJ.TYPE ty => StepType sign ty
+          | _ >> CJ.MEM _ => Membership.Intro
+          | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
+          | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString CJ.toString jdg)])
+    in
+      val Auto = StepJdg
+    end
+
+    local
+      fun StepTrue ty =
+        case Syn.out ty of
+           Syn.BOOL => Bool.Elim
+         | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
+
+      fun StepJdg sign z alpha jdg =
+        let
+          val H >> _ = jdg
+          val catjdg = lookupHyp H z
+        in
+          case catjdg of
+             CJ.TRUE ty => StepTrue ty z alpha jdg
+           | _ => raise E.error [E.% ("Could not find suitable elimination rule for " ^ CJ.toString catjdg)]
+        end
+    in
+      val Elim = StepJdg
+    end
   end
 end

@@ -129,6 +129,7 @@ struct
      | O.MONO O.RULE_CEQUIV_REFL `$ _ <: _ => S.VAL
      | O.MONO O.RULE_WITNESS `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
+     | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_EACH n) `$ _ <: _ => S.VAL
