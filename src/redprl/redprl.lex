@@ -47,6 +47,7 @@ whitespace = [\ \t];
 "`"                => (Tokens.BACK_TICK (!pos, Coord.nextchar o (!pos)));
 "@"                => (Tokens.AT_SIGN (!pos, Coord.nextchar o (!pos)));
 "|"                => (Tokens.PIPE (!pos, Coord.nextchar o (!pos)));
+"%"                => (Tokens.PERCENT (!pos, Coord.nextchar o (!pos)));
 
 "bool"             => (Tokens.BOOL (!pos, Coord.addchar (size yytext) o (!pos)));
 "tt"               => (Tokens.TT (!pos, Coord.addchar (size yytext) o (!pos)));
@@ -77,6 +78,7 @@ whitespace = [\ \t];
 "in"               => (Tokens.IN (!pos, Coord.addchar 2 o (!pos)));
 
 "rec"              => (Tokens.TAC_REC (!pos, Coord.addchar (size yytext) o (!pos)));
+"progress"         => (Tokens.TAC_PROGRESS (!pos, Coord.addchar (size yytext) o (!pos)));
 "id"               => (Tokens.RULE_ID (!pos, Coord.addchar 2 o (!pos)));
 "eval-goal"        => (Tokens.RULE_EVAL_GOAL (!pos, Coord.addchar (size yytext) o (!pos)));
 "ceq/refl"         => (Tokens.RULE_CEQUIV_REFL (!pos, Coord.addchar (size yytext) o (!pos)));

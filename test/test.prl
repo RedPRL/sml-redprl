@@ -56,6 +56,20 @@ Tac try(#t : tac) = [
   #t | id
 ].
 
-// Thm testPathTrue : [ paths({x}.bool; tt; tt) true ] by [
-//   try(auto); try(auto); try(auto)
-// ].
+Tac repeat(#t : tac) = [
+  rec t' in {
+    try(%{ progress { #t }; t'})
+  }
+].
+
+Tac go = [
+  repeat(%{ auto })
+].
+
+Thm testPathTrue : [ paths({x}.bool; tt; tt) true ] by [
+  go();
+  [ witness [tt] ];
+  go()
+].
+
+Print testPathTrue.

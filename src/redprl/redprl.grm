@@ -54,7 +54,7 @@ end
  | SQUIGGLE
  | SQUIGGLE_ARROW
  | RIGHT_ARROW | LEFT_ARROW
- | BACK_TICK | AT_SIGN | PIPE
+ | BACK_TICK | AT_SIGN | PIPE | PERCENT
 
  | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE
 
@@ -67,7 +67,7 @@ end
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY | IN
 
- | TAC_REC
+ | TAC_REC | TAC_PROGRESS
  | RULE_ID | RULE_AUTO | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_HYP | RULE_WITNESS | RULE_ELIM
 
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
@@ -209,7 +209,7 @@ terms
   : ([])
   | term ([term])
   | term COMMA terms (term :: terms)
-  | tactic COMMA terms (tactic :: terms)
+  | PERCENT LBRACKET tactic RBRACKET COMMA terms (tactic :: terms)
 
 binder
   : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT (symbols1, symbols2)
@@ -219,7 +219,7 @@ binder
 
 binding
   : binder term (\ (binder, term))
-  | binder tactic (\ (binder, tactic))
+  | binder PERCENT LBRACKET tactic RBRACKET (\ (binder, tactic))
 
 bindings
   : ([])
@@ -293,6 +293,7 @@ atomicRawTac
   | RULE_WITNESS LSQUARE term RSQUARE (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | tactic PIPE tactic %prec PIPE (Ast.$$ (O.MONO O.TAC_ORELSE, [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
   | TAC_REC IDENT IN LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_REC, [\ (([],[IDENT]), tactic)]))
+  | TAC_PROGRESS LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_PROGRESS, [\ (([], []), tactic)]))
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | IDENT (`` IDENT)

@@ -75,6 +75,7 @@ struct
          | O.MONO (O.TAC_SEQ _) $ _ => SEQ (collect tac')
          | O.MONO O.TAC_ORELSE $ [_ \ t1, _ \ t2] => ORELSE (t1, t2)
          | O.MONO O.TAC_REC $ [(_,[x]) \ tx] => REC (x, tx)
+         | O.MONO O.TAC_PROGRESS $ [_ \ t] => PROGRESS t
          | _ => RULE tac'
          (* TODO: ORELSE, REC, PROGRESS, etc. *)
       end

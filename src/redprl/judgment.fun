@@ -49,7 +49,7 @@ struct
       fun hypsMetactx H : Tm.metactx =
         S.Hyps.foldl
           (fn (_, a, psi) => psi <+> CJ.metactx a)
-          (raise Match)
+          MetaCtx.empty
           H
 
       val rec judgmentMetactx : judgment -> Tm.metactx =

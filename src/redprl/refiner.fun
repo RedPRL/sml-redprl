@@ -44,6 +44,26 @@ struct
       handle Bind =>
         raise E.error [E.% "Expected typehood sequent"]
 
+    fun EqTT _ jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.BOOL = Syn.out ty
+        val Syn.TT = Syn.out m
+        val Syn.TT = Syn.out n
+      in
+        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun EqFF _ jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.BOOL = Syn.out ty
+        val Syn.FF = Syn.out m
+        val Syn.FF = Syn.out n
+      in
+        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+      end
+
     fun Elim z _ jdg =
       let
         val H >> CJ.TRUE cz = jdg
@@ -270,8 +290,10 @@ struct
          | _ => raise E.error [E.% "Could not find typehood rule for", E.! ty]
 
       fun StepEq sign ((m, n), ty) =
-        case Syn.out m of
-           Syn.VAR _ => Equality.Hyp
+        case (Syn.out m, Syn.out n, Syn.out ty) of
+           (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
+         | (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
+         | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepJdg sign = matchGoal
