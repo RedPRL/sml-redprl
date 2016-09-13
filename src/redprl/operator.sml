@@ -336,7 +336,7 @@ struct
        | CUST (opid, ps, ar) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
-       | ID_AP r => "idap" ^ P.toString f r ^ "}"
+       | ID_AP r => "idap{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP a => "hyp{" ^ f a ^ "}"
        | RULE_ELIM a => "elim{" ^ f a ^ "}"

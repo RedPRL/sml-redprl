@@ -27,6 +27,8 @@ whitespace = [\ \t];
 
 "("                => (Tokens.LPAREN (!pos, Coord.nextchar o (!pos)));
 ")"                => (Tokens.RPAREN (!pos, Coord.nextchar o (!pos)));
+"<"                => (Tokens.LANGLE (!pos, Coord.nextchar o (!pos)));
+">"                => (Tokens.RANGLE (!pos, Coord.nextchar o (!pos)));
 "{"                => (Tokens.LBRACKET (!pos, Coord.nextchar o (!pos)));
 "}"                => (Tokens.RBRACKET (!pos, Coord.nextchar o (!pos)));
 "["                => (Tokens.LSQUARE (!pos, Coord.nextchar o (!pos)));
@@ -42,17 +44,21 @@ whitespace = [\ \t];
 "~>"               => (Tokens.SQUIGGLE_ARROW (!pos, Coord.addchar 2 o (!pos)));
 "->"               => (Tokens.RIGHT_ARROW (!pos, Coord.addchar 2 o (!pos)));
 "<-"               => (Tokens.LEFT_ARROW (!pos, Coord.addchar 2 o (!pos)));
+"`"                => (Tokens.BACK_TICK (!pos, Coord.nextchar o (!pos)));
 "@"                => (Tokens.AT_SIGN (!pos, Coord.nextchar o (!pos)));
 
 "bool"             => (Tokens.BOOL (!pos, Coord.addchar (size yytext) o (!pos)));
 "tt"               => (Tokens.TT (!pos, Coord.addchar (size yytext) o (!pos)));
 "ff"               => (Tokens.FF (!pos, Coord.addchar (size yytext) o (!pos)));
 "if"               => (Tokens.IF (!pos, Coord.addchar (size yytext) o (!pos)));
+"paths"            => (Tokens.PATHS (!pos, Coord.addchar (size yytext) o (!pos)));
 
 "lam"              => (Tokens.LAMBDA (!pos, Coord.addchar 3 o (!pos)));
 "hcom"             => (Tokens.HCOM (!pos, Coord.addchar 4 o (!pos)));
 "coe"              => (Tokens.COE (!pos, Coord.addchar 3 o (!pos)));
 "univ"             => (Tokens.UNIV (!pos, Coord.addchar 4 o (!pos)));
+"loop"             => (Tokens.LOOP (!pos, Coord.addchar (size yytext) o (!pos)));
+"base"             => (Tokens.BASE (!pos, Coord.addchar (size yytext) o (!pos)));
 
 "dim"              => (Tokens.DIM (!pos, Coord.addchar 3 o (!pos)));
 "exn"              => (Tokens.EXN (!pos, Coord.addchar 3 o (!pos)));

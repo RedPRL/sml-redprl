@@ -40,12 +40,10 @@ end
  | IDENT of string
  | NUMERAL of int
  | COLON
- | LPAREN
- | RPAREN
- | RBRACKET
- | LBRACKET
- | LSQUARE
- | RSQUARE
+ | LANGLE | RANGLE
+ | LPAREN | RPAREN
+ | RBRACKET | LBRACKET
+ | LSQUARE | RSQUARE
  | EQUALS
  | DOT
  | APOSTROPHE
@@ -57,9 +55,10 @@ end
  | SQUIGGLE_ARROW
  | RIGHT_ARROW
  | LEFT_ARROW
+ | BACK_TICK
  | AT_SIGN
 
- | HCOM | COE | UNIV | BOOL | TT | FF | IF
+ | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE
 
  | FUN_APP
 
@@ -76,7 +75,7 @@ end
 
 %nonassoc SQUIGGLE
 %right LEFT_ARROW RIGHT_ARROW
-%left FUN_APP
+%left FUN_APP AT_SIGN
 
 
 %nonterm
@@ -237,6 +236,9 @@ operator
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
   | IDENT customOpParams (O.POLY (O.CUST (IDENT, customOpParams, NONE)))
   | IF (O.MONO O.IF)
+  | PATHS (O.MONO O.ID_TY)
+  | BASE (O.MONO O.BASE)
+  | LOOP LBRACKET param RBRACKET (O.POLY (O.LOOP param))
 
 customOpParams
   : LBRACKET params RBRACKET (List.map (fn x => (x, NONE)) params)
@@ -254,7 +256,7 @@ atomicRawTerm
   : LPAREN term RPAREN (term)
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-  | AT_SIGN IDENT (Ast.$$ (O.POLY (O.HYP_REF IDENT), []))
+  | BACK_TICK IDENT (Ast.$$ (O.POLY (O.HYP_REF IDENT), []))
   | IDENT (`` IDENT)
   | term RIGHT_ARROW term (Ast.$$ (O.MONO O.FUN, [\ (([],[]), term1), \ (([],[]), term2)]))
   | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
@@ -262,6 +264,9 @@ atomicRawTerm
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
   | TT (Ast.$$ (O.MONO O.TRUE, []))
   | FF (Ast.$$ (O.MONO O.FALSE, []))
+  | LANGLE IDENT RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([IDENT],[]), term)]))
+  | term AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.ID_AP param), [\ (([],[]), term)]))
+
 
 rawTerm
   : term atomicRawTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicRawTerm)]))

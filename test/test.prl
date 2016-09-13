@@ -30,15 +30,15 @@ Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
   // We provide an explicit term witness of the goal, in this case,
   // a reference to the hypothesis symbol that we bound above. Note that when
   // we wish to refer to variables that are introduced as hypotheses, we
-  // must use references as below, since the variable itself is not in scope.
-  witness [@x];
+  // must use references with a tick as below, since the variable itself is not in scope.
+  witness [`x];
   auto; auto
 ].
 
 
 Print dfunIsTrue2.
 
-// We can also (redundandly) apply the elimination rule for booleans. 
+// We can also (redundandly) apply the elimination rule for booleans.
 // Observe the difference in the extracted program!
 Thm dfunIsTrue3 : [ (x : bool) -> bool true ] by [
   x <- auto;
@@ -47,4 +47,4 @@ Thm dfunIsTrue3 : [ (x : bool) -> bool true ] by [
   hyp{x}
 ].
 
-Print dfunIsTrue3.
+Print dfunI
