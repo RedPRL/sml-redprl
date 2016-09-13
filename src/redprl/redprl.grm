@@ -65,8 +65,9 @@ end
 
  | CMD_PRINT
  | DCL_DEF | DCL_TAC | DCL_THM
- | BY
+ | BY | IN
 
+ | TAC_REC
  | RULE_ID | RULE_AUTO | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_HYP | RULE_WITNESS | RULE_ELIM
 
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
@@ -291,6 +292,7 @@ atomicRawTac
   | RULE_ELIM LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_ELIM IDENT), []))
   | RULE_WITNESS LSQUARE term RSQUARE (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | tactic PIPE tactic %prec PIPE (Ast.$$ (O.MONO O.TAC_ORELSE, [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
+  | TAC_REC IDENT IN LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_REC, [\ (([],[IDENT]), tactic)]))
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | IDENT (`` IDENT)

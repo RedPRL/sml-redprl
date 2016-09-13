@@ -131,6 +131,7 @@ struct
 
      | O.MONO (O.TAC_SEQ _) `$ _ <: _ => S.VAL
      | O.MONO O.TAC_ORELSE `$ _ <: _ => S.VAL
+     | O.MONO O.TAC_REC `$ _ <: _ => S.VAL
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
      | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL
