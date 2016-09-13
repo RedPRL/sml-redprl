@@ -16,7 +16,7 @@ struct
   fun @@ (f, x) = f x
   infixr @@
 
-  structure O = RedPrlOpData
+  structure O = RedPrlOpData and E = RedPrlError
 
   structure ListUtil =
   struct
@@ -130,11 +130,13 @@ struct
            <: env
 
      | O.MONO (O.TAC_SEQ _) `$ _ <: _ => S.VAL
+     | O.MONO O.TAC_ORELSE `$ _ <: _ => S.VAL
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
      | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL
      | O.MONO O.RULE_CEQUIV_REFL `$ _ <: _ => S.VAL
      | O.MONO O.RULE_WITNESS `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_AUTO `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
 
@@ -202,7 +204,7 @@ struct
            S.STEP @@ lam <: env
          end
 
-     | _ => raise Match
+     | th `$ es <: env => raise E.error [E.% "Machine encountered unrecognized term", E.! (th $$ es)]
 
   (* [cut] tells the machine how to plug a value into a hole in a stack frame. As a rule of thumb,
    * any time you return [CUT] in the [step] judgment, you should add a corresponding rule to [cut]. *)

@@ -9,6 +9,7 @@ struct
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
   open RedPrlSequent
 
+  structure P = struct open RedPrlParameterTerm RedPrlParamData end
   structure CJ = RedPrlCategoricalJudgment
 
   exception todo

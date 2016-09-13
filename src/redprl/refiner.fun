@@ -113,6 +113,53 @@ struct
         raise E.error [E.% "Expected dfun truth sequent"]
   end
 
+  structure Path =
+  struct
+    fun Type alpha jdg =
+      let
+        val H >> CJ.TYPE ty = jdg
+        val Syn.ID_TY ((u, a), m, n) = Syn.out ty
+
+        val a0 = substSymbol (P.APP P.DIM0, u) a
+        val a1 = substSymbol (P.APP P.DIM1, u) a
+
+        val (tyGoal, _) = makeGoal @@ H >> CJ.TYPE a
+        val (goal0, _) = makeGoal @@ H >> CJ.MEM (m, a0)
+        val (goal1, _) = makeGoal @@ H >> CJ.MEM (n, a1)
+
+        val psi = T.empty >: tyGoal >: goal0 >: goal1
+      in
+        (psi, fn rho =>
+          abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun True alpha jdg =
+      let
+        val H >> CJ.TRUE ty = jdg
+        val Syn.ID_TY ((u, a), p0, p1) = Syn.out ty
+        val a0 = substSymbol (P.APP P.DIM0, u) a
+        val a1 = substSymbol (P.APP P.DIM1, u) a
+
+        val v = alpha 0
+
+        val (mainGoal, mhole) = makeGoal @@ ([(v, P.DIM)],[]) |> H >> CJ.TRUE (substSymbol (P.ret v, u) a)
+
+        val m0 = mhole [(P.APP P.DIM0, P.DIM)] []
+        val m1 = mhole [(P.APP P.DIM1, P.DIM)] []
+        val (cohGoal0, _) = makeGoal @@ H >> CJ.EQ ((m0, p0), a0)
+        val (cohGoal1, _) = makeGoal @@ H >> CJ.EQ ((m1, p1), a1)
+
+        val psi = T.empty >: mainGoal >: cohGoal0 >: cohGoal1
+      in
+        (psi, fn rho =>
+           let
+             val ([v],_) \ p = outb @@ T.lookup rho (#1 mainGoal)
+           in
+             abtToAbs o Syn.into @@ Syn.ID_ABS (v, p)
+           end)
+      end
+  end
+
   structure Generic =
   struct
     fun Intro alpha jdg =
@@ -212,12 +259,14 @@ struct
       fun StepTrue sign ty =
         case Syn.out ty of
            Syn.DFUN _ => DFun.True
+         | Syn.ID_TY _ => Path.True
          | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
 
       fun StepType sign ty =
         case Syn.out ty of
            Syn.BOOL => Bool.Type
          | Syn.DFUN _ => DFun.Type
+         | Syn.ID_TY _ => Path.Type
          | _ => raise E.error [E.% "Could not find typehood rule for", E.! ty]
 
       fun StepEq sign ((m, n), ty) =

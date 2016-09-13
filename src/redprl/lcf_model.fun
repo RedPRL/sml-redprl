@@ -4,8 +4,9 @@ sig
   structure Lcf : DEPENDENT_LCF
 end =
 struct
-  structure Lcf = Lcf and T = Tacticals and MT = Multitacticals and Spr = UniversalSpread
+  structure Lcf = Lcf and T = Tacticals and MT = Multitacticals and Spr = UniversalSpread and E = RedPrlError
   structure Syn = LcfSyntax (Sig)
+  structure Machine = RedPrlMachine (Sig)
 
   type 'a nominal = Syn.atom Spr.point -> 'a
   type tactic = MT.Lcf.tactic nominal
@@ -29,9 +30,9 @@ struct
      | O.POLY (O.RULE_HYP z) $ _ => Rules.Hyp.Project z
      | O.POLY (O.RULE_ELIM z) $ _ => Rules.Elim sign z
      | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Truth.Witness tm
-     | _ => raise InvalidRule
+     | _ => raise E.error [E.% "Invalid rule", E.! rule]
 
   fun rule (sign, env) rule alpha goal =
-    Debug.wrap (fn _ => interpret (sign, env) rule alpha goal)
+    Debug.wrap (fn _ => interpret (sign, env) (Machine.eval sign rule) alpha goal)
     handle exn => raise RedPrlError.annotate (getAnnotation rule) exn
 end

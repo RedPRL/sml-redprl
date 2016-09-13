@@ -17,10 +17,9 @@ local
   redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml
-  redprl/syntax.sml
-
   redprl/error.sig
   redprl/error.sml
+  redprl/syntax.sml
 
   redprl/categorical_judgment.sig
   redprl/categorical_judgment.sml

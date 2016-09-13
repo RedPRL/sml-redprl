@@ -53,17 +53,15 @@ end
  | LAMBDA
  | SQUIGGLE
  | SQUIGGLE_ARROW
- | RIGHT_ARROW
- | LEFT_ARROW
- | BACK_TICK
- | AT_SIGN
+ | RIGHT_ARROW | LEFT_ARROW
+ | BACK_TICK | AT_SIGN | PIPE
 
  | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE
 
  | FUN_APP
 
  | DIM | EXN | LBL | LVL
- | EXP
+ | EXP | TAC
 
  | CMD_PRINT
  | DCL_DEF | DCL_TAC | DCL_THM
@@ -74,7 +72,7 @@ end
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
 %nonassoc SQUIGGLE
-%right LEFT_ARROW RIGHT_ARROW
+%right LEFT_ARROW RIGHT_ARROW PIPE
 %left FUN_APP AT_SIGN
 
 
@@ -166,6 +164,7 @@ psort
 
 sort
   : EXP (O.EXP)
+  | TAC (O.TAC)
 
 sorts
   : ([])
@@ -209,6 +208,7 @@ terms
   : ([])
   | term ([term])
   | term COMMA terms (term :: terms)
+  | tactic COMMA terms (tactic :: terms)
 
 binder
   : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT (symbols1, symbols2)
@@ -218,6 +218,7 @@ binder
 
 binding
   : binder term (\ (binder, term))
+  | binder tactic (\ (binder, tactic))
 
 bindings
   : ([])
@@ -237,8 +238,6 @@ operator
   | IDENT customOpParams (O.POLY (O.CUST (IDENT, customOpParams, NONE)))
   | IF (O.MONO O.IF)
   | PATHS (O.MONO O.ID_TY)
-  | BASE (O.MONO O.BASE)
-  | LOOP LBRACKET param RBRACKET (O.POLY (O.LOOP param))
 
 customOpParams
   : LBRACKET params RBRACKET (List.map (fn x => (x, NONE)) params)
@@ -264,9 +263,10 @@ atomicRawTerm
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
   | TT (Ast.$$ (O.MONO O.TRUE, []))
   | FF (Ast.$$ (O.MONO O.FALSE, []))
+  | BASE (Ast.$$ (O.MONO O.BASE, []))
+  | LOOP LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.LOOP param), []))
   | LANGLE IDENT RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([IDENT],[]), term)]))
   | term AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.ID_AP param), [\ (([],[]), term)]))
-
 
 rawTerm
   : term atomicRawTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicRawTerm)]))
@@ -290,6 +290,10 @@ atomicRawTac
   | RULE_HYP LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_HYP IDENT), []))
   | RULE_ELIM LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_ELIM IDENT), []))
   | RULE_WITNESS LSQUARE term RSQUARE (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
+  | tactic PIPE tactic %prec PIPE (Ast.$$ (O.MONO O.TAC_ORELSE, [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
+  | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
+  | IDENT (`` IDENT)
   | term (term)
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)

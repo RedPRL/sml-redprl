@@ -41,7 +41,7 @@ struct
 
    | REFINE of bool * sort | EXTRACT of sort
 
-   | TAC_SEQ of int
+   | TAC_SEQ of int | TAC_ORELSE
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
    | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_WITNESS
 
@@ -132,6 +132,7 @@ struct
          in
            [[] * [] <> MTAC, hyps * [] <> TAC] ->> TAC
          end
+     | TAC_ORELSE => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
      | RULE_ID => [] ->> TAC
      | RULE_AUTO => [] ->> TAC
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
@@ -286,6 +287,7 @@ struct
      | REFINE _ => "refine"
      | EXTRACT _ => "extract"
      | TAC_SEQ _ => "seq"
+     | TAC_ORELSE => "orelse"
      | RULE_ID => "id"
      | RULE_AUTO => "auto"
      | RULE_WITNESS => "witness"

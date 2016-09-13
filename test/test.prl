@@ -47,4 +47,15 @@ Thm dfunIsTrue3 : [ (x : bool) -> bool true ] by [
   hyp{x}
 ].
 
-Print dfunI
+Thm testPath : [ (<x> loop{x}) @ 0 ~ base ] by [
+  eval-goal;
+  ceq/refl
+].
+
+Tac try(#t : tac) = [
+  #t | id
+].
+
+// Thm testPathTrue : [ paths({x}.bool; tt; tt) true ] by [
+//   try(auto); try(auto); try(auto)
+// ].

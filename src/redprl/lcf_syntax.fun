@@ -73,6 +73,7 @@ struct
         case Tm.out tac' of
            `x => VAR x
          | O.MONO (O.TAC_SEQ _) $ _ => SEQ (collect tac')
+         | O.MONO O.TAC_ORELSE $ [_ \ t1, _ \ t2] => ORELSE (t1, t2)
          | _ => RULE tac'
          (* TODO: ORELSE, REC, PROGRESS, etc. *)
       end

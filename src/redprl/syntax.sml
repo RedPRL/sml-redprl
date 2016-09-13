@@ -16,7 +16,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData and P = RedPrlParameterTerm
+    structure O = RedPrlOpData and P = RedPrlParameterTerm and E = RedPrlError
     infix $ $$ \
   in
     val into =
@@ -51,7 +51,7 @@ struct
        | O.MONO O.ID_TY $ [([u],_) \ a, _ \ m, _ \ n] => ID_TY ((u, a), m, n)
        | O.MONO O.ID_ABS $ [([u],_) \ m] => ID_ABS (u, m)
        | O.POLY (O.ID_AP r) $ [_ \ m] => ID_AP (m, r)
-       | _ => raise Match
+       | _ => raise E.error [E.% "Syntax view encountered unrecognized term", E.! m]
 
     fun heteroCom (exts, dir) ((u, a), cap, tube) =
       let
