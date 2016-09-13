@@ -83,9 +83,9 @@ end
    start of Signature.sign
 
    (* a type-theoretic term, excluding function application *)
- | preterm of ast
+ | rawTerm of ast
    (* a type-theoretic term, including function application *)
- | atomicPreterm of ast
+ | atomicRawTerm of ast
 
    (* a type-theoretic term, annotated with source position *)
  | term of ast
@@ -119,17 +119,17 @@ end
  | bindingSig of P.param_sort list * O.sort list
  | valence of Ar.valence
 
- | prejudgment of ast
+ | rawJudgment of ast
  | judgment of ast
 
- | pretactic of ast
+ | rawTactic of ast
  | tactic of ast
  | tactics of ast list
  | tacticBinding of Tac.binding
  | tacticBindings of Tac.binding list
- | premultitac of ast
+ | rawMultitac of ast
  | multitac of ast
- | atomicPretac of ast
+ | atomicRawTac of ast
  | atomicTac of ast
 
  | declArgument of metavariable * Ar.valence
@@ -140,11 +140,11 @@ end
  | declParamsBrackets of string Signature.params
 
    (* a declaration in a RedPRL signature *)
- | predecl of string * Signature.src_decl
+ | rawDecl of string * Signature.src_decl
    (* a declaration, annotated with source position *)
  | decl of string * (Signature.src_decl * Pos.t option)
    (* a RedPRL signature *)
- | precmd of Signature.src_cmd
+ | rawCmd of Signature.src_cmd
  | cmd of Signature.src_cmd * Pos.t
  | sign of Signature.sign
 
@@ -248,9 +248,9 @@ metavar
 dir
   : param SQUIGGLE_ARROW param ((param1, param2))
 
-term : preterm (annotate (Pos.pos (preterm1left fileName) (preterm1right fileName)) preterm)
+term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
 
-atomicPreterm
+atomicRawTerm
   : LPAREN term RPAREN (term)
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
@@ -263,11 +263,11 @@ atomicPreterm
   | TT (Ast.$$ (O.MONO O.TRUE, []))
   | FF (Ast.$$ (O.MONO O.FALSE, []))
 
-preterm
-  : term atomicPreterm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicPreterm)]))
-  | atomicPreterm (atomicPreterm)
+rawTerm
+  : term atomicRawTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicRawTerm)]))
+  | atomicRawTerm (atomicRawTerm)
 
-prejudgment
+rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
   | term JDG_TYPE (Ast.$$ (O.MONO O.JDG_TYPE, [\ (([],[]), term)]))
   | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
@@ -275,9 +275,9 @@ prejudgment
   | term EQUALS term COLON term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
   | term COLON term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
 
-judgment : prejudgment (annotate (Pos.pos (prejudgment1left fileName) (prejudgment1right fileName)) prejudgment)
+judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
-atomicPretac
+atomicRawTac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO (Ast.$$ (O.MONO O.RULE_AUTO, []))
   | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
@@ -287,14 +287,14 @@ atomicPretac
   | RULE_WITNESS LSQUARE term RSQUARE (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | term (term)
 
-atomicTac : atomicPretac (annotate (Pos.pos (atomicPretac1left fileName) (atomicPretac1right fileName)) atomicPretac)
+atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 
-premultitac
+rawMultitac
   : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
   | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS NUMERAL), [\ (([],[]), tactic)]))
   | atomicTac (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
 
-multitac : premultitac (annotate (Pos.pos (premultitac1left fileName) (premultitac1right fileName)) premultitac)
+multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
 tacticBinding
   : symbols LEFT_ARROW multitac (symbols, multitac)
@@ -305,10 +305,10 @@ tacticBindings
   | tacticBinding SEMI tacticBindings (tacticBinding :: tacticBindings)
   | ([])
 
-pretactic
+rawTactic
   : tacticBindings (Tac.compileScript tacticBindings)
 
-tactic : pretactic (annotate (Pos.pos (pretactic1left fileName) (pretactic1right fileName)) pretactic)
+tactic : rawTactic (annotate (Pos.pos (rawTactic1left fileName) (rawTactic1right fileName)) rawTactic)
 
 tactics
   : ([])
@@ -339,7 +339,7 @@ declParamsBrackets
   : LBRACKET declParams RBRACKET (declParams)
   | ([])
 
-predecl
+rawDecl
   : DCL_DEF IDENT declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
       (IDENT, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
   | DCL_TAC IDENT declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
@@ -347,12 +347,12 @@ predecl
   | DCL_THM IDENT declParamsBrackets declArgumentsParens COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
       (IDENT, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = judgment, script = tactic})
 
-decl : predecl (#1 predecl, (#2 predecl, SOME (Pos.pos (predecl1left fileName) (predecl1right fileName))))
+decl : rawDecl (#1 rawDecl, (#2 rawDecl, SOME (Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))))
 
-precmd
+rawCmd
   : CMD_PRINT IDENT (Signature.PRINT IDENT)
 
-cmd : precmd (precmd, (Pos.pos (precmd1left fileName) (precmd1right fileName)))
+cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
 
 sign
   : (Signature.empty)
