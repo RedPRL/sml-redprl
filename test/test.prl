@@ -66,9 +66,9 @@ Tac go = [
   repeat(%{ auto })
 ].
 
-Thm testPathTrue : [ paths({x}.bool; tt; tt) true ] by [
-  go();
-  [ witness [tt] ];
+Thm testPathTrue : [ paths({x}.S1; base; base) true ] by [
+  x:dim <- auto;
+  [ auto; witness [ loop{x} ] ];
   go()
 ].
 

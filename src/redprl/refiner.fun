@@ -31,6 +31,54 @@ struct
         raise E.error [E.% "Expected a computational equality sequent"]
   end
 
+  structure S1 =
+  struct
+    fun Type _ jdg =
+      let
+        val H >> CJ.TYPE a = jdg
+        val Syn.S1 = Syn.out a
+      in
+        (T.empty, fn rho =>
+          Abt.abtToAbs @@ Syn.into Syn.AX)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected typehood sequent"]
+
+    fun EqBase _ jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.S1 = Syn.out ty
+        val Syn.BASE = Syn.out m
+        val Syn.BASE = Syn.out n
+      in
+        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun EqLoop _ jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.S1 = Syn.out ty
+        val Syn.LOOP r1 = Syn.out m
+        val Syn.LOOP r2 = Syn.out n
+      in
+        if P.eq Sym.eq (r1, r2) then
+          (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+        else
+          raise E.error [E.% "Expected loops in same dimension"]
+      end
+
+    (* TODO: replace with general-purpose head expansion rule when possible. *)
+    fun ComputeLoop _ jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.S1 = Syn.out ty
+        val Syn.LOOP (P.APP _) = Syn.out m
+        val Syn.BASE = Syn.out n
+      in
+        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+      end
+  end
+
   structure Bool =
   struct
     fun Type _ jdg =
@@ -287,6 +335,7 @@ struct
            Syn.BOOL => Bool.Type
          | Syn.DFUN _ => DFun.Type
          | Syn.ID_TY _ => Path.Type
+         | Syn.S1 => S1.Type
          | _ => raise E.error [E.% "Could not find typehood rule for", E.! ty]
 
       fun StepEq sign ((m, n), ty) =
@@ -294,6 +343,9 @@ struct
            (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
+         | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
+         | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
+         | (Syn.LOOP _, Syn.BASE, Syn.S1) => S1.ComputeLoop
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepJdg sign = matchGoal

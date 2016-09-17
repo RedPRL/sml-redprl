@@ -31,6 +31,7 @@ structure RedPrlOpData =
 struct
   open RedPrlSortData
   structure P = RedPrlParameterTerm
+  type psort = RedPrlParamData.param_sort
 
   datatype mono_operator =
      DFUN | FUN | LAM | AP
@@ -41,7 +42,7 @@ struct
 
    | REFINE of bool * sort | EXTRACT of sort
 
-   | TAC_SEQ of int | TAC_ORELSE | TAC_REC | TAC_PROGRESS
+   | TAC_SEQ of psort list | TAC_ORELSE | TAC_REC | TAC_PROGRESS
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
    | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_WITNESS
 
@@ -126,12 +127,7 @@ struct
      | REFINE (true, tau) => [[] * [] <> JDG, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
      | REFINE (false, tau) => [[] * [] <> JDG, [] * [] <> TAC] ->> THM tau
      | EXTRACT tau => [[] * [] <> THM tau] ->> tau
-     | TAC_SEQ n =>
-         let
-           val hyps = List.tabulate (n, fn _ => HYP)
-         in
-           [[] * [] <> MTAC, hyps * [] <> TAC] ->> TAC
-         end
+     | TAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> TAC] ->> TAC
      | TAC_ORELSE => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
      | TAC_REC => [[] * [TAC] <> TAC] ->> TAC
      | TAC_PROGRESS => [[] * [] <> TAC] ->> TAC

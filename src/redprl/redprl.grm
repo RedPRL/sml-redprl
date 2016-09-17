@@ -14,11 +14,15 @@ structure O = RedPrlOpData
 
 structure Tac =
 struct
-  type binding = string list * ast
+  type binding = (string * P.param_sort) list * ast
   infix $$ $ \
 
-  fun makeSeq mt us t =
-    O.MONO (O.TAC_SEQ (List.length us)) $$ [([],[]) \ mt, (us,[]) \ t]
+  fun makeSeq mt (us : (string * P.param_sort) list) t =
+    let
+      val (syms, sorts) = ListPair.unzip us
+    in
+      O.MONO (O.TAC_SEQ sorts) $$ [([],[]) \ mt, (syms,[]) \ t]
+    end
 
   fun multitacToTac tm =
     case out tm of
@@ -125,6 +129,8 @@ end
  | tactics of ast list
  | tacticBinding of Tac.binding
  | tacticBindings of Tac.binding list
+ | hypBinding of string * P.param_sort
+ | hypBindings of (string * P.param_sort) list
  | rawMultitac of ast
  | multitac of ast
  | atomicRawTac of ast
@@ -309,8 +315,17 @@ rawMultitac
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
+
+hypBinding
+  : IDENT COLON psort (IDENT, psort)
+  | IDENT (IDENT, P.HYP)
+
+hypBindings
+  : hypBinding ([hypBinding])
+  | hypBinding COMMA hypBindings (hypBinding :: hypBindings)
+
 tacticBinding
-  : symbols LEFT_ARROW multitac (symbols, multitac)
+  : hypBindings LEFT_ARROW multitac (hypBindings, multitac)
   | multitac ([], multitac)
 
 tacticBindings
