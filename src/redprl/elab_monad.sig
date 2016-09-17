@@ -7,6 +7,7 @@ sig
   val delay : (unit -> 'a t) -> 'a t
   val wrap : (unit -> 'a) ann -> 'a t
 
+  val hush : 'a t -> 'a t
   val warn : string ann -> unit t
   val dump : string ann -> unit t
   val info : string ann -> unit t

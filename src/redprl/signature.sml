@@ -315,7 +315,7 @@ struct
 
     fun elabPrint (sign : sign) (pos, opid) =
       E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid =>
-        ETelescope.lookup (#elabSign sign) eopid >>= (fn edecl =>
+        E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
                 EDEF entry => E.info (SOME pos, entryToString sign (eopid, entry))

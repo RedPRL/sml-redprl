@@ -67,6 +67,15 @@ struct
   structure MonadUtil = MonadUtil (Monad)
   open MonadUtil
 
+  fun hush m =
+    Susp.delay (fn () =>
+      let
+        val {result, messages} = Susp.force m
+      in
+        {result = result, messages = DList.empty}
+      end)
+
+
   fun warn msg =
     Susp.delay (fn () =>
       {result = SUCCESS (),
