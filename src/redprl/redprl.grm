@@ -56,7 +56,7 @@ end
  | RIGHT_ARROW | LEFT_ARROW
  | BACK_TICK | AT_SIGN | PIPE | PERCENT
 
- | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE
+ | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE | S1
 
  | FUN_APP
 
@@ -264,6 +264,7 @@ atomicRawTerm
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
   | TT (Ast.$$ (O.MONO O.TRUE, []))
   | FF (Ast.$$ (O.MONO O.FALSE, []))
+  | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
   | LOOP LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.LOOP param), []))
   | LANGLE IDENT RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([IDENT],[]), term)]))
