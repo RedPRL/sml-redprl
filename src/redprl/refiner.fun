@@ -219,23 +219,50 @@ struct
 
   structure Generic =
   struct
-    fun Intro alpha jdg =
+    fun splitList (xs, n) =
+      (List.take (xs, n), List.drop (xs, n))
+      handle _=> raise Fail "splitlist"
+
+    structure ST = ShowTelescope (T)
+
+    fun Lift tac alpha jdg =
       let
         val (U, G) |> jdg' = jdg
-        val (goal, _) = makeGoal jdg'
-        val psi = T.empty >: goal
+
+        val st as (psi, vld) = tac alpha jdg'
+        val psi' = T.map (fn jdgx => (U, G) |> jdgx) psi
+        val (us', sigmas') = ListPair.unzip U
+        val (xs', taus') = ListPair.unzip G
+
+        fun strip abs =
+          let
+            val ((us, xs) \ m, ((sigmas, taus), tau)) = inferb abs
+            val (us1, us2) = splitList (us, List.length U)
+            val (sigmas1, sigmas2) = splitList (sigmas, List.length U)
+            val (xs1, xs2) = splitList (xs, List.length G)
+            val (taus1, taus2) = splitList (taus, List.length G)
+
+            val srho = ListPair.foldl (fn (u1, (u', _), r) => Sym.Ctx.insert r u1 (P.ret u')) Sym.Ctx.empty (us1, U)
+            val xrho = ListPair.foldl (fn (x1, (x', taux), r) => Var.Ctx.insert r x1 (check (`x', taux))) Var.Ctx.empty (xs1, G)
+            val m' = substVarenv xrho (substSymenv srho m)
+          in
+            checkb ((us2, xs2) \ m', ((sigmas2, taus2), tau))
+          end
+
+        fun wrap abs =
+          let
+            val ((us, xs) \ m, ((sigmas, taus), tau)) = inferb abs
+          in
+            checkb ((us' @ us, xs' @ xs) \ m, ((sigmas' @ sigmas, taus' @ taus), tau))
+          end
+
+
+        fun vld' (rho : abs telescope) =
+          wrap o vld @@ T.foldl (fn (x, _, r) => T.modify x strip r) rho psi
+
       in
-        (psi, fn rho =>
-           let
-             val ((us, xs) \ m, ((sigmas, taus), tau)) = inferb @@ T.lookup rho (#1 goal)
-             val (us', sigmas') = ListPair.unzip U
-             val (xs', taus') = ListPair.unzip G
-           in
-             checkb ((us' @ us, xs' @ xs) \ m, ((sigmas' @ sigmas, taus' @ taus), tau))
-           end)
+        (psi', vld')
       end
-      handle Bind =>
-        raise E.error [E.% "Expected generic judgment"]
   end
 
   structure Hyp =
@@ -267,7 +294,7 @@ struct
           abtToAbs tm)
       end
       handle Bind =>
-        raise E.error [E.% "Expected truth sequent"]
+        raise E.error [E.% @@ "Expected truth sequent but got " ^ J.judgmentToString jdg]
   end
 
   structure Membership =
@@ -332,6 +359,11 @@ struct
       end
   end
 
+  fun Lift tac alpha jdg =
+    case jdg of
+       _ |> _ => Generic.Lift tac alpha jdg
+     | _ => tac alpha jdg
+
   local
     fun matchGoal f alpha jdg =
       f jdg alpha jdg
@@ -363,8 +395,7 @@ struct
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepJdg sign = matchGoal
-        (fn _ |> _ => Generic.Intro
-          | _ >> CJ.TRUE ty => StepTrue sign ty
+        (fn _ >> CJ.TRUE ty => StepTrue sign ty
           | _ >> CJ.TYPE ty => StepType sign ty
           | _ >> CJ.MEM _ => Membership.Intro
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)

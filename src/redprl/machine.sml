@@ -170,7 +170,7 @@ struct
 
      | O.MONO O.DEV_PATH_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all Tac.auto) [(u, P.DIM)] (Tac.fromMtac (Tac.each [Tac.then' Tac.auto t]))
+           @@ Tac.seq (Tac.all Tac.auto) [(u, P.DIM)] (Tac.fromMtac (Tac.each [t]))
            <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL

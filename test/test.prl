@@ -17,7 +17,7 @@ Thm dfunIsType : [ (x : bool) -> bool type ] by [
 Thm dfunIsTrue : [ (x : bool) -> bool true ] by [
   // We step forward in the proof, supplying a name to be used by the
   // dependent function introduction rule.
-  z <- auto; auto;
+  z <- auto; [id, auto];
   // Now, we may use our hypothesized element to discharge our goal.
   hyp{z}
 ].
@@ -26,7 +26,7 @@ Print dfunIsTrue.
 
 // We can also prove the above theorem in a more primitive way.
 Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
-  x <- auto; auto;
+  x <- auto; [id, auto];
   // We provide an explicit term witness of the goal, in this case,
   // a reference to the hypothesis symbol that we bound above. Note that when
   // we wish to refer to variables that are introduced as hypotheses, we
@@ -41,8 +41,7 @@ Print dfunIsTrue2.
 // We can also (redundandly) apply the elimination rule for booleans.
 // Observe the difference in the extracted program!
 Thm dfunIsTrue3 : [ (x : bool) -> bool true ] by [
-  x <- auto;
-  auto;
+  x <- auto; [id, auto];
   elim{x};
   hyp{x}
 ].
@@ -77,7 +76,7 @@ Thm testPathTrue : [ paths({x}.S1; base; base) true ] by [
   <x> {
    // Now we must exhibit a term of type S1 at dimensions x. We can inject
    // an explicit CTT witness by using the quotation tactic '{ M }.
-   '{ loop{x} }
+     '{ loop{x} }
    // Everything is interactive and proofs can be partially defined. See what happens
    // if you delete the line above.
   };
