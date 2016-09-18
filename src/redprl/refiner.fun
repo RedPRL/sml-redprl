@@ -66,17 +66,6 @@ struct
         else
           raise E.error [E.% "Expected loops in same dimension"]
       end
-
-    (* TODO: replace with general-purpose head expansion rule when possible. *)
-    fun ComputeLoop _ jdg =
-      let
-        val H >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.S1 = Syn.out ty
-        val Syn.LOOP (P.APP _) = Syn.out m
-        val Syn.BASE = Syn.out n
-      in
-        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
-      end
   end
 
   structure Bool =
@@ -317,6 +306,30 @@ struct
       end
       handle Bind =>
         raise E.error [E.% "Expected variable-equality sequent"]
+
+    fun Symmetry alpha jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val (goal, _) = makeGoal @@ H >> CJ.EQ ((n, m), ty)
+        val psi = T.empty >: goal
+      in
+        (psi, fn rho =>
+           T.lookup rho (#1 goal))
+      end
+
+    fun HeadExpansion sign alpha jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Abt.$ (theta, _) = Abt.out m
+        val hasFreeDims = List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support theta
+        val _ = if hasFreeDims then raise E.error [E.% "Found free dimensions in head operator of", E.! m] else ()
+        val m' = Machine.eval sign m
+        val (goal, _) = makeGoal @@ H >> CJ.EQ ((m', n), ty)
+        val psi = T.empty >: goal
+      in
+        (psi, fn rho =>
+           T.lookup rho (#1 goal))
+      end
   end
 
   local
@@ -345,7 +358,8 @@ struct
          | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
-         | (Syn.LOOP _, Syn.BASE, Syn.S1) => S1.ComputeLoop
+         | (Syn.LOOP _, Syn.BASE, Syn.S1) => Equality.HeadExpansion sign
+         | (Syn.BASE, Syn.LOOP _, Syn.S1) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepJdg sign = matchGoal

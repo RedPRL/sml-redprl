@@ -85,7 +85,7 @@ whitespace = [\ \t];
 "auto"             => (Tokens.RULE_AUTO (!pos, Coord.addchar (size yytext) o (!pos)));
 "hyp"              => (Tokens.RULE_HYP (!pos, Coord.addchar (size yytext) o (!pos)));
 "elim"             => (Tokens.RULE_ELIM (!pos, Coord.addchar (size yytext) o (!pos)));
-"witness"          => (Tokens.RULE_WITNESS (!pos, Coord.addchar (size yytext) o (!pos)));
+"head-expand"      => (Tokens.RULE_HEAD_EXP (!pos, Coord.addchar (size yytext) o (!pos)));
 
 "true"             => (Tokens.JDG_TRUE (!pos, Coord.addchar 4 o (!pos)));
 "type"             => (Tokens.JDG_TYPE (!pos, Coord.addchar 4 o (!pos)));

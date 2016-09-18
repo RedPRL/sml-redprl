@@ -81,6 +81,31 @@ struct
       (mrho, srho)
     end
 
+  structure Tac =
+  struct
+    val auto = O.MONO O.RULE_AUTO $$ []
+
+    fun all t =
+      O.MONO O.MTAC_ALL $$ [([],[]) \ t]
+
+    fun each ts =
+      O.MONO (O.MTAC_EACH (List.length ts)) $$ List.map (fn t => ([],[]) \ t) ts
+
+    fun seq mt bs t =
+      let
+        val (us, sorts) = ListPair.unzip bs
+      in
+        O.MONO (O.TAC_SEQ sorts) $$ [([],[]) \ mt, (us, []) \ t]
+      end
+
+    fun fromMtac mt =
+      seq mt [] (O.MONO O.RULE_ID $$ [])
+
+    fun then' t1 t2 =
+      seq (all t1) [] t2
+
+  end
+
 
   (* [step] tells our machine how to proceed when computing a term: is it a value,
    * can it step without inspecting the values of its arguments, or does it need to inspect one
@@ -141,6 +166,12 @@ struct
      | O.MONO O.RULE_AUTO `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
+
+     | O.MONO O.DEV_PATH_INTRO `$ [([u], _) \ t] <: env =>
+         S.STEP
+           @@ Tac.seq (Tac.all Tac.auto) [(u, P.DIM)] (Tac.fromMtac (Tac.each [Tac.then' Tac.auto t]))
+           <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_EACH n) `$ _ <: _ => S.VAL

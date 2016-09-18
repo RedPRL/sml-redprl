@@ -30,6 +30,7 @@ struct
      | O.POLY (O.RULE_HYP z) $ _ => Rules.Hyp.Project z
      | O.POLY (O.RULE_ELIM z) $ _ => Rules.Elim sign z
      | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Truth.Witness tm
+     | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Equality.HeadExpansion sign
      | _ => raise E.error [E.% "Invalid rule", E.! rule]
 
   fun rule (sign, env) rule alpha goal =

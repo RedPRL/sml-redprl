@@ -31,7 +31,7 @@ Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
   // a reference to the hypothesis symbol that we bound above. Note that when
   // we wish to refer to variables that are introduced as hypotheses, we
   // must use references with a tick as below, since the variable itself is not in scope.
-  witness [`x];
+  '{ `x };
   auto; auto
 ].
 
@@ -67,9 +67,23 @@ Tac go = [
 ].
 
 Thm testPathTrue : [ paths({x}.S1; base; base) true ] by [
-  x:dim <- auto;
-  [ auto; witness [ loop{x} ] ];
-  go()
+  // Our tactic language contains a sophisticated development calculus, which
+  // contains terms that look superficially like programs in CTT, but compute
+  // to tactic scripts that guide the refiner to prove our goal, synthesizing a
+  // real program as the extract. This is analogous to how Epigram worked.
+
+  // We begin by building a path abstraction with the <x> { t } tactical.
+  <x> {
+   // Now we must exhibit a term of type S1 at dimensions x. We can inject
+   // an explicit CTT witness by using the quotation tactic '{ M }.
+   '{ loop{x} }
+   // Everything is interactive and proofs can be partially defined. See what happens
+   // if you delete the line above.
+  };
+
+  // The script above incurred several well-formedness subgoals, which were saved for
+  // the end. These can be discharged automatically:
+  go();
 ].
 
 Print testPathTrue.

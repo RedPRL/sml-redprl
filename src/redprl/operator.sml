@@ -42,9 +42,15 @@ struct
 
    | REFINE of bool * sort | EXTRACT of sort
 
+   (* primitive tacticals and multitacticals *)
    | TAC_SEQ of psort list | TAC_ORELSE | TAC_REC | TAC_PROGRESS
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
-   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_WITNESS
+
+   (* primitive rules *)
+   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_WITNESS | RULE_HEAD_EXP
+
+   (* development calculus terms *)
+   | DEV_PATH_INTRO
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
@@ -134,8 +140,12 @@ struct
      | RULE_ID => [] ->> TAC
      | RULE_AUTO => [] ->> TAC
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
+     | RULE_HEAD_EXP => [] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
+
+     | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
+
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
      | MTAC_EACH n =>
          let
@@ -291,8 +301,10 @@ struct
      | RULE_ID => "id"
      | RULE_AUTO => "auto"
      | RULE_WITNESS => "witness"
+     | RULE_HEAD_EXP => "head-expand"
      | RULE_EVAL_GOAL => "eval-goal"
      | RULE_CEQUIV_REFL => "ceq/refl"
+     | DEV_PATH_INTRO => "path-intro"
      | MTAC_ALL => "all"
      | MTAC_EACH n => "each"
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
