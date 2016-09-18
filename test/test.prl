@@ -70,7 +70,8 @@ Thm testPathTrue : [ paths({x}.S1; base; base) true ] by [
   // Our tactic language contains a sophisticated development calculus, which
   // contains terms that look superficially like programs in CTT, but compute
   // to tactic scripts that guide the refiner to prove our goal, synthesizing a
-  // real program as the extract. This is analogous to how Epigram worked.
+  // real program as the extract. This is analogous to how Epigram worked, so
+  // far as I could understand.
 
   // We begin by building a path abstraction with the <x> { t } tactical.
   <x> {
