@@ -50,7 +50,7 @@ struct
    | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_WITNESS | RULE_HEAD_EXP
 
    (* development calculus terms *)
-   | DEV_PATH_INTRO
+   | DEV_FUN_INTRO | DEV_PATH_INTRO
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
@@ -144,6 +144,7 @@ struct
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
 
+     | DEV_FUN_INTRO => [[HYP] * [] <> TAC] ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
 
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
@@ -305,6 +306,7 @@ struct
      | RULE_EVAL_GOAL => "eval-goal"
      | RULE_CEQUIV_REFL => "ceq/refl"
      | DEV_PATH_INTRO => "path-intro"
+     | DEV_FUN_INTRO => "fun-intro"
      | MTAC_ALL => "all"
      | MTAC_EACH n => "each"
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"

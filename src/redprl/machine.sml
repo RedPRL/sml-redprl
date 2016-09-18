@@ -168,6 +168,10 @@ struct
      | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
      | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
 
+     | O.MONO O.DEV_FUN_INTRO `$ [([u], _) \ t] <: env =>
+         S.STEP
+           @@ Tac.seq (Tac.all Tac.auto) [(u, P.HYP)] (Tac.fromMtac (Tac.each [t]))
+           <: env
      | O.MONO O.DEV_PATH_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
            @@ Tac.seq (Tac.all Tac.auto) [(u, P.DIM)] (Tac.fromMtac (Tac.each [t]))

@@ -303,6 +303,7 @@ atomicRawTac
   | TAC_REC IDENT IN LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_REC, [\ (([],[IDENT]), tactic)]))
   | TAC_PROGRESS LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_PROGRESS, [\ (([], []), tactic)]))
 
+  | LAMBDA IDENT LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
   | LANGLE IDENT RANGLE LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([IDENT], []), tactic)]))
 
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
