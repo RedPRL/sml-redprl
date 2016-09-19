@@ -62,6 +62,11 @@ whitespace = [\ \t];
 "loop"             => (Tokens.LOOP (!pos, Coord.addchar (size yytext) o (!pos)));
 "base"             => (Tokens.BASE (!pos, Coord.addchar (size yytext) o (!pos)));
 
+"then"             => (Tokens.THEN (!pos, Coord.addchar (size yytext) o (!pos)));
+"else"             => (Tokens.ELSE (!pos, Coord.addchar (size yytext) o (!pos)));
+"let"              => (Tokens.LET (!pos, Coord.addchar (size yytext) o (!pos)));
+"with"             => (Tokens.WITH (!pos, Coord.addchar (size yytext) o (!pos)));
+
 "dim"              => (Tokens.DIM (!pos, Coord.addchar 3 o (!pos)));
 "exn"              => (Tokens.EXN (!pos, Coord.addchar 3 o (!pos)));
 "lbl"              => (Tokens.LBL (!pos, Coord.addchar 3 o (!pos)));

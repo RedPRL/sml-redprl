@@ -61,6 +61,7 @@ end
  | BACK_TICK | AT_SIGN | PIPE | PERCENT
 
  | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE | S1
+ | THEN | ELSE | LET | WITH
 
  | FUN_APP
 
@@ -297,6 +298,7 @@ atomicRawTac
   | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
   | RULE_HYP LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_HYP IDENT), []))
   | RULE_ELIM LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_ELIM IDENT), []))
+  | APOSTROPHE term (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | APOSTROPHE LBRACKET term RBRACKET (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
   | tactic PIPE tactic %prec PIPE (Ast.$$ (O.MONO O.TAC_ORELSE, [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
@@ -305,6 +307,12 @@ atomicRawTac
 
   | LAMBDA IDENT LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
   | LANGLE IDENT RANGLE LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([IDENT], []), tactic)]))
+  | IF IDENT THEN LBRACKET tactic RBRACKET ELSE LBRACKET tactic RBRACKET
+      (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM IDENT), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
+  | LET IDENT WITH IDENT EQUALS IDENT LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET
+      (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT3), [\ (([],[]), tactic1), \ (([IDENT1, IDENT2],[]), tactic2)]))
+  | LET IDENT EQUALS IDENT LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET
+      (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT2), [\ (([],[]), tactic1), \ (([IDENT1, "_"],[]), tactic2)]))
 
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))

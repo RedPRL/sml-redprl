@@ -1,7 +1,6 @@
 Thm boolTest : [ (x : bool) -> bool true ] by [
   lam x {
-    elim{x};
-    [ '{ ff }, '{ tt } ]
+    if x then { 'tt } else { 'ff }
   };
   auto
 ].
@@ -10,7 +9,7 @@ Print boolTest.
 
 Thm pathTest : [ paths({x}. S1; base; base) true ] by [
   <x> {
-    '{ loop{x} }
+    'loop{x}
   };
   auto
 ].
@@ -19,8 +18,9 @@ Print pathTest.
 
 Thm funElimTest : [ (f : (x : bool) -> bool) -> bool true ] by [
   lam f {
-    x , p <- elim{f};
-    [ '{ tt }, hyp{x} ]
+    let x = f { 'tt } in {
+      hyp{x}
+    }
   };
 
   auto

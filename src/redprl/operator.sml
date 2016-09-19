@@ -91,6 +91,8 @@ struct
    | HYP_REF of 'a
    | RULE_HYP of 'a
    | RULE_ELIM of 'a
+   | DEV_BOOL_ELIM of 'a
+   | DEV_DFUN_ELIM of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -202,6 +204,8 @@ struct
        | HYP_REF a => [] ->> EXP
        | RULE_HYP a => [] ->> TAC
        | RULE_ELIM a => [] ->> TAC
+       | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
+       | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -240,6 +244,8 @@ struct
        | HYP_REF a => [(a, HYP)]
        | RULE_HYP a => [(a, HYP)]
        | RULE_ELIM a => [(a, HYP)]
+       | DEV_BOOL_ELIM a => [(a, HYP)]
+       | DEV_DFUN_ELIM a => [(a, HYP)]
   end
 
   val support =
@@ -271,6 +277,10 @@ struct
        | (RULE_HYP a, RULE_HYP b) =>
            f (a, b)
        | (RULE_ELIM a, RULE_ELIM b) =>
+           f (a, b)
+       | (DEV_BOOL_ELIM a, DEV_BOOL_ELIM b) =>
+           f (a, b)
+       | (DEV_DFUN_ELIM a, DEV_DFUN_ELIM b) =>
            f (a, b)
        | _ => false
   end
@@ -358,6 +368,8 @@ struct
        | HYP_REF a => "@" ^ f a
        | RULE_HYP a => "hyp{" ^ f a ^ "}"
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
+       | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
+       | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -400,6 +412,8 @@ struct
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP a => RULE_HYP (mapSym f a)
        | RULE_ELIM a => RULE_ELIM (mapSym f a)
+       | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym f a)
+       | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym f a)
   end
 
   fun map f =
