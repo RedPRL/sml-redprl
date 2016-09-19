@@ -5,7 +5,7 @@ struct
 
   infixr @@
   infix 1 |>
-  infix 2 >> >: $$ // \ @>
+  infix 2 >> >: $$ $# // \ @>
 
   structure CEquiv =
   struct
@@ -254,6 +254,34 @@ struct
       (List.take (xs, n), List.drop (xs, n))
       handle _=> raise Fail "splitlist"
 
+    fun liftTelescope (U, G) psi =
+      let
+        val (us', sigmas') = ListPair.unzip U
+        val (xs', taus') = ListPair.unzip G
+
+        open T.ConsView
+        fun go EMPTY env psi' = psi'
+          | go (CONS (x, jdg, psi)) env psi' =
+              let
+                 val vl as ((psorts, vsorts), tau) = J.evidenceValence jdg
+                 val us = List.map (fn _ => Sym.named "u") psorts
+                 val xs = List.map (fn _ => Var.named "x") vsorts
+
+                 val ps = ListPair.map (fn (u, sigma) => (P.ret u, sigma)) (us' @ us, sigmas' @ psorts)
+                 val ms = ListPair.map (fn (x, tau) => check (`x, tau)) (xs' @ xs, taus' @ vsorts)
+
+                 val m = check (x $# (ps, ms), tau)
+                 val b = checkb ((us, xs) \ m, vl)
+
+                 val jdg' = (U, G) |> J.substEvidenceEnv env jdg
+                 val env' = Metavar.Ctx.insert env x b
+              in
+                go (out psi) env' (T.snoc psi' x jdg')
+              end
+      in
+        go (out psi) Metavar.Ctx.empty T.empty
+      end
+
     structure ST = ShowTelescope (T)
 
     fun Lift tac alpha jdg =
@@ -261,11 +289,13 @@ struct
         val (U, G) |> jdg' = jdg
 
         val st as (psi, vld) = tac alpha jdg'
-        val psi' = T.map (fn jdgx => (U, G) |> jdgx) psi
+
+        val psi' = liftTelescope (U, G) psi
+
         val (us', sigmas') = ListPair.unzip U
         val (xs', taus') = ListPair.unzip G
 
-        fun strip abs =
+        fun lower abs =
           let
             val ((us, xs) \ m, ((sigmas, taus), tau)) = inferb abs
             val (us1, us2) = splitList (us, List.length U)
@@ -273,23 +303,22 @@ struct
             val (xs1, xs2) = splitList (xs, List.length G)
             val (taus1, taus2) = splitList (taus, List.length G)
 
-            val srho = ListPair.foldl (fn (u1, (u', _), r) => Sym.Ctx.insert r u1 (P.ret u')) Sym.Ctx.empty (us1, U)
-            val xrho = ListPair.foldl (fn (x1, (x', taux), r) => Var.Ctx.insert r x1 (check (`x', taux))) Var.Ctx.empty (xs1, G)
+            val srho = ListPair.foldl (fn (u1, (u', _), r) => Sym.Ctx.insert r u1 (P.ret u')) Sym.Ctx.empty (us1, U) handle _ => raise Fail "srho"
+            val xrho = ListPair.foldl (fn (x1, (x', taux), r) => Var.Ctx.insert r x1 (check (`x', taux))) Var.Ctx.empty (xs1, G) handle _ => raise Fail "xrho"
             val m' = substVarenv xrho (substSymenv srho m)
           in
             checkb ((us2, xs2) \ m', ((sigmas2, taus2), tau))
           end
 
-        fun wrap abs =
+        fun lift abs =
           let
             val ((us, xs) \ m, ((sigmas, taus), tau)) = inferb abs
           in
             checkb ((us' @ us, xs' @ xs) \ m, ((sigmas' @ sigmas, taus' @ taus), tau))
           end
 
-
         fun vld' (rho : abs telescope) =
-          wrap o vld @@ T.foldl (fn (x, _, r) => T.modify x strip r) rho psi
+          lift o vld @@ T.foldl (fn (x, _, r) => T.modify x lower r) rho psi
 
       in
         (psi', vld')
@@ -392,8 +421,8 @@ struct
 
   fun Lift tac alpha jdg =
     case jdg of
-       _ |> _ => Generic.Lift tac alpha jdg
-     | _ => tac alpha jdg
+       _ |> _ => Generic.Lift (Lift tac) alpha jdg
+     | _ >> _ => tac alpha jdg
 
   local
     fun matchGoal f alpha jdg =
