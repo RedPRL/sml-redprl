@@ -64,7 +64,7 @@ end
 
  | FUN_APP
 
- | DIM | EXN | LBL | LVL
+ | DIM | EXN | LBL | LVL | HYP
  | EXP | TAC
 
  | CMD_PRINT
@@ -129,7 +129,6 @@ end
  | tactics of ast list
  | tacticBinding of Tac.binding
  | tacticBindings of Tac.binding list
- | hypBinding of string * P.param_sort
  | hypBindings of (string * P.param_sort) list
  | rawMultitac of ast
  | multitac of ast
@@ -168,6 +167,7 @@ psort
   | EXN (P.EXN)
   | LBL (P.LBL)
   | LVL (P.LVL)
+  | HYP (P.HYP)
 
 sort
   : EXP (O.EXP)
@@ -322,16 +322,12 @@ rawMultitac
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
 
-hypBinding
-  : IDENT COLON psort (IDENT, psort)
-  | IDENT (IDENT, P.HYP)
-
 hypBindings
-  : hypBinding ([hypBinding])
-  | hypBinding COMMA hypBindings (hypBinding :: hypBindings)
+  : IDENT ([(IDENT, P.HYP)])
+  | IDENT COMMA hypBindings ((IDENT, P.HYP) :: hypBindings)
 
 tacticBinding
-  : hypBindings LEFT_ARROW multitac (hypBindings, multitac)
+  : hypBindings LEFT_ARROW multitac %prec LEFT_ARROW (hypBindings, multitac)
   | multitac ([], multitac)
 
 tacticBindings
