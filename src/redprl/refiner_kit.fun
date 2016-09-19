@@ -3,7 +3,6 @@ struct
   structure Def = DependentLcf (RedPrlJudgment)
   open Def
 
-  structure PP = PrettyPrint
   structure Hole = HoleUtil (structure Tm = RedPrlAbt and J = J and T = T)
 
   fun prettyGoal (x, jdg) =
@@ -34,7 +33,7 @@ struct
        prettyValidation (psi, vld)]
 
   val stateToString : judgment state -> string =
-    PP.toString 80 o prettyState
+    PP.toString 80 false o prettyState
 end
 
 structure Tacticals = Tacticals (Lcf)

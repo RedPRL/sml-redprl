@@ -66,51 +66,66 @@ struct
   structure O = RedPrlOpData
 
   local
-    structure PP = PrettyPrint
+    open PP
 
     fun argsToString f =
       ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
+
+    val kwd = color C.red o bold true
+    val declId = blink true o underline true
+
+    fun squares x =
+      concat
+        [color C.white @@ text "[",
+         x,
+         color C.white @@ text "]"]
   in
     fun prettyDecl (opid, decl) =
       case decl of
          DEF {arguments, params, sort, definiens} =>
-           PP.concat
-             [PP.text "Def ", PP.text opid, PP.text "(", PP.text @@ argsToString (fn x => x) arguments, PP.text ") : ", PP.text @@ RedPrlSort.toString sort, PP.text " = [",
-              PP.nest 2 @@ PP.concat [PP.line, PP.text (RedPrlAst.toString definiens)],
-              PP.line, PP.text "]."]
+           concat
+             [kwd @@ text "Def ", declId @@ text opid, text "(", text @@ argsToString (fn x => x) arguments, text ") : ",
+              text @@ RedPrlSort.toString sort, text " = ",
+              squares @@ concat [nest 2 @@ concat [line, text (RedPrlAst.toString definiens)], line],
+              text "."]
        | THM {arguments, params, goal, script} =>
-           PP.concat
-             [PP.text "Thm ", PP.text opid, PP.text "(", PP.text @@ argsToString (fn x => x) arguments, PP.text ") : [",
-              PP.nest 2 @@ PP.concat [PP.line, PP.text @@ RedPrlAst.toString goal],
-              PP.line, PP.text "] by [",
-              PP.nest 2 @@ PP.concat [PP.line, PP.text @@ RedPrlAst.toString script],
-              PP.line, PP.text "]."]
+           concat
+             [kwd @@ text "Thm ",
+              declId @@ text opid,
+              text "(",
+              text @@ argsToString (fn x => x) arguments,
+              text ")", text " : ",
+              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString goal], line],
+              text " by ",
+              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
+              text "."]
        | TAC {arguments, params, script} =>
-           PP.concat
-            [PP.text "Tac ", PP.text opid, PP.text "(", PP.text @@ argsToString (fn x => x) arguments, PP.text ") = [",
-             PP.nest 2 @@ PP.concat [PP.line, PP.text @@ RedPrlAst.toString script],
-             PP.line, PP.text "]."]
+           concat
+            [kwd @@ text "Tac ", declId @@ text opid, text "(", text @@ argsToString (fn x => x) arguments, text ") = ",
+             squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
+             text "."]
 
 
     val declToString =
-      PP.toString 80 o prettyDecl
+      PP.toString 80 false o prettyDecl
 
     fun prettyEntry (sign : sign) (opid, {sourceOpid, params, arguments, sort, definiens}) =
       let
         val src = prettyDecl (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
         val elab =
-          PP.concat
-            [PP.text "Def ", PP.text (Sym.toString opid),
-             PP.text "(", PP.text @@ argsToString Metavar.toString arguments, PP.text ") : ",
-             PP.text @@ RedPrlSort.toString sort, PP.text " = [",
-             PP.nest 2 @@ PP.concat [PP.line, PP.text @@ ShowAbt.toString definiens],
-             PP.line, PP.text "]."]
+          concat
+            [kwd @@ text "Def ",
+             declId @@ text @@ Sym.toString opid,
+             text "(", text @@ argsToString Metavar.toString arguments, text ") : ",
+             text @@ RedPrlSort.toString sort, text " = ",
+             squares @@ concat [nest 2 @@ concat [line, text @@ ShowAbt.toString definiens], line],
+             text "."]
       in
-        PP.concat [src, PP.newline, PP.newline, PP.text "===>", PP.newline, PP.newline, elab]
+        concat [src, newline, newline, text "===>", newline, newline, elab]
       end
 
     fun entryToString (sign : sign) =
-      PP.toString 80 o prettyEntry sign
+      PP.toString 80 false o prettyEntry sign
 
     fun toString ({sourceSign,...} : sign) =
       let

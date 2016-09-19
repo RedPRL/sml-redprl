@@ -18,6 +18,6 @@ sig
 
   val map : ('a -> 'b) -> 'a jdg -> 'b jdg
 
-  val pretty : ('a -> string) -> 'a jdg -> PrettyPrint.doc
+  val pretty : ('a -> string) -> 'a jdg -> PP.doc
   val toString : ('a -> string) -> 'a jdg -> string
 end

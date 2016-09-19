@@ -21,6 +21,8 @@ is
 
   debug.cm
 
+  redprl/pretty.sml
+
   redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml

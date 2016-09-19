@@ -23,8 +23,6 @@ struct
     fn H >> catjdg => Hyps.map f H >> f catjdg
      | (U,G) |> jdg => (U,G) |> map f jdg
 
-  structure PP = PrettyPrint
-
   local
     open PP
   in
@@ -38,5 +36,5 @@ struct
        | (U, G) |> jdg => pretty f jdg
   end
 
-  fun toString f = PP.toString 80 o pretty f
+  fun toString f = PP.toString 80 true o pretty f
 end
