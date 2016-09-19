@@ -5,7 +5,7 @@ struct
 
   infixr @@
   infix 1 |>
-  infix 2 >> >: $$ // \
+  infix 2 >> >: $$ // \ @>
 
   structure CEquiv =
   struct
@@ -138,7 +138,7 @@ struct
         val bz = substVar (Syn.into @@ Syn.VAR (z, O.EXP), x) bx
 
         val (goal1, _) = makeGoal @@ H >> CJ.TYPE a
-        val (goal2, _) = makeGoal @@ Hyps.snoc H z (CJ.TRUE a) >> CJ.TYPE bz
+        val (goal2, _) = makeGoal @@ H @> (z, CJ.TRUE a) >> CJ.TYPE bz
         val psi = T.empty >: goal1 >: goal2
       in
         (psi, fn rho =>
@@ -156,7 +156,7 @@ struct
         val bz = substVar (Syn.into @@ Syn.VAR (z, O.EXP), x) bx
 
         val (tyGoal, _) = makeGoal @@ H >> CJ.TYPE a
-        val (goal, _) = makeGoal @@ ([],[(z, O.EXP)]) |> Hyps.snoc H z (CJ.TRUE a) >> CJ.TRUE bz
+        val (goal, _) = makeGoal @@ ([],[(z, O.EXP)]) |> H @> (z, CJ.TRUE a) >> CJ.TRUE bz
         val psi = T.empty >: goal >: tyGoal
       in
         (psi, fn rho =>
@@ -168,6 +168,37 @@ struct
       end
       handle Bind =>
         raise E.error [E.% "Expected dfun truth sequent"]
+
+    fun Elim z alpha (jdg : J.judgment) =
+      let
+        val H >> catjdg = jdg
+        val CJ.TRUE dfun = Hyps.lookup H z
+        val Syn.DFUN (a, x, bx) = Syn.out dfun
+        val (goal1, hole1) = makeGoal @@ H >> CJ.TRUE a
+
+        val u = alpha 0
+        val v = alpha 1
+
+        val b' = substVar (hole1 [] [], x) bx
+
+        val utm = Syn.into @@ Syn.VAR (u, O.EXP)
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val aptm = Syn.into @@ Syn.AP (ztm, hole1 [] [])
+        val H' = Hyps.empty @> (u, CJ.TRUE b') @> (v, CJ.EQ ((utm, aptm), b'))
+        val H'' = Hyps.interposeAfter H z H'
+        val (goal2, _) = makeGoal @@ ([], [(u, O.EXP), (v, O.TRIV)]) |> H'' >> catjdg
+
+        val psi = T.empty >: goal1 >: goal2
+      in
+        (psi, fn rho =>
+          let
+            val m = T.lookup rho (#1 goal1) // ([],[])
+            val aptm = Syn.into @@ Syn.AP (ztm, m)
+            val ax = Syn.into Syn.AX
+          in
+            abtToAbs @@ T.lookup rho (#1 goal2) // ([], [aptm, ax])
+          end)
+      end
   end
 
   structure Path =
@@ -408,6 +439,7 @@ struct
       fun StepTrue ty =
         case Syn.out ty of
            Syn.BOOL => Bool.Elim
+         | Syn.DFUN _ => DFun.Elim
          | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
 
       fun StepJdg sign z alpha jdg =

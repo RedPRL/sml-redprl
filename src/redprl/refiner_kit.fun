@@ -9,6 +9,9 @@ struct
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
   open RedPrlSequent
 
+  fun @> (H, (x, j)) = Hyps.snoc H x j
+  infix @>
+
   structure P = struct open RedPrlParameterTerm RedPrlParamData end
   structure CJ = RedPrlCategoricalJudgment
 
