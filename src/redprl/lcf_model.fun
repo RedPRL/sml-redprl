@@ -26,7 +26,7 @@ struct
      | O.MONO O.RULE_ID $ _ => (fn _ => T.ID)
      | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.Lift (Rules.CEquiv.EvalGoal sign)
      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.Lift (Rules.CEquiv.Refl)
-     | O.MONO O.RULE_AUTO $ _ => Rules.Lift (Rules.Auto sign)
+     | O.MONO O.RULE_AUTO_STEP $ _ => Rules.Lift (Rules.AutoStep sign)
      | O.POLY (O.RULE_HYP z) $ _ => Rules.Lift (Rules.Hyp.Project z)
      | O.POLY (O.RULE_ELIM z) $ _ => Rules.Lift (Rules.Elim sign z)
      | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Lift (Rules.Truth.Witness tm)

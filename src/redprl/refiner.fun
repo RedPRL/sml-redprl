@@ -401,7 +401,7 @@ struct
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString CJ.toString jdg)])
     in
-      val Auto = StepJdg
+      val AutoStep = StepJdg
     end
 
     local

@@ -83,7 +83,7 @@ struct
 
   structure Tac =
   struct
-    val auto = O.MONO O.RULE_AUTO $$ []
+    val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
 
     fun all t =
       O.MONO O.MTAC_ALL $$ [([],[]) \ t]
@@ -98,12 +98,24 @@ struct
         O.MONO (O.TAC_SEQ sorts) $$ [([],[]) \ mt, (us, []) \ t]
       end
 
+    fun try t =
+      O.MONO O.TAC_ORELSE $$ [([],[]) \ t, ([],[]) \ O.MONO O.RULE_ID $$ []]
+
+    fun progress t =
+      O.MONO O.TAC_PROGRESS $$ [([],[]) \ t]
+
     fun fromMtac mt =
       seq mt [] (O.MONO O.RULE_ID $$ [])
 
     fun then' t1 t2 =
       seq (all t1) [] t2
 
+    fun repeat t =
+      let
+        val x = Var.named "t"
+      in
+        O.MONO O.TAC_REC $$ [([],[x]) \ try (then' (progress t) (check (`x, O.TAC)))]
+      end
   end
 
 
@@ -163,18 +175,22 @@ struct
      | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL
      | O.MONO O.RULE_CEQUIV_REFL `$ _ <: _ => S.VAL
      | O.MONO O.RULE_WITNESS `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_AUTO `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_AUTO_STEP `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_AUTO `$ _ <: env =>
+         S.STEP
+           @@ Tac.repeat Tac.autoStep
+           <: env
      | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
      | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
 
      | O.MONO O.DEV_FUN_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all Tac.auto) [(u, P.HYP)] (Tac.fromMtac (Tac.each [t]))
+           @@ Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP)] (Tac.fromMtac (Tac.each [t]))
            <: env
      | O.MONO O.DEV_PATH_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all Tac.auto) [(u, P.DIM)] (Tac.fromMtac (Tac.each [t]))
+           @@ Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.fromMtac (Tac.each [t]))
            <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL

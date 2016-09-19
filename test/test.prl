@@ -1,88 +1,18 @@
-// Refinement proof is like a (non-deterministic) abstract machine
-// decomposition of natural proof. In RedPRL, `auto` acts like a one-step
-// transition function for this machine; other transitions are possible,
-// and can be invoked using any of the built-in rules other than `auto`.
-
-// RedPRL has a variety of different forms of judgment, including typehood,
-// truth, membership and equality.
-
-Thm boolIsType : [ bool type ] by [
-  auto
-].
-
-Thm dfunIsType : [ (x : bool) -> bool type ] by [
-  auto; auto
-].
-
-Thm dfunIsTrue : [ (x : bool) -> bool true ] by [
-  lam z {
-    hyp{z}
-  };
-  auto
-].
-
-Print dfunIsTrue.
-
-// We can also prove the above theorem in a more primitive way.
-Thm dfunIsTrue2 : [ (x : bool) -> bool true ] by [
-  lam x {
-    '{ `x }
-  };
-
-  auto; auto
-].
-
-
-Print dfunIsTrue2.
-
-// We can also (redundandly) apply the elimination rule for booleans.
-// Observe the difference in the extracted program!
-Thm dfunIsTrue3 : [ (x : bool) -> bool true ] by [
+Thm boolTest : [ (x : bool) -> bool true ] by [
   lam x {
     elim{x};
-    [ '{ tt }, '{ ff } ]
+    [ '{ ff }, '{ tt } ]
   };
-  auto; auto
+  auto
 ].
 
-Thm testPath : [ (<x> loop{x}) @ 0 ~ base ] by [
-  eval-goal;
-  ceq/refl
-].
+Print boolTest.
 
-Tac try(#t : tac) = [
-  #t | id
-].
-
-Tac repeat(#t : tac) = [
-  rec t' in {
-    try(%{ progress { #t }; t'})
-  }
-].
-
-Tac go = [
-  repeat(%{ auto })
-].
-
-Thm testPathTrue : [ paths({x}.S1; base; base) true ] by [
-  // Our tactic language contains a sophisticated development calculus, which
-  // contains terms that look superficially like programs in CTT, but compute
-  // to tactic scripts that guide the refiner to prove our goal, synthesizing a
-  // real program as the extract. This is analogous to how Epigram worked, so
-  // far as I could understand.
-
-  // We begin by building a path abstraction with the <x> { t } tactical.
+Thm pathTest : [ paths({x}. S1; base; base) true ] by [
   <x> {
-   // Now we must exhibit a term of type S1 at dimensions x. We can inject
-   // an explicit CTT witness by using the quotation tactic '{ M }.
-     '{ loop{x} }
-   // Everything is interactive and proofs can be partially defined. See what happens
-   // if you delete the line above.
+    '{ loop{x} }
   };
-
-  // The script above incurred several well-formedness subgoals, which were saved for
-  // the end. These can be discharged automatically:
-  go();
+  auto
 ].
 
-Print testPathTrue.
+Print pathTest.
