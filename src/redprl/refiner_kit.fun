@@ -11,7 +11,8 @@ struct
       [PP.text "Goal ",
        PP.text (RedPrlAbt.Metavar.toString x),
        PP.text ".",
-       PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty RedPrlCategoricalJudgment.toString jdg])]
+       PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty RedPrlCategoricalJudgment.toString jdg]),
+       PP.line]
 
   val prettyGoals : judgment ctx -> PP.doc =
     T.foldl
@@ -24,9 +25,12 @@ struct
   fun prettyState (psi, vld) =
     PP.concat
       [prettyGoals psi,
-       PP.line,
        PP.text "----------------------------------------------------------",
        PP.line,
+       PP.text "Current Proof Extract:",
+       PP.line,
+       PP.text "----------------------------------------------------------",
+       PP.line, PP.line,
        prettyValidation (psi, vld)]
 
   val stateToString : judgment state -> string =

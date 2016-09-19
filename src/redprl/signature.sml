@@ -66,25 +66,51 @@ struct
   structure O = RedPrlOpData
 
   local
+    structure PP = PrettyPrint
+
     fun argsToString f =
       ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
   in
-    fun declToString (opid, decl) =
+    fun prettyDecl (opid, decl) =
       case decl of
          DEF {arguments, params, sort, definiens} =>
-           "Def " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") : " ^ RedPrlSort.toString sort ^ " = [" ^ RedPrlAst.toString definiens ^ "]."
+           PP.concat
+             [PP.text "Def ", PP.text opid, PP.text "(", PP.text @@ argsToString (fn x => x) arguments, PP.text ") : ", PP.text @@ RedPrlSort.toString sort, PP.text " = [",
+              PP.nest 2 @@ PP.concat [PP.line, PP.text (RedPrlAst.toString definiens)],
+              PP.line, PP.text "]."]
        | THM {arguments, params, goal, script} =>
-           "Thm " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") : [" ^ RedPrlAst.toString goal ^ "] by [" ^ RedPrlAst.toString script ^ "]."
+           PP.concat
+             [PP.text "Thm ", PP.text opid, PP.text "(", PP.text @@ argsToString (fn x => x) arguments, PP.text ") : [",
+              PP.nest 2 @@ PP.concat [PP.line, PP.text @@ RedPrlAst.toString goal],
+              PP.line, PP.text "] by [",
+              PP.nest 2 @@ PP.concat [PP.line, PP.text @@ RedPrlAst.toString script],
+              PP.line, PP.text "]."]
        | TAC {arguments, params, script} =>
-           "Tac " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") = [" ^ RedPrlAst.toString script ^ "]."
+           PP.concat
+            [PP.text "Tac ", PP.text opid, PP.text "(", PP.text @@ argsToString (fn x => x) arguments, PP.text ") = [",
+             PP.nest 2 @@ PP.concat [PP.line, PP.text @@ RedPrlAst.toString script],
+             PP.line, PP.text "]."]
 
-    fun entryToString (sign : sign) (opid, {sourceOpid, params, arguments, sort, definiens}) =
+
+    val declToString =
+      PP.toString 80 o prettyDecl
+
+    fun prettyEntry (sign : sign) (opid, {sourceOpid, params, arguments, sort, definiens}) =
       let
-        val src = declToString (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
-        val elab = "Def " ^ Sym.toString opid ^ "(" ^ argsToString Metavar.toString arguments ^ ") : "  ^ RedPrlSort.toString sort ^ " = [" ^ ShowAbt.toString definiens ^ "]."
+        val src = prettyDecl (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
+        val elab =
+          PP.concat
+            [PP.text "Def ", PP.text (Sym.toString opid),
+             PP.text "(", PP.text @@ argsToString Metavar.toString arguments, PP.text ") : ",
+             PP.text @@ RedPrlSort.toString sort, PP.text " = [",
+             PP.nest 2 @@ PP.concat [PP.line, PP.text @@ ShowAbt.toString definiens],
+             PP.line, PP.text "]."]
       in
-        src ^ "\n\n===>\n\n" ^ elab
+        PP.concat [src, PP.newline, PP.newline, PP.text "===>", PP.newline, PP.newline, elab]
       end
+
+    fun entryToString (sign : sign) =
+      PP.toString 80 o prettyEntry sign
 
     fun toString ({sourceSign,...} : sign) =
       let
@@ -318,7 +344,7 @@ struct
         E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
-                EDEF entry => E.info (SOME pos, entryToString sign (eopid, entry))
+                EDEF entry => E.info (SOME pos, "Elaborated:\n" ^ entryToString sign (eopid, entry))
               | _ => E.warn (SOME pos, "Invalid declaration name"))))
 
     fun elabCmd (sign : sign) (cmd, pos) : elab_sign =
