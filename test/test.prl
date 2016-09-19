@@ -16,3 +16,14 @@ Thm pathTest : [ paths({x}. S1; base; base) true ] by [
 ].
 
 Print pathTest.
+
+Thm funElimTest : [ (f : (x : bool) -> bool) -> bool true ] by [
+  lam f {
+    x , p <- elim{f};
+    [ '{ tt }, hyp{x} ]
+  };
+
+  auto
+].
+
+Print funElimTest.
