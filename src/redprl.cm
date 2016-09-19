@@ -17,6 +17,7 @@ is
   $libs/sml-typed-abts/basis/basis.cm
   $libs/sml-dependent-lcf/dependent_lcf.cm
   $libs/sml-dependent-lcf/nominal_lcf.cm
+  $libs/sml-wpp/wpp.cm
 
   debug.cm
 
