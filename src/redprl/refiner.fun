@@ -104,24 +104,38 @@ struct
       handle Bind =>
         raise E.error [E.% "Expected circle elimination problem"]
 
-        (*
     fun ElimEq alpha jdg =
       let
         val H >> CJ.EQ ((elim0, elim1), c) = jdg
-        val Syn.S1_ELIM ((x, c0x), m0, (b0, l0)) = Syn.out elim0
-        val Syn.S1_ELIM ((y, c1y), m1, (b1, l1)) = Syn.out elim1
+        val Syn.S1_ELIM ((x, c0x), m0, (b0, (u, l0u))) = Syn.out elim0
+        val Syn.S1_ELIM ((y, c1y), m1, (b1, (v, l1v))) = Syn.out elim1
 
         val z = alpha 0
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val c0z = substVar (ztm, x) c0x
         val c1z = substVar (ztm, y) c1y
+        val l1u = substSymbol (P.ret u, v) l1v
 
-        val (goalC, _) = makeGoal @@ H @> (z, Syn.into Syn.S1) >> CJ.EQ ((
+        val l00 = substSymbol (P.APP P.DIM0, u) l0u
+        val l01 = substSymbol (P.APP P.DIM1, u) l0u
+
+        val cbase = substVar (Syn.into Syn.BASE, x) c0x
+        val cloop = substVar (Syn.into @@ Syn.LOOP (P.ret u), x) c0x
+
+        val S1 = Syn.into Syn.S1
+
+        val (goalCz, _) = makeGoal @@ ([], [(z, O.EXP)]) |> H @> (z, CJ.TRUE S1) >> CJ.EQ_TYPE (c0z, c1z)
+        val (goalM, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), S1)
+        val (goalB, _) = makeGoal @@ H >> CJ.EQ ((b0, b1), cbase)
+        val (goalL, _) = makeGoal @@ H >> CJ.EQ ((l0u, l1u), cloop)
+        val (goalL00, _) = makeGoal @@ H >> CJ.EQ ((l00, b0), cbase)
+        val (goalL01, _) = makeGoal @@ H >> CJ.EQ ((l01, b0), cbase)
+
+        val psi = T.empty >: goalCz >: goalM >: goalB >: goalL >: goalL00 >: goalL01
       in
-        ?todo
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
       end
-
-      *)
   end
 
   structure Bool =
