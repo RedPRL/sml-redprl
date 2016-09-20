@@ -476,6 +476,20 @@ struct
         (T.empty, fn rho =>
            abtToAbs a)
       end
+
+    fun Ap alpha jdg =
+      let
+        val H >> CJ.SYNTH tm = jdg
+        val Syn.AP (m, n) = Syn.out tm
+        val (goalDFun, holeDFun) = makeGoal @@ H >> CJ.SYNTH m
+        val (goalDom, holeDom) = makeGoal @@ MATCH (O.MONO O.DFUN, 0, holeDFun [] [])
+        val (goalCod, _) = makeGoal @@ MATCH (O.MONO O.DFUN, 1, holeDFun [] [])
+        val (goalN, _) = makeGoal @@ H >> CJ.MEM (n, holeDom [] [])
+        val psi = T.empty >: goalDFun >: goalDom >: goalCod >: goalN
+      in
+        (psi, fn rho =>
+           abtToAbs @@ T.lookup rho (#1 goalCod) // ([],[n]))
+      end
   end
 
   structure Match =
@@ -577,12 +591,19 @@ struct
          | (Syn.BASE, Syn.LOOP _, Syn.S1) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
+      fun StepSynth sign m =
+        case Syn.out m of
+           Syn.VAR _ => Synth.Hyp
+         | Syn.AP _ => Synth.Ap
+         | _ => raise E.error [E.% "Could not find suitable type synthesis rule for", E.! m]
+
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.TRUE ty => StepTrue sign ty
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.TYPE ty => Type.Intro
           | _ >> CJ.MEM _ => Membership.Intro
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
+          | _ >> CJ.SYNTH m => StepSynth sign m
           | MATCH _ => Match.MatchOperator
           | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString ShowAbt.toString jdg)])
     in
