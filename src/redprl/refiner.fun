@@ -465,6 +465,19 @@ struct
         raise E.error [E.% "Expected member sequent"]
   end
 
+  structure Synth =
+  struct
+    fun Hyp alpha jdg =
+      let
+        val H >> CJ.SYNTH tm = jdg
+        val Syn.VAR (z, O.EXP) = Syn.out tm
+        val CJ.TRUE a = Hyps.lookup H z
+      in
+        (T.empty, fn rho =>
+           abtToAbs a)
+      end
+  end
+
   structure Equality =
   struct
     fun Hyp alpha jdg =
