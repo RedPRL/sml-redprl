@@ -154,6 +154,11 @@ struct
            | P.APP P.DIM1 => S.STEP @@ O.MONO O.BASE $$ [] <: env
            | P.APP _ => raise Match)
 
+     | O.MONO O.S1_ELIM `$ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] <: env =>
+         S.CUT
+           @@ (O.MONO O.S1_ELIM `$ [([],[x]) \ S.% cx, ([],[]) \ S.HOLE, ([],[]) \ S.% b, ([u],[]) \ S.% l], m)
+           <: env
+
      | O.MONO O.ID_TY `$ _ <: _ => S.VAL
      | O.MONO O.ID_ABS `$ _ <: _ => S.VAL
      | O.POLY (O.ID_AP r) `$ [_ \ m] <: env =>
@@ -277,7 +282,7 @@ struct
      | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
-     | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (_, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>
+     | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>
          let
            val (r, r') = dir
            val cx' = Cl.force cx
@@ -291,6 +296,29 @@ struct
          in
            Syn.heteroCom (exts, dir) ((v, chv), mkIf cap, List.map (mapBind mkIf) tubes) <: env
          end
+
+     | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% l], _ \ O.MONO O.BASE `$ _ <: _) => b
+     | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% (l <: envL)], _ \ O.POLY (O.LOOP r) `$ _ <: env) =>
+         let
+           val r' = Cl.forceParam (r <: env)
+         in
+           l <: Cl.insertSym envL u r'
+         end
+     | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% l], _ \ O.POLY (O.HCOM (O.TAG_S1, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>
+         let
+           val (r, r') = dir
+           val cx' = Cl.force cx
+           val b' = Cl.force b
+           val l' = Cl.force l
+
+           val v = Sym.named "v"
+           val hv = O.POLY (O.HCOM (O.TAG_S1, exts, (r, P.ret v))) $$ (([],[]) \ cap) :: tubes
+           val chv = substVar (hv, x) cx'
+           fun mkElim m = Syn.into @@ Syn.S1_ELIM ((x, cx'), m, (b', (u, l')))
+         in
+           Syn.heteroCom (exts, dir) ((v, chv), mkElim cap, List.map (mapBind mkElim) tubes) <: env
+         end
+
 
      | (O.POLY (O.ID_AP r) `$ [_ \ S.HOLE], _ \ O.MONO O.ID_ABS `$ [([u],_) \ m] <: env) =>
          m <: Cl.insertSym env u r

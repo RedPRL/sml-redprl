@@ -36,7 +36,7 @@ struct
   datatype mono_operator =
      DFUN | FUN | LAM | AP
    | BOOL | TRUE | FALSE | IF
-   | S1 | BASE
+   | S1 | BASE | S1_ELIM
    | AX
    | ID_TY | ID_ABS
 
@@ -129,6 +129,7 @@ struct
      | IF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
+     | S1_ELIM => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
      | AX => [] ->> TRIV
      | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
@@ -301,6 +302,7 @@ struct
      | IF => "if"
      | S1 => "S1"
      | BASE => "base"
+     | S1_ELIM => "s1-elim"
      | AX => "ax"
      | ID_TY => "Id"
      | ID_ABS => "path"
