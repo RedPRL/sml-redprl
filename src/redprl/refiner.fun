@@ -509,6 +509,19 @@ struct
         (psi, fn rho =>
            abtToAbs @@ T.lookup rho (#1 goalCod) // ([],[n]))
       end
+
+    fun S1Elim alpha jdg =
+      let
+        val H >> CJ.SYNTH tm = jdg
+        val Syn.S1_ELIM ((x,cx), m, _) = Syn.out tm
+
+        val cm = substVar (m, x) cx
+        val (goal, _) = makeGoal @@ H >> CJ.MEM (tm, cm)
+        val psi = T.empty >: goal
+      in
+        (psi, fn rho =>
+           abtToAbs cm)
+      end
   end
 
   structure Match =
@@ -616,6 +629,7 @@ struct
         case Syn.out m of
            Syn.VAR _ => Synth.Hyp
          | Syn.AP _ => Synth.Ap
+         | Syn.S1_ELIM _ => Synth.S1Elim
          | _ => raise E.error [E.% "Could not find suitable type synthesis rule for", E.! m]
 
       fun StepJdg sign = matchGoal
