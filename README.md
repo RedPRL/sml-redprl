@@ -60,11 +60,9 @@ follows
 
     ./bin/redprl test/test.prl
 
-### Editor Support
+### Editor Support: Emacs
 
-RedPRL is presently supported in Atom and Emacs.
-
-### Emacs
+We have support for interactive RedPRL development in Emacs.
 
 [![MELPA](https://melpa.org/packages/redprl-badge.svg)](https://melpa.org/#/redprl)
 
@@ -92,3 +90,19 @@ following features:
    Be sure that either the `redprl` executable is in your path, or set
    `flycheck-redprl-executable` in your own Emacs configuration.
 
+
+### Contributing
+
+If you'd like to help, the best place to start are issues with the following labels:
+
+* [`E-easy`](https://github.com/RedPRL/sml-redprl/issues?q=is%3Aissue+is%3Aopen+label%3AE-easy)
+* [`E-help-wanted`](https://github.com/RedPRL/sml-redprl/issues?q=is%3Aissue+is%3Aopen+label%3AE-help-wanted)
+
+We follow the issue labels used by Rust which are described in detail
+[here](https://github.com/rust-lang/rust/blob/master/CONTRIBUTING.md#issue-triage).
+
+If you find something you want to work on, please leave a comment so that others
+can coordinate their efforts with you. Also, please don't hesitate to open a new
+issue if you have feedback of any kind.
+
+*The above text is stolen from [Yggdrasil](https://github.com/freebroccolo/yggdrasil/blob/master/README.md).*
