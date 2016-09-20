@@ -4,6 +4,7 @@ sig
      EQ of ('a * 'a) * 'a
    | MEM of 'a * 'a
    | TRUE of 'a
+   | EQ_TYPE of 'a * 'a
    | TYPE of 'a
    | SYNTH of 'a
    | CEQUIV of 'a * 'a
@@ -15,6 +16,7 @@ struct
      EQ of ('a * 'a) * 'a
    | MEM of 'a * 'a
    | TRUE of 'a
+   | EQ_TYPE of 'a * 'a
    | TYPE of 'a
    | SYNTH of 'a
    | CEQUIV of 'a * 'a
@@ -25,6 +27,7 @@ struct
     fn EQ ((m, n), a) => EQ ((f m, f n), f a)
      | MEM (m, a) => MEM (f m, f a)
      | TRUE a => TRUE (f a)
+     | EQ_TYPE (a, b) => EQ_TYPE (f a, f b)
      | TYPE a => TYPE (f a)
      | SYNTH a => SYNTH (f a)
      | CEQUIV (m, n) => CEQUIV (f m, f n)
@@ -36,6 +39,7 @@ struct
     fn EQ _ => O.TRIV
      | MEM _ => O.TRIV
      | TRUE _ => O.EXP
+     | EQ_TYPE _ => O.TRIV
      | TYPE _ => O.TRIV
      | SYNTH _ => O.EXP
      | CEQUIV _ => O.TRIV
@@ -54,6 +58,7 @@ struct
       fn EQ ((m, n), a) => O.MONO O.JDG_EQ $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
        | MEM (m, a) => O.MONO O.JDG_MEM $$ [([],[]) \ m, ([],[]) \ a]
        | TRUE a => O.MONO O.JDG_TRUE $$ [([],[]) \ a]
+       | EQ_TYPE (a, b) => O.MONO O.JDG_EQ_TYPE $$ [([],[]) \ a, ([],[]) \ b]
        | TYPE a => O.MONO O.JDG_TYPE $$ [([],[]) \ a]
        | SYNTH m => O.MONO O.JDG_SYNTH $$ [([],[]) \ m]
        | CEQUIV (m, n) => O.MONO O.JDG_CEQ $$ [([],[]) \ m, ([],[]) \ n]
