@@ -33,10 +33,11 @@ struct
 
   structure S1 =
   struct
-    fun Type _ jdg =
+    fun EqType _ jdg =
       let
-        val H >> CJ.TYPE a = jdg
+        val H >> CJ.EQ_TYPE (a, b) = jdg
         val Syn.S1 = Syn.out a
+        val Syn.S1 = Syn.out b
       in
         (T.empty, fn rho =>
           Abt.abtToAbs @@ Syn.into Syn.AX)
@@ -125,10 +126,11 @@ struct
 
   structure Bool =
   struct
-    fun Type _ jdg =
+    fun EqType _ jdg =
       let
-        val H >> CJ.TYPE a = jdg
+        val H >> CJ.EQ_TYPE (a, b) = jdg
         val Syn.BOOL = Syn.out a
+        val Syn.BOOL = Syn.out b
       in
         (T.empty, fn rho =>
           Abt.abtToAbs @@ Syn.into Syn.AX)
@@ -185,16 +187,19 @@ struct
 
   structure DFun =
   struct
-    fun Type alpha jdg =
+    fun EqType alpha jdg =
       let
-        val H >> CJ.TYPE dfun = jdg
-        val Syn.DFUN (a, x, bx) = Syn.out dfun
+        val H >> CJ.EQ_TYPE (dfun0, dfun1) = jdg
+        val Syn.DFUN (a0, x, b0x) = Syn.out dfun0
+        val Syn.DFUN (a1, y, b1y) = Syn.out dfun1
 
         val z = alpha 0
-        val bz = substVar (Syn.into @@ Syn.VAR (z, O.EXP), x) bx
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val b0z = substVar (ztm, x) b0x
+        val b1z = substVar (ztm, y) b1y
 
-        val (goal1, _) = makeGoal @@ H >> CJ.TYPE a
-        val (goal2, _) = makeGoal @@ H @> (z, CJ.TRUE a) >> CJ.TYPE bz
+        val (goal1, _) = makeGoal @@ H >> CJ.EQ_TYPE (a0, a1)
+        val (goal2, _) = makeGoal @@ H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
         val psi = T.empty >: goal1 >: goal2
       in
         (psi, fn rho =>
@@ -259,17 +264,20 @@ struct
 
   structure Path =
   struct
-    fun Type alpha jdg =
+    fun EqType alpha jdg =
       let
-        val H >> CJ.TYPE ty = jdg
-        val Syn.ID_TY ((u, a), m, n) = Syn.out ty
+        val H >> CJ.EQ_TYPE (ty0, ty1) = jdg
+        val Syn.ID_TY ((u, a0u), m0, n0) = Syn.out ty0
+        val Syn.ID_TY ((v, a1v), m1, n1) = Syn.out ty1
 
-        val a0 = substSymbol (P.APP P.DIM0, u) a
-        val a1 = substSymbol (P.APP P.DIM1, u) a
+        val a1u = substSymbol (P.ret u, v) a1v
 
-        val (tyGoal, _) = makeGoal @@ H >> CJ.TYPE a
-        val (goal0, _) = makeGoal @@ H >> CJ.MEM (m, a0)
-        val (goal1, _) = makeGoal @@ H >> CJ.MEM (n, a1)
+        val a00 = substSymbol (P.APP P.DIM0, u) a0u
+        val a01 = substSymbol (P.APP P.DIM1, u) a0u
+
+        val (tyGoal, _) = makeGoal @@ H >> CJ.EQ_TYPE (a0u, a1u)
+        val (goal0, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), a00)
+        val (goal1, _) = makeGoal @@ H >> CJ.EQ ((n0, n1), a01)
 
         val psi = T.empty >: tyGoal >: goal0 >: goal1
       in
@@ -398,6 +406,21 @@ struct
         raise E.error [E.% "Expected sequent judgment"]
   end
 
+  structure Type =
+  struct
+    fun Intro _ jdg =
+      let
+        val H >> CJ.TYPE ty = jdg
+        val (goal, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty, ty)
+        val psi = T.empty >: goal
+      in
+        (psi, fn rho =>
+           T.lookup rho (#1 goal))
+      end
+      handle Bind =>
+        raise E.error [E.% @@ "Expected typehood sequent but got " ^ J.judgmentToString jdg]
+  end
+
   structure Truth =
   struct
     fun Witness tm alpha jdg =
@@ -491,13 +514,13 @@ struct
          | Syn.ID_TY _ => Path.True
          | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
 
-      fun StepType sign ty =
-        case Syn.out ty of
-           Syn.BOOL => Bool.Type
-         | Syn.DFUN _ => DFun.Type
-         | Syn.ID_TY _ => Path.Type
-         | Syn.S1 => S1.Type
-         | _ => raise E.error [E.% "Could not find typehood rule for", E.! ty]
+      fun StepEqType sign (ty1, ty2) =
+        case (Syn.out ty1, Syn.out ty2) of
+           (Syn.BOOL, Syn.BOOL) => Bool.EqType
+         | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
+         | (Syn.ID_TY _, Syn.ID_TY _) => Path.EqType
+         | (Syn.S1, Syn.S1) => S1.EqType
+         | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
       fun StepEq sign ((m, n), ty) =
         case (Syn.out m, Syn.out n, Syn.out ty) of
@@ -512,7 +535,8 @@ struct
 
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.TRUE ty => StepTrue sign ty
-          | _ >> CJ.TYPE ty => StepType sign ty
+          | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
+          | _ >> CJ.TYPE ty => Type.Intro
           | _ >> CJ.MEM _ => Membership.Intro
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString CJ.toString jdg)])
