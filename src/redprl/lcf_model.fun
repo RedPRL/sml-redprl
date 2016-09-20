@@ -31,6 +31,7 @@ struct
      | O.POLY (O.RULE_ELIM z) $ _ => Rules.Lift (Rules.Elim sign z)
      | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Lift (Rules.Truth.Witness tm)
      | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Lift (Rules.Equality.HeadExpansion sign)
+     | O.MONO O.RULE_SYMMETRY $ _ => Rules.Lift Rules.Equality.Symmetry
      | _ => raise E.error [E.% "Invalid rule", E.! rule]
 
   fun rule (sign, env) rule alpha goal =

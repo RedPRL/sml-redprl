@@ -47,7 +47,7 @@ struct
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
 
    (* primitive rules *)
-   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_AUTO_STEP | RULE_WITNESS | RULE_HEAD_EXP
+   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
 
    (* development calculus terms *)
    | DEV_FUN_INTRO | DEV_PATH_INTRO
@@ -144,6 +144,7 @@ struct
      | RULE_ID => [] ->> TAC
      | RULE_AUTO => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
+     | RULE_SYMMETRY => [] ->> TAC
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
@@ -321,6 +322,7 @@ struct
      | RULE_ID => "id"
      | RULE_AUTO => "auto-step"
      | RULE_AUTO_STEP => "auto"
+     | RULE_SYMMETRY => "symmetry"
      | RULE_WITNESS => "witness"
      | RULE_HEAD_EXP => "head-expand"
      | RULE_EVAL_GOAL => "eval-goal"

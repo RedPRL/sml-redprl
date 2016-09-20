@@ -90,6 +90,7 @@ whitespace = [\ \t];
 "id"               => (Tokens.RULE_ID (!pos, Coord.addchar 2 o (!pos)));
 "eval-goal"        => (Tokens.RULE_EVAL_GOAL (!pos, Coord.addchar (size yytext) o (!pos)));
 "ceq/refl"         => (Tokens.RULE_CEQUIV_REFL (!pos, Coord.addchar (size yytext) o (!pos)));
+"symmetry"         => (Tokens.RULE_SYMMETRY (!pos, Coord.addchar (size yytext) o (!pos)));
 "auto"             => (Tokens.RULE_AUTO (!pos, Coord.addchar (size yytext) o (!pos)));
 "hyp"              => (Tokens.RULE_HYP (!pos, Coord.addchar (size yytext) o (!pos)));
 "elim"             => (Tokens.RULE_ELIM (!pos, Coord.addchar (size yytext) o (!pos)));
