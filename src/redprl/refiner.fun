@@ -506,6 +506,7 @@ struct
       fun StepTrue ty =
         case Syn.out ty of
            Syn.BOOL => Bool.Elim
+         | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
          | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
 

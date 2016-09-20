@@ -200,13 +200,17 @@ struct
          S.STEP
            @@ Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.fromMtac (Tac.each [t]))
            <: env
-     | O.POLY (O.DEV_BOOL_ELIM u) `$ [_ \ t1, _ \ t2] <: env =>
+     | O.POLY (O.DEV_BOOL_ELIM z) `$ [_ \ t1, _ \ t2] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all (Tac.elim u)) [] (Tac.fromMtac (Tac.each [t1,t2]))
+           @@ Tac.seq (Tac.all (Tac.elim z)) [] (Tac.fromMtac (Tac.each [t1,t2]))
            <: env
-     | O.POLY (O.DEV_DFUN_ELIM u) `$ [_ \ t1, ([x,p],_) \ t2] <: env =>
+     | O.POLY (O.DEV_S1_ELIM z) `$ [_ \ t1, ([v],_) \ t2] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all (Tac.elim u)) [(x, P.HYP), (p, P.HYP)] (Tac.fromMtac (Tac.each [t1,t2]))
+           @@ Tac.seq (Tac.all (Tac.elim z)) [(v, P.DIM)] (Tac.fromMtac (Tac.each [t1,t2]))
+           <: env
+     | O.POLY (O.DEV_DFUN_ELIM z) `$ [_ \ t1, ([x,p],_) \ t2] <: env =>
+         S.STEP
+           @@ Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (p, P.HYP)] (Tac.fromMtac (Tac.each [t1,t2]))
            <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
