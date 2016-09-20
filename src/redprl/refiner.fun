@@ -222,6 +222,28 @@ struct
       handle Bind =>
         raise E.error [E.% "Expected dfun typehood sequent"]
 
+    fun Eq alpha jdg =
+      let
+        val H >> CJ.EQ ((lam0, lam1), dfun) = jdg
+        val Syn.LAM (x, m0x) = Syn.out lam0
+        val Syn.LAM (y, m1y) = Syn.out lam1
+        val Syn.DFUN (a, z, bz) = Syn.out dfun
+
+        val w = alpha 0
+        val wtm = Syn.into @@ Syn.VAR (w, O.EXP)
+
+        val m0w = substVar (wtm, x) m0x
+        val m1w = substVar (wtm, y) m1y
+        val bw = substVar (wtm, z) bz
+
+        val (goal1, _) = makeGoal @@ ([],[(w, O.EXP)]) |> H @> (w, CJ.TRUE a) >> CJ.EQ ((m0w, m1w), bw)
+        val (goal2, _) = makeGoal @@ H >> CJ.TYPE a
+        val psi = T.empty >: goal1 >: goal2
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
     fun True alpha jdg =
       let
         val H >> CJ.TRUE dfun = jdg
@@ -635,6 +657,7 @@ struct
          | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.LOOP _, Syn.BASE, Syn.S1) => Equality.HeadExpansion sign
          | (Syn.BASE, Syn.LOOP _, Syn.S1) => Equality.Symmetry
+         | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
