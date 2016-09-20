@@ -105,6 +105,7 @@ struct
       let
         val H >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
+        val Syn.BOOL = Syn.out ty
 
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
