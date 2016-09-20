@@ -244,7 +244,7 @@ struct
       handle Bind =>
         raise E.error [E.% "Expected dfun truth sequent"]
 
-    fun Elim z alpha (jdg : J.judgment) =
+    fun Elim z alpha jdg =
       let
         val H >> catjdg = jdg
         val CJ.TRUE dfun = Hyps.lookup H z
@@ -273,6 +273,25 @@ struct
           in
             abtToAbs @@ T.lookup rho (#1 goal2) // ([], [aptm, ax])
           end)
+      end
+
+    fun ApEq alpha jdg =
+      let
+        val H >> CJ.EQ ((ap0, ap1), c) = jdg
+        val Syn.AP (m0, n0) = Syn.out ap0
+        val Syn.AP (m1, n1) = Syn.out ap1
+
+        val (goalDFun0, holeDFun0) = makeGoal @@ H >> CJ.SYNTH m0
+        val (goalDFun1, holeDFun1) = makeGoal @@ H >> CJ.SYNTH m1
+        val (goalDFunEq, _) = makeGoal @@ H >> CJ.EQ_TYPE (holeDFun0 [] [], holeDFun1 [] [])
+        val (goalDom, holeDom) = makeGoal @@ MATCH (O.MONO O.DFUN, 0, holeDFun0 [] [])
+        val (goalM, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeDFun0 [] [])
+        val (goalN, _) = makeGoal @@ H >> CJ.EQ ((n0, n1), holeDom [] [])
+
+        val psi = T.empty >: goalDFun0 >: goalDFun1 >: goalDFunEq >: goalDom >: goalM >: goalN
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
       end
   end
 
@@ -587,8 +606,10 @@ struct
          | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
+         | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.LOOP _, Syn.BASE, Syn.S1) => Equality.HeadExpansion sign
          | (Syn.BASE, Syn.LOOP _, Syn.S1) => Equality.Symmetry
+         | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepSynth sign m =

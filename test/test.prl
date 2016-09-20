@@ -2,6 +2,7 @@ Thm boolTest : [ (x : bool) -> bool true ] by [
   lam x {
     if x then { 'tt } else { 'ff }
   };
+
   auto
 ].
 
@@ -9,6 +10,7 @@ Thm pathTest : [ paths({x}. S1; base; base) true ] by [
   <x> {
     'loop{x}
   };
+
   auto
 ].
 
@@ -19,7 +21,8 @@ Thm funElimTest : [ (f : (x : bool) -> bool) -> bool true ] by [
       hyp{x}
     }
   };
-  auto;
+
+  auto
 ].
 
 Thm s1ElimTest : [ (s : S1) -> S1 true ] by [
@@ -29,5 +32,20 @@ Thm s1ElimTest : [ (s : S1) -> S1 true ] by [
      | loop{x} => {'loop{x}}
   };
 
+  auto
+].
+
+// Useful for stepping through a proof RedPRL completes automatically, to see
+// what is being done.
+Tac tryStep = [ auto-step || id ].
+
+Thm apEqTest : [ (f : (x : bool) -> bool) -> paths({y}. bool; f tt; f tt) true ] by [
+  lam f {
+    <y> {
+      '(`f tt)
+    }
+  };
+
+  // Try commenting out the following line, and stepping through the proof with tryStep().
   auto
 ].
