@@ -16,9 +16,7 @@ sig
   datatype 'a jdg =
      >> of 'a CJ.jdg ctx * 'a CJ.jdg
    | |> of ((sym * psort) list * (var * sort) list) * 'a jdg
-   (*
    | MATCH of operator * int * 'a
-   *)
 
   val map : ('a -> 'b) -> 'a jdg -> 'b jdg
 

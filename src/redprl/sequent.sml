@@ -17,18 +17,14 @@ struct
   datatype 'a jdg =
      >> of 'a CJ.jdg ctx * 'a CJ.jdg
    | |> of ((sym * psort) list * (var * sort) list) * 'a jdg
-   (*
    | MATCH of operator * int * 'a
-   *)
 
   infix >> |>
 
   fun map f =
     fn H >> catjdg => Hyps.map (CJ.map f) H >> CJ.map f catjdg
      | (U,G) |> jdg => (U,G) |> map f jdg
-     (*
      | MATCH (th, k, a) => MATCH (th, k, f a)
-     *)
 
   local
     open PP
@@ -40,7 +36,7 @@ struct
 
     fun pretty f : 'a jdg -> doc =
       fn H >> catjdg => concat [prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
-       (* | MATCH (th, k, a) => concat [*)
+       | MATCH (th, k, a) => concat [text (f a), text " match ", text (Tm.O.toString Tm.Sym.toString th), text " @ ", int k]
        | (U, G) |> jdg => pretty f jdg
   end
 
