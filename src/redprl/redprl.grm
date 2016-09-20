@@ -263,7 +263,7 @@ atomicRawTerm
   : LPAREN term RPAREN (term)
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-  | BACK_TICK IDENT (Ast.$$ (O.POLY (O.HYP_REF IDENT), []))
+  | COMMA IDENT (Ast.$$ (O.POLY (O.HYP_REF IDENT), []))
   | IDENT (`` IDENT)
   | term RIGHT_ARROW term (Ast.$$ (O.MONO O.FUN, [\ (([],[]), term1), \ (([],[]), term2)]))
   | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
