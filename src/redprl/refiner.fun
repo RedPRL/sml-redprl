@@ -103,6 +103,24 @@ struct
       handle Bind =>
         raise E.error [E.% "Expected circle elimination problem"]
 
+        (*
+    fun ElimEq alpha jdg =
+      let
+        val H >> CJ.EQ ((elim0, elim1), c) = jdg
+        val Syn.S1_ELIM ((x, c0x), m0, (b0, l0)) = Syn.out elim0
+        val Syn.S1_ELIM ((y, c1y), m1, (b1, l1)) = Syn.out elim1
+
+        val z = alpha 0
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val c0z = substVar (ztm, x) c0x
+        val c1z = substVar (ztm, y) c1y
+
+        val (goalC, _) = makeGoal @@ H @> (z, Syn.into Syn.S1) >> CJ.EQ ((
+      in
+        ?todo
+      end
+
+      *)
   end
 
   structure Bool =
