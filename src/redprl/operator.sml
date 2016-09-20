@@ -36,7 +36,7 @@ struct
   datatype mono_operator =
      DFUN | FUN | LAM | AP
    | BOOL | TRUE | FALSE | IF
-   | S1 | BASE
+   | S1 | BASE | S1_ELIM
    | AX
    | ID_TY | ID_ABS
 
@@ -92,6 +92,7 @@ struct
    | RULE_HYP of 'a
    | RULE_ELIM of 'a
    | DEV_BOOL_ELIM of 'a
+   | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
@@ -129,6 +130,7 @@ struct
      | IF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
+     | S1_ELIM => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
      | AX => [] ->> TRIV
      | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
@@ -205,6 +207,7 @@ struct
        | RULE_HYP a => [] ->> TAC
        | RULE_ELIM a => [] ->> TAC
        | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
+       | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
   end
 
@@ -245,6 +248,7 @@ struct
        | RULE_HYP a => [(a, HYP)]
        | RULE_ELIM a => [(a, HYP)]
        | DEV_BOOL_ELIM a => [(a, HYP)]
+       | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_DFUN_ELIM a => [(a, HYP)]
   end
 
@@ -280,6 +284,8 @@ struct
            f (a, b)
        | (DEV_BOOL_ELIM a, DEV_BOOL_ELIM b) =>
            f (a, b)
+       | (DEV_S1_ELIM a, DEV_S1_ELIM b) =>
+           f (a, b)
        | (DEV_DFUN_ELIM a, DEV_DFUN_ELIM b) =>
            f (a, b)
        | _ => false
@@ -301,6 +307,7 @@ struct
      | IF => "if"
      | S1 => "S1"
      | BASE => "base"
+     | S1_ELIM => "s1-elim"
      | AX => "ax"
      | ID_TY => "Id"
      | ID_ABS => "path"
@@ -369,6 +376,7 @@ struct
        | RULE_HYP a => "hyp{" ^ f a ^ "}"
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
+       | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
   end
 
@@ -413,6 +421,7 @@ struct
        | RULE_HYP a => RULE_HYP (mapSym f a)
        | RULE_ELIM a => RULE_ELIM (mapSym f a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym f a)
+       | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym f a)
   end
 

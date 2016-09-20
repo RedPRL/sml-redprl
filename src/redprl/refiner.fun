@@ -66,6 +66,43 @@ struct
         else
           raise E.error [E.% "Expected loops in same dimension"]
       end
+
+    fun Elim z alpha jdg =
+      let
+        val H >> CJ.TRUE cz = jdg
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.S1 = Syn.out ty
+
+        val u = alpha 0
+        val loop = Syn.into o Syn.LOOP @@ P.ret u
+        val base = Syn.into Syn.BASE
+        val Hbase = Hyps.modifyAfter z (CJ.map (substVar (base, z))) H
+        val cbase = substVar (base, z) cz
+
+        val (goalB, holeB) = makeGoal @@ Hbase >> CJ.TRUE cbase
+        val (goalL, holeL) = makeGoal @@ ([(u, P.DIM)], []) |> Hyps.modifyAfter z (CJ.map (substVar (loop, z))) H >> CJ.TRUE (substVar (loop, z) cz)
+
+        val b = holeB [][]
+        val l0 = holeL [(P.APP P.DIM0, P.DIM)] []
+        val l1 = holeL [(P.APP P.DIM1, P.DIM)] []
+
+        val (goalCoh0, _) = makeGoal @@ Hbase >> CJ.EQ ((l0, b), cbase)
+        val (goalCoh1, _) = makeGoal @@ Hbase >> CJ.EQ ((l1, b), cbase)
+
+        val psi = T.empty >: goalB >: goalL >: goalCoh0 >: goalCoh1
+      in
+        (psi, fn rho =>
+           let
+             val m = Syn.into @@ Syn.VAR (z, O.EXP)
+             val b = T.lookup rho (#1 goalB) // ([],[])
+             val lu = T.lookup rho (#1 goalL) // ([u],[])
+           in
+             abtToAbs o Syn.into @@ Syn.S1_ELIM ((z, cz), m, (b, (u, lu)))
+           end)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected circle elimination problem"]
+
   end
 
   structure Bool =
@@ -105,6 +142,7 @@ struct
       let
         val H >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
+        val Syn.BOOL = Syn.out ty
 
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
@@ -468,6 +506,7 @@ struct
       fun StepTrue ty =
         case Syn.out ty of
            Syn.BOOL => Bool.Elim
+         | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
          | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
 

@@ -57,11 +57,11 @@ end
  | LAMBDA
  | SQUIGGLE
  | SQUIGGLE_ARROW
- | RIGHT_ARROW | LEFT_ARROW
+ | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW
  | BACK_TICK | AT_SIGN | PIPE | PERCENT
 
  | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE | S1
- | THEN | ELSE | LET | WITH
+ | THEN | ELSE | LET | WITH | CASE | OF
 
  | FUN_APP
 
@@ -313,6 +313,8 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT3), [\ (([],[]), tactic1), \ (([IDENT1, IDENT2],[]), tactic2)]))
   | LET IDENT EQUALS IDENT LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT2), [\ (([],[]), tactic1), \ (([IDENT1, "_"],[]), tactic2)]))
+  | CASE IDENT OF BASE DOUBLE_RIGHT_ARROW LBRACKET tactic RBRACKET PIPE LOOP LBRACKET IDENT RBRACKET DOUBLE_RIGHT_ARROW LBRACKET tactic RBRACKET
+      (Ast.$$ (O.POLY (O.DEV_S1_ELIM IDENT1), [\ (([],[]), tactic1), \(([IDENT2], []), tactic2)]))
 
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
