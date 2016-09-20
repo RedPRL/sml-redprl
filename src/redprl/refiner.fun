@@ -566,7 +566,7 @@ struct
           | _ >> CJ.TYPE ty => Type.Intro
           | _ >> CJ.MEM _ => Membership.Intro
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
-          | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString CJ.toString jdg)])
+          | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString ShowAbt.toString jdg)])
     in
       val AutoStep = StepJdg
     end

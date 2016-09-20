@@ -77,6 +77,15 @@ struct
   val toString = ShowAbt.toString o toAbt
   val metactx = RedPrlAbt.metactx o toAbt
 
+  fun pretty f =
+    fn EQ ((m, n), a) => PP.concat [PP.text (f m), PP.text " = ", PP.text (f n), PP.text " : ", PP.text (f a)]
+     | MEM (m, a) => PP.concat [PP.text (f m), PP.text " : ", PP.text (f a)]
+     | TRUE a => PP.concat [PP.text (f a), PP.text " true"]
+     | EQ_TYPE (a, b) => PP.concat [PP.text (f a), PP.text " = ", PP.text (f b), PP.text " type"]
+     | TYPE a => PP.concat [PP.text (f a), PP.text " type"]
+     | SYNTH m => PP.concat [PP.text (f m), PP.text " synth"]
+     | CEQUIV (m, n) => PP.concat [PP.text (f m), PP.text " ~ ", PP.text (f n)]
+
   fun unify (j1, j2) =
     RedPrlAbt.Unify.unify (toAbt j1, toAbt j2)
 

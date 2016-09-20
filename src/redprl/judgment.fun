@@ -4,11 +4,9 @@ struct
   structure Tm = CJ.Tm
   type valence = Tm.valence
 
-  type judgment = Tm.abt CJ.jdg S.jdg
+  type judgment = Tm.abt S.jdg
   type evidence = Tm.abs
   type metavariable = Tm.metavariable
-
-  val judgmentToString = S.toString CJ.toString
 
   local
     open Tm
@@ -18,10 +16,12 @@ struct
     fun evidenceToString e =
       case outb e of
          _ \ m => ShowAbt.toString m
+
+    val judgmentToString = S.toString ShowAbt.toString
   end
 
-  val substEvidence = S.map o CJ.map o Tm.substMetavar
-  val substEvidenceEnv = S.map o CJ.map o Tm.substMetaenv
+  val substEvidence = S.map o Tm.substMetavar
+  val substEvidenceEnv = S.map o Tm.substMetaenv
 
   structure MetaCtx = Tm.Metavar.Ctx
   structure VarCtx = Tm.Var.Ctx

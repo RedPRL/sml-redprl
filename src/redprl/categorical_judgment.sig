@@ -21,5 +21,7 @@ sig
 
   val eq : abt jdg * abt jdg -> bool
 
+  val pretty : ('a -> string) -> 'a jdg -> PP.doc
+
   exception InvalidJudgment
 end
