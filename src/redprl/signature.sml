@@ -66,25 +66,66 @@ struct
   structure O = RedPrlOpData
 
   local
+    open PP
+
     fun argsToString f =
       ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
+
+    val kwd = color C.red o bold true
+    val declId = blink true o underline true
+
+    fun squares x =
+      concat
+        [color C.white @@ text "[",
+         x,
+         color C.white @@ text "]"]
   in
-    fun declToString (opid, decl) =
+    fun prettyDecl (opid, decl) =
       case decl of
          DEF {arguments, params, sort, definiens} =>
-           "Def " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") : " ^ RedPrlSort.toString sort ^ " = [" ^ RedPrlAst.toString definiens ^ "]."
+           concat
+             [kwd @@ text "Def ", declId @@ text opid, text "(", text @@ argsToString (fn x => x) arguments, text ") : ",
+              text @@ RedPrlSort.toString sort, text " = ",
+              squares @@ concat [nest 2 @@ concat [line, text (RedPrlAst.toString definiens)], line],
+              text "."]
        | THM {arguments, params, goal, script} =>
-           "Thm " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") : [" ^ RedPrlAst.toString goal ^ "] by [" ^ RedPrlAst.toString script ^ "]."
+           concat
+             [kwd @@ text "Thm ",
+              declId @@ text opid,
+              text "(",
+              text @@ argsToString (fn x => x) arguments,
+              text ")", text " : ",
+              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString goal], line],
+              text " by ",
+              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
+              text "."]
        | TAC {arguments, params, script} =>
-           "Tac " ^ opid ^ "(" ^ argsToString (fn x => x) arguments ^ ") = [" ^ RedPrlAst.toString script ^ "]."
+           concat
+            [kwd @@ text "Tac ", declId @@ text opid, text "(", text @@ argsToString (fn x => x) arguments, text ") = ",
+             squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
+             text "."]
 
-    fun entryToString (sign : sign) (opid, {sourceOpid, params, arguments, sort, definiens}) =
+
+    val declToString =
+      PP.toString 80 false o prettyDecl
+
+    fun prettyEntry (sign : sign) (opid, {sourceOpid, params, arguments, sort, definiens}) =
       let
-        val src = declToString (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
-        val elab = "Def " ^ Sym.toString opid ^ "(" ^ argsToString Metavar.toString arguments ^ ") : "  ^ RedPrlSort.toString sort ^ " = [" ^ ShowAbt.toString definiens ^ "]."
+        val src = prettyDecl (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
+        val elab =
+          concat
+            [kwd @@ text "Def ",
+             declId @@ text @@ Sym.toString opid,
+             text "(", text @@ argsToString Metavar.toString arguments, text ") : ",
+             text @@ RedPrlSort.toString sort, text " = ",
+             squares @@ concat [nest 2 @@ concat [line, text @@ ShowAbt.toString definiens], line],
+             text "."]
       in
-        src ^ "\n\n===>\n\n" ^ elab
+        concat [src, newline, newline, text "===>", newline, newline, elab]
       end
+
+    fun entryToString (sign : sign) =
+      PP.toString 80 false o prettyEntry sign
 
     fun toString ({sourceSign,...} : sign) =
       let
@@ -274,7 +315,7 @@ struct
               let
                 val stateStr = LcfModel.Lcf.stateToString state
               in
-                E.warn (pos, "Refinement failed: \n\n" ^ stateStr)
+                E.warn (pos, "Incomplete proof: \n\n" ^ stateStr)
                   *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))
               end)
         end
@@ -318,7 +359,7 @@ struct
         E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
-                EDEF entry => E.info (SOME pos, entryToString sign (eopid, entry))
+                EDEF entry => E.info (SOME pos, "Elaborated:\n" ^ entryToString sign (eopid, entry))
               | _ => E.warn (SOME pos, "Invalid declaration name"))))
 
     fun elabCmd (sign : sign) (cmd, pos) : elab_sign =

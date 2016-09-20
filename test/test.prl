@@ -18,12 +18,11 @@ Print pathTest.
 
 Thm funElimTest : [ (f : (x : bool) -> bool) -> bool true ] by [
   lam f {
-    let x = f { 'tt } in {
+    let x = f {'tt} in {
       hyp{x}
     }
   };
-
-  auto
+  auto;
 ].
 
 Print funElimTest.

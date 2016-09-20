@@ -1,4 +1,41 @@
-structure Lcf = DependentLcf (RedPrlJudgment)
+structure Lcf : DEPENDENT_LCF =
+struct
+  structure Def = DependentLcf (RedPrlJudgment)
+  open Def
+
+  structure Hole = HoleUtil (structure Tm = RedPrlAbt and J = J and T = T)
+
+  fun prettyGoal (x, jdg) =
+    PP.concat
+      [PP.text "Goal ",
+       PP.text (RedPrlAbt.Metavar.toString x),
+       PP.text ".",
+       PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty RedPrlCategoricalJudgment.toString jdg]),
+       PP.line]
+
+  val prettyGoals : judgment ctx -> PP.doc =
+    T.foldl
+      (fn (x, jdg, r) => PP.concat [r, prettyGoal (x, jdg), PP.line])
+      PP.empty
+
+  fun prettyValidation (psi, vld) =
+    PP.text (J.evidenceToString (vld (Hole.openEnv psi)))
+
+  fun prettyState (psi, vld) =
+    PP.concat
+      [prettyGoals psi,
+       PP.text "----------------------------------------------------------",
+       PP.line,
+       PP.text "Current Proof Extract:",
+       PP.line,
+       PP.text "----------------------------------------------------------",
+       PP.line, PP.line,
+       prettyValidation (psi, vld)]
+
+  val stateToString : judgment state -> string =
+    PP.toString 80 false o prettyState
+end
+
 structure Tacticals = Tacticals (Lcf)
 structure Multitacticals = Multitacticals (Lcf)
 

@@ -15,5 +15,5 @@ in
   structure RedPrlAst = AstUtil (Ast (AbtKit))
   structure RedPrlAbt = Abt (AbtKit)
   structure AstToAbt = AstToAbt (structure Ast = RedPrlAst and Abt = RedPrlAbt)
-  structure ShowAbt = DebugShowAbt (RedPrlAbt)
+  structure ShowAbt = PlainShowAbt (RedPrlAbt)
 end

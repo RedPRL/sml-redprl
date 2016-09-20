@@ -13,7 +13,7 @@ struct
   local
     open Tm
     infix \
-    structure ShowAbt = DebugShowAbt (Tm)
+    structure ShowAbt = PlainShowAbt (Tm)
   in
     fun evidenceToString e =
       case outb e of

@@ -20,7 +20,7 @@ struct
          | WARN => "Warning"
          | FAIL => "Error"
 
-      val lines = String.tokens (fn c => c = #"\n") msg
+      val lines = String.fields (fn c => c = #"\n") msg
       val indented = List.map (fn l => "  " ^ l ^ "\n") lines
       val msg' = List.foldr op^ "" indented
     in

@@ -23,25 +23,18 @@ struct
     fn H >> catjdg => Hyps.map f H >> f catjdg
      | (U,G) |> jdg => (U,G) |> map f jdg
 
-  fun hypsToString f H =
-    let
-      open Hyps open ConsView
-      val rec go =
-        fn EMPTY => ""
-         | CONS (x, a, tl) =>
-             let
-               val hyp = Tm.Sym.toString x ^ " : " ^ f a
-             in
-               hyp ^ (if isEmpty tl then " " else ", " ^ go (out tl))
-             end
-    in
-      go (out H)
-    end
+  local
+    open PP
+  in
+    fun prettyHyps f : 'a ctx -> doc =
+      Hyps.foldl
+        (fn (x, a, r) => concat [r, text (Tm.Sym.toString x), text " : ", text (f a), line])
+        empty
 
-  fun toString f =
-    fn H >> catjdg => "{" ^ hypsToString f H ^ "\226\138\162 " ^ f catjdg ^ "}"
-     | (U, G) |> jdg =>
-        "{" ^ ListSpine.pretty (Tm.Sym.toString o #1) "," U ^ "}" ^
-        "[" ^ ListSpine.pretty (Tm.Var.toString o #1) "," G ^ "] | " ^ toString f jdg
+    fun pretty f : 'a jdg -> doc =
+      fn H >> catjdg => concat [prettyHyps f H, text "\226\138\162 ", text (f catjdg)]
+       | (U, G) |> jdg => pretty f jdg
+  end
+
+  fun toString f = PP.toString 80 true o pretty f
 end
-

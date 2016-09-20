@@ -11,8 +11,11 @@ local
   $(LIBS)/sml-typed-abts/basis/basis.mlb
   $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
   $(LIBS)/sml-dependent-lcf/nominal_lcf.mlb
+  $(LIBS)/sml-wpp/wpp.mlb
 
   debug.mlb
+
+  redprl/pretty.sml
 
   redprl/parameter.sml
   redprl/operator.sml
