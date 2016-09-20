@@ -315,7 +315,7 @@ struct
               let
                 val stateStr = LcfModel.Lcf.stateToString state
               in
-                E.warn (pos, "Refinement failed: \n\n" ^ stateStr)
+                E.warn (pos, "Incomplete proof: \n\n" ^ stateStr)
                   *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))
               end)
         end
