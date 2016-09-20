@@ -478,6 +478,23 @@ struct
       end
   end
 
+  structure Match =
+  struct
+    fun MatchOperator alpha jdg =
+      let
+        val MATCH (th, k, tm) = jdg
+
+        val Abt.$ (th', args) = Abt.out tm
+        val true = Abt.O.eq Sym.eq (th, th')
+
+        val (vls, _) = Abt.O.arity th
+        val abs = checkb (List.nth (args, k), List.nth (vls, k))
+      in
+        (T.empty, fn rho =>
+           abs)
+      end
+  end
+
   structure Equality =
   struct
     fun Hyp alpha jdg =
@@ -528,7 +545,7 @@ struct
   fun Lift tac alpha jdg =
     case jdg of
        _ |> _ => Generic.Lift (Lift tac) alpha jdg
-     | _ >> _ => tac alpha jdg
+     | _ => tac alpha jdg
 
   local
     fun matchGoal f alpha jdg =
@@ -566,6 +583,7 @@ struct
           | _ >> CJ.TYPE ty => Type.Intro
           | _ >> CJ.MEM _ => Membership.Intro
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
+          | MATCH _ => Match.MatchOperator
           | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString ShowAbt.toString jdg)])
     in
       val AutoStep = StepJdg

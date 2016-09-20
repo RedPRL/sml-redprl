@@ -33,6 +33,12 @@ struct
   in
     val rec evidenceValence =
       fn H >> catjdg => (([],[]), CJ.synthesis catjdg)
+       | MATCH (th, k, _) =>
+           let
+             val (vls, _) = Tm.O.arity th
+           in
+             List.nth (vls, k)
+           end
        | (U, G) |> jdg =>
            let
              val ((sigmas, taus), tau) = evidenceValence jdg
@@ -54,6 +60,7 @@ struct
 
       val rec judgmentMetactx : judgment -> Tm.metactx =
         fn H >> catjdg => hypsMetactx H <+> CJ.metactx catjdg
+         | MATCH (_, _, tm) => Tm.metactx tm
          | _ |> jdg => judgmentMetactx jdg
     end
 
