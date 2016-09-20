@@ -283,6 +283,7 @@ rawTerm
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
+  | term EQUALS term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term JDG_TYPE (Ast.$$ (O.MONO O.JDG_TYPE, [\ (([],[]), term)]))
   | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
   | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))

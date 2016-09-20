@@ -52,7 +52,7 @@ struct
    (* development calculus terms *)
    | DEV_FUN_INTRO | DEV_PATH_INTRO
 
-   | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_SYNTH
+   | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -165,6 +165,7 @@ struct
      | JDG_MEM => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_TRUE => [[] * [] <> EXP] ->> JDG
      | JDG_TYPE => [[] * [] <> EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
 
   local
@@ -333,6 +334,7 @@ struct
      | JDG_CEQ => "ceq"
      | JDG_MEM => "mem"
      | JDG_TRUE => "true"
+     | JDG_EQ_TYPE => "eq-type"
      | JDG_TYPE => "type"
      | JDG_SYNTH => "synth"
 
