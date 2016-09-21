@@ -69,13 +69,20 @@ Thm funextTest : [
 Thm pathFunextTest : [
   paths({z}. (b:bool) -> bool; lam([b].b); lam([b]. if ([z].bool; b; tt; ff))) true
 ] by [
+  // exhibit a path
   <x> {
     lam b { hyp{b} }
   };
 
-  b <- auto;
-  symmetry;
-  elim{b};
-  head-expand;
+  // discharge a trivial goal
+  [ auto ];
+
+  // demonstrate that both lambdas are endpoints of the path we constructed above
+  lam b {
+    symmetry;
+    elim{b};
+    head-expand
+  };
+
   auto
 ].
