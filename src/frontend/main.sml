@@ -13,9 +13,18 @@ struct
   end
 
   val helpMessage =
-    "A proof assistant for Computational Type Theory\n" ^
-    "\n  ~ Uphold Cubical Thought! ~ \n\n" ^
-    "Usage\n" ^
+    "                                A proof assistant for Computational Type Theory           \n" ^
+    "             `.                                                                           \n" ^
+    "              `--`        %%%%%%%    %%%%%%%%   %%%%%%%    %%%%%%%    %%%%%%%    %%       \n" ^
+    "      `-:::.    -:-       %%    %%   %%         %%    %%   %%    %%   %%    %%   %%       \n" ^
+    "    `-::::.      -:-      %%    %%   %%         %%    %%   %%    %%   %%    %%   %%       \n" ^
+    "    .::-`-::.     ::.     %%%%%%%    %%%%%%     %%    %%   %%%%%%%    %%%%%%%    %%       \n" ^
+    "          `-::.   ::-     %%    %%   %%         %%    %%   %%         %%    %%   %%       \n" ^
+    "            `:::.-::`     %%    %%   %%         %%    %%   %%         %%    %%   %%       \n" ^
+    "     `-:::-...-::::.      %%    %%   %%%%%%%%   %%%%%%%    %%         %%    %%   %%%%%%%% \n" ^
+    "   .::-` .-:::::-:::.                                                                     \n" ^
+    "  .::.            .::.                    ~ Uphold Cubical Thought! ~                     \n" ^
+    "\nUsage\n" ^
     "  redprl <file>...\n" ^
     "  redprl --help\n" ^
     "Options\n" ^
