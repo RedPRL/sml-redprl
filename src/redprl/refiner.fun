@@ -383,6 +383,33 @@ struct
              abtToAbs o Syn.into @@ Syn.ID_ABS (v, p)
            end)
       end
+
+    fun Eq alpha jdg =
+      let
+        val H >> CJ.EQ ((abs0, abs1), ty) = jdg
+        val Syn.ID_TY ((u, au), p0, p1) = Syn.out ty
+        val Syn.ID_ABS (v, m0v) = Syn.out abs0
+        val Syn.ID_ABS (w, m1w) = Syn.out abs1
+
+        val z = alpha 0
+        val az = substSymbol (P.ret z, u) au
+        val m0z = substSymbol (P.ret z, v) m0v
+        val m1z = substSymbol (P.ret z, w) m1w
+
+        val a0 = substSymbol (P.APP P.DIM0, u) au
+        val a1 = substSymbol (P.APP P.DIM1, u) au
+        val m00 = substSymbol (P.APP P.DIM0, v) m0v
+        val m01 = substSymbol (P.APP P.DIM1, v) m0v
+
+        val (goalM, _) = makeGoal @@ ([(z, P.DIM)], []) |> H >> CJ.EQ ((m0z, m1z), az)
+        val (goalM00, _) = makeGoal @@ H >> CJ.EQ ((m00, p0), a0)
+        val (goalM01, _) = makeGoal @@ H >> CJ.EQ ((m01, p1), a1)
+
+        val psi = T.empty >: goalM >: goalM00 >: goalM01
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
   end
 
   structure Generic =
@@ -677,6 +704,7 @@ struct
          | (Syn.BASE, Syn.LOOP _, Syn.S1) => Equality.Symmetry
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
+         | (Syn.ID_ABS _, Syn.ID_ABS _, _) => Path.Eq
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepSynth sign m =
