@@ -17,6 +17,6 @@ struct
       `x => SOME (atom "i am a variable!")
     | _ => NONE
 
-  and unparse m =
-    UP.unparse notation m
+  and toString m =
+    parens (done (UP.unparse notation m))
 end
