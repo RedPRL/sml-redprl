@@ -24,12 +24,13 @@ struct
   fun prettyState (psi, vld) =
     PP.concat
       [prettyGoals psi,
-       PP.text "----------------------------------------------------------",
-       PP.line,
+       PP.newline,
+       PP.rule #"-",
+       PP.newline,
        PP.text "Current Proof Extract:",
-       PP.line,
-       PP.text "----------------------------------------------------------",
-       PP.line, PP.line,
+       PP.newline,
+       PP.rule #"-",
+       PP.newline, PP.newline,
        prettyValidation (psi, vld)]
 
   val stateToString : judgment state -> string =
