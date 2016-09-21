@@ -323,7 +323,6 @@ atomicRawTac
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | IDENT (`` IDENT)
   | LPAREN tactic RPAREN tactic (tactic)
-  | term (term)
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 

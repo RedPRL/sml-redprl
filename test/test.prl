@@ -62,6 +62,7 @@ Thm funextTest : [
     symmetry;
     head-expand
   };
+
   auto
 ].
 
