@@ -11,8 +11,10 @@ is
 
   cmlib.cm
   $libs/sml-cats/cats.cm
+  $libs/sml-unparse/unparse.cm
   $libs/sml-telescopes/telescopes.cm
   $libs/sml-typed-abts/abt.cm
+  $libs/sml-typed-abts/abt-unparser.cm
   $libs/sml-typed-abts/abt-machine.cm
   $libs/sml-typed-abts/basis/basis.cm
   $libs/sml-dependent-lcf/dependent_lcf.cm
@@ -21,12 +23,12 @@ is
 
   debug.cm
 
-  redprl/pretty.sml
-
   redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml
   redprl/syntax.sml
+
+  redprl/pretty.sml
 
   redprl/error.sig
   redprl/error.sml

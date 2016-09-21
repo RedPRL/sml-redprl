@@ -6,16 +6,17 @@ local
 
   $(LIBS)/sml-cats/cats.mlb
   $(LIBS)/sml-telescopes/telescopes.mlb
+  $(LIBS)/sml-unparse/unparse.mlb
   $(LIBS)/sml-typed-abts/abt.mlb
+  $(LIBS)/sml-typed-abts/abt-unparser.mlb
   $(LIBS)/sml-typed-abts/abt-machine.mlb
   $(LIBS)/sml-typed-abts/basis/basis.mlb
   $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
   $(LIBS)/sml-dependent-lcf/nominal_lcf.mlb
   $(LIBS)/sml-wpp/wpp.mlb
 
-  debug.mlb
 
-  redprl/pretty.sml
+  debug.mlb
 
   redprl/parameter.sml
   redprl/operator.sml
@@ -23,6 +24,8 @@ local
   redprl/error.sig
   redprl/error.sml
   redprl/syntax.sml
+
+  redprl/pretty.sml
 
   redprl/categorical_judgment.sig
   redprl/categorical_judgment.sml
