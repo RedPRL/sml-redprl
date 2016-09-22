@@ -212,7 +212,7 @@ struct
         val c0ff = substVar (Syn.into Syn.FF, x) c0x
         val c0m0 = substVar (m0, x) c0x
 
-        val (goalTy, _) = makeGoal @@ ([], [(z, O.EXP)]) |> H >> CJ.EQ_TYPE (c0z, c1z)
+        val (goalTy, _) = makeGoal @@ ([], [(z, O.EXP)]) |> H @> (z, CJ.TRUE @@ Syn.into Syn.BOOL) >> CJ.EQ_TYPE (c0z, c1z)
         val (goalTy', _) = makeGoal @@ H >> CJ.EQ_TYPE (c0m0, c)
         val (goalM, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), Syn.into Syn.BOOL)
         val (goalT, _) = makeGoal @@ H >> CJ.EQ ((t0, t1), c0tt)

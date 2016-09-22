@@ -58,21 +58,7 @@ Def boolEta(#M : exp) : exp = [
 ].
 
 Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
-  let h : [(b:bool) -> paths({x}.bool; b; boolEta(b)) true] = {
-    lam b {
-      if b then {
-        <y> { 'tt }
-      } else {
-        <y> { 'ff }
-      }
-    }
-  } in {
-    <x> {
-      lam b {
-        let p = h {hyp{b}} in { '(,p @ x) }
-      }
-    };
-  };
-
+  // I'm surprised that RedPRL can typecheck this properly! Quite encouraging.
+  '(<x> lam([b]. (if([b].paths({x}.bool; b; boolEta(b)); b; <y> tt; <y> ff) @ x)));
   auto
 ].
