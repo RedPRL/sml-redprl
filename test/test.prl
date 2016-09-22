@@ -53,3 +53,20 @@ Thm apEqTest : [
   auto
 ].
 
+Def boolEta(#M : exp) : exp = [
+  if([a].bool; #M; tt; ff)
+].
+
+Thm pathTest1 : [ (b:bool) -> paths({x}.bool; b; boolEta(b)) true ] by [
+  lam x {
+    if x then {
+      <y> { 'tt }
+    } else {
+      <y> { 'ff }
+    }
+  };
+  auto;
+  symmetry;
+  head-expand;
+  auto
+].
