@@ -70,7 +70,7 @@ struct
 
     fun Elim z alpha jdg =
       let
-        val H >> catjdgz = jdg
+        val H >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
         val Syn.S1 = Syn.out ty
 
@@ -78,41 +78,28 @@ struct
         val loop = Syn.into o Syn.LOOP @@ P.ret u
         val base = Syn.into Syn.BASE
         val Hbase = Hyps.modifyAfter z (CJ.map (substVar (base, z))) H
-        val catjdgbase = CJ.map (substVar (base, z)) catjdgz
+        val cbase = substVar (base, z) cz
 
-        val (goalB, holeB) = makeGoal @@ Hbase >> catjdgbase
-        val (goalL, holeL) = makeGoal @@ ([(u, P.DIM)], []) |> Hyps.modifyAfter z (CJ.map (substVar (loop, z))) H >> CJ.map (substVar (loop, z)) catjdgz
+        val (goalB, holeB) = makeGoal @@ Hbase >> CJ.TRUE cbase
+        val (goalL, holeL) = makeGoal @@ ([(u, P.DIM)], []) |> Hyps.modifyAfter z (CJ.map (substVar (loop, z))) H >> CJ.TRUE (substVar (loop, z) cz)
 
         val b = holeB [][]
         val l0 = holeL [(P.APP P.DIM0, P.DIM)] []
         val l1 = holeL [(P.APP P.DIM1, P.DIM)] []
 
-        val psi =
-          case catjdgbase of
-             CJ.TRUE cbase =>
-             let
-               val (goalCoh0, _) = makeGoal @@ Hbase >> CJ.EQ ((l0, b), cbase)
-               val (goalCoh1, _) = makeGoal @@ Hbase >> CJ.EQ ((l1, b), cbase)
-             in
-               T.empty >: goalB >: goalL >: goalCoh0 >: goalCoh1
-             end
-           | CJ.EQ _ => T.empty >: goalB >: goalL
-           | CJ.EQ_TYPE _ => T.empty >: goalB >: goalL
-           | _ => raise Match
+        val (goalCoh0, _) = makeGoal @@ Hbase >> CJ.EQ ((l0, b), cbase)
+        val (goalCoh1, _) = makeGoal @@ Hbase >> CJ.EQ ((l1, b), cbase)
+
+        val psi = T.empty >: goalB >: goalL >: goalCoh0 >: goalCoh1
       in
         (psi, fn rho =>
-           case catjdgz of
-              CJ.TRUE cz =>
-              let
-                val m = Syn.into @@ Syn.VAR (z, O.EXP)
-                val b = T.lookup rho (#1 goalB) // ([],[])
-                val lu = T.lookup rho (#1 goalL) // ([u],[])
-              in
-                abtToAbs o Syn.into @@ Syn.S1_ELIM ((z, cz), m, (b, (u, lu)))
-              end
-            | CJ.EQ _ => abtToAbs @@ Syn.into Syn.AX
-            | CJ.EQ_TYPE _ => abtToAbs @@ Syn.into Syn.AX
-            | _ => raise Match)
+           let
+             val m = Syn.into @@ Syn.VAR (z, O.EXP)
+             val b = T.lookup rho (#1 goalB) // ([],[])
+             val lu = T.lookup rho (#1 goalL) // ([u],[])
+           in
+             abtToAbs o Syn.into @@ Syn.S1_ELIM ((z, cz), m, (b, (u, lu)))
+           end)
       end
       handle Bind =>
         raise E.error [E.% "Expected circle elimination problem"]
@@ -187,31 +174,26 @@ struct
 
     fun Elim z _ jdg =
       let
-        val H >> catjdgz = jdg
+        val H >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
         val Syn.BOOL = Syn.out ty
 
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val (goalT, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.map (substVar (tt, z)) catjdgz
-        val (goalF, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.map (substVar (ff, z)) catjdgz
+        val (goalT, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.TRUE (substVar (tt, z) cz)
+        val (goalF, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.TRUE (substVar (ff, z) cz)
 
         val psi = T.empty >: goalT >: goalF
       in
         (psi, fn rho =>
-           case catjdgz of
-              CJ.TRUE cz =>
-              let
-                val m = Syn.into @@ Syn.VAR (z, O.EXP)
-                val t = T.lookup rho (#1 goalT) // ([],[])
-                val f = T.lookup rho (#1 goalF) // ([],[])
-              in
-                abtToAbs o Syn.into @@ Syn.IF ((z, cz), m, (t, f))
-              end
-            | CJ.EQ _ => abtToAbs @@ Syn.into Syn.AX
-            | CJ.EQ_TYPE _ => abtToAbs @@ Syn.into Syn.AX
-            | _ => raise Match)
+           let
+             val m = Syn.into @@ Syn.VAR (z, O.EXP)
+             val t = T.lookup rho (#1 goalT) // ([],[])
+             val f = T.lookup rho (#1 goalF) // ([],[])
+           in
+             abtToAbs o Syn.into @@ Syn.IF ((z, cz), m, (t, f))
+           end)
       end
       handle Bind =>
         raise E.error [E.% "Expected bool elimination problem"]
