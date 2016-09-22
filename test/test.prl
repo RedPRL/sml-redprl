@@ -53,37 +53,3 @@ Thm apEqTest : [
   auto
 ].
 
-// Extensionally equivalent functions are *judgmentally* equal in RedPRL.
-Thm funextTest : [
-  lam([b].b) = lam([b]. if ([z].bool; b; tt; ff)) : (b : bool) -> bool
-] by [
-  lam b {
-    elim{b};
-    symmetry;
-    head-expand
-  };
-
-  auto
-].
-
-// And, of course, there are also paths between extensionally equivalent functions.
-Thm pathFunextTest : [
-  paths({z}. (b:bool) -> bool; lam([b].b); lam([b]. if ([z].bool; b; tt; ff))) true
-] by [
-  // exhibit a path
-  <x> {
-    lam b { hyp{b} }
-  };
-
-  // discharge a trivial goal
-  [ auto ];
-
-  // demonstrate that both lambdas are endpoints of the path we constructed above
-  lam b {
-    symmetry;
-    elim{b};
-    head-expand
-  };
-
-  auto
-].
