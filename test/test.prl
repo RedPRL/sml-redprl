@@ -70,3 +70,21 @@ Thm pathTest1 : [ (b:bool) -> paths({x}.bool; b; boolEta(b)) true ] by [
   head-expand;
   auto
 ].
+
+Tac headExpandAll = [
+  head-expand; symmetry; head-expand
+].
+
+Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
+  let h : [(b:bool) -> paths({x}.bool; b; boolEta(b)) true] = {
+    lemma { pathTest1() : exp }
+  } in {
+    <x> {
+      lam b {
+        let z = h {hyp{b}} in { '(,z @ x) }
+      }
+    };
+    auto; headExpandAll(); auto
+  };
+
+].

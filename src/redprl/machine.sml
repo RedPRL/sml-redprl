@@ -119,6 +119,9 @@ struct
       in
         O.MONO O.TAC_REC $$ [([],[x]) \ try (then' (progress t) (check (`x, O.TAC)))]
       end
+
+    fun cut jdg =
+      O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
   end
 
 
@@ -192,7 +195,17 @@ struct
      | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
      | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_CUT `$ _ <: _ => S.VAL
+     | O.MONO (O.RULE_LEMMA (true, tau)) `$ _ <: _ => S.VAL
+     | O.MONO (O.RULE_LEMMA (false, tau)) `$ [_ \ thm] <: env =>
+         S.CUT
+           @@ (O.MONO (O.RULE_LEMMA (false, tau)) `$ [([],[]) \ S.HOLE], thm)
+           <: env
 
+     | O.MONO O.DEV_LET `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
+         S.STEP
+          @@ Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP)] (Tac.fromMtac (Tac.each [tac2,tac1]))
+          <: env
      | O.MONO O.DEV_FUN_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
            @@ Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP)] (Tac.fromMtac (Tac.each [t]))
@@ -287,6 +300,8 @@ struct
   fun cut sign =
     fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
      | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
+     | (O.MONO (O.RULE_LEMMA (_, tau)) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, tau')) `$ [goal, script, evd] <: env) =>
+         O.MONO (O.RULE_LEMMA (true, tau)) $$ [([],[]) \ O.MONO (O.REFINE (true, tau')) $$ [goal, script, evd]] <: env
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>

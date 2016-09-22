@@ -73,7 +73,7 @@ end
  | BY | IN
 
  | TAC_REC | TAC_PROGRESS
- | RULE_ID | RULE_AUTO | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_HYP | RULE_ELIM | RULE_HEAD_EXP
+ | RULE_ID | RULE_AUTO | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_HYP | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA
 
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
@@ -307,11 +307,14 @@ atomicRawTac
   | tactic PIPE tactic %prec PIPE (Ast.$$ (O.MONO O.TAC_ORELSE, [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
   | TAC_REC IDENT IN LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_REC, [\ (([],[IDENT]), tactic)]))
   | TAC_PROGRESS LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_PROGRESS, [\ (([], []), tactic)]))
+  | RULE_LEMMA LBRACKET term COLON sort RBRACKET (Ast.$$ (O.MONO (O.RULE_LEMMA (false, sort)), [\ (([],[]), term)]))
 
   | LAMBDA IDENT LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
   | LANGLE IDENT RANGLE LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([IDENT], []), tactic)]))
   | IF IDENT THEN LBRACKET tactic RBRACKET ELSE LBRACKET tactic RBRACKET
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM IDENT), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
+  | LET IDENT COLON LSQUARE judgment RSQUARE EQUALS LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET
+      (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([IDENT],[]), tactic2)]))
   | LET IDENT WITH IDENT EQUALS IDENT LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT3), [\ (([],[]), tactic1), \ (([IDENT1, IDENT2],[]), tactic2)]))
   | LET IDENT EQUALS IDENT LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET

@@ -13,6 +13,7 @@ struct
    | S1 | BASE | LOOP of param | S1_ELIM of (variable * 'a) * 'a * ('a * (symbol * 'a))
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
    | ID_TY of (symbol * 'a) * 'a * 'a | ID_ABS of symbol * 'a | ID_AP of 'a * param
+   | CUST
 
   local
     open Tm
@@ -36,6 +37,7 @@ struct
        | ID_TY ((u, a), m, n) => O.MONO O.ID_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | ID_ABS (u, m) => O.MONO O.ID_ABS $$ [([u],[]) \ m]
        | ID_AP (m, r) => O.POLY (O.ID_AP r) $$ [([],[]) \ m]
+       | CUST => raise Fail "CUST"
 
     fun out m =
       case Tm.out m of
@@ -55,6 +57,7 @@ struct
        | O.MONO O.ID_TY $ [([u],_) \ a, _ \ m, _ \ n] => ID_TY ((u, a), m, n)
        | O.MONO O.ID_ABS $ [([u],_) \ m] => ID_ABS (u, m)
        | O.POLY (O.ID_AP r) $ [_ \ m] => ID_AP (m, r)
+       | O.POLY (O.CUST _) $ _ => CUST
        | _ => raise E.error [E.% "Syntax view encountered unrecognized term", E.! m]
 
     fun heteroCom (exts, dir) ((u, a), cap, tube) =

@@ -197,6 +197,31 @@ struct
       end
       handle Bind =>
         raise E.error [E.% "Expected bool elimination problem"]
+
+    fun ElimEq alpha jdg =
+      let
+        val H >> CJ.EQ ((if0, if1), c) = jdg
+        val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
+        val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
+
+        val z = alpha 0
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val c0z = substVar (ztm, x) c0x
+        val c1z = substVar (ztm, y) c1y
+        val c0tt = substVar (Syn.into Syn.TT, x) c0x
+        val c0ff = substVar (Syn.into Syn.FF, x) c0x
+        val c0m0 = substVar (m0, x) c0x
+
+        val (goalTy, _) = makeGoal @@ ([], [(z, O.EXP)]) |> H >> CJ.EQ_TYPE (c0z, c1z)
+        val (goalTy', _) = makeGoal @@ H >> CJ.EQ_TYPE (c0m0, c)
+        val (goalM, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), Syn.into Syn.BOOL)
+        val (goalT, _) = makeGoal @@ H >> CJ.EQ ((t0, t1), c0tt)
+        val (goalF, _) = makeGoal @@ H >> CJ.EQ ((f0, f1), c0ff)
+        val psi = T.empty >: goalTy >: goalM >: goalT >: goalF
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
   end
 
   structure DFun =
@@ -388,6 +413,39 @@ struct
         val (goalM01, _) = makeGoal @@ H >> CJ.EQ ((m01, p1), a1)
 
         val psi = T.empty >: goalM >: goalM00 >: goalM01
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun ApEq alpha jdg =
+      let
+        val H >> CJ.EQ ((ap0, ap1), ty) = jdg
+        val Syn.ID_AP (m0, r0) = Syn.out ap0
+        val Syn.ID_AP (m1, r1) = Syn.out ap1
+        val true = P.eq Sym.eq (r0, r1)
+        val (goalSynth, holeSynth) = makeGoal @@ H >> CJ.SYNTH m0
+        val (goalMem, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeSynth [] [])
+        val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.ID_TY, 0, holeSynth [] [])
+        val (goalTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty, holeLine [(r0, P.DIM)] [])
+        val psi = T.empty >: goalSynth >: goalMem >: goalLine >: goalTy
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun ApComputeConst alpha jdg =
+      let
+        val H >> CJ.EQ ((ap, p), a) = jdg
+        val Syn.ID_AP (m, P.APP r) = Syn.out ap
+        val (goalSynth, holeSynth) = makeGoal @@ H >> CJ.SYNTH m
+
+        val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2 | _ => raise Fail "impossible"
+        val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.ID_TY, 0, holeSynth [] [])
+        val (goalEndpoint, holeEndpoint) = makeGoal @@ MATCH (O.MONO O.ID_TY, dimAddr, holeSynth [] [])
+        val (goalTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (a, holeLine [(P.APP r, P.DIM)] [])
+        val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((holeEndpoint [] [], p), a)
+        val psi = T.empty >: goalSynth >: goalLine >: goalEndpoint >: goalTy >: goalEq
       in
         (psi, fn rho =>
            abtToAbs @@ Syn.into Syn.AX)
@@ -601,6 +659,8 @@ struct
         (T.empty, fn rho =>
            abs)
       end
+      handle _ =>
+        raise E.error [E.% "MATCH judgment failed to unify"]
   end
 
   structure Equality =
@@ -650,6 +710,35 @@ struct
       end
   end
 
+  fun Cut catjdg alpha jdg =
+    let
+      val H >> catjdg' = jdg
+      val z = alpha 0
+      val tau = CJ.synthesis catjdg
+      val (goal1, _) = makeGoal @@ ([], [(z, tau)]) |> H @> (z, catjdg) >> catjdg'
+      val (goal2, _) = makeGoal @@ H >> catjdg
+      val psi = T.empty >: goal1 >: goal2
+    in
+      (psi, fn rho =>
+         let
+           val n = T.lookup rho (#1 goal2) // ([], [])
+         in
+           abtToAbs @@ T.lookup rho (#1 goal1) // ([], [n])
+         end)
+    end
+
+
+  fun Lemma thm alpha jdg =
+    let
+      val Abt.$ (O.MONO (O.REFINE (true, _)), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
+      val H >> catjdg = jdg
+      val catjdg' = CJ.fromAbt goal
+      val true = CJ.eq (catjdg, catjdg')
+    in
+      (T.empty, fn rho =>
+        abtToAbs evd)
+    end
+
   fun Lift tac alpha jdg =
     case jdg of
        _ |> _ => Generic.Lift (Lift tac) alpha jdg
@@ -679,6 +768,7 @@ struct
            (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
+         | (Syn.IF _, Syn.IF _, _) => Bool.ElimEq
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
@@ -687,6 +777,8 @@ struct
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.ID_ABS _, Syn.ID_ABS _, _) => Path.Eq
+         | (Syn.ID_AP (_, P.VAR _), Syn.ID_AP (_, P.VAR _), _) => Path.ApEq
+         | (Syn.ID_AP (_, P.APP _), _, _) => Path.ApComputeConst
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepSynth sign m =

@@ -48,9 +48,10 @@ struct
 
    (* primitive rules *)
    | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
+   | RULE_CUT | RULE_LEMMA of bool * sort
 
    (* development calculus terms *)
-   | DEV_FUN_INTRO | DEV_PATH_INTRO
+   | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_LET
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
 
@@ -147,11 +148,14 @@ struct
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
+     | RULE_CUT => [[] * [] <> JDG] ->> TAC
+     | RULE_LEMMA (_, tau) => [[] * [] <> THM tau] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
 
      | DEV_FUN_INTRO => [[HYP] * [] <> TAC] ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
+     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
 
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
      | MTAC_EACH n =>
@@ -311,8 +315,8 @@ struct
      | BASE => "base"
      | S1_ELIM => "s1-elim"
      | AX => "ax"
-     | ID_TY => "Id"
-     | ID_ABS => "path"
+     | ID_TY => "paths"
+     | ID_ABS => "abs"
      | REFINE _ => "refine"
      | EXTRACT _ => "extract"
      | TAC_SEQ _ => "seq"
@@ -325,10 +329,13 @@ struct
      | RULE_SYMMETRY => "symmetry"
      | RULE_WITNESS => "witness"
      | RULE_HEAD_EXP => "head-expand"
+     | RULE_CUT => "cut"
+     | RULE_LEMMA _ => "lemma"
      | RULE_EVAL_GOAL => "eval-goal"
      | RULE_CEQUIV_REFL => "ceq/refl"
      | DEV_PATH_INTRO => "path-intro"
      | DEV_FUN_INTRO => "fun-intro"
+     | DEV_LET => "let"
      | MTAC_ALL => "all"
      | MTAC_EACH n => "each"
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
