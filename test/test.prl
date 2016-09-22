@@ -57,7 +57,37 @@ Def boolEta(#M : exp) : exp = [
   if([a].bool; #M; tt; ff)
 ].
 
+// Let's prove the existence of a path between the identity function on booleans, and the
+// function that takes a boolean to a vacuous if statement.
+//
+// The most fun way to use RedPRL is interactively! We will write our proof in the development
+// calculus. The advantage of this style of proof is that we can leave holes, and interactively figure out
+// what we need to do.
+//
 Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
+  let h : [(b:bool) -> paths({x}.bool; b; boolEta(b)) true] = {
+    lam b {
+      if b then { <y> { 'tt } } else { <y> { 'ff } }
+    }
+  } in {
+    <x> {
+      lam b {
+        let p = h { hyp{b} } in {
+          '(,p @ x)
+        }
+      }
+    }
+  };
+
+  auto
+].
+
+// It turns out that it is just as good to figure out what the witness program for this path is
+// by hand, and then tell RedPRL to try and prove that it does in fact witness this path.
+// This approach has the advantage of being far more concise, but it has the disadvantage of
+// not being interactive: you must know ahead of time the entirety of the program, and
+// cannot take advantage of types in order to synthesize part of it.
+Thm pathTest3 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
   // I'm surprised that RedPRL can typecheck this properly! Quite encouraging.
   '(<x> lam([b]. (if([b].paths({x}.bool; b; boolEta(b)); b; <y> tt; <y> ff) @ x)));
   auto
