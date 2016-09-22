@@ -779,6 +779,8 @@ struct
          | (Syn.ID_ABS _, Syn.ID_ABS _, _) => Path.Eq
          | (Syn.ID_AP (_, P.VAR _), Syn.ID_AP (_, P.VAR _), _) => Path.ApEq
          | (Syn.ID_AP (_, P.APP _), _, _) => Path.ApComputeConst
+         | (Syn.CUST, _, _) => Equality.HeadExpansion sign
+         | (_, Syn.CUST, _) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepSynth sign m =

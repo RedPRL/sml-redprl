@@ -57,34 +57,22 @@ Def boolEta(#M : exp) : exp = [
   if([a].bool; #M; tt; ff)
 ].
 
-Thm pathTest1 : [ (b:bool) -> paths({x}.bool; b; boolEta(b)) true ] by [
-  lam x {
-    if x then {
-      <y> { 'tt }
-    } else {
-      <y> { 'ff }
-    }
-  };
-  auto;
-  symmetry;
-  head-expand;
-  auto
-].
-
-Tac headExpandAll = [
-  head-expand; symmetry; head-expand
-].
-
 Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
   let h : [(b:bool) -> paths({x}.bool; b; boolEta(b)) true] = {
-    lemma { pathTest1() : exp }
+    lam b {
+      if b then {
+        <y> { 'tt }
+      } else {
+        <y> { 'ff }
+      }
+    }
   } in {
     <x> {
       lam b {
-        let z = h {hyp{b}} in { '(,z @ x) }
+        let p = h {hyp{b}} in { '(,p @ x) }
       }
     };
-    auto; headExpandAll(); auto
   };
 
+  auto
 ].
