@@ -84,11 +84,11 @@ Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) 
 
 // It turns out that it is just as good to figure out what the witness program for this path is
 // by hand, and then tell RedPRL to try and prove that it does in fact witness this path.
-// This approach has the advantage of being far more concise, but it has the disadvantage of
+// This approach has the advantage of being far more concise, but it has the disadvantage of 
 // not being interactive: you must know ahead of time the entirety of the program, and
 // cannot take advantage of types in order to synthesize part of it.
 Thm pathTest3 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
   // I'm surprised that RedPRL can typecheck this properly! Quite encouraging.
-  '(<x> lam([b]. (if([b].paths({x}.bool; b; boolEta(b)); b; <y> tt; <y> ff) @ x)));
+  '(<x> lam([b]. if([b].paths({x}.bool; b; boolEta(b)); b; <y> tt; <y> ff) @ x));
   auto
 ].
