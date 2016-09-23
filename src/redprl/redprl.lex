@@ -47,6 +47,7 @@ whitespace = [\ \t];
 "<-"               => (Tokens.LEFT_ARROW (!pos, Coord.addchar 2 o (!pos)));
 "`"                => (Tokens.BACK_TICK (!pos, Coord.nextchar o (!pos)));
 "@"                => (Tokens.AT_SIGN (!pos, Coord.nextchar o (!pos)));
+"||"               => (Tokens.DOUBLE_PIPE (!pos, Coord.addchar 2 o (!pos)));
 "|"                => (Tokens.PIPE (!pos, Coord.nextchar o (!pos)));
 "%"                => (Tokens.PERCENT (!pos, Coord.nextchar o (!pos)));
 

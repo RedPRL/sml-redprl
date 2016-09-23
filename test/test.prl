@@ -1,35 +1,23 @@
 Thm boolTest : [ (x : bool) -> bool true ] by [
-  lam x {
-    if x then { 'tt } else { 'ff }
-  };
-
+  { lam x. if x then 'tt else 'ff };
   auto
 ].
 
 Thm pathTest : [ paths({x}. S1; base; base) true ] by [
-  <x> {
-    'loop{x}
-  };
-
-  auto
+  { <x> 'loop{x} }; auto
 ].
 
-
 Thm funElimTest : [ (f : (x : bool) -> bool) -> bool true ] by [
-  lam f {
-    let x = f {'tt} in {
-      hyp{x}
-    }
-  };
+  { lam f. let x = f {'tt}. hyp{x} };
 
   auto
 ].
 
 Thm s1ElimTest : [ (s : S1) -> S1 true ] by [
-  lam s {
+  { lam s.
     case s of
-       base => {'base}
-     | loop{x} => {'loop{x}}
+       base => 'base
+     | loop{x} => 'loop{x}
   };
 
   auto
@@ -43,11 +31,7 @@ Thm apEqTest : [
   (f : (x : bool) -> bool)
     -> paths({y}. bool; f tt; f tt) true
 ] by [
-  lam f {
-    <y> {
-      '(,f tt)
-    }
-  };
+  { lam f. <y> '(,f tt) };
 
   // Try commenting out the following line, and stepping through the proof with tryStep().
   auto
@@ -65,18 +49,9 @@ Def boolEta(#M : exp) : exp = [
 // what we need to do.
 //
 Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
-  let h : [(b:bool) -> paths({x}.bool; b; boolEta(b)) true] = {
-    lam b {
-      if b then { <y> { 'tt } } else { <y> { 'ff } }
-    }
-  } in {
-    <x> {
-      lam b {
-        let p = h { hyp{b} } in {
-          '(,p @ x)
-        }
-      }
-    }
+  { let h : [(b:bool) -> paths({x}.bool; b; boolEta(b)) true] =
+      lam b. if b then <y> 'tt else <y> 'ff.
+    <x> lam b. let p = h hyp{b}. '(,p @ x)
   };
 
   auto
@@ -84,7 +59,7 @@ Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) 
 
 // It turns out that it is just as good to figure out what the witness program for this path is
 // by hand, and then tell RedPRL to try and prove that it does in fact witness this path.
-// This approach has the advantage of being far more concise, but it has the disadvantage of 
+// This approach has the advantage of being far more concise, but it has the disadvantage of
 // not being interactive: you must know ahead of time the entirety of the program, and
 // cannot take advantage of types in order to synthesize part of it.
 Thm pathTest3 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [

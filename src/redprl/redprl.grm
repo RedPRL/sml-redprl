@@ -58,7 +58,7 @@ end
  | SQUIGGLE
  | SQUIGGLE_ARROW
  | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW
- | BACK_TICK | AT_SIGN | PIPE | PERCENT
+ | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
 
  | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE | S1
  | THEN | ELSE | LET | WITH | CASE | OF
@@ -78,7 +78,7 @@ end
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
 %nonassoc SQUIGGLE
-%right LEFT_ARROW RIGHT_ARROW PIPE
+%right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE
 %left FUN_APP AT_SIGN
 
 
@@ -302,30 +302,29 @@ atomicRawTac
   | RULE_HYP LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_HYP IDENT), []))
   | RULE_ELIM LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_ELIM IDENT), []))
   | APOSTROPHE term (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
-  | APOSTROPHE LBRACKET term RBRACKET (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
-  | tactic PIPE tactic %prec PIPE (Ast.$$ (O.MONO O.TAC_ORELSE, [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
+  | LBRACKET tactic RBRACKET tactic (tactic)
+  | tactic DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Ast.$$ (O.MONO O.TAC_ORELSE, [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
   | TAC_REC IDENT IN LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_REC, [\ (([],[IDENT]), tactic)]))
   | TAC_PROGRESS LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.TAC_PROGRESS, [\ (([], []), tactic)]))
   | RULE_LEMMA LBRACKET term COLON sort RBRACKET (Ast.$$ (O.MONO (O.RULE_LEMMA (false, sort)), [\ (([],[]), term)]))
 
-  | LAMBDA IDENT LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
-  | LANGLE IDENT RANGLE LBRACKET tactic RBRACKET (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([IDENT], []), tactic)]))
-  | IF IDENT THEN LBRACKET tactic RBRACKET ELSE LBRACKET tactic RBRACKET
+  | LAMBDA IDENT DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
+  | LANGLE IDENT RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([IDENT], []), tactic)]))
+  | IF IDENT THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM IDENT), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
-  | LET IDENT COLON LSQUARE judgment RSQUARE EQUALS LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET
+  | LET IDENT COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
       (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([IDENT],[]), tactic2)]))
-  | LET IDENT WITH IDENT EQUALS IDENT LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET
+  | LET IDENT WITH IDENT EQUALS IDENT tactic DOT tactic
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT3), [\ (([],[]), tactic1), \ (([IDENT1, IDENT2],[]), tactic2)]))
-  | LET IDENT EQUALS IDENT LBRACKET tactic RBRACKET IN LBRACKET tactic RBRACKET
+  | LET IDENT EQUALS IDENT tactic DOT tactic
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT2), [\ (([],[]), tactic1), \ (([IDENT1, "_"],[]), tactic2)]))
-  | CASE IDENT OF BASE DOUBLE_RIGHT_ARROW LBRACKET tactic RBRACKET PIPE LOOP LBRACKET IDENT RBRACKET DOUBLE_RIGHT_ARROW LBRACKET tactic RBRACKET
+  | CASE IDENT OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP LBRACKET IDENT RBRACKET DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM IDENT1), [\ (([],[]), tactic1), \(([IDENT2], []), tactic2)]))
 
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | IDENT (`` IDENT)
-  | LPAREN tactic RPAREN tactic (tactic)
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 
