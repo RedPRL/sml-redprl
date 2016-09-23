@@ -23,10 +23,14 @@ struct
       POLY (HYP_REF x) $ [] => SOME (atom @@ ", " ^ ShowVar.toString x)
     | (* A -> B *)
       MONO FUN $ [_ \ a, (_, []) \ b] =>
-        SOME (atom @@ toString a ^ " -> " ^ toString b)
+        SOME (infix' (Right, 3, "->") (unparse a, unparse b))
     | (* (x : A) -> B *)
       MONO DFUN $ [_ \ a, (_, [x]) \ bx] =>
-        SOME (atom @@ "(" ^ ShowVar.toString x ^ " : " ^ toString a ^ ") -> " ^ toString bx)
+        let
+          val left = "(" ^ ShowVar.toString x ^ " : " ^ toString a ^ ")"
+        in
+          SOME (infix' (Right, 3, "->") (atom left, unparse bx))
+        end
     | (* < x > A *)
       MONO ID_ABS $ [(([x], []) \ a)] =>
         SOME (atom @@ "< " ^ ShowVar.toString x  ^ " > " ^ toString a)
@@ -36,11 +40,12 @@ struct
     | (* loop [ p ] *)
       POLY (LOOP p) $ [] =>
         SOME (atom @@ "loop [ " ^ paramToString p ^ " ]")
-    | (* A @ p @ *)
+    | (* A @ p *)
       POLY (ID_AP p) $ [(([],[]) \ a)] =>
-        SOME (atom @@ toString a ^ " @ " ^ (paramToString p) ^ " @")
+        SOME (infix' (Left, 5, "@") (unparse a, atom (paramToString p)))
     | _ => NONE
 
+  and unparse m = UP.unparse notation m
   and toString m =
-      parens (done (UP.unparse notation m))
+      parens (done (unparse m))
 end
