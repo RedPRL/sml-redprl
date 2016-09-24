@@ -118,7 +118,7 @@ struct
              declId @@ text @@ Sym.toString opid,
              text "(", text @@ argsToString Metavar.toString arguments, text ") : ",
              text @@ RedPrlSort.toString sort, text " = ",
-             squares @@ concat [nest 2 @@ concat [line, text @@ ShowAbt.toString definiens], line],
+             squares @@ concat [nest 2 @@ concat [line, text @@ TermPrinter.toString definiens], line],
              text "."]
       in
         concat [src, newline, newline, text "===>", newline, newline, elab]
