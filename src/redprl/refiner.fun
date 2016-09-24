@@ -799,7 +799,7 @@ struct
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
           | MATCH _ => Match.MatchOperator
-          | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString ShowAbt.toString jdg)])
+          | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString TermPrinter.toString jdg)])
     in
       val AutoStep = StepJdg
     end

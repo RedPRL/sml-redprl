@@ -22,10 +22,10 @@ local
   redprl/operator.sml
   redprl/abt.sml
   redprl/error.sig
-  redprl/error.sml
-  redprl/syntax.sml
 
   redprl/pretty.sml
+  redprl/error.sml
+  redprl/syntax.sml
 
   redprl/categorical_judgment.sig
   redprl/categorical_judgment.sml

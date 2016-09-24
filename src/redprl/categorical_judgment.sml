@@ -74,7 +74,7 @@ struct
        | _ => raise InvalidJudgment
   end
 
-  val toString = ShowAbt.toString o toAbt
+  val toString = TermPrinter.toString o toAbt
   val metactx = RedPrlAbt.metactx o toAbt
 
   fun pretty f =

@@ -1,6 +1,6 @@
 structure PP = PrettyPrint (AnsiColors)
 
-structure TermPrinter = 
+structure TermPrinter : SHOW =
 struct
   structure Abt = RedPrlAbt
   structure ShowVar = Abt.Var
@@ -12,37 +12,39 @@ struct
 
   open Abt O Unparse
 
+  type t = abt
+
   fun @@ (f, x) = f x
   infix 0 @@ $ $$ \
 
   val paramToString = P.toString ShowSym.toString
 
-  fun notation m = 
+  fun notation m =
     case Abt.out m of
       (* , x *)
-      POLY (HYP_REF x) $ [] => SOME (atom @@ ", " ^ ShowVar.toString x)
+      POLY (HYP_REF x) $ [] => SOME o atom @@ "," ^ ShowVar.toString x
     | (* A -> B *)
-      MONO FUN $ [_ \ a, (_, []) \ b] =>
-        SOME (infix' (Right, 3, "->") (unparse a, unparse b))
+      MONO FUN $ [_ \ a, _ \ b] =>
+        SOME @@ infix' (Right, 3, "->") (unparse a, unparse b)
     | (* (x : A) -> B *)
       MONO DFUN $ [_ \ a, (_, [x]) \ bx] =>
         let
           val left = "(" ^ ShowVar.toString x ^ " : " ^ toString a ^ ")"
         in
-          SOME (infix' (Right, 3, "->") (atom left, unparse bx))
+          SOME @@ infix' (Right, 3, "->") (atom left, unparse bx)
         end
+    | (* M N *)
+      MONO AP $ [_ \ m, _ \ n] =>
+        SOME @@ adj (unparse m, unparse n)
     | (* <x> A *)
       MONO ID_ABS $ [(([x], []) \ a)] =>
-        SOME (atom @@ "<" ^ ShowVar.toString x  ^ "> " ^ toString a)
-    | (* univ [p] *)
-      POLY (UNIV p) $ [] =>
-        SOME (atom @@ "univ [" ^ paramToString p ^ "]")
-    | (* loop [p] *)
+        SOME o atom @@ "<" ^ ShowVar.toString x  ^ "> " ^ toString a
+    | (* loop[p] *)
       POLY (LOOP p) $ [] =>
-        SOME (atom @@ "loop [" ^ paramToString p ^ "]")
+        SOME o atom @@ "loop[" ^ paramToString p ^ "]"
     | (* A @ p *)
-      POLY (ID_AP p) $ [(([],[]) \ a)] =>
-        SOME (infix' (Left, 5, "@") (unparse a, atom (paramToString p)))
+      POLY (ID_AP p) $ [_ \ a] =>
+        SOME @@ infix' (Left, 5, "@") (unparse a, atom (paramToString p))
     | _ => NONE
 
   and unparse m = UP.unparse notation m

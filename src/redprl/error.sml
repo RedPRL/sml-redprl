@@ -5,7 +5,6 @@ struct
    | ! of 'a
 
   open RedPrlAbt
-  structure ShowAbt = DebugShowAbt (RedPrlAbt)
 
   type term = abt
 
@@ -16,7 +15,7 @@ struct
 
   val fragToString =
     fn % str => str
-     | ! tm => "`" ^ ShowAbt.toString tm ^ "`"
+     | ! tm => "`" ^ TermPrinter.toString tm ^ "`"
 
   val rec format =
     fn E frags => ListSpine.pretty fragToString " " frags

@@ -1,4 +1,6 @@
-functor SequentJudgment (S : SEQUENT where type 'a CJ.Tm.O.Ar.Vl.Sp.t = 'a list) : ABT_JUDGMENT =
+functor SequentJudgment
+  (structure S : SEQUENT where type 'a CJ.Tm.O.Ar.Vl.Sp.t = 'a list
+   structure TermPrinter : SHOW where type t = S.CJ.Tm.abt) : ABT_JUDGMENT =
 struct
   structure CJ = S.CJ
   structure Tm = CJ.Tm
@@ -11,13 +13,12 @@ struct
   local
     open Tm
     infix \
-    structure ShowAbt = PlainShowAbt (Tm)
   in
     fun evidenceToString e =
       case outb e of
-         _ \ m => ShowAbt.toString m
+         _ \ m => TermPrinter.toString m
 
-    val judgmentToString = S.toString ShowAbt.toString
+    val judgmentToString = S.toString TermPrinter.toString
   end
 
   val substEvidence = S.map o Tm.substMetavar
@@ -136,4 +137,4 @@ struct
 end
 
 structure RedPrlSequent = Sequent (RedPrlCategoricalJudgment)
-structure RedPrlJudgment = SequentJudgment (RedPrlSequent)
+structure RedPrlJudgment = SequentJudgment (structure S = RedPrlSequent and TermPrinter = TermPrinter)

@@ -10,7 +10,7 @@ struct
       [PP.text "Goal ",
        PP.text (RedPrlAbt.Metavar.toString x),
        PP.text ".",
-       PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty ShowAbt.toString jdg]),
+       PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
        PP.line]
 
   val prettyGoals : judgment ctx -> PP.doc =
