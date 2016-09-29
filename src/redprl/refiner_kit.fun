@@ -43,6 +43,7 @@ structure Multitacticals = Multitacticals (Lcf)
 functor RefinerKit (Sig : MINI_SIGNATURE) =
 struct
   structure E = RedPrlError and O = RedPrlOpData and T = Lcf.T and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
+  structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = AbtMachineUtil (RedPrlMachine (Sig))
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
   open RedPrlSequent
