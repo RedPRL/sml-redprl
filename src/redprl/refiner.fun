@@ -15,7 +15,7 @@ struct
         val (goal, _) = makeGoal @@ H >> CJ.CEQUIV (Machine.eval sign m, Machine.eval sign n)
         val psi = T.empty >: goal
       in
-        (psi, fn rho => T.lookup rho @@ #1 goal)
+        (psi, fn rho => Env.lookup rho @@ #1 goal)
       end
       handle Bind =>
         raise E.error [E.% "Expected a computational equality sequent"]
@@ -95,8 +95,8 @@ struct
         (psi, fn rho =>
            let
              val m = Syn.into @@ Syn.VAR (z, O.EXP)
-             val b = T.lookup rho (#1 goalB) // ([],[])
-             val lu = T.lookup rho (#1 goalL) // ([u],[])
+             val b = Env.lookup rho (#1 goalB) // ([],[])
+             val lu = Env.lookup rho (#1 goalL) // ([u],[])
            in
              abtToAbs o Syn.into @@ Syn.S1_ELIM ((z, cz), m, (b, (u, lu)))
            end)
@@ -189,8 +189,8 @@ struct
         (psi, fn rho =>
            let
              val m = Syn.into @@ Syn.VAR (z, O.EXP)
-             val t = T.lookup rho (#1 goalT) // ([],[])
-             val f = T.lookup rho (#1 goalF) // ([],[])
+             val t = Env.lookup rho (#1 goalT) // ([],[])
+             val f = Env.lookup rho (#1 goalF) // ([],[])
            in
              abtToAbs o Syn.into @@ Syn.IF ((z, cz), m, (t, f))
            end)
@@ -283,7 +283,7 @@ struct
       in
         (psi, fn rho =>
            let
-             val (_, [x]) \ mx = outb @@ T.lookup rho (#1 goal)
+             val (_, [x]) \ mx = outb @@ Env.lookup rho (#1 goal)
            in
              abtToAbs o Syn.into @@ Syn.LAM (x, mx)
            end)
@@ -314,11 +314,11 @@ struct
       in
         (psi, fn rho =>
           let
-            val m = T.lookup rho (#1 goal1) // ([],[])
+            val m = Env.lookup rho (#1 goal1) // ([],[])
             val aptm = Syn.into @@ Syn.AP (ztm, m)
             val ax = Syn.into Syn.AX
           in
-            abtToAbs @@ T.lookup rho (#1 goal2) // ([], [aptm, ax])
+            abtToAbs @@ Env.lookup rho (#1 goal2) // ([], [aptm, ax])
           end)
       end
 
@@ -385,7 +385,7 @@ struct
       in
         (psi, fn rho =>
            let
-             val ([v],_) \ p = outb @@ T.lookup rho (#1 mainGoal)
+             val ([v],_) \ p = outb @@ Env.lookup rho (#1 mainGoal)
            in
              abtToAbs o Syn.into @@ Syn.ID_ABS (v, p)
            end)
@@ -521,8 +521,8 @@ struct
             checkb ((us' @ us, xs' @ xs) \ m, ((sigmas' @ sigmas, taus' @ taus), tau))
           end
 
-        fun vld' (rho : abs telescope) =
-          lift o vld @@ T.foldl (fn (x, _, r) => T.modify x lower r) rho psi
+        fun vld' rho =
+          lift o vld @@ T.foldl (fn (x, _, r) => #3 @@ Env.operate r x (fn _ => raise Match) lower) rho psi
 
       in
         (psi', vld')
@@ -555,7 +555,7 @@ struct
         val psi = T.empty >: goal
       in
         (psi, fn rho =>
-           T.lookup rho (#1 goal))
+           Env.lookup rho (#1 goal))
       end
       handle Bind =>
         raise E.error [E.% @@ "Expected typehood sequent but got " ^ J.judgmentToString jdg]
@@ -614,7 +614,7 @@ struct
         val psi = T.empty >: goalDFun >: goalDom >: goalCod >: goalN
       in
         (psi, fn rho =>
-           abtToAbs @@ T.lookup rho (#1 goalCod) // ([],[n]))
+           abtToAbs @@ Env.lookup rho (#1 goalCod) // ([],[n]))
       end
 
     fun S1Elim alpha jdg =
@@ -692,7 +692,7 @@ struct
         val psi = T.empty >: goal
       in
         (psi, fn rho =>
-           T.lookup rho (#1 goal))
+           Env.lookup rho (#1 goal))
       end
 
     fun HeadExpansion sign alpha jdg =
@@ -706,7 +706,7 @@ struct
         val psi = T.empty >: goal
       in
         (psi, fn rho =>
-           T.lookup rho (#1 goal))
+           Env.lookup rho (#1 goal))
       end
   end
 
@@ -721,9 +721,9 @@ struct
     in
       (psi, fn rho =>
          let
-           val n = T.lookup rho (#1 goal2) // ([], [])
+           val n = Env.lookup rho (#1 goal2) // ([], [])
          in
-           abtToAbs @@ T.lookup rho (#1 goal1) // ([], [n])
+           abtToAbs @@ Env.lookup rho (#1 goal1) // ([], [n])
          end)
     end
 

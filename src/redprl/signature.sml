@@ -309,7 +309,7 @@ struct
         in
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (subgoals, vld) =>
             if LcfModel.Lcf.T.isEmpty subgoals then
-              E.wrap (pos, fn _ => outb (vld (LcfModel.Lcf.T.empty))) >>= (fn _ \ evd =>
+              E.wrap (pos, fn _ => outb (vld Metavar.Ctx.empty)) >>= (fn _ \ evd =>
                  E.ret (MONO (REFINE (true, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd]))
             else
               let
