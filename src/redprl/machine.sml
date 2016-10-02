@@ -130,10 +130,6 @@ struct
    * of its arguments (i.e. it is a cut)? *)
   fun step sign =
     fn O.MONO O.DFUN `$ _ <: _ => S.VAL
-     | O.MONO O.FUN `$ [_ \ a, _ \ b] <: env =>
-         S.STEP
-           @@ O.MONO O.DFUN $$ [([],[]) \ a, ([],[Var.named "_"]) \ b]
-           <: env
      | O.MONO O.LAM `$ _ <: _ => S.VAL
      | O.MONO O.AP `$ [_ \ m, _ \ n] <: env =>
          S.CUT

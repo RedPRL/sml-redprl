@@ -23,9 +23,6 @@ struct
     case Abt.out m of
       (* , x *)
       POLY (HYP_REF x) $ [] => SOME o atom @@ "," ^ ShowVar.toString x
-    | (* A -> B *)
-      MONO FUN $ [_ \ a, _ \ b] =>
-        SOME @@ infix' (Right, 3, "->") (unparse a, unparse b)
     | (* (x : A) -> B *)
       MONO DFUN $ [_ \ a, (_, [x]) \ bx] =>
         let

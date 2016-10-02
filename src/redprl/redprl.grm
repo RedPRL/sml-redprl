@@ -265,7 +265,6 @@ atomicRawTerm
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA IDENT (Ast.$$ (O.POLY (O.HYP_REF IDENT), []))
   | IDENT (`` IDENT)
-  | term RIGHT_ARROW term (Ast.$$ (O.MONO O.FUN, [\ (([],[]), term1), \ (([],[]), term2)]))
   | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
   | UNIV LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.UNIV param), []))
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))

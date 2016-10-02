@@ -34,7 +34,7 @@ struct
   type psort = RedPrlParamData.param_sort
 
   datatype mono_operator =
-     DFUN | FUN | LAM | AP
+     DFUN | LAM | AP
    | BOOL | TRUE | FALSE | IF
    | S1 | BASE | S1_ELIM
    | AX
@@ -122,7 +122,6 @@ struct
 
   val arityMono =
     fn DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
-     | FUN => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | LAM => [[] * [EXP] <> EXP] ->> EXP
      | AP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | BOOL => [] ->> EXP
@@ -304,7 +303,6 @@ struct
 
   val toStringMono =
     fn DFUN => "dfun"
-     | FUN => "fun"
      | LAM => "lam"
      | AP => "ap"
      | BOOL => "bool"
