@@ -224,6 +224,132 @@ struct
       end
   end
 
+  structure DProd =
+  struct
+    fun EqType alpha jdg =
+      let
+        val H >> CJ.EQ_TYPE (dfun0, dfun1) = jdg
+        val Syn.DFUN (a0, x, b0x) = Syn.out dfun0
+        val Syn.DFUN (a1, y, b1y) = Syn.out dfun1
+
+        val z = alpha 0
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val b0z = substVar (ztm, x) b0x
+        val b1z = substVar (ztm, y) b1y
+
+        val (goal1, _) = makeGoal @@ H >> CJ.EQ_TYPE (a0, a1)
+        val (goal2, _) = makeGoal @@ H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
+        val psi = T.empty >: goal1 >: goal2
+      in
+        (psi, fn rho =>
+          Abt.abtToAbs @@ Syn.into Syn.AX)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected dprod typehood sequent"]
+
+    fun Eq alpha jdg =
+      let
+        val H >> CJ.EQ ((pair0, pair1), dprod) = jdg
+        val Syn.PAIR (m0, n0) = Syn.out pair0
+        val Syn.PAIR (m1, n1) = Syn.out pair1
+        val Syn.DPROD (a, x, bx) = Syn.out dprod
+
+        val z = alpha 0
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val bz = substVar (ztm, x) bx
+
+        val (goal1, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), a)
+        val (goal2, _) = makeGoal @@ H >> CJ.EQ ((n0, n1), substVar (m0, x) bx)
+        val (goalFam, _) = makeGoal @@ ([], [(z, O.EXP)]) |> H @> (z, CJ.TRUE a) >> CJ.TYPE bz
+        val psi = T.empty >: goal1 >: goal2 >: goalFam
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun FstEq alpha jdg =
+      let
+        val H >> CJ.EQ ((fst0, fst1), ty) = jdg
+        val Syn.FST m0 = Syn.out fst0
+        val Syn.FST m1 = Syn.out fst1
+
+        val (goalTy, holeTy) = makeGoal @@ H >> CJ.SYNTH m0
+        val (goalTyA, holeTyA) = makeGoal @@ MATCH (O.MONO O.DPROD, 0, holeTy [] [])
+        val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeTy [] [])
+        val (goalEqTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (holeTyA [] [], ty)
+        val psi = T.empty >: goalTy >: goalTyA >: goalEq >: goalEqTy
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun SndEq alpha jdg =
+      let
+        val H >> CJ.EQ ((snd0, snd1), ty) = jdg
+        val Syn.SND m0 = Syn.out snd0
+        val Syn.SND m1 = Syn.out snd1
+
+        val (goalTy, holeTy) = makeGoal @@ H >> CJ.SYNTH m0
+        val (goalTyB, holeTyB) = makeGoal @@ MATCH (O.MONO O.DPROD, 1, holeTy [] [])
+        val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeTy [] [])
+        val (goalEqTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (holeTyB [] [Syn.into @@ Syn.FST m0], ty)
+        val psi = T.empty >: goalTy >: goalTyB >: goalEq >: goalEqTy
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun True alpha jdg =
+      let
+        val H >> CJ.TRUE dprod = jdg
+        val Syn.DPROD (a, x, bx) = Syn.out dprod
+
+        val z = alpha 0
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val bz = substVar (ztm, x) bx
+
+        val (goal1, hole1) = makeGoal @@ H >> CJ.TRUE a
+        val (goal2, _) = makeGoal @@ H >> CJ.TRUE (substVar (hole1 [] [], x) bx)
+        val (goalFam, _) = makeGoal @@ ([], [(z, O.EXP)]) |> H @> (z, CJ.TRUE a) >> CJ.TYPE bz
+        val psi = T.empty >: goal1 >: goal2 >: goalFam
+      in
+        (psi, fn rho =>
+           abtToAbs o Syn.into @@ Syn.PAIR (Env.lookup rho (#1 goal1) // ([],[]), Env.lookup rho (#1 goal2) // ([],[])))
+      end
+
+    fun Elim z alpha jdg =
+      let
+        val H >> CJ.TRUE cz = jdg
+        val CJ.TRUE dprod = Hyps.lookup H z
+        val Syn.DPROD (a, x, bx) = Syn.out dprod
+
+        val z1 = alpha 0
+        val z2 = alpha 1
+
+        val z1tm = Syn.into @@ Syn.VAR (z1, O.EXP)
+        val z2tm = Syn.into @@ Syn.VAR (z2, O.EXP)
+
+        val pair = Syn.into @@ Syn.PAIR (z1tm, z2tm)
+
+        val (goal, _) =
+          makeGoal
+            @@ ([], [(z1, O.EXP), (z2, O.EXP)])
+            |> Hyps.modifyAfter z (CJ.map (substVar (pair, z))) H
+            >> CJ.TRUE (substVar (pair, z) cz)
+
+        val psi = T.empty >: goal
+      in
+        (psi, fn rho =>
+           let
+             val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+             val fst = Syn.into @@ Syn.FST ztm
+             val snd = Syn.into @@ Syn.SND ztm
+           in
+             abtToAbs @@ Env.lookup rho (#1 goal) // ([], [fst, snd])
+           end)
+      end
+  end
+
   structure DFun =
   struct
     fun EqType alpha jdg =
@@ -293,7 +419,7 @@ struct
 
     fun Elim z alpha jdg =
       let
-        val H >> catjdg = jdg
+        val H >> CJ.TRUE cz = jdg
         val CJ.TRUE dfun = Hyps.lookup H z
         val Syn.DFUN (a, x, bx) = Syn.out dfun
         val (goal1, hole1) = makeGoal @@ H >> CJ.TRUE a
@@ -308,7 +434,7 @@ struct
         val aptm = Syn.into @@ Syn.AP (ztm, hole1 [] [])
         val H' = Hyps.empty @> (u, CJ.TRUE b') @> (v, CJ.EQ ((utm, aptm), b'))
         val H'' = Hyps.interposeAfter H z H'
-        val (goal2, _) = makeGoal @@ ([], [(u, O.EXP), (v, O.TRIV)]) |> H'' >> catjdg
+        val (goal2, _) = makeGoal @@ ([], [(u, O.EXP), (v, O.TRIV)]) |> H'' >> CJ.TRUE cz
 
         val psi = T.empty >: goal1 >: goal2
       in
@@ -658,6 +784,30 @@ struct
              abtToAbs @@ substSymbol (r, u) line
            end)
       end
+
+    fun Fst alpha jdg =
+      let
+        val H >> CJ.SYNTH tm = jdg
+        val Syn.FST m = Syn.out tm
+        val (goalTy, holeTy) = makeGoal @@ H >> CJ.SYNTH m
+        val (goalA, _) = makeGoal @@ MATCH (O.MONO O.DPROD, 0, holeTy [] [])
+        val psi = T.empty >: goalTy >: goalA
+      in
+        (psi, fn rho =>
+           Env.lookup rho @@ #1 goalA)
+      end
+
+    fun Snd alpha jdg =
+      let
+        val H >> CJ.SYNTH tm = jdg
+        val Syn.SND m = Syn.out tm
+        val (goalTy, holeTy) = makeGoal @@ H >> CJ.SYNTH m
+        val (goalB, _) = makeGoal @@ MATCH (O.MONO O.DPROD, 1, holeTy [] [])
+        val psi = T.empty >: goalTy >: goalB
+      in
+        (psi, fn rho =>
+          abtToAbs @@ Env.lookup rho (#1 goalB) // ([], [Syn.into @@ Syn.FST m]))
+      end
   end
 
   structure Match =
@@ -768,6 +918,7 @@ struct
       fun StepTrue sign ty =
         case Syn.out ty of
            Syn.DFUN _ => DFun.True
+         | Syn.DPROD _ => DProd.True
          | Syn.ID_TY _ => Path.True
          | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
 
@@ -775,10 +926,16 @@ struct
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Bool.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
+         | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
          | (Syn.ID_TY _, Syn.ID_TY _) => Path.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
+      (* TODO: We need to branch on the following conditions:
+       *    1. If the equands are canonical, use canonical equality rules
+       *    2. If the equands are neutral, use structural equality rules
+       *    3. If the equands are redexes, then use head expansion
+       *)
       fun StepEq sign ((m, n), ty) =
         case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
@@ -792,6 +949,8 @@ struct
          | (Syn.BASE, Syn.LOOP _, Syn.S1) => Equality.Symmetry
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
+         | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
+         | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
          | (Syn.ID_ABS _, Syn.ID_ABS _, _) => Path.Eq
          | (Syn.ID_AP (_, P.VAR _), Syn.ID_AP (_, P.VAR _), _) => Path.ApEq
          | (Syn.ID_AP (_, P.APP _), _, _) => Path.ApComputeConst
@@ -827,6 +986,7 @@ struct
            Syn.BOOL => Bool.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
+         | Syn.DPROD _ => DProd.Elim
          | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
 
       fun StepJdg sign z alpha jdg =

@@ -35,6 +35,7 @@ struct
 
   datatype mono_operator =
      DFUN | LAM | AP
+   | DPROD | PAIR | FST | SND
    | BOOL | TRUE | FALSE | IF
    | S1 | BASE | S1_ELIM
    | AX
@@ -51,7 +52,8 @@ struct
    | RULE_CUT | RULE_LEMMA of bool * sort
 
    (* development calculus terms *)
-   | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_LET
+   | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_DPROD_INTRO
+   | DEV_LET
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
 
@@ -77,6 +79,7 @@ struct
    | TAG_BOOL
    | TAG_S1
    | TAG_DFUN
+   | TAG_DPROD
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a extents = 'a P.term list
@@ -95,6 +98,7 @@ struct
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
+   | DEV_DPROD_ELIM of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -124,6 +128,10 @@ struct
     fn DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
      | LAM => [[] * [EXP] <> EXP] ->> EXP
      | AP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
+     | PAIR => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | FST => [[] * [] <> EXP] ->> EXP
+     | SND => [[] * [] <> EXP] ->> EXP
      | BOOL => [] ->> EXP
      | TRUE => [] ->> EXP
      | FALSE => [] ->> EXP
@@ -154,6 +162,7 @@ struct
 
      | DEV_FUN_INTRO => [[HYP] * [] <> TAC] ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
+     | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
      | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
 
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
@@ -178,6 +187,7 @@ struct
        | TAG_BOOL => []
        | TAG_S1 => []
        | TAG_DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP]
+       | TAG_DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP]
 
     fun arityHcom (tag, extents, dir) =
       let
@@ -214,6 +224,7 @@ struct
        | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
+       | DEV_DPROD_ELIM a => [[HYP,HYP] * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -255,6 +266,7 @@ struct
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_DFUN_ELIM a => [(a, HYP)]
+       | DEV_DPROD_ELIM a => [(a, HYP)]
   end
 
   val support =
@@ -293,6 +305,8 @@ struct
            f (a, b)
        | (DEV_DFUN_ELIM a, DEV_DFUN_ELIM b) =>
            f (a, b)
+       | (DEV_DPROD_ELIM a, DEV_DPROD_ELIM b) =>
+           f (a, b)
        | _ => false
   end
 
@@ -305,6 +319,10 @@ struct
     fn DFUN => "dfun"
      | LAM => "lam"
      | AP => "ap"
+     | DPROD => "dprod"
+     | PAIR => "pair"
+     | FST => "fst"
+     | SND => "snd"
      | BOOL => "bool"
      | TRUE => "tt"
      | FALSE => "ff"
@@ -333,6 +351,7 @@ struct
      | RULE_CEQUIV_REFL => "ceq/refl"
      | DEV_PATH_INTRO => "path-intro"
      | DEV_FUN_INTRO => "fun-intro"
+     | DEV_DPROD_INTRO => "dprod-intro"
      | DEV_LET => "let"
      | MTAC_ALL => "all"
      | MTAC_EACH n => "each"
@@ -360,6 +379,7 @@ struct
        | TAG_BOOL => "/bool"
        | TAG_S1 => "/S1"
        | TAG_DFUN => "/dfun"
+       | TAG_DPROD => "/dprod"
   in
     fun toStringPoly f =
       fn LOOP r => "loop[" ^ P.toString f r ^ "]"
@@ -387,6 +407,7 @@ struct
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
+       | DEV_DPROD_ELIM a => "dprod-elim{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -432,6 +453,7 @@ struct
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym f a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym f a)
+       | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym f a)
   end
 
   fun map f =

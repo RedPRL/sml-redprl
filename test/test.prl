@@ -67,3 +67,10 @@ Thm pathTest3 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) 
   '(<x> lam([b]. if([b].paths({x}.bool; b; boolEta(b)); b; <y> tt; <y> ff) @ x));
   auto
 ].
+
+Thm pairTest : [ (a : S1) * paths({x}. S1; a; base) true ] by [
+  < {'base}
+  , <x> 'loop{x}
+  >;
+  auto
+].
