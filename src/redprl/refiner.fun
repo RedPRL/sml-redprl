@@ -642,6 +642,22 @@ struct
         (psi, fn rho =>
            abtToAbs cm)
       end
+
+    fun PathAp alpha jdg =
+      let
+        val H >> CJ.SYNTH tm = jdg
+        val Syn.ID_AP (m, r) = Syn.out tm
+        val (goalPathTy, holePathTy) = makeGoal @@ H >> CJ.SYNTH m
+        val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.ID_TY, 0, holePathTy [] [])
+        val psi = T.empty >: goalPathTy >: goalLine
+      in
+        (psi, fn rho =>
+           let
+             val ([u], _) \ line = outb @@ Env.lookup rho (#1 goalLine)
+           in
+             abtToAbs @@ substSymbol (r, u) line
+           end)
+      end
   end
 
   structure Match =
@@ -789,6 +805,7 @@ struct
          | Syn.AP _ => Synth.Ap
          | Syn.S1_ELIM _ => Synth.S1Elim
          | Syn.IF _ => Synth.If
+         | Syn.ID_AP _ => Synth.PathAp
          | _ => raise E.error [E.% "Could not find suitable type synthesis rule for", E.! m]
 
       fun StepJdg sign = matchGoal
