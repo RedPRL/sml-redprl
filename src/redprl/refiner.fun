@@ -931,31 +931,38 @@ struct
          | (Syn.S1, Syn.S1) => S1.EqType
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
-      (* TODO: We need to branch on the following conditions:
-       *    1. If the equands are canonical, use canonical equality rules
-       *    2. If the equands are neutral, use structural equality rules
-       *    3. If the equands are redexes, then use head expansion
-       *)
-      fun StepEq sign ((m, n), ty) =
+      (* equality of canonical forms *)
+      fun StepEqVal ((m, n), ty) =
         case (Syn.out m, Syn.out n, Syn.out ty) of
-           (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
-         | (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
+           (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
-         | (Syn.IF _, Syn.IF _, _) => Bool.ElimEq
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
-         | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
-         | (Syn.LOOP _, Syn.BASE, Syn.S1) => Equality.HeadExpansion sign
-         | (Syn.BASE, Syn.LOOP _, Syn.S1) => Equality.Symmetry
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
+         | (Syn.ID_ABS _, Syn.ID_ABS _, _) => Path.Eq
+         | _ => raise E.error [E.% "Could not find value equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+
+      (* equality for neutrals: variables and elimination forms;
+       * this includes structural equality and eta rules *)
+      fun StepEqNeu ((m, n), ty) =
+        case (Syn.out m, Syn.out n, Syn.out ty) of
+           (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
+         | (Syn.IF _, Syn.IF _, _) => Bool.ElimEq
+         | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
          | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
-         | (Syn.ID_ABS _, Syn.ID_ABS _, _) => Path.Eq
          | (Syn.ID_AP (_, P.VAR _), Syn.ID_AP (_, P.VAR _), _) => Path.ApEq
          | (Syn.ID_AP (_, P.APP _), _, _) => Path.ApComputeConst
-         | (Syn.CUST, _, _) => Equality.HeadExpansion sign
-         | (_, Syn.CUST, _) => Equality.Symmetry
+         | (_, Syn.ID_AP (_, P.APP _), _) => Equality.Symmetry
+         | _ => raise E.error [E.% "Could not find neutral equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+
+      fun StepEq sign ((m, n), ty) =
+        case (Machine.canonicity sign m, Machine.canonicity sign n) of
+           (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
+         | (Machine.NEUTRAL, Machine.NEUTRAL) => StepEqNeu ((m, n), ty)
+         | (Machine.REDEX, _) => Equality.HeadExpansion sign
+         | (_, Machine.REDEX) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepSynth sign m =
