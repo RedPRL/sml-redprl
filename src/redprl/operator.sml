@@ -78,6 +78,7 @@ struct
    | TAG_BOOL
    | TAG_S1
    | TAG_DFUN
+   | TAG_DPROD
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a extents = 'a P.term list
@@ -183,6 +184,7 @@ struct
        | TAG_BOOL => []
        | TAG_S1 => []
        | TAG_DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP]
+       | TAG_DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP]
 
     fun arityHcom (tag, extents, dir) =
       let
@@ -369,6 +371,7 @@ struct
        | TAG_BOOL => "/bool"
        | TAG_S1 => "/S1"
        | TAG_DFUN => "/dfun"
+       | TAG_DPROD => "/dprod"
   in
     fun toStringPoly f =
       fn LOOP r => "loop[" ^ P.toString f r ^ "]"

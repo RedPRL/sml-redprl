@@ -12,6 +12,7 @@ struct
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    | S1 | BASE | LOOP of param | S1_ELIM of (variable * 'a) * 'a * ('a * (symbol * 'a))
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
+   | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    | ID_TY of (symbol * 'a) * 'a * 'a | ID_ABS of symbol * 'a | ID_AP of 'a * param
    | CUST
 
@@ -34,6 +35,10 @@ struct
        | DFUN (a, x, bx) => O.MONO O.DFUN $$ [([],[]) \ a, ([],[x]) \ bx]
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
        | AP (m, n) => O.MONO O.AP $$ [([],[]) \ m, ([],[]) \ n]
+       | DPROD (a, x, bx) => O.MONO O.DPROD $$ [([],[]) \ a, ([],[x]) \ bx]
+       | PAIR (m, n) => O.MONO O.PAIR $$ [([],[]) \ m, ([],[]) \ n]
+       | FST m => O.MONO O.FST $$ [([],[]) \ m]
+       | SND m => O.MONO O.SND $$ [([],[]) \ m]
        | ID_TY ((u, a), m, n) => O.MONO O.ID_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | ID_ABS (u, m) => O.MONO O.ID_ABS $$ [([u],[]) \ m]
        | ID_AP (m, r) => O.POLY (O.ID_AP r) $$ [([],[]) \ m]
@@ -54,6 +59,10 @@ struct
        | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] => DFUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
        | O.MONO O.AP $ [_ \ m, _ \ n] => AP (m, n)
+       | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] => DPROD (a, x, bx)
+       | O.MONO O.PAIR $ [_ \ m, _ \ n] => PAIR (m, n)
+       | O.MONO O.FST $ [_ \ m] => FST m
+       | O.MONO O.SND $ [_ \ m] => SND m
        | O.MONO O.ID_TY $ [([u],_) \ a, _ \ m, _ \ n] => ID_TY ((u, a), m, n)
        | O.MONO O.ID_ABS $ [([u],_) \ m] => ID_ABS (u, m)
        | O.POLY (O.ID_AP r) $ [_ \ m] => ID_AP (m, r)
