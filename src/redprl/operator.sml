@@ -98,6 +98,7 @@ struct
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
+   | DEV_DPROD_ELIM of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -223,6 +224,7 @@ struct
        | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
+       | DEV_DPROD_ELIM a => [[HYP,HYP] * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -264,6 +266,7 @@ struct
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_DFUN_ELIM a => [(a, HYP)]
+       | DEV_DPROD_ELIM a => [(a, HYP)]
   end
 
   val support =
@@ -301,6 +304,8 @@ struct
        | (DEV_S1_ELIM a, DEV_S1_ELIM b) =>
            f (a, b)
        | (DEV_DFUN_ELIM a, DEV_DFUN_ELIM b) =>
+           f (a, b)
+       | (DEV_DPROD_ELIM a, DEV_DPROD_ELIM b) =>
            f (a, b)
        | _ => false
   end
@@ -402,6 +407,7 @@ struct
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
+       | DEV_DPROD_ELIM a => "dprod-elim{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -447,6 +453,7 @@ struct
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym f a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym f a)
+       | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym f a)
   end
 
   fun map f =

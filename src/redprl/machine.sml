@@ -238,6 +238,11 @@ struct
            @@ Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (p, P.HYP)] (Tac.fromMtac (Tac.each [t1,t2]))
            <: env
 
+     | O.POLY (O.DEV_DPROD_ELIM z) `$ [([x,y], _) \ t] <: env =>
+         S.STEP
+           @@ Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (y, P.HYP)] (Tac.fromMtac (Tac.each [t]))
+           <: env
+
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_EACH n) `$ _ <: _ => S.VAL
      | O.MONO (O.MTAC_FOCUS i) `$ _ <: _ => S.VAL

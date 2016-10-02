@@ -324,6 +324,8 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT3), [\ (([],[]), tactic1), \ (([IDENT1, IDENT2],[]), tactic2)]))
   | LET IDENT EQUALS IDENT tactic DOT tactic
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT2), [\ (([],[]), tactic1), \ (([IDENT1, "_"],[]), tactic2)]))
+  | LET LANGLE IDENT COMMA IDENT RANGLE EQUALS IDENT DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_DPROD_ELIM IDENT3), [\ (([IDENT1, IDENT2],[]), tactic)]))
   | CASE IDENT OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP LBRACKET IDENT RBRACKET DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM IDENT1), [\ (([],[]), tactic1), \(([IDENT2], []), tactic2)]))
 
