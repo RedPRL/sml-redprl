@@ -52,7 +52,8 @@ struct
    | RULE_CUT | RULE_LEMMA of bool * sort
 
    (* development calculus terms *)
-   | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_LET
+   | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_DPROD_INTRO
+   | DEV_LET
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
 
@@ -160,6 +161,7 @@ struct
 
      | DEV_FUN_INTRO => [[HYP] * [] <> TAC] ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
+     | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
      | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
 
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
@@ -344,6 +346,7 @@ struct
      | RULE_CEQUIV_REFL => "ceq/refl"
      | DEV_PATH_INTRO => "path-intro"
      | DEV_FUN_INTRO => "fun-intro"
+     | DEV_DPROD_INTRO => "dprod-intro"
      | DEV_LET => "let"
      | MTAC_ALL => "all"
      | MTAC_EACH n => "each"

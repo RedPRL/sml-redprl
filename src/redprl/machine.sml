@@ -217,6 +217,10 @@ struct
          S.STEP
            @@ Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP)] (Tac.fromMtac (Tac.each [t]))
            <: env
+     | O.MONO O.DEV_DPROD_INTRO `$ [_ \ t1, _ \ t2] <: env =>
+         S.STEP
+           @@ Tac.seq (Tac.all Tac.autoStep) [] (Tac.fromMtac (Tac.each [t1, t2]))
+           <: env
      | O.MONO O.DEV_PATH_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
            @@ Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.fromMtac (Tac.each [t]))

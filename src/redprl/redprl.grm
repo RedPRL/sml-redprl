@@ -315,6 +315,7 @@ atomicRawTac
 
   | LAMBDA IDENT DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
   | LANGLE IDENT RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([IDENT], []), tactic)]))
+  | LANGLE tactic COMMA tactic RANGLE (Ast.$$ (O.MONO O.DEV_DPROD_INTRO, [\ (([], []), tactic1), \ (([],[]), tactic2)]))
   | IF IDENT THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM IDENT), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
   | LET IDENT COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
