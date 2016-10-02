@@ -59,8 +59,9 @@ end
  | SQUIGGLE_ARROW
  | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW
  | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
+ | TIMES
 
- | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE | S1
+ | HCOM | COE | UNIV | BOOL | TT | FF | IF | PATHS | LOOP | BASE | S1 | FST | SND
  | THEN | ELSE | LET | WITH | CASE | OF
 
  | FUN_APP
@@ -246,6 +247,8 @@ operator
   | IDENT customOpParams (O.POLY (O.CUST (IDENT, customOpParams, NONE)))
   | IF (O.MONO O.IF)
   | PATHS (O.MONO O.ID_TY)
+  | FST (O.MONO O.FST)
+  | SND (O.MONO O.SND)
 
 customOpParams
   : LBRACKET params RBRACKET (List.map (fn x => (x, NONE)) params)
@@ -266,6 +269,8 @@ atomicRawTerm
   | COMMA IDENT (Ast.$$ (O.POLY (O.HYP_REF IDENT), []))
   | IDENT (`` IDENT)
   | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
+  | LPAREN IDENT COLON term RPAREN TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
+  | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
   | UNIV LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.UNIV param), []))
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
   | TT (Ast.$$ (O.MONO O.TRUE, []))

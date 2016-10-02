@@ -46,6 +46,7 @@ whitespace = [\ \t];
 "=>"               => (Tokens.DOUBLE_RIGHT_ARROW (!pos, Coord.addchar 2 o (!pos)));
 "<-"               => (Tokens.LEFT_ARROW (!pos, Coord.addchar 2 o (!pos)));
 "`"                => (Tokens.BACK_TICK (!pos, Coord.nextchar o (!pos)));
+"*"                => (Tokens.TIMES (!pos, Coord.nextchar o (!pos)));
 "@"                => (Tokens.AT_SIGN (!pos, Coord.nextchar o (!pos)));
 "||"               => (Tokens.DOUBLE_PIPE (!pos, Coord.addchar 2 o (!pos)));
 "|"                => (Tokens.PIPE (!pos, Coord.nextchar o (!pos)));
@@ -63,6 +64,8 @@ whitespace = [\ \t];
 "univ"             => (Tokens.UNIV (!pos, Coord.addchar 4 o (!pos)));
 "loop"             => (Tokens.LOOP (!pos, Coord.addchar (size yytext) o (!pos)));
 "base"             => (Tokens.BASE (!pos, Coord.addchar (size yytext) o (!pos)));
+"fst"              => (Tokens.FST (!pos, Coord.addchar (size yytext) o (!pos)));
+"snd"              => (Tokens.SND (!pos, Coord.addchar (size yytext) o (!pos)));
 
 "then"             => (Tokens.THEN (!pos, Coord.addchar (size yytext) o (!pos)));
 "else"             => (Tokens.ELSE (!pos, Coord.addchar (size yytext) o (!pos)));
