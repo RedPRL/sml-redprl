@@ -35,6 +35,7 @@ struct
 
   datatype mono_operator =
      DFUN | LAM | AP
+   | DPROD | PAIR | FST | SND
    | BOOL | TRUE | FALSE | IF
    | S1 | BASE | S1_ELIM
    | AX
@@ -124,6 +125,10 @@ struct
     fn DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
      | LAM => [[] * [EXP] <> EXP] ->> EXP
      | AP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
+     | PAIR => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | FST => [[] * [] <> EXP] ->> EXP
+     | SND => [[] * [] <> EXP] ->> EXP
      | BOOL => [] ->> EXP
      | TRUE => [] ->> EXP
      | FALSE => [] ->> EXP
@@ -305,6 +310,10 @@ struct
     fn DFUN => "dfun"
      | LAM => "lam"
      | AP => "ap"
+     | DPROD => "dprod"
+     | PAIR => "pair"
+     | FST => "fst"
+     | SND => "snd"
      | BOOL => "bool"
      | TRUE => "tt"
      | FALSE => "ff"

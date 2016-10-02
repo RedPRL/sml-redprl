@@ -136,6 +136,17 @@ struct
            @@ (O.MONO O.AP `$ [([],[]) \ S.HOLE, ([],[]) \ S.% n], m)
            <: env
 
+     | O.MONO O.DPROD `$ _ <: _ => S.VAL
+     | O.MONO O.PAIR `$ _ <: _ => S.VAL
+     | O.MONO O.FST `$ [_ \ m] <: env =>
+         S.CUT
+          @@ (O.MONO O.FST `$ [([],[]) \ S.HOLE], m)
+          <: env
+     | O.MONO O.SND `$ [_ \ m] <: env =>
+         S.CUT
+          @@ (O.MONO O.SND `$ [([],[]) \ S.HOLE], m)
+          <: env
+
      | O.MONO O.BOOL `$ _ <: _ => S.VAL
      | O.MONO O.TRUE `$ _ <: _ => S.VAL
      | O.MONO O.FALSE `$ _ <: _ => S.VAL
@@ -295,6 +306,9 @@ struct
    * any time you return [CUT] in the [step] judgment, you should add a corresponding rule to [cut]. *)
   fun cut sign =
     fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
+     | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => m <: env
+     | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => n <: env
+
      | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
      | (O.MONO (O.RULE_LEMMA (_, tau)) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, tau')) `$ [goal, script, evd] <: env) =>
          O.MONO (O.RULE_LEMMA (true, tau)) $$ [([],[]) \ O.MONO (O.REFINE (true, tau')) $$ [goal, script, evd]] <: env
