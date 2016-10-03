@@ -284,6 +284,21 @@ struct
       handle Bind =>
         raise E.error [E.% "Expected strict bool elimination problem"]
 
+    fun ElimEq alpha jdg =
+      let
+        val H >> CJ.EQ ((if0, if1), c) = jdg
+        val Syn.S_IF (m0, (t0, f0)) = Syn.out if0
+        val Syn.S_IF (m1, (t1, f1)) = Syn.out if1
+
+        val (goalM, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), Syn.into Syn.S_BOOL)
+        val (goalT, _) = makeGoal @@ H >> CJ.EQ ((t0, t1), c)
+        val (goalF, _) = makeGoal @@ H >> CJ.EQ ((f0, f1), c)
+        val psi = T.empty >: goalM >: goalT >: goalF
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
     fun EqElim z _ jdg =
       let
         val H >> catjdg = jdg
@@ -1085,6 +1100,7 @@ struct
         case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.IF _, Syn.IF _, _) => Bool.ElimEq
+         | (Syn.S_IF _, Syn.S_IF _, _) => StrictBool.ElimEq
          | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
