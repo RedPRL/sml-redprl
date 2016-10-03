@@ -224,6 +224,89 @@ struct
       end
   end
 
+  structure StrictBool =
+  struct
+    fun EqType _ jdg =
+      let
+        val H >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.S_BOOL = Syn.out a
+        val Syn.S_BOOL = Syn.out b
+      in
+        (T.empty, fn rho =>
+          Abt.abtToAbs @@ Syn.into Syn.AX)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected typehood sequent"]
+
+    fun EqTT _ jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.S_BOOL = Syn.out ty
+        val Syn.TT = Syn.out m
+        val Syn.TT = Syn.out n
+      in
+        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun EqFF _ jdg =
+      let
+        val H >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.S_BOOL = Syn.out ty
+        val Syn.FF = Syn.out m
+        val Syn.FF = Syn.out n
+      in
+        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+      end
+
+    fun Elim z _ jdg =
+      let
+        val H >> CJ.TRUE cz = jdg
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.S_BOOL = Syn.out ty
+
+        val tt = Syn.into Syn.TT
+        val ff = Syn.into Syn.FF
+
+        val (goalT, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.TRUE (substVar (tt, z) cz)
+        val (goalF, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.TRUE (substVar (ff, z) cz)
+
+        val psi = T.empty >: goalT >: goalF
+      in
+        (psi, fn rho =>
+           let
+             val m = Syn.into @@ Syn.VAR (z, O.EXP)
+             val t = Env.lookup rho (#1 goalT) // ([],[])
+             val f = Env.lookup rho (#1 goalF) // ([],[])
+           in
+             abtToAbs o Syn.into @@ Syn.S_IF (m, (t, f))
+           end)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected strict bool elimination problem"]
+
+    fun EqElim z _ jdg =
+      let
+        val H >> catjdg = jdg
+        val CJ.EQ ((m0z, m1z), cz) = catjdg
+
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.S_BOOL = Syn.out ty
+
+        val tt = Syn.into Syn.TT
+        val ff = Syn.into Syn.FF
+
+        val (goalT, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.map (substVar (tt, z)) catjdg
+        val (goalF, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.map (substVar (ff, z)) catjdg
+
+        val psi = T.empty >: goalT >: goalF
+      in
+        (psi, fn rho =>
+            abtToAbs @@ Syn.into Syn.AX)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected strict bool elimination problem"]
+  end
+
   structure DProd =
   struct
     fun EqType alpha jdg =
@@ -973,6 +1056,7 @@ struct
       fun StepEqType sign (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Bool.EqType
+         | (Syn.S_BOOL, Syn.S_BOOL) => StrictBool.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
          | (Syn.ID_TY _, Syn.ID_TY _) => Path.EqType
@@ -984,6 +1068,8 @@ struct
         case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
+         | (Syn.TT, Syn.TT, Syn.S_BOOL) => StrictBool.EqTT
+         | (Syn.FF, Syn.FF, Syn.S_BOOL) => StrictBool.EqFF
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
@@ -1049,18 +1135,25 @@ struct
       fun StepTrue ty =
         case Syn.out ty of
            Syn.BOOL => Bool.Elim
+         | Syn.S_BOOL => StrictBool.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
          | Syn.DPROD _ => DProd.Elim
          | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
 
+      fun StepEq ty =
+        case Syn.out ty of
+           Syn.S_BOOL => StrictBool.EqElim
+         | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
+
       fun StepJdg sign z alpha jdg =
         let
-          val H >> _ = jdg
-          val catjdg = lookupHyp H z
+          val H >> catjdg = jdg
+          val CJ.TRUE hyp = lookupHyp H z
         in
           case catjdg of
-             CJ.TRUE ty => StepTrue ty z alpha jdg
+             CJ.TRUE _ => StepTrue hyp z alpha jdg
+           | CJ.EQ _ => StepEq hyp z alpha jdg
            | _ => raise E.error [E.% ("Could not find suitable elimination rule for " ^ CJ.toString catjdg)]
         end
     in
