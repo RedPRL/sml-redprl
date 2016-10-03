@@ -187,7 +187,7 @@ struct
                  in
                    O.POLY (O.CUST (opid, ps', SOME ar))
                  end
-             | NONE => raise Fail "Encountered undefined custom operator")
+             | NONE => raise Fail ("Encountered undefined custom operator: " ^ opid))
          | th => th
 
       fun processTerm' sign m =
@@ -211,7 +211,7 @@ struct
     structure Refiner = NominalLcfSemantics (LcfModel)
 
     fun elabDeclArguments args =
-      List.foldl
+      List.foldr
         (fn ((x, vl), (args', mctx)) =>
           let
             val x' = Metavar.named x
