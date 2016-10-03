@@ -329,12 +329,16 @@ struct
         val z1tm = Syn.into @@ Syn.VAR (z1, O.EXP)
         val z2tm = Syn.into @@ Syn.VAR (z2, O.EXP)
 
+        val bz1 = substVar (z1tm, x) bx
         val pair = Syn.into @@ Syn.PAIR (z1tm, z2tm)
+
+        val H' = Hyps.empty @> (z1, CJ.TRUE a) @> (z2, CJ.TRUE bz1)
+        val H'' = Hyps.interposeAfter H z H'
 
         val (goal, _) =
           makeGoal
             @@ ([], [(z1, O.EXP), (z2, O.EXP)])
-            |> Hyps.modifyAfter z (CJ.map (substVar (pair, z))) H
+            |> Hyps.modifyAfter z (CJ.map (substVar (pair, z))) H''
             >> CJ.TRUE (substVar (pair, z) cz)
 
         val psi = T.empty >: goal
