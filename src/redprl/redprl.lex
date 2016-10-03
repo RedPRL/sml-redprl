@@ -57,6 +57,7 @@ whitespace = [\ \t];
 "tt"               => (Tokens.TT (!pos, Coord.addchar (size yytext) o (!pos)));
 "ff"               => (Tokens.FF (!pos, Coord.addchar (size yytext) o (!pos)));
 "if"               => (Tokens.IF (!pos, Coord.addchar (size yytext) o (!pos)));
+"if/s"             => (Tokens.S_IF (!pos, Coord.addchar (size yytext) o (!pos)));
 "paths"            => (Tokens.PATHS (!pos, Coord.addchar (size yytext) o (!pos)));
 "S1"               => (Tokens.S1 (!pos, Coord.addchar (size yytext) o (!pos)));
 "lam"              => (Tokens.LAMBDA (!pos, Coord.addchar 3 o (!pos)));
