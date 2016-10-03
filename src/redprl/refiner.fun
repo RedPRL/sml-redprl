@@ -267,6 +267,20 @@ struct
            abtToAbs @@ Syn.into Syn.AX)
       end
 
+    fun Eta alpha jdg =
+      let
+        val H >> CJ.EQ ((m, n), dprod) = jdg
+        val Syn.DPROD (a, x, bx) = Syn.out dprod
+
+        val m' = Syn.into @@ Syn.PAIR (Syn.into @@ Syn.FST m, Syn.into @@ Syn.SND m)
+        val (goal1, _) = makeGoal @@ H >> CJ.MEM (m, dprod)
+        val (goal2, _) = makeGoal @@ H >> CJ.EQ ((m', n), dprod)
+        val psi = T.empty >: goal1 >: goal2
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
     fun FstEq alpha jdg =
       let
         val H >> CJ.EQ ((fst0, fst1), ty) = jdg
@@ -420,6 +434,21 @@ struct
       end
       handle Bind =>
         raise E.error [E.% "Expected dfun truth sequent"]
+
+    fun Eta alpha jdg =
+      let
+        val H >> CJ.EQ ((m, n), dfun) = jdg
+        val Syn.DFUN (a, x, bx) = Syn.out dfun
+
+        val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
+        val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.AP (m, xtm))
+        val (goal1, _) = makeGoal @@ H >> CJ.MEM (m, dfun)
+        val (goal2, _) = makeGoal @@ H >> CJ.EQ ((m', n), dfun)
+        val psi = T.empty >: goal1 >: goal2
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
 
     fun Elim z alpha jdg =
       let
@@ -580,6 +609,21 @@ struct
         (psi, fn rho =>
            abtToAbs @@ Syn.into Syn.AX)
       end
+
+    fun Eta alpha jdg =
+      let
+        val H >> CJ.EQ ((m, n), pathTy) = jdg
+        val Syn.ID_TY ((u, a), p0, p1) = Syn.out pathTy
+
+        val m' = Syn.into @@ Syn.ID_ABS (u, Syn.into @@ Syn.ID_AP (m, P.ret u))
+        val (goal1, _) = makeGoal @@ H >> CJ.MEM (m, pathTy)
+        val (goal2, _) = makeGoal @@ H >> CJ.EQ ((m', n), pathTy)
+        val psi = T.empty >: goal1 >: goal2
+      in
+        (psi, fn rho =>
+           abtToAbs @@ Syn.into Syn.AX)
+      end
+
   end
 
   structure Generic =
@@ -944,6 +988,7 @@ struct
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.ID_ABS _, Syn.ID_ABS _, _) => Path.Eq
+         | (Syn.PAIR _, Syn.PAIR _, _) => DProd.Eq
          | _ => raise E.error [E.% "Could not find value equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       (* equality for neutrals: variables and elimination forms;
@@ -961,17 +1006,22 @@ struct
          | (_, Syn.ID_AP (_, P.APP _), _) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find neutral equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
-      fun StepEqEta ((m, n), ty) =
-        raise E.error [E.% "Eta rules are not yet implemented"]
+      fun StepEqEta ty =
+        case Syn.out ty of
+           Syn.DPROD _ => DProd.Eta
+         | Syn.DFUN _ => DFun.Eta
+         | Syn.ID_TY _ => Path.Eta
+         | _ => raise E.error [E.% "Could not find eta expansion rule for type", E.! ty]
 
       fun StepEq sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
-         | (Machine.NEUTRAL, Machine.NEUTRAL) => StepEqNeu ((m, n), ty)
+         | (Machine.NEUTRAL _, Machine.NEUTRAL _) => StepEqNeu ((m, n), ty)
          | (Machine.REDEX, _) => Equality.HeadExpansion sign
          | (_, Machine.REDEX) => Equality.Symmetry
-         | (Machine.NEUTRAL, Machine.CANONICAL) => StepEqEta ((m, n), ty)
-         | (Machine.CANONICAL, Machine.NEUTRAL) => Equality.Symmetry
+         | (Machine.NEUTRAL (Machine.VAR x), Machine.CANONICAL) => StepEqEta ty
+         | (Machine.CANONICAL, Machine.NEUTRAL _) => Equality.Symmetry
+         | _ => raise E.error [E.% "Could not find equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepSynth sign m =
         case Syn.out m of
@@ -1016,5 +1066,6 @@ struct
     in
       val Elim = StepJdg
     end
+
   end
 end
