@@ -229,8 +229,8 @@ struct
     fun EqType alpha jdg =
       let
         val H >> CJ.EQ_TYPE (dfun0, dfun1) = jdg
-        val Syn.DFUN (a0, x, b0x) = Syn.out dfun0
-        val Syn.DFUN (a1, y, b1y) = Syn.out dfun1
+        val Syn.DPROD (a0, x, b0x) = Syn.out dfun0
+        val Syn.DPROD (a1, y, b1y) = Syn.out dfun1
 
         val z = alpha 0
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
