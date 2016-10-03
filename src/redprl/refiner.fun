@@ -943,7 +943,7 @@ struct
          | _ => raise E.error [E.% "Could not find value equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       (* equality for neutrals: variables and elimination forms;
-       * this includes structural equality and eta rules *)
+       * this includes structural equality and typed computation principles *)
       fun StepEqNeu ((m, n), ty) =
         case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
@@ -957,13 +957,17 @@ struct
          | (_, Syn.ID_AP (_, P.APP _), _) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find neutral equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
+      fun StepEqEta ((m, n), ty) =
+        raise E.error [E.% "Eta rules are not yet implemented"]
+
       fun StepEq sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
          | (Machine.NEUTRAL, Machine.NEUTRAL) => StepEqNeu ((m, n), ty)
          | (Machine.REDEX, _) => Equality.HeadExpansion sign
          | (_, Machine.REDEX) => Equality.Symmetry
-         | _ => raise E.error [E.% "Could not find suitable equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+         | (Machine.NEUTRAL, Machine.CANONICAL) => StepEqEta ((m, n), ty)
+         | (Machine.CANONICAL, Machine.NEUTRAL) => Equality.Symmetry
 
       fun StepSynth sign m =
         case Syn.out m of
