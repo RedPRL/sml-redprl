@@ -384,8 +384,8 @@ struct
            Syn.heteroCom (exts, dir) ((v, chv), mkIf cap, List.map (mapBind mkIf) tubes) <: env
          end
 
-     | (O.MONO O.IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.MONO O.TRUE `$ _ <: _) => t
-     | (O.MONO O.IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.MONO O.FALSE `$ _ <: _) => f
+     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.MONO O.TRUE `$ _ <: _) => t
+     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.MONO O.FALSE `$ _ <: _) => f
 
      | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% l], _ \ O.MONO O.BASE `$ _ <: _) => b
      | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% (l <: envL)], _ \ O.POLY (O.LOOP r) `$ _ <: env) =>
