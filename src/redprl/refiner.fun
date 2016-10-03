@@ -295,13 +295,15 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
+        val (goalM0, _) = makeGoal @@ H >> CJ.MEM (m0z, cz)
+        val (goalM1, _) = makeGoal @@ H >> CJ.MEM (m1z, cz)
         val (goalT, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.map (substVar (tt, z)) catjdg
         val (goalF, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.map (substVar (ff, z)) catjdg
 
-        val psi = T.empty >: goalT >: goalF
+        val psi = T.empty >: goalM0 >: goalM1 >: goalT >: goalF
       in
         (psi, fn rho =>
-            abtToAbs @@ Syn.into Syn.AX)
+           abtToAbs @@ Syn.into Syn.AX)
       end
       handle Bind =>
         raise E.error [E.% "Expected strict bool elimination problem"]
