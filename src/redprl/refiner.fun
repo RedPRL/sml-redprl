@@ -1096,11 +1096,16 @@ struct
 
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
-      fun StepEqNeu ((m, n), ty) =
+      fun StepEqNeu (x, y) ((m, n), ty) =
         case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.IF _, Syn.IF _, _) => Bool.ElimEq
          | (Syn.S_IF _, Syn.S_IF _, _) => StrictBool.ElimEq
+         | (Syn.S_IF _, _, _) =>
+           (case x of
+               Machine.VAR z => StrictBool.EqElim z
+             | _ => raise E.error [E.% "Could not determine critical variable at which to apply sbool elimination"])
+         | (_, Syn.S_IF _, _) => Equality.Symmetry
          | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
@@ -1120,7 +1125,7 @@ struct
       fun StepEq sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
-         | (Machine.NEUTRAL _, Machine.NEUTRAL _) => StepEqNeu ((m, n), ty)
+         | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
          | (Machine.REDEX, _) => Equality.HeadExpansion sign
          | (_, Machine.REDEX) => Equality.Symmetry
          | (Machine.NEUTRAL (Machine.VAR x), Machine.CANONICAL) => StepEqEta ty

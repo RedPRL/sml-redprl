@@ -76,6 +76,5 @@ Thm pairTest : [ (a : S1) * paths({x}. S1; a; base) true ] by [
 ].
 
 Thm strictBoolTest : [ lam([x]. if/s(x; tt; ff)) = lam([x]. x) : (x : sbool) -> sbool ] by [
-  x <- auto;
-  elim{x}; auto; elim{x}; auto
+  auto
 ].
