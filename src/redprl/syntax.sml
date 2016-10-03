@@ -10,6 +10,7 @@ struct
      VAR of variable * sort
    | AX
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
+   | S_BOOL | S_IF of 'a * ('a * 'a)
    | S1 | BASE | LOOP of param | S1_ELIM of (variable * 'a) * 'a * ('a * (symbol * 'a))
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
@@ -27,7 +28,9 @@ struct
        | BOOL => O.MONO O.BOOL $$ []
        | TT => O.MONO O.TRUE $$ []
        | FF => O.MONO O.FALSE $$ []
+       | S_BOOL => O.MONO O.S_BOOL $$ []
        | IF ((x, cx), m, (t, f)) => O.MONO O.IF $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
+       | S_IF (m, (t, f)) => O.MONO O.S_IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
        | S1_ELIM ((x, cx), m, (b, (u, l))) => O.MONO O.S1_ELIM $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([u],[]) \ l]
        | S1 => O.MONO O.S1 $$ []
        | BASE => O.MONO O.BASE $$ []
@@ -51,7 +54,9 @@ struct
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TRUE $ _ => TT
        | O.MONO O.FALSE $ _ => FF
+       | O.MONO O.S_BOOL $ _ => S_BOOL
        | O.MONO O.IF $ [(_,[x]) \ cx, _ \ m, _ \ t, _ \ f] => IF ((x, cx), m, (t, f))
+       | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] => S_IF (m, (t, f))
        | O.MONO O.S1_ELIM $ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] => S1_ELIM ((x, cx), m, (b, (u, l)))
        | O.MONO O.S1 $ _ => S1
        | O.MONO O.BASE $ _ => BASE

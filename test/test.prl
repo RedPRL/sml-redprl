@@ -74,3 +74,16 @@ Thm pairTest : [ (a : S1) * paths({x}. S1; a; base) true ] by [
   >;
   auto
 ].
+
+
+Def not : exp = [
+  lam([x]. if/s(x; ff; tt))
+].
+
+Def cmp(#f : exp; #g : exp) : exp = [
+  lam([x]. #f (#g x))
+].
+
+Thm strictBoolTest : [ not() = cmp(not(); cmp(not(); not())) : (x : sbool) -> sbool ] by [
+  auto
+].

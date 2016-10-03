@@ -36,7 +36,8 @@ struct
   datatype mono_operator =
      DFUN | LAM | AP
    | DPROD | PAIR | FST | SND
-   | BOOL | TRUE | FALSE | IF
+   | BOOL | TRUE | FALSE | IF (* weak booleans *)
+   | S_BOOL | S_IF (* strict booleans *)
    | S1 | BASE | S1_ELIM
    | AX
    | ID_TY | ID_ABS
@@ -137,6 +138,8 @@ struct
      | TRUE => [] ->> EXP
      | FALSE => [] ->> EXP
      | IF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | S_BOOL => [] ->> EXP
+     | S_IF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
      | S1_ELIM => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
@@ -329,6 +332,8 @@ struct
      | TRUE => "tt"
      | FALSE => "ff"
      | IF => "if"
+     | S_BOOL => "sbool"
+     | S_IF => "if"
      | S1 => "S1"
      | BASE => "base"
      | S1_ELIM => "s1-elim"
@@ -342,8 +347,8 @@ struct
      | TAC_REC => "rec"
      | TAC_PROGRESS => "progress"
      | RULE_ID => "id"
-     | RULE_AUTO => "auto-step"
-     | RULE_AUTO_STEP => "auto"
+     | RULE_AUTO => "auto"
+     | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
      | RULE_WITNESS => "witness"
      | RULE_HEAD_EXP => "head-expand"

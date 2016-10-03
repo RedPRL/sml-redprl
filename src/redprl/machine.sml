@@ -155,6 +155,12 @@ struct
            @@ (O.MONO O.IF `$ [([],[x]) \ S.% cx, ([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
            <: env
 
+     | O.MONO O.S_BOOL `$ _ <: _ => S.VAL
+     | O.MONO O.S_IF `$ [_ \ b, _ \ t, _ \ f] <: env =>
+         S.CUT
+           @@ (O.MONO O.S_IF `$ [([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
+           <: env
+
      | O.MONO O.S1 `$ _ <: _ => S.VAL
      | O.MONO O.BASE `$ _ <: _ => S.VAL
      | O.POLY (O.LOOP r) `$ _ <: env =>
@@ -378,6 +384,9 @@ struct
            Syn.heteroCom (exts, dir) ((v, chv), mkIf cap, List.map (mapBind mkIf) tubes) <: env
          end
 
+     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.MONO O.TRUE `$ _ <: _) => t
+     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.MONO O.FALSE `$ _ <: _) => f
+
      | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% l], _ \ O.MONO O.BASE `$ _ <: _) => b
      | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% (l <: envL)], _ \ O.POLY (O.LOOP r) `$ _ <: env) =>
          let
@@ -411,6 +420,9 @@ struct
          in
            hcom $$ args <: env
          end
+
+     | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: (_ \ S.% cap) :: args), _ \ O.MONO O.S_BOOL `$ _ <: env) =>
+         cap
 
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.S1 `$ _ <: env) =>
          let
@@ -446,6 +458,9 @@ struct
 
      | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.BOOL `$ _ <: env) =>
          O.POLY (O.COE (O.TAG_BOOL, dir)) $$ [([],[]) \ Cl.force cl] <: env
+
+     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.S_BOOL `$ _ <: env) =>
+         cl
 
      | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.S1 `$ _ <: env) =>
          O.POLY (O.COE (O.TAG_S1, dir)) $$ [([],[]) \ Cl.force cl] <: env
