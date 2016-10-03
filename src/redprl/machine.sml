@@ -286,6 +286,7 @@ struct
          in
            S.STEP @@ lam <: env
          end
+
      | O.POLY (O.HCOM (O.TAG_DPROD, exts, dir)) `$ (_ \ a) :: ((_,[x]) \ bx) :: (_ \ cap) :: tubes <: env =>
          let
            val fst = Syn.into o Syn.FST
@@ -297,6 +298,17 @@ struct
            val pair = Syn.into @@ Syn.PAIR (hcom1 (#2 dir), com)
          in
            S.STEP @@ pair <: env
+         end
+
+     | O.POLY (O.HCOM (O.TAG_ID, exts, dir)) `$ (([u],_) \ a) :: (_ \ p0) :: (_ \ p1) :: (_ \ cap) :: tubes <: env =>
+         let
+           fun ap m = Syn.into @@ Syn.ID_AP (m, P.ret u)
+           val w = Sym.named "w"
+           val tubes' = List.map (mapBind ap) tubes @ [([w],[]) \ p0, ([w],[]) \ p1]
+           val hcom = O.POLY (O.HCOM (O.TAG_NONE, exts @ [P.ret u], dir)) $$ (([],[]) \ a) :: (([],[]) \ ap cap) :: tubes'
+           val path = Syn.into @@ Syn.ID_ABS (u, raise Match)
+         in
+           S.STEP @@ path <: env
          end
 
      | (coe as O.POLY (O.COE (O.TAG_NONE, dir))) `$ [([u],_) \ a, _ \ m] <: env =>
@@ -328,6 +340,13 @@ struct
            val pair = Syn.into @@ Syn.PAIR (coe1 (#2 dir), coe2)
          in
            S.STEP @@ pair <: env
+         end
+
+     | O.POLY (O.COE (O.TAG_ID, dir)) `$ [([u,v],_) \ auv, p0, p1, _ \ m] <: env =>
+         let
+           val com = Syn.heteroCom ([P.ret v], dir) ((u, auv), Syn.into @@ Syn.ID_AP (m, P.ret u), [p0, p1])
+         in
+           S.STEP @@ com <: env
          end
 
      | th `$ es <: env => raise E.error [E.% "Machine encountered unrecognized term", E.! (th $$ es)]
@@ -392,6 +411,7 @@ struct
          in
            hcom $$ args <: env
          end
+
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.S1 `$ _ <: env) =>
          let
            val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
@@ -399,6 +419,7 @@ struct
          in
            hcom $$ args <: env
          end
+
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.DFUN `$ [a, b] <: env) =>
          let
            val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
@@ -406,12 +427,21 @@ struct
          in
            hcom $$ a :: b :: args <: env
          end
+
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.DPROD `$ [a, b] <: env) =>
          let
            val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
            val hcom = O.POLY @@ O.HCOM (O.TAG_DPROD, exts, dir)
          in
            hcom $$ a :: b :: args <: env
+         end
+
+     | (O.POLY (O.HCOM (O.TAG_ID, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.ID_TY `$ [a, p0, p1] <: env) =>
+         let
+           val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
+           val hcom = O.POLY @@ O.HCOM (O.TAG_ID, exts, dir)
+         in
+           hcom $$ a :: p0 :: p1 :: args <: env
          end
 
      | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.BOOL `$ _ <: env) =>
@@ -425,6 +455,9 @@ struct
 
      | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.DPROD `$ [_\ a, (_,[x]) \ bx] <: env) =>
          O.POLY (O.COE (O.TAG_DPROD, dir)) $$ [([u], []) \ a, ([u],[x]) \ bx, ([],[]) \ Cl.force cl] <: env
+
+     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.ID_TY `$ [([v],_) \ a, _ \ p0, _ \ p1] <: env) =>
+         O.POLY (O.COE (O.TAG_ID, dir)) $$ [([u,v], []) \ a, ([u],[]) \ p0, ([u],[]) \ p1, ([],[]) \ Cl.force cl] <: env
 
      | _ => raise InvalidCut
 end

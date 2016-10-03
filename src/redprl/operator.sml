@@ -80,6 +80,7 @@ struct
    | TAG_S1
    | TAG_DFUN
    | TAG_DPROD
+   | TAG_ID
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a extents = 'a P.term list
@@ -188,6 +189,7 @@ struct
        | TAG_S1 => []
        | TAG_DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP]
        | TAG_DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP]
+       | TAG_ID => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP]
 
     fun arityHcom (tag, extents, dir) =
       let
@@ -205,7 +207,7 @@ struct
       let
         val typeArgs =
           List.map
-            (fn ((_, sigmas),tau) => [DIM] * sigmas <> tau)
+            (fn ((sigmas, taus),tau) => (DIM :: sigmas) * taus <> tau)
             (typeArgsForTag tag)
       in
         typeArgs @ [[] * [] <> EXP] ->> EXP
@@ -380,6 +382,7 @@ struct
        | TAG_S1 => "/S1"
        | TAG_DFUN => "/dfun"
        | TAG_DPROD => "/dprod"
+       | TAG_ID => "/id"
   in
     fun toStringPoly f =
       fn LOOP r => "loop[" ^ P.toString f r ^ "]"
