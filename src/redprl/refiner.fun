@@ -1021,7 +1021,7 @@ struct
           case out m of
              th $ _ =>
                if List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support th then
-                 raise E.error [E.% "Cannot eval", E.! m, E.% "because it has free dimension variables"]
+                 NONE
                else
                  Machine.next sign st
            | _ => NONE
