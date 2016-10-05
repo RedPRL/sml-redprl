@@ -1009,13 +1009,37 @@ struct
            Env.lookup rho (#1 goal))
       end
 
+    local
+      open Machine.S.Cl infix <: $
+    in
+      (* This should be safe---but it is not ideal, because we have to force the deferred
+       * substitutions in order to determine whether it is safe to take a step. *)
+      fun safeStep sign (st as (mode, cl, stk)) : abt Machine.S.state option =
+        let
+          val m = force cl
+        in
+          case out m of
+             th $ _ =>
+               if List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support th then
+                 raise E.error [E.% "Cannot eval", E.! m, E.% "because it has free dimension variables"]
+               else
+                 Machine.next sign st
+           | _ => NONE
+        end
+
+      fun safeEval sign st =
+        case safeStep sign st of
+           NONE => st
+         | SOME st' => safeEval sign st'
+    end
+
+
     fun HeadExpansion sign alpha jdg =
       let
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Abt.$ (theta, _) = Abt.out m
         val hasFreeDims = List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support theta
-        val _ = if hasFreeDims then raise E.error [E.% "Found free dimensions in head operator of", E.! m] else ()
-        val m' = Machine.eval sign m
+        val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val (goal, _) = makeGoal @@ H >> CJ.EQ ((m', n), ty)
         val psi = T.empty >: goal
       in
