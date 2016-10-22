@@ -749,8 +749,9 @@ struct
             checkb ((us' @ us, xs' @ xs) \ m, ((sigmas' @ sigmas, taus' @ taus), tau))
           end
 
+
         (* No idea if what follows is correct, I'm just guessing at this point! *)
-        val env = T.foldl (fn (x, jdg, r) => Env.insert r x (LcfLanguage.var x (J.sort jdg))) Env.empty psi'
+        val env = T.foldl (fn (x, jdg, r) => Env.insert r x (lower (LcfLanguage.var x (J.sort jdg)))) Env.empty psi'
         val vld' = lift @@ mapAbs (substMetaenv env) vld
       in
         Lcf.|> (psi', vld')
