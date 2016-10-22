@@ -20,7 +20,6 @@ struct
     case out rule of
        `x => Var.Ctx.lookup env x
      | O.MONO O.RULE_ID $ _ => (fn _ => Lcf.idn)
-       (*
      | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.Lift (Rules.CEquiv.EvalGoal sign)
      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.Lift (Rules.CEquiv.Refl)
      | O.MONO O.RULE_AUTO_STEP $ _ => Rules.Lift (Rules.AutoStep sign)
@@ -31,7 +30,6 @@ struct
      | O.MONO O.RULE_SYMMETRY $ _ => Rules.Lift Rules.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Lift (Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg))
      | O.MONO (O.RULE_LEMMA _) $ [_ \ thm] => Rules.Lift (Rules.Lemma thm)
-     *)
      | _ => raise E.error [E.% "Invalid rule", E.! rule]
 
   fun rule (sign, env) rule alpha goal =
