@@ -1,9 +1,15 @@
-structure Lcf : DEPENDENT_LCF =
-struct
-  structure Def = DependentLcf (RedPrlJudgment)
-  open Def
+structure LcfLanguage = LcfAbtLanguage (RedPrlAbt)
 
-  structure Hole = HoleUtil (structure Tm = RedPrlAbt and J = J and T = T)
+structure Lcf :
+sig
+  include LCF_UTIL
+  val prettyState : jdg state -> PP.doc
+  val stateToString : jdg state -> string
+end =
+struct
+  structure Def = LcfUtil (structure Lcf = Lcf (LcfLanguage) and J = RedPrlJudgment)
+  open Def
+  infix |>
 
   fun prettyGoal (x, jdg) =
     PP.concat
@@ -13,15 +19,20 @@ struct
        PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
        PP.line]
 
-  val prettyGoals : judgment ctx -> PP.doc =
-    T.foldl
+  val prettyGoals : jdg Tl.telescope -> PP.doc =
+    Tl.foldl
       (fn (x, jdg, r) => PP.concat [r, prettyGoal (x, jdg), PP.line])
       PP.empty
 
-  fun prettyValidation (psi, vld) =
-    PP.text (J.evidenceToString (vld (Hole.openEnv psi)))
+  fun prettyValidation vld =
+    let
+      open RedPrlAbt infix \
+      val _ \ m = outb vld
+    in
+      PP.text (TermPrinter.toString m)
+    end
 
-  fun prettyState (psi, vld) =
+  fun prettyState (psi |> vld) =
     PP.concat
       [prettyGoals psi,
        PP.newline,
@@ -31,18 +42,15 @@ struct
        PP.newline,
        PP.rule #"-",
        PP.newline, PP.newline,
-       prettyValidation (psi, vld)]
+       prettyValidation vld]
 
-  val stateToString : judgment state -> string =
+  val stateToString : jdg state -> string =
     PP.toString 80 false o prettyState
 end
 
-structure Tacticals = Tacticals (Lcf)
-structure Multitacticals = Multitacticals (Lcf)
-
 functor RefinerKit (Sig : MINI_SIGNATURE) =
 struct
-  structure E = RedPrlError and O = RedPrlOpData and T = Lcf.T and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
+  structure E = RedPrlError and O = RedPrlOpData and T = Lcf.Tl and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = AbtMachineUtil (RedPrlMachine (Sig))
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
@@ -76,7 +84,7 @@ struct
     let
       open Abt infix 1 $#
       val x = newMeta ""
-      val vl as (_, tau) = J.evidenceValence jdg
+      val vl as (_, tau) = J.sort jdg
       fun hole ps ms = check (x $# (ps, ms), tau)
     in
       ((x, jdg), hole)
