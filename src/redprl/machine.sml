@@ -194,6 +194,10 @@ struct
      | O.MONO O.TAC_ORELSE `$ _ <: _ => S.VAL
      | O.MONO O.TAC_REC `$ _ <: _ => S.VAL
      | O.MONO O.TAC_PROGRESS `$ _ <: _ => S.VAL
+     | O.MONO O.TAC_REPEAT `$ [_ \ t] <: env =>
+         S.STEP
+           @@ Tac.repeat t
+           <: env
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
      | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL

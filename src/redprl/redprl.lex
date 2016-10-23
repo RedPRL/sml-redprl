@@ -92,6 +92,7 @@ whitespace = [\ \t];
 "in"               => (Tokens.IN (!pos, Coord.addchar 2 o (!pos)));
 
 "rec"              => (Tokens.TAC_REC (!pos, Coord.addchar (size yytext) o (!pos)));
+"repeat"           => (Tokens.TAC_REPEAT (!pos, Coord.addchar (size yytext) o (!pos)));
 "progress"         => (Tokens.TAC_PROGRESS (!pos, Coord.addchar (size yytext) o (!pos)));
 "id"               => (Tokens.RULE_ID (!pos, Coord.addchar 2 o (!pos)));
 "eval-goal"        => (Tokens.RULE_EVAL_GOAL (!pos, Coord.addchar (size yytext) o (!pos)));

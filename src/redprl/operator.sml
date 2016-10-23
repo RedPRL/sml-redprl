@@ -45,7 +45,7 @@ struct
    | REFINE of bool * sort | EXTRACT of sort
 
    (* primitive tacticals and multitacticals *)
-   | TAC_SEQ of psort list | TAC_ORELSE | TAC_REC | TAC_PROGRESS
+   | TAC_SEQ of psort list | TAC_ORELSE | TAC_REC | TAC_PROGRESS | TAC_REPEAT
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
 
    (* primitive rules *)
@@ -153,6 +153,7 @@ struct
      | TAC_ORELSE => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
      | TAC_REC => [[] * [TAC] <> TAC] ->> TAC
      | TAC_PROGRESS => [[] * [] <> TAC] ->> TAC
+     | TAC_REPEAT => [[] * [] <> TAC] ->> TAC
      | RULE_ID => [] ->> TAC
      | RULE_AUTO => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
@@ -346,6 +347,7 @@ struct
      | TAC_ORELSE => "orelse"
      | TAC_REC => "rec"
      | TAC_PROGRESS => "progress"
+     | TAC_REPEAT => "repeat"
      | RULE_ID => "id"
      | RULE_AUTO => "auto"
      | RULE_AUTO_STEP => "auto-step"
