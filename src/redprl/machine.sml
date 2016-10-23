@@ -105,14 +105,20 @@ struct
       O.MONO O.TAC_MTAC $$ [([],[]) \ mt]
 
 
+    fun mtry mt =
+      O.MONO O.MTAC_ORELSE $$ [([],[]) \ mt, ([],[]) \ all (O.MONO O.RULE_ID $$ [])]
+
     fun try t =
-      mtac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ all t, ([],[]) \ all (O.MONO O.RULE_ID $$ [])])
+      mtac (mtry (all t))
 
     fun mprogress mt =
       O.MONO O.MTAC_PROGRESS $$ [([],[]) \ mt]
 
     fun multirepeat mt =
-      O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
+      let
+      in
+        O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
+      end
 
     fun cut jdg =
       O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
@@ -187,7 +193,17 @@ struct
      | O.MONO (O.MTAC_SEQ _) `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_ORELSE `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_REC `$ _ <: _ => S.VAL
-     | O.MONO O.MTAC_REPEAT `$ _ <: _=> S.VAL
+     | O.MONO O.MTAC_REPEAT `$ [_ \ mt] <: env =>
+         let
+           val x = Var.named "x"
+           val xtm = check (`x, O.MTAC)
+           val mtrec = O.MONO O.MTAC_REC $$ [([],[x]) \ Tac.mtry (Tac.seq (Tac.mprogress mt) [] xtm)]
+         in
+           S.STEP
+             @@ mtrec
+             <: env
+         end
+
      | O.MONO O.TAC_MTAC `$ _ <: _ => S.VAL
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL

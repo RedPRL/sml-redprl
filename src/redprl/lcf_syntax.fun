@@ -73,7 +73,6 @@ struct
          O.MONO O.MTAC_ALL $ [_ \ t] => ALL t
        | O.MONO (O.MTAC_EACH _) $ ts => EACH (List.map (fn _ \ t => t) ts)
        | O.MONO (O.MTAC_FOCUS i) $ [_ \ t] => FOCUS (i, t)
-       | O.MONO O.MTAC_REPEAT $ [_ \ mt] => REPEAT mt
        | O.MONO O.MTAC_PROGRESS $ [_ \ mt] => PROGRESS mt
        | O.MONO O.MTAC_REC $ [(_,[x]) \ mtx] => REC (x, mtx)
        | O.MONO (O.MTAC_SEQ _) $ [_ \ mt1, (us,_) \ mt2] => SEQ (us, mt1, mt2)
