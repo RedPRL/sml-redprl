@@ -25,8 +25,14 @@ struct
       O.MONO (O.MTAC_SEQ sorts) $$ [([],[]) \ mt, (syms,[]) \ mt']
     end
 
-  fun multitacToTac tm =
-    O.MONO O.TAC_MTAC $$ [([],[]) \ tm]
+  fun multitacToTac mt =
+    O.MONO O.TAC_MTAC $$ [([],[]) \ mt]
+
+  fun tacToMulitac t =
+    O.MONO O.MTAC_ALL $$ [([],[]) \ t]
+
+  fun orElse (t1, t2) =
+    multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
 end
 
 %%
@@ -302,6 +308,7 @@ atomicRawTac
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
   | RULE_LEMMA LBRACKET term COLON sort RBRACKET (Ast.$$ (O.MONO (O.RULE_LEMMA (false, sort)), [\ (([],[]), term)]))
 
+  | tactic DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (tactic1, tactic2))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
   | LAMBDA IDENT DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
@@ -337,7 +344,6 @@ rawMultitac
   | hypBindings LEFT_ARROW multitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac1 hypBindings multitac2)
   | multitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac1 [] multitac2)
   | atomicTac (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
-  | multitac DOUBLE_PIPE multitac %prec DOUBLE_PIPE (Ast.$$ (O.MONO O.MTAC_ORELSE, [\ (([],[]), multitac1), \ (([],[]), multitac2)]))
   | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
