@@ -25,6 +25,8 @@ whitespace = [\ \t];
 "//"[^\n]*         => (continue ());
 
 
+"<|"               => (Tokens.LANGLE_PIPE (!pos, Coord.addchar (size yytext) o (!pos)));
+"|>"               => (Tokens.RANGLE_PIPE (!pos, Coord.addchar (size yytext) o (!pos)));
 "("                => (Tokens.LPAREN (!pos, Coord.nextchar o (!pos)));
 ")"                => (Tokens.RPAREN (!pos, Coord.nextchar o (!pos)));
 "<"                => (Tokens.LANGLE (!pos, Coord.nextchar o (!pos)));
@@ -91,9 +93,9 @@ whitespace = [\ \t];
 "by"               => (Tokens.BY (!pos, Coord.addchar 2 o (!pos)));
 "in"               => (Tokens.IN (!pos, Coord.addchar 2 o (!pos)));
 
-"rec"              => (Tokens.TAC_REC (!pos, Coord.addchar (size yytext) o (!pos)));
+"rec"              => (Tokens.MTAC_REC (!pos, Coord.addchar (size yytext) o (!pos)));
 "repeat"           => (Tokens.MTAC_REPEAT (!pos, Coord.addchar (size yytext) o (!pos)));
-"progress"         => (Tokens.TAC_PROGRESS (!pos, Coord.addchar (size yytext) o (!pos)));
+"progress"         => (Tokens.MTAC_PROGRESS (!pos, Coord.addchar (size yytext) o (!pos)));
 "id"               => (Tokens.RULE_ID (!pos, Coord.addchar 2 o (!pos)));
 "eval-goal"        => (Tokens.RULE_EVAL_GOAL (!pos, Coord.addchar (size yytext) o (!pos)));
 "ceq/refl"         => (Tokens.RULE_CEQUIV_REFL (!pos, Coord.addchar (size yytext) o (!pos)));

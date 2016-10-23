@@ -59,33 +59,25 @@ struct
       (getAnnotation t)
       (expandHypVars (evalOpen sign t))
 
-  local
-    fun collect t =
-      case Tm.out t of
-         O.MONO (O.TAC_SEQ n) $ [_ \ mt, (us,_) \ t'] => (us, mt) :: collect t'
-       | _ => [([], O.MONO O.MTAC_ALL $$ [([],[]) \ t])]
-  in
-    fun tactic sign tac =
-      let
-        val tac' = prepareTerm sign tac
-      in
-        case Tm.out tac' of
-           `x => VAR x
-         | O.MONO (O.TAC_SEQ _) $ _ => SEQ (collect tac')
-         | O.MONO O.TAC_ORELSE $ [_ \ t1, _ \ t2] => ORELSE (t1, t2)
-         | O.MONO O.TAC_REC $ [(_,[x]) \ tx] => REC (x, tx)
-         | O.MONO O.TAC_PROGRESS $ [_ \ t] => PROGRESS t
-         | _ => RULE tac'
-         (* TODO: ORELSE, REC, PROGRESS, etc. *)
-      end
-  end
+  fun tactic sign tac =
+    let
+      val tac' = prepareTerm sign tac
+    in
+      case Tm.out tac' of
+         O.MONO O.TAC_MTAC $ [_ \ mt] => MTAC mt
+       | _ => RULE tac'
+    end
 
   fun multitactic sign mtac =
     case Tm.out (prepareTerm sign mtac) of
          O.MONO O.MTAC_ALL $ [_ \ t] => ALL t
        | O.MONO (O.MTAC_EACH _) $ ts => EACH (List.map (fn _ \ t => t) ts)
        | O.MONO (O.MTAC_FOCUS i) $ [_ \ t] => FOCUS (i, t)
-       | O.MONO O.MTAC_REPEAT $ [_ \ mt] => MULTI_REPEAT mt
-       | O.MONO O.MTAC_PROGRESS $ [_ \ mt] => MULTI_PROGRESS mt
+       | O.MONO O.MTAC_REPEAT $ [_ \ mt] => REPEAT mt
+       | O.MONO O.MTAC_PROGRESS $ [_ \ mt] => PROGRESS mt
+       | O.MONO O.MTAC_REC $ [(_,[x]) \ mtx] => REC (x, mtx)
+       | O.MONO (O.MTAC_SEQ _) $ [_ \ mt1, (us,_) \ mt2] => SEQ (us, mt1, mt2)
+       | O.MONO O.MTAC_ORELSE $ [_ \ mt1, _ \ mt2] => ORELSE (mt1, mt2)
+       | ` x => VAR x
        | _ => raise InvalidMultitactic
 end

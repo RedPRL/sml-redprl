@@ -7,8 +7,7 @@ struct
   type 'a nominal = Syn.atom Spr.point -> 'a
   type tactic = Lcf.jdg Lcf.tactic nominal
   type multitactic = Lcf.jdg Lcf.multitactic nominal
-  type env = tactic Syn.VarCtx.dict
-  type menv = multitactic Syn.VarCtx.dict
+  type env = multitactic Syn.VarCtx.dict
   exception InvalidRule
 
   open RedPrlAbt
@@ -19,8 +18,7 @@ struct
   structure O = RedPrlOpData
   fun interpret (sign, env) rule =
     case out rule of
-       `x => Var.Ctx.lookup env x
-     | O.MONO O.RULE_ID $ _ => (fn _ => Lcf.idn)
+       O.MONO O.RULE_ID $ _ => (fn _ => Lcf.idn)
      | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.Lift (Rules.CEquiv.EvalGoal sign)
      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.Lift (Rules.CEquiv.Refl)
      | O.MONO O.RULE_AUTO_STEP $ _ => Rules.Lift (Rules.AutoStep sign)

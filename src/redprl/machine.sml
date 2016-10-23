@@ -94,27 +94,22 @@ struct
     fun each ts =
       O.MONO (O.MTAC_EACH (List.length ts)) $$ List.map (fn t => ([],[]) \ t) ts
 
-    fun seq mt bs t =
+    fun seq mt1 bs mt2 =
       let
         val (us, sorts) = ListPair.unzip bs
       in
-        O.MONO (O.TAC_SEQ sorts) $$ [([],[]) \ mt, (us, []) \ t]
+        O.MONO (O.MTAC_SEQ sorts) $$ [([],[]) \ mt1, (us, []) \ mt2]
       end
 
-    fun try t =
-      O.MONO O.TAC_ORELSE $$ [([],[]) \ t, ([],[]) \ O.MONO O.RULE_ID $$ []]
+    fun mtac mt =
+      O.MONO O.TAC_MTAC $$ [([],[]) \ mt]
 
-    fun progress t =
-      O.MONO O.TAC_PROGRESS $$ [([],[]) \ t]
+
+    fun try t =
+      mtac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ all t, ([],[]) \ all (O.MONO O.RULE_ID $$ [])])
 
     fun mprogress mt =
       O.MONO O.MTAC_PROGRESS $$ [([],[]) \ mt]
-
-    fun fromMtac mt =
-      seq mt [] (O.MONO O.RULE_ID $$ [])
-
-    fun then' t1 t2 =
-      seq (all t1) [] t2
 
     fun multirepeat mt =
       O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
@@ -189,11 +184,11 @@ struct
            @@ (O.MONO (O.EXTRACT tau) `$ [([],[]) \ S.HOLE], thm)
            <: env
 
-     | O.MONO (O.TAC_SEQ _) `$ _ <: _ => S.VAL
-     | O.MONO O.TAC_ORELSE `$ _ <: _ => S.VAL
-     | O.MONO O.TAC_REC `$ _ <: _ => S.VAL
-     | O.MONO O.TAC_PROGRESS `$ _ <: _ => S.VAL
+     | O.MONO (O.MTAC_SEQ _) `$ _ <: _ => S.VAL
+     | O.MONO O.MTAC_ORELSE `$ _ <: _ => S.VAL
+     | O.MONO O.MTAC_REC `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_REPEAT `$ _ <: _=> S.VAL
+     | O.MONO O.TAC_MTAC `$ _ <: _ => S.VAL
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
      | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL
@@ -217,36 +212,36 @@ struct
 
      | O.MONO O.DEV_LET `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
          S.STEP
-          @@ Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP)] (Tac.fromMtac (Tac.each [tac2,tac1]))
+          @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP)] (Tac.each [tac2,tac1]))
           <: env
      | O.MONO O.DEV_FUN_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP)] (Tac.fromMtac (Tac.each [t]))
+           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP)] (Tac.each [t]))
            <: env
      | O.MONO O.DEV_DPROD_INTRO `$ [_ \ t1, _ \ t2] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all Tac.autoStep) [] (Tac.fromMtac (Tac.each [t1, t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [] (Tac.each [t1, t2]))
            <: env
      | O.MONO O.DEV_PATH_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.fromMtac (Tac.each [t]))
+           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.each [t]))
            <: env
      | O.POLY (O.DEV_BOOL_ELIM z) `$ [_ \ t1, _ \ t2] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all (Tac.elim z)) [] (Tac.fromMtac (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [] (Tac.each [t1,t2]))
            <: env
      | O.POLY (O.DEV_S1_ELIM z) `$ [_ \ t1, ([v],_) \ t2] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all (Tac.elim z)) [(v, P.DIM)] (Tac.fromMtac (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(v, P.DIM)] (Tac.each [t1,t2]))
            <: env
      | O.POLY (O.DEV_DFUN_ELIM z) `$ [_ \ t1, ([x,p],_) \ t2] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (p, P.HYP)] (Tac.fromMtac (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (p, P.HYP)] (Tac.each [t1,t2]))
            <: env
 
      | O.POLY (O.DEV_DPROD_ELIM z) `$ [([x,y], _) \ t] <: env =>
          S.STEP
-           @@ Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (y, P.HYP)] (Tac.fromMtac (Tac.each [t]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (y, P.HYP)] (Tac.each [t]))
            <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
