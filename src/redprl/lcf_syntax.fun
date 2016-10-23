@@ -64,7 +64,6 @@ struct
       case Tm.out t of
          O.MONO (O.TAC_SEQ n) $ [_ \ mt, (us,_) \ t'] => (us, mt) :: collect t'
        | _ => [([], O.MONO O.MTAC_ALL $$ [([],[]) \ t])]
-
   in
     fun tactic sign tac =
       let
@@ -86,5 +85,7 @@ struct
          O.MONO O.MTAC_ALL $ [_ \ t] => ALL t
        | O.MONO (O.MTAC_EACH _) $ ts => EACH (List.map (fn _ \ t => t) ts)
        | O.MONO (O.MTAC_FOCUS i) $ [_ \ t] => FOCUS (i, t)
+       | O.MONO O.MTAC_REPEAT $ [_ \ mt] => MULTI_REPEAT mt
+       | O.MONO O.MTAC_PROGRESS $ [_ \ mt] => MULTI_PROGRESS mt
        | _ => raise InvalidMultitactic
 end

@@ -107,18 +107,17 @@ struct
     fun progress t =
       O.MONO O.TAC_PROGRESS $$ [([],[]) \ t]
 
+    fun mprogress mt =
+      O.MONO O.MTAC_PROGRESS $$ [([],[]) \ mt]
+
     fun fromMtac mt =
       seq mt [] (O.MONO O.RULE_ID $$ [])
 
     fun then' t1 t2 =
       seq (all t1) [] t2
 
-    fun repeat t =
-      let
-        val x = Var.named "t"
-      in
-        O.MONO O.TAC_REC $$ [([],[x]) \ try (then' (progress t) (check (`x, O.TAC)))]
-      end
+    fun multirepeat mt =
+      O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
 
     fun cut jdg =
       O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
@@ -194,10 +193,7 @@ struct
      | O.MONO O.TAC_ORELSE `$ _ <: _ => S.VAL
      | O.MONO O.TAC_REC `$ _ <: _ => S.VAL
      | O.MONO O.TAC_PROGRESS `$ _ <: _ => S.VAL
-     | O.MONO O.TAC_REPEAT `$ [_ \ t] <: env =>
-         S.STEP
-           @@ Tac.repeat t
-           <: env
+     | O.MONO O.MTAC_REPEAT `$ _ <: _=> S.VAL
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
      | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL
@@ -205,9 +201,9 @@ struct
      | O.MONO O.RULE_WITNESS `$ _ <: _ => S.VAL
      | O.MONO O.RULE_SYMMETRY `$ _ <: _ => S.VAL
      | O.MONO O.RULE_AUTO_STEP `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_AUTO `$ _ <: env =>
+     | O.MONO O.MTAC_AUTO `$ _ <: env =>
          S.STEP
-           @@ Tac.repeat Tac.autoStep
+           @@ Tac.multirepeat (Tac.mprogress (Tac.all (Tac.try Tac.autoStep)))
            <: env
      | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL

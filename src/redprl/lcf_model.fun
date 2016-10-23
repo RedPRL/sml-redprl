@@ -8,6 +8,7 @@ struct
   type tactic = Lcf.jdg Lcf.tactic nominal
   type multitactic = Lcf.jdg Lcf.multitactic nominal
   type env = tactic Syn.VarCtx.dict
+  type menv = multitactic Syn.VarCtx.dict
   exception InvalidRule
 
   open RedPrlAbt

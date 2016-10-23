@@ -34,7 +34,7 @@ Thm apEqTest : [
   { lam f. <y> '(,f tt) };
 
   // Try commenting out the following line, and stepping through the proof with tryStep().
-  auto; auto; auto
+  auto
 ].
 
 Def boolEta(#M : exp) : exp = [
@@ -54,7 +54,7 @@ Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) 
     <x> lam b. let p = h hyp{b}. '(,p @ x)
   };
 
-  auto; auto; auto; auto
+  auto
 ].
 
 // It turns out that it is just as good to figure out what the witness program for this path is
@@ -65,7 +65,7 @@ Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) 
 Thm pathTest3 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
   // I'm surprised that RedPRL can typecheck this properly! Quite encouraging.
   '(<x> lam([b]. if([b].paths({x}.bool; b; boolEta(b)); b; <y> tt; <y> ff) @ x));
-  auto; auto; auto
+  auto
 ].
 
 Thm pairTest : [ (a : S1) * paths({x}. S1; a; base) true ] by [

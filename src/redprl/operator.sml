@@ -45,11 +45,12 @@ struct
    | REFINE of bool * sort | EXTRACT of sort
 
    (* primitive tacticals and multitacticals *)
-   | TAC_SEQ of psort list | TAC_ORELSE | TAC_REC | TAC_PROGRESS | TAC_REPEAT
-   | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
+   | TAC_SEQ of psort list | TAC_ORELSE | TAC_REC | TAC_PROGRESS
+   | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int | MTAC_REPEAT
+   | MTAC_AUTO | MTAC_PROGRESS
 
    (* primitive rules *)
-   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
+   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
    | RULE_CUT | RULE_LEMMA of bool * sort
 
    (* development calculus terms *)
@@ -153,9 +154,10 @@ struct
      | TAC_ORELSE => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
      | TAC_REC => [[] * [TAC] <> TAC] ->> TAC
      | TAC_PROGRESS => [[] * [] <> TAC] ->> TAC
-     | TAC_REPEAT => [[] * [] <> TAC] ->> TAC
+     | MTAC_REPEAT => [[] * [] <> MTAC] ->> MTAC
      | RULE_ID => [] ->> TAC
-     | RULE_AUTO => [] ->> TAC
+     | MTAC_AUTO => [] ->> MTAC
+     | MTAC_PROGRESS => [[] * [] <> MTAC] ->> MTAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
@@ -178,6 +180,7 @@ struct
            tacs ->> MTAC
          end
      | MTAC_FOCUS i => [[] * [] <> TAC] ->> MTAC
+
      | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_MEM => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
@@ -347,9 +350,10 @@ struct
      | TAC_ORELSE => "orelse"
      | TAC_REC => "rec"
      | TAC_PROGRESS => "progress"
-     | TAC_REPEAT => "repeat"
+     | MTAC_REPEAT => "repeat"
      | RULE_ID => "id"
-     | RULE_AUTO => "auto"
+     | MTAC_AUTO => "auto"
+     | MTAC_PROGRESS => "multi-progress"
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
      | RULE_WITNESS => "witness"

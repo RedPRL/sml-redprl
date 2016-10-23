@@ -92,14 +92,14 @@ whitespace = [\ \t];
 "in"               => (Tokens.IN (!pos, Coord.addchar 2 o (!pos)));
 
 "rec"              => (Tokens.TAC_REC (!pos, Coord.addchar (size yytext) o (!pos)));
-"repeat"           => (Tokens.TAC_REPEAT (!pos, Coord.addchar (size yytext) o (!pos)));
+"repeat"           => (Tokens.MTAC_REPEAT (!pos, Coord.addchar (size yytext) o (!pos)));
 "progress"         => (Tokens.TAC_PROGRESS (!pos, Coord.addchar (size yytext) o (!pos)));
 "id"               => (Tokens.RULE_ID (!pos, Coord.addchar 2 o (!pos)));
 "eval-goal"        => (Tokens.RULE_EVAL_GOAL (!pos, Coord.addchar (size yytext) o (!pos)));
 "ceq/refl"         => (Tokens.RULE_CEQUIV_REFL (!pos, Coord.addchar (size yytext) o (!pos)));
 "symmetry"         => (Tokens.RULE_SYMMETRY (!pos, Coord.addchar (size yytext) o (!pos)));
 "auto-step"        => (Tokens.RULE_AUTO_STEP (!pos, Coord.addchar (size yytext) o (!pos)));
-"auto"             => (Tokens.RULE_AUTO (!pos, Coord.addchar (size yytext) o (!pos)));
+"auto"             => (Tokens.MTAC_AUTO (!pos, Coord.addchar (size yytext) o (!pos)));
 "hyp"              => (Tokens.RULE_HYP (!pos, Coord.addchar (size yytext) o (!pos)));
 "elim"             => (Tokens.RULE_ELIM (!pos, Coord.addchar (size yytext) o (!pos)));
 "head-expand"      => (Tokens.RULE_HEAD_EXP (!pos, Coord.addchar (size yytext) o (!pos)));
