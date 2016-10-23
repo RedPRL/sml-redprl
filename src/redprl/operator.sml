@@ -45,9 +45,10 @@ struct
    | REFINE of bool * sort | EXTRACT of sort
 
    (* primitive tacticals and multitacticals *)
-   | TAC_SEQ of psort list | TAC_ORELSE | TAC_REC | TAC_PROGRESS
+   | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int | MTAC_REPEAT
    | MTAC_AUTO | MTAC_PROGRESS
+   | TAC_MTAC
 
    (* primitive rules *)
    | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
@@ -150,10 +151,10 @@ struct
      | REFINE (true, tau) => [[] * [] <> JDG, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
      | REFINE (false, tau) => [[] * [] <> JDG, [] * [] <> TAC] ->> THM tau
      | EXTRACT tau => [[] * [] <> THM tau] ->> tau
-     | TAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> TAC] ->> TAC
-     | TAC_ORELSE => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
-     | TAC_REC => [[] * [TAC] <> TAC] ->> TAC
-     | TAC_PROGRESS => [[] * [] <> TAC] ->> TAC
+     | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
+     | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
+     | MTAC_REC => [[] * [MTAC] <> MTAC] ->> MTAC
+     | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
      | MTAC_REPEAT => [[] * [] <> MTAC] ->> MTAC
      | RULE_ID => [] ->> TAC
      | MTAC_AUTO => [] ->> MTAC
@@ -346,10 +347,10 @@ struct
      | ID_ABS => "abs"
      | REFINE _ => "refine"
      | EXTRACT _ => "extract"
-     | TAC_SEQ _ => "seq"
-     | TAC_ORELSE => "orelse"
-     | TAC_REC => "rec"
-     | TAC_PROGRESS => "progress"
+     | MTAC_SEQ _ => "seq"
+     | MTAC_ORELSE => "orelse"
+     | MTAC_REC => "rec"
+     | TAC_MTAC => "mtac"
      | MTAC_REPEAT => "repeat"
      | RULE_ID => "id"
      | MTAC_AUTO => "auto"
