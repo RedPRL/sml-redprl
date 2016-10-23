@@ -7,15 +7,20 @@ struct
   infix 1 |>
   infix 2 >> >: $$ $# // \ @>
 
+  fun #> (psi, m) = Lcf.|> (psi, abtToAbs m)
+  infix #>
+
+  val trivial = Syn.into Syn.AX
+
   structure CEquiv =
   struct
     fun EvalGoal sign _ jdg =
       let
         val H >> CJ.CEQUIV (m, n) = jdg
-        val (goal, _) = makeGoal @@ H >> CJ.CEQUIV (Machine.eval sign m, Machine.eval sign n)
-        val psi = T.empty >: goal
+        val (goal, hole) = makeGoal @@ H >> CJ.CEQUIV (Machine.eval sign m, Machine.eval sign n)
       in
-        (psi, fn rho => Env.lookup rho @@ #1 goal)
+        T.empty >: goal
+          #> hole [] []
       end
       handle Bind =>
         raise E.error [E.% "Expected a computational equality sequent"]
@@ -25,7 +30,7 @@ struct
         val H >> CJ.CEQUIV (m, n) = jdg
         val _ = assertAlphaEq (m, n)
       in
-        (T.empty, fn _ => Abt.abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
       handle Bind =>
         raise E.error [E.% "Expected a computational equality sequent"]
@@ -39,8 +44,7 @@ struct
         val Syn.S1 = Syn.out a
         val Syn.S1 = Syn.out b
       in
-        (T.empty, fn rho =>
-          Abt.abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
       handle Bind =>
         raise E.error [E.% "Expected typehood sequent"]
@@ -52,7 +56,7 @@ struct
         val Syn.BASE = Syn.out m
         val Syn.BASE = Syn.out n
       in
-        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
 
     fun EqLoop _ jdg =
@@ -63,7 +67,7 @@ struct
         val Syn.LOOP r2 = Syn.out n
       in
         if P.eq Sym.eq (r1, r2) then
-          (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+          T.empty #> trivial
         else
           raise E.error [E.% "Expected loops in same dimension"]
       end
@@ -91,15 +95,11 @@ struct
         val (goalCoh1, _) = makeGoal @@ Hbase >> CJ.EQ ((l1, b), cbase)
 
         val psi = T.empty >: goalB >: goalL >: goalCoh0 >: goalCoh1
+
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val elim = Syn.into @@ Syn.S1_ELIM ((z, cz), ztm, (holeB [] [], (u, holeL [(P.ret u, P.DIM)] [])))
       in
-        (psi, fn rho =>
-           let
-             val m = Syn.into @@ Syn.VAR (z, O.EXP)
-             val b = Env.lookup rho (#1 goalB) // ([],[])
-             val lu = Env.lookup rho (#1 goalL) // ([u],[])
-           in
-             abtToAbs o Syn.into @@ Syn.S1_ELIM ((z, cz), m, (b, (u, lu)))
-           end)
+        psi #> elim
       end
       handle Bind =>
         raise E.error [E.% "Expected circle elimination problem"]
@@ -133,8 +133,7 @@ struct
 
         val psi = T.empty >: goalCz >: goalM >: goalB >: goalL >: goalL00 >: goalL01
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        psi #> trivial
       end
   end
 
@@ -146,8 +145,7 @@ struct
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
       in
-        (T.empty, fn rho =>
-          Abt.abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
       handle Bind =>
         raise E.error [E.% "Expected typehood sequent"]
@@ -159,7 +157,7 @@ struct
         val Syn.TT = Syn.out m
         val Syn.TT = Syn.out n
       in
-        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
 
     fun EqFF _ jdg =
@@ -169,7 +167,7 @@ struct
         val Syn.FF = Syn.out m
         val Syn.FF = Syn.out n
       in
-        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
 
     fun Elim z _ jdg =
@@ -181,19 +179,14 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val (goalT, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.TRUE (substVar (tt, z) cz)
-        val (goalF, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.TRUE (substVar (ff, z) cz)
+        val (goalT, holeT) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.TRUE (substVar (tt, z) cz)
+        val (goalF, holeF) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.TRUE (substVar (ff, z) cz)
 
         val psi = T.empty >: goalT >: goalF
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val if_ = Syn.into @@ Syn.IF ((z, cz), ztm, (holeT [] [], holeF [] []))
       in
-        (psi, fn rho =>
-           let
-             val m = Syn.into @@ Syn.VAR (z, O.EXP)
-             val t = Env.lookup rho (#1 goalT) // ([],[])
-             val f = Env.lookup rho (#1 goalF) // ([],[])
-           in
-             abtToAbs o Syn.into @@ Syn.IF ((z, cz), m, (t, f))
-           end)
+        psi #> if_
       end
       handle Bind =>
         raise E.error [E.% "Expected bool elimination problem"]
@@ -219,8 +212,7 @@ struct
         val (goalF, _) = makeGoal @@ H >> CJ.EQ ((f0, f1), c0ff)
         val psi = T.empty >: goalTy >: goalM >: goalT >: goalF
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        psi #> trivial
       end
   end
 
@@ -232,8 +224,7 @@ struct
         val Syn.S_BOOL = Syn.out a
         val Syn.S_BOOL = Syn.out b
       in
-        (T.empty, fn rho =>
-          Abt.abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
       handle Bind =>
         raise E.error [E.% "Expected typehood sequent"]
@@ -245,7 +236,7 @@ struct
         val Syn.TT = Syn.out m
         val Syn.TT = Syn.out n
       in
-        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
 
     fun EqFF _ jdg =
@@ -255,7 +246,7 @@ struct
         val Syn.FF = Syn.out m
         val Syn.FF = Syn.out n
       in
-        (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+        T.empty #> trivial
       end
 
     fun Elim z _ jdg =
@@ -267,19 +258,14 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val (goalT, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.TRUE (substVar (tt, z) cz)
-        val (goalF, _) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.TRUE (substVar (ff, z) cz)
+        val (goalT, holeT) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H >> CJ.TRUE (substVar (tt, z) cz)
+        val (goalF, holeF) = makeGoal @@ Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H >> CJ.TRUE (substVar (ff, z) cz)
 
         val psi = T.empty >: goalT >: goalF
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val if_ = Syn.into @@ Syn.S_IF (ztm, (holeT [] [], holeF [] []))
       in
-        (psi, fn rho =>
-           let
-             val m = Syn.into @@ Syn.VAR (z, O.EXP)
-             val t = Env.lookup rho (#1 goalT) // ([],[])
-             val f = Env.lookup rho (#1 goalF) // ([],[])
-           in
-             abtToAbs o Syn.into @@ Syn.S_IF (m, (t, f))
-           end)
+        psi #> if_
       end
       handle Bind =>
         raise E.error [E.% "Expected strict bool elimination problem"]
@@ -295,8 +281,7 @@ struct
         val (goalF, _) = makeGoal @@ H >> CJ.EQ ((f0, f1), c)
         val psi = T.empty >: goalM >: goalT >: goalF
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        psi #> trivial
       end
 
     fun EqElim z _ jdg =
@@ -317,8 +302,7 @@ struct
 
         val psi = T.empty >: goalM0 >: goalM1 >: goalT >: goalF
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        psi #> trivial
       end
       handle Bind =>
         raise E.error [E.% "Expected strict bool elimination problem"]
@@ -339,10 +323,9 @@ struct
 
         val (goal1, _) = makeGoal @@ H >> CJ.EQ_TYPE (a0, a1)
         val (goal2, _) = makeGoal @@ H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
-        val psi = T.empty >: goal1 >: goal2
       in
-        (psi, fn rho =>
-          Abt.abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goal1 >: goal1
+          #> trivial
       end
       handle Bind =>
         raise E.error [E.% "Expected dprod typehood sequent"]
@@ -361,10 +344,9 @@ struct
         val (goal1, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), a)
         val (goal2, _) = makeGoal @@ H >> CJ.EQ ((n0, n1), substVar (m0, x) bx)
         val (goalFam, _) = makeGoal @@ ([], [(z, O.EXP)]) |> H @> (z, CJ.TRUE a) >> CJ.TYPE bz
-        val psi = T.empty >: goal1 >: goal2 >: goalFam
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goal1 >: goal2 >: goalFam
+          #> trivial
       end
 
     fun Eta alpha jdg =
@@ -375,10 +357,9 @@ struct
         val m' = Syn.into @@ Syn.PAIR (Syn.into @@ Syn.FST m, Syn.into @@ Syn.SND m)
         val (goal1, _) = makeGoal @@ H >> CJ.MEM (m, dprod)
         val (goal2, _) = makeGoal @@ H >> CJ.EQ ((m', n), dprod)
-        val psi = T.empty >: goal1 >: goal2
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goal1 >: goal2
+          #> trivial
       end
 
     fun FstEq alpha jdg =
@@ -391,10 +372,9 @@ struct
         val (goalTyA, holeTyA) = makeGoal @@ MATCH (O.MONO O.DPROD, 0, holeTy [] [])
         val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeTy [] [])
         val (goalEqTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (holeTyA [] [], ty)
-        val psi = T.empty >: goalTy >: goalTyA >: goalEq >: goalEqTy
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goalTy >: goalTyA >: goalEq >: goalEqTy
+          #> trivial
       end
 
     fun SndEq alpha jdg =
@@ -407,10 +387,9 @@ struct
         val (goalTyB, holeTyB) = makeGoal @@ MATCH (O.MONO O.DPROD, 1, holeTy [] [])
         val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeTy [] [])
         val (goalEqTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (holeTyB [] [Syn.into @@ Syn.FST m0], ty)
-        val psi = T.empty >: goalTy >: goalTyB >: goalEq >: goalEqTy
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goalTy >: goalTyB >: goalEq >: goalEqTy
+          #> trivial
       end
 
     fun True alpha jdg =
@@ -423,12 +402,12 @@ struct
         val bz = substVar (ztm, x) bx
 
         val (goal1, hole1) = makeGoal @@ H >> CJ.TRUE a
-        val (goal2, _) = makeGoal @@ H >> CJ.TRUE (substVar (hole1 [] [], x) bx)
+        val (goal2, hole2) = makeGoal @@ H >> CJ.TRUE (substVar (hole1 [] [], x) bx)
         val (goalFam, _) = makeGoal @@ ([], [(z, O.EXP)]) |> H @> (z, CJ.TRUE a) >> CJ.TYPE bz
         val psi = T.empty >: goal1 >: goal2 >: goalFam
+        val pair = Syn.into @@ Syn.PAIR (hole1 [] [], hole2 [] [])
       in
-        (psi, fn rho =>
-           abtToAbs o Syn.into @@ Syn.PAIR (Env.lookup rho (#1 goal1) // ([],[]), Env.lookup rho (#1 goal2) // ([],[])))
+        psi #> pair
       end
 
     fun Elim z alpha jdg =
@@ -449,22 +428,20 @@ struct
         val H' = Hyps.empty @> (z1, CJ.TRUE a) @> (z2, CJ.TRUE bz1)
         val H'' = Hyps.interposeAfter H z H'
 
-        val (goal, _) =
+        val (goal, hole) =
           makeGoal
             @@ ([], [(z1, O.EXP), (z2, O.EXP)])
             |> Hyps.modifyAfter z (CJ.map (substVar (pair, z))) H''
             >> CJ.TRUE (substVar (pair, z) cz)
 
         val psi = T.empty >: goal
+
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val fstz = Syn.into @@ Syn.FST ztm
+        val sndz = Syn.into @@ Syn.SND ztm
       in
-        (psi, fn rho =>
-           let
-             val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-             val fst = Syn.into @@ Syn.FST ztm
-             val snd = Syn.into @@ Syn.SND ztm
-           in
-             abtToAbs @@ Env.lookup rho (#1 goal) // ([], [fst, snd])
-           end)
+        T.empty >: goal
+          #> hole [] [fstz, sndz]
       end
   end
 
@@ -483,10 +460,9 @@ struct
 
         val (goal1, _) = makeGoal @@ H >> CJ.EQ_TYPE (a0, a1)
         val (goal2, _) = makeGoal @@ H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
-        val psi = T.empty >: goal1 >: goal2
       in
-        (psi, fn rho =>
-          Abt.abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goal1 >: goal2
+          #> trivial
       end
       handle Bind =>
         raise E.error [E.% "Expected dfun typehood sequent"]
@@ -507,10 +483,9 @@ struct
 
         val (goal1, _) = makeGoal @@ ([],[(w, O.EXP)]) |> H @> (w, CJ.TRUE a) >> CJ.EQ ((m0w, m1w), bw)
         val (goal2, _) = makeGoal @@ H >> CJ.TYPE a
-        val psi = T.empty >: goal1 >: goal2
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goal1 >: goal2
+          #> trivial
       end
 
     fun True alpha jdg =
@@ -519,18 +494,16 @@ struct
         val Syn.DFUN (a, x, bx) = Syn.out dfun
 
         val z = alpha 0
-        val bz = substVar (Syn.into @@ Syn.VAR (z, O.EXP), x) bx
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val bz = substVar (ztm, x) bx
 
         val (tyGoal, _) = makeGoal @@ H >> CJ.TYPE a
-        val (goal, _) = makeGoal @@ ([],[(z, O.EXP)]) |> H @> (z, CJ.TRUE a) >> CJ.TRUE bz
+        val (goal, hole) = makeGoal @@ ([],[(z, O.EXP)]) |> H @> (z, CJ.TRUE a) >> CJ.TRUE bz
+
         val psi = T.empty >: goal >: tyGoal
+        val lam = Syn.into @@ Syn.LAM (z, hole [] [ztm])
       in
-        (psi, fn rho =>
-           let
-             val (_, [x]) \ mx = outb @@ Env.lookup rho (#1 goal)
-           in
-             abtToAbs o Syn.into @@ Syn.LAM (x, mx)
-           end)
+        psi #> lam
       end
       handle Bind =>
         raise E.error [E.% "Expected dfun truth sequent"]
@@ -544,10 +517,9 @@ struct
         val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.AP (m, xtm))
         val (goal1, _) = makeGoal @@ H >> CJ.MEM (m, dfun)
         val (goal2, _) = makeGoal @@ H >> CJ.EQ ((m', n), dfun)
-        val psi = T.empty >: goal1 >: goal2
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goal1 >: goal2
+          #> trivial
       end
 
     fun Elim z alpha jdg =
@@ -567,18 +539,13 @@ struct
         val aptm = Syn.into @@ Syn.AP (ztm, hole1 [] [])
         val H' = Hyps.empty @> (u, CJ.TRUE b') @> (v, CJ.EQ ((utm, aptm), b'))
         val H'' = Hyps.interposeAfter H z H'
-        val (goal2, _) = makeGoal @@ ([], [(u, O.EXP), (v, O.TRIV)]) |> H'' >> CJ.TRUE cz
+
+        val (goal2, hole2) = makeGoal @@ ([], [(u, O.EXP), (v, O.TRIV)]) |> H'' >> CJ.TRUE cz
 
         val psi = T.empty >: goal1 >: goal2
+        val aptm = Syn.into @@ Syn.AP (ztm, hole1 [] [])
       in
-        (psi, fn rho =>
-          let
-            val m = Env.lookup rho (#1 goal1) // ([],[])
-            val aptm = Syn.into @@ Syn.AP (ztm, m)
-            val ax = Syn.into Syn.AX
-          in
-            abtToAbs @@ Env.lookup rho (#1 goal2) // ([], [aptm, ax])
-          end)
+        psi #> hole2 [] [aptm, Syn.into Syn.AX]
       end
 
     fun ApEq alpha jdg =
@@ -593,11 +560,9 @@ struct
         val (goalDom, holeDom) = makeGoal @@ MATCH (O.MONO O.DFUN, 0, holeDFun0 [] [])
         val (goalM, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeDFun0 [] [])
         val (goalN, _) = makeGoal @@ H >> CJ.EQ ((n0, n1), holeDom [] [])
-
-        val psi = T.empty >: goalDFun0 >: goalDFun1 >: goalDFunEq >: goalDom >: goalM >: goalN
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goalDFun0 >: goalDFun1 >: goalDFunEq >: goalDom >: goalM >: goalN
+          #> trivial
       end
   end
 
@@ -617,11 +582,9 @@ struct
         val (tyGoal, _) = makeGoal @@ H >> CJ.EQ_TYPE (a0u, a1u)
         val (goal0, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), a00)
         val (goal1, _) = makeGoal @@ H >> CJ.EQ ((n0, n1), a01)
-
-        val psi = T.empty >: tyGoal >: goal0 >: goal1
       in
-        (psi, fn rho =>
-          abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: tyGoal >: goal0 >: goal1
+          #> trivial
       end
 
     fun True alpha jdg =
@@ -641,13 +604,9 @@ struct
         val (cohGoal1, _) = makeGoal @@ H >> CJ.EQ ((m1, p1), a1)
 
         val psi = T.empty >: mainGoal >: cohGoal0 >: cohGoal1
+        val abstr = Syn.into @@ Syn.ID_ABS (v, mhole [(P.ret v, P.DIM)] [])
       in
-        (psi, fn rho =>
-           let
-             val ([v],_) \ p = outb @@ Env.lookup rho (#1 mainGoal)
-           in
-             abtToAbs o Syn.into @@ Syn.ID_ABS (v, p)
-           end)
+        psi #> abstr
       end
 
     fun Eq alpha jdg =
@@ -670,11 +629,9 @@ struct
         val (goalM, _) = makeGoal @@ ([(z, P.DIM)], []) |> H >> CJ.EQ ((m0z, m1z), az)
         val (goalM00, _) = makeGoal @@ H >> CJ.EQ ((m00, p0), a0)
         val (goalM01, _) = makeGoal @@ H >> CJ.EQ ((m01, p1), a1)
-
-        val psi = T.empty >: goalM >: goalM00 >: goalM01
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goalM >: goalM00 >: goalM01
+          #> trivial
       end
 
     fun ApEq alpha jdg =
@@ -687,10 +644,9 @@ struct
         val (goalMem, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeSynth [] [])
         val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.ID_TY, 0, holeSynth [] [])
         val (goalTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty, holeLine [(r0, P.DIM)] [])
-        val psi = T.empty >: goalSynth >: goalMem >: goalLine >: goalTy
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goalSynth >: goalMem >: goalLine >: goalTy
+          #> trivial
       end
 
     fun ApComputeConst alpha jdg =
@@ -704,10 +660,9 @@ struct
         val (goalEndpoint, holeEndpoint) = makeGoal @@ MATCH (O.MONO O.ID_TY, dimAddr, holeSynth [] [])
         val (goalTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (a, holeLine [(P.APP r, P.DIM)] [])
         val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((holeEndpoint [] [], p), a)
-        val psi = T.empty >: goalSynth >: goalLine >: goalEndpoint >: goalTy >: goalEq
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goalSynth >: goalLine >: goalEndpoint >: goalTy >: goalEq
+          #> trivial
       end
 
     fun Eta alpha jdg =
@@ -718,10 +673,9 @@ struct
         val m' = Syn.into @@ Syn.ID_ABS (u, Syn.into @@ Syn.ID_AP (m, P.ret u))
         val (goal1, _) = makeGoal @@ H >> CJ.MEM (m, pathTy)
         val (goal2, _) = makeGoal @@ H >> CJ.EQ ((m', n), pathTy)
-        val psi = T.empty >: goal1 >: goal2
       in
-        (psi, fn rho =>
-           abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goal1 >: goal2
+          #> trivial
       end
 
   end
@@ -741,7 +695,7 @@ struct
         fun go EMPTY env psi' = psi'
           | go (CONS (x, jdg, psi)) env psi' =
               let
-                 val vl as ((psorts, vsorts), tau) = J.evidenceValence jdg
+                 val vl as ((psorts, vsorts), tau) = J.sort jdg
                  val us = List.map (fn _ => Sym.named "u") psorts
                  val xs = List.map (fn _ => Var.named "x") vsorts
 
@@ -751,7 +705,7 @@ struct
                  val m = check (x $# (ps, ms), tau)
                  val b = checkb ((us, xs) \ m, vl)
 
-                 val jdg' = (U, G) |> J.substEvidenceEnv env jdg
+                 val jdg' = (U, G) |> J.subst env jdg
                  val env' = Metavar.Ctx.insert env x b
               in
                 go (out psi) env' (T.snoc psi' x jdg')
@@ -766,7 +720,7 @@ struct
       let
         val (U, G) |> jdg' = jdg
 
-        val st as (psi, vld) = tac alpha jdg'
+        val st as Lcf.|> (psi, vld) = tac alpha jdg'
 
         val psi' = liftTelescope (U, G) psi
 
@@ -795,11 +749,12 @@ struct
             checkb ((us' @ us, xs' @ xs) \ m, ((sigmas' @ sigmas, taus' @ taus), tau))
           end
 
-        fun vld' rho =
-          lift o vld @@ T.foldl (fn (x, _, r) => #3 @@ Env.operate r x (fn _ => raise Match) lower) rho psi
 
+        (* No idea if what follows is correct, I'm just guessing at this point! *)
+        val env = T.foldl (fn (x, jdg, r) => Env.insert r x (lower (LcfLanguage.var x (J.sort jdg)))) Env.empty psi'
+        val vld' = lift @@ mapAbs (substMetaenv env) vld
       in
-        (psi', vld')
+        Lcf.|> (psi', vld')
       end
   end
 
@@ -811,8 +766,7 @@ struct
         val catjdg' = lookupHyp H z
       in
         if CJ.eq (catjdg, catjdg') then
-          (T.empty, fn rho =>
-            abtToAbs o Syn.into @@ Syn.VAR (z, CJ.synthesis catjdg))
+          T.empty #> Syn.into (Syn.VAR (z, CJ.synthesis catjdg))
         else
           raise E.error [E.% "Hypothesis does not match goal"]
       end
@@ -826,13 +780,12 @@ struct
       let
         val H >> CJ.TYPE ty = jdg
         val (goal, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty, ty)
-        val psi = T.empty >: goal
       in
-        (psi, fn rho =>
-           Env.lookup rho (#1 goal))
+        T.empty >: goal
+          #> trivial
       end
       handle Bind =>
-        raise E.error [E.% @@ "Expected typehood sequent but got " ^ J.judgmentToString jdg]
+        raise E.error [E.% @@ "Expected typehood sequent but got " ^ J.toString jdg]
   end
 
   structure Truth =
@@ -841,13 +794,12 @@ struct
       let
         val H >> CJ.TRUE ty = jdg
         val (goal, _) = makeGoal @@ H >> CJ.MEM (tm, ty)
-        val psi = T.empty >: goal
       in
-        (psi, fn rho =>
-          abtToAbs tm)
+        T.empty >: goal
+          #> tm
       end
       handle Bind =>
-        raise E.error [E.% @@ "Expected truth sequent but got " ^ J.judgmentToString jdg]
+        raise E.error [E.% @@ "Expected truth sequent but got " ^ J.toString jdg]
   end
 
   structure Membership =
@@ -856,10 +808,9 @@ struct
       let
         val H >> CJ.MEM (tm, ty) = jdg
         val (goal, _) = makeGoal @@ H >> CJ.EQ ((tm, tm), ty)
-        val psi = T.empty >: goal
       in
-        (psi, fn rho =>
-          abtToAbs @@ Syn.into Syn.AX)
+        T.empty >: goal
+          #> trivial
       end
       handle Bind =>
         raise E.error [E.% "Expected member sequent"]
@@ -873,8 +824,7 @@ struct
         val Syn.VAR (z, O.EXP) = Syn.out tm
         val CJ.TRUE a = Hyps.lookup H z
       in
-        (T.empty, fn rho =>
-           abtToAbs a)
+        T.empty #> a
       end
 
     fun Ap alpha jdg =
@@ -883,12 +833,11 @@ struct
         val Syn.AP (m, n) = Syn.out tm
         val (goalDFun, holeDFun) = makeGoal @@ H >> CJ.SYNTH m
         val (goalDom, holeDom) = makeGoal @@ MATCH (O.MONO O.DFUN, 0, holeDFun [] [])
-        val (goalCod, _) = makeGoal @@ MATCH (O.MONO O.DFUN, 1, holeDFun [] [])
+        val (goalCod, holeCod) = makeGoal @@ MATCH (O.MONO O.DFUN, 1, holeDFun [] [])
         val (goalN, _) = makeGoal @@ H >> CJ.MEM (n, holeDom [] [])
-        val psi = T.empty >: goalDFun >: goalDom >: goalCod >: goalN
       in
-        (psi, fn rho =>
-           abtToAbs @@ Env.lookup rho (#1 goalCod) // ([],[n]))
+        T.empty >: goalDFun >: goalDom >: goalCod >: goalN
+          #> holeCod [] [n]
       end
 
     fun S1Elim alpha jdg =
@@ -898,10 +847,9 @@ struct
 
         val cm = substVar (m, x) cx
         val (goal, _) = makeGoal @@ H >> CJ.MEM (tm, cm)
-        val psi = T.empty >: goal
       in
-        (psi, fn rho =>
-           abtToAbs cm)
+        T.empty >: goal
+          #> cm
       end
 
     fun If alpha jdg =
@@ -911,10 +859,9 @@ struct
 
         val cm = substVar (m, x) cx
         val (goal, _) = makeGoal @@ H >> CJ.MEM (tm, cm)
-        val psi = T.empty >: goal
       in
-        (psi, fn rho =>
-           abtToAbs cm)
+        T.empty >: goal
+          #> cm
       end
 
     fun PathAp alpha jdg =
@@ -925,12 +872,8 @@ struct
         val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.ID_TY, 0, holePathTy [] [])
         val psi = T.empty >: goalPathTy >: goalLine
       in
-        (psi, fn rho =>
-           let
-             val ([u], _) \ line = outb @@ Env.lookup rho (#1 goalLine)
-           in
-             abtToAbs @@ substSymbol (r, u) line
-           end)
+        T.empty >: goalPathTy >: goalLine
+          #> holeLine [(r, P.DIM)] []
       end
 
     fun Fst alpha jdg =
@@ -938,11 +881,10 @@ struct
         val H >> CJ.SYNTH tm = jdg
         val Syn.FST m = Syn.out tm
         val (goalTy, holeTy) = makeGoal @@ H >> CJ.SYNTH m
-        val (goalA, _) = makeGoal @@ MATCH (O.MONO O.DPROD, 0, holeTy [] [])
-        val psi = T.empty >: goalTy >: goalA
+        val (goalA, holeA) = makeGoal @@ MATCH (O.MONO O.DPROD, 0, holeTy [] [])
       in
-        (psi, fn rho =>
-           Env.lookup rho @@ #1 goalA)
+        T.empty >: goalTy >: goalA
+          #> holeA [] []
       end
 
     fun Snd alpha jdg =
@@ -950,11 +892,10 @@ struct
         val H >> CJ.SYNTH tm = jdg
         val Syn.SND m = Syn.out tm
         val (goalTy, holeTy) = makeGoal @@ H >> CJ.SYNTH m
-        val (goalB, _) = makeGoal @@ MATCH (O.MONO O.DPROD, 1, holeTy [] [])
-        val psi = T.empty >: goalTy >: goalB
+        val (goalB, holeB) = makeGoal @@ MATCH (O.MONO O.DPROD, 1, holeTy [] [])
       in
-        (psi, fn rho =>
-          abtToAbs @@ Env.lookup rho (#1 goalB) // ([], [Syn.into @@ Syn.FST m]))
+        T.empty >: goalTy >: goalB
+          #> holeB [] [Syn.into @@ Syn.FST m]
       end
   end
 
@@ -970,8 +911,7 @@ struct
         val (vls, _) = Abt.O.arity th
         val abs = checkb (List.nth (args, k), List.nth (vls, k))
       in
-        (T.empty, fn rho =>
-           abs)
+        Lcf.|> (T.empty, abs)
       end
       handle _ =>
         raise E.error [E.% "MATCH judgment failed to unify"]
@@ -992,7 +932,7 @@ struct
            | _ => raise E.error [E.% "Equality.Hyp: expected truth hypothesis"]
       in
         if Syn.Tm.eq (ty, ty') then
-          (T.empty, fn rho => abtToAbs @@ Syn.into Syn.AX)
+          T.empty #> trivial
         else
           raise E.error [E.% @@ "Expected type of hypothesis " ^ Var.toString x ^ " to be", E.! ty, E.% "but found", E.! ty']
       end
@@ -1002,11 +942,10 @@ struct
     fun Symmetry alpha jdg =
       let
         val H >> CJ.EQ ((m, n), ty) = jdg
-        val (goal, _) = makeGoal @@ H >> CJ.EQ ((n, m), ty)
-        val psi = T.empty >: goal
+        val (goal, hole) = makeGoal @@ H >> CJ.EQ ((n, m), ty)
       in
-        (psi, fn rho =>
-           Env.lookup rho (#1 goal))
+        T.empty >: goal
+          #> trivial
       end
 
     local
@@ -1041,10 +980,9 @@ struct
         val hasFreeDims = List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support theta
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val (goal, _) = makeGoal @@ H >> CJ.EQ ((m', n), ty)
-        val psi = T.empty >: goal
       in
-        (psi, fn rho =>
-           Env.lookup rho (#1 goal))
+        T.empty >: goal
+          #> trivial
       end
   end
 
@@ -1053,18 +991,12 @@ struct
       val H >> catjdg' = jdg
       val z = alpha 0
       val tau = CJ.synthesis catjdg
-      val (goal1, _) = makeGoal @@ ([], [(z, tau)]) |> H @> (z, catjdg) >> catjdg'
-      val (goal2, _) = makeGoal @@ H >> catjdg
-      val psi = T.empty >: goal1 >: goal2
+      val (goal1, hole1) = makeGoal @@ ([], [(z, tau)]) |> H @> (z, catjdg) >> catjdg'
+      val (goal2, hole2) = makeGoal @@ H >> catjdg
     in
-      (psi, fn rho =>
-         let
-           val n = Env.lookup rho (#1 goal2) // ([], [])
-         in
-           abtToAbs @@ Env.lookup rho (#1 goal1) // ([], [n])
-         end)
+      T.empty >: goal1 >: goal2
+        #> hole1 [] [hole2 [] []]
     end
-
 
   fun Lemma thm alpha jdg =
     let
@@ -1073,8 +1005,7 @@ struct
       val catjdg' = CJ.fromAbt goal
       val true = CJ.eq (catjdg, catjdg')
     in
-      (T.empty, fn rho =>
-        abtToAbs evd)
+      T.empty #> evd
     end
 
   fun Lift tac alpha jdg =

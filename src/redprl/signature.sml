@@ -307,13 +307,13 @@ struct
           val tau = CJ.synthesis catjdg
           val pos = getAnnotation script
         in
-          E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (subgoals, vld) =>
-            if LcfModel.Lcf.T.isEmpty subgoals then
-              E.wrap (pos, fn _ => outb (vld Metavar.Ctx.empty)) >>= (fn _ \ evd =>
+          E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
+            if LcfModel.Lcf.Tl.isEmpty subgoals then
+              E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
                  E.ret (MONO (REFINE (true, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd]))
             else
               let
-                val stateStr = LcfModel.Lcf.stateToString state
+                val stateStr = Lcf.stateToString state
               in
                 E.warn (pos, "Incomplete proof: \n\n" ^ stateStr)
                   *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))

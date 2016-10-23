@@ -22,4 +22,6 @@ sig
 
   val pretty : ('a -> string) -> 'a jdg -> PP.doc
   val toString : ('a -> string) -> 'a jdg -> string
+
+  val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
 end
