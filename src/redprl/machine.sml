@@ -203,7 +203,7 @@ struct
      | O.MONO O.RULE_AUTO_STEP `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_AUTO `$ _ <: env =>
          S.STEP
-           @@ Tac.multirepeat (Tac.mprogress (Tac.all (Tac.try Tac.autoStep)))
+           @@ Tac.multirepeat (Tac.all (Tac.try Tac.autoStep))
            <: env
      | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
