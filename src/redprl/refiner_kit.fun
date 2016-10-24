@@ -50,7 +50,7 @@ end
 
 functor RefinerKit (Sig : MINI_SIGNATURE) =
 struct
-  structure E = RedPrlError and O = RedPrlOpData and T = Lcf.Tl and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
+  structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = AbtMachineUtil (RedPrlMachine (Sig))
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end

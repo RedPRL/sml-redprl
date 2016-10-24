@@ -1,7 +1,11 @@
-functor Refiner (Sig : MINI_SIGNATURE) =
+functor Refiner (Sig : MINI_SIGNATURE) : REFINER =
 struct
   structure Kit = RefinerKit (Sig)
   open RedPrlAbt Kit
+
+  type sign = Sig.sign
+  type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
+  type catjdg = abt CJ.jdg
 
   infixr @@
   infix 1 |>
@@ -713,8 +717,6 @@ struct
       in
         go (out psi) Metavar.Ctx.empty T.empty
       end
-
-    structure ST = ShowTelescope (T)
 
     fun Lift tac alpha jdg =
       let

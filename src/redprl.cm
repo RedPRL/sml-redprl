@@ -60,6 +60,7 @@ is
   redprl/machine.sml
 
   redprl/refiner_kit.fun
+  redprl/refiner.sig
   redprl/refiner.fun
   redprl/lcf_syntax.fun
   redprl/lcf_model.fun
