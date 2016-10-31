@@ -3,6 +3,12 @@ Thm boolTest : [ (x : bool) -> bool true ] by [
   auto
 ].
 
+// Identifiers can contain hyphens and slashes
+Thm ident-test/ : [ bool true ] by [
+  { 'tt };
+  auto
+].
+
 Thm pathTest : [ paths({x}. S1; base; base) true ] by [
   { <x> 'loop{x} }; auto
 ].
