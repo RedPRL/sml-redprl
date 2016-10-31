@@ -76,7 +76,7 @@ struct
         val i = !counter
       in
         counter := i + 1;
-        Metavar.named @@ "?" ^ str ^ Int.toString i
+        Metavar.named @@ str ^ Int.toString i
       end
   end
 
