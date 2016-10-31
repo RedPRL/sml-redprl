@@ -15,7 +15,7 @@ exception LexerError of pos
 %header (functor RedPrlLexFun (structure Tokens : RedPrl_TOKENS));
 alpha = [A-Za-z];
 digit = [0-9];
-any = [@a-zA-Z0-9\'];
+identChr = [@a-zA-Z0-9\'/-];
 whitespace = [\ \t];
 %%
 
@@ -111,4 +111,4 @@ whitespace = [\ \t];
 "type"             => (Tokens.JDG_TYPE (!pos, Coord.addchar 4 o (!pos)));
 "synth"            => (Tokens.JDG_SYNTH (!pos, Coord.addchar 5 o (!pos)));
 
-{alpha}{any}*      => (Tokens.IDENT (yytext, !pos, Coord.addchar (size yytext) o (!pos)));
+{alpha}{identChr}* => (Tokens.IDENT (yytext, !pos, Coord.addchar (size yytext) o (!pos)));
