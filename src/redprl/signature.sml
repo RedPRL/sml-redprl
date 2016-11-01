@@ -257,9 +257,17 @@ struct
             (E.ret ())
             (Tm.symctx term)
 
+        val varOccurrences = Susp.delay (fn _ => Tm.varOccurrences term)
         val checkVars =
           Tm.Var.Ctx.foldl
-            (fn (x, tau, r) => E.fail (termPos, "Unbound variable: " ^ Tm.Var.toString x) *> r)
+            (fn (x, tau, r) =>
+               let
+                 val pos = case Tm.Var.Ctx.find (Susp.force varOccurrences) x of
+                               SOME (pos :: _) => SOME pos
+                             | _ => termPos
+               in
+                 E.fail (pos, "Unbound variable: " ^ Tm.Var.toString x) *> r
+               end)
             (E.ret ())
             (Tm.varctx term)
 
