@@ -86,10 +86,12 @@ end
 %nonterm
    start of Signature.sign
 
-   (* a type-theoretic term, excluding function application *)
- | rawTerm of ast
    (* a type-theoretic term, including function application *)
+ | rawTerm of ast
+   (* a type-theoretic term, excluding function application *)
  | atomicRawTerm of ast
+   (* ... annotated with source position*)
+ | atomicTerm of ast
 
    (* a type-theoretic term, annotated with source position *)
  | term of ast
@@ -281,9 +283,11 @@ atomicRawTerm
   | LANGLE IDENT RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([IDENT],[]), term)]))
   | term AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.ID_AP param), [\ (([],[]), term)]))
 
+atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
+
 rawTerm
-  : term atomicRawTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicRawTerm)]))
-  | atomicRawTerm (atomicRawTerm)
+  : term atomicTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicTerm)]))
+  | atomicTerm (atomicTerm)
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
