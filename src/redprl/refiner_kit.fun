@@ -19,30 +19,47 @@ struct
        PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
        PP.line]
 
-  val prettyGoals : jdg Tl.telescope -> PP.doc =
-    Tl.foldl
-      (fn (x, jdg, r) => PP.concat [r, prettyGoal (x, jdg), PP.line])
-      PP.empty
+  val prettyGoals : jdg Tl.telescope -> {doc : PP.doc, env : J.env, idx : int} =
+    let
+      open RedPrlAbt
+    in
+      Tl.foldl
+        (fn (x, jdg, {doc, env, idx}) =>
+          let
+            val x' = Metavar.named (Int.toString idx)
+            val jdg' = J.subst env jdg
+            val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' (J.sort jdg'))
+          in
+            {doc = PP.concat [doc, prettyGoal (x', jdg'), PP.line],
+             env = env',
+             idx = idx + 1}
+          end)
+        {doc = PP.empty, env = Metavar.Ctx.empty, idx = 0}
+    end
 
-  fun prettyValidation vld =
+  fun prettyValidation env vld =
     let
       open RedPrlAbt infix \
       val _ \ m = outb vld
     in
-      PP.text (TermPrinter.toString m)
+      PP.text (TermPrinter.toString (substMetaenv env m))
     end
 
   fun prettyState (psi |> vld) =
-    PP.concat
-      [prettyGoals psi,
-       PP.newline,
-       PP.rule #"-",
-       PP.newline,
-       PP.text "Current Proof Extract:",
-       PP.newline,
-       PP.rule #"-",
-       PP.newline, PP.newline,
-       prettyValidation vld]
+    let
+      val {doc = goals, env, idx} = prettyGoals psi
+    in
+      PP.concat
+        [goals,
+         PP.newline,
+         PP.rule #"-",
+         PP.newline,
+         PP.text "Current Proof Extract:",
+         PP.newline,
+         PP.rule #"-",
+         PP.newline, PP.newline,
+         prettyValidation env vld]
+    end
 
   val stateToString : jdg state -> string =
     PP.toString 80 false o prettyState
