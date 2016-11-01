@@ -1,8 +1,10 @@
-Red JonPRL is authored by the following people:
+The following people have contributed code and work to RedPRL:
 
 - Jon Sterling
 - Danny Gratzer
 - Eugene Akentyev
+- James Wilcox
+- David Christiansen
 
 We also thank the following people for their contributions to previous versions
 of JonPRL:
