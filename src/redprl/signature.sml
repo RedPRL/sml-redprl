@@ -243,15 +243,19 @@ struct
     fun scopeCheck (metactx, symctx) term : Tm.abt E.t =
       let
         val termPos = Tm.getAnnotation term
+        val symOccurrences = Susp.delay (fn _ => Tm.symOccurrences term)
         val checkSyms =
           Tm.Sym.Ctx.foldl
             (fn (u, tau, r) =>
               let
                 val tau' = Tm.Sym.Ctx.find symctx u
                 val ustr = Tm.Sym.toString u
+                val pos = case Tm.Sym.Ctx.find (Susp.force symOccurrences) u of
+                               SOME (pos :: _) => SOME pos
+                             | _ => (print ("couldn't find position for var " ^ ustr); termPos)
               in
-                E.when (tau' = NONE, E.fail (termPos, "Unbound symbol: " ^ ustr))
-                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (termPos, "Symbol sort mismatch: " ^ ustr))
+                E.when (tau' = NONE, E.fail (pos, "Unbound symbol: " ^ ustr))
+                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, "Symbol sort mismatch: " ^ ustr))
                   *> r
               end)
             (E.ret ())
