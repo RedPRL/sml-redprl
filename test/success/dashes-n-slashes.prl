@@ -1,0 +1,5 @@
+// Identifiers can contain hyphens and slashes
+Thm ident-test/ : [ bool true ] by [
+  { 'tt };
+  auto
+].
