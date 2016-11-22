@@ -1,0 +1,3 @@
+Def cmp(#f : exp; #g : exp) : exp = [
+  lam([x]. #f (#h x))
+].
