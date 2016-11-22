@@ -291,9 +291,15 @@ struct
         AstToAbt.NameEnv.empty
         metactx
 
-    fun convertToAbt (metactx, symctx, env) ast sort =
-      E.wrap (RedPrlAst.getAnnotation ast, fn () => AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort))
-        >>= scopeCheck (metactx, symctx)
+    local
+      structure Err = RedPrlError
+    in
+      fun convertToAbt (metactx, symctx, env) ast sort =
+        E.wrap (RedPrlAst.getAnnotation ast,
+                fn () => AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort)
+                         handle AstToAbt.FreeMeta (mv, pos) => raise Err.annotate pos (Err.error [Err.% "Unbound metavariable", Err.% mv]))
+          >>= scopeCheck (metactx, symctx)
+    end
 
     fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
       let
