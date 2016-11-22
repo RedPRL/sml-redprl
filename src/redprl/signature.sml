@@ -163,6 +163,8 @@ struct
           >>= Option.map arityOfDecl o getEntry
       end
 
+    structure Err = RedPrlError
+
     (* During parsing, the arity of a custom-operator application is not known; but we can
      * derive it from the signature "so far". Prior to adding a declaration to the signature,
      * we process its terms to fill this in. *)
@@ -170,7 +172,7 @@ struct
       open RedPrlAst
       infix $ $$ $# $$# \
 
-      fun processOp sign =
+      fun processOp pos sign =
         fn O.POLY (O.CUST (opid, ps, NONE)) =>
            (case arityOfOpid sign opid of
                SOME (psorts, ar) =>
@@ -187,13 +189,13 @@ struct
                  in
                    O.POLY (O.CUST (opid, ps', SOME ar))
                  end
-             | NONE => raise Fail ("Encountered undefined custom operator: " ^ opid))
+             | NONE => raise Err.annotate pos (Err.error [Err.% "Encountered undefined custom operator:", Err.% opid]))
          | th => th
 
       fun processTerm' sign m =
         case out m of
            `x => ``x
-         | th $ es => processOp sign th $$ List.map (fn bs \ m => bs \ processTerm sign m) es
+         | th $ es => processOp (getAnnotation m) sign th $$ List.map (fn bs \ m => bs \ processTerm sign m) es
          | x $# (ps, ms) => x $$# (ps, List.map (processTerm sign) ms)
 
       and processTerm sign m =
@@ -360,10 +362,11 @@ struct
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
         fun decorate e = e >>= (fn x => E.dump (pos, declToString (opid, decl)) *> E.ret x)
       in
-        case processDecl sign decl of
-           DEF defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabDef sign' opid defn)))
-         | THM defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabThm sign' opid pos defn)))
-         | TAC defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabTac sign' opid defn)))
+        ETelescope.snoc esign' eopid (decorate (E.delay (fn _ =>
+          case processDecl sign decl of
+             DEF defn => elabDef sign' opid defn
+           | THM defn => elabThm sign' opid pos defn
+           | TAC defn => elabTac sign' opid defn)))
       end
 
     fun elabPrint (sign : sign) (pos, opid) =
