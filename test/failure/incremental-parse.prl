@@ -1,0 +1,11 @@
+// Two copies of the same theorem. The first one has a syntax error
+// (curlys instead of squares around the proof), but the second one is
+// just fine, and should be processed by RedPRL despite the earlier error.
+
+Thm foo : [tt = tt : bool ] by {
+  auto
+}.
+
+Thm bar : [ tt = tt : bool ] by [
+  auto
+].
