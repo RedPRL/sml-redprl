@@ -4,7 +4,7 @@ REDPRL=./bin/redprl
 PROBLEM=0
 
 echo "Building RedPRL..."
-./script/mlton.sh >/dev/null 2>&1 || { echo "build failed"; exit 1; }
+./script/mlton.sh >build.log 2>&1 || { echo "build failed!"; cat build.log; exit 1; }
 echo "done!"
 
 # Ensure that the examples file and all suceeding tests succeed
