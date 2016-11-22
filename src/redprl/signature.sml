@@ -362,10 +362,11 @@ struct
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
         fun decorate e = e >>= (fn x => E.dump (pos, declToString (opid, decl)) *> E.ret x)
       in
-        case processDecl sign decl of
-           DEF defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabDef sign' opid defn)))
-         | THM defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabThm sign' opid pos defn)))
-         | TAC defn => ETelescope.snoc esign' eopid (decorate (E.delay (fn _ => elabTac sign' opid defn)))
+        ETelescope.snoc esign' eopid (decorate (E.delay (fn _ =>
+          case processDecl sign decl of
+             DEF defn => elabDef sign' opid defn
+           | THM defn => elabThm sign' opid pos defn
+           | TAC defn => elabTac sign' opid defn)))
       end
 
     fun elabPrint (sign : sign) (pos, opid) =
