@@ -1,0 +1,10 @@
+Def not : exp = [
+  lam([x]. if/s(x; ff; tt))
+].
+
+// An [Output] message should display for not(), even though the
+// following theorem is malformed.
+
+Thm foo : [ bar() = bar() : sbool ] by [
+  auto
+].
