@@ -84,7 +84,7 @@ end
 
 
 %nonterm
-   start of Signature.sign
+   start of Signature.src_elt
 
    (* a type-theoretic term, including function application *)
  | rawTerm of ast
@@ -147,22 +147,22 @@ end
    (* a declaration in a RedPRL signature *)
  | rawDecl of string * Signature.src_decl
    (* a declaration, annotated with source position *)
- | decl of string * (Signature.src_decl * Pos.t option)
+ | decl of string * Signature.src_decl * Pos.t
    (* a RedPRL signature *)
  | rawCmd of Signature.src_cmd
  | cmd of Signature.src_cmd * Pos.t
- | sign of Signature.sign
+ | elt of Signature.src_elt
 
 %verbose
 %pos (string -> Coord.t)
 %start start
-%eop EOF
+%eop EOF CMD_PRINT DCL_DEF DCL_TAC DCL_THM
 %noshift EOF
 %name RedPrl
 %arg (fileName) : string
 %%
 
-start : sign (sign)
+start : elt (elt)
 
 psort
   : DIM (P.DIM)
@@ -400,14 +400,13 @@ rawDecl
   | DCL_THM IDENT declParamsBrackets declArgumentsParens COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
       (IDENT, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = judgment, script = tactic})
 
-decl : rawDecl (#1 rawDecl, (#2 rawDecl, SOME (Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))))
+decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))
 
 rawCmd
   : CMD_PRINT IDENT (Signature.PRINT IDENT)
 
 cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
 
-sign
-  : (Signature.empty)
-  | sign decl DOT (Signature.insert sign (#1 decl) (#2 decl))
-  | sign cmd DOT (Signature.command sign cmd)
+elt
+  : cmd DOT (Signature.CMD cmd)
+  | decl DOT (Signature.DECL decl)

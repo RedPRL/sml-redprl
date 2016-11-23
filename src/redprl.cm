@@ -5,6 +5,7 @@ Library
   structure Signature
   structure RedPrlLog
   structure RedPrlError
+  structure RedPrlLrVals
 is
   $/basis.cm
   $/ml-yacc-lib.cm
