@@ -1,11 +1,16 @@
-// Two copies of the same theorem. The first one has a syntax error
-// (curlys instead of squares around the proof), but the second one is
-// just fine, and should be processed by RedPRL despite the earlier error.
+// Three copies of the same theorem. The second one has a syntax error
+// (curlys instead of squares around the proof), but the first and
+// last ones are just fine, and should be processed by RedPRL despite
+// the error in the middle.
 
-Thm foo : [tt = tt : bool ] by {
+Thm foo : [ tt = tt : bool ] by [
+  auto
+].
+
+Thm bar : [ tt = tt : bool ] by {
   auto
 }.
 
-Thm bar : [ tt = tt : bool ] by [
+Thm baz : [ tt = tt : bool ] by [
   auto
 ].
