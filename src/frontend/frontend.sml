@@ -17,10 +17,13 @@ struct
         end
     end
 
-  exception ParseError of Pos.t * string
-
-  fun error fileName (s, pos, pos') : unit =
-    raise ParseError (Pos.pos (pos fileName) (pos' fileName), s)
+  local
+    structure E = RedPrlError
+  in
+    fun error fileName (s, pos, pos') : unit =
+      raise E.annotate (SOME (Pos.pos (pos fileName) (pos' fileName)))
+            (RedPrlError.error [E.% s])
+  end
 
   fun parseSig fileName =
     let
@@ -33,6 +36,6 @@ struct
 
   fun processFile fileName =
     Signature.check (parseSig fileName)
-    handle ParseError (pos, msg) => (RedPrlLog.print RedPrlLog.FAIL (SOME pos, msg); false)
-         | exn => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (Coord.init fileName) (Coord.init fileName)), RedPrlError.format exn); false)
+    handle exn => (RedPrlLog.print RedPrlLog.FAIL (RedPrlError.annotation exn, RedPrlError.format exn); false)
+
 end
