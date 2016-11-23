@@ -22,14 +22,17 @@ struct
   fun error fileName (s, pos, pos') : unit =
     raise ParseError (Pos.pos (pos fileName) (pos' fileName), s)
 
-  fun processFile fileName =
+  fun parseSig fileName =
     let
       val input = TextIO.inputAll (TextIO.openIn fileName)
       val lexer = RedPrlParser.makeLexer (stringreader input) fileName
       val (sign, _) = RedPrlParser.parse (1, lexer, error fileName, fileName)
     in
-      Signature.check sign
+      sign
     end
+
+  fun processFile fileName =
+    Signature.check (parseSig fileName)
     handle ParseError (pos, msg) => (RedPrlLog.print RedPrlLog.FAIL (SOME pos, msg); false)
          | exn => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (Coord.init fileName) (Coord.init fileName)), RedPrlError.format exn); false)
 end
