@@ -36,6 +36,10 @@ struct
 
     type src_cmd = src_opid cmd
 
+    datatype src_elt =
+       DECL of string * src_decl * Pos.t
+     | CMD of src_cmd * Pos.t
+
     (* elaborated declarations *)
     datatype elab_decl =
        EDEF of entry

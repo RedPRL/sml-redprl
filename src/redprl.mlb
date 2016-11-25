@@ -70,4 +70,5 @@ in
   structure Signature
   structure RedPrlLog
   structure RedPrlError
+  structure RedPrlLrVals
 end

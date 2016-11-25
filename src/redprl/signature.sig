@@ -34,6 +34,10 @@ sig
 
   type src_cmd = src_opid cmd
 
+  datatype src_elt =
+     DECL of string * src_decl * Pos.t
+   | CMD of src_cmd * Pos.t
+
   val empty : sign
   val insert : sign -> src_opid -> src_decl * Pos.t option -> sign
   val command : sign -> src_opid cmd * Pos.t -> sign
