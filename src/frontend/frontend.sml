@@ -20,13 +20,10 @@ struct
   local
     structure E = RedPrlError
   in
-    fun error fileName (s, pos, pos') : unit =
+    fun error fileName (s, pos, pos') =
       raise E.annotate (SOME (Pos.pos (pos fileName) (pos' fileName)))
             (RedPrlError.error [E.% s])
   end
-
-  fun parseElt fileName lexer =
-    RedPrlParser.parse (0, lexer, error fileName, fileName)
 
   local
     open Signature
@@ -44,6 +41,7 @@ struct
     val THM = RedPrlLrVals.Tokens.DCL_THM (Coord.init, Coord.init)
     val TAC = RedPrlLrVals.Tokens.DCL_TAC (Coord.init, Coord.init)
     val PRINT = RedPrlLrVals.Tokens.CMD_PRINT (Coord.init, Coord.init)
+    val DOT = RedPrlLrVals.Tokens.DOT (Coord.init, Coord.init)
 
     fun isBeginElt tok =
       RedPrlParser.Token.sameToken (tok, THM) orelse
@@ -53,6 +51,34 @@ struct
 
     fun isEof tok =
       RedPrlParser.Token.sameToken (tok, EOF)
+
+    fun isDot tok =
+      RedPrlParser.Token.sameToken (tok, DOT)
+
+    fun getPos (RedPrlParser.Token.TOKEN (_, (_, c_start, c_end))) =
+      (c_start, c_end)
+
+    fun skipDot fileName lexer =
+      let
+        val (next_tok, lexer') = RedPrlParser.Stream.get lexer
+      in
+        if isDot next_tok
+        then lexer'
+        else
+          let
+            val (c1, c2) = getPos next_tok
+          in
+            error fileName ("Expected '.' after element.", c1, c2)
+          end
+      end
+
+    fun parseElt fileName lexer =
+      let
+        val (elt, lexer) = RedPrlParser.parse (0, lexer, error fileName, fileName)
+        val lexer = skipDot fileName lexer
+      in
+        (elt, lexer)
+      end
 
     fun skipToBeginElt lexer =
       let
