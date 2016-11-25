@@ -78,7 +78,7 @@ struct
       end
       handle exn => (logExn exn; (false, sign, recover lexer))
   in
-    fun parseSig fileName =
+    fun parseSig fileName buf =
       let
         fun loop acc lexer sign =
           let
@@ -94,18 +94,27 @@ struct
               end
           end
 
-        val input = TextIO.inputAll (TextIO.openIn fileName)
-        val lexer = RedPrlParser.makeLexer (stringreader input) fileName
+        val lexer = RedPrlParser.makeLexer (stringreader buf) fileName
       in
         loop true lexer Signature.empty
       end
   end
 
-  fun processFile fileName =
+  fun processBuffer fileName buf =
     let
-      val (noParseErrors, sign) = parseSig fileName
+      val (noParseErrors, sign) = parseSig fileName buf
     in
       Signature.check sign andalso noParseErrors
     end
     handle exn => (logExn exn; false)
+
+  fun processStream fileName stream =
+    let
+      val input = TextIO.inputAll stream
+    in
+      processBuffer fileName input
+    end
+
+  fun processFile fileName =
+    processStream fileName (TextIO.openIn fileName)
 end
