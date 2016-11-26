@@ -156,7 +156,7 @@ end
 %verbose
 %pos (string -> Coord.t)
 %start start
-%eop EOF CMD_PRINT DCL_DEF DCL_TAC DCL_THM
+%eop EOF DOT
 %noshift EOF
 %name RedPrl
 %arg (fileName) : string
@@ -408,5 +408,5 @@ rawCmd
 cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
 
 elt
-  : cmd DOT (Signature.CMD cmd)
-  | decl DOT (Signature.DECL decl)
+  : cmd (Signature.CMD cmd)
+  | decl (Signature.DECL decl)
