@@ -26,8 +26,6 @@ fun posTupleWith n x =
     (x, l, r)
   end
 
-exception LexerError of pos
-
 %%
 %arg (fileName : string);
 %header (functor RedPrlLexFun (structure Tokens : RedPrl_TOKENS));
@@ -130,3 +128,5 @@ whitespace = [\ \t];
 "synth"            => (Tokens.JDG_SYNTH (posTuple (size yytext)));
 
 {alpha}{identChr}* => (Tokens.IDENT (posTupleWith (size yytext) yytext));
+
+.                  => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (!pos yyarg) (!pos yyarg)), "lexical error: skipping unrecognized character '" ^ yytext ^ "'"); continue ());
