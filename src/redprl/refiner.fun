@@ -328,7 +328,7 @@ struct
         val (goal1, _) = makeGoal @@ H >> CJ.EQ_TYPE (a0, a1)
         val (goal2, _) = makeGoal @@ H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
       in
-        T.empty >: goal1 >: goal1
+        T.empty >: goal1 >: goal2
           #> trivial
       end
       handle Bind =>
