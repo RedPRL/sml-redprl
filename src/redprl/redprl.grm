@@ -79,7 +79,7 @@ end
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
 %nonassoc SQUIGGLE
-%right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE
+%right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %left FUN_APP AT_SIGN
 
 
@@ -346,7 +346,7 @@ rawMultitac
   | MTAC_REC IDENT IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[IDENT]), multitac)]))
   | LBRACKET multitac RBRACKET (multitac)
   | hypBindings LEFT_ARROW multitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac1 hypBindings multitac2)
-  | multitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac1 [] multitac2)
+  | multitac SEMI multitac %prec SEMI (Tac.makeSeq multitac1 [] multitac2)
   | atomicTac (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
   | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
 
@@ -358,7 +358,7 @@ hypBindings
   | IDENT COMMA hypBindings ((IDENT, P.HYP) :: hypBindings)
 
 rawTactic
-  : multitac (Tac.multitacToTac multitac)
+  : multitac %prec SEMI (Tac.multitacToTac multitac)
 
 tactic
   : rawTactic (annotate (Pos.pos (rawTactic1left fileName) (rawTactic1right fileName)) rawTactic)
