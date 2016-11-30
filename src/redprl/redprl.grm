@@ -333,7 +333,6 @@ atomicRawTac
 
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-  | IDENT (`` IDENT)
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 
