@@ -1,0 +1,5 @@
+// The term syntax `f(foo)` is ambiguous: is it a custom operator f, or is
+// it a variable f with foo surrounded by parens.
+Thm custom-op-versus-parens : [ (f : (x : bool) -> bool) -> bool true ] by [
+  'lam([f]. f (f tt))
+].
