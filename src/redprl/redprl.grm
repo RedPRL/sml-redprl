@@ -286,7 +286,7 @@ atomicRawTerm
 atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
 
 rawTerm
-  : term atomicTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicTerm)]))
+  : rawTerm atomicTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)), \ (([],[]), atomicTerm)]))
   | atomicTerm (atomicTerm)
 
 rawJudgment
