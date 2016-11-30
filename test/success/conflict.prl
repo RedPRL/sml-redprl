@@ -3,3 +3,10 @@
 Thm custom-op-versus-parens : [ (f : (x : bool) -> bool) -> bool true ] by [
   'lam([f]. f (f tt))
 ].
+
+// The tactic syntax is ambiguous in several places because the empty
+// string parses as `all(id)`. For example `[]` could mean each() or
+// each(all(id)). The current parser arbitrarily chooses the latter.
+Thm square-bracket : [ (f : (x : bool) -> bool) -> bool true ] by [
+  {lam f. }; []
+].
