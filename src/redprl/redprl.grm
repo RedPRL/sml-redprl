@@ -80,7 +80,8 @@ end
 
 %nonassoc SQUIGGLE
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
-%left FUN_APP AT_SIGN
+%left FUN_APP
+%left AT_SIGN
 %nonassoc SND FST S1 BASE LOOP PATHS S_IF IF FF TT S_BOOL BOOL UNIV COE HCOM LAMBDA COMMA HASH IDENT LANGLE LPAREN
 
 
@@ -291,7 +292,7 @@ atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (ato
 
 rawTerm
   : rawTerm atomicTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)), \ (([],[]), atomicTerm)]))
-  | atomicTerm (atomicTerm)
+  | atomicTerm %prec FUN_APP (atomicTerm)
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
