@@ -312,7 +312,7 @@ atomicRawTac
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
   | RULE_LEMMA LBRACKET term COLON sort RBRACKET (Ast.$$ (O.MONO (O.RULE_LEMMA (false, sort)), [\ (([],[]), term)]))
 
-  | tactic DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (tactic1, tactic2))
+  | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
   | LAMBDA IDENT DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
