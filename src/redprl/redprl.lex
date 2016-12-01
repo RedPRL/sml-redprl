@@ -31,7 +31,7 @@ fun posTupleWith n x =
 %header (functor RedPrlLexFun (structure Tokens : RedPrl_TOKENS));
 alpha = [A-Za-z];
 digit = [0-9];
-identChr = [@a-zA-Z0-9\'/-];
+identChr = [a-zA-Z0-9\'/-];
 whitespace = [\ \t];
 %%
 
