@@ -1,0 +1,4 @@
+Def Foo(#a : exp; #b : exp) : exp = [ (x : #a) -> #b ].
+
+Thm Foo-bool-type : [Foo(bool) type] by [
+].
