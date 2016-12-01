@@ -81,6 +81,8 @@ end
 %nonassoc SQUIGGLE
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %left FUN_APP AT_SIGN
+%nonassoc SND FST S1 BASE LOOP PATHS S_IF IF FF TT S_BOOL BOOL UNIV COE HCOM LAMBDA COMMA HASH IDENT LANGLE LPAREN
+
 
 
 %nonterm
@@ -261,7 +263,7 @@ metavar
 dir
   : param SQUIGGLE_ARROW param ((param1, param2))
 
-term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
+term : rawTerm %prec FUN_APP (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
 
 atomicRawTerm
   : LPAREN term RPAREN (term)
