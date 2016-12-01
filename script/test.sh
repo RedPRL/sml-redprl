@@ -27,3 +27,5 @@ done
 if [ $PROBLEM -eq 0 ] ; then
     echo "All tests ran as expected!"
 fi
+
+exit $PROBLEM
