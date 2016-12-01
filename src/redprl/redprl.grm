@@ -134,6 +134,8 @@ end
  | tactic of ast
  | tactics of ast list
  | hypBindings of (string * P.param_sort) list
+ | atomicRawMultitac of ast
+ | atomicMultitac of ast
  | rawMultitac of ast
  | multitac of ast
  | atomicRawTac of ast
@@ -338,7 +340,7 @@ atomicRawTac
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 
-rawMultitac
+atomicRawMultitac
   : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
   | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS NUMERAL), [\ (([],[]), tactic)]))
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REPEAT, [\ (([], []), multitac)]))
@@ -346,10 +348,16 @@ rawMultitac
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
   | MTAC_REC IDENT IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[IDENT]), multitac)]))
   | LBRACKET multitac RBRACKET (multitac)
-  | hypBindings LEFT_ARROW multitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac1 hypBindings multitac2)
-  | multitac SEMI multitac %prec SEMI (Tac.makeSeq multitac1 [] multitac2)
-  | atomicTac (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
+  | hypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac hypBindings atomicRawMultitac)
+  | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
   | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
+
+atomicMultitac
+  : atomicRawMultitac (annotate (Pos.pos (atomicRawMultitac1left fileName) (atomicRawMultitac1right fileName)) atomicRawMultitac)
+
+rawMultitac
+  : multitac SEMI atomicMultitac %prec SEMI (Tac.makeSeq multitac [] atomicMultitac)
+  | atomicMultitac %prec SEMI (atomicMultitac)
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
