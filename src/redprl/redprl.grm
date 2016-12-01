@@ -363,8 +363,7 @@ tactic
   : rawTactic (annotate (Pos.pos (rawTactic1left fileName) (rawTactic1right fileName)) rawTactic)
 
 tactics
-  : ([])
-  | tactic ([tactic])
+  : tactic ([tactic])
   | tactic COMMA tactics (tactic :: tactics)
 
 declArgument
