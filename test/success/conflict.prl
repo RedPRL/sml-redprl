@@ -1,12 +1,12 @@
 // The term syntax `f(foo)` is ambiguous: is it a custom operator f, or is
 // it a variable f with foo surrounded by parens.
-Thm custom-op-versus-parens : [ (f : (x : bool) -> bool) -> bool true ] by [
-  'lam([f]. f (f tt))
+Thm Custom-op-versus-parens : [ (f : (x : bool) -> bool) -> bool true ] by [
+  'lam([f]. f (f tt)); auto
 ].
 
 // The tactic syntax is ambiguous in several places because the empty
 // string parses as `all(id)`. For example `[]` could mean each() or
 // each(all(id)). The current parser arbitrarily chooses the latter.
-Thm square-bracket : [ (f : (x : bool) -> bool) -> bool true ] by [
-  {lam f. }; []
+Thm Square-bracket : [ (f : (x : bool) -> bool) -> bool true ] by [
+  {lam f. 'tt}; []; auto
 ].

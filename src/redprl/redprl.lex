@@ -29,7 +29,8 @@ fun posTupleWith n x =
 %%
 %arg (fileName : string);
 %header (functor RedPrlLexFun (structure Tokens : RedPrl_TOKENS));
-alpha = [A-Za-z];
+upper = [A-Z];
+lower = [a-z];
 digit = [0-9];
 identChr = [a-zA-Z0-9\'/-];
 whitespace = [\ \t];
@@ -127,6 +128,7 @@ whitespace = [\ \t];
 "type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));
 "synth"            => (Tokens.JDG_SYNTH (posTuple (size yytext)));
 
-{alpha}{identChr}* => (Tokens.IDENT (posTupleWith (size yytext) yytext));
+{lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));
+{upper}{identChr}* => (Tokens.OPNAME (posTupleWith (size yytext) yytext));
 
 .                  => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (!pos yyarg) (!pos yyarg)), "lexical error: skipping unrecognized character '" ^ yytext ^ "'"); continue ());
