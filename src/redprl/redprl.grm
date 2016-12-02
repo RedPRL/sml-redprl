@@ -42,6 +42,7 @@ end
    EOF
  | VARNAME of string
  | OPNAME of string
+ | UNDER
  | NUMERAL of int
  | COLON
  | LANGLE | RANGLE
@@ -104,6 +105,8 @@ end
  | term of ast
  | terms of ast list
  | funapp of ast
+
+ | boundVar of string
 
    (* abt abstractions *)
  | binder of symbol list * symbol list
@@ -221,10 +224,14 @@ extents
   : param ([param])
   | param COMMA extents (param :: extents)
 
+boundVar
+  : VARNAME (VARNAME)
+  | UNDER ("_")
+
 symbols
   : ([])
-  | VARNAME ([VARNAME])
-  | VARNAME COMMA symbols (VARNAME :: symbols)
+  | boundVar ([boundVar])
+  | boundVar COMMA symbols (boundVar :: symbols)
 
 terms
   : ([])
@@ -282,8 +289,8 @@ atomicRawTerm
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
   | VARNAME (`` VARNAME)
-  | LPAREN VARNAME COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[VARNAME]), term2)]))
-  | LPAREN VARNAME COLON term RPAREN TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), term1), \ (([],[VARNAME]), term2)]))
+  | LPAREN boundVar COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[boundVar]), term2)]))
+  | LPAREN boundVar COLON term RPAREN TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), term1), \ (([],[boundVar]), term2)]))
   | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
   | UNIV LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.UNIV param), []))
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
@@ -293,7 +300,7 @@ atomicRawTerm
   | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
   | LOOP LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.LOOP param), []))
-  | LANGLE VARNAME RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([VARNAME],[]), term)]))
+  | LANGLE boundVar RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([boundVar],[]), term)]))
   | atomicTerm AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.ID_AP param), [\ (([],[]), atomicTerm)]))
 
 atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
@@ -328,8 +335,8 @@ atomicRawTac
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
-  | LAMBDA VARNAME DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([VARNAME], []), tactic)]))
-  | LANGLE VARNAME RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([VARNAME], []), tactic)]))
+  | LAMBDA boundVar DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([boundVar], []), tactic)]))
+  | LANGLE boundVar RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([boundVar], []), tactic)]))
   | LANGLE tactic COMMA tactic RANGLE (Ast.$$ (O.MONO O.DEV_DPROD_INTRO, [\ (([], []), tactic1), \ (([],[]), tactic2)]))
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
