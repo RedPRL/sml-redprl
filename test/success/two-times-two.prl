@@ -1,0 +1,3 @@
+Thm TwoTimesTwo : [ (x : bool) * bool true ] by [
+  '(< tt , tt >); auto
+].
