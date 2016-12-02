@@ -208,7 +208,7 @@ valence
   : bindingSig sort ((bindingSig, sort))
 
 param
-  : ident (P.VAR ident)
+  : VARNAME (P.VAR VARNAME)
   | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise Fail "Invalid dimension constant"))
   | param APOSTROPHE (P.APP (P.LVL_SUCC param))
 
@@ -223,8 +223,8 @@ extents
 
 symbols
   : ([])
-  | ident ([ident])
-  | ident COMMA symbols (ident :: symbols)
+  | VARNAME ([VARNAME])
+  | VARNAME COMMA symbols (VARNAME :: symbols)
 
 terms
   : ([])
@@ -399,7 +399,7 @@ declArgumentsParens
   | ([])
 
 declParam
-  : ident COLON psort (ident, psort)
+  : VARNAME COLON psort (VARNAME, psort)
 
 declParams
   : ([])
