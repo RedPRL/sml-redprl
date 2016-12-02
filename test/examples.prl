@@ -1,19 +1,19 @@
-Thm BoolTest : [ (x : bool) -> bool true ] by [
+Thm BoolTest : [ bool -> bool true ] by [
   { lam x. if x then 'tt else 'ff };
   auto
 ].
 
-Thm PathTest : [ paths({x}. S1; base; base) true ] by [
+Thm PathTest : [ paths({_}. S1; base; base) true ] by [
   { <x> 'loop{x} }; auto
 ].
 
-Thm FunElimTest : [ (f : (x : bool) -> bool) -> bool true ] by [
+Thm FunElimTest : [ (bool -> bool) -> bool true ] by [
   { lam f. let x = f {'tt}. hyp{x} };
 
   auto
 ].
 
-Thm S1ElimTest : [ (s : S1) -> S1 true ] by [
+Thm S1ElimTest : [ S1 -> S1 true ] by [
   { lam s.
     case s of
        base => 'base
@@ -28,10 +28,10 @@ Thm S1ElimTest : [ (s : S1) -> S1 true ] by [
 Tac TryStep = [ auto-step || id ].
 
 Thm ApEqTest : [
-  (f : (x : bool) -> bool)
-    -> paths({y}. bool; f tt; f tt) true
+  (f : bool -> bool)
+    -> paths({_}. bool; f tt; f tt) true
 ] by [
-  { lam f. <y> '(,f tt) };
+  { lam f. <_> '(,f tt) };
 
   // Try commenting out the following line, and stepping through the proof with tryStep().
   auto
@@ -48,8 +48,8 @@ Def BoolEta(#M : exp) : exp = [
 // calculus. The advantage of this style of proof is that we can leave holes, and interactively figure out
 // what we need to do.
 //
-Thm PathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].BoolEta(b))) true ] by [
-  { let h : [(b:bool) -> paths({x}.bool; b; BoolEta(b)) true] =
+Thm PathTest2 : [ paths({_}. bool -> bool; lam([b].b); lam([b].BoolEta(b))) true ] by [
+  { let h : [(b:bool) -> paths({_}.bool; b; BoolEta(b)) true] =
       lam b. if b then <y> 'tt else <y> 'ff.
     <x> lam b. let p = h hyp{b}. '(,p @ x)
   };
@@ -62,13 +62,13 @@ Thm PathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].BoolEta(b))) 
 // This approach has the advantage of being far more concise, but it has the disadvantage of
 // not being interactive: you must know ahead of time the entirety of the program, and
 // cannot take advantage of types in order to synthesize part of it.
-Thm PathTest3 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].BoolEta(b))) true ] by [
+Thm PathTest3 : [ paths({_}. bool -> bool; lam([b].b); lam([b].BoolEta(b))) true ] by [
   // I'm surprised that RedPRL can typecheck this properly! Quite encouraging.
-  '(<x> lam([b]. if([b].paths({x}.bool; b; BoolEta(b)); b; <y> tt; <y> ff) @ x));
+  '(<x> lam([b]. if([b].paths({_}.bool; b; BoolEta(b)); b; <_> tt; <_> ff) @ x));
   auto
 ].
 
-Thm PairTest : [ (a : S1) * paths({x}. S1; a; base) true ] by [
+Thm PairTest : [ (a : S1) * paths({_}. S1; a; base) true ] by [
   < {'base}
   , <x> 'loop{x}
   >;
@@ -84,6 +84,6 @@ Def Cmp(#f : exp; #g : exp) : exp = [
   lam([x]. #f (#g x))
 ].
 
-Thm StrictBoolTest : [ Not() = Cmp(Not(); Cmp(Not(); Not())) : (x : sbool) -> sbool ] by [
+Thm StrictBoolTest : [ Not() = Cmp(Not(); Cmp(Not(); Not())) : sbool -> sbool ] by [
   auto
 ].
