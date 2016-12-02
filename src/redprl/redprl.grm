@@ -82,6 +82,7 @@ end
 
 %nonassoc SQUIGGLE
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
+%right TIMES
 %nonassoc COMMA
 %left FUN_APP
 %left AT_SIGN
@@ -104,7 +105,8 @@ end
    (* a type-theoretic term, annotated with source position *)
  | term of ast
  | terms of ast list
- | funapp of ast
+ | rawFunApp of ast
+ | funApp of ast
 
  | boundVar of string
 
@@ -305,9 +307,16 @@ atomicRawTerm
 
 atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
 
-rawTerm
+rawFunApp
   : rawTerm atomicTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)), \ (([],[]), atomicTerm)]))
   | atomicTerm %prec FUN_APP (atomicTerm)
+
+funApp : rawFunApp (annotate (Pos.pos (rawFunAppleft fileName) (rawFunAppright fileName)) rawFunApp)
+
+rawTerm
+  : funApp RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), funApp), \ (([],["_"]), term)]))
+  | funApp TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), funApp), \ (([],["_"]), term)]))
+  | funApp %prec RIGHT_ARROW (funApp)
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
