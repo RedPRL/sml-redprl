@@ -40,7 +40,8 @@ end
 
 %term
    EOF
- | IDENT of string
+ | VARNAME of string
+ | OPNAME of string
  | NUMERAL of int
  | COLON
  | LANGLE | RANGLE
@@ -79,12 +80,18 @@ end
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
 %nonassoc SQUIGGLE
-%right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE
-%left FUN_APP AT_SIGN
+%right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
+%nonassoc COMMA
+%left FUN_APP
+%left AT_SIGN
+%nonassoc SND FST S1 BASE LOOP PATHS S_IF IF FF TT S_BOOL BOOL UNIV COE HCOM LAMBDA HASH LANGLE LPAREN VARNAME OPNAME
+
 
 
 %nonterm
    start of Signature.src_elt
+
+ | ident of string
 
    (* a type-theoretic term, including function application *)
  | rawTerm of ast
@@ -132,6 +139,8 @@ end
  | tactic of ast
  | tactics of ast list
  | hypBindings of (string * P.param_sort) list
+ | atomicRawMultitac of ast
+ | atomicMultitac of ast
  | rawMultitac of ast
  | multitac of ast
  | atomicRawTac of ast
@@ -164,6 +173,10 @@ end
 
 start : elt (elt)
 
+ident
+  : OPNAME (OPNAME)
+  | VARNAME (VARNAME)
+
 psort
   : DIM (P.DIM)
   | EXN (P.EXN)
@@ -195,7 +208,7 @@ valence
   : bindingSig sort ((bindingSig, sort))
 
 param
-  : IDENT (P.VAR IDENT)
+  : VARNAME (P.VAR VARNAME)
   | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise Fail "Invalid dimension constant"))
   | param APOSTROPHE (P.APP (P.LVL_SUCC param))
 
@@ -210,8 +223,8 @@ extents
 
 symbols
   : ([])
-  | IDENT ([IDENT])
-  | IDENT COMMA symbols (IDENT :: symbols)
+  | VARNAME ([VARNAME])
+  | VARNAME COMMA symbols (VARNAME :: symbols)
 
 terms
   : ([])
@@ -244,7 +257,7 @@ operator
   : LAMBDA (O.MONO O.LAM)
   | HCOM LBRACKET extents SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
-  | IDENT customOpParams (O.POLY (O.CUST (IDENT, customOpParams, NONE)))
+  | OPNAME customOpParams (O.POLY (O.CUST (OPNAME, customOpParams, NONE)))
   | IF (O.MONO O.IF)
   | S_IF (O.MONO O.S_IF)
   | PATHS (O.MONO O.ID_TY)
@@ -256,21 +269,21 @@ customOpParams
   | ([])
 
 metavar
-  : HASH IDENT (IDENT)
+  : HASH ident (ident)
 
 dir
   : param SQUIGGLE_ARROW param ((param1, param2))
 
-term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
+term : rawTerm %prec FUN_APP (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
 
 atomicRawTerm
   : LPAREN term RPAREN (term)
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-  | COMMA IDENT (Ast.$$ (O.POLY (O.HYP_REF IDENT), []))
-  | IDENT (`` IDENT)
-  | LPAREN IDENT COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
-  | LPAREN IDENT COLON term RPAREN TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), term1), \ (([],[IDENT]), term2)]))
+  | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
+  | VARNAME (`` VARNAME)
+  | LPAREN VARNAME COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[VARNAME]), term2)]))
+  | LPAREN VARNAME COLON term RPAREN TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), term1), \ (([],[VARNAME]), term2)]))
   | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
   | UNIV LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.UNIV param), []))
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
@@ -280,14 +293,14 @@ atomicRawTerm
   | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
   | LOOP LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.LOOP param), []))
-  | LANGLE IDENT RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([IDENT],[]), term)]))
-  | term AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.ID_AP param), [\ (([],[]), term)]))
+  | LANGLE VARNAME RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([VARNAME],[]), term)]))
+  | atomicTerm AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.ID_AP param), [\ (([],[]), atomicTerm)]))
 
 atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
 
 rawTerm
-  : term atomicTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), term), \ (([],[]), atomicTerm)]))
-  | atomicTerm (atomicTerm)
+  : rawTerm atomicTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)), \ (([],[]), atomicTerm)]))
+  | atomicTerm %prec FUN_APP (atomicTerm)
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
@@ -306,66 +319,71 @@ atomicRawTac
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
   | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
   | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
-  | RULE_HYP LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_HYP IDENT), []))
-  | RULE_ELIM LBRACKET IDENT RBRACKET (Ast.$$ (O.POLY (O.RULE_ELIM IDENT), []))
+  | RULE_HYP LBRACKET VARNAME RBRACKET (Ast.$$ (O.POLY (O.RULE_HYP VARNAME), []))
+  | RULE_ELIM LBRACKET VARNAME RBRACKET (Ast.$$ (O.POLY (O.RULE_ELIM VARNAME), []))
   | APOSTROPHE term (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
   | RULE_LEMMA LBRACKET term COLON sort RBRACKET (Ast.$$ (O.MONO (O.RULE_LEMMA (false, sort)), [\ (([],[]), term)]))
 
-  | tactic DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (tactic1, tactic2))
+  | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
-  | LAMBDA IDENT DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([IDENT], []), tactic)]))
-  | LANGLE IDENT RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([IDENT], []), tactic)]))
+  | LAMBDA VARNAME DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([VARNAME], []), tactic)]))
+  | LANGLE VARNAME RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([VARNAME], []), tactic)]))
   | LANGLE tactic COMMA tactic RANGLE (Ast.$$ (O.MONO O.DEV_DPROD_INTRO, [\ (([], []), tactic1), \ (([],[]), tactic2)]))
-  | IF IDENT THEN tactic ELSE tactic
-      (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM IDENT), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
-  | LET IDENT COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
-      (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([IDENT],[]), tactic2)]))
-  | LET IDENT WITH IDENT EQUALS IDENT tactic DOT tactic
-      (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT3), [\ (([],[]), tactic1), \ (([IDENT1, IDENT2],[]), tactic2)]))
-  | LET IDENT EQUALS IDENT tactic DOT tactic
-      (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM IDENT2), [\ (([],[]), tactic1), \ (([IDENT1, "_"],[]), tactic2)]))
-  | LET LANGLE IDENT COMMA IDENT RANGLE EQUALS IDENT DOT tactic
-      (Ast.$$ (O.POLY (O.DEV_DPROD_ELIM IDENT3), [\ (([IDENT1, IDENT2],[]), tactic)]))
-  | CASE IDENT OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP LBRACKET IDENT RBRACKET DOUBLE_RIGHT_ARROW tactic
-      (Ast.$$ (O.POLY (O.DEV_S1_ELIM IDENT1), [\ (([],[]), tactic1), \(([IDENT2], []), tactic2)]))
+  | IF VARNAME THEN tactic ELSE tactic
+      (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
+  | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
+      (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
+  | LET VARNAME WITH VARNAME EQUALS VARNAME tactic DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM VARNAME3), [\ (([],[]), tactic1), \ (([VARNAME1, VARNAME2],[]), tactic2)]))
+  | LET VARNAME EQUALS VARNAME tactic DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
+  | LET LANGLE VARNAME COMMA VARNAME RANGLE EQUALS VARNAME DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_DPROD_ELIM VARNAME3), [\ (([VARNAME1, VARNAME2],[]), tactic)]))
+  | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP LBRACKET VARNAME RBRACKET DOUBLE_RIGHT_ARROW tactic
+      (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-  | IDENT (`` IDENT)
+  | VARNAME (`` VARNAME)
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 
-rawMultitac
+atomicRawMultitac
   : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
   | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS NUMERAL), [\ (([],[]), tactic)]))
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REPEAT, [\ (([], []), multitac)]))
   | MTAC_AUTO (Ast.$$ (O.MONO O.MTAC_AUTO, []))
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
-  | MTAC_REC IDENT IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[IDENT]), multitac)]))
+  | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
   | LBRACKET multitac RBRACKET (multitac)
-  | hypBindings LEFT_ARROW multitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac1 hypBindings multitac2)
-  | multitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac1 [] multitac2)
-  | atomicTac (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
+  | hypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac hypBindings atomicRawMultitac)
+  | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
   | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
+
+atomicMultitac
+  : atomicRawMultitac (annotate (Pos.pos (atomicRawMultitac1left fileName) (atomicRawMultitac1right fileName)) atomicRawMultitac)
+
+rawMultitac
+  : multitac SEMI atomicMultitac %prec SEMI (Tac.makeSeq multitac [] atomicMultitac)
+  | atomicMultitac %prec SEMI (atomicMultitac)
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
 
 hypBindings
-  : IDENT ([(IDENT, P.HYP)])
-  | IDENT COMMA hypBindings ((IDENT, P.HYP) :: hypBindings)
+  : VARNAME ([(VARNAME, P.HYP)])
+  | VARNAME COMMA hypBindings ((VARNAME, P.HYP) :: hypBindings)
 
 rawTactic
-  : multitac (Tac.multitacToTac multitac)
+  : multitac %prec SEMI (Tac.multitacToTac multitac)
 
 tactic
   : rawTactic (annotate (Pos.pos (rawTactic1left fileName) (rawTactic1right fileName)) rawTactic)
 
 tactics
-  : ([])
-  | tactic ([tactic])
+  : tactic ([tactic])
   | tactic COMMA tactics (tactic :: tactics)
 
 declArgument
@@ -381,7 +399,7 @@ declArgumentsParens
   | ([])
 
 declParam
-  : IDENT COLON psort (IDENT, psort)
+  : VARNAME COLON psort (VARNAME, psort)
 
 declParams
   : ([])
@@ -393,17 +411,17 @@ declParamsBrackets
   | ([])
 
 rawDecl
-  : DCL_DEF IDENT declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
-      (IDENT, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
-  | DCL_TAC IDENT declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
-      (IDENT, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
-  | DCL_THM IDENT declParamsBrackets declArgumentsParens COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
-      (IDENT, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = judgment, script = tactic})
+  : DCL_DEF OPNAME declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
+      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
+  | DCL_TAC OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
+      (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
+  | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = judgment, script = tactic})
 
 decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))
 
 rawCmd
-  : CMD_PRINT IDENT (Signature.PRINT IDENT)
+  : CMD_PRINT OPNAME (Signature.PRINT OPNAME)
 
 cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
 

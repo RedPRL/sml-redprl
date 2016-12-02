@@ -1,3 +1,3 @@
-Thm test : [ (x : bool) * bool = (y : bool) * bool type ] by [
+Thm Test : [ (x : bool) * bool = (y : bool) * bool type ] by [
   auto
 ].

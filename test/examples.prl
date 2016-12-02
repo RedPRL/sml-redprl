@@ -1,19 +1,19 @@
-Thm boolTest : [ (x : bool) -> bool true ] by [
+Thm BoolTest : [ (x : bool) -> bool true ] by [
   { lam x. if x then 'tt else 'ff };
   auto
 ].
 
-Thm pathTest : [ paths({x}. S1; base; base) true ] by [
+Thm PathTest : [ paths({x}. S1; base; base) true ] by [
   { <x> 'loop{x} }; auto
 ].
 
-Thm funElimTest : [ (f : (x : bool) -> bool) -> bool true ] by [
+Thm FunElimTest : [ (f : (x : bool) -> bool) -> bool true ] by [
   { lam f. let x = f {'tt}. hyp{x} };
 
   auto
 ].
 
-Thm s1ElimTest : [ (s : S1) -> S1 true ] by [
+Thm S1ElimTest : [ (s : S1) -> S1 true ] by [
   { lam s.
     case s of
        base => 'base
@@ -25,9 +25,9 @@ Thm s1ElimTest : [ (s : S1) -> S1 true ] by [
 
 // Useful for stepping through a proof RedPRL completes automatically, to see
 // what is being done.
-Tac tryStep = [ auto-step || id ].
+Tac TryStep = [ auto-step || id ].
 
-Thm apEqTest : [
+Thm ApEqTest : [
   (f : (x : bool) -> bool)
     -> paths({y}. bool; f tt; f tt) true
 ] by [
@@ -37,7 +37,7 @@ Thm apEqTest : [
   auto
 ].
 
-Def boolEta(#M : exp) : exp = [
+Def BoolEta(#M : exp) : exp = [
   if([a].bool; #M; tt; ff)
 ].
 
@@ -48,8 +48,8 @@ Def boolEta(#M : exp) : exp = [
 // calculus. The advantage of this style of proof is that we can leave holes, and interactively figure out
 // what we need to do.
 //
-Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
-  { let h : [(b:bool) -> paths({x}.bool; b; boolEta(b)) true] =
+Thm PathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].BoolEta(b))) true ] by [
+  { let h : [(b:bool) -> paths({x}.bool; b; BoolEta(b)) true] =
       lam b. if b then <y> 'tt else <y> 'ff.
     <x> lam b. let p = h hyp{b}. '(,p @ x)
   };
@@ -62,13 +62,13 @@ Thm pathTest2 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) 
 // This approach has the advantage of being far more concise, but it has the disadvantage of
 // not being interactive: you must know ahead of time the entirety of the program, and
 // cannot take advantage of types in order to synthesize part of it.
-Thm pathTest3 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].boolEta(b))) true ] by [
+Thm PathTest3 : [ paths({x}. (b:bool) -> bool; lam([b].b); lam([b].BoolEta(b))) true ] by [
   // I'm surprised that RedPRL can typecheck this properly! Quite encouraging.
-  '(<x> lam([b]. if([b].paths({x}.bool; b; boolEta(b)); b; <y> tt; <y> ff) @ x));
+  '(<x> lam([b]. if([b].paths({x}.bool; b; BoolEta(b)); b; <y> tt; <y> ff) @ x));
   auto
 ].
 
-Thm pairTest : [ (a : S1) * paths({x}. S1; a; base) true ] by [
+Thm PairTest : [ (a : S1) * paths({x}. S1; a; base) true ] by [
   < {'base}
   , <x> 'loop{x}
   >;
@@ -76,14 +76,14 @@ Thm pairTest : [ (a : S1) * paths({x}. S1; a; base) true ] by [
 ].
 
 
-Def not : exp = [
+Def Not : exp = [
   lam([x]. if/s(x; ff; tt))
 ].
 
-Def cmp(#f : exp; #g : exp) : exp = [
+Def Cmp(#f : exp; #g : exp) : exp = [
   lam([x]. #f (#g x))
 ].
 
-Thm strictBoolTest : [ not() = cmp(not(); cmp(not(); not())) : (x : sbool) -> sbool ] by [
+Thm StrictBoolTest : [ Not() = Cmp(Not(); Cmp(Not(); Not())) : (x : sbool) -> sbool ] by [
   auto
 ].
