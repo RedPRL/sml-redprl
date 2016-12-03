@@ -4,7 +4,9 @@ local
   debug.mlb
   frontend/frontend.sml
   frontend/main.sml
+  frontend/main-mlton.sml
 in
   structure Frontend
   structure Main
+  structure MainMLton
 end

@@ -59,11 +59,4 @@ struct
     handle E =>
       (print (RedPrlError.format E);
        OS.Process.failure)
-
-(*  val _ =
-    OS.Process.exit
-      (main
-        (CommandLine.name (),
-         CommandLine.arguments ())) *)
-
 end
