@@ -15,7 +15,11 @@ sig
   structure Equality :
   sig
     val Symmetry : rule
-    val HeadExpansion : sign -> rule
+  end
+
+  structure Computation : 
+  sig
+    val EqHeadExpansion : sign -> rule
   end
 
   structure Truth :

@@ -25,7 +25,7 @@ struct
      | O.POLY (O.RULE_HYP z) $ _ => Rules.Lift (Rules.Hyp.Project z)
      | O.POLY (O.RULE_ELIM z) $ _ => Rules.Lift (Rules.Elim sign z)
      | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Lift (Rules.Truth.Witness tm)
-     | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Lift (Rules.Equality.HeadExpansion sign)
+     | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Lift (Rules.Computation.EqHeadExpansion sign)
      | O.MONO O.RULE_SYMMETRY $ _ => Rules.Lift Rules.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Lift (Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg))
      | O.MONO (O.RULE_LEMMA _) $ [_ \ thm] => Rules.Lift (Rules.Lemma thm)
