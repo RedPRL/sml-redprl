@@ -60,10 +60,10 @@ struct
       (print (RedPrlError.format E);
        OS.Process.failure)
 
-  val _ =
+(*  val _ =
     OS.Process.exit
       (main
         (CommandLine.name (),
-         CommandLine.arguments ()))
+         CommandLine.arguments ())) *)
 
 end
