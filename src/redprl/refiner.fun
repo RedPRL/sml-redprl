@@ -32,7 +32,7 @@ struct
 
     fun Refl _ jdg =
       let
-        val _ = RedPrlLog.trace "CEquiv.Refl" 
+        val _ = RedPrlLog.trace "CEquiv.Refl"
         val H >> CJ.CEQUIV (m, n) = jdg
         val _ = assertAlphaEq (m, n)
       in
@@ -58,7 +58,7 @@ struct
 
     fun EqBase _ jdg =
       let
-        val _ = RedPrlLog.trace "S1.EqBase" 
+        val _ = RedPrlLog.trace "S1.EqBase"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.S1 = Syn.out ty
         val Syn.BASE = Syn.out m
@@ -152,7 +152,7 @@ struct
   struct
     fun EqType _ jdg =
       let
-        val _ = RedPrlLog.trace "Bool.EqType"  
+        val _ = RedPrlLog.trace "Bool.EqType"
         val H >> CJ.EQ_TYPE (a, b) = jdg
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
@@ -829,7 +829,7 @@ struct
         raise E.error [E.% @@ "Expected typehood sequent but got " ^ J.toString jdg]
   end
 
-  structure TypeEquality = 
+  structure TypeEquality =
   struct
     fun Symmetry alpha jdg =
     let
@@ -1015,8 +1015,8 @@ struct
       end
   end
 
-  structure Computation = 
-  struct 
+  structure Computation =
+  struct
 
     local
       open Machine.S.Cl infix <: $
@@ -1055,7 +1055,7 @@ struct
           #> trivial
       end
 
-    fun EqTypeHeadExpansion sign alpha jdg = 
+    fun EqTypeHeadExpansion sign alpha jdg =
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val H >> CJ.EQ_TYPE (ty1, ty2) = jdg
@@ -1118,9 +1118,9 @@ struct
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
          | (Syn.ID_TY _, Syn.ID_TY _) => Path.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
-         | _ => (print ("StepEqType: " ^ TermPrinter.toString ty1 ^ " | " ^ TermPrinter.toString ty2 ^ "\n"); raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2])
+         | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
-      fun StepEqType sign (ty1, ty2) = 
+      fun StepEqType sign (ty1, ty2) =
         case (Machine.canonicity sign ty1, Machine.canonicity sign ty2) of
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
          | (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
@@ -1188,7 +1188,7 @@ struct
          | Syn.ID_AP _ => Synth.PathAp
          | Syn.FST _ => Synth.Fst
          | Syn.SND _ => Synth.Snd
-         | _ => (print ("StepSynth: " ^ TermPrinter.toString m ^ "\n"); raise E.error [E.% "Could not find suitable type synthesis rule for", E.! m])
+         | _ => raise E.error [E.% "Could not find suitable type synthesis rule for", E.! m]
 
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.TRUE ty => StepTrue sign ty
@@ -1197,7 +1197,7 @@ struct
           | _ >> CJ.MEM _ => Membership.Intro
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
-          | MATCH _ => Match.MatchOperator 
+          | MATCH _ => Match.MatchOperator
           | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString TermPrinter.toString jdg)])
     in
       val AutoStep = StepJdg
