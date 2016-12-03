@@ -16,11 +16,12 @@ struct
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    | ID_TY of (symbol * 'a) * 'a * 'a | ID_ABS of symbol * 'a | ID_AP of 'a * param
    | CUST
+   | META
 
   local
     open Tm
     structure O = RedPrlOpData and P = RedPrlParameterTerm and E = RedPrlError
-    infix $ $$ \
+    infix $ $$ $# \
   in
     val into =
       fn VAR (x, tau) => check (`x, tau)
@@ -46,6 +47,7 @@ struct
        | ID_ABS (u, m) => O.MONO O.ID_ABS $$ [([u],[]) \ m]
        | ID_AP (m, r) => O.POLY (O.ID_AP r) $$ [([],[]) \ m]
        | CUST => raise Fail "CUST"
+       | META => raise Fail "META"
 
     fun out m =
       case Tm.out m of
@@ -72,6 +74,7 @@ struct
        | O.MONO O.ID_ABS $ [([u],_) \ m] => ID_ABS (u, m)
        | O.POLY (O.ID_AP r) $ [_ \ m] => ID_AP (m, r)
        | O.POLY (O.CUST _) $ _ => CUST
+       | _ $# _ => META
        | _ => raise E.error [E.% "Syntax view encountered unrecognized term", E.! m]
 
     fun heteroCom (exts, dir) ((u, a), cap, tube) =

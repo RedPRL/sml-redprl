@@ -20,6 +20,7 @@ struct
   struct
     fun EvalGoal sign _ jdg =
       let
+        val _ = RedPrlLog.trace "CEquiv.EvalGoal"
         val H >> CJ.CEQUIV (m, n) = jdg
         val (goal, hole) = makeGoal @@ H >> CJ.CEQUIV (Machine.eval sign m, Machine.eval sign n)
       in
@@ -31,6 +32,7 @@ struct
 
     fun Refl _ jdg =
       let
+        val _ = RedPrlLog.trace "CEquiv.Refl" 
         val H >> CJ.CEQUIV (m, n) = jdg
         val _ = assertAlphaEq (m, n)
       in
@@ -44,6 +46,7 @@ struct
   struct
     fun EqType _ jdg =
       let
+        val _ = RedPrlLog.trace "S1.EqType"
         val H >> CJ.EQ_TYPE (a, b) = jdg
         val Syn.S1 = Syn.out a
         val Syn.S1 = Syn.out b
@@ -55,6 +58,7 @@ struct
 
     fun EqBase _ jdg =
       let
+        val _ = RedPrlLog.trace "S1.EqBase" 
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.S1 = Syn.out ty
         val Syn.BASE = Syn.out m
@@ -65,6 +69,7 @@ struct
 
     fun EqLoop _ jdg =
       let
+        val _ = RedPrlLog.trace "S1.EqLoop"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.S1 = Syn.out ty
         val Syn.LOOP r1 = Syn.out m
@@ -78,6 +83,7 @@ struct
 
     fun Elim z alpha jdg =
       let
+        val _ = RedPrlLog.trace "S1.Elim"
         val H >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
         val Syn.S1 = Syn.out ty
@@ -110,6 +116,7 @@ struct
 
     fun ElimEq alpha jdg =
       let
+        val _ = RedPrlLog.trace "S1.ElimEq"
         val H >> CJ.EQ ((elim0, elim1), c) = jdg
         val Syn.S1_ELIM ((x, c0x), m0, (b0, (u, l0u))) = Syn.out elim0
         val Syn.S1_ELIM ((y, c1y), m1, (b1, (v, l1v))) = Syn.out elim1
@@ -145,6 +152,7 @@ struct
   struct
     fun EqType _ jdg =
       let
+        val _ = RedPrlLog.trace "Bool.EqType"  
         val H >> CJ.EQ_TYPE (a, b) = jdg
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
@@ -156,6 +164,7 @@ struct
 
     fun EqTT _ jdg =
       let
+        val _ = RedPrlLog.trace "Bool.EqTT"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.BOOL = Syn.out ty
         val Syn.TT = Syn.out m
@@ -166,6 +175,7 @@ struct
 
     fun EqFF _ jdg =
       let
+        val _ = RedPrlLog.trace "Bool.EqFF"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.BOOL = Syn.out ty
         val Syn.FF = Syn.out m
@@ -176,6 +186,7 @@ struct
 
     fun Elim z _ jdg =
       let
+        val _ = RedPrlLog.trace "Bool.Elim"
         val H >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
         val Syn.BOOL = Syn.out ty
@@ -197,6 +208,7 @@ struct
 
     fun ElimEq alpha jdg =
       let
+        val _ = RedPrlLog.trace "Bool.ElimEq"
         val H >> CJ.EQ ((if0, if1), c) = jdg
         val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
         val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
@@ -224,6 +236,7 @@ struct
   struct
     fun EqType _ jdg =
       let
+        val _ = RedPrlLog.trace "StrictBool.EqType"
         val H >> CJ.EQ_TYPE (a, b) = jdg
         val Syn.S_BOOL = Syn.out a
         val Syn.S_BOOL = Syn.out b
@@ -235,6 +248,7 @@ struct
 
     fun EqTT _ jdg =
       let
+        val _ = RedPrlLog.trace "StrictBool.EqTT"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.S_BOOL = Syn.out ty
         val Syn.TT = Syn.out m
@@ -245,6 +259,7 @@ struct
 
     fun EqFF _ jdg =
       let
+        val _ = RedPrlLog.trace "StrictBool.EqFF"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.S_BOOL = Syn.out ty
         val Syn.FF = Syn.out m
@@ -255,6 +270,7 @@ struct
 
     fun Elim z _ jdg =
       let
+        val _ = RedPrlLog.trace "StrictBool.Elim"
         val H >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
         val Syn.S_BOOL = Syn.out ty
@@ -276,6 +292,7 @@ struct
 
     fun ElimEq alpha jdg =
       let
+        val _ = RedPrlLog.trace "StrictBool.ElimEq"
         val H >> CJ.EQ ((if0, if1), c) = jdg
         val Syn.S_IF (m0, (t0, f0)) = Syn.out if0
         val Syn.S_IF (m1, (t1, f1)) = Syn.out if1
@@ -290,6 +307,7 @@ struct
 
     fun EqElim z _ jdg =
       let
+        val _ = RedPrlLog.trace "StrictBool.EqElim"
         val H >> catjdg = jdg
         val CJ.EQ ((m0z, m1z), cz) = catjdg
 
@@ -316,6 +334,7 @@ struct
   struct
     fun EqType alpha jdg =
       let
+        val _ = RedPrlLog.trace "DProd.EqType"
         val H >> CJ.EQ_TYPE (dfun0, dfun1) = jdg
         val Syn.DPROD (a0, x, b0x) = Syn.out dfun0
         val Syn.DPROD (a1, y, b1y) = Syn.out dfun1
@@ -336,6 +355,7 @@ struct
 
     fun Eq alpha jdg =
       let
+        val _ = RedPrlLog.trace "DProd.Eq"
         val H >> CJ.EQ ((pair0, pair1), dprod) = jdg
         val Syn.PAIR (m0, n0) = Syn.out pair0
         val Syn.PAIR (m1, n1) = Syn.out pair1
@@ -355,6 +375,7 @@ struct
 
     fun Eta alpha jdg =
       let
+        val _ = RedPrlLog.trace "DProd.Eta"
         val H >> CJ.EQ ((m, n), dprod) = jdg
         val Syn.DPROD (a, x, bx) = Syn.out dprod
 
@@ -368,6 +389,7 @@ struct
 
     fun FstEq alpha jdg =
       let
+        val _ = RedPrlLog.trace "DProd.FstEq"
         val H >> CJ.EQ ((fst0, fst1), ty) = jdg
         val Syn.FST m0 = Syn.out fst0
         val Syn.FST m1 = Syn.out fst1
@@ -383,6 +405,7 @@ struct
 
     fun SndEq alpha jdg =
       let
+        val _ = RedPrlLog.trace "DProd.SndEq"
         val H >> CJ.EQ ((snd0, snd1), ty) = jdg
         val Syn.SND m0 = Syn.out snd0
         val Syn.SND m1 = Syn.out snd1
@@ -398,6 +421,7 @@ struct
 
     fun True alpha jdg =
       let
+        val _ = RedPrlLog.trace "DProd.True"
         val H >> CJ.TRUE dprod = jdg
         val Syn.DPROD (a, x, bx) = Syn.out dprod
 
@@ -416,6 +440,7 @@ struct
 
     fun Elim z alpha jdg =
       let
+        val _ = RedPrlLog.trace "DProd.Elim"
         val H >> CJ.TRUE cz = jdg
         val CJ.TRUE dprod = Hyps.lookup H z
         val Syn.DPROD (a, x, bx) = Syn.out dprod
@@ -453,6 +478,7 @@ struct
   struct
     fun EqType alpha jdg =
       let
+        val _ = RedPrlLog.trace "DFun.EqType"
         val H >> CJ.EQ_TYPE (dfun0, dfun1) = jdg
         val Syn.DFUN (a0, x, b0x) = Syn.out dfun0
         val Syn.DFUN (a1, y, b1y) = Syn.out dfun1
@@ -473,6 +499,7 @@ struct
 
     fun Eq alpha jdg =
       let
+        val _ = RedPrlLog.trace "DFun.Eq"
         val H >> CJ.EQ ((lam0, lam1), dfun) = jdg
         val Syn.LAM (x, m0x) = Syn.out lam0
         val Syn.LAM (y, m1y) = Syn.out lam1
@@ -494,6 +521,7 @@ struct
 
     fun True alpha jdg =
       let
+        val _ = RedPrlLog.trace "DFun.True"
         val H >> CJ.TRUE dfun = jdg
         val Syn.DFUN (a, x, bx) = Syn.out dfun
 
@@ -514,6 +542,7 @@ struct
 
     fun Eta alpha jdg =
       let
+        val _ = RedPrlLog.trace "DFun.Eta"
         val H >> CJ.EQ ((m, n), dfun) = jdg
         val Syn.DFUN (a, x, bx) = Syn.out dfun
 
@@ -528,6 +557,7 @@ struct
 
     fun Elim z alpha jdg =
       let
+        val _ = RedPrlLog.trace "DFun.Elim"
         val H >> CJ.TRUE cz = jdg
         val CJ.TRUE dfun = Hyps.lookup H z
         val Syn.DFUN (a, x, bx) = Syn.out dfun
@@ -554,6 +584,7 @@ struct
 
     fun ApEq alpha jdg =
       let
+        val _ = RedPrlLog.trace "DFun.ApEq"
         val H >> CJ.EQ ((ap0, ap1), c) = jdg
         val Syn.AP (m0, n0) = Syn.out ap0
         val Syn.AP (m1, n1) = Syn.out ap1
@@ -574,6 +605,7 @@ struct
   struct
     fun EqType alpha jdg =
       let
+        val _ = RedPrlLog.trace "Path.EqType"
         val H >> CJ.EQ_TYPE (ty0, ty1) = jdg
         val Syn.ID_TY ((u, a0u), m0, n0) = Syn.out ty0
         val Syn.ID_TY ((v, a1v), m1, n1) = Syn.out ty1
@@ -593,6 +625,7 @@ struct
 
     fun True alpha jdg =
       let
+        val _ = RedPrlLog.trace "Path.True"
         val H >> CJ.TRUE ty = jdg
         val Syn.ID_TY ((u, a), p0, p1) = Syn.out ty
         val a0 = substSymbol (P.APP P.DIM0, u) a
@@ -615,6 +648,7 @@ struct
 
     fun Eq alpha jdg =
       let
+        val _ = RedPrlLog.trace "Path.Eq"
         val H >> CJ.EQ ((abs0, abs1), ty) = jdg
         val Syn.ID_TY ((u, au), p0, p1) = Syn.out ty
         val Syn.ID_ABS (v, m0v) = Syn.out abs0
@@ -640,6 +674,7 @@ struct
 
     fun ApEq alpha jdg =
       let
+        val _ = RedPrlLog.trace "Path.ApEq"
         val H >> CJ.EQ ((ap0, ap1), ty) = jdg
         val Syn.ID_AP (m0, r0) = Syn.out ap0
         val Syn.ID_AP (m1, r1) = Syn.out ap1
@@ -655,6 +690,7 @@ struct
 
     fun ApComputeConst alpha jdg =
       let
+        val _ = RedPrlLog.trace "Path.ApComputeConst"
         val H >> CJ.EQ ((ap, p), a) = jdg
         val Syn.ID_AP (m, P.APP r) = Syn.out ap
         val (goalSynth, holeSynth) = makeGoal @@ H >> CJ.SYNTH m
@@ -671,6 +707,7 @@ struct
 
     fun Eta alpha jdg =
       let
+        val _ = RedPrlLog.trace "Path.Eta"
         val H >> CJ.EQ ((m, n), pathTy) = jdg
         val Syn.ID_TY ((u, a), p0, p1) = Syn.out pathTy
 
@@ -764,6 +801,7 @@ struct
   struct
     fun Project z alpha jdg =
       let
+        val _ = RedPrlLog.trace "Hyp.Project"
         val H >> catjdg = jdg
         val catjdg' = lookupHyp H z
       in
@@ -780,6 +818,7 @@ struct
   struct
     fun Intro _ jdg =
       let
+        val _ = RedPrlLog.trace "Type.Intro"
         val H >> CJ.TYPE ty = jdg
         val (goal, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty, ty)
       in
@@ -794,6 +833,7 @@ struct
   struct
     fun Witness tm alpha jdg =
       let
+        val _ = RedPrlLog.trace "True.Witness"
         val H >> CJ.TRUE ty = jdg
         val (goal, _) = makeGoal @@ H >> CJ.MEM (tm, ty)
       in
@@ -808,6 +848,7 @@ struct
   struct
     fun Intro alpha jdg =
       let
+        val _ = RedPrlLog.trace "Membership.Intro"
         val H >> CJ.MEM (tm, ty) = jdg
         val (goal, _) = makeGoal @@ H >> CJ.EQ ((tm, tm), ty)
       in
@@ -822,6 +863,7 @@ struct
   struct
     fun Hyp alpha jdg =
       let
+        val _ = RedPrlLog.trace "Synth.Hyp"
         val H >> CJ.SYNTH tm = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
         val CJ.TRUE a = Hyps.lookup H z
@@ -831,6 +873,7 @@ struct
 
     fun Ap alpha jdg =
       let
+        val _ = RedPrlLog.trace "Synth.Ap"
         val H >> CJ.SYNTH tm = jdg
         val Syn.AP (m, n) = Syn.out tm
         val (goalDFun, holeDFun) = makeGoal @@ H >> CJ.SYNTH m
@@ -844,6 +887,7 @@ struct
 
     fun S1Elim alpha jdg =
       let
+        val _ = RedPrlLog.trace "Synth.S1Elim"
         val H >> CJ.SYNTH tm = jdg
         val Syn.S1_ELIM ((x,cx), m, _) = Syn.out tm
 
@@ -856,6 +900,7 @@ struct
 
     fun If alpha jdg =
       let
+        val _ = RedPrlLog.trace "Synth.If"
         val H >> CJ.SYNTH tm = jdg
         val Syn.IF ((x,cx), m, _) = Syn.out tm
 
@@ -868,6 +913,7 @@ struct
 
     fun PathAp alpha jdg =
       let
+        val _ = RedPrlLog.trace "Synth.PathAp"
         val H >> CJ.SYNTH tm = jdg
         val Syn.ID_AP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeGoal @@ H >> CJ.SYNTH m
@@ -880,6 +926,7 @@ struct
 
     fun Fst alpha jdg =
       let
+        val _ = RedPrlLog.trace "Synth.Fst"
         val H >> CJ.SYNTH tm = jdg
         val Syn.FST m = Syn.out tm
         val (goalTy, holeTy) = makeGoal @@ H >> CJ.SYNTH m
@@ -891,6 +938,7 @@ struct
 
     fun Snd alpha jdg =
       let
+        val _ = RedPrlLog.trace "Synth.Snd"
         val H >> CJ.SYNTH tm = jdg
         val Syn.SND m = Syn.out tm
         val (goalTy, holeTy) = makeGoal @@ H >> CJ.SYNTH m
@@ -905,6 +953,7 @@ struct
   struct
     fun MatchOperator alpha jdg =
       let
+        val _ = RedPrlLog.trace "Match.MatchOperator"
         val MATCH (th, k, tm) = jdg
 
         val Abt.$ (th', args) = Abt.out tm
@@ -923,6 +972,7 @@ struct
   struct
     fun Hyp alpha jdg =
       let
+        val _ = RedPrlLog.trace "Equality.Hyp"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
@@ -943,6 +993,7 @@ struct
 
     fun Symmetry alpha jdg =
       let
+        val _ = RedPrlLog.trace "Equality.Symmetry"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val (goal, hole) = makeGoal @@ H >> CJ.EQ ((n, m), ty)
       in
@@ -977,6 +1028,7 @@ struct
 
     fun HeadExpansion sign alpha jdg =
       let
+        val _ = RedPrlLog.trace "Equality.HeadExpansion"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Abt.$ (theta, _) = Abt.out m
         val hasFreeDims = List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support theta
@@ -990,6 +1042,7 @@ struct
 
   fun Cut catjdg alpha jdg =
     let
+      val _ = RedPrlLog.trace "Cut"
       val H >> catjdg' = jdg
       val z = alpha 0
       val tau = CJ.synthesis catjdg
@@ -1002,6 +1055,7 @@ struct
 
   fun Lemma thm alpha jdg =
     let
+      val _ = RedPrlLog.trace "Lemma"
       val Abt.$ (O.MONO (O.REFINE (true, _)), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
       val H >> catjdg = jdg
       val catjdg' = CJ.fromAbt goal

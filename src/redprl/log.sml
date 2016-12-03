@@ -1,10 +1,11 @@
-structure RedPrlLog :> REDPRL_LOG =
+structure RedPrlLogBasis :> REDPRL_LOG =
 struct
   datatype level =
      INFO
    | WARN
    | DUMP
    | FAIL
+   | TRACE
 
   fun formatMessage lvl (pos, msg) =
     let
@@ -19,6 +20,7 @@ struct
          | DUMP => "Output"
          | WARN => "Warning"
          | FAIL => "Error"
+         | TRACE => "Trace"
 
       val lines = String.fields (fn c => c = #"\n") msg
       val indented = List.map (fn l => "  " ^ l ^ "\n") lines
@@ -32,6 +34,7 @@ struct
      | DUMP => TextIO.stdOut
      | WARN => TextIO.stdOut
      | FAIL => TextIO.stdErr
+     | TRACE => TextIO.stdOut
 
   fun print lvl msg =
     let
@@ -41,3 +44,15 @@ struct
       TextIO.flushOut stream
     end
 end
+
+
+functor RedPrlLogUtil (L : REDPRL_LOG) : REDPRL_LOG_UTIL= 
+struct
+  open L
+
+  fun trace msg = 
+    () 
+    (*print TRACE (NONE, msg)*)
+end
+
+structure RedPrlLog = RedPrlLogUtil (RedPrlLogBasis)
