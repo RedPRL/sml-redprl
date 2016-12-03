@@ -303,7 +303,7 @@ struct
       fun convertToAbt (metactx, symctx, env) ast sort =
         E.wrap (RedPrlAst.getAnnotation ast,
                 fn () => AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort)
-                         handle AstToAbt.FreeMeta (mv, pos) => raise Err.annotate pos (Err.error [Err.% "Unbound metavariable", Err.% mv]))
+                         handle AstToAbt.BadConversion (msg, pos) => raise Err.annotate pos (Err.error [Err.% msg]))
           >>= scopeCheck (metactx, symctx)
     end
 
