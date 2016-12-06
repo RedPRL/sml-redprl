@@ -1,4 +1,4 @@
-The following people have contributed code and work to RedPRL and its theoretical underpinnings:
+The following people have contributed to RedPRL and its theoretical underpinnings:
 
 - Jon Sterling
 - Danny Gratzer
