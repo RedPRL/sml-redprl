@@ -74,11 +74,9 @@ struct
         val Syn.S1 = Syn.out ty
         val Syn.LOOP r1 = Syn.out m
         val Syn.LOOP r2 = Syn.out n
+        val () = assertParamEq "S1.EqLoop" (r1, r2)
       in
-        if P.eq Sym.eq (r1, r2) then
-          T.empty #> trivial
-        else
-          raise E.error [E.% "Expected loops in same dimension"]
+        T.empty #> trivial
       end
 
     fun Elim z alpha jdg =
@@ -678,7 +676,7 @@ struct
         val H >> CJ.EQ ((ap0, ap1), ty) = jdg
         val Syn.ID_AP (m0, r0) = Syn.out ap0
         val Syn.ID_AP (m1, r1) = Syn.out ap1
-        val true = P.eq Sym.eq (r0, r1)
+        val () = assertParamEq "Path.ApEq" (r0, r1)
         val (goalSynth, holeSynth) = makeGoal @@ H >> CJ.SYNTH m0
         val (goalMem, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeSynth [] [])
         val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.ID_TY, 0, holeSynth [] [])

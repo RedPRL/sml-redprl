@@ -119,6 +119,12 @@ struct
     else
       raise E.error [E.% "Expected", E.! m, E.% "to be alpha-equivalent to", E.! n]
 
+  fun assertParamEq msg (r1, r2) =
+    if P.eq Sym.eq (r1, r2) then
+      ()
+    else
+      raise E.error [E.% (msg ^ ":"), E.% "Expected parameter", E.% (P.toString Sym.toString r1), E.% "to be equal to", E.% (P.toString Sym.toString r2)]
+
   fun assertVarEq (x, y) =
     if Var.eq (x, y) then
       ()
