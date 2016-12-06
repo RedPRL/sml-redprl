@@ -1,10 +1,11 @@
-The following people have contributed code and work to RedPRL:
+The following people have contributed code and work to RedPRL and its theoretical underpinnings:
 
 - Jon Sterling
 - Danny Gratzer
 - Eugene Akentyev
 - James Wilcox
 - David Christiansen
+- Darin Morrison
 
 We also thank the following people for their contributions to previous versions
 of JonPRL:
