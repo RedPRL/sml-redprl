@@ -1282,7 +1282,10 @@ struct
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
          | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
-         | (Machine.REDEX, _) => Computation.EqHeadExpansion sign
+         | (Machine.REDEX, _) => (fn a =>
+           (* this is a horrible hack to get the hcom rule to be called sometimes *)
+           Lcf.orelse_ (HCom.Eq a,
+                        Computation.EqHeadExpansion sign a))
          | (_, Machine.REDEX) => Equality.Symmetry
          | (Machine.NEUTRAL (Machine.VAR x), Machine.CANONICAL) => StepEqEta ty
          | (Machine.CANONICAL, Machine.NEUTRAL _) => Equality.Symmetry
