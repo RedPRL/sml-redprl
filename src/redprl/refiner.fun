@@ -1013,6 +1013,117 @@ struct
       end
   end
 
+  structure Restriction =
+  struct
+    fun neq_dims (P.APP P.DIM0, P.APP DIM1) = true
+      | neq_dims (P.APP P.DIM1, P.APP DIM0) = true
+      | neq_dims _ = false
+
+    fun One jdg ext eps =
+      if P.eq Sym.eq (ext, eps) then [jdg]
+      else if neq_dims (ext, eps) then []
+      else
+        let
+          val (P.VAR v, P.APP eps) = (ext, eps)
+        in
+          [Seq.map (substSymbol (P.APP eps, v)) jdg]
+        end
+
+    fun Two jdg ext0 eps0 ext1 eps1 =
+      if P.eq Sym.eq (ext0, eps0) then One jdg ext1 eps1
+      else if P.eq Sym.eq (ext1, eps1) then One jdg ext0 eps0
+      else if neq_dims (ext0, eps0) then []
+      else if neq_dims (ext1, eps1) then []
+      else
+        let
+          val (P.VAR u, P.APP _) = (ext0, eps0)
+          val (P.VAR v, P.APP _) = (ext1, eps1)
+        in
+          if Sym.eq (u, v) andalso not (P.eq Sym.eq (eps0, eps1)) then []
+          else
+            [Seq.map (substSymbol (eps0, u)) (Seq.map (substSymbol (eps1, v)) jdg)]
+        end
+  end
+
+  structure HCom =
+  struct
+    fun Eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.Eq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.HCOM (exts0, (r0, r'0), ty0, cap0, tubes0) = Syn.out lhs
+        val () = assertAlphaEq (ty0, ty)
+        val Syn.HCOM (exts1, (r1, r'1), ty1, cap1, tubes1) = Syn.out rhs
+        val () = assertParamEq "HCom.Eq source of direction" (r0, r1)
+        val () = assertParamEq "HCom.Eq target of direction" (r'0, r'1)
+        val _ = ListPair.mapEq (assertParamEq "HCom.Eq extents") (exts0, exts1)
+
+        val (goalTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty0, ty1)
+        val (goalCap, _) = makeGoal @@ H >> CJ.EQ ((cap0, cap1), ty)
+
+        val w = alpha 0
+
+        fun interTube ext eps (u, tube0) (v, tube1) =
+          let
+            val tube0 = substSymbol (P.ret w, u) tube0
+            val tube1 = substSymbol (P.ret w, v) tube1
+            val J = H >> CJ.EQ ((tube0,tube1), ty)
+          in
+            List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) |> j)))
+                     (Restriction.One J ext eps)
+          end
+
+        fun intraTube ext0 eps0 (u, tube0) ext1 eps1 (v, tube1) =
+          let
+            val tube0 = substSymbol (P.ret w, u) tube0
+            val tube1 = substSymbol (P.ret w, v) tube1
+            val J = H >> CJ.EQ ((tube0,tube1), ty)
+          in
+            List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) |> j)))
+                     (Restriction.Two J ext0 eps0 ext1 eps1)
+          end
+
+        fun tubeCap ext eps (u, tube) =
+          let
+            val J = H >> CJ.EQ ((substSymbol (r0,u) tube, cap0), ty)
+          in
+            List.map (fn j => #1 (makeGoal j)) (Restriction.One J ext eps)
+          end
+
+        fun groupTubes [] [] = []
+          | groupTubes (ext :: exts) (tube0 :: tube1 :: tubes)  =
+            (ext, P.APP P.DIM0, tube0) ::
+            (ext, P.APP P.DIM1, tube1) ::
+            groupTubes exts tubes
+
+        fun listToTel' acc [] = acc
+          | listToTel' acc (g :: l) = listToTel' (acc >: g) l
+
+        val listToTel = listToTel' T.empty
+
+        val group0 = groupTubes exts0 tubes0
+        val group1 = groupTubes exts1 tubes1
+
+        val interTubeGoals = listToTel
+          (ListMonad.bind (fn ((ext, eps, tube0), (_, _, tube1)) => interTube ext eps tube0 tube1)
+                          (ListPair.zipEq (group0, group1)))
+
+        val intraTubeGoals = listToTel
+          (ListMonad.bind (fn (ext0, eps0, tube0) =>
+             ListMonad.bind (fn (ext1, eps1, tube1) => intraTube ext0 eps0 tube0 ext1 eps1 tube1)
+                            group0)
+             group0)
+
+        val tubeCapGoals =
+          listToTel (ListMonad.bind (fn (ext0, eps0, tube0) => tubeCap ext0 eps0 tube0) group0)
+      in
+        T.append (T.empty >: goalTy >: goalCap)
+                 (T.append interTubeGoals (T.append intraTubeGoals tubeCapGoals))
+        #> trivial
+      end
+  end
+
+
   structure Computation =
   struct
 
