@@ -16,7 +16,7 @@ and type theory, including:
 - support for nominal abstraction and unguessable atoms
 - a dependent version of the LCF apparatus to support refinement rules
   whose premises depend on each other's evidence
-- [computational cubical type theory](http://www.cs.cmu.edu/~rwh/papers/chitt/draft.pdf)
+- [computational cubical type theory](https://www.cs.cmu.edu/~cangiuli/papers/chtt.pdf)
 
 ### Literature and background on RedPRL
 
