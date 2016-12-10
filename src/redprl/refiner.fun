@@ -1015,33 +1015,43 @@ struct
 
   structure Restriction =
   struct
-    fun neq_dims (P.APP P.DIM0, P.APP DIM1) = true
-      | neq_dims (P.APP P.DIM1, P.APP DIM0) = true
-      | neq_dims _ = false
+    (* This structure provides functions that automate the restriction
+       judgement rules given in "Dependent Cubical Realizability",
+       page 46.
 
-    fun One jdg ext eps =
-      if P.eq Sym.eq (ext, eps) then [jdg]
-      else if neq_dims (ext, eps) then []
+       Such automation is possible because the rules are "syntax
+       directed" on the restriction being performed.
+     *)
+
+    fun neqDims (P.APP P.DIM0, P.APP DIM1) = true
+      | neqDims (P.APP P.DIM1, P.APP DIM0) = true
+      | neqDims _ = false
+
+    (* Restrict a judgement by a single equation `ext = eps`. *)
+    fun One (jdg : abt jdg) (ext : param) (eps : param) =
+      if P.eq Sym.eq (ext, eps) then [jdg] (* combining rules in first row *)
+      else if neqDims (ext, eps) then [] (* second row, left rule *)
       else
         let
           val (P.VAR v, P.APP eps) = (ext, eps)
         in
-          [Seq.map (substSymbol (P.APP eps, v)) jdg]
+          [Seq.map (substSymbol (P.APP eps, v)) jdg] (* bottom left rule *)
         end
 
-    fun Two jdg ext0 eps0 ext1 eps1 =
-      if P.eq Sym.eq (ext0, eps0) then One jdg ext1 eps1
-      else if P.eq Sym.eq (ext1, eps1) then One jdg ext0 eps0
-      else if neq_dims (ext0, eps0) then []
-      else if neq_dims (ext1, eps1) then []
+    (* Restrict a judgement by two equations `ext0 = eps0` and `ext1 = eps1`. *)
+    fun Two (jdg : abt jdg) (ext0 : param) (eps0 : param) (ext1 : param) (eps1 : param) =
+      if P.eq Sym.eq (ext0, eps0) then One jdg ext1 eps1 (* top right rule *)
+      else if P.eq Sym.eq (ext1, eps1) then One jdg ext0 eps0 (* top right rule *)
+      else if neqDims (ext0, eps0) then [] (* second row, left rule *)
+      else if neqDims (ext1, eps1) then [] (* second row, left rule *)
       else
         let
           val (P.VAR u, P.APP _) = (ext0, eps0)
           val (P.VAR v, P.APP _) = (ext1, eps1)
         in
-          if Sym.eq (u, v) andalso not (P.eq Sym.eq (eps0, eps1)) then []
+          if Sym.eq (u, v) andalso not (P.eq Sym.eq (eps0, eps1)) then [] (* second row, right rule *)
           else
-            [Seq.map (substSymbol (eps0, u)) (Seq.map (substSymbol (eps1, v)) jdg)]
+            [Seq.map (substSymbol (eps0, u)) (Seq.map (substSymbol (eps1, v)) jdg)] (* bottom right rule *)
         end
   end
 
