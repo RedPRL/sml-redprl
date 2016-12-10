@@ -1166,7 +1166,6 @@ struct
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Abt.$ (theta, _) = Abt.out m
-        val hasFreeDims = List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support theta
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val (goal, _) = makeGoal @@ H >> CJ.EQ ((m', n), ty)
       in
@@ -1179,7 +1178,6 @@ struct
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val H >> CJ.EQ_TYPE (ty1, ty2) = jdg
         val Abt.$ (theta, _) = Abt.out ty1
-        val hasFreeDims = List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support theta
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
         val (goal, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty1', ty2)
         in
