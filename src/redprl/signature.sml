@@ -326,9 +326,8 @@ struct
 
       fun elabRefine sign (goal, script) =
         let
-          val catjdg = CJ.fromAbt goal
-          val seqjdg = Hyps.empty >> catjdg
-          val tau = CJ.synthesis catjdg
+          val seqjdg = RedPrlSequent.fromAbt goal
+          val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
@@ -351,7 +350,7 @@ struct
           val (params', symctx, env) = elabDeclParams sign params
           val names = fn i => Sym.named ("@" ^ Int.toString i)
         in
-          convertToAbt (metactx, symctx, env) goal JDG <&> convertToAbt (metactx, symctx, env) script TAC
+          convertToAbt (metactx, symctx, env) goal SEQ <&> convertToAbt (metactx, symctx, env) script TAC
             >>= elabRefine sign
             >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = sort definiens, definiens = definiens})
         end
