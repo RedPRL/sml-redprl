@@ -1,4 +1,7 @@
-functor Sequent (CJ : CATEGORICAL_JUDGMENT) : SEQUENT =
+functor Sequent (structure CJ : CATEGORICAL_JUDGMENT
+                                  where type 'a Tm.O.Ar.Vl.Sp.t = 'a list
+                                  where type 'a Tm.O.t = 'a RedPrlOperator.t
+                 sharing type CJ.Tm.Sym.t = CJ.Tm.Var.t) : SEQUENT =
 struct
   structure CJ = CJ
   structure Tm = CJ.Tm
@@ -9,6 +12,7 @@ struct
   type sort = Tm.sort
   type operator = Tm.operator
   type hyp = sym
+  type abt = CJ.Tm.abt
 
   structure Hyps : TELESCOPE = Telescope (Tm.Sym)
   type 'a ctx = 'a Hyps.telescope
@@ -68,4 +72,20 @@ struct
   end
 
   fun toString f = PP.toString 80 true o pretty f
+
+  local
+    open Tm
+    structure O = RedPrlOpData
+    infix $ $$ \
+
+    fun fromAbt' (acc : abt CJ.jdg ctx) (seq : abt) : abt jdg =
+      case Tm.out seq of
+         O.MONO O.SEQ_CONCL $ [_ \ j] => acc >> CJ.fromAbt j
+       | O.MONO (O.SEQ_CONS tau) $ [([], []) \ h, ([], [x]) \ seq] =>
+         fromAbt' (Hyps.snoc acc x (CJ.fromAbt h)) seq
+       | _ => raise Fail "Unrecognized sequent abt"
+  in
+    fun fromAbt (seq : abt) : abt jdg = fromAbt' Hyps.empty seq
+  end
+
 end

@@ -8,6 +8,7 @@ sig
   type sort = CJ.Tm.sort
   type operator = CJ.Tm.operator
   type hyp = sym
+  type abt = CJ.Tm.abt
 
   structure Hyps : TELESCOPE where type Label.t = hyp
 
@@ -24,4 +25,6 @@ sig
   val toString : ('a -> string) -> 'a jdg -> string
 
   val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
+
+  val fromAbt : abt -> abt jdg
 end

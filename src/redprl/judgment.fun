@@ -34,5 +34,5 @@ struct
   end
 end
 
-structure RedPrlSequent = Sequent (RedPrlCategoricalJudgment)
+structure RedPrlSequent = Sequent (structure CJ = RedPrlCategoricalJudgment)
 structure RedPrlJudgment = SequentJudgment (structure S = RedPrlSequent and TermPrinter = TermPrinter)
