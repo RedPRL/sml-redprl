@@ -71,6 +71,7 @@ whitespace = [\ \t];
 "|"                => (Tokens.PIPE (posTuple (size yytext)));
 "%"                => (Tokens.PERCENT (posTuple (size yytext)));
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
+">>"               => (Tokens.DOUBLE_RANGLE (posTuple (size yytext)));
 
 "bool"             => (Tokens.BOOL (posTuple (size yytext)));
 "sbool"            => (Tokens.S_BOOL (posTuple (size yytext)));
