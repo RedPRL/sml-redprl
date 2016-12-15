@@ -1136,6 +1136,7 @@ struct
 
   structure Computation =
   struct
+    exception UnsafeStep
 
     local
       open Machine.S.Cl infix <: $
@@ -1149,7 +1150,7 @@ struct
           case out m of
              th $ _ =>
                if List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support th then
-                 NONE
+                 raise UnsafeStep
                else
                  Machine.next sign st
            | _ => NONE
