@@ -1150,15 +1150,15 @@ struct
         val Syn.HCOM (exts, (r, r'), ty0, cap, tubes) = Syn.out lhs
         val () = assertParamEq "HCom.CapEq source and target of direction" (r, r')
         val () = assertAlphaEq (ty0, ty)
-        val () = assertAlphaEq (cap, rhs)
         val group = groupTubes exts tubes
 
         val (goalTy, _) = makeGoal @@ H >> CJ.TYPE ty
         val (goalCap, _) = makeGoal @@ H >> CJ.MEM (cap, ty)
+        val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((cap, rhs), ty)
 
         val w = alpha 0
       in
-        T.append (T.empty >: goalTy >: goalCap)
+        T.append (T.empty >: goalTy >: goalCap >: goalEq)
                  (T.append (intraTubeGoals H w ty group)
                            (tubeCapGoals H ty r cap group))
         #> trivial
@@ -1178,16 +1178,15 @@ struct
 
         val (u, tube) = List.nth (tubes, 2 * i + j)
 
-        val () = assertAlphaEq (substSymbol (r', u) tube, rhs)
-
         val group = groupTubes exts tubes
 
         val (goalTy, _) = makeGoal @@ H >> CJ.TYPE ty
         val (goalCap, _) = makeGoal @@ H >> CJ.MEM (cap, ty)
+        val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((substSymbol (r', u) tube, rhs), ty)
 
         val w = alpha 0
       in
-        T.append (T.empty >: goalTy >: goalCap)
+        T.append (T.empty >: goalTy >: goalCap >: goalEq)
                  (T.append (intraTubeGoals H w ty group)
                            (tubeCapGoals H ty r cap group))
         #> trivial
