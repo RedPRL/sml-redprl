@@ -1141,6 +1141,27 @@ struct
                                                     (tubeCapGoals H ty r0 cap0 group0)))
         #> trivial
       end
+
+    fun CapEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.CapEq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.HCOM (exts, (r, r'), ty0, cap, tubes) = Syn.out lhs
+        val () = assertParamEq "HCom.CapEq source and target of direction" (r, r')
+        val () = assertAlphaEq (ty0, ty)
+        val () = assertAlphaEq (cap, rhs)
+        val group = groupTubes exts tubes
+
+        val (goalTy, _) = makeGoal @@ H >> CJ.TYPE ty
+        val (goalCap, _) = makeGoal @@ H >> CJ.MEM (cap, ty)
+
+        val w = alpha 0
+      in
+        T.append (T.empty >: goalTy >: goalCap)
+                 (T.append (intraTubeGoals H w ty group)
+                           (tubeCapGoals H ty r cap group))
+        #> trivial
+      end
   end
 
 
