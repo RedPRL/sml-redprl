@@ -1073,7 +1073,7 @@ struct
     (* Produce the list of goals requiring that tube aspects agree with each other. *)
     fun intraTubeGoals H w ty group =
       let
-        fun intraTube ext0 eps0 (u, tube0) ext1 eps1 (v, tube1) =
+        fun intraTube (ext0, eps0, (u, tube0)) (ext1, eps1, (v, tube1)) =
           let
             val tube0 = substSymbol (P.ret w, u) tube0
             val tube1 = substSymbol (P.ret w, v) tube1
@@ -1084,24 +1084,22 @@ struct
           end
       in
         listToTel
-          (ListMonad.bind (fn (ext0, eps0, tube0) =>
-             ListMonad.bind (fn (ext1, eps1, tube1) =>
-                 intraTube ext0 eps0 tube0 ext1 eps1 tube1)
-               group)
+          (ListMonad.bind
+             (fn x => ListMonad.bind (intraTube x) group)
              group)
       end
 
     (* Produce the list of goals requiring that tube aspects agree with the cap. *)
     fun tubeCapGoals H ty r cap group =
       let
-        fun tubeCap ext eps (u, tube) =
+        fun tubeCap (ext, eps, (u, tube)) =
           let
             val J = H >> CJ.EQ ((substSymbol (r,u) tube, cap), ty)
           in
-            List.map (fn j => #1 (makeGoal j)) (Restriction.One J ext eps)
+            List.map (#1 o makeGoal) (Restriction.One J ext eps)
           end
       in
-        listToTel (ListMonad.bind (fn (ext, eps, tube) => tubeCap ext eps tube) group)
+        listToTel (ListMonad.bind tubeCap group)
       end
 
     fun Eq alpha jdg =
@@ -1133,11 +1131,11 @@ struct
         val group0 = groupTubes exts0 tubes0
         val group1 = groupTubes exts1 tubes1
 
-        val interTubeGoals = listToTel
-          (ListMonad.bind (fn ((ext, eps, tube0), (_, _, tube1)) => interTube ext eps tube0 tube1)
-                          (ListPair.zipEq (group0, group1)))
-
-
+        val interTubeGoals =
+          listToTel
+            (ListMonad.bind
+               (fn ((ext, eps, tube0), (_, _, tube1)) => interTube ext eps tube0 tube1)
+               (ListPair.zipEq (group0, group1)))
       in
         T.append (T.empty >: goalTy >: goalCap)
                  (T.append interTubeGoals (T.append (intraTubeGoals H w ty group0)
