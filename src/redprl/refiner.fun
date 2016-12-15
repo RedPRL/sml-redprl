@@ -1057,6 +1057,50 @@ struct
 
   structure HCom =
   struct
+    (* Given a list of n extents and a list of 2n tubes, produce a list of
+       (extent * side * tube) triples, where side is 0 or 1 according to the
+       tube's position in the list *)
+    fun groupTubes [] [] = []
+      | groupTubes (ext :: exts) (tube0 :: tube1 :: tubes)  =
+        (ext, P.APP P.DIM0, tube0) :: (ext, P.APP P.DIM1, tube1) :: groupTubes exts tubes
+      | groupTubes _ _ = raise Fail "groupTubes"
+
+    fun listToTel l = List.foldl (fn (g, l) => l >: g) T.empty l
+
+    (* Produce the list of goals requiring that tube aspects agree with each other. *)
+    fun intraTubeGoals H w ty group =
+      let
+        fun intraTube ext0 eps0 (u, tube0) ext1 eps1 (v, tube1) =
+          let
+            val tube0 = substSymbol (P.ret w, u) tube0
+            val tube1 = substSymbol (P.ret w, v) tube1
+            val J = H >> CJ.EQ ((tube0,tube1), ty)
+          in
+            List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) |> j)))
+                     (Restriction.Two J ext0 eps0 ext1 eps1)
+          end
+      in
+        listToTel
+          (ListMonad.bind (fn (ext0, eps0, tube0) =>
+             ListMonad.bind (fn (ext1, eps1, tube1) =>
+                 intraTube ext0 eps0 tube0 ext1 eps1 tube1)
+               group)
+             group)
+      end
+
+    (* Produce the list of goals requiring that tube aspects agree with the cap. *)
+    fun tubeCapGoals H ty r cap group =
+      let
+        fun tubeCap ext eps (u, tube) =
+          let
+            val J = H >> CJ.EQ ((substSymbol (r,u) tube, cap), ty)
+          in
+            List.map (fn j => #1 (makeGoal j)) (Restriction.One J ext eps)
+          end
+      in
+        listToTel (ListMonad.bind (fn (ext, eps, tube) => tubeCap ext eps tube) group)
+      end
+
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.Eq"
@@ -1083,35 +1127,6 @@ struct
                      (Restriction.One J ext eps)
           end
 
-        fun intraTube ext0 eps0 (u, tube0) ext1 eps1 (v, tube1) =
-          let
-            val tube0 = substSymbol (P.ret w, u) tube0
-            val tube1 = substSymbol (P.ret w, v) tube1
-            val J = H >> CJ.EQ ((tube0,tube1), ty)
-          in
-            List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) |> j)))
-                     (Restriction.Two J ext0 eps0 ext1 eps1)
-          end
-
-        fun tubeCap ext eps (u, tube) =
-          let
-            val J = H >> CJ.EQ ((substSymbol (r0,u) tube, cap0), ty)
-          in
-            List.map (fn j => #1 (makeGoal j)) (Restriction.One J ext eps)
-          end
-
-        fun groupTubes [] [] = []
-          | groupTubes (ext :: exts) (tube0 :: tube1 :: tubes)  =
-            (ext, P.APP P.DIM0, tube0) ::
-            (ext, P.APP P.DIM1, tube1) ::
-            groupTubes exts tubes
-          | groupTubes _ _ = raise Fail "groupTubes"
-
-        fun listToTel' acc [] = acc
-          | listToTel' acc (g :: l) = listToTel' (acc >: g) l
-
-        val listToTel = listToTel' T.empty
-
         val group0 = groupTubes exts0 tubes0
         val group1 = groupTubes exts1 tubes1
 
@@ -1119,17 +1134,11 @@ struct
           (ListMonad.bind (fn ((ext, eps, tube0), (_, _, tube1)) => interTube ext eps tube0 tube1)
                           (ListPair.zipEq (group0, group1)))
 
-        val intraTubeGoals = listToTel
-          (ListMonad.bind (fn (ext0, eps0, tube0) =>
-             ListMonad.bind (fn (ext1, eps1, tube1) => intraTube ext0 eps0 tube0 ext1 eps1 tube1)
-                            group0)
-             group0)
 
-        val tubeCapGoals =
-          listToTel (ListMonad.bind (fn (ext0, eps0, tube0) => tubeCap ext0 eps0 tube0) group0)
       in
         T.append (T.empty >: goalTy >: goalCap)
-                 (T.append interTubeGoals (T.append intraTubeGoals tubeCapGoals))
+                 (T.append interTubeGoals (T.append (intraTubeGoals H w ty group0)
+                                                    (tubeCapGoals H ty r0 cap0 group0)))
         #> trivial
       end
   end
