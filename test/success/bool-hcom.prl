@@ -10,3 +10,11 @@ Thm BasicHcom : [
     <i> 'hcom{i; 0 ~> 1}(bool; ,pab @ i; {j}. ,pac @ j; {j}. ,pbd @ j)
   }; auto
 ].
+
+Thm Cap{i : dim} : [ hcom{i; 0 ~> 0}(bool; tt; {_}. tt; {_}. tt) = tt : bool ] by [
+  auto
+].
+
+Thm Tube : [ hcom{0; 0 ~> 1}(bool; tt; {_}. tt; {_}. tt) = tt : bool ] by [
+  auto
+].
