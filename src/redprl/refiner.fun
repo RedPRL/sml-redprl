@@ -1126,16 +1126,6 @@ struct
 
         val w = alpha 0
 
-        fun interTube ext eps (u, tube0) (v, tube1) =
-          let
-            val tube0 = substSymbol (P.ret w, u) tube0
-            val tube1 = substSymbol (P.ret w, v) tube1
-            val J = H >> CJ.EQ ((tube0,tube1), ty)
-          in
-            List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) |> j)))
-                     (Restriction.One J ext eps)
-          end
-
         val group0 = groupTubes exts0 tubes0
         val group1 = groupTubes exts1 tubes1
 
@@ -1145,10 +1135,22 @@ struct
                N_i^eps = P_i^eps in A [Psi, y | r_i = eps]
          *)
         val interTubeGoals =
-          listToTel
-            (ListMonad.bind
-               (fn ((ext, eps, tube0), (_, _, tube1)) => interTube ext eps tube0 tube1)
-               (ListPair.zipEq (group0, group1)))
+          let
+            fun interTube ext eps (u, tube0) (v, tube1) =
+              let
+                val tube0 = substSymbol (P.ret w, u) tube0
+                val tube1 = substSymbol (P.ret w, v) tube1
+                val J = H >> CJ.EQ ((tube0,tube1), ty)
+              in
+                List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) |> j)))
+                         (Restriction.One J ext eps)
+              end
+          in
+            listToTel
+              (ListMonad.bind
+                 (fn ((ext, eps, tube0), (_, _, tube1)) => interTube ext eps tube0 tube1)
+                 (ListPair.zipEq (group0, group1)))
+          end
       in
         T.append (T.empty >: goalTy >: goalCap)
                  (T.append interTubeGoals (T.append (intraTubeGoals H w ty group0)
