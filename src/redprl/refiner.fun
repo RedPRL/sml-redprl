@@ -1162,6 +1162,35 @@ struct
                            (tubeCapGoals H ty r cap group))
         #> trivial
       end
+
+    fun TubeEq i alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.TubeEq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.HCOM (exts, (r, r'), ty0, cap, tubes) = Syn.out lhs
+        val () = assertAlphaEq (ty0, ty)
+        val j =
+          case List.nth (exts, i) of
+             P.APP P.DIM0 => 0
+           | P.APP P.DIM1 => 1
+           | _ => raise Fail "HCom.TubeEq extent"
+
+        val (u, tube) = List.nth (tubes, 2 * i + j)
+
+        val () = assertAlphaEq (substSymbol (r', u) tube, rhs)
+
+        val group = groupTubes exts tubes
+
+        val (goalTy, _) = makeGoal @@ H >> CJ.TYPE ty
+        val (goalCap, _) = makeGoal @@ H >> CJ.MEM (cap, ty)
+
+        val w = alpha 0
+      in
+        T.append (T.empty >: goalTy >: goalCap)
+                 (T.append (intraTubeGoals H w ty group)
+                           (tubeCapGoals H ty r cap group))
+        #> trivial
+      end
   end
 
 
