@@ -1155,12 +1155,11 @@ struct
         val group = groupTubes exts tubes
 
         val (goalTy, _) = makeGoal @@ H >> CJ.TYPE ty
-        val (goalCap, _) = makeGoal @@ H >> CJ.MEM (cap, ty)
         val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((cap, rhs), ty)
 
         val w = alpha 0
       in
-        T.append (T.empty >: goalTy >: goalCap >: goalEq)
+        T.append (T.empty >: goalTy >: goalEq)
                  (T.append (intraTubeGoals H w ty group)
                            (tubeCapGoals H ty r cap group))
         #> trivial
