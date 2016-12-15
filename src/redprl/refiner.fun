@@ -1105,6 +1105,7 @@ struct
             (ext, P.APP P.DIM0, tube0) ::
             (ext, P.APP P.DIM1, tube1) ::
             groupTubes exts tubes
+          | groupTubes _ _ = raise Fail "groupTubes"
 
         fun listToTel' acc [] = acc
           | listToTel' acc (g :: l) = listToTel' (acc >: g) l
