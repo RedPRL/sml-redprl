@@ -1287,18 +1287,20 @@ struct
          | Syn.ID_TY _ => Path.Eta
          | _ => raise E.error [E.% "Could not find eta expansion rule for type", E.! ty]
 
-      fun StepEq sign ((m, n), ty) =
+      fun StepEqCanonicity sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
          | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
-         | (Machine.REDEX, _) => (fn a =>
-           (* this is a horrible hack to get the hcom rule to be called sometimes *)
-           Lcf.orelse_ (HCom.Eq a,
-                        Computation.EqHeadExpansion sign a))
+         | (Machine.REDEX, _) => Computation.EqHeadExpansion sign
          | (_, Machine.REDEX) => Equality.Symmetry
          | (Machine.NEUTRAL (Machine.VAR x), Machine.CANONICAL) => StepEqEta ty
          | (Machine.CANONICAL, Machine.NEUTRAL _) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+
+      fun StepEq sign ((m, n), ty) =
+        case (Syn.out m, Syn.out n) of
+           (Syn.HCOM _, Syn.HCOM _) => HCom.Eq
+         | _ => StepEqCanonicity sign ((m, n), ty)
 
       fun StepSynth sign m =
         case Syn.out m of
