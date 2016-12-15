@@ -16,6 +16,8 @@ struct
 
   val trivial = Syn.into Syn.AX
 
+  fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
+
   structure CEquiv =
   struct
     fun EvalGoal sign _ jdg =
@@ -1191,6 +1193,40 @@ struct
                            (tubeCapGoals H ty r cap group))
         #> trivial
       end
+
+    (* Return index of first element in the list satisfying p. *)
+    fun indexOf p =
+      let
+        fun go acc [] = raise List.Empty
+          | go acc (x :: l) =
+            if p x then acc
+            else go (acc + 1) l
+      in
+        go 0
+      end
+
+    (* Search for an index of a constant extent in an hcom, to pass to HCom.TubeEq. *)
+    fun FindTubeEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.FindTubeEq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.HCOM (exts, _, _, _, _) = Syn.out lhs
+
+        fun isConstantDim (P.APP P.DIM0) = true
+          | isConstantDim (P.APP P.DIM1) = true
+          | isConstantDim _ = false
+
+        val i = indexOf isConstantDim exts
+      in
+        TubeEq i alpha jdg
+      end
+
+    local
+      infix orelse_
+    in
+      (* Try all the hcom rules. *)
+      val AutoEq = Eq orelse_ CapEq orelse_ FindTubeEq
+    end
   end
 
 
@@ -1359,7 +1395,8 @@ struct
 
       fun StepEq sign ((m, n), ty) =
         case (Syn.out m, Syn.out n) of
-           (Syn.HCOM _, Syn.HCOM _) => HCom.Eq
+           (Syn.HCOM _, _) => HCom.AutoEq
+         | (_, Syn.HCOM _) => Equality.Symmetry
          | _ => StepEqCanonicity sign ((m, n), ty)
 
       fun StepSynth sign m =
