@@ -16,6 +16,8 @@ struct
 
   val trivial = Syn.into Syn.AX
 
+  fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
+
   structure CEquiv =
   struct
     fun EvalGoal sign _ jdg =
@@ -74,11 +76,9 @@ struct
         val Syn.S1 = Syn.out ty
         val Syn.LOOP r1 = Syn.out m
         val Syn.LOOP r2 = Syn.out n
+        val () = assertParamEq "S1.EqLoop" (r1, r2)
       in
-        if P.eq Sym.eq (r1, r2) then
-          T.empty #> trivial
-        else
-          raise E.error [E.% "Expected loops in same dimension"]
+        T.empty #> trivial
       end
 
     fun Elim z alpha jdg =
@@ -678,7 +678,7 @@ struct
         val H >> CJ.EQ ((ap0, ap1), ty) = jdg
         val Syn.ID_AP (m0, r0) = Syn.out ap0
         val Syn.ID_AP (m1, r1) = Syn.out ap1
-        val true = P.eq Sym.eq (r0, r1)
+        val () = assertParamEq "Path.ApEq" (r0, r1)
         val (goalSynth, holeSynth) = makeGoal @@ H >> CJ.SYNTH m0
         val (goalMem, _) = makeGoal @@ H >> CJ.EQ ((m0, m1), holeSynth [] [])
         val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.ID_TY, 0, holeSynth [] [])
@@ -1015,8 +1015,236 @@ struct
       end
   end
 
+  structure Restriction =
+  struct
+    (* This structure provides functions that automate the restriction
+       judgement rules given in "Dependent Cubical Realizability",
+       page 46.
+
+       Such automation is possible because the rules are "syntax
+       directed" on the restriction being performed.
+     *)
+
+    (* Return whether given dimensions are different constants, which
+       is a contradiction, allowing the restriction judgment to conclude
+       anything. *)
+    fun dimsContradictory (P.APP P.DIM0, P.APP DIM1) = true
+      | dimsContradictory (P.APP P.DIM1, P.APP DIM0) = true
+      | dimsContradictory _ = false
+
+    (* Restrict a judgement by a single equation `ext = eps`. *)
+    fun One (jdg : abt jdg) (ext : param) (eps : param) =
+      if P.eq Sym.eq (ext, eps) then [jdg] (* combining rules in first row *)
+      else if dimsContradictory (ext, eps) then [] (* second row, left rule *)
+      else
+        let
+          val (P.VAR v, P.APP eps) = (ext, eps)
+        in
+          [Seq.map (substSymbol (P.APP eps, v)) jdg] (* bottom left rule *)
+        end
+
+    (* Restrict a judgement by two equations `ext0 = eps0` and `ext1 = eps1`. *)
+    fun Two (jdg : abt jdg) (ext0 : param) (eps0 : param) (ext1 : param) (eps1 : param) =
+      if P.eq Sym.eq (ext0, eps0) then One jdg ext1 eps1 (* top right rule *)
+      else if P.eq Sym.eq (ext1, eps1) then One jdg ext0 eps0 (* top right rule *)
+      else if dimsContradictory (ext0, eps0) then [] (* second row, left rule *)
+      else if dimsContradictory (ext1, eps1) then [] (* second row, left rule *)
+      else
+        let
+          val (P.VAR u, P.APP _) = (ext0, eps0)
+          val (P.VAR v, P.APP _) = (ext1, eps1)
+        in
+          if Sym.eq (u, v) andalso not (P.eq Sym.eq (eps0, eps1)) then [] (* second row, right rule *)
+          else
+            [Seq.map (substSymbol (eps0, u)) (Seq.map (substSymbol (eps1, v)) jdg)] (* bottom right rule *)
+        end
+  end
+
+  structure HCom =
+  struct
+    (* Given a list of n extents and a list of 2n tubes, produce a list of
+       (extent * side * tube) triples, where side is 0 or 1 according to the
+       tube's position in the list *)
+    fun groupTubes [] [] = []
+      | groupTubes (ext :: exts) (tube0 :: tube1 :: tubes)  =
+        (ext, P.APP P.DIM0, tube0) :: (ext, P.APP P.DIM1, tube1) :: groupTubes exts tubes
+      | groupTubes _ _ = raise Fail "groupTubes"
+
+    fun listToTel l = List.foldl (fn (g, l) => l >: g) T.empty l
+
+    (* Produce the list of goals requiring that tube aspects agree with each other.
+         forall i, j, eps, eps'.
+           N_i^eps = N_j^eps' in A [Psi, y | r_i = eps, r_j = eps']
+     *)
+    fun intraTubeGoals H w ty group =
+      let
+        fun intraTube (ext0, eps0, (u, tube0)) (ext1, eps1, (v, tube1)) =
+          let
+            val tube0 = substSymbol (P.ret w, u) tube0
+            val tube1 = substSymbol (P.ret w, v) tube1
+            val J = H >> CJ.EQ ((tube0,tube1), ty)
+          in
+            List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) |> j)))
+                     (Restriction.Two J ext0 eps0 ext1 eps1)
+          end
+      in
+        listToTel
+          (ListMonad.bind
+             (fn x => ListMonad.bind (intraTube x) group)
+             group)
+      end
+
+    (* Produce the list of goals requiring that tube aspects agree with the cap.
+         forall i, eps.
+           N_i^eps<r/y> = M in A [Psi | r_i = eps]
+     *)
+    fun tubeCapGoals H ty r cap group =
+      let
+        fun tubeCap (ext, eps, (u, tube)) =
+          let
+            val J = H >> CJ.EQ ((substSymbol (r,u) tube, cap), ty)
+          in
+            List.map (#1 o makeGoal) (Restriction.One J ext eps)
+          end
+      in
+        listToTel (ListMonad.bind tubeCap group)
+      end
+
+    fun Eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.Eq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.HCOM (exts0, (r0, r'0), ty0, cap0, tubes0) = Syn.out lhs
+        val () = assertAlphaEq (ty0, ty)
+        val Syn.HCOM (exts1, (r1, r'1), ty1, cap1, tubes1) = Syn.out rhs
+        val () = assertParamEq "HCom.Eq source of direction" (r0, r1)
+        val () = assertParamEq "HCom.Eq target of direction" (r'0, r'1)
+        val _ = ListPair.mapEq (assertParamEq "HCom.Eq extents") (exts0, exts1)
+
+        val (goalTy, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty0, ty1)
+        val (goalCap, _) = makeGoal @@ H >> CJ.EQ ((cap0, cap1), ty)
+
+        val w = alpha 0
+
+        val group0 = groupTubes exts0 tubes0
+        val group1 = groupTubes exts1 tubes1
+
+        (* The list of goals requiring that corresponding tube aspects
+           from the left and right side agree.
+             forall i, eps.
+               N_i^eps = P_i^eps in A [Psi, y | r_i = eps]
+         *)
+        val interTubeGoals =
+          let
+            fun interTube ext eps (u, tube0) (v, tube1) =
+              let
+                val tube0 = substSymbol (P.ret w, u) tube0
+                val tube1 = substSymbol (P.ret w, v) tube1
+                val J = H >> CJ.EQ ((tube0,tube1), ty)
+              in
+                List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) |> j)))
+                         (Restriction.One J ext eps)
+              end
+          in
+            listToTel
+              (ListMonad.bind
+                 (fn ((ext, eps, tube0), (_, _, tube1)) => interTube ext eps tube0 tube1)
+                 (ListPair.zipEq (group0, group1)))
+          end
+      in
+        T.append (T.empty >: goalTy >: goalCap)
+                 (T.append interTubeGoals (T.append (intraTubeGoals H w ty group0)
+                                                    (tubeCapGoals H ty r0 cap0 group0)))
+        #> trivial
+      end
+
+    fun CapEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.CapEq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.HCOM (exts, (r, r'), ty0, cap, tubes) = Syn.out lhs
+        val () = assertParamEq "HCom.CapEq source and target of direction" (r, r')
+        val () = assertAlphaEq (ty0, ty)
+        val group = groupTubes exts tubes
+
+        val (goalTy, _) = makeGoal @@ H >> CJ.TYPE ty
+        val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((cap, rhs), ty)
+
+        val w = alpha 0
+      in
+        T.append (T.empty >: goalTy >: goalEq)
+                 (T.append (intraTubeGoals H w ty group)
+                           (tubeCapGoals H ty r cap group))
+        #> trivial
+      end
+
+    fun TubeEq i alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.TubeEq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.HCOM (exts, (r, r'), ty0, cap, tubes) = Syn.out lhs
+        val () = assertAlphaEq (ty0, ty)
+        val j =
+          case List.nth (exts, i) of
+             P.APP P.DIM0 => 0
+           | P.APP P.DIM1 => 1
+           | _ => raise Fail "HCom.TubeEq extent"
+
+        val (u, tube) = List.nth (tubes, 2 * i + j)
+
+        val group = groupTubes exts tubes
+
+        val (goalTy, _) = makeGoal @@ H >> CJ.TYPE ty
+        val (goalCap, _) = makeGoal @@ H >> CJ.MEM (cap, ty)
+        val (goalEq, _) = makeGoal @@ H >> CJ.EQ ((substSymbol (r', u) tube, rhs), ty)
+
+        val w = alpha 0
+      in
+        T.append (T.empty >: goalTy >: goalCap >: goalEq)
+                 (T.append (intraTubeGoals H w ty group)
+                           (tubeCapGoals H ty r cap group))
+        #> trivial
+      end
+
+    (* Return index of first element in the list satisfying p. *)
+    fun indexOf p =
+      let
+        fun go acc [] = raise List.Empty
+          | go acc (x :: l) =
+            if p x then acc
+            else go (acc + 1) l
+      in
+        go 0
+      end
+
+    (* Search for an index of a constant extent in an hcom, to pass to HCom.TubeEq. *)
+    fun FindTubeEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.FindTubeEq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.HCOM (exts, _, _, _, _) = Syn.out lhs
+
+        fun isConstantDim (P.APP P.DIM0) = true
+          | isConstantDim (P.APP P.DIM1) = true
+          | isConstantDim _ = false
+
+        val i = indexOf isConstantDim exts
+      in
+        TubeEq i alpha jdg
+      end
+
+    local
+      infix orelse_
+    in
+      (* Try all the hcom rules. *)
+      val AutoEq = Eq orelse_ CapEq orelse_ FindTubeEq
+    end
+  end
+
+
   structure Computation =
   struct
+    exception UnsafeStep
 
     local
       open Machine.S.Cl infix <: $
@@ -1030,7 +1258,7 @@ struct
           case out m of
              th $ _ =>
                if List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support th then
-                 NONE
+                 raise UnsafeStep
                else
                  Machine.next sign st
            | _ => NONE
@@ -1047,7 +1275,6 @@ struct
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val H >> CJ.EQ ((m, n), ty) = jdg
         val Abt.$ (theta, _) = Abt.out m
-        val hasFreeDims = List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support theta
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val (goal, _) = makeGoal @@ H >> CJ.EQ ((m', n), ty)
       in
@@ -1060,7 +1287,6 @@ struct
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val H >> CJ.EQ_TYPE (ty1, ty2) = jdg
         val Abt.$ (theta, _) = Abt.out ty1
-        val hasFreeDims = List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support theta
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
         val (goal, _) = makeGoal @@ H >> CJ.EQ_TYPE (ty1', ty2)
         in
@@ -1169,7 +1395,7 @@ struct
          | Syn.ID_TY _ => Path.Eta
          | _ => raise E.error [E.% "Could not find eta expansion rule for type", E.! ty]
 
-      fun StepEq sign ((m, n), ty) =
+      fun StepEqCanonicity sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
          | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
@@ -1178,6 +1404,12 @@ struct
          | (Machine.NEUTRAL (Machine.VAR x), Machine.CANONICAL) => StepEqEta ty
          | (Machine.CANONICAL, Machine.NEUTRAL _) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+
+      fun StepEq sign ((m, n), ty) =
+        case (Syn.out m, Syn.out n) of
+           (Syn.HCOM _, _) => HCom.AutoEq
+         | (_, Syn.HCOM _) => Equality.Symmetry
+         | _ => StepEqCanonicity sign ((m, n), ty)
 
       fun StepSynth sign m =
         case Syn.out m of
