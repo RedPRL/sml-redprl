@@ -1072,7 +1072,10 @@ struct
 
     fun listToTel l = List.foldl (fn (g, l) => l >: g) T.empty l
 
-    (* Produce the list of goals requiring that tube aspects agree with each other. *)
+    (* Produce the list of goals requiring that tube aspects agree with each other.
+         forall i, j, eps, eps'.
+           N_i^eps = N_j^eps' in A [Psi, y | r_i = eps, r_j = eps']
+     *)
     fun intraTubeGoals H w ty group =
       let
         fun intraTube (ext0, eps0, (u, tube0)) (ext1, eps1, (v, tube1)) =
@@ -1091,7 +1094,10 @@ struct
              group)
       end
 
-    (* Produce the list of goals requiring that tube aspects agree with the cap. *)
+    (* Produce the list of goals requiring that tube aspects agree with the cap.
+         forall i, eps.
+           N_i^eps<r/y> = M in A [Psi | r_i = eps]
+     *)
     fun tubeCapGoals H ty r cap group =
       let
         fun tubeCap (ext, eps, (u, tube)) =
@@ -1133,6 +1139,11 @@ struct
         val group0 = groupTubes exts0 tubes0
         val group1 = groupTubes exts1 tubes1
 
+        (* The list of goals requiring that corresponding tube aspects
+           from the left and right side agree.
+             forall i, eps.
+               N_i^eps = P_i^eps in A [Psi, y | r_i = eps]
+         *)
         val interTubeGoals =
           listToTel
             (ListMonad.bind
