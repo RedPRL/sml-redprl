@@ -1023,14 +1023,17 @@ struct
        directed" on the restriction being performed.
      *)
 
-    fun neqDims (P.APP P.DIM0, P.APP DIM1) = true
-      | neqDims (P.APP P.DIM1, P.APP DIM0) = true
-      | neqDims _ = false
+    (* Return whether given dimensions are different constants, which
+       is a contradiction, allowing the restriction judgment to conclude
+       anything. *)
+    fun dimsContradictory (P.APP P.DIM0, P.APP DIM1) = true
+      | dimsContradictory (P.APP P.DIM1, P.APP DIM0) = true
+      | dimsContradictory _ = false
 
     (* Restrict a judgement by a single equation `ext = eps`. *)
     fun One (jdg : abt jdg) (ext : param) (eps : param) =
       if P.eq Sym.eq (ext, eps) then [jdg] (* combining rules in first row *)
-      else if neqDims (ext, eps) then [] (* second row, left rule *)
+      else if dimsContradictory (ext, eps) then [] (* second row, left rule *)
       else
         let
           val (P.VAR v, P.APP eps) = (ext, eps)
@@ -1042,8 +1045,8 @@ struct
     fun Two (jdg : abt jdg) (ext0 : param) (eps0 : param) (ext1 : param) (eps1 : param) =
       if P.eq Sym.eq (ext0, eps0) then One jdg ext1 eps1 (* top right rule *)
       else if P.eq Sym.eq (ext1, eps1) then One jdg ext0 eps0 (* top right rule *)
-      else if neqDims (ext0, eps0) then [] (* second row, left rule *)
-      else if neqDims (ext1, eps1) then [] (* second row, left rule *)
+      else if dimsContradictory (ext0, eps0) then [] (* second row, left rule *)
+      else if dimsContradictory (ext1, eps1) then [] (* second row, left rule *)
       else
         let
           val (P.VAR u, P.APP _) = (ext0, eps0)
