@@ -14,8 +14,8 @@ struct
   val eq = S.eq
   val toString = S.toString TermPrinter.toString
 
-  fun substSymenv _ = raise Fail "TODO!"
-  fun substVarenv _ = raise Fail "TODO!"
+  val substSymenv = S.map o Tm.substSymenv
+  val substVarenv = S.map o Tm.substVarenv
 
   local
     open S
