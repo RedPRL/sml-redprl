@@ -1,15 +1,23 @@
 structure LcfLanguage = LcfAbtLanguage (RedPrlAbt)
 
+signature LCF_GENERIC_UTIL = 
+sig
+  structure Abt : ABT
+  datatype 'a generic = || of ((Abt.symbol * Abt.psort) list * (Abt.variable * Abt.sort) list) * 'a
+  include LCF_UTIL where type 'a Eff.t = 'a generic
+end
+
 structure Lcf :
 sig
-  include LCF_UTIL
+  include LCF_GENERIC_UTIL
   val prettyState : jdg state -> PP.doc
   val stateToString : jdg state -> string
 end =
 struct
-  structure Def = LcfUtil (structure Lcf = Lcf (LcfLanguage) and J = RedPrlJudgment)
-  open Def
-  infix |>
+  structure LcfGeneric = LcfGeneric (LcfLanguage)
+  structure Def = LcfGenericUtil (structure Lcf = LcfGeneric and J = RedPrlJudgment)
+  open Def LcfGeneric
+  infix |> ||
 
   fun prettyGoal (x, jdg) =
     PP.concat
@@ -19,12 +27,12 @@ struct
        PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
        PP.line]
 
-  val prettyGoals : jdg Tl.telescope -> {doc : PP.doc, env : J.env, idx : int} =
+  val prettyGoals : jdg eff Tl.telescope -> {doc : PP.doc, env : J.env, idx : int} =
     let
       open RedPrlAbt
     in
       Tl.foldl
-        (fn (x, jdg, {doc, env, idx}) =>
+        (fn (x, _ || jdg, {doc, env, idx}) =>
           let
             val x' = Metavar.named (Int.toString idx)
             val jdg' = J.subst env jdg
@@ -97,14 +105,14 @@ struct
       end
   end
 
-  fun makeGoal jdg =
+  fun makeGoal (Lcf.|| (bs, jdg)) =
     let
       open Abt infix 1 $#
       val x = newMeta ""
       val vl as (_, tau) = J.sort jdg
       fun hole ps ms = check (x $# (ps, ms), tau)
     in
-      ((x, jdg), hole)
+      ((x, Lcf.|| (bs, jdg)), hole)
     end
 
 
