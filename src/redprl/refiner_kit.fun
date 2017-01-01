@@ -32,11 +32,13 @@ struct
       open RedPrlAbt
     in
       Tl.foldl
-        (fn (x, _ || jdg, {doc, env, idx}) =>
+        (fn (x, (syms, vars) || jdg, {doc, env, idx}) =>
           let
             val x' = Metavar.named (Int.toString idx)
             val jdg' = J.subst env jdg
-            val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' (J.sort jdg'))
+            val ((ssorts, vsorts), tau) = J.sort jdg'
+            val vl' = ((ssorts @ List.map #2 syms, vsorts @ List.map #2 vars), tau)
+            val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' vl')
           in
             {doc = PP.concat [doc, prettyGoal (x', jdg'), PP.line],
              env = env',
@@ -110,7 +112,7 @@ struct
       open Abt infix 1 $#
       val x = newMeta ""
       val vl as (_, tau) = J.sort jdg
-      fun hole ps ms = check (x $# (ps, ms), tau)
+      fun hole ps ms = check (x $# (ps, ms), tau) handle _ => raise Fail "makeGoal"
     in
       ((x, Lcf.|| (bs, jdg)), hole)
     end
