@@ -30,22 +30,15 @@ struct
     let
       val parametric = 
         if List.length syms > 0 then
-          [PP.text "nabla {", prettySyms syms, PP.text "}. "]
+          PP.concat [PP.line, PP.text "nabla {", prettySyms syms, PP.text "}. "]
         else
-          []
-      val generic = 
-        if List.length vars > 0 then 
-          [PP.text "forall [", prettyVars vars, PP.text "]. "]
-        else
-          []
-      val quantifications = parametric @ generic
+          PP.empty
     in
       PP.concat
         [PP.text "Goal ",
          PP.text (RedPrlAbt.Metavar.toString x),
          PP.text ".",
-         if List.length quantifications > 0 then PP.line else PP.empty,
-         PP.concat quantifications,
+         parametric,
          PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
          PP.line]
     end
