@@ -19,13 +19,37 @@ struct
   open Def LcfGeneric
   infix |> ||
 
-  fun prettyGoal (x, jdg) =
-    PP.concat
-      [PP.text "Goal ",
-       PP.text (RedPrlAbt.Metavar.toString x),
-       PP.text ".",
-       PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
-       PP.line]
+
+  val prettySyms =
+    PP.text o ListSpine.pretty (fn (u, sigma) => Sym.toString u ^ " : " ^ Abt.O.Ar.Vl.PS.toString sigma) ", "
+
+  val prettyVars = 
+    PP.text o ListSpine.pretty (fn (x, tau) => Var.toString x ^ " : " ^ Abt.O.Ar.Vl.S.toString tau) ", "
+
+  fun prettyGoal (syms, vars) (x, jdg) =
+    let
+      val parametric = 
+        if List.length syms > 0 then
+          [PP.text "nabla {", prettySyms syms, PP.text "}. "]
+        else
+          []
+      val generic = 
+        if List.length vars > 0 then 
+          [PP.text "forall [", prettyVars vars, PP.text "]. "]
+        else
+          []
+      val quantifications = parametric @ generic
+    in
+      PP.concat
+        [PP.text "Goal ",
+         PP.text (RedPrlAbt.Metavar.toString x),
+         PP.text ".",
+         if List.length quantifications > 0 then PP.line else PP.empty,
+         PP.concat quantifications,
+         PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
+         PP.line]
+    end
+
 
   val prettyGoals : jdg eff Tl.telescope -> {doc : PP.doc, env : J.env, idx : int} =
     let
@@ -39,8 +63,9 @@ struct
             val ((ssorts, vsorts), tau) = J.sort jdg'
             val vl' = ((ssorts @ List.map #2 syms, vsorts @ List.map #2 vars), tau)
             val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' vl')
+
           in
-            {doc = PP.concat [doc, prettyGoal (x', jdg'), PP.line],
+            {doc = PP.concat [doc, prettyGoal (syms, vars) (x', jdg'), PP.line],
              env = env',
              idx = idx + 1}
           end)
