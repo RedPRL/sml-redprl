@@ -1,0 +1,4 @@
+Thm PrimitiveSequencingTest : [bool -> bool -> bool true] by [
+  {x,y} <- auto;
+  hyp{y}
+].
