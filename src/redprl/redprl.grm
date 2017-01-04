@@ -144,6 +144,7 @@ end
  | tactic of ast
  | tactics of ast list
  | hypBindings of (string * P.param_sort) list
+ | multiHypBindings of (string * P.param_sort) list
  | atomicRawMultitac of ast
  | atomicMultitac of ast
  | rawMultitac of ast
@@ -387,10 +388,13 @@ rawMultitac
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
+multiHypBindings
+  : VARNAME ([(VARNAME, P.HYP)])
+  | VARNAME COMMA hypBindings ((VARNAME, P.HYP) :: hypBindings)
 
 hypBindings
   : VARNAME ([(VARNAME, P.HYP)])
-  | VARNAME COMMA hypBindings ((VARNAME, P.HYP) :: hypBindings)
+  | LBRACKET multiHypBindings RBRACKET (multiHypBindings)
 
 rawTactic
   : multitac %prec SEMI (Tac.multitacToTac multitac)
