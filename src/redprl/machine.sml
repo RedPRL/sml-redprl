@@ -115,10 +115,7 @@ struct
       O.MONO O.MTAC_PROGRESS $$ [([],[]) \ mt]
 
     fun multirepeat mt =
-      let
-      in
         O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
-      end
 
     fun cut jdg =
       O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
