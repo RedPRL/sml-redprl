@@ -1,0 +1,3 @@
+Thm SequentTest(#A : exp) : [ x : #A true >> x = x in #A ] by [
+  auto
+].

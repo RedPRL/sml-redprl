@@ -1,0 +1,37 @@
+Tac TryStep = [ auto-step || id ].
+
+Thm Hcom/Poly(#A : exp) : [
+  _ : #A = #A type
+  >>
+    (a : #A)
+      -> (b : #A)
+      -> (c : #A) 
+      -> (d  : #A) 
+      -> paths({_}.#A; a; b)
+      -> paths({_}.#A; a; c)
+      -> paths({_}.#A; b; d) 
+      -> paths({_}.#A; c; d)
+    true
+] by [
+  { lam a. lam b. lam c. lam d.
+    lam pab. lam pac. lam pbd.
+    <i> 'hcom{i; 0 ~> 1}(#A; ,pab @ i; {j}. ,pac @ j; {j}. ,pbd @ j)
+  };
+  <|auto|>
+].
+
+Thm Cap{i : dim}(#A : exp; #e : exp) : [ 
+  _ : #A = #A type,
+  _ : #e = #e in #A 
+  >> hcom{i; 0 ~> 0}(#A; #e; {_}. #e; {_}. #e) = #e in #A
+] by [
+  auto
+].
+
+Thm Tube(#A : exp; #e : exp) : [
+  _ : #A = #A type,
+  _ : #e = #e in #A
+  >> hcom{0; 0 ~> 1}(#A; #e; {_}. #e; {_}. #e) = #e in #A
+] by [
+  auto
+].
