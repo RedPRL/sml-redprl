@@ -74,21 +74,30 @@ struct
 
     fun argsToString f =
       ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
+      
+    fun paramsToString f =
+      ListSpine.pretty (fn (x, vl) => f x ^ " : " ^ RedPrlArity.Vl.PS.toString vl) ", "
 
     val kwd = color C.red o bold true
     val declId = blink true o underline true
 
-    fun squares x =
+    fun delim (l,r) x =
       concat
-        [color C.white @@ text "[",
+        [color C.white @@ text l,
          x,
-         color C.white @@ text "]"]
+         color C.white @@ text r]
+
+    val squares = delim ("[", "]")
+    val braces = delim ("{", "}")
+    val parens = delim ("(", ")")
   in
     fun prettyDecl (opid, decl) =
       case decl of
          DEF {arguments, params, sort, definiens} =>
            concat
-             [kwd @@ text "Def ", declId @@ text opid, text "(", text @@ argsToString (fn x => x) arguments, text ") : ",
+             [kwd @@ text "Def ", declId @@ text opid, 
+              braces @@ text @@ paramsToString (fn x => x) params,
+              parens @@ text @@ argsToString (fn x => x) arguments, text " : ",
               text @@ RedPrlSort.toString sort, text " = ",
               squares @@ concat [nest 2 @@ concat [line, text (RedPrlAst.toString definiens)], line],
               text "."]
@@ -96,16 +105,19 @@ struct
            concat
              [kwd @@ text "Thm ",
               declId @@ text opid,
-              text "(",
-              text @@ argsToString (fn x => x) arguments,
-              text ")", text " : ",
+              braces @@ text @@ paramsToString (fn x => x) params,
+              parens @@ text @@ argsToString (fn x => x) arguments,
+              text " : ",
               squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString goal], line],
               text " by ",
               squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
               text "."]
        | TAC {arguments, params, script} =>
            concat
-            [kwd @@ text "Tac ", declId @@ text opid, text "(", text @@ argsToString (fn x => x) arguments, text ") = ",
+            [kwd @@ text "Tac ", declId @@ text opid,
+             braces @@ text @@ paramsToString (fn x => x) params,
+             parens @@ text @@ argsToString (fn x => x) arguments,
+             text " = ",
              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
              text "."]
 
@@ -120,7 +132,9 @@ struct
           concat
             [kwd @@ text "Def ",
              declId @@ text @@ Sym.toString opid,
-             text "(", text @@ argsToString Metavar.toString arguments, text ") : ",
+             braces @@ text @@ paramsToString Sym.toString params,
+             parens @@ text @@ argsToString Metavar.toString arguments,
+             text " : ",
              text @@ RedPrlSort.toString sort, text " = ",
              squares @@ concat [nest 2 @@ concat [line, text @@ TermPrinter.toString definiens], line],
              text "."]
@@ -322,11 +336,9 @@ struct
 
       fun names i = Sym.named ("@" ^ Int.toString i)
 
-      fun elabRefine sign (goal, script) =
+      fun elabRefine sign (goal, seqjdg, script) =
         let
-          val catjdg = CJ.fromAbt goal
-          val seqjdg = Hyps.empty >> catjdg
-          val tau = CJ.synthesis catjdg
+          val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
@@ -341,17 +353,26 @@ struct
                   *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))
               end)
         end
-
     in
       fun elabThm sign opid pos {arguments, params, goal, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
-          val names = fn i => Sym.named ("@" ^ Int.toString i)
         in
-          convertToAbt (metactx, symctx, env) goal JDG <&> convertToAbt (metactx, symctx, env) script TAC
-            >>= elabRefine sign
-            >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = sort definiens, definiens = definiens})
+          convertToAbt (metactx, symctx, env) goal SEQ >>= (fn goalTm =>
+            let
+              val seqjdg as hyps >> concl = RedPrlSequent.fromAbt goalTm
+              val (params'', symctx', env') = 
+                Hyps.foldr
+                  (fn (x, jdg, (ps, ctx, env)) => 
+                    ((x, RedPrlParamData.HYP) :: ps, Tm.Sym.Ctx.insert ctx x RedPrlParamData.HYP, NameEnv.insert env (Sym.toString x) x)) 
+                  (params', symctx, env)
+                  hyps
+            in
+              convertToAbt (metactx, symctx', env') script TAC 
+                >>= (fn scriptTm => elabRefine sign (goalTm, seqjdg, scriptTm))
+                >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = sort definiens, definiens = definiens})
+            end)
         end
     end
 

@@ -7,6 +7,7 @@ struct
    | THM of sort
    | JDG
    | TRIV
+   | SEQ
 end
 
 structure RedPrlSort : ABT_SORT =
@@ -23,6 +24,7 @@ struct
      | THM sort => "thm{" ^ toString sort ^ "}"
      | JDG => "jdg"
      | TRIV => "triv"
+     | SEQ => "seq"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -59,6 +61,8 @@ struct
    | DEV_LET
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
+
+   | SEQ_CONCL | SEQ_CONS of sort
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -148,8 +152,8 @@ struct
      | AX => [] ->> TRIV
      | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
-     | REFINE (true, tau) => [[] * [] <> JDG, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
-     | REFINE (false, tau) => [[] * [] <> JDG, [] * [] <> TAC] ->> THM tau
+     | REFINE (true, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
+     | REFINE (false, tau) => [[] * [] <> SEQ, [] * [] <> TAC] ->> THM tau
      | EXTRACT tau => [[] * [] <> THM tau] ->> tau
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
@@ -189,6 +193,9 @@ struct
      | JDG_TYPE => [[] * [] <> EXP] ->> JDG
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
+
+     | SEQ_CONCL => [[] * [] <> JDG] ->> SEQ
+     | SEQ_CONS tau => [[] * [] <> JDG, [] * [tau] <> SEQ] ->> SEQ
 
   local
     val typeArgsForTag =
@@ -377,6 +384,8 @@ struct
      | JDG_EQ_TYPE => "eq-type"
      | JDG_TYPE => "type"
      | JDG_SYNTH => "synth"
+     | SEQ_CONCL => "seq-concl"
+     | SEQ_CONS _ => "seq-cons"
 
   local
     fun spanToString f (r, r') =
