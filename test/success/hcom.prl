@@ -26,6 +26,40 @@ Thm Hcom/Poly(#A : exp) : [
   <|auto|>
 ].
 
+Thm Hcom/trans(#A : exp) : [
+  _ : #A = #A type
+  >>
+    (a : #A)
+      -> (b : #A)
+      -> (c : #A)
+      -> paths({_}.#A; a; b)
+      -> paths({_}.#A; b; c)
+      -> paths({_}.#A; a; c)
+    true
+] by [
+  {
+    lam a. lam b. lam c. lam pab. lam pbc.
+    <i> 'hcom{i; 0 ~> 1}(#A; ,pab @ i; {_}. ,a; {j}. ,pbc @j)
+  };
+  auto
+].
+
+Thm Hcom/symm(#A : exp) : [
+  _ : #A = #A type
+  >> 
+    (a : #A) 
+      -> (b : #A)
+      -> paths({_}.#A; a; b)
+      -> paths({_}.#A; b; a)
+    true
+] by [
+  {
+    lam a. lam b. lam pab.
+    <i> 'hcom{i; 0 ~> 1}(#A; ,a; {j}. ,pab @j; {_}. ,a)
+  };
+  auto
+].
+
 Thm Cap{i : dim}(#A : exp) : [ 
   _ : #A = #A type,
   x : #A true
