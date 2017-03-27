@@ -26,18 +26,18 @@ Thm Hcom/Poly(#A : exp) : [
   <|auto|>
 ].
 
-Thm Cap{i : dim}(#A : exp; #e : exp) : [ 
+Thm Cap{i : dim}(#A : exp) : [ 
   _ : #A = #A type,
-  _ : #e = #e in #A 
-  >> hcom{i; 0 ~> 0}(#A; #e; {_}. #e; {_}. #e) = #e in #A
+  x : #A true
+  >> hcom{i; 0 ~> 0}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
   auto
 ].
 
-Thm Tube(#A : exp; #e : exp) : [
+Thm Tube(#A : exp) : [
   _ : #A = #A type,
-  _ : #e = #e in #A
-  >> hcom{0; 0 ~> 1}(#A; #e; {_}. #e; {_}. #e) = #e in #A
+  x : #A true
+  >> hcom{0; 0 ~> 1}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
   auto
 ].
