@@ -1353,8 +1353,14 @@ struct
           | _ >> CJ.SYNTH m => StepSynth sign m
           | MATCH _ => Match.MatchOperator
           | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString TermPrinter.toString jdg)])
+
+      structure HypsUtil = TelescopeUtil (Hyps)
+      fun FindHyp alpha (H >> jdg) = 
+        case HypsUtil.search H (fn jdg' => CJ.eq (jdg, jdg')) of
+           SOME (lbl, _) => Hyp.Project lbl alpha (H >> jdg)
+         | NONE => raise E.error [E.% "Could not find suitable hypothesis"]
     in
-      val AutoStep = StepJdg
+      fun AutoStep sign = orelse_ (StepJdg sign, FindHyp)
     end
 
     local
