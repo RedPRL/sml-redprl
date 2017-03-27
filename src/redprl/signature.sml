@@ -336,9 +336,8 @@ struct
 
       fun names i = Sym.named ("@" ^ Int.toString i)
 
-      fun elabRefine sign (goal, script) =
+      fun elabRefine sign (goal, seqjdg, script) =
         let
-          val seqjdg = RedPrlSequent.fromAbt goal
           val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
@@ -354,17 +353,26 @@ struct
                   *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))
               end)
         end
-
     in
       fun elabThm sign opid pos {arguments, params, goal, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
-          val names = fn i => Sym.named ("@" ^ Int.toString i)
         in
-          convertToAbt (metactx, symctx, env) goal SEQ <&> convertToAbt (metactx, symctx, env) script TAC
-            >>= elabRefine sign
-            >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = sort definiens, definiens = definiens})
+          convertToAbt (metactx, symctx, env) goal SEQ >>= (fn goalTm =>
+            let
+              val seqjdg as hyps >> concl = RedPrlSequent.fromAbt goalTm
+              val (params'', symctx', env') = 
+                Hyps.foldr
+                  (fn (x, jdg, (ps, ctx, env)) => 
+                    ((x, RedPrlParamData.HYP) :: ps, Tm.Sym.Ctx.insert ctx x RedPrlParamData.HYP, NameEnv.insert env (Sym.toString x) x)) 
+                  (params', symctx, env)
+                  hyps
+            in
+              convertToAbt (metactx, symctx', env') script TAC 
+                >>= (fn scriptTm => elabRefine sign (goalTm, seqjdg, scriptTm))
+                >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = sort definiens, definiens = definiens})
+            end)
         end
     end
 
