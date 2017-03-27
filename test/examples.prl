@@ -84,6 +84,6 @@ Def Cmp(#f : exp; #g : exp) : exp = [
   lam([x]. #f (#g x))
 ].
 
-Thm StrictBoolTest : [ Not() = Cmp(Not(); Cmp(Not(); Not())) : sbool -> sbool ] by [
+Thm StrictBoolTest : [ Not() = Cmp(Not(); Cmp(Not(); Not())) in sbool -> sbool ] by [
   auto
 ].

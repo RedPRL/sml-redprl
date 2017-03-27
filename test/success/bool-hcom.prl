@@ -12,10 +12,10 @@ Thm BasicHcom : [
   <|auto|>;
 ].
 
-Thm Cap{i : dim} : [ hcom{i; 0 ~> 0}(bool; tt; {_}. tt; {_}. tt) = tt : bool ] by [
+Thm Cap{i : dim} : [ hcom{i; 0 ~> 0}(bool; tt; {_}. tt; {_}. tt) = tt in bool ] by [
   auto
 ].
 
-Thm Tube : [ hcom{0; 0 ~> 1}(bool; tt; {_}. tt; {_}. tt) = tt : bool ] by [
+Thm Tube : [ hcom{0; 0 ~> 1}(bool; tt; {_}. tt; {_}. tt) = tt in bool ] by [
   auto
 ].
