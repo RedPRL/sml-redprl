@@ -176,6 +176,7 @@ end
  | tactic of ast
  | tactics of ast list
  | hypBindings of (string * P.param_sort) list
+ | multiHypBindings of (string * P.param_sort) list
  | atomicRawMultitac of ast
  | atomicMultitac of ast
  | rawMultitac of ast
@@ -422,7 +423,7 @@ atomicRawMultitac
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
   | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
   | LBRACKET multitac RBRACKET (multitac)
-  | hypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq multitac hypBindings atomicRawMultitac)
+  | hypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
   | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
 
@@ -435,10 +436,13 @@ rawMultitac
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
+multiHypBindings
+  : VARNAME ([(VARNAME, P.HYP)])
+  | VARNAME COMMA hypBindings ((VARNAME, P.HYP) :: hypBindings)
 
 hypBindings
   : VARNAME ([(VARNAME, P.HYP)])
-  | VARNAME COMMA hypBindings ((VARNAME, P.HYP) :: hypBindings)
+  | LBRACKET multiHypBindings RBRACKET (multiHypBindings)
 
 rawTactic
   : multitac %prec SEMI (Tac.multitacToTac multitac)

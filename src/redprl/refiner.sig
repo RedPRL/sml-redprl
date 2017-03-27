@@ -6,7 +6,6 @@ sig
   type rule
   type hyp
 
-  val Lift : rule -> rule
   val Lemma : abt -> 'n -> Lcf.jdg Lcf.tactic
   val Cut : catjdg -> rule
   val Elim : sign -> hyp -> rule

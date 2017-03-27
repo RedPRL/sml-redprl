@@ -1,0 +1,8 @@
+Thm BoolSym : [
+  (a : bool) -> (b : bool) ->
+  paths({_}.bool; a; b) ->
+  paths({_}.bool; b; a) true
+] by [
+  { lam a. lam b. lam p. <i> 'hcom{i; 0 ~> 1}(bool; ,a; {j}. ,p @ j; {_}. ,a)};
+  auto
+].

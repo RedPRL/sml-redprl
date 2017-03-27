@@ -169,6 +169,8 @@ struct
 
     structure Err = RedPrlError
 
+    fun error pos msg = raise Err.annotate pos (Err.error msg)
+
     (* During parsing, the arity of a custom-operator application is not known; but we can
      * derive it from the signature "so far". Prior to adding a declaration to the signature,
      * we process its terms to fill this in. *)
@@ -193,7 +195,7 @@ struct
                  in
                    O.POLY (O.CUST (opid, ps', SOME ar))
                  end
-             | NONE => raise Err.annotate pos (Err.error [Err.% "Encountered undefined custom operator:", Err.% opid]))
+             | NONE => error pos [Err.% "Encountered undefined custom operator:", Err.% opid])
          | th => th
 
       fun processTerm' sign m =
@@ -297,15 +299,11 @@ struct
         AstToAbt.NameEnv.empty
         metactx
 
-    local
-      structure Err = RedPrlError
-    in
-      fun convertToAbt (metactx, symctx, env) ast sort =
-        E.wrap (RedPrlAst.getAnnotation ast,
-                fn () => AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort)
-                         handle AstToAbt.BadConversion (msg, pos) => raise Err.annotate pos (Err.error [Err.% msg]))
-          >>= scopeCheck (metactx, symctx)
-    end
+    fun convertToAbt (metactx, symctx, env) ast sort =
+      E.wrap (RedPrlAst.getAnnotation ast,
+              fn () => AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort)
+                       handle AstToAbt.BadConversion (msg, pos) => error pos [Err.% msg])
+        >>= scopeCheck (metactx, symctx)
 
     fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
       let
@@ -402,6 +400,7 @@ struct
       in
         Telescope.snoc sign opid (decl, pos)
       end
+      handle Telescope.Duplicate l => error pos [Err.% "Duplicate identitifier:", Err.% l]
 
   in
     fun insert (sign : sign) opid (decl, pos) =

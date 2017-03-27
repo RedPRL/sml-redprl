@@ -6,6 +6,8 @@ struct
   type param = Tm.param
   type sort = Tm.sort
 
+  type dir = param * param
+
   datatype 'a view =
      VAR of variable * sort
    | AX
@@ -15,6 +17,7 @@ struct
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    | ID_TY of (symbol * 'a) * 'a * 'a | ID_ABS of symbol * 'a | ID_AP of 'a * param
+   | HCOM of param list (* extents *) * dir * 'a (* type *) * 'a (* cap *) * (symbol * 'a) list (* tubes *)
    | CUST
    | META
 
@@ -46,6 +49,7 @@ struct
        | ID_TY ((u, a), m, n) => O.MONO O.ID_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | ID_ABS (u, m) => O.MONO O.ID_ABS $$ [([u],[]) \ m]
        | ID_AP (m, r) => O.POLY (O.ID_AP r) $$ [([],[]) \ m]
+       | HCOM (exts, dir, ty, cap, tubes) => O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ (([],[]) \ ty) :: (([],[]) \ cap) :: List.map (fn (d, tube) => ([d], []) \ tube) tubes
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
 
@@ -73,6 +77,25 @@ struct
        | O.MONO O.ID_TY $ [([u],_) \ a, _ \ m, _ \ n] => ID_TY ((u, a), m, n)
        | O.MONO O.ID_ABS $ [([u],_) \ m] => ID_ABS (u, m)
        | O.POLY (O.ID_AP r) $ [_ \ m] => ID_AP (m, r)
+       | O.POLY (O.HCOM (tag, exts, dir)) $ args =>
+         let
+           val (ty, args) =
+             case (tag, args) of
+                (O.TAG_NONE, ((_ \ ty) :: args)) => (ty, args)
+              | (O.TAG_BOOL, args) => (O.MONO O.BOOL $$ [], args)
+              | (O.TAG_S1, args) => (O.MONO O.S1 $$ [], args)
+              | (O.TAG_DFUN, (A :: xB :: args)) => (O.MONO O.DFUN $$ [A, xB], args)
+              | (O.TAG_DPROD, (A :: xB :: args)) => (O.MONO O.DPROD $$ [A, xB], args)
+              | (O.TAG_ID, (uA :: a0 :: a1 :: args)) => (O.MONO O.ID_TY $$ [uA, a0, a1], args)
+              | _ => raise Fail "Syntax.out hcom: Malformed tag"
+           val (_ \ cap) :: args = args
+           fun goTube (([d], _) \ tube) = (d, tube)
+             | goTube _ = raise Fail "Syntax.out hcom: Malformed tube"
+           val tubes = List.map goTube args
+         in
+           HCOM (exts, dir, ty, cap, tubes)
+         end
+
        | O.POLY (O.CUST _) $ _ => CUST
        | _ $# _ => META
        | _ => raise E.error [E.% "Syntax view encountered unrecognized term", E.! m]

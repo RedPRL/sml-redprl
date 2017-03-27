@@ -1,36 +1,64 @@
 structure LcfLanguage = LcfAbtLanguage (RedPrlAbt)
 
+signature LCF_GENERIC_UTIL = 
+sig
+  structure Abt : ABT
+  datatype 'a generic = || of ((Abt.symbol * Abt.psort) list * (Abt.variable * Abt.sort) list) * 'a
+  include LCF_UTIL where type 'a Eff.t = 'a generic
+end
+
 structure Lcf :
 sig
-  include LCF_UTIL
+  include LCF_GENERIC_UTIL
   val prettyState : jdg state -> PP.doc
   val stateToString : jdg state -> string
 end =
 struct
-  structure Def = LcfUtil (structure Lcf = Lcf (LcfLanguage) and J = RedPrlJudgment)
-  open Def
-  infix |>
+  structure LcfGeneric = LcfGeneric (LcfLanguage)
+  structure Def = LcfGenericUtil (structure Lcf = LcfGeneric and J = RedPrlJudgment)
+  open Def LcfGeneric
+  infix |> ||
 
-  fun prettyGoal (x, jdg) =
-    PP.concat
-      [PP.text "Goal ",
-       PP.text (RedPrlAbt.Metavar.toString x),
-       PP.text ".",
-       PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
-       PP.line]
 
-  val prettyGoals : jdg Tl.telescope -> {doc : PP.doc, env : J.env, idx : int} =
+  val prettySyms =
+    PP.text o ListSpine.pretty (fn (u, sigma) => Sym.toString u ^ " : " ^ Abt.O.Ar.Vl.PS.toString sigma) ", "
+
+  val prettyVars = 
+    PP.text o ListSpine.pretty (fn (x, tau) => Var.toString x ^ " : " ^ Abt.O.Ar.Vl.S.toString tau) ", "
+
+  fun prettyGoal (syms, vars) (x, jdg) =
+    let
+      val parametric = 
+        if List.length syms > 0 then
+          PP.concat [PP.line, PP.text "nabla {", prettySyms syms, PP.text "}. "]
+        else
+          PP.empty
+    in
+      PP.concat
+        [PP.text "Goal ",
+         PP.text (RedPrlAbt.Metavar.toString x),
+         PP.text ".",
+         parametric,
+         PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
+         PP.line]
+    end
+
+
+  val prettyGoals : jdg eff Tl.telescope -> {doc : PP.doc, env : J.env, idx : int} =
     let
       open RedPrlAbt
     in
       Tl.foldl
-        (fn (x, jdg, {doc, env, idx}) =>
+        (fn (x, (syms, vars) || jdg, {doc, env, idx}) =>
           let
             val x' = Metavar.named (Int.toString idx)
             val jdg' = J.subst env jdg
-            val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' (J.sort jdg'))
+            val ((ssorts, vsorts), tau) = J.sort jdg'
+            val vl' = ((ssorts @ List.map #2 syms, vsorts @ List.map #2 vars), tau)
+            val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' vl')
+
           in
-            {doc = PP.concat [doc, prettyGoal (x', jdg'), PP.line],
+            {doc = PP.concat [doc, prettyGoal (syms, vars) (x', jdg'), PP.line],
              env = env',
              idx = idx + 1}
           end)
@@ -97,14 +125,14 @@ struct
       end
   end
 
-  fun makeGoal jdg =
+  fun makeGoal (Lcf.|| (bs, jdg)) =
     let
       open Abt infix 1 $#
       val x = newMeta ""
       val vl as (_, tau) = J.sort jdg
-      fun hole ps ms = check (x $# (ps, ms), tau)
+      fun hole ps ms = check (x $# (ps, ms), tau) handle _ => raise Fail "makeGoal"
     in
-      ((x, jdg), hole)
+      ((x, Lcf.|| (bs, jdg)), hole)
     end
 
 
@@ -118,6 +146,12 @@ struct
       ()
     else
       raise E.error [E.% "Expected", E.! m, E.% "to be alpha-equivalent to", E.! n]
+
+  fun assertParamEq msg (r1, r2) =
+    if P.eq Sym.eq (r1, r2) then
+      ()
+    else
+      raise E.error [E.% (msg ^ ":"), E.% "Expected parameter", E.% (P.toString Sym.toString r1), E.% "to be equal to", E.% (P.toString Sym.toString r2)]
 
   fun assertVarEq (x, y) =
     if Var.eq (x, y) then
