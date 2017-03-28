@@ -8,6 +8,7 @@ struct
    | JDG
    | TRIV
    | SEQ
+   | GJDG (* generic judgments *)
 end
 
 structure RedPrlSort : ABT_SORT =
@@ -25,6 +26,7 @@ struct
      | JDG => "jdg"
      | TRIV => "triv"
      | SEQ => "seq"
+     | GJDG => "gjdg"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -44,7 +46,7 @@ struct
    | AX
    | ID_TY | ID_ABS
 
-   | REFINE of bool * sort | EXTRACT of sort
+   | EXTRACT of sort
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
@@ -63,6 +65,7 @@ struct
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
 
    | SEQ_CONCL | SEQ_CONS of sort
+   | GJDG_FORM of psort list * int list (* generic judgment form: symbol bindings, and sequent hyp addresses *)
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -92,6 +95,7 @@ struct
   type psort = RedPrlArity.Vl.PS.t
   type 'a extents = 'a P.term list
   type 'a dir = 'a P.term * 'a P.term
+  type refine_state = Metavar.t list * sort
 
   datatype 'a poly_operator =
      LOOP of 'a P.term
@@ -107,6 +111,7 @@ struct
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
    | DEV_DPROD_ELIM of 'a
+   | REFINE of refine_state 
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -152,8 +157,6 @@ struct
      | AX => [] ->> TRIV
      | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
-     | REFINE (true, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
-     | REFINE (false, tau) => [[] * [] <> SEQ, [] * [] <> TAC] ->> THM tau
      | EXTRACT tau => [[] * [] <> THM tau] ->> tau
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
@@ -196,6 +199,7 @@ struct
 
      | SEQ_CONCL => [[] * [] <> JDG] ->> SEQ
      | SEQ_CONS tau => [[] * [] <> JDG, [] * [tau] <> SEQ] ->> SEQ
+     | GJDG_FORM (sigmas, n) => [sigmas * [] <> SEQ] ->> GJDG
 
   local
     val typeArgsForTag =
@@ -227,6 +231,9 @@ struct
       in
         typeArgs @ [[] * [] <> EXP] ->> EXP
       end
+
+    fun subgoalVls vls =
+      List.map (fn ((sigmas, taus), _) => ((sigmas, taus), SEQ)) vls
   in
     val arityPoly =
       fn LOOP _ => [] ->> EXP
@@ -242,6 +249,7 @@ struct
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
        | DEV_DPROD_ELIM a => [[HYP,HYP] * [] <> TAC] ->> TAC
+       | REFINE (xs, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] @ List.map (fn _ => [] * [] <> GJDG) xs ->> THM tau
   end
 
   val arity =
@@ -284,6 +292,7 @@ struct
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_DFUN_ELIM a => [(a, HYP)]
        | DEV_DPROD_ELIM a => [(a, HYP)]
+       | REFINE _ => []
   end
 
   val support =
@@ -324,6 +333,9 @@ struct
            f (a, b)
        | (DEV_DPROD_ELIM a, DEV_DPROD_ELIM b) =>
            f (a, b)
+       | (REFINE (xs1, tau1), REFINE (xs2, tau2)) =>
+           tau1 = tau2
+             andalso ListPair.allEq Metavar.eq (xs1, xs2)
        | _ => false
   end
 
@@ -352,7 +364,6 @@ struct
      | AX => "ax"
      | ID_TY => "paths"
      | ID_ABS => "abs"
-     | REFINE _ => "refine"
      | EXTRACT _ => "extract"
      | MTAC_SEQ _ => "seq"
      | MTAC_ORELSE => "orelse"
@@ -386,6 +397,7 @@ struct
      | JDG_SYNTH => "synth"
      | SEQ_CONCL => "seq-concl"
      | SEQ_CONS _ => "seq-cons"
+     | GJDG_FORM _ => "generic"
 
   local
     fun spanToString f (r, r') =
@@ -432,6 +444,8 @@ struct
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
        | DEV_DPROD_ELIM a => "dprod-elim{" ^ f a ^ "}"
+       | REFINE _ => "refine"
+
   end
 
   fun toString f =
@@ -478,6 +492,7 @@ struct
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym f a)
        | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym f a)
+       | REFINE a => REFINE a
   end
 
   fun map f =

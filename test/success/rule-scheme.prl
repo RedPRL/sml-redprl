@@ -1,0 +1,14 @@
+Rule RuleScheme : [
+  {x : bool true >> bool true}
+  ---------------
+  {z : bool true >> bool true}
+] by [
+].
+
+Print RuleScheme.
+
+Thm Lemma : [ y : bool true >> bool true] by [
+  lemma{RuleScheme():exp}
+].
+
+Print Lemma.

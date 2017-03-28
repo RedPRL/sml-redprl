@@ -20,6 +20,7 @@ struct
   val rec format =
     fn E frags => ListSpine.pretty fragToString " " frags
      | Pos (_, exn) => format exn
+     | BadSubstMetaenv {description,...} => description
      | exn => exnMessage exn
 
    fun annotate (SOME pos) exn = Pos (pos, exn)

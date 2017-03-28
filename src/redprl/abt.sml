@@ -1,7 +1,3 @@
-structure Metavar = AbtSymbol ()
-structure Sym = AbtSymbol ()
-structure Var = Sym
-
 local
   structure AbtKit =
   struct

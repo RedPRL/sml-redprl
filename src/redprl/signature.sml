@@ -29,6 +29,7 @@ struct
     datatype src_decl =
        DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
      | THM of {arguments : string arguments, params : string params, goal : ast, script : ast}
+     | RULE of {arguments : string arguments, params : string params, premises : ast list, concl : ast, script : ast}
      | TAC of {arguments : string arguments, params : string params, script : ast}
 
     datatype 'opid cmd =
@@ -91,6 +92,13 @@ struct
     val braces = delim ("{", "}")
     val parens = delim ("(", ")")
   in
+    fun prettyRule {premises, concl} = 
+      concat
+        [concat @@ List.map (fn pr => concat [braces o text @@ RedPrlAst.toString pr, line]) premises,
+         text " ===> ",
+         line,
+         braces o text @@ RedPrlAst.toString concl]
+
     fun prettyDecl (opid, decl) =
       case decl of
          DEF {arguments, params, sort, definiens} =>
@@ -109,6 +117,17 @@ struct
               parens @@ text @@ argsToString (fn x => x) arguments,
               text " : ",
               squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString goal], line],
+              text " by ",
+              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
+              text "."]
+       | RULE {arguments, params, premises, concl, script} =>
+           concat
+             [kwd @@ text "Rule ",
+              declId @@ text opid,
+              braces @@ text @@ paramsToString (fn x => x) params,
+              parens @@ text @@ argsToString (fn x => x) arguments,
+              text " : ",
+              squares @@ concat [nest 2 @@ concat [line, prettyRule {premises = premises, concl = concl}], line],
               text " by ",
               squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
               text "."]
@@ -224,6 +243,7 @@ struct
       fun processDecl sign =
         fn DEF {arguments, params, sort, definiens} => DEF {arguments = arguments, params = params, sort = sort, definiens = processTerm sign definiens}
          | THM {arguments, params, goal, script} => THM {arguments = arguments, params = params, goal = processTerm sign goal, script = processTerm sign script}
+         | RULE {arguments, params, premises, concl, script} => RULE {arguments = arguments, params = params, premises = List.map (processTerm sign) premises, concl = processTerm sign concl, script = processTerm sign script}
          | TAC {arguments, params, script} => TAC {arguments = arguments, params = params, script = processTerm sign script}
     end
 
@@ -336,32 +356,65 @@ struct
 
       fun names i = Sym.named ("@" ^ Int.toString i)
 
-      fun elabRefine sign (goal, seqjdg, script) =
+      type subgoals = RedPrlJudgment.jdg Lcf.eff Lcf.Tl.telescope
+
+      fun subgoalValence (Lcf.|| ((us, xs), jdg)) =
+        let
+          val ((sigmas, taus), tau) = RedPrlJudgment.sort jdg
+        in
+          ((List.map #2 us @ sigmas, List.map #2 xs @ taus), tau)
+        end
+
+      fun quoteSubgoals (subgoals : subgoals) : abt list = 
+        Lcf.Tl.foldr (fn (x, goal, r) => Lcf.genericToAbt goal :: r) [] subgoals
+
+      fun telescopeMetas (subgoals : subgoals) : Metavar.t list = 
+        Lcf.Tl.foldr (fn (x, goal, r) => x :: r) [] subgoals
+
+      fun elabRefine sign (goal, seqjdg, subgoalSpec : abt list, script) =
         let
           val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
-            if LcfModel.Lcf.Tl.isEmpty subgoals then
-              E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
-                 E.ret (MONO (REFINE (true, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd]))
-            else
-              let
-                val stateStr = Lcf.stateToString state
-              in
-                E.warn (pos, "Incomplete proof: \n\n" ^ stateStr)
-                  *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))
+            let
+              val quotedSubgoals : abt list = quoteSubgoals subgoals
+              val _ = List.app (print o TermPrinter.toString) quotedSubgoals
+              val _ = print "\nvs\n"
+              val _ = List.app (print o TermPrinter.toString) subgoalSpec
+              val _ = print "\n\n\n"
+
+              val metas = telescopeMetas subgoals
+              val _ \ evd = outb vld
+
+              val unfinishedSubgoals = List.filter (fn goal => not (List.exists (fn goal' => RedPrlAbt.eq (goal, goal')) subgoalSpec)) quotedSubgoals
+              val thm = POLY (REFINE (metas, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd] @ List.map (fn m => ([],[]) \ m) quotedSubgoals
+            in
+              if List.length unfinishedSubgoals = 0 then
+                E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
+                  E.ret thm)
+              else
+                let
+                  val stateStr = Lcf.stateToString state
+                in
+                  E.warn (pos, "Incomplete proof: \n\n" ^ stateStr)
+                    *> E.ret thm
+                end
               end)
         end
+        
+        structure ElabApplicative = MonadApplicative (E)
+        structure ElabTraverse = ListTraversable (ElabApplicative)
     in
-      fun elabThm sign opid pos {arguments, params, goal, script} =
+      fun elabRule sign opid pos {arguments, params, premises, concl, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
+          val elabPremises : abt list E.t = ElabTraverse.traverse (fn x => convertToAbt (metactx, symctx, env) x GJDG) premises
         in
-          convertToAbt (metactx, symctx, env) goal SEQ >>= (fn goalTm =>
+          elabPremises <&> convertToAbt (metactx, symctx, env) concl SEQ >>= (fn (premiseTms, conclTm) =>
             let
-              val seqjdg as hyps >> concl = RedPrlSequent.fromAbt goalTm
+              val seqjdg as hyps >> _ = RedPrlSequent.fromAbt conclTm handle _ => raise Fail "fuck393"
               val (params'', symctx', env') = 
                 Hyps.foldr
                   (fn (x, jdg, (ps, ctx, env)) => 
@@ -370,7 +423,7 @@ struct
                   hyps
             in
               convertToAbt (metactx, symctx', env') script TAC 
-                >>= (fn scriptTm => elabRefine sign (goalTm, seqjdg, scriptTm))
+                >>= (fn scriptTm => elabRefine sign (conclTm, seqjdg, premiseTms, scriptTm))
                 >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = sort definiens, definiens = definiens})
             end)
         end
@@ -394,7 +447,8 @@ struct
         ETelescope.snoc esign' eopid (decorate (E.delay (fn _ =>
           case processDecl sign decl of
              DEF defn => elabDef sign' opid defn
-           | THM defn => elabThm sign' opid pos defn
+           | THM {arguments, params, goal, script} => elabRule sign' opid pos {arguments = arguments, params = params, premises = [], concl = goal, script = script}
+           | RULE defn => elabRule sign' opid pos defn
            | TAC defn => elabTac sign' opid defn)))
       end
 

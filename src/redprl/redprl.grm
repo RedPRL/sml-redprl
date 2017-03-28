@@ -88,6 +88,7 @@ end
  | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
  | TIMES
  | DOUBLE_RANGLE
+ | DASHES
 
  | HCOM | COE | UNIV | BOOL | S_BOOL | TT | FF | IF | S_IF | PATHS | LOOP | BASE | S1 | FST | SND
  | THEN | ELSE | LET | WITH | CASE | OF
@@ -98,7 +99,7 @@ end
  | EXP | TAC
 
  | CMD_PRINT
- | DCL_DEF | DCL_TAC | DCL_THM
+ | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
  | BY | IN
 
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO
@@ -171,6 +172,11 @@ end
 
  | rawSequent of ast
  | sequent of ast
+ | genericJdg of ast
+ | rulePremise of ast
+ | rulePremises of ast list
+ | ruleConcl of ast
+ | ruleSpec of ast list * ast
 
  | rawTactic of ast
  | tactic of ast
@@ -378,6 +384,24 @@ rawSequent
 
 sequent : rawSequent (annotate (Pos.pos (rawSequent1left fileName) (rawSequent1right fileName)) rawSequent)
 
+(* TODO *)
+genericJdg
+  : sequent (Ast.$$ (O.MONO (O.GJDG_FORM ([],[])), [\ (([],[]), sequent)]))
+
+rulePremise
+  : LBRACKET genericJdg RBRACKET (genericJdg)
+
+rulePremises
+  : ([])
+  | rulePremise ([rulePremise])
+  | rulePremise COMMA rulePremises (rulePremise :: rulePremises)
+
+ruleConcl
+  : LBRACKET sequent RBRACKET (sequent)
+
+ruleSpec
+  : rulePremises DASHES ruleConcl (rulePremises, ruleConcl)
+
 atomicRawTac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
@@ -485,6 +509,8 @@ rawDecl
       (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
   | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE sequent RSQUARE BY LSQUARE tactic RSQUARE
       (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = sequent, script = tactic})
+  | DCL_RULE OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE ruleSpec RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.RULE {arguments = declArgumentsParens, params = declParamsBrackets, premises = (#1 ruleSpec), concl = (#2 ruleSpec), script = tactic})
 
 decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))
 

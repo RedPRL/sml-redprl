@@ -1235,15 +1235,42 @@ struct
         #> hole1 [] [hole2 [] []]
     end
 
-  fun Lemma thm alpha jdg =
+  fun renameMeta (y, x) tm =
+    let
+      val vl as ((sigmas, taus), tau) = Metavar.Ctx.lookup (metactx tm) x
+      val us = List.tabulate (List.length sigmas, fn i => Sym.named (Int.toString i))
+      val xs = List.tabulate (List.length taus, fn i => Var.named (Int.toString i))
+      val ps = ListPair.map (fn (u, sigma) => (P.VAR u, sigma)) (us, sigmas)
+      val ms = ListPair.map (fn (x, tau) => check (`x, tau)) (xs, taus)
+      val ytm = check (y $# (ps, ms), tau)
+      val btm = checkb ((us, xs) \ ytm, vl)
+    in
+      substMetaenv (Metavar.Ctx.insert Metavar.Ctx.empty x btm) tm
+    end
+
+  fun Lemma thm (alpha : int -> sym) jdg =
     let
       val _ = RedPrlLog.trace "Lemma"
-      val Abt.$ (O.MONO (O.REFINE (true, _)), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
-      val H >> catjdg = jdg
-      val catjdg' = CJ.fromAbt goal
-      val true = CJ.eq (catjdg, catjdg')
+
+      val Abt.$ (O.POLY (O.REFINE (metas, _)), (_ \ goal) :: (_ \ script) :: (_ \ evidence) :: rest) = Abt.out thm
+      val _ = if Abt.eq (goal, RedPrlSequent.toAbt jdg) then () else raise E.error [E.% "Lemma", E.! goal, E.% "did not match goal"]
+
+      fun goalFromSeqTm tm = 
+       #1 o makeGoal @@ Lcf.genericFromAbt (SOME alpha) tm
+      
+      val state =
+        ListPair.foldl 
+          (fn (x, _ \ seq, Lcf.|> (psi, evd)) => 
+             let
+               val (x', goal) = goalFromSeqTm seq
+               val evd' = mapAbs (renameMeta (x', x))  evd
+             in
+               Lcf.|> ((psi >: (x', goal)), evd')
+             end)
+          (T.empty #> evidence)
+          (metas, rest)
     in
-      T.empty #> evd
+      state
     end
 
   local
