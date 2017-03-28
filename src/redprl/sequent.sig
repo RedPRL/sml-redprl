@@ -26,4 +26,5 @@ sig
   val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
 
   val fromAbt : abt -> abt jdg
+  val toAbt : abt jdg -> abt
 end

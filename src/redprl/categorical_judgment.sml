@@ -72,7 +72,7 @@ struct
        | O.MONO O.JDG_TYPE $ [_ \ a] => TYPE a
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO O.JDG_CEQ $ [_ \ m, _ \ n] => CEQUIV (m, n)
-       | _ => raise InvalidJudgment
+       | _ => raise Fail ("Invalid judgment: " ^ TermPrinter.toString jdg)
   end
 
   val toString = TermPrinter.toString o toAbt

@@ -44,7 +44,7 @@ struct
    | AX
    | ID_TY | ID_ABS
 
-   | REFINE of bool * sort | EXTRACT of sort
+   | EXTRACT of sort
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
@@ -92,6 +92,7 @@ struct
   type psort = RedPrlArity.Vl.PS.t
   type 'a extents = 'a P.term list
   type 'a dir = 'a P.term * 'a P.term
+  type refine_state = (Metavar.t * RedPrlArity.valence) list * sort
 
   datatype 'a poly_operator =
      LOOP of 'a P.term
@@ -107,6 +108,7 @@ struct
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
    | DEV_DPROD_ELIM of 'a
+   | REFINE of refine_state 
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -152,8 +154,6 @@ struct
      | AX => [] ->> TRIV
      | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
-     | REFINE (true, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
-     | REFINE (false, tau) => [[] * [] <> SEQ, [] * [] <> TAC] ->> THM tau
      | EXTRACT tau => [[] * [] <> THM tau] ->> tau
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
@@ -227,6 +227,9 @@ struct
       in
         typeArgs @ [[] * [] <> EXP] ->> EXP
       end
+
+    fun subgoalVls vls =
+      List.map (fn ((sigmas, taus), _) => ((sigmas, taus), SEQ)) vls
   in
     val arityPoly =
       fn LOOP _ => [] ->> EXP
@@ -242,6 +245,7 @@ struct
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
        | DEV_DPROD_ELIM a => [[HYP,HYP] * [] <> TAC] ->> TAC
+       | REFINE (vls, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] @ subgoalVls (List.map #2 vls) ->> THM tau
   end
 
   val arity =
@@ -284,6 +288,7 @@ struct
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_DFUN_ELIM a => [(a, HYP)]
        | DEV_DPROD_ELIM a => [(a, HYP)]
+       | REFINE _ => []
   end
 
   val support =
@@ -324,6 +329,9 @@ struct
            f (a, b)
        | (DEV_DPROD_ELIM a, DEV_DPROD_ELIM b) =>
            f (a, b)
+       | (REFINE (vls1, tau1), REFINE (vls2, tau2)) =>
+           tau1 = tau2
+             andalso ListPair.allEq (fn ((x, vl1), (y, vl2)) => Metavar.eq (x, y) andalso vl1 = vl2) (vls1, vls2)
        | _ => false
   end
 
@@ -352,7 +360,6 @@ struct
      | AX => "ax"
      | ID_TY => "paths"
      | ID_ABS => "abs"
-     | REFINE _ => "refine"
      | EXTRACT _ => "extract"
      | MTAC_SEQ _ => "seq"
      | MTAC_ORELSE => "orelse"
@@ -432,6 +439,8 @@ struct
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
        | DEV_DPROD_ELIM a => "dprod-elim{" ^ f a ^ "}"
+       | REFINE _ => "refine"
+
   end
 
   fun toString f =
@@ -478,6 +487,7 @@ struct
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym f a)
        | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym f a)
+       | REFINE a => REFINE a
   end
 
   fun map f =

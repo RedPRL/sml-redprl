@@ -181,7 +181,7 @@ struct
 
      | O.MONO O.AX `$ _ <: _ => S.VAL
 
-     | O.MONO (O.REFINE _) `$ _ <: _ => S.VAL
+     | O.POLY (O.REFINE _) `$ _ <: _ => S.VAL
      | O.MONO (O.EXTRACT tau) `$ [_ \ thm] <: env =>
          S.CUT
            @@ (O.MONO (O.EXTRACT tau) `$ [([],[]) \ S.HOLE], thm)
@@ -372,9 +372,10 @@ struct
      | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => m <: env
      | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => n <: env
 
-     | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
-     | (O.MONO (O.RULE_LEMMA (_, tau)) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, tau')) `$ [goal, script, evd] <: env) =>
-         O.MONO (O.RULE_LEMMA (true, tau)) $$ [([],[]) \ O.MONO (O.REFINE (true, tau')) $$ [goal, script, evd]] <: env
+     | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.POLY (O.REFINE ([], _)) `$ [_, _, _ \ m] <: env) => m <: env
+     | (O.MONO (O.RULE_LEMMA (_, tau)) `$ [_ \ S.HOLE], _ \ O.POLY (O.REFINE (vls, tau')) `$ (goal :: script :: rest) <: env) =>
+         O.MONO (O.RULE_LEMMA (true, tau)) $$ [([],[]) \ O.POLY (O.REFINE (vls, tau')) $$ (goal :: script :: rest)] <: env
+
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>

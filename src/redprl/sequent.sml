@@ -1,6 +1,7 @@
 functor Sequent (structure CJ : CATEGORICAL_JUDGMENT
                                   where type 'a Tm.O.Ar.Vl.Sp.t = 'a list
                                   where type 'a Tm.O.t = 'a RedPrlOperator.t
+                                  where type Tm.O.Ar.Vl.S.t = RedPrlSort.t
                  sharing type CJ.Tm.Sym.t = CJ.Tm.Var.t) : SEQUENT =
 struct
   structure CJ = CJ
@@ -73,12 +74,23 @@ struct
 
     fun fromAbt' (acc : abt CJ.jdg ctx) (seq : abt) : abt jdg =
       case Tm.out seq of
-         O.MONO O.SEQ_CONCL $ [_ \ j] => acc >> CJ.fromAbt j
+         O.MONO O.SEQ_CONCL $ [_ \ j] => (acc >> CJ.fromAbt j handle _ => raise Fail "fuck77")
        | O.MONO (O.SEQ_CONS tau) $ [([], []) \ h, ([], [x]) \ seq] =>
-         fromAbt' (Hyps.snoc acc x (CJ.fromAbt h)) seq
+         (fromAbt' (Hyps.snoc acc x (CJ.fromAbt h)) seq handle _ => raise Fail "fuck79")
        | _ => raise Fail "Unrecognized sequent abt"
   in
     fun fromAbt (seq : abt) : abt jdg = fromAbt' Hyps.empty seq
+
+    local
+      open Hyps.ConsView
+      fun go H concl = 
+        case out H of
+           EMPTY => O.MONO O.SEQ_CONCL $$ [([],[]) \ CJ.toAbt concl]
+         | CONS (x, jdg, H') => O.MONO (O.SEQ_CONS (CJ.synthesis jdg)) $$ [([],[]) \ CJ.toAbt jdg, ([],[x]) \ go H' concl]
+    in
+      fun toAbt (H >> jdg : abt jdg) : abt = 
+        go H jdg 
+    end
   end
 
 end

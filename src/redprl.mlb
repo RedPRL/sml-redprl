@@ -19,6 +19,7 @@ local
 
   debug.mlb
 
+  redprl/symbol.sml
   redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml

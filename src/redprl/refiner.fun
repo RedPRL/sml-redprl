@@ -1238,13 +1238,46 @@ struct
   fun Lemma thm alpha jdg =
     let
       val _ = RedPrlLog.trace "Lemma"
-      val Abt.$ (O.MONO (O.REFINE (true, _)), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
-      val H >> catjdg = jdg
-      val catjdg' = CJ.fromAbt goal
-      val true = CJ.eq (catjdg, catjdg')
+
+      val Abt.$ (O.POLY (O.REFINE (vls, _)), (_ \ goal) :: (_ \ script) :: (_ \ evidence) :: rest) = Abt.out thm
+
+      (*val seq' = RedPrlSequent.fromAbt goal*)
+      val true = Abt.eq (goal, RedPrlSequent.toAbt jdg) handle _ => raise Fail "fuck1244"
+      fun goalFromTerm ((_, ((sigmas, taus), _)), (xs, us) \ seq) = 
+        makeGoal 
+          @@ (ListPair.zip (us, sigmas), ListPair.zip (xs, taus)) 
+          || (RedPrlSequent.fromAbt seq handle _ => raise Fail "fuck1248")
+          handle _ => raise Fail "fuck1249"
+
+      val subgoalsList = ListPair.map goalFromTerm (vls, rest) handle _ => raise Fail "Fuck1251"
+
+      val subgoals = List.foldl (fn ((goal, _), psi) => psi >: goal) T.empty subgoalsList handle _ => raise Fail "Fuck1252"
+
+      val mrho = 
+        ListPair.foldl
+          (fn ((meta, vl), (goal, hole), mrho) => 
+             let
+               val ((sigmas, taus), tau) = vl
+               val us = List.tabulate (List.length sigmas, fn i => Sym.named ("_" ^ Int.toString i))
+               val xs = List.tabulate (List.length sigmas, fn i => Var.named ("_" ^ Int.toString i))
+               val ps = ListPair.map (fn (u, sigma) => (P.VAR u, sigma)) (us, sigmas)
+               val ms = ListPair.map (fn (x, tau) => check (` x, tau)) (xs, taus)
+               val tm = check (meta $# (ps, ms), tau)
+               val btm = checkb ((us, xs) \ tm, vl)
+             in
+               Metavar.Ctx.insert mrho meta btm
+             end)
+          Metavar.Ctx.empty
+          (vls, subgoalsList)
+          handle _ => raise Fail "fuck1270"
+
+      val evidence' = substMetaenv mrho evidence
+        handle _ => raise Fail "fuck1275"
+
     in
-      T.empty #> evd
+      subgoals #> evidence'
     end
+    handle _ => raise Fail "1280"
 
   local
     fun matchGoal f alpha jdg =

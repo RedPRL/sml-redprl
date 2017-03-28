@@ -336,21 +336,51 @@ struct
 
       fun names i = Sym.named ("@" ^ Int.toString i)
 
+      type subgoals = RedPrlJudgment.jdg Lcf.eff Lcf.Tl.telescope
+
+      fun quoteSubgoal (Lcf.|| ((us,xs), jdg)) = 
+        (List.map #1 us, List.map #1 xs) \ RedPrlSequent.toAbt jdg
+
+      fun subgoalValence (Lcf.|| ((us, xs), jdg)) =
+        let
+          val ((sigmas, taus), tau) = RedPrlJudgment.sort jdg
+        in
+          ((List.map #2 us @ sigmas, List.map #2 xs @ taus), tau)
+        end
+
+      fun quoteSubgoals (subgoals : subgoals) = 
+        Lcf.Tl.foldr (fn (x, goal, r) => quoteSubgoal goal :: r) [] subgoals
+
+      fun quoteTelescopeSig (subgoals : subgoals) : (Metavar.t * valence) list = 
+        Lcf.Tl.foldr (fn (x, goal, r) => (x, subgoalValence goal) :: r) [] subgoals
+
       fun elabRefine sign (goal, seqjdg, script) =
         let
           val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
-            if LcfModel.Lcf.Tl.isEmpty subgoals then
-              E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
-                 E.ret (MONO (REFINE (true, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd]))
-            else
-              let
-                val stateStr = Lcf.stateToString state
-              in
-                E.warn (pos, "Incomplete proof: \n\n" ^ stateStr)
-                  *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))
+            let
+              val quotedSubgoals = quoteSubgoals subgoals
+              val tsig = quoteTelescopeSig subgoals handle _ => raise Fail "fuck365"
+              val n = List.length quotedSubgoals
+              val _ \ evd = outb vld
+              val _ = List.app (fn (_,x) => print (RedPrlArity.Vl.toString x)) tsig
+
+              val thm = POLY (REFINE (tsig, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd] @ quotedSubgoals 
+                handle _ => raise Fail "Fuck371"
+
+            in
+              if n = 0 then
+                E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
+                  E.ret thm)
+              else
+                let
+                  val stateStr = Lcf.stateToString state
+                in
+                  E.warn (pos, "Incomplete proof: \n\n" ^ stateStr)
+                    *> E.ret thm
+                end
               end)
         end
     in
@@ -361,7 +391,7 @@ struct
         in
           convertToAbt (metactx, symctx, env) goal SEQ >>= (fn goalTm =>
             let
-              val seqjdg as hyps >> concl = RedPrlSequent.fromAbt goalTm
+              val seqjdg as hyps >> concl = RedPrlSequent.fromAbt goalTm handle _ => raise Fail "fuck393"
               val (params'', symctx', env') = 
                 Hyps.foldr
                   (fn (x, jdg, (ps, ctx, env)) => 
