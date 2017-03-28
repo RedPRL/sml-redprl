@@ -1354,11 +1354,18 @@ struct
           | MATCH _ => Match.MatchOperator
           | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString TermPrinter.toString jdg)])
 
+
+      fun isWfJdg (CJ.TRUE _) = false
+        | isWfJdg _ = true
+
       structure HypsUtil = TelescopeUtil (Hyps)
       fun FindHyp alpha (H >> jdg) = 
-        case HypsUtil.search H (fn jdg' => CJ.eq (jdg, jdg')) of
-           SOME (lbl, _) => Hyp.Project lbl alpha (H >> jdg)
-         | NONE => raise E.error [E.% "Could not find suitable hypothesis"]
+        if isWfJdg jdg then 
+          case HypsUtil.search H (fn jdg' => CJ.eq (jdg, jdg')) of
+             SOME (lbl, _) => Hyp.Project lbl alpha (H >> jdg)
+           | NONE => raise E.error [E.% "Could not find suitable hypothesis"]
+        else
+          raise E.error [E.% "Non-deterministic tactics can only be run on auxiliary goals"]
     in
       fun AutoStep sign = orelse_ (StepJdg sign, FindHyp)
     end
