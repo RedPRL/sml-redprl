@@ -34,11 +34,13 @@ lower = [a-z];
 digit = [0-9];
 identChr = [a-zA-Z0-9\'/-];
 whitespace = [\ \t];
+dashes = [\-\-\-][\-]*;
 %%
 
 \n                 => (pos := (Coord.nextline o (!pos)); continue ());
 {whitespace}+      => (incPos (size yytext); continue ());
 {digit}+           => (Tokens.NUMERAL (posTupleWith (size yytext) (valOf (Int.fromString yytext))));
+{dashes}           => (Tokens.DASHES (posTuple (size yytext)));
 "//"[^\n]*         => (continue ());
 
 

@@ -94,8 +94,8 @@ struct
   in
     fun prettyRule {premises, concl} = 
       concat
-        [concat @@ List.map (fn pr => concat [line, braces o text @@ RedPrlAst.toString pr]) premises,
-         rule #"-",
+        [concat @@ List.map (fn pr => concat [braces o text @@ RedPrlAst.toString pr, line]) premises,
+         text " ===> ",
          line,
          braces o text @@ RedPrlAst.toString concl]
 
@@ -357,7 +357,7 @@ struct
       fun names i = Sym.named ("@" ^ Int.toString i)
 
       type subgoals = RedPrlJudgment.jdg Lcf.eff Lcf.Tl.telescope
-      
+
       fun subgoalValence (Lcf.|| ((us, xs), jdg)) =
         let
           val ((sigmas, taus), tau) = RedPrlJudgment.sort jdg
@@ -378,13 +378,19 @@ struct
         in
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
             let
-              val quotedSubgoals = quoteSubgoals subgoals
+              val quotedSubgoals : abt list = quoteSubgoals subgoals
+              val _ = List.app (print o TermPrinter.toString) quotedSubgoals
+              val _ = print "\nvs\n"
+              val _ = List.app (print o TermPrinter.toString) subgoalSpec
+              val _ = print "\n\n\n"
+
               val metas = telescopeMetas subgoals
               val _ \ evd = outb vld
 
+              val unfinishedSubgoals = List.filter (fn goal => not (List.exists (fn goal' => RedPrlAbt.eq (goal, goal')) subgoalSpec)) quotedSubgoals
               val thm = POLY (REFINE (metas, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd] @ List.map (fn m => ([],[]) \ m) quotedSubgoals
             in
-              if List.length metas = 0 then
+              if List.length unfinishedSubgoals = 0 then
                 E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
                   E.ret thm)
               else
@@ -396,13 +402,17 @@ struct
                 end
               end)
         end
+        
+        structure ElabApplicative = MonadApplicative (E)
+        structure ElabTraverse = ListTraversable (ElabApplicative)
     in
       fun elabRule sign opid pos {arguments, params, premises, concl, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
+          val elabPremises : abt list E.t = ElabTraverse.traverse (fn x => convertToAbt (metactx, symctx, env) x GJDG) premises
         in
-          convertToAbt (metactx, symctx, env) concl SEQ >>= (fn conclTm =>
+          elabPremises <&> convertToAbt (metactx, symctx, env) concl SEQ >>= (fn (premiseTms, conclTm) =>
             let
               val seqjdg as hyps >> _ = RedPrlSequent.fromAbt conclTm handle _ => raise Fail "fuck393"
               val (params'', symctx', env') = 
@@ -413,7 +423,7 @@ struct
                   hyps
             in
               convertToAbt (metactx, symctx', env') script TAC 
-                >>= (fn scriptTm => elabRefine sign (conclTm, seqjdg, [], scriptTm))
+                >>= (fn scriptTm => elabRefine sign (conclTm, seqjdg, premiseTms, scriptTm))
                 >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = sort definiens, definiens = definiens})
             end)
         end

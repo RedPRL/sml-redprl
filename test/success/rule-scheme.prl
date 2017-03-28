@@ -1,12 +1,14 @@
-Thm RuleScheme : [x : bool true >> bool true] by [
-  
+Rule RuleScheme : [
+  {x : bool true >> bool true}
+  ---------------
+  {z : bool true >> bool true}
+] by [
 ].
 
 Print RuleScheme.
 
 Thm Lemma : [ y : bool true >> bool true] by [
-  z <- lemma{RuleScheme{y}():exp};
-  hyp{z}
+  lemma{RuleScheme():exp}
 ].
 
 Print Lemma.

@@ -1253,7 +1253,7 @@ struct
       val _ = RedPrlLog.trace "Lemma"
 
       val Abt.$ (O.POLY (O.REFINE (metas, _)), (_ \ goal) :: (_ \ script) :: (_ \ evidence) :: rest) = Abt.out thm
-      val true = Abt.eq (goal, RedPrlSequent.toAbt jdg)
+      val _ = if Abt.eq (goal, RedPrlSequent.toAbt jdg) then () else raise E.error [E.% "Lemma", E.! goal, E.% "did not match goal"]
 
       fun goalFromSeqTm tm = 
        #1 o makeGoal @@ Lcf.genericFromAbt (SOME alpha) tm
