@@ -65,7 +65,7 @@ struct
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
 
    | SEQ_CONCL | SEQ_CONS of sort
-   | GJDG_FORM of psort list * sort list (* generic judgment form *)
+   | GJDG_FORM of psort list * int list (* generic judgment form: symbol bindings, and sequent hyp addresses *)
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -95,7 +95,7 @@ struct
   type psort = RedPrlArity.Vl.PS.t
   type 'a extents = 'a P.term list
   type 'a dir = 'a P.term * 'a P.term
-  type refine_state = (Metavar.t * RedPrlArity.valence) list * sort
+  type refine_state = Metavar.t list * sort
 
   datatype 'a poly_operator =
      LOOP of 'a P.term
@@ -199,7 +199,7 @@ struct
 
      | SEQ_CONCL => [[] * [] <> JDG] ->> SEQ
      | SEQ_CONS tau => [[] * [] <> JDG, [] * [tau] <> SEQ] ->> SEQ
-     | GJDG_FORM (sigmas, taus) => [sigmas * taus <> SEQ] ->> GJDG
+     | GJDG_FORM (sigmas, n) => [sigmas * [] <> SEQ] ->> GJDG
 
   local
     val typeArgsForTag =
@@ -249,7 +249,7 @@ struct
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
        | DEV_DPROD_ELIM a => [[HYP,HYP] * [] <> TAC] ->> TAC
-       | REFINE (vls, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] @ subgoalVls (List.map #2 vls) ->> THM tau
+       | REFINE (xs, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] @ List.map (fn _ => [] * [] <> GJDG) xs ->> THM tau
   end
 
   val arity =
@@ -333,9 +333,9 @@ struct
            f (a, b)
        | (DEV_DPROD_ELIM a, DEV_DPROD_ELIM b) =>
            f (a, b)
-       | (REFINE (vls1, tau1), REFINE (vls2, tau2)) =>
+       | (REFINE (xs1, tau1), REFINE (xs2, tau2)) =>
            tau1 = tau2
-             andalso ListPair.allEq (fn ((x, vl1), (y, vl2)) => Metavar.eq (x, y) andalso vl1 = vl2) (vls1, vls2)
+             andalso ListPair.allEq Metavar.eq (xs1, xs2)
        | _ => false
   end
 

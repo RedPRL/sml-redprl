@@ -1235,48 +1235,43 @@ struct
         #> hole1 [] [hole2 [] []]
     end
 
+  fun renameMeta (y, x) tm =
+    let
+      val vl as ((sigmas, taus), tau) = Metavar.Ctx.lookup (metactx tm) x
+      val us = List.tabulate (List.length sigmas, fn i => Sym.named (Int.toString i))
+      val xs = List.tabulate (List.length taus, fn i => Var.named (Int.toString i))
+      val ps = ListPair.map (fn (u, sigma) => (P.VAR u, sigma)) (us, sigmas)
+      val ms = ListPair.map (fn (x, tau) => check (`x, tau)) (xs, taus)
+      val ytm = check (y $# (ps, ms), tau)
+      val btm = checkb ((us, xs) \ ytm, vl)
+    in
+      substMetaenv (Metavar.Ctx.insert Metavar.Ctx.empty x btm) tm
+    end
+
   fun Lemma thm (alpha : int -> sym) jdg =
     let
       val _ = RedPrlLog.trace "Lemma"
 
-      val Abt.$ (O.POLY (O.REFINE (vls, _)), (_ \ goal) :: (_ \ script) :: (_ \ evidence) :: rest) = Abt.out thm
+      val Abt.$ (O.POLY (O.REFINE (metas, _)), (_ \ goal) :: (_ \ script) :: (_ \ evidence) :: rest) = Abt.out thm
+      val true = Abt.eq (goal, RedPrlSequent.toAbt jdg)
 
-      val true = Abt.eq (goal, RedPrlSequent.toAbt jdg) handle _ => raise Fail "fuck1244"
-      fun goalFromTerm ((_, ((sigmas, taus), _)), (xs, us) \ seq) = 
-        makeGoal 
-          @@ (ListPair.zip (us, sigmas), ListPair.zip (xs, taus)) 
-          || (RedPrlSequent.fromAbtUsingNames (SOME alpha) seq handle _ => raise Fail "fuck1248")
-          handle _ => raise Fail "fuck1249"
-
-      val subgoalsList = ListPair.map goalFromTerm (vls, rest) handle _ => raise Fail "Fuck1251"
-
-      val subgoals = List.foldl (fn ((goal, _), psi) => psi >: goal) T.empty subgoalsList handle _ => raise Fail "Fuck1252"
-
-      val mrho = 
-        ListPair.foldl
-          (fn ((meta, vl), (goal, hole), mrho) => 
+      fun goalFromSeqTm tm = 
+       #1 o makeGoal @@ Lcf.genericFromAbt (SOME alpha) tm
+      
+      val state =
+        ListPair.foldl 
+          (fn (x, _ \ seq, Lcf.|> (psi, evd)) => 
              let
-               val ((sigmas, taus), tau) = vl
-               val us = List.tabulate (List.length sigmas, fn i => Sym.named ("_" ^ Int.toString i))
-               val xs = List.tabulate (List.length sigmas, fn i => Var.named ("_" ^ Int.toString i))
-               val ps = ListPair.map (fn (u, sigma) => (P.VAR u, sigma)) (us, sigmas)
-               val ms = ListPair.map (fn (x, tau) => check (` x, tau)) (xs, taus)
-               val tm = check (meta $# (ps, ms), tau)
-               val btm = checkb ((us, xs) \ tm, vl)
+               val (x', goal) = goalFromSeqTm seq
+               val evd' = mapAbs (renameMeta (x', x))  evd
              in
-               Metavar.Ctx.insert mrho meta btm
+               Lcf.|> ((psi >: (x', goal)), evd')
              end)
-          Metavar.Ctx.empty
-          (vls, subgoalsList)
-          handle _ => raise Fail "fuck1270"
-
-      val evidence' = substMetaenv mrho evidence
-        handle _ => raise Fail "fuck1275"
-
+          (T.empty #> evidence)
+          (metas, rest)
     in
-      subgoals #> evidence'
+      state
     end
-    handle _ => raise Fail "1280"
 
   local
     fun matchGoal f alpha jdg =

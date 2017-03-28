@@ -2,9 +2,11 @@ Thm RuleScheme : [x : bool true >> bool true] by [
   
 ].
 
-// Print RuleScheme.
+Print RuleScheme.
 
 Thm Lemma : [ y : bool true >> bool true] by [
   z <- lemma{RuleScheme{y}():exp};
-  
+  hyp{z}
 ].
+
+Print Lemma.

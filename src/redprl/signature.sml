@@ -357,10 +357,7 @@ struct
       fun names i = Sym.named ("@" ^ Int.toString i)
 
       type subgoals = RedPrlJudgment.jdg Lcf.eff Lcf.Tl.telescope
-
-      fun quoteSubgoal (Lcf.|| ((us,xs), jdg)) = 
-        (List.map #1 us, List.map #1 xs) \ RedPrlSequent.toAbt jdg
-
+      
       fun subgoalValence (Lcf.|| ((us, xs), jdg)) =
         let
           val ((sigmas, taus), tau) = RedPrlJudgment.sort jdg
@@ -368,11 +365,11 @@ struct
           ((List.map #2 us @ sigmas, List.map #2 xs @ taus), tau)
         end
 
-      fun quoteSubgoals (subgoals : subgoals) : abt bview list = 
-        Lcf.Tl.foldr (fn (x, goal, r) => quoteSubgoal goal :: r) [] subgoals
+      fun quoteSubgoals (subgoals : subgoals) : abt list = 
+        Lcf.Tl.foldr (fn (x, goal, r) => Lcf.genericToAbt goal :: r) [] subgoals
 
-      fun quoteTelescopeSig (subgoals : subgoals) : (Metavar.t * valence) list = 
-        Lcf.Tl.foldr (fn (x, goal, r) => (x, subgoalValence goal) :: r) [] subgoals
+      fun telescopeMetas (subgoals : subgoals) : Metavar.t list = 
+        Lcf.Tl.foldr (fn (x, goal, r) => x :: r) [] subgoals
 
       fun elabRefine sign (goal, seqjdg, subgoalSpec : abt list, script) =
         let
@@ -382,13 +379,12 @@ struct
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
             let
               val quotedSubgoals = quoteSubgoals subgoals
-              val tsig = quoteTelescopeSig subgoals
-              val n = List.length quotedSubgoals
+              val metas = telescopeMetas subgoals
               val _ \ evd = outb vld
 
-              val thm = POLY (REFINE (tsig, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd] @ quotedSubgoals
+              val thm = POLY (REFINE (metas, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd] @ List.map (fn m => ([],[]) \ m) quotedSubgoals
             in
-              if n = 0 then
+              if List.length metas = 0 then
                 E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
                   E.ret thm)
               else

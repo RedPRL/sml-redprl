@@ -5,6 +5,9 @@ sig
   structure Abt : ABT
   datatype 'a generic = || of ((Abt.symbol * Abt.psort) list * (Abt.variable * Abt.sort) list) * 'a
   include LCF_UTIL where type 'a Eff.t = 'a generic
+
+  val genericToAbt : jdg generic -> Abt.abt
+  val genericFromAbt : (int -> Abt.symbol) option -> Abt.abt -> jdg generic
 end
 
 structure Lcf :
@@ -19,6 +22,31 @@ struct
   open Def LcfGeneric
   infix |> ||
 
+  local
+    open Abt RedPrlSequent RedPrlOpData
+    infix $$ \ >> $
+  in
+    fun genericToAbt ((syms, vars) || (seq as (H >> jdg))) =
+      let
+        val (us, sigmas) = ListPair.unzip syms
+        val (xs, taus) = ListPair.unzip vars
+        val hyps = Hyps.foldr (fn (x, _, r) => x :: r) [] H
+        val (_, addrs) = ListPair.foldr (fn (x, x', (i, r)) => (i + 1, if Sym.eq (x, x') then r @ [i] else r)) (0, []) (xs, hyps)
+      in
+        MONO (GJDG_FORM (sigmas, addrs)) $$ [(us,[]) \ RedPrlSequent.toAbt seq]
+      end
+
+    fun genericFromAbt names (gentm : abt) = 
+      let
+        val MONO (GJDG_FORM (sigmas, addrs)) $ [(us, _) \ seq] = Abt.out gentm
+        val H >> concl = RedPrlSequent.fromAbtUsingNames names seq
+        val (_, hyps) = Hyps.foldr (fn (x, jdg, (i, r)) => (i + 1, (i, x, jdg) :: r)) (0, []) H
+        val hyps' = List.filter (fn (i, x, jdg) => List.exists (fn j => i = j) addrs) hyps
+        val hyps'' = List.map (fn (i, x, jdg) => (x, CJ.synthesis jdg)) hyps'
+      in
+        (ListPair.zip (us, sigmas), hyps'') || (H >> concl)
+      end
+  end
 
   val prettySyms =
     PP.text o ListSpine.pretty (fn (u, sigma) => Sym.toString u ^ " : " ^ Abt.O.Ar.Vl.PS.toString sigma) ", "
