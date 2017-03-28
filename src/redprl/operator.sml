@@ -8,6 +8,7 @@ struct
    | JDG
    | TRIV
    | SEQ
+   | GJDG (* generic judgments *)
 end
 
 structure RedPrlSort : ABT_SORT =
@@ -25,6 +26,7 @@ struct
      | JDG => "jdg"
      | TRIV => "triv"
      | SEQ => "seq"
+     | GJDG => "gjdg"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -63,6 +65,7 @@ struct
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
 
    | SEQ_CONCL | SEQ_CONS of sort
+   | GJDG_FORM of psort list * sort list (* generic judgment form *)
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -196,6 +199,7 @@ struct
 
      | SEQ_CONCL => [[] * [] <> JDG] ->> SEQ
      | SEQ_CONS tau => [[] * [] <> JDG, [] * [tau] <> SEQ] ->> SEQ
+     | GJDG_FORM (sigmas, taus) => [sigmas * taus <> SEQ] ->> GJDG
 
   local
     val typeArgsForTag =
@@ -393,6 +397,7 @@ struct
      | JDG_SYNTH => "synth"
      | SEQ_CONCL => "seq-concl"
      | SEQ_CONS _ => "seq-cons"
+     | GJDG_FORM _ => "generic"
 
   local
     fun spanToString f (r, r') =
