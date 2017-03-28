@@ -98,7 +98,7 @@ end
  | EXP | TAC
 
  | CMD_PRINT
- | DCL_DEF | DCL_TAC | DCL_THM
+ | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
  | BY | IN
 
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO
@@ -485,6 +485,8 @@ rawDecl
       (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
   | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE sequent RSQUARE BY LSQUARE tactic RSQUARE
       (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = sequent, script = tactic})
+  (*| DCL_RULE OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE sequent RSQURE BY LSQURE tactic RSQUARE*)
+      (*(OPNAME, Signature.RULE {arguments = declArgumentsParens, params = declParamsBrackets, goal = sequent, script = tactic})*)
 
 decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))
 

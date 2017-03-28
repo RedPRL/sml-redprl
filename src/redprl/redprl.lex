@@ -109,6 +109,7 @@ whitespace = [\ \t];
 "Def"              => (Tokens.DCL_DEF (posTuple (size yytext)));
 "Tac"              => (Tokens.DCL_TAC (posTuple (size yytext)));
 "Thm"              => (Tokens.DCL_THM (posTuple (size yytext)));
+"Rule"             => (Tokens.DCL_RULE (posTuple (size yytext)));
 "by"               => (Tokens.BY (posTuple (size yytext)));
 "in"               => (Tokens.IN (posTuple (size yytext)));
 

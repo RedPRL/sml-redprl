@@ -27,6 +27,7 @@ sig
   datatype src_decl =
      DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
    | THM of {arguments : string arguments, params : string params, goal : ast, script : ast}
+   | RULE of {arguments : string arguments, params : string params, premises : ast list, concl : ast, script : ast}
    | TAC of {arguments : string arguments, params : string params, script : ast}
 
   datatype 'opid cmd =

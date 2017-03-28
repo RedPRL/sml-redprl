@@ -29,6 +29,7 @@ struct
     datatype src_decl =
        DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
      | THM of {arguments : string arguments, params : string params, goal : ast, script : ast}
+     | RULE of {arguments : string arguments, params : string params, premises : ast list, concl : ast, script : ast}
      | TAC of {arguments : string arguments, params : string params, script : ast}
 
     datatype 'opid cmd =
@@ -91,6 +92,13 @@ struct
     val braces = delim ("{", "}")
     val parens = delim ("(", ")")
   in
+    fun prettyRule {premises, concl} = 
+      concat
+        [concat @@ List.map (fn pr => concat [line, braces o text @@ RedPrlAst.toString pr]) premises,
+         rule #"-",
+         line,
+         braces o text @@ RedPrlAst.toString concl]
+
     fun prettyDecl (opid, decl) =
       case decl of
          DEF {arguments, params, sort, definiens} =>
@@ -109,6 +117,17 @@ struct
               parens @@ text @@ argsToString (fn x => x) arguments,
               text " : ",
               squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString goal], line],
+              text " by ",
+              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
+              text "."]
+       | RULE {arguments, params, premises, concl, script} =>
+           concat
+             [kwd @@ text "Rule ",
+              declId @@ text opid,
+              braces @@ text @@ paramsToString (fn x => x) params,
+              parens @@ text @@ argsToString (fn x => x) arguments,
+              text " : ",
+              squares @@ concat [nest 2 @@ concat [line, prettyRule {premises = premises, concl = concl}], line],
               text " by ",
               squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
               text "."]
@@ -224,6 +243,7 @@ struct
       fun processDecl sign =
         fn DEF {arguments, params, sort, definiens} => DEF {arguments = arguments, params = params, sort = sort, definiens = processTerm sign definiens}
          | THM {arguments, params, goal, script} => THM {arguments = arguments, params = params, goal = processTerm sign goal, script = processTerm sign script}
+         | RULE {arguments, params, premises, concl, script} => RULE {arguments = arguments, params = params, premises = List.map (processTerm sign) premises, concl = processTerm sign concl, script = processTerm sign script}
          | TAC {arguments, params, script} => TAC {arguments = arguments, params = params, script = processTerm sign script}
     end
 
@@ -348,13 +368,13 @@ struct
           ((List.map #2 us @ sigmas, List.map #2 xs @ taus), tau)
         end
 
-      fun quoteSubgoals (subgoals : subgoals) = 
+      fun quoteSubgoals (subgoals : subgoals) : abt bview list = 
         Lcf.Tl.foldr (fn (x, goal, r) => quoteSubgoal goal :: r) [] subgoals
 
       fun quoteTelescopeSig (subgoals : subgoals) : (Metavar.t * valence) list = 
         Lcf.Tl.foldr (fn (x, goal, r) => (x, subgoalValence goal) :: r) [] subgoals
 
-      fun elabRefine sign (goal, seqjdg, script) =
+      fun elabRefine sign (goal, seqjdg, subgoalSpec : abt list, script) =
         let
           val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
@@ -362,14 +382,11 @@ struct
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
             let
               val quotedSubgoals = quoteSubgoals subgoals
-              val tsig = quoteTelescopeSig subgoals handle _ => raise Fail "fuck365"
+              val tsig = quoteTelescopeSig subgoals
               val n = List.length quotedSubgoals
               val _ \ evd = outb vld
-              val _ = List.app (fn (_,x) => print (RedPrlArity.Vl.toString x)) tsig
 
-              val thm = POLY (REFINE (tsig, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd] @ quotedSubgoals 
-                handle _ => raise Fail "Fuck371"
-
+              val thm = POLY (REFINE (tsig, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd] @ quotedSubgoals
             in
               if n = 0 then
                 E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
@@ -384,14 +401,14 @@ struct
               end)
         end
     in
-      fun elabThm sign opid pos {arguments, params, goal, script} =
+      fun elabRule sign opid pos {arguments, params, premises, concl, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
         in
-          convertToAbt (metactx, symctx, env) goal SEQ >>= (fn goalTm =>
+          convertToAbt (metactx, symctx, env) concl SEQ >>= (fn conclTm =>
             let
-              val seqjdg as hyps >> concl = RedPrlSequent.fromAbt goalTm handle _ => raise Fail "fuck393"
+              val seqjdg as hyps >> _ = RedPrlSequent.fromAbt conclTm handle _ => raise Fail "fuck393"
               val (params'', symctx', env') = 
                 Hyps.foldr
                   (fn (x, jdg, (ps, ctx, env)) => 
@@ -400,7 +417,7 @@ struct
                   hyps
             in
               convertToAbt (metactx, symctx', env') script TAC 
-                >>= (fn scriptTm => elabRefine sign (goalTm, seqjdg, scriptTm))
+                >>= (fn scriptTm => elabRefine sign (conclTm, seqjdg, [], scriptTm))
                 >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = sort definiens, definiens = definiens})
             end)
         end
@@ -424,7 +441,8 @@ struct
         ETelescope.snoc esign' eopid (decorate (E.delay (fn _ =>
           case processDecl sign decl of
              DEF defn => elabDef sign' opid defn
-           | THM defn => elabThm sign' opid pos defn
+           | THM {arguments, params, goal, script} => elabRule sign' opid pos {arguments = arguments, params = params, premises = [], concl = goal, script = script}
+           | RULE defn => elabRule sign' opid pos defn
            | TAC defn => elabTac sign' opid defn)))
       end
 
