@@ -1235,18 +1235,17 @@ struct
         #> hole1 [] [hole2 [] []]
     end
 
-  fun Lemma thm alpha jdg =
+  fun Lemma thm (alpha : int -> sym) jdg =
     let
       val _ = RedPrlLog.trace "Lemma"
 
       val Abt.$ (O.POLY (O.REFINE (vls, _)), (_ \ goal) :: (_ \ script) :: (_ \ evidence) :: rest) = Abt.out thm
 
-      (*val seq' = RedPrlSequent.fromAbt goal*)
       val true = Abt.eq (goal, RedPrlSequent.toAbt jdg) handle _ => raise Fail "fuck1244"
       fun goalFromTerm ((_, ((sigmas, taus), _)), (xs, us) \ seq) = 
         makeGoal 
           @@ (ListPair.zip (us, sigmas), ListPair.zip (xs, taus)) 
-          || (RedPrlSequent.fromAbt seq handle _ => raise Fail "fuck1248")
+          || (RedPrlSequent.fromAbtUsingNames (SOME alpha) seq handle _ => raise Fail "fuck1248")
           handle _ => raise Fail "fuck1249"
 
       val subgoalsList = ListPair.map goalFromTerm (vls, rest) handle _ => raise Fail "Fuck1251"

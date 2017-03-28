@@ -5,5 +5,6 @@ Thm RuleScheme : [x : bool true >> bool true] by [
 // Print RuleScheme.
 
 Thm Lemma : [ y : bool true >> bool true] by [
-  lemma{RuleScheme{y}():exp}
+  z <- lemma{RuleScheme{y}():exp};
+  
 ].
