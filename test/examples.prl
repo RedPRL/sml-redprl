@@ -8,7 +8,7 @@ Thm PathTest : [ paths({_}. S1; base; base) true ] by [
 ].
 
 Thm FunElimTest : [ (bool -> bool) -> bool true ] by [
-  { lam f. let x = f {'tt}. hyp{x} };
+  { lam f. let x = f {'tt}. hyp x };
 
   auto
 ].
@@ -51,7 +51,7 @@ Def BoolEta(#M : exp) : exp = [
 Thm PathTest2 : [ paths({_}. bool -> bool; lam([b].b); lam([b].BoolEta(b))) true ] by [
   { let h : [(b:bool) -> paths({_}.bool; b; BoolEta(b)) true] =
       lam b. if b then <y> 'tt else <y> 'ff.
-    <x> lam b. let p = h hyp{b}. '(,p @ x)
+    <x> lam b. let p = h {hyp b}. '(,p @ x)
   };
 
   auto

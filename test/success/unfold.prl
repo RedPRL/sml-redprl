@@ -6,9 +6,9 @@ Thm Times/Id/L(#A:exp) : [
   _ : #A = #A type >> Times(bool; #A) -> #A true
 ] by [
   {lam x. 
-    unfold{Times};
+    unfold Times;
     let <y, z> = x.
-    hyp{z}
+    hyp z
   };
   auto
 ].
