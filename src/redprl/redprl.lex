@@ -106,6 +106,7 @@ whitespace = [\ \t];
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
 
 "Print"            => (Tokens.CMD_PRINT (posTuple (size yytext)));
+"Extract"          => (Tokens.CMD_EXTRACT (posTuple (size yytext)));
 "Def"              => (Tokens.DCL_DEF (posTuple (size yytext)));
 "Tac"              => (Tokens.DCL_TAC (posTuple (size yytext)));
 "Thm"              => (Tokens.DCL_THM (posTuple (size yytext)));

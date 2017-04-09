@@ -31,6 +31,7 @@ sig
 
   datatype 'opid cmd =
      PRINT of 'opid
+   | EXTRACT of 'opid
 
   type src_cmd = src_opid cmd
 

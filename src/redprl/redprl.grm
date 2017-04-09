@@ -97,7 +97,7 @@ end
  | DIM | EXN | LBL | LVL | HYP
  | EXP | TAC
 
- | CMD_PRINT
+ | CMD_PRINT | CMD_EXTRACT
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY | IN
 
@@ -491,6 +491,7 @@ decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl
 
 rawCmd
   : CMD_PRINT OPNAME (Signature.PRINT OPNAME)
+  | CMD_EXTRACT OPNAME (Signature.EXTRACT OPNAME)
 
 cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
 

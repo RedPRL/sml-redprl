@@ -12,3 +12,5 @@ Thm Times/Id/L(#A:exp) : [
   };
   auto
 ].
+
+Extract Times/Id/L.

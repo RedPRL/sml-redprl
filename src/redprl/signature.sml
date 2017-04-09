@@ -33,6 +33,7 @@ struct
 
     datatype 'opid cmd =
        PRINT of 'opid
+     | EXTRACT of 'opid
 
     type src_cmd = src_opid cmd
 
@@ -406,6 +407,30 @@ struct
                 EDEF entry => E.info (SOME pos, "Elaborated:\n" ^ entryToString sign (eopid, entry))
               | _ => E.warn (SOME pos, "Invalid declaration name"))))
 
+    local
+      open RedPrlAbt infix $ \
+      structure O = RedPrlOpData
+
+      fun printExtractOf (pos, term) : unit E.t = 
+        case out term of
+           O.MONO (O.REFINE (true, _)) $ es => 
+             (let
+               val _ \ extract = List.last es
+             in
+               E.info (SOME pos, TermPrinter.toString extract)
+             end
+             handle _ => E.warn (SOME pos, "fuck!!"))
+         | _ => E.warn (SOME pos, "Cannot extract witness")
+    in
+      fun elabExtract (sign : sign) (pos, opid) = 
+        E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid => 
+          E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl => 
+            E.ret (ECMD (EXTRACT eopid)) <*
+              (case edecl of 
+                  EDEF entry => printExtractOf (pos, #definiens entry)
+                | _ => E.warn (SOME pos, "Invalid declaration name"))))
+    end
+
     fun elabCmd (sign : sign) (cmd, pos) : elab_sign =
       case cmd of
          PRINT opid =>
@@ -413,6 +438,12 @@ struct
              val fresh = Sym.named "_"
            in
              ETelescope.snoc (#elabSign sign) fresh (E.delay (fn _ => elabPrint sign (pos, opid)))
+           end
+       | EXTRACT opid => 
+           let
+             val fresh = Sym.named "_"
+           in
+             ETelescope.snoc (#elabSign sign) fresh (E.delay (fn _ => elabExtract sign (pos, opid)))
            end
 
 
