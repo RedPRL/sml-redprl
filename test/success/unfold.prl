@@ -2,8 +2,9 @@ Def Times(#A:exp; #B:exp) : exp = [
   (x : #A) * #B
 ].
 
-Thm Times/Id/L(#A:exp) : [
-  _ : #A = #A type >> Times(bool; #A) -> #A true
+Thm Times/Proj(#A:exp) : [
+  _ : #A = #A type 
+  >> Times(bool; #A) -> #A true
 ] by [
   {lam x. 
     unfold Times;
@@ -13,4 +14,4 @@ Thm Times/Id/L(#A:exp) : [
   auto
 ].
 
-Extract Times/Id/L.
+Extract Times/Proj.
