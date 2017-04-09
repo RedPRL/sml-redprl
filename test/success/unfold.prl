@@ -1,0 +1,14 @@
+Def Times(#A:exp; #B:exp) : exp = [
+  (x : #A) * #B
+].
+
+Thm Times/Id/L(#A:exp) : [
+  _ : #A = #A type >> Times(bool; #A) -> #A true
+] by [
+  {lam x. 
+    unfold{Times};
+    let <y, z> = x.
+    hyp{z}
+  };
+  auto
+].

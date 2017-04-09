@@ -217,6 +217,7 @@ struct
      | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
      | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
      | O.MONO O.RULE_CUT `$ _ <: _ => S.VAL
+     | O.POLY (O.RULE_UNFOLD _) `$ _ <: _ => S.VAL
      | O.MONO (O.RULE_LEMMA (true, tau)) `$ _ <: _ => S.VAL
      | O.MONO (O.RULE_LEMMA (false, tau)) `$ [_ \ thm] <: env =>
          S.CUT

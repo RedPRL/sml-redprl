@@ -29,6 +29,7 @@ struct
      | O.MONO O.RULE_SYMMETRY $ _ => Rules.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg)
      | O.MONO (O.RULE_LEMMA _) $ [_ \ thm] => Rules.Lemma thm
+     | O.POLY (O.RULE_UNFOLD opid) $ _ => Rules.Computation.Unfold sign opid
      | _ => raise E.error [E.% "Invalid rule", E.! rule]
 
   fun rule (sign, env) rule alpha goal =

@@ -124,6 +124,7 @@ whitespace = [\ \t];
 "hyp"              => (Tokens.RULE_HYP (posTuple (size yytext)));
 "elim"             => (Tokens.RULE_ELIM (posTuple (size yytext)));
 "head-expand"      => (Tokens.RULE_HEAD_EXP (posTuple (size yytext)));
+"unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
 "lemma"            => (Tokens.RULE_LEMMA (posTuple (size yytext)));
 
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));

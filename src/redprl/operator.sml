@@ -103,6 +103,7 @@ struct
    | HYP_REF of 'a
    | RULE_HYP of 'a
    | RULE_ELIM of 'a
+   | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
@@ -238,6 +239,7 @@ struct
        | HYP_REF a => [] ->> EXP
        | RULE_HYP a => [] ->> TAC
        | RULE_ELIM a => [] ->> TAC
+       | RULE_UNFOLD a => [] ->> TAC
        | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
@@ -280,6 +282,7 @@ struct
        | HYP_REF a => [(a, HYP)]
        | RULE_HYP a => [(a, HYP)]
        | RULE_ELIM a => [(a, HYP)]
+       | RULE_UNFOLD a => [(a, OPID)]
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_DFUN_ELIM a => [(a, HYP)]
@@ -315,6 +318,8 @@ struct
        | (RULE_HYP a, RULE_HYP b) =>
            f (a, b)
        | (RULE_ELIM a, RULE_ELIM b) =>
+           f (a, b)
+       | (RULE_UNFOLD a, RULE_UNFOLD b) => 
            f (a, b)
        | (DEV_BOOL_ELIM a, DEV_BOOL_ELIM b) =>
            f (a, b)
@@ -428,6 +433,7 @@ struct
        | HYP_REF a => "@" ^ f a
        | RULE_HYP a => "hyp{" ^ f a ^ "}"
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
+       | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
@@ -474,6 +480,7 @@ struct
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP a => RULE_HYP (mapSym f a)
        | RULE_ELIM a => RULE_ELIM (mapSym f a)
+       | RULE_UNFOLD a => RULE_UNFOLD (mapSym f a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym f a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym f a)

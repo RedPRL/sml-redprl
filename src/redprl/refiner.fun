@@ -6,6 +6,7 @@ struct
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
   type catjdg = abt CJ.jdg
+  type opid = Sig.opid
 
   infixr @@
   infix 1 ||
@@ -1195,7 +1196,26 @@ struct
         case safeStep sign st of
            NONE => st
          | SOME st' => safeEval sign st'
+
+      fun safeUnfold sign opid m =
+        case out m of
+           O.POLY (O.CUST (opid',_,_)) $ _ =>
+             if Sym.eq (opid, opid') then
+               Machine.unload sign (Option.valOf (safeStep sign (Machine.load m)))
+                 handle _ => raise UnsafeStep (* please put better error message here; should never happen anyway *) 
+             else
+               m
+         | _ => m
     end
+
+    fun Unfold sign opid alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Computation.Unfold"
+        val jdg' = RedPrlSequent.map (safeUnfold sign opid) jdg
+        val (goal, hole) = makeGoal @@ ([],[]) || jdg'
+      in
+        T.empty >: goal #> hole [] []
+      end
 
     fun EqHeadExpansion sign alpha jdg =
       let
