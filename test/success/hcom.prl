@@ -7,7 +7,7 @@
 // which witnesses that #A = #A type. We could add a generic tactic that applies a lemma and 
 // *asserts* all its hypotheses, or tries to unify these with the context, etc.
 Thm Hcom/Poly(#A : exp) : [
-  _ : #A = #A type
+  a/type : #A type
   >>
     (a : #A)
       -> (b : #A)
@@ -19,6 +19,7 @@ Thm Hcom/Poly(#A : exp) : [
       -> paths({_}.#A; c; d)
     true
 ] by [
+  elim a/type;
   { lam a. lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
     <i> 'hcom{i; 0 ~> 1}(#A; ,pab @ i; {j}. ,pac @ j; {j}. ,pbd @ j)
@@ -27,7 +28,7 @@ Thm Hcom/Poly(#A : exp) : [
 ].
 
 Thm Hcom/trans(#A : exp) : [
-  _ : #A = #A type
+  a/type : #A type
   >>
     (a : #A)
       -> (b : #A)
@@ -35,43 +36,46 @@ Thm Hcom/trans(#A : exp) : [
       -> paths({_}.#A; a; b)
       -> paths({_}.#A; b; c)
       -> paths({_}.#A; a; c)
-    true
+  true
 ] by [
   {
     lam a. lam b. lam c. lam pab. lam pbc.
     <i> 'hcom{i; 0 ~> 1}(#A; ,pab @ i; {_}. ,a; {j}. ,pbc @j)
   };
+  elim a/type;
   auto
 ].
 
 Thm Hcom/symm(#A : exp) : [
-  _ : #A = #A type
+  a/type : #A type
   >> 
     (a : #A) 
       -> (b : #A)
       -> paths({_}.#A; a; b)
       -> paths({_}.#A; b; a)
-    true
+  true
 ] by [
-  {
-    lam a. lam b. lam pab.
+  { lam a. lam b. lam pab.
     <i> 'hcom{i; 0 ~> 1}(#A; ,a; {j}. ,pab @j; {_}. ,a)
   };
+  elim a/type;
   auto
 ].
 
 Thm Cap{i : dim}(#A : exp) : [ 
-  _ : #A = #A type,
+  a/type : #A type,
   x : #A true
   >> hcom{i; 0 ~> 0}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
+  elim a/type;
   auto
 ].
 
 Thm Tube(#A : exp) : [
-  _ : #A = #A type,
+  a/type : #A type,
   x : #A true
   >> hcom{0; 0 ~> 1}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
+  elim a/type;
   auto
 ].

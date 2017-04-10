@@ -755,6 +755,18 @@ struct
       end
       handle Bind =>
         raise E.error [E.% @@ "Expected typehood sequent but got " ^ J.toString jdg]
+    
+    fun Elim z alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Type.Elim"
+        val H >> catjdg = jdg
+        val CJ.TYPE ty = lookupHyp H z
+        val H' = Hyps.modify z (fn _ => CJ.EQ_TYPE (ty, ty)) H
+        val (goal, hole) = makeGoal @@ ([],[]) || H' >> catjdg
+      in
+        T.empty >: goal
+          #> hole [] []
+      end
   end
 
   structure TypeEquality =
@@ -1379,6 +1391,7 @@ struct
         | isWfJdg _ = true
 
       structure HypsUtil = TelescopeUtil (Hyps)
+
       fun FindHyp alpha (H >> jdg) = 
         if isWfJdg jdg then 
           case HypsUtil.search H (fn jdg' => CJ.eq (jdg, jdg')) of
@@ -1408,12 +1421,15 @@ struct
       fun StepJdg sign z alpha jdg =
         let
           val H >> catjdg = jdg
-          val CJ.TRUE hyp = lookupHyp H z
         in
-          case catjdg of
-             CJ.TRUE _ => StepTrue hyp z alpha jdg
-           | CJ.EQ _ => StepEq hyp z alpha jdg
-           | _ => raise E.error [E.% ("Could not find suitable elimination rule for " ^ CJ.toString catjdg)]
+          case lookupHyp H z of
+             CJ.TRUE hyp =>
+              (case catjdg of
+                  CJ.TRUE _ => StepTrue hyp z alpha jdg
+                | CJ.EQ _ => StepEq hyp z alpha jdg
+                | _ => raise E.error [E.% ("Could not find suitable elimination rule for " ^ CJ.toString catjdg)])
+           | CJ.TYPE _ => Type.Elim z alpha jdg
+           | _ => raise E.error [E.% "Could not find suitable elimination rule"]
         end
     in
       val Elim = StepJdg

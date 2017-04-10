@@ -3,14 +3,17 @@ Def Times(#A:exp; #B:exp) : exp = [
 ].
 
 Thm Times/Proj(#A:exp) : [
-  _ : #A = #A type 
-  >> Times(bool; #A) -> #A true
+  a/type : #A type 
+  >> Times(bool; #A) -> #A
+  true
 ] by [
   {lam x. 
     unfold Times;
     let <y, z> = x.
     hyp z
   };
+
+  elim a/type;
   auto
 ].
 
