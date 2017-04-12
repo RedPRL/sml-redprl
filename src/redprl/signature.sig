@@ -13,7 +13,12 @@ sig
   type 'a params = ('a * psort) list
 
   type sign
-  type entry = {sourceOpid : src_opid, params : symbol params, arguments : metavar arguments, sort : sort, definiens : abt}
+  type entry =
+    {sourceOpid : src_opid,
+     params : symbol params,
+     arguments : metavar arguments,
+     sort : sort,
+     definiens : Lcf.jdg Lcf.state}
 
   val lookup : sign -> opid -> entry
 end

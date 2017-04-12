@@ -275,11 +275,14 @@ struct
      | (cust as O.POLY (O.CUST (opid, ps, ar))) `$ args <: env =>
          let
            val entry as {definiens,...} = Sig.lookup sign opid
+           val Lcf.|> (subgoals, evidence) = definiens
+           val _ \ term = Abt.outb evidence
+           val _ = if Lcf.Tl.isEmpty subgoals then () else raise Fail "custom operator not yet fully defined!"
            val (mrho, srho) = unifyCustomOperator entry (List.map #1 ps) args
-           val definiens' = substMetaenv mrho definiens
+           val term' = substMetaenv mrho term
            val env' = {params = SymEnvUtil.union (#params env, srho), terms = #terms env}
          in
-           S.STEP @@ definiens' <: env'
+           S.STEP @@ term' <: env'
          end
 
      | (hcom as O.POLY (O.HCOM (O.TAG_NONE, exts, dir))) `$ (_ \ ty) :: cap :: tubes <: env =>
@@ -373,9 +376,9 @@ struct
      | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => m <: env
      | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => n <: env
 
-     | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
-     | (O.MONO (O.RULE_LEMMA (_, tau)) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, tau')) `$ [goal, script, evd] <: env) =>
-         O.MONO (O.RULE_LEMMA (true, tau)) $$ [([],[]) \ O.MONO (O.REFINE (true, tau')) $$ [goal, script, evd]] <: env
+     | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE _) `$ [_, _, _ \ m] <: env) => m <: env
+     | (O.MONO (O.RULE_LEMMA (_, tau)) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE tau') `$ [goal, script, evd] <: env) =>
+         O.MONO (O.RULE_LEMMA (true, tau)) $$ [([],[]) \ O.MONO (O.REFINE tau') $$ [goal, script, evd]] <: env
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>

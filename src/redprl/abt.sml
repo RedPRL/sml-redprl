@@ -1,5 +1,5 @@
-structure Metavar = AbtSymbol ()
 structure Sym = AbtSymbol ()
+structure Metavar = Sym
 structure Var = Sym
 
 local

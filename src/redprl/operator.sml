@@ -44,7 +44,7 @@ struct
    | AX
    | ID_TY | ID_ABS
 
-   | REFINE of bool * sort | EXTRACT of sort
+   | REFINE of sort | EXTRACT of sort
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
@@ -153,8 +153,7 @@ struct
      | AX => [] ->> TRIV
      | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
-     | REFINE (true, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
-     | REFINE (false, tau) => [[] * [] <> SEQ, [] * [] <> TAC] ->> THM tau
+     | REFINE tau => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
      | EXTRACT tau => [[] * [] <> THM tau] ->> tau
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC

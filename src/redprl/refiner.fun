@@ -1270,7 +1270,7 @@ struct
   fun Lemma thm alpha jdg =
     let
       val _ = RedPrlLog.trace "Lemma"
-      val Abt.$ (O.MONO (O.REFINE (true, _)), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
+      val Abt.$ (O.MONO (O.REFINE _), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
       val true = Abt.eq (RedPrlSequent.toAbt jdg, goal) 
     in
       T.empty #> evd

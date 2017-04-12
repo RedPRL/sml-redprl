@@ -9,66 +9,8 @@ struct
   fun @@ (f, x) = f x
   infixr @@
 
-  structure MiniSig =
-  struct
-    type abt = Tm.abt
-    type metavar = Tm.metavariable
-    type ast = RedPrlAst.ast
-    type sort = Tm.sort
-    type psort = Tm.psort
-    type valence = RedPrlArity.valence
-    type symbol = Tm.symbol
-    type opid = Tm.symbol
-
-    type 'a params = ('a * psort) list
-    type 'a arguments = ('a * valence) list
-
-    type src_opid = string
-    type entry = {sourceOpid : src_opid, params : symbol params, arguments : metavar arguments, sort : sort, definiens : abt}
-
-    datatype src_decl =
-       DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
-     | THM of {arguments : string arguments, params : string params, goal : ast, script : ast}
-     | TAC of {arguments : string arguments, params : string params, script : ast}
-
-    datatype 'opid cmd =
-       PRINT of 'opid
-     | EXTRACT of 'opid
-
-    type src_cmd = src_opid cmd
-
-    datatype src_elt =
-       DECL of string * src_decl * Pos.t
-     | CMD of src_cmd * Pos.t
-
-    (* elaborated declarations *)
-    datatype elab_decl =
-       EDEF of entry
-     | ECMD of opid cmd
-
-    structure Telescope = Telescope (StringAbtSymbol)
-    structure ETelescope = Telescope (Tm.Sym)
-    structure NameEnv = AstToAbt.NameEnv
-
-    (* A signature / [sign] is a telescope of declarations. *)
-    type src_sign = (src_decl * Pos.t option) Telescope.telescope
-
-    (* An elaborated signature is a telescope of definitions. *)
-    type elab_sign = elab_decl E.t ETelescope.telescope
-
-    type sign =
-      {sourceSign : src_sign,
-       elabSign : elab_sign,
-       nameEnv : Tm.symbol NameEnv.dict}
-
-    fun lookup ({elabSign, ...} : sign) opid =
-      case E.run (ETelescope.lookup elabSign opid) of
-         SOME (EDEF defn) => defn
-       | _ => raise Fail "Elaboration failed"
-  end
-
   open MiniSig
-  structure O = RedPrlOpData
+  structure O = RedPrlOpData and E = ElabMonadUtil (ElabMonad)
 
   local
     open PP
@@ -129,6 +71,8 @@ struct
     fun prettyEntry (sign : sign) (opid, {sourceOpid, params, arguments, sort, definiens}) =
       let
         val src = prettyDecl (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
+        val Lcf.|> (_, evd) = definiens
+        val Tm.\ (_, term) = Tm.outb evd
         val elab =
           concat
             [kwd @@ text "Def ",
@@ -137,7 +81,7 @@ struct
              parens @@ text @@ argsToString Metavar.toString arguments,
              text " : ",
              text @@ RedPrlSort.toString sort, text " = ",
-             squares @@ concat [nest 2 @@ concat [line, text @@ TermPrinter.toString definiens], line],
+             squares @@ concat [nest 2 @@ concat [line, text @@ TermPrinter.toString term], line],
              text "."]
       in
         concat [src, newline, newline, text "===>", newline, newline, elab]
@@ -167,7 +111,7 @@ struct
       fn EDEF entry => SOME entry
        | _ => NONE
 
-    fun arityOfDecl ({sourceOpid, arguments, params, sort, definiens} : entry) : Tm.psort list * Tm.O.Ar.t=
+    fun arityOfDecl ({sourceOpid, arguments, params, sort, definiens} : entry) : Tm.psort list * Tm.O.Ar.t =
       (List.map #2 params, (List.map #2 arguments, sort))
 
     structure OptionMonad = MonadNotation (OptionMonad)
@@ -326,7 +270,13 @@ struct
         val (params', symctx, env) = elabDeclParams sign params
       in
         convertToAbt (metactx, symctx, env) definiens sort >>= (fn definiens' =>
-          E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = sort, definiens = definiens'}))
+          let
+            val tau = sort
+            open RedPrlAbt infix \
+            val definiens' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ definiens', (([],[]), tau)))
+          in
+            E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = tau, definiens = definiens'})
+          end)
       end
 
     fun <&> (m, n) = m >>= (fn x => n >>= (fn y => E.ret (x, y)))
@@ -342,18 +292,22 @@ struct
           val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
-          E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn state as (Lcf.|> (subgoals, vld)) =>
-            if LcfModel.Lcf.Tl.isEmpty subgoals then
-              E.wrap (pos, fn _ => outb vld) >>= (fn _ \ evd =>
-                 E.ret (MONO (REFINE (true, tau)) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ evd]))
-            else
-              let
-                val stateStr = Lcf.stateToString state
-              in
-                E.warn (pos, "Incomplete proof: \n\n" ^ stateStr)
-                  *> (E.ret (MONO (REFINE (false, tau)) $$ [([],[]) \ goal, ([],[]) \ script]))
-              end)
+          E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn Lcf.|> (subgoals, construction) => 
+            let
+              val (bs \ term, (bsorts, tau)) = inferb construction
+              val refined = MONO (REFINE tau) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ term]
+              val brefined = checkb (([],[]) \ refined, (bsorts, THM tau))
+            in
+              E.ret (Lcf.|> (subgoals, brefined))
+            end)
         end
+
+      fun ensureComplete pos (state as Lcf.|> (subgoals, evidence)) = 
+        if Lcf.Tl.isEmpty subgoals then
+          E.ret state
+        else
+          E.warn (pos, "Incomplete proof: \n\n" ^ Lcf.stateToString state)
+            *> E.ret state
     in
       fun elabThm sign opid pos {arguments, params, goal, script} =
         let
@@ -363,6 +317,7 @@ struct
           convertToAbt (metactx, symctx, env) goal SEQ >>= (fn goalTm =>
             let
               val seqjdg as hyps >> concl = RedPrlSequent.fromAbt goalTm
+              val tau = CJ.synthesis concl
               val (params'', symctx', env') = 
                 Hyps.foldr
                   (fn (x, jdg, (ps, ctx, env)) => 
@@ -372,7 +327,8 @@ struct
             in
               convertToAbt (metactx, symctx', env') script TAC 
                 >>= (fn scriptTm => elabRefine sign (goalTm, seqjdg, scriptTm))
-                >>= (fn definiens => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = sort definiens, definiens = definiens})
+                >>= ensureComplete pos
+                >>= (fn state => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = THM tau, definiens = state})
             end)
         end
     end
@@ -381,9 +337,15 @@ struct
       let
         val (arguments', metactx) = elabDeclArguments arguments
         val (params', symctx, env) = elabDeclParams sign params
+
       in
         convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
-          E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = O.TAC, definiens = script'})
+          let
+            open O RedPrlAbt infix \
+            val definiens' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ script', (([],[]), TAC)))
+          in
+            E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = TAC, definiens = definiens'}
+          end)
       end
 
     fun elabDecl (sign : sign) (opid, eopid) (decl : src_decl, pos) : elab_sign =
@@ -411,16 +373,15 @@ struct
       open RedPrlAbt infix $ \
       structure O = RedPrlOpData
 
-      fun printExtractOf (pos, term) : unit E.t = 
-        case out term of
-           O.MONO (O.REFINE (true, _)) $ es => 
-             (let
-               val _ \ extract = List.last es
-             in
-               E.info (SOME pos, TermPrinter.toString extract)
-             end
-             handle _ => E.warn (SOME pos, "fuck!!"))
-         | _ => E.warn (SOME pos, "Cannot extract witness")
+      fun printExtractOf (pos, state) : unit E.t = 
+        let
+          val Lcf.|> (_, evd) = state
+          val _ \ term = outb evd
+        in
+          case out term of
+            O.MONO (O.REFINE _) $ [_, _, _ \ extract] => E.info (SOME pos, TermPrinter.toString extract)
+          | _ => E.warn (SOME pos, "Cannot extract witness")
+        end
     in
       fun elabExtract (sign : sign) (pos, opid) = 
         E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid => 
