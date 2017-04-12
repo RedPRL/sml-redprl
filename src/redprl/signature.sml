@@ -302,14 +302,19 @@ struct
             end)
         end
 
-      fun ensureComplete pos (state as Lcf.|> (subgoals, evidence)) = 
+      fun ensureCompleteState pos (state as Lcf.|> (subgoals, evidence)) = 
         if Lcf.Tl.isEmpty subgoals then
-          E.ret state
+          E.ret ()
         else
           E.warn (pos, "Incomplete proof: \n\n" ^ Lcf.stateToString state)
-            *> E.ret state
+
+      fun ensureCompleteDefinition pos decl =
+        case decl of 
+           EDEF {sourceOpid, params, arguments, sort, definiens} => ensureCompleteState pos definiens *> E.ret decl
+         | _ => E.ret decl
     in
-      fun elabThm sign opid pos {arguments, params, goal, script} =
+      (* Foreshadowing the addition of support for derived rules, which will differ from theorems in that can have unsolved subgoals *)
+      fun elabDerivedRule sign opid pos {arguments, params, goal, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
@@ -327,10 +332,13 @@ struct
             in
               convertToAbt (metactx, symctx', env') script TAC 
                 >>= (fn scriptTm => elabRefine sign (goalTm, seqjdg, scriptTm))
-                >>= ensureComplete pos
                 >>= (fn state => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = THM tau, definiens = state})
             end)
         end
+
+      fun elabThm sign opid pos thm = 
+        elabDerivedRule sign opid pos thm
+          >>= ensureCompleteDefinition pos 
     end
 
     fun elabTac (sign : sign) opid {arguments, params, script} =
