@@ -203,7 +203,7 @@ struct
      | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
      | O.MONO O.RULE_CUT `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_UNFOLD _) `$ _ <: _ => S.VAL
-     | O.MONO (O.RULE_LEMMA _) `$ _ <: _ => S.VAL
+     | O.POLY (O.RULE_LEMMA _) `$ _ <: _ => S.VAL
      
      | O.MONO O.DEV_LET `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
          S.STEP

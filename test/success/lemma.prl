@@ -4,7 +4,7 @@ Thm MyLemma : [ x : bool true >> bool true ] by [
 ].
 
 Thm MyCorollary : [ bool -> bool true ] by [
-  { lam z. lemma MyLemma{z}():exp
+  { lam z. lemma MyLemma{z}()
   }; auto
 ].
 

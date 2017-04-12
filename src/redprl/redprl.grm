@@ -300,6 +300,7 @@ operator
   | HCOM LBRACKET extents SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
   | OPNAME customOpParams (O.POLY (O.CUST (OPNAME, customOpParams, NONE)))
+  | RULE_LEMMA OPNAME customOpParams (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams, NONE)))
   | IF (O.MONO O.IF)
   | S_IF (O.MONO O.S_IF)
   | PATHS (O.MONO O.ID_TY)
@@ -389,7 +390,6 @@ atomicRawTac
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | APOSTROPHE term (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
-  | RULE_LEMMA term COLON sort (Ast.$$ (O.MONO (O.RULE_LEMMA sort), [\ (([],[]), term)]))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)

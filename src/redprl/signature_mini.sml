@@ -79,16 +79,15 @@ struct
     open RedPrlOpData Tm 
     infix $ \
   in
-    fun resuscitateTheorem sign thm = 
+    fun resuscitateTheorem sign opid ps args = 
       let
-        val POLY (CUST (opid, ps, ar)) $ args = out thm
         val entry = lookup sign opid
         val paramsSig = #params entry
         val argsSig = #arguments entry
         val SOME goal = #spec entry
         val Lcf.|> (subgoals, validation) = #state entry
 
-        val (mrho, srho) = unifyCustomOperator entry (List.map #1 ps) args
+        val (mrho, srho) = unifyCustomOperator entry ps args
         val revive = substMetaenv mrho o substSymenv srho
 
         fun mapEff f = Lcf.Eff.bind (Lcf.Eff.ret o f)

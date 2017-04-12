@@ -141,17 +141,18 @@ struct
            (case arityOfOpid sign opid of
                SOME (psorts, ar) =>
                  let
-                   val ps' =
-                     ListPair.mapEq
-                       (fn ((p, _), tau) =>
-                          let
-                            val _ = O.P.check tau p
-                          in
-                            (p, SOME tau)
-                          end)
-                       (ps, psorts)
+                   val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
                  in
                    O.POLY (O.CUST (opid, ps', SOME ar))
+                 end
+             | NONE => error pos [Err.% "Encountered undefined custom operator:", Err.% opid])
+         | O.POLY (O.RULE_LEMMA (opid, ps, NONE)) =>
+           (case arityOfOpid sign opid of
+               SOME (psorts, ar) =>
+                 let
+                   val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
+                 in
+                   O.POLY (O.RULE_LEMMA (opid, ps', SOME ar))
                  end
              | NONE => error pos [Err.% "Encountered undefined custom operator:", Err.% opid])
          | th => th

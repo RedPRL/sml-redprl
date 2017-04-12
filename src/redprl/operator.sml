@@ -52,7 +52,7 @@ struct
 
    (* primitive rules *)
    | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
-   | RULE_CUT | RULE_LEMMA of sort
+   | RULE_CUT
 
    (* development calculus terms *)
    | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_DPROD_INTRO
@@ -97,6 +97,7 @@ struct
    | HCOM of type_tag * 'a extents * 'a dir
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
+   | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | UNIV of 'a P.term
    | ID_AP of 'a P.term
    | HYP_REF of 'a
@@ -165,7 +166,6 @@ struct
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
-     | RULE_LEMMA tau => [[] * [] <> tau] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
 
@@ -231,6 +231,7 @@ struct
        | HCOM hcom => arityHcom hcom
        | COE coe => arityCoe coe
        | CUST (_, _, ar) => Option.valOf ar
+       | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
        | UNIV lvl => [] ->> EXP
        | ID_AP r => [[] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
@@ -274,6 +275,7 @@ struct
              @ spanSupport dir
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
+       | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | UNIV lvl => lvlSupport lvl
        | ID_AP r => dimSupport r
        | HYP_REF a => [(a, HYP)]
@@ -309,6 +311,8 @@ struct
        | (COE (tag1, sp1), COE (tag2, sp2)) =>
            tag1 = tag2 andalso spanEq f (sp1, sp2)
        | (CUST (opid1, ps1, _), CUST (opid2, ps2, _)) =>
+           f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+       | (RULE_LEMMA (opid1, ps1, _), RULE_LEMMA (opid2, ps2, _)) =>
            f (opid1, opid2) andalso paramsEq f (ps1, ps2)
        | (HYP_REF a, HYP_REF b) =>
            f (a, b)
@@ -367,7 +371,6 @@ struct
      | RULE_WITNESS => "witness"
      | RULE_HEAD_EXP => "head-expand"
      | RULE_CUT => "cut"
-     | RULE_LEMMA _ => "lemma"
      | RULE_EVAL_GOAL => "eval-goal"
      | RULE_CEQUIV_REFL => "ceq/refl"
      | DEV_PATH_INTRO => "path-intro"
@@ -424,6 +427,8 @@ struct
              ^ "]"
        | CUST (opid, ps, ar) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
+       | RULE_LEMMA (opid, ps, ar) =>
+           "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
        | ID_AP r => "idap{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
@@ -471,6 +476,7 @@ struct
        | HCOM (tag, extents, dir) => HCOM (tag, mapExtents f extents, mapSpan f dir)
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
+       | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
        | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | ID_AP r => ID_AP (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)

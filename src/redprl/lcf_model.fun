@@ -28,7 +28,7 @@ struct
      | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => Rules.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg)
-     | O.MONO (O.RULE_LEMMA _) $ [_ \ thm] => Rules.Lemma sign thm
+     | O.POLY (O.RULE_LEMMA (opid, ps, _)) $ args => Rules.Lemma sign opid (List.map #1 ps) args
      | O.POLY (O.RULE_UNFOLD opid) $ _ => Rules.Computation.Unfold sign opid
      | _ => raise E.error [E.% "Invalid rule", E.! rule]
 

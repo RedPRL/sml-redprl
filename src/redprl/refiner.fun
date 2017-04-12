@@ -1267,10 +1267,10 @@ struct
         #> hole1 [] [hole2 [] []]
     end
 
-  fun Lemma sign thm alpha jdg =
+  fun Lemma sign opid params args alpha jdg =
     let
       val _ = RedPrlLog.trace "Lemma"
-      val (goal, state) = Sig.resuscitateTheorem sign thm
+      val (goal, state) = Sig.resuscitateTheorem sign opid params args
       val true = Abt.eq (RedPrlSequent.toAbt jdg, RedPrlSequent.toAbt goal) 
     in
       state
