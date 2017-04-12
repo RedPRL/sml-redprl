@@ -68,11 +68,10 @@ struct
     val declToString =
       PP.toString 80 false o prettyDecl
 
-    fun prettyEntry (sign : sign) (opid, {sourceOpid, params, arguments, sort, definiens}) =
+    fun prettyEntry (sign : sign) (opid, {sourceOpid, params, arguments, sort, spec, state} : entry) =
       let
         val src = prettyDecl (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
-        val Lcf.|> (_, evd) = definiens
-        val Tm.\ (_, term) = Tm.outb evd
+        val term = extract state
         val elab =
           concat
             [kwd @@ text "Def ",
@@ -111,7 +110,7 @@ struct
       fn EDEF entry => SOME entry
        | _ => NONE
 
-    fun arityOfDecl ({sourceOpid, arguments, params, sort, definiens} : entry) : Tm.psort list * Tm.O.Ar.t =
+    fun arityOfDecl ({sourceOpid, arguments, params, sort, spec, state} : entry) : Tm.psort list * Tm.O.Ar.t =
       (List.map #2 params, (List.map #2 arguments, sort))
 
     structure OptionMonad = MonadNotation (OptionMonad)
@@ -273,9 +272,9 @@ struct
           let
             val tau = sort
             open RedPrlAbt infix \
-            val definiens' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ definiens', (([],[]), tau)))
+            val state' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ definiens', (([],[]), tau)))
           in
-            E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = tau, definiens = definiens'})
+            E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = tau, spec = NONE, state = state'})
           end)
       end
 
@@ -292,14 +291,7 @@ struct
           val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
-          E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg) >>= (fn Lcf.|> (subgoals, construction) => 
-            let
-              val (bs \ term, (bsorts, tau)) = inferb construction
-              val refined = MONO (REFINE tau) $$ [([],[]) \ goal, ([],[]) \ script, ([],[]) \ term]
-              val brefined = checkb (([],[]) \ refined, (bsorts, THM tau))
-            in
-              E.ret (Lcf.|> (subgoals, brefined))
-            end)
+          E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg)
         end
 
       fun ensureCompleteState pos (state as Lcf.|> (subgoals, evidence)) = 
@@ -310,7 +302,7 @@ struct
 
       fun ensureCompleteDefinition pos decl =
         case decl of 
-           EDEF {sourceOpid, params, arguments, sort, definiens} => ensureCompleteState pos definiens *> E.ret decl
+           EDEF {sourceOpid, params, arguments, sort, spec, state} => ensureCompleteState pos state *> E.ret decl
          | _ => E.ret decl
     in
       (* Foreshadowing the addition of support for derived rules, which will differ from theorems in that can have unsolved subgoals *)
@@ -332,7 +324,7 @@ struct
             in
               convertToAbt (metactx, symctx', env') script TAC 
                 >>= (fn scriptTm => elabRefine sign (goalTm, seqjdg, scriptTm))
-                >>= (fn state => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = THM tau, definiens = state})
+                >>= (fn state => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = tau, spec = SOME seqjdg, state = state})
             end)
         end
 
@@ -350,9 +342,9 @@ struct
         convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
           let
             open O RedPrlAbt infix \
-            val definiens' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ script', (([],[]), TAC)))
+            val state' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ script', (([],[]), TAC)))
           in
-            E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = TAC, definiens = definiens'}
+            E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = TAC, spec = NONE, state = state'}
           end)
       end
 
@@ -382,21 +374,14 @@ struct
       structure O = RedPrlOpData
 
       fun printExtractOf (pos, state) : unit E.t = 
-        let
-          val Lcf.|> (_, evd) = state
-          val _ \ term = outb evd
-        in
-          case out term of
-            O.MONO (O.REFINE _) $ [_, _, _ \ extract] => E.info (SOME pos, TermPrinter.toString extract)
-          | _ => E.warn (SOME pos, "Cannot extract witness")
-        end
+        E.info (SOME pos, TermPrinter.toString (extract state))
     in
       fun elabExtract (sign : sign) (pos, opid) = 
         E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid => 
           E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl => 
             E.ret (ECMD (EXTRACT eopid)) <*
               (case edecl of 
-                  EDEF entry => printExtractOf (pos, #definiens entry)
+                  EDEF entry => printExtractOf (pos, #state entry)
                 | _ => E.warn (SOME pos, "Invalid declaration name"))))
     end
 

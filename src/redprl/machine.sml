@@ -172,12 +172,6 @@ struct
 
      | O.MONO O.AX `$ _ <: _ => S.VAL
 
-     | O.MONO (O.REFINE _) `$ _ <: _ => S.VAL
-     | O.MONO (O.EXTRACT tau) `$ [_ \ thm] <: env =>
-         S.CUT
-           @@ (O.MONO (O.EXTRACT tau) `$ [([],[]) \ S.HOLE], thm)
-           <: env
-
      | O.MONO (O.MTAC_SEQ _) `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_ORELSE `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_REC `$ _ <: _ => S.VAL
@@ -261,9 +255,9 @@ struct
 
      | (cust as O.POLY (O.CUST (opid, ps, ar))) `$ args <: env =>
          let
-           val entry as {definiens,...} = Sig.lookup sign opid
-           val Lcf.|> (subgoals, evidence) = definiens
-           val _ \ term = Abt.outb evidence
+           val entry as {state,...} = Sig.lookup sign opid
+           val Lcf.|> (subgoals, evidence) = state
+           val term = Sig.extract state
            val _ = if Lcf.Tl.isEmpty subgoals then () else raise Fail "custom operator not yet fully defined!"
            val (mrho, srho) = Sig.unifyCustomOperator entry (List.map #1 ps) args
            val term' = substMetaenv mrho term
@@ -363,7 +357,6 @@ struct
      | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => m <: env
      | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => n <: env
 
-     | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE _) `$ [_, _, _ \ m] <: env) => m <: env
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>

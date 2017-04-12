@@ -4,7 +4,6 @@ struct
      EXP
    | TAC
    | MTAC
-   | THM of sort
    | JDG
    | TRIV
    | SEQ
@@ -22,7 +21,6 @@ struct
     fn EXP => "exp"
      | TAC => "tac"
      | MTAC => "mtac"
-     | THM sort => "thm{" ^ toString sort ^ "}"
      | JDG => "jdg"
      | TRIV => "triv"
      | SEQ => "seq"
@@ -45,8 +43,6 @@ struct
    | S1 | BASE | S1_ELIM
    | AX
    | ID_TY | ID_ABS
-
-   | REFINE of sort | EXTRACT of sort
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
@@ -156,8 +152,6 @@ struct
      | AX => [] ->> TRIV
      | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
-     | REFINE tau => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
-     | EXTRACT tau => [[] * [] <> THM tau] ->> tau
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
      | MTAC_REC => [[] * [MTAC] <> MTAC] ->> MTAC
@@ -171,7 +165,7 @@ struct
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
-     | RULE_LEMMA tau => [[] * [] <> THM tau] ->> TAC
+     | RULE_LEMMA tau => [[] * [] <> tau] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
 
@@ -360,8 +354,6 @@ struct
      | AX => "ax"
      | ID_TY => "paths"
      | ID_ABS => "abs"
-     | REFINE _ => "refine"
-     | EXTRACT _ => "extract"
      | MTAC_SEQ _ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"

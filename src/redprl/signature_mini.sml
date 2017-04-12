@@ -22,7 +22,8 @@ struct
      params : symbol params,
      arguments : metavar arguments,
      sort : sort,
-     definiens : Lcf.jdg Lcf.state}
+     spec : jdg option,
+     state : Lcf.jdg Lcf.state}
 
   datatype src_decl =
       DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
@@ -78,18 +79,14 @@ struct
     open RedPrlOpData Tm 
     infix $ \
   in
-    fun getExtract tm = 
-      case out tm of
-         MONO (REFINE _) $ [_,_,_\evd] => evd
-       | _ => raise Fail "getExtract"
-
     fun resuscitateTheorem sign thm = 
       let
         val POLY (CUST (opid, ps, ar)) $ args = out thm
         val entry = lookup sign opid
         val paramsSig = #params entry
         val argsSig = #arguments entry
-        val Lcf.|> (subgoals, validation) = #definiens entry
+        val SOME goal = #spec entry
+        val Lcf.|> (subgoals, validation) = #state entry
 
         val (mrho, srho) = unifyCustomOperator entry (List.map #1 ps) args
         val revive = substMetaenv mrho o substSymenv srho
@@ -97,11 +94,15 @@ struct
         fun mapEff f = Lcf.Eff.bind (Lcf.Eff.ret o f)
         val subgoals' = Lcf.Tl.map (mapEff (RedPrlSequent.map revive)) subgoals
         val validation' = mapAbs revive validation
-        val (bs \ term, (vls, THM tau)) = inferb validation'
-        val MONO (REFINE _) $ [_ \ goal, _, _ \ evd] = out term
-        val validation'' = checkb (bs \ evd, (vls, tau))
       in
-        (RedPrlSequent.fromAbt goal, Lcf.|> (subgoals', validation''))
+        (goal, Lcf.|> (subgoals', validation'))
       end
+
+      fun extract (Lcf.|> (subgoals, validation)) = 
+        case outb validation of 
+           ([],[]) \ term => term
+         | _ => raise Fail "Extract term has unexpected binder. Can this relaly happen?"
     end
 end
+
+structure MiniSig_ : MINI_SIGNATURE = MiniSig

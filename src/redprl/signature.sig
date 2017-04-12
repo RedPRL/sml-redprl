@@ -19,11 +19,14 @@ sig
      params : symbol params,
      arguments : metavar arguments,
      sort : sort,
-     definiens : Lcf.jdg Lcf.state}
+     spec : jdg option,
+     state : Lcf.jdg Lcf.state}
+
+  val lookup : sign -> opid -> entry
 
   val unifyCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> RedPrlAbt.metaenv * RedPrlAbt.symenv
-  val lookup : sign -> opid -> entry
   val resuscitateTheorem : sign -> abt -> jdg * Lcf.jdg Lcf.state
+  val extract : Lcf.jdg Lcf.state -> abt
 end
 
 signature SIGNATURE =
