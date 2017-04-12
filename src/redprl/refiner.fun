@@ -1271,9 +1271,7 @@ struct
     let
       val _ = RedPrlLog.trace "Lemma"
       val Abt.$ (O.MONO (O.REFINE (true, _)), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
-      val H >> catjdg = jdg
-      val catjdg' = CJ.fromAbt goal
-      val true = CJ.eq (catjdg, catjdg')
+      val true = Abt.eq (RedPrlSequent.toAbt jdg, goal) 
     in
       T.empty #> evd
     end
