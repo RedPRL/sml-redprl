@@ -93,8 +93,9 @@ struct
         fun mapEff f = Lcf.Eff.bind (Lcf.Eff.ret o f)
         val subgoals' = Lcf.Tl.map (mapEff (RedPrlSequent.map revive)) subgoals
         val validation' = mapAbs revive validation
+        val goal' = RedPrlSequent.map revive goal
       in
-        (goal, Lcf.|> (subgoals', validation'))
+        (goal', Lcf.|> (subgoals', validation'))
       end
 
       fun extract (Lcf.|> (subgoals, validation)) = 
