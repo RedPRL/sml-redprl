@@ -8,6 +8,7 @@ sig
   type sort = RedPrlAbt.sort
   type psort = RedPrlAbt.psort
   type src_opid = string
+  type jdg = RedPrlJudgment.jdg
 
   type 'a arguments = ('a * valence) list
   type 'a params = ('a * psort) list
@@ -20,7 +21,9 @@ sig
      sort : sort,
      definiens : Lcf.jdg Lcf.state}
 
+  val unifyCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> RedPrlAbt.metaenv * RedPrlAbt.symenv
   val lookup : sign -> opid -> entry
+  val resuscitateTheorem : sign -> abt -> jdg * Lcf.jdg Lcf.state
 end
 
 signature SIGNATURE =

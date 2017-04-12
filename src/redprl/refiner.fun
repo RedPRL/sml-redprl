@@ -1267,13 +1267,13 @@ struct
         #> hole1 [] [hole2 [] []]
     end
 
-  fun Lemma thm alpha jdg =
+  fun Lemma sign thm alpha jdg =
     let
       val _ = RedPrlLog.trace "Lemma"
-      val Abt.$ (O.MONO (O.REFINE _), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
-      val true = Abt.eq (RedPrlSequent.toAbt jdg, goal) 
+      val (goal, state) = Sig.resuscitateTheorem sign thm
+      val true = Abt.eq (RedPrlSequent.toAbt jdg, RedPrlSequent.toAbt goal) 
     in
-      T.empty #> evd
+      state
     end
 
   local

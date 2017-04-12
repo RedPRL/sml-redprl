@@ -389,7 +389,7 @@ atomicRawTac
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | APOSTROPHE term (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
-  | RULE_LEMMA term COLON sort (Ast.$$ (O.MONO (O.RULE_LEMMA (false, sort)), [\ (([],[]), term)]))
+  | RULE_LEMMA term COLON sort (Ast.$$ (O.MONO (O.RULE_LEMMA sort), [\ (([],[]), term)]))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)

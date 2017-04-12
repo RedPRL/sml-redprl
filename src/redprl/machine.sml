@@ -72,15 +72,6 @@ struct
 
   structure SymEnvUtil = ContextUtil (structure Ctx = Sym.Ctx and Elem = ParamElem)
 
-  fun unifyCustomOperator (entry : Sig.entry) (ps : param list) (es : abt bview list) : metaenv * symenv =
-    let
-      val {params, arguments, ...} = entry
-      val srho = ListPair.foldl (fn ((u,_), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
-      val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
-    in
-      (mrho, srho)
-    end
-
   structure Tac =
   struct
     val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
@@ -218,12 +209,8 @@ struct
      | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
      | O.MONO O.RULE_CUT `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_UNFOLD _) `$ _ <: _ => S.VAL
-     | O.MONO (O.RULE_LEMMA (true, tau)) `$ _ <: _ => S.VAL
-     | O.MONO (O.RULE_LEMMA (false, tau)) `$ [_ \ thm] <: env =>
-         S.CUT
-           @@ (O.MONO (O.RULE_LEMMA (false, tau)) `$ [([],[]) \ S.HOLE], thm)
-           <: env
-
+     | O.MONO (O.RULE_LEMMA _) `$ _ <: _ => S.VAL
+     
      | O.MONO O.DEV_LET `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
          S.STEP
           @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP)] (Tac.each [tac2,tac1]))
@@ -278,7 +265,7 @@ struct
            val Lcf.|> (subgoals, evidence) = definiens
            val _ \ term = Abt.outb evidence
            val _ = if Lcf.Tl.isEmpty subgoals then () else raise Fail "custom operator not yet fully defined!"
-           val (mrho, srho) = unifyCustomOperator entry (List.map #1 ps) args
+           val (mrho, srho) = Sig.unifyCustomOperator entry (List.map #1 ps) args
            val term' = substMetaenv mrho term
            val env' = {params = SymEnvUtil.union (#params env, srho), terms = #terms env}
          in
@@ -377,8 +364,6 @@ struct
      | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => n <: env
 
      | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE _) `$ [_, _, _ \ m] <: env) => m <: env
-     | (O.MONO (O.RULE_LEMMA (_, tau)) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE tau') `$ [goal, script, evd] <: env) =>
-         O.MONO (O.RULE_LEMMA (true, tau)) $$ [([],[]) \ O.MONO (O.REFINE tau') $$ [goal, script, evd]] <: env
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>

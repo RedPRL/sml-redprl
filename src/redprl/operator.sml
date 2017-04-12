@@ -54,7 +54,7 @@ struct
 
    (* primitive rules *)
    | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
-   | RULE_CUT | RULE_LEMMA of bool * sort
+   | RULE_CUT | RULE_LEMMA of sort
 
    (* development calculus terms *)
    | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_DPROD_INTRO
@@ -168,7 +168,7 @@ struct
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
-     | RULE_LEMMA (_, tau) => [[] * [] <> THM tau] ->> TAC
+     | RULE_LEMMA tau => [[] * [] <> THM tau] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
 

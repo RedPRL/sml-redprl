@@ -7,7 +7,7 @@ sig
   type hyp
   type opid
 
-  val Lemma : abt -> 'n -> Lcf.jdg Lcf.tactic
+  val Lemma : sign -> abt -> 'n -> Lcf.jdg Lcf.tactic
   val Cut : catjdg -> rule
   val Elim : sign -> hyp -> rule
   val AutoStep : sign -> rule  
