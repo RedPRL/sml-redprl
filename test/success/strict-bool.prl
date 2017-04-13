@@ -7,13 +7,13 @@ Def SBool/Not : exp = [
 ].
 
 Thm SBool/Not-Not-Id : [
-  Cmp(SBool/Not(); SBool/Not()) = lam([x].x) in sbool -> sbool
+  Cmp(SBool/Not; SBool/Not) = lam([x].x) in sbool -> sbool
 ] by [
   auto
 ].
 
 Thm SBool/Not-Not-Id-Path : [
-  paths({_}.sbool -> sbool; Cmp(SBool/Not(); SBool/Not()); lam([x].x)) true
+  paths({_}.sbool -> sbool; Cmp(SBool/Not; SBool/Not); lam([x].x)) true
 ] by [
   {<i> lam x. hyp x};
   auto

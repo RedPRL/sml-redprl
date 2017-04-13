@@ -33,7 +33,7 @@ Thm ApEqTest : [
 ] by [
   { lam f. <_> '(,f tt) };
 
-  // Try commenting out the following line, and stepping through the proof with tryStep().
+  // Try commenting out the following line, and stepping through the proof with TryStep.
   auto
 ].
 
@@ -84,6 +84,6 @@ Def Cmp(#f : exp; #g : exp) : exp = [
   lam([x]. #f (#g x))
 ].
 
-Thm StrictBoolTest : [ Not() = Cmp(Not(); Cmp(Not(); Not())) in sbool -> sbool ] by [
+Thm StrictBoolTest : [ Not = Cmp(Not; Cmp(Not; Not)) in sbool -> sbool ] by [
   auto
 ].

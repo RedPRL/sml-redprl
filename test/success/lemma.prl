@@ -4,12 +4,12 @@ Thm MyLemma : [ x : bool true >> bool true ] by [
 ].
 
 Thm MyCorollary : [ bool -> bool true ] by [
-  { lam z. lemma MyLemma{z}()
+  { lam z. lemma MyLemma{z}
   }; auto
 ].
 
 Extract MyCorollary.
 
-Thm MyCorollary/Test : [ MyCorollary() = lam([z]. if([x]. bool; z; ff; tt)) in bool -> bool ] by [
+Thm MyCorollary/Test : [ MyCorollary = lam([z]. if([_]. bool; z; ff; tt)) in bool -> bool ] by [
   auto
 ].

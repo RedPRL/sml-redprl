@@ -322,6 +322,7 @@ term : rawTerm %prec FUN_APP (annotate (Pos.pos (rawTerm1left fileName) (rawTerm
 atomicRawTerm
   : LPAREN term RPAREN (term)
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | operator (Ast.$$ (operator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
   | VARNAME (`` VARNAME)
@@ -411,6 +412,7 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | operator (Ast.$$ (operator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | VARNAME (`` VARNAME)
 
