@@ -12,7 +12,7 @@ Thm Hcom/Poly(#A : exp) : [
     (a : #A)
       -> (b : #A)
       -> (c : #A) 
-      -> (d  : #A) 
+      -> (d : #A) 
       -> paths({_}.#A; a; b)
       -> paths({_}.#A; a; c)
       -> paths({_}.#A; b; d) 
@@ -38,8 +38,7 @@ Thm Hcom/trans(#A : exp) : [
       -> paths({_}.#A; a; c)
   true
 ] by [
-  {
-    lam a. lam b. lam c. lam pab. lam pbc.
+  { lam a. lam b. lam c. lam pab. lam pbc.
     <i> 'hcom{i; 0 ~> 1}(#A; ,pab @ i; {_}. ,a; {j}. ,pbc @j)
   };
   elim a/type;
