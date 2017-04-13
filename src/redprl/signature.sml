@@ -423,14 +423,23 @@ struct
         end
 
       structure Tl = TelescopeUtil (Lcf.Tl)
+
       fun checkProofState (pos, subgoalsSpec) state = 
         let
           val Lcf.|> (subgoals, _) = state
           fun goalEqualTo goal1 goal2 = Lcf.effEq (goal1, goal2)
+
+          fun go ([], Tl.ConsView.EMPTY) = true
+            | go (jdgSpec :: subgoalsSpec, Tl.ConsView.CONS (_, jdgReal, subgoalsReal)) = 
+                Lcf.effEq (jdgSpec, jdgReal) andalso go (subgoalsSpec, Tl.ConsView.out subgoalsReal)
+
+          val proofStateCorrect = go (subgoalsSpec, Tl.ConsView.out subgoals)
         in
-          case Tl.search subgoals (fn subgoal => not (List.exists (goalEqualTo subgoal) subgoalsSpec)) of
-             SOME _ => E.warn (pos, "Incomplete proof: \n\n" ^ Lcf.stateToString state) *> E.ret state
-           | NONE => E.ret state
+          if proofStateCorrect then 
+            E.ret state 
+          else
+            E.warn (pos, "Incomplete proof: \n\n" ^ Lcf.stateToString state)
+              *> E.ret state
         end
     in
       fun elabDerivedRule sign opid pos {arguments, params, spec, script} =

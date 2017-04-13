@@ -1329,7 +1329,6 @@ struct
         Lcf.|| (bs, H0' >> jdg0)
       end
   in
-
     fun Lemma sign opid params args alpha jdg =
       let
         val _ = RedPrlLog.trace "Lemma"

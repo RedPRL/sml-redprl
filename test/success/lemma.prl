@@ -4,8 +4,8 @@ Thm MyLemma : [ x : bool true >> bool true ] by [
 ].
 
 Rule MyRule : [
-  {x : bool true >> tt in bool},
-  {x : bool true >> ff in bool}
+  {x : bool true >> ff in bool},
+  {x : bool true >> tt in bool}
   ==> {x : bool true >> bool true}
 ] by [
   {if x then 'ff else 'tt}
