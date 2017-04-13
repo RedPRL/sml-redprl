@@ -36,8 +36,9 @@ sig
   include MINI_SIGNATURE
 
   type src_catjdg = ast RedPrlCategoricalJudgment.jdg
-  type src_sequent = (string * src_catjdg) list * src_catjdg
-  type src_genjdg = (string * psort) list * (string * psort) list * src_sequent
+  type src_seqhyp = string * src_catjdg
+  type src_sequent = src_seqhyp list * src_catjdg
+  type src_genjdg = ((string * psort) list * (string * sort) list) * src_sequent
   type src_rulespec = src_genjdg list * src_sequent
 
   datatype src_decl =

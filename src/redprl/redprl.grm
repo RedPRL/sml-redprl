@@ -11,12 +11,12 @@ struct
 end
 
 structure O = RedPrlOpData
+structure CJ = RedPrlCategoricalJudgment
 
 structure Tac =
 struct
   type binding = (string * P.param_sort) list * ast
   infix $$ $ \
-
 
   fun makeSeq mt (us : (string * P.param_sort) list) mt' =
     let
@@ -84,7 +84,7 @@ end
  | LAMBDA
  | SQUIGGLE
  | SQUIGGLE_ARROW
- | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW
+ | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
  | TIMES
  | DOUBLE_RANGLE
@@ -137,7 +137,7 @@ end
  | boundVar of string
 
    (* abt abstractions *)
- | binder of symbol list * symbol list
+ | binder of string list * string list
  | binding of ast abs
  | bindings of ast abs list
 
@@ -163,6 +163,13 @@ end
  | bindingSig of P.param_sort list * O.sort list
  | valence of Ar.valence
 
+ | symBinding of string * P.param_sort
+ | symBindings of (string * P.param_sort) list
+ | varBinding of string * O.sort
+ | varBindings of (string * O.sort) list
+ | annotatedBinder of (string * P.param_sort) list * (string * O.sort) list
+
+
  | rawJudgment of ast
  | judgment of ast
 
@@ -171,6 +178,15 @@ end
 
  | rawSequent of ast
  | sequent of ast
+
+ | src_catjdg of Signature.src_catjdg
+ | src_seqhyp of Signature.src_seqhyp
+ | src_seqhyps of Signature.src_seqhyp list
+ | src_sequent of Signature.src_sequent
+ | src_genjdg of Signature.src_genjdg
+ | src_rulePremises of Signature.src_genjdg list
+ | src_ruleConcl of Signature.src_sequent
+ | src_rulespec of Signature.src_rulespec
 
  | rawTactic of ast
  | tactic of ast
@@ -363,6 +379,64 @@ rawJudgment
   | term IN term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
+
+symBinding
+  : boundVar COLON psort (boundVar, psort)
+
+symBindings
+  : ([])
+  | symBinding ([symBinding])
+  | symBinding COMMA symBindings (symBinding :: symBindings)
+
+varBinding
+  : boundVar COLON sort (boundVar, sort)
+
+varBindings
+  : ([])
+  | varBinding ([varBinding])
+  | varBinding COMMA varBindings (varBinding :: varBindings)
+
+annotatedBinder
+  : LBRACKET symBindings RBRACKET LSQUARE varBindings RSQUARE (symBindings, varBindings)
+
+src_catjdg
+  : term JDG_TRUE (CJ.TRUE term)
+  | term EQUALS term JDG_TYPE (CJ.EQ_TYPE (term1, term1))
+  | term JDG_TYPE (CJ.TYPE term)
+  | term JDG_SYNTH (CJ.SYNTH term)
+  | term SQUIGGLE term (CJ.CEQUIV (term1, term2))
+  | term EQUALS term IN term (CJ.EQ ((term1, term2), term3))
+  | term IN term (CJ.MEM (term1, term2))
+
+src_seqhyp
+  : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))
+  | UNDER COLON src_catjdg (("_", src_catjdg))
+  | src_catjdg (("_", src_catjdg))
+
+src_seqhyps
+  : ([])
+  | src_seqhyp ([src_seqhyp])
+  | src_seqhyp COMMA src_seqhyps (src_seqhyp :: src_seqhyps)
+
+src_sequent
+  : src_catjdg ([], src_catjdg)
+  | src_seqhyps DOUBLE_RANGLE src_catjdg (src_seqhyps, src_catjdg)
+
+src_genjdg
+  : src_sequent (([],[]), src_sequent)
+  | annotatedBinder PIPE src_sequent (annotatedBinder, src_sequent)
+
+src_ruleConcl 
+  : LBRACKET src_sequent RBRACKET (src_sequent)
+
+src_rulePremises
+  : ([])
+  | LBRACKET src_genjdg RBRACKET ([src_genjdg])
+  | LBRACKET src_genjdg RBRACKET COMMA src_rulePremises (src_genjdg :: src_rulePremises)
+
+src_rulespec
+  : src_ruleConcl ([], src_ruleConcl)
+  | src_rulePremises LONG_RIGHT_ARROW src_ruleConcl (src_rulePremises, src_ruleConcl)
 
 seqHyp
   : VARNAME COLON judgment ((VARNAME, judgment))

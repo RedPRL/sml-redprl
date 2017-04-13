@@ -63,6 +63,7 @@ whitespace = [\ \t];
 "~>"               => (Tokens.SQUIGGLE_ARROW (posTuple (size yytext)));
 "->"               => (Tokens.RIGHT_ARROW (posTuple (size yytext)));
 "=>"               => (Tokens.DOUBLE_RIGHT_ARROW (posTuple (size yytext)));
+"==>"              => (Tokens.LONG_RIGHT_ARROW (posTuple (size yytext)));
 "<-"               => (Tokens.LEFT_ARROW (posTuple (size yytext)));
 "`"                => (Tokens.BACK_TICK (posTuple (size yytext)));
 "*"                => (Tokens.TIMES (posTuple (size yytext)));
