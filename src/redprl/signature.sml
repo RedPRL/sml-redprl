@@ -433,13 +433,12 @@ struct
            | NONE => E.ret state
         end
     in
-      (* Foreshadowing the addition of support for derived rules, which will differ from theorems in that can have unsolved subgoals *)
       fun elabDerivedRule sign opid pos {arguments, params, spec, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
         in
-          E.wrap(pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as hyps >> concl) =>
+          E.wrap (pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as hyps >> concl) =>
             let
               val tau = CJ.synthesis concl
               val (params'', symctx', env') = 

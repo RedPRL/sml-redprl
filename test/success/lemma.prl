@@ -12,7 +12,7 @@ Rule MyRule : [
 ].
 
 
-Thm MyCorollary : [ welp : S1 true >> bool -> bool true ] by [
+Thm MyCorollary : [ bool -> bool true ] by [
   { lam z. lemma MyRule{z}
   }; auto
 ].
