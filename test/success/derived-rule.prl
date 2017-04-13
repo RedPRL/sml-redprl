@@ -9,7 +9,7 @@ Rule MyRule : [
   {x : bool true >> tt in bool}
   ==> {x : bool true >> bool true}
 ] by [
-  {if x then 'ff else 'tt}
+  if x then 'ff else 'tt
 ].
 
 // A derived rule can be applied using the built-in 'rule' rule. This checks whether
@@ -18,12 +18,35 @@ Rule MyRule : [
 // hypothetical contexts are also unified together in the appropriate way (i.e. we 
 // do not require strict equality of contexts, but only compatibility).
 Thm MyCorollary : [ bool -> bool true ] by [
-  { lam z. rule MyRule{z}
-  }; auto
+  {lam z. rule MyRule{z}; auto}; auto
 ].
 
 Extract MyCorollary.
 
 Thm MyCorollary/Test : [ MyCorollary = lam([z]. if([_]. bool; z; ff; tt)) in bool -> bool ] by [
+  auto
+].
+
+Rule PiTypehood(#A : exp; #B : [exp].exp) : [
+  {#A = #A type},
+  {{}[x:exp] | x : #A true >> #B[x] = #B[x] type}
+  ==> {(x : #A) -> #B[x] type}
+] by [
+  auto
+].
+
+Rule LambdaEquality(#A : exp; #B : [exp].exp; #m : [exp].exp) : [
+  {{}[x:exp] | x : #A true >> #m[x] = #m[x] in #B[x]},
+  {#A = #A type}
+  ==> {lam([x].#m[x]) in (x : #A) -> #B[x]}
+] by [
+  auto
+].
+
+Rule PiIntro(#A : exp; #B : [exp].exp) : [
+  {{}[x:exp] | x : #A true >> #B[x] true},
+  {#A = #A type}
+  ==> {(x:#A) -> #B[x] true}
+] by [
   auto
 ].
