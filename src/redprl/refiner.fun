@@ -1267,6 +1267,11 @@ struct
         #> hole1 [] [hole2 [] []]
     end
 
+  (* TODO: add "extra" hypotheses:
+        We need to take the subgoals of the resuscitated proof state as well as the 
+        resuscitated goal, and add to them the hypotheses present in the actual goal.
+        This means that a lemma or derived rule can be applied in a larger context.
+   *)
   fun Lemma sign opid params args alpha jdg =
     let
       val _ = RedPrlLog.trace "Lemma"
