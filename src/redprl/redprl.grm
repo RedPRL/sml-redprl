@@ -74,7 +74,7 @@ end
  | EXP | TAC
 
  | CMD_PRINT | CMD_EXTRACT
- | DCL_DEF | DCL_TAC | DCL_THM
+ | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
  | BY | IN
 
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO
@@ -400,13 +400,12 @@ src_ruleConcl
   : LBRACKET src_sequent RBRACKET (src_sequent)
 
 src_rulePremises
-  : ([])
-  | LBRACKET src_genjdg RBRACKET ([src_genjdg])
+  : LBRACKET src_genjdg RBRACKET ([src_genjdg])
   | LBRACKET src_genjdg RBRACKET COMMA src_rulePremises (src_genjdg :: src_rulePremises)
+  | ([])
 
 src_rulespec
-  : src_ruleConcl ([], src_ruleConcl)
-  | src_rulePremises LONG_RIGHT_ARROW src_ruleConcl (src_rulePremises, src_ruleConcl)
+  : src_rulePremises LONG_RIGHT_ARROW src_ruleConcl (src_rulePremises, src_ruleConcl)
 
 atomicRawTac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
@@ -516,6 +515,8 @@ rawDecl
       (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
   | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_sequent RSQUARE BY LSQUARE tactic RSQUARE
       (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = src_sequent, script = tactic})
+  | DCL_RULE OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_rulespec RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.RULE {arguments = declArgumentsParens, params = declParamsBrackets, spec = src_rulespec, script = tactic})
 
 decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))
 

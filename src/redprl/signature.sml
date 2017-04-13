@@ -56,6 +56,17 @@ struct
               text " by ",
               squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
               text "."]
+       | RULE {arguments, params, spec, script} =>
+           concat
+             [kwd @@ text "Rule ",
+              declId @@ text opid,
+              braces @@ text @@ paramsToString (fn x => x) params,
+              parens @@ text @@ argsToString (fn x => x) arguments,
+              text " : ",
+              squares @@ concat [nest 2 @@ concat [line, text "TODO"], line],
+              text " by ",
+              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
+              text "."]
        | TAC {arguments, params, script} =>
            concat
             [kwd @@ text "Tac ", declId @@ text opid,
@@ -173,10 +184,17 @@ struct
       fun processSrcSeq sign (hyps, concl) = 
         (List.map (fn (x, hyp) => (x, processSrcCatjdg sign hyp)) hyps, processSrcCatjdg sign concl)
 
+      fun processSrcGenJdg sign (bs, seq) = 
+        (bs, processSrcSeq sign seq)
+
+      fun processSrcRuleSpec sign (premises, goal) = 
+        (List.map (processSrcGenJdg sign) premises, processSrcSeq sign goal)
+
     in
       fun processDecl sign =
         fn DEF {arguments, params, sort, definiens} => DEF {arguments = arguments, params = params, sort = sort, definiens = processTerm sign definiens}
          | THM {arguments, params, goal, script} => THM {arguments = arguments, params = params, goal = processSrcSeq sign goal, script = processTerm sign script}
+         | RULE {arguments, params, spec, script} => RULE {arguments = arguments, params = params, spec = processSrcRuleSpec sign spec, script = processTerm sign script}
          | TAC {arguments, params, script} => TAC {arguments = arguments, params = params, script = processTerm sign script}
     end
 
@@ -282,31 +300,48 @@ struct
         abt
       end
 
-    fun elabSrcCatjdg (metactx, symctx, env) : src_catjdg -> abt CJ.jdg = 
+    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> abt CJ.jdg = 
       CJ.map (elabAst (metactx, env))
+      (* TODO check scoping *)
 
-    fun getOrAddName (env, symctx, varctx) srcname = 
-      case NameEnv.find env srcname of
-         SOME x => (env, symctx, varctx, x)
-       | NONE => 
-         let
-           val x = Sym.named srcname
-           val env' = NameEnv.insert env srcname x
-           val symctx' = Sym.Ctx.insert symctx x RedPrlParamData.HYP
-           val varctx' = Sym.Ctx.insert varctx x RedPrlOpData.EXP
-         in
-           (env', symctx', varctx', x)
-         end
+    fun addHypName (env, symctx, varctx) srcname = 
+      let
+        val x = NameEnv.lookup env srcname handle _ => Sym.named srcname
+        val env' = NameEnv.insert env srcname x
+        val symctx' = Sym.Ctx.insert symctx x RedPrlParamData.HYP
+        val varctx' = Sym.Ctx.insert varctx x RedPrlOpData.EXP
+      in
+        (env', symctx', varctx', x)
+      end
 
+    fun addSymName (env, symctx) (srcname, psort) = 
+      let
+        val u = Sym.named srcname
+        val env' = NameEnv.insert env srcname u
+        val symctx' = Sym.Ctx.insert symctx u psort
+      in
+        (env', symctx')
+      end
+
+    fun addVarName (env, varctx) (srcname, sort) = 
+      let
+        val x = Var.named srcname
+        val env' = NameEnv.insert env srcname x
+        val varctx' = Sym.Ctx.insert varctx x sort
+      in
+        (env', varctx')
+      end
+
+ 
     fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * abt CJ.jdg = 
       let
-        val catjdg = elabSrcCatjdg (metactx, symctx, env) srcjdg
-        val (env', symctx', varctx', x) = getOrAddName (env, symctx, varctx) srcname
+        val catjdg = elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg
+        val (env', symctx', varctx', x) = addHypName (env, symctx, varctx) srcname
       in
         (symctx', varctx', env', x, catjdg)
       end
 
-    fun elabSrcSeqHyps (metactx, symctx, env) : src_seqhyp list -> symbol NameEnv.dict * abt CJ.jdg Hyps.telescope =
+    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * abt CJ.jdg Hyps.telescope =
       let
         fun go env syms vars H [] = (env, H)
           | go env syms vars H (hyp :: hyps) = 
@@ -316,16 +351,38 @@ struct
                 go env' syms' vars' (Hyps.snoc H x jdg) hyps
               end
       in
-        go env symctx Var.Ctx.empty Hyps.empty
+        go env symctx varctx Hyps.empty
       end
 
-    fun elabSrcSequent (metactx, symctx, env) (seq : src_sequent) : jdg = 
+    fun elabSrcSequent (metactx, symctx, varctx, env) (seq : src_sequent) : symbol NameEnv.dict * jdg = 
       let
         val (hyps, concl) = seq
-        val (env', hyps') = elabSrcSeqHyps (metactx, symctx, env) hyps
-        val concl' = elabSrcCatjdg (metactx, symctx, env') concl
+        val (env', hyps') = elabSrcSeqHyps (metactx, symctx, varctx, env) hyps
+        val concl' = elabSrcCatjdg (metactx, symctx, varctx, env') concl
       in
-        RedPrlSequent.>> (hyps', concl')
+        (env', RedPrlSequent.>> (hyps', concl'))
+      end
+
+    fun elabSrcGenJdg (metactx, symctx, env) ((syms, vars), seq) : symbol NameEnv.dict * jdg Lcf.eff = 
+      let
+        val (env', symctx') = List.foldl (fn (sym, (env, symctx)) => addSymName (env, symctx) sym) (env, symctx) syms
+        val (env'', varctx) = List.foldl (fn (var, (env, varctx)) => addVarName (env, varctx) var) (env', Var.Ctx.empty) vars
+        val syms' = List.map (fn (u,psort) => (NameEnv.lookup env'' u, psort)) syms
+        val vars' = List.map (fn (x,sort) => (NameEnv.lookup env'' x, sort)) vars
+        val (env''', seq') = elabSrcSequent (metactx, symctx', varctx, env'') seq
+        val env'''' = List.foldl (fn ((u,_), env) => NameEnv.remove env u) env''' syms
+        val env''''' = List.foldl (fn ((x,_), env) => NameEnv.remove env x) env'''' vars
+      in
+        (env''''', Lcf.|| ((syms', vars'), seq'))
+      end
+
+    fun elabSrcRuleSpec (metactx, symctx, env) (spec : src_rulespec) = 
+      let
+        val (subgoals, goal) = spec
+        val (env', subgoals') = List.foldr (fn (subgoal, (env, subgoals)) => let val (env', subgoal') = elabSrcGenJdg (metactx, symctx, env) subgoal in (env', subgoal' :: subgoals) end) (env, []) subgoals
+        val (_, goal') = elabSrcSequent (metactx, symctx, Var.Ctx.empty, env') goal
+      in
+        (subgoals', goal')
       end
 
     fun convertToAbt (metactx, symctx, env) ast sort =
@@ -365,24 +422,24 @@ struct
           E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg)
         end
 
-      fun ensureCompleteState pos (state as Lcf.|> (subgoals, evidence)) = 
-        if Lcf.Tl.isEmpty subgoals then
-          E.ret ()
-        else
-          E.warn (pos, "Incomplete proof: \n\n" ^ Lcf.stateToString state)
-
-      fun ensureCompleteDefinition pos decl =
-        case decl of 
-           EDEF {sourceOpid, params, arguments, sort, spec, state} => ensureCompleteState pos state *> E.ret decl
-         | _ => E.ret decl
+      structure Tl = TelescopeUtil (Lcf.Tl)
+      fun checkProofState (pos, subgoalsSpec) state = 
+        let
+          val Lcf.|> (subgoals, _) = state
+          fun goalEqualTo goal1 goal2 = Lcf.effEq (goal1, goal2)
+        in
+          case Tl.search subgoals (fn subgoal => not (List.exists (goalEqualTo subgoal) subgoalsSpec)) of
+             SOME _ => E.warn (pos, "Incomplete proof: \n\n" ^ Lcf.stateToString state) *> E.ret state
+           | NONE => E.ret state
+        end
     in
       (* Foreshadowing the addition of support for derived rules, which will differ from theorems in that can have unsolved subgoals *)
-      fun elabDerivedRule sign opid pos {arguments, params, goal, script} =
+      fun elabDerivedRule sign opid pos {arguments, params, spec, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
         in
-          E.wrap(pos, fn () => elabSrcSequent (metactx, symctx, env) goal) >>= (fn seqjdg as hyps >> concl =>
+          E.wrap(pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as hyps >> concl) =>
             let
               val tau = CJ.synthesis concl
               val (params'', symctx', env') = 
@@ -394,13 +451,19 @@ struct
             in
               convertToAbt (metactx, symctx', env') script TAC 
                 >>= (fn scriptTm => elabRefine sign (seqjdg, scriptTm))
+                >>= checkProofState (pos, subgoalsSpec)
                 >>= (fn state => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = tau, spec = SOME seqjdg, state = state})
             end)
         end
 
+      fun thmToRule {arguments, params, goal, script} = 
+        {arguments = arguments,
+         params = params,
+         spec = ([], goal),
+         script = script}
+
       fun elabThm sign opid pos thm = 
-        elabDerivedRule sign opid pos thm
-          >>= ensureCompleteDefinition pos 
+        elabDerivedRule sign opid pos (thmToRule thm)
     end
 
     fun elabTac (sign : sign) opid {arguments, params, script} =
@@ -428,6 +491,7 @@ struct
           case processDecl sign decl of
              DEF defn => elabDef sign' opid defn
            | THM defn => elabThm sign' opid pos defn
+           | RULE defn => elabDerivedRule sign' opid pos defn
            | TAC defn => elabTac sign' opid defn)))
       end
 

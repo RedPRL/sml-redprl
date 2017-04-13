@@ -1338,7 +1338,7 @@ struct
       let
         val _ = RedPrlLog.trace "Lemma"
         val (mainGoalSpec, state as Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
-        val _ = checkMainGoal (jdg, mainGoalSpec)
+        val _ = checkMainGoal (mainGoalSpec, jdg)
 
         val H >> _ = jdg
         val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal H (subgoalSpec, mainGoalSpec)) subgoals

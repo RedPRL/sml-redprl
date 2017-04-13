@@ -3,8 +3,17 @@ Thm MyLemma : [ x : bool true >> bool true ] by [
   auto
 ].
 
-Thm MyCorollary : [ bool -> bool true ] by [
-  { lam z. lemma MyLemma{z}
+Rule MyRule : [
+  {x : bool true >> tt in bool},
+  {x : bool true >> ff in bool}
+  ==> {x : bool true >> bool true}
+] by [
+  {if x then 'ff else 'tt}
+].
+
+
+Thm MyCorollary : [ welp : S1 true >> bool -> bool true ] by [
+  { lam z. lemma MyRule{z}
   }; auto
 ].
 
