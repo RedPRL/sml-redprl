@@ -9,3 +9,7 @@ Thm MyCorollary : [ bool -> bool true ] by [
 ].
 
 Extract MyCorollary.
+
+Thm MyCorollary/Test : [ MyCorollary() = lam([z]. if([x]. bool; z; ff; tt)) in bool -> bool ] by [
+  auto
+].
