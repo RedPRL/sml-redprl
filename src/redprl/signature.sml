@@ -6,10 +6,16 @@ struct
   structure ElabNotation = MonadNotation (E)
   open ElabNotation infix >>= *> <*
 
+
   fun @@ (f, x) = f x
   infixr @@
 
   open MiniSig
+  type src_catjdg = ast RedPrlCategoricalJudgment.jdg
+  type src_sequent = (string * src_catjdg) list * src_catjdg
+  type src_genjdg = (string * psort) list * (string * psort) list * src_sequent
+  type src_rulespec = src_genjdg list * src_sequent
+
   structure O = RedPrlOpData and E = ElabMonadUtil (ElabMonad)
 
   local

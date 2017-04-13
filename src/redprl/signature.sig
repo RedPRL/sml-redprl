@@ -35,6 +35,11 @@ sig
 
   include MINI_SIGNATURE
 
+  type src_catjdg = ast RedPrlCategoricalJudgment.jdg
+  type src_sequent = (string * src_catjdg) list * src_catjdg
+  type src_genjdg = (string * psort) list * (string * psort) list * src_sequent
+  type src_rulespec = src_genjdg list * src_sequent
+
   datatype src_decl =
      DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
    | THM of {arguments : string arguments, params : string params, goal : ast, script : ast}
