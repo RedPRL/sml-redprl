@@ -69,10 +69,28 @@ struct
   fun unifyCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : Tm.metaenv * Tm.symenv =
     let
       val {params, arguments, ...} = entry
-      val srho = ListPair.foldl (fn ((u,_), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
+      val srho = ListPair.foldl (fn ((u, _), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
       val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
     in
       (mrho, srho)
+    end
+
+  (* Observe that hypotheses have a dual nature: they are both symbols and variables. When reviving a proof state,
+     we have to rename hypotheses in *both* their moments. This routine constructs the appropriate substitution
+     for hypotheses qua variables. *)
+  fun hypothesisRenaming (entry : entry) (ps : Tm.param list) : Tm.varenv = 
+    let
+      fun handleHyp ((u, psort), ptm, ctx) = 
+        case psort of 
+          RedPrlParamData.HYP =>
+            let
+              val RedPrlParameterTerm.VAR v = ptm
+            in
+              Var.Ctx.insert ctx u (Tm.check (Tm.`v, RedPrlOpData.EXP))
+            end
+        | _ => ctx
+    in
+      ListPair.foldl handleHyp Var.Ctx.empty (#params entry, ps)
     end
 
   local 
@@ -85,17 +103,20 @@ struct
         val paramsSig = #params entry
         val argsSig = #arguments entry
         val SOME goal = #spec entry
-        val Lcf.|> (subgoals, validation) = #state entry
+        val state as Lcf.|> (subgoals, validation) = #state entry
 
         val (mrho, srho) = unifyCustomOperator entry ps args
-        val revive = substMetaenv mrho o substSymenv srho
+        val vrho = hypothesisRenaming entry ps
+        val revive = substVarenv vrho o substSymenv srho o substMetaenv mrho
 
         fun mapEff f = Lcf.Eff.bind (Lcf.Eff.ret o f)
         val subgoals' = Lcf.Tl.map (mapEff (RedPrlSequent.map revive)) subgoals
         val validation' = mapAbs revive validation
         val goal' = RedPrlSequent.map revive goal
+
+        val state' = Lcf.|> (subgoals', validation')
       in
-        (goal', Lcf.|> (subgoals', validation'))
+        (goal', state')
       end
 
       fun extract (Lcf.|> (subgoals, validation)) = 

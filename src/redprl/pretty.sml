@@ -1,6 +1,10 @@
 structure PP = PrettyPrint (AnsiColors)
 
-structure TermPrinter : SHOW =
+structure TermPrinter :
+sig
+  include SHOW 
+  val paramToString : Sym.t RedPrlParameterTerm.t -> string
+end =
 struct
   structure Abt = RedPrlAbt
   structure ShowVar = Abt.Var
