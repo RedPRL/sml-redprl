@@ -432,6 +432,7 @@ struct
           fun go ([], Tl.ConsView.EMPTY) = true
             | go (jdgSpec :: subgoalsSpec, Tl.ConsView.CONS (_, jdgReal, subgoalsReal)) = 
                 Lcf.effEq (jdgSpec, jdgReal) andalso go (subgoalsSpec, Tl.ConsView.out subgoalsReal)
+            | go _ = false
 
           val proofStateCorrect = go (subgoalsSpec, Tl.ConsView.out subgoals)
         in
