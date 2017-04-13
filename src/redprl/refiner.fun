@@ -1267,19 +1267,87 @@ struct
         #> hole1 [] [hole2 [] []]
     end
 
-  (* TODO: add "extra" hypotheses:
-        We need to take the subgoals of the resuscitated proof state as well as the 
-        resuscitated goal, and add to them the hypotheses present in the actual goal.
-        This means that a lemma or derived rule can be applied in a larger context.
-   *)
-  fun Lemma sign opid params args alpha jdg =
-    let
-      val _ = RedPrlLog.trace "Lemma"
-      val (goal, state) = Sig.resuscitateTheorem sign opid params args
-      val true = Abt.eq (RedPrlSequent.toAbt jdg, RedPrlSequent.toAbt goal) 
-    in
-      state
-    end
+
+  local
+    fun checkHyp H x jdg0 =
+      case Hyps.find H x of
+         SOME jdg => 
+           if CJ.eq (jdg, jdg0) then () else
+             raise E.error [E.% ("Hypothesis " ^ Sym.toString x ^ " did not match specification")]
+       | _ => raise E.error [E.% ("Could not find hypothesis " ^ Sym.toString x)]
+
+    fun checkMainGoal (specGoal, mainGoal) = 
+      let
+        val H >> jdg = mainGoal
+        val H0 >> jdg0 = specGoal
+        val _ = print ("Spec: " ^ RedPrlJudgment.toString specGoal ^ "\n")
+        val _ = print ("Actual: " ^ RedPrlJudgment.toString mainGoal ^ "\n")
+      in
+        if CJ.eq (jdg, jdg0) then () else raise E.error [E.% "Conclusions of goal did not match specification"];
+        Hyps.foldl (fn (x, j, _) => checkHyp H x j) () H0
+      end
+
+    datatype diff =
+       DELETE of hyp
+     | UPDATE of hyp * catjdg
+     | INSERT of hyp * catjdg
+
+    fun applyDiff (delta : diff) (H : catjdg Hyps.telescope) : catjdg Hyps.telescope = 
+      case delta of 
+         DELETE x => Hyps.remove x H
+       | UPDATE (x, jdg) => Hyps.modify x (fn _ => jdg) H
+       | INSERT (x, jdg) => Hyps.snoc H x jdg
+
+    fun applyDiffs (delta : diff list) : catjdg Hyps.telescope -> catjdg Hyps.telescope =
+      List.foldl (fn (d, f) => applyDiff d o f) (fn H => H) delta
+
+    fun hypothesesDiff (H0, H1) : diff list =
+      let
+        val diff01 = 
+          Hyps.foldr
+            (fn (x, jdg0, delta) => 
+              case Hyps.find H1 x of 
+                  SOME jdg1 => if CJ.eq (jdg0, jdg1) then delta else UPDATE (x, jdg1) :: delta
+                | NONE => DELETE x :: delta) 
+            []
+            H0
+      in
+        Hyps.foldr
+          (fn (x, jdg1, delta) => 
+             case Hyps.find H0 x of 
+                SOME jdg0 => delta
+              | NONE => INSERT (x, jdg1) :: delta)
+          diff01
+          H1
+      end
+
+    fun instantiateSubgoal H (subgoalSpec, mainGoalSpec) = 
+      let
+        val Lcf.|| (bs, H0 >> jdg0) = subgoalSpec
+        val H1 >> jdg1 = mainGoalSpec
+        val delta = hypothesesDiff (H0, H1)
+        val H0' = applyDiffs delta H
+      in
+        Lcf.|| (bs, H0' >> jdg0)
+      end
+  in
+    (* TODO: add "extra" hypotheses:
+          We need to take the subgoals of the resuscitated proof state as well as the 
+          resuscitated goal, and add to them the hypotheses present in the actual goal.
+          This means that a lemma or derived rule can be applied in a larger context.
+    *)
+    fun Lemma sign opid params args alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Lemma"
+        val (mainGoalSpec, state as Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
+        val _ = checkMainGoal (jdg, mainGoalSpec)
+
+        val H >> _ = jdg
+        val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal H (subgoalSpec, mainGoalSpec)) subgoals
+      in
+        Lcf.|> (subgoals', validation)
+      end
+  end
 
   local
     fun matchGoal f alpha jdg =
