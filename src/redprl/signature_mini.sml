@@ -75,27 +75,55 @@ struct
       (mrho, srho)
     end
 
-  (* Observe that hypotheses have a dual nature: they are both symbols and variables. When reviving a proof state,
-     we have to rename hypotheses in *both* their moments. This routine constructs the appropriate substitution
-     for hypotheses qua variables. *)
-  fun hypothesisRenaming (entry : entry) (ps : Tm.param list) : Tm.varenv = 
-    let
-      fun handleHyp ((u, psort), ptm, ctx) = 
-        case psort of 
-          RedPrlParamData.HYP =>
-            let
-              val RedPrlParameterTerm.VAR v = ptm
-            in
-              Var.Ctx.insert ctx u (Tm.check (Tm.`v, RedPrlOpData.EXP))
-            end
-        | _ => ctx
-    in
-      ListPair.foldl handleHyp Var.Ctx.empty (#params entry, ps)
-    end
 
   local 
-    open RedPrlOpData Tm 
-    infix $ \
+    open RedPrlOpData Tm RedPrlSequent
+    infix $ \ >>
+
+    (* Observe that hypotheses have a dual nature: they are both symbols and variables. When reviving a proof state,
+      we have to rename hypotheses in *both* their moments. This routine constructs the appropriate substitution
+      for hypotheses qua variables. *)
+    fun hypothesisRenaming (entry : entry) (ps : Tm.param list) : Tm.varenv = 
+      let
+        fun handleHyp ((u, psort), ptm, ctx) = 
+          case psort of 
+            RedPrlParamData.HYP =>
+              let
+                val RedPrlParameterTerm.VAR v = ptm
+              in
+                Var.Ctx.insert ctx u (Tm.check (Tm.`v, RedPrlOpData.EXP))
+              end
+          | _ => ctx
+      in
+        ListPair.foldl handleHyp Var.Ctx.empty (#params entry, ps)
+      end
+
+    fun relabelHyp (u, v) H =
+      let
+        val jdg = Hyps.lookup H u
+        val H' = Hyps.interposeAfter H u (Hyps.singleton v jdg)
+      in
+        Hyps.remove u H'
+      end
+
+    fun relabelHyps (entry : entry) (ps : Tm.param list) H = 
+      let
+        fun handleHyp ((u, psort), ptm, H) =
+          case psort of 
+             RedPrlParamData.HYP =>
+               let
+                 val RedPrlParameterTerm.VAR v = ptm
+               in
+                 relabelHyp (u, v) H
+               end
+           | _ => H
+      in
+        ListPair.foldl handleHyp H (#params entry, ps)
+      end
+
+    fun relabelSequent (entry : entry) (ps : Tm.param list) : abt jdg -> abt jdg =
+      fn H >> catjdg => relabelHyps entry ps H >> catjdg
+      | jdg => jdg
   in
     fun resuscitateTheorem sign opid ps args = 
       let
@@ -107,12 +135,13 @@ struct
 
         val (mrho, srho) = unifyCustomOperator entry ps args
         val vrho = hypothesisRenaming entry ps
-        val revive = substVarenv vrho o substSymenv srho o substMetaenv mrho
+        val reviveTerm = substVarenv vrho o substSymenv srho o substMetaenv mrho
+        val reviveSequent = relabelSequent entry ps o RedPrlSequent.map reviveTerm
 
         fun mapEff f = Lcf.Eff.bind (Lcf.Eff.ret o f)
-        val subgoals' = Lcf.Tl.map (mapEff (RedPrlSequent.map revive)) subgoals
-        val validation' = mapAbs revive validation
-        val goal' = RedPrlSequent.map revive goal
+        val subgoals' = Lcf.Tl.map (mapEff reviveSequent) subgoals
+        val validation' = mapAbs reviveTerm validation
+        val goal' = reviveSequent goal
 
         val state' = Lcf.|> (subgoals', validation')
       in
