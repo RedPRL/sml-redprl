@@ -337,9 +337,9 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "DProd.EqType"
-        val H >> CJ.EQ_TYPE (dfun0, dfun1) = jdg
-        val Syn.DPROD (a0, x, b0x) = Syn.out dfun0
-        val Syn.DPROD (a1, y, b1y) = Syn.out dfun1
+        val H >> CJ.EQ_TYPE (dprod0, dprod1) = jdg
+        val Syn.DPROD (a0, x, b0x) = Syn.out dprod0
+        val Syn.DPROD (a1, y, b1y) = Syn.out dprod1
 
         val z = alpha 0
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
@@ -347,7 +347,7 @@ struct
         val b1z = substVar (ztm, y) b1y
 
         val (goal1, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a0, a1)
-        val (goal2, _) = makeGoal @@ ([],[]) || H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
+        val (goal2, _) = makeGoal @@ ([],[(x,O.EXP)]) || H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
       in
         T.empty >: goal1 >: goal2
           #> trivial
@@ -491,7 +491,7 @@ struct
         val b1z = substVar (ztm, y) b1y
 
         val (goal1, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a0, a1)
-        val (goal2, _) = makeGoal @@ ([],[]) || H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
+        val (goal2, _) = makeGoal @@ ([],[(z,O.EXP)]) || H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
       in
         T.empty >: goal1 >: goal2
           #> trivial
