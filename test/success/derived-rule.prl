@@ -1,0 +1,29 @@
+// RedPRL supports user-defined derived rules. These work a lot like theorems, except that the user
+// provides a specification of subgoals which can be left "unsolved"; then, the user proves the main goal
+// in the usual way, except that the definition becomes complete when the remaining subgoals
+// are exactly those specified. (Theorems differ only in that they require *all* subgoals to be completed.)
+
+// Here's an example of a derived rule which has two premises.
+Rule MyRule : [
+  {x : bool true >> ff in bool},
+  {x : bool true >> tt in bool}
+  ==> {x : bool true >> bool true}
+] by [
+  {if x then 'ff else 'tt}
+].
+
+// A derived rule can be applied using the built-in 'rule' rule. This checks whether
+// the main goal of the derived rule is compatible with the current goal, and then 
+// it replaces the current goal with the premises induced by the derived rule. The
+// hypothetical contexts are also unified together in the appropriate way (i.e. we 
+// do not require strict equality of contexts, but only compatibility).
+Thm MyCorollary : [ bool -> bool true ] by [
+  { lam z. rule MyRule{z}
+  }; auto
+].
+
+// Extract MyCorollary.
+
+// Thm MyCorollary/Test : [ MyCorollary = lam([z]. if([_]. bool; z; ff; tt)) in bool -> bool ] by [
+//   auto
+// ].
