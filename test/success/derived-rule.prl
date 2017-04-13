@@ -22,8 +22,8 @@ Thm MyCorollary : [ bool -> bool true ] by [
   }; auto
 ].
 
-// Extract MyCorollary.
+Extract MyCorollary.
 
-// Thm MyCorollary/Test : [ MyCorollary = lam([z]. if([_]. bool; z; ff; tt)) in bool -> bool ] by [
-//   auto
-// ].
+Thm MyCorollary/Test : [ MyCorollary = lam([z]. if([_]. bool; z; ff; tt)) in bool -> bool ] by [
+  auto
+].
