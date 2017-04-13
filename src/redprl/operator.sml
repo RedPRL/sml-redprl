@@ -22,7 +22,6 @@ struct
      | MTAC => "mtac"
      | JDG => "jdg"
      | TRIV => "triv"
-     | SEQ => "seq"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -57,8 +56,6 @@ struct
    | DEV_LET
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
-
-   | SEQ_CONCL | SEQ_CONS of sort
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -187,9 +184,6 @@ struct
      | JDG_TYPE => [[] * [] <> EXP] ->> JDG
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
-
-     | SEQ_CONCL => [[] * [] <> JDG] ->> SEQ
-     | SEQ_CONS tau => [[] * [] <> JDG, [] * [tau] <> SEQ] ->> SEQ
 
   local
     val typeArgsForTag =
@@ -383,8 +377,6 @@ struct
      | JDG_EQ_TYPE => "eq-type"
      | JDG_TYPE => "type"
      | JDG_SYNTH => "synth"
-     | SEQ_CONCL => "seq-concl"
-     | SEQ_CONS _ => "seq-cons"
 
   local
     fun spanToString f (r, r') =

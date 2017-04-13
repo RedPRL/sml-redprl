@@ -25,9 +25,15 @@ struct
      spec : jdg option,
      state : Lcf.jdg Lcf.state}
 
+  type src_catjdg = ast RedPrlCategoricalJudgment.jdg
+  type src_seqhyp = string * src_catjdg
+  type src_sequent = src_seqhyp list * src_catjdg
+  type src_genjdg = ((string * psort) list * (string * sort) list) * src_sequent
+  type src_rulespec = src_genjdg list * src_sequent
+
   datatype src_decl =
       DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
-    | THM of {arguments : string arguments, params : string params, goal : ast, script : ast}
+    | THM of {arguments : string arguments, params : string params, goal : src_sequent, script : ast}
     | TAC of {arguments : string arguments, params : string params, script : ast}
 
   datatype 'opid cmd =

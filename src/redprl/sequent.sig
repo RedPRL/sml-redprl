@@ -24,8 +24,4 @@ sig
   val toString : ('a -> string) -> 'a jdg -> string
 
   val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
-
-  val fromAbtUsingNames : (int -> sym) option -> abt -> abt jdg
-  val fromAbt : abt -> abt jdg
-  val toAbt : abt jdg -> abt
 end

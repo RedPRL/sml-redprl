@@ -35,30 +35,6 @@ struct
     multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
 end
 
-structure JdgAst =
-struct
-  (* This essentially duplicates the logic of CJ.synthesis, but I
-     can't see any good way to combine them, since this is needed
-     in the parser, before we can convert to redprl_jdg (via abt). *)
-  fun synthesis ast =
-    case Ast.out ast of
-       $ (O.MONO O.JDG_EQ, _) => O.TRIV
-     | $ (O.MONO O.JDG_MEM, _) => O.TRIV
-     | $ (O.MONO O.JDG_TRUE, _) => O.EXP
-     | $ (O.MONO O.JDG_EQ_TYPE, _) => O.TRIV
-     | $ (O.MONO O.JDG_TYPE, _) => O.TRIV
-     | $ (O.MONO O.JDG_SYNTH, _) => O.EXP
-     | $ (O.MONO O.JDG_CEQ, _) => O.TRIV
-     | _ => raise Fail "Bad judgement AST"
-
-  fun buildSequent acc [] = acc
-    | buildSequent acc ((x,jdg) :: hyps) =
-      let
-        val tau = synthesis jdg
-      in
-        buildSequent (Ast.$$ (O.MONO (O.SEQ_CONS tau), [\ (([],[]), jdg), \ (([], [x]), acc)])) hyps
-      end
-end
 
 %%
 %header (functor RedPrlLrValsFun (structure Token : TOKEN))
@@ -172,12 +148,6 @@ end
 
  | rawJudgment of ast
  | judgment of ast
-
- | seqHyp of string * ast
- | seqHyps of (string * ast) list
-
- | rawSequent of ast
- | sequent of ast
 
  | src_catjdg of Signature.src_catjdg
  | src_seqhyp of Signature.src_seqhyp
@@ -438,22 +408,6 @@ src_rulespec
   : src_ruleConcl ([], src_ruleConcl)
   | src_rulePremises LONG_RIGHT_ARROW src_ruleConcl (src_rulePremises, src_ruleConcl)
 
-seqHyp
-  : VARNAME COLON judgment ((VARNAME, judgment))
-  | UNDER COLON judgment (("_", judgment))
-  | judgment (("_", judgment))
-
-seqHyps
-  : ([])
-  | seqHyp ([seqHyp])
-  | seqHyp COMMA seqHyps (seqHyp :: seqHyps)
-
-rawSequent
-  : judgment (Ast.$$ (O.MONO O.SEQ_CONCL, [\ (([],[]), judgment)]))
-  | seqHyps DOUBLE_RANGLE judgment (JdgAst.buildSequent (Ast.$$ (O.MONO O.SEQ_CONCL, [\ (([],[]), judgment)])) (List.rev seqHyps))
-
-sequent : rawSequent (annotate (Pos.pos (rawSequent1left fileName) (rawSequent1right fileName)) rawSequent)
-
 atomicRawTac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
@@ -560,8 +514,8 @@ rawDecl
       (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
   | DCL_TAC OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
       (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
-  | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE sequent RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = sequent, script = tactic})
+  | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_sequent RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = src_sequent, script = tactic})
 
 decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))
 

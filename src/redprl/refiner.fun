@@ -1280,8 +1280,6 @@ struct
       let
         val H >> jdg = mainGoal
         val H0 >> jdg0 = specGoal
-        val _ = print ("Spec: " ^ RedPrlJudgment.toString specGoal ^ "\n")
-        val _ = print ("Actual: " ^ RedPrlJudgment.toString mainGoal ^ "\n")
       in
         if CJ.eq (jdg, jdg0) then () else raise E.error [E.% "Conclusions of goal did not match specification"];
         Hyps.foldl (fn (x, j, _) => checkHyp H x j) () H0
