@@ -370,6 +370,9 @@ varBindings
 
 annotatedBinder
   : LBRACKET symBindings RBRACKET LSQUARE varBindings RSQUARE (symBindings, varBindings)
+  | LSQUARE varBindings RSQUARE ([], varBindings)
+  | LBRACKET symBindings RBRACKET RSQUARE (symBindings, [])
+
 
 src_catjdg
   : term JDG_TRUE (CJ.TRUE term)
