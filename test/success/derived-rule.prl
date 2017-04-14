@@ -51,7 +51,6 @@ Rule PiIntro(#A; #B : [exp].exp) : [
   auto
 ].
 
-// TODO: for some reason, the subgoal generated does not have the correct premises
 Thm Test : [ bool -> bool] by [
   fresh x <- rule PiIntro(bool; [x].bool);
   [ if x then 'ff else 'tt ];
