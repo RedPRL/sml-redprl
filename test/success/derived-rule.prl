@@ -5,9 +5,9 @@
 
 // Here's an example of a derived rule which has two premises.
 Rule MyRule : [
-  {x : bool true >> ff in bool},
-  {x : bool true >> tt in bool}
-  ==> {x : bool true >> bool true}
+  x : bool true >> ff in bool;
+  x : bool true >> tt in bool
+  ==> x : bool true >> bool true
 ] by [
   if x then 'ff else 'tt
 ].
@@ -28,25 +28,25 @@ Thm MyCorollary/Test : [ MyCorollary = lam([z]. if([_]. bool; z; ff; tt)) in boo
 ].
 
 Rule PiTypehood(#A : exp; #B : [exp].exp) : [
-  {#A = #A type},
-  {{}[x:exp] | x : #A true >> #B[x] = #B[x] type}
-  ==> {(x : #A) -> #B[x] type}
+  #A = #A type;
+  {}[x:exp] | x : #A true >> #B[x] = #B[x] type
+  ==> (x : #A) -> #B[x] type
 ] by [
   auto
 ].
 
-Rule LambdaEquality(#A : exp; #B : [exp].exp; #m : [exp].exp) : [
-  {{}[x:exp] | x : #A true >> #m[x] = #m[x] in #B[x]},
-  {#A = #A type}
-  ==> {lam([x].#m[x]) in (x : #A) -> #B[x]}
+Rule LambdaMembership(#A : exp; #B : [exp].exp; #m : [exp].exp) : [
+  {}[x:exp] | x : #A true >> #m[x] = #m[x] in #B[x];
+  #A = #A type
+  ==> lam([x].#m[x]) in (x : #A) -> #B[x]
 ] by [
   auto
 ].
 
 Rule PiIntro(#A : exp; #B : [exp].exp) : [
-  {{}[x:exp] | x : #A true >> #B[x] true},
-  {#A = #A type}
-  ==> {(x:#A) -> #B[x] true}
+  {}[x:exp] | x : #A true >> #B[x] true;
+  #A = #A type
+  ==> (x:#A) -> #B[x] true
 ] by [
   auto
 ].
