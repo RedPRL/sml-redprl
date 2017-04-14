@@ -6,7 +6,7 @@
 // this as a lemma, you simply supply to the operator the appropriate hypothesis in your context
 // which witnesses that #A = #A type. We could add a generic tactic that applies a lemma and 
 // *asserts* all its hypotheses, or tries to unify these with the context, etc.
-Thm Hcom/Poly(#A : exp) : [
+Thm Hcom/Poly(#A) : [
   a/type : #A type
   >>
     (a : #A)
@@ -17,7 +17,6 @@ Thm Hcom/Poly(#A : exp) : [
       -> paths({_}.#A; a; c)
       -> paths({_}.#A; b; d) 
       -> paths({_}.#A; c; d)
-    true
 ] by [
   elim a/type;
   { lam a. lam b. lam c. lam d.
@@ -27,7 +26,7 @@ Thm Hcom/Poly(#A : exp) : [
   <|auto|>
 ].
 
-Thm Hcom/trans(#A : exp) : [
+Thm Hcom/trans(#A) : [
   a/type : #A type
   >>
     (a : #A)
@@ -36,7 +35,6 @@ Thm Hcom/trans(#A : exp) : [
       -> paths({_}.#A; a; b)
       -> paths({_}.#A; b; c)
       -> paths({_}.#A; a; c)
-  true
 ] by [
   { lam a. lam b. lam c. lam pab. lam pbc.
     <i> 'hcom{i; 0 ~> 1}(#A; ,pab @ i; {_}. ,a; {j}. ,pbc @j)
@@ -45,14 +43,13 @@ Thm Hcom/trans(#A : exp) : [
   auto
 ].
 
-Thm Hcom/symm(#A : exp) : [
+Thm Hcom/symm(#A) : [
   a/type : #A type
   >> 
     (a : #A) 
       -> (b : #A)
       -> paths({_}.#A; a; b)
       -> paths({_}.#A; b; a)
-  true
 ] by [
   { lam a. lam b. lam pab.
     <i> 'hcom{i; 0 ~> 1}(#A; ,a; {j}. ,pab @j; {_}. ,a)
@@ -61,18 +58,18 @@ Thm Hcom/symm(#A : exp) : [
   auto
 ].
 
-Thm Cap{i : dim}(#A : exp) : [ 
+Thm Cap{i : dim}(#A) : [ 
   a/type : #A type,
-  x : #A true
+  x : #A
   >> hcom{i; 0 ~> 0}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
   elim a/type;
   auto
 ].
 
-Thm Tube(#A : exp) : [
+Thm Tube(#A) : [
   a/type : #A type,
-  x : #A true
+  x : #A
   >> hcom{0; 0 ~> 1}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
   elim a/type;

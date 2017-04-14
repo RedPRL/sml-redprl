@@ -1,5 +1,5 @@
 // Identifiers can contain hyphens and slashes
-Thm Ident-test/ : [ bool true ] by [
+Thm Ident-test/ : [ bool ] by [
   { 'tt };
   auto
 ].

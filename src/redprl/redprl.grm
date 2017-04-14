@@ -348,6 +348,7 @@ rawJudgment
   | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term EQUALS term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
   | term IN term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
+  | term (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
@@ -378,6 +379,7 @@ src_catjdg
   | term SQUIGGLE term (CJ.CEQUIV (term1, term2))
   | term EQUALS term IN term (CJ.EQ ((term1, term2), term3))
   | term IN term (CJ.MEM (term1, term2))
+  | term (CJ.TRUE term)
 
 src_seqhyp
   : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))
@@ -491,6 +493,7 @@ tactics
 
 declArgument
   : metavar COLON valence ((metavar, valence))
+  | metavar ((metavar, (([],[]), O.EXP)))
 
 declArguments
   : declArgument ([declArgument])
@@ -516,6 +519,8 @@ declParamsBrackets
 rawDecl
   : DCL_DEF OPNAME declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
       (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
+  | DCL_DEF OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE term RSQUARE
+      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = O.EXP})
   | DCL_TAC OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
       (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
   | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_sequent RSQUARE BY LSQUARE tactic RSQUARE
