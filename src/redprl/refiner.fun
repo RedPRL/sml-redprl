@@ -1325,9 +1325,13 @@ struct
           H1
       end
 
-    fun instantiateSubgoal H (subgoalSpec, mainGoalSpec) = 
+    fun instantiateSubgoal alpha H (subgoalSpec, mainGoalSpec) = 
       let
-        val Lcf.|| (bs, H0 >> jdg0) = subgoalSpec
+        val Lcf.|| ((syms, vars), H0 >> jdg0) = subgoalSpec
+
+        (* TODO: use the namestore to pick new names for bindings *)
+        val bs = (syms, vars)
+
         val H1 >> jdg1 = mainGoalSpec
         val delta = hypothesesDiff (H1, H0)
         val H0' = applyDiffs delta H
@@ -1342,7 +1346,8 @@ struct
         val _ = checkMainGoal (mainGoalSpec, jdg)
 
         val H >> _ = jdg
-        val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal H (subgoalSpec, mainGoalSpec)) subgoals
+        
+        val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha H (subgoalSpec, mainGoalSpec)) subgoals
       in
         Lcf.|> (subgoals', validation)
       end
