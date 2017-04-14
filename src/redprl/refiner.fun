@@ -1290,6 +1290,12 @@ struct
      | UPDATE of hyp * catjdg
      | INSERT of hyp * catjdg
 
+    val diffToString = 
+      fn DELETE x => "DELETE " ^ Sym.toString x
+       | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
+       | INSERT (x,_) => "INSERT " ^ Sym.toString x
+
+
     fun applyDiff (delta : diff) (H : catjdg Hyps.telescope) : catjdg Hyps.telescope = 
       case delta of 
          DELETE x => Hyps.remove x H
@@ -1323,7 +1329,7 @@ struct
       let
         val Lcf.|| (bs, H0 >> jdg0) = subgoalSpec
         val H1 >> jdg1 = mainGoalSpec
-        val delta = hypothesesDiff (H0, H1)
+        val delta = hypothesesDiff (H1, H0)
         val H0' = applyDiffs delta H
       in
         Lcf.|| (bs, H0' >> jdg0)
