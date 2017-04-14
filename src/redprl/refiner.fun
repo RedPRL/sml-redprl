@@ -1329,14 +1329,28 @@ struct
       let
         val Lcf.|| ((syms, vars), H0 >> jdg0) = subgoalSpec
 
-        (* TODO: use the namestore to pick new names for bindings *)
-        val bs = (syms, vars)
+        val nsyms = List.length syms
+        val nvars = List.length vars
+        
+        val freshSyms = List.tabulate (nsyms, fn i => alpha i)
+        val freshVars = List.tabulate (nvars, fn i => alpha (i + nsyms))
+
+        val syms' = ListPair.map (fn ((u,sigma), v) => (v, sigma)) (syms, freshSyms)
+        val vars' = ListPair.map (fn ((x, tau), y) => (y, tau)) (vars, freshVars)
+
+        val hypren = ListPair.foldl (fn ((x, _), y, rho) => Sym.Ctx.insert rho x y) Sym.Ctx.empty (vars, freshVars)
+        val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (syms, freshSyms)
+ 
+        val bs = (syms', vars')
 
         val H1 >> jdg1 = mainGoalSpec
         val delta = hypothesesDiff (H1, H0)
         val H0' = applyDiffs delta H
+
+        val jdg' = H0' >> jdg0
+        val jdg'' = RedPrlSequent.map (substSymenv srho) (RedPrlSequent.relabel hypren jdg')
       in
-        Lcf.|| (bs, H0' >> jdg0)
+        Lcf.|| (bs, jdg'')
       end
   in
     fun Lemma sign opid params args alpha jdg =

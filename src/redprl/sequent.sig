@@ -24,4 +24,6 @@ sig
   val toString : ('a -> string) -> 'a jdg -> string
 
   val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
+
+  val relabel : hyp CJ.Tm.Sym.Ctx.dict -> abt jdg -> abt jdg
 end

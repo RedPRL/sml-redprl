@@ -40,8 +40,29 @@ struct
              andalso CJ.eq (catjdg1, catjdg2)
              andalso telescopeEq (t1', t2')
        | _ => false
-
   end
+
+  val renameHypsInTerm =
+    Tm.substSymenv o Tm.Sym.Ctx.map Tm.O.P.VAR
+
+  fun relabelHyp (u, v) H =
+    let
+      val jdg = Hyps.lookup H u
+      val H' = Hyps.interposeAfter H u (Hyps.singleton v jdg)
+    in
+      Hyps.remove u H'
+    end
+    handle _ => H
+
+  fun relabelHyps H srho = 
+    Tm.Sym.Ctx.foldl 
+      (fn (x, y, H) => relabelHyp (x, y) H)
+      H
+      srho
+
+  fun relabel srho = 
+    fn H >> catjdg => relabelHyps H srho >> CJ.map (renameHypsInTerm srho) catjdg
+     | jdg => map (renameHypsInTerm srho) jdg
 
   val rec eq =
     fn (H1 >> catjdg1, H2 >> catjdg2) =>
