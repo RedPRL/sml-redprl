@@ -115,6 +115,8 @@ whitespace = [\ \t];
 "by"               => (Tokens.BY (posTuple (size yytext)));
 "in"               => (Tokens.IN (posTuple (size yytext)));
 
+"fresh"            => (Tokens.FRESH (posTuple (size yytext)));
+
 "rec"              => (Tokens.MTAC_REC (posTuple (size yytext)));
 "repeat"           => (Tokens.MTAC_REPEAT (posTuple (size yytext)));
 "progress"         => (Tokens.MTAC_PROGRESS (posTuple (size yytext)));

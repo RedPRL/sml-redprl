@@ -7,6 +7,15 @@ Thm PathTest : [ paths({_}. S1; base; base) ] by [
   { <x> 'loop{x} }; auto
 ].
 
+Thm LowLevel : [ (bool -> bool) -> bool ] by [
+  fresh f <- auto;
+  fresh x, x/eq <- elim f;
+  [ 'tt, hyp x];
+  auto
+].
+
+Extract LowLevel.
+
 Thm FunElimTest : [ (bool -> bool) -> bool ] by [
   { lam f. let x = f {'tt}. hyp x };
 
@@ -23,9 +32,13 @@ Thm S1ElimTest : [ S1 -> S1 ] by [
   auto
 ].
 
+Tac Try(#t : tac) = [
+  #t || id
+].
+
 // Useful for stepping through a proof RedPRL completes automatically, to see
 // what is being done.
-Tac TryStep = [ auto-step || id ].
+Tac TryStep = [ Try(%{auto-step}) ].
 
 Thm ApEqTest : [
   (f : bool -> bool)
@@ -49,9 +62,9 @@ Def BoolEta(#M) = [
 // what we need to do.
 //
 Thm PathTest2 : [ paths({_}. bool -> bool; lam([b].b); lam([b].BoolEta(b))) ] by [
-  { let h : [(b:bool) -> paths({_}.bool; b; BoolEta(b)) ] =
+  { let h : [(b:bool) -> paths({_}.bool; b; BoolEta(b))] =
       lam b. if b then <y> 'tt else <y> 'ff.
-    <x> lam b. let p = h {hyp b}. '(,p @ x)
+    <x> lam c. let p = h {hyp c}. '(,p @ x)
   };
 
   auto

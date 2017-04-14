@@ -1,5 +1,5 @@
 Thm PrimitiveSequencingTest : [bool -> bool -> bool -> bool] by [
-  {x,y,z} <- auto;
+  fresh x,y,z <- auto;
   hyp y
 ].
 

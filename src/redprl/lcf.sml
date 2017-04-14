@@ -30,7 +30,12 @@ struct
     let
       val parametric = 
         if List.length syms > 0 then
-          PP.concat [PP.line, PP.text "nabla {", prettySyms syms, PP.text "}. "]
+          PP.concat [PP.line, PP.text "{", prettySyms syms, PP.text "}. "]
+        else
+          PP.empty
+      val generic = 
+        if List.length vars > 0 then
+          PP.concat [PP.line, PP.text "[", prettyVars vars, PP.text "]. "]
         else
           PP.empty
     in
@@ -39,6 +44,7 @@ struct
          PP.text (RedPrlAbt.Metavar.toString x),
          PP.text ".",
          parametric,
+         generic,
          PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
          PP.line]
     end
@@ -56,9 +62,8 @@ struct
             val ((ssorts, vsorts), tau) = J.sort jdg'
             val vl' = ((ssorts @ List.map #2 syms, vsorts @ List.map #2 vars), tau)
             val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' vl')
-
           in
-            {doc = PP.concat [doc, prettyGoal (syms, vars) (x', jdg'), PP.line],
+            {doc = PP.concat [doc, prettyGoal (syms, vars) (x, jdg), PP.line],
              env = env',
              idx = idx + 1}
           end)
@@ -68,9 +73,13 @@ struct
   fun prettyValidation env vld =
     let
       open RedPrlAbt infix \
-      val _ \ m = outb vld
+      val (us,xs) \ m = outb vld
     in
-      PP.text (TermPrinter.toString (substMetaenv env m))
+      PP.concat [
+        PP.text (TermPrinter.toString m),
+        PP.line,
+        PP.text (primToStringAbs vld)
+      ]
     end
 
   fun prettyState (psi |> vld) =

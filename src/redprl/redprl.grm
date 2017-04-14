@@ -60,6 +60,7 @@ end
  | LAMBDA
  | SQUIGGLE
  | SQUIGGLE_ARROW
+ | FRESH
  | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
  | TIMES
@@ -163,7 +164,6 @@ end
  | tactics of ast list
  | hypBinding of string * P.param_sort
  | hypBindings of (string * P.param_sort) list
- | multiHypBindings of (string * P.param_sort) list
  | atomicRawMultitac of ast
  | atomicMultitac of ast
  | rawMultitac of ast
@@ -456,7 +456,7 @@ atomicRawMultitac
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
   | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
   | LBRACKET multitac RBRACKET (multitac)
-  | multiHypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac multiHypBindings multitac)
+  | FRESH hypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
   | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
 
@@ -477,9 +477,6 @@ hypBindings
   : hypBinding ([hypBinding])
   | hypBinding COMMA hypBindings %prec COMMA (hypBinding :: hypBindings)
   | ([])
-
-multiHypBindings
-  : LBRACKET hypBindings RBRACKET (hypBindings)
 
 rawTactic
   : multitac %prec SEMI (Tac.multitacToTac multitac)
