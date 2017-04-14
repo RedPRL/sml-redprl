@@ -60,6 +60,14 @@ follows
 
     ./bin/redprl test/test.prl
 
+
+### Editor Support: Visual Studio Code
+
+The easiest/most user-friendly way to get started is with [Visual Studio
+Code](https://code.visualstudio.com); the [RedPRL
+mode](https://marketplace.visualstudio.com/items?itemName=freebroccolo.redprl)
+can be downloaded from the Marketplace.
+
 ### Editor Support: Emacs
 
 We have support for interactive RedPRL development in Emacs.
