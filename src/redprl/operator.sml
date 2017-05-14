@@ -161,7 +161,6 @@ struct
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | UNIV of 'a P.term
    | ID_AP of 'a P.term
    | HYP_REF of 'a
    | RULE_HYP of 'a * sort
@@ -291,7 +290,6 @@ struct
        | COE coe => arityCoe coe
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
-       | UNIV lvl => [] ->> EXP
        | ID_AP r => [[] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
@@ -335,7 +333,6 @@ struct
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | UNIV lvl => lvlSupport lvl
        | ID_AP r => dimSupport r
        | HYP_REF a => [(a, HYP EXP)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
@@ -485,7 +482,7 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_LEMMA (opid, ps, ar) =>
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
-       | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
+
        | ID_AP r => "idap{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
@@ -533,7 +530,6 @@ struct
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
-       | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | ID_AP r => ID_AP (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
