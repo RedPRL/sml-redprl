@@ -164,8 +164,8 @@ struct
    | UNIV of 'a P.term
    | ID_AP of 'a P.term
    | HYP_REF of 'a
-   | RULE_HYP of 'a
-   | RULE_ELIM of 'a
+   | RULE_HYP of 'a * sort
+   | RULE_ELIM of 'a * sort
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
@@ -294,8 +294,8 @@ struct
        | UNIV lvl => [] ->> EXP
        | ID_AP r => [[] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
-       | RULE_HYP a => [] ->> TAC
-       | RULE_ELIM a => [] ->> TAC
+       | RULE_HYP _ => [] ->> TAC
+       | RULE_ELIM _ => [] ->> TAC
        | RULE_UNFOLD a => [] ->> TAC
        | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
@@ -338,8 +338,8 @@ struct
        | UNIV lvl => lvlSupport lvl
        | ID_AP r => dimSupport r
        | HYP_REF a => [(a, HYP EXP)]
-       | RULE_HYP a => [(a, HYP EXP)]
-       | RULE_ELIM a => [(a, HYP EXP)]
+       | RULE_HYP (a, tau) => [(a, HYP tau)]
+       | RULE_ELIM (a, tau) => [(a, HYP tau)]
        | RULE_UNFOLD a => [(a, OPID)]
        | DEV_BOOL_ELIM a => [(a, HYP EXP)]
        | DEV_S1_ELIM a => [(a, HYP EXP)]
@@ -375,9 +375,9 @@ struct
            f (opid1, opid2) andalso paramsEq f (ps1, ps2)
        | (HYP_REF a, HYP_REF b) =>
            f (a, b)
-       | (RULE_HYP a, RULE_HYP b) =>
+       | (RULE_HYP (a, _), RULE_HYP (b, _)) =>
            f (a, b)
-       | (RULE_ELIM a, RULE_ELIM b) =>
+       | (RULE_ELIM (a, _), RULE_ELIM (b, _)) =>
            f (a, b)
        | (RULE_UNFOLD a, RULE_UNFOLD b) => 
            f (a, b)
@@ -488,8 +488,8 @@ struct
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
        | ID_AP r => "idap{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
-       | RULE_HYP a => "hyp{" ^ f a ^ "}"
-       | RULE_ELIM a => "elim{" ^ f a ^ "}"
+       | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
+       | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
@@ -536,8 +536,8 @@ struct
        | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | ID_AP r => ID_AP (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
-       | RULE_HYP a => RULE_HYP (mapSym f a)
-       | RULE_ELIM a => RULE_ELIM (mapSym f a)
+       | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
+       | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym f a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym f a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)

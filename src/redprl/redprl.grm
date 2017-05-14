@@ -73,7 +73,7 @@ end
  | FUN_APP
 
  | DIM | EXN | LBL | LVL | HYP
- | EXP | TAC
+ | EXP | TAC | TRIV
 
  | CMD_PRINT | CMD_EXTRACT
  | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
@@ -213,6 +213,7 @@ psort
 sort
   : EXP (O.EXP)
   | TAC (O.TAC)
+  | TRIV (O.TRIV)
 
 sorts
   : sort ([sort])
@@ -420,8 +421,10 @@ atomicRawTac
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
   | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
   | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
-  | HYP VARNAME  (Ast.$$ (O.POLY (O.RULE_HYP VARNAME), []))
-  | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM VARNAME), []))
+  | HYP VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, sort)), []))
+  | HYP VARNAME (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, O.EXP)), []))
+  | RULE_ELIM VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, sort)), []))
+  | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, O.EXP)), []))
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | APOSTROPHE term (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))

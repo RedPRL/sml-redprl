@@ -63,7 +63,7 @@ Thm Cap{i : dim}(#A) : [
   x : #A
   >> hcom{i; 0 ~> 0}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
-  elim a/type;
+  elim a/type:triv;
   auto
 ].
 
@@ -72,6 +72,6 @@ Thm Tube(#A) : [
   x : #A
   >> hcom{0; 0 ~> 1}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
-  elim a/type;
+  elim a/type:triv;
   auto
 ].

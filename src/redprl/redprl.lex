@@ -104,6 +104,7 @@ whitespace = [\ \t];
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
+"triv"             => (Tokens.TRIV (posTuple (size yytext)));
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
 
 "Print"            => (Tokens.CMD_PRINT (posTuple (size yytext)));

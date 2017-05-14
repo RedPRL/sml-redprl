@@ -76,8 +76,8 @@ struct
   struct
     val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
 
-    fun elim u =
-      O.POLY (O.RULE_ELIM u) $$ []
+    fun elim (u, tau) =
+      O.POLY (O.RULE_ELIM (u, tau)) $$ []
 
     fun all t =
       O.MONO O.MTAC_ALL $$ [([],[]) \ t]
@@ -223,20 +223,20 @@ struct
            <: env
      | O.POLY (O.DEV_BOOL_ELIM z) `$ [_ \ t1, _ \ t2] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [] (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [] (Tac.each [t1,t2]))
            <: env
      | O.POLY (O.DEV_S1_ELIM z) `$ [_ \ t1, ([v],_) \ t2] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(v, P.DIM)] (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2]))
            <: env
      | O.POLY (O.DEV_DFUN_ELIM z) `$ [_ \ t1, ([x,p],_) \ t2] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2]))
            <: env
 
      | O.POLY (O.DEV_DPROD_ELIM z) `$ [([x,y], _) \ t] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t]))
            <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
