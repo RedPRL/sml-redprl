@@ -6,8 +6,11 @@ sig
   type rule
   type hyp
   type opid
+  type param
+  type 'a bview
 
-  val Lemma : abt -> 'n -> Lcf.jdg Lcf.tactic
+  val Lemma : sign -> opid -> param list -> abt bview list -> rule
+  
   val Cut : catjdg -> rule
   val Elim : sign -> hyp -> rule
   val AutoStep : sign -> rule  

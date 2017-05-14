@@ -1,11 +1,10 @@
-Def Times(#A:exp; #B:exp) : exp = [
+Def Times(#A; #B) = [
   (x : #A) * #B
 ].
 
-Thm Times/Proj(#A:exp) : [
+Thm Times/Proj(#A) : [
   a/type : #A type 
   >> Times(bool; #A) -> #A
-  true
 ] by [
   {lam x. 
     unfold Times;

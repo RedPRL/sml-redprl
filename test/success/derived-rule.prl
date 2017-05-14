@@ -1,0 +1,61 @@
+// RedPRL supports user-defined derived rules. These work a lot like theorems, except that the user
+// provides a specification of subgoals which can be left "unsolved"; then, the user proves the main goal
+// in the usual way, except that the definition becomes complete when the remaining subgoals
+// are exactly those specified. (Theorems differ only in that they require *all* subgoals to be completed.)
+
+// Here's an example of a derived rule which has two premises.
+Rule MyRule : [
+  x : bool >> ff in bool;
+  x : bool >> tt in bool
+  ==> x : bool >> bool
+] by [
+  if x then 'ff else 'tt
+].
+
+// A derived rule can be applied using the built-in 'rule' rule. This checks whether
+// the main goal of the derived rule is compatible with the current goal, and then 
+// it replaces the current goal with the premises induced by the derived rule. The
+// hypothetical contexts are also unified together in the appropriate way (i.e. we 
+// do not require strict equality of contexts, but only compatibility).
+Thm MyCorollary : [ bool -> bool ] by [
+  {lam z. rule MyRule{z}; auto}; auto
+].
+
+Extract MyCorollary.
+
+Thm MyCorollary/Test : [ MyCorollary = lam([z]. if([_]. bool; z; ff; tt)) in bool -> bool ] by [
+  auto
+].
+
+Rule PiTypehood(#A; #B : [exp].exp) : [
+  #A = #A type;
+  [x:exp] | x : #A >> #B[x] = #B[x] type
+  ==> (x : #A) -> #B[x] type
+] by [
+  auto
+].
+
+Rule LambdaMembership(#A; #B : [exp].exp; #m : [exp].exp) : [
+  [x:exp] | x : #A >> #m[x] = #m[x] in #B[x];
+  #A = #A type
+  ==> lam([x].#m[x]) in (x : #A) -> #B[x]
+] by [
+  auto
+].
+
+Rule PiIntro(#A; #B : [exp].exp) : [
+  [x:exp] | x : #A >> #B[x];
+  #A = #A type
+  ==> (x:#A) -> #B[x]
+] by [
+  auto
+].
+
+Thm Test : [ bool -> bool] by [
+  fresh x <- rule PiIntro(bool; [x].bool);
+  [ if x then 'ff else 'tt ];
+  auto;
+  < id, id >
+].
+
+Extract Test.

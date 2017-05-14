@@ -22,13 +22,13 @@ struct
      | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.CEquiv.EvalGoal sign
      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.CEquiv.Refl
      | O.MONO O.RULE_AUTO_STEP $ _ => Rules.AutoStep sign
-     | O.POLY (O.RULE_HYP z) $ _ => Rules.Hyp.Project z
-     | O.POLY (O.RULE_ELIM z) $ _ => Rules.Elim sign z
+     | O.POLY (O.RULE_HYP (z, _)) $ _ => Rules.Hyp.Project z
+     | O.POLY (O.RULE_ELIM (z, _)) $ _ => Rules.Elim sign z
      | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Truth.Witness tm
      | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => Rules.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg)
-     | O.MONO (O.RULE_LEMMA _) $ [_ \ thm] => Rules.Lemma thm
+     | O.POLY (O.RULE_LEMMA (opid, ps, _)) $ args => Rules.Lemma sign opid (List.map #1 ps) args
      | O.POLY (O.RULE_UNFOLD opid) $ _ => Rules.Computation.Unfold sign opid
      | _ => raise E.error [E.% "Invalid rule", E.! rule]
 

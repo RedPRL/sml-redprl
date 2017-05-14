@@ -337,9 +337,9 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "DProd.EqType"
-        val H >> CJ.EQ_TYPE (dfun0, dfun1) = jdg
-        val Syn.DPROD (a0, x, b0x) = Syn.out dfun0
-        val Syn.DPROD (a1, y, b1y) = Syn.out dfun1
+        val H >> CJ.EQ_TYPE (dprod0, dprod1) = jdg
+        val Syn.DPROD (a0, x, b0x) = Syn.out dprod0
+        val Syn.DPROD (a1, y, b1y) = Syn.out dprod1
 
         val z = alpha 0
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
@@ -347,7 +347,7 @@ struct
         val b1z = substVar (ztm, y) b1y
 
         val (goal1, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a0, a1)
-        val (goal2, _) = makeGoal @@ ([],[]) || H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
+        val (goal2, _) = makeGoal @@ ([],[(x,O.EXP)]) || H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
       in
         T.empty >: goal1 >: goal2
           #> trivial
@@ -491,7 +491,7 @@ struct
         val b1z = substVar (ztm, y) b1y
 
         val (goal1, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a0, a1)
-        val (goal2, _) = makeGoal @@ ([],[]) || H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
+        val (goal2, _) = makeGoal @@ ([],[(z,O.EXP)]) || H @> (z, CJ.TRUE a0) >> CJ.EQ_TYPE (b0z, b1z)
       in
         T.empty >: goal1 >: goal2
           #> trivial
@@ -1267,14 +1267,105 @@ struct
         #> hole1 [] [hole2 [] []]
     end
 
-  fun Lemma thm alpha jdg =
-    let
-      val _ = RedPrlLog.trace "Lemma"
-      val Abt.$ (O.MONO (O.REFINE (true, _)), [_ \ goal, _ \ script, _ \ evd]) = Abt.out thm
-      val true = Abt.eq (RedPrlSequent.toAbt jdg, goal) 
-    in
-      T.empty #> evd
-    end
+
+  local
+    fun checkHyp H x jdg0 =
+      case Hyps.find H x of
+         SOME jdg => 
+           if CJ.eq (jdg, jdg0) then () else
+             raise E.error [E.% ("Hypothesis " ^ Sym.toString x ^ " did not match specification")]
+       | _ => raise E.error [E.% ("Could not find hypothesis " ^ Sym.toString x)]
+
+    fun checkMainGoal (specGoal, mainGoal) = 
+      let
+        val H >> jdg = mainGoal
+        val H0 >> jdg0 = specGoal
+      in
+        if CJ.eq (jdg, jdg0) then () else raise E.error [E.% "Conclusions of goal did not match specification"];
+        Hyps.foldl (fn (x, j, _) => checkHyp H x j) () H0
+      end
+
+    datatype diff =
+       DELETE of hyp
+     | UPDATE of hyp * catjdg
+     | INSERT of hyp * catjdg
+
+    val diffToString = 
+      fn DELETE x => "DELETE " ^ Sym.toString x
+       | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
+       | INSERT (x,_) => "INSERT " ^ Sym.toString x
+
+
+    fun applyDiff (delta : diff) (H : catjdg Hyps.telescope) : catjdg Hyps.telescope = 
+      case delta of 
+         DELETE x => Hyps.remove x H
+       | UPDATE (x, jdg) => Hyps.modify x (fn _ => jdg) H
+       | INSERT (x, jdg) => Hyps.snoc H x jdg
+
+    fun applyDiffs (delta : diff list) : catjdg Hyps.telescope -> catjdg Hyps.telescope =
+      List.foldl (fn (d, f) => applyDiff d o f) (fn H => H) delta
+
+    fun hypothesesDiff (H0, H1) : diff list =
+      let
+        val diff01 = 
+          Hyps.foldr
+            (fn (x, jdg0, delta) => 
+              case Hyps.find H1 x of 
+                  SOME jdg1 => if CJ.eq (jdg0, jdg1) then delta else UPDATE (x, jdg1) :: delta
+                | NONE => DELETE x :: delta) 
+            []
+            H0
+      in
+        Hyps.foldr
+          (fn (x, jdg1, delta) => 
+             case Hyps.find H0 x of 
+                SOME jdg0 => delta
+              | NONE => INSERT (x, jdg1) :: delta)
+          diff01
+          H1
+      end
+
+    fun instantiateSubgoal alpha H (subgoalSpec, mainGoalSpec) = 
+      let
+        val Lcf.|| ((syms, vars), H0 >> jdg0) = subgoalSpec
+
+        val nsyms = List.length syms
+        val nvars = List.length vars
+        
+        val freshSyms = List.tabulate (nsyms, fn i => alpha i)
+        val freshVars = List.tabulate (nvars, fn i => alpha (i + nsyms))
+
+        val syms' = ListPair.map (fn ((u,sigma), v) => (v, sigma)) (syms, freshSyms)
+        val vars' = ListPair.map (fn ((x, tau), y) => (y, tau)) (vars, freshVars)
+
+        val hypren = ListPair.foldl (fn ((x, _), y, rho) => Sym.Ctx.insert rho x y) Sym.Ctx.empty (vars, freshVars)
+        val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (syms, freshSyms)
+ 
+        val bs = (syms', vars')
+
+        val H1 >> jdg1 = mainGoalSpec
+        val delta = hypothesesDiff (H1, H0)
+        val H0' = applyDiffs delta H
+
+        val jdg' = H0' >> jdg0
+        val jdg'' = RedPrlSequent.map (substSymenv srho) (RedPrlSequent.relabel hypren jdg')
+      in
+        Lcf.|| (bs, jdg'')
+      end
+  in
+    fun Lemma sign opid params args alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Lemma"
+        val (mainGoalSpec, state as Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
+        val _ = checkMainGoal (mainGoalSpec, jdg)
+
+        val H >> _ = jdg
+        
+        val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha H (subgoalSpec, mainGoalSpec)) subgoals
+      in
+        Lcf.|> (subgoals', validation)
+      end
+  end
 
   local
     fun matchGoal f alpha jdg =

@@ -25,7 +25,5 @@ sig
 
   val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
 
-  val fromAbtUsingNames : (int -> sym) option -> abt -> abt jdg
-  val fromAbt : abt -> abt jdg
-  val toAbt : abt jdg -> abt
+  val relabel : hyp CJ.Tm.Sym.Ctx.dict -> abt jdg -> abt jdg
 end

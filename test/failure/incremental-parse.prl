@@ -3,14 +3,16 @@
 // last ones are just fine, and should be processed by RedPRL despite
 // the error in the middle.
 
-Thm foo : [ tt = tt : bool ] by [
+Thm Foo : [ tt = tt in bool ] by [
   auto
 ].
 
-Thm bar : [ tt = tt : bool ] by {
+Thm Bar : [ tt = tt in bool ] by {
   auto
 }.
 
-Thm baz : [ tt = tt : bool ] by [
+Thm Baz : [ tt = tt in bool ] by [
   auto
 ].
+
+Print Foo.

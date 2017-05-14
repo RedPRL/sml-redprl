@@ -4,11 +4,79 @@ struct
      EXP
    | TAC
    | MTAC
-   | THM of sort
    | JDG
    | TRIV
    | SEQ
+
+  datatype param_sort =
+     DIM
+   | EXN
+   | LBL
+   | OPID
+   | HYP of sort
+   | LVL
 end
+
+structure RedPrlParamData =
+struct
+  datatype 'a param_operator =
+     DIM0
+   | DIM1
+   | LVL_SUCC of 'a
+end
+
+structure RedPrlParamSort : ABT_SORT =
+struct
+  open RedPrlSortData RedPrlParamData
+
+  type t = param_sort
+  val eq : t * t -> bool = op=
+
+  val toString =
+    fn DIM => "dim"
+     | EXN => "exn"
+     | LBL => "lbl"
+     | OPID => "opid"
+     | HYP _ => "hyp"
+     | LVL => "lvl"
+end
+
+structure RedPrlParameter : ABT_PARAMETER =
+struct
+  open RedPrlSortData RedPrlParamData
+  type 'a t = 'a param_operator
+
+  fun map f =
+    fn DIM0 => DIM0
+     | DIM1 => DIM1
+     | LVL_SUCC a => LVL_SUCC (f a)
+
+  structure Sort = RedPrlParamSort
+
+  val arity =
+    fn DIM0 => (DIM0, DIM)
+     | DIM1 => (DIM1, DIM)
+     | LVL_SUCC a => (LVL_SUCC LVL, LVL)
+
+  fun eq f =
+    fn (DIM0, DIM0) => true
+     | (DIM1, DIM1) => true
+     | (LVL_SUCC a, LVL_SUCC b) => f (a, b)
+     | _ => false
+
+  fun toString f =
+    fn DIM0 => "dim0"
+     | DIM1 => "dim1"
+     | LVL_SUCC a => f a ^ "'"
+
+  fun join zer mul =
+    fn DIM0 => zer
+     | DIM1 => zer
+     | LVL_SUCC l => mul (l, zer)
+end
+
+structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
+
 
 structure RedPrlSort : ABT_SORT =
 struct
@@ -21,10 +89,8 @@ struct
     fn EXP => "exp"
      | TAC => "tac"
      | MTAC => "mtac"
-     | THM sort => "thm{" ^ toString sort ^ "}"
      | JDG => "jdg"
      | TRIV => "triv"
-     | SEQ => "seq"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -33,7 +99,7 @@ structure RedPrlOpData =
 struct
   open RedPrlSortData
   structure P = RedPrlParameterTerm
-  type psort = RedPrlParamData.param_sort
+  type psort = RedPrlSortData.param_sort
 
   datatype mono_operator =
      DFUN | LAM | AP
@@ -44,8 +110,6 @@ struct
    | AX
    | ID_TY | ID_ABS
 
-   | REFINE of bool * sort | EXTRACT of sort
-
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int | MTAC_REPEAT
@@ -54,15 +118,13 @@ struct
 
    (* primitive rules *)
    | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
-   | RULE_CUT | RULE_LEMMA of bool * sort
+   | RULE_CUT
 
    (* development calculus terms *)
    | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_DPROD_INTRO
    | DEV_LET
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
-
-   | SEQ_CONCL | SEQ_CONS of sort
 
   (* We end up having separate hcom operator for the different types. This
    * corresponds to the fact that there are two stages of computation for a kan
@@ -98,11 +160,12 @@ struct
    | HCOM of type_tag * 'a extents * 'a dir
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
+   | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | UNIV of 'a P.term
    | ID_AP of 'a P.term
    | HYP_REF of 'a
-   | RULE_HYP of 'a
-   | RULE_ELIM of 'a
+   | RULE_HYP of 'a * sort
+   | RULE_ELIM of 'a * sort
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
@@ -153,9 +216,6 @@ struct
      | AX => [] ->> TRIV
      | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
-     | REFINE (true, tau) => [[] * [] <> SEQ, [] * [] <> TAC, [] * [] <> tau] ->> THM tau
-     | REFINE (false, tau) => [[] * [] <> SEQ, [] * [] <> TAC] ->> THM tau
-     | EXTRACT tau => [[] * [] <> THM tau] ->> tau
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
      | MTAC_REC => [[] * [MTAC] <> MTAC] ->> MTAC
@@ -169,14 +229,13 @@ struct
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
-     | RULE_LEMMA (_, tau) => [[] * [] <> THM tau] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
 
-     | DEV_FUN_INTRO => [[HYP] * [] <> TAC] ->> TAC
+     | DEV_FUN_INTRO => [[HYP EXP] * [] <> TAC] ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
      | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
-     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
+     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP EXP] * [] <> TAC] ->> TAC
 
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
      | MTAC_EACH n =>
@@ -194,9 +253,6 @@ struct
      | JDG_TYPE => [[] * [] <> EXP] ->> JDG
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
-
-     | SEQ_CONCL => [[] * [] <> JDG] ->> SEQ
-     | SEQ_CONS tau => [[] * [] <> JDG, [] * [tau] <> SEQ] ->> SEQ
 
   local
     val typeArgsForTag =
@@ -234,16 +290,17 @@ struct
        | HCOM hcom => arityHcom hcom
        | COE coe => arityCoe coe
        | CUST (_, _, ar) => Option.valOf ar
+       | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
        | UNIV lvl => [] ->> EXP
        | ID_AP r => [[] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
-       | RULE_HYP a => [] ->> TAC
-       | RULE_ELIM a => [] ->> TAC
+       | RULE_HYP _ => [] ->> TAC
+       | RULE_ELIM _ => [] ->> TAC
        | RULE_UNFOLD a => [] ->> TAC
        | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
-       | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
-       | DEV_DPROD_ELIM a => [[HYP,HYP] * [] <> TAC] ->> TAC
+       | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
+       | DEV_DPROD_ELIM a => [[HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -277,16 +334,17 @@ struct
              @ spanSupport dir
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
+       | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | UNIV lvl => lvlSupport lvl
        | ID_AP r => dimSupport r
-       | HYP_REF a => [(a, HYP)]
-       | RULE_HYP a => [(a, HYP)]
-       | RULE_ELIM a => [(a, HYP)]
+       | HYP_REF a => [(a, HYP EXP)]
+       | RULE_HYP (a, tau) => [(a, HYP tau)]
+       | RULE_ELIM (a, tau) => [(a, HYP tau)]
        | RULE_UNFOLD a => [(a, OPID)]
-       | DEV_BOOL_ELIM a => [(a, HYP)]
-       | DEV_S1_ELIM a => [(a, HYP)]
-       | DEV_DFUN_ELIM a => [(a, HYP)]
-       | DEV_DPROD_ELIM a => [(a, HYP)]
+       | DEV_BOOL_ELIM a => [(a, HYP EXP)]
+       | DEV_S1_ELIM a => [(a, HYP EXP)]
+       | DEV_DFUN_ELIM a => [(a, HYP EXP)]
+       | DEV_DPROD_ELIM a => [(a, HYP EXP)]
   end
 
   val support =
@@ -313,11 +371,13 @@ struct
            tag1 = tag2 andalso spanEq f (sp1, sp2)
        | (CUST (opid1, ps1, _), CUST (opid2, ps2, _)) =>
            f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+       | (RULE_LEMMA (opid1, ps1, _), RULE_LEMMA (opid2, ps2, _)) =>
+           f (opid1, opid2) andalso paramsEq f (ps1, ps2)
        | (HYP_REF a, HYP_REF b) =>
            f (a, b)
-       | (RULE_HYP a, RULE_HYP b) =>
+       | (RULE_HYP (a, _), RULE_HYP (b, _)) =>
            f (a, b)
-       | (RULE_ELIM a, RULE_ELIM b) =>
+       | (RULE_ELIM (a, _), RULE_ELIM (b, _)) =>
            f (a, b)
        | (RULE_UNFOLD a, RULE_UNFOLD b) => 
            f (a, b)
@@ -357,8 +417,6 @@ struct
      | AX => "ax"
      | ID_TY => "paths"
      | ID_ABS => "abs"
-     | REFINE _ => "refine"
-     | EXTRACT _ => "extract"
      | MTAC_SEQ _ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
@@ -372,7 +430,6 @@ struct
      | RULE_WITNESS => "witness"
      | RULE_HEAD_EXP => "head-expand"
      | RULE_CUT => "cut"
-     | RULE_LEMMA _ => "lemma"
      | RULE_EVAL_GOAL => "eval-goal"
      | RULE_CEQUIV_REFL => "ceq/refl"
      | DEV_PATH_INTRO => "path-intro"
@@ -389,8 +446,6 @@ struct
      | JDG_EQ_TYPE => "eq-type"
      | JDG_TYPE => "type"
      | JDG_SYNTH => "synth"
-     | SEQ_CONCL => "seq-concl"
-     | SEQ_CONS _ => "seq-cons"
 
   local
     fun spanToString f (r, r') =
@@ -428,11 +483,13 @@ struct
              ^ "]"
        | CUST (opid, ps, ar) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
+       | RULE_LEMMA (opid, ps, ar) =>
+           "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
        | ID_AP r => "idap{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
-       | RULE_HYP a => "hyp{" ^ f a ^ "}"
-       | RULE_ELIM a => "elim{" ^ f a ^ "}"
+       | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
+       | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
@@ -475,11 +532,12 @@ struct
        | HCOM (tag, extents, dir) => HCOM (tag, mapExtents f extents, mapSpan f dir)
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
+       | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
        | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | ID_AP r => ID_AP (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
-       | RULE_HYP a => RULE_HYP (mapSym f a)
-       | RULE_ELIM a => RULE_ELIM (mapSym f a)
+       | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
+       | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym f a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym f a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)

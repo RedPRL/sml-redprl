@@ -7,16 +7,17 @@ open Ast
 structure P =
 struct
   open RedPrlParamData
+  open RedPrlSortData
   open RedPrlParameterTerm
 end
 
 structure O = RedPrlOpData
+structure CJ = RedPrlCategoricalJudgment
 
 structure Tac =
 struct
   type binding = (string * P.param_sort) list * ast
   infix $$ $ \
-
 
   fun makeSeq mt (us : (string * P.param_sort) list) mt' =
     let
@@ -35,30 +36,6 @@ struct
     multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
 end
 
-structure JdgAst =
-struct
-  (* This essentially duplicates the logic of CJ.synthesis, but I
-     can't see any good way to combine them, since this is needed
-     in the parser, before we can convert to redprl_jdg (via abt). *)
-  fun synthesis ast =
-    case Ast.out ast of
-       $ (O.MONO O.JDG_EQ, _) => O.TRIV
-     | $ (O.MONO O.JDG_MEM, _) => O.TRIV
-     | $ (O.MONO O.JDG_TRUE, _) => O.EXP
-     | $ (O.MONO O.JDG_EQ_TYPE, _) => O.TRIV
-     | $ (O.MONO O.JDG_TYPE, _) => O.TRIV
-     | $ (O.MONO O.JDG_SYNTH, _) => O.EXP
-     | $ (O.MONO O.JDG_CEQ, _) => O.TRIV
-     | _ => raise Fail "Bad judgement AST"
-
-  fun buildSequent acc [] = acc
-    | buildSequent acc ((x,jdg) :: hyps) =
-      let
-        val tau = synthesis jdg
-      in
-        buildSequent (Ast.$$ (O.MONO (O.SEQ_CONS tau), [\ (([],[]), jdg), \ (([], [x]), acc)])) hyps
-      end
-end
 
 %%
 %header (functor RedPrlLrValsFun (structure Token : TOKEN))
@@ -84,7 +61,8 @@ end
  | LAMBDA
  | SQUIGGLE
  | SQUIGGLE_ARROW
- | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW
+ | FRESH
+ | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
  | TIMES
  | DOUBLE_RANGLE
@@ -95,14 +73,14 @@ end
  | FUN_APP
 
  | DIM | EXN | LBL | LVL | HYP
- | EXP | TAC
+ | EXP | TAC | TRIV
 
  | CMD_PRINT | CMD_EXTRACT
- | DCL_DEF | DCL_TAC | DCL_THM
+ | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
  | BY | IN
 
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO
- | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_HYP | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_UNFOLD
+ | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_UNFOLD
 
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
@@ -137,7 +115,7 @@ end
  | boundVar of string
 
    (* abt abstractions *)
- | binder of symbol list * symbol list
+ | binder of string list * string list
  | binding of ast abs
  | bindings of ast abs list
 
@@ -163,20 +141,30 @@ end
  | bindingSig of P.param_sort list * O.sort list
  | valence of Ar.valence
 
+ | symBinding of string * P.param_sort
+ | symBindings of (string * P.param_sort) list
+ | varBinding of string * O.sort
+ | varBindings of (string * O.sort) list
+ | annotatedBinder of (string * P.param_sort) list * (string * O.sort) list
+
+
  | rawJudgment of ast
  | judgment of ast
 
- | seqHyp of string * ast
- | seqHyps of (string * ast) list
-
- | rawSequent of ast
- | sequent of ast
+ | src_catjdg of Signature.src_catjdg
+ | src_seqhyp of Signature.src_seqhyp
+ | src_seqhyps of Signature.src_seqhyp list
+ | src_sequent of Signature.src_sequent
+ | src_genjdg of Signature.src_genjdg
+ | src_rulePremises of Signature.src_genjdg list
+ | src_ruleConcl of Signature.src_sequent
+ | src_rulespec of Signature.src_rulespec
 
  | rawTactic of ast
  | tactic of ast
  | tactics of ast list
+ | hypBinding of string * P.param_sort
  | hypBindings of (string * P.param_sort) list
- | multiHypBindings of (string * P.param_sort) list
  | atomicRawMultitac of ast
  | atomicMultitac of ast
  | rawMultitac of ast
@@ -220,21 +208,22 @@ psort
   | EXN (P.EXN)
   | LBL (P.LBL)
   | LVL (P.LVL)
-  | HYP (P.HYP)
+  | HYP (P.HYP O.EXP)
 
 sort
   : EXP (O.EXP)
   | TAC (O.TAC)
+  | TRIV (O.TRIV)
 
 sorts
-  : ([])
-  | sort ([sort])
+  : sort ([sort])
   | sort COMMA sorts (sort :: sorts)
+  | ([])
 
 psorts
-  : ([])
-  | psort ([psort])
+  : psort ([psort])
   | psort COMMA psorts (psort :: psorts)
+  | ([])
 
 bindingSig
   : LBRACKET psorts RBRACKET LSQUARE sorts RSQUARE DOT (psorts, sorts)
@@ -251,9 +240,9 @@ param
   | param APOSTROPHE (P.APP (P.LVL_SUCC param))
 
 params
-  : ([])
-  | param ([param])
+  : param ([param])
   | param COMMA params (param :: params)
+  | ([])
 
 extents
   : param ([param])
@@ -264,15 +253,15 @@ boundVar
   | UNDER ("_")
 
 symbols
-  : ([])
-  | boundVar ([boundVar])
+  : boundVar ([boundVar])
   | boundVar COMMA symbols (boundVar :: symbols)
+  | ([])
 
 terms
-  : ([])
-  | term ([term])
+  : term ([term])
   | term COMMA terms (term :: terms)
   | PERCENT LBRACKET tactic RBRACKET COMMA terms (tactic :: terms)
+  | ([])
 
 binder
   : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT (symbols1, symbols2)
@@ -285,9 +274,9 @@ binding
   | binder PERCENT LBRACKET tactic RBRACKET (\ (binder, tactic))
 
 bindings
-  : ([])
-  | binding ([binding])
+  : binding ([binding])
   | binding SEMI bindings (binding :: bindings)
+  | ([])
 
 metavarArgs
   : LBRACKET params RBRACKET LSQUARE terms RSQUARE (params, terms)
@@ -300,6 +289,7 @@ operator
   | HCOM LBRACKET extents SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
   | OPNAME customOpParams (O.POLY (O.CUST (OPNAME, customOpParams, NONE)))
+  | RULE_LEMMA OPNAME customOpParams (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams, NONE)))
   | IF (O.MONO O.IF)
   | S_IF (O.MONO O.S_IF)
   | PATHS (O.MONO O.ID_TY)
@@ -321,6 +311,7 @@ term : rawTerm %prec FUN_APP (annotate (Pos.pos (rawTerm1left fileName) (rawTerm
 atomicRawTerm
   : LPAREN term RPAREN (term)
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | operator (Ast.$$ (operator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
   | VARNAME (`` VARNAME)
@@ -359,24 +350,70 @@ rawJudgment
   | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term EQUALS term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
   | term IN term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
+  | term (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
-seqHyp
-  : VARNAME COLON judgment ((VARNAME, judgment))
-  | UNDER COLON judgment (("_", judgment))
-  | judgment (("_", judgment))
+symBinding
+  : boundVar COLON psort (boundVar, psort)
 
-seqHyps
-  : ([])
-  | seqHyp ([seqHyp])
-  | seqHyp COMMA seqHyps (seqHyp :: seqHyps)
+symBindings
+  : symBinding ([symBinding])
+  | symBinding COMMA symBindings (symBinding :: symBindings)
+  | ([])
 
-rawSequent
-  : judgment (Ast.$$ (O.MONO O.SEQ_CONCL, [\ (([],[]), judgment)]))
-  | seqHyps DOUBLE_RANGLE judgment (JdgAst.buildSequent (Ast.$$ (O.MONO O.SEQ_CONCL, [\ (([],[]), judgment)])) (List.rev seqHyps))
+varBinding
+  : boundVar COLON sort (boundVar, sort)
 
-sequent : rawSequent (annotate (Pos.pos (rawSequent1left fileName) (rawSequent1right fileName)) rawSequent)
+varBindings
+  : varBinding ([varBinding])
+  | varBinding COMMA varBindings (varBinding :: varBindings)
+  | ([])
+
+annotatedBinder
+  : LBRACKET symBindings RBRACKET LSQUARE varBindings RSQUARE (symBindings, varBindings)
+  | LSQUARE varBindings RSQUARE ([], varBindings)
+  | LBRACKET symBindings RBRACKET RSQUARE (symBindings, [])
+
+
+src_catjdg
+  : term JDG_TRUE (CJ.TRUE term)
+  | term EQUALS term JDG_TYPE (CJ.EQ_TYPE (term1, term1))
+  | term JDG_TYPE (CJ.TYPE term)
+  | term JDG_SYNTH (CJ.SYNTH term)
+  | term SQUIGGLE term (CJ.CEQUIV (term1, term2))
+  | term EQUALS term IN term (CJ.EQ ((term1, term2), term3))
+  | term IN term (CJ.MEM (term1, term2))
+  | term (CJ.TRUE term)
+
+src_seqhyp
+  : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))
+  | UNDER COLON src_catjdg (("_", src_catjdg))
+  | src_catjdg (("_", src_catjdg))
+
+src_seqhyps
+  : src_seqhyp ([src_seqhyp])
+  | src_seqhyp COMMA src_seqhyps (src_seqhyp :: src_seqhyps)
+  | ([])
+
+src_sequent
+  : src_catjdg ([], src_catjdg)
+  | src_seqhyps DOUBLE_RANGLE src_catjdg (src_seqhyps, src_catjdg)
+
+src_genjdg
+  : src_sequent (([],[]), src_sequent)
+  | annotatedBinder PIPE src_sequent (annotatedBinder, src_sequent)
+
+src_ruleConcl 
+  : src_sequent (src_sequent)
+
+src_rulePremises
+  : src_genjdg ([src_genjdg])
+  | src_genjdg SEMI src_rulePremises (src_genjdg :: src_rulePremises)
+  | ([])
+
+src_rulespec
+  : src_rulePremises LONG_RIGHT_ARROW src_ruleConcl (src_rulePremises, src_ruleConcl)
 
 atomicRawTac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
@@ -384,12 +421,13 @@ atomicRawTac
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
   | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
   | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
-  | RULE_HYP VARNAME  (Ast.$$ (O.POLY (O.RULE_HYP VARNAME), []))
-  | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM VARNAME), []))
+  | HYP VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, sort)), []))
+  | HYP VARNAME (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, O.EXP)), []))
+  | RULE_ELIM VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, sort)), []))
+  | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, O.EXP)), []))
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | APOSTROPHE term (Ast.$$ (O.MONO O.RULE_WITNESS, [\ (([],[]), term)]))
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
-  | RULE_LEMMA term COLON sort (Ast.$$ (O.MONO (O.RULE_LEMMA (false, sort)), [\ (([],[]), term)]))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
@@ -411,6 +449,7 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | operator (Ast.$$ (operator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | VARNAME (`` VARNAME)
 
@@ -424,7 +463,7 @@ atomicRawMultitac
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
   | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
   | LBRACKET multitac RBRACKET (multitac)
-  | hypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
+  | FRESH hypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
   | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
 
@@ -437,13 +476,14 @@ rawMultitac
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
-multiHypBindings
-  : VARNAME ([(VARNAME, P.HYP)])
-  | VARNAME COMMA hypBindings ((VARNAME, P.HYP) :: hypBindings)
+hypBinding
+  : VARNAME COLON psort (VARNAME, psort)
+  | VARNAME (VARNAME, P.HYP O.EXP)
 
 hypBindings
-  : VARNAME ([(VARNAME, P.HYP)])
-  | LBRACKET multiHypBindings RBRACKET (multiHypBindings)
+  : hypBinding ([hypBinding])
+  | hypBinding COMMA hypBindings %prec COMMA (hypBinding :: hypBindings)
+  | ([])
 
 rawTactic
   : multitac %prec SEMI (Tac.multitacToTac multitac)
@@ -457,11 +497,12 @@ tactics
 
 declArgument
   : metavar COLON valence ((metavar, valence))
+  | metavar ((metavar, (([],[]), O.EXP)))
 
 declArguments
-  : ([])
-  | declArgument ([declArgument])
+  : declArgument ([declArgument])
   | declArgument SEMI declArguments (declArgument :: declArguments)
+  | ([])
 
 declArgumentsParens
   : LPAREN declArguments RPAREN (declArguments)
@@ -471,9 +512,9 @@ declParam
   : VARNAME COLON psort (VARNAME, psort)
 
 declParams
-  : ([])
-  | declParam ([declParam])
+  : declParam ([declParam])
   | declParam COMMA declParams (declParam :: declParams)
+  | ([])
 
 declParamsBrackets
   : LBRACKET declParams RBRACKET (declParams)
@@ -482,10 +523,14 @@ declParamsBrackets
 rawDecl
   : DCL_DEF OPNAME declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
       (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
+  | DCL_DEF OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE term RSQUARE
+      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = O.EXP})
   | DCL_TAC OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
       (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
-  | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE sequent RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = sequent, script = tactic})
+  | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_sequent RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = src_sequent, script = tactic})
+  | DCL_RULE OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_rulespec RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.RULE {arguments = declArgumentsParens, params = declParamsBrackets, spec = src_rulespec, script = tactic})
 
 decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))
 

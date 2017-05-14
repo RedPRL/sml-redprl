@@ -1,4 +1,6 @@
-Thm PrimitiveSequencingTest : [bool -> bool -> bool true] by [
-  {x,y} <- auto;
+Thm PrimitiveSequencingTest : [bool -> bool -> bool -> bool] by [
+  fresh x,y,z <- auto;
   hyp y
 ].
+
+Extract PrimitiveSequencingTest.

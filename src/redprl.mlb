@@ -19,7 +19,6 @@ local
 
   debug.mlb
 
-  redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml
   redprl/error.sig
@@ -38,9 +37,11 @@ local
 
   redprl/elab_monad.sig
   redprl/elab_monad.sml
-
+  
+  redprl/lcf.sml
 
   redprl/signature.sig
+  redprl/signature_mini.sml
 
   redprl/log.sig
   redprl/log.sml

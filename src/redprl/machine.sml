@@ -2,7 +2,7 @@ functor RedPrlMachineBasis (Sig : MINI_SIGNATURE) : ABT_MACHINE_BASIS =
 struct
   structure Cl = AbtClosureUtil (AbtClosure (RedPrlAbt))
   structure S = AbtMachineState (Cl)
-  structure P = struct open RedPrlParamData RedPrlParameterTerm end
+  structure P = struct open RedPrlSortData RedPrlParamData RedPrlParameterTerm end
   structure Syn = Syntax
   type sign = Sig.sign
 
@@ -72,21 +72,12 @@ struct
 
   structure SymEnvUtil = ContextUtil (structure Ctx = Sym.Ctx and Elem = ParamElem)
 
-  fun unifyCustomOperator (entry : Sig.entry) (ps : param list) (es : abt bview list) : metaenv * symenv =
-    let
-      val {params, arguments, ...} = entry
-      val srho = ListPair.foldl (fn ((u,_), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
-      val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
-    in
-      (mrho, srho)
-    end
-
   structure Tac =
   struct
     val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
 
-    fun elim u =
-      O.POLY (O.RULE_ELIM u) $$ []
+    fun elim (u, tau) =
+      O.POLY (O.RULE_ELIM (u, tau)) $$ []
 
     fun all t =
       O.MONO O.MTAC_ALL $$ [([],[]) \ t]
@@ -181,12 +172,6 @@ struct
 
      | O.MONO O.AX `$ _ <: _ => S.VAL
 
-     | O.MONO (O.REFINE _) `$ _ <: _ => S.VAL
-     | O.MONO (O.EXTRACT tau) `$ [_ \ thm] <: env =>
-         S.CUT
-           @@ (O.MONO (O.EXTRACT tau) `$ [([],[]) \ S.HOLE], thm)
-           <: env
-
      | O.MONO (O.MTAC_SEQ _) `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_ORELSE `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_REC `$ _ <: _ => S.VAL
@@ -218,19 +203,15 @@ struct
      | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
      | O.MONO O.RULE_CUT `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_UNFOLD _) `$ _ <: _ => S.VAL
-     | O.MONO (O.RULE_LEMMA (true, tau)) `$ _ <: _ => S.VAL
-     | O.MONO (O.RULE_LEMMA (false, tau)) `$ [_ \ thm] <: env =>
-         S.CUT
-           @@ (O.MONO (O.RULE_LEMMA (false, tau)) `$ [([],[]) \ S.HOLE], thm)
-           <: env
-
+     | O.POLY (O.RULE_LEMMA _) `$ _ <: _ => S.VAL
+     
      | O.MONO O.DEV_LET `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
          S.STEP
-          @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP)] (Tac.each [tac2,tac1]))
+          @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP O.EXP)] (Tac.each [tac2,tac1]))
           <: env
      | O.MONO O.DEV_FUN_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP)] (Tac.each [t]))
+           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t]))
            <: env
      | O.MONO O.DEV_DPROD_INTRO `$ [_ \ t1, _ \ t2] <: env =>
          S.STEP
@@ -242,20 +223,20 @@ struct
            <: env
      | O.POLY (O.DEV_BOOL_ELIM z) `$ [_ \ t1, _ \ t2] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [] (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [] (Tac.each [t1,t2]))
            <: env
      | O.POLY (O.DEV_S1_ELIM z) `$ [_ \ t1, ([v],_) \ t2] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(v, P.DIM)] (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2]))
            <: env
      | O.POLY (O.DEV_DFUN_ELIM z) `$ [_ \ t1, ([x,p],_) \ t2] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (p, P.HYP)] (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2]))
            <: env
 
      | O.POLY (O.DEV_DPROD_ELIM z) `$ [([x,y], _) \ t] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (y, P.HYP)] (Tac.each [t]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t]))
            <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
@@ -274,12 +255,15 @@ struct
 
      | (cust as O.POLY (O.CUST (opid, ps, ar))) `$ args <: env =>
          let
-           val entry as {definiens,...} = Sig.lookup sign opid
-           val (mrho, srho) = unifyCustomOperator entry (List.map #1 ps) args
-           val definiens' = substMetaenv mrho definiens
+           val entry as {state,...} = Sig.lookup sign opid
+           val Lcf.|> (subgoals, evidence) = state
+           val term = Sig.extract state
+           val _ = if Lcf.Tl.isEmpty subgoals then () else raise Fail "custom operator not yet fully defined!"
+           val (mrho, srho) = Sig.unifyCustomOperator entry (List.map #1 ps) args
+           val term' = substMetaenv mrho term
            val env' = {params = SymEnvUtil.union (#params env, srho), terms = #terms env}
          in
-           S.STEP @@ definiens' <: env'
+           S.STEP @@ term' <: env'
          end
 
      | (hcom as O.POLY (O.HCOM (O.TAG_NONE, exts, dir))) `$ (_ \ ty) :: cap :: tubes <: env =>
@@ -373,9 +357,6 @@ struct
      | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => m <: env
      | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => n <: env
 
-     | (O.MONO (O.EXTRACT _) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, _)) `$ [_, _, _ \ m] <: env) => m <: env
-     | (O.MONO (O.RULE_LEMMA (_, tau)) `$ [_ \ S.HOLE], _ \ O.MONO (O.REFINE (true, tau')) `$ [goal, script, evd] <: env) =>
-         O.MONO (O.RULE_LEMMA (true, tau)) $$ [([],[]) \ O.MONO (O.REFINE (true, tau')) $$ [goal, script, evd]] <: env
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>

@@ -25,7 +25,6 @@ is
 
   debug.cm
 
-  redprl/parameter.sml
   redprl/operator.sml
   redprl/abt.sml
   redprl/syntax.sml
@@ -50,6 +49,8 @@ is
   redprl/log.sml
 
   redprl/signature.sig
+  redprl/signature_mini.sml
+
   redprl/signature.sml
 
   redprl/redprl.lex
@@ -63,6 +64,7 @@ is
   redprl/refiner_kit.fun
   redprl/refiner.sig
   redprl/refiner.fun
+  redprl/lcf.sml
   redprl/lcf_syntax.fun
   redprl/lcf_model.fun
 

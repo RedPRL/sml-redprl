@@ -40,8 +40,29 @@ struct
              andalso CJ.eq (catjdg1, catjdg2)
              andalso telescopeEq (t1', t2')
        | _ => false
-
   end
+
+  val renameHypsInTerm =
+    Tm.substSymenv o Tm.Sym.Ctx.map Tm.O.P.VAR
+
+  fun relabelHyp (u, v) H =
+    let
+      val jdg = Hyps.lookup H u
+      val H' = Hyps.interposeAfter H u (Hyps.singleton v jdg)
+    in
+      Hyps.remove u H'
+    end
+    handle _ => H
+
+  fun relabelHyps H srho = 
+    Tm.Sym.Ctx.foldl 
+      (fn (x, y, H) => relabelHyp (x, y) H)
+      H
+      srho
+
+  fun relabel srho = 
+    fn H >> catjdg => relabelHyps H srho >> CJ.map (renameHypsInTerm srho) catjdg
+     | jdg => map (renameHypsInTerm srho) jdg
 
   val rec eq =
     fn (H1 >> catjdg1, H2 >> catjdg2) =>
@@ -67,42 +88,4 @@ struct
   end
 
   fun toString f = PP.toString 80 true o pretty f
-
-  local
-    open Tm
-    structure O = RedPrlOpData
-    infix $ $$ \
-
-    fun tail alpha n = alpha (n + 1)
-
-    fun fromAbt' (names : (int -> sym) option) (acc : abt CJ.jdg ctx) (seq : abt) : abt jdg =
-      case Tm.out seq of
-         O.MONO O.SEQ_CONCL $ [_ \ j] => acc >> CJ.fromAbt j
-       | O.MONO (O.SEQ_CONS tau) $ [([], []) \ h, ([], [x]) \ seq] =>
-         (case names of
-             NONE => fromAbt' NONE (Hyps.snoc acc x (CJ.fromAbt h)) seq
-           | SOME alpha => 
-             let
-               val x' = alpha 0
-               val seq' = substSymbol (RedPrlParameterTerm.VAR x', x) seq
-             in
-               fromAbt' NONE (Hyps.snoc acc x' (CJ.fromAbt h)) seq'
-             end)
-       | _ => raise Fail "Unrecognized sequent abt"
-  in
-    fun fromAbtUsingNames (names : (int -> sym) option) (seq : abt) : abt jdg = fromAbt' names Hyps.empty seq
-    val fromAbt = fromAbtUsingNames NONE
-
-    local
-      open Hyps.ConsView
-      fun go H concl = 
-        case out H of
-           EMPTY => O.MONO O.SEQ_CONCL $$ [([],[]) \ CJ.toAbt concl]
-         | CONS (x, jdg, H') => O.MONO (O.SEQ_CONS (CJ.synthesis jdg)) $$ [([],[]) \ CJ.toAbt jdg, ([],[x]) \ go H' concl]
-    in
-      fun toAbt (H >> jdg : abt jdg) : abt = 
-        go H jdg 
-    end
-  end
-
 end

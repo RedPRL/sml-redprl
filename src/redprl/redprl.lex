@@ -63,6 +63,7 @@ whitespace = [\ \t];
 "~>"               => (Tokens.SQUIGGLE_ARROW (posTuple (size yytext)));
 "->"               => (Tokens.RIGHT_ARROW (posTuple (size yytext)));
 "=>"               => (Tokens.DOUBLE_RIGHT_ARROW (posTuple (size yytext)));
+"==>"              => (Tokens.LONG_RIGHT_ARROW (posTuple (size yytext)));
 "<-"               => (Tokens.LEFT_ARROW (posTuple (size yytext)));
 "`"                => (Tokens.BACK_TICK (posTuple (size yytext)));
 "*"                => (Tokens.TIMES (posTuple (size yytext)));
@@ -103,6 +104,7 @@ whitespace = [\ \t];
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
+"triv"             => (Tokens.TRIV (posTuple (size yytext)));
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
 
 "Print"            => (Tokens.CMD_PRINT (posTuple (size yytext)));
@@ -110,8 +112,11 @@ whitespace = [\ \t];
 "Def"              => (Tokens.DCL_DEF (posTuple (size yytext)));
 "Tac"              => (Tokens.DCL_TAC (posTuple (size yytext)));
 "Thm"              => (Tokens.DCL_THM (posTuple (size yytext)));
+"Rule"             => (Tokens.DCL_RULE (posTuple (size yytext)));
 "by"               => (Tokens.BY (posTuple (size yytext)));
 "in"               => (Tokens.IN (posTuple (size yytext)));
+
+"fresh"            => (Tokens.FRESH (posTuple (size yytext)));
 
 "rec"              => (Tokens.MTAC_REC (posTuple (size yytext)));
 "repeat"           => (Tokens.MTAC_REPEAT (posTuple (size yytext)));
@@ -122,11 +127,12 @@ whitespace = [\ \t];
 "symmetry"         => (Tokens.RULE_SYMMETRY (posTuple (size yytext)));
 "auto-step"        => (Tokens.RULE_AUTO_STEP (posTuple (size yytext)));
 "auto"             => (Tokens.MTAC_AUTO (posTuple (size yytext)));
-"hyp"              => (Tokens.RULE_HYP (posTuple (size yytext)));
+"hyp"              => (Tokens.HYP (posTuple (size yytext)));
 "elim"             => (Tokens.RULE_ELIM (posTuple (size yytext)));
 "head-expand"      => (Tokens.RULE_HEAD_EXP (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
 "lemma"            => (Tokens.RULE_LEMMA (posTuple (size yytext)));
+"rule"             => (Tokens.RULE_LEMMA (posTuple (size yytext)));
 
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
 "type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));
