@@ -94,11 +94,11 @@ struct
       let
         fun handleHyp ((u, psort), ptm, ctx) = 
           case psort of 
-            RedPrlParamData.HYP =>
+            RedPrlSortData.HYP tau =>
               let
                 val RedPrlParameterTerm.VAR v = ptm
               in
-                Var.Ctx.insert ctx u (Tm.check (Tm.`v, RedPrlOpData.EXP))
+                Var.Ctx.insert ctx u (Tm.check (Tm.`v, tau))
               end
           | _ => ctx
       in
@@ -117,7 +117,7 @@ struct
       let
         fun handleHyp ((u, psort), ptm, H) =
           case psort of 
-             RedPrlParamData.HYP =>
+             RedPrlSortData.HYP _ =>
                let
                  val RedPrlParameterTerm.VAR v = ptm
                in

@@ -7,6 +7,7 @@ open Ast
 structure P =
 struct
   open RedPrlParamData
+  open RedPrlSortData
   open RedPrlParameterTerm
 end
 
@@ -207,7 +208,7 @@ psort
   | EXN (P.EXN)
   | LBL (P.LBL)
   | LVL (P.LVL)
-  | HYP (P.HYP)
+  | HYP (P.HYP O.EXP)
 
 sort
   : EXP (O.EXP)
@@ -474,7 +475,7 @@ multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultit
 
 hypBinding
   : VARNAME COLON psort (VARNAME, psort)
-  | VARNAME (VARNAME, P.HYP)
+  | VARNAME (VARNAME, P.HYP O.EXP)
 
 hypBindings
   : hypBinding ([hypBinding])

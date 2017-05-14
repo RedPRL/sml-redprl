@@ -1,7 +1,7 @@
 structure Signature :> SIGNATURE =
 struct
   structure Tm = RedPrlAbt
-  structure P = RedPrlParamData
+  structure P = struct open RedPrlSortData RedPrlParamData end
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
   open ElabNotation infix >>= *> <*
@@ -304,12 +304,12 @@ struct
       CJ.map (elabAst (metactx, env))
       (* TODO check scoping *)
 
-    fun addHypName (env, symctx, varctx) srcname = 
+    fun addHypName (env, symctx, varctx) (srcname, tau) = 
       let
         val x = NameEnv.lookup env srcname handle _ => Sym.named srcname
         val env' = NameEnv.insert env srcname x
-        val symctx' = Sym.Ctx.insert symctx x RedPrlParamData.HYP
-        val varctx' = Sym.Ctx.insert varctx x RedPrlOpData.EXP
+        val symctx' = Sym.Ctx.insert symctx x (RedPrlSortData.HYP tau)
+        val varctx' = Sym.Ctx.insert varctx x tau
       in
         (env', symctx', varctx', x)
       end
@@ -336,7 +336,8 @@ struct
     fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * abt CJ.jdg = 
       let
         val catjdg = elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg
-        val (env', symctx', varctx', x) = addHypName (env, symctx, varctx) srcname
+        val tau = CJ.synthesis catjdg
+        val (env', symctx', varctx', x) = addHypName (env, symctx, varctx) (srcname, tau)
       in
         (symctx', varctx', env', x, catjdg)
       end
@@ -454,7 +455,7 @@ struct
               val (params'', symctx', env') = 
                 Hyps.foldr
                   (fn (x, jdg, (ps, ctx, env)) => 
-                    ((x, RedPrlParamData.HYP) :: ps, Tm.Sym.Ctx.insert ctx x RedPrlParamData.HYP, NameEnv.insert env (Sym.toString x) x)) 
+                    ((x, RedPrlSortData.HYP tau) :: ps, Tm.Sym.Ctx.insert ctx x (RedPrlSortData.HYP tau), NameEnv.insert env (Sym.toString x) x)) 
                   (params', symctx, env)
                   hyps
             in

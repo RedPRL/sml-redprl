@@ -9,7 +9,7 @@ struct
   fun @> (H, (x, j)) = Hyps.snoc H x j
   infix @>
 
-  structure P = struct open RedPrlParameterTerm RedPrlParamData end
+  structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
   structure CJ = RedPrlCategoricalJudgment
 
   exception todo

@@ -2,7 +2,7 @@ functor RedPrlMachineBasis (Sig : MINI_SIGNATURE) : ABT_MACHINE_BASIS =
 struct
   structure Cl = AbtClosureUtil (AbtClosure (RedPrlAbt))
   structure S = AbtMachineState (Cl)
-  structure P = struct open RedPrlParamData RedPrlParameterTerm end
+  structure P = struct open RedPrlSortData RedPrlParamData RedPrlParameterTerm end
   structure Syn = Syntax
   type sign = Sig.sign
 
@@ -207,11 +207,11 @@ struct
      
      | O.MONO O.DEV_LET `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
          S.STEP
-          @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP)] (Tac.each [tac2,tac1]))
+          @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP O.EXP)] (Tac.each [tac2,tac1]))
           <: env
      | O.MONO O.DEV_FUN_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP)] (Tac.each [t]))
+           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t]))
            <: env
      | O.MONO O.DEV_DPROD_INTRO `$ [_ \ t1, _ \ t2] <: env =>
          S.STEP
@@ -231,12 +231,12 @@ struct
            <: env
      | O.POLY (O.DEV_DFUN_ELIM z) `$ [_ \ t1, ([x,p],_) \ t2] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (p, P.HYP)] (Tac.each [t1,t2]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2]))
            <: env
 
      | O.POLY (O.DEV_DPROD_ELIM z) `$ [([x,y], _) \ t] <: env =>
          S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP), (y, P.HYP)] (Tac.each [t]))
+           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim z)) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t]))
            <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL

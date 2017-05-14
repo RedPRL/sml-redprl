@@ -7,7 +7,76 @@ struct
    | JDG
    | TRIV
    | SEQ
+
+  datatype param_sort =
+     DIM
+   | EXN
+   | LBL
+   | OPID
+   | HYP of sort
+   | LVL
 end
+
+structure RedPrlParamData =
+struct
+  datatype 'a param_operator =
+     DIM0
+   | DIM1
+   | LVL_SUCC of 'a
+end
+
+structure RedPrlParamSort : ABT_SORT =
+struct
+  open RedPrlSortData RedPrlParamData
+
+  type t = param_sort
+  val eq : t * t -> bool = op=
+
+  val toString =
+    fn DIM => "dim"
+     | EXN => "exn"
+     | LBL => "lbl"
+     | OPID => "opid"
+     | HYP _ => "hyp"
+     | LVL => "lvl"
+end
+
+structure RedPrlParameter : ABT_PARAMETER =
+struct
+  open RedPrlSortData RedPrlParamData
+  type 'a t = 'a param_operator
+
+  fun map f =
+    fn DIM0 => DIM0
+     | DIM1 => DIM1
+     | LVL_SUCC a => LVL_SUCC (f a)
+
+  structure Sort = RedPrlParamSort
+
+  val arity =
+    fn DIM0 => (DIM0, DIM)
+     | DIM1 => (DIM1, DIM)
+     | LVL_SUCC a => (LVL_SUCC LVL, LVL)
+
+  fun eq f =
+    fn (DIM0, DIM0) => true
+     | (DIM1, DIM1) => true
+     | (LVL_SUCC a, LVL_SUCC b) => f (a, b)
+     | _ => false
+
+  fun toString f =
+    fn DIM0 => "dim0"
+     | DIM1 => "dim1"
+     | LVL_SUCC a => f a ^ "'"
+
+  fun join zer mul =
+    fn DIM0 => zer
+     | DIM1 => zer
+     | LVL_SUCC l => mul (l, zer)
+end
+
+structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
+
 
 structure RedPrlSort : ABT_SORT =
 struct
@@ -30,7 +99,7 @@ structure RedPrlOpData =
 struct
   open RedPrlSortData
   structure P = RedPrlParameterTerm
-  type psort = RedPrlParamData.param_sort
+  type psort = RedPrlSortData.param_sort
 
   datatype mono_operator =
      DFUN | LAM | AP
@@ -163,10 +232,10 @@ struct
      | RULE_EVAL_GOAL => [] ->> TAC
      | RULE_CEQUIV_REFL => [] ->> TAC
 
-     | DEV_FUN_INTRO => [[HYP] * [] <> TAC] ->> TAC
+     | DEV_FUN_INTRO => [[HYP EXP] * [] <> TAC] ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
      | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
-     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
+     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP EXP] * [] <> TAC] ->> TAC
 
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
      | MTAC_EACH n =>
@@ -230,8 +299,8 @@ struct
        | RULE_UNFOLD a => [] ->> TAC
        | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
-       | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP,HYP] * [] <> TAC] ->> TAC
-       | DEV_DPROD_ELIM a => [[HYP,HYP] * [] <> TAC] ->> TAC
+       | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
+       | DEV_DPROD_ELIM a => [[HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -268,14 +337,14 @@ struct
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | UNIV lvl => lvlSupport lvl
        | ID_AP r => dimSupport r
-       | HYP_REF a => [(a, HYP)]
-       | RULE_HYP a => [(a, HYP)]
-       | RULE_ELIM a => [(a, HYP)]
+       | HYP_REF a => [(a, HYP EXP)]
+       | RULE_HYP a => [(a, HYP EXP)]
+       | RULE_ELIM a => [(a, HYP EXP)]
        | RULE_UNFOLD a => [(a, OPID)]
-       | DEV_BOOL_ELIM a => [(a, HYP)]
-       | DEV_S1_ELIM a => [(a, HYP)]
-       | DEV_DFUN_ELIM a => [(a, HYP)]
-       | DEV_DPROD_ELIM a => [(a, HYP)]
+       | DEV_BOOL_ELIM a => [(a, HYP EXP)]
+       | DEV_S1_ELIM a => [(a, HYP EXP)]
+       | DEV_DFUN_ELIM a => [(a, HYP EXP)]
+       | DEV_DPROD_ELIM a => [(a, HYP EXP)]
   end
 
   val support =
