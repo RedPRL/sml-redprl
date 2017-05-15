@@ -12,6 +12,8 @@ struct
   type tactic = abt
   type multitactic = abt
   type sign = Sig.sign
+  type ann = Pos.t * string option
+  type state = Sig.jdg Lcf.state
 
   fun inheritAnnotation t1 t2 = 
     case getAnnotation t2 of 
@@ -86,6 +88,7 @@ struct
        | O.MONO O.MTAC_REC $ [(_,[x]) \ mtx] => REC (x, inheritAnnotation mtac mtx)
        | O.MONO (O.MTAC_SEQ _) $ [_ \ mt1, (us,_) \ mt2] => SEQ (us, inheritAnnotation mtac mt1, inheritAnnotation mtac mt2)
        | O.MONO O.MTAC_ORELSE $ [_ \ mt1, _ \ mt2] => ORELSE (inheritAnnotation mtac mt1, inheritAnnotation mtac mt2)
+       | O.MONO (O.MTAC_HOLE msg) $ _ => HOLE (Option.valOf (getAnnotation mtac), msg) 
        | ` x => VAR x
        | _ => raise InvalidMultitactic
 end

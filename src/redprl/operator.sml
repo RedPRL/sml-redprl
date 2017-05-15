@@ -6,7 +6,6 @@ struct
    | MTAC
    | JDG
    | TRIV
-   | SEQ
 
   datatype param_sort =
      DIM
@@ -113,7 +112,7 @@ struct
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int | MTAC_REPEAT
-   | MTAC_AUTO | MTAC_PROGRESS
+   | MTAC_AUTO | MTAC_PROGRESS | MTAC_HOLE of string option
    | TAC_MTAC
 
    (* primitive rules *)
@@ -225,6 +224,7 @@ struct
      | RULE_ID => [] ->> TAC
      | MTAC_AUTO => [] ->> MTAC
      | MTAC_PROGRESS => [[] * [] <> MTAC] ->> MTAC
+     | MTAC_HOLE _ => [] ->> MTAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
@@ -421,6 +421,8 @@ struct
      | MTAC_SEQ _ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
+     | MTAC_HOLE (SOME x) => "?" ^ x
+     | MTAC_HOLE NONE => "?"
      | TAC_MTAC => "mtac"
      | MTAC_REPEAT => "repeat"
      | RULE_ID => "id"

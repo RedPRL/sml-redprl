@@ -194,6 +194,8 @@ struct
              <: env
          end
 
+     | O.MONO (O.MTAC_HOLE _) `$ _ <: _ => S.VAL
+
      | O.MONO O.TAC_MTAC `$ _ <: _ => S.VAL
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL

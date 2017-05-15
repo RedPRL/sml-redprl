@@ -447,7 +447,7 @@ struct
           if proofStateCorrect then 
             E.ret state 
           else
-            E.warn (pos, "Incomplete proof: \n\n" ^ Lcf.stateToString state)
+            E.warn (pos, "Incomplete proof")
               *> E.ret state
         end
     in
