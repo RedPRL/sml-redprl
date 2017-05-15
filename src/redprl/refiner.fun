@@ -813,6 +813,18 @@ struct
 
   structure Synth =
   struct
+    fun FromWfHyp z alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Synth.Switch"
+        val H >> CJ.SYNTH tm = jdg
+        val CJ.EQ ((a, b), ty) = Hyps.lookup H z
+      in
+        if Abt.eq (a, tm) orelse Abt.eq (b, tm) then 
+          T.empty #> ty
+        else
+          raise Fail "Did not match"
+      end
+
     fun Hyp alpha jdg =
       let
         val _ = RedPrlLog.trace "Synth.Hyp"
@@ -1491,9 +1503,8 @@ struct
          | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
          | (Machine.REDEX, _) => Computation.EqHeadExpansion sign
          | (_, Machine.REDEX) => Equality.Symmetry
-         | (Machine.NEUTRAL (Machine.VAR x), Machine.CANONICAL) => StepEqEta ty
+         | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqEta ty
          | (Machine.CANONICAL, Machine.NEUTRAL _) => Equality.Symmetry
-         | _ => raise E.error [E.% "Could not find equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepEq sign ((m, n), ty) =
         case (Syn.out m, Syn.out n) of
