@@ -118,13 +118,7 @@ Thm FunExt(#A; #B) : [
     <i> lam a. let q = p hyp a. '(,q @i)};
   elim type/B;
   elim type/A;
-  auto-step; auto-step; [auto-step];
-  TryStep; TryStep; TryStep;
-  TryStep; TryStep; [id,auto]
-  // {lam f. lam g. lam p. <i> lam a. let q = p hyp a. '(,q @i)};
-  // elim type/B;
-  // elim type/A;
-  // auto
+  auto
 ].
 
 
