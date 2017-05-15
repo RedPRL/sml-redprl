@@ -106,28 +106,43 @@ Thm Not : [bool -> bool] by [
   auto
 ].
 
-Thm FunExt(#A; #B; #F; #G) : [
+Thm FunExt(#A; #B) : [
   type/A : #A type,
-  type/B : #B type, 
-  f : #A -> #B, 
-  g : #A -> #B,
-  p : ((x : #A) -> paths({_}. #B; f x; g x))
-  >> paths({_}. #A -> #B; f; g)  
+  type/B : #B type
+  >> (f : #A -> #B)
+  -> (g : #A -> #B)
+  -> (p : (y : #A) -> paths({_}. #B; f y; g y))
+  -> paths({_}. #A -> #B; f; g)
 ] by [
-  {<i> lam a. let q = p hyp a. '(,q @i)};
+  {lam f. lam g. lam p.
+    <i> lam a. let q = p hyp a. '(,q @i)};
   elim type/B;
   elim type/A;
-  auto
+  auto-step; auto-step; [auto-step];
+  TryStep; TryStep; TryStep;
+  TryStep; TryStep; [id,auto]
+  // {lam f. lam g. lam p. <i> lam a. let q = p hyp a. '(,q @i)};
+  // elim type/B;
+  // elim type/A;
+  // auto
 ].
 
 
-Thm NotNotPath : [paths({_}.bool -> bool; Cmp(Not;Not); lam([x].x))] by [
-  let p : [(x : bool) -> paths({_}.bool; Cmp(Not;Not) x; lam([x].x) x)] = {
-    {lam x. if x then <i> 'tt else <i> 'ff}; auto
-  }.
-  
-  {<i> lam a. let q = p hyp a. '(,q @i)};
-  auto
-].
 
-Print NotNotPath.
+// Thm NotNotPath : [paths({_}.bool -> bool; Cmp(Not;Not); lam([x].x))] by [
+//   let a : [bool type] = .
+//   let b : [bool type] = .
+//   let c : [bool -> bool] = .
+//   let d : [bool -> bool] = .
+//   let h : [(x : bool) -> ] = .
+
+//   lemma FunExt{a,b,c,d,h}(bool; bool);
+//   // let p : [(x : bool) -> paths({_}.bool; Cmp(Not;Not) x; lam([x].x) x)] = {
+//   //   {lam x. if x then <i> 'tt else <i> 'ff}; auto
+//   // }.
+
+//   // {<i> lam a. let q = p hyp a. '(,q @i)};
+//   // auto
+// ].
+
+// Print NotNotPath.
