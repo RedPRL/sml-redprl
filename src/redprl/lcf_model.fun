@@ -49,6 +49,6 @@ struct
            SOME n => n ^ " | " ^ Lcf.stateToString state
          | NONE => Lcf.stateToString state
     in
-      RedPrlLog.print RedPrlLog.WARN (SOME pos, message)
+      RedPrlLog.print RedPrlLog.INFO (SOME pos, message)
     end
 end

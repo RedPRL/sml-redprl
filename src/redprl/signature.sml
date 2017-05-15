@@ -445,7 +445,7 @@ struct
           val proofStateCorrect = go (subgoalsSpec, Tl.ConsView.out subgoals)
         in
           if proofStateCorrect then 
-            E.ret state 
+            E.ret state
           else
             E.warn (pos, "Incomplete proof")
               *> E.ret state
