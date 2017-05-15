@@ -13,8 +13,13 @@ struct
   type multitactic = abt
   type sign = Sig.sign
 
+  fun inheritAnnotation t1 t2 = 
+    case getAnnotation t2 of 
+       NONE => setAnnotation (getAnnotation t1) t2
+     | _ => t2
+
   fun evalOpen sign t =
-    setAnnotation (getAnnotation t) (Machine.eval sign t)
+    inheritAnnotation t (Machine.eval sign t)
       handle _ => t
 
   local
@@ -24,11 +29,11 @@ struct
            if SymCtx.member syms a then
              m
            else
-             setAnnotation (getAnnotation m) (check (`a, O.EXP))
+             inheritAnnotation m (check (`a, O.EXP))
        | _ => goStruct syms m
 
     and goStruct syms m =
-      setAnnotation (getAnnotation m)
+      inheritAnnotation m
         (case out m of
            theta $ es =>
              theta $$ List.map (goAbs syms) es
@@ -55,28 +60,32 @@ struct
   open NominalLcfView
 
   fun prepareTerm sign t =
-    setAnnotation
-      (getAnnotation t)
+    inheritAnnotation t
       (expandHypVars (evalOpen sign t))
 
   fun tactic sign tac =
     let
+      (*val _ = 
+        case getAnnotation tac of 
+           SOME (ann : Pos.t) => print ("Tactic " ^ TermPrinter.toString tac ^ ": " ^ Pos.toString ann ^ "\n\n")
+         | NONE => print ("Tactic " ^ TermPrinter.toString tac ^ ": has no annotation\n\n")*)
+
       val tac' = prepareTerm sign tac
     in
       case Tm.out tac' of
-         O.MONO O.TAC_MTAC $ [_ \ mt] => MTAC mt
+         O.MONO O.TAC_MTAC $ [_ \ mt] => MTAC (inheritAnnotation tac' mt)
        | _ => RULE tac'
     end
 
   fun multitactic sign mtac =
     case Tm.out (prepareTerm sign mtac) of
-         O.MONO O.MTAC_ALL $ [_ \ t] => ALL t
-       | O.MONO (O.MTAC_EACH _) $ ts => EACH (List.map (fn _ \ t => t) ts)
-       | O.MONO (O.MTAC_FOCUS i) $ [_ \ t] => FOCUS (i, t)
-       | O.MONO O.MTAC_PROGRESS $ [_ \ mt] => PROGRESS mt
-       | O.MONO O.MTAC_REC $ [(_,[x]) \ mtx] => REC (x, mtx)
-       | O.MONO (O.MTAC_SEQ _) $ [_ \ mt1, (us,_) \ mt2] => SEQ (us, mt1, mt2)
-       | O.MONO O.MTAC_ORELSE $ [_ \ mt1, _ \ mt2] => ORELSE (mt1, mt2)
+         O.MONO O.MTAC_ALL $ [_ \ t] => ALL (inheritAnnotation mtac t)
+       | O.MONO (O.MTAC_EACH _) $ ts => EACH (List.map (fn _ \ t => inheritAnnotation mtac t) ts)
+       | O.MONO (O.MTAC_FOCUS i) $ [_ \ t] => FOCUS (i, inheritAnnotation mtac t)
+       | O.MONO O.MTAC_PROGRESS $ [_ \ mt] => PROGRESS (inheritAnnotation mtac mt)
+       | O.MONO O.MTAC_REC $ [(_,[x]) \ mtx] => REC (x, inheritAnnotation mtac mtx)
+       | O.MONO (O.MTAC_SEQ _) $ [_ \ mt1, (us,_) \ mt2] => SEQ (us, inheritAnnotation mtac mt1, inheritAnnotation mtac mt2)
+       | O.MONO O.MTAC_ORELSE $ [_ \ mt1, _ \ mt2] => ORELSE (inheritAnnotation mtac mt1, inheritAnnotation mtac mt2)
        | ` x => VAR x
        | _ => raise InvalidMultitactic
 end
