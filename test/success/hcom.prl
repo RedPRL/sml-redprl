@@ -21,9 +21,9 @@ Thm Hcom/Poly(#A) : [
   elim a/type;
   { lam a. lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
-    <i> 'hcom{i; 0 ~> 1}(#A; ,pab @ i; {j}. ,pac @ j; {j}. ,pbd @ j)
+    <i> 'hcom{i; 0 ~> 1}(#A; ,pab @ i; {j}. ,pac @ j; {j}. ,pbd @ j); auto
   };
-  <| auto |>
+  auto
 ].
 
 Thm Hcom/trans(#A) : [

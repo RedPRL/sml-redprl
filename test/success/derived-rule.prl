@@ -55,7 +55,6 @@ Thm Test : [ bool -> bool] by [
   fresh x <- rule PiIntro(bool; [x].bool);
   [ if x then 'ff else 'tt ];
   auto;
-  < id, id >
 ].
 
 Extract Test.

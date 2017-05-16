@@ -63,7 +63,7 @@ struct
             val vl' = ((ssorts @ List.map #2 syms, vsorts @ List.map #2 vars), tau)
             val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' vl')
           in
-            {doc = PP.concat [doc, prettyGoal (syms, vars) (x, jdg), PP.line],
+            {doc = PP.concat [doc, prettyGoal (syms, vars) (x', jdg), PP.line],
              env = env',
              idx = idx + 1}
           end)
@@ -75,11 +75,10 @@ struct
       open RedPrlAbt infix \
       val (us,xs) \ m = outb vld
     in
-      PP.concat [
-        PP.text (TermPrinter.toString m),
-        PP.line,
-        PP.text (primToStringAbs vld)
-      ]
+      PP.concat 
+        [PP.text (TermPrinter.toString m),
+         PP.line,
+         PP.text (primToStringAbs vld)]
     end
 
   fun prettyState (psi |> vld) =

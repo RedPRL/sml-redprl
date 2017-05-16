@@ -14,4 +14,4 @@ Thm IA/beta : [ NOT{0} = bool type ] by [
   auto
 ].
 
-Print IA/beta.
+Extract IA/beta.

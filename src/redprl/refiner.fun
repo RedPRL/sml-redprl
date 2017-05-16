@@ -1095,8 +1095,7 @@ struct
                 val tube1 = substSymbol (P.ret w, v) tube1
                 val J = H >> CJ.EQ ((tube0,tube1), ty)
               in
-                List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) || j)))
-                         (Restriction.One J ext eps)
+                List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) || j))) (Restriction.One J ext eps)
               end
           in
             listToTel
