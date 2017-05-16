@@ -307,6 +307,21 @@ struct
         psi #> trivial
       end
 
+    fun ElimTypeEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "StrictBool.ElimTypeEq"
+        val H >> CJ.EQ_TYPE (if0, if1) = jdg
+        val Syn.S_IF (m0, (t0, f0)) = Syn.out if0
+        val Syn.S_IF (m1, (t1, f1)) = Syn.out if1
+
+        val (goalM, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m0, m1), Syn.into Syn.S_BOOL)
+        val (goalT, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (t0, t1)
+        val (goalF, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (f0, f1)
+        val psi = T.empty >: goalM >: goalT >: goalF
+      in
+        psi #> trivial
+      end
+
     fun EqElim z _ jdg =
       let
         val _ = RedPrlLog.trace "StrictBool.EqElim"
@@ -397,7 +412,7 @@ struct
         val Syn.FST m1 = Syn.out fst1
 
         val (goalTy, holeTy) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m0
-        val (goalTyA, holeTyA) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DPROD, 0, holeTy [] [])
+        val (goalTyA, holeTyA) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DPROD, 0, holeTy [] [], [], [])
         val (goalEq, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m0, m1), holeTy [] [])
         val (goalEqTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (holeTyA [] [], ty)
       in
@@ -413,9 +428,9 @@ struct
         val Syn.SND m1 = Syn.out snd1
 
         val (goalTy, holeTy) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m0
-        val (goalTyB, holeTyB) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DPROD, 1, holeTy [] [])
+        val (goalTyB, holeTyB) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DPROD, 1, holeTy [] [], [], [Syn.into @@ Syn.FST m0])
         val (goalEq, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m0, m1), holeTy [] [])
-        val (goalEqTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (holeTyB [] [Syn.into @@ Syn.FST m0], ty)
+        val (goalEqTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (holeTyB [] [], ty)
       in
         T.empty >: goalTy >: goalTyB >: goalEq >: goalEqTy
           #> trivial
@@ -594,7 +609,7 @@ struct
         val (goalDFun0, holeDFun0) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m0
         val (goalDFun1, holeDFun1) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m1
         val (goalDFunEq, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (holeDFun0 [] [], holeDFun1 [] [])
-        val (goalDom, holeDom) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DFUN, 0, holeDFun0 [] [])
+        val (goalDom, holeDom) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DFUN, 0, holeDFun0 [] [], [], [])
         val (goalM, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m0, m1), holeDFun0 [] [])
         val (goalN, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((n0, n1), holeDom [] [])
       in
@@ -683,8 +698,8 @@ struct
         val () = assertParamEq "Path.ApEq" (r0, r1)
         val (goalSynth, holeSynth) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m0
         val (goalMem, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m0, m1), holeSynth [] [])
-        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holeSynth [] [])
-        val (goalTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (ty, holeLine [(r0, P.DIM)] [])
+        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holeSynth [] [], [r0], [])
+        val (goalTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (ty, holeLine [] [])
       in
         T.empty >: goalSynth >: goalMem >: goalLine >: goalTy
           #> trivial
@@ -698,9 +713,9 @@ struct
         val (goalSynth, holeSynth) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m
 
         val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2 | _ => raise Fail "impossible"
-        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holeSynth [] [])
-        val (goalEndpoint, holeEndpoint) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, dimAddr, holeSynth [] [])
-        val (goalTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a, holeLine [(P.APP r, P.DIM)] [])
+        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holeSynth [] [], [P.APP r], [])
+        val (goalEndpoint, holeEndpoint) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, dimAddr, holeSynth [] [], [], [])
+        val (goalTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a, holeLine [] [])
         val (goalEq, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((holeEndpoint [] [], p), a)
       in
         T.empty >: goalSynth >: goalLine >: goalEndpoint >: goalTy >: goalEq
@@ -722,8 +737,6 @@ struct
       end
 
   end
-
-
 
   structure Hyp =
   struct
@@ -768,6 +781,7 @@ struct
           #> hole [] []
       end
   end
+
 
   structure TypeEquality =
   struct
@@ -814,6 +828,18 @@ struct
 
   structure Synth =
   struct
+    fun FromWfHyp z alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Synth.Switch"
+        val H >> CJ.SYNTH tm = jdg
+        val CJ.EQ ((a, b), ty) = Hyps.lookup H z
+      in
+        if Abt.eq (a, tm) orelse Abt.eq (b, tm) then 
+          T.empty #> ty
+        else
+          raise Fail "Did not match"
+      end
+
     fun Hyp alpha jdg =
       let
         val _ = RedPrlLog.trace "Synth.Hyp"
@@ -830,12 +856,12 @@ struct
         val H >> CJ.SYNTH tm = jdg
         val Syn.AP (m, n) = Syn.out tm
         val (goalDFun, holeDFun) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m
-        val (goalDom, holeDom) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DFUN, 0, holeDFun [] [])
-        val (goalCod, holeCod) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DFUN, 1, holeDFun [] [])
+        val (goalDom, holeDom) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DFUN, 0, holeDFun [] [], [], [])
+        val (goalCod, holeCod) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DFUN, 1, holeDFun [] [], [], [n])
         val (goalN, _) = makeGoal @@ ([],[]) || H >> CJ.MEM (n, holeDom [] [])
       in
         T.empty >: goalDFun >: goalDom >: goalCod >: goalN
-          #> holeCod [] [n]
+          #> holeCod [] []
       end
 
     fun S1Elim alpha jdg =
@@ -870,11 +896,11 @@ struct
         val H >> CJ.SYNTH tm = jdg
         val Syn.ID_AP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m
-        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holePathTy [] [])
+        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holePathTy [] [], [r], [])
         val psi = T.empty >: goalPathTy >: goalLine
       in
         T.empty >: goalPathTy >: goalLine
-          #> holeLine [(r, P.DIM)] []
+          #> holeLine [] []
       end
 
     fun Fst alpha jdg =
@@ -883,7 +909,7 @@ struct
         val H >> CJ.SYNTH tm = jdg
         val Syn.FST m = Syn.out tm
         val (goalTy, holeTy) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m
-        val (goalA, holeA) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DPROD, 0, holeTy [] [])
+        val (goalA, holeA) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DPROD, 0, holeTy [] [], [], [])
       in
         T.empty >: goalTy >: goalA
           #> holeA [] []
@@ -895,10 +921,10 @@ struct
         val H >> CJ.SYNTH tm = jdg
         val Syn.SND m = Syn.out tm
         val (goalTy, holeTy) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m
-        val (goalB, holeB) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DPROD, 1, holeTy [] [])
+        val (goalB, holeB) = makeGoal @@ ([],[]) || MATCH (O.MONO O.DPROD, 1, holeTy [] [], [], [Syn.into @@ Syn.FST m])
       in
         T.empty >: goalTy >: goalB
-          #> holeB [] [Syn.into @@ Syn.FST m]
+          #> holeB [] []
       end
   end
 
@@ -907,15 +933,19 @@ struct
     fun MatchOperator alpha jdg =
       let
         val _ = RedPrlLog.trace "Match.MatchOperator"
-        val MATCH (th, k, tm) = jdg
+        val MATCH (th, k, tm, ps, ms) = jdg
 
         val Abt.$ (th', args) = Abt.out tm
         val true = Abt.O.eq Sym.eq (th, th')
 
         val (vls, _) = Abt.O.arity th
-        val abs = checkb (List.nth (args, k), List.nth (vls, k))
+        val (us, xs) \ arg = List.nth (args, k)
+        val srho = ListPair.foldrEq (fn (u,p,rho) => Sym.Ctx.insert rho u p) Sym.Ctx.empty (us, ps)
+        val vrho = ListPair.foldrEq (fn (x,m,rho) => Var.Ctx.insert rho x m) Var.Ctx.empty (xs, ms)
+
+        val arg' = substSymenv srho (substVarenv vrho arg)
       in
-        Lcf.|> (T.empty, abs)
+        T.empty #> arg'
       end
       handle _ =>
         raise E.error [E.% "MATCH judgment failed to unify"]
@@ -973,7 +1003,7 @@ struct
       | dimsContradictory _ = false
 
     (* Restrict a judgement by a single equation `ext = eps`. *)
-    fun One (jdg : abt jdg) (ext : param) (eps : param) =
+    fun One (jdg : abt jdg) (ext : param) (eps : param) : abt jdg list =
       if P.eq Sym.eq (ext, eps) then [jdg] (* combining rules in first row *)
       else if dimsContradictory (ext, eps) then [] (* second row, left rule *)
       else
@@ -984,7 +1014,7 @@ struct
         end
 
     (* Restrict a judgement by two equations `ext0 = eps0` and `ext1 = eps1`. *)
-    fun Two (jdg : abt jdg) (ext0 : param) (eps0 : param) (ext1 : param) (eps1 : param) =
+    fun Two (jdg : abt jdg) (ext0 : param) (eps0 : param) (ext1 : param) (eps1 : param) : abt jdg list =
       if P.eq Sym.eq (ext0, eps0) then One jdg ext1 eps1 (* top right rule *)
       else if P.eq Sym.eq (ext1, eps1) then One jdg ext0 eps0 (* top right rule *)
       else if dimsContradictory (ext0, eps0) then [] (* second row, left rule *)
@@ -1009,8 +1039,6 @@ struct
       | groupTubes (ext :: exts) (tube0 :: tube1 :: tubes)  =
         (ext, P.APP P.DIM0, tube0) :: (ext, P.APP P.DIM1, tube1) :: groupTubes exts tubes
       | groupTubes _ _ = raise Fail "groupTubes"
-
-    fun listToTel l = List.foldl (fn (g, l) => l >: g) T.empty l
 
     (* Produce the list of goals requiring that tube aspects agree with each other.
          forall i, j, eps, eps'.
@@ -1082,8 +1110,7 @@ struct
                 val tube1 = substSymbol (P.ret w, v) tube1
                 val J = H >> CJ.EQ ((tube0,tube1), ty)
               in
-                List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) || j)))
-                         (Restriction.One J ext eps)
+                List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) || j))) (Restriction.One J ext eps)
               end
           in
             listToTel
@@ -1182,10 +1209,56 @@ struct
   end
 
 
+  structure Univalence = 
+  struct
+    fun EqType alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Univalence.EqType"
+        val H >> CJ.EQ_TYPE (ty0, ty1) = jdg
+        val Syn.IA (r0, a0, b0, f0, g0) = Syn.out ty0
+        val Syn.IA (r1, a1, b1, f1, g1) = Syn.out ty1
+        val () = assertParamEq "Univalence.EqType" (r0, r1)
+        val r = r0
+
+        val a2b = Syn.into @@ Syn.DFUN (a0, Sym.named "_", b0)
+        val b2a = Syn.into @@ Syn.DFUN (b0, Sym.named "_", a0)
+
+        val x = alpha 0
+        val y = alpha 1 
+
+        val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
+        val ytm = Syn.into @@ Syn.VAR (y, O.EXP)
+
+        val gfx = Syn.into @@ Syn.AP (g0, Syn.into @@ Syn.AP (f0, xtm))
+        val fgy = Syn.into @@ Syn.AP (f0, Syn.into @@ Syn.AP (g0, ytm))
+
+        val Hx = H @> (x, CJ.TRUE a0)
+        val Hy = H @> (y, CJ.TRUE b0)
+
+        val (goalA, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a0, a1)
+        val structuralGoals =
+          List.map (fn jdg => #1 o makeGoal @@ ([], []) || jdg) @@
+            Restriction.One (H >> CJ.EQ_TYPE (b0, b1)) r (P.APP P.DIM1)
+            @ Restriction.One (H >> CJ.EQ ((f0, f1), a2b)) r (P.APP P.DIM1)
+            @ Restriction.One (H >> CJ.EQ ((g0, g1), b2a)) r (P.APP P.DIM1)
+
+        val isoGoalsGF = 
+          List.map (fn jdg => #1 o makeGoal @@ ([], [(x, O.EXP)]) || jdg) @@
+            Restriction.One (Hx >> CJ.EQ ((gfx, xtm), a0)) r (P.APP P.DIM1)
+
+        val isoGoalsFG = 
+          List.map (fn jdg => #1 o makeGoal @@ ([], [(y, O.EXP)]) || jdg) @@ 
+            Restriction.One (Hy >> CJ.EQ ((fgy, ytm), b0)) r (P.APP P.DIM1)
+
+        val psi = listToTel @@ structuralGoals @ isoGoalsGF @ isoGoalsFG
+      in
+        psi #> trivial
+      end
+  end
+
+
   structure Computation =
   struct
-    exception UnsafeStep
-
     local
       open Machine.S.Cl infix <: $
     in
@@ -1195,10 +1268,12 @@ struct
         let
           val m = force cl
         in
-          case out m of
-             th $ _ =>
+          case (out m, Machine.canonicity sign m) of
+             (_, Machine.CANONICAL) => Machine.next sign st
+           | (O.POLY (O.CUST _) $ _, _) => Machine.next sign st
+           | (th $ _, _) =>
                if List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support th then
-                 raise UnsafeStep
+                 raise Fail ("Unsafe step: " ^ TermPrinter.toString m)
                else
                  Machine.next sign st
            | _ => NONE
@@ -1214,7 +1289,7 @@ struct
            O.POLY (O.CUST (opid',_,_)) $ _ =>
              if Sym.eq (opid, opid') then
                Machine.unload sign (Option.valOf (safeStep sign (Machine.load m)))
-                 handle _ => raise UnsafeStep (* please put better error message here; should never happen anyway *) 
+                 handle _ => raise Fail "Impossible failure during safeUnfold" (* please put better error message here; should never happen anyway *) 
              else
                m
          | _ => m
@@ -1223,8 +1298,19 @@ struct
     fun Unfold sign opid alpha jdg = 
       let
         val _ = RedPrlLog.trace "Computation.Unfold"
-        val jdg' = RedPrlSequent.map (safeUnfold sign opid) jdg
+        val unfold = safeUnfold sign opid o Abt.deepMapSubterms (safeUnfold sign opid)
+        val jdg' = RedPrlSequent.map unfold jdg
         val (goal, hole) = makeGoal @@ ([],[]) || jdg'
+      in
+        T.empty >: goal #> hole [] []
+      end
+
+    fun TrueHeadExpansion sign alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Computation.TrueHeadExpansion"
+        val H >> CJ.TRUE a = jdg
+        val a' = Machine.unload sign (safeEval sign (Machine.load a))
+        val (goal, hole) = makeGoal @@ ([],[]) || H >> CJ.TRUE a'
       in
         T.empty >: goal #> hole [] []
       end
@@ -1233,7 +1319,6 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val H >> CJ.EQ ((m, n), ty) = jdg
-        val Abt.$ (theta, _) = Abt.out m
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val (goal, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m', n), ty)
       in
@@ -1245,7 +1330,6 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val H >> CJ.EQ_TYPE (ty1, ty2) = jdg
-        val Abt.$ (theta, _) = Abt.out ty1
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
         val (goal, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (ty1', ty2)
         in
@@ -1372,12 +1456,17 @@ struct
       f jdg alpha jdg
   in
     local
-      fun StepTrue sign ty =
+      fun StepTrueVal sign ty =
         case Syn.out ty of
            Syn.DFUN _ => DFun.True
          | Syn.DPROD _ => DProd.True
          | Syn.ID_TY _ => Path.True
          | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
+
+      fun StepTrue sign ty = 
+        case Machine.canonicity sign ty of 
+           Machine.CANONICAL => StepTrueVal sign ty
+         | Machine.REDEX => Computation.TrueHeadExpansion sign
 
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
@@ -1387,6 +1476,7 @@ struct
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
          | (Syn.ID_TY _, Syn.ID_TY _) => Path.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
+         | (Syn.IA _, Syn.IA _) => Univalence.EqType
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
       fun StepEqType sign (ty1, ty2) =
@@ -1394,6 +1484,7 @@ struct
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
          | (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
          | (_, Machine.REDEX) => TypeEquality.Symmetry
+         | (Machine.NEUTRAL _, _) => StrictBool.ElimTypeEq
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
       (* equality of canonical forms *)
@@ -1444,9 +1535,8 @@ struct
          | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
          | (Machine.REDEX, _) => Computation.EqHeadExpansion sign
          | (_, Machine.REDEX) => Equality.Symmetry
-         | (Machine.NEUTRAL (Machine.VAR x), Machine.CANONICAL) => StepEqEta ty
+         | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqEta ty
          | (Machine.CANONICAL, Machine.NEUTRAL _) => Equality.Symmetry
-         | _ => raise E.error [E.% "Could not find equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepEq sign ((m, n), ty) =
         case (Syn.out m, Syn.out n) of

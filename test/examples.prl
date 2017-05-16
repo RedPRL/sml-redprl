@@ -89,7 +89,7 @@ Thm PairTest : [ (a : S1) * paths({_}. S1; a; base) ] by [
 ].
 
 
-Def Not = [
+Def SNot = [
   lam([x]. if/s(x; ff; tt))
 ].
 
@@ -97,6 +97,44 @@ Def Cmp(#f; #g) = [
   lam([x]. #f (#g x))
 ].
 
-Thm StrictBoolTest : [ Not = Cmp(Not; Cmp(Not; Not)) in sbool -> sbool ] by [
+Thm StrictBoolTest : [ SNot = Cmp(SNot; Cmp(SNot; SNot)) in sbool -> sbool ] by [
   auto
 ].
+
+Thm Not : [bool -> bool] by [
+  {lam x. if x then 'ff else 'tt};
+  auto
+].
+
+Thm FunExt(#A; #B) : [
+  type/A : #A type,
+  type/B : #B type
+  >> (f : #A -> #B)
+  -> (g : #A -> #B)
+  -> (p : (y : #A) -> paths({_}. #B; f y; g y))
+  -> paths({_}. #A -> #B; f; g)
+] by [
+  {lam f. lam g. lam p.
+    <i> lam a. let q = p hyp a. '(,q @i)};
+  elim type/B;
+  elim type/A;
+  auto
+].
+
+
+Tac FunExtTac(#A; #B; #F; #G) = [
+  let p : [(x:#A) -> paths({_}.bool; #F x; #G x)] = {}.
+  {<i> lam a. let q = p hyp a. '(,q @i)};
+  auto
+].
+
+// We ought to be able to use FunExt as a lemma, but our machinery is not yet set up for that.
+// Instead, we can use FunExtTac.
+Thm NotNotPath : [paths({_}.bool -> bool; Cmp(Not;Not); lam([x].x))] by [
+  FunExtTac(bool; bool; Cmp(Not; Not); lam([x].x));
+
+  {lam x. if x then <i> 'tt else <i> 'ff};
+  auto
+].
+
+Extract NotNotPath.

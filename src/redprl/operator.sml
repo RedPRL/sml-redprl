@@ -6,7 +6,6 @@ struct
    | MTAC
    | JDG
    | TRIV
-   | SEQ
 
   datatype param_sort =
      DIM
@@ -113,7 +112,7 @@ struct
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int | MTAC_REPEAT
-   | MTAC_AUTO | MTAC_PROGRESS
+   | MTAC_AUTO | MTAC_PROGRESS | MTAC_HOLE of string option
    | TAC_MTAC
 
    (* primitive rules *)
@@ -161,8 +160,9 @@ struct
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | UNIV of 'a P.term
    | ID_AP of 'a P.term
+   | IA of 'a P.term
+
    | HYP_REF of 'a
    | RULE_HYP of 'a * sort
    | RULE_ELIM of 'a * sort
@@ -224,6 +224,7 @@ struct
      | RULE_ID => [] ->> TAC
      | MTAC_AUTO => [] ->> MTAC
      | MTAC_PROGRESS => [[] * [] <> MTAC] ->> MTAC
+     | MTAC_HOLE _ => [] ->> MTAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
@@ -291,8 +292,8 @@ struct
        | COE coe => arityCoe coe
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
-       | UNIV lvl => [] ->> EXP
        | ID_AP r => [[] * [] <> EXP] ->> EXP
+       | IA r => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
@@ -335,8 +336,8 @@ struct
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | UNIV lvl => lvlSupport lvl
        | ID_AP r => dimSupport r
+       | IA r => dimSupport r
        | HYP_REF a => [(a, HYP EXP)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
@@ -420,6 +421,8 @@ struct
      | MTAC_SEQ _ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
+     | MTAC_HOLE (SOME x) => "?" ^ x
+     | MTAC_HOLE NONE => "?"
      | TAC_MTAC => "mtac"
      | MTAC_REPEAT => "repeat"
      | RULE_ID => "id"
@@ -485,8 +488,9 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_LEMMA (opid, ps, ar) =>
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
-       | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
+
        | ID_AP r => "idap{" ^ P.toString f r ^ "}"
+       | IA r => "ia{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
@@ -533,8 +537,8 @@ struct
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
-       | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | ID_AP r => ID_AP (P.bind f r)
+       | IA r => IA (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)

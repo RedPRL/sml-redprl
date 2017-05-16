@@ -106,7 +106,7 @@ struct
       O.MONO O.MTAC_PROGRESS $$ [([],[]) \ mt]
 
     fun multirepeat mt =
-        O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
+      O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
 
     fun cut jdg =
       O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
@@ -149,6 +149,13 @@ struct
            @@ (O.MONO O.S_IF `$ [([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
            <: env
 
+     | O.POLY (O.IA r) `$ [_ \ a, _ \ b, _, _] <: env => 
+         (case readParam env r of 
+             P.VAR a => S.VAL
+           | P.APP P.DIM0 => S.STEP @@ a <: env
+           | P.APP P.DIM1 => S.STEP @@ b <: env 
+           | _ => raise Match)
+
      | O.MONO O.S1 `$ _ <: _ => S.VAL
      | O.MONO O.BASE `$ _ <: _ => S.VAL
      | O.POLY (O.LOOP r) `$ _ <: env =>
@@ -170,6 +177,7 @@ struct
            @@ (O.POLY (O.ID_AP r) `$ [([],[]) \ S.HOLE], m)
            <: env
 
+
      | O.MONO O.AX `$ _ <: _ => S.VAL
 
      | O.MONO (O.MTAC_SEQ _) `$ _ <: _ => S.VAL
@@ -185,6 +193,8 @@ struct
              @@ mtrec
              <: env
          end
+
+     | O.MONO (O.MTAC_HOLE _) `$ _ <: _ => S.VAL
 
      | O.MONO O.TAC_MTAC `$ _ <: _ => S.VAL
 
@@ -250,8 +260,6 @@ struct
      | O.MONO O.JDG_TYPE `$ _ <: _ => S.VAL
      | O.MONO O.JDG_TRUE `$ _ <: _ => S.VAL
      | O.MONO O.JDG_SYNTH `$ _ <: _ => S.VAL
-
-     | O.POLY (O.UNIV _) `$ _ <: _ => S.VAL
 
      | (cust as O.POLY (O.CUST (opid, ps, ar))) `$ args <: env =>
          let

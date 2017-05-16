@@ -36,6 +36,11 @@ sig
     val Project : hyp -> rule
   end
 
+  structure Synth : 
+  sig
+    val FromWfHyp : hyp -> rule
+  end
+
   structure CEquiv :
   sig
     val Refl : rule

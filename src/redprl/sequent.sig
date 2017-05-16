@@ -7,6 +7,7 @@ sig
   type psort = CJ.Tm.psort
   type sort = CJ.Tm.sort
   type operator = CJ.Tm.operator
+  type param = CJ.Tm.param
   type hyp = sym
   type abt = CJ.Tm.abt
 
@@ -16,7 +17,7 @@ sig
 
   datatype 'a jdg =
      >> of 'a CJ.jdg ctx * 'a CJ.jdg                            (* sequents / formal hypothetical judgment *)
-   | MATCH of operator * int * 'a                               (* unify a term w/ a head operator and extract the kth subterm *)
+   | MATCH of operator * int * 'a * param list * 'a list        (* unify a term w/ a head operator and extract the kth subterm *)
 
   val map : ('a -> 'b) -> 'a jdg -> 'b jdg
 

@@ -16,23 +16,41 @@ struct
   structure Rules = Refiner (Sig)
 
   structure O = RedPrlOpData
+
+  fun hyp z alpha jdg = 
+    Rules.Hyp.Project z alpha jdg 
+    handle _ => 
+      Rules.Synth.FromWfHyp z alpha jdg
+
   fun interpret (sign, env) rule =
     case out rule of
-       O.MONO O.RULE_ID $ _ => (fn _ => Lcf.idn)
-     | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.CEquiv.EvalGoal sign
-     | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.CEquiv.Refl
-     | O.MONO O.RULE_AUTO_STEP $ _ => Rules.AutoStep sign
-     | O.POLY (O.RULE_HYP (z, _)) $ _ => Rules.Hyp.Project z
-     | O.POLY (O.RULE_ELIM (z, _)) $ _ => Rules.Elim sign z
-     | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Truth.Witness tm
-     | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Computation.EqHeadExpansion sign
-     | O.MONO O.RULE_SYMMETRY $ _ => Rules.Equality.Symmetry
-     | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg)
-     | O.POLY (O.RULE_LEMMA (opid, ps, _)) $ args => Rules.Lemma sign opid (List.map #1 ps) args
-     | O.POLY (O.RULE_UNFOLD opid) $ _ => Rules.Computation.Unfold sign opid
-     | _ => raise E.error [E.% "Invalid rule", E.! rule]
+        O.MONO O.RULE_ID $ _ => (fn _ => Lcf.idn)
+      | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.CEquiv.EvalGoal sign
+      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.CEquiv.Refl
+      | O.MONO O.RULE_AUTO_STEP $ _ => Rules.AutoStep sign
+      | O.POLY (O.RULE_HYP (z, _)) $ _ => hyp z
+      | O.POLY (O.RULE_ELIM (z, _)) $ _ => Rules.Elim sign z
+      | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Truth.Witness tm
+      | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Computation.EqHeadExpansion sign
+      | O.MONO O.RULE_SYMMETRY $ _ => Rules.Equality.Symmetry
+      | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg)
+      | O.POLY (O.RULE_LEMMA (opid, ps, _)) $ args => Rules.Lemma sign opid (List.map #1 ps) args
+      | O.POLY (O.RULE_UNFOLD opid) $ _ => Rules.Computation.Unfold sign opid
+      | _ => raise E.error [E.% "Invalid rule", E.! rule]
 
   fun rule (sign, env) rule alpha goal =
     Debug.wrap (fn _ => interpret (sign, env) (Machine.eval sign rule) alpha goal)
     handle exn => raise RedPrlError.annotate (getAnnotation rule) exn
+
+  fun printHole (pos : Pos.t, name) (state : Lcf.jdg Lcf.state) = 
+    let
+      val header = 
+        case name of 
+           NONE => PP.empty
+         | SOME n => PP.concat [PP.text n, PP.text ".", PP.newline]
+      val doc = PP.concat [header, Lcf.prettyState state]
+      val message = PP.toString 60 false doc
+    in
+      RedPrlLog.print RedPrlLog.INFO (SOME pos, message)
+    end
 end

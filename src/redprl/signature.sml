@@ -148,6 +148,13 @@ struct
       open RedPrlAst
       infix $ $$ $# $$# \
 
+
+      fun inheritAnnotation t1 t2 = 
+        case getAnnotation t2 of 
+          NONE => setAnnotation (getAnnotation t1) t2
+        | _ => t2
+
+
       fun processOp pos sign =
         fn O.POLY (O.CUST (opid, ps, NONE)) =>
            (case arityOfOpid sign opid of
@@ -176,7 +183,7 @@ struct
          | x $# (ps, ms) => x $$# (ps, List.map (processTerm sign) ms)
 
       and processTerm sign m =
-        setAnnotation (getAnnotation m) (processTerm' sign m)
+        inheritAnnotation m (processTerm' sign m)
 
       fun processSrcCatjdg sign = 
         RedPrlCategoricalJudgment.map (processTerm sign)
@@ -438,9 +445,9 @@ struct
           val proofStateCorrect = go (subgoalsSpec, Tl.ConsView.out subgoals)
         in
           if proofStateCorrect then 
-            E.ret state 
+            E.ret state
           else
-            E.warn (pos, "Incomplete proof: \n\n" ^ Lcf.stateToString state)
+            E.warn (pos, "Incomplete proof")
               *> E.ret state
         end
     in

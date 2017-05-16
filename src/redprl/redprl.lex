@@ -74,6 +74,7 @@ whitespace = [\ \t];
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
 ">>"               => (Tokens.DOUBLE_RANGLE (posTuple (size yytext)));
 
+"?"                => (Tokens.QUESTION (posTuple (size yytext)));
 "bool"             => (Tokens.BOOL (posTuple (size yytext)));
 "sbool"            => (Tokens.S_BOOL (posTuple (size yytext)));
 "tt"               => (Tokens.TT (posTuple (size yytext)));
@@ -85,11 +86,12 @@ whitespace = [\ \t];
 "lam"              => (Tokens.LAMBDA (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
-"univ"             => (Tokens.UNIV (posTuple (size yytext)));
 "loop"             => (Tokens.LOOP (posTuple (size yytext)));
 "base"             => (Tokens.BASE (posTuple (size yytext)));
 "fst"              => (Tokens.FST (posTuple (size yytext)));
 "snd"              => (Tokens.SND (posTuple (size yytext)));
+
+"ia"               => (Tokens.IA (posTuple (size yytext)));
 
 "then"             => (Tokens.THEN (posTuple (size yytext)));
 "else"             => (Tokens.ELSE (posTuple (size yytext)));

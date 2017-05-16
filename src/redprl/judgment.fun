@@ -46,11 +46,12 @@ struct
   in
     val rec sort =
       fn H >> catjdg => (([],[]), CJ.synthesis catjdg)
-       | MATCH (th, k, _) =>
+       | MATCH (th, k, _, _, _) =>
            let
              val (vls, _) = Tm.O.arity th
+             val (_, tau) = List.nth (vls, k)
            in
-             List.nth (vls, k)
+             (([],[]), tau)
            end
   end
 end
