@@ -307,6 +307,21 @@ struct
         psi #> trivial
       end
 
+    fun ElimTypeEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "StrictBool.ElimTypeEq"
+        val H >> CJ.EQ_TYPE (if0, if1) = jdg
+        val Syn.S_IF (m0, (t0, f0)) = Syn.out if0
+        val Syn.S_IF (m1, (t1, f1)) = Syn.out if1
+
+        val (goalM, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m0, m1), Syn.into Syn.S_BOOL)
+        val (goalT, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (t0, t1)
+        val (goalF, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (f0, f1)
+        val psi = T.empty >: goalM >: goalT >: goalF
+      in
+        psi #> trivial
+      end
+
     fun EqElim z _ jdg =
       let
         val _ = RedPrlLog.trace "StrictBool.EqElim"
@@ -1290,11 +1305,20 @@ struct
         T.empty >: goal #> hole [] []
       end
 
+    fun TrueHeadExpansion sign alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Computation.TrueHeadExpansion"
+        val H >> CJ.TRUE a = jdg
+        val a' = Machine.unload sign (safeEval sign (Machine.load a))
+        val (goal, hole) = makeGoal @@ ([],[]) || H >> CJ.TRUE a'
+      in
+        T.empty >: goal #> hole [] []
+      end
+
     fun EqHeadExpansion sign alpha jdg =
       let
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val H >> CJ.EQ ((m, n), ty) = jdg
-        val Abt.$ (theta, _) = Abt.out m
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val (goal, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m', n), ty)
       in
@@ -1306,7 +1330,6 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val H >> CJ.EQ_TYPE (ty1, ty2) = jdg
-        val Abt.$ (theta, _) = Abt.out ty1
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
         val (goal, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (ty1', ty2)
         in
@@ -1433,12 +1456,17 @@ struct
       f jdg alpha jdg
   in
     local
-      fun StepTrue sign ty =
+      fun StepTrueVal sign ty =
         case Syn.out ty of
            Syn.DFUN _ => DFun.True
          | Syn.DPROD _ => DProd.True
          | Syn.ID_TY _ => Path.True
          | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
+
+      fun StepTrue sign ty = 
+        case Machine.canonicity sign ty of 
+           Machine.CANONICAL => StepTrueVal sign ty
+         | Machine.REDEX => Computation.TrueHeadExpansion sign
 
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
@@ -1456,6 +1484,7 @@ struct
            (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
          | (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
          | (_, Machine.REDEX) => TypeEquality.Symmetry
+         | (Machine.NEUTRAL _, _) => StrictBool.ElimTypeEq
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
       (* equality of canonical forms *)
