@@ -100,7 +100,7 @@ struct
    | S_BOOL | S_IF (* strict booleans *)
    | S1 | BASE | S1_ELIM
    | AX
-   | ID_TY | ID_ABS
+   | PATH_TY | PATH_ABS
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
@@ -141,7 +141,7 @@ struct
    | TAG_S1
    | TAG_DFUN
    | TAG_DPROD
-   | TAG_ID
+   | TAG_PATH
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a extents = 'a P.term list
@@ -153,7 +153,7 @@ struct
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | ID_AP of 'a P.term
+   | PATH_AP of 'a P.term
    | HYP_REF of 'a
    | RULE_HYP of 'a * sort
    | RULE_ELIM of 'a * sort
@@ -205,8 +205,8 @@ struct
      | BASE => [] ->> EXP
      | S1_ELIM => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
      | AX => [] ->> TRIV
-     | ID_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-     | ID_ABS => [[DIM] * [] <> EXP] ->> EXP
+     | PATH_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | PATH_ABS => [[DIM] * [] <> EXP] ->> EXP
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
      | MTAC_REC => [[] * [MTAC] <> MTAC] ->> MTAC
@@ -252,7 +252,7 @@ struct
        | TAG_S1 => []
        | TAG_DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP]
        | TAG_DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP]
-       | TAG_ID => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP]
+       | TAG_PATH => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP]
 
     fun arityHcom (tag, extents, dir) =
       let
@@ -282,7 +282,7 @@ struct
        | COE coe => arityCoe coe
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
-       | ID_AP r => [[] * [] <> EXP] ->> EXP
+       | PATH_AP r => [[] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
@@ -321,7 +321,7 @@ struct
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | ID_AP r => dimSupport r
+       | PATH_AP r => dimSupport r
        | HYP_REF a => [(a, HYP EXP)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
@@ -400,8 +400,8 @@ struct
      | BASE => "base"
      | S1_ELIM => "s1-elim"
      | AX => "ax"
-     | ID_TY => "paths"
-     | ID_ABS => "abs"
+     | PATH_TY => "paths"
+     | PATH_ABS => "abs"
      | MTAC_SEQ _ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
@@ -448,7 +448,7 @@ struct
        | TAG_S1 => "/S1"
        | TAG_DFUN => "/dfun"
        | TAG_DPROD => "/dprod"
-       | TAG_ID => "/id"
+       | TAG_PATH => "/path"
   in
     fun toStringPoly f =
       fn LOOP r => "loop[" ^ P.toString f r ^ "]"
@@ -470,7 +470,7 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_LEMMA (opid, ps, ar) =>
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
-       | ID_AP r => "idap{" ^ P.toString f r ^ "}"
+       | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
@@ -509,7 +509,7 @@ struct
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
-       | ID_AP r => ID_AP (P.bind f r)
+       | PATH_AP r => PATH_AP (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)
