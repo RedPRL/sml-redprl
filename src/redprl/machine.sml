@@ -209,7 +209,7 @@ struct
          S.STEP
           @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP O.EXP)] (Tac.each [tac2,tac1]))
           <: env
-     | O.MONO O.DEV_FUN_INTRO `$ [([u], _) \ t] <: env =>
+     | O.MONO O.DEV_DFUN_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
            @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t]))
            <: env

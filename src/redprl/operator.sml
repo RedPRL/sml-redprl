@@ -83,6 +83,7 @@ struct
      | MTAC => "mtac"
      | JDG => "jdg"
      | TRIV => "triv"
+     | SEQ => "seq"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -93,19 +94,33 @@ struct
   structure P = RedPrlParameterTerm
   type psort = RedPrlSortData.param_sort
 
+  (* We split our operator signature into a couple datatypes, because the implementation of
+   * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
+   * which we call "monomorphic".
+   *
+   * Practically, the difference is:
+   * MONO: the Standard ML built-in equality properly compares the operators.
+   * POLY: we have to compare the operators manually. *)
   datatype mono_operator =
-     DFUN | LAM | AP
-   | DPROD | PAIR | FST | SND
+   (* axioms *)
+     AX
+   (* week bool: true, false and if *)
    | BOOL | TRUE | FALSE | IF (* weak booleans *)
-   | S_BOOL | S_IF (* strict booleans *)
+   (* strict bool: strict if (true and false are shared) *)
+   | S_BOOL | S_IF
+   (* circle: base and s1_elim *)
    | S1 | BASE | S1_ELIM
-   | AX
+   (* function: lambda and app *)
+   | DFUN | LAM | AP
+   (* prodcut: pair, fst and snd *)
+   | DPROD | PAIR | FST | SND
+   (* path: path abstraction *)
    | PATH_TY | PATH_ABS
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
-   | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int | MTAC_REPEAT
-   | MTAC_AUTO | MTAC_PROGRESS
+   | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
+   | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
    | TAC_MTAC
 
    (* primitive rules *)
@@ -113,7 +128,7 @@ struct
    | RULE_CUT
 
    (* development calculus terms *)
-   | DEV_FUN_INTRO | DEV_PATH_INTRO | DEV_DPROD_INTRO
+   | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
    | DEV_LET
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
@@ -149,11 +164,11 @@ struct
 
   datatype 'a poly_operator =
      LOOP of 'a P.term
+   | PATH_AP of 'a P.term
    | HCOM of type_tag * 'a extents * 'a dir
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | PATH_AP of 'a P.term
    | HYP_REF of 'a
    | RULE_HYP of 'a * sort
    | RULE_ELIM of 'a * sort
@@ -163,9 +178,6 @@ struct
    | DEV_DFUN_ELIM of 'a
    | DEV_DPROD_ELIM of 'a
 
-  (* We split our operator signature into a couple datatypes, because the implementation of
-   * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
-   * which we call "monomorphic". *)
   datatype 'a operator =
      MONO of mono_operator
    | POLY of 'a poly_operator
@@ -188,45 +200,39 @@ struct
   type 'a t = 'a operator
 
   val arityMono =
-    fn DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
-     | LAM => [[] * [EXP] <> EXP] ->> EXP
-     | AP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
-     | DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
-     | PAIR => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
-     | FST => [[] * [] <> EXP] ->> EXP
-     | SND => [[] * [] <> EXP] ->> EXP
+    fn AX => [] ->> TRIV
+
      | BOOL => [] ->> EXP
      | TRUE => [] ->> EXP
      | FALSE => [] ->> EXP
      | IF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+
      | S_BOOL => [] ->> EXP
      | S_IF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
      | S1_ELIM => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
-     | AX => [] ->> TRIV
+
+     | DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
+     | LAM => [[] * [EXP] <> EXP] ->> EXP
+     | AP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+
+     | DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
+     | PAIR => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | FST => [[] * [] <> EXP] ->> EXP
+     | SND => [[] * [] <> EXP] ->> EXP
+
      | PATH_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | PATH_ABS => [[DIM] * [] <> EXP] ->> EXP
+
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
      | MTAC_REC => [[] * [MTAC] <> MTAC] ->> MTAC
-     | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
      | MTAC_REPEAT => [[] * [] <> MTAC] ->> MTAC
-     | RULE_ID => [] ->> TAC
      | MTAC_AUTO => [] ->> MTAC
      | MTAC_PROGRESS => [[] * [] <> MTAC] ->> MTAC
-     | RULE_AUTO_STEP => [] ->> TAC
-     | RULE_SYMMETRY => [] ->> TAC
-     | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
-     | RULE_HEAD_EXP => [] ->> TAC
-     | RULE_CUT => [[] * [] <> JDG] ->> TAC
-     | RULE_EVAL_GOAL => [] ->> TAC
-     | RULE_CEQUIV_REFL => [] ->> TAC
-
-     | DEV_FUN_INTRO => [[HYP EXP] * [] <> TAC] ->> TAC
-     | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
-     | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
-     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP EXP] * [] <> TAC] ->> TAC
+     | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
 
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
      | MTAC_EACH n =>
@@ -236,6 +242,20 @@ struct
            tacs ->> MTAC
          end
      | MTAC_FOCUS i => [[] * [] <> TAC] ->> MTAC
+
+     | RULE_ID => [] ->> TAC
+     | RULE_EVAL_GOAL => [] ->> TAC
+     | RULE_CEQUIV_REFL => [] ->> TAC
+     | RULE_AUTO_STEP => [] ->> TAC
+     | RULE_SYMMETRY => [] ->> TAC
+     | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
+     | RULE_HEAD_EXP => [] ->> TAC
+     | RULE_CUT => [[] * [] <> JDG] ->> TAC
+
+     | DEV_DFUN_INTRO => [[HYP EXP] * [] <> TAC] ->> TAC
+     | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
+     | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
+     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP EXP] * [] <> TAC] ->> TAC
 
      | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
@@ -278,11 +298,11 @@ struct
   in
     val arityPoly =
       fn LOOP _ => [] ->> EXP
+       | PATH_AP r => [[] * [] <> EXP] ->> EXP
        | HCOM hcom => arityHcom hcom
        | COE coe => arityCoe coe
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
-       | PATH_AP r => [[] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
@@ -315,13 +335,13 @@ struct
   in
     val supportPoly =
       fn LOOP r => dimSupport r
+       | PATH_AP r => dimSupport r
        | HCOM (_, extents, dir) =>
            ListMonad.bind dimSupport extents
              @ spanSupport dir
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | PATH_AP r => dimSupport r
        | HYP_REF a => [(a, HYP EXP)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
@@ -347,34 +367,46 @@ struct
       ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
   in
     fun eqPoly f =
-      fn (LOOP r, LOOP r') => P.eq f (r, r')
-       | (HCOM (tag1, exs1, sp1), HCOM (tag2, exs2, sp2)) =>
-           tag1 = tag2
-             andalso extentsEq f (exs1, exs2)
-             andalso spanEq f (sp1, sp2)
-       | (COE (tag1, sp1), COE (tag2, sp2)) =>
-           tag1 = tag2 andalso spanEq f (sp1, sp2)
-       | (CUST (opid1, ps1, _), CUST (opid2, ps2, _)) =>
-           f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-       | (RULE_LEMMA (opid1, ps1, _), RULE_LEMMA (opid2, ps2, _)) =>
-           f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-       | (HYP_REF a, HYP_REF b) =>
-           f (a, b)
-       | (RULE_HYP (a, _), RULE_HYP (b, _)) =>
-           f (a, b)
-       | (RULE_ELIM (a, _), RULE_ELIM (b, _)) =>
-           f (a, b)
-       | (RULE_UNFOLD a, RULE_UNFOLD b) => 
-           f (a, b)
-       | (DEV_BOOL_ELIM a, DEV_BOOL_ELIM b) =>
-           f (a, b)
-       | (DEV_S1_ELIM a, DEV_S1_ELIM b) =>
-           f (a, b)
-       | (DEV_DFUN_ELIM a, DEV_DFUN_ELIM b) =>
-           f (a, b)
-       | (DEV_DPROD_ELIM a, DEV_DPROD_ELIM b) =>
-           f (a, b)
-       | _ => false
+      fn (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
+       | (PATH_AP r, t) => (case t of PATH_AP r' => P.eq f (r, r') | _ => false)
+       | (HCOM (tag1, exs1, sp1), t) =>
+           (case t of
+                 HCOM (tag2, exs2, sp2) =>
+                   tag1 = tag2
+                   andalso extentsEq f (exs1, exs2)
+                   andalso spanEq f (sp1, sp2)
+               | _ => false)
+       | (COE (tag1, sp1), t) =>
+           (case t of
+                 COE (tag2, sp2) =>
+                   tag1 = tag2 andalso spanEq f (sp1, sp2)
+               | _ => false)
+       | (CUST (opid1, ps1, _), t) =>
+           (case t of
+                 CUST (opid2, ps2, _) =>
+                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+               | _ => false)
+       | (RULE_LEMMA (opid1, ps1, _), t) =>
+           (case t of
+                 RULE_LEMMA (opid2, ps2, _) =>
+                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+               | _ => false)
+       | (HYP_REF a, t) =>
+           (case t of HYP_REF b => f (a, b) | _ => false)
+       | (RULE_HYP (a, _), t) =>
+           (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
+       | (RULE_ELIM (a, _), t) =>
+           (case t of RULE_ELIM (b, _) => f (a, b) | _ => false)
+       | (RULE_UNFOLD a, t) =>
+           (case t of RULE_UNFOLD b => f (a, b) | _ => false)
+       | (DEV_BOOL_ELIM a, t) =>
+           (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
+       | (DEV_S1_ELIM a, t) =>
+           (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
+       | (DEV_DFUN_ELIM a, t) =>
+           (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
+       | (DEV_DPROD_ELIM a, t) =>
+           (case t of DEV_DPROD_ELIM b => f (a, b) | _ => false)
   end
 
   fun eq f =
@@ -383,47 +415,57 @@ struct
      | _ => false
 
   val toStringMono =
-    fn DFUN => "dfun"
-     | LAM => "lam"
-     | AP => "ap"
-     | DPROD => "dprod"
-     | PAIR => "pair"
-     | FST => "fst"
-     | SND => "snd"
+    fn AX => "ax"
+
      | BOOL => "bool"
      | TRUE => "tt"
      | FALSE => "ff"
      | IF => "if"
+
      | S_BOOL => "sbool"
      | S_IF => "if"
+
      | S1 => "S1"
      | BASE => "base"
      | S1_ELIM => "s1-elim"
-     | AX => "ax"
+
+     | DFUN => "dfun"
+     | LAM => "lam"
+     | AP => "ap"
+
+     | DPROD => "dprod"
+     | PAIR => "pair"
+     | FST => "fst"
+     | SND => "snd"
+
      | PATH_TY => "paths"
      | PATH_ABS => "abs"
+
      | MTAC_SEQ _ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
-     | TAC_MTAC => "mtac"
      | MTAC_REPEAT => "repeat"
-     | RULE_ID => "id"
      | MTAC_AUTO => "auto"
      | MTAC_PROGRESS => "multi-progress"
+     | MTAC_ALL => "all"
+     | MTAC_EACH n => "each"
+     | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
+     | TAC_MTAC => "mtac"
+
+     | RULE_ID => "id"
+     | RULE_EVAL_GOAL => "eval-goal"
+     | RULE_CEQUIV_REFL => "ceq/refl"
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
      | RULE_WITNESS => "witness"
      | RULE_HEAD_EXP => "head-expand"
      | RULE_CUT => "cut"
-     | RULE_EVAL_GOAL => "eval-goal"
-     | RULE_CEQUIV_REFL => "ceq/refl"
+
      | DEV_PATH_INTRO => "path-intro"
-     | DEV_FUN_INTRO => "fun-intro"
+     | DEV_DFUN_INTRO => "fun-intro"
      | DEV_DPROD_INTRO => "dprod-intro"
      | DEV_LET => "let"
-     | MTAC_ALL => "all"
-     | MTAC_EACH n => "each"
-     | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
+
      | JDG_EQ => "eq"
      | JDG_CEQ => "ceq"
      | JDG_MEM => "mem"
@@ -452,6 +494,7 @@ struct
   in
     fun toStringPoly f =
       fn LOOP r => "loop[" ^ P.toString f r ^ "]"
+       | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
        | HCOM (tag, extents, dir) =>
            "hcom"
              ^ tagToString tag
@@ -470,7 +513,6 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_LEMMA (opid, ps, ar) =>
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
-       | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
@@ -505,11 +547,11 @@ struct
   in
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)
+       | PATH_AP r => PATH_AP (P.bind f r)
        | HCOM (tag, extents, dir) => HCOM (tag, mapExtents f extents, mapSpan f dir)
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
-       | PATH_AP r => PATH_AP (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)
