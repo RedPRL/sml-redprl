@@ -54,7 +54,7 @@ struct
       POLY (LOOP p) $ [] =>
         SOME o atom @@ "loop[" ^ paramToString p ^ "]"
     | (* A @ p *)
-      POLY (ID_AP p) $ [_ \ a] =>
+      POLY (PATH_AP p) $ [_ \ a] =>
         SOME @@ infix' (Left, 5, "@") (unparse a, atom (paramToString p))
     | _ => NONE
 

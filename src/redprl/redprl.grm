@@ -290,7 +290,7 @@ operator
   | RULE_LEMMA OPNAME customOpParams (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams, NONE)))
   | IF (O.MONO O.IF)
   | S_IF (O.MONO O.S_IF)
-  | PATHS (O.MONO O.ID_TY)
+  | PATHS (O.MONO O.PATH_TY)
   | FST (O.MONO O.FST)
   | SND (O.MONO O.SND)
 
@@ -323,8 +323,8 @@ atomicRawTerm
   | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
   | LOOP LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.LOOP param), []))
-  | LANGLE boundVar RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([boundVar],[]), term)]))
-  | atomicTerm AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.ID_AP param), [\ (([],[]), atomicTerm)]))
+  | LANGLE boundVar RANGLE term (Ast.$$ (O.MONO O.PATH_ABS, [\ (([boundVar],[]), term)]))
+  | atomicTerm AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), atomicTerm)]))
 
 atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
 

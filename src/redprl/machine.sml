@@ -163,11 +163,11 @@ struct
            @@ (O.MONO O.S1_ELIM `$ [([],[x]) \ S.% cx, ([],[]) \ S.HOLE, ([],[]) \ S.% b, ([u],[]) \ S.% l], m)
            <: env
 
-     | O.MONO O.ID_TY `$ _ <: _ => S.VAL
-     | O.MONO O.ID_ABS `$ _ <: _ => S.VAL
-     | O.POLY (O.ID_AP r) `$ [_ \ m] <: env =>
+     | O.MONO O.PATH_TY `$ _ <: _ => S.VAL
+     | O.MONO O.PATH_ABS `$ _ <: _ => S.VAL
+     | O.POLY (O.PATH_AP r) `$ [_ \ m] <: env =>
          S.CUT
-           @@ (O.POLY (O.ID_AP r) `$ [([],[]) \ S.HOLE], m)
+           @@ (O.POLY (O.PATH_AP r) `$ [([],[]) \ S.HOLE], m)
            <: env
 
      | O.MONO O.AX `$ _ <: _ => S.VAL
@@ -297,13 +297,13 @@ struct
            S.STEP @@ pair <: env
          end
 
-     | O.POLY (O.HCOM (O.TAG_ID, exts, dir)) `$ (([u],_) \ a) :: (_ \ p0) :: (_ \ p1) :: (_ \ cap) :: tubes <: env =>
+     | O.POLY (O.HCOM (O.TAG_PATH, exts, dir)) `$ (([u],_) \ a) :: (_ \ p0) :: (_ \ p1) :: (_ \ cap) :: tubes <: env =>
          let
-           fun ap m = Syn.into @@ Syn.ID_AP (m, P.ret u)
+           fun ap m = Syn.into @@ Syn.PATH_AP (m, P.ret u)
            val w = Sym.named "w"
            val tubes' = List.map (mapBind ap) tubes @ [([w],[]) \ p0, ([w],[]) \ p1]
            val hcom = O.POLY (O.HCOM (O.TAG_NONE, exts @ [P.ret u], dir)) $$ (([],[]) \ a) :: (([],[]) \ ap cap) :: tubes'
-           val path = Syn.into @@ Syn.ID_ABS (u, raise Match)
+           val path = Syn.into @@ Syn.PATH_ABS (u, raise Match)
          in
            S.STEP @@ path <: env
          end
@@ -339,9 +339,9 @@ struct
            S.STEP @@ pair <: env
          end
 
-     | O.POLY (O.COE (O.TAG_ID, dir)) `$ [([u,v],_) \ auv, p0, p1, _ \ m] <: env =>
+     | O.POLY (O.COE (O.TAG_PATH, dir)) `$ [([u,v],_) \ auv, p0, p1, _ \ m] <: env =>
          let
-           val com = Syn.heteroCom ([P.ret v], dir) ((u, auv), Syn.into @@ Syn.ID_AP (m, P.ret u), [p0, p1])
+           val com = Syn.heteroCom ([P.ret v], dir) ((u, auv), Syn.into @@ Syn.PATH_AP (m, P.ret u), [p0, p1])
          in
            S.STEP @@ com <: env
          end
@@ -398,7 +398,7 @@ struct
          end
 
 
-     | (O.POLY (O.ID_AP r) `$ [_ \ S.HOLE], _ \ O.MONO O.ID_ABS `$ [([u],_) \ m] <: env) =>
+     | (O.POLY (O.PATH_AP r) `$ [_ \ S.HOLE], _ \ O.MONO O.PATH_ABS `$ [([u],_) \ m] <: env) =>
          m <: Cl.insertSym env u r
 
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.BOOL `$ _ <: env) =>
@@ -436,10 +436,10 @@ struct
            hcom $$ a :: b :: args <: env
          end
 
-     | (O.POLY (O.HCOM (O.TAG_ID, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.ID_TY `$ [a, p0, p1] <: env) =>
+     | (O.POLY (O.HCOM (O.TAG_PATH, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.PATH_TY `$ [a, p0, p1] <: env) =>
          let
            val args = List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
-           val hcom = O.POLY @@ O.HCOM (O.TAG_ID, exts, dir)
+           val hcom = O.POLY @@ O.HCOM (O.TAG_PATH, exts, dir)
          in
            hcom $$ a :: p0 :: p1 :: args <: env
          end
@@ -459,8 +459,8 @@ struct
      | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.DPROD `$ [_\ a, (_,[x]) \ bx] <: env) =>
          O.POLY (O.COE (O.TAG_DPROD, dir)) $$ [([u], []) \ a, ([u],[x]) \ bx, ([],[]) \ Cl.force cl] <: env
 
-     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.ID_TY `$ [([v],_) \ a, _ \ p0, _ \ p1] <: env) =>
-         O.POLY (O.COE (O.TAG_ID, dir)) $$ [([u,v], []) \ a, ([u],[]) \ p0, ([u],[]) \ p1, ([],[]) \ Cl.force cl] <: env
+     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.PATH_TY `$ [([v],_) \ a, _ \ p0, _ \ p1] <: env) =>
+         O.POLY (O.COE (O.TAG_PATH, dir)) $$ [([u,v], []) \ a, ([u],[]) \ p0, ([u],[]) \ p1, ([],[]) \ Cl.force cl] <: env
 
      | _ => raise InvalidCut
 end
