@@ -251,8 +251,6 @@ struct
      | O.MONO O.JDG_TRUE `$ _ <: _ => S.VAL
      | O.MONO O.JDG_SYNTH `$ _ <: _ => S.VAL
 
-     | O.POLY (O.UNIV _) `$ _ <: _ => S.VAL
-
      | (cust as O.POLY (O.CUST (opid, ps, ar))) `$ args <: env =>
          let
            val entry as {state,...} = Sig.lookup sign opid

@@ -14,7 +14,6 @@ struct
    | LBL
    | OPID
    | HYP of sort
-   | LVL
 end
 
 structure RedPrlParamData =
@@ -22,7 +21,6 @@ struct
   datatype 'a param_operator =
      DIM0
    | DIM1
-   | LVL_SUCC of 'a
 end
 
 structure RedPrlParamSort : ABT_SORT =
@@ -38,7 +36,6 @@ struct
      | LBL => "lbl"
      | OPID => "opid"
      | HYP _ => "hyp"
-     | LVL => "lvl"
 end
 
 structure RedPrlParameter : ABT_PARAMETER =
@@ -49,30 +46,25 @@ struct
   fun map f =
     fn DIM0 => DIM0
      | DIM1 => DIM1
-     | LVL_SUCC a => LVL_SUCC (f a)
 
   structure Sort = RedPrlParamSort
 
   val arity =
     fn DIM0 => (DIM0, DIM)
      | DIM1 => (DIM1, DIM)
-     | LVL_SUCC a => (LVL_SUCC LVL, LVL)
 
   fun eq f =
     fn (DIM0, DIM0) => true
      | (DIM1, DIM1) => true
-     | (LVL_SUCC a, LVL_SUCC b) => f (a, b)
      | _ => false
 
   fun toString f =
     fn DIM0 => "dim0"
      | DIM1 => "dim1"
-     | LVL_SUCC a => f a ^ "'"
 
   fun join zer mul =
     fn DIM0 => zer
      | DIM1 => zer
-     | LVL_SUCC l => mul (l, zer)
 end
 
 structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
@@ -161,7 +153,6 @@ struct
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | UNIV of 'a P.term
    | ID_AP of 'a P.term
    | HYP_REF of 'a
    | RULE_HYP of 'a * sort
@@ -291,7 +282,6 @@ struct
        | COE coe => arityCoe coe
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
-       | UNIV lvl => [] ->> EXP
        | ID_AP r => [[] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
@@ -315,10 +305,6 @@ struct
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
 
-    val lvlSupport =
-      fn P.VAR a => [(a, LVL)]
-       | P.APP t => P.freeVars t
-
     fun paramsSupport ps =
       ListMonad.bind
         (fn (P.VAR a, SOME tau) => [(a, tau)]
@@ -335,7 +321,6 @@ struct
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | UNIV lvl => lvlSupport lvl
        | ID_AP r => dimSupport r
        | HYP_REF a => [(a, HYP EXP)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
@@ -485,7 +470,6 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_LEMMA (opid, ps, ar) =>
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
-       | UNIV lvl => "univ{" ^ P.toString f lvl ^ "}"
        | ID_AP r => "idap{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
@@ -518,14 +502,6 @@ struct
       case f a of
          P.VAR a' => a'
        | _ => raise Fail "Expected symbol, but got application"
-
-    fun mapLvl f a =
-      let
-        val r = f a
-        val _ = P.check LVL r
-      in
-        r
-      end
   in
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)
@@ -533,7 +509,6 @@ struct
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
-       | UNIV lvl => UNIV (P.bind (mapLvl f) lvl)
        | ID_AP r => ID_AP (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
