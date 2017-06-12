@@ -158,7 +158,7 @@ struct
       fun extract (Lcf.|> (subgoals, validation)) = 
         case outb validation of 
            ([],[]) \ term => term
-         | _ => raise Fail "Extract term has unexpected binder. Can this relaly happen?"
+         | _ => raise Fail "Extract term has unexpected binder. Can this really happen?"
     end
 end
 
