@@ -48,7 +48,7 @@ struct
       MONO PAIR $ [_ \ m, _ \ n] =>
         SOME o atom @@ "<" ^ toString m ^ ", " ^ toString n ^ ">"
     | (* <x> A *)
-      MONO ID_ABS $ [(([x], []) \ a)] =>
+      MONO PATH_ABS $ [(([x], []) \ a)] =>
         SOME o atom @@ "<" ^ ShowVar.toString x  ^ "> " ^ toString a
     | (* loop[p] *)
       POLY (LOOP p) $ [] =>
