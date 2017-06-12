@@ -7,6 +7,7 @@ install:
   - git submodule update --init --recursive
 script:
   - ./script/test.sh
+  - cat 'build.log'
 
 notifications:
   email: false
