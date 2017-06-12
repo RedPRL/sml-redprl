@@ -429,7 +429,7 @@ atomicRawTac
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
-  | LAMBDA boundVar DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([boundVar], []), tactic)]))
+  | LAMBDA boundVar DOT tactic (Ast.$$ (O.MONO O.DEV_DFUN_INTRO, [\ (([boundVar], []), tactic)]))
   | LANGLE boundVar RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([boundVar], []), tactic)]))
   | LANGLE tactic COMMA tactic RANGLE (Ast.$$ (O.MONO O.DEV_DPROD_INTRO, [\ (([], []), tactic1), \ (([],[]), tactic2)]))
   | IF VARNAME THEN tactic ELSE tactic

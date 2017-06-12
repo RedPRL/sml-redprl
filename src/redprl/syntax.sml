@@ -10,15 +10,25 @@ struct
 
   datatype 'a view =
      VAR of variable * sort
+   (* axiom *)
    | AX
+   (* week bool: true, false and if *)
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
+   (* strict bool: strict if (true and false are shared) *)
    | S_BOOL | S_IF of 'a * ('a * 'a)
+   (* circle: base, loop and s1_elim *)
    | S1 | BASE | LOOP of param | S1_ELIM of (variable * 'a) * 'a * ('a * (symbol * 'a))
+   (* function: lambda and app *)
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
+   (* prodcut: pair, fst and snd *)
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
+   (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_AP of 'a * param
+   (* hcom *)
    | HCOM of param list (* extents *) * dir * 'a (* type *) * 'a (* cap *) * (symbol * 'a) list (* tubes *)
+   (* it is a "view" for custom operators *)
    | CUST
+   (* meta *)
    | META
 
   local
