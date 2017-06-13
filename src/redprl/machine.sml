@@ -53,7 +53,7 @@ struct
     case ListUtil.indexSatisfyingPredicate (asConcrete env) exts of
        SOME (i, c) =>
          let
-           val j = case c of P.DIM0 => i * 2 | P.DIM1 => i * 2 + 1 | _ => raise Match
+           val j = case c of P.DIM0 => i * 2 | P.DIM1 => i * 2 + 1
            val ([y],_) \ tube = List.nth (tubes, j)
          in
            S.STEP @@ tube <: Cl.insertSym env y r'
@@ -155,8 +155,7 @@ struct
          (case readParam env r of
              P.VAR a => S.VAL
            | P.APP P.DIM0 => S.STEP @@ O.MONO O.BASE $$ [] <: env
-           | P.APP P.DIM1 => S.STEP @@ O.MONO O.BASE $$ [] <: env
-           | P.APP _ => raise Match)
+           | P.APP P.DIM1 => S.STEP @@ O.MONO O.BASE $$ [] <: env)
 
      | O.MONO O.S1_ELIM `$ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] <: env =>
          S.CUT
