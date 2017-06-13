@@ -697,7 +697,7 @@ struct
         val Syn.PATH_AP (m, P.APP r) = Syn.out ap
         val (goalSynth, holeSynth) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m
 
-        val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2 | _ => raise Fail "impossible"
+        val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2
         val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.PATH_TY, 0, holeSynth [] [])
         val (goalEndpoint, holeEndpoint) = makeGoal @@ ([],[]) || MATCH (O.MONO O.PATH_TY, dimAddr, holeSynth [] [])
         val (goalTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a, holeLine [(P.APP r, P.DIM)] [])
