@@ -443,11 +443,12 @@ struct
             | go _ = false
 
           val proofStateCorrect = go (subgoalsSpec, Tl.ConsView.out subgoals)
+          val subgoalsCount = Tl.foldr (fn (_,_,n) => 1 + n) 0 subgoals
         in
           if proofStateCorrect then 
             E.ret state
           else
-            E.warn (pos, "Incomplete proof")
+            E.warn (pos, Int.toString (subgoalsCount) ^ " Remaining Obligations")
               *> E.ret state
         end
     in
