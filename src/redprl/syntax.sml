@@ -17,7 +17,6 @@ struct
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    | ID_TY of (symbol * 'a) * 'a * 'a | ID_ABS of symbol * 'a | ID_AP of 'a * param
-   | IA of param * 'a * 'a * 'a * 'a
    | HCOM of param list (* extents *) * dir * 'a (* type *) * 'a (* cap *) * (symbol * 'a) list (* tubes *)
    | CUST
    | META
@@ -50,7 +49,6 @@ struct
        | ID_TY ((u, a), m, n) => O.MONO O.ID_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | ID_ABS (u, m) => O.MONO O.ID_ABS $$ [([u],[]) \ m]
        | ID_AP (m, r) => O.POLY (O.ID_AP r) $$ [([],[]) \ m]
-       | IA (r, a, b, f, g) => O.POLY (O.IA r) $$ [([],[]) \ a, ([],[]) \ b, ([],[]) \ f, ([],[]) \ g]
        | HCOM (exts, dir, ty, cap, tubes) => O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ (([],[]) \ ty) :: (([],[]) \ cap) :: List.map (fn (d, tube) => ([d], []) \ tube) tubes
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
@@ -79,7 +77,6 @@ struct
        | O.MONO O.ID_TY $ [([u],_) \ a, _ \ m, _ \ n] => ID_TY ((u, a), m, n)
        | O.MONO O.ID_ABS $ [([u],_) \ m] => ID_ABS (u, m)
        | O.POLY (O.ID_AP r) $ [_ \ m] => ID_AP (m, r)
-       | O.POLY (O.IA r) $ [_ \ a, _ \ b, _ \ f, _ \ g] => IA (r, a, b, f, g)
        | O.POLY (O.HCOM (tag, exts, dir)) $ args =>
          let
            val (ty, args) =

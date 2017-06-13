@@ -161,7 +161,6 @@ struct
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | ID_AP of 'a P.term
-   | IA of 'a P.term
 
    | HYP_REF of 'a
    | RULE_HYP of 'a * sort
@@ -293,7 +292,6 @@ struct
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
        | ID_AP r => [[] * [] <> EXP] ->> EXP
-       | IA r => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | HYP_REF a => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
@@ -337,7 +335,6 @@ struct
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | ID_AP r => dimSupport r
-       | IA r => dimSupport r
        | HYP_REF a => [(a, HYP EXP)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
@@ -490,7 +487,6 @@ struct
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
 
        | ID_AP r => "idap{" ^ P.toString f r ^ "}"
-       | IA r => "ia{" ^ P.toString f r ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
@@ -538,7 +534,6 @@ struct
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
        | ID_AP r => ID_AP (P.bind f r)
-       | IA r => IA (P.bind f r)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)

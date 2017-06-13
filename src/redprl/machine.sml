@@ -149,13 +149,6 @@ struct
            @@ (O.MONO O.S_IF `$ [([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
            <: env
 
-     | O.POLY (O.IA r) `$ [_ \ a, _ \ b, _, _] <: env => 
-         (case readParam env r of 
-             P.VAR a => S.VAL
-           | P.APP P.DIM0 => S.STEP @@ a <: env
-           | P.APP P.DIM1 => S.STEP @@ b <: env 
-           | _ => raise Match)
-
      | O.MONO O.S1 `$ _ <: _ => S.VAL
      | O.MONO O.BASE `$ _ <: _ => S.VAL
      | O.POLY (O.LOOP r) `$ _ <: env =>

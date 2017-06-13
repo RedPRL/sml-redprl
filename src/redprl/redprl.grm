@@ -295,7 +295,6 @@ operator
   | PATHS (O.MONO O.ID_TY)
   | FST (O.MONO O.FST)
   | SND (O.MONO O.SND)
-  | IA LBRACKET param RBRACKET (O.POLY (O.IA param))
 
 customOpParams
   : LBRACKET params RBRACKET (List.map (fn x => (x, NONE)) params)

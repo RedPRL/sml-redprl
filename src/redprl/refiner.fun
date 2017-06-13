@@ -1195,54 +1195,6 @@ struct
   end
 
 
-  structure Univalence = 
-  struct
-    fun EqType alpha jdg = 
-      let
-        val _ = RedPrlLog.trace "Univalence.EqType"
-        val H >> CJ.EQ_TYPE (ty0, ty1) = jdg
-        val Syn.IA (r0, a0, b0, f0, g0) = Syn.out ty0
-        val Syn.IA (r1, a1, b1, f1, g1) = Syn.out ty1
-        val () = assertParamEq "Univalence.EqType" (r0, r1)
-        val r = r0
-
-        val a2b = Syn.into @@ Syn.DFUN (a0, Sym.named "_", b0)
-        val b2a = Syn.into @@ Syn.DFUN (b0, Sym.named "_", a0)
-
-        val x = alpha 0
-        val y = alpha 1 
-
-        val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
-        val ytm = Syn.into @@ Syn.VAR (y, O.EXP)
-
-        val gfx = Syn.into @@ Syn.AP (g0, Syn.into @@ Syn.AP (f0, xtm))
-        val fgy = Syn.into @@ Syn.AP (f0, Syn.into @@ Syn.AP (g0, ytm))
-
-        val Hx = H @> (x, CJ.TRUE a0)
-        val Hy = H @> (y, CJ.TRUE b0)
-
-        val (goalA, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a0, a1)
-        val structuralGoals =
-          List.map (fn jdg => #1 o makeGoal @@ ([], []) || jdg) @@
-            Restriction.One (H >> CJ.EQ_TYPE (b0, b1)) r (P.APP P.DIM1)
-            @ Restriction.One (H >> CJ.EQ ((f0, f1), a2b)) r (P.APP P.DIM1)
-            @ Restriction.One (H >> CJ.EQ ((g0, g1), b2a)) r (P.APP P.DIM1)
-
-        val isoGoalsGF = 
-          List.map (fn jdg => #1 o makeGoal @@ ([], [(x, O.EXP)]) || jdg) @@
-            Restriction.One (Hx >> CJ.EQ ((gfx, xtm), a0)) r (P.APP P.DIM1)
-
-        val isoGoalsFG = 
-          List.map (fn jdg => #1 o makeGoal @@ ([], [(y, O.EXP)]) || jdg) @@ 
-            Restriction.One (Hy >> CJ.EQ ((fgy, ytm), b0)) r (P.APP P.DIM1)
-
-        val psi = listToTel @@ structuralGoals @ isoGoalsGF @ isoGoalsFG
-      in
-        psi #> trivial
-      end
-  end
-
-
   structure Computation =
   struct
     local
@@ -1449,7 +1401,6 @@ struct
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
          | (Syn.ID_TY _, Syn.ID_TY _) => Path.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
-         | (Syn.IA _, Syn.IA _) => Univalence.EqType
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
       fun StepEqType sign (ty1, ty2) =
