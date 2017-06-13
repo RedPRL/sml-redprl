@@ -609,8 +609,8 @@ struct
       let
         val _ = RedPrlLog.trace "Path.EqType"
         val H >> CJ.EQ_TYPE (ty0, ty1) = jdg
-        val Syn.ID_TY ((u, a0u), m0, n0) = Syn.out ty0
-        val Syn.ID_TY ((v, a1v), m1, n1) = Syn.out ty1
+        val Syn.PATH_TY ((u, a0u), m0, n0) = Syn.out ty0
+        val Syn.PATH_TY ((v, a1v), m1, n1) = Syn.out ty1
 
         val a1u = substSymbol (P.ret u, v) a1v
 
@@ -629,7 +629,7 @@ struct
       let
         val _ = RedPrlLog.trace "Path.True"
         val H >> CJ.TRUE ty = jdg
-        val Syn.ID_TY ((u, a), p0, p1) = Syn.out ty
+        val Syn.PATH_TY ((u, a), p0, p1) = Syn.out ty
         val a0 = substSymbol (P.APP P.DIM0, u) a
         val a1 = substSymbol (P.APP P.DIM1, u) a
 
@@ -643,7 +643,7 @@ struct
         val (cohGoal1, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m1, p1), a1)
 
         val psi = T.empty >: mainGoal >: cohGoal0 >: cohGoal1
-        val abstr = Syn.into @@ Syn.ID_ABS (v, mhole [(P.ret v, P.DIM)] [])
+        val abstr = Syn.into @@ Syn.PATH_ABS (v, mhole [(P.ret v, P.DIM)] [])
       in
         psi #> abstr
       end
@@ -652,9 +652,9 @@ struct
       let
         val _ = RedPrlLog.trace "Path.Eq"
         val H >> CJ.EQ ((abs0, abs1), ty) = jdg
-        val Syn.ID_TY ((u, au), p0, p1) = Syn.out ty
-        val Syn.ID_ABS (v, m0v) = Syn.out abs0
-        val Syn.ID_ABS (w, m1w) = Syn.out abs1
+        val Syn.PATH_TY ((u, au), p0, p1) = Syn.out ty
+        val Syn.PATH_ABS (v, m0v) = Syn.out abs0
+        val Syn.PATH_ABS (w, m1w) = Syn.out abs1
 
         val z = alpha 0
         val az = substSymbol (P.ret z, u) au
@@ -678,12 +678,12 @@ struct
       let
         val _ = RedPrlLog.trace "Path.ApEq"
         val H >> CJ.EQ ((ap0, ap1), ty) = jdg
-        val Syn.ID_AP (m0, r0) = Syn.out ap0
-        val Syn.ID_AP (m1, r1) = Syn.out ap1
+        val Syn.PATH_AP (m0, r0) = Syn.out ap0
+        val Syn.PATH_AP (m1, r1) = Syn.out ap1
         val () = assertParamEq "Path.ApEq" (r0, r1)
         val (goalSynth, holeSynth) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m0
         val (goalMem, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m0, m1), holeSynth [] [])
-        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holeSynth [] [], [r0], [])
+        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.PATH_TY, 0, holeSynth [] [], [r0], [])
         val (goalTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (ty, holeLine [] [])
       in
         T.empty >: goalSynth >: goalMem >: goalLine >: goalTy
@@ -694,12 +694,12 @@ struct
       let
         val _ = RedPrlLog.trace "Path.ApComputeConst"
         val H >> CJ.EQ ((ap, p), a) = jdg
-        val Syn.ID_AP (m, P.APP r) = Syn.out ap
+        val Syn.PATH_AP (m, P.APP r) = Syn.out ap
         val (goalSynth, holeSynth) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m
 
-        val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2 | _ => raise Fail "impossible"
-        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holeSynth [] [], [P.APP r], [])
-        val (goalEndpoint, holeEndpoint) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, dimAddr, holeSynth [] [], [], [])
+        val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2
+        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.PATH_TY, 0, holeSynth [] [], [P.APP r], [])
+        val (goalEndpoint, holeEndpoint) = makeGoal @@ ([],[]) || MATCH (O.MONO O.PATH_TY, dimAddr, holeSynth [] [], [], [])
         val (goalTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (a, holeLine [] [])
         val (goalEq, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((holeEndpoint [] [], p), a)
       in
@@ -711,9 +711,9 @@ struct
       let
         val _ = RedPrlLog.trace "Path.Eta"
         val H >> CJ.EQ ((m, n), pathTy) = jdg
-        val Syn.ID_TY ((u, a), p0, p1) = Syn.out pathTy
+        val Syn.PATH_TY ((u, a), p0, p1) = Syn.out pathTy
 
-        val m' = Syn.into @@ Syn.ID_ABS (u, Syn.into @@ Syn.ID_AP (m, P.ret u))
+        val m' = Syn.into @@ Syn.PATH_ABS (u, Syn.into @@ Syn.PATH_AP (m, P.ret u))
         val (goal1, _) = makeGoal @@ ([],[]) || H >> CJ.MEM (m, pathTy)
         val (goal2, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m', n), pathTy)
       in
@@ -879,9 +879,9 @@ struct
       let
         val _ = RedPrlLog.trace "Synth.PathAp"
         val H >> CJ.SYNTH tm = jdg
-        val Syn.ID_AP (m, r) = Syn.out tm
+        val Syn.PATH_AP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeGoal @@ ([],[]) || H >> CJ.SYNTH m
-        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.ID_TY, 0, holePathTy [] [], [r], [])
+        val (goalLine, holeLine) = makeGoal @@ ([],[]) || MATCH (O.MONO O.PATH_TY, 0, holePathTy [] [], [r], [])
         val psi = T.empty >: goalPathTy >: goalLine
       in
         T.empty >: goalPathTy >: goalLine
@@ -1390,7 +1390,7 @@ struct
         case Syn.out ty of
            Syn.DFUN _ => DFun.True
          | Syn.DPROD _ => DProd.True
-         | Syn.ID_TY _ => Path.True
+         | Syn.PATH_TY _ => Path.True
          | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
 
       fun StepEqTypeVal (ty1, ty2) =
@@ -1399,7 +1399,7 @@ struct
          | (Syn.S_BOOL, Syn.S_BOOL) => StrictBool.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
-         | (Syn.ID_TY _, Syn.ID_TY _) => Path.EqType
+         | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
@@ -1420,7 +1420,7 @@ struct
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
-         | (Syn.ID_ABS _, Syn.ID_ABS _, _) => Path.Eq
+         | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
          | (Syn.PAIR _, Syn.PAIR _, _) => DProd.Eq
          | _ => raise E.error [E.% "Could not find value equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
@@ -1440,16 +1440,16 @@ struct
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
          | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
-         | (Syn.ID_AP (_, P.VAR _), Syn.ID_AP (_, P.VAR _), _) => Path.ApEq
-         | (Syn.ID_AP (_, P.APP _), _, _) => Path.ApComputeConst
-         | (_, Syn.ID_AP (_, P.APP _), _) => Equality.Symmetry
+         | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _), _) => Path.ApEq
+         | (Syn.PATH_AP (_, P.APP _), _, _) => Path.ApComputeConst
+         | (_, Syn.PATH_AP (_, P.APP _), _) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find neutral equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepEqEta ty =
         case Syn.out ty of
            Syn.DPROD _ => DProd.Eta
          | Syn.DFUN _ => DFun.Eta
-         | Syn.ID_TY _ => Path.Eta
+         | Syn.PATH_TY _ => Path.Eta
          | _ => raise E.error [E.% "Could not find eta expansion rule for type", E.! ty]
 
       fun StepEqCanonicity sign ((m, n), ty) =
@@ -1473,7 +1473,7 @@ struct
          | Syn.AP _ => Synth.Ap
          | Syn.S1_ELIM _ => Synth.S1Elim
          | Syn.IF _ => Synth.If
-         | Syn.ID_AP _ => Synth.PathAp
+         | Syn.PATH_AP _ => Synth.PathAp
          | Syn.FST _ => Synth.Fst
          | Syn.SND _ => Synth.Snd
          | _ => raise E.error [E.% "Could not find suitable type synthesis rule for", E.! m]

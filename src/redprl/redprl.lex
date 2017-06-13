@@ -91,8 +91,6 @@ whitespace = [\ \t];
 "fst"              => (Tokens.FST (posTuple (size yytext)));
 "snd"              => (Tokens.SND (posTuple (size yytext)));
 
-"ia"               => (Tokens.IA (posTuple (size yytext)));
-
 "then"             => (Tokens.THEN (posTuple (size yytext)));
 "else"             => (Tokens.ELSE (posTuple (size yytext)));
 "let"              => (Tokens.LET (posTuple (size yytext)));

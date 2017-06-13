@@ -10,15 +10,25 @@ struct
 
   datatype 'a view =
      VAR of variable * sort
+   (* axiom *)
    | AX
+   (* week bool: true, false and if *)
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
+   (* strict bool: strict if (true and false are shared) *)
    | S_BOOL | S_IF of 'a * ('a * 'a)
+   (* circle: base, loop and s1_elim *)
    | S1 | BASE | LOOP of param | S1_ELIM of (variable * 'a) * 'a * ('a * (symbol * 'a))
+   (* function: lambda and app *)
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
+   (* prodcut: pair, fst and snd *)
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
-   | ID_TY of (symbol * 'a) * 'a * 'a | ID_ABS of symbol * 'a | ID_AP of 'a * param
+   (* path: path abstraction and path application *)
+   | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_AP of 'a * param
+   (* hcom *)
    | HCOM of param list (* extents *) * dir * 'a (* type *) * 'a (* cap *) * (symbol * 'a) list (* tubes *)
+   (* it is a "view" for custom operators *)
    | CUST
+   (* meta *)
    | META
 
   local
@@ -46,9 +56,9 @@ struct
        | PAIR (m, n) => O.MONO O.PAIR $$ [([],[]) \ m, ([],[]) \ n]
        | FST m => O.MONO O.FST $$ [([],[]) \ m]
        | SND m => O.MONO O.SND $$ [([],[]) \ m]
-       | ID_TY ((u, a), m, n) => O.MONO O.ID_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
-       | ID_ABS (u, m) => O.MONO O.ID_ABS $$ [([u],[]) \ m]
-       | ID_AP (m, r) => O.POLY (O.ID_AP r) $$ [([],[]) \ m]
+       | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
+       | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
+       | PATH_AP (m, r) => O.POLY (O.PATH_AP r) $$ [([],[]) \ m]
        | HCOM (exts, dir, ty, cap, tubes) => O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ (([],[]) \ ty) :: (([],[]) \ cap) :: List.map (fn (d, tube) => ([d], []) \ tube) tubes
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
@@ -74,9 +84,9 @@ struct
        | O.MONO O.PAIR $ [_ \ m, _ \ n] => PAIR (m, n)
        | O.MONO O.FST $ [_ \ m] => FST m
        | O.MONO O.SND $ [_ \ m] => SND m
-       | O.MONO O.ID_TY $ [([u],_) \ a, _ \ m, _ \ n] => ID_TY ((u, a), m, n)
-       | O.MONO O.ID_ABS $ [([u],_) \ m] => ID_ABS (u, m)
-       | O.POLY (O.ID_AP r) $ [_ \ m] => ID_AP (m, r)
+       | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
+       | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
+       | O.POLY (O.PATH_AP r) $ [_ \ m] => PATH_AP (m, r)
        | O.POLY (O.HCOM (tag, exts, dir)) $ args =>
          let
            val (ty, args) =
@@ -86,7 +96,7 @@ struct
               | (O.TAG_S1, args) => (O.MONO O.S1 $$ [], args)
               | (O.TAG_DFUN, (A :: xB :: args)) => (O.MONO O.DFUN $$ [A, xB], args)
               | (O.TAG_DPROD, (A :: xB :: args)) => (O.MONO O.DPROD $$ [A, xB], args)
-              | (O.TAG_ID, (uA :: a0 :: a1 :: args)) => (O.MONO O.ID_TY $$ [uA, a0, a1], args)
+              | (O.TAG_PATH, (uA :: a0 :: a1 :: args)) => (O.MONO O.PATH_TY $$ [uA, a0, a1], args)
               | _ => raise Fail "Syntax.out hcom: Malformed tag"
            val (_ \ cap) :: args = args
            fun goTube (([d], _) \ tube) = (d, tube)

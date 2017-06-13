@@ -69,7 +69,6 @@ end
  | QUESTION
 
  | HCOM | COE | BOOL | S_BOOL | TT | FF | IF | S_IF | PATHS | LOOP | BASE | S1 | FST | SND
- | IA
  | THEN | ELSE | LET | WITH | CASE | OF
 
  | FUN_APP
@@ -92,7 +91,7 @@ end
 %nonassoc COMMA COLON
 %left FUN_APP
 %left AT_SIGN
-%nonassoc SND FST S1 BASE LOOP PATHS S_IF IF FF TT S_BOOL BOOL COE HCOM LAMBDA HASH LANGLE LPAREN VARNAME OPNAME IA
+%nonassoc SND FST S1 BASE LOOP PATHS S_IF IF FF TT S_BOOL BOOL COE HCOM LAMBDA HASH LANGLE LPAREN VARNAME OPNAME
 
 
 
@@ -207,7 +206,6 @@ psort
   : DIM (P.DIM)
   | EXN (P.EXN)
   | LBL (P.LBL)
-  | LVL (P.LVL)
   | HYP (P.HYP O.EXP)
 
 sort
@@ -237,7 +235,6 @@ valence
 param
   : VARNAME (P.VAR VARNAME)
   | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise Fail "Invalid dimension constant"))
-  | param APOSTROPHE (P.APP (P.LVL_SUCC param))
 
 params
   : param ([param])
@@ -292,7 +289,7 @@ operator
   | RULE_LEMMA OPNAME customOpParams (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams, NONE)))
   | IF (O.MONO O.IF)
   | S_IF (O.MONO O.S_IF)
-  | PATHS (O.MONO O.ID_TY)
+  | PATHS (O.MONO O.PATH_TY)
   | FST (O.MONO O.FST)
   | SND (O.MONO O.SND)
 
@@ -325,8 +322,8 @@ atomicRawTerm
   | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
   | LOOP LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.LOOP param), []))
-  | LANGLE boundVar RANGLE term (Ast.$$ (O.MONO O.ID_ABS, [\ (([boundVar],[]), term)]))
-  | atomicTerm AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.ID_AP param), [\ (([],[]), atomicTerm)]))
+  | LANGLE boundVar RANGLE term (Ast.$$ (O.MONO O.PATH_ABS, [\ (([boundVar],[]), term)]))
+  | atomicTerm AT_SIGN param %prec AT_SIGN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), atomicTerm)]))
 
 atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
 
@@ -431,7 +428,7 @@ atomicRawTac
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
-  | LAMBDA boundVar DOT tactic (Ast.$$ (O.MONO O.DEV_FUN_INTRO, [\ (([boundVar], []), tactic)]))
+  | LAMBDA boundVar DOT tactic (Ast.$$ (O.MONO O.DEV_DFUN_INTRO, [\ (([boundVar], []), tactic)]))
   | LANGLE boundVar RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([boundVar], []), tactic)]))
   | LANGLE tactic COMMA tactic RANGLE (Ast.$$ (O.MONO O.DEV_DPROD_INTRO, [\ (([], []), tactic1), \ (([],[]), tactic2)]))
   | IF VARNAME THEN tactic ELSE tactic

@@ -48,13 +48,13 @@ struct
       MONO PAIR $ [_ \ m, _ \ n] =>
         SOME o atom @@ "<" ^ toString m ^ ", " ^ toString n ^ ">"
     | (* <x> A *)
-      MONO ID_ABS $ [(([x], []) \ a)] =>
+      MONO PATH_ABS $ [(([x], []) \ a)] =>
         SOME o atom @@ "<" ^ ShowVar.toString x  ^ "> " ^ toString a
     | (* loop[p] *)
       POLY (LOOP p) $ [] =>
         SOME o atom @@ "loop[" ^ paramToString p ^ "]"
     | (* A @ p *)
-      POLY (ID_AP p) $ [_ \ a] =>
+      POLY (PATH_AP p) $ [_ \ a] =>
         SOME @@ infix' (Left, 5, "@") (unparse a, atom (paramToString p))
     | _ => NONE
 

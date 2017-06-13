@@ -6,6 +6,7 @@ The following people have contributed to RedPRL and its theoretical underpinning
 - James Wilcox
 - David Christiansen
 - Darin Morrison
+- Favonia
 
 We also thank the following people for their contributions to previous versions
 of JonPRL:
