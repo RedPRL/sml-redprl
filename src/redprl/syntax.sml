@@ -39,26 +39,33 @@ struct
     val into =
       fn VAR (x, tau) => check (`x, tau)
        | AX => O.MONO O.AX $$ []
+
        | BOOL => O.MONO O.BOOL $$ []
        | TT => O.MONO O.TRUE $$ []
        | FF => O.MONO O.FALSE $$ []
-       | S_BOOL => O.MONO O.S_BOOL $$ []
        | IF ((x, cx), m, (t, f)) => O.MONO O.IF $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
+
+       | S_BOOL => O.MONO O.S_BOOL $$ []
        | S_IF (m, (t, f)) => O.MONO O.S_IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
-       | S1_ELIM ((x, cx), m, (b, (u, l))) => O.MONO O.S1_ELIM $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([u],[]) \ l]
+
        | S1 => O.MONO O.S1 $$ []
        | BASE => O.MONO O.BASE $$ []
        | LOOP r => O.POLY (O.LOOP r) $$ []
+       | S1_ELIM ((x, cx), m, (b, (u, l))) => O.MONO O.S1_ELIM $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([u],[]) \ l]
+
        | DFUN (a, x, bx) => O.MONO O.DFUN $$ [([],[]) \ a, ([],[x]) \ bx]
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
        | AP (m, n) => O.MONO O.AP $$ [([],[]) \ m, ([],[]) \ n]
+
        | DPROD (a, x, bx) => O.MONO O.DPROD $$ [([],[]) \ a, ([],[x]) \ bx]
        | PAIR (m, n) => O.MONO O.PAIR $$ [([],[]) \ m, ([],[]) \ n]
        | FST m => O.MONO O.FST $$ [([],[]) \ m]
        | SND m => O.MONO O.SND $$ [([],[]) \ m]
+
        | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
        | PATH_AP (m, r) => O.POLY (O.PATH_AP r) $$ [([],[]) \ m]
+
        | HCOM (exts, dir, ty, cap, tubes) => O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ (([],[]) \ ty) :: (([],[]) \ cap) :: List.map (fn (d, tube) => ([d], []) \ tube) tubes
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
@@ -70,23 +77,29 @@ struct
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TRUE $ _ => TT
        | O.MONO O.FALSE $ _ => FF
-       | O.MONO O.S_BOOL $ _ => S_BOOL
        | O.MONO O.IF $ [(_,[x]) \ cx, _ \ m, _ \ t, _ \ f] => IF ((x, cx), m, (t, f))
+
+       | O.MONO O.S_BOOL $ _ => S_BOOL
        | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] => S_IF (m, (t, f))
-       | O.MONO O.S1_ELIM $ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] => S1_ELIM ((x, cx), m, (b, (u, l)))
+
        | O.MONO O.S1 $ _ => S1
        | O.MONO O.BASE $ _ => BASE
        | O.POLY (O.LOOP r) $ _ => LOOP r
+       | O.MONO O.S1_ELIM $ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] => S1_ELIM ((x, cx), m, (b, (u, l)))
+
        | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] => DFUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
        | O.MONO O.AP $ [_ \ m, _ \ n] => AP (m, n)
+
        | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] => DPROD (a, x, bx)
        | O.MONO O.PAIR $ [_ \ m, _ \ n] => PAIR (m, n)
        | O.MONO O.FST $ [_ \ m] => FST m
        | O.MONO O.SND $ [_ \ m] => SND m
+
        | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
        | O.POLY (O.PATH_AP r) $ [_ \ m] => PATH_AP (m, r)
+
        | O.POLY (O.HCOM (tag, exts, dir)) $ args =>
          let
            val (ty, args) =

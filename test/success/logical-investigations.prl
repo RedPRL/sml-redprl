@@ -1,0 +1,45 @@
+// Some theorems from http://www.nuprl.org/MathLibrary/LogicalInvestigations/.
+
+// We will prove the theorem A -> B -> A. In a traditional proof assistant for type theory, the 
+// types/propositions A, B would be quantified over using dependent function types and a universe.
+// However, RedPRL doesn't yet have a universe! So, what we have to do is treat A and B as parameters
+// to the theorem, and add explicit *hypotheses* that they are types.
+//
+// In RedPRL, parameters to definitions and theorems are prefixed by a #; this distinguishes them from 
+// object variables.
+//
+// Once we have a universe, this will be much simpler.
+Thm Thm1(#A; #B) : [
+  type/A : #A = #A type,
+  type/B : #B = #B type
+  >> #A -> #B -> #A
+] by [
+  // The main part of the theorem is the following expression; but in RedPRL, this induces some
+  // auxiliary subgoals, which have to be resolved. To do that, we put the main part of the proof
+  // in braces, and proceed with the 'auto' tactic, which resolves the remaining subgoals automatically.
+  // To see what these subgoals look like, comment out 'auto'.
+  {lam a. lam b. hyp a};
+  auto
+].
+
+Thm Thm2(#A; #B; #C) : [
+  type/A : #A = #A type,
+  type/B : #B = #B type,
+  type/C : #C = #C type
+  >> ((#A -> #B) -> (#A -> #B -> #C) -> #A -> #C)
+] by [
+  {lam f. lam g. lam a.
+   // RedPRL's logic is a sequent calculus, which means that you apply 
+   // functions in your context using let bindings in the following way:
+   let b = f {hyp a}.
+   let h = g {hyp a}.
+   let c = h {hyp b}.
+   hyp c};
+  auto
+].
+
+// It is worthwhile to print out the extract program / evidence for Thm2.
+Extract Thm2.
+
+// TODO: I would have given some examples about negation, but I just realized that RedPRL doesn't even have
+// the Void type! I'll add it soon.
