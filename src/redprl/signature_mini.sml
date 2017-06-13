@@ -118,14 +118,14 @@ struct
       let
         fun handleHyp ((u, psort), ptm, H) =
           case psort of
-             RedPrlSortData.HYP _ =>
-               let
-                 val v = case ptm of RedPrlParameterTerm.VAR v => v
-                            | _ => raise Fail "Hypothesis relabeling failed: not a variable"
-               in
-                 relabelHyp (u, v) H
-               end
-           | _ => H
+            RedPrlSortData.HYP _ =>
+              let
+                val v = case ptm of RedPrlParameterTerm.VAR v => v
+                           | _ => raise Fail "Hypothesis relabeling failed: not a variable"
+              in
+                relabelHyp (u, v) H
+              end
+          | _ => H
       in
         ListPair.foldl handleHyp H (#params entry, ps)
       end
