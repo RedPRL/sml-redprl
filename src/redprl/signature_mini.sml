@@ -96,7 +96,8 @@ struct
           case psort of 
             RedPrlSortData.HYP tau =>
               let
-                val RedPrlParameterTerm.VAR v = ptm
+                val v = case ptm of RedPrlParameterTerm.VAR v => v
+                           | _ => raise Fail "Hypothesis renaming failed: not a variable"
               in
                 Var.Ctx.insert ctx u (Tm.check (Tm.`v, tau))
               end
@@ -116,10 +117,11 @@ struct
     fun relabelHyps (entry : entry) (ps : Tm.param list) H = 
       let
         fun handleHyp ((u, psort), ptm, H) =
-          case psort of 
+          case psort of
              RedPrlSortData.HYP _ =>
                let
-                 val RedPrlParameterTerm.VAR v = ptm
+                 val v = case ptm of RedPrlParameterTerm.VAR v => v
+                            | _ => raise Fail "Hypothesis relabeling failed: not a variable"
                in
                  relabelHyp (u, v) H
                end
@@ -137,7 +139,7 @@ struct
         val entry = lookup sign opid
         val paramsSig = #params entry
         val argsSig = #arguments entry
-        val SOME goal = #spec entry
+        val goal = case #spec entry of SOME goal => goal | _ => raise Fail "Reviving theorem failed: goal missing"
         val state as Lcf.|> (subgoals, validation) = #state entry
 
         val (mrho, srho) = unifyCustomOperator entry ps args
