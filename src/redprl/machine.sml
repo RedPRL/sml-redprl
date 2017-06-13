@@ -106,7 +106,7 @@ struct
       O.MONO O.MTAC_PROGRESS $$ [([],[]) \ mt]
 
     fun multirepeat mt =
-        O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
+      O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
 
     fun cut jdg =
       O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
@@ -169,6 +169,7 @@ struct
            @@ (O.POLY (O.PATH_AP r) `$ [([],[]) \ S.HOLE], m)
            <: env
 
+
      | O.MONO O.AX `$ _ <: _ => S.VAL
 
      | O.MONO (O.MTAC_SEQ _) `$ _ <: _ => S.VAL
@@ -184,6 +185,8 @@ struct
              @@ mtrec
              <: env
          end
+
+     | O.MONO (O.MTAC_HOLE _) `$ _ <: _ => S.VAL
 
      | O.MONO O.TAC_MTAC `$ _ <: _ => S.VAL
 

@@ -6,7 +6,6 @@ struct
    | MTAC
    | JDG
    | TRIV
-   | SEQ
 
   datatype param_sort =
      DIM
@@ -83,7 +82,6 @@ struct
      | MTAC => "mtac"
      | JDG => "jdg"
      | TRIV => "triv"
-     | SEQ => "seq"
 end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
@@ -121,6 +119,7 @@ struct
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
+   |  MTAC_HOLE of string option
    | TAC_MTAC
 
    (* primitive rules *)
@@ -178,6 +177,9 @@ struct
    | DEV_DFUN_ELIM of 'a
    | DEV_DPROD_ELIM of 'a
 
+  (* We split our operator signature into a couple datatypes, because the implementation of
+   * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
+   * which we call "monomorphic". *)
   datatype 'a operator =
      MONO of mono_operator
    | POLY of 'a poly_operator
@@ -232,6 +234,7 @@ struct
      | MTAC_REPEAT => [[] * [] <> MTAC] ->> MTAC
      | MTAC_AUTO => [] ->> MTAC
      | MTAC_PROGRESS => [[] * [] <> MTAC] ->> MTAC
+     | MTAC_HOLE _ => [] ->> MTAC
      | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
 
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
@@ -450,6 +453,7 @@ struct
      | MTAC_ALL => "all"
      | MTAC_EACH n => "each"
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
+     | MTAC_HOLE (SOME x) => "?" ^ x
      | TAC_MTAC => "mtac"
 
      | RULE_ID => "id"

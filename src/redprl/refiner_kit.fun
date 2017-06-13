@@ -5,6 +5,7 @@ struct
   structure Machine = AbtMachineUtil (RedPrlMachine (Sig))
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
   open RedPrlSequent
+  infix >:
 
   fun @> (H, (x, j)) = Hyps.snoc H x j
   infix @>
@@ -29,6 +30,10 @@ struct
         Metavar.named @@ str ^ Int.toString i
       end
   end
+
+
+  fun listToTel (l : (label * 'a) list) : 'a telescope =
+    List.foldl (fn (g, l) => l >: g) T.empty l
 
   fun makeGoal (Lcf.|| (bs, jdg)) =
     let

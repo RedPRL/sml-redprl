@@ -27,10 +27,10 @@ struct
     end
 
   fun multitacToTac mt =
-    O.MONO O.TAC_MTAC $$ [([],[]) \ mt]
+    setAnnotation (getAnnotation mt) (O.MONO O.TAC_MTAC $$ [([],[]) \ mt])
 
   fun tacToMulitac t =
-    O.MONO O.MTAC_ALL $$ [([],[]) \ t]
+    setAnnotation (getAnnotation t) (O.MONO O.MTAC_ALL $$ [([],[]) \ t])
 
   fun orElse (t1, t2) =
     multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
@@ -66,6 +66,7 @@ end
  | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
  | TIMES
  | DOUBLE_RANGLE
+ | QUESTION
 
  | HCOM | COE | BOOL | S_BOOL | TT | FF | IF | S_IF | PATHS | LOOP | BASE | S1 | FST | SND
  | THEN | ELSE | LET | WITH | CASE | OF
@@ -79,7 +80,7 @@ end
  | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
  | BY | IN
 
- | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO
+ | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
  | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_UNFOLD
 
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
@@ -179,8 +180,6 @@ end
  | declParams of string Signature.params
  | declParamsBrackets of string Signature.params
 
-   (* a declaration in a RedPRL signature *)
- | rawDecl of string * Signature.src_decl
    (* a declaration, annotated with source position *)
  | decl of string * Signature.src_decl * Pos.t
    (* a RedPRL signature *)
@@ -462,6 +461,8 @@ atomicRawMultitac
   | LBRACKET multitac RBRACKET (multitac)
   | FRESH hypBindings LEFT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
+  | QUESTION ident (Ast.$$ (O.MONO (O.MTAC_HOLE (SOME ident)), []))
+  | QUESTION (Ast.$$ (O.MONO (O.MTAC_HOLE NONE), []))
   | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
 
 atomicMultitac
@@ -517,19 +518,17 @@ declParamsBrackets
   : LBRACKET declParams RBRACKET (declParams)
   | ([])
 
-rawDecl
+decl
   : DCL_DEF OPNAME declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
-      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort})
+      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_DEF OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE term RSQUARE
-      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = O.EXP})
+      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_TAC OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
-      (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic})
+      (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_sequent RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = src_sequent, script = tactic})
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = src_sequent, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_RULE OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_rulespec RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.RULE {arguments = declArgumentsParens, params = declParamsBrackets, spec = src_rulespec, script = tactic})
-
-decl : rawDecl (#1 rawDecl, #2 rawDecl, Pos.pos (rawDecl1left fileName) (rawDecl1right fileName))
+      (OPNAME, Signature.RULE {arguments = declArgumentsParens, params = declParamsBrackets, spec = src_rulespec, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
 
 rawCmd
   : CMD_PRINT OPNAME (Signature.PRINT OPNAME)

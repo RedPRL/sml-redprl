@@ -13,6 +13,7 @@ struct
   type psort = Tm.psort
   type sort = Tm.sort
   type operator = Tm.operator
+  type param = Tm.param
   type hyp = sym
   type abt = CJ.Tm.abt
 
@@ -21,13 +22,13 @@ struct
 
   datatype 'a jdg =
      >> of 'a CJ.jdg ctx * 'a CJ.jdg
-   | MATCH of operator * int * 'a
+   | MATCH of operator * int * 'a * param list * 'a list
 
   infix >>
 
   fun map f =
     fn H >> catjdg => Hyps.map (CJ.map f) H >> CJ.map f catjdg
-     | MATCH (th, k, a) => MATCH (th, k, f a)
+     | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
 
   local
     open Hyps.ConsView
@@ -68,10 +69,12 @@ struct
     fn (H1 >> catjdg1, H2 >> catjdg2) =>
           telescopeEq (H1, H2)
             andalso CJ.eq (catjdg1, catjdg2)
-     | (MATCH (th1, k1, a1), MATCH (th2, k2, a2)) =>
+     | (MATCH (th1, k1, a1, ps1, ms1), MATCH (th2, k2, a2, ps2, ms2)) =>
           CJ.Tm.O.eq CJ.Tm.Sym.eq (th1, th2)
             andalso k1 = k2
             andalso Tm.eq (a1, a2)
+            andalso ListPair.allEq (Tm.O.P.eq Tm.Sym.eq) (ps1, ps2)
+            andalso ListPair.allEq Tm.eq (ms1, ms2)
      | _ => false
 
   local
@@ -84,7 +87,7 @@ struct
 
     fun pretty f : 'a jdg -> doc =
       fn H >> catjdg => concat [prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
-       | MATCH (th, k, a) => concat [text (f a), text " match ", text (Tm.O.toString Tm.Sym.toString th), text " @ ", int k]
+       | MATCH (th, k, a, _, _) => concat [text (f a), text " match ", text (Tm.O.toString Tm.Sym.toString th), text " @ ", int k]
   end
 
   fun toString f = PP.toString 80 true o pretty f

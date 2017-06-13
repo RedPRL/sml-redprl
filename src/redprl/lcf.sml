@@ -75,11 +75,10 @@ struct
       open RedPrlAbt infix \
       val (us,xs) \ m = outb vld
     in
-      PP.concat [
-        PP.text (TermPrinter.toString m),
-        PP.line,
-        PP.text (primToStringAbs vld)
-      ]
+      PP.concat
+        [PP.text (TermPrinter.toString m),
+         PP.line,
+         PP.text (primToStringAbs vld)]
     end
 
   fun prettyState (psi |> vld) =
