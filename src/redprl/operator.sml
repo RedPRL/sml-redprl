@@ -119,7 +119,7 @@ struct
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
-   |  MTAC_HOLE of string option
+   | MTAC_HOLE of string option
    | TAC_MTAC
 
    (* primitive rules *)
@@ -234,9 +234,6 @@ struct
      | MTAC_REPEAT => [[] * [] <> MTAC] ->> MTAC
      | MTAC_AUTO => [] ->> MTAC
      | MTAC_PROGRESS => [[] * [] <> MTAC] ->> MTAC
-     | MTAC_HOLE _ => [] ->> MTAC
-     | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
-
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
      | MTAC_EACH n =>
          let
@@ -245,6 +242,8 @@ struct
            tacs ->> MTAC
          end
      | MTAC_FOCUS i => [[] * [] <> TAC] ->> MTAC
+     | MTAC_HOLE _ => [] ->> MTAC
+     | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
 
      | RULE_ID => [] ->> TAC
      | RULE_EVAL_GOAL => [] ->> TAC
@@ -454,6 +453,7 @@ struct
      | MTAC_EACH n => "each"
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
      | MTAC_HOLE (SOME x) => "?" ^ x
+     | MTAC_HOLE NONE => "?"
      | TAC_MTAC => "mtac"
 
      | RULE_ID => "id"
