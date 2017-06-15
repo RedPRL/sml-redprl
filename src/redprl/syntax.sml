@@ -6,6 +6,7 @@ struct
   type param = Tm.param
   type sort = Tm.sort
 
+  type equation = param * param
   type dir = param * param
 
   datatype 'a view =
@@ -25,7 +26,7 @@ struct
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_AP of 'a * param
    (* hcom *)
-   | HCOM of param list (* extents *) * dir * 'a (* type *) * 'a (* cap *) * (symbol * 'a) list (* tubes *)
+   | HCOM of {dir: dir, class: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* it is a "view" for custom operators *)
    | CUST
    (* meta *)
@@ -66,7 +67,14 @@ struct
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
        | PATH_AP (m, r) => O.POLY (O.PATH_AP r) $$ [([],[]) \ m]
 
-       | HCOM (exts, dir, ty, cap, tubes) => O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ (([],[]) \ ty) :: (([],[]) \ cap) :: List.map (fn (d, tube) => ([d], []) \ tube) tubes
+       | HCOM {dir, class=ty, cap, tubes} =>
+           let
+             val (eqs, tubes) = ListPair.unzip tubes
+             val tubes' = List.map (fn (d, t) => ([d], []) \ t) tubes
+           in
+             O.POLY (O.HCOM (O.TAG_NONE, eqs, dir)) $$
+               (([],[]) \ ty) :: (([],[]) \ cap) :: tubes'
+           end
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
 
@@ -100,7 +108,7 @@ struct
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
        | O.POLY (O.PATH_AP r) $ [_ \ m] => PATH_AP (m, r)
 
-       | O.POLY (O.HCOM (tag, exts, dir)) $ args =>
+       | O.POLY (O.HCOM (tag, eqs, dir)) $ args =>
          let
            val (ty, args) =
              case (tag, args) of
@@ -112,18 +120,18 @@ struct
               | (O.TAG_PATH, (uA :: a0 :: a1 :: args)) => (O.MONO O.PATH_TY $$ [uA, a0, a1], args)
               | _ => raise Fail "Syntax.out hcom: Malformed tag"
            val (_ \ cap) :: args = args
-           fun goTube (([d], _) \ tube) = (d, tube)
+           fun goTube (([d], []) \ tube) = (d, tube)
              | goTube _ = raise Fail "Syntax.out hcom: Malformed tube"
            val tubes = List.map goTube args
          in
-           HCOM (exts, dir, ty, cap, tubes)
+           HCOM {dir=dir, class=ty, cap=cap, tubes=ListPair.zipEq(eqs, tubes)}
          end
 
        | O.POLY (O.CUST _) $ _ => CUST
        | _ $# _ => META
        | _ => raise E.error [E.% "Syntax view encountered unrecognized term", E.! m]
 
-    fun heteroCom (exts, dir) ((u, a), cap, tube) =
+    fun heteroCom (eqs, dir) ((u, a), cap, tube) =
       let
         val (r, r') = dir
         fun coe v m = O.POLY (O.COE (O.TAG_NONE, dir)) $$ [([u],[]) \ a, ([],[]) \ m]
@@ -131,7 +139,7 @@ struct
         val cap' = ([],[]) \ coe r cap
         val tube' = List.map (fn ([v],_) \ n => ([v],[]) \ coe (P.ret v) n | _ => raise Fail "malformed tube") tube
       in
-        O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ ty :: cap' :: tube'
+        O.POLY (O.HCOM (O.TAG_NONE, eqs, dir)) $$ ty :: cap' :: tube'
       end
   end
 end

@@ -124,8 +124,9 @@ end
  | param of string param
  | params of string param list
 
-   (* the extents of a Kan composition *)
- | extents of string param list
+   (* the equations of a Kan composition *)
+ | equation of string param * string param
+ | equations of (string param * string param) list
    (* the direction of a coercion of Kan composition *)
  | dir of string param * string param
 
@@ -241,9 +242,14 @@ params
   | param COMMA params (param :: params)
   | ([])
 
-extents
-  : param ([param])
-  | param COMMA extents (param :: extents)
+equation
+  : LPAREN equation RPAREN (equation)
+  | param EQUALS param (param1, param2)
+
+equations
+  : equation ([equation])
+  | equation COMMA equations (equation :: equations)
+  | ([])
 
 boundVar
   : VARNAME (VARNAME)
@@ -283,7 +289,7 @@ metavarArgs
 
 operator
   : LAMBDA (O.MONO O.LAM)
-  | HCOM LBRACKET extents SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, extents, dir)))
+  | HCOM LBRACKET equations SEMI dir RBRACKET (O.POLY (O.HCOM (O.TAG_NONE, equations, dir)))
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE (O.TAG_NONE, dir)))
   | OPNAME customOpParams (O.POLY (O.CUST (OPNAME, customOpParams, NONE)))
   | RULE_LEMMA OPNAME customOpParams (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams, NONE)))

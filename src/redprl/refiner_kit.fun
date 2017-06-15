@@ -32,8 +32,8 @@ struct
   end
 
 
-  fun listToTel (l : (label * 'a) list) : 'a telescope =
-    List.foldl (fn (g, l) => l >: g) T.empty l
+  fun appendListOfGoals (tel, (l : (label * 'a) list)) : 'a telescope =
+    List.foldl (fn (g, l) => l >: g) tel l
 
   fun makeGoal (Lcf.|| (bs, jdg)) =
     let
@@ -62,6 +62,47 @@ struct
       ()
     else
       raise E.error [E.% (msg ^ ":"), E.% "Expected parameter", E.% (P.toString Sym.toString r1), E.% "to be equal to", E.% (P.toString Sym.toString r2)]
+
+  fun equationEq (r1, r1') (r2, r2') = P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2')
+
+  fun assertEquationEq msg ((r1, r1'), (r2, r2')) =
+    if equationEq (r1, r1') (r2, r2') then
+      ()
+    else
+      raise E.error [E.% (msg ^ ":"), E.% "Expected equation", E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r1'), E.% "to be equal to", E.% (P.toString Sym.toString r2), E.% "=", E.% (P.toString Sym.toString r2')]
+
+  (* The following is a sufficient condition for tautology:
+   * the list contains a true equation `r = r` or both `r = 0`
+   * and `r = 1` for some r.
+   *)
+  fun assertTautologicalEquations msg l =
+    if List.exists (P.eq Sym.eq) l then
+      ()
+    else
+      let
+        (* O(n^2)-time checking *)
+        fun goEquations [] = false
+          | goEquations (eq :: eqs) =
+              let
+                val res = case #2 eq of
+                    P.APP d => List.exists (fn e => equationEq (#1 eq, P.APP (RedPrlParamData.invert d)) e) eqs
+                  | _ => false
+              in
+                res orelse goEquations eqs
+              end
+      in
+        if goEquations l then
+          ()
+        else
+          (* todo: pretty printer for equation lists *)
+          raise E.error
+            (List.concat
+              [ [E.% (msg ^ ":"), E.% "Expected shape"]
+              , ListMonad.bind (fn (r1, r2) =>
+                [E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r2), E.% ";"]) l
+              , [E.% "to have true equation r = r or equation pair r = 0 and r = 1."]
+              ])
+      end
 
   fun assertVarEq (x, y) =
     if Var.eq (x, y) then
