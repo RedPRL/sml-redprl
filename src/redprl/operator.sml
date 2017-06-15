@@ -547,7 +547,7 @@ struct
     fun mapSym f a =
       case f a of
          P.VAR a' => a'
-       | _ => raise Fail "Expected symbol, but got application"
+       | P.APP _ => raise Fail "Expected symbol, but got application"
   in
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)
