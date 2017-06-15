@@ -970,49 +970,45 @@ struct
       end
   end
 
-  structure Restriction =
-  struct
-    (* This structure provides functions that automate the restriction
-       judgement rules given in "Dependent Cubical Realizability",
-       page 46.
+  structure Restriction :
+  sig
+    (* This structure used to provide functions that automate the
+       restriction judgement rules given in "Dependent Cubical
+       Realizability", page 46.
+
+       On 2017/06/14, favonia implemented a function to handle
+       all cases. We need to generalize the old handling to
+       welcome new hcom operators. (It is true that we still
+       only need to handle context restrictions with at most two
+       equations, but it seems easier to just handle all cases.)
 
        Such automation is possible because the rules are "syntax
        directed" on the restriction being performed.
      *)
 
-    (* Return whether given dimensions are different constants, which
-       is a contradiction, allowing the restriction judgment to conclude
-       anything. *)
-    fun dimsContradictory (P.APP P.DIM0, P.APP DIM1) = true
-      | dimsContradictory (P.APP P.DIM1, P.APP DIM0) = true
-      | dimsContradictory _ = false
+    (* Restrict a judgement (as the goal) by a list of equations. *)
+    val restrict : abt jdg -> (param * param) list -> abt jdg list
+  end
+  =
+  struct
+    (* A helper function which does substitution in a parameter. *)
+    fun substSymInParam (r, v) = P.bind (fn u => if Sym.eq (u, v) then r else P.ret u)
 
-    (* Restrict a judgement by a single equation `ext = eps`. *)
-    fun One (jdg : abt jdg) (ext : param) (eps : param) : abt jdg list =
-      if P.eq Sym.eq (ext, eps) then [jdg] (* combining rules in first row *)
-      else if dimsContradictory (ext, eps) then [] (* second row, left rule *)
-      else
-        let
-          val (P.VAR v, P.APP eps) = (ext, eps)
-        in
-          [Seq.map (substSymbol (P.APP eps, v)) jdg] (* bottom left rule *)
-        end
+    fun restrict jdg [] = [jdg]
+      | restrict jdg ((P.APP d1, P.APP d2) :: eqs) =
+          (* The following line is correct because we only have constants
+           * (DIM0 and DIM1). If in the future we want to have connections
+           * or other stuff, then a real unification algorithm might be needed.
+           *)
+          if P.Sig.eq (fn _ => true) (d1, d2) then restrict jdg eqs else []
+      | restrict jdg ((r1 as P.VAR v1, r2) :: eqs) =
+          if P.eq Sym.eq (r1, r2) then restrict jdg eqs else substAndRestrict (r2, v1) jdg eqs
+      | restrict jdg ((r1, r2 as P.VAR v2) :: eqs) =
+          substAndRestrict (r1, v2) jdg eqs
 
-    (* Restrict a judgement by two equations `ext0 = eps0` and `ext1 = eps1`. *)
-    fun Two (jdg : abt jdg) (ext0 : param) (eps0 : param) (ext1 : param) (eps1 : param) : abt jdg list =
-      if P.eq Sym.eq (ext0, eps0) then One jdg ext1 eps1 (* top right rule *)
-      else if P.eq Sym.eq (ext1, eps1) then One jdg ext0 eps0 (* top right rule *)
-      else if dimsContradictory (ext0, eps0) then [] (* second row, left rule *)
-      else if dimsContradictory (ext1, eps1) then [] (* second row, left rule *)
-      else
-        let
-          val (P.VAR u, P.APP _) = (ext0, eps0)
-          val (P.VAR v, P.APP _) = (ext1, eps1)
-        in
-          if Sym.eq (u, v) andalso not (P.eq Sym.eq (eps0, eps1)) then [] (* second row, right rule *)
-          else
-            [Seq.map (substSymbol (eps0, u)) (Seq.map (substSymbol (eps1, v)) jdg)] (* bottom right rule *)
-        end
+    and substAndRestrict rv jdg eqs = restrict
+          (Seq.map (substSymbol rv) jdg)
+          (List.map (fn (r, r') => (substSymInParam rv r, substSymInParam rv r')) eqs)
   end
 
   structure HCom =
@@ -1038,7 +1034,7 @@ struct
             val J = H >> CJ.EQ ((tube0,tube1), ty)
           in
             List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) || j)))
-                     (Restriction.Two J ext0 eps0 ext1 eps1)
+                     (Restriction.restrict J [(ext0, eps0), (ext1, eps1)])
           end
       in
         listToTel
@@ -1057,7 +1053,7 @@ struct
           let
             val J = H >> CJ.EQ ((substSymbol (r,u) tube, cap), ty)
           in
-            List.map (#1 o (fn j => makeGoal @@ ([],[]) || j)) (Restriction.One J ext eps)
+            List.map (#1 o (fn j => makeGoal @@ ([],[]) || j)) (Restriction.restrict J [(ext, eps)])
           end
       in
         listToTel (ListMonad.bind tubeCap group)
@@ -1096,7 +1092,7 @@ struct
                 val J = H >> CJ.EQ ((tube0,tube1), ty)
               in
                 List.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) || j)))
-                         (Restriction.One J ext eps)
+                         (Restriction.restrict J [(ext, eps)])
               end
           in
             listToTel
