@@ -3,6 +3,6 @@ Thm BoolSym : [
   paths({_}.bool; a; b) ->
   paths({_}.bool; b; a) true
 ] by [
-  { lam a. lam b. lam p. <i> 'hcom{i; 0 ~> 1}(bool; ,a; {j}. ,p @ j; {_}. ,a)};
+  { lam a. lam b. lam p. <i> 'hcom{i=0, i=1; 0 ~> 1}(bool; ,a; {j}. ,p @ j; {_}. ,a)};
   [auto-step; head-expand]
 ].

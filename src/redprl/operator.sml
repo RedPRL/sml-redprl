@@ -20,6 +20,10 @@ struct
   datatype 'a param_operator =
      DIM0
    | DIM1
+
+  val invert =
+    fn DIM0 => DIM1
+     | DIM1 => DIM0
 end
 
 structure RedPrlParamSort : ABT_SORT =
@@ -158,13 +162,14 @@ struct
    | TAG_PATH
 
   type psort = RedPrlArity.Vl.PS.t
-  type 'a extents = 'a P.term list
+  type 'a equation = 'a P.term * 'a P.term
+  type 'a equations = 'a equation list
   type 'a dir = 'a P.term * 'a P.term
 
   datatype 'a poly_operator =
      LOOP of 'a P.term
    | PATH_AP of 'a P.term
-   | HCOM of type_tag * 'a extents * 'a dir
+   | HCOM of type_tag * 'a equations * 'a dir
    | COE of type_tag * 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
@@ -276,14 +281,14 @@ struct
        | TAG_DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP]
        | TAG_PATH => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP]
 
-    fun arityHcom (tag, extents, dir) =
+    fun arityHcom (tag, equations, dir) =
       let
         val typeArgs = typeArgsForTag tag
         val capArg = [] * [] <> EXP
         val tubeArgs =
-          ListMonad.bind
-            (fn _ => [[DIM] * [] <> EXP, [DIM] * [] <> EXP])
-            extents
+          List.map
+            (fn _ => [DIM] * [] <> EXP)
+            equations
       in
         typeArgs @ capArg :: tubeArgs ->> EXP
       end
@@ -324,6 +329,9 @@ struct
       fn P.VAR a => [(a, DIM)]
        | P.APP t => P.freeVars t
 
+    fun equationSupport (r, r') =
+      dimSupport r @ dimSupport r'
+
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
 
@@ -338,8 +346,8 @@ struct
     val supportPoly =
       fn LOOP r => dimSupport r
        | PATH_AP r => dimSupport r
-       | HCOM (_, extents, dir) =>
-           ListMonad.bind dimSupport extents
+       | HCOM (_, equations, dir) =>
+           ListMonad.bind equationSupport equations
              @ spanSupport dir
        | COE (_, dir) => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
@@ -362,8 +370,9 @@ struct
     fun spanEq f ((r1, r'1), (r2, r'2)) =
       P.eq f (r1, r2) andalso P.eq f (r'1, r'2)
 
-    fun extentsEq f =
-      ListPair.allEq (P.eq f)
+    fun equationsEq f =
+      ListPair.allEq (fn ((r1, r'1), (r2, r'2)) =>
+        P.eq f (r1, r2) andalso P.eq f (r'1, r'2))
 
     fun paramsEq f =
       ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
@@ -375,7 +384,7 @@ struct
            (case t of
                  HCOM (tag2, exs2, sp2) =>
                    tag1 = tag2
-                   andalso extentsEq f (exs1, exs2)
+                   andalso equationsEq f (exs1, exs2)
                    andalso spanEq f (sp1, sp2)
                | _ => false)
        | (COE (tag1, sp1), t) =>
@@ -482,8 +491,11 @@ struct
     fun spanToString f (r, r') =
       P.toString f r ^ " ~> " ^ P.toString f r'
 
-    fun extentsToString f =
-      ListSpine.pretty (P.toString f) ","
+    fun equationToString f (r, r') =
+      P.toString f r ^ "=" ^ P.toString f r'
+
+    fun equationsToString f =
+      ListSpine.pretty (equationToString f) ","
 
     fun paramsToString f =
       ListSpine.pretty (fn (p, _) => P.toString f p) ","
@@ -499,11 +511,11 @@ struct
     fun toStringPoly f =
       fn LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
-       | HCOM (tag, extents, dir) =>
+       | HCOM (tag, equations, dir) =>
            "hcom"
              ^ tagToString tag
              ^ "["
-             ^ extentsToString f extents
+             ^ equationsToString f equations
              ^ "; "
              ^ spanToString f dir
              ^ "]"
@@ -533,7 +545,7 @@ struct
 
   local
     fun mapSpan f (r, r') = (P.bind f r, P.bind f r')
-    fun mapExtents f = List.map (P.bind f)
+    fun mapEquations f = List.map (fn (r, r') => (P.bind f r , P.bind f r'))
     fun mapParams (f : 'a -> 'b P.term) =
       List.map
         (fn (p, ann) =>
@@ -552,7 +564,7 @@ struct
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)
        | PATH_AP r => PATH_AP (P.bind f r)
-       | HCOM (tag, extents, dir) => HCOM (tag, mapExtents f extents, mapSpan f dir)
+       | HCOM (tag, equations, dir) => HCOM (tag, mapEquations f equations, mapSpan f dir)
        | COE (tag, dir) => COE (tag, mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
