@@ -11,7 +11,6 @@ structure Lcf :
 sig
   include LCF_GENERIC_UTIL
   val prettyState : jdg state -> PP.doc
-  val stateToString : jdg state -> string
 end =
 struct
   structure LcfGeneric = LcfGeneric (LcfLanguage)
@@ -96,7 +95,4 @@ struct
          PP.newline, PP.newline,
          prettyValidation env vld]
     end
-
-  val stateToString : jdg state -> string =
-    PP.toString 80 false o prettyState
 end
