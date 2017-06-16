@@ -303,7 +303,7 @@ struct
            val w = Sym.named "w"
            val tubes' = List.map (mapBind ap) tubes @ [([w],[]) \ p0, ([w],[]) \ p1]
            val hcom = O.POLY (O.HCOM (O.TAG_NONE, exts @ [P.ret u], dir)) $$ (([],[]) \ a) :: (([],[]) \ ap cap) :: tubes'
-           val path = Syn.into @@ Syn.PATH_ABS (u, raise Match)
+           val path = O.MONO O.PATH_ABS $$ [([u],[]) \ hcom]
          in
            S.STEP @@ path <: env
          end
