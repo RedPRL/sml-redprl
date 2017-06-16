@@ -23,7 +23,7 @@ struct
     fun indexSatisfyingPredicate p =
       let
         exception NotFound
-        fun go i [] = raise NotFound
+        fun go _ [] = raise NotFound
           | go i (x :: xs) =
               case p x of
                  SOME x' => (i, x')
@@ -33,7 +33,7 @@ struct
       end
   end
 
-  fun readParam {params,terms} =
+  fun readParam {params,terms=_} =
     P.bind (fn x => Option.getOpt (Sym.Ctx.find params x, P.ret x))
 
   (* Extract a concrete dimension {0,1} from a dimension parameter; returns NONE in case of a dimension variable. *)
@@ -45,8 +45,6 @@ struct
   (* E ⊨ r # r' *)
   fun paramsApart env (r1, r2) =
     not (P.eq Sym.eq (readParam env r1, readParam env r2))
-
-  fun reverseDir (r1, r2) = (r2, r1)
 
   (* computation rules for Kan compositions at base type *)
   fun stepAtomicHcom exts (r, r') (_ \ cap) tubes env =
@@ -153,7 +151,7 @@ struct
      | O.MONO O.BASE `$ _ <: _ => S.VAL
      | O.POLY (O.LOOP r) `$ _ <: env =>
          (case readParam env r of
-             P.VAR a => S.VAL
+             P.VAR _ => S.VAL
            | P.APP P.DIM0 => S.STEP @@ O.MONO O.BASE $$ [] <: env
            | P.APP P.DIM1 => S.STEP @@ O.MONO O.BASE $$ [] <: env)
 
@@ -242,8 +240,8 @@ struct
            <: env
 
      | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
-     | O.MONO (O.MTAC_EACH n) `$ _ <: _ => S.VAL
-     | O.MONO (O.MTAC_FOCUS i) `$ _ <: _ => S.VAL
+     | O.MONO (O.MTAC_EACH _) `$ _ <: _ => S.VAL
+     | O.MONO (O.MTAC_FOCUS _) `$ _ <: _ => S.VAL
 
      | O.MONO O.JDG_EQ `$ _ <: _ => S.VAL
      | O.MONO O.JDG_CEQ `$ _ <: _ => S.VAL
@@ -253,10 +251,10 @@ struct
      | O.MONO O.JDG_TRUE `$ _ <: _ => S.VAL
      | O.MONO O.JDG_SYNTH `$ _ <: _ => S.VAL
 
-     | (cust as O.POLY (O.CUST (opid, ps, ar))) `$ args <: env =>
+     | (O.POLY (O.CUST (opid, ps, _(*ar*)))) `$ args <: env =>
          let
            val entry as {state,...} = Sig.lookup sign opid
-           val Lcf.|> (subgoals, evidence) = state
+           val Lcf.|> (subgoals, _(*evidence*)) = state
            val term = Sig.extract state
            val _ = if Lcf.Tl.isEmpty subgoals then () else raise Fail "custom operator not yet fully defined!"
            val (mrho, srho) = Sig.unifyCustomOperator entry (List.map #1 ps) args
@@ -266,7 +264,7 @@ struct
            S.STEP @@ term' <: env'
          end
 
-     | (hcom as O.POLY (O.HCOM (O.TAG_NONE, exts, dir))) `$ (_ \ ty) :: cap :: tubes <: env =>
+     | (hcom as O.POLY (O.HCOM (O.TAG_NONE, _, _))) `$ (_ \ ty) :: cap :: tubes <: env =>
          S.CUT
            @@ (hcom `$ (([],[]) \ S.HOLE) :: List.map (mapBind S.%) (cap :: tubes), ty)
            <: env
@@ -277,7 +275,7 @@ struct
      | O.POLY (O.HCOM (O.TAG_S1, exts, dir)) `$ cap :: tubes <: env =>
          stepAtomicHcom exts dir cap tubes env
 
-     | O.POLY (O.HCOM (O.TAG_DFUN, exts, dir)) `$ (_ \ a) :: ((_,[x]) \ bx) :: cap :: tubes <: env =>
+     | O.POLY (O.HCOM (O.TAG_DFUN, exts, dir)) `$ _ :: ((_,[x]) \ bx) :: cap :: tubes <: env =>
          let
            fun apx m = O.MONO O.AP $$ [([],[]) \ m, ([],[]) \ Abt.check (`x, O.EXP)]
            val hcomx = O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) $$ (([],[]) \ bx) :: List.map (mapBind apx) (cap :: tubes)
@@ -310,15 +308,15 @@ struct
            S.STEP @@ path <: env
          end
 
-     | (coe as O.POLY (O.COE (O.TAG_NONE, dir))) `$ [([u],_) \ a, _ \ m] <: env =>
+     | (coe as O.POLY (O.COE (O.TAG_NONE, _))) `$ [([u],_) \ a, _ \ m] <: env =>
          S.CUT
            @@ (coe `$ [([u],[]) \ S.HOLE, ([],[]) \ S.% m], a)
            <: env
 
-     | O.POLY (O.COE (O.TAG_BOOL, dir)) `$ [_ \ m] <: env =>
+     | O.POLY (O.COE (O.TAG_BOOL, _)) `$ [_ \ m] <: env =>
          S.STEP @@ m <: env
 
-     | O.POLY (O.COE (O.TAG_S1, dir)) `$ [_ \ m] <: env =>
+     | O.POLY (O.COE (O.TAG_S1, _)) `$ [_ \ m] <: env =>
          S.STEP @@ m <: env
 
      | O.POLY (O.COE (O.TAG_DFUN, dir as (r, r'))) `$ [([u],_) \ a, ([v],[x]) \ bvx, _ \ m] <: env =>
@@ -348,37 +346,36 @@ struct
            S.STEP @@ com <: env
          end
 
-     | th `$ es <: env => raise E.error [E.% "Machine encountered unrecognized term", E.! (th $$ es)]
+     | th `$ es <: _ => raise E.error [E.% "Machine encountered unrecognized term", E.! (th $$ es)]
 
   (* [cut] tells the machine how to plug a value into a hole in a stack frame. As a rule of thumb,
    * any time you return [CUT] in the [step] judgment, you should add a corresponding rule to [cut]. *)
-  fun cut sign =
+  fun cut _(*sign*) =
     fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
-     | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => m <: env
-     | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ n] <: env) => n <: env
+     | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ _] <: env) => m <: env
+     | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ _, _ \ n] <: env) => n <: env
 
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.POLY (O.HCOM (O.TAG_BOOL, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>
          let
-           val (r, r') = dir
            val cx' = Cl.force cx
            val t' = Cl.force t
            val f' = Cl.force f
 
            val v = Sym.named "v"
-           val hv = O.POLY (O.HCOM (O.TAG_BOOL, exts, (r, P.ret v))) $$ (([],[]) \ cap) :: tubes
+           val hv = O.POLY (O.HCOM (O.TAG_BOOL, exts, (#1 dir, P.ret v))) $$ (([],[]) \ cap) :: tubes
            val chv = substVar (hv, x) cx'
            fun mkIf m = Syn.into @@ Syn.IF ((x, cx'), m, (t', f'))
          in
            Syn.heteroCom (exts, dir) ((v, chv), mkIf cap, List.map (mapBind mkIf) tubes) <: env
          end
 
-     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.MONO O.TRUE `$ _ <: _) => t
-     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% f], _ \ O.MONO O.FALSE `$ _ <: _) => f
+     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% _], _ \ O.MONO O.TRUE `$ _ <: _) => t
+     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% _, _ \ S.% f], _ \ O.MONO O.FALSE `$ _ <: _) => f
 
-     | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% l], _ \ O.MONO O.BASE `$ _ <: _) => b
-     | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% (l <: envL)], _ \ O.POLY (O.LOOP r) `$ _ <: env) =>
+     | (O.MONO O.S1_ELIM `$ [(_,[_]) \ S.% _, _ \ S.HOLE, _ \ S.% b, ([_],_) \ S.% _], _ \ O.MONO O.BASE `$ _ <: _) => b
+     | (O.MONO O.S1_ELIM `$ [(_,[_]) \ S.% _, _ \ S.HOLE, _ \ S.% _, ([u],_) \ S.% (l <: envL)], _ \ O.POLY (O.LOOP r) `$ _ <: env) =>
          let
            val r' = Cl.forceParam (r <: env)
          in
@@ -386,13 +383,12 @@ struct
          end
      | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% l], _ \ O.POLY (O.HCOM (O.TAG_S1, exts, dir)) `$ (_ \ cap) :: tubes <: env) =>
          let
-           val (r, r') = dir
            val cx' = Cl.force cx
            val b' = Cl.force b
            val l' = Cl.force l
 
            val v = Sym.named "v"
-           val hv = O.POLY (O.HCOM (O.TAG_S1, exts, (r, P.ret v))) $$ (([],[]) \ cap) :: tubes
+           val hv = O.POLY (O.HCOM (O.TAG_S1, exts, (#1 dir, P.ret v))) $$ (([],[]) \ cap) :: tubes
            val chv = substVar (hv, x) cx'
            fun mkElim m = Syn.into @@ Syn.S1_ELIM ((x, cx'), m, (b', (u, l')))
          in
@@ -411,7 +407,7 @@ struct
            hcom $$ args <: env
          end
 
-     | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: (_ \ S.% cap) :: args), _ \ O.MONO O.S_BOOL `$ _ <: env) =>
+     | (O.POLY (O.HCOM (O.TAG_NONE, _, _)) `$ ((_ \ S.HOLE) :: (_ \ S.% cap) :: _), _ \ O.MONO O.S_BOOL `$ _ <: _) =>
          cap
 
      | (O.POLY (O.HCOM (O.TAG_NONE, exts, dir)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.S1 `$ _ <: env) =>
@@ -446,13 +442,13 @@ struct
            hcom $$ a :: p0 :: p1 :: args <: env
          end
 
-     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.BOOL `$ _ <: env) =>
+     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([_],_) \ O.MONO O.BOOL `$ _ <: env) =>
          O.POLY (O.COE (O.TAG_BOOL, dir)) $$ [([],[]) \ Cl.force cl] <: env
 
-     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.S_BOOL `$ _ <: env) =>
+     | (O.POLY (O.COE (O.TAG_NONE, _)) `$ [_ \ S.HOLE, _\ S.% cl] , ([_],_) \ O.MONO O.S_BOOL `$ _ <: _) =>
          cl
 
-     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.S1 `$ _ <: env) =>
+     | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([_],_) \ O.MONO O.S1 `$ _ <: env) =>
          O.POLY (O.COE (O.TAG_S1, dir)) $$ [([],[]) \ Cl.force cl] <: env
 
      | (O.POLY (O.COE (O.TAG_NONE, dir)) `$ [_ \ S.HOLE, _\ S.% cl] , ([u],_) \ O.MONO O.DFUN `$ [_\ a, (_,[x]) \ bx] <: env) =>
