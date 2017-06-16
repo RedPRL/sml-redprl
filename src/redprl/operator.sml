@@ -58,8 +58,8 @@ struct
      | _ => false
 
   fun toString f =
-    fn DIM0 => "dim0"
-     | DIM1 => "dim1"
+    fn DIM0 => "0"
+     | DIM1 => "1"
 
   fun join zer mul =
     fn DIM0 => zer
