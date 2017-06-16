@@ -45,7 +45,7 @@ struct
     infix >>
   in
     val rec sort =
-      fn H >> catjdg => (([],[]), CJ.synthesis catjdg)
+      fn _ >> catjdg => (([],[]), CJ.synthesis catjdg)
        | MATCH (th, k, _, _, _) =>
            let
              val (vls, _) = Tm.O.arity th
