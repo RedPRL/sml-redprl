@@ -13,7 +13,6 @@ struct
   type multitactic = abt
   type sign = Sig.sign
   type ann = Pos.t * string option
-  type state = Sig.jdg Lcf.state
 
   fun inheritAnnotation t1 t2 = 
     case getAnnotation t2 of 
@@ -57,7 +56,7 @@ struct
   end
 
   exception InvalidStatement
-  exception InvalidMultitactic
+  exception InvalidMultitactic (* unused but demanded by the signature *)
 
   open NominalLcfView
 
