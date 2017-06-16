@@ -70,10 +70,10 @@ struct
         {doc = PP.empty, env = Metavar.Ctx.empty, idx = 0}
     end
 
-  fun prettyValidation env vld =
+  fun prettyValidation _(*env*) vld =
     let
       open RedPrlAbt infix \
-      val (us,xs) \ m = outb vld
+      val _ \ m = outb vld
     in
       PP.concat
         [PP.text (TermPrinter.toString m),
@@ -83,7 +83,7 @@ struct
 
   fun prettyState (psi |> vld) =
     let
-      val {doc = goals, env, idx} = prettyGoals psi
+      val {doc = goals, env, idx = _} = prettyGoals psi
     in
       PP.concat
         [goals,
