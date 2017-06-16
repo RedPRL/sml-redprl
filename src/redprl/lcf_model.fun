@@ -8,7 +8,6 @@ struct
   type tactic = Lcf.jdg Lcf.tactic nominal
   type multitactic = Lcf.jdg Lcf.multitactic nominal
   type env = multitactic Syn.VarCtx.dict
-  exception InvalidRule
 
   open RedPrlAbt
   infix $ \
@@ -22,7 +21,7 @@ struct
     handle _ => 
       Rules.Synth.FromWfHyp z alpha jdg
 
-  fun interpret (sign, env) rule =
+  fun interpret (sign, _(*env*)) rule =
     case out rule of
         O.MONO O.RULE_ID $ _ => (fn _ => Lcf.idn)
       | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.CEquiv.EvalGoal sign
