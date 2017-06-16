@@ -70,7 +70,7 @@ struct
   fun hush m =
     Susp.delay (fn () =>
       let
-        val {result, messages} = Susp.force m
+        val {result, messages = _} = Susp.force m
       in
         {result = result, messages = DList.empty}
       end)
@@ -95,10 +95,6 @@ struct
     Susp.delay (fn () =>
       {result = FAILURE msg,
        messages = DList.empty})
-
-  val optOrElse =
-    fn (NONE, x) => x
-     | (x, _) => x
 
   fun wrap (pos, f) =
     Debug.wrap (fn _ => ret (f ()))
