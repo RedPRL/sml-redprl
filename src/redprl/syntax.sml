@@ -13,6 +13,8 @@ struct
      VAR of variable * sort
    (* axiom *)
    | AX
+   (* formal composition *)
+   | FHCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* week bool: true, false and if *)
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    (* strict bool: strict if (true and false are shared) *)
@@ -25,8 +27,8 @@ struct
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_AP of 'a * param
-   (* hcom *)
-   | HCOM of {dir: dir, class: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
+   (* hcom operator *)
+   | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* it is a "view" for custom operators *)
    | CUST
    (* meta *)
@@ -36,10 +38,55 @@ struct
     open Tm
     structure O = RedPrlOpData and P = RedPrlParameterTerm and E = RedPrlError
     infix $ $$ $# \
+
+    fun intoTubes tubes =
+      let
+        val (eqs, tubes) = ListPair.unzip tubes 
+        val tubes = List.map (fn (d, t) => ([d], []) \ t) tubes
+      in
+        (eqs, tubes)
+      end
+    fun outTubes (eqs, tubes) =
+      let
+        fun goTube (([d], []) \ tube) = (d, tube)
+          | goTube _ = raise Fail "Syntax.out: Malformed tube"
+      in
+        ListPair.zipEq (eqs, List.map goTube tubes)
+      end
   in
+    fun intoHcom' (dir, eqs) (ty, args) =
+      O.POLY (O.HCOM (dir, eqs)) $$ (([],[]) \ ty) :: args
+
+    fun intoHcom (dir, eqs) (ty, cap, tubes) =
+      intoHcom' (dir, eqs) (ty, (([],[]) \ cap) :: tubes)
+
+    fun intoFHcom' (dir, eqs) args = O.POLY (O.FHCOM (dir, eqs)) $$ args
+
+    fun intoFHcom (dir, eqs) (cap, tubes) =
+      intoFHcom' (dir, eqs) ((([],[]) \ cap) :: tubes)
+
+    fun intoCoe dir ((u, a), m) =
+      O.POLY (O.COE dir) $$ [([u],[]) \ a, ([],[]) \ m]
+
+    fun intoCom (dir as (r, r'), eqs) ((u, a), cap, tubes) =
+      let
+        fun coe v m = intoCoe (v, r') ((u, a), m)
+        fun goTube (([v],_) \ n) = ([v],[]) \ coe (P.ret v) n
+          | goTube _ = raise Fail "malformed tube"
+      in
+        intoHcom (dir, eqs) (substSymbol (r', u) a, coe r cap, List.map goTube tubes)
+      end
+
     val into =
       fn VAR (x, tau) => check (`x, tau)
        | AX => O.MONO O.AX $$ []
+
+       | FHCOM {dir, cap, tubes} =>
+           let
+             val (eqs, tubes) = intoTubes tubes
+           in
+             intoFHcom (dir, eqs) (cap, tubes)
+           end
 
        | BOOL => O.MONO O.BOOL $$ []
        | TT => O.MONO O.TRUE $$ []
@@ -67,21 +114,31 @@ struct
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
        | PATH_AP (m, r) => O.POLY (O.PATH_AP r) $$ [([],[]) \ m]
 
-       | HCOM {dir, class=ty, cap, tubes} =>
+       | HCOM {dir, ty, cap, tubes} =>
            let
-             val (eqs, tubes) = ListPair.unzip tubes
-             val tubes' = List.map (fn (d, t) => ([d], []) \ t) tubes
+             val (eqs, tubes) = intoTubes tubes
            in
-             O.POLY (O.HCOM (O.TAG_NONE, eqs, dir)) $$
-               (([],[]) \ ty) :: (([],[]) \ cap) :: tubes'
+             intoHcom (dir, eqs) (ty, cap, tubes)
            end
+
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
+
+    val intoAp = into o AP
+    val intoLam = into o LAM
+
+    val intoFst = into o FST
+    val intoSnd = into o SND
+    val intoPair = into o PAIR
 
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
        | O.MONO O.AX $ _ => AX
+
+       | O.POLY (O.FHCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
+           FHCOM {dir = dir, cap = cap, tubes = outTubes (eqs, tubes)}
+
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TRUE $ _ => TT
        | O.MONO O.FALSE $ _ => FF
@@ -108,38 +165,11 @@ struct
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
        | O.POLY (O.PATH_AP r) $ [_ \ m] => PATH_AP (m, r)
 
-       | O.POLY (O.HCOM (tag, eqs, dir)) $ args =>
-         let
-           val (ty, args) =
-             case (tag, args) of
-                (O.TAG_NONE, ((_ \ ty) :: args)) => (ty, args)
-              | (O.TAG_BOOL, args) => (O.MONO O.BOOL $$ [], args)
-              | (O.TAG_S1, args) => (O.MONO O.S1 $$ [], args)
-              | (O.TAG_DFUN, (A :: xB :: args)) => (O.MONO O.DFUN $$ [A, xB], args)
-              | (O.TAG_DPROD, (A :: xB :: args)) => (O.MONO O.DPROD $$ [A, xB], args)
-              | (O.TAG_PATH, (uA :: a0 :: a1 :: args)) => (O.MONO O.PATH_TY $$ [uA, a0, a1], args)
-              | _ => raise Fail "Syntax.out hcom: Malformed tag"
-           val (_ \ cap) :: args = args
-           fun goTube (([d], []) \ tube) = (d, tube)
-             | goTube _ = raise Fail "Syntax.out hcom: Malformed tube"
-           val tubes = List.map goTube args
-         in
-           HCOM {dir=dir, class=ty, cap=cap, tubes=ListPair.zipEq(eqs, tubes)}
-         end
+       | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
+           HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}
 
        | O.POLY (O.CUST _) $ _ => CUST
        | _ $# _ => META
        | _ => raise E.error [E.% "Syntax view encountered unrecognized term", E.! m]
-
-    fun heteroCom (eqs, dir) ((u, a), cap, tube) =
-      let
-        val (r, r') = dir
-        fun coe v m = O.POLY (O.COE (O.TAG_NONE, (v, r'))) $$ [([u],[]) \ a, ([],[]) \ m]
-        val ty = ([],[]) \ substSymbol (r', u) a
-        val cap' = ([],[]) \ coe r cap
-        val tube' = List.map (fn ([v],_) \ n => ([v],[]) \ coe (P.ret v) n | _ => raise Fail "malformed tube") tube
-      in
-        O.POLY (O.HCOM (O.TAG_NONE, eqs, dir)) $$ ty :: cap' :: tube'
-      end
   end
 end
