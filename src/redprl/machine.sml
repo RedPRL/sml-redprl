@@ -18,30 +18,31 @@ struct
 
   structure O = RedPrlOpData and E = RedPrlError
 
-  fun readParam {params,terms=_} =
-    P.bind (fn x => Option.getOpt (Sym.Ctx.find params x, P.ret x))
+  fun forceSpan ((r1, r2) <: env) =
+    (Cl.forceParam (r1 <: env), Cl.forceParam (r2 <: env))
 
-  (* E ⊨ r1 = r2 *)
-  fun paramsMatch env (r1, r2) =
-    P.eq Sym.eq (readParam env r1, readParam env r2)
+  fun forceSpans (ss <: env) = List.map (fn s => forceSpan (s <: env)) ss
 
   fun equationPair u = [(P.VAR u, P.APP P.DIM0), (P.VAR u, P.APP P.DIM1)]
 
   (* computation rules for Kan compositions at base type *)
   fun stepAtomicHcom eqs (r, r') (_ \ cap) tubes env =
-    if paramsMatch env (r, r')
-    then S.STEP @@ cap <: env
-    else
-      let
-        fun checkTubes [] [] = S.VAL
-          | checkTubes (eq :: eqs) ((([y],_) \ tube) :: ts) =
-              if paramsMatch env eq
-              then S.STEP @@ tube <: Cl.insertSym env y r'
-              else checkTubes eqs ts
-          | checkTubes _ _ = raise Fail "hcom has different numbers of equations and tubes."
-      in
-        checkTubes eqs tubes
-      end
+  let
+    val (r, r') = forceSpan ((r, r') <: env)
+    val eqs = forceSpans (eqs <: env)
+  in
+    if P.eq Sym.eq (r, r') then S.STEP @@ cap <: env
+    else let
+      fun checkTubes [] [] = S.VAL
+        | checkTubes (eq :: eqs) ((([y],_) \ tube) :: ts) =
+            if P.eq Sym.eq eq
+            then S.STEP @@ tube <: Cl.insertSym env y r'
+            else checkTubes eqs ts
+        | checkTubes _ _ = raise Fail "hcom has different numbers of equations and tubes."
+    in
+      checkTubes eqs tubes
+    end
+  end
 
   structure ParamElem =
   struct
@@ -131,7 +132,7 @@ struct
      | O.MONO O.S1 `$ _ <: _ => S.VAL
      | O.MONO O.BASE `$ _ <: _ => S.VAL
      | O.POLY (O.LOOP r) `$ _ <: env =>
-         (case readParam env r of
+         (case Cl.forceParam (r <: env) of
              P.VAR _ => S.VAL
            | P.APP P.DIM0 => S.STEP @@ O.MONO O.BASE $$ [] <: env
            | P.APP P.DIM1 => S.STEP @@ O.MONO O.BASE $$ [] <: env)
