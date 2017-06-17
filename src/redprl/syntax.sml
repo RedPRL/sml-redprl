@@ -134,7 +134,7 @@ struct
     fun heteroCom (eqs, dir) ((u, a), cap, tube) =
       let
         val (r, r') = dir
-        fun coe v m = O.POLY (O.COE (O.TAG_NONE, dir)) $$ [([u],[]) \ a, ([],[]) \ m]
+        fun coe v m = O.POLY (O.COE (O.TAG_NONE, (v, r'))) $$ [([u],[]) \ a, ([],[]) \ m]
         val ty = ([],[]) \ substSymbol (r', u) a
         val cap' = ([],[]) \ coe r cap
         val tube' = List.map (fn ([v],_) \ n => ([v],[]) \ coe (P.ret v) n | _ => raise Fail "malformed tube") tube
