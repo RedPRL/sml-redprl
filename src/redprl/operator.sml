@@ -20,10 +20,6 @@ struct
   datatype 'a param_operator =
      DIM0
    | DIM1
-
-  val invert =
-    fn DIM0 => DIM1
-     | DIM1 => DIM0
 end
 
 structure RedPrlParamSort : ABT_SORT =

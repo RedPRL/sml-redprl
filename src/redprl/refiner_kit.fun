@@ -63,10 +63,8 @@ struct
     else
       raise E.error [E.% (msg ^ ":"), E.% "Expected parameter", E.% (P.toString Sym.toString r1), E.% "to be equal to", E.% (P.toString Sym.toString r2)]
 
-  fun equationEq (r1, r1') (r2, r2') = P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2')
-
   fun assertEquationEq msg ((r1, r1'), (r2, r2')) =
-    if equationEq (r1, r1') (r2, r2') then
+    if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
       ()
     else
       raise E.error [E.% (msg ^ ":"), E.% "Expected equation", E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r1'), E.% "to be equal to", E.% (P.toString Sym.toString r2), E.% "=", E.% (P.toString Sym.toString r2')]
@@ -75,34 +73,35 @@ struct
    * the list contains a true equation `r = r` or both `r = 0`
    * and `r = 1` for some r.
    *)
-  fun assertTautologicalEquations msg l =
-    if List.exists (P.eq Sym.eq) l then
-      ()
-    else
-      let
-        (* O(n^2)-time checking *)
-        fun goEquations [] = false
-          | goEquations (eq :: eqs) =
-              let
-                val res = case #2 eq of
-                    P.APP d => List.exists (fn e => equationEq (#1 eq, P.APP (RedPrlParamData.invert d)) e) eqs
-                  | _ => false
-              in
-                res orelse goEquations eqs
-              end
-      in
-        if goEquations l then
-          ()
-        else
-          (* todo: pretty printer for equation lists *)
-          raise E.error
-            (List.concat
-              [ [E.% (msg ^ ":"), E.% "Expected shape"]
-              , ListMonad.bind (fn (r1, r2) =>
-                [E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r2), E.% ";"]) l
-              , [E.% "to have true equation r = r or equation pair r = 0 and r = 1."]
-              ])
-      end
+  structure SymSet = SplaySet (structure Elem = Sym.Ord)
+  fun assertTautologicalEquations msg eqs =
+    let
+      fun goEqs _ [] = false
+        | goEqs (state as (zeros, ones)) (eq :: eqs) =
+            case eq of
+              (P.APP P.DIM0, P.APP P.DIM0) => true
+            | (P.APP P.DIM0, _) => goEqs state eqs
+            | (P.APP P.DIM1, P.APP P.DIM1) => true
+            | (P.APP P.DIM1, _) => goEqs state eqs
+            | (P.VAR u, P.APP P.DIM0) =>
+                SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
+            | (P.VAR u, P.APP P.DIM1) =>
+                SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
+            | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
+      fun prettyEq (r1, r2) =
+            [E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r2), E.% ";"]
+    in
+      if goEqs (SymSet.empty, SymSet.empty) eqs then
+        ()
+      else
+        (* todo: pretty printer for equation lists *)
+        raise E.error
+          (List.concat
+            [ [E.% (msg ^ ":"), E.% "Expected shape"]
+            , ListMonad.bind prettyEq eqs
+            , [E.% "to have true equation r = r or equation pair r = 0 and r = 1."]
+            ])
+    end
 
   fun assertVarEq (x, y) =
     if Var.eq (x, y) then
