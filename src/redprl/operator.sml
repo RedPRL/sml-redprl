@@ -132,41 +132,16 @@ struct
 
    | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
 
-  (* We end up having separate hcom operator for the different types. This
-   * corresponds to the fact that there are two stages of computation for a kan
-   * composition: first we compute the type argument to a canonical form, and then
-   * further computation may proceed on the basis of the shape of that canonical form.
-   *
-   * To ensure that our operational semantics does not require us to inspect the subterms
-   * of an operator application (a "no-no"), we embed the contents of the canonical type form
-   * in the arguments of the hcom in case it is known. Therefore, expect to see kan compositions
-   * like the following:
-   *
-   *    1. hcom[TAG_NONE; rs; r ~> r'](ty; cap; tubes...)
-   *    2. hcom[TAG_BOOL; rs; r ~> r'](cap; tubes...)
-   *    3. hcom[TAG_DFUN; rs; r ~> r'](a; [x].b[x]; cap; tubes...)
-   *
-   * We use the same approach with coercions, except that we bind a dimension in the type arguments.
-   *)
-
-  datatype type_tag =
-     TAG_NONE
-   | TAG_BOOL
-   | TAG_S1
-   | TAG_DFUN
-   | TAG_DPROD
-   | TAG_PATH
-
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
-  type 'a equations = 'a equation list
   type 'a dir = 'a P.term * 'a P.term
 
   datatype 'a poly_operator =
      LOOP of 'a P.term
    | PATH_AP of 'a P.term
-   | HCOM of type_tag * 'a equations * 'a dir
-   | COE of type_tag * 'a dir
+   | HCOM of 'a dir * 'a equation list
+   | FHCOM of 'a dir * 'a equation list
+   | COE of 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | HYP_REF of 'a
@@ -269,41 +244,28 @@ struct
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
 
   local
-    val typeArgsForTag =
-      fn TAG_NONE => [[] * [] <> EXP]
-       | TAG_BOOL => []
-       | TAG_S1 => []
-       | TAG_DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP]
-       | TAG_DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP]
-       | TAG_PATH => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP]
-
-    fun arityHcom (tag, equations, dir) =
+    fun arityFHcom (dir, eqs) =
       let
-        val typeArgs = typeArgsForTag tag
         val capArg = [] * [] <> EXP
-        val tubeArgs =
-          List.map
-            (fn _ => [DIM] * [] <> EXP)
-            equations
+        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
       in
-        typeArgs @ capArg :: tubeArgs ->> EXP
+        capArg :: tubeArgs ->> EXP
       end
-
-    fun arityCoe (tag, dir) =
+    fun arityHcom (dir, eqs) =
       let
-        val typeArgs =
-          List.map
-            (fn ((sigmas, taus),tau) => (DIM :: sigmas) * taus <> tau)
-            (typeArgsForTag tag)
+        val typeArg = [] * [] <> EXP
+        val capArg = [] * [] <> EXP
+        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
       in
-        typeArgs @ [[] * [] <> EXP] ->> EXP
+        typeArg :: capArg :: tubeArgs ->> EXP
       end
   in
     val arityPoly =
       fn LOOP _ => [] ->> EXP
        | PATH_AP r => [[] * [] <> EXP] ->> EXP
-       | HCOM hcom => arityHcom hcom
-       | COE coe => arityCoe coe
+       | HCOM params => arityHcom params
+       | FHCOM params => arityFHcom params
+       | COE coe => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
        | HYP_REF a => [] ->> EXP
@@ -325,11 +287,14 @@ struct
       fn P.VAR a => [(a, DIM)]
        | P.APP t => P.freeVars t
 
-    fun equationSupport (r, r') =
-      dimSupport r @ dimSupport r'
-
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
+    
+    fun spansSupport ss =
+      ListMonad.bind spanSupport ss
+    
+    fun comSupport (dir, eqs) =
+      spanSupport dir @ spansSupport eqs
 
     fun paramsSupport ps =
       ListMonad.bind
@@ -342,10 +307,9 @@ struct
     val supportPoly =
       fn LOOP r => dimSupport r
        | PATH_AP r => dimSupport r
-       | HCOM (_, equations, dir) =>
-           ListMonad.bind equationSupport equations
-             @ spanSupport dir
-       | COE (_, dir) => spanSupport dir
+       | HCOM params => comSupport params
+       | FHCOM params => comSupport params
+       | COE dir => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
@@ -366,9 +330,8 @@ struct
     fun spanEq f ((r1, r'1), (r2, r'2)) =
       P.eq f (r1, r2) andalso P.eq f (r'1, r'2)
 
-    fun equationsEq f =
-      ListPair.allEq (fn ((r1, r'1), (r2, r'2)) =>
-        P.eq f (r1, r2) andalso P.eq f (r'1, r'2))
+    fun spansEq f =
+      ListPair.allEq (spanEq f)
 
     fun paramsEq f =
       ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
@@ -376,17 +339,21 @@ struct
     fun eqPoly f =
       fn (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_AP r, t) => (case t of PATH_AP r' => P.eq f (r, r') | _ => false)
-       | (HCOM (tag1, exs1, sp1), t) =>
+       | (HCOM (dir1, eqs1), t) =>
            (case t of
-                 HCOM (tag2, exs2, sp2) =>
-                   tag1 = tag2
-                   andalso equationsEq f (exs1, exs2)
-                   andalso spanEq f (sp1, sp2)
+                 HCOM (dir2, eqs2) =>
+                   spanEq f (dir1, dir2)
+                   andalso spansEq f (eqs1, eqs2)
                | _ => false)
-       | (COE (tag1, sp1), t) =>
+       | (FHCOM (dir1, eqs1), t) =>
            (case t of
-                 COE (tag2, sp2) =>
-                   tag1 = tag2 andalso spanEq f (sp1, sp2)
+                 FHCOM (dir2, eqs2) =>
+                   spanEq f (dir1, dir2)
+                   andalso spansEq f (eqs1, eqs2)
+               | _ => false)
+       | (COE dir1, t) =>
+           (case t of
+                 COE dir2 => spanEq f (dir1, dir2)
                | _ => false)
        | (CUST (opid1, ps1, _), t) =>
            (case t of
@@ -495,29 +462,26 @@ struct
 
     fun paramsToString f =
       ListSpine.pretty (fn (p, _) => P.toString f p) ","
-
-    val tagToString =
-      fn TAG_NONE => ""
-       | TAG_BOOL => "/bool"
-       | TAG_S1 => "/S1"
-       | TAG_DFUN => "/dfun"
-       | TAG_DPROD => "/dprod"
-       | TAG_PATH => "/path"
   in
     fun toStringPoly f =
       fn LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
-       | HCOM (tag, equations, dir) =>
+       | HCOM (dir, eqs) =>
            "hcom"
-             ^ tagToString tag
              ^ "["
-             ^ equationsToString f equations
+             ^ equationsToString f eqs
              ^ "; "
              ^ spanToString f dir
              ^ "]"
-       | COE (tag, dir) =>
+       | FHCOM (dir, eqs) =>
+           "fhcom"
+             ^ "["
+             ^ equationsToString f eqs
+             ^ "; "
+             ^ spanToString f dir
+             ^ "]"
+       | COE dir =>
            "coe"
-             ^ tagToString tag
              ^ "["
              ^ spanToString f dir
              ^ "]"
@@ -541,7 +505,7 @@ struct
 
   local
     fun mapSpan f (r, r') = (P.bind f r, P.bind f r')
-    fun mapEquations f = List.map (fn (r, r') => (P.bind f r , P.bind f r'))
+    fun mapSpans f = List.map (mapSpan f)
     fun mapParams (f : 'a -> 'b P.term) =
       List.map
         (fn (p, ann) =>
@@ -560,8 +524,9 @@ struct
     fun mapPoly f =
       fn LOOP r => LOOP (P.bind f r)
        | PATH_AP r => PATH_AP (P.bind f r)
-       | HCOM (tag, equations, dir) => HCOM (tag, mapEquations f equations, mapSpan f dir)
-       | COE (tag, dir) => COE (tag, mapSpan f dir)
+       | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
+       | FHCOM (dir, eqs) => FHCOM (mapSpan f dir, mapSpans f eqs)
+       | COE dir => COE (mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
        | HYP_REF a => HYP_REF (mapSym f a)

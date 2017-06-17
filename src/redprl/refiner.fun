@@ -753,8 +753,8 @@ struct
       end
       handle Bind =>
         raise E.error [E.% @@ "Expected typehood sequent but got " ^ J.toString jdg]
-    
-    fun Elim z alpha jdg = 
+
+    fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Type.Elim"
         val H >> catjdg = jdg
@@ -813,13 +813,13 @@ struct
 
   structure Synth =
   struct
-    fun FromWfHyp z alpha jdg = 
+    fun FromWfHyp z alpha jdg =
       let
         val _ = RedPrlLog.trace "Synth.Switch"
         val H >> CJ.SYNTH tm = jdg
         val CJ.EQ ((a, b), ty) = Hyps.lookup H z
       in
-        if Abt.eq (a, tm) orelse Abt.eq (b, tm) then 
+        if Abt.eq (a, tm) orelse Abt.eq (b, tm) then
           T.empty #> ty
         else
           raise Fail "Did not match"
@@ -1013,9 +1013,13 @@ struct
           (List.map (fn (r, r') => (substSymInParam rv r, substSymInParam rv r')) eqs)
   end
 
-  structure HCom =
+  (* code shared by Com, HCom and FHCom. *)
+  structure ComKit =
   struct
-    (* todo: an optimized version for intraTube (tubes0 = tubes1) *)
+    (* todo: optimizing the restriction process even further. *)
+    (* todo: pre-restrict r=0, r=1, 0=r and 1=r, and open-reduce everything first. *)
+    (* todo: do alpha-renaming only once. *)
+    (* todo: try to minimize substitution. *)
 
     (* Produce the list of goals requiring that tube aspects agree with each other.
          forall i <= j.
@@ -1027,7 +1031,7 @@ struct
           let
             val tube0 = substSymbol (P.ret w, u) tube0
             val tube1 = substSymbol (P.ret w, v) tube1
-            val J = H >> CJ.EQ ((tube0,tube1), ty)
+            val J = H >> CJ.EQ ((tube0, tube1), ty)
           in
             Option.map (fn j => #1 (makeGoal (([(w, P.DIM)], []) || j)))
                        (Restriction.restrict J [eq0, eq1])
@@ -1055,28 +1059,31 @@ struct
       in
         appendListOfGoals (tele, List.mapPartial tubeCap tubes)
       end
+  end
 
+  structure HCom =
+  struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.Eq"
         val H >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.HCOM {dir=(r0, r'0), class=ty0, cap=cap0, tubes=tubes0} = Syn.out lhs
+        val Syn.HCOM {dir=(r0, r'0), ty=ty0, cap=cap0, tubes=tubes0} = Syn.out lhs
         val () = assertAlphaEq (ty0, ty)
-        val Syn.HCOM {dir=(r1, r'1), class=ty1, cap=cap1, tubes=tubes1} = Syn.out rhs
+        val Syn.HCOM {dir=(r1, r'1), ty=ty1, cap=cap1, tubes=tubes1} = Syn.out rhs
         val () = assertParamEq "HCom.Eq source of direction" (r0, r1)
         val () = assertParamEq "HCom.Eq target of direction" (r'0, r'1)
         val eqs0 = List.map #1 tubes0
         val eqs1 = List.map #1 tubes1
         val _ = ListPair.mapEq (assertEquationEq "HCom.Eq equations") (eqs0, eqs1)
-        val _ = assertTautologicalEquations "HCom.Eq tautology" eqs0
+        val _ = assertTautologicalEquations "HCom.Eq tautology checking" eqs0
 
         val (goalTy, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (ty0, ty1)
         val (goalCap, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((cap0, cap1), ty)
 
         val w = alpha 0
       in
-        appendTubeCapGoals
-          (appendInterTubeGoals
+        ComKit.appendTubeCapGoals
+          (ComKit.appendInterTubeGoals
             (T.empty >: goalTy >: goalCap)
             H w ty tubes0 tubes1)
           H ty r0 cap0 tubes0
@@ -1087,7 +1094,7 @@ struct
       let
         val _ = RedPrlLog.trace "HCom.CapEq"
         val H >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.HCOM {dir=(r, r'), class=ty0, cap, tubes} = Syn.out lhs
+        val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out lhs
         val () = assertParamEq "HCom.CapEq source and target of direction" (r, r')
         val () = assertAlphaEq (ty0, ty)
 
@@ -1096,8 +1103,8 @@ struct
 
         val w = alpha 0
       in
-        appendTubeCapGoals
-          (appendInterTubeGoals
+        ComKit.appendTubeCapGoals
+          (ComKit.appendInterTubeGoals
             (T.empty >: goalTy >: goalEq)
             H w ty tubes tubes)
           H ty r cap tubes
@@ -1109,7 +1116,7 @@ struct
       let
         val _ = RedPrlLog.trace "HCom.TubeEq"
         val H >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.HCOM {dir=(r, r'), class=ty0, cap, tubes} = Syn.out lhs
+        val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out lhs
         val (eq, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
         val () = assertAlphaEq (ty0, ty)
 
@@ -1119,8 +1126,8 @@ struct
 
         val w = alpha 0
       in
-        appendTubeCapGoals
-          (appendInterTubeGoals
+        ComKit.appendTubeCapGoals
+          (ComKit.appendInterTubeGoals
             (T.empty >: goalTy >: goalCap >: goalEq)
             H w ty tubes tubes)
           H ty r cap tubes
@@ -1132,6 +1139,41 @@ struct
     in
       (* Try all the hcom rules. *)
       val AutoEq = Eq orelse_ CapEq orelse_ TubeEq
+    end
+  end
+
+  structure FHCom =
+  struct
+    fun Eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "FHCom.Eq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.FHCOM {dir=(r0, r'0), cap=cap0, tubes=tubes0} = Syn.out lhs
+        val Syn.FHCOM {dir=(r1, r'1), cap=cap1, tubes=tubes1} = Syn.out rhs
+        val () = assertParamEq "FHCom.Eq source of direction" (r0, r1)
+        val () = assertParamEq "FHCom.Eq target of direction" (r'0, r'1)
+        val eqs0 = List.map #1 tubes0
+        val eqs1 = List.map #1 tubes1
+        val _ = ListPair.mapEq (assertEquationEq "FHCom.Eq equations") (eqs0, eqs1)
+        val _ = assertTautologicalEquations "FHCom.Eq tautology checking" eqs0
+
+        val (goalCap, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((cap0, cap1), ty)
+
+        val w = alpha 0
+      in
+        ComKit.appendTubeCapGoals
+          (ComKit.appendInterTubeGoals
+            (T.empty >: goalCap)
+            H w ty tubes0 tubes1)
+          H ty r0 cap0 tubes0
+        #> trivial
+      end
+
+    local
+      infix orelse_
+    in
+      (* Try all the fhcom rules. *)
+      val AutoEq = Eq
     end
   end
 
@@ -1168,13 +1210,13 @@ struct
            O.POLY (O.CUST (opid',_,_)) $ _ =>
              if Sym.eq (opid, opid') then
                Machine.unload sign (Option.valOf (safeStep sign (Machine.load m)))
-                 handle _ => raise Fail "Impossible failure during safeUnfold" (* please put better error message here; should never happen anyway *) 
+                 handle _ => raise Fail "Impossible failure during safeUnfold" (* please put better error message here; should never happen anyway *)
              else
                m
          | _ => m
     end
 
-    fun Unfold sign opid alpha jdg = 
+    fun Unfold sign opid alpha jdg =
       let
         val _ = RedPrlLog.trace "Computation.Unfold"
         val unfold = safeUnfold sign opid o Abt.deepMapSubterms (safeUnfold sign opid)
@@ -1226,12 +1268,12 @@ struct
   local
     fun checkHyp H x jdg0 =
       case Hyps.find H x of
-         SOME jdg => 
+         SOME jdg =>
            if CJ.eq (jdg, jdg0) then () else
              raise E.error [E.% ("Hypothesis " ^ Sym.toString x ^ " did not match specification")]
        | _ => raise E.error [E.% ("Could not find hypothesis " ^ Sym.toString x)]
 
-    fun checkMainGoal (specGoal, mainGoal) = 
+    fun checkMainGoal (specGoal, mainGoal) =
       let
         val H >> jdg = mainGoal
         val H0 >> jdg0 = specGoal
@@ -1245,14 +1287,14 @@ struct
      | UPDATE of hyp * catjdg
      | INSERT of hyp * catjdg
 
-    val diffToString = 
+    val diffToString =
       fn DELETE x => "DELETE " ^ Sym.toString x
        | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
        | INSERT (x,_) => "INSERT " ^ Sym.toString x
 
 
-    fun applyDiff (delta : diff) (H : catjdg Hyps.telescope) : catjdg Hyps.telescope = 
-      case delta of 
+    fun applyDiff (delta : diff) (H : catjdg Hyps.telescope) : catjdg Hyps.telescope =
+      case delta of
          DELETE x => Hyps.remove x H
        | UPDATE (x, jdg) => Hyps.modify x (fn _ => jdg) H
        | INSERT (x, jdg) => Hyps.snoc H x jdg
@@ -1262,31 +1304,31 @@ struct
 
     fun hypothesesDiff (H0, H1) : diff list =
       let
-        val diff01 = 
+        val diff01 =
           Hyps.foldr
-            (fn (x, jdg0, delta) => 
-              case Hyps.find H1 x of 
+            (fn (x, jdg0, delta) =>
+              case Hyps.find H1 x of
                   SOME jdg1 => if CJ.eq (jdg0, jdg1) then delta else UPDATE (x, jdg1) :: delta
-                | NONE => DELETE x :: delta) 
+                | NONE => DELETE x :: delta)
             []
             H0
       in
         Hyps.foldr
-          (fn (x, jdg1, delta) => 
-             case Hyps.find H0 x of 
+          (fn (x, jdg1, delta) =>
+             case Hyps.find H0 x of
                 SOME jdg0 => delta
               | NONE => INSERT (x, jdg1) :: delta)
           diff01
           H1
       end
 
-    fun instantiateSubgoal alpha H (subgoalSpec, mainGoalSpec) = 
+    fun instantiateSubgoal alpha H (subgoalSpec, mainGoalSpec) =
       let
         val Lcf.|| ((syms, vars), H0 >> jdg0) = subgoalSpec
 
         val nsyms = List.length syms
         val nvars = List.length vars
-        
+
         val freshSyms = List.tabulate (nsyms, fn i => alpha i)
         val freshVars = List.tabulate (nvars, fn i => alpha (i + nsyms))
 
@@ -1295,7 +1337,7 @@ struct
 
         val hypren = ListPair.foldl (fn ((x, _), y, rho) => Sym.Ctx.insert rho x y) Sym.Ctx.empty (vars, freshVars)
         val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (syms, freshSyms)
- 
+
         val bs = (syms', vars')
 
         val H1 >> jdg1 = mainGoalSpec
@@ -1315,7 +1357,7 @@ struct
         val _ = checkMainGoal (mainGoalSpec, jdg)
 
         val H >> _ = jdg
-        
+
         val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha H (subgoalSpec, mainGoalSpec)) subgoals
       in
         Lcf.|> (subgoals', validation)
@@ -1435,8 +1477,8 @@ struct
 
       structure HypsUtil = TelescopeUtil (Hyps)
 
-      fun FindHyp alpha (H >> jdg) = 
-        if isWfJdg jdg then 
+      fun FindHyp alpha (H >> jdg) =
+        if isWfJdg jdg then
           case HypsUtil.search H (fn jdg' => CJ.eq (jdg, jdg')) of
              SOME (lbl, _) => Hyp.Project lbl alpha (H >> jdg)
            | NONE => raise E.error [E.% "Could not find suitable hypothesis"]
