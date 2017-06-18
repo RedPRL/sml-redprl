@@ -16,7 +16,7 @@ sig
   type 'a ctx = 'a Hyps.telescope
 
   datatype 'a jdg =
-     >> of ((sym * psort) list * 'a CJ.jdg ctx) * 'a CJ.jdg                            (* sequents / formal hypothetical judgment *)
+     >> of ((sym * psort) list * 'a CJ.jdg ctx) * 'a CJ.jdg     (* sequents / formal hypothetical judgment *)
    | MATCH of operator * int * 'a * param list * 'a list        (* unify a term w/ a head operator and extract the kth subterm *)
 
   val map : ('a -> 'b) -> 'a jdg -> 'b jdg

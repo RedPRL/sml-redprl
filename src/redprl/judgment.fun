@@ -45,7 +45,9 @@ struct
     infix >>
   in
     val rec sort =
-      fn _ >> catjdg => (([],[]), CJ.synthesis catjdg)
+      fn (I, H) >> catjdg =>
+           ((List.map #2 I, Hyps.foldr (fn (_, jdg, r) => CJ.synthesis jdg :: r) [] H), 
+            CJ.synthesis catjdg)
        | MATCH (th, k, _, _, _) =>
            let
              val (vls, _) = Tm.O.arity th

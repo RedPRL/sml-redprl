@@ -26,6 +26,8 @@ Thm Hcom/Poly(#A) : [
   <| auto |>
 ].
 
+Extract Hcom/Poly.
+
 Thm Hcom/trans(#A) : [
   a/type : #A type
   >>

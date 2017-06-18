@@ -371,17 +371,15 @@ struct
         (env', RedPrlSequent.>> (([], hyps'), concl')) (* todo: I := ? *)
       end
 
-    fun elabSrcGenJdg (metactx, symctx, env) ((syms, vars), seq) : symbol NameEnv.dict * jdg Lcf.eff = 
+    fun elabSrcGenJdg (metactx, symctx, env) (syms, seq) : symbol NameEnv.dict * jdg Lcf.eff = 
       let
         val (env', symctx') = List.foldl (fn (sym, (env, symctx)) => addSymName (env, symctx) sym) (env, symctx) syms
-        val (env'', varctx) = List.foldl (fn (var, (env, varctx)) => addVarName (env, varctx) var) (env', Var.Ctx.empty) vars
-        val syms' = List.map (fn (u,psort) => (NameEnv.lookup env'' u, psort)) syms
-        val vars' = List.map (fn (x,sort) => (NameEnv.lookup env'' x, sort)) vars
-        val (env''', seq') = elabSrcSequent (metactx, symctx', varctx, env'') seq
+
+        val syms' = List.map (fn (u,psort) => (NameEnv.lookup env' u, psort)) syms
+        val (env''', seq') = elabSrcSequent (metactx, symctx', Var.Ctx.empty, env') seq
         val env'''' = List.foldl (fn ((u,_), env) => NameEnv.remove env u) env''' syms
-        val env''''' = List.foldl (fn ((x,_), env) => NameEnv.remove env x) env'''' vars
       in
-        (env''''', Lcf.|| ((syms', vars'), seq'))
+        (env'''', seq')
       end
 
     fun elabSrcRuleSpec (metactx, symctx, env) (spec : src_rulespec) = 

@@ -404,8 +404,8 @@ src_sequent
   | src_seqhyps DOUBLE_RANGLE src_catjdg (src_seqhyps, src_catjdg)
 
 src_genjdg
-  : src_sequent (([],[]), src_sequent)
-  | annotatedBinder PIPE src_sequent (annotatedBinder, src_sequent)
+  : src_sequent ([], src_sequent)
+  | LBRACKET symBindings RBRACKET PIPE src_sequent (symBindings, src_sequent)
 
 src_ruleConcl 
   : src_sequent (src_sequent)

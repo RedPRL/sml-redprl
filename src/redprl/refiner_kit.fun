@@ -35,14 +35,22 @@ struct
   fun appendListOfGoals (tel, (l : (label * 'a) list)) : 'a telescope =
     List.foldl (fn (g, l) => l >: g) tel l
 
-  fun makeGoal (Lcf.|| (bs, jdg)) =
+  fun hypsToSpine H =
+    Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
+
+  fun makeGoal jdg =
     let
       open Abt infix 1 $#
       val x = newMeta ""
       val vl as (_, tau) = J.sort jdg
-      fun hole ps ms = check (x $# (ps, ms), tau) handle _ => raise Fail "makeGoal"
+      val (ps, ms) = 
+        case jdg of
+           (I, H) >> _ => (List.map (fn (u, sigma) => (P.VAR u, sigma)) I, hypsToSpine H)
+         | MATCH _ => ([],[])
+
+      val hole = check (x $# (ps, ms), tau)
     in
-      ((x, Lcf.|| (bs, jdg)), hole)
+      ((x, jdg), hole)
     end
 
 
