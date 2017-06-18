@@ -42,7 +42,7 @@ struct
   open RedPrlSortData RedPrlParamData
   type 'a t = 'a param_operator
 
-  fun map f =
+  fun map _ =
     fn DIM0 => DIM0
      | DIM1 => DIM1
 
@@ -52,16 +52,16 @@ struct
     fn DIM0 => (DIM0, DIM)
      | DIM1 => (DIM1, DIM)
 
-  fun eq f =
+  fun eq _ =
     fn (DIM0, DIM0) => true
      | (DIM1, DIM1) => true
      | _ => false
 
-  fun toString f =
+  fun toString _ =
     fn DIM0 => "0"
      | DIM1 => "1"
 
-  fun join zer mul =
+  fun join zer _ =
     fn DIM0 => zer
      | DIM1 => zer
 end
@@ -137,10 +137,10 @@ struct
   type 'a dir = 'a P.term * 'a P.term
 
   datatype 'a poly_operator =
-     LOOP of 'a P.term
+     FHCOM of 'a dir * 'a equation list
+   | LOOP of 'a P.term
    | PATH_AP of 'a P.term
    | HCOM of 'a dir * 'a equation list
-   | FHCOM of 'a dir * 'a equation list
    | COE of 'a dir
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
@@ -217,7 +217,7 @@ struct
          in
            tacs ->> MTAC
          end
-     | MTAC_FOCUS i => [[] * [] <> TAC] ->> MTAC
+     | MTAC_FOCUS _ => [[] * [] <> TAC] ->> MTAC
      | MTAC_HOLE _ => [] ->> MTAC
      | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
 
@@ -244,14 +244,14 @@ struct
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
 
   local
-    fun arityFHcom (dir, eqs) =
+    fun arityFHcom (_, eqs) =
       let
         val capArg = [] * [] <> EXP
         val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
       in
         capArg :: tubeArgs ->> EXP
       end
-    fun arityHcom (dir, eqs) =
+    fun arityHcom (_, eqs) =
       let
         val typeArg = [] * [] <> EXP
         val capArg = [] * [] <> EXP
@@ -261,21 +261,21 @@ struct
       end
   in
     val arityPoly =
-      fn LOOP _ => [] ->> EXP
-       | PATH_AP r => [[] * [] <> EXP] ->> EXP
+      fn FHCOM params => arityFHcom params
+       | LOOP _ => [] ->> EXP
+       | PATH_AP _ => [[] * [] <> EXP] ->> EXP
        | HCOM params => arityHcom params
-       | FHCOM params => arityFHcom params
-       | COE coe => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | COE _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
-       | HYP_REF a => [] ->> EXP
+       | HYP_REF _ => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
-       | RULE_UNFOLD a => [] ->> TAC
-       | DEV_BOOL_ELIM a => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
-       | DEV_S1_ELIM a => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
-       | DEV_DFUN_ELIM a => [[] * [] <> TAC, [HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
-       | DEV_DPROD_ELIM a => [[HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
+       | RULE_UNFOLD _ => [] ->> TAC
+       | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
+       | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
+       | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
+       | DEV_DPROD_ELIM _ => [[HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -289,26 +289,26 @@ struct
 
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
-    
+
     fun spansSupport ss =
       ListMonad.bind spanSupport ss
-    
+
     fun comSupport (dir, eqs) =
       spanSupport dir @ spansSupport eqs
 
     fun paramsSupport ps =
       ListMonad.bind
         (fn (P.VAR a, SOME tau) => [(a, tau)]
-          | (P.VAR a, NONE) => raise Fail "Encountered unannotated parameter in custom operator"
-          | (P.APP t, tau) => P.freeVars t)
+          | (P.VAR _, NONE) => raise Fail "Encountered unannotated parameter in custom operator"
+          | (P.APP t, _) => P.freeVars t)
         ps
 
   in
     val supportPoly =
-      fn LOOP r => dimSupport r
+      fn FHCOM params => comSupport params
+       | LOOP r => dimSupport r
        | PATH_AP r => dimSupport r
        | HCOM params => comSupport params
-       | FHCOM params => comSupport params
        | COE dir => spanSupport dir
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
@@ -323,7 +323,7 @@ struct
   end
 
   val support =
-    fn MONO th => []
+    fn MONO _ => []
      | POLY th => supportPoly th
 
   local
@@ -337,17 +337,17 @@ struct
       ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
   in
     fun eqPoly f =
-      fn (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
+      fn (FHCOM (dir1, eqs1), t) =>
+           (case t of
+                 FHCOM (dir2, eqs2) =>
+                   spanEq f (dir1, dir2)
+                   andalso spansEq f (eqs1, eqs2)
+               | _ => false)
+       | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_AP r, t) => (case t of PATH_AP r' => P.eq f (r, r') | _ => false)
        | (HCOM (dir1, eqs1), t) =>
            (case t of
                  HCOM (dir2, eqs2) =>
-                   spanEq f (dir1, dir2)
-                   andalso spansEq f (eqs1, eqs2)
-               | _ => false)
-       | (FHCOM (dir1, eqs1), t) =>
-           (case t of
-                 FHCOM (dir2, eqs2) =>
                    spanEq f (dir1, dir2)
                    andalso spansEq f (eqs1, eqs2)
                | _ => false)
@@ -422,7 +422,7 @@ struct
      | MTAC_AUTO => "auto"
      | MTAC_PROGRESS => "multi-progress"
      | MTAC_ALL => "all"
-     | MTAC_EACH n => "each"
+     | MTAC_EACH _ => "each"
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
      | MTAC_HOLE (SOME x) => "?" ^ x
      | MTAC_HOLE NONE => "?"
@@ -451,7 +451,7 @@ struct
      | JDG_SYNTH => "synth"
 
   local
-    fun spanToString f (r, r') =
+    fun dirToString f (r, r') =
       P.toString f r ^ " ~> " ^ P.toString f r'
 
     fun equationToString f (r, r') =
@@ -464,30 +464,30 @@ struct
       ListSpine.pretty (fn (p, _) => P.toString f p) ","
   in
     fun toStringPoly f =
-      fn LOOP r => "loop[" ^ P.toString f r ^ "]"
+      fn FHCOM (dir, eqs) =>
+           "fhcom"
+             ^ "["
+             ^ equationsToString f eqs
+             ^ "; "
+             ^ dirToString f dir
+             ^ "]"
+       | LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
        | HCOM (dir, eqs) =>
            "hcom"
              ^ "["
              ^ equationsToString f eqs
              ^ "; "
-             ^ spanToString f dir
-             ^ "]"
-       | FHCOM (dir, eqs) =>
-           "fhcom"
-             ^ "["
-             ^ equationsToString f eqs
-             ^ "; "
-             ^ spanToString f dir
+             ^ dirToString f dir
              ^ "]"
        | COE dir =>
            "coe"
              ^ "["
-             ^ spanToString f dir
+             ^ dirToString f dir
              ^ "]"
-       | CUST (opid, ps, ar) =>
+       | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
-       | RULE_LEMMA (opid, ps, ar) =>
+       | RULE_LEMMA (opid, ps, _) =>
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
@@ -522,10 +522,10 @@ struct
        | P.APP _ => raise Fail "Expected symbol, but got application"
   in
     fun mapPoly f =
-      fn LOOP r => LOOP (P.bind f r)
+      fn FHCOM (dir, eqs) => FHCOM (mapSpan f dir, mapSpans f eqs)
+       | LOOP r => LOOP (P.bind f r)
        | PATH_AP r => PATH_AP (P.bind f r)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
-       | FHCOM (dir, eqs) => FHCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
