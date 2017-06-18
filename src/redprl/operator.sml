@@ -265,7 +265,7 @@ struct
        | LOOP _ => [] ->> EXP
        | PATH_AP _ => [[] * [] <> EXP] ->> EXP
        | HCOM params => arityHcom params
-       | COE _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
        | HYP_REF _ => [] ->> EXP

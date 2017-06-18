@@ -29,6 +29,8 @@ struct
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_AP of 'a * param
    (* hcom operator *)
    | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
+   (* coe operator *)
+   | COE of {dir: dir, ty: (symbol * 'a), coercee: 'a}
    (* it is a "view" for custom operators *)
    | CUST
    (* meta *)
@@ -41,7 +43,7 @@ struct
 
     fun intoTubes tubes =
       let
-        val (eqs, tubes) = ListPair.unzip tubes 
+        val (eqs, tubes) = ListPair.unzip tubes
         val tubes = List.map (fn (d, t) => ([d], []) \ t) tubes
       in
         (eqs, tubes)
@@ -64,18 +66,6 @@ struct
 
     fun intoFHcom (dir, eqs) (cap, tubes) =
       intoFHcom' (dir, eqs) ((([],[]) \ cap) :: tubes)
-
-    fun intoCoe dir ((u, a), m) =
-      O.POLY (O.COE dir) $$ [([u],[]) \ a, ([],[]) \ m]
-
-    fun intoCom (dir as (r, r'), eqs) ((u, a), cap, tubes) =
-      let
-        fun coe v m = intoCoe (v, r') ((u, a), m)
-        fun goTube (([v],_) \ n) = ([v],[]) \ coe (P.ret v) n
-          | goTube _ = raise Fail "malformed tube"
-      in
-        intoHcom (dir, eqs) (substSymbol (r', u) a, coe r cap, List.map goTube tubes)
-      end
 
     val into =
       fn VAR (x, tau) => check (`x, tau)
@@ -120,6 +110,8 @@ struct
            in
              intoHcom (dir, eqs) (ty, cap, tubes)
            end
+       | COE {dir, ty = (u, a), coercee} =>
+           O.POLY (O.COE dir) $$ [([u],[]) \ a, ([],[]) \ coercee]
 
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
@@ -130,6 +122,18 @@ struct
     val intoFst = into o FST
     val intoSnd = into o SND
     val intoPair = into o PAIR
+
+    fun intoCoe dir (ty, m) =
+      into (COE {dir = dir, ty = ty, coercee = m})
+
+    fun intoCom (dir as (r, r'), eqs) ((u, a), cap, tubes) =
+      let
+        fun coe v m = intoCoe (v, r') ((u, a), m)
+        fun goTube (([v],_) \ n) = ([v],[]) \ coe (P.ret v) n
+          | goTube _ = raise Fail "malformed tube"
+      in
+        intoHcom (dir, eqs) (substSymbol (r', u) a, coe r cap, List.map goTube tubes)
+      end
 
     fun out m =
       case Tm.out m of
@@ -167,6 +171,8 @@ struct
 
        | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
            HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}
+       | O.POLY (O.COE dir) $ [([u],_) \ a, _ \ m] =>
+           COE {dir = dir, ty = (u, a), coercee = m}
 
        | O.POLY (O.CUST _) $ _ => CUST
        | _ $# _ => META
