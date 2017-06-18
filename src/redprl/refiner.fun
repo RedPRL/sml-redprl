@@ -1371,19 +1371,19 @@ struct
     local
       fun StepTrue sign ty =
         case Syn.out ty of
-           Syn.DFUN _ => DFun.True
+           Syn.PATH_TY _ => Path.True
+         | Syn.DFUN _ => DFun.True
          | Syn.DPROD _ => DProd.True
-         | Syn.PATH_TY _ => Path.True
          | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
 
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Bool.EqType
          | (Syn.S_BOOL, Syn.S_BOOL) => StrictBool.EqType
+         | (Syn.S1, Syn.S1) => S1.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
-         | (Syn.S1, Syn.S1) => S1.EqType
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
       fun StepEqType sign (ty1, ty2) =
@@ -1398,13 +1398,15 @@ struct
         case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
+         | (Syn.FHCOM _, Syn.FHCOM _, Syn.BOOL) => FHCom.AutoEq
          | (Syn.TT, Syn.TT, Syn.S_BOOL) => StrictBool.EqTT
          | (Syn.FF, Syn.FF, Syn.S_BOOL) => StrictBool.EqFF
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
+         | (Syn.FHCOM _, Syn.FHCOM _, Syn.S1) => FHCom.AutoEq
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
-         | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
          | (Syn.PAIR _, Syn.PAIR _, _) => DProd.Eq
+         | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
          | _ => raise E.error [E.% "Could not find value equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       (* equality for neutrals: variables and elimination forms;
