@@ -21,13 +21,13 @@ struct
   type 'a ctx = 'a Hyps.telescope
 
   datatype 'a jdg =
-     >> of 'a CJ.jdg ctx * 'a CJ.jdg
+     >> of ((sym * psort) list * 'a CJ.jdg ctx) * 'a CJ.jdg
    | MATCH of operator * int * 'a * param list * 'a list
 
   infix >>
 
   fun map f =
-    fn H >> catjdg => Hyps.map (CJ.map f) H >> CJ.map f catjdg
+    fn (I, H) >> catjdg => (I, Hyps.map (CJ.map f) H) >> CJ.map f catjdg
      | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
 
   local
@@ -62,12 +62,13 @@ struct
       srho
 
   fun relabel srho = 
-    fn H >> catjdg => relabelHyps H srho >> CJ.map (renameHypsInTerm srho) catjdg
+    fn (I, H) >> catjdg => (I, relabelHyps H srho) >> CJ.map (renameHypsInTerm srho) catjdg
      | jdg => map (renameHypsInTerm srho) jdg
 
   val rec eq =
-    fn (H1 >> catjdg1, H2 >> catjdg2) =>
-          telescopeEq (H1, H2)
+    fn ((I1, H1) >> catjdg1, (I2, H2) >> catjdg2) =>
+          ListPair.allEq (fn ((u1, sigma1), (u2, sigma2)) => Tm.Sym.eq (u1, u2) andalso Tm.O.Ar.Vl.PS.eq (sigma1, sigma2)) (I1, I2)
+            andalso telescopeEq (H1, H2)
             andalso CJ.eq (catjdg1, catjdg2)
      | (MATCH (th1, k1, a1, ps1, ms1), MATCH (th2, k2, a2, ps2, ms2)) =>
           CJ.Tm.O.eq CJ.Tm.Sym.eq (th1, th2)
@@ -86,7 +87,7 @@ struct
         empty
 
     fun pretty f : 'a jdg -> doc =
-      fn H >> catjdg => concat [prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
+      fn (I, H) >> catjdg => concat [prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
        | MATCH (th, k, a, _, _) => concat [text (f a), text " match ", text (Tm.O.toString Tm.Sym.toString th), text " @ ", int k]
   end
 

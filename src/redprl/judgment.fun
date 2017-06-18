@@ -31,7 +31,7 @@ struct
 
   fun relabelWithVarenv vrho jdg =
     case jdg of 
-       S.>> (H, catjdg) => S.>> (relabelHypsWithVarenv vrho H, catjdg)
+       S.>> ((I, H), catjdg) => S.>> ((I, relabelHypsWithVarenv vrho H), catjdg)
      | _ => jdg
 
   val substSymenv = 

@@ -131,7 +131,7 @@ struct
       end
 
     fun relabelSequent (entry : entry) (ps : Tm.param list) : abt jdg -> abt jdg =
-      fn H >> catjdg => relabelHyps entry ps H >> catjdg
+      fn (I, H) >> catjdg => (I, relabelHyps entry ps H) >> catjdg
       | jdg => jdg
   in
     fun resuscitateTheorem sign opid ps args = 

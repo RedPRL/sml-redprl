@@ -368,7 +368,7 @@ struct
         val (env', hyps') = elabSrcSeqHyps (metactx, symctx, varctx, env) hyps
         val concl' = elabSrcCatjdg (metactx, symctx, varctx, env') concl
       in
-        (env', RedPrlSequent.>> (hyps', concl'))
+        (env', RedPrlSequent.>> (([], hyps'), concl')) (* todo: I := ? *)
       end
 
     fun elabSrcGenJdg (metactx, symctx, env) ((syms, vars), seq) : symbol NameEnv.dict * jdg Lcf.eff = 
@@ -457,8 +457,9 @@ struct
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
         in
-          E.wrap (pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as hyps >> concl) =>
+          E.wrap (pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as (syms, hyps) >> concl) =>
             let
+              (* TODO: deal with syms ?? *)
               val tau = CJ.synthesis concl
               val (params'', symctx', env') = 
                 Hyps.foldr

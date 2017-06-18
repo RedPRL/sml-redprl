@@ -5,7 +5,7 @@ struct
   structure Machine = AbtMachineUtil (RedPrlMachine (Sig))
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
   open RedPrlSequent
-  infix >:
+  infix >: >>
 
   fun @> (H, (x, j)) = Hyps.snoc H x j
   infix @>
