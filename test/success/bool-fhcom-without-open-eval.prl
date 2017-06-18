@@ -1,0 +1,55 @@
+Thm FHcom/trans3 : [
+     (a : bool)
+  -> (b : bool)
+  -> (c : bool) 
+  -> (d : bool) 
+  -> paths({_}.bool; a; b)
+  -> paths({_}.bool; a; c)
+  -> paths({_}.bool; b; d) 
+  -> paths({_}.bool; c; d)
+] by [
+  { <a> lam b. lam c. lam d.
+    lam pab. lam pac. lam pbd.
+    <i> 'fhcom{i=0, i=1; 0~>1}(,pab @ i; {j}. ,pac @j; {j}. ,pbd @j)
+  };
+  <| auto |>;
+].
+
+Thm FHcom/trans2 : [
+     (a : bool)
+  -> (b : bool)
+  -> (c : bool)
+  -> paths({_}.bool; a; b)
+  -> paths({_}.bool; b; c)
+  -> paths({_}.bool; a; c)
+] by [
+  { lam a. lam b. lam c. lam pab. lam pbc.
+    <i> 'fhcom{i=0, i=1; 0 ~> 1}(,pab @ i; {_}. ,a; {j}. ,pbc @j)
+  };
+  auto
+].
+
+Thm FHcom/symm : [
+     (a : bool)
+  -> (b : bool)
+  -> paths({_}.bool; a; b)
+  -> paths({_}.bool; b; a)
+] by [
+  { lam a. lam b. lam pab.
+    <i> 'fhcom{i=0, i=1; 0 ~> 1}(,a; {j}. ,pab @j; {_}. ,a)
+  };
+  auto
+].
+
+Thm Tube : [
+  x : bool
+  >> fhcom{1=1,0=0; 0 ~> 1}(x; {_}. x; {_}. x) = x in bool
+] by [
+  auto
+].
+
+Thm TrueByEvaluation : [
+  fhcom{; 0 ~> 0}(tt) in bool
+] by [
+  auto
+].
