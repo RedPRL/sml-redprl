@@ -1177,6 +1177,54 @@ struct
     end
   end
 
+  structure Coe =
+  struct
+    fun Eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coe.Eq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.COE {dir=(r0, r'0), ty=(u, ty0u), coercee=m0} = Syn.out lhs
+        val Syn.COE {dir=(r1, r'1), ty=(v, ty1v), coercee=m1} = Syn.out rhs
+        val () = assertParamEq "Coe.Eq source of direction" (r0, r1)
+        val () = assertParamEq "Coe.Eq target of direction" (r'0, r'1)
+
+        val ty01 = substSymbol (r'0, u) ty0u
+        val (goalTy1, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (ty01, ty)
+
+        val w = alpha 0
+        val ty0w = substSymbol (P.ret w, u) ty0u
+        val ty1w = substSymbol (P.ret w, v) ty1v
+        val (goalTy, _) = makeGoal @@ ([(w, P.DIM)],[]) || H >> CJ.EQ_TYPE (ty0w, ty1w)
+
+        val ty00 = substSymbol (r0, u) ty0u
+        val (goalCoercees, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m0, m1), ty00)
+      in
+        T.empty >: goalTy1 >: goalTy >: goalCoercees #> trivial
+      end
+
+    fun CapEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coe.CapEq"
+        val H >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.COE {dir=(r, r'), ty=(u, tyu), coercee=m} = Syn.out lhs
+        val () = assertParamEq "Coe.CapEq source and target of direction" (r, r')
+
+        val ty0 = substSymbol (r, u) tyu
+        val (goalTy0, _) = makeGoal @@ ([],[]) || H >> CJ.EQ_TYPE (ty0, ty)
+
+        val (goalTy, _) = makeGoal @@ ([(u, P.DIM)],[]) || H >> CJ.TYPE tyu
+        val (goalEq, _) = makeGoal @@ ([],[]) || H >> CJ.EQ ((m, rhs), ty)
+      in
+        T.empty >: goalTy0 >: goalTy >: goalEq #> trivial
+      end
+
+    local
+      infix orelse_
+    in
+      (* Try all the fhcom rules. *)
+      val AutoEq = Eq orelse_ CapEq
+    end
+  end
 
   structure Computation =
   struct
@@ -1450,6 +1498,8 @@ struct
         case (Syn.out m, Syn.out n) of
            (Syn.HCOM _, _) => HCom.AutoEq
          | (_, Syn.HCOM _) => Equality.Symmetry
+         | (Syn.COE _, _) => Coe.AutoEq
+         | (_, Syn.COE _) => Equality.Symmetry
          | _ => StepEqCanonicity sign ((m, n), ty)
 
       fun StepSynth sign m =
