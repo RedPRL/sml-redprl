@@ -348,11 +348,11 @@ rawTerm
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
   | term EQUALS term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term JDG_TYPE (Ast.$$ (O.MONO O.JDG_TYPE, [\ (([],[]), term)]))
+  | term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term), \ (([],[]), term)]))
   | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
   | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term EQUALS term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
-  | term IN term (Ast.$$ (O.MONO O.JDG_MEM, [\ (([],[]), term1), \(([],[]), term2)]))
+  | term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
   | term (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)

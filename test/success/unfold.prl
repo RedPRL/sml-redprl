@@ -12,7 +12,6 @@ Thm Times/Proj(#A) : [
     hyp z
   };
 
-  elim a/type;
   auto
 ].
 
