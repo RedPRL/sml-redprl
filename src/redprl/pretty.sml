@@ -1,4 +1,4 @@
-structure PP = PrettyPrint (AnsiColors)
+structure PP = PrettyPrint (DisableAnsiColors)
 
 structure TermPrinter :
 sig
