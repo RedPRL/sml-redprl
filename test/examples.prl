@@ -136,3 +136,9 @@ Thm NotNotPath : [paths({_}.bool -> bool; Cmp(Not;Not); lam([x].x))] by [
 ].
 
 Extract NotNotPath.
+
+
+Thm Singleton : [(x : bool) * paths({_}.bool; x; tt)] by [
+  < 'tt, <x> 'tt >;
+  auto
+].
