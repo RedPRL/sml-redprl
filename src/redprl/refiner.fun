@@ -1526,8 +1526,7 @@ struct
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
-          | MATCH _ => Match.MatchOperator
-          | jdg => raise E.error [E.% ("Could not find suitable rule for " ^ Seq.toString TermPrinter.toString jdg)])
+          | MATCH _ => Match.MatchOperator)
 
 
       fun isWfJdg (CJ.TRUE _) = false
