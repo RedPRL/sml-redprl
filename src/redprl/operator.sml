@@ -106,6 +106,8 @@ struct
    | BOOL | TRUE | FALSE | IF (* weak booleans *)
    (* strict bool: strict if (true and false are shared) *)
    | S_BOOL | S_IF
+   (* empty type *)
+   | VOID
    (* circle: base and s1_elim *)
    | S1 | BASE | S1_ELIM
    (* function: lambda and app *)
@@ -187,6 +189,8 @@ struct
 
      | S_BOOL => [] ->> EXP
      | S_IF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+
+     | VOID => [] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -396,6 +400,8 @@ struct
 
      | S_BOOL => "sbool"
      | S_IF => "if"
+
+     | VOID => "void"
 
      | S1 => "S1"
      | BASE => "base"

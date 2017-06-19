@@ -82,6 +82,7 @@ whitespace = [\ \t];
 "if"               => (Tokens.IF (posTuple (size yytext)));
 "sbool"            => (Tokens.S_BOOL (posTuple (size yytext)));
 "if/s"             => (Tokens.S_IF (posTuple (size yytext)));
+"void"             => (Tokens.VOID (posTuple (size yytext)));
 "S1"               => (Tokens.S1 (posTuple (size yytext)));
 "base"             => (Tokens.BASE (posTuple (size yytext)));
 "loop"             => (Tokens.LOOP (posTuple (size yytext)));

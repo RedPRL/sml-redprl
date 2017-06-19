@@ -68,7 +68,7 @@ end
  | DOUBLE_RANGLE
  | QUESTION
 
- | HCOM | COE | FHCOM | BOOL | S_BOOL | TT | FF | IF | S_IF | PATHS | LOOP | BASE | S1 | FST | SND
+ | FHCOM | BOOL | TT | FF | IF | S_BOOL | S_IF | VOID | S1 | BASE | LOOP | FST | SND | PATHS | HCOM | COE
  | THEN | ELSE | LET | WITH | CASE | OF
 
  | FUN_APP
@@ -91,7 +91,7 @@ end
 %nonassoc COMMA COLON
 %left FUN_APP
 %left AT_SIGN
-%nonassoc SND FST S1 BASE LOOP PATHS S_IF IF FF TT S_BOOL BOOL COE HCOM FHCOM LAMBDA HASH LANGLE LPAREN VARNAME OPNAME
+%nonassoc FHCOM BOOL TT FF IF S_BOOL S_IF VOID S1 BASE LOOP LAMBDA FST SND PATHS HCOM COE HASH LANGLE LPAREN VARNAME OPNAME
 
 
 
@@ -323,9 +323,10 @@ atomicRawTerm
   | LPAREN boundVar COLON term RPAREN TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), term1), \ (([],[boundVar]), term2)]))
   | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
-  | S_BOOL (Ast.$$ (O.MONO O.S_BOOL, []))
   | TT (Ast.$$ (O.MONO O.TRUE, []))
   | FF (Ast.$$ (O.MONO O.FALSE, []))
+  | S_BOOL (Ast.$$ (O.MONO O.S_BOOL, []))
+  | VOID (Ast.$$ (O.MONO O.VOID, []))
   | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
   | LOOP LBRACKET param RBRACKET (Ast.$$ (O.POLY (O.LOOP param), []))
