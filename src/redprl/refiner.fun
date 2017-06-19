@@ -752,34 +752,6 @@ struct
         raise E.error [E.% "Expected sequent judgment"]
   end
 
-  structure Type =
-  struct
-    fun Intro _ jdg =
-      let
-        val _ = RedPrlLog.trace "Type.Intro"
-        val (I, H) >> CJ.TYPE ty = jdg
-        val (goal, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty, ty)
-      in
-        T.empty >: goal
-          #> (I, H, trivial)
-      end
-      handle Bind =>
-        raise E.error [E.% @@ "Expected typehood sequent but got " ^ J.toString jdg]
-
-    fun Elim z alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Type.Elim"
-        val (I, H) >> catjdg = jdg
-        val CJ.TYPE ty = lookupHyp H z
-        val H' = Hyps.modify z (fn _ => CJ.EQ_TYPE (ty, ty)) H
-        val (goal, hole) = makeGoal @@ (I, H') >> catjdg
-      in
-        T.empty >: goal
-          #> (I, H, hole)
-      end
-  end
-
-
   structure TypeEquality =
   struct
     fun Symmetry alpha jdg =
@@ -806,21 +778,6 @@ struct
       end
       handle Bind =>
         raise E.error [E.% @@ "Expected truth sequent but got " ^ J.toString jdg]
-  end
-
-  structure Membership =
-  struct
-    fun Intro alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Membership.Intro"
-        val (I, H) >> CJ.MEM (tm, ty) = jdg
-        val (goal, _) = makeGoal @@ (I, H) >> CJ.EQ ((tm, tm), ty)
-      in
-        T.empty >: goal
-          #> (I, H, trivial)
-      end
-      handle Bind =>
-        raise E.error [E.% "Expected member sequent"]
   end
 
   structure Synth =
@@ -1526,8 +1483,6 @@ struct
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.TRUE ty => StepTrue sign ty
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
-          | _ >> CJ.TYPE ty => Type.Intro
-          | _ >> CJ.MEM _ => Membership.Intro
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
           | MATCH _ => Match.MatchOperator
@@ -1575,7 +1530,6 @@ struct
                   CJ.TRUE _ => StepTrue hyp z alpha jdg
                 | CJ.EQ _ => StepEq hyp z alpha jdg
                 | _ => raise E.error [E.% ("Could not find suitable elimination rule for " ^ CJ.toString catjdg)])
-           | CJ.TYPE _ => Type.Elim z alpha jdg
            | _ => raise E.error [E.% "Could not find suitable elimination rule"]
         end
     in

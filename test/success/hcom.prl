@@ -18,7 +18,6 @@ Thm Hcom/Poly(#A) : [
       -> paths({_}.#A; b; d) 
       -> paths({_}.#A; c; d)
 ] by [
-  elim a/type;
   { lam a. lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
     <i> 'hcom{i=0, i=1; 0 ~> 1}(#A; ,pab @ i; {j}. ,pac @ j; {j}. ,pbd @ j)
@@ -41,7 +40,6 @@ Thm Hcom/trans(#A) : [
   { lam a. lam b. lam c. lam pab. lam pbc.
     <i> 'hcom{i=0, i=1; 0 ~> 1}(#A; ,pab @ i; {_}. ,a; {j}. ,pbc @j)
   };
-  elim a/type;
   auto
 ].
 
@@ -56,7 +54,6 @@ Thm Hcom/symm(#A) : [
   { lam a. lam b. lam pab.
     <i> 'hcom{i=0, i=1; 0 ~> 1}(#A; ,a; {j}. ,pab @j; {_}. ,a)
   };
-  elim a/type;
   auto
 ].
 
@@ -65,7 +62,6 @@ Thm Cap{i : dim}(#A) : [
   x : #A
   >> hcom{i=0, i=1; 0 ~> 0}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
-  elim a/type:triv;
   auto
 ].
 
@@ -74,7 +70,6 @@ Thm Tube(#A) : [
   x : #A
   >> hcom{1=1,0=0; 0 ~> 1}(#A; x; {_}. x; {_}. x) = x in #A
 ] by [
-  elim a/type:triv;
   auto
 ].
 

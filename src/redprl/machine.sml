@@ -244,9 +244,7 @@ struct
 
      | O.MONO O.JDG_EQ `$ _ <: _ => S.VAL
      | O.MONO O.JDG_CEQ `$ _ <: _ => S.VAL
-     | O.MONO O.JDG_MEM `$ _ <: _ => S.VAL
      | O.MONO O.JDG_EQ_TYPE `$ _ <: _ => S.VAL
-     | O.MONO O.JDG_TYPE `$ _ <: _ => S.VAL
      | O.MONO O.JDG_TRUE `$ _ <: _ => S.VAL
      | O.MONO O.JDG_SYNTH `$ _ <: _ => S.VAL
 

@@ -130,7 +130,7 @@ struct
    | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
    | DEV_LET
 
-   | JDG_EQ | JDG_CEQ | JDG_MEM | JDG_TRUE | JDG_TYPE | JDG_EQ_TYPE | JDG_SYNTH
+   | JDG_EQ | JDG_CEQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -237,9 +237,7 @@ struct
 
      | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_MEM => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_TRUE => [[] * [] <> EXP] ->> JDG
-     | JDG_TYPE => [[] * [] <> EXP] ->> JDG
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
 
@@ -444,10 +442,8 @@ struct
 
      | JDG_EQ => "eq"
      | JDG_CEQ => "ceq"
-     | JDG_MEM => "mem"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
-     | JDG_TYPE => "type"
      | JDG_SYNTH => "synth"
 
   local

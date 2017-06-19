@@ -116,8 +116,6 @@ Thm FunExt(#A; #B) : [
 ] by [
   {lam f. lam g. lam p.
     <i> lam a. let q = p hyp a. '(,q @i)};
-  elim type/B;
-  elim type/A;
   auto
 ].
 

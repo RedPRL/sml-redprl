@@ -10,8 +10,8 @@
 //
 // Once we have a universe, this will be much simpler.
 Thm Thm1(#A; #B) : [
-  type/A : #A = #A type,
-  type/B : #B = #B type
+  type/A : #A type,
+  type/B : #B type
   >> #A -> #B -> #A
 ] by [
   // The main part of the theorem is the following expression; but in RedPRL, this induces some
@@ -23,9 +23,9 @@ Thm Thm1(#A; #B) : [
 ].
 
 Thm Thm2(#A; #B; #C) : [
-  type/A : #A = #A type,
-  type/B : #B = #B type,
-  type/C : #C = #C type
+  type/A : #A type,
+  type/B : #B type,
+  type/C : #C type
   >> ((#A -> #B) -> (#A -> #B -> #C) -> #A -> #C)
 ] by [
   {lam f. lam g. lam a.
