@@ -1393,20 +1393,17 @@ struct
     fun instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec) =
       let
         val (I0, H0) >> jdg0 = subgoalSpec
-
-        (*val nsyms = List.length I0
+        val nsyms = List.length I0
         val freshSyms = List.tabulate (List.length I0, fn i => alpha i)
-        val (_, xrho) = Hyps.foldr (fn (x, _, (i, xrho)) => (i + 1, Sym.Ctx.insert xrho x (alpha i))) (nsyms, Sym.Ctx.empty) H0*)
-
-        (*val I' = ListPair.map (fn ((u,sigma), v) => (v, sigma)) (I, freshSyms)
-        val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (I, freshSyms)*)
+        val I0' = ListPair.map (fn ((u,sigma), v) => (v, sigma)) (I, freshSyms)
+        val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (I, freshSyms)
 
         val (I1, H1) >> jdg1 = mainGoalSpec
         val delta = hypothesesDiff (H1, H0)
-        val H0' = applyDiffs alpha 0 Var.Ctx.empty delta H
+        val H0' = applyDiffs alpha nsyms Var.Ctx.empty delta H
 
-        val jdg' = (I, H0') >> jdg0
-        val jdg'' = RedPrlSequent.map (substSymenv Sym.Ctx.empty) jdg'
+        val jdg' = (I @ I0', H0') >> jdg0
+        val jdg'' = RedPrlSequent.map (substSymenv srho) jdg'
       in
         jdg''
       end
