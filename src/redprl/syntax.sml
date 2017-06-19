@@ -15,12 +15,12 @@ struct
    | AX
    (* formal composition *)
    | FHCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
-   (* empty type *)
-   | VOID
    (* weak bool: true, false and if *)
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    (* strict bool: strict if (true and false are shared) *)
    | S_BOOL | S_IF of 'a * ('a * 'a)
+   (* empty type *)
+   | VOID
    (* circle: base, loop and s1_elim *)
    | S1 | BASE | LOOP of param | S1_ELIM of (variable * 'a) * 'a * ('a * (symbol * 'a))
    (* function: lambda and app *)
@@ -80,8 +80,6 @@ struct
              intoFHcom (dir, eqs) (cap, tubes)
            end
 
-       | VOID => O.MONO O.VOID $$ []
-
        | BOOL => O.MONO O.BOOL $$ []
        | TT => O.MONO O.TRUE $$ []
        | FF => O.MONO O.FALSE $$ []
@@ -89,6 +87,8 @@ struct
 
        | S_BOOL => O.MONO O.S_BOOL $$ []
        | S_IF (m, (t, f)) => O.MONO O.S_IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
+
+       | VOID => O.MONO O.VOID $$ []
 
        | S1 => O.MONO O.S1 $$ []
        | BASE => O.MONO O.BASE $$ []
@@ -147,8 +147,6 @@ struct
        | O.POLY (O.FHCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
            FHCOM {dir = dir, cap = cap, tubes = outTubes (eqs, tubes)}
 
-       | O.MONO O.VOID $ _ => VOID
-
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TRUE $ _ => TT
        | O.MONO O.FALSE $ _ => FF
@@ -156,6 +154,8 @@ struct
 
        | O.MONO O.S_BOOL $ _ => S_BOOL
        | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] => S_IF (m, (t, f))
+
+       | O.MONO O.VOID $ _ => VOID
 
        | O.MONO O.S1 $ _ => S1
        | O.MONO O.BASE $ _ => BASE

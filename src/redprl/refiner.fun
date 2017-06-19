@@ -1546,10 +1546,10 @@ struct
         case Syn.out ty of
            Syn.BOOL => Bool.Elim
          | Syn.S_BOOL => StrictBool.Elim
+         | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
          | Syn.DPROD _ => DProd.Elim
-         | Syn.VOID => Void.Elim
          | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
 
       fun StepEq ty =
