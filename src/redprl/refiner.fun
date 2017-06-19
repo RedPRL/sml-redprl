@@ -737,9 +737,9 @@ struct
           #> (I, H, trivial)
       end
 
-    fun ApComputeConst alpha jdg =
+    fun ApConstCompute alpha jdg =
       let
-        val _ = RedPrlLog.trace "Path.ApComputeConst"
+        val _ = RedPrlLog.trace "Path.ApConstCompute"
         val (I, H) >> CJ.EQ ((ap, p), a) = jdg
         val Syn.PATH_AP (m, P.APP r) = Syn.out ap
         val (goalSynth, holeSynth) = makeGoal @@ (I, H) >> CJ.SYNTH m
@@ -1477,25 +1477,23 @@ struct
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
          | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
          | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _), _) => Path.ApEq
-         | (Syn.PATH_AP (_, P.APP _), _, _) => Path.ApComputeConst
          | (_, Syn.PATH_AP (_, P.APP _), _) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find neutral equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
-      fun StepEqEta ty =
-        case Syn.out ty of
-           Syn.DPROD _ => DProd.Eta
-         | Syn.DFUN _ => DFun.Eta
-         | Syn.PATH_TY _ => Path.Eta
-         | _ => raise E.error [E.% "Could not find eta expansion rule for type", E.! ty]
+      fun StepEqNeuExpand (m, ty) =
+        case (Syn.out m, Syn.out ty) of
+           (_, Syn.DPROD _) => DProd.Eta
+         | (_, Syn.DFUN _) => DFun.Eta
+         | (_, Syn.PATH_TY _) => Path.Eta
+         | _ => raise E.error [E.% "Could not expand neutral term of type", E.! ty]
 
       fun StepEqCanonicity sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
-           (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
+           (Machine.REDEX, _) => Computation.EqHeadExpansion sign
+         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
          | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
-         | (Machine.REDEX, _) => Computation.EqHeadExpansion sign
-         | (_, Machine.REDEX) => Equality.Symmetry
-         | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqEta ty
-         | (Machine.CANONICAL, Machine.NEUTRAL _) => Equality.Symmetry
+         | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand (m, ty)
+         | _ => Equality.Symmetry
 
       fun StepEq sign ((m, n), ty) =
         case (Syn.out m, Syn.out n) of
@@ -1503,6 +1501,8 @@ struct
          | (_, Syn.HCOM _) => Equality.Symmetry
          | (Syn.COE _, _) => Coe.AutoEq
          | (_, Syn.COE _) => Equality.Symmetry
+         | (Syn.PATH_AP (_, P.APP _), _) => Path.ApConstCompute
+         | (_, Syn.PATH_AP (_, P.APP _)) => Equality.Symmetry
          | _ => StepEqCanonicity sign ((m, n), ty)
 
       fun StepSynth sign m =
