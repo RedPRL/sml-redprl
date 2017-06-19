@@ -376,8 +376,9 @@ struct
         val (env', symctx') = List.foldl (fn (sym, (env, symctx)) => addSymName (env, symctx) sym) (env, symctx) syms
 
         val syms' = List.map (fn (u,psort) => (NameEnv.lookup env' u, psort)) syms
-        val (env''', seq') = elabSrcSequent (metactx, symctx', Var.Ctx.empty, env') seq
+        val (env''', RedPrlSequent.>> ((_, H), jdg) )= elabSrcSequent (metactx, symctx', Var.Ctx.empty, env') seq
         val env'''' = List.foldl (fn ((u,_), env) => NameEnv.remove env u) env''' syms
+        val seq' = RedPrlSequent.>> ((syms', H), jdg)
       in
         (env'''', seq')
       end
@@ -433,11 +434,15 @@ struct
       fun checkProofState (pos, subgoalsSpec) state = 
         let
           val Lcf.|> (subgoals, _) = state
-          fun goalEqualTo goal1 goal2 = Lcf.effEq (goal1, goal2)
+          fun goalEqualTo goal1 goal2 = 
+            if Lcf.effEq (goal1, goal2) then true
+            else
+              (RedPrlLog.print RedPrlLog.WARN (pos, RedPrlJudgment.toString goal1 ^ " not equal to " ^ RedPrlJudgment.toString goal2);
+               false)
 
           fun go ([], Tl.ConsView.EMPTY) = true
             | go (jdgSpec :: subgoalsSpec, Tl.ConsView.CONS (_, jdgReal, subgoalsReal)) = 
-                Lcf.effEq (jdgSpec, jdgReal) andalso go (subgoalsSpec, Tl.ConsView.out subgoalsReal)
+                goalEqualTo jdgSpec jdgReal andalso go (subgoalsSpec, Tl.ConsView.out subgoalsReal)
             | go _ = false
 
           val proofStateCorrect = go (subgoalsSpec, Tl.ConsView.out subgoals)

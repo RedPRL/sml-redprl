@@ -62,7 +62,9 @@ struct
       srho
 
   fun relabel srho = 
-    fn (I, H) >> catjdg => (I, relabelHyps H srho) >> CJ.map (renameHypsInTerm srho) catjdg
+    fn (I, H) >> catjdg => 
+       (List.map (fn (u, sigma) => (Tm.Sym.Ctx.lookup srho u handle _ => u, sigma)) I, relabelHyps H srho) 
+         >> CJ.map (renameHypsInTerm srho) catjdg
      | jdg => map (renameHypsInTerm srho) jdg
 
   val rec eq =
@@ -81,13 +83,20 @@ struct
   local
     open PP
   in
+    fun prettySyms' [] = concat []
+      | prettySyms' [(u, sigma)] = concat [text (Tm.Sym.toString u), text " : ", text (Tm.O.Ar.Vl.PS.toString sigma)]
+      | prettySyms' ((u, sigma) :: syms) = concat [text (Tm.Sym.toString u), text " : ", text (Tm.O.Ar.Vl.PS.toString sigma), text " , ", prettySyms' syms]
+
+    fun prettySyms [] = concat []
+      | prettySyms syms = concat [text "{", prettySyms' syms, text "}.", line]
+
     fun prettyHyps f : 'a ctx -> doc =
       Hyps.foldl
         (fn (x, a, r) => concat [r, text (Tm.Sym.toString x), text " : ", f a, line])
         empty
 
     fun pretty f : 'a jdg -> doc =
-      fn (I, H) >> catjdg => concat [prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
+      fn (I, H) >> catjdg => concat [prettySyms I, prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
        | MATCH (th, k, a, _, _) => concat [text (f a), text " match ", text (Tm.O.toString Tm.Sym.toString th), text " @ ", int k]
   end
 
