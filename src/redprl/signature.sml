@@ -435,7 +435,7 @@ struct
         let
           val Lcf.|> (subgoals, _) = state
           fun goalEqualTo goal1 goal2 = 
-            if Lcf.effEq (goal1, goal2) then true
+            if RedPrlSequent.eq (goal1, goal2) then true
             else
               (RedPrlLog.print RedPrlLog.WARN (pos, RedPrlJudgment.toString goal1 ^ " not equal to " ^ RedPrlJudgment.toString goal2);
                false)

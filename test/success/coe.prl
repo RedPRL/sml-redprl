@@ -15,5 +15,5 @@ Rule CoeTestCap{r:dim}(#A : {dim}.exp) : [
   ==>
   m : #A{r} >> coe{r ~> r}({x}.#A{x}; m) = m in #A{r}
 ] by [
-  auto;
+  auto
 ].
