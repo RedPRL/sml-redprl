@@ -40,10 +40,4 @@ sig
   sig
     val FromWfHyp : hyp -> rule
   end
-
-  structure CEquiv :
-  sig
-    val Refl : rule
-    val EvalGoal : sign -> rule
-  end
 end

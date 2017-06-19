@@ -29,32 +29,6 @@ struct
 
   fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
 
-  structure CEquiv =
-  struct
-    fun EvalGoal sign _ jdg =
-      let
-        val _ = RedPrlLog.trace "CEquiv.EvalGoal"
-        val (I, H) >> CJ.CEQUIV (m, n) = jdg
-        val (goal, hole) = makeGoal @@ (I, H) >> CJ.CEQUIV (Machine.eval sign m, Machine.eval sign n)
-      in
-        T.empty >: goal
-          #> (I, H, hole)
-      end
-      handle Bind =>
-        raise E.error [E.% "Expected a computational equality sequent"]
-
-    fun Refl _ jdg =
-      let
-        val _ = RedPrlLog.trace "CEquiv.Refl"
-        val (I, H) >> CJ.CEQUIV (m, n) = jdg
-        val _ = assertAlphaEq (m, n)
-      in
-        T.empty #> (I, H, trivial)
-      end
-      handle Bind =>
-        raise E.error [E.% "Expected a computational equality sequent"]
-  end
-
   structure S1 =
   struct
     fun EqType _ jdg =

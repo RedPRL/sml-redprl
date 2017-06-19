@@ -190,8 +190,6 @@ struct
      | O.MONO O.TAC_MTAC `$ _ <: _ => S.VAL
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_EVAL_GOAL `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_CEQUIV_REFL `$ _ <: _ => S.VAL
      | O.MONO O.RULE_WITNESS `$ _ <: _ => S.VAL
      | O.MONO O.RULE_SYMMETRY `$ _ <: _ => S.VAL
      | O.MONO O.RULE_AUTO_STEP `$ _ <: _ => S.VAL

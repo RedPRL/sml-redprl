@@ -5,7 +5,6 @@ sig
    | TRUE of 'a
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
-   | CEQUIV of 'a * 'a
 
   val MEM : 'a * 'a -> 'a redprl_jdg
   val TYPE : 'a -> 'a redprl_jdg
@@ -18,7 +17,6 @@ struct
    | TRUE of 'a
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
-   | CEQUIV of 'a * 'a
 
   fun MEM (m, a) = 
     EQ ((m, m), a)
@@ -33,7 +31,6 @@ struct
      | TRUE a => TRUE (f a)
      | EQ_TYPE (a, b) => EQ_TYPE (f a, f b)
      | SYNTH a => SYNTH (f a)
-     | CEQUIV (m, n) => CEQUIV (f m, f n)
 
   structure O = RedPrlOpData
   structure Tm = RedPrlAbt
@@ -43,7 +40,6 @@ struct
      | TRUE _ => O.EXP
      | EQ_TYPE _ => O.TRIV
      | SYNTH _ => O.EXP
-     | CEQUIV _ => O.TRIV
 
   exception InvalidJudgment
 
@@ -60,7 +56,6 @@ struct
        | TRUE a => O.MONO O.JDG_TRUE $$ [([],[]) \ a]
        | EQ_TYPE (a, b) => O.MONO O.JDG_EQ_TYPE $$ [([],[]) \ a, ([],[]) \ b]
        | SYNTH m => O.MONO O.JDG_SYNTH $$ [([],[]) \ m]
-       | CEQUIV (m, n) => O.MONO O.JDG_CEQ $$ [([],[]) \ m, ([],[]) \ n]
 
     fun fromAbt jdg =
       case RedPrlAbt.out jdg of
@@ -68,7 +63,6 @@ struct
        | O.MONO O.JDG_TRUE $ [_ \ a] => TRUE a
        | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _\ n] => EQ_TYPE (m, n)
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
-       | O.MONO O.JDG_CEQ $ [_ \ m, _ \ n] => CEQUIV (m, n)
        | _ => raise InvalidJudgment
   end
 
@@ -80,7 +74,6 @@ struct
      | TRUE a => PP.concat [PP.text (f a), PP.text " true"]
      | EQ_TYPE (a, b) => PP.concat [PP.text (f a), PP.text " = ", PP.text (f b), PP.text " type"]
      | SYNTH m => PP.concat [PP.text (f m), PP.text " synth"]
-     | CEQUIV (m, n) => PP.concat [PP.text (f m), PP.text " ~ ", PP.text (f n)]
 
   fun unify (j1, j2) =
     RedPrlAbt.Unify.unify (toAbt j1, toAbt j2)
