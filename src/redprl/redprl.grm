@@ -149,10 +149,6 @@ end
 
  | symBinding of string * P.param_sort
  | symBindings of (string * P.param_sort) list
- | varBinding of string * O.sort
- | varBindings of (string * O.sort) list
- | annotatedBinder of (string * P.param_sort) list * (string * O.sort) list
-
 
  | rawJudgment of ast
  | judgment of ast
@@ -384,20 +380,6 @@ symBindings
   : symBinding ([symBinding])
   | symBinding COMMA symBindings (symBinding :: symBindings)
   | ([])
-
-varBinding
-  : boundVar COLON sort (boundVar, sort)
-
-varBindings
-  : varBinding ([varBinding])
-  | varBinding COMMA varBindings (varBinding :: varBindings)
-  | ([])
-
-annotatedBinder
-  : LBRACKET symBindings RBRACKET LSQUARE varBindings RSQUARE (symBindings, varBindings)
-  | LSQUARE varBindings RSQUARE ([], varBindings)
-  | LBRACKET symBindings RBRACKET RSQUARE (symBindings, [])
-
 
 src_catjdg
   : term JDG_TRUE (CJ.TRUE term)
