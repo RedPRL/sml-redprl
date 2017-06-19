@@ -29,6 +29,8 @@ struct
 
   fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
 
+  fun swapEqJdg ((lhs, rhs), ty) = ((rhs, lhs), ty)
+
   structure S1 =
   struct
     fun EqType _ jdg =
@@ -1069,55 +1071,71 @@ struct
         #> (I, H, trivial)
       end
 
-    fun CapEq alpha jdg =
-      let
-        val _ = RedPrlLog.trace "HCom.CapEq"
-        val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out lhs
-        val () = assertParamEq "HCom.CapEq source and target of direction" (r, r')
-        val () = assertAlphaEq (ty0, ty)
-
-        val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
-        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap, rhs), ty)
-
-        val w = alpha 0
-      in
-        ComKit.appendTubeCapGoals
-          (ComKit.appendInterTubeGoals
-            (T.empty >: goalTy >: goalEq)
-            (I, H) w ty tubes tubes)
-          (I, H) ty r cap tubes
-        #> (I, H, trivial)
-      end
-
-    (* Search for the first satisfied equation in an hcom. *)
-    fun TubeEq alpha jdg =
-      let
-        val _ = RedPrlLog.trace "HCom.TubeEq"
-        val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out lhs
-        val (eq, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
-        val () = assertAlphaEq (ty0, ty)
-
-        val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
-        val (goalCap, _) = makeGoal @@ (I, H) >> CJ.MEM (cap, ty)
-        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, rhs), ty)
-
-        val w = alpha 0
-      in
-        ComKit.appendTubeCapGoals
-          (ComKit.appendInterTubeGoals
-            (T.empty >: goalTy >: goalCap >: goalEq)
-            (I, H) w ty tubes tubes)
-          (I, H) ty r cap tubes
-        #> (I, H, trivial)
-      end
+    local
+      fun CapEqCommon alpha (I, H) ((hcom, other), ty) =
+        let
+          val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
+          val () = assertParamEq "HCom.CapEqCommon source and target of direction" (r, r')
+          val () = assertAlphaEq (ty0, ty)
+  
+          val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
+          val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap, other), ty)
+  
+          val w = alpha 0
+        in
+          ComKit.appendTubeCapGoals
+            (ComKit.appendInterTubeGoals
+              (T.empty >: goalTy >: goalEq)
+              (I, H) w ty tubes tubes)
+            (I, H) ty r cap tubes
+          #> (I, H, trivial)
+        end
+      (* Search for the first satisfied equation in an hcom. *)
+      fun TubeEqCommon alpha (I, H) ((hcom, other), ty) =
+        let
+          val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
+          val (eq, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
+          val () = assertAlphaEq (ty0, ty)
+  
+          val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
+          val (goalCap, _) = makeGoal @@ (I, H) >> CJ.MEM (cap, ty)
+          val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, other), ty)
+  
+          val w = alpha 0
+        in
+          ComKit.appendTubeCapGoals
+            (ComKit.appendInterTubeGoals
+              (T.empty >: goalTy >: goalCap >: goalEq)
+              (I, H) w ty tubes tubes)
+            (I, H) ty r cap tubes
+          #> (I, H, trivial)
+        end
+    in
+      fun CapEqL alpha (IH >> CJ.EQ terms) =
+        ( RedPrlLog.trace "HCom.CapEqL"
+        ; CapEqCommon alpha IH terms
+        )
+      fun CapEqR alpha (IH >> CJ.EQ terms) =
+        ( RedPrlLog.trace "HCom.CapEqL"
+        ; CapEqCommon alpha IH (swapEqJdg terms)
+        )
+      fun TubeEqL alpha (IH >> CJ.EQ terms) =
+        ( RedPrlLog.trace "HCom.TubeEqL"
+        ; TubeEqCommon alpha IH terms
+        )
+      fun TubeEqR alpha (IH >> CJ.EQ terms) =
+        ( RedPrlLog.trace "HCom.TubeEqL"
+        ; TubeEqCommon alpha IH (swapEqJdg terms)
+        )
+    end
 
     local
       infix orelse_
     in
       (* Try all the hcom rules. *)
-      val AutoEq = Eq orelse_ CapEq orelse_ TubeEq
+      val AutoEqLR = Eq orelse_ CapEqL orelse_ CapEqR orelse_ TubeEqL orelse_ TubeEqR
+      val AutoEqL = Eq orelse_ CapEqL orelse_ TubeEqL
+      val AutoEqR = Eq orelse_ CapEqR orelse_ TubeEqR
     end
   end
 
@@ -1181,27 +1199,38 @@ struct
         T.empty >: goalTy1 >: goalTy >: goalCoercees #> (I, H, trivial)
       end
 
-    fun CapEq alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Coe.CapEq"
-        val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.COE {dir=(r, r'), ty=(u, tyu), coercee=m} = Syn.out lhs
-        val () = assertParamEq "Coe.CapEq source and target of direction" (r, r')
+    local
+      fun CapEqCommon alpha (I, H) ((coe, other), ty) =
+        let
+          val Syn.COE {dir=(r, r'), ty=(u, tyu), coercee=m} = Syn.out coe
+          val () = assertParamEq "Coe.CapEqCommon source and target of direction" (r, r')
 
-        val ty0 = substSymbol (r, u) tyu
-        val (goalTy0, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
+          val ty0 = substSymbol (r, u) tyu
+          val (goalTy0, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
 
-        val (goalTy, _) = makeGoal @@ (I @ [(u, P.DIM)], H) >> CJ.TYPE tyu
-        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((m, rhs), ty)
-      in
-        T.empty >: goalTy0 >: goalTy >: goalEq #> (I, H, trivial)
-      end
+          val (goalTy, _) = makeGoal @@ (I @ [(u, P.DIM)], H) >> CJ.TYPE tyu
+          val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((m, other), ty)
+        in
+          T.empty >: goalTy0 >: goalTy >: goalEq #> (I, H, trivial)
+        end
+    in
+      fun CapEqL alpha (IH >> CJ.EQ terms) =
+        ( RedPrlLog.trace "Coe.CapEqL"
+        ; CapEqCommon alpha IH terms
+        )
+      fun CapEqR alpha (IH >> CJ.EQ terms) =
+        ( RedPrlLog.trace "Coe.CapEqL"
+        ; CapEqCommon alpha IH (swapEqJdg terms)
+        )
+    end
 
     local
       infix orelse_
     in
       (* Try all the fhcom rules. *)
-      val AutoEq = Eq orelse_ CapEq
+      val AutoEqLR = Eq orelse_ CapEqL orelse_ CapEqR
+      val AutoEqL = Eq orelse_ CapEqL
+      val AutoEqR = Eq orelse_ CapEqR
     end
   end
 
@@ -1471,10 +1500,12 @@ struct
 
       fun StepEq sign ((m, n), ty) =
         case (Syn.out m, Syn.out n) of
-           (Syn.HCOM _, _) => HCom.AutoEq
-         | (_, Syn.HCOM _) => Equality.Symmetry
-         | (Syn.COE _, _) => Coe.AutoEq
-         | (_, Syn.COE _) => Equality.Symmetry
+           (Syn.HCOM _, Syn.HCOM _) => HCom.AutoEqLR
+         | (Syn.HCOM _, _) => HCom.AutoEqL
+         | (_, Syn.HCOM _) => HCom.AutoEqLR
+         | (Syn.COE _, Syn.COE _) => Coe.AutoEqLR
+         | (Syn.COE _, _) => Coe.AutoEqL
+         | (_, Syn.COE _) => Coe.AutoEqR
          | (Syn.PATH_AP (_, P.APP _), _) => Path.ApConstCompute
          | (_, Syn.PATH_AP (_, P.APP _)) => Equality.Symmetry
          | _ => StepEqCanonicity sign ((m, n), ty)
