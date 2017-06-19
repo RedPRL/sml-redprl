@@ -80,8 +80,8 @@ struct
 
   fun multitactic sign mtac =
     case Tm.out (prepareTerm sign mtac) of
-         O.MONO O.MTAC_ALL $ [_ \ t] => ALL (inheritAnnotation mtac t)
-       | O.MONO (O.MTAC_EACH _) $ ts => EACH (List.map (fn _ \ t => inheritAnnotation mtac t) ts)
+         O.MONO O.MTAC_ALL $ [_ \ t] => ALL (SEQUENTIAL, inheritAnnotation mtac t)
+       | O.MONO (O.MTAC_EACH _) $ ts => EACH (SEQUENTIAL, List.map (fn _ \ t => inheritAnnotation mtac t) ts)
        | O.MONO (O.MTAC_FOCUS i) $ [_ \ t] => FOCUS (i, inheritAnnotation mtac t)
        | O.MONO O.MTAC_PROGRESS $ [_ \ mt] => PROGRESS (inheritAnnotation mtac mt)
        | O.MONO O.MTAC_REC $ [(_,[x]) \ mtx] => REC (x, inheritAnnotation mtac mtx)
