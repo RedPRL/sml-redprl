@@ -52,11 +52,9 @@ Rule PiIntro(#A; #B : [exp].exp) : [
 ].
 
 Thm Test : [ bool -> bool] by [
-  fresh x <- rule PiIntro(bool; [x].bool);
-  ?hole
-  // [ if x then 'ff else 'tt ];
-  // auto;
-  // < id, id >
+  fresh x <- {rule PiIntro(bool; [x].bool);};
+  [ if x then 'ff else 'tt ];
+  auto;
 ].
 
 Extract Test.

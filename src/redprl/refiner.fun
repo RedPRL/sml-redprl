@@ -1355,15 +1355,19 @@ struct
        | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
        | INSERT (x,_) => "INSERT " ^ Sym.toString x
 
-
-    fun applyDiff (delta : diff) (H : catjdg Hyps.telescope) : catjdg Hyps.telescope =
-      case delta of
-         DELETE x => Hyps.remove x H
-       | UPDATE (x, jdg) => Hyps.modify x (fn _ => jdg) H
-       | INSERT (x, jdg) => Hyps.snoc H x jdg
-
-    fun applyDiffs (delta : diff list) : catjdg Hyps.telescope -> catjdg Hyps.telescope =
-      List.foldl (fn (d, f) => applyDiff d o f) (fn H => H) delta
+    fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope = 
+      case deltas of 
+         [] => H
+       | DELETE x :: deltas => applyDiffs alpha i xrho deltas (Hyps.remove x H)
+       | UPDATE (x, jdg) :: deltas => applyDiffs alpha i xrho deltas (Hyps.modify x (fn _ => jdg) H)
+       | INSERT (x, jdg) :: deltas => 
+           let
+             val x' = alpha i
+             val jdg' = CJ.map (RedPrlAbt.renameVars xrho) jdg
+             val xrho' = Var.Ctx.insert xrho x x'
+           in
+             applyDiffs alpha (i + 1) xrho' deltas (Hyps.snoc H x' jdg')
+           end
 
     fun hypothesesDiff (H0, H1) : diff list =
       let
@@ -1389,17 +1393,20 @@ struct
     fun instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec) =
       let
         val (I0, H0) >> jdg0 = subgoalSpec
-        val nsyms = List.length I0
-        val freshSyms = List.tabulate (nsyms, fn i => alpha i)
-        val I' = ListPair.map (fn ((u,sigma), v) => (v, sigma)) (I, freshSyms)
-        val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (I, freshSyms)
+
+        (*val nsyms = List.length I0
+        val freshSyms = List.tabulate (List.length I0, fn i => alpha i)
+        val (_, xrho) = Hyps.foldr (fn (x, _, (i, xrho)) => (i + 1, Sym.Ctx.insert xrho x (alpha i))) (nsyms, Sym.Ctx.empty) H0*)
+
+        (*val I' = ListPair.map (fn ((u,sigma), v) => (v, sigma)) (I, freshSyms)
+        val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (I, freshSyms)*)
 
         val (I1, H1) >> jdg1 = mainGoalSpec
         val delta = hypothesesDiff (H1, H0)
-        val H0' = applyDiffs delta H
+        val H0' = applyDiffs alpha 0 Var.Ctx.empty delta H
 
-        val jdg' = (I', H0') >> jdg0
-        val jdg'' = RedPrlSequent.map (substSymenv srho) jdg'
+        val jdg' = (I, H0') >> jdg0
+        val jdg'' = RedPrlSequent.map (substSymenv Sym.Ctx.empty) jdg'
       in
         jdg''
       end
