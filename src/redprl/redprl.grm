@@ -81,7 +81,7 @@ end
  | BY | IN
 
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
- | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_UNFOLD
+ | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_UNFOLD
 
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
@@ -385,7 +385,6 @@ src_catjdg
   | term EQUALS term JDG_TYPE (CJ.EQ_TYPE (term1, term1))
   | term JDG_TYPE (CJ.TYPE term)
   | term JDG_SYNTH (CJ.SYNTH term)
-  | term SQUIGGLE term (CJ.CEQUIV (term1, term2))
   | term EQUALS term IN term (CJ.EQ ((term1, term2), term3))
   | term IN term (CJ.MEM (term1, term2))
   | term (CJ.TRUE term)
@@ -423,8 +422,6 @@ atomicRawTac
   : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
-  | RULE_EVAL_GOAL (Ast.$$ (O.MONO O.RULE_EVAL_GOAL, []))
-  | RULE_CEQUIV_REFL (Ast.$$ (O.MONO O.RULE_CEQUIV_REFL, []))
   | HYP VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, sort)), []))
   | HYP VARNAME (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, O.EXP)), []))
   | RULE_ELIM VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, sort)), []))

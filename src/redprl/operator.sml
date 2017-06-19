@@ -125,7 +125,7 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_EVAL_GOAL | RULE_CEQUIV_REFL | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
    | RULE_CUT
 
    (* development calculus terms *)
@@ -226,8 +226,6 @@ struct
      | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
 
      | RULE_ID => [] ->> TAC
-     | RULE_EVAL_GOAL => [] ->> TAC
-     | RULE_CEQUIV_REFL => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
@@ -433,8 +431,6 @@ struct
      | TAC_MTAC => "mtac"
 
      | RULE_ID => "id"
-     | RULE_EVAL_GOAL => "eval-goal"
-     | RULE_CEQUIV_REFL => "ceq/refl"
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
      | RULE_WITNESS => "witness"

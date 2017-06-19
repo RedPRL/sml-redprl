@@ -24,8 +24,6 @@ struct
   fun interpret (sign, _(*env*)) rule =
     case out rule of
         O.MONO O.RULE_ID $ _ => (fn _ => Lcf.idn)
-      | O.MONO O.RULE_EVAL_GOAL $ _ => Rules.CEquiv.EvalGoal sign
-      | O.MONO O.RULE_CEQUIV_REFL $ _ => Rules.CEquiv.Refl
       | O.MONO O.RULE_AUTO_STEP $ _ => Rules.AutoStep sign
       | O.POLY (O.RULE_HYP (z, _)) $ _ => hyp z
       | O.POLY (O.RULE_ELIM (z, _)) $ _ => Rules.Elim sign z
