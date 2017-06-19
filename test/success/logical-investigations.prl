@@ -43,6 +43,13 @@ Extract Thm2.
 
 Def Not(#A) = [ #A -> void ].
 
+Thm Not/wf(#A) : [
+  type/A : #A type
+  >> Not(#A) type
+] by [
+  auto
+].
+
 Thm Thm4(#A; #B) : [
   type/A : #A type
   >> Not(#A) -> #A -> #B
