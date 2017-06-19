@@ -28,7 +28,7 @@ struct
   type src_catjdg = ast RedPrlCategoricalJudgment.jdg
   type src_seqhyp = string * src_catjdg
   type src_sequent = src_seqhyp list * src_catjdg
-  type src_genjdg = ((string * psort) list * (string * sort) list) * src_sequent
+  type src_genjdg = (string * psort) list * src_sequent
   type src_rulespec = src_genjdg list * src_sequent
 
   datatype src_decl =
@@ -131,7 +131,7 @@ struct
       end
 
     fun relabelSequent (entry : entry) (ps : Tm.param list) : abt jdg -> abt jdg =
-      fn H >> catjdg => relabelHyps entry ps H >> catjdg
+      fn (I, H) >> catjdg => (I, relabelHyps entry ps H) >> catjdg
       | jdg => jdg
   in
     fun resuscitateTheorem sign opid ps args = 
@@ -157,10 +157,9 @@ struct
         (goal', state')
       end
 
-      fun extract (Lcf.|> (subgoals, validation)) = 
+      fun extract (Lcf.|> (subgoals, validation)) =
         case outb validation of 
-           ([],[]) \ term => term
-         | _ => raise Fail "Extract term has unexpected binder. Can this really happen?"
+           _ \ term => term
     end
 end
 

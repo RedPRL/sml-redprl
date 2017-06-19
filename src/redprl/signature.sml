@@ -368,20 +368,19 @@ struct
         val (env', hyps') = elabSrcSeqHyps (metactx, symctx, varctx, env) hyps
         val concl' = elabSrcCatjdg (metactx, symctx, varctx, env') concl
       in
-        (env', RedPrlSequent.>> (hyps', concl'))
+        (env', RedPrlSequent.>> (([], hyps'), concl')) (* todo: I := ? *)
       end
 
-    fun elabSrcGenJdg (metactx, symctx, env) ((syms, vars), seq) : symbol NameEnv.dict * jdg Lcf.eff = 
+    fun elabSrcGenJdg (metactx, symctx, env) (syms, seq) : symbol NameEnv.dict * jdg Lcf.eff = 
       let
         val (env', symctx') = List.foldl (fn (sym, (env, symctx)) => addSymName (env, symctx) sym) (env, symctx) syms
-        val (env'', varctx) = List.foldl (fn (var, (env, varctx)) => addVarName (env, varctx) var) (env', Var.Ctx.empty) vars
-        val syms' = List.map (fn (u,psort) => (NameEnv.lookup env'' u, psort)) syms
-        val vars' = List.map (fn (x,sort) => (NameEnv.lookup env'' x, sort)) vars
-        val (env''', seq') = elabSrcSequent (metactx, symctx', varctx, env'') seq
+
+        val syms' = List.map (fn (u,psort) => (NameEnv.lookup env' u, psort)) syms
+        val (env''', RedPrlSequent.>> ((_, H), jdg) )= elabSrcSequent (metactx, symctx', Var.Ctx.empty, env') seq
         val env'''' = List.foldl (fn ((u,_), env) => NameEnv.remove env u) env''' syms
-        val env''''' = List.foldl (fn ((x,_), env) => NameEnv.remove env x) env'''' vars
+        val seq' = RedPrlSequent.>> ((syms', H), jdg)
       in
-        (env''''', Lcf.|| ((syms', vars'), seq'))
+        (env'''', seq')
       end
 
     fun elabSrcRuleSpec (metactx, symctx, env) (spec : src_rulespec) = 
@@ -435,11 +434,15 @@ struct
       fun checkProofState (pos, subgoalsSpec) state = 
         let
           val Lcf.|> (subgoals, _) = state
-          fun goalEqualTo goal1 goal2 = Lcf.effEq (goal1, goal2)
+          fun goalEqualTo goal1 goal2 = 
+            if RedPrlSequent.eq (goal1, goal2) then true
+            else
+              (RedPrlLog.print RedPrlLog.WARN (pos, RedPrlJudgment.toString goal1 ^ " not equal to " ^ RedPrlJudgment.toString goal2);
+               false)
 
           fun go ([], Tl.ConsView.EMPTY) = true
             | go (jdgSpec :: subgoalsSpec, Tl.ConsView.CONS (_, jdgReal, subgoalsReal)) = 
-                Lcf.effEq (jdgSpec, jdgReal) andalso go (subgoalsSpec, Tl.ConsView.out subgoalsReal)
+                goalEqualTo jdgSpec jdgReal andalso go (subgoalsSpec, Tl.ConsView.out subgoalsReal)
             | go _ = false
 
           val proofStateCorrect = go (subgoalsSpec, Tl.ConsView.out subgoals)
@@ -457,8 +460,9 @@ struct
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
         in
-          E.wrap (pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as hyps >> concl) =>
+          E.wrap (pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as (syms, hyps) >> concl) =>
             let
+              (* TODO: deal with syms ?? *)
               val tau = CJ.synthesis concl
               val (params'', symctx', env') = 
                 Hyps.foldr
