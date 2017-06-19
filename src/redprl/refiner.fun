@@ -1485,7 +1485,7 @@ struct
            (_, Syn.DPROD _) => DProd.Eta
          | (_, Syn.DFUN _) => DFun.Eta
          | (_, Syn.PATH_TY _) => Path.Eta
-         | _ => raise E.error [E.% "Could not simplify neutral term or find eta expansion rule for type", E.! ty]
+         | _ => raise E.error [E.% "Could not expand neutral term of type", E.! ty]
 
       fun StepEqCanonicity sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
