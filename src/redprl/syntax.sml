@@ -15,7 +15,9 @@ struct
    | AX
    (* formal composition *)
    | FHCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
-   (* week bool: true, false and if *)
+   (* empty type *)
+   | VOID
+   (* weak bool: true, false and if *)
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    (* strict bool: strict if (true and false are shared) *)
    | S_BOOL | S_IF of 'a * ('a * 'a)
@@ -77,6 +79,8 @@ struct
            in
              intoFHcom (dir, eqs) (cap, tubes)
            end
+
+       | VOID => O.MONO O.VOID $$ []
 
        | BOOL => O.MONO O.BOOL $$ []
        | TT => O.MONO O.TRUE $$ []
@@ -142,6 +146,8 @@ struct
 
        | O.POLY (O.FHCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
            FHCOM {dir = dir, cap = cap, tubes = outTubes (eqs, tubes)}
+
+       | O.MONO O.VOID $ _ => VOID
 
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TRUE $ _ => TT

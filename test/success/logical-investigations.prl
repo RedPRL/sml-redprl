@@ -41,5 +41,34 @@ Thm Thm2(#A; #B; #C) : [
 // It is worthwhile to print out the extract program / evidence for Thm2.
 Extract Thm2.
 
+Def Not(#A) = [ #A -> void ].
+
+Thm Thm4(#A; #B) : [
+  type/A : #A type
+  >> Not(#A) -> #A -> #B
+] by [
+  { lam r. lam a.
+    unfold Not;
+    let boom = r {hyp a}.
+    elim boom
+  };
+  auto
+].
+
+Thm Thm5(#A) : [
+  type/A : #A type
+  >> #A -> Not(Not(#A))
+] by [
+  { lam a.
+    unfold Not;
+    lam r.
+    let x = r {hyp a}.
+    hyp x // watch how the extract changes  if you replace this with 'elim x'
+  };
+  auto
+].
+
+Extract Thm5.
+
 // TODO: I would have given some examples about negation, but I just realized that RedPRL doesn't even have
 // the Void type! I'll add it soon.

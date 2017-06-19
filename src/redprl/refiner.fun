@@ -159,6 +159,41 @@ struct
       end
   end
 
+  structure Void = 
+  struct
+    fun EqType _ jdg = 
+      let
+        val _ = RedPrlLog.trace "Void.EqType"
+        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.VOID = Syn.out a
+        val Syn.VOID = Syn.out b
+      in
+        T.empty #> (I, H, trivial)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected typehood sequent"]
+
+    fun Elim z _ jdg =
+      let
+        val _ = RedPrlLog.trace "Void.Elim"
+        val (I, H) >> catjdg = jdg
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.VOID = Syn.out ty
+
+        val evidence = 
+          case catjdg of 
+             CJ.TRUE _ => Syn.into Syn.TT
+           | CJ.EQ _ => trivial
+           | CJ.EQ_TYPE _ => trivial
+           | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
+      in
+        T.empty #> (I, H, evidence)
+      end
+      handle Bind =>
+        raise E.error [E.% "Expected Void elimination problem"]
+
+  end
+
   structure Bool =
   struct
     fun EqType _ jdg =
@@ -1395,6 +1430,7 @@ struct
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Bool.EqType
          | (Syn.S_BOOL, Syn.S_BOOL) => StrictBool.EqType
+         | (Syn.VOID, Syn.VOID) => Void.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
@@ -1513,6 +1549,7 @@ struct
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
          | Syn.DPROD _ => DProd.Elim
+         | Syn.VOID => Void.Elim
          | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
 
       fun StepEq ty =

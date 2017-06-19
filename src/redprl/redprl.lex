@@ -77,6 +77,7 @@ whitespace = [\ \t];
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
 "fhcom"            => (Tokens.FHCOM (posTuple (size yytext)));
 "bool"             => (Tokens.BOOL (posTuple (size yytext)));
+"void"             => (Tokens.VOID (posTuple (size yytext)));
 "tt"               => (Tokens.TT (posTuple (size yytext)));
 "ff"               => (Tokens.FF (posTuple (size yytext)));
 "if"               => (Tokens.IF (posTuple (size yytext)));
