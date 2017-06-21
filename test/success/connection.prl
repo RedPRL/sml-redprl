@@ -3,7 +3,7 @@ Thm Connection(#A) : [
      (a : #A)
   -> (b : #A)
   -> (p : paths({_}.#A; a; b))
-  -> paths({i}.(paths({_}.#A; a; p@i)); <_>a; p)
+  -> paths({i}.paths({_}.#A; a; p@i); <_>a; p)
 ] by [
   {
   lam a. lam b. lam p.
