@@ -4,15 +4,35 @@ structure Fpp = FinalPrettyPrinter (FppBasis)
 signature FINAL_PRINTER = 
 sig
   type doc = unit Fpp.m
+  val execPP : doc -> (int, unit) FppTypes.output
 end
 
 structure FinalPrinter :> FINAL_PRINTER = 
 struct
   open FppBasis Fpp
   type doc = unit m
+
+  local 
+    val initialEnv =
+      {maxWidth = 80,
+       maxRibbon = 60,
+       layout = FppTypes.BREAK,
+       failure = FppTypes.CANT_FAIL,
+       nesting = 0,
+       formatting = (),
+       formatAnn = fn _ => ()}
+  in
+    fun execPP (m : unit m)  = 
+      #output (m emptyPrecEnv initialEnv {curLine = []})
+  end
 end
 
-structure TermPrinter : SHOW =
+structure TermPrinter : 
+sig
+  type t = RedPrlAbt.abt
+  val toString : t -> string
+  val ppTerm : t -> FinalPrinter.doc
+end =
 struct
   structure Abt = RedPrlAbt
   structure P = RedPrlParameterTerm
@@ -81,22 +101,8 @@ struct
       collection (char #"[") (char #"]") Atomic.comma (List.map ppVar xs)
 
 
-  local 
-    val initialEnv =
-      {maxWidth = 80,
-       maxRibbon = 60,
-       layout = FppTypes.BREAK,
-       failure = FppTypes.CANT_FAIL,
-       nesting = 0,
-       formatting = (),
-       formatAnn = fn _ => ()}
-  in
-    fun execPP (m : unit m)  = 
-      #output (m emptyPrecEnv initialEnv {curLine = []})
-  end
-
   val toString = 
     FppRenderPlainText.toString 
-      o execPP
+      o FinalPrinter.execPP
       o ppTerm
 end

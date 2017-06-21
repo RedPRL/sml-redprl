@@ -260,8 +260,8 @@ struct
                       SOME (pos :: _) => SOME pos
                     | _ => (print ("couldn't find position for var " ^ ustr); termPos)
               in
-                E.when (tau' = NONE, E.fail (pos, "Unbound symbol: " ^ ustr))
-                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, "Symbol sort mismatch: " ^ ustr))
+                E.when (tau' = NONE, E.fail (pos, Fpp.text ("Unbound symbol: " ^ ustr)))
+                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, Fpp.text ("Symbol sort mismatch: " ^ ustr)))
                   *> r
               end)
             (E.ret ())
@@ -278,8 +278,8 @@ struct
                       SOME (pos :: _) => SOME pos
                     | _ => termPos
                in
-                 E.when (tau' = NONE, E.fail (pos, "Unbound variable: " ^ xstr))
-                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, "Variable sort mismatch: " ^ xstr))
+                 E.when (tau' = NONE, E.fail (pos, Fpp.text ("Unbound variable: " ^ xstr)))
+                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, Fpp.text ("Variable sort mismatch: " ^ xstr)))
                   *> r
                end)
             (E.ret ())
@@ -288,7 +288,7 @@ struct
         val checkMetas =
           Tm.Metavar.Ctx.foldl
             (fn (x, vl, r) =>
-               r <* E.unless (Option.isSome (Tm.Metavar.Ctx.find metactx x), E.fail (termPos, "Unbound metavar: " ^ Tm.Metavar.toString x)))
+               r <* E.unless (Option.isSome (Tm.Metavar.Ctx.find metactx x), E.fail (termPos, Fpp.text ("Unbound metavar: " ^ Tm.Metavar.toString x))))
             (E.ret ())
             (Tm.metactx term)
       in
@@ -440,7 +440,8 @@ struct
           fun goalEqualTo goal1 goal2 = 
             if RedPrlSequent.eq (goal1, goal2) then true
             else
-              (RedPrlLog.print RedPrlLog.WARN (pos, RedPrlJudgment.toString goal1 ^ " not equal to " ^ RedPrlJudgment.toString goal2);
+              (* TODO: fix *)
+              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.text (RedPrlJudgment.toString goal1 ^ " not equal to " ^ RedPrlJudgment.toString goal2));
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true
@@ -454,7 +455,7 @@ struct
           if proofStateCorrect then 
             E.ret state
           else
-            E.warn (pos, Int.toString (subgoalsCount) ^ " Remaining Obligations")
+            E.warn (pos, Fpp.text (Int.toString (subgoalsCount) ^ " Remaining Obligations"))
               *> E.ret state
         end
     in
@@ -525,15 +526,16 @@ struct
         E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
-                EDEF entry => E.info (SOME pos, "Elaborated:\n" ^ entryToString sign (eopid, entry))
-              | _ => E.warn (SOME pos, "Invalid declaration name"))))
+            (* TODO fix *)
+                EDEF entry => E.info (SOME pos, Fpp.text ("Elaborated:\n" ^ entryToString sign (eopid, entry)))
+              | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
 
     local
       open RedPrlAbt infix $ \
       structure O = RedPrlOpData
 
       fun printExtractOf (pos, state) : unit E.t = 
-        E.info (SOME pos, TermPrinter.toString (extract state))
+        E.info (SOME pos, TermPrinter.ppTerm (extract state))
     in
       fun elabExtract (sign : sign) (pos, opid) = 
         E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid => 
@@ -541,7 +543,7 @@ struct
             E.ret (ECMD (EXTRACT eopid)) <*
               (case edecl of 
                   EDEF entry => printExtractOf (pos, #state entry)
-                | _ => E.warn (SOME pos, "Invalid declaration name"))))
+                | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
     end
 
     fun elabCmd (sign : sign) (cmd, pos) : elab_sign =

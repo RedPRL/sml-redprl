@@ -7,7 +7,8 @@ struct
    | FAIL
    | TRACE
 
-  fun formatMessage lvl (pos, msg) =
+  fun formatMessage lvl (pos, msg) : (int, unit) FppTypes.output = raise Fail "TODO"
+(*  
     let
       val pos' =
         case pos of
@@ -27,7 +28,7 @@ struct
       val msg' = List.foldr op^ "" indented
     in
       pos' ^ " [" ^ prefix ^ "]:\n" ^ msg' ^"\n\n"
-    end
+    end*)
 
   val streamForLevel =
     fn INFO => TextIO.stdOut
@@ -40,7 +41,7 @@ struct
     let
       val stream = streamForLevel lvl
     in
-      TextIO.output (stream, formatMessage lvl msg);
+      FppRenderPlainText.render stream (formatMessage lvl msg);
       TextIO.flushOut stream
     end
 end

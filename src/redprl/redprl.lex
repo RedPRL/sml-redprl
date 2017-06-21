@@ -141,4 +141,4 @@ whitespace = [\ \t];
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));
 {upper}{identChr}* => (Tokens.OPNAME (posTupleWith (size yytext) yytext));
 
-.                  => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (!pos yyarg) (!pos yyarg)), "lexical error: skipping unrecognized character '" ^ yytext ^ "'"); continue ());
+.                  => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (!pos yyarg) (!pos yyarg)), Fpp.text ("lexical error: skipping unrecognized character '" ^ yytext ^ "'")); continue ());

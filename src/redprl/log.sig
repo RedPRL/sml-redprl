@@ -7,7 +7,7 @@ sig
    | FAIL
    | TRACE
 
-  val print : level -> Pos.t option * string -> unit
+  val print : level -> Pos.t option * FinalPrinter.doc -> unit
 end
 
 signature REDPRL_LOG_UTIL =

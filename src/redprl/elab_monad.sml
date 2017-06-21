@@ -17,13 +17,13 @@ struct
   end
 
   datatype msg =
-     DUMP of string ann
-   | INFO of string ann
-   | WARN of string ann
+     DUMP of FinalPrinter.doc ann
+   | INFO of FinalPrinter.doc ann
+   | WARN of FinalPrinter.doc ann
 
   datatype 'a res =
      SUCCESS of 'a
-   | FAILURE of string ann
+   | FAILURE of FinalPrinter.doc ann
 
   type 'a state =
     {result : 'a res,
@@ -34,6 +34,7 @@ struct
   fun force susp =
     Debug.wrap (fn _ => Susp.force susp)
     handle exn =>
+      (* TODO: fix *)
       {result = FAILURE (RedPrlError.annotation exn, RedPrlError.format exn),
        messages = DList.empty}
 
@@ -107,10 +108,10 @@ struct
     bind f (ret ())
 
   type ('a, 'b) alg =
-    {warn : string ann * 'b -> 'b,
-     dump : string ann * 'b -> 'b,
-     info : string ann * 'b -> 'b,
-     fail : string ann * 'b -> 'b,
+    {warn : FinalPrinter.doc ann * 'b -> 'b,
+     dump : FinalPrinter.doc ann * 'b -> 'b,
+     info : FinalPrinter.doc ann * 'b -> 'b,
+     fail : FinalPrinter.doc ann * 'b -> 'b,
      init : 'b,
      succeed : 'a * 'b -> 'b}
 
