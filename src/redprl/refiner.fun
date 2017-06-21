@@ -10,7 +10,7 @@ struct
 
   infixr @@
   infix 1 ||
-  infix 2 >> >: $$ $# // \ @>
+  infix 2 >> >: >:+ $$ $# // \ @>
 
   fun abstractEvidence (I : (sym * psort) list, H) m = 
     let
@@ -28,8 +28,6 @@ struct
   val trivial = Syn.into Syn.AX
 
   fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
-
-  fun swapEqJdg ((lhs, rhs), ty) = ((rhs, lhs), ty)
 
   structure S1 =
   struct
@@ -76,14 +74,13 @@ struct
         val Syn.S1 = Syn.out ty
 
         val u = alpha 0
-        val loop = Syn.into o Syn.LOOP @@ P.ret u
         val base = Syn.into Syn.BASE
+        val loop = Syn.into o Syn.LOOP @@ P.ret u
         val Hbase = Hyps.modifyAfter z (CJ.map (substVar (base, z))) H
         val cbase = substVar (base, z) cz
 
         val (goalB, holeB) = makeGoal @@ (I, Hbase) >> CJ.TRUE cbase
         val (goalL, holeL) = makeGoal @@ (I @ [(u, P.DIM)], Hyps.modifyAfter z (CJ.map (substVar (loop, z))) H) >> CJ.TRUE (substVar (loop, z) cz)
-
 
         val l0 = substSymbol (P.APP P.DIM0, u) holeL
         val l1 = substSymbol (P.APP P.DIM1, u) holeL
@@ -1012,7 +1009,7 @@ struct
          forall i <= j.
            N_i = P_j in A [Psi, y | r_i = r_i', r_j = r_j']
      *)
-    fun appendInterTubeGoals tele (I, H) w ty tubes0 tubes1 =
+    fun genInterTubeGoals (I, H) w ty tubes0 tubes1 =
       let
         fun interTube (eq0, (u, tube0)) (eq1, (v, tube1)) =
           let
@@ -1029,14 +1026,14 @@ struct
               List.mapPartial (interTube t0) (t1 :: ts1) :: goTubePairs ts0 ts1
           | goTubePairs _ _ = raise Fail "interTubeGoals: the tubes are of different lengths"
       in
-        List.foldl (fn (l, t) => appendListOfGoals (t, l)) tele (goTubePairs tubes0 tubes1)
+        List.concat (goTubePairs tubes0 tubes1)
       end
 
     (* Produce the list of goals requiring that tube aspects agree with the cap.
          forall i.
            N_i<r/y> = M in A [Psi | r_i = r_i']
      *)
-    fun appendTubeCapGoals tele (I, H) ty r cap tubes =
+    fun genTubeCapGoals (I, H) ty r cap tubes =
       let
         fun tubeCap (eq, (u, tube)) =
           let
@@ -1045,7 +1042,7 @@ struct
             Option.map (#1 o (fn j => makeGoal @@ j)) (Restriction.restrict J [eq])
           end
       in
-        appendListOfGoals (tele, List.mapPartial tubeCap tubes)
+        List.mapPartial tubeCap tubes
       end
   end
 
@@ -1070,71 +1067,58 @@ struct
 
         val w = alpha 0
       in
-        ComKit.appendTubeCapGoals
-          (ComKit.appendInterTubeGoals
-            (T.empty >: goalTy >: goalCap)
-            (I, H) w ty tubes0 tubes1)
-          (I, H) ty r0 cap0 tubes0
+        T.empty
+          >: goalTy >: goalCap
+          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes0 tubes1
+          >:+ ComKit.genTubeCapGoals (I, H) ty r0 cap0 tubes0
         #> (I, H, trivial)
       end
 
-    local
-      fun CapEqCommon alpha (I, H) ((hcom, other), ty) =
-        let
-          val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
-          val () = assertParamEq "HCom.CapEqCommon source and target of direction" (r, r')
-          val () = assertAlphaEq (ty0, ty)
+    fun CapEqL alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.CapEq"
+        val (I, H) >> CJ.EQ ((hcom, other), ty) = jdg
+        val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
+        val () = assertParamEq "HCom.CapEq source and target of direction" (r, r')
+        val () = assertAlphaEq (ty0, ty)
   
-          val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
-          val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap, other), ty)
+        val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
+        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap, other), ty)
   
-          val w = alpha 0
-        in
-          ComKit.appendTubeCapGoals
-            (ComKit.appendInterTubeGoals
-              (T.empty >: goalTy >: goalEq)
-              (I, H) w ty tubes tubes)
-            (I, H) ty r cap tubes
-          #> (I, H, trivial)
-        end
-      (* Search for the first satisfied equation in an hcom. *)
-      fun TubeEqCommon alpha (I, H) ((hcom, other), ty) =
-        let
-          val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
-          val (eq, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
-          val () = assertAlphaEq (ty0, ty)
+        val w = alpha 0
+      in
+        T.empty
+          >: goalTy >: goalEq
+          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
+          >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
+        #> (I, H, trivial)
+      end
+
+    val CapEqR = catJdgFlipWrapper CapEqL
+
+    (* Search for the first satisfied equation in an hcom. *)
+    fun TubeEqL alpha jdg =
+      let
+        val _ = RedPrlLog.trace "HCom.TubeEq"
+        val (I, H) >> CJ.EQ ((hcom, other), ty) = jdg
+        val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
+        val (eq, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
+        val () = assertAlphaEq (ty0, ty)
   
-          val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
-          val (goalCap, _) = makeGoal @@ (I, H) >> CJ.MEM (cap, ty)
-          val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, other), ty)
+        val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
+        val (goalCap, _) = makeGoal @@ (I, H) >> CJ.MEM (cap, ty)
+        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, other), ty)
   
-          val w = alpha 0
-        in
-          ComKit.appendTubeCapGoals
-            (ComKit.appendInterTubeGoals
-              (T.empty >: goalTy >: goalCap >: goalEq)
-              (I, H) w ty tubes tubes)
-            (I, H) ty r cap tubes
-          #> (I, H, trivial)
-        end
-    in
-      fun CapEqL alpha (IH >> CJ.EQ terms) =
-        ( RedPrlLog.trace "HCom.CapEqL"
-        ; CapEqCommon alpha IH terms
-        )
-      fun CapEqR alpha (IH >> CJ.EQ terms) =
-        ( RedPrlLog.trace "HCom.CapEqL"
-        ; CapEqCommon alpha IH (swapEqJdg terms)
-        )
-      fun TubeEqL alpha (IH >> CJ.EQ terms) =
-        ( RedPrlLog.trace "HCom.TubeEqL"
-        ; TubeEqCommon alpha IH terms
-        )
-      fun TubeEqR alpha (IH >> CJ.EQ terms) =
-        ( RedPrlLog.trace "HCom.TubeEqL"
-        ; TubeEqCommon alpha IH (swapEqJdg terms)
-        )
-    end
+        val w = alpha 0
+      in
+        T.empty
+          >: goalTy >: goalCap >: goalEq
+          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
+          >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
+        #> (I, H, trivial)
+      end
+
+    val TubeEqR = catJdgFlipWrapper TubeEqL
 
     local
       infix orelse_
@@ -1165,11 +1149,10 @@ struct
 
         val w = alpha 0
       in
-        ComKit.appendTubeCapGoals
-          (ComKit.appendInterTubeGoals
-            (T.empty >: goalCap)
-            (I, H) w ty tubes0 tubes1)
-          (I, H) ty r0 cap0 tubes0
+        T.empty
+          >: goalCap
+          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes0 tubes1
+          >:+ ComKit.genTubeCapGoals (I, H) ty r0 cap0 tubes0
         #> (I, H, trivial)
       end
 
@@ -1206,30 +1189,23 @@ struct
         T.empty >: goalTy1 >: goalTy >: goalCoercees #> (I, H, trivial)
       end
 
-    local
-      fun CapEqCommon alpha (I, H) ((coe, other), ty) =
-        let
-          val Syn.COE {dir=(r, r'), ty=(u, tyu), coercee=m} = Syn.out coe
-          val () = assertParamEq "Coe.CapEqCommon source and target of direction" (r, r')
+    fun CapEqL alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coe.CapEq"
+        val (I, H) >> CJ.EQ ((coe, other), ty) = jdg
+        val Syn.COE {dir=(r, r'), ty=(u, tyu), coercee=m} = Syn.out coe
+        val () = assertParamEq "Coe.CapEq source and target of direction" (r, r')
 
-          val ty0 = substSymbol (r, u) tyu
-          val (goalTy0, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
+        val ty0 = substSymbol (r, u) tyu
+        val (goalTy0, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
 
-          val (goalTy, _) = makeGoal @@ (I @ [(u, P.DIM)], H) >> CJ.TYPE tyu
-          val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((m, other), ty)
-        in
-          T.empty >: goalTy0 >: goalTy >: goalEq #> (I, H, trivial)
-        end
-    in
-      fun CapEqL alpha (IH >> CJ.EQ terms) =
-        ( RedPrlLog.trace "Coe.CapEqL"
-        ; CapEqCommon alpha IH terms
-        )
-      fun CapEqR alpha (IH >> CJ.EQ terms) =
-        ( RedPrlLog.trace "Coe.CapEqL"
-        ; CapEqCommon alpha IH (swapEqJdg terms)
-        )
-    end
+        val (goalTy, _) = makeGoal @@ (I @ [(u, P.DIM)], H) >> CJ.TYPE tyu
+        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((m, other), ty)
+      in
+        T.empty >: goalTy0 >: goalTy >: goalEq #> (I, H, trivial)
+      end
+
+    val CapEqR = catJdgFlipWrapper CapEqL
 
     local
       infix orelse_
