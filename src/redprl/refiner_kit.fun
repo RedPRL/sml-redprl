@@ -32,8 +32,15 @@ struct
   end
 
 
-  fun appendListOfGoals (tel, (l : (label * 'a) list)) : 'a telescope =
-    List.foldl (fn (g, l) => l >: g) tel l
+  fun >:+ (tel, (l : (label * 'a) list)) : 'a telescope =
+    List.foldl (fn (g, t) => t >: g) tel l
+  infix 5 >:+
+
+  fun catJdgFlip (CJ.EQ_TYPE (a, b)) = CJ.EQ_TYPE (b, a)
+    | catJdgFlip (CJ.EQ ((a, b), ty)) = CJ.EQ ((b, a), ty)
+
+  fun catJdgFlipWrapper tactic alpha (IH >> jdg) =
+    tactic alpha (IH >> catJdgFlip jdg)
 
   fun hypsToSpine H =
     Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
