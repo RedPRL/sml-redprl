@@ -29,7 +29,7 @@ struct
   fun equationPair u = [(P.VAR u, P.APP P.DIM0), (P.VAR u, P.APP P.DIM1)]
 
   (* computation rules for formal compositions *)
-  fun stepFHcom ((r, r'), eqs) ((_ \ cap) :: tubes) env =
+  fun stepFcom ((r, r'), eqs) ((_ \ cap) :: tubes) env =
   let
     val (r, r') = forceSpan ((r, r') <: env)
     val eqs = forceSpans (eqs <: env)
@@ -43,7 +43,7 @@ struct
             if P.eq Sym.eq eq
             then S.STEP @@ tube <: Cl.insertSym env y r'
             else checkTubes eqs ts
-        | checkTubes _ _ = raise Fail "fhcom has different numbers of equations and tubes."
+        | checkTubes _ _ = raise Fail "fcom has different numbers of equations and tubes."
     in
       checkTubes eqs tubes
     end
@@ -104,8 +104,8 @@ struct
   fun step sign =
     fn O.MONO O.AX `$ _ <: _ => S.VAL
 
-     | O.POLY (O.FHCOM params) `$ args <: env =>
-         stepFHcom params args env
+     | O.POLY (O.FCOM params) `$ args <: env =>
+         stepFcom params args env
 
      | O.MONO O.BOOL `$ _ <: _ => S.VAL
      | O.MONO O.TRUE `$ _ <: _ => S.VAL
@@ -275,7 +275,7 @@ struct
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f],
-        _ \ O.POLY (O.FHCOM (dir, eqs)) `$ (_ \ cap) :: tubes <: env) =>
+        _ \ O.POLY (O.FCOM (dir, eqs)) `$ (_ \ cap) :: tubes <: env) =>
          let
            (* todo: maybe create a larger closure instead of forcing? *)
            val cx' = Cl.force cx
@@ -283,7 +283,7 @@ struct
            val f' = Cl.force f
 
            val v = Sym.named "v"
-           val hv = Syn.intoFHcom ((#1 dir, P.ret v), eqs) (cap, tubes)
+           val hv = Syn.intoFcom ((#1 dir, P.ret v), eqs) (cap, tubes)
            val chv = substVar (hv, x) cx'
            fun mkIf m = Syn.into @@ Syn.IF ((x, cx'), m, (t', f'))
          in
@@ -302,7 +302,7 @@ struct
            l <: Cl.insertSym envL u r'
          end
      | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% l],
-        _ \ O.POLY (O.FHCOM (dir, eqs)) `$ (_ \ cap) :: tubes <: env) =>
+        _ \ O.POLY (O.FCOM (dir, eqs)) `$ (_ \ cap) :: tubes <: env) =>
          let
            (* todo: maybe create a larger closure instead of forcing? *)
            val cx' = Cl.force cx
@@ -310,7 +310,7 @@ struct
            val l' = Cl.force l
 
            val v = Sym.named "v"
-           val hv = O.POLY (O.FHCOM ((#1 dir, P.ret v), eqs)) $$ (([],[]) \ cap) :: tubes
+           val hv = O.POLY (O.FCOM ((#1 dir, P.ret v), eqs)) $$ (([],[]) \ cap) :: tubes
            val chv = substVar (hv, x) cx'
            fun mkElim m = Syn.into @@ Syn.S1_ELIM ((x, cx'), m, (b', (u, l')))
          in
@@ -322,13 +322,13 @@ struct
          m <: Cl.insertSym env u r
 
      | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.BOOL `$ _ <: env) =>
-         Syn.intoFHcom' (dir, eqs) (forceSList args) <: env
+         Syn.intoFcom' (dir, eqs) (forceSList args) <: env
 
      | (O.POLY (O.HCOM _) `$ ((_ \ S.HOLE) :: (_ \ S.% cap) :: _), _ \ O.MONO O.S_BOOL `$ _ <: _) =>
          cap
 
      | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.S1 `$ _ <: env) =>
-         Syn.intoFHcom' (dir, eqs) (forceSList args) <: env
+         Syn.intoFcom' (dir, eqs) (forceSList args) <: env
 
      | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.DFUN `$ [_, ((_,[x]) \ bx)] <: env) =>
          let

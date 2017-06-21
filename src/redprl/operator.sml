@@ -139,7 +139,7 @@ struct
   type 'a dir = 'a P.term * 'a P.term
 
   datatype 'a poly_operator =
-     FHCOM of 'a dir * 'a equation list
+     FCOM of 'a dir * 'a equation list
    | LOOP of 'a P.term
    | PATH_AP of 'a P.term
    | HCOM of 'a dir * 'a equation list
@@ -244,7 +244,7 @@ struct
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
 
   local
-    fun arityFHcom (_, eqs) =
+    fun arityFcom (_, eqs) =
       let
         val capArg = [] * [] <> EXP
         val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
@@ -261,7 +261,7 @@ struct
       end
   in
     val arityPoly =
-      fn FHCOM params => arityFHcom params
+      fn FCOM params => arityFcom params
        | LOOP _ => [] ->> EXP
        | PATH_AP _ => [[] * [] <> EXP] ->> EXP
        | HCOM params => arityHcom params
@@ -305,7 +305,7 @@ struct
 
   in
     val supportPoly =
-      fn FHCOM params => comSupport params
+      fn FCOM params => comSupport params
        | LOOP r => dimSupport r
        | PATH_AP r => dimSupport r
        | HCOM params => comSupport params
@@ -337,9 +337,9 @@ struct
       ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
   in
     fun eqPoly f =
-      fn (FHCOM (dir1, eqs1), t) =>
+      fn (FCOM (dir1, eqs1), t) =>
            (case t of
-                 FHCOM (dir2, eqs2) =>
+                 FCOM (dir2, eqs2) =>
                    spanEq f (dir1, dir2)
                    andalso spansEq f (eqs1, eqs2)
                | _ => false)
@@ -462,8 +462,8 @@ struct
       ListSpine.pretty (fn (p, _) => P.toString f p) ","
   in
     fun toStringPoly f =
-      fn FHCOM (dir, eqs) =>
-           "fhcom"
+      fn FCOM (dir, eqs) =>
+           "fcom"
              ^ "["
              ^ equationsToString f eqs
              ^ "; "
@@ -520,7 +520,7 @@ struct
        | P.APP _ => raise Fail "Expected symbol, but got application"
   in
     fun mapPoly f =
-      fn FHCOM (dir, eqs) => FHCOM (mapSpan f dir, mapSpans f eqs)
+      fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
        | LOOP r => LOOP (P.bind f r)
        | PATH_AP r => PATH_AP (P.bind f r)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)

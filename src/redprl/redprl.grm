@@ -315,7 +315,7 @@ atomicRawTerm
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | operator (Ast.$$ (operator, []))
   | FCOM LBRACKET dir RBRACKET LPAREN binding RPAREN LSQUARE tubes RSQUARE
-      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FHCOM (dir, eqs)), (binding :: tubes)) end)
+      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
   | HCOM LBRACKET dir RBRACKET LPAREN binding SEMI binding RPAREN LSQUARE tubes RSQUARE
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.HCOM (dir, eqs)), (binding1 :: binding2 :: tubes)) end)
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
