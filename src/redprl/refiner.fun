@@ -931,10 +931,17 @@ struct
              CJ.TRUE ty => ty
            | _ => raise E.error [E.% "Equality.Hyp: expected truth hypothesis"]
       in
+        (* If the types are identical, there is no need to create a new subgoal (which would amount to proving that 'ty' is a type).
+           This is because the semantics of sequents is that by assuming that something is a member of a 'ty', we have
+           automatically assumed that 'ty' is a type. *)
         if Syn.Tm.eq (ty, ty') then
           T.empty #> (I, H, trivial)
         else
-          raise E.error [E.% @@ "Expected type of hypothesis " ^ Var.toString x ^ " to be", E.! ty, E.% "but found", E.! ty']
+          let
+            val (goalTy, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty, ty')
+          in
+            T.empty >: goalTy #> (I, H, trivial)
+          end
       end
       handle Bind =>
         raise E.error [E.% "Expected variable-equality sequent"]
