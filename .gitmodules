@@ -22,3 +22,6 @@
 [submodule "lib/sml-wpp"]
 	path = lib/sml-wpp
 	url = https://github.com/RedPRL/sml-wpp.git
+[submodule "lib/sml-final-pretty-printer"]
+	path = lib/sml-final-pretty-printer
+	url = https://github.com/RedPRL/sml-final-pretty-printer
