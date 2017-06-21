@@ -12,7 +12,8 @@ struct
 
   val subst = S.map o Tm.substMetaenv
   val eq = S.eq
-  val toString = S.toString TermPrinter.toString
+  fun toString _ = "TODO"
+  (* S.toString TermPrinter.toString*)
 
   local
     open S
@@ -31,6 +32,6 @@ struct
            end
   end
 end
-
+ 
 structure RedPrlSequent = Sequent (structure CJ = RedPrlCategoricalJudgment)
 structure RedPrlJudgment = SequentJudgment (structure S = RedPrlSequent and TermPrinter = TermPrinter)

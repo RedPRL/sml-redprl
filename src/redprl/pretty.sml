@@ -1,40 +1,35 @@
-structure PP = PrettyPrint (DisableAnsiColors)
 structure FppBasis = FppPrecedenceBasis (FppInitialBasis (FppPlainBasisTypes))
 structure Fpp = FinalPrettyPrinter (FppBasis)
-
 
 signature FINAL_PRINTER = 
 sig
   type doc = unit Fpp.m
-  type term = RedPrlAbt.abt
-
-  val ppTerm : term -> doc
 end
 
 structure FinalPrinter :> FINAL_PRINTER = 
 struct
   open FppBasis Fpp
-
-  structure Abt = RedPrlAbt
-  open Abt
-
-  structure O = RedPrlOpData and P = RedPrlParameterTerm
-
   type doc = unit m
-  type term = Abt.abt
+end
+
+structure TermPrinter : SHOW =
+struct
+  structure Abt = RedPrlAbt
+  structure P = RedPrlParameterTerm
+
+  open FppBasis Fpp Abt
+  structure O = RedPrlOpData
+
+  type t = Abt.abt
 
   fun >> (m, n) = Monad.bind m (fn _ => n)
   infix 2 >>
-
-  fun >+> (m, n) = m >> space 1 >> n
-  infix 2 >+>
 
   fun @@ (f, x) = f x
   infix 0 $ $$ $# \
   infixr 0 @@
 
   val ppVar = text o Var.toString
-
   val ppParam = text o P.toString Sym.toString
 
   fun unlessEmpty xs m = 
@@ -84,19 +79,7 @@ struct
   and varBinding xs =
     unlessEmpty xs @@ 
       collection (char #"[") (char #"]") Atomic.comma (List.map ppVar xs)
-end
 
-structure TermPrinter : SHOW =
-struct
-  structure Abt = RedPrlAbt
-  structure ShowVar = Abt.Var
-  structure ShowSym = Abt.Sym
-  structure O = RedPrlOpData
-  structure P = RedPrlParameterTerm
-
-  open FppBasis Fpp
-
-  type t = Abt.abt
 
   local 
     val initialEnv =
@@ -115,5 +98,5 @@ struct
   val toString = 
     FppRenderPlainText.toString 
       o execPP
-      o FinalPrinter.ppTerm
+      o ppTerm
 end

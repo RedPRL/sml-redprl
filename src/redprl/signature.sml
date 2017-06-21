@@ -6,16 +6,13 @@ struct
   structure ElabNotation = MonadNotation (E)
   open ElabNotation infix >>= *> <*
 
-
   fun @@ (f, x) = f x
   infixr @@
 
   open MiniSig
   structure O = RedPrlOpData and E = ElabMonadUtil (ElabMonad)
 
-  local
-    open PP
-
+  (*local
     fun argsToString f =
       ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
       
@@ -101,6 +98,7 @@ struct
     fun entryToString (sign : sign) =
       PP.toString 80 false o prettyEntry sign
 
+
     fun toString ({sourceSign,...} : sign) =
       let
         open Telescope.ConsView
@@ -111,6 +109,11 @@ struct
         go (out sourceSign)
       end
   end
+  *)
+
+  fun toString _ = raise Fail "TODO"
+  fun declToString _ = raise Fail "TODO"
+  fun entryToString _ = raise Fail "TODO!"
 
   val empty =
     {sourceSign = Telescope.empty,

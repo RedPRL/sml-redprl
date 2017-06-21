@@ -41,12 +41,13 @@ struct
 
   fun printHole (pos : Pos.t, name) (state : Lcf.jdg Lcf.state) = 
     let
-      val header = 
+      (*val header = 
         case name of 
            NONE => PP.empty
          | SOME n => PP.concat [PP.text n, PP.text ".", PP.newline]
       val doc = PP.concat [header, Lcf.prettyState state]
-      val message = PP.toString 60 false doc
+      val message = PP.toString 60 false doc*)
+      val message = raise Fail "TODO!"
     in
       RedPrlLog.print RedPrlLog.INFO (SOME pos, message)
     end

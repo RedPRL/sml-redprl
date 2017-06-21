@@ -12,7 +12,6 @@ local
   $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
   $(LIBS)/sml-dependent-lcf/lcf_abt.mlb
   $(LIBS)/sml-dependent-lcf/nominal_lcf.mlb
-  $(LIBS)/sml-wpp/wpp.mlb
   $(LIBS)/sml-final-pretty-printer/final-pretty-printer.mlb
 
 

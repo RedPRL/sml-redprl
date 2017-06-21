@@ -3,7 +3,7 @@ structure LcfLanguage = LcfAbtLanguage (RedPrlAbt)
 structure Lcf :
 sig
   include LCF_UTIL
-  val prettyState : jdg state -> PP.doc
+  val prettyState : jdg state -> FinalPrinter.doc
 end =
 struct
   structure Lcf = Lcf (LcfLanguage)
@@ -11,7 +11,7 @@ struct
   open Def Lcf
   infix |> ||
 
-
+(*
   val prettySyms =
     PP.text o ListSpine.pretty (fn (u, sigma) => Sym.toString u ^ " : " ^ RedPrlAbt.O.Ar.Vl.PS.toString sigma) ", "
 
@@ -71,4 +71,7 @@ struct
          PP.newline, PP.newline,
          prettyValidation env vld]
     end
+    *)
+
+    fun prettyState _ = raise Fail "TODO!"
 end

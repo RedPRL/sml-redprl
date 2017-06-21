@@ -77,7 +77,7 @@ struct
 
 
 
-  local
+  (*local
     open PP
   in
     fun prettySyms' [] = concat []
@@ -95,9 +95,10 @@ struct
     fun pretty f : 'a jdg -> doc =
       fn (I, H) >> catjdg => concat [prettySyms I, prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
        | MATCH (th, k, a, _, _) => concat [text (f a), text " match ", text (Tm.O.toString Tm.Sym.toString th), text " @ ", int k]
-  end
+  end*)
 
-  fun toString f = PP.toString 80 true o pretty f
+  fun pretty f = raise Fail "TODO!"
+  fun toString f = raise Fail "TODO!"
 
 
   val rec eq =
