@@ -8,7 +8,7 @@ Thm Hcom(#A) : [
       -> paths({_}.#A; a; b)
 ] by [
   { lam a. lam b. lam p.
-    <i> 'hcom{0 ~> 1}(#A; ,p @ i; i = 1 -> {_}. ,b; (i = 0) -> {_}. ,a)
+    <i> 'hcom{0 ~> 1}(#A; ,p @ i) [i = 1 -> {_}. ,b; (i = 0) -> {_}. ,a]
   };
   auto
 ].
@@ -19,7 +19,7 @@ Thm FHcom() : [
   -> paths({_}.bool; tt; tt)
 ] by [
   { lam p.
-    <i> 'fhcom{0 ~> 1}(,p @ i; (((i = 1)))-> {_}. tt; (i = 0)-> {_}. tt)
+    <i> 'fcom{0 ~> 1}(,p @ i) [(((i = 1)))-> {_}. tt; (i = 0)-> {_}. tt]
   };
   auto
 ].

@@ -20,7 +20,7 @@ Thm Hcom/Poly(#A) : [
 ] by [
   { lam a. lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
-    <i> 'hcom{i=0, i=1; 0 ~> 1}(#A; ,pab @ i; {j}. ,pac @ j; {j}. ,pbd @ j)
+    <i> 'hcom{0 ~> 1}(#A; ,pab @ i) [i=0 -> {j}. ,pac @ j; i=1 -> {j}. ,pbd @ j]
   };
   auto
 ].
@@ -38,7 +38,7 @@ Thm Hcom/trans(#A) : [
       -> paths({_}.#A; a; c)
 ] by [
   { lam a. lam b. lam c. lam pab. lam pbc.
-    <i> 'hcom{i=0, i=1; 0 ~> 1}(#A; ,pab @ i; {_}. ,a; {j}. ,pbc @j)
+    <i> 'hcom{0 ~> 1}(#A; ,pab @ i) [i=0 -> {_}. ,a; i=1 -> {j}. ,pbc @j]
   };
   auto
 ].
@@ -52,7 +52,7 @@ Thm Hcom/symm(#A) : [
       -> paths({_}.#A; b; a)
 ] by [
   { lam a. lam b. lam pab.
-    <i> 'hcom{i=0, i=1; 0 ~> 1}(#A; ,a; {j}. ,pab @j; {_}. ,a)
+    <i> 'hcom{0 ~> 1}(#A; ,a) [i=0 -> {j}. ,pab @j; i=1 -> {_}. ,a]
   };
   auto
 ].
@@ -60,7 +60,7 @@ Thm Hcom/symm(#A) : [
 Thm Cap{i : dim}(#A) : [ 
   a/type : #A type,
   x : #A
-  >> hcom{i=0, i=1; 0 ~> 0}(#A; x; {_}. x; {_}. x) = x in #A
+  >> hcom{0 ~> 0}(#A; x) [i=0 -> {_}. x; i=1 -> {_}. x] = x in #A
 ] by [
   auto
 ].
@@ -68,13 +68,13 @@ Thm Cap{i : dim}(#A) : [
 Thm Tube(#A) : [
   a/type : #A type,
   x : #A
-  >> hcom{1=1,0=0; 0 ~> 1}(#A; x; {_}. x; {_}. x) = x in #A
+  >> hcom{0 ~> 1}(#A; x) [1=1 -> {_}. x; 0=0 -> {_}. x] = x in #A
 ] by [
   auto
 ].
 
 Thm TrueByEvaluation : [
-  hcom{; 0 ~> 0}(bool; tt) in bool
+  hcom{0 ~> 0}(bool; tt) [] in bool
 ] by [
   auto
 ].

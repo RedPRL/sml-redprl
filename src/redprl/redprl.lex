@@ -75,7 +75,7 @@ whitespace = [\ \t];
 ">>"               => (Tokens.DOUBLE_RANGLE (posTuple (size yytext)));
 
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
-"fhcom"            => (Tokens.FHCOM (posTuple (size yytext)));
+"fcom"             => (Tokens.FCOM (posTuple (size yytext)));
 "bool"             => (Tokens.BOOL (posTuple (size yytext)));
 "tt"               => (Tokens.TT (posTuple (size yytext)));
 "ff"               => (Tokens.FF (posTuple (size yytext)));
