@@ -63,7 +63,7 @@ struct
      | `x => ppVar x
      | theta $ args => 
          text (RedPrlOperator.toString Sym.toString theta)
-           >> collection (char #"(") (char #")") (char #";") (List.map ppBinder args)
+           >> unlessEmpty args (collection (char #"(") (char #")") (char #";") (List.map ppBinder args))
      | x $# (ps, ms) =>
          char #"#" >> text (Abt.Metavar.toString x) 
            >> unlessEmpty ps (collection (char #"{") (char #"}") Atomic.comma (List.map (ppParam o #1) ps))
