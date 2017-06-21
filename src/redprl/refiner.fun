@@ -1000,7 +1000,7 @@ struct
           (List.map (fn (r, r') => (substSymInParam rv r, substSymInParam rv r')) eqs)
   end
 
-  (* code shared by Com, HCom and FHCom. *)
+  (* code shared by Com, HCom and FCom. *)
   structure ComKit =
   struct
     (* todo: optimizing the restriction process even further. *)
@@ -1146,20 +1146,20 @@ struct
     end
   end
 
-  structure FHCom =
+  structure FCom =
   struct
     fun Eq alpha jdg =
       let
-        val _ = RedPrlLog.trace "FHCom.Eq"
+        val _ = RedPrlLog.trace "FCom.Eq"
         val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.FHCOM {dir=(r0, r'0), cap=cap0, tubes=tubes0} = Syn.out lhs
-        val Syn.FHCOM {dir=(r1, r'1), cap=cap1, tubes=tubes1} = Syn.out rhs
-        val () = assertParamEq "FHCom.Eq source of direction" (r0, r1)
-        val () = assertParamEq "FHCom.Eq target of direction" (r'0, r'1)
+        val Syn.FCOM {dir=(r0, r'0), cap=cap0, tubes=tubes0} = Syn.out lhs
+        val Syn.FCOM {dir=(r1, r'1), cap=cap1, tubes=tubes1} = Syn.out rhs
+        val () = assertParamEq "FCom.Eq source of direction" (r0, r1)
+        val () = assertParamEq "FCom.Eq target of direction" (r'0, r'1)
         val eqs0 = List.map #1 tubes0
         val eqs1 = List.map #1 tubes1
-        val _ = ListPair.mapEq (assertEquationEq "FHCom.Eq equations") (eqs0, eqs1)
-        val _ = assertTautologicalEquations "FHCom.Eq tautology checking" eqs0
+        val _ = ListPair.mapEq (assertEquationEq "FCom.Eq equations") (eqs0, eqs1)
+        val _ = assertTautologicalEquations "FCom.Eq tautology checking" eqs0
 
         val (goalCap, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap0, cap1), ty)
 
@@ -1176,7 +1176,7 @@ struct
     local
       infix orelse_
     in
-      (* Try all the fhcom rules. *)
+      (* Try all the fcom rules. *)
       val AutoEq = Eq
     end
   end
@@ -1234,7 +1234,7 @@ struct
     local
       infix orelse_
     in
-      (* Try all the fhcom rules. *)
+      (* Try all the fcom rules. *)
       val AutoEqLR = Eq orelse_ CapEqL orelse_ CapEqR
       val AutoEqL = Eq orelse_ CapEqL
       val AutoEqR = Eq orelse_ CapEqR
@@ -1459,12 +1459,12 @@ struct
         case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
-         | (Syn.FHCOM _, Syn.FHCOM _, Syn.BOOL) => FHCom.AutoEq
+         | (Syn.FCOM _, Syn.FCOM _, Syn.BOOL) => FCom.AutoEq
          | (Syn.TT, Syn.TT, Syn.S_BOOL) => StrictBool.EqTT
          | (Syn.FF, Syn.FF, Syn.S_BOOL) => StrictBool.EqFF
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
-         | (Syn.FHCOM _, Syn.FHCOM _, Syn.S1) => FHCom.AutoEq
+         | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => FCom.AutoEq
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.PAIR _, Syn.PAIR _, _) => DProd.Eq
          | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
