@@ -106,6 +106,8 @@ end
  | atomicRawTerm of ast
    (* ... annotated with source position*)
  | atomicTerm of ast
+   (* alternative notation for composition *)
+ | alternativeComRawTerm of ast
 
    (* a type-theoretic term, annotated with source position *)
  | term of ast
@@ -127,6 +129,8 @@ end
    (* the equations of a Kan composition *)
  | equation of string param * string param
  | equations of (string param * string param) list
+ | tube of (string param * string param) * ast abs
+ | tubes of ((string param * string param) * ast abs) list
    (* the direction of a coercion of Kan composition *)
  | dir of string param * string param
 
@@ -281,6 +285,14 @@ bindings
   | binding SEMI bindings (binding :: bindings)
   | ([])
 
+tube
+  : equation RIGHT_ARROW binding (equation, binding)
+
+tubes
+  : tube ([tube])
+  | tube SEMI tubes (tube :: tubes)
+  | ([])
+
 metavarArgs
   : LBRACKET params RBRACKET LSQUARE terms RSQUARE (params, terms)
   | LBRACKET params RBRACKET (params, [])
@@ -312,10 +324,17 @@ dir
 
 term : rawTerm %prec FUN_APP (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
 
+alternativeComRawTerm
+  : FHCOM LBRACKET dir RBRACKET LPAREN binding SEMI tubes RPAREN
+      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FHCOM (dir, eqs)), (binding :: tubes)) end)
+  | HCOM LBRACKET dir RBRACKET LPAREN binding SEMI binding SEMI tubes RPAREN
+      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.HCOM (dir, eqs)), (binding1 :: binding2 :: tubes)) end)
+
 atomicRawTerm
   : LPAREN term RPAREN (term)
   | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
   | operator (Ast.$$ (operator, []))
+  | alternativeComRawTerm (alternativeComRawTerm)
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
   | VARNAME (`` VARNAME)
