@@ -1,0 +1,19 @@
+Thm Connection(#A) : [
+  a/type : #A type >>
+     (a : #A)
+  -> (b : #A)
+  -> (p : paths({_}.#A; a; b))
+  -> paths({i}.(paths({_}.#A; a; p@i)); <_>a; p)
+] by [
+  {
+  lam a. lam b. lam p.
+    <i> <j> 'hcom{i=0,i=1,j=0,j=1;0~>1}(#A; ,a;
+     {k}.hcom{k=0,k=1;1~>j}(#A; hcom{k=0,k=1;1~>0}(#A; ,p @ k; {_}.,a; {j}.,p @ j); {_}.,a; {_}.,a);
+     {k}.hcom{k=0,k=1;1~>j}(#A; ,p @ k; {_}.,a; {j}.,p @ j);
+     {k}.hcom{k=0,k=1;1~>i}(#A; hcom{k=0,k=1;1~>0}(#A; ,p @ k; {_}.,a; {i}.,p @ i); {_}.,a; {_}.,a);
+     {k}.hcom{k=0,k=1;1~>i}(#A; ,p @ k; {_}.,a; {j}.,p @ j))
+  };
+  auto;
+].
+
+Extract Connection.
