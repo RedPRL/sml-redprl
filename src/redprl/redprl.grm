@@ -126,7 +126,6 @@ end
 
    (* the equations of a Kan composition *)
  | equation of string param * string param
- | equations of (string param * string param) list
  | tube of (string param * string param) * ast abs
  | tubes of ((string param * string param) * ast abs) list
    (* the direction of a coercion of Kan composition *)
@@ -243,11 +242,6 @@ params
 equation
   : LPAREN equation RPAREN (equation)
   | param EQUALS param (param1, param2)
-
-equations
-  : equation ([equation])
-  | equation COMMA equations (equation :: equations)
-  | ([])
 
 boundVar
   : VARNAME (VARNAME)
