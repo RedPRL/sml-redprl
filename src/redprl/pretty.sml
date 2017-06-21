@@ -1,10 +1,92 @@
 structure PP = PrettyPrint (DisableAnsiColors)
+structure FppBasis = FppPrecedenceBasis (FppInitialBasis (FppPlainBasisTypes))
+structure Fpp = FinalPrettyPrinter (FppBasis)
 
-structure TermPrinter :
+
+signature FINAL_PRINTER = 
 sig
-  include SHOW 
-  val paramToString : Sym.t RedPrlParameterTerm.t -> string
-end =
+  type doc = unit Fpp.m
+  type term = RedPrlAbt.abt
+
+  val ppTerm : term -> doc
+end
+
+structure FinalPrinter :> FINAL_PRINTER = 
+struct
+  open FppBasis Fpp
+
+  structure Abt = RedPrlAbt
+  open Abt
+
+  structure O = RedPrlOpData and P = RedPrlParameterTerm
+
+  type doc = unit m
+  type term = Abt.abt
+
+  fun >> (m, n) = Monad.bind m (fn _ => n)
+  infix 2 >>
+
+  fun >+> (m, n) = m >> space 1 >> n
+  infix 2 >+>
+
+  fun @@ (f, x) = f x
+  infix 0 $ $$ $# \
+  infixr 0 @@
+
+  val ppVar = text o Var.toString
+
+  val ppParam = text o P.toString Sym.toString
+
+  fun unlessEmpty xs m = 
+    case xs of 
+       [] => Monad.ret ()
+     | _ => m
+
+  (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
+  fun ppTerm m = 
+    case Abt.out m of 
+       O.POLY (O.HYP_REF x) $ [] => text "," >> ppVar x
+     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] =>
+         hsep [Atomic.parens @@ hsep [ppVar x, Atomic.colon, ppTerm a], text "->", ppTerm bx]
+     | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] =>
+         hsep [Atomic.parens @@ hsep [ppVar x, Atomic.colon, ppTerm a], text "*", ppTerm bx]
+     | O.MONO O.AP $ [_ \ m, _ \ n] => 
+         app (ppTerm m) [ppTerm n]
+     | O.MONO O.PAIR $ [_ \ m, _ \ n] => 
+         collection (char #"<") (char #">") Atomic.comma [ppTerm m, ppTerm n]
+     | O.MONO O.PATH_ABS $ [([x], _) \ m] =>
+         hsep [char #"<" >> ppVar x >> char #">", ppTerm m]
+     | O.POLY (O.LOOP r) $ _ => 
+         text "loop" >> char #"[" >> ppParam r >> char #"]"
+     | O.POLY (O.PATH_AP r) $ [_ \ m] =>
+         inf 2 LEFT {opr = char #"@", arg1 = ppTerm m, arg2 = ppParam r}
+     | `x => ppVar x
+     | theta $ args => 
+         text (RedPrlOperator.toString Sym.toString theta)
+           >> collection (char #"(") (char #")") (char #";") (List.map ppBinder args)
+     | x $# (ps, ms) =>
+         char #"#" >> text (Abt.Metavar.toString x) 
+           >> unlessEmpty ps (collection (char #"{") (char #"}") Atomic.comma (List.map (ppParam o #1) ps))
+           >> unlessEmpty ms (collection (char #"[") (char #"]") Atomic.comma (List.map ppTerm ms))
+  
+  and ppBinder (b \ m) = 
+    ppBinding b >> ppTerm m
+
+  and ppBinding (us, xs) = 
+    case (us, xs) of 
+       ([], []) => Monad.ret ()
+     | _ => symBinding us >> varBinding xs >> char #"."
+  
+  and symBinding us =
+    unlessEmpty us @@ 
+      collection (char #"{") (char #"}") Atomic.comma (List.map (text o Sym.toString) us)
+
+  and varBinding xs =
+    unlessEmpty xs @@ 
+      collection (char #"[") (char #"]") Atomic.comma (List.map ppVar xs)
+end
+
+structure TermPrinter : SHOW =
 struct
   structure Abt = RedPrlAbt
   structure ShowVar = Abt.Var
@@ -12,53 +94,26 @@ struct
   structure O = RedPrlOpData
   structure P = RedPrlParameterTerm
 
-  structure UP = UnparseAbt (structure Abt = Abt and Unparse = Unparse)
+  open FppBasis Fpp
 
-  open Abt O Unparse
+  type t = Abt.abt
 
-  type t = abt
+  local 
+    val initialEnv =
+      {maxWidth = 80,
+       maxRibbon = 60,
+       layout = FppTypes.BREAK,
+       failure = FppTypes.CANT_FAIL,
+       nesting = 0,
+       formatting = (),
+       formatAnn = fn _ => ()}
+  in
+    fun execPP (m : unit m)  = 
+      #output (m emptyPrecEnv initialEnv {curLine = []})
+  end
 
-  fun @@ (f, x) = f x
-  infix 0 @@ $ $$ \
-
-  val paramToString = P.toString ShowSym.toString
-
-  fun notation m =
-    case Abt.out m of
-      (* , x *)
-      POLY (HYP_REF x) $ [] => SOME o atom @@ "," ^ ShowVar.toString x
-    | (* (x : A) -> B *)
-      MONO DFUN $ [_ \ a, (_, [x]) \ bx] =>
-        let
-          val left = "(" ^ ShowVar.toString x ^ " : " ^ toString a ^ ")"
-        in
-          SOME @@ infix' (Right, 3, "->") (atom left, unparse bx)
-        end
-    | (* M N *)
-      MONO AP $ [_ \ m, _ \ n] =>
-        SOME @@ adj (unparse m, unparse n)
-    | (* (x : A) * B *)
-      MONO DPROD $ [_ \ a, (_, [x]) \ bx] =>
-        let
-          val left = "(" ^ ShowVar.toString x ^ " : " ^ toString a ^ ")"
-        in
-          SOME @@ infix' (Right, 3, "*") (atom left, unparse bx)
-        end
-    | (* <M, N> *)
-      MONO PAIR $ [_ \ m, _ \ n] =>
-        SOME o atom @@ "<" ^ toString m ^ ", " ^ toString n ^ ">"
-    | (* <x> A *)
-      MONO PATH_ABS $ [(([x], []) \ a)] =>
-        SOME o atom @@ "<" ^ ShowVar.toString x  ^ "> " ^ toString a
-    | (* loop[p] *)
-      POLY (LOOP p) $ [] =>
-        SOME o atom @@ "loop[" ^ paramToString p ^ "]"
-    | (* A @ p *)
-      POLY (PATH_AP p) $ [_ \ a] =>
-        SOME @@ infix' (Left, 5, "@") (unparse a, atom (paramToString p))
-    | _ => NONE
-
-  and unparse m = UP.unparse notation m
-  and toString m =
-      parens (done (unparse m))
+  val toString = 
+    FppRenderPlainText.toString 
+      o execPP
+      o FinalPrinter.ppTerm
 end

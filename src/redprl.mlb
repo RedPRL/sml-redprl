@@ -6,15 +6,14 @@ local
 
   $(LIBS)/sml-cats/cats.mlb
   $(LIBS)/sml-telescopes/telescopes.mlb
-  $(LIBS)/sml-unparse/unparse.mlb
   $(LIBS)/sml-typed-abts/abt.mlb
-  $(LIBS)/sml-typed-abts/abt-unparser.mlb
   $(LIBS)/sml-typed-abts/abt-machine.mlb
   $(LIBS)/sml-typed-abts/basis/basis.mlb
   $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
   $(LIBS)/sml-dependent-lcf/lcf_abt.mlb
   $(LIBS)/sml-dependent-lcf/nominal_lcf.mlb
   $(LIBS)/sml-wpp/wpp.mlb
+  $(LIBS)/sml-final-pretty-printer/final-pretty-printer.mlb
 
 
   debug.mlb
