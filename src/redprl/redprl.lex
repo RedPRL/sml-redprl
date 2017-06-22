@@ -87,6 +87,7 @@ whitespace = [\ \t];
 "base"             => (Tokens.BASE (posTuple (size yytext)));
 "loop"             => (Tokens.LOOP (posTuple (size yytext)));
 "lam"              => (Tokens.LAMBDA (posTuple (size yytext)));
+"abs"              => (Tokens.ABS (posTuple (size yytext)));
 "fst"              => (Tokens.FST (posTuple (size yytext)));
 "snd"              => (Tokens.SND (posTuple (size yytext)));
 "paths"            => (Tokens.PATHS (posTuple (size yytext)));
