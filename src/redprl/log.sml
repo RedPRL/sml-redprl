@@ -7,14 +7,13 @@ struct
    | FAIL
    | TRACE
 
-  fun formatMessage lvl (pos, msg) : (int, unit) FppTypes.output = raise Fail "TODO"
-(*  
+  fun formatMessage lvl (pos, msg : FinalPrinter.doc) : FinalPrinter.doc =
     let
       val pos' =
         case pos of
            SOME pos => Pos.toString pos
          | NONE => "[Unknown Location]"
-
+      
       val prefix =
         case lvl of
            INFO => "Info"
@@ -23,12 +22,14 @@ struct
          | FAIL => "Error"
          | TRACE => "Trace"
 
-      val lines = String.fields (fn c => c = #"\n") msg
-      val indented = List.map (fn l => "  " ^ l ^ "\n") lines
-      val msg' = List.foldr op^ "" indented
+      val header =
+        Fpp.hsep 
+          [Fpp.text pos',
+           Fpp.seq [Fpp.Atomic.squares (Fpp.text prefix), Fpp.Atomic.colon]]
+
     in
-      pos' ^ " [" ^ prefix ^ "]:\n" ^ msg' ^"\n\n"
-    end*)
+      Fpp.vsep [header, Fpp.nest 2 msg, Fpp.hardLine]
+    end
 
   val streamForLevel =
     fn INFO => TextIO.stdOut
@@ -40,8 +41,10 @@ struct
   fun print lvl msg =
     let
       val stream = streamForLevel lvl
+      val doc = formatMessage lvl msg
+      val output = FinalPrinter.execPP doc
     in
-      FppRenderPlainText.render stream (formatMessage lvl msg);
+      FppRenderPlainText.render stream output;
       TextIO.flushOut stream
     end
 end
