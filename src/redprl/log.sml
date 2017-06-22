@@ -28,7 +28,7 @@ struct
            Fpp.seq [Fpp.Atomic.squares (Fpp.text prefix), Fpp.Atomic.colon]]
 
     in
-      Fpp.seq [Fpp.nest 4 (Fpp.vsep [header, msg]), Fpp.hardLine, Fpp.hardLine]
+      Fpp.vsep [Fpp.nest 2 (Fpp.vsep [header, msg]), Fpp.hardLine, Fpp.hardLine]
     end
 
   val streamForLevel =
