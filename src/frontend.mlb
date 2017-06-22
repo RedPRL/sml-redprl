@@ -1,5 +1,5 @@
 local
-  $(SML_LIB)/basis/basis.ml
+  $(SML_LIB)/basis/basis.mlb
   ../lib/sml-final-pretty-printer/final-pretty-printer.mlb
   redprl.mlb
   debug.mlb
