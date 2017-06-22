@@ -1577,7 +1577,7 @@ struct
               (case catjdg of
                   CJ.TRUE _ => StepTrue hyp z alpha jdg
                 | CJ.EQ _ => StepEq hyp z alpha jdg
-                | _ => raise E.error [E.% ("Could not find suitable elimination rule for " ^ (raise Fail "TODO!"))])
+                | _ => raise E.error [E.% ("Could not find suitable elimination rule [TODO, display information]")])
            | _ => raise E.error [E.% "Could not find suitable elimination rule"]
         end
     in

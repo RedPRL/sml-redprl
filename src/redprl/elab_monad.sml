@@ -34,7 +34,6 @@ struct
   fun force susp =
     Debug.wrap (fn _ => Susp.force susp)
     handle exn =>
-      (* TODO: fix *)
       {result = FAILURE (RedPrlError.annotation exn, RedPrlError.format exn),
        messages = DList.empty}
 

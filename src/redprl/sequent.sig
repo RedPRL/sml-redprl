@@ -21,7 +21,7 @@ sig
 
   val map : ('a -> 'b) -> 'a jdg -> 'b jdg
 
-  val pretty : ('a -> string) -> 'a jdg -> FinalPrinter.doc
+  val pretty : ('a -> FinalPrinter.doc) -> 'a jdg -> FinalPrinter.doc
 
   val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
 

@@ -69,11 +69,11 @@ struct
   val toString = TermPrinter.toString o toAbt
   val metactx = RedPrlAbt.metactx o toAbt
 
-  fun pretty f = raise Fail "TODO!"
-    (*fn EQ ((m, n), a) => PP.concat [PP.text (f m), PP.text " = ", PP.text (f n), PP.text " in ", PP.text (f a)]
-     | TRUE a => PP.concat [PP.text (f a), PP.text " true"]
-     | EQ_TYPE (a, b) => PP.concat [PP.text (f a), PP.text " = ", PP.text (f b), PP.text " type"]
-     | SYNTH m => PP.concat [PP.text (f m), PP.text " synth"]*)
+  fun pretty f =
+    fn EQ ((m, n), a) => Fpp.hsep [f m, Fpp.Atomic.equals, f n, Fpp.text "in", f a]
+     | TRUE a => Fpp.hsep [f a, Fpp.text "true"]
+     | EQ_TYPE (a, b) => Fpp.hsep [f a, Fpp.Atomic.equals, f b, Fpp.text "type"]
+     | SYNTH m => Fpp.hsep [f m, Fpp.text "synth"]
 
   fun unify (j1, j2) =
     RedPrlAbt.Unify.unify (toAbt j1, toAbt j2)

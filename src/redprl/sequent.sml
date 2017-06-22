@@ -75,30 +75,19 @@ struct
 
   structure P = CJ.Tm.O.P and PS = CJ.Tm.O.Ar.Vl.PS
 
+  fun prettySyms syms =
+    Fpp.collection 
+      (Fpp.char #"{")
+      (Fpp.char #"}")
+      (Fpp.Atomic.comma)
+      (List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Tm.O.Ar.Vl.PS.toString sigma)]) syms)
 
+  fun prettyHyps f : 'a ctx -> FinalPrinter.doc =
+    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [Fpp.text (Tm.Sym.toString x), Fpp.Atomic.colon, f a] :: r) []
 
-  (*local
-    open PP
-  in
-    fun prettySyms' [] = concat []
-      | prettySyms' [(u, sigma)] = concat [text (Tm.Sym.toString u), text " : ", text (Tm.O.Ar.Vl.PS.toString sigma)]
-      | prettySyms' ((u, sigma) :: syms) = concat [text (Tm.Sym.toString u), text " : ", text (Tm.O.Ar.Vl.PS.toString sigma), text " , ", prettySyms' syms]
-
-    fun prettySyms [] = concat []
-      | prettySyms syms = concat [text "{", prettySyms' syms, text "}.", line]
-
-    fun prettyHyps f : 'a ctx -> doc =
-      Hyps.foldl
-        (fn (x, a, r) => concat [r, text (Tm.Sym.toString x), text " : ", f a, line])
-        empty
-
-    fun pretty f : 'a jdg -> doc =
-      fn (I, H) >> catjdg => concat [prettySyms I, prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
-       | MATCH (th, k, a, _, _) => concat [text (f a), text " match ", text (Tm.O.toString Tm.Sym.toString th), text " @ ", int k]
-  end*)
-
-  fun pretty f = raise Fail "TODO!"
-  fun toString f = raise Fail "TODO!"
+  fun pretty f : 'a jdg -> FinalPrinter.doc = 
+    fn (I, H) >> catjdg => Fpp.vsep [prettySyms I, prettyHyps (CJ.pretty f) H, Fpp.hsep [Fpp.text "\226\138\162", CJ.pretty f catjdg]]
+     | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
 
 
   val rec eq =
