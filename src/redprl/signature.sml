@@ -19,12 +19,12 @@ struct
       (Fpp.Atomic.comma)
       (List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Ar.Vl.PS.toString sigma)]) ps)
 
-  fun prettyArgs ps = 
+  fun prettyArgs args = 
     Fpp.collection
       (Fpp.char #"(")
       (Fpp.char #")")
       (Fpp.char #";")
-      (List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, Fpp.text (Ar.Vl.toString vl)]) ps) (* TODO: prettyValence *)
+      (List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args)
 
   fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : FinalPrinter.doc =
     Fpp.seq

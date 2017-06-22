@@ -32,18 +32,18 @@ sig
   type t = RedPrlAbt.abt
   val toString : t -> string
   val ppTerm : t -> FinalPrinter.doc
+  val ppSort : RedPrlAbt.sort -> FinalPrinter.doc
+  val ppPsort : RedPrlAbt.psort -> FinalPrinter.doc
+  val ppValence : RedPrlAbt.valence -> FinalPrinter.doc
 end =
 struct
   structure Abt = RedPrlAbt
-  structure P = RedPrlParameterTerm
+  structure P = RedPrlParameterTerm and Ar = Abt.O.Ar
 
   open FppBasis Fpp Abt
   structure O = RedPrlOpData
 
   type t = Abt.abt
-
-  fun >> (m, n) = Monad.bind m (fn _ => n)
-  infix 2 >>
 
   fun @@ (f, x) = f x
   infix 0 $ $$ $# \
@@ -54,13 +54,13 @@ struct
 
   fun unlessEmpty xs m = 
     case xs of 
-       [] => Monad.ret ()
+       [] => empty
      | _ => m
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
   fun ppTerm m = 
     case Abt.out m of 
-       O.POLY (O.HYP_REF x) $ [] => text "," >> ppVar x
+       O.POLY (O.HYP_REF x) $ [] => seq [text ",", ppVar x]
      | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] =>
          hsep [Atomic.parens @@ hsep [ppVar x, Atomic.colon, ppTerm a], text "->", ppTerm bx]
      | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] =>
@@ -70,28 +70,32 @@ struct
      | O.MONO O.PAIR $ [_ \ m, _ \ n] => 
          collection (char #"<") (char #">") Atomic.comma [ppTerm m, ppTerm n]
      | O.MONO O.PATH_ABS $ [([x], _) \ m] =>
-         hsep [char #"<" >> ppVar x >> char #">", ppTerm m]
+         hsep [seq [char #"<", ppVar x, char #">"], ppTerm m]
      | O.POLY (O.LOOP r) $ _ => 
-         text "loop" >> char #"[" >> ppParam r >> char #"]"
+         seq [text "loop", Atomic.squares @@ ppParam r]
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
          inf 2 LEFT {opr = char #"@", arg1 = ppTerm m, arg2 = ppParam r}
      | `x => ppVar x
      | theta $ args => 
-         text (RedPrlOperator.toString Sym.toString theta)
-           >> unlessEmpty args (collection (char #"(") (char #")") (char #";") (List.map ppBinder args))
+         seq
+           [text @@ RedPrlOperator.toString Sym.toString theta,
+            unlessEmpty args @@ collection (char #"(") (char #")") (char #";") (List.map ppBinder args)]
      | x $# (ps, ms) =>
-         char #"#" >> text (Abt.Metavar.toString x) 
-           >> unlessEmpty ps (collection (char #"{") (char #"}") Atomic.comma (List.map (ppParam o #1) ps))
-           >> unlessEmpty ms (collection (char #"[") (char #"]") Atomic.comma (List.map ppTerm ms))
+         seq
+           [char #"#",text (Abt.Metavar.toString x),
+            unlessEmpty ps @@ collection (char #"{") (char #"}") Atomic.comma @@ List.map (ppParam o #1) ps,
+            unlessEmpty ms @@ collection (char #"[") (char #"]") Atomic.comma @@ List.map ppTerm ms]
   
-  and ppBinder (b \ m) = 
-    ppBinding b >> ppTerm m
+  and ppBinder ((us, xs) \ m) = 
+    let
+      val prefix = 
+        case (us, xs) of 
+           ([], []) => empty
+         | _ => seq [symBinding us, varBinding xs, char #"."]
+    in
+      seq [prefix, ppTerm m]
+    end
 
-  and ppBinding (us, xs) = 
-    case (us, xs) of 
-       ([], []) => Monad.ret ()
-     | _ => symBinding us >> varBinding xs >> char #"."
-  
   and symBinding us =
     unlessEmpty us @@ 
       collection (char #"{") (char #"}") Atomic.comma (List.map (text o Sym.toString) us)
@@ -100,6 +104,26 @@ struct
     unlessEmpty xs @@ 
       collection (char #"[") (char #"]") Atomic.comma (List.map ppVar xs)
 
+  val ppSort = text o Ar.Vl.S.toString
+  val ppPsort = text o Ar.Vl.PS.toString
+
+  fun ppValence ((sigmas, taus), tau) =
+    let
+      val prefix = 
+        case (sigmas, taus) of 
+           ([], []) => empty
+         | _ => seq [symSorts sigmas, varSorts taus, char #"."]
+    in
+      seq [prefix, ppSort tau]
+    end
+
+  and symSorts sigmas = 
+    unlessEmpty sigmas @@
+      collection (char #"{") (char #"}") Atomic.comma @@ List.map ppPsort sigmas
+
+  and varSorts taus =
+    unlessEmpty taus @@
+      collection (char #"[") (char #"]") Atomic.comma @@ List.map ppSort taus
 
   val toString = 
     FppRenderPlainText.toString 
