@@ -13,14 +13,14 @@ struct
 
   (* TODO: clean up all this stuff with vsep *)
 
+  fun @@ (f, x) = f x
+  infixr 0 @@
+
   fun prettyGoal (x, jdg) =
-    Fpp.seq
-      [Fpp.text "Goal",
-       Fpp.space 1,
-       Fpp.text ".",
-       Fpp.newline,
-       Fpp.nest 2 (RedPrlSequent.pretty TermPrinter.ppTerm jdg),
-       Fpp.hardLine]
+    Fpp.nest 2 @@ 
+      Fpp.vsep 
+        [Fpp.seq [Fpp.hsep [Fpp.text "Goal", Fpp.text (Metavar.toString x)], Fpp.text "."],
+         RedPrlSequent.pretty TermPrinter.ppTerm jdg]
 
   val prettyGoals : jdg Tl.telescope -> {doc : FinalPrinter.doc, env : J.env, idx : int} = 
     let
