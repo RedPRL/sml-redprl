@@ -168,6 +168,19 @@ struct
          S.CUT
            @@ (coe `$ [([u],[]) \ S.HOLE, ([],[]) \ S.% m], a)
            <: env
+     | O.POLY (O.COM (dir as (r, r'), eqs)) `$ (([u],_) \ a) :: (_ \ cap) :: tubes <: env =>
+         let
+           fun coe v m = Syn.intoCoe (v, r') ((u, a), m)
+           fun goTube (([v],_) \ n) = ([v],[]) \ coe (P.ret v) n
+             | goTube _ = raise Fail "RedPrlMachineBasis.step: malformed COM tubes"
+         in
+           S.STEP
+             @@ (O.POLY (O.HCOM (dir, eqs)) $$
+                    (([],[]) \ substSymbol (r', u) a)
+                 :: (([],[]) \ coe r cap)
+                 :: List.map goTube tubes)
+             <: env
+         end
 
      (* tactic *)
 
