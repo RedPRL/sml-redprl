@@ -1,19 +1,22 @@
 Def Cmp(#m; #n) = [
-  lam([x]. #m (#n x))
+  (lam [x] (#m (#n x)))
 ].
 
 Def SBool/Not = [
-  lam([x]. if/s(x; ff; tt))
+  (lam [x] (if/s x ff tt))
 ].
 
 Thm SBool/Not-Not-Id : [
-  Cmp(SBool/Not; SBool/Not) = lam([x].x) in sbool -> sbool
+  (Cmp SBool/Not SBool/Not) = (lam [x] x) in (-> [x sbool] sbool)
 ] by [
   auto
 ].
 
 Thm SBool/Not-Not-Id-Path : [
-  paths({_}.sbool -> sbool; Cmp(SBool/Not; SBool/Not); lam([x].x))
+  (paths
+    {_} (-> [x sbool] sbool)
+    (Cmp SBool/Not SBool/Not)
+    (lam [x] x))
 ] by [
   {<i> lam x. hyp x};
   auto

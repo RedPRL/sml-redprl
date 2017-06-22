@@ -259,9 +259,9 @@ terms
   | ([])
 
 binder
-  : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE DOT (symbols1, symbols2)
-  | LBRACKET symbols RBRACKET DOT (symbols, [])
-  | LSQUARE symbols RSQUARE DOT ([], symbols)
+  : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE (symbols1, symbols2)
+  | LBRACKET symbols RBRACKET (symbols, [])
+  | LSQUARE symbols RSQUARE ([], symbols)
   | ([], [])
 
 binding
@@ -270,7 +270,7 @@ binding
 
 bindings
   : binding ([binding])
-  | binding SEMI bindings (binding :: bindings)
+  | binding bindings (binding :: bindings)
   | ([])
 
 tube
@@ -308,11 +308,11 @@ metavar
 dir
   : param SQUIGGLE_ARROW param ((param1, param2))
 
-term : rawTerm %prec FUN_APP (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
+term : atomicRawTerm %prec FUN_APP (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
 
 atomicRawTerm
-  : LPAREN term RPAREN (term)
-  | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  : LPAREN term term RPAREN (Ast.$$ (O.MONO O.AP, [\ (([],[]),term1), \ (([],[]), term2)]))
+  | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
   | operator (Ast.$$ (operator, []))
   | FCOM LBRACKET dir RBRACKET LPAREN binding RPAREN LSQUARE tubes RSQUARE
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
@@ -321,8 +321,8 @@ atomicRawTerm
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
   | VARNAME (`` VARNAME)
-  | LPAREN boundVar COLON term RPAREN RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[boundVar]), term2)]))
-  | LPAREN boundVar COLON term RPAREN TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), term1), \ (([],[boundVar]), term2)]))
+  | LPAREN RIGHT_ARROW LSQUARE boundVar term RSQUARE term RPAREN (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), term1), \ (([],[boundVar]), term2)]))
+  | LPAREN TIMES LSQUARE boundVar term RSQUARE term RPAREN (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), term1), \ (([],[boundVar]), term2)]))
   | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
   | TT (Ast.$$ (O.MONO O.TRUE, []))
@@ -337,16 +337,16 @@ atomicRawTerm
 
 atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
 
-rawFunApp
+(*rawFunApp
   : rawTerm atomicTerm %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)), \ (([],[]), atomicTerm)]))
   | atomicTerm %prec FUN_APP (atomicTerm)
 
-funApp : rawFunApp (annotate (Pos.pos (rawFunAppleft fileName) (rawFunAppright fileName)) rawFunApp)
+funApp : rawFunApp (annotate (Pos.pos (rawFunAppleft fileName) (rawFunAppright fileName)) rawFunApp)*)
 
-rawTerm
+(*rawTerm
   : funApp RIGHT_ARROW term (Ast.$$ (O.MONO O.DFUN, [\ (([],[]), funApp), \ (([],["_"]), term)]))
   | funApp TIMES term (Ast.$$ (O.MONO O.DPROD, [\ (([],[]), funApp), \ (([],["_"]), term)]))
-  | funApp %prec RIGHT_ARROW (funApp)
+  | funApp %prec RIGHT_ARROW (funApp)*)
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
@@ -437,7 +437,7 @@ atomicRawTac
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP LBRACKET VARNAME RBRACKET DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
-  | operator LPAREN bindings RPAREN (Ast.$$ (operator, bindings))
+  | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
   | operator (Ast.$$ (operator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | VARNAME (`` VARNAME)

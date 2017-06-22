@@ -67,7 +67,7 @@ struct
     case xs of 
        [] => []
      | [x] => [x]
-     | x::xs => x :: s :: intersperse s xs
+     | x::xs => seq [x, s] :: intersperse s xs
 
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
@@ -86,7 +86,7 @@ struct
      | O.POLY (O.LOOP r) $ _ => 
          seq [text "loop", Atomic.squares @@ ppParam r]
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
-         inf 2 LEFT {opr = char #"@", arg1 = ppTerm m, arg2 = ppParam r}
+         Atomic.parens @@ expr @@ hvsep [text "@", ppTerm m, ppParam r]
      | `x => ppVar x
      | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@
@@ -99,10 +99,9 @@ struct
         Atomic.parens @@ expr @@ hvsep @@ [ppOperator theta, atLevel 10 @@ ppTerm arg]
      | theta $ [(us, xs) \ arg] => 
         Atomic.parens @@ expr @@ hvsep [hvsep [ppOperator theta, seq [symBinding us, varBinding xs]], align @@ ppTerm arg] 
-
      | theta $ args => 
         Atomic.parens @@ expr @@
-          hvsep @@ ppOperator theta :: (List.map ppBinder args)
+          hvsep @@ ppOperator theta :: List.map ppBinder args
 
      | x $# (ps, ms) =>
          seq
