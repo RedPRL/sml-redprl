@@ -371,8 +371,7 @@ struct
           fun goalEqualTo goal1 goal2 = 
             if RedPrlSequent.eq (goal1, goal2) then true
             else
-              (* TODO: fix *)
-              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.text (RedPrlJudgment.toString goal1 ^ " not equal to " ^ RedPrlJudgment.toString goal2));
+              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty TermPrinter.ppTerm goal1, Fpp.text "not equal to", RedPrlSequent.pretty TermPrinter.ppTerm goal2]);
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true
