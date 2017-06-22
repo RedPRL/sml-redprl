@@ -57,7 +57,21 @@ struct
        [] => empty
      | _ => m
 
+  val ppOperator = 
+    text o RedPrlOperator.toString Sym.toString
+
+  fun ppComHead name (r, r') = 
+    seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
+
+  fun intersperse s xs = 
+    case xs of 
+       [] => []
+     | [x] => [x]
+     | x::xs => x :: s :: intersperse s xs
+
+
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
+
   fun ppTerm m = 
     case Abt.out m of 
        O.POLY (O.HYP_REF x) $ [] => seq [text ",", ppVar x]
@@ -66,43 +80,62 @@ struct
      | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] =>
          hsep [Atomic.parens @@ hsep [ppVar x, Atomic.colon, ppTerm a], text "*", ppTerm bx]
      | O.MONO O.AP $ [_ \ m, _ \ n] => 
-         app (ppTerm m) [ppTerm n]
+         Atomic.parens @@ expr @@ hvsep [ppTerm m, ppTerm n]
      | O.MONO O.PAIR $ [_ \ m, _ \ n] => 
          collection (char #"<") (char #">") Atomic.comma [ppTerm m, ppTerm n]
-     | O.MONO O.PATH_ABS $ [([x], _) \ m] =>
-         hsep [seq [char #"<", ppVar x, char #">"], ppTerm m]
      | O.POLY (O.LOOP r) $ _ => 
          seq [text "loop", Atomic.squares @@ ppParam r]
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
          inf 2 LEFT {opr = char #"@", arg1 = ppTerm m, arg2 = ppParam r}
      | `x => ppVar x
+     | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [ppComHead "hcom" dir, ppBinder ty, ppBinder cap]
+             :: [ppTubes (eqs, tubes)]
+
+     | theta $ [] => 
+        ppOperator theta
+     | theta $ [([], []) \ arg] => 
+        Atomic.parens @@ expr @@ hvsep @@ [ppOperator theta, atLevel 10 @@ ppTerm arg]
+     | theta $ [(us, xs) \ arg] => 
+        Atomic.parens @@ expr @@ hvsep [hvsep [ppOperator theta, seq [symBinding us, varBinding xs]], align @@ ppTerm arg] 
+
      | theta $ args => 
-         seq
-           [text @@ RedPrlOperator.toString Sym.toString theta,
-            unlessEmpty args @@ collection (char #"(") (char #")") (char #";") (List.map ppBinder args)]
+        Atomic.parens @@ expr @@
+          hvsep @@ ppOperator theta :: (List.map ppBinder args)
+
      | x $# (ps, ms) =>
          seq
            [char #"#",text (Abt.Metavar.toString x),
             unlessEmpty ps @@ collection (char #"{") (char #"}") Atomic.comma @@ List.map (ppParam o #1) ps,
             unlessEmpty ms @@ collection (char #"[") (char #"]") Atomic.comma @@ List.map ppTerm ms]
+
+  and ppTubes (eqs, tubes) = 
+    expr @@ hvsep @@
+      ListPair.map 
+        (fn ((r1, r2), ([u], _) \ mx) => 
+          Atomic.squares @@ hsep
+            [seq [ppParam r1, Atomic.equals, ppParam r2],
+              text "->",
+              nest 1 @@ hvsep [Atomic.braces (text (Sym.toString u)), ppTerm mx]])
+        (eqs, tubes)
+
   
   and ppBinder ((us, xs) \ m) = 
-    let
-      val prefix = 
-        case (us, xs) of 
-           ([], []) => empty
-         | _ => seq [symBinding us, varBinding xs, char #"."]
-    in
-      seq [prefix, ppTerm m]
-    end
+    case (us, xs) of 
+        ([], []) => atLevel 10 @@ ppTerm m
+      | _ => grouped @@ hvsep [seq [symBinding us, varBinding xs], align @@ ppTerm m] 
 
   and symBinding us =
-    unlessEmpty us @@ 
-      collection (char #"{") (char #"}") Atomic.comma (List.map (text o Sym.toString) us)
+    unlessEmpty us @@
+      Atomic.braces @@ 
+        hsep @@ intersperse Atomic.comma @@ List.map (text o Sym.toString) us
 
   and varBinding xs =
-    unlessEmpty xs @@ 
-      collection (char #"[") (char #"]") Atomic.comma (List.map ppVar xs)
+    unlessEmpty xs @@
+      Atomic.squares @@ 
+        hsep @@ intersperse Atomic.comma @@ List.map ppVar xs
+
 
   val ppSort = text o Ar.Vl.S.toString
   val ppPsort = text o Ar.Vl.PS.toString
@@ -119,11 +152,13 @@ struct
 
   and symSorts sigmas = 
     unlessEmpty sigmas @@
-      collection (char #"{") (char #"}") Atomic.comma @@ List.map ppPsort sigmas
+      Atomic.braces @@ 
+        hsep @@ intersperse Atomic.comma @@ List.map ppPsort sigmas
 
   and varSorts taus =
     unlessEmpty taus @@
-      collection (char #"[") (char #"]") Atomic.comma @@ List.map ppSort taus
+      Atomic.squares @@ 
+        hsep @@ intersperse Atomic.comma @@ List.map ppSort taus
 
   val toString = 
     FppRenderPlainText.toString 

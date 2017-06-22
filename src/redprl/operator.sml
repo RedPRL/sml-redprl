@@ -483,6 +483,8 @@ struct
              ^ "["
              ^ dirToString f dir
              ^ "]"
+       | CUST (opid, [], _) => 
+           f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_LEMMA (opid, ps, _) =>

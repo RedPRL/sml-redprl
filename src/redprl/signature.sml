@@ -12,19 +12,22 @@ struct
   open MiniSig
   structure O = RedPrlOpData and E = ElabMonadUtil (ElabMonad)
 
-  fun prettyParams ps = 
-    Fpp.collection
-      (Fpp.char #"{")
-      (Fpp.char #"}")
-      (Fpp.Atomic.comma)
-      (List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Ar.Vl.PS.toString sigma)]) ps)
+  fun intersperse s xs = 
+    case xs of 
+       [] => []
+     | [x] => [x]
+     | x::xs => Fpp.seq [x, s] :: intersperse s xs
 
-  fun prettyArgs args = 
-    Fpp.collection
-      (Fpp.char #"(")
-      (Fpp.char #")")
-      (Fpp.char #";")
-      (List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args)
+  fun prettyParams ps =
+    Fpp.Atomic.braces @@ Fpp.grouped @@ Fpp.hvsep @@
+      intersperse Fpp.Atomic.comma @@ 
+        List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Ar.Vl.PS.toString sigma)]) ps
+
+
+  fun prettyArgs args =
+    Fpp.Atomic.parens @@ Fpp.grouped @@ Fpp.hvsep @@
+      intersperse (Fpp.text ";") @@ 
+        List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
   fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : FinalPrinter.doc =
     Fpp.seq
@@ -464,7 +467,7 @@ struct
       structure O = RedPrlOpData
 
       fun printExtractOf (pos, state) : unit E.t = 
-        E.info (SOME pos, TermPrinter.ppTerm (extract state))
+        E.info (SOME pos, Fpp.vsep [Fpp.text "Extract:", TermPrinter.ppTerm (extract state)])
     in
       fun elabExtract (sign : sign) (pos, opid) = 
         E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid => 
