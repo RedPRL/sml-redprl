@@ -137,10 +137,12 @@ Thm Not : [(-> [_ bool] bool)] by [
 Thm FunExt(#A; #B) : [
   type/A : #A type,
   type/B : #B type
-  >> (-> [f (-> #A #B)]
-         [g (-> #A #B)]
-         [p (-> [y #A] (paths {_} #B (f y) (g y)))]
-         (paths {_} (-> #A #B) f g))
+  >>
+  (->
+   [f (-> #A #B)]
+   [g (-> #A #B)]
+   [p (-> [y #A] (paths {_} #B (f y) (g y)))]
+   (paths {_} (-> #A #B) f g))
 ] by [
   {lam f. lam g. lam p.
     <i> lam a. let q = p hyp a. '(@ ,q i)};
