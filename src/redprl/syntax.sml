@@ -11,7 +11,7 @@ struct
 
   datatype 'a view =
      VAR of variable * sort
-   (* axiom *)
+   (* the trivial realizer for equality, which is called 'axiom' in NuPRL. *)
    | AX
    (* formal composition *)
    | FCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
