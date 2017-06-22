@@ -31,14 +31,30 @@ struct
       end
   end
 
+  fun abstractEvidence (I : (sym * psort) list, H) m =
+    let
+      val (us, sigmas) = ListPair.unzip I
+      val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, CJ.synthesis jdg::taus)) ([],[]) H
+    in
+      Abt.checkb (Abt.\ ((us, xs), m), ((sigmas, taus), Abt.sort m))
+    end
+
+  fun #> (psi, (I, H, m)) =
+    Lcf.|> (psi, abstractEvidence (I, H) m)
+  infix #>
+
+  val trivial = Syn.into Syn.AX
+
+  fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
+  infix orelse_
 
   fun >:+ (tel, (l : (label * 'a) list)) : 'a telescope =
     List.foldl (fn (g, t) => t >: g) tel l
   infix 5 >:+
 
+  (* this is a hack till we have a nice way to pre-compose Equality.Symmetry *)
   fun catJdgFlip (CJ.EQ_TYPE (a, b)) = CJ.EQ_TYPE (b, a)
     | catJdgFlip (CJ.EQ ((a, b), ty)) = CJ.EQ ((b, a), ty)
-
   fun catJdgFlipWrapper tactic alpha (IH >> jdg) =
     tactic alpha (IH >> catJdgFlip jdg)
 
