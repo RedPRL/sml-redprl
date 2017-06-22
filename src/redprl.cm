@@ -6,6 +6,7 @@ Library
   structure RedPrlLog
   structure RedPrlError
   structure RedPrlLrVals
+  structure FinalPrinter
 is
   $/basis.cm
   $/ml-yacc-lib.cm

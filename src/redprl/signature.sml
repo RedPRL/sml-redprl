@@ -12,6 +12,15 @@ struct
   open MiniSig
   structure O = RedPrlOpData and E = ElabMonadUtil (ElabMonad)
 
+  fun printDecl (opid : string, decl) : FinalPrinter.doc =
+    case decl of 
+       DEF {arguments, params, sort, definiens} => Fpp.text "TODO"
+     | THM {arguments, params, goal, script} => Fpp.text "TODO"
+     | RULE {arguments, params, spec, script} => Fpp.text "TODO"
+     | TAC {arguments, params, script} => Fpp.text "TODO"
+
+  fun printEntry _ _ : FinalPrinter.doc = Fpp.text "TODO"
+
   (*local
     fun argsToString f =
       ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
@@ -110,10 +119,6 @@ struct
       end
   end
   *)
-
-  fun toString _ = raise Fail "TODO"
-  fun declToString _ = raise Fail "TODO"
-  fun entryToString _ = raise Fail "TODO!"
 
   val empty =
     {sourceSign = Telescope.empty,
@@ -511,7 +516,7 @@ struct
       let
         val esign' = ETelescope.truncateFrom (#elabSign sign) eopid
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
-        fun decorate e = e >>= (fn x => E.dump (pos, declToString (opid, decl)) *> E.ret x)
+        fun decorate e = e >>= (fn x => E.dump (pos, printDecl (opid, decl)) *> E.ret x)
       in
         ETelescope.snoc esign' eopid (decorate (E.delay (fn _ =>
           case processDecl sign decl of
@@ -527,7 +532,7 @@ struct
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
             (* TODO fix *)
-                EDEF entry => E.info (SOME pos, Fpp.text ("Elaborated:\n" ^ entryToString sign (eopid, entry)))
+                EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", printEntry sign (eopid, entry)])
               | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
 
     local

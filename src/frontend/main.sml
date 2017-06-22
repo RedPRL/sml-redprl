@@ -57,6 +57,6 @@ struct
            | HELP => (print helpMessage; OS.Process.success)
       end)
     handle E =>
-      (print (RedPrlError.format E);
+      (FppRenderPlainText.render TextIO.stdErr (FinalPrinter.execPP (RedPrlError.format E));
        OS.Process.failure)
 end

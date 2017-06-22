@@ -17,3 +17,6 @@ Rule CoeTestCap{r:dim}(#A : {dim}.exp) : [
 ] by [
   auto
 ].
+
+
+Extract CoeTestCap.
