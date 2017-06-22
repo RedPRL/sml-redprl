@@ -33,6 +33,8 @@ struct
    | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* coe operator *)
    | COE of {dir: dir, ty: (symbol * 'a), coercee: 'a}
+   (* com operator *)
+   | COM of {dir: dir, ty: (symbol * 'a), cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* it is a "view" for custom operators *)
    | CUST
    (* meta *)
@@ -53,21 +55,27 @@ struct
     fun outTubes (eqs, tubes) =
       let
         fun goTube (([d], []) \ tube) = (d, tube)
-          | goTube _ = raise Fail "Syntax.out: Malformed tube"
+          | goTube _ = raise Fail "Syntax.outTubes: Malformed tube"
       in
         ListPair.zipEq (eqs, List.map goTube tubes)
       end
   in
+    fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
+
+    fun intoFcom (dir, eqs) (cap, tubes) =
+      intoFcom' (dir, eqs) ((([],[]) \ cap) :: tubes)
+
     fun intoHcom' (dir, eqs) (ty, args) =
       O.POLY (O.HCOM (dir, eqs)) $$ (([],[]) \ ty) :: args
 
     fun intoHcom (dir, eqs) (ty, cap, tubes) =
       intoHcom' (dir, eqs) (ty, (([],[]) \ cap) :: tubes)
 
-    fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
+    fun intoCom' (dir, eqs) ((u, a), args) =
+      O.POLY (O.COM (dir, eqs)) $$ (([u],[]) \ a) :: args
 
-    fun intoFcom (dir, eqs) (cap, tubes) =
-      intoFcom' (dir, eqs) ((([],[]) \ cap) :: tubes)
+    fun intoCom (dir, eqs) (ty, cap, tubes) =
+      intoCom' (dir, eqs) (ty, (([],[]) \ cap) :: tubes)
 
     val into =
       fn VAR (x, tau) => check (`x, tau)
@@ -116,6 +124,12 @@ struct
            end
        | COE {dir, ty = (u, a), coercee} =>
            O.POLY (O.COE dir) $$ [([u],[]) \ a, ([],[]) \ coercee]
+       | COM {dir, ty = (u, a), cap, tubes} =>
+           let
+             val (eqs, tubes) = intoTubes tubes
+           in
+             intoCom (dir, eqs) ((u, a), cap, tubes)
+           end
 
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
