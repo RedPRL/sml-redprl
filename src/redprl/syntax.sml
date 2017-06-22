@@ -14,7 +14,7 @@ struct
    (* axiom *)
    | AX
    (* formal composition *)
-   | FHCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
+   | FCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* weak bool: true, false and if *)
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    (* strict bool: strict if (true and false are shared) *)
@@ -64,20 +64,20 @@ struct
     fun intoHcom (dir, eqs) (ty, cap, tubes) =
       intoHcom' (dir, eqs) (ty, (([],[]) \ cap) :: tubes)
 
-    fun intoFHcom' (dir, eqs) args = O.POLY (O.FHCOM (dir, eqs)) $$ args
+    fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
 
-    fun intoFHcom (dir, eqs) (cap, tubes) =
-      intoFHcom' (dir, eqs) ((([],[]) \ cap) :: tubes)
+    fun intoFcom (dir, eqs) (cap, tubes) =
+      intoFcom' (dir, eqs) ((([],[]) \ cap) :: tubes)
 
     val into =
       fn VAR (x, tau) => check (`x, tau)
        | AX => O.MONO O.AX $$ []
 
-       | FHCOM {dir, cap, tubes} =>
+       | FCOM {dir, cap, tubes} =>
            let
              val (eqs, tubes) = intoTubes tubes
            in
-             intoFHcom (dir, eqs) (cap, tubes)
+             intoFcom (dir, eqs) (cap, tubes)
            end
 
        | BOOL => O.MONO O.BOOL $$ []
@@ -144,8 +144,8 @@ struct
          `x => VAR (x, Tm.sort m)
        | O.MONO O.AX $ _ => AX
 
-       | O.POLY (O.FHCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
-           FHCOM {dir = dir, cap = cap, tubes = outTubes (eqs, tubes)}
+       | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
+           FCOM {dir = dir, cap = cap, tubes = outTubes (eqs, tubes)}
 
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TRUE $ _ => TT
