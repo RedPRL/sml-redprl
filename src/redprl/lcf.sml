@@ -33,7 +33,7 @@ struct
             val jdg' = J.subst env jdg
             val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' (J.sort jdg'))
           in
-            {doc = Fpp.seq [doc, prettyGoal (x, jdg), Fpp.hardLine],
+            {doc = Fpp.seq [doc, prettyGoal (x, jdg), Fpp.newline],
              env = env',
              idx = idx + 1}
           end)

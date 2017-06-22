@@ -1,6 +1,6 @@
 structure Signature :> SIGNATURE =
 struct
-  structure Tm = RedPrlAbt
+  structure Tm = RedPrlAbt and Ar = RedPrlArity
   structure P = struct open RedPrlSortData RedPrlParamData end
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
@@ -12,113 +12,39 @@ struct
   open MiniSig
   structure O = RedPrlOpData and E = ElabMonadUtil (ElabMonad)
 
-  fun printDecl (opid : string, decl) : FinalPrinter.doc =
-    case decl of 
-       DEF {arguments, params, sort, definiens} => Fpp.text "TODO"
-     | THM {arguments, params, goal, script} => Fpp.text "TODO"
-     | RULE {arguments, params, spec, script} => Fpp.text "TODO"
-     | TAC {arguments, params, script} => Fpp.text "TODO"
+  fun prettyParams ps = 
+    Fpp.collection
+      (Fpp.char #"{")
+      (Fpp.char #"}")
+      (Fpp.Atomic.comma)
+      (List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Ar.Vl.PS.toString sigma)]) ps)
 
-  fun printEntry _ _ : FinalPrinter.doc = Fpp.text "TODO"
+  fun prettyArgs ps = 
+    Fpp.collection
+      (Fpp.char #"(")
+      (Fpp.char #")")
+      (Fpp.char #";")
+      (List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, Fpp.text (Ar.Vl.toString vl)]) ps) (* TODO: prettyValence *)
 
-  (*local
-    fun argsToString f =
-      ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
-      
-    fun paramsToString f =
-      ListSpine.pretty (fn (x, vl) => f x ^ " : " ^ RedPrlArity.Vl.PS.toString vl) ", "
+  fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : FinalPrinter.doc =
+    Fpp.seq
+      [Fpp.text "Def",
+        Fpp.space 1,
+        Fpp.text @@ Sym.toString opid,
+        prettyParams params,
+        prettyArgs arguments,
+        Fpp.space 1,
+        Fpp.Atomic.colon,
+        Fpp.space 1,
+        Fpp.text (RedPrlSort.toString sort),
+        Fpp.space 1,
+        Fpp.Atomic.equals,
+        Fpp.space 1,
+        Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
+          [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm @@ extract state],
+          Fpp.newline],
+        Fpp.char #"."]
 
-    val kwd = color C.red o bold true
-    val declId = blink true o underline true
-
-    fun delim (l,r) x =
-      concat
-        [color C.white @@ text l,
-         x,
-         color C.white @@ text r]
-
-    val squares = delim ("[", "]")
-    val braces = delim ("{", "}")
-    val parens = delim ("(", ")")
-  in
-    fun prettyDecl (opid, decl) =
-      case decl of
-         DEF {arguments, params, sort, definiens} =>
-           concat
-             [kwd @@ text "Def ", declId @@ text opid, 
-              braces @@ text @@ paramsToString (fn x => x) params,
-              parens @@ text @@ argsToString (fn x => x) arguments, text " : ",
-              text @@ RedPrlSort.toString sort, text " = ",
-              squares @@ concat [nest 2 @@ concat [line, text (RedPrlAst.toString definiens)], line],
-              text "."]
-       | THM {arguments, params, goal, script} =>
-           concat
-             [kwd @@ text "Thm ",
-              declId @@ text opid,
-              braces @@ text @@ paramsToString (fn x => x) params,
-              parens @@ text @@ argsToString (fn x => x) arguments,
-              text " : ",
-              squares @@ concat [nest 2 @@ concat [line, text "TODO"], line],
-              text " by ",
-              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
-              text "."]
-       | RULE {arguments, params, spec, script} =>
-           concat
-             [kwd @@ text "Rule ",
-              declId @@ text opid,
-              braces @@ text @@ paramsToString (fn x => x) params,
-              parens @@ text @@ argsToString (fn x => x) arguments,
-              text " : ",
-              squares @@ concat [nest 2 @@ concat [line, text "TODO"], line],
-              text " by ",
-              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
-              text "."]
-       | TAC {arguments, params, script} =>
-           concat
-            [kwd @@ text "Tac ", declId @@ text opid,
-             braces @@ text @@ paramsToString (fn x => x) params,
-             parens @@ text @@ argsToString (fn x => x) arguments,
-             text " = ",
-             squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
-             text "."]
-
-
-    val declToString =
-      PP.toString 80 false o prettyDecl
-
-    fun prettyEntry (sign : sign) (opid, {sourceOpid, params, arguments, sort, spec, state} : entry) =
-      let
-        val src = prettyDecl (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
-        val term = extract state
-        val elab =
-          concat
-            [kwd @@ text "Def ",
-             declId @@ text @@ Sym.toString opid,
-             braces @@ text @@ paramsToString Sym.toString params,
-             parens @@ text @@ argsToString Metavar.toString arguments,
-             text " : ",
-             text @@ RedPrlSort.toString sort, text " = ",
-             squares @@ concat [nest 2 @@ concat [line, text @@ TermPrinter.toString term], line],
-             text "."]
-      in
-        concat [src, newline, newline, text "===>", newline, newline, elab]
-      end
-
-    fun entryToString (sign : sign) =
-      PP.toString 80 false o prettyEntry sign
-
-
-    fun toString ({sourceSign,...} : sign) =
-      let
-        open Telescope.ConsView
-        fun go EMPTY = ""
-          | go (CONS (opid, (decl, _), xs)) =
-              declToString (opid, decl) ^ "\n\n" ^ go (out xs)
-      in
-        go (out sourceSign)
-      end
-  end
-  *)
 
   val empty =
     {sourceSign = Telescope.empty,
@@ -516,14 +442,13 @@ struct
       let
         val esign' = ETelescope.truncateFrom (#elabSign sign) eopid
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
-        fun decorate e = e >>= (fn x => E.dump (pos, printDecl (opid, decl)) *> E.ret x)
       in
-        ETelescope.snoc esign' eopid (decorate (E.delay (fn _ =>
+        ETelescope.snoc esign' eopid (E.delay (fn _ =>
           case processDecl sign decl of
              DEF defn => elabDef sign' opid defn
            | THM defn => elabThm sign' opid pos defn
            | RULE defn => elabDerivedRule sign' opid pos defn
-           | TAC defn => elabTac sign' opid defn)))
+           | TAC defn => elabTac sign' opid defn))
       end
 
     fun elabPrint (sign : sign) (pos, opid) =
@@ -532,7 +457,7 @@ struct
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
             (* TODO fix *)
-                EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", printEntry sign (eopid, entry)])
+                EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", prettyEntry sign (eopid, entry)])
               | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
 
     local
