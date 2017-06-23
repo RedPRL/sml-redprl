@@ -18,9 +18,9 @@ Rule MyRule : [
 // hypothetical contexts are also unified together in the appropriate way (i.e. we 
 // do not require strict equality of contexts, but only compatibility).
 Thm MyCorollary : [ (-> bool bool) ] by [
-  {lam z. rule MyRule{z}; auto}; auto
+  {lam z. rule {MyRule z}; auto}; auto
 ].
-
+ 
 Extract MyCorollary.
 
 Thm MyCorollary/Test : [ MyCorollary = (lam [z] (if [_] bool z ff tt)) in (-> bool bool) ] by [
@@ -52,7 +52,7 @@ Rule PiIntro(#A; #B : [exp].exp) : [
 ].
 
 Thm Test : [ (-> bool bool)] by [
-  fresh x <- (rule PiIntro bool [x] bool);
+  fresh x <- rule (PiIntro bool [x] bool);
   [ if x then 'ff else 'tt ];
   auto;
 ].

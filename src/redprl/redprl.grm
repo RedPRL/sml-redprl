@@ -34,6 +34,11 @@ struct
 
   fun orElse (t1, t2) =
     multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
+
+  fun makeLemma tm = 
+    case Ast.out tm of
+       O.POLY (O.CUST params) $ bindings => O.POLY (O.RULE_LEMMA params) $$ bindings
+     | _ => raise Fail "Invalid 'rule' term"
 end
 
 structure Multi =
@@ -289,19 +294,9 @@ metavarArgs
   | ([], [])
 
 
-operator
-  : ABS (O.MONO O.PATH_ABS)
-  | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
-  | RULE_LEMMA OPNAME customOpParams (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams, NONE)))
-  | IF (O.MONO O.IF)
-  | S_IF (O.MONO O.S_IF)
-  | PATHS (O.MONO O.PATH_TY)
-  | FST (O.MONO O.FST)
-  | SND (O.MONO O.SND)
 
 customOpParams
-  : LBRACKET params RBRACKET (List.map (fn x => (x, NONE)) params)
-  | ([])
+  : params (List.map (fn x => (x, NONE)) params)
 
 metavar
   : HASH ident (ident)
@@ -330,6 +325,16 @@ bindings
   : binding bindings (binding :: bindings)
   | binding ([binding])
 
+operator
+  : ABS (O.MONO O.PATH_ABS)
+  | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
+  | IF (O.MONO O.IF)
+  | S_IF (O.MONO O.S_IF)
+  | PATHS (O.MONO O.PATH_TY)
+  | FST (O.MONO O.FST)
+  | SND (O.MONO O.SND)
+
+
 atomicRawTerm
   : VARNAME (`` VARNAME)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
@@ -343,8 +348,9 @@ atomicRawTerm
 
   | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
 
-  | LPAREN OPNAME customOpParams RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
-  | LPAREN OPNAME customOpParams bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
+
+  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
+  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
 
   | LPAREN term term RPAREN (Ast.$$ (O.MONO O.AP, [\ (([],[]),term1), \ (([],[]), term2)]))
 
@@ -375,7 +381,9 @@ funApp : rawFunApp (annotate (Pos.pos (rawFunAppleft fileName) (rawFunAppright f
 
 rawTerm
   : funApp %prec FUN_APP (funApp)
-  | OPNAME customOpParams %prec FUN_APP (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
+  | LBRACKET OPNAME customOpParams RBRACKET %prec FUN_APP (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
+
+  | OPNAME %prec FUN_APP (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
 
 
 
@@ -468,6 +476,7 @@ atomicRawTac
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP LBRACKET VARNAME RBRACKET DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
+  | RULE_LEMMA term (Tac.makeLemma term)
   | LPAREN OPNAME customOpParams RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
   | LPAREN OPNAME customOpParams bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
   | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
