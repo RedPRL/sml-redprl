@@ -100,7 +100,7 @@ struct
    * MONO: the Standard ML built-in equality properly compares the operators.
    * POLY: we have to compare the operators manually. *)
   datatype mono_operator =
-   (* axioms *)
+   (* the trivial realizer for equality, which is called 'axiom' in NuPRL. *)
      AX
    (* week bool: true, false and if *)
    | BOOL | TRUE | FALSE | IF (* weak booleans *)

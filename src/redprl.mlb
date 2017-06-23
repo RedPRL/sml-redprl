@@ -1,77 +1,85 @@
-local
-  $(SML_LIB)/basis/basis.mlb
-  $(SML_LIB)/mlyacc-lib/mlyacc-lib.mlb
-
-  cmlib.mlb
-
-  $(LIBS)/sml-cats/cats.mlb
-  $(LIBS)/sml-telescopes/telescopes.mlb
-  $(LIBS)/sml-typed-abts/abt.mlb
-  $(LIBS)/sml-typed-abts/abt-machine.mlb
-  $(LIBS)/sml-typed-abts/basis/basis.mlb
-  $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
-  $(LIBS)/sml-dependent-lcf/lcf_abt.mlb
-  $(LIBS)/sml-dependent-lcf/nominal_lcf.mlb
-  $(LIBS)/sml-final-pretty-printer/final-pretty-printer.mlb
-
-
-  debug.mlb
-
-  redprl/operator.sml
-  redprl/abt.sml
-
-  redprl/pretty.sml
-
-  redprl/error.sig
-  redprl/error.sml
-  redprl/syntax.sml
-
-  redprl/categorical_judgment.sig
-  redprl/categorical_judgment.sml
-
-  redprl/sequent.sig
-  redprl/sequent.sml
-
-  redprl/judgment.fun
-
-  redprl/elab_monad.sig
-  redprl/elab_monad.sml
-
-  redprl/lcf.sml
-
-  redprl/signature.sig
-  redprl/signature_mini.sml
-
-  redprl/log.sig
-  redprl/log.sml
-
-  ann "nonexhaustiveMatch ignore" in
-    redprl/machine.sml
-    redprl/refiner_kit.fun
-    redprl/refiner_composition_kit.fun
-    redprl/refiner_types.fun
-    redprl/refiner.sig
-    redprl/refiner.fun
-    redprl/lcf_syntax.fun
-    redprl/lcf_model.fun
-  end
-
-  redprl/signature.sml
-
-  redprl/redprl.grm.sig
-  redprl/redprl.grm.sml
-  redprl/redprl.lex.sml
-
-  redprl/redprl_lexer.sml
-  redprl/redprl_parser.sml
-
+ann
+  "forceUsed"
+  "warnUnused true"
 in
-  structure FinalPrinter
-  structure RedPrlParser
-  structure Coord
-  structure Pos
-  structure Signature
-  structure RedPrlLog
-  structure RedPrlError
-  structure RedPrlLrVals
+  local
+    $(SML_LIB)/basis/basis.mlb
+    $(SML_LIB)/mlyacc-lib/mlyacc-lib.mlb
+
+    cmlib.mlb
+
+    $(LIBS)/sml-cats/cats.mlb
+    $(LIBS)/sml-telescopes/telescopes.mlb
+    $(LIBS)/sml-typed-abts/abt.mlb
+    $(LIBS)/sml-typed-abts/abt-machine.mlb
+    $(LIBS)/sml-typed-abts/basis/basis.mlb
+    $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
+    $(LIBS)/sml-dependent-lcf/lcf_abt.mlb
+    $(LIBS)/sml-dependent-lcf/nominal_lcf.mlb
+    $(LIBS)/sml-final-pretty-printer/final-pretty-printer.mlb
+
+
+    debug.mlb
+
+    redprl/operator.sml
+    redprl/abt.sml
+    redprl/pretty.sml
+
+    redprl/error.sig
+    redprl/error.sml
+    redprl/syntax.sml
+
+    redprl/categorical_judgment.sig
+    redprl/categorical_judgment.sml
+
+    redprl/sequent.sig
+    redprl/sequent.sml
+
+    redprl/judgment.fun
+
+    redprl/elab_monad.sig
+    redprl/elab_monad.sml
+    
+    redprl/lcf.sml
+
+    redprl/signature.sig
+    redprl/signature_mini.sml
+
+    redprl/log.sig
+    redprl/log.sml
+
+    ann "nonexhaustiveMatch ignore" in
+      redprl/machine.sml
+      redprl/refiner_kit.fun
+      redprl/refiner_composition_kit.fun
+      redprl/refiner_types.fun
+      redprl/refiner.sig
+      redprl/refiner.fun
+      redprl/lcf_syntax.fun
+      redprl/lcf_model.fun
+    end
+
+    redprl/signature.sml
+
+    ann
+      "warnUnused false"
+    in
+      redprl/redprl.grm.sig
+      redprl/redprl.grm.sml
+      redprl/redprl.lex.sml
+    end
+
+    redprl/redprl_lexer.sml
+    redprl/redprl_parser.sml
+
+  in
+    structure RedPrlParser
+    structure Coord
+    structure Pos
+    structure Signature
+    structure RedPrlLog
+    structure RedPrlError
+    structure RedPrlLrVals
+    structure FinalPrinter
+  end
 end
