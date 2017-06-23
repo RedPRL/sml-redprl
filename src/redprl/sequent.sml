@@ -90,7 +90,7 @@ struct
        Fpp.seq
          [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
           if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps (CJ.pretty f) H, Fpp.newline],
-          Fpp.hsep [Fpp.text "\226\138\162", CJ.pretty f catjdg]]
+          Fpp.hsep [Fpp.text "!-", CJ.pretty f catjdg]]
      | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
 
 
