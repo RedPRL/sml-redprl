@@ -9,14 +9,9 @@ to [Nuprl](http://www.nuprl.org); RedPRL was preceeded by
 [JonPRL](http://www.github.com/jonsterling/jonprl), written by Jon Sterling,
 Danny Gratzer and Vincent Rahli.
 
-The purpose of RedPRL is to consolidate several advances in refinement logics
-and type theory, including:
-
-- a multi-sorted version of abstract binding trees
-- support for nominal abstraction and unguessable atoms
-- a dependent version of the LCF apparatus to support refinement rules
-  whose premises depend on each other's evidence
-- [computational cubical type theory](https://www.cs.cmu.edu/~cangiuli/papers/chtt.pdf)
+The purpose of RedPRL is to provide a practical implementation of Computational
+Cubical Type Theory in the Nuprl style, integrating modern advances in proof
+refinement.
 
 ### Literature and background on RedPRL
 
