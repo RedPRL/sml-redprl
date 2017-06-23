@@ -22,7 +22,7 @@ struct
   in
     fun error fileName (s, pos, pos') =
       raise E.annotate (SOME (Pos.pos (pos fileName) (pos' fileName)))
-            (RedPrlError.error [E.% s])
+            (RedPrlError.error [Fpp.text s])
   end
 
   local

@@ -99,7 +99,7 @@ struct
                  in
                    O.POLY (O.CUST (opid, ps', SOME ar))
                  end
-             | NONE => error pos [Err.% "Encountered undefined custom operator:", Err.% opid])
+             | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | O.POLY (O.RULE_LEMMA (opid, ps, NONE)) =>
            (case arityOfOpid sign opid of
                SOME (psorts, ar) =>
@@ -108,7 +108,7 @@ struct
                  in
                    O.POLY (O.RULE_LEMMA (opid, ps', SOME ar))
                  end
-             | NONE => error pos [Err.% "Encountered undefined custom operator:", Err.% opid])
+             | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th => th
 
       fun processTerm' sign m =
@@ -330,7 +330,7 @@ struct
     fun convertToAbt (metactx, symctx, env) ast sort =
       E.wrap (RedPrlAst.getAnnotation ast, fn () =>
         AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort)
-        handle AstToAbt.BadConversion (msg, pos) => error pos [Err.% msg])
+        handle AstToAbt.BadConversion (msg, pos) => error pos [Fpp.text msg])
       >>= scopeCheck (metactx, symctx, Var.Ctx.empty)
 
     fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
@@ -497,7 +497,7 @@ struct
       in
         Telescope.snoc sign opid (decl, pos)
       end
-      handle Telescope.Duplicate l => error pos [Err.% "Duplicate identitifier:", Err.% l]
+      handle Telescope.Duplicate l => error pos [Fpp.text "Duplicate identitifier:", Fpp.text l]
 
   in
     fun insert (sign : sign) opid (decl, pos) =

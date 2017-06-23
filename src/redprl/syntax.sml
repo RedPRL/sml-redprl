@@ -196,6 +196,6 @@ struct
 
        | O.POLY (O.CUST _) $ _ => CUST
        | _ $# _ => META
-       | _ => raise E.error [E.% "Syntax view encountered unrecognized term", E.! m]
+       | _ => raise E.error [Fpp.text "Syntax view encountered unrecognized term", TermPrinter.ppTerm m]
   end
 end

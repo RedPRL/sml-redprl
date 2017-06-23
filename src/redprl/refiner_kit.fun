@@ -72,7 +72,7 @@ struct
   fun lookupHyp H z =
     Hyps.lookup H z
     handle _ =>
-      raise E.error [E.% @@ "Found nothing in context for hypothesis `" ^ Sym.toString z ^ "`"]
+      raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
 
   (* making goals *)
 
@@ -104,19 +104,19 @@ struct
       if Abt.eq (m, n) then
         ()
       else
-        raise E.error [E.% "Expected", E.! m, E.% "to be alpha-equivalent to", E.! n]
+        raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
 
     fun paramEq msg (r1, r2) =
       if P.eq Sym.eq (r1, r2) then
         ()
       else
-        raise E.error [E.% (msg ^ ":"), E.% "Expected parameter", E.% (P.toString Sym.toString r1), E.% "to be equal to", E.% (P.toString Sym.toString r2)]
+        raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", Fpp.text (P.toString Sym.toString r1), Fpp.text "to be equal to", Fpp.text (P.toString Sym.toString r2)]
 
     fun equationEq msg ((r1, r1'), (r2, r2')) =
       if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
         ()
       else
-        raise E.error [E.% (msg ^ ":"), E.% "Expected equation", E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r1'), E.% "to be equal to", E.% (P.toString Sym.toString r2), E.% "=", E.% (P.toString Sym.toString r2')]
+        raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected equation", Fpp.text (P.toString Sym.toString r1), Fpp.text "=", Fpp.text (P.toString Sym.toString r1'), Fpp.text "to be equal to", Fpp.text (P.toString Sym.toString r2), Fpp.text "=", Fpp.text (P.toString Sym.toString r2')]
 
     (* The following is a sufficient condition for tautology:
      * the list contains a true equation `r = r` or both `r = 0`
@@ -138,7 +138,7 @@ struct
                   SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
               | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
         fun prettyEq (r1, r2) =
-              [E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r2), E.% ";"]
+              [Fpp.text (P.toString Sym.toString r1), Fpp.text "=", Fpp.text (P.toString Sym.toString r2), Fpp.text ";"]
       in
         if goEqs (SymSet.empty, SymSet.empty) eqs then
           ()
@@ -146,9 +146,9 @@ struct
           (* todo: pretty printer for equation lists *)
           raise E.error
             (List.concat
-              [ [E.% (msg ^ ":"), E.% "Expected shape"]
+              [ [Fpp.text (msg ^ ":"), Fpp.text "Expected shape"]
               , ListMonad.bind prettyEq eqs
-              , [E.% "to have true equation r = r or equation pair r = 0 and r = 1."]
+              , [Fpp.text "to have true equation r = r or equation pair r = 0 and r = 1."]
               ])
       end
 
@@ -156,6 +156,6 @@ struct
       if Var.eq (x, y) then
         ()
       else
-        raise E.error [E.% @@ "Expected variable `" ^ Var.toString x ^ "` to be equal to variable `" ^ Var.toString y ^ "`"]
+        raise E.error [Fpp.text @@ "Expected variable `" ^ Var.toString x ^ "` to be equal to variable `" ^ Var.toString y ^ "`"]
   end
 end

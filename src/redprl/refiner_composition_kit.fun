@@ -82,7 +82,7 @@ struct
           | goTubePairs (t0 :: ts0) (t1 :: ts1) =
               List.mapPartial (interTube t0) (t1 :: ts1) :: goTubePairs ts0 ts1
           | goTubePairs _ _ = raise
-              E.error [E.% "interTubeGoals: the tubes are of different lengths"]
+              E.error [Fpp.text "interTubeGoals: the tubes are of different lengths"]
       in
         List.concat (goTubePairs tubes0 tubes1)
       end
