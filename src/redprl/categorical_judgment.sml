@@ -71,7 +71,7 @@ struct
 
   fun pretty f =
     fn EQ ((m, n), a) => Fpp.hsep [f m, Fpp.Atomic.equals, f n, Fpp.text "in", f a]
-     | TRUE a => Fpp.hsep [f a, Fpp.text "true"]
+     | TRUE a => f a
      | EQ_TYPE (a, b) => Fpp.hsep [f a, Fpp.Atomic.equals, f b, Fpp.text "type"]
      | SYNTH m => Fpp.hsep [f m, Fpp.text "synth"]
 

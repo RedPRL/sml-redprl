@@ -72,13 +72,43 @@ struct
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
 
-  fun ppTerm m = 
+  fun multiDFun (doms : (variable list * abt) list) m = 
+    case Abt.out m of 
+       O.MONO O.DFUN $ [_ \ a, (_, [x]) \ bx] =>
+         (case doms of 
+             [] => multiDFun (([x], a) :: doms) bx
+           | (xs, a') :: doms' =>
+               if Abt.eq (a, a') then
+                 multiDFun ((xs @ [x], a) :: doms') bx
+               else
+                 multiDFun (([x], a) :: doms) bx)
+     | _ => (List.rev doms, m)
+
+  fun multiDProd (doms : (variable list * abt) list) m = 
+    case Abt.out m of 
+       O.MONO O.DPROD $ [_ \ a, (_, [x]) \ bx] =>
+         (case doms of 
+             [] => multiDFun (([x], a) :: doms) bx
+           | (xs, a') :: doms' =>
+               if Abt.eq (a, a') then
+                 multiDProd ((xs @ [x], a) :: doms') bx
+               else
+                 multiDProd (([x], a) :: doms) bx)
+     | _ => (List.rev doms, m)
+
+  fun printQuant opr (doms, cod) = 
+        Atomic.parens @@ expr @@ hvsep @@
+          (text opr)
+            :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [ppTerm a]) doms
+             @ [ppTerm cod]
+
+  and ppTerm m = 
     case Abt.out m of 
        O.POLY (O.HYP_REF x) $ [] => seq [text ",", ppVar x]
-     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] =>
-         hsep [Atomic.parens @@ hsep [ppVar x, Atomic.colon, ppTerm a], text "->", ppTerm bx]
-     | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] =>
-         hsep [Atomic.parens @@ hsep [ppVar x, Atomic.colon, ppTerm a], text "*", ppTerm bx]
+     | O.MONO O.DFUN $ _ =>
+         printQuant "->" @@ multiDFun [] m
+     | O.MONO O.DPROD $ _ =>
+         printQuant "*" @@ multiDProd [] m
      | O.MONO O.AP $ [_ \ m, _ \ n] => 
          Atomic.parens @@ expr @@ hvsep [ppTerm m, ppTerm n]
      | O.MONO O.PAIR $ [_ \ m, _ \ n] => 

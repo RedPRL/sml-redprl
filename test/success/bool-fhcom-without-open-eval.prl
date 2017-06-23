@@ -12,6 +12,8 @@ Thm FHcom/trans3 : [
   auto
 ].
 
+Print FHcom/trans3.
+
 Thm FHcom/trans2 : [
   (-> [a b c bool]
    (paths {_} bool a b)

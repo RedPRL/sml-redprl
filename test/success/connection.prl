@@ -23,4 +23,5 @@ Thm Connection(#A) : [
   auto
 ].
 
+Print Connection.
 Extract Connection.
