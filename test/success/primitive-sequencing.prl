@@ -1,4 +1,4 @@
-Thm PrimitiveSequencingTest : [bool -> bool -> bool -> bool] by [
+Thm PrimitiveSequencingTest : [(-> bool bool bool bool)] by [
   fresh x,y,z <- auto;
   hyp y
 ].

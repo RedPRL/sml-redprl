@@ -152,7 +152,6 @@ Thm FunExt(#A; #B) : [
 Print FunExt.
 
 
-
 Tac FunExtTac(#A; #B; #F; #G) = [
   let p : [(-> [x #A] (paths {_} bool (#F x) (#G x)))] = {}.
   {<i> lam a. let q = p hyp a. '(@ ,q i)};

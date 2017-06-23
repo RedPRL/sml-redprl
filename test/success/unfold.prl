@@ -1,10 +1,10 @@
 Def Times(#A; #B) = [
-  (x : #A) * #B
+  (* #A #B)
 ].
 
 Thm Times/Proj(#A) : [
   a/type : #A type 
-  >> Times(bool; #A) -> #A
+  >> (-> (Times bool #A) #A)
 ] by [
   {lam x. 
     unfold Times;

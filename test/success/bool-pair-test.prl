@@ -1,4 +1,4 @@
-Thm Test : [ bool * bool = bool * bool type ] by [
+Thm Test : [ (* bool bool) = (* bool bool) type ] by [
   auto
 ].
 

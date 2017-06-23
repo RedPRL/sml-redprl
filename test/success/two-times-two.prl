@@ -1,3 +1,4 @@
-Thm TwoTimesTwo : [ bool * bool ] by [
-  '(< tt , tt >); auto
+Thm TwoTimesTwo : [ (* bool bool) ] by [
+  '< tt , tt >;
+  auto
 ].
