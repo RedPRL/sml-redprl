@@ -170,7 +170,7 @@ struct
            <: env
      | O.POLY (O.COM (dir as (r, r'), eqs)) `$ (([u],_) \ a) :: (_ \ cap) :: tubes <: env =>
          let
-           fun coe v m = Syn.intoCoe (v, r') ((u, a), m)
+           fun coe s m = Syn.intoCoe (s, r') ((u, a), m)
            fun goTube (([v],_) \ n) = ([v],[]) \ coe (P.ret v) n
              | goTube _ = raise Fail "RedPrlMachineBasis.step: malformed COM tubes"
          in
