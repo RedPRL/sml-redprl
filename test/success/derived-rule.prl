@@ -23,7 +23,7 @@ Thm MyCorollary : [ (-> bool bool) ] by [
 
 Extract MyCorollary.
 
-Thm MyCorollary/Test : [ (MyCorollary) = (lam [z] (if [_] bool z ff tt)) in (-> bool bool) ] by [
+Thm MyCorollary/Test : [ MyCorollary = (lam [z] (if [_] bool z ff tt)) in (-> bool bool) ] by [
   auto
 ].
 

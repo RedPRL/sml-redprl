@@ -125,7 +125,7 @@ Def Cmp(#f; #g) = [
   (lam [x] (#f (#g x)))
 ].
 
-Thm StrictBoolTest : [ (SNot) = (Cmp (SNot) (Cmp (SNot) (SNot))) in (-> sbool sbool) ] by [
+Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> sbool sbool) ] by [
   auto
 ].
 
@@ -160,8 +160,8 @@ Tac FunExtTac(#A; #B; #F; #G) = [
 
 // We ought to be able to use FunExt as a lemma, but our machinery is not yet set up for that.
 // Instead, we can use FunExtTac.
-Thm NotNotPath : [(paths {_} (-> bool bool) (Cmp (Not) (Not)) (lam [x] x))] by [
-  (FunExtTac bool bool (Cmp (Not) (Not)) (lam [x] x));
+Thm NotNotPath : [(paths {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
+  (FunExtTac bool bool (Cmp Not Not) (lam [x] x));
 
   {lam x. if x then <i> 'tt else <i> 'ff};
   auto
