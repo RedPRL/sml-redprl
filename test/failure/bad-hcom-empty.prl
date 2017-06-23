@@ -1,6 +1,6 @@
 Thm Bool : [
   bool true
 ] by [
-  {'hcom{; 0 ~> 1}(bool; tt)};
-  auto;
+  {`(hcom{0 ~> 1} bool tt)};
+  auto
 ].

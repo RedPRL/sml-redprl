@@ -87,9 +87,10 @@ whitespace = [\ \t];
 "base"             => (Tokens.BASE (posTuple (size yytext)));
 "loop"             => (Tokens.LOOP (posTuple (size yytext)));
 "lam"              => (Tokens.LAMBDA (posTuple (size yytext)));
+"abs"              => (Tokens.ABS (posTuple (size yytext)));
 "fst"              => (Tokens.FST (posTuple (size yytext)));
 "snd"              => (Tokens.SND (posTuple (size yytext)));
-"paths"            => (Tokens.PATHS (posTuple (size yytext)));
+"path"            => (Tokens.PATHS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
 
@@ -141,4 +142,4 @@ whitespace = [\ \t];
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));
 {upper}{identChr}* => (Tokens.OPNAME (posTupleWith (size yytext) yytext));
 
-.                  => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (!pos yyarg) (!pos yyarg)), "lexical error: skipping unrecognized character '" ^ yytext ^ "'"); continue ());
+.                  => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (!pos yyarg) (!pos yyarg)), Fpp.text ("lexical error: skipping unrecognized character '" ^ yytext ^ "'")); continue ());

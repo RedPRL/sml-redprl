@@ -431,7 +431,7 @@ struct
      | FST => "fst"
      | SND => "snd"
 
-     | PATH_TY => "paths"
+     | PATH_TY => "path"
      | PATH_ABS => "abs"
 
      | MTAC_SEQ _ => "seq"
@@ -507,6 +507,8 @@ struct
              ^ "; "
              ^ dirToString f dir
              ^ "]"
+       | CUST (opid, [], _) =>
+           f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_LEMMA (opid, ps, _) =>

@@ -3,7 +3,7 @@ structure LcfLanguage = LcfAbtLanguage (RedPrlAbt)
 structure Lcf :
 sig
   include LCF_UTIL
-  val prettyState : jdg state -> PP.doc
+  val prettyState : jdg state -> Fpp.doc
 end =
 struct
   structure Lcf = Lcf (LcfLanguage)
@@ -11,23 +11,20 @@ struct
   open Def Lcf
   infix |> ||
 
+  (* TODO: clean up all this stuff with vsep *)
+  (* TODO: also try to extend the printer with "concrete name" environments so that we can print without doing
+     all these renamings. *)
 
-  val prettySyms =
-    PP.text o ListSpine.pretty (fn (u, sigma) => Sym.toString u ^ " : " ^ RedPrlAbt.O.Ar.Vl.PS.toString sigma) ", "
-
-  val prettyVars = 
-    PP.text o ListSpine.pretty (fn (x, tau) => Var.toString x ^ " : " ^ RedPrlAbt.O.Ar.Vl.S.toString tau) ", "
+  fun @@ (f, x) = f x
+  infixr 0 @@
 
   fun prettyGoal (x, jdg) =
-    PP.concat
-      [PP.text "Goal ",
-        PP.text (RedPrlAbt.Metavar.toString x),
-        PP.text ".",
-        PP.nest 2 (PP.concat [PP.line, RedPrlSequent.pretty TermPrinter.toString jdg]),
-        PP.line]
+    Fpp.nest 2 @@
+      Fpp.vsep
+        [Fpp.seq [Fpp.hsep [Fpp.text "Goal", Fpp.text (Metavar.toString x)], Fpp.text "."],
+         RedPrlSequent.pretty TermPrinter.ppTerm jdg]
 
-
-  val prettyGoals : jdg eff Tl.telescope -> {doc : PP.doc, env : J.env, idx : int} =
+  val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, env : J.env, idx : int} =
     let
       open RedPrlAbt
     in
@@ -38,37 +35,13 @@ struct
             val jdg' = J.subst env jdg
             val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' (J.sort jdg'))
           in
-            {doc = PP.concat [doc, prettyGoal (x, jdg), PP.line],
+            {doc = Fpp.seq [doc, prettyGoal (x, jdg), Fpp.newline],
              env = env',
              idx = idx + 1}
           end)
-        {doc = PP.empty, env = Metavar.Ctx.empty, idx = 0}
+        {doc = Fpp.empty, env = Metavar.Ctx.empty, idx = 0}
     end
 
-  fun prettyValidation _(*env*) vld =
-    let
-      open RedPrlAbt infix \
-      val _ \ m = outb vld
-    in
-      PP.concat
-        [PP.text (TermPrinter.toString m),
-         PP.line,
-         PP.text (primToStringAbs vld)]
-    end
-
-  fun prettyState (psi |> vld) =
-    let
-      val {doc = goals, env, idx = _} = prettyGoals psi
-    in
-      PP.concat
-        [goals,
-         PP.newline,
-         PP.rule #"-",
-         PP.newline,
-         PP.text "Current Proof Extract:",
-         PP.newline,
-         PP.rule #"-",
-         PP.newline, PP.newline,
-         prettyValidation env vld]
-    end
+  fun prettyState (psi |> _) =
+    #doc (prettyGoals psi)
 end

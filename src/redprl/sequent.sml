@@ -34,7 +34,7 @@ struct
 
 
   fun renameHypsInTerm srho =
-    Tm.substSymenv (Tm.Sym.Ctx.map Tm.O.P.VAR srho) 
+    Tm.substSymenv (Tm.Sym.Ctx.map Tm.O.P.VAR srho)
       o Tm.renameVars srho
 
   local
@@ -49,17 +49,17 @@ struct
              andalso telescopeEq (t1', t2')
        | _ => false
 
-    fun relabelHyps H srho = 
+    fun relabelHyps H srho =
       let
         val srho' = Tm.Sym.Ctx.map Tm.O.P.VAR srho
       in
-        case out H of 
+        case out H of
            EMPTY => Hyps.empty
-         | CONS (x, catjdg, Hx) => 
+         | CONS (x, catjdg, Hx) =>
            let
              val catjdg' = CJ.map (Tm.substSymenv srho') catjdg
            in
-             case Tm.Sym.Ctx.find srho x of 
+             case Tm.Sym.Ctx.find srho x of
                  NONE => Hyps.cons x catjdg' (relabelHyps Hx srho)
                | SOME y => Hyps.cons y catjdg' (relabelHyps Hx srho)
            end
@@ -67,45 +67,39 @@ struct
 
   end
 
-  fun relabel srho = 
-    fn (I, H) >> catjdg => 
-       (List.map (fn (u, sigma) => (Tm.Sym.Ctx.lookup srho u handle _ => u, sigma)) I, relabelHyps H srho) 
+  fun relabel srho =
+    fn (I, H) >> catjdg =>
+       (List.map (fn (u, sigma) => (Tm.Sym.Ctx.lookup srho u handle _ => u, sigma)) I, relabelHyps H srho)
          >> CJ.map (renameHypsInTerm srho) catjdg
      | jdg => map (renameHypsInTerm srho) jdg
 
   structure P = CJ.Tm.O.P and PS = CJ.Tm.O.Ar.Vl.PS
 
+  fun prettySyms syms =
+    Fpp.collection
+      (Fpp.char #"{")
+      (Fpp.char #"}")
+      (Fpp.Atomic.comma)
+      (List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Tm.O.Ar.Vl.PS.toString sigma)]) syms)
 
+  fun prettyHyps f : 'a ctx -> Fpp.doc =
+    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [Fpp.text (Tm.Sym.toString x), Fpp.Atomic.colon, f a] :: r) []
 
-  local
-    open PP
-  in
-    fun prettySyms' [] = concat []
-      | prettySyms' [(u, sigma)] = concat [text (Tm.Sym.toString u), text " : ", text (Tm.O.Ar.Vl.PS.toString sigma)]
-      | prettySyms' ((u, sigma) :: syms) = concat [text (Tm.Sym.toString u), text " : ", text (Tm.O.Ar.Vl.PS.toString sigma), text " , ", prettySyms' syms]
-
-    fun prettySyms [] = concat []
-      | prettySyms syms = concat [text "{", prettySyms' syms, text "}.", line]
-
-    fun prettyHyps f : 'a ctx -> doc =
-      Hyps.foldl
-        (fn (x, a, r) => concat [r, text (Tm.Sym.toString x), text " : ", f a, line])
-        empty
-
-    fun pretty f : 'a jdg -> doc =
-      fn (I, H) >> catjdg => concat [prettySyms I, prettyHyps (CJ.pretty f) H, text "\226\138\162 ", CJ.pretty f catjdg]
-       | MATCH (th, k, a, _, _) => concat [text (f a), text " match ", text (Tm.O.toString Tm.Sym.toString th), text " @ ", int k]
-  end
-
-  fun toString f = PP.toString 80 true o pretty f
+  fun pretty f : 'a jdg -> Fpp.doc =
+    fn (I, H) >> catjdg =>
+       Fpp.seq
+         [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
+          if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps (CJ.pretty f) H, Fpp.newline],
+          Fpp.hsep [Fpp.text ">>", CJ.pretty f catjdg]]
+     | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
 
 
   val rec eq =
     fn (jdg1 as (I1, H1) >> catjdg1, jdg2 as (I2, H2) >> catjdg2) =>
        (let
 
-         fun unifyPsorts (sigma1, sigma2) = 
-           if PS.eq (sigma1, sigma2) then sigma1 else 
+         fun unifyPsorts (sigma1, sigma2) =
+           if PS.eq (sigma1, sigma2) then sigma1 else
              raise Fail "psort mismatch in Sequent.eq"
 
          val I = ListPair.mapEq (fn ((_, sigma1), (_, sigma2)) => (Sym.new (), unifyPsorts (sigma1, sigma2))) (I1, I2)

@@ -208,9 +208,9 @@ struct
         raise E.error [E.% "Expected strict bool elimination problem"]
   end
 
-  structure Void = 
+  structure Void =
   struct
-    fun EqType _ jdg = 
+    fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Void.EqType"
         val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
@@ -229,8 +229,8 @@ struct
         val CJ.TRUE ty = lookupHyp H z
         val Syn.VOID = Syn.out ty
 
-        val evidence = 
-          case catjdg of 
+        val evidence =
+          case catjdg of
              CJ.TRUE _ => Syn.into Syn.TT
            | CJ.EQ _ => trivial
            | CJ.EQ_TYPE _ => trivial

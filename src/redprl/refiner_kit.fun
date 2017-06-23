@@ -81,7 +81,7 @@ struct
       open Abt infix 1 $#
       val x = newMeta ""
       val vl as (_, tau) = J.sort jdg
-      val (ps, ms) = 
+      val (ps, ms) =
         case jdg of
            (I, H) >> _ => (List.map (fn (u, sigma) => (P.VAR u, sigma)) I, hypsToSpine H)
          | MATCH _ => ([],[])

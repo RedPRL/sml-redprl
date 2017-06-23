@@ -1,6 +1,6 @@
 Thm PathApConst : [
-  paths({_}.bool; tt; tt) -> bool
+  (-> (path {_} bool tt tt) bool)
 ] by [
-  { lam p. ',p @ 0 };
+  { lam p. `(@ ,p 0) };
   auto;
 ].

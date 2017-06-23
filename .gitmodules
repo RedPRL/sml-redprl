@@ -10,15 +10,12 @@
 [submodule "lib/sml-dependent-lcf"]
 	path = lib/sml-dependent-lcf
 	url = https://github.com/JonPRL/sml-dependent-lcf.git
-[submodule "lib/sml-unparse"]
-	path = lib/sml-unparse
-	url = https://github.com/RedPRL/sml-unparse.git
 [submodule "lib/sml-json"]
 	path = lib/sml-json
 	url = https://github.com/RedPRL/sml-json.git
 [submodule "lib/sml-cats"]
 	path = lib/sml-cats
 	url = https://github.com/RedPRL/sml-cats.git
-[submodule "lib/sml-wpp"]
-	path = lib/sml-wpp
-	url = https://github.com/RedPRL/sml-wpp.git
+[submodule "lib/sml-final-pretty-printer"]
+	path = lib/sml-final-pretty-printer
+	url = https://github.com/RedPRL/sml-final-pretty-printer

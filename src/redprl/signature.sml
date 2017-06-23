@@ -1,11 +1,10 @@
 structure Signature :> SIGNATURE =
 struct
-  structure Tm = RedPrlAbt
+  structure Tm = RedPrlAbt and Ar = RedPrlArity
   structure P = struct open RedPrlSortData RedPrlParamData end
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
   open ElabNotation infix >>= *> <*
-
 
   fun @@ (f, x) = f x
   infixr @@
@@ -13,104 +12,40 @@ struct
   open MiniSig
   structure O = RedPrlOpData and E = ElabMonadUtil (ElabMonad)
 
-  local
-    open PP
+  fun intersperse s xs =
+    case xs of
+       [] => []
+     | [x] => [x]
+     | x::xs => Fpp.seq [x, s] :: intersperse s xs
 
-    fun argsToString f =
-      ListSpine.pretty (fn (x, vl) => "#" ^ f x ^ " : " ^ RedPrlArity.Vl.toString vl) ", "
-      
-    fun paramsToString f =
-      ListSpine.pretty (fn (x, vl) => f x ^ " : " ^ RedPrlArity.Vl.PS.toString vl) ", "
-
-    val kwd = color C.red o bold true
-    val declId = blink true o underline true
-
-    fun delim (l,r) x =
-      concat
-        [color C.white @@ text l,
-         x,
-         color C.white @@ text r]
-
-    val squares = delim ("[", "]")
-    val braces = delim ("{", "}")
-    val parens = delim ("(", ")")
-  in
-    fun prettyDecl (opid, decl) =
-      case decl of
-         DEF {arguments, params, sort, definiens} =>
-           concat
-             [kwd @@ text "Def ", declId @@ text opid, 
-              braces @@ text @@ paramsToString (fn x => x) params,
-              parens @@ text @@ argsToString (fn x => x) arguments, text " : ",
-              text @@ RedPrlSort.toString sort, text " = ",
-              squares @@ concat [nest 2 @@ concat [line, text (RedPrlAst.toString definiens)], line],
-              text "."]
-       | THM {arguments, params, goal, script} =>
-           concat
-             [kwd @@ text "Thm ",
-              declId @@ text opid,
-              braces @@ text @@ paramsToString (fn x => x) params,
-              parens @@ text @@ argsToString (fn x => x) arguments,
-              text " : ",
-              squares @@ concat [nest 2 @@ concat [line, text "TODO"], line],
-              text " by ",
-              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
-              text "."]
-       | RULE {arguments, params, spec, script} =>
-           concat
-             [kwd @@ text "Rule ",
-              declId @@ text opid,
-              braces @@ text @@ paramsToString (fn x => x) params,
-              parens @@ text @@ argsToString (fn x => x) arguments,
-              text " : ",
-              squares @@ concat [nest 2 @@ concat [line, text "TODO"], line],
-              text " by ",
-              squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
-              text "."]
-       | TAC {arguments, params, script} =>
-           concat
-            [kwd @@ text "Tac ", declId @@ text opid,
-             braces @@ text @@ paramsToString (fn x => x) params,
-             parens @@ text @@ argsToString (fn x => x) arguments,
-             text " = ",
-             squares @@ concat [nest 2 @@ concat [line, text @@ RedPrlAst.toString script], line],
-             text "."]
+  fun prettyParams ps =
+    Fpp.Atomic.braces @@ Fpp.grouped @@ Fpp.hvsep @@
+      intersperse Fpp.Atomic.comma @@
+        List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Ar.Vl.PS.toString sigma)]) ps
 
 
-    val declToString =
-      PP.toString 80 false o prettyDecl
+  fun prettyArgs args =
+    Fpp.Atomic.parens @@ Fpp.grouped @@ Fpp.hvsep @@
+      intersperse (Fpp.text ";") @@
+        List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
-    fun prettyEntry (sign : sign) (opid, {sourceOpid, params, arguments, sort, spec, state} : entry) =
-      let
-        val src = prettyDecl (sourceOpid, #1 (Telescope.lookup (#sourceSign sign) sourceOpid))
-        val term = extract state
-        val elab =
-          concat
-            [kwd @@ text "Def ",
-             declId @@ text @@ Sym.toString opid,
-             braces @@ text @@ paramsToString Sym.toString params,
-             parens @@ text @@ argsToString Metavar.toString arguments,
-             text " : ",
-             text @@ RedPrlSort.toString sort, text " = ",
-             squares @@ concat [nest 2 @@ concat [line, text @@ TermPrinter.toString term], line],
-             text "."]
-      in
-        concat [src, newline, newline, text "===>", newline, newline, elab]
-      end
+  fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : Fpp.doc =
+    Fpp.hsep
+      [Fpp.text "Def",
+        Fpp.seq [Fpp.text @@ Sym.toString opid, prettyParams params, prettyArgs arguments],
+        Fpp.Atomic.colon,
+        case spec of
+           NONE => Fpp.text (RedPrlSort.toString sort)
+         | SOME jdg =>
+             Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
+               [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty TermPrinter.ppTerm jdg],
+               Fpp.newline],
+        Fpp.Atomic.equals,
+        Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
+          [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm @@ extract state],
+          Fpp.newline],
+        Fpp.char #"."]
 
-    fun entryToString (sign : sign) =
-      PP.toString 80 false o prettyEntry sign
-
-    fun toString ({sourceSign,...} : sign) =
-      let
-        open Telescope.ConsView
-        fun go EMPTY = ""
-          | go (CONS (opid, (decl, _), xs)) =
-              declToString (opid, decl) ^ "\n\n" ^ go (out xs)
-      in
-        go (out sourceSign)
-      end
-  end
 
   val empty =
     {sourceSign = Telescope.empty,
@@ -149,8 +84,8 @@ struct
       infix $ $$ $# $$# \
 
 
-      fun inheritAnnotation t1 t2 = 
-        case getAnnotation t2 of 
+      fun inheritAnnotation t1 t2 =
+        case getAnnotation t2 of
           NONE => setAnnotation (getAnnotation t1) t2
         | _ => t2
 
@@ -185,16 +120,16 @@ struct
       and processTerm sign m =
         inheritAnnotation m (processTerm' sign m)
 
-      fun processSrcCatjdg sign = 
+      fun processSrcCatjdg sign =
         RedPrlCategoricalJudgment.map (processTerm sign)
 
-      fun processSrcSeq sign (hyps, concl) = 
+      fun processSrcSeq sign (hyps, concl) =
         (List.map (fn (x, hyp) => (x, processSrcCatjdg sign hyp)) hyps, processSrcCatjdg sign concl)
 
-      fun processSrcGenJdg sign (bs, seq) = 
+      fun processSrcGenJdg sign (bs, seq) =
         (bs, processSrcSeq sign seq)
 
-      fun processSrcRuleSpec sign (premises, goal) = 
+      fun processSrcRuleSpec sign (premises, goal) =
         (List.map (processSrcGenJdg sign) premises, processSrcSeq sign goal)
 
     in
@@ -257,8 +192,8 @@ struct
                       SOME (pos :: _) => SOME pos
                     | _ => (print ("couldn't find position for var " ^ ustr); termPos)
               in
-                E.when (tau' = NONE, E.fail (pos, "Unbound symbol: " ^ ustr))
-                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, "Symbol sort mismatch: " ^ ustr))
+                E.when (tau' = NONE, E.fail (pos, Fpp.text ("Unbound symbol: " ^ ustr)))
+                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, Fpp.text ("Symbol sort mismatch: " ^ ustr)))
                   *> r
               end)
             (E.ret ())
@@ -275,8 +210,8 @@ struct
                       SOME (pos :: _) => SOME pos
                     | _ => termPos
                in
-                 E.when (tau' = NONE, E.fail (pos, "Unbound variable: " ^ xstr))
-                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, "Variable sort mismatch: " ^ xstr))
+                 E.when (tau' = NONE, E.fail (pos, Fpp.text ("Unbound variable: " ^ xstr)))
+                  *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, Fpp.text ("Variable sort mismatch: " ^ xstr)))
                   *> r
                end)
             (E.ret ())
@@ -285,7 +220,7 @@ struct
         val checkMetas =
           Tm.Metavar.Ctx.foldl
             (fn (x, vl, r) =>
-               r <* E.unless (Option.isSome (Tm.Metavar.Ctx.find metactx x), E.fail (termPos, "Unbound metavar: " ^ Tm.Metavar.toString x)))
+               r <* E.unless (Option.isSome (Tm.Metavar.Ctx.find metactx x), E.fail (termPos, Fpp.text ("Unbound metavar: " ^ Tm.Metavar.toString x))))
             (E.ret ())
             (Tm.metactx term)
       in
@@ -301,17 +236,17 @@ struct
     structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequent.Hyps
 
     fun elabAst (metactx, env) ast : abt =
-      let 
+      let
         val abt = AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, Sort.EXP)
-      in 
+      in
         abt
       end
 
-    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> abt CJ.jdg = 
+    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> abt CJ.jdg =
       CJ.map (elabAst (metactx, env))
       (* TODO check scoping *)
 
-    fun addHypName (env, symctx, varctx) (srcname, tau) = 
+    fun addHypName (env, symctx, varctx) (srcname, tau) =
       let
         val x = NameEnv.lookup env srcname handle _ => Sym.named srcname
         val env' = NameEnv.insert env srcname x
@@ -321,7 +256,7 @@ struct
         (env', symctx', varctx', x)
       end
 
-    fun addSymName (env, symctx) (srcname, psort) = 
+    fun addSymName (env, symctx) (srcname, psort) =
       let
         val u = Sym.named srcname
         val env' = NameEnv.insert env srcname u
@@ -330,7 +265,7 @@ struct
         (env', symctx')
       end
 
-    fun addVarName (env, varctx) (srcname, sort) = 
+    fun addVarName (env, varctx) (srcname, sort) =
       let
         val x = Var.named srcname
         val env' = NameEnv.insert env srcname x
@@ -339,8 +274,8 @@ struct
         (env', varctx')
       end
 
- 
-    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * abt CJ.jdg = 
+
+    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * abt CJ.jdg =
       let
         val catjdg = elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg
         val tau = CJ.synthesis catjdg
@@ -352,7 +287,7 @@ struct
     fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * abt CJ.jdg Hyps.telescope =
       let
         fun go env syms vars H [] = (env, H)
-          | go env syms vars H (hyp :: hyps) = 
+          | go env syms vars H (hyp :: hyps) =
               let
                 val (syms', vars', env', x, jdg) = elabSrcSeqHyp (metactx, syms, vars, env) hyp
               in
@@ -362,7 +297,7 @@ struct
         go env symctx varctx Hyps.empty
       end
 
-    fun elabSrcSequent (metactx, symctx, varctx, env) (seq : src_sequent) : symbol NameEnv.dict * jdg = 
+    fun elabSrcSequent (metactx, symctx, varctx, env) (seq : src_sequent) : symbol NameEnv.dict * jdg =
       let
         val (hyps, concl) = seq
         val (env', hyps') = elabSrcSeqHyps (metactx, symctx, varctx, env) hyps
@@ -371,7 +306,7 @@ struct
         (env', RedPrlSequent.>> (([], hyps'), concl')) (* todo: I := ? *)
       end
 
-    fun elabSrcGenJdg (metactx, symctx, env) (syms, seq) : symbol NameEnv.dict * jdg Lcf.eff = 
+    fun elabSrcGenJdg (metactx, symctx, env) (syms, seq) : symbol NameEnv.dict * jdg Lcf.eff =
       let
         val (env', symctx') = List.foldl (fn (sym, (env, symctx)) => addSymName (env, symctx) sym) (env, symctx) syms
 
@@ -383,7 +318,7 @@ struct
         (env'''', seq')
       end
 
-    fun elabSrcRuleSpec (metactx, symctx, env) (spec : src_rulespec) = 
+    fun elabSrcRuleSpec (metactx, symctx, env) (spec : src_rulespec) =
       let
         val (subgoals, goal) = spec
         val (env', subgoals') = List.foldr (fn (subgoal, (env, subgoals)) => let val (env', subgoal') = elabSrcGenJdg (metactx, symctx, env) subgoal in (env', subgoal' :: subgoals) end) (env, []) subgoals
@@ -393,7 +328,7 @@ struct
       end
 
     fun convertToAbt (metactx, symctx, env) ast sort =
-      E.wrap (RedPrlAst.getAnnotation ast, fn () => 
+      E.wrap (RedPrlAst.getAnnotation ast, fn () =>
         AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort)
         handle AstToAbt.BadConversion (msg, pos) => error pos [Err.% msg])
       >>= scopeCheck (metactx, symctx, Var.Ctx.empty)
@@ -431,27 +366,27 @@ struct
 
       structure Tl = TelescopeUtil (Lcf.Tl)
 
-      fun checkProofState (pos, subgoalsSpec) state = 
+      fun checkProofState (pos, subgoalsSpec) state =
         let
           val Lcf.|> (subgoals, _) = state
-          fun goalEqualTo goal1 goal2 = 
+          fun goalEqualTo goal1 goal2 =
             if RedPrlSequent.eq (goal1, goal2) then true
             else
-              (RedPrlLog.print RedPrlLog.WARN (pos, RedPrlJudgment.toString goal1 ^ " not equal to " ^ RedPrlJudgment.toString goal2);
+              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty TermPrinter.ppTerm goal1, Fpp.text "not equal to", RedPrlSequent.pretty TermPrinter.ppTerm goal2]);
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true
-            | go (jdgSpec :: subgoalsSpec, Tl.ConsView.CONS (_, jdgReal, subgoalsReal)) = 
+            | go (jdgSpec :: subgoalsSpec, Tl.ConsView.CONS (_, jdgReal, subgoalsReal)) =
                 goalEqualTo jdgSpec jdgReal andalso go (subgoalsSpec, Tl.ConsView.out subgoalsReal)
             | go _ = false
 
           val proofStateCorrect = go (subgoalsSpec, Tl.ConsView.out subgoals)
           val subgoalsCount = Tl.foldr (fn (_,_,n) => 1 + n) 0 subgoals
         in
-          if proofStateCorrect then 
+          if proofStateCorrect then
             E.ret state
           else
-            E.warn (pos, Int.toString (subgoalsCount) ^ " Remaining Obligations")
+            E.warn (pos, Fpp.text (Int.toString (subgoalsCount) ^ " Remaining Obligations"))
               *> E.ret state
         end
     in
@@ -464,27 +399,27 @@ struct
             let
               (* TODO: deal with syms ?? *)
               val tau = CJ.synthesis concl
-              val (params'', symctx', env') = 
+              val (params'', symctx', env') =
                 Hyps.foldr
-                  (fn (x, jdg, (ps, ctx, env)) => 
-                    ((x, RedPrlSortData.HYP tau) :: ps, Tm.Sym.Ctx.insert ctx x (RedPrlSortData.HYP tau), NameEnv.insert env (Sym.toString x) x)) 
+                  (fn (x, jdg, (ps, ctx, env)) =>
+                    ((x, RedPrlSortData.HYP tau) :: ps, Tm.Sym.Ctx.insert ctx x (RedPrlSortData.HYP tau), NameEnv.insert env (Sym.toString x) x))
                   (params', symctx, env)
                   hyps
             in
-              convertToAbt (metactx, symctx', env') script TAC 
+              convertToAbt (metactx, symctx', env') script TAC
                 >>= (fn scriptTm => elabRefine sign (seqjdg, scriptTm))
                 >>= checkProofState (pos, subgoalsSpec)
                 >>= (fn state => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = tau, spec = SOME seqjdg, state = state})
             end)
         end
 
-      fun thmToRule {arguments, params, goal, script} = 
+      fun thmToRule {arguments, params, goal, script} =
         {arguments = arguments,
          params = params,
          spec = ([], goal),
          script = script}
 
-      fun elabThm sign opid pos thm = 
+      fun elabThm sign opid pos thm =
         elabDerivedRule sign opid pos (thmToRule thm)
     end
 
@@ -507,14 +442,13 @@ struct
       let
         val esign' = ETelescope.truncateFrom (#elabSign sign) eopid
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
-        fun decorate e = e >>= (fn x => E.dump (pos, declToString (opid, decl)) *> E.ret x)
       in
-        ETelescope.snoc esign' eopid (decorate (E.delay (fn _ =>
+        ETelescope.snoc esign' eopid (E.delay (fn _ =>
           case processDecl sign decl of
              DEF defn => elabDef sign' opid defn
            | THM defn => elabThm sign' opid pos defn
            | RULE defn => elabDerivedRule sign' opid pos defn
-           | TAC defn => elabTac sign' opid defn)))
+           | TAC defn => elabTac sign' opid defn))
       end
 
     fun elabPrint (sign : sign) (pos, opid) =
@@ -522,23 +456,23 @@ struct
         E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
-                EDEF entry => E.info (SOME pos, "Elaborated:\n" ^ entryToString sign (eopid, entry))
-              | _ => E.warn (SOME pos, "Invalid declaration name"))))
+                EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", prettyEntry sign (eopid, entry)])
+              | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
 
     local
       open RedPrlAbt infix $ \
       structure O = RedPrlOpData
 
-      fun printExtractOf (pos, state) : unit E.t = 
-        E.info (SOME pos, TermPrinter.toString (extract state))
+      fun printExtractOf (pos, state) : unit E.t =
+        E.info (SOME pos, Fpp.vsep [Fpp.text "Extract:", TermPrinter.ppTerm (extract state)])
     in
-      fun elabExtract (sign : sign) (pos, opid) = 
-        E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid => 
-          E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl => 
+      fun elabExtract (sign : sign) (pos, opid) =
+        E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid =>
+          E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
             E.ret (ECMD (EXTRACT eopid)) <*
-              (case edecl of 
+              (case edecl of
                   EDEF entry => printExtractOf (pos, #state entry)
-                | _ => E.warn (SOME pos, "Invalid declaration name"))))
+                | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
     end
 
     fun elabCmd (sign : sign) (cmd, pos) : elab_sign =
@@ -549,7 +483,7 @@ struct
            in
              ETelescope.snoc (#elabSign sign) fresh (E.delay (fn _ => elabPrint sign (pos, opid)))
            end
-       | EXTRACT opid => 
+       | EXTRACT opid =>
            let
              val fresh = Sym.named "_"
            in

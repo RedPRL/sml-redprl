@@ -7,7 +7,7 @@ struct
    | FAIL
    | TRACE
 
-  fun formatMessage lvl (pos, msg) =
+  fun formatMessage lvl (pos, msg : Fpp.doc) : Fpp.doc =
     let
       val pos' =
         case pos of
@@ -22,11 +22,13 @@ struct
          | FAIL => "Error"
          | TRACE => "Trace"
 
-      val lines = String.fields (fn c => c = #"\n") msg
-      val indented = List.map (fn l => "  " ^ l ^ "\n") lines
-      val msg' = List.foldr op^ "" indented
+      val header =
+        Fpp.hsep
+          [Fpp.text pos',
+           Fpp.seq [Fpp.Atomic.squares (Fpp.text prefix), Fpp.Atomic.colon]]
+
     in
-      pos' ^ " [" ^ prefix ^ "]:\n" ^ msg' ^"\n\n"
+      Fpp.vsep [Fpp.nest 2 (Fpp.vsep [header, msg]), Fpp.newline, Fpp.newline]
     end
 
   val streamForLevel =
@@ -39,19 +41,21 @@ struct
   fun print lvl msg =
     let
       val stream = streamForLevel lvl
+      val doc = formatMessage lvl msg
+      val output = FinalPrinter.execPP doc
     in
-      TextIO.output (stream, formatMessage lvl msg);
+      FppRenderPlainText.render stream output;
       TextIO.flushOut stream
     end
 end
 
 
-functor RedPrlLogUtil (L : REDPRL_LOG) : REDPRL_LOG_UTIL= 
+functor RedPrlLogUtil (L : REDPRL_LOG) : REDPRL_LOG_UTIL=
 struct
   open L
 
-  fun trace msg = 
-    () 
+  fun trace msg =
+    ()
     (*print TRACE (NONE, msg)*)
 end
 

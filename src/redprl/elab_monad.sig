@@ -8,17 +8,17 @@ sig
   val wrap : (unit -> 'a) ann -> 'a t
 
   val hush : 'a t -> 'a t
-  val warn : string ann -> unit t
-  val dump : string ann -> unit t
-  val info : string ann -> unit t
-  val fail : string ann -> 'a t
+  val warn : Fpp.doc ann -> unit t
+  val dump : Fpp.doc ann -> unit t
+  val info : Fpp.doc ann -> unit t
+  val fail : Fpp.doc ann -> 'a t
 
   type ('a, 'b) alg =
-    {warn : string ann * 'b -> 'b,
-     dump : string ann * 'b -> 'b,
-     info : string ann * 'b -> 'b,
+    {warn : Fpp.doc ann * 'b -> 'b,
+     dump : Fpp.doc ann * 'b -> 'b,
+     info : Fpp.doc ann * 'b -> 'b,
      init : 'b,
-     fail : string ann * 'b -> 'b,
+     fail : Fpp.doc ann * 'b -> 'b,
      succeed : 'a * 'b -> 'b}
 
   val fold : ('a, 'b) alg -> 'a t -> 'b

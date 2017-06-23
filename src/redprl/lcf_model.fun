@@ -16,9 +16,9 @@ struct
 
   structure O = RedPrlOpData
 
-  fun hyp z alpha jdg = 
-    Rules.Hyp.Project z alpha jdg 
-    handle _ => 
+  fun hyp z alpha jdg =
+    Rules.Hyp.Project z alpha jdg
+    handle _ =>
       Rules.Synth.FromWfHyp z alpha jdg
 
   fun interpret (sign, _(*env*)) rule =
@@ -39,14 +39,10 @@ struct
     Debug.wrap (fn _ => interpret (sign, env) (Machine.eval sign rule) alpha goal)
     handle exn => raise RedPrlError.annotate (getAnnotation rule) exn
 
-  fun printHole (pos : Pos.t, name) (state : Lcf.jdg Lcf.state) = 
+  fun printHole (pos : Pos.t, name : string option) (state : Lcf.jdg Lcf.state) =
     let
-      val header = 
-        case name of 
-           NONE => PP.empty
-         | SOME n => PP.concat [PP.text n, PP.text ".", PP.newline]
-      val doc = PP.concat [header, Lcf.prettyState state]
-      val message = PP.toString 60 false doc
+      val header = Fpp.seq [Fpp.text (Option.getOpt (name, "hole")), Fpp.char #"."]
+      val message = Fpp.vsep [header, Lcf.prettyState state]
     in
       RedPrlLog.print RedPrlLog.INFO (SOME pos, message)
     end

@@ -14,14 +14,12 @@ sig
   val toAbt : abt jdg -> abt
   val fromAbt : abt -> abt jdg
 
-  val toString : abt jdg -> string
-
   val metactx : abt jdg -> Tm.metactx
   val unify : abt jdg * abt jdg -> Tm.Unify.renaming
 
   val eq : abt jdg * abt jdg -> bool
 
-  val pretty : ('a -> string) -> 'a jdg -> PP.doc
+  val pretty : ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
 
   exception InvalidJudgment
 end

@@ -62,5 +62,4 @@ sig
   val command : sign -> src_opid cmd * Pos.t -> sign
 
   val check : sign -> bool
-  val toString : sign -> string
 end

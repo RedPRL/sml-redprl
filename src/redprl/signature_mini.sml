@@ -1,4 +1,4 @@
-structure MiniSig = 
+structure MiniSig =
 struct
   structure Tm = RedPrlAbt
 
@@ -83,17 +83,17 @@ struct
     end
 
 
-  local 
+  local
     open RedPrlOpData Tm RedPrlSequent
     infix $ \ >>
 
     (* Observe that hypotheses have a dual nature: they are both symbols and variables. When reviving a proof state,
       we have to rename hypotheses in *both* their moments. This routine constructs the appropriate substitution
       for hypotheses qua variables. *)
-    fun hypothesisRenaming (entry : entry) (ps : Tm.param list) : Tm.varenv = 
+    fun hypothesisRenaming (entry : entry) (ps : Tm.param list) : Tm.varenv =
       let
-        fun handleHyp ((u, psort), ptm, ctx) = 
-          case psort of 
+        fun handleHyp ((u, psort), ptm, ctx) =
+          case psort of
             RedPrlSortData.HYP tau =>
               let
                 val v = case ptm of RedPrlParameterTerm.VAR v => v
@@ -114,7 +114,7 @@ struct
         Hyps.remove u H'
       end
 
-    fun relabelHyps (entry : entry) (ps : Tm.param list) H = 
+    fun relabelHyps (entry : entry) (ps : Tm.param list) H =
       let
         fun handleHyp ((u, psort), ptm, H) =
           case psort of
@@ -134,7 +134,7 @@ struct
       fn (I, H) >> catjdg => (I, relabelHyps entry ps H) >> catjdg
       | jdg => jdg
   in
-    fun resuscitateTheorem sign opid ps args = 
+    fun resuscitateTheorem sign opid ps args =
       let
         val entry = lookup sign opid
         val paramsSig = #params entry
@@ -158,7 +158,7 @@ struct
       end
 
       fun extract (Lcf.|> (subgoals, validation)) =
-        case outb validation of 
+        case outb validation of
            _ \ term => term
     end
 end

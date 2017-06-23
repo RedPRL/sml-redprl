@@ -3,7 +3,7 @@
 Rule CoeTest{r:dim, r':dim}(#A : {dim}.exp) : [
   {x:dim} | m : #A{r} >> #A{x} = #A{x} type
   ==>
-  m : #A{r} >> coe{r ~> r'}({x}.#A{x}; m) in #A{r'}
+  m : #A{r} >> (coe{r ~> r'} {x} #A{x} m) in #A{r'}
 ] by [
   auto
 ].
@@ -11,7 +11,10 @@ Rule CoeTest{r:dim, r':dim}(#A : {dim}.exp) : [
 Rule CoeTestCap{r:dim}(#A : {dim}.exp) : [
   {x:dim} | m : #A{r} >> #A{x} = #A{x} type
   ==>
-  m : #A{r} >> coe{r ~> r}({x}.#A{x}; m) = m in #A{r}
+  m : #A{r} >> (coe{r ~> r} {x} #A{x} m) = m in #A{r}
 ] by [
   auto
 ].
+
+
+Extract CoeTestCap.

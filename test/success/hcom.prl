@@ -9,18 +9,19 @@
 Thm Hcom/Poly(#A) : [
   a/type : #A type
   >>
-    (a : #A)
-      -> (b : #A)
-      -> (c : #A) 
-      -> (d : #A) 
-      -> paths({_}.#A; a; b)
-      -> paths({_}.#A; a; c)
-      -> paths({_}.#A; b; d) 
-      -> paths({_}.#A; c; d)
+  (->
+   [a b c d #A]
+   (path {_} #A a b)
+   (path {_} #A a c)
+   (path {_} #A b d)
+   (path {_} #A c d))
 ] by [
   { lam a. lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
-    <i> 'hcom{0 ~> 1}(#A; ,pab @ i) [i=0 -> {j}. ,pac @ j; i=1 -> {j}. ,pbd @ j]
+    <i> 
+      `(hcom{0 ~> 1} #A (@ ,pab i) 
+        [i=0 {j} (@ ,pac j)]
+        [i=1 {j} (@ ,pbd j)])
   };
   auto
 ].
@@ -30,15 +31,17 @@ Extract Hcom/Poly.
 Thm Hcom/trans(#A) : [
   a/type : #A type
   >>
-    (a : #A)
-      -> (b : #A)
-      -> (c : #A)
-      -> paths({_}.#A; a; b)
-      -> paths({_}.#A; b; c)
-      -> paths({_}.#A; a; c)
+  (->
+   [a b c #A]
+   (path {_} #A a b)
+   (path {_} #A b c)
+   (path {_} #A a c))
 ] by [
   { lam a. lam b. lam c. lam pab. lam pbc.
-    <i> 'hcom{0 ~> 1}(#A; ,pab @ i) [i=0 -> {_}. ,a; i=1 -> {j}. ,pbc @j]
+    <i>
+      `(hcom{0 ~> 1} #A (@ ,pab i) 
+        [i=0 {_} ,a] 
+        [i=1 {j} (@ ,pbc j)])
   };
   auto
 ].
@@ -46,13 +49,16 @@ Thm Hcom/trans(#A) : [
 Thm Hcom/symm(#A) : [
   a/type : #A type
   >> 
-    (a : #A) 
-      -> (b : #A)
-      -> paths({_}.#A; a; b)
-      -> paths({_}.#A; b; a)
+  (->
+   [a b #A]
+   (path {_} #A a b)
+   (path {_} #A b a))
 ] by [
   { lam a. lam b. lam pab.
-    <i> 'hcom{0 ~> 1}(#A; ,a) [i=0 -> {j}. ,pab @j; i=1 -> {_}. ,a]
+    <i>
+      `(hcom{0 ~> 1} #A ,a 
+        [i=0 {j} (@ ,pab j)]
+        [i=1 {_} ,a])
   };
   auto
 ].
@@ -60,7 +66,7 @@ Thm Hcom/symm(#A) : [
 Thm Cap{i : dim}(#A) : [ 
   a/type : #A type,
   x : #A
-  >> hcom{0 ~> 0}(#A; x) [i=0 -> {_}. x; i=1 -> {_}. x] = x in #A
+  >> (hcom{0 ~> 0} #A x [i=0 {_} x] [i=1 {_} x]) = x in #A
 ] by [
   auto
 ].
@@ -68,13 +74,13 @@ Thm Cap{i : dim}(#A) : [
 Thm Tube(#A) : [
   a/type : #A type,
   x : #A
-  >> hcom{0 ~> 1}(#A; x) [1=1 -> {_}. x; 0=0 -> {_}. x] = x in #A
+  >> (hcom{0 ~> 1} #A x [1=1 {_} x] [0=0 {_} x]) = x in #A
 ] by [
   auto
 ].
 
 Thm TrueByEvaluation : [
-  hcom{0 ~> 0}(bool; tt) [] in bool
+  (hcom{0 ~> 0} bool tt) in bool
 ] by [
   auto
 ].

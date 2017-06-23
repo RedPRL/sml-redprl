@@ -1,6 +1,6 @@
 functor SequentJudgment
   (structure S : SEQUENT where type 'a CJ.Tm.O.Ar.Vl.Sp.t = 'a list and type CJ.Tm.Sym.t = Sym.t and type CJ.Tm.Var.t = Sym.t
-   structure TermPrinter : SHOW where type t = S.CJ.Tm.abt) : LCF_JUDGMENT  =
+   structure TermPrinter : sig type t = S.CJ.Tm.abt val ppTerm : t -> Fpp.doc end) : LCF_JUDGMENT  =
 struct
   structure CJ = S.CJ
   structure Tm = CJ.Tm
@@ -12,7 +12,7 @@ struct
 
   val subst = S.map o Tm.substMetaenv
   val eq = S.eq
-  val toString = S.toString TermPrinter.toString
+  val toString = FppRenderPlainText.toString o FinalPrinter.execPP o S.pretty TermPrinter.ppTerm
 
   local
     open S
@@ -20,7 +20,7 @@ struct
   in
     val rec sort =
       fn (I, H) >> catjdg =>
-           ((List.map #2 I, Hyps.foldr (fn (_, jdg, r) => CJ.synthesis jdg :: r) [] H), 
+           ((List.map #2 I, Hyps.foldr (fn (_, jdg, r) => CJ.synthesis jdg :: r) [] H),
             CJ.synthesis catjdg)
        | MATCH (th, k, _, _, _) =>
            let

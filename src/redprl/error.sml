@@ -18,10 +18,10 @@ struct
      | ! tm => "`" ^ TermPrinter.toString tm ^ "`"
 
   val rec format =
-    fn E frags => ListSpine.pretty fragToString " " frags
+    fn E frags => Fpp.text (ListSpine.pretty fragToString " " frags)
      | Pos (_, exn) => format exn
-     | BadSubstMetaenv {description,...} => description
-     | exn => exnMessage exn
+     | BadSubstMetaenv {description,...} => Fpp.text description
+     | exn => Fpp.text (exnMessage exn)
 
    fun annotate (SOME pos) exn = Pos (pos, exn)
      | annotate NONE exn = exn

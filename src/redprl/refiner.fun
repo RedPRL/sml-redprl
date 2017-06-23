@@ -388,12 +388,12 @@ struct
        | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
        | INSERT (x,_) => "INSERT " ^ Sym.toString x
 
-    fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope = 
-      case deltas of 
+    fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope =
+      case deltas of
          [] => H
        | DELETE x :: deltas => applyDiffs alpha i xrho deltas (Hyps.remove x H)
        | UPDATE (x, jdg) :: deltas => applyDiffs alpha i xrho deltas (Hyps.modify x (fn _ => jdg) H)
-       | INSERT (x, jdg) :: deltas => 
+       | INSERT (x, jdg) :: deltas =>
            let
              val x' = alpha i
              val jdg' = CJ.map (RedPrlAbt.renameVars xrho) jdg
@@ -618,7 +618,7 @@ struct
               (case catjdg of
                   CJ.TRUE _ => StepTrue hyp z alpha jdg
                 | CJ.EQ _ => StepEq hyp z alpha jdg
-                | _ => raise E.error [E.% ("Could not find suitable elimination rule for " ^ CJ.toString catjdg)])
+                | _ => raise E.error [E.% ("Could not find suitable elimination rule [TODO, display information]")])
            | _ => raise E.error [E.% "Could not find suitable elimination rule"]
         end
     in

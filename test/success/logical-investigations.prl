@@ -12,7 +12,7 @@
 Thm Thm1(#A; #B) : [
   type/A : #A type,
   type/B : #B type
-  >> #A -> #B -> #A
+  >> (-> #A #B #A)
 ] by [
   // The main part of the theorem is the following expression; but in RedPRL, this induces some
   // auxiliary subgoals, which have to be resolved. To do that, we put the main part of the proof
@@ -26,7 +26,7 @@ Thm Thm2(#A; #B; #C) : [
   type/A : #A type,
   type/B : #B type,
   type/C : #C type
-  >> ((#A -> #B) -> (#A -> #B -> #C) -> #A -> #C)
+  >> (-> (-> #A #B) (-> #A #B #C) #A #C)
 ] by [
   {lam f. lam g. lam a.
    // RedPRL's logic is a sequent calculus, which means that you apply 
@@ -41,18 +41,18 @@ Thm Thm2(#A; #B; #C) : [
 // It is worthwhile to print out the extract program / evidence for Thm2.
 Extract Thm2.
 
-Def Not(#A) = [ #A -> void ].
+Def Not(#A) = [ (-> #A void) ].
 
 Thm Not/wf(#A) : [
   type/A : #A type
-  >> Not(#A) type
+  >> (Not #A) type
 ] by [
   auto
 ].
 
 Thm Thm4(#A; #B) : [
   type/A : #A type
-  >> Not(#A) -> #A -> #B
+  >> (-> (Not #A) #A #B)
 ] by [
   { lam r. lam a.
     unfold Not;
@@ -64,7 +64,7 @@ Thm Thm4(#A; #B) : [
 
 Thm Thm5(#A) : [
   type/A : #A type
-  >> #A -> Not(Not(#A))
+  >> (-> #A (Not (Not #A)))
 ] by [
   { lam a.
     unfold Not;
@@ -76,6 +76,3 @@ Thm Thm5(#A) : [
 ].
 
 Extract Thm5.
-
-// TODO: I would have given some examples about negation, but I just realized that RedPRL doesn't even have
-// the Void type! I'll add it soon.
