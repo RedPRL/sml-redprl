@@ -32,8 +32,7 @@ struct
   fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : Fpp.doc =
     Fpp.hsep
       [Fpp.text "Def",
-        Fpp.text @@ Sym.toString opid,
-        Fpp.seq [prettyParams params, prettyArgs arguments],
+        Fpp.seq [Fpp.text @@ Sym.toString opid, prettyParams params, prettyArgs arguments],
         Fpp.Atomic.colon,
         case spec of
            NONE => Fpp.text (RedPrlSort.toString sort)
