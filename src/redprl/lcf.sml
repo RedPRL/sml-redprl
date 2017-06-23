@@ -3,7 +3,7 @@ structure LcfLanguage = LcfAbtLanguage (RedPrlAbt)
 structure Lcf :
 sig
   include LCF_UTIL
-  val prettyState : jdg state -> FinalPrinter.doc
+  val prettyState : jdg state -> Fpp.doc
 end =
 struct
   structure Lcf = Lcf (LcfLanguage)
@@ -22,7 +22,7 @@ struct
         [Fpp.seq [Fpp.hsep [Fpp.text "Goal", Fpp.text (Metavar.toString x)], Fpp.text "."],
          RedPrlSequent.pretty TermPrinter.ppTerm jdg]
 
-  val prettyGoals : jdg Tl.telescope -> {doc : FinalPrinter.doc, env : J.env, idx : int} = 
+  val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, env : J.env, idx : int} = 
     let
       open RedPrlAbt
     in

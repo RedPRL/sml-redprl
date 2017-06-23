@@ -29,7 +29,7 @@ struct
       intersperse (Fpp.text ";") @@ 
         List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
-  fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : FinalPrinter.doc =
+  fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : Fpp.doc =
     Fpp.hsep
       [Fpp.text "Def",
         Fpp.text @@ Sym.toString opid,

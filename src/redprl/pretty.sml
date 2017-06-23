@@ -3,14 +3,12 @@ structure Fpp = FinalPrettyPrinter (FppBasis)
 
 signature FINAL_PRINTER = 
 sig
-  type doc = unit Fpp.m
-  val execPP : doc -> (int, unit) FppTypes.output
+  val execPP : Fpp.doc -> (int, unit) FppTypes.output
 end
 
 structure FinalPrinter :> FINAL_PRINTER = 
 struct
   open FppBasis Fpp
-  type doc = unit m
 
   local 
     val initialEnv =
@@ -31,10 +29,10 @@ structure TermPrinter :
 sig
   type t = RedPrlAbt.abt
   val toString : t -> string
-  val ppTerm : t -> FinalPrinter.doc
-  val ppSort : RedPrlAbt.sort -> FinalPrinter.doc
-  val ppPsort : RedPrlAbt.psort -> FinalPrinter.doc
-  val ppValence : RedPrlAbt.valence -> FinalPrinter.doc
+  val ppTerm : t -> Fpp.doc
+  val ppSort : RedPrlAbt.sort -> Fpp.doc
+  val ppPsort : RedPrlAbt.psort -> Fpp.doc
+  val ppValence : RedPrlAbt.valence -> Fpp.doc
 end =
 struct
   structure Abt = RedPrlAbt

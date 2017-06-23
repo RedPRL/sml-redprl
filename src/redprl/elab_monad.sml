@@ -17,13 +17,13 @@ struct
   end
 
   datatype msg =
-     DUMP of FinalPrinter.doc ann
-   | INFO of FinalPrinter.doc ann
-   | WARN of FinalPrinter.doc ann
+     DUMP of Fpp.doc ann
+   | INFO of Fpp.doc ann
+   | WARN of Fpp.doc ann
 
   datatype 'a res =
      SUCCESS of 'a
-   | FAILURE of FinalPrinter.doc ann
+   | FAILURE of Fpp.doc ann
 
   type 'a state =
     {result : 'a res,
@@ -107,10 +107,10 @@ struct
     bind f (ret ())
 
   type ('a, 'b) alg =
-    {warn : FinalPrinter.doc ann * 'b -> 'b,
-     dump : FinalPrinter.doc ann * 'b -> 'b,
-     info : FinalPrinter.doc ann * 'b -> 'b,
-     fail : FinalPrinter.doc ann * 'b -> 'b,
+    {warn : Fpp.doc ann * 'b -> 'b,
+     dump : Fpp.doc ann * 'b -> 'b,
+     info : Fpp.doc ann * 'b -> 'b,
+     fail : Fpp.doc ann * 'b -> 'b,
      init : 'b,
      succeed : 'a * 'b -> 'b}
 

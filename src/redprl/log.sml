@@ -7,7 +7,7 @@ struct
    | FAIL
    | TRACE
 
-  fun formatMessage lvl (pos, msg : FinalPrinter.doc) : FinalPrinter.doc =
+  fun formatMessage lvl (pos, msg : Fpp.doc) : Fpp.doc =
     let
       val pos' =
         case pos of

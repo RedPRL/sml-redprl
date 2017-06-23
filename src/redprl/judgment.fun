@@ -1,6 +1,6 @@
 functor SequentJudgment
   (structure S : SEQUENT where type 'a CJ.Tm.O.Ar.Vl.Sp.t = 'a list and type CJ.Tm.Sym.t = Sym.t and type CJ.Tm.Var.t = Sym.t
-   structure TermPrinter : sig type t = S.CJ.Tm.abt val ppTerm : t -> FinalPrinter.doc end) : LCF_JUDGMENT  =
+   structure TermPrinter : sig type t = S.CJ.Tm.abt val ppTerm : t -> Fpp.doc end) : LCF_JUDGMENT  =
 struct
   structure CJ = S.CJ
   structure Tm = CJ.Tm

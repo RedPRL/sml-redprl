@@ -82,10 +82,10 @@ struct
       (Fpp.Atomic.comma)
       (List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Tm.O.Ar.Vl.PS.toString sigma)]) syms)
 
-  fun prettyHyps f : 'a ctx -> FinalPrinter.doc =
+  fun prettyHyps f : 'a ctx -> Fpp.doc =
     Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [Fpp.text (Tm.Sym.toString x), Fpp.Atomic.colon, f a] :: r) []
 
-  fun pretty f : 'a jdg -> FinalPrinter.doc = 
+  fun pretty f : 'a jdg -> Fpp.doc = 
     fn (I, H) >> catjdg =>
        Fpp.seq
          [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
