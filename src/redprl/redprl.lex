@@ -90,7 +90,7 @@ whitespace = [\ \t];
 "abs"              => (Tokens.ABS (posTuple (size yytext)));
 "fst"              => (Tokens.FST (posTuple (size yytext)));
 "snd"              => (Tokens.SND (posTuple (size yytext)));
-"paths"            => (Tokens.PATHS (posTuple (size yytext)));
+"path"            => (Tokens.PATHS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
 

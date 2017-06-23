@@ -6,7 +6,7 @@ Thm BoolTest : [
 ].
 
 Thm PathTest : [
-  (paths {_} S1 base base)
+  (path {_} S1 base base)
 ] by [
   { <x> '(loop x) }; auto
 ].
@@ -55,7 +55,7 @@ Tac TryStep = [ auto-step || id ].
 Thm ApEqTest : [
   (-> 
    [f (-> bool bool)]
-   (paths {_} bool (f tt) (f tt)))
+   (path {_} bool (f tt) (f tt)))
 ] by [
   { lam f. <_> '(,f tt) };
 
@@ -75,12 +75,12 @@ Def BoolEta(#M) = [
 // what we need to do.
 //
 Thm PathTest2 : [
-  (paths 
+  (path 
     {_} (-> bool bool)
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
-  { let h : [(-> [b bool] (paths {_} bool b (BoolEta b))) ] =
+  { let h : [(-> [b bool] (path {_} bool b (BoolEta b))) ] =
       lam b. if b then <y> 'tt else <y> 'ff.
     <x> lam c. let p = h {hyp c}. '(@ ,p x)
   };
@@ -94,7 +94,7 @@ Thm PathTest2 : [
 // not being interactive: you must know ahead of time the entirety of the program, and
 // cannot take advantage of types in order to synthesize part of it.
 Thm PathTest3 : [
-  (paths 
+  (path 
     {_} (-> bool bool)
     (lam [b] b)
     (lam [b] (BoolEta b)))
@@ -102,14 +102,14 @@ Thm PathTest3 : [
   // I'm surprised that RedPRL can typecheck this properly! Quite encouraging.
   '(abs {x} 
     (lam [b]
-     (@ (if [b] (paths {_} bool b (BoolEta b)) b (abs {_} tt) (abs {_} ff))
+     (@ (if [b] (path {_} bool b (BoolEta b)) b (abs {_} tt) (abs {_} ff))
         x)));
   auto
 ].
 
 Print PathTest3.
 
-Thm PairTest : [ (* [a S1] (paths {_} S1 a base)) ] by [
+Thm PairTest : [ (* [a S1] (path {_} S1 a base)) ] by [
   < {'base}
   , <x> '(loop x)
   >;
@@ -152,8 +152,8 @@ Thm FunExt(#A; #B) : [
   (->
    [f (-> #A #B)]
    [g (-> #A #B)]
-   [p (-> [y #A] (paths {_} #B (f y) (g y)))]
-   (paths {_} (-> #A #B) f g))
+   [p (-> [y #A] (path {_} #B (f y) (g y)))]
+   (path {_} (-> #A #B) f g))
 ] by [
   {lam f. lam g. lam p.
     <i> lam a. let q = p hyp a. '(@ ,q i)};
@@ -164,14 +164,14 @@ Print FunExt.
 
 
 Tac FunExtTac(#A; #B; #F; #G) = [
-  let p : [(-> [x #A] (paths {_} bool (#F x) (#G x)))] = {}.
+  let p : [(-> [x #A] (path {_} bool (#F x) (#G x)))] = {}.
   {<i> lam a. let q = p hyp a. '(@ ,q i)};
   auto
 ].
 
 // We ought to be able to use FunExt as a lemma, but our machinery is not yet set up for that.
 // Instead, we can use FunExtTac.
-Thm NotNotPath : [(paths {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
+Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac bool bool (Cmp Not Not) (lam [x] x));
 
   {lam x. if x then <i> 'tt else <i> 'ff};
@@ -181,7 +181,7 @@ Thm NotNotPath : [(paths {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
 Extract NotNotPath.
 Print FunExtTac.
 
-Thm Singleton : [(* [x bool] (paths {_} bool x tt))] by [
+Thm Singleton : [(* [x bool] (path {_} bool x tt))] by [
   < 'tt, <x> 'tt >;
   auto
 ].

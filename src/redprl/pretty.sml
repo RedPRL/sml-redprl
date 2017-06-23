@@ -138,6 +138,10 @@ struct
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "hcom" dir, ppBinder ty, ppBinder cap]
              :: [ppTubes (eqs, tubes)]
+     | O.POLY (O.FCOM (dir, eqs)) $ (cap :: tubes) =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [ppComHead "fcom" dir, ppBinder cap]
+             :: [ppTubes (eqs, tubes)]
 
      | theta $ [] =>
         ppOperator theta
@@ -161,8 +165,7 @@ struct
         (fn ((r1, r2), ([u], _) \ mx) =>
           Atomic.squares @@ hsep
             [seq [ppParam r1, Atomic.equals, ppParam r2],
-              text "->",
-              nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mx]])
+             nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mx]])
         (eqs, tubes)
 
 

@@ -13,7 +13,7 @@ Thm SBool/Not-Not-Id : [
 ].
 
 Thm SBool/Not-Not-Id-Path : [
-  (paths
+  (path
     {_} (-> sbool sbool)
     (Cmp SBool/Not SBool/Not)
     (lam [x] x))

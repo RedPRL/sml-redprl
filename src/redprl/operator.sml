@@ -414,7 +414,7 @@ struct
      | FST => "fst"
      | SND => "snd"
 
-     | PATH_TY => "paths"
+     | PATH_TY => "path"
      | PATH_ABS => "abs"
 
      | MTAC_SEQ _ => "seq"

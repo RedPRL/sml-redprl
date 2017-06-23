@@ -35,7 +35,7 @@ struct
   fun orElse (t1, t2) =
     multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
 
-  fun makeLemma tm = 
+  fun makeLemma tm =
     case Ast.out tm of
        O.POLY (O.CUST params) $ bindings => O.POLY (O.RULE_LEMMA params) $$ bindings
      | _ => raise Fail "Invalid 'rule' term"
@@ -281,7 +281,7 @@ terms
 
 
 tube
-  : LSQUARE equation RIGHT_ARROW binding RSQUARE (equation, binding)
+  : LSQUARE equation binding RSQUARE (equation, binding)
 
 tubes
   : tube ([tube])
