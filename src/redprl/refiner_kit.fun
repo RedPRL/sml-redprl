@@ -110,13 +110,22 @@ struct
       if P.eq Sym.eq (r1, r2) then
         ()
       else
-        raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", Fpp.text (P.toString Sym.toString r1), Fpp.text "to be equal to", Fpp.text (P.toString Sym.toString r2)]
+        raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", TermPrinter.ppParam r1, Fpp.text "to be equal to", TermPrinter.ppParam r2]
 
     fun equationEq msg ((r1, r1'), (r2, r2')) =
       if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
         ()
       else
-        raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected equation", Fpp.text (P.toString Sym.toString r1), Fpp.text "=", Fpp.text (P.toString Sym.toString r1'), Fpp.text "to be equal to", Fpp.text (P.toString Sym.toString r2), Fpp.text "=", Fpp.text (P.toString Sym.toString r2')]
+        raise E.error
+          [Fpp.text (msg ^ ":"),
+           Fpp.text "Expected equation",
+           TermPrinter.ppParam r1,
+           Fpp.text "=",
+           TermPrinter.ppParam r1',
+           Fpp.text "to be equal to",
+           TermPrinter.ppParam r2,
+           Fpp.text "=",
+           TermPrinter.ppParam r2']
 
     (* The following is a sufficient condition for tautology:
      * the list contains a true equation `r = r` or both `r = 0`
@@ -137,8 +146,7 @@ struct
               | (P.VAR u, P.APP P.DIM1) =>
                   SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
               | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
-        fun prettyEq (r1, r2) =
-              [Fpp.text (P.toString Sym.toString r1), Fpp.text "=", Fpp.text (P.toString Sym.toString r2), Fpp.text ";"]
+        fun prettyEq (r1, r2) = [TermPrinter.ppParam r1, Fpp.text "=", TermPrinter.ppParam r2, Fpp.text ";"]
       in
         if goEqs (SymSet.empty, SymSet.empty) eqs then
           ()
@@ -156,6 +164,6 @@ struct
       if Var.eq (x, y) then
         ()
       else
-        raise E.error [Fpp.text @@ "Expected variable `" ^ Var.toString x ^ "` to be equal to variable `" ^ Var.toString y ^ "`"]
+        raise E.error [Fpp.text "Expected variable", TermPrinter.ppVar x, Fpp.text "to be equal to variable", TermPrinter.ppVar y]
   end
 end
