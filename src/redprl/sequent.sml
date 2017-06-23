@@ -86,7 +86,11 @@ struct
     Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [Fpp.text (Tm.Sym.toString x), Fpp.Atomic.colon, f a] :: r) []
 
   fun pretty f : 'a jdg -> FinalPrinter.doc = 
-    fn (I, H) >> catjdg => Fpp.vsep [prettySyms I, prettyHyps (CJ.pretty f) H, Fpp.hsep [Fpp.text "\226\138\162", CJ.pretty f catjdg]]
+    fn (I, H) >> catjdg =>
+       Fpp.seq
+         [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
+          if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps (CJ.pretty f) H, Fpp.newline],
+          Fpp.hsep [Fpp.text "\226\138\162", CJ.pretty f catjdg]]
      | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
 
 

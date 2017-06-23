@@ -30,19 +30,18 @@ struct
         List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
   fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : FinalPrinter.doc =
-    Fpp.seq
+    Fpp.hsep
       [Fpp.text "Def",
-        Fpp.space 1,
         Fpp.text @@ Sym.toString opid,
-        prettyParams params,
-        prettyArgs arguments,
-        Fpp.space 1,
+        Fpp.seq [prettyParams params, prettyArgs arguments],
         Fpp.Atomic.colon,
-        Fpp.space 1,
-        Fpp.text (RedPrlSort.toString sort),
-        Fpp.space 1,
+        case spec of
+           NONE => Fpp.text (RedPrlSort.toString sort)
+         | SOME jdg =>
+             Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
+               [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty TermPrinter.ppTerm jdg],
+               Fpp.newline],
         Fpp.Atomic.equals,
-        Fpp.space 1,
         Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
           [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm @@ extract state],
           Fpp.newline],
@@ -458,7 +457,6 @@ struct
         E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
-            (* TODO fix *)
                 EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", prettyEntry sign (eopid, entry)])
               | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
 
