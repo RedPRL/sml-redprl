@@ -1,5 +1,5 @@
 Thm FHcom/trans3 : [
-  (-> [a bool] [b bool] [c bool] [d bool]
+  (-> [a b c d bool]
    (paths {_} bool a b)
    (paths {_} bool a c)
    (paths {_} bool b d)
@@ -13,7 +13,7 @@ Thm FHcom/trans3 : [
 ].
 
 Thm FHcom/trans2 : [
-  (-> [a bool] [b bool] [c bool]
+  (-> [a b c bool]
    (paths {_} bool a b)
    (paths {_} bool b c)
    (paths {_} bool a c))
@@ -25,7 +25,7 @@ Thm FHcom/trans2 : [
 ].
 
 Thm FHcom/symm : [
-  (-> [a bool] [b bool]
+  (-> [a b bool]
    (paths {_} bool a b)
    (paths {_} bool b a))
 ] by [

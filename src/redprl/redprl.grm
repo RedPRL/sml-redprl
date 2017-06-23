@@ -40,15 +40,13 @@ structure Quant =
 struct
   infix $$ $ \
 
-  fun makeDFun [] cod = cod
-    | makeDFun ((x,a) :: doms) cod = 
-       O.MONO O.DFUN $$ [([],[]) \ a, ([],[x]) \ makeDFun doms cod]
+  fun makeQuant opr [] cod = cod
+    | makeQuant opr (([], _) :: doms) cod = makeQuant opr doms cod
+    | makeQuant opr ((x :: xs, a) :: doms) cod = 
+       O.MONO opr $$ [([],[]) \ a, ([],[x]) \ makeQuant opr ((xs, a) :: doms) cod]
 
-  fun makeDProd [] cod = cod
-    | makeDProd ((x,a) :: doms) cod = 
-       O.MONO O.DPROD $$ [([],[]) \ a, ([],[x]) \ makeDFun doms cod]
-
-    
+  val makeDFun = makeQuant O.DFUN
+  val makeDProd = makeQuant O.DPROD
 end
 
 
@@ -119,7 +117,7 @@ end
    (* ... annotated with source position*)
  | atomicTerm of ast
 
- | quantifierData of (string * ast) list * ast
+ | quantifierData of (string list * ast) list * ast
 
    (* a type-theoretic term, annotated with source position *)
  | term of ast
@@ -263,12 +261,12 @@ boundVar
 
 symbols
   : boundVar ([boundVar])
-  | boundVar COMMA symbols (boundVar :: symbols)
+  | boundVar symbols (boundVar :: symbols)
   | ([])
 
 terms
   : term ([term])
-  | term COMMA terms (term :: terms)
+  | term terms (term :: terms)
   | PERCENT LBRACKET tactic RBRACKET COMMA terms (tactic :: terms)
   | ([])
 
@@ -326,8 +324,8 @@ dir
 term : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
 
 quantifierData
-  : LSQUARE boundVar term RSQUARE quantifierData (((boundVar, term) :: #1 quantifierData), #2 quantifierData)
-  | term quantifierData ((("_", term) :: #1 quantifierData), #2 quantifierData)
+  : LSQUARE symbols term RSQUARE quantifierData (((symbols, term) :: #1 quantifierData), #2 quantifierData)
+  | term quantifierData (((["_"], term) :: #1 quantifierData), #2 quantifierData)
   | term ([], term)
 
 
