@@ -12,6 +12,8 @@ struct
   infix |> ||
 
   (* TODO: clean up all this stuff with vsep *)
+  (* TODO: also try to extend the printer with "concrete name" environments so that we can print without doing
+     all these renamings. *)
 
   fun @@ (f, x) = f x
   infixr 0 @@

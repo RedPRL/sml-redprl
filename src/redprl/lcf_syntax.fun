@@ -66,11 +66,6 @@ struct
 
   fun tactic sign tac =
     let
-      (*val _ =
-        case getAnnotation tac of
-           SOME (ann : Pos.t) => print ("Tactic " ^ TermPrinter.toString tac ^ ": " ^ Pos.toString ann ^ "\n\n")
-         | NONE => print ("Tactic " ^ TermPrinter.toString tac ^ ": has no annotation\n\n")*)
-
       val tac' = prepareTerm sign tac
     in
       case Tm.out tac' of
