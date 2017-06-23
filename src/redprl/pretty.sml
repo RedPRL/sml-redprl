@@ -47,6 +47,7 @@ struct
   infix 0 $ $$ $# \
   infixr 0 @@
 
+  val ppSym = text o Sym.toString
   val ppVar = text o Var.toString
   val ppParam = text o P.toString Sym.toString
 
@@ -55,8 +56,11 @@ struct
        [] => empty
      | _ => m
 
-  val ppOperator =
-    text o RedPrlOperator.toString Sym.toString
+  fun ppOperator theta =
+    case theta of 
+       O.POLY (O.CUST (opid, [], _)) => ppSym opid
+     | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map (fn (p, _) => ppParam p) params
+     | _ =>  text @@ RedPrlOperator.toString Sym.toString theta
 
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
@@ -156,7 +160,7 @@ struct
           Atomic.squares @@ hsep
             [seq [ppParam r1, Atomic.equals, ppParam r2],
               text "->",
-              nest 1 @@ hvsep [Atomic.braces (text (Sym.toString u)), ppTerm mx]])
+              nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mx]])
         (eqs, tubes)
 
 
@@ -168,7 +172,7 @@ struct
   and symBinding us =
     unlessEmpty us @@
       Atomic.braces @@
-        hsep @@ List.map (text o Sym.toString) us
+        hsep @@ List.map ppSym us
 
   and varBinding xs =
     unlessEmpty xs @@
