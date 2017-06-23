@@ -7,7 +7,7 @@ Def SBool/Not = [
 ].
 
 Thm SBool/Not-Not-Id : [
-  (Cmp (SBool/Not) (SBool/Not)) = (lam [x] x) in (-> sbool sbool)
+  (Cmp SBool/Not SBool/Not) = (lam [x] x) in (-> sbool sbool)
 ] by [
   auto
 ].
@@ -15,7 +15,7 @@ Thm SBool/Not-Not-Id : [
 Thm SBool/Not-Not-Id-Path : [
   (paths
     {_} (-> sbool sbool)
-    (Cmp (SBool/Not) (SBool/Not))
+    (Cmp SBool/Not SBool/Not)
     (lam [x] x))
 ] by [
   {<i> lam x. hyp x};
