@@ -33,6 +33,8 @@ sig
   val ppSort : RedPrlAbt.sort -> Fpp.doc
   val ppPsort : RedPrlAbt.psort -> Fpp.doc
   val ppValence : RedPrlAbt.valence -> Fpp.doc
+  val ppSym : RedPrlAbt.variable -> Fpp.doc
+  val ppParam : RedPrlAbt.param -> Fpp.doc
 end =
 struct
   structure Abt = RedPrlAbt
