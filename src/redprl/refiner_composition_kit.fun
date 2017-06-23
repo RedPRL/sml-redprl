@@ -10,7 +10,7 @@ struct
 
   infixr @@
   infix 1 || #>
-  infix 2 >> >: >:+ $$ $# // \ @>
+  infix 2 >> >: >:? >:+ $$ $# // \ @>
   infix orelse_
 
   structure Restriction :
@@ -74,11 +74,9 @@ struct
           let
             val tube0 = substSymbol (P.ret w, u) tube0
             val tube1 = substSymbol (P.ret w, v) tube1
-            val J = (I, H) >> CJ.EQ ((tube0, tube1), ty)
+            val J = (I @ [(w,P.DIM)], H) >> CJ.EQ ((tube0, tube1), ty)
           in
-            Option.map 
-              (fn (I, J) >> jdg => #1 (makeGoal @@ (I @ [(w,P.DIM)], H) >> jdg))
-              (Restriction.restrict J [eq0, eq1])
+            Option.map makeGoal' (Restriction.restrict J [eq0, eq1])
           end
         fun goTubePairs [] [] = []
           | goTubePairs (t0 :: ts0) (t1 :: ts1) =
@@ -97,9 +95,9 @@ struct
       let
         fun tubeCap (eq, (u, tube)) =
           let
-            val J = (I, H) >> CJ.EQ ((substSymbol (r,u) tube, cap), ty)
+            val J = (I, H) >> CJ.EQ ((substSymbol (r, u) tube, cap), ty)
           in
-            Option.map (#1 o (fn j => makeGoal @@ j)) (Restriction.restrict J [eq])
+            Option.map makeGoal' (Restriction.restrict J [eq])
           end
       in
         List.mapPartial tubeCap tubes
@@ -112,14 +110,14 @@ struct
       let
         val {dir=(r0, r'0), cap=cap0, tubes=tubes0} = args0
         val {dir=(r1, r'1), cap=cap1, tubes=tubes1} = args1
-        val () = assertParamEq "genFcomGoals source of direction" (r0, r1)
-        val () = assertParamEq "genFcomGoals target of direction" (r'0, r'1)
+        val () = Assert.paramEq "EqFComDelegator source of direction" (r0, r1)
+        val () = Assert.paramEq "EqFComDelegator target of direction" (r'0, r'1)
         val eqs0 = List.map #1 tubes0
         val eqs1 = List.map #1 tubes1
-        val _ = ListPair.mapEq (assertEquationEq "genFcomGoals equations") (eqs0, eqs1)
-        val _ = assertTautologicalEquations "genFcomGoals tautology checking" eqs0
+        val _ = ListPair.mapEq (Assert.equationEq "EqFComDelegator equations") (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "EqFComDelegator tautology checking" eqs0
 
-        val (goalCap, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap0, cap1), ty)
+        val goalCap = makeGoal' @@ (I, H) >> CJ.EQ ((cap0, cap1), ty)
 
         val w = alpha 0
       in
@@ -138,23 +136,26 @@ struct
         val _ = RedPrlLog.trace "HCom.Eq"
         val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
         val Syn.HCOM {dir=(r0, r'0), ty=ty0, cap=cap0, tubes=tubes0} = Syn.out lhs
-        val () = assertAlphaEq (ty0, ty)
         val Syn.HCOM {dir=(r1, r'1), ty=ty1, cap=cap1, tubes=tubes1} = Syn.out rhs
-        val () = assertParamEq "HCom.Eq source of direction" (r0, r1)
-        val () = assertParamEq "HCom.Eq target of direction" (r'0, r'1)
+        val () = Assert.paramEq "HCom.Eq source of direction" (r0, r1)
+        val () = Assert.paramEq "HCom.Eq target of direction" (r'0, r'1)
         val eqs0 = List.map #1 tubes0
         val eqs1 = List.map #1 tubes1
-        val _ = ListPair.mapEq (assertEquationEq "HCom.Eq equations") (eqs0, eqs1)
-        val _ = assertTautologicalEquations "HCom.Eq tautology checking" eqs0
+        val _ = ListPair.mapEq (Assert.equationEq "HCom.Eq equations") (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "HCom.Eq tautology checking" eqs0
 
-        val (goalTy, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty0, ty1)
-        val (goalCap, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap0, cap1), ty)
+        (* type *)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0, ty)
+        val goalTy01 = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty0, ty1)
+
+        (* cap *)
+        val goalCap01 = makeGoal' @@ (I, H) >> CJ.EQ ((cap0, cap1), ty)
 
         val w = alpha 0
       in
         T.empty
-          >: goalTy >: goalCap
-          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes0 tubes1
+          >:? goalTy0 >: goalTy01 >: goalCap01
+          >:+ ComKit.genInterTubeGoals (I, H) w ty0 tubes0 tubes1
           >:+ ComKit.genTubeCapGoals (I, H) ty r0 cap0 tubes0
         #> (I, H, trivial)
       end
@@ -164,16 +165,18 @@ struct
         val _ = RedPrlLog.trace "HCom.CapEq"
         val (I, H) >> CJ.EQ ((hcom, other), ty) = jdg
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
-        val () = assertParamEq "HCom.CapEq source and target of direction" (r, r')
-        val () = assertAlphaEq (ty0, ty)
+        val () = Assert.paramEq "HCom.CapEq source and target of direction" (r, r')
   
-        val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
-        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap, other), ty)
+        (* type *)
+        val goalTy0 = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
+
+        (* eq *)
+        val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((cap, other), ty)
   
         val w = alpha 0
       in
         T.empty
-          >: goalTy >: goalEq
+          >: goalTy0 >: goalEq
           >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
           >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
         #> (I, H, trivial)
@@ -188,18 +191,119 @@ struct
         val (I, H) >> CJ.EQ ((hcom, other), ty) = jdg
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
         val (eq, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
-        val () = assertAlphaEq (ty0, ty)
-  
-        val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
-        val (goalCap, _) = makeGoal @@ (I, H) >> CJ.MEM (cap, ty)
-        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, other), ty)
+
+        (* type *)
+        val goalTy0 = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
+
+        (* cap *)
+        val goalCap = makeGoal' @@ (I, H) >> CJ.MEM (cap, ty)
+
+        (* eq *)
+        val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, other), ty)
   
         val w = alpha 0
       in
         T.empty
-          >: goalTy >: goalCap >: goalEq
+          >: goalTy0 >: goalCap >: goalEq
           >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
           >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
+        #> (I, H, trivial)
+      end
+
+    val TubeEqR = catJdgFlipWrapper TubeEqL
+
+    (* Try all the hcom rules.
+     * Note that the EQ rule is invertible only when the cap and tube rules fail. *)
+    val AutoEqLR = CapEqL orelse_ CapEqR orelse_ TubeEqL orelse_ TubeEqR orelse_ Eq
+    val AutoEqL = CapEqL orelse_ TubeEqL orelse_ Eq
+    val AutoEqR = CapEqR orelse_ TubeEqR orelse_ Eq
+  end
+
+  structure Com =
+  struct
+    fun Eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Com.Eq"
+        val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.COM {dir=(r0, r'0), ty=(u0,ty0), cap=cap0, tubes=tubes0} = Syn.out lhs
+        val Syn.COM {dir=(r1, r'1), ty=(u1,ty1), cap=cap1, tubes=tubes1} = Syn.out rhs
+        val () = Assert.paramEq "Com.Eq source of direction" (r0, r1)
+        val () = Assert.paramEq "Com.Eq target of direction" (r'0, r'1)
+        val eqs0 = List.map #1 tubes0
+        val eqs1 = List.map #1 tubes1
+        val _ = ListPair.mapEq (Assert.equationEq "Com.Eq equations") (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "Com.Eq tautology checking" eqs0
+
+        val w = alpha 0
+
+        (* type *)
+        val goalTy0 = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (substSymbol (r'0, u0) ty0, ty)
+        val ty0w = substSymbol (P.ret w, u0) ty0
+        val ty1w = substSymbol (P.ret w, u1) ty1
+        val goalTy01 = makeGoal' @@ (I @ [(w,P.DIM)], H) >> CJ.EQ_TYPE (ty0w, ty1w)
+
+        (* cap *)
+        val ty00 = substSymbol (r0, u0) ty0
+        val goalCap = makeGoal' @@ (I, H) >> CJ.EQ ((cap0, cap1), ty00)
+      in
+        T.empty
+          >: goalTy0 >: goalTy01 >: goalCap
+          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes0 tubes1
+          >:+ ComKit.genTubeCapGoals (I, H) ty00 r0 cap0 tubes0
+        #> (I, H, trivial)
+      end
+
+    fun CapEqL alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Com.CapEq"
+        val (I, H) >> CJ.EQ ((com, other), ty) = jdg
+        val Syn.COM {dir=(r, r'), ty=(u0,ty0), cap, tubes} = Syn.out com
+        val () = Assert.paramEq "Com.CapEq source and target of direction" (r, r')
+
+        (* type *)
+        val goalTy0 = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (substSymbol (r', u0) ty0, ty)
+
+        (* eq *)
+        val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((cap, other), ty)
+
+        val w = alpha 0
+        val ty0w = substSymbol (P.ret w, u0) ty0
+        val ty00 = substSymbol (r, u0) ty0
+      in
+        T.empty
+          >: goalTy0 >: goalEq
+          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
+          >:+ ComKit.genTubeCapGoals (I, H) ty00 r cap tubes
+        #> (I, H, trivial)
+      end
+
+    val CapEqR = catJdgFlipWrapper CapEqL
+
+    (* Search for the first satisfied equation in an hcom. *)
+    fun TubeEqL alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Com.TubeEq"
+        val (I, H) >> CJ.EQ ((com, other), ty) = jdg
+        val Syn.COM {dir=(r, r'), ty=(u0,ty0), cap, tubes} = Syn.out com
+        val (eq, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
+
+        (* type *)
+        val goalTy0 = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (substSymbol (r', u0) ty0, ty)
+
+        (* cap *)
+        val ty00 = substSymbol (r, u0) ty0
+        val goalCap = makeGoal' @@ (I, H) >> CJ.MEM (cap, ty00)
+
+        (* eq *)
+        val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, other), ty)
+
+        val w = alpha 0
+        val ty0w = substSymbol (P.ret w, u0) ty0
+      in
+        T.empty
+          >: goalTy0 >: goalCap >: goalEq
+          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
+          >:+ ComKit.genTubeCapGoals (I, H) ty00 r cap tubes
         #> (I, H, trivial)
       end
 

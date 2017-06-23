@@ -12,99 +12,8 @@ struct
 
   infixr @@
   infix 1 || #>
-  infix 2 >> >: >:+ $$ $# // \ @>
+  infix 2 >> >: >:? >:+ $$ $# // \ @>
   infix orelse_
-
-  structure Equality =
-  struct
-    fun Hyp alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Equality.Hyp"
-        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.VAR (x, _) = Syn.out m
-        val Syn.VAR (y, _) = Syn.out n
-        val _ = assertVarEq (x, y)
-        val catjdg = lookupHyp H x
-        val ty' =
-          case catjdg of
-             CJ.TRUE ty => ty
-           | _ => raise E.error [E.% "Equality.Hyp: expected truth hypothesis"]
-      in
-        (* If the types are identical, there is no need to create a new subgoal (which would amount to proving that 'ty' is a type).
-           This is because the semantics of sequents is that by assuming that something is a member of a 'ty', we have
-           automatically assumed that 'ty' is a type. *)
-        if Syn.Tm.eq (ty, ty') then
-          T.empty #> (I, H, trivial)
-        else
-          let
-            val (goalTy, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty, ty')
-          in
-            T.empty >: goalTy #> (I, H, trivial)
-          end
-      end
-      handle Bind =>
-        raise E.error [E.% "Expected variable-equality sequent"]
-
-    fun Symmetry alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Equality.Symmetry"
-        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val (goal, hole) = makeGoal @@ (I, H) >> CJ.EQ ((n, m), ty)
-      in
-        T.empty >: goal
-          #> (I, H, trivial)
-      end
-  end
-
-  structure Coe =
-  struct
-    fun Eq alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Coe.Eq"
-        val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.COE {dir=(r0, r'0), ty=(u, ty0u), coercee=m0} = Syn.out lhs
-        val Syn.COE {dir=(r1, r'1), ty=(v, ty1v), coercee=m1} = Syn.out rhs
-        val () = assertParamEq "Coe.Eq source of direction" (r0, r1)
-        val () = assertParamEq "Coe.Eq target of direction" (r'0, r'1)
-
-        val ty01 = substSymbol (r'0, u) ty0u
-        val (goalTy1, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty01, ty)
-
-        val w = alpha 0
-        val ty0w = substSymbol (P.ret w, u) ty0u
-        val ty1w = substSymbol (P.ret w, v) ty1v
-        val (goalTy, _) = makeGoal @@ (I @ [(w, P.DIM)], H) >> CJ.EQ_TYPE (ty0w, ty1w)
-
-        val ty00 = substSymbol (r0, u) ty0u
-        val (goalCoercees, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), ty00)
-      in
-        T.empty >: goalTy1 >: goalTy >: goalCoercees #> (I, H, trivial)
-      end
-
-    fun CapEqL alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Coe.CapEq"
-        val (I, H) >> CJ.EQ ((coe, other), ty) = jdg
-        val Syn.COE {dir=(r, r'), ty=(u, tyu), coercee=m} = Syn.out coe
-        val () = assertParamEq "Coe.CapEq source and target of direction" (r, r')
-
-        val ty0 = substSymbol (r, u) tyu
-        val (goalTy0, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
-
-        val (goalTy, _) = makeGoal @@ (I @ [(u, P.DIM)], H) >> CJ.TYPE tyu
-        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((m, other), ty)
-      in
-        T.empty >: goalTy0 >: goalTy >: goalEq #> (I, H, trivial)
-      end
-
-    fun CapEqR alpha = catJdgFlipWrapper CapEqL alpha
-
-    (* Try all the fcom rules.
-     * Note that the EQ rule is invertible only when the cap rule fails. *)
-    val AutoEqLR = CapEqL orelse_ CapEqR orelse_ Eq
-    val AutoEqL = CapEqL orelse_ Eq
-    val AutoEqR = CapEqR orelse_ Eq
-  end
 
   structure Hyp =
   struct
@@ -142,7 +51,7 @@ struct
       let
         val _ = RedPrlLog.trace "True.Witness"
         val (I, H) >> CJ.TRUE ty = jdg
-        val (goal, _) = makeGoal @@ (I, H) >> CJ.MEM (tm, ty)
+        val goal = makeGoal' @@ (I, H) >> CJ.MEM (tm, ty)
       in
         T.empty >: goal
           #> (I, H, tm)
@@ -182,7 +91,7 @@ struct
         val Syn.IF ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
-        val (goal, _) = makeGoal @@ (I, H) >> CJ.MEM (tm, cm)
+        val goal = makeGoal' @@ (I, H) >> CJ.MEM (tm, cm)
       in
         T.empty >: goal
           #> (I, H, cm)
@@ -195,7 +104,7 @@ struct
         val Syn.S1_ELIM ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
-        val (goal, _) = makeGoal @@ (I, H) >> CJ.MEM (tm, cm)
+        val goal = makeGoal' @@ (I, H) >> CJ.MEM (tm, cm)
       in
         T.empty >: goal
           #> (I, H, cm)
@@ -209,7 +118,7 @@ struct
         val (goalDFun, holeDFun) = makeGoal @@ (I, H) >> CJ.SYNTH m
         val (goalDom, holeDom) = makeGoal @@ MATCH (O.MONO O.DFUN, 0, holeDFun, [], [])
         val (goalCod, holeCod) = makeGoal @@ MATCH (O.MONO O.DFUN, 1, holeDFun, [], [n])
-        val (goalN, _) = makeGoal @@ (I, H) >> CJ.MEM (n, holeDom)
+        val goalN = makeGoal' @@ (I, H) >> CJ.MEM (n, holeDom)
       in
         T.empty >: goalDFun >: goalDom >: goalCod >: goalN
           #> (I, H, holeCod)
@@ -284,24 +193,19 @@ struct
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
-        val _ = assertVarEq (x, y)
+        val _ = Assert.varEq (x, y)
         val catjdg = lookupHyp H x
         val ty' =
           case catjdg of
              CJ.TRUE ty => ty
            | _ => raise E.error [E.% "Equality.Hyp: expected truth hypothesis"]
-      in
+
         (* If the types are identical, there is no need to create a new subgoal (which would amount to proving that 'ty' is a type).
            This is because the semantics of sequents is that by assuming that something is a member of a 'ty', we have
            automatically assumed that 'ty' is a type. *)
-        if Syn.Tm.eq (ty, ty') then
-          T.empty #> (I, H, trivial)
-        else
-          let
-            val (goalTy, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty, ty')
-          in
-            T.empty >: goalTy #> (I, H, trivial)
-          end
+        val goalTy = makeEqTypeIfDifferent (I, H) (ty, ty')
+      in
+        T.empty >:? goalTy #> (I, H, trivial)
       end
       handle Bind =>
         raise E.error [E.% "Expected variable-equality sequent"]
@@ -310,7 +214,7 @@ struct
       let
         val _ = RedPrlLog.trace "Equality.Symmetry"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val (goal, hole) = makeGoal @@ (I, H) >> CJ.EQ ((n, m), ty)
+        val goal = makeGoal' @@ (I, H) >> CJ.EQ ((n, m), ty)
       in
         T.empty >: goal
           #> (I, H, trivial)
@@ -323,23 +227,23 @@ struct
       let
         val _ = RedPrlLog.trace "Coe.Eq"
         val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.COE {dir=(r0, r'0), ty=(u, ty0u), coercee=m0} = Syn.out lhs
-        val Syn.COE {dir=(r1, r'1), ty=(v, ty1v), coercee=m1} = Syn.out rhs
-        val () = assertParamEq "Coe.Eq source of direction" (r0, r1)
-        val () = assertParamEq "Coe.Eq target of direction" (r'0, r'1)
+        val Syn.COE {dir=(r0, r'0), ty=(u0, ty0), coercee=m0} = Syn.out lhs
+        val Syn.COE {dir=(r1, r'1), ty=(u1, ty1), coercee=m1} = Syn.out rhs
+        val () = Assert.paramEq "Coe.Eq source of direction" (r0, r1)
+        val () = Assert.paramEq "Coe.Eq target of direction" (r'0, r'1)
 
-        val ty01 = substSymbol (r'0, u) ty0u
-        val (goalTy1, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty01, ty)
-
+        (* type *)
         val w = alpha 0
-        val ty0w = substSymbol (P.ret w, u) ty0u
-        val ty1w = substSymbol (P.ret w, v) ty1v
-        val (goalTy, _) = makeGoal @@ (I @ [(w, P.DIM)], H) >> CJ.EQ_TYPE (ty0w, ty1w)
+        val ty0w = substSymbol (P.ret w, u0) ty0
+        val ty1w = substSymbol (P.ret w, u1) ty1
+        val goalTy = makeGoal' @@ (I @ [(w, P.DIM)], H) >> CJ.EQ_TYPE (ty0w, ty1w)
 
-        val ty00 = substSymbol (r0, u) ty0u
-        val (goalCoercees, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), ty00)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) (substSymbol (r'0, u0) ty0, ty)
+
+        (* coercee *)
+        val goalCoercees = makeGoal' @@ (I, H) >> CJ.EQ ((m0, m1), substSymbol (r0, u0) ty0)
       in
-        T.empty >: goalTy1 >: goalTy >: goalCoercees #> (I, H, trivial)
+        T.empty >: goalTy >:? goalTy0 >: goalCoercees #> (I, H, trivial)
       end
 
     fun CapEqL alpha jdg =
@@ -347,15 +251,16 @@ struct
         val _ = RedPrlLog.trace "Coe.CapEq"
         val (I, H) >> CJ.EQ ((coe, other), ty) = jdg
         val Syn.COE {dir=(r, r'), ty=(u, tyu), coercee=m} = Syn.out coe
-        val () = assertParamEq "Coe.CapEq source and target of direction" (r, r')
+        val () = Assert.paramEq "Coe.CapEq source and target of direction" (r, r')
 
-        val ty0 = substSymbol (r, u) tyu
-        val (goalTy0, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
+        (* type *)
+        val goalTy = makeGoal' @@ (I @ [(u, P.DIM)], H) >> CJ.TYPE tyu
+        val goalTy0 = makeEqTypeIfDifferent (I, H) (substSymbol (r, u) tyu, ty)
 
-        val (goalTy, _) = makeGoal @@ (I @ [(u, P.DIM)], H) >> CJ.TYPE tyu
-        val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((m, other), ty)
+        (* eq *)
+        val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((m, other), ty)
       in
-        T.empty >: goalTy0 >: goalTy >: goalEq #> (I, H, trivial)
+        T.empty >: goalTy >:? goalTy0 >: goalEq #> (I, H, trivial)
       end
 
     fun CapEqR alpha = catJdgFlipWrapper CapEqL alpha
@@ -421,7 +326,7 @@ struct
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
         val Abt.$ (theta, _) = Abt.out m
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
-        val (goal, _) = makeGoal @@ (I, H) >> CJ.EQ ((m', n), ty)
+        val goal = makeGoal' @@ (I, H) >> CJ.EQ ((m', n), ty)
       in
         T.empty >: goal
           #> (I, H, trivial)
@@ -434,7 +339,7 @@ struct
         val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
         val Abt.$ (theta, _) = Abt.out ty1
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
-        val (goal, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty1', ty2)
+        val goal = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty1', ty2)
         in
           T.empty >: goal
             #> (I, H, trivial)
@@ -575,9 +480,9 @@ struct
 
       fun StepEqType sign (ty1, ty2) =
         case (Machine.canonicity sign ty1, Machine.canonicity sign ty2) of
-           (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
-         | (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
-         | (_, Machine.REDEX) => TypeEquality.Symmetry
+           (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
+         | (_, Machine.REDEX) => catJdgFlipWrapper (Computation.EqTypeHeadExpansion sign)
+         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
          | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
 
       (* equality of canonical forms *)
@@ -607,31 +512,28 @@ struct
            (case x of
                Machine.VAR z => StrictBool.EqElim z
              | _ => raise E.error [E.% "Could not determine critical variable at which to apply sbool elimination"])
-         | (_, Syn.S_IF _, _) => Equality.Symmetry
+         | (_, Syn.S_IF _, _) =>
+           (case y of
+               Machine.VAR z => catJdgFlipWrapper (StrictBool.EqElim z)
+             | _ => raise E.error [E.% "Could not determine critical variable at which to apply sbool elimination"])
          | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
          | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
          | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _), _) => Path.ApEq
-         | (_, Syn.PATH_AP (_, P.APP _), _) => Equality.Symmetry
          | _ => raise E.error [E.% "Could not find neutral equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
 
       fun StepEqNeuExpand (m, ty) =
-        case (Syn.out m, Syn.out ty) of
-           (_, Syn.DPROD _) => DProd.Eta
-         | (_, Syn.DFUN _) => DFun.Eta
-         | (_, Syn.PATH_TY _) => Path.Eta
+        case Syn.out ty of
+           Syn.DPROD _ => DProd.Eta
+         | Syn.DFUN _ => DFun.Eta
+         | Syn.PATH_TY _ => Path.Eta
          | _ => raise E.error [E.% "Could not expand neutral term of type", E.! ty]
 
-      fun StepEqCanonicity sign ((m, n), ty) =
-        case (Machine.canonicity sign m, Machine.canonicity sign n) of
-           (Machine.REDEX, _) => Computation.EqHeadExpansion sign
-         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
-         | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
-         | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand (m, ty)
-         | _ => Equality.Symmetry
-
-      fun StepEq sign ((m, n), ty) =
+      (* these are special rules which are not beta or eta,
+       * and we have to check them against the neutral terms.
+       * it looks nicer to list all of them here. *)
+      fun StepEqStuck sign ((m, n), ty) canonicity =
         case (Syn.out m, Syn.out n) of
            (Syn.HCOM _, Syn.HCOM _) => HCom.AutoEqLR
          | (Syn.HCOM _, _) => HCom.AutoEqL
@@ -639,9 +541,22 @@ struct
          | (Syn.COE _, Syn.COE _) => Coe.AutoEqLR
          | (Syn.COE _, _) => Coe.AutoEqL
          | (_, Syn.COE _) => Coe.AutoEqR
+         | (Syn.COM _, Syn.COM _) => Com.AutoEqLR
+         | (Syn.COM _, _) => Com.AutoEqL
+         | (_, Syn.COM _) => Com.AutoEqLR
          | (Syn.PATH_AP (_, P.APP _), _) => Path.ApConstCompute
-         | (_, Syn.PATH_AP (_, P.APP _)) => Equality.Symmetry
-         | _ => StepEqCanonicity sign ((m, n), ty)
+         | (_, Syn.PATH_AP (_, P.APP _)) => catJdgFlipWrapper Path.ApConstCompute
+         | _ => case canonicity of
+                   (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
+                 | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand (m, ty)
+                 | (Machine.CANONICAL, Machine.NEUTRAL _) => catJdgFlipWrapper @@ StepEqNeuExpand (m, ty)
+
+      fun StepEq sign ((m, n), ty) =
+        case (Machine.canonicity sign m, Machine.canonicity sign n) of
+           (Machine.REDEX, _) => Computation.EqHeadExpansion sign
+         | (_, Machine.REDEX) => catJdgFlipWrapper @@ Computation.EqHeadExpansion sign
+         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
+         | canonicity => StepEqStuck sign ((m, n), ty) canonicity
 
       fun StepSynth sign m =
         case Syn.out m of

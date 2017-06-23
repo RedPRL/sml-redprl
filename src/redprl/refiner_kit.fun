@@ -5,7 +5,7 @@ struct
   structure Machine = AbtMachineUtil (RedPrlMachine (Sig))
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
   open RedPrlSequent
-  infix >: >>
+  infix 2 >: >>
 
   fun @> (H, (x, j)) = Hyps.snoc H x j
   infix @>
@@ -48,18 +48,33 @@ struct
   fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
   infix orelse_
 
-  fun >:+ (tel, (l : (label * 'a) list)) : 'a telescope =
-    List.foldl (fn (g, t) => t >: g) tel l
-  infix 5 >:+
-
   (* this is a hack till we have a nice way to pre-compose Equality.Symmetry *)
   fun catJdgFlip (CJ.EQ_TYPE (a, b)) = CJ.EQ_TYPE (b, a)
     | catJdgFlip (CJ.EQ ((a, b), ty)) = CJ.EQ ((b, a), ty)
   fun catJdgFlipWrapper tactic alpha (IH >> jdg) =
     tactic alpha (IH >> catJdgFlip jdg)
 
+  (* combinators *)
+
+  fun >:+ (tel, list) : 'a telescope =
+    List.foldl (fn (g, t) => t >: g) tel list
+  infix 5 >:+
+
+  fun >:? (tel, NONE) = tel
+    | >:? (tel, SOME g) = tel >: g
+  infix 5 >:?
+
+  (* hypotheses *)
+
   fun hypsToSpine H =
     Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
+
+  fun lookupHyp H z =
+    Hyps.lookup H z
+    handle _ =>
+      raise E.error [E.% @@ "Found nothing in context for hypothesis `" ^ Sym.toString z ^ "`"]
+
+  (* making goals *)
 
   fun makeGoal jdg =
     let
@@ -76,70 +91,71 @@ struct
       ((x, jdg), hole)
     end
 
+  (* ignoring the evidence *)
+  fun makeGoal' jdg = #1 (makeGoal jdg)
 
-  fun lookupHyp H z =
-    Hyps.lookup H z
-    handle _ =>
-      raise E.error [E.% @@ "Found nothing in context for hypothesis `" ^ Sym.toString z ^ "`"]
+  fun makeEqTypeIfDifferent (I, H) (m, n) =
+    if Abt.eq (m, n) then NONE
+    else SOME (makeGoal' @@ (I, H) >> CJ.EQ_TYPE (m, n))
 
-  fun assertAlphaEq (m, n) =
-    if Abt.eq (m, n) then
-      ()
-    else
-      raise E.error [E.% "Expected", E.! m, E.% "to be alpha-equivalent to", E.! n]
-
-  fun assertParamEq msg (r1, r2) =
-    if P.eq Sym.eq (r1, r2) then
-      ()
-    else
-      raise E.error [E.% (msg ^ ":"), E.% "Expected parameter", E.% (P.toString Sym.toString r1), E.% "to be equal to", E.% (P.toString Sym.toString r2)]
-
-  fun assertEquationEq msg ((r1, r1'), (r2, r2')) =
-    if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
-      ()
-    else
-      raise E.error [E.% (msg ^ ":"), E.% "Expected equation", E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r1'), E.% "to be equal to", E.% (P.toString Sym.toString r2), E.% "=", E.% (P.toString Sym.toString r2')]
-
-  (* The following is a sufficient condition for tautology:
-   * the list contains a true equation `r = r` or both `r = 0`
-   * and `r = 1` for some r.
-   *)
-  structure SymSet = SplaySet (structure Elem = Sym.Ord)
-  fun assertTautologicalEquations msg eqs =
-    let
-      fun goEqs _ [] = false
-        | goEqs (state as (zeros, ones)) (eq :: eqs) =
-            case eq of
-              (P.APP P.DIM0, P.APP P.DIM0) => true
-            | (P.APP P.DIM0, _) => goEqs state eqs
-            | (P.APP P.DIM1, P.APP P.DIM1) => true
-            | (P.APP P.DIM1, _) => goEqs state eqs
-            | (P.VAR u, P.APP P.DIM0) =>
-                SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
-            | (P.VAR u, P.APP P.DIM1) =>
-                SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
-            | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
-      fun prettyEq (r1, r2) =
-            [E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r2), E.% ";"]
-    in
-      if goEqs (SymSet.empty, SymSet.empty) eqs then
+  structure Assert =
+  struct
+    fun alphaEq (m, n) =
+      if Abt.eq (m, n) then
         ()
       else
-        (* todo: pretty printer for equation lists *)
-        raise E.error
-          (List.concat
-            [ [E.% (msg ^ ":"), E.% "Expected shape"]
-            , ListMonad.bind prettyEq eqs
-            , [E.% "to have true equation r = r or equation pair r = 0 and r = 1."]
-            ])
-    end
+        raise E.error [E.% "Expected", E.! m, E.% "to be alpha-equivalent to", E.! n]
 
-  fun assertVarEq (x, y) =
-    if Var.eq (x, y) then
-      ()
-    else
-      raise E.error [E.% @@ "Expected variable `" ^ Var.toString x ^ "` to be equal to variable `" ^ Var.toString y ^ "`"]
+    fun paramEq msg (r1, r2) =
+      if P.eq Sym.eq (r1, r2) then
+        ()
+      else
+        raise E.error [E.% (msg ^ ":"), E.% "Expected parameter", E.% (P.toString Sym.toString r1), E.% "to be equal to", E.% (P.toString Sym.toString r2)]
 
+    fun equationEq msg ((r1, r1'), (r2, r2')) =
+      if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
+        ()
+      else
+        raise E.error [E.% (msg ^ ":"), E.% "Expected equation", E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r1'), E.% "to be equal to", E.% (P.toString Sym.toString r2), E.% "=", E.% (P.toString Sym.toString r2')]
+
+    (* The following is a sufficient condition for tautology:
+     * the list contains a true equation `r = r` or both `r = 0`
+     * and `r = 1` for some r.
+     *)
+    structure SymSet = SplaySet (structure Elem = Sym.Ord)
+    fun tautologicalEquations msg eqs =
+      let
+        fun goEqs _ [] = false
+          | goEqs (state as (zeros, ones)) (eq :: eqs) =
+              case eq of
+                (P.APP P.DIM0, P.APP P.DIM0) => true
+              | (P.APP P.DIM0, _) => goEqs state eqs
+              | (P.APP P.DIM1, P.APP P.DIM1) => true
+              | (P.APP P.DIM1, _) => goEqs state eqs
+              | (P.VAR u, P.APP P.DIM0) =>
+                  SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
+              | (P.VAR u, P.APP P.DIM1) =>
+                  SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
+              | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
+        fun prettyEq (r1, r2) =
+              [E.% (P.toString Sym.toString r1), E.% "=", E.% (P.toString Sym.toString r2), E.% ";"]
+      in
+        if goEqs (SymSet.empty, SymSet.empty) eqs then
+          ()
+        else
+          (* todo: pretty printer for equation lists *)
+          raise E.error
+            (List.concat
+              [ [E.% (msg ^ ":"), E.% "Expected shape"]
+              , ListMonad.bind prettyEq eqs
+              , [E.% "to have true equation r = r or equation pair r = 0 and r = 1."]
+              ])
+      end
+
+    fun varEq (x, y) =
+      if Var.eq (x, y) then
+        ()
+      else
+        raise E.error [E.% @@ "Expected variable `" ^ Var.toString x ^ "` to be equal to variable `" ^ Var.toString y ^ "`"]
+  end
 end
-
-

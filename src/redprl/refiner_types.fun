@@ -274,7 +274,7 @@ struct
         val Syn.S1 = Syn.out ty
         val Syn.LOOP r1 = Syn.out m
         val Syn.LOOP r2 = Syn.out n
-        val () = assertParamEq "S1.EqLoop" (r1, r2)
+        val () = Assert.paramEq "S1.EqLoop" (r1, r2)
       in
         T.empty #> (I, H, trivial)
       end
@@ -707,7 +707,7 @@ struct
         val (I, H) >> CJ.EQ ((ap0, ap1), ty) = jdg
         val Syn.PATH_AP (m0, r0) = Syn.out ap0
         val Syn.PATH_AP (m1, r1) = Syn.out ap1
-        val () = assertParamEq "Path.ApEq" (r0, r1)
+        val () = Assert.paramEq "Path.ApEq" (r0, r1)
         val (goalSynth, holeSynth) = makeGoal @@ (I, H) >> CJ.SYNTH m0
         val (goalMem, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), holeSynth)
         val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.PATH_TY, 0, holeSynth, [r0], [])
