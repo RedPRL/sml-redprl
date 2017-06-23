@@ -48,9 +48,13 @@ struct
   fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
   infix orelse_
 
-  fun >:+ (tel, (l : (label * 'a) list)) : 'a telescope =
-    List.foldl (fn (g, t) => t >: g) tel l
+  fun >:+ (tel, list) : 'a telescope =
+    List.foldl (fn (g, t) => t >: g) tel list
   infix 5 >:+
+
+  fun >:? (tel, NONE) = tel
+    | >:? (tel, SOME g) = tel >: g
+  infix 5 >:?
 
   (* this is a hack till we have a nice way to pre-compose Equality.Symmetry *)
   fun catJdgFlip (CJ.EQ_TYPE (a, b)) = CJ.EQ_TYPE (b, a)
@@ -87,6 +91,10 @@ struct
       ()
     else
       raise E.error [E.% "Expected", E.! m, E.% "to be alpha-equivalent to", E.! n]
+
+  fun genEqTypeIfNotAlpha (I, H) (m, n) =
+    if Abt.eq (m, n) then NONE
+    else SOME ((I, H) >> CJ.EQ_TYPE (m, n))
 
   fun assertParamEq msg (r1, r2) =
     if P.eq Sym.eq (r1, r2) then
