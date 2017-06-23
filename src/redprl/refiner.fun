@@ -530,17 +530,10 @@ struct
          | Syn.PATH_TY _ => Path.Eta
          | _ => raise E.error [E.% "Could not expand neutral term of type", E.! ty]
 
-      fun StepEqCanonicity sign ((m, n), ty) =
-        case (Machine.canonicity sign m, Machine.canonicity sign n) of
-           (Machine.REDEX, _) => Computation.EqHeadExpansion sign
-         | (_, Machine.REDEX) => catJdgFlipWrapper @@ Computation.EqHeadExpansion sign
-         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
-         | (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
-         | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand (m, ty)
-         | (Machine.CANONICAL, Machine.NEUTRAL _) => catJdgFlipWrapper @@ StepEqNeuExpand (m, ty)
-
-      (* these are special rules which are not beta and not eta *)
-      fun StepEq sign ((m, n), ty) =
+      (* these are special rules which are not beta or eta,
+       * and we have to check them against the neutral terms.
+       * it looks nicer to list all of them here. *)
+      fun StepEqStuck sign ((m, n), ty) canonicity =
         case (Syn.out m, Syn.out n) of
            (Syn.HCOM _, Syn.HCOM _) => HCom.AutoEqLR
          | (Syn.HCOM _, _) => HCom.AutoEqL
@@ -553,7 +546,17 @@ struct
          | (_, Syn.COM _) => Com.AutoEqLR
          | (Syn.PATH_AP (_, P.APP _), _) => Path.ApConstCompute
          | (_, Syn.PATH_AP (_, P.APP _)) => catJdgFlipWrapper Path.ApConstCompute
-         | _ => StepEqCanonicity sign ((m, n), ty)
+         | _ => case canonicity of
+                   (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
+                 | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand (m, ty)
+                 | (Machine.CANONICAL, Machine.NEUTRAL _) => catJdgFlipWrapper @@ StepEqNeuExpand (m, ty)
+
+      fun StepEq sign ((m, n), ty) =
+        case (Machine.canonicity sign m, Machine.canonicity sign n) of
+           (Machine.REDEX, _) => Computation.EqHeadExpansion sign
+         | (_, Machine.REDEX) => catJdgFlipWrapper @@ Computation.EqHeadExpansion sign
+         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
+         | canonicity => StepEqStuck sign ((m, n), ty) canonicity
 
       fun StepSynth sign m =
         case Syn.out m of
