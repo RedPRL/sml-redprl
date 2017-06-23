@@ -36,7 +36,7 @@ struct
     multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
 end
 
-structure Quant =
+structure Multi =
 struct
   infix $$ $ \
 
@@ -47,6 +47,10 @@ struct
 
   val makeDFun = makeQuant O.DFUN
   val makeDProd = makeQuant O.DPROD
+
+  fun makeLam [] m = m
+    | makeLam (x::xs) m = 
+        O.MONO O.LAM $$ [([],[x]) \ makeLam xs m]
 end
 
 
@@ -286,8 +290,7 @@ metavarArgs
 
 
 operator
-  : LAMBDA (O.MONO O.LAM)
-  | ABS (O.MONO O.PATH_ABS)
+  : ABS (O.MONO O.PATH_ABS)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
   | RULE_LEMMA OPNAME customOpParams (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams, NONE)))
   | IF (O.MONO O.IF)
@@ -348,8 +351,9 @@ atomicRawTerm
 
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
-  | LPAREN RIGHT_ARROW quantifierData RPAREN (Quant.makeDFun (#1 quantifierData) (#2 quantifierData))
-  | LPAREN TIMES quantifierData RPAREN (Quant.makeDProd (#1 quantifierData) (#2 quantifierData))
+  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
+  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
+  | LPAREN LAMBDA LSQUARE symbols RSQUARE term RPAREN (Multi.makeLam symbols term)
   | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
   | BOOL (Ast.$$ (O.MONO O.BOOL, []))
   | TT (Ast.$$ (O.MONO O.TRUE, []))

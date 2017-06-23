@@ -96,11 +96,21 @@ struct
                  multiDProd (([x], a) :: doms) bx)
      | _ => (List.rev doms, m)
 
+  fun multiLam (xs : variable list) m = 
+    case Abt.out m of 
+       O.MONO O.LAM $ [(_, [x]) \ mx] => 
+         multiLam (x :: xs) mx
+     | _ => (List.rev xs, m)
+
   fun printQuant opr (doms, cod) = 
-        Atomic.parens @@ expr @@ hvsep @@
-          (text opr)
-            :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [ppTerm a]) doms
-             @ [ppTerm cod]
+    Atomic.parens @@ expr @@ hvsep @@
+      (text opr)
+        :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [ppTerm a]) doms
+          @ [ppTerm cod]
+
+  and printLam (xs, m) = 
+    Atomic.parens @@ expr @@ hvsep @@ 
+      [hvsep [text "lam", varBinding xs], align @@ ppTerm m]
 
   and ppTerm m = 
     case Abt.out m of 
@@ -109,6 +119,8 @@ struct
          printQuant "->" @@ multiDFun [] m
      | O.MONO O.DPROD $ _ =>
          printQuant "*" @@ multiDProd [] m
+     | O.MONO O.LAM $ _ => 
+         printLam @@ multiLam [] m
      | O.MONO O.AP $ [_ \ m, _ \ n] => 
          Atomic.parens @@ expr @@ hvsep [ppTerm m, ppTerm n]
      | O.MONO O.PAIR $ [_ \ m, _ \ n] => 
@@ -158,12 +170,12 @@ struct
   and symBinding us =
     unlessEmpty us @@
       Atomic.braces @@ 
-        hsep @@ intersperse Atomic.comma @@ List.map (text o Sym.toString) us
+        hsep @@ List.map (text o Sym.toString) us
 
   and varBinding xs =
     unlessEmpty xs @@
       Atomic.squares @@ 
-        hsep @@ intersperse Atomic.comma @@ List.map ppVar xs
+        hsep @@ List.map ppVar xs
 
 
   val ppSort = text o Ar.Vl.S.toString
