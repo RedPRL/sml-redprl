@@ -276,7 +276,7 @@ struct
            S.STEP @@ term' <: env'
          end
 
-     | th `$ es <: _ => raise E.error [E.% "Machine encountered unrecognized term", E.! (th $$ es)]
+     | th `$ es <: _ => raise E.error [Fpp.text "Machine encountered unrecognized term", TermPrinter.ppTerm (th $$ es)]
 
   (* [cut] tells the machine how to plug a value into a hole in a stack frame. As a rule of thumb,
    * any time you return [CUT] in the [step] judgment, you should add a corresponding rule to [cut]. *)

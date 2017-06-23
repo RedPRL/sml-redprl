@@ -33,7 +33,7 @@ struct
       | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg)
       | O.POLY (O.RULE_LEMMA (opid, ps, _)) $ args => Rules.Lemma sign opid (List.map #1 ps) args
       | O.POLY (O.RULE_UNFOLD opid) $ _ => Rules.Computation.Unfold sign opid
-      | _ => raise E.error [E.% "Invalid rule", E.! rule]
+      | _ => raise E.error [Fpp.text "Invalid rule", TermPrinter.ppTerm rule]
 
   fun rule (sign, env) rule alpha goal =
     Debug.wrap (fn _ => interpret (sign, env) (Machine.eval sign rule) alpha goal)

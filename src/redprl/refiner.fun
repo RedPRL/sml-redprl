@@ -26,10 +26,10 @@ struct
         if CJ.eq (catjdg, catjdg') then
           T.empty #> (I, H, Syn.into (Syn.VAR (z, CJ.synthesis catjdg)))
         else
-          raise E.error [E.% "Hypothesis does not match goal"]
+          raise E.error [Fpp.text "Hypothesis does not match goal"]
       end
       handle Bind =>
-        raise E.error [E.% "Expected sequent judgment"]
+        raise E.error [Fpp.text "Expected sequent judgment"]
   end
 
   structure TypeEquality =
@@ -57,7 +57,7 @@ struct
           #> (I, H, tm)
       end
       handle Bind =>
-        raise E.error [E.% @@ "Expected truth sequent but got " ^ J.toString jdg]
+        raise E.error [Fpp.text @@ "Expected truth sequent but got " ^ J.toString jdg]
   end
 
   structure Synth =
@@ -182,7 +182,7 @@ struct
         Lcf.|> (T.empty, abtToAbs arg')
       end
       handle _ =>
-        raise E.error [E.% "MATCH judgment failed to unify"]
+        raise E.error [Fpp.text "MATCH judgment failed to unify"]
   end
 
   structure Equality =
@@ -198,7 +198,7 @@ struct
         val ty' =
           case catjdg of
              CJ.TRUE ty => ty
-           | _ => raise E.error [E.% "Equality.Hyp: expected truth hypothesis"]
+           | _ => raise E.error [Fpp.text "Equality.Hyp: expected truth hypothesis"]
 
         (* If the types are identical, there is no need to create a new subgoal (which would amount to proving that 'ty' is a type).
            This is because the semantics of sequents is that by assuming that something is a member of a 'ty', we have
@@ -208,7 +208,7 @@ struct
         T.empty >:? goalTy #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [E.% "Expected variable-equality sequent"]
+        raise E.error [Fpp.text "Expected variable-equality sequent"]
 
     fun Symmetry alpha jdg =
       let
@@ -331,7 +331,7 @@ struct
         T.empty >: goal
           #> (I, H, trivial)
       end
-      handle _ => raise E.error [E.% "EqHeadExpansion!"]
+      handle _ => raise E.error [Fpp.text "EqHeadExpansion!"]
 
     fun EqTypeHeadExpansion sign alpha jdg =
       let
@@ -365,15 +365,15 @@ struct
       case Hyps.find H x of
          SOME jdg =>
            if CJ.eq (jdg, jdg0) then () else
-             raise E.error [E.% ("Hypothesis " ^ Sym.toString x ^ " did not match specification")]
-       | _ => raise E.error [E.% ("Could not find hypothesis " ^ Sym.toString x)]
+             raise E.error [Fpp.text ("Hypothesis " ^ Sym.toString x ^ " did not match specification")]
+       | _ => raise E.error [Fpp.text ("Could not find hypothesis " ^ Sym.toString x)]
 
     fun checkMainGoal (specGoal, mainGoal) =
       let
         val (I, H) >> jdg = mainGoal
         val (J, H0) >> jdg0 = specGoal
       in
-        if CJ.eq (jdg, jdg0) then () else raise E.error [E.% "Conclusions of goal did not match specification"];
+        if CJ.eq (jdg, jdg0) then () else raise E.error [Fpp.text "Conclusions of goal did not match specification"];
         Hyps.foldl (fn (x, j, _) => checkHyp H x j) () H0
         (* TODO: unify using I, J!! *)
       end
@@ -465,7 +465,7 @@ struct
            Syn.PATH_TY _ => Path.True
          | Syn.DFUN _ => DFun.True
          | Syn.DPROD _ => DProd.True
-         | _ => raise E.error [E.% "Could not find introduction rule for", E.! ty]
+         | _ => raise E.error [Fpp.text "Could not find introduction rule for", TermPrinter.ppTerm ty]
 
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
@@ -476,14 +476,14 @@ struct
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
-         | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
+         | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
       fun StepEqType sign (ty1, ty2) =
         case (Machine.canonicity sign ty1, Machine.canonicity sign ty2) of
            (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
          | (_, Machine.REDEX) => catJdgFlipWrapper (Computation.EqTypeHeadExpansion sign)
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
-         | _ => raise E.error [E.% "Could not find type equality rule for", E.! ty1, E.% "and", E.! ty2]
+         | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
       (* equality of canonical forms *)
       fun StepEqVal ((m, n), ty) =
@@ -499,7 +499,7 @@ struct
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.PAIR _, Syn.PAIR _, _) => DProd.Eq
          | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
-         | _ => raise E.error [E.% "Could not find value equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+         | _ => raise E.error [Fpp.text "Could not find value equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
@@ -511,24 +511,24 @@ struct
          | (Syn.S_IF _, _, _) =>
            (case x of
                Machine.VAR z => StrictBool.EqElim z
-             | _ => raise E.error [E.% "Could not determine critical variable at which to apply sbool elimination"])
+             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply sbool elimination"])
          | (_, Syn.S_IF _, _) =>
            (case y of
                Machine.VAR z => catJdgFlipWrapper (StrictBool.EqElim z)
-             | _ => raise E.error [E.% "Could not determine critical variable at which to apply sbool elimination"])
+             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply sbool elimination"])
          | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
          | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
          | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _), _) => Path.ApEq
-         | _ => raise E.error [E.% "Could not find neutral equality rule for", E.! m, E.% "and", E.! n, E.% "at type", E.! ty]
+         | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       fun StepEqNeuExpand (m, ty) =
         case Syn.out ty of
            Syn.DPROD _ => DProd.Eta
          | Syn.DFUN _ => DFun.Eta
          | Syn.PATH_TY _ => Path.Eta
-         | _ => raise E.error [E.% "Could not expand neutral term of type", E.! ty]
+         | _ => raise E.error [Fpp.text "Could not expand neutral term of type", TermPrinter.ppTerm ty]
 
       (* these are special rules which are not beta or eta,
        * and we have to check them against the neutral terms.
@@ -567,7 +567,7 @@ struct
          | Syn.PATH_AP _ => Synth.PathAp
          | Syn.FST _ => Synth.Fst
          | Syn.SND _ => Synth.Snd
-         | _ => raise E.error [E.% "Could not find suitable type synthesis rule for", E.! m]
+         | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.TRUE ty => StepTrue sign ty
@@ -586,9 +586,9 @@ struct
         if isWfJdg jdg then
           case HypsUtil.search H (fn jdg' => CJ.eq (jdg, jdg')) of
              SOME (lbl, _) => Hyp.Project lbl alpha ((I, H) >> jdg)
-           | NONE => raise E.error [E.% "Could not find suitable hypothesis"]
+           | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
         else
-          raise E.error [E.% "Non-deterministic tactics can only be run on auxiliary goals"]
+          raise E.error [Fpp.text "Non-deterministic tactics can only be run on auxiliary goals"]
     in
       fun AutoStep sign = StepJdg sign orelse_ FindHyp
     end
@@ -602,12 +602,12 @@ struct
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
          | Syn.DPROD _ => DProd.Elim
-         | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
+         | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepEq ty =
         case Syn.out ty of
            Syn.S_BOOL => StrictBool.EqElim
-         | _ => raise E.error [E.% "Could not find suitable elimination rule for", E.! ty]
+         | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepJdg sign z alpha jdg =
         let
@@ -618,8 +618,8 @@ struct
               (case catjdg of
                   CJ.TRUE _ => StepTrue hyp z alpha jdg
                 | CJ.EQ _ => StepEq hyp z alpha jdg
-                | _ => raise E.error [E.% ("Could not find suitable elimination rule [TODO, display information]")])
-           | _ => raise E.error [E.% "Could not find suitable elimination rule"]
+                | _ => raise E.error [Fpp.text ("Could not find suitable elimination rule [TODO, display information]")])
+           | _ => raise E.error [Fpp.text "Could not find suitable elimination rule"]
         end
     in
       val Elim = StepJdg

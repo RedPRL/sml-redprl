@@ -27,7 +27,7 @@ struct
         T.empty #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [E.% "Expected typehood sequent"]
+        raise E.error [Fpp.text "Expected typehood sequent"]
 
     fun EqTT _ jdg =
       let
@@ -82,7 +82,7 @@ struct
         psi #> (I, H, if_)
       end
       handle Bind =>
-        raise E.error [E.% "Expected bool elimination problem"]
+        raise E.error [Fpp.text "Expected bool elimination problem"]
 
     fun ElimEq alpha jdg =
       let
@@ -122,7 +122,7 @@ struct
         T.empty #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [E.% "Expected typehood sequent"]
+        raise E.error [Fpp.text "Expected typehood sequent"]
 
     fun EqTT _ jdg =
       let
@@ -166,7 +166,7 @@ struct
         psi #> (I, H, if_)
       end
       handle Bind =>
-        raise E.error [E.% "Expected strict bool elimination problem"]
+        raise E.error [Fpp.text "Expected strict bool elimination problem"]
 
     fun ElimEq alpha jdg =
       let
@@ -205,7 +205,7 @@ struct
         psi #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [E.% "Expected strict bool elimination problem"]
+        raise E.error [Fpp.text "Expected strict bool elimination problem"]
   end
 
   structure Void =
@@ -220,7 +220,7 @@ struct
         T.empty #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [E.% "Expected typehood sequent"]
+        raise E.error [Fpp.text "Expected typehood sequent"]
 
     fun Elim z _ jdg =
       let
@@ -239,7 +239,7 @@ struct
         T.empty #> (I, H, evidence)
       end
       handle Bind =>
-        raise E.error [E.% "Expected Void elimination problem"]
+        raise E.error [Fpp.text "Expected Void elimination problem"]
   end
 
   structure S1 =
@@ -254,7 +254,7 @@ struct
         T.empty #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [E.% "Expected typehood sequent"]
+        raise E.error [Fpp.text "Expected typehood sequent"]
 
     fun EqBase _ jdg =
       let
@@ -320,7 +320,7 @@ struct
         psi #> (I, H, elim)
       end
       handle Bind =>
-        raise E.error [E.% "Expected circle elimination problem"]
+        raise E.error [Fpp.text "Expected circle elimination problem"]
 
     fun ElimEq alpha jdg =
       let
@@ -377,7 +377,7 @@ struct
           #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [E.% "Expected dfun typehood sequent"]
+        raise E.error [Fpp.text "Expected dfun typehood sequent"]
 
     fun Eq alpha jdg =
       let
@@ -420,7 +420,7 @@ struct
         psi #> (I, H, lam)
       end
       handle Bind =>
-        raise E.error [E.% "Expected dfun truth sequent"]
+        raise E.error [Fpp.text "Expected dfun truth sequent"]
 
     fun Eta alpha jdg =
       let
@@ -506,7 +506,7 @@ struct
           #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [E.% "Expected dprod typehood sequent"]
+        raise E.error [Fpp.text "Expected dprod typehood sequent"]
 
     fun Eq alpha jdg =
       let
@@ -761,10 +761,10 @@ struct
         if CJ.eq (catjdg, catjdg') then
           T.empty #> (I, H, Syn.into (Syn.VAR (z, CJ.synthesis catjdg)))
         else
-          raise E.error [E.% "Hypothesis does not match goal"]
+          raise E.error [Fpp.text "Hypothesis does not match goal"]
       end
       handle Bind =>
-        raise E.error [E.% "Expected sequent judgment"]
+        raise E.error [Fpp.text "Expected sequent judgment"]
   end
 
   structure TypeEquality =
@@ -792,7 +792,7 @@ struct
           #> (I, H, tm)
       end
       handle Bind =>
-        raise E.error [E.% @@ "Expected truth sequent but got " ^ J.toString jdg]
+        raise E.error [Fpp.text @@ "Expected truth sequent but got " ^ J.toString jdg]
   end
 
   structure Synth =
@@ -917,6 +917,6 @@ struct
         Lcf.|> (T.empty, abtToAbs arg')
       end
       handle _ =>
-        raise E.error [E.% "MATCH judgment failed to unify"]
+        raise E.error [Fpp.text "MATCH judgment failed to unify"]
   end
 end

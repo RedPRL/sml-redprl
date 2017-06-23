@@ -1,26 +1,14 @@
-structure RedPrlError :> REDPRL_ERROR where type term = RedPrlAbt.abt =
+structure RedPrlError :> REDPRL_ERROR =
 struct
-  datatype 'a frag =
-     % of string
-   | ! of 'a
-
-  open RedPrlAbt
-
-  type term = abt
-
-  exception E of term frag list
+  exception E of Fpp.doc
   exception Pos of Pos.t * exn
 
-  val error = E
-
-  val fragToString =
-    fn % str => str
-     | ! tm => "`" ^ TermPrinter.toString tm ^ "`"
+  val error = E o Fpp.hsep
 
   val rec format =
-    fn E frags => Fpp.text (ListSpine.pretty fragToString " " frags)
+    fn E doc => doc
      | Pos (_, exn) => format exn
-     | BadSubstMetaenv {description,...} => Fpp.text description
+     | RedPrlAbt.BadSubstMetaenv {description,...} => Fpp.text description
      | exn => Fpp.text (exnMessage exn)
 
    fun annotate (SOME pos) exn = Pos (pos, exn)
