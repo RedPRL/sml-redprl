@@ -36,13 +36,13 @@ struct
     multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
 end
 
-structure Quant = 
+structure Quant =
 struct
   infix $$ $ \
 
   fun makeQuant opr [] cod = cod
     | makeQuant opr (([], _) :: doms) cod = makeQuant opr doms cod
-    | makeQuant opr ((x :: xs, a) :: doms) cod = 
+    | makeQuant opr ((x :: xs, a) :: doms) cod =
        O.MONO opr $$ [([],[]) \ a, ([],[x]) \ makeQuant opr ((xs, a) :: doms) cod]
 
   val makeDFun = makeQuant O.DFUN
@@ -262,13 +262,10 @@ boundVar
 symbols
   : boundVar ([boundVar])
   | boundVar symbols (boundVar :: symbols)
-  | ([])
 
 terms
   : term ([term])
   | term terms (term :: terms)
-  | PERCENT LBRACKET tactic RBRACKET COMMA terms (tactic :: terms)
-  | ([])
 
 binder
   : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE (symbols1, symbols2)
@@ -278,7 +275,6 @@ binder
 
 binding
   : binder term (\ (binder, term))
-  | binder PERCENT LBRACKET tactic RBRACKET (\ (binder, tactic))
 
 bindings
   : binding ([binding])
@@ -332,11 +328,13 @@ quantifierData
 atomicRawTerm
   : LPAREN term term RPAREN (Ast.$$ (O.MONO O.AP, [\ (([],[]),term1), \ (([],[]), term2)]))
   | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
-  | operator (Ast.$$ (operator, []))
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
   | LPAREN HCOM LBRACKET dir RBRACKET binding binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.HCOM (dir, eqs)), (binding1 :: binding2 :: tubes)) end)
+  | OPNAME customOpParams (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
+
+  
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
   | VARNAME (`` VARNAME)
@@ -402,7 +400,7 @@ src_genjdg
   : src_sequent ([], src_sequent)
   | LBRACKET symBindings RBRACKET PIPE src_sequent (symBindings, src_sequent)
 
-src_ruleConcl 
+src_ruleConcl
   : src_sequent (src_sequent)
 
 src_rulePremises

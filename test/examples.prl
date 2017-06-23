@@ -50,7 +50,7 @@ Tac Try(#t : tac) = [
 
 // Useful for stepping through a proof RedPRL completes automatically, to see
 // what is being done.
-Tac TryStep = [ (Try %{auto-step}) ].
+Tac TryStep = [ auto-step || id ].
 
 Thm ApEqTest : [
   (-> 
