@@ -5,6 +5,6 @@ Thm BoolSym : [
    (path {_} bool b a))
 ] by [
   { lam a. lam b. lam p. <i> 
-     '(hcom{0 ~> 1} bool ,a [i=0 {j} (@ ,p j)] [i=1 {_} ,a])};
+     `(hcom{0 ~> 1} bool ,a [i=0 {j} (@ ,p j)] [i=1 {_} ,a])};
   [auto-step; head-expand]
 ].
