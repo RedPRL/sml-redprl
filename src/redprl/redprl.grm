@@ -454,6 +454,7 @@ atomicRawTac
 
   | LPAREN OPNAME customOpParams RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
   | LPAREN OPNAME customOpParams bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings)) 
+  | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
 
   | operator (Ast.$$ (operator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
