@@ -49,7 +49,7 @@ struct
   val makeDProd = makeQuant O.DPROD
 
   fun makeLam [] m = m
-    | makeLam (x::xs) m = 
+    | makeLam (x::xs) m =
         O.MONO O.LAM $$ [([],[x]) \ makeLam xs m]
 end
 
@@ -89,7 +89,7 @@ end
  | FCOM | BOOL | TT | FF | IF | S_BOOL | S_IF | VOID | S1 | BASE | LOOP | FST | SND | PATHS | HCOM | COE
  | THEN | ELSE | LET | WITH | CASE | OF
 
- | FUN_APP 
+ | FUN_APP
 
  | DIM | EXN | LBL | LVL | HYP
  | EXP | TAC | TRIV
@@ -344,7 +344,7 @@ atomicRawTerm
   | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
 
   | LPAREN OPNAME customOpParams RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
-  | LPAREN OPNAME customOpParams bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings)) 
+  | LPAREN OPNAME customOpParams bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
 
   | LPAREN term term RPAREN (Ast.$$ (O.MONO O.AP, [\ (([],[]),term1), \ (([],[]), term2)]))
 
@@ -469,7 +469,7 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
   | LPAREN OPNAME customOpParams RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
-  | LPAREN OPNAME customOpParams bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings)) 
+  | LPAREN OPNAME customOpParams bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
   | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
 
   | operator (Ast.$$ (operator, []))

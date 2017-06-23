@@ -483,12 +483,12 @@ struct
        | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
        | INSERT (x,_) => "INSERT " ^ Sym.toString x
 
-    fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope = 
-      case deltas of 
+    fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope =
+      case deltas of
          [] => H
        | DELETE x :: deltas => applyDiffs alpha i xrho deltas (Hyps.remove x H)
        | UPDATE (x, jdg) :: deltas => applyDiffs alpha i xrho deltas (Hyps.modify x (fn _ => jdg) H)
-       | INSERT (x, jdg) :: deltas => 
+       | INSERT (x, jdg) :: deltas =>
            let
              val x' = alpha i
              val jdg' = CJ.map (RedPrlAbt.renameVars xrho) jdg

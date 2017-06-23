@@ -13,7 +13,7 @@ struct
         case pos of
            SOME pos => Pos.toString pos
          | NONE => "[Unknown Location]"
-      
+
       val prefix =
         case lvl of
            INFO => "Info"
@@ -23,7 +23,7 @@ struct
          | TRACE => "Trace"
 
       val header =
-        Fpp.hsep 
+        Fpp.hsep
           [Fpp.text pos',
            Fpp.seq [Fpp.Atomic.squares (Fpp.text prefix), Fpp.Atomic.colon]]
 
@@ -50,12 +50,12 @@ struct
 end
 
 
-functor RedPrlLogUtil (L : REDPRL_LOG) : REDPRL_LOG_UTIL= 
+functor RedPrlLogUtil (L : REDPRL_LOG) : REDPRL_LOG_UTIL=
 struct
   open L
 
-  fun trace msg = 
-    () 
+  fun trace msg =
+    ()
     (*print TRACE (NONE, msg)*)
 end
 

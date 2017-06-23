@@ -483,7 +483,7 @@ struct
              ^ "["
              ^ dirToString f dir
              ^ "]"
-       | CUST (opid, [], _) => 
+       | CUST (opid, [], _) =>
            f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"

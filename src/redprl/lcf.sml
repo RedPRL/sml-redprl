@@ -17,16 +17,16 @@ struct
   infixr 0 @@
 
   fun prettyGoal (x, jdg) =
-    Fpp.nest 2 @@ 
-      Fpp.vsep 
+    Fpp.nest 2 @@
+      Fpp.vsep
         [Fpp.seq [Fpp.hsep [Fpp.text "Goal", Fpp.text (Metavar.toString x)], Fpp.text "."],
          RedPrlSequent.pretty TermPrinter.ppTerm jdg]
 
-  val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, env : J.env, idx : int} = 
+  val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, env : J.env, idx : int} =
     let
       open RedPrlAbt
     in
-      Tl.foldl 
+      Tl.foldl
         (fn (x, jdg, {doc, env, idx}) =>
           let
             val x' = Metavar.named (Int.toString idx)
@@ -40,6 +40,6 @@ struct
         {doc = Fpp.empty, env = Metavar.Ctx.empty, idx = 0}
     end
 
-  fun prettyState (psi |> _) = 
+  fun prettyState (psi |> _) =
     #doc (prettyGoals psi)
 end

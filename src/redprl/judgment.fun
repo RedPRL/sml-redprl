@@ -20,7 +20,7 @@ struct
   in
     val rec sort =
       fn (I, H) >> catjdg =>
-           ((List.map #2 I, Hyps.foldr (fn (_, jdg, r) => CJ.synthesis jdg :: r) [] H), 
+           ((List.map #2 I, Hyps.foldr (fn (_, jdg, r) => CJ.synthesis jdg :: r) [] H),
             CJ.synthesis catjdg)
        | MATCH (th, k, _, _, _) =>
            let
@@ -31,6 +31,6 @@ struct
            end
   end
 end
- 
+
 structure RedPrlSequent = Sequent (structure CJ = RedPrlCategoricalJudgment)
 structure RedPrlJudgment = SequentJudgment (structure S = RedPrlSequent and TermPrinter = TermPrinter)

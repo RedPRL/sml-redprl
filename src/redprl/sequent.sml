@@ -34,7 +34,7 @@ struct
 
 
   fun renameHypsInTerm srho =
-    Tm.substSymenv (Tm.Sym.Ctx.map Tm.O.P.VAR srho) 
+    Tm.substSymenv (Tm.Sym.Ctx.map Tm.O.P.VAR srho)
       o Tm.renameVars srho
 
   local
@@ -49,17 +49,17 @@ struct
              andalso telescopeEq (t1', t2')
        | _ => false
 
-    fun relabelHyps H srho = 
+    fun relabelHyps H srho =
       let
         val srho' = Tm.Sym.Ctx.map Tm.O.P.VAR srho
       in
-        case out H of 
+        case out H of
            EMPTY => Hyps.empty
-         | CONS (x, catjdg, Hx) => 
+         | CONS (x, catjdg, Hx) =>
            let
              val catjdg' = CJ.map (Tm.substSymenv srho') catjdg
            in
-             case Tm.Sym.Ctx.find srho x of 
+             case Tm.Sym.Ctx.find srho x of
                  NONE => Hyps.cons x catjdg' (relabelHyps Hx srho)
                | SOME y => Hyps.cons y catjdg' (relabelHyps Hx srho)
            end
@@ -67,16 +67,16 @@ struct
 
   end
 
-  fun relabel srho = 
-    fn (I, H) >> catjdg => 
-       (List.map (fn (u, sigma) => (Tm.Sym.Ctx.lookup srho u handle _ => u, sigma)) I, relabelHyps H srho) 
+  fun relabel srho =
+    fn (I, H) >> catjdg =>
+       (List.map (fn (u, sigma) => (Tm.Sym.Ctx.lookup srho u handle _ => u, sigma)) I, relabelHyps H srho)
          >> CJ.map (renameHypsInTerm srho) catjdg
      | jdg => map (renameHypsInTerm srho) jdg
 
   structure P = CJ.Tm.O.P and PS = CJ.Tm.O.Ar.Vl.PS
 
   fun prettySyms syms =
-    Fpp.collection 
+    Fpp.collection
       (Fpp.char #"{")
       (Fpp.char #"}")
       (Fpp.Atomic.comma)
@@ -85,7 +85,7 @@ struct
   fun prettyHyps f : 'a ctx -> Fpp.doc =
     Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [Fpp.text (Tm.Sym.toString x), Fpp.Atomic.colon, f a] :: r) []
 
-  fun pretty f : 'a jdg -> Fpp.doc = 
+  fun pretty f : 'a jdg -> Fpp.doc =
     fn (I, H) >> catjdg =>
        Fpp.seq
          [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
@@ -98,8 +98,8 @@ struct
     fn (jdg1 as (I1, H1) >> catjdg1, jdg2 as (I2, H2) >> catjdg2) =>
        (let
 
-         fun unifyPsorts (sigma1, sigma2) = 
-           if PS.eq (sigma1, sigma2) then sigma1 else 
+         fun unifyPsorts (sigma1, sigma2) =
+           if PS.eq (sigma1, sigma2) then sigma1 else
              raise Fail "psort mismatch in Sequent.eq"
 
          val I = ListPair.mapEq (fn ((_, sigma1), (_, sigma2)) => (Sym.new (), unifyPsorts (sigma1, sigma2))) (I1, I2)

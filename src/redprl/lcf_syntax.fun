@@ -14,8 +14,8 @@ struct
   type sign = Sig.sign
   type ann = Pos.t * string option
 
-  fun inheritAnnotation t1 t2 = 
-    case getAnnotation t2 of 
+  fun inheritAnnotation t1 t2 =
+    case getAnnotation t2 of
        NONE => setAnnotation (getAnnotation t1) t2
      | _ => t2
 
@@ -66,8 +66,8 @@ struct
 
   fun tactic sign tac =
     let
-      (*val _ = 
-        case getAnnotation tac of 
+      (*val _ =
+        case getAnnotation tac of
            SOME (ann : Pos.t) => print ("Tactic " ^ TermPrinter.toString tac ^ ": " ^ Pos.toString ann ^ "\n\n")
          | NONE => print ("Tactic " ^ TermPrinter.toString tac ^ ": has no annotation\n\n")*)
 
@@ -87,7 +87,7 @@ struct
        | O.MONO O.MTAC_REC $ [(_,[x]) \ mtx] => REC (x, inheritAnnotation mtac mtx)
        | O.MONO (O.MTAC_SEQ _) $ [_ \ mt1, (us,_) \ mt2] => SEQ (us, inheritAnnotation mtac mt1, inheritAnnotation mtac mt2)
        | O.MONO O.MTAC_ORELSE $ [_ \ mt1, _ \ mt2] => ORELSE (inheritAnnotation mtac mt1, inheritAnnotation mtac mt2)
-       | O.MONO (O.MTAC_HOLE msg) $ _ => HOLE (Option.valOf (getAnnotation mtac), msg) 
+       | O.MONO (O.MTAC_HOLE msg) $ _ => HOLE (Option.valOf (getAnnotation mtac), msg)
        | ` x => VAR x
        | _ => raise InvalidMultitactic
 end

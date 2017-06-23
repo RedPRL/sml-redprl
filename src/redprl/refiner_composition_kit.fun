@@ -76,7 +76,7 @@ struct
             val tube1 = substSymbol (P.ret w, v) tube1
             val J = (I, H) >> CJ.EQ ((tube0, tube1), ty)
           in
-            Option.map 
+            Option.map
               (fn (I, J) >> jdg => #1 (makeGoal @@ (I @ [(w,P.DIM)], H) >> jdg))
               (Restriction.restrict J [eq0, eq1])
           end
@@ -166,10 +166,10 @@ struct
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
         val () = assertParamEq "HCom.CapEq source and target of direction" (r, r')
         val () = assertAlphaEq (ty0, ty)
-  
+
         val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
         val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((cap, other), ty)
-  
+
         val w = alpha 0
       in
         T.empty
@@ -189,11 +189,11 @@ struct
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
         val (eq, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
         val () = assertAlphaEq (ty0, ty)
-  
+
         val (goalTy, _) = makeGoal @@ (I, H) >> CJ.TYPE ty
         val (goalCap, _) = makeGoal @@ (I, H) >> CJ.MEM (cap, ty)
         val (goalEq, _) = makeGoal @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, other), ty)
-  
+
         val w = alpha 0
       in
         T.empty

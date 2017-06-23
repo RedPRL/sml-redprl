@@ -18,10 +18,10 @@ struct
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
 
-  fun MEM (m, a) = 
+  fun MEM (m, a) =
     EQ ((m, m), a)
 
-  fun TYPE a = 
+  fun TYPE a =
     EQ_TYPE (a, a)
 
   type 'a jdg = 'a redprl_jdg
