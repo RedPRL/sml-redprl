@@ -260,7 +260,7 @@ param
 
 params
   : param ([param])
-  | param COMMA params (param :: params)
+  | param params (param :: params)
   | ([])
 
 equation
