@@ -127,8 +127,8 @@ struct
          Atomic.parens @@ expr @@ hvsep [ppTerm m, ppTerm n]
      | O.MONO O.PAIR $ [_ \ m, _ \ n] =>
          collection (char #"<") (char #">") Atomic.comma [ppTerm m, ppTerm n]
-     | O.POLY (O.LOOP r) $ _ =>
-         seq [text "loop", Atomic.squares @@ ppParam r]
+     | O.POLY (O.LOOP x) $ [] => 
+         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
          Atomic.parens @@ expr @@ hvsep [text "@", ppTerm m, ppParam r]
      | `x => ppVar x

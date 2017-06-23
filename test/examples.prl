@@ -8,7 +8,7 @@ Thm BoolTest : [
 Thm PathTest : [
   (paths {_} S1 base base)
 ] by [
-  { <x> 'loop{x} }; auto
+  { <x> '(loop x) }; auto
 ].
 
 Thm LowLevel : [
@@ -38,7 +38,7 @@ Thm S1ElimTest : [ (-> S1 S1) ] by [
   { lam s.
     case s of
        base => 'base
-     | loop{x} => 'loop{x}
+     | loop x => '(loop x)
   };
 
   auto
@@ -111,7 +111,7 @@ Print PathTest3.
 
 Thm PairTest : [ (* [a S1] (paths {_} S1 a base)) ] by [
   < {'base}
-  , <x> 'loop{x}
+  , <x> '(loop x)
   >;
   auto
 ].
@@ -124,6 +124,17 @@ Def SNot = [
 Def Cmp(#f; #g) = [
   (lam [x] (#f (#g x)))
 ].
+
+
+Def MyLoop{x:dim}(#m) = [
+  <#m, (loop x)>
+].
+
+Def Test = [
+  ({MyLoop 0} (loop 1))
+].
+
+Print Test.
 
 Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> sbool sbool) ] by [
   auto
