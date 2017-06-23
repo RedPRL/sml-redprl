@@ -7,7 +7,7 @@ Thm Connection(#A) : [
 ] by [
   { lam a. lam b. lam p.
     <i> <j> 
-      '(hcom{0~>1} #A ,a
+      `(hcom{0~>1} #A ,a
         [i=0 {k}
           (hcom{1~>j} #A
            (hcom{1~>0} #A (@ ,p k)

@@ -76,6 +76,3 @@ Thm Thm5(#A) : [
 ].
 
 Extract Thm5.
-
-// TODO: I would have given some examples about negation, but I just realized that RedPRL doesn't even have
-// the Void type! I'll add it soon.

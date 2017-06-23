@@ -19,7 +19,7 @@ Thm Hcom/Poly(#A) : [
   { lam a. lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
     <i> 
-      '(hcom{0 ~> 1} #A (@ ,pab i) 
+      `(hcom{0 ~> 1} #A (@ ,pab i) 
         [i=0 {j} (@ ,pac j)]
         [i=1 {j} (@ ,pbd j)])
   };
@@ -39,7 +39,7 @@ Thm Hcom/trans(#A) : [
 ] by [
   { lam a. lam b. lam c. lam pab. lam pbc.
     <i>
-      '(hcom{0 ~> 1} #A (@ ,pab i) 
+      `(hcom{0 ~> 1} #A (@ ,pab i) 
         [i=0 {_} ,a] 
         [i=1 {j} (@ ,pbc j)])
   };
@@ -56,7 +56,7 @@ Thm Hcom/symm(#A) : [
 ] by [
   { lam a. lam b. lam pab.
     <i>
-      '(hcom{0 ~> 1} #A ,a 
+      `(hcom{0 ~> 1} #A ,a 
         [i=0 {j} (@ ,pab j)]
         [i=1 {_} ,a])
   };

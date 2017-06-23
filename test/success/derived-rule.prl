@@ -9,7 +9,7 @@ Rule MyRule : [
   x : bool >> tt in bool
   ==> x : bool >> bool
 ] by [
-  if x then 'ff else 'tt
+  if x then `ff else `tt
 ].
 
 // A derived rule can be applied using the built-in 'rule' rule. This checks whether
@@ -53,7 +53,7 @@ Rule PiIntro(#A; #B : [exp].exp) : [
 
 Thm Test : [ (-> bool bool)] by [
   fresh x <- rule (PiIntro bool [x] bool);
-  [ if x then 'ff else 'tt ];
+  [ if x then `ff else `tt ];
   auto;
 ].
 

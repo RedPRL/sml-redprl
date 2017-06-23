@@ -7,7 +7,7 @@ Thm FHcom/trans3 : [
 ] by [
   { <a> lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
-    <i> '(fcom{0~>1} (@ ,pab i) [i=0 {j} (@ ,pac j)] [i=1 {j} (@ ,pbd j)])
+    <i> `(fcom{0~>1} (@ ,pab i) [i=0 {j} (@ ,pac j)] [i=1 {j} (@ ,pbd j)])
   };
   auto
 ].
@@ -21,7 +21,7 @@ Thm FHcom/trans2 : [
    (path {_} bool a c))
 ] by [
   { lam a. lam b. lam c. lam pab. lam pbc.
-    <i> '(fcom{0~>1} (@ ,pab i) [i=0 {_} ,a] [i=1 {j} (@ ,pbc j)])
+    <i> `(fcom{0~>1} (@ ,pab i) [i=0 {_} ,a] [i=1 {j} (@ ,pbc j)])
   };
   auto
 ].
@@ -32,7 +32,7 @@ Thm FHcom/symm : [
    (path {_} bool b a))
 ] by [
   { lam a. lam b. lam pab.
-    <i> '(fcom{0~>1} ,a [i=0 {j} (@,pab j)] [i=1 {_} ,a])
+    <i> `(fcom{0~>1} ,a [i=0 {j} (@,pab j)] [i=1 {_} ,a])
   };
   auto
 ].

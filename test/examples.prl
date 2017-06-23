@@ -1,14 +1,14 @@
 Thm BoolTest : [ 
   (-> bool bool)
 ] by [
-  { lam x. if x then 'tt else 'ff };
+  { lam x. if x then `tt else `ff };
   auto
 ].
 
 Thm PathTest : [
   (path {_} S1 base base)
 ] by [
-  { <x> '(loop x) }; auto
+  { <x> `(loop x) }; auto
 ].
 
 Thm LowLevel : [
@@ -18,7 +18,7 @@ Thm LowLevel : [
 ] by [
   fresh f <- auto;
   fresh x, x/eq <- elim f;
-  [ 'tt, hyp x];
+  [ `tt, hyp x];
   auto
 ].
 
@@ -29,7 +29,7 @@ Thm FunElimTest : [
     (-> bool bool)
     bool)
 ] by [
-  { lam f. let x = f {'tt}. hyp x };
+  { lam f. let x = f {`tt}. hyp x };
 
   auto
 ].
@@ -37,8 +37,8 @@ Thm FunElimTest : [
 Thm S1ElimTest : [ (-> S1 S1) ] by [
   { lam s.
     case s of
-       base => 'base
-     | loop x => '(loop x)
+       base => `base
+     | loop x => `(loop x)
   };
 
   auto
@@ -57,7 +57,7 @@ Thm ApEqTest : [
    [f (-> bool bool)]
    (path {_} bool (f tt) (f tt)))
 ] by [
-  { lam f. <_> '(,f tt) };
+  { lam f. <_> `(,f tt) };
 
   // Try commenting out the following line, and stepping through the proof with TryStep.
   auto
@@ -81,8 +81,8 @@ Thm PathTest2 : [
     (lam [b] (BoolEta b)))
 ] by [
   { let h : [(-> [b bool] (path {_} bool b (BoolEta b))) ] =
-      lam b. if b then <y> 'tt else <y> 'ff.
-    <x> lam c. let p = h {hyp c}. '(@ ,p x)
+      lam b. if b then <y> `tt else <y> `ff.
+    <x> lam c. let p = h {hyp c}. `(@ ,p x)
   };
 
   auto
@@ -100,7 +100,7 @@ Thm PathTest3 : [
     (lam [b] (BoolEta b)))
 ] by [
   // I'm surprised that RedPRL can typecheck this properly! Quite encouraging.
-  '(abs {x} 
+  `(abs {x} 
     (lam [b]
      (@ (if [b] (path {_} bool b (BoolEta b)) b (abs {_} tt) (abs {_} ff))
         x)));
@@ -110,8 +110,8 @@ Thm PathTest3 : [
 Print PathTest3.
 
 Thm PairTest : [ (* [a S1] (path {_} S1 a base)) ] by [
-  < {'base}
-  , <x> '(loop x)
+  < `base
+  , <x> `(loop x)
   >;
   auto
 ].
@@ -141,7 +141,7 @@ Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> sbool sbool) ] b
 ].
 
 Thm Not : [(-> [_ bool] bool)] by [
-  {lam x. if x then 'ff else 'tt};
+  {lam x. if x then `ff else `tt};
   auto
 ].
 
@@ -156,7 +156,7 @@ Thm FunExt(#A; #B) : [
    (path {_} (-> #A #B) f g))
 ] by [
   {lam f. lam g. lam p.
-    <i> lam a. let q = p hyp a. '(@ ,q i)};
+    <i> lam a. let q = p hyp a. `(@ ,q i)};
   auto
 ].
 
@@ -165,7 +165,7 @@ Print FunExt.
 
 Tac FunExtTac(#A; #B; #F; #G) = [
   let p : [(-> [x #A] (path {_} bool (#F x) (#G x)))] = {}.
-  {<i> lam a. let q = p hyp a. '(@ ,q i)};
+  {<i> lam a. let q = p hyp a. `(@ ,q i)};
   auto
 ].
 
@@ -174,7 +174,7 @@ Tac FunExtTac(#A; #B; #F; #G) = [
 Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac bool bool (Cmp Not Not) (lam [x] x));
 
-  {lam x. if x then <i> 'tt else <i> 'ff};
+  {lam x. if x then <i> `tt else <i> `ff};
   auto
 ].
 
@@ -182,6 +182,6 @@ Extract NotNotPath.
 Print FunExtTac.
 
 Thm Singleton : [(* [x bool] (path {_} bool x tt))] by [
-  < 'tt, <x> 'tt >;
+  < `tt, <x> `tt >;
   auto
 ].
