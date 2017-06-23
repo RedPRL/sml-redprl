@@ -144,6 +144,7 @@ struct
    | PATH_AP of 'a P.term
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
+   | COM of 'a dir * 'a equation list
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | HYP_REF of 'a
@@ -259,6 +260,14 @@ struct
       in
         typeArg :: capArg :: tubeArgs ->> EXP
       end
+    fun arityCom (_, eqs) =
+      let
+        val typeArg = [DIM] * [] <> EXP
+        val capArg = [] * [] <> EXP
+        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
+      in
+        typeArg :: capArg :: tubeArgs ->> EXP
+      end
   in
     val arityPoly =
       fn FCOM params => arityFcom params
@@ -266,6 +275,7 @@ struct
        | PATH_AP _ => [[] * [] <> EXP] ->> EXP
        | HCOM params => arityHcom params
        | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | COM params => arityCom params
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
        | HYP_REF _ => [] ->> EXP
@@ -310,6 +320,7 @@ struct
        | PATH_AP r => dimSupport r
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
+       | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
@@ -354,6 +365,12 @@ struct
        | (COE dir1, t) =>
            (case t of
                  COE dir2 => spanEq f (dir1, dir2)
+               | _ => false)
+       | (COM (dir1, eqs1), t) =>
+           (case t of
+                 COM (dir2, eqs2) =>
+                   spanEq f (dir1, dir2)
+                   andalso spansEq f (eqs1, eqs2)
                | _ => false)
        | (CUST (opid1, ps1, _), t) =>
            (case t of
@@ -483,6 +500,13 @@ struct
              ^ "["
              ^ dirToString f dir
              ^ "]"
+       | COM (dir, eqs) =>
+           "com"
+             ^ "["
+             ^ equationsToString f eqs
+             ^ "; "
+             ^ dirToString f dir
+             ^ "]"
        | CUST (opid, [], _) =>
            f opid
        | CUST (opid, ps, _) =>
@@ -527,6 +551,7 @@ struct
        | PATH_AP r => PATH_AP (P.bind f r)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
+       | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
        | HYP_REF a => HYP_REF (mapSym f a)
