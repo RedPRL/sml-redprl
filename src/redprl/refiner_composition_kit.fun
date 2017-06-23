@@ -238,8 +238,9 @@ struct
 
         (* type *)
         val goalTy0 = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (substSymbol (r'0, u0) ty0, ty)
-        val goalTy01 = makeGoal' @@ (I @ [(w,P.DIM)], H)
-            >> CJ.EQ_TYPE (substSymbol (P.ret w, u0) ty0, substSymbol (P.ret w, u1) ty1)
+        val ty0w = substSymbol (P.ret w, u0) ty0
+        val ty1w = substSymbol (P.ret w, u1) ty1
+        val goalTy01 = makeGoal' @@ (I @ [(w,P.DIM)], H) >> CJ.EQ_TYPE (ty0w, ty1w)
 
         (* cap *)
         val ty00 = substSymbol (r0, u0) ty0
@@ -247,7 +248,7 @@ struct
       in
         T.empty
           >: goalTy0 >: goalTy01 >: goalCap
-          >:+ ComKit.genInterTubeGoals (I, H) w ty0 tubes0 tubes1
+          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes0 tubes1
           >:+ ComKit.genTubeCapGoals (I, H) ty00 r0 cap0 tubes0
         #> (I, H, trivial)
       end
@@ -266,11 +267,12 @@ struct
         val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((cap, other), ty)
 
         val w = alpha 0
+        val ty0w = substSymbol (P.ret w, u0) ty0
         val ty00 = substSymbol (r, u0) ty0
       in
         T.empty
           >: goalTy0 >: goalEq
-          >:+ ComKit.genInterTubeGoals (I, H) w ty0 tubes tubes
+          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
           >:+ ComKit.genTubeCapGoals (I, H) ty00 r cap tubes
         #> (I, H, trivial)
       end
@@ -296,11 +298,12 @@ struct
         val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((substSymbol (r', u) tube, other), ty)
 
         val w = alpha 0
+        val ty0w = substSymbol (P.ret w, u0) ty0
       in
         T.empty
           >: goalTy0 >: goalCap >: goalEq
-          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
-          >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
+          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
+          >:+ ComKit.genTubeCapGoals (I, H) ty00 r cap tubes
         #> (I, H, trivial)
       end
 
