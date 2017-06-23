@@ -1,7 +1,6 @@
 // This uses the still-somewhat-fragile "derived rules" mechanism, which
 // will eventually be subsumed when we adopt a higher-order logical framework.
 Rule CoeTest{r:dim, r':dim}(#A : {dim}.exp) : [
-  m : #A{r} >> #A{r'} = #A{r'} type;
   {x:dim} | m : #A{r} >> #A{x} = #A{x} type
   ==>
   m : #A{r} >> coe{r ~> r'}({x}.#A{x}; m) in #A{r'}
@@ -10,7 +9,6 @@ Rule CoeTest{r:dim, r':dim}(#A : {dim}.exp) : [
 ].
 
 Rule CoeTestCap{r:dim}(#A : {dim}.exp) : [
-  m : #A{r} >> #A{r} = #A{r} type;
   {x:dim} | m : #A{r} >> #A{x} = #A{x} type
   ==>
   m : #A{r} >> coe{r ~> r}({x}.#A{x}; m) = m in #A{r}
