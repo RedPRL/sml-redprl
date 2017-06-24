@@ -56,6 +56,8 @@ struct
 
   (* combinators *)
 
+  fun |>: g = T.empty >: g
+
   fun >:+ (tel, list) : 'a telescope =
     List.foldl (fn (g, t) => t >: g) tel list
   infix 5 >:+
@@ -92,19 +94,31 @@ struct
     end
 
   (* ignoring the evidence *)
-  fun makeGoal' jdg = #1 (makeGoal jdg)
+  fun makeGoal' jdg = #1 @@ makeGoal jdg
+  fun makeType (I, H) a = makeGoal' @@ (I, H) >> CJ.TYPE a
+  fun makeEqType (I, H) (a, b) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (a, b)
+  fun makeEq (I, H) ((m, n), ty) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty)
+  fun makeMem (I, H) (m, ty) = makeGoal' @@ (I, H) >> CJ.MEM (m, ty)
 
+  (* needing the evidence *)
+  fun makeTrue (I, H) a = makeGoal @@ (I, H) >> CJ.TRUE a
+
+  (* conditional goal making *)
   fun makeEqTypeIfDifferent (I, H) (m, n) =
     if Abt.eq (m, n) then NONE
     else SOME (makeGoal' @@ (I, H) >> CJ.EQ_TYPE (m, n))
 
-  fun makeEqTypeIfAllDifferent (I, H) (m, n) l =
-    if List.exists (fn n' => Abt.eq (m, n')) l then NONE
+  fun makeEqTypeIfAllDifferent (I, H) (m, n) ns =
+    if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
     else makeEqTypeIfDifferent (I, H) (m, n)
 
   fun makeEqIfDifferent (I, H) ((m, n), ty) =
     if Abt.eq (m, n) then NONE
     else SOME (makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty))
+
+  fun makeEqIfAllDifferent (I, H) ((m, n), ty) ns =
+    if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
+    else makeEqIfDifferent (I, H) ((m, n), ty)
 
   structure Assert =
   struct
