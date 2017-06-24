@@ -41,6 +41,45 @@ Thm Thm2(#A; #B; #C) : [
 // It is worthwhile to print out the extract program / evidence for Thm2.
 Extract Thm2.
 
+// here's a proof using lower-level scripting
+Thm Thm3/low-level(#A; #B; #C) : [
+  type/A : #A type,
+  type/B : #B type,
+  type/C : #C type
+  >> (->
+      (-> #A #B)
+      (-> #B #C)
+      (-> #A #C))
+] by [
+  fresh ab, bc, a <- auto;
+  fresh c <- elim bc;
+  [fresh b <- elim ab; [hyp a, hyp b], hyp c]
+].
+
+Extract Thm3/low-level.
+
+// here's a high-level version of the above proof. proofs using the high-level 
+// programming calculus may be longer, but they are often easier to engineer, 
+// and nicely segregate main goals from auxiliary goals.
+Thm Thm3/high-level(#A; #B; #C) : [
+  type/A : #A type,
+  type/B : #B type,
+  type/C : #C type
+  >> (->
+      (-> #A #B)
+      (-> #B #C)
+      (-> #A #C))
+] by [
+  { lam ab. lam bc. lam a.
+    let c = bc {
+      let b = ab hyp a.
+      hyp b
+    }. hyp c
+  }; auto
+].
+
+Extract Thm3/high-level.
+
 Def Not(#A) = [ (-> #A void) ].
 
 Thm Not/wf(#A) : [
@@ -75,4 +114,20 @@ Thm Thm5(#A) : [
   auto
 ].
 
-Extract Thm5.
+Print Thm4.
+Print Thm5.
+
+Thm Thm6(#A;#B) : [
+  type/A : #A type,
+  type/B : #B type
+  >> (-> (-> #A #B) (Not #B) (Not #A))
+] by [
+  { lam ab. lam nb.
+    unfold Not;
+    lam a. 
+    let bang = nb {
+      let b = ab hyp a. hyp b
+    }.
+    hyp bang
+  }; auto
+].
