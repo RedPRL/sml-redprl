@@ -382,6 +382,11 @@ struct
      | UPDATE of hyp * catjdg
      | INSERT of hyp * catjdg
 
+    val diffToString =
+      fn DELETE x => "DELETE " ^ Sym.toString x
+       | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
+       | INSERT (x,_) => "INSERT " ^ Sym.toString x
+
     fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope =
       case deltas of
          [] => H
