@@ -98,6 +98,14 @@ struct
     if Abt.eq (m, n) then NONE
     else SOME (makeGoal' @@ (I, H) >> CJ.EQ_TYPE (m, n))
 
+  fun makeEqTypeIfAllDifferent (I, H) (m, n) l =
+    if List.exists (fn n' => Abt.eq (m, n')) l then NONE
+    else makeEqTypeIfDifferent (I, H) (m, n)
+
+  fun makeEqIfDifferent (I, H) ((m, n), ty) =
+    if Abt.eq (m, n) then NONE
+    else SOME (makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty))
+
   structure Assert =
   struct
     fun alphaEq (m, n) =
