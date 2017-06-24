@@ -106,6 +106,7 @@ struct
 
   (* needing the evidence *)
   fun makeTrue (I, H) a = makeGoal @@ (I, H) >> CJ.TRUE a
+  fun makeSynth (I, H) m = makeGoal @@ (I, H) >> CJ.SYNTH m
 
   (* conditional goal making *)
   fun makeEqTypeIfDifferent (I, H) (m, n) =

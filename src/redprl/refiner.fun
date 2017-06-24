@@ -44,10 +44,9 @@ struct
     let
       val _ = RedPrlLog.trace "Equality.Symmetry"
       val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
-      val goal = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty2, ty1)
+      val goal = makeEqType (I, H) (ty2, ty1)
     in
-      T.empty >: goal
-        #> (I, H, trivial)
+      |>: goal #> (I, H, trivial)
     end
   end
 
@@ -57,10 +56,9 @@ struct
       let
         val _ = RedPrlLog.trace "True.Witness"
         val (I, H) >> CJ.TRUE ty = jdg
-        val goal = makeGoal' @@ (I, H) >> CJ.MEM (tm, ty)
+        val goal = makeMem (I, H) (tm, ty)
       in
-        T.empty >: goal
-          #> (I, H, tm)
+        |>: goal #> (I, H, tm)
       end
       handle Bind =>
         raise E.error [Fpp.text @@ "Expected truth sequent but got " ^ J.toString jdg]
@@ -97,10 +95,9 @@ struct
         val Syn.IF ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
-        val goal = makeGoal' @@ (I, H) >> CJ.MEM (tm, cm)
+        val goal = makeMem (I, H) (tm, cm)
       in
-        T.empty >: goal
-          #> (I, H, cm)
+        |>: goal #> (I, H, cm)
       end
 
     fun S1Elim _ jdg =
@@ -110,10 +107,9 @@ struct
         val Syn.S1_ELIM ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
-        val goal = makeGoal' @@ (I, H) >> CJ.MEM (tm, cm)
+        val goal = makeMem (I, H) (tm, cm)
       in
-        T.empty >: goal
-          #> (I, H, cm)
+        |>: goal #> (I, H, cm)
       end
 
     fun Ap _ jdg =
@@ -121,13 +117,12 @@ struct
         val _ = RedPrlLog.trace "Synth.Ap"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.AP (m, n) = Syn.out tm
-        val (goalDFun, holeDFun) = makeGoal @@ (I, H) >> CJ.SYNTH m
+        val (goalDFun, holeDFun) = makeSynth (I, H) m
         val (goalDom, holeDom) = makeGoal @@ MATCH (O.MONO O.DFUN, 0, holeDFun, [], [])
         val (goalCod, holeCod) = makeGoal @@ MATCH (O.MONO O.DFUN, 1, holeDFun, [], [n])
-        val goalN = makeGoal' @@ (I, H) >> CJ.MEM (n, holeDom)
+        val goalN = makeMem (I, H) (n, holeDom)
       in
-        T.empty >: goalDFun >: goalDom >: goalCod >: goalN
-          #> (I, H, holeCod)
+        |>: goalDFun >: goalDom >: goalCod >: goalN #> (I, H, holeCod)
       end
 
     fun PathAp _ jdg =
@@ -135,11 +130,10 @@ struct
         val _ = RedPrlLog.trace "Synth.PathAp"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.PATH_AP (m, r) = Syn.out tm
-        val (goalPathTy, holePathTy) = makeGoal @@ (I, H) >> CJ.SYNTH m
+        val (goalPathTy, holePathTy) = makeSynth (I, H) m
         val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.PATH_TY, 0, holePathTy, [r], [])
       in
-        T.empty >: goalPathTy >: goalLine
-          #> (I, H, holeLine)
+        |>: goalPathTy >: goalLine #> (I, H, holeLine)
       end
 
     fun Fst _ jdg =
@@ -147,11 +141,10 @@ struct
         val _ = RedPrlLog.trace "Synth.Fst"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.FST m = Syn.out tm
-        val (goalTy, holeTy) = makeGoal @@ (I, H) >> CJ.SYNTH m
+        val (goalTy, holeTy) = makeSynth (I, H) m
         val (goalA, holeA) = makeGoal @@ MATCH (O.MONO O.DPROD, 0, holeTy, [], [])
       in
-        T.empty >: goalTy >: goalA
-          #> (I, H, holeA)
+        |>: goalTy >: goalA #> (I, H, holeA)
       end
 
     fun Snd _ jdg =
@@ -159,11 +152,10 @@ struct
         val _ = RedPrlLog.trace "Synth.Snd"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.SND m = Syn.out tm
-        val (goalTy, holeTy) = makeGoal @@ (I, H) >> CJ.SYNTH m
+        val (goalTy, holeTy) = makeSynth (I, H) m
         val (goalB, holeB) = makeGoal @@ MATCH (O.MONO O.DPROD, 1, holeTy, [], [Syn.into @@ Syn.FST m])
       in
-        T.empty >: goalTy >: goalB
-          #> (I, H, holeB)
+        |>: goalTy >: goalB #> (I, H, holeB)
       end
   end
 
@@ -177,7 +169,6 @@ struct
         val Abt.$ (th', args) = Abt.out tm
         val true = Abt.O.eq Sym.eq (th, th')
 
-        val _ = Abt.O.arity th (* is this needed? *)
         val (us, xs) \ arg = List.nth (args, k)
         val srho = ListPair.foldrEq (fn (u,p,rho) => Sym.Ctx.insert rho u p) Sym.Ctx.empty (us, ps)
         val vrho = ListPair.foldrEq (fn (x,m,rho) => Var.Ctx.insert rho x m) Var.Ctx.empty (xs, ms)
@@ -210,7 +201,7 @@ struct
            automatically assumed that 'ty' is a type. *)
         val goalTy = makeEqTypeIfDifferent (I, H) (ty, ty')
       in
-        T.empty >:? goalTy #> (I, H, trivial)
+        |>:? goalTy #> (I, H, trivial)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected variable-equality sequent"]
@@ -219,10 +210,9 @@ struct
       let
         val _ = RedPrlLog.trace "Equality.Symmetry"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val goal = makeGoal' @@ (I, H) >> CJ.EQ ((n, m), ty)
+        val goal = makeEq (I, H) ((n, m), ty)
       in
-        T.empty >: goal
-          #> (I, H, trivial)
+        |>: goal #> (I, H, trivial)
       end
   end
 
@@ -241,31 +231,35 @@ struct
         val w = alpha 0
         val ty0w = substSymbol (P.ret w, u0) ty0
         val ty1w = substSymbol (P.ret w, u1) ty1
-        val goalTy = makeGoal' @@ (I @ [(w, P.DIM)], H) >> CJ.EQ_TYPE (ty0w, ty1w)
-
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (substSymbol (r'0, u0) ty0, ty)
+        val goalTy = makeEqType (I @ [(w, P.DIM)], H) (ty0w, ty1w)
+        (* after proving the above goal, [ty0r] must be a type *)
+        val ty0r' = substSymbol (r'0, u0) ty0
+        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0r', ty)
 
         (* coercee *)
-        val goalCoercees = makeGoal' @@ (I, H) >> CJ.EQ ((m0, m1), substSymbol (r0, u0) ty0)
+        val ty0r = substSymbol (r0, u0) ty0
+        val goalCoercees = makeEq (I, H) ((m0, m1), ty0r)
       in
-        T.empty >: goalTy >:? goalTy0 >: goalCoercees #> (I, H, trivial)
+        |>: goalCoercees >:? goalTy0 >: goalTy #> (I, H, trivial)
       end
 
     fun CapEqL _ jdg =
       let
         val _ = RedPrlLog.trace "Coe.CapEq"
         val (I, H) >> CJ.EQ ((coe, other), ty) = jdg
-        val Syn.COE {dir=(r, r'), ty=(u, tyu), coercee=m} = Syn.out coe
+        val Syn.COE {dir=(r, r'), ty=(u0, ty0), coercee=m} = Syn.out coe
         val () = Assert.paramEq "Coe.CapEq source and target of direction" (r, r')
 
         (* type *)
-        val goalTy = makeGoal' @@ (I @ [(u, P.DIM)], H) >> CJ.TYPE tyu
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (substSymbol (r, u) tyu, ty)
+        val goalTy = makeType (I @ [(u0, P.DIM)], H) ty0
+        (* after proving the above goal, [ty0r] must be a type *)
+        val ty0r = substSymbol (r, u0) ty0
+        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0r, ty)
 
         (* eq *)
-        val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((m, other), ty)
+        val goalEq = makeEq (I, H) ((m, other), ty)
       in
-        T.empty >: goalTy >:? goalTy0 >: goalEq #> (I, H, trivial)
+        |>: goalEq >:? goalTy0 >: goalTy #> (I, H, trivial)
       end
 
     fun CapEqR alpha = catJdgFlipWrapper CapEqL alpha
@@ -322,7 +316,7 @@ struct
         val jdg' as (I, H) >> _ = RedPrlSequent.map unfold jdg
         val (goal, hole) = makeGoal @@ jdg'
       in
-        T.empty >: goal #> (I, H, hole)
+        |>: goal #> (I, H, hole)
       end
 
     fun EqHeadExpansion sign _ jdg =
@@ -331,10 +325,9 @@ struct
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
         val Abt.$ _ = Abt.out m (* is this needed? *)
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
-        val goal = makeGoal' @@ (I, H) >> CJ.EQ ((m', n), ty)
+        val goal = makeEq (I, H) ((m', n), ty)
       in
-        T.empty >: goal
-          #> (I, H, trivial)
+        |>: goal #> (I, H, trivial)
       end
       handle _ => raise E.error [Fpp.text "EqHeadExpansion!"]
 
@@ -344,11 +337,10 @@ struct
         val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
         val Abt.$ _ = Abt.out ty1 (* is this needed? *)
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
-        val goal = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty1', ty2)
-        in
-          T.empty >: goal
-            #> (I, H, trivial)
-        end
+        val goal = makeEqType (I, H) (ty1', ty2)
+      in
+        |>: goal #> (I, H, trivial)
+      end
   end
 
   fun Cut catjdg alpha jdg =
@@ -360,8 +352,7 @@ struct
       val (goal1, hole1) = makeGoal @@ (I, H @> (z, catjdg)) >> catjdg'
       val (goal2, hole2) = makeGoal @@ (I, H) >> catjdg
     in
-      T.empty >: goal1 >: goal2
-        #> (I, H, substVar (hole2, z) hole1)
+      |>: goal1 >: goal2 #> (I, H, substVar (hole2, z) hole1)
     end
 
 
