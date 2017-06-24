@@ -12,7 +12,7 @@ struct
 
   infixr @@
   infix 1 || #>
-  infix 2 >> >: >:+ $$ $# // \ @>
+  infix 2 >> >: >:? >:+ $$ $# // \ @>
   infix orelse_
 
   structure Bool =
@@ -99,12 +99,12 @@ struct
         val c0ff = substVar (Syn.into Syn.FF, x) c0x
         val c0m0 = substVar (m0, x) c0x
 
-        val (goalTy, _) = makeGoal @@ (I, H @> (z, CJ.TRUE @@ Syn.into Syn.BOOL)) >> CJ.EQ_TYPE (c0z, c1z)
-        val (goalTy', _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (c0m0, c)
-        val (goalM, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), Syn.into Syn.BOOL)
-        val (goalT, _) = makeGoal @@ (I, H) >> CJ.EQ ((t0, t1), c0tt)
-        val (goalF, _) = makeGoal @@ (I, H) >> CJ.EQ ((f0, f1), c0ff)
-        val psi = T.empty >: goalTy >: goalTy' >: goalM >: goalT >: goalF
+        val goalTy = makeGoal' @@ (I, H @> (z, CJ.TRUE @@ Syn.into Syn.BOOL)) >> CJ.EQ_TYPE (c0z, c1z)
+        val goalM = makeGoal' @@ (I, H) >> CJ.EQ ((m0, m1), Syn.into Syn.BOOL)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) (c0m0, c)
+        val goalT = makeGoal' @@ (I, H) >> CJ.EQ ((t0, t1), c0tt)
+        val goalF = makeGoal' @@ (I, H) >> CJ.EQ ((f0, f1), c0ff)
+        val psi = T.empty >: goalTy >: goalM >:? goalTy0 >: goalT >: goalF
       in
         psi #> (I, H, trivial)
       end
@@ -168,7 +168,8 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
 
-    fun ElimEq alpha jdg =
+    (* this rule is outdated because the paper version has changed. *)
+    fun ElimEq _ jdg =
       let
         val _ = RedPrlLog.trace "StrictBool.ElimEq"
         val (I, H) >> CJ.EQ ((if0, if1), c) = jdg
@@ -195,10 +196,10 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val (goalM0, _) = makeGoal @@ (I, H) >> CJ.MEM (m0z, cz)
-        val (goalM1, _) = makeGoal @@ (I, H) >> CJ.MEM (m1z, cz)
-        val (goalT, _) = makeGoal @@ (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) >> CJ.map (substVar (tt, z)) catjdg
-        val (goalF, _) = makeGoal @@ (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) >> CJ.map (substVar (ff, z)) catjdg
+        val goalM0 = makeGoal' @@ (I, H) >> CJ.MEM (m0z, cz)
+        val goalM1 = makeGoal' @@ (I, H) >> CJ.MEM (m1z, cz)
+        val goalT = makeGoal' @@ (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) >> CJ.map (substVar (tt, z)) catjdg
+        val goalF = makeGoal' @@ (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) >> CJ.map (substVar (ff, z)) catjdg
 
         val psi = T.empty >: goalM0 >: goalM1 >: goalT >: goalF
       in
@@ -231,7 +232,7 @@ struct
 
         val evidence =
           case catjdg of
-             CJ.TRUE _ => Syn.into Syn.TT
+             CJ.TRUE _ => Syn.into Syn.TT (* should be some fancy symbol *)
            | CJ.EQ _ => trivial
            | CJ.EQ_TYPE _ => trivial
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
@@ -309,10 +310,10 @@ struct
         val l0 = substSymbol (P.APP P.DIM0, u) holeL
         val l1 = substSymbol (P.APP P.DIM1, u) holeL
 
-        val (goalCoh0, _) = makeGoal @@ (I, Hbase) >> CJ.EQ ((l0, holeB), cbase)
-        val (goalCoh1, _) = makeGoal @@ (I, Hbase) >> CJ.EQ ((l1, holeB), cbase)
+        val goalCoh0 = makeGoal' @@ (I, Hbase) >> CJ.EQ ((l0, holeB), cbase)
+        val goalCoh1 = makeEqIfAllDifferent (I, Hbase) ((l1, holeB), cbase) [l0]
 
-        val psi = T.empty >: goalB >: goalL >: goalCoh0 >: goalCoh1
+        val psi = T.empty >: goalB >: goalL >: goalCoh0 >:? goalCoh1
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val elim = Syn.into @@ Syn.S1_ELIM ((z, cz), ztm, (holeB, (u, holeL)))
@@ -333,6 +334,9 @@ struct
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val c0z = substVar (ztm, x) c0x
         val c1z = substVar (ztm, y) c1y
+
+        val c0m0 = substVar (m0, x) c0x
+
         val l1u = substSymbol (P.ret u, v) l1v
 
         val l00 = substSymbol (P.APP P.DIM0, u) l0u
@@ -343,14 +347,15 @@ struct
 
         val S1 = Syn.into Syn.S1
 
-        val (goalCz, _) = makeGoal @@ (I, H @> (z, CJ.TRUE S1)) >> CJ.EQ_TYPE (c0z, c1z)
-        val (goalM, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), S1)
-        val (goalB, _) = makeGoal @@ (I, H) >> CJ.EQ ((b0, b1), cbase)
-        val (goalL, _) = makeGoal @@ (I, H) >> CJ.EQ ((l0u, l1u), cloop)
-        val (goalL00, _) = makeGoal @@ (I, H) >> CJ.EQ ((l00, b0), cbase)
-        val (goalL01, _) = makeGoal @@ (I, H) >> CJ.EQ ((l01, b0), cbase)
+        val goalCz = makeGoal' @@ (I, H @> (z, CJ.TRUE S1)) >> CJ.EQ_TYPE (c0z, c1z)
+        val goalM = makeGoal' @@ (I, H) >> CJ.EQ ((m0, m1), S1)
+        val goalCM = makeEqTypeIfDifferent (I, H) (c0m0, c)
+        val goalB = makeGoal' @@ (I, H) >> CJ.EQ ((b0, b1), cbase)
+        val goalL = makeGoal' @@ (I, H) >> CJ.EQ ((l0u, l1u), cloop)
+        val goalL00 = makeEqIfAllDifferent (I, H) ((l00, b0), cbase) [b1]
+        val goalL01 = makeEqIfAllDifferent (I, H) ((l01, b0), cbase) [l00, b1]
 
-        val psi = T.empty >: goalCz >: goalM >: goalB >: goalL >: goalL00 >: goalL01
+        val psi = T.empty >: goalCz >: goalM >:? goalCM >: goalB >: goalL >:? goalL00 >:? goalL01
       in
         psi #> (I, H, trivial)
       end
@@ -370,10 +375,10 @@ struct
         val b0z = substVar (ztm, x) b0x
         val b1z = substVar (ztm, y) b1y
 
-        val (goal1, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (a0, a1)
-        val (goal2, _) = makeGoal @@ (I, H @> (z, CJ.TRUE a0)) >> CJ.EQ_TYPE (b0z, b1z)
+        val goalA = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (a0, a1)
+        val goalB = makeGoal' @@ (I, H @> (z, CJ.TRUE a0)) >> CJ.EQ_TYPE (b0z, b1z)
       in
-        T.empty >: goal1 >: goal2
+        T.empty >: goalA >: goalB
           #> (I, H, trivial)
       end
       handle Bind =>
@@ -394,10 +399,10 @@ struct
         val m1w = substVar (wtm, y) m1y
         val bw = substVar (wtm, z) bz
 
-        val (goal1, _) = makeGoal @@ (I, H @> (w, CJ.TRUE a)) >> CJ.EQ ((m0w, m1w), bw)
-        val (goal2, _) = makeGoal @@ (I, H) >> CJ.TYPE a
+        val goalA = makeGoal' @@ (I, H) >> CJ.TYPE a (* the paper rule seems wrong *)
+        val goalB = makeGoal' @@ (I, H @> (w, CJ.TRUE a)) >> CJ.EQ ((m0w, m1w), bw)
       in
-        T.empty >: goal1 >: goal2
+        T.empty >: goalA >: goalB
           #> (I, H, trivial)
       end
 
@@ -411,10 +416,10 @@ struct
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val bz = substVar (ztm, x) bx
 
-        val (tyGoal, _) = makeGoal @@ (I, H) >> CJ.TYPE a
-        val (goal, hole) = makeGoal @@ (I, H @> (z, CJ.TRUE a)) >> CJ.TRUE bz
+        val (goalLam, hole) = makeGoal @@ (I, H @> (z, CJ.TRUE a)) >> CJ.TRUE bz
+        val goalA = makeGoal' @@ (I, H) >> CJ.TYPE a
 
-        val psi = T.empty >: goal >: tyGoal
+        val psi = T.empty >: goalLam >: goalA
         val lam = Syn.into @@ Syn.LAM (z, substVar (ztm, z) hole)
       in
         psi #> (I, H, lam)
@@ -430,8 +435,8 @@ struct
 
         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
         val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.AP (m, xtm))
-        val (goal1, _) = makeGoal @@ (I, H) >> CJ.MEM (m, dfun)
-        val (goal2, _) = makeGoal @@ (I, H) >> CJ.EQ ((m', n), dfun)
+        val goal1 = makeGoal' @@ (I, H) >> CJ.MEM (m, dfun)
+        val goal2 = makeGoal' @@ (I, H) >> CJ.EQ ((m', n), dfun)
       in
         T.empty >: goal1 >: goal2
           #> (I, H, trivial)
@@ -460,7 +465,7 @@ struct
 
         val psi = T.empty >: goal1 >: goal2
         val aptm = Syn.into @@ Syn.AP (ztm, hole1)
-        val rho = Var.Ctx.insert (Var.Ctx.insert Var.Ctx.empty u aptm) v (Syn.into Syn.AX)
+        val rho = Var.Ctx.insert (Var.Ctx.insert Var.Ctx.empty u aptm) v trivial
         val hole2' = substVarenv rho hole2
       in
         psi #> (I, H, hole2')
