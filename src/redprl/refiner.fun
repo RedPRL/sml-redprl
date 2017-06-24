@@ -17,7 +17,7 @@ struct
 
   structure Hyp =
   struct
-    fun Project z alpha jdg =
+    fun Project z _ jdg =
       let
         val _ = RedPrlLog.trace "Hyp.Project"
         val (I, H) >> catjdg = jdg
@@ -34,11 +34,11 @@ struct
 
   structure TypeEquality =
   struct
-    fun Symmetry alpha jdg =
+    fun Symmetry _ jdg =
     let
       val _ = RedPrlLog.trace "Equality.Symmetry"
       val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
-      val (goal, hole) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (ty2, ty1)
+      val goal = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty2, ty1)
     in
       T.empty >: goal
         #> (I, H, trivial)
@@ -47,7 +47,7 @@ struct
 
   structure Truth =
   struct
-    fun Witness tm alpha jdg =
+    fun Witness tm _ jdg =
       let
         val _ = RedPrlLog.trace "True.Witness"
         val (I, H) >> CJ.TRUE ty = jdg
@@ -62,7 +62,7 @@ struct
 
   structure Synth =
   struct
-    fun FromWfHyp z alpha jdg =
+    fun FromWfHyp z _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.FromWfHyp"
         val (I, H) >> CJ.SYNTH tm = jdg
@@ -74,7 +74,7 @@ struct
           raise Fail "Did not match"
       end
 
-    fun Hyp alpha jdg =
+    fun Hyp _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.Hyp"
         val (I, H) >> CJ.SYNTH tm = jdg
@@ -84,7 +84,7 @@ struct
         T.empty #> (I, H, a)
       end
 
-    fun If alpha jdg =
+    fun If _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.If"
         val (I, H) >> CJ.SYNTH tm = jdg
@@ -97,7 +97,7 @@ struct
           #> (I, H, cm)
       end
 
-    fun S1Elim alpha jdg =
+    fun S1Elim _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.S1Elim"
         val (I, H) >> CJ.SYNTH tm = jdg
@@ -110,7 +110,7 @@ struct
           #> (I, H, cm)
       end
 
-    fun Ap alpha jdg =
+    fun Ap _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.Ap"
         val (I, H) >> CJ.SYNTH tm = jdg
@@ -124,20 +124,19 @@ struct
           #> (I, H, holeCod)
       end
 
-    fun PathAp alpha jdg =
+    fun PathAp _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.PathAp"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.PATH_AP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeGoal @@ (I, H) >> CJ.SYNTH m
         val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.PATH_TY, 0, holePathTy, [r], [])
-        val psi = T.empty >: goalPathTy >: goalLine
       in
         T.empty >: goalPathTy >: goalLine
           #> (I, H, holeLine)
       end
 
-    fun Fst alpha jdg =
+    fun Fst _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.Fst"
         val (I, H) >> CJ.SYNTH tm = jdg
@@ -149,7 +148,7 @@ struct
           #> (I, H, holeA)
       end
 
-    fun Snd alpha jdg =
+    fun Snd _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.Snd"
         val (I, H) >> CJ.SYNTH tm = jdg
@@ -164,7 +163,7 @@ struct
 
   structure Match =
   struct
-    fun MatchOperator alpha jdg =
+    fun MatchOperator _ jdg =
       let
         val _ = RedPrlLog.trace "Match.MatchOperator"
         val MATCH (th, k, tm, ps, ms) = jdg
@@ -172,7 +171,7 @@ struct
         val Abt.$ (th', args) = Abt.out tm
         val true = Abt.O.eq Sym.eq (th, th')
 
-        val (vls, _) = Abt.O.arity th
+        val _ = Abt.O.arity th (* is this needed? *)
         val (us, xs) \ arg = List.nth (args, k)
         val srho = ListPair.foldrEq (fn (u,p,rho) => Sym.Ctx.insert rho u p) Sym.Ctx.empty (us, ps)
         val vrho = ListPair.foldrEq (fn (x,m,rho) => Var.Ctx.insert rho x m) Var.Ctx.empty (xs, ms)
@@ -187,7 +186,7 @@ struct
 
   structure Equality =
   struct
-    fun Hyp alpha jdg =
+    fun Hyp _ jdg =
       let
         val _ = RedPrlLog.trace "Equality.Hyp"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
@@ -210,7 +209,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected variable-equality sequent"]
 
-    fun Symmetry alpha jdg =
+    fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "Equality.Symmetry"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
@@ -246,7 +245,7 @@ struct
         T.empty >: goalTy >:? goalTy0 >: goalCoercees #> (I, H, trivial)
       end
 
-    fun CapEqL alpha jdg =
+    fun CapEqL _ jdg =
       let
         val _ = RedPrlLog.trace "Coe.CapEq"
         val (I, H) >> CJ.EQ ((coe, other), ty) = jdg
@@ -310,7 +309,7 @@ struct
          | _ => m
     end
 
-    fun Unfold sign opid alpha jdg =
+    fun Unfold sign opid _ jdg =
       let
         val _ = RedPrlLog.trace "Computation.Unfold"
         val unfold = safeUnfold sign opid o Abt.deepMapSubterms (safeUnfold sign opid)
@@ -320,11 +319,11 @@ struct
         T.empty >: goal #> (I, H, hole)
       end
 
-    fun EqHeadExpansion sign alpha jdg =
+    fun EqHeadExpansion sign _ jdg =
       let
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Abt.$ (theta, _) = Abt.out m
+        val Abt.$ _ = Abt.out m (* is this needed? *)
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val goal = makeGoal' @@ (I, H) >> CJ.EQ ((m', n), ty)
       in
@@ -333,11 +332,11 @@ struct
       end
       handle _ => raise E.error [Fpp.text "EqHeadExpansion!"]
 
-    fun EqTypeHeadExpansion sign alpha jdg =
+    fun EqTypeHeadExpansion sign _ jdg =
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
-        val Abt.$ (theta, _) = Abt.out ty1
+        val Abt.$ _ = Abt.out ty1 (* is this needed? *)
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
         val goal = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty1', ty2)
         in
@@ -351,7 +350,7 @@ struct
       val _ = RedPrlLog.trace "Cut"
       val (I, H) >> catjdg' = jdg
       val z = alpha 0
-      val tau = CJ.synthesis catjdg
+      val _ = CJ.synthesis catjdg (* what is this for? it is not used. *)
       val (goal1, hole1) = makeGoal @@ (I, H @> (z, catjdg)) >> catjdg'
       val (goal2, hole2) = makeGoal @@ (I, H) >> catjdg
     in
@@ -370,8 +369,8 @@ struct
 
     fun checkMainGoal (specGoal, mainGoal) =
       let
-        val (I, H) >> jdg = mainGoal
-        val (J, H0) >> jdg0 = specGoal
+        val (_, H) >> jdg = mainGoal
+        val (_, H0) >> jdg0 = specGoal
       in
         if CJ.eq (jdg, jdg0) then () else raise E.error [Fpp.text "Conclusions of goal did not match specification"];
         Hyps.foldl (fn (x, j, _) => checkHyp H x j) () H0
@@ -382,11 +381,6 @@ struct
        DELETE of hyp
      | UPDATE of hyp * catjdg
      | INSERT of hyp * catjdg
-
-    val diffToString =
-      fn DELETE x => "DELETE " ^ Sym.toString x
-       | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
-       | INSERT (x,_) => "INSERT " ^ Sym.toString x
 
     fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope =
       case deltas of
@@ -416,7 +410,7 @@ struct
         Hyps.foldr
           (fn (x, jdg1, delta) =>
              case Hyps.find H0 x of
-                SOME jdg0 => delta
+                SOME _ => delta
               | NONE => INSERT (x, jdg1) :: delta)
           diff01
           H1
@@ -428,10 +422,10 @@ struct
         val (I0, H0) >> jdg0 = subgoalSpec
         val nsyms = List.length I0
         val freshSyms = List.tabulate (List.length I0, fn i => alpha i)
-        val I0' = ListPair.map (fn ((u,sigma), v) => (v, sigma)) (I, freshSyms)
+        val I0' = ListPair.map (fn ((_,sigma), v) => (v, sigma)) (I, freshSyms)
         val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (I, freshSyms)
 
-        val (I1, H1) >> jdg1 = mainGoalSpec
+        val (_, H1) >> _ = mainGoalSpec
         val delta = hypothesesDiff (H1, H0)
         val H0' = applyDiffs alpha nsyms Var.Ctx.empty delta H
 
@@ -444,7 +438,7 @@ struct
     fun Lemma sign opid params args alpha jdg =
       let
         val _ = RedPrlLog.trace "Lemma"
-        val (mainGoalSpec, state as Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
+        val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
         val _ = checkMainGoal (mainGoalSpec, jdg)
 
         val (I, H) >> _ = jdg
@@ -460,7 +454,7 @@ struct
       f jdg alpha jdg
   in
     local
-      fun StepTrue sign ty =
+      fun StepTrue _ ty =
         case Syn.out ty of
            Syn.PATH_TY _ => Path.True
          | Syn.DFUN _ => DFun.True
@@ -523,7 +517,7 @@ struct
          | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _), _) => Path.ApEq
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
-      fun StepEqNeuExpand (m, ty) =
+      fun StepEqNeuExpand ty =
         case Syn.out ty of
            Syn.DPROD _ => DProd.Eta
          | Syn.DFUN _ => DFun.Eta
@@ -533,7 +527,7 @@ struct
       (* these are special rules which are not beta or eta,
        * and we have to check them against the neutral terms.
        * it looks nicer to list all of them here. *)
-      fun StepEqStuck sign ((m, n), ty) canonicity =
+      fun StepEqStuck _ ((m, n), ty) canonicity =
         case (Syn.out m, Syn.out n) of
            (Syn.HCOM _, Syn.HCOM _) => HCom.AutoEqLR
          | (Syn.HCOM _, _) => HCom.AutoEqL
@@ -548,8 +542,8 @@ struct
          | (_, Syn.PATH_AP (_, P.APP _)) => catJdgFlipWrapper Path.ApConstCompute
          | _ => case canonicity of
                    (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
-                 | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand (m, ty)
-                 | (Machine.CANONICAL, Machine.NEUTRAL _) => catJdgFlipWrapper @@ StepEqNeuExpand (m, ty)
+                 | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand ty
+                 | (Machine.CANONICAL, Machine.NEUTRAL _) => catJdgFlipWrapper @@ StepEqNeuExpand ty
 
       fun StepEq sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
@@ -558,7 +552,7 @@ struct
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
          | canonicity => StepEqStuck sign ((m, n), ty) canonicity
 
-      fun StepSynth sign m =
+      fun StepSynth _ m =
         case Syn.out m of
            Syn.VAR _ => Synth.Hyp
          | Syn.AP _ => Synth.Ap
@@ -609,9 +603,9 @@ struct
            Syn.S_BOOL => StrictBool.EqElim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
-      fun StepJdg sign z alpha jdg =
+      fun StepJdg _ z alpha jdg =
         let
-          val (I, H) >> catjdg = jdg
+          val (_, H) >> catjdg = jdg
         in
           case lookupHyp H z of
              CJ.TRUE hyp =>
