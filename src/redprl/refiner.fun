@@ -348,7 +348,6 @@ struct
       val _ = RedPrlLog.trace "Cut"
       val (I, H) >> catjdg' = jdg
       val z = alpha 0
-      val _ = CJ.synthesis catjdg (* what is this for? it is not used. *)
       val (goal1, hole1) = makeGoal @@ (I, H @> (z, catjdg)) >> catjdg'
       val (goal2, hole2) = makeGoal @@ (I, H) >> catjdg
     in
