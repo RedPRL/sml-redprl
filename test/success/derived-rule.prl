@@ -36,8 +36,8 @@ Rule PiTypehood(#A; #B : [exp].exp) : [
 ].
 
 Rule LambdaMembership(#A; #B : [exp].exp; #m : [exp].exp) : [
-  #A type;
-  x : #A >> #m[x] in #B[x]
+  x : #A >> #m[x] in #B[x];
+  #A type
   ==> (lam [x] #m[x]) in (-> [x #A] #B[x])
 ] by [
   auto

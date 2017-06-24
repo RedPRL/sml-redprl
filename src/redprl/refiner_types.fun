@@ -399,10 +399,10 @@ struct
         val m1w = substVar (wtm, y) m1y
         val bw = substVar (wtm, z) bz
 
-        val goalA = makeGoal' @@ (I, H) >> CJ.TYPE a (* the paper rule seems wrong *)
-        val goalB = makeGoal' @@ (I, H @> (w, CJ.TRUE a)) >> CJ.EQ ((m0w, m1w), bw)
+        val goalM = makeGoal' @@ (I, H @> (w, CJ.TRUE a)) >> CJ.EQ ((m0w, m1w), bw)
+        val goalA = makeGoal' @@ (I, H) >> CJ.TYPE a
       in
-        T.empty >: goalA >: goalB
+        T.empty >: goalM >: goalA
           #> (I, H, trivial)
       end
 
