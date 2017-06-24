@@ -104,7 +104,7 @@ struct
         val (goalM, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), Syn.into Syn.BOOL)
         val (goalT, _) = makeGoal @@ (I, H) >> CJ.EQ ((t0, t1), c0tt)
         val (goalF, _) = makeGoal @@ (I, H) >> CJ.EQ ((f0, f1), c0ff)
-        val psi = T.empty >: goalTy >: goalM >: goalT >: goalF
+        val psi = T.empty >: goalTy >: goalTy' >: goalM >: goalT >: goalF
       in
         psi #> (I, H, trivial)
       end
