@@ -89,18 +89,18 @@ struct
 
     (* Produce the list of goals requiring that tube aspects agree with the cap.
          forall i.
-           N_i<r/y> = M in A [Psi | r_i = r_i']
+           M = N_i<r/y> in A [Psi | r_i = r_i']
      *)
-    fun genTubeCapGoals (I, H) ty r cap tubes =
+    fun genCapTubeGoals (I, H) ty r cap tubes =
       let
-        fun tubeCap (eq, (u, tube)) =
+        fun capTube (eq, (u, tube)) =
           let
-            val J = (I, H) >> CJ.EQ ((substSymbol (r, u) tube, cap), ty)
+            val J = (I, H) >> CJ.EQ ((cap, substSymbol (r, u) tube), ty)
           in
             Option.map makeGoal' (Restriction.restrict J [eq])
           end
       in
-        List.mapPartial tubeCap tubes
+        List.mapPartial capTube tubes
       end
 
     (* Note that this does not check whether the 'ty' is a base type.
@@ -123,7 +123,7 @@ struct
       in
         |>: goalCap
          >:+ genInterTubeGoals (I, H) w ty tubes0 tubes1
-         >:+ genTubeCapGoals (I, H) ty r0 cap0 tubes0
+         >:+ genCapTubeGoals (I, H) ty r0 cap0 tubes0
         #> (I, H, trivial)
       end
   end
@@ -154,9 +154,10 @@ struct
 
         val w = alpha 0
       in
-        |>: goalTy >:? goalTy0 >: goalCap
+        |>: goalCap
          >:+ ComKit.genInterTubeGoals (I, H) w ty0 tubes0 tubes1
-         >:+ ComKit.genTubeCapGoals (I, H) ty r0 cap0 tubes0
+         >:+ ComKit.genCapTubeGoals (I, H) ty r0 cap0 tubes0
+         >:? goalTy0 >: goalTy
         #> (I, H, trivial)
       end
 
@@ -178,9 +179,10 @@ struct
 
         val w = alpha 0
       in
-        |>: goalTy0 >: goalEq
+        |>: goalEq
          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
-         >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
+         >:+ ComKit.genCapTubeGoals (I, H) ty r cap tubes
+         >: goalTy0
         #> (I, H, trivial)
       end
 
@@ -213,9 +215,10 @@ struct
   
         val w = alpha 0
       in
-        |>:? goalTy0 >:? goalEq
+        |>:? goalEq
          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
-         >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
+         >:+ ComKit.genCapTubeGoals (I, H) ty r cap tubes
+         >:? goalTy0
         #> (I, H, trivial)
       end
 
@@ -260,9 +263,10 @@ struct
         val ty0r = substSymbol (r0, u0) ty0
         val goalCap = makeEq (I, H) ((cap0, cap1), ty0r)
       in
-        |>: goalTy >:? goalTy0 >: goalCap
+        |>: goalCap
          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes0 tubes1
-         >:+ ComKit.genTubeCapGoals (I, H) ty0r r0 cap0 tubes0
+         >:+ ComKit.genCapTubeGoals (I, H) ty0r r0 cap0 tubes0
+         >:? goalTy0 >: goalTy
         #> (I, H, trivial)
       end
 
@@ -291,9 +295,10 @@ struct
         val w = alpha 0
         val ty0w = substSymbol (P.ret w, u0) ty0
       in
-        |>: goalTy >:? goalTy0 >: goalEq
+        |>: goalEq
          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
-         >:+ ComKit.genTubeCapGoals (I, H) ty0r r cap tubes
+         >:+ ComKit.genCapTubeGoals (I, H) ty0r r cap tubes
+         >:? goalTy0 >: goalTy
         #> (I, H, trivial)
       end
 
@@ -329,9 +334,10 @@ struct
         val ty0w = substSymbol (P.ret w, u0) ty0
         val ty0r = substSymbol (r, u0) ty0
       in
-        |>: goalTy >:? goalTy0 >:? goalEq
+        |>:? goalEq
          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
-         >:+ ComKit.genTubeCapGoals (I, H) ty0r r cap tubes
+         >:+ ComKit.genCapTubeGoals (I, H) ty0r r cap tubes
+         >:? goalTy0 >: goalTy
         #> (I, H, trivial)
       end
 
