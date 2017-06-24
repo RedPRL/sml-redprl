@@ -62,9 +62,13 @@ struct
     List.foldl (fn (g, t) => t >: g) tel list
   infix 5 >:+
 
+  fun |>:+ g = T.empty >:+ g
+
   fun >:? (tel, NONE) = tel
     | >:? (tel, SOME g) = tel >: g
   infix 5 >:?
+
+  fun |>:? g = T.empty >:? g
 
   (* hypotheses *)
 

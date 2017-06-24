@@ -117,14 +117,13 @@ struct
         val _ = ListPair.mapEq (Assert.equationEq "EqFComDelegator equations") (eqs0, eqs1)
         val _ = Assert.tautologicalEquations "EqFComDelegator tautology checking" eqs0
 
-        val goalCap = makeGoal' @@ (I, H) >> CJ.EQ ((cap0, cap1), ty)
+        val goalCap = makeEq (I, H) ((cap0, cap1), ty)
 
         val w = alpha 0
       in
-        T.empty
-          >: goalCap
-          >:+ genInterTubeGoals (I, H) w ty tubes0 tubes1
-          >:+ genTubeCapGoals (I, H) ty r0 cap0 tubes0
+        |>: goalCap
+         >:+ genInterTubeGoals (I, H) w ty tubes0 tubes1
+         >:+ genTubeCapGoals (I, H) ty r0 cap0 tubes0
         #> (I, H, trivial)
       end
   end
@@ -147,18 +146,17 @@ struct
         val _ = Assert.tautologicalEquations "HCom.Eq tautology checking" eqs0
 
         (* type *)
-        val goalTy = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty0, ty1)
+        val goalTy = makeEqType (I, H) (ty0, ty1)
         val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0, ty)
 
         (* cap *)
-        val goalCap = makeGoal' @@ (I, H) >> CJ.EQ ((cap0, cap1), ty)
+        val goalCap = makeEq (I, H) ((cap0, cap1), ty)
 
         val w = alpha 0
       in
-        T.empty
-          >: goalTy >:? goalTy0 >: goalCap
-          >:+ ComKit.genInterTubeGoals (I, H) w ty0 tubes0 tubes1
-          >:+ ComKit.genTubeCapGoals (I, H) ty r0 cap0 tubes0
+        |>: goalTy >:? goalTy0 >: goalCap
+         >:+ ComKit.genInterTubeGoals (I, H) w ty0 tubes0 tubes1
+         >:+ ComKit.genTubeCapGoals (I, H) ty r0 cap0 tubes0
         #> (I, H, trivial)
       end
 
@@ -173,17 +171,16 @@ struct
         val _ = Assert.tautologicalEquations "HCom.CapEq tautology checking" (List.map #1 tubes)
   
         (* type *)
-        val goalTy0 = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (ty0, ty)
+        val goalTy0 = makeEqType (I, H) (ty0, ty)
 
         (* eq *)
-        val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((cap, other), ty)
+        val goalEq = makeEq (I, H) ((cap, other), ty)
 
         val w = alpha 0
       in
-        T.empty
-          >: goalTy0 >: goalEq
-          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
-          >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
+        |>: goalTy0 >: goalEq
+         >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
+         >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
         #> (I, H, trivial)
       end
 
@@ -216,10 +213,9 @@ struct
   
         val w = alpha 0
       in
-        T.empty
-          >:? goalTy0 >:? goalEq
-          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
-          >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
+        |>:? goalTy0 >:? goalEq
+         >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
+         >:+ ComKit.genTubeCapGoals (I, H) ty r cap tubes
         #> (I, H, trivial)
       end
 
@@ -254,7 +250,7 @@ struct
         (* type *)
         val ty0w = substSymbol (P.ret w, u0) ty0
         val ty1w = substSymbol (P.ret w, u1) ty1
-        val goalTy = makeGoal' @@ (I @ [(w,P.DIM)], H) >> CJ.EQ_TYPE (ty0w, ty1w)
+        val goalTy = makeEqType (I @ [(w,P.DIM)], H) (ty0w, ty1w)
         (* after proving the above goal, we know [ty0] under any substitution is
          * still a type, and thus alpha-equivalence is sufficient. *)
         val goalTy0 = makeEqTypeIfAllDifferent (I, H)
@@ -262,12 +258,11 @@ struct
 
         (* cap *)
         val ty0r = substSymbol (r0, u0) ty0
-        val goalCap = makeGoal' @@ (I, H) >> CJ.EQ ((cap0, cap1), ty0r)
+        val goalCap = makeEq (I, H) ((cap0, cap1), ty0r)
       in
-        T.empty
-          >: goalTy >:? goalTy0 >: goalCap
-          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes0 tubes1
-          >:+ ComKit.genTubeCapGoals (I, H) ty0r r0 cap0 tubes0
+        |>: goalTy >:? goalTy0 >: goalCap
+         >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes0 tubes1
+         >:+ ComKit.genTubeCapGoals (I, H) ty0r r0 cap0 tubes0
         #> (I, H, trivial)
       end
 
@@ -282,7 +277,7 @@ struct
         val _ = Assert.tautologicalEquations "Com.CapEq tautology checking" (List.map #1 tubes)
 
         (* type *)
-        val goalTy = makeGoal' @@ (I @ [(u0,P.DIM)], H) >> CJ.TYPE ty0
+        val goalTy = makeType (I @ [(u0,P.DIM)], H) ty0
         (* after proving the above goal, we know [ty0] under any substitution is
          * still a type, and thus alpha-equivalence is sufficient. *)
         val ty0r = substSymbol (r, u0) ty0
@@ -291,15 +286,14 @@ struct
         (* eq *)
         (* the reason to choose [ty] not [ty0r] is because [ty] is more likely
          * to be reduced, even though they are equal after the above goal. *)
-        val goalEq = makeGoal' @@ (I, H) >> CJ.EQ ((cap, other), ty)
+        val goalEq = makeEq (I, H) ((cap, other), ty)
 
         val w = alpha 0
         val ty0w = substSymbol (P.ret w, u0) ty0
       in
-        T.empty
-          >: goalTy >:? goalTy0 >: goalEq
-          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
-          >:+ ComKit.genTubeCapGoals (I, H) ty0r r cap tubes
+        |>: goalTy >:? goalTy0 >: goalEq
+         >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
+         >:+ ComKit.genTubeCapGoals (I, H) ty0r r cap tubes
         #> (I, H, trivial)
       end
 
@@ -316,7 +310,7 @@ struct
         val (_, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
 
         (* type *)
-        val goalTy = makeGoal' @@ (I @ [(u0,P.DIM)], H) >> CJ.TYPE ty0
+        val goalTy = makeType (I @ [(u0,P.DIM)], H) ty0
         (* after proving the above goal, we know [ty0] under any substitution is
          * still a type, and thus alpha-equivalence is sufficient. *)
         val ty0r' = substSymbol (r', u0) ty0
@@ -335,10 +329,9 @@ struct
         val ty0w = substSymbol (P.ret w, u0) ty0
         val ty0r = substSymbol (r, u0) ty0
       in
-        T.empty
-          >: goalTy >:? goalTy0 >:? goalEq
-          >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
-          >:+ ComKit.genTubeCapGoals (I, H) ty0r r cap tubes
+        |>: goalTy >:? goalTy0 >:? goalEq
+         >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
+         >:+ ComKit.genTubeCapGoals (I, H) ty0r r cap tubes
         #> (I, H, trivial)
       end
 
