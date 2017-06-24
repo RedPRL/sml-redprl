@@ -1,3 +1,9 @@
+(* 2017/06/24
+ * As a note on programming style, the most important or most interesting
+ * subgoals should go first, as long as telescopes are well-formed.
+ *
+ * Rules violating this principle should be updated.
+ *)
 functor Refiner (Sig : MINI_SIGNATURE) : REFINER =
 struct
   structure Kit = RefinerKit (Sig)
