@@ -72,14 +72,13 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val (goalT, holeT) = makeGoal @@ (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) >> CJ.TRUE (substVar (tt, z) cz)
-        val (goalF, holeF) = makeGoal @@ (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) >> CJ.TRUE (substVar (ff, z) cz)
+        val (goalT, holeT) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) (substVar (tt, z) cz)
+        val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) (substVar (ff, z) cz)
 
-        val psi = T.empty >: goalT >: goalF
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val if_ = Syn.into @@ Syn.IF ((z, cz), ztm, (holeT, holeF))
       in
-        psi #> (I, H, if_)
+        |>: goalT >: goalF #> (I, H, if_)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected bool elimination problem"]
@@ -99,14 +98,13 @@ struct
         val c0ff = substVar (Syn.into Syn.FF, x) c0x
         val c0m0 = substVar (m0, x) c0x
 
-        val goalTy = makeGoal' @@ (I, H @> (z, CJ.TRUE @@ Syn.into Syn.BOOL)) >> CJ.EQ_TYPE (c0z, c1z)
-        val goalM = makeGoal' @@ (I, H) >> CJ.EQ ((m0, m1), Syn.into Syn.BOOL)
+        val goalTy = makeEqType (I, H @> (z, CJ.TRUE @@ Syn.into Syn.BOOL)) (c0z, c1z)
+        val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.BOOL)
         val goalTy0 = makeEqTypeIfDifferent (I, H) (c0m0, c)
-        val goalT = makeGoal' @@ (I, H) >> CJ.EQ ((t0, t1), c0tt)
-        val goalF = makeGoal' @@ (I, H) >> CJ.EQ ((f0, f1), c0ff)
-        val psi = T.empty >: goalTy >: goalM >:? goalTy0 >: goalT >: goalF
+        val goalT = makeEq (I, H) ((t0, t1), c0tt)
+        val goalF = makeEq (I, H) ((f0, f1), c0ff)
       in
-        psi #> (I, H, trivial)
+        |>: goalM >: goalT >: goalF >:? goalTy0 >: goalTy #> (I, H, trivial)
       end
   end
 
@@ -156,14 +154,13 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val (goalT, holeT) = makeGoal @@ (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) >> CJ.TRUE (substVar (tt, z) cz)
-        val (goalF, holeF) = makeGoal @@ (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) >> CJ.TRUE (substVar (ff, z) cz)
+        val (goalT, holeT) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) (substVar (tt, z) cz)
+        val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) (substVar (ff, z) cz)
 
-        val psi = T.empty >: goalT >: goalF
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val if_ = Syn.into @@ Syn.S_IF (ztm, (holeT, holeF))
       in
-        psi #> (I, H, if_)
+        |>: goalT >: goalF #> (I, H, if_)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
@@ -176,12 +173,11 @@ struct
         val Syn.S_IF (m0, (t0, f0)) = Syn.out if0
         val Syn.S_IF (m1, (t1, f1)) = Syn.out if1
 
-        val (goalM, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), Syn.into Syn.S_BOOL)
-        val (goalT, _) = makeGoal @@ (I, H) >> CJ.EQ ((t0, t1), c)
-        val (goalF, _) = makeGoal @@ (I, H) >> CJ.EQ ((f0, f1), c)
-        val psi = T.empty >: goalM >: goalT >: goalF
+        val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.S_BOOL)
+        val goalT = makeEq (I, H) ((t0, t1), c)
+        val goalF = makeEq (I, H) ((f0, f1), c)
       in
-        psi #> (I, H, trivial)
+        |>: goalM >: goalT >: goalF #> (I, H, trivial)
       end
 
     fun EqElim z _ jdg =
@@ -196,14 +192,12 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val goalM0 = makeGoal' @@ (I, H) >> CJ.MEM (m0z, cz)
-        val goalM1 = makeGoal' @@ (I, H) >> CJ.MEM (m1z, cz)
+        val goalM0 = makeMem (I, H) (m0z, cz)
+        val goalM1 = makeMem (I, H) (m1z, cz)
         val goalT = makeGoal' @@ (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) >> CJ.map (substVar (tt, z)) catjdg
         val goalF = makeGoal' @@ (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) >> CJ.map (substVar (ff, z)) catjdg
-
-        val psi = T.empty >: goalM0 >: goalM1 >: goalT >: goalF
       in
-        psi #> (I, H, trivial)
+        |>: goalT >: goalF >: goalM0 >: goalM1 #> (I, H, trivial)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
@@ -304,21 +298,19 @@ struct
         val Hbase = Hyps.modifyAfter z (CJ.map (substVar (base, z))) H
         val cbase = substVar (base, z) cz
 
-        val (goalB, holeB) = makeGoal @@ (I, Hbase) >> CJ.TRUE cbase
-        val (goalL, holeL) = makeGoal @@ (I @ [(u, P.DIM)], Hyps.modifyAfter z (CJ.map (substVar (loop, z))) H) >> CJ.TRUE (substVar (loop, z) cz)
+        val (goalB, holeB) = makeTrue (I, Hbase) cbase
+        val (goalL, holeL) = makeTrue (I @ [(u, P.DIM)], Hyps.modifyAfter z (CJ.map (substVar (loop, z))) H) (substVar (loop, z) cz)
 
         val l0 = substSymbol (P.APP P.DIM0, u) holeL
         val l1 = substSymbol (P.APP P.DIM1, u) holeL
 
-        val goalCoh0 = makeGoal' @@ (I, Hbase) >> CJ.EQ ((l0, holeB), cbase)
+        val goalCoh0 = makeEq (I, Hbase) ((l0, holeB), cbase)
         val goalCoh1 = makeEqIfAllDifferent (I, Hbase) ((l1, holeB), cbase) [l0]
-
-        val psi = T.empty >: goalB >: goalL >: goalCoh0 >:? goalCoh1
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val elim = Syn.into @@ Syn.S1_ELIM ((z, cz), ztm, (holeB, (u, holeL)))
       in
-        psi #> (I, H, elim)
+        |>: goalB >: goalL >: goalCoh0 >:? goalCoh1 #> (I, H, elim)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected circle elimination problem"]
@@ -478,15 +470,15 @@ struct
         val Syn.AP (m0, n0) = Syn.out ap0
         val Syn.AP (m1, n1) = Syn.out ap1
 
-        val (goalDFun0, holeDFun0) = makeGoal @@ (I, H) >> CJ.SYNTH m0
-        val (goalDFun1, holeDFun1) = makeGoal @@ (I, H) >> CJ.SYNTH m1
-        val (goalDFunEq, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (holeDFun0, holeDFun1)
+        val (goalDFun0, holeDFun0) = makeSynth (I, H) m0
+        val (goalDFun1, holeDFun1) = makeSynth (I, H) m1
+        val goalDFunEq = makeEqType (I, H) (holeDFun0, holeDFun1)
         val (goalDom, holeDom) = makeGoal @@ MATCH (O.MONO O.DFUN, 0, holeDFun0, [], [])
-        val (goalM, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), holeDFun0)
-        val (goalN, _) = makeGoal @@ (I, H) >> CJ.EQ ((n0, n1), holeDom)
+        val goalM = makeEq (I, H) ((m0, m1), holeDFun0)
+        val goalN = makeEq (I, H) ((n0, n1), holeDom)
       in
-        T.empty >: goalDFun0 >: goalDFun1 >: goalDFunEq >: goalDom >: goalM >: goalN
-          #> (I, H, trivial)
+        |>: goalDFun0 >: goalDFun1 >: goalDFunEq >: goalDom >: goalM >: goalN
+        #> (I, H, trivial)
       end
   end
 
@@ -504,11 +496,10 @@ struct
         val b0z = substVar (ztm, x) b0x
         val b1z = substVar (ztm, y) b1y
 
-        val (goal1, _) = makeGoal @@ (I, H) >> CJ.EQ_TYPE (a0, a1)
-        val (goal2, _) = makeGoal @@ (I, H @> (z, CJ.TRUE a0)) >> CJ.EQ_TYPE (b0z, b1z)
+        val goalA = makeEqType (I, H) (a0, a1)
+        val goalB = makeEqType (I, H @> (z, CJ.TRUE a0)) (b0z, b1z)
       in
-        T.empty >: goal1 >: goal2
-          #> (I, H, trivial)
+        |>: goalA >: goalB #> (I, H, trivial)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected dprod typehood sequent"]
@@ -525,12 +516,11 @@ struct
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val bz = substVar (ztm, x) bx
 
-        val (goal1, _) = makeGoal @@ (I, H) >> CJ.EQ ((m0, m1), a)
-        val (goal2, _) = makeGoal @@ (I, H) >> CJ.EQ ((n0, n1), substVar (m0, x) bx)
-        val (goalFam, _) = makeGoal @@ (I, H @> (z, CJ.TRUE a)) >> CJ.TYPE bz
+        val goalA = makeEq (I, H) ((m0, m1), a)
+        val goalB = makeEq (I, H) ((n0, n1), substVar (m0, x) bx)
+        val goalFam = makeType (I, H @> (z, CJ.TRUE a)) bz
       in
-        T.empty >: goal1 >: goal2 >: goalFam
-          #> (I, H, trivial)
+        |>: goalA >: goalB >: goalFam #> (I, H, trivial)
       end
 
     fun Eta alpha jdg =
@@ -540,11 +530,10 @@ struct
         val Syn.DPROD (a, x, bx) = Syn.out dprod
 
         val m' = Syn.into @@ Syn.PAIR (Syn.into @@ Syn.FST m, Syn.into @@ Syn.SND m)
-        val (goal1, _) = makeGoal @@ (I, H) >> CJ.MEM (m, dprod)
-        val (goal2, _) = makeGoal @@ (I, H) >> CJ.EQ ((m', n), dprod)
+        val goal1 = makeMem (I, H) (m, dprod)
+        val goal2 = makeEq (I, H) ((m', n), dprod)
       in
-        T.empty >: goal1 >: goal2
-          #> (I, H, trivial)
+        |>: goal1 >: goal2 #> (I, H, trivial)
       end
 
     fun FstEq alpha jdg =
@@ -622,16 +611,13 @@ struct
             @@ (I, Hyps.modifyAfter z (CJ.map (substVar (pair, z))) H'')
             >> CJ.TRUE (substVar (pair, z) cz)
 
-        val psi = T.empty >: goal
-
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val fstz = Syn.into @@ Syn.FST ztm
         val sndz = Syn.into @@ Syn.SND ztm
         val rho = Var.Ctx.insert (Var.Ctx.insert Var.Ctx.empty z1 fstz) z2 sndz
         val hole' = substVarenv rho hole
       in
-        T.empty >: goal
-          #> (I, H, hole')
+        |>: goal #> (I, H, hole')
       end
   end
 
