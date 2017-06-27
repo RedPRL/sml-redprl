@@ -362,22 +362,9 @@ struct
 
 
   local
-    fun checkHyp H x jdg0 =
-      case Hyps.find H x of
-         SOME jdg =>
-           if CJ.eq (jdg, jdg0) then () else
-             raise E.error
-               [Fpp.nest 2 @@
-                Fpp.vsep
-                  [Fpp.hsep [Fpp.text "Hypothesis ", TermPrinter.ppSym x, Fpp.text "did not match specification:"],
-                   CJ.pretty TermPrinter.ppTerm jdg,
-                   Fpp.text "vs",
-                   CJ.pretty TermPrinter.ppTerm jdg0]]
-       | _ => raise E.error [Fpp.text "Could not find hypothesis", TermPrinter.ppSym x]
-
     fun checkMainGoal (specGoal, mainGoal) =
       let
-        val (_, H) >> jdg = mainGoal
+        val (I, H) >> jdg = mainGoal
         val (_, H0) >> jdg0 = specGoal
       in
         if CJ.eq (jdg, jdg0) then () else 
@@ -388,7 +375,7 @@ struct
                  CJ.pretty TermPrinter.ppTerm jdg,
                  Fpp.text "vs",
                  CJ.pretty TermPrinter.ppTerm jdg0]];
-        Hyps.foldl (fn (x, j, _) => checkHyp H x j) () H0
+        Hyps.foldl (fn (x, jdg, goals) => goals >: makeGoal' ((I, H) >> CJ.HYP_IS (x, jdg))) T.empty H0
         (* TODO: unify using I, J!! *)
       end
 
@@ -459,13 +446,13 @@ struct
       let
         val _ = RedPrlLog.trace "Lemma"
         val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
-        val _ = checkMainGoal (mainGoalSpec, jdg)
+        val hypSubgoals = checkMainGoal (mainGoalSpec, jdg)
 
         val (I, H) >> _ = jdg
 
         val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec)) subgoals
       in
-        Lcf.|> (subgoals', validation)
+        Lcf.|> (Lcf.Tl.append subgoals' hypSubgoals, validation)
       end
   end
 

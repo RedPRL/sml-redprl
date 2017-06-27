@@ -171,18 +171,23 @@ Tac FunExtTac(#A; #B; #F; #G) = [
   auto
 ].
 
-// Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
-//   { let a : [bool type] = auto.
-//     let b : [bool type] = auto.
-//     fresh ext <- cut-lemma ({FunExt a b} bool bool);
-//     let ext = ext {`(Cmp Not Not)}.
-//     let ext = ext {lam x. hyp x}.
-//     let ext = ext {
-//       lam x. if x then <i> `tt else <i> `ff
-//     }.
-//     hyp ext
-//   }; auto
-// ].
+Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
+  let a : [bool type] = .
+  let b : [bool type] = .
+  cut-lemma {FunExt a b};
+  [`bool, `bool];
+  ?hole
+  // { let a : [bool type] = auto.
+  //   let b : [bool type] = auto.
+  //   // fresh ext <- cut-lemma ({FunExt a b} bool bool);
+  //   // let ext = ext {`(Cmp Not Not)}.
+  //   // let ext = ext {lam x. hyp x}.
+  //   // let ext = ext {
+  //   //   lam x. if x then <i> `tt else <i> `ff
+  //   // }.
+  //   // hyp ext
+  // }
+].
 
 // Extract NotNotPath.
 // Print FunExtTac.
