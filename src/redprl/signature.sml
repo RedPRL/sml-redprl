@@ -29,7 +29,7 @@ struct
       intersperse (Fpp.text ";") @@
         List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
-  fun prettyEntry (sign : sign) (opid : symbol, {sourceOpid, params, arguments, sort, spec, state} : entry) : Fpp.doc =
+  fun prettyEntry (_ : sign) (opid : symbol, {params, arguments, sort, spec, state,...} : entry) : Fpp.doc =
     Fpp.hsep
       [Fpp.text "Def",
         Fpp.seq [Fpp.text @@ Sym.toString opid, prettyParams params, prettyArgs arguments],
@@ -57,7 +57,7 @@ struct
       fn EDEF entry => SOME entry
        | _ => NONE
 
-    fun arityOfDecl ({sourceOpid, arguments, params, sort, spec, state} : entry) : Tm.psort list * Tm.O.Ar.t =
+    fun arityOfDecl ({arguments, params, sort, ...} : entry) : Tm.psort list * Tm.O.Ar.t =
       (List.map #2 params, (List.map #2 arguments, sort))
 
     structure OptionMonad = MonadNotation (OptionMonad)
@@ -219,7 +219,7 @@ struct
 
         val checkMetas =
           Tm.Metavar.Ctx.foldl
-            (fn (x, vl, r) =>
+            (fn (x, _, r) =>
                r <* E.unless (Option.isSome (Tm.Metavar.Ctx.find metactx x), E.fail (termPos, Fpp.text ("Unbound metavar: " ^ Tm.Metavar.toString x))))
             (E.ret ())
             (Tm.metactx term)
@@ -286,7 +286,7 @@ struct
 
     fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * abt CJ.jdg Hyps.telescope =
       let
-        fun go env syms vars H [] = (env, H)
+        fun go env _ _ H [] = (env, H)
           | go env syms vars H (hyp :: hyps) =
               let
                 val (syms', vars', env', x, jdg) = elabSrcSeqHyp (metactx, syms, vars, env) hyp
@@ -341,15 +341,12 @@ struct
         convertToAbt (metactx, symctx, env) definiens sort >>= (fn definiens' =>
           let
             val tau = sort
-            open RedPrlAbt infix \
+            open Tm infix \
             val state' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ definiens', (([],[]), tau)))
           in
             E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = tau, spec = NONE, state = state'})
           end)
       end
-
-    fun <&> (m, n) = m >>= (fn x => n >>= (fn y => E.ret (x, y)))
-    infix <&>
 
     local
       open RedPrlSequent Tm RedPrlOpData infix >> \ $$
@@ -358,7 +355,6 @@ struct
 
       fun elabRefine sign (seqjdg, script) =
         let
-          val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
           E.wrap (pos, fn _ => LcfSemantics.tactic (sign, Var.Ctx.empty) script names seqjdg)
@@ -401,7 +397,7 @@ struct
               val tau = CJ.synthesis concl
               val (params'', symctx', env') =
                 Hyps.foldr
-                  (fn (x, jdg, (ps, ctx, env)) =>
+                  (fn (x, _, (ps, ctx, env)) =>
                     ((x, RedPrlSortData.HYP tau) :: ps, Tm.Sym.Ctx.insert ctx x (RedPrlSortData.HYP tau), NameEnv.insert env (Sym.toString x) x))
                   (params', symctx, env)
                   hyps
@@ -431,7 +427,7 @@ struct
       in
         convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
           let
-            open O RedPrlAbt infix \
+            open O Tm infix \
             val state' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ script', (([],[]), TAC)))
           in
             E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = TAC, spec = NONE, state = state'}
@@ -460,9 +456,7 @@ struct
               | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
 
     local
-      open RedPrlAbt infix $ \
-      structure O = RedPrlOpData
-
+      open Tm infix $ \
       fun printExtractOf (pos, state) : unit E.t =
         E.info (SOME pos, Fpp.vsep [Fpp.text "Extract:", TermPrinter.ppTerm (extract state)])
     in
@@ -522,7 +516,7 @@ struct
   structure L = RedPrlLog
 
   val checkAlg : (elab_decl, bool) E.alg =
-    {warn = fn (msg, r) => (L.print L.WARN msg; false),
+    {warn = fn (msg, _) => (L.print L.WARN msg; false),
      info = fn (msg, r) => (L.print L.INFO msg; r),
      dump = fn (msg, r) => (L.print L.DUMP msg; r),
      init = true,

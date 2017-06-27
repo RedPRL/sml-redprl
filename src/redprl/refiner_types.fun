@@ -416,11 +416,11 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected dfun truth sequent"]
 
-    fun Eta alpha jdg =
+    fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "DFun.Eta"
         val (I, H) >> CJ.EQ ((m, n), dfun) = jdg
-        val Syn.DFUN (a, x, bx) = Syn.out dfun
+        val Syn.DFUN (_, x, _) = Syn.out dfun
 
         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
         val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.AP (m, xtm))
@@ -459,10 +459,10 @@ struct
         |>: goalA >: goal2 #> (I, H, hole2')
       end
 
-    fun ApEq alpha jdg =
+    fun ApEq _ jdg =
       let
         val _ = RedPrlLog.trace "DFun.ApEq"
-        val (I, H) >> CJ.EQ ((ap0, ap1), c) = jdg
+        val (I, H) >> CJ.EQ ((ap0, ap1), _) = jdg
         val Syn.AP (m0, n0) = Syn.out ap0
         val Syn.AP (m1, n1) = Syn.out ap1
 
@@ -518,11 +518,11 @@ struct
         |>: goal1 >: goal2 >: goalFam #> (I, H, trivial)
       end
 
-    fun Eta alpha jdg =
+    fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "DProd.Eta"
         val (I, H) >> CJ.EQ ((m, n), dprod) = jdg
-        val Syn.DPROD (a, x, bx) = Syn.out dprod
+        val Syn.DPROD _ = Syn.out dprod
 
         val m' = Syn.into @@ Syn.PAIR (Syn.into @@ Syn.FST m, Syn.into @@ Syn.SND m)
         val goal1 = makeMem (I, H) (m, dprod)
@@ -531,7 +531,7 @@ struct
         |>: goal1 >:? goal2 #> (I, H, trivial)
       end
 
-    fun FstEq alpha jdg =
+    fun FstEq _ jdg =
       let
         val _ = RedPrlLog.trace "DProd.FstEq"
         val (I, H) >> CJ.EQ ((fst0, fst1), ty) = jdg
@@ -547,7 +547,7 @@ struct
         #> (I, H, trivial)
       end
 
-    fun SndEq alpha jdg =
+    fun SndEq _ jdg =
       let
         val _ = RedPrlLog.trace "DProd.SndEq"
         val (I, H) >> CJ.EQ ((snd0, snd1), ty) = jdg
@@ -617,7 +617,7 @@ struct
 
   structure Path =
   struct
-    fun EqType alpha jdg =
+    fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Path.EqType"
         val (I, H) >> CJ.EQ_TYPE (ty0, ty1) = jdg
@@ -686,7 +686,7 @@ struct
         |>: goalM >:? goalM00 >:? goalM01 #> (I, H, trivial)
       end
 
-    fun ApEq alpha jdg =
+    fun ApEq _ jdg =
       let
         val _ = RedPrlLog.trace "Path.ApEq"
         val (I, H) >> CJ.EQ ((ap0, ap1), ty) = jdg
@@ -701,7 +701,7 @@ struct
         |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (I, H, trivial)
       end
 
-    fun ApConstCompute alpha jdg =
+    fun ApConstCompute _ jdg =
       let
         val _ = RedPrlLog.trace "Path.ApConstCompute"
         val (I, H) >> CJ.EQ ((ap, p), a) = jdg
@@ -718,11 +718,11 @@ struct
         #> (I, H, trivial)
       end
 
-    fun Eta alpha jdg =
+    fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Path.Eta"
         val (I, H) >> CJ.EQ ((m, n), pathTy) = jdg
-        val Syn.PATH_TY ((u, a), p0, p1) = Syn.out pathTy
+        val Syn.PATH_TY ((u, _), _, _) = Syn.out pathTy
 
         val m' = Syn.into @@ Syn.PATH_ABS (u, Syn.into @@ Syn.PATH_AP (m, P.ret u))
         val goal1 = makeMem (I, H) (m, pathTy)

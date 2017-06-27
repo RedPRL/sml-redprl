@@ -10,7 +10,6 @@ struct
   type valence = RedPrlArity.valence
   type symbol = Tm.symbol
   type opid = Tm.symbol
-  type proof_state = Lcf.jdg Lcf.state
   type jdg = RedPrlJudgment.jdg
 
   type 'a params = ('a * psort) list
@@ -137,10 +136,8 @@ struct
     fun resuscitateTheorem sign opid ps args =
       let
         val entry = lookup sign opid
-        val paramsSig = #params entry
-        val argsSig = #arguments entry
         val goal = case #spec entry of SOME goal => goal | _ => raise Fail "Reviving theorem failed: goal missing"
-        val state as Lcf.|> (subgoals, validation) = #state entry
+        val Lcf.|> (subgoals, validation) = #state entry
 
         val (mrho, srho) = unifyCustomOperator entry ps args
         val vrho = hypothesisRenaming entry ps
@@ -157,7 +154,7 @@ struct
         (goal', state')
       end
 
-      fun extract (Lcf.|> (subgoals, validation)) =
+      fun extract (Lcf.|> (_, validation)) =
         case outb validation of
            _ \ term => term
     end

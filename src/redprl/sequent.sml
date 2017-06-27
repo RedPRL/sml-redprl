@@ -95,7 +95,7 @@ struct
 
 
   val rec eq =
-    fn (jdg1 as (I1, H1) >> catjdg1, jdg2 as (I2, H2) >> catjdg2) =>
+    fn ((I1, H1) >> catjdg1, (I2, H2) >> catjdg2) =>
        (let
 
          fun unifyPsorts (sigma1, sigma2) =
@@ -116,14 +116,11 @@ struct
          val H2' = Hyps.map (CJ.map (CJ.Tm.substSymenv srho2)) (relabelHyps H2 xrho2)
          val catjdg1' = CJ.map (CJ.Tm.substSymenv srho1 o renameHypsInTerm xrho1) catjdg1
          val catjdg2' = CJ.map (CJ.Tm.substSymenv srho2 o renameHypsInTerm xrho2) catjdg2
-
-         val jdg1' = (I, H1') >> catjdg1'
-         val jdg2' = (I, H2') >> catjdg2'
        in
          telescopeEq (H1', H2')
            andalso CJ.eq (catjdg1', catjdg2')
        end
-       handle exn => false)
+       handle _ => false)
      | (MATCH (th1, k1, a1, ps1, ms1), MATCH (th2, k2, a2, ps2, ms2)) =>
           CJ.Tm.O.eq CJ.Tm.Sym.eq (th1, th2)
             andalso k1 = k2
