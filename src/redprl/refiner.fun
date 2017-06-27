@@ -19,7 +19,7 @@ struct
   infixr @@
   infix 1 || #>
   infix 2 >> >: >:? >:+ $$ $# // \ @>
-  infix orelse_ then_
+  infix orelse_ then_ thenl
 
   structure Hyp =
   struct
@@ -347,6 +347,7 @@ struct
     end
 
 
+
   local
     fun checkHyp H x jdg0 =
       case Hyps.find H x of
@@ -441,6 +442,15 @@ struct
         Lcf.|> (subgoals', validation)
       end
   end
+
+
+  fun CutLemma sign opid params args = 
+    let
+      val (mainGoalSpec : Lcf.jdg, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
+      val ([], H) >> catjdg = mainGoalSpec
+    in
+      Cut catjdg thenl [fn _ => Lcf.idn, Lemma sign opid params args]
+    end
 
   local
     val CatJdgSymmetry : Sym.t Tactical.tactic =
