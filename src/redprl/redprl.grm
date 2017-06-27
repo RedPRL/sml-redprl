@@ -261,7 +261,6 @@ param
 params
   : param ([param])
   | param params (param :: params)
-  | ([])
 
 equation
   : LPAREN equation RPAREN (equation)
@@ -477,9 +476,9 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
   | RULE_LEMMA term (Tac.makeLemma term)
-  | LPAREN OPNAME customOpParams RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
-  | LPAREN OPNAME customOpParams bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
-  | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
+
+  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
+  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
 
   | operator (Ast.$$ (operator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
