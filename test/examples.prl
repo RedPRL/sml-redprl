@@ -172,8 +172,8 @@ Tac FunExtTac(#A; #B; #F; #G) = [
 ].
 
 Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
-  { let a : [bool type] = .
-    let b : [bool type] = .
+  { let a : [bool type] = auto.
+    let b : [bool type] = auto.
     fresh ext <- cut-lemma {FunExt a b};
     [`bool, `bool, auto, auto];
     let ext = ext {`(Cmp Not Not)}.
