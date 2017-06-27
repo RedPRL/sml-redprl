@@ -489,7 +489,7 @@ struct
       let
         val sign' = Telescope.truncateFrom sign opid
       in
-        Telescope.snoc sign opid (decl, pos)
+        Telescope.snoc sign' opid (decl, pos)
       end
       handle Telescope.Duplicate l => error pos [Fpp.text "Duplicate identitifier:", Fpp.text l]
 
