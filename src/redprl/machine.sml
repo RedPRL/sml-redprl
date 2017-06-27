@@ -218,10 +218,15 @@ struct
      | O.POLY (O.RULE_LEMMA _) `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_CUT_LEMMA _) `$ _ <: _ => S.VAL
 
-     | O.MONO O.DEV_LET `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
-         S.STEP
-          @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP O.EXP)] (Tac.each [tac2,tac1]))
-          <: env
+     | O.MONO (O.DEV_LET tau) `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
+         let
+           val catjdg = RedPrlCategoricalJudgment.fromAbt jdg
+           val tau = RedPrlCategoricalJudgment.synthesis catjdg
+         in
+           S.STEP
+             @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2]))
+             <: env
+          end
      | O.MONO O.DEV_DFUN_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
            @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t]))
