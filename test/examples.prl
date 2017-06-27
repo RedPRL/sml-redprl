@@ -173,12 +173,12 @@ Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
   { let a : [bool type] = auto.
     let b : [bool type] = auto.
     fresh ext <- cut-lemma ({FunExt a b} bool bool);
-    let ext1 = ext {`(Cmp Not Not)}.
-    let ext2 = ext1 {lam x. hyp x}.
-    let ext3 = ext2 {
+    let ext = ext {`(Cmp Not Not)}.
+    let ext = ext {lam x. hyp x}.
+    let ext = ext {
       lam x. if x then <i> `tt else <i> `ff
     }.
-    hyp ext3
+    hyp ext
   }; auto
 ].
 
