@@ -557,9 +557,9 @@ struct
         val (goalTy, holeTy) = makeSynth (I, H) m0
         val (goalTyB, holeTyB) = makeMatch (O.MONO O.DPROD, 1, holeTy, [], [Syn.into @@ Syn.FST m0])
         val goalEq = makeEqIfDifferent (I, H) ((m0, m1), holeTy) (* m0 well-typed *)
-        val goalEqTy = makeEqType (I, H) (holeTyB, ty) (* holeTyB type? *)
+        val goalEqTy = makeEqTypeIfDifferent (I, H) (holeTyB, ty) (* holeTyB type *)
       in
-        |>: goalTy >: goalTyB >:? goalEq >: goalEqTy
+        |>: goalTy >: goalTyB >:? goalEq >:? goalEqTy
         #> (I, H, trivial)
       end
 
@@ -696,9 +696,9 @@ struct
         val (goalSynth, holeSynth) = makeSynth (I, H) m0
         val goalMem = makeEqIfDifferent (I, H) ((m0, m1), holeSynth) (* m0 well-typed *)
         val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [r0], [])
-        val goalTy = makeEqType (I, H) (holeLine, ty) (* holeLine type? *)
+        val goalTy = makeEqTypeIfDifferent (I, H) (holeLine, ty) (* holeLine type *)
       in
-        |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (I, H, trivial)
+        |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (I, H, trivial)
       end
 
     fun ApConstCompute alpha jdg =
