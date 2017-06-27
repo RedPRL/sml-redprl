@@ -170,7 +170,7 @@ struct
 
         (* equations *)
         val _ = Assert.tautologicalEquations "HCom.CapEq tautology checking" (List.map #1 tubes)
-  
+
         (* type *)
         val goalTy0 = makeEqType (I, H) (ty0, ty)
 
@@ -186,7 +186,7 @@ struct
         #> (I, H, trivial)
       end
 
-    val CapEqR = catJdgFlipWrapper CapEqL
+    (*val CapEqR = catJdgFlipWrapper CapEqL*)
 
     (* Search for the first satisfied equation in an hcom. *)
     fun TubeEqL alpha jdg =
@@ -212,7 +212,7 @@ struct
         (* the tube-tube adjacency premise guarantees that this particular tube
          * is unconditionally in [ty], and thus alpha-equivalence is sufficient. *)
         val goalEq = makeEqIfDifferent (I, H) ((substSymbol (r', u) tube, other), ty)
-  
+
         val w = alpha 0
       in
         |>:? goalEq
@@ -221,14 +221,6 @@ struct
          >:? goalTy0
         #> (I, H, trivial)
       end
-
-    val TubeEqR = catJdgFlipWrapper TubeEqL
-
-    (* Try all the hcom rules.
-     * Note that the EQ rule is invertible only when the cap and tube rules fail. *)
-    val AutoEqLR = CapEqL orelse_ CapEqR orelse_ TubeEqL orelse_ TubeEqR orelse_ Eq
-    val AutoEqL = CapEqL orelse_ TubeEqL orelse_ Eq
-    val AutoEqR = CapEqR orelse_ TubeEqR orelse_ Eq
   end
 
   structure Com =
@@ -302,8 +294,6 @@ struct
         #> (I, H, trivial)
       end
 
-    val CapEqR = catJdgFlipWrapper CapEqL
-
     (* Search for the first satisfied equation in an hcom. *)
     fun TubeEqL alpha jdg =
       let
@@ -340,13 +330,5 @@ struct
          >:? goalTy0 >: goalTy
         #> (I, H, trivial)
       end
-
-    val TubeEqR = catJdgFlipWrapper TubeEqL
-
-    (* Try all the hcom rules.
-     * Note that the EQ rule is invertible only when the cap and tube rules fail. *)
-    val AutoEqLR = CapEqL orelse_ CapEqR orelse_ TubeEqL orelse_ TubeEqR orelse_ Eq
-    val AutoEqL = CapEqL orelse_ TubeEqL orelse_ Eq
-    val AutoEqR = CapEqR orelse_ TubeEqR orelse_ Eq
   end
 end

@@ -7,8 +7,6 @@ struct
   type sort = Tm.valence
   type env = Tm.metaenv
   type jdg = Tm.abt S.jdg
-  type symenv = Tm.symenv
-  type varenv = Tm.varenv
 
   val subst = S.map o Tm.substMetaenv
   val eq = S.eq

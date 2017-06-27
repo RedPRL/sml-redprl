@@ -55,7 +55,6 @@ struct
       go SymCtx.empty
   end
 
-  exception InvalidStatement
   exception InvalidMultitactic (* unused but demanded by the signature *)
 
   open NominalLcfView

@@ -19,7 +19,7 @@ struct
   infixr @@
   infix 1 || #>
   infix 2 >> >: >:? >:+ $$ $# // \ @>
-  infix orelse_
+  infix orelse_ then_
 
   structure Hyp =
   struct
@@ -261,14 +261,6 @@ struct
       in
         |>: goalEq >:? goalTy0 >: goalTy #> (I, H, trivial)
       end
-
-    fun CapEqR alpha = catJdgFlipWrapper CapEqL alpha
-
-    (* Try all the fcom rules.
-     * Note that the EQ rule is invertible only when the cap rule fails. *)
-    val AutoEqLR = CapEqL orelse_ CapEqR orelse_ Eq
-    val AutoEqL = CapEqL orelse_ Eq
-    val AutoEqR = CapEqR orelse_ Eq
   end
 
   structure Computation =
@@ -451,6 +443,9 @@ struct
   end
 
   local
+    val CatJdgSymmetry : Sym.t Tactical.tactic =
+      Equality.Symmetry orelse_ TypeEquality.Symmetry
+
     fun matchGoal f alpha jdg =
       f jdg alpha jdg
   in
@@ -476,7 +471,7 @@ struct
       fun StepEqType sign (ty1, ty2) =
         case (Machine.canonicity sign ty1, Machine.canonicity sign ty2) of
            (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
-         | (_, Machine.REDEX) => catJdgFlipWrapper (Computation.EqTypeHeadExpansion sign)
+         | (_, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqTypeHeadExpansion sign
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
@@ -509,7 +504,7 @@ struct
              | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply sbool elimination"])
          | (_, Syn.S_IF _, _) =>
            (case y of
-               Machine.VAR z => catJdgFlipWrapper (StrictBool.EqElim z)
+               Machine.VAR z => CatJdgSymmetry then_ StrictBool.EqElim z
              | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply sbool elimination"])
          | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
@@ -524,6 +519,48 @@ struct
          | Syn.DFUN _ => DFun.Eta
          | Syn.PATH_TY _ => Path.Eta
          | _ => raise E.error [Fpp.text "Could not expand neutral term of type", TermPrinter.ppTerm ty]
+
+
+      structure HCom =
+      struct
+        open HCom
+
+        val AutoEqL = CapEqL orelse_ TubeEqL orelse_ Eq
+
+        (* Try all the hcom rules.
+         * Note that the EQ rule is invertible only when the cap and tube rules fail. *)
+        val AutoEqLR =
+          CapEqL
+            orelse_ (CatJdgSymmetry then_ HCom.CapEqL)
+            orelse_ HCom.TubeEqL
+            orelse_ (CatJdgSymmetry then_ HCom.TubeEqL)
+            orelse_ HCom.Eq
+      end
+
+      structure Com =
+      struct
+        open Com
+
+        val AutoEqL = CapEqL orelse_ TubeEqL orelse_ Eq
+        (* Try all the com rules.
+         * Note that the EQ rule is invertible only when the cap and tube rules fail. *)
+        val AutoEqLR =
+          CapEqL
+            orelse_ (CatJdgSymmetry then_ CapEqL)
+            orelse_ TubeEqL
+            orelse_ (CatJdgSymmetry then_ TubeEqL)
+            orelse_ Eq
+      end
+
+      structure Coe =
+      struct
+       open Coe
+
+       val CapEqR = CatJdgSymmetry then_ CapEqL
+       val AutoEqLR = CapEqL orelse_ CapEqR orelse_ Eq
+       val AutoEqL = CapEqL orelse_ Eq
+       val AutoEqR = CapEqR orelse_ Eq
+      end
 
       (* these are special rules which are not beta or eta,
        * and we have to check them against the neutral terms.
@@ -540,16 +577,17 @@ struct
          | (Syn.COM _, _) => Com.AutoEqL
          | (_, Syn.COM _) => Com.AutoEqLR
          | (Syn.PATH_AP (_, P.APP _), _) => Path.ApConstCompute
-         | (_, Syn.PATH_AP (_, P.APP _)) => catJdgFlipWrapper Path.ApConstCompute
-         | _ => case canonicity of
-                   (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
-                 | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand ty
-                 | (Machine.CANONICAL, Machine.NEUTRAL _) => catJdgFlipWrapper @@ StepEqNeuExpand ty
+         | (_, Syn.PATH_AP (_, P.APP _)) => CatJdgSymmetry then_ Path.ApConstCompute
+         | _ =>
+           (case canonicity of
+               (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
+             | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand ty
+             | (Machine.CANONICAL, Machine.NEUTRAL _) => CatJdgSymmetry then_ StepEqNeuExpand ty)
 
       fun StepEq sign ((m, n), ty) =
         case (Machine.canonicity sign m, Machine.canonicity sign n) of
            (Machine.REDEX, _) => Computation.EqHeadExpansion sign
-         | (_, Machine.REDEX) => catJdgFlipWrapper @@ Computation.EqHeadExpansion sign
+         | (_, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqHeadExpansion sign
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
          | canonicity => StepEqStuck sign ((m, n), ty) canonicity
 
