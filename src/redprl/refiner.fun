@@ -447,10 +447,6 @@ struct
   fun CutLemma sign opid params args = 
     let
       val (mainGoalSpec : Lcf.jdg, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
-      val _ = 
-        if Lcf.Tl.isEmpty subgoals then () else
-          raise E.error [Fpp.text "Cannot cut incomplete lemma", TermPrinter.ppSym opid]
-
       val ([], H) >> catjdg = mainGoalSpec
     in
       Cut catjdg thenl [fn _ => Lcf.idn, Lemma sign opid params args]
