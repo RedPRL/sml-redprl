@@ -56,13 +56,19 @@ struct
 
   (* combinators *)
 
+  fun |>: g = T.empty >: g
+
   fun >:+ (tel, list) : 'a telescope =
     List.foldl (fn (g, t) => t >: g) tel list
   infix 5 >:+
 
+  fun |>:+ g = T.empty >:+ g
+
   fun >:? (tel, NONE) = tel
     | >:? (tel, SOME g) = tel >: g
   infix 5 >:?
+
+  fun |>:? g = T.empty >:? g
 
   (* hypotheses *)
 
@@ -80,7 +86,7 @@ struct
     let
       open Abt infix 1 $#
       val x = newMeta ""
-      val vl as (_, tau) = J.sort jdg
+      val (_, tau) = J.sort jdg
       val (ps, ms) =
         case jdg of
            (I, H) >> _ => (List.map (fn (u, sigma) => (P.VAR u, sigma)) I, hypsToSpine H)
@@ -90,13 +96,35 @@ struct
     in
       ((x, jdg), hole)
     end
+  fun makeGoal' jdg = #1 @@ makeGoal jdg
 
-  (* ignoring the evidence *)
-  fun makeGoal' jdg = #1 (makeGoal jdg)
+  (* needing the realizer *)
+  fun makeTrue (I, H) a = makeGoal @@ (I, H) >> CJ.TRUE a
+  fun makeSynth (I, H) m = makeGoal @@ (I, H) >> CJ.SYNTH m
+  fun makeMatch part = makeGoal @@ MATCH part
 
+  (* ignoring the trivial realizer *)
+  fun makeType (I, H) a = makeGoal' @@ (I, H) >> CJ.TYPE a
+  fun makeEqType (I, H) (a, b) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (a, b)
+  fun makeEq (I, H) ((m, n), ty) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty)
+  fun makeMem (I, H) (m, ty) = makeGoal' @@ (I, H) >> CJ.MEM (m, ty)
+
+  (* conditional goal making *)
   fun makeEqTypeIfDifferent (I, H) (m, n) =
     if Abt.eq (m, n) then NONE
     else SOME (makeGoal' @@ (I, H) >> CJ.EQ_TYPE (m, n))
+
+  fun makeEqTypeIfAllDifferent (I, H) (m, n) ns =
+    if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
+    else makeEqTypeIfDifferent (I, H) (m, n)
+
+  fun makeEqIfDifferent (I, H) ((m, n), ty) =
+    if Abt.eq (m, n) then NONE
+    else SOME (makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty))
+
+  fun makeEqIfAllDifferent (I, H) ((m, n), ty) ns =
+    if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
+    else makeEqIfDifferent (I, H) ((m, n), ty)
 
   structure Assert =
   struct
