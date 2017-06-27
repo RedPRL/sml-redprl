@@ -118,8 +118,8 @@ struct
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.AP (m, n) = Syn.out tm
         val (goalDFun, holeDFun) = makeSynth (I, H) m
-        val (goalDom, holeDom) = makeGoal @@ MATCH (O.MONO O.DFUN, 0, holeDFun, [], [])
-        val (goalCod, holeCod) = makeGoal @@ MATCH (O.MONO O.DFUN, 1, holeDFun, [], [n])
+        val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun, [], [])
+        val (goalCod, holeCod) = makeMatch (O.MONO O.DFUN, 1, holeDFun, [], [n])
         val goalN = makeMem (I, H) (n, holeDom)
       in
         |>: goalDFun >: goalDom >: goalCod >: goalN #> (I, H, holeCod)
@@ -131,7 +131,7 @@ struct
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.PATH_AP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth (I, H) m
-        val (goalLine, holeLine) = makeGoal @@ MATCH (O.MONO O.PATH_TY, 0, holePathTy, [r], [])
+        val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holePathTy, [r], [])
       in
         |>: goalPathTy >: goalLine #> (I, H, holeLine)
       end
@@ -142,7 +142,7 @@ struct
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.FST m = Syn.out tm
         val (goalTy, holeTy) = makeSynth (I, H) m
-        val (goalA, holeA) = makeGoal @@ MATCH (O.MONO O.DPROD, 0, holeTy, [], [])
+        val (goalA, holeA) = makeMatch (O.MONO O.DPROD, 0, holeTy, [], [])
       in
         |>: goalTy >: goalA #> (I, H, holeA)
       end
@@ -153,7 +153,7 @@ struct
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.SND m = Syn.out tm
         val (goalTy, holeTy) = makeSynth (I, H) m
-        val (goalB, holeB) = makeGoal @@ MATCH (O.MONO O.DPROD, 1, holeTy, [], [Syn.into @@ Syn.FST m])
+        val (goalB, holeB) = makeMatch (O.MONO O.DPROD, 1, holeTy, [], [Syn.into @@ Syn.FST m])
       in
         |>: goalTy >: goalB #> (I, H, holeB)
       end

@@ -96,17 +96,18 @@ struct
     in
       ((x, jdg), hole)
     end
-
-  (* ignoring the evidence *)
   fun makeGoal' jdg = #1 @@ makeGoal jdg
+
+  (* needing the realizer *)
+  fun makeTrue (I, H) a = makeGoal @@ (I, H) >> CJ.TRUE a
+  fun makeSynth (I, H) m = makeGoal @@ (I, H) >> CJ.SYNTH m
+  fun makeMatch part = makeGoal @@ MATCH part
+
+  (* ignoring the trivial realizer *)
   fun makeType (I, H) a = makeGoal' @@ (I, H) >> CJ.TYPE a
   fun makeEqType (I, H) (a, b) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (a, b)
   fun makeEq (I, H) ((m, n), ty) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty)
   fun makeMem (I, H) (m, ty) = makeGoal' @@ (I, H) >> CJ.MEM (m, ty)
-
-  (* needing the evidence *)
-  fun makeTrue (I, H) a = makeGoal @@ (I, H) >> CJ.TRUE a
-  fun makeSynth (I, H) m = makeGoal @@ (I, H) >> CJ.SYNTH m
 
   (* conditional goal making *)
   fun makeEqTypeIfDifferent (I, H) (m, n) =
