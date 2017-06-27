@@ -170,7 +170,7 @@ struct
 
         (* equations *)
         val _ = Assert.tautologicalEquations "HCom.CapEq tautology checking" (List.map #1 tubes)
-  
+
         (* type *)
         val goalTy0 = makeEqType (I, H) (ty0, ty)
 
@@ -212,7 +212,7 @@ struct
         (* the tube-tube adjacency premise guarantees that this particular tube
          * is unconditionally in [ty], and thus alpha-equivalence is sufficient. *)
         val goalEq = makeEqIfDifferent (I, H) ((substSymbol (r', u) tube, other), ty)
-  
+
         val w = alpha 0
       in
         |>:? goalEq

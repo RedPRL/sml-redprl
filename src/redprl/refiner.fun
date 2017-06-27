@@ -521,7 +521,7 @@ struct
          | _ => raise E.error [Fpp.text "Could not expand neutral term of type", TermPrinter.ppTerm ty]
 
 
-      structure HCom = 
+      structure HCom =
       struct
         open HCom
 
@@ -529,15 +529,15 @@ struct
 
         (* Try all the hcom rules.
          * Note that the EQ rule is invertible only when the cap and tube rules fail. *)
-        val AutoEqLR = 
-          CapEqL 
+        val AutoEqLR =
+          CapEqL
             orelse_ (CatJdgSymmetry then_ HCom.CapEqL)
             orelse_ HCom.TubeEqL
             orelse_ (CatJdgSymmetry then_ HCom.TubeEqL)
             orelse_ HCom.Eq
       end
 
-      structure Com = 
+      structure Com =
       struct
         open Com
 
@@ -547,12 +547,12 @@ struct
         val AutoEqLR =
           CapEqL
             orelse_ (CatJdgSymmetry then_ CapEqL)
-            orelse_ TubeEqL 
+            orelse_ TubeEqL
             orelse_ (CatJdgSymmetry then_ TubeEqL)
             orelse_ Eq
       end
 
-      structure Coe = 
+      structure Coe =
       struct
        open Coe
 
@@ -578,7 +578,7 @@ struct
          | (_, Syn.COM _) => Com.AutoEqLR
          | (Syn.PATH_AP (_, P.APP _), _) => Path.ApConstCompute
          | (_, Syn.PATH_AP (_, P.APP _)) => CatJdgSymmetry then_ Path.ApConstCompute
-         | _ => 
+         | _ =>
            (case canonicity of
                (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
              | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand ty
