@@ -18,7 +18,6 @@ struct
   type src_opid = string
   type entry =
     {sourceOpid : src_opid,
-     params : symbol params,
      spec : jdg,
      state : Lcf.jdg Lcf.state}
 
@@ -70,6 +69,13 @@ struct
         SOME (EDEF defn) => defn
       | _ => raise Fail "Elaboration failed"
 
+  fun entryParams (entry : entry) : symbol params = 
+    let
+      val RedPrlSequent.>> ((I, _), _) = #spec entry
+    in
+      I
+    end
+
   fun entryArguments (entry : entry) : metavar arguments =
     let
       val Lcf.|> (subgoals, _) = #state entry
@@ -86,14 +92,13 @@ struct
 
   fun unifyCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : Tm.metaenv * Tm.symenv =
     let
-      val {params, ...} = entry
+      val params = entryParams entry
       val arguments = entryArguments entry
       val srho = ListPair.foldl (fn ((u, _), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
       val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
     in
       (mrho, srho)
     end
-
 
   local
     open RedPrlOpData Tm RedPrlSequent
@@ -115,7 +120,7 @@ struct
               end
           | _ => ctx
       in
-        ListPair.foldl handleHyp Var.Ctx.empty (#params entry, ps)
+        ListPair.foldl handleHyp Var.Ctx.empty (entryParams entry, ps)
       end
 
     fun relabelHyp (u, v) H =
@@ -139,7 +144,7 @@ struct
               end
           | _ => H
       in
-        ListPair.foldl handleHyp H (#params entry, ps)
+        ListPair.foldl handleHyp H (entryParams entry, ps)
       end
 
     fun relabelSequent (entry : entry) (ps : Tm.param list) : abt jdg -> abt jdg =

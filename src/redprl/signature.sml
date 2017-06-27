@@ -29,8 +29,9 @@ struct
       intersperse (Fpp.text ";") @@
         List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
-  fun prettyEntry (_ : sign) (opid : symbol, entry as {params, spec, state,...} : entry) : Fpp.doc =
+  fun prettyEntry (_ : sign) (opid : symbol, entry as {spec, state,...} : entry) : Fpp.doc =
     let
+      val params = entryParams entry
       val arguments = entryArguments entry
     in
       Fpp.hsep
@@ -58,8 +59,9 @@ struct
       fn EDEF entry => SOME entry
        | _ => NONE
 
-    fun arityOfDecl (entry as {params, ...} : entry) : Tm.psort list * Tm.O.Ar.t =
+    fun arityOfDecl (entry : entry) : Tm.psort list * Tm.O.Ar.t =
       let
+        val params = entryParams entry
         val arguments = entryArguments entry
         val sort = entrySort entry
       in
@@ -374,9 +376,9 @@ struct
             open Tm infix \
             val subgoals = argumentsToSubgoals arguments'
             val state = Lcf.|> (subgoals, checkb (([],[]) \ definiens', (([],[]), tau)))
-            val spec = RedPrlSequent.>> (([], Hyps.empty), CJ.TERM tau)
+            val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM tau)
           in
-            E.ret (EDEF {sourceOpid = opid, params = params', spec = spec, state = state})
+            E.ret (EDEF {sourceOpid = opid, spec = spec, state = state})
           end)
       end
 
@@ -442,8 +444,9 @@ struct
                 let
                   val subgoals' = Lcf.Tl.append termSubgoals subgoals
                   val state = Lcf.|> (subgoals', validation)
+                  val spec = (params'' @ syms, hyps) >> concl
                 in
-                  E.ret @@ EDEF {sourceOpid = opid, params = params'', spec = seqjdg, state = state}
+                  E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
                 end)
             end)
         end
@@ -468,9 +471,9 @@ struct
             open O Tm infix \
             val subgoals = argumentsToSubgoals arguments'
             val state = Lcf.|> (subgoals, checkb (([],[]) \ script', (([],[]), TAC)))
-            val spec = RedPrlSequent.>> (([], Hyps.empty), CJ.TERM TAC)
+            val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM TAC)
           in
-            E.ret @@ EDEF {sourceOpid = opid, params = params', spec = spec, state = state}
+            E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
           end)
       end
 

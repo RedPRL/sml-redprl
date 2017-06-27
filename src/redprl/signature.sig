@@ -16,7 +16,6 @@ sig
   type sign
   type entry =
     {sourceOpid : src_opid,
-     params : symbol params,
      spec : jdg,
      state : Lcf.jdg Lcf.state}
 
