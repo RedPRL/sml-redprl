@@ -39,6 +39,11 @@ struct
     case Ast.out tm of
        O.POLY (O.CUST params) $ bindings => O.POLY (O.RULE_LEMMA params) $$ bindings
      | _ => raise Fail "Invalid 'rule' term"
+
+  fun makeCutLemma tm =
+    case Ast.out tm of
+       O.POLY (O.CUST params) $ bindings => O.POLY (O.RULE_CUT_LEMMA params) $$ bindings
+     | _ => raise Fail "Invalid 'rule' term"
 end
 
 structure Multi =
@@ -104,7 +109,7 @@ end
  | BY | IN
 
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
- | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_UNFOLD
+ | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_CUT_LEMMA | RULE_UNFOLD
 
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
@@ -475,6 +480,7 @@ atomicRawTac
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
+  | RULE_CUT_LEMMA term (Tac.makeCutLemma term)
   | RULE_LEMMA term (Tac.makeLemma term)
 
   | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))

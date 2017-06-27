@@ -10,8 +10,9 @@ sig
   type 'a bview
 
   val Lemma : sign -> opid -> param list -> abt bview list -> rule
-
   val Cut : catjdg -> rule
+  val CutLemma : sign -> opid -> param list -> abt bview list -> rule
+
   val Elim : sign -> hyp -> rule
   val AutoStep : sign -> rule
 

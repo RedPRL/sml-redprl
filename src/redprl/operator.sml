@@ -147,6 +147,7 @@ struct
    | COM of 'a dir * 'a equation list
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
+   | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | HYP_REF of 'a
    | RULE_HYP of 'a * sort
    | RULE_ELIM of 'a * sort
@@ -278,6 +279,7 @@ struct
        | COM params => arityCom params
        | CUST (_, _, ar) => Option.valOf ar
        | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
+       | RULE_CUT_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
        | HYP_REF _ => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
@@ -323,6 +325,7 @@ struct
        | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
+       | RULE_CUT_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
@@ -380,6 +383,11 @@ struct
        | (RULE_LEMMA (opid1, ps1, _), t) =>
            (case t of
                  RULE_LEMMA (opid2, ps2, _) =>
+                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+               | _ => false)
+       | (RULE_CUT_LEMMA (opid1, ps1, _), t) =>
+           (case t of
+                 RULE_CUT_LEMMA (opid2, ps2, _) =>
                    f (opid1, opid2) andalso paramsEq f (ps1, ps2)
                | _ => false)
        | (HYP_REF a, t) =>
@@ -513,6 +521,8 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_LEMMA (opid, ps, _) =>
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
+       | RULE_CUT_LEMMA (opid, ps, _) =>
+           "cut-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
@@ -554,6 +564,7 @@ struct
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
        | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
+       | RULE_CUT_LEMMA (opid, ps, ar) => RULE_CUT_LEMMA (mapSym f opid, mapParams f ps, ar)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)
