@@ -143,7 +143,7 @@ struct
     structure MetaCtx = Tm.Metavar.Ctx
 
     structure LcfModel = LcfModel (MiniSig)
-    structure Refiner = NominalLcfSemantics (LcfModel)
+    structure LcfSemantics = NominalLcfSemantics (LcfModel)
 
     fun elabDeclArguments args =
       List.foldr
@@ -361,7 +361,7 @@ struct
           val (_, tau) = RedPrlJudgment.sort seqjdg
           val pos = getAnnotation script
         in
-          E.wrap (pos, fn _ => Refiner.tactic (sign, Var.Ctx.empty) script names seqjdg)
+          E.wrap (pos, fn _ => LcfSemantics.tactic (sign, Var.Ctx.empty) script names seqjdg)
         end
 
       structure Tl = TelescopeUtil (Lcf.Tl)

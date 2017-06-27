@@ -1,5 +1,9 @@
 functor RefinerKit (Sig : MINI_SIGNATURE) =
 struct
+  structure Tactical = NominalLcfTactical (structure Lcf = Lcf and Spr = UniversalSpread)
+  open Tactical
+  infix orelse_ then_
+
   structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = AbtMachineUtil (RedPrlMachine (Sig))
@@ -45,16 +49,7 @@ struct
 
   val trivial = Syn.into Syn.AX
 
-  fun orelse_ (t1, t2) alpha = Lcf.orelse_ (t1 alpha, t2 alpha)
-  infix orelse_
-
-  (* this is a hack till we have a nice way to pre-compose Equality.Symmetry *)
-  fun catJdgFlip (CJ.EQ_TYPE (a, b)) = CJ.EQ_TYPE (b, a)
-    | catJdgFlip (CJ.EQ ((a, b), ty)) = CJ.EQ ((b, a), ty)
-  fun catJdgFlipWrapper tactic alpha (IH >> jdg) =
-    tactic alpha (IH >> catJdgFlip jdg)
-
-  (* combinators *)
+  (* telescope combinators *)
 
   fun |>: g = T.empty >: g
 
