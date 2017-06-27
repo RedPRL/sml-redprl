@@ -139,7 +139,7 @@ struct
   in
     fun resuscitateTheorem sign opid ps =
       let
-        val entry = lookup sign opid handle _ => raise Fail "resus"
+        val entry = lookup sign opid
         val goal = #spec entry
         val Lcf.|> (subgoals, validation) = #state entry
         val args = Lcf.Tl.foldr (fn (x, jdg, args) => outb (Lcf.L.var x (RedPrlJudgment.sort jdg)) :: args) [] subgoals
