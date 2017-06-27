@@ -64,13 +64,26 @@ struct
         raise E.error [Fpp.text @@ "Expected truth sequent but got " ^ J.toString jdg]
   end
 
+  structure Term = 
+  struct
+    fun Exact tm _ jdg = 
+      let
+        val _ = RedPrlLog.trace "Term.Exact"
+        val (I, H) >> CJ.TERM tau = jdg
+        val tau' = Abt.sort tm
+        val _ = Assert.sortEq (tau, tau')
+      in
+        T.empty #> (I, H, tm)
+      end
+  end
+
   structure Synth =
   struct
     fun FromWfHyp z _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.FromWfHyp"
         val (I, H) >> CJ.SYNTH tm = jdg
-        val CJ.EQ ((a, b), ty) = Hyps.lookup H z
+        val CJ.EQ ((a, b), ty) = lookupHyp H z
       in
         if Abt.eq (a, tm) orelse Abt.eq (b, tm) then
           T.empty #> (I, H, ty)
@@ -83,7 +96,7 @@ struct
         val _ = RedPrlLog.trace "Synth.Hyp"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
-        val CJ.TRUE a = Hyps.lookup H z
+        val CJ.TRUE a = lookupHyp H z
       in
         T.empty #> (I, H, a)
       end
@@ -340,10 +353,10 @@ struct
       val _ = RedPrlLog.trace "Cut"
       val (I, H) >> catjdg' = jdg
       val z = alpha 0
-      val (goal1, hole1) = makeGoal @@ (I, H @> (z, catjdg)) >> catjdg'
-      val (goal2, hole2) = makeGoal @@ (I, H) >> catjdg
+      val (goal1, hole1) = makeGoal @@ (I, H) >> catjdg
+      val (goal2, hole2) = makeGoal @@ (I, H @> (z, catjdg)) >> catjdg'
     in
-      |>: goal1 >: goal2 #> (I, H, substVar (hole2, z) hole1)
+      |>: goal1 >: goal2 #> (I, H, substVar (hole1, z) hole2)
     end
 
 
@@ -353,15 +366,28 @@ struct
       case Hyps.find H x of
          SOME jdg =>
            if CJ.eq (jdg, jdg0) then () else
-             raise E.error [Fpp.text ("Hypothesis " ^ Sym.toString x ^ " did not match specification")]
-       | _ => raise E.error [Fpp.text ("Could not find hypothesis " ^ Sym.toString x)]
+             raise E.error
+               [Fpp.nest 2 @@
+                Fpp.vsep
+                  [Fpp.hsep [Fpp.text "Hypothesis ", TermPrinter.ppSym x, Fpp.text "did not match specification:"],
+                   CJ.pretty TermPrinter.ppTerm jdg,
+                   Fpp.text "vs",
+                   CJ.pretty TermPrinter.ppTerm jdg0]]
+       | _ => raise E.error [Fpp.text "Could not find hypothesis", TermPrinter.ppSym x]
 
     fun checkMainGoal (specGoal, mainGoal) =
       let
         val (_, H) >> jdg = mainGoal
         val (_, H0) >> jdg0 = specGoal
       in
-        if CJ.eq (jdg, jdg0) then () else raise E.error [Fpp.text "Conclusions of goal did not match specification"];
+        if CJ.eq (jdg, jdg0) then () else 
+          raise E.error 
+            [Fpp.nest 2 @@ 
+              Fpp.vsep 
+                [Fpp.text "Conclusions of goal did not match specification:",
+                 CJ.pretty TermPrinter.ppTerm jdg,
+                 Fpp.text "vs",
+                 CJ.pretty TermPrinter.ppTerm jdg0]];
         Hyps.foldl (fn (x, j, _) => checkHyp H x j) () H0
         (* TODO: unify using I, J!! *)
       end
@@ -429,10 +455,10 @@ struct
         jdg''
       end
   in
-    fun Lemma sign opid params args alpha jdg =
+    fun Lemma sign opid params alpha jdg =
       let
         val _ = RedPrlLog.trace "Lemma"
-        val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
+        val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
         val _ = checkMainGoal (mainGoalSpec, jdg)
 
         val (I, H) >> _ = jdg
@@ -444,13 +470,17 @@ struct
   end
 
 
-  fun CutLemma sign opid params args = 
+  fun CutLemma sign opid params = 
     let
-      val (mainGoalSpec : Lcf.jdg, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
-      val ([], H) >> catjdg = mainGoalSpec
+      val (mainGoalSpec : Lcf.jdg, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
+      val (I, H) >> catjdg = mainGoalSpec
     in
-      Cut catjdg thenl [fn _ => Lcf.idn, Lemma sign opid params args]
+      Cut catjdg thenl [Lemma sign opid params, fn _ => Lcf.idn]
     end
+
+  fun Exact tm = 
+    Truth.Witness tm
+      orelse_ Term.Exact tm
 
   local
     val CatJdgSymmetry : Sym.t Tactical.tactic =

@@ -65,7 +65,7 @@ struct
 
   structure E = ElabMonadUtil (ElabMonad)
   fun lookup ({elabSign, ...} : sign) opid =
-    case E.run (ETelescope.lookup elabSign opid) of
+    case E.run (ETelescope.lookup elabSign opid) handle _ => raise Fail "mini" of
         SOME (EDEF defn) => defn
       | _ => raise Fail "Elaboration failed"
 
@@ -96,6 +96,8 @@ struct
       val arguments = entryArguments entry
       val srho = ListPair.foldl (fn ((u, _), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
       val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
+              handle _ => raise Fail "Fuck/unifyCustomOperator"
+
     in
       (mrho, srho)
     end
@@ -123,39 +125,24 @@ struct
         ListPair.foldl handleHyp Var.Ctx.empty (entryParams entry, ps)
       end
 
-    fun relabelHyp (u, v) H =
-      let
-        val jdg = Hyps.lookup H u
-        val H' = Hyps.interposeAfter H u (Hyps.singleton v jdg)
-      in
-        Hyps.remove u H'
-      end
-
-    fun relabelHyps (entry : entry) (ps : Tm.param list) H =
-      let
-        fun handleHyp ((u, psort), ptm, H) =
-          case psort of
-            RedPrlSortData.HYP _ =>
-              let
-                val v = case ptm of RedPrlParameterTerm.VAR v => v
-                           | _ => raise Fail "Hypothesis relabeling failed: not a variable"
-              in
-                relabelHyp (u, v) H
-              end
-          | _ => H
-      in
-        ListPair.foldl handleHyp H (entryParams entry, ps)
-      end
-
     fun relabelSequent (entry : entry) (ps : Tm.param list) : abt jdg -> abt jdg =
-      fn (I, H) >> catjdg => (I, relabelHyps entry ps H) >> catjdg
-      | jdg => jdg
-  in
-    fun resuscitateTheorem sign opid ps args =
       let
-        val entry = lookup sign opid
+        val rho =
+          ListPair.foldrEq
+            (fn ((u, _), P.VAR v, r) => Sym.Ctx.insert r u v
+              | (_, _, r) => r)
+            Sym.Ctx.empty
+            (entryParams entry, ps)
+      in
+        RedPrlSequent.relabel rho
+      end
+  in
+    fun resuscitateTheorem sign opid ps =
+      let
+        val entry = lookup sign opid handle _ => raise Fail "resus"
         val goal = #spec entry
         val Lcf.|> (subgoals, validation) = #state entry
+        val args = Lcf.Tl.foldr (fn (x, jdg, args) => outb (Lcf.L.var x (RedPrlJudgment.sort jdg)) :: args) [] subgoals
 
         val (mrho, srho) = unifyCustomOperator entry ps args
         val vrho = hypothesisRenaming entry ps
@@ -171,6 +158,7 @@ struct
       in
         (goal', state')
       end
+      handle _ => raise Fail "Resusc"
 
       fun extract (Lcf.|> (_, validation)) =
         case outb validation of

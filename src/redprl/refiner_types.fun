@@ -434,7 +434,7 @@ struct
       let
         val _ = RedPrlLog.trace "DFun.Elim"
         val (I, H) >> CJ.TRUE cz = jdg
-        val CJ.TRUE dfun = Hyps.lookup H z
+        val CJ.TRUE dfun = lookupHyp H z
         val Syn.DFUN (a, x, bx) = Syn.out dfun
         val (goalA, holeA) = makeTrue (I, H) a
 
@@ -585,7 +585,7 @@ struct
       let
         val _ = RedPrlLog.trace "DProd.Elim"
         val (I, H) >> CJ.TRUE cz = jdg
-        val CJ.TRUE dprod = Hyps.lookup H z
+        val CJ.TRUE dprod = lookupHyp H z
         val Syn.DPROD (a, x, bx) = Syn.out dprod
 
         val z1 = alpha 0

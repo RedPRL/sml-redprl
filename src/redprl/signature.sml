@@ -108,22 +108,22 @@ struct
                    O.POLY (O.CUST (opid, ps', SOME ar))
                  end
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.RULE_LEMMA (opid, ps, NONE)) =>
+         | O.POLY (O.RULE_LEMMA (opid, ps)) =>
            (case arityOfOpid sign opid of
-               SOME (psorts, ar) =>
+               SOME (psorts, _) =>
                  let
                    val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
                  in
-                   O.POLY (O.RULE_LEMMA (opid, ps', SOME ar))
+                   O.POLY (O.RULE_LEMMA (opid, ps'))
                  end
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.RULE_CUT_LEMMA (opid, ps, NONE)) =>
+         | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) =>
            (case arityOfOpid sign opid of
-               SOME (psorts, ar) =>
+               SOME (psorts, _) =>
                  let
                    val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
                  in
-                   O.POLY (O.RULE_CUT_LEMMA (opid, ps', SOME ar))
+                   O.POLY (O.RULE_CUT_LEMMA (opid, ps'))
                  end
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th => th
@@ -327,7 +327,7 @@ struct
       let
         val (env', symctx') = List.foldl (fn (sym, (env, symctx)) => addSymName (env, symctx) sym) (env, symctx) syms
 
-        val syms' = List.map (fn (u,psort) => (NameEnv.lookup env' u, psort)) syms
+        val syms' = List.map (fn (u,psort) => (NameEnv.lookup env' u, psort)) syms handle _ => raise Fail "elabSrcGenJdg"
         val (env''', RedPrlSequent.>> ((_, H), jdg) )= elabSrcSequent (metactx, symctx', Var.Ctx.empty, env') seq
         val env'''' = List.foldl (fn ((u,_), env) => NameEnv.remove env u) env''' syms
         val seq' = RedPrlSequent.>> ((syms', H), jdg)
@@ -376,6 +376,7 @@ struct
             open Tm infix \
             val subgoals = argumentsToSubgoals arguments'
             val state = Lcf.|> (subgoals, checkb (([],[]) \ definiens', (([],[]), tau)))
+              handle _ => raise Fail "Fuck/elabDef"
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM tau)
           in
             E.ret (EDEF {sourceOpid = opid, spec = spec, state = state})
@@ -428,11 +429,16 @@ struct
           E.wrap (pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as (syms, hyps) >> concl) =>
             let
               (* TODO: deal with syms ?? *)
-              val tau = CJ.synthesis concl
               val (params'', symctx', env') =
                 Hyps.foldr
-                  (fn (x, _, (ps, ctx, env)) =>
-                    ((x, RedPrlSortData.HYP tau) :: ps, Tm.Sym.Ctx.insert ctx x (RedPrlSortData.HYP tau), NameEnv.insert env (Sym.toString x) x))
+                  (fn (x, jdgx, (ps, ctx, env)) =>
+                    let
+                      val taux = CJ.synthesis jdgx
+                    in
+                      ((x, RedPrlSortData.HYP taux) :: ps,
+                       Tm.Sym.Ctx.insert ctx x (RedPrlSortData.HYP taux),
+                       NameEnv.insert env (Sym.toString x) x)
+                    end)
                   (params', symctx, env)
                   hyps
               val termSubgoals = argumentsToSubgoals arguments'
@@ -471,6 +477,8 @@ struct
             open O Tm infix \
             val subgoals = argumentsToSubgoals arguments'
             val state = Lcf.|> (subgoals, checkb (([],[]) \ script', (([],[]), TAC)))
+                      handle _ => raise Fail "Fuck/elabTac"
+
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM TAC)
           in
             E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
@@ -491,8 +499,8 @@ struct
       end
 
     fun elabPrint (sign : sign) (pos, opid) =
-      E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid =>
-        E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
+      E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid handle _ => raise Fail "elabPrint") >>= (fn eopid =>
+        E.hush (ETelescope.lookup (#elabSign sign) eopid handle _ => raise Fail "elabPrint2") >>= (fn edecl =>
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
                 EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", prettyEntry sign (eopid, entry)])

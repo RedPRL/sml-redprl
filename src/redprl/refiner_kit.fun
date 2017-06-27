@@ -123,6 +123,12 @@ struct
 
   structure Assert =
   struct
+    fun sortEq (tau1, tau2) = 
+      if tau1 = tau2 then 
+        ()
+      else
+        raise E.error [Fpp.text "Expected sort", TermPrinter.ppSort tau1, Fpp.text "to be equal to", TermPrinter.ppSort tau2]
+
     fun alphaEq (m, n) =
       if Abt.eq (m, n) then
         ()

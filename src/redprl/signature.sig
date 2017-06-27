@@ -22,7 +22,7 @@ sig
   val lookup : sign -> opid -> entry
 
   val unifyCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> RedPrlAbt.metaenv * RedPrlAbt.symenv
-  val resuscitateTheorem : sign -> opid -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> jdg * Lcf.jdg Lcf.state
+  val resuscitateTheorem : sign -> opid -> RedPrlAbt.param list -> jdg * Lcf.jdg Lcf.state
   val extract : Lcf.jdg Lcf.state -> abt
 end
 
