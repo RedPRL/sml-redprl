@@ -30,7 +30,7 @@ struct
            if SymCtx.member syms a then
              m
            else
-             inheritAnnotation m (check (`a, O.EXP))
+             inheritAnnotation m (check (`a, O.EXP)) (* TODO: This can't be right *)
        | _ => goStruct syms m
 
     and goStruct syms m =
