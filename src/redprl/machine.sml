@@ -267,9 +267,7 @@ struct
      | (O.POLY (O.CUST (opid, ps, _(*ar*)))) `$ args <: env =>
          let
            val entry as {state,...} = Sig.lookup sign opid
-           val Lcf.|> (subgoals, _(*evidence*)) = state
            val term = Sig.extract state
-           val _ = if Lcf.Tl.isEmpty subgoals then () else raise Fail "custom operator not yet fully defined!"
            val (mrho, srho) = Sig.unifyCustomOperator entry (List.map #1 ps) args
            val term' = substMetaenv mrho term
            val env' = {params = SymEnvUtil.union (#params env, srho), terms = #terms env}

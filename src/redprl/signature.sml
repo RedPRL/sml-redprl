@@ -29,22 +29,23 @@ struct
       intersperse (Fpp.text ";") @@
         List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
-  fun prettyEntry (_ : sign) (opid : symbol, {params, arguments, sort, spec, state,...} : entry) : Fpp.doc =
-    Fpp.hsep
-      [Fpp.text "Def",
-        Fpp.seq [Fpp.text @@ Sym.toString opid, prettyParams params, prettyArgs arguments],
-        Fpp.Atomic.colon,
-        case spec of
-           NONE => Fpp.text (RedPrlSort.toString sort)
-         | SOME jdg =>
-             Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
-               [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty TermPrinter.ppTerm jdg],
-               Fpp.newline],
-        Fpp.Atomic.equals,
-        Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
-          [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm @@ extract state],
-          Fpp.newline],
-        Fpp.char #"."]
+  fun prettyEntry (_ : sign) (opid : symbol, entry as {params, spec, state,...} : entry) : Fpp.doc =
+    let
+      val arguments = entryArguments entry
+    in
+      Fpp.hsep
+        [Fpp.text "Def",
+          Fpp.seq [Fpp.text @@ Sym.toString opid, prettyParams params, prettyArgs arguments],
+          Fpp.Atomic.colon,
+          Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
+            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty TermPrinter.ppTerm spec],
+            Fpp.newline],
+          Fpp.Atomic.equals,
+          Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
+            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm @@ extract state],
+            Fpp.newline],
+          Fpp.char #"."]
+    end
 
 
   val empty =
@@ -57,8 +58,13 @@ struct
       fn EDEF entry => SOME entry
        | _ => NONE
 
-    fun arityOfDecl ({arguments, params, sort, ...} : entry) : Tm.psort list * Tm.O.Ar.t =
-      (List.map #2 params, (List.map #2 arguments, sort))
+    fun arityOfDecl (entry as {params, ...} : entry) : Tm.psort list * Tm.O.Ar.t =
+      let
+        val arguments = entryArguments entry
+        val sort = entrySort entry
+      in
+        (List.map #2 params, (List.map #2 arguments, sort))
+      end
 
     structure OptionMonad = MonadNotation (OptionMonad)
 
@@ -342,6 +348,21 @@ struct
         handle AstToAbt.BadConversion (msg, pos) => error pos [Fpp.text msg])
       >>= scopeCheck (metactx, symctx, Var.Ctx.empty)
 
+    fun valenceToSequent ((sigmas, taus), tau) =
+      let
+        open RedPrlSequent RedPrlCategoricalJudgment infix >>
+        val I = List.map (fn sigma => (Sym.new (), sigma)) sigmas
+        val H = List.foldr (fn (tau, H) => Hyps.cons (Var.new ()) (TERM tau) H) Hyps.empty taus
+      in
+        (I, H) >> TERM tau
+      end
+
+    fun argumentsToSubgoals arguments = 
+      List.foldr
+        (fn ((x,vl), r) => Lcf.Tl.cons x (valenceToSequent vl) r)
+        Lcf.Tl.empty
+        arguments
+
     fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
       let
         val (arguments', metactx) = elabDeclArguments arguments
@@ -351,9 +372,11 @@ struct
           let
             val tau = sort
             open Tm infix \
-            val state' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ definiens', (([],[]), tau)))
+            val subgoals = argumentsToSubgoals arguments'
+            val state = Lcf.|> (subgoals, checkb (([],[]) \ definiens', (([],[]), tau)))
+            val spec = RedPrlSequent.>> (([], Hyps.empty), CJ.TERM tau)
           in
-            E.ret (EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = tau, spec = NONE, state = state'})
+            E.ret (EDEF {sourceOpid = opid, params = params', spec = spec, state = state})
           end)
       end
 
@@ -410,11 +433,18 @@ struct
                     ((x, RedPrlSortData.HYP tau) :: ps, Tm.Sym.Ctx.insert ctx x (RedPrlSortData.HYP tau), NameEnv.insert env (Sym.toString x) x))
                   (params', symctx, env)
                   hyps
+              val termSubgoals = argumentsToSubgoals arguments'
             in
-              convertToAbt (metactx, symctx', env') script TAC
-                >>= (fn scriptTm => elabRefine sign (seqjdg, scriptTm))
-                >>= checkProofState (pos, subgoalsSpec)
-                >>= (fn state => E.ret @@ EDEF {sourceOpid = opid, params = params'', arguments = arguments', sort = tau, spec = SOME seqjdg, state = state})
+              convertToAbt (metactx, symctx', env') script TAC >>= 
+              (fn scriptTm => elabRefine sign (seqjdg, scriptTm)) >>= 
+              checkProofState (pos, subgoalsSpec) >>= 
+              (fn Lcf.|> (subgoals, validation) => 
+                let
+                  val subgoals' = Lcf.Tl.append termSubgoals subgoals
+                  val state = Lcf.|> (subgoals', validation)
+                in
+                  E.ret @@ EDEF {sourceOpid = opid, params = params'', spec = seqjdg, state = state}
+                end)
             end)
         end
 
@@ -432,14 +462,15 @@ struct
       let
         val (arguments', metactx) = elabDeclArguments arguments
         val (params', symctx, env) = elabDeclParams sign params
-
       in
         convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
           let
             open O Tm infix \
-            val state' = Lcf.|> (Lcf.Tl.empty, checkb (([],[]) \ script', (([],[]), TAC)))
+            val subgoals = argumentsToSubgoals arguments'
+            val state = Lcf.|> (subgoals, checkb (([],[]) \ script', (([],[]), TAC)))
+            val spec = RedPrlSequent.>> (([], Hyps.empty), CJ.TERM TAC)
           in
-            E.ret @@ EDEF {sourceOpid = opid, params = params', arguments = arguments', sort = TAC, spec = NONE, state = state'}
+            E.ret @@ EDEF {sourceOpid = opid, params = params', spec = spec, state = state}
           end)
       end
 

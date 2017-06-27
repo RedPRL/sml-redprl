@@ -67,6 +67,8 @@ Def BoolEta(#M) = [
   (if [a] bool #M tt ff)
 ].
 
+Print BoolEta.
+
 // Let's prove the existence of a path between the identity function on booleans, and the
 // function that takes a boolean to a vacuous if statement.
 //
@@ -169,23 +171,23 @@ Tac FunExtTac(#A; #B; #F; #G) = [
   auto
 ].
 
-Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
-  { let a : [bool type] = auto.
-    let b : [bool type] = auto.
-    fresh ext <- cut-lemma ({FunExt a b} bool bool);
-    let ext = ext {`(Cmp Not Not)}.
-    let ext = ext {lam x. hyp x}.
-    let ext = ext {
-      lam x. if x then <i> `tt else <i> `ff
-    }.
-    hyp ext
-  }; auto
-].
+// Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
+//   { let a : [bool type] = auto.
+//     let b : [bool type] = auto.
+//     fresh ext <- cut-lemma ({FunExt a b} bool bool);
+//     let ext = ext {`(Cmp Not Not)}.
+//     let ext = ext {lam x. hyp x}.
+//     let ext = ext {
+//       lam x. if x then <i> `tt else <i> `ff
+//     }.
+//     hyp ext
+//   }; auto
+// ].
 
-Extract NotNotPath.
-Print FunExtTac.
+// Extract NotNotPath.
+// Print FunExtTac.
 
-Thm Singleton : [(* [x bool] (path {_} bool x tt))] by [
-  < `tt, <x> `tt >;
-  auto
-].
+// Thm Singleton : [(* [x bool] (path {_} bool x tt))] by [
+//   < `tt, <x> `tt >;
+//   auto
+// ].

@@ -19,9 +19,7 @@ struct
   type entry =
     {sourceOpid : src_opid,
      params : symbol params,
-     arguments : metavar arguments,
-     sort : sort,
-     spec : jdg option,
+     spec : jdg,
      state : Lcf.jdg Lcf.state}
 
   type src_catjdg = ast RedPrlCategoricalJudgment.jdg
@@ -72,9 +70,24 @@ struct
         SOME (EDEF defn) => defn
       | _ => raise Fail "Elaboration failed"
 
+  fun entryArguments (entry : entry) : metavar arguments =
+    let
+      val Lcf.|> (subgoals, _) = #state entry
+    in
+      Lcf.Tl.foldr (fn (x, jdg, args) => (x, RedPrlJudgment.sort jdg) :: args) [] subgoals
+    end
+
+  fun entrySort (entry : entry) : sort = 
+    let
+      val RedPrlSequent.>> (_, jdg) = #spec entry
+    in
+      RedPrlCategoricalJudgment.synthesis jdg
+    end
+
   fun unifyCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : Tm.metaenv * Tm.symenv =
     let
-      val {params, arguments, ...} = entry
+      val {params, ...} = entry
+      val arguments = entryArguments entry
       val srho = ListPair.foldl (fn ((u, _), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
       val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
     in
@@ -136,7 +149,7 @@ struct
     fun resuscitateTheorem sign opid ps args =
       let
         val entry = lookup sign opid
-        val goal = case #spec entry of SOME goal => goal | _ => raise Fail "Reviving theorem failed: goal missing"
+        val goal = #spec entry
         val Lcf.|> (subgoals, validation) = #state entry
 
         val (mrho, srho) = unifyCustomOperator entry ps args

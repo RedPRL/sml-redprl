@@ -17,9 +17,7 @@ sig
   type entry =
     {sourceOpid : src_opid,
      params : symbol params,
-     arguments : metavar arguments,
-     sort : sort,
-     spec : jdg option,
+     spec : jdg,
      state : Lcf.jdg Lcf.state}
 
   val lookup : sign -> opid -> entry

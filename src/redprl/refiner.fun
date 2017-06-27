@@ -295,7 +295,7 @@ struct
            O.POLY (O.CUST (opid',_,_)) $ _ =>
              if Sym.eq (opid, opid') then
                Machine.unload sign (Option.valOf (safeStep sign (Machine.load m)))
-                 handle _ => raise Fail "Impossible failure during safeUnfold" (* please put better error message here; should never happen anyway *)
+                 handle exn => raise Fail ("Impossible failure during safeUnfold: " ^ exnMessage exn)
              else
                m
          | _ => m
