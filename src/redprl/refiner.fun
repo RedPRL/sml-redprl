@@ -172,11 +172,11 @@ struct
       end
   end
 
-  structure Match =
+  structure Misc =
   struct
     fun MatchOperator _ jdg =
       let
-        val _ = RedPrlLog.trace "Match.MatchOperator"
+        val _ = RedPrlLog.trace "Misc.MatchOperator"
         val MATCH (th, k, tm, ps, ms) = jdg
 
         val Abt.$ (th', args) = Abt.out tm
@@ -192,6 +192,18 @@ struct
       end
       handle _ =>
         raise E.error [Fpp.text "MATCH judgment failed to unify"]
+
+    fun HypIs _ jdg =
+      let
+        val _ = RedPrlLog.trace "Misc.HypIs"
+        val (I, H) >> CJ.HYP_IS (x, catjdg) = jdg
+        val catjdg' = lookupHyp H x
+      in
+        if CJ.eq (catjdg, catjdg') then 
+          T.empty #> (I, H, trivial)
+        else
+          raise E.error [Fpp.text "HypIs failed"]
+      end
   end
 
   structure Equality =
@@ -634,7 +646,8 @@ struct
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
-          | MATCH _ => Match.MatchOperator)
+          | MATCH _ => Misc.MatchOperator
+          | _ >> CJ.HYP_IS _ => Misc.HypIs)
 
 
       fun isWfJdg (CJ.TRUE _) = false
