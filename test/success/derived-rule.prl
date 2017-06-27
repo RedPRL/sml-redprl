@@ -52,9 +52,10 @@ Rule PiIntro(#A; #B : [exp].exp) : [
 ].
 
 Thm Test : [ (-> bool bool)] by [
-  fresh x <- rule (PiIntro bool [x] bool);
-  [ if x then `ff else `tt ];
-  auto;
+  fresh f, x <- cut-lemma PiIntro;
+  [`bool, `bool, if x then `ff else `tt];
+  [auto, auto, auto];
+  hyp f
 ].
 
 Extract Test.
