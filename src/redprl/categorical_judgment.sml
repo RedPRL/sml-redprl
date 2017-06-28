@@ -6,7 +6,6 @@ sig
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
    | TERM of RedPrlSort.t
-   | HYP_IS of Sym.t * 'a redprl_jdg
 
   val MEM : 'a * 'a -> 'a redprl_jdg
   val TYPE : 'a -> 'a redprl_jdg
@@ -20,7 +19,6 @@ struct
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
    | TERM of RedPrlSort.t
-   | HYP_IS of Sym.t * 'a redprl_jdg
 
   fun MEM (m, a) =
     EQ ((m, m), a)
@@ -36,7 +34,6 @@ struct
      | EQ_TYPE (a, b) => EQ_TYPE (f a, f b)
      | SYNTH a => SYNTH (f a)
      | TERM tau => TERM tau
-     | HYP_IS (x, j) => HYP_IS (x, map f j)
 
   structure O = RedPrlOpData
   structure Tm = RedPrlAbt
@@ -47,7 +44,6 @@ struct
      | EQ_TYPE _ => O.TRIV
      | SYNTH _ => O.EXP
      | TERM tau => tau
-     | HYP_IS _ => O.TRIV
 
   exception InvalidJudgment
 
@@ -65,7 +61,6 @@ struct
        | EQ_TYPE (a, b) => O.MONO O.JDG_EQ_TYPE $$ [([],[]) \ a, ([],[]) \ b]
        | SYNTH m => O.MONO O.JDG_SYNTH $$ [([],[]) \ m]
        | TERM tau => O.MONO (O.JDG_TERM tau) $$ []
-       | _ => raise Fail "TODO!"
 
     fun fromAbt jdg =
       case RedPrlAbt.out jdg of
@@ -85,8 +80,6 @@ struct
      | EQ_TYPE (a, b) => Fpp.hsep [f a, Fpp.Atomic.equals, f b, Fpp.text "type"]
      | SYNTH m => Fpp.hsep [f m, Fpp.text "synth"]
      | TERM tau => TermPrinter.ppSort tau
-     | HYP_IS (x, jdg) => 
-        Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym x, Fpp.Atomic.colon, pretty f jdg]
 
   fun unify (j1, j2) =
     RedPrlAbt.Unify.unify (toAbt j1, toAbt j2)

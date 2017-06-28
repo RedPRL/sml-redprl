@@ -193,17 +193,6 @@ struct
       handle _ =>
         raise E.error [Fpp.text "MATCH judgment failed to unify"]
 
-    fun HypIs _ jdg =
-      let
-        val _ = RedPrlLog.trace "Misc.HypIs"
-        val (I, H) >> CJ.HYP_IS (x, catjdg) = jdg
-        val catjdg' = lookupHyp H x
-      in
-        if CJ.eq (catjdg, catjdg') then 
-          T.empty #> (I, H, trivial)
-        else
-          raise E.error [Fpp.text "HypIs failed"]
-      end
   end
 
   structure Equality =
@@ -380,7 +369,7 @@ struct
         val (_, H0) >> jdg0 = specGoal
       in
         if CJ.eq (jdg, jdg0) then
-          Hyps.foldl (fn (x, jdg, goals) => goals >: makeGoal' ((I, H) >> CJ.HYP_IS (x, jdg))) T.empty H0
+          ()
         else 
           raise E.error 
             [Fpp.nest 2 @@ 
@@ -459,7 +448,7 @@ struct
       let
         val _ = RedPrlLog.trace "Lemma"
         val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
-        val hypSubgoals = checkMainGoal (mainGoalSpec, jdg)
+        val () = checkMainGoal (mainGoalSpec, jdg)
 
         val (I as [], H) >> _ = jdg
         val _ = 
@@ -468,7 +457,7 @@ struct
 
         val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec)) subgoals
       in
-        Lcf.|> (Lcf.Tl.append subgoals' hypSubgoals, validation)
+        Lcf.|> (subgoals', validation)
       end
   end
 
@@ -649,8 +638,7 @@ struct
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
-          | MATCH _ => Misc.MatchOperator
-          | _ >> CJ.HYP_IS _ => Misc.HypIs)
+          | MATCH _ => Misc.MatchOperator)
 
 
       fun isWfJdg (CJ.TRUE _) = false
