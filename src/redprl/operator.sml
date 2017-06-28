@@ -134,7 +134,7 @@ struct
    | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
    | DEV_LET of RedPrlSort.t
 
-   | JDG_EQ | JDG_CEQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t
+   | JDG_EQ | JDG_CEQ | JDG_TRUE | JDG_EQ_TYPE of bool | JDG_SYNTH | JDG_TERM of RedPrlSort.t
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -244,7 +244,7 @@ struct
      | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_TRUE => [[] * [] <> EXP] ->> JDG
-     | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
+     | JDG_EQ_TYPE k => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
      | JDG_TERM _ => [] ->> JDG
 
@@ -473,7 +473,7 @@ struct
      | JDG_EQ => "eq"
      | JDG_CEQ => "ceq"
      | JDG_TRUE => "true"
-     | JDG_EQ_TYPE => "eq-type"
+     | JDG_EQ_TYPE k => "eq-type"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
 
