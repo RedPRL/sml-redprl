@@ -28,6 +28,13 @@ fun sortOfJudgment jdg =
     sort
   end
 
+local
+  infix $$ \
+in
+  fun makeApp m ns = 
+    List.foldr (fn (n, ap) => O.MONO O.AP $$ [([],[]) \ ap, ([],[]) \ n]) m ns
+end
+
 structure Tac =
 struct
   type binding = (string * P.param_sort) list * ast
@@ -122,8 +129,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA COLON
-%left FUN_APP
-%nonassoc AT_SIGN FCOM BOOL TT FF IF S_BOOL S_IF VOID S1 BASE LOOP LAMBDA ABS FST SND PATHS HCOM COE HASH LANGLE LPAREN VARNAME OPNAME
+%nonassoc FUN_APP AT_SIGN FCOM BOOL TT FF IF S_BOOL S_IF VOID S1 BASE LOOP LAMBDA ABS FST SND PATHS HCOM COE HASH LANGLE LPAREN VARNAME OPNAME
 
 
 
@@ -135,9 +141,6 @@ end
    (* a type-theoretic term, including function application *)
  | rawTerm of ast
    (* a type-theoretic term, excluding function application *)
- | atomicRawTerm of ast
-   (* ... annotated with source position*)
- | atomicTerm of ast
 
  | quantifierData of (string list * ast) list * ast
 
@@ -313,7 +316,7 @@ metavar
 dir
   : param SQUIGGLE_ARROW param ((param1, param2))
 
-term : rawTerm %prec FUN_APP (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
+term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
 
 quantifierData
   : LSQUARE symbols term RSQUARE quantifierData (((symbols, term) :: #1 quantifierData), #2 quantifierData)
@@ -344,7 +347,7 @@ operator
   | SND (O.MONO O.SND)
 
 
-atomicRawTerm
+rawTerm
   : VARNAME (`` VARNAME)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
@@ -361,8 +364,9 @@ atomicRawTerm
   | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
   | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
 
-  | LPAREN term term RPAREN (Ast.$$ (O.MONO O.AP, [\ (([],[]),term1), \ (([],[]), term2)]))
+  | LPAREN FUN_APP term terms RPAREN (makeApp term terms)
 
+  | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
 
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
@@ -378,23 +382,7 @@ atomicRawTerm
   | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
   | LPAREN LOOP param RPAREN (Ast.$$ (O.POLY (O.LOOP param), []))
-  | LPAREN AT_SIGN atomicTerm param RPAREN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), atomicTerm)]))
-
-atomicTerm : atomicRawTerm (annotate (Pos.pos (atomicRawTerm1left fileName) (atomicRawTerm1right fileName)) atomicRawTerm)
-
-rawFunApp
-  : LPAREN rawTerm atomicTerm RPAREN %prec FUN_APP (Ast.$$ (O.MONO O.AP, [\ (([],[]), (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)), \ (([],[]), atomicTerm)]))
-  | atomicTerm %prec FUN_APP (atomicTerm)
-
-funApp : rawFunApp (annotate (Pos.pos (rawFunAppleft fileName) (rawFunAppright fileName)) rawFunApp)
-
-rawTerm
-  : funApp %prec FUN_APP (funApp)
-  | LBRACKET OPNAME customOpParams RBRACKET %prec FUN_APP (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
-
-  | OPNAME %prec FUN_APP (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
-
-
+  | LPAREN AT_SIGN term param RPAREN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), term)]))
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))

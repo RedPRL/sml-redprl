@@ -55,9 +55,9 @@ Tac TryStep = [ auto-step || id ].
 Thm ApEqTest : [
   (-> 
    [f (-> bool bool)]
-   (path {_} bool (f tt) (f tt)))
+   (path {_} bool (app f tt) (app f tt)))
 ] by [
-  { lam f. <_> `(,f tt) };
+  { lam f. <_> `(app ,f tt) };
 
   // Try commenting out the following line, and stepping through the proof with TryStep.
   auto
@@ -124,7 +124,7 @@ Def SNot = [
 ].
 
 Def Cmp(#f; #g) = [
-  (lam [x] (#f (#g x)))
+  (lam [x] (app #f (app #g x)))
 ].
 
 
@@ -154,7 +154,7 @@ Thm FunExt(#A; #B) : [
   (->
    [f (-> #A #B)]
    [g (-> #A #B)]
-   [p (-> [y #A] (path {_} #B (f y) (g y)))]
+   [p (-> [y #A] (path {_} #B (app f y) (app g y)))]
    (path {_} (-> #A #B) f g))
 ] by [
   {lam f. lam g. lam p.
@@ -166,7 +166,7 @@ Print FunExt.
 
 
 Tac FunExtTac(#A; #B; #F; #G) = [
-  let p : [(-> [x #A] (path {_} bool (#F x) (#G x)))] = {}.
+  let p : [(-> [x #A] (path {_} bool (app #F x) (app #G x)))] = {}.
   {<i> lam a. let q = p hyp a. `(@ ,q i)};
   auto
 ].
