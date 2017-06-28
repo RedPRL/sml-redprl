@@ -65,7 +65,7 @@ struct
 
   structure E = ElabMonadUtil (ElabMonad)
   fun lookup ({elabSign, ...} : sign) opid =
-    case E.run (ETelescope.lookup elabSign opid) handle _ => raise Fail "mini" of
+    case E.run (ETelescope.lookup elabSign opid) of
         SOME (EDEF defn) => defn
       | _ => raise Fail "Elaboration failed"
 
