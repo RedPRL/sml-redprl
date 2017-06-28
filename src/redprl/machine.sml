@@ -203,7 +203,7 @@ struct
      | O.MONO O.TAC_MTAC `$ _ <: _ => S.VAL
 
      | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_WITNESS `$ _ <: _ => S.VAL
+     | O.MONO O.RULE_EXACT `$ _ <: _ => S.VAL
      | O.MONO O.RULE_SYMMETRY `$ _ <: _ => S.VAL
      | O.MONO O.RULE_AUTO_STEP `$ _ <: _ => S.VAL
      | O.MONO O.MTAC_AUTO `$ _ <: env =>
@@ -218,10 +218,15 @@ struct
      | O.POLY (O.RULE_LEMMA _) `$ _ <: _ => S.VAL
      | O.POLY (O.RULE_CUT_LEMMA _) `$ _ <: _ => S.VAL
 
-     | O.MONO O.DEV_LET `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
-         S.STEP
-          @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP O.EXP)] (Tac.each [tac2,tac1]))
-          <: env
+     | O.MONO (O.DEV_LET tau) `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
+         let
+           val catjdg = RedPrlCategoricalJudgment.fromAbt jdg
+           val tau = RedPrlCategoricalJudgment.synthesis catjdg
+         in
+           S.STEP
+             @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2]))
+             <: env
+          end
      | O.MONO O.DEV_DFUN_INTRO `$ [([u], _) \ t] <: env =>
          S.STEP
            @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t]))
@@ -267,9 +272,7 @@ struct
      | (O.POLY (O.CUST (opid, ps, _(*ar*)))) `$ args <: env =>
          let
            val entry as {state,...} = Sig.lookup sign opid
-           val Lcf.|> (subgoals, _(*evidence*)) = state
            val term = Sig.extract state
-           val _ = if Lcf.Tl.isEmpty subgoals then () else raise Fail "custom operator not yet fully defined!"
            val (mrho, srho) = Sig.unifyCustomOperator entry (List.map #1 ps) args
            val term' = substMetaenv mrho term
            val env' = {params = SymEnvUtil.union (#params env, srho), terms = #terms env}

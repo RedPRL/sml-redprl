@@ -64,13 +64,26 @@ struct
         raise E.error [Fpp.text @@ "Expected truth sequent but got " ^ J.toString jdg]
   end
 
+  structure Term = 
+  struct
+    fun Exact tm _ jdg = 
+      let
+        val _ = RedPrlLog.trace "Term.Exact"
+        val (I, H) >> CJ.TERM tau = jdg
+        val tau' = Abt.sort tm
+        val _ = Assert.sortEq (tau, tau')
+      in
+        T.empty #> (I, H, tm)
+      end
+  end
+
   structure Synth =
   struct
     fun FromWfHyp z _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.FromWfHyp"
         val (I, H) >> CJ.SYNTH tm = jdg
-        val CJ.EQ ((a, b), ty) = Hyps.lookup H z
+        val CJ.EQ ((a, b), ty) = lookupHyp H z
       in
         if Abt.eq (a, tm) orelse Abt.eq (b, tm) then
           T.empty #> (I, H, ty)
@@ -83,7 +96,7 @@ struct
         val _ = RedPrlLog.trace "Synth.Hyp"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
-        val CJ.TRUE a = Hyps.lookup H z
+        val CJ.TRUE a = lookupHyp H z
       in
         T.empty #> (I, H, a)
       end
@@ -159,11 +172,11 @@ struct
       end
   end
 
-  structure Match =
+  structure Misc =
   struct
     fun MatchOperator _ jdg =
       let
-        val _ = RedPrlLog.trace "Match.MatchOperator"
+        val _ = RedPrlLog.trace "Misc.MatchOperator"
         val MATCH (th, k, tm, ps, ms) = jdg
 
         val Abt.$ (th', args) = Abt.out tm
@@ -179,6 +192,7 @@ struct
       end
       handle _ =>
         raise E.error [Fpp.text "MATCH judgment failed to unify"]
+
   end
 
   structure Equality =
@@ -295,7 +309,7 @@ struct
            O.POLY (O.CUST (opid',_,_)) $ _ =>
              if Sym.eq (opid, opid') then
                Machine.unload sign (Option.valOf (safeStep sign (Machine.load m)))
-                 handle _ => raise Fail "Impossible failure during safeUnfold" (* please put better error message here; should never happen anyway *)
+                 handle exn => raise Fail ("Impossible failure during safeUnfold: " ^ exnMessage exn)
              else
                m
          | _ => m
@@ -340,29 +354,30 @@ struct
       val _ = RedPrlLog.trace "Cut"
       val (I, H) >> catjdg' = jdg
       val z = alpha 0
-      val (goal1, hole1) = makeGoal @@ (I, H @> (z, catjdg)) >> catjdg'
-      val (goal2, hole2) = makeGoal @@ (I, H) >> catjdg
+      val (goal1, hole1) = makeGoal @@ (I, H) >> catjdg
+      val (goal2, hole2) = makeGoal @@ (I, H @> (z, catjdg)) >> catjdg'
     in
-      |>: goal1 >: goal2 #> (I, H, substVar (hole2, z) hole1)
+      |>: goal1 >: goal2 #> (I, H, substVar (hole1, z) hole2)
     end
 
 
 
   local
-    fun checkHyp H x jdg0 =
-      case Hyps.find H x of
-         SOME jdg =>
-           if CJ.eq (jdg, jdg0) then () else
-             raise E.error [Fpp.text ("Hypothesis " ^ Sym.toString x ^ " did not match specification")]
-       | _ => raise E.error [Fpp.text ("Could not find hypothesis " ^ Sym.toString x)]
-
     fun checkMainGoal (specGoal, mainGoal) =
       let
-        val (_, H) >> jdg = mainGoal
+        val (I, H) >> jdg = mainGoal
         val (_, H0) >> jdg0 = specGoal
       in
-        if CJ.eq (jdg, jdg0) then () else raise E.error [Fpp.text "Conclusions of goal did not match specification"];
-        Hyps.foldl (fn (x, j, _) => checkHyp H x j) () H0
+        if CJ.eq (jdg, jdg0) then
+          ()
+        else 
+          raise E.error 
+            [Fpp.nest 2 @@ 
+              Fpp.vsep 
+                [Fpp.text "Conclusions of goal did not match specification:",
+                 CJ.pretty TermPrinter.ppTerm jdg,
+                 Fpp.text "vs",
+                 CJ.pretty TermPrinter.ppTerm jdg0]]
         (* TODO: unify using I, J!! *)
       end
 
@@ -429,13 +444,16 @@ struct
         jdg''
       end
   in
-    fun Lemma sign opid params args alpha jdg =
+    fun Lemma sign opid params alpha jdg =
       let
         val _ = RedPrlLog.trace "Lemma"
-        val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
-        val _ = checkMainGoal (mainGoalSpec, jdg)
+        val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
+        val () = checkMainGoal (mainGoalSpec, jdg)
 
-        val (I, H) >> _ = jdg
+        val (I as [], H) >> _ = jdg
+        val _ = 
+          if Hyps.isEmpty H then () else
+            raise E.error [Fpp.text "Lemmas must have a categorical judgment as a conclusion"]
 
         val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec)) subgoals
       in
@@ -443,14 +461,17 @@ struct
       end
   end
 
-
-  fun CutLemma sign opid params args = 
+  fun CutLemma sign opid params = 
     let
-      val (mainGoalSpec : Lcf.jdg, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params args
-      val ([], H) >> catjdg = mainGoalSpec
+      val (mainGoalSpec, _) = Sig.resuscitateTheorem sign opid params
+      val (I, H) >> catjdg = mainGoalSpec
     in
-      Cut catjdg thenl [fn _ => Lcf.idn, Lemma sign opid params args]
+      Cut catjdg thenl [Lemma sign opid params, fn _ => Lcf.idn]
     end
+
+  fun Exact tm =
+    Truth.Witness tm
+      orelse_ Term.Exact tm
 
   local
     val CatJdgSymmetry : Sym.t Tactical.tactic =
@@ -617,7 +638,7 @@ struct
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
-          | MATCH _ => Match.MatchOperator)
+          | MATCH _ => Misc.MatchOperator)
 
 
       fun isWfJdg (CJ.TRUE _) = false

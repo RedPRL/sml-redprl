@@ -27,12 +27,12 @@ struct
       | O.MONO O.RULE_AUTO_STEP $ _ => Rules.AutoStep sign
       | O.POLY (O.RULE_HYP (z, _)) $ _ => hyp z
       | O.POLY (O.RULE_ELIM (z, _)) $ _ => Rules.Elim sign z
-      | O.MONO O.RULE_WITNESS $ [_ \ tm] => Rules.Truth.Witness tm
+      | O.MONO O.RULE_EXACT $ [_ \ tm] => Rules.Exact tm
       | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Computation.EqHeadExpansion sign
       | O.MONO O.RULE_SYMMETRY $ _ => Rules.Equality.Symmetry
       | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg)
-      | O.POLY (O.RULE_LEMMA (opid, ps, _)) $ args => Rules.Lemma sign opid (List.map #1 ps) args
-      | O.POLY (O.RULE_CUT_LEMMA (opid, ps, _)) $ args => Rules.CutLemma sign opid (List.map #1 ps) args
+      | O.POLY (O.RULE_LEMMA (opid, ps)) $ _ => Rules.Lemma sign opid (List.map #1 ps)
+      | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) $ _ => Rules.CutLemma sign opid (List.map #1 ps)
       | O.POLY (O.RULE_UNFOLD opid) $ _ => Rules.Computation.Unfold sign opid
       | _ => raise E.error [Fpp.text "Invalid rule", TermPrinter.ppTerm rule]
 

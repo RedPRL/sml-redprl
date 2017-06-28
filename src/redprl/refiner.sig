@@ -9,9 +9,9 @@ sig
   type param
   type 'a bview
 
-  val Lemma : sign -> opid -> param list -> abt bview list -> rule
+  val Lemma : sign -> opid -> param list -> rule
   val Cut : catjdg -> rule
-  val CutLemma : sign -> opid -> param list -> abt bview list -> rule
+  val CutLemma : sign -> opid -> param list -> rule
 
   val Elim : sign -> hyp -> rule
   val AutoStep : sign -> rule
@@ -27,11 +27,6 @@ sig
     val EqHeadExpansion : sign -> rule
   end
 
-  structure Truth :
-  sig
-    val Witness : abt -> rule
-  end
-
   structure Hyp :
   sig
     val Project : hyp -> rule
@@ -41,4 +36,6 @@ sig
   sig
     val FromWfHyp : hyp -> rule
   end
+
+  val Exact : abt -> rule
 end

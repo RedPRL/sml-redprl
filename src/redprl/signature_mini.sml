@@ -18,10 +18,7 @@ struct
   type src_opid = string
   type entry =
     {sourceOpid : src_opid,
-     params : symbol params,
-     arguments : metavar arguments,
-     sort : sort,
-     spec : jdg option,
+     spec : jdg,
      state : Lcf.jdg Lcf.state}
 
   type src_catjdg = ast RedPrlCategoricalJudgment.jdg
@@ -33,7 +30,6 @@ struct
   datatype src_decl =
       DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
     | THM of {arguments : string arguments, params : string params, goal : src_sequent, script : ast}
-    | RULE of {arguments : string arguments, params : string params, spec : src_rulespec, script : ast}
     | TAC of {arguments : string arguments, params : string params, script : ast}
 
   datatype 'opid cmd =
@@ -72,15 +68,36 @@ struct
         SOME (EDEF defn) => defn
       | _ => raise Fail "Elaboration failed"
 
+  fun entryParams (entry : entry) : symbol params = 
+    let
+      val RedPrlSequent.>> ((I, _), _) = #spec entry
+    in
+      I
+    end
+
+  fun entryArguments (entry : entry) : metavar arguments =
+    let
+      val Lcf.|> (subgoals, _) = #state entry
+    in
+      Lcf.Tl.foldr (fn (x, jdg, args) => (x, RedPrlJudgment.sort jdg) :: args) [] subgoals
+    end
+
+  fun entrySort (entry : entry) : sort = 
+    let
+      val RedPrlSequent.>> (_, jdg) = #spec entry
+    in
+      RedPrlCategoricalJudgment.synthesis jdg
+    end
+
   fun unifyCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : Tm.metaenv * Tm.symenv =
     let
-      val {params, arguments, ...} = entry
+      val params = entryParams entry
+      val arguments = entryArguments entry
       val srho = ListPair.foldl (fn ((u, _), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
       val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
     in
       (mrho, srho)
     end
-
 
   local
     open RedPrlOpData Tm RedPrlSequent
@@ -102,42 +119,27 @@ struct
               end
           | _ => ctx
       in
-        ListPair.foldl handleHyp Var.Ctx.empty (#params entry, ps)
-      end
-
-    fun relabelHyp (u, v) H =
-      let
-        val jdg = Hyps.lookup H u
-        val H' = Hyps.interposeAfter H u (Hyps.singleton v jdg)
-      in
-        Hyps.remove u H'
-      end
-
-    fun relabelHyps (entry : entry) (ps : Tm.param list) H =
-      let
-        fun handleHyp ((u, psort), ptm, H) =
-          case psort of
-            RedPrlSortData.HYP _ =>
-              let
-                val v = case ptm of RedPrlParameterTerm.VAR v => v
-                           | _ => raise Fail "Hypothesis relabeling failed: not a variable"
-              in
-                relabelHyp (u, v) H
-              end
-          | _ => H
-      in
-        ListPair.foldl handleHyp H (#params entry, ps)
+        ListPair.foldl handleHyp Var.Ctx.empty (entryParams entry, ps)
       end
 
     fun relabelSequent (entry : entry) (ps : Tm.param list) : abt jdg -> abt jdg =
-      fn (I, H) >> catjdg => (I, relabelHyps entry ps H) >> catjdg
-      | jdg => jdg
+      let
+        val rho =
+          ListPair.foldrEq
+            (fn ((u, _), P.VAR v, r) => Sym.Ctx.insert r u v
+              | (_, _, r) => r)
+            Sym.Ctx.empty
+            (entryParams entry, ps)
+      in
+        RedPrlSequent.relabel rho
+      end
   in
-    fun resuscitateTheorem sign opid ps args =
+    fun resuscitateTheorem sign opid ps =
       let
         val entry = lookup sign opid
-        val goal = case #spec entry of SOME goal => goal | _ => raise Fail "Reviving theorem failed: goal missing"
+        val goal = #spec entry
         val Lcf.|> (subgoals, validation) = #state entry
+        val args = Lcf.Tl.foldr (fn (x, jdg, args) => outb (Lcf.L.var x (RedPrlJudgment.sort jdg)) :: args) [] subgoals
 
         val (mrho, srho) = unifyCustomOperator entry ps args
         val vrho = hypothesisRenaming entry ps

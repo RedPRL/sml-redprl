@@ -22,6 +22,23 @@ struct
    | DIM1
 end
 
+
+structure RedPrlSort : ABT_SORT =
+struct
+  open RedPrlSortData
+
+  type t = sort
+  val eq : t * t -> bool = op=
+
+  val rec toString =
+    fn EXP => "exp"
+     | TAC => "tac"
+     | MTAC => "mtac"
+     | JDG => "jdg"
+     | TRIV => "triv"
+end
+
+
 structure RedPrlParamSort : ABT_SORT =
 struct
   open RedPrlSortData RedPrlParamData
@@ -34,7 +51,7 @@ struct
      | EXN => "exn"
      | LBL => "lbl"
      | OPID => "opid"
-     | HYP _ => "hyp"
+     | HYP tau => "hyp{" ^ RedPrlSort.toString tau ^ "}"
 end
 
 structure RedPrlParameter : ABT_PARAMETER =
@@ -68,21 +85,6 @@ end
 
 structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
 
-
-structure RedPrlSort : ABT_SORT =
-struct
-  open RedPrlSortData
-
-  type t = sort
-  val eq : t * t -> bool = op=
-
-  val rec toString =
-    fn EXP => "exp"
-     | TAC => "tac"
-     | MTAC => "mtac"
-     | JDG => "jdg"
-     | TRIV => "triv"
-end
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
 
@@ -125,14 +127,14 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_WITNESS | RULE_HEAD_EXP
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT | RULE_HEAD_EXP
    | RULE_CUT
 
    (* development calculus terms *)
    | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
-   | DEV_LET
+   | DEV_LET of RedPrlSort.t
 
-   | JDG_EQ | JDG_CEQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH
+   | JDG_EQ | JDG_CEQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -146,8 +148,8 @@ struct
    | COE of 'a dir
    | COM of 'a dir * 'a equation list
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | RULE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
+   | RULE_LEMMA of 'a * ('a P.term * psort option) list
+   | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list
    | HYP_REF of 'a
    | RULE_HYP of 'a * sort
    | RULE_ELIM of 'a * sort
@@ -230,20 +232,21 @@ struct
      | RULE_ID => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
-     | RULE_WITNESS => [[] * [] <> EXP] ->> TAC
+     | RULE_EXACT => [[] * [] <> EXP] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
 
      | DEV_DFUN_INTRO => [[HYP EXP] * [] <> TAC] ->> TAC
      | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
-     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP EXP] * [] <> TAC] ->> TAC
+     | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
 
      | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_TRUE => [[] * [] <> EXP] ->> JDG
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
+     | JDG_TERM _ => [] ->> JDG
 
   local
     fun arityFcom (_, eqs) =
@@ -278,8 +281,8 @@ struct
        | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | COM params => arityCom params
        | CUST (_, _, ar) => Option.valOf ar
-       | RULE_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
-       | RULE_CUT_LEMMA (_, _, ar) => (#1 (Option.valOf ar), TAC)
+       | RULE_LEMMA (_, _) => [] ->> TAC
+       | RULE_CUT_LEMMA (_, _) => [] ->> TAC
        | HYP_REF _ => [] ->> EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
@@ -324,8 +327,8 @@ struct
        | COE dir => spanSupport dir
        | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | RULE_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | RULE_CUT_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
+       | RULE_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
+       | RULE_CUT_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
@@ -380,14 +383,14 @@ struct
                  CUST (opid2, ps2, _) =>
                    f (opid1, opid2) andalso paramsEq f (ps1, ps2)
                | _ => false)
-       | (RULE_LEMMA (opid1, ps1, _), t) =>
+       | (RULE_LEMMA (opid1, ps1), t) =>
            (case t of
-                 RULE_LEMMA (opid2, ps2, _) =>
+                 RULE_LEMMA (opid2, ps2) =>
                    f (opid1, opid2) andalso paramsEq f (ps1, ps2)
                | _ => false)
-       | (RULE_CUT_LEMMA (opid1, ps1, _), t) =>
+       | (RULE_CUT_LEMMA (opid1, ps1), t) =>
            (case t of
-                 RULE_CUT_LEMMA (opid2, ps2, _) =>
+                 RULE_CUT_LEMMA (opid2, ps2) =>
                    f (opid1, opid2) andalso paramsEq f (ps1, ps2)
                | _ => false)
        | (HYP_REF a, t) =>
@@ -442,7 +445,7 @@ struct
      | PATH_TY => "path"
      | PATH_ABS => "abs"
 
-     | MTAC_SEQ _ => "seq"
+     | MTAC_SEQ psorts => "seq{" ^ ListSpine.pretty RedPrlParamSort.toString "," psorts ^ "}"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
      | MTAC_REPEAT => "repeat"
@@ -458,20 +461,21 @@ struct
      | RULE_ID => "id"
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
-     | RULE_WITNESS => "witness"
+     | RULE_EXACT => "EXACT"
      | RULE_HEAD_EXP => "head-expand"
      | RULE_CUT => "cut"
 
      | DEV_PATH_INTRO => "path-intro"
      | DEV_DFUN_INTRO => "fun-intro"
      | DEV_DPROD_INTRO => "dprod-intro"
-     | DEV_LET => "let"
+     | DEV_LET _ => "let"
 
      | JDG_EQ => "eq"
      | JDG_CEQ => "ceq"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
      | JDG_SYNTH => "synth"
+     | JDG_TERM tau => RedPrlSort.toString tau
 
   local
     fun dirToString f (r, r') =
@@ -519,9 +523,9 @@ struct
            f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
-       | RULE_LEMMA (opid, ps, _) =>
+       | RULE_LEMMA (opid, ps) =>
            "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
-       | RULE_CUT_LEMMA (opid, ps, _) =>
+       | RULE_CUT_LEMMA (opid, ps) =>
            "cut-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "@" ^ f a
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
@@ -563,8 +567,8 @@ struct
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
        | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
-       | RULE_LEMMA (opid, ps, ar) => RULE_LEMMA (mapSym f opid, mapParams f ps, ar)
-       | RULE_CUT_LEMMA (opid, ps, ar) => RULE_CUT_LEMMA (mapSym f opid, mapParams f ps, ar)
+       | RULE_LEMMA (opid, ps) => RULE_LEMMA (mapSym f opid, mapParams f ps)
+       | RULE_CUT_LEMMA (opid, ps) => RULE_CUT_LEMMA (mapSym f opid, mapParams f ps)
        | HYP_REF a => HYP_REF (mapSym f a)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)
