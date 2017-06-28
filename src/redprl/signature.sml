@@ -279,16 +279,6 @@ struct
         (env', symctx')
       end
 
-    fun addVarName (env, varctx) (srcname, sort) =
-      let
-        val x = Var.named srcname
-        val env' = NameEnv.insert env srcname x
-        val varctx' = Sym.Ctx.insert varctx x sort
-      in
-        (env', varctx')
-      end
-
-
     fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * abt CJ.jdg =
       let
         val catjdg = elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg
@@ -352,7 +342,6 @@ struct
             open Tm infix \
             val subgoals = argumentsToSubgoals arguments'
             val state = Lcf.|> (subgoals, checkb (([],[]) \ definiens', (([],[]), tau)))
-              handle _ => raise Fail "Fuck/elabDef"
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM tau)
           in
             E.ret (EDEF {sourceOpid = opid, spec = spec, state = state})
