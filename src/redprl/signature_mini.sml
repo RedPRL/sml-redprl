@@ -30,7 +30,6 @@ struct
   datatype src_decl =
       DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
     | THM of {arguments : string arguments, params : string params, goal : src_sequent, script : ast}
-    | RULE of {arguments : string arguments, params : string params, spec : src_rulespec, script : ast}
     | TAC of {arguments : string arguments, params : string params, script : ast}
 
   datatype 'opid cmd =

@@ -21,6 +21,8 @@ sig
 
   val lookup : sign -> opid -> entry
 
+  val entryParams : entry -> symbol params
+
   val unifyCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> RedPrlAbt.metaenv * RedPrlAbt.symenv
   val resuscitateTheorem : sign -> opid -> RedPrlAbt.param list -> jdg * Lcf.jdg Lcf.state
   val extract : Lcf.jdg Lcf.state -> abt
@@ -35,13 +37,10 @@ sig
   type src_catjdg = ast RedPrlCategoricalJudgment.jdg
   type src_seqhyp = string * src_catjdg
   type src_sequent = src_seqhyp list * src_catjdg
-  type src_genjdg = (string * psort) list * src_sequent
-  type src_rulespec = src_genjdg list * src_sequent
 
   datatype src_decl =
      DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
    | THM of {arguments : string arguments, params : string params, goal : src_sequent, script : ast}
-   | RULE of {arguments : string arguments, params : string params, spec : src_rulespec, script : ast}
    | TAC of {arguments : string arguments, params : string params, script : ast}
 
   datatype 'opid cmd =

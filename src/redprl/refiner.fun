@@ -379,15 +379,16 @@ struct
         val (I, H) >> jdg = mainGoal
         val (_, H0) >> jdg0 = specGoal
       in
-        if CJ.eq (jdg, jdg0) then () else 
+        if CJ.eq (jdg, jdg0) then
+          Hyps.foldl (fn (x, jdg, goals) => goals >: makeGoal' ((I, H) >> CJ.HYP_IS (x, jdg))) T.empty H0
+        else 
           raise E.error 
             [Fpp.nest 2 @@ 
               Fpp.vsep 
                 [Fpp.text "Conclusions of goal did not match specification:",
                  CJ.pretty TermPrinter.ppTerm jdg,
                  Fpp.text "vs",
-                 CJ.pretty TermPrinter.ppTerm jdg0]];
-        Hyps.foldl (fn (x, jdg, goals) => goals >: makeGoal' ((I, H) >> CJ.HYP_IS (x, jdg))) T.empty H0
+                 CJ.pretty TermPrinter.ppTerm jdg0]]
         (* TODO: unify using I, J!! *)
       end
 
@@ -460,7 +461,10 @@ struct
         val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
         val hypSubgoals = checkMainGoal (mainGoalSpec, jdg)
 
-        val (I, H) >> _ = jdg
+        val (I as [], H) >> _ = jdg
+        val _ = 
+          if Hyps.isEmpty H then () else
+            raise E.error [Fpp.text "Lemmas must have a categorical judgment as a conclusion"]
 
         val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec)) subgoals
       in
@@ -477,7 +481,7 @@ struct
       Cut catjdg thenl [Lemma sign opid params, fn _ => Lcf.idn]
     end
 
-  fun Exact tm = 
+  fun Exact tm =
     Truth.Witness tm
       orelse_ Term.Exact tm
 

@@ -23,7 +23,6 @@ struct
       intersperse Fpp.Atomic.comma @@
         List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Ar.Vl.PS.toString sigma)]) ps
 
-
   fun prettyArgs args =
     Fpp.Atomic.parens @@ Fpp.grouped @@ Fpp.hvsep @@
       intersperse (Fpp.text ";") @@
@@ -31,12 +30,11 @@ struct
 
   fun prettyEntry (_ : sign) (opid : symbol, entry as {spec, state,...} : entry) : Fpp.doc =
     let
-      val params = entryParams entry
       val arguments = entryArguments entry
     in
       Fpp.hsep
         [Fpp.text "Def",
-          Fpp.seq [Fpp.text @@ Sym.toString opid, prettyParams params, prettyArgs arguments],
+          Fpp.seq [Fpp.text @@ Sym.toString opid, prettyArgs arguments],
           Fpp.Atomic.colon,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
             [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty TermPrinter.ppTerm spec],
@@ -153,7 +151,6 @@ struct
       fun processDecl sign =
         fn DEF {arguments, params, sort, definiens} => DEF {arguments = arguments, params = params, sort = sort, definiens = processTerm sign definiens}
          | THM {arguments, params, goal, script} => THM {arguments = arguments, params = params, goal = processSrcSeq sign goal, script = processTerm sign script}
-         | RULE {arguments, params, spec, script} => RULE {arguments = arguments, params = params, spec = processSrcRuleSpec sign spec, script = processTerm sign script}
          | TAC {arguments, params, script} => TAC {arguments = arguments, params = params, script = processTerm sign script}
     end
 
@@ -477,7 +474,6 @@ struct
             open O Tm infix \
             val subgoals = argumentsToSubgoals arguments'
             val state = Lcf.|> (subgoals, checkb (([],[]) \ script', (([],[]), TAC)))
-                      handle _ => raise Fail "Fuck/elabTac"
 
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM TAC)
           in
@@ -494,7 +490,6 @@ struct
           case processDecl sign decl of
              DEF defn => elabDef sign' opid defn
            | THM defn => elabThm sign' opid pos defn
-           | RULE defn => elabDerivedRule sign' opid pos defn
            | TAC defn => elabTac sign' opid defn))
       end
 

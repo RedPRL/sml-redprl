@@ -5,6 +5,8 @@ Thm BoolTest : [
   auto
 ].
 
+// RedPRL 
+
 Thm PathTest : [
   (path {_} S1 base base)
 ] by [
@@ -172,17 +174,11 @@ Tac FunExtTac(#A; #B; #F; #G) = [
 ].
 
 Thm NotNotPath : [(path {_} (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
-  { let a : [bool type] = auto.
-    let b : [bool type] = auto.
-    fresh ext <- cut-lemma {FunExt a b};
-    [`bool, `bool, auto, auto];
-    let ext = ext {`(Cmp Not Not)}.
-    let ext = ext {lam x. hyp x}.
-    let ext = ext {
-      lam x. if x then <i> `tt else <i> `ff
-    }.
-    hyp ext
-  }; auto
+  (FunExtTac bool bool (Cmp Not Not) (lam [x] x));
+  { lam x.
+    if x then <_> `tt else <_> `ff
+  };
+  auto
 ].
 
 Extract NotNotPath.
