@@ -472,10 +472,9 @@ struct
       end
   end
 
-
   fun CutLemma sign opid params = 
     let
-      val (mainGoalSpec : Lcf.jdg, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
+      val (mainGoalSpec, _) = Sig.resuscitateTheorem sign opid params
       val (I, H) >> catjdg = mainGoalSpec
     in
       Cut catjdg thenl [Lemma sign opid params, fn _ => Lcf.idn]

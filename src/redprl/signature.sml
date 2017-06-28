@@ -320,27 +320,6 @@ struct
         (env', RedPrlSequent.>> (([], hyps'), concl')) (* todo: I := ? *)
       end
 
-    fun elabSrcGenJdg (metactx, symctx, env) (syms, seq) : symbol NameEnv.dict * jdg Lcf.eff =
-      let
-        val (env', symctx') = List.foldl (fn (sym, (env, symctx)) => addSymName (env, symctx) sym) (env, symctx) syms
-
-        val syms' = List.map (fn (u,psort) => (NameEnv.lookup env' u, psort)) syms handle _ => raise Fail "elabSrcGenJdg"
-        val (env''', RedPrlSequent.>> ((_, H), jdg) )= elabSrcSequent (metactx, symctx', Var.Ctx.empty, env') seq
-        val env'''' = List.foldl (fn ((u,_), env) => NameEnv.remove env u) env''' syms
-        val seq' = RedPrlSequent.>> ((syms', H), jdg)
-      in
-        (env'''', seq')
-      end
-
-    fun elabSrcRuleSpec (metactx, symctx, env) (spec : src_rulespec) =
-      let
-        val (subgoals, goal) = spec
-        val (env', subgoals') = List.foldr (fn (subgoal, (env, subgoals)) => let val (env', subgoal') = elabSrcGenJdg (metactx, symctx, env) subgoal in (env', subgoal' :: subgoals) end) (env, []) subgoals
-        val (_, goal') = elabSrcSequent (metactx, symctx, Var.Ctx.empty, env') goal
-      in
-        (subgoals', goal')
-      end
-
     fun convertToAbt (metactx, symctx, env) ast sort =
       E.wrap (RedPrlAst.getAnnotation ast, fn () =>
         AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort)
@@ -418,12 +397,13 @@ struct
               *> E.ret state
         end
     in
-      fun elabDerivedRule sign opid pos {arguments, params, spec, script} =
+
+      fun elabThm sign opid pos {arguments, params, goal, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
         in
-          E.wrap (pos, fn () => elabSrcRuleSpec (metactx, symctx, env) spec) >>= (fn (subgoalsSpec, seqjdg as (syms, hyps) >> concl) =>
+          E.wrap (pos, fn () => elabSrcSequent (metactx, symctx, Var.Ctx.empty, env) goal) >>= (fn (_, seqjdg as (syms, hyps) >> concl) =>
             let
               (* TODO: deal with syms ?? *)
               val (params'', symctx', env') =
@@ -442,7 +422,7 @@ struct
             in
               convertToAbt (metactx, symctx', env') script TAC >>= 
               (fn scriptTm => elabRefine sign (seqjdg, scriptTm)) >>= 
-              checkProofState (pos, subgoalsSpec) >>= 
+              checkProofState (pos, []) >>=
               (fn Lcf.|> (subgoals, validation) => 
                 let
                   val subgoals' = Lcf.Tl.append termSubgoals subgoals
@@ -453,16 +433,7 @@ struct
                 end)
             end)
         end
-
-      fun thmToRule {arguments, params, goal, script} =
-        {arguments = arguments,
-         params = params,
-         spec = ([], goal),
-         script = script}
-
-      fun elabThm sign opid pos thm =
-        elabDerivedRule sign opid pos (thmToRule thm)
-    end
+      end
 
     fun elabTac (sign : sign) opid {arguments, params, script} =
       let
