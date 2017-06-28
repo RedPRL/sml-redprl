@@ -454,8 +454,8 @@ struct
       end
 
     fun elabPrint (sign : sign) (pos, opid) =
-      E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid handle _ => raise Fail "elabPrint") >>= (fn eopid =>
-        E.hush (ETelescope.lookup (#elabSign sign) eopid handle _ => raise Fail "elabPrint2") >>= (fn edecl =>
+      E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid =>
+        E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
           E.ret (ECMD (PRINT eopid)) <*
             (case edecl of
                 EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", prettyEntry sign (eopid, entry)])

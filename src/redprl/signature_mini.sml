@@ -155,7 +155,6 @@ struct
       in
         (goal', state')
       end
-      handle _ => raise Fail "Resusc"
 
       fun extract (Lcf.|> (_, validation)) =
         case outb validation of
