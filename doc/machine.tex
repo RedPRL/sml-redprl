@@ -74,6 +74,18 @@ moreover, $M$ is allowed to mention the dimensions in $\vec{\Psi}$.
   }
   \\
   \AStep{
+    \Cfg{\App{M}{N}}{\mathcal{E}}{\pi}
+  }{
+    \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{[]}}{\pi}}
+  }
+  \\
+  \AStep{
+    \Cfg{\Lam{a}{M}}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{[]}}{\pi}}
+  }{
+    \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}}}]}{\pi}
+  }
+  \\
+  \AStep{
     \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
   }{
     \Cfg{A}{\mathcal{E}}{
