@@ -7,6 +7,7 @@
 \usepackage{perfectcut}
 \usepackage{fullpage}
 \usepackage{manfnt}
+\usepackage{resizegather}
 
 % for dumb blackboard greek
 \usepackage{breqn}
@@ -54,7 +55,7 @@
     K &::= &\Coe{r}{r'}{\Box}{M}\mid\ldots&\text{(continuations)}\\
     C &::= &\Clo{M}{\mathcal{E}}&\text{(closures)}\\
     \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(environments)}\\
-    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow\Psi.\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
+    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow\{\vec{x}\}[\vec{a}].\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
     \gamma &::= &\overline{a\hookrightarrow C}&\text{(object env.)}\\
     \psi &::= &\overline{x\hookrightarrow r}&\text{(dimension env.)}\\
     f &::= &\Frame{K}{\mathcal{E}}{\Psi} &\text{(frames)}\\
@@ -167,33 +168,48 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   }{
     \Cfg{M}{\mathcal{E}'}{\pi}
   }
-  % \\
-  % \AStepSt{
-  %   \Cfg{
-  %     \DFun{a}{A}{B}
-  %   }{
-  %     \mathcal{E}
-  %   }{
-  %     \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
-  %   }
-  % }{
-  %   \Cfg{
-  %     \Lam{b}{
-  %       \Coe{r}{r'}{
-  %         x.B[\mathcal{E},a\hookrightarrow \Clo{\Coe{r'}{x}{x.A[\mathcal{E}]}{b}}{\mathcal{E}'}]
-  %       }{
-  %         \App{M}{
-  %           \Coe{r'}{r}{x. A[\mathcal{E}]}{b}
-  %         }
-  %       }
-  %     }
-  %   }{
-  %     \mathcal{E}'
-  %   }{
-  %     \pi
-  %   }
-  % }
 \end{align}
+
+\begin{gather*}
+  \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
+  \\
+  \succ_{\Stable}
+  \\
+  \Cfg{
+    \Lam{a}{
+      \Coe{r}{r'}{x.\Meta{x}\{x\}[a]}{
+        \App{M}{
+          \Coe{r'}{r}{x.\Meta{y}\{x\}}{a}
+        }
+      }
+    }
+  }{
+    \perfectbrackets{
+      \mathcal{E}',
+      \Meta{x}\hookrightarrow
+      \{x\}[a].\Clo{B}{
+        \perfectbrackets{
+          \mathcal{E},a\hookrightarrow
+          \Clo{
+            \Coe{r'}{x}{x.\Meta{z}[x]}{a}
+          }{
+            \perfectbrackets{
+              \mathcal{E'},
+              \Meta{z}\hookrightarrow
+              \{x\}.\Clo{A}{\mathcal{E}}
+            }
+          }
+        }
+      },
+      \Meta{y}\hookrightarrow
+      \{x\}.
+      \Clo{A}{\mathcal{E}}
+    }
+  }{
+    \pi
+  }
+\end{gather*}
+
 
 \begin{gather*}
   \Cfg{
@@ -208,23 +224,16 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \\
   \Cfg{
     \Pair{
-      \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
+      \Coe{r}{r'}{x.\Meta{x}\{x\}}{\Fst{M}}
     }{
-      \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
+      \Coe{r}{r'}{x.\Meta{y}\{x\}}{\Snd{M}}
     }
-    % \Pair{
-    % \Coe{r}{r'}{x.A[\mathcal{E}]}{\Fst{M}}
-    % }{
-    %   \Coe{r}{r'}{
-    %   x.B[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{x.A[\mathcal{E}]}{\Fst{M}}}{\mathcal{E}'}]
-    % }{
-    %   \Snd{M}
-    % }
-    % }
   }{
-    \mathcal{E}',
-    \Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}},
-    \Meta{y}\hookrightarrow{x.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}}]}]}}
+    \perfectbrackets{
+      \mathcal{E}',
+      \Meta{x}\hookrightarrow{\{x\}.\Clo{A}{\mathcal{E}}},
+      \Meta{y}\hookrightarrow{\{x\}.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}\{y\}}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{\{x\}.\Clo{A}{\mathcal{E}}}]}]}}
+    }
   }{
     \pi
   }
