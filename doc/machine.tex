@@ -16,6 +16,8 @@
 \newcommand\Lam[2]{\lambda{#1}.{#2}}
 \newcommand\Fst[1]{\mathsf{fst} (#1)}
 \newcommand\Snd[1]{\mathsf{snd} (#1)}
+\newcommand\Loop[1]{\mathsf{loop}_{#1}}
+\newcommand\Base{\mathsf{base}}
 
 \newcommand\Cons[2]{{#1}\dblcolon{#2}}
 \newcommand\AStep[2]{{#1}&\succ{#2}}
@@ -84,6 +86,37 @@ moreover, $M$ is allowed to mention the dimensions in $\vec{\Psi}$.
   }{
     \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}}}]}{\pi}
   }
+  \\
+  \AStep{
+    \Cfg{\Fst{M}}{\mathcal{E}}{\pi}
+  }{
+    \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}}{[]}}{\pi}}
+  }
+  \\
+  \AStep{
+    \Cfg{\Snd{M}}{\mathcal{E}}{\pi}
+  }{
+    \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}}{[]}}{\pi}}
+  }
+  \\
+  \AStep{
+    \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}'}{[]}}{\pi}}
+  }{
+    \Cfg{M}{\mathcal{E}}{\pi}
+  }
+  \\
+  \AStep{
+    \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}'}{[]}}{\pi}}
+  }{
+    \Cfg{N}{\mathcal{E}}{\pi}
+  }
+  \\
+  \AStep{
+    \Cfg{\Loop{r}}{(\gamma,\psi)}{\pi}
+  }{
+    \Cfg{\Base}{(\gamma,\psi)}{\pi}
+  }
+  \textbf{ when } r\psi = \epsilon
   \\
   \AStep{
     \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
