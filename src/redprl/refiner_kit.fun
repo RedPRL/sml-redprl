@@ -99,7 +99,7 @@ struct
   fun makeMatch part = makeGoal @@ MATCH part
 
   (* ignoring the trivial realizer *)
-  fun makeType (I, H) k a = makeGoal' @@ (I, H) >> CJ.TYPE a
+  fun makeType (I, H) k a = makeGoal' @@ (I, H) >> CJ.TYPE (k, a)
   fun makeEqType (I, H) k (a, b) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (k, a, b)
   fun makeEq (I, H) ((m, n), ty) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty)
   fun makeMem (I, H) (m, ty) = makeGoal' @@ (I, H) >> CJ.MEM (m, ty)

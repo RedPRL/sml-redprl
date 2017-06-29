@@ -3,7 +3,7 @@ Def Times(#A; #B) = [
 ].
 
 Thm Times/Proj(#A) : [
-  a/type : #A type 
+  a/type : #A pretype 
   >> (-> (Times bool #A) #A)
 ] by [
   {lam x. 

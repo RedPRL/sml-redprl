@@ -10,7 +10,7 @@ sig
    | TERM of RedPrlSort.t
 
   val MEM : 'a * 'a -> 'a redprl_jdg
-  val TYPE : 'a -> 'a redprl_jdg
+  val TYPE : type_kind * 'a -> 'a redprl_jdg
 
   include CATEGORICAL_JUDGMENT where type 'a jdg = 'a redprl_jdg
 end =
@@ -27,8 +27,8 @@ struct
   fun MEM (m, a) =
     EQ ((m, m), a)
 
-  fun TYPE a =
-    EQ_TYPE (KAN_TYPE, a, a)
+  fun TYPE (k, a) =
+    EQ_TYPE (k, a, a)
 
   type 'a jdg = 'a redprl_jdg
 

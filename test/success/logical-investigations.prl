@@ -10,8 +10,8 @@
 //
 // Once we have a universe, this will be much simpler.
 Thm Thm1(#A; #B) : [
-  type/A : #A type,
-  type/B : #B type
+  type/A : #A pretype,
+  type/B : #B pretype
   >> (-> #A #B #A)
 ] by [
   // The main part of the theorem is the following expression; but in RedPRL, this induces some
@@ -23,9 +23,9 @@ Thm Thm1(#A; #B) : [
 ].
 
 Thm Thm2(#A; #B; #C) : [
-  type/A : #A type,
-  type/B : #B type,
-  type/C : #C type
+  type/A : #A pretype,
+  type/B : #B pretype,
+  type/C : #C pretype
   >> (-> (-> #A #B) (-> #A #B #C) #A #C)
 ] by [
   {lam f. lam g. lam a.
@@ -43,9 +43,9 @@ Extract Thm2.
 
 // here's a proof using lower-level scripting
 Thm Thm3/low-level(#A; #B; #C) : [
-  type/A : #A type,
-  type/B : #B type,
-  type/C : #C type
+  type/A : #A pretype,
+  type/B : #B pretype,
+  type/C : #C pretype
   >> (->
       (-> #A #B)
       (-> #B #C)
@@ -62,9 +62,9 @@ Extract Thm3/low-level.
 // programming calculus may be longer, but they are often easier to engineer, 
 // and nicely segregate main goals from auxiliary goals.
 Thm Thm3/high-level(#A; #B; #C) : [
-  type/A : #A type,
-  type/B : #B type,
-  type/C : #C type
+  type/A : #A pretype,
+  type/B : #B pretype,
+  type/C : #C pretype
   >> (->
       (-> #A #B)
       (-> #B #C)
@@ -90,7 +90,7 @@ Thm Not/wf(#A) : [
 ].
 
 Thm Thm4(#A; #B) : [
-  type/A : #A type
+  type/A : #A pretype
   >> (-> (Not #A) #A #B)
 ] by [
   { lam r. lam a.
@@ -102,7 +102,7 @@ Thm Thm4(#A; #B) : [
 ].
 
 Thm Thm5(#A) : [
-  type/A : #A type
+  type/A : #A pretype
   >> (-> #A (Not (Not #A)))
 ] by [
   { lam a.
@@ -118,8 +118,8 @@ Print Thm4.
 Print Thm5.
 
 Thm Thm6(#A;#B) : [
-  type/A : #A type,
-  type/B : #B type
+  type/A : #A pretype,
+  type/B : #B pretype
   >> (-> (-> #A #B) (Not #B) (Not #A))
 ] by [
   { lam ab. lam nb.
