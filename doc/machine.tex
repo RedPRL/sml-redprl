@@ -6,6 +6,12 @@
 \usepackage{amssymb}
 \usepackage{perfectcut}
 \usepackage{fullpage}
+\usepackage{manfnt}
+
+% for dumb blackboard greek
+\usepackage{breqn}
+\usepackage[bbgreekl]{mathbbol}
+\usepackage{bbm}
 
 \global\long\def\cut#1#2{\perfectcut{#1}{#2}}
 
@@ -17,10 +23,10 @@
 \newcommand\Fst[1]{\mathsf{fst} (#1)}
 \newcommand\Snd[1]{\mathsf{snd} (#1)}
 \newcommand\Loop[1]{\mathsf{loop}_{#1}}
+\newcommand\CircRec[4]{\mathbb{S}^1\mathsf{rec}_{#1} (#2;#3;#4)}
 \newcommand\Base{\mathsf{base}}
 
 \newcommand\Cons[2]{{#1}\dblcolon{#2}}
-\newcommand\AStep[2]{{#1}&\succ{#2}}
 \newcommand\FreeVars[1]{\mathbf{FV}\perfectparens{#1}}
 \newcommand\FreeDims[1]{\mathbf{FD}\perfectparens{#1}}
 \newcommand\Bool{\mathsf{bool}}
@@ -29,8 +35,15 @@
 \newcommand\App[2]{{#1}\perfectparens{#2}}
 \newcommand\Pair[2]{\perfectunary{CurrentHeight}{\langle}{\rangle}{#1,#2}}
 
+\newcommand\Stable{\text{\mancube}}
+\newcommand\NonStable{\bullet}
+\newcommand\Step[3]{{#2}\mathrel{\succ_{#1}}{#3}}
+\newcommand\AStep[3]{{#2}&\mathrel{\succ_{#1}}{#3}}
+\newcommand\AStepSt[2]{\AStep{\Stable}{#1}{#2}}
+\newcommand\Meta[1]{\mathbb{#1}}
 
 \title{Cubical Abstract Machine}
+\author{Jon Sterling and Kuen-Bang Hou (Favonia)}
 
 \begin{document}
 \maketitle
@@ -40,7 +53,8 @@
     M,A &::= &a\mid \Coe{r}{r'}{x.A}{M}\mid\ldots&\text{(terms)}\\
     K &::= &\Coe{r}{r'}{\Box}{M}\mid\ldots&\text{(continuations)}\\
     C &::= &\Clo{M}{\mathcal{E}}&\text{(closures)}\\
-    \mathcal{E} &::= &(\gamma,\psi)&\text{(environments)}\\
+    \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(environments)}\\
+    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow\Psi.\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
     \gamma &::= &\overline{a\hookrightarrow C}&\text{(object env.)}\\
     \psi &::= &\overline{x\hookrightarrow r}&\text{(dimension env.)}\\
     f &::= &\Frame{K}{\mathcal{E}}{\Psi} &\text{(frames)}\\
@@ -68,57 +82,75 @@ $\mathcal{E}$ is an environment for $\FreeDims{M}\setminus\vec{\Psi}$;
 moreover, $M$ is allowed to mention the dimensions in $\vec{\Psi}$.
 
 \paragraph{Selected transition rules}
+
+We define a transition judgment
+$\Step{\mu}{\mathcal{C}}{\mathcal{C}'}$ with $\mu$ ranging over
+the following possible modes:
+\begin{enumerate}
+\item $\Stable$, denoting a cubically stable transition
+\item $\NonStable$, denoting a non-cubically stable transition
+\end{enumerate}
+
+Moreover, if $\Step{\Stable}{\mathcal{C}}{\mathcal{C}'}$ then
+$\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
+
+
 \begin{align}
-  \AStep{
+  \AStepSt{
     \Cfg{a}{(\gamma,\psi)}{\pi}
   }{
     \Cfg{\gamma(a)}{(\gamma,\psi)}{\pi}
   }
   \\
-  \AStep{
+  \AStepSt{
     \Cfg{\App{M}{N}}{\mathcal{E}}{\pi}
   }{
     \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{[]}}{\pi}}
   }
   \\
-  \AStep{
+  \AStepSt{
     \Cfg{\Lam{a}{M}}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{[]}}{\pi}}
   }{
     \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}}}]}{\pi}
   }
   \\
-  \AStep{
+  \AStepSt{
     \Cfg{\Fst{M}}{\mathcal{E}}{\pi}
   }{
     \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}}{[]}}{\pi}}
   }
   \\
-  \AStep{
+  \AStepSt{
     \Cfg{\Snd{M}}{\mathcal{E}}{\pi}
   }{
     \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}}{[]}}{\pi}}
   }
   \\
-  \AStep{
+  \AStepSt{
     \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}'}{[]}}{\pi}}
   }{
     \Cfg{M}{\mathcal{E}}{\pi}
   }
   \\
-  \AStep{
+  \AStepSt{
     \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}'}{[]}}{\pi}}
   }{
     \Cfg{N}{\mathcal{E}}{\pi}
   }
-  \\
-  \AStep{
+\end{align}
+
+\begin{align}
+  \AStepSt{
     \Cfg{\Loop{r}}{(\gamma,\psi)}{\pi}
   }{
     \Cfg{\Base}{(\gamma,\psi)}{\pi}
   }
   \textbf{ when } r\psi = \epsilon
   \\
-  \AStep{
+\end{align}
+
+\begin{align}
+  \AStepSt{
     \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
   }{
     \Cfg{A}{\mathcal{E}}{
@@ -128,75 +160,75 @@ moreover, $M$ is allowed to mention the dimensions in $\vec{\Psi}$.
     }
   }
   \\
-  \AStep{
+  \AStepSt{
     \Cfg{\Bool}{\mathcal{E}}{
       \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
     }
   }{
     \Cfg{M}{\mathcal{E}'}{\pi}
   }
+  % \\
+  % \AStepSt{
+  %   \Cfg{
+  %     \DFun{a}{A}{B}
+  %   }{
+  %     \mathcal{E}
+  %   }{
+  %     \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+  %   }
+  % }{
+  %   \Cfg{
+  %     \Lam{b}{
+  %       \Coe{r}{r'}{
+  %         x.B[\mathcal{E},a\hookrightarrow \Clo{\Coe{r'}{x}{x.A[\mathcal{E}]}{b}}{\mathcal{E}'}]
+  %       }{
+  %         \App{M}{
+  %           \Coe{r'}{r}{x. A[\mathcal{E}]}{b}
+  %         }
+  %       }
+  %     }
+  %   }{
+  %     \mathcal{E}'
+  %   }{
+  %     \pi
+  %   }
+  % }
+\end{align}
+
+\begin{gather*}
+  \Cfg{
+    \DPair{a}{A}{B}
+  }{
+    \mathcal{E}
+  }{
+    \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+  }
   \\
-  \AStep{
-    \Cfg{
-      \DFun{a}{A}{B}
+  \succ_{\Stable}
+  \\
+  \Cfg{
+    \Pair{
+      \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
     }{
-      \mathcal{E}
-    }{
-      \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+      \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
     }
+    % \Pair{
+    % \Coe{r}{r'}{x.A[\mathcal{E}]}{\Fst{M}}
+    % }{
+    %   \Coe{r}{r'}{
+    %   x.B[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{x.A[\mathcal{E}]}{\Fst{M}}}{\mathcal{E}'}]
+    % }{
+    %   \Snd{M}
+    % }
+    % }
   }{
-    \Cfg{
-      \Lam{b}{
-        \Coe{r}{r'}{
-          x.B[\mathcal{E},a\hookrightarrow \Clo{\Coe{r'}{x}{x.A[\mathcal{E}]}{b}}{\mathcal{E}'}]
-        }{
-          \App{M}{
-            \Coe{r'}{r}{x. A[\mathcal{E}]}{b}
-          }
-        }
-      }
-    }{
-      \mathcal{E}'
-    }{
-      \pi
-    }
-  }
-\end{align}
-
-The dynamics of coercion on a functional type are unfortunate: it is
-necessary to force the substitution $\mathcal{E}$ on the types $A$ and
-$B$, since we are ``suspending'' the coercion and placing it
-underneath a $\lambda$-abstraction. The same problem occurs for pair
-types. This suggests that we may ultimately need some kind of explicit
-substitution in our calculus.
-
-\begin{align}
-  \AStep{
-    \Cfg{
-      \DPair{a}{A}{B}
-    }{
-      \mathcal{E}
-    }{
-      \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
-    }
+    \mathcal{E}',
+    \Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}},
+    \Meta{y}\hookrightarrow{x.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}}]}]}}
   }{
-    \Cfg{
-      \Pair{
-        \Coe{r}{r'}{x.A[\mathcal{E}]}{\Fst{M}}
-      }{
-        \Coe{r}{r'}{
-          x.B[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{x.A[\mathcal{E}]}{\Fst{M}}}{\mathcal{E}'}]
-        }{
-          \Snd{M}
-        }
-      }
-    }{
-      \mathcal{E}'
-    }{
-      \pi
-    }
+    \pi
   }
-\end{align}
+\end{gather*}
 
 \paragraph{Unloading the machine}
 
