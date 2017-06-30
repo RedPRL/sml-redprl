@@ -51,8 +51,8 @@
 
 \[
   \begin{array}{rrlr}
-    M,A &::= &a\mid \Coe{r}{r'}{x.A}{M}\mid\ldots&\text{(terms)}\\
-    K &::= &\Coe{r}{r'}{\Box}{M}\mid\ldots&\text{(continuations)}\\
+    M,A &::= &a\mid \Meta{x}[\vec{r};\vec{M}] \mid \Coe{r}{r'}{x.A}{M}\mid\ldots&\text{(terms)}\\
+    K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\ldots&\text{(continuations)}\\
     C &::= &\Clo{M}{\mathcal{E}}&\text{(closures)}\\
     \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(environments)}\\
     \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
@@ -204,6 +204,61 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \inferrule{
   }{
     \Step{\Stable}{
+      \Cfg{
+        \CircRec{a.A}{M}{P}{x.L}
+      }{
+        \mathcal{E}
+      }{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{
+        \Cons{
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}}{[]}
+        }{\pi}
+      }
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Base}{\mathcal{E}}{
+        \Cons{
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{P}{\mathcal{E}'}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    \mathcal{E}\equiv(\Meta{\gamma},\gamma,\psi)
+    \\
+    r\psi\equiv{w}
+  }{
+    \Step{\NonStable}{
+      \Cfg{\Loop{r}}{\mathcal{E}}{
+        \Cons{
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{L}{
+        \perfectbrackets{
+          \mathcal{E}',x\hookrightarrow{w}
+        }
+      }{\pi}
+    }
+  }
+\end{mathparpagebreakable}
+
+The rules for coercions are more difficult, but using second-order
+substitutions we can account for them without needing to force
+closures.
+\begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Step{\Stable}{
       \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
     }{
       \Cfg{A}{\mathcal{E}}{
@@ -224,12 +279,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       \Cfg{M}{\mathcal{E}'}{\pi}
     }
   }
-\end{mathparpagebreakable}
-
-The rules for coercions are more difficult, but using second-order
-substitutions we can account for them without needing to force
-closures.
-\begin{mathparpagebreakable}
+  \and
   \inferrule{
     \mathcal{E}'' \triangleq%
     \perfectbrackets{
