@@ -41,7 +41,7 @@ struct
   datatype hole = HOLE
   datatype continuation =
      APP of hole * abt
-   | HCOM of symbol O.dir * symbol O.equation list * hole * abt * abt bview list
+   | HCOM of symbol O.dir * hole * abt * (symbol O.equation * (symbol * abt)) list
    | COE of symbol O.dir * (symbol * hole) * abt
 
   type frame = continuation closure
@@ -103,10 +103,10 @@ struct
          term <: (mrho'', rho, psi'') || stk
        end
 
-     | O.POLY (O.COE dir) $ [([u], _) \ a, _ \ cap] <: env || stk =>
-       a <: env || COE (dir, (u, HOLE), cap) <: env :: stk
+     | O.POLY (O.COE dir) $ [([u], _) \ a, _ \ coercee] <: env || stk =>
+       a <: env || COE (dir, (u, HOLE), coercee) <: env :: stk
      | O.POLY (O.HCOM (dir, eqs)) $ (_ \ a :: _ \ cap :: tubes) <: env || stk =>
-       a <: env || HCOM (dir, eqs, HOLE, cap, tubes) <: env :: stk
+       a <: env || HCOM (dir, HOLE, cap, ListPair.map (fn (eq, ([u],_) \ n) => (eq, (u,n))) (eqs, tubes)) <: env :: stk
 
      (* TODO: fcom stepping rules *)
 
@@ -115,7 +115,7 @@ struct
      | O.MONO O.LAM $ [(_, [x]) \ mx] <: (mrho, rho, psi) || APP (HOLE, n) <: env' :: stk =>
        mx <: (mrho, Var.Ctx.insert rho x (n <: env'), psi) || stk
 
-     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || COE ((r,r'), (u, HOLE), cap) <: env' :: stk =>
+     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || COE ((r,r'), (u, HOLE), coercee) <: env' :: stk =>
        let
          val metaX = Metavar.named "X"
          val metaY = Metavar.named "Y"
@@ -132,7 +132,7 @@ struct
                ty = (u, check (metaX $# ([uprm], [xtm]), O.EXP)),
                coercee = 
                  Syn.into @@ Syn.AP
-                   (cap,
+                   (coercee,
                     Syn.into @@ Syn.COE
                       {dir = (r', r),
                        ty = (u, check (metaY $# ([uprm],[]), O.EXP)),
@@ -155,7 +155,23 @@ struct
        in
          lam <: env'' || stk
        end
-     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || HCOM (dir, eqs, HOLE, cap, tubes) <: env' :: stk => ?todo
+
+     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || HCOM (dir, HOLE, cap, tubes) <: env' :: stk =>
+       let
+         val metaX = Metavar.named "X"
+         val env'' = insertMeta metaX (([],[x]) \ (bx <: env)) env'
+         val xtm = check (`x, O.EXP)
+         val hcom =
+           Syn.into @@ Syn.HCOM 
+             {dir = dir,
+              ty = check (metaX $# ([],[xtm]), O.EXP),
+              cap = Syn.into @@ Syn.AP (cap, xtm),
+              tubes = List.map (fn (eq, (u, n)) => (eq, (u, Syn.into @@ Syn.AP (n, xtm)))) tubes}
+
+         val lam = Syn.into @@ Syn.LAM (x, hcom)
+       in
+         lam <: env'' || stk
+       end
 
      | _ => ?todo
 
