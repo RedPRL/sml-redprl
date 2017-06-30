@@ -93,159 +93,210 @@ Moreover, if $\Step{\Stable}{\mathcal{C}}{\mathcal{C}'}$ then
 $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 
 
-\begin{align}
-  \AStepSt{
-    \Cfg{a}{(\gamma,\psi)}{\pi}
+\begin{mathpar}
+  \inferrule{
+    \mathcal{E}\equiv(\Meta{\gamma},\gamma,\psi)
   }{
-    \Cfg{\gamma(a)}{(\gamma,\psi)}{\pi}
-  }
-  \\
-  \AStepSt{
-    \Cfg{\App{M}{N}}{\mathcal{E}}{\pi}
-  }{
-    \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{[]}}{\pi}}
-  }
-  \\
-  \AStepSt{
-    \Cfg{\Lam{a}{M}}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{[]}}{\pi}}
-  }{
-    \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}}}]}{\pi}
-  }
-  \\
-  \AStepSt{
-    \Cfg{\Fst{M}}{\mathcal{E}}{\pi}
-  }{
-    \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}}{[]}}{\pi}}
-  }
-  \\
-  \AStepSt{
-    \Cfg{\Snd{M}}{\mathcal{E}}{\pi}
-  }{
-    \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}}{[]}}{\pi}}
-  }
-  \\
-  \AStepSt{
-    \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}'}{[]}}{\pi}}
-  }{
-    \Cfg{M}{\mathcal{E}}{\pi}
-  }
-  \\
-  \AStepSt{
-    \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}'}{[]}}{\pi}}
-  }{
-    \Cfg{N}{\mathcal{E}}{\pi}
-  }
-\end{align}
-
-\begin{align}
-  \AStepSt{
-    \Cfg{\Loop{r}}{(\gamma,\psi)}{\pi}
-  }{
-    \Cfg{\Base}{(\gamma,\psi)}{\pi}
-  }
-  \textbf{ when } r\psi = \epsilon
-  \\
-\end{align}
-
-\begin{align}
-  \AStepSt{
-    \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
-  }{
-    \Cfg{A}{\mathcal{E}}{
-      \Cons{
-        \Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}
-      }{\pi}
+    \Step{\Stable}{
+      \Cfg{a}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{\gamma(a)}{\mathcal{E}}{\pi}
     }
   }
-  \\
-  \AStepSt{
-    \Cfg{\Bool}{\mathcal{E}}{
-      \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+  \and
+  \inferrule{
+    \mathcal{E}\equiv(\Meta{\gamma},\gamma,\psi)
+    \\
+    \Meta{\gamma} (\Meta{x})\equiv{\vec{x};\vec{a}.N}
+    \\
+    \gamma'\triangleq\perfectparens{
+      \gamma,\overline{a\hookrightarrow\Clo{M}{\mathcal{E}}}
+    }
+    \\
+    \psi'\triangleq\perfectparens{
+      \psi,\overline{x\hookrightarrow{r\psi}}
     }
   }{
-    \Cfg{M}{\mathcal{E}'}{\pi}
+    \Step{\Stable}{
+      \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{N}{
+        \perfectbrackets{
+          (\Meta{\gamma},\gamma',\psi')
+        }
+      }{
+        \pi%
+      }
+    }
   }
-\end{align}
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\App{M}{N}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{[]}}{\pi}}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Lam{a}{M}}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{[]}}{\pi}}
+    }{
+      \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}}}]}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Fst{M}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}}{[]}}{\pi}}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Snd{M}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}}{[]}}{\pi}}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}'}{[]}}{\pi}}
+    }{
+      \Cfg{M}{\mathcal{E}}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}'}{[]}}{\pi}}
+    }{
+      \Cfg{N}{\mathcal{E}}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    r\psi\equiv\epsilon%
+  }{
+    \Step{\Stable}{
+      \Cfg{\Loop{r}}{(\Meta{\gamma},\gamma,\psi)}{\pi}
+    }{
+      \Cfg{\Base}{(\Meta{\gamma},\gamma,\psi)}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{A}{\mathcal{E}}{
+        \Cons{
+          \Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}
+        }{\pi}
+      }
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Bool}{\mathcal{E}}{
+        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+      }
+    }{
+      \Cfg{M}{\mathcal{E}'}{\pi}
+    }
+  }
+\end{mathpar}
 
 The rules for coercions are more difficult, but using second-order
 substitutions we can account for them without needing to force
 closures.
-\begin{gather*}
-  \Step{\Stable}{
-    \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
-  }{
-    \Cfg{
-      \Lam{a}{
-        \Coe{r}{r'}{x.\Meta{x}[x;a]}{
-          \App{M}{
-            \Coe{r'}{r}{x.\Meta{y}[x]}{a}
-          }
-        }
-      }
-    }{
-      \mathcal{E}''
-    }{
-      \pi
-    }
-  }
-  \\
-  \textbf{where }
-  \mathcal{E}'' =
+\begin{mathpar}
+  \inferrule{
+    \mathcal{E}'' \triangleq%
     \perfectbrackets{
       \mathcal{E}',
-      \Meta{x}\hookrightarrow
+      \Meta{x}\hookrightarrow%
       x;a.\Clo{B}{
         \perfectbrackets{
-          \mathcal{E},a\hookrightarrow
+          \mathcal{E},a\hookrightarrow%
           \Clo{
             \Coe{r'}{x}{x.\Meta{z}[x]}{a}
           }{
             \perfectbrackets{
               \mathcal{E'},
-              \Meta{z}\hookrightarrow
+              \Meta{z}\hookrightarrow%
               x.\Clo{A}{\mathcal{E}}
             }
           }
         }
       },
-      \Meta{y}\hookrightarrow
-      x.
-      \Clo{A}{\mathcal{E}}
-    }
-\end{gather*}
-
-
-\begin{gather*}
-  \Step{\Stable}{
-    \Cfg{
-      \DPair{a}{A}{B}
-    }{
-      \mathcal{E}
-    }{
-      \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+      \Meta{y}\hookrightarrow%
+      x.\Clo{A}{\mathcal{E}}
     }
   }{
-    \Cfg{
-      \Pair{
-        \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
+    \Step{\Stable}{
+      \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
+    }{
+      \Cfg{
+        \Lam{a}{
+          \Coe{r}{r'}{x.\Meta{x}[x;a]}{
+            \App{M}{
+              \Coe{r'}{r}{x.\Meta{y}[x]}{a}
+            }
+          }
+        }
       }{
-        \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
+        \mathcal{E}''
+      }{
+        \pi%
       }
-    }{
-      \mathcal{E}''
-    }{
-      \pi
     }
   }
-  \\
-  \textbf{where }
-  \mathcal{E}'' =
+  \and
+  \inferrule{
+    \mathcal{E}'' \triangleq%
     \perfectbrackets{
       \mathcal{E}',
       \Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}},
       \Meta{y}\hookrightarrow{x.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}}]}]}}
     }
-\end{gather*}
+  }{
+    \Step{\Stable}{
+      \Cfg{
+        \DPair{a}{A}{B}
+      }{
+        \mathcal{E}
+      }{
+        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+      }
+    }{
+      \Cfg{
+        \Pair{
+          \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
+        }{
+          \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
+        }
+      }{
+        \mathcal{E}''
+      }{
+        \pi%
+      }
+    }
+  }
+\end{mathpar}
+
 
 \paragraph{Unloading the machine}
 
