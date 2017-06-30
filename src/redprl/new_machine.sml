@@ -58,6 +58,16 @@ struct
          in
            m <: (mrho', rho'', psi'') || stk
          end
-       | _ $ _ => raise Fail "TODO"
+       | O.POLY (O.CUST (opid, ps, _)) $ args =>
+         let
+           val entry as {state,...} = Sig.lookup sign opid
+           val term = Sig.extract state
+           val (mrho', psi') = Sig.unifyCustomOperator entry (List.map #1 ps) args
+           val mrho'' = Metavar.Ctx.union mrho (Metavar.Ctx.map ((fn (us,xs) \ m => (us,xs) \ (m <: env)) o outb) mrho') (fn _ => raise Fail "Duplicated metavariables")
+           val psi'' = raise Match
+         in
+           term <: (mrho'', rho, psi'') || stk
+         end
+       | _ => raise Fail "TODO"
     end
 end
