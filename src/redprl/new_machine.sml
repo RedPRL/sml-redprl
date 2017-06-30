@@ -79,6 +79,9 @@ struct
   fun insertMeta meta bcl (mrho, rho, psi) = 
     (Metavar.Ctx.insert mrho meta bcl, rho, psi)
 
+  fun insertSym u r (mrho, rho, psi) = 
+    (mrho, rho, Sym.Ctx.insert psi u r)
+
 
   fun stepView sign stability = 
     fn `x <: (mrho, rho, psi) || stk =>
@@ -110,7 +113,29 @@ struct
      | O.POLY (O.HCOM (dir, eqs)) $ (_ \ a :: _ \ cap :: tubes) <: env || stk =>
        a <: env || HCOM (dir, HOLE, cap, ListPair.map (fn (eq, ([u],_) \ n) => (eq, (u,n))) (eqs, tubes)) <: env :: stk
 
-     (* TODO: com unfolding rule *)
+     | O.POLY (O.COM ((r,r'), eqs)) $ (([u],_) \ a :: _ \ cap :: tubes) <: env || stk => 
+       let
+         fun makeTube (eq, ([v],_) \ n) = 
+           (eq, (v, Syn.into @@ Syn.COE
+             {dir = (P.ret v, r'),
+              ty = (v, a),
+              coercee = n}))
+
+         val hcom = 
+           Syn.into @@ Syn.HCOM
+             {dir = (r, r'),
+              ty = a,
+              cap = Syn.into @@ Syn.COE
+                {dir = (r, r'),
+                 ty = (u, a),
+                 coercee = cap},
+              tubes = ListPair.map makeTube (eqs, tubes)}
+
+          val env' = insertSym u r' env
+       in
+         hcom <: env' || stk
+       end
+
      (* TODO: fcom stepping rules *)
 
      | O.MONO O.AP $ [_ \ m, _ \ n] <: env || stk =>
