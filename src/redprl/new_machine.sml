@@ -28,13 +28,6 @@ struct
   and meta_env = Tm.abt closure Tm.bview Metavar.Ctx.dict
   and environment = meta_env * object_env * param_env
 
-  datatype hole = HOLE
-  datatype continuation =
-     APP of hole * Tm.abt
-
-  type frame = continuation closure
-  type stack = frame list
-  datatype 'a machine = || of 'a closure * stack
 
   infix 5 <:
   infix 3 ||
@@ -42,6 +35,18 @@ struct
   open Tm infix 6 $ $$ $# \
   structure O = RedPrlOpData
   structure P = RedPrlParameterTerm
+
+  datatype hole = HOLE
+  datatype continuation =
+     APP of hole * abt
+   | HCOM of symbol O.dir * symbol O.equation list * hole * abt * abt bview list
+   | COE of symbol O.dir * (symbol * hole) * abt
+
+  type frame = continuation closure
+  type stack = frame list
+
+  datatype 'a machine = || of 'a closure * stack
+
 
   datatype stability = 
      CUBICAL
@@ -89,10 +94,20 @@ struct
          term <: (mrho'', rho, psi'') || stk
        end
 
+     | O.POLY (O.COE dir) $ [([u], _) \ a, _ \ cap] <: env || stk =>
+       a <: env || COE (dir, (u, HOLE), cap) <: env :: stk
+     | O.POLY (O.HCOM (dir, eqs)) $ (_ \ a :: _ \ cap :: tubes) <: env || stk =>
+       a <: env || HCOM (dir, eqs, HOLE, cap, tubes) <: env :: stk
+
+     (* TODO: fcom stepping rules *)
+
      | O.MONO O.AP $ [_ \ m, _ \ n] <: env || stk =>
        m <: env || APP (HOLE, n) <: env :: stk
      | O.MONO O.LAM $ [(_, [x]) \ mx] <: (mrho, rho, psi) || APP (HOLE, n) <: env' :: stk =>
        mx <: (mrho, Var.Ctx.insert rho x (n <: env'), psi) || stk
+
+     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || COE (dir, (u, HOLE), cap) <: env' :: stk => ?todo
+     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || HCOM (dir, eqs, HOLE, cap, tubes) <: env' :: stk => ?todo
 
      | _ => ?todo
 
