@@ -55,7 +55,7 @@
     K &::= &\Coe{r}{r'}{\Box}{M}\mid\ldots&\text{(continuations)}\\
     C &::= &\Clo{M}{\mathcal{E}}&\text{(closures)}\\
     \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(environments)}\\
-    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow\{\vec{x}\}[\vec{a}].\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
+    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
     \gamma &::= &\overline{a\hookrightarrow C}&\text{(object env.)}\\
     \psi &::= &\overline{x\hookrightarrow r}&\text{(dimension env.)}\\
     f &::= &\Frame{K}{\mathcal{E}}{\Psi} &\text{(frames)}\\
@@ -63,9 +63,6 @@
     \mathcal{C} &::= &\Cfg{M}{\mathcal{E}}{\pi} &\text{(states)}
   \end{array}
 \]
-
-We will write $M[\mathcal{E}]$ for substituting the free dimensions
-and variables of a term $M$ using an environment $\mathcal{E}$.
 
 \paragraph{Stack frames and machine states}
 
@@ -170,23 +167,26 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   }
 \end{align}
 
+The rules for coercions are more difficult, but using second-order
+substitutions we can account for them without needing to force
+closures.
 \begin{gather*}
-  \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
-  \\
-  \succ_{\Stable}
-  \\
-  \Cfg{
-    \Lam{a}{
-      \Coe{r}{r'}{x.\Meta{x}\{x\}[a]}{
-        \App{M}{
-          \Coe{r'}{r}{x.\Meta{y}\{x\}}{a}
+  \Step{\Stable}{
+    \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
+  }{
+    \Cfg{
+      \Lam{a}{
+        \Coe{r}{r'}{x.\Meta{x}[x;a]}{
+          \App{M}{
+            \Coe{r'}{r}{x.\Meta{y}[x]}{a}
+          }
         }
       }
+    }{
+      \mathcal{E}''
+    }{
+      \pi
     }
-  }{
-    \mathcal{E}''
-  }{
-    \pi
   }
   \\
   \textbf{where }
@@ -194,7 +194,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
     \perfectbrackets{
       \mathcal{E}',
       \Meta{x}\hookrightarrow
-      \{x\}[a].\Clo{B}{
+      x;a.\Clo{B}{
         \perfectbrackets{
           \mathcal{E},a\hookrightarrow
           \Clo{
@@ -203,47 +203,47 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
             \perfectbrackets{
               \mathcal{E'},
               \Meta{z}\hookrightarrow
-              \{x\}.\Clo{A}{\mathcal{E}}
+              x.\Clo{A}{\mathcal{E}}
             }
           }
         }
       },
       \Meta{y}\hookrightarrow
-      \{x\}.
+      x.
       \Clo{A}{\mathcal{E}}
     }
 \end{gather*}
 
 
 \begin{gather*}
-  \Cfg{
-    \DPair{a}{A}{B}
-  }{
-    \mathcal{E}
-  }{
-    \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
-  }
-  \\
-  \succ_{\Stable}
-  \\
-  \Cfg{
-    \Pair{
-      \Coe{r}{r'}{x.\Meta{x}\{x\}}{\Fst{M}}
+  \Step{\Stable}{
+    \Cfg{
+      \DPair{a}{A}{B}
     }{
-      \Coe{r}{r'}{x.\Meta{y}\{x\}}{\Snd{M}}
+      \mathcal{E}
+    }{
+      \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
     }
   }{
-    \mathcal{E}''
-  }{
-    \pi
+    \Cfg{
+      \Pair{
+        \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
+      }{
+        \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
+      }
+    }{
+      \mathcal{E}''
+    }{
+      \pi
+    }
   }
   \\
   \textbf{where }
   \mathcal{E}'' =
     \perfectbrackets{
       \mathcal{E}',
-      \Meta{x}\hookrightarrow{\{x\}.\Clo{A}{\mathcal{E}}},
-      \Meta{y}\hookrightarrow{\{x\}.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}\{y\}}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{\{x\}.\Clo{A}{\mathcal{E}}}]}]}}
+      \Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}},
+      \Meta{y}\hookrightarrow{x.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}}]}]}}
     }
 \end{gather*}
 
