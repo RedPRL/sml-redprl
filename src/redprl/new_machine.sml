@@ -23,16 +23,13 @@ struct
   type sign = Sig.sign
 
   datatype 'a closure = <: of 'a * environment
-  withtype param_env = Tm.param Sym.Ctx.dict
-  and object_env = Tm.abt closure Var.Ctx.dict
-  and meta_env = Tm.abt closure Tm.bview Metavar.Ctx.dict
-  and environment = meta_env * object_env * param_env
+  withtype environment = Tm.abt closure Tm.bview Metavar.Ctx.dict * Tm.abt closure Var.Ctx.dict * Tm.param Sym.Ctx.dict
 
 
-  infix 5 <:
+  infix 6 <:
   infix 3 ||
 
-  open Tm infix 6 $ $$ $# \
+  open Tm infix 7 $ $$ $# \
   structure O = RedPrlOpData
   structure P = RedPrlParameterTerm
 
@@ -66,7 +63,7 @@ struct
     Sym.Ctx.lookup psi x
     handle Sym.Ctx.Absent => P.ret x
 
-  fun readParam (psi : param_env) : param -> param = 
+  fun readParam psi : param -> param = 
     P.bind (lookupSym psi)
 
   fun stepView sign stability = 
