@@ -111,37 +111,29 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 \begin{mathparpagebreakable}
   \inferrule{
     \mathcal{E}\equiv(\Meta{\gamma},\gamma,\psi)
+    \\
+    \gamma(a)\equiv\Clo{M}{\mathcal{E}'}
   }{
     \Step{\Stable}{
       \Cfg{a}{\mathcal{E}}{\pi}
     }{
-      \Cfg{\gamma(a)}{\mathcal{E}}{\pi}
+      \Cfg{M}{\mathcal{E}'}{\pi}
     }
   }
   \and
   \inferrule{
-    \mathcal{E}\equiv(\Meta{\gamma},\gamma,\psi)
-    \\
-    \Meta{\gamma} (\Meta{x})\equiv{\vec{x};\vec{a}.N}
-    \\
-    \gamma'\triangleq\perfectparens{
-      \gamma,\overline{a\hookrightarrow\Clo{M}{\mathcal{E}}}
-    }
-    \\
-    \psi'\triangleq\perfectparens{
-      \psi,\overline{x\hookrightarrow{r\psi}}
+    \mathcal{E} (\Meta{x})\equiv{\vec{x};\vec{a}.\Clo{N}{\mathcal{E}'}}
+    \and
+    \mathcal{E}''\triangleq\perfectbrackets{
+      \mathcal{E}',
+      \overline{a\hookrightarrow\Clo{M}{\mathcal{E}}},
+      \overline{x\hookrightarrow\mathcal{E} (r)}
     }
   }{
     \Step{\Stable}{
       \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\mathcal{E}}{\pi}
     }{
-      \Cfg{N}{
-        \perfectbrackets{
-          (\Meta{\gamma},\gamma',\psi')
-        }
-      }{
-        \pi%
-      }
+      \Cfg{N}{\mathcal{E}''}{\pi}
     }
   }
   \and
