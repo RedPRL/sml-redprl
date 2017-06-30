@@ -255,6 +255,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 The rules for coercions are more difficult, but using second-order
 substitutions we can account for them without needing to force
 closures.
+
 \begin{mathparpagebreakable}
   \inferrule{
   }{
@@ -285,11 +286,11 @@ closures.
     \perfectbrackets{
       \mathcal{E}',
       \Meta{x}\hookrightarrow%
-      x;a.\Clo{B}{
+      x;b.\Clo{B}{
         \perfectbrackets{
           \mathcal{E},a\hookrightarrow%
           \Clo{
-            \Coe{r'}{x}{x.\Meta{z}[x]}{a}
+            \Coe{r'}{x}{x.\Meta{z}[x]}{b}
           }{
             \perfectbrackets{
               \mathcal{E'},
