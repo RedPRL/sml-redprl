@@ -25,6 +25,9 @@
 \newcommand\FCom[4]{\mathsf{fcom}^{#1\leadsto{#2}} (#3;#4)}
 \newcommand\DFun[3]{\perfectparens{#1:#2}\to{#3}}
 \newcommand\DPair[3]{\perfectparens{#1:#2}\times{#3}}
+\newcommand\PAbs[2]{\perfectunary{CurrentHeight}{\langle}{\rangle}{#1}{#2}}
+\newcommand\PApp[2]{#1\mathbin{@}#2}
+\newcommand\Path[3]{\mathsf{path}_{#1} (#2;#3)}
 \newcommand\Lam[2]{\lambda{#1}.{#2}}
 \newcommand\Fst[1]{\mathsf{fst} (#1)}
 \newcommand\Snd[1]{\mathsf{snd} (#1)}
@@ -58,11 +61,11 @@
 
 \[
   \begin{array}{rrlr}
-    M,A &::= &a\mid \Meta{x}[\vec{r};\vec{M}] \mid \Bool \mid \WBool \mid \Circ \mid \Pair{M}{N}\mid\Fst{M}\mid\Snd{M}\mid\Lam{x}{M}\mid\App{M}{N}
+    M,A &::= &a\mid \Meta{x}[\vec{r};\vec{M}] \mid \Bool \mid \WBool \mid \Circ \mid \Pair{M}{N}\mid\Fst{M}\mid\Snd{M}\mid\Lam{x}{M}\mid\App{M}{N}\mid\PAbs{x}{M}\mid\PApp{M}{r}
     \\
     &&\Coe{r}{r'}{x.A}{M}\mid\HCom{r}{r'}{A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}\\
     &&\Com{r}{r'}{x.A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(terms)}\\
-    K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\Snd{\Box}\mid\HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(continuations)}\\
+    K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\Snd{\Box}\mid\PApp{\Box}{r}\mid\HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(continuations)}\\
     C &::= &\Clo{M}{\mathcal{E}}&\text{(closures)}\\
     \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(environments)}\\
     \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
@@ -246,6 +249,36 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       }{\pi}
     }
   }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\PApp{M}{r}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{
+        \Cons{
+          \Frame{\PApp{\Box}{r}}{\mathcal{E}}{[]}
+        }{\pi}
+      }
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\PAbs{x}{M}}{\mathcal{E}}{
+        \Cons{
+          \Frame{\PApp{\Box}{r}}{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{M}{
+        \perfectbrackets{
+          \mathcal{E},x\hookrightarrow\mathcal{E}' (r)
+        }
+      }{\pi}
+    }
+  }
 \end{mathparpagebreakable}
 
 The rules for coercions are more difficult, but using second-order
@@ -347,6 +380,40 @@ closures.
       }{
         \pi%
       }
+    }
+  }
+  \and
+  \inferrule{
+    \mathcal{E}''\triangleq\perfectbrackets{
+      \mathcal{E}',
+      \Meta{x}\hookrightarrow{}x.\Clo{A}{\mathcal{E}},
+      \overline{
+        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\mathcal{E}}
+      }
+    }
+  }{
+    \Step{\Stable}{
+      \Cfg{
+        \Path{x.A}{P_0}{P_1}
+      }{
+        \mathcal{E}
+      }{
+        \Cons{
+          \Frame{
+            \Coe{r}{r'}{\Box}{M}
+          }{\mathcal{E}'}{[x]}
+        }{\pi}
+      }
+    }{
+      \Cfg{
+        \PAbs{x}{
+          \Com{r}{r'}{y.\Meta{x}[y]}{\PApp{M}{x}}{
+            \overline{
+              x=\epsilon\hookrightarrow{}y.{\Meta{y}_\epsilon}
+            }
+          }
+        }
+      }{\mathcal{E}''}{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -534,6 +601,47 @@ closures.
       }{
         \mathcal{E}'''
       }{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    H\triangleq{
+      \HCom{r}{r'}{\Meta{x}[x]}{\PApp{M}{x}}{
+        \overline{
+          x=\epsilon\hookrightarrow{}y.\Meta{y}_\epsilon%
+        },
+        \overline{
+          \xi_i\hookrightarrow{}y.\PApp{N_i}{x}
+        }
+      }
+    }
+    \\
+    \mathcal{E}''\triangleq\perfectbrackets{
+      \mathcal{E}',
+      \Meta{x}\hookrightarrow{}x.\Clo{A}{\mathcal{E}},
+      \overline{
+        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\mathcal{E}}%
+      }
+    }
+  }{
+    \Step{\Stable}{
+      \Cfg{\Path{x.A}{P_0}{P_1}}{
+        \mathcal{E}
+      }{
+        \Cons{
+          \Frame{
+            \HCom{r}{r'}{\Box}{M}{
+              \overline{
+                \xi_i\hookrightarrow{}y.N_i
+              }
+            }
+          }{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{
+        \PAbs{x}{H}
+      }{\mathcal{E}''}{\pi}
     }
   }
 \end{mathparpagebreakable}
