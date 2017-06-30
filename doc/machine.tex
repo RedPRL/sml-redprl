@@ -93,7 +93,7 @@ Moreover, if $\Step{\Stable}{\mathcal{C}}{\mathcal{C}'}$ then
 $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 
 
-\begin{mathpar}
+\begin{mathparpagebreakable}
   \inferrule{
     \mathcal{E}\equiv(\Meta{\gamma},\gamma,\psi)
   }{
@@ -217,12 +217,12 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       \Cfg{M}{\mathcal{E}'}{\pi}
     }
   }
-\end{mathpar}
+\end{mathparpagebreakable}
 
 The rules for coercions are more difficult, but using second-order
 substitutions we can account for them without needing to force
 closures.
-\begin{mathpar}
+\begin{mathparpagebreakable}
   \inferrule{
     \mathcal{E}'' \triangleq%
     \perfectbrackets{
@@ -295,7 +295,7 @@ closures.
       }
     }
   }
-\end{mathpar}
+\end{mathparpagebreakable}
 
 
 \paragraph{Unloading the machine}
