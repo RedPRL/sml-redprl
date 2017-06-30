@@ -110,9 +110,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \mathcal{E}\equiv(\Meta{\gamma},\gamma,\psi)
-    \\
-    \gamma(a)\equiv\Clo{M}{\mathcal{E}'}
+    \mathcal{E} (a)\equiv\Clo{M}{\mathcal{E}'}
   }{
     \Step{\Stable}{
       \Cfg{a}{\mathcal{E}}{\pi}
@@ -192,9 +190,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   }
   \and
   \inferrule{
-    \mathcal{E}\equiv{(\Meta{\gamma},\gamma,\psi)}%
-    \and
-    r\psi\equiv\epsilon%
+    \DimEq{\mathcal{E}}{r}{\epsilon}
   }{
     \Step{\Stable}{
       \Cfg{\Loop{r}}{\mathcal{E}}{\pi}
@@ -234,9 +230,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   }
   \and
   \inferrule{
-    \mathcal{E}\equiv(\Meta{\gamma},\gamma,\psi)
-    \\
-    r\psi\equiv{w}
+    \DimEq{\mathcal{E}}{r}{w}
   }{
     \Step{\NonStable}{
       \Cfg{\Loop{r}}{\mathcal{E}}{
