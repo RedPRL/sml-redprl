@@ -85,9 +85,9 @@ call-by-name and call-by-value respectively. Ours is call-by-name.
 \paragraph{Stack frames and machine states}
 
 A stack frame $\Frame{K}{\mathcal{E}}{\Psi}$ represents a continuation
-whose whole binds $\Psi$ dimensions. For a stack $\pi$, let
-$\vec{\Psi}$ be the aggregation of all the dimension bindings $\Psi$
-mentioned in $\pi$; then the extension of a stack
+whose hole ranges over a binder of $\Psi$ dimensions. For a stack
+$\pi$, let $\vec{\Psi}$ be the aggregation of all the dimension
+bindings $\Psi$ mentioned in $\pi$; then the extension of a stack
 $\Cons{\Frame{K}{\mathcal{E}}{\Phi}}{\pi}$ is wellformed when
 $\mathcal{E}$ is an environment for $\FreeDims{K}\setminus\vec{\Psi}$;
 moreover, $K$ is allowed to mention the dimensions in $\vec{\Psi}$.
