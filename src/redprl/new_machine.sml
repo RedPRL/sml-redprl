@@ -19,6 +19,8 @@ sig
 end = 
 struct
   structure Tm = RedPrlAbt
+  structure Syn = Syntax
+  
 
   type sign = Sig.sign
 
@@ -119,28 +121,37 @@ struct
          val metaY = Metavar.named "Y"
          val metaZ = Metavar.named "Z"
          val xtm = check (`x, O.EXP)
+         val uprm = (P.ret u, P.DIM)
+         val y = Var.named "y"
+         val ytm = check (`y, O.EXP)
 
-         val lam = 
-           O.MONO O.LAM $$
-             [([],[x]) \ O.POLY (O.COE (r,r')) $$ 
-               [([u],[]) \ check (metaX $# ([(P.ret u,P.DIM)],[xtm]), O.EXP),
-                ([],[]) \ O.MONO O.AP $$ 
-                  [([],[]) \ cap,
-                   ([],[]) \ O.POLY (O.COE (r', r)) $$ 
-                     [([u], []) \ check (metaY $# ([(P.ret u,P.DIM)],[]), O.EXP),
-                      ([],[]) \ xtm]]]]
+         val lam =
+           Syn.into @@ Syn.LAM (x, 
+            Syn.into @@ Syn.COE
+              {dir = (r,r'),
+               ty = (u, check (metaX $# ([uprm], [xtm]), O.EXP)),
+               coercee = 
+                 Syn.into @@ Syn.AP
+                   (cap,
+                    Syn.into @@ Syn.COE
+                      {dir = (r', r),
+                       ty = (u, check (metaY $# ([uprm],[]), O.EXP)),
+                       coercee = check (metaY $# ([uprm],[]), O.EXP)})})
 
+         val metaYCl = ([u], []) \ (a <: env)
 
-          val metaYCl = ([u], []) \ (a <: env)
+         val coeyCl = 
+           Syn.into 
+             (Syn.COE
+               {dir = (r', P.ret u),
+                ty = (u, check (metaZ $# ([uprm],[]), O.EXP)),
+                coercee = ytm})
+             <: insertMeta metaZ (([u],[]) \ (a <: env)) env'
 
-          val y = Var.named "y"
-          val coey = O.POLY (O.COE (r', P.ret u)) $$ [([u],[]) \ check (metaZ $# ([(P.ret u, P.DIM)],[]), O.EXP)]
-          val coeyCl = coey <: insertMeta metaZ (([u],[]) \ (a <: env)) env'
-          val metaXCl = ([u], [y]) \ (bx <: insertVar x coeyCl env)
-
-          val env'' = 
-            insertMeta metaY metaYCl @@ 
-              insertMeta metaX metaXCl env'
+         val metaXCl = ([u], [y]) \ (bx <: insertVar x coeyCl env)
+         val env'' = 
+           insertMeta metaY metaYCl @@ 
+             insertMeta metaX metaXCl env'
        in
          lam <: env'' || stk
        end
