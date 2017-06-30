@@ -64,6 +64,11 @@
   \end{array}
 \]
 
+This machine is similar to both Krivine's environment machine and the
+CEK machine. To be honest, Jon Sterling is not really sure of what
+delineates these from each other, except that they usually seem to be
+call-by-name and call-by-value respectively. Ours is call-by-name.
+
 \paragraph{Stack frames and machine states}
 
 A stack frame $\Frame{K}{\mathcal{E}}{\Psi}$ represents a continuation
@@ -185,12 +190,14 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   }
   \and
   \inferrule{
+    \mathcal{E}\equiv{(\Meta{\gamma},\gamma,\psi)}%
+    \and
     r\psi\equiv\epsilon%
   }{
     \Step{\Stable}{
-      \Cfg{\Loop{r}}{(\Meta{\gamma},\gamma,\psi)}{\pi}
+      \Cfg{\Loop{r}}{\mathcal{E}}{\pi}
     }{
-      \Cfg{\Base}{(\Meta{\gamma},\gamma,\psi)}{\pi}
+      \Cfg{\Base}{\mathcal{E}}{\pi}
     }
   }
   \and
