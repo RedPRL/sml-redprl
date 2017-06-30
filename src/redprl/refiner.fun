@@ -6,6 +6,9 @@
  *)
 functor Refiner (Sig : MINI_SIGNATURE) : REFINER =
 struct
+  (* This is just to get SML/NJ to typecheck the new machine module; unused code doesn't get typechecked otherwise for some reason. *)
+  local structure M = NewMachine (Sig) open M in end
+
   structure Kit = RefinerKit (Sig)
   structure ComRefinerKit = RefinerCompositionKit (Sig)
   structure TypeRules = RefinerTypeRules (Sig)

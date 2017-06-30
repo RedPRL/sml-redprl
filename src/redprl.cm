@@ -8,6 +8,7 @@ Library
   structure RedPrlLrVals
   structure FinalPrinter
   structure Fpp
+  functor NewMachine
 is
   $/basis.cm
   $/ml-yacc-lib.cm
@@ -60,6 +61,7 @@ is
   redprl/redprl_parser.sml
 
   redprl/machine.sml
+  redprl/new_machine.sml
 
   redprl/refiner_kit.fun
   redprl/refiner_composition_kit.fun
@@ -69,4 +71,3 @@ is
   redprl/lcf.sml
   redprl/lcf_syntax.fun
   redprl/lcf_model.fun
-
