@@ -16,21 +16,28 @@
 
 \global\long\def\cut#1#2{\perfectcut{#1}{#2}}
 
+\newcommand\DimEq[3]{{#1}\vDash{#2}={#3}}
+\newcommand\DimApart[3]{{#1}\vDash{#2}\mathrel{\#}{#3}}
 \newcommand\Clo[2]{#1\triangleleft{#2}}
 \newcommand\Coe[4]{\mathsf{coe}^{#1\leadsto{#2}}_{#3} (#4)}
+\newcommand\Com[5]{\mathsf{com}^{#1\leadsto{#2}}_{#3} (#4;#5)}
+\newcommand\HCom[5]{\mathsf{hcom}^{#1\leadsto{#2}}_{#3} (#4;#5)}
+\newcommand\FCom[4]{\mathsf{fcom}^{#1\leadsto{#2}} (#3;#4)}
 \newcommand\DFun[3]{\perfectparens{#1:#2}\to{#3}}
 \newcommand\DPair[3]{\perfectparens{#1:#2}\times{#3}}
 \newcommand\Lam[2]{\lambda{#1}.{#2}}
 \newcommand\Fst[1]{\mathsf{fst} (#1)}
 \newcommand\Snd[1]{\mathsf{snd} (#1)}
 \newcommand\Loop[1]{\mathsf{loop}_{#1}}
-\newcommand\CircRec[4]{\mathbb{S}^1\mathsf{rec}_{#1} (#2;#3;#4)}
+\newcommand\Circ{\mathbb{S}^1}
+\newcommand\CircRec[4]{\Circ\mathsf{rec}_{#1} (#2;#3;#4)}
 \newcommand\Base{\mathsf{base}}
 
 \newcommand\Cons[2]{{#1}\dblcolon{#2}}
 \newcommand\FreeVars[1]{\mathbf{FV}\perfectparens{#1}}
 \newcommand\FreeDims[1]{\mathbf{FD}\perfectparens{#1}}
 \newcommand\Bool{\mathsf{bool}}
+\newcommand\WBool{\mathsf{wbool}}
 \newcommand\Frame[3]{\perfectparens{#1,#2,#3}}
 \newcommand\Cfg[3]{\cut{\Clo{#1}{#2}}{#3}}
 \newcommand\App[2]{{#1}\perfectparens{#2}}
@@ -51,8 +58,11 @@
 
 \[
   \begin{array}{rrlr}
-    M,A &::= &a\mid \Meta{x}[\vec{r};\vec{M}] \mid \Coe{r}{r'}{x.A}{M}\mid\ldots&\text{(terms)}\\
-    K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\ldots&\text{(continuations)}\\
+    M,A &::= &a\mid \Meta{x}[\vec{r};\vec{M}] \mid \Bool \mid \WBool \mid \Circ \mid \Pair{M}{N}\mid\Fst{M}\mid\Snd{M}\mid\Lam{x}{M}\mid\App{M}{N}
+    \\
+    &&\Coe{r}{r'}{x.A}{M}\mid\HCom{r}{r'}{A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}\\
+    &&\Com{r}{r'}{x.A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(terms)}\\
+    K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\Snd{\Box}\mid\HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(continuations)}\\
     C &::= &\Clo{M}{\mathcal{E}}&\text{(closures)}\\
     \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(environments)}\\
     \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
@@ -351,6 +361,115 @@ closures.
       }{
         \pi%
       }
+    }
+  }
+\end{mathparpagebreakable}
+
+\begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{
+        \HCom{r}{r'}{A}{M}{\overline{\xi\hookrightarrow{}y.N}}
+      }{\mathcal{E}}{\pi}
+    }{
+      \Cfg{A}{\mathcal{E}}{
+        \Cons{
+          \Frame{
+            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+          }{\mathcal{E}}{[]}
+        }{\pi}
+      }
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{
+        \Com{r}{r'}{x.A}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
+      }{\mathcal{E}}{\pi}
+    }{
+      \Cfg{
+        \HCom{r}{r'}{A}{
+          \Coe{r}{r'}{y.A}{M}
+        }{
+          \overline{
+            \xi_i\hookrightarrow{}y.\Coe{y}{r'}{y.A}{N_i}
+          }
+        }
+      }{
+        \perfectbrackets{
+          \mathcal{E},
+          y\hookrightarrow{r'}
+        }
+      }{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    \DimEq{\mathcal{E}}{r}{r'}
+  }{
+    \Step{\Stable}{
+      \Cfg{\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    \DimApart{\mathcal{E}}{r}{r'}
+    \\
+    \DimApart{\mathcal{E}}{r_i}{r'_i}\ (\forall{}i<j)
+    \\
+    \DimEq{\mathcal{E}}{r_j}{r'_j}
+  }{
+    \Step{\NonStable}{
+      \Cfg{
+        \FCom{r}{r'}{M}{
+          \overline{
+            r_i=r'_i\hookrightarrow{}y.N_i
+          }
+        }
+      }{\mathcal{E}}{\pi}
+    }{
+      \Cfg{N_j}{
+        \perfectbrackets{
+          \mathcal{E},y\hookrightarrow{}\mathcal{E} (r')
+        }
+      }{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Bool}{\mathcal{E}}{
+        \Cons{
+          \Frame{
+            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+          }{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{M}{\mathcal{E}'}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\WBool}{\mathcal{E}}{
+        \Cons{
+          \Frame{
+            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+          }{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{
+        \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
+      }{\mathcal{E'}}{\pi}
     }
   }
 \end{mathparpagebreakable}
