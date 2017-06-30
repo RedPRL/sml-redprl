@@ -82,6 +82,20 @@ struct
   fun insertSym u r (mrho, rho, psi) = 
     (mrho, rho, Sym.Ctx.insert psi u r)
 
+  fun dimensionsEqual (_, _, psi) (r1, r2) = 
+    P.eq Sym.eq (readParam psi r1, readParam psi r2)
+
+  fun findTrueEquationIndex env = 
+    let
+      fun aux i [] = NONE
+        | aux i ((r,r') :: eqs) =
+          if dimensionsEqual env (r, r') then 
+            SOME i
+          else 
+            aux (i + 1) eqs
+    in
+      aux 0
+    end
 
   fun stepView sign stability = 
     fn `x <: (mrho, rho, psi) || stk =>
@@ -131,10 +145,27 @@ struct
                  coercee = cap},
               tubes = ListPair.map makeTube (eqs, tubes)}
 
-          val env' = insertSym u r' env
+          val env' = insertSym u (readParam (#3 env) r') env
        in
          hcom <: env' || stk
        end
+
+     | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap :: tubes) <: env || stk =>
+       if dimensionsEqual env dir then 
+         cap <: env || stk
+       else if stability = NOMINAL then 
+         case findTrueEquationIndex env eqs of 
+            SOME i =>
+              let
+                val (_, r') = dir
+                val ([u], _) \ n = List.nth (tubes, i)
+                val env' = insertSym u (readParam (#3 env) r') env
+              in
+                n <: env' || stk
+              end
+          | NONE => ?todo (* TODO: give cut rules for fcom values *)
+       else
+         raise Unstable
 
      (* TODO: fcom stepping rules *)
 
@@ -266,6 +297,7 @@ struct
        in
          pair <: env''' || stk
        end
+
 
      | _ => ?todo
 
