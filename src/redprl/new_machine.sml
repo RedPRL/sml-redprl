@@ -110,6 +110,7 @@ struct
      | O.POLY (O.HCOM (dir, eqs)) $ (_ \ a :: _ \ cap :: tubes) <: env || stk =>
        a <: env || HCOM (dir, HOLE, cap, ListPair.map (fn (eq, ([u],_) \ n) => (eq, (u,n))) (eqs, tubes)) <: env :: stk
 
+     (* TODO: com unfolding rule *)
      (* TODO: fcom stepping rules *)
 
      | O.MONO O.AP $ [_ \ m, _ \ n] <: env || stk =>
@@ -202,12 +203,43 @@ struct
               coercee = Syn.into @@ Syn.SND coercee}
 
          val metaXCl = ([u],[]) \ (a <: env)
-         val metaYCl = ([u],[]) \ (bx <: insertVar x (proj2 (P.ret u) <: (insertMeta metaX metaXCl env)) env)
+         val metaYCl = ([u],[]) \ (bx <: insertVar x (proj2 (P.ret u) <: insertMeta metaX metaXCl env) env)
          val env'' = insertMeta metaX metaXCl (insertMeta metaY metaYCl env')
 
          val pair = Syn.into @@ Syn.PAIR (proj1, proj2 r')
        in
          pair <: env'' || stk
+       end
+
+     | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] <: env || HCOM ((r,r'), HOLE, cap, tubes) <: env' :: stk => 
+       let
+         val metaX = Metavar.named "X"
+         val metaY = Metavar.named "Y"
+         val xtm = check (`x, O.EXP)
+
+         fun proj1 s = 
+           Syn.into @@ Syn.HCOM 
+             {dir = (r, s),
+              ty = check (metaX $# ([],[]), O.EXP),
+              cap = Syn.into @@ Syn.FST cap,
+              tubes = List.map (fn (eq, (u, n)) => (eq, (u, Syn.into @@ Syn.FST n))) tubes}
+
+         val v = Sym.named "v"
+
+         val proj2 = 
+           Syn.into @@ Syn.COM
+             {dir = (r, r'),
+              ty = (v, check (metaY $# ([(P.ret v, P.DIM)], []), O.EXP)),
+              cap = Syn.into @@ Syn.SND cap,
+              tubes = List.map (fn (eq, (u, n)) => (eq, (u, Syn.into @@ Syn.SND n))) tubes}
+
+         val pair = Syn.into @@ Syn.PAIR (proj1 r', proj2)
+
+         val env'' = insertMeta metaX (([],[]) \ (a <: env)) env'
+         val metaYCl = ([v],[]) \ (bx <: (insertVar x (proj1 (P.ret v) <: env'') env))
+         val env''' = insertMeta metaY metaYCl env''
+       in
+         pair <: env''' || stk
        end
 
      | _ => ?todo
