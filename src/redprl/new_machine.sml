@@ -25,13 +25,16 @@ struct
   datatype 'a closure = <: of 'a * environment
   withtype environment = Tm.abt closure Tm.bview Metavar.Ctx.dict * Tm.abt closure Var.Ctx.dict * Tm.param Sym.Ctx.dict
 
+  fun @@ (f, x) = f x
+  infixr @@
+
 
   infix 6 <:
   infix 3 ||
 
-  open Tm infix 7 $ $$ $# \
+  open Tm infix 7 $ $$ $# infix 6 \
   structure O = RedPrlOpData
-  structure P = RedPrlParameterTerm
+  structure P = struct open RedPrlParameterTerm RedPrlSortData end
 
   datatype hole = HOLE
   datatype continuation =
@@ -65,6 +68,13 @@ struct
 
   fun readParam psi : param -> param = 
     P.bind (lookupSym psi)
+
+  fun insertVar x cl (mrho, rho, psi) = 
+    (mrho, Var.Ctx.insert rho x cl, psi)
+
+  fun insertMeta meta bcl (mrho, rho, psi) = 
+    (Metavar.Ctx.insert mrho meta bcl, rho, psi)
+
 
   fun stepView sign stability = 
     fn `x <: (mrho, rho, psi) || stk =>
@@ -103,7 +113,37 @@ struct
      | O.MONO O.LAM $ [(_, [x]) \ mx] <: (mrho, rho, psi) || APP (HOLE, n) <: env' :: stk =>
        mx <: (mrho, Var.Ctx.insert rho x (n <: env'), psi) || stk
 
-     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || COE (dir, (u, HOLE), cap) <: env' :: stk => ?todo
+     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || COE ((r,r'), (u, HOLE), cap) <: env' :: stk =>
+       let
+         val metaX = Metavar.named "X"
+         val metaY = Metavar.named "Y"
+         val metaZ = Metavar.named "Z"
+         val xtm = check (`x, O.EXP)
+
+         val lam = 
+           O.MONO O.LAM $$
+             [([],[x]) \ O.POLY (O.COE (r,r')) $$ 
+               [([u],[]) \ check (metaX $# ([(P.ret u,P.DIM)],[xtm]), O.EXP),
+                ([],[]) \ O.MONO O.AP $$ 
+                  [([],[]) \ cap,
+                   ([],[]) \ O.POLY (O.COE (r', r)) $$ 
+                     [([u], []) \ check (metaY $# ([(P.ret u,P.DIM)],[]), O.EXP),
+                      ([],[]) \ xtm]]]]
+
+
+          val metaYCl = ([u], []) \ (a <: env)
+
+          val y = Var.named "y"
+          val coey = O.POLY (O.COE (r', P.ret u)) $$ [([u],[]) \ check (metaZ $# ([(P.ret u, P.DIM)],[]), O.EXP)]
+          val coeyCl = coey <: insertMeta metaZ (([u],[]) \ (a <: env)) env'
+          val metaXCl = ([u], [y]) \ (bx <: insertVar x coeyCl env)
+
+          val env'' = 
+            insertMeta metaY metaYCl @@ 
+              insertMeta metaX metaXCl env'
+       in
+         lam <: env'' || stk
+       end
      | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || HCOM (dir, eqs, HOLE, cap, tubes) <: env' :: stk => ?todo
 
      | _ => ?todo
