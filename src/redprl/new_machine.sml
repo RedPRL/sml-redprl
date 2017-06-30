@@ -43,6 +43,8 @@ struct
      APP of hole * abt
    | HCOM of symbol O.dir * hole * abt * (symbol O.equation * (symbol * abt)) list
    | COE of symbol O.dir * (symbol * hole) * abt
+   | FST of hole
+   | SND of hole
 
   type frame = continuation closure
   type stack = frame list
@@ -171,6 +173,41 @@ struct
          val lam = Syn.into @@ Syn.LAM (x, hcom)
        in
          lam <: env'' || stk
+       end
+
+     | O.MONO O.FST $ [_ \ m] <: env || stk =>
+        m <: env || FST HOLE <: env :: stk
+     | O.MONO O.SND $ [_ \ m] <: env || stk => 
+        m <: env || SND HOLE <: env :: stk
+
+     | O.MONO O.PAIR $ [_ \ m1, _] <: env || FST HOLE <: _ :: stk => 
+        m1 <: env || stk
+     | O.MONO O.PAIR $ [_, _ \ m2] <: env || SND HOLE <: _ :: stk =>
+        m2 <: env || stk
+    
+     | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] <: env || COE ((r,r'), (u, HOLE), coercee) <: env' :: stk => 
+       let
+         val metaX = Metavar.named "X"
+         val metaY = Metavar.named "Y"
+         val uprm = (P.ret u, P.DIM)
+         val proj1 =
+           Syn.into @@ Syn.COE
+             {dir = (r, r'),
+              ty = (u, check (metaX $# ([uprm], []), O.EXP)),
+              coercee = Syn.into @@ Syn.FST coercee}
+         fun proj2 s = 
+           Syn.into @@ Syn.COE
+             {dir = (r, s),
+              ty = (u, check (metaY $# ([uprm], []), O.EXP)),
+              coercee = Syn.into @@ Syn.SND coercee}
+
+         val metaXCl = ([u],[]) \ (a <: env)
+         val metaYCl = ([u],[]) \ (bx <: insertVar x (proj2 (P.ret u) <: (insertMeta metaX metaXCl env)) env)
+         val env'' = insertMeta metaX metaXCl (insertMeta metaY metaYCl env')
+
+         val pair = Syn.into @@ Syn.PAIR (proj1, proj2 r')
+       in
+         pair <: env'' || stk
        end
 
      | _ => ?todo
