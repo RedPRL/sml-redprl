@@ -84,7 +84,7 @@ end
  | VARNAME of string
  | OPNAME of string
  | UNDER
- | NUMERAL of int
+ | NUMERAL of IntInf.int
  | COLON
  | LANGLE | RANGLE
  | LANGLE_PIPE | RANGLE_PIPE
@@ -108,12 +108,12 @@ end
  | DOUBLE_RANGLE
  | QUESTION
 
- | FCOM | BOOL | TT | FF | IF | S_BOOL | S_IF | VOID | S1 | BASE | LOOP | FST | SND | PATHS | HCOM | COE
+ | FCOM | BOOL | TT | FF | IF | S_BOOL | S_IF | INT | NUMBER | NAT | VOID | S1 | BASE | LOOP | FST | SND | PATHS | HCOM | COE
  | THEN | ELSE | LET | WITH | CASE | OF
 
  | FUN_APP
 
- | DIM | EXN | LBL | LVL | HYP
+ | DIM | EXN | HYP | LBL | NUM
  | EXP | TAC | TRIV
 
  | CMD_PRINT | CMD_EXTRACT
@@ -236,8 +236,9 @@ ident
 psort
   : DIM (P.DIM)
   | EXN (P.EXN)
-  | LBL (P.LBL)
   | HYP (P.HYP O.EXP)
+  | LBL (P.LBL)
+  | NUM (P.NUM)
 
 sort
   : EXP (O.EXP)
@@ -374,6 +375,10 @@ rawTerm
   | TT (Ast.$$ (O.MONO O.TRUE, []))
   | FF (Ast.$$ (O.MONO O.FALSE, []))
   | S_BOOL (Ast.$$ (O.MONO O.S_BOOL, []))
+  | INT (Ast.$$ (O.MONO O.INT, []))
+  | LPAREN NUMBER param RPAREN (Ast.$$ (O.POLY (O.NUMBER param), []))
+  | NUMERAL (Ast.$$ (O.POLY (O.NUMBER (P.APP (P.NUMERAL NUMERAL))), []))
+  | NAT (Ast.$$ (O.MONO O.NAT, []))
   | VOID (Ast.$$ (O.MONO O.VOID, []))
   | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
@@ -391,14 +396,6 @@ rawJudgment
   | term (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
-
-symBinding
-  : boundVar COLON psort (boundVar, psort)
-
-symBindings
-  : symBinding ([symBinding])
-  | symBinding COMMA symBindings (symBinding :: symBindings)
-  | ([])
 
 src_catjdg
   : term JDG_TRUE (CJ.TRUE term)
@@ -470,7 +467,7 @@ atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomic
 
 atomicRawMultitac
   : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
-  | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS NUMERAL), [\ (([],[]), tactic)]))
+  | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS (IntInf.toInt NUMERAL)), [\ (([],[]), tactic)]))
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REPEAT, [\ (([], []), multitac)]))
   | MTAC_AUTO (Ast.$$ (O.MONO O.MTAC_AUTO, []))
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))

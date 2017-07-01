@@ -121,6 +121,11 @@ struct
            @@ (O.MONO O.S_IF `$ [([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
            <: env
 
+     | O.MONO O.INT `$ _ <: _ => S.VAL
+     | O.POLY (O.NUMBER _) `$ _ <: _ => S.VAL
+
+     | O.MONO O.NAT `$ _ <: _ => S.VAL
+
      | O.MONO O.VOID `$ _ <: _ => S.VAL
 
      | O.MONO O.S1 `$ _ <: _ => S.VAL

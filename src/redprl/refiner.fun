@@ -492,6 +492,8 @@ struct
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Bool.EqType
          | (Syn.S_BOOL, Syn.S_BOOL) => StrictBool.EqType
+         | (Syn.INT, Syn.INT) => Int.EqType
+         | (Syn.NAT, Syn.NAT) => Nat.EqType
          | (Syn.VOID, Syn.VOID) => Void.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
@@ -514,6 +516,8 @@ struct
          | (Syn.FCOM _, Syn.FCOM _, Syn.BOOL) => Bool.EqFCom
          | (Syn.TT, Syn.TT, Syn.S_BOOL) => StrictBool.EqTT
          | (Syn.FF, Syn.FF, Syn.S_BOOL) => StrictBool.EqFF
+         | (Syn.NUMBER _, Syn.NUMBER _, Syn.INT) => Int.Eq
+         | (Syn.NUMBER _, Syn.NUMBER _, Syn.NAT) => Nat.Eq
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => S1.EqFCom

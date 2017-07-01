@@ -203,6 +203,62 @@ struct
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
   end
 
+  structure Int =
+  struct
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqType"
+        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.INT = Syn.out a
+        val Syn.INT = Syn.out b
+      in
+        T.empty #> (I, H, trivial)
+      end
+      handle Bind =>
+        raise E.error [Fpp.text "Expected typehood sequent"]
+
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.Eq"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.INT = Syn.out ty
+        val Syn.NUMBER i0 = Syn.out m
+        val Syn.NUMBER i1 = Syn.out n
+        val () = Assert.paramEq "Int.Eq" (i0, i1)
+      in
+        T.empty #> (I, H, trivial)
+      end
+  end
+
+  structure Nat =
+  struct
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.EqType"
+        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.NAT = Syn.out a
+        val Syn.NAT = Syn.out b
+      in
+        T.empty #> (I, H, trivial)
+      end
+      handle Bind =>
+        raise E.error [Fpp.text "Expected typehood sequent"]
+
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.Eq"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.NAT = Syn.out ty
+        (* till we can generate "less-than" goals we can only handle numerals *)
+        val Syn.NUMBER (P.APP (P.NUMERAL i0)) = Syn.out m
+        val Syn.NUMBER (P.APP (P.NUMERAL i1)) = Syn.out n
+        val true = i0 = i1
+        val true = IntInf.>= (i0, 0)
+      in
+        T.empty #> (I, H, trivial)
+      end
+  end
+
   structure Void =
   struct
     fun EqType _ jdg =
