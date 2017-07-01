@@ -21,6 +21,7 @@ end =
 struct
   structure Tm = RedPrlAbt
   structure Syn = Syntax
+  structure SymSet = SplaySet (structure Elem = Sym.Ord)
   
 
   type sign = Sig.sign
@@ -51,8 +52,9 @@ struct
 
   type frame = continuation closure
   type stack = frame list
+  type bound_syms = SymSet.set
 
-  datatype 'a machine = || of 'a closure * stack
+  datatype 'a machine = || of 'a closure * (bound_syms * stack)
 
 
   datatype stability = 
@@ -154,10 +156,10 @@ struct
          term <: (mrho'', rho, psi'') || stk
        end
 
-     | O.POLY (O.COE dir) $ [([u], _) \ a, _ \ coercee] <: env || stk =>
-       a <: env || COE (dir, (u, HOLE), coercee) <: env :: stk
-     | O.POLY (O.HCOM (dir, eqs)) $ (_ \ a :: _ \ cap :: tubes) <: env || stk =>
-       a <: env || HCOM (dir, HOLE, cap, ListPair.map (fn (eq, ([u],_) \ n) => (eq, (u,n))) (eqs, tubes)) <: env :: stk
+     | O.POLY (O.COE dir) $ [([u], _) \ a, _ \ coercee] <: env || (syms, stk) =>
+       a <: env || (SymSet.insert syms u, COE (dir, (u, HOLE), coercee) <: env :: stk)
+     | O.POLY (O.HCOM (dir, eqs)) $ (_ \ a :: _ \ cap :: tubes) <: env || (syms, stk) =>
+       a <: env || (syms, HCOM (dir, HOLE, cap, ListPair.map (fn (eq, ([u],_) \ n) => (eq, (u,n))) (eqs, tubes)) <: env :: stk)
 
      | O.POLY (O.COM ((r,r'), eqs)) $ (([u],_) \ a :: _ \ cap :: tubes) <: env || stk => 
        let
@@ -182,9 +184,10 @@ struct
          hcom <: env' || stk
        end
 
-     | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap :: tubes) <: env || stk =>
+     | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap :: tubes) <: env || (syms, stk) =>
        if dimensionsEqual env dir then 
-         cap <: env || stk
+         cap <: env || (syms, stk)
+       (* TODO: be less conservative, use 'syms' as a weapon *)
        else if stability = NOMINAL then 
          case (findTrueEquationIndex env eqs, stk) of 
             (SOME i, _) =>
@@ -193,7 +196,7 @@ struct
                 val ([u], _) \ n = List.nth (tubes, i)
                 val env' = insertSym u (readParam (#3 env) r') env
               in
-                n <: env' || stk
+                n <: env' || (syms, stk)
               end
           | (NONE, []) => raise Final
           | (NONE, W_IF ((x,a), HOLE, mt, mf) <: env' :: stk) => ?todo
@@ -204,12 +207,12 @@ struct
 
      (* TODO: fcom stepping rules *)
 
-     | O.MONO O.AP $ [_ \ m, _ \ n] <: env || stk =>
-       m <: env || APP (HOLE, n) <: env :: stk
-     | O.MONO O.LAM $ [(_, [x]) \ mx] <: (mrho, rho, psi) || APP (HOLE, n) <: env' :: stk =>
-       mx <: (mrho, Var.Ctx.insert rho x (n <: env'), psi) || stk
+     | O.MONO O.AP $ [_ \ m, _ \ n] <: env || (syms, stk) =>
+       m <: env || (syms, APP (HOLE, n) <: env :: stk)
+     | O.MONO O.LAM $ [(_, [x]) \ mx] <: (mrho, rho, psi) || (syms, APP (HOLE, n) <: env' :: stk) =>
+       mx <: (mrho, Var.Ctx.insert rho x (n <: env'), psi) || (syms, stk)
 
-     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || COE ((r,r'), (u, HOLE), coercee) <: env' :: stk =>
+     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || (us, COE ((r,r'), (u, HOLE), coercee) <: env' :: stk) =>
        let
          val metaX = Metavar.named "X"
          val metaY = Metavar.named "Y"
@@ -247,10 +250,10 @@ struct
            insertMeta metaY metaYCl @@ 
              insertMeta metaX metaXCl env'
        in
-         lam <: env'' || stk
+         lam <: env'' || (SymSet.remove us u, stk)
        end
 
-     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || HCOM (dir, HOLE, cap, tubes) <: env' :: stk =>
+     | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] <: env || (syms, HCOM (dir, HOLE, cap, tubes) <: env' :: stk) =>
        let
          val metaX = Metavar.named "X"
          val env'' = insertMeta metaX (([],[x]) \ (bx <: env)) env'
@@ -264,20 +267,20 @@ struct
 
          val lam = Syn.into @@ Syn.LAM (x, hcom)
        in
-         lam <: env'' || stk
+         lam <: env'' || (syms, stk)
        end
 
-     | O.MONO O.FST $ [_ \ m] <: env || stk =>
-        m <: env || FST HOLE <: env :: stk
-     | O.MONO O.SND $ [_ \ m] <: env || stk => 
-        m <: env || SND HOLE <: env :: stk
+     | O.MONO O.FST $ [_ \ m] <: env || (syms, stk) =>
+        m <: env || (syms, FST HOLE <: env :: stk)
+     | O.MONO O.SND $ [_ \ m] <: env || (syms, stk) => 
+        m <: env || (syms, SND HOLE <: env :: stk)
 
-     | O.MONO O.PAIR $ [_ \ m1, _] <: env || FST HOLE <: _ :: stk => 
-        m1 <: env || stk
-     | O.MONO O.PAIR $ [_, _ \ m2] <: env || SND HOLE <: _ :: stk =>
-        m2 <: env || stk
+     | O.MONO O.PAIR $ [_ \ m1, _] <: env || (syms, FST HOLE <: _ :: stk) => 
+        m1 <: env || (syms, stk)
+     | O.MONO O.PAIR $ [_, _ \ m2] <: env || (syms, SND HOLE <: _ :: stk) =>
+        m2 <: env || (syms, stk)
     
-     | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] <: env || COE ((r,r'), (u, HOLE), coercee) <: env' :: stk => 
+     | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] <: env || (syms, COE ((r,r'), (u, HOLE), coercee) <: env' :: stk) => 
        let
          val metaX = Metavar.named "X"
          val metaY = Metavar.named "Y"
@@ -299,10 +302,10 @@ struct
 
          val pair = Syn.into @@ Syn.PAIR (proj1, proj2 r')
        in
-         pair <: env'' || stk
+         pair <: env'' || (SymSet.remove syms u, stk)
        end
 
-     | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] <: env || HCOM ((r,r'), HOLE, cap, tubes) <: env' :: stk => 
+     | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] <: env || (syms, HCOM ((r,r'), HOLE, cap, tubes) <: env' :: stk) => 
        let
          val metaX = Metavar.named "X"
          val metaY = Metavar.named "Y"
@@ -330,7 +333,7 @@ struct
          val metaYCl = ([v],[]) \ (bx <: (insertVar x (proj1 (P.ret v) <: env'') env))
          val env''' = insertMeta metaY metaYCl env''
        in
-         pair <: env''' || stk
+         pair <: env''' || (syms, stk)
        end
 
 

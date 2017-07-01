@@ -1,5 +1,6 @@
 Library
   signature DICT
+  signature SET
   functor SplaySet
   functor SplayDict
   functor HashTable
