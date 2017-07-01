@@ -1,6 +1,6 @@
 Thm Bool : [
-  bool true
+  wbool true
 ] by [
-  {`(hcom{0 ~> 1} bool tt)};
+  {`(hcom{0 ~> 1} wbool tt)};
   auto
 ].

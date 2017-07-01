@@ -38,7 +38,7 @@ whitespace = [\ \t];
 
 \n                 => (pos := (Coord.nextline o (!pos)); continue ());
 {whitespace}+      => (incPos (size yytext); continue ());
-{digit}+           => (Tokens.NUMERAL (posTupleWith (size yytext) (valOf (Int.fromString yytext))));
+"-"?{digit}+       => (Tokens.NUMERAL (posTupleWith (size yytext) (valOf (IntInf.fromString yytext))));
 "//"[^\n]*         => (continue ());
 
 
@@ -76,12 +76,17 @@ whitespace = [\ \t];
 
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
 "fcom"             => (Tokens.FCOM (posTuple (size yytext)));
-"bool"             => (Tokens.BOOL (posTuple (size yytext)));
+"wbool"            => (Tokens.WBOOL (posTuple (size yytext)));
+"wool"             => (Tokens.WBOOL (posTuple (size yytext)));
 "tt"               => (Tokens.TT (posTuple (size yytext)));
 "ff"               => (Tokens.FF (posTuple (size yytext)));
+"wbool-rec"        => (Tokens.WBOOL_REC (posTuple (size yytext)));
+"wif"              => (Tokens.WBOOL_REC (posTuple (size yytext)));
+"bool"             => (Tokens.BOOL (posTuple (size yytext)));
 "if"               => (Tokens.IF (posTuple (size yytext)));
-"sbool"            => (Tokens.S_BOOL (posTuple (size yytext)));
-"if/s"             => (Tokens.S_IF (posTuple (size yytext)));
+"int"              => (Tokens.INT (posTuple (size yytext)));
+"number"           => (Tokens.NUMBER (posTuple (size yytext)));
+"nat"              => (Tokens.NAT (posTuple (size yytext)));
 "void"             => (Tokens.VOID (posTuple (size yytext)));
 "S1"               => (Tokens.S1 (posTuple (size yytext)));
 "base"             => (Tokens.BASE (posTuple (size yytext)));
@@ -105,11 +110,11 @@ whitespace = [\ \t];
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 "exn"              => (Tokens.EXN (posTuple (size yytext)));
 "lbl"              => (Tokens.LBL (posTuple (size yytext)));
+"num"              => (Tokens.NUM (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
 "triv"             => (Tokens.TRIV (posTuple (size yytext)));
-"lvl"              => (Tokens.LVL (posTuple (size yytext)));
 
 "Print"            => (Tokens.CMD_PRINT (posTuple (size yytext)));
 "Extract"          => (Tokens.CMD_EXTRACT (posTuple (size yytext)));

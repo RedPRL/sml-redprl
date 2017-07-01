@@ -15,14 +15,14 @@ struct
   infix 2 >> >: >:? >:+ $$ $# // \ @>
   infix orelse_
 
-  structure Bool =
+  structure WeakBool =
   struct
     fun EqType _ jdg =
       let
-        val _ = RedPrlLog.trace "Bool.EqType"
+        val _ = RedPrlLog.trace "WeakBool.EqType"
         val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
-        val Syn.BOOL = Syn.out a
-        val Syn.BOOL = Syn.out b
+        val Syn.WBOOL = Syn.out a
+        val Syn.WBOOL = Syn.out b
       in
         T.empty #> (I, H, trivial)
       end
@@ -31,9 +31,9 @@ struct
 
     fun EqTT _ jdg =
       let
-        val _ = RedPrlLog.trace "Bool.EqTT"
+        val _ = RedPrlLog.trace "WeakBool.EqTT"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.BOOL = Syn.out ty
+        val Syn.WBOOL = Syn.out ty
         val Syn.TT = Syn.out m
         val Syn.TT = Syn.out n
       in
@@ -42,9 +42,9 @@ struct
 
     fun EqFF _ jdg =
       let
-        val _ = RedPrlLog.trace "Bool.EqFF"
+        val _ = RedPrlLog.trace "WeakBool.EqFF"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.BOOL = Syn.out ty
+        val Syn.WBOOL = Syn.out ty
         val Syn.FF = Syn.out m
         val Syn.FF = Syn.out n
       in
@@ -55,7 +55,7 @@ struct
       let
         val _ = RedPrlLog.trace "EqFCom"
         val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.BOOL = Syn.out ty
+        val Syn.WBOOL = Syn.out ty
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
       in
@@ -64,10 +64,10 @@ struct
 
     fun Elim z _ jdg =
       let
-        val _ = RedPrlLog.trace "Bool.Elim"
+        val _ = RedPrlLog.trace "WeakBool.Elim"
         val (I, H) >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
-        val Syn.BOOL = Syn.out ty
+        val Syn.WBOOL = Syn.out ty
 
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
@@ -85,7 +85,7 @@ struct
 
     fun ElimEq alpha jdg =
       let
-        val _ = RedPrlLog.trace "Bool.ElimEq"
+        val _ = RedPrlLog.trace "WeakBool.ElimEq"
         val (I, H) >> CJ.EQ ((if0, if1), c) = jdg
         val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
         val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
@@ -98,8 +98,8 @@ struct
         val c0ff = substVar (Syn.into Syn.FF, x) c0x
         val c0m0 = substVar (m0, x) c0x
 
-        val goalTy = makeEqType (I, H @> (z, CJ.TRUE @@ Syn.into Syn.BOOL)) (c0z, c1z)
-        val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.BOOL)
+        val goalTy = makeEqType (I, H @> (z, CJ.TRUE @@ Syn.into Syn.WBOOL)) (c0z, c1z)
+        val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.WBOOL)
         val goalTy0 = makeEqTypeIfDifferent (I, H) (c0m0, c) (* c0m0 type *)
         val goalT = makeEq (I, H) ((t0, t1), c0tt)
         val goalF = makeEq (I, H) ((f0, f1), c0ff)
@@ -114,8 +114,8 @@ struct
       let
         val _ = RedPrlLog.trace "StrictBool.EqType"
         val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
-        val Syn.S_BOOL = Syn.out a
-        val Syn.S_BOOL = Syn.out b
+        val Syn.BOOL = Syn.out a
+        val Syn.BOOL = Syn.out b
       in
         T.empty #> (I, H, trivial)
       end
@@ -126,7 +126,7 @@ struct
       let
         val _ = RedPrlLog.trace "StrictBool.EqTT"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.S_BOOL = Syn.out ty
+        val Syn.BOOL = Syn.out ty
         val Syn.TT = Syn.out m
         val Syn.TT = Syn.out n
       in
@@ -137,7 +137,7 @@ struct
       let
         val _ = RedPrlLog.trace "StrictBool.EqFF"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.S_BOOL = Syn.out ty
+        val Syn.BOOL = Syn.out ty
         val Syn.FF = Syn.out m
         val Syn.FF = Syn.out n
       in
@@ -149,7 +149,7 @@ struct
         val _ = RedPrlLog.trace "StrictBool.Elim"
         val (I, H) >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
-        val Syn.S_BOOL = Syn.out ty
+        val Syn.BOOL = Syn.out ty
 
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
@@ -173,7 +173,7 @@ struct
         val Syn.S_IF (m0, (t0, f0)) = Syn.out if0
         val Syn.S_IF (m1, (t1, f1)) = Syn.out if1
 
-        val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.S_BOOL)
+        val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.BOOL)
         val goalT = makeEq (I, H) ((t0, t1), c)
         val goalF = makeEq (I, H) ((f0, f1), c)
       in
@@ -187,7 +187,7 @@ struct
         val CJ.EQ ((m0z, m1z), cz) = catjdg
 
         val CJ.TRUE ty = lookupHyp H z
-        val Syn.S_BOOL = Syn.out ty
+        val Syn.BOOL = Syn.out ty
 
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
@@ -201,6 +201,62 @@ struct
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
+  end
+
+  structure Int =
+  struct
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqType"
+        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.INT = Syn.out a
+        val Syn.INT = Syn.out b
+      in
+        T.empty #> (I, H, trivial)
+      end
+      handle Bind =>
+        raise E.error [Fpp.text "Expected typehood sequent"]
+
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.Eq"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.INT = Syn.out ty
+        val Syn.NUMBER i0 = Syn.out m
+        val Syn.NUMBER i1 = Syn.out n
+        val () = Assert.paramEq "Int.Eq" (i0, i1)
+      in
+        T.empty #> (I, H, trivial)
+      end
+  end
+
+  structure Nat =
+  struct
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.EqType"
+        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.NAT = Syn.out a
+        val Syn.NAT = Syn.out b
+      in
+        T.empty #> (I, H, trivial)
+      end
+      handle Bind =>
+        raise E.error [Fpp.text "Expected typehood sequent"]
+
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.Eq"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.NAT = Syn.out ty
+        (* till we can generate "less-than" goals we can only handle numerals *)
+        val Syn.NUMBER (P.APP (P.NUMERAL i0)) = Syn.out m
+        val Syn.NUMBER (P.APP (P.NUMERAL i1)) = Syn.out n
+        val true = i0 = i1
+        val true = IntInf.>= (i0, 0)
+      in
+        T.empty #> (I, H, trivial)
+      end
   end
 
   structure Void =

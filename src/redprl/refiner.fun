@@ -493,8 +493,10 @@ struct
 
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
-           (Syn.BOOL, Syn.BOOL) => Bool.EqType
-         | (Syn.S_BOOL, Syn.S_BOOL) => StrictBool.EqType
+           (Syn.WBOOL, Syn.WBOOL) => WeakBool.EqType
+         | (Syn.BOOL, Syn.BOOL) => StrictBool.EqType
+         | (Syn.INT, Syn.INT) => Int.EqType
+         | (Syn.NAT, Syn.NAT) => Nat.EqType
          | (Syn.VOID, Syn.VOID) => Void.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
@@ -512,11 +514,13 @@ struct
       (* equality of canonical forms *)
       fun StepEqVal ((m, n), ty) =
         case (Syn.out m, Syn.out n, Syn.out ty) of
-           (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
-         | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
-         | (Syn.FCOM _, Syn.FCOM _, Syn.BOOL) => Bool.EqFCom
-         | (Syn.TT, Syn.TT, Syn.S_BOOL) => StrictBool.EqTT
-         | (Syn.FF, Syn.FF, Syn.S_BOOL) => StrictBool.EqFF
+           (Syn.TT, Syn.TT, Syn.WBOOL) => WeakBool.EqTT
+         | (Syn.FF, Syn.FF, Syn.WBOOL) => WeakBool.EqFF
+         | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => WeakBool.EqFCom
+         | (Syn.TT, Syn.TT, Syn.BOOL) => StrictBool.EqTT
+         | (Syn.FF, Syn.FF, Syn.BOOL) => StrictBool.EqFF
+         | (Syn.NUMBER _, Syn.NUMBER _, Syn.INT) => Int.Eq
+         | (Syn.NUMBER _, Syn.NUMBER _, Syn.NAT) => Nat.Eq
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => S1.EqFCom
@@ -530,16 +534,16 @@ struct
       fun StepEqNeu (x, y) ((m, n), ty) =
         case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
-         | (Syn.IF _, Syn.IF _, _) => Bool.ElimEq
+         | (Syn.IF _, Syn.IF _, _) => WeakBool.ElimEq
          | (Syn.S_IF _, Syn.S_IF _, _) => StrictBool.ElimEq
          | (Syn.S_IF _, _, _) =>
            (case x of
                Machine.VAR z => StrictBool.EqElim z
-             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply sbool elimination"])
+             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply StrictBool elimination"])
          | (_, Syn.S_IF _, _) =>
            (case y of
                Machine.VAR z => CatJdgSymmetry then_ StrictBool.EqElim z
-             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply sbool elimination"])
+             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply StrictBool elimination"])
          | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
@@ -663,8 +667,8 @@ struct
     local
       fun StepTrue ty =
         case Syn.out ty of
-           Syn.BOOL => Bool.Elim
-         | Syn.S_BOOL => StrictBool.Elim
+           Syn.WBOOL => WeakBool.Elim
+         | Syn.BOOL => StrictBool.Elim
          | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
@@ -673,7 +677,7 @@ struct
 
       fun StepEq ty =
         case Syn.out ty of
-           Syn.S_BOOL => StrictBool.EqElim
+           Syn.BOOL => StrictBool.EqElim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepJdg _ z alpha jdg =

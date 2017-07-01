@@ -84,7 +84,7 @@ end
  | VARNAME of string
  | OPNAME of string
  | UNDER
- | NUMERAL of int
+ | NUMERAL of IntInf.int
  | COLON
  | LANGLE | RANGLE
  | LANGLE_PIPE | RANGLE_PIPE
@@ -108,12 +108,12 @@ end
  | DOUBLE_RANGLE
  | QUESTION
 
- | FCOM | BOOL | TT | FF | IF | S_BOOL | S_IF | VOID | S1 | BASE | LOOP | FST | SND | PATHS | HCOM | COE
+ | FCOM | WBOOL | TT | FF | WBOOL_REC | BOOL | IF | INT | NUMBER | NAT | VOID | S1 | BASE | LOOP | FST | SND | PATHS | HCOM | COE
  | THEN | ELSE | LET | WITH | CASE | OF
 
  | FUN_APP
 
- | DIM | EXN | LBL | LVL | HYP
+ | DIM | EXN | HYP | LBL | NUM
  | EXP | TAC | TRIV
 
  | CMD_PRINT | CMD_EXTRACT
@@ -129,7 +129,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA COLON
-%nonassoc FUN_APP AT_SIGN FCOM BOOL TT FF IF S_BOOL S_IF VOID S1 BASE LOOP LAMBDA ABS FST SND PATHS HCOM COE HASH LANGLE LPAREN VARNAME OPNAME
+%nonassoc FUN_APP AT_SIGN FCOM WBOOL TT FF WBOOL_REC BOOL IF VOID S1 BASE LOOP LAMBDA ABS FST SND PATHS HCOM COE HASH LANGLE LPAREN VARNAME OPNAME
 
 
 
@@ -236,8 +236,9 @@ ident
 psort
   : DIM (P.DIM)
   | EXN (P.EXN)
-  | LBL (P.LBL)
   | HYP (P.HYP O.EXP)
+  | LBL (P.LBL)
+  | NUM (P.NUM)
 
 sort
   : EXP (O.EXP)
@@ -336,8 +337,8 @@ bindings
 operator
   : ABS (O.MONO O.PATH_ABS)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
-  | IF (O.MONO O.IF)
-  | S_IF (O.MONO O.S_IF)
+  | WBOOL_REC (O.MONO O.IF)
+  | IF (O.MONO O.S_IF)
   | PATHS (O.MONO O.PATH_TY)
   | FST (O.MONO O.FST)
   | SND (O.MONO O.SND)
@@ -370,10 +371,14 @@ rawTerm
   | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
   | LPAREN LAMBDA LSQUARE symbols RSQUARE term RPAREN (Multi.makeLam symbols term)
   | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
-  | BOOL (Ast.$$ (O.MONO O.BOOL, []))
+  | WBOOL (Ast.$$ (O.MONO O.WBOOL, []))
   | TT (Ast.$$ (O.MONO O.TRUE, []))
   | FF (Ast.$$ (O.MONO O.FALSE, []))
-  | S_BOOL (Ast.$$ (O.MONO O.S_BOOL, []))
+  | BOOL (Ast.$$ (O.MONO O.BOOL, []))
+  | INT (Ast.$$ (O.MONO O.INT, []))
+  | LPAREN NUMBER param RPAREN (Ast.$$ (O.POLY (O.NUMBER param), []))
+  | NUMERAL (Ast.$$ (O.POLY (O.NUMBER (P.APP (P.NUMERAL NUMERAL))), []))
+  | NAT (Ast.$$ (O.MONO O.NAT, []))
   | VOID (Ast.$$ (O.MONO O.VOID, []))
   | S1 (Ast.$$ (O.MONO O.S1, []))
   | BASE (Ast.$$ (O.MONO O.BASE, []))
@@ -391,14 +396,6 @@ rawJudgment
   | term (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
-
-symBinding
-  : boundVar COLON psort (boundVar, psort)
-
-symBindings
-  : symBinding ([symBinding])
-  | symBinding COMMA symBindings (symBinding :: symBindings)
-  | ([])
 
 src_catjdg
   : term JDG_TRUE (CJ.TRUE term)
@@ -470,7 +467,7 @@ atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomic
 
 atomicRawMultitac
   : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
-  | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS NUMERAL), [\ (([],[]), tactic)]))
+  | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS (IntInf.toInt NUMERAL)), [\ (([],[]), tactic)]))
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REPEAT, [\ (([], []), multitac)]))
   | MTAC_AUTO (Ast.$$ (O.MONO O.MTAC_AUTO, []))
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
