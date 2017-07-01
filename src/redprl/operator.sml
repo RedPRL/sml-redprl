@@ -113,9 +113,9 @@ struct
    (* the trivial realizer for equality, which is called 'axiom' in NuPRL. *)
      AX
    (* week bool: true, false and if *)
-   | BOOL | TRUE | FALSE | IF (* weak booleans *)
+   | WBOOL | TRUE | FALSE | IF (* weak booleans *)
    (* strict bool: strict if (true and false are shared) *)
-   | S_BOOL | S_IF
+   | BOOL | S_IF
    (* integers *)
    | INT
    (* natural numbers *)
@@ -199,12 +199,12 @@ struct
   val arityMono =
     fn AX => [] ->> TRIV
 
-     | BOOL => [] ->> EXP
+     | WBOOL => [] ->> EXP
      | TRUE => [] ->> EXP
      | FALSE => [] ->> EXP
      | IF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
-     | S_BOOL => [] ->> EXP
+     | BOOL => [] ->> EXP
      | S_IF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
      | VOID => [] ->> EXP
@@ -442,12 +442,12 @@ struct
   val toStringMono =
     fn AX => "ax"
 
-     | BOOL => "bool"
+     | WBOOL => "wbool"
      | TRUE => "tt"
      | FALSE => "ff"
-     | IF => "if"
+     | IF => "bool-rec"
 
-     | S_BOOL => "sbool"
+     | BOOL => "bool"
      | S_IF => "if"
 
      | INT => "int"

@@ -76,12 +76,14 @@ whitespace = [\ \t];
 
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
 "fcom"             => (Tokens.FCOM (posTuple (size yytext)));
-"bool"             => (Tokens.BOOL (posTuple (size yytext)));
+"wbool"            => (Tokens.WBOOL (posTuple (size yytext)));
+"wool"             => (Tokens.WBOOL (posTuple (size yytext)));
 "tt"               => (Tokens.TT (posTuple (size yytext)));
 "ff"               => (Tokens.FF (posTuple (size yytext)));
+"wbool-rec"        => (Tokens.WBOOL_REC (posTuple (size yytext)));
+"wif"              => (Tokens.WBOOL_REC (posTuple (size yytext)));
+"bool"             => (Tokens.BOOL (posTuple (size yytext)));
 "if"               => (Tokens.IF (posTuple (size yytext)));
-"sbool"            => (Tokens.S_BOOL (posTuple (size yytext)));
-"if/s"             => (Tokens.S_IF (posTuple (size yytext)));
 "int"              => (Tokens.INT (posTuple (size yytext)));
 "number"           => (Tokens.NUMBER (posTuple (size yytext)));
 "nat"              => (Tokens.NAT (posTuple (size yytext)));

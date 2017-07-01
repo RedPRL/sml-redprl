@@ -107,7 +107,7 @@ struct
      | O.POLY (O.FCOM params) `$ args <: env =>
          stepFcom params args env
 
-     | O.MONO O.BOOL `$ _ <: _ => S.VAL
+     | O.MONO O.WBOOL `$ _ <: _ => S.VAL
      | O.MONO O.TRUE `$ _ <: _ => S.VAL
      | O.MONO O.FALSE `$ _ <: _ => S.VAL
      | O.MONO O.IF `$ [(_,[x]) \ cx, _ \ b, _ \ t, _ \ f] <: env =>
@@ -115,7 +115,7 @@ struct
            @@ (O.MONO O.IF `$ [([],[x]) \ S.% cx, ([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
            <: env
 
-     | O.MONO O.S_BOOL `$ _ <: _ => S.VAL
+     | O.MONO O.BOOL `$ _ <: _ => S.VAL
      | O.MONO O.S_IF `$ [_ \ b, _ \ t, _ \ f] <: env =>
          S.CUT
            @@ (O.MONO O.S_IF `$ [([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
@@ -343,10 +343,10 @@ struct
      | (O.POLY (O.PATH_AP r) `$ [_ \ S.HOLE], _ \ O.MONO O.PATH_ABS `$ [([u],_) \ m] <: env) =>
          m <: Cl.insertSym env u r
 
-     | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.BOOL `$ _ <: env) =>
+     | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.WBOOL `$ _ <: env) =>
          Syn.intoFcom' (dir, eqs) (forceSList args) <: env
 
-     | (O.POLY (O.HCOM _) `$ ((_ \ S.HOLE) :: (_ \ S.% cap) :: _), _ \ O.MONO O.S_BOOL `$ _ <: _) =>
+     | (O.POLY (O.HCOM _) `$ ((_ \ S.HOLE) :: (_ \ S.% cap) :: _), _ \ O.MONO O.BOOL `$ _ <: _) =>
          cap
 
      | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.S1 `$ _ <: env) =>
@@ -387,8 +387,8 @@ struct
            path <: env
          end
 
+     | (O.POLY (O.COE _) `$ [_ \ S.HOLE, _\ S.% cl], ([_],_) \ O.MONO O.WBOOL `$ _ <: _) => cl
      | (O.POLY (O.COE _) `$ [_ \ S.HOLE, _\ S.% cl], ([_],_) \ O.MONO O.BOOL `$ _ <: _) => cl
-     | (O.POLY (O.COE _) `$ [_ \ S.HOLE, _\ S.% cl], ([_],_) \ O.MONO O.S_BOOL `$ _ <: _) => cl
      | (O.POLY (O.COE _) `$ [_ \ S.HOLE, _\ S.% cl], ([_],_) \ O.MONO O.S1 `$ _ <: _) => cl
 
      | (O.POLY (O.COE (dir as (r, r'))) `$ [_ \ S.HOLE, _\ S.% cl], ([u],_) \ O.MONO O.DFUN `$ [_\ a, (_,[x]) \ bx] <: env) =>

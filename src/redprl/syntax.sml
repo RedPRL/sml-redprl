@@ -16,9 +16,9 @@ struct
    (* formal composition *)
    | FCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* weak bool: true, false and if *)
-   | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
+   | WBOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    (* strict bool: strict if (true and false are shared) *)
-   | S_BOOL | S_IF of 'a * ('a * 'a)
+   | BOOL | S_IF of 'a * ('a * 'a)
    (* int *)
    | INT | NUMBER of param
    (* nat, reusing the number *)
@@ -92,12 +92,12 @@ struct
              intoFcom (dir, eqs) (cap, tubes)
            end
 
-       | BOOL => O.MONO O.BOOL $$ []
+       | WBOOL => O.MONO O.WBOOL $$ []
        | TT => O.MONO O.TRUE $$ []
        | FF => O.MONO O.FALSE $$ []
        | IF ((x, cx), m, (t, f)) => O.MONO O.IF $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
 
-       | S_BOOL => O.MONO O.S_BOOL $$ []
+       | BOOL => O.MONO O.BOOL $$ []
        | S_IF (m, (t, f)) => O.MONO O.S_IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
 
        | INT => O.MONO O.INT $$ []
@@ -170,12 +170,12 @@ struct
        | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
            FCOM {dir = dir, cap = cap, tubes = outTubes (eqs, tubes)}
 
-       | O.MONO O.BOOL $ _ => BOOL
+       | O.MONO O.WBOOL $ _ => WBOOL
        | O.MONO O.TRUE $ _ => TT
        | O.MONO O.FALSE $ _ => FF
        | O.MONO O.IF $ [(_,[x]) \ cx, _ \ m, _ \ t, _ \ f] => IF ((x, cx), m, (t, f))
 
-       | O.MONO O.S_BOOL $ _ => S_BOOL
+       | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] => S_IF (m, (t, f))
 
        | O.MONO O.INT $ _ => INT
