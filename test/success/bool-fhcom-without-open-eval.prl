@@ -1,9 +1,9 @@
 Thm FHcom/trans3 : [
-  (-> [a b c d bool]
-   (path {_} bool a b)
-   (path {_} bool a c)
-   (path {_} bool b d)
-   (path {_} bool c d))
+  (-> [a b c d wbool]
+   (path {_} wbool a b)
+   (path {_} wbool a c)
+   (path {_} wbool b d)
+   (path {_} wbool c d))
 ] by [
   { <a> lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
@@ -15,10 +15,10 @@ Thm FHcom/trans3 : [
 Print FHcom/trans3.
 
 Thm FHcom/trans2 : [
-  (-> [a b c bool]
-   (path {_} bool a b)
-   (path {_} bool b c)
-   (path {_} bool a c))
+  (-> [a b c wbool]
+   (path {_} wbool a b)
+   (path {_} wbool b c)
+   (path {_} wbool a c))
 ] by [
   { lam a. lam b. lam c. lam pab. lam pbc.
     <i> `(fcom{0~>1} (@ ,pab i) [i=0 {_} ,a] [i=1 {j} (@ ,pbc j)])
@@ -27,9 +27,9 @@ Thm FHcom/trans2 : [
 ].
 
 Thm FHcom/symm : [
-  (-> [a b bool]
-   (path {_} bool a b)
-   (path {_} bool b a))
+  (-> [a b wbool]
+   (path {_} wbool a b)
+   (path {_} wbool b a))
 ] by [
   { lam a. lam b. lam pab.
     <i> `(fcom{0~>1} ,a [i=0 {j} (@,pab j)] [i=1 {_} ,a])
@@ -38,14 +38,14 @@ Thm FHcom/symm : [
 ].
 
 Thm Tube : [
-  x : bool
-  >> (fcom{0~>1} x [1=1 {_} x] [0=0 {_} x]) = x in bool
+  x : wbool
+  >> (fcom{0~>1} x [1=1 {_} x] [0=0 {_} x]) = x in wbool
 ] by [
   auto
 ].
 
 Thm TrueByEvaluation : [
-  (fcom{0 ~> 0} tt) in bool
+  (fcom{0 ~> 0} tt) in wbool
 ] by [
   auto
 ].
