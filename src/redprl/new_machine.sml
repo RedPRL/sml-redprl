@@ -122,14 +122,38 @@ struct
          end
 
 
-  fun dimensionsEqual (_, _, psi) (r1, r2) = 
-    P.eq Sym.eq (readParam psi r1, readParam psi r2)
+  (* Is it safe to observe the identity of a dimension? *)
+  fun dimensionSafeToObserve syms r = 
+    case r of 
+       P.VAR x => SymSet.member syms x
+     | _ => true
 
-  fun findTrueEquationIndex env = 
+  fun dimensionsEqual stability syms (_, _, psi) (r1, r2) = 
+    let
+      val r1' = readParam psi r1
+      val r2' = readParam psi r2
+    in
+      (* If two dimensions are equal, then no substitution can ever change that. *)
+      if P.eq Sym.eq (r1', r2') then 
+        true
+      else
+        (* On the other hand, if they are not equal, this observation may not commute with cubical substitutions. *)
+        case stability of 
+           (* An observation of apartness is stable under permutations. *)
+           NOMINAL => false
+           (* An observation of apartness is only stable if one of the compared dimensions is bound. *)
+         | CUBICAL =>
+             if dimensionSafeToObserve syms r1' orelse dimensionSafeToObserve syms r2' then 
+               false 
+             else
+               raise Unstable
+    end
+
+  fun findTrueEquationIndex stability syms env = 
     let
       fun aux i [] = NONE
         | aux i ((r,r') :: eqs) =
-          if dimensionsEqual env (r, r') then 
+          if dimensionsEqual stability syms env (r, r') then 
             SOME i
           else 
             aux (i + 1) eqs
@@ -185,25 +209,22 @@ struct
        end
 
      | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap :: tubes) <: env || (syms, stk) =>
-       if dimensionsEqual env dir then 
+       if dimensionsEqual stability syms env dir then 
          cap <: env || (syms, stk)
        (* TODO: be less conservative, use 'syms' as a weapon *)
-       else if stability = NOMINAL then 
-         case (findTrueEquationIndex env eqs, stk) of 
-            (SOME i, _) =>
-              let
-                val (_, r') = dir
-                val ([u], _) \ n = List.nth (tubes, i)
-                val env' = insertSym u (readParam (#3 env) r') env
-              in
-                n <: env' || (syms, stk)
-              end
-          | (NONE, []) => raise Final
-          | (NONE, W_IF ((x,a), HOLE, mt, mf) <: env' :: stk) => ?todo
-          | _ => ?todo
-
        else
-         raise Unstable
+         (case (findTrueEquationIndex stability syms env eqs, stk) of 
+             (SOME i, _) =>
+               let
+                 val (_, r') = dir
+                 val ([u], _) \ n = List.nth (tubes, i)
+                 val env' = insertSym u (readParam (#3 env) r') env
+               in
+                 n <: env' || (syms, stk)
+               end
+           | (NONE, []) => raise Final
+           | (NONE, W_IF ((x,a), HOLE, mt, mf) <: env' :: stk) => ?todo
+           | _ => ?todo)
 
      (* TODO: fcom stepping rules *)
 
