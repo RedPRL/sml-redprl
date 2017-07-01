@@ -273,7 +273,7 @@ struct
          let
            val entry as {state,...} = Sig.lookup sign opid
            val term = Sig.extract state
-           val (mrho, srho) = Sig.unifyCustomOperator entry (List.map #1 ps) args
+           val (mrho, srho) = Sig.applyCustomOperator entry (List.map #1 ps) args
            val term' = substMetaenv mrho term
            val env' = {params = SymEnvUtil.union (#params env, srho), terms = #terms env}
          in

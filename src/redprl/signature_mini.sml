@@ -89,7 +89,7 @@ struct
       RedPrlCategoricalJudgment.synthesis jdg
     end
 
-  fun unifyCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : Tm.metaenv * Tm.symenv =
+  fun applyCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : Tm.metaenv * Tm.symenv =
     let
       val params = entryParams entry
       val arguments = entryArguments entry
@@ -141,7 +141,7 @@ struct
         val Lcf.|> (subgoals, validation) = #state entry
         val args = Lcf.Tl.foldr (fn (x, jdg, args) => outb (Lcf.L.var x (RedPrlJudgment.sort jdg)) :: args) [] subgoals
 
-        val (mrho, srho) = unifyCustomOperator entry ps args
+        val (mrho, srho) = applyCustomOperator entry ps args
         val vrho = hypothesisRenaming entry ps
         val reviveTerm = substVarenv vrho o substSymenv srho o substMetaenv mrho
         val reviveSequent = relabelSequent entry ps o RedPrlSequent.map reviveTerm

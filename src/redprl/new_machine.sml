@@ -14,6 +14,7 @@ sig
 
   exception Neutral of blocker
   exception Unstable
+  exception Final
 
   val step : sign -> stability -> abt machine -> abt machine
 end = 
@@ -45,6 +46,8 @@ struct
    | COE of symbol O.dir * (symbol * hole) * abt
    | FST of hole
    | SND of hole
+   | W_IF of (variable * abt) * hole * abt * abt
+   | IF of hole * abt * abt
 
   type frame = continuation closure
   type stack = frame list
@@ -62,6 +65,7 @@ struct
 
   exception Neutral of blocker
   exception Unstable
+  exception Final
 
   val todo = Fail "TODO"
   fun ?e = raise e
@@ -115,7 +119,7 @@ struct
          val (mrho, rho, psi) = env
          val entry as {state,...} = Sig.lookup sign opid
          val term = Sig.extract state
-         val (mrho', psi') = Sig.unifyCustomOperator entry (List.map #1 ps) args
+         val (mrho', psi') = Sig.applyCustomOperator entry (List.map #1 ps) args
          val mrho'' = Metavar.Ctx.union mrho (Metavar.Ctx.map ((fn (us,xs) \ m => (us,xs) \ (m <: env)) o outb) mrho') (fn _ => raise Fail "Duplicated metavariables")
          val psi'' = raise Match
        in
@@ -154,8 +158,8 @@ struct
        if dimensionsEqual env dir then 
          cap <: env || stk
        else if stability = NOMINAL then 
-         case findTrueEquationIndex env eqs of 
-            SOME i =>
+         case (findTrueEquationIndex env eqs, stk) of 
+            (SOME i, _) =>
               let
                 val (_, r') = dir
                 val ([u], _) \ n = List.nth (tubes, i)
@@ -163,7 +167,10 @@ struct
               in
                 n <: env' || stk
               end
-          | NONE => ?todo (* TODO: give cut rules for fcom values *)
+          | (NONE, []) => raise Final
+          | (NONE, W_IF ((x,a), HOLE, mt, mf) <: env' :: stk) => ?todo
+          | _ => ?todo
+
        else
          raise Unstable
 
@@ -299,7 +306,7 @@ struct
        end
 
 
-     | _ => ?todo
+     | _ => raise Final
 
   fun step sign stability (tm <: env || stk) =
     stepView sign stability (out tm <: env || stk)
