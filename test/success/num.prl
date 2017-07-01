@@ -1,0 +1,23 @@
+Thm One : [
+  1 in int
+] by [
+  auto
+].
+
+Thm NegOne : [
+  -1 in int
+] by [
+  auto
+].
+
+Thm Abstract{i:num} : [
+  (number i) in int
+] by [
+  auto
+].
+
+Thm NatOne : [
+  1 in nat
+] by [
+  auto
+].

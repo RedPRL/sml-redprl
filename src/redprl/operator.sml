@@ -10,9 +10,10 @@ struct
   datatype param_sort =
      DIM
    | EXN
-   | LBL
-   | OPID
    | HYP of sort
+   | LBL
+   | NUM
+   | OPID
 end
 
 structure RedPrlParamData =
@@ -20,6 +21,7 @@ struct
   datatype 'a param_operator =
      DIM0
    | DIM1
+   | NUMERAL of IntInf.int
 end
 
 
@@ -49,9 +51,10 @@ struct
   val toString =
     fn DIM => "dim"
      | EXN => "exn"
-     | LBL => "lbl"
-     | OPID => "opid"
      | HYP tau => "hyp{" ^ RedPrlSort.toString tau ^ "}"
+     | LBL => "lbl"
+     | NUM => "num"
+     | OPID => "opid"
 end
 
 structure RedPrlParameter : ABT_PARAMETER =
@@ -62,25 +65,30 @@ struct
   fun map _ =
     fn DIM0 => DIM0
      | DIM1 => DIM1
+     | NUMERAL n => NUMERAL n
 
   structure Sort = RedPrlParamSort
 
   val arity =
     fn DIM0 => (DIM0, DIM)
      | DIM1 => (DIM1, DIM)
+     | NUMERAL n => (NUMERAL n, NUM)
 
   fun eq _ =
     fn (DIM0, DIM0) => true
      | (DIM1, DIM1) => true
+     | (NUMERAL n1, NUMERAL n2) => n1 = n2
      | _ => false
 
   fun toString _ =
     fn DIM0 => "0"
      | DIM1 => "1"
+     | NUMERAL n => IntInf.toString n
 
   fun join zer _ =
     fn DIM0 => zer
      | DIM1 => zer
+     | NUMERAL n => zer
 end
 
 structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
@@ -108,6 +116,10 @@ struct
    | BOOL | TRUE | FALSE | IF (* weak booleans *)
    (* strict bool: strict if (true and false are shared) *)
    | S_BOOL | S_IF
+   (* integers *)
+   | INT
+   (* natural numbers *)
+   | NAT
    (* empty type *)
    | VOID
    (* circle: base and s1_elim *)
@@ -142,6 +154,7 @@ struct
 
   datatype 'a poly_operator =
      FCOM of 'a dir * 'a equation list
+   | NUMBER of 'a P.term
    | LOOP of 'a P.term
    | PATH_AP of 'a P.term
    | HCOM of 'a dir * 'a equation list
@@ -195,6 +208,9 @@ struct
      | S_IF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
      | VOID => [] ->> EXP
+
+     | INT => [] ->> EXP
+     | NAT => [] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -275,6 +291,7 @@ struct
   in
     val arityPoly =
       fn FCOM params => arityFcom params
+       | NUMBER n => [] ->> EXP
        | LOOP _ => [] ->> EXP
        | PATH_AP _ => [[] * [] <> EXP] ->> EXP
        | HCOM params => arityHcom params
@@ -298,6 +315,10 @@ struct
      | POLY th => arityPoly th
 
   local
+    val numSupport =
+      fn P.VAR a => [(a, NUM)]
+       | P.APP t => P.freeVars t
+
     val dimSupport =
       fn P.VAR a => [(a, DIM)]
        | P.APP t => P.freeVars t
@@ -321,6 +342,7 @@ struct
   in
     val supportPoly =
       fn FCOM params => comSupport params
+       | NUMBER n => numSupport n
        | LOOP r => dimSupport r
        | PATH_AP r => dimSupport r
        | HCOM params => comSupport params
@@ -360,6 +382,7 @@ struct
                    spanEq f (dir1, dir2)
                    andalso spansEq f (eqs1, eqs2)
                | _ => false)
+       | (NUMBER n, t) => (case t of NUMBER n' => P.eq f (n, n') | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_AP r, t) => (case t of PATH_AP r' => P.eq f (r, r') | _ => false)
        | (HCOM (dir1, eqs1), t) =>
@@ -426,6 +449,9 @@ struct
 
      | S_BOOL => "sbool"
      | S_IF => "if"
+
+     | INT => "int"
+     | NAT => "nat"
 
      | VOID => "void"
 
@@ -498,6 +524,7 @@ struct
              ^ "; "
              ^ dirToString f dir
              ^ "]"
+       | NUMBER n => P.toString f n
        | LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
        | HCOM (dir, eqs) =>
@@ -561,6 +588,7 @@ struct
   in
     fun mapPoly f =
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
+       | NUMBER n => NUMBER (P.bind f n)
        | LOOP r => LOOP (P.bind f r)
        | PATH_AP r => PATH_AP (P.bind f r)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)

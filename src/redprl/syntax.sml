@@ -19,6 +19,10 @@ struct
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    (* strict bool: strict if (true and false are shared) *)
    | S_BOOL | S_IF of 'a * ('a * 'a)
+   (* int *)
+   | INT | NUMBER of param
+   (* nat, reusing the number *)
+   | NAT
    (* empty type *)
    | VOID
    (* circle: base, loop and s1_elim *)
@@ -96,6 +100,11 @@ struct
        | S_BOOL => O.MONO O.S_BOOL $$ []
        | S_IF (m, (t, f)) => O.MONO O.S_IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
 
+       | INT => O.MONO O.INT $$ []
+       | NUMBER n => O.POLY (O.NUMBER n) $$ []
+
+       | NAT => O.MONO O.NAT $$ []
+
        | VOID => O.MONO O.VOID $$ []
 
        | S1 => O.MONO O.S1 $$ []
@@ -168,6 +177,11 @@ struct
 
        | O.MONO O.S_BOOL $ _ => S_BOOL
        | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] => S_IF (m, (t, f))
+
+       | O.MONO O.INT $ _ => INT
+       | O.POLY (O.NUMBER n) $ _ => NUMBER n
+
+       | O.MONO O.NAT $ _ => NAT
 
        | O.MONO O.VOID $ _ => VOID
 
