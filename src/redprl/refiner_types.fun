@@ -20,7 +20,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqType"
-        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val (I, H) >> CJ.EQ_TYPE (kind, a, b) = jdg
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
       in
@@ -98,9 +98,9 @@ struct
         val c0ff = substVar (Syn.into Syn.FF, x) c0x
         val c0m0 = substVar (m0, x) c0x
 
-        val goalTy = makeEqType (I, H @> (z, CJ.TRUE @@ Syn.into Syn.BOOL)) (c0z, c1z)
+        val goalTy = makeEqType (I, H @> (z, CJ.TRUE @@ Syn.into Syn.BOOL)) CJ.KAN_TYPE (c0z, c1z)
         val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.BOOL)
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (c0m0, c) (* c0m0 type *)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (c0m0, c) (* c0m0 type *)
         val goalT = makeEq (I, H) ((t0, t1), c0tt)
         val goalF = makeEq (I, H) ((f0, f1), c0ff)
       in
@@ -113,7 +113,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "StrictBool.EqType"
-        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val (I, H) >> CJ.EQ_TYPE (kind, a, b) = jdg
         val Syn.S_BOOL = Syn.out a
         val Syn.S_BOOL = Syn.out b
       in
@@ -264,7 +264,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Void.EqType"
-        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val (I, H) >> CJ.EQ_TYPE (kind, a, b) = jdg
         val Syn.VOID = Syn.out a
         val Syn.VOID = Syn.out b
       in
@@ -298,7 +298,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqType"
-        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val (I, H) >> CJ.EQ_TYPE (kind, a, b) = jdg
         val Syn.S1 = Syn.out a
         val Syn.S1 = Syn.out b
       in
@@ -395,9 +395,9 @@ struct
 
         val S1 = Syn.into Syn.S1
 
-        val goalCz = makeEqType (I, H @> (z, CJ.TRUE S1)) (c0z, c1z)
+        val goalCz = makeEqType (I, H @> (z, CJ.TRUE S1)) CJ.KAN_TYPE (c0z, c1z)
         val goalM = makeEq (I, H) ((m0, m1), S1)
-        val goalCM = makeEqTypeIfDifferent (I, H) (c0m0, c) (* c0m0 type *)
+        val goalCM = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (c0m0, c) (* c0m0 type *)
         val goalB = makeEq (I, H) ((b0, b1), cbase)
         val goalL = makeEq (I @ [(u,P.DIM)], H) ((l0u, l1u), cloop)
         val goalL00 = makeEqIfAllDifferent (I, H) ((l00, b0), cbase) [b1]
@@ -414,7 +414,7 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "DFun.EqType"
-        val (I, H) >> CJ.EQ_TYPE (dfun0, dfun1) = jdg
+        val (I, H) >> CJ.EQ_TYPE (kind, dfun0, dfun1) = jdg
         val Syn.DFUN (a0, x, b0x) = Syn.out dfun0
         val Syn.DFUN (a1, y, b1y) = Syn.out dfun1
 
@@ -423,8 +423,8 @@ struct
         val b0z = substVar (ztm, x) b0x
         val b1z = substVar (ztm, y) b1y
 
-        val goalA = makeEqType (I, H) (a0, a1)
-        val goalB = makeEqType (I, H @> (z, CJ.TRUE a0)) (b0z, b1z)
+        val goalA = makeEqType (I, H) kind (a0, a1)
+        val goalB = makeEqType (I, H @> (z, CJ.TRUE a0)) kind (b0z, b1z)
       in
         |>: goalA >: goalB #> (I, H, trivial)
       end
@@ -447,7 +447,7 @@ struct
         val bw = substVar (wtm, z) bz
 
         val goalM = makeEq (I, H @> (w, CJ.TRUE a)) ((m0w, m1w), bw)
-        val goalA = makeType (I, H) a
+        val goalA = makeType (I, H) CJ.PRETYPE a
       in
         |>: goalM >: goalA #> (I, H, trivial)
       end
@@ -462,7 +462,7 @@ struct
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val bz = substVar (ztm, x) bx
 
-        val goalA = makeType (I, H) a
+        val goalA = makeType (I, H) CJ.PRETYPE a
         val (goalLam, hole) = makeTrue (I, H @> (z, CJ.TRUE a)) bz
 
         val lam = Syn.into @@ Syn.LAM (z, substVar (ztm, z) hole)
@@ -524,7 +524,7 @@ struct
 
         val (goalDFun0, holeDFun0) = makeSynth (I, H) m0
         val (goalDFun1, holeDFun1) = makeSynth (I, H) m1
-        val goalDFunEq = makeEqTypeIfDifferent (I, H) (holeDFun0, holeDFun1)
+        val goalDFunEq = makeEqTypeIfDifferent (I, H) CJ.PRETYPE (holeDFun0, holeDFun1)
         val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun0, [], [])
         val goalN = makeEq (I, H) ((n0, n1), holeDom)
       in
@@ -538,7 +538,7 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "DProd.EqType"
-        val (I, H) >> CJ.EQ_TYPE (dprod0, dprod1) = jdg
+        val (I, H) >> CJ.EQ_TYPE (kind, dprod0, dprod1) = jdg
         val Syn.DPROD (a0, x, b0x) = Syn.out dprod0
         val Syn.DPROD (a1, y, b1y) = Syn.out dprod1
 
@@ -547,8 +547,8 @@ struct
         val b0z = substVar (ztm, x) b0x
         val b1z = substVar (ztm, y) b1y
 
-        val goalA = makeEqType (I, H) (a0, a1)
-        val goalB = makeEqType (I, H @> (z, CJ.TRUE a0)) (b0z, b1z)
+        val goalA = makeEqType (I, H) kind (a0, a1)
+        val goalB = makeEqType (I, H @> (z, CJ.TRUE a0)) kind (b0z, b1z)
       in
         |>: goalA >: goalB #> (I, H, trivial)
       end
@@ -569,7 +569,7 @@ struct
 
         val goal1 = makeEq (I, H) ((m0, m1), a)
         val goal2 = makeEq (I, H) ((n0, n1), substVar (m0, x) bx)
-        val goalFam = makeType (I, H @> (z, CJ.TRUE a)) bz
+        val goalFam = makeType (I, H @> (z, CJ.TRUE a)) CJ.PRETYPE bz
       in
         |>: goal1 >: goal2 >: goalFam #> (I, H, trivial)
       end
@@ -597,7 +597,7 @@ struct
         val (goalTy, holeTy) = makeSynth (I, H) m0
         val (goalTyA, holeTyA) = makeMatch (O.MONO O.DPROD, 0, holeTy, [], [])
         val goalEq = makeEqIfDifferent (I, H) ((m0, m1), holeTy) (* m0 well-typed *)
-        val goalEqTy = makeEqTypeIfDifferent (I, H) (holeTyA, ty) (* holeTyA type *)
+        val goalEqTy = makeEqTypeIfDifferent (I, H) CJ.PRETYPE (holeTyA, ty) (* holeTyA type *)
       in
         |>: goalTy >: goalTyA >:? goalEq >:? goalEqTy
         #> (I, H, trivial)
@@ -613,7 +613,7 @@ struct
         val (goalTy, holeTy) = makeSynth (I, H) m0
         val (goalTyB, holeTyB) = makeMatch (O.MONO O.DPROD, 1, holeTy, [], [Syn.into @@ Syn.FST m0])
         val goalEq = makeEqIfDifferent (I, H) ((m0, m1), holeTy) (* m0 well-typed *)
-        val goalEqTy = makeEqTypeIfDifferent (I, H) (holeTyB, ty) (* holeTyB type *)
+        val goalEqTy = makeEqTypeIfDifferent (I, H) CJ.PRETYPE (holeTyB, ty) (* holeTyB type *)
       in
         |>: goalTy >: goalTyB >:? goalEq >:? goalEqTy
         #> (I, H, trivial)
@@ -631,7 +631,7 @@ struct
 
         val (goal1, hole1) = makeTrue (I, H) a
         val (goal2, hole2) = makeTrue (I, H) (substVar (hole1, x) bx)
-        val goalFam = makeType (I, H @> (z, CJ.TRUE a)) bz
+        val goalFam = makeType (I, H @> (z, CJ.TRUE a)) CJ.PRETYPE bz
         val pair = Syn.into @@ Syn.PAIR (hole1, hole2)
       in
         |>: goal1 >: goal2 >: goalFam #> (I, H, pair)
@@ -676,7 +676,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Path.EqType"
-        val (I, H) >> CJ.EQ_TYPE (ty0, ty1) = jdg
+        val (I, H) >> CJ.EQ_TYPE (kind, ty0, ty1) = jdg
         val Syn.PATH_TY ((u, a0u), m0, n0) = Syn.out ty0
         val Syn.PATH_TY ((v, a1v), m1, n1) = Syn.out ty1
 
@@ -685,7 +685,7 @@ struct
         val a00 = substSymbol (P.APP P.DIM0, u) a0u
         val a01 = substSymbol (P.APP P.DIM1, u) a0u
 
-        val tyGoal = makeEqType (I, H) (a0u, a1u)
+        val tyGoal = makeEqType (I, H) CJ.KAN_TYPE (a0u, a1u) (* kind? *)
         val goal0 = makeEq (I, H) ((m0, m1), a00)
         val goal1 = makeEq (I, H) ((n0, n1), a01)
       in
@@ -752,7 +752,7 @@ struct
         val (goalSynth, holeSynth) = makeSynth (I, H) m0
         val goalMem = makeEqIfDifferent (I, H) ((m0, m1), holeSynth) (* m0 well-typed *)
         val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [r0], [])
-        val goalTy = makeEqTypeIfDifferent (I, H) (holeLine, ty) (* holeLine type *)
+        val goalTy = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (holeLine, ty) (* holeLine type *)
       in
         |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (I, H, trivial)
       end
@@ -767,7 +767,7 @@ struct
         val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2
         val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [P.APP r], [])
         val (goalEndpoint, holeEndpoint) = makeMatch (O.MONO O.PATH_TY, dimAddr, holeSynth, [], [])
-        val goalTy = makeEqType (I, H) (a, holeLine)
+        val goalTy = makeEqType (I, H) CJ.KAN_TYPE (a, holeLine)
         val goalEq = makeEq (I, H) ((holeEndpoint, p), a)
       in
         |>: goalSynth >: goalLine >: goalEndpoint >: goalTy >: goalEq

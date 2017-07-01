@@ -146,8 +146,8 @@ struct
         val _ = Assert.tautologicalEquations "HCom.Eq tautology checking" eqs0
 
         (* type *)
-        val goalTy = makeEqType (I, H) (ty0, ty1)
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0, ty)
+        val goalTy = makeEqType (I, H) CJ.KAN_TYPE (ty0, ty1)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (ty0, ty)
 
         (* cap *)
         val goalCap = makeEq (I, H) ((cap0, cap1), ty)
@@ -172,7 +172,7 @@ struct
         val _ = Assert.tautologicalEquations "HCom.CapEq tautology checking" (List.map #1 tubes)
 
         (* type *)
-        val goalTy0 = makeEqType (I, H) (ty0, ty)
+        val goalTy0 = makeEqType (I, H) CJ.KAN_TYPE (ty0, ty)
 
         (* eq *)
         val goalEq = makeEq (I, H) ((cap, other), ty)
@@ -202,7 +202,7 @@ struct
         (* the cap-tube adjacency premise guarantees that [ty] is a type
          * because one of the equations is true, and thus alpha-equivalence
          * is sufficient. *)
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0, ty)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (ty0, ty)
 
         (* cap *)
         (* the cap-tube adjacency premise guarantees that [cap] is in [ty],
@@ -245,11 +245,10 @@ struct
         (* type *)
         val ty0w = substSymbol (P.ret w, u0) ty0
         val ty1w = substSymbol (P.ret w, u1) ty1
-        val goalTy = makeEqType (I @ [(w,P.DIM)], H) (ty0w, ty1w)
+        val goalTy = makeEqType (I @ [(w,P.DIM)], H) CJ.KAN_TYPE (ty0w, ty1w)
         (* after proving the above goal, we know [ty0] under any substitution is
          * still a type, and thus alpha-equivalence is sufficient. *)
-        val goalTy0 = makeEqTypeIfAllDifferent (I, H)
-              (substSymbol (r'0, u0) ty0, ty) [substSymbol (r'1, u1) ty1]
+        val goalTy0 = makeEqTypeIfAllDifferent (I, H) CJ.KAN_TYPE (substSymbol (r'0, u0) ty0, ty) [substSymbol (r'1, u1) ty1]
 
         (* cap *)
         val ty0r = substSymbol (r0, u0) ty0
@@ -273,11 +272,11 @@ struct
         val _ = Assert.tautologicalEquations "Com.CapEq tautology checking" (List.map #1 tubes)
 
         (* type *)
-        val goalTy = makeType (I @ [(u0,P.DIM)], H) ty0
+        val goalTy = makeType (I @ [(u0,P.DIM)], H) CJ.KAN_TYPE ty0
         (* after proving the above goal, we know [ty0] under any substitution is
          * still a type, and thus alpha-equivalence is sufficient. *)
         val ty0r = substSymbol (r, u0) ty0
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0r, ty)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (ty0r, ty)
 
         (* eq *)
         (* the reason to choose [ty] not [ty0r] is because [ty] is more likely
@@ -305,11 +304,11 @@ struct
         val (_, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
 
         (* type *)
-        val goalTy = makeType (I @ [(u0,P.DIM)], H) ty0
+        val goalTy = makeType (I @ [(u0,P.DIM)], H) CJ.KAN_TYPE ty0
         (* after proving the above goal, we know [ty0] under any substitution is
          * still a type, and thus alpha-equivalence is sufficient. *)
         val ty0r' = substSymbol (r', u0) ty0
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0r', ty)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (ty0r', ty)
 
         (* cap *)
         (* the cap-tube adjacency premise guarantees that [cap] is in [ty],

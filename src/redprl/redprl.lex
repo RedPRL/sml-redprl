@@ -142,6 +142,7 @@ whitespace = [\ \t];
 
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
 "type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));
+"pretype"          => (Tokens.JDG_PRETYPE (posTuple (size yytext)));
 "synth"            => (Tokens.JDG_SYNTH (posTuple (size yytext)));
 
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));

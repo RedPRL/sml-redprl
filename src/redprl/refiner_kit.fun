@@ -99,19 +99,19 @@ struct
   fun makeMatch part = makeGoal @@ MATCH part
 
   (* ignoring the trivial realizer *)
-  fun makeType (I, H) a = makeGoal' @@ (I, H) >> CJ.TYPE a
-  fun makeEqType (I, H) (a, b) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (a, b)
+  fun makeType (I, H) k a = makeGoal' @@ (I, H) >> CJ.TYPE (k, a)
+  fun makeEqType (I, H) k (a, b) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (k, a, b)
   fun makeEq (I, H) ((m, n), ty) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty)
   fun makeMem (I, H) (m, ty) = makeGoal' @@ (I, H) >> CJ.MEM (m, ty)
 
   (* conditional goal making *)
-  fun makeEqTypeIfDifferent (I, H) (m, n) =
-    if Abt.eq (m, n) then NONE
-    else SOME (makeGoal' @@ (I, H) >> CJ.EQ_TYPE (m, n))
+  fun makeEqTypeIfDifferent (I, H) k (a, b) =
+    if Abt.eq (a, b) then NONE
+    else SOME (makeGoal' @@ (I, H) >> CJ.EQ_TYPE (k, a, b))
 
-  fun makeEqTypeIfAllDifferent (I, H) (m, n) ns =
+  fun makeEqTypeIfAllDifferent (I, H) k (m, n) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqTypeIfDifferent (I, H) (m, n)
+    else makeEqTypeIfDifferent (I, H) k (m, n)
 
   fun makeEqIfDifferent (I, H) ((m, n), ty) =
     if Abt.eq (m, n) then NONE

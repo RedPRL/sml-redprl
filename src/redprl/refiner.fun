@@ -43,8 +43,8 @@ struct
     fun Symmetry _ jdg =
     let
       val _ = RedPrlLog.trace "Equality.Symmetry"
-      val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
-      val goal = makeEqType (I, H) (ty2, ty1)
+      val (I, H) >> CJ.EQ_TYPE (kind, ty1, ty2) = jdg
+      val goal = makeEqType (I, H) kind (ty2, ty1)
     in
       |>: goal #> (I, H, trivial)
     end
@@ -213,7 +213,7 @@ struct
         (* If the types are identical, there is no need to create a new subgoal (which would amount to proving that 'ty' is a type).
            This is because the semantics of sequents is that by assuming that something is a member of a 'ty', we have
            automatically assumed that 'ty' is a type. *)
-        val goalTy = makeEqTypeIfDifferent (I, H) (ty, ty')
+        val goalTy = makeEqTypeIfDifferent (I, H) CJ.PRETYPE (ty, ty')
       in
         |>:? goalTy #> (I, H, trivial)
       end
@@ -245,10 +245,10 @@ struct
         val w = alpha 0
         val ty0w = substSymbol (P.ret w, u0) ty0
         val ty1w = substSymbol (P.ret w, u1) ty1
-        val goalTy = makeEqType (I @ [(w, P.DIM)], H) (ty0w, ty1w)
+        val goalTy = makeEqType (I @ [(w, P.DIM)], H) CJ.KAN_TYPE (ty0w, ty1w)
         (* after proving the above goal, [ty0r] must be a type *)
         val ty0r' = substSymbol (r'0, u0) ty0
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0r', ty)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (ty0r', ty)
 
         (* coercee *)
         val ty0r = substSymbol (r0, u0) ty0
@@ -265,10 +265,10 @@ struct
         val () = Assert.paramEq "Coe.CapEq source and target of direction" (r, r')
 
         (* type *)
-        val goalTy = makeType (I @ [(u0, P.DIM)], H) ty0
+        val goalTy = makeType (I @ [(u0, P.DIM)], H) CJ.KAN_TYPE ty0
         (* after proving the above goal, [ty0r] must be a type *)
         val ty0r = substSymbol (r, u0) ty0
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0r, ty)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) CJ.KAN_TYPE (ty0r, ty)
 
         (* eq *)
         val goalEq = makeEq (I, H) ((m, other), ty)
@@ -340,10 +340,10 @@ struct
     fun EqTypeHeadExpansion sign _ jdg =
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
-        val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
+        val (I, H) >> CJ.EQ_TYPE (kind, ty1, ty2) = jdg
         val Abt.$ _ = Abt.out ty1 (* is this needed? *)
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
-        val goal = makeEqType (I, H) (ty1', ty2)
+        val goal = makeEqType (I, H) kind (ty1', ty2)
       in
         |>: goal #> (I, H, trivial)
       end
@@ -639,7 +639,7 @@ struct
 
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.TRUE ty => StepTrue sign ty
-          | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
+          | _ >> CJ.EQ_TYPE (_, a, b) => StepEqType sign (a, b)
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
           | MATCH _ => Misc.MatchOperator)

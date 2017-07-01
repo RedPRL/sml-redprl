@@ -123,7 +123,7 @@ end
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
  | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_CUT_LEMMA | RULE_UNFOLD
 
- | JDG_TRUE | JDG_TYPE | JDG_SYNTH
+ | JDG_TRUE | JDG_TYPE | JDG_PRETYPE | JDG_SYNTH
 
 %nonassoc SQUIGGLE
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
@@ -387,8 +387,9 @@ rawTerm
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
-  | term EQUALS term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term), \ (([],[]), term)]))
+  | term EQUALS term JDG_PRETYPE (Ast.$$ (O.MONO (O.JDG_EQ_TYPE false), [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term EQUALS term JDG_TYPE (Ast.$$ (O.MONO (O.JDG_EQ_TYPE true), [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term JDG_TYPE (Ast.$$ (O.MONO (O.JDG_EQ_TYPE true), [\ (([],[]), term), \ (([],[]), term)]))
   | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
   | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term EQUALS term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
@@ -399,8 +400,10 @@ judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgme
 
 src_catjdg
   : term JDG_TRUE (CJ.TRUE term)
-  | term EQUALS term JDG_TYPE (CJ.EQ_TYPE (term1, term1))
-  | term JDG_TYPE (CJ.TYPE term)
+  | term EQUALS term JDG_PRETYPE (CJ.EQ_TYPE (CJ.PRETYPE, term1, term1))
+  | term EQUALS term JDG_TYPE (CJ.EQ_TYPE (CJ.KAN_TYPE, term1, term1))
+  | term JDG_PRETYPE (CJ.TYPE (CJ.PRETYPE, term))
+  | term JDG_TYPE (CJ.TYPE (CJ.KAN_TYPE, term))
   | term JDG_SYNTH (CJ.SYNTH term)
   | term EQUALS term IN term (CJ.EQ ((term1, term2), term3))
   | term IN term (CJ.MEM (term1, term2))
