@@ -70,6 +70,7 @@ struct
   val todo = Fail "TODO"
   fun ?e = raise e
 
+
   fun lookupSym psi x = 
     Sym.Ctx.lookup psi x
     handle Sym.Ctx.Absent => P.ret x
@@ -86,6 +87,39 @@ struct
   fun insertSym u r (mrho, rho, psi) = 
     (mrho, rho, Sym.Ctx.insert psi u r)
 
+  (* Feel free to try and make more efficient *)
+  fun forceClosure (tm <: (env as (mrho, rho, psi))) = 
+    case infer tm of
+       (`x, _) =>
+         (case Var.Ctx.find rho x of 
+             SOME cl => forceClosure cl
+           | NONE => tm)
+     | (x $# (ps, ms), tau) => 
+         (case Metavar.Ctx.find mrho x of 
+             SOME ((us, xs) \ cl) =>
+               let
+                 val m' = forceClosure cl
+                 val rho' = ListPair.foldl (fn (x, n, rho) => Var.Ctx.insert rho x (n <: env)) rho (xs, ms)
+                 val psi' = ListPair.foldl (fn (u, (r, _), psi) => Sym.Ctx.insert psi u (readParam psi r)) psi (us, ps)
+               in
+                 forceClosure (m' <: (mrho, rho', psi'))
+               end
+           | NONE =>
+               let
+                 val ps' = List.map (fn (r, sigma) => (readParam psi r, sigma)) ps
+                 val ms' = List.map (forceClosure o (fn m => m <: env)) ms
+               in
+                 check (x $# (ps', ms'), tau)
+               end)
+     | (theta $ es, _) =>
+         let
+           val theta' = Tm.O.map (lookupSym psi) theta
+           val es' = List.map (mapBind (forceClosure o (fn m => m <: env))) es
+         in
+           theta' $$ es'
+         end
+
+
   fun dimensionsEqual (_, _, psi) (r1, r2) = 
     P.eq Sym.eq (readParam psi r1, readParam psi r2)
 
@@ -101,19 +135,13 @@ struct
       aux 0
     end
 
-  fun stepView sign stability = 
+  fun stepView sign stability tau = 
     fn `x <: (mrho, rho, psi) || stk =>
        (Var.Ctx.lookup rho x || stk
         handle Var.Ctx.Absent => raise Neutral (VAR x))
-     | meta $# (ps, ms) <: env || stk =>
-       let
-         val (mrho, rho, psi) = env
-         val (us, xs) \ (m <: (mrho', rho', psi')) = Metavar.Ctx.lookup mrho meta handle Metavar.Ctx.Absent => raise Neutral (METAVAR meta)
-         val rho'' = ListPair.foldl (fn (x, n, rho) => Var.Ctx.insert rho x (n <: env)) rho' (xs, ms)
-         val psi'' = ListPair.foldl (fn (u, (r, _), psi) => Sym.Ctx.insert psi u (readParam psi r)) psi' (us, ps)
-       in
-         m <: (mrho', rho'', psi'') || stk
-       end
+     | (tm as (_ $# _)) <: env || stk =>
+         forceClosure (check (tm, tau) <: env) <: env || stk
+
      | O.POLY (O.CUST (opid, ps, _)) $ args <: env || stk => 
        let
          val (mrho, rho, psi) = env
@@ -309,5 +337,9 @@ struct
      | _ => raise Final
 
   fun step sign stability (tm <: env || stk) =
-    stepView sign stability (out tm <: env || stk)
+    let
+      val (view, tau) = infer tm
+    in
+      stepView sign stability tau (view <: env || stk)
+    end
 end
