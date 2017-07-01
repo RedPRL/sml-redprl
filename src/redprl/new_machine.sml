@@ -16,6 +16,7 @@ sig
   exception Unstable
   exception Final
 
+  val init : abt -> abt machine
   val step : sign -> stability -> abt machine -> abt machine
 end = 
 struct
@@ -72,6 +73,10 @@ struct
   val todo = Fail "TODO"
   fun ?e = raise e
 
+  val emptyEnv = 
+    (Metavar.Ctx.empty,
+     Var.Ctx.empty,
+     Sym.Ctx.empty)
 
   fun lookupSym psi x = 
     Sym.Ctx.lookup psi x
@@ -366,4 +371,7 @@ struct
     in
       stepView sign stability tau (view <: env || stk)
     end
+
+  fun init tm = 
+    tm <: emptyEnv || (SymSet.empty, [])
 end
