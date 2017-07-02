@@ -167,7 +167,7 @@ the stack.
     \Step{\mu}{
       \Cfg{a}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}'}{(\mathcal{F}'[\mathcal{F}])}{\pi}
+      \Cfg{M}{\mathcal{E}'}{\perfectparens{\mathcal{F}\circ\mathcal{F}'}}{\pi}
     }
   }
   \and
@@ -177,18 +177,13 @@ the stack.
     \mathcal{F}''\triangleq\perfectbrackets{
       \mathcal{F},
       \overline{a\hookrightarrow{M\perfectbrackets{\Env{\mathcal{E}}{\mathcal{F}}}}},
-      \overline{x\hookrightarrow\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r)},
-      \mathcal{F}'\perfectbrackets{
-        \mathcal{F},
-        \overline{a\hookrightarrow{M\perfectbrackets{\Env{\mathcal{E}}{\mathcal{F}}}}},
-        \overline{x\hookrightarrow\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r)}
-      }
+      \overline{x\hookrightarrow\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r)}
     }
   }{
     \Step{\mu}{
       \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{N}{\mathcal{E}'}{\mathcal{F}''}{\pi}
+      \Cfg{N}{\mathcal{E}'}{\perfectparens{\mathcal{F}''\circ\mathcal{F}'}}{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -297,24 +292,24 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\App{M}{N}}{\mathcal{E}}{\pi}
+      \Cfg{\App{M}{N}}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{[]}}{\pi}}
+      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{\mathcal{F}}{[]}}{\pi}}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Lam{a}{M}}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{[]}}{\pi}}
+      \Cfg{\Lam{a}{M}}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{\mathcal{F}'}{[]}}{\pi}}
     }{
-      \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}'}}]}{\pi}
+      \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}'}{\mathcal{F}'}}]}{\mathcal{F}}{\pi}
     }
   }
   \and
   \inferrule{
     \mathcal{E}''\triangleq\perfectbrackets{
-      \mathcal{E}',\Meta{x}\hookrightarrow{}a.\Clo{B}{\mathcal{E}}
+      \mathcal{E}',\Meta{x}\hookrightarrow{}a.\Clo{B}{\mathcal{E}}{\mathcal{F}}
     }
   }{
     \Step{\mu}{
@@ -323,10 +318,12 @@ the stack.
       }{
         \mathcal{E}
       }{
+        \mathcal{F}
+      }{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-          }{\mathcal{E}'}{[]}
+          }{\mathcal{E}'}{\mathcal{F}'}{[]}
         }{\pi}
       }
     }{
@@ -336,7 +333,7 @@ the stack.
             \overline{\xi_i\hookrightarrow{}y.\App{N_i}{a}}
           }
         }
-      }{\mathcal{E}''}{\pi}
+      }{\mathcal{E}''}{\mathcal{F}'}{\pi}
     }
   }
   \and
@@ -354,17 +351,21 @@ the stack.
             \perfectbrackets{
               \mathcal{E'},
               \Meta{z}\hookrightarrow%
-              x.\Clo{A}{\mathcal{E}}
+              x.\Clo{A}{\mathcal{E}}{\mathcal{F}}
             }
+          }{
+            \mathcal{F'}
           }
         }
+      }{
+        \mathcal{F}
       },
       \Meta{y}\hookrightarrow%
-      x.\Clo{A}{\mathcal{E}}
+      x.\Clo{A}{\mathcal{E}}{\mathcal{F}}
     }
   }{
     \Step{\mu}{
-      \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
+      \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{\mathcal{F}'}{[x]}}{\pi}}
     }{
       \Cfg{
         \Lam{a}{
@@ -376,6 +377,8 @@ the stack.
         }
       }{
         \mathcal{E}''
+      }{
+        \mathcal{F}'
       }{
         \pi%
       }
@@ -389,46 +392,46 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Fst{M}}{\mathcal{E}}{\pi}
+      \Cfg{\Fst{M}}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}}{[]}}{\pi}}
+      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Fst{\Box}}{[]}{[]}{[]}}{\pi}}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Snd{M}}{\mathcal{E}}{\pi}
+      \Cfg{\Snd{M}}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}}{[]}}{\pi}}
+      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Snd{\Box}}{[]}{[]}{[]}}{\pi}}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}'}{[]}}{\pi}}
+      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Fst{\Box}}{[]}{[]}{[]}}{\pi}}
     }{
-      \Cfg{M}{\mathcal{E}}{\pi}
+      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\pi}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}'}{[]}}{\pi}}
+      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Snd{\Box}}{[]}{[]}{[]}}{\pi}}
     }{
-      \Cfg{N}{\mathcal{E}}{\pi}
+      \Cfg{N}{\mathcal{E}}{\mathcal{F}}{\pi}
     }
   }
   \and
   \inferrule{
     L_s\triangleq{
-      \HCom{r}{s}{\Meta{x}}{\Fst{M}}{\overline{\xi_i\hookrightarrow{}y.\Fst{N_i}}}
+      \HCom{r}{s}{a}{\Fst{M}}{\overline{\xi_i\hookrightarrow{}y.\Fst{N_i}}}
     }
     \\
     R\triangleq{
-      \Com{r}{r'}{z.\Meta{y}[z]}{\Snd{M}}{
+      \Com{r}{r'}{z.\Meta{x}[z]}{\Snd{M}}{
         \overline{\xi_i\hookrightarrow{}y.\Snd{N_i}}
       }
     }
@@ -436,7 +439,7 @@ the stack.
     \mathcal{E}''\triangleq{
       \perfectbrackets{
         \mathcal{E}',
-        \Meta{x}\hookrightarrow{}.\Clo{A}{\mathcal{E}}
+        a\hookrightarrow{}\Clo{A}{\mathcal{E}}{\mathcal{F}}
       }
     }
     \\
@@ -449,18 +452,18 @@ the stack.
           \perfectbrackets{
             \mathcal{E},
             a\hookrightarrow{}
-            \Clo{L_z}{\mathcal{E}''}
+            \Clo{L_z}{\mathcal{E}''}{\mathcal{F}}
           }
         }
       }
     }
   }{
     \Step{\mu}{
-      \Cfg{\DPair{a}{A}{B}}{\mathcal{E}}{
+      \Cfg{\DPair{a}{A}{B}}{\mathcal{E}}{\mathcal{F}}{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-          }{\mathcal{E}'}{[]}
+          }{\mathcal{E}'}{\mathcal{F}'}{[]}
         }{\pi}
       }
     }{
