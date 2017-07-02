@@ -629,7 +629,7 @@ TODO
 \end{mathparpagebreakable}
 
 \subsection{Weak booleans}
-TODO, if, if-fcom, etc.
+
 \begin{mathparpagebreakable}
   \inferrule{
   }{
@@ -759,7 +759,6 @@ TODO, if, if-fcom, etc.
 
 \subsection{Circle}
 
-TODO, add hcom, coe, rec-fcom, etc.
 \begin{mathparpagebreakable}
   \inferrule{
     \DimEq{\mathcal{E}}{r}{\epsilon}
@@ -877,6 +876,38 @@ TODO, add hcom, coe, rec-fcom, etc.
     }{
       \mathcal{E}''
     }{\pi}
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\mu}{
+      \Cfg{\Circ}{\mathcal{E}}{
+        \Cons{
+          \Frame{
+            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+          }{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{
+        \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
+      }{\mathcal{E'}}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\mu}{
+      \Cfg{\Circ}{\mathcal{E}}{
+        \Cons{
+          \Frame{
+            \Coe{r}{r'}{\Box}{M}
+          }{\mathcal{E}'}{[x]}
+        }{\pi}
+      }
+    }{
+      \Cfg{M}{\mathcal{E}'}{\pi}
+    }
   }
 \end{mathparpagebreakable}
 
