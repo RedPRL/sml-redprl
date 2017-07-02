@@ -38,6 +38,7 @@
 \newcommand\True{\mathsf{true}}
 \newcommand\False{\mathsf{false}}
 \newcommand\If[3]{\mathsf{if} (#1; #2; #3)}
+\newcommand\WIf[4]{\mathsf{if}_{#1} (#2; #3; #4)}
 
 \newcommand\Cons[2]{{#1}\dblcolon{#2}}
 \newcommand\FreeVars[1]{\mathbf{FV}\perfectparens{#1}}
@@ -66,12 +67,13 @@
 
 \[
   \begin{array}{rrlr}
-    M,A &::= &a\mid \Meta{x}[\vec{r};\vec{M}] \mid \Bool \mid \WBool \mid \Circ \mid \Pair{M}{N}\mid\Fst{M}\mid\Snd{M}\mid\Lam{x}{M}\mid\App{M}{N}\mid\PAbs{x}{M}\mid\PApp{M}{r}
+    M,A &::= &a\mid \Meta{x}[\vec{r};\vec{M}] \mid \Bool \mid \WBool \mid \Circ \mid \Pair{M}{N}\mid\Fst{M}\mid\Snd{M}\mid\Lam{x}{M}\mid\App{M}{N}\mid\PAbs{x}{M}\mid\PApp{M}{r}\\
+    &&\If{M}{N}{N'}\mid\WIf{x.A}{M}{N}{N'}
     \\
     &&\Coe{r}{r'}{x.A}{M}\mid\HCom{r}{r'}{A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}\\
     &&\Com{r}{r'}{x.A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(terms)}\\
     K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\Snd{\Box}\mid\PApp{\Box}{r}\mid\HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}\\
-    &&\If{\Box}{M}{N}\mid\ldots&\text{(continuations)}\\
+    &&\If{\Box}{M}{N}\mid\WIf{x.A}{\Box}{M}{N}\mid\ldots&\text{(continuations)}\\
     C &::= &\Clo{M}{\mathcal{E}}&\text{(closures)}\\
     \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(environments)}\\
     \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
@@ -627,8 +629,101 @@ TODO
 \end{mathparpagebreakable}
 
 \subsection{Weak booleans}
-TODO, add hcom, if, if-fcom, etc.
+TODO, if, if-fcom, etc.
 \begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Step{\mu}{
+      \Cfg{\WIf{x.A}{M}{T}{F}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{
+        \Cons{\Frame{\WIf{x.A}{\Box}{T}{F}}{\mathcal{E}}{[]}}{\pi}
+      }
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\mu}{
+      \Cfg{\True}{\mathcal{E}}{
+        \Cons{\Frame{\WIf{x.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
+      }
+    }{
+      \Cfg{T}{\mathcal{E}'}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\mu}{
+      \Cfg{\False}{\mathcal{E}}{
+        \Cons{\Frame{\WIf{x.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
+      }
+    }{
+      \Cfg{F}{\mathcal{E}'}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    \DimApart{\mathcal{E}}{r}{r'}
+    \\
+    \DimApart{\mathcal{E}}{r_i}{r'_i}\ (\forall{}i)
+    \\
+    H\triangleq{
+      \FCom{r}{z}{M}{
+        \overline{
+          r_i=r'_i\hookrightarrow{}y.N_i
+        }
+      }
+    }
+    \\
+    \mathcal{E}''\triangleq{
+      \perfectbrackets{
+        \mathcal{E}',
+        \Meta{x}\hookrightarrow{}z.\Clo{A}{
+          \perfectbrackets{
+            \mathcal{E}',
+            a\hookrightarrow\Clo{H}{\mathcal{E}}
+          }
+        },
+        \Meta{y}\hookrightarrow{}.\Clo{M}{\mathcal{E}},
+        \overline{
+          \Meta{z}_i\hookrightarrow{}y.\Clo{N_i}{\mathcal{E}}
+        }
+      }
+    }
+  }{
+    \Cfg{
+      \FCom{r}{r'}{M}{
+        \overline{
+          r_i=r'_i\hookrightarrow{}y.N_i
+        }
+      }
+    }{
+      \mathcal{E}'
+    }{
+      \Cons{
+        \Frame{\WIf{x.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}
+      }{\pi}
+    }
+    \\\\
+    \mathrel{\succ_\mu}
+    \\\\
+    \Cfg{
+      \Com{\mathcal{E} (r)}{\mathcal{E} (r')}{z.\Meta{x}[z]}{
+        \WIf{a.A}{\Meta{y}}{T}{F}
+      }{
+        \overline{
+          \mathcal{E} (r_i)=\mathcal{E} (r'_i)
+          \hookrightarrow{}
+          y.\WIf{a.A}{\Meta{z}_i[y]}{T}{F}
+        }
+      }
+    }{
+      \mathcal{E}''
+    }{\pi}
+  }
+  \and
   \inferrule{
   }{
     \Step{\mu}{
@@ -643,6 +738,21 @@ TODO, add hcom, if, if-fcom, etc.
       \Cfg{
         \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
       }{\mathcal{E'}}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\mu}{
+      \Cfg{\WBool}{\mathcal{E}}{
+        \Cons{
+          \Frame{
+            \Coe{r}{r'}{\Box}{M}
+          }{\mathcal{E}'}{[x]}
+        }{\pi}
+      }
+    }{
+      \Cfg{M}{\mathcal{E}'}{\pi}
     }
   }
 \end{mathparpagebreakable}
