@@ -819,6 +819,65 @@ TODO, add hcom, coe, rec-fcom, etc.
     }
   }
   \and
+  \inferrule{
+    \DimApart{\mathcal{E}}{r}{r'}
+    \\
+    \DimApart{\mathcal{E}}{r_i}{r'_i}\ (\forall{}i)
+    \\
+    H\triangleq{
+      \FCom{r}{z}{M}{
+        \overline{
+          r_i=r'_i\hookrightarrow{}y.N_i
+        }
+      }
+    }
+    \\
+    \mathcal{E}''\triangleq{
+      \perfectbrackets{
+        \mathcal{E}',
+        \Meta{x}\hookrightarrow{}z.\Clo{A}{
+          \perfectbrackets{
+            \mathcal{E}',
+            a\hookrightarrow\Clo{H}{\mathcal{E}}
+          }
+        },
+        \Meta{y}\hookrightarrow{}.\Clo{M}{\mathcal{E}},
+        \overline{
+          \Meta{z}_i\hookrightarrow{}y.\Clo{N_i}{\mathcal{E}}
+        }
+      }
+    }
+  }{
+    \Cfg{
+      \FCom{r}{r'}{M}{
+        \overline{
+          r_i=r'_i\hookrightarrow{}y.N_i
+        }
+      }
+    }{
+      \mathcal{E}'
+    }{
+      \Cons{
+        \Frame{\CircRec{x.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+      }{\pi}
+    }
+    \\\\
+    \mathrel{\succ_\mu}
+    \\\\
+    \Cfg{
+      \Com{\mathcal{E} (r)}{\mathcal{E} (r')}{z.\Meta{x}[z]}{
+        \CircRec{a.A}{\Meta{y}}{P}{x.L}
+      }{
+        \overline{
+          \mathcal{E} (r_i)=\mathcal{E} (r'_i)
+          \hookrightarrow{}
+          y.\CircRec{a.A}{\Meta{z}_i[y]}{P}{x.L}
+        }
+      }
+    }{
+      \mathcal{E}''
+    }{\pi}
+  }
 \end{mathparpagebreakable}
 
 
