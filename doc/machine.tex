@@ -16,8 +16,9 @@
 
 \global\long\def\cut#1#2{\perfectcut{#1}{#2}}
 
+\newcommand\StackBindings[1]{\mathbf{bindings} (#1)}
 \newcommand\DimEq[3]{{#1}\vDash{#2}={#3}}
-\newcommand\DimApart[3]{{#1}\vDash{#2}\mathrel{\#}{#3}}
+\newcommand\DimApart[5]{{#1}\vDash_{#2}^{#3}{#4}\not={#5}}
 \newcommand\Clo[2]{#1\triangleleft{#2}}
 \newcommand\Coe[4]{\mathsf{coe}^{#1\leadsto{#2}}_{#3} (#4)}
 \newcommand\Com[5]{\mathsf{com}^{#1\leadsto{#2}}_{#3} (#4;#5)}
@@ -118,11 +119,46 @@ the following possible modes:
 Moreover, if $\Step{\Stable}{\mathcal{C}}{\mathcal{C}'}$ then
 $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 
+\subsection{Dimensions}
+
+First, let us collect all the bindings that are induced by the stack
+frames:
+\begin{align*}
+  \StackBindings{\cdot} &= \varnothing\\
+  \StackBindings{\Cons{\Frame{K}{\mathcal{E}}{\Psi}}{\pi}} &= \Psi\cup\StackBindings{\pi}
+\end{align*}
+
+Now, I think that it is cubically stable to observe apartness of
+dimensions $r,r'$ in case either one of those dimensions is bound by
+the stack.
+
+\begin{mathparpagebreakable}
+  \inferrule{
+    \mathcal{E}^+ (r) = \mathcal{E}^+ (r')
+  }{
+    \DimEq{\mathcal{E}}{r}{r'}
+  }
+  \and
+  \inferrule{
+    \mathcal{E}^+ (r) \not= \mathcal{E}^+ (r')
+  }{
+    \DimApart{\mathcal{E}}{\NonStable}{\pi}{r}{r'}
+  }
+  \and
+  \inferrule{
+    \{\mathcal{E}^+ (r),\mathcal{E}^+ (r')\}\cap\StackBindings{\pi}\not=\varnothing{}
+    \\
+    \DimApart{\mathcal{E}}{\NonStable}{\pi}{r}{r'}
+  }{
+    \DimApart{\mathcal{E}}{\Stable}{\pi}{r}{r'}
+  }
+\end{mathparpagebreakable}
+
 \subsection{Variables}
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \mathcal{E} (a)\equiv\Clo{M}{\mathcal{E}'}
+    \mathcal{E}^+ (a)\equiv\Clo{M}{\mathcal{E}'}
   }{
     \Step{\mu}{
       \Cfg{a}{\mathcal{E}}{\pi}
@@ -132,12 +168,12 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   }
   \and
   \inferrule{
-    \mathcal{E} (\Meta{x})\equiv{\vec{x};\vec{a}.\Clo{N}{\mathcal{E}'}}
+    \mathcal{E}^+ (\Meta{x})\equiv{\vec{x};\vec{a}.\Clo{N}{\mathcal{E}'}}
     \and
     \mathcal{E}''\triangleq\perfectbrackets{
       \mathcal{E}',
       \overline{a\hookrightarrow\Clo{M}{\mathcal{E}}},
-      \overline{x\hookrightarrow\mathcal{E} (r)}
+      \overline{x\hookrightarrow\mathcal{E}^+ (r)}
     }
   }{
     \Step{\mu}{
@@ -220,13 +256,13 @@ another way to fix it.
   }
   \and
   \inferrule{
-    \DimApart{\mathcal{E}}{r}{r'}
+    \DimApart{\mathcal{E}}{\mu}{\pi}{r}{r'}
     \\
-    \DimApart{\mathcal{E}}{r_i}{r'_i}\ (\forall{}i<j)
+    \DimApart{\mathcal{E}}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i<j)
     \\
     \DimEq{\mathcal{E}}{r_j}{r'_j}
   }{
-    \Step{\NonStable}{
+    \Step{\mu}{
       \Cfg{
         \FCom{r}{r'}{M}{
           \overline{
@@ -237,7 +273,7 @@ another way to fix it.
     }{
       \Cfg{N_j}{
         \perfectbrackets{
-          \mathcal{E},y\hookrightarrow{}\mathcal{E} (r')
+          \mathcal{E},y\hookrightarrow{}\mathcal{E}^+ (r')
         }
       }{\pi}
     }
@@ -669,9 +705,9 @@ TODO
   }
   \and
   \inferrule{
-    \DimApart{\mathcal{E}}{r}{r'}
+    \DimApart{\mathcal{E}}{\mu}{\pi}{r}{r'}
     \\
-    \DimApart{\mathcal{E}}{r_i}{r'_i}\ (\forall{}i)
+    \DimApart{\mathcal{E}}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
     \\
     H\triangleq{
       \FCom{r}{z}{M}{
@@ -714,11 +750,11 @@ TODO
     \mathrel{\succ_\mu}
     \\\\
     \Cfg{
-      \Com{\mathcal{E} (r)}{\mathcal{E} (r')}{z.\Meta{x}[z]}{
+      \Com{\mathcal{E}^+ (r)}{\mathcal{E}^+ (r')}{z.\Meta{x}[z]}{
         \WIf{a.A}{\Meta{y}}{T}{F}
       }{
         \overline{
-          \mathcal{E} (r_i)=\mathcal{E} (r'_i)
+          \mathcal{E}^+ (r_i)=\mathcal{E}^+ (r'_i)
           \hookrightarrow{}
           y.\WIf{a.A}{\Meta{z}_i[y]}{T}{F}
         }
@@ -823,9 +859,9 @@ TODO
   }
   \and
   \inferrule{
-    \DimApart{\mathcal{E}}{r}{r'}
+    \DimApart{\mathcal{E}}{\mu}{\pi}{r}{r'}
     \\
-    \DimApart{\mathcal{E}}{r_i}{r'_i}\ (\forall{}i)
+    \DimApart{\mathcal{E}}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
     \\
     H\triangleq{
       \FCom{r}{z}{M}{
@@ -868,11 +904,11 @@ TODO
     \mathrel{\succ_\mu}
     \\\\
     \Cfg{
-      \Com{\mathcal{E} (r)}{\mathcal{E} (r')}{z.\Meta{x}[z]}{
+      \Com{\mathcal{E}^+ (r)}{\mathcal{E}^+ (r')}{z.\Meta{x}[z]}{
         \CircRec{a.A}{\Meta{y}}{P}{x.L}
       }{
         \overline{
-          \mathcal{E} (r_i)=\mathcal{E} (r'_i)
+          \mathcal{E}^+ (r_i)=\mathcal{E}^+ (r'_i)
           \hookrightarrow{}
           y.\CircRec{a.A}{\Meta{z}_i[y]}{P}{x.L}
         }
