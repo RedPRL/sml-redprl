@@ -4,6 +4,7 @@
 \usepackage{mathtools}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{wasysym}
 \usepackage{perfectcut}
 \usepackage{fullpage}
 \usepackage{manfnt}
@@ -19,7 +20,8 @@
 \newcommand\StackBindings[1]{\mathbf{bindings} (#1)}
 \newcommand\DimEq[3]{{#1}\vDash{#2}={#3}}
 \newcommand\DimApart[5]{{#1}\vDash_{#2}{#4}\not={#5}\parallel{#3}}
-\newcommand\Clo[2]{#1\triangleleft{#2}}
+\newcommand\Env[2]{#1\star{#2}}
+\newcommand\Clo[3]{#1\triangleleft{\Env{#2}{#3}}}
 \newcommand\Coe[4]{\mathsf{coe}^{#1\leadsto{#2}}_{#3} (#4)}
 \newcommand\Com[5]{\mathsf{com}^{#1\leadsto{#2}}_{#3} (#4;#5)}
 \newcommand\HCom[5]{\mathsf{hcom}^{#1\leadsto{#2}}_{#3} (#4;#5)}
@@ -46,8 +48,8 @@
 \newcommand\FreeDims[1]{\mathbf{FD}\perfectparens{#1}}
 \newcommand\Bool{\mathsf{bool}}
 \newcommand\WBool{\mathsf{wbool}}
-\newcommand\Frame[3]{\perfectparens{#1,#2,#3}}
-\newcommand\Cfg[3]{\cut{\Clo{#1}{#2}}{#3}}
+\newcommand\Frame[4]{\perfectparens{#1,\Env{#2}{#3},#4}}
+\newcommand\Cfg[4]{\cut{\Clo{#1}{#2}{#3}}{#4}}
 \newcommand\App[2]{{#1}\perfectparens{#2}}
 \newcommand\Pair[2]{\perfectunary{CurrentHeight}{\langle}{\rangle}{#1,#2}}
 
@@ -75,14 +77,16 @@
     &&\Com{r}{r'}{x.A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(terms)}\\
     K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\Snd{\Box}\mid\PApp{\Box}{r}\mid\HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}\\
     &&\If{\Box}{M}{N}\mid\WIf{x.A}{\Box}{M}{N}\mid\ldots&\text{(continuations)}\\
-    C &::= &\Clo{M}{\mathcal{E}}&\text{(closures)}\\
-    \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(environments)}\\
-    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\mathcal{E}}}&\text{(meta env.)}\\
+    C &::= &\Clo{M}{\mathcal{E}}{\mathcal{F}}&\text{(closures)}\\
+    \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(pre. env)}\\
+    \mathcal{F} &::= &(\eta,\psi)&\text{(f.f.f.f.)}\\
+    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\mathcal{E}}{\mathcal{F}}}&\text{(meta env.)}\\
     \gamma &::= &\overline{a\hookrightarrow C}&\text{(object env.)}\\
+    \eta &::= &\overline{a\hookrightarrow M}&\text{(forced obj. env.)}\\
     \psi &::= &\overline{x\hookrightarrow r}&\text{(dimension env.)}\\
-    f &::= &\Frame{K}{\mathcal{E}}{\Psi} &\text{(frames)}\\
+    f &::= &\Frame{K}{\mathcal{E}}{\mathcal{F}}{\Psi} &\text{(frames)}\\
     \pi &::= &\cdot \mid \Cons{f}{\pi} &\text{(stacks)}\\
-    \mathcal{C} &::= &\Cfg{M}{\mathcal{E}}{\pi} &\text{(states)}
+    \mathcal{C} &::= &\Cfg{M}{\mathcal{E}}{\mathcal{F}}{\pi} &\text{(states)}
   \end{array}
 \]
 
@@ -93,17 +97,17 @@ continuations.
 
 \paragraph{Stack frames and machine states}
 
-A stack frame $\Frame{K}{\mathcal{E}}{\Psi}$ represents a continuation
+A stack frame $\Frame{K}{\mathcal{E}}{\mathcal{F}}{\Psi}$ represents a continuation
 whose hole ranges over a binder of $\Psi$ dimensions. For a stack
 $\pi$, let $\vec{\Psi}$ be the aggregation of all the dimension
 bindings $\Psi$ mentioned in $\pi$; then the extension of a stack
-$\Cons{\Frame{K}{\mathcal{E}}{\Phi}}{\pi}$ is wellformed when
-$\mathcal{E}$ is an environment for $\FreeDims{K}\setminus\vec{\Psi}$;
+$\Cons{\Frame{K}{\mathcal{E}}{\mathcal{F}}{\Phi}}{\pi}$ is wellformed when
+$\Env{\mathcal{E}}{\mathcal{F}}$ is an environment for $\FreeDims{K}\setminus\vec{\Psi}$;
 moreover, $K$ is allowed to mention the dimensions in $\vec{\Psi}$.
 
-A machine state $\Cfg{M}{\mathcal{E}}{\pi}$, where $\vec{\Psi}$ is the
+A machine state $\Cfg{M}{\mathcal{E}}{\mathcal{F}}{\pi}$, where $\vec{\Psi}$ is the
 aggregation of dimension bindings in $\pi$, is wellformed when
-$\mathcal{E}$ is an environment for $\FreeDims{M}\setminus\vec{\Psi}$;
+$\Env{\mathcal{E}}{\mathcal{F}}$ is an environment for $\FreeDims{M}\setminus\vec{\Psi}$;
 moreover, $M$ is allowed to mention the dimensions in $\vec{\Psi}$.
 
 \section{Selected transition rules}
@@ -125,7 +129,7 @@ First, let us collect all the bindings that are induced by the stack
 frames:
 \begin{align*}
   \StackBindings{\cdot} &= \varnothing\\
-  \StackBindings{\Cons{\Frame{K}{\mathcal{E}}{\Psi}}{\pi}} &= \Psi\cup\StackBindings{\pi}
+  \StackBindings{\Cons{\Frame{K}{\mathcal{E}}{\mathcal{F}}{\Psi}}{\pi}} &= \Psi\cup\StackBindings{\pi}
 \end{align*}
 
 Now, I think that it is cubically stable to observe apartness of
@@ -134,23 +138,23 @@ the stack.
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \mathcal{E}^+ (r) = \mathcal{E}^+ (r')
+    \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r) = \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r')
   }{
-    \DimEq{\mathcal{E}}{r}{r'}
+    \DimEq{\Env{\mathcal{E}}{\mathcal{F}}}{r}{r'}
   }
   \and
   \inferrule{
-    \mathcal{E}^+ (r) \not= \mathcal{E}^+ (r')
+    \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r) \not= \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r')
   }{
-    \DimApart{\mathcal{E}}{\NonStable}{\pi}{r}{r'}
+    \DimApart{\Env{\mathcal{E}}{\mathcal{F}}}{\NonStable}{\pi}{r}{r'}
   }
   \and
   \inferrule{
-    \{\mathcal{E}^+ (r),\mathcal{E}^+ (r')\}\cap\StackBindings{\pi}\not=\varnothing{}
+    \{\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r),\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r')\}\cap\StackBindings{\pi}\not=\varnothing{}
     \\
-    \mathcal{E}^+ (r) \not= \mathcal{E}^+ (r')
+    \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r) \not= \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r')
   }{
-    \DimApart{\mathcal{E}}{\Stable}{\pi}{r}{r'}
+    \DimApart{\Env{\mathcal{E}}{\mathcal{F}}}{\Stable}{\pi}{r}{r'}
   }
 \end{mathparpagebreakable}
 
@@ -158,35 +162,40 @@ the stack.
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \mathcal{E}^+ (a)\equiv\Clo{M}{\mathcal{E}'}
+    \mathcal{E}^+ (a)\equiv\Clo{M}{\mathcal{E}'}{\mathcal{F}'}
   }{
     \Step{\mu}{
-      \Cfg{a}{\mathcal{E}}{\pi}
+      \Cfg{a}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}'}{\pi}
+      \Cfg{M}{\mathcal{E}'}{(\mathcal{F}'[\mathcal{F}])}{\pi}
     }
   }
   \and
   \inferrule{
-    \mathcal{E}^+ (\Meta{x})\equiv{\vec{x};\vec{a}.\Clo{N}{\mathcal{E}'}}
+    \mathcal{E}^+ (\Meta{x})\equiv{\vec{x};\vec{a}.\Clo{N}{\mathcal{E}'}{\mathcal{F}'}}
     \and
-    \mathcal{E}''\triangleq\perfectbrackets{
-      \mathcal{E}',
-      \overline{a\hookrightarrow\Clo{M}{\mathcal{E}}},
-      \overline{x\hookrightarrow\mathcal{E}^+ (r)}
+    \mathcal{F}''\triangleq\perfectbrackets{
+      \mathcal{F},
+      \overline{a\hookrightarrow{M\perfectbrackets{\Env{\mathcal{E}}{\mathcal{F}}}}},
+      \overline{x\hookrightarrow\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r)},
+      \mathcal{F}'\perfectbrackets{
+        \mathcal{F},
+        \overline{a\hookrightarrow{M\perfectbrackets{\Env{\mathcal{E}}{\mathcal{F}}}}},
+        \overline{x\hookrightarrow\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r)}
+      }
     }
   }{
     \Step{\mu}{
-      \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\mathcal{E}}{\pi}
+      \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{N}{\mathcal{E}''}{\pi}
+      \Cfg{N}{\mathcal{E}'}{\mathcal{F}''}{\pi}
     }
   }
 \end{mathparpagebreakable}
 
-NOTE, the above rule for metavariables is incorrect. One way to fix it
-is by forcing the substitutions in a certain order; maybe we can find
-another way to fix it.
+%NOTE, the above rule for metavariables is incorrect. One way to fix it
+%is by forcing the substitutions in a certain order; maybe we can find
+%another way to fix it.
 
 
 \subsection{Kan operations}
@@ -196,13 +205,13 @@ another way to fix it.
     \Step{\mu}{
       \Cfg{
         \HCom{r}{r'}{A}{M}{\overline{\xi\hookrightarrow{}y.N}}
-      }{\mathcal{E}}{\pi}
+      }{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{A}{\mathcal{E}}{
+      \Cfg{A}{\mathcal{E}}{\mathcal{F}}{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\mathcal{E}}{[]}
+          }{\mathcal{E}}{\mathcal{F}}{[]}
         }{\pi}
       }
     }
@@ -211,11 +220,11 @@ another way to fix it.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
+      \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{A}{\mathcal{E}}{
+      \Cfg{A}{\mathcal{E}}{\mathcal{F}}{
         \Cons{
-          \Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}
+          \Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}}{\mathcal{F}}{[x]}
         }{\pi}
       }
     }
@@ -226,7 +235,7 @@ another way to fix it.
     \Step{\mu}{
       \Cfg{
         \Com{r}{r'}{x.A}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-      }{\mathcal{E}}{\pi}
+      }{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
       \Cfg{
         \HCom{r}{r'}{A}{
@@ -239,8 +248,10 @@ another way to fix it.
       }{
         \perfectbrackets{
           \mathcal{E},
-          x\hookrightarrow{r'}
+          x\hookrightarrow{\mathcal{E}^+(r')}
         }
+      }{
+        \mathcal{F}
       }{\pi}
     }
   }
@@ -249,9 +260,9 @@ another way to fix it.
     \DimEq{\mathcal{E}}{r}{r'}
   }{
     \Step{\mu}{
-      \Cfg{\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}}{\mathcal{E}}{\pi}
+      \Cfg{\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}}{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{\pi}
+      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\pi}
     }
   }
   \and
@@ -269,13 +280,13 @@ another way to fix it.
             r_i=r'_i\hookrightarrow{}y.N_i
           }
         }
-      }{\mathcal{E}}{\pi}
+      }{\mathcal{E}}{\mathcal{F}}{\pi}
     }{
       \Cfg{N_j}{
         \perfectbrackets{
           \mathcal{E},y\hookrightarrow{}\mathcal{E}^+ (r')
         }
-      }{\pi}
+      }{\mathcal{F}}{\pi}
     }
   }
 \end{mathparpagebreakable}
