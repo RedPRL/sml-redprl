@@ -634,10 +634,10 @@ TODO
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\WIf{x.A}{M}{T}{F}}{\mathcal{E}}{\pi}
+      \Cfg{\WIf{a.A}{M}{T}{F}}{\mathcal{E}}{\pi}
     }{
       \Cfg{M}{\mathcal{E}}{
-        \Cons{\Frame{\WIf{x.A}{\Box}{T}{F}}{\mathcal{E}}{[]}}{\pi}
+        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\mathcal{E}}{[]}}{\pi}
       }
     }
   }
@@ -646,7 +646,7 @@ TODO
   }{
     \Step{\mu}{
       \Cfg{\True}{\mathcal{E}}{
-        \Cons{\Frame{\WIf{x.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
+        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
       }
     }{
       \Cfg{T}{\mathcal{E}'}{\pi}
@@ -657,7 +657,7 @@ TODO
   }{
     \Step{\mu}{
       \Cfg{\False}{\mathcal{E}}{
-        \Cons{\Frame{\WIf{x.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
+        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
       }
     }{
       \Cfg{F}{\mathcal{E}'}{\pi}
@@ -703,7 +703,7 @@ TODO
       \mathcal{E}'
     }{
       \Cons{
-        \Frame{\WIf{x.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}
+        \Frame{\WIf{a.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}
       }{\pi}
     }
     \\\\
@@ -857,7 +857,7 @@ TODO
       \mathcal{E}'
     }{
       \Cons{
-        \Frame{\CircRec{x.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+        \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
       }{\pi}
     }
     \\\\
