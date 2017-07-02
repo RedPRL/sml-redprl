@@ -122,7 +122,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \inferrule{
     \mathcal{E} (a)\equiv\Clo{M}{\mathcal{E}'}
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{a}{\mathcal{E}}{\pi}
     }{
       \Cfg{M}{\mathcal{E}'}{\pi}
@@ -138,7 +138,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       \overline{x\hookrightarrow\mathcal{E} (r)}
     }
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\mathcal{E}}{\pi}
     }{
       \Cfg{N}{\mathcal{E}''}{\pi}
@@ -151,7 +151,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 \begin{mathparpagebreakable}
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{
         \HCom{r}{r'}{A}{M}{\overline{\xi\hookrightarrow{}y.N}}
       }{\mathcal{E}}{\pi}
@@ -168,7 +168,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
     }{
       \Cfg{A}{\mathcal{E}}{
@@ -181,7 +181,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{
         \Com{r}{r'}{x.A}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
       }{\mathcal{E}}{\pi}
@@ -206,7 +206,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \inferrule{
     \DimEq{\mathcal{E}}{r}{r'}
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}}{\mathcal{E}}{\pi}
     }{
       \Cfg{M}{\mathcal{E}}{\pi}
@@ -243,7 +243,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 \begin{mathparpagebreakable}
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\App{M}{N}}{\mathcal{E}}{\pi}
     }{
       \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{[]}}{\pi}}
@@ -252,7 +252,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Lam{a}{M}}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{[]}}{\pi}}
     }{
       \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}'}}]}{\pi}
@@ -264,7 +264,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       \mathcal{E}',\Meta{x}\hookrightarrow{}a.\Clo{B}{\mathcal{E}}
     }
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{
         \DFun{x}{A}{B}
       }{
@@ -310,7 +310,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       x.\Clo{A}{\mathcal{E}}
     }
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
     }{
       \Cfg{
@@ -335,7 +335,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 \begin{mathparpagebreakable}
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Fst{M}}{\mathcal{E}}{\pi}
     }{
       \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}}{[]}}{\pi}}
@@ -344,7 +344,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Snd{M}}{\mathcal{E}}{\pi}
     }{
       \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}}{[]}}{\pi}}
@@ -353,7 +353,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}'}{[]}}{\pi}}
     }{
       \Cfg{M}{\mathcal{E}}{\pi}
@@ -362,7 +362,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}'}{[]}}{\pi}}
     }{
       \Cfg{N}{\mathcal{E}}{\pi}
@@ -402,7 +402,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       }
     }
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\DPair{a}{A}{B}}{\mathcal{E}}{
         \Cons{
           \Frame{
@@ -427,7 +427,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       \Meta{y}\hookrightarrow{x.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}}]}]}}
     }
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{
         \DPair{a}{A}{B}
       }{
@@ -456,7 +456,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 \begin{mathparpagebreakable}
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\PApp{M}{r}}{\mathcal{E}}{\pi}
     }{
       \Cfg{M}{\mathcal{E}}{
@@ -469,7 +469,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\PAbs{x}{M}}{\mathcal{E}}{
         \Cons{
           \Frame{\PApp{\Box}{r}}{\mathcal{E}'}{[]}
@@ -504,7 +504,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       }
     }
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Path{x.A}{P_0}{P_1}}{
         \mathcal{E}
       }{
@@ -534,7 +534,7 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       }
     }
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{
         \Path{x.A}{P_0}{P_1}
       }{
@@ -568,7 +568,7 @@ TODO
 \begin{mathparpagebreakable}
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\If{M}{T}{F}}{\mathcal{E}}{\pi}
     }{
       \Cfg{M}{\mathcal{E}}{
@@ -579,7 +579,7 @@ TODO
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\True}{\mathcal{E}}{
         \Cons{\Frame{\If{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
       }
@@ -590,7 +590,7 @@ TODO
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\False}{\mathcal{E}}{
         \Cons{\Frame{\If{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
       }
@@ -601,7 +601,7 @@ TODO
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Bool}{\mathcal{E}}{
         \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
       }
@@ -612,7 +612,7 @@ TODO
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Bool}{\mathcal{E}}{
         \Cons{
           \Frame{
@@ -631,7 +631,7 @@ TODO, add hcom, if, if-fcom, etc.
 \begin{mathparpagebreakable}
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\WBool}{\mathcal{E}}{
         \Cons{
           \Frame{
@@ -654,7 +654,7 @@ TODO, add hcom, coe, rec-fcom, etc.
   \inferrule{
     \DimEq{\mathcal{E}}{r}{\epsilon}
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Loop{r}}{\mathcal{E}}{\pi}
     }{
       \Cfg{\Base}{\mathcal{E}}{\pi}
@@ -663,7 +663,7 @@ TODO, add hcom, coe, rec-fcom, etc.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{
         \CircRec{a.A}{M}{P}{x.L}
       }{
@@ -680,7 +680,7 @@ TODO, add hcom, coe, rec-fcom, etc.
   \and
   \inferrule{
   }{
-    \Step{\Stable}{
+    \Step{\mu}{
       \Cfg{\Base}{\mathcal{E}}{
         \Cons{
           \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
