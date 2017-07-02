@@ -18,7 +18,7 @@
 
 \newcommand\StackBindings[1]{\mathbf{bindings} (#1)}
 \newcommand\DimEq[3]{{#1}\vDash{#2}={#3}}
-\newcommand\DimApart[5]{{#1}\vDash_{#2}^{#3}{#4}\not={#5}}
+\newcommand\DimApart[5]{{#1}\vDash_{#2}{#4}\not={#5}\parallel{#3}}
 \newcommand\Clo[2]{#1\triangleleft{#2}}
 \newcommand\Coe[4]{\mathsf{coe}^{#1\leadsto{#2}}_{#3} (#4)}
 \newcommand\Com[5]{\mathsf{com}^{#1\leadsto{#2}}_{#3} (#4;#5)}
@@ -148,7 +148,7 @@ the stack.
   \inferrule{
     \{\mathcal{E}^+ (r),\mathcal{E}^+ (r')\}\cap\StackBindings{\pi}\not=\varnothing{}
     \\
-    \DimApart{\mathcal{E}}{\NonStable}{\pi}{r}{r'}
+    \mathcal{E}^+ (r) \not= \mathcal{E}^+ (r')
   }{
     \DimApart{\mathcal{E}}{\Stable}{\pi}{r}{r'}
   }
