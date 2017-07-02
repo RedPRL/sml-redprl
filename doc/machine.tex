@@ -59,6 +59,8 @@
 \begin{document}
 \maketitle
 
+\section{Machine structure}
+
 \[
   \begin{array}{rrlr}
     M,A &::= &a\mid \Meta{x}[\vec{r};\vec{M}] \mid \Bool \mid \WBool \mid \Circ \mid \Pair{M}{N}\mid\Fst{M}\mid\Snd{M}\mid\Lam{x}{M}\mid\App{M}{N}\mid\PAbs{x}{M}\mid\PApp{M}{r}
@@ -97,7 +99,7 @@ aggregation of dimension bindings in $\pi$, is wellformed when
 $\mathcal{E}$ is an environment for $\FreeDims{M}\setminus\vec{\Psi}$;
 moreover, $M$ is allowed to mention the dimensions in $\vec{\Psi}$.
 
-\paragraph{Selected transition rules}
+\section{Selected transition rules}
 
 We define a transition judgment
 $\Step{\mu}{\mathcal{C}}{\mathcal{C}'}$ with $\mu$ ranging over
@@ -110,6 +112,7 @@ the following possible modes:
 Moreover, if $\Step{\Stable}{\mathcal{C}}{\mathcal{C}'}$ then
 $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
 
+\subsection{Variables}
 
 \begin{mathparpagebreakable}
   \inferrule{
@@ -137,287 +140,10 @@ $\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
       \Cfg{N}{\mathcal{E}''}{\pi}
     }
   }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\App{M}{N}}{\mathcal{E}}{\pi}
-    }{
-      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{[]}}{\pi}}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\Lam{a}{M}}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{[]}}{\pi}}
-    }{
-      \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}'}}]}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\Fst{M}}{\mathcal{E}}{\pi}
-    }{
-      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}}{[]}}{\pi}}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\Snd{M}}{\mathcal{E}}{\pi}
-    }{
-      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}}{[]}}{\pi}}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}'}{[]}}{\pi}}
-    }{
-      \Cfg{M}{\mathcal{E}}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}'}{[]}}{\pi}}
-    }{
-      \Cfg{N}{\mathcal{E}}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \DimEq{\mathcal{E}}{r}{\epsilon}
-  }{
-    \Step{\Stable}{
-      \Cfg{\Loop{r}}{\mathcal{E}}{\pi}
-    }{
-      \Cfg{\Base}{\mathcal{E}}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{
-        \CircRec{a.A}{M}{P}{x.L}
-      }{
-        \mathcal{E}
-      }{\pi}
-    }{
-      \Cfg{M}{\mathcal{E}}{
-        \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}}{[]}
-        }{\pi}
-      }
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\Base}{\mathcal{E}}{
-        \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{P}{\mathcal{E}'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \DimEq{\mathcal{E}}{r}{w}
-  }{
-    \Step{\NonStable}{
-      \Cfg{\Loop{r}}{\mathcal{E}}{
-        \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{L}{
-        \perfectbrackets{
-          \mathcal{E}',x\hookrightarrow{w}
-        }
-      }{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\PApp{M}{r}}{\mathcal{E}}{\pi}
-    }{
-      \Cfg{M}{\mathcal{E}}{
-        \Cons{
-          \Frame{\PApp{\Box}{r}}{\mathcal{E}}{[]}
-        }{\pi}
-      }
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\PAbs{x}{M}}{\mathcal{E}}{
-        \Cons{
-          \Frame{\PApp{\Box}{r}}{\mathcal{E}'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{M}{
-        \perfectbrackets{
-          \mathcal{E},x\hookrightarrow\mathcal{E}' (r)
-        }
-      }{\pi}
-    }
-  }
 \end{mathparpagebreakable}
 
-The rules for coercions are more difficult, but using second-order
-substitutions we can account for them without needing to force
-closures.
 
-\begin{mathparpagebreakable}
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
-    }{
-      \Cfg{A}{\mathcal{E}}{
-        \Cons{
-          \Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}
-        }{\pi}
-      }
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\Stable}{
-      \Cfg{\Bool}{\mathcal{E}}{
-        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
-      }
-    }{
-      \Cfg{M}{\mathcal{E}'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \mathcal{E}'' \triangleq%
-    \perfectbrackets{
-      \mathcal{E}',
-      \Meta{x}\hookrightarrow%
-      x;b.\Clo{B}{
-        \perfectbrackets{
-          \mathcal{E},a\hookrightarrow%
-          \Clo{
-            \Coe{r'}{x}{x.\Meta{z}[x]}{b}
-          }{
-            \perfectbrackets{
-              \mathcal{E'},
-              \Meta{z}\hookrightarrow%
-              x.\Clo{A}{\mathcal{E}}
-            }
-          }
-        }
-      },
-      \Meta{y}\hookrightarrow%
-      x.\Clo{A}{\mathcal{E}}
-    }
-  }{
-    \Step{\Stable}{
-      \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
-    }{
-      \Cfg{
-        \Lam{a}{
-          \Coe{r}{r'}{x.\Meta{x}[x;a]}{
-            \App{M}{
-              \Coe{r'}{r}{x.\Meta{y}[x]}{a}
-            }
-          }
-        }
-      }{
-        \mathcal{E}''
-      }{
-        \pi%
-      }
-    }
-  }
-  \and
-  \inferrule{
-    \mathcal{E}'' \triangleq%
-    \perfectbrackets{
-      \mathcal{E}',
-      \Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}},
-      \Meta{y}\hookrightarrow{x.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}}]}]}}
-    }
-  }{
-    \Step{\Stable}{
-      \Cfg{
-        \DPair{a}{A}{B}
-      }{
-        \mathcal{E}
-      }{
-        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
-      }
-    }{
-      \Cfg{
-        \Pair{
-          \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
-        }{
-          \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
-        }
-      }{
-        \mathcal{E}''
-      }{
-        \pi%
-      }
-    }
-  }
-  \and
-  \inferrule{
-    \mathcal{E}''\triangleq\perfectbrackets{
-      \mathcal{E}',
-      \Meta{x}\hookrightarrow{}x.\Clo{A}{\mathcal{E}},
-      \overline{
-        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\mathcal{E}}
-      }
-    }
-  }{
-    \Step{\Stable}{
-      \Cfg{
-        \Path{x.A}{P_0}{P_1}
-      }{
-        \mathcal{E}
-      }{
-        \Cons{
-          \Frame{
-            \Coe{r}{r'}{\Box}{M}
-          }{\mathcal{E}'}{[x]}
-        }{\pi}
-      }
-    }{
-      \Cfg{
-        \PAbs{x}{
-          \Com{r}{r'}{y.\Meta{x}[y]}{\PApp{M}{x}}{
-            \overline{
-              x=\epsilon\hookrightarrow{}y.{\Meta{y}_\epsilon}
-            }
-          }
-        }
-      }{\mathcal{E}''}{\pi}
-    }
-  }
-\end{mathparpagebreakable}
-
+\subsection{Kan operations}
 \begin{mathparpagebreakable}
   \inferrule{
   }{
@@ -431,6 +157,19 @@ closures.
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
           }{\mathcal{E}}{[]}
+        }{\pi}
+      }
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{A}{\mathcal{E}}{
+        \Cons{
+          \Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}
         }{\pi}
       }
     }
@@ -493,36 +232,26 @@ closures.
       }{\pi}
     }
   }
-  \and
+\end{mathparpagebreakable}
+
+\subsection{Dependent function types}
+
+\begin{mathparpagebreakable}
   \inferrule{
   }{
     \Step{\Stable}{
-      \Cfg{\Bool}{\mathcal{E}}{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\mathcal{E}'}{[]}
-        }{\pi}
-      }
+      \Cfg{\App{M}{N}}{\mathcal{E}}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}'}{\pi}
+      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{[]}}{\pi}}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\Stable}{
-      \Cfg{\WBool}{\mathcal{E}}{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\mathcal{E}'}{[]}
-        }{\pi}
-      }
+      \Cfg{\Lam{a}{M}}{\mathcal{E}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{[]}}{\pi}}
     }{
-      \Cfg{
-        \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
-      }{\mathcal{E'}}{\pi}
+      \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}'}}]}{\pi}
     }
   }
   \and
@@ -551,6 +280,88 @@ closures.
           }
         }
       }{\mathcal{E}''}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    \mathcal{E}'' \triangleq%
+    \perfectbrackets{
+      \mathcal{E}',
+      \Meta{x}\hookrightarrow%
+      x;b.\Clo{B}{
+        \perfectbrackets{
+          \mathcal{E},a\hookrightarrow%
+          \Clo{
+            \Coe{r'}{x}{x.\Meta{z}[x]}{b}
+          }{
+            \perfectbrackets{
+              \mathcal{E'},
+              \Meta{z}\hookrightarrow%
+              x.\Clo{A}{\mathcal{E}}
+            }
+          }
+        }
+      },
+      \Meta{y}\hookrightarrow%
+      x.\Clo{A}{\mathcal{E}}
+    }
+  }{
+    \Step{\Stable}{
+      \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}}
+    }{
+      \Cfg{
+        \Lam{a}{
+          \Coe{r}{r'}{x.\Meta{x}[x;a]}{
+            \App{M}{
+              \Coe{r'}{r}{x.\Meta{y}[x]}{a}
+            }
+          }
+        }
+      }{
+        \mathcal{E}''
+      }{
+        \pi%
+      }
+    }
+  }
+\end{mathparpagebreakable}
+
+\subsection{Dependent pair types}
+
+\begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Fst{M}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}}{[]}}{\pi}}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Snd{M}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}}{[]}}{\pi}}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Fst{\Box}}{\mathcal{E}'}{[]}}{\pi}}
+    }{
+      \Cfg{M}{\mathcal{E}}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\Cons{\Frame{\Snd{\Box}}{\mathcal{E}'}{[]}}{\pi}}
+    }{
+      \Cfg{N}{\mathcal{E}}{\pi}
     }
   }
   \and
@@ -605,6 +416,71 @@ closures.
   }
   \and
   \inferrule{
+    \mathcal{E}'' \triangleq%
+    \perfectbrackets{
+      \mathcal{E}',
+      \Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}},
+      \Meta{y}\hookrightarrow{x.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}}]}]}}
+    }
+  }{
+    \Step{\Stable}{
+      \Cfg{
+        \DPair{a}{A}{B}
+      }{
+        \mathcal{E}
+      }{
+        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+      }
+    }{
+      \Cfg{
+        \Pair{
+          \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
+        }{
+          \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
+        }
+      }{
+        \mathcal{E}''
+      }{
+        \pi%
+      }
+    }
+  }
+\end{mathparpagebreakable}
+
+\subsection{Path types}
+
+\begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\PApp{M}{r}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{
+        \Cons{
+          \Frame{\PApp{\Box}{r}}{\mathcal{E}}{[]}
+        }{\pi}
+      }
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\PAbs{x}{M}}{\mathcal{E}}{
+        \Cons{
+          \Frame{\PApp{\Box}{r}}{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{M}{
+        \perfectbrackets{
+          \mathcal{E},x\hookrightarrow\mathcal{E}' (r)
+        }
+      }{\pi}
+    }
+  }
+  \and
+  \inferrule{
     H\triangleq{
       \HCom{r}{r'}{\Meta{x}[x]}{\PApp{M}{x}}{
         \overline{
@@ -644,6 +520,159 @@ closures.
       }{\mathcal{E}''}{\pi}
     }
   }
+  \and
+  \inferrule{
+    \mathcal{E}''\triangleq\perfectbrackets{
+      \mathcal{E}',
+      \Meta{x}\hookrightarrow{}x.\Clo{A}{\mathcal{E}},
+      \overline{
+        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\mathcal{E}}
+      }
+    }
+  }{
+    \Step{\Stable}{
+      \Cfg{
+        \Path{x.A}{P_0}{P_1}
+      }{
+        \mathcal{E}
+      }{
+        \Cons{
+          \Frame{
+            \Coe{r}{r'}{\Box}{M}
+          }{\mathcal{E}'}{[x]}
+        }{\pi}
+      }
+    }{
+      \Cfg{
+        \PAbs{x}{
+          \Com{r}{r'}{y.\Meta{x}[y]}{\PApp{M}{x}}{
+            \overline{
+              x=\epsilon\hookrightarrow{}y.{\Meta{y}_\epsilon}
+            }
+          }
+        }
+      }{\mathcal{E}''}{\pi}
+    }
+  }
+\end{mathparpagebreakable}
+
+\subsection{Natural numbers}
+TODO
+
+\subsection{Booleans}
+TODO, add if, etc.
+
+\begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Bool}{\mathcal{E}}{
+        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+      }
+    }{
+      \Cfg{M}{\mathcal{E}'}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Bool}{\mathcal{E}}{
+        \Cons{
+          \Frame{
+            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+          }{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{M}{\mathcal{E}'}{\pi}
+    }
+  }
+\end{mathparpagebreakable}
+
+\subsection{Weak booleans}
+TODO, add hcom, if, if-fcom, etc.
+\begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\WBool}{\mathcal{E}}{
+        \Cons{
+          \Frame{
+            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+          }{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{
+        \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
+      }{\mathcal{E'}}{\pi}
+    }
+  }
+\end{mathparpagebreakable}
+
+\subsection{Circle}
+
+TODO, add hcom, coe, rec-fcom, etc.
+\begin{mathparpagebreakable}
+  \inferrule{
+    \DimEq{\mathcal{E}}{r}{\epsilon}
+  }{
+    \Step{\Stable}{
+      \Cfg{\Loop{r}}{\mathcal{E}}{\pi}
+    }{
+      \Cfg{\Base}{\mathcal{E}}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{
+        \CircRec{a.A}{M}{P}{x.L}
+      }{
+        \mathcal{E}
+      }{\pi}
+    }{
+      \Cfg{M}{\mathcal{E}}{
+        \Cons{
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}}{[]}
+        }{\pi}
+      }
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\Stable}{
+      \Cfg{\Base}{\mathcal{E}}{
+        \Cons{
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{P}{\mathcal{E}'}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    \DimEq{\mathcal{E}}{r}{w}
+  }{
+    \Step{\NonStable}{
+      \Cfg{\Loop{r}}{\mathcal{E}}{
+        \Cons{
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{L}{
+        \perfectbrackets{
+          \mathcal{E}',x\hookrightarrow{w}
+        }
+      }{\pi}
+    }
+  }
+  \and
 \end{mathparpagebreakable}
 
 
