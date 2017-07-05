@@ -60,6 +60,10 @@
 \newcommand\AStepSt[2]{\AStep{\Stable}{#1}{#2}}
 \newcommand\Meta[1]{\mathbb{#1}}
 
+\newcommand\CC{\mathcal{C}}
+\newcommand\EE{\mathcal{E}}
+\newcommand\FF{\mathcal{F}}
+
 \title{Cubical Abstract Machine}
 \author{Jon Sterling and Kuen-Bang Hou (Favonia)}
 
@@ -77,16 +81,16 @@
     &&\Com{r}{r'}{x.A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(terms)}\\
     K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\Snd{\Box}\mid\PApp{\Box}{r}\mid\HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}\\
     &&\If{\Box}{M}{N}\mid\WIf{x.A}{\Box}{M}{N}\mid\ldots&\text{(continuations)}\\
-    C &::= &\Clo{M}{\mathcal{E}}{\mathcal{F}}&\text{(closures)}\\
-    \mathcal{E} &::= &(\Meta{\gamma},\gamma,\psi)&\text{(pre. env)}\\
-    \mathcal{F} &::= &(\eta,\psi)&\text{(f.f.f.f.)}\\
-    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\mathcal{E}}{\mathcal{F}}}&\text{(meta env.)}\\
+    C &::= &\Clo{M}{\EE}{\FF}&\text{(closures)}\\
+    \EE &::= &(\Meta{\gamma},\gamma,\psi)&\text{(pre. env)}\\
+    \FF &::= &(\eta,\psi)&\text{(f.f.f.f.)}\\
+    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\EE}{\FF}}&\text{(meta env.)}\\
     \gamma &::= &\overline{a\hookrightarrow C}&\text{(object env.)}\\
     \eta &::= &\overline{a\hookrightarrow M}&\text{(forced obj. env.)}\\
     \psi &::= &\overline{x\hookrightarrow r}&\text{(dimension env.)}\\
-    f &::= &\Frame{K}{\mathcal{E}}{\mathcal{F}}{\Psi} &\text{(frames)}\\
+    f &::= &\Frame{K}{\EE}{\FF}{\Psi} &\text{(frames)}\\
     \pi &::= &\cdot \mid \Cons{f}{\pi} &\text{(stacks)}\\
-    \mathcal{C} &::= &\Cfg{M}{\mathcal{E}}{\mathcal{F}}{\pi} &\text{(states)}
+    \CC &::= &\Cfg{M}{\EE}{\FF}{\pi} &\text{(states)}
   \end{array}
 \]
 
@@ -97,31 +101,31 @@ continuations.
 
 \paragraph{Stack frames and machine states}
 
-A stack frame $\Frame{K}{\mathcal{E}}{\mathcal{F}}{\Psi}$ represents a continuation
+A stack frame $\Frame{K}{\EE}{\FF}{\Psi}$ represents a continuation
 whose hole ranges over a binder of $\Psi$ dimensions. For a stack
 $\pi$, let $\vec{\Psi}$ be the aggregation of all the dimension
 bindings $\Psi$ mentioned in $\pi$; then the extension of a stack
-$\Cons{\Frame{K}{\mathcal{E}}{\mathcal{F}}{\Phi}}{\pi}$ is wellformed when
-$\Env{\mathcal{E}}{\mathcal{F}}$ is an environment for $\FreeDims{K}\setminus\vec{\Psi}$;
+$\Cons{\Frame{K}{\EE}{\FF}{\Phi}}{\pi}$ is wellformed when
+$\Env{\EE}{\FF}$ is an environment for $\FreeDims{K}\setminus\vec{\Psi}$;
 moreover, $K$ is allowed to mention the dimensions in $\vec{\Psi}$.
 
-A machine state $\Cfg{M}{\mathcal{E}}{\mathcal{F}}{\pi}$, where $\vec{\Psi}$ is the
+A machine state $\Cfg{M}{\EE}{\FF}{\pi}$, where $\vec{\Psi}$ is the
 aggregation of dimension bindings in $\pi$, is wellformed when
-$\Env{\mathcal{E}}{\mathcal{F}}$ is an environment for $\FreeDims{M}\setminus\vec{\Psi}$;
+$\Env{\EE}{\FF}$ is an environment for $\FreeDims{M}\setminus\vec{\Psi}$;
 moreover, $M$ is allowed to mention the dimensions in $\vec{\Psi}$.
 
 \section{Selected transition rules}
 
 We define a transition judgment
-$\Step{\mu}{\mathcal{C}}{\mathcal{C}'}$ with $\mu$ ranging over
+$\Step{\mu}{\CC}{\CC'}$ with $\mu$ ranging over
 the following possible modes:
 \begin{enumerate}
 \item $\Stable$, denoting a cubically stable transition
 \item $\NonStable$, denoting a non-cubically stable transition
 \end{enumerate}
 
-Moreover, if $\Step{\Stable}{\mathcal{C}}{\mathcal{C}'}$ then
-$\Step{\NonStable}{\mathcal{C}}{\mathcal{C}'}$.
+Moreover, if $\Step{\Stable}{\CC}{\CC'}$ then
+$\Step{\NonStable}{\CC}{\CC'}$.
 
 \subsection{Dimensions}
 
@@ -129,7 +133,7 @@ First, let us collect all the bindings that are induced by the stack
 frames:
 \begin{align*}
   \StackBindings{\cdot} &= \varnothing\\
-  \StackBindings{\Cons{\Frame{K}{\mathcal{E}}{\mathcal{F}}{\Psi}}{\pi}} &= \Psi\cup\StackBindings{\pi}
+  \StackBindings{\Cons{\Frame{K}{\EE}{\FF}{\Psi}}{\pi}} &= \Psi\cup\StackBindings{\pi}
 \end{align*}
 
 Now, I think that it is cubically stable to observe apartness of
@@ -138,23 +142,23 @@ the stack.
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r) = \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r')
+    \perfectparens{\Env{\EE}{\FF}}^+ (r) = \perfectparens{\Env{\EE}{\FF}}^+ (r')
   }{
-    \DimEq{\Env{\mathcal{E}}{\mathcal{F}}}{r}{r'}
+    \DimEq{\Env{\EE}{\FF}}{r}{r'}
   }
   \and
   \inferrule{
-    \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r) \not= \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r')
+    \perfectparens{\Env{\EE}{\FF}}^+ (r) \not= \perfectparens{\Env{\EE}{\FF}}^+ (r')
   }{
-    \DimApart{\Env{\mathcal{E}}{\mathcal{F}}}{\NonStable}{\pi}{r}{r'}
+    \DimApart{\Env{\EE}{\FF}}{\NonStable}{\pi}{r}{r'}
   }
   \and
   \inferrule{
-    \{\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r),\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r')\}\cap\StackBindings{\pi}\not=\varnothing{}
+    \{\perfectparens{\Env{\EE}{\FF}}^+ (r),\perfectparens{\Env{\EE}{\FF}}^+ (r')\}\cap\StackBindings{\pi}\not=\varnothing{}
     \\
-    \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r) \not= \perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r')
+    \perfectparens{\Env{\EE}{\FF}}^+ (r) \not= \perfectparens{\Env{\EE}{\FF}}^+ (r')
   }{
-    \DimApart{\Env{\mathcal{E}}{\mathcal{F}}}{\Stable}{\pi}{r}{r'}
+    \DimApart{\Env{\EE}{\FF}}{\Stable}{\pi}{r}{r'}
   }
 \end{mathparpagebreakable}
 
@@ -162,28 +166,28 @@ the stack.
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \mathcal{E}^+ (a)\equiv\Clo{M}{\mathcal{E}'}{\mathcal{F}'}
+    \EE^+ (a)\equiv\Clo{M}{\EE'}{\FF'}
   }{
     \Step{\mu}{
-      \Cfg{a}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{a}{\EE}{\FF}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}'}{\perfectparens{\mathcal{F}\circ\mathcal{F}'}}{\pi}
+      \Cfg{M}{\EE'}{\perfectparens{\FF\circ\FF'}}{\pi}
     }
   }
   \and
   \inferrule{
-    \mathcal{E}^+ (\Meta{x})\equiv{\vec{x};\vec{a}.\Clo{N}{\mathcal{E}'}{\mathcal{F}'}}
+    \EE^+ (\Meta{x})\equiv{\vec{x};\vec{a}.\Clo{N}{\EE'}{\FF'}}
     \and
-    \mathcal{F}''\triangleq\perfectbrackets{
-      \mathcal{F},
-      \overline{a\hookrightarrow{M\perfectbrackets{\Env{\mathcal{E}}{\mathcal{F}}}}},
-      \overline{x\hookrightarrow\perfectparens{\Env{\mathcal{E}}{\mathcal{F}}}^+ (r)}
+    \FF''\triangleq\perfectbrackets{
+      \FF,
+      \overline{a\hookrightarrow{M\perfectbrackets{\Env{\EE}{\FF}}}},
+      \overline{x\hookrightarrow\perfectparens{\Env{\EE}{\FF}}^+ (r)}
     }
   }{
     \Step{\mu}{
-      \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\EE}{\FF}{\pi}
     }{
-      \Cfg{N}{\mathcal{E}'}{\perfectparens{\mathcal{F}''\circ\mathcal{F}'}}{\pi}
+      \Cfg{N}{\EE'}{\perfectparens{\FF''\circ\FF'}}{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -200,13 +204,13 @@ the stack.
     \Step{\mu}{
       \Cfg{
         \HCom{r}{r'}{A}{M}{\overline{\xi\hookrightarrow{}y.N}}
-      }{\mathcal{E}}{\mathcal{F}}{\pi}
+      }{\EE}{\FF}{\pi}
     }{
-      \Cfg{A}{\mathcal{E}}{\mathcal{F}}{
+      \Cfg{A}{\EE}{\FF}{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\mathcal{E}}{\mathcal{F}}{[]}
+          }{\EE}{\FF}{[]}
         }{\pi}
       }
     }
@@ -215,11 +219,11 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Coe{r}{r'}{x.A}{M}}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{\Coe{r}{r'}{x.A}{M}}{\EE}{\FF}{\pi}
     }{
-      \Cfg{A}{\mathcal{E}}{\mathcal{F}}{
+      \Cfg{A}{\EE}{\FF}{
         \Cons{
-          \Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}}{\mathcal{F}}{[x]}
+          \Frame{\Coe{r}{r'}{\Box}{M}}{\EE}{\FF}{[x]}
         }{\pi}
       }
     }
@@ -230,7 +234,7 @@ the stack.
     \Step{\mu}{
       \Cfg{
         \Com{r}{r'}{x.A}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-      }{\mathcal{E}}{\mathcal{F}}{\pi}
+      }{\EE}{\FF}{\pi}
     }{
       \Cfg{
         \HCom{r}{r'}{A}{
@@ -242,31 +246,31 @@ the stack.
         }
       }{
         \perfectbrackets{
-          \mathcal{E},
-          x\hookrightarrow{\mathcal{E}^+(r')}
+          \EE,
+          x\hookrightarrow{\EE^+(r')}
         }
       }{
-        \mathcal{F}
+        \FF
       }{\pi}
     }
   }
   \and
   \inferrule{
-    \DimEq{\mathcal{E}}{r}{r'}
+    \DimEq{\EE}{r}{r'}
   }{
     \Step{\mu}{
-      \Cfg{\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}}{\EE}{\FF}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{M}{\EE}{\FF}{\pi}
     }
   }
   \and
   \inferrule{
-    \DimApart{\mathcal{E}}{\mu}{\pi}{r}{r'}
+    \DimApart{\EE}{\mu}{\pi}{r}{r'}
     \\
-    \DimApart{\mathcal{E}}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i<j)
+    \DimApart{\EE}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i<j)
     \\
-    \DimEq{\mathcal{E}}{r_j}{r'_j}
+    \DimEq{\EE}{r_j}{r'_j}
   }{
     \Step{\mu}{
       \Cfg{
@@ -275,13 +279,13 @@ the stack.
             r_i=r'_i\hookrightarrow{}y.N_i
           }
         }
-      }{\mathcal{E}}{\mathcal{F}}{\pi}
+      }{\EE}{\FF}{\pi}
     }{
       \Cfg{N_j}{
         \perfectbrackets{
-          \mathcal{E},y\hookrightarrow{}\mathcal{E}^+ (r')
+          \EE,y\hookrightarrow{}\EE^+ (r')
         }
-      }{\mathcal{F}}{\pi}
+      }{\FF}{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -292,38 +296,38 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\App{M}{N}}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{\App{M}{N}}{\EE}{\FF}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}}{\mathcal{F}}{[]}}{\pi}}
+      \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\App{\Box}{N}}{\EE}{\FF}{[]}}{\pi}}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Lam{a}{M}}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\App{\Box}{N}}{\mathcal{E}'}{\mathcal{F}'}{[]}}{\pi}}
+      \Cfg{\Lam{a}{M}}{\EE}{\FF}{\Cons{\Frame{\App{\Box}{N}}{\EE'}{\FF'}{[]}}{\pi}}
     }{
-      \Cfg{M}{[\mathcal{E},a\hookrightarrow{\Clo{N}{\mathcal{E}'}{\mathcal{F}'}}]}{\mathcal{F}}{\pi}
+      \Cfg{M}{[\EE,a\hookrightarrow{\Clo{N}{\EE'}{\FF'}}]}{\FF}{\pi}
     }
   }
   \and
   \inferrule{
-    \mathcal{E}''\triangleq\perfectbrackets{
-      \mathcal{E}',\Meta{x}\hookrightarrow{}a.\Clo{B}{\mathcal{E}}{\mathcal{F}}
+    \EE''\triangleq\perfectbrackets{
+      \EE',\Meta{x}\hookrightarrow{}a.\Clo{B}{\EE}{\FF}
     }
   }{
     \Step{\mu}{
       \Cfg{
         \DFun{x}{A}{B}
       }{
-        \mathcal{E}
+        \EE
       }{
-        \mathcal{F}
+        \FF
       }{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-          }{\mathcal{E}'}{\mathcal{F}'}{[]}
+          }{\EE'}{\FF'}{[]}
         }{\pi}
       }
     }{
@@ -333,39 +337,39 @@ the stack.
             \overline{\xi_i\hookrightarrow{}y.\App{N_i}{a}}
           }
         }
-      }{\mathcal{E}''}{\mathcal{F}'}{\pi}
+      }{\EE''}{\FF'}{\pi}
     }
   }
   \and
   \inferrule{
-    \mathcal{E}'' \triangleq%
+    \EE'' \triangleq%
     \perfectbrackets{
-      \mathcal{E}',
+      \EE',
       \Meta{x}\hookrightarrow%
       x;b.\Clo{B}{
         \perfectbrackets{
-          \mathcal{E},a\hookrightarrow%
+          \EE,a\hookrightarrow%
           \Clo{
             \Coe{r'}{x}{x.\Meta{z}[x]}{b}
           }{
             \perfectbrackets{
-              \mathcal{E'},
+              \EE',
               \Meta{z}\hookrightarrow%
-              x.\Clo{A}{\mathcal{E}}{\mathcal{F}}
+              x.\Clo{A}{\EE}{[]}
             }
           }{
-            \mathcal{F'}
+            []
           }
         }
       }{
-        \mathcal{F}
+        \FF
       },
       \Meta{y}\hookrightarrow%
-      x.\Clo{A}{\mathcal{E}}{\mathcal{F}}
+      x.\Clo{A}{\EE}{\FF}
     }
   }{
     \Step{\mu}{
-      \Cfg{\DFun{a}{A}{B}}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{\mathcal{F}'}{[x]}}{\pi}}
+      \Cfg{\DFun{a}{A}{B}}{\EE}{\FF}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}}
     }{
       \Cfg{
         \Lam{a}{
@@ -376,9 +380,9 @@ the stack.
           }
         }
       }{
-        \mathcal{E}''
+        \EE''
       }{
-        \mathcal{F}'
+        \FF'
       }{
         \pi%
       }
@@ -392,36 +396,36 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Fst{M}}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{\Fst{M}}{\EE}{\FF}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Fst{\Box}}{[]}{[]}{[]}}{\pi}}
+      \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Fst{\Box}}{[]}{[]}{[]}}{\pi}}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Snd{M}}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{\Snd{M}}{\EE}{\FF}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Snd{\Box}}{[]}{[]}{[]}}{\pi}}
+      \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Snd{\Box}}{[]}{[]}{[]}}{\pi}}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Fst{\Box}}{[]}{[]}{[]}}{\pi}}
+      \Cfg{\Pair{M}{N}}{\EE}{\FF}{\Cons{\Frame{\Fst{\Box}}{[]}{[]}{[]}}{\pi}}
     }{
-      \Cfg{M}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{M}{\EE}{\FF}{\pi}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Pair{M}{N}}{\mathcal{E}}{\mathcal{F}}{\Cons{\Frame{\Snd{\Box}}{[]}{[]}{[]}}{\pi}}
+      \Cfg{\Pair{M}{N}}{\EE}{\FF}{\Cons{\Frame{\Snd{\Box}}{[]}{[]}{[]}}{\pi}}
     }{
-      \Cfg{N}{\mathcal{E}}{\mathcal{F}}{\pi}
+      \Cfg{N}{\EE}{\FF}{\pi}
     }
   }
   \and
@@ -436,60 +440,60 @@ the stack.
       }
     }
     \\\\
-    \mathcal{E}''\triangleq{
+    \EE''\triangleq{
       \perfectbrackets{
-        \mathcal{E}',
-        a\hookrightarrow{}\Clo{A}{\mathcal{E}}{\mathcal{F}}
+        \EE',
+        a\hookrightarrow{}\Clo{A}{\EE}{\FF}
       }
     }
     \\
-    \mathcal{E}'''\triangleq{
+    \EE'''\triangleq{
       \perfectbrackets{
-        \mathcal{E}'',
+        \EE'',
         \Meta{y}\hookrightarrow{}z.\Clo{
           B
         }{
           \perfectbrackets{
-            \mathcal{E},
+            \EE,
             a\hookrightarrow{}
-            \Clo{L_z}{\mathcal{E}''}{\mathcal{F}}
+            \Clo{L_z}{\EE''}{\FF}
           }
         }
       }
     }
   }{
     \Step{\mu}{
-      \Cfg{\DPair{a}{A}{B}}{\mathcal{E}}{\mathcal{F}}{
+      \Cfg{\DPair{a}{A}{B}}{\EE}{\FF}{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-          }{\mathcal{E}'}{\mathcal{F}'}{[]}
+          }{\EE'}{\FF'}{[]}
         }{\pi}
       }
     }{
       \Cfg{
         \Pair{L_{r'}}{R}
       }{
-        \mathcal{E}'''
+        \EE'''
       }{\pi}
     }
   }
   \and
   \inferrule{
-    \mathcal{E}'' \triangleq%
+    \EE'' \triangleq%
     \perfectbrackets{
-      \mathcal{E}',
-      \Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}},
-      \Meta{y}\hookrightarrow{x.\Clo{B}{[\mathcal{E},a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\mathcal{E},\Meta{x}\hookrightarrow{x.\Clo{A}{\mathcal{E}}}]}]}}
+      \EE',
+      \Meta{x}\hookrightarrow{x.\Clo{A}{\EE}},
+      \Meta{y}\hookrightarrow{x.\Clo{B}{[\EE,a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\EE,\Meta{x}\hookrightarrow{x.\Clo{A}{\EE}}]}]}}
     }
   }{
     \Step{\mu}{
       \Cfg{
         \DPair{a}{A}{B}
       }{
-        \mathcal{E}
+        \EE
       }{
-        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{[x]}}{\pi}
       }
     }{
       \Cfg{
@@ -499,7 +503,7 @@ the stack.
           \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
         }
       }{
-        \mathcal{E}''
+        \EE''
       }{
         \pi%
       }
@@ -513,11 +517,11 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\PApp{M}{r}}{\mathcal{E}}{\pi}
+      \Cfg{\PApp{M}{r}}{\EE}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{
+      \Cfg{M}{\EE}{
         \Cons{
-          \Frame{\PApp{\Box}{r}}{\mathcal{E}}{[]}
+          \Frame{\PApp{\Box}{r}}{\EE}{[]}
         }{\pi}
       }
     }
@@ -526,15 +530,15 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\PAbs{x}{M}}{\mathcal{E}}{
+      \Cfg{\PAbs{x}{M}}{\EE}{
         \Cons{
-          \Frame{\PApp{\Box}{r}}{\mathcal{E}'}{[]}
+          \Frame{\PApp{\Box}{r}}{\EE'}{[]}
         }{\pi}
       }
     }{
       \Cfg{M}{
         \perfectbrackets{
-          \mathcal{E},x\hookrightarrow\mathcal{E}' (r)
+          \EE,x\hookrightarrow\EE' (r)
         }
       }{\pi}
     }
@@ -552,17 +556,17 @@ the stack.
       }
     }
     \\
-    \mathcal{E}''\triangleq\perfectbrackets{
-      \mathcal{E}',
-      \Meta{x}\hookrightarrow{}x.\Clo{A}{\mathcal{E}},
+    \EE''\triangleq\perfectbrackets{
+      \EE',
+      \Meta{x}\hookrightarrow{}x.\Clo{A}{\EE},
       \overline{
-        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\mathcal{E}}%
+        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\EE}%
       }
     }
   }{
     \Step{\mu}{
       \Cfg{\Path{x.A}{P_0}{P_1}}{
-        \mathcal{E}
+        \EE
       }{
         \Cons{
           \Frame{
@@ -571,22 +575,22 @@ the stack.
                 \xi_i\hookrightarrow{}y.N_i
               }
             }
-          }{\mathcal{E}'}{[]}
+          }{\EE'}{[]}
         }{\pi}
       }
     }{
       \Cfg{
         \PAbs{x}{H}
-      }{\mathcal{E}''}{\pi}
+      }{\EE''}{\pi}
     }
   }
   \and
   \inferrule{
-    \mathcal{E}''\triangleq\perfectbrackets{
-      \mathcal{E}',
-      \Meta{x}\hookrightarrow{}x.\Clo{A}{\mathcal{E}},
+    \EE''\triangleq\perfectbrackets{
+      \EE',
+      \Meta{x}\hookrightarrow{}x.\Clo{A}{\EE},
       \overline{
-        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\mathcal{E}}
+        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\EE}
       }
     }
   }{
@@ -594,12 +598,12 @@ the stack.
       \Cfg{
         \Path{x.A}{P_0}{P_1}
       }{
-        \mathcal{E}
+        \EE
       }{
         \Cons{
           \Frame{
             \Coe{r}{r'}{\Box}{M}
-          }{\mathcal{E}'}{[x]}
+          }{\EE'}{[x]}
         }{\pi}
       }
     }{
@@ -611,7 +615,7 @@ the stack.
             }
           }
         }
-      }{\mathcal{E}''}{\pi}
+      }{\EE''}{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -625,10 +629,10 @@ TODO
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\If{M}{T}{F}}{\mathcal{E}}{\pi}
+      \Cfg{\If{M}{T}{F}}{\EE}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{
-        \Cons{\Frame{\If{\Box}{T}{F}}{\mathcal{E}}{[]}}{\pi}
+      \Cfg{M}{\EE}{
+        \Cons{\Frame{\If{\Box}{T}{F}}{\EE}{[]}}{\pi}
       }
     }
   }
@@ -636,48 +640,48 @@ TODO
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\True}{\mathcal{E}}{
-        \Cons{\Frame{\If{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
+      \Cfg{\True}{\EE}{
+        \Cons{\Frame{\If{\Box}{T}{F}}{\EE'}{[]}}{\pi}
       }
     }{
-      \Cfg{T}{\mathcal{E}'}{\pi}
+      \Cfg{T}{\EE'}{\pi}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\False}{\mathcal{E}}{
-        \Cons{\Frame{\If{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
+      \Cfg{\False}{\EE}{
+        \Cons{\Frame{\If{\Box}{T}{F}}{\EE'}{[]}}{\pi}
       }
     }{
-      \Cfg{F}{\mathcal{E}'}{\pi}
+      \Cfg{F}{\EE'}{\pi}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Bool}{\mathcal{E}}{
-        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\mathcal{E}'}{[x]}}{\pi}
+      \Cfg{\Bool}{\EE}{
+        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{[x]}}{\pi}
       }
     }{
-      \Cfg{M}{\mathcal{E}'}{\pi}
+      \Cfg{M}{\EE'}{\pi}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Bool}{\mathcal{E}}{
+      \Cfg{\Bool}{\EE}{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\mathcal{E}'}{[]}
+          }{\EE'}{[]}
         }{\pi}
       }
     }{
-      \Cfg{M}{\mathcal{E}'}{\pi}
+      \Cfg{M}{\EE'}{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -688,10 +692,10 @@ TODO
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\WIf{a.A}{M}{T}{F}}{\mathcal{E}}{\pi}
+      \Cfg{\WIf{a.A}{M}{T}{F}}{\EE}{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{
-        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\mathcal{E}}{[]}}{\pi}
+      \Cfg{M}{\EE}{
+        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE}{[]}}{\pi}
       }
     }
   }
@@ -699,29 +703,29 @@ TODO
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\True}{\mathcal{E}}{
-        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
+      \Cfg{\True}{\EE}{
+        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{[]}}{\pi}
       }
     }{
-      \Cfg{T}{\mathcal{E}'}{\pi}
+      \Cfg{T}{\EE'}{\pi}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\False}{\mathcal{E}}{
-        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}}{\pi}
+      \Cfg{\False}{\EE}{
+        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{[]}}{\pi}
       }
     }{
-      \Cfg{F}{\mathcal{E}'}{\pi}
+      \Cfg{F}{\EE'}{\pi}
     }
   }
   \and
   \inferrule{
-    \DimApart{\mathcal{E}}{\mu}{\pi}{r}{r'}
+    \DimApart{\EE}{\mu}{\pi}{r}{r'}
     \\
-    \DimApart{\mathcal{E}}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
+    \DimApart{\EE}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
     \\
     H\triangleq{
       \FCom{r}{z}{M}{
@@ -731,18 +735,18 @@ TODO
       }
     }
     \\
-    \mathcal{E}''\triangleq{
+    \EE''\triangleq{
       \perfectbrackets{
-        \mathcal{E}',
+        \EE',
         \Meta{x}\hookrightarrow{}z.\Clo{A}{
           \perfectbrackets{
-            \mathcal{E}',
-            a\hookrightarrow\Clo{H}{\mathcal{E}}
+            \EE',
+            a\hookrightarrow\Clo{H}{\EE}
           }
         },
-        \Meta{y}\hookrightarrow{}.\Clo{M}{\mathcal{E}},
+        \Meta{y}\hookrightarrow{}.\Clo{M}{\EE},
         \overline{
-          \Meta{z}_i\hookrightarrow{}y.\Clo{N_i}{\mathcal{E}}
+          \Meta{z}_i\hookrightarrow{}y.\Clo{N_i}{\EE}
         }
       }
     }
@@ -754,59 +758,59 @@ TODO
         }
       }
     }{
-      \mathcal{E}'
+      \EE'
     }{
       \Cons{
-        \Frame{\WIf{a.A}{\Box}{T}{F}}{\mathcal{E}'}{[]}
+        \Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{[]}
       }{\pi}
     }
     \\\\
     \mathrel{\succ_\mu}
     \\\\
     \Cfg{
-      \Com{\mathcal{E}^+ (r)}{\mathcal{E}^+ (r')}{z.\Meta{x}[z]}{
+      \Com{\EE^+ (r)}{\EE^+ (r')}{z.\Meta{x}[z]}{
         \WIf{a.A}{\Meta{y}}{T}{F}
       }{
         \overline{
-          \mathcal{E}^+ (r_i)=\mathcal{E}^+ (r'_i)
+          \EE^+ (r_i)=\EE^+ (r'_i)
           \hookrightarrow{}
           y.\WIf{a.A}{\Meta{z}_i[y]}{T}{F}
         }
       }
     }{
-      \mathcal{E}''
+      \EE''
     }{\pi}
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\WBool}{\mathcal{E}}{
+      \Cfg{\WBool}{\EE}{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\mathcal{E}'}{[]}
+          }{\EE'}{[]}
         }{\pi}
       }
     }{
       \Cfg{
         \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
-      }{\mathcal{E'}}{\pi}
+      }{\EE'}{\pi}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\WBool}{\mathcal{E}}{
+      \Cfg{\WBool}{\EE}{
         \Cons{
           \Frame{
             \Coe{r}{r'}{\Box}{M}
-          }{\mathcal{E}'}{[x]}
+          }{\EE'}{[x]}
         }{\pi}
       }
     }{
-      \Cfg{M}{\mathcal{E}'}{\pi}
+      \Cfg{M}{\EE'}{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -815,12 +819,12 @@ TODO
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \DimEq{\mathcal{E}}{r}{\epsilon}
+    \DimEq{\EE}{r}{\epsilon}
   }{
     \Step{\mu}{
-      \Cfg{\Loop{r}}{\mathcal{E}}{\pi}
+      \Cfg{\Loop{r}}{\EE}{\pi}
     }{
-      \Cfg{\Base}{\mathcal{E}}{\pi}
+      \Cfg{\Base}{\EE}{\pi}
     }
   }
   \and
@@ -830,12 +834,12 @@ TODO
       \Cfg{
         \CircRec{a.A}{M}{P}{x.L}
       }{
-        \mathcal{E}
+        \EE
       }{\pi}
     }{
-      \Cfg{M}{\mathcal{E}}{
+      \Cfg{M}{\EE}{
         \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}}{[]}
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE}{[]}
         }{\pi}
       }
     }
@@ -844,38 +848,38 @@ TODO
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Base}{\mathcal{E}}{
+      \Cfg{\Base}{\EE}{
         \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{[]}
         }{\pi}
       }
     }{
-      \Cfg{P}{\mathcal{E}'}{\pi}
+      \Cfg{P}{\EE'}{\pi}
     }
   }
   \and
   \inferrule{
-    \DimEq{\mathcal{E}}{r}{w}
+    \DimEq{\EE}{r}{w}
   }{
     \Step{\NonStable}{
-      \Cfg{\Loop{r}}{\mathcal{E}}{
+      \Cfg{\Loop{r}}{\EE}{
         \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{[]}
         }{\pi}
       }
     }{
       \Cfg{L}{
         \perfectbrackets{
-          \mathcal{E}',x\hookrightarrow{w}
+          \EE',x\hookrightarrow{w}
         }
       }{\pi}
     }
   }
   \and
   \inferrule{
-    \DimApart{\mathcal{E}}{\mu}{\pi}{r}{r'}
+    \DimApart{\EE}{\mu}{\pi}{r}{r'}
     \\
-    \DimApart{\mathcal{E}}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
+    \DimApart{\EE}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
     \\
     H\triangleq{
       \FCom{r}{z}{M}{
@@ -885,18 +889,18 @@ TODO
       }
     }
     \\
-    \mathcal{E}''\triangleq{
+    \EE''\triangleq{
       \perfectbrackets{
-        \mathcal{E}',
+        \EE',
         \Meta{x}\hookrightarrow{}z.\Clo{A}{
           \perfectbrackets{
-            \mathcal{E}',
-            a\hookrightarrow\Clo{H}{\mathcal{E}}
+            \EE',
+            a\hookrightarrow\Clo{H}{\EE}
           }
         },
-        \Meta{y}\hookrightarrow{}.\Clo{M}{\mathcal{E}},
+        \Meta{y}\hookrightarrow{}.\Clo{M}{\EE},
         \overline{
-          \Meta{z}_i\hookrightarrow{}y.\Clo{N_i}{\mathcal{E}}
+          \Meta{z}_i\hookrightarrow{}y.\Clo{N_i}{\EE}
         }
       }
     }
@@ -908,59 +912,59 @@ TODO
         }
       }
     }{
-      \mathcal{E}'
+      \EE'
     }{
       \Cons{
-        \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\mathcal{E}'}{[]}
+        \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{[]}
       }{\pi}
     }
     \\\\
     \mathrel{\succ_\mu}
     \\\\
     \Cfg{
-      \Com{\mathcal{E}^+ (r)}{\mathcal{E}^+ (r')}{z.\Meta{x}[z]}{
+      \Com{\EE^+ (r)}{\EE^+ (r')}{z.\Meta{x}[z]}{
         \CircRec{a.A}{\Meta{y}}{P}{x.L}
       }{
         \overline{
-          \mathcal{E}^+ (r_i)=\mathcal{E}^+ (r'_i)
+          \EE^+ (r_i)=\EE^+ (r'_i)
           \hookrightarrow{}
           y.\CircRec{a.A}{\Meta{z}_i[y]}{P}{x.L}
         }
       }
     }{
-      \mathcal{E}''
+      \EE''
     }{\pi}
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Circ}{\mathcal{E}}{
+      \Cfg{\Circ}{\EE}{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\mathcal{E}'}{[]}
+          }{\EE'}{[]}
         }{\pi}
       }
     }{
       \Cfg{
         \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
-      }{\mathcal{E'}}{\pi}
+      }{\EE'}{\pi}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Circ}{\mathcal{E}}{
+      \Cfg{\Circ}{\EE}{
         \Cons{
           \Frame{
             \Coe{r}{r'}{\Box}{M}
-          }{\mathcal{E}'}{[x]}
+          }{\EE'}{[x]}
         }{\pi}
       }
     }{
-      \Cfg{M}{\mathcal{E}'}{\pi}
+      \Cfg{M}{\EE'}{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -974,13 +978,13 @@ computing an open term and hit a variable.
 \begin{mathpar}
   \inferrule{
   }{
-    \Cfg{M}{\mathcal{E}}{\cdot}\Longrightarrow{M[\mathcal{E}]}
+    \Cfg{M}{\EE}{\cdot}\Longrightarrow{M[\EE]}
   }
   \and
   \inferrule{
-    \Cfg{K[\Psi.M[\mathcal{E}]]}{\mathcal{E}'}{\pi}\Longrightarrow{N}
+    \Cfg{K[\Psi.M[\EE]]}{\EE'}{\pi}\Longrightarrow{N}
   }{
-    \Cfg{M}{\mathcal{E}}{\Cons{\Frame{K[\Box]}{\mathcal{E}'}{\Psi}}{\pi}}\Longrightarrow{N}
+    \Cfg{M}{\EE}{\Cons{\Frame{K[\Box]}{\EE'}{\Psi}}{\pi}}\Longrightarrow{N}
   }
 \end{mathpar}
 
