@@ -1004,7 +1004,7 @@ TODO
 \end{mathparpagebreakable}
 
 
-\paragraph{Unloading the machine}
+\subsection{Unloading the machine}
 
 We can unload the machine at any time; this is useful if we are
 computing an open term and hit a variable.
@@ -1022,9 +1022,16 @@ computing an open term and hit a variable.
   }
 \end{mathpar}
 
-\paragraph{Two-Layer Forcing}
+\subsection{Two-layer forcing}
 
 So, we have $\DoubleForce{M}{\EE}{\LL}$ everywhere. Here is the definition disguised as rules.
+In the following, we keep a list of ``final substitutions'' as $\LL$, but we can also
+concatenate those environments eagerly. The following equation should hold:
+\[
+  \DoubleForce{M}{\EE}{\Cons{\FF_1}{\Cons{\cdots}{\Cons{\FF_n}{\cdot}}}} = \DoubleForce{M}{\EE}{\perfectparens{\FF_n\circ\cdots\circ\FF_1}}
+\]
+
+Here are the fake rules serving as the definition of the two-layer forcing:
 
 \begin{mathparpagebreakable}
   \inferrule{
@@ -1078,6 +1085,8 @@ So, we have $\DoubleForce{M}{\EE}{\LL}$ everywhere. Here is the definition disgu
   }
 \end{mathparpagebreakable}
 
+Here are the fake rules serving as the definition of the one-layer forcing:
+
 \begin{mathparpagebreakable}
   \inferrule{
   }{
@@ -1100,7 +1109,7 @@ So, we have $\DoubleForce{M}{\EE}{\LL}$ everywhere. Here is the definition disgu
   }
 \end{mathparpagebreakable}
 
-\paragraph{Environment Concatenation}
+\subsection{Environment concatenation}
 
 Again, the definition is disguised as rules.
 The concatenation is a list such that the following rules are true theorems:
