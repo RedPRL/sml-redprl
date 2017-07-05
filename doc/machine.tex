@@ -1090,4 +1090,29 @@ So, we have $\DoubleForce{M}{\EE}{\LL}$ everywhere. Here is the definition disgu
   }
 \end{mathparpagebreakable}
 
+\paragraph{Environment Concatenation}
+
+Again, the definition is disguised as rules.
+The concatenation is a list such that the following rules are true theorems:
+
+\begin{mathparpagebreakable}
+  \inferrule{
+    \FF(a) = M
+  }{
+    \perfectparens{{\FF'}\circ{\FF}}(a) = \Force{M}{\FF'}
+  }
+  \and
+  \inferrule{
+    a \notin \FF \\ \FF'(a) = M
+  }{
+    \perfectparens{{\FF'}\circ{\FF}}(a) = M
+  }
+  \and
+  \inferrule{
+    a \notin \FF \\ a \notin \FF'
+  }{
+    a \notin \perfectparens{{\FF'}\circ{\FF}}
+  }
+\end{mathparpagebreakable}
+
 \end{document}
