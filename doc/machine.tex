@@ -20,6 +20,8 @@
 \newcommand\Dummy{\underline{\hspace{0.5em}}}
 
 \newcommand\Env[2]{#1\star{#2}}
+\newcommand\DoubleForce[3]{#1[\Env{#2}{#3}]}
+\newcommand\Force[2]{#1[#2]}
 \newcommand\StackBindings[1]{\mathbf{bindings} (#1)}
 \newcommand\DimEq[4]{\Env{#1}{#2}\vDash{#3}={#4}}
 \newcommand\DimApart[6]{\Env{#1}{#2}\vDash_{#3}{#5}\not={#6}\parallel{#4}}
@@ -65,6 +67,7 @@
 \newcommand\CC{\mathcal{C}}
 \newcommand\EE{\mathcal{E}}
 \newcommand\FF{\mathcal{F}}
+\newcommand\LL{\mathcal{L}}
 
 \title{Cubical Abstract Machine}
 \author{Jon Sterling and Kuen-Bang Hou (Favonia)}
@@ -86,6 +89,7 @@
     C &::= &\Clo{M}{\EE}{\FF}&\text{(closures)}\\
     \EE &::= &(\Meta{\gamma},\gamma,\psi)&\text{(pre. env)}\\
     \FF &::= &(\eta,\psi)&\text{(f.f.f.f.)}\\
+    \LL &::= &\cdot \mid \Cons{\FF}{\LL}&\text{(f.f.f.f.s)}\\
     \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\EE}{\FF}}&\text{(meta env.)}\\
     \gamma &::= &\overline{a\hookrightarrow C}&\text{(object env.)}\\
     \eta &::= &\overline{a\hookrightarrow M}&\text{(forced obj. env.)}\\
@@ -200,7 +204,7 @@ the stack.
 
 
 \subsection{Kan operations}
-The substitution $A[x\hookrightarrow y]$ in the $\Com{}{}{}{}{}$ rule should be a no-op.
+The substitution $\Force{A}{x\hookrightarrow y}$ in the $\Com{}{}{}{}{}$ rule should be a no-op.
 \begin{mathparpagebreakable}
   \inferrule{
   }{
@@ -245,10 +249,10 @@ The substitution $A[x\hookrightarrow y]$ in the $\Com{}{}{}{}{}$ rule should be 
     }{
       \Cfg{
         \HCom{r}{r'}{a}{
-          \Coe{r}{r'}{y.A[x\hookrightarrow{y}]}{M}
+          \Coe{r}{r'}{y.\Force{A}{x\hookrightarrow{y}}}{M}
         }{
           \overline{
-            \xi_i\hookrightarrow{}y.\Coe{y}{r'}{y.A[x\hookrightarrow{y}]}{N_i}
+            \xi_i\hookrightarrow{}y.\Coe{y}{r'}{y.\Force{A}{x\hookrightarrow{y}}}{N_i}
           }
         }
       }{
@@ -354,7 +358,7 @@ The substitution $A[x\hookrightarrow y]$ in the $\Com{}{}{}{}{}$ rule should be 
         \perfectbrackets{
           \EE,a\hookrightarrow%
           \Clo{
-            \Coe{r'[\EE']}{x}{x.\Meta{z}[x]}{b}
+            \Coe{\Force{r'}{\EE'}}{x}{x.\Meta{z}[x]}{b}
           }{
             \perfectbrackets{
               \Meta{z}\hookrightarrow%
@@ -1008,7 +1012,7 @@ computing an open term and hit a variable.
 \begin{mathpar}
   \inferrule{
   }{
-    \Cfg{M}{\EE}{\FF}{\cdot}\Longrightarrow{M[\Env{\EE}{\FF}]}
+    \Cfg{M}{\EE}{\FF}{\cdot}\Longrightarrow{\DoubleForce{M}{\EE}{\FF}}
   }
   \and
   \inferrule{
@@ -1018,8 +1022,45 @@ computing an open term and hit a variable.
   }
 \end{mathpar}
 
-But using Favonia's Thought, we can come up with something more
-efficient. This na\"ive version is rather appalling.
+\paragraph{Two-Layer Forcing}
+
+So, we have $M[\Env{\EE}{\FF}]$ everywhere. Here is the definition disguised as rules.
+
+\begin{mathparpagebreakable}
+  \inferrule{
+    \EE^+(a) = \Clo{M}{\EE'}{\LL}
+  }{
+    \DoubleForce{a}{\EE}{\FF} = \DoubleForce{M}{\EE'}{\Cons{\FF}{\LL}}
+  }
+  \and
+  \inferrule{
+    a \notin \EE
+  }{
+    \DoubleForce{a}{\EE}{\LL} = \Force{a}{\LL}
+  }
+  \and
+  \inferrule{
+  }{
+    \Force{a}{\cdot} = a
+  }
+  \and
+  \inferrule{
+    \FF(a) = M
+  }{
+    \Force{a}{\Cons{\FF}{\LL}} = \Force{M}{\LL}
+  }
+  \and
+  \inferrule{
+    a \notin \FF
+  }{
+    \Force{a}{\Cons{\FF}{\LL}} = \Force{a}{\LL}
+  }
+  \\
+  \inferrule{
+  }{
+    \DoubleForce{r}{\EE}{\FF} = \Force{\EE^+(r)}{\LL}
+  }
+\end{mathparpagebreakable}
 
 
 \end{document}
