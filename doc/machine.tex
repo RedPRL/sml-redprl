@@ -198,6 +198,7 @@ the stack.
 
 
 \subsection{Kan operations}
+The substitution $A[x\hookrightarrow y]$ in the $\Com{}{}{}{}{}$ rule should be a no-op.
 \begin{mathparpagebreakable}
   \inferrule{
   }{
@@ -230,6 +231,10 @@ the stack.
   }
   \and
   \inferrule{
+    \EE'\triangleq\perfectbrackets{
+      \EE,
+      a\hookrightarrow{\Clo{A}{[x\hookrightarrow{\EE^+(r')}]}{[]}}
+    }
   }{
     \Step{\mu}{
       \Cfg{
@@ -237,18 +242,15 @@ the stack.
       }{\EE}{\FF}{\pi}
     }{
       \Cfg{
-        \HCom{r}{r'}{A}{
-          \Coe{r}{r'}{y.A}{M}
+        \HCom{r}{r'}{a}{
+          \Coe{r}{r'}{y.A[x\hookrightarrow{y}]}{M}
         }{
           \overline{
-            \xi_i\hookrightarrow{}y.\Coe{y}{r'}{y.A}{N_i}
+            \xi_i\hookrightarrow{}y.\Coe{y}{r'}{y.A[x\hookrightarrow{y}]}{N_i}
           }
         }
       }{
-        \perfectbrackets{
-          \EE,
-          x\hookrightarrow{\EE^+(r')}
-        }
+        \EE'
       }{
         \FF
       }{\pi}
@@ -350,10 +352,9 @@ the stack.
         \perfectbrackets{
           \EE,a\hookrightarrow%
           \Clo{
-            \Coe{r'}{x}{x.\Meta{z}[x]}{b}
+            \Coe{r'[\EE']}{x}{x.\Meta{z}[x]}{b}
           }{
             \perfectbrackets{
-              \EE',
               \Meta{z}\hookrightarrow%
               x.\Clo{A}{\EE}{[]}
             }
@@ -439,25 +440,26 @@ the stack.
         \overline{\xi_i\hookrightarrow{}y.\Snd{N_i}}
       }
     }
-    \\\\
+    \\
     \EE''\triangleq{
       \perfectbrackets{
         \EE',
-        a\hookrightarrow{}\Clo{A}{\EE}{\FF}
-      }
-    }
-    \\
-    \EE'''\triangleq{
-      \perfectbrackets{
-        \EE'',
+        a\hookrightarrow{}\Clo{A}{\EE}{\FF},
         \Meta{y}\hookrightarrow{}z.\Clo{
           B
         }{
           \perfectbrackets{
             \EE,
             a\hookrightarrow{}
-            \Clo{L_z}{\EE''}{\FF}
+            \Clo{L_z}{
+              \perfectbrackets{
+                \EE',
+                a\hookrightarrow{}\Clo{A}{\EE}{[]}
+              }
+            }{[]}
           }
+        }{
+          \FF
         }
       }
     }
@@ -474,7 +476,9 @@ the stack.
       \Cfg{
         \Pair{L_{r'}}{R}
       }{
-        \EE'''
+        \EE''
+      }{
+        \FF'
       }{\pi}
     }
   }
@@ -483,8 +487,20 @@ the stack.
     \EE'' \triangleq%
     \perfectbrackets{
       \EE',
-      \Meta{x}\hookrightarrow{x.\Clo{A}{\EE}},
-      \Meta{y}\hookrightarrow{x.\Clo{B}{[\EE,a\hookrightarrow\Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Snd{M}}}{[\EE,\Meta{x}\hookrightarrow{x.\Clo{A}{\EE}}]}]}}
+      \Meta{x}\hookrightarrow{x.\Clo{A}{\EE}{\FF}},
+      \Meta{y}\hookrightarrow{x.\Clo{B}{
+        \perfectbrackets{
+          \EE,
+          a\hookrightarrow{
+            \Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Fst{M}}}{
+              \perfectbrackets{
+                \EE',
+                \Meta{x}\hookrightarrow{x.\Clo{A}{\EE}{[]}}
+              }}{[]}
+          }
+        }}{
+          \FF
+        }}
     }
   }{
     \Step{\mu}{
@@ -493,7 +509,9 @@ the stack.
       }{
         \EE
       }{
-        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{[x]}}{\pi}
+        \FF
+      }{
+        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}
       }
     }{
       \Cfg{
@@ -504,6 +522,8 @@ the stack.
         }
       }{
         \EE''
+      }{
+        \FF'
       }{
         \pi%
       }
@@ -517,11 +537,11 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\PApp{M}{r}}{\EE}{\pi}
+      \Cfg{\PApp{M}{r}}{\EE}{\FF}{\pi}
     }{
-      \Cfg{M}{\EE}{
+      \Cfg{M}{\EE}{\FF}{
         \Cons{
-          \Frame{\PApp{\Box}{r}}{\EE}{[]}
+          \Frame{\PApp{\Box}{{\FF'}^+({\EE'}^+(r))}}{[]}{[]}{[]}
         }{\pi}
       }
     }
@@ -530,17 +550,17 @@ the stack.
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\PAbs{x}{M}}{\EE}{
+      \Cfg{\PAbs{x}{M}}{\EE}{\FF}{
         \Cons{
-          \Frame{\PApp{\Box}{r}}{\EE'}{[]}
+          \Frame{\PApp{\Box}{r}}{[]}{[]}{[]}
         }{\pi}
       }
     }{
       \Cfg{M}{
         \perfectbrackets{
-          \EE,x\hookrightarrow\EE' (r)
+          \EE,x\hookrightarrow{r}
         }
-      }{\pi}
+      }{\FF}{\pi}
     }
   }
   \and
@@ -548,7 +568,7 @@ the stack.
     H\triangleq{
       \HCom{r}{r'}{\Meta{x}[x]}{\PApp{M}{x}}{
         \overline{
-          x=\epsilon\hookrightarrow{}y.\Meta{y}_\epsilon%
+          x=\epsilon\hookrightarrow{}y.\Meta{y}_\epsilon[y]%
         },
         \overline{
           \xi_i\hookrightarrow{}y.\PApp{N_i}{x}
@@ -558,15 +578,17 @@ the stack.
     \\
     \EE''\triangleq\perfectbrackets{
       \EE',
-      \Meta{x}\hookrightarrow{}x.\Clo{A}{\EE},
+      \Meta{x}\hookrightarrow{}x.\Clo{A}{\EE}{\FF},
       \overline{
-        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\EE}%
+        \Meta{y}_\epsilon\hookrightarrow{}x.\Clo{P_\epsilon}{\EE}{\FF}%
       }
     }
   }{
     \Step{\mu}{
       \Cfg{\Path{x.A}{P_0}{P_1}}{
         \EE
+      }{
+        \FF
       }{
         \Cons{
           \Frame{
@@ -575,22 +597,22 @@ the stack.
                 \xi_i\hookrightarrow{}y.N_i
               }
             }
-          }{\EE'}{[]}
+          }{\EE'}{\FF'}{[]}
         }{\pi}
       }
     }{
       \Cfg{
         \PAbs{x}{H}
-      }{\EE''}{\pi}
+      }{\EE''}{\FF'}{\pi}
     }
   }
   \and
   \inferrule{
     \EE''\triangleq\perfectbrackets{
       \EE',
-      \Meta{x}\hookrightarrow{}x.\Clo{A}{\EE},
+      \Meta{x}\hookrightarrow{}x,y.\Clo{A}{\EE}{\FF},
       \overline{
-        \Meta{y}_\epsilon\hookrightarrow{}.\Clo{P_\epsilon}{\EE}
+        \Meta{y}_\epsilon\hookrightarrow{}x,y.\Clo{P_\epsilon}{\EE}{\FF}
       }
     }
   }{
@@ -600,22 +622,24 @@ the stack.
       }{
         \EE
       }{
+        \FF
+      }{
         \Cons{
           \Frame{
             \Coe{r}{r'}{\Box}{M}
-          }{\EE'}{[x]}
+          }{\EE'}{\FF'}{[y]}
         }{\pi}
       }
     }{
       \Cfg{
         \PAbs{x}{
-          \Com{r}{r'}{y.\Meta{x}[y]}{\PApp{M}{x}}{
+          \Com{r}{r'}{y.\Meta{x}[x,y]}{\PApp{M}{x}}{
             \overline{
-              x=\epsilon\hookrightarrow{}y.{\Meta{y}_\epsilon}
+              x=\epsilon\hookrightarrow{}y.{\Meta{y}_\epsilon[x,y]}
             }
           }
         }
-      }{\EE''}{\pi}
+      }{\EE''}{\FF'}{\pi}
     }
   }
 \end{mathparpagebreakable}
