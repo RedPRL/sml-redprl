@@ -1024,13 +1024,13 @@ computing an open term and hit a variable.
 
 \paragraph{Two-Layer Forcing}
 
-So, we have $M[\Env{\EE}{\FF}]$ everywhere. Here is the definition disguised as rules.
+So, we have $\DoubleForce{M}{\EE}{\LL}$ everywhere. Here is the definition disguised as rules.
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \EE^+(a) = \Clo{M}{\EE'}{\LL}
+    \EE^+(a) = \Clo{M}{\EE'}{\FF}
   }{
-    \DoubleForce{a}{\EE}{\FF} = \DoubleForce{M}{\EE'}{\Cons{\FF}{\LL}}
+    \DoubleForce{a}{\EE}{\LL} = \DoubleForce{M}{\EE'}{\Cons{\FF}{\LL}}
   }
   \and
   \inferrule{
@@ -1040,27 +1040,54 @@ So, we have $M[\Env{\EE}{\FF}]$ everywhere. Here is the definition disguised as 
   }
   \and
   \inferrule{
+    \EE^+(\Meta{x}) = \vec{x};\vec{a}.\Clo{N}{\EE'}{\FF}
   }{
-    \Force{a}{\cdot} = a
+    \DoubleForce{\perfectparens{\Meta{x}[\vec{r};\vec{M}]}}{\EE}{\LL} =
+    \DoubleForce{N}{\EE'}{
+      \Cons{F}{\Cons{
+        \perfectbrackets{
+          \overline{x\hookrightarrow{\DoubleForce{r}{\EE}{\LL}}},
+          \overline{a\hookrightarrow{\DoubleForce{M}{\EE}{\LL}}}
+        }
+      }{\LL}}
+    }
   }
   \and
   \inferrule{
-    \FF(a) = M
+    \Meta{x} \notin \EE
   }{
-    \Force{a}{\Cons{\FF}{\LL}} = \Force{M}{\LL}
+    \DoubleForce{\perfectparens{\Meta{x}[\vec{r};\vec{M}]}}{\EE}{\LL} =
+    \Meta{x}[
+      \overline{\perfectparens{\Env{\EE}{\LL}}^+(r)};
+      \overline{\DoubleForce{M}{\EE}{\LL}}]
   }
   \and
-  \inferrule{
-    a \notin \FF
-  }{
-    \Force{a}{\Cons{\FF}{\LL}} = \Force{a}{\LL}
-  }
-  \\
   \inferrule{
   }{
     \DoubleForce{r}{\EE}{\FF} = \Force{\EE^+(r)}{\LL}
   }
 \end{mathparpagebreakable}
 
+\begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Force{a}{\cdot} = a
+  }
+  \and
+  \inferrule{
+  }{
+    \Force{r}{\cdot} = r
+  }
+  \and
+  \inferrule{
+  }{
+    \Force{a}{\Cons{\FF}{\LL}} = \Force{\FF^+(a)}{\LL}
+  }
+  \and
+  \inferrule{
+  }{
+    \Force{r}{\Cons{\FF}{\LL}} = \Force{\FF^+(r)}{\LL}
+  }
+\end{mathparpagebreakable}
 
 \end{document}
