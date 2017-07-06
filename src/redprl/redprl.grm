@@ -172,7 +172,9 @@ end
  | metavar of string
  | metavarArgs of string param list * ast list
 
- | operator of string operator
+ | simpleNullaryOperator of string operator
+ | nullaryOperator of string operator
+ | regularNonNullaryOperator of string operator
  | customOpParams of (string param * P.param_sort option) list
  | psort of P.param_sort
  | sort of O.sort
@@ -333,18 +335,66 @@ bindings
   : binding bindings (binding :: bindings)
   | binding ([binding])
 
-operator
-  : ABS (O.MONO O.PATH_ABS)
-  | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
+(* built-in nullary operators that take no parameters *)
+simpleNullaryOperator
+  (* bools *)
+  : BOOL (O.MONO O.BOOL)
+  | TT (O.MONO O.TRUE)
+  | FF (O.MONO O.FALSE)
+  (* weak bools *)
+  | WBOOL (O.MONO O.WBOOL)
+  (* integers *)
+  | INT (O.MONO O.INT)
+  | NAT (O.MONO O.NAT)
+  (* void *)
+  | VOID (O.MONO O.VOID)
+  (* circle *)
+  | S1 (O.MONO O.S1)
+  | BASE (O.MONO O.BASE)
+
+(* built-in nullary operators *)
+nullaryOperator
+  : simpleNullaryOperator (simpleNullaryOperator)
+  (* integers *)
+  | NUMBER param (O.POLY (O.NUMBER param))
+  (* circle *)
+  | LOOP param (O.POLY (O.LOOP param))
+
+(* built-in operators that do not have special form *)
+regularNonNullaryOperator
+  (* bools *)
+  : IF (O.MONO O.S_IF)
+  (* weak bools *)
   | WBOOL_REC (O.MONO O.IF)
-  | IF (O.MONO O.S_IF)
+  (* paths *)
   | PATHS (O.MONO O.PATH_TY)
+  | ABS (O.MONO O.PATH_ABS)
+  (* pairs *)
   | FST (O.MONO O.FST)
   | SND (O.MONO O.SND)
-
+  (* coe *)
+  | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
 
 rawTerm
   : VARNAME (`` VARNAME)
+
+  (* meta variable *)
+  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
+
+  (* hypothesis *)
+  | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
+
+  (* custom operators *)
+  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
+  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
+  | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
+
+  (* built-in operators that are followed by bindings *)
+  | simpleNullaryOperator (Ast.$$ (simpleNullaryOperator, []))
+  | LPAREN nullaryOperator RPAREN (Ast.$$ (nullaryOperator, []))
+  | LPAREN regularNonNullaryOperator bindings RPAREN (Ast.$$ (regularNonNullaryOperator, bindings))
+
+  (* compositions *)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
   | LPAREN FCOM LBRACKET dir RBRACKET binding RPAREN
@@ -354,34 +404,19 @@ rawTerm
   | LPAREN HCOM LBRACKET dir RBRACKET binding binding RPAREN
       (Ast.$$ (O.POLY (O.HCOM (dir, [])), [binding1, binding2]))
 
-  | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
+  (* numbers *)
+  | NUMERAL (Ast.$$ (O.POLY (O.NUMBER (P.APP (P.NUMERAL NUMERAL))), []))
 
-
-  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
-  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
-
+  (* function types *)
+  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
+  | LPAREN LAMBDA LSQUARE symbols RSQUARE term RPAREN (Multi.makeLam symbols term)
   | LPAREN FUN_APP term terms RPAREN (makeApp term terms)
 
-  | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
-
-  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-  | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
-  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
+  (* pair types *)
   | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
-  | LPAREN LAMBDA LSQUARE symbols RSQUARE term RPAREN (Multi.makeLam symbols term)
   | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
-  | WBOOL (Ast.$$ (O.MONO O.WBOOL, []))
-  | TT (Ast.$$ (O.MONO O.TRUE, []))
-  | FF (Ast.$$ (O.MONO O.FALSE, []))
-  | BOOL (Ast.$$ (O.MONO O.BOOL, []))
-  | INT (Ast.$$ (O.MONO O.INT, []))
-  | LPAREN NUMBER param RPAREN (Ast.$$ (O.POLY (O.NUMBER param), []))
-  | NUMERAL (Ast.$$ (O.POLY (O.NUMBER (P.APP (P.NUMERAL NUMERAL))), []))
-  | NAT (Ast.$$ (O.MONO O.NAT, []))
-  | VOID (Ast.$$ (O.MONO O.VOID, []))
-  | S1 (Ast.$$ (O.MONO O.S1, []))
-  | BASE (Ast.$$ (O.MONO O.BASE, []))
-  | LPAREN LOOP param RPAREN (Ast.$$ (O.POLY (O.LOOP param), []))
+
+  (* paths *)
   | LPAREN AT_SIGN term param RPAREN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), term)]))
 
 rawJudgment
@@ -458,7 +493,8 @@ atomicRawTac
   | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
   | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
 
-  | operator (Ast.$$ (operator, []))
+  | nullaryOperator (Ast.$$ (nullaryOperator, []))
+  | regularNonNullaryOperator (Ast.$$ (regularNonNullaryOperator, []))
   | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
   | VARNAME (`` VARNAME)
 
