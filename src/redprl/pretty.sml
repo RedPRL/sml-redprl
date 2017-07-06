@@ -93,7 +93,7 @@ struct
     case Abt.out m of
        O.MONO O.DPROD $ [_ \ a, (_, [x]) \ bx] =>
          (case doms of
-             [] => multiDFun (([x], a) :: doms) bx
+             [] => multiDProd (([x], a) :: doms) bx
            | (xs, a') :: doms' =>
                if Abt.eq (a, a') then
                  multiDProd ((xs @ [x], a) :: doms') bx
