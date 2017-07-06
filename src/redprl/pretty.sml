@@ -110,7 +110,7 @@ struct
   fun printQuant opr (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
       (text opr)
-        :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [ppTerm a]) doms
+        :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]) doms
           @ [ppTerm cod]
 
   and printLam (xs, m) =
