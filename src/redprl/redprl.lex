@@ -109,7 +109,6 @@ whitespace = [\ \t];
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 "exn"              => (Tokens.EXN (posTuple (size yytext)));
-"lbl"              => (Tokens.LBL (posTuple (size yytext)));
 "num"              => (Tokens.NUM (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));

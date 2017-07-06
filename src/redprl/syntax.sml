@@ -9,6 +9,9 @@ struct
   type equation = param * param
   type dir = param * param
 
+  type label = string
+  structure LabelDict = SplayDict (structure Key = StringOrdered)
+
   datatype 'a view =
      VAR of variable * sort
    (* the trivial realizer for equality, which is called 'axiom' in NuPRL. *)
@@ -31,6 +34,9 @@ struct
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
    (* prodcut: pair, fst and snd *)
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
+   (* record *)
+   | RECORD of 'a LabelDict.dict
+   | TUPLE of 'a LabelDict.dict | PROJ of string * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_AP of 'a * param
    (* hcom operator *)
@@ -63,6 +69,17 @@ struct
       in
         ListPair.zipEq (eqs, List.map goTube tubes)
       end
+    fun intoFields fs =
+      let
+        val (lbls, tms) = ListPair.unzip (LabelDict.toList fs)
+        val tms = List.map (fn tm => ([],[]) \ tm) tms
+      in
+        (lbls, tms)
+      end
+    fun outFields (lbls, tms) =
+      ListPair.foldrEq
+        (fn (lbl, (_ \ tm), m) => LabelDict.insert m lbl tm)
+        LabelDict.empty (lbls, tms)
   in
     fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
 
@@ -120,6 +137,20 @@ struct
        | PAIR (m, n) => O.MONO O.PAIR $$ [([],[]) \ m, ([],[]) \ n]
        | FST m => O.MONO O.FST $$ [([],[]) \ m]
        | SND m => O.MONO O.SND $$ [([],[]) \ m]
+
+       | RECORD fs =>
+           let
+             val (lbls, tys) = intoFields fs
+           in
+             O.MONO (O.RECORD lbls) $$ tys
+           end
+       | TUPLE fs =>
+           let
+             val (lbls, tys) = intoFields fs
+           in
+             O.MONO (O.TUPLE lbls) $$ tys
+           end
+       | PROJ (lbl, a) => O.MONO (O.PROJ lbl) $$ [([],[]) \ a]
 
        | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
@@ -198,6 +229,10 @@ struct
        | O.MONO O.PAIR $ [_ \ m, _ \ n] => PAIR (m, n)
        | O.MONO O.FST $ [_ \ m] => FST m
        | O.MONO O.SND $ [_ \ m] => SND m
+
+       | O.MONO (O.RECORD lbls) $ tms => RECORD (outFields (lbls, tms))
+       | O.MONO (O.TUPLE lbls) $ tms => TUPLE (outFields (lbls, tms))
+       | O.MONO (O.PROJ lbl) $ [_ \ m] => PROJ (lbl, m)
 
        | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)

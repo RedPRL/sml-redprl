@@ -108,12 +108,12 @@ end
  | DOUBLE_RANGLE
  | QUESTION
 
- | FCOM | WBOOL | TT | FF | WBOOL_REC | BOOL | IF | INT | NUMBER | NAT | VOID | S1 | BASE | LOOP | FST | SND | PATHS | HCOM | COE
+ | FCOM | WBOOL | TT | FF | WBOOL_REC | BOOL | IF | INT | NUMBER | NAT | VOID | S1 | BASE | LOOP | FST | SND | RECORD | TUPLE | PROJ | PATHS | HCOM | COE
  | THEN | ELSE | LET | WITH | CASE | OF
 
  | FUN_APP
 
- | DIM | EXN | HYP | LBL | NUM
+ | DIM | EXN | HYP | NUM
  | EXP | TAC | TRIV
 
  | CMD_PRINT | CMD_EXTRACT
@@ -237,7 +237,6 @@ psort
   : DIM (P.DIM)
   | EXN (P.EXN)
   | HYP (P.HYP O.EXP)
-  | LBL (P.LBL)
   | NUM (P.NUM)
 
 sort
