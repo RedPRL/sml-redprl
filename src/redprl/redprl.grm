@@ -108,7 +108,9 @@ end
  | DOUBLE_RANGLE
  | QUESTION
 
- | FCOM | WBOOL | TT | FF | WBOOL_REC | BOOL | IF | INT | NUMBER | NAT | VOID | S1 | BASE | LOOP | FST | SND | RECORD | TUPLE | PROJ | PATHS | HCOM | COE
+ | FCOM | WBOOL | TT | FF | WBOOL_REC | BOOL | IF | INT | NUMBER | NAT | VOID
+ | S1 | BASE | LOOP | FST | SND | RECORD | TUPLE | PROJ | PATHS | HCOM | COE
+
  | THEN | ELSE | LET | WITH | CASE | OF
 
  | FUN_APP
@@ -273,6 +275,9 @@ params
   : param ([param])
   | param params (param :: params)
 
+dir
+  : param SQUIGGLE_ARROW param ((param1, param2))
+
 equation
   : LPAREN equation RPAREN (equation)
   | param EQUALS param (param1, param2)
@@ -289,7 +294,6 @@ terms
   : term ([term])
   | term terms (term :: terms)
 
-
 tube
   : LSQUARE equation binding RSQUARE (equation, binding)
 
@@ -297,27 +301,18 @@ tubes
   : tube ([tube])
   | tube tubes (tube :: tubes)
 
-metavarArgs
-  : LBRACKET params RBRACKET LSQUARE terms RSQUARE (params, terms)
-  | LBRACKET params RBRACKET (params, [])
-  | LSQUARE terms RSQUARE ([], terms)
-  | ([], [])
-
-
+metavar
+  : HASH ident (ident)
 
 customOpParams
   : params (List.map (fn x => (x, NONE)) params)
 
-metavar
-  : HASH ident (ident)
 
-dir
-  : param SQUIGGLE_ARROW param ((param1, param2))
 
 term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
 
 quantifierData
-  : LSQUARE symbols term RSQUARE quantifierData (((symbols, term) :: #1 quantifierData), #2 quantifierData)
+  : LSQUARE symbols COLON term RSQUARE quantifierData (((symbols, term) :: #1 quantifierData), #2 quantifierData)
   | term quantifierData (((["_"], term) :: #1 quantifierData), #2 quantifierData)
   | term ([], term)
 
@@ -378,18 +373,20 @@ regularNonNullaryOperator
 rawTerm
   : VARNAME (`` VARNAME)
 
-  (* meta variable *)
-  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-
   (* hypothesis *)
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
 
-  (* custom operators *)
-  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
-  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
-  | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
+  (* meta variable *)
+  | metavar (Ast.$$# (metavar, ([], [])))
+  | LPAREN metavar terms RPAREN (Ast.$$# (metavar, ([], terms)))
+  | LPAREN LBRACKET metavar params RBRACKET terms RPAREN (Ast.$$# (metavar, (params, terms)))
 
-  (* built-in operators that are followed by bindings *)
+  (* custom operators *)
+  | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
+  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
+  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
+
+  (* built-in operators that can be handled uniformly *)
   | simpleNullaryOperator (Ast.$$ (simpleNullaryOperator, []))
   | LPAREN nullaryOperator RPAREN (Ast.$$ (nullaryOperator, []))
   | LPAREN regularNonNullaryOperator bindings RPAREN (Ast.$$ (regularNonNullaryOperator, bindings))
@@ -495,7 +492,8 @@ atomicRawTac
 
   | nullaryOperator (Ast.$$ (nullaryOperator, []))
   | regularNonNullaryOperator (Ast.$$ (regularNonNullaryOperator, []))
-  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
+  | metavar (Ast.$$# (metavar, ([], [])))
+  | LBRACKET metavar metavarArgs RBRACKET (Ast.$$# (metavar, metavarArgs))
   | VARNAME (`` VARNAME)
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)

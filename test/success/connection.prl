@@ -1,8 +1,8 @@
 Thm Connection(#A) : [
   a/type : #A type >>
   (->
-   [a b #A]
-   [p (path {_} #A a b)]
+   [a b : #A]
+   [p : (path {_} #A a b)]
    (path {i} (path {_} #A a (@ p i)) (abs {_} a) p))
 ] by [
   { lam a. lam b. lam p.
