@@ -131,7 +131,7 @@ Def Cmp(#f; #g) = [
 
 
 Def MyLoop{x:dim}(#m) = [
-  <#m, (loop x)>
+  (pair #m (loop x))
 ].
 
 Def Test = [

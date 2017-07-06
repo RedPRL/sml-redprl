@@ -92,13 +92,14 @@ whitespace = [\ \t];
 "base"             => (Tokens.BASE (posTuple (size yytext)));
 "loop"             => (Tokens.LOOP (posTuple (size yytext)));
 "lam"              => (Tokens.LAMBDA (posTuple (size yytext)));
-"abs"              => (Tokens.ABS (posTuple (size yytext)));
+"app"              => (Tokens.FUN_APP (posTuple (size yytext)));
+"pair"             => (Tokens.PAIR (posTuple (size yytext)));
 "fst"              => (Tokens.FST (posTuple (size yytext)));
 "snd"              => (Tokens.SND (posTuple (size yytext)));
 "path"             => (Tokens.PATHS (posTuple (size yytext)));
+"abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
-"app"              => (Tokens.FUN_APP (posTuple (size yytext)));
 
 "then"             => (Tokens.THEN (posTuple (size yytext)));
 "else"             => (Tokens.ELSE (posTuple (size yytext)));

@@ -69,7 +69,7 @@ struct
   fun ppMetavarParams (x, ps) =
     case ps of
       [] => ppMetavar x
-    | ps => Atomic.braces @@ hsep @@ ppMetavar x :: List.map ppParam ps
+    | ps => Atomic.braces @@ hsep @@ ppMetavar x :: List.map (fn (p, _) => ppParam p) ps
 
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
@@ -134,8 +134,6 @@ struct
          printLam @@ multiLam [] m
      | O.MONO O.AP $ [_ \ m, _ \ n] =>
          Atomic.parens @@ expr @@ hvsep [ppTerm m, ppTerm n]
-     | O.MONO O.PAIR $ [_ \ m, _ \ n] =>
-         collection (char #"<") (char #">") Atomic.comma [ppTerm m, ppTerm n]
      | O.POLY (O.LOOP x) $ [] => 
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
