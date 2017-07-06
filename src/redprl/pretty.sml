@@ -53,6 +53,7 @@ struct
   val ppSym = text o Sym.toString
   val ppVar = text o Var.toString
   val ppParam = text o P.toString Sym.toString
+  fun ppMetavar x = seq [char #"#", text (Abt.Metavar.toString x)]
 
   fun unlessEmpty xs m =
     case xs of
@@ -64,6 +65,11 @@ struct
        O.POLY (O.CUST (opid, [], _)) => ppSym opid
      | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map (fn (p, _) => ppParam p) params
      | _ =>  text @@ RedPrlOperator.toString Sym.toString theta
+
+  fun ppMetavarParams (x, ps) =
+    case ps of
+      [] => ppMetavar x
+    | ps => Atomic.braces @@ hsep @@ ppMetavar x :: List.map ppParam ps
 
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
@@ -154,11 +160,9 @@ struct
         Atomic.parens @@ expr @@
           hvsep @@ ppOperator theta :: List.map ppBinder args
 
+     | x $# (ps, []) => ppMetavarParams (x, ps)
      | x $# (ps, ms) =>
-         seq
-           [char #"#",text (Abt.Metavar.toString x),
-            unlessEmpty ps @@ collection (char #"{") (char #"}") Atomic.comma @@ List.map (ppParam o #1) ps,
-            unlessEmpty ms @@ collection (char #"[") (char #"]") Atomic.comma @@ List.map ppTerm ms]
+        Atomic.parens @@ expr @@ hvsep @@ ppMetavarParams (x, ps) :: List.map ppTerm ms
 
   and ppTubes (eqs, tubes) =
     expr @@ hvsep @@

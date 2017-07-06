@@ -45,7 +45,7 @@ struct
    | COE of {dir: dir, ty: (symbol * 'a), coercee: 'a}
    (* com operator *)
    | COM of {dir: dir, ty: (symbol * 'a), cap: 'a, tubes: (equation * (symbol * 'a)) list}
-   (* it is a "view" for custom operators *)
+   (* custom operators *)
    | CUST
    (* meta *)
    | META

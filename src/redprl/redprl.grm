@@ -379,11 +379,13 @@ rawTerm
   (* meta variable *)
   | metavar (Ast.$$# (metavar, ([], [])))
   | LPAREN metavar terms RPAREN (Ast.$$# (metavar, ([], terms)))
+  | LBRACKET metavar params RBRACKET (Ast.$$# (metavar, (params, [])))
   | LPAREN LBRACKET metavar params RBRACKET terms RPAREN (Ast.$$# (metavar, (params, terms)))
 
   (* custom operators *)
   | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
   | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
+  | LBRACKET OPNAME customOpParams RBRACKET (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
   | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
 
   (* built-in operators that can be handled uniformly *)
