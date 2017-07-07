@@ -62,17 +62,31 @@ structure Multi =
 struct
   infix $$ $ \
 
-  fun makeQuant opr [] cod = cod
-    | makeQuant opr (([], _) :: doms) cod = makeQuant opr doms cod
-    | makeQuant opr ((x :: xs, a) :: doms) cod =
-       O.MONO opr $$ [([],[]) \ a, ([],[x]) \ makeQuant opr ((xs, a) :: doms) cod]
+  fun flatten xsys = List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
 
-  val makeDFun = makeQuant O.DFUN
-  val makeDProd = makeQuant O.DPROD
+  fun makeQuant opr [] cod = cod
+    | makeQuant opr ((x, a) :: doms) cod =
+       O.MONO opr $$ [([],[]) \ a, ([],[x]) \ makeQuant opr doms cod]
+
+  val makeDFun = makeQuant O.DFUN o flatten
+  val makeDProd = makeQuant O.DPROD o flatten
 
   fun makeLam [] m = m
     | makeLam (x::xs) m =
         O.MONO O.LAM $$ [([],[x]) \ makeLam xs m]
+
+  fun makeRecord tbs =
+    let
+      val (lbls, tys) = ListPair.unzip (flatten tbs)
+    in
+      O.MONO (O.RECORD lbls) $$ List.map (fn ty => ([],[]) \ ty) tys
+    end
+  fun makeTuple fields =
+    let
+      val (lbls, args) = ListPair.unzip (flatten fields)
+    in
+      O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) args
+    end
 end
 
 
@@ -138,7 +152,9 @@ end
    start of Signature.src_elt
 
  | ident of string
+ | idents of string list
  | boundVar of string
+ | boundVars of string list
 
  | psort of P.param_sort
  | psorts of P.param_sort list
@@ -159,8 +175,11 @@ end
  | metavar of string
  | customOpParams of (string param * P.param_sort option) list
 
- | symbols of symbol list
+ | typedBinder of string list * ast
+ | typedBinders of (string list * ast) list
  | quantifierData of (string list * ast) list * ast
+ | field of string list * ast
+ | fields of (string list * ast) list
 
    (* abt abstractions *)
  | binder of string list * string list
@@ -227,9 +246,17 @@ ident
   : OPNAME (OPNAME)
   | VARNAME (VARNAME)
 
+idents
+  : ident ([ident])
+  | ident idents (ident :: idents)
+
 boundVar
   : VARNAME (VARNAME)
   | UNDER ("_")
+
+boundVars
+  : boundVar ([boundVar])
+  | boundVar boundVars (boundVar :: boundVars)
 
 psort
   : DIM (P.DIM)
@@ -289,19 +316,29 @@ metavar
 customOpParams
   : params (List.map (fn x => (x, NONE)) params)
 
-symbols
-  : boundVar ([boundVar])
-  | boundVar symbols (boundVar :: symbols)
+typedBinder
+  : LSQUARE boundVars COLON term RSQUARE ((boundVars, term))
+
+typedBinders
+  : typedBinder ([typedBinder])
+  | typedBinder typedBinders (typedBinder :: typedBinders)
 
 quantifierData
-  : LSQUARE symbols COLON term RSQUARE quantifierData (((symbols, term) :: #1 quantifierData), #2 quantifierData)
+  : typedBinder quantifierData ((typedBinder :: #1 quantifierData), #2 quantifierData)
   | term quantifierData (((["_"], term) :: #1 quantifierData), #2 quantifierData)
   | term ([], term)
 
+field
+  : LSQUARE idents EQUALS term RSQUARE (idents, term)
+
+fields
+  : field fields (field :: fields)
+  | field ([field])
+
 binder
-  : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE (symbols1, symbols2)
-  | LBRACKET symbols RBRACKET (symbols, [])
-  | LSQUARE symbols RSQUARE ([], symbols)
+  : LBRACKET boundVars RBRACKET LSQUARE boundVars RSQUARE (boundVars1, boundVars2)
+  | LBRACKET boundVars RBRACKET (boundVars, [])
+  | LSQUARE boundVars RSQUARE ([], boundVars)
 
 binding
   : binder term (\ (binder, term))
@@ -389,17 +426,25 @@ rawTermAndTac
 
   (* function types *)
   | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
-  | LPAREN LAMBDA LSQUARE symbols RSQUARE term RPAREN (Multi.makeLam symbols term)
+  | LPAREN LAMBDA LSQUARE boundVars RSQUARE term RPAREN (Multi.makeLam boundVars term)
 
   (* pair types *)
   | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
+
+  (* non-dep. record types *)
+  (* in theory `RECORD` and `TUPLE` can be put into `simpleNullaryOperator`
+   * but it is better to put all the relevant rules next to each other. *)
+  | RECORD (Multi.makeRecord [])
+  | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord typedBinders)
+  | TUPLE (Multi.makeTuple [])
+  | LPAREN TUPLE fields RPAREN (Multi.makeTuple fields)
 
   (* paths *)
   | LPAREN AT_SIGN term param RPAREN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), term)]))
 
 rawTerm
   : rawTermAndTac (rawTermAndTac)
-  (* hypothesis *)
+  (* hypotheses *)
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
 
 term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
