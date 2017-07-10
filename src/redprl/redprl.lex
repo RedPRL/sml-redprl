@@ -67,6 +67,7 @@ whitespace = [\ \t];
 "<-"               => (Tokens.LEFT_ARROW (posTuple (size yytext)));
 "`"                => (Tokens.BACK_TICK (posTuple (size yytext)));
 "*"                => (Tokens.TIMES (posTuple (size yytext)));
+"!"                => (Tokens.BANG (posTuple (size yytext)));
 "@"                => (Tokens.AT_SIGN (posTuple (size yytext)));
 "||"               => (Tokens.DOUBLE_PIPE (posTuple (size yytext)));
 "|"                => (Tokens.PIPE (posTuple (size yytext)));

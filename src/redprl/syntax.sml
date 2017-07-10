@@ -65,7 +65,7 @@ struct
     fun outTubes (eqs, tubes) =
       let
         fun goTube (([d], []) \ tube) = (d, tube)
-          | goTube _ = raise Fail "Syntax.outTubes: Malformed tube"
+          | goTube _ = raise E.error [Fpp.text "Syntax.outTubes: Malformed tube"]
       in
         ListPair.zipEq (eqs, List.map goTube tubes)
       end
@@ -78,7 +78,10 @@ struct
       end
     fun outFields (lbls, tms) =
       ListPair.foldrEq
-        (fn (lbl, (_ \ tm), m) => LabelDict.insert m lbl tm)
+        (fn (lbl, (_ \ tm), m) =>
+          case LabelDict.insert' m lbl tm of
+            (_ , true) => raise E.error [Fpp.text "Duplicate labels"]
+          | (dict, _) => dict)
         LabelDict.empty (lbls, tms)
   in
     fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args

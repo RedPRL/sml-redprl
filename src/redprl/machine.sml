@@ -49,6 +49,19 @@ struct
     end
   end
 
+  structure ListUtils =
+  struct
+    local
+      fun findi' p i : 'a list -> (int * 'a) option =
+        fn [] => NONE
+         | (x :: l) =>
+             if p x then SOME (i, x)
+             else findi' p (i+1) l
+    in
+      fun findi p l = findi' p 0 l
+    end
+  end
+
   structure ParamElem =
   struct
     type t = param
@@ -158,6 +171,13 @@ struct
           @@ (O.MONO O.SND `$ [([],[]) \ S.HOLE], m)
           <: env
 
+     | O.MONO (O.RECORD _) `$ _ <: _ => S.VAL
+     | O.MONO (O.TUPLE _) `$ _ <: _ => S.VAL
+     | O.MONO (O.PROJ lbl) `$ [_ \ m] <: env =>
+         S.CUT
+          @@ (O.MONO (O.PROJ lbl) `$ [([],[]) \ S.HOLE], m)
+          <: env
+
      | O.MONO O.PATH_TY `$ _ <: _ => S.VAL
      | O.MONO O.PATH_ABS `$ _ <: _ => S.VAL
      | O.POLY (O.PATH_AP r) `$ [_ \ m] <: env =>
@@ -256,7 +276,6 @@ struct
          S.STEP
            @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2]))
            <: env
-
      | O.POLY (O.DEV_DPROD_ELIM z) `$ [([x,y], _) \ t] <: env =>
          S.STEP
            @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t]))
@@ -290,11 +309,7 @@ struct
   (* [cut] tells the machine how to plug a value into a hole in a stack frame. As a rule of thumb,
    * any time you return [CUT] in the [step] judgment, you should add a corresponding rule to [cut]. *)
   fun cut _(*sign*) =
-    fn (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
-     | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ _] <: env) => m <: env
-     | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ _, _ \ n] <: env) => n <: env
-
-     | (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
+    fn (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
      | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f],
         _ \ O.POLY (O.FCOM (dir, eqs)) `$ (_ \ cap) :: tubes <: env) =>
@@ -339,6 +354,15 @@ struct
            Syn.intoCom (dir, eqs) ((v, chv), mkElim cap, List.map (mapBind mkElim) tubes) <: env
          end
 
+     | (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
+
+     | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ _] <: env) => m <: env
+     | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ _, _ \ n] <: env) => n <: env
+
+     | (O.MONO (O.PROJ lbl) `$ [_ \ S.HOLE], _ \ O.MONO (O.TUPLE lbls) `$ args <: env) =>
+         (case ListUtils.findi (fn l => l = lbl) lbls of
+           NONE => raise InvalidCut
+         | SOME (i, _) => case List.nth (args, i) of (_ \ m) => m <: env)
 
      | (O.POLY (O.PATH_AP r) `$ [_ \ S.HOLE], _ \ O.MONO O.PATH_ABS `$ [([u],_) \ m] <: env) =>
          m <: Cl.insertSym env u r

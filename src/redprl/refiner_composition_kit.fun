@@ -134,6 +134,7 @@ struct
       let
         val _ = RedPrlLog.trace "HCom.Eq"
         val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
+        (* these operations could be expensive *)
         val Syn.HCOM {dir=(r0, r'0), ty=ty0, cap=cap0, tubes=tubes0} = Syn.out lhs
         val Syn.HCOM {dir=(r1, r'1), ty=ty1, cap=cap1, tubes=tubes1} = Syn.out rhs
         val () = Assert.paramEq "HCom.Eq source of direction" (r0, r1)
@@ -165,6 +166,7 @@ struct
       let
         val _ = RedPrlLog.trace "HCom.CapEq"
         val (I, H) >> CJ.EQ ((hcom, other), ty) = jdg
+        (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
         val () = Assert.paramEq "HCom.CapEq source and target of direction" (r, r')
 
@@ -193,6 +195,7 @@ struct
       let
         val _ = RedPrlLog.trace "HCom.TubeEq"
         val (I, H) >> CJ.EQ ((hcom, other), ty) = jdg
+        (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
 
         (* equations. they must be tautological because one of them is true. *)

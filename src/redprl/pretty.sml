@@ -36,6 +36,7 @@ sig
   val ppVar : RedPrlAbt.variable -> Fpp.doc
   val ppSym : RedPrlAbt.symbol -> Fpp.doc
   val ppParam : RedPrlAbt.param -> Fpp.doc
+  val ppLabel : string -> Fpp.doc
 end =
 struct
   structure Abt = RedPrlAbt

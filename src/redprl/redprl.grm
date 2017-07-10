@@ -83,7 +83,7 @@ struct
     end
   fun makeTuple fields =
     let
-      val (lbls, args) = ListPair.unzip (flatten fields)
+      val (lbls, args) = ListPair.unzip fields
     in
       O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) args
     end
@@ -118,7 +118,7 @@ end
  | FRESH
  | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
- | TIMES
+ | TIMES | BANG
  | DOUBLE_RANGLE
  | QUESTION
 
@@ -152,7 +152,6 @@ end
    start of Signature.src_elt
 
  | ident of string
- | idents of string list
  | boundVar of string
  | boundVars of string list
 
@@ -178,8 +177,8 @@ end
  | typedBinder of string list * ast
  | typedBinders of (string list * ast) list
  | quantifierData of (string list * ast) list * ast
- | field of string list * ast
- | fields of (string list * ast) list
+ | field of string * ast
+ | fields of (string * ast) list
 
    (* abt abstractions *)
  | binder of string list * string list
@@ -245,10 +244,6 @@ start : elt (elt)
 ident
   : OPNAME (OPNAME)
   | VARNAME (VARNAME)
-
-idents
-  : ident ([ident])
-  | ident idents (ident :: idents)
 
 boundVar
   : VARNAME (VARNAME)
@@ -329,7 +324,7 @@ quantifierData
   | term ([], term)
 
 field
-  : LSQUARE idents EQUALS term RSQUARE (idents, term)
+  : LSQUARE ident term RSQUARE (ident, term)
 
 fields
   : field fields (field :: fields)
@@ -438,6 +433,7 @@ rawTermAndTac
   | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord typedBinders)
   | TUPLE (Multi.makeTuple [])
   | LPAREN TUPLE fields RPAREN (Multi.makeTuple fields)
+  | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
 
   (* paths *)
   | LPAREN AT_SIGN term param RPAREN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), term)]))

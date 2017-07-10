@@ -486,6 +486,7 @@ struct
            Syn.PATH_TY _ => Path.True
          | Syn.DFUN _ => DFun.True
          | Syn.DPROD _ => DProd.True
+         | Syn.RECORD _ => Record.True
          | _ => raise E.error [Fpp.text "Could not find introduction rule for", TermPrinter.ppTerm ty]
 
       fun StepEqTypeVal (ty1, ty2) =
@@ -498,6 +499,7 @@ struct
          | (Syn.S1, Syn.S1) => S1.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
          | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
+         | (Syn.RECORD _, Syn.RECORD _) => Record.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
@@ -523,6 +525,7 @@ struct
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => S1.EqFCom
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.PAIR _, Syn.PAIR _, _) => DProd.Eq
+         | (Syn.TUPLE _, Syn.TUPLE _, _) => Record.Eq
          | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
          | _ => raise E.error [Fpp.text "Could not find value equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
@@ -553,6 +556,7 @@ struct
            Syn.DPROD _ => DProd.Eta
          | Syn.DFUN _ => DFun.Eta
          | Syn.PATH_TY _ => Path.Eta
+         | Syn.RECORD _ => Record.Eta
          | _ => raise E.error [Fpp.text "Could not expand neutral term of type", TermPrinter.ppTerm ty]
 
 
