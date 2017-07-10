@@ -74,6 +74,8 @@ struct
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
 
+  val ppLabel = text
+
   fun intersperse s xs =
     case xs of
        [] => []
@@ -126,16 +128,34 @@ struct
   and ppTerm m =
     case Abt.out m of
        O.POLY (O.HYP_REF x) $ [] => seq [text ",", ppVar x]
+     | O.POLY (O.LOOP x) $ [] =>
+         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
      | O.MONO O.DFUN $ _ =>
          printQuant "->" @@ multiDFun [] m
-     | O.MONO O.DPROD $ _ =>
-         printQuant "*" @@ multiDProd [] m
      | O.MONO O.LAM $ _ =>
          printLam @@ multiLam [] m
      | O.MONO O.AP $ [_ \ m, _ \ n] =>
          Atomic.parens @@ expr @@ hvsep [ppTerm m, ppTerm n]
-     | O.POLY (O.LOOP x) $ [] => 
-         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
+     | O.MONO O.DPROD $ _ =>
+         printQuant "*" @@ multiDProd [] m
+     | O.MONO (O.RECORD []) $ _ => text "record"
+     | O.MONO (O.RECORD lbls) $ tys =>
+         let
+           val tys = List.map (fn (_ \ ty) => ty) tys
+           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, char #":", ppTerm a]
+         in
+           Atomic.parens @@ expr @@ hvsep
+             [text "record", expr @@ hvsep @@ ListPair.mapEq pp (lbls, tys)]
+         end
+     | O.MONO (O.TUPLE []) $ _ => text "tuple"
+     | O.MONO (O.TUPLE lbls) $ data =>
+         let
+           val data = List.map (fn (_ \ a) => a) data
+           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, ppTerm a]
+         in
+           Atomic.parens @@ expr @@ hvsep
+             [text "tuple", expr @@ hvsep @@ ListPair.mapEq pp (lbls, data)]
+         end
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
          Atomic.parens @@ expr @@ hvsep [text "@", ppTerm m, ppParam r]
      | `x => ppVar x
