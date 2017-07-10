@@ -572,21 +572,6 @@ struct
             orelse_ HCom.Eq
       end
 
-      structure Com =
-      struct
-        open Com
-
-        val AutoEqL = CapEqL orelse_ TubeEqL orelse_ Eq
-        (* Try all the com rules.
-         * Note that the EQ rule is invertible only when the cap and tube rules fail. *)
-        val AutoEqLR =
-          CapEqL
-            orelse_ (CatJdgSymmetry then_ CapEqL)
-            orelse_ TubeEqL
-            orelse_ (CatJdgSymmetry then_ TubeEqL)
-            orelse_ Eq
-      end
-
       structure Coe =
       struct
        open Coe
@@ -608,9 +593,6 @@ struct
          | (Syn.COE _, Syn.COE _) => Coe.AutoEqLR
          | (Syn.COE _, _) => Coe.AutoEqL
          | (_, Syn.COE _) => Coe.AutoEqR
-         | (Syn.COM _, Syn.COM _) => Com.AutoEqLR
-         | (Syn.COM _, _) => Com.AutoEqL
-         | (_, Syn.COM _) => Com.AutoEqLR
          | (Syn.PATH_AP (_, P.APP _), _) => Path.ApConstCompute
          | (_, Syn.PATH_AP (_, P.APP _)) => CatJdgSymmetry then_ Path.ApConstCompute
          | _ =>
