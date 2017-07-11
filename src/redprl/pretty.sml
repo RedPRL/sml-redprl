@@ -36,6 +36,7 @@ sig
   val ppVar : RedPrlAbt.variable -> Fpp.doc
   val ppSym : RedPrlAbt.symbol -> Fpp.doc
   val ppParam : RedPrlAbt.param -> Fpp.doc
+  val ppLabel : string -> Fpp.doc
 end =
 struct
   structure Abt = RedPrlAbt
@@ -53,6 +54,7 @@ struct
   val ppSym = text o Sym.toString
   val ppVar = text o Var.toString
   val ppParam = text o P.toString Sym.toString
+  fun ppMetavar x = seq [char #"#", text (Abt.Metavar.toString x)]
 
   fun unlessEmpty xs m =
     case xs of
@@ -65,8 +67,15 @@ struct
      | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map (fn (p, _) => ppParam p) params
      | _ =>  text @@ RedPrlOperator.toString Sym.toString theta
 
+  fun ppMetavarParams (x, ps) =
+    case ps of
+      [] => ppMetavar x
+    | ps => Atomic.braces @@ hsep @@ ppMetavar x :: List.map (fn (p, _) => ppParam p) ps
+
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
+
+  val ppLabel = text
 
   fun intersperse s xs =
     case xs of
@@ -93,7 +102,7 @@ struct
     case Abt.out m of
        O.MONO O.DPROD $ [_ \ a, (_, [x]) \ bx] =>
          (case doms of
-             [] => multiDFun (([x], a) :: doms) bx
+             [] => multiDProd (([x], a) :: doms) bx
            | (xs, a') :: doms' =>
                if Abt.eq (a, a') then
                  multiDProd ((xs @ [x], a) :: doms') bx
@@ -110,7 +119,7 @@ struct
   fun printQuant opr (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
       (text opr)
-        :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [ppTerm a]) doms
+        :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]) doms
           @ [ppTerm cod]
 
   and printLam (xs, m) =
@@ -120,18 +129,34 @@ struct
   and ppTerm m =
     case Abt.out m of
        O.POLY (O.HYP_REF x) $ [] => seq [text ",", ppVar x]
+     | O.POLY (O.LOOP x) $ [] =>
+         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
      | O.MONO O.DFUN $ _ =>
          printQuant "->" @@ multiDFun [] m
-     | O.MONO O.DPROD $ _ =>
-         printQuant "*" @@ multiDProd [] m
      | O.MONO O.LAM $ _ =>
          printLam @@ multiLam [] m
      | O.MONO O.AP $ [_ \ m, _ \ n] =>
          Atomic.parens @@ expr @@ hvsep [ppTerm m, ppTerm n]
-     | O.MONO O.PAIR $ [_ \ m, _ \ n] =>
-         collection (char #"<") (char #">") Atomic.comma [ppTerm m, ppTerm n]
-     | O.POLY (O.LOOP x) $ [] => 
-         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
+     | O.MONO O.DPROD $ _ =>
+         printQuant "*" @@ multiDProd [] m
+     | O.MONO (O.RECORD []) $ _ => text "record"
+     | O.MONO (O.RECORD lbls) $ tys =>
+         let
+           val tys = List.map (fn (_ \ ty) => ty) tys
+           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, char #":", ppTerm a]
+         in
+           Atomic.parens @@ expr @@ hvsep
+             [text "record", expr @@ hvsep @@ ListPair.mapEq pp (lbls, tys)]
+         end
+     | O.MONO (O.TUPLE []) $ _ => text "tuple"
+     | O.MONO (O.TUPLE lbls) $ data =>
+         let
+           val data = List.map (fn (_ \ a) => a) data
+           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, ppTerm a]
+         in
+           Atomic.parens @@ expr @@ hvsep
+             [text "tuple", expr @@ hvsep @@ ListPair.mapEq pp (lbls, data)]
+         end
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
          Atomic.parens @@ expr @@ hvsep [text "@", ppTerm m, ppParam r]
      | `x => ppVar x
@@ -154,11 +179,9 @@ struct
         Atomic.parens @@ expr @@
           hvsep @@ ppOperator theta :: List.map ppBinder args
 
+     | x $# (ps, []) => ppMetavarParams (x, ps)
      | x $# (ps, ms) =>
-         seq
-           [char #"#",text (Abt.Metavar.toString x),
-            unlessEmpty ps @@ collection (char #"{") (char #"}") Atomic.comma @@ List.map (ppParam o #1) ps,
-            unlessEmpty ms @@ collection (char #"[") (char #"]") Atomic.comma @@ List.map ppTerm ms]
+        Atomic.parens @@ expr @@ hvsep @@ ppMetavarParams (x, ps) :: List.map ppTerm ms
 
   and ppTubes (eqs, tubes) =
     expr @@ hvsep @@

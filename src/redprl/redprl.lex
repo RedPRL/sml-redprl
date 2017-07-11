@@ -67,6 +67,7 @@ whitespace = [\ \t];
 "<-"               => (Tokens.LEFT_ARROW (posTuple (size yytext)));
 "`"                => (Tokens.BACK_TICK (posTuple (size yytext)));
 "*"                => (Tokens.TIMES (posTuple (size yytext)));
+"!"                => (Tokens.BANG (posTuple (size yytext)));
 "@"                => (Tokens.AT_SIGN (posTuple (size yytext)));
 "||"               => (Tokens.DOUBLE_PIPE (posTuple (size yytext)));
 "|"                => (Tokens.PIPE (posTuple (size yytext)));
@@ -92,13 +93,16 @@ whitespace = [\ \t];
 "base"             => (Tokens.BASE (posTuple (size yytext)));
 "loop"             => (Tokens.LOOP (posTuple (size yytext)));
 "lam"              => (Tokens.LAMBDA (posTuple (size yytext)));
-"abs"              => (Tokens.ABS (posTuple (size yytext)));
+"app"              => (Tokens.FUN_APP (posTuple (size yytext)));
+"pair"             => (Tokens.PAIR (posTuple (size yytext)));
 "fst"              => (Tokens.FST (posTuple (size yytext)));
 "snd"              => (Tokens.SND (posTuple (size yytext)));
+"record"           => (Tokens.RECORD (posTuple (size yytext)));
+"tuple"            => (Tokens.TUPLE (posTuple (size yytext)));
 "path"             => (Tokens.PATHS (posTuple (size yytext)));
+"abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
-"app"              => (Tokens.FUN_APP (posTuple (size yytext)));
 
 "then"             => (Tokens.THEN (posTuple (size yytext)));
 "else"             => (Tokens.ELSE (posTuple (size yytext)));
@@ -109,7 +113,6 @@ whitespace = [\ \t];
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 "exn"              => (Tokens.EXN (posTuple (size yytext)));
-"lbl"              => (Tokens.LBL (posTuple (size yytext)));
 "num"              => (Tokens.NUM (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));

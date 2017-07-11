@@ -194,5 +194,14 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected variable", TermPrinter.ppVar x, Fpp.text "to be equal to variable", TermPrinter.ppVar y]
+
+    fun labelEq msg (lbl0, lbl1) =
+      if lbl0 = lbl1 then
+        ()
+      else
+        raise E.error [Fpp.text msg, Fpp.char #":", Fpp.text "Expected label", TermPrinter.ppLabel lbl0, Fpp.text "to be equal to label", TermPrinter.ppLabel lbl1]
+
+    fun labelsEq msg (l0, l1) =
+      ListPair.appEq (labelEq msg) (l0, l1)
   end
 end

@@ -1,5 +1,5 @@
 Thm FHcom/trans3 : [
-  (-> [a b c d wbool]
+  (-> [a b c d : wbool]
    (path {_} wbool a b)
    (path {_} wbool a c)
    (path {_} wbool b d)
@@ -15,7 +15,7 @@ Thm FHcom/trans3 : [
 Print FHcom/trans3.
 
 Thm FHcom/trans2 : [
-  (-> [a b c wbool]
+  (-> [a b c : wbool]
    (path {_} wbool a b)
    (path {_} wbool b c)
    (path {_} wbool a c))
@@ -27,7 +27,7 @@ Thm FHcom/trans2 : [
 ].
 
 Thm FHcom/symm : [
-  (-> [a b wbool]
+  (-> [a b : wbool]
    (path {_} wbool a b)
    (path {_} wbool b a))
 ] by [

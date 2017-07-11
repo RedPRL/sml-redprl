@@ -10,7 +10,7 @@ Thm Hcom/Poly(#A) : [
   a/type : #A type
   >>
   (->
-   [a b c d #A]
+   [a b c d : #A]
    (path {_} #A a b)
    (path {_} #A a c)
    (path {_} #A b d)
@@ -32,7 +32,7 @@ Thm Hcom/trans(#A) : [
   a/type : #A type
   >>
   (->
-   [a b c #A]
+   [a b c : #A]
    (path {_} #A a b)
    (path {_} #A b c)
    (path {_} #A a c))
@@ -50,7 +50,7 @@ Thm Hcom/symm(#A) : [
   a/type : #A type
   >> 
   (->
-   [a b #A]
+   [a b : #A]
    (path {_} #A a b)
    (path {_} #A b a))
 ] by [
