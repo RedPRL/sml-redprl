@@ -1,0 +1,5 @@
+Thm RecordTest : [
+  (tuple [a tt] [a tt]) in (record [a : bool])
+] by [
+  auto;
+].
