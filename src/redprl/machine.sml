@@ -54,7 +54,7 @@ struct
     local
       fun findi' p i : 'a list -> (int * 'a) option =
         fn [] => NONE
-         | (x :: l) =>
+         | x :: l =>
              if p x then SOME (i, x)
              else findi' p (i+1) l
     in
