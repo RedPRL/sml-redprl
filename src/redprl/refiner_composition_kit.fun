@@ -147,8 +147,11 @@ struct
         val _ = Assert.tautologicalEquations "HCom.Eq tautology checking" eqs0
 
         (* type *)
-        val goalTy = makeEqType (I, H) (ty0, ty1)
+        val goalTy = makeEqTypeIfDifferent (I, H) (ty0, ty1)
         val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0, ty)
+        val goalTy' = case (goalTy, goalTy0) of
+                        (NONE, NONE) => SOME (makeType (I, H) ty)
+                      | _ => NONE
 
         (* cap *)
         val goalCap = makeEq (I, H) ((cap0, cap1), ty)
@@ -158,7 +161,7 @@ struct
         |>: goalCap
          >:+ ComKit.genInterTubeGoals (I, H) w ty0 tubes0 tubes1
          >:+ ComKit.genCapTubeGoals (I, H) ty r0 cap0 tubes0
-         >:? goalTy0 >: goalTy
+         >:? goalTy0 >:? goalTy >:? goalTy'
         #> (I, H, trivial)
       end
 
