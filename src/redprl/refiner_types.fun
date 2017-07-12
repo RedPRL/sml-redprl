@@ -741,7 +741,36 @@ struct
         |>: goal1 >:? goal2 #> (I, H, trivial)
       end
 
-    (* TODO: ProjEq, probably needing a new MATCH *)
+    fun MatchRecord _ jdg =
+      let
+        val _ = RedPrlLog.trace "Record.MatchRecord"
+        val MATCH_RECORD (lbl, tm) = jdg
+
+        val Abt.$ (O.MONO (O.RECORD lbls), args) = Abt.out tm
+
+        val (_ \ arg) = List.nth (args, #1 (Option.valOf (ListUtil.find_eq_index lbl lbls)))
+      in
+        Lcf.|> (T.empty, abtToAbs arg)
+      end
+      handle _ =>
+        raise E.error [Fpp.text "MATCH_RECORD judgment failed to unify"]
+
+    fun ProjEq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Record.ProjEq"
+        val (I, H) >> CJ.EQ ((proj0, proj1), ty) = jdg
+        val Syn.PROJ (lbl0, m0) = Syn.out proj0
+        val Syn.PROJ (lbl1, m1) = Syn.out proj1
+        val () = Assert.labelEq "Record.ProjEq" (lbl0, lbl1)
+
+        val (goalTy, holeTy) = makeSynth (I, H) m0
+        val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy)
+        val goalEq = makeEqIfDifferent (I, H) ((m0, m1), holeTy) (* m0 well-typed *)
+        val goalEqTy = makeEqTypeIfDifferent (I, H) (holeTyP, ty) (* holeTyP type *)
+      in
+        |>: goalTy >: goalTyP >:? goalEq >:? goalEqTy
+        #> (I, H, trivial)
+      end
 
     fun True _ jdg =
       let

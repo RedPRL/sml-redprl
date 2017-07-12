@@ -86,6 +86,7 @@ struct
         case jdg of
            (I, H) >> _ => (List.map (fn (u, sigma) => (P.VAR u, sigma)) I, hypsToSpine H)
          | MATCH _ => ([],[])
+         | MATCH_RECORD _ => ([],[])
 
       val hole = check (x $# (ps, ms), tau)
     in
@@ -97,6 +98,7 @@ struct
   fun makeTrue (I, H) a = makeGoal @@ (I, H) >> CJ.TRUE a
   fun makeSynth (I, H) m = makeGoal @@ (I, H) >> CJ.SYNTH m
   fun makeMatch part = makeGoal @@ MATCH part
+  fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
 
   (* ignoring the trivial realizer *)
   fun makeType (I, H) a = makeGoal' @@ (I, H) >> CJ.TYPE a

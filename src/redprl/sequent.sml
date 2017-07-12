@@ -18,6 +18,7 @@ struct
   type param = Tm.param
   type hyp = sym
   type abt = CJ.Tm.abt
+  type label = string
 
   structure Hyps : TELESCOPE = Telescope (Sym)
   type 'a ctx = 'a Hyps.telescope
@@ -25,12 +26,14 @@ struct
   datatype 'a jdg =
      >> of ((sym * psort) list * 'a CJ.jdg ctx) * 'a CJ.jdg
    | MATCH of operator * int * 'a * param list * 'a list
+   | MATCH_RECORD of label * 'a
 
   infix >>
 
   fun map f =
     fn (I, H) >> catjdg => (I, Hyps.map (CJ.map f) H) >> CJ.map f catjdg
      | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
+     | MATCH_RECORD (lbl, tm) => MATCH_RECORD (lbl, f tm)
 
 
   fun renameHypsInTerm srho =
@@ -92,6 +95,7 @@ struct
           if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps (CJ.pretty eq f) H, Fpp.newline],
           Fpp.hsep [Fpp.text ">>", CJ.pretty eq f catjdg]]
      | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
+     | MATCH_RECORD (lbl, a) => Fpp.hsep [f a, Fpp.text "match_record", Fpp.text lbl]
   fun pretty' f = pretty (fn _ => false) f
 
   val rec eq =
@@ -127,5 +131,7 @@ struct
             andalso Tm.eq (a1, a2)
             andalso ListPair.allEq (Tm.O.P.eq Tm.Sym.eq) (ps1, ps2)
             andalso ListPair.allEq Tm.eq (ms1, ms2)
+     | (MATCH_RECORD (lbl1, a1), MATCH_RECORD (lbl2, a2)) =>
+          lbl1 = lbl2 andalso Tm.eq (a1, a2)
      | _ => false
 end

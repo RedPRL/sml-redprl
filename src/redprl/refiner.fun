@@ -192,7 +192,6 @@ struct
       end
       handle _ =>
         raise E.error [Fpp.text "MATCH judgment failed to unify"]
-
   end
 
   structure Equality =
@@ -548,6 +547,7 @@ struct
          | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
          | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
          | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
+         | (Syn.PROJ _, Syn.PROJ _, _) => Record.ProjEq
          | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _), _) => Path.ApEq
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
@@ -628,7 +628,8 @@ struct
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
-          | MATCH _ => Misc.MatchOperator)
+          | MATCH _ => Misc.MatchOperator
+          | MATCH_RECORD _ => Record.MatchRecord)
 
 
       fun isWfJdg (CJ.TRUE _) = false

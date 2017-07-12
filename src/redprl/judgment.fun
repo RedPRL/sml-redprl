@@ -27,6 +27,7 @@ struct
            in
              (([],[]), tau)
            end
+       | MATCH_RECORD (lbl, _) => (([],[]), RedPrlSortData.EXP)
   end
 end
 

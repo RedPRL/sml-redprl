@@ -157,6 +157,8 @@ struct
            Atomic.parens @@ expr @@ hvsep
              [text "tuple", expr @@ hvsep @@ ListPair.mapEq pp (lbls, data)]
          end
+     | O.MONO (O.PROJ lbl) $ [_ \ m] =>
+         Atomic.parens @@ expr @@ hvsep [text "!", text lbl, ppTerm m]
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
          Atomic.parens @@ expr @@ hvsep [text "@", ppTerm m, ppParam r]
      | `x => ppVar x
