@@ -74,12 +74,19 @@ struct
 
   val metactx = RedPrlAbt.metactx o toAbt
 
-  fun pretty f =
-    fn EQ ((m, n), a) => Fpp.hsep [f m, Fpp.Atomic.equals, f n, Fpp.text "in", f a]
+  fun pretty eq f =
+    fn EQ ((m, n), a) =>
+         if eq (m, n)
+         then Fpp.expr (Fpp.hvsep [f m, Fpp.hsep [Fpp.text "in", f a]])
+         else Fpp.expr (Fpp.hvsep [f m, Fpp.Atomic.equals, f n, Fpp.hsep [Fpp.text "in", f a]])
      | TRUE a => f a
-     | EQ_TYPE (a, b) => Fpp.hsep [f a, Fpp.Atomic.equals, f b, Fpp.text "type"]
-     | SYNTH m => Fpp.hsep [f m, Fpp.text "synth"]
+     | EQ_TYPE (a, b) =>
+         if eq (a, b)
+         then Fpp.expr (Fpp.hvsep [f a, Fpp.text "type"])
+         else Fpp.expr (Fpp.hvsep [f a, Fpp.Atomic.equals, f b, Fpp.text "type"])
+     | SYNTH m => Fpp.expr (Fpp.hvsep [f m, Fpp.text "synth"])
      | TERM tau => TermPrinter.ppSort tau
+  fun pretty' f = pretty (fn _ => false) f
 
   fun unify (j1, j2) =
     RedPrlAbt.Unify.unify (toAbt j1, toAbt j2)
