@@ -85,14 +85,14 @@ struct
   fun prettyHyps f : 'a ctx -> Fpp.doc =
     Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [Fpp.text (Tm.Sym.toString x), Fpp.Atomic.colon, f a] :: r) []
 
-  fun pretty f : 'a jdg -> Fpp.doc =
+  fun pretty eq f : 'a jdg -> Fpp.doc =
     fn (I, H) >> catjdg =>
        Fpp.seq
          [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
-          if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps (CJ.pretty f) H, Fpp.newline],
-          Fpp.hsep [Fpp.text ">>", CJ.pretty f catjdg]]
+          if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps (CJ.pretty eq f) H, Fpp.newline],
+          Fpp.hsep [Fpp.text ">>", CJ.pretty eq f catjdg]]
      | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
-
+  fun pretty' f = pretty (fn _ => false) f
 
   val rec eq =
     fn ((I1, H1) >> catjdg1, (I2, H2) >> catjdg2) =>

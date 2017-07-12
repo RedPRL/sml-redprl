@@ -1,6 +1,7 @@
 ;;; redprl.el --- Major mode for editing RedPRL proofs and interacting with RedPRL  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2016  Jonathan Sterling
+;; Copyright (C) 2017  Jonathan Sterling, Favonia
 
 ;; Author: Jonathan Sterling <jon@jonmsterling.com>
 ;; Package-Requires: ((emacs "24.3"))
@@ -46,8 +47,24 @@
   '((t (:inherit font-lock-type-face))) "Face for RedPRL's built-in sorts."
   :group 'redprl)
 
-(defface redprl-atom-face
-  '((t (:inherit font-lock-constant-face))) "Face for RedPRL's atoms."
+(defface redprl-metavar-face
+  '((t (:inherit font-lock-variable-name-face))) "Face for RedPRL's meta variables."
+  :group 'redprl)
+
+(defface redprl-expression-keyword-face
+  '((t (:inherit font-lock-builtin-face))) "Face for RedPRL's expression keywords."
+  :group 'redprl)
+
+(defface redprl-expression-symbol-face
+  '((t (:inherit font-lock-builtin-face))) "Face for RedPRL's expression symbols."
+  :group 'redprl)
+
+(defface redprl-tactic-keyword-face
+  '((t (:inherit font-lock-builtin-face))) "Face for RedPRL's tactic keywords."
+  :group 'redprl)
+
+(defface redprl-tactic-symbol-face
+  '((t (:inherit font-lock-builtin-face))) "Face for RedPRL's tactic symbols."
   :group 'redprl)
 
 (defcustom redprl-command "redprl"
@@ -74,13 +91,38 @@
     table)
   "Syntax table for RedPRL.")
 
-(defconst redprl-keywords
-  '("Def" "Thm" "Tac" "Sym" "Record" "Print")
+(defconst redprl-declaration-keywords
+  '("Def" "Thm" "Tac" "Sym" "Record" "Print" "Extract")
   "RedPRL's keywords.")
 
-(defconst redprl-builtin-sorts
-  '("exp" "exn" "lbl" "lvl" "dim")
+(defconst redprl-sort-keywords
+  '("exp" "exn" "dim" "num")
   "RedPRL's built-in sorts.")
+
+(defconst redprl-expression-keywords
+  '("ax" "fcom"
+    "wbool" "wool" "tt" "ff" "bool-rec" "wif" "bool" "if"
+    "int" "nat"
+    "void"
+    "S1" "base" "loop" "s1-elim"
+    "lam" "app"
+    "pair" "fst" "snd"
+    "record" "tuple"
+    "path" "abs"
+    "hcom" "coe" "com")
+  "RedPRL's expression keywords.")
+
+(defconst redprl-expression-symbols
+  '("->" "*" "!" "@")
+  "RedPRL's expression symbols.")
+
+(defconst redprl-tactic-keywords
+  '("auto" "auto-step" "lemma" "cut-lemma" "hyp" "elim" "unfold")
+  "RedPRL's tactic keywords.")
+
+(defconst redprl-tactic-symbols
+  '("?")
+  "RedPRL's tactic symbols.")
 
 (defconst redprl-def-name-regexp
   '(: "Def" (+ whitespace) (group-n 1 (+ word)) not-wordchar))
@@ -107,13 +149,21 @@
 (defvar redprl-mode-font-lock-keywords
   `(
     ;; Declaration keyword
-    (,(regexp-opt redprl-keywords 'words) 0 'redprl-declaration-keyword-face)
+    (,(regexp-opt redprl-declaration-keywords 'words) 0 'redprl-declaration-keyword-face)
 
     ;; Built-in sorts
-    (,(regexp-opt redprl-builtin-sorts 'words) 0 'redprl-sort-face)
+    (,(regexp-opt redprl-sort-keywords 'words) 0 'redprl-sort-face)
 
-    ;; Atoms
-    (,(rx "'" (+ word)) 0 'redprl-atom-face)
+    ;; Meta variables
+    (,(rx "#" (+ word)) 0 'redprl-metavar-face)
+
+    ;; Built-in expressions
+    (,(regexp-opt redprl-expression-keywords 'words) 0 'redprl-expression-keyword-face)
+    (,(regexp-opt redprl-expression-symbols 'nil) 0 'redprl-expression-symbol-face)
+
+    ;; Built-in tactics
+    (,(regexp-opt redprl-tactic-keywords 'words) 0 'redprl-tactic-keyword-face)
+    (,(regexp-opt redprl-tactic-symbols 'nil) 0 'redprl-tactic-symbol-face)
     ))
 
 (defun redprl-defined-names ()

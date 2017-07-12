@@ -10,7 +10,7 @@ struct
 
   val subst = S.map o Tm.substMetaenv
   val eq = S.eq
-  val toString = FppRenderPlainText.toString o FinalPrinter.execPP o S.pretty TermPrinter.ppTerm
+  val toString = FppRenderPlainText.toString o FinalPrinter.execPP o S.pretty Tm.eq TermPrinter.ppTerm
 
   local
     open S

@@ -375,9 +375,9 @@ struct
             [Fpp.nest 2 @@ 
               Fpp.vsep 
                 [Fpp.text "Conclusions of goal did not match specification:",
-                 CJ.pretty TermPrinter.ppTerm jdg,
+                 CJ.pretty Abt.eq TermPrinter.ppTerm jdg,
                  Fpp.text "vs",
-                 CJ.pretty TermPrinter.ppTerm jdg0]]
+                 CJ.pretty Abt.eq TermPrinter.ppTerm jdg0]]
         (* TODO: unify using I, J!! *)
       end
 

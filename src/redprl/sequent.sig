@@ -21,7 +21,8 @@ sig
 
   val map : ('a -> 'b) -> 'a jdg -> 'b jdg
 
-  val pretty : ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
+  val pretty : ('a * 'a -> bool) -> ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
+  val pretty' : ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
 
   val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
 
