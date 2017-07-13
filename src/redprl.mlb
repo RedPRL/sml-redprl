@@ -21,6 +21,8 @@ in
 
     debug.mlb
 
+    redprl/listutil.sml
+
     redprl/operator.sml
     redprl/abt.sml
     redprl/pretty.sml

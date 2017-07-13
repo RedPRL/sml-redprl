@@ -25,6 +25,8 @@ is
 
   debug.cm
 
+  redprl/listutil.sml
+
   redprl/operator.sml
   redprl/abt.sml
   redprl/syntax.sml

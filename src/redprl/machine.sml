@@ -49,19 +49,6 @@ struct
     end
   end
 
-  structure ListUtils =
-  struct
-    local
-      fun findi' p i : 'a list -> (int * 'a) option =
-        fn [] => NONE
-         | x :: l =>
-             if p x then SOME (i, x)
-             else findi' p (i+1) l
-    in
-      fun findi p l = findi' p 0 l
-    end
-  end
-
   structure ParamElem =
   struct
     type t = param
@@ -360,7 +347,7 @@ struct
      | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ _, _ \ n] <: env) => n <: env
 
      | (O.MONO (O.PROJ lbl) `$ [_ \ S.HOLE], _ \ O.MONO (O.TUPLE lbls) `$ args <: env) =>
-         (case ListUtils.findi (fn l => l = lbl) lbls of
+         (case ListUtil.findEqIndex lbl lbls of
            NONE => raise InvalidCut
          | SOME (i, _) => case List.nth (args, i) of (_ \ m) => m <: env)
 
