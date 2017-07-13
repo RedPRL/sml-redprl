@@ -347,7 +347,7 @@ struct
      | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ _, _ \ n] <: env) => n <: env
 
      | (O.MONO (O.PROJ lbl) `$ [_ \ S.HOLE], _ \ O.MONO (O.TUPLE lbls) `$ args <: env) =>
-         (case ListUtil.find_eq_index lbl lbls of
+         (case ListUtil.findEqIndex lbl lbls of
            NONE => raise InvalidCut
          | SOME (i, _) => case List.nth (args, i) of (_ \ m) => m <: env)
 

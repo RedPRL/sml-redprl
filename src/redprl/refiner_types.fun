@@ -748,7 +748,7 @@ struct
 
         val Abt.$ (O.MONO (O.RECORD lbls), args) = Abt.out tm
 
-        val (_ \ arg) = List.nth (args, #1 (Option.valOf (ListUtil.find_eq_index lbl lbls)))
+        val (_ \ arg) = List.nth (args, #1 (Option.valOf (ListUtil.findEqIndex lbl lbls)))
       in
         Lcf.|> (T.empty, abtToAbs arg)
       end
