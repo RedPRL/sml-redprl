@@ -38,6 +38,10 @@
 \newcommand\Lam[2]{\lambda{#1}.{#2}}
 \newcommand\Fst[1]{\mathsf{fst} (#1)}
 \newcommand\Snd[1]{\mathsf{snd} (#1)}
+\newcommand\Record[1]{\mathsf{record} (#1)}
+\newcommand\Tuple[1]{\mathsf{tuple} (#1)}
+\newcommand\Label[1]{\mathtt{#1}}
+\newcommand\Proj[2]{\mathsf{proj}_{\Label{#1}} (#2)}
 \newcommand\Loop[1]{\mathsf{loop}_{#1}}
 \newcommand\Circ{\mathbb{S}^1}
 \newcommand\CircRec[4]{\Circ\mathsf{rec}_{#1} (#2;#3;#4)}
@@ -451,7 +455,7 @@ The substitution $\Force{A}{x\hookrightarrow y}$ in the $\Com{}{}{}{}{}$ rule sh
       \perfectbrackets{
         \EE',
         a\hookrightarrow{}\Clo{A}{\EE}{\FF},
-        \Meta{y}\hookrightarrow{}z.\Clo{
+        \Meta{x}\hookrightarrow{}z.\Clo{
           B
         }{
           \perfectbrackets{
@@ -525,6 +529,93 @@ The substitution $\Force{A}{x\hookrightarrow y}$ in the $\Com{}{}{}{}{}$ rule sh
           \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
         }{
           \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
+        }
+      }{
+        \EE''
+      }{
+        \FF'
+      }{
+        \pi%
+      }
+    }
+  }
+\end{mathparpagebreakable}
+
+\subsection{Non-dependent record types}
+
+\begin{mathparpagebreakable}
+  \inferrule{
+  }{
+    \Step{\mu}{
+      \Cfg{\Proj{l}{M}}{\EE}{\FF}{\pi}
+    }{
+      \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Proj{l}{\Box}}{[]}{[]}{[]}}{\pi}}
+    }
+  }
+  \and
+  \inferrule{
+  }{
+    \Step{\mu}{
+      \Cfg{\Tuple{\overline{[\Label{l_i}\hookrightarrow M_i]}}}{\EE}{\FF}{\Cons{\Frame{\Proj{l_i}{\Box}}{\Dummy}{\Dummy}{[]}}{\pi}}
+    }{
+      \Cfg{M_i}{\EE}{\FF}{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    O_j\triangleq{
+      \HCom{r}{r'}{a_j}{\Proj{l_j}{M}}{\overline{\xi_i\hookrightarrow{}y.\Proj{l_j}{N_i}}}
+    }
+    \\
+    \EE''\triangleq{
+      \perfectbrackets{
+        \EE',
+        \overline{a_j\hookrightarrow{}\Clo{A_j}{\EE}{\FF}}
+      }
+    }
+  }{
+    \Step{\mu}{
+      \Cfg{\Record{\overline{\Label{l_j}\hookrightarrow{A_j}}}}{\EE}{\FF}{
+        \Cons{
+          \Frame{
+            \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
+          }{\EE'}{\FF'}{[]}
+        }{\pi}
+      }
+    }{
+      \Cfg{
+        \Tuple{\overline{\Label{l_j}\hookrightarrow{O_j}}}
+      }{
+        \EE''
+      }{
+        \FF'
+      }{\pi}
+    }
+  }
+  \and
+  \inferrule{
+    \EE'' \triangleq%
+    \perfectbrackets{
+      \EE',
+      \overline{\Meta{x}_j\hookrightarrow{x.\Clo{A_j}{\EE}{\FF}}}
+    }
+  }{
+    \Step{\mu}{
+      \Cfg{
+        \Record{\overline{\Label{l_j}\hookrightarrow{A_j}}}
+      }{
+        \EE
+      }{
+        \FF
+      }{
+        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}
+      }
+    }{
+      \Cfg{
+        \Tuple{
+          \overline{
+            \Coe{r}{r'}{x.\Meta{x}_j[x]}{\Proj{l_j}{M}}
+          }
         }
       }{
         \EE''
