@@ -21,7 +21,7 @@ struct
     handle _ =>
       Rules.Synth.FromWfHyp z alpha jdg
 
-  fun interpret (sign, _(*env*)) rule =
+  fun interpret (sign, env) rule =
     case out rule of
         O.MONO O.RULE_ID $ _ => (fn _ => Lcf.idn)
       | O.MONO O.RULE_AUTO_STEP $ _ => Rules.AutoStep sign

@@ -203,33 +203,6 @@ struct
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
   end
 
-  structure Int =
-  struct
-    fun EqType _ jdg =
-      let
-        val _ = RedPrlLog.trace "Int.EqType"
-        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
-        val Syn.INT = Syn.out a
-        val Syn.INT = Syn.out b
-      in
-        T.empty #> (I, H, trivial)
-      end
-      handle Bind =>
-        raise E.error [Fpp.text "Expected typehood sequent"]
-
-    fun Eq _ jdg =
-      let
-        val _ = RedPrlLog.trace "Int.Eq"
-        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.INT = Syn.out ty
-        val Syn.NUMBER i0 = Syn.out m
-        val Syn.NUMBER i1 = Syn.out n
-        val () = Assert.paramEq "Int.Eq" (i0, i1)
-      in
-        T.empty #> (I, H, trivial)
-      end
-  end
-
   structure Nat =
   struct
     fun EqType _ jdg =
@@ -244,18 +217,77 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun Eq _ jdg =
+    fun EqZero _ jdg =
       let
-        val _ = RedPrlLog.trace "Nat.Eq"
+        val _ = RedPrlLog.trace "Nat.EqZero"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
         val Syn.NAT = Syn.out ty
-        (* till we can generate "less-than" goals we can only handle numerals *)
-        val Syn.NUMBER (P.APP (P.NUMERAL i0)) = Syn.out m
-        val Syn.NUMBER (P.APP (P.NUMERAL i1)) = Syn.out n
-        val true = i0 = i1
-        val true = IntInf.>= (i0, 0)
+        val Syn.ZERO = Syn.out m
+        val Syn.ZERO = Syn.out n
       in
         T.empty #> (I, H, trivial)
+      end
+
+    fun EqSucc _ jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.EqSucc"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.NAT = Syn.out ty
+        val Syn.SUCC m' = Syn.out m
+        val Syn.SUCC n' = Syn.out n
+        val goal = makeEq (I, H) ((m', n'), ty)
+      in
+        |>: goal #> (I, H, trivial)
+      end
+  end
+
+  structure Int =
+  struct
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqType"
+        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.INT = Syn.out a
+        val Syn.INT = Syn.out b
+      in
+        T.empty #> (I, H, trivial)
+      end
+      handle Bind =>
+        raise E.error [Fpp.text "Expected typehood sequent"]
+
+    fun EqZero _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqZero"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.INT = Syn.out ty
+        val Syn.ZERO = Syn.out m
+        val Syn.ZERO = Syn.out n
+      in
+        T.empty #> (I, H, trivial)
+      end
+
+    fun EqSucc _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqSucc"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.INT = Syn.out ty
+        val Syn.SUCC m' = Syn.out m
+        val Syn.SUCC n' = Syn.out n
+        val goal = makeEq (I, H) ((m', n'), Syn.into Syn.NAT)
+      in
+        |>: goal #> (I, H, trivial)
+      end
+
+    fun EqNegSucc _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqNegSucc"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.INT = Syn.out ty
+        val Syn.NEGSUCC m' = Syn.out m
+        val Syn.NEGSUCC n' = Syn.out n
+        val goal = makeEq (I, H) ((m', n'), Syn.into Syn.NAT)
+      in
+        |>: goal #> (I, H, trivial)
       end
   end
 
@@ -282,7 +314,7 @@ struct
 
         val evidence =
           case catjdg of
-             CJ.TRUE _ => Syn.into Syn.TT (* should be some fancy symbol *)
+             CJ.TRUE _ => Syn.into Syn.AX (* should be some fancy symbol *)
            | CJ.EQ _ => trivial
            | CJ.EQ_TYPE _ => trivial
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"

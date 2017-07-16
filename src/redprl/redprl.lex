@@ -58,8 +58,6 @@ whitespace = [\ \t];
 ";"                => (Tokens.SEMI (posTuple (size yytext)));
 "#"                => (Tokens.HASH (posTuple (size yytext)));
 "="                => (Tokens.EQUALS (posTuple (size yytext)));
-"\'"               => (Tokens.APOSTROPHE (posTuple (size yytext)));
-"~"                => (Tokens.SQUIGGLE (posTuple (size yytext)));
 "~>"               => (Tokens.SQUIGGLE_ARROW (posTuple (size yytext)));
 "->"               => (Tokens.RIGHT_ARROW (posTuple (size yytext)));
 "=>"               => (Tokens.DOUBLE_RIGHT_ARROW (posTuple (size yytext)));
@@ -74,8 +72,8 @@ whitespace = [\ \t];
 "%"                => (Tokens.PERCENT (posTuple (size yytext)));
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
 ">>"               => (Tokens.DOUBLE_RANGLE (posTuple (size yytext)));
-
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
+
 "fcom"             => (Tokens.FCOM (posTuple (size yytext)));
 "wbool"            => (Tokens.WBOOL (posTuple (size yytext)));
 "wool"             => (Tokens.WBOOL (posTuple (size yytext)));
@@ -85,9 +83,11 @@ whitespace = [\ \t];
 "wif"              => (Tokens.WBOOL_REC (posTuple (size yytext)));
 "bool"             => (Tokens.BOOL (posTuple (size yytext)));
 "if"               => (Tokens.IF (posTuple (size yytext)));
-"int"              => (Tokens.INT (posTuple (size yytext)));
-"number"           => (Tokens.NUMBER (posTuple (size yytext)));
 "nat"              => (Tokens.NAT (posTuple (size yytext)));
+"zero"             => (Tokens.ZERO (posTuple (size yytext)));
+"succ"             => (Tokens.SUCC (posTuple (size yytext)));
+"int"              => (Tokens.INT (posTuple (size yytext)));
+"negsucc"          => (Tokens.NEGSUCC (posTuple (size yytext)));
 "void"             => (Tokens.VOID (posTuple (size yytext)));
 "S1"               => (Tokens.S1 (posTuple (size yytext)));
 "base"             => (Tokens.BASE (posTuple (size yytext)));
@@ -113,7 +113,6 @@ whitespace = [\ \t];
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 "exn"              => (Tokens.EXN (posTuple (size yytext)));
-"num"              => (Tokens.NUM (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));

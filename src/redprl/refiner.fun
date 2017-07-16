@@ -328,7 +328,6 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Abt.$ _ = Abt.out m (* is this needed? *)
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val goal = makeEq (I, H) ((m', n), ty)
       in
@@ -340,7 +339,6 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
-        val Abt.$ _ = Abt.out ty1 (* is this needed? *)
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
         val goal = makeEqType (I, H) (ty1', ty2)
       in
@@ -517,8 +515,11 @@ struct
          | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => WeakBool.EqFCom
          | (Syn.TT, Syn.TT, Syn.BOOL) => StrictBool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => StrictBool.EqFF
-         | (Syn.NUMBER _, Syn.NUMBER _, Syn.INT) => Int.Eq
-         | (Syn.NUMBER _, Syn.NUMBER _, Syn.NAT) => Nat.Eq
+         | (Syn.ZERO, Syn.ZERO, Syn.NAT) => Nat.EqZero
+         | (Syn.SUCC _, Syn.SUCC _, Syn.NAT) => Nat.EqSucc
+         | (Syn.ZERO, Syn.ZERO, Syn.INT) => Int.EqZero
+         | (Syn.SUCC _, Syn.SUCC _, Syn.INT) => Int.EqSucc
+         | (Syn.NEGSUCC _, Syn.NEGSUCC _, Syn.INT) => Int.EqNegSucc
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => S1.EqFCom

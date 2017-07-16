@@ -47,7 +47,7 @@ struct
     Lcf.|> (psi, abstractEvidence (I, H) m)
   infix #>
 
-  val trivial = Syn.into Syn.AX
+  val trivial = Syn.into Syn.TV
 
   (* telescope combinators *)
 
