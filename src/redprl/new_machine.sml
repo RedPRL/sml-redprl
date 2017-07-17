@@ -65,7 +65,7 @@ struct
       fun lookupSymFinal L u = 
         case L of 
            [] => P.ret u
-         | F :: L => P.bind (lookupSymShallow F) (lookupSymFinal L u)
+         | F :: L => P.bind (lookupSymFinal L) (lookupSymShallow F u)
     in
       (* First, lookup the symbol in E; then, apply whatever substitutions are in L. *)
       fun lookupSym (E ** L) u =
