@@ -89,8 +89,69 @@ struct
     fun forceParam (E ** L) = 
       P.bind (lookupSym (E ** L))
 
-    fun forceTerm (E ** L) =
-      raise Fail "TODO"
+
+    local
+      open Tm infix $ $$ $# \
+    in
+      (* These two functions implement E+(x). *)
+      fun lookupMeta (E : deep_env) x = 
+        Metavar.Ctx.lookup (#metas E) x
+        (*TODO: handle Absent  *)
+
+      fun lookupVar (E : deep_env) (x, tau) =
+        Var.Ctx.lookup (#vars E) x
+        handle Var.Ctx.Absent => 
+          check (`x, tau)
+            <: E ** []
+
+      fun lookupVarFinal (F : shallow_env) (x, tau) = 
+        Var.Ctx.lookup (#vars F) x 
+        handle Var.Ctx.Absent => 
+          check (`x, tau)
+
+      fun forceVarFinal L (x, tau) = 
+        forceTermFinal L (check (`x, tau))
+
+      and forceTermFinal L tm = 
+        case L of 
+           [] => tm
+         | F :: L => forceTermFinal L (forceTermShallow F tm)
+      
+      and forceTermShallow F = 
+        substSymenv (#syms F)
+          o substVarenv (#vars F)
+
+      and forceTerm (E ** L) tm =
+        case infer tm of 
+           (`x, tau) => 
+             (case Var.Ctx.find (#vars E) x of 
+                 SOME (m <: E' ** L') => forceTerm (E' ** (L' @ L)) m
+               | NONE => forceVarFinal L (x, tau))
+         | (x $# (rs, ms), tau) => 
+             (case Metavar.Ctx.find (#metas E) x of 
+                 SOME ((us, xs) \ n <: E' ** L') =>
+                 let
+                   val F = 
+                     {vars = ListPair.foldr (fn (x, m, rho) => Var.Ctx.insert rho x (forceTerm (E ** L) m)) Var.Ctx.empty (xs, ms),
+                      syms = ListPair.foldr (fn (u, (r, _), rho) => Sym.Ctx.insert rho u (forceParam (E ** L) r)) Sym.Ctx.empty (us, rs)}
+                 in
+                   forceTerm (E' ** (L' @ F :: L)) n
+                 end
+               | NONE => 
+                 let
+                   val rs' = List.map (fn (r, sigma) => (forceParam (E ** L) r, sigma)) rs
+                   val ms' = List.map (fn m => forceTerm (E ** L) m) ms
+                 in
+                   check (x $# (rs', ms'), tau)
+                 end)
+         | (theta $ args, _) =>
+           let
+             val theta' = O.map (lookupSym (E ** L)) theta
+             val args' = List.map (fn (us, xs) \ n => (us, xs) \ forceTerm (E ** L) n) args
+           in
+             theta' $$ args'
+           end
+    end
 
     fun insertMeta x bndCl ({metas, vars, syms} ** L) =
       {metas = Metavar.Ctx.insert metas x bndCl, vars = vars, syms = syms} 
@@ -107,27 +168,17 @@ struct
 
   local
     open Tm infix $# \
-
-    (* This implements E+(x). *)
-    fun lookupVar (E : deep_env) (x, tau) =
-      Var.Ctx.lookup (#vars E) x
-      handle Var.Ctx.Absent => 
-        check (`x, tau)
-          <: E ** []
-
-    fun lookupMeta (E : deep_env) x = 
-      Metavar.Ctx.lookup (#metas E) x
   in
     fun variable (x, tau) (E ** L) = 
       let
-        val m <: E' ** L' = lookupVar E (x, tau)
+        val m <: E' ** L' = Env.lookupVar E (x, tau)
       in
         m <: E' ** (L' @ L)
       end
 
     fun metavariable (x, rs, ms, tau) (E ** L) =
       let
-        val (us, xs) \ n <: E' ** L' = lookupMeta E x
+        val (us, xs) \ n <: E' ** L' = Env.lookupMeta E x
         val F =
           {vars = ListPair.foldrEq (fn (x, m, rho) => Var.Ctx.insert rho x (Env.forceTerm (E ** L) m)) Var.Ctx.empty (xs, ms),
            syms = ListPair.foldrEq (fn (u, (r, _), rho) => Sym.Ctx.insert rho u (Env.forceParam (E ** L) r)) Sym.Ctx.empty (us, rs)}
