@@ -12,7 +12,7 @@ sig
 
     val empty : t
     val lookupSym : t -> Sym.t -> param
-    val readParam : t -> param -> param
+    val forceParam : t -> param -> param
 
     val insertMeta : Metavar.t -> term closure binder -> t -> t
     val insertVar : Var.t -> term closure -> t -> t
@@ -72,7 +72,7 @@ struct
         P.bind (lookupSymFinal L) (lookupSymDeep E u)
     end
 
-    fun readParam (E ** F) = 
+    fun forceParam (E ** F) = 
       P.bind (lookupSym (E ** F))
 
     fun insertMeta x bndCl ({metas, vars, syms} ** F) =
