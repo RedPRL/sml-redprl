@@ -1,18 +1,26 @@
 signature CLOSURE = 
 sig
   type environment
+  type param = RedPrlAbt.param
+  type term = RedPrlAbt.abt
+  type sort = RedPrlAbt.sort
+  type psort = RedPrlAbt.psort
+  type valence = RedPrlAbt.valence
+  type 'a binder = 'a RedPrlAbt.bview
+
   datatype 'a closure = <: of 'a * environment
+
+  val variable : (Var.t * sort) -> environment -> term closure
+  val metavariable : (Metavar.t * (param * psort) list * term list * sort) -> environment -> term closure
 
   structure Env :
   sig
     type t = environment
-    type param = RedPrlAbt.param
-    type term = RedPrlAbt.abt
-    type 'a binder = 'a RedPrlAbt.bview
 
     val empty : t
     val lookupSym : t -> Sym.t -> param
     val forceParam : t -> param -> param
+    val forceTerm  : t -> term -> term
 
     val insertMeta : Metavar.t -> term closure binder -> t -> t
     val insertVar : Var.t -> term closure -> t -> t
@@ -23,6 +31,12 @@ end
 structure Closure :> CLOSURE = 
 struct
   structure Tm = RedPrlAbt and P = RedPrlParameterTerm
+  type param = Tm.param
+  type term = Tm.abt
+  type sort = Tm.sort
+  type psort = Tm.psort
+  type valence = Tm.valence
+  type 'a binder = 'a Tm.bview
 
   type shallow_env =
     {vars: Tm.abt Var.Ctx.dict,
@@ -35,14 +49,13 @@ struct
      vars: Tm.abt closure Var.Ctx.dict,
      syms: Tm.param Sym.Ctx.dict}
 
+
+  infix 3 <:
+  infix 4 **
+
   structure Env = 
   struct
     type t = environment
-    type param = RedPrlAbt.param
-    type term = RedPrlAbt.abt
-    type 'a binder = 'a RedPrlAbt.bview
-
-    infix **
     local
       val emptyDeep = {metas = Metavar.Ctx.empty, vars = Var.Ctx.empty, syms = Sym.Ctx.empty}
     in
@@ -73,20 +86,55 @@ struct
         P.bind (lookupSymFinal L) (lookupSymDeep E u)
     end
 
-    fun forceParam (E ** F) = 
-      P.bind (lookupSym (E ** F))
+    fun forceParam (E ** L) = 
+      P.bind (lookupSym (E ** L))
 
-    fun insertMeta x bndCl ({metas, vars, syms} ** F) =
+    fun forceTerm (E ** L) =
+      raise Fail "TODO"
+
+    fun insertMeta x bndCl ({metas, vars, syms} ** L) =
       {metas = Metavar.Ctx.insert metas x bndCl, vars = vars, syms = syms} 
-        ** F
+        ** L
 
-    fun insertVar x cl ({metas, vars, syms} ** F) = 
+    fun insertVar x cl ({metas, vars, syms} ** L) = 
       {metas = metas, vars = Var.Ctx.insert vars x cl, syms = syms}
-        ** F
+        ** L
 
-    fun insertSym u r ({metas, vars, syms} ** F) = 
+    fun insertSym u r ({metas, vars, syms} ** L) = 
       {metas = metas, vars = vars, syms = Sym.Ctx.insert syms u r}
-        ** F
+        ** L
+  end
+
+  local
+    open Tm infix $# \
+
+    (* This implements E+(x). *)
+    fun lookupVar (E : deep_env) (x, tau) =
+      Var.Ctx.lookup (#vars E) x
+      handle Var.Ctx.Absent => 
+        check (`x, tau)
+          <: E ** []
+
+    fun lookupMeta (E : deep_env) x = 
+      Metavar.Ctx.lookup (#metas E) x
+  in
+    fun variable (x, tau) (E ** L) = 
+      let
+        val m <: E' ** L' = lookupVar E (x, tau)
+      in
+        m <: E' ** (L' @ L)
+      end
+
+    fun metavariable (x, rs, ms, tau) (E ** L) =
+      let
+        val (us, xs) \ n <: E' ** L' = lookupMeta E x
+        val F =
+          {vars = ListPair.foldrEq (fn (x, m, rho) => Var.Ctx.insert rho x (Env.forceTerm (E ** L) m)) Var.Ctx.empty (xs, ms),
+           syms = ListPair.foldrEq (fn (u, (r, _), rho) => Sym.Ctx.insert rho u (Env.forceParam (E ** L) r)) Sym.Ctx.empty (us, rs)}
+        val L'' = L @ [F]
+      in
+        n <: E' ** (L' @ L'')
+      end
   end
 end
 
