@@ -1,3 +1,43 @@
+signature CLOSURE = 
+sig
+  type environment
+  datatype 'a closure = <: of 'a * environment
+
+  structure Env :
+  sig
+    val empty : environment
+  end
+end
+
+structure Closure :> CLOSURE = 
+struct
+  structure Tm = RedPrlAbt
+
+  type shallow_env =
+    {vars: Tm.abt Var.Ctx.dict,
+     syms: Tm.param Sym.Ctx.dict}
+
+  datatype 'a closure = <: of 'a * environment
+  and environment = ** of deep_env * shallow_env
+  withtype deep_env = 
+    {metas: Tm.abt closure Tm.bview Metavar.Ctx.dict,
+     vars: Tm.abt closure Var.Ctx.dict,
+     syms: Tm.param Sym.Ctx.dict}
+
+
+  structure Env = 
+  struct
+    infix **
+    local
+      val emptyDeep = {metas = Metavar.Ctx.empty, vars = Var.Ctx.empty, syms = Sym.Ctx.empty}
+      val emptyShallow = {vars = Var.Ctx.empty, syms = Sym.Ctx.empty}
+    in
+      val empty : environment = emptyDeep ** emptyShallow
+    end
+  end
+end
+
+
 functor NewMachine (Sig : MINI_SIGNATURE) :
 sig
   type sign = Sig.sign
@@ -24,18 +64,15 @@ struct
   structure Syn = Syntax
   structure SymSet = SplaySet (structure Elem = Sym.Ord)
   
-
   type sign = Sig.sign
-
-  datatype 'a closure = <: of 'a * environment
-  withtype environment = Tm.abt closure Tm.bview Metavar.Ctx.dict * Tm.abt closure Var.Ctx.dict * Tm.param Sym.Ctx.dict
+  open Closure
 
   fun @@ (f, x) = f x
   infixr @@
 
-
   infix 6 <:
   infix 3 ||
+
 
   open Tm infix 7 $ $$ $# infix 6 \
   structure O = RedPrlOpData
@@ -95,7 +132,7 @@ struct
     (mrho, rho, Sym.Ctx.insert psi u r)
 
   (* Feel free to try and make more efficient *)
-  fun forceClosure (tm <: (env as (mrho, rho, psi))) = 
+  (* fun forceClosure (tm <: (env as (mrho, rho, psi))) = 
     case infer tm of
        (`x, _) =>
          (case Var.Ctx.find rho x of 
@@ -124,7 +161,7 @@ struct
            val es' = List.map (mapBind (forceClosure o (fn m => m <: env))) es
          in
            theta' $$ es'
-         end
+         end *)
 
 
   (* Is it safe to observe the identity of a dimension? *)
@@ -166,8 +203,8 @@ struct
       aux 0
     end
 
-  fun stepView sign stability tau = 
-    fn `x <: (mrho, rho, psi) || stk =>
+  fun stepView sign stability tau = ?todo
+    (* fn `x <: (mrho, rho, psi) || stk =>
        (Var.Ctx.lookup rho x || stk
         handle Var.Ctx.Absent => raise Neutral (VAR x))
      | (tm as (_ $# _)) <: env || stk =>
@@ -363,7 +400,7 @@ struct
        end
 
 
-     | _ => raise Final
+     | _ => raise Final *)
 
   fun step sign stability (tm <: env || stk) =
     let
@@ -373,5 +410,5 @@ struct
     end
 
   fun init tm = 
-    tm <: emptyEnv || (SymSet.empty, [])
+    tm <: Env.empty || (SymSet.empty, [])
 end
