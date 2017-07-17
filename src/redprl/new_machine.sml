@@ -1,6 +1,3 @@
-functor NewMachine () = struct end
-
-(* 
 functor NewMachine (Sig : MINI_SIGNATURE) :
 sig
   type sign = Sig.sign
@@ -73,70 +70,16 @@ struct
   val todo = Fail "TODO"
   fun ?e = raise e
 
-  val emptyEnv = 
-    (Metavar.Ctx.empty,
-     Var.Ctx.empty,
-     Sym.Ctx.empty)
-
-  fun lookupSym psi x = 
-    Sym.Ctx.lookup psi x
-    handle Sym.Ctx.Absent => P.ret x
-
-  fun readParam psi : param -> param = 
-    P.bind (lookupSym psi)
-
-  fun insertVar x cl (mrho, rho, psi) = 
-    (mrho, Var.Ctx.insert rho x cl, psi)
-
-  fun insertMeta meta bcl (mrho, rho, psi) = 
-    (Metavar.Ctx.insert mrho meta bcl, rho, psi)
-
-  fun insertSym u r (mrho, rho, psi) = 
-    (mrho, rho, Sym.Ctx.insert psi u r)
-
-  (* Feel free to try and make more efficient *)
-  (* fun forceClosure (tm <: (env as (mrho, rho, psi))) = 
-    case infer tm of
-       (`x, _) =>
-         (case Var.Ctx.find rho x of 
-             SOME cl => forceClosure cl
-           | NONE => tm)
-     | (x $# (ps, ms), tau) => 
-         (case Metavar.Ctx.find mrho x of 
-             SOME ((us, xs) \ cl) =>
-               let
-                 val m' = forceClosure cl
-                 val rho' = ListPair.foldl (fn (x, n, rho) => Var.Ctx.insert rho x (n <: env)) rho (xs, ms)
-                 val psi' = ListPair.foldl (fn (u, (r, _), psi) => Sym.Ctx.insert psi u (readParam psi r)) psi (us, ps)
-               in
-                 forceClosure (m' <: (mrho, rho', psi'))
-               end
-           | NONE =>
-               let
-                 val ps' = List.map (fn (r, sigma) => (readParam psi r, sigma)) ps
-                 val ms' = List.map (forceClosure o (fn m => m <: env)) ms
-               in
-                 check (x $# (ps', ms'), tau)
-               end)
-     | (theta $ es, _) =>
-         let
-           val theta' = Tm.O.map (lookupSym psi) theta
-           val es' = List.map (mapBind (forceClosure o (fn m => m <: env))) es
-         in
-           theta' $$ es'
-         end *)
-
-
   (* Is it safe to observe the identity of a dimension? *)
   fun dimensionSafeToObserve syms r = 
     case r of 
        P.VAR x => SymSet.member syms x
      | _ => true
 
-  fun dimensionsEqual stability syms (_, _, psi) (r1, r2) = 
+  fun dimensionsEqual stability syms env (r1, r2) = 
     let
-      val r1' = readParam psi r1
-      val r2' = readParam psi r2
+      val r1' = Env.forceParam env r1
+      val r2' = Env.forceParam env r2
     in
       (* If two dimensions are equal, then no substitution can ever change that. *)
       if P.eq Sym.eq (r1', r2') then 
@@ -166,25 +109,31 @@ struct
       aux 0
     end
 
-  fun stepView sign stability tau = ?todo
-    (* fn `x <: (mrho, rho, psi) || stk =>
-       (Var.Ctx.lookup rho x || stk
-        handle Var.Ctx.Absent => raise Neutral (VAR x))
-     | (tm as (_ $# _)) <: env || stk =>
-         forceClosure (check (tm, tau) <: env) <: env || stk
+  fun stepView sign stability tau =
+    fn `x <: env || stk =>
+       Closure.variable (x, tau) env || stk (* TODO: this should raise Neutral or something?? *)
+     | x $# (rs, ms) <: env || stk =>
+       Closure.metavariable (x, rs, ms, tau) env || stk
 
      | O.POLY (O.CUST (opid, ps, _)) $ args <: env || stk => 
        let
-         val (mrho, rho, psi) = env
          val entry as {state,...} = Sig.lookup sign opid
          val term = Sig.extract state
-         val (mrho', psi') = Sig.applyCustomOperator entry (List.map #1 ps) args
-         val mrho'' = Metavar.Ctx.union mrho (Metavar.Ctx.map ((fn (us,xs) \ m => (us,xs) \ (m <: env)) o outb) mrho') (fn _ => raise Fail "Duplicated metavariables")
-         val psi'' = raise Match
+         val (mrho, psi) = Sig.applyCustomOperator entry (List.map #1 ps) args
+         val env' =
+           Metavar.Ctx.foldr
+             (fn (x, abs, env') => Env.insertMeta x (mapBind (fn m => m <: env) (outb abs)) env')
+             env
+             mrho
+         val env'' = 
+           Sym.Ctx.foldr 
+             (fn (u, r, env'') => Env.insertSym u r env'')
+             env'
+             psi
        in
-         term <: (mrho'', rho, psi'') || stk
+         term <: env'' || stk
        end
-
+(*
      | O.POLY (O.COE dir) $ [([u], _) \ a, _ \ coercee] <: env || (syms, stk) =>
        a <: env || (SymSet.insert syms u, COE (dir, (u, HOLE), coercee) <: env :: stk)
      | O.POLY (O.HCOM (dir, eqs)) $ (_ \ a :: _ \ cap :: tubes) <: env || (syms, stk) =>
@@ -374,4 +323,4 @@ struct
 
   fun init tm = 
     tm <: Env.empty || (SymSet.empty, [])
-end *)
+end
