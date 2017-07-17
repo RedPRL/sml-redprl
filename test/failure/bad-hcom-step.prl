@@ -1,6 +1,6 @@
 Thm BoolSym : [
   (-> 
-   [a b bool]
+   [a b : bool]
    (path {_} bool a b)
    (path {_} bool b a))
 ] by [

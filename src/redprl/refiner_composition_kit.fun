@@ -134,6 +134,7 @@ struct
       let
         val _ = RedPrlLog.trace "HCom.Eq"
         val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
+        (* these operations could be expensive *)
         val Syn.HCOM {dir=(r0, r'0), ty=ty0, cap=cap0, tubes=tubes0} = Syn.out lhs
         val Syn.HCOM {dir=(r1, r'1), ty=ty1, cap=cap1, tubes=tubes1} = Syn.out rhs
         val () = Assert.paramEq "HCom.Eq source of direction" (r0, r1)
@@ -146,8 +147,11 @@ struct
         val _ = Assert.tautologicalEquations "HCom.Eq tautology checking" eqs0
 
         (* type *)
-        val goalTy = makeEqType (I, H) (ty0, ty1)
+        val goalTy = makeEqTypeIfDifferent (I, H) (ty0, ty1)
         val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0, ty)
+        val goalTy' = case (goalTy, goalTy0) of
+                        (NONE, NONE) => SOME (makeType (I, H) ty)
+                      | _ => NONE
 
         (* cap *)
         val goalCap = makeEq (I, H) ((cap0, cap1), ty)
@@ -157,7 +161,7 @@ struct
         |>: goalCap
          >:+ ComKit.genInterTubeGoals (I, H) w ty0 tubes0 tubes1
          >:+ ComKit.genCapTubeGoals (I, H) ty r0 cap0 tubes0
-         >:? goalTy0 >: goalTy
+         >:? goalTy0 >:? goalTy >:? goalTy'
         #> (I, H, trivial)
       end
 
@@ -165,6 +169,7 @@ struct
       let
         val _ = RedPrlLog.trace "HCom.CapEq"
         val (I, H) >> CJ.EQ ((hcom, other), ty) = jdg
+        (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
         val () = Assert.paramEq "HCom.CapEq source and target of direction" (r, r')
 
@@ -193,6 +198,7 @@ struct
       let
         val _ = RedPrlLog.trace "HCom.TubeEq"
         val (I, H) >> CJ.EQ ((hcom, other), ty) = jdg
+        (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
 
         (* equations. they must be tautological because one of them is true. *)
@@ -219,115 +225,6 @@ struct
          >:+ ComKit.genInterTubeGoals (I, H) w ty tubes tubes
          >:+ ComKit.genCapTubeGoals (I, H) ty r cap tubes
          >:? goalTy0
-        #> (I, H, trivial)
-      end
-  end
-
-  structure Com =
-  struct
-    fun Eq alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Com.Eq"
-        val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.COM {dir=(r0, r'0), ty=(u0,ty0), cap=cap0, tubes=tubes0} = Syn.out lhs
-        val Syn.COM {dir=(r1, r'1), ty=(u1,ty1), cap=cap1, tubes=tubes1} = Syn.out rhs
-        val () = Assert.paramEq "Com.Eq source of direction" (r0, r1)
-        val () = Assert.paramEq "Com.Eq target of direction" (r'0, r'1)
-
-        (* equations *)
-        val eqs0 = List.map #1 tubes0
-        val eqs1 = List.map #1 tubes1
-        val _ = ListPair.mapEq (Assert.equationEq "Com.Eq equations") (eqs0, eqs1)
-        val _ = Assert.tautologicalEquations "Com.Eq tautology checking" eqs0
-
-        val w = alpha 0
-
-        (* type *)
-        val ty0w = substSymbol (P.ret w, u0) ty0
-        val ty1w = substSymbol (P.ret w, u1) ty1
-        val goalTy = makeEqType (I @ [(w,P.DIM)], H) (ty0w, ty1w)
-        (* after proving the above goal, we know [ty0] under any substitution is
-         * still a type, and thus alpha-equivalence is sufficient. *)
-        val goalTy0 = makeEqTypeIfAllDifferent (I, H)
-              (substSymbol (r'0, u0) ty0, ty) [substSymbol (r'1, u1) ty1]
-
-        (* cap *)
-        val ty0r = substSymbol (r0, u0) ty0
-        val goalCap = makeEq (I, H) ((cap0, cap1), ty0r)
-      in
-        |>: goalCap
-         >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes0 tubes1
-         >:+ ComKit.genCapTubeGoals (I, H) ty0r r0 cap0 tubes0
-         >:? goalTy0 >: goalTy
-        #> (I, H, trivial)
-      end
-
-    fun CapEqL alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Com.CapEq"
-        val (I, H) >> CJ.EQ ((com, other), ty) = jdg
-        val Syn.COM {dir=(r, r'), ty=(u0,ty0), cap, tubes} = Syn.out com
-        val () = Assert.paramEq "Com.CapEq source and target of direction" (r, r')
-
-        (* equations *)
-        val _ = Assert.tautologicalEquations "Com.CapEq tautology checking" (List.map #1 tubes)
-
-        (* type *)
-        val goalTy = makeType (I @ [(u0,P.DIM)], H) ty0
-        (* after proving the above goal, we know [ty0] under any substitution is
-         * still a type, and thus alpha-equivalence is sufficient. *)
-        val ty0r = substSymbol (r, u0) ty0
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0r, ty)
-
-        (* eq *)
-        (* the reason to choose [ty] not [ty0r] is because [ty] is more likely
-         * to be reduced, even though they are equal after the above goal. *)
-        val goalEq = makeEq (I, H) ((cap, other), ty)
-
-        val w = alpha 0
-        val ty0w = substSymbol (P.ret w, u0) ty0
-      in
-        |>: goalEq
-         >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
-         >:+ ComKit.genCapTubeGoals (I, H) ty0r r cap tubes
-         >:? goalTy0 >: goalTy
-        #> (I, H, trivial)
-      end
-
-    (* Search for the first satisfied equation in an hcom. *)
-    fun TubeEqL alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Com.TubeEq"
-        val (I, H) >> CJ.EQ ((com, other), ty) = jdg
-        val Syn.COM {dir=(r, r'), ty=(u0,ty0), cap, tubes} = Syn.out com
-
-        (* equations. they must be tautological because one of them is true. *)
-        val (_, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
-
-        (* type *)
-        val goalTy = makeType (I @ [(u0,P.DIM)], H) ty0
-        (* after proving the above goal, we know [ty0] under any substitution is
-         * still a type, and thus alpha-equivalence is sufficient. *)
-        val ty0r' = substSymbol (r', u0) ty0
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (ty0r', ty)
-
-        (* cap *)
-        (* the cap-tube adjacency premise guarantees that [cap] is in [ty],
-         * and thus there is nothing to prove! Yay! *)
-
-        (* eq *)
-        (* the tube-tube adjacency premise guarantees that this particular tube
-         * is unconditionally in [ty], and thus alpha-equivalence is sufficient. *)
-        val goalEq = makeEqIfDifferent (I, H) ((substSymbol (r', u) tube, other), ty)
-
-        val w = alpha 0
-        val ty0w = substSymbol (P.ret w, u0) ty0
-        val ty0r = substSymbol (r, u0) ty0
-      in
-        |>:? goalEq
-         >:+ ComKit.genInterTubeGoals (I, H) w ty0w tubes tubes
-         >:+ ComKit.genCapTubeGoals (I, H) ty0r r cap tubes
-         >:? goalTy0 >: goalTy
         #> (I, H, trivial)
       end
   end

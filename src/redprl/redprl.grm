@@ -62,17 +62,31 @@ structure Multi =
 struct
   infix $$ $ \
 
-  fun makeQuant opr [] cod = cod
-    | makeQuant opr (([], _) :: doms) cod = makeQuant opr doms cod
-    | makeQuant opr ((x :: xs, a) :: doms) cod =
-       O.MONO opr $$ [([],[]) \ a, ([],[x]) \ makeQuant opr ((xs, a) :: doms) cod]
+  fun flatten xsys = List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
 
-  val makeDFun = makeQuant O.DFUN
-  val makeDProd = makeQuant O.DPROD
+  fun makeQuant opr [] cod = cod
+    | makeQuant opr ((x, a) :: doms) cod =
+       O.MONO opr $$ [([],[]) \ a, ([],[x]) \ makeQuant opr doms cod]
+
+  val makeDFun = makeQuant O.DFUN o flatten
+  val makeDProd = makeQuant O.DPROD o flatten
 
   fun makeLam [] m = m
     | makeLam (x::xs) m =
         O.MONO O.LAM $$ [([],[x]) \ makeLam xs m]
+
+  fun makeRecord tbs =
+    let
+      val (lbls, tys) = ListPair.unzip (flatten tbs)
+    in
+      O.MONO (O.RECORD lbls) $$ List.map (fn ty => ([],[]) \ ty) tys
+    end
+  fun makeTuple fields =
+    let
+      val (lbls, args) = ListPair.unzip fields
+    in
+      O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) args
+    end
 end
 
 
@@ -104,16 +118,17 @@ end
  | FRESH
  | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
- | TIMES
+ | TIMES | BANG
  | DOUBLE_RANGLE
  | QUESTION
 
- | FCOM | WBOOL | TT | FF | WBOOL_REC | BOOL | IF | INT | NUMBER | NAT | VOID | S1 | BASE | LOOP | FST | SND | PATHS | HCOM | COE
+ | FCOM | WBOOL | TT | FF | WBOOL_REC | BOOL | IF | INT | NUMBER | NAT | VOID
+ | S1 | BASE | LOOP | FUN_APP | PAIR | FST | SND | RECORD | TUPLE | PROJ | PATHS
+ | HCOM | COE
+
  | THEN | ELSE | LET | WITH | CASE | OF
 
- | FUN_APP
-
- | DIM | EXN | HYP | LBL | NUM
+ | DIM | EXN | HYP | NUM
  | EXP | TAC | TRIV
 
  | CMD_PRINT | CMD_EXTRACT
@@ -137,52 +152,49 @@ end
    start of Signature.src_elt
 
  | ident of string
-
-   (* a type-theoretic term, including function application *)
- | rawTerm of ast
-   (* a type-theoretic term, excluding function application *)
-
- | quantifierData of (string list * ast) list * ast
-
-   (* a type-theoretic term, annotated with source position *)
- | term of ast
- | terms of ast list
- | rawFunApp of ast
- | funApp of ast
-
  | boundVar of string
+ | boundVars of string list
+
+ | psort of P.param_sort
+ | psorts of P.param_sort list
+ | sort of O.sort
+ | sorts of O.sort list
+
+ | bindingSig of P.param_sort list * O.sort list
+ | valence of Ar.valence
+
+   (* parameters *)
+ | param of string param
+ | params of string param list
+ | dir of string param * string param
+ | equation of string param * string param
+ | tube of (string param * string param) * ast abs
+ | tubes of ((string param * string param) * ast abs) list
+
+ | metavar of string
+ | customOpParams of (string param * P.param_sort option) list
+
+ | typedBinder of string list * ast
+ | typedBinders of (string list * ast) list
+ | quantifierData of (string list * ast) list * ast
+ | field of string * ast
+ | fields of (string * ast) list
 
    (* abt abstractions *)
  | binder of string list * string list
  | binding of ast abs
  | bindings of ast abs list
 
- | symbols of symbol list
- | param of string param
- | params of string param list
+   (* a type-theoretic term *)
+ | simpleNullaryOperator of string operator
+ | nullaryOperator of string operator
+ | regularNonNullaryOperator of string operator
+ | rawTermAndTac of ast (* shared with tactics *)
+ | rawTerm of ast
 
-   (* the equations of a Kan composition *)
- | equation of string param * string param
- | tube of (string param * string param) * ast abs
- | tubes of ((string param * string param) * ast abs) list
-   (* the direction of a coercion of Kan composition *)
- | dir of string param * string param
-
-   (* metavariables and metavariable applications *)
- | metavar of string
- | metavarArgs of string param list * ast list
-
- | operator of string operator
- | customOpParams of (string param * P.param_sort option) list
- | psort of P.param_sort
- | sort of O.sort
- | psorts of P.param_sort list
- | sorts of O.sort list
- | bindingSig of P.param_sort list * O.sort list
- | valence of Ar.valence
-
- | symBinding of string * P.param_sort
- | symBindings of (string * P.param_sort) list
+   (* a type-theoretic term, annotated with source position *)
+ | term of ast
+ | terms of ast list
 
  | rawJudgment of ast
  | judgment of ast
@@ -192,17 +204,17 @@ end
  | src_seqhyps of Signature.src_seqhyp list
  | src_sequent of Signature.src_sequent
 
- | rawTactic of ast
- | tactic of ast
- | tactics of ast list
- | hypBinding of string * P.param_sort
- | hypBindings of (string * P.param_sort) list
+ | atomicRawTac of ast
+ | atomicTac of ast
  | atomicRawMultitac of ast
  | atomicMultitac of ast
  | rawMultitac of ast
  | multitac of ast
- | atomicRawTac of ast
- | atomicTac of ast
+ | hypBinding of string * P.param_sort
+ | hypBindings of (string * P.param_sort) list
+ | rawTactic of ast
+ | tactic of ast
+ | tactics of ast list
 
  | declArgument of metavariable * Ar.valence
  | declArguments of string Signature.arguments
@@ -233,12 +245,24 @@ ident
   : OPNAME (OPNAME)
   | VARNAME (VARNAME)
 
+boundVar
+  : VARNAME (VARNAME)
+  | UNDER ("_")
+
+boundVars
+  : boundVar ([boundVar])
+  | boundVar boundVars (boundVar :: boundVars)
+
 psort
   : DIM (P.DIM)
   | EXN (P.EXN)
   | HYP (P.HYP O.EXP)
-  | LBL (P.LBL)
   | NUM (P.NUM)
+
+psorts
+  : psort ([psort])
+  | psort COMMA psorts (psort :: psorts)
+  | ([])
 
 sort
   : EXP (O.EXP)
@@ -248,11 +272,6 @@ sort
 sorts
   : sort ([sort])
   | sort COMMA sorts (sort :: sorts)
-  | ([])
-
-psorts
-  : psort ([psort])
-  | psort COMMA psorts (psort :: psorts)
   | ([])
 
 bindingSig
@@ -272,22 +291,12 @@ params
   : param ([param])
   | param params (param :: params)
 
+dir
+  : param SQUIGGLE_ARROW param ((param1, param2))
+
 equation
   : LPAREN equation RPAREN (equation)
   | param EQUALS param (param1, param2)
-
-boundVar
-  : VARNAME (VARNAME)
-  | UNDER ("_")
-
-symbols
-  : boundVar ([boundVar])
-  | boundVar symbols (boundVar :: symbols)
-
-terms
-  : term ([term])
-  | term terms (term :: terms)
-
 
 tube
   : LSQUARE equation binding RSQUARE (equation, binding)
@@ -296,35 +305,35 @@ tubes
   : tube ([tube])
   | tube tubes (tube :: tubes)
 
-metavarArgs
-  : LBRACKET params RBRACKET LSQUARE terms RSQUARE (params, terms)
-  | LBRACKET params RBRACKET (params, [])
-  | LSQUARE terms RSQUARE ([], terms)
-  | ([], [])
-
-
+metavar
+  : HASH ident (ident)
 
 customOpParams
   : params (List.map (fn x => (x, NONE)) params)
 
-metavar
-  : HASH ident (ident)
+typedBinder
+  : LSQUARE boundVars COLON term RSQUARE ((boundVars, term))
 
-dir
-  : param SQUIGGLE_ARROW param ((param1, param2))
-
-term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
+typedBinders
+  : typedBinder ([typedBinder])
+  | typedBinder typedBinders (typedBinder :: typedBinders)
 
 quantifierData
-  : LSQUARE symbols term RSQUARE quantifierData (((symbols, term) :: #1 quantifierData), #2 quantifierData)
+  : typedBinder quantifierData ((typedBinder :: #1 quantifierData), #2 quantifierData)
   | term quantifierData (((["_"], term) :: #1 quantifierData), #2 quantifierData)
   | term ([], term)
 
-binder
-  : LBRACKET symbols RBRACKET LSQUARE symbols RSQUARE (symbols1, symbols2)
-  | LBRACKET symbols RBRACKET (symbols, [])
-  | LSQUARE symbols RSQUARE ([], symbols)
+field
+  : LSQUARE ident term RSQUARE (ident, term)
 
+fields
+  : field fields (field :: fields)
+  | field ([field])
+
+binder
+  : LBRACKET boundVars RBRACKET LSQUARE boundVars RSQUARE (boundVars1, boundVars2)
+  | LBRACKET boundVars RBRACKET (boundVars, [])
+  | LSQUARE boundVars RSQUARE ([], boundVars)
 
 binding
   : binder term (\ (binder, term))
@@ -334,18 +343,70 @@ bindings
   : binding bindings (binding :: bindings)
   | binding ([binding])
 
-operator
-  : ABS (O.MONO O.PATH_ABS)
-  | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
+(* built-in nullary operators that take no parameters *)
+simpleNullaryOperator
+  (* bools *)
+  : BOOL (O.MONO O.BOOL)
+  | TT (O.MONO O.TRUE)
+  | FF (O.MONO O.FALSE)
+  (* weak bools *)
+  | WBOOL (O.MONO O.WBOOL)
+  (* integers *)
+  | INT (O.MONO O.INT)
+  | NAT (O.MONO O.NAT)
+  (* void *)
+  | VOID (O.MONO O.VOID)
+  (* circle *)
+  | S1 (O.MONO O.S1)
+  | BASE (O.MONO O.BASE)
+
+(* built-in nullary operators *)
+nullaryOperator
+  : simpleNullaryOperator (simpleNullaryOperator)
+  (* integers *)
+  | NUMBER param (O.POLY (O.NUMBER param))
+  (* circle *)
+  | LOOP param (O.POLY (O.LOOP param))
+
+(* built-in operators that do not have special form *)
+regularNonNullaryOperator
+  (* bools *)
+  : IF (O.MONO O.S_IF)
+  (* weak bools *)
   | WBOOL_REC (O.MONO O.IF)
-  | IF (O.MONO O.S_IF)
+  (* paths *)
   | PATHS (O.MONO O.PATH_TY)
+  | ABS (O.MONO O.PATH_ABS)
+  (* functions *)
+  | FUN_APP (O.MONO O.AP)
+  (* pairs *)
+  | PAIR (O.MONO O.PAIR)
   | FST (O.MONO O.FST)
   | SND (O.MONO O.SND)
+  (* coe *)
+  | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
 
-
-rawTerm
+rawTermAndTac
   : VARNAME (`` VARNAME)
+
+  (* meta variable *)
+  | metavar (Ast.$$# (metavar, ([], [])))
+  | LPAREN metavar terms RPAREN (Ast.$$# (metavar, ([], terms)))
+  | LBRACKET metavar params RBRACKET (Ast.$$# (metavar, (params, [])))
+  | LPAREN LBRACKET metavar params RBRACKET terms RPAREN (Ast.$$# (metavar, (params, terms)))
+
+  (* custom operators *)
+  | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
+  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
+  | LBRACKET OPNAME customOpParams RBRACKET (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
+  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
+
+  (* built-in operators that can be handled uniformly *)
+  | simpleNullaryOperator (Ast.$$ (simpleNullaryOperator, []))
+  | LPAREN nullaryOperator RPAREN (Ast.$$ (nullaryOperator, []))
+  | LPAREN regularNonNullaryOperator bindings RPAREN (Ast.$$ (regularNonNullaryOperator, bindings))
+
+  (* compositions *)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
   | LPAREN FCOM LBRACKET dir RBRACKET binding RPAREN
@@ -355,35 +416,38 @@ rawTerm
   | LPAREN HCOM LBRACKET dir RBRACKET binding binding RPAREN
       (Ast.$$ (O.POLY (O.HCOM (dir, [])), [binding1, binding2]))
 
-  | LPAREN operator bindings RPAREN (Ast.$$ (operator, bindings))
-
-
-  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
-  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
-
-  | LPAREN FUN_APP term terms RPAREN (makeApp term terms)
-
-  | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
-
-  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-  | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
-  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
-  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
-  | LPAREN LAMBDA LSQUARE symbols RSQUARE term RPAREN (Multi.makeLam symbols term)
-  | LANGLE term COMMA term RANGLE (Ast.$$ (O.MONO O.PAIR, [\ (([],[]), term1), \ (([],[]), term2)]))
-  | WBOOL (Ast.$$ (O.MONO O.WBOOL, []))
-  | TT (Ast.$$ (O.MONO O.TRUE, []))
-  | FF (Ast.$$ (O.MONO O.FALSE, []))
-  | BOOL (Ast.$$ (O.MONO O.BOOL, []))
-  | INT (Ast.$$ (O.MONO O.INT, []))
-  | LPAREN NUMBER param RPAREN (Ast.$$ (O.POLY (O.NUMBER param), []))
+  (* numbers *)
   | NUMERAL (Ast.$$ (O.POLY (O.NUMBER (P.APP (P.NUMERAL NUMERAL))), []))
-  | NAT (Ast.$$ (O.MONO O.NAT, []))
-  | VOID (Ast.$$ (O.MONO O.VOID, []))
-  | S1 (Ast.$$ (O.MONO O.S1, []))
-  | BASE (Ast.$$ (O.MONO O.BASE, []))
-  | LPAREN LOOP param RPAREN (Ast.$$ (O.POLY (O.LOOP param), []))
+
+  (* function types *)
+  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
+  | LPAREN LAMBDA LSQUARE boundVars RSQUARE term RPAREN (Multi.makeLam boundVars term)
+
+  (* pair types *)
+  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
+
+  (* non-dep. record types *)
+  (* in theory `RECORD` and `TUPLE` can be put into `simpleNullaryOperator`
+   * but it is better to put all the relevant rules next to each other. *)
+  | RECORD (Multi.makeRecord [])
+  | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord typedBinders)
+  | TUPLE (Multi.makeTuple [])
+  | LPAREN TUPLE fields RPAREN (Multi.makeTuple fields)
+  | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
+
+  (* paths *)
   | LPAREN AT_SIGN term param RPAREN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), term)]))
+
+rawTerm
+  : rawTermAndTac (rawTermAndTac)
+  (* hypotheses *)
+  | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
+
+term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
+
+terms
+  : term ([term])
+  | term terms (term :: terms)
 
 rawJudgment
   : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
@@ -456,12 +520,8 @@ atomicRawTac
   | RULE_LEMMA LBRACKET OPNAME customOpParams RBRACKET (Ast.$$ (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams)), []))
   | RULE_LEMMA OPNAME (Ast.$$ (O.POLY (O.RULE_LEMMA (OPNAME, [])), []))
 
-  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
-  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
-
-  | operator (Ast.$$ (operator, []))
-  | metavar metavarArgs (Ast.$$# (metavar, metavarArgs))
-  | VARNAME (`` VARNAME)
+  (* overlapping with term *)
+  | rawTermAndTac (rawTermAndTac)
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 

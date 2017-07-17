@@ -56,7 +56,7 @@ Tac TryStep = [ auto-step || id ].
 
 Thm ApEqTest : [
   (-> 
-   [f (-> wbool wbool)]
+   [f : (-> wbool wbool)]
    (path {_} wbool (app f tt) (app f tt)))
 ] by [
   { lam f. <_> `(app ,f tt) };
@@ -84,7 +84,7 @@ Thm PathTest2 : [
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
-  { let h : [(-> [b wbool] (path {_} wbool b (BoolEta b))) ] =
+  { let h : [(-> [b : wbool] (path {_} wbool b (BoolEta b))) ] =
       lam b. if b then <y> `tt else <y> `ff.
     <x> lam c. let p = h {hyp c}. `(@ ,p x)
   };
@@ -113,7 +113,7 @@ Thm PathTest3 : [
 
 Print PathTest3.
 
-Thm PairTest : [ (* [a S1] (path {_} S1 a base)) ] by [
+Thm PairTest : [ (* [a : S1] (path {_} S1 a base)) ] by [
   < `base
   , <x> `(loop x)
   >;
@@ -131,7 +131,7 @@ Def Cmp(#f; #g) = [
 
 
 Def MyLoop{x:dim}(#m) = [
-  <#m, (loop x)>
+  (pair #m (loop x))
 ].
 
 Def Test = [
@@ -144,7 +144,7 @@ Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by 
   auto
 ].
 
-Thm Not : [(-> [_ wbool] wbool)] by [
+Thm Not : [(-> [_ : wbool] wbool)] by [
   {lam x. if x then `ff else `tt};
   auto
 ].
@@ -154,9 +154,9 @@ Thm FunExt(#A; #B) : [
   type/B : #B type
   >>
   (->
-   [f (-> #A #B)]
-   [g (-> #A #B)]
-   [p (-> [y #A] (path {_} #B (app f y) (app g y)))]
+   [f : (-> #A #B)]
+   [g : (-> #A #B)]
+   [p : (-> [y : #A] (path {_} #B (app f y) (app g y)))]
    (path {_} (-> #A #B) f g))
 ] by [
   {lam f. lam g. lam p.
@@ -168,7 +168,7 @@ Print FunExt.
 
 
 Tac FunExtTac(#A; #B; #F; #G) = [
-  let p : [(-> [x #A] (path {_} wbool (app #F x) (app #G x)))] = {}.
+  let p : [(-> [x : #A] (path {_} wbool (app #F x) (app #G x)))] = {}.
   {<i> lam a. let q = p hyp a. `(@ ,q i)};
   auto
 ].
@@ -185,7 +185,7 @@ Extract NotNotPath.
 Print FunExtTac.
 Print NotNotPath.
 
-Thm Singleton : [(* [x wbool] (path {_} wbool x tt))] by [
+Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
   < `tt, <x> `tt >;
   auto
 ].

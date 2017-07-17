@@ -1,5 +1,5 @@
 Def Not : exp = [
-  (lam [x] (if/s x ff tt))
+  (lam [x] (if x ff tt))
 ].
 
 // An [Output] message should display for not(), even though the

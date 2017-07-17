@@ -671,6 +671,130 @@ struct
       end
   end
 
+  structure Record =
+  struct
+    structure LabelDict = Syn.LabelDict
+
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Record.EqType"
+        val (I, H) >> CJ.EQ_TYPE (record0, record1) = jdg
+        val Syn.RECORD map0 = Syn.out record0
+        val Syn.RECORD map1 = Syn.out record1
+        val map0 = LabelDict.toList map0
+        val map1 = LabelDict.toList map1
+
+        fun goLabel ((lbl0, ty0), (lbl1, ty1)) =
+          let
+            val () = Assert.labelEq "Record.EqType" (lbl0, lbl1)
+          in
+            makeEqType (I, H) (ty0, ty1)
+          end
+        val goals = ListPair.mapEq goLabel (map0, map1)
+      in
+        |>:+ goals #> (I, H, trivial)
+      end
+
+    fun Eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Record.Eq"
+        val (I, H) >> CJ.EQ ((tuple0, tuple1), record) = jdg
+        (* these operations could be expensive *)
+        val Syn.TUPLE map0 = Syn.out tuple0
+        val Syn.TUPLE map1 = Syn.out tuple1
+        val Syn.RECORD map = Syn.out record
+        val map0 = LabelDict.toList map0
+        val map1 = LabelDict.toList map1
+        val map = LabelDict.toList map
+
+        fun goLabel (((lbl0, a0), (lbl1, a1)), (lbl, ty)) =
+          let
+            val () = Assert.labelEq "Record.Eq" (lbl0, lbl1)
+            val () = Assert.labelEq "Record.Eq" (lbl0, lbl)
+          in
+            makeEq (I, H) ((a0, a1), ty)
+          end
+        val rec goLabels =
+          fn (([], []), []) => []
+          | ((lbla0 :: map0, lbla1 :: map1), lbla :: map)
+            => goLabel ((lbla0, lbla1), lbla) :: goLabels ((map0, map1), map)
+          | _ => raise E.error [Fpp.text "Expected the same number of labels"]
+        val goals = goLabels ((map0, map1), map)
+      in
+        |>:+ goals #> (I, H, trivial)
+      end
+
+    fun Eta _ jdg =
+      let
+        val _ = RedPrlLog.trace "Record.Eta"
+        val (I, H) >> CJ.EQ ((m, n), record) = jdg
+        (* these operations are expensive *)
+        val Syn.RECORD map = Syn.out record
+        val dom = LabelDict.domain map
+
+        fun goLabel lbl = ([],[]) \ (Syn.into @@ Syn.PROJ (lbl, m))
+
+        val m' = O.MONO (O.TUPLE dom) $$ List.map goLabel dom
+        val goal1 = makeMem (I, H) (m, record)
+        val goal2 = makeEqIfDifferent (I, H) ((m', n), record) (* m' well-typed *)
+      in
+        |>: goal1 >:? goal2 #> (I, H, trivial)
+      end
+
+    fun MatchRecord _ jdg =
+      let
+        val _ = RedPrlLog.trace "Record.MatchRecord"
+        val MATCH_RECORD (lbl, tm) = jdg
+
+        val Abt.$ (O.MONO (O.RECORD lbls), args) = Abt.out tm
+
+        val (_ \ arg) = List.nth (args, #1 (Option.valOf (ListUtil.findEqIndex lbl lbls)))
+      in
+        Lcf.|> (T.empty, abtToAbs arg)
+      end
+      handle _ =>
+        raise E.error [Fpp.text "MATCH_RECORD judgment failed to unify"]
+
+    fun ProjEq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Record.ProjEq"
+        val (I, H) >> CJ.EQ ((proj0, proj1), ty) = jdg
+        val Syn.PROJ (lbl0, m0) = Syn.out proj0
+        val Syn.PROJ (lbl1, m1) = Syn.out proj1
+        val () = Assert.labelEq "Record.ProjEq" (lbl0, lbl1)
+
+        val (goalTy, holeTy) = makeSynth (I, H) m0
+        val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy)
+        val goalEq = makeEqIfDifferent (I, H) ((m0, m1), holeTy) (* m0 well-typed *)
+        val goalEqTy = makeEqTypeIfDifferent (I, H) (holeTyP, ty) (* holeTyP type *)
+      in
+        |>: goalTy >: goalTyP >:? goalEq >:? goalEqTy
+        #> (I, H, trivial)
+      end
+
+    fun True _ jdg =
+      let
+        val _ = RedPrlLog.trace "Record.True"
+        val (I, H) >> CJ.TRUE record = jdg
+        val Syn.RECORD map = Syn.out record
+        val map = LabelDict.toList map
+
+        fun goLabel (lbl, ty) =
+          let
+            val (goal, hole) = makeTrue (I, H) ty
+          in
+            (goal, (lbl, ([], []) \ hole))
+          end
+        val (goals, map) = ListPair.unzip (List.map goLabel map)
+        val (dom, data) = ListPair.unzip map
+        val tuple = O.MONO (O.TUPLE dom) $$ data
+      in
+        |>:+ goals #> (I, H, tuple)
+      end
+
+    (* TODO: Elim *)
+  end
+
   structure Path =
   struct
     fun EqType _ jdg =

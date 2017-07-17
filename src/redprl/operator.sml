@@ -11,7 +11,6 @@ struct
      DIM
    | EXN
    | HYP of sort
-   | LBL
    | NUM
    | OPID
 end
@@ -52,7 +51,6 @@ struct
     fn DIM => "dim"
      | EXN => "exn"
      | HYP tau => "hyp{" ^ RedPrlSort.toString tau ^ "}"
-     | LBL => "lbl"
      | NUM => "num"
      | OPID => "opid"
 end
@@ -128,6 +126,8 @@ struct
    | DFUN | LAM | AP
    (* prodcut: pair, fst and snd *)
    | DPROD | PAIR | FST | SND
+   (* record and tuple *)
+   | RECORD of string list | TUPLE of string list | PROJ of string
    (* path: path abstraction *)
    | PATH_TY | PATH_ABS
 
@@ -224,6 +224,10 @@ struct
      | PAIR => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | FST => [[] * [] <> EXP] ->> EXP
      | SND => [[] * [] <> EXP] ->> EXP
+
+     | RECORD lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
+     | TUPLE lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
+     | PROJ lbl => [[] * [] <> EXP] ->> EXP
 
      | PATH_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | PATH_ABS => [[DIM] * [] <> EXP] ->> EXP
@@ -467,6 +471,10 @@ struct
      | PAIR => "pair"
      | FST => "fst"
      | SND => "snd"
+
+     | RECORD lbls => "record{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
+     | TUPLE lbls => "tuple{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
+     | PROJ lbl => "proj{" ^ lbl ^ "}"
 
      | PATH_TY => "path"
      | PATH_ABS => "abs"

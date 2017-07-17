@@ -37,7 +37,7 @@ struct
           Fpp.seq [Fpp.text @@ Sym.toString opid, prettyArgs arguments],
           Fpp.Atomic.colon,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
-            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty TermPrinter.ppTerm spec],
+            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm spec],
             Fpp.newline],
           Fpp.Atomic.equals,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
@@ -368,7 +368,7 @@ struct
           fun goalEqualTo goal1 goal2 =
             if RedPrlSequent.eq (goal1, goal2) then true
             else
-              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty TermPrinter.ppTerm goal1, Fpp.text "not equal to", RedPrlSequent.pretty TermPrinter.ppTerm goal2]);
+              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm goal1, Fpp.text "not equal to", RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm goal2]);
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true

@@ -19,7 +19,8 @@ sig
 
   val eq : abt jdg * abt jdg -> bool
 
-  val pretty : ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
+  val pretty : ('a * 'a -> bool) -> ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
+  val pretty' : ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
 
   exception InvalidJudgment
 end
