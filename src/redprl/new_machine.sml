@@ -16,6 +16,7 @@ sig
 
     val insertMeta : Metavar.t -> term closure binder -> t -> t
     val insertVar : Var.t -> term closure -> t -> t
+    val insertSym : Sym.t -> param -> t -> t
   end
 end
 
@@ -76,18 +77,16 @@ struct
       P.bind (lookupSym (E ** F))
 
     fun insertMeta x bndCl ({metas, vars, syms} ** F) =
-      let
-        val E = {metas = Metavar.Ctx.insert metas x bndCl, vars = vars, syms = syms}
-      in
-        E ** F
-      end
+      {metas = Metavar.Ctx.insert metas x bndCl, vars = vars, syms = syms} 
+        ** F
 
     fun insertVar x cl ({metas, vars, syms} ** F) = 
-      let
-        val E = {metas = metas, vars = Var.Ctx.insert vars x cl, syms = syms}
-      in
-        E ** F
-      end
+      {metas = metas, vars = Var.Ctx.insert vars x cl, syms = syms}
+        ** F
+
+    fun insertSym u r ({metas, vars, syms} ** F) = 
+      {metas = metas, vars = vars, syms = Sym.Ctx.insert syms u r}
+        ** F
   end
 end
 
