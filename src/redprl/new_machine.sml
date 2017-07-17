@@ -5,39 +5,95 @@ sig
 
   structure Env :
   sig
-    val empty : environment
+    type t = environment
+    type param = RedPrlAbt.param
+    type term = RedPrlAbt.abt
+    type 'a binder = 'a RedPrlAbt.bview
+
+    val empty : t
+    val lookupSym : t -> Sym.t -> param
+    val readParam : t -> param -> param
+
+    val insertMeta : Metavar.t -> term closure binder -> t -> t
+    val insertVar : Var.t -> term closure -> t -> t
   end
 end
 
 structure Closure :> CLOSURE = 
 struct
-  structure Tm = RedPrlAbt
+  structure Tm = RedPrlAbt and P = RedPrlParameterTerm
 
   type shallow_env =
     {vars: Tm.abt Var.Ctx.dict,
      syms: Tm.param Sym.Ctx.dict}
 
   datatype 'a closure = <: of 'a * environment
-  and environment = ** of deep_env * shallow_env
+  and environment = ** of deep_env * shallow_env list
   withtype deep_env = 
     {metas: Tm.abt closure Tm.bview Metavar.Ctx.dict,
      vars: Tm.abt closure Var.Ctx.dict,
      syms: Tm.param Sym.Ctx.dict}
 
-
   structure Env = 
   struct
+    type t = environment
+    type param = RedPrlAbt.param
+    type term = RedPrlAbt.abt
+    type 'a binder = 'a RedPrlAbt.bview
+
     infix **
     local
       val emptyDeep = {metas = Metavar.Ctx.empty, vars = Var.Ctx.empty, syms = Sym.Ctx.empty}
-      val emptyShallow = {vars = Var.Ctx.empty, syms = Sym.Ctx.empty}
     in
-      val empty : environment = emptyDeep ** emptyShallow
+      val empty =
+        emptyDeep ** []
     end
+
+    local
+      fun lookupSymDeep (E : deep_env) u = 
+        Sym.Ctx.lookup (#syms E) u 
+        handle Sym.Ctx.Absent => 
+          P.ret u
+
+      fun lookupSymShallow (F : shallow_env) u = 
+        Sym.Ctx.lookup (#syms F) u 
+        handle Sym.Ctx.Absent => 
+          P.ret u
+
+      (* Favonia: is this correct? To get the value of a symbol from the list of final substitutions,
+         do we have to walk through the whole list and apply all possible substitutions? *)
+      fun lookupSymFinal L u = 
+        case L of 
+           [] => P.ret u
+         | F :: L => P.bind (lookupSymShallow F) (lookupSymFinal L u)
+    in
+      (* First, lookup the symbol in E; then, apply whatever substitutions are in L. *)
+      fun lookupSym (E ** L) u =
+        P.bind (lookupSymFinal L) (lookupSymDeep E u)
+    end
+
+    fun readParam (E ** F) = 
+      P.bind (lookupSym (E ** F))
+
+    fun insertMeta x bndCl ({metas, vars, syms} ** F) =
+      let
+        val E = {metas = Metavar.Ctx.insert metas x bndCl, vars = vars, syms = syms}
+      in
+        E ** F
+      end
+
+    fun insertVar x cl ({metas, vars, syms} ** F) = 
+      let
+        val E = {metas = metas, vars = Var.Ctx.insert vars x cl, syms = syms}
+      in
+        E ** F
+      end
   end
 end
 
+functor NewMachine () = struct end
 
+(* 
 functor NewMachine (Sig : MINI_SIGNATURE) :
 sig
   type sign = Sig.sign
@@ -411,4 +467,4 @@ struct
 
   fun init tm = 
     tm <: Env.empty || (SymSet.empty, [])
-end
+end *)
