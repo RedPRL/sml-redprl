@@ -8,12 +8,20 @@ struct
   type valence = Tm.valence
   type 'a binder = 'a Tm.bview
 
+
+  (* A 'shallow env' contains a substitution of terms for variables, and parameters for symbols. *)
+
   type shallow_env =
     {vars: Tm.abt Var.Ctx.dict,
      syms: Tm.param Sym.Ctx.dict}
+  
+  (* A 'final env' is a list of shallow env; this is a "formal composition" of environments.
+     Unlike in the document, the implementation uses one of these lists everwhere, rather than only
+     in the definition of forcing. We may wish to change this, I have no idea. *)
+  type final_env = shallow_env list
 
   datatype 'a closure = <: of 'a * environment
-  and environment = ** of deep_env * shallow_env list
+  and environment = ** of deep_env * final_env
   withtype deep_env = 
     {metas: Tm.abt closure Tm.bview Metavar.Ctx.dict,
      vars: Tm.abt closure Var.Ctx.dict,

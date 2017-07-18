@@ -577,46 +577,52 @@ struct
      | POLY th => toStringPoly f th
 
   local
-    fun mapSpan f (r, r') = (P.bind f r, P.bind f r')
+    fun passSort sigma f = 
+      fn u => f (u, sigma)
+
+    fun mapSpan f (r, r') = (P.bind (passSort DIM f) r, P.bind (passSort DIM f) r')
     fun mapSpans f = List.map (mapSpan f)
-    fun mapParams (f : 'a -> 'b P.term) =
+    fun mapParams (f : 'a * psort -> 'b P.term) =
       List.map
-        (fn (p, ann) =>
+        (fn (p, SOME tau) =>
            let
-             val q = P.bind f p
-             val _ = Option.map (fn tau => P.check tau q) ann
+             val q = P.bind (passSort tau f) p
+             val _ = P.check tau q
            in
-             (q, ann)
-           end)
+             (q, SOME tau)
+           end
+          | _ => raise Fail "operator.sml, uh-oh")
 
     fun mapSym f a =
       case f a of
          P.VAR a' => a'
        | P.APP _ => raise Fail "Expected symbol, but got application"
   in
-    fun mapPoly f =
+    fun mapPolyWithSort f =
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
-       | NUMBER n => NUMBER (P.bind f n)
-       | LOOP r => LOOP (P.bind f r)
-       | PATH_AP r => PATH_AP (P.bind f r)
+       | NUMBER n => NUMBER (P.bind (passSort NUM f) n)
+       | LOOP r => LOOP (P.bind (passSort DIM f) r)
+       | PATH_AP r => PATH_AP (P.bind (passSort DIM f) r)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
-       | CUST (opid, ps, ar) => CUST (mapSym f opid, mapParams f ps, ar)
-       | RULE_LEMMA (opid, ps) => RULE_LEMMA (mapSym f opid, mapParams f ps)
-       | RULE_CUT_LEMMA (opid, ps) => RULE_CUT_LEMMA (mapSym f opid, mapParams f ps)
-       | HYP_REF a => HYP_REF (mapSym f a)
-       | RULE_HYP (a, tau) => RULE_HYP (mapSym f a, tau)
-       | RULE_ELIM (a, tau) => RULE_ELIM (mapSym f a, tau)
-       | RULE_UNFOLD a => RULE_UNFOLD (mapSym f a)
-       | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym f a)
-       | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym f a)
-       | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym f a)
-       | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym f a)
+       | CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
+       | RULE_LEMMA (opid, ps) => RULE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
+       | RULE_CUT_LEMMA (opid, ps) => RULE_CUT_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
+       | HYP_REF a => HYP_REF (mapSym (passSort (HYP EXP) f) a)
+       | RULE_HYP (a, tau) => RULE_HYP (mapSym (passSort (HYP tau) f) a, tau)
+       | RULE_ELIM (a, tau) => RULE_ELIM (mapSym (passSort (HYP tau) f) a, tau)
+       | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
+       | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym (passSort (HYP EXP) f) a)
   end
 
-  fun map f =
+  fun mapWithSort f =
     fn MONO th => MONO th
-     | POLY th => POLY (mapPoly f th)
+     | POLY th => POLY (mapPolyWithSort f th)
 
+  fun map f = 
+    mapWithSort (fn (u, _) => f u)
 end

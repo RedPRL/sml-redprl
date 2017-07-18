@@ -13,6 +13,6 @@ local
   end
 in
   structure RedPrlAst = AstUtil (Ast (AbtKit))
-  structure RedPrlAbt = Abt (AbtKit)
+  structure RedPrlAbt = NewAbt (AbtKit)
   structure AstToAbt = AstToAbt (structure Ast = RedPrlAst and Abt = RedPrlAbt)
 end

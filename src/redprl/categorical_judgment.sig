@@ -15,7 +15,6 @@ sig
   val fromAbt : abt -> abt jdg
 
   val metactx : abt jdg -> Tm.metactx
-  val unify : abt jdg * abt jdg -> Tm.Unify.renaming
 
   val eq : abt jdg * abt jdg -> bool
 
