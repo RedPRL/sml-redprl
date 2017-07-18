@@ -125,7 +125,7 @@
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
-  '("auto" "auto-step" "lemma" "let" "cut-lemma" "hyp" "elim" "unfold")
+  '("auto" "auto-step" "cut-lemma" "elim" "fresh" "hyp" "lemma" "let" "unfold")
   "RedPRL's tactic keywords.")
 
 (defconst redprl-tactic-symbols
