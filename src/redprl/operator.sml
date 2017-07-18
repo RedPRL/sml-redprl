@@ -111,9 +111,9 @@ struct
    (* strict bool: strict if (true and false are shared) *)
    | BOOL | S_IF
    (* natural numbers *)
-   | NAT | ZERO | SUCC
+   | NAT | ZERO | SUCC | NAT_REC
    (* integers *)
-   | INT | NEGSUCC
+   | INT | NEGSUCC | INT_REC
    (* empty type *)
    | VOID
    (* circle: base and s1_elim *)
@@ -208,8 +208,10 @@ struct
      | NAT => [] ->> EXP
      | ZERO => [] ->> EXP
      | SUCC => [[] * [] <> EXP] ->> EXP
+     | NAT_REC => [[] * [] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
      | INT => [] ->> EXP
      | NEGSUCC => [[] * [] <> EXP] ->> EXP
+     | INT_REC => [[] * [] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -447,10 +449,12 @@ struct
      | S_IF => "if"
 
      | NAT => "nat"
+     | NAT_REC => "nat-rec"
      | ZERO => "zero"
      | SUCC => "succ"
      | INT => "int"
      | NEGSUCC => "negsucc"
+     | INT_REC => "int-rec"
 
      | VOID => "void"
 

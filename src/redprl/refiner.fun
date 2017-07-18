@@ -654,6 +654,7 @@ struct
         case Syn.out ty of
            Syn.WBOOL => WeakBool.Elim
          | Syn.BOOL => StrictBool.Elim
+         | Syn.NAT => Nat.Elim
          | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim

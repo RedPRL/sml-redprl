@@ -125,8 +125,20 @@ struct
      | O.MONO O.NAT `$ _ <: _ => S.VAL
      | O.MONO O.ZERO `$ _ <: _ => S.VAL
      | O.MONO O.SUCC `$ _ <: _ => S.VAL
+     | O.MONO O.NAT_REC `$ [_ \ m, _ \ n, (_,[a,b]) \ p] <: env =>
+         S.CUT
+           @@ (O.MONO O.NAT_REC `$ [([],[]) \ S.HOLE, ([],[]) \ S.% n, ([],[a,b]) \ S.% p] , m)
+           <: env
+
      | O.MONO O.INT `$ _ <: _ => S.VAL
      | O.MONO O.NEGSUCC `$ _ <: _ => S.VAL
+     | O.MONO O.INT_REC `$ [_ \ m, _ \ n, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] <: env =>
+         S.CUT
+           @@ (O.MONO O.INT_REC `$
+                 [([],[]) \ S.HOLE,
+                  ([],[]) \ S.% n, ([],[a,b]) \ S.% p,
+                  ([],[]) \ S.% q, ([],[c,d]) \ S.% r], m)
+           <: env
 
      | O.MONO O.VOID `$ _ <: _ => S.VAL
 
@@ -317,6 +329,17 @@ struct
 
      | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% _], _ \ O.MONO O.TRUE `$ _ <: _) => t
      | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% _, _ \ S.% f], _ \ O.MONO O.FALSE `$ _ <: _) => f
+
+     | (O.MONO O.NAT_REC `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.ZERO `$ _ <: _) => cl
+     | (O.MONO O.NAT_REC `$ [_, _ \ S.HOLE, _ \ S.% n, (_,[a,b]) \ S.% p], _ \ O.MONO O.SUCC `$ [_ \ m] <: env) =>
+         let
+           val n = Cl.force n
+           val p = Cl.force p
+           val env' = Cl.insertVar env a (m <: env)
+           val env' = Cl.insertVar env' b (Syn.into (Syn.NAT_REC (m, (n, (a,b,p)))) <: env)
+         in
+           p <: env'
+         end
 
      | (O.MONO O.S1_ELIM `$ [(_,[_]) \ S.% _, _ \ S.HOLE, _ \ S.% b, ([_],_) \ S.% _], _ \ O.MONO O.BASE `$ _ <: _) => b
      | (O.MONO O.S1_ELIM `$ [(_,[_]) \ S.% _, _ \ S.HOLE, _ \ S.% _, ([u],_) \ S.% (l <: envL)],

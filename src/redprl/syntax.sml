@@ -28,8 +28,10 @@ struct
    | BOOL | S_IF of 'a * ('a * 'a)
    (* natural numbers *)
    | NAT | ZERO | SUCC of 'a
+   | NAT_REC of 'a * ('a * (variable * variable * 'a))
    (* integers, reusing natural numbers *)
    | INT | NEGSUCC of 'a
+   | INT_REC of 'a * ('a * (variable * variable * 'a) * 'a * (variable * variable * 'a))
    (* empty type *)
    | VOID
    (* circle: base, loop and s1_elim *)
@@ -129,8 +131,12 @@ struct
        | NAT => O.MONO O.NAT $$ []
        | ZERO => O.MONO O.ZERO $$ []
        | SUCC m => O.MONO O.SUCC $$ [([],[]) \ m]
+       | NAT_REC (m, (n, (a, b, p))) => O.MONO O.NAT_REC $$ [([],[]) \ m, ([],[]) \ n, ([],[a,b]) \ p]
+
        | INT => O.MONO O.INT $$ []
        | NEGSUCC m => O.MONO O.NEGSUCC $$ [([],[]) \ m]
+       | INT_REC (m, (n, (a, b, p), q, (c, d, r))) =>
+           O.MONO O.INT_REC $$ [([],[]) \ m, ([],[]) \ n, ([],[a,b]) \ p, ([],[]) \ q, ([],[c,d]) \ r]
 
        | VOID => O.MONO O.VOID $$ []
 
@@ -224,8 +230,12 @@ struct
        | O.MONO O.NAT $ _ => NAT
        | O.MONO O.ZERO $ _ => ZERO
        | O.MONO O.SUCC $ [_ \ m] => SUCC m
+       | O.MONO O.NAT_REC $ [_ \ m, _ \ n, (_,[a,b]) \ p] => NAT_REC (m, (n, (a, b, p)))
+
        | O.MONO O.INT $ _ => INT
        | O.MONO O.NEGSUCC $ [_ \ m] => NEGSUCC m
+       | O.MONO O.INT_REC $ [_ \ m, _ \ n, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] =>
+           INT_REC (m, (n, (a, b, p), q, (c, d, r)))
 
        | O.MONO O.VOID $ _ => VOID
 

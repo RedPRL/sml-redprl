@@ -239,6 +239,38 @@ struct
       in
         |>: goal #> (I, H, trivial)
       end
+
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.Elim"
+        val (I, H) >> CJ.TRUE cz = jdg
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.NAT = Syn.out ty
+
+        val u = alpha 0
+        val v = alpha 1
+        val utm = Syn.into @@ Syn.VAR (u, O.EXP)
+        val zero = Syn.into Syn.ZERO
+        val succ = Syn.into @@ Syn.SUCC utm
+
+        val Hzero = Hyps.modifyAfter z (CJ.map (substVar (zero, z))) H
+        val czero = substVar (zero, z) cz
+
+        val Huv = Hyps.empty
+              @> (u, CJ.TRUE (Syn.into Syn.NAT))
+              @> (v, CJ.TRUE (substVar (utm, z) cz))
+              @> (z, CJ.TRUE (Syn.into Syn.NAT))
+        val Hsucc = Hyps.modifyAfter z (CJ.map (substVar (succ, z))) (Hyps.splice H z Huv)
+        val csucc = substVar (succ, z) cz
+
+        val (goalZ, holeZ) = makeTrue (I, Hzero) czero
+        val (goalS, holeS) = makeTrue (I, Hsucc) csucc
+
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val evidence = Syn.into @@ Syn.NAT_REC (ztm, (holeZ, (u, v, holeS)))
+      in
+        |>: goalZ >: goalS #> (I, H, evidence)
+      end
   end
 
   structure Int =
