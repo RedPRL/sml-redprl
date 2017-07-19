@@ -330,8 +330,8 @@ struct
      | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% _], _ \ O.MONO O.TRUE `$ _ <: _) => t
      | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% _, _ \ S.% f], _ \ O.MONO O.FALSE `$ _ <: _) => f
 
-     | (O.MONO O.NAT_REC `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.ZERO `$ _ <: _) => cl
-     | (O.MONO O.NAT_REC `$ [_, _ \ S.HOLE, _ \ S.% n, (_,[a,b]) \ S.% p], _ \ O.MONO O.SUCC `$ [_ \ m] <: env) =>
+     | (O.MONO O.NAT_REC `$ [_ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.ZERO `$ _ <: _) => cl
+     | (O.MONO O.NAT_REC `$ [_ \ S.HOLE, _ \ S.% n, (_,[a,b]) \ S.% p], _ \ O.MONO O.SUCC `$ [_ \ m] <: env) =>
          let
            val n = Cl.force n
            val p = Cl.force p

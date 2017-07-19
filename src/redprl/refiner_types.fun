@@ -53,7 +53,7 @@ struct
 
     fun EqFCom alpha jdg =
       let
-        val _ = RedPrlLog.trace "EqFCom"
+        val _ = RedPrlLog.trace "WeakBool.EqFCom"
         val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
         val Syn.WBOOL = Syn.out ty
         val Syn.FCOM args0 = Syn.out lhs
@@ -165,7 +165,8 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
 
-    (* this rule is outdated because the paper version has changed. *)
+    (* This rule is outdated because the paper version has changed.
+     * The correct version should handle the dependent motive. *)
     fun ElimEq _ jdg =
       let
         val _ = RedPrlLog.trace "StrictBool.ElimEq"
@@ -250,26 +251,66 @@ struct
         val u = alpha 0
         val v = alpha 1
         val utm = Syn.into @@ Syn.VAR (u, O.EXP)
+
+        val nat = Syn.into Syn.NAT
         val zero = Syn.into Syn.ZERO
-        val succ = Syn.into @@ Syn.SUCC utm
+        val succu = Syn.into @@ Syn.SUCC utm
 
         val Hzero = Hyps.modifyAfter z (CJ.map (substVar (zero, z))) H
         val czero = substVar (zero, z) cz
 
-        val Huv = Hyps.empty
-              @> (u, CJ.TRUE (Syn.into Syn.NAT))
+        val Huvz = Hyps.empty
+              @> (u, CJ.TRUE nat)
               @> (v, CJ.TRUE (substVar (utm, z) cz))
-              @> (z, CJ.TRUE (Syn.into Syn.NAT))
-        val Hsucc = Hyps.modifyAfter z (CJ.map (substVar (succ, z))) (Hyps.splice H z Huv)
-        val csucc = substVar (succ, z) cz
+              @> (z, CJ.TRUE nat)
+        val Hsuccu = Hyps.modifyAfter z (CJ.map (substVar (succu, z))) (Hyps.splice H z Huvz)
+        val csuccu = substVar (succu, z) cz
 
         val (goalZ, holeZ) = makeTrue (I, Hzero) czero
-        val (goalS, holeS) = makeTrue (I, Hsucc) csucc
+        val (goalS, holeS) = makeTrue (I, Hsuccu) csuccu
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val evidence = Syn.into @@ Syn.NAT_REC (ztm, (holeZ, (u, v, holeS)))
       in
         |>: goalZ >: goalS #> (I, H, evidence)
+      end
+
+    fun ElimEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.ElimEq"
+        val (I, H) >> CJ.EQ ((elim0, elim1), c) = jdg
+        val Syn.NAT_REC (m0, (n0, (a0, b0, p0))) = Syn.out elim0
+        val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
+
+        val z = alpha 0
+        val u = alpha 1
+        val v = alpha 2
+        val utm = Syn.into @@ Syn.VAR (u, O.EXP)
+        val vtm = Syn.into @@ Syn.VAR (v, O.EXP)
+
+        val nat = Syn.into Syn.NAT
+        val zero = Syn.into Syn.ZERO
+        val succu = Syn.into @@ Syn.SUCC utm
+
+        val goalM = makeEq (I, H) ((m0, m1), nat)
+
+        (* getting the motive *)
+        val (goalC, holeC) = makeTerm (I, H @> (z, CJ.TRUE nat)) O.EXP
+        val goalC' = makeType (I, H @> (z, CJ.TRUE nat)) holeC
+
+        (* zero branch *)
+        val czero = substVar (zero, z) holeC
+        val goalZ = makeEq (I, H) ((n0, n1), czero)
+
+        (* succ branch *)
+        val cu = substVar (utm, z) holeC
+        val csuccu = substVar (succu, z) holeC
+        val p0 = substVar (utm, a0) o substVar (vtm, b0) @@ p0
+        val p1 = substVar (utm, a1) o substVar (vtm, b1) @@ p1
+        val goalS = makeEq (I, H @> (u, CJ.TRUE nat) @> (v, CJ.TRUE cu))
+                      ((p0, p1), csuccu)
+      in
+        |>: goalC >: goalZ >: goalS >: goalC' #> (I, H, trivial)
       end
   end
 

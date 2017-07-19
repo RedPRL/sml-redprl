@@ -532,24 +532,25 @@ struct
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
       fun StepEqNeu (x, y) ((m, n), ty) =
-        case (Syn.out m, Syn.out n, Syn.out ty) of
-           (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
-         | (Syn.IF _, Syn.IF _, _) => WeakBool.ElimEq
-         | (Syn.S_IF _, Syn.S_IF _, _) => StrictBool.ElimEq
-         | (Syn.S_IF _, _, _) =>
+        case (Syn.out m, Syn.out n) of
+           (Syn.VAR _, Syn.VAR _) => Equality.Hyp
+         | (Syn.IF _, Syn.IF _) => WeakBool.ElimEq
+         | (Syn.S_IF _, Syn.S_IF _) => StrictBool.ElimEq
+         | (Syn.S_IF _, _) =>
            (case x of
                Machine.VAR z => StrictBool.EqElim z
              | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply StrictBool elimination"])
-         | (_, Syn.S_IF _, _) =>
+         | (_, Syn.S_IF _) =>
            (case y of
                Machine.VAR z => CatJdgSymmetry then_ StrictBool.EqElim z
              | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply StrictBool elimination"])
-         | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
-         | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
-         | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
-         | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
-         | (Syn.PROJ _, Syn.PROJ _, _) => Record.ProjEq
-         | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _), _) => Path.ApEq
+         | (Syn.NAT_REC _, Syn.NAT_REC _) => Nat.ElimEq
+         | (Syn.S1_ELIM _, Syn.S1_ELIM _) => S1.ElimEq
+         | (Syn.AP _, Syn.AP _) => DFun.ApEq
+         | (Syn.FST _, Syn.FST _) => DProd.FstEq
+         | (Syn.SND _, Syn.SND _) => DProd.SndEq
+         | (Syn.PROJ _, Syn.PROJ _) => Record.ProjEq
+         | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _)) => Path.ApEq
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       fun StepEqNeuExpand ty =

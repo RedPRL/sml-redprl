@@ -464,7 +464,7 @@ struct
 
      | DFUN => "dfun"
      | LAM => "lam"
-     | AP => "ap"
+     | AP => "app" (* AP will be changed to APP later *)
 
      | DPROD => "dprod"
      | PAIR => "pair"
