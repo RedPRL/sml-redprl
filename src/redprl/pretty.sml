@@ -128,15 +128,13 @@ struct
 
   and ppTerm m =
     case Abt.out m of
-       O.POLY (O.HYP_REF x) $ [] => seq [text ",", ppVar x]
+       O.POLY (O.HYP_REF x) $ [] => seq [char #",", ppVar x]
      | O.POLY (O.LOOP x) $ [] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
      | O.MONO O.DFUN $ _ =>
          printQuant "->" @@ multiDFun [] m
      | O.MONO O.LAM $ _ =>
          printLam @@ multiLam [] m
-     | O.MONO O.AP $ [_ \ m, _ \ n] =>
-         Atomic.parens @@ expr @@ hvsep [ppTerm m, ppTerm n]
      | O.MONO O.DPROD $ _ =>
          printQuant "*" @@ multiDProd [] m
      | O.MONO (O.RECORD []) $ _ => text "record"
@@ -158,9 +156,9 @@ struct
              [text "tuple", expr @@ hvsep @@ ListPair.mapEq pp (lbls, data)]
          end
      | O.MONO (O.PROJ lbl) $ [_ \ m] =>
-         Atomic.parens @@ expr @@ hvsep [text "!", text lbl, ppTerm m]
+         Atomic.parens @@ expr @@ hvsep [char #"!", text lbl, ppTerm m]
      | O.POLY (O.PATH_AP r) $ [_ \ m] =>
-         Atomic.parens @@ expr @@ hvsep [text "@", ppTerm m, ppParam r]
+         Atomic.parens @@ expr @@ hvsep [char #"@", ppTerm m, ppParam r]
      | `x => ppVar x
      | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@

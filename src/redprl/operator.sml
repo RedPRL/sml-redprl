@@ -11,7 +11,6 @@ struct
      DIM
    | EXN
    | HYP of sort
-   | NUM
    | OPID
 end
 
@@ -20,7 +19,6 @@ struct
   datatype 'a param_operator =
      DIM0
    | DIM1
-   | NUMERAL of IntInf.int
 end
 
 
@@ -51,7 +49,6 @@ struct
     fn DIM => "dim"
      | EXN => "exn"
      | HYP tau => "hyp{" ^ RedPrlSort.toString tau ^ "}"
-     | NUM => "num"
      | OPID => "opid"
 end
 
@@ -63,30 +60,25 @@ struct
   fun map _ =
     fn DIM0 => DIM0
      | DIM1 => DIM1
-     | NUMERAL n => NUMERAL n
 
   structure Sort = RedPrlParamSort
 
   val arity =
     fn DIM0 => (DIM0, DIM)
      | DIM1 => (DIM1, DIM)
-     | NUMERAL n => (NUMERAL n, NUM)
 
   fun eq _ =
     fn (DIM0, DIM0) => true
      | (DIM1, DIM1) => true
-     | (NUMERAL n1, NUMERAL n2) => n1 = n2
      | _ => false
 
   fun toString _ =
     fn DIM0 => "0"
      | DIM1 => "1"
-     | NUMERAL n => IntInf.toString n
 
   fun join zer _ =
     fn DIM0 => zer
      | DIM1 => zer
-     | NUMERAL n => zer
 end
 
 structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
@@ -108,16 +100,20 @@ struct
    * MONO: the Standard ML built-in equality properly compares the operators.
    * POLY: we have to compare the operators manually. *)
   datatype mono_operator =
-   (* the trivial realizer for equality, which is called 'axiom' in NuPRL. *)
-     AX
+   (* the trivial realizer of sort TRIV for judgments lacking interesting
+    * computational content. *)
+     TV
+   (* the trivial realizer of sort EXP for types lacking interesting
+    * computational content. This is the "ax(iom)" in Nuprl. *)
+   | AX
    (* week bool: true, false and if *)
    | WBOOL | TRUE | FALSE | IF (* weak booleans *)
    (* strict bool: strict if (true and false are shared) *)
    | BOOL | S_IF
-   (* integers *)
-   | INT
    (* natural numbers *)
-   | NAT
+   | NAT | ZERO | SUCC | NAT_REC
+   (* integers *)
+   | INT | NEGSUCC | INT_REC
    (* empty type *)
    | VOID
    (* circle: base and s1_elim *)
@@ -146,7 +142,7 @@ struct
    | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
    | DEV_LET of RedPrlSort.t
 
-   | JDG_EQ | JDG_CEQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t
+   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -154,7 +150,6 @@ struct
 
   datatype 'a poly_operator =
      FCOM of 'a dir * 'a equation list
-   | NUMBER of 'a P.term
    | LOOP of 'a P.term
    | PATH_AP of 'a P.term
    | HCOM of 'a dir * 'a equation list
@@ -197,7 +192,8 @@ struct
   type 'a t = 'a operator
 
   val arityMono =
-    fn AX => [] ->> TRIV
+    fn TV => [] ->> TRIV
+     | AX => [] ->> EXP
 
      | WBOOL => [] ->> EXP
      | TRUE => [] ->> EXP
@@ -209,8 +205,13 @@ struct
 
      | VOID => [] ->> EXP
 
-     | INT => [] ->> EXP
      | NAT => [] ->> EXP
+     | ZERO => [] ->> EXP
+     | SUCC => [[] * [] <> EXP] ->> EXP
+     | NAT_REC => [[] * [] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
+     | INT => [] ->> EXP
+     | NEGSUCC => [[] * [] <> EXP] ->> EXP
+     | INT_REC => [[] * [] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -262,7 +263,6 @@ struct
      | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
 
      | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_CEQ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_TRUE => [[] * [] <> EXP] ->> JDG
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
@@ -295,7 +295,6 @@ struct
   in
     val arityPoly =
       fn FCOM params => arityFcom params
-       | NUMBER n => [] ->> EXP
        | LOOP _ => [] ->> EXP
        | PATH_AP _ => [[] * [] <> EXP] ->> EXP
        | HCOM params => arityHcom params
@@ -319,10 +318,6 @@ struct
      | POLY th => arityPoly th
 
   local
-    val numSupport =
-      fn P.VAR a => [(a, NUM)]
-       | P.APP t => P.freeVars t
-
     val dimSupport =
       fn P.VAR a => [(a, DIM)]
        | P.APP t => P.freeVars t
@@ -346,7 +341,6 @@ struct
   in
     val supportPoly =
       fn FCOM params => comSupport params
-       | NUMBER n => numSupport n
        | LOOP r => dimSupport r
        | PATH_AP r => dimSupport r
        | HCOM params => comSupport params
@@ -386,7 +380,6 @@ struct
                    spanEq f (dir1, dir2)
                    andalso spansEq f (eqs1, eqs2)
                | _ => false)
-       | (NUMBER n, t) => (case t of NUMBER n' => P.eq f (n, n') | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_AP r, t) => (case t of PATH_AP r' => P.eq f (r, r') | _ => false)
        | (HCOM (dir1, eqs1), t) =>
@@ -444,7 +437,8 @@ struct
      | _ => false
 
   val toStringMono =
-    fn AX => "ax"
+    fn TV => "tv"
+     | AX => "ax"
 
      | WBOOL => "wbool"
      | TRUE => "tt"
@@ -454,8 +448,13 @@ struct
      | BOOL => "bool"
      | S_IF => "if"
 
-     | INT => "int"
      | NAT => "nat"
+     | NAT_REC => "nat-rec"
+     | ZERO => "zero"
+     | SUCC => "succ"
+     | INT => "int"
+     | NEGSUCC => "negsucc"
+     | INT_REC => "int-rec"
 
      | VOID => "void"
 
@@ -465,7 +464,7 @@ struct
 
      | DFUN => "dfun"
      | LAM => "lam"
-     | AP => "ap"
+     | AP => "app" (* AP will be changed to APP later *)
 
      | DPROD => "dprod"
      | PAIR => "pair"
@@ -505,7 +504,6 @@ struct
      | DEV_LET _ => "let"
 
      | JDG_EQ => "eq"
-     | JDG_CEQ => "ceq"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
      | JDG_SYNTH => "synth"
@@ -532,7 +530,6 @@ struct
              ^ "; "
              ^ dirToString f dir
              ^ "]"
-       | NUMBER n => P.toString f n
        | LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
        | HCOM (dir, eqs) =>
@@ -596,7 +593,6 @@ struct
   in
     fun mapPoly f =
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
-       | NUMBER n => NUMBER (P.bind f n)
        | LOOP r => LOOP (P.bind f r)
        | PATH_AP r => PATH_AP (P.bind f r)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)

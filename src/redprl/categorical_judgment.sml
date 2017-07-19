@@ -64,9 +64,9 @@ struct
 
     fun fromAbt jdg =
       case RedPrlAbt.out jdg of
-         O.MONO O.JDG_EQ $ [_ \ m, _\ n, _ \ a] => EQ ((m, n), a)
+         O.MONO O.JDG_EQ $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), a)
        | O.MONO O.JDG_TRUE $ [_ \ a] => TRUE a
-       | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _\ n] => EQ_TYPE (m, n)
+       | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
        | _ => raise InvalidJudgment

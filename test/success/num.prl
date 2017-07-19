@@ -10,14 +10,72 @@ Thm NegOne : [
   auto
 ].
 
-Thm Abstract{i:num} : [
-  (number i) in int
+Thm NatOne : [
+  1 in nat
 ] by [
   auto
 ].
 
-Thm NatOne : [
-  1 in nat
+Thm Pred : [
+  (-> nat nat)
+] by [
+  {
+    lam a.
+    fresh a', ind <- elim a;
+    [ `zero; auto ];
+    [ hyp a'; auto ];
+  };
+  auto
+].
+
+Extract Pred.
+
+Def Pred2 = [
+   (lam [x] (nat-rec x zero [y z] y))
+].
+
+Extract Pred2.
+
+Thm Prod2Wf : [
+  Pred2 in (-> nat nat)
+] by [
+  fresh n1, n2, n2', ind <- auto;
+  [ `nat ]; // providing the motive
+  auto;
+].
+
+Thm Plus : [
+  (-> nat nat nat)
+] by [
+  {
+    lam a.
+    fresh a', ind <- elim a;
+    [ `(lam [x] x); auto ];
+    [ `(lam [x] (succ (app ,ind x))); auto ];
+  };
+  auto
+].
+
+Extract Plus.
+
+Def Plus2 = [
+  (lam [a]
+   (nat-rec
+    a
+    (lam [x] x)
+    [a' ind] (lam [x] (succ (app ind x)))))
+].
+
+Thm Plus2Wf : [
+  Plus2 in (-> nat nat nat)
+] by [
+  fresh a, b, b', ind <- auto;
+  [ `(-> nat nat) ];
+  auto
+].
+
+Thm Plus2UnitL : [
+  n : nat >> (app (app Plus2 0) n) = n in nat
 ] by [
   auto
 ].

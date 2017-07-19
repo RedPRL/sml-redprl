@@ -33,7 +33,14 @@ local
 in
   fun makeApp m ns = 
     List.foldr (fn (n, ap) => O.MONO O.AP $$ [([],[]) \ ap, ([],[]) \ n]) m ns
+
+  fun makeNum i =
+    case IntInf.compare (i, 0) of
+      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (IntInf.- (i, 1))]
+    | EQUAL => O.MONO O.ZERO $$ []
+    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum (IntInf.- (IntInf.~ i, 1))]
 end
+
 
 structure Tac =
 struct
@@ -95,56 +102,71 @@ end
 
 %term
    EOF
+
  | VARNAME of string
  | OPNAME of string
  | UNDER
  | NUMERAL of IntInf.int
+
  | COLON
- | LANGLE | RANGLE
+ (* delimiters *)
+ | LANGLE | RANGLE | DOUBLE_RANGLE
  | LANGLE_PIPE | RANGLE_PIPE
  | LPAREN | RPAREN
  | RBRACKET | LBRACKET
  | LSQUARE | RSQUARE
- | EQUALS
- | DOT
- | APOSTROPHE
- | HASH
- | SEMI
+ (* (mostly) single-character symbols *)
+ | BACK_TICK
  | COMMA
- | LAMBDA
- | ABS
- | SQUIGGLE
- | SQUIGGLE_ARROW
- | FRESH
- | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
- | BACK_TICK | AT_SIGN | PIPE | DOUBLE_PIPE | PERCENT
- | TIMES | BANG
- | DOUBLE_RANGLE
+ | DOT
+ | EQUALS
+ | HASH
+ | PERCENT
+ | PIPE | DOUBLE_PIPE
  | QUESTION
+ | SEMI
+ (* arrows *)
+ | SQUIGGLE_ARROW
+ | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
 
- | FCOM | WBOOL | TT | FF | WBOOL_REC | BOOL | IF | INT | NUMBER | NAT | VOID
- | S1 | BASE | LOOP | FUN_APP | PAIR | FST | SND | RECORD | TUPLE | PROJ | PATHS
- | HCOM | COE
-
- | THEN | ELSE | LET | WITH | CASE | OF
-
- | DIM | EXN | HYP | NUM
+ (* sorts *)
+ | DIM | EXN | HYP
  | EXP | TAC | TRIV
 
+ (* keywords and symbols in expressions *)
+ | FCOM | WBOOL | TT | FF | WBOOL_REC
+ | BOOL | IF
+ | NAT | ZERO | SUCC | NAT_REC
+ | INT | NEGSUCC | INT_REC
+ | VOID
+ | S1 | BASE | LOOP
+ | LAMBDA | FUN_APP
+ | TIMES | PAIR | FST | SND
+ | RECORD | TUPLE | BANG
+ | PATHS | ABS | AT_SIGN
+ | HCOM | COE
+
+ (* keywords in tactics *)
+ | CASE | OF
+ | FRESH
+ | LET | WITH
+ | THEN | ELSE
+ | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
+ | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_CUT_LEMMA | RULE_UNFOLD
+
+ (* keywords in judgments *)
+ | JDG_TRUE | JDG_TYPE | JDG_SYNTH
+
+ (* commands and declarations *)
  | CMD_PRINT | CMD_EXTRACT
  | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
  | BY | IN
 
- | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
- | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_CUT_LEMMA | RULE_UNFOLD
-
- | JDG_TRUE | JDG_TYPE | JDG_SYNTH
-
-%nonassoc SQUIGGLE
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA COLON
-%nonassoc FUN_APP AT_SIGN FCOM WBOOL TT FF WBOOL_REC BOOL IF VOID S1 BASE LOOP LAMBDA ABS FST SND PATHS HCOM COE HASH LANGLE LPAREN VARNAME OPNAME
+%nonassoc FCOM WBOOL TT FF WBOOL_REC BOOL IF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA FUN_APP PAIR FST SND PATHS ABS AT_SIGN HCOM COE
+%nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
 
 
@@ -186,9 +208,9 @@ end
  | bindings of ast abs list
 
    (* a type-theoretic term *)
- | simpleNullaryOperator of string operator
- | nullaryOperator of string operator
- | regularNonNullaryOperator of string operator
+ | monoNullaryOperator of string operator
+ | polyNullaryOperator of string operator
+ | regularMultinaryOperator of string operator
  | rawTermAndTac of ast (* shared with tactics *)
  | rawTerm of ast
 
@@ -257,7 +279,6 @@ psort
   : DIM (P.DIM)
   | EXN (P.EXN)
   | HYP (P.HYP O.EXP)
-  | NUM (P.NUM)
 
 psorts
   : psort ([psort])
@@ -344,36 +365,41 @@ bindings
   | binding ([binding])
 
 (* built-in nullary operators that take no parameters *)
-simpleNullaryOperator
+monoNullaryOperator
   (* bools *)
   : BOOL (O.MONO O.BOOL)
   | TT (O.MONO O.TRUE)
   | FF (O.MONO O.FALSE)
   (* weak bools *)
   | WBOOL (O.MONO O.WBOOL)
+  (* natural numbers *)
+  | NAT (O.MONO O.NAT)
+  | ZERO (O.MONO O.ZERO)
   (* integers *)
   | INT (O.MONO O.INT)
-  | NAT (O.MONO O.NAT)
   (* void *)
   | VOID (O.MONO O.VOID)
   (* circle *)
   | S1 (O.MONO O.S1)
   | BASE (O.MONO O.BASE)
 
-(* built-in nullary operators *)
-nullaryOperator
-  : simpleNullaryOperator (simpleNullaryOperator)
-  (* integers *)
-  | NUMBER param (O.POLY (O.NUMBER param))
+(* built-in nullary operators that take parameters *)
+polyNullaryOperator
   (* circle *)
-  | LOOP param (O.POLY (O.LOOP param))
+  : LOOP param (O.POLY (O.LOOP param))
 
 (* built-in operators that do not have special form *)
-regularNonNullaryOperator
+regularMultinaryOperator
   (* bools *)
   : IF (O.MONO O.S_IF)
   (* weak bools *)
   | WBOOL_REC (O.MONO O.IF)
+  (* natural numbers *)
+  | SUCC (O.MONO O.SUCC)
+  | NAT_REC (O.MONO O.NAT_REC)
+  (* integers *)
+  | NEGSUCC (O.MONO O.NEGSUCC)
+  | INT_REC (O.MONO O.INT_REC)
   (* paths *)
   | PATHS (O.MONO O.PATH_TY)
   | ABS (O.MONO O.PATH_ABS)
@@ -402,9 +428,9 @@ rawTermAndTac
   | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
 
   (* built-in operators that can be handled uniformly *)
-  | simpleNullaryOperator (Ast.$$ (simpleNullaryOperator, []))
-  | LPAREN nullaryOperator RPAREN (Ast.$$ (nullaryOperator, []))
-  | LPAREN regularNonNullaryOperator bindings RPAREN (Ast.$$ (regularNonNullaryOperator, bindings))
+  | monoNullaryOperator (Ast.$$ (monoNullaryOperator, []))
+  | LPAREN polyNullaryOperator RPAREN (Ast.$$ (polyNullaryOperator, []))
+  | LPAREN regularMultinaryOperator bindings RPAREN (Ast.$$ (regularMultinaryOperator, bindings))
 
   (* compositions *)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
@@ -417,7 +443,7 @@ rawTermAndTac
       (Ast.$$ (O.POLY (O.HCOM (dir, [])), [binding1, binding2]))
 
   (* numbers *)
-  | NUMERAL (Ast.$$ (O.POLY (O.NUMBER (P.APP (P.NUMERAL NUMERAL))), []))
+  | NUMERAL (makeNum NUMERAL)
 
   (* function types *)
   | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
@@ -427,8 +453,6 @@ rawTermAndTac
   | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
 
   (* non-dep. record types *)
-  (* in theory `RECORD` and `TUPLE` can be put into `simpleNullaryOperator`
-   * but it is better to put all the relevant rules next to each other. *)
   | RECORD (Multi.makeRecord [])
   | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord typedBinders)
   | TUPLE (Multi.makeTuple [])
@@ -450,14 +474,13 @@ terms
   | term terms (term :: terms)
 
 rawJudgment
-  : term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
+  : term EQUALS term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
+  | term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
+  | term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
+  | term (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
   | term EQUALS term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term1), \ (([],[]), term2)]))
   | term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term), \ (([],[]), term)]))
   | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
-  | term SQUIGGLE term (Ast.$$ (O.MONO O.JDG_CEQ, [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term EQUALS term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
-  | term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
-  | term (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 

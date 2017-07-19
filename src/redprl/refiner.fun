@@ -328,7 +328,6 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Abt.$ _ = Abt.out m (* is this needed? *)
         val m' = Machine.unload sign (safeEval sign (Machine.load m))
         val goal = makeEq (I, H) ((m', n), ty)
       in
@@ -340,7 +339,6 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
-        val Abt.$ _ = Abt.out ty1 (* is this needed? *)
         val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
         val goal = makeEqType (I, H) (ty1', ty2)
       in
@@ -517,8 +515,11 @@ struct
          | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => WeakBool.EqFCom
          | (Syn.TT, Syn.TT, Syn.BOOL) => StrictBool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => StrictBool.EqFF
-         | (Syn.NUMBER _, Syn.NUMBER _, Syn.INT) => Int.Eq
-         | (Syn.NUMBER _, Syn.NUMBER _, Syn.NAT) => Nat.Eq
+         | (Syn.ZERO, Syn.ZERO, Syn.NAT) => Nat.EqZero
+         | (Syn.SUCC _, Syn.SUCC _, Syn.NAT) => Nat.EqSucc
+         | (Syn.ZERO, Syn.ZERO, Syn.INT) => Int.EqZero
+         | (Syn.SUCC _, Syn.SUCC _, Syn.INT) => Int.EqSucc
+         | (Syn.NEGSUCC _, Syn.NEGSUCC _, Syn.INT) => Int.EqNegSucc
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => S1.EqFCom
@@ -531,24 +532,25 @@ struct
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
       fun StepEqNeu (x, y) ((m, n), ty) =
-        case (Syn.out m, Syn.out n, Syn.out ty) of
-           (Syn.VAR _, Syn.VAR _, _) => Equality.Hyp
-         | (Syn.IF _, Syn.IF _, _) => WeakBool.ElimEq
-         | (Syn.S_IF _, Syn.S_IF _, _) => StrictBool.ElimEq
-         | (Syn.S_IF _, _, _) =>
+        case (Syn.out m, Syn.out n) of
+           (Syn.VAR _, Syn.VAR _) => Equality.Hyp
+         | (Syn.IF _, Syn.IF _) => WeakBool.ElimEq
+         | (Syn.S_IF _, Syn.S_IF _) => StrictBool.ElimEq
+         | (Syn.S_IF _, _) =>
            (case x of
                Machine.VAR z => StrictBool.EqElim z
              | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply StrictBool elimination"])
-         | (_, Syn.S_IF _, _) =>
+         | (_, Syn.S_IF _) =>
            (case y of
                Machine.VAR z => CatJdgSymmetry then_ StrictBool.EqElim z
              | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply StrictBool elimination"])
-         | (Syn.S1_ELIM _, Syn.S1_ELIM _, _) => S1.ElimEq
-         | (Syn.AP _, Syn.AP _, _) => DFun.ApEq
-         | (Syn.FST _, Syn.FST _, _) => DProd.FstEq
-         | (Syn.SND _, Syn.SND _, _) => DProd.SndEq
-         | (Syn.PROJ _, Syn.PROJ _, _) => Record.ProjEq
-         | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _), _) => Path.ApEq
+         | (Syn.NAT_REC _, Syn.NAT_REC _) => Nat.ElimEq
+         | (Syn.S1_ELIM _, Syn.S1_ELIM _) => S1.ElimEq
+         | (Syn.AP _, Syn.AP _) => DFun.ApEq
+         | (Syn.FST _, Syn.FST _) => DProd.FstEq
+         | (Syn.SND _, Syn.SND _) => DProd.SndEq
+         | (Syn.PROJ _, Syn.PROJ _) => Record.ProjEq
+         | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _)) => Path.ApEq
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       fun StepEqNeuExpand ty =
@@ -653,6 +655,7 @@ struct
         case Syn.out ty of
            Syn.WBOOL => WeakBool.Elim
          | Syn.BOOL => StrictBool.Elim
+         | Syn.NAT => Nat.Elim
          | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
