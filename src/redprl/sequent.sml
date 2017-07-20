@@ -1,5 +1,4 @@
 functor Sequent (structure CJ : CATEGORICAL_JUDGMENT
-                                  where type 'a Tm.O.Ar.Vl.Sp.t = 'a list
                                   where type 'a Tm.O.t = 'a RedPrlOperator.t
                                   where type Tm.O.Ar.Vl.S.t = RedPrlSort.t
                                   where type 'a Tm.O.P.term = 'a RedPrlParameterTerm.t
