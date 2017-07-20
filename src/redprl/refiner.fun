@@ -286,35 +286,13 @@ struct
   structure Computation =
   struct
     local
-      open Machine.S.Cl infix <: $
+      infix $
     in
-      (* This should be safe---but it is not ideal, because we have to force the deferred
-       * substitutions in order to determine whether it is safe to take a step. *)
-      fun safeStep sign (st as (mode, cl, stk)) : abt Machine.S.state option =
-        let
-          val m = force cl
-        in
-          case (out m, Machine.canonicity sign m) of
-             (_, Machine.CANONICAL) => Machine.next sign st
-           | (O.POLY (O.CUST _) $ _, _) => Machine.next sign st
-           | (th $ _, _) =>
-               if List.exists (fn (_, sigma) => sigma = P.DIM) @@ Abt.O.support th then
-                 raise Fail ("Unsafe step: " ^ TermPrinter.toString m)
-               else
-                 Machine.next sign st
-           | _ => NONE
-        end
-
-      fun safeEval sign st =
-        case safeStep sign st of
-           NONE => st
-         | SOME st' => safeEval sign st'
-
-      fun safeUnfold sign opid m =
+      fun safeUnfold sign opid m : abt =
         case out m of
            O.POLY (O.CUST (opid',_,_)) $ _ =>
              if Sym.eq (opid, opid') then
-               Machine.unload sign (Option.valOf (safeStep sign (Machine.load m)))
+               Machine.unload (Machine.unwrapAction (Machine.step sign Machine.CUBICAL (Machine.init m)))
                  handle exn => raise Fail ("Impossible failure during safeUnfold: " ^ exnMessage exn)
              else
                m
@@ -335,7 +313,7 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val m' = Machine.unload sign (safeEval sign (Machine.load m))
+        val m' = Machine.eval sign Machine.CUBICAL m
         val goal = makeEq (I, H) ((m', n), ty)
       in
         |>: goal #> (I, H, trivial)
@@ -346,7 +324,7 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
-        val ty1' = Machine.unload sign (safeEval sign (Machine.load ty1))
+        val ty1' = Machine.eval sign Machine.CUBICAL ty1
         val goal = makeEqType (I, H) (ty1', ty2)
       in
         |>: goal #> (I, H, trivial)
@@ -508,7 +486,7 @@ struct
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
       fun StepEqType sign (ty1, ty2) =
-        case (Machine.canonicity sign ty1, Machine.canonicity sign ty2) of
+        case (Machine.canonicity sign Machine.NOMINAL ty1, Machine.canonicity sign Machine.NOMINAL ty2) of
            (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
          | (_, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqTypeHeadExpansion sign
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
@@ -615,7 +593,7 @@ struct
              | (Machine.CANONICAL, Machine.NEUTRAL _) => CatJdgSymmetry then_ StepEqNeuExpand ty)
 
       fun StepEq sign ((m, n), ty) =
-        case (Machine.canonicity sign m, Machine.canonicity sign n) of
+        case (Machine.canonicity sign Machine.NOMINAL m, Machine.canonicity sign Machine.NOMINAL n) of
            (Machine.REDEX, _) => Computation.EqHeadExpansion sign
          | (_, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqHeadExpansion sign
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
@@ -654,7 +632,11 @@ struct
         else
           raise E.error [Fpp.text "Non-deterministic tactics can only be run on auxiliary goals"]
     in
-      fun AutoStep sign = StepJdg sign orelse_ FindHyp
+      fun AutoStep sign alpha jdg = 
+        StepJdg sign alpha jdg
+          handle exn => 
+            FindHyp alpha jdg
+            handle _ => raise exn
     end
 
     local
