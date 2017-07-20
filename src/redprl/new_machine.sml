@@ -32,15 +32,15 @@ struct
   infix 6 <:
   infix 3 ||
 
-
   open Tm infix 7 $ $$ $# infix 6 \
   structure O = RedPrlOpData
   structure P = struct open RedPrlParameterTerm RedPrlSortData end
 
+  type tube = symbol O.equation * (symbol * abt)
   datatype hole = HOLE
   datatype frame =
      APP of hole * abt
-   | HCOM of symbol O.dir * hole * abt * (symbol O.equation * (symbol * abt)) list
+   | HCOM of symbol O.dir * hole * abt * tube list
    | COE of symbol O.dir * (symbol * hole) * abt
    | FST of hole
    | SND of hole
@@ -104,9 +104,18 @@ struct
 
   fun mapTubes f = List.map (fn (eq, (u, n)) => (eq, (u, f n)))
 
+  val zipTubes : symbol O.equation list * abt bview list -> tube list =
+    ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, n)))
+
   fun stepView sign stability tau =
     fn `x || stk => raise Neutral (VAR x)
      | x $# (rs, ms) || stk => raise Neutral (METAVAR x)
+
+     | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty :: _ \ cap :: tubes) || (syms, stk) =>
+         ty || (syms, HCOM (dir, HOLE, cap, zipTubes (eqs, tubes)) :: stk)
+     | O.POLY (O.COE dir) $ [([u], _) \ ty, _ \ coercee] || (syms, stk) =>
+         ty || (SymSet.insert syms u, COE (dir, (u, HOLE), coercee) :: stk)
+
      | O.MONO O.AP $ [_ \ m, _ \ n] || (syms, stk) => m || (syms, APP (HOLE, n) :: stk)
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => substVar (n, x) m || (syms, stk)
      | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
@@ -141,6 +150,7 @@ struct
        in
          lambda || (SymSet.remove syms u, stk)
        end
+
      | O.MONO O.FST $ [_ \ m] || (syms, stk) => m || (syms, FST HOLE :: stk)
      | O.MONO O.SND $ [_ \ m] || (syms, stk) => m || (syms, SND HOLE :: stk)
      | O.MONO O.PAIR $ [_ \ m, _ \ _] || (syms, FST HOLE :: stk) => m || (syms, stk)
