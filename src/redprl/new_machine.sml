@@ -35,7 +35,7 @@ struct
 
   open Tm infix 7 $ $$ $# infix 6 \
   structure O = RedPrlOpData
-  structure P = struct open RedPrlParameterTerm RedPrlSortData end
+  structure P = struct open RedPrlParameterTerm RedPrlSortData RedPrlParamData end
 
   type tube = symbol O.equation * (symbol * abt)
   datatype hole = HOLE
@@ -48,6 +48,7 @@ struct
    | W_IF of (variable * abt) * hole * abt * abt
    | S1_REC of (variable * abt) * hole * abt * (symbol * abt)
    | IF of hole * abt * abt
+   | PATH_AP of hole * symbol P.t
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -160,7 +161,6 @@ struct
                com || (syms, stk)
              end
            | _ => raise Stuck)
-         (* TODO: write principal cuts for value-fcom *)
 
   fun stepView sign stability tau =
     fn `x || stk => raise Neutral (VAR x)
@@ -272,6 +272,38 @@ struct
          pair || (SymSet.remove syms u, stk)
        end
 
+     | O.MONO O.PATH_ABS $ _ || (_, []) => raise Final
+     | O.MONO O.PATH_TY $ _ || (_, []) => raise Final
+
+     | O.POLY (O.PATH_AP r) $ [_ \ m] || (syms, stk) => m || (syms, PATH_AP (HOLE, r) :: stk)
+     | O.MONO O.PATH_ABS $ [([u], _) \ m] || (syms, PATH_AP (HOLE, r) :: stk) => substSymbol (r, u) m || (syms, stk)
+
+     | O.MONO O.PATH_TY $ [([u], _) \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         fun apu m = Syn.into @@ Syn.PATH_AP (m, P.ret u)
+         val v = Sym.named "_"
+         val hcomu =
+           Syn.into @@ Syn.HCOM
+             {dir = dir,
+              ty = tyu,
+              cap = apu cap,
+              tubes = ((P.ret u, P.APP P.DIM0), (v, m0)) :: ((P.ret u, P.APP P.DIM1), (v, m1)) :: mapTubes_ apu tubes}
+         val abs = Syn.into @@ Syn.PATH_ABS (u, hcomu)
+       in
+         abs || (syms, stk)
+       end
+     | O.MONO O.PATH_TY $ [([u], _) \ tyuv, _ \ m0v, _ \ m1v] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+       let
+         val comu =
+           Syn.into @@ Syn.COM
+             {dir = dir,
+              ty = (v, tyuv),
+              cap = Syn.into @@ Syn.PATH_AP (coercee, P.ret u),
+              tubes = [((P.ret u, P.APP P.DIM0), (v, m0v)), ((P.ret u, P.APP P.DIM1), (v, m1v))]}
+         val abs = Syn.into @@ Syn.PATH_ABS (u, comu)
+       in
+         abs || (SymSet.remove syms v, stk)
+       end
 
   fun step sign stability (tm || stk) =
     let
