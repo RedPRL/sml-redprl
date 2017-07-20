@@ -8,6 +8,7 @@ Library
   structure RedPrlLrVals
   structure FinalPrinter
   structure Fpp
+  functor RedPrlMachine
 is
   $/basis.cm
   $/ml-yacc-lib.cm
@@ -71,4 +72,3 @@ is
   redprl/lcf.sml
   redprl/lcf_syntax.fun
   redprl/lcf_model.fun
-

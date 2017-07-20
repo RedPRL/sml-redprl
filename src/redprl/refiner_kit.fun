@@ -6,7 +6,7 @@ struct
 
   structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
   structure Env = RedPrlAbt.Metavar.Ctx
-  structure Machine = AbtMachineUtil (RedPrlMachine (Sig))
+  structure Machine = RedPrlMachine (Sig)
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
   open RedPrlSequent
   infix 2 >: >>

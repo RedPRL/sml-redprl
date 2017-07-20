@@ -31,7 +31,7 @@ struct
    | NAT_REC of 'a * ('a * (variable * variable * 'a))
    (* integers, reusing natural numbers *)
    | INT | NEGSUCC of 'a
-   | INT_REC of 'a * ('a * (variable * variable * 'a) * 'a * (variable * variable * 'a))
+   | INT_REC of 'a * ((variable * variable * 'a) * 'a * (variable * variable * 'a))
    (* empty type *)
    | VOID
    (* circle: base, loop and s1_elim *)
@@ -135,8 +135,8 @@ struct
 
        | INT => O.MONO O.INT $$ []
        | NEGSUCC m => O.MONO O.NEGSUCC $$ [([],[]) \ m]
-       | INT_REC (m, (n, (a, b, p), q, (c, d, r))) =>
-           O.MONO O.INT_REC $$ [([],[]) \ m, ([],[]) \ n, ([],[a,b]) \ p, ([],[]) \ q, ([],[c,d]) \ r]
+       | INT_REC (m, ((a, b, p), q, (c, d, r))) =>
+           O.MONO O.INT_REC $$ [([],[]) \ m, ([],[a,b]) \ p, ([],[]) \ q, ([],[c,d]) \ r]
 
        | VOID => O.MONO O.VOID $$ []
 
@@ -200,15 +200,6 @@ struct
     fun intoCoe dir (ty, m) =
       into (COE {dir = dir, ty = ty, coercee = m})
 
-    fun intoCom (dir as (r, r'), eqs) ((u, a), cap, tubes) =
-      let
-        fun coe v m = intoCoe (v, r') ((u, a), m)
-        fun goTube (([v],_) \ n) = ([v],[]) \ coe (P.ret v) n
-          | goTube _ = raise Fail "malformed tube"
-      in
-        intoHcom (dir, eqs) (substSymbol (r', u) a, coe r cap, List.map goTube tubes)
-      end
-
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
@@ -234,8 +225,8 @@ struct
 
        | O.MONO O.INT $ _ => INT
        | O.MONO O.NEGSUCC $ [_ \ m] => NEGSUCC m
-       | O.MONO O.INT_REC $ [_ \ m, _ \ n, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] =>
-           INT_REC (m, (n, (a, b, p), q, (c, d, r)))
+       | O.MONO O.INT_REC $ [_ \ m, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] =>
+           INT_REC (m, ((a, b, p), q, (c, d, r)))
 
        | O.MONO O.VOID $ _ => VOID
 

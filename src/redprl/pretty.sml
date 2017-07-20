@@ -135,6 +135,8 @@ struct
          printQuant "->" @@ multiDFun [] m
      | O.MONO O.LAM $ _ =>
          printLam @@ multiLam [] m
+     | O.MONO O.AP $ [_ \ m, _ \ n] =>
+         Atomic.parens @@ expr @@ hvsep [text "app", ppTerm m, ppTerm n]
      | O.MONO O.DPROD $ _ =>
          printQuant "*" @@ multiDProd [] m
      | O.MONO (O.RECORD []) $ _ => text "record"

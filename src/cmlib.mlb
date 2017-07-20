@@ -2,8 +2,9 @@ local
   $(LIBS)/cmlib/cmlib.mlb
 in
   signature DICT
-  functor SplaySet
+  signature SET
   functor SplayDict
+  functor SplaySet
   functor HashTable
   structure StringOrdered
   structure IntHashable

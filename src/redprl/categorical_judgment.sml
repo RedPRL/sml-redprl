@@ -88,9 +88,6 @@ struct
      | TERM tau => TermPrinter.ppSort tau
   fun pretty' f = pretty (fn _ => false) f
 
-  fun unify (j1, j2) =
-    RedPrlAbt.Unify.unify (toAbt j1, toAbt j2)
-
   fun eq (j1, j2) =
     RedPrlAbt.eq (toAbt j1, toAbt j2)
 end

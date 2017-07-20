@@ -18,8 +18,9 @@ struct
 
   fun hyp z alpha jdg =
     Rules.Hyp.Project z alpha jdg
-    handle _ =>
+    handle exn =>
       Rules.Synth.FromWfHyp z alpha jdg
+      handle _ => raise exn
 
   fun interpret (sign, env) rule =
     case out rule of
@@ -37,7 +38,7 @@ struct
       | _ => raise E.error [Fpp.text "Invalid rule", TermPrinter.ppTerm rule]
 
   fun rule (sign, env) rule alpha goal =
-    Debug.wrap (fn _ => interpret (sign, env) (Machine.eval sign rule) alpha goal)
+    Debug.wrap (fn _ => interpret (sign, env) (Machine.eval sign Machine.NOMINAL rule) alpha goal)
     handle exn => raise RedPrlError.annotate (getAnnotation rule) exn
 
   fun printHole (pos : Pos.t, name : string option) (state : Lcf.jdg Lcf.state) =

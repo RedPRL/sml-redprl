@@ -1,61 +1,60 @@
-functor RedPrlMachineBasis (Sig : MINI_SIGNATURE) : ABT_MACHINE_BASIS =
-struct
-  structure Cl = AbtClosureUtil (AbtClosure (RedPrlAbt))
-  structure S = AbtMachineState (Cl)
-  structure P = struct open RedPrlSortData RedPrlParamData RedPrlParameterTerm end
-  structure Syn = Syntax
+functor RedPrlMachine (Sig : MINI_SIGNATURE) :
+sig
   type sign = Sig.sign
+  type abt = RedPrlAbt.abt
+  type 'a machine
 
-  exception InvalidCut
+  datatype stability = 
+     CUBICAL
+   | NOMINAL
 
-  open RedPrlAbt Cl
-  infix 0 \
-  infix 1 <:
-  infix 2 $ `$ $$ $#
+  datatype blocker =
+     VAR of RedPrlAbt.variable
+   | METAVAR of RedPrlAbt.metavariable
+
+  exception Unstable
+  exception Stuck
+  exception Neutral of blocker
+  exception Final
+
+  datatype canonicity =
+     CANONICAL
+   | NEUTRAL of blocker
+   | REDEX
+   | STUCK
+   | UNSTABLE
+
+
+  datatype 'a action = 
+     COMPAT of 'a
+   | CRITICAL of 'a
+   | STEP of 'a
+
+  val unwrapAction : 'a action -> 'a
+
+  val canonicity : sign -> stability -> abt -> canonicity
+
+  val init : abt -> abt machine
+  val step : sign -> stability -> abt machine -> abt machine action
+  val unload : abt machine -> abt
+  val eval : sign -> stability -> abt -> abt
+end = 
+struct
+  structure Tm = RedPrlAbt
+  structure Syn = Syntax
+  structure SymSet = SplaySet (structure Elem = Sym.Ord)
+  
+  type sign = Sig.sign
 
   fun @@ (f, x) = f x
   infixr @@
 
-  structure O = RedPrlOpData and E = RedPrlError
+  infix 6 <:
+  infix 3 ||
 
-  fun forceSpan ((r1, r2) <: env) =
-    (Cl.forceParam (r1 <: env), Cl.forceParam (r2 <: env))
-
-  fun forceSpans (ss <: env) = List.map (fn s => forceSpan (s <: env)) ss
-
-  fun forceSList args =
-    List.map (mapBind (fn S.% cl => Cl.force cl | _ => raise Match)) args
-
-  fun equationPair u = [(P.VAR u, P.APP P.DIM0), (P.VAR u, P.APP P.DIM1)]
-
-  (* computation rules for formal compositions *)
-  fun stepFcom ((r, r'), eqs) ((_ \ cap) :: tubes) env =
-  let
-    val (r, r') = forceSpan ((r, r') <: env)
-    val eqs = forceSpans (eqs <: env)
-  in
-    if P.eq Sym.eq (r, r') then S.STEP @@ cap <: env
-    else let
-      (* todo: change the generic machine so that we can return the partially
-       * forced value. *)
-      fun checkTubes [] [] = S.VAL
-        | checkTubes (eq :: eqs) ((([y],_) \ tube) :: ts) =
-            if P.eq Sym.eq eq
-            then S.STEP @@ tube <: Cl.insertSym env y r'
-            else checkTubes eqs ts
-        | checkTubes _ _ = raise Fail "fcom has different numbers of equations and tubes."
-    in
-      checkTubes eqs tubes
-    end
-  end
-
-  structure ParamElem =
-  struct
-    type t = param
-    val eq = P.eq Sym.eq
-  end
-
-  structure SymEnvUtil = ContextUtil (structure Ctx = Sym.Ctx and Elem = ParamElem)
+  open Tm infix 7 $ $$ $# infix 6 \
+  structure O = RedPrlOpData
+  structure P = struct open RedPrlParameterTerm RedPrlSortData RedPrlParamData end
 
   structure Tac =
   struct
@@ -98,367 +97,534 @@ struct
   end
 
 
-  (* [step] tells our machine how to proceed when computing a term: is it a value,
-   * can it step without inspecting the values of its arguments, or does it need to inspect one
-   * of its arguments (i.e. it is a cut)? *)
-  fun step sign =
-    fn O.MONO O.TV `$ _ <: _ => S.VAL
-     | O.MONO O.AX `$ _ <: _ => S.VAL
+  type tube = symbol O.equation * (symbol * abt)
+  datatype hole = HOLE
+  datatype frame =
+     APP of hole * abt
+   | HCOM of symbol O.dir * hole * abt * tube list
+   | COE of symbol O.dir * (symbol * hole) * abt
+   | FST of hole
+   | SND of hole
+   | W_IF of (variable * abt) * hole * abt * abt
+   | S1_REC of (variable * abt) * hole * abt * (symbol * abt)
+   | IF of hole * abt * abt
+   | PATH_AP of hole * symbol P.t
+   | NAT_REC of hole * abt * (variable * variable * abt)
+   | INT_REC of hole * (variable * variable * abt) * abt * (variable * variable * abt)
+   | PROJ of string * hole
 
-     | O.POLY (O.FCOM params) `$ args <: env =>
-         stepFcom params args env
+  type stack = frame list
+  type bound_syms = SymSet.set
 
-     | O.MONO O.WBOOL `$ _ <: _ => S.VAL
-     | O.MONO O.TRUE `$ _ <: _ => S.VAL
-     | O.MONO O.FALSE `$ _ <: _ => S.VAL
-     | O.MONO O.IF `$ [(_,[x]) \ cx, _ \ b, _ \ t, _ \ f] <: env =>
-         S.CUT
-           @@ (O.MONO O.IF `$ [([],[x]) \ S.% cx, ([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
-           <: env
+  datatype 'a machine = || of 'a * (bound_syms * stack)
 
-     | O.MONO O.BOOL `$ _ <: _ => S.VAL
-     | O.MONO O.S_IF `$ [_ \ b, _ \ t, _ \ f] <: env =>
-         S.CUT
-           @@ (O.MONO O.S_IF `$ [([],[]) \ S.HOLE, ([],[]) \ S.% t, ([],[]) \ S.% f], b)
-           <: env
+  val todo = Fail "TODO"
+  fun ?e = raise e
 
-     | O.MONO O.NAT `$ _ <: _ => S.VAL
-     | O.MONO O.ZERO `$ _ <: _ => S.VAL
-     | O.MONO O.SUCC `$ _ <: _ => S.VAL
-     | O.MONO O.NAT_REC `$ [_ \ m, _ \ n, (_,[a,b]) \ p] <: env =>
-         S.CUT
-           @@ (O.MONO O.NAT_REC `$ [([],[]) \ S.HOLE, ([],[]) \ S.% n, ([],[a,b]) \ S.% p] , m)
-           <: env
+  local
+    fun plug m = 
+      fn APP (HOLE, n) => Syn.into @@ Syn.AP (m, n)
+       | HCOM (dir, HOLE, cap, tubes) => Syn.into @@ Syn.HCOM {dir = dir, ty = m, cap = cap, tubes = tubes}
+       | COE (dir, (u, HOLE), coercee) => Syn.into @@ Syn.COE {dir = dir, ty = (u, m), coercee = coercee}
+       | FST HOLE => Syn.into @@ Syn.FST m
+       | SND HOLE => Syn.into @@ Syn.SND m
+       | W_IF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
+       | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_ELIM ((x, tyx), m, (base, (u, loop)))
+       | IF (HOLE, t, f) => Syn.into @@ Syn.S_IF (m, (t, f))
+       | PATH_AP (HOLE, r) => Syn.into @@ Syn.PATH_AP (m, r)
+       | NAT_REC (HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC (m, (zer, (x, y, succ)))
+       | INT_REC (HOLE, (x,y,negsucc), zer, (x',y',succ)) => Syn.into @@ Syn.INT_REC (m, ((x,y,negsucc), zer, (x',y',succ)))
+       | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
+  in
+    fun unload (m || (syms, stk)) = 
+      case stk of
+         [] => m
+       | k :: stk => unload @@ plug m k || (syms, stk)
+  end
 
-     | O.MONO O.INT `$ _ <: _ => S.VAL
-     | O.MONO O.NEGSUCC `$ _ <: _ => S.VAL
-     | O.MONO O.INT_REC `$ [_ \ m, _ \ n, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] <: env =>
-         S.CUT
-           @@ (O.MONO O.INT_REC `$
-                 [([],[]) \ S.HOLE,
-                  ([],[]) \ S.% n, ([],[a,b]) \ S.% p,
-                  ([],[]) \ S.% q, ([],[c,d]) \ S.% r], m)
-           <: env
+  datatype stability = 
+     CUBICAL
+   | NOMINAL
 
-     | O.MONO O.VOID `$ _ <: _ => S.VAL
+  datatype blocker =
+     VAR of variable
+   | METAVAR of metavariable
 
-     | O.MONO O.S1 `$ _ <: _ => S.VAL
-     | O.MONO O.BASE `$ _ <: _ => S.VAL
-     | O.POLY (O.LOOP r) `$ _ <: env =>
-         (case Cl.forceParam (r <: env) of
-             P.VAR _ => S.VAL
-           | P.APP P.DIM0 => S.STEP @@ O.MONO O.BASE $$ [] <: env
-           | P.APP P.DIM1 => S.STEP @@ O.MONO O.BASE $$ [] <: env)
-     | O.MONO O.S1_ELIM `$ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] <: env =>
-         S.CUT
-           @@ (O.MONO O.S1_ELIM `$ [([],[x]) \ S.% cx, ([],[]) \ S.HOLE, ([],[]) \ S.% b, ([u],[]) \ S.% l], m)
-           <: env
+  exception Neutral of blocker
+  exception Unstable
+  exception Final
+  exception Stuck
 
-     | O.MONO O.DFUN `$ _ <: _ => S.VAL
-     | O.MONO O.LAM `$ _ <: _ => S.VAL
-     | O.MONO O.AP `$ [_ \ m, _ \ n] <: env =>
-         S.CUT
-           @@ (O.MONO O.AP `$ [([],[]) \ S.HOLE, ([],[]) \ S.% n], m)
-           <: env
+  (* Is it safe to observe the identity of a dimension? *)
+  fun dimensionSafeToObserve syms r = 
+    case r of 
+       P.VAR x => SymSet.member syms x
+     | _ => true
 
-     | O.MONO O.DPROD `$ _ <: _ => S.VAL
-     | O.MONO O.PAIR `$ _ <: _ => S.VAL
-     | O.MONO O.FST `$ [_ \ m] <: env =>
-         S.CUT
-          @@ (O.MONO O.FST `$ [([],[]) \ S.HOLE], m)
-          <: env
-     | O.MONO O.SND `$ [_ \ m] <: env =>
-         S.CUT
-          @@ (O.MONO O.SND `$ [([],[]) \ S.HOLE], m)
-          <: env
+  fun dimensionsEqual stability syms (r1, r2) = 
+    (* If two dimensions are equal, then no substitution can ever change that. *)
+    if P.eq Sym.eq (r1, r2) then 
+      true
+    else
+      (* On the other hand, if they are not equal, this observation may not commute with cubical substitutions. *)
+      case stability of 
+          (* An observation of apartness is stable under permutations. *)
+          NOMINAL => false
+          (* An observation of apartness is only stable if one of the compared dimensions is bound. *)
+        | CUBICAL =>
+            if dimensionSafeToObserve syms r1 orelse dimensionSafeToObserve syms r2 then 
+              false 
+            else
+              raise Unstable
 
-     | O.MONO (O.RECORD _) `$ _ <: _ => S.VAL
-     | O.MONO (O.TUPLE _) `$ _ <: _ => S.VAL
-     | O.MONO (O.PROJ lbl) `$ [_ \ m] <: env =>
-         S.CUT
-          @@ (O.MONO (O.PROJ lbl) `$ [([],[]) \ S.HOLE], m)
-          <: env
+  fun findTubeWithTrueEquation stability syms = 
+    let
+      val rec aux = 
+        fn [] => NONE
+         | (eq, (u, n)) :: tubes =>
+           if dimensionsEqual stability syms eq then 
+             SOME (u, n)
+           else 
+             aux tubes
+    in
+      aux
+    end
 
-     | O.MONO O.PATH_TY `$ _ <: _ => S.VAL
-     | O.MONO O.PATH_ABS `$ _ <: _ => S.VAL
-     | O.POLY (O.PATH_AP r) `$ [_ \ m] <: env =>
-         S.CUT
-           @@ (O.POLY (O.PATH_AP r) `$ [([],[]) \ S.HOLE], m)
-           <: env
+  fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
 
-     | (hcom as O.POLY (O.HCOM _)) `$ (_ \ ty) :: cap :: tubes <: env =>
-         S.CUT
-           @@ (hcom `$ (([],[]) \ S.HOLE) :: List.map (mapBind S.%) (cap :: tubes), ty)
-           <: env
-     | (coe as O.POLY (O.COE _)) `$ [([u],_) \ a, _ \ m] <: env =>
-         S.CUT
-           @@ (coe `$ [([u],[]) \ S.HOLE, ([],[]) \ S.% m], a)
-           <: env
-     | O.POLY (O.COM (dir as (r, r'), eqs)) `$ (([u],_) \ a) :: (_ \ cap) :: tubes <: env =>
-         let
-           fun coe s m = Syn.intoCoe (s, r') ((u, a), m)
-           fun goTube (([v],_) \ n) = ([v],[]) \ coe (P.ret v) n
-             | goTube _ = raise Fail "RedPrlMachineBasis.step: malformed COM tubes"
-         in
-           S.STEP
-             @@ (O.POLY (O.HCOM (dir, eqs)) $$
-                    (([],[]) \ substSymbol (r', u) a)
-                 :: (([],[]) \ coe r cap)
-                 :: List.map goTube tubes)
-             <: env
-         end
+  fun zipTubesWith f : symbol O.equation list * abt bview list -> tube list =
+    ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
 
-     (* tactic *)
+  fun mapTubes_ f = mapTubes (f o #2)
+  val zipTubes = zipTubesWith #2
 
-     | O.MONO (O.MTAC_SEQ _) `$ _ <: _ => S.VAL
-     | O.MONO O.MTAC_ORELSE `$ _ <: _ => S.VAL
-     | O.MONO O.MTAC_REC `$ _ <: _ => S.VAL
-     | O.MONO O.MTAC_REPEAT `$ [_ \ mt] <: env =>
-         let
-           val x = Var.named "x"
-           val xtm = check (`x, O.MTAC)
-           val mtrec = O.MONO O.MTAC_REC $$ [([],[x]) \ Tac.mtry (Tac.seq (Tac.mprogress mt) [] xtm)]
-         in
-           S.STEP
-             @@ mtrec
-             <: env
-         end
+  datatype 'a action = 
+     COMPAT of 'a
+   | CRITICAL of 'a
+   | STEP of 'a
 
-     | O.MONO (O.MTAC_HOLE _) `$ _ <: _ => S.VAL
+  fun stepFCom stability ({dir = dir as (r, r'), cap, tubes} || (syms, stk)) =
+    if dimensionsEqual stability syms dir then 
+      STEP @@ cap || (syms, stk)
+    else
+      case findTubeWithTrueEquation stability syms tubes of
+         SOME (u, n) => STEP @@ substSymbol (r', u) n || (syms, stk)
+       | NONE =>
+         (case stk of
+             [] => raise Final
+           | W_IF ((x, tyx), HOLE, t, f) :: stk =>
+             let
+               val u = Sym.named "u"
+               val fcomu =
+                 Syn.into @@ Syn.FCOM
+                   {dir = (r, P.ret u),
+                    cap = cap,
+                    tubes = tubes}
+               fun if_ m = Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
+               val com =
+                 Syn.into @@ Syn.COM 
+                   {dir = dir,
+                    ty = (u, substVar (fcomu, x) tyx),
+                    cap = if_ cap,
+                    tubes = mapTubes_ if_ tubes}
+             in
+               CRITICAL @@ com || (syms, stk)
+             end
+           | S1_REC ((x, tyx), HOLE, base, (v, loop)) :: stk => 
+             let
+               val u = Sym.named "u"
+               val fcomu =
+                 Syn.into @@ Syn.FCOM
+                   {dir = (r, P.ret u),
+                    cap = cap,
+                    tubes = tubes}
+               fun s1rec m = Syn.into @@ Syn.S1_ELIM ((x, tyx), m, (base, (v, loop)))
+               val com =
+                 Syn.into @@ Syn.COM 
+                   {dir = dir,
+                    ty = (u, substVar (fcomu, x) tyx),
+                    cap = s1rec cap,
+                    tubes = mapTubes_ s1rec tubes}
+             in
+               CRITICAL @@ com || (syms, stk)
+             end
+           | _ => raise Stuck)
 
-     | O.MONO O.TAC_MTAC `$ _ <: _ => S.VAL
+  fun stepView sign stability tau =
+    fn `x || _ => raise Neutral (VAR x)
+     | x $# (rs, ms) || _ => raise Neutral (METAVAR x)
 
-     | O.MONO O.RULE_ID `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_EXACT `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_SYMMETRY `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_AUTO_STEP `$ _ <: _ => S.VAL
-     | O.MONO O.MTAC_AUTO `$ _ <: env =>
-         S.STEP
-           @@ Tac.multirepeat (Tac.all (Tac.try Tac.autoStep))
-           <: env
-     | O.POLY (O.RULE_HYP _) `$ _ <: _ => S.VAL
-     | O.POLY (O.RULE_ELIM _) `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_HEAD_EXP `$ _ <: _ => S.VAL
-     | O.MONO O.RULE_CUT `$ _ <: _ => S.VAL
-     | O.POLY (O.RULE_UNFOLD _) `$ _ <: _ => S.VAL
-     | O.POLY (O.RULE_LEMMA _) `$ _ <: _ => S.VAL
-     | O.POLY (O.RULE_CUT_LEMMA _) `$ _ <: _ => S.VAL
+     | O.POLY (O.CUST (opid, ps, _)) $ args || (syms, stk) =>
+       let
+         val entry as {state, ...} = Sig.lookup sign opid
+         val (mrho, srho) = Sig.applyCustomOperator entry (List.map #1 ps) args
+         val term = substSymenv srho (substMetaenv mrho (Sig.extract state))
+       in
+         STEP @@ term || (syms, stk)
+       end  
 
-     | O.MONO (O.DEV_LET tau) `$ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] <: env =>
-         let
-           val catjdg = RedPrlCategoricalJudgment.fromAbt jdg
-           val tau = RedPrlCategoricalJudgment.synthesis catjdg
-         in
-           S.STEP
-             @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2]))
-             <: env
-          end
-     | O.MONO O.DEV_DFUN_INTRO `$ [([u], _) \ t] <: env =>
-         S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t]))
-           <: env
-     | O.MONO O.DEV_DPROD_INTRO `$ [_ \ t1, _ \ t2] <: env =>
-         S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [] (Tac.each [t1, t2]))
-           <: env
-     | O.MONO O.DEV_PATH_INTRO `$ [([u], _) \ t] <: env =>
-         S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.each [t]))
-           <: env
-     | O.POLY (O.DEV_BOOL_ELIM z) `$ [_ \ t1, _ \ t2] <: env =>
-         S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [] (Tac.each [t1,t2]))
-           <: env
-     | O.POLY (O.DEV_S1_ELIM z) `$ [_ \ t1, ([v],_) \ t2] <: env =>
-         S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2]))
-           <: env
-     | O.POLY (O.DEV_DFUN_ELIM z) `$ [_ \ t1, ([x,p],_) \ t2] <: env =>
-         S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2]))
-           <: env
-     | O.POLY (O.DEV_DPROD_ELIM z) `$ [([x,y], _) \ t] <: env =>
-         S.STEP
-           @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t]))
-           <: env
+     | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty :: _ \ cap :: tubes) || (syms, stk) => COMPAT @@ ty || (syms, HCOM (dir, HOLE, cap, zipTubes (eqs, tubes)) :: stk)
+     | O.POLY (O.COE dir) $ [([u], _) \ ty, _ \ coercee] || (syms, stk) => COMPAT @@ ty || (SymSet.insert syms u, COE (dir, (u, HOLE), coercee) :: stk)
+     | O.POLY (O.COM (dir, eqs)) $ (([u], _) \ ty :: _ \ cap :: tubes) || (syms, stk) =>
+       let
+         val (r, r') = dir
+         fun coe s m = 
+           Syn.into @@ Syn.COE
+             {dir = (s, r'),
+              ty = (u, ty),
+              coercee = m}
+          val hcom =
+            Syn.into @@ Syn.HCOM
+              {dir = dir,
+               ty = substSymbol (r', u) ty,
+               cap = coe r cap,
+               tubes = zipTubesWith (fn (u, n) => coe (P.ret u) n) (eqs, tubes)}
+       in
+         STEP @@ hcom || (syms, stk)
+       end
 
-     | O.MONO O.MTAC_ALL `$ _ <: _ => S.VAL
-     | O.MONO (O.MTAC_EACH _) `$ _ <: _ => S.VAL
-     | O.MONO (O.MTAC_FOCUS _) `$ _ <: _ => S.VAL
+     | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap :: tubes) || (syms, stk) =>
+       stepFCom stability ({dir = dir, cap = cap, tubes = zipTubes (eqs, tubes)} || (syms, stk))
 
-     | O.MONO O.JDG_EQ `$ _ <: _ => S.VAL
-     | O.MONO O.JDG_EQ_TYPE `$ _ <: _ => S.VAL
-     | O.MONO O.JDG_TRUE `$ _ <: _ => S.VAL
-     | O.MONO O.JDG_SYNTH `$ _ <: _ => S.VAL
+     | O.MONO O.LAM $ _ || (_, []) => raise Final
+     | O.MONO O.DFUN $ _ || (_, []) => raise Final
 
-     (* custom operators *)
+     | O.MONO O.AP $ [_ \ m, _ \ n] || (syms, stk) => COMPAT @@ m || (syms, APP (HOLE, n) :: stk)
+     | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => CRITICAL @@ substVar (n, x) m || (syms, stk)
+     | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
+         fun apx n = Syn.into @@ Syn.AP (n, xtm)
+         val hcomx =
+           Syn.into @@ Syn.HCOM
+             {dir = dir,
+              ty = tyBx,
+              cap = apx cap,
+              tubes = mapTubes_ apx tubes}
+         val lambda = Syn.into @@ Syn.LAM (x, hcomx)
+       in
+         CRITICAL @@ lambda || (syms, stk)
+       end
+     | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+       let
+         val (r, r') = dir
+         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
+         fun xcoe s =
+           Syn.into @@ Syn.COE
+             {dir = (r', s),
+              ty = (u, tyA),
+              coercee = xtm}
+          val lambda =
+            Syn.into @@ Syn.LAM (x,
+              Syn.into @@ Syn.COE 
+                {dir = dir,
+                 ty = (u, substVar (xcoe (P.ret u), x) tyBx),
+                 coercee = Syn.into @@ Syn.AP (coercee, xcoe r)})
+       in
+         CRITICAL @@ lambda || (SymSet.remove syms u, stk)
+       end
 
-     | (O.POLY (O.CUST (opid, ps, _(*ar*)))) `$ args <: env =>
-         let
-           val entry as {state,...} = Sig.lookup sign opid
-           val term = Sig.extract state
-           val (mrho, srho) = Sig.unifyCustomOperator entry (List.map #1 ps) args
-           val term' = substMetaenv mrho term
-           val env' = {params = SymEnvUtil.union (#params env, srho), terms = #terms env}
-         in
-           S.STEP @@ term' <: env'
-         end
+     | O.MONO O.PAIR $ _ || (_, []) => raise Final
+     | O.MONO O.DPROD $ _ || (_, []) => raise Final
 
-     | th `$ es <: _ => raise E.error [Fpp.text "Machine encountered unrecognized term", TermPrinter.ppTerm (th $$ es)]
+     | O.MONO O.FST $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, FST HOLE :: stk)
+     | O.MONO O.SND $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, SND HOLE :: stk)
+     | O.MONO O.PAIR $ [_ \ m, _ \ _] || (syms, FST HOLE :: stk) => CRITICAL @@ m || (syms, stk)
+     | O.MONO O.PAIR $ [_ \ _, _ \ n] || (syms, SND HOLE :: stk) => CRITICAL @@ n || (syms, stk)
+     | O.MONO O.DPROD $ [_ \ tyA, (_, [x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val (r, r') = dir
+         fun left s = 
+           Syn.into @@ Syn.HCOM
+             {dir = (r, s),
+              ty = tyA,
+              cap = Syn.into @@ Syn.FST cap,
+              tubes = mapTubes_ (Syn.into o Syn.FST) tubes}
+          val u = Sym.named "u"
+          val right = 
+            Syn.into @@ Syn.COM
+              {dir = dir,
+               ty = (u, substVar (left (P.ret u), x) tyBx),
+               cap = Syn.into @@ Syn.SND cap,
+               tubes = mapTubes_ (Syn.into o Syn.SND) tubes}
+          val pair = Syn.into @@ Syn.PAIR (left r', right)
+       in
+         CRITICAL @@ pair || (syms, stk)
+       end
+     | O.MONO O.DPROD $ [_ \ tyA, (_, [x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+       let
+         val (r, r') = dir
+         fun left s = 
+           Syn.into @@ Syn.COE
+             {dir = (r, s),
+              ty = (u, tyA),
+              coercee = Syn.into @@ Syn.FST coercee}
+          val right = 
+            Syn.into @@ Syn.COE
+              {dir = dir,
+               ty = (u, substVar (left (P.ret u), x) tyBx),
+               coercee = Syn.into @@ Syn.SND coercee}
+          val pair = Syn.into @@ Syn.PAIR (left r', right)
+       in
+         CRITICAL @@ pair || (SymSet.remove syms u, stk)
+       end
 
-  (* [cut] tells the machine how to plug a value into a hole in a stack frame. As a rule of thumb,
-   * any time you return [CUT] in the [step] judgment, you should add a corresponding rule to [cut]. *)
-  fun cut _(*sign*) =
-    fn (O.MONO O.IF `$ [_, _ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.TRUE `$ _ <: _) => cl
-     | (O.MONO O.IF `$ [_, _ \ S.HOLE, _, _ \ S.% cl], _ \ O.MONO O.FALSE `$ _ <: _) => cl
-     | (O.MONO O.IF `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% t, _ \ S.% f],
-        _ \ O.POLY (O.FCOM (dir, eqs)) `$ (_ \ cap) :: tubes <: env) =>
-         let
-           (* todo: maybe create a larger closure instead of forcing? *)
-           val cx' = Cl.force cx
-           val t' = Cl.force t
-           val f' = Cl.force f
+     | O.MONO O.PATH_ABS $ _ || (_, []) => raise Final
+     | O.MONO O.PATH_TY $ _ || (_, []) => raise Final
 
-           val v = Sym.named "v"
-           val hv = Syn.intoFcom ((#1 dir, P.ret v), eqs) (cap, tubes)
-           val chv = substVar (hv, x) cx'
-           fun mkIf m = Syn.into @@ Syn.IF ((x, cx'), m, (t', f'))
-         in
-           Syn.intoCom (dir, eqs) ((v, chv), mkIf cap, List.map (mapBind mkIf) tubes) <: env
-         end
+     | O.POLY (O.PATH_AP r) $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PATH_AP (HOLE, r) :: stk)
+     | O.MONO O.PATH_ABS $ [([u], _) \ m] || (syms, PATH_AP (HOLE, r) :: stk) => CRITICAL @@ substSymbol (r, u) m || (syms, stk)
 
-     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% t, _ \ S.% _], _ \ O.MONO O.TRUE `$ _ <: _) => t
-     | (O.MONO O.S_IF `$ [_ \ S.HOLE, _ \ S.% _, _ \ S.% f], _ \ O.MONO O.FALSE `$ _ <: _) => f
+     | O.MONO O.PATH_TY $ [([u], _) \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         fun apu m = Syn.into @@ Syn.PATH_AP (m, P.ret u)
+         val v = Sym.named "_"
+         val hcomu =
+           Syn.into @@ Syn.HCOM
+             {dir = dir,
+              ty = tyu,
+              cap = apu cap,
+              tubes = ((P.ret u, P.APP P.DIM0), (v, m0)) :: ((P.ret u, P.APP P.DIM1), (v, m1)) :: mapTubes_ apu tubes}
+         val abs = Syn.into @@ Syn.PATH_ABS (u, hcomu)
+       in
+         CRITICAL @@ abs || (syms, stk)
+       end
+     | O.MONO O.PATH_TY $ [([u], _) \ tyuv, _ \ m0v, _ \ m1v] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+       let
+         val comu =
+           Syn.into @@ Syn.COM
+             {dir = dir,
+              ty = (v, tyuv),
+              cap = Syn.into @@ Syn.PATH_AP (coercee, P.ret u),
+              tubes = [((P.ret u, P.APP P.DIM0), (v, m0v)), ((P.ret u, P.APP P.DIM1), (v, m1v))]}
+         val abs = Syn.into @@ Syn.PATH_ABS (u, comu)
+       in
+         CRITICAL @@ abs || (SymSet.remove syms v, stk)
+       end
 
-     | (O.MONO O.NAT_REC `$ [_ \ S.HOLE, _ \ S.% cl, _], _ \ O.MONO O.ZERO `$ _ <: _) => cl
-     | (O.MONO O.NAT_REC `$ [_ \ S.HOLE, _ \ S.% n, (_,[a,b]) \ S.% p], _ \ O.MONO O.SUCC `$ [_ \ m] <: env) =>
-         let
-           val n = Cl.force n
-           val p = Cl.force p
-           val env' = Cl.insertVar env a (m <: env)
-           val env' = Cl.insertVar env' b (Syn.into (Syn.NAT_REC (m, (n, (a,b,p)))) <: env)
-         in
-           p <: env'
-         end
+     | O.MONO O.NAT $ _ || (_, []) => raise Final
+     | O.MONO O.ZERO $ _ || (_, []) => raise Final
+     | O.MONO O.SUCC $ _ || (_, []) => raise Final
+     | O.MONO O.NAT_REC $ [_ \ m, _ \ n, (_,[x,y]) \ p] || (syms, stk) => COMPAT @@ m || (syms, NAT_REC (HOLE, n, (x,y,p)) :: stk)
+     | O.MONO O.ZERO $ _ || (syms, NAT_REC (HOLE, zer, _) :: stk) => CRITICAL @@ zer || (syms, stk)
+     | O.MONO O.SUCC $ [_ \ n] || (syms, NAT_REC (HOLE, zer, (x,y, succ)) :: stk) =>
+       let
+         val rho = Var.Ctx.insert (Var.Ctx.singleton x n) y @@ Syn.into @@ Syn.NAT_REC (n, (zer, (x,y,succ)))
+       in
+         CRITICAL @@ substVarenv rho succ || (syms, stk)
+       end
+     | O.MONO O.NAT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
+     | O.MONO O.NAT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | (O.MONO O.S1_ELIM `$ [(_,[_]) \ S.% _, _ \ S.HOLE, _ \ S.% b, ([_],_) \ S.% _], _ \ O.MONO O.BASE `$ _ <: _) => b
-     | (O.MONO O.S1_ELIM `$ [(_,[_]) \ S.% _, _ \ S.HOLE, _ \ S.% _, ([u],_) \ S.% (l <: envL)],
-       _ \ O.POLY (O.LOOP r) `$ _ <: env) =>
-         let
-           val r' = Cl.forceParam (r <: env)
-         in
-           l <: Cl.insertSym envL u r'
-         end
-     | (O.MONO O.S1_ELIM `$ [(_,[x]) \ S.% cx, _ \ S.HOLE, _ \ S.% b, ([u],_) \ S.% l],
-        _ \ O.POLY (O.FCOM (dir, eqs)) `$ (_ \ cap) :: tubes <: env) =>
-         let
-           (* todo: maybe create a larger closure instead of forcing? *)
-           val cx' = Cl.force cx
-           val b' = Cl.force b
-           val l' = Cl.force l
+     | O.MONO O.INT $ _ || (_, []) => raise Final
+     | O.MONO O.NEGSUCC $ _ || (_, []) => raise Final
+     | O.MONO O.INT_REC $ [_ \ m, (_,[x,y]) \ p, _ \ q, (_,[x',y']) \ r] || (syms, stk) => COMPAT @@ m || (syms, INT_REC (HOLE, (x,y,p), q, (x',y',r)) :: stk) 
+     | O.MONO O.ZERO $ _ || (syms, INT_REC (HOLE, _, q, _) :: stk) => CRITICAL @@ q || (syms, stk)
+     | O.MONO O.SUCC $ [_ \ n] || (syms, INT_REC (HOLE, (x,y,p), zer, (x',y',q)) :: stk) => 
+       let
+         val rho = Var.Ctx.insert (Var.Ctx.singleton x' n) y' @@ Syn.into @@ Syn.INT_REC (n, ((x,y,p), zer, (x',y',q)))
+       in
+         CRITICAL @@ substVarenv rho q || (syms, stk)
+       end
+     | O.MONO O.NEGSUCC $ [_ \ n] || (syms, INT_REC (HOLE, (x,y,p), zer, (x',y',q)) :: stk) => 
+       let
+         val rho = Var.Ctx.insert (Var.Ctx.singleton x n) y @@ Syn.into @@ Syn.INT_REC (n, ((x,y,p), zer, (x',y',q)))
+       in
+         CRITICAL @@ substVarenv rho p || (syms, stk)
+       end
+     | O.MONO O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
+     | O.MONO O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-           val v = Sym.named "v"
-           val hv = O.POLY (O.FCOM ((#1 dir, P.ret v), eqs)) $$ (([],[]) \ cap) :: tubes
-           val chv = substVar (hv, x) cx'
-           fun mkElim m = Syn.into @@ Syn.S1_ELIM ((x, cx'), m, (b', (u, l')))
-         in
-           Syn.intoCom (dir, eqs) ((v, chv), mkElim cap, List.map (mapBind mkElim) tubes) <: env
-         end
+     | O.MONO O.AX $ _ || (_, []) => raise Final
+     | O.MONO O.VOID $ _ || (_, []) => raise Final
 
-     | (O.MONO O.AP `$ [_ \ S.HOLE, _ \ S.% cl], _ \ O.MONO O.LAM `$ [(_,[x]) \ mx] <: env) => mx <: Cl.insertVar env x cl
+     | O.MONO O.WBOOL $ _ || (_, []) => raise Final
+     | O.MONO O.BOOL $ _ || (_, []) => raise Final
+     | O.MONO O.TRUE $ _ || (_, []) => raise Final
+     | O.MONO O.FALSE $ _ || (_, []) => raise Final
 
-     | (O.MONO O.FST `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ m, _ \ _] <: env) => m <: env
-     | (O.MONO O.SND `$ [_ \ S.HOLE], _ \ O.MONO O.PAIR `$ [_ \ _, _ \ n] <: env) => n <: env
+     | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, IF (HOLE, t, f) :: stk)
+     | O.MONO O.IF $ [(_,[x]) \ tyx, _ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, W_IF ((x, tyx), HOLE, t, f) :: stk)
+     | O.MONO O.TRUE $ _ || (syms, IF (HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
+     | O.MONO O.TRUE $ _ || (syms, W_IF (_, HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
+     | O.MONO O.FALSE $ _ || (syms, IF (HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
+     | O.MONO O.FALSE $ _ || (syms, W_IF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
+     | O.MONO O.BOOL $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
+     | O.MONO O.BOOL $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.MONO O.WBOOL $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val fcom =
+           Syn.into @@ Syn.FCOM
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         CRITICAL @@ fcom || (syms, stk)
+       end
+     | O.MONO O.WBOOL $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | (O.MONO (O.PROJ lbl) `$ [_ \ S.HOLE], _ \ O.MONO (O.TUPLE lbls) `$ args <: env) =>
-         (case ListUtil.findEqIndex lbl lbls of
-           NONE => raise InvalidCut
-         | SOME (i, _) => case List.nth (args, i) of (_ \ m) => m <: env)
+     | O.MONO O.S1 $ _ || (_, []) => raise Final
+     | O.MONO O.BASE $ _ || (_, []) => raise Final
+     | O.POLY (O.LOOP r) $ _ || (syms, stk) =>
+       (case r of 
+           P.APP P.DIM0 => STEP @@ Syn.into Syn.BASE || (syms, stk)
+         | P.APP P.DIM1 => STEP @@ Syn.into Syn.BASE || (syms, stk)
+         | P.VAR u => 
+             if stability = CUBICAL andalso not (SymSet.member syms u) then raise Unstable else
+              case stk of 
+                 [] => raise Final
+               | S1_REC (_, HOLE, _, (v, loop)) :: stk => CRITICAL @@ substSymbol (P.ret u, v) loop || (syms, stk)
+               | _ => raise Stuck)
+     | O.MONO O.BASE $ _ || (syms, S1_REC (_, HOLE, base, _) :: stk) => CRITICAL @@ base || (syms, stk)
+     | O.MONO O.S1 $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val fcom =
+           Syn.into @@ Syn.FCOM
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         CRITICAL @@ fcom || (syms, stk)
+       end
+     | O.MONO O.S1 $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | (O.POLY (O.PATH_AP r) `$ [_ \ S.HOLE], _ \ O.MONO O.PATH_ABS `$ [([u],_) \ m] <: env) =>
-         m <: Cl.insertSym env u r
+     | O.MONO (O.RECORD _) $ _ || (_, []) => raise Final
+     | O.MONO (O.TUPLE _) $ _ || (_, []) => raise Final
+     | O.MONO (O.PROJ lbl) $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PROJ (lbl, HOLE) :: stk)
+     | O.MONO (O.TUPLE lbls) $ args || (syms, PROJ (lbl, HOLE) :: stk) =>
+       (case ListUtil.findEqIndex lbl lbls of
+           NONE => raise Stuck
+         | SOME (i,_) => case List.nth (args, i) of _ \ m => CRITICAL @@ m || (syms, stk))
+     | O.MONO (O.RECORD lbls) $ tys || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         fun wrap m = ([],[]) \ m
+         fun hcom (lbl, _ \ ty) =
+           wrap o Syn.into @@ Syn.HCOM 
+             {dir = dir,
+              ty = ty,
+              cap = Syn.into @@ Syn.PROJ (lbl, cap),
+              tubes = mapTubes_ (fn n => Syn.into @@ Syn.PROJ (lbl, n)) tubes}
+         val tuple = O.MONO (O.TUPLE lbls) $$ ListPair.mapEq hcom (lbls, tys)
+       in
+         CRITICAL @@ tuple || (syms, stk)
+       end
+     | O.MONO (O.RECORD lbls) $ tys || (syms, COE (dir, (u, HOLE), coercee) :: stk) => 
+       let
+         fun wrap m = ([],[]) \ m
+         fun coe (lbl, _ \ ty) = 
+           wrap o Syn.into @@ Syn.COE 
+             {dir = dir,
+              ty = (u, ty),
+              coercee = Syn.into @@ Syn.PROJ (lbl, coercee)}
+         val tuple = O.MONO (O.TUPLE lbls) $$ ListPair.mapEq coe (lbls, tys)
+       in
+         CRITICAL @@ tuple || (SymSet.remove syms u, stk)
+       end
 
-     | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.WBOOL `$ _ <: env) =>
-         Syn.intoFcom' (dir, eqs) (forceSList args) <: env
+     (* forms of judgment *)
+     | O.MONO O.JDG_EQ $ _ || (_, []) => raise Final
+     | O.MONO O.JDG_EQ_TYPE $ _ || (_, []) => raise Final
+     | O.MONO O.JDG_TRUE $ _ || (_, []) => raise Final
+     | O.MONO O.JDG_SYNTH $ _ || (_, []) => raise Final
 
-     | (O.POLY (O.HCOM _) `$ ((_ \ S.HOLE) :: (_ \ S.% cap) :: _), _ \ O.MONO O.BOOL `$ _ <: _) =>
-         cap
+     (* rules, tactics and multitactics *)
+     | O.MONO O.MTAC_ALL $ _ || (_, []) => raise Final
+     | O.MONO (O.MTAC_EACH _) $ _ || (_, []) => raise Final
+     | O.MONO (O.MTAC_FOCUS _) $ _ || (_, []) => raise Final
+     | O.MONO (O.MTAC_SEQ _) $ _ || (_, []) => raise Final
+     | O.MONO O.MTAC_ORELSE $ _ || (_, []) => raise Final
+     | O.MONO O.MTAC_REC $ _ || (_, []) => raise Final
+     | O.MONO (O.MTAC_HOLE _) $ _ || (_, []) => raise Final
+     | O.MONO O.TAC_MTAC $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_ID $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_EXACT $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_SYMMETRY $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_AUTO_STEP $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_HYP _) $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_ELIM _) $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_HEAD_EXP $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_CUT $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_UNFOLD _) $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_LEMMA _) $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_CUT_LEMMA _) $ _ || (_, []) => raise Final
+     | O.MONO O.MTAC_REPEAT $ [_ \ mt] || (syms, stk) => 
+       let
+         val x = Var.named "x"
+         val xtm = check (`x, O.MTAC)
+         val mtrec = O.MONO O.MTAC_REC $$ [([],[x]) \ Tac.mtry (Tac.seq (Tac.mprogress mt) [] xtm)]
+       in
+         STEP @@ mtrec || (syms, stk)
+       end
+     | O.MONO O.MTAC_AUTO $ _ || (syms, stk) => STEP @@ Tac.multirepeat (Tac.all (Tac.try Tac.autoStep)) || (syms, stk)
+     | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] || (syms, stk) => 
+       let
+         val catjdg = RedPrlCategoricalJudgment.fromAbt jdg
+         val tau = RedPrlCategoricalJudgment.synthesis catjdg
+       in
+         STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2])) || (syms, stk)
+       end
+     | O.MONO O.DEV_DFUN_INTRO $ [([u],_) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
+     | O.MONO O.DEV_DPROD_INTRO $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [] (Tac.each [t1, t2])) || (syms, stk)
+     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.each [t])) || (syms, stk)
+     | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [] (Tac.each [t1,t2])) || (syms, stk)
+     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ t1, ([v],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2])) || (syms, stk)
+     | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2])) || (syms, stk)
+     | O.POLY (O.DEV_DPROD_ELIM z) $ [([x,y], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
+     | _ => raise Stuck
 
-     | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.S1 `$ _ <: env) =>
-         Syn.intoFcom' (dir, eqs) (forceSList args) <: env
+  fun step sign stability (tm || stk) =
+    let
+      val (view, tau) = infer tm
+    in
+      stepView sign stability tau (view || stk)
+    end
 
-     | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.DFUN `$ [_, ((_,[x]) \ bx)] <: env) =>
-         let
-           val args = forceSList args
-           fun apx m = Syn.intoAp (m, Abt.check (`x, O.EXP))
-           val hcomx = Syn.intoHcom' (dir, eqs) (bx, List.map (mapBind apx) args)
-         in
-           Syn.intoLam (x, hcomx) <: env
-         end
+  fun init tm = 
+    tm || (SymSet.empty, [])
 
-     | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.DPROD `$ [(_ \ a), ((_,[x]) \ bx)] <: env) =>
-         let
-           val (_ \ cap) :: tubes = forceSList args
-           fun hcom1 r = Syn.intoHcom ((#1 dir, r), eqs)
-             (a, Syn.intoFst cap, List.map (mapBind Syn.intoFst) tubes)
+  datatype canonicity =
+     CANONICAL
+   | NEUTRAL of blocker
+   | REDEX
+   | STUCK
+   | UNSTABLE
 
-           val v = Sym.named "v"
-           val com = Syn.intoCom (dir, eqs)
-             ( (v, substVar (hcom1 (P.ret v), x) bx)
-             , Syn.intoSnd cap, List.map (mapBind Syn.intoSnd) tubes)
-         in
-           Syn.intoPair (hcom1 (#2 dir), com) <: env
-         end
 
-     | (O.POLY (O.HCOM (dir, eqs)) `$ ((_ \ S.HOLE) :: args), _ \ O.MONO O.PATH_TY `$ [(([u],_) \ a), (_ \ p0), (_ \ p1)] <: env) =>
-         let
-           val (_ \ cap) :: tubes = forceSList args
-           fun ap m = Syn.into @@ Syn.PATH_AP (m, P.ret u)
-           val eqs = eqs @ equationPair u
-           val w = Sym.named "w"
-           val tubes = List.map (mapBind ap) tubes @ [([w],[]) \ p0, ([w],[]) \ p1]
-           val path = Syn.into @@ Syn.PATH_ABS (u, Syn.intoHcom (dir, eqs) (a, ap cap, tubes))
-         in
-           path <: env
-         end
+  val unwrapAction = 
+    fn COMPAT cfg => cfg
+     | STEP cfg => cfg
+     | CRITICAL cfg => cfg
 
-     | (O.POLY (O.COE _) `$ [_ \ S.HOLE, _\ S.% cl], ([_],_) \ O.MONO O.WBOOL `$ _ <: _) => cl
-     | (O.POLY (O.COE _) `$ [_ \ S.HOLE, _\ S.% cl], ([_],_) \ O.MONO O.BOOL `$ _ <: _) => cl
-     | (O.POLY (O.COE _) `$ [_ \ S.HOLE, _\ S.% cl], ([_],_) \ O.MONO O.S1 `$ _ <: _) => cl
+  fun eval sign stability = 
+    let
+      fun go cfg =
+        go (unwrapAction (step sign stability cfg))
+        handle Stuck => cfg
+             | Final => cfg
+             | Neutral _ => cfg 
+             | Unstable => cfg
+    in
+      unload o go o init
+    end
 
-     | (O.POLY (O.COE (dir as (r, r'))) `$ [_ \ S.HOLE, _\ S.% cl], ([u],_) \ O.MONO O.DFUN `$ [_\ a, (_,[x]) \ bx] <: env) =>
-         let
-           fun coea v = Syn.intoCoe (r', v) ((u, a), check (`x, O.EXP))
-           val bcoe = substVar (coea (P.ret u), x) bx
-           val app = Syn.intoAp (Cl.force cl, coea r)
-           val coeR = Syn.intoCoe dir ((u, bcoe), app)
-         in
-           Syn.intoLam (x, coeR) <: env
-         end
+  fun steps sign stability n = 
+    let
+      fun go1 cfg = 
+        case step sign stability cfg of 
+           COMPAT cfg' => go1 cfg'
+         | CRITICAL cfg' => cfg'
+         | STEP cfg' => cfg'
 
-     | (O.POLY (O.COE (dir as (r, r'))) `$ [_ \ S.HOLE, _\ S.% cl], ([u],_) \ O.MONO O.DPROD `$ [_\ a, (_,[x]) \ bx] <: env) =>
-         let
-           val m = Cl.force cl
-           fun coe1 v = Syn.intoCoe (r, v) ((u, a), Syn.intoFst m)
-           val coe2 = Syn.intoCoe dir ((u, substVar (coe1 (P.ret u), x) bx), Syn.intoSnd m)
-         in
-           Syn.intoPair (coe1 r', coe2) <: env
-         end
+      fun go 0 cfg = cfg
+        | go n cfg = go (n - 1) (go1 cfg)
+    in
+      unload o go n
+    end
 
-     | (O.POLY (O.COE dir) `$ [_ \ S.HOLE, _\ S.% cl], ([u],_) \ O.MONO O.PATH_TY `$ [([v],_) \ a, _ \ p0, _ \ p1] <: env) =>
-         let
-           val m = Cl.force cl
-           val com = Syn.intoCom (dir, equationPair v)
-             ((u, a), (Syn.into @@ Syn.PATH_AP (m, P.ret u)), [(([u],[]) \ p0), (([u],[]) \ p1)])
-           val path = Syn.into @@ Syn.PATH_ABS (v, com)
-         in
-           path <: env
-         end
-
-     | _ => raise InvalidCut
+  fun canonicity sign stability tm =
+    (steps sign stability 1 (init tm); REDEX) 
+    handle Stuck => STUCK
+         | Final => CANONICAL
+         | Unstable => UNSTABLE
+         | Neutral blocker => NEUTRAL blocker
 end
-
-(* From the above definitions, we are able to generate a complete machine implementation,
- * which deals with all the bureaucratic aspects of computation: variables, congruence
- * rules, etc. The supremacy of Standard ML in action! *)
- functor RedPrlMachine (Sig : MINI_SIGNATURE) = AbtMachineUtil (AbtMachine (RedPrlMachineBasis (Sig)))
