@@ -102,6 +102,8 @@ struct
       aux 0
     end
 
+  fun mapTubes f = List.map (fn (eq, (u, n)) => (eq, (u, f n)))
+
   fun stepView sign stability tau =
     fn `x || stk => raise Neutral (VAR x)
      | x $# (rs, ms) || stk => raise Neutral (METAVAR x)
@@ -116,7 +118,7 @@ struct
              {dir = dir,
               ty = tyBx,
               cap = apx cap,
-              tubes = List.map (fn (eq, (u, n)) => (eq, (u, apx n))) tubes}
+              tubes = mapTubes apx tubes}
          val lambda = Syn.into @@ Syn.LAM (x, hcomx)
        in
          lambda || (syms, stk)
@@ -139,6 +141,48 @@ struct
        in
          lambda || (SymSet.remove syms u, stk)
        end
+     | O.MONO O.FST $ [_ \ m] || (syms, stk) => m || (syms, FST HOLE :: stk)
+     | O.MONO O.SND $ [_ \ m] || (syms, stk) => m || (syms, SND HOLE :: stk)
+     | O.MONO O.PAIR $ [_ \ m, _ \ _] || (syms, FST HOLE :: stk) => m || (syms, stk)
+     | O.MONO O.PAIR $ [_ \ _, _ \ n] || (syms, SND HOLE :: stk) => n || (syms, stk)
+     | O.MONO O.DPROD $ [_ \ tyA, (_, [x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val (r, r') = dir
+         fun left s = 
+           Syn.into @@ Syn.HCOM
+             {dir = (r, s),
+              ty = tyA,
+              cap = Syn.into @@ Syn.FST cap,
+              tubes = mapTubes (Syn.into o Syn.FST) tubes}
+          val u = Sym.named "u"
+          val right = 
+            Syn.into @@ Syn.COM
+              {dir = dir,
+               ty = (u, substVar (left (P.ret u), x) tyBx),
+               cap = Syn.into @@ Syn.SND cap,
+               tubes = mapTubes (Syn.into o Syn.SND) tubes}
+          val pair = Syn.into @@ Syn.PAIR (left r', right)
+       in
+         pair || (syms, stk)
+       end
+     | O.MONO O.DPROD $ [_ \ tyA, (_, [x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+       let
+         val (r, r') = dir
+         fun left s = 
+           Syn.into @@ Syn.COE
+             {dir = (r, s),
+              ty = (u, tyA),
+              coercee = Syn.into @@ Syn.FST coercee}
+          val right = 
+            Syn.into @@ Syn.COE
+              {dir = dir,
+               ty = (u, substVar (left (P.ret u), x) tyBx),
+               coercee = Syn.into @@ Syn.SND coercee}
+          val pair = Syn.into @@ Syn.PAIR (left r', right)
+       in
+         pair || (SymSet.remove syms u, stk)
+       end
+
 
   fun step sign stability (tm || stk) =
     let
