@@ -102,19 +102,37 @@ struct
       aux 0
     end
 
-  fun mapTubes f = List.map (fn (eq, (u, n)) => (eq, (u, f n)))
+  fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
 
-  val zipTubes : symbol O.equation list * abt bview list -> tube list =
-    ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, n)))
+  fun zipTubesWith f : symbol O.equation list * abt bview list -> tube list =
+    ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
+
+  fun mapTubes_ f = mapTubes (f o #2)
+  val zipTubes = zipTubesWith #2
 
   fun stepView sign stability tau =
     fn `x || stk => raise Neutral (VAR x)
      | x $# (rs, ms) || stk => raise Neutral (METAVAR x)
 
-     | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty :: _ \ cap :: tubes) || (syms, stk) =>
-         ty || (syms, HCOM (dir, HOLE, cap, zipTubes (eqs, tubes)) :: stk)
-     | O.POLY (O.COE dir) $ [([u], _) \ ty, _ \ coercee] || (syms, stk) =>
-         ty || (SymSet.insert syms u, COE (dir, (u, HOLE), coercee) :: stk)
+     | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty :: _ \ cap :: tubes) || (syms, stk) => ty || (syms, HCOM (dir, HOLE, cap, zipTubes (eqs, tubes)) :: stk)
+     | O.POLY (O.COE dir) $ [([u], _) \ ty, _ \ coercee] || (syms, stk) => ty || (SymSet.insert syms u, COE (dir, (u, HOLE), coercee) :: stk)
+     | O.POLY (O.COM (dir, eqs)) $ (([u], _) \ ty :: _ \ cap :: tubes) || (syms, stk) =>
+       let
+         val (r, r') = dir
+         fun coe s m = 
+           Syn.into @@ Syn.COE
+             {dir = (s, r'),
+              ty = (u, ty),
+              coercee = m}
+          val hcom =
+            Syn.into @@ Syn.HCOM
+              {dir = dir,
+               ty = substSymbol (r', u) ty,
+               cap = coe r cap,
+               tubes = zipTubesWith (fn (u, n) => coe (P.ret u) n) (eqs, tubes)}
+       in
+         hcom || (syms, stk)
+       end
 
      | O.MONO O.AP $ [_ \ m, _ \ n] || (syms, stk) => m || (syms, APP (HOLE, n) :: stk)
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => substVar (n, x) m || (syms, stk)
@@ -127,7 +145,7 @@ struct
              {dir = dir,
               ty = tyBx,
               cap = apx cap,
-              tubes = mapTubes apx tubes}
+              tubes = mapTubes_ apx tubes}
          val lambda = Syn.into @@ Syn.LAM (x, hcomx)
        in
          lambda || (syms, stk)
@@ -163,14 +181,14 @@ struct
              {dir = (r, s),
               ty = tyA,
               cap = Syn.into @@ Syn.FST cap,
-              tubes = mapTubes (Syn.into o Syn.FST) tubes}
+              tubes = mapTubes_ (Syn.into o Syn.FST) tubes}
           val u = Sym.named "u"
           val right = 
             Syn.into @@ Syn.COM
               {dir = dir,
                ty = (u, substVar (left (P.ret u), x) tyBx),
                cap = Syn.into @@ Syn.SND cap,
-               tubes = mapTubes (Syn.into o Syn.SND) tubes}
+               tubes = mapTubes_ (Syn.into o Syn.SND) tubes}
           val pair = Syn.into @@ Syn.PAIR (left r', right)
        in
          pair || (syms, stk)
