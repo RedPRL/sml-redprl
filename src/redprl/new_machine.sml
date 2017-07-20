@@ -423,6 +423,7 @@ struct
      | O.MONO O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
 
      | O.MONO O.AX $ _ || (_, []) => raise Final
+     | O.MONO O.VOID $ _ || (_, []) => raise Final
 
      | O.MONO O.WBOOL $ _ || (_, []) => raise Final
      | O.MONO O.BOOL $ _ || (_, []) => raise Final
