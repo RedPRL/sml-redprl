@@ -47,7 +47,7 @@ struct
     Lcf.|> (psi, abstractEvidence (I, H) m)
   infix #>
 
-  val trivial = Syn.into Syn.AX
+  val trivial = Syn.into Syn.TV
 
   (* telescope combinators *)
 
@@ -99,6 +99,7 @@ struct
   fun makeSynth (I, H) m = makeGoal @@ (I, H) >> CJ.SYNTH m
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
+  fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> CJ.TERM tau
 
   (* ignoring the trivial realizer *)
   fun makeType (I, H) a = makeGoal' @@ (I, H) >> CJ.TYPE a

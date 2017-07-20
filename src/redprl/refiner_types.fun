@@ -53,7 +53,7 @@ struct
 
     fun EqFCom alpha jdg =
       let
-        val _ = RedPrlLog.trace "EqFCom"
+        val _ = RedPrlLog.trace "WeakBool.EqFCom"
         val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
         val Syn.WBOOL = Syn.out ty
         val Syn.FCOM args0 = Syn.out lhs
@@ -165,7 +165,8 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
 
-    (* this rule is outdated because the paper version has changed. *)
+    (* This rule is outdated because the paper version has changed.
+     * The correct version should handle the dependent motive. *)
     fun ElimEq _ jdg =
       let
         val _ = RedPrlLog.trace "StrictBool.ElimEq"
@@ -203,33 +204,6 @@ struct
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
   end
 
-  structure Int =
-  struct
-    fun EqType _ jdg =
-      let
-        val _ = RedPrlLog.trace "Int.EqType"
-        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
-        val Syn.INT = Syn.out a
-        val Syn.INT = Syn.out b
-      in
-        T.empty #> (I, H, trivial)
-      end
-      handle Bind =>
-        raise E.error [Fpp.text "Expected typehood sequent"]
-
-    fun Eq _ jdg =
-      let
-        val _ = RedPrlLog.trace "Int.Eq"
-        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.INT = Syn.out ty
-        val Syn.NUMBER i0 = Syn.out m
-        val Syn.NUMBER i1 = Syn.out n
-        val () = Assert.paramEq "Int.Eq" (i0, i1)
-      in
-        T.empty #> (I, H, trivial)
-      end
-  end
-
   structure Nat =
   struct
     fun EqType _ jdg =
@@ -244,18 +218,149 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun Eq _ jdg =
+    fun EqZero _ jdg =
       let
-        val _ = RedPrlLog.trace "Nat.Eq"
+        val _ = RedPrlLog.trace "Nat.EqZero"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
         val Syn.NAT = Syn.out ty
-        (* till we can generate "less-than" goals we can only handle numerals *)
-        val Syn.NUMBER (P.APP (P.NUMERAL i0)) = Syn.out m
-        val Syn.NUMBER (P.APP (P.NUMERAL i1)) = Syn.out n
-        val true = i0 = i1
-        val true = IntInf.>= (i0, 0)
+        val Syn.ZERO = Syn.out m
+        val Syn.ZERO = Syn.out n
       in
         T.empty #> (I, H, trivial)
+      end
+
+    fun EqSucc _ jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.EqSucc"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.NAT = Syn.out ty
+        val Syn.SUCC m' = Syn.out m
+        val Syn.SUCC n' = Syn.out n
+        val goal = makeEq (I, H) ((m', n'), ty)
+      in
+        |>: goal #> (I, H, trivial)
+      end
+
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.Elim"
+        val (I, H) >> CJ.TRUE cz = jdg
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.NAT = Syn.out ty
+
+        val u = alpha 0
+        val v = alpha 1
+        val utm = Syn.into @@ Syn.VAR (u, O.EXP)
+
+        val nat = Syn.into Syn.NAT
+        val zero = Syn.into Syn.ZERO
+        val succu = Syn.into @@ Syn.SUCC utm
+
+        val Hzero = Hyps.modifyAfter z (CJ.map (substVar (zero, z))) H
+        val czero = substVar (zero, z) cz
+
+        val Huvz = Hyps.empty
+              @> (u, CJ.TRUE nat)
+              @> (v, CJ.TRUE (substVar (utm, z) cz))
+              @> (z, CJ.TRUE nat)
+        val Hsuccu = Hyps.modifyAfter z (CJ.map (substVar (succu, z))) (Hyps.splice H z Huvz)
+        val csuccu = substVar (succu, z) cz
+
+        val (goalZ, holeZ) = makeTrue (I, Hzero) czero
+        val (goalS, holeS) = makeTrue (I, Hsuccu) csuccu
+
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val evidence = Syn.into @@ Syn.NAT_REC (ztm, (holeZ, (u, v, holeS)))
+      in
+        |>: goalZ >: goalS #> (I, H, evidence)
+      end
+
+    fun ElimEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.ElimEq"
+        val (I, H) >> CJ.EQ ((elim0, elim1), c) = jdg
+        val Syn.NAT_REC (m0, (n0, (a0, b0, p0))) = Syn.out elim0
+        val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
+
+        val z = alpha 0
+        val u = alpha 1
+        val v = alpha 2
+        val utm = Syn.into @@ Syn.VAR (u, O.EXP)
+        val vtm = Syn.into @@ Syn.VAR (v, O.EXP)
+
+        val nat = Syn.into Syn.NAT
+        val zero = Syn.into Syn.ZERO
+        val succu = Syn.into @@ Syn.SUCC utm
+
+        val goalM = makeEq (I, H) ((m0, m1), nat)
+
+        (* getting the motive *)
+        val (goalC, holeC) = makeTerm (I, H @> (z, CJ.TRUE nat)) O.EXP
+        val goalC' = makeType (I, H @> (z, CJ.TRUE nat)) holeC
+
+        (* zero branch *)
+        val czero = substVar (zero, z) holeC
+        val goalZ = makeEq (I, H) ((n0, n1), czero)
+
+        (* succ branch *)
+        val cu = substVar (utm, z) holeC
+        val csuccu = substVar (succu, z) holeC
+        val p0 = substVar (utm, a0) o substVar (vtm, b0) @@ p0
+        val p1 = substVar (utm, a1) o substVar (vtm, b1) @@ p1
+        val goalS = makeEq (I, H @> (u, CJ.TRUE nat) @> (v, CJ.TRUE cu))
+                      ((p0, p1), csuccu)
+      in
+        |>: goalC >: goalZ >: goalS >: goalC' #> (I, H, trivial)
+      end
+  end
+
+  structure Int =
+  struct
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqType"
+        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.INT = Syn.out a
+        val Syn.INT = Syn.out b
+      in
+        T.empty #> (I, H, trivial)
+      end
+      handle Bind =>
+        raise E.error [Fpp.text "Expected typehood sequent"]
+
+    fun EqZero _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqZero"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.INT = Syn.out ty
+        val Syn.ZERO = Syn.out m
+        val Syn.ZERO = Syn.out n
+      in
+        T.empty #> (I, H, trivial)
+      end
+
+    fun EqSucc _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqSucc"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.INT = Syn.out ty
+        val Syn.SUCC m' = Syn.out m
+        val Syn.SUCC n' = Syn.out n
+        val goal = makeEq (I, H) ((m', n'), Syn.into Syn.NAT)
+      in
+        |>: goal #> (I, H, trivial)
+      end
+
+    fun EqNegSucc _ jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqNegSucc"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.INT = Syn.out ty
+        val Syn.NEGSUCC m' = Syn.out m
+        val Syn.NEGSUCC n' = Syn.out n
+        val goal = makeEq (I, H) ((m', n'), Syn.into Syn.NAT)
+      in
+        |>: goal #> (I, H, trivial)
       end
   end
 
@@ -282,7 +387,7 @@ struct
 
         val evidence =
           case catjdg of
-             CJ.TRUE _ => Syn.into Syn.TT (* should be some fancy symbol *)
+             CJ.TRUE _ => Syn.into Syn.AX (* should be some fancy symbol *)
            | CJ.EQ _ => trivial
            | CJ.EQ_TYPE _ => trivial
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"

@@ -67,6 +67,14 @@
   '((t (:inherit font-lock-builtin-face))) "Face for RedPRL's tactic symbols."
   :group 'redprl)
 
+(defface redprl-sequent-keyword-face
+  '((t (:inherit font-lock-builtin-face))) "Face for RedPRL's sequent keywords."
+  :group 'redprl)
+
+(defface redprl-sequent-symbol-face
+  '((t (:inherit font-lock-builtin-face))) "Face for RedPRL's sequent symbols."
+  :group 'redprl)
+
 (defcustom redprl-command "redprl"
   "The command to be run for RedPRL."
   :group 'redprl
@@ -117,12 +125,21 @@
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
-  '("auto" "auto-step" "lemma" "cut-lemma" "hyp" "elim" "unfold")
+  '("auto" "auto-step" "cut-lemma" "elim" "fresh" "head-expand" "hyp" "id"
+    "lemma" "let" "progress" "rec" "repeat" "rule" "symmetry" "unfold")
   "RedPRL's tactic keywords.")
 
 (defconst redprl-tactic-symbols
-  '("?")
+  '("?" ";")
   "RedPRL's tactic symbols.")
+
+(defconst redprl-sequent-keywords
+  '("type")
+  "RedPRL's sequent keywords.")
+
+(defconst redprl-sequent-symbols
+  '(">>")
+  "RedPRL's sequent symbols.")
 
 (defconst redprl-def-name-regexp
   '(: "Def" (+ whitespace) (group-n 1 (+ word)) not-wordchar))
@@ -164,6 +181,10 @@
     ;; Built-in tactics
     (,(regexp-opt redprl-tactic-keywords 'words) 0 'redprl-tactic-keyword-face)
     (,(regexp-opt redprl-tactic-symbols 'nil) 0 'redprl-tactic-symbol-face)
+
+    ;; Sequents
+    (,(regexp-opt redprl-sequent-keywords 'words) 0 'redprl-sequent-keyword-face)
+    (,(regexp-opt redprl-sequent-symbols 'nil) 0 'redprl-sequent-symbol-face)
     ))
 
 (defun redprl-defined-names ()

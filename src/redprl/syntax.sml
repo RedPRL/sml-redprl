@@ -14,7 +14,11 @@ struct
 
   datatype 'a view =
      VAR of variable * sort
-   (* the trivial realizer for equality, which is called 'axiom' in NuPRL. *)
+   (* the trivial realizer of sort TRIV for judgments lacking interesting
+    * computational content. *)
+   | TV
+   (* the trivial realizer of sort EXP for types lacking interesting
+    * computational content. This is the "ax(iom)" in Nuprl. *)
    | AX
    (* formal composition *)
    | FCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
@@ -22,10 +26,12 @@ struct
    | WBOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    (* strict bool: strict if (true and false are shared) *)
    | BOOL | S_IF of 'a * ('a * 'a)
-   (* int *)
-   | INT | NUMBER of param
-   (* nat, reusing the number *)
-   | NAT
+   (* natural numbers *)
+   | NAT | ZERO | SUCC of 'a
+   | NAT_REC of 'a * ('a * (variable * variable * 'a))
+   (* integers, reusing natural numbers *)
+   | INT | NEGSUCC of 'a
+   | INT_REC of 'a * ('a * (variable * variable * 'a) * 'a * (variable * variable * 'a))
    (* empty type *)
    | VOID
    (* circle: base, loop and s1_elim *)
@@ -103,6 +109,8 @@ struct
 
     val into =
       fn VAR (x, tau) => check (`x, tau)
+
+       | TV => O.MONO O.TV $$ []
        | AX => O.MONO O.AX $$ []
 
        | FCOM {dir, cap, tubes} =>
@@ -120,10 +128,15 @@ struct
        | BOOL => O.MONO O.BOOL $$ []
        | S_IF (m, (t, f)) => O.MONO O.S_IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
 
-       | INT => O.MONO O.INT $$ []
-       | NUMBER n => O.POLY (O.NUMBER n) $$ []
-
        | NAT => O.MONO O.NAT $$ []
+       | ZERO => O.MONO O.ZERO $$ []
+       | SUCC m => O.MONO O.SUCC $$ [([],[]) \ m]
+       | NAT_REC (m, (n, (a, b, p))) => O.MONO O.NAT_REC $$ [([],[]) \ m, ([],[]) \ n, ([],[a,b]) \ p]
+
+       | INT => O.MONO O.INT $$ []
+       | NEGSUCC m => O.MONO O.NEGSUCC $$ [([],[]) \ m]
+       | INT_REC (m, (n, (a, b, p), q, (c, d, r))) =>
+           O.MONO O.INT_REC $$ [([],[]) \ m, ([],[]) \ n, ([],[a,b]) \ p, ([],[]) \ q, ([],[c,d]) \ r]
 
        | VOID => O.MONO O.VOID $$ []
 
@@ -199,6 +212,8 @@ struct
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
+
+       | O.MONO O.TV $ _ => TV
        | O.MONO O.AX $ _ => AX
 
        | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
@@ -212,10 +227,15 @@ struct
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] => S_IF (m, (t, f))
 
-       | O.MONO O.INT $ _ => INT
-       | O.POLY (O.NUMBER n) $ _ => NUMBER n
-
        | O.MONO O.NAT $ _ => NAT
+       | O.MONO O.ZERO $ _ => ZERO
+       | O.MONO O.SUCC $ [_ \ m] => SUCC m
+       | O.MONO O.NAT_REC $ [_ \ m, _ \ n, (_,[a,b]) \ p] => NAT_REC (m, (n, (a, b, p)))
+
+       | O.MONO O.INT $ _ => INT
+       | O.MONO O.NEGSUCC $ [_ \ m] => NEGSUCC m
+       | O.MONO O.INT_REC $ [_ \ m, _ \ n, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] =>
+           INT_REC (m, (n, (a, b, p), q, (c, d, r)))
 
        | O.MONO O.VOID $ _ => VOID
 
