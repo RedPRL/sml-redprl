@@ -19,13 +19,12 @@
 
 \newcommand\Dummy{\underline{\hspace{0.5em}}}
 
-\newcommand\Env[2]{#1\star{#2}}
-\newcommand\DoubleForce[3]{#1[\Env{#2}{#3}]}
-\newcommand\Force[2]{#1[#2]}
+\newcommand\DimSubst[3]{{#3}\langle{#1}/{#2}\rangle}
+\newcommand\Subst[3]{{#3}[{#1}/{#2}]}
+
 \newcommand\StackBindings[1]{\mathbf{bindings} (#1)}
-\newcommand\DimEq[4]{\Env{#1}{#2}\vDash{#3}={#4}}
-\newcommand\DimApart[6]{\Env{#1}{#2}\vDash_{#3}{#5}\not={#6}\parallel{#4}}
-\newcommand\Clo[3]{#1\triangleleft{\Env{#2}{#3}}}
+\newcommand\DimEq[2]{{#1}={#2}}
+\newcommand\DimApart[4]{{#2}\Vdash_{#1}{#3}\not={#4}}
 \newcommand\Coe[4]{\mathsf{coe}^{#1\leadsto{#2}}_{#3} (#4)}
 \newcommand\Com[5]{\mathsf{com}^{#1\leadsto{#2}}_{#3} (#4;#5)}
 \newcommand\HCom[5]{\mathsf{hcom}^{#1\leadsto{#2}}_{#3} (#4;#5)}
@@ -56,8 +55,8 @@
 \newcommand\FreeDims[1]{\mathbf{FD}\perfectparens{#1}}
 \newcommand\Bool{\mathsf{bool}}
 \newcommand\WBool{\mathsf{wbool}}
-\newcommand\Frame[4]{\perfectparens{#1,\Env{#2}{#3},#4}}
-\newcommand\Cfg[4]{\cut{\Clo{#1}{#2}{#3}}{#4}}
+\newcommand\Frame[2]{\perfectparens{#1,\perfectbrackets{#2}}}
+\newcommand\Cfg[2]{\cut{#1}{#2}}
 \newcommand\App[2]{{#1}\perfectparens{#2}}
 \newcommand\Pair[2]{\perfectunary{CurrentHeight}{\langle}{\rangle}{#1,#2}}
 
@@ -69,9 +68,6 @@
 \newcommand\Meta[1]{\mathbb{#1}}
 
 \newcommand\CC{\mathcal{C}}
-\newcommand\EE{\mathcal{E}}
-\newcommand\FF{\mathcal{F}}
-\newcommand\LL{\mathcal{L}}
 
 \title{Cubical Abstract Machine}
 \author{Jon Sterling and Kuen-Bang Hou (Favonia)}
@@ -90,39 +86,12 @@
     &&\Com{r}{r'}{x.A}{M}{\overline{\xi\hookrightarrow{}y.N}}\mid\ldots&\text{(terms)}\\
     K &::= &\Coe{r}{r'}{\Box}{M}\mid\App{\Box}{N}\mid\Fst{\Box}\mid\Snd{\Box}\mid\PApp{\Box}{r}\mid\HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}\\
     &&\If{\Box}{M}{N}\mid\WIf{x.A}{\Box}{M}{N}\mid\ldots&\text{(continuations)}\\
-    C &::= &\Clo{M}{\EE}{\FF}&\text{(closures)}\\
-    \EE &::= &(\Meta{\gamma},\gamma,\psi)&\text{(pre. env)}\\
-    \FF &::= &(\eta,\psi)&\text{(f.f.f.f.)}\\
-    \LL &::= &\cdot \mid \Cons{\FF}{\LL}&\text{(f.f.f.f.s)}\\
-    \Meta{\gamma} &::= &\overline{\Meta{x}\hookrightarrow \vec{x};\vec{a}.\Clo{M}{\EE}{\FF}}&\text{(meta env.)}\\
-    \gamma &::= &\overline{a\hookrightarrow C}&\text{(object env.)}\\
-    \eta &::= &\overline{a\hookrightarrow M}&\text{(forced obj. env.)}\\
-    \psi &::= &\overline{x\hookrightarrow r}&\text{(dimension env.)}\\
-    f &::= &\Frame{K}{\EE}{\FF}{\Psi} &\text{(frames)}\\
+    f &::= &\Frame{K}{\vec{x}} &\text{(frames)}\\
     \pi &::= &\cdot \mid \Cons{f}{\pi} &\text{(stacks)}\\
-    \CC &::= &\Cfg{M}{\EE}{\FF}{\pi} &\text{(states)}
+    \CC &::= &\Cfg{M}{\pi} &\text{(states)}
   \end{array}
 \]
 
-This machine is similar to Krivine's environment machine; it also
-bears a resembles to the CEK machine, with the difference that we use
-an explicit stack rather than an inductive definition of
-continuations.
-
-\paragraph{Stack frames and machine states}
-
-A stack frame $\Frame{K}{\EE}{\FF}{\Psi}$ represents a continuation
-whose hole ranges over a binder of $\Psi$ dimensions. For a stack
-$\pi$, let $\vec{\Psi}$ be the aggregation of all the dimension
-bindings $\Psi$ mentioned in $\pi$; then the extension of a stack
-$\Cons{\Frame{K}{\EE}{\FF}{\Phi}}{\pi}$ is wellformed when
-$\Env{\EE}{\FF}$ is an environment for $\FreeDims{K}\setminus\vec{\Psi}$;
-moreover, $K$ is allowed to mention the dimensions in $\vec{\Psi}$.
-
-A machine state $\Cfg{M}{\EE}{\FF}{\pi}$, where $\vec{\Psi}$ is the
-aggregation of dimension bindings in $\pi$, is wellformed when
-$\Env{\EE}{\FF}$ is an environment for $\FreeDims{M}\setminus\vec{\Psi}$;
-moreover, $M$ is allowed to mention the dimensions in $\vec{\Psi}$.
 
 \section{Selected transition rules}
 
@@ -143,7 +112,7 @@ First, let us collect all the bindings that are induced by the stack
 frames:
 \begin{align*}
   \StackBindings{\cdot} &= \varnothing\\
-  \StackBindings{\Cons{\Frame{K}{\EE}{\FF}{\Psi}}{\pi}} &= \Psi\cup\StackBindings{\pi}
+  \StackBindings{\Cons{\Frame{K}{\vec{x}}}{\pi}} &= \vec{x}\cup\StackBindings{\pi}
 \end{align*}
 
 Now, I think that it is cubically stable to observe apartness of
@@ -152,76 +121,34 @@ the stack.
 
 \begin{mathparpagebreakable}
   \inferrule{
-    \perfectparens{\Env{\EE}{\FF}}^+ (r) = \perfectparens{\Env{\EE}{\FF}}^+ (r')
+    r \not= r'
   }{
-    \DimEq{\EE}{\FF}{r}{r'}
+    \DimApart{\NonStable}{\pi}{r}{r'}
   }
   \and
   \inferrule{
-    \perfectparens{\Env{\EE}{\FF}}^+ (r) \not= \perfectparens{\Env{\EE}{\FF}}^+ (r')
-  }{
-    \DimApart{\EE}{\FF}{\NonStable}{\pi}{r}{r'}
-  }
-  \and
-  \inferrule{
-    \{\perfectparens{\Env{\EE}{\FF}}^+ (r),\perfectparens{\Env{\EE}{\FF}}^+ (r')\}\cap\StackBindings{\pi}\not=\varnothing{}
+    \{r,r'\}\cap\StackBindings{\pi}\not=\varnothing{}
     \\
-    \perfectparens{\Env{\EE}{\FF}}^+ (r) \not= \perfectparens{\Env{\EE}{\FF}}^+ (r')
+    r \not= r'
   }{
-    \DimApart{\EE}{\FF}{\Stable}{\pi}{r}{r'}
+    \DimApart{\Stable}{\pi}{r}{r'}
   }
 \end{mathparpagebreakable}
-
-\subsection{Variables}
-
-\begin{mathparpagebreakable}
-  \inferrule{
-    \EE^+ (a)\equiv\Clo{M}{\EE'}{\FF'}
-  }{
-    \Step{\mu}{
-      \Cfg{a}{\EE}{\FF}{\pi}
-    }{
-      \Cfg{M}{\EE'}{\perfectparens{\FF\circ\FF'}}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \EE^+ (\Meta{x})\equiv{\vec{x};\vec{a}.\Clo{N}{\EE'}{\FF'}}
-    \and
-    \FF''\triangleq\perfectbrackets{
-      \FF,
-      \overline{a\hookrightarrow{M\perfectbrackets{\Env{\EE}{\FF}}}},
-      \overline{x\hookrightarrow\perfectparens{\Env{\EE}{\FF}}^+ (r)}
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{\Meta{x}[\vec{r};\vec{M}]}{\EE}{\FF}{\pi}
-    }{
-      \Cfg{N}{\EE'}{\perfectparens{\FF''\circ\FF'}}{\pi}
-    }
-  }
-\end{mathparpagebreakable}
-
-%NOTE, the above rule for metavariables is incorrect. One way to fix it
-%is by forcing the substitutions in a certain order; maybe we can find
-%another way to fix it.
-
 
 \subsection{Kan operations}
-The substitution $\Force{A}{x\hookrightarrow y}$ in the $\Com{}{}{}{}{}$ rule should be a no-op.
 \begin{mathparpagebreakable}
   \inferrule{
   }{
     \Step{\mu}{
       \Cfg{
         \HCom{r}{r'}{A}{M}{\overline{\xi\hookrightarrow{}y.N}}
-      }{\EE}{\FF}{\pi}
+      }{\pi}
     }{
-      \Cfg{A}{\EE}{\FF}{
+      \Cfg{A}{
         \Cons{
           \Frame{
             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\EE}{\FF}{[]}
+          }{\cdot}
         }{\pi}
       }
     }
@@ -230,59 +157,53 @@ The substitution $\Force{A}{x\hookrightarrow y}$ in the $\Com{}{}{}{}{}$ rule sh
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Coe{r}{r'}{x.A}{M}}{\EE}{\FF}{\pi}
+      \Cfg{\Coe{r}{r'}{x.A}{M}}{\pi}
     }{
-      \Cfg{A}{\EE}{\FF}{
+      \Cfg{A}{
         \Cons{
-          \Frame{\Coe{r}{r'}{\Box}{M}}{\EE}{\FF}{[x]}
+          \Frame{\Coe{r}{r'}{\Box}{M}}{x}
         }{\pi}
       }
     }
   }
   \and
   \inferrule{
-    \EE'\triangleq\perfectbrackets{
-      \EE,
-      a\hookrightarrow{\Clo{A}{[x\hookrightarrow{\EE^+(r')}]}{[]}}
-    }
   }{
     \Step{\mu}{
       \Cfg{
         \Com{r}{r'}{x.A}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-      }{\EE}{\FF}{\pi}
+      }{\pi}
     }{
       \Cfg{
-        \HCom{r}{r'}{a}{
-          \Coe{r}{r'}{y.\Force{A}{x\hookrightarrow{y}}}{M}
+        \HCom{r}{r'}{
+          \DimSubst{r'}{x}{A}
+        }{
+          \Coe{r}{r'}{x.A}{M}
         }{
           \overline{
-            \xi_i\hookrightarrow{}y.\Coe{y}{r'}{y.\Force{A}{x\hookrightarrow{y}}}{N_i}
+            \xi_i\hookrightarrow{}y.\Coe{y}{r'}{x.A}{N_i}
           }
         }
-      }{
-        \EE'
-      }{
-        \FF
       }{\pi}
     }
   }
   \and
   \inferrule{
-    \DimEq{\EE}{\FF}{r}{r'}
+    \DimEq{r}{r'}
   }{
     \Step{\mu}{
-      \Cfg{\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}}{\EE}{\FF}{\pi}
+      \Cfg{\FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}}{\pi}
     }{
-      \Cfg{M}{\EE}{\FF}{\pi}
+      \Cfg{M}{\pi}
     }
   }
   \and
   \inferrule{
-    \DimApart{\EE}{\FF}{\mu}{\pi}{r}{r'}
+    \DimApart{\mu}{\pi}{r}{r'}
     \\
-    \DimApart{\EE}{\FF}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i<j)
+    \DimApart{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i<j)
     \\
-    \DimEq{\EE}{\FF}{r_j}{r'_j}
+    \DimEq{r_j}{r'_j}
   }{
     \Step{\mu}{
       \Cfg{
@@ -291,13 +212,11 @@ The substitution $\Force{A}{x\hookrightarrow y}$ in the $\Com{}{}{}{}{}$ rule sh
             r_i=r'_i\hookrightarrow{}y.N_i
           }
         }
-      }{\EE}{\FF}{\pi}
+      }{\pi}
     }{
-      \Cfg{N_j}{
-        \perfectbrackets{
-          \EE,y\hookrightarrow{}\EE^+ (r')
-        }
-      }{\FF}{\pi}
+      \Cfg{
+        \DimSubst{r'}{y}{N_j}
+      }{\pi}
     }
   }
 \end{mathparpagebreakable}
@@ -308,921 +227,923 @@ The substitution $\Force{A}{x\hookrightarrow y}$ in the $\Com{}{}{}{}{}$ rule sh
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\App{M}{N}}{\EE}{\FF}{\pi}
+      \Cfg{\App{M}{N}}{\pi}
     }{
-      \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\App{\Box}{N}}{\EE}{\FF}{[]}}{\pi}}
+      \Cfg{M}{\Cons{\Frame{\App{\Box}{N}}{\cdot}}{\pi}}
     }
   }
   \and
   \inferrule{
   }{
     \Step{\mu}{
-      \Cfg{\Lam{a}{M}}{\EE}{\FF}{\Cons{\Frame{\App{\Box}{N}}{\EE'}{\FF'}{[]}}{\pi}}
-    }{
-      \Cfg{M}{[\EE,a\hookrightarrow{\Clo{N}{\EE'}{\FF'}}]}{\FF}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \EE''\triangleq\perfectbrackets{
-      \EE',\Meta{x}\hookrightarrow{}a.\Clo{B}{\EE}{\FF}
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{
-        \DFun{x}{A}{B}
-      }{
-        \EE
-      }{
-        \FF
-      }{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-          }{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
+      \Cfg{\Lam{a}{M}}{\Cons{\Frame{\App{\Box}{N}}{\cdot}}{\pi}}
     }{
       \Cfg{
-        \Lam{a}{
-          \HCom{r}{r'}{\Meta{x}[a]}{\App{M}{a}}{
-            \overline{\xi_i\hookrightarrow{}y.\App{N_i}{a}}
-          }
-        }
-      }{\EE''}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \EE'' \triangleq%
-    \perfectbrackets{
-      \EE',
-      \Meta{x}\hookrightarrow%
-      x;b.\Clo{B}{
-        \perfectbrackets{
-          \EE,a\hookrightarrow%
-          \Clo{
-            \Coe{\Force{r'}{\EE'}}{x}{x.\Meta{z}[x]}{b}
-          }{
-            \perfectbrackets{
-              \Meta{z}\hookrightarrow%
-              x.\Clo{A}{\EE}{[]}
-            }
-          }{
-            []
-          }
-        }
-      }{
-        \FF
-      },
-      \Meta{y}\hookrightarrow%
-      x.\Clo{A}{\EE}{\FF}
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{\DFun{a}{A}{B}}{\EE}{\FF}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}}
-    }{
-      \Cfg{
-        \Lam{a}{
-          \Coe{r}{r'}{x.\Meta{x}[x;a]}{
-            \App{M}{
-              \Coe{r'}{r}{x.\Meta{y}[x]}{a}
-            }
-          }
-        }
-      }{
-        \EE''
-      }{
-        \FF'
-      }{
-        \pi%
-      }
-    }
-  }
-\end{mathparpagebreakable}
-
-\subsection{Dependent pair types}
-
-\begin{mathparpagebreakable}
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Fst{M}}{\EE}{\FF}{\pi}
-    }{
-      \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Fst{\Box}}{[]}{[]}{[]}}{\pi}}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Snd{M}}{\EE}{\FF}{\pi}
-    }{
-      \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Snd{\Box}}{[]}{[]}{[]}}{\pi}}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Pair{M}{N}}{\EE}{\FF}{\Cons{\Frame{\Fst{\Box}}{\Dummy}{\Dummy}{[]}}{\pi}}
-    }{
-      \Cfg{M}{\EE}{\FF}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Pair{M}{N}}{\EE}{\FF}{\Cons{\Frame{\Snd{\Box}}{\Dummy}{\Dummy}{[]}}{\pi}}
-    }{
-      \Cfg{N}{\EE}{\FF}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    L_s\triangleq{
-      \HCom{r}{s}{a}{\Fst{M}}{\overline{\xi_i\hookrightarrow{}y.\Fst{N_i}}}
-    }
-    \\
-    R\triangleq{
-      \Com{r}{r'}{z.\Meta{x}[z]}{\Snd{M}}{
-        \overline{\xi_i\hookrightarrow{}y.\Snd{N_i}}
-      }
-    }
-    \\
-    \EE''\triangleq{
-      \perfectbrackets{
-        \EE',
-        a\hookrightarrow{}\Clo{A}{\EE}{\FF},
-        \Meta{x}\hookrightarrow{}z.\Clo{
-          B
-        }{
-          \perfectbrackets{
-            \EE,
-            a\hookrightarrow{}
-            \Clo{L_z}{
-              \perfectbrackets{
-                \EE',
-                a\hookrightarrow{}\Clo{A}{\EE}{[]}
-              }
-            }{[]}
-          }
-        }{
-          \FF
-        }
-      }
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{\DPair{a}{A}{B}}{\EE}{\FF}{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-          }{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{
-        \Pair{L_{r'}}{R}
-      }{
-        \EE''
-      }{
-        \FF'
+        \Subst{N}{a}{M}
       }{\pi}
     }
   }
-  \and
-  \inferrule{
-    \EE'' \triangleq%
-    \perfectbrackets{
-      \EE',
-      \Meta{x}\hookrightarrow{x.\Clo{A}{\EE}{\FF}},
-      \Meta{y}\hookrightarrow{x.\Clo{B}{
-        \perfectbrackets{
-          \EE,
-          a\hookrightarrow{
-            \Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Fst{M}}}{
-              \perfectbrackets{
-                \EE',
-                \Meta{x}\hookrightarrow{x.\Clo{A}{\EE}{[]}}
-              }}{[]}
-          }
-        }}{
-          \FF
-        }}
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{
-        \DPair{a}{A}{B}
-      }{
-        \EE
-      }{
-        \FF
-      }{
-        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}
-      }
-    }{
-      \Cfg{
-        \Pair{
-          \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
-        }{
-          \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
-        }
-      }{
-        \EE''
-      }{
-        \FF'
-      }{
-        \pi%
-      }
-    }
-  }
+%   \and
+%   \inferrule{
+%     \EE''\triangleq\perfectbrackets{
+%       \EE',\Meta{x}\hookrightarrow{}a.\Clo{B}{\EE}{\FF}
+%     }
+%   }{
+%     \Step{\mu}{
+%       \Cfg{
+%         \DFun{x}{A}{B}
+%       }{
+%         \EE
+%       }{
+%         \FF
+%       }{
+%         \Cons{
+%           \Frame{
+%             \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
+%           }{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \Lam{a}{
+%           \HCom{r}{r'}{\Meta{x}[a]}{\App{M}{a}}{
+%             \overline{\xi_i\hookrightarrow{}y.\App{N_i}{a}}
+%           }
+%         }
+%       }{\EE''}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     \EE'' \triangleq%
+%     \perfectbrackets{
+%       \EE',
+%       \Meta{x}\hookrightarrow%
+%       x;b.\Clo{B}{
+%         \perfectbrackets{
+%           \EE,a\hookrightarrow%
+%           \Clo{
+%             \Coe{\Force{r'}{\EE'}}{x}{x.\Meta{z}[x]}{b}
+%           }{
+%             \perfectbrackets{
+%               \Meta{z}\hookrightarrow%
+%               x.\Clo{A}{\EE}{[]}
+%             }
+%           }{
+%             []
+%           }
+%         }
+%       }{
+%         \FF
+%       },
+%       \Meta{y}\hookrightarrow%
+%       x.\Clo{A}{\EE}{\FF}
+%     }
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\DFun{a}{A}{B}}{\EE}{\FF}{\Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}}
+%     }{
+%       \Cfg{
+%         \Lam{a}{
+%           \Coe{r}{r'}{x.\Meta{x}[x;a]}{
+%             \App{M}{
+%               \Coe{r'}{r}{x.\Meta{y}[x]}{a}
+%             }
+%           }
+%         }
+%       }{
+%         \EE''
+%       }{
+%         \FF'
+%       }{
+%         \pi%
+%       }
+%     }
+%   }
 \end{mathparpagebreakable}
 
-\subsection{Non-dependent record types}
+% \subsection{Dependent pair types}
 
-\begin{mathparpagebreakable}
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Proj{l}{M}}{\EE}{\FF}{\pi}
-    }{
-      \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Proj{l}{\Box}}{[]}{[]}{[]}}{\pi}}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Tuple{\overline{[\Label{l_i}\hookrightarrow M_i]}}}{\EE}{\FF}{\Cons{\Frame{\Proj{l_i}{\Box}}{\Dummy}{\Dummy}{[]}}{\pi}}
-    }{
-      \Cfg{M_i}{\EE}{\FF}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    O_j\triangleq{
-      \HCom{r}{r'}{a_j}{\Proj{l_j}{M}}{\overline{\xi_i\hookrightarrow{}y.\Proj{l_j}{N_i}}}
-    }
-    \\
-    \EE''\triangleq{
-      \perfectbrackets{
-        \EE',
-        \overline{a_j\hookrightarrow{}\Clo{A_j}{\EE}{\FF}}
-      }
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{\Record{\overline{\Label{l_j}\hookrightarrow{A_j}}}}{\EE}{\FF}{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
-          }{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{
-        \Tuple{\overline{\Label{l_j}\hookrightarrow{O_j}}}
-      }{
-        \EE''
-      }{
-        \FF'
-      }{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \EE'' \triangleq%
-    \perfectbrackets{
-      \EE',
-      \overline{\Meta{x}_j\hookrightarrow{x.\Clo{A_j}{\EE}{\FF}}}
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{
-        \Record{\overline{\Label{l_j}\hookrightarrow{A_j}}}
-      }{
-        \EE
-      }{
-        \FF
-      }{
-        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}
-      }
-    }{
-      \Cfg{
-        \Tuple{
-          \overline{
-            \Coe{r}{r'}{x.\Meta{x}_j[x]}{\Proj{l_j}{M}}
-          }
-        }
-      }{
-        \EE''
-      }{
-        \FF'
-      }{
-        \pi%
-      }
-    }
-  }
-\end{mathparpagebreakable}
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Fst{M}}{\EE}{\FF}{\pi}
+%     }{
+%       \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Fst{\Box}}{[]}{[]}{[]}}{\pi}}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Snd{M}}{\EE}{\FF}{\pi}
+%     }{
+%       \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Snd{\Box}}{[]}{[]}{[]}}{\pi}}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Pair{M}{N}}{\EE}{\FF}{\Cons{\Frame{\Fst{\Box}}{\Dummy}{\Dummy}{[]}}{\pi}}
+%     }{
+%       \Cfg{M}{\EE}{\FF}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Pair{M}{N}}{\EE}{\FF}{\Cons{\Frame{\Snd{\Box}}{\Dummy}{\Dummy}{[]}}{\pi}}
+%     }{
+%       \Cfg{N}{\EE}{\FF}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     L_s\triangleq{
+%       \HCom{r}{s}{a}{\Fst{M}}{\overline{\xi_i\hookrightarrow{}y.\Fst{N_i}}}
+%     }
+%     \\
+%     R\triangleq{
+%       \Com{r}{r'}{z.\Meta{x}[z]}{\Snd{M}}{
+%         \overline{\xi_i\hookrightarrow{}y.\Snd{N_i}}
+%       }
+%     }
+%     \\
+%     \EE''\triangleq{
+%       \perfectbrackets{
+%         \EE',
+%         a\hookrightarrow{}\Clo{A}{\EE}{\FF},
+%         \Meta{x}\hookrightarrow{}z.\Clo{
+%           B
+%         }{
+%           \perfectbrackets{
+%             \EE,
+%             a\hookrightarrow{}
+%             \Clo{L_z}{
+%               \perfectbrackets{
+%                 \EE',
+%                 a\hookrightarrow{}\Clo{A}{\EE}{[]}
+%               }
+%             }{[]}
+%           }
+%         }{
+%           \FF
+%         }
+%       }
+%     }
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\DPair{a}{A}{B}}{\EE}{\FF}{
+%         \Cons{
+%           \Frame{
+%             \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
+%           }{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \Pair{L_{r'}}{R}
+%       }{
+%         \EE''
+%       }{
+%         \FF'
+%       }{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     \EE'' \triangleq%
+%     \perfectbrackets{
+%       \EE',
+%       \Meta{x}\hookrightarrow{x.\Clo{A}{\EE}{\FF}},
+%       \Meta{y}\hookrightarrow{x.\Clo{B}{
+%         \perfectbrackets{
+%           \EE,
+%           a\hookrightarrow{
+%             \Clo{\Coe{r}{x}{y.\Meta{x}[y]}{\Fst{M}}}{
+%               \perfectbrackets{
+%                 \EE',
+%                 \Meta{x}\hookrightarrow{x.\Clo{A}{\EE}{[]}}
+%               }}{[]}
+%           }
+%         }}{
+%           \FF
+%         }}
+%     }
+%   }{
+%     \Step{\mu}{
+%       \Cfg{
+%         \DPair{a}{A}{B}
+%       }{
+%         \EE
+%       }{
+%         \FF
+%       }{
+%         \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \Pair{
+%           \Coe{r}{r'}{x.\Meta{x}[x]}{\Fst{M}}
+%         }{
+%           \Coe{r}{r'}{x.\Meta{y}[x]}{\Snd{M}}
+%         }
+%       }{
+%         \EE''
+%       }{
+%         \FF'
+%       }{
+%         \pi%
+%       }
+%     }
+%   }
+% \end{mathparpagebreakable}
 
-\subsection{Path types}
+% \subsection{Non-dependent record types}
 
-\begin{mathparpagebreakable}
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\PApp{M}{r}}{\EE}{\FF}{\pi}
-    }{
-      \Cfg{M}{\EE}{\FF}{
-        \Cons{
-          \Frame{\PApp{\Box}{\perfectparens{\Env{\FF'}{\EE'}}^+(r)}}{[]}{[]}{[]}
-        }{\pi}
-      }
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\PAbs{x}{M}}{\EE}{\FF}{
-        \Cons{
-          \Frame{\PApp{\Box}{r}}{[]}{[]}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{M}{
-        \perfectbrackets{
-          \EE,x\hookrightarrow{r}
-        }
-      }{\FF}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    H\triangleq{
-      \HCom{r}{r'}{\Meta{x}[x]}{\PApp{M}{x}}{
-        \overline{
-          x=\epsilon\hookrightarrow{}y.\Meta{y}_\epsilon[y]%
-        },
-        \overline{
-          \xi_i\hookrightarrow{}y.\PApp{N_i}{x}
-        }
-      }
-    }
-    \\
-    \EE''\triangleq\perfectbrackets{
-      \EE',
-      \Meta{x}\hookrightarrow{}x.\Clo{A}{\EE}{\FF},
-      \overline{
-        \Meta{y}_\epsilon\hookrightarrow{}x.\Clo{P_\epsilon}{\EE}{\FF}%
-      }
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{\Path{x.A}{P_0}{P_1}}{
-        \EE
-      }{
-        \FF
-      }{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{
-              \overline{
-                \xi_i\hookrightarrow{}y.N_i
-              }
-            }
-          }{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{
-        \PAbs{x}{H}
-      }{\EE''}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \EE''\triangleq\perfectbrackets{
-      \EE',
-      \Meta{x}\hookrightarrow{}x,y.\Clo{A}{\EE}{\FF},
-      \overline{
-        \Meta{y}_\epsilon\hookrightarrow{}x,y.\Clo{P_\epsilon}{\EE}{\FF}
-      }
-    }
-  }{
-    \Step{\mu}{
-      \Cfg{
-        \Path{x.A}{P_0}{P_1}
-      }{
-        \EE
-      }{
-        \FF
-      }{
-        \Cons{
-          \Frame{
-            \Coe{r}{r'}{\Box}{M}
-          }{\EE'}{\FF'}{[y]}
-        }{\pi}
-      }
-    }{
-      \Cfg{
-        \PAbs{x}{
-          \Com{r}{r'}{y.\Meta{x}[x,y]}{\PApp{M}{x}}{
-            \overline{
-              x=\epsilon\hookrightarrow{}y.{\Meta{y}_\epsilon[x,y]}
-            }
-          }
-        }
-      }{\EE''}{\FF'}{\pi}
-    }
-  }
-\end{mathparpagebreakable}
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Proj{l}{M}}{\EE}{\FF}{\pi}
+%     }{
+%       \Cfg{M}{\EE}{\FF}{\Cons{\Frame{\Proj{l}{\Box}}{[]}{[]}{[]}}{\pi}}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Tuple{\overline{[\Label{l_i}\hookrightarrow M_i]}}}{\EE}{\FF}{\Cons{\Frame{\Proj{l_i}{\Box}}{\Dummy}{\Dummy}{[]}}{\pi}}
+%     }{
+%       \Cfg{M_i}{\EE}{\FF}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     O_j\triangleq{
+%       \HCom{r}{r'}{a_j}{\Proj{l_j}{M}}{\overline{\xi_i\hookrightarrow{}y.\Proj{l_j}{N_i}}}
+%     }
+%     \\
+%     \EE''\triangleq{
+%       \perfectbrackets{
+%         \EE',
+%         \overline{a_j\hookrightarrow{}\Clo{A_j}{\EE}{\FF}}
+%       }
+%     }
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Record{\overline{\Label{l_j}\hookrightarrow{A_j}}}}{\EE}{\FF}{
+%         \Cons{
+%           \Frame{
+%             \HCom{r}{r'}{\Box}{M}{\overline{\xi_i\hookrightarrow{}y.N_i}}
+%           }{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \Tuple{\overline{\Label{l_j}\hookrightarrow{O_j}}}
+%       }{
+%         \EE''
+%       }{
+%         \FF'
+%       }{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     \EE'' \triangleq%
+%     \perfectbrackets{
+%       \EE',
+%       \overline{\Meta{x}_j\hookrightarrow{x.\Clo{A_j}{\EE}{\FF}}}
+%     }
+%   }{
+%     \Step{\mu}{
+%       \Cfg{
+%         \Record{\overline{\Label{l_j}\hookrightarrow{A_j}}}
+%       }{
+%         \EE
+%       }{
+%         \FF
+%       }{
+%         \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \Tuple{
+%           \overline{
+%             \Coe{r}{r'}{x.\Meta{x}_j[x]}{\Proj{l_j}{M}}
+%           }
+%         }
+%       }{
+%         \EE''
+%       }{
+%         \FF'
+%       }{
+%         \pi%
+%       }
+%     }
+%   }
+% \end{mathparpagebreakable}
 
-\subsection{Natural numbers}
-TODO
+% \subsection{Path types}
 
-\subsection{Booleans}
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\PApp{M}{r}}{\EE}{\FF}{\pi}
+%     }{
+%       \Cfg{M}{\EE}{\FF}{
+%         \Cons{
+%           \Frame{\PApp{\Box}{\perfectparens{\Env{\FF'}{\EE'}}^+(r)}}{[]}{[]}{[]}
+%         }{\pi}
+%       }
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\PAbs{x}{M}}{\EE}{\FF}{
+%         \Cons{
+%           \Frame{\PApp{\Box}{r}}{[]}{[]}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{M}{
+%         \perfectbrackets{
+%           \EE,x\hookrightarrow{r}
+%         }
+%       }{\FF}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     H\triangleq{
+%       \HCom{r}{r'}{\Meta{x}[x]}{\PApp{M}{x}}{
+%         \overline{
+%           x=\epsilon\hookrightarrow{}y.\Meta{y}_\epsilon[y]%
+%         },
+%         \overline{
+%           \xi_i\hookrightarrow{}y.\PApp{N_i}{x}
+%         }
+%       }
+%     }
+%     \\
+%     \EE''\triangleq\perfectbrackets{
+%       \EE',
+%       \Meta{x}\hookrightarrow{}x.\Clo{A}{\EE}{\FF},
+%       \overline{
+%         \Meta{y}_\epsilon\hookrightarrow{}x.\Clo{P_\epsilon}{\EE}{\FF}%
+%       }
+%     }
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Path{x.A}{P_0}{P_1}}{
+%         \EE
+%       }{
+%         \FF
+%       }{
+%         \Cons{
+%           \Frame{
+%             \HCom{r}{r'}{\Box}{M}{
+%               \overline{
+%                 \xi_i\hookrightarrow{}y.N_i
+%               }
+%             }
+%           }{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \PAbs{x}{H}
+%       }{\EE''}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     \EE''\triangleq\perfectbrackets{
+%       \EE',
+%       \Meta{x}\hookrightarrow{}x,y.\Clo{A}{\EE}{\FF},
+%       \overline{
+%         \Meta{y}_\epsilon\hookrightarrow{}x,y.\Clo{P_\epsilon}{\EE}{\FF}
+%       }
+%     }
+%   }{
+%     \Step{\mu}{
+%       \Cfg{
+%         \Path{x.A}{P_0}{P_1}
+%       }{
+%         \EE
+%       }{
+%         \FF
+%       }{
+%         \Cons{
+%           \Frame{
+%             \Coe{r}{r'}{\Box}{M}
+%           }{\EE'}{\FF'}{[y]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \PAbs{x}{
+%           \Com{r}{r'}{y.\Meta{x}[x,y]}{\PApp{M}{x}}{
+%             \overline{
+%               x=\epsilon\hookrightarrow{}y.{\Meta{y}_\epsilon[x,y]}
+%             }
+%           }
+%         }
+%       }{\EE''}{\FF'}{\pi}
+%     }
+%   }
+% \end{mathparpagebreakable}
 
-\begin{mathparpagebreakable}
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\If{M}{T}{F}}{\EE}{\FF}{\pi}
-    }{
-      \Cfg{M}{\EE}{\FF}{
-        \Cons{\Frame{\If{\Box}{T}{F}}{\EE}{\FF}{[]}}{\pi}
-      }
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\True}{\Dummy}{\Dummy}{
-        \Cons{\Frame{\If{\Box}{T}{F}}{\EE'}{\FF'}{[]}}{\pi}
-      }
-    }{
-      \Cfg{T}{\EE'}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\False}{\Dummy}{\Dummy}{
-        \Cons{\Frame{\If{\Box}{T}{F}}{\EE'}{\FF'}{[]}}{\pi}
-      }
-    }{
-      \Cfg{F}{\EE'}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Bool}{\Dummy}{\Dummy}{
-        \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}
-      }
-    }{
-      \Cfg{M}{\EE'}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Bool}{\Dummy}{\Dummy}{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{M}{\EE'}{\FF'}{\pi}
-    }
-  }
-\end{mathparpagebreakable}
+% \subsection{Natural numbers}
+% TODO
 
-\subsection{Weak booleans}
+% \subsection{Booleans}
 
-\begin{mathparpagebreakable}
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\WIf{a.A}{M}{T}{F}}{\EE}{\FF}{\pi}
-    }{
-      \Cfg{M}{\EE}{\FF}{
-        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE}{\FF}{[]}}{\pi}
-      }
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\True}{\Dummy}{\Dummy}{
-        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{\FF'}{[]}}{\pi}
-      }
-    }{
-      \Cfg{T}{\EE'}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\False}{\Dummy}{\Dummy}{
-        \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{\FF'}{[]}}{\pi}
-      }
-    }{
-      \Cfg{F}{\EE'}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \DimApart{\EE}{\FF}{\mu}{\pi}{r}{r'}
-    \\
-    \DimApart{\EE}{\FF}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
-    \\
-    H\triangleq{
-      \FCom{r}{z}{M}{
-        \overline{
-          r_i=r'_i\hookrightarrow{}y.N_i
-        }
-      }
-    }
-    \\
-    \EE''\triangleq{
-      \perfectbrackets{
-        \EE',
-        b\hookrightarrow{}\Clo{M}{\EE}{\FF},
-        \Meta{x}\hookrightarrow{}z.\Clo{A}{
-          \perfectbrackets{
-            \EE',
-            a\hookrightarrow\Clo{H}{\EE}{\FF}
-          }
-        }{[]},
-        \overline{
-          \Meta{y}_i\hookrightarrow{}y.\Clo{N_i}{\EE}{\FF}
-        }
-      }
-    }
-  }{
-    \Cfg{
-      \FCom{r}{r'}{M}{
-        \overline{
-          r_i=r'_i\hookrightarrow{}y.N_i
-        }
-      }
-    }{
-      \EE
-    }{
-      \FF
-    }{
-      \Cons{
-        \Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{\FF'}{[]}
-      }{\pi}
-    }
-    \\\\
-    \mathrel{\succ_\mu}
-    \\\\
-    \Cfg{
-      \Com{\perfectparens{\Env{\EE}{\FF}}^+ (r)}{\perfectparens{\Env{\EE}{\FF}}^+ (r')}{z.\Meta{x}[z]}{
-        \WIf{a.A}{b}{T}{F}
-      }{
-        \overline{
-          \perfectparens{\Env{\EE}{\FF}}^+ (r_i)=\perfectparens{\Env{\EE}{\FF}}^+ (r'_i)
-          \hookrightarrow{}
-          y.\WIf{a.A}{\Meta{y}_i[y]}{T}{F}
-        }
-      }
-    }{
-      \EE''
-    }{\FF'}{\pi}
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\WBool}{\Dummy}{\Dummy}{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{
-        \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
-      }{\EE'}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\WBool}{\Dummy}{\Dummy}{
-        \Cons{
-          \Frame{
-            \Coe{r}{r'}{\Box}{M}
-          }{\EE'}{\FF'}{[x]}
-        }{\pi}
-      }
-    }{
-      \Cfg{M}{\EE'}{\FF'}{\pi}
-    }
-  }
-\end{mathparpagebreakable}
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\If{M}{T}{F}}{\EE}{\FF}{\pi}
+%     }{
+%       \Cfg{M}{\EE}{\FF}{
+%         \Cons{\Frame{\If{\Box}{T}{F}}{\EE}{\FF}{[]}}{\pi}
+%       }
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\True}{\Dummy}{\Dummy}{
+%         \Cons{\Frame{\If{\Box}{T}{F}}{\EE'}{\FF'}{[]}}{\pi}
+%       }
+%     }{
+%       \Cfg{T}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\False}{\Dummy}{\Dummy}{
+%         \Cons{\Frame{\If{\Box}{T}{F}}{\EE'}{\FF'}{[]}}{\pi}
+%       }
+%     }{
+%       \Cfg{F}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Bool}{\Dummy}{\Dummy}{
+%         \Cons{\Frame{\Coe{r}{r'}{\Box}{M}}{\EE'}{\FF'}{[x]}}{\pi}
+%       }
+%     }{
+%       \Cfg{M}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Bool}{\Dummy}{\Dummy}{
+%         \Cons{
+%           \Frame{
+%             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+%           }{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{M}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+% \end{mathparpagebreakable}
 
-\subsection{Circle}
+% \subsection{Weak booleans}
 
-\begin{mathparpagebreakable}
-  \inferrule{
-    \DimEq{\EE}{\FF}{r}{\epsilon}
-  }{
-    \Step{\mu}{
-      \Cfg{\Loop{r}}{\Dummy}{\Dummy}{\pi}
-    }{
-      \Cfg{\Base}{[]}{[]}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{
-        \CircRec{a.A}{M}{P}{x.L}
-      }{
-        \EE
-      }{\FF}{\pi}
-    }{
-      \Cfg{M}{\EE}{\FF}{
-        \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE}{\FF}{[]}
-        }{\pi}
-      }
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Base}{\Dummy}{\Dummy}{
-        \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{P}{\EE'}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \DimEq{\EE}{\FF}{r}{w}
-  }{
-    \Step{\NonStable}{
-      \Cfg{\Loop{r}}{\EE}{\FF}{
-        \Cons{
-          \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{L}{
-        \perfectbrackets{
-          \EE',x\hookrightarrow{w}
-        }
-      }{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-    \DimApart{\EE}{\FF}{\mu}{\pi}{r}{r'}
-    \\
-    \DimApart{\EE}{\FF}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
-    \\
-    H\triangleq{
-      \FCom{r}{z}{M}{
-        \overline{
-          r_i=r'_i\hookrightarrow{}y.N_i
-        }
-      }
-    }
-    \\
-    \EE''\triangleq{
-      \perfectbrackets{
-        \EE',
-        b\hookrightarrow{}\Clo{M}{\EE}{\FF},
-        \Meta{x}\hookrightarrow{}z.\Clo{A}{
-          \perfectbrackets{
-            \EE',
-            a\hookrightarrow\Clo{H}{\EE}{\FF}
-          }
-        }{[]},
-        \overline{
-          \Meta{y}_i\hookrightarrow{}y.\Clo{N_i}{\EE}{\FF}
-        }
-      }
-    }
-  }{
-    \Cfg{
-      \FCom{r}{r'}{M}{
-        \overline{
-          r_i=r'_i\hookrightarrow{}y.N_i
-        }
-      }
-    }{
-      \EE
-    }{
-      \FF
-    }{
-      \Cons{
-        \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{\FF'}{[]}
-      }{\pi}
-    }
-    \\\\
-    \mathrel{\succ_\mu}
-    \\\\
-    \Cfg{
-      \Com{\perfectparens{\Env{\EE}{\FF}}^+ (r)}{\perfectparens{\Env{\EE}{\FF}}^+ (r')}{z.\Meta{x}[z]}{
-        \CircRec{a.A}{b}{P}{x.L}
-      }{
-        \overline{
-          \perfectparens{\Env{\EE}{\FF}}^+ (r_i)=\perfectparens{\Env{\EE}{\FF}}^+ (r'_i)
-          \hookrightarrow{}
-          y.\CircRec{a.A}{\Meta{y}_i[y]}{P}{x.L}
-        }
-      }
-    }{
-      \EE''
-    }{\FF'}{\pi}
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Circ}{\Dummy}{\Dummy}{
-        \Cons{
-          \Frame{
-            \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
-          }{\EE'}{\FF'}{[]}
-        }{\pi}
-      }
-    }{
-      \Cfg{
-        \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
-      }{\EE'}{\FF'}{\pi}
-    }
-  }
-  \and
-  \inferrule{
-  }{
-    \Step{\mu}{
-      \Cfg{\Circ}{\Dummy}{\Dummy}{
-        \Cons{
-          \Frame{
-            \Coe{r}{r'}{\Box}{M}
-          }{\EE'}{\FF'}{[x]}
-        }{\pi}
-      }
-    }{
-      \Cfg{M}{\EE'}{\FF'}{\pi}
-    }
-  }
-\end{mathparpagebreakable}
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\WIf{a.A}{M}{T}{F}}{\EE}{\FF}{\pi}
+%     }{
+%       \Cfg{M}{\EE}{\FF}{
+%         \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE}{\FF}{[]}}{\pi}
+%       }
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\True}{\Dummy}{\Dummy}{
+%         \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{\FF'}{[]}}{\pi}
+%       }
+%     }{
+%       \Cfg{T}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\False}{\Dummy}{\Dummy}{
+%         \Cons{\Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{\FF'}{[]}}{\pi}
+%       }
+%     }{
+%       \Cfg{F}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     \DimApart{\EE}{\FF}{\mu}{\pi}{r}{r'}
+%     \\
+%     \DimApart{\EE}{\FF}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
+%     \\
+%     H\triangleq{
+%       \FCom{r}{z}{M}{
+%         \overline{
+%           r_i=r'_i\hookrightarrow{}y.N_i
+%         }
+%       }
+%     }
+%     \\
+%     \EE''\triangleq{
+%       \perfectbrackets{
+%         \EE',
+%         b\hookrightarrow{}\Clo{M}{\EE}{\FF},
+%         \Meta{x}\hookrightarrow{}z.\Clo{A}{
+%           \perfectbrackets{
+%             \EE',
+%             a\hookrightarrow\Clo{H}{\EE}{\FF}
+%           }
+%         }{[]},
+%         \overline{
+%           \Meta{y}_i\hookrightarrow{}y.\Clo{N_i}{\EE}{\FF}
+%         }
+%       }
+%     }
+%   }{
+%     \Cfg{
+%       \FCom{r}{r'}{M}{
+%         \overline{
+%           r_i=r'_i\hookrightarrow{}y.N_i
+%         }
+%       }
+%     }{
+%       \EE
+%     }{
+%       \FF
+%     }{
+%       \Cons{
+%         \Frame{\WIf{a.A}{\Box}{T}{F}}{\EE'}{\FF'}{[]}
+%       }{\pi}
+%     }
+%     \\\\
+%     \mathrel{\succ_\mu}
+%     \\\\
+%     \Cfg{
+%       \Com{\perfectparens{\Env{\EE}{\FF}}^+ (r)}{\perfectparens{\Env{\EE}{\FF}}^+ (r')}{z.\Meta{x}[z]}{
+%         \WIf{a.A}{b}{T}{F}
+%       }{
+%         \overline{
+%           \perfectparens{\Env{\EE}{\FF}}^+ (r_i)=\perfectparens{\Env{\EE}{\FF}}^+ (r'_i)
+%           \hookrightarrow{}
+%           y.\WIf{a.A}{\Meta{y}_i[y]}{T}{F}
+%         }
+%       }
+%     }{
+%       \EE''
+%     }{\FF'}{\pi}
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\WBool}{\Dummy}{\Dummy}{
+%         \Cons{
+%           \Frame{
+%             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+%           }{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
+%       }{\EE'}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\WBool}{\Dummy}{\Dummy}{
+%         \Cons{
+%           \Frame{
+%             \Coe{r}{r'}{\Box}{M}
+%           }{\EE'}{\FF'}{[x]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{M}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+% \end{mathparpagebreakable}
+
+% \subsection{Circle}
+
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%     \DimEq{\EE}{\FF}{r}{\epsilon}
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Loop{r}}{\Dummy}{\Dummy}{\pi}
+%     }{
+%       \Cfg{\Base}{[]}{[]}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{
+%         \CircRec{a.A}{M}{P}{x.L}
+%       }{
+%         \EE
+%       }{\FF}{\pi}
+%     }{
+%       \Cfg{M}{\EE}{\FF}{
+%         \Cons{
+%           \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE}{\FF}{[]}
+%         }{\pi}
+%       }
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Base}{\Dummy}{\Dummy}{
+%         \Cons{
+%           \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{P}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     \DimEq{\EE}{\FF}{r}{w}
+%   }{
+%     \Step{\NonStable}{
+%       \Cfg{\Loop{r}}{\EE}{\FF}{
+%         \Cons{
+%           \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{L}{
+%         \perfectbrackets{
+%           \EE',x\hookrightarrow{w}
+%         }
+%       }{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     \DimApart{\EE}{\FF}{\mu}{\pi}{r}{r'}
+%     \\
+%     \DimApart{\EE}{\FF}{\mu}{\pi}{r_i}{r'_i}\ (\forall{}i)
+%     \\
+%     H\triangleq{
+%       \FCom{r}{z}{M}{
+%         \overline{
+%           r_i=r'_i\hookrightarrow{}y.N_i
+%         }
+%       }
+%     }
+%     \\
+%     \EE''\triangleq{
+%       \perfectbrackets{
+%         \EE',
+%         b\hookrightarrow{}\Clo{M}{\EE}{\FF},
+%         \Meta{x}\hookrightarrow{}z.\Clo{A}{
+%           \perfectbrackets{
+%             \EE',
+%             a\hookrightarrow\Clo{H}{\EE}{\FF}
+%           }
+%         }{[]},
+%         \overline{
+%           \Meta{y}_i\hookrightarrow{}y.\Clo{N_i}{\EE}{\FF}
+%         }
+%       }
+%     }
+%   }{
+%     \Cfg{
+%       \FCom{r}{r'}{M}{
+%         \overline{
+%           r_i=r'_i\hookrightarrow{}y.N_i
+%         }
+%       }
+%     }{
+%       \EE
+%     }{
+%       \FF
+%     }{
+%       \Cons{
+%         \Frame{\CircRec{a.A}{\Box}{P}{x.L}}{\EE'}{\FF'}{[]}
+%       }{\pi}
+%     }
+%     \\\\
+%     \mathrel{\succ_\mu}
+%     \\\\
+%     \Cfg{
+%       \Com{\perfectparens{\Env{\EE}{\FF}}^+ (r)}{\perfectparens{\Env{\EE}{\FF}}^+ (r')}{z.\Meta{x}[z]}{
+%         \CircRec{a.A}{b}{P}{x.L}
+%       }{
+%         \overline{
+%           \perfectparens{\Env{\EE}{\FF}}^+ (r_i)=\perfectparens{\Env{\EE}{\FF}}^+ (r'_i)
+%           \hookrightarrow{}
+%           y.\CircRec{a.A}{\Meta{y}_i[y]}{P}{x.L}
+%         }
+%       }
+%     }{
+%       \EE''
+%     }{\FF'}{\pi}
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Circ}{\Dummy}{\Dummy}{
+%         \Cons{
+%           \Frame{
+%             \HCom{r}{r'}{\Box}{M}{\overline{\xi\hookrightarrow{}y.N}}
+%           }{\EE'}{\FF'}{[]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{
+%         \FCom{r}{r'}{M}{\overline{\xi\hookrightarrow{}y.N}}
+%       }{\EE'}{\FF'}{\pi}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Step{\mu}{
+%       \Cfg{\Circ}{\Dummy}{\Dummy}{
+%         \Cons{
+%           \Frame{
+%             \Coe{r}{r'}{\Box}{M}
+%           }{\EE'}{\FF'}{[x]}
+%         }{\pi}
+%       }
+%     }{
+%       \Cfg{M}{\EE'}{\FF'}{\pi}
+%     }
+%   }
+% \end{mathparpagebreakable}
 
 
-\subsection{Unloading the machine}
+% \subsection{Unloading the machine}
 
-We can unload the machine at any time; this is useful if we are
-computing an open term and hit a variable.
+% We can unload the machine at any time; this is useful if we are
+% computing an open term and hit a variable.
 
-\begin{mathpar}
-  \inferrule{
-  }{
-    \Cfg{M}{\EE}{\FF}{\cdot}\Longrightarrow{\DoubleForce{M}{\EE}{\FF}}
-  }
-  \and
-  \inferrule{
-    \Cfg{K[\Psi.M[\Env{\EE}{\FF}]]}{\EE'}{\FF'}{\pi}\Longrightarrow{N}
-  }{
-    \Cfg{M}{\EE}{\FF}{\Cons{\Frame{K[\Box]}{\EE'}{\FF'}{\Psi}}{\pi}}\Longrightarrow{N}
-  }
-\end{mathpar}
+% \begin{mathpar}
+%   \inferrule{
+%   }{
+%     \Cfg{M}{\EE}{\FF}{\cdot}\Longrightarrow{\DoubleForce{M}{\EE}{\FF}}
+%   }
+%   \and
+%   \inferrule{
+%     \Cfg{K[\Psi.M[\Env{\EE}{\FF}]]}{\EE'}{\FF'}{\pi}\Longrightarrow{N}
+%   }{
+%     \Cfg{M}{\EE}{\FF}{\Cons{\Frame{K[\Box]}{\EE'}{\FF'}{\Psi}}{\pi}}\Longrightarrow{N}
+%   }
+% \end{mathpar}
 
-\subsection{Two-layer forcing}
+% \subsection{Two-layer forcing}
 
-So, we have $\DoubleForce{M}{\EE}{\LL}$ everywhere. Here is the definition disguised as rules.
-In the following, we keep a list of ``final substitutions'' as $\LL$, but we can also
-concatenate those environments eagerly. The following equation should hold:
-\[
-  \DoubleForce{M}{\EE}{\Cons{\FF_1}{\Cons{\cdots}{\Cons{\FF_n}{\cdot}}}} = \DoubleForce{M}{\EE}{\perfectparens{\FF_n\circ\cdots\circ\FF_1}}
-\]
+% So, we have $\DoubleForce{M}{\EE}{\LL}$ everywhere. Here is the definition disguised as rules.
+% In the following, we keep a list of ``final substitutions'' as $\LL$, but we can also
+% concatenate those environments eagerly. The following equation should hold:
+% \[
+%   \DoubleForce{M}{\EE}{\Cons{\FF_1}{\Cons{\cdots}{\Cons{\FF_n}{\cdot}}}} = \DoubleForce{M}{\EE}{\perfectparens{\FF_n\circ\cdots\circ\FF_1}}
+% \]
 
-Here are the fake rules serving as the definition of the two-layer forcing:
+% Here are the fake rules serving as the definition of the two-layer forcing:
 
-\begin{mathparpagebreakable}
-  \inferrule{
-    \EE^+(a) = \Clo{M}{\EE'}{\FF}
-  }{
-    \DoubleForce{a}{\EE}{\LL} = \DoubleForce{M}{\EE'}{\Cons{\FF}{\LL}}
-  }
-  \and
-  \inferrule{
-    a \notin \EE
-  }{
-    \DoubleForce{a}{\EE}{\LL} = \Force{a}{\LL}
-  }
-  \and
-  \inferrule{
-    \EE^+(\Meta{x}) = \vec{x};\vec{a}.\Clo{N}{\EE'}{\FF}
-  }{
-    \DoubleForce{\perfectparens{\Meta{x}[\vec{r};\vec{M}]}}{\EE}{\LL} =
-    \DoubleForce{N}{\EE'}{
-      \Cons{F}{\Cons{
-        \perfectbrackets{
-          \overline{x\hookrightarrow{\DoubleForce{r}{\EE}{\LL}}},
-          \overline{a\hookrightarrow{\DoubleForce{M}{\EE}{\LL}}}
-        }
-      }{\LL}}
-    }
-  }
-  \and
-  \inferrule{
-    \Meta{x} \notin \EE
-  }{
-    \DoubleForce{\perfectparens{\Meta{x}[\vec{r};\vec{M}]}}{\EE}{\LL} =
-    \Meta{x}[
-      \overline{\perfectparens{\Env{\EE}{\LL}}^+(r)};
-      \overline{\DoubleForce{M}{\EE}{\LL}}]
-  }
-  \and
-  \inferrule{
-  }{
-    \DoubleForce{r}{\EE}{\FF} = \Force{\EE^+(r)}{\LL}
-  }
-  \and
-  \inferrule{
-  }{
-    \DoubleForce{
-      \perfectparens{
-        \vartheta[\vec{r}]\perfectparens{\overline{\vec{x};\vec{a}.M}}
-      }
-    }{\EE}{\LL} =
-    \vartheta[\overline{\DoubleForce{r}{\EE}{\LL}}]\perfectparens{\overline{\vec{x};\vec{a}.\DoubleForce{M}{\EE}{\LL}}}
-  }
-\end{mathparpagebreakable}
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%     \EE^+(a) = \Clo{M}{\EE'}{\FF}
+%   }{
+%     \DoubleForce{a}{\EE}{\LL} = \DoubleForce{M}{\EE'}{\Cons{\FF}{\LL}}
+%   }
+%   \and
+%   \inferrule{
+%     a \notin \EE
+%   }{
+%     \DoubleForce{a}{\EE}{\LL} = \Force{a}{\LL}
+%   }
+%   \and
+%   \inferrule{
+%     \EE^+(\Meta{x}) = \vec{x};\vec{a}.\Clo{N}{\EE'}{\FF}
+%   }{
+%     \DoubleForce{\perfectparens{\Meta{x}[\vec{r};\vec{M}]}}{\EE}{\LL} =
+%     \DoubleForce{N}{\EE'}{
+%       \Cons{F}{\Cons{
+%         \perfectbrackets{
+%           \overline{x\hookrightarrow{\DoubleForce{r}{\EE}{\LL}}},
+%           \overline{a\hookrightarrow{\DoubleForce{M}{\EE}{\LL}}}
+%         }
+%       }{\LL}}
+%     }
+%   }
+%   \and
+%   \inferrule{
+%     \Meta{x} \notin \EE
+%   }{
+%     \DoubleForce{\perfectparens{\Meta{x}[\vec{r};\vec{M}]}}{\EE}{\LL} =
+%     \Meta{x}[
+%       \overline{\perfectparens{\Env{\EE}{\LL}}^+(r)};
+%       \overline{\DoubleForce{M}{\EE}{\LL}}]
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \DoubleForce{r}{\EE}{\FF} = \Force{\EE^+(r)}{\LL}
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \DoubleForce{
+%       \perfectparens{
+%         \vartheta[\vec{r}]\perfectparens{\overline{\vec{x};\vec{a}.M}}
+%       }
+%     }{\EE}{\LL} =
+%     \vartheta[\overline{\DoubleForce{r}{\EE}{\LL}}]\perfectparens{\overline{\vec{x};\vec{a}.\DoubleForce{M}{\EE}{\LL}}}
+%   }
+% \end{mathparpagebreakable}
 
-Here are the fake rules serving as the definition of the one-layer forcing:
+% Here are the fake rules serving as the definition of the one-layer forcing:
 
-\begin{mathparpagebreakable}
-  \inferrule{
-  }{
-    \Force{a}{\cdot} = a
-  }
-  \and
-  \inferrule{
-  }{
-    \Force{r}{\cdot} = r
-  }
-  \and
-  \inferrule{
-  }{
-    \Force{a}{\Cons{\FF}{\LL}} = \Force{\FF^+(a)}{\LL}
-  }
-  \and
-  \inferrule{
-  }{
-    \Force{r}{\Cons{\FF}{\LL}} = \Force{\FF^+(r)}{\LL}
-  }
-\end{mathparpagebreakable}
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%   }{
+%     \Force{a}{\cdot} = a
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Force{r}{\cdot} = r
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Force{a}{\Cons{\FF}{\LL}} = \Force{\FF^+(a)}{\LL}
+%   }
+%   \and
+%   \inferrule{
+%   }{
+%     \Force{r}{\Cons{\FF}{\LL}} = \Force{\FF^+(r)}{\LL}
+%   }
+% \end{mathparpagebreakable}
 
-\subsection{Environment concatenation}
+% \subsection{Environment concatenation}
 
-Again, the definition is disguised as rules.
-The concatenation is a list such that the following rules are true theorems:
+% Again, the definition is disguised as rules.
+% The concatenation is a list such that the following rules are true theorems:
 
-\begin{mathparpagebreakable}
-  \inferrule{
-    \FF(a) = M
-  }{
-    \perfectparens{{\FF'}\circ{\FF}}(a) = \Force{M}{\FF'}
-  }
-  \and
-  \inferrule{
-    a \notin \FF \\ \FF'(a) = M
-  }{
-    \perfectparens{{\FF'}\circ{\FF}}(a) = M
-  }
-  \and
-  \inferrule{
-    a \notin \FF \\ a \notin \FF'
-  }{
-    a \notin \perfectparens{{\FF'}\circ{\FF}}
-  }
-\end{mathparpagebreakable}
+% \begin{mathparpagebreakable}
+%   \inferrule{
+%     \FF(a) = M
+%   }{
+%     \perfectparens{{\FF'}\circ{\FF}}(a) = \Force{M}{\FF'}
+%   }
+%   \and
+%   \inferrule{
+%     a \notin \FF \\ \FF'(a) = M
+%   }{
+%     \perfectparens{{\FF'}\circ{\FF}}(a) = M
+%   }
+%   \and
+%   \inferrule{
+%     a \notin \FF \\ a \notin \FF'
+%   }{
+%     a \notin \perfectparens{{\FF'}\circ{\FF}}
+%   }
+% \end{mathparpagebreakable}
 
 \end{document}

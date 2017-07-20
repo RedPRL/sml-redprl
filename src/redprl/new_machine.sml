@@ -104,8 +104,9 @@ struct
 
   fun stepView sign stability tau =
     fn `x || stk => raise Neutral (VAR x)
-     | x $# (rs, ms)|| stk => raise Neutral (METAVAR x)
-     | _ => ?todo
+     | x $# (rs, ms) || stk => raise Neutral (METAVAR x)
+     | O.MONO O.AP $ [_ \ m, _ \ n] || (syms, stk) => m || (syms, APP (HOLE, n) :: stk)
+     | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => substVar (n, x) m || (syms, stk)
 
   fun step sign stability (tm || stk) =
     let
