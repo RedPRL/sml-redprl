@@ -35,7 +35,11 @@ struct
         if CJ.eq (catjdg, catjdg') then
           T.empty #> (I, H, Syn.into (Syn.VAR (z, CJ.synthesis catjdg)))
         else
-          raise E.error [Fpp.text "Hypothesis does not match goal"]
+          raise E.error
+            [Fpp.text "Hypothesis",
+             Fpp.expr @@ Fpp.hsep [TermPrinter.ppSym z, Fpp.Atomic.colon, CJ.pretty' TermPrinter.ppTerm catjdg'],
+             Fpp.text "does not match goal",
+             CJ.pretty' TermPrinter.ppTerm catjdg]
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected sequent judgment"]

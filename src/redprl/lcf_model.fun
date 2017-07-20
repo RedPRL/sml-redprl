@@ -18,8 +18,9 @@ struct
 
   fun hyp z alpha jdg =
     Rules.Hyp.Project z alpha jdg
-    handle _ =>
+    handle exn =>
       Rules.Synth.FromWfHyp z alpha jdg
+      handle _ => raise exn
 
   fun interpret (sign, env) rule =
     case out rule of
