@@ -195,8 +195,17 @@ struct
            | _ => raise Stuck)
 
   fun stepView sign stability tau =
-    fn `x || stk => raise Neutral (VAR x)
-     | x $# (rs, ms) || stk => raise Neutral (METAVAR x)
+    fn `x || _ => raise Neutral (VAR x)
+     | x $# (rs, ms) || _ => raise Neutral (METAVAR x)
+
+     | O.POLY (O.CUST (opid, ps, _)) $ args || (syms, stk) =>
+       let
+         val entry as {state, ...} = Sig.lookup sign opid
+         val (mrho, srho) = Sig.applyCustomOperator entry (List.map #1 ps) args
+         val term = substSymenv srho (substMetaenv mrho (Sig.extract state))
+       in
+         term || (syms, stk)
+       end  
 
      | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty :: _ \ cap :: tubes) || (syms, stk) => ty || (syms, HCOM (dir, HOLE, cap, zipTubes (eqs, tubes)) :: stk)
      | O.POLY (O.COE dir) $ [([u], _) \ ty, _ \ coercee] || (syms, stk) => ty || (SymSet.insert syms u, COE (dir, (u, HOLE), coercee) :: stk)
