@@ -200,15 +200,6 @@ struct
     fun intoCoe dir (ty, m) =
       into (COE {dir = dir, ty = ty, coercee = m})
 
-    fun intoCom (dir as (r, r'), eqs) ((u, a), cap, tubes) =
-      let
-        fun coe v m = intoCoe (v, r') ((u, a), m)
-        fun goTube (([v],_) \ n) = ([v],[]) \ coe (P.ret v) n
-          | goTube _ = raise Fail "malformed tube"
-      in
-        intoHcom (dir, eqs) (substSymbol (r', u) a, coe r cap, List.map goTube tubes)
-      end
-
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
