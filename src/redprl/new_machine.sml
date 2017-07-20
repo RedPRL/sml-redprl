@@ -90,16 +90,17 @@ struct
             else
               raise Unstable
 
-  fun findTrueEquationIndex stability syms = 
+  fun findTubeWithTrueEquation stability syms = 
     let
-      fun aux i [] = NONE
-        | aux i ((r,r') :: eqs) =
-          if dimensionsEqual stability syms (r, r') then 
-            SOME i
-          else 
-            aux (i + 1) eqs
+      val rec aux = 
+        fn [] => NONE
+         | (eq, (u, n)) :: tubes =>
+           if dimensionsEqual stability syms eq then 
+             SOME (u, n)
+           else 
+             aux tubes
     in
-      aux 0
+      aux
     end
 
   fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
@@ -109,6 +110,18 @@ struct
 
   fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
+
+  fun stepFCom stability ({dir = dir as (_, r'), cap, tubes} || (syms, stk)) =
+    if dimensionsEqual stability syms dir then 
+      cap || (syms, stk)
+    else
+      case findTubeWithTrueEquation stability syms tubes of
+         SOME (u, n) => substSymbol (r', u) n || (syms, stk)
+       | NONE =>
+         (case stk of
+             [] => raise Final
+           | _ => ?todo)
+         (* TODO: write principal cuts for value-fcom *)
 
   fun stepView sign stability tau =
     fn `x || stk => raise Neutral (VAR x)
@@ -133,6 +146,9 @@ struct
        in
          hcom || (syms, stk)
        end
+
+     | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap :: tubes) || (syms, stk) =>
+       stepFCom stability ({dir = dir, cap = cap, tubes = zipTubes (eqs, tubes)} || (syms, stk))
 
      | O.MONO O.AP $ [_ \ m, _ \ n] || (syms, stk) => m || (syms, APP (HOLE, n) :: stk)
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => substVar (n, x) m || (syms, stk)
