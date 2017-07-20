@@ -132,11 +132,10 @@ struct
 
      | O.MONO O.INT `$ _ <: _ => S.VAL
      | O.MONO O.NEGSUCC `$ _ <: _ => S.VAL
-     | O.MONO O.INT_REC `$ [_ \ m, _ \ n, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] <: env =>
+     | O.MONO O.INT_REC `$ [_ \ m, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] <: env =>
          S.CUT
            @@ (O.MONO O.INT_REC `$
-                 [([],[]) \ S.HOLE,
-                  ([],[]) \ S.% n, ([],[a,b]) \ S.% p,
+                 [([],[]) \ S.HOLE, ([],[a,b]) \ S.% p,
                   ([],[]) \ S.% q, ([],[c,d]) \ S.% r], m)
            <: env
 
