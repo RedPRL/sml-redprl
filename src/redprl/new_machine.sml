@@ -20,6 +20,7 @@ sig
   val init : abt -> abt machine
   val step : sign -> stability -> abt machine -> abt machine
   val unload : abt machine -> abt
+  val eval : sign -> stability -> abt -> abt
 end = 
 struct
   structure Tm = RedPrlAbt
@@ -456,4 +457,15 @@ struct
 
   fun init tm = 
     tm || (SymSet.empty, [])
+
+  fun eval sign stability = 
+    let
+      fun go cfg = 
+        go (step sign stability cfg)
+        handle Stuck => cfg
+             | Final => cfg
+             | Neutral _ => cfg
+    in
+      unload o go o init
+    end
 end
