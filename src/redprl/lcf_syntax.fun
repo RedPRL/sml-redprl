@@ -1,6 +1,6 @@
 functor LcfSyntax (Sig : MINI_SIGNATURE) : NOMINAL_LCF_SYNTAX =
 struct
-  structure Machine = RedPrlMachine (Sig)
+  structure Machine = NewMachine (Sig)
   structure Tm = RedPrlAbt open RedPrlAbt
   structure O = RedPrlOpData
   infix $ $$ \ $#
@@ -20,7 +20,7 @@ struct
      | _ => t2
 
   fun evalOpen sign t =
-    inheritAnnotation t (Machine.eval sign t)
+    inheritAnnotation t (Machine.eval sign Machine.NOMINAL t)
       handle _ => t
 
   local

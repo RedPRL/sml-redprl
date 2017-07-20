@@ -2,7 +2,7 @@ functor LcfModel (Sig : MINI_SIGNATURE) : NOMINAL_LCF_MODEL =
 struct
   structure Lcf = Lcf and Spr = UniversalSpread and E = RedPrlError
   structure Syn = LcfSyntax (Sig)
-  structure Machine = RedPrlMachine (Sig)
+  structure Machine = NewMachine (Sig)
 
   type 'a nominal = Syn.atom Spr.point -> 'a
   type tactic = Lcf.jdg Lcf.tactic nominal
@@ -38,7 +38,7 @@ struct
       | _ => raise E.error [Fpp.text "Invalid rule", TermPrinter.ppTerm rule]
 
   fun rule (sign, env) rule alpha goal =
-    Debug.wrap (fn _ => interpret (sign, env) (Machine.eval sign rule) alpha goal)
+    Debug.wrap (fn _ => interpret (sign, env) (Machine.eval sign Machine.NOMINAL rule) alpha goal)
     handle exn => raise RedPrlError.annotate (getAnnotation rule) exn
 
   fun printHole (pos : Pos.t, name : string option) (state : Lcf.jdg Lcf.state) =
