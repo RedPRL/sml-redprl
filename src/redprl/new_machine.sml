@@ -50,6 +50,7 @@ struct
    | IF of hole * abt * abt
    | PATH_AP of hole * symbol P.t
    | NAT_REC of hole * abt * (variable * variable * abt)
+   | INT_REC of hole * (variable * variable * abt) * abt * (variable * variable * abt)
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -319,6 +320,26 @@ struct
        end
      | O.MONO O.NAT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => cap || (syms, stk)
      | O.MONO O.NAT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
+
+     | O.MONO O.INT $ _ || (_, []) => raise Final
+     | O.MONO O.NEGSUCC $ _ || (_, []) => raise Final
+     | O.MONO O.INT_REC $ [_ \ m, (_,[x,y]) \ p, _ \ q, (_,[x',y']) \ r] || (syms, stk) => m || (syms, INT_REC (HOLE, (x,y,p), q, (x',y',r)) :: stk) 
+     | O.MONO O.ZERO $ _ || (syms, INT_REC (HOLE, _, q, _) :: stk) => q || (syms, stk)
+     | O.MONO O.SUCC $ [_ \ n] || (syms, INT_REC (HOLE, (x,y,p), zer, (x',y',q)) :: stk) => 
+       let
+         val rho = Var.Ctx.insert (Var.Ctx.singleton x' n) y' @@ Syn.into @@ Syn.INT_REC (n, ((x,y,p), zer, (x',y',q)))
+       in
+         substVarenv rho q || (syms, stk)
+       end
+     | O.MONO O.NEGSUCC $ [_ \ n] || (syms, INT_REC (HOLE, (x,y,p), zer, (x',y',q)) :: stk) => 
+       let
+         val rho = Var.Ctx.insert (Var.Ctx.singleton x n) y @@ Syn.into @@ Syn.INT_REC (n, ((x,y,p), zer, (x',y',q)))
+       in
+         substVarenv rho p || (syms, stk)
+       end
+     | O.MONO O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => cap || (syms, stk)
+     | O.MONO O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
+
 
   fun step sign stability (tm || stk) =
     let
