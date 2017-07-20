@@ -107,6 +107,38 @@ struct
      | x $# (rs, ms) || stk => raise Neutral (METAVAR x)
      | O.MONO O.AP $ [_ \ m, _ \ n] || (syms, stk) => m || (syms, APP (HOLE, n) :: stk)
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => substVar (n, x) m || (syms, stk)
+     | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
+         fun apx n = Syn.into @@ Syn.AP (n, xtm)
+         val hcomx =
+           Syn.into @@ Syn.HCOM
+             {dir = dir,
+              ty = tyBx,
+              cap = apx cap,
+              tubes = List.map (fn (eq, (u, n)) => (eq, (u, apx n))) tubes}
+         val lambda = Syn.into @@ Syn.LAM (x, hcomx)
+       in
+         lambda || (syms, stk)
+       end
+     | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+       let
+         val (r, r') = dir
+         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
+         fun xcoe s =
+           Syn.into @@ Syn.COE
+             {dir = (r', s),
+              ty = (u, tyA),
+              coercee = xtm}
+          val lambda =
+            Syn.into @@ Syn.LAM (x,
+              Syn.into @@ Syn.COE 
+                {dir = dir,
+                 ty = (u, substVar (xcoe (P.ret u), x) tyBx),
+                 coercee = Syn.into @@ Syn.AP (coercee, xcoe r)})
+       in
+         lambda || (SymSet.remove syms u, stk)
+       end
 
   fun step sign stability (tm || stk) =
     let
