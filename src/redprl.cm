@@ -62,9 +62,6 @@ is
   redprl/redprl_lexer.sml
   redprl/redprl_parser.sml
 
-  redprl/closure.sig
-  redprl/closure.sml
-
   redprl/machine.sml
   redprl/new_machine.sml
 

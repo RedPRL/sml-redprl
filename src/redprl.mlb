@@ -51,9 +51,6 @@ in
     redprl/log.sml
 
     ann "nonexhaustiveMatch ignore" in
-      redprl/closure.sig
-      redprl/closure.sml
-
       redprl/machine.sml
       redprl/new_machine.sml
       redprl/refiner_kit.fun
