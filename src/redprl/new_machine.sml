@@ -340,6 +340,32 @@ struct
      | O.MONO O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => cap || (syms, stk)
      | O.MONO O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
 
+     | O.MONO O.AX $ _ || (_, []) => raise Final
+
+     | O.MONO O.WBOOL $ _ || (_, []) => raise Final
+     | O.MONO O.BOOL $ _ || (_, []) => raise Final
+     | O.MONO O.TRUE $ _ || (_, []) => raise Final
+     | O.MONO O.FALSE $ _ || (_, []) => raise Final
+
+     | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] || (syms, stk) => m || (syms, IF (HOLE, t, f) :: stk)
+     | O.MONO O.IF $ [(_,[x]) \ tyx, _ \ m, _ \ t, _ \ f] || (syms, stk) => m || (syms, W_IF ((x, tyx), HOLE, t, f) :: stk)
+     | O.MONO O.TRUE $ _ || (syms, IF (HOLE, t, _) :: stk) => t || (syms, stk)
+     | O.MONO O.TRUE $ _ || (syms, W_IF (_, HOLE, t, _) :: stk) => t || (syms, stk)
+     | O.MONO O.FALSE $ _ || (syms, IF (HOLE, _, f) :: stk) => f || (syms, stk)
+     | O.MONO O.FALSE $ _ || (syms, W_IF (_, HOLE, _, f) :: stk) => f || (syms, stk)
+     | O.MONO O.BOOL $ _ || (syms, HCOM (_, _, cap, _) :: stk) => cap || (syms, stk)
+     | O.MONO O.BOOL $ _ || (syms, COE (_, (u, _), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
+     | O.MONO O.WBOOL $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val fcom =
+           Syn.into @@ Syn.FCOM
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         fcom || (syms, stk)
+       end
+     | O.MONO O.WBOOL $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
 
   fun step sign stability (tm || stk) =
     let
