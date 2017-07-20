@@ -2,7 +2,7 @@ functor LcfModel (Sig : MINI_SIGNATURE) : NOMINAL_LCF_MODEL =
 struct
   structure Lcf = Lcf and Spr = UniversalSpread and E = RedPrlError
   structure Syn = LcfSyntax (Sig)
-  structure Machine = NewMachine (Sig)
+  structure Machine = RedPrlMachine (Sig)
 
   type 'a nominal = Syn.atom Spr.point -> 'a
   type tactic = Lcf.jdg Lcf.tactic nominal

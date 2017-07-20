@@ -52,7 +52,6 @@ in
 
     ann "nonexhaustiveMatch ignore" in
       redprl/machine.sml
-      redprl/new_machine.sml
       redprl/refiner_kit.fun
       redprl/refiner_composition_kit.fun
       redprl/refiner_types.fun

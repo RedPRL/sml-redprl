@@ -1,6 +1,6 @@
 functor LcfSyntax (Sig : MINI_SIGNATURE) : NOMINAL_LCF_SYNTAX =
 struct
-  structure Machine = NewMachine (Sig)
+  structure Machine = RedPrlMachine (Sig)
   structure Tm = RedPrlAbt open RedPrlAbt
   structure O = RedPrlOpData
   infix $ $$ \ $#
