@@ -51,6 +51,7 @@ struct
    | PATH_AP of hole * symbol P.t
    | NAT_REC of hole * abt * (variable * variable * abt)
    | INT_REC of hole * (variable * variable * abt) * abt * (variable * variable * abt)
+   | PROJ of string * hole
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -392,6 +393,38 @@ struct
        end
      | O.MONO O.S1 $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
 
+     | O.MONO (O.RECORD _) $ _ || (_, []) => raise Final
+     | O.MONO (O.TUPLE _) $ _ || (_, []) => raise Final
+     | O.MONO (O.PROJ lbl) $ [_ \ m] || (syms, stk) => m || (syms, PROJ (lbl, HOLE) :: stk)
+     | O.MONO (O.TUPLE lbls) $ args || (syms, PROJ (lbl, HOLE) :: stk) =>
+       (case ListUtil.findEqIndex lbl lbls of
+           NONE => raise Stuck
+         | SOME (i,_) => case List.nth (args, i) of _ \ m => m || (syms, stk))
+     | O.MONO (O.RECORD lbls) $ tys || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         fun wrap m = ([],[]) \ m
+         fun hcom (lbl, _ \ ty) =
+           wrap o Syn.into @@ Syn.HCOM 
+             {dir = dir,
+              ty = ty,
+              cap = Syn.into @@ Syn.PROJ (lbl, cap),
+              tubes = mapTubes_ (fn n => Syn.into @@ Syn.PROJ (lbl, n)) tubes}
+         val tuple = O.MONO (O.TUPLE lbls) $$ ListPair.mapEq hcom (lbls, tys)
+       in
+         tuple || (syms, stk)
+       end
+     | O.MONO (O.RECORD lbls) $ tys || (syms, COE (dir, (u, HOLE), coercee) :: stk) => 
+       let
+         fun wrap m = ([],[]) \ m
+         fun coe (lbl, _ \ ty) = 
+           wrap o Syn.into @@ Syn.COE 
+             {dir = dir,
+              ty = (u, ty),
+              coercee = Syn.into @@ Syn.PROJ (lbl, coercee)}
+         val tuple = O.MONO (O.TUPLE lbls) $$ ListPair.mapEq coe (lbls, tys)
+       in
+         tuple || (SymSet.remove syms u, stk)
+       end
 
   fun step sign stability (tm || stk) =
     let
