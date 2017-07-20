@@ -367,6 +367,32 @@ struct
        end
      | O.MONO O.WBOOL $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
 
+     | O.MONO O.S1 $ _ || (_, []) => raise Final
+     | O.MONO O.BASE $ _ || (_, []) => raise Final
+     | O.POLY (O.LOOP r) $ _ || (syms, stk) =>
+       (case r of 
+           P.APP P.DIM0 => Syn.into Syn.BASE || (syms, stk)
+         | P.APP P.DIM1 => Syn.into Syn.BASE || (syms, stk)
+         | P.VAR u => 
+             if stability = CUBICAL andalso not (SymSet.member syms u) then raise Unstable else
+              case stk of 
+                 [] => raise Final
+               | S1_REC (_, HOLE, _, (v, loop)) :: stk => substSymbol (P.ret u, v) loop || (syms, stk)
+               | _ => raise Stuck)
+     | O.MONO O.BASE $ _ || (syms, S1_REC (_, HOLE, base, _) :: stk) => base || (syms, stk)
+     | O.MONO O.S1 $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val fcom =
+           Syn.into @@ Syn.FCOM
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         fcom || (syms, stk)
+       end
+     | O.MONO O.S1 $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
+
+
   fun step sign stability (tm || stk) =
     let
       val (view, tau) = infer tm
