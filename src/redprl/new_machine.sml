@@ -49,6 +49,7 @@ struct
    | S1_REC of (variable * abt) * hole * abt * (symbol * abt)
    | IF of hole * abt * abt
    | PATH_AP of hole * symbol P.t
+   | NAT_REC of hole * abt * (variable * variable * abt)
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -304,6 +305,20 @@ struct
        in
          abs || (SymSet.remove syms v, stk)
        end
+
+     | O.MONO O.NAT $ _ || (_, []) => raise Final
+     | O.MONO O.ZERO $ _ || (_, []) => raise Final
+     | O.MONO O.SUCC $ _ || (_, []) => raise Final
+     | O.MONO O.NAT_REC $ [_ \ m, _ \ n, (_,[x,y]) \ p] || (syms, stk) => m || (syms, NAT_REC (HOLE, n, (x,y,p)) :: stk)
+     | O.MONO O.ZERO $ _ || (syms, NAT_REC (HOLE, zer, _) :: stk) => zer || (syms, stk)
+     | O.MONO O.SUCC $ [_ \ n] || (syms, NAT_REC (HOLE, zer, (x,y, succ)) :: stk) =>
+       let
+         val rho = Var.Ctx.insert (Var.Ctx.singleton x n) y @@ Syn.into @@ Syn.NAT_REC (n, (zer, (x,y,succ)))
+       in
+         substVarenv rho succ || (syms, stk)
+       end
+     | O.MONO O.NAT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => cap || (syms, stk)
+     | O.MONO O.NAT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => coercee || (SymSet.remove syms u, stk)
 
   fun step sign stability (tm || stk) =
     let
