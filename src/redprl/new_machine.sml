@@ -12,10 +12,17 @@ sig
      VAR of RedPrlAbt.variable
    | METAVAR of RedPrlAbt.metavariable
 
-  exception Neutral of blocker
   exception Unstable
-  exception Final
   exception Stuck
+
+  datatype canonicity =
+     CANONICAL
+   | NEUTRAL of blocker
+   | REDEX
+   | STUCK
+   | UNSTABLE
+
+  val canonicity : sign -> stability -> abt -> canonicity
 
   val init : abt -> abt machine
   val step : sign -> stability -> abt machine -> abt machine
@@ -458,6 +465,14 @@ struct
   fun init tm = 
     tm || (SymSet.empty, [])
 
+  datatype canonicity =
+     CANONICAL
+   | NEUTRAL of blocker
+   | REDEX
+   | STUCK
+   | UNSTABLE
+
+
   fun eval sign stability = 
     let
       fun go cfg = 
@@ -465,7 +480,15 @@ struct
         handle Stuck => cfg
              | Final => cfg
              | Neutral _ => cfg
+             | Unstable => cfg
     in
       unload o go o init
     end
+
+  fun canonicity sign stability tm = 
+    (step sign stability (init tm); REDEX) 
+    handle Stuck => STUCK
+         | Final => CANONICAL
+         | Unstable => UNSTABLE
+         | Neutral blocker => NEUTRAL blocker
 end
