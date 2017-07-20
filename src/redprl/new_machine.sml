@@ -14,6 +14,8 @@ sig
 
   exception Unstable
   exception Stuck
+  exception Neutral of blocker
+  exception Final
 
   datatype canonicity =
      CANONICAL
@@ -45,6 +47,47 @@ struct
   open Tm infix 7 $ $$ $# infix 6 \
   structure O = RedPrlOpData
   structure P = struct open RedPrlParameterTerm RedPrlSortData RedPrlParamData end
+
+  structure Tac =
+  struct
+    val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
+
+    fun elim (u, tau) =
+      O.POLY (O.RULE_ELIM (u, tau)) $$ []
+
+    fun all t =
+      O.MONO O.MTAC_ALL $$ [([],[]) \ t]
+
+    fun each ts =
+      O.MONO (O.MTAC_EACH (List.length ts)) $$ List.map (fn t => ([],[]) \ t) ts
+
+    fun seq mt1 bs mt2 =
+      let
+        val (us, sorts) = ListPair.unzip bs
+      in
+        O.MONO (O.MTAC_SEQ sorts) $$ [([],[]) \ mt1, (us, []) \ mt2]
+      end
+
+    fun mtac mt =
+      O.MONO O.TAC_MTAC $$ [([],[]) \ mt]
+
+
+    fun mtry mt =
+      O.MONO O.MTAC_ORELSE $$ [([],[]) \ mt, ([],[]) \ all (O.MONO O.RULE_ID $$ [])]
+
+    fun try t =
+      mtac (mtry (all t))
+
+    fun mprogress mt =
+      O.MONO O.MTAC_PROGRESS $$ [([],[]) \ mt]
+
+    fun multirepeat mt =
+      O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
+
+    fun cut jdg =
+      O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
+  end
+
 
   type tube = symbol O.equation * (symbol * abt)
   datatype hole = HOLE
@@ -463,6 +506,57 @@ struct
        in
          tuple || (SymSet.remove syms u, stk)
        end
+
+     (* forms of judgment *)
+     | O.MONO O.JDG_EQ $ _ || (_, []) => raise Final
+     | O.MONO O.JDG_EQ_TYPE $ _ || (_, []) => raise Final
+     | O.MONO O.JDG_TRUE $ _ || (_, []) => raise Final
+     | O.MONO O.JDG_SYNTH $ _ || (_, []) => raise Final
+
+     (* rules, tactics and multitactics *)
+     | O.MONO O.MTAC_ALL $ _ || (_, []) => raise Final
+     | O.MONO (O.MTAC_EACH _) $ _ || (_, []) => raise Final
+     | O.MONO (O.MTAC_FOCUS _) $ _ || (_, []) => raise Final
+     | O.MONO (O.MTAC_SEQ _) $ _ || (_, []) => raise Final
+     | O.MONO O.MTAC_ORELSE $ _ || (_, []) => raise Final
+     | O.MONO O.MTAC_REC $ _ || (_, []) => raise Final
+     | O.MONO (O.MTAC_HOLE _) $ _ || (_, []) => raise Final
+     | O.MONO O.TAC_MTAC $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_ID $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_EXACT $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_SYMMETRY $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_AUTO_STEP $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_HYP _) $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_ELIM _) $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_HEAD_EXP $ _ || (_, []) => raise Final
+     | O.MONO O.RULE_CUT $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_UNFOLD _) $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_LEMMA _) $ _ || (_, []) => raise Final
+     | O.POLY (O.RULE_CUT_LEMMA _) $ _ || (_, []) => raise Final
+     | O.MONO O.MTAC_REPEAT $ [_ \ mt] || (syms, stk) => 
+       let
+         val x = Var.named "x"
+         val xtm = check (`x, O.MTAC)
+         val mtrec = O.MONO O.MTAC_REC $$ [([],[x]) \ Tac.mtry (Tac.seq (Tac.mprogress mt) [] xtm)]
+       in
+         mtrec || (syms, stk)
+       end
+     | O.MONO O.MTAC_AUTO $ _ || (syms, stk) => Tac.multirepeat (Tac.all (Tac.try Tac.autoStep)) || (syms, stk)
+     | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] || (syms, stk) => 
+       let
+         val catjdg = RedPrlCategoricalJudgment.fromAbt jdg
+         val tau = RedPrlCategoricalJudgment.synthesis catjdg
+       in
+         Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2])) || (syms, stk)
+       end
+     | O.MONO O.DEV_DFUN_INTRO $ [([u],_) \ t] || (syms, stk) => Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
+     | O.MONO O.DEV_DPROD_INTRO $ [_ \ t1, _ \ t2] || (syms, stk) => Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [] (Tac.each [t1, t2])) || (syms, stk)
+     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ t] || (syms, stk) => Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.each [t])) || (syms, stk)
+     | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ t1, _ \ t2] || (syms, stk) => Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [] (Tac.each [t1,t2])) || (syms, stk)
+     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ t1, ([v],_) \ t2] || (syms, stk) => Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2])) || (syms, stk)
+     | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2])) || (syms, stk)
+     | O.POLY (O.DEV_DPROD_ELIM z) $ [([x,y], _) \ t] || (syms, stk) => Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
+     | _ => raise Stuck
 
   fun step sign stability (tm || stk) =
     let
