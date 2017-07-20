@@ -15,6 +15,7 @@ sig
   exception Neutral of blocker
   exception Unstable
   exception Final
+  exception Stuck
 
   val init : abt -> abt machine
   val step : sign -> stability -> abt machine -> abt machine
@@ -45,6 +46,7 @@ struct
    | FST of hole
    | SND of hole
    | W_IF of (variable * abt) * hole * abt * abt
+   | S1_REC of (variable * abt) * hole * abt * (symbol * abt)
    | IF of hole * abt * abt
 
   type stack = frame list
@@ -64,6 +66,7 @@ struct
   exception Neutral of blocker
   exception Unstable
   exception Final
+  exception Stuck
 
   val todo = Fail "TODO"
   fun ?e = raise e
@@ -111,7 +114,7 @@ struct
   fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
 
-  fun stepFCom stability ({dir = dir as (_, r'), cap, tubes} || (syms, stk)) =
+  fun stepFCom stability ({dir = dir as (r, r'), cap, tubes} || (syms, stk)) =
     if dimensionsEqual stability syms dir then 
       cap || (syms, stk)
     else
@@ -120,7 +123,43 @@ struct
        | NONE =>
          (case stk of
              [] => raise Final
-           | _ => ?todo)
+           | W_IF ((x, tyx), HOLE, t, f) :: stk =>
+             let
+               val u = Sym.named "u"
+               val fcomu =
+                 Syn.into @@ Syn.FCOM
+                   {dir = (r, P.ret u),
+                    cap = cap,
+                    tubes = tubes}
+               fun if_ m = Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
+               val com =
+                 Syn.into @@ Syn.COM 
+                   {dir = dir,
+                    ty = (u, substVar (fcomu, x) tyx),
+                    cap = if_ cap,
+                    tubes = mapTubes_ if_ tubes}
+             in
+               com || (syms, stk)
+             end
+           | S1_REC ((x, tyx), HOLE, base, (v, loop)) :: stk => 
+             let
+               val u = Sym.named "u"
+               val fcomu =
+                 Syn.into @@ Syn.FCOM
+                   {dir = (r, P.ret u),
+                    cap = cap,
+                    tubes = tubes}
+               fun s1rec m = Syn.into @@ Syn.S1_ELIM ((x, tyx), m, (base, (v, loop)))
+               val com =
+                 Syn.into @@ Syn.COM 
+                   {dir = dir,
+                    ty = (u, substVar (fcomu, x) tyx),
+                    cap = s1rec cap,
+                    tubes = mapTubes_ s1rec tubes}
+             in
+               com || (syms, stk)
+             end
+           | _ => raise Stuck)
          (* TODO: write principal cuts for value-fcom *)
 
   fun stepView sign stability tau =
@@ -149,6 +188,9 @@ struct
 
      | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap :: tubes) || (syms, stk) =>
        stepFCom stability ({dir = dir, cap = cap, tubes = zipTubes (eqs, tubes)} || (syms, stk))
+
+     | O.MONO O.LAM $ _ || (_, []) => raise Final
+     | O.MONO O.DFUN $ _ || (_, []) => raise Final
 
      | O.MONO O.AP $ [_ \ m, _ \ n] || (syms, stk) => m || (syms, APP (HOLE, n) :: stk)
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => substVar (n, x) m || (syms, stk)
@@ -184,6 +226,9 @@ struct
        in
          lambda || (SymSet.remove syms u, stk)
        end
+
+     | O.MONO O.PAIR $ _ || (_, []) => raise Final
+     | O.MONO O.DPROD $ _ || (_, []) => raise Final
 
      | O.MONO O.FST $ [_ \ m] || (syms, stk) => m || (syms, FST HOLE :: stk)
      | O.MONO O.SND $ [_ \ m] || (syms, stk) => m || (syms, SND HOLE :: stk)
