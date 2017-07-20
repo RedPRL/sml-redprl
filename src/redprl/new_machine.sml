@@ -19,6 +19,7 @@ sig
 
   val init : abt -> abt machine
   val step : sign -> stability -> abt machine -> abt machine
+  val unload : abt machine -> abt
 end = 
 struct
   structure Tm = RedPrlAbt
@@ -58,6 +59,29 @@ struct
 
   datatype 'a machine = || of 'a * (bound_syms * stack)
 
+  val todo = Fail "TODO"
+  fun ?e = raise e
+
+  local
+    fun plug m = 
+      fn APP (HOLE, n) => Syn.into @@ Syn.AP (m, n)
+       | HCOM (dir, HOLE, cap, tubes) => Syn.into @@ Syn.HCOM {dir = dir, ty = m, cap = cap, tubes = tubes}
+       | COE (dir, (u, HOLE), coercee) => Syn.into @@ Syn.COE {dir = dir, ty = (u, m), coercee = coercee}
+       | FST HOLE => Syn.into @@ Syn.FST m
+       | SND HOLE => Syn.into @@ Syn.SND m
+       | W_IF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
+       | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_ELIM ((x, tyx), m, (base, (u, loop)))
+       | IF (HOLE, t, f) => Syn.into @@ Syn.S_IF (m, (t, f))
+       | PATH_AP (HOLE, r) => Syn.into @@ Syn.PATH_AP (m, r)
+       | NAT_REC (HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC (m, (zer, (x, y, succ)))
+       | INT_REC (HOLE, (x,y,negsucc), zer, (x',y',succ)) => Syn.into @@ Syn.INT_REC (m, ((x,y,negsucc), zer, (x',y',succ)))
+       | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
+  in
+    fun unload (m || (syms, stk)) = 
+      case stk of
+         [] => m
+       | k :: stk => unload @@ plug m k || (syms, stk)
+  end
 
   datatype stability = 
      CUBICAL
@@ -71,9 +95,6 @@ struct
   exception Unstable
   exception Final
   exception Stuck
-
-  val todo = Fail "TODO"
-  fun ?e = raise e
 
   (* Is it safe to observe the identity of a dimension? *)
   fun dimensionSafeToObserve syms r = 
