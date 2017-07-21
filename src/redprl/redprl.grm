@@ -16,20 +16,6 @@ structure CJ = RedPrlCategoricalJudgment
 
 fun sortOfJudgment jdg = CJ.synthesis (CJ.fromAst jdg)
 
-local
-  infix $$ \
-in
-  fun makeApp m ns = 
-    List.foldr (fn (n, ap) => O.MONO O.AP $$ [([],[]) \ ap, ([],[]) \ n]) m ns
-
-  fun makeNum i =
-    case IntInf.compare (i, 0) of
-      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (IntInf.- (i, 1))]
-    | EQUAL => O.MONO O.ZERO $$ []
-    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum (IntInf.- (IntInf.~ i, 1))]
-end
-
-
 structure Tac =
 struct
   type binding = (string * P.param_sort) list * ast
@@ -57,6 +43,26 @@ structure Multi =
 struct
   infix $$ $ \
 
+  fun makeLam [] m = m
+    | makeLam (x::xs) m =
+        O.MONO O.LAM $$ [([],[x]) \ makeLam xs m]
+
+  fun makeApp m ns =
+    List.foldl (fn (n, app) => O.MONO O.APP $$ [([],[]) \ app, ([],[]) \ n]) m ns
+
+  fun makePathAbs [] m = m
+    | makePathAbs (u::us) m =
+        O.MONO O.PATH_ABS $$ [([u],[]) \ makePathAbs us m]
+
+  fun makePathApp m ns =
+    List.foldl (fn (r, app) => O.POLY (O.PATH_APP r) $$ [([],[]) \ app]) m ns
+
+  fun makeNum i =
+    case IntInf.compare (i, 0) of
+      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (IntInf.- (i, 1))]
+    | EQUAL => O.MONO O.ZERO $$ []
+    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum (IntInf.- (IntInf.~ i, 1))]
+
   fun flatten xsys = List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
 
   fun makeQuant opr [] cod = cod
@@ -65,10 +71,6 @@ struct
 
   val makeDFun = makeQuant O.DFUN o flatten
   val makeDProd = makeQuant O.DPROD o flatten
-
-  fun makeLam [] m = m
-    | makeLam (x::xs) m =
-        O.MONO O.LAM $$ [([],[x]) \ makeLam xs m]
 
   fun makeRecord tbs =
     let
@@ -122,13 +124,14 @@ end
  | EXP | TAC | TRIV
 
  (* keywords and symbols in expressions *)
- | FCOM | WBOOL | TT | FF | WBOOL_REC
- | BOOL | IF
+ | FCOM
+ | BOOL | TT | FF | IF
+ | WBOOL | WIF
  | NAT | ZERO | SUCC | NAT_REC
  | INT | NEGSUCC | INT_REC
  | VOID
- | S1 | BASE | LOOP
- | LAMBDA | FUN_APP
+ | S1 | BASE | LOOP | S1_REC
+ | LAMBDA | DOLLAR_SIGN
  | TIMES | PAIR | FST | SND
  | RECORD | TUPLE | BANG
  | PATHS | ABS | AT_SIGN
@@ -153,7 +156,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA COLON
-%nonassoc FCOM WBOOL TT FF WBOOL_REC BOOL IF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA FUN_APP PAIR FST SND PATHS ABS AT_SIGN HCOM COE
+%nonassoc FCOM BOOL TT FF IF WBOOL WIF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PAIR FST SND PATHS ABS AT_SIGN HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
 
@@ -356,8 +359,8 @@ bindings
 monoNullaryOperator
   (* bools *)
   : BOOL (O.MONO O.BOOL)
-  | TT (O.MONO O.TRUE)
-  | FF (O.MONO O.FALSE)
+  | TT (O.MONO O.TT)
+  | FF (O.MONO O.FF)
   (* weak bools *)
   | WBOOL (O.MONO O.WBOOL)
   (* natural numbers *)
@@ -379,9 +382,9 @@ polyNullaryOperator
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
   (* bools *)
-  : IF (O.MONO O.S_IF)
+  : IF (O.MONO O.IF)
   (* weak bools *)
-  | WBOOL_REC (O.MONO O.IF)
+  | WIF (O.MONO O.WIF)
   (* natural numbers *)
   | SUCC (O.MONO O.SUCC)
   | NAT_REC (O.MONO O.NAT_REC)
@@ -390,9 +393,6 @@ regularMultinaryOperator
   | INT_REC (O.MONO O.INT_REC)
   (* paths *)
   | PATHS (O.MONO O.PATH_TY)
-  | ABS (O.MONO O.PATH_ABS)
-  (* functions *)
-  | FUN_APP (O.MONO O.AP)
   (* pairs *)
   | PAIR (O.MONO O.PAIR)
   | FST (O.MONO O.FST)
@@ -431,11 +431,12 @@ rawTermAndTac
       (Ast.$$ (O.POLY (O.HCOM (dir, [])), [binding1, binding2]))
 
   (* numbers *)
-  | NUMERAL (makeNum NUMERAL)
+  | NUMERAL (Multi.makeNum NUMERAL)
 
   (* function types *)
   | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
   | LPAREN LAMBDA LSQUARE boundVars RSQUARE term RPAREN (Multi.makeLam boundVars term)
+  | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 
   (* pair types *)
   | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
@@ -448,7 +449,8 @@ rawTermAndTac
   | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
 
   (* paths *)
-  | LPAREN AT_SIGN term param RPAREN (Ast.$$ (O.POLY (O.PATH_AP param), [\ (([],[]), term)]))
+  | LPAREN ABS LBRACKET boundVars RBRACKET term RPAREN (Multi.makePathAbs boundVars term)
+  | LPAREN AT_SIGN term params RPAREN (Multi.makePathApp term params)
 
 rawTerm
   : rawTermAndTac (rawTermAndTac)

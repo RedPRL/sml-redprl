@@ -105,10 +105,10 @@ struct
    | COE of symbol O.dir * (symbol * hole) * abt
    | FST of hole
    | SND of hole
-   | W_IF of (variable * abt) * hole * abt * abt
+   | WIF of (variable * abt) * hole * abt * abt
    | S1_REC of (variable * abt) * hole * abt * (symbol * abt)
    | IF of hole * abt * abt
-   | PATH_AP of hole * symbol P.t
+   | PATH_APP of hole * symbol P.t
    | NAT_REC of hole * abt * (variable * variable * abt)
    | INT_REC of hole * (variable * variable * abt) * abt * (variable * variable * abt)
    | PROJ of string * hole
@@ -123,15 +123,15 @@ struct
 
   local
     fun plug m = 
-      fn APP (HOLE, n) => Syn.into @@ Syn.AP (m, n)
+      fn APP (HOLE, n) => Syn.into @@ Syn.APP (m, n)
        | HCOM (dir, HOLE, cap, tubes) => Syn.into @@ Syn.HCOM {dir = dir, ty = m, cap = cap, tubes = tubes}
        | COE (dir, (u, HOLE), coercee) => Syn.into @@ Syn.COE {dir = dir, ty = (u, m), coercee = coercee}
        | FST HOLE => Syn.into @@ Syn.FST m
        | SND HOLE => Syn.into @@ Syn.SND m
-       | W_IF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
-       | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_ELIM ((x, tyx), m, (base, (u, loop)))
-       | IF (HOLE, t, f) => Syn.into @@ Syn.S_IF (m, (t, f))
-       | PATH_AP (HOLE, r) => Syn.into @@ Syn.PATH_AP (m, r)
+       | IF (HOLE, t, f) => Syn.into @@ Syn.IF (m, (t, f))
+       | WIF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
+       | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
+       | PATH_APP (HOLE, r) => Syn.into @@ Syn.PATH_APP (m, r)
        | NAT_REC (HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC (m, (zer, (x, y, succ)))
        | INT_REC (HOLE, (x,y,negsucc), zer, (x',y',succ)) => Syn.into @@ Syn.INT_REC (m, ((x,y,negsucc), zer, (x',y',succ)))
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
@@ -212,7 +212,7 @@ struct
        | NONE =>
          (case stk of
              [] => raise Final
-           | W_IF ((x, tyx), HOLE, t, f) :: stk =>
+           | WIF ((x, tyx), HOLE, t, f) :: stk =>
              let
                val u = Sym.named "u"
                val fcomu =
@@ -220,7 +220,7 @@ struct
                    {dir = (r, P.ret u),
                     cap = cap,
                     tubes = tubes}
-               fun if_ m = Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
+               fun if_ m = Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
                val com =
                  Syn.into @@ Syn.COM 
                    {dir = dir,
@@ -238,7 +238,7 @@ struct
                    {dir = (r, P.ret u),
                     cap = cap,
                     tubes = tubes}
-               fun s1rec m = Syn.into @@ Syn.S1_ELIM ((x, tyx), m, (base, (v, loop)))
+               fun s1rec m = Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (v, loop)))
                val com =
                  Syn.into @@ Syn.COM 
                    {dir = dir,
@@ -289,12 +289,12 @@ struct
      | O.MONO O.LAM $ _ || (_, []) => raise Final
      | O.MONO O.DFUN $ _ || (_, []) => raise Final
 
-     | O.MONO O.AP $ [_ \ m, _ \ n] || (syms, stk) => COMPAT @@ m || (syms, APP (HOLE, n) :: stk)
+     | O.MONO O.APP $ [_ \ m, _ \ n] || (syms, stk) => COMPAT @@ m || (syms, APP (HOLE, n) :: stk)
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => CRITICAL @@ substVar (n, x) m || (syms, stk)
      | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
-         fun apx n = Syn.into @@ Syn.AP (n, xtm)
+         fun apx n = Syn.into @@ Syn.APP (n, xtm)
          val hcomx =
            Syn.into @@ Syn.HCOM
              {dir = dir,
@@ -319,7 +319,7 @@ struct
               Syn.into @@ Syn.COE 
                 {dir = dir,
                  ty = (u, substVar (xcoe (P.ret u), x) tyBx),
-                 coercee = Syn.into @@ Syn.AP (coercee, xcoe r)})
+                 coercee = Syn.into @@ Syn.APP (coercee, xcoe r)})
        in
          CRITICAL @@ lambda || (SymSet.remove syms u, stk)
        end
@@ -372,12 +372,12 @@ struct
      | O.MONO O.PATH_ABS $ _ || (_, []) => raise Final
      | O.MONO O.PATH_TY $ _ || (_, []) => raise Final
 
-     | O.POLY (O.PATH_AP r) $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PATH_AP (HOLE, r) :: stk)
-     | O.MONO O.PATH_ABS $ [([u], _) \ m] || (syms, PATH_AP (HOLE, r) :: stk) => CRITICAL @@ substSymbol (r, u) m || (syms, stk)
+     | O.POLY (O.PATH_APP r) $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PATH_APP (HOLE, r) :: stk)
+     | O.MONO O.PATH_ABS $ [([u], _) \ m] || (syms, PATH_APP (HOLE, r) :: stk) => CRITICAL @@ substSymbol (r, u) m || (syms, stk)
 
      | O.MONO O.PATH_TY $ [([u], _) \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
-         fun apu m = Syn.into @@ Syn.PATH_AP (m, P.ret u)
+         fun apu m = Syn.into @@ Syn.PATH_APP (m, P.ret u)
          val v = Sym.named "_"
          val hcomu =
            Syn.into @@ Syn.HCOM
@@ -395,7 +395,7 @@ struct
            Syn.into @@ Syn.COM
              {dir = dir,
               ty = (v, tyuv),
-              cap = Syn.into @@ Syn.PATH_AP (coercee, P.ret u),
+              cap = Syn.into @@ Syn.PATH_APP (coercee, P.ret u),
               tubes = [((P.ret u, P.APP P.DIM0), (v, m0v)), ((P.ret u, P.APP P.DIM1), (v, m1v))]}
          val abs = Syn.into @@ Syn.PATH_ABS (u, comu)
        in
@@ -440,15 +440,15 @@ struct
 
      | O.MONO O.WBOOL $ _ || (_, []) => raise Final
      | O.MONO O.BOOL $ _ || (_, []) => raise Final
-     | O.MONO O.TRUE $ _ || (_, []) => raise Final
-     | O.MONO O.FALSE $ _ || (_, []) => raise Final
+     | O.MONO O.TT $ _ || (_, []) => raise Final
+     | O.MONO O.FF $ _ || (_, []) => raise Final
 
-     | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, IF (HOLE, t, f) :: stk)
-     | O.MONO O.IF $ [(_,[x]) \ tyx, _ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, W_IF ((x, tyx), HOLE, t, f) :: stk)
-     | O.MONO O.TRUE $ _ || (syms, IF (HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
-     | O.MONO O.TRUE $ _ || (syms, W_IF (_, HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
-     | O.MONO O.FALSE $ _ || (syms, IF (HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
-     | O.MONO O.FALSE $ _ || (syms, W_IF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
+     | O.MONO O.IF $ [_ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, IF (HOLE, t, f) :: stk)
+     | O.MONO O.WIF $ [(_,[x]) \ tyx, _ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, WIF ((x, tyx), HOLE, t, f) :: stk)
+     | O.MONO O.TT $ _ || (syms, IF (HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
+     | O.MONO O.TT $ _ || (syms, WIF (_, HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
+     | O.MONO O.FF $ _ || (syms, IF (HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
+     | O.MONO O.FF $ _ || (syms, WIF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
      | O.MONO O.BOOL $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
      | O.MONO O.BOOL $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
      | O.MONO O.WBOOL $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>

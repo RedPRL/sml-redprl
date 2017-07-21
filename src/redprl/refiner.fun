@@ -108,11 +108,11 @@ struct
         T.empty #> (I, H, a)
       end
 
-    fun If _ jdg =
+    fun WIf _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.If"
         val (I, H) >> CJ.SYNTH tm = jdg
-        val Syn.IF ((x,cx), m, _) = Syn.out tm
+        val Syn.WIF ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
         val goal = makeMem (I, H) (tm, cm)
@@ -120,11 +120,11 @@ struct
         |>: goal #> (I, H, cm)
       end
 
-    fun S1Elim _ jdg =
+    fun S1Rec _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.S1Elim"
+        val _ = RedPrlLog.trace "Synth.S1Rec"
         val (I, H) >> CJ.SYNTH tm = jdg
-        val Syn.S1_ELIM ((x,cx), m, _) = Syn.out tm
+        val Syn.S1_REC ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
         val goal = makeMem (I, H) (tm, cm)
@@ -132,11 +132,11 @@ struct
         |>: goal #> (I, H, cm)
       end
 
-    fun Ap _ jdg =
+    fun App _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.Ap"
+        val _ = RedPrlLog.trace "Synth.App"
         val (I, H) >> CJ.SYNTH tm = jdg
-        val Syn.AP (m, n) = Syn.out tm
+        val Syn.APP (m, n) = Syn.out tm
         val (goalDFun, holeDFun) = makeSynth (I, H) m
         val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun, [], [])
         val (goalCod, holeCod) = makeMatch (O.MONO O.DFUN, 1, holeDFun, [], [n])
@@ -145,11 +145,11 @@ struct
         |>: goalDFun >: goalDom >: goalCod >: goalN #> (I, H, holeCod)
       end
 
-    fun PathAp _ jdg =
+    fun PathApp _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.PathAp"
+        val _ = RedPrlLog.trace "Synth.PathApp"
         val (I, H) >> CJ.SYNTH tm = jdg
-        val Syn.PATH_AP (m, r) = Syn.out tm
+        val Syn.PATH_APP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth (I, H) m
         val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holePathTy, [r], [])
       in
@@ -473,10 +473,10 @@ struct
 
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
-           (Syn.WBOOL, Syn.WBOOL) => WeakBool.EqType
-         | (Syn.BOOL, Syn.BOOL) => StrictBool.EqType
-         | (Syn.INT, Syn.INT) => Int.EqType
+           (Syn.BOOL, Syn.BOOL) => Bool.EqType
+         | (Syn.WBOOL, Syn.WBOOL) => WBool.EqType
          | (Syn.NAT, Syn.NAT) => Nat.EqType
+         | (Syn.INT, Syn.INT) => Int.EqType
          | (Syn.VOID, Syn.VOID) => Void.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
@@ -495,11 +495,11 @@ struct
       (* equality of canonical forms *)
       fun StepEqVal ((m, n), ty) =
         case (Syn.out m, Syn.out n, Syn.out ty) of
-           (Syn.TT, Syn.TT, Syn.WBOOL) => WeakBool.EqTT
-         | (Syn.FF, Syn.FF, Syn.WBOOL) => WeakBool.EqFF
-         | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => WeakBool.EqFCom
-         | (Syn.TT, Syn.TT, Syn.BOOL) => StrictBool.EqTT
-         | (Syn.FF, Syn.FF, Syn.BOOL) => StrictBool.EqFF
+           (Syn.TT, Syn.TT, Syn.WBOOL) => WBool.EqTT
+         | (Syn.FF, Syn.FF, Syn.WBOOL) => WBool.EqFF
+         | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => WBool.EqFCom
+         | (Syn.TT, Syn.TT, Syn.BOOL) => Bool.EqTT
+         | (Syn.FF, Syn.FF, Syn.BOOL) => Bool.EqFF
          | (Syn.ZERO, Syn.ZERO, Syn.NAT) => Nat.EqZero
          | (Syn.SUCC _, Syn.SUCC _, Syn.NAT) => Nat.EqSucc
          | (Syn.ZERO, Syn.ZERO, Syn.INT) => Int.EqZero
@@ -519,23 +519,23 @@ struct
       fun StepEqNeu (x, y) ((m, n), ty) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Equality.Hyp
-         | (Syn.IF _, Syn.IF _) => WeakBool.ElimEq
-         | (Syn.S_IF _, Syn.S_IF _) => StrictBool.ElimEq
-         | (Syn.S_IF _, _) =>
+         | (Syn.WIF _, Syn.WIF _) => WBool.ElimEq
+         | (Syn.IF _, Syn.IF _) => Bool.ElimEq
+         | (Syn.IF _, _) =>
            (case x of
-               Machine.VAR z => StrictBool.EqElim z
-             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply StrictBool elimination"])
-         | (_, Syn.S_IF _) =>
+               Machine.VAR z => Bool.EqElim z
+             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply Bool elimination"])
+         | (_, Syn.IF _) =>
            (case y of
-               Machine.VAR z => CatJdgSymmetry then_ StrictBool.EqElim z
-             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply StrictBool elimination"])
+               Machine.VAR z => CatJdgSymmetry then_ Bool.EqElim z
+             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply Bool elimination"])
          | (Syn.NAT_REC _, Syn.NAT_REC _) => Nat.ElimEq
-         | (Syn.S1_ELIM _, Syn.S1_ELIM _) => S1.ElimEq
-         | (Syn.AP _, Syn.AP _) => DFun.ApEq
+         | (Syn.S1_REC _, Syn.S1_REC _) => S1.ElimEq
+         | (Syn.APP _, Syn.APP _) => DFun.AppEq
          | (Syn.FST _, Syn.FST _) => DProd.FstEq
          | (Syn.SND _, Syn.SND _) => DProd.SndEq
          | (Syn.PROJ _, Syn.PROJ _) => Record.ProjEq
-         | (Syn.PATH_AP (_, P.VAR _), Syn.PATH_AP (_, P.VAR _)) => Path.ApEq
+         | (Syn.PATH_APP (_, P.VAR _), Syn.PATH_APP (_, P.VAR _)) => Path.AppEq
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       fun StepEqNeuExpand ty =
@@ -584,8 +584,8 @@ struct
          | (Syn.COE _, Syn.COE _) => Coe.AutoEqLR
          | (Syn.COE _, _) => Coe.AutoEqL
          | (_, Syn.COE _) => Coe.AutoEqR
-         | (Syn.PATH_AP (_, P.APP _), _) => Path.ApConstCompute
-         | (_, Syn.PATH_AP (_, P.APP _)) => CatJdgSymmetry then_ Path.ApConstCompute
+         | (Syn.PATH_APP (_, P.APP _), _) => Path.AppConstCompute
+         | (_, Syn.PATH_APP (_, P.APP _)) => CatJdgSymmetry then_ Path.AppConstCompute
          | _ =>
            (case canonicity of
                (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
@@ -602,10 +602,10 @@ struct
       fun StepSynth _ m =
         case Syn.out m of
            Syn.VAR _ => Synth.Hyp
-         | Syn.AP _ => Synth.Ap
-         | Syn.S1_ELIM _ => Synth.S1Elim
-         | Syn.IF _ => Synth.If
-         | Syn.PATH_AP _ => Synth.PathAp
+         | Syn.APP _ => Synth.App
+         | Syn.S1_REC _ => Synth.S1Rec
+         | Syn.WIF _ => Synth.WIf
+         | Syn.PATH_APP _ => Synth.PathApp
          | Syn.FST _ => Synth.Fst
          | Syn.SND _ => Synth.Snd
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
@@ -642,8 +642,8 @@ struct
     local
       fun StepTrue ty =
         case Syn.out ty of
-           Syn.WBOOL => WeakBool.Elim
-         | Syn.BOOL => StrictBool.Elim
+           Syn.BOOL => Bool.Elim
+         | Syn.WBOOL => WBool.Elim
          | Syn.NAT => Nat.Elim
          | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
@@ -653,7 +653,7 @@ struct
 
       fun StepEq ty =
         case Syn.out ty of
-           Syn.BOOL => StrictBool.EqElim
+           Syn.BOOL => Bool.EqElim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepJdg _ z alpha jdg =

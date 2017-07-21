@@ -106,20 +106,20 @@ struct
    (* the trivial realizer of sort EXP for types lacking interesting
     * computational content. This is the "ax(iom)" in Nuprl. *)
    | AX
-   (* week bool: true, false and if *)
-   | WBOOL | TRUE | FALSE | IF (* weak booleans *)
-   (* strict bool: strict if (true and false are shared) *)
-   | BOOL | S_IF
+   (* strict bool *)
+   | BOOL | TT | FF | IF
+   (* week bool *)
+   | WBOOL | WIF
    (* natural numbers *)
    | NAT | ZERO | SUCC | NAT_REC
    (* integers *)
    | INT | NEGSUCC | INT_REC
    (* empty type *)
    | VOID
-   (* circle: base and s1_elim *)
-   | S1 | BASE | S1_ELIM
+   (* circle *)
+   | S1 | BASE | S1_REC
    (* function: lambda and app *)
-   | DFUN | LAM | AP
+   | DFUN | LAM | APP
    (* prodcut: pair, fst and snd *)
    | DPROD | PAIR | FST | SND
    (* record and tuple *)
@@ -151,7 +151,7 @@ struct
   datatype 'a poly_operator =
      FCOM of 'a dir * 'a equation list
    | LOOP of 'a P.term
-   | PATH_AP of 'a P.term
+   | PATH_APP of 'a P.term
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
    | COM of 'a dir * 'a equation list
@@ -195,13 +195,13 @@ struct
     fn TV => [] ->> TRIV
      | AX => [] ->> EXP
 
-     | WBOOL => [] ->> EXP
-     | TRUE => [] ->> EXP
-     | FALSE => [] ->> EXP
-     | IF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-
      | BOOL => [] ->> EXP
-     | S_IF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | TT => [] ->> EXP
+     | FF => [] ->> EXP
+     | IF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+
+     | WBOOL => [] ->> EXP
+     | WIF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
      | VOID => [] ->> EXP
 
@@ -215,11 +215,11 @@ struct
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
-     | S1_ELIM => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
+     | S1_REC => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
 
      | DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
      | LAM => [[] * [EXP] <> EXP] ->> EXP
-     | AP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | APP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
      | DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
      | PAIR => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
@@ -296,7 +296,7 @@ struct
     val arityPoly =
       fn FCOM params => arityFcom params
        | LOOP _ => [] ->> EXP
-       | PATH_AP _ => [[] * [] <> EXP] ->> EXP
+       | PATH_APP _ => [[] * [] <> EXP] ->> EXP
        | HCOM params => arityHcom params
        | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | COM params => arityCom params
@@ -342,7 +342,7 @@ struct
     val supportPoly =
       fn FCOM params => comSupport params
        | LOOP r => dimSupport r
-       | PATH_AP r => dimSupport r
+       | PATH_APP r => dimSupport r
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
        | COM params => comSupport params
@@ -381,7 +381,7 @@ struct
                    andalso spansEq f (eqs1, eqs2)
                | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
-       | (PATH_AP r, t) => (case t of PATH_AP r' => P.eq f (r, r') | _ => false)
+       | (PATH_APP r, t) => (case t of PATH_APP r' => P.eq f (r, r') | _ => false)
        | (HCOM (dir1, eqs1), t) =>
            (case t of
                  HCOM (dir2, eqs2) =>
@@ -441,12 +441,12 @@ struct
      | AX => "ax"
 
      | WBOOL => "wbool"
-     | TRUE => "tt"
-     | FALSE => "ff"
-     | IF => "bool-rec"
+     | WIF => "wif"
 
      | BOOL => "bool"
-     | S_IF => "if"
+     | TT => "tt"
+     | FF => "ff"
+     | IF => "if"
 
      | NAT => "nat"
      | NAT_REC => "nat-rec"
@@ -460,11 +460,11 @@ struct
 
      | S1 => "S1"
      | BASE => "base"
-     | S1_ELIM => "s1-elim"
+     | S1_REC => "S1-rec"
 
      | DFUN => "dfun"
      | LAM => "lam"
-     | AP => "app" (* AP will be changed to APP later *)
+     | APP => "app"
 
      | DPROD => "dprod"
      | PAIR => "pair"
@@ -531,7 +531,7 @@ struct
              ^ dirToString f dir
              ^ "]"
        | LOOP r => "loop[" ^ P.toString f r ^ "]"
-       | PATH_AP r => "pathap{" ^ P.toString f r ^ "}"
+       | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
        | HCOM (dir, eqs) =>
            "hcom"
              ^ "["
@@ -598,7 +598,7 @@ struct
     fun mapPolyWithSort f =
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
        | LOOP r => LOOP (P.bind (passSort DIM f) r)
-       | PATH_AP r => PATH_AP (P.bind (passSort DIM f) r)
+       | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)

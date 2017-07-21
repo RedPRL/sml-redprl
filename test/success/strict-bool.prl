@@ -1,5 +1,5 @@
 Def Cmp(#m; #n) = [
-  (lam [x] (app #m (app #n x)))
+  (lam [x] ($ #m ($ #n x)))
 ].
 
 Def Bool/Not = [
