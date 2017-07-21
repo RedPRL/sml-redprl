@@ -1,8 +1,7 @@
 Thm BoolTest : [ 
   (-> wbool wbool)
 ] by [
-  { lam x. if x then `tt else `ff };
-  auto
+  lam x. if x then `tt else `ff
 ].
 
 // RedPRL 
@@ -10,7 +9,7 @@ Thm BoolTest : [
 Thm PathTest : [
   (path {_} S1 base base)
 ] by [
-  { <x> `(loop x) }; auto
+  <x> `(loop x)
 ].
 
 Thm LowLevel : [
@@ -20,8 +19,7 @@ Thm LowLevel : [
 ] by [
   fresh f <- auto;
   fresh x, x/eq <- elim f;
-  [ `tt, hyp x];
-  auto
+  [ `tt, hyp x]
 ].
 
 Extract LowLevel.
@@ -31,19 +29,14 @@ Thm FunElimTest : [
     (-> wbool wbool)
     wbool)
 ] by [
-  { lam f. let x = f {`tt}. hyp x };
-
-  auto
+  lam f. let x = f {`tt}. hyp x
 ].
 
 Thm S1ElimTest : [ (-> S1 S1) ] by [
-  { lam s.
+  lam s.
     case s of
        base => `base
      | loop x => `(loop x)
-  };
-
-  auto
 ].
 
 Tac Try(#t : tac) = [
@@ -59,10 +52,7 @@ Thm ApEqTest : [
    [f : (-> wbool wbool)]
    (path {_} wbool ($ f tt) ($ f tt)))
 ] by [
-  { lam f. <_> `($ ,f tt) };
-
-  // Try commenting out the following line, and stepping through the proof with TryStep.
-  auto
+  lam f. <_> `($ ,f tt)
 ].
 
 Def BoolEta(#M) = [
@@ -84,12 +74,9 @@ Thm PathTest2 : [
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
-  { let h : [(-> [b : wbool] (path {_} wbool b (BoolEta b))) ] =
+  let h : [(-> [b : wbool] (path {_} wbool b (BoolEta b))) ] =
       lam b. if b then <y> `tt else <y> `ff.
     <x> lam c. let p = h {hyp c}. let px = p @ &x. hyp px
-  };
-
-  auto
 ].
 
 // It turns out that it is just as good to figure out what the witness program for this path is
@@ -107,8 +94,7 @@ Thm PathTest3 : [
   `(abs {x} 
     (lam [b]
      (@ (wbool-rec [b] (path {_} wbool b (BoolEta b)) b (abs {_} tt) (abs {_} ff))
-        x)));
-  auto
+        x)))
 ].
 
 Print PathTest3.
@@ -116,8 +102,7 @@ Print PathTest3.
 Thm PairTest : [ (* [a : S1] (path {_} S1 a base)) ] by [
   < `base
   , <x> `(loop x)
-  >;
-  auto
+  >
 ].
 
 
@@ -145,8 +130,7 @@ Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by 
 ].
 
 Thm Not : [(-> [_ : wbool] wbool)] by [
-  {lam x. if x then `ff else `tt};
-  auto
+  lam x. if x then `ff else `tt
 ].
 
 Thm FunExt(#A; #B) : [
@@ -159,9 +143,8 @@ Thm FunExt(#A; #B) : [
    [p : (-> [y : #A] (path {_} #B ($ f y) ($ g y)))]
    (path {_} (-> #A #B) f g))
 ] by [
-  {lam f. lam g. lam p.
+  lam f. lam g. lam p.
     <i> lam a. let q = p hyp a. let qi = q @ &i. hyp qi
-  }; auto
 ].
 
 Print FunExt.
@@ -169,16 +152,13 @@ Print FunExt.
 
 Tac FunExtTac(#A; #B; #F; #G) = [
   let p : [(-> [x : #A] (path {_} wbool ($ #F x) ($ #G x)))] = {}.
-  {<i> lam a. let q = p hyp a. let qi = q @ &i. hyp qi};
-  auto
+  <i> lam a. let q = p hyp a. let qi = q @ &i. hyp qi
 ].
 
 Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac wbool wbool (Cmp Not Not) (lam [x] x));
-  { lam x.
+  lam x.
     if x then <_> `tt else <_> `ff
-  };
-  auto
 ].
 
 Extract NotNotPath.
@@ -186,14 +166,12 @@ Print FunExtTac.
 Print NotNotPath.
 
 Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
-  < `tt, <x> `tt >;
-  auto
+  < `tt, <x> `tt >
 ].
 
 
 Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
-  { lam x. let y = x @ &0. hyp y
-  }; auto
+  lam x. let y = x @ &0. hyp y
 ].
 
 Print PathElimTest.

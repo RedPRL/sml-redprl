@@ -41,6 +41,5 @@ Thm RecordTest6 : [
     [p : (record [a : bool] [b c : record])]
     bool)
 ] by [
-  { lam p. `(! a ,p) };
-  auto
+  lam p. `(! a ,p)
 ].

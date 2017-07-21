@@ -31,12 +31,23 @@ struct
   fun multitacToTac mt =
     setAnnotation (getAnnotation mt) (O.MONO O.TAC_MTAC $$ [([],[]) \ mt])
 
-  fun tacToMulitac t =
+  fun tacToMultitac t =
     setAnnotation (getAnnotation t) (O.MONO O.MTAC_ALL $$ [([],[]) \ t])
 
   fun orElse (t1, t2) =
-    multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMulitac t1, ([],[]) \ tacToMulitac t2])
+    multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMultitac t1, ([],[]) \ tacToMultitac t2])
 
+  fun then_ (t1, t2) =
+    multitacToTac (makeSeq (tacToMultitac t1) [] (tacToMultitac t2))
+
+  val autoMtac = O.MONO O.MTAC_AUTO $$ []
+  val autoTac = multitacToTac autoMtac
+
+  fun exact tau m = 
+    then_ (O.MONO (O.RULE_EXACT tau) $$ [([],[]) \ m], autoTac)
+
+  fun exactDim r = 
+    exact O.DIM_EXP (O.POLY (O.DIM_REF r) $$ [])
 end
 
 structure Multi =
@@ -508,8 +519,8 @@ atomicRawTac
   | RULE_ELIM VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, sort)), []))
   | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, O.EXP)), []))
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
-  | BACK_TICK term (Ast.$$ (O.MONO (O.RULE_EXACT O.EXP), [\ (([],[]), term)]))
-  | AMPERSAND param (Ast.$$ (O.MONO (O.RULE_EXACT O.DIM_EXP), [\ (([],[]), Ast.$$ (O.POLY (O.DIM_REF param), []))]))
+  | BACK_TICK term (Tac.exact O.EXP term)
+  | AMPERSAND param (Tac.exactDim param)
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
@@ -549,7 +560,7 @@ atomicRawMultitac
   : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
   | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS (IntInf.toInt NUMERAL)), [\ (([],[]), tactic)]))
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REPEAT, [\ (([], []), multitac)]))
-  | MTAC_AUTO (Ast.$$ (O.MONO O.MTAC_AUTO, []))
+  | MTAC_AUTO (Tac.autoMtac)
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
   | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
   | LBRACKET multitac RBRACKET (multitac)

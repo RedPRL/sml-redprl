@@ -6,13 +6,10 @@ Thm Times/Proj(#A) : [
   a/type : #A type 
   >> (-> (Times bool #A) #A)
 ] by [
-  {lam x. 
+  lam x. 
     unfold Times;
     let <y, z> = x.
     hyp z
-  };
-
-  auto
 ].
 
 Extract Times/Proj.
