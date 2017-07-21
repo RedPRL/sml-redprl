@@ -14,19 +14,7 @@ end
 structure O = RedPrlOpData
 structure CJ = RedPrlCategoricalJudgment
 
-fun sortOfJudgment jdg = 
-  let
-    infix $
-    val sort = 
-    case Ast.out jdg of 
-       O.MONO O.JDG_TRUE $ _ => O.EXP
-     | O.MONO (O.JDG_TERM tau) $ _ => tau
-     | _ => O.TRIV
-
-    val _ = print ("grm: " ^ Ast.toString jdg ^ " : " ^ RedPrlSort.toString sort ^ "\n")
-  in
-    sort
-  end
+fun sortOfJudgment jdg = CJ.synthesis (CJ.fromAst jdg)
 
 local
   infix $$ \

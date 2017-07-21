@@ -10,6 +10,8 @@ sig
   val MEM : 'a * 'a -> 'a redprl_jdg
   val TYPE : 'a -> 'a redprl_jdg
 
+  val fromAst : RedPrlAst.ast -> RedPrlAst.ast redprl_jdg
+
   include CATEGORICAL_JUDGMENT where type 'a jdg = 'a redprl_jdg
 end =
 struct
@@ -37,6 +39,7 @@ struct
 
   structure O = RedPrlOpData
   structure Tm = RedPrlAbt
+  structure Ast = RedPrlAst
 
   val synthesis =
     fn EQ _ => O.TRIV
@@ -64,6 +67,21 @@ struct
 
     fun fromAbt jdg =
       case RedPrlAbt.out jdg of
+         O.MONO O.JDG_EQ $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), a)
+       | O.MONO O.JDG_TRUE $ [_ \ a] => TRUE a
+       | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
+       | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
+       | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
+       | _ => raise InvalidJudgment
+  end
+
+  local
+    open Ast
+    structure O = RedPrlOpData
+    infix $ \
+  in
+    fun fromAst jdg =
+      case Ast.out jdg of
          O.MONO O.JDG_EQ $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), a)
        | O.MONO O.JDG_TRUE $ [_ \ a] => TRUE a
        | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
