@@ -526,6 +526,10 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM VARNAME3), [\ (([],[]), tactic1), \ (([VARNAME1, VARNAME2],[]), tactic2)]))
   | LET VARNAME EQUALS VARNAME tactic DOT tactic
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
+  | LET VARNAME WITH VARNAME EQUALS VARNAME AT_SIGN tactic DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME3), [\ (([],[]), tactic1), \ (([VARNAME1, VARNAME2],[]), tactic2)]))
+  | LET VARNAME EQUALS VARNAME AT_SIGN tactic DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
   | LET LANGLE VARNAME COMMA VARNAME RANGLE EQUALS VARNAME DOT tactic
       (Ast.$$ (O.POLY (O.DEV_DPROD_ELIM VARNAME3), [\ (([VARNAME1, VARNAME2],[]), tactic)]))
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic

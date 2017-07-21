@@ -1,6 +1,8 @@
 Thm PathApConst : [
   (-> (path {_} bool tt tt) bool)
 ] by [
-  { lam p. `(@ ,p 0) };
+  { lam p. let p0 = p @ &0. hyp p0 };
   auto;
 ].
+
+Print PathApConst.

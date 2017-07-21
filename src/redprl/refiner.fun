@@ -16,7 +16,7 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = abt CJ.jdg
+  type catjdg = (Sym.t, abt) CJ.jdg
   type opid = Sig.opid
 
   infixr @@
@@ -203,10 +203,10 @@ struct
     fun DimSubst _ jdg = 
       let
         val _ = RedPrlLog.trace "Misc.DimSubst"
-        val DIM_SUBST (rtm, u, m) = jdg
+        val (I, H) >> CJ.DIM_SUBST (rtm, u, m) = jdg
         val Abt.$ (O.POLY (O.DIM_REF r), _) = Abt.out rtm
       in
-        Lcf.|> (T.empty, abtToAbs (substSymbol (r, u) m))
+        T.empty #> (I, H, substSymbol (r, u) m)
       end
   end
 
@@ -390,7 +390,7 @@ struct
        | INSERT (x, jdg) :: deltas =>
            let
              val x' = alpha i
-             val jdg' = CJ.map (RedPrlAbt.renameVars xrho) jdg
+             val jdg' = CJ.map_ (RedPrlAbt.renameVars xrho) jdg
              val xrho' = Var.Ctx.insert xrho x x'
            in
              applyDiffs alpha (i + 1) xrho' deltas (Hyps.snoc H x' jdg')
@@ -624,9 +624,9 @@ struct
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
+          | _ >> CJ.DIM_SUBST _ => Misc.DimSubst
           | MATCH _ => Misc.MatchOperator
-          | MATCH_RECORD _ => Record.MatchRecord
-          | DIM_SUBST _ => Misc.DimSubst)
+          | MATCH_RECORD _ => Record.MatchRecord)
 
 
       fun isWfJdg (CJ.TRUE _) = false

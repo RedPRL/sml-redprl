@@ -144,7 +144,7 @@ struct
    | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
    | DEV_LET of RedPrlSort.t
 
-   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t
+   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_DIM_SUBST
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -169,6 +169,7 @@ struct
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
    | DEV_DPROD_ELIM of 'a
+   | DEV_PATH_ELIM of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -270,6 +271,7 @@ struct
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
      | JDG_TERM _ => [] ->> JDG
+     | JDG_DIM_SUBST => [[] * [] <> DIM_EXP, [DIM] * [] <> EXP] ->> JDG
 
   local
     fun arityFcom (_, eqs) =
@@ -315,6 +317,7 @@ struct
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
        | DEV_DPROD_ELIM _ => [[HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
+       | DEV_PATH_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -362,6 +365,7 @@ struct
        | DEV_S1_ELIM a => [(a, HYP EXP)]
        | DEV_DFUN_ELIM a => [(a, HYP EXP)]
        | DEV_DPROD_ELIM a => [(a, HYP EXP)]
+       | DEV_PATH_ELIM a => [(a, HYP EXP)]
   end
 
   val support =
@@ -436,6 +440,8 @@ struct
            (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
        | (DEV_DPROD_ELIM a, t) =>
            (case t of DEV_DPROD_ELIM b => f (a, b) | _ => false)
+       | (DEV_PATH_ELIM a, t) =>
+           (case t of DEV_PATH_ELIM b => f (a, b) | _ => false)
   end
 
   fun eq f =
@@ -515,6 +521,7 @@ struct
      | JDG_EQ_TYPE => "eq-type"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
+     | JDG_DIM_SUBST => "dim-subst"
 
   local
     fun dirToString f (r, r') =
@@ -575,6 +582,7 @@ struct
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
        | DEV_DPROD_ELIM a => "dprod-elim{" ^ f a ^ "}"
+       | DEV_PATH_ELIM a => "path-elim{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -622,6 +630,7 @@ struct
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_PATH_ELIM a => DEV_PATH_ELIM (mapSym (passSort (HYP EXP) f) a)
   end
 
   fun mapWithSort f =

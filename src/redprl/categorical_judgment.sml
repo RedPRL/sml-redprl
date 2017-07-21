@@ -1,26 +1,28 @@
 structure RedPrlCategoricalJudgment :
 sig
-  datatype 'a redprl_jdg =
+  datatype ('sym, 'a) redprl_jdg =
      EQ of ('a * 'a) * 'a
    | TRUE of 'a
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
    | TERM of RedPrlSort.t
+   | DIM_SUBST of 'a * 'sym * 'a
 
-  val MEM : 'a * 'a -> 'a redprl_jdg
-  val TYPE : 'a -> 'a redprl_jdg
+  val MEM : 'a * 'a -> ('sym, 'a) redprl_jdg
+  val TYPE : 'a -> ('sym, 'a) redprl_jdg
 
-  val fromAst : RedPrlAst.ast -> RedPrlAst.ast redprl_jdg
+  val fromAst : RedPrlAst.ast -> (string, RedPrlAst.ast) redprl_jdg
 
-  include CATEGORICAL_JUDGMENT where type 'a jdg = 'a redprl_jdg
+  include CATEGORICAL_JUDGMENT where type ('sym, 'a) jdg = ('sym, 'a) redprl_jdg
 end =
 struct
-  datatype 'a redprl_jdg =
+  datatype ('sym, 'a) redprl_jdg =
      EQ of ('a * 'a) * 'a
    | TRUE of 'a
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
    | TERM of RedPrlSort.t
+   | DIM_SUBST of 'a * 'sym * 'a
 
   fun MEM (m, a) =
     EQ ((m, m), a)
@@ -28,14 +30,17 @@ struct
   fun TYPE a =
     EQ_TYPE (a, a)
 
-  type 'a jdg = 'a redprl_jdg
+  type ('sym, 'a) jdg = ('sym, 'a) redprl_jdg
 
-  fun map f =
+  fun map sym f =
     fn EQ ((m, n), a) => EQ ((f m, f n), f a)
      | TRUE a => TRUE (f a)
      | EQ_TYPE (a, b) => EQ_TYPE (f a, f b)
      | SYNTH a => SYNTH (f a)
      | TERM tau => TERM tau
+     | DIM_SUBST (r, u, m) => DIM_SUBST (f r, sym u, f m)
+  
+  fun map_ f = map (fn x => x) f
 
   structure O = RedPrlOpData
   structure Tm = RedPrlAbt
@@ -47,6 +52,7 @@ struct
      | EQ_TYPE _ => O.TRIV
      | SYNTH _ => O.EXP
      | TERM tau => tau
+     | DIM_SUBST (r, u, m) => O.EXP
 
   exception InvalidJudgment
 
@@ -64,6 +70,7 @@ struct
        | EQ_TYPE (a, b) => O.MONO O.JDG_EQ_TYPE $$ [([],[]) \ a, ([],[]) \ b]
        | SYNTH m => O.MONO O.JDG_SYNTH $$ [([],[]) \ m]
        | TERM tau => O.MONO (O.JDG_TERM tau) $$ []
+       | DIM_SUBST (r, u, m) => O.MONO O.JDG_DIM_SUBST $$ [([],[]) \ r, ([u],[]) \ m]
 
     fun fromAbt jdg =
       case RedPrlAbt.out jdg of
@@ -72,6 +79,7 @@ struct
        | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
+       | O.MONO O.JDG_DIM_SUBST $ [_ \ r, ([u],_) \ m] => DIM_SUBST (r, u, m)
        | _ => raise InvalidJudgment
   end
 
@@ -87,6 +95,7 @@ struct
        | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
+       | O.MONO O.JDG_DIM_SUBST $ [_ \ r, ([u],_) \ m] => DIM_SUBST (r, u, m)
        | _ => raise InvalidJudgment
   end
 
