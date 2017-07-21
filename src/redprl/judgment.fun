@@ -28,6 +28,7 @@ struct
              (([],[]), tau)
            end
        | MATCH_RECORD (lbl, _) => (([],[]), RedPrlSortData.EXP)
+       | DIM_SUBST (r, u, m) => (([],[]), Tm.sort m)
   end
 end
 

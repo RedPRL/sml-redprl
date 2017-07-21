@@ -199,6 +199,15 @@ struct
       end
       handle _ =>
         raise E.error [Fpp.text "MATCH judgment failed to unify"]
+
+    fun DimSubst _ jdg = 
+      let
+        val _ = RedPrlLog.trace "Misc.DimSubst"
+        val DIM_SUBST (rtm, u, m) = jdg
+        val Abt.$ (O.POLY (O.DIM_REF r), _) = Abt.out rtm
+      in
+        Lcf.|> (T.empty, abtToAbs (substSymbol (r, u) m))
+      end
   end
 
   structure Equality =
@@ -616,7 +625,8 @@ struct
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
           | MATCH _ => Misc.MatchOperator
-          | MATCH_RECORD _ => Record.MatchRecord)
+          | MATCH_RECORD _ => Record.MatchRecord
+          | DIM_SUBST _ => Misc.DimSubst)
 
 
       fun isWfJdg (CJ.TRUE _) = false

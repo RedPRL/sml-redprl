@@ -26,6 +26,7 @@ struct
      >> of ((sym * psort) list * 'a CJ.jdg ctx) * 'a CJ.jdg
    | MATCH of operator * int * 'a * param list * 'a list
    | MATCH_RECORD of label * 'a
+   | DIM_SUBST of 'a * sym * 'a  
 
   infix >>
 
@@ -33,7 +34,7 @@ struct
     fn (I, H) >> catjdg => (I, Hyps.map (CJ.map f) H) >> CJ.map f catjdg
      | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
      | MATCH_RECORD (lbl, tm) => MATCH_RECORD (lbl, f tm)
-
+     | DIM_SUBST (r, u, m) => DIM_SUBST (f r, u, f m)
 
   fun renameHypsInTerm srho =
     Tm.substSymenv (Tm.Sym.Ctx.map Tm.O.P.VAR srho)
@@ -95,12 +96,12 @@ struct
           Fpp.hsep [Fpp.text ">>", CJ.pretty eq f catjdg]]
      | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
      | MATCH_RECORD (lbl, a) => Fpp.hsep [f a, Fpp.text "match_record", Fpp.text lbl]
+     | DIM_SUBST (r, u, m) => Fpp.hsep [f m, Fpp.seq [Fpp.char #"<", f r, Fpp.char #"/", TermPrinter.ppSym u, Fpp.char #">"]]
   fun pretty' f = pretty (fn _ => false) f
 
   val rec eq =
     fn ((I1, H1) >> catjdg1, (I2, H2) >> catjdg2) =>
        (let
-
          fun unifyPsorts (sigma1, sigma2) =
            if PS.eq (sigma1, sigma2) then sigma1 else
              raise Fail "psort mismatch in Sequent.eq"
@@ -132,5 +133,7 @@ struct
             andalso ListPair.allEq Tm.eq (ms1, ms2)
      | (MATCH_RECORD (lbl1, a1), MATCH_RECORD (lbl2, a2)) =>
           lbl1 = lbl2 andalso Tm.eq (a1, a2)
+     | (DIM_SUBST (r1, u1, m1), DIM_SUBST (r2, u2, m2)) => 
+          Tm.eq (r1, r2) andalso Tm.Sym.eq (u1, u2) andalso Tm.eq (m1, m2)
      | _ => false
 end

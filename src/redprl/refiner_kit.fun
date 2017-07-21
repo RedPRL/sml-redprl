@@ -87,6 +87,7 @@ struct
            (I, H) >> _ => (List.map (fn (u, sigma) => (P.VAR u, sigma)) I, hypsToSpine H)
          | MATCH _ => ([],[])
          | MATCH_RECORD _ => ([],[])
+         | DIM_SUBST _ => ([],[])
 
       val hole = check (x $# (ps, ms), tau)
     in
