@@ -74,16 +74,18 @@ Thm PathTest2 : [
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
-  let h : [(-> [b : wbool] (path {_} wbool b (BoolEta b))) ] =
-      lam b. if b then <y> `tt else <y> `ff.
-    <x> lam c. let p = h {hyp c}. let px = p @ &x. hyp px
+  <x> lam b.
+    let c : [(path {_} wbool ,b (BoolEta ,b))] =
+      if b then <y> `tt else <y> `ff.
+    let d = c @ &x.
+    hyp d
 ].
 
 // It turns out that it is just as good to figure out what the witness program for this path is
 // by hand, and then tell RedPRL to try and prove that it does in fact witness this path.
-// This approach has the advantage of being far more concise, but it has the disadvantage of
-// not being interactive: you must know ahead of time the entirety of the program, and
-// cannot take advantage of types in order to synthesize part of it.
+// This approach is not preferred, because it is not interactive: you must know ahead of time
+// the entirety of the program, and cannot take advantage of types in order to guide its
+// construction, or even synthesize part of it.
 Thm PathTest3 : [
   (path 
     {_} (-> wbool wbool)
@@ -157,8 +159,7 @@ Tac FunExtTac(#A; #B; #F; #G) = [
 
 Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac wbool wbool (Cmp Not Not) (lam [x] x));
-  lam x.
-    if x then <_> `tt else <_> `ff
+  lam x. if x then <_> `tt else <_> `ff
 ].
 
 Extract NotNotPath.
