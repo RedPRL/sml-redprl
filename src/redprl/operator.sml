@@ -6,6 +6,7 @@ struct
    | MTAC
    | JDG
    | TRIV
+   | DIM_EXP
 
   datatype param_sort =
      DIM
@@ -35,6 +36,7 @@ struct
      | MTAC => "mtac"
      | JDG => "jdg"
      | TRIV => "triv"
+     | DIM_EXP => "dim-exp"
 end
 
 
@@ -159,6 +161,7 @@ struct
    | RULE_LEMMA of 'a * ('a P.term * psort option) list
    | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list
    | HYP_REF of 'a
+   | DIM_REF of 'a P.term
    | RULE_HYP of 'a * sort
    | RULE_ELIM of 'a * sort
    | RULE_UNFOLD of 'a
@@ -304,6 +307,7 @@ struct
        | RULE_LEMMA (_, _) => [] ->> TAC
        | RULE_CUT_LEMMA (_, _) => [] ->> TAC
        | HYP_REF _ => [] ->> EXP
+       | DIM_REF _ => [] ->> DIM_EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
@@ -350,6 +354,7 @@ struct
        | RULE_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
        | RULE_CUT_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
+       | DIM_REF r => dimSupport r
        | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
        | RULE_UNFOLD a => [(a, OPID)]
@@ -415,6 +420,8 @@ struct
                | _ => false)
        | (HYP_REF a, t) =>
            (case t of HYP_REF b => f (a, b) | _ => false)
+       | (DIM_REF r1, t) =>
+           (case t of DIM_REF r2 => P.eq f (r1, r2) | _ => false)
        | (RULE_HYP (a, _), t) =>
            (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
        | (RULE_ELIM (a, _), t) =>
@@ -560,6 +567,7 @@ struct
        | RULE_CUT_LEMMA (opid, ps) =>
            "cut-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "@" ^ f a
+       | DIM_REF r => "dim-ref{" ^ P.toString f r ^ "}"
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
@@ -606,6 +614,7 @@ struct
        | RULE_LEMMA (opid, ps) => RULE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
        | RULE_CUT_LEMMA (opid, ps) => RULE_CUT_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
        | HYP_REF a => HYP_REF (mapSym (passSort (HYP EXP) f) a)
+       | DIM_REF r => DIM_REF (P.bind (passSort DIM f) r)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym (passSort (HYP tau) f) a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym (passSort (HYP tau) f) a, tau)
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
