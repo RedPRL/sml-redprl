@@ -15,104 +15,11 @@ struct
   infix 2 >> >: >:? >:+ $$ $# // \ @>
   infix orelse_
 
-  structure WeakBool =
+  structure Bool =
   struct
     fun EqType _ jdg =
       let
-        val _ = RedPrlLog.trace "WeakBool.EqType"
-        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
-        val Syn.WBOOL = Syn.out a
-        val Syn.WBOOL = Syn.out b
-      in
-        T.empty #> (I, H, trivial)
-      end
-      handle Bind =>
-        raise E.error [Fpp.text "Expected typehood sequent"]
-
-    fun EqTT _ jdg =
-      let
-        val _ = RedPrlLog.trace "WeakBool.EqTT"
-        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.WBOOL = Syn.out ty
-        val Syn.TT = Syn.out m
-        val Syn.TT = Syn.out n
-      in
-        T.empty #> (I, H, trivial)
-      end
-
-    fun EqFF _ jdg =
-      let
-        val _ = RedPrlLog.trace "WeakBool.EqFF"
-        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val Syn.WBOOL = Syn.out ty
-        val Syn.FF = Syn.out m
-        val Syn.FF = Syn.out n
-      in
-        T.empty #> (I, H, trivial)
-      end
-
-    fun EqFCom alpha jdg =
-      let
-        val _ = RedPrlLog.trace "WeakBool.EqFCom"
-        val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
-        val Syn.WBOOL = Syn.out ty
-        val Syn.FCOM args0 = Syn.out lhs
-        val Syn.FCOM args1 = Syn.out rhs
-      in
-        ComKit.EqFComDelegator alpha (I, H) args0 args1 ty
-      end
-
-    fun Elim z _ jdg =
-      let
-        val _ = RedPrlLog.trace "WeakBool.Elim"
-        val (I, H) >> CJ.TRUE cz = jdg
-        val CJ.TRUE ty = lookupHyp H z
-        val Syn.WBOOL = Syn.out ty
-
-        val tt = Syn.into Syn.TT
-        val ff = Syn.into Syn.FF
-
-        val (goalT, holeT) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) (substVar (tt, z) cz)
-        val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) (substVar (ff, z) cz)
-
-        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val if_ = Syn.into @@ Syn.IF ((z, cz), ztm, (holeT, holeF))
-      in
-        |>: goalT >: goalF #> (I, H, if_)
-      end
-      handle Bind =>
-        raise E.error [Fpp.text "Expected bool elimination problem"]
-
-    fun ElimEq alpha jdg =
-      let
-        val _ = RedPrlLog.trace "WeakBool.ElimEq"
-        val (I, H) >> CJ.EQ ((if0, if1), c) = jdg
-        val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
-        val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
-
-        val z = alpha 0
-        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val c0z = substVar (ztm, x) c0x
-        val c1z = substVar (ztm, y) c1y
-        val c0tt = substVar (Syn.into Syn.TT, x) c0x
-        val c0ff = substVar (Syn.into Syn.FF, x) c0x
-        val c0m0 = substVar (m0, x) c0x
-
-        val goalTy = makeEqType (I, H @> (z, CJ.TRUE @@ Syn.into Syn.WBOOL)) (c0z, c1z)
-        val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.WBOOL)
-        val goalTy0 = makeEqTypeIfDifferent (I, H) (c0m0, c) (* c0m0 type *)
-        val goalT = makeEq (I, H) ((t0, t1), c0tt)
-        val goalF = makeEq (I, H) ((f0, f1), c0ff)
-      in
-        |>: goalM >: goalT >: goalF >:? goalTy0 >: goalTy #> (I, H, trivial)
-      end
-  end
-
-  structure StrictBool =
-  struct
-    fun EqType _ jdg =
-      let
-        val _ = RedPrlLog.trace "StrictBool.EqType"
+        val _ = RedPrlLog.trace "Bool.EqType"
         val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
@@ -124,7 +31,7 @@ struct
 
     fun EqTT _ jdg =
       let
-        val _ = RedPrlLog.trace "StrictBool.EqTT"
+        val _ = RedPrlLog.trace "Bool.EqTT"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
         val Syn.BOOL = Syn.out ty
         val Syn.TT = Syn.out m
@@ -135,7 +42,7 @@ struct
 
     fun EqFF _ jdg =
       let
-        val _ = RedPrlLog.trace "StrictBool.EqFF"
+        val _ = RedPrlLog.trace "Bool.EqFF"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
         val Syn.BOOL = Syn.out ty
         val Syn.FF = Syn.out m
@@ -146,7 +53,7 @@ struct
 
     fun Elim z _ jdg =
       let
-        val _ = RedPrlLog.trace "StrictBool.Elim"
+        val _ = RedPrlLog.trace "Bool.Elim"
         val (I, H) >> CJ.TRUE cz = jdg
         val CJ.TRUE ty = lookupHyp H z
         val Syn.BOOL = Syn.out ty
@@ -158,7 +65,7 @@ struct
         val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) (substVar (ff, z) cz)
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val if_ = Syn.into @@ Syn.S_IF (ztm, (holeT, holeF))
+        val if_ = Syn.into @@ Syn.IF (ztm, (holeT, holeF))
       in
         |>: goalT >: goalF #> (I, H, if_)
       end
@@ -169,10 +76,10 @@ struct
      * The correct version should handle the dependent motive. *)
     fun ElimEq _ jdg =
       let
-        val _ = RedPrlLog.trace "StrictBool.ElimEq"
+        val _ = RedPrlLog.trace "Bool.ElimEq"
         val (I, H) >> CJ.EQ ((if0, if1), c) = jdg
-        val Syn.S_IF (m0, (t0, f0)) = Syn.out if0
-        val Syn.S_IF (m1, (t1, f1)) = Syn.out if1
+        val Syn.IF (m0, (t0, f0)) = Syn.out if0
+        val Syn.IF (m1, (t1, f1)) = Syn.out if1
 
         val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.BOOL)
         val goalT = makeEq (I, H) ((t0, t1), c)
@@ -183,7 +90,7 @@ struct
 
     fun EqElim z _ jdg =
       let
-        val _ = RedPrlLog.trace "StrictBool.EqElim"
+        val _ = RedPrlLog.trace "Bool.EqElim"
         val (I, H) >> catjdg = jdg
         val CJ.EQ ((m0z, m1z), cz) = catjdg
 
@@ -202,6 +109,99 @@ struct
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
+  end
+
+  structure WBool =
+  struct
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "WBool.EqType"
+        val (I, H) >> CJ.EQ_TYPE (a, b) = jdg
+        val Syn.WBOOL = Syn.out a
+        val Syn.WBOOL = Syn.out b
+      in
+        T.empty #> (I, H, trivial)
+      end
+      handle Bind =>
+        raise E.error [Fpp.text "Expected typehood sequent"]
+
+    fun EqTT _ jdg =
+      let
+        val _ = RedPrlLog.trace "WBool.EqTT"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.WBOOL = Syn.out ty
+        val Syn.TT = Syn.out m
+        val Syn.TT = Syn.out n
+      in
+        T.empty #> (I, H, trivial)
+      end
+
+    fun EqFF _ jdg =
+      let
+        val _ = RedPrlLog.trace "WBool.EqFF"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+        val Syn.WBOOL = Syn.out ty
+        val Syn.FF = Syn.out m
+        val Syn.FF = Syn.out n
+      in
+        T.empty #> (I, H, trivial)
+      end
+
+    fun EqFCom alpha jdg =
+      let
+        val _ = RedPrlLog.trace "WBool.EqFCom"
+        val (I, H) >> CJ.EQ ((lhs, rhs), ty) = jdg
+        val Syn.WBOOL = Syn.out ty
+        val Syn.FCOM args0 = Syn.out lhs
+        val Syn.FCOM args1 = Syn.out rhs
+      in
+        ComKit.EqFComDelegator alpha (I, H) args0 args1 ty
+      end
+
+    fun Elim z _ jdg =
+      let
+        val _ = RedPrlLog.trace "WBool.Elim"
+        val (I, H) >> CJ.TRUE cz = jdg
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.WBOOL = Syn.out ty
+
+        val tt = Syn.into Syn.TT
+        val ff = Syn.into Syn.FF
+
+        val (goalT, holeT) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) (substVar (tt, z) cz)
+        val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) (substVar (ff, z) cz)
+
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val if_ = Syn.into @@ Syn.WIF ((z, cz), ztm, (holeT, holeF))
+      in
+        |>: goalT >: goalF #> (I, H, if_)
+      end
+      handle Bind =>
+        raise E.error [Fpp.text "Expected bool elimination problem"]
+
+    fun ElimEq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "WBool.ElimEq"
+        val (I, H) >> CJ.EQ ((if0, if1), c) = jdg
+        val Syn.WIF ((x, c0x), m0, (t0, f0)) = Syn.out if0
+        val Syn.WIF ((y, c1y), m1, (t1, f1)) = Syn.out if1
+
+        val z = alpha 0
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val c0z = substVar (ztm, x) c0x
+        val c1z = substVar (ztm, y) c1y
+        val c0tt = substVar (Syn.into Syn.TT, x) c0x
+        val c0ff = substVar (Syn.into Syn.FF, x) c0x
+        val c0m0 = substVar (m0, x) c0x
+
+        val goalTy = makeEqType (I, H @> (z, CJ.TRUE @@ Syn.into Syn.WBOOL)) (c0z, c1z)
+        val goalM = makeEq (I, H) ((m0, m1), Syn.into Syn.WBOOL)
+        val goalTy0 = makeEqTypeIfDifferent (I, H) (c0m0, c) (* c0m0 type *)
+        val goalT = makeEq (I, H) ((t0, t1), c0tt)
+        val goalF = makeEq (I, H) ((f0, f1), c0ff)
+      in
+        |>: goalM >: goalT >: goalF >:? goalTy0 >: goalTy #> (I, H, trivial)
+      end
   end
 
   structure Nat =
@@ -469,7 +469,7 @@ struct
         val goalCoh1 = makeEqIfAllDifferent (I, Hbase) ((l1, holeB), cbase) [l0]
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val elim = Syn.into @@ Syn.S1_ELIM ((z, cz), ztm, (holeB, (u, holeL)))
+        val elim = Syn.into @@ Syn.S1_REC ((z, cz), ztm, (holeB, (u, holeL)))
       in
         |>: goalB >: goalL >:? goalCoh0 >:? goalCoh1 #> (I, H, elim)
       end
@@ -480,8 +480,8 @@ struct
       let
         val _ = RedPrlLog.trace "S1.ElimEq"
         val (I, H) >> CJ.EQ ((elim0, elim1), c) = jdg
-        val Syn.S1_ELIM ((x, c0x), m0, (b0, (u, l0u))) = Syn.out elim0
-        val Syn.S1_ELIM ((y, c1y), m1, (b1, (v, l1v))) = Syn.out elim1
+        val Syn.S1_REC ((x, c0x), m0, (b0, (u, l0u))) = Syn.out elim0
+        val Syn.S1_REC ((y, c1y), m1, (b1, (v, l1v))) = Syn.out elim1
 
         val z = alpha 0
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
@@ -584,7 +584,7 @@ struct
         val Syn.DFUN (_, x, _) = Syn.out dfun
 
         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
-        val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.AP (m, xtm))
+        val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.APP (m, xtm))
         val goal1 = makeMem (I, H) (m, dfun)
         val goal2 = makeEq (I, H) ((m', n), dfun)
       in
@@ -606,26 +606,26 @@ struct
 
         val utm = Syn.into @@ Syn.VAR (u, O.EXP)
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val aptm = Syn.into @@ Syn.AP (ztm, holeA)
+        val aptm = Syn.into @@ Syn.APP (ztm, holeA)
         (* note: a and bx come from the telescope so they are types *)
         val H' = Hyps.empty @> (u, CJ.TRUE b') @> (v, CJ.EQ ((utm, aptm), b'))
         val H'' = Hyps.interposeAfter H z H'
 
         val (goal2, hole2) = makeTrue (I, H'') cz
 
-        val aptm = Syn.into @@ Syn.AP (ztm, holeA)
+        val aptm = Syn.into @@ Syn.APP (ztm, holeA)
         val rho = Var.Ctx.insert (Var.Ctx.insert Var.Ctx.empty u aptm) v trivial
         val hole2' = substVarenv rho hole2
       in
         |>: goalA >: goal2 #> (I, H, hole2')
       end
 
-    fun ApEq _ jdg =
+    fun AppEq _ jdg =
       let
-        val _ = RedPrlLog.trace "DFun.ApEq"
+        val _ = RedPrlLog.trace "DFun.AppEq"
         val (I, H) >> CJ.EQ ((ap0, ap1), _) = jdg
-        val Syn.AP (m0, n0) = Syn.out ap0
-        val Syn.AP (m1, n1) = Syn.out ap1
+        val Syn.APP (m0, n0) = Syn.out ap0
+        val Syn.APP (m1, n1) = Syn.out ap1
 
         val (goalDFun0, holeDFun0) = makeSynth (I, H) m0
         val (goalDFun1, holeDFun1) = makeSynth (I, H) m1
@@ -971,13 +971,13 @@ struct
         |>: goalM >:? goalM00 >:? goalM01 #> (I, H, trivial)
       end
 
-    fun ApEq _ jdg =
+    fun AppEq _ jdg =
       let
-        val _ = RedPrlLog.trace "Path.ApEq"
+        val _ = RedPrlLog.trace "Path.AppEq"
         val (I, H) >> CJ.EQ ((ap0, ap1), ty) = jdg
-        val Syn.PATH_AP (m0, r0) = Syn.out ap0
-        val Syn.PATH_AP (m1, r1) = Syn.out ap1
-        val () = Assert.paramEq "Path.ApEq" (r0, r1)
+        val Syn.PATH_APP (m0, r0) = Syn.out ap0
+        val Syn.PATH_APP (m1, r1) = Syn.out ap1
+        val () = Assert.paramEq "Path.AppEq" (r0, r1)
         val (goalSynth, holeSynth) = makeSynth (I, H) m0
         val goalMem = makeEqIfDifferent (I, H) ((m0, m1), holeSynth) (* m0 well-typed *)
         val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [r0], [])
@@ -986,11 +986,11 @@ struct
         |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (I, H, trivial)
       end
 
-    fun ApConstCompute _ jdg =
+    fun AppConstCompute _ jdg =
       let
-        val _ = RedPrlLog.trace "Path.ApConstCompute"
+        val _ = RedPrlLog.trace "Path.AppConstCompute"
         val (I, H) >> CJ.EQ ((ap, p), a) = jdg
-        val Syn.PATH_AP (m, P.APP r) = Syn.out ap
+        val Syn.PATH_APP (m, P.APP r) = Syn.out ap
         val (goalSynth, holeSynth) = makeSynth (I, H) m
 
         val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2
@@ -1009,7 +1009,7 @@ struct
         val (I, H) >> CJ.EQ ((m, n), pathTy) = jdg
         val Syn.PATH_TY ((u, _), _, _) = Syn.out pathTy
 
-        val m' = Syn.into @@ Syn.PATH_ABS (u, Syn.into @@ Syn.PATH_AP (m, P.ret u))
+        val m' = Syn.into @@ Syn.PATH_ABS (u, Syn.into @@ Syn.PATH_APP (m, P.ret u))
         val goal1 = makeMem (I, H) (m, pathTy)
         val goal2 = makeEqIfDifferent (I, H) ((m', n), pathTy) (* m' will-typed *)
       in

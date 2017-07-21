@@ -22,10 +22,10 @@ struct
    | AX
    (* formal composition *)
    | FCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
-   (* weak bool: true, false and if *)
-   | WBOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
-   (* strict bool: strict if (true and false are shared) *)
-   | BOOL | S_IF of 'a * ('a * 'a)
+   (* strict bool *)
+   | BOOL | TT | FF | IF of 'a * ('a * 'a)
+   (* weak bool *)
+   | WBOOL | WIF of (variable * 'a) * 'a * ('a * 'a)
    (* natural numbers *)
    | NAT | ZERO | SUCC of 'a
    | NAT_REC of 'a * ('a * (variable * variable * 'a))
@@ -34,17 +34,17 @@ struct
    | INT_REC of 'a * ((variable * variable * 'a) * 'a * (variable * variable * 'a))
    (* empty type *)
    | VOID
-   (* circle: base, loop and s1_elim *)
-   | S1 | BASE | LOOP of param | S1_ELIM of (variable * 'a) * 'a * ('a * (symbol * 'a))
+   (* circle *)
+   | S1 | BASE | LOOP of param | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
    (* function: lambda and app *)
-   | DFUN of 'a * variable * 'a | LAM of variable * 'a | AP of 'a * 'a
+   | DFUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
    (* prodcut: pair, fst and snd *)
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    (* record *)
    | RECORD of 'a LabelDict.dict
    | TUPLE of 'a LabelDict.dict | PROJ of string * 'a
    (* path: path abstraction and path application *)
-   | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_AP of 'a * param
+   | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
    (* hcom operator *)
    | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* coe operator *)
@@ -120,13 +120,13 @@ struct
              intoFcom (dir, eqs) (cap, tubes)
            end
 
-       | WBOOL => O.MONO O.WBOOL $$ []
-       | TT => O.MONO O.TRUE $$ []
-       | FF => O.MONO O.FALSE $$ []
-       | IF ((x, cx), m, (t, f)) => O.MONO O.IF $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
-
        | BOOL => O.MONO O.BOOL $$ []
-       | S_IF (m, (t, f)) => O.MONO O.S_IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
+       | TT => O.MONO O.TT $$ []
+       | FF => O.MONO O.FF $$ []
+       | IF (m, (t, f)) => O.MONO O.IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
+
+       | WBOOL => O.MONO O.WBOOL $$ []
+       | WIF ((x, cx), m, (t, f)) => O.MONO O.WIF $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
 
        | NAT => O.MONO O.NAT $$ []
        | ZERO => O.MONO O.ZERO $$ []
@@ -143,11 +143,11 @@ struct
        | S1 => O.MONO O.S1 $$ []
        | BASE => O.MONO O.BASE $$ []
        | LOOP r => O.POLY (O.LOOP r) $$ []
-       | S1_ELIM ((x, cx), m, (b, (u, l))) => O.MONO O.S1_ELIM $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([u],[]) \ l]
+       | S1_REC ((x, cx), m, (b, (u, l))) => O.MONO O.S1_REC $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([u],[]) \ l]
 
        | DFUN (a, x, bx) => O.MONO O.DFUN $$ [([],[]) \ a, ([],[x]) \ bx]
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
-       | AP (m, n) => O.MONO O.AP $$ [([],[]) \ m, ([],[]) \ n]
+       | APP (m, n) => O.MONO O.APP $$ [([],[]) \ m, ([],[]) \ n]
 
        | DPROD (a, x, bx) => O.MONO O.DPROD $$ [([],[]) \ a, ([],[x]) \ bx]
        | PAIR (m, n) => O.MONO O.PAIR $$ [([],[]) \ m, ([],[]) \ n]
@@ -170,7 +170,7 @@ struct
 
        | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
-       | PATH_AP (m, r) => O.POLY (O.PATH_AP r) $$ [([],[]) \ m]
+       | PATH_APP (m, r) => O.POLY (O.PATH_APP r) $$ [([],[]) \ m]
 
        | HCOM {dir, ty, cap, tubes} =>
            let
@@ -190,7 +190,7 @@ struct
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
 
-    val intoAp = into o AP
+    val intoAp = into o APP
     val intoLam = into o LAM
 
     val intoFst = into o FST
@@ -210,13 +210,13 @@ struct
        | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
            FCOM {dir = dir, cap = cap, tubes = outTubes (eqs, tubes)}
 
-       | O.MONO O.WBOOL $ _ => WBOOL
-       | O.MONO O.TRUE $ _ => TT
-       | O.MONO O.FALSE $ _ => FF
-       | O.MONO O.IF $ [(_,[x]) \ cx, _ \ m, _ \ t, _ \ f] => IF ((x, cx), m, (t, f))
-
        | O.MONO O.BOOL $ _ => BOOL
-       | O.MONO O.S_IF $ [_ \ m, _ \ t, _ \ f] => S_IF (m, (t, f))
+       | O.MONO O.TT $ _ => TT
+       | O.MONO O.FF $ _ => FF
+       | O.MONO O.IF $ [_ \ m, _ \ t, _ \ f] => IF (m, (t, f))
+
+       | O.MONO O.WBOOL $ _ => WBOOL
+       | O.MONO O.WIF $ [(_,[x]) \ cx, _ \ m, _ \ t, _ \ f] => WIF ((x, cx), m, (t, f))
 
        | O.MONO O.NAT $ _ => NAT
        | O.MONO O.ZERO $ _ => ZERO
@@ -233,11 +233,11 @@ struct
        | O.MONO O.S1 $ _ => S1
        | O.MONO O.BASE $ _ => BASE
        | O.POLY (O.LOOP r) $ _ => LOOP r
-       | O.MONO O.S1_ELIM $ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] => S1_ELIM ((x, cx), m, (b, (u, l)))
+       | O.MONO O.S1_REC $ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] => S1_REC ((x, cx), m, (b, (u, l)))
 
        | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] => DFUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
-       | O.MONO O.AP $ [_ \ m, _ \ n] => AP (m, n)
+       | O.MONO O.APP $ [_ \ m, _ \ n] => APP (m, n)
 
        | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] => DPROD (a, x, bx)
        | O.MONO O.PAIR $ [_ \ m, _ \ n] => PAIR (m, n)
@@ -250,7 +250,7 @@ struct
 
        | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
-       | O.POLY (O.PATH_AP r) $ [_ \ m] => PATH_AP (m, r)
+       | O.POLY (O.PATH_APP r) $ [_ \ m] => PATH_APP (m, r)
 
        | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
            HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}

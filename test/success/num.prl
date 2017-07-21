@@ -51,7 +51,7 @@ Thm Plus : [
     lam a.
     fresh a', ind <- elim a;
     [ `(lam [x] x); auto ];
-    [ `(lam [x] (succ (app ,ind x))); auto ];
+    [ `(lam [x] (succ ($ ,ind x))); auto ];
   };
   auto
 ].
@@ -63,7 +63,7 @@ Def Plus2 = [
    (nat-rec
     a
     (lam [x] x)
-    [a' ind] (lam [x] (succ (app ind x)))))
+    [a' ind] (lam [x] (succ ($ ind x)))))
 ].
 
 Thm Plus2Wf : [
@@ -75,7 +75,7 @@ Thm Plus2Wf : [
 ].
 
 Thm Plus2UnitL : [
-  n : nat >> (app (app Plus2 0) n) = n in nat
+  n : nat >> ($ Plus2 0 n) = n in nat
 ] by [
   auto
 ].

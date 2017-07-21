@@ -116,6 +116,24 @@ struct
          multiLam (x :: xs) mx
      | _ => (List.rev xs, m)
 
+  fun multiApp m (ns : abt list) =
+    case Abt.out m of
+       O.MONO O.APP $ [_ \ m, _ \ n] =>
+         multiApp m (n :: ns)
+     | _ => (m, ns)
+
+  fun multiPathAbs (us : symbol list) m =
+    case Abt.out m of
+       O.MONO O.PATH_ABS $ [([u], _) \ mu] =>
+         multiPathAbs (u :: us) mu
+     | _ => (List.rev us, m)
+
+  fun multiPathApp m (rs : param list) =
+    case Abt.out m of
+       O.POLY (O.PATH_APP r) $ [_ \ m] =>
+         multiPathApp m (r :: rs)
+     | _ => (m, rs)
+
   fun printQuant opr (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
       (text opr)
@@ -126,17 +144,30 @@ struct
     Atomic.parens @@ expr @@ hvsep @@
       [hvsep [text "lam", varBinding xs], align @@ ppTerm m]
 
+  and printApp (m, ns) =
+    Atomic.parens @@ expr @@ hvsep
+      (char #"$" :: ppTerm m :: List.map ppTerm ns)
+
+  and printPathAbs (us, m) =
+    Atomic.parens @@ expr @@ hvsep @@
+      [hvsep [text "abs", symBinding us], align @@ ppTerm m]
+
+  and printPathApp (m, rs) =
+    Atomic.parens @@ expr @@ hvsep
+      (char #"@" :: ppTerm m :: List.map ppParam rs)
+
   and ppTerm m =
     case Abt.out m of
        O.POLY (O.HYP_REF x) $ [] => seq [char #",", ppVar x]
+     | `x => ppVar x
      | O.POLY (O.LOOP x) $ [] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
      | O.MONO O.DFUN $ _ =>
          printQuant "->" @@ multiDFun [] m
      | O.MONO O.LAM $ _ =>
          printLam @@ multiLam [] m
-     | O.MONO O.AP $ [_ \ m, _ \ n] =>
-         Atomic.parens @@ expr @@ hvsep [text "app", ppTerm m, ppTerm n]
+     | O.MONO O.APP $ _ =>
+         printApp @@ multiApp m []
      | O.MONO O.DPROD $ _ =>
          printQuant "*" @@ multiDProd [] m
      | O.MONO (O.RECORD []) $ _ => text "record"
@@ -159,9 +190,10 @@ struct
          end
      | O.MONO (O.PROJ lbl) $ [_ \ m] =>
          Atomic.parens @@ expr @@ hvsep [char #"!", text lbl, ppTerm m]
-     | O.POLY (O.PATH_AP r) $ [_ \ m] =>
-         Atomic.parens @@ expr @@ hvsep [char #"@", ppTerm m, ppParam r]
-     | `x => ppVar x
+     | O.MONO O.PATH_ABS $ _ =>
+         printPathAbs @@ multiPathAbs [] m
+     | O.POLY (O.PATH_APP _) $ _ =>
+         printPathApp @@ multiPathApp m []
      | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "hcom" dir, ppBinder ty, ppBinder cap]
