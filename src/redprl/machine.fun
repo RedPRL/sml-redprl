@@ -1,44 +1,4 @@
-functor RedPrlMachine (Sig : MINI_SIGNATURE) :
-sig
-  type sign = Sig.sign
-  type abt = RedPrlAbt.abt
-  type 'a machine
-
-  datatype stability = 
-     CUBICAL
-   | NOMINAL
-
-  datatype blocker =
-     VAR of RedPrlAbt.variable
-   | METAVAR of RedPrlAbt.metavariable
-
-  exception Unstable
-  exception Stuck
-  exception Neutral of blocker
-  exception Final
-
-  datatype canonicity =
-     CANONICAL
-   | NEUTRAL of blocker
-   | REDEX
-   | STUCK
-   | UNSTABLE
-
-
-  datatype 'a action = 
-     COMPAT of 'a
-   | CRITICAL of 'a
-   | STEP of 'a
-
-  val unwrapAction : 'a action -> 'a
-
-  val canonicity : sign -> stability -> abt -> canonicity
-
-  val init : abt -> abt machine
-  val step : sign -> stability -> abt machine -> abt machine action
-  val unload : abt machine -> abt
-  val eval : sign -> stability -> abt -> abt
-end = 
+functor RedPrlMachine (Sig : MINI_SIGNATURE) : REDPRL_MACHINE =
 struct
   structure Tm = RedPrlAbt
   structure Syn = Syntax
@@ -618,11 +578,11 @@ struct
       fun go 0 cfg = cfg
         | go n cfg = go (n - 1) (go1 cfg)
     in
-      unload o go n
+      unload o go n o init
     end
 
   fun canonicity sign stability tm =
-    (steps sign stability 1 (init tm); REDEX) 
+    (steps sign stability 1 tm; REDEX) 
     handle Stuck => STUCK
          | Final => CANONICAL
          | Unstable => UNSTABLE

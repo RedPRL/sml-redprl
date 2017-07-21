@@ -17,7 +17,6 @@ is
   $libs/sml-cats/cats.cm
   $libs/sml-telescopes/telescopes.cm
   $libs/sml-typed-abts/abt.cm
-  $libs/sml-typed-abts/abt-machine.cm
   $libs/sml-typed-abts/basis/basis.cm
   $libs/sml-dependent-lcf/dependent_lcf.cm
   $libs/sml-dependent-lcf/lcf_abt.cm
@@ -62,7 +61,8 @@ is
   redprl/redprl_lexer.sml
   redprl/redprl_parser.sml
 
-  redprl/machine.sml
+  redprl/machine.sig
+  redprl/machine.fun
 
   redprl/refiner_kit.fun
   redprl/refiner_composition_kit.fun
