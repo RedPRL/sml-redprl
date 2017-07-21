@@ -19,19 +19,16 @@ Thm NatOne : [
 Thm Pred : [
   (-> nat nat)
 ] by [
-  {
-    lam a.
-    fresh a', ind <- elim a;
-    [ `zero; auto ];
-    [ hyp a'; auto ];
-  };
-  auto
+  lam a.
+  fresh a', ind <- elim a;
+  [ `zero ];
+  [ hyp a' ];
 ].
 
 Extract Pred.
 
 Def Pred2 = [
-   (lam [x] (nat-rec x zero [y z] y))
+  (lam [x] (nat-rec x zero [y z] y))
 ].
 
 Extract Pred2.
@@ -47,13 +44,11 @@ Thm Prod2Wf : [
 Thm Plus : [
   (-> nat nat nat)
 ] by [
-  {
-    lam a.
-    fresh a', ind <- elim a;
-    [ `(lam [x] x); auto ];
-    [ `(lam [x] (succ ($ ,ind x))); auto ];
-  };
-  auto
+  lam a.
+  fresh a', ind <- elim a;
+  [ `(lam [x] x)
+  , `(lam [x] (succ ($ ,ind x)))
+  ]
 ].
 
 Extract Plus.

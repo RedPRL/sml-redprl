@@ -74,11 +74,19 @@ Thm PathTest2 : [
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
-  <x> lam b.
-    let c : [(path {_} wbool ,b (BoolEta ,b))] =
-      if b then <y> `tt else <y> `ff.
-    let d = c @ &x.
-    hyp d
+  // abstract a dimension
+  <x>
+    // now, we are constructing a line of functions; so we use a lambda.
+    lam b.
+      // for our b:wbool, we will construct a path between b and (BoolEta b)
+      let p : [(path {_} wbool ,b (BoolEta ,b))] =
+        if b then <y> `tt else <y> `ff.
+
+      // Now, we will project the 'x'-side of our path. In the interactive tactic environment,
+      // dimension expressions are supplied to the refiner using the & "dimension quotation"
+      // operator.
+      let px = p @ &x.
+      hyp px
 ].
 
 // It turns out that it is just as good to figure out what the witness program for this path is

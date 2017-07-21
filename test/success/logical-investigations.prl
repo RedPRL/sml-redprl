@@ -14,12 +14,7 @@ Thm Thm1(#A; #B) : [
   type/B : #B type
   >> (-> #A #B #A)
 ] by [
-  // The main part of the theorem is the following expression; but in RedPRL, this induces some
-  // auxiliary subgoals, which have to be resolved. To do that, we put the main part of the proof
-  // in braces, and proceed with the 'auto' tactic, which resolves the remaining subgoals automatically.
-  // To see what these subgoals look like, comment out 'auto'.
-  {lam a. lam b. hyp a};
-  auto
+  lam a. lam b. hyp a
 ].
 
 Thm Thm2(#A; #B; #C) : [
@@ -28,14 +23,13 @@ Thm Thm2(#A; #B; #C) : [
   type/C : #C type
   >> (-> (-> #A #B) (-> #A #B #C) #A #C)
 ] by [
-  {lam f. lam g. lam a.
+  lam f. lam g. lam a.
    // RedPRL's logic is a sequent calculus, which means that you apply 
    // functions in your context using let bindings in the following way:
    let b = f {hyp a}.
    let h = g {hyp a}.
    let c = h {hyp b}.
-   hyp c};
-  auto
+   hyp c
 ].
 
 // It is worthwhile to print out the extract program / evidence for Thm2.
@@ -70,12 +64,12 @@ Thm Thm3/high-level(#A; #B; #C) : [
       (-> #B #C)
       (-> #A #C))
 ] by [
-  { lam ab. lam bc. lam a.
-    let c = bc {
-      let b = ab hyp a.
-      hyp b
-    }. hyp c
-  }; auto
+  lam ab. lam bc. lam a.
+  let c = bc {
+    let b = ab hyp a.
+    hyp b
+  }.
+  hyp c
 ].
 
 Extract Thm3/high-level.
@@ -93,25 +87,20 @@ Thm Thm4(#A; #B) : [
   type/A : #A type
   >> (-> (Not #A) #A #B)
 ] by [
-  { lam r. lam a.
-    unfold Not;
-    let boom = r {hyp a}.
-    elim boom
-  };
-  auto
+  lam r. lam a.
+  unfold Not;
+  let boom = r {hyp a}.
+  elim boom
 ].
 
 Thm Thm5(#A) : [
   type/A : #A type
   >> (-> #A (Not (Not #A)))
 ] by [
-  { lam a.
-    unfold Not;
-    lam r.
-    let x = r {hyp a}.
-    hyp x // watch how the extract changes  if you replace this with 'elim x'
-  };
-  auto
+  lam a. unfold Not;
+  lam r.
+  let x = r {hyp a}.
+  hyp x // watch how the extract changes  if you replace this with 'elim x'
 ].
 
 Print Thm4.
@@ -122,12 +111,8 @@ Thm Thm6(#A;#B) : [
   type/B : #B type
   >> (-> (-> #A #B) (Not #B) (Not #A))
 ] by [
-  { lam ab. lam nb.
-    unfold Not;
-    lam a. 
-    let bang = nb {
-      let b = ab hyp a. hyp b
-    }.
+  lam ab. lam nb. unfold Not;
+  lam a.
+    let bang = nb { let b = ab hyp a. hyp b }.
     hyp bang
-  }; auto
 ].
