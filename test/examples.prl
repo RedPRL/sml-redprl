@@ -189,3 +189,10 @@ Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
   < `tt, <x> `tt >;
   auto
 ].
+
+Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
+  {lam x.
+    fresh y <- elim x;
+    [&0, auto, auto];
+    hyp y}; auto
+].

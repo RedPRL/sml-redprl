@@ -659,6 +659,7 @@ struct
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
          | Syn.DPROD _ => DProd.Elim
+         | Syn.PATH_TY _ => Path.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepEq ty =

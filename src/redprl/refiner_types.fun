@@ -945,6 +945,38 @@ struct
         #> (I, H, abstr)
       end
 
+    fun Elim z alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Path.Elim"
+
+        val (I, H) >> CJ.TRUE motive = jdg
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.PATH_TY ((u, a), p0, p1) = Syn.out ty
+
+        val x = alpha 0
+        val y = alpha 1
+        
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
+
+        val (dimGoal, dimHole) = makeGoal @@ (I, H) >> CJ.TERM O.DIM_EXP
+        val (arGoal, arHole) = makeGoal @@ DIM_SUBST (dimHole, u, a)
+
+        val w = Sym.named "w"
+        val (pathAppGoal, pathAppHole) = makeGoal @@ DIM_SUBST (dimHole, w, Syn.into @@ Syn.PATH_APP (ztm, P.ret w))
+
+        val hypx = CJ.TRUE @@ arHole
+        val hypy = CJ.EQ ((xtm, pathAppHole), arHole)
+
+        val H' = Hyps.empty @> (x, CJ.TRUE arHole) @> (y, CJ.EQ ((xtm, pathAppHole), arHole))
+        val H'' = Hyps.interposeAfter H z H'
+
+        val (mainGoal, mainHole) = makeGoal @@ (I, H'') >> CJ.TRUE motive
+        val rho = Var.Ctx.insert (Var.Ctx.singleton x pathAppHole) y trivial
+      in
+        |>: dimGoal >: arGoal >: pathAppGoal >: mainGoal #> (I, H, substVarenv rho mainHole)
+      end
+
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Path.Eq"
