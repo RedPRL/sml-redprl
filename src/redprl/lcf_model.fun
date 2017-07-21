@@ -28,7 +28,7 @@ struct
       | O.MONO O.RULE_AUTO_STEP $ _ => Rules.AutoStep sign
       | O.POLY (O.RULE_HYP (z, _)) $ _ => hyp z
       | O.POLY (O.RULE_ELIM (z, _)) $ _ => Rules.Elim sign z
-      | O.MONO O.RULE_EXACT $ [_ \ tm] => Rules.Exact tm
+      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => Rules.Exact tm
       | O.MONO O.RULE_HEAD_EXP $ _ => Rules.Computation.EqHeadExpansion sign
       | O.MONO O.RULE_SYMMETRY $ _ => Rules.Equality.Symmetry
       | O.MONO O.RULE_CUT $ [_ \ catjdg] => Rules.Cut (RedPrlCategoricalJudgment.fromAbt catjdg)

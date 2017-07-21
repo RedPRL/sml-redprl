@@ -497,7 +497,7 @@ struct
      | O.MONO (O.MTAC_HOLE _) $ _ || (_, []) => raise Final
      | O.MONO O.TAC_MTAC $ _ || (_, []) => raise Final
      | O.MONO O.RULE_ID $ _ || (_, []) => raise Final
-     | O.MONO O.RULE_EXACT $ _ || (_, []) => raise Final
+     | O.MONO (O.RULE_EXACT _) $ _ || (_, []) => raise Final
      | O.MONO O.RULE_SYMMETRY $ _ || (_, []) => raise Final
      | O.MONO O.RULE_AUTO_STEP $ _ || (_, []) => raise Final
      | O.POLY (O.RULE_HYP _) $ _ || (_, []) => raise Final

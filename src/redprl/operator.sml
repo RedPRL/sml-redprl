@@ -137,7 +137,7 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT | RULE_HEAD_EXP
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of RedPrlSort.t | RULE_HEAD_EXP
    | RULE_CUT
 
    (* development calculus terms *)
@@ -256,7 +256,7 @@ struct
      | RULE_ID => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
-     | RULE_EXACT => [[] * [] <> EXP] ->> TAC
+     | RULE_EXACT tau => [[] * [] <> tau] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
 
@@ -501,7 +501,7 @@ struct
      | RULE_ID => "id"
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
-     | RULE_EXACT => "EXACT"
+     | RULE_EXACT _ => "exact"
      | RULE_HEAD_EXP => "head-expand"
      | RULE_CUT => "cut"
 

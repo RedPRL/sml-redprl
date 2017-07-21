@@ -54,6 +54,7 @@ whitespace = [\ \t];
 "]"                => (Tokens.RSQUARE (posTuple (size yytext)));
 "."                => (Tokens.DOT (posTuple (size yytext)));
 ","                => (Tokens.COMMA (posTuple (size yytext)));
+"&"                => (Tokens.AMPERSAND (posTuple (size yytext)));
 ":"                => (Tokens.COLON (posTuple (size yytext)));
 ";"                => (Tokens.SEMI (posTuple (size yytext)));
 "#"                => (Tokens.HASH (posTuple (size yytext)));
