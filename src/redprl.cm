@@ -63,7 +63,7 @@ is
   redprl/redprl_parser.sml
 
   redprl/machine.sig
-  redprl/machine.sml
+  redprl/machine.fun
 
   redprl/refiner_kit.fun
   redprl/refiner_composition_kit.fun
