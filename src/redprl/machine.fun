@@ -19,6 +19,7 @@ struct
   structure Tac =
   struct
     val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
+    val auto = O.MONO O.MTAC_AUTO $$ []
 
     fun elim (u, tau) =
       O.POLY (O.RULE_ELIM (u, tau)) $$ []
@@ -486,6 +487,8 @@ struct
      | O.MONO O.JDG_EQ_TYPE $ _ || (_, []) => raise Final
      | O.MONO O.JDG_TRUE $ _ || (_, []) => raise Final
      | O.MONO O.JDG_SYNTH $ _ || (_, []) => raise Final
+     | O.MONO O.JDG_DIM_SUBST $ _ || (_, []) => raise Final
+     | O.MONO (O.JDG_TERM _) $ _ || (_, []) => raise Final
 
      (* rules, tactics and multitactics *)
      | O.MONO O.MTAC_ALL $ _ || (_, []) => raise Final
@@ -497,7 +500,7 @@ struct
      | O.MONO (O.MTAC_HOLE _) $ _ || (_, []) => raise Final
      | O.MONO O.TAC_MTAC $ _ || (_, []) => raise Final
      | O.MONO O.RULE_ID $ _ || (_, []) => raise Final
-     | O.MONO O.RULE_EXACT $ _ || (_, []) => raise Final
+     | O.MONO (O.RULE_EXACT _) $ _ || (_, []) => raise Final
      | O.MONO O.RULE_SYMMETRY $ _ || (_, []) => raise Final
      | O.MONO O.RULE_AUTO_STEP $ _ || (_, []) => raise Final
      | O.POLY (O.RULE_HYP _) $ _ || (_, []) => raise Final
@@ -530,6 +533,7 @@ struct
      | O.POLY (O.DEV_S1_ELIM z) $ [_ \ t1, ([v],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2])) || (syms, stk)
      | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2])) || (syms, stk)
      | O.POLY (O.DEV_DPROD_ELIM z) $ [([x,y], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
+     | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,Tac.mtac Tac.auto, Tac.mtac Tac.auto, t2])) || (syms, stk)
      | _ => raise Stuck
 
   fun step sign stability (tm || stk) =

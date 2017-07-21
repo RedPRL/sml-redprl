@@ -23,17 +23,16 @@ struct
   type 'a ctx = 'a Hyps.telescope
 
   datatype 'a jdg =
-     >> of ((sym * psort) list * 'a CJ.jdg ctx) * 'a CJ.jdg
+     >> of ((sym * psort) list * (sym, 'a) CJ.jdg ctx) * (sym, 'a) CJ.jdg
    | MATCH of operator * int * 'a * param list * 'a list
    | MATCH_RECORD of label * 'a
 
   infix >>
 
   fun map f =
-    fn (I, H) >> catjdg => (I, Hyps.map (CJ.map f) H) >> CJ.map f catjdg
+    fn (I, H) >> catjdg => (I, Hyps.map (CJ.map_ f) H) >> CJ.map_ f catjdg
      | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
      | MATCH_RECORD (lbl, tm) => MATCH_RECORD (lbl, f tm)
-
 
   fun renameHypsInTerm srho =
     Tm.substSymenv (Tm.Sym.Ctx.map Tm.O.P.VAR srho)
@@ -59,7 +58,7 @@ struct
            EMPTY => Hyps.empty
          | CONS (x, catjdg, Hx) =>
            let
-             val catjdg' = CJ.map (Tm.substSymenv srho') catjdg
+             val catjdg' = CJ.map_ (Tm.substSymenv srho') catjdg
            in
              case Tm.Sym.Ctx.find srho x of
                  NONE => Hyps.cons x catjdg' (relabelHyps Hx srho)
@@ -72,7 +71,7 @@ struct
   fun relabel srho =
     fn (I, H) >> catjdg =>
        (List.map (fn (u, sigma) => (Tm.Sym.Ctx.lookup srho u handle _ => u, sigma)) I, relabelHyps H srho)
-         >> CJ.map (renameHypsInTerm srho) catjdg
+         >> CJ.map_ (renameHypsInTerm srho) catjdg
      | jdg => map (renameHypsInTerm srho) jdg
 
   structure P = CJ.Tm.O.P and PS = CJ.Tm.O.Ar.Vl.PS
@@ -100,7 +99,6 @@ struct
   val rec eq =
     fn ((I1, H1) >> catjdg1, (I2, H2) >> catjdg2) =>
        (let
-
          fun unifyPsorts (sigma1, sigma2) =
            if PS.eq (sigma1, sigma2) then sigma1 else
              raise Fail "psort mismatch in Sequent.eq"
@@ -115,10 +113,10 @@ struct
          val xrho1 = ListPair.foldr (fn (x1, x, rho) => Tm.Sym.Ctx.insert rho x1 x) Tm.Sym.Ctx.empty (xs1, xs)
          val xrho2 = ListPair.foldr (fn (x2, x, rho) => Tm.Sym.Ctx.insert rho x2 x) Tm.Sym.Ctx.empty (xs2, xs)
 
-         val H1' = Hyps.map (CJ.map (CJ.Tm.substSymenv srho1)) (relabelHyps H1 xrho1)
-         val H2' = Hyps.map (CJ.map (CJ.Tm.substSymenv srho2)) (relabelHyps H2 xrho2)
-         val catjdg1' = CJ.map (CJ.Tm.substSymenv srho1 o renameHypsInTerm xrho1) catjdg1
-         val catjdg2' = CJ.map (CJ.Tm.substSymenv srho2 o renameHypsInTerm xrho2) catjdg2
+         val H1' = Hyps.map (CJ.map_ (CJ.Tm.substSymenv srho1)) (relabelHyps H1 xrho1)
+         val H2' = Hyps.map (CJ.map_ (CJ.Tm.substSymenv srho2)) (relabelHyps H2 xrho2)
+         val catjdg1' = CJ.map_ (CJ.Tm.substSymenv srho1 o renameHypsInTerm xrho1) catjdg1
+         val catjdg2' = CJ.map_ (CJ.Tm.substSymenv srho2 o renameHypsInTerm xrho2) catjdg2
        in
          telescopeEq (H1', H2')
            andalso CJ.eq (catjdg1', catjdg2')

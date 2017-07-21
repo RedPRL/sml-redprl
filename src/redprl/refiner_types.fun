@@ -7,7 +7,7 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = abt CJ.jdg
+  type catjdg = (Sym.t, abt) CJ.jdg
   type opid = Sig.opid
 
   infixr @@
@@ -61,8 +61,8 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val (goalT, holeT) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) (substVar (tt, z) cz)
-        val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) (substVar (ff, z) cz)
+        val (goalT, holeT) = makeTrue (I, Hyps.modifyAfter z (CJ.map_ (substVar (tt, z))) H) (substVar (tt, z) cz)
+        val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map_ (substVar (ff, z))) H) (substVar (ff, z) cz)
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val if_ = Syn.into @@ Syn.IF (ztm, (holeT, holeF))
@@ -102,8 +102,8 @@ struct
 
         val goalM0 = makeMem (I, H) (m0z, cz)
         val goalM1 = makeMem (I, H) (m1z, cz)
-        val goalT = makeGoal' @@ (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) >> CJ.map (substVar (tt, z)) catjdg
-        val goalF = makeGoal' @@ (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) >> CJ.map (substVar (ff, z)) catjdg
+        val goalT = makeGoal' @@ (I, Hyps.modifyAfter z (CJ.map_ (substVar (tt, z))) H) >> CJ.map_ (substVar (tt, z)) catjdg
+        val goalF = makeGoal' @@ (I, Hyps.modifyAfter z (CJ.map_ (substVar (ff, z))) H) >> CJ.map_ (substVar (ff, z)) catjdg
       in
         |>: goalT >: goalF >: goalM0 >: goalM1 #> (I, H, trivial)
       end
@@ -168,8 +168,8 @@ struct
         val tt = Syn.into Syn.TT
         val ff = Syn.into Syn.FF
 
-        val (goalT, holeT) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (tt, z))) H) (substVar (tt, z) cz)
-        val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map (substVar (ff, z))) H) (substVar (ff, z) cz)
+        val (goalT, holeT) = makeTrue (I, Hyps.modifyAfter z (CJ.map_ (substVar (tt, z))) H) (substVar (tt, z) cz)
+        val (goalF, holeF) = makeTrue (I, Hyps.modifyAfter z (CJ.map_ (substVar (ff, z))) H) (substVar (ff, z) cz)
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val if_ = Syn.into @@ Syn.WIF ((z, cz), ztm, (holeT, holeF))
@@ -256,14 +256,14 @@ struct
         val zero = Syn.into Syn.ZERO
         val succu = Syn.into @@ Syn.SUCC utm
 
-        val Hzero = Hyps.modifyAfter z (CJ.map (substVar (zero, z))) H
+        val Hzero = Hyps.modifyAfter z (CJ.map_ (substVar (zero, z))) H
         val czero = substVar (zero, z) cz
 
         val Huvz = Hyps.empty
               @> (u, CJ.TRUE nat)
               @> (v, CJ.TRUE (substVar (utm, z) cz))
               @> (z, CJ.TRUE nat)
-        val Hsuccu = Hyps.modifyAfter z (CJ.map (substVar (succu, z))) (Hyps.splice H z Huvz)
+        val Hsuccu = Hyps.modifyAfter z (CJ.map_ (substVar (succu, z))) (Hyps.splice H z Huvz)
         val csuccu = substVar (succu, z) cz
 
         val (goalZ, holeZ) = makeTrue (I, Hzero) czero
@@ -456,11 +456,11 @@ struct
         val u = alpha 0
         val base = Syn.into Syn.BASE
         val loop = Syn.into o Syn.LOOP @@ P.ret u
-        val Hbase = Hyps.modifyAfter z (CJ.map (substVar (base, z))) H
+        val Hbase = Hyps.modifyAfter z (CJ.map_ (substVar (base, z))) H
         val cbase = substVar (base, z) cz
 
         val (goalB, holeB) = makeTrue (I, Hbase) cbase
-        val (goalL, holeL) = makeTrue (I @ [(u, P.DIM)], Hyps.modifyAfter z (CJ.map (substVar (loop, z))) H) (substVar (loop, z) cz)
+        val (goalL, holeL) = makeTrue (I @ [(u, P.DIM)], Hyps.modifyAfter z (CJ.map_ (substVar (loop, z))) H) (substVar (loop, z) cz)
 
         val l0 = substSymbol (P.APP P.DIM0, u) holeL
         val l1 = substSymbol (P.APP P.DIM1, u) holeL
@@ -763,7 +763,7 @@ struct
 
         val (goal, hole) =
           makeTrue
-            (I, Hyps.modifyAfter z (CJ.map (substVar (pair, z))) H'')
+            (I, Hyps.modifyAfter z (CJ.map_ (substVar (pair, z))) H'')
             (substVar (pair, z) cz)
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
@@ -943,6 +943,38 @@ struct
       in
         |>: mainGoal >:? cohGoal0 >:? cohGoal1
         #> (I, H, abstr)
+      end
+
+    fun Elim z alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Path.Elim"
+
+        val (I, H) >> CJ.TRUE motive = jdg
+        val CJ.TRUE ty = lookupHyp H z
+        val Syn.PATH_TY ((u, a), p0, p1) = Syn.out ty
+
+        val x = alpha 0
+        val y = alpha 1
+        
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
+
+        val (dimGoal, dimHole) = makeGoal @@ (I, H) >> CJ.TERM O.DIM_EXP
+        val (arGoal, arHole) = makeGoal @@ (I, H) >> CJ.DIM_SUBST (dimHole, u, a)
+
+        val w = Sym.named "w"
+        val (pathAppGoal, pathAppHole) = makeGoal @@ (I, H) >> CJ.DIM_SUBST (dimHole, w, Syn.into @@ Syn.PATH_APP (ztm, P.ret w))
+
+        val hypx = CJ.TRUE @@ arHole
+        val hypy = CJ.EQ ((xtm, pathAppHole), arHole)
+
+        val H' = Hyps.empty @> (x, CJ.TRUE arHole) @> (y, CJ.EQ ((xtm, pathAppHole), arHole))
+        val H'' = Hyps.interposeAfter H z H'
+
+        val (mainGoal, mainHole) = makeGoal @@ (I, H'') >> CJ.TRUE motive
+        val rho = Var.Ctx.insert (Var.Ctx.singleton x pathAppHole) y trivial
+      in
+        |>: dimGoal >: arGoal >: pathAppGoal >: mainGoal #> (I, H, substVarenv rho mainHole)
       end
 
     fun Eq alpha jdg =

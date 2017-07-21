@@ -21,7 +21,7 @@ struct
      spec : jdg,
      state : Lcf.jdg Lcf.state}
 
-  type src_catjdg = ast RedPrlCategoricalJudgment.jdg
+  type src_catjdg = (string, ast) RedPrlCategoricalJudgment.jdg
   type src_seqhyp = string * src_catjdg
   type src_sequent = src_seqhyp list * src_catjdg
   type src_genjdg = (string * psort) list * src_sequent

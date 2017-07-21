@@ -86,7 +86,7 @@ Thm PathTest2 : [
 ] by [
   { let h : [(-> [b : wbool] (path {_} wbool b (BoolEta b))) ] =
       lam b. if b then <y> `tt else <y> `ff.
-    <x> lam c. let p = h {hyp c}. `(@ ,p x)
+    <x> lam c. let p = h {hyp c}. let px = p @ &x. hyp px
   };
 
   auto
@@ -160,8 +160,8 @@ Thm FunExt(#A; #B) : [
    (path {_} (-> #A #B) f g))
 ] by [
   {lam f. lam g. lam p.
-    <i> lam a. let q = p hyp a. `(@ ,q i)};
-  auto
+    <i> lam a. let q = p hyp a. let qi = q @ &i. hyp qi
+  }; auto
 ].
 
 Print FunExt.
@@ -169,7 +169,7 @@ Print FunExt.
 
 Tac FunExtTac(#A; #B; #F; #G) = [
   let p : [(-> [x : #A] (path {_} wbool ($ #F x) ($ #G x)))] = {}.
-  {<i> lam a. let q = p hyp a. `(@ ,q i)};
+  {<i> lam a. let q = p hyp a. let qi = q @ &i. hyp qi};
   auto
 ].
 
@@ -189,3 +189,11 @@ Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
   < `tt, <x> `tt >;
   auto
 ].
+
+
+Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
+  { lam x. let y = x @ &0. hyp y
+  }; auto
+].
+
+Print PathElimTest.

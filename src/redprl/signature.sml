@@ -136,7 +136,7 @@ struct
         inheritAnnotation m (processTerm' sign m)
 
       fun processSrcCatjdg sign =
-        RedPrlCategoricalJudgment.map (processTerm sign)
+        RedPrlCategoricalJudgment.map_ (processTerm sign)
 
       fun processSrcSeq sign (hyps, concl) =
         (List.map (fn (x, hyp) => (x, processSrcCatjdg sign hyp)) hyps, processSrcCatjdg sign concl)
@@ -256,8 +256,8 @@ struct
         abt
       end
 
-    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> abt CJ.jdg =
-      CJ.map (elabAst (metactx, env))
+    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> (Sym.t, abt) CJ.jdg =
+      CJ.map (fn name => NameEnv.lookup env name handle _ => Sym.named name) (elabAst (metactx, env))
       (* TODO check scoping *)
 
     fun addHypName (env, symctx, varctx) (srcname, tau) =
@@ -279,7 +279,7 @@ struct
         (env', symctx')
       end
 
-    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * abt CJ.jdg =
+    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * (Sym.t, abt) CJ.jdg =
       let
         val catjdg = elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg
         val tau = CJ.synthesis catjdg
@@ -288,7 +288,7 @@ struct
         (symctx', varctx', env', x, catjdg)
       end
 
-    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * abt CJ.jdg Hyps.telescope =
+    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * (Sym.t, abt) CJ.jdg Hyps.telescope =
       let
         fun go env _ _ H [] = (env, H)
           | go env syms vars H (hyp :: hyps) =

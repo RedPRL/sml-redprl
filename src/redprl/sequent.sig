@@ -17,7 +17,7 @@ sig
   type 'a ctx = 'a Hyps.telescope
 
   datatype 'a jdg =
-     >> of ((sym * psort) list * 'a CJ.jdg ctx) * 'a CJ.jdg     (* sequents / formal hypothetical judgment *)
+     >> of ((sym * psort) list * (Sym.t, 'a) CJ.jdg ctx) * (Sym.t, 'a) CJ.jdg     (* sequents / formal hypothetical judgment *)
    | MATCH of operator * int * 'a * param list * 'a list        (* unify a term w/ a head operator and extract the kth subterm *)
    | MATCH_RECORD of label * 'a                                 (* unify a term w/ RECORD and extract the subterm of the label *)
 

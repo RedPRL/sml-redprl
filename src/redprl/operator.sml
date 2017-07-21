@@ -6,6 +6,7 @@ struct
    | MTAC
    | JDG
    | TRIV
+   | DIM_EXP
 
   datatype param_sort =
      DIM
@@ -35,6 +36,7 @@ struct
      | MTAC => "mtac"
      | JDG => "jdg"
      | TRIV => "triv"
+     | DIM_EXP => "dim-exp"
 end
 
 
@@ -135,14 +137,14 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT | RULE_HEAD_EXP
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of RedPrlSort.t | RULE_HEAD_EXP
    | RULE_CUT
 
    (* development calculus terms *)
    | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
    | DEV_LET of RedPrlSort.t
 
-   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t
+   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_DIM_SUBST
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -159,6 +161,7 @@ struct
    | RULE_LEMMA of 'a * ('a P.term * psort option) list
    | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list
    | HYP_REF of 'a
+   | DIM_REF of 'a P.term
    | RULE_HYP of 'a * sort
    | RULE_ELIM of 'a * sort
    | RULE_UNFOLD of 'a
@@ -166,6 +169,7 @@ struct
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
    | DEV_DPROD_ELIM of 'a
+   | DEV_PATH_ELIM of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -253,7 +257,7 @@ struct
      | RULE_ID => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
-     | RULE_EXACT => [[] * [] <> EXP] ->> TAC
+     | RULE_EXACT tau => [[] * [] <> tau] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
 
@@ -267,6 +271,7 @@ struct
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
      | JDG_TERM _ => [] ->> JDG
+     | JDG_DIM_SUBST => [[] * [] <> DIM_EXP, [DIM] * [] <> EXP] ->> JDG
 
   local
     fun arityFcom (_, eqs) =
@@ -304,13 +309,15 @@ struct
        | RULE_LEMMA (_, _) => [] ->> TAC
        | RULE_CUT_LEMMA (_, _) => [] ->> TAC
        | HYP_REF _ => [] ->> EXP
+       | DIM_REF _ => [] ->> DIM_EXP
        | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
-       | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
+       | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
        | DEV_DPROD_ELIM _ => [[HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
+       | DEV_PATH_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -350,6 +357,7 @@ struct
        | RULE_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
        | RULE_CUT_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
+       | DIM_REF r => dimSupport r
        | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
        | RULE_UNFOLD a => [(a, OPID)]
@@ -357,6 +365,7 @@ struct
        | DEV_S1_ELIM a => [(a, HYP EXP)]
        | DEV_DFUN_ELIM a => [(a, HYP EXP)]
        | DEV_DPROD_ELIM a => [(a, HYP EXP)]
+       | DEV_PATH_ELIM a => [(a, HYP EXP)]
   end
 
   val support =
@@ -415,6 +424,8 @@ struct
                | _ => false)
        | (HYP_REF a, t) =>
            (case t of HYP_REF b => f (a, b) | _ => false)
+       | (DIM_REF r1, t) =>
+           (case t of DIM_REF r2 => P.eq f (r1, r2) | _ => false)
        | (RULE_HYP (a, _), t) =>
            (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
        | (RULE_ELIM (a, _), t) =>
@@ -429,6 +440,8 @@ struct
            (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
        | (DEV_DPROD_ELIM a, t) =>
            (case t of DEV_DPROD_ELIM b => f (a, b) | _ => false)
+       | (DEV_PATH_ELIM a, t) =>
+           (case t of DEV_PATH_ELIM b => f (a, b) | _ => false)
   end
 
   fun eq f =
@@ -494,7 +507,7 @@ struct
      | RULE_ID => "id"
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
-     | RULE_EXACT => "EXACT"
+     | RULE_EXACT _ => "exact"
      | RULE_HEAD_EXP => "head-expand"
      | RULE_CUT => "cut"
 
@@ -508,6 +521,7 @@ struct
      | JDG_EQ_TYPE => "eq-type"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
+     | JDG_DIM_SUBST => "dim-subst"
 
   local
     fun dirToString f (r, r') =
@@ -560,6 +574,7 @@ struct
        | RULE_CUT_LEMMA (opid, ps) =>
            "cut-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "@" ^ f a
+       | DIM_REF r => "dim-ref{" ^ P.toString f r ^ "}"
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
@@ -567,6 +582,7 @@ struct
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
        | DEV_DPROD_ELIM a => "dprod-elim{" ^ f a ^ "}"
+       | DEV_PATH_ELIM a => "path-elim{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -606,6 +622,7 @@ struct
        | RULE_LEMMA (opid, ps) => RULE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
        | RULE_CUT_LEMMA (opid, ps) => RULE_CUT_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
        | HYP_REF a => HYP_REF (mapSym (passSort (HYP EXP) f) a)
+       | DIM_REF r => DIM_REF (P.bind (passSort DIM f) r)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym (passSort (HYP tau) f) a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym (passSort (HYP tau) f) a, tau)
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
@@ -613,6 +630,7 @@ struct
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_PATH_ELIM a => DEV_PATH_ELIM (mapSym (passSort (HYP EXP) f) a)
   end
 
   fun mapWithSort f =

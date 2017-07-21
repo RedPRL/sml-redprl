@@ -5,7 +5,7 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = abt CJ.jdg
+  type catjdg = (Sym.t, abt) CJ.jdg
   type opid = Sig.opid
 
   infixr @@

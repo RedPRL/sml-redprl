@@ -108,6 +108,7 @@ end
  (* (mostly) single-character symbols *)
  | BACK_TICK
  | COMMA
+ | AMPERSAND
  | DOT
  | EQUALS
  | HASH
@@ -155,7 +156,7 @@ end
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
-%nonassoc COMMA COLON
+%nonassoc COMMA AMPERSAND COLON
 %nonassoc FCOM BOOL TT FF IF WBOOL WIF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PAIR FST SND PATHS ABS AT_SIGN HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
@@ -378,6 +379,7 @@ monoNullaryOperator
 polyNullaryOperator
   (* circle *)
   : LOOP param (O.POLY (O.LOOP param))
+  | DIM param (O.POLY (O.DIM_REF param))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
@@ -506,7 +508,8 @@ atomicRawTac
   | RULE_ELIM VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, sort)), []))
   | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, O.EXP)), []))
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
-  | BACK_TICK term (Ast.$$ (O.MONO O.RULE_EXACT, [\ (([],[]), term)]))
+  | BACK_TICK term (Ast.$$ (O.MONO (O.RULE_EXACT O.EXP), [\ (([],[]), term)]))
+  | AMPERSAND param (Ast.$$ (O.MONO (O.RULE_EXACT O.DIM_EXP), [\ (([],[]), Ast.$$ (O.POLY (O.DIM_REF param), []))]))
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
@@ -523,6 +526,10 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM VARNAME3), [\ (([],[]), tactic1), \ (([VARNAME1, VARNAME2],[]), tactic2)]))
   | LET VARNAME EQUALS VARNAME tactic DOT tactic
       (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
+  | LET VARNAME WITH VARNAME EQUALS VARNAME AT_SIGN tactic DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME3), [\ (([],[]), tactic1), \ (([VARNAME1, VARNAME2],[]), tactic2)]))
+  | LET VARNAME EQUALS VARNAME AT_SIGN tactic DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
   | LET LANGLE VARNAME COMMA VARNAME RANGLE EQUALS VARNAME DOT tactic
       (Ast.$$ (O.POLY (O.DEV_DPROD_ELIM VARNAME3), [\ (([VARNAME1, VARNAME2],[]), tactic)]))
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
