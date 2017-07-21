@@ -292,7 +292,7 @@ struct
         case out m of
            O.POLY (O.CUST (opid',_,_)) $ _ =>
              if Sym.eq (opid, opid') then
-               Machine.unload (Machine.unwrapAction (Machine.step sign Machine.CUBICAL (Machine.init m)))
+               Machine.steps sign Machine.CUBICAL 1 m
                  handle exn => raise Fail ("Impossible failure during safeUnfold: " ^ exnMessage exn)
              else
                m

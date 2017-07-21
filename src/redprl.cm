@@ -62,6 +62,7 @@ is
   redprl/redprl_lexer.sml
   redprl/redprl_parser.sml
 
+  redprl/machine.sig
   redprl/machine.sml
 
   redprl/refiner_kit.fun
