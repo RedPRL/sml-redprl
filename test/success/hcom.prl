@@ -16,14 +16,12 @@ Thm Hcom/Poly(#A) : [
    (path {_} #A b d)
    (path {_} #A c d))
 ] by [
-  { lam a. lam b. lam c. lam d.
-    lam pab. lam pac. lam pbd.
+  lam a. lam b. lam c. lam d.
+  lam pab. lam pac. lam pbd.
     <i> 
       `(hcom{0 ~> 1} #A (@ ,pab i) 
         [i=0 {j} (@ ,pac j)]
         [i=1 {j} (@ ,pbd j)])
-  };
-  auto
 ].
 
 Extract Hcom/Poly.
@@ -37,13 +35,11 @@ Thm Hcom/trans(#A) : [
    (path {_} #A b c)
    (path {_} #A a c))
 ] by [
-  { lam a. lam b. lam c. lam pab. lam pbc.
+  lam a. lam b. lam c. lam pab. lam pbc.
     <i>
       `(hcom{0 ~> 1} #A (@ ,pab i) 
         [i=0 {_} ,a] 
         [i=1 {j} (@ ,pbc j)])
-  };
-  auto
 ].
 
 Thm Hcom/symm(#A) : [
@@ -54,13 +50,11 @@ Thm Hcom/symm(#A) : [
    (path {_} #A a b)
    (path {_} #A b a))
 ] by [
-  { lam a. lam b. lam pab.
+  lam a. lam b. lam pab.
     <i>
       `(hcom{0 ~> 1} #A ,a 
         [i=0 {j} (@ ,pab j)]
         [i=1 {_} ,a])
-  };
-  auto
 ].
 
 Thm Cap{i : dim}(#A) : [ 

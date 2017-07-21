@@ -5,7 +5,7 @@ Thm Connection(#A) : [
    [p : (path {_} #A a b)]
    (path {i} (path {_} #A a (@ p i)) (abs {_} a) p))
 ] by [
-  { lam a. lam b. lam p.
+  lam a. lam b. lam p.
     <i> <j> 
       `(hcom{0~>1} #A ,a
         [i=0 {k}
@@ -30,8 +30,6 @@ Thm Connection(#A) : [
          (hcom{1~>i} #A (@ ,p k)
           [k=0 {_} ,a]
           [k=1 {l} (@ ,p l)])])
-  };
-  auto
 ].
 
 Print Connection.

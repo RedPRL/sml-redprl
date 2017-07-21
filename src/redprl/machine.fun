@@ -55,6 +55,8 @@ struct
 
     fun cut jdg =
       O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
+
+    val autoTac = mtac auto
   end
 
 
@@ -526,14 +528,14 @@ struct
        in
          STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2])) || (syms, stk)
        end
-     | O.MONO O.DEV_DFUN_INTRO $ [([u],_) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
-     | O.MONO O.DEV_DPROD_INTRO $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [] (Tac.each [t1, t2])) || (syms, stk)
-     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.each [t])) || (syms, stk)
+     | O.MONO O.DEV_DFUN_INTRO $ [([u],_) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t, Tac.autoTac])) || (syms, stk)
+     | O.MONO O.DEV_DPROD_INTRO $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [] (Tac.each [t1, t2, Tac.autoTac])) || (syms, stk)
+     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.each [t, Tac.autoTac, Tac.autoTac])) || (syms, stk)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [] (Tac.each [t1,t2])) || (syms, stk)
-     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ t1, ([v],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2])) || (syms, stk)
+     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ t1, ([v],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2, Tac.autoTac, Tac.autoTac])) || (syms, stk)
      | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2])) || (syms, stk)
      | O.POLY (O.DEV_DPROD_ELIM z) $ [([x,y], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
-     | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,Tac.mtac Tac.auto, Tac.mtac Tac.auto, t2])) || (syms, stk)
+     | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1, Tac.autoTac, Tac.autoTac, t2])) || (syms, stk)
      | _ => raise Stuck
 
   fun step sign stability (tm || stk) =
