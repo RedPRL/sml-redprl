@@ -1,6 +1,8 @@
 Thm BoolTest : [ 
   (-> wbool wbool)
 ] by [
+  // A term/witness can be supplied to the refiner at any point in a tactic script
+  // using the quotation operator `.
   lam x. if x then `tt else `ff
 ].
 
@@ -52,6 +54,15 @@ Thm ApEqTest : [
    [f : (-> wbool wbool)]
    (path {_} wbool ($ f tt) ($ f tt)))
 ] by [
+  // This is a good example of the difference between hypotheses and variables. A tactic script is
+  // a program, and itself may have variables in it---such as a variable ranging over a tactic, induced
+  // by the recursion tactical, etc.
+  
+  // On the other hand, tactics like 'lam' introduce *hypothesis names*, which are not variables; they are
+  // *names* of object variables. The contradiction between hypotheses qua names and hypotheses qua object
+  // variables is mediated using an "unquotation" operator, written ','. When supplying a witness, the hypothesis
+  // name is "unquoted" using the comma operator, which causes it to become the appropriate object
+  // variable.
   lam f. <_> `($ ,f tt)
 ].
 
@@ -78,7 +89,7 @@ Thm PathTest2 : [
   <x>
     // now, we are constructing a line of functions; so we use a lambda.
     lam b.
-      // for our b:wbool, we will construct a path between b and (BoolEta b)
+      // for our b:wbool, we will construct a path between b and (BoolEta b).
       let p : [(path {_} wbool ,b (BoolEta ,b))] =
         if b then <y> `tt else <y> `ff.
 
