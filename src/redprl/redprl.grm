@@ -315,6 +315,8 @@ end
  (* keywords in judgments *)
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
 
+ | DISCRETE | KAN | CUBICAL
+
  (* commands and declarations *)
  | CMD_PRINT | CMD_EXTRACT
  | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
@@ -383,6 +385,9 @@ end
  | terms of ast list
  | typedTerm of ast * O.sort
  | typedTerms of (ast * O.sort) list
+
+ | kind of O.K.kind
+ | withKind of O.K.kind
 
  | rawJudgment of ast
  | judgment of ast
@@ -687,26 +692,36 @@ typedTerms
   : typedTerm ([typedTerm])
   | typedTerm typedTerms (typedTerm :: typedTerms)
 
+kind
+  : DISCRETE (O.K.DISCRETE)
+  | KAN (O.K.KAN)
+  | HCOM (O.K.HCOM)
+  | COE (O.K.COE)
+  | CUBICAL (O.K.CUBICAL)
+
+withKind
+  : WITH kind (kind)
+  | (O.K.CUBICAL)
 
 rawJudgment
-  : term EQUALS term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
-  | term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
-  | term JDG_TRUE (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
-  | term (Ast.$$ (O.MONO O.JDG_TRUE, [\ (([],[]), term)]))
-  | term EQUALS term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term JDG_TYPE (Ast.$$ (O.MONO O.JDG_EQ_TYPE, [\ (([],[]), term), \ (([],[]), term)]))
-  | term JDG_SYNTH (Ast.$$ (O.MONO O.JDG_SYNTH, [\ (([],[]), term)]))
+  : term EQUALS term IN term withKind (Ast.$$ (O.MONO (O.JDG_EQ withKind), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
+  | term IN term withKind (Ast.$$ (O.MONO (O.JDG_EQ withKind), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
+  | term JDG_TRUE withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
+  | term withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
+  | term EQUALS term JDG_TYPE withKind (Ast.$$ (O.MONO (O.JDG_EQ_TYPE withKind), [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term JDG_TYPE withKind (Ast.$$ (O.MONO (O.JDG_EQ_TYPE withKind), [\ (([],[]), term), \ (([],[]), term)]))
+  | term JDG_SYNTH withKind (Ast.$$ (O.MONO (O.JDG_SYNTH withKind), [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
 src_catjdg
-  : term JDG_TRUE (CJ.TRUE term)
-  | term EQUALS term JDG_TYPE (CJ.EQ_TYPE (term1, term1))
-  | term JDG_TYPE (CJ.TYPE term)
-  | term JDG_SYNTH (CJ.SYNTH term)
-  | term EQUALS term IN term (CJ.EQ ((term1, term2), term3))
-  | term IN term (CJ.MEM (term1, term2))
-  | term (CJ.TRUE term)
+  : term EQUALS term JDG_TYPE withKind (CJ.EQ_TYPE ((term1, term1), withKind))
+  | term IN term withKind (CJ.MEM (term1, (term2, withKind)))
+  | term JDG_TRUE withKind (CJ.TRUE (term, withKind))
+  | term withKind (CJ.TRUE (term, withKind))
+  | term EQUALS term IN term withKind (CJ.EQ ((term1, term2), (term3, withKind)))
+  | term JDG_TYPE withKind (CJ.TYPE (term, withKind))
+  | term JDG_SYNTH withKind (CJ.SYNTH (term, withKind))
 
 src_seqhyp
   : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))

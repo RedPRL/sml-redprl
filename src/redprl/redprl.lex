@@ -156,6 +156,9 @@ whitespace = [\ \t];
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
 "type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));
 "synth"            => (Tokens.JDG_SYNTH (posTuple (size yytext)));
+"discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
+"kan"              => (Tokens.KAN (posTuple (size yytext)));
+"cubical"          => (Tokens.CUBICAL (posTuple (size yytext)));
 
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));
 {upper}{identChr}* => (Tokens.OPNAME (posTupleWith (size yytext) yytext));

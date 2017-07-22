@@ -432,15 +432,15 @@ struct
      | O.MONO (O.TUPLE_UPDATE lbl) $ [_ \ n, _ \ m] || (syms, stk) => COMPAT @@ m || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk)
      | O.MONO (O.TUPLE lbls) $ args || (syms, PROJ (lbl, HOLE) :: stk) =>
        let
-         val dict = Syn.outTupleFields (lbls, args)
+         val fields = Syn.outTupleFields (lbls, args)
        in
-         CRITICAL @@ Syn.LabelDict.lookup dict lbl || (syms, stk)
-         handle Syn.LabelDict.Absent => raise Stuck
+         CRITICAL @@ Syn.Fields.lookup lbl fields || (syms, stk)
+         handle Syn.Fields.Absent => raise Stuck
        end
      | O.MONO (O.TUPLE lbls) $ args || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk) =>
        let
-         val dict = Syn.outTupleFields (lbls, args)
-         val (lbls', args') = Syn.intoTupleFields @@ Syn.LabelDict.insert dict lbl n
+         val fields = Syn.outTupleFields (lbls, args)
+         val (lbls', args') = Syn.intoTupleFields @@ Syn.Fields.update (lbl, n) fields
        in
          CRITICAL @@ O.MONO (O.TUPLE lbls') $$ args' || (syms, stk)
        end
@@ -448,7 +448,7 @@ struct
        (case (lbls, args) of 
            ([], []) =>
            let
-             val tuple = Syn.into @@ Syn.TUPLE @@ Syn.LabelDict.empty
+             val tuple = Syn.into @@ Syn.TUPLE Syn.Fields.empty
            in
              CRITICAL @@ tuple || (syms, stk)
            end
@@ -484,7 +484,7 @@ struct
        (case (lbls, args) of 
            ([], []) =>
            let
-             val tuple = Syn.into @@ Syn.TUPLE @@ Syn.LabelDict.empty
+             val tuple = Syn.into @@ Syn.TUPLE Syn.Fields.empty
            in
              CRITICAL @@ tuple || (syms, stk)
            end
