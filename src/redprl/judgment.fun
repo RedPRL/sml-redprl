@@ -6,9 +6,12 @@ struct
   structure Tm = CJ.Tm
   type sort = Tm.valence
   type env = Tm.metaenv
+  type ren = Tm.metavariable Tm.Metavar.Ctx.dict
   type jdg = Tm.abt S.jdg
 
   val subst = S.map o Tm.substMetaenv
+  val ren = S.map o Tm.renameMetavars
+
   val eq = S.eq
   val toString = FppRenderPlainText.toString o FinalPrinter.execPP o S.pretty Tm.eq TermPrinter.ppTerm
 
