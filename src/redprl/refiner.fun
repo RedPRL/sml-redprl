@@ -193,7 +193,7 @@ struct
         val srho = ListPair.foldrEq (fn (u,p,rho) => Sym.Ctx.insert rho u p) Sym.Ctx.empty (us, ps)
         val vrho = ListPair.foldrEq (fn (x,m,rho) => Var.Ctx.insert rho x m) Var.Ctx.empty (xs, ms)
 
-        val arg' = substSymenv srho (substVarenv vrho arg)
+        val arg' = substEnv (srho, vrho) arg
       in
         Lcf.|> (T.empty, abtToAbs arg')
       end

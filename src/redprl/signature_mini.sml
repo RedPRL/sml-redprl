@@ -143,7 +143,7 @@ struct
 
         val (mrho, srho) = applyCustomOperator entry ps args
         val vrho = hypothesisRenaming entry ps
-        val reviveTerm = substVarenv vrho o substSymenv srho o substMetaenv mrho
+        val reviveTerm = substEnv (srho, vrho) o substMetaenv mrho
         val reviveSequent = relabelSequent entry ps o RedPrlSequent.map reviveTerm
 
         fun mapEff f = Lcf.Eff.bind (Lcf.Eff.ret o f)
