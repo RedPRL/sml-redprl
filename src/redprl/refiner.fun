@@ -243,6 +243,42 @@ struct
       in
         |>: goal #> (I, H, trivial)
       end
+
+    local
+      fun jdgEqGoals (I, H) (jdg1, jdg2) = 
+        case (jdg1, jdg2) of
+           (CJ.TRUE ty1, CJ.TRUE ty2) => [makeEqType (I, H) (ty1, ty2)]
+         | (CJ.EQ_TYPE (ty11, ty12), CJ.EQ_TYPE (ty21, ty22)) =>
+             [makeEqType (I, H) (ty11, ty21),
+              makeEqType (I, H) (ty12, ty22)]
+         | (CJ.EQ ((m1, n1), ty1), CJ.EQ ((m2, n2), ty2)) =>
+             [makeEqType (I, H) (ty1, ty2),
+              makeEq (I, H) ((m1, m2), ty1),
+              makeEq (I, H) ((n1, n2), ty1)]
+         | _ => raise Fail "Judgments don't match"
+
+      fun jdgWfGoals (I, H) jdg = 
+        jdgEqGoals (I, H) (jdg, jdg)
+    in
+      fun EqElim z alpha jdg = 
+        let
+          val (I, H) >> CJ.TRUE mainGoal = jdg
+          val CJ.EQ ((m, n), ty) = lookupHyp H z
+          val x = alpha 0
+          val Hx = H @> (x, CJ.TRUE ty)
+          val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
+
+          val motiven = substVar (n, x) motiveHole
+          val motivem = substVar (m, x) motiveHole
+
+          val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) motiven
+
+          val motiveWfGoal = makeType (I, Hx) motiveHole
+          val motiveMatchesMainGoal = makeEqType (I, H) (motivem, mainGoal)
+        in
+          |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal #> (I, H, rewrittenHole)
+        end
+      end
   end
 
   structure Coe =
@@ -677,6 +713,7 @@ struct
                   CJ.TRUE _ => StepTrue hyp z alpha jdg
                 | CJ.EQ _ => StepEq hyp z alpha jdg
                 | _ => raise E.error [Fpp.text ("Could not find suitable elimination rule [TODO, display information]")])
+           | CJ.EQ _ => Equality.EqElim z alpha jdg
            | _ => raise E.error [Fpp.text "Could not find suitable elimination rule"]
         end
     in

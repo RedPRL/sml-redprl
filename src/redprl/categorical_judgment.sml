@@ -54,8 +54,6 @@ struct
      | TERM tau => tau
      | DIM_SUBST (r, u, m) => O.EXP
 
-  exception InvalidJudgment
-
   local
     open Tm
     structure O = RedPrlOpData
@@ -80,7 +78,7 @@ struct
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
        | O.MONO O.JDG_DIM_SUBST $ [_ \ r, ([u],_) \ m] => DIM_SUBST (r, u, m)
-       | _ => raise InvalidJudgment
+       | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]
   end
 
   local
@@ -96,7 +94,7 @@ struct
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
        | O.MONO O.JDG_DIM_SUBST $ [_ \ r, ([u],_) \ m] => DIM_SUBST (r, u, m)
-       | _ => raise InvalidJudgment
+       | _ => raise RedPrlError.error [Fpp.text "Invalid judgment"]
   end
 
   val metactx = RedPrlAbt.metactx o toAbt
