@@ -10,7 +10,6 @@ struct
 
   datatype param_sort =
      DIM
-   | EXN
    | HYP of sort
    | OPID
 end
@@ -49,7 +48,6 @@ struct
 
   val toString =
     fn DIM => "dim"
-     | EXN => "exn"
      | HYP tau => "hyp{" ^ RedPrlSort.toString tau ^ "}"
      | OPID => "opid"
 end

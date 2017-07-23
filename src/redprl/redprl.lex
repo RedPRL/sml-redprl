@@ -117,7 +117,6 @@ whitespace = [\ \t];
 "of"               => (Tokens.OF (posTuple (size yytext)));
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
-"exn"              => (Tokens.EXN (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));

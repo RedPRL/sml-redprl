@@ -134,8 +134,9 @@ end
  | SQUIGGLE_ARROW
  | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
 
+ (* parameter sorts *)
+ | DIM | HYP
  (* sorts *)
- | DIM | EXN | HYP
  | EXP | TAC | TRIV
 
  (* keywords and symbols in expressions *)
@@ -287,7 +288,6 @@ boundVars
 
 psort
   : DIM (P.DIM)
-  | EXN (P.EXN)
   | HYP (P.HYP O.EXP)
 
 psorts
