@@ -21,6 +21,4 @@ sig
 
   val pretty : ('a * 'a -> bool) -> ('a -> Fpp.doc) -> (Sym.t, 'a) jdg -> Fpp.doc
   val pretty' : ('a -> Fpp.doc) -> (Sym.t, 'a) jdg -> Fpp.doc
-
-  exception InvalidJudgment
 end

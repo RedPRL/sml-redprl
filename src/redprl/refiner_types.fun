@@ -959,11 +959,11 @@ struct
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
 
-        val (dimGoal, dimHole) = makeGoal @@ (I, H) >> CJ.TERM O.DIM_EXP
-        val (arGoal, arHole) = makeGoal @@ (I, H) >> CJ.DIM_SUBST (dimHole, u, a)
+        val (dimGoal, dimHole) = makeTerm (I, H) O.DIM_EXP
+        val (arGoal, arHole) = makeDimSubst (I, H) (dimHole, u, a)
 
         val w = Sym.named "w"
-        val (pathAppGoal, pathAppHole) = makeGoal @@ (I, H) >> CJ.DIM_SUBST (dimHole, w, Syn.into @@ Syn.PATH_APP (ztm, P.ret w))
+        val (pathAppGoal, pathAppHole) = makeDimSubst (I, H) (dimHole, w, Syn.into @@ Syn.PATH_APP (ztm, P.ret w))
 
         val hypx = CJ.TRUE @@ arHole
         val hypy = CJ.EQ ((xtm, pathAppHole), arHole)
@@ -971,7 +971,7 @@ struct
         val H' = Hyps.empty @> (x, CJ.TRUE arHole) @> (y, CJ.EQ ((xtm, pathAppHole), arHole))
         val H'' = Hyps.interposeAfter H z H'
 
-        val (mainGoal, mainHole) = makeGoal @@ (I, H'') >> CJ.TRUE motive
+        val (mainGoal, mainHole) = makeTrue (I, H'') motive
         val rho = Var.Ctx.insert (Var.Ctx.singleton x pathAppHole) y trivial
       in
         |>: dimGoal >: arGoal >: pathAppGoal >: mainGoal #> (I, H, substVarenv rho mainHole)
