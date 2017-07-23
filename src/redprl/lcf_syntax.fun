@@ -20,7 +20,7 @@ struct
      | _ => t2
 
   fun evalOpen sign t =
-    inheritAnnotation t (Machine.eval sign Machine.NOMINAL t)
+    inheritAnnotation t (Machine.eval sign Machine.NOMINAL Machine.Unfolding.always t)
       handle _ => t
 
   local
