@@ -98,6 +98,20 @@ struct
           raise Fail "Did not match"
       end
 
+    fun Custom sign _ jdg = 
+      let
+        val _ = RedPrlLog.trace "Synth.Custom"
+        val (I, H) >> CJ.SYNTH tm = jdg
+        val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out tm
+        val {spec = ([],H') >> CJ.TRUE ty, state = Lcf.|> (psi, _), ...} = Sig.lookup sign name
+        val metas = Lcf.Tl.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
+        val rho = ListPair.foldl (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl))) Metavar.Ctx.empty (metas, args)
+        val ty' = substMetaenv rho ty
+        val _ = if Hyps.isEmpty H' then () else raise Fail "Synth.Custom only works with empty sequent"
+      in
+        T.empty #> (I, H, ty')
+      end
+
     fun Hyp _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.Hyp"
@@ -235,6 +249,25 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected variable-equality sequent"]
 
+    fun Custom sign _ jdg = 
+      let
+        val _ = RedPrlLog.trace "Equality.Custom"
+        val (I, H) >> CJ.EQ ((m, n), ty) = jdg
+
+        val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out m
+        val true = Abt.eq (m, n)
+
+        val {spec = ([],H') >> CJ.TRUE specTy, state = Lcf.|> (psi, _), ...} = Sig.lookup sign name
+        val metas = Lcf.Tl.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
+        val rho = ListPair.foldl (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl))) Metavar.Ctx.empty (metas, args)
+        val specTy' = substMetaenv rho specTy
+        val _ = if Hyps.isEmpty H' then () else raise Fail "Equality.Custom only works with empty sequent"
+
+        val goalTy = makeEqTypeIfDifferent (I, H) (ty, specTy')
+      in
+        |>:? goalTy #> (I, H, trivial)
+      end
+
     fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "Equality.Symmetry"
@@ -337,7 +370,7 @@ struct
         case out m of
            O.POLY (O.CUST (opid',_,_)) $ _ =>
              if Sym.eq (opid, opid') then
-               Machine.steps sign Machine.CUBICAL 1 m
+               Machine.steps sign Machine.CUBICAL Machine.Unfolding.always 1 m
                  handle exn => raise Fail ("Impossible failure during safeUnfold: " ^ exnMessage exn)
              else
                m
@@ -358,7 +391,7 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
         val (I, H) >> CJ.EQ ((m, n), ty) = jdg
-        val m' = Machine.eval sign Machine.CUBICAL m
+        val m' = Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign) m
         val goal = makeEq (I, H) ((m', n), ty)
       in
         |>: goal #> (I, H, trivial)
@@ -369,7 +402,7 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
         val (I, H) >> CJ.EQ_TYPE (ty1, ty2) = jdg
-        val ty1' = Machine.eval sign Machine.CUBICAL ty1
+        val ty1' = Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign) ty1
         val goal = makeEqType (I, H) (ty1', ty2)
       in
         |>: goal #> (I, H, trivial)
@@ -530,8 +563,11 @@ struct
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
+      fun canonicity sign = 
+        Machine.canonicity sign Machine.NOMINAL (Machine.Unfolding.default sign)
+
       fun StepEqType sign (ty1, ty2) =
-        case (Machine.canonicity sign Machine.NOMINAL ty1, Machine.canonicity sign Machine.NOMINAL ty2) of
+        case (canonicity sign ty1, canonicity sign ty2) of
            (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
          | (_, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqTypeHeadExpansion sign
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
@@ -561,34 +597,31 @@ struct
 
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
-      fun StepEqNeu (x, y) ((m, n), ty) =
-        case (Syn.out m, Syn.out n) of
-           (Syn.VAR _, Syn.VAR _) => Equality.Hyp
-         | (Syn.WIF _, Syn.WIF _) => WBool.ElimEq
-         | (Syn.IF _, Syn.IF _) => Bool.ElimEq
-         | (Syn.IF _, _) =>
-           (case x of
-               Machine.VAR z => Bool.EqElim z
-             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply Bool elimination"])
-         | (_, Syn.IF _) =>
-           (case y of
-               Machine.VAR z => CatJdgSymmetry then_ Bool.EqElim z
-             | _ => raise E.error [Fpp.text "Could not determine critical variable at which to apply Bool elimination"])
-         | (Syn.NAT_REC _, Syn.NAT_REC _) => Nat.ElimEq
-         | (Syn.S1_REC _, Syn.S1_REC _) => S1.ElimEq
-         | (Syn.APP _, Syn.APP _) => DFun.AppEq
-         | (Syn.FST _, Syn.FST _) => DProd.FstEq
-         | (Syn.SND _, Syn.SND _) => DProd.SndEq
-         | (Syn.PROJ _, Syn.PROJ _) => Record.ProjEq
-         | (Syn.PATH_APP (_, P.VAR _), Syn.PATH_APP (_, P.VAR _)) => Path.AppEq
+      fun StepEqNeu sign (blocker1, blocker2) ((m, n), ty) =
+        case (Syn.out m, blocker1, Syn.out n, blocker2) of
+           (Syn.VAR _, _, Syn.VAR _, _) => Equality.Hyp
+         | (Syn.WIF _, _, Syn.WIF _, _) => WBool.ElimEq
+         | (Syn.IF _, _, Syn.IF _, _) => Bool.ElimEq
+         | (Syn.IF _, Machine.VAR z, _, _) => Bool.EqElim z
+         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.EqElim z
+         | (Syn.NAT_REC _, _, Syn.NAT_REC _, _) => Nat.ElimEq
+         | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.ElimEq
+         | (Syn.APP _, _, Syn.APP _, _) => DFun.AppEq
+         | (Syn.FST _, _, Syn.FST _, _) => DProd.FstEq
+         | (Syn.SND _, _, Syn.SND _, _) => DProd.SndEq
+         | (Syn.PROJ _, _, Syn.PROJ _, _) => Record.ProjEq
+         | (Syn.PATH_APP (_, P.VAR _), _, Syn.PATH_APP (_, P.VAR _), _) => Path.AppEq
+         | (Syn.CUST, _, Syn.CUST, _) => Equality.Custom sign
+         | (_, Machine.OPERATOR theta, _, _) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
-      fun StepEqNeuExpand ty =
-        case Syn.out ty of
-           Syn.DPROD _ => DProd.Eta
-         | Syn.DFUN _ => DFun.Eta
-         | Syn.PATH_TY _ => Path.Eta
-         | Syn.RECORD _ => Record.Eta
+      fun StepEqNeuExpand sign blocker ty =
+        case (blocker, Syn.out ty) of
+           (_, Syn.DPROD _) => DProd.Eta
+         | (_, Syn.DFUN _) => DFun.Eta
+         | (_, Syn.PATH_TY _) => Path.Eta
+         | (_, Syn.RECORD _) => Record.Eta
+         | (Machine.OPERATOR theta, _) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not expand neutral term of type", TermPrinter.ppTerm ty]
 
 
@@ -621,7 +654,7 @@ struct
       (* these are special rules which are not beta or eta,
        * and we have to check them against the neutral terms.
        * it looks nicer to list all of them here. *)
-      fun StepEqStuck _ ((m, n), ty) canonicity =
+      fun StepEqStuck sign ((m, n), ty) canonicity =
         case (Syn.out m, Syn.out n) of
            (Syn.HCOM _, Syn.HCOM _) => HCom.AutoEqLR
          | (Syn.HCOM _, _) => HCom.AutoEqL
@@ -633,18 +666,19 @@ struct
          | (_, Syn.PATH_APP (_, P.APP _)) => CatJdgSymmetry then_ Path.AppConstCompute
          | _ =>
            (case canonicity of
-               (Machine.NEUTRAL x, Machine.NEUTRAL y) => StepEqNeu (x, y) ((m, n), ty)
-             | (Machine.NEUTRAL _, Machine.CANONICAL) => StepEqNeuExpand ty
-             | (Machine.CANONICAL, Machine.NEUTRAL _) => CatJdgSymmetry then_ StepEqNeuExpand ty)
+               (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqNeu sign (blocker1, blocker2) ((m, n), ty)
+             | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqNeuExpand sign blocker ty
+             | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign blocker ty)
 
+    
       fun StepEq sign ((m, n), ty) =
-        case (Machine.canonicity sign Machine.NOMINAL m, Machine.canonicity sign Machine.NOMINAL n) of
+        case (canonicity sign m, canonicity sign n) of
            (Machine.REDEX, _) => Computation.EqHeadExpansion sign
          | (_, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqHeadExpansion sign
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
          | canonicity => StepEqStuck sign ((m, n), ty) canonicity
 
-      fun StepSynth _ m =
+      fun StepSynth sign m =
         case Syn.out m of
            Syn.VAR _ => Synth.Hyp
          | Syn.APP _ => Synth.App
@@ -653,6 +687,7 @@ struct
          | Syn.PATH_APP _ => Synth.PathApp
          | Syn.FST _ => Synth.Fst
          | Syn.SND _ => Synth.Snd
+         | Syn.CUST => Synth.Custom sign
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
       fun StepJdg sign = matchGoal

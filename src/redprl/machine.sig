@@ -2,6 +2,7 @@ signature REDPRL_MACHINE =
 sig
   type sign
   type abt
+  type opid
 
   exception Unstable
 
@@ -19,6 +20,7 @@ sig
   datatype blocker =
      VAR of RedPrlAbt.variable
    | METAVAR of RedPrlAbt.metavariable
+   | OPERATOR of opid
 
   exception Stuck
   exception Neutral of blocker
@@ -30,10 +32,24 @@ sig
    | STUCK
    | UNSTABLE
 
-  val eval : sign -> stability -> abt -> abt
+  structure Unfolding :
+  sig
+    type regime = opid -> bool
+
+    (* Don't unfold operators for which we have type information! *)
+    val default : sign -> regime
+
+    (* Don't unfold any operators *)
+    val never : regime
+
+    (* Always unfold operators *)
+    val always : regime
+  end
+
+  val eval : sign -> stability -> Unfolding.regime -> abt -> abt
 
   (* Execute a term for 'n' steps; compatibility/congruence steps don't count. *)
-  val steps : sign -> stability -> int -> abt -> abt
+  val steps : sign -> stability -> Unfolding.regime -> int -> abt -> abt
 
-  val canonicity : sign -> stability -> abt -> canonicity
+  val canonicity : sign -> stability -> Unfolding.regime -> abt -> canonicity
 end

@@ -5,6 +5,7 @@ struct
   structure SymSet = SplaySet (structure Elem = Sym.Ord)
   
   type sign = Sig.sign
+  type opid = Sig.opid
 
   fun @@ (f, x) = f x
   infixr @@
@@ -110,8 +111,27 @@ struct
    | NOMINAL
 
   datatype blocker =
-     VAR of variable
-   | METAVAR of metavariable
+     VAR of RedPrlAbt.variable
+   | METAVAR of RedPrlAbt.metavariable
+   | OPERATOR of RedPrlAbt.symbol
+
+  structure Unfolding = 
+  struct
+    type regime = opid -> bool
+
+    fun default sign opid = 
+      let
+        val {spec, ...} = Sig.lookup sign opid
+        open RedPrlSequent infix >>
+      in
+        case spec of
+          _ >> RedPrlCategoricalJudgment.TRUE _ => false
+        | _ => true
+      end
+
+    fun never _ = false
+    fun always _ = true
+  end
 
   exception Neutral of blocker
   exception Unstable
@@ -213,11 +233,12 @@ struct
              end
            | _ => raise Stuck)
 
-  fun stepView sign stability tau =
+  fun stepView sign stability unfolding tau =
     fn `x || _ => raise Neutral (VAR x)
      | x $# (rs, ms) || _ => raise Neutral (METAVAR x)
 
      | O.POLY (O.CUST (opid, ps, _)) $ args || (syms, stk) =>
+       if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
          val entry as {state, ...} = Sig.lookup sign opid
          val (mrho, srho) = Sig.applyCustomOperator entry (List.map #1 ps) args
@@ -538,11 +559,11 @@ struct
      | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1, Tac.autoTac, Tac.autoTac, t2])) || (syms, stk)
      | _ => raise Stuck
 
-  fun step sign stability (tm || stk) =
+  fun step sign stability unfolding (tm || stk) =
     let
       val (view, tau) = infer tm
     in
-      stepView sign stability tau (view || stk)
+      stepView sign stability unfolding tau (view || stk)
     end
 
   fun init tm = 
@@ -561,10 +582,10 @@ struct
      | STEP cfg => cfg
      | CRITICAL cfg => cfg
 
-  fun eval sign stability = 
+  fun eval sign stability unfolding = 
     let
       fun go cfg =
-        go (unwrapAction (step sign stability cfg))
+        go (unwrapAction (step sign stability unfolding cfg))
         handle Stuck => cfg
              | Final => cfg
              | Neutral _ => cfg 
@@ -573,10 +594,10 @@ struct
       unload o go o init
     end
 
-  fun steps sign stability n = 
+  fun steps sign stability unfolding n = 
     let
       fun go1 cfg = 
-        case step sign stability cfg of 
+        case step sign stability unfolding cfg of 
            COMPAT cfg' => go1 cfg'
          | CRITICAL cfg' => cfg'
          | STEP cfg' => cfg'
@@ -587,8 +608,8 @@ struct
       unload o go n o init
     end
 
-  fun canonicity sign stability tm =
-    (steps sign stability 1 tm; REDEX) 
+  fun canonicity sign stability unfolding tm =
+    (steps sign stability unfolding 1 tm; REDEX) 
     handle Stuck => STUCK
          | Final => CANONICAL
          | Unstable => UNSTABLE
