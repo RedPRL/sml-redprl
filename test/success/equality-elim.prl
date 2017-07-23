@@ -1,12 +1,15 @@
+Tac Rewrite(#m; #n; #a; #c : {hyp}.exp) = [
+  let p : [#m = #n in #a] = auto.
+
+  fresh x <- elim p:triv;
+  [`{#c x}, id, auto, auto]
+].
+
 Thm EqualityElimTest : [
   (-> [b : bool] (path {_} bool tt (if tt tt ff)))
 ] by [
-  let p : [(if tt tt ff) = tt in bool] = {
-    auto
-  }.
-
-  fresh x <- elim p:triv;
-  [`(-> bool (path {_} bool tt ,x)),
-   lam b. <_> `tt];
-  auto;
+  (Rewrite
+   (if tt tt ff) tt bool
+   {x} (-> bool (path {_} bool tt ,x)));
+  lam b. <_> `tt
 ].
