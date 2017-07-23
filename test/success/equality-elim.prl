@@ -1,3 +1,5 @@
+// We can write a cool user-defined tactic for asserting and then rewriting along an equality.
+// (Rewrite m n a {x} c) asserts the equality [m = n in a], and rewrites using the motive [{x} c].
 Tac Rewrite(#m; #n; #a; #c : {hyp}.exp) = [
   let p : [#m = #n in #a] = auto.
 
@@ -8,8 +10,15 @@ Tac Rewrite(#m; #n; #a; #c : {hyp}.exp) = [
 Thm EqualityElimTest : [
   (-> [b : bool] (path {_} bool tt (if tt tt ff)))
 ] by [
+  // We're going to prove this in a silly way to illustrate equality elimination.
+  // We'll rewrite the goal by asserting [(if tt tt ff) = tt in bool].
   (Rewrite
    (if tt tt ff) tt bool
+   // we specify the motive (to be unified with the goal) by binding a *hypothesis* x,
+   // which can then be unquoted in the term that we provide.
    {x} (-> bool (path {_} bool tt ,x)));
+
+  // observe that the goal has now been rewritten!
+  ?check-this-out;
   lam b. <_> `tt
 ].
