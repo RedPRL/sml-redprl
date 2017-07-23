@@ -150,6 +150,7 @@ whitespace = [\ \t];
 "lemma"            => (Tokens.RULE_LEMMA (posTuple (size yytext)));
 "cut-lemma"        => (Tokens.RULE_CUT_LEMMA (posTuple (size yytext)));
 "rule"             => (Tokens.RULE_LEMMA (posTuple (size yytext)));
+"exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
 
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
 "type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));

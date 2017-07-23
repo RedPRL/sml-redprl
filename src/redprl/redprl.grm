@@ -44,10 +44,13 @@ struct
   val autoTac = multitacToTac autoMtac
 
   fun exact tau m = 
-    then_ (O.MONO (O.RULE_EXACT tau) $$ [([],[]) \ m], autoTac)
+    O.MONO (O.RULE_EXACT tau) $$ [([],[]) \ m]
+
+  fun exactAuto tau m = 
+    then_ (exact tau m, autoTac)
 
   fun exactDim r = 
-    exact O.DIM_EXP (O.POLY (O.DIM_REF r) $$ [])
+    exactAuto O.DIM_EXP (O.POLY (O.DIM_REF r) $$ [])
 end
 
 structure Multi =
@@ -159,6 +162,7 @@ end
  | THEN | ELSE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
  | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_CUT_LEMMA | RULE_UNFOLD
+ | RULE_EXACT
 
  (* keywords in judgments *)
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
@@ -523,7 +527,8 @@ atomicRawTac
   | RULE_ELIM VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, sort)), []))
   | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, O.EXP)), []))
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
-  | BACK_TICK term (Tac.exact O.EXP term)
+  | BACK_TICK term (Tac.exactAuto O.EXP term)
+  | RULE_EXACT term (Tac.exact O.EXP term)
   | AMPERSAND param (Tac.exactDim param)
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
 
