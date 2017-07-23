@@ -20,7 +20,7 @@ struct
   structure Tac =
   struct
     val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
-    val auto = O.MONO O.MTAC_AUTO $$ []
+    val autoTac = O.MONO O.TAC_AUTO $$ []
 
     fun elim (u, tau) =
       O.POLY (O.RULE_ELIM (u, tau)) $$ []
@@ -56,8 +56,6 @@ struct
 
     fun cut jdg =
       O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
-
-    val autoTac = mtac auto
 
     fun prim name = 
       O.MONO (O.RULE_PRIM name) $$ []
@@ -603,7 +601,7 @@ struct
        in
          STEP @@ mtrec || (syms, stk)
        end
-     | O.MONO O.MTAC_AUTO $ _ || (syms, stk) => STEP @@ Tac.multirepeat (Tac.all (Tac.try Tac.autoStep)) || (syms, stk)
+     | O.MONO O.TAC_AUTO $ _ || (syms, stk) => STEP @@ Tac.mtac (Tac.multirepeat (Tac.all (Tac.try Tac.autoStep))) || (syms, stk)
      | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] || (syms, stk) => 
        let
          val catjdg = RedPrlCategoricalJudgment.fromAbt jdg

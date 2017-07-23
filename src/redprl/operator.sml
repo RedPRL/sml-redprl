@@ -129,7 +129,7 @@ struct
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
-   | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
+   | MTAC_REPEAT | TAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
    | MTAC_HOLE of string option
    | TAC_MTAC
@@ -247,7 +247,7 @@ struct
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
      | MTAC_REC => [[] * [MTAC] <> MTAC] ->> MTAC
      | MTAC_REPEAT => [[] * [] <> MTAC] ->> MTAC
-     | MTAC_AUTO => [] ->> MTAC
+     | TAC_AUTO => [] ->> TAC
      | MTAC_PROGRESS => [[] * [] <> MTAC] ->> MTAC
      | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
      | MTAC_EACH n =>
@@ -507,7 +507,7 @@ struct
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
      | MTAC_REPEAT => "repeat"
-     | MTAC_AUTO => "auto"
+     | TAC_AUTO => "auto"
      | MTAC_PROGRESS => "multi-progress"
      | MTAC_ALL => "all"
      | MTAC_EACH _ => "each"
@@ -645,6 +645,7 @@ struct
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_PATH_ELIM a => DEV_PATH_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_RECORD_ELIM (a, lbls) => DEV_RECORD_ELIM (mapSym (passSort (HYP EXP) f) a, lbls)
   end
 
   fun mapWithSort f =
