@@ -123,6 +123,8 @@ whitespace = [\ \t];
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
 "triv"             => (Tokens.TRIV (posTuple (size yytext)));
 
+"tactic"           => (Tokens.TACTIC (posTuple (size yytext)));
+
 "Print"            => (Tokens.CMD_PRINT (posTuple (size yytext)));
 "Extract"          => (Tokens.CMD_EXTRACT (posTuple (size yytext)));
 "Def"              => (Tokens.DCL_DEF (posTuple (size yytext)));

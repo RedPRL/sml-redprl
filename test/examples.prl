@@ -46,7 +46,12 @@ Tac Try(#t : tac) = [
 
 // Useful for stepping through a proof RedPRL completes automatically, to see
 // what is being done.
-Tac TryStep = [ auto-step || id ].
+Tac TryStep = [ 
+  // We can call our Try tactical. But tactics are parsed with a different grammar than terms,
+  // so to avoid ambiguity, when we need to provide a tactic expression as an argument to 
+  // an operator, we wrap it in (tactic ....).
+  (Try (tactic auto-step))
+].
 
 Thm ApEqTest : [
   (->
@@ -65,11 +70,25 @@ Thm ApEqTest : [
   lam f. <_> `($ ,f tt)
 ].
 
+// 'wif' stands for "weak if", which is the recursor for the weak booleans. It differs
+// from ordinary 'if' in that it must take the motive of induction as an argument;
+// this is computationally relevant in the case of hcoms.
 Def BoolEta(#M) = [
-  (wbool-rec [a] wbool #M tt ff)
+  (wif [a] wbool #M tt ff)
 ].
 
 Print BoolEta.
+
+// But note that if we define such a function in the refiner using tactics, we can use the
+// built-in 'if x then t1 else t2' tactical, and the extracted witness will be a 'wif' form
+// with the motive already filled in.
+Thm BoolEtaFunction : [
+  (-> wbool wbool)
+] by [
+  lam b. if b then `tt else `ff
+].
+
+Extract BoolEtaFunction.
 
 // Let's prove the existence of a path between the identity function
 // on booleans, and the function that takes a boolean to a vacuous if

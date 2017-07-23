@@ -149,6 +149,9 @@ end
  | PATHS | ABS | AT_SIGN
  | HCOM | COE
 
+ (* parsing "coercions" *)
+ | TACTIC
+
  (* keywords in tactics *)
  | CASE | OF
  | FRESH
@@ -467,6 +470,7 @@ rawTermAndTac
 
 rawTerm
   : rawTermAndTac (rawTermAndTac)
+  | LPAREN TACTIC tactic RPAREN (tactic)
   (* hypotheses *)
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
 
