@@ -5,7 +5,7 @@ Thm FHcom/trans3 : [
    (path {_} wbool b d)
    (path {_} wbool c d))
 ] by [
-  <a> lam b. lam c. lam d.
+  lam a. lam b. lam c. lam d.
     lam pab. lam pac. lam pbd.
     <i> `(fcom{0~>1} (@ ,pab i) [i=0 {j} (@ ,pac j)] [i=1 {j} (@ ,pbd j)])
 ].
