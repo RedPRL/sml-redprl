@@ -38,4 +38,8 @@ sig
   end
 
   val Exact : abt -> rule
+
+
+  type rule_name = string
+  val lookupRule : rule_name -> rule
 end

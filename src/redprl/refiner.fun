@@ -18,6 +18,7 @@ struct
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
   type catjdg = (Sym.t, abt) CJ.jdg
   type opid = Sig.opid
+  type rule_name = string
 
   infixr @@
   infix 1 || #>
@@ -532,6 +533,61 @@ struct
   fun Exact tm =
     Truth.Witness tm
       orelse_ Term.Exact tm
+
+
+
+  val lookupRule = 
+    fn "bool/eq/type" => Bool.EqType
+     | "bool/eq/tt" => Bool.EqTT
+     | "bool/eq/ff" => Bool.EqFF
+     | "bool/eq/if" => Bool.ElimEq
+     | "wbool/eq/type" => WBool.EqType
+     | "wbool/eq/tt" => WBool.EqTT
+     | "wbool/eq/ff" => WBool.EqFF
+     | "wbool/eq/fcom" => WBool.EqFCom
+     | "wbool/eq/wif" => WBool.ElimEq
+     | "nat/eq/type" => Nat.EqType
+     | "nat/eq/zero" => Nat.EqZero
+     | "nat/eq/succ" => Nat.EqSucc
+     | "nat/eq/nat-rec" => Nat.ElimEq
+     | "int/eq/type" => Int.EqType
+     | "int/eq/zero" => Int.EqZero
+     | "int/eq/succ" => Int.EqSucc
+     | "int/eq/negsucc" => Int.EqNegSucc
+     | "void/eq/type" => Void.EqType
+     | "S1/eq/type" => S1.EqType
+     | "S1/eq/base" => S1.EqBase
+     | "S1/eq/loop" => S1.EqLoop
+     | "S1/eq/fcom" => S1.EqFCom
+     | "S1/eq/S1-rec" => S1.ElimEq
+     | "dfun/eq/type" => DFun.EqType
+     | "dfun/eq/lam" => DFun.Eq
+     | "dfun/intro" => DFun.True
+     | "dfun/eq/eta" => DFun.Eta
+     | "dfun/eq/app" => DFun.AppEq
+     | "dpair/eq/type" => DProd.EqType
+     | "dpair/eq/pair" => DProd.Eq
+     | "dpair/eq/eta" => DProd.Eta
+     | "dpair/eq/fst" => DProd.FstEq
+     | "dpair/eq/snd" => DProd.SndEq
+     | "dpair/intro" => DProd.True
+     | "record/eq/type" => Record.EqType
+     | "record/eq/tuple" => Record.Eq
+     | "record/eq/eta" => Record.Eta
+     | "record/eq/proj" => Record.ProjEq
+     | "record/intro" => Record.True
+     | "path/eq/type" => Path.EqType
+     | "path/intro" => Path.True
+     | "path/eq/abs" => Path.Eq
+     | "path/eq/app" => Path.AppEq
+     | "path/eq/app/const" => Path.AppConstCompute
+     | "path/eq/eta" => Path.Eta
+     | "hcom/eq" => HCom.Eq
+     | "hcom/eq/cap" => HCom.CapEqL
+     | "hcom/eq/tube" => HCom.TubeEqL
+
+     | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
+
 
   local
     val CatJdgSymmetry : Sym.t Tactical.tactic =

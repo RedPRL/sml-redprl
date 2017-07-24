@@ -58,6 +58,9 @@ struct
       O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
 
     val autoTac = mtac auto
+
+    fun prim name = 
+      O.MONO (O.RULE_PRIM name) $$ []
   end
 
 
@@ -523,6 +526,7 @@ struct
      | O.MONO (O.MTAC_HOLE _) $ _ || (_, []) => raise Final
      | O.MONO O.TAC_MTAC $ _ || (_, []) => raise Final
      | O.MONO O.RULE_ID $ _ || (_, []) => raise Final
+     | O.MONO (O.RULE_PRIM _) $ _ || (_, []) => raise Final
      | O.MONO (O.RULE_EXACT _) $ _ || (_, []) => raise Final
      | O.MONO O.RULE_SYMMETRY $ _ || (_, []) => raise Final
      | O.MONO O.RULE_AUTO_STEP $ _ || (_, []) => raise Final
@@ -549,9 +553,9 @@ struct
        in
          STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2])) || (syms, stk)
        end
-     | O.MONO O.DEV_DFUN_INTRO $ [([u],_) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.HYP O.EXP)] (Tac.each [t, Tac.autoTac])) || (syms, stk)
-     | O.MONO O.DEV_DPROD_INTRO $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [] (Tac.each [t1, t2, Tac.autoTac])) || (syms, stk)
-     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all Tac.autoStep) [(u, P.DIM)] (Tac.each [t, Tac.autoTac, Tac.autoTac])) || (syms, stk)
+     | O.MONO O.DEV_DFUN_INTRO $ [([u],_) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "dfun/intro")) [(u, P.HYP O.EXP)] (Tac.each [t, Tac.autoTac])) || (syms, stk)
+     | O.MONO O.DEV_DPROD_INTRO $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "dpair/intro")) [] (Tac.each [t1, t2, Tac.autoTac])) || (syms, stk)
+     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "path/intro")) [(u, P.DIM)] (Tac.each [t, Tac.autoTac, Tac.autoTac])) || (syms, stk)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [] (Tac.each [t1,t2])) || (syms, stk)
      | O.POLY (O.DEV_S1_ELIM z) $ [_ \ t1, ([v],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2, Tac.autoTac, Tac.autoTac])) || (syms, stk)
      | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2])) || (syms, stk)

@@ -35,6 +35,7 @@ struct
       | O.POLY (O.RULE_LEMMA (opid, ps)) $ _ => Rules.Lemma sign opid (List.map #1 ps)
       | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) $ _ => Rules.CutLemma sign opid (List.map #1 ps)
       | O.POLY (O.RULE_UNFOLD opid) $ _ => Rules.Computation.Unfold sign opid
+      | O.MONO (O.RULE_PRIM ruleName) $ _ => Rules.lookupRule ruleName
       | _ => raise E.error [Fpp.text "Invalid rule", TermPrinter.ppTerm rule]
 
   fun rule (sign, env) rule alpha goal =

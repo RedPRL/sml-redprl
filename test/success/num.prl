@@ -74,3 +74,24 @@ Thm Plus2UnitL : [
 ] by [
   auto
 ].
+
+
+Thm NatSymm : [
+  (->
+   [a b : nat]
+   (path {_} nat a b)
+   (path {_} nat b a))
+] by [
+  lam a. lam b. lam pab.
+  fresh i:dim <- refine path/intro;
+  #0 {
+    `(hcom{0 ~> 1} nat ,a 
+      [i=0 {j} (@ ,pab j)]
+      [i=1 {_} ,a])
+  };
+
+  refine hcom/eq/tube;
+  auto
+].
+
+Print NatSymm.
