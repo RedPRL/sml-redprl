@@ -660,7 +660,6 @@ struct
          | (Syn.IF _, _, Syn.IF _, _) => Bool.ElimEq
          | (Syn.IF _, Machine.VAR z, _, _) => Bool.EqElim z
          | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.EqElim z
-         | (Syn.NAT_REC _, _, Syn.NAT_REC _, _) => Nat.ElimEq
          | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.ElimEq
          | (Syn.APP _, _, Syn.APP _, _) => DFun.AppEq
          | (Syn.FST _, _, Syn.FST _, _) => DProd.FstEq

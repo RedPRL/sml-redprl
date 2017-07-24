@@ -33,12 +33,17 @@ Def Pred2 = [
 
 Extract Pred2.
 
+Tac NatRecEq(#a) = [
+  refine nat/eq/nat-rec;
+  [`#a];
+  auto
+].
+
 Thm Prod2Wf : [
   Pred2 in (-> nat nat)
 ] by [
-  fresh n1, n2, n2', ind <- auto;
-  [ `nat ]; // providing the motive
   auto;
+  (NatRecEq nat)
 ].
 
 Thm Plus : [
@@ -64,9 +69,8 @@ Def Plus2 = [
 Thm Plus2Wf : [
   Plus2 in (-> nat nat nat)
 ] by [
-  fresh a, b, b', ind <- auto;
-  [ `(-> nat nat) ];
-  auto
+  auto;
+  (NatRecEq (-> nat nat))
 ].
 
 Thm Plus2UnitL : [
