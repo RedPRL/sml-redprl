@@ -86,8 +86,8 @@ Thm NatSymm : [
   fresh i:dim <- refine path/intro;
   #0 {
     `(hcom{0 ~> 1} nat ,a 
-     [i=0 {j} (@ ,pab j)]
-     [i=1 {_} ,a])
+      [i=0 {j} (@ ,pab j)]
+      [i=1 {_} ,a])
   };
 
   refine hcom/eq/tube;
