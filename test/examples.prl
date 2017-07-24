@@ -18,17 +18,31 @@ Thm LowLevel : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f <- auto;
-  fresh x, x/eq <- elim f;
-  [ `tt, hyp x]
+  fresh f <- refine dfun/intro;
+  [fresh x, x/eq <- elim f;
+  [`tt, hyp x],
+  refine dfun/eq/type;
+  refine wbool/eq/type]
 ].
 
 Extract LowLevel.
 
-Thm FunElimTest : [
+Thm LowLevel2 : [
   (->
     (-> wbool wbool)
     wbool)
+] by [
+  fresh f <- auto;
+  fresh x, x/eq <- elim f;
+  [`tt, hyp x]
+].
+
+Extract LowLevel2.
+
+Thm FunElimTest : [
+  (->
+   (-> wbool wbool)
+   wbool)
 ] by [
   lam f. let x = f {`tt}. hyp x
 ].
