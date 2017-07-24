@@ -623,17 +623,18 @@ struct
     fun AppEq _ jdg =
       let
         val _ = RedPrlLog.trace "DFun.AppEq"
-        val (I, H) >> CJ.EQ ((ap0, ap1), _) = jdg
+        val (I, H) >> CJ.EQ ((ap0, ap1), ty) = jdg
         val Syn.APP (m0, n0) = Syn.out ap0
         val Syn.APP (m1, n1) = Syn.out ap1
 
-        val (goalDFun0, holeDFun0) = makeSynth (I, H) m0
-        val (goalDFun1, holeDFun1) = makeSynth (I, H) m1
-        val goalDFunEq = makeEqTypeIfDifferent (I, H) (holeDFun0, holeDFun1)
-        val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun0, [], [])
-        val goalN = makeEq (I, H) ((n0, n1), holeDom)
+        val (goalDFun, holeDFun) = makeSynth (I, H) m0
+        val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun, [], [])
+        val (goalCod, holeCod) = makeMatch (O.MONO O.DFUN, 1, holeDFun, [], [n0])
+        val goalFunEq = makeEq (I, H) ((m0, m1), holeDFun)
+        val goalArgEq = makeEq (I, H) ((n0, n1), holeDom)
+        val goalTyEq = makeEqTypeIfDifferent (I, H) (ty, holeCod)
       in
-        |>: goalDFun0 >: goalDFun1 >:? goalDFunEq >: goalDom >: goalN
+        |>: goalDFun >: goalDom >: goalCod >: goalFunEq >: goalArgEq >:? goalTyEq
         #> (I, H, trivial)
       end
   end
