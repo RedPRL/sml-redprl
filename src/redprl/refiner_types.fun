@@ -630,11 +630,11 @@ struct
         val (goalDFun, holeDFun) = makeSynth (I, H) m0
         val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun, [], [])
         val (goalCod, holeCod) = makeMatch (O.MONO O.DFUN, 1, holeDFun, [], [n0])
-        val goalFunEq = makeEq (I, H) ((m0, m1), holeDFun)
+        val goalFunEq = makeEqIfDifferent (I, H) ((m0, m1), holeDFun)
         val goalArgEq = makeEq (I, H) ((n0, n1), holeDom)
         val goalTyEq = makeEqTypeIfDifferent (I, H) (ty, holeCod)
       in
-        |>: goalDFun >: goalDom >: goalCod >: goalFunEq >: goalArgEq >:? goalTyEq
+        |>: goalDFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >:? goalTyEq
         #> (I, H, trivial)
       end
   end
