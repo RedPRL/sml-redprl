@@ -83,15 +83,10 @@ Thm NatSymm : [
    (path {_} nat b a))
 ] by [
   lam a. lam b. lam pab.
-  fresh i:dim <- refine path/intro;
-  #0 {
+  <i>
     `(hcom{0 ~> 1} nat ,a 
       [i=0 {j} (@ ,pab j)]
       [i=1 {_} ,a])
-  };
-
-  refine hcom/eq/tube;
-  auto
 ].
 
 Print NatSymm.

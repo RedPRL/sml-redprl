@@ -707,32 +707,25 @@ struct
        val AutoEqR = CapEqR orelse_ Eq
       end
 
-      (* these are special rules which are not beta or eta,
-       * and we have to check them against the neutral terms.
-       * it looks nicer to list all of them here. *)
-      fun StepEqStuck sign ((m, n), ty) canonicity =
-        case (Syn.out m, Syn.out n) of
-           (Syn.HCOM _, Syn.HCOM _) => HCom.AutoEqLR
-         | (Syn.HCOM _, _) => HCom.AutoEqL
-         | (_, Syn.HCOM _) => HCom.AutoEqLR
-         | (Syn.COE _, Syn.COE _) => Coe.AutoEqLR
-         | (Syn.COE _, _) => Coe.AutoEqL
-         | (_, Syn.COE _) => Coe.AutoEqR
-         | (Syn.PATH_APP (_, P.APP _), _) => Path.AppConstCompute
-         | (_, Syn.PATH_APP (_, P.APP _)) => CatJdgSymmetry then_ Path.AppConstCompute
-         | _ =>
-           (case canonicity of
-               (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqNeu sign (blocker1, blocker2) ((m, n), ty)
-             | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqNeuExpand sign blocker ty
-             | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign blocker ty)
+      fun TryHeadExpansionL sign alpha = Lcf.try (Computation.EqHeadExpansion sign alpha)
+      fun TryHeadExpansionLR sign = TryHeadExpansionL sign then_ CatJdgSymmetry then_ TryHeadExpansionL sign then_ CatJdgSymmetry
 
-    
       fun StepEq sign ((m, n), ty) =
-        case (canonicity sign m, canonicity sign n) of
-           (Machine.REDEX, _) => Computation.EqHeadExpansion sign
-         | (_, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqHeadExpansion sign
-         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal ((m, n), ty)
-         | canonicity => StepEqStuck sign ((m, n), ty) canonicity
+        case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of 
+           (Syn.HCOM _, _, Syn.HCOM _, _) => HCom.AutoEqLR orelse_ TryHeadExpansionLR sign
+         | (Syn.HCOM _, _, _, _) => HCom.AutoEqL orelse_ TryHeadExpansionLR sign
+         | (_, _, Syn.HCOM _, _) => HCom.AutoEqLR orelse_ TryHeadExpansionLR sign
+         | (Syn.COE _, _, Syn.COE _, _) => Coe.AutoEqLR orelse_ TryHeadExpansionLR sign
+         | (Syn.COE _, _, _, _) => Coe.AutoEqL orelse_ TryHeadExpansionLR sign
+         | (_, _, Syn.COE _, _) => Coe.AutoEqR orelse_ TryHeadExpansionLR sign
+         | (_, Machine.REDEX, _, _) => Computation.EqHeadExpansion sign
+         | (_, _, _, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqHeadExpansion sign
+         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal ((m, n), ty)
+         | (Syn.PATH_APP (_, P.APP _), _, _, _) => Path.AppConstCompute
+         | (_, _, Syn.PATH_APP (_, P.APP _), _) => CatJdgSymmetry then_ Path.AppConstCompute
+         | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (blocker1, blocker2) ((m, n), ty)
+         | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign blocker ty
+         | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign blocker ty
 
       fun StepSynth sign m =
         case Syn.out m of
