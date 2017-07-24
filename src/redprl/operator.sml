@@ -137,6 +137,7 @@ struct
    (* primitive rules *)
    | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of RedPrlSort.t | RULE_HEAD_EXP
    | RULE_CUT
+   | RULE_PRIM of string
 
    (* development calculus terms *)
    | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
@@ -258,6 +259,7 @@ struct
      | RULE_EXACT tau => [[] * [] <> tau] ->> TAC
      | RULE_HEAD_EXP => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
+     | RULE_PRIM _ => [] ->> TAC
 
      | DEV_DFUN_INTRO => [[HYP EXP] * [] <> TAC] ->> TAC
      | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
@@ -508,6 +510,7 @@ struct
      | RULE_EXACT _ => "exact"
      | RULE_HEAD_EXP => "head-expand"
      | RULE_CUT => "cut"
+     | RULE_PRIM name => "refine{" ^ name ^ "}"
 
      | DEV_PATH_INTRO => "path-intro"
      | DEV_DFUN_INTRO => "fun-intro"

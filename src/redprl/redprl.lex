@@ -115,6 +115,7 @@ whitespace = [\ \t];
 "with"             => (Tokens.WITH (posTuple (size yytext)));
 "case"             => (Tokens.CASE (posTuple (size yytext)));
 "of"               => (Tokens.OF (posTuple (size yytext)));
+"refine"           => (Tokens.REFINE (posTuple (size yytext)));
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 

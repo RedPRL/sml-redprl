@@ -161,6 +161,7 @@ end
  | FRESH
  | LET | WITH
  | THEN | ELSE
+ | REFINE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
  | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_CUT_LEMMA | RULE_UNFOLD
  | RULE_EXACT
@@ -519,7 +520,8 @@ src_sequent
   | src_seqhyps DOUBLE_RANGLE src_catjdg (src_seqhyps, src_catjdg)
 
 atomicRawTac
-  : RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
+  : REFINE VARNAME (Ast.$$ (O.MONO (O.RULE_PRIM VARNAME), []))
+  | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
   | HYP VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, sort)), []))

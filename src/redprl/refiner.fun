@@ -18,6 +18,7 @@ struct
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
   type catjdg = (Sym.t, abt) CJ.jdg
   type opid = Sig.opid
+  type rule_name = string
 
   infixr @@
   infix 1 || #>
@@ -532,6 +533,13 @@ struct
   fun Exact tm =
     Truth.Witness tm
       orelse_ Term.Exact tm
+
+
+
+  val lookupRule = 
+    fn "bool/eq-type" => Bool.EqType
+     | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
+
 
   local
     val CatJdgSymmetry : Sym.t Tactical.tactic =
