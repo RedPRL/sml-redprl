@@ -815,22 +815,24 @@ struct
         val Syn.TUPLE map1 = Syn.out tuple1
         val Syn.RECORD fields = Syn.out record
 
-        val {goals, ...} = 
+        val {goals, famGoals, ...} = 
           List.foldl
-            (fn (((lbl, var), ty), {goals, env}) =>
+            (fn (((lbl, var), ty), {goals, famGoals, env, hyps, isFirst}) =>
                let
                  val ty' = substVarenv env ty
                  val m0 = Syn.LabelDict.lookup map0 lbl
                  val m1 = Syn.LabelDict.lookup map1 lbl
                  val env' = Var.Ctx.insert env var m0
                  val goals' = goals >: makeEq (I, H) ((m0, m1), ty')
+                 val hyps' = hyps @> (var, CJ.TRUE ty)
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (I, hyps) ty
                in
-                 {goals = goals', env = env'}
+                 {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}
                end)
-            {goals = Lcf.Tl.empty, env = Var.Ctx.empty}
+            {goals = Lcf.Tl.empty, famGoals = Lcf.Tl.empty, env = Var.Ctx.empty, hyps = H, isFirst = true}
             fields
       in
-        goals #> (I, H, trivial)
+        Lcf.Tl.append goals famGoals #> (I, H, trivial)
       end
 
     fun Eta _ jdg =
