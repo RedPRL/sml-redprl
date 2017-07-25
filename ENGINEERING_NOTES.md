@@ -27,22 +27,17 @@ Downsides of MLton are:
 - Source code cannot contain unicode characters; in practice, this means that
   you have to use the decimal code in string literals.
 
-- Builds take longer. In practice, by splitting parts of JonPRL into smaller
-  libraries, we can still get reasonable build-and-code turnaround by only
-  building the part of JonPRL that we are working on.
+- Builds take longer.
 
 - There's no REPL. In practice, the REPL has not been used almost at all for
-  day-to-day JonPRL development, so I do not see this is a very serious
+  day-to-day JonPRL/RedPRL development, so I do not see this is a very serious
   disadvantage. The only benefit of the REPL is that you can quickly print out some
   datastructure without writing your own pretty-printer for it.
 
 #### No clever stuff
 
-I want the code to be straightforward. I considered using `sml-open-ended`
-again for operators, for instance, and in addition to the fact that it may be
-non-trivial to make it work at higher kind, it's just another piece of the
-codebase that is incredibly mystifying to people who don't understand what it
-is.
+Code should be straightforward; sometimes this means sacrificing a clever typing guarante
+or a bit of abstraction.
 
 #### Strike a balance with modularity
 
@@ -61,7 +56,6 @@ The whitespace and lexical style that I prefer is used in JonPRL and the ABT
 library. Contributors are *not* required to adhere to this perfectly, but we
 will ensure that no code is merged into master which does not match the
 surrounding style.
-
 
 
 #### This is a living document!

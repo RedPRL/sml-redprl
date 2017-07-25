@@ -1,4 +1,5 @@
-The following people have contributed to RedPRL and its theoretical underpinnings:
+The following people have contributed to RedPRL and its theoretical underpinnings,
+in no particular order:
 
 - Jon Sterling
 - Danny Gratzer
