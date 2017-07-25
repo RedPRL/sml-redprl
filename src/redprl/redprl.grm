@@ -279,6 +279,8 @@ end
  | tactic of ast
  | tactics of ast list
 
+ | recordFieldPatterns of (string * string) list
+
  | declArgument of metavariable * Ar.valence
  | declArguments of string Signature.arguments
  | declArgumentsParens of string Signature.arguments
@@ -548,6 +550,11 @@ src_sequent
   : src_catjdg ([], src_catjdg)
   | src_seqhyps DOUBLE_RANGLE src_catjdg (src_seqhyps, src_catjdg)
 
+recordFieldPatterns
+   : VARNAME EQUALS VARNAME COMMA recordFieldPatterns ((VARNAME1, VARNAME2) :: recordFieldPatterns)
+   | VARNAME EQUALS VARNAME ([(VARNAME1, VARNAME2)])
+   | ([])
+
 atomicRawTac
   : REFINE VARNAME (Ast.$$ (O.MONO (O.RULE_PRIM VARNAME), []))
   | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
@@ -583,6 +590,8 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
   | LET LANGLE VARNAME COMMA VARNAME RANGLE EQUALS VARNAME DOT tactic
       (Ast.$$ (O.POLY (O.DEV_DPROD_ELIM VARNAME3), [\ (([VARNAME1, VARNAME2],[]), tactic)]))
+  | LET LANGLE recordFieldPatterns RANGLE EQUALS VARNAME DOT tactic
+      (Ast.$$ (O.POLY (O.DEV_RECORD_ELIM (VARNAME, List.map #1 recordFieldPatterns)), [\ ((List.map #2 recordFieldPatterns, []), tactic)]))
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
