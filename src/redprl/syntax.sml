@@ -41,7 +41,7 @@ struct
    (* product: pair, fst and snd *)
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    (* record *)
-   | RECORD of (string * 'a) list
+   | RECORD of ((string * variable) * 'a) list
    | TUPLE of 'a LabelDict.dict | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
@@ -75,8 +75,29 @@ struct
           | goTube _ = raise E.error [Fpp.text "Syntax.outTubes: Malformed tube"]
       in
         ListPair.zipEq (eqs, List.map goTube tubes)
-      end  
+      end
+
   in
+    fun outRecordFields (lbls, args) =
+      let
+        val init = {rcd = [], vars = []}
+        val {rcd, ...} = 
+          ListPair.foldrEq
+            (fn (lbl, (_, xs) \ ty, {rcd, vars}) =>
+              let
+                val ren = ListPair.foldlEq (fn (x, var, ren) => Var.Ctx.insert ren x var) Var.Ctx.empty (xs, vars)
+                val ty' = Tm.renameVars ren ty
+                val var = Var.named lbl
+              in
+                {rcd = ((lbl, var), ty') :: rcd,
+                 vars = vars @ [var]}
+              end)
+            init
+            (lbls, args)
+      in
+        rcd
+      end
+
     fun intoTupleFields fs =
       let
         val (lbls, tms) = ListPair.unzip (LabelDict.toList fs)
@@ -93,10 +114,6 @@ struct
           | (dict, _) => dict)
         LabelDict.empty (lbls, args)
 
-    fun outRecordFields (lbls, args) = 
-      ListPair.mapEq
-        (fn (lbl, _ \ m) => (lbl, m))
-        (lbls, args)
 
     fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
 
@@ -162,11 +179,19 @@ struct
        | FST m => O.MONO O.FST $$ [([],[]) \ m]
        | SND m => O.MONO O.SND $$ [([],[]) \ m]
 
-       | RECORD fs =>
+       | RECORD fields =>
            let
-             val (lbls, tys) = ListPair.unzip fs
+             val init = {labels = [], args = [], vars = []}
+             val {labels, args, ...} =
+               List.foldr
+                 (fn (((lbl, var), ty), {labels, args, vars}) =>
+                     {labels = lbl :: labels,
+                      vars = vars @ [var],
+                      args = (([],vars) \ ty) :: args})
+                 init
+                 fields
            in
-             O.MONO (O.RECORD lbls) $$ List.map (fn ty => ([],[]) \ ty) tys
+             O.MONO (O.RECORD labels) $$ args
            end
        | TUPLE fs =>
            let

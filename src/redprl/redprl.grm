@@ -104,10 +104,20 @@ struct
 
  fun makeRecord pos tbs =
     let
-      val (lbls, tys) = ListPair.unzip (flatten tbs)
+      val fields = flatten tbs
+      val init = {labels = [], args = []}
+      val {labels, args} = 
+        List.foldr
+          (fn ((lbl, ty), {labels, args}) =>
+            {labels = labels @ [lbl],
+             args = (([],labels) \ ty) :: args})
+          init
+          fields
+
+      val lbls = List.rev labels
+      val _ = checkNoDuplicates pos lbls
     in
-      checkNoDuplicates pos lbls;
-      O.MONO (O.RECORD lbls) $$ List.map (fn ty => ([],[]) \ ty) tys
+      O.MONO (O.RECORD lbls) $$ args
     end
 
   fun makeTuple pos fields =

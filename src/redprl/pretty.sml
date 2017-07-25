@@ -171,13 +171,24 @@ struct
      | O.MONO O.DPROD $ _ =>
          printQuant "*" @@ multiDProd [] m
      | O.MONO (O.RECORD []) $ _ => text "record"
-     | O.MONO (O.RECORD lbls) $ tys =>
+     | O.MONO (O.RECORD lbls) $ args =>
          let
-           val tys = List.map (fn (_ \ ty) => ty) tys
-           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, char #":", ppTerm a]
+           val init = {fields = [], vars = []}
+           val {fields, ...} = 
+             ListPair.foldrEq
+               (fn (lbl, (_, xs) \ ty, {fields, vars}) =>
+                 let
+                   val ren = ListPair.foldlEq (fn (x, var, ren) => Var.Ctx.insert ren x var) Var.Ctx.empty (xs, vars)
+                   val ty' = RedPrlAbt.renameVars ren ty
+                   val var = Var.named lbl
+                 in
+                   {fields = Atomic.squares (hsep [ppLabel lbl, char #":", ppTerm ty']) :: fields,
+                    vars = vars @ [var]}
+                 end)
+               init
+               (lbls, args)
          in
-           Atomic.parens @@ expr @@ hvsep
-             [text "record", expr @@ hvsep @@ ListPair.mapEq pp (lbls, tys)]
+           Atomic.parens @@ expr @@ hvsep fields
          end
      | O.MONO (O.TUPLE []) $ _ => text "tuple"
      | O.MONO (O.TUPLE lbls) $ data =>

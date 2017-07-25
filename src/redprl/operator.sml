@@ -229,7 +229,12 @@ struct
      | FST => [[] * [] <> EXP] ->> EXP
      | SND => [[] * [] <> EXP] ->> EXP
 
-     | RECORD lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
+     | RECORD lbls =>
+       let
+         val (_, valences) = List.foldr (fn (_, (taus, vls)) => (EXP :: taus, ([] * taus <> EXP) :: vls)) ([], []) lbls
+       in 
+         valences ->> EXP
+       end
      | TUPLE lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
      | PROJ lbl => [[] * [] <> EXP] ->> EXP
      | TUPLE_UPDATE lbl => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP

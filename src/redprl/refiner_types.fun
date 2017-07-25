@@ -794,7 +794,8 @@ struct
             makeEqType (I, H) (ty0, ty1)
           end
 
-        val goals = ListPair.mapEq goalForField (map0, map1)
+        val goals = ?todo
+         (* ListPair.mapEq goalForField (map0, map1) *)
       in
         |>:+ goals #> (I, H, trivial)
       end
@@ -808,11 +809,11 @@ struct
         val Syn.TUPLE map1 = Syn.out tuple1
         val Syn.RECORD fields = Syn.out record
 
-        val fieldGoals = 
-          List.map
+        val fieldGoals = ?todo
+          (* List.map
             (fn (lbl, ty) =>
               makeEq (I, H) ((LabelDict.lookup map0 lbl, LabelDict.lookup map1 lbl), ty))
-            fields
+            fields *)
 
       in
         |>:+ fieldGoals #> (I, H, trivial)
@@ -828,7 +829,8 @@ struct
 
         fun goLabel lbl = ([],[]) \ (Syn.into @@ Syn.PROJ (lbl, m))
 
-        val m' = O.MONO (O.TUPLE dom) $$ List.map goLabel dom
+        val m' = ?todo
+        (* O.MONO (O.TUPLE dom) $$ List.map goLabel dom *)
         val goal1 = makeMem (I, H) (m, record)
         val goal2 = makeEqIfDifferent (I, H) ((m', n), record) (* m' well-typed *)
       in
@@ -881,7 +883,8 @@ struct
 
         val (goals, map) = ListPair.unzip (List.map goLabel map)
         val (dom, data) = ListPair.unzip map
-        val tuple = O.MONO (O.TUPLE dom) $$ data
+        val tuple = ?todo
+        (* O.MONO (O.TUPLE dom) $$ data *)
       in
         |>:+ goals #> (I, H, tuple)
       end
