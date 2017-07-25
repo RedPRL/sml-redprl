@@ -911,7 +911,23 @@ struct
         Lcf.Tl.append goals famGoals #> (I, H, tuple)
       end
 
-    (* TODO: Elim *)
+    fun Elim z alpha jdg = 
+      let
+        val (I, H) >> CJ.TRUE motivez = jdg
+        val CJ.TRUE record = lookupHyp H z
+        val Syn.RECORD fields = Syn.out record
+        val names = List.tabulate (List.length fields, alpha)
+        val ren = ListPair.foldlEq (fn (name, ((_, var), ty), ren) => Var.Ctx.insert ren var name) Var.Ctx.empty (names, fields)
+        val H' = ListPair.foldlEq (fn (name, ((_,_),ty), hyps) => hyps @> (name, CJ.TRUE (renameVars ren ty))) H (names, fields)
+        val tuple = Syn.into @@ Syn.TUPLE @@ ListPair.foldl (fn (((lbl, _), _), name, dict) => Syn.LabelDict.insert dict lbl @@ Syn.into @@ Syn.VAR (name, O.EXP)) Syn.LabelDict.empty (fields, names)
+        val motive' = substVar (tuple, z) motivez
+        val (goal, hole) = makeTrue (I, H') motive'
+
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val projEnv = ListPair.foldlEq (fn (((lbl, _), _), name, env) => Var.Ctx.insert env name @@ Syn.into @@ Syn.PROJ (lbl, ztm)) Var.Ctx.empty (fields, names)
+      in
+        |>: goal #> (I, H, substVarenv projEnv hole)
+      end
   end
 
   structure Path =
