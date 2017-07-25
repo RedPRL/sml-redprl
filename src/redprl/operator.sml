@@ -120,7 +120,7 @@ struct
    | S1 | BASE | S1_REC
    (* function: lambda and app *)
    | DFUN | LAM | APP
-   (* prodcut: pair, fst and snd *)
+   (* product: pair, fst and snd *)
    | DPROD | PAIR | FST | SND
    (* record and tuple *)
    | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
