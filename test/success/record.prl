@@ -88,10 +88,14 @@ Print Sg.
 
 Thm RecordElimTest : [
   (-> 
-   (record [b : bool] [p : (path {_} bool b b)])
+   (record
+    [b : bool]
+    [p : (path {_} bool b b)])
    bool)
 ] by [
   lam r.
     fresh b, p <- elim r;
     hyp b
 ].
+
+Print RecordElimTest.
