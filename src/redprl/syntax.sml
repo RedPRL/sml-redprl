@@ -38,10 +38,10 @@ struct
    | S1 | BASE | LOOP of param | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
    (* function: lambda and app *)
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
-   (* prodcut: pair, fst and snd *)
+   (* product: pair, fst and snd *)
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    (* record *)
-   | RECORD of 'a LabelDict.dict
+   | RECORD of (string * 'a) list
    | TUPLE of 'a LabelDict.dict | PROJ of string * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
@@ -68,6 +68,7 @@ struct
       in
         (eqs, tubes)
       end
+
     fun outTubes (eqs, tubes) =
       let
         fun goTube (([d], []) \ tube) = (d, tube)
@@ -75,20 +76,28 @@ struct
       in
         ListPair.zipEq (eqs, List.map goTube tubes)
       end
-    fun intoFields fs =
+
+    fun intoTupleFields fs =
       let
         val (lbls, tms) = ListPair.unzip (LabelDict.toList fs)
         val tms = List.map (fn tm => ([],[]) \ tm) tms
       in
         (lbls, tms)
       end
-    fun outFields (lbls, tms) =
+
+    fun outTupleFields (lbls, args) =
       ListPair.foldrEq
         (fn (lbl, (_ \ tm), m) =>
           case LabelDict.insert' m lbl tm of
             (_ , true) => raise E.error [Fpp.text "Duplicate labels"]
           | (dict, _) => dict)
-        LabelDict.empty (lbls, tms)
+        LabelDict.empty (lbls, args)
+
+    fun outRecordFields (lbls, args) = 
+      ListPair.mapEq
+        (fn (lbl, _ \ m) => (lbl, m))
+        (lbls, args)
+      
   in
     fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
 
@@ -156,13 +165,13 @@ struct
 
        | RECORD fs =>
            let
-             val (lbls, tys) = intoFields fs
+             val (lbls, tys) = ListPair.unzip fs
            in
-             O.MONO (O.RECORD lbls) $$ tys
+             O.MONO (O.RECORD lbls) $$ List.map (fn ty => ([],[]) \ ty) tys
            end
        | TUPLE fs =>
            let
-             val (lbls, tys) = intoFields fs
+             val (lbls, tys) = intoTupleFields fs
            in
              O.MONO (O.TUPLE lbls) $$ tys
            end
@@ -244,8 +253,8 @@ struct
        | O.MONO O.FST $ [_ \ m] => FST m
        | O.MONO O.SND $ [_ \ m] => SND m
 
-       | O.MONO (O.RECORD lbls) $ tms => RECORD (outFields (lbls, tms))
-       | O.MONO (O.TUPLE lbls) $ tms => TUPLE (outFields (lbls, tms))
+       | O.MONO (O.RECORD lbls) $ tms => RECORD (outRecordFields (lbls, tms))
+       | O.MONO (O.TUPLE lbls) $ tms => TUPLE (outTupleFields (lbls, tms))
        | O.MONO (O.PROJ lbl) $ [_ \ m] => PROJ (lbl, m)
 
        | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)

@@ -786,8 +786,6 @@ struct
         val (I, H) >> CJ.EQ_TYPE (record0, record1) = jdg
         val Syn.RECORD map0 = Syn.out record0
         val Syn.RECORD map1 = Syn.out record1
-        val map0 = LabelDict.toList map0
-        val map1 = LabelDict.toList map1
 
         fun goLabel ((lbl0, ty0), (lbl1, ty1)) =
           let
@@ -810,7 +808,6 @@ struct
         val Syn.RECORD map = Syn.out record
         val map0 = LabelDict.toList map0
         val map1 = LabelDict.toList map1
-        val map = LabelDict.toList map
 
         fun goLabel (((lbl0, a0), (lbl1, a1)), (lbl, ty)) =
           let
@@ -834,8 +831,8 @@ struct
         val _ = RedPrlLog.trace "Record.Eta"
         val (I, H) >> CJ.EQ ((m, n), record) = jdg
         (* these operations are expensive *)
-        val Syn.RECORD map = Syn.out record
-        val dom = LabelDict.domain map
+        val Syn.RECORD rcd = Syn.out record
+        val dom = List.map #1 rcd
 
         fun goLabel lbl = ([],[]) \ (Syn.into @@ Syn.PROJ (lbl, m))
 
@@ -882,7 +879,6 @@ struct
         val _ = RedPrlLog.trace "Record.True"
         val (I, H) >> CJ.TRUE record = jdg
         val Syn.RECORD map = Syn.out record
-        val map = LabelDict.toList map
 
         fun goLabel (lbl, ty) =
           let
