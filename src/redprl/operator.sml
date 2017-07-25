@@ -123,7 +123,7 @@ struct
    (* prodcut: pair, fst and snd *)
    | DPROD | PAIR | FST | SND
    (* record and tuple *)
-   | RECORD of string list | TUPLE of string list | PROJ of string
+   | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
    (* path: path abstraction *)
    | PATH_TY | PATH_ABS
 
@@ -232,6 +232,7 @@ struct
      | RECORD lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
      | TUPLE lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
      | PROJ lbl => [[] * [] <> EXP] ->> EXP
+     | TUPLE_UPDATE lbl => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
      | PATH_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | PATH_ABS => [[DIM] * [] <> EXP] ->> EXP
@@ -487,6 +488,7 @@ struct
      | RECORD lbls => "record{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
      | TUPLE lbls => "tuple{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
      | PROJ lbl => "proj{" ^ lbl ^ "}"
+     | TUPLE_UPDATE lbl => "update{" ^ lbl ^ "}"
 
      | PATH_TY => "path"
      | PATH_ABS => "abs"

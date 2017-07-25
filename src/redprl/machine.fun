@@ -79,6 +79,7 @@ struct
    | NAT_REC of hole * abt * (variable * variable * abt)
    | INT_REC of hole * (variable * variable * abt) * abt * (variable * variable * abt)
    | PROJ of string * hole
+   | TUPLE_UPDATE of string * abt * hole
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -102,6 +103,7 @@ struct
        | NAT_REC (HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC (m, (zer, (x, y, succ)))
        | INT_REC (HOLE, (x,y,negsucc), zer, (x',y',succ)) => Syn.into @@ Syn.INT_REC (m, ((x,y,negsucc), zer, (x',y',succ)))
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
+       | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
   in
     fun unload (m || (syms, stk)) = 
       case stk of
@@ -478,10 +480,21 @@ struct
      | O.MONO (O.RECORD _) $ _ || (_, []) => raise Final
      | O.MONO (O.TUPLE _) $ _ || (_, []) => raise Final
      | O.MONO (O.PROJ lbl) $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PROJ (lbl, HOLE) :: stk)
+     | O.MONO (O.TUPLE_UPDATE lbl) $ [_ \ n, _ \ m] || (syms, stk) => COMPAT @@ m || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk)
      | O.MONO (O.TUPLE lbls) $ args || (syms, PROJ (lbl, HOLE) :: stk) =>
-       (case ListUtil.findEqIndex lbl lbls of
-           NONE => raise Stuck
-         | SOME (i,_) => case List.nth (args, i) of _ \ m => CRITICAL @@ m || (syms, stk))
+       let
+         val dict = Syn.outTupleFields (lbls, args)
+       in
+         CRITICAL @@ Syn.LabelDict.lookup dict lbl || (syms, stk)
+         handle Syn.LabelDict.Absent => raise Stuck
+       end
+     | O.MONO (O.TUPLE lbls) $ args || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk) =>
+       let
+         val dict = Syn.outTupleFields (lbls, args)
+         val (lbls', args') = Syn.intoTupleFields @@ Syn.LabelDict.insert dict lbl n
+       in
+         CRITICAL @@ O.MONO (O.TUPLE lbls') $$ args' || (syms, stk)
+       end
      | O.MONO (O.RECORD lbls) $ tys || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          fun wrap m = ([],[]) \ m

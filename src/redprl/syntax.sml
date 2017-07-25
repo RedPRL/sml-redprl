@@ -42,7 +42,7 @@ struct
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    (* record *)
    | RECORD of (string * 'a) list
-   | TUPLE of 'a LabelDict.dict | PROJ of string * 'a
+   | TUPLE of 'a LabelDict.dict | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
    (* hcom operator *)
@@ -75,8 +75,8 @@ struct
           | goTube _ = raise E.error [Fpp.text "Syntax.outTubes: Malformed tube"]
       in
         ListPair.zipEq (eqs, List.map goTube tubes)
-      end
-
+      end  
+  in
     fun intoTupleFields fs =
       let
         val (lbls, tms) = ListPair.unzip (LabelDict.toList fs)
@@ -97,8 +97,7 @@ struct
       ListPair.mapEq
         (fn (lbl, _ \ m) => (lbl, m))
         (lbls, args)
-      
-  in
+
     fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
 
     fun intoFcom (dir, eqs) (cap, tubes) =
@@ -176,6 +175,7 @@ struct
              O.MONO (O.TUPLE lbls) $$ tys
            end
        | PROJ (lbl, a) => O.MONO (O.PROJ lbl) $$ [([],[]) \ a]
+       | TUPLE_UPDATE ((lbl, n), m) => O.MONO (O.TUPLE_UPDATE lbl) $$ [([],[]) \ n, ([],[]) \ m]
 
        | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
@@ -256,6 +256,7 @@ struct
        | O.MONO (O.RECORD lbls) $ tms => RECORD (outRecordFields (lbls, tms))
        | O.MONO (O.TUPLE lbls) $ tms => TUPLE (outTupleFields (lbls, tms))
        | O.MONO (O.PROJ lbl) $ [_ \ m] => PROJ (lbl, m)
+       | O.MONO (O.TUPLE_UPDATE lbl) $ [_ \ n, _ \ m] => TUPLE_UPDATE ((lbl, n), m)
 
        | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
