@@ -887,24 +887,26 @@ struct
         val (I, H) >> CJ.TRUE record = jdg
         val Syn.RECORD fields = Syn.out record
 
-        val {goals, elements, ...} = 
+        val {goals, famGoals, elements, ...} = 
           List.foldl
-            (fn (((lbl, var), ty), {goals, elements, env}) =>
+            (fn (((lbl, var), ty), {goals, famGoals, elements, env, hyps, isFirst}) =>
                let
+                 val hyps' = hyps @> (var, CJ.TRUE ty)
                  val ty' = substVarenv env ty
-                 val (goal, hole) = makeTrue (I, H) ty'
-                 val env' = Var.Ctx.insert env var hole
-                 val goals' = goals >: goal
-                 val elements' = (lbl, ([],[]) \ hole) :: elements
+                 val (elemGoal, elemHole) = makeTrue (I, H) ty'
+                 val env' = Var.Ctx.insert env var elemHole
+                 val goals' = goals >: elemGoal
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (I, hyps) ty
+                 val elements' = (lbl, ([],[]) \ elemHole) :: elements
                in
-                 {goals = goals', elements = elements', env = env'}
+                 {goals = goals', famGoals = famGoals', elements = elements', env = env', hyps = hyps', isFirst = false}
                end)
-            {goals = Lcf.Tl.empty, elements = [], env = Var.Ctx.empty}
+            {goals = Lcf.Tl.empty, famGoals= Lcf.Tl.empty, elements = [], env = Var.Ctx.empty, hyps = H, isFirst = true}
             fields
         val (lbls, holes) = ListPair.unzip @@ List.rev elements
         val tuple = O.MONO (O.TUPLE lbls) $$ holes
       in
-        goals #> (I, H, tuple)
+        Lcf.Tl.append goals famGoals #> (I, H, tuple)
       end
 
     (* TODO: Elim *)
