@@ -495,7 +495,43 @@ struct
        in
          CRITICAL @@ O.MONO (O.TUPLE lbls') $$ args' || (syms, stk)
        end
-     | O.MONO (O.RECORD lbls) $ tys || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.MONO (O.RECORD lbls) $ args || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) => 
+       (case (lbls, args) of 
+           ([], []) =>
+           let
+             val tuple = Syn.into @@ Syn.TUPLE @@ Syn.LabelDict.empty
+           in
+             CRITICAL @@ tuple || (syms, stk)
+           end
+         | (lbl :: lbls, ([],[]) \ ty :: args) =>
+           let
+             val (r, r') = dir
+             fun proj m = Syn.into @@ Syn.PROJ (lbl, m)
+             fun head s =
+               Syn.into @@ Syn.HCOM
+                 {dir = (r, s),
+                  ty = ty,
+                  cap = proj cap,
+                  tubes = mapTubes_ proj tubes}
+
+             fun shiftField s = 
+               fn ([], x :: xs) \ ty => ([], xs) \ substVar (head s, x) ty
+                | _ => raise Fail "Impossible field"
+
+             val u = Sym.named "u"
+             val ty'u = O.MONO (O.RECORD lbls) $$ List.map (shiftField (P.ret u)) args
+
+             val tail =
+               Syn.into @@ Syn.COM
+                 {dir = dir,
+                  ty = (u, ty'u),
+                  cap = cap,
+                  tubes = tubes}
+           in
+             CRITICAL @@ tail || (syms, TUPLE_UPDATE (lbl, head r', HOLE) :: stk)
+           end
+         | _ => raise Fail "Impossible record type")
+     (* | O.MONO (O.RECORD lbls) $ tys || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          fun wrap m = ([],[]) \ m
          fun hcom (lbl, _ \ ty) =
@@ -507,8 +543,8 @@ struct
          val tuple = O.MONO (O.TUPLE lbls) $$ ListPair.mapEq hcom (lbls, tys)
        in
          CRITICAL @@ tuple || (syms, stk)
-       end
-     | O.MONO (O.RECORD lbls) $ tys || (syms, COE (dir, (u, HOLE), coercee) :: stk) => 
+       end *)
+     (* | O.MONO (O.RECORD lbls) $ tys || (syms, COE (dir, (u, HOLE), coercee) :: stk) => 
        let
          fun wrap m = ([],[]) \ m
          fun coe (lbl, _ \ ty) = 
@@ -519,7 +555,7 @@ struct
          val tuple = O.MONO (O.TUPLE lbls) $$ ListPair.mapEq coe (lbls, tys)
        in
          CRITICAL @@ tuple || (SymSet.remove syms u, stk)
-       end
+       end *)
 
      (* forms of judgment *)
      | O.MONO O.JDG_EQ $ _ || (_, []) => raise Final
