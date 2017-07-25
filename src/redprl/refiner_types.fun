@@ -787,13 +787,14 @@ struct
         val Syn.RECORD map0 = Syn.out record0
         val Syn.RECORD map1 = Syn.out record1
 
-        fun goLabel ((lbl0, ty0), (lbl1, ty1)) =
+        fun goalForField ((lbl0, ty0), (lbl1, ty1)) =
           let
             val () = Assert.labelEq "Record.EqType" (lbl0, lbl1)
           in
             makeEqType (I, H) (ty0, ty1)
           end
-        val goals = ListPair.mapEq goLabel (map0, map1)
+
+        val goals = ListPair.mapEq goalForField (map0, map1)
       in
         |>:+ goals #> (I, H, trivial)
       end
@@ -805,25 +806,16 @@ struct
         (* these operations could be expensive *)
         val Syn.TUPLE map0 = Syn.out tuple0
         val Syn.TUPLE map1 = Syn.out tuple1
-        val Syn.RECORD map = Syn.out record
-        val map0 = LabelDict.toList map0
-        val map1 = LabelDict.toList map1
+        val Syn.RECORD fields = Syn.out record
 
-        fun goLabel (((lbl0, a0), (lbl1, a1)), (lbl, ty)) =
-          let
-            val () = Assert.labelEq "Record.Eq" (lbl0, lbl1)
-            val () = Assert.labelEq "Record.Eq" (lbl0, lbl)
-          in
-            makeEq (I, H) ((a0, a1), ty)
-          end
-        val rec goLabels =
-          fn (([], []), []) => []
-          | ((lbla0 :: map0, lbla1 :: map1), lbla :: map)
-            => goLabel ((lbla0, lbla1), lbla) :: goLabels ((map0, map1), map)
-          | _ => raise E.error [Fpp.text "Expected the same number of labels"]
-        val goals = goLabels ((map0, map1), map)
+        val fieldGoals = 
+          List.map
+            (fn (lbl, ty) =>
+              makeEq (I, H) ((LabelDict.lookup map0 lbl, LabelDict.lookup map1 lbl), ty))
+            fields
+
       in
-        |>:+ goals #> (I, H, trivial)
+        |>:+ fieldGoals #> (I, H, trivial)
       end
 
     fun Eta _ jdg =
@@ -886,6 +878,7 @@ struct
           in
             (goal, (lbl, ([], []) \ hole))
           end
+
         val (goals, map) = ListPair.unzip (List.map goLabel map)
         val (dom, data) = ListPair.unzip map
         val tuple = O.MONO (O.TUPLE dom) $$ data

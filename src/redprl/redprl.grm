@@ -77,7 +77,8 @@ struct
     | EQUAL => O.MONO O.ZERO $$ []
     | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum (IntInf.- (IntInf.~ i, 1))]
 
-  fun flatten xsys = List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
+  fun flatten xsys =
+    List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
 
   fun makeQuant opr [] cod = cod
     | makeQuant opr ((x, a) :: doms) cod =
@@ -86,16 +87,25 @@ struct
   val makeDFun = makeQuant O.DFUN o flatten
   val makeDProd = makeQuant O.DPROD o flatten
 
+  structure LabelSet = SplaySet (structure Elem = StringOrdered)
+
+  fun checkNoDuplicates lbls = 
+    (List.foldl (fn (lbl, set) => if LabelSet.member set lbl then raise Fail ("Duplicate label " ^ lbl) else LabelSet.insert set lbl) LabelSet.empty lbls;
+     ())
+
   fun makeRecord tbs =
     let
       val (lbls, tys) = ListPair.unzip (flatten tbs)
     in
+      checkNoDuplicates lbls;
       O.MONO (O.RECORD lbls) $$ List.map (fn ty => ([],[]) \ ty) tys
     end
+
   fun makeTuple fields =
     let
       val (lbls, args) = ListPair.unzip fields
     in
+      checkNoDuplicates lbls;
       O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) args
     end
 end
