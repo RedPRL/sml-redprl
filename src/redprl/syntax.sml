@@ -82,7 +82,7 @@ struct
       let
         val init = {rcd = [], vars = []}
         val {rcd, ...} = 
-          ListPair.foldrEq
+          ListPair.foldlEq
             (fn (lbl, (_, xs) \ ty, {rcd, vars}) =>
               let
                 val ren = ListPair.foldlEq (fn (x, var, ren) => Var.Ctx.insert ren x var) Var.Ctx.empty (xs, vars)
@@ -95,7 +95,7 @@ struct
             init
             (lbls, args)
       in
-        rcd
+        List.rev rcd
       end
 
     fun intoTupleFields fs =
@@ -180,10 +180,10 @@ struct
        | SND m => O.MONO O.SND $$ [([],[]) \ m]
 
        | RECORD fields =>
-           let
+            let
              val init = {labels = [], args = [], vars = []}
              val {labels, args, ...} =
-               List.foldr
+               List.foldl
                  (fn (((lbl, var), ty), {labels, args, vars}) =>
                      {labels = lbl :: labels,
                       vars = vars @ [var],
@@ -191,7 +191,7 @@ struct
                  init
                  fields
            in
-             O.MONO (O.RECORD labels) $$ args
+             O.MONO (O.RECORD (List.rev labels)) $$ List.rev args
            end
        | TUPLE fs =>
            let
@@ -278,7 +278,7 @@ struct
        | O.MONO O.FST $ [_ \ m] => FST m
        | O.MONO O.SND $ [_ \ m] => SND m
 
-       | O.MONO (O.RECORD lbls) $ tms => RECORD (outRecordFields (lbls, tms))
+       | O.MONO (O.RECORD lbls) $ tms => RECORD (outRecordFields (lbls, tms)) 
        | O.MONO (O.TUPLE lbls) $ tms => TUPLE (outTupleFields (lbls, tms))
        | O.MONO (O.PROJ lbl) $ [_ \ m] => PROJ (lbl, m)
        | O.MONO (O.TUPLE_UPDATE lbl) $ [_ \ n, _ \ m] => TUPLE_UPDATE ((lbl, n), m)

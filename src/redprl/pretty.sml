@@ -175,21 +175,21 @@ struct
          let
            val init = {fields = [], vars = []}
            val {fields, ...} = 
-             ListPair.foldrEq
+             ListPair.foldlEq
                (fn (lbl, (_, xs) \ ty, {fields, vars}) =>
                  let
                    val ren = ListPair.foldlEq (fn (x, var, ren) => Var.Ctx.insert ren x var) Var.Ctx.empty (xs, vars)
                    val ty' = RedPrlAbt.renameVars ren ty
                    val var = Var.named lbl
                  in
-                   {fields = Atomic.squares (hsep [ppLabel lbl, char #":", ppTerm ty']) :: fields,
+                   {fields = Atomic.squares (hsep [ppVar var, char #":", ppTerm ty']) :: fields,
                     vars = vars @ [var]}
                  end)
                init
                (lbls, args)
          in
-           Atomic.parens @@ expr @@ hvsep fields
-         end
+           Atomic.parens @@ expr @@ hvsep @@ text "record" :: List.rev fields
+         end 
      | O.MONO (O.TUPLE []) $ _ => text "tuple"
      | O.MONO (O.TUPLE lbls) $ data =>
          let

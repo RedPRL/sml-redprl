@@ -233,7 +233,7 @@ struct
        let
          val (_, valences) = List.foldr (fn (_, (taus, vls)) => (EXP :: taus, ([] * taus <> EXP) :: vls)) ([], []) lbls
        in 
-         valences ->> EXP
+         List.rev valences ->> EXP
        end
      | TUPLE lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
      | PROJ lbl => [[] * [] <> EXP] ->> EXP
