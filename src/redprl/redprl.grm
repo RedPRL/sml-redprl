@@ -89,23 +89,32 @@ struct
 
   structure LabelSet = SplaySet (structure Elem = StringOrdered)
 
-  fun checkNoDuplicates lbls = 
-    (List.foldl (fn (lbl, set) => if LabelSet.member set lbl then raise Fail ("Duplicate label " ^ lbl) else LabelSet.insert set lbl) LabelSet.empty lbls;
-     ())
 
-  fun makeRecord tbs =
+  fun checkNoDuplicates pos lbls = 
+    let
+      fun insert (lbl, set) = 
+        if LabelSet.member set lbl then
+          raise RedPrlError.annotate pos (RedPrlError.error [Fpp.text "Duplicate label", Fpp.text lbl])
+        else
+          LabelSet.insert set lbl
+    in
+      List.foldl insert LabelSet.empty lbls;
+      ()
+    end
+
+ fun makeRecord pos tbs =
     let
       val (lbls, tys) = ListPair.unzip (flatten tbs)
     in
-      checkNoDuplicates lbls;
+      checkNoDuplicates pos lbls;
       O.MONO (O.RECORD lbls) $$ List.map (fn ty => ([],[]) \ ty) tys
     end
 
-  fun makeTuple fields =
+  fun makeTuple pos fields =
     let
       val (lbls, args) = ListPair.unzip fields
     in
-      checkNoDuplicates lbls;
+      checkNoDuplicates pos lbls;
       O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) args
     end
 end
@@ -473,10 +482,10 @@ rawTermAndTac
   | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
 
   (* non-dep. record types *)
-  | RECORD (Multi.makeRecord [])
-  | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord typedBinders)
-  | TUPLE (Multi.makeTuple [])
-  | LPAREN TUPLE fields RPAREN (Multi.makeTuple fields)
+  | RECORD (Multi.makeRecord (SOME (Pos.pos (RECORD1left fileName) (RECORD1right fileName))) [])
+  | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) typedBinders)
+  | TUPLE (Multi.makeTuple (SOME (Pos.pos (TUPLE1left fileName) (TUPLE1right fileName))) [])
+  | LPAREN TUPLE fields RPAREN (Multi.makeTuple (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) fields)
   | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
 
   (* paths *)
