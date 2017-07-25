@@ -336,7 +336,7 @@ valence
 
 param
   : VARNAME (P.VAR VARNAME)
-  | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise Fail "Invalid dimension constant"))
+  | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise RedPrlError.annotate (SOME (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName))) (RedPrlError.error [Fpp.text "Invalid dimension constant"])))
 
 params
   : param ([param])
