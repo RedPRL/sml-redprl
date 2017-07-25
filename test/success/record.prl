@@ -1,7 +1,15 @@
+Thm RecordTypeTest : [
+  (record [a : bool] [b : (path {_} bool a a)] [c : bool] [d : S1]) type
+] by [
+  auto
+].
+
+Print RecordTypeTest.
+
 Thm RecordTest0 : [
   tuple in record
 ] by [
-  auto;
+  auto
 ].
 
 Thm RecordTest1 : [
@@ -13,7 +21,7 @@ Thm RecordTest1 : [
 Thm RecordTest2 : [
   (tuple [a tt] [b tuple]) in (record [b : record] [a : bool])
 ] by [
-  auto;
+  auto
 ].
 
 Thm RecordTest3 : [
@@ -42,4 +50,13 @@ Thm RecordTest6 : [
     bool)
 ] by [
   lam p. `(! a ,p)
+].
+
+Thm RecordTest7 : [
+  (record
+   [a : S1]
+   [b : (path {_} S1 a a)])
+] by [
+  refine record/intro;
+  [`base, <i> `(loop i)]
 ].

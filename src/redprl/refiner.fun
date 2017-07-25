@@ -572,7 +572,7 @@ struct
      | "dpair/eq/snd" => DProd.SndEq
      | "dpair/intro" => DProd.True
      | "record/eq/type" => Record.EqType
-     | "record/eq/tuple" => Record.Eq
+     | "record/eq" => Record.Eq
      | "record/eq/eta" => Record.Eta
      | "record/eq/proj" => Record.ProjEq
      | "record/intro" => Record.True

@@ -784,20 +784,26 @@ struct
       let
         val _ = RedPrlLog.trace "Record.EqType"
         val (I, H) >> CJ.EQ_TYPE (record0, record1) = jdg
-        val Syn.RECORD map0 = Syn.out record0
-        val Syn.RECORD map1 = Syn.out record1
+        val Syn.RECORD fields0 = Syn.out record0
+        val Syn.RECORD fields1 = Syn.out record1
 
-        fun goalForField ((lbl0, ty0), (lbl1, ty1)) =
-          let
-            val () = Assert.labelEq "Record.EqType" (lbl0, lbl1)
-          in
-            makeEqType (I, H) (ty0, ty1)
-          end
-
-        val goals = ?todo
-         (* ListPair.mapEq goalForField (map0, map1) *)
+        fun goals ([],[]) _ _  = Lcf.Tl.empty
+          | goals (((lbl0, var0), ty0) :: fields0, ((lbl1, var1), ty1) :: fields1) H (ren0, ren1) =
+            let
+              val () = Assert.labelEq "Record.EqType" (lbl0, lbl1)
+              val var = Var.named lbl0
+              val ty0' = renameVars ren0 ty0
+              val ty1' = renameVars ren1 ty1
+              val ren0' = Var.Ctx.insert ren0 var0 var
+              val ren1' = Var.Ctx.insert ren1 var1 var
+              val H' = H @> (var, CJ.TRUE ty0')
+            in
+              goals (fields0, fields1) H' (ren0', ren1') >: makeEqType (I, H) (ty0', ty1')
+            end
+          | goals _ _ _ = raise E.error [Fpp.text "Record type mismatch"]
       in
-        |>:+ goals #> (I, H, trivial)
+        goals (fields0, fields1) H (Var.Ctx.empty, Var.Ctx.empty)
+          #> (I, H, trivial)
       end
 
     fun Eq alpha jdg =
@@ -809,14 +815,22 @@ struct
         val Syn.TUPLE map1 = Syn.out tuple1
         val Syn.RECORD fields = Syn.out record
 
-        val fieldGoals = ?todo
-          (* List.map
-            (fn (lbl, ty) =>
-              makeEq (I, H) ((LabelDict.lookup map0 lbl, LabelDict.lookup map1 lbl), ty))
-            fields *)
-
+        val {goals, ...} = 
+          List.foldl
+            (fn (((lbl, var), ty), {goals, env}) =>
+               let
+                 val ty' = substVarenv env ty
+                 val m0 = Syn.LabelDict.lookup map0 lbl
+                 val m1 = Syn.LabelDict.lookup map1 lbl
+                 val env' = Var.Ctx.insert env var m0
+                 val goals' = goals >: makeEq (I, H) ((m0, m1), ty')
+               in
+                 {goals = goals', env = env'}
+               end)
+            {goals = Lcf.Tl.empty, env = Var.Ctx.empty}
+            fields
       in
-        |>:+ fieldGoals #> (I, H, trivial)
+        goals #> (I, H, trivial)
       end
 
     fun Eta _ jdg =
@@ -825,12 +839,11 @@ struct
         val (I, H) >> CJ.EQ ((m, n), record) = jdg
         (* these operations are expensive *)
         val Syn.RECORD rcd = Syn.out record
-        val dom = List.map #1 rcd
+        val dom = List.map (#1 o #1) rcd
 
         fun goLabel lbl = ([],[]) \ (Syn.into @@ Syn.PROJ (lbl, m))
 
-        val m' = ?todo
-        (* O.MONO (O.TUPLE dom) $$ List.map goLabel dom *)
+        val m' = O.MONO (O.TUPLE dom) $$ List.map goLabel dom
         val goal1 = makeMem (I, H) (m, record)
         val goal2 = makeEqIfDifferent (I, H) ((m', n), record) (* m' well-typed *)
       in
@@ -872,21 +885,26 @@ struct
       let
         val _ = RedPrlLog.trace "Record.True"
         val (I, H) >> CJ.TRUE record = jdg
-        val Syn.RECORD map = Syn.out record
+        val Syn.RECORD fields = Syn.out record
 
-        fun goLabel (lbl, ty) =
-          let
-            val (goal, hole) = makeTrue (I, H) ty
-          in
-            (goal, (lbl, ([], []) \ hole))
-          end
-
-        val (goals, map) = ListPair.unzip (List.map goLabel map)
-        val (dom, data) = ListPair.unzip map
-        val tuple = ?todo
-        (* O.MONO (O.TUPLE dom) $$ data *)
+        val {goals, elements, ...} = 
+          List.foldl
+            (fn (((lbl, var), ty), {goals, elements, env}) =>
+               let
+                 val ty' = substVarenv env ty
+                 val (goal, hole) = makeTrue (I, H) ty'
+                 val env' = Var.Ctx.insert env var hole
+                 val goals' = goals >: goal
+                 val elements' = (lbl, ([],[]) \ hole) :: elements
+               in
+                 {goals = goals', elements = elements', env = env'}
+               end)
+            {goals = Lcf.Tl.empty, elements = [], env = Var.Ctx.empty}
+            fields
+        val (lbls, holes) = ListPair.unzip @@ List.rev elements
+        val tuple = O.MONO (O.TUPLE lbls) $$ holes
       in
-        |>:+ goals #> (I, H, tuple)
+        goals #> (I, H, tuple)
       end
 
     (* TODO: Elim *)
