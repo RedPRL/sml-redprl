@@ -138,12 +138,12 @@ struct
     end
 
   fun tactic sign env tm alpha jdg = 
-    tactic_ sign env (expandHypVars tm) alpha jdg 
+    tactic_ sign env tm alpha jdg 
     handle exn => 
       raise RedPrlError.annotate (Tm.getAnnotation tm) exn
 
   and multitactic sign env tm alpha jdg = 
-    multitactic_ sign env (expandHypVars tm) alpha jdg
+    multitactic_ sign env tm alpha jdg
     handle exn => 
       raise RedPrlError.annotate (Tm.getAnnotation tm) exn
 
@@ -154,15 +154,15 @@ struct
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.POLY (O.RULE_ELIM (z, _)) $ _ => R.Elim sign z
      | O.POLY (O.RULE_HYP (z, _)) $ _ => hyp z
-     | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact tm
+     | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
-     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.fromAbt catjdg)
+     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.fromAbt (expandHypVars catjdg))
      | O.POLY (O.RULE_LEMMA (opid, ps)) $ _ => R.Lemma sign opid (List.map #1 ps)
      | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) $ _ => R.CutLemma sign opid (List.map #1 ps)
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
-     | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO O.DEV_DFUN_INTRO $ [([u], _) \ tm] => RT.DFun.True thenl' ([u], [tactic sign env tm, autoTac sign])
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ tm] => RT.Path.True thenl' ([u], [tactic sign env tm, autoTac sign, autoTac sign])
