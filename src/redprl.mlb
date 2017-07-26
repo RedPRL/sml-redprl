@@ -50,9 +50,9 @@ in
     redprl/log.sml
     
 
-    nominal_lcf/spread.sig
-    nominal_lcf/spread.sml
-    nominal_lcf/tactical.fun
+    redprl/spread.sig
+    redprl/spread.sml
+    redprl/tactical.fun
 
 
     ann "nonexhaustiveMatch ignore" in

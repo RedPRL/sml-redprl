@@ -23,9 +23,9 @@ is
   $libs/sml-final-pretty-printer/final-pretty-printer.cm
 
 
-  nominal_lcf/spread.sig
-  nominal_lcf/spread.sml
-  nominal_lcf/tactical.fun
+  redprl/spread.sig
+  redprl/spread.sml
+  redprl/tactical.fun
 
 
   debug.cm

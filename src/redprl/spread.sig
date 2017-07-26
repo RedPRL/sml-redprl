@@ -36,5 +36,4 @@ sig
   val probe
     : 'a point
     -> 'a point * int ref
-
 end

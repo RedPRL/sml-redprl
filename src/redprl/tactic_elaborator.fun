@@ -17,19 +17,13 @@ struct
 
   type sign = Sig.sign
   type script = Tm.abt
-
-  structure LcfStructure =
-  struct
-    structure Lcf = Lcf and Spr = UniversalSpread
-    type 'a nominal = (int -> Sym.t) -> 'a
-    type tactic = Lcf.jdg Lcf.tactic nominal
-    type multitactic = Lcf.jdg Lcf.multitactic nominal
-  end
+  type 'a nominal = (int -> Sym.t) -> 'a
+  type tactic = Lcf.jdg Lcf.tactic nominal
+  type multitactic = Lcf.jdg Lcf.multitactic nominal
 
   structure R = Refiner (Sig)
   structure RT = RefinerTypeRules (Sig)
-  structure T = NominalLcfTactical (LcfStructure)
-  open LcfStructure
+  structure T = RedPrlTactical (Lcf)
 
   type env = multitactic Var.Ctx.dict
 

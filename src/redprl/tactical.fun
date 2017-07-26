@@ -1,28 +1,11 @@
-signature NOMINAL_LCF_STRUCTURE = 
-sig
-  (* A model begins with a tactic metalanguage. *)
-  structure Lcf : LCF_UTIL
-
-  (* The nominal character of the semantics is dealt with using a Brouwerian
-   * spread, a space whose points are free choice sequences. A free choice
-   * sequence is a stream of constructible objects which are chosen not by a
-   * computable function, but by interaction with a subject (i.e. a user). *)
-  structure Spr : SPREAD
-
-
-  (* A "nominal" object is a functional which _continuously_ transforms a free
-   * choice sequence into a result. *)
-  type 'a nominal = Sym.t Spr.point -> 'a
-
-  type tactic = Lcf.jdg Lcf.tactic nominal
-  type multitactic = Lcf.jdg Lcf.multitactic nominal
-end
-
-functor NominalLcfTactical (S : NOMINAL_LCF_STRUCTURE) = 
+functor RedPrlTactical (Lcf : LCF_UTIL) = 
 struct
   local
-    open S
+    structure Spr = UniversalSpread
   in
+    type 'a nominal = (int -> Sym.t) -> 'a
+    type multitactic = Lcf.jdg Lcf.multitactic nominal
+    type tactic = Lcf.jdg Lcf.tactic nominal
 
     fun idn alpha =
       Lcf.idn
