@@ -20,8 +20,18 @@ is
   $libs/sml-typed-abts/basis/basis.cm
   $libs/sml-dependent-lcf/dependent_lcf.cm
   $libs/sml-dependent-lcf/lcf_abt.cm
-  $libs/sml-dependent-lcf/nominal_lcf.cm
   $libs/sml-final-pretty-printer/final-pretty-printer.cm
+
+
+  nominal_lcf/spread.sig
+  nominal_lcf/spread.sml
+
+  nominal_lcf/syntax.sig
+  nominal_lcf/model.sig
+  nominal_lcf/tactical.fun
+  nominal_lcf/semantics.sig
+  nominal_lcf/semantics.fun
+
 
   debug.cm
 
