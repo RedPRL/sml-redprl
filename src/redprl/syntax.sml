@@ -38,11 +38,11 @@ struct
    | S1 | BASE | LOOP of param | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
    (* function: lambda and app *)
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
-   (* prodcut: pair, fst and snd *)
+   (* product: pair, fst and snd *)
    | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    (* record *)
-   | RECORD of 'a LabelDict.dict
-   | TUPLE of 'a LabelDict.dict | PROJ of string * 'a
+   | RECORD of ((string * variable) * 'a) list
+   | TUPLE of 'a LabelDict.dict | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
    (* hcom operator *)
@@ -68,6 +68,7 @@ struct
       in
         (eqs, tubes)
       end
+
     fun outTubes (eqs, tubes) =
       let
         fun goTube (([d], []) \ tube) = (d, tube)
@@ -75,21 +76,45 @@ struct
       in
         ListPair.zipEq (eqs, List.map goTube tubes)
       end
-    fun intoFields fs =
+
+  in
+    fun outRecordFields (lbls, args) =
+      let
+        val init = {rcd = [], vars = []}
+        val {rcd, ...} = 
+          ListPair.foldlEq
+            (fn (lbl, (_, xs) \ ty, {rcd, vars}) =>
+              let
+                val ren = ListPair.foldlEq (fn (x, var, ren) => Var.Ctx.insert ren x var) Var.Ctx.empty (xs, vars)
+                val ty' = Tm.renameVars ren ty
+                val var = Var.named lbl
+              in
+                {rcd = ((lbl, var), ty') :: rcd,
+                 vars = vars @ [var]}
+              end)
+            init
+            (lbls, args)
+      in
+        List.rev rcd
+      end
+
+    fun intoTupleFields fs =
       let
         val (lbls, tms) = ListPair.unzip (LabelDict.toList fs)
         val tms = List.map (fn tm => ([],[]) \ tm) tms
       in
         (lbls, tms)
       end
-    fun outFields (lbls, tms) =
+
+    fun outTupleFields (lbls, args) =
       ListPair.foldrEq
         (fn (lbl, (_ \ tm), m) =>
           case LabelDict.insert' m lbl tm of
             (_ , true) => raise E.error [Fpp.text "Duplicate labels"]
           | (dict, _) => dict)
-        LabelDict.empty (lbls, tms)
-  in
+        LabelDict.empty (lbls, args)
+
+
     fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
 
     fun intoFcom (dir, eqs) (cap, tubes) =
@@ -154,19 +179,28 @@ struct
        | FST m => O.MONO O.FST $$ [([],[]) \ m]
        | SND m => O.MONO O.SND $$ [([],[]) \ m]
 
-       | RECORD fs =>
-           let
-             val (lbls, tys) = intoFields fs
+       | RECORD fields =>
+            let
+             val init = {labels = [], args = [], vars = []}
+             val {labels, args, ...} =
+               List.foldl
+                 (fn (((lbl, var), ty), {labels, args, vars}) =>
+                     {labels = lbl :: labels,
+                      vars = vars @ [var],
+                      args = (([],vars) \ ty) :: args})
+                 init
+                 fields
            in
-             O.MONO (O.RECORD lbls) $$ tys
+             O.MONO (O.RECORD (List.rev labels)) $$ List.rev args
            end
        | TUPLE fs =>
            let
-             val (lbls, tys) = intoFields fs
+             val (lbls, tys) = intoTupleFields fs
            in
              O.MONO (O.TUPLE lbls) $$ tys
            end
        | PROJ (lbl, a) => O.MONO (O.PROJ lbl) $$ [([],[]) \ a]
+       | TUPLE_UPDATE ((lbl, n), m) => O.MONO (O.TUPLE_UPDATE lbl) $$ [([],[]) \ n, ([],[]) \ m]
 
        | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
@@ -244,9 +278,10 @@ struct
        | O.MONO O.FST $ [_ \ m] => FST m
        | O.MONO O.SND $ [_ \ m] => SND m
 
-       | O.MONO (O.RECORD lbls) $ tms => RECORD (outFields (lbls, tms))
-       | O.MONO (O.TUPLE lbls) $ tms => TUPLE (outFields (lbls, tms))
+       | O.MONO (O.RECORD lbls) $ tms => RECORD (outRecordFields (lbls, tms)) 
+       | O.MONO (O.TUPLE lbls) $ tms => TUPLE (outTupleFields (lbls, tms))
        | O.MONO (O.PROJ lbl) $ [_ \ m] => PROJ (lbl, m)
+       | O.MONO (O.TUPLE_UPDATE lbl) $ [_ \ n, _ \ m] => TUPLE_UPDATE ((lbl, n), m)
 
        | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)

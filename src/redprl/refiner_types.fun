@@ -785,20 +785,26 @@ struct
       let
         val _ = RedPrlLog.trace "Record.EqType"
         val (I, H) >> CJ.EQ_TYPE (record0, record1) = jdg
-        val Syn.RECORD map0 = Syn.out record0
-        val Syn.RECORD map1 = Syn.out record1
-        val map0 = LabelDict.toList map0
-        val map1 = LabelDict.toList map1
+        val Syn.RECORD fields0 = Syn.out record0
+        val Syn.RECORD fields1 = Syn.out record1
 
-        fun goLabel ((lbl0, ty0), (lbl1, ty1)) =
-          let
-            val () = Assert.labelEq "Record.EqType" (lbl0, lbl1)
-          in
-            makeEqType (I, H) (ty0, ty1)
-          end
-        val goals = ListPair.mapEq goLabel (map0, map1)
+        fun goals ([],[]) _ _  = Lcf.Tl.empty
+          | goals (((lbl0, var0), ty0) :: fields0, ((lbl1, var1), ty1) :: fields1) H (ren0, ren1) =
+            let
+              val () = Assert.labelEq "Record.EqType" (lbl0, lbl1)
+              val var = Var.named lbl0
+              val ty0' = renameVars ren0 ty0
+              val ty1' = renameVars ren1 ty1
+              val ren0' = Var.Ctx.insert ren0 var0 var
+              val ren1' = Var.Ctx.insert ren1 var1 var
+              val H' = H @> (var, CJ.TRUE ty0')
+            in
+              goals (fields0, fields1) H' (ren0', ren1') >: makeEqType (I, H) (ty0', ty1')
+            end
+          | goals _ _ _ = raise E.error [Fpp.text "Record type mismatch"]
       in
-        |>:+ goals #> (I, H, trivial)
+        goals (fields0, fields1) H (Var.Ctx.empty, Var.Ctx.empty)
+          #> (I, H, trivial)
       end
 
     fun Eq alpha jdg =
@@ -808,26 +814,26 @@ struct
         (* these operations could be expensive *)
         val Syn.TUPLE map0 = Syn.out tuple0
         val Syn.TUPLE map1 = Syn.out tuple1
-        val Syn.RECORD map = Syn.out record
-        val map0 = LabelDict.toList map0
-        val map1 = LabelDict.toList map1
-        val map = LabelDict.toList map
+        val Syn.RECORD fields = Syn.out record
 
-        fun goLabel (((lbl0, a0), (lbl1, a1)), (lbl, ty)) =
-          let
-            val () = Assert.labelEq "Record.Eq" (lbl0, lbl1)
-            val () = Assert.labelEq "Record.Eq" (lbl0, lbl)
-          in
-            makeEq (I, H) ((a0, a1), ty)
-          end
-        val rec goLabels =
-          fn (([], []), []) => []
-          | ((lbla0 :: map0, lbla1 :: map1), lbla :: map)
-            => goLabel ((lbla0, lbla1), lbla) :: goLabels ((map0, map1), map)
-          | _ => raise E.error [Fpp.text "Expected the same number of labels"]
-        val goals = goLabels ((map0, map1), map)
+        val {goals, famGoals, ...} = 
+          List.foldl
+            (fn (((lbl, var), ty), {goals, famGoals, env, hyps, isFirst}) =>
+               let
+                 val ty' = substVarenv env ty
+                 val m0 = Syn.LabelDict.lookup map0 lbl
+                 val m1 = Syn.LabelDict.lookup map1 lbl
+                 val env' = Var.Ctx.insert env var m0
+                 val goals' = goals >: makeEq (I, H) ((m0, m1), ty')
+                 val hyps' = hyps @> (var, CJ.TRUE ty)
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (I, hyps) ty
+               in
+                 {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}
+               end)
+            {goals = Lcf.Tl.empty, famGoals = Lcf.Tl.empty, env = Var.Ctx.empty, hyps = H, isFirst = true}
+            fields
       in
-        |>:+ goals #> (I, H, trivial)
+        Lcf.Tl.append goals famGoals #> (I, H, trivial)
       end
 
     fun Eta _ jdg =
@@ -835,8 +841,8 @@ struct
         val _ = RedPrlLog.trace "Record.Eta"
         val (I, H) >> CJ.EQ ((m, n), record) = jdg
         (* these operations are expensive *)
-        val Syn.RECORD map = Syn.out record
-        val dom = LabelDict.domain map
+        val Syn.RECORD rcd = Syn.out record
+        val dom = List.map (#1 o #1) rcd
 
         fun goLabel lbl = ([],[]) \ (Syn.into @@ Syn.PROJ (lbl, m))
 
@@ -882,23 +888,47 @@ struct
       let
         val _ = RedPrlLog.trace "Record.True"
         val (I, H) >> CJ.TRUE record = jdg
-        val Syn.RECORD map = Syn.out record
-        val map = LabelDict.toList map
+        val Syn.RECORD fields = Syn.out record
 
-        fun goLabel (lbl, ty) =
-          let
-            val (goal, hole) = makeTrue (I, H) ty
-          in
-            (goal, (lbl, ([], []) \ hole))
-          end
-        val (goals, map) = ListPair.unzip (List.map goLabel map)
-        val (dom, data) = ListPair.unzip map
-        val tuple = O.MONO (O.TUPLE dom) $$ data
+        val {goals, famGoals, elements, ...} = 
+          List.foldl
+            (fn (((lbl, var), ty), {goals, famGoals, elements, env, hyps, isFirst}) =>
+               let
+                 val hyps' = hyps @> (var, CJ.TRUE ty)
+                 val ty' = substVarenv env ty
+                 val (elemGoal, elemHole) = makeTrue (I, H) ty'
+                 val env' = Var.Ctx.insert env var elemHole
+                 val goals' = goals >: elemGoal
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (I, hyps) ty
+                 val elements' = (lbl, ([],[]) \ elemHole) :: elements
+               in
+                 {goals = goals', famGoals = famGoals', elements = elements', env = env', hyps = hyps', isFirst = false}
+               end)
+            {goals = Lcf.Tl.empty, famGoals= Lcf.Tl.empty, elements = [], env = Var.Ctx.empty, hyps = H, isFirst = true}
+            fields
+        val (lbls, holes) = ListPair.unzip @@ List.rev elements
+        val tuple = O.MONO (O.TUPLE lbls) $$ holes
       in
-        |>:+ goals #> (I, H, tuple)
+        Lcf.Tl.append goals famGoals #> (I, H, tuple)
       end
 
-    (* TODO: Elim *)
+    fun Elim z alpha jdg = 
+      let
+        val (I, H) >> CJ.TRUE motivez = jdg
+        val CJ.TRUE record = lookupHyp H z
+        val Syn.RECORD fields = Syn.out record
+        val names = List.tabulate (List.length fields, alpha)
+        val ren = ListPair.foldlEq (fn (name, ((_, var), ty), ren) => Var.Ctx.insert ren var name) Var.Ctx.empty (names, fields)
+        val H' = ListPair.foldlEq (fn (name, ((_,_),ty), hyps) => hyps @> (name, CJ.TRUE (renameVars ren ty))) H (names, fields)
+        val tuple = Syn.into @@ Syn.TUPLE @@ ListPair.foldl (fn (((lbl, _), _), name, dict) => Syn.LabelDict.insert dict lbl @@ Syn.into @@ Syn.VAR (name, O.EXP)) Syn.LabelDict.empty (fields, names)
+        val motive' = substVar (tuple, z) motivez
+        val (goal, hole) = makeTrue (I, H') motive'
+
+        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
+        val projEnv = ListPair.foldlEq (fn (((lbl, _), _), name, env) => Var.Ctx.insert env name @@ Syn.into @@ Syn.PROJ (lbl, ztm)) Var.Ctx.empty (fields, names)
+      in
+        |>: goal #> (I, H, substVarenv projEnv hole)
+      end
   end
 
   structure Path =

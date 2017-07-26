@@ -6,7 +6,7 @@ install:
   - git submodule init
   - git submodule update --init --recursive
 script:
-  - ./script/test.sh
+  - ./script/test-mlton.sh
   - cat 'build.log'
 
 notifications:

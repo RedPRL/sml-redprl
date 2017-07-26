@@ -408,6 +408,16 @@ struct
       in
         |>: goal #> (I, H, trivial)
       end
+    
+    fun MatchRecordHeadExpansion sign _ jdg = 
+      let
+        val _ = RedPrlLog.trace "Record.MatchRecord"
+        val MATCH_RECORD (lbl, tm) = jdg
+        val tm' = Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign) tm
+        val (goal, hole) = makeMatchRecord (lbl, tm')
+      in
+        |>: goal #> ([], Hyps.empty, hole)
+      end
   end
 
   fun Cut catjdg alpha jdg =
@@ -572,7 +582,7 @@ struct
      | "dpair/eq/snd" => DProd.SndEq
      | "dpair/intro" => DProd.True
      | "record/eq/type" => Record.EqType
-     | "record/eq/tuple" => Record.Eq
+     | "record/eq" => Record.Eq
      | "record/eq/eta" => Record.Eta
      | "record/eq/proj" => Record.ProjEq
      | "record/intro" => Record.True
@@ -745,7 +755,7 @@ struct
           | _ >> CJ.SYNTH m => StepSynth sign m
           | _ >> CJ.DIM_SUBST _ => Misc.DimSubst
           | MATCH _ => Misc.MatchOperator
-          | MATCH_RECORD _ => Record.MatchRecord)
+          | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordHeadExpansion sign then_ Record.MatchRecord)
 
 
       fun isWfJdg (CJ.TRUE _) = false
@@ -779,6 +789,7 @@ struct
          | Syn.DFUN _ => DFun.Elim
          | Syn.DPROD _ => DProd.Elim
          | Syn.PATH_TY _ => Path.Elim
+         | Syn.RECORD _ => Record.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepEq ty =

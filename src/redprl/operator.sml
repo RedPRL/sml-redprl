@@ -120,10 +120,10 @@ struct
    | S1 | BASE | S1_REC
    (* function: lambda and app *)
    | DFUN | LAM | APP
-   (* prodcut: pair, fst and snd *)
+   (* product: pair, fst and snd *)
    | DPROD | PAIR | FST | SND
    (* record and tuple *)
-   | RECORD of string list | TUPLE of string list | PROJ of string
+   | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
    (* path: path abstraction *)
    | PATH_TY | PATH_ABS
 
@@ -169,6 +169,7 @@ struct
    | DEV_DFUN_ELIM of 'a
    | DEV_DPROD_ELIM of 'a
    | DEV_PATH_ELIM of 'a
+   | DEV_RECORD_ELIM of 'a * string list
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -229,9 +230,15 @@ struct
      | FST => [[] * [] <> EXP] ->> EXP
      | SND => [[] * [] <> EXP] ->> EXP
 
-     | RECORD lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
+     | RECORD lbls =>
+       let
+         val (_, valences) = List.foldr (fn (_, (taus, vls)) => (EXP :: taus, ([] * taus <> EXP) :: vls)) ([], []) lbls
+       in 
+         List.rev valences ->> EXP
+       end
      | TUPLE lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
      | PROJ lbl => [[] * [] <> EXP] ->> EXP
+     | TUPLE_UPDATE lbl => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
      | PATH_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | PATH_ABS => [[DIM] * [] <> EXP] ->> EXP
@@ -317,6 +324,7 @@ struct
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
        | DEV_DPROD_ELIM _ => [[HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
+       | DEV_RECORD_ELIM (z, lbls) => [List.map (fn _ => HYP EXP) lbls * [] <> TAC] ->> TAC
        | DEV_PATH_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
   end
 
@@ -365,6 +373,7 @@ struct
        | DEV_S1_ELIM a => [(a, HYP EXP)]
        | DEV_DFUN_ELIM a => [(a, HYP EXP)]
        | DEV_DPROD_ELIM a => [(a, HYP EXP)]
+       | DEV_RECORD_ELIM (a, _) => [(a, HYP EXP)]
        | DEV_PATH_ELIM a => [(a, HYP EXP)]
   end
 
@@ -440,6 +449,8 @@ struct
            (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
        | (DEV_DPROD_ELIM a, t) =>
            (case t of DEV_DPROD_ELIM b => f (a, b) | _ => false)
+       | (DEV_RECORD_ELIM (a, lbls), t) =>
+           (case t of DEV_RECORD_ELIM (b, lbls') => f (a, b) andalso lbls = lbls' | _ => false)
        | (DEV_PATH_ELIM a, t) =>
            (case t of DEV_PATH_ELIM b => f (a, b) | _ => false)
   end
@@ -487,6 +498,7 @@ struct
      | RECORD lbls => "record{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
      | TUPLE lbls => "tuple{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
      | PROJ lbl => "proj{" ^ lbl ^ "}"
+     | TUPLE_UPDATE lbl => "update{" ^ lbl ^ "}"
 
      | PATH_TY => "path"
      | PATH_ABS => "abs"
@@ -583,6 +595,7 @@ struct
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
        | DEV_DPROD_ELIM a => "dprod-elim{" ^ f a ^ "}"
+       | DEV_RECORD_ELIM (a, _) => "record-elim{" ^ f a ^ "}"
        | DEV_PATH_ELIM a => "path-elim{" ^ f a ^ "}"
   end
 

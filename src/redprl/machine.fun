@@ -79,6 +79,7 @@ struct
    | NAT_REC of hole * abt * (variable * variable * abt)
    | INT_REC of hole * (variable * variable * abt) * abt * (variable * variable * abt)
    | PROJ of string * hole
+   | TUPLE_UPDATE of string * abt * hole
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -102,6 +103,7 @@ struct
        | NAT_REC (HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC (m, (zer, (x, y, succ)))
        | INT_REC (HOLE, (x,y,negsucc), zer, (x',y',succ)) => Syn.into @@ Syn.INT_REC (m, ((x,y,negsucc), zer, (x',y',succ)))
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
+       | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
   in
     fun unload (m || (syms, stk)) = 
       case stk of
@@ -478,35 +480,91 @@ struct
      | O.MONO (O.RECORD _) $ _ || (_, []) => raise Final
      | O.MONO (O.TUPLE _) $ _ || (_, []) => raise Final
      | O.MONO (O.PROJ lbl) $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PROJ (lbl, HOLE) :: stk)
+     | O.MONO (O.TUPLE_UPDATE lbl) $ [_ \ n, _ \ m] || (syms, stk) => COMPAT @@ m || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk)
      | O.MONO (O.TUPLE lbls) $ args || (syms, PROJ (lbl, HOLE) :: stk) =>
-       (case ListUtil.findEqIndex lbl lbls of
-           NONE => raise Stuck
-         | SOME (i,_) => case List.nth (args, i) of _ \ m => CRITICAL @@ m || (syms, stk))
-     | O.MONO (O.RECORD lbls) $ tys || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
-         fun wrap m = ([],[]) \ m
-         fun hcom (lbl, _ \ ty) =
-           wrap o Syn.into @@ Syn.HCOM 
-             {dir = dir,
-              ty = ty,
-              cap = Syn.into @@ Syn.PROJ (lbl, cap),
-              tubes = mapTubes_ (fn n => Syn.into @@ Syn.PROJ (lbl, n)) tubes}
-         val tuple = O.MONO (O.TUPLE lbls) $$ ListPair.mapEq hcom (lbls, tys)
+         val dict = Syn.outTupleFields (lbls, args)
        in
-         CRITICAL @@ tuple || (syms, stk)
+         CRITICAL @@ Syn.LabelDict.lookup dict lbl || (syms, stk)
+         handle Syn.LabelDict.Absent => raise Stuck
        end
-     | O.MONO (O.RECORD lbls) $ tys || (syms, COE (dir, (u, HOLE), coercee) :: stk) => 
+     | O.MONO (O.TUPLE lbls) $ args || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk) =>
        let
-         fun wrap m = ([],[]) \ m
-         fun coe (lbl, _ \ ty) = 
-           wrap o Syn.into @@ Syn.COE 
-             {dir = dir,
-              ty = (u, ty),
-              coercee = Syn.into @@ Syn.PROJ (lbl, coercee)}
-         val tuple = O.MONO (O.TUPLE lbls) $$ ListPair.mapEq coe (lbls, tys)
+         val dict = Syn.outTupleFields (lbls, args)
+         val (lbls', args') = Syn.intoTupleFields @@ Syn.LabelDict.insert dict lbl n
        in
-         CRITICAL @@ tuple || (SymSet.remove syms u, stk)
+         CRITICAL @@ O.MONO (O.TUPLE lbls') $$ args' || (syms, stk)
        end
+     | O.MONO (O.RECORD lbls) $ args || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) => 
+       (case (lbls, args) of 
+           ([], []) =>
+           let
+             val tuple = Syn.into @@ Syn.TUPLE @@ Syn.LabelDict.empty
+           in
+             CRITICAL @@ tuple || (syms, stk)
+           end
+         | (lbl :: lbls, ([],[]) \ ty :: args) =>
+           let
+             val (r, r') = dir
+             fun proj m = Syn.into @@ Syn.PROJ (lbl, m)
+             fun head s =
+               Syn.into @@ Syn.HCOM
+                 {dir = (r, s),
+                  ty = ty,
+                  cap = proj cap,
+                  tubes = mapTubes_ proj tubes}
+
+             fun shiftField s = 
+               fn ([], x :: xs) \ ty => ([], xs) \ substVar (head s, x) ty
+                | _ => raise Fail "Impossible field"
+
+             val u = Sym.named "u"
+             val ty'u = O.MONO (O.RECORD lbls) $$ List.map (shiftField (P.ret u)) args
+
+             val tail =
+               Syn.into @@ Syn.COM
+                 {dir = dir,
+                  ty = (u, ty'u),
+                  cap = cap,
+                  tubes = tubes}
+           in
+             CRITICAL @@ tail || (syms, TUPLE_UPDATE (lbl, head r', HOLE) :: stk)
+           end
+         | _ => raise Fail "Impossible record type")
+     | O.MONO (O.RECORD lbls) $ args || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>  
+       (case (lbls, args) of 
+           ([], []) =>
+           let
+             val tuple = Syn.into @@ Syn.TUPLE @@ Syn.LabelDict.empty
+           in
+             CRITICAL @@ tuple || (syms, stk)
+           end
+         | (lbl :: lbls, ([],[]) \ ty :: args) =>
+           let
+             val (r, r') = dir
+             fun proj m = Syn.into @@ Syn.PROJ (lbl, m)
+             fun head s =
+               Syn.into @@ Syn.COE
+                 {dir = (r, s),
+                  ty = (u, ty),
+                  coercee = proj coercee}
+
+             fun shiftField s = 
+               fn ([], x :: xs) \ ty => ([], xs) \ substVar (head s, x) ty
+                | _ => raise Fail "Impossible field"
+
+             val u = Sym.named "u"
+             val ty'u = O.MONO (O.RECORD lbls) $$ List.map (shiftField (P.ret u)) args
+
+             val tail =
+               Syn.into @@ Syn.COE
+                 {dir = dir,
+                  ty = (u, ty'u),
+                  coercee = coercee}
+           in
+             CRITICAL @@ tail || (syms, TUPLE_UPDATE (lbl, head r', HOLE) :: stk)
+           end
+         | _ => raise Fail "Impossible record type")
 
      (* forms of judgment *)
      | O.MONO O.JDG_EQ $ _ || (_, []) => raise Final
@@ -561,6 +619,7 @@ struct
      | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2])) || (syms, stk)
      | O.POLY (O.DEV_DPROD_ELIM z) $ [([x,y], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
      | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1, Tac.autoTac, Tac.autoTac, t2])) || (syms, stk)
+     | O.POLY (O.DEV_RECORD_ELIM _) $ _ || (_, []) => raise Final
      | _ => raise Stuck
 
   fun step sign stability unfolding (tm || stk) =

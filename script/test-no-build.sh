@@ -3,10 +3,6 @@
 REDPRL=./bin/redprl
 PROBLEM=0
 
-echo "Building RedPRL..."
-./script/mlton.sh >build.log 2>&1 || { echo "build failed!"; cat build.log; exit 1; }
-echo "done!"
-
 # Ensure that the examples file and all suceeding tests succeed
 for f in test/examples.prl test/success/*.prl ; do
     if ! $REDPRL $f >$f.log 2>&1 ; then
