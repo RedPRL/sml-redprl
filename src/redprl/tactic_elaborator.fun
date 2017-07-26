@@ -27,6 +27,7 @@ struct
   end
 
   structure R = Refiner (Sig)
+  structure RT = RefinerTypeRules (Sig)
   structure T = NominalLcfTactical (LcfStructure)
   open LcfStructure
 
@@ -57,6 +58,17 @@ struct
 
   structure CJ = RedPrlCategoricalJudgment
 
+  fun autoMtac sign = T.mrepeat (T.all (T.try (R.AutoStep sign)))
+  val autoTac = T.multitacToTac o autoMtac
+
+  fun unfoldCustomOperator sign (opid, ps, args) = 
+    let
+      val entry as {state, ...} = Sig.lookup sign opid
+      val (mrho, srho) = Sig.applyCustomOperator entry (List.map (fn (r, _) => r) ps) args
+    in
+      substSymenv srho (substMetaenv mrho (Sig.extract state))
+    end  
+
   fun tactic sign env tm = 
     case Tm.out tm of 
        O.MONO O.TAC_MTAC $ [_ \ tm] => T.multitacToTac (multitactic sign env tm)
@@ -72,8 +84,63 @@ struct
      | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) $ _ => R.CutLemma sign opid (List.map #1 ps)
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
+     | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] =>
+         T.thenl'
+           (R.Cut (CJ.fromAbt jdg),
+            [u],
+            [tactic sign env tm1,
+             tactic sign env tm2])
+     | O.MONO O.DEV_DFUN_INTRO $ [([u], _) \ tm] => 
+         T.thenl'
+           (RT.DFun.True,
+            [u],
+            [tactic sign env tm,
+             autoTac sign])
+     | O.MONO O.DEV_DPROD_INTRO $ [_ \ tm1, _ \ tm2] => 
+         T.thenl
+           (RT.DProd.True,
+            [tactic sign env tm1,
+             tactic sign env tm2,
+             autoTac sign])
+     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ tm] => 
+        T.thenl'
+          (RT.Path.True,
+           [u],
+           [tactic sign env tm])
+     | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => 
+        T.thenl
+          (R.Elim sign z,
+           [tactic sign env tm1,
+            tactic sign env tm2])
+     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => 
+         T.thenl'
+           (R.Elim sign z,
+            [v],
+            [tactic sign env tm1,
+             tactic sign env tm2,
+             autoTac sign,
+             autoTac sign])
+     | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ tm1, ([x,p],_) \ tm2] => 
+         T.thenl'
+           (R.Elim sign z,
+            [x,p],
+            [tactic sign env tm1,
+             tactic sign env tm2])
+     | O.POLY (O.DEV_DPROD_ELIM z) $ [([x,y], _) \ tm] => 
+         T.thenl'
+           (R.Elim sign z,
+            [x,y],
+            [tactic sign env tm])
+     | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ tm1, ([x,p], _) \ tm2] => 
+         T.thenl'
+           (R.Elim sign z,
+            [x,p],
+            [tactic sign env tm1,
+             autoTac sign,
+             autoTac sign,
+             tactic sign env tm2])
+     | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
-     (* TODO: elaborate "defined tactics", which are currently defined in the machine *)
 
   and multitactic sign env tm =
     case Tm.out tm of 
@@ -85,6 +152,9 @@ struct
      | O.MONO (O.MTAC_SEQ _) $ [_ \ tm1, (us, _) \ tm2] => T.seq (multitactic sign env tm1, us, multitactic sign env tm2)
      | O.MONO O.MTAC_ORELSE $ [_ \ tm1, _ \ tm2] => T.morelse (multitactic sign env tm1, multitactic sign env tm2)
      | O.MONO (O.MTAC_HOLE msg) $ _ => hole (Option.valOf (Tm.getAnnotation tm), msg)
+     | O.MONO O.MTAC_REPEAT $ [_ \ tm] => T.mrepeat (multitactic sign env tm)
+     | O.MONO O.MTAC_AUTO $ _ => autoMtac sign
+     | O.POLY (O.CUST (opid, ps, _)) $ args => multitactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | `x => Var.Ctx.lookup env x
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized multitactic", TermPrinter.ppTerm tm]
 

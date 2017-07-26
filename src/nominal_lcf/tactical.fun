@@ -57,5 +57,12 @@ struct
     fun orelse_ (t1 : tactic, t2 : tactic) : tactic = 
       fn alpha =>
         Lcf.orelse_ (t1 alpha, t2 alpha)
+
+    fun mrepeat (mt : multitactic) : multitactic = 
+      mrec (fn mt' => seq (mprogress mt, [], mt'))
+
+    fun try (t : tactic) : tactic = 
+      orelse_ (t, idn)
+
   end
 end
