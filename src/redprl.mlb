@@ -58,7 +58,6 @@ in
     nominal_lcf/semantics.sig
     nominal_lcf/semantics.fun
 
-    redprl/tactic_elaborator.fun
 
     ann "nonexhaustiveMatch ignore" in
       redprl/machine.sig
@@ -68,6 +67,7 @@ in
       redprl/refiner_types.fun
       redprl/refiner.sig
       redprl/refiner.fun
+      redprl/tactic_elaborator.fun
       redprl/lcf_syntax.fun
       redprl/lcf_model.fun
     end
