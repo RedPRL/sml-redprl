@@ -90,12 +90,13 @@ Thm RecordElimTest : [
   (-> 
    (record
     [b : bool]
+    [c : S1]
     [p : (path {_} bool b b)])
    bool)
 ] by [
   lam r.
-    fresh b, p <- elim r;
-    hyp b
+    let <b = welp> = r.
+    hyp welp
 ].
 
 Print RecordElimTest.

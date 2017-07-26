@@ -88,8 +88,8 @@ struct
       R.Synth.FromWfHyp z alpha jdg
       handle _ => raise exn
 
-
-  structure CJ = RedPrlCategoricalJudgment
+  open RedPrlSequent infix >>
+  structure CJ = RedPrlCategoricalJudgment and Syn = Syntax
 
   fun autoMtac sign = mrepeat (all (try (R.AutoStep sign)))
   val autoTac = multitacToTac o autoMtac
@@ -104,6 +104,20 @@ struct
 
   fun elimRule sign z xs tacs = 
     R.Elim sign z thenl' (xs, tacs)
+
+  fun recordElim sign z (lbls, names) tac alpha jdg =
+    let
+      val (_, H) >> _ = jdg
+      val CJ.TRUE record = RT.lookupHyp H z
+      val Syn.RECORD fields = Syn.out record
+      val nameMap = ListPair.foldl (fn (lbl, name, r) => Syn.LabelDict.insert r lbl name) Syn.LabelDict.empty (lbls, names)
+      fun nameForLabel lbl = 
+        Syn.LabelDict.lookup nameMap lbl
+        handle Syn.LabelDict.Absent => Sym.named ("@" ^ lbl)
+      val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
+    in
+      elimRule sign z xs [tac] alpha jdg
+    end
 
   fun tactic sign env tm alpha jdg = 
     tactic_ sign env (expandHypVars tm) alpha jdg 
@@ -139,6 +153,7 @@ struct
      | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ tm1, ([x,p],_) \ tm2] => elimRule sign z [x,p] [tactic sign env tm1, tactic sign env tm2]
      | O.POLY (O.DEV_DPROD_ELIM z) $ [([x,y], _) \ tm] => elimRule sign z [x,y] [tactic sign env tm]
      | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ tm1, ([x,p], _) \ tm2] => elimRule sign z [x,p] [tactic sign env tm1, autoTac sign, autoTac sign, tactic sign env tm2]
+     | O.POLY (O.DEV_RECORD_ELIM (z, lbls)) $ [(us, _) \ tm] => recordElim sign z (lbls, us) (tactic sign env tm)
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
