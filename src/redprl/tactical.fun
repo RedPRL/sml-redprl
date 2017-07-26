@@ -1,4 +1,25 @@
-functor RedPrlTactical (Lcf : LCF_UTIL) = 
+functor RedPrlTactical (Lcf : LCF_UTIL) :
+sig
+  type 'a nominal = (int -> Sym.t) -> 'a
+  type multitactic = Lcf.jdg Lcf.multitactic nominal
+  type tactic = Lcf.jdg Lcf.tactic nominal
+
+  val all : tactic -> multitactic
+  val each : tactic list -> multitactic
+  val only : int * tactic -> multitactic
+  val mprogress: multitactic -> multitactic
+  val mrec : (multitactic -> multitactic) -> multitactic
+  val multitacToTac : multitactic -> tactic
+  val seq : multitactic * Sym.t list * multitactic -> multitactic
+  val then_ : tactic * tactic -> tactic
+  val thenl : tactic * tactic list -> tactic
+  val thenl' : tactic * Sym.t list * tactic list -> tactic
+  val orelse_ : tactic * tactic -> tactic
+  val morelse : multitactic * multitactic -> multitactic
+  val mrepeat : multitactic -> multitactic
+  val try : tactic -> tactic
+  val idn : tactic
+end = 
 struct
   local
     structure Spr = UniversalSpread
