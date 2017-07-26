@@ -493,7 +493,7 @@ rawTermAndTac
   (* pair types *)
   | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (#1 quantifierData) (#2 quantifierData))
 
-  (* non-dep. record types *)
+  (* dependent record types *)
   | RECORD (Multi.makeRecord (SOME (Pos.pos (RECORD1left fileName) (RECORD1right fileName))) [])
   | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) typedBinders)
   | TUPLE (Multi.makeTuple (SOME (Pos.pos (TUPLE1left fileName) (TUPLE1right fileName))) [])
