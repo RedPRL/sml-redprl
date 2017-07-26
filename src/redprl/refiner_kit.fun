@@ -1,7 +1,16 @@
 functor RefinerKit (Sig : MINI_SIGNATURE) =
 struct
-  structure Tactical = NominalLcfTactical (structure Lcf = Lcf and Spr = UniversalSpread)
-  open Tactical
+  structure NominalLcfStructure = 
+  struct
+    structure Lcf = Lcf and Spr = UniversalSpread
+    type 'a nominal = Sym.t Spr.point -> 'a
+    type tactic = Lcf.jdg Lcf.tactic nominal
+    type multitactic = Lcf.jdg Lcf.multitactic nominal
+  end
+
+  structure Tactical = NominalLcfTactical (NominalLcfStructure)
+
+  open NominalLcfStructure Tactical
   infix orelse_ then_
 
   structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment

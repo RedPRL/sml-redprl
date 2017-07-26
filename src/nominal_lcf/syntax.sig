@@ -22,8 +22,8 @@ end
 
 signature NOMINAL_LCF_SYNTAX =
 sig
-  type atom
-  type variable
+  type atom = Sym.t
+  type variable = Var.t
 
   (* A [rule] is an atomic tactic, a leaf node of a proof. *)
   type rule

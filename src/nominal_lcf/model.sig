@@ -8,10 +8,18 @@ sig
    * sequence is a stream of constructible objects which are chosen not by a
    * computable function, but by interaction with a subject (i.e. a user). *)
   structure Spr : SPREAD
+
+
+  (* A "nominal" object is a functional which _continuously_ transforms a free
+   * choice sequence into a result. *)
+  type 'a nominal = Sym.t Spr.point -> 'a
+
+  type tactic = Lcf.jdg Lcf.tactic nominal
+  type multitactic = Lcf.jdg Lcf.multitactic nominal
 end
 
 (* A model of Nominal LCF consists in a tactic metalanguage, a spread of
- * sequences of atoms, and an interpretation of the primitive rules of inference
+ * sequences of symbols, and an interpretation of the primitive rules of inference
  * into the metalanguage. *)
 signature NOMINAL_LCF_MODEL =
 sig
@@ -19,14 +27,6 @@ sig
 
   (* We will construct a model for a Nominal LCF theory [Syn]. *)
   structure Syn : NOMINAL_LCF_SYNTAX
-
-  (* A "nominal" object is a functional which _continuously_ transforms a free
-   * choice sequence into a result. *)
-  type 'a nominal = Syn.atom Spr.point -> 'a
-
-  type tactic = Lcf.jdg Lcf.tactic nominal
-  type multitactic = Lcf.jdg Lcf.multitactic nominal
-
   (* An environment assigns a multitactic to each variable. *)
   type env = multitactic Syn.VarCtx.dict
 

@@ -600,7 +600,7 @@ struct
 
 
   local
-    val CatJdgSymmetry : Sym.t Tactical.tactic =
+    val CatJdgSymmetry : tactic =
       Equality.Symmetry orelse_ TypeEquality.Symmetry
 
     fun matchGoal f alpha jdg =
