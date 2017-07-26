@@ -6,6 +6,7 @@ struct
 
     fun tacToMultitac (t : tactic) : multitactic = 
       Lcf.all o t 
+      Lcf.allSeq o t 
 
     fun multitacToTac (mt : multitactic) : tactic =
       fn alpha => 
