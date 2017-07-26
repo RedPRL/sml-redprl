@@ -106,8 +106,18 @@ struct
       substSymenv srho (substMetaenv mrho (Sig.extract state))
     end  
 
-  fun tactic sign env tm = 
-    case Tm.out (expandHypVars tm) of 
+  fun tactic sign env tm alpha jdg = 
+    tactic_ sign env (expandHypVars tm) alpha jdg 
+    handle exn => 
+      raise RedPrlError.annotate (Tm.getAnnotation tm) exn
+
+  and multitactic sign env tm alpha jdg = 
+    multitactic_ sign env (expandHypVars tm) alpha jdg
+    handle exn => 
+      raise RedPrlError.annotate (Tm.getAnnotation tm) exn
+
+  and tactic_ sign env tm = 
+    case Tm.out tm of 
        O.MONO O.TAC_MTAC $ [_ \ tm] => T.multitacToTac (multitactic sign env tm)
      | O.MONO O.RULE_ID $ _ => T.idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
@@ -181,8 +191,8 @@ struct
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
-  and multitactic sign env tm =
-    case Tm.out (expandHypVars tm) of 
+  and multitactic_ sign env tm =
+    case Tm.out tm of 
        O.MONO O.MTAC_ALL $ [_ \ tm] => T.all (tactic sign env tm)
      | O.MONO (O.MTAC_EACH _) $ args => T.each (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.MTAC_FOCUS i) $ [_ \ tm] => T.only (i, tactic sign env tm)
