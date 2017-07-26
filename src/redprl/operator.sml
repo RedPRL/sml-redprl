@@ -645,6 +645,7 @@ struct
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_PATH_ELIM a => DEV_PATH_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_RECORD_ELIM (a, lbls) => DEV_RECORD_ELIM (mapSym (passSort (HYP EXP) f) a, lbls)
   end
 
   fun mapWithSort f =
