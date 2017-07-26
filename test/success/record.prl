@@ -57,8 +57,7 @@ Thm RecordTest7 : [
    [a : S1]
    [b : (path {_} S1 a a)])
 ] by [
-  refine record/intro;
-  [`base, <i> `(loop i), auto]
+  <a = `base, b = <i> `(loop i)>
 ].
 
 Def Sg(#a; #b : [exp].exp) = [

@@ -119,6 +119,24 @@ struct
       elimRule sign z xs [tac] alpha jdg
     end
 
+  fun recordIntro sign lbls tacs alpha jdg = 
+    let
+      val (_, _) >> CJ.TRUE record = jdg
+      val Syn.RECORD fields = Syn.out record
+
+      val labeledTactics = ListPair.zipEq (lbls, tacs)
+
+      fun tacticForLabel lbl = 
+        case ListUtil.findIndex (fn (lbl', _) => lbl = lbl') labeledTactics of
+           SOME (_, (_, tac)) => tac
+         | NONE => idn
+
+      val fieldTactics = List.map (fn ((lbl, _), _) => tacticForLabel lbl) fields
+      val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTac sign)
+    in
+      (RT.Record.True thenl fieldTactics @ famTactics) alpha jdg
+    end
+
   fun tactic sign env tm alpha jdg = 
     tactic_ sign env (expandHypVars tm) alpha jdg 
     handle exn => 
@@ -147,6 +165,7 @@ struct
      | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO O.DEV_DFUN_INTRO $ [([u], _) \ tm] => RT.DFun.True thenl' ([u], [tactic sign env tm, autoTac sign])
      | O.MONO O.DEV_DPROD_INTRO $ [_ \ tm1, _ \ tm2] => RT.DProd.True thenl [tactic sign env tm1, tactic sign env tm2, autoTac sign]
+     | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ tm] => RT.Path.True thenl' ([u], [tactic sign env tm, autoTac sign, autoTac sign])
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]
      | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign]
@@ -156,7 +175,6 @@ struct
      | O.POLY (O.DEV_RECORD_ELIM (z, lbls)) $ [(us, _) \ tm] => recordElim sign z (lbls, us) (tactic sign env tm)
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
-
 
   and multitactic_ sign env tm =
     case Tm.out tm of 

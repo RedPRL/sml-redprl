@@ -127,6 +127,14 @@ struct
       checkNoDuplicates pos lbls;
       O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) args
     end
+
+  fun recordIntro pos fields = 
+    let
+      val (lbls, tacs) = ListPair.unzip fields
+    in
+      checkNoDuplicates pos lbls;
+      O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
+    end
 end
 
 
@@ -280,6 +288,7 @@ end
  | tactics of ast list
 
  | recordFieldPatterns of (string * string) list
+ | recordFieldTactics of (string * ast) list
 
  | declArgument of metavariable * Ar.valence
  | declArguments of string Signature.arguments
@@ -555,6 +564,11 @@ recordFieldPatterns
    | VARNAME EQUALS VARNAME ([(VARNAME1, VARNAME2)])
    | ([])
 
+recordFieldTactics
+   : VARNAME EQUALS tactic COMMA recordFieldTactics ((VARNAME, tactic) :: recordFieldTactics)
+   | VARNAME EQUALS tactic ([(VARNAME, tactic)])
+   | ([])
+
 atomicRawTac
   : REFINE VARNAME (Ast.$$ (O.MONO (O.RULE_PRIM VARNAME), []))
   | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
@@ -576,6 +590,7 @@ atomicRawTac
   | LAMBDA boundVar DOT tactic (Ast.$$ (O.MONO O.DEV_DFUN_INTRO, [\ (([boundVar], []), tactic)]))
   | LANGLE boundVar RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([boundVar], []), tactic)]))
   | LANGLE tactic COMMA tactic RANGLE (Ast.$$ (O.MONO O.DEV_DPROD_INTRO, [\ (([], []), tactic1), \ (([],[]), tactic2)]))
+  | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (SOME (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName))) recordFieldTactics)
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic

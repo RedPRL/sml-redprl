@@ -140,7 +140,7 @@ struct
    | RULE_PRIM of string
 
    (* development calculus terms *)
-   | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO
+   | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO | DEV_RECORD_INTRO of string list
    | DEV_LET of RedPrlSort.t
 
    | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_DIM_SUBST
@@ -270,6 +270,7 @@ struct
 
      | DEV_DFUN_INTRO => [[HYP EXP] * [] <> TAC] ->> TAC
      | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
+     | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
      | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
 
@@ -527,6 +528,7 @@ struct
      | DEV_PATH_INTRO => "path-intro"
      | DEV_DFUN_INTRO => "fun-intro"
      | DEV_DPROD_INTRO => "dprod-intro"
+     | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
      | DEV_LET _ => "let"
 
      | JDG_EQ => "eq"
