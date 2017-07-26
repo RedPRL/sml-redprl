@@ -36,8 +36,45 @@ struct
   fun ?e = raise e
   exception todo
 
-  open Tm infix $ \
+  open Tm infix $ $$ $# \
   structure O = RedPrlOpData
+
+  local
+    fun inheritAnnotation t1 t2 =
+      case getAnnotation t2 of
+         NONE => setAnnotation (getAnnotation t1) t2
+       | _ => t2
+
+    fun go syms m =
+      case Tm.out m of
+         O.POLY (O.HYP_REF a) $ _ =>
+           if Sym.Ctx.member syms a then
+             m
+           else
+             inheritAnnotation m (check (`a, O.EXP)) 
+              (* TODO: This can't be right *)
+       | _ => goStruct syms m
+
+    and goStruct syms m =
+      inheritAnnotation m
+        (case out m of
+           theta $ es =>
+             theta $$ List.map (goAbs syms) es
+         | x $# (ps, ms) =>
+             check (x $# (ps, List.map (go syms) ms), sort m)
+         | _ => m)
+
+    and goAbs syms ((us,xs) \ m) =
+      let
+        val syms' = List.foldl (fn (u, acc) => Sym.Ctx.insert acc u ()) syms us
+      in
+        (us,xs) \ go syms' m
+      end
+  in
+    (* Replace hypothesis-references @u with variables `u; this will *only* expand
+     * unbound hyp-refs. *)
+    val expandHypVars = go Sym.Ctx.empty
+  end
 
   fun hole (pos : Pos.t, name : string option) : multitactic = 
     fn alpha => fn state =>
@@ -70,7 +107,7 @@ struct
     end  
 
   fun tactic sign env tm = 
-    case Tm.out tm of 
+    case Tm.out (expandHypVars tm) of 
        O.MONO O.TAC_MTAC $ [_ \ tm] => T.multitacToTac (multitactic sign env tm)
      | O.MONO O.RULE_ID $ _ => T.idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
@@ -106,7 +143,9 @@ struct
         T.thenl'
           (RT.Path.True,
            [u],
-           [tactic sign env tm])
+           [tactic sign env tm,
+            autoTac sign,
+            autoTac sign])
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => 
         T.thenl
           (R.Elim sign z,
@@ -143,7 +182,7 @@ struct
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic sign env tm =
-    case Tm.out tm of 
+    case Tm.out (expandHypVars tm) of 
        O.MONO O.MTAC_ALL $ [_ \ tm] => T.all (tactic sign env tm)
      | O.MONO (O.MTAC_EACH _) $ args => T.each (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.MTAC_FOCUS i) $ [_ \ tm] => T.only (i, tactic sign env tm)

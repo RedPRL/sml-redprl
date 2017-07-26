@@ -1,3 +1,23 @@
+signature NOMINAL_LCF_STRUCTURE = 
+sig
+  (* A model begins with a tactic metalanguage. *)
+  structure Lcf : LCF_UTIL
+
+  (* The nominal character of the semantics is dealt with using a Brouwerian
+   * spread, a space whose points are free choice sequences. A free choice
+   * sequence is a stream of constructible objects which are chosen not by a
+   * computable function, but by interaction with a subject (i.e. a user). *)
+  structure Spr : SPREAD
+
+
+  (* A "nominal" object is a functional which _continuously_ transforms a free
+   * choice sequence into a result. *)
+  type 'a nominal = Sym.t Spr.point -> 'a
+
+  type tactic = Lcf.jdg Lcf.tactic nominal
+  type multitactic = Lcf.jdg Lcf.multitactic nominal
+end
+
 functor NominalLcfTactical (S : NOMINAL_LCF_STRUCTURE) = 
 struct
   local
@@ -58,8 +78,11 @@ struct
       fn alpha =>
         Lcf.orelse_ (t1 alpha, t2 alpha)
 
+    fun mtry (mt : multitactic) : multitactic = 
+      morelse (mt, all idn)
+
     fun mrepeat (mt : multitactic) : multitactic = 
-      mrec (fn mt' => seq (mprogress mt, [], mt'))
+      mrec (fn mt' => mtry (seq (mprogress mt, [], mt')))
 
     fun try (t : tactic) : tactic = 
       orelse_ (t, idn)
