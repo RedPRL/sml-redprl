@@ -4,6 +4,9 @@ struct
     open S
   in
 
+    fun idn alpha =
+      Lcf.idn
+
     fun all (t : tactic) : multitactic = 
       Lcf.allSeq o t 
     
@@ -54,6 +57,5 @@ struct
     fun orelse_ (t1 : tactic, t2 : tactic) : tactic = 
       fn alpha =>
         Lcf.orelse_ (t1 alpha, t2 alpha)
-
   end
 end
