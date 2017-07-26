@@ -40,7 +40,8 @@ struct
   fun then_ (t1, t2) =
     multitacToTac (makeSeq (tacToMultitac t1) [] (tacToMultitac t2))
 
-  val autoTac = O.MONO O.TAC_AUTO $$ []
+  val autoMtac = O.MONO O.MTAC_AUTO $$ []
+  val autoTac = multitacToTac autoMtac
 
   fun exact tau m = 
     O.MONO (O.RULE_EXACT tau) $$ [([],[]) \ m]
@@ -190,7 +191,7 @@ end
  | LET | WITH
  | THEN | ELSE
  | REFINE
- | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | TAC_AUTO | MTAC_HOLE
+ | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
  | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_CUT_LEMMA | RULE_UNFOLD
  | RULE_EXACT
 
@@ -599,8 +600,6 @@ atomicRawTac
   | RULE_LEMMA LBRACKET OPNAME customOpParams RBRACKET (Ast.$$ (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams)), []))
   | RULE_LEMMA OPNAME (Ast.$$ (O.POLY (O.RULE_LEMMA (OPNAME, [])), []))
 
-  | TAC_AUTO (Tac.autoTac)
-
   (* overlapping with term *)
   | rawTermAndTac (rawTermAndTac)
 
@@ -610,6 +609,7 @@ atomicRawMultitac
   : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
   | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS (IntInf.toInt NUMERAL)), [\ (([],[]), tactic)]))
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REPEAT, [\ (([], []), multitac)]))
+  | MTAC_AUTO (Tac.autoMtac)
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
   | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
   | LBRACKET multitac RBRACKET (multitac)
