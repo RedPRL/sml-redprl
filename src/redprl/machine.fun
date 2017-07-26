@@ -524,17 +524,6 @@ struct
      | O.MONO O.JDG_SYNTH $ _ || (_, []) => raise Final
      | O.MONO O.JDG_DIM_SUBST $ _ || (_, []) => raise Final
      | O.MONO (O.JDG_TERM _) $ _ || (_, []) => raise Final
-
-(*  
-     | O.MONO O.MTAC_REPEAT $ [_ \ mt] || (syms, stk) => 
-       let
-         val x = Var.named "x"
-         val xtm = check (`x, O.MTAC)
-         val mtrec = O.MONO O.MTAC_REC $$ [([],[x]) \ Tac.mtry (Tac.seq (Tac.mprogress mt) [] xtm)]
-       in
-         STEP @@ mtrec || (syms, stk)
-       end
-     | O.MONO O.MTAC_AUTO $ _ || (syms, stk) => STEP @@ Tac.multirepeat (Tac.all (Tac.try Tac.autoStep)) || (syms, stk) *)
      | _ => raise Stuck
 
   fun step sign stability unfolding (tm || stk) =
