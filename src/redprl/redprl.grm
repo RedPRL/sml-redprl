@@ -101,9 +101,12 @@ struct
       ()
     end
 
- fun makeRecordAux pos tbs =
+  fun anonRecordLabelForIndex i = 
+    "proj" ^ Int.toString (i + 1)
+
+  fun makeRecordAux pos tbs =
     let
-      val fields = ListUtil.mapWithIndex (fn (_, (SOME x, ty)) => (x, ty) | (i, (NONE, ty)) => ("proj" ^ Int.toString (i + 1), ty)) (flatten tbs)
+      val fields = ListUtil.mapWithIndex (fn (_, (SOME x, ty)) => (x, ty) | (i, (NONE, ty)) => (anonRecordLabelForIndex i, ty)) (flatten tbs)
       val init = {labels = [], args = []}
       val {labels, args} = 
         List.foldl
@@ -122,7 +125,7 @@ struct
   fun makeDProd pos (tbs, ty) =
     let
       val (_, args) = makeRecordAux pos (tbs @ [([NONE], ty)])
-      val lbls = ListUtil.mapWithIndex (fn (i, _) => "proj" ^ Int.toString (i + 1)) args
+      val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) args
     in
       O.MONO (O.RECORD lbls) $$ args
     end
@@ -144,7 +147,7 @@ struct
 
   fun makeAnonymousTuple terms = 
     let
-      val lbls = ListUtil.mapWithIndex (fn (i, _) => "proj" ^ Int.toString (i + 1)) terms
+      val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) terms
     in
       O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) terms
     end
@@ -159,7 +162,7 @@ struct
 
   fun dprodIntro pos tacs = 
     let
-      val lbls = ListUtil.mapWithIndex (fn (i, _) => "proj" ^ Int.toString (i + 1)) tacs
+      val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) tacs
     in
       O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
     end
