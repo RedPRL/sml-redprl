@@ -156,8 +156,7 @@ struct
 
     structure MetaCtx = Tm.Metavar.Ctx
 
-    structure LcfModel = LcfModel (MiniSig)
-    structure LcfSemantics = NominalLcfSemantics (LcfModel)
+    structure TacticElaborator = TacticElaborator (MiniSig)
 
     fun elabDeclArguments args =
       List.foldr
@@ -357,7 +356,7 @@ struct
         let
           val pos = getAnnotation script
         in
-          E.wrap (pos, fn _ => LcfSemantics.tactic (sign, Var.Ctx.empty) script names seqjdg)
+          E.wrap (pos, fn _ => TacticElaborator.tactic sign Var.Ctx.empty script names seqjdg)
         end
 
       structure Tl = TelescopeUtil (Lcf.Tl)

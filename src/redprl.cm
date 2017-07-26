@@ -20,8 +20,13 @@ is
   $libs/sml-typed-abts/basis/basis.cm
   $libs/sml-dependent-lcf/dependent_lcf.cm
   $libs/sml-dependent-lcf/lcf_abt.cm
-  $libs/sml-dependent-lcf/nominal_lcf.cm
   $libs/sml-final-pretty-printer/final-pretty-printer.cm
+
+
+  redprl/spread.sig
+  redprl/spread.sml
+  redprl/tactical.fun
+
 
   debug.cm
 
@@ -53,6 +58,8 @@ is
   redprl/signature.sig
   redprl/signature_mini.sml
 
+  redprl/tactic_elaborator.fun
+
   redprl/signature.sml
 
   redprl/redprl.lex
@@ -70,5 +77,3 @@ is
   redprl/refiner.sig
   redprl/refiner.fun
   redprl/lcf.sml
-  redprl/lcf_syntax.fun
-  redprl/lcf_model.fun

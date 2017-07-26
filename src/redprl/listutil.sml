@@ -11,4 +11,12 @@ struct
 
     fun findEqIndex x l = findIndex (fn y => x = y) l
   end
+  
+  fun mapWithIndex f = 
+    let
+      fun go i [] = []
+        | go i (x :: xs) = f (i, x) :: go (i + 1) xs
+    in
+      go 0
+    end
 end

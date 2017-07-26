@@ -14,7 +14,10 @@ struct
    fun annotate (SOME pos) exn = Pos (pos, exn)
      | annotate NONE exn = exn
 
-   val annotation =
-     fn Pos (pos, _) => SOME pos
+   val rec annotation =
+     fn Pos (pos, exn) => 
+        (case annotation exn of
+            SOME pos' => SOME pos'
+          | NONE => SOME pos)
       | _ => NONE
 end

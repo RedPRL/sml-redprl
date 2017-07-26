@@ -70,8 +70,6 @@ struct
      APP of hole * abt
    | HCOM of symbol O.dir * hole * abt * tube list
    | COE of symbol O.dir * (symbol * hole) * abt
-   | FST of hole
-   | SND of hole
    | WIF of (variable * abt) * hole * abt * abt
    | S1_REC of (variable * abt) * hole * abt * (symbol * abt)
    | IF of hole * abt * abt
@@ -94,8 +92,6 @@ struct
       fn APP (HOLE, n) => Syn.into @@ Syn.APP (m, n)
        | HCOM (dir, HOLE, cap, tubes) => Syn.into @@ Syn.HCOM {dir = dir, ty = m, cap = cap, tubes = tubes}
        | COE (dir, (u, HOLE), coercee) => Syn.into @@ Syn.COE {dir = dir, ty = (u, m), coercee = coercee}
-       | FST HOLE => Syn.into @@ Syn.FST m
-       | SND HOLE => Syn.into @@ Syn.SND m
        | IF (HOLE, t, f) => Syn.into @@ Syn.IF (m, (t, f))
        | WIF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
        | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
@@ -313,51 +309,6 @@ struct
          CRITICAL @@ lambda || (SymSet.remove syms u, stk)
        end
 
-     | O.MONO O.PAIR $ _ || (_, []) => raise Final
-     | O.MONO O.DPROD $ _ || (_, []) => raise Final
-
-     | O.MONO O.FST $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, FST HOLE :: stk)
-     | O.MONO O.SND $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, SND HOLE :: stk)
-     | O.MONO O.PAIR $ [_ \ m, _ \ _] || (syms, FST HOLE :: stk) => CRITICAL @@ m || (syms, stk)
-     | O.MONO O.PAIR $ [_ \ _, _ \ n] || (syms, SND HOLE :: stk) => CRITICAL @@ n || (syms, stk)
-     | O.MONO O.DPROD $ [_ \ tyA, (_, [x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-       let
-         val (r, r') = dir
-         fun left s = 
-           Syn.into @@ Syn.HCOM
-             {dir = (r, s),
-              ty = tyA,
-              cap = Syn.into @@ Syn.FST cap,
-              tubes = mapTubes_ (Syn.into o Syn.FST) tubes}
-          val u = Sym.named "u"
-          val right = 
-            Syn.into @@ Syn.COM
-              {dir = dir,
-               ty = (u, substVar (left (P.ret u), x) tyBx),
-               cap = Syn.into @@ Syn.SND cap,
-               tubes = mapTubes_ (Syn.into o Syn.SND) tubes}
-          val pair = Syn.into @@ Syn.PAIR (left r', right)
-       in
-         CRITICAL @@ pair || (syms, stk)
-       end
-     | O.MONO O.DPROD $ [_ \ tyA, (_, [x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
-       let
-         val (r, r') = dir
-         fun left s = 
-           Syn.into @@ Syn.COE
-             {dir = (r, s),
-              ty = (u, tyA),
-              coercee = Syn.into @@ Syn.FST coercee}
-          val right = 
-            Syn.into @@ Syn.COE
-              {dir = dir,
-               ty = (u, substVar (left (P.ret u), x) tyBx),
-               coercee = Syn.into @@ Syn.SND coercee}
-          val pair = Syn.into @@ Syn.PAIR (left r', right)
-       in
-         CRITICAL @@ pair || (SymSet.remove syms u, stk)
-       end
-
      | O.MONO O.PATH_ABS $ _ || (_, []) => raise Final
      | O.MONO O.PATH_TY $ _ || (_, []) => raise Final
 
@@ -573,53 +524,6 @@ struct
      | O.MONO O.JDG_SYNTH $ _ || (_, []) => raise Final
      | O.MONO O.JDG_DIM_SUBST $ _ || (_, []) => raise Final
      | O.MONO (O.JDG_TERM _) $ _ || (_, []) => raise Final
-
-     (* rules, tactics and multitactics *)
-     | O.MONO O.MTAC_ALL $ _ || (_, []) => raise Final
-     | O.MONO (O.MTAC_EACH _) $ _ || (_, []) => raise Final
-     | O.MONO (O.MTAC_FOCUS _) $ _ || (_, []) => raise Final
-     | O.MONO (O.MTAC_SEQ _) $ _ || (_, []) => raise Final
-     | O.MONO O.MTAC_ORELSE $ _ || (_, []) => raise Final
-     | O.MONO O.MTAC_REC $ _ || (_, []) => raise Final
-     | O.MONO (O.MTAC_HOLE _) $ _ || (_, []) => raise Final
-     | O.MONO O.TAC_MTAC $ _ || (_, []) => raise Final
-     | O.MONO O.RULE_ID $ _ || (_, []) => raise Final
-     | O.MONO (O.RULE_PRIM _) $ _ || (_, []) => raise Final
-     | O.MONO (O.RULE_EXACT _) $ _ || (_, []) => raise Final
-     | O.MONO O.RULE_SYMMETRY $ _ || (_, []) => raise Final
-     | O.MONO O.RULE_AUTO_STEP $ _ || (_, []) => raise Final
-     | O.POLY (O.RULE_HYP _) $ _ || (_, []) => raise Final
-     | O.POLY (O.RULE_ELIM _) $ _ || (_, []) => raise Final
-     | O.MONO O.RULE_HEAD_EXP $ _ || (_, []) => raise Final
-     | O.MONO O.RULE_CUT $ _ || (_, []) => raise Final
-     | O.POLY (O.RULE_UNFOLD _) $ _ || (_, []) => raise Final
-     | O.POLY (O.RULE_LEMMA _) $ _ || (_, []) => raise Final
-     | O.POLY (O.RULE_CUT_LEMMA _) $ _ || (_, []) => raise Final
-     | O.MONO O.MTAC_REPEAT $ [_ \ mt] || (syms, stk) => 
-       let
-         val x = Var.named "x"
-         val xtm = check (`x, O.MTAC)
-         val mtrec = O.MONO O.MTAC_REC $$ [([],[x]) \ Tac.mtry (Tac.seq (Tac.mprogress mt) [] xtm)]
-       in
-         STEP @@ mtrec || (syms, stk)
-       end
-     | O.MONO O.MTAC_AUTO $ _ || (syms, stk) => STEP @@ Tac.multirepeat (Tac.all (Tac.try Tac.autoStep)) || (syms, stk)
-     | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] || (syms, stk) => 
-       let
-         val catjdg = RedPrlCategoricalJudgment.fromAbt jdg
-         val tau = RedPrlCategoricalJudgment.synthesis catjdg
-       in
-         STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2])) || (syms, stk)
-       end
-     | O.MONO O.DEV_DFUN_INTRO $ [([u],_) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "dfun/intro")) [(u, P.HYP O.EXP)] (Tac.each [t, Tac.autoTac])) || (syms, stk)
-     | O.MONO O.DEV_DPROD_INTRO $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "dpair/intro")) [] (Tac.each [t1, t2, Tac.autoTac])) || (syms, stk)
-     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "path/intro")) [(u, P.DIM)] (Tac.each [t, Tac.autoTac, Tac.autoTac])) || (syms, stk)
-     | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [] (Tac.each [t1,t2])) || (syms, stk)
-     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ t1, ([v],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(v, P.DIM)] (Tac.each [t1,t2, Tac.autoTac, Tac.autoTac])) || (syms, stk)
-     | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1,t2])) || (syms, stk)
-     | O.POLY (O.DEV_DPROD_ELIM z) $ [([x,y], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (y, P.HYP O.EXP)] (Tac.each [t])) || (syms, stk)
-     | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ t1, ([x,p],_) \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.elim (z, O.EXP))) [(x, P.HYP O.EXP), (p, P.HYP O.EXP)] (Tac.each [t1, Tac.autoTac, Tac.autoTac, t2])) || (syms, stk)
-     | O.POLY (O.DEV_RECORD_ELIM _) $ _ || (_, []) => raise Final
      | _ => raise Stuck
 
   fun step sign stability unfolding (tm || stk) =

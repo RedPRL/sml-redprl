@@ -38,8 +38,6 @@ struct
    | S1 | BASE | LOOP of param | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
    (* function: lambda and app *)
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
-   (* product: pair, fst and snd *)
-   | DPROD of 'a * variable * 'a | PAIR of 'a * 'a | FST of 'a | SND of 'a
    (* record *)
    | RECORD of ((string * variable) * 'a) list
    | TUPLE of 'a LabelDict.dict | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
@@ -174,11 +172,6 @@ struct
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
        | APP (m, n) => O.MONO O.APP $$ [([],[]) \ m, ([],[]) \ n]
 
-       | DPROD (a, x, bx) => O.MONO O.DPROD $$ [([],[]) \ a, ([],[x]) \ bx]
-       | PAIR (m, n) => O.MONO O.PAIR $$ [([],[]) \ m, ([],[]) \ n]
-       | FST m => O.MONO O.FST $$ [([],[]) \ m]
-       | SND m => O.MONO O.SND $$ [([],[]) \ m]
-
        | RECORD fields =>
             let
              val init = {labels = [], args = [], vars = []}
@@ -227,10 +220,6 @@ struct
     val intoAp = into o APP
     val intoLam = into o LAM
 
-    val intoFst = into o FST
-    val intoSnd = into o SND
-    val intoPair = into o PAIR
-
     fun intoCoe dir (ty, m) =
       into (COE {dir = dir, ty = ty, coercee = m})
 
@@ -272,11 +261,6 @@ struct
        | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] => DFUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
        | O.MONO O.APP $ [_ \ m, _ \ n] => APP (m, n)
-
-       | O.MONO O.DPROD $ [_ \ a, (_,[x]) \ bx] => DPROD (a, x, bx)
-       | O.MONO O.PAIR $ [_ \ m, _ \ n] => PAIR (m, n)
-       | O.MONO O.FST $ [_ \ m] => FST m
-       | O.MONO O.SND $ [_ \ m] => SND m
 
        | O.MONO (O.RECORD lbls) $ tms => RECORD (outRecordFields (lbls, tms)) 
        | O.MONO (O.TUPLE lbls) $ tms => TUPLE (outTupleFields (lbls, tms))

@@ -171,27 +171,7 @@ struct
         |>: goalPathTy >: goalLine #> (I, H, holeLine)
       end
 
-    fun Fst _ jdg =
-      let
-        val _ = RedPrlLog.trace "Synth.Fst"
-        val (I, H) >> CJ.SYNTH tm = jdg
-        val Syn.FST m = Syn.out tm
-        val (goalTy, holeTy) = makeSynth (I, H) m
-        val (goalA, holeA) = makeMatch (O.MONO O.DPROD, 0, holeTy, [], [])
-      in
-        |>: goalTy >: goalA #> (I, H, holeA)
-      end
-
-    fun Snd _ jdg =
-      let
-        val _ = RedPrlLog.trace "Synth.Snd"
-        val (I, H) >> CJ.SYNTH tm = jdg
-        val Syn.SND m = Syn.out tm
-        val (goalTy, holeTy) = makeSynth (I, H) m
-        val (goalB, holeB) = makeMatch (O.MONO O.DPROD, 1, holeTy, [], [Syn.into @@ Syn.FST m])
-      in
-        |>: goalTy >: goalB #> (I, H, holeB)
-      end
+    (* TODO: add Proj / record rule!!! *)
   end
 
   structure Misc =
@@ -575,12 +555,6 @@ struct
      | "dfun/intro" => DFun.True
      | "dfun/eq/eta" => DFun.Eta
      | "dfun/eq/app" => DFun.AppEq
-     | "dpair/eq/type" => DProd.EqType
-     | "dpair/eq/pair" => DProd.Eq
-     | "dpair/eq/eta" => DProd.Eta
-     | "dpair/eq/fst" => DProd.FstEq
-     | "dpair/eq/snd" => DProd.SndEq
-     | "dpair/intro" => DProd.True
      | "record/eq/type" => Record.EqType
      | "record/eq" => Record.Eq
      | "record/eq/eta" => Record.Eta
@@ -600,7 +574,7 @@ struct
 
 
   local
-    val CatJdgSymmetry : Sym.t Tactical.tactic =
+    val CatJdgSymmetry : tactic =
       Equality.Symmetry orelse_ TypeEquality.Symmetry
 
     fun matchGoal f alpha jdg =
@@ -611,7 +585,6 @@ struct
         case Syn.out ty of
            Syn.PATH_TY _ => Path.True
          | Syn.DFUN _ => DFun.True
-         | Syn.DPROD _ => DProd.True
          | Syn.RECORD _ => Record.True
          | _ => raise E.error [Fpp.text "Could not find introduction rule for", TermPrinter.ppTerm ty]
 
@@ -624,7 +597,6 @@ struct
          | (Syn.VOID, Syn.VOID) => Void.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
-         | (Syn.DPROD _, Syn.DPROD _) => DProd.EqType
          | (Syn.RECORD _, Syn.RECORD _) => Record.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
@@ -656,7 +628,6 @@ struct
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => S1.EqFCom
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
-         | (Syn.PAIR _, Syn.PAIR _, _) => DProd.Eq
          | (Syn.TUPLE _, Syn.TUPLE _, _) => Record.Eq
          | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
          | _ => raise E.error [Fpp.text "Could not find value equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
@@ -672,8 +643,6 @@ struct
          | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.EqElim z
          | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.ElimEq
          | (Syn.APP _, _, Syn.APP _, _) => DFun.AppEq
-         | (Syn.FST _, _, Syn.FST _, _) => DProd.FstEq
-         | (Syn.SND _, _, Syn.SND _, _) => DProd.SndEq
          | (Syn.PROJ _, _, Syn.PROJ _, _) => Record.ProjEq
          | (Syn.PATH_APP (_, P.VAR _), _, Syn.PATH_APP (_, P.VAR _), _) => Path.AppEq
          | (Syn.CUST, _, Syn.CUST, _) => Equality.Custom sign
@@ -682,8 +651,7 @@ struct
 
       fun StepEqNeuExpand sign blocker ty =
         case (blocker, Syn.out ty) of
-           (_, Syn.DPROD _) => DProd.Eta
-         | (_, Syn.DFUN _) => DFun.Eta
+           (_, Syn.DFUN _) => DFun.Eta
          | (_, Syn.PATH_TY _) => Path.Eta
          | (_, Syn.RECORD _) => Record.Eta
          | (Machine.OPERATOR theta, _) => Computation.Unfold sign theta
@@ -743,8 +711,6 @@ struct
          | Syn.S1_REC _ => Synth.S1Rec
          | Syn.WIF _ => Synth.WIf
          | Syn.PATH_APP _ => Synth.PathApp
-         | Syn.FST _ => Synth.Fst
-         | Syn.SND _ => Synth.Snd
          | Syn.CUST => Synth.Custom sign
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
@@ -787,7 +753,6 @@ struct
          | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
-         | Syn.DPROD _ => DProd.Elim
          | Syn.PATH_TY _ => Path.Elim
          | Syn.RECORD _ => Record.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]

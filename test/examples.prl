@@ -161,9 +161,7 @@ Thm PathTest3 : [
 Print PathTest3.
 
 Thm PairTest : [ (* [a : S1] (path {_} S1 a base)) ] by [
-  < `base
-  , <x> `(loop x)
-  >
+  <proj1 = `base, proj2 = <x> `(loop x)>;
 ].
 
 
@@ -173,7 +171,7 @@ Def Cmp(#f; #g) = [
 
 
 Def MyLoop{x:dim}(#m) = [
-  (pair #m (loop x))
+  (tuple [proj1 #m] [proj2 (loop x)])
 ].
 
 Def Test = [
@@ -226,9 +224,8 @@ Print FunExtTac.
 Print NotNotPath.
 
 Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
-  < `tt, <x> `tt >
+  <proj1 = `tt, proj2 = <_> `tt>;
 ].
-
 
 Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
   lam x. let x/0 = x @ &0. hyp x/0

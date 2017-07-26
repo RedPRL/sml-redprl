@@ -57,45 +57,21 @@ Thm RecordTest7 : [
    [a : S1]
    [b : (path {_} S1 a a)])
 ] by [
-  refine record/intro;
-  [`base, <i> `(loop i), auto]
+  <a = `base, b = <i> `(loop i)>
 ].
-
-Def Sg(#a; #b : [exp].exp) = [
-  (record
-   [pi1 : #a]
-   [pi2 : (#b pi1)])
-].
-
-Def Fst(#m) = [
-  (! pi1 #m)
-].
-
-Def Snd(#m) = [
-  (! pi2 #m)
-].
-
-Thm TestSg : [
-  (->
-   (Sg nat [x] nat)
-   (* nat nat))
-] by [
-  lam p.
-    <`(Fst ,p), `(Snd ,p)>;
-].
-
-Print Sg.
 
 Thm RecordElimTest : [
   (-> 
    (record
     [b : bool]
+    [c : S1]
     [p : (path {_} bool b b)])
-   bool)
+   (* [b : bool] (path {_} bool b b)))
 ] by [
   lam r.
-    fresh b, p <- elim r;
-    hyp b
+    let <b = welp, p = hello> = r.
+    <proj2 = hyp hello,
+     proj1 = hyp welp>
 ].
 
 Print RecordElimTest.

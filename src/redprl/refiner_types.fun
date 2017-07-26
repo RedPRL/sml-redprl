@@ -639,144 +639,6 @@ struct
       end
   end
 
-  structure DProd =
-  struct
-    fun EqType alpha jdg =
-      let
-        val _ = RedPrlLog.trace "DProd.EqType"
-        val (I, H) >> CJ.EQ_TYPE (dprod0, dprod1) = jdg
-        val Syn.DPROD (a0, x, b0x) = Syn.out dprod0
-        val Syn.DPROD (a1, y, b1y) = Syn.out dprod1
-
-        val z = alpha 0
-        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val b0z = substVar (ztm, x) b0x
-        val b1z = substVar (ztm, y) b1y
-
-        val goalA = makeEqType (I, H) (a0, a1)
-        val goalB = makeEqType (I, H @> (z, CJ.TRUE a0)) (b0z, b1z)
-      in
-        |>: goalA >: goalB #> (I, H, trivial)
-      end
-      handle Bind =>
-        raise E.error [Fpp.text "Expected dprod typehood sequent"]
-
-    fun Eq alpha jdg =
-      let
-        val _ = RedPrlLog.trace "DProd.Eq"
-        val (I, H) >> CJ.EQ ((pair0, pair1), dprod) = jdg
-        val Syn.PAIR (m0, n0) = Syn.out pair0
-        val Syn.PAIR (m1, n1) = Syn.out pair1
-        val Syn.DPROD (a, x, bx) = Syn.out dprod
-
-        val z = alpha 0
-        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val bz = substVar (ztm, x) bx
-
-        val goal1 = makeEq (I, H) ((m0, m1), a)
-        val goal2 = makeEq (I, H) ((n0, n1), substVar (m0, x) bx)
-        val goalFam = makeType (I, H @> (z, CJ.TRUE a)) bz
-      in
-        |>: goal1 >: goal2 >: goalFam #> (I, H, trivial)
-      end
-
-    fun Eta _ jdg =
-      let
-        val _ = RedPrlLog.trace "DProd.Eta"
-        val (I, H) >> CJ.EQ ((m, n), dprod) = jdg
-        val Syn.DPROD _ = Syn.out dprod
-
-        val m' = Syn.into @@ Syn.PAIR (Syn.into @@ Syn.FST m, Syn.into @@ Syn.SND m)
-        val goal1 = makeMem (I, H) (m, dprod)
-        val goal2 = makeEqIfDifferent (I, H) ((m', n), dprod) (* m' well-typed *)
-      in
-        |>: goal1 >:? goal2 #> (I, H, trivial)
-      end
-
-    fun FstEq _ jdg =
-      let
-        val _ = RedPrlLog.trace "DProd.FstEq"
-        val (I, H) >> CJ.EQ ((fst0, fst1), ty) = jdg
-        val Syn.FST m0 = Syn.out fst0
-        val Syn.FST m1 = Syn.out fst1
-
-        val (goalTy, holeTy) = makeSynth (I, H) m0
-        val (goalTyA, holeTyA) = makeMatch (O.MONO O.DPROD, 0, holeTy, [], [])
-        val goalEq = makeEqIfDifferent (I, H) ((m0, m1), holeTy) (* m0 well-typed *)
-        val goalEqTy = makeEqTypeIfDifferent (I, H) (holeTyA, ty) (* holeTyA type *)
-      in
-        |>: goalTy >: goalTyA >:? goalEq >:? goalEqTy
-        #> (I, H, trivial)
-      end
-
-    fun SndEq _ jdg =
-      let
-        val _ = RedPrlLog.trace "DProd.SndEq"
-        val (I, H) >> CJ.EQ ((snd0, snd1), ty) = jdg
-        val Syn.SND m0 = Syn.out snd0
-        val Syn.SND m1 = Syn.out snd1
-
-        val (goalTy, holeTy) = makeSynth (I, H) m0
-        val (goalTyB, holeTyB) = makeMatch (O.MONO O.DPROD, 1, holeTy, [], [Syn.into @@ Syn.FST m0])
-        val goalEq = makeEqIfDifferent (I, H) ((m0, m1), holeTy) (* m0 well-typed *)
-        val goalEqTy = makeEqTypeIfDifferent (I, H) (holeTyB, ty) (* holeTyB type *)
-      in
-        |>: goalTy >: goalTyB >:? goalEq >:? goalEqTy
-        #> (I, H, trivial)
-      end
-
-    fun True alpha jdg =
-      let
-        val _ = RedPrlLog.trace "DProd.True"
-        val (I, H) >> CJ.TRUE dprod = jdg
-        val Syn.DPROD (a, x, bx) = Syn.out dprod
-
-        val z = alpha 0
-        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val bz = substVar (ztm, x) bx
-
-        val (goal1, hole1) = makeTrue (I, H) a
-        val (goal2, hole2) = makeTrue (I, H) (substVar (hole1, x) bx)
-        val goalFam = makeType (I, H @> (z, CJ.TRUE a)) bz
-        val pair = Syn.into @@ Syn.PAIR (hole1, hole2)
-      in
-        |>: goal1 >: goal2 >: goalFam #> (I, H, pair)
-      end
-
-    fun Elim z alpha jdg =
-      let
-        val _ = RedPrlLog.trace "DProd.Elim"
-        val (I, H) >> CJ.TRUE cz = jdg
-        val CJ.TRUE dprod = lookupHyp H z
-        val Syn.DPROD (a, x, bx) = Syn.out dprod
-
-        val z1 = alpha 0
-        val z2 = alpha 1
-
-        val z1tm = Syn.into @@ Syn.VAR (z1, O.EXP)
-        val z2tm = Syn.into @@ Syn.VAR (z2, O.EXP)
-
-        val bz1 = substVar (z1tm, x) bx
-        val pair = Syn.into @@ Syn.PAIR (z1tm, z2tm)
-
-        val H' = Hyps.empty @> (z1, CJ.TRUE a) @> (z2, CJ.TRUE bz1)
-        val H'' = Hyps.interposeAfter H z H'
-
-        val (goal, hole) =
-          makeTrue
-            (I, Hyps.modifyAfter z (CJ.map_ (substVar (pair, z))) H'')
-            (substVar (pair, z) cz)
-
-        val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
-        val fstz = Syn.into @@ Syn.FST ztm
-        val sndz = Syn.into @@ Syn.SND ztm
-        val rho = Var.Ctx.insert (Var.Ctx.insert Var.Ctx.empty z1 fstz) z2 sndz
-        val hole' = substVarenv rho hole
-      in
-        |>: goal #> (I, H, hole')
-      end
-  end
-
   structure Record =
   struct
     structure LabelDict = Syn.LabelDict
@@ -919,10 +781,13 @@ struct
         val Syn.RECORD fields = Syn.out record
         val names = List.tabulate (List.length fields, alpha)
         val ren = ListPair.foldlEq (fn (name, ((_, var), ty), ren) => Var.Ctx.insert ren var name) Var.Ctx.empty (names, fields)
-        val H' = ListPair.foldlEq (fn (name, ((_,_),ty), hyps) => hyps @> (name, CJ.TRUE (renameVars ren ty))) H (names, fields)
         val tuple = Syn.into @@ Syn.TUPLE @@ ListPair.foldl (fn (((lbl, _), _), name, dict) => Syn.LabelDict.insert dict lbl @@ Syn.into @@ Syn.VAR (name, O.EXP)) Syn.LabelDict.empty (fields, names)
+
+        val H' = ListPair.foldlEq (fn (name, ((_,_),ty), hyps) => hyps @> (name, CJ.TRUE (renameVars ren ty))) Hyps.empty (names, fields)
+        val H'' = Hyps.interposeAfter (Hyps.modifyAfter z (CJ.map_ (substVar (tuple, z))) H) z H'
+
         val motive' = substVar (tuple, z) motivez
-        val (goal, hole) = makeTrue (I, H') motive'
+        val (goal, hole) = makeTrue (I,  H'') motive'
 
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val projEnv = ListPair.foldlEq (fn (((lbl, _), _), name, env) => Var.Ctx.insert env name @@ Syn.into @@ Syn.PROJ (lbl, ztm)) Var.Ctx.empty (fields, names)
