@@ -70,8 +70,6 @@ struct
      APP of hole * abt
    | HCOM of symbol O.dir * hole * abt * tube list
    | COE of symbol O.dir * (symbol * hole) * abt
-   | FST of hole
-   | SND of hole
    | WIF of (variable * abt) * hole * abt * abt
    | S1_REC of (variable * abt) * hole * abt * (symbol * abt)
    | IF of hole * abt * abt
@@ -94,8 +92,6 @@ struct
       fn APP (HOLE, n) => Syn.into @@ Syn.APP (m, n)
        | HCOM (dir, HOLE, cap, tubes) => Syn.into @@ Syn.HCOM {dir = dir, ty = m, cap = cap, tubes = tubes}
        | COE (dir, (u, HOLE), coercee) => Syn.into @@ Syn.COE {dir = dir, ty = (u, m), coercee = coercee}
-       | FST HOLE => Syn.into @@ Syn.FST m
-       | SND HOLE => Syn.into @@ Syn.SND m
        | IF (HOLE, t, f) => Syn.into @@ Syn.IF (m, (t, f))
        | WIF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
        | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
@@ -311,51 +307,6 @@ struct
                  coercee = Syn.into @@ Syn.APP (coercee, xcoe r)})
        in
          CRITICAL @@ lambda || (SymSet.remove syms u, stk)
-       end
-
-     | O.MONO O.PAIR $ _ || (_, []) => raise Final
-     | O.MONO O.DPROD $ _ || (_, []) => raise Final
-
-     | O.MONO O.FST $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, FST HOLE :: stk)
-     | O.MONO O.SND $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, SND HOLE :: stk)
-     | O.MONO O.PAIR $ [_ \ m, _ \ _] || (syms, FST HOLE :: stk) => CRITICAL @@ m || (syms, stk)
-     | O.MONO O.PAIR $ [_ \ _, _ \ n] || (syms, SND HOLE :: stk) => CRITICAL @@ n || (syms, stk)
-     | O.MONO O.DPROD $ [_ \ tyA, (_, [x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-       let
-         val (r, r') = dir
-         fun left s = 
-           Syn.into @@ Syn.HCOM
-             {dir = (r, s),
-              ty = tyA,
-              cap = Syn.into @@ Syn.FST cap,
-              tubes = mapTubes_ (Syn.into o Syn.FST) tubes}
-          val u = Sym.named "u"
-          val right = 
-            Syn.into @@ Syn.COM
-              {dir = dir,
-               ty = (u, substVar (left (P.ret u), x) tyBx),
-               cap = Syn.into @@ Syn.SND cap,
-               tubes = mapTubes_ (Syn.into o Syn.SND) tubes}
-          val pair = Syn.into @@ Syn.PAIR (left r', right)
-       in
-         CRITICAL @@ pair || (syms, stk)
-       end
-     | O.MONO O.DPROD $ [_ \ tyA, (_, [x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
-       let
-         val (r, r') = dir
-         fun left s = 
-           Syn.into @@ Syn.COE
-             {dir = (r, s),
-              ty = (u, tyA),
-              coercee = Syn.into @@ Syn.FST coercee}
-          val right = 
-            Syn.into @@ Syn.COE
-              {dir = dir,
-               ty = (u, substVar (left (P.ret u), x) tyBx),
-               coercee = Syn.into @@ Syn.SND coercee}
-          val pair = Syn.into @@ Syn.PAIR (left r', right)
-       in
-         CRITICAL @@ pair || (SymSet.remove syms u, stk)
        end
 
      | O.MONO O.PATH_ABS $ _ || (_, []) => raise Final

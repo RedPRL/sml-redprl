@@ -98,18 +98,6 @@ struct
                  multiDFun (([x], a) :: doms) bx)
      | _ => (List.rev doms, m)
 
-  fun multiDProd (doms : (variable list * abt) list) m =
-    case Abt.out m of
-       O.MONO O.DPROD $ [_ \ a, (_, [x]) \ bx] =>
-         (case doms of
-             [] => multiDProd (([x], a) :: doms) bx
-           | (xs, a') :: doms' =>
-               if Abt.eq (a, a') then
-                 multiDProd ((xs @ [x], a) :: doms') bx
-               else
-                 multiDProd (([x], a) :: doms) bx)
-     | _ => (List.rev doms, m)
-
   fun multiLam (xs : variable list) m =
     case Abt.out m of
        O.MONO O.LAM $ [(_, [x]) \ mx] =>
@@ -168,8 +156,6 @@ struct
          printLam @@ multiLam [] m
      | O.MONO O.APP $ _ =>
          printApp @@ multiApp m []
-     | O.MONO O.DPROD $ _ =>
-         printQuant "*" @@ multiDProd [] m
      | O.MONO (O.RECORD []) $ _ => text "record"
      | O.MONO (O.RECORD lbls) $ args =>
          let

@@ -142,6 +142,13 @@ struct
       O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) args
     end
 
+  fun makeAnonymousTuple terms = 
+    let
+      val lbls = ListUtil.mapWithIndex (fn (i, _) => "proj" ^ Int.toString (i + 1)) terms
+    in
+      O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) terms
+    end
+
   fun recordIntro pos fields = 
     let
       val (lbls, tacs) = ListPair.unzip fields
@@ -207,7 +214,7 @@ end
  | VOID
  | S1 | BASE | LOOP | S1_REC
  | LAMBDA | DOLLAR_SIGN
- | TIMES | PAIR | FST | SND
+ | TIMES
  | RECORD | TUPLE | BANG
  | PATHS | ABS | AT_SIGN
  | HCOM | COE
@@ -236,7 +243,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA AMPERSAND COLON
-%nonassoc FCOM BOOL TT FF IF WBOOL WIF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PAIR FST SND PATHS ABS AT_SIGN HCOM COE
+%nonassoc FCOM BOOL TT FF IF WBOOL WIF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATHS ABS AT_SIGN HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
 
@@ -476,10 +483,6 @@ regularMultinaryOperator
   | INT_REC (O.MONO O.INT_REC)
   (* paths *)
   | PATHS (O.MONO O.PATH_TY)
-  (* pairs *)
-  | PAIR (O.MONO O.PAIR)
-  | FST (O.MONO O.FST)
-  | SND (O.MONO O.SND)
   (* coe *)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
 
@@ -529,6 +532,7 @@ rawTermAndTac
   | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) typedBinders)
   | TUPLE (Multi.makeTuple (SOME (Pos.pos (TUPLE1left fileName) (TUPLE1right fileName))) [])
   | LPAREN TUPLE fields RPAREN (Multi.makeTuple (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) fields)
+  | LPAREN TUPLE terms RPAREN (Multi.makeAnonymousTuple terms) 
   | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
 
   (* paths *)
@@ -612,7 +616,6 @@ atomicRawTac
   | LAMBDA boundVar DOT tactic (Ast.$$ (O.MONO O.DEV_DFUN_INTRO, [\ (([Option.getOpt (boundVar, "_")], []), tactic)]))
   | LANGLE boundVar RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([Option.getOpt (boundVar, "_")], []), tactic)]))
   | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (SOME (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName))) recordFieldTactics)
-  | LANGLE tactics RANGLE (Multi.dprodIntro (SOME (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName))) tactics)
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
@@ -625,8 +628,6 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME3), [\ (([],[]), tactic1), \ (([VARNAME1, VARNAME2],[]), tactic2)]))
   | LET VARNAME EQUALS VARNAME AT_SIGN tactic DOT tactic
       (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
-  | LET LANGLE VARNAME COMMA VARNAME RANGLE EQUALS VARNAME DOT tactic
-      (Ast.$$ (O.POLY (O.DEV_DPROD_ELIM VARNAME3), [\ (([VARNAME1, VARNAME2],[]), tactic)]))
   | LET LANGLE recordFieldPatterns RANGLE EQUALS VARNAME DOT tactic
       (Ast.$$ (O.POLY (O.DEV_RECORD_ELIM (VARNAME, List.map #1 recordFieldPatterns)), [\ ((List.map #2 recordFieldPatterns, []), tactic)]))
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic

@@ -120,8 +120,6 @@ struct
    | S1 | BASE | S1_REC
    (* function: lambda and app *)
    | DFUN | LAM | APP
-   (* product: pair, fst and snd *)
-   | DPROD | PAIR | FST | SND
    (* record and tuple *)
    | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
    (* path: path abstraction *)
@@ -140,7 +138,7 @@ struct
    | RULE_PRIM of string
 
    (* development calculus terms *)
-   | DEV_DFUN_INTRO | DEV_DPROD_INTRO | DEV_PATH_INTRO | DEV_RECORD_INTRO of string list
+   | DEV_DFUN_INTRO | DEV_PATH_INTRO | DEV_RECORD_INTRO of string list
    | DEV_LET of RedPrlSort.t
 
    | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_DIM_SUBST
@@ -167,7 +165,6 @@ struct
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
-   | DEV_DPROD_ELIM of 'a
    | DEV_PATH_ELIM of 'a
    | DEV_RECORD_ELIM of 'a * string list
 
@@ -225,11 +222,6 @@ struct
      | LAM => [[] * [EXP] <> EXP] ->> EXP
      | APP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
-     | DPROD => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
-     | PAIR => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
-     | FST => [[] * [] <> EXP] ->> EXP
-     | SND => [[] * [] <> EXP] ->> EXP
-
      | RECORD lbls =>
        let
          val (_, valences) = List.foldr (fn (_, (taus, vls)) => (EXP :: taus, ([] * taus <> EXP) :: vls)) ([], []) lbls
@@ -269,7 +261,6 @@ struct
      | RULE_PRIM _ => [] ->> TAC
 
      | DEV_DFUN_INTRO => [[HYP EXP] * [] <> TAC] ->> TAC
-     | DEV_DPROD_INTRO => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO => [[DIM] * [] <> TAC] ->> TAC
      | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
@@ -324,7 +315,6 @@ struct
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
-       | DEV_DPROD_ELIM _ => [[HYP EXP, HYP EXP] * [] <> TAC] ->> TAC
        | DEV_RECORD_ELIM (z, lbls) => [List.map (fn _ => HYP EXP) lbls * [] <> TAC] ->> TAC
        | DEV_PATH_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
   end
@@ -373,7 +363,6 @@ struct
        | DEV_BOOL_ELIM a => [(a, HYP EXP)]
        | DEV_S1_ELIM a => [(a, HYP EXP)]
        | DEV_DFUN_ELIM a => [(a, HYP EXP)]
-       | DEV_DPROD_ELIM a => [(a, HYP EXP)]
        | DEV_RECORD_ELIM (a, _) => [(a, HYP EXP)]
        | DEV_PATH_ELIM a => [(a, HYP EXP)]
   end
@@ -448,8 +437,6 @@ struct
            (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_DFUN_ELIM a, t) =>
            (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
-       | (DEV_DPROD_ELIM a, t) =>
-           (case t of DEV_DPROD_ELIM b => f (a, b) | _ => false)
        | (DEV_RECORD_ELIM (a, lbls), t) =>
            (case t of DEV_RECORD_ELIM (b, lbls') => f (a, b) andalso lbls = lbls' | _ => false)
        | (DEV_PATH_ELIM a, t) =>
@@ -491,11 +478,6 @@ struct
      | LAM => "lam"
      | APP => "app"
 
-     | DPROD => "dprod"
-     | PAIR => "pair"
-     | FST => "fst"
-     | SND => "snd"
-
      | RECORD lbls => "record{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
      | TUPLE lbls => "tuple{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
      | PROJ lbl => "proj{" ^ lbl ^ "}"
@@ -527,7 +509,6 @@ struct
 
      | DEV_PATH_INTRO => "path-intro"
      | DEV_DFUN_INTRO => "fun-intro"
-     | DEV_DPROD_INTRO => "dprod-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
      | DEV_LET _ => "let"
 
@@ -596,7 +577,6 @@ struct
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
-       | DEV_DPROD_ELIM a => "dprod-elim{" ^ f a ^ "}"
        | DEV_RECORD_ELIM (a, _) => "record-elim{" ^ f a ^ "}"
        | DEV_PATH_ELIM a => "path-elim{" ^ f a ^ "}"
   end
@@ -645,7 +625,6 @@ struct
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_DPROD_ELIM a => DEV_DPROD_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_PATH_ELIM a => DEV_PATH_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_RECORD_ELIM (a, lbls) => DEV_RECORD_ELIM (mapSym (passSort (HYP EXP) f) a, lbls)
   end
