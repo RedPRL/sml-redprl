@@ -60,31 +60,6 @@ Thm RecordTest7 : [
   <a = `base, b = <i> `(loop i)>
 ].
 
-Def Sg(#a; #b : [exp].exp) = [
-  (record
-   [pi1 : #a]
-   [pi2 : (#b pi1)])
-].
-
-Def Fst(#m) = [
-  (! pi1 #m)
-].
-
-Def Snd(#m) = [
-  (! pi2 #m)
-].
-
-Thm TestSg : [
-  (->
-   (Sg nat [x] nat)
-   (* nat nat))
-] by [
-  lam p.
-    <`(Fst ,p), `(Snd ,p)>;
-].
-
-Print Sg.
-
 Thm RecordElimTest : [
   (-> 
    (record
