@@ -66,11 +66,12 @@ Thm RecordElimTest : [
     [b : bool]
     [c : S1]
     [p : (path {_} bool b b)])
-   bool)
+   (* [b : bool] (path {_} bool b b)))
 ] by [
   lam r.
-    let <b = welp> = r.
-    hyp welp
+    let <b = welp, p = hello> = r.
+    <proj1 = hyp welp,
+     proj2 = hyp hello>
 ].
 
 Print RecordElimTest.
