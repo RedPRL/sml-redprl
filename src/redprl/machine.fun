@@ -605,12 +605,7 @@ struct
        end
      | O.MONO O.MTAC_AUTO $ _ || (syms, stk) => STEP @@ Tac.multirepeat (Tac.all (Tac.try Tac.autoStep)) || (syms, stk)
      | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tac1, ([u],_) \ tac2] || (syms, stk) => 
-       let
-         val catjdg = RedPrlCategoricalJudgment.fromAbt jdg
-         val tau = RedPrlCategoricalJudgment.synthesis catjdg
-       in
          STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.cut jdg)) [(u, P.HYP tau)] (Tac.each [tac1,tac2])) || (syms, stk)
-       end
      | O.MONO O.DEV_DFUN_INTRO $ [([u],_) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "dfun/intro")) [(u, P.HYP O.EXP)] (Tac.each [t, Tac.autoTac])) || (syms, stk)
      | O.MONO O.DEV_DPROD_INTRO $ [_ \ t1, _ \ t2] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "dpair/intro")) [] (Tac.each [t1, t2, Tac.autoTac])) || (syms, stk)
      | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ t] || (syms, stk) => STEP @@ Tac.mtac (Tac.seq (Tac.all (Tac.prim "path/intro")) [(u, P.DIM)] (Tac.each [t, Tac.autoTac, Tac.autoTac])) || (syms, stk)
