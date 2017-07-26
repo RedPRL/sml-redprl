@@ -63,6 +63,8 @@ is
   redprl/signature.sig
   redprl/signature_mini.sml
 
+  redprl/tactic_elaborator.fun
+
   redprl/signature.sml
 
   redprl/redprl.lex

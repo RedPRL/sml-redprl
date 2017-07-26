@@ -4,9 +4,25 @@ struct
     open S
   in
 
-    fun tacToMultitac (t : tactic) : multitactic = 
-      Lcf.all o t 
+    fun all (t : tactic) : multitactic = 
       Lcf.allSeq o t 
+    
+    (* TODO: consider a version where 'alpha' is not shared among the branches. That may be better-behaved. *)
+    fun each (ts : tactic list) : multitactic = 
+      fn alpha => 
+        Lcf.eachSeq (List.map (fn t => t alpha) ts)
+
+    fun only (i, t) : multitactic = 
+      fn alpha => 
+        Lcf.only (i, t alpha)
+
+    fun mprogress (mt : multitactic) : multitactic = 
+      fn alpha => 
+        Lcf.mprogress (mt alpha)
+
+    fun mrec (f : multitactic -> multitactic) : multitactic =
+      fn alpha => 
+        f (mrec f) alpha
 
     fun multitacToTac (mt : multitactic) : tactic =
       fn alpha => 
@@ -23,16 +39,21 @@ struct
       end
 
     fun then_ (t1 : tactic, t2 : tactic) : tactic = 
-      multitacToTac (seq (tacToMultitac t1, [], tacToMultitac t2))
+      multitacToTac (seq (all t1, [], all t2))
 
     fun thenl (t : tactic, ts : tactic list) : tactic = 
-      multitacToTac (seq (tacToMultitac t, [], fn alpha => Lcf.eachSeq (List.map (fn t => t alpha) ts)))
+      multitacToTac (seq (all t, [], each ts))
 
     fun thenl' (t : tactic, us : Sym.t list, ts : tactic list) = 
-      multitacToTac (seq (tacToMultitac t, us, fn alpha => Lcf.eachSeq (List.map (fn t => t alpha) ts)))
+      multitacToTac (seq (all t, us, each ts))
+
+    fun morelse (mt1 : multitactic, mt2 : multitactic) : multitactic = 
+      fn alpha => 
+        Lcf.morelse (mt1 alpha, mt2 alpha)
 
     fun orelse_ (t1 : tactic, t2 : tactic) : tactic = 
       fn alpha =>
         Lcf.orelse_ (t1 alpha, t2 alpha)
+
   end
 end

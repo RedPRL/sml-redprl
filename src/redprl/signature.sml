@@ -156,6 +156,7 @@ struct
 
     structure MetaCtx = Tm.Metavar.Ctx
 
+    structure TacticElaborator = TacticElaborator (MiniSig)
     structure LcfModel = LcfModel (MiniSig)
     structure LcfSemantics = NominalLcfSemantics (LcfModel)
 

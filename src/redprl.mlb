@@ -16,15 +16,6 @@ in
     $(LIBS)/sml-dependent-lcf/lcf_abt.mlb
     $(LIBS)/sml-final-pretty-printer/final-pretty-printer.mlb
 
-    nominal_lcf/spread.sig
-    nominal_lcf/spread.sml
-
-    nominal_lcf/syntax.sig
-    nominal_lcf/model.sig
-    nominal_lcf/tactical.fun
-    nominal_lcf/semantics.sig
-    nominal_lcf/semantics.fun
-
 
     debug.mlb
 
@@ -34,6 +25,7 @@ in
     redprl/abt.sml
     redprl/pretty.sml
 
+  
     redprl/error.sig
     redprl/error.sml
     redprl/syntax.sml
@@ -56,6 +48,17 @@ in
 
     redprl/log.sig
     redprl/log.sml
+    
+
+    nominal_lcf/spread.sig
+    nominal_lcf/spread.sml
+    nominal_lcf/syntax.sig
+    nominal_lcf/model.sig
+    nominal_lcf/tactical.fun
+    nominal_lcf/semantics.sig
+    nominal_lcf/semantics.fun
+
+    redprl/tactic_elaborator.fun
 
     ann "nonexhaustiveMatch ignore" in
       redprl/machine.sig
