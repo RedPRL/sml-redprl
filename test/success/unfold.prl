@@ -3,13 +3,13 @@ Def Times(#A; #B) = [
 ].
 
 Tac Proj1{z:hyp} = [
-  decompose <proj1 = x> = z.
-  hyp x
+  decompose <proj1> = z.
+  hyp proj1
 ].
 
 Tac Proj2{z:hyp} = [
-  decompose <proj2 = y> = z.
-  hyp y
+  decompose <proj2> = z.
+  hyp proj2
 ].
 
 Thm Times/Proj(#A) : [

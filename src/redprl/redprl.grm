@@ -357,7 +357,8 @@ end
 
  | devDecompPattern of string O.dev_pattern
  | devDecompPatterns of string O.dev_pattern list
- | tupleDecompPatterns of (string * string O.dev_pattern) list
+ | tupleDecompPattern of (string * string O.dev_pattern) list
+ | labeledDecompPattern of string * string O.dev_pattern
  | recordFieldTactics of (string * ast) list
 
  | declArgument of metavariable * Ar.valence
@@ -633,16 +634,20 @@ recordFieldTactics
 
 devDecompPattern
   : VARNAME (O.PAT_VAR VARNAME)
-  | LANGLE tupleDecompPatterns RANGLE (O.PAT_TUPLE tupleDecompPatterns)
+  | LANGLE tupleDecompPattern RANGLE (O.PAT_TUPLE tupleDecompPattern)
 
 devDecompPatterns
   : devDecompPattern COMMA devDecompPatterns (devDecompPattern :: devDecompPatterns)
   | devDecompPattern ([devDecompPattern])
   | ([])
 
-tupleDecompPatterns
-   : VARNAME EQUALS devDecompPattern COMMA tupleDecompPatterns ((VARNAME, devDecompPattern) :: tupleDecompPatterns)
-   | VARNAME EQUALS devDecompPattern ([(VARNAME, devDecompPattern)])
+labeledDecompPattern 
+  : VARNAME EQUALS devDecompPattern (VARNAME, devDecompPattern)
+  | VARNAME (VARNAME, O.PAT_VAR VARNAME)
+
+tupleDecompPattern
+   : labeledDecompPattern COMMA tupleDecompPattern (labeledDecompPattern :: tupleDecompPattern)
+   | labeledDecompPattern ([labeledDecompPattern])
    | ([])
 
 atomicRawTac
