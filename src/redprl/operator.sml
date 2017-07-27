@@ -146,7 +146,8 @@ struct
    | RULE_PRIM of string
 
    (* development calculus terms *)
-   | DEV_DFUN_INTRO of int | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
+   | DEV_DFUN_INTRO of unit dev_pattern list
+   | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
    | DEV_LET of RedPrlSort.t
 
    | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_DIM_SUBST
@@ -268,7 +269,7 @@ struct
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
 
-     | DEV_DFUN_INTRO n => [List.tabulate (n, fn _ => HYP EXP) * [] <> TAC] ->> TAC
+     | DEV_DFUN_INTRO pats => [List.concat (List.map devPatternValence pats) * [] <> TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) * [] <> TAC] ->> TAC
      | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
@@ -497,7 +498,7 @@ struct
      | RULE_PRIM name => "refine{" ^ name ^ "}"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
-     | DEV_DFUN_INTRO n => "fun-intro{" ^ Int.toString n ^ "}"
+     | DEV_DFUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
      | DEV_LET _ => "let"
 
@@ -566,6 +567,7 @@ struct
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
+       | DEV_DECOMPOSE (a, _) => "decompose{" ^ f a ^ "}"
        | DEV_PATH_ELIM a => "path-elim{" ^ f a ^ "}"
   end
 

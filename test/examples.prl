@@ -202,7 +202,7 @@ Thm FunExt(#A; #B) : [
    [p : (-> [y : #A] (path {_} #B ($ f y) ($ g y)))]
    (path {_} (-> #A #B) f g))
 ] by [
-  lam f. lam g. lam p.
+  lam f, g, p.
     <i> lam a. let q = p hyp a. let q/i = q @ &i. hyp q/i
 ].
 
@@ -238,7 +238,7 @@ Thm PathEta(#A) : [
    (path {_} #A m n)
    (path {_} #A m n))
 ] by [
-  lam m. lam n. lam p. <j> let p/j = p @ &j. hyp p/j
+  lam m, n, p. <j> let p/j = p @ &j. hyp p/j
 ].
 
 Print PathEta.

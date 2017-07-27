@@ -195,6 +195,14 @@ struct
     in
       O.POLY (O.DEV_DECOMPOSE (z, pat)) $$ [(names, []) \ tac]
     end
+
+  fun makeLambda pats tac = 
+    let
+      val (pats', namess) = ListPair.unzip (List.map unstitchPattern pats)
+      val names = List.concat namess
+    in
+      O.MONO (O.DEV_DFUN_INTRO pats') $$ [(names, []) \ tac]
+    end
 end
 
 
@@ -348,6 +356,7 @@ end
  | tactics of ast list
 
  | devDecompPattern of string O.dev_pattern
+ | devDecompPatterns of string O.dev_pattern list
  | tupleDecompPatterns of (string * string O.dev_pattern) list
  | recordFieldTactics of (string * ast) list
 
@@ -626,6 +635,11 @@ devDecompPattern
   : VARNAME (O.PAT_VAR VARNAME)
   | LANGLE tupleDecompPatterns RANGLE (O.PAT_TUPLE tupleDecompPatterns)
 
+devDecompPatterns
+  : devDecompPattern COMMA devDecompPatterns (devDecompPattern :: devDecompPatterns)
+  | devDecompPattern ([devDecompPattern])
+  | ([])
+
 tupleDecompPatterns
    : VARNAME EQUALS devDecompPattern COMMA tupleDecompPatterns ((VARNAME, devDecompPattern) :: tupleDecompPatterns)
    | VARNAME EQUALS devDecompPattern ([(VARNAME, devDecompPattern)])
@@ -649,7 +663,7 @@ atomicRawTac
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
-  | LAMBDA boundVars DOT tactic (Ast.$$ (O.MONO (O.DEV_DFUN_INTRO (List.length boundVars)), [\ ((Multi.addUnderscores boundVars, []), tactic)]))
+  | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
   | LANGLE boundVars RANGLE tactic (Ast.$$ (O.MONO (O.DEV_PATH_INTRO (List.length boundVars)), [\ ((Multi.addUnderscores boundVars, []), tactic)]))
   | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (SOME (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName))) recordFieldTactics)
   | IF VARNAME THEN tactic ELSE tactic

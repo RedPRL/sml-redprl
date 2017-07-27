@@ -119,53 +119,50 @@ struct
       elimRule sign z xs [tac] alpha jdg
     end
 
-  local
-    fun stitchPattern (pattern : unit O.dev_pattern, names : Sym.t list) : Sym.t O.dev_pattern =
-      let
-        fun go (O.PAT_VAR (), u :: names) = (O.PAT_VAR u, names)
-          | go (O.PAT_TUPLE lpats, names) =
-            let
-              val (lpats', names') = goTuple (lpats, names)
-            in
-              (O.PAT_TUPLE lpats', names')
-            end
-        and goTuple ([], names) = ([], names)
-          | goTuple ((lbl, pat) :: lpats, names) =
-            let
-              val (pat', names') = go (pat, names)
-              val (lpats', names'') = goTuple (lpats, names')
-            in
-              ((lbl, pat') :: lpats', names'')
-            end
+  fun stitchPattern (pattern : unit O.dev_pattern, names : Sym.t list) : Sym.t O.dev_pattern * Sym.t list =
+    let
+      fun go (O.PAT_VAR (), u :: names) = (O.PAT_VAR u, names)
+        | go (O.PAT_TUPLE lpats, names) =
+          let
+            val (lpats', names') = goTuple (lpats, names)
+          in
+            (O.PAT_TUPLE lpats', names')
+          end
+      and goTuple ([], names) = ([], names)
+        | goTuple ((lbl, pat) :: lpats, names) =
+          let
+            val (pat', names') = go (pat, names)
+            val (lpats', names'') = goTuple (lpats, names')
+          in
+            ((lbl, pat') :: lpats', names'')
+          end
+    in
+      go (pattern, names)
+    end
+    handle _ => 
+      raise RedPrlError.error [Fpp.text "stitchPattern encountered mismatch!"]
 
-        val (pattern', []) = go (pattern, names)
-      in
-        pattern'
-      end
-      handle _ => 
-        raise RedPrlError.error [Fpp.text "stitchPattern encountered mismatch!"]
-  in
-    fun decomposeStitched sign z (pattern : Sym.t O.dev_pattern) tac = 
-      case pattern of 
-         O.PAT_VAR u => R.Hyp.Rename z thenl' ([u], [tac])
-       | O.PAT_TUPLE labeledPatterns =>
-         let
-           val (lbls, pats) = ListPair.unzip labeledPatterns
-           val names = List.map (fn lbl => Sym.named ("tmp/" ^ lbl)) lbls
+  fun decomposeStitched sign z (pattern : Sym.t O.dev_pattern) tac = 
+    case pattern of 
+        O.PAT_VAR u => R.Hyp.Rename z thenl' ([u], [tac])
+      | O.PAT_TUPLE labeledPatterns =>
+        let
+          val (lbls, pats) = ListPair.unzip labeledPatterns
+          val names = List.map (fn lbl => Sym.named ("tmp/" ^ lbl)) lbls
 
-           val rec go = 
-             fn [] => tac
-              | (name, pat) :: rest => decomposeStitched sign name pat (R.Hyp.Delete name thenl [go rest])
+          val rec go = 
+            fn [] => tac
+            | (name, pat) :: rest => decomposeStitched sign name pat (R.Hyp.Delete name thenl [go rest])
 
-           val continue = go (ListPair.zip (names, pats))
-         in
-           recordElim sign z (lbls, names) continue
-         end
+          val continue = go (ListPair.zip (names, pats))
+        in
+          recordElim sign z (lbls, names) continue
+        end
 
-    fun decompose sign z =
-      decomposeStitched sign z
-        o stitchPattern
-  end
+  fun decompose sign z =
+    decomposeStitched sign z
+      o #1
+      o stitchPattern
 
   fun recordIntro sign lbls tacs alpha jdg = 
     let
@@ -184,12 +181,31 @@ struct
     in
       (RT.Record.True thenl fieldTactics @ famTactics) alpha jdg
     end
-  
 
-  fun dfunIntros sign us tac = 
-    case us of 
+
+  fun nameForPattern pat = 
+    case pat of 
+       O.PAT_VAR x => x
+     | O.PAT_TUPLE lpats => Sym.named (ListSpine.pretty (Sym.toString o nameForPattern o #2) "_" lpats)
+
+  fun dfunIntros sign (pats, names) tac =
+    case pats of 
        [] => tac
-     | u::us => RT.DFun.True thenl' ([u], [dfunIntros sign us tac, autoTac sign])
+     | pat::pats => 
+       let
+         val (pat', names') = stitchPattern (pat, names)
+         val name = nameForPattern pat'
+         val intros = dfunIntros sign (pats, names') tac
+         val continue =
+           case pat' of
+              O.PAT_VAR _ => intros
+            | _ => decomposeStitched sign name pat' (R.Hyp.Delete name thenl [intros])
+       in
+         RT.DFun.True thenl' ([name], [continue, autoTac sign])
+       end
+    (* case us of 
+       [] => tac
+     | u::us => RT.DFun.True thenl' ([u], [dfunIntros sign us tac, autoTac sign]) *)
 
   fun pathIntros sign us tac =
     case us of 
@@ -223,7 +239,7 @@ struct
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
      | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
-     | O.MONO (O.DEV_DFUN_INTRO _) $ [(us, _) \ tm] => dfunIntros sign us (tactic sign env tm)
+     | O.MONO (O.DEV_DFUN_INTRO pats) $ [(us, _) \ tm] => dfunIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]

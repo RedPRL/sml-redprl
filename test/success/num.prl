@@ -86,7 +86,7 @@ Thm NatSymm : [
    (path {_} nat a b)
    (path {_} nat b a))
 ] by [
-  lam a b pab.
+  lam a, b, pab.
   <i>
     `(hcom{0 ~> 1} nat ,a 
       [i=0 {j} (@ ,pab j)]
