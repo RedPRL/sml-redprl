@@ -11,10 +11,18 @@ Extract Decomposition.
 
 Thm Apply : [
   (-> 
-   (-> bool (record [a : S1]))
+   (->
+    bool
+    bool
+    (path {_}
+     (record [a : S1])
+     (tuple [a base])
+     (tuple [a base])))
    S1)
 ] by [
   lam f.
-    let <a> = f `tt.
-      hyp a
+    let <a> = f `tt `ff @0.
+    hyp a
 ].
+
+Extract Apply.
