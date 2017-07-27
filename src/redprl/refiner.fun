@@ -44,6 +44,53 @@ struct
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected sequent judgment"]
+
+    fun Rename z alpha jdg = 
+      let
+        val _ = RedPrlLog.trace "Hyp.Rename"
+        val (I, H) >> catjdg = jdg
+        val zjdg = lookupHyp H z
+        val z' = alpha 0
+
+        val renameIn = 
+          CJ.map_ @@
+            renameVars (Var.Ctx.singleton z z')
+
+        val renameOut = 
+          renameVars (Var.Ctx.singleton z' z)
+
+        val H' = Hyps.splice H z (Hyps.singleton z' zjdg)
+        val H'' = Hyps.modifyAfter z' renameIn H' 
+
+        val (goal, hole) = makeGoal @@ (I, H'') >> renameIn catjdg
+      in
+        |>: goal #> (I, H, renameOut hole)
+      end
+
+    fun Delete z _ jdg = 
+      let
+        val _ = RedPrlLog.trace "Hyp.Delete"
+        val (I, H) >> catjdg = jdg
+
+        fun checkCJ catjdg = 
+          let
+            val tm = CJ.toAbt catjdg
+            val vars = varctx tm
+          in
+            if Var.Ctx.member vars z then 
+              raise E.error [Fpp.text "Cannot delete hypothesis which is mentioned in sequent"]
+            else
+             ()
+          end
+
+        val _ = checkCJ catjdg
+        val _ = Hyps.foldr (fn (_, catjdg, _) => (checkCJ catjdg; ())) () H
+
+        val H' = Hyps.remove z H
+        val (goal, hole) = makeGoal @@ (I, H') >> catjdg
+      in
+        |>: goal #> (I, H, hole)
+      end
   end
 
   structure TypeEquality =

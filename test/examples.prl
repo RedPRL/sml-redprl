@@ -133,7 +133,7 @@ Thm PathTest2 : [
       // interactive tactic environment, dimension expressions are
       // supplied to the refiner using the & "dimension quotation"
       // operator.
-      let px = p @ &x.
+      let px = p @ x.
       hyp px
 ].
 
@@ -202,8 +202,8 @@ Thm FunExt(#A; #B) : [
    [p : (-> [y : #A] (path {_} #B ($ f y) ($ g y)))]
    (path {_} (-> #A #B) f g))
 ] by [
-  lam f. lam g. lam p.
-    <i> lam a. let q = p hyp a. let q/i = q @ &i. hyp q/i
+  lam f, g, p.
+    <i> lam a. let q = p hyp a. let q/i = q @ i. hyp q/i
 ].
 
 Print FunExt.
@@ -211,7 +211,7 @@ Print FunExt.
 
 Tac FunExtTac(#A; #B; #F; #G) = [
   let p : [(-> [x : #A] (path {_} wbool ($ #F x) ($ #G x)))] = {}.
-  <i> lam a. let q = p hyp a. let q/i = q @ &i. hyp q/i
+  <i> lam a. let q = p hyp a. let q/i = q @ i. hyp q/i
 ].
 
 Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
@@ -228,7 +228,7 @@ Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
 ].
 
 Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
-  lam x. let x/0 = x @ &0. hyp x/0
+  lam x. let x/0 = x @ 0. hyp x/0
 ].
 
 Thm PathEta(#A) : [
@@ -238,7 +238,7 @@ Thm PathEta(#A) : [
    (path {_} #A m n)
    (path {_} #A m n))
 ] by [
-  lam m. lam n. lam p. <j> let p/j = p @ &j. hyp p/j
+  lam m, n, p. <j> let p/j = p @ j. hyp p/j
 ].
 
 Print PathEta.

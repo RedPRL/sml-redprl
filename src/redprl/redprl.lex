@@ -73,7 +73,6 @@ whitespace = [\ \t];
 "|"                => (Tokens.PIPE (posTuple (size yytext)));
 "%"                => (Tokens.PERCENT (posTuple (size yytext)));
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
-">>"               => (Tokens.DOUBLE_RANGLE (posTuple (size yytext)));
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
 
 "fcom"             => (Tokens.FCOM (posTuple (size yytext)));

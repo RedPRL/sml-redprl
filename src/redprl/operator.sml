@@ -92,6 +92,11 @@ struct
   structure P = RedPrlParameterTerm
   type psort = RedPrlSortData.param_sort
 
+  datatype 'a dev_pattern = 
+     PAT_VAR of 'a
+   | PAT_TUPLE of (string * 'a dev_pattern) list
+
+
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
    * which we call "monomorphic".
@@ -138,7 +143,8 @@ struct
    | RULE_PRIM of string
 
    (* development calculus terms *)
-   | DEV_DFUN_INTRO of int | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
+   | DEV_DFUN_INTRO of unit dev_pattern list
+   | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
    | DEV_LET of RedPrlSort.t
 
    | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_DIM_SUBST
@@ -164,9 +170,8 @@ struct
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
-   | DEV_DFUN_ELIM of 'a
-   | DEV_PATH_ELIM of 'a
-   | DEV_RECORD_ELIM of 'a * string list
+
+   | DEV_APPLY of 'a * unit dev_pattern * int
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -191,6 +196,10 @@ struct
   open ArityNotation infix <> ->>
 
   type 'a t = 'a operator
+
+  val rec devPatternSymValence = 
+    fn PAT_VAR _ => [HYP EXP]
+     | PAT_TUPLE pats => List.concat (List.map (devPatternSymValence o #2) pats)
 
   val arityMono =
     fn TV => [] ->> TRIV
@@ -260,7 +269,7 @@ struct
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
 
-     | DEV_DFUN_INTRO n => [List.tabulate (n, fn _ => HYP EXP) * [] <> TAC] ->> TAC
+     | DEV_DFUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) * [] <> TAC] ->> TAC
      | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
@@ -314,9 +323,7 @@ struct
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
-       | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
-       | DEV_RECORD_ELIM (z, lbls) => [List.map (fn _ => HYP EXP) lbls * [] <> TAC] ->> TAC
-       | DEV_PATH_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
+       | DEV_APPLY (_, pat, n) => List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -362,9 +369,7 @@ struct
        | RULE_UNFOLD a => [(a, OPID)]
        | DEV_BOOL_ELIM a => [(a, HYP EXP)]
        | DEV_S1_ELIM a => [(a, HYP EXP)]
-       | DEV_DFUN_ELIM a => [(a, HYP EXP)]
-       | DEV_RECORD_ELIM (a, _) => [(a, HYP EXP)]
-       | DEV_PATH_ELIM a => [(a, HYP EXP)]
+       | DEV_APPLY (a, _, _) => [(a, HYP EXP)]
   end
 
   val support =
@@ -383,64 +388,43 @@ struct
   in
     fun eqPoly f =
       fn (FCOM (dir1, eqs1), t) =>
-           (case t of
-                 FCOM (dir2, eqs2) =>
-                   spanEq f (dir1, dir2)
-                   andalso spansEq f (eqs1, eqs2)
-               | _ => false)
+         (case t of
+             FCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+           | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_APP r, t) => (case t of PATH_APP r' => P.eq f (r, r') | _ => false)
        | (HCOM (dir1, eqs1), t) =>
-           (case t of
-                 HCOM (dir2, eqs2) =>
-                   spanEq f (dir1, dir2)
-                   andalso spansEq f (eqs1, eqs2)
-               | _ => false)
+         (case t of
+             HCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+           | _ => false)
        | (COE dir1, t) =>
-           (case t of
-                 COE dir2 => spanEq f (dir1, dir2)
-               | _ => false)
+         (case t of
+             COE dir2 => spanEq f (dir1, dir2)
+            | _ => false)
        | (COM (dir1, eqs1), t) =>
-           (case t of
-                 COM (dir2, eqs2) =>
-                   spanEq f (dir1, dir2)
-                   andalso spansEq f (eqs1, eqs2)
-               | _ => false)
+         (case t of
+             COM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+            | _ => false)
        | (CUST (opid1, ps1, _), t) =>
-           (case t of
-                 CUST (opid2, ps2, _) =>
-                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-               | _ => false)
+         (case t of
+             CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+           | _ => false)
        | (RULE_LEMMA (opid1, ps1), t) =>
-           (case t of
-                 RULE_LEMMA (opid2, ps2) =>
-                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-               | _ => false)
+         (case t of
+             RULE_LEMMA (opid2, ps2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+           | _ => false)
        | (RULE_CUT_LEMMA (opid1, ps1), t) =>
-           (case t of
-                 RULE_CUT_LEMMA (opid2, ps2) =>
-                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-               | _ => false)
-       | (HYP_REF a, t) =>
-           (case t of HYP_REF b => f (a, b) | _ => false)
-       | (DIM_REF r1, t) =>
-           (case t of DIM_REF r2 => P.eq f (r1, r2) | _ => false)
-       | (RULE_HYP (a, _), t) =>
-           (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
-       | (RULE_ELIM (a, _), t) =>
-           (case t of RULE_ELIM (b, _) => f (a, b) | _ => false)
-       | (RULE_UNFOLD a, t) =>
-           (case t of RULE_UNFOLD b => f (a, b) | _ => false)
-       | (DEV_BOOL_ELIM a, t) =>
-           (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
-       | (DEV_S1_ELIM a, t) =>
-           (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
-       | (DEV_DFUN_ELIM a, t) =>
-           (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
-       | (DEV_RECORD_ELIM (a, lbls), t) =>
-           (case t of DEV_RECORD_ELIM (b, lbls') => f (a, b) andalso lbls = lbls' | _ => false)
-       | (DEV_PATH_ELIM a, t) =>
-           (case t of DEV_PATH_ELIM b => f (a, b) | _ => false)
+         (case t of
+             RULE_CUT_LEMMA (opid2, ps2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+           | _ => false)
+       | (HYP_REF a, t) => (case t of HYP_REF b => f (a, b) | _ => false)
+       | (DIM_REF r1, t) => (case t of DIM_REF r2 => P.eq f (r1, r2) | _ => false)
+       | (RULE_HYP (a, _), t) => (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
+       | (RULE_ELIM (a, _), t) => (case t of RULE_ELIM (b, _) => f (a, b) | _ => false)
+       | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
+       | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
+       | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
+       | (DEV_APPLY (a, pat, n), t) => (case t of DEV_APPLY (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
   end
 
   fun eq f =
@@ -508,7 +492,7 @@ struct
      | RULE_PRIM name => "refine{" ^ name ^ "}"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
-     | DEV_DFUN_INTRO n => "fun-intro{" ^ Int.toString n ^ "}"
+     | DEV_DFUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
      | DEV_LET _ => "let"
 
@@ -576,9 +560,7 @@ struct
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
-       | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
-       | DEV_RECORD_ELIM (a, _) => "record-elim{" ^ f a ^ "}"
-       | DEV_PATH_ELIM a => "path-elim{" ^ f a ^ "}"
+       | DEV_APPLY (a, _, _) => "apply{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -624,9 +606,7 @@ struct
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_PATH_ELIM a => DEV_PATH_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_RECORD_ELIM (a, lbls) => DEV_RECORD_ELIM (mapSym (passSort (HYP EXP) f) a, lbls)
+       | DEV_APPLY (a, pat, spine) => DEV_APPLY (mapSym (passSort (HYP EXP) f) a, pat, spine)
   end
 
   fun mapWithSort f =

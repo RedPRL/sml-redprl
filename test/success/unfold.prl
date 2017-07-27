@@ -3,13 +3,13 @@ Def Times(#A; #B) = [
 ].
 
 Tac Proj1{z:hyp} = [
-  let <proj1 = x> = z.
-  hyp x
+  let <proj1> = z.
+  hyp proj1
 ].
 
 Tac Proj2{z:hyp} = [
-  let <proj2 = y> = z.
-  hyp y
+  let <proj2> = z.
+  hyp proj2
 ].
 
 Thm Times/Proj(#A) : [

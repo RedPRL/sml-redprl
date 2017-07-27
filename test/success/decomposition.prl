@@ -1,0 +1,28 @@
+Thm Decomposition : [
+  (->
+   (record [foo : (record [a : bool] [b : (* bool bool)])] [bar : S1])
+   bool)
+] by [
+  lam <foo = <a, b = <proj1>>>.
+  hyp proj1
+].
+
+Extract Decomposition.
+
+Thm Apply : [
+  (-> 
+   (->
+    bool
+    bool
+    (path {_}
+     (record [a : S1])
+     (tuple [a base])
+     (tuple [a base])))
+   S1)
+] by [
+  lam f.
+    let <a> = f `tt `ff @0.
+    hyp a
+].
+
+Extract Apply.

@@ -14,7 +14,7 @@ Thm Thm1(#A; #B) : [
   type/B : #B type
   >> (-> #A #B #A)
 ] by [
-  lam a. lam b. hyp a
+  lam a, b. hyp a
 ].
 
 
@@ -33,7 +33,7 @@ Thm Thm2(#A; #B; #C) : [
   type/C : #C type
   >> (-> (-> #A #B) (-> #A #B #C) #A #C)
 ] by [
-  lam f. lam g. lam a.
+  lam f, g, a.
   let h = g {hyp a}.
   ({Apply h}
    ({Apply f}
@@ -72,7 +72,7 @@ Thm Thm3/high-level(#A; #B; #C) : [
       (-> #B #C)
       (-> #A #C))
 ] by [
-  lam ab. lam bc. lam a.
+  lam ab, bc, a.
   ({Apply bc}
    ({Apply ab}
     (tactic hyp a)))
@@ -94,7 +94,7 @@ Thm Thm4(#A; #B) : [
   type/A : #A type
   >> (-> (Not #A) #A #B)
 ] by [
-  lam r. lam a.
+  lam r, a.
   unfold Not;
   let boom = r {hyp a}.
   elim boom
@@ -119,7 +119,7 @@ Thm Thm6(#A;#B) : [
   type/B : #B type
   >> (-> (-> #A #B) (Not #B) (Not #A))
 ] by [
-  lam ab. lam nb. unfold Not; lam a.
+  lam ab, nb. unfold Not; lam a.
   ({Apply nb} 
    ({Apply ab}
     (tactic hyp a)))
