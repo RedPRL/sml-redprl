@@ -16,8 +16,7 @@ Thm Hcom/Poly(#A) : [
    (path {_} #A b d)
    (path {_} #A c d))
 ] by [
-  lam a. lam b. lam c. lam d.
-  lam pab. lam pac. lam pbd.
+  lam a b c d pab pac pbd.
     <i> 
       `(hcom{0 ~> 1} #A (@ ,pab i) 
         [i=0 {j} (@ ,pac j)]
@@ -35,7 +34,7 @@ Thm Hcom/trans(#A) : [
    (path {_} #A b c)
    (path {_} #A a c))
 ] by [
-  lam a. lam b. lam c. lam pab. lam pbc.
+  lam a b c pab pbc.
     <i>
       `(hcom{0 ~> 1} #A (@ ,pab i) 
         [i=0 {_} ,a] 
@@ -50,7 +49,7 @@ Thm Hcom/symm(#A) : [
    (path {_} #A a b)
    (path {_} #A b a))
 ] by [
-  lam a. lam b. lam pab.
+  lam a b pab.
     <i>
       `(hcom{0 ~> 1} #A ,a 
         [i=0 {j} (@ ,pab j)]
