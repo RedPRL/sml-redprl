@@ -29,10 +29,14 @@ struct
     end
 
   fun multitacToTac mt =
-    setAnnotation (getAnnotation mt) (O.MONO O.TAC_MTAC $$ [([],[]) \ mt])
+    case out mt of 
+       O.MONO O.MTAC_ALL $ [_ \ t] => t
+     | _ => setAnnotation (getAnnotation mt) (O.MONO O.TAC_MTAC $$ [([],[]) \ mt])
 
   fun tacToMultitac t =
-    setAnnotation (getAnnotation t) (O.MONO O.MTAC_ALL $$ [([],[]) \ t])
+    case out t of 
+       O.MONO O.TAC_MTAC $ [_ \ mt] => mt
+     | _ => setAnnotation (getAnnotation t) (O.MONO O.MTAC_ALL $$ [([],[]) \ t])
 
   fun orElse (t1, t2) =
     multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMultitac t1, ([],[]) \ tacToMultitac t2])
