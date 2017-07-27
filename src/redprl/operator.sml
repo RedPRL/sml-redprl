@@ -96,9 +96,6 @@ struct
      PAT_VAR of 'a
    | PAT_TUPLE of (string * 'a dev_pattern) list
 
-  val rec devPatternValence = 
-    fn PAT_VAR _ => [HYP EXP]
-     | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -173,9 +170,8 @@ struct
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
-   | DEV_DFUN_ELIM of 'a
-   | DEV_PATH_ELIM of 'a
-   | DEV_DECOMPOSE of 'a * unit dev_pattern
+
+   | DEV_APPLY of 'a * unit dev_pattern * int
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -200,6 +196,10 @@ struct
   open ArityNotation infix <> ->>
 
   type 'a t = 'a operator
+
+  val rec devPatternSymValence = 
+    fn PAT_VAR _ => [HYP EXP]
+     | PAT_TUPLE pats => List.concat (List.map (devPatternSymValence o #2) pats)
 
   val arityMono =
     fn TV => [] ->> TRIV
@@ -269,7 +269,7 @@ struct
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
 
-     | DEV_DFUN_INTRO pats => [List.concat (List.map devPatternValence pats) * [] <> TAC] ->> TAC
+     | DEV_DFUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) * [] <> TAC] ->> TAC
      | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
@@ -323,9 +323,7 @@ struct
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
-       | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
-       | DEV_DECOMPOSE (_, pat) => [devPatternValence pat * [] <> TAC] ->> TAC
-       | DEV_PATH_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
+       | DEV_APPLY (_, pat, n) => List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
   end
 
   val arity =
@@ -371,9 +369,7 @@ struct
        | RULE_UNFOLD a => [(a, OPID)]
        | DEV_BOOL_ELIM a => [(a, HYP EXP)]
        | DEV_S1_ELIM a => [(a, HYP EXP)]
-       | DEV_DFUN_ELIM a => [(a, HYP EXP)]
-       | DEV_DECOMPOSE (a, _) => [(a, HYP EXP)]
-       | DEV_PATH_ELIM a => [(a, HYP EXP)]
+       | DEV_APPLY (a, _, _) => [(a, HYP EXP)]
   end
 
   val support =
@@ -428,9 +424,7 @@ struct
        | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
-       | (DEV_DFUN_ELIM a, t) => (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
-       | (DEV_DECOMPOSE (a, pat), t) => (case t of DEV_DECOMPOSE (b, pat') => f (a, b) andalso pat = pat' | _ => false)
-       | (DEV_PATH_ELIM a, t) => (case t of DEV_PATH_ELIM b => f (a, b) | _ => false)
+       | (DEV_APPLY (a, pat, n), t) => (case t of DEV_APPLY (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
   end
 
   fun eq f =
@@ -566,9 +560,7 @@ struct
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
-       | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
-       | DEV_DECOMPOSE (a, _) => "decompose{" ^ f a ^ "}"
-       | DEV_PATH_ELIM a => "path-elim{" ^ f a ^ "}"
+       | DEV_APPLY (a, _, _) => "apply{" ^ f a ^ "}"
   end
 
   fun toString f =
@@ -614,9 +606,7 @@ struct
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_PATH_ELIM a => DEV_PATH_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_DECOMPOSE (a, pat) => DEV_DECOMPOSE (mapSym (passSort (HYP EXP) f) a, pat)
+       | DEV_APPLY (a, pat, spine) => DEV_APPLY (mapSym (passSort (HYP EXP) f) a, pat, spine)
   end
 
   fun mapWithSort f =

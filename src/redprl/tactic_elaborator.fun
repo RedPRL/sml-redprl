@@ -116,7 +116,7 @@ struct
         handle Syn.LabelDict.Absent => Sym.named ("@" ^ lbl)
       val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
     in
-      elimRule sign z xs [tac] alpha jdg
+      (RT.Record.Elim z thenl' (xs, [tac])) alpha jdg
     end
 
   fun stitchPattern (pattern : unit O.dev_pattern, names : Sym.t list) : Sym.t O.dev_pattern * Sym.t list =
@@ -142,6 +142,10 @@ struct
     handle _ => 
       raise RedPrlError.error [Fpp.text "stitchPattern encountered mismatch!"]
 
+  (* R.Hyp.Delete can fail if the hypothesis is mentioned. *)
+  fun deleteHyp name = 
+    T.try (R.Hyp.Delete name)
+
   fun decomposeStitched sign z (pattern : Sym.t O.dev_pattern) tac = 
     case pattern of 
         O.PAT_VAR u => R.Hyp.Rename z thenl' ([u], [tac])
@@ -152,7 +156,7 @@ struct
 
           val rec go = 
             fn [] => tac
-            | (name, pat) :: rest => decomposeStitched sign name pat (R.Hyp.Delete name thenl [go rest])
+            | (name, pat) :: rest => decomposeStitched sign name pat (deleteHyp name thenl [go rest])
 
           val continue = go (ListPair.zip (names, pats))
         in
@@ -163,6 +167,28 @@ struct
     decomposeStitched sign z
       o #1
       o stitchPattern
+
+  fun apply sign z names (appTac, contTac) alpha jdg = 
+    let
+      val (_, H) >> _ = jdg
+      val CJ.TRUE ty = RT.lookupHyp H z
+    in
+      case Syn.out ty of 
+         Syn.DFUN _ => (RT.DFun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+       | Syn.PATH_TY _ => (RT.Path.Elim z thenl' (names, [appTac, autoTac sign, autoTac sign, contTac])) alpha jdg
+       | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
+    end
+
+  fun applications sign z (pattern, names) tacs tac =
+    case tacs of 
+       [] => decompose sign z (pattern, names) tac
+     | appTac :: tacs =>
+       let
+         val z' = Sym.named (Sym.toString z ^ "'")
+         val p = Sym.named "_"
+       in
+         apply sign z [z',p] (appTac, applications sign z' (pattern, names) tacs tac)
+       end
 
   fun recordIntro sign lbls tacs alpha jdg = 
     let
@@ -199,13 +225,10 @@ struct
          val continue =
            case pat' of
               O.PAT_VAR _ => intros
-            | _ => decomposeStitched sign name pat' (R.Hyp.Delete name thenl [intros])
+            | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
        in
          RT.DFun.True thenl' ([name], [continue, autoTac sign])
        end
-    (* case us of 
-       [] => tac
-     | u::us => RT.DFun.True thenl' ([u], [dfunIntros sign us tac, autoTac sign]) *)
 
   fun pathIntros sign us tac =
     case us of 
@@ -244,9 +267,13 @@ struct
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]
      | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign]
-     | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ tm1, ([x,p],_) \ tm2] => elimRule sign z [x,p] [tactic sign env tm1, tactic sign env tm2]
-     | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ tm1, ([x,p], _) \ tm2] => elimRule sign z [x,p] [tactic sign env tm1, autoTac sign, autoTac sign, tactic sign env tm2]
-     | O.POLY (O.DEV_DECOMPOSE (z, pattern)) $ [(us, _) \ tm] => decompose sign z (pattern, us) (tactic sign env tm)
+     | O.POLY (O.DEV_APPLY (z, pattern, _)) $ args =>
+        let
+          val ((names, _) \ tm) :: args' = List.rev args
+          val tacs = List.map (fn _ \ tm => tactic sign env tm) (List.rev args')
+        in
+          applications sign z (pattern, names) tacs (tactic sign env tm)
+        end
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 

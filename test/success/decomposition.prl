@@ -8,3 +8,13 @@ Thm Decomposition : [
 ].
 
 Extract Decomposition.
+
+Thm Apply : [
+  (-> 
+   (-> bool (record [a : S1]))
+   S1)
+] by [
+  lam f.
+    let <a> = f `tt.
+      hyp a
+].

@@ -189,19 +189,20 @@ struct
          (O.PAT_TUPLE (ListPair.zip (lbls, pats)), List.concat names)
        end
 
-  fun makeDecompose z pat tac = 
-    let
-      val (pat, names) = unstitchPattern pat
-    in
-      O.POLY (O.DEV_DECOMPOSE (z, pat)) $$ [(names, []) \ tac]
-    end
-
   fun makeLambda pats tac = 
     let
       val (pats', namess) = ListPair.unzip (List.map unstitchPattern pats)
       val names = List.concat namess
     in
       O.MONO (O.DEV_DFUN_INTRO pats') $$ [(names, []) \ tac]
+    end
+
+  fun makeApply pat z tacs tac = 
+    let
+      val (pat, names) = unstitchPattern pat
+      val args = (List.map (fn tac => ([],[]) \ tac) tacs) @ [(names, []) \ tac]
+    in
+      O.POLY (O.DEV_APPLY (z, pat, List.length tacs)) $$ args
     end
 end
 
@@ -264,7 +265,7 @@ end
  (* keywords in tactics *)
  | CASE | OF
  | FRESH
- | LET | DECOMPOSE | WITH
+ | LET | WITH
  | THEN | ELSE
  | REFINE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
@@ -359,6 +360,8 @@ end
  | devDecompPatterns of string O.dev_pattern list
  | tupleDecompPattern of (string * string O.dev_pattern) list
  | labeledDecompPattern of string * string O.dev_pattern
+ | devAppSpine of ast list
+
  | recordFieldTactics of (string * ast) list
 
  | declArgument of metavariable * Ar.valence
@@ -632,6 +635,11 @@ recordFieldTactics
    | VARNAME EQUALS tactic ([(VARNAME, tactic)])
    | ([])
 
+devAppSpine
+  : tactic devAppSpine (tactic :: devAppSpine)
+  | tactic ([tactic])
+  | ([])
+
 devDecompPattern
   : VARNAME (O.PAT_VAR VARNAME)
   | LANGLE tupleDecompPattern RANGLE (O.PAT_TUPLE tupleDecompPattern)
@@ -662,7 +670,7 @@ atomicRawTac
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
-  | AMPERSAND param (Tac.exactDim param)
+  | AT_SIGN param (Tac.exactDim param)
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
@@ -677,20 +685,8 @@ atomicRawTac
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
       (Ast.$$ (O.MONO (O.DEV_LET (sortOfJudgment judgment)), [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
 
-  | LET VARNAME WITH VARNAME EQUALS VARNAME tactic DOT tactic
-      (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM VARNAME3), [\ (([],[]), tactic1), \ (([VARNAME1, VARNAME2],[]), tactic2)]))
-
-  | LET VARNAME EQUALS VARNAME tactic DOT tactic
-      (Ast.$$ (O.POLY (O.DEV_DFUN_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
-
-  | LET VARNAME WITH VARNAME EQUALS VARNAME AT_SIGN tactic DOT tactic
-      (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME3), [\ (([],[]), tactic1), \ (([VARNAME1, VARNAME2],[]), tactic2)]))
-
-  | LET VARNAME EQUALS VARNAME AT_SIGN tactic DOT tactic
-      (Ast.$$ (O.POLY (O.DEV_PATH_ELIM VARNAME2), [\ (([],[]), tactic1), \ (([VARNAME1, "_"],[]), tactic2)]))
-
-  | DECOMPOSE devDecompPattern EQUALS VARNAME DOT tactic
-      (Pattern.makeDecompose VARNAME devDecompPattern tactic)
+  | LET devDecompPattern EQUALS VARNAME devAppSpine DOT tactic
+      (Pattern.makeApply devDecompPattern VARNAME devAppSpine tactic)
 
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
