@@ -383,64 +383,45 @@ struct
   in
     fun eqPoly f =
       fn (FCOM (dir1, eqs1), t) =>
-           (case t of
-                 FCOM (dir2, eqs2) =>
-                   spanEq f (dir1, dir2)
-                   andalso spansEq f (eqs1, eqs2)
-               | _ => false)
+         (case t of
+             FCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+           | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_APP r, t) => (case t of PATH_APP r' => P.eq f (r, r') | _ => false)
        | (HCOM (dir1, eqs1), t) =>
-           (case t of
-                 HCOM (dir2, eqs2) =>
-                   spanEq f (dir1, dir2)
-                   andalso spansEq f (eqs1, eqs2)
-               | _ => false)
+         (case t of
+             HCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+           | _ => false)
        | (COE dir1, t) =>
-           (case t of
-                 COE dir2 => spanEq f (dir1, dir2)
-               | _ => false)
+         (case t of
+             COE dir2 => spanEq f (dir1, dir2)
+            | _ => false)
        | (COM (dir1, eqs1), t) =>
-           (case t of
-                 COM (dir2, eqs2) =>
-                   spanEq f (dir1, dir2)
-                   andalso spansEq f (eqs1, eqs2)
-               | _ => false)
+         (case t of
+             COM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+            | _ => false)
        | (CUST (opid1, ps1, _), t) =>
-           (case t of
-                 CUST (opid2, ps2, _) =>
-                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-               | _ => false)
+         (case t of
+             CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+           | _ => false)
        | (RULE_LEMMA (opid1, ps1), t) =>
-           (case t of
-                 RULE_LEMMA (opid2, ps2) =>
-                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-               | _ => false)
+         (case t of
+             RULE_LEMMA (opid2, ps2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+           | _ => false)
        | (RULE_CUT_LEMMA (opid1, ps1), t) =>
-           (case t of
-                 RULE_CUT_LEMMA (opid2, ps2) =>
-                   f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-               | _ => false)
-       | (HYP_REF a, t) =>
-           (case t of HYP_REF b => f (a, b) | _ => false)
-       | (DIM_REF r1, t) =>
-           (case t of DIM_REF r2 => P.eq f (r1, r2) | _ => false)
-       | (RULE_HYP (a, _), t) =>
-           (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
-       | (RULE_ELIM (a, _), t) =>
-           (case t of RULE_ELIM (b, _) => f (a, b) | _ => false)
-       | (RULE_UNFOLD a, t) =>
-           (case t of RULE_UNFOLD b => f (a, b) | _ => false)
-       | (DEV_BOOL_ELIM a, t) =>
-           (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
-       | (DEV_S1_ELIM a, t) =>
-           (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
-       | (DEV_DFUN_ELIM a, t) =>
-           (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
-       | (DEV_RECORD_ELIM (a, lbls), t) =>
-           (case t of DEV_RECORD_ELIM (b, lbls') => f (a, b) andalso lbls = lbls' | _ => false)
-       | (DEV_PATH_ELIM a, t) =>
-           (case t of DEV_PATH_ELIM b => f (a, b) | _ => false)
+         (case t of
+             RULE_CUT_LEMMA (opid2, ps2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+           | _ => false)
+       | (HYP_REF a, t) => (case t of HYP_REF b => f (a, b) | _ => false)
+       | (DIM_REF r1, t) => (case t of DIM_REF r2 => P.eq f (r1, r2) | _ => false)
+       | (RULE_HYP (a, _), t) => (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
+       | (RULE_ELIM (a, _), t) => (case t of RULE_ELIM (b, _) => f (a, b) | _ => false)
+       | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
+       | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
+       | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
+       | (DEV_DFUN_ELIM a, t) => (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
+       | (DEV_RECORD_ELIM (a, lbls), t) => (case t of DEV_RECORD_ELIM (b, lbls') => f (a, b) andalso lbls = lbls' | _ => false)
+       | (DEV_PATH_ELIM a, t) => (case t of DEV_PATH_ELIM b => f (a, b) | _ => false)
   end
 
   fun eq f =
