@@ -620,8 +620,8 @@ atomicRawTac
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
-  | LAMBDA boundVar DOT tactic (Ast.$$ (O.MONO O.DEV_DFUN_INTRO, [\ (([Option.getOpt (boundVar, "_")], []), tactic)]))
-  | LANGLE boundVar RANGLE tactic (Ast.$$ (O.MONO O.DEV_PATH_INTRO, [\ (([Option.getOpt (boundVar, "_")], []), tactic)]))
+  | LAMBDA boundVars DOT tactic (Ast.$$ (O.MONO (O.DEV_DFUN_INTRO (List.length boundVars)), [\ ((Multi.addUnderscores boundVars, []), tactic)]))
+  | LANGLE boundVars RANGLE tactic (Ast.$$ (O.MONO (O.DEV_PATH_INTRO (List.length boundVars)), [\ ((Multi.addUnderscores boundVars, []), tactic)]))
   | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (SOME (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName))) recordFieldTactics)
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))

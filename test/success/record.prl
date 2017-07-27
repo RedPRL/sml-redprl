@@ -49,7 +49,7 @@ Thm RecordTest6 : [
     [p : (record [a : bool] [b c : record])]
     bool)
 ] by [
-  lam p. `(! a ,p)
+  lam p. let <a = a> = p. hyp a
 ].
 
 Thm RecordTest7 : [

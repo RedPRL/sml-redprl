@@ -5,8 +5,8 @@ Thm Connection(#A) : [
    [p : (path {_} #A a b)]
    (path {i} (path {_} #A a (@ p i)) (abs {_} a) p))
 ] by [
-  lam a. lam b. lam p.
-    <i> <j>
+  lam a b p.
+    <i j>
       `(hcom{0~>1} #A ,a
         [i=0 {k}
           (hcom{1~>j} #A
