@@ -91,7 +91,7 @@ struct
   open RedPrlSequent infix >>
   structure CJ = RedPrlCategoricalJudgment and Syn = Syntax
 
-  fun autoMtac sign = mrepeat (all (try (R.AutoStep sign)))
+  val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
 
   fun unfoldCustomOperator sign (opid, ps, args) = 
@@ -136,6 +136,18 @@ struct
     in
       (RT.Record.True thenl fieldTactics @ famTactics) alpha jdg
     end
+  
+
+  fun dfunIntros sign us tac = 
+    case us of 
+       [] => tac
+     | u::us => RT.DFun.True thenl' ([u], [dfunIntros sign us tac, autoTac sign])
+
+  fun pathIntros sign us tac =
+    case us of 
+       [] => tac
+     | u::us => RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+
 
   fun tactic sign env tm alpha jdg = 
     tactic_ sign env tm alpha jdg 
@@ -163,9 +175,9 @@ struct
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
      | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
-     | O.MONO O.DEV_DFUN_INTRO $ [([u], _) \ tm] => RT.DFun.True thenl' ([u], [tactic sign env tm, autoTac sign])
+     | O.MONO (O.DEV_DFUN_INTRO _) $ [(us, _) \ tm] => dfunIntros sign us (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
-     | O.MONO O.DEV_PATH_INTRO $ [([u], _) \ tm] => RT.Path.True thenl' ([u], [tactic sign env tm, autoTac sign, autoTac sign])
+     | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]
      | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign]
      | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ tm1, ([x,p],_) \ tm2] => elimRule sign z [x,p] [tactic sign env tm1, tactic sign env tm2]
