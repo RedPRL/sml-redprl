@@ -1,0 +1,9 @@
+Thm Decomposition : [
+  (->
+   (record [foo : (record [a : bool] [b : (* bool bool)])] [bar : S1])
+   bool)
+] by [
+  lam rcd.
+    decompose <foo = <a = a, b = <proj1 = p1>>> = rcd.
+    hyp p1
+].

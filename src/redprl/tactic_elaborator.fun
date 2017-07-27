@@ -119,6 +119,54 @@ struct
       elimRule sign z xs [tac] alpha jdg
     end
 
+  local
+    fun stitchPattern (pattern : unit O.dev_pattern, names : Sym.t list) : Sym.t O.dev_pattern =
+      let
+        fun go (O.PAT_VAR (), u :: names) = (O.PAT_VAR u, names)
+          | go (O.PAT_TUPLE lpats, names) =
+            let
+              val (lpats', names') = goTuple (lpats, names)
+            in
+              (O.PAT_TUPLE lpats', names')
+            end
+        and goTuple ([], names) = ([], names)
+          | goTuple ((lbl, pat) :: lpats, names) =
+            let
+              val (pat', names') = go (pat, names)
+              val (lpats', names'') = goTuple (lpats, names')
+            in
+              ((lbl, pat') :: lpats', names'')
+            end
+
+        val (pattern', []) = go (pattern, names)
+      in
+        pattern'
+      end
+      handle _ => 
+        raise RedPrlError.error [Fpp.text "stitchPattern encountered mismatch!"]
+  in
+    fun decomposeStitched sign z (pattern : Sym.t O.dev_pattern) tac = 
+      case pattern of 
+         O.PAT_VAR u => R.Hyp.Rename z thenl' ([u], [tac])
+       | O.PAT_TUPLE labeledPatterns =>
+         let
+           val (lbls, pats) = ListPair.unzip labeledPatterns
+           val names = List.map (fn lbl => Sym.named ("tmp/" ^ lbl)) lbls
+
+           val rec go = 
+             fn [] => tac
+              | (name, pat) :: rest => decomposeStitched sign name pat (R.Hyp.Delete name thenl [go rest])
+
+           val continue = go (ListPair.zip (names, pats))
+         in
+           recordElim sign z (lbls, names) continue
+         end
+
+    fun decompose sign z =
+      decomposeStitched sign z
+        o stitchPattern
+  end
+
   fun recordIntro sign lbls tacs alpha jdg = 
     let
       val (_, _) >> CJ.TRUE record = jdg
@@ -182,7 +230,7 @@ struct
      | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign]
      | O.POLY (O.DEV_DFUN_ELIM z) $ [_ \ tm1, ([x,p],_) \ tm2] => elimRule sign z [x,p] [tactic sign env tm1, tactic sign env tm2]
      | O.POLY (O.DEV_PATH_ELIM z) $ [_ \ tm1, ([x,p], _) \ tm2] => elimRule sign z [x,p] [tactic sign env tm1, autoTac sign, autoTac sign, tactic sign env tm2]
-     | O.POLY (O.DEV_RECORD_ELIM (z, lbls)) $ [(us, _) \ tm] => recordElim sign z (lbls, us) (tactic sign env tm)
+     | O.POLY (O.DEV_DECOMPOSE (z, pattern)) $ [(us, _) \ tm] => decompose sign z (pattern, us) (tactic sign env tm)
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 

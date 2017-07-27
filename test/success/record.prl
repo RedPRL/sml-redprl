@@ -49,7 +49,7 @@ Thm RecordTest6 : [
     [p : (record [a : bool] [b c : record])]
     bool)
 ] by [
-  lam p. let <a = a> = p. hyp a
+  lam p. decompose <a = a> = p. hyp a
 ].
 
 Thm RecordTest7 : [
@@ -69,7 +69,7 @@ Thm RecordElimTest : [
    (* [b : bool] (path {_} bool b b)))
 ] by [
   lam r.
-    let <b = welp, p = hello> = r.
+    decompose <b = welp, p = hello> = r.
     <proj2 = hyp hello,
      proj1 = hyp welp>
 ].

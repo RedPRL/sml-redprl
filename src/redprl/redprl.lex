@@ -73,7 +73,6 @@ whitespace = [\ \t];
 "|"                => (Tokens.PIPE (posTuple (size yytext)));
 "%"                => (Tokens.PERCENT (posTuple (size yytext)));
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
-">>"               => (Tokens.DOUBLE_RANGLE (posTuple (size yytext)));
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
 
 "fcom"             => (Tokens.FCOM (posTuple (size yytext)));
@@ -109,6 +108,7 @@ whitespace = [\ \t];
 "then"             => (Tokens.THEN (posTuple (size yytext)));
 "else"             => (Tokens.ELSE (posTuple (size yytext)));
 "let"              => (Tokens.LET (posTuple (size yytext)));
+"decompose"        => (Tokens.DECOMPOSE (posTuple (size yytext)));
 "with"             => (Tokens.WITH (posTuple (size yytext)));
 "case"             => (Tokens.CASE (posTuple (size yytext)));
 "of"               => (Tokens.OF (posTuple (size yytext)));

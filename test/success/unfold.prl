@@ -3,12 +3,12 @@ Def Times(#A; #B) = [
 ].
 
 Tac Proj1{z:hyp} = [
-  let <proj1 = x> = z.
+  decompose <proj1 = x> = z.
   hyp x
 ].
 
 Tac Proj2{z:hyp} = [
-  let <proj2 = y> = z.
+  decompose <proj2 = y> = z.
   hyp y
 ].
 

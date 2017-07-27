@@ -92,6 +92,14 @@ struct
   structure P = RedPrlParameterTerm
   type psort = RedPrlSortData.param_sort
 
+  datatype 'a dev_pattern = 
+     PAT_VAR of 'a
+   | PAT_TUPLE of (string * 'a dev_pattern) list
+
+  val rec devPatternValence = 
+    fn PAT_VAR _ => [HYP EXP]
+     | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
+
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
    * which we call "monomorphic".
@@ -166,7 +174,7 @@ struct
    | DEV_S1_ELIM of 'a
    | DEV_DFUN_ELIM of 'a
    | DEV_PATH_ELIM of 'a
-   | DEV_RECORD_ELIM of 'a * string list
+   | DEV_DECOMPOSE of 'a * unit dev_pattern
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -315,7 +323,7 @@ struct
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_DFUN_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
-       | DEV_RECORD_ELIM (z, lbls) => [List.map (fn _ => HYP EXP) lbls * [] <> TAC] ->> TAC
+       | DEV_DECOMPOSE (_, pat) => [devPatternValence pat * [] <> TAC] ->> TAC
        | DEV_PATH_ELIM _ => [[] * [] <> TAC, [HYP EXP, HYP TRIV] * [] <> TAC] ->> TAC
   end
 
@@ -363,7 +371,7 @@ struct
        | DEV_BOOL_ELIM a => [(a, HYP EXP)]
        | DEV_S1_ELIM a => [(a, HYP EXP)]
        | DEV_DFUN_ELIM a => [(a, HYP EXP)]
-       | DEV_RECORD_ELIM (a, _) => [(a, HYP EXP)]
+       | DEV_DECOMPOSE (a, _) => [(a, HYP EXP)]
        | DEV_PATH_ELIM a => [(a, HYP EXP)]
   end
 
@@ -420,7 +428,7 @@ struct
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_DFUN_ELIM a, t) => (case t of DEV_DFUN_ELIM b => f (a, b) | _ => false)
-       | (DEV_RECORD_ELIM (a, lbls), t) => (case t of DEV_RECORD_ELIM (b, lbls') => f (a, b) andalso lbls = lbls' | _ => false)
+       | (DEV_DECOMPOSE (a, pat), t) => (case t of DEV_DECOMPOSE (b, pat') => f (a, b) andalso pat = pat' | _ => false)
        | (DEV_PATH_ELIM a, t) => (case t of DEV_PATH_ELIM b => f (a, b) | _ => false)
   end
 
@@ -558,7 +566,6 @@ struct
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_DFUN_ELIM a => "dfun-elim{" ^ f a ^ "}"
-       | DEV_RECORD_ELIM (a, _) => "record-elim{" ^ f a ^ "}"
        | DEV_PATH_ELIM a => "path-elim{" ^ f a ^ "}"
   end
 
@@ -607,7 +614,7 @@ struct
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_DFUN_ELIM a => DEV_DFUN_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_PATH_ELIM a => DEV_PATH_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_RECORD_ELIM (a, lbls) => DEV_RECORD_ELIM (mapSym (passSort (HYP EXP) f) a, lbls)
+       | DEV_DECOMPOSE (a, pat) => DEV_DECOMPOSE (mapSym (passSort (HYP EXP) f) a, pat)
   end
 
   fun mapWithSort f =
