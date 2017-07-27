@@ -31,7 +31,7 @@ struct
   fun multitacToTac mt =
     case out mt of 
        O.MONO O.MTAC_ALL $ [_ \ t] => t
-     | _ =>  setAnnotation (getAnnotation mt) (O.MONO O.TAC_MTAC $$ [([],[]) \ mt])
+     | _ => setAnnotation (getAnnotation mt) (O.MONO O.TAC_MTAC $$ [([],[]) \ mt])
 
   fun tacToMultitac t =
     case out t of 
