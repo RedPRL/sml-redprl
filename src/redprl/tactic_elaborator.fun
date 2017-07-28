@@ -257,8 +257,7 @@ struct
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.fromAbt (expandHypVars catjdg))
-     | O.POLY (O.RULE_LEMMA (opid, ps)) $ _ => R.Lemma sign opid (List.map #1 ps)
-     | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) $ _ => R.CutLemma sign opid (List.map #1 ps)
+     | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) $ _ => R.CutLemma sign opid ps
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
      | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])

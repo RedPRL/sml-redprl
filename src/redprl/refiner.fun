@@ -466,113 +466,59 @@ struct
       |>: goal1 >: goal2 #> (I, H, substVar (hole1, z) hole2)
     end
 
-
-
-  local
-    fun checkMainGoal (specGoal, mainGoal) =
-      let
-        val (I, H) >> jdg = mainGoal
-        val (_, H0) >> jdg0 = specGoal
-      in
-        if CJ.eq (jdg, jdg0) then
-          ()
-        else 
-          raise E.error 
-            [Fpp.nest 2 @@ 
-              Fpp.vsep 
-                [Fpp.text "Conclusions of goal did not match specification:",
-                 CJ.pretty Abt.eq TermPrinter.ppTerm jdg,
-                 Fpp.text "vs",
-                 CJ.pretty Abt.eq TermPrinter.ppTerm jdg0]]
-        (* TODO: unify using I, J!! *)
-      end
-
-    datatype diff =
-       DELETE of hyp
-     | UPDATE of hyp * catjdg
-     | INSERT of hyp * catjdg
-
-    val diffToString =
-      fn DELETE x => "DELETE " ^ Sym.toString x
-       | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
-       | INSERT (x,_) => "INSERT " ^ Sym.toString x
-
-    fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope =
-      case deltas of
-         [] => H
-       | DELETE x :: deltas => applyDiffs alpha i xrho deltas (Hyps.remove x H)
-       | UPDATE (x, jdg) :: deltas => applyDiffs alpha i xrho deltas (Hyps.modify x (fn _ => jdg) H)
-       | INSERT (x, jdg) :: deltas =>
-           let
-             val x' = alpha i
-             val jdg' = CJ.map_ (RedPrlAbt.renameVars xrho) jdg
-             val xrho' = Var.Ctx.insert xrho x x'
-           in
-             applyDiffs alpha (i + 1) xrho' deltas (Hyps.snoc H x' jdg')
-           end
-
-    fun hypothesesDiff (H0, H1) : diff list =
-      let
-        val diff01 =
-          Hyps.foldr
-            (fn (x, jdg0, delta) =>
-              case Hyps.find H1 x of
-                  SOME jdg1 => if CJ.eq (jdg0, jdg1) then delta else UPDATE (x, jdg1) :: delta
-                | NONE => DELETE x :: delta)
-            []
-            H0
-      in
-        Hyps.foldr
-          (fn (x, jdg1, delta) =>
-             case Hyps.find H0 x of
-                SOME _ => delta
-              | NONE => INSERT (x, jdg1) :: delta)
-          diff01
-          H1
-      end
-
-    (* TODO: This needs to be rewritten; it is probably completely wrong now. *)
-    fun instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec) =
-      let
-        val (I0, H0) >> jdg0 = subgoalSpec
-        val nsyms = List.length I0
-        val freshSyms = List.tabulate (List.length I0, fn i => alpha i)
-        val I0' = ListPair.map (fn ((_,sigma), v) => (v, sigma)) (I, freshSyms)
-        val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (I, freshSyms)
-
-        val (_, H1) >> _ = mainGoalSpec
-        val delta = hypothesesDiff (H1, H0)
-        val H0' = applyDiffs alpha nsyms Var.Ctx.empty delta H
-
-        val jdg' = (I @ I0', H0') >> jdg0
-        val jdg'' = RedPrlSequent.map (substSymenv srho) jdg'
-      in
-        jdg''
-      end
-  in
-    fun Lemma sign opid params alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Lemma"
-        val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
-        val () = checkMainGoal (mainGoalSpec, jdg)
-
-        val (I as [], H) >> _ = jdg
-        val _ = 
-          if Hyps.isEmpty H then () else
-            raise E.error [Fpp.text "Lemmas must have a categorical judgment as a conclusion"]
-
-        val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec)) subgoals
-      in
-        Lcf.|> (subgoals', validation)
-      end
-  end
-
-  fun CutLemma sign opid params = 
+  fun CutLemma sign opid params alpha jdg = 
     let
-      val (mainGoalSpec, _) = Sig.resuscitateTheorem sign opid params
-      val (I, H) >> catjdg = mainGoalSpec
+      val (I, H) >> catjdg = jdg
+
+      val {spec, state = Lcf.|> (lemmaSubgoals, _), ...} = Sig.lookup sign opid
+      val (I_spec, H_spec) >> specjdg = spec
+      val _ = 
+        if Hyps.isEmpty H_spec then () else 
+          raise E.error [Fpp.text "Lemmas must have a categorical judgment as a conclusion"]
+
+      val (rs, sigmas) = ListPair.unzip params
+
+      val z = alpha 0
+
+      local
+        val ix = ref 1
+      in
+        fun fresh () =
+          let
+            val h = alpha (!ix)
+          in
+            ix := (!ix + 1);
+            h
+          end
+      end
+
+      val symenv = ListPair.foldlEq (fn ((x, _), r, rho) => Sym.Ctx.insert rho x r) Sym.Ctx.empty (I_spec, rs)
+      fun processSubgoal ((I', H') >> cjdg) =
+        let
+          val relabeling = Hyps.foldr (fn (x, _, rho) => Sym.Ctx.insert rho x (fresh ())) Sym.Ctx.empty H'
+        in
+          RedPrlSequent.relabel relabeling @@ (I', Hyps.append H H') >> CJ.map_ (substSymenv symenv) cjdg
+        end
+
+      val lemmaSubgoals' = Lcf.Tl.map processSubgoal lemmaSubgoals
+      val specjdg' = CJ.map_ (substSymenv symenv) specjdg
+
+      val lemmaExtract' =
+        let
+          val subgoalsList = Lcf.Tl.foldr (fn (x, cj, goals) => (x, cj) :: goals) [] lemmaSubgoals
+          val valences = List.map (RedPrlJudgment.sort o #2) subgoalsList
+          val arity = (valences, CJ.synthesis specjdg)
+          val args = List.map (fn (x, cj) => outb @@ LcfLanguage.var x (RedPrlJudgment.sort cj)) subgoalsList
+        in
+          O.POLY (O.CUST (opid, params, SOME arity)) $$ args
+        end
+
+      val H' = H @> (z, specjdg')
+      val (mainGoal, mainHole) = makeGoal @@ (I, H') >> catjdg
+
+      val extract = substVar (lemmaExtract', z) mainHole
     in
-      Cut catjdg thenl [Lemma sign opid params, fn _ => Lcf.idn]
+      lemmaSubgoals' >: mainGoal #> (I, H, extract)
     end
 
   fun Exact tm =

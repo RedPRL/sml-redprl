@@ -165,7 +165,6 @@ struct
    | COE of 'a dir
    | COM of 'a dir * 'a equation list
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | RULE_LEMMA of 'a * ('a P.term * psort option) list
    | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list
    | HYP_REF of 'a
    | PARAM_REF of psort * 'a P.term
@@ -318,7 +317,6 @@ struct
        | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | COM params => arityCom params
        | CUST (_, _, ar) => Option.valOf ar
-       | RULE_LEMMA (_, _) => [] ->> TAC
        | RULE_CUT_LEMMA (_, _) => [] ->> TAC
        | HYP_REF _ => [] ->> EXP
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
@@ -364,7 +362,6 @@ struct
        | COE dir => spanSupport dir
        | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | RULE_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
        | RULE_CUT_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
@@ -412,10 +409,6 @@ struct
        | (CUST (opid1, ps1, _), t) =>
          (case t of
              CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-           | _ => false)
-       | (RULE_LEMMA (opid1, ps1), t) =>
-         (case t of
-             RULE_LEMMA (opid2, ps2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
            | _ => false)
        | (RULE_CUT_LEMMA (opid1, ps1), t) =>
          (case t of
@@ -553,8 +546,6 @@ struct
            f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
-       | RULE_LEMMA (opid, ps) =>
-           "lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | RULE_CUT_LEMMA (opid, ps) =>
            "cut-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "@" ^ f a
@@ -601,7 +592,6 @@ struct
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
        | CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
-       | RULE_LEMMA (opid, ps) => RULE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
        | RULE_CUT_LEMMA (opid, ps) => RULE_CUT_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
        | HYP_REF a => HYP_REF (mapSym (passSort (HYP EXP) f) a)
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)

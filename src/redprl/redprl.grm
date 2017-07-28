@@ -269,7 +269,7 @@ end
  | THEN | ELSE
  | REFINE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
- | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_LEMMA | RULE_CUT_LEMMA | RULE_UNFOLD
+ | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_CUT_LEMMA | RULE_UNFOLD
  | RULE_EXACT
 
  (* keywords in judgments *)
@@ -693,8 +693,6 @@ atomicRawTac
 
   | RULE_CUT_LEMMA LBRACKET OPNAME customOpParams RBRACKET (Ast.$$ (O.POLY (O.RULE_CUT_LEMMA (OPNAME, customOpParams)), []))
   | RULE_CUT_LEMMA OPNAME (Ast.$$ (O.POLY (O.RULE_CUT_LEMMA (OPNAME, [])), []))
-  | RULE_LEMMA LBRACKET OPNAME customOpParams RBRACKET (Ast.$$ (O.POLY (O.RULE_LEMMA (OPNAME, customOpParams)), []))
-  | RULE_LEMMA OPNAME (Ast.$$ (O.POLY (O.RULE_LEMMA (OPNAME, [])), []))
 
   (* overlapping with term *)
   | rawTermAndTac (rawTermAndTac)
