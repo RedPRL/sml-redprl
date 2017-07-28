@@ -517,13 +517,6 @@ struct
            end
          | _ => raise Fail "Impossible record type")
 
-     (* forms of judgment *)
-     | O.MONO O.JDG_EQ $ _ || (_, []) => raise Final
-     | O.MONO O.JDG_EQ_TYPE $ _ || (_, []) => raise Final
-     | O.MONO O.JDG_TRUE $ _ || (_, []) => raise Final
-     | O.MONO O.JDG_SYNTH $ _ || (_, []) => raise Final
-     | O.MONO O.JDG_DIM_SUBST $ _ || (_, []) => raise Final
-     | O.MONO (O.JDG_TERM _) $ _ || (_, []) => raise Final
      | _ => raise Stuck
 
   fun step sign stability unfolding (tm || stk) =

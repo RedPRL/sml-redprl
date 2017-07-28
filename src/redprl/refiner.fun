@@ -239,11 +239,12 @@ struct
       handle _ =>
         raise E.error [Fpp.text "MATCH judgment failed to unify"]
 
-    fun DimSubst _ jdg = 
+    fun ParamSubst _ jdg = 
       let
-        val _ = RedPrlLog.trace "Misc.DimSubst"
-        val (I, H) >> CJ.DIM_SUBST (rtm, u, m) = jdg
-        val Abt.$ (O.POLY (O.PARAM_REF (O.DIM, r)), _) = Abt.out rtm
+        val _ = RedPrlLog.trace "Misc.ParamSubst"
+        val (I, H) >> CJ.PARAM_SUBST (rtm, sigma, u, m, _) = jdg
+        val Abt.$ (O.POLY (O.PARAM_REF (sigma', r)), _) = Abt.out rtm
+        val _ = if sigma = sigma' then () else raise E.error [Fpp.text "ParamSubst: parameter sort mismatch"]
       in
         T.empty #> (I, H, substSymbol (r, u) m)
       end
@@ -763,7 +764,7 @@ struct
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
-          | _ >> CJ.DIM_SUBST _ => Misc.DimSubst
+          | _ >> CJ.PARAM_SUBST _ => Misc.ParamSubst
           | MATCH _ => Misc.MatchOperator
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordHeadExpansion sign then_ Record.MatchRecord)
 

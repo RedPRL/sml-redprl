@@ -6,7 +6,7 @@ sig
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
    | TERM of RedPrlSort.t
-   | DIM_SUBST of 'a * 'sym * 'a
+   | PARAM_SUBST of 'a * RedPrlParamSort.t * 'sym * 'a * RedPrlSort.t
 
   val MEM : 'a * 'a -> ('sym, 'a) redprl_jdg
   val TYPE : 'a -> ('sym, 'a) redprl_jdg
@@ -22,7 +22,7 @@ struct
    | EQ_TYPE of 'a * 'a
    | SYNTH of 'a
    | TERM of RedPrlSort.t
-   | DIM_SUBST of 'a * 'sym * 'a
+   | PARAM_SUBST of 'a * RedPrlParamSort.t * 'sym * 'a * RedPrlSort.t
 
   fun MEM (m, a) =
     EQ ((m, m), a)
@@ -38,7 +38,7 @@ struct
      | EQ_TYPE (a, b) => EQ_TYPE (f a, f b)
      | SYNTH a => SYNTH (f a)
      | TERM tau => TERM tau
-     | DIM_SUBST (r, u, m) => DIM_SUBST (f r, sym u, f m)
+     | PARAM_SUBST (r, sigma, u, m, tau) => PARAM_SUBST (f r, sigma, sym u, f m, tau)
   
   fun map_ f = map (fn x => x) f
 
@@ -52,7 +52,7 @@ struct
      | EQ_TYPE _ => O.TRIV
      | SYNTH _ => O.EXP
      | TERM tau => tau
-     | DIM_SUBST (r, u, m) => O.EXP
+     | PARAM_SUBST (r, sigma, u, m, tau) => tau
 
   local
     open Tm
@@ -68,7 +68,7 @@ struct
        | EQ_TYPE (a, b) => O.MONO O.JDG_EQ_TYPE $$ [([],[]) \ a, ([],[]) \ b]
        | SYNTH m => O.MONO O.JDG_SYNTH $$ [([],[]) \ m]
        | TERM tau => O.MONO (O.JDG_TERM tau) $$ []
-       | DIM_SUBST (r, u, m) => O.MONO O.JDG_DIM_SUBST $$ [([],[]) \ r, ([u],[]) \ m]
+       | PARAM_SUBST (r, sigma, u, m, tau) => O.MONO (O.JDG_PARAM_SUBST (sigma, tau)) $$ [([],[]) \ r, ([u],[]) \ m]
 
     fun fromAbt jdg =
       case RedPrlAbt.out jdg of
@@ -77,7 +77,7 @@ struct
        | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
-       | O.MONO O.JDG_DIM_SUBST $ [_ \ r, ([u],_) \ m] => DIM_SUBST (r, u, m)
+       | O.MONO (O.JDG_PARAM_SUBST (sigma, tau)) $ [_ \ r, ([u],_) \ m] => PARAM_SUBST (r, sigma, u, m, tau)
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]
   end
 
@@ -93,7 +93,7 @@ struct
        | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
        | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
-       | O.MONO O.JDG_DIM_SUBST $ [_ \ r, ([u],_) \ m] => DIM_SUBST (r, u, m)
+       | O.MONO (O.JDG_PARAM_SUBST (sigma, tau)) $ [_ \ r, ([u],_) \ m] => PARAM_SUBST (r, sigma, u, m, tau)
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment"]
   end
 

@@ -146,8 +146,7 @@ struct
         val reviveTerm = substEnv (srho, vrho) o substMetaenv mrho
         val reviveSequent = relabelSequent entry ps o RedPrlSequent.map reviveTerm
 
-        fun mapEff f = Lcf.Eff.bind (Lcf.Eff.ret o f)
-        val subgoals' = Lcf.Tl.map (mapEff reviveSequent) subgoals
+        val subgoals' = Lcf.Tl.map reviveSequent subgoals
         val validation' = mapAbs reviveTerm validation
         val goal' = reviveSequent goal
 
