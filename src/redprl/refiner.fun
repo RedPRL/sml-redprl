@@ -243,7 +243,7 @@ struct
       let
         val _ = RedPrlLog.trace "Misc.DimSubst"
         val (I, H) >> CJ.DIM_SUBST (rtm, u, m) = jdg
-        val Abt.$ (O.POLY (O.DIM_REF r), _) = Abt.out rtm
+        val Abt.$ (O.POLY (O.PARAM_REF (O.DIM, r)), _) = Abt.out rtm
       in
         T.empty #> (I, H, substSymbol (r, u) m)
       end

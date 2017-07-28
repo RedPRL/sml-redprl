@@ -54,7 +54,7 @@ struct
     then_ (exact tau m, autoTac)
 
   fun exactDim r = 
-    exactAuto O.DIM_EXP (O.POLY (O.DIM_REF r) $$ [])
+    exactAuto (O.PARAM_EXP O.DIM) (O.POLY (O.PARAM_REF (O.DIM, r)) $$ [])
 end
 
 structure Multi =
@@ -512,7 +512,7 @@ monoNullaryOperator
 polyNullaryOperator
   (* circle *)
   : LOOP param (O.POLY (O.LOOP param))
-  | DIM param (O.POLY (O.DIM_REF param))
+  | DIM param (O.POLY (O.PARAM_REF (O.DIM, param)))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
