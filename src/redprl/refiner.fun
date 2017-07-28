@@ -466,8 +466,24 @@ struct
       |>: goal1 >: goal2 #> (I, H, substVar (hole1, z) hole2)
     end
 
+  fun makeNamePopper alpha = 
+    let
+      val ix = ref 0
+    in
+      fn () => 
+        let
+          val i = !ix
+          val h = alpha i
+        in
+          ix := i + 1;
+          h
+        end
+    end
+
   fun CutLemma sign opid params alpha jdg = 
     let
+      val fresh = makeNamePopper alpha
+
       val (I, H) >> catjdg = jdg
 
       val {spec, state = Lcf.|> (lemmaSubgoals, _), ...} = Sig.lookup sign opid
@@ -478,21 +494,7 @@ struct
 
       val (rs, sigmas) = ListPair.unzip params
 
-      val z = alpha 0
-
-      local
-        val ix : int ref = ref 1
-      in
-        fun fresh () =
-          let
-            val i = !ix
-            val h = alpha i
-          in
-            ix := i + 1;
-            h
-          end
-      end
-
+      val z = fresh ()
       val symenv = ListPair.foldlEq (fn ((x, _), r, rho) => Sym.Ctx.insert rho x r) Sym.Ctx.empty (I_spec, rs)
 
       fun processSubgoal ((I', H') >> cjdg) =
