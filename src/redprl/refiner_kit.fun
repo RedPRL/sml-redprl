@@ -131,7 +131,7 @@ struct
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
   fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> CJ.TERM tau
-  fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> CJ.PARAM_SUBST (r, O.DIM, u, m, Abt.sort m)
+  fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> CJ.PARAM_SUBST ([(r, O.DIM, u)], m, Abt.sort m)
 
   (* ignoring the trivial realizer *)
   fun makeType (I, H) a = makeGoal' @@ (I, H) >> CJ.TYPE a

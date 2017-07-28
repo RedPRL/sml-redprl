@@ -151,7 +151,7 @@ struct
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
    | DEV_LET of RedPrlSort.t
 
-   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_PARAM_SUBST of RedPrlParamSort.t * RedPrlSort.t
+   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_PARAM_SUBST of RedPrlParamSort.t list * RedPrlSort.t
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -283,7 +283,7 @@ struct
      | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
      | JDG_TERM _ => [] ->> JDG
-     | JDG_PARAM_SUBST (sigma, tau) => [[] * [] <> PARAM_EXP sigma, [sigma] * [] <> tau] ->> JDG
+     | JDG_PARAM_SUBST (sigmas, tau) => List.map (fn sigma => [] * [] <> PARAM_EXP sigma) sigmas @ [sigmas * [] <> tau] ->> JDG
 
   local
     fun arityFcom (_, eqs) =

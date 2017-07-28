@@ -242,11 +242,21 @@ struct
     fun ParamSubst _ jdg = 
       let
         val _ = RedPrlLog.trace "Misc.ParamSubst"
-        val (I, H) >> CJ.PARAM_SUBST (rtm, sigma, u, m, _) = jdg
-        val Abt.$ (O.POLY (O.PARAM_REF (sigma', r)), _) = Abt.out rtm
-        val _ = if sigma = sigma' then () else raise E.error [Fpp.text "ParamSubst: parameter sort mismatch"]
+        val (I, H) >> CJ.PARAM_SUBST (psi, m, _) = jdg
+
+        fun getSubstitution (rtm, sigma, u) = 
+          case Abt.out rtm of
+             Abt.$ (O.POLY (O.PARAM_REF (sigma', r)), _) =>
+               if sigma = sigma' then
+                 (r, u)
+               else
+                 raise E.error [Fpp.text "ParamSubst: parameter sort mismatch"]
+           | _ => raise E.error [Fpp.text "Parameter substitution not yet materialized"]
+
+        val substitutions = List.map getSubstitution psi
+        val rho = List.foldl (fn ((r, u), rho) => Sym.Ctx.insert rho u r) Sym.Ctx.empty substitutions
       in
-        T.empty #> (I, H, substSymbol (r, u) m)
+        T.empty #> (I, H, substSymenv rho m)
       end
   end
 
