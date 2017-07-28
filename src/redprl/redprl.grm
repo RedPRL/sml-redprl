@@ -197,12 +197,12 @@ struct
       O.MONO (O.DEV_DFUN_INTRO pats') $$ [(names, []) \ tac]
     end
 
-  fun makeApply pat z tacs tac = 
+  fun makeApplyHyp pat z tacs tac = 
     let
       val (pat, names) = unstitchPattern pat
       val args = (List.map (fn tac => ([],[]) \ tac) tacs) @ [(names, []) \ tac]
     in
-      O.POLY (O.DEV_APPLY (z, pat, List.length tacs)) $$ args
+      O.POLY (O.DEV_APPLY_HYP (z, pat, List.length tacs)) $$ args
     end
 end
 
@@ -686,7 +686,7 @@ atomicRawTac
       (Ast.$$ (O.MONO (O.DEV_LET (sortOfJudgment judgment)), [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
 
   | LET devDecompPattern EQUALS VARNAME devAppSpine DOT tactic
-      (Pattern.makeApply devDecompPattern VARNAME devAppSpine tactic)
+      (Pattern.makeApplyHyp devDecompPattern VARNAME devAppSpine tactic)
 
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))

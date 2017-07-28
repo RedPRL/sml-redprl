@@ -26,3 +26,20 @@ Thm Apply : [
 ].
 
 Extract Apply.
+
+
+Thm MyLemma : [
+  (-> [b : bool] [p : (path {_} bool b tt)] (path {_} bool tt b))
+] by [
+  lam b, p. <i> `(hcom{0~>1} bool ,b [i=0 {j} (@ ,p j)] [i=1 {_} ,b])
+].
+
+Thm UsingLemma : [
+  (path {_} bool tt tt)
+] by [
+  fresh lem <- cut-lemma MyLemma;
+  let welp = lem `tt {<_> `tt}.
+  hyp welp
+].
+
+Print UsingLemma.

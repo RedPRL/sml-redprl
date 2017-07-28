@@ -67,7 +67,7 @@ struct
         (us,xs) \ go syms' m
       end
   in
-    (* Replace hypothesis-references @u with variables `u; this will *only* expand
+    (* Replace hypothesis-references with variables; this will *only* expand
      * unbound hyp-refs. *)
     val expandHypVars = go Sym.Ctx.empty
   end
@@ -267,13 +267,14 @@ struct
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]
      | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign]
-     | O.POLY (O.DEV_APPLY (z, pattern, _)) $ args =>
-        let
-          val ((names, _) \ tm) :: args' = List.rev args
-          val tacs = List.map (fn _ \ tm => tactic sign env tm) (List.rev args')
-        in
-          applications sign z (pattern, names) tacs (tactic sign env tm)
-        end
+     | O.POLY (O.DEV_APPLY_HYP (z, pattern, _)) $ args =>
+       let
+         val ((names, _) \ tm) :: args' = List.rev args
+         val tacs = List.map (fn _ \ tm => tactic sign env tm) (List.rev args')
+         val tac = tactic sign env tm
+       in
+         applications sign z (pattern, names) tacs tac
+       end
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
