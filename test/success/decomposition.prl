@@ -28,7 +28,7 @@ Thm Apply : [
 Extract Apply.
 
 
-Thm MyLemma(#m: [exp].exp) : [
+Thm MyLemma(#m: {dim}[exp,exp].exp) : [
   (-> [b : bool] [p : (path {_} bool b tt)] (path {_} bool tt b))
 ] by [
   lam b, p. <i> `(hcom{0~>1} bool ,b [i=0 {j} (@ ,p j)] [i=1 {_} ,b])
@@ -37,8 +37,8 @@ Thm MyLemma(#m: [exp].exp) : [
 Thm UsingLemma : [
   (path {_} bool tt tt)
 ] by [
-  fresh lem, x <- cut-lemma MyLemma;
-  [`,x];
+  fresh lem, x:dim, y, z <- cut-lemma MyLemma;
+  [`(@ (abs {_} ,y) x)];
 
   let welp = lem `tt {<_> `tt}.
   hyp welp

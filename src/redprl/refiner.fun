@@ -481,23 +481,29 @@ struct
       val z = alpha 0
 
       local
-        val ix = ref 1
+        val ix : int ref = ref 1
       in
         fun fresh () =
           let
-            val h = alpha (!ix)
+            val i = !ix
+            val h = alpha i
           in
-            ix := (!ix + 1);
+            ix := i + 1;
             h
           end
       end
 
       val symenv = ListPair.foldlEq (fn ((x, _), r, rho) => Sym.Ctx.insert rho x r) Sym.Ctx.empty (I_spec, rs)
+
       fun processSubgoal ((I', H') >> cjdg) =
         let
-          val relabeling = Hyps.foldr (fn (x, _, rho) => Sym.Ctx.insert rho x (fresh ())) Sym.Ctx.empty H'
+          val I'' = List.map (fn (_, sigma) => (fresh (), sigma)) I'
+          val symenv' = ListPair.foldlEq (fn ((u, _), (v, _), rho) => Sym.Ctx.insert rho u (P.ret v)) symenv (I', I'')
+          val relabelingList = List.rev @@ Hyps.foldl (fn (x, cj, names) => (x, (fresh (), CJ.synthesis cj)) :: names) [] H'
+          val relabelingDict = List.foldl (fn ((x,(y, _)), rho) => Sym.Ctx.insert rho x y) Sym.Ctx.empty relabelingList
+          val H'' = Hyps.map (CJ.map_ (substSymenv symenv')) @@ Hyps.append H H'
         in
-          RedPrlSequent.relabel relabeling @@ (I', Hyps.append H H') >> CJ.map_ (substSymenv symenv) cjdg
+          (I'', List.map #2 relabelingList, RedPrlSequent.relabel relabelingDict @@ (I', H'') >> CJ.map_ (substSymenv symenv') cjdg)
         end
 
       val lemmaSubgoals' = Lcf.Tl.map processSubgoal lemmaSubgoals
@@ -505,12 +511,21 @@ struct
 
       val lemmaExtract' =
         let
-          val subgoalsList = Lcf.Tl.foldr (fn (x, cj, goals) => (x, cj) :: goals) [] lemmaSubgoals
-          val valences = List.map (RedPrlJudgment.sort o #2) subgoalsList
+          val subgoalsList = Lcf.Tl.foldr (fn (x, (syms, vars, jdg), goals) => (x, (syms, vars, jdg)) :: goals) [] lemmaSubgoals'
+          val valences = List.map (RedPrlJudgment.sort o #3 o #2) subgoalsList
           val arity = (valences, CJ.synthesis specjdg)
-          val args = List.map (fn (x, cj) => outb @@ LcfLanguage.var x (RedPrlJudgment.sort cj)) subgoalsList
+          fun argForSubgoal (x, (syms : (Sym.t * psort) list, vars : (Var.t * sort) list, _ >> cj)) = 
+            let
+              val us = List.map #1 syms
+              val xs = List.map #1 vars
+              val ps = List.map (fn (u, sigma) => (P.ret u, sigma)) syms
+              val ms = List.map (fn (x, tau) => check (`x, tau)) vars
+              val tau = CJ.synthesis cj
+            in
+              (us, xs) \ check (x $# (ps, ms), tau)
+            end
         in
-          O.POLY (O.CUST (opid, params, SOME arity)) $$ args
+          O.POLY (O.CUST (opid, params, SOME arity)) $$ List.map argForSubgoal subgoalsList
         end
 
       val H' = H @> (z, specjdg')
@@ -518,7 +533,7 @@ struct
 
       val extract = substVar (lemmaExtract', z) mainHole
     in
-      lemmaSubgoals' >: mainGoal #> (I, H, extract)
+      Lcf.Tl.map #3 lemmaSubgoals' >: mainGoal #> (I, H, extract)
     end
 
   fun Exact tm =
