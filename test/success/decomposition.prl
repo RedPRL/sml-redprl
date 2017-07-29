@@ -21,7 +21,7 @@ Thm Apply : [
    S1)
 ] by [
   lam f.
-    let <a> = f `tt `ff @0.
+    let <a> = f `tt, `ff, @0.
     hyp a
 ].
 
@@ -40,7 +40,7 @@ Thm UsingLemma : [
   fresh lem, x:dim, y, z <- cut-lemma MyLemma;
   [`(@ (abs {_} ,y) x)];
 
-  let welp = lem `tt {<_> `tt}.
+  let welp = lem `tt, <_> `tt.
   hyp welp
 ].
 

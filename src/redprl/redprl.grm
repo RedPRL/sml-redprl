@@ -636,7 +636,7 @@ recordFieldTactics
    | ([])
 
 devAppSpine
-  : tactic devAppSpine (tactic :: devAppSpine)
+  : tactic COMMA devAppSpine (tactic :: devAppSpine)
   | tactic ([tactic])
   | ([])
 
@@ -647,7 +647,6 @@ devDecompPattern
 devDecompPatterns
   : devDecompPattern COMMA devDecompPatterns (devDecompPattern :: devDecompPatterns)
   | devDecompPattern ([devDecompPattern])
-  | ([])
 
 labeledDecompPattern 
   : VARNAME EQUALS devDecompPattern (VARNAME, devDecompPattern)
@@ -682,11 +681,11 @@ atomicRawTac
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
       
-  | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
+   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
       (Ast.$$ (O.MONO (O.DEV_LET (sortOfJudgment judgment)), [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
 
   | LET devDecompPattern EQUALS VARNAME devAppSpine DOT tactic
-      (Pattern.makeApplyHyp devDecompPattern VARNAME devAppSpine tactic)
+      (Pattern.makeApplyHyp devDecompPattern VARNAME devAppSpine tactic) 
 
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
@@ -711,7 +710,6 @@ atomicRawMultitac
   | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
   | QUESTION ident (Ast.$$ (O.MONO (O.MTAC_HOLE (SOME ident)), []))
   | QUESTION (Ast.$$ (O.MONO (O.MTAC_HOLE NONE), []))
-  | (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), Ast.$$ (O.MONO O.RULE_ID, []))]))
 
 atomicMultitac
   : atomicRawMultitac (annotate (Pos.pos (atomicRawMultitac1left fileName) (atomicRawMultitac1right fileName)) atomicRawMultitac)
