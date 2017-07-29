@@ -16,6 +16,9 @@ structure CJ = RedPrlCategoricalJudgment
 
 fun sortOfJudgment jdg = CJ.synthesis (CJ.fromAst jdg)
 
+fun makeCustom (opid, params, bindings) = 
+  Ast.$$ (O.POLY (O.CUST (opid, params, NONE)), bindings)
+
 structure Tac =
 struct
   type binding = (string * P.param_sort) list * ast
@@ -313,6 +316,7 @@ end
 
  | metavar of string
  | customOpParams of (string param * P.param_sort option) list
+ | customOpTerm of string * (string param * P.param_sort option) list * ast abs list
 
  | typedBinder of string option list * ast
  | typedBinders of (string option list * ast) list
@@ -530,6 +534,12 @@ regularMultinaryOperator
   | PATHS (O.MONO O.PATH_TY)
   (* coe *)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
+ 
+customOpTerm
+  : OPNAME (OPNAME, [], [])
+  | LPAREN OPNAME bindings RPAREN (OPNAME, [], bindings)
+  | LBRACKET OPNAME customOpParams RBRACKET (OPNAME, customOpParams, [])
+  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (OPNAME, customOpParams, bindings) 
 
 rawTermAndTac
   : VARNAME (`` VARNAME)
@@ -541,10 +551,7 @@ rawTermAndTac
   | LPAREN LBRACKET metavar params RBRACKET terms RPAREN (Ast.$$# (metavar, (params, terms)))
 
   (* custom operators *)
-  | OPNAME (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), []))
-  | LPAREN OPNAME bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, [], NONE)), bindings))
-  | LBRACKET OPNAME customOpParams RBRACKET (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), []))
-  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (Ast.$$ (O.POLY (O.CUST (OPNAME, customOpParams, NONE)), bindings))
+  | customOpTerm (makeCustom customOpTerm)
 
   (* built-in operators that can be handled uniformly *)
   | monoNullaryOperator (Ast.$$ (monoNullaryOperator, []))
