@@ -208,6 +208,12 @@ struct
       O.POLY (O.DEV_APPLY_HYP (z, pat, List.length tacs)) $$ args
     end
 
+  fun makeUseHyp z tacs = 
+    let
+      val args = List.map (fn tac => ([],[]) \ tac) tacs
+    in
+      O.POLY (O.DEV_USE_HYP (z, List.length tacs)) $$ args
+    end
 
   fun makeCutLemma pat (opid, params, subtermArgs) tacs tac = 
     let
@@ -279,7 +285,7 @@ end
  (* keywords in tactics *)
  | CASE | OF
  | FRESH
- | LET | WITH
+ | LET | USE | WITH
  | THEN | ELSE
  | REFINE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
@@ -682,8 +688,6 @@ atomicRawTac
   | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
-  | HYP VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, sort)), []))
-  | HYP VARNAME (Ast.$$ (O.POLY (O.RULE_HYP (VARNAME, O.EXP)), []))
   | RULE_ELIM VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, sort)), []))
   | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, O.EXP)), []))
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
@@ -708,6 +712,8 @@ atomicRawTac
       (Pattern.makeApplyHyp devDecompPattern VARNAME devAppSpine tactic)
 
   | LET devDecompPattern EQUALS customOpTerm devAppSpine DOT tactic (Pattern.makeCutLemma devDecompPattern customOpTerm devAppSpine tactic)
+
+  | USE VARNAME devAppSpine (Pattern.makeUseHyp VARNAME devAppSpine)
 
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))

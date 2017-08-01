@@ -22,7 +22,7 @@ Thm Pred : [
   lam a.
   fresh a', ind <- elim a;
   [ `zero ];
-  [ hyp a' ]
+  [ use a' ]
 ].
 
 Extract Pred.

@@ -4,7 +4,7 @@ Thm Decomposition : [
    bool)
 ] by [
   lam <foo = <a, b = <proj1>>>.
-  hyp proj1
+  use proj1
 ].
 
 Extract Decomposition.
@@ -22,10 +22,19 @@ Thm Apply : [
 ] by [
   lam f.
     let <a> = f `tt, `ff, @0.
-    hyp a
+    use a
 ].
 
 Extract Apply.
+
+Thm UseHypTest : [
+  bool
+] by [
+  let p : [(-> bool S1 bool)] = lam b, c. use b.
+  use p `tt, `(loop 0)
+].
+
+Print UseHypTest.
 
 
 Thm MyLemma(#m: {dim,dim}[exp,exp].exp) : [
@@ -38,7 +47,7 @@ Thm UsingLemma : [
   (path {_} bool tt tt)
 ] by [
   let <proj2 = lem> = (MyLemma {i j} [x y] (@ (abs {_} y) i)) `tt, <_> `tt.
-  hyp lem
+  use lem
 ].
 
 Print UsingLemma.

@@ -14,21 +14,8 @@ Thm Thm1(#A; #B) : [
   type/B : #B type
   >> (-> #A #B #A)
 ] by [
-  lam a, b. hyp a
+  lam a, b. use a
 ].
-
-
-
-// We'll make a handy little tactic to apply a functional hypothesis.
-Tac Apply{z:hyp}(#t:tac) = [
-  // RedPRL's logic is a sequent calculus, which means that you apply 
-  // functions in your context using let bindings in the following way:
-  let x = z #t.
-  hyp x
-].
-
-
-// #{t} tells the parser that 't' should be parsed using tactic notation.
 
 Thm Thm2(#A; #B; #C) : [
   type/A : #A type,
@@ -37,10 +24,7 @@ Thm Thm2(#A; #B; #C) : [
   >> (-> (-> #A #B) (-> #A #B #C) #A #C)
 ] by [
   lam f, g, a.
-  let h = g {hyp a}.
-  ({Apply h}
-   ({Apply f}
-    #{hyp a}))
+  use g {use a}, {use f {use a}}
 ].
 
 // It is worthwhile to print out the extract program / evidence for Thm2.
@@ -58,7 +42,7 @@ Thm Thm3/low-level(#A; #B; #C) : [
 ] by [
   fresh ab, bc, a <- auto;
   fresh c <- elim bc;
-  [fresh b <- elim ab; [hyp a, hyp b], hyp c]
+  [fresh b <- elim ab; [use a, use b], use c]
 ].
 
 Extract Thm3/low-level.
@@ -76,9 +60,7 @@ Thm Thm3/high-level(#A; #B; #C) : [
       (-> #A #C))
 ] by [
   lam ab, bc, a.
-  ({Apply bc}
-   ({Apply ab}
-    #{hyp a}))
+  use bc {use ab {use a}}
 ].
 
 Extract Thm3/high-level.
@@ -99,7 +81,7 @@ Thm Thm4(#A; #B) : [
 ] by [
   lam r, a.
   unfold Not;
-  let boom = r {hyp a}.
+  let boom = r {use a}.
   elim boom
 ].
 
@@ -108,8 +90,7 @@ Thm Thm5(#A) : [
   >> (-> #A (Not (Not #A)))
 ] by [
   lam a. unfold Not; lam r.
-  ({Apply r}
-   #{hyp a})
+  use r {use a}
 ].
 
 Print Thm4.
@@ -122,7 +103,5 @@ Thm Thm6(#A;#B) : [
   >> (-> (-> #A #B) (Not #B) (Not #A))
 ] by [
   lam ab, nb. unfold Not; lam a.
-  ({Apply nb} 
-   ({Apply ab}
-    #{hyp a}))
+  use nb {use ab {use a}}
 ].

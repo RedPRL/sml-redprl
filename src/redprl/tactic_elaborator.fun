@@ -278,7 +278,6 @@ struct
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.POLY (O.RULE_ELIM (z, _)) $ _ => R.Elim sign z
-     | O.POLY (O.RULE_HYP (z, _)) $ _ => hyp z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
@@ -298,6 +297,13 @@ struct
          val tac = tactic sign env tm
        in
          applications sign z (pattern, names) tacs tac
+       end
+     | O.POLY (O.DEV_USE_HYP (z, n)) $ args => 
+       let
+         val z' = RedPrlSym.named (Sym.toString z ^ "'")
+         val tacs = List.map (fn _ \ tm => tactic sign env tm) args
+       in
+         applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
        end
      | O.POLY (O.DEV_APPLY_LEMMA (opid, ps, ar, pat, n)) $ args =>
        let
