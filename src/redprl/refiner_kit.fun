@@ -36,11 +36,41 @@ struct
       end
   end
 
+  (* assert that the term 'm' has only free symbols 'us' and free variables 'xs' at most. *)
+  fun assertWellScoped (us, xs) m = 
+    let
+      val syms = List.foldl (fn (u, syms) => Sym.Ctx.remove syms u) (Abt.symctx m) us
+      val vars = List.foldl (fn (x, vars) => Var.Ctx.remove vars x) (Abt.varctx m) xs
+      fun ppSyms us = Fpp.Atomic.braces @@ Fpp.hsep @@ List.map TermPrinter.ppSym us
+      fun ppVars us = Fpp.Atomic.squares @@ Fpp.hsep @@ List.map TermPrinter.ppVar us
+
+      val symsOk = Sym.Ctx.foldl (fn (u, sigma, ok) => sigma = O.OPID andalso ok) true syms
+      val varsOk = Var.Ctx.isEmpty vars
+    in
+      if symsOk andalso varsOk then
+        ()
+      else
+        raise E.error
+          [Fpp.text "Internal Error:",
+           Fpp.text "Validation term",
+           TermPrinter.ppTerm m,
+           Fpp.text "had unbound symbols",
+           ppSyms (Sym.Ctx.domain syms),
+           Fpp.text "and unbound variables",
+           ppVars (Var.Ctx.domain vars),
+           Fpp.text "whereas we expected only",
+           ppSyms us,
+           Fpp.text "and",
+           ppVars xs]
+    end
+
+
   fun abstractEvidence (I : (sym * psort) list, H) m =
     let
       val (us, sigmas) = ListPair.unzip I
       val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, CJ.synthesis jdg::taus)) ([],[]) H
     in
+      assertWellScoped (us, xs) m;
       Abt.checkb (Abt.\ ((us, xs), m), ((sigmas, taus), Abt.sort m))
     end
 

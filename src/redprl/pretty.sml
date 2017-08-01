@@ -35,7 +35,9 @@ sig
   val ppValence : RedPrlAbt.valence -> Fpp.doc
   val ppVar : RedPrlAbt.variable -> Fpp.doc
   val ppSym : RedPrlAbt.symbol -> Fpp.doc
+  val ppMeta : RedPrlAbt.metavariable -> Fpp.doc
   val ppParam : RedPrlAbt.param -> Fpp.doc
+  val ppOperator : RedPrlAbt.operator -> Fpp.doc
   val ppLabel : string -> Fpp.doc
 end =
 struct
@@ -51,10 +53,27 @@ struct
   infix 0 $ $$ $# \
   infixr 0 @@
 
-  val ppSym = text o Sym.toString
-  val ppVar = text o Var.toString
-  val ppParam = text o P.toString Sym.toString
-  fun ppMetavar x = seq [char #"#", text (Abt.Metavar.toString x)]
+  structure DebugPrintName = 
+  struct
+    val sym = Sym.DebugShow.toString
+    val var = Var.DebugShow.toString
+    val meta = Metavar.toString
+  end
+
+  structure NormalPrintName = 
+  struct
+    val sym = Sym.toString
+    val var = Var.toString
+    val meta = Metavar.toString
+  end
+
+  (* To debug scoping issues, switch below to DebugPrintName. *)
+  structure PrintName = NormalPrintName
+
+  val ppSym = text o PrintName.sym
+  val ppVar = text o PrintName.var
+  val ppParam = text o P.toString PrintName.sym
+  fun ppMeta x = seq [char #"#", text @@ PrintName.meta x]
 
   fun unlessEmpty xs m =
     case xs of
@@ -65,12 +84,12 @@ struct
     case theta of 
        O.POLY (O.CUST (opid, [], _)) => ppSym opid
      | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map (fn (p, _) => ppParam p) params
-     | _ =>  text @@ RedPrlOperator.toString Sym.toString theta
+     | _ =>  text @@ RedPrlOperator.toString PrintName.sym theta
 
   fun ppMetavarParams (x, ps) =
     case ps of
-      [] => ppMetavar x
-    | ps => Atomic.braces @@ hsep @@ ppMetavar x :: List.map (fn (p, _) => ppParam p) ps
+      [] => ppMeta x
+    | ps => Atomic.braces @@ hsep @@ ppMeta x :: List.map (fn (p, _) => ppParam p) ps
 
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
