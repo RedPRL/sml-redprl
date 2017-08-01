@@ -53,13 +53,27 @@ struct
   infix 0 $ $$ $# \
   infixr 0 @@
 
-  val symToString = Sym.DebugShow.toString
-  val varToString = Var.DebugShow.toString
+  structure DebugPrintName = 
+  struct
+    val sym = Sym.DebugShow.toString
+    val var = Var.DebugShow.toString
+    val meta = Metavar.toString
+  end
 
-  val ppSym = text o symToString
-  val ppVar = text o varToString
-  val ppParam = text o P.toString symToString
-  fun ppMeta x = seq [char #"#", text (Abt.Metavar.toString x)]
+  structure NormalPrintName = 
+  struct
+    val sym = Sym.toString
+    val var = Var.toString
+    val meta = Metavar.toString
+  end
+
+  (* To debug scoping issues, switch below to DebugPrintName. *)
+  structure PrintName = NormalPrintName
+
+  val ppSym = text o PrintName.sym
+  val ppVar = text o PrintName.var
+  val ppParam = text o P.toString PrintName.sym
+  fun ppMeta x = seq [char #"#", text @@ PrintName.meta x]
 
   fun unlessEmpty xs m =
     case xs of
@@ -70,7 +84,7 @@ struct
     case theta of 
        O.POLY (O.CUST (opid, [], _)) => ppSym opid
      | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map (fn (p, _) => ppParam p) params
-     | _ =>  text @@ RedPrlOperator.toString symToString theta
+     | _ =>  text @@ RedPrlOperator.toString PrintName.sym theta
 
   fun ppMetavarParams (x, ps) =
     case ps of
