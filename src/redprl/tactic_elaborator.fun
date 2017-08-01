@@ -97,6 +97,7 @@ struct
   fun unfoldCustomOperator sign (opid, ps, args) = 
     let
       val entry as {state, ...} = Sig.lookup sign opid
+      val state = state (fn _ => RedPrlSym.new ())
       val (mrho, srho) = Sig.applyCustomOperator entry (List.map (fn (r, _) => r) ps) args
     in
       substSymenv srho (substMetaenv mrho (Sig.extract state))

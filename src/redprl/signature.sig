@@ -12,12 +12,13 @@ sig
 
   type 'a arguments = ('a * valence) list
   type 'a params = ('a * psort) list
+  type names = int -> symbol
 
   type sign
   type entry =
     {sourceOpid : src_opid,
      spec : jdg,
-     state : Lcf.jdg Lcf.state}
+     state : names -> Lcf.jdg Lcf.state}
 
   val lookup : sign -> opid -> entry
 

@@ -548,7 +548,7 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | RULE_CUT_LEMMA (opid, ps) =>
            "cut-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
-       | HYP_REF a => "@" ^ f a
+       | HYP_REF a => "hyp-ref{" ^ f a ^ "}"
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"

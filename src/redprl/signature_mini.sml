@@ -15,11 +15,12 @@ struct
   type 'a params = ('a * psort) list
   type 'a arguments = ('a * valence) list
 
+  type names = int -> symbol
   type src_opid = string
   type entry =
     {sourceOpid : src_opid,
      spec : jdg,
-     state : Lcf.jdg Lcf.state}
+     state : names -> Lcf.jdg Lcf.state}
 
   type src_catjdg = (string, ast) RedPrlCategoricalJudgment.jdg
   type src_seqhyp = string * src_catjdg
@@ -77,7 +78,7 @@ struct
 
   fun entryArguments (entry : entry) : metavar arguments =
     let
-      val Lcf.|> (subgoals, _) = #state entry
+      val Lcf.|> (subgoals, _) = #state entry (fn _ => Sym.new ())
     in
       Lcf.Tl.foldr (fn (x, jdg, args) => (x, RedPrlJudgment.sort jdg) :: args) [] subgoals
     end

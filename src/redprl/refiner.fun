@@ -148,7 +148,8 @@ struct
         val _ = RedPrlLog.trace "Synth.Custom"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out tm
-        val {spec = ([],H') >> CJ.TRUE ty, state = Lcf.|> (psi, _), ...} = Sig.lookup sign name
+        val {spec = ([],H') >> CJ.TRUE ty, state, ...} = Sig.lookup sign name
+        val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = Lcf.Tl.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho = ListPair.foldl (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl))) Metavar.Ctx.empty (metas, args)
         val ty' = substMetaenv rho ty
@@ -293,7 +294,8 @@ struct
         val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out m
         val true = Abt.eq (m, n)
 
-        val {spec = ([],H') >> CJ.TRUE specTy, state = Lcf.|> (psi, _), ...} = Sig.lookup sign name
+        val {spec = ([],H') >> CJ.TRUE specTy, state, ...} = Sig.lookup sign name
+        val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ()) (* TODO: use alpha here??? *)
         val metas = Lcf.Tl.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho = ListPair.foldl (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl))) Metavar.Ctx.empty (metas, args)
         val specTy' = substMetaenv rho specTy
@@ -482,60 +484,33 @@ struct
 
   fun CutLemma sign opid params alpha jdg = 
     let
-      val fresh = makeNamePopper alpha
-
+      val z = alpha 0
       val (I, H) >> catjdg = jdg
 
-      val {spec, state = Lcf.|> (lemmaSubgoals, _), ...} = Sig.lookup sign opid
+      val {spec, state, ...} = Sig.lookup sign opid
+      val Lcf.|> (lemmaSubgoals, _) = state @@ UniversalSpread.bite 1 alpha
+
       val (I_spec, H_spec) >> specjdg = spec
       val _ = 
         if Hyps.isEmpty H_spec then () else 
           raise E.error [Fpp.text "Lemmas must have a categorical judgment as a conclusion"]
 
-      val (rs, sigmas) = ListPair.unzip params
-
-      val z = fresh ()
-      val symenv = ListPair.foldlEq (fn ((x, _), r, rho) => Sym.Ctx.insert rho x r) Sym.Ctx.empty (I_spec, rs)
-
-      fun processSubgoal ((I', H') >> cjdg) =
-        let
-          val I'' = List.map (fn (_, sigma) => (fresh (), sigma)) I'
-          val symenv' = ListPair.foldlEq (fn ((u, _), (v, _), rho) => Sym.Ctx.insert rho u (P.ret v)) symenv (I', I'')
-          val relabelingList = List.rev @@ Hyps.foldl (fn (x, cj, names) => (x, (fresh (), CJ.synthesis cj)) :: names) [] H'
-          val relabelingDict = List.foldl (fn ((x,(y, _)), rho) => Sym.Ctx.insert rho x y) Sym.Ctx.empty relabelingList
-          val H'' = Hyps.map (CJ.map_ (substSymenv symenv')) @@ Hyps.append H H'
-        in
-          (I'', List.map #2 relabelingList, RedPrlSequent.relabel relabelingDict @@ (I', H'') >> CJ.map_ (substSymenv symenv') cjdg)
-        end
-
-      val lemmaSubgoals' = Lcf.Tl.map processSubgoal lemmaSubgoals
-      val specjdg' = CJ.map_ (substSymenv symenv) specjdg
-
       val lemmaExtract' =
         let
-          val subgoalsList = Lcf.Tl.foldr (fn (x, (syms, vars, jdg), goals) => (x, (syms, vars, jdg)) :: goals) [] lemmaSubgoals'
-          val valences = List.map (RedPrlJudgment.sort o #3 o #2) subgoalsList
+          val subgoalsList = Lcf.Tl.foldr (fn (x, jdg, goals) => (x, jdg) :: goals) [] lemmaSubgoals
+          val valences = List.map (RedPrlJudgment.sort o #2) subgoalsList
           val arity = (valences, CJ.synthesis specjdg)
-          fun argForSubgoal (x, (syms : (Sym.t * psort) list, vars : (Var.t * sort) list, _ >> cj)) = 
-            let
-              val us = List.map #1 syms
-              val xs = List.map #1 vars
-              val ps = List.map (fn (u, sigma) => (P.ret u, sigma)) syms
-              val ms = List.map (fn (x, tau) => check (`x, tau)) vars
-              val tau = CJ.synthesis cj
-            in
-              (us, xs) \ check (x $# (ps, ms), tau)
-            end
+          fun argForSubgoal ((x, jdg), vl) = outb @@ Lcf.L.var x vl
         in
-          O.POLY (O.CUST (opid, params, SOME arity)) $$ List.map argForSubgoal subgoalsList
+          O.POLY (O.CUST (opid, params, SOME arity)) $$ ListPair.mapEq argForSubgoal (subgoalsList, valences)
         end
 
-      val H' = H @> (z, specjdg')
+      val symenv = ListPair.foldlEq (fn ((x, _), r, rho) => Sym.Ctx.insert rho x r) Sym.Ctx.empty (I_spec, List.map #1 params)
+      val H' = H @> (z, CJ.map_ (substSymenv symenv) specjdg)
       val (mainGoal, mainHole) = makeGoal @@ (I, H') >> catjdg
-
       val extract = substVar (lemmaExtract', z) mainHole
     in
-      Lcf.Tl.map #3 lemmaSubgoals' >: mainGoal #> (I, H, extract)
+      lemmaSubgoals >: mainGoal #> (I, H, extract)
     end
 
   fun Exact tm =

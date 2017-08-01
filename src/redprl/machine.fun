@@ -242,6 +242,7 @@ struct
        if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
          val entry as {state, ...} = Sig.lookup sign opid
+         val state = state (fn _ => RedPrlSym.new ())
          val (mrho, srho) = Sig.applyCustomOperator entry (List.map #1 ps) args
          val term = substSymenv srho (substMetaenv mrho (Sig.extract state))
        in
