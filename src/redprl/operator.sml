@@ -165,7 +165,6 @@ struct
    | COE of 'a dir
    | COM of 'a dir * 'a equation list
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | HYP_REF of 'a
    | PARAM_REF of psort * 'a P.term
    | RULE_HYP of 'a * sort
@@ -174,6 +173,7 @@ struct
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
 
+   | DEV_APPLY_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option * unit dev_pattern * int
    | DEV_APPLY_HYP of 'a * unit dev_pattern * int
 
   (* We split our operator signature into a couple datatypes, because the implementation of
@@ -317,12 +317,6 @@ struct
        | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | COM params => arityCom params
        | CUST (_, _, ar) => Option.valOf ar
-       | RULE_CUT_LEMMA (_, _, ar) => 
-         let
-           val (vls, tau) = Option.valOf ar
-         in
-           vls @ [[HYP tau] * [] <> TAC] ->> TAC
-         end
        | HYP_REF _ => [] ->> EXP
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
        | RULE_HYP _ => [] ->> TAC
@@ -331,6 +325,12 @@ struct
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_APPLY_HYP (_, pat, n) => List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
+       | DEV_APPLY_LEMMA (_, _, ar, pat, n) => 
+         let
+           val (vls, tau) = Option.valOf ar
+         in
+           vls @ List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
+         end
   end
 
   val arity =
@@ -367,7 +367,6 @@ struct
        | COE dir => spanSupport dir
        | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | RULE_CUT_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
@@ -376,6 +375,7 @@ struct
        | DEV_BOOL_ELIM a => [(a, HYP EXP)]
        | DEV_S1_ELIM a => [(a, HYP EXP)]
        | DEV_APPLY_HYP (a, _, _) => [(a, HYP EXP)]
+       | DEV_APPLY_LEMMA (opid, ps, _, _, _) => (opid, OPID) :: paramsSupport ps
   end
 
   val support =
@@ -415,10 +415,7 @@ struct
          (case t of
              CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
            | _ => false)
-       | (RULE_CUT_LEMMA (opid1, ps1, _), t) =>
-         (case t of
-             RULE_CUT_LEMMA (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
-           | _ => false)
+
        | (HYP_REF a, t) => (case t of HYP_REF b => f (a, b) | _ => false)
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
        | (RULE_HYP (a, _), t) => (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
@@ -427,6 +424,10 @@ struct
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_APPLY_HYP (a, pat, n), t) => (case t of DEV_APPLY_HYP (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
+       | (DEV_APPLY_LEMMA (opid1, ps1, _, pat1, n1), t) =>
+         (case t of
+             DEV_APPLY_LEMMA (opid2, ps2, _, pat2, n2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2) andalso pat1 = pat2 andalso n1 = n2
+           | _ => false)
   end
 
   fun eq f =
@@ -551,8 +552,6 @@ struct
            f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
-       | RULE_CUT_LEMMA (opid, ps, _) =>
-           "cut-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "hyp-ref{" ^ f a ^ "}"
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
        | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
@@ -561,6 +560,7 @@ struct
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_APPLY_HYP (a, _, _) => "apply-hyp{" ^ f a ^ "}"
+       | DEV_APPLY_LEMMA (opid, ps, _, _, _) => "apply-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
   end
 
   fun toString f =
@@ -597,7 +597,6 @@ struct
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
        | CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
-       | RULE_CUT_LEMMA (opid, ps, ar) => RULE_CUT_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar)
        | HYP_REF a => HYP_REF (mapSym (passSort (HYP EXP) f) a)
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym (passSort (HYP tau) f) a, tau)
@@ -605,6 +604,7 @@ struct
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_APPLY_LEMMA (opid, ps, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, pat, n)
        | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort (HYP EXP) f) a, pat, spine)
   end
 

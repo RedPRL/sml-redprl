@@ -107,13 +107,13 @@ struct
                    O.POLY (O.CUST (opid, ps', SOME ar))
                  end
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.RULE_CUT_LEMMA (opid, ps, NONE)) =>
+         | O.POLY (O.DEV_APPLY_LEMMA (opid, ps, NONE, pat, n)) =>
            (case arityOfOpid sign opid of
                SOME (psorts, ar) =>
                  let
                    val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
                  in
-                   O.POLY (O.RULE_CUT_LEMMA (opid, ps', SOME ar))
+                   O.POLY (O.DEV_APPLY_LEMMA (opid, ps', SOME ar, pat, n))
                  end
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th => th

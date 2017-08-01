@@ -240,24 +240,26 @@ struct
   fun exactAuto sign m = 
     R.Exact (expandHypVars m) thenl [autoTac sign]
 
-  fun cutLemma sign opid ar ps (args : abt bview list) (z : symbol, tac : tactic) =
+  fun cutLemma sign opid ar ps (args : abt bview list) (pattern, names) appTacs tac =
     let
       val (vls, _) = ar
-      fun processArg ((us, xs) \ m, ((sigmas, taus), _), {names, tacs}) : {names: Sym.t list, tacs : tactic list} =
+      fun processArg ((us, xs) \ m, ((sigmas, taus), _), {subtermNames, subtermTacs}) =
         let
           val syms = ListPair.zipEq (us, sigmas)
           val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP tau)) (xs, taus)
           val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF x) $$ [])) Var.Ctx.empty (xs, taus)
           val m' = substVarenv rho m
         in
-          {names = us @ xs @ names,
-           tacs = exactAuto sign m' :: tacs}
+          {subtermNames = us @ xs @ subtermNames,
+           subtermTacs = exactAuto sign m' :: subtermTacs}
         end
 
-      val {names, tacs} = ListPair.foldr processArg {names = [], tacs = []} (args, vls)
-      val _ = print ("Names: " ^ ListSpine.pretty Sym.toString "," names ^ "\n")
+      val {subtermNames, subtermTacs} = ListPair.foldr processArg {subtermNames = [], subtermTacs = []} (args, vls)
+
+      val z = RedPrlSym.new ()
+      val continue = applications sign z (pattern, names) appTacs tac
     in
-      R.CutLemma sign opid ps thenl' (z :: names, tacs @ [tac])
+      R.CutLemma sign opid ps thenl' (z :: subtermNames, subtermTacs @ [continue])
     end
 
   fun tactic sign env tm alpha jdg = 
@@ -281,13 +283,6 @@ struct
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.fromAbt (expandHypVars catjdg))
-     | O.POLY (O.RULE_CUT_LEMMA (opid, ps, ar)) $ args =>
-       let
-         val (([z], []) \ tm) :: args' = List.rev args
-         val tac = tactic sign env tm
-       in
-         cutLemma sign opid (Option.valOf ar) ps (List.rev args') (z, tac)
-       end
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
      | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
@@ -303,6 +298,15 @@ struct
          val tac = tactic sign env tm
        in
          applications sign z (pattern, names) tacs tac
+       end
+     | O.POLY (O.DEV_APPLY_LEMMA (opid, ps, ar, pat, n)) $ args =>
+       let
+         val ((names, []) \ tm) :: args' = List.rev args
+         val (appArgs, subtermArgs) = ListUtil.splitAt (args', n)
+         val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
+         val tac = tactic sign env tm
+       in
+         cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (pat, names) (List.rev appTacs) tac
        end
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
