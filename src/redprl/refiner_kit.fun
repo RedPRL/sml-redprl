@@ -43,8 +43,11 @@ struct
       val vars = List.foldl (fn (x, vars) => Var.Ctx.remove vars x) (Abt.varctx m) xs
       fun ppSyms us = Fpp.Atomic.braces @@ Fpp.hsep @@ List.map TermPrinter.ppSym us
       fun ppVars us = Fpp.Atomic.squares @@ Fpp.hsep @@ List.map TermPrinter.ppVar us
+
+      val symsOk = Sym.Ctx.foldl (fn (u, sigma, ok) => sigma = O.OPID andalso ok) true syms
+      val varsOk = Var.Ctx.isEmpty vars
     in
-      if Sym.Ctx.isEmpty syms andalso Var.Ctx.isEmpty vars then
+      if symsOk andalso varsOk then
         ()
       else
         raise E.error
