@@ -52,19 +52,16 @@ struct
         val zjdg = lookupHyp H z
         val z' = alpha 0
 
-        val renameIn = 
-          CJ.map_ @@
-            renameVars (Var.Ctx.singleton z z')
-
-        val renameOut = 
-          renameVars (Var.Ctx.singleton z' z)
+        val renameIn = renameVars @@ Var.Ctx.singleton z z'
+        val renameOut =  renameVars @@ Var.Ctx.singleton z' z
 
         val H' = Hyps.splice H z (Hyps.singleton z' zjdg)
-        val H'' = Hyps.modifyAfter z' renameIn H' 
+        val H'' = Hyps.modifyAfter z' (CJ.map_ renameIn) H' 
 
-        val (goal, hole) = makeGoal @@ (I, H'') >> renameIn catjdg
+        val (goal, hole) = makeGoal @@ (I, H'') >> CJ.map_ renameIn catjdg
+        val extract = renameOut hole
       in
-        |>: goal #> (I, H, renameOut hole)
+        |>: goal #> (I, H, extract)
       end
 
     fun Delete z _ jdg = 
