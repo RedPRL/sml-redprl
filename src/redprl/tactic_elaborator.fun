@@ -237,6 +237,29 @@ struct
      | u::us => RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
 
 
+  fun exactAuto sign m = 
+    R.Exact (expandHypVars m) thenl [autoTac sign]
+
+  fun cutLemma sign opid ar ps (args : abt bview list) (z : symbol, tac : tactic) =
+    let
+      val (vls, _) = ar
+      fun processArg ((us, xs) \ m, ((sigmas, taus), _), {names, tacs}) : {names: Sym.t list, tacs : tactic list} =
+        let
+          val syms = ListPair.zipEq (us, sigmas)
+          val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP tau)) (xs, taus)
+          val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF x) $$ [])) Var.Ctx.empty (xs, taus)
+          val m' = substVarenv rho m
+        in
+          {names = us @ xs @ names,
+           tacs = exactAuto sign m' :: tacs}
+        end
+
+      val {names, tacs} = ListPair.foldr processArg {names = [], tacs = []} (args, vls)
+      val _ = print ("Names: " ^ ListSpine.pretty Sym.toString "," names ^ "\n")
+    in
+      R.CutLemma sign opid ps thenl' (z :: names, tacs @ [tac])
+    end
+
   fun tactic sign env tm alpha jdg = 
     tactic_ sign env tm alpha jdg 
     handle exn => 
@@ -258,7 +281,13 @@ struct
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.fromAbt (expandHypVars catjdg))
-     | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) $ _ => R.CutLemma sign opid ps
+     | O.POLY (O.RULE_CUT_LEMMA (opid, ps, ar)) $ args =>
+       let
+         val (([z], []) \ tm) :: args' = List.rev args
+         val tac = tactic sign env tm
+       in
+         cutLemma sign opid (Option.valOf ar) ps (List.rev args') (z, tac)
+       end
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
      | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])

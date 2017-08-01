@@ -37,9 +37,7 @@ Thm MyLemma(#m: {dim,dim}[exp,exp].exp) : [
 Thm UsingLemma : [
   (path {_} bool tt tt)
 ] by [
-  fresh lem, u:dim, v:dim, y, z, asd:dim <- cut-lemma (MyLemma {a b} [c d] #{id});
-  [`(@ (abs {_} ,y) u)];
-
+  let lem = (MyLemma {i j} [x y] (@ (abs {_} y) i)).
   let welp = lem `tt, <_> `tt.
   hyp welp
 ].

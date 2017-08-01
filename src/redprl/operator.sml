@@ -165,7 +165,7 @@ struct
    | COE of 'a dir
    | COM of 'a dir * 'a equation list
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list
+   | RULE_CUT_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | HYP_REF of 'a
    | PARAM_REF of psort * 'a P.term
    | RULE_HYP of 'a * sort
@@ -317,7 +317,12 @@ struct
        | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | COM params => arityCom params
        | CUST (_, _, ar) => Option.valOf ar
-       | RULE_CUT_LEMMA (_, _) => [] ->> TAC
+       | RULE_CUT_LEMMA (_, _, ar) => 
+         let
+           val (vls, tau) = Option.valOf ar
+         in
+           vls @ [[HYP tau] * [] <> TAC] ->> TAC
+         end
        | HYP_REF _ => [] ->> EXP
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
        | RULE_HYP _ => [] ->> TAC
@@ -362,7 +367,7 @@ struct
        | COE dir => spanSupport dir
        | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
-       | RULE_CUT_LEMMA (opid, ps) => (opid, OPID) :: paramsSupport ps
+       | RULE_CUT_LEMMA (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
        | RULE_HYP (a, tau) => [(a, HYP tau)]
@@ -410,9 +415,9 @@ struct
          (case t of
              CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
            | _ => false)
-       | (RULE_CUT_LEMMA (opid1, ps1), t) =>
+       | (RULE_CUT_LEMMA (opid1, ps1, _), t) =>
          (case t of
-             RULE_CUT_LEMMA (opid2, ps2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+             RULE_CUT_LEMMA (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
            | _ => false)
        | (HYP_REF a, t) => (case t of HYP_REF b => f (a, b) | _ => false)
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
@@ -546,7 +551,7 @@ struct
            f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
-       | RULE_CUT_LEMMA (opid, ps) =>
+       | RULE_CUT_LEMMA (opid, ps, _) =>
            "cut-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "hyp-ref{" ^ f a ^ "}"
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
@@ -563,7 +568,7 @@ struct
      | POLY th => toStringPoly f th
 
   local
-    fun passSort sigma f = 
+    fun passSort sigma f =
       fn u => f (u, sigma)
 
     fun mapSpan f (r, r') = (P.bind (passSort DIM f) r, P.bind (passSort DIM f) r')
@@ -592,7 +597,7 @@ struct
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
        | CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
-       | RULE_CUT_LEMMA (opid, ps) => RULE_CUT_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps)
+       | RULE_CUT_LEMMA (opid, ps, ar) => RULE_CUT_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar)
        | HYP_REF a => HYP_REF (mapSym (passSort (HYP EXP) f) a)
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
        | RULE_HYP (a, tau) => RULE_HYP (mapSym (passSort (HYP tau) f) a, tau)
