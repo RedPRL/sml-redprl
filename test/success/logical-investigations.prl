@@ -27,6 +27,9 @@ Tac Apply{z:hyp}(#t:tac) = [
   hyp x
 ].
 
+
+// #{t} tells the parser that 't' should be parsed using tactic notation.
+
 Thm Thm2(#A; #B; #C) : [
   type/A : #A type,
   type/B : #B type,
@@ -37,7 +40,7 @@ Thm Thm2(#A; #B; #C) : [
   let h = g {hyp a}.
   ({Apply h}
    ({Apply f}
-    (tactic hyp a)))
+    #{hyp a}))
 ].
 
 // It is worthwhile to print out the extract program / evidence for Thm2.
@@ -75,7 +78,7 @@ Thm Thm3/high-level(#A; #B; #C) : [
   lam ab, bc, a.
   ({Apply bc}
    ({Apply ab}
-    (tactic hyp a)))
+    #{hyp a}))
 ].
 
 Extract Thm3/high-level.
@@ -100,14 +103,13 @@ Thm Thm4(#A; #B) : [
   elim boom
 ].
 
-
 Thm Thm5(#A) : [
   type/A : #A type
   >> (-> #A (Not (Not #A)))
 ] by [
   lam a. unfold Not; lam r.
   ({Apply r}
-   (tactic hyp a))
+   #{hyp a})
 ].
 
 Print Thm4.
@@ -122,5 +124,5 @@ Thm Thm6(#A;#B) : [
   lam ab, nb. unfold Not; lam a.
   ({Apply nb} 
    ({Apply ab}
-    (tactic hyp a)))
+    #{hyp a}))
 ].
