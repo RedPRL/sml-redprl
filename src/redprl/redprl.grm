@@ -390,6 +390,7 @@ end
  | tupleDecompPattern of (string * string O.dev_pattern) list
  | labeledDecompPattern of string * string O.dev_pattern
  | devAppSpine of ast list
+ | bracketedDevAppSpine of ast list
 
  | recordFieldTactics of (string * ast) list
 
@@ -673,6 +674,10 @@ devAppSpine
   | tactic ([tactic])
   | ([])
 
+bracketedDevAppSpine
+  : LSQUARE devAppSpine RSQUARE (devAppSpine)
+  | ([])
+
 devDecompPattern
   : VARNAME (O.PAT_VAR VARNAME)
   | LANGLE tupleDecompPattern RANGLE (O.PAT_TUPLE tupleDecompPattern)
@@ -715,13 +720,13 @@ atomicRawTac
    | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
       (Ast.$$ (O.MONO (O.DEV_LET (sortOfJudgment judgment)), [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
 
-  | LET devDecompPattern EQUALS VARNAME devAppSpine DOT tactic
-      (Pattern.makeApplyHyp devDecompPattern VARNAME devAppSpine tactic)
+  | LET devDecompPattern EQUALS VARNAME bracketedDevAppSpine DOT tactic
+      (Pattern.makeApplyHyp devDecompPattern VARNAME bracketedDevAppSpine tactic)
 
-  | LET devDecompPattern EQUALS customOpTerm devAppSpine DOT tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm devAppSpine tactic)
+  | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine DOT tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
 
-  | USE VARNAME devAppSpine (Pattern.makeUseHyp VARNAME devAppSpine)
-  | USE customOpTerm devAppSpine (Pattern.makeUseLemma customOpTerm devAppSpine)
+  | USE VARNAME bracketedDevAppSpine (Pattern.makeUseHyp VARNAME bracketedDevAppSpine)
+  | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
 
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))

@@ -24,7 +24,7 @@ Thm Thm2(#A; #B; #C) : [
   >> (-> (-> #A #B) (-> #A #B #C) #A #C)
 ] by [
   lam f, g, a.
-  use g {use a}, {use f {use a}}
+  use g [use a, use f [use a]]
 ].
 
 // It is worthwhile to print out the extract program / evidence for Thm2.
@@ -60,7 +60,7 @@ Thm Thm3/high-level(#A; #B; #C) : [
       (-> #A #C))
 ] by [
   lam ab, bc, a.
-  use bc {use ab {use a}}
+  use bc [use ab [use a]]
 ].
 
 Extract Thm3/high-level.
@@ -81,7 +81,7 @@ Thm Thm4(#A; #B) : [
 ] by [
   lam r, a.
   unfold Not;
-  let boom = r {use a}.
+  let boom = r [use a].
   elim boom
 ].
 
@@ -90,7 +90,7 @@ Thm Thm5(#A) : [
   >> (-> #A (Not (Not #A)))
 ] by [
   lam a. unfold Not; lam r.
-  use r {use a}
+  use r [use a]
 ].
 
 Print Thm4.
@@ -103,5 +103,5 @@ Thm Thm6(#A;#B) : [
   >> (-> (-> #A #B) (Not #B) (Not #A))
 ] by [
   lam ab, nb. unfold Not; lam a.
-  use nb {use ab {use a}}
+  use nb [use ab [use a]]
 ].
