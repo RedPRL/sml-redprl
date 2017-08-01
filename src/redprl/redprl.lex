@@ -143,7 +143,6 @@ whitespace = [\ \t];
 "elim"             => (Tokens.RULE_ELIM (posTuple (size yytext)));
 "head-expand"      => (Tokens.RULE_HEAD_EXP (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
-"cut-lemma"        => (Tokens.DEV_APPLY_LEMMA (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
 
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
