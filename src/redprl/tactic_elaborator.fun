@@ -314,6 +314,14 @@ struct
        in
          cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (pat, names) (List.rev appTacs) tac
        end
+     | O.POLY (O.DEV_USE_LEMMA (opid, ps, ar, n)) $ args =>
+       let
+         val z = RedPrlSym.named (Sym.toString opid ^ "'")
+         val (appArgs, subtermArgs) = ListUtil.splitAt (List.rev args, n)
+         val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
+       in
+         cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
+       end
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 

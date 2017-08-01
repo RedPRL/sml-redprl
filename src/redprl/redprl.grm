@@ -215,13 +215,20 @@ struct
       O.POLY (O.DEV_USE_HYP (z, List.length tacs)) $$ args
     end
 
-  fun makeCutLemma pat (opid, params, subtermArgs) tacs tac = 
+  fun makeApplyLemma pat (opid, params, subtermArgs) tacs tac = 
     let
       val (pat, names) = unstitchPattern pat
       val appArgs = List.map (fn tac => ([],[]) \ tac) tacs
       val args = subtermArgs @ appArgs @ [(names, []) \ tac]
     in
       O.POLY (O.DEV_APPLY_LEMMA (opid, params, NONE, pat, List.length tacs)) $$ args
+    end
+
+  fun makeUseLemma (opid, params, subtermArgs) tacs = 
+    let
+      val args = List.map (fn tac => ([],[]) \ tac) tacs
+    in
+      O.POLY (O.DEV_USE_LEMMA (opid, params, NONE, List.length tacs)) $$ args
     end
 
 end
@@ -711,9 +718,10 @@ atomicRawTac
   | LET devDecompPattern EQUALS VARNAME devAppSpine DOT tactic
       (Pattern.makeApplyHyp devDecompPattern VARNAME devAppSpine tactic)
 
-  | LET devDecompPattern EQUALS customOpTerm devAppSpine DOT tactic (Pattern.makeCutLemma devDecompPattern customOpTerm devAppSpine tactic)
+  | LET devDecompPattern EQUALS customOpTerm devAppSpine DOT tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm devAppSpine tactic)
 
   | USE VARNAME devAppSpine (Pattern.makeUseHyp VARNAME devAppSpine)
+  | USE customOpTerm devAppSpine (Pattern.makeUseLemma customOpTerm devAppSpine)
 
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))

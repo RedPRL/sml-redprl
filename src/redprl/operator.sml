@@ -174,6 +174,7 @@ struct
    | DEV_APPLY_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option * unit dev_pattern * int
    | DEV_APPLY_HYP of 'a * unit dev_pattern * int
    | DEV_USE_HYP of 'a * int
+   | DEV_USE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option * int
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -330,6 +331,12 @@ struct
          in
            vls @ List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
          end
+       | DEV_USE_LEMMA (_, _, ar, n) => 
+         let
+           val (vls, tau) = Option.valOf ar
+         in
+           vls @ List.tabulate (n, fn _ => [] * [] <> TAC) ->> TAC
+         end
   end
 
   val arity =
@@ -375,6 +382,7 @@ struct
        | DEV_APPLY_HYP (a, _, _) => [(a, HYP EXP)]
        | DEV_USE_HYP (a, _) => [(a, HYP EXP)]
        | DEV_APPLY_LEMMA (opid, ps, _, _, _) => (opid, OPID) :: paramsSupport ps
+       | DEV_USE_LEMMA (opid, ps, _, _) => (opid, OPID) :: paramsSupport ps
   end
 
   val support =
@@ -426,6 +434,10 @@ struct
        | (DEV_APPLY_LEMMA (opid1, ps1, _, pat1, n1), t) =>
          (case t of
              DEV_APPLY_LEMMA (opid2, ps2, _, pat2, n2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2) andalso pat1 = pat2 andalso n1 = n2
+           | _ => false)
+       | (DEV_USE_LEMMA (opid1, ps1, _, n1), t) =>
+         (case t of
+             DEV_USE_LEMMA (opid2, ps2, _, n2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2) andalso n1 = n2
            | _ => false)
   end
 
@@ -560,6 +572,7 @@ struct
        | DEV_APPLY_HYP (a, _, _) => "apply-hyp{" ^ f a ^ "}"
        | DEV_USE_HYP (a, _) => "use-hyp{" ^ f a ^ "}"
        | DEV_APPLY_LEMMA (opid, ps, _, _, _) => "apply-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
+       | DEV_USE_LEMMA (opid, ps, _, _) => "use-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
   end
 
   fun toString f =
@@ -605,6 +618,7 @@ struct
        | DEV_APPLY_LEMMA (opid, ps, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, pat, n)
        | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort (HYP EXP) f) a, pat, spine)
        | DEV_USE_HYP (a, n) => DEV_USE_HYP (mapSym (passSort (HYP EXP) f) a, n)
+       | DEV_USE_LEMMA (opid, ps, ar, n) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, n)
   end
 
   fun mapWithSort f =

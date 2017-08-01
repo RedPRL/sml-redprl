@@ -28,13 +28,21 @@ Thm Apply : [
 Extract Apply.
 
 Thm UseHypTest : [
-  bool
+  (-> bool bool)
 ] by [
+  lam x.
   let p : [(-> bool S1 bool)] = lam b, c. use b.
-  use p `tt, `(loop 0)
+  use p {use x}, `(loop 0)
 ].
 
 Print UseHypTest.
+
+Thm UseLemmaTest : [
+  (-> bool bool)
+] by [
+  lam x.
+  use UseHypTest {use x}
+].
 
 
 Thm MyLemma(#m: {dim,dim}[exp,exp].exp) : [

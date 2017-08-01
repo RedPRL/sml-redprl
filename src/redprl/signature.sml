@@ -96,7 +96,6 @@ struct
           NONE => setAnnotation (getAnnotation t1) t2
         | _ => t2
 
-
       fun processOp pos sign =
         fn O.POLY (O.CUST (opid, ps, NONE)) =>
            (case arityOfOpid sign opid of
@@ -114,6 +113,15 @@ struct
                    val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
                  in
                    O.POLY (O.DEV_APPLY_LEMMA (opid, ps', SOME ar, pat, n))
+                 end
+             | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
+         | O.POLY (O.DEV_USE_LEMMA (opid, ps, NONE, n)) =>
+           (case arityOfOpid sign opid of
+               SOME (psorts, ar) =>
+                 let
+                   val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
+                 in
+                   O.POLY (O.DEV_USE_LEMMA (opid, ps', SOME ar, n))
                  end
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th => th
