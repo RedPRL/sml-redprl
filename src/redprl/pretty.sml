@@ -51,9 +51,13 @@ struct
   infix 0 $ $$ $# \
   infixr 0 @@
 
-  val ppSym = text o Sym.toString
-  val ppVar = text o Var.toString
-  val ppParam = text o P.toString Sym.toString
+  val symToString = Sym.DebugShow.toString
+  val varToString = Var.DebugShow.toString
+
+
+  val ppSym = text o symToString
+  val ppVar = text o varToString
+  val ppParam = text o P.toString symToString
   fun ppMetavar x = seq [char #"#", text (Abt.Metavar.toString x)]
 
   fun unlessEmpty xs m =
@@ -65,7 +69,7 @@ struct
     case theta of 
        O.POLY (O.CUST (opid, [], _)) => ppSym opid
      | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map (fn (p, _) => ppParam p) params
-     | _ =>  text @@ RedPrlOperator.toString Sym.toString theta
+     | _ =>  text @@ RedPrlOperator.toString symToString theta
 
   fun ppMetavarParams (x, ps) =
     case ps of

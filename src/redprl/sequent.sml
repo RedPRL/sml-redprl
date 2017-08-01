@@ -81,10 +81,10 @@ struct
       (Fpp.char #"{")
       (Fpp.char #"}")
       (Fpp.Atomic.comma)
-      (List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Tm.O.Ar.Vl.PS.toString sigma)]) syms)
+      (List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.DebugShow.toString u), Fpp.Atomic.colon, Fpp.text (Tm.O.Ar.Vl.PS.toString sigma)]) syms)
 
   fun prettyHyps f : 'a ctx -> Fpp.doc =
-    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [Fpp.text (Tm.Sym.toString x), Fpp.Atomic.colon, f a] :: r) []
+    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [Fpp.text (Tm.Sym.DebugShow.toString x), Fpp.Atomic.colon, f a] :: r) []
 
   fun pretty eq f : 'a jdg -> Fpp.doc =
     fn (I, H) >> catjdg =>
@@ -92,7 +92,7 @@ struct
          [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
           if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps (CJ.pretty eq f) H, Fpp.newline],
           Fpp.hsep [Fpp.text ">>", CJ.pretty eq f catjdg]]
-     | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
+     | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", Fpp.text (Tm.O.toString Tm.Sym.DebugShow.toString th), Fpp.text "@", Fpp.text (Int.toString k)]
      | MATCH_RECORD (lbl, a) => Fpp.hsep [f a, Fpp.text "match_record", Fpp.text lbl]
   fun pretty' f = pretty (fn _ => false) f
 
