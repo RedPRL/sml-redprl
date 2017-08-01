@@ -131,7 +131,7 @@ Thm PathTest2 : [
 
       // Now, we will project the 'x'-side of our path. In the
       // interactive tactic environment, dimension expressions are
-      // supplied to the refiner using the & "dimension quotation"
+      // supplied to the refiner using the '@' "dimension quotation"
       // operator.
       use p @x
 ].
