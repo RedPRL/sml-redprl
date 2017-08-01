@@ -24,22 +24,22 @@ struct
         [Fpp.seq [Fpp.hsep [Fpp.text "Goal", TermPrinter.ppMeta x], Fpp.text "."],
          RedPrlSequent.pretty RedPrlAbt.eq TermPrinter.ppTerm jdg]
 
-  val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, env : J.env, idx : int} =
+  val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, ren : J.ren, idx : int} =
     let
       open RedPrlAbt
     in
       Tl.foldl
-        (fn (x, jdg, {doc, env, idx}) =>
+        (fn (x, jdg, {doc, ren, idx}) =>
           let
             val x' = Metavar.named (Int.toString idx)
-            val jdg' = J.subst env jdg
-            val env' = Metavar.Ctx.insert env x (LcfLanguage.var x' (J.sort jdg'))
+            val jdg' = J.ren ren jdg
+            val ren' = Metavar.Ctx.insert ren x x'
           in
             {doc = Fpp.seq [doc, prettyGoal (x, jdg), Fpp.newline],
-             env = env',
+             ren = ren',
              idx = idx + 1}
           end)
-        {doc = Fpp.empty, env = Metavar.Ctx.empty, idx = 0}
+        {doc = Fpp.empty, ren = Metavar.Ctx.empty, idx = 0}
     end
 
   fun prettyState (psi |> _) =
