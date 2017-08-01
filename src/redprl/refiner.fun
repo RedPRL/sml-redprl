@@ -148,7 +148,8 @@ struct
         val _ = RedPrlLog.trace "Synth.Custom"
         val (I, H) >> CJ.SYNTH tm = jdg
         val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out tm
-        val {spec = ([],H') >> CJ.TRUE ty, state = Lcf.|> (psi, _), ...} = Sig.lookup sign name
+        val {spec = ([],H') >> CJ.TRUE ty, state, ...} = Sig.lookup sign name
+        val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = Lcf.Tl.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho = ListPair.foldl (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl))) Metavar.Ctx.empty (metas, args)
         val ty' = substMetaenv rho ty
@@ -239,13 +240,24 @@ struct
       handle _ =>
         raise E.error [Fpp.text "MATCH judgment failed to unify"]
 
-    fun DimSubst _ jdg = 
+    fun ParamSubst _ jdg = 
       let
-        val _ = RedPrlLog.trace "Misc.DimSubst"
-        val (I, H) >> CJ.DIM_SUBST (rtm, u, m) = jdg
-        val Abt.$ (O.POLY (O.DIM_REF r), _) = Abt.out rtm
+        val _ = RedPrlLog.trace "Misc.ParamSubst"
+        val (I, H) >> CJ.PARAM_SUBST (psi, m, _) = jdg
+
+        fun getSubstitution (rtm, sigma, u) = 
+          case Abt.out rtm of
+             Abt.$ (O.POLY (O.PARAM_REF (sigma', r)), _) =>
+               if sigma = sigma' then
+                 (r, u)
+               else
+                 raise E.error [Fpp.text "ParamSubst: parameter sort mismatch"]
+           | _ => raise E.error [Fpp.text "Parameter substitution not yet materialized"]
+
+        val substitutions = List.map getSubstitution psi
+        val rho = List.foldl (fn ((r, u), rho) => Sym.Ctx.insert rho u r) Sym.Ctx.empty substitutions
       in
-        T.empty #> (I, H, substSymbol (r, u) m)
+        T.empty #> (I, H, substSymenv rho m)
       end
   end
 
@@ -282,7 +294,8 @@ struct
         val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out m
         val true = Abt.eq (m, n)
 
-        val {spec = ([],H') >> CJ.TRUE specTy, state = Lcf.|> (psi, _), ...} = Sig.lookup sign name
+        val {spec = ([],H') >> CJ.TRUE specTy, state, ...} = Sig.lookup sign name
+        val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ()) (* TODO: use alpha here??? *)
         val metas = Lcf.Tl.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho = ListPair.foldl (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl))) Metavar.Ctx.empty (metas, args)
         val specTy' = substMetaenv rho specTy
@@ -455,113 +468,49 @@ struct
       |>: goal1 >: goal2 #> (I, H, substVar (hole1, z) hole2)
     end
 
-
-
-  local
-    fun checkMainGoal (specGoal, mainGoal) =
-      let
-        val (I, H) >> jdg = mainGoal
-        val (_, H0) >> jdg0 = specGoal
-      in
-        if CJ.eq (jdg, jdg0) then
-          ()
-        else 
-          raise E.error 
-            [Fpp.nest 2 @@ 
-              Fpp.vsep 
-                [Fpp.text "Conclusions of goal did not match specification:",
-                 CJ.pretty Abt.eq TermPrinter.ppTerm jdg,
-                 Fpp.text "vs",
-                 CJ.pretty Abt.eq TermPrinter.ppTerm jdg0]]
-        (* TODO: unify using I, J!! *)
-      end
-
-    datatype diff =
-       DELETE of hyp
-     | UPDATE of hyp * catjdg
-     | INSERT of hyp * catjdg
-
-    val diffToString =
-      fn DELETE x => "DELETE " ^ Sym.toString x
-       | UPDATE (x,_) => "UPDATE " ^ Sym.toString x
-       | INSERT (x,_) => "INSERT " ^ Sym.toString x
-
-    fun applyDiffs alpha i xrho deltas H : catjdg Hyps.telescope =
-      case deltas of
-         [] => H
-       | DELETE x :: deltas => applyDiffs alpha i xrho deltas (Hyps.remove x H)
-       | UPDATE (x, jdg) :: deltas => applyDiffs alpha i xrho deltas (Hyps.modify x (fn _ => jdg) H)
-       | INSERT (x, jdg) :: deltas =>
-           let
-             val x' = alpha i
-             val jdg' = CJ.map_ (RedPrlAbt.renameVars xrho) jdg
-             val xrho' = Var.Ctx.insert xrho x x'
-           in
-             applyDiffs alpha (i + 1) xrho' deltas (Hyps.snoc H x' jdg')
-           end
-
-    fun hypothesesDiff (H0, H1) : diff list =
-      let
-        val diff01 =
-          Hyps.foldr
-            (fn (x, jdg0, delta) =>
-              case Hyps.find H1 x of
-                  SOME jdg1 => if CJ.eq (jdg0, jdg1) then delta else UPDATE (x, jdg1) :: delta
-                | NONE => DELETE x :: delta)
-            []
-            H0
-      in
-        Hyps.foldr
-          (fn (x, jdg1, delta) =>
-             case Hyps.find H0 x of
-                SOME _ => delta
-              | NONE => INSERT (x, jdg1) :: delta)
-          diff01
-          H1
-      end
-
-    (* TODO: This needs to be rewritten; it is probably completely wrong now. *)
-    fun instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec) =
-      let
-        val (I0, H0) >> jdg0 = subgoalSpec
-        val nsyms = List.length I0
-        val freshSyms = List.tabulate (List.length I0, fn i => alpha i)
-        val I0' = ListPair.map (fn ((_,sigma), v) => (v, sigma)) (I, freshSyms)
-        val srho = ListPair.foldl (fn ((u, _), v, rho) => Sym.Ctx.insert rho u (P.ret v)) Sym.Ctx.empty (I, freshSyms)
-
-        val (_, H1) >> _ = mainGoalSpec
-        val delta = hypothesesDiff (H1, H0)
-        val H0' = applyDiffs alpha nsyms Var.Ctx.empty delta H
-
-        val jdg' = (I @ I0', H0') >> jdg0
-        val jdg'' = RedPrlSequent.map (substSymenv srho) jdg'
-      in
-        jdg''
-      end
-  in
-    fun Lemma sign opid params alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Lemma"
-        val (mainGoalSpec, Lcf.|> (subgoals, validation)) = Sig.resuscitateTheorem sign opid params
-        val () = checkMainGoal (mainGoalSpec, jdg)
-
-        val (I as [], H) >> _ = jdg
-        val _ = 
-          if Hyps.isEmpty H then () else
-            raise E.error [Fpp.text "Lemmas must have a categorical judgment as a conclusion"]
-
-        val subgoals' = Lcf.Tl.map (fn subgoalSpec => instantiateSubgoal alpha (I, H) (subgoalSpec, mainGoalSpec)) subgoals
-      in
-        Lcf.|> (subgoals', validation)
-      end
-  end
-
-  fun CutLemma sign opid params = 
+  fun makeNamePopper alpha = 
     let
-      val (mainGoalSpec, _) = Sig.resuscitateTheorem sign opid params
-      val (I, H) >> catjdg = mainGoalSpec
+      val ix = ref 0
     in
-      Cut catjdg thenl [Lemma sign opid params, fn _ => Lcf.idn]
+      fn () => 
+        let
+          val i = !ix
+          val h = alpha i
+        in
+          ix := i + 1;
+          h
+        end
+    end
+
+  fun CutLemma sign opid params alpha jdg = 
+    let
+      val z = alpha 0
+      val (I, H) >> catjdg = jdg
+
+      val {spec, state, ...} = Sig.lookup sign opid
+      val Lcf.|> (lemmaSubgoals, _) = state @@ UniversalSpread.bite 1 alpha
+
+      val (I_spec, H_spec) >> specjdg = spec
+      val _ = 
+        if Hyps.isEmpty H_spec then () else 
+          raise E.error [Fpp.text "Lemmas must have a categorical judgment as a conclusion"]
+
+      val lemmaExtract' =
+        let
+          val subgoalsList = Lcf.Tl.foldr (fn (x, jdg, goals) => (x, jdg) :: goals) [] lemmaSubgoals
+          val valences = List.map (RedPrlJudgment.sort o #2) subgoalsList
+          val arity = (valences, CJ.synthesis specjdg)
+          fun argForSubgoal ((x, jdg), vl) = outb @@ Lcf.L.var x vl
+        in
+          O.POLY (O.CUST (opid, params, SOME arity)) $$ ListPair.mapEq argForSubgoal (subgoalsList, valences)
+        end
+
+      val symenv = ListPair.foldlEq (fn ((x, _), r, rho) => Sym.Ctx.insert rho x r) Sym.Ctx.empty (I_spec, List.map #1 params)
+      val H' = H @> (z, CJ.map_ (substSymenv symenv) specjdg)
+      val (mainGoal, mainHole) = makeGoal @@ (I, H') >> catjdg
+      val extract = substVar (lemmaExtract', z) mainHole
+    in
+      lemmaSubgoals >: mainGoal #> (I, H, extract)
     end
 
   fun Exact tm =
@@ -763,7 +712,7 @@ struct
           | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
-          | _ >> CJ.DIM_SUBST _ => Misc.DimSubst
+          | _ >> CJ.PARAM_SUBST _ => Misc.ParamSubst
           | MATCH _ => Misc.MatchOperator
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordHeadExpansion sign then_ Record.MatchRecord)
 

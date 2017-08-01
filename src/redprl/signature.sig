@@ -12,19 +12,19 @@ sig
 
   type 'a arguments = ('a * valence) list
   type 'a params = ('a * psort) list
+  type names = int -> symbol
 
   type sign
   type entry =
     {sourceOpid : src_opid,
      spec : jdg,
-     state : Lcf.jdg Lcf.state}
+     state : names -> Lcf.jdg Lcf.state}
 
   val lookup : sign -> opid -> entry
 
   val entryParams : entry -> symbol params
 
   val applyCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> RedPrlAbt.metaenv * RedPrlAbt.symenv
-  val resuscitateTheorem : sign -> opid -> RedPrlAbt.param list -> jdg * Lcf.jdg Lcf.state
   val extract : Lcf.jdg Lcf.state -> abt
 end
 

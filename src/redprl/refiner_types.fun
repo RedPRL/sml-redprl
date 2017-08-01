@@ -855,7 +855,7 @@ struct
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
 
-        val (dimGoal, dimHole) = makeTerm (I, H) O.DIM_EXP
+        val (dimGoal, dimHole) = makeTerm (I, H) @@ O.PARAM_EXP O.DIM
         val (arGoal, arHole) = makeDimSubst (I, H) (dimHole, u, a)
 
         val w = Sym.named "w"

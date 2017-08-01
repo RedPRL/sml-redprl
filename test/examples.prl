@@ -64,7 +64,7 @@ Tac TryStep = [
   // We can call our Try tactical. But tactics are parsed with a different grammar than terms,
   // so to avoid ambiguity, when we need to provide a tactic expression as an argument to 
   // an operator, we wrap it in (tactic ....).
-  (Try (tactic auto-step))
+  (Try #{auto-step})
 ].
 
 Thm ApEqTest : [
@@ -161,7 +161,7 @@ Thm PathTest3 : [
 Print PathTest3.
 
 Thm PairTest : [ (* [a : S1] (path {_} S1 a base)) ] by [
-  <proj1 = `base, proj2 = <x> `(loop x)>;
+  <proj1 = `base, proj2 = <x> `(loop x)>
 ].
 
 
@@ -203,15 +203,15 @@ Thm FunExt(#A; #B) : [
    (path {_} (-> #A #B) f g))
 ] by [
   lam f, g, p.
-    <i> lam a. let q = p {hyp a} @i. hyp q
+    <i> lam a. let q = p {hyp a}, @i. hyp q
 ].
 
 Print FunExt.
 
 
 Tac FunExtTac(#A; #B; #F; #G) = [
-  let p : [(-> [x : #A] (path {_} wbool ($ #F x) ($ #G x)))] = {}.
-  <i> lam a. let q = p {hyp a} @i. hyp q
+  let p : [(-> [x : #A] (path {_} wbool ($ #F x) ($ #G x)))] = id.
+  <i> lam a. let q = p {hyp a}, @i. hyp q
 ].
 
 Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
@@ -224,7 +224,7 @@ Print FunExtTac.
 Print NotNotPath.
 
 Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
-  <proj1 = `tt, proj2 = <_> `tt>;
+  <proj1 = `tt, proj2 = <_> `tt>
 ].
 
 Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [

@@ -7,11 +7,11 @@ sig
   type hyp
   type opid
   type param
+  type psort
   type 'a bview
 
-  val Lemma : sign -> opid -> param list -> rule
   val Cut : catjdg -> rule
-  val CutLemma : sign -> opid -> param list -> rule
+  val CutLemma : sign -> opid -> (param * psort option) list -> rule
 
   val Elim : sign -> hyp -> rule
   val AutoStep : sign -> rule

@@ -242,6 +242,7 @@ struct
        if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
          val entry as {state, ...} = Sig.lookup sign opid
+         val state = state (fn _ => RedPrlSym.new ())
          val (mrho, srho) = Sig.applyCustomOperator entry (List.map #1 ps) args
          val term = substSymenv srho (substMetaenv mrho (Sig.extract state))
        in
@@ -517,13 +518,6 @@ struct
            end
          | _ => raise Fail "Impossible record type")
 
-     (* forms of judgment *)
-     | O.MONO O.JDG_EQ $ _ || (_, []) => raise Final
-     | O.MONO O.JDG_EQ_TYPE $ _ || (_, []) => raise Final
-     | O.MONO O.JDG_TRUE $ _ || (_, []) => raise Final
-     | O.MONO O.JDG_SYNTH $ _ || (_, []) => raise Final
-     | O.MONO O.JDG_DIM_SUBST $ _ || (_, []) => raise Final
-     | O.MONO (O.JDG_TERM _) $ _ || (_, []) => raise Final
      | _ => raise Stuck
 
   fun step sign stability unfolding (tm || stk) =

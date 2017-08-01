@@ -21,8 +21,24 @@ Thm Apply : [
    S1)
 ] by [
   lam f.
-    let <a> = f `tt `ff @0.
+    let <a> = f `tt, `ff, @0.
     hyp a
 ].
 
 Extract Apply.
+
+
+Thm MyLemma(#m: {dim,dim}[exp,exp].exp) : [
+  (-> [b : bool] [p : (path {_} bool b tt)] (* bool (path {_} bool tt b)))
+] by [
+  lam b, p. <proj1 = `tt, proj2 = <i> `(hcom{0~>1} bool ,b [i=0 {j} (@ ,p j)] [i=1 {_} ,b])>
+].
+
+Thm UsingLemma : [
+  (path {_} bool tt tt)
+] by [
+  let <proj2 = lem> = (MyLemma {i j} [x y] (@ (abs {_} y) i)) `tt, <_> `tt.
+  hyp lem
+].
+
+Print UsingLemma.

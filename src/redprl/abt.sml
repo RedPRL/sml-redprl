@@ -1,6 +1,8 @@
 structure Metavar = AbtSymbol ()
-structure Sym = AbtSymbol ()
-structure Var = Sym
+structure RedPrlSym = AbtSymbol ()
+structure RedPrlVar = RedPrlSym
+
+structure Sym = RedPrlSym and Var = RedPrlVar
 
 local
   structure AbtKit =

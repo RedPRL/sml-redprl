@@ -19,4 +19,15 @@ struct
     in
       go 0
     end
+
+  (* From MLton: https://github.com/MLton/mlton/blob/master/lib/mlton/basic/list.sml *)
+  fun splitAt (xs, i) = 
+   let
+      val rec loop = 
+        fn (0, acc, xs) => (rev acc, xs)
+         | (_, _, []) => raise Fail "ListUtil.splitAt"
+         | (i, acc, x::xs) => loop (i - 1, x :: acc, xs)
+   in
+      loop (i, [], xs)
+   end
 end

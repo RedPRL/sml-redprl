@@ -1,6 +1,0 @@
-// The tactic syntax is ambiguous in several places because the empty
-// string parses as `all(id)`. For example `[]` could mean each() or
-// each(all(id)). The current parser arbitrarily chooses the latter.
-Thm Square-bracket : [ (-> (-> bool bool) bool) ] by [
-  {lam f. `tt}; []
-].

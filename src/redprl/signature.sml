@@ -31,6 +31,7 @@ struct
   fun prettyEntry (_ : sign) (opid : symbol, entry as {spec, state,...} : entry) : Fpp.doc =
     let
       val arguments = entryArguments entry
+      val state = state (fn _ => RedPrlSym.new ())
     in
       Fpp.hsep
         [Fpp.text "Def",
@@ -106,22 +107,13 @@ struct
                    O.POLY (O.CUST (opid, ps', SOME ar))
                  end
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.RULE_LEMMA (opid, ps)) =>
+         | O.POLY (O.DEV_APPLY_LEMMA (opid, ps, NONE, pat, n)) =>
            (case arityOfOpid sign opid of
-               SOME (psorts, _) =>
+               SOME (psorts, ar) =>
                  let
                    val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
                  in
-                   O.POLY (O.RULE_LEMMA (opid, ps'))
-                 end
-             | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.RULE_CUT_LEMMA (opid, ps)) =>
-           (case arityOfOpid sign opid of
-               SOME (psorts, _) =>
-                 let
-                   val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
-                 in
-                   O.POLY (O.RULE_CUT_LEMMA (opid, ps'))
+                   O.POLY (O.DEV_APPLY_LEMMA (opid, ps', SOME ar, pat, n))
                  end
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th => th
@@ -315,20 +307,38 @@ struct
         handle AstToAbt.BadConversion (msg, pos) => error pos [Fpp.text msg])
       >>= scopeCheck (metactx, symctx, Var.Ctx.empty)
 
-    fun valenceToSequent ((sigmas, taus), tau) =
+    fun makeNamePopper alpha = 
+      let
+        val ix = ref 0
+      in
+        fn () => 
+          let
+            val i = !ix
+            val h = alpha i
+          in
+            ix := i + 1;
+            h
+          end
+      end
+
+    fun valenceToSequent alpha ((sigmas, taus), tau) =
       let
         open RedPrlSequent RedPrlCategoricalJudgment infix >>
-        val I = List.map (fn sigma => (Sym.new (), sigma)) sigmas
-        val H = List.foldr (fn (tau, H) => Hyps.cons (Var.new ()) (TERM tau) H) Hyps.empty taus
+        val fresh = makeNamePopper alpha
+        val I = List.map (fn sigma => (fresh (), sigma)) sigmas
+        val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ List.rev taus
       in
         (I, H) >> TERM tau
       end
 
-    fun argumentsToSubgoals arguments = 
+    fun argumentsToSubgoals alpha arguments = 
       List.foldr
-        (fn ((x,vl), r) => Lcf.Tl.cons x (valenceToSequent vl) r)
+        (fn ((x,vl), r) => Lcf.Tl.cons x (valenceToSequent alpha vl) r)
         Lcf.Tl.empty
         arguments
+
+
+    fun globalNameSequence i = Sym.named ("@" ^ Int.toString i)
 
     fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
       let
@@ -339,8 +349,14 @@ struct
           let
             val tau = sort
             open Tm infix \
-            val subgoals = argumentsToSubgoals arguments'
-            val state = Lcf.|> (subgoals, checkb (([],[]) \ definiens', (([],[]), tau)))
+
+            fun state alpha =
+              let
+                val subgoals = argumentsToSubgoals alpha arguments'
+              in
+                Lcf.|> (subgoals, checkb (([],[]) \ definiens', (([],[]), tau)))
+              end
+
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM tau)
           in
             E.ret (EDEF {sourceOpid = opid, spec = spec, state = state})
@@ -350,13 +366,11 @@ struct
     local
       open RedPrlSequent Tm RedPrlOpData infix >> \ $$
 
-      fun names i = Sym.named ("@" ^ Int.toString i)
-
-      fun elabRefine sign (seqjdg, script) =
+      fun elabRefine sign alpha (seqjdg, script) =
         let
           val pos = getAnnotation script
         in
-          E.wrap (pos, fn _ => TacticElaborator.tactic sign Var.Ctx.empty script names seqjdg)
+          E.wrap (pos, fn _ => TacticElaborator.tactic sign Var.Ctx.empty script alpha seqjdg)
         end
 
       structure Tl = TelescopeUtil (Lcf.Tl)
@@ -406,15 +420,20 @@ struct
                     end)
                   (params', symctx, env)
                   hyps
-              val termSubgoals = argumentsToSubgoals arguments'
+
             in
               convertToAbt (metactx, symctx', env') script TAC >>= 
-              (fn scriptTm => elabRefine sign (seqjdg, scriptTm)) >>= 
+              (fn scriptTm => elabRefine sign globalNameSequence (seqjdg, scriptTm)) >>= 
               checkProofState (pos, []) >>=
               (fn Lcf.|> (subgoals, validation) => 
                 let
-                  val subgoals' = Lcf.Tl.append termSubgoals subgoals
-                  val state = Lcf.|> (subgoals', validation)
+                  fun state alpha =
+                    let
+                      val argSubgoals = argumentsToSubgoals alpha arguments'
+                      (* TODO: relabel ordinary subgoals using alpha too *)
+                    in
+                      Lcf.|> (Lcf.Tl.append argSubgoals subgoals, validation)
+                    end
                   val spec = (params'' @ syms, hyps) >> concl
                 in
                   E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
@@ -431,9 +450,8 @@ struct
         convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
           let
             open O Tm infix \
-            val subgoals = argumentsToSubgoals arguments'
-            val state = Lcf.|> (subgoals, checkb (([],[]) \ script', (([],[]), TAC)))
-
+            fun state alpha =
+              Lcf.|> (argumentsToSubgoals alpha arguments', checkb (([],[]) \ script', (([],[]), TAC)))
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM TAC)
           in
             E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
@@ -470,7 +488,7 @@ struct
           E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
             E.ret (ECMD (EXTRACT eopid)) <*
               (case edecl of
-                  EDEF entry => printExtractOf (pos, #state entry)
+                  EDEF entry => printExtractOf (pos, #state entry (fn _ => RedPrlSym.new ()))
                 | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
     end
 

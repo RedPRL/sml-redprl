@@ -17,7 +17,7 @@ Thm EqualityElimTest : [
   // We'll rewrite the goal by asserting [(if tt tt ff) = tt in bool].
   (Rewrite
    (if tt tt ff) tt bool
-   (tactic auto)
+   #{auto}
    // we specify the motive (to be unified with the goal) by binding a *hypothesis* x,
    // which can then be unquoted in the term that we provide.
    {x} (-> bool (path {_} bool tt ,x)));

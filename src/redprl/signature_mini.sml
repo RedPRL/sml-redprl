@@ -15,11 +15,12 @@ struct
   type 'a params = ('a * psort) list
   type 'a arguments = ('a * valence) list
 
+  type names = int -> symbol
   type src_opid = string
   type entry =
     {sourceOpid : src_opid,
      spec : jdg,
-     state : Lcf.jdg Lcf.state}
+     state : names -> Lcf.jdg Lcf.state}
 
   type src_catjdg = (string, ast) RedPrlCategoricalJudgment.jdg
   type src_seqhyp = string * src_catjdg
@@ -77,7 +78,7 @@ struct
 
   fun entryArguments (entry : entry) : metavar arguments =
     let
-      val Lcf.|> (subgoals, _) = #state entry
+      val Lcf.|> (subgoals, _) = #state entry (fn _ => Sym.new ())
     in
       Lcf.Tl.foldr (fn (x, jdg, args) => (x, RedPrlJudgment.sort jdg) :: args) [] subgoals
     end
@@ -99,67 +100,9 @@ struct
       (mrho, srho)
     end
 
-  local
-    open RedPrlOpData Tm RedPrlSequent
-    infix $ \ >>
-
-    (* Observe that hypotheses have a dual nature: they are both symbols and variables. When reviving a proof state,
-      we have to rename hypotheses in *both* their moments. This routine constructs the appropriate substitution
-      for hypotheses qua variables. *)
-    fun hypothesisRenaming (entry : entry) (ps : Tm.param list) : Tm.varenv =
-      let
-        fun handleHyp ((u, psort), ptm, ctx) =
-          case psort of
-            RedPrlSortData.HYP tau =>
-              let
-                val v = case ptm of RedPrlParameterTerm.VAR v => v
-                           | _ => raise Fail "Hypothesis renaming failed: not a variable"
-              in
-                Var.Ctx.insert ctx u (Tm.check (Tm.`v, tau))
-              end
-          | _ => ctx
-      in
-        ListPair.foldl handleHyp Var.Ctx.empty (entryParams entry, ps)
-      end
-
-    fun relabelSequent (entry : entry) (ps : Tm.param list) : abt jdg -> abt jdg =
-      let
-        val rho =
-          ListPair.foldrEq
-            (fn ((u, _), P.VAR v, r) => Sym.Ctx.insert r u v
-              | (_, _, r) => r)
-            Sym.Ctx.empty
-            (entryParams entry, ps)
-      in
-        RedPrlSequent.relabel rho
-      end
-  in
-    fun resuscitateTheorem sign opid ps =
-      let
-        val entry = lookup sign opid
-        val goal = #spec entry
-        val Lcf.|> (subgoals, validation) = #state entry
-        val args = Lcf.Tl.foldr (fn (x, jdg, args) => outb (Lcf.L.var x (RedPrlJudgment.sort jdg)) :: args) [] subgoals
-
-        val (mrho, srho) = applyCustomOperator entry ps args
-        val vrho = hypothesisRenaming entry ps
-        val reviveTerm = substEnv (srho, vrho) o substMetaenv mrho
-        val reviveSequent = relabelSequent entry ps o RedPrlSequent.map reviveTerm
-
-        fun mapEff f = Lcf.Eff.bind (Lcf.Eff.ret o f)
-        val subgoals' = Lcf.Tl.map (mapEff reviveSequent) subgoals
-        val validation' = mapAbs reviveTerm validation
-        val goal' = reviveSequent goal
-
-        val state' = Lcf.|> (subgoals', validation')
-      in
-        (goal', state')
-      end
-
-      fun extract (Lcf.|> (_, validation)) =
-        case outb validation of
-           _ \ term => term
-    end
+  fun extract (Lcf.|> (_, validation)) =
+    case RedPrlAbt.outb validation of
+       RedPrlAbt.\ (_, term) => term
 end
 
 structure MiniSig_ : MINI_SIGNATURE = MiniSig
