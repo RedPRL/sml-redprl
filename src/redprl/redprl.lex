@@ -108,6 +108,7 @@ whitespace = [\ \t];
 "then"             => (Tokens.THEN (posTuple (size yytext)));
 "else"             => (Tokens.ELSE (posTuple (size yytext)));
 "let"              => (Tokens.LET (posTuple (size yytext)));
+"use"              => (Tokens.USE (posTuple (size yytext)));
 "with"             => (Tokens.WITH (posTuple (size yytext)));
 "case"             => (Tokens.CASE (posTuple (size yytext)));
 "of"               => (Tokens.OF (posTuple (size yytext)));

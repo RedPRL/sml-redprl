@@ -100,7 +100,6 @@ struct
      PAT_VAR of 'a
    | PAT_TUPLE of (string * 'a dev_pattern) list
 
-
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
    * which we call "monomorphic".
@@ -167,7 +166,6 @@ struct
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | HYP_REF of 'a
    | PARAM_REF of psort * 'a P.term
-   | RULE_HYP of 'a * sort
    | RULE_ELIM of 'a * sort
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
@@ -175,6 +173,8 @@ struct
 
    | DEV_APPLY_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option * unit dev_pattern * int
    | DEV_APPLY_HYP of 'a * unit dev_pattern * int
+   | DEV_USE_HYP of 'a * int
+   | DEV_USE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option * int
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -319,17 +319,23 @@ struct
        | CUST (_, _, ar) => Option.valOf ar
        | HYP_REF _ => [] ->> EXP
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
-       | RULE_HYP _ => [] ->> TAC
        | RULE_ELIM _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
        | DEV_APPLY_HYP (_, pat, n) => List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
+       | DEV_USE_HYP (_, n) => List.tabulate (n, fn _ => [] * [] <> TAC) ->> TAC
        | DEV_APPLY_LEMMA (_, _, ar, pat, n) => 
          let
            val (vls, tau) = Option.valOf ar
          in
            vls @ List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
+         end
+       | DEV_USE_LEMMA (_, _, ar, n) => 
+         let
+           val (vls, tau) = Option.valOf ar
+         in
+           vls @ List.tabulate (n, fn _ => [] * [] <> TAC) ->> TAC
          end
   end
 
@@ -369,13 +375,14 @@ struct
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | HYP_REF a => [(a, HYP EXP)]
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
-       | RULE_HYP (a, tau) => [(a, HYP tau)]
        | RULE_ELIM (a, tau) => [(a, HYP tau)]
        | RULE_UNFOLD a => [(a, OPID)]
        | DEV_BOOL_ELIM a => [(a, HYP EXP)]
        | DEV_S1_ELIM a => [(a, HYP EXP)]
        | DEV_APPLY_HYP (a, _, _) => [(a, HYP EXP)]
+       | DEV_USE_HYP (a, _) => [(a, HYP EXP)]
        | DEV_APPLY_LEMMA (opid, ps, _, _, _) => (opid, OPID) :: paramsSupport ps
+       | DEV_USE_LEMMA (opid, ps, _, _) => (opid, OPID) :: paramsSupport ps
   end
 
   val support =
@@ -418,15 +425,19 @@ struct
 
        | (HYP_REF a, t) => (case t of HYP_REF b => f (a, b) | _ => false)
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
-       | (RULE_HYP (a, _), t) => (case t of RULE_HYP (b, _) => f (a, b) | _ => false)
        | (RULE_ELIM (a, _), t) => (case t of RULE_ELIM (b, _) => f (a, b) | _ => false)
        | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_APPLY_HYP (a, pat, n), t) => (case t of DEV_APPLY_HYP (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
+       | (DEV_USE_HYP (a, n), t) => (case t of DEV_USE_HYP (b, n') => f (a, b) andalso n = n' | _ => false)
        | (DEV_APPLY_LEMMA (opid1, ps1, _, pat1, n1), t) =>
          (case t of
              DEV_APPLY_LEMMA (opid2, ps2, _, pat2, n2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2) andalso pat1 = pat2 andalso n1 = n2
+           | _ => false)
+       | (DEV_USE_LEMMA (opid1, ps1, _, n1), t) =>
+         (case t of
+             DEV_USE_LEMMA (opid2, ps2, _, n2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2) andalso n1 = n2
            | _ => false)
   end
 
@@ -554,13 +565,14 @@ struct
            f opid ^ "{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "hyp-ref{" ^ f a ^ "}"
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
-       | RULE_HYP (a, _) => "hyp{" ^ f a ^ "}"
        | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_APPLY_HYP (a, _, _) => "apply-hyp{" ^ f a ^ "}"
+       | DEV_USE_HYP (a, _) => "use-hyp{" ^ f a ^ "}"
        | DEV_APPLY_LEMMA (opid, ps, _, _, _) => "apply-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
+       | DEV_USE_LEMMA (opid, ps, _, _) => "use-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
   end
 
   fun toString f =
@@ -599,13 +611,14 @@ struct
        | CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
        | HYP_REF a => HYP_REF (mapSym (passSort (HYP EXP) f) a)
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
-       | RULE_HYP (a, tau) => RULE_HYP (mapSym (passSort (HYP tau) f) a, tau)
        | RULE_ELIM (a, tau) => RULE_ELIM (mapSym (passSort (HYP tau) f) a, tau)
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
        | DEV_APPLY_LEMMA (opid, ps, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, pat, n)
        | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort (HYP EXP) f) a, pat, spine)
+       | DEV_USE_HYP (a, n) => DEV_USE_HYP (mapSym (passSort (HYP EXP) f) a, n)
+       | DEV_USE_LEMMA (opid, ps, ar, n) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, n)
   end
 
   fun mapWithSort f =

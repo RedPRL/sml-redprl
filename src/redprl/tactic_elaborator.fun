@@ -278,7 +278,6 @@ struct
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.POLY (O.RULE_ELIM (z, _)) $ _ => R.Elim sign z
-     | O.POLY (O.RULE_HYP (z, _)) $ _ => hyp z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
@@ -299,6 +298,13 @@ struct
        in
          applications sign z (pattern, names) tacs tac
        end
+     | O.POLY (O.DEV_USE_HYP (z, n)) $ args => 
+       let
+         val z' = RedPrlSym.named (Sym.toString z ^ "'")
+         val tacs = List.map (fn _ \ tm => tactic sign env tm) args
+       in
+         applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
+       end
      | O.POLY (O.DEV_APPLY_LEMMA (opid, ps, ar, pat, n)) $ args =>
        let
          val ((names, []) \ tm) :: args' = List.rev args
@@ -307,6 +313,14 @@ struct
          val tac = tactic sign env tm
        in
          cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (pat, names) (List.rev appTacs) tac
+       end
+     | O.POLY (O.DEV_USE_LEMMA (opid, ps, ar, n)) $ args =>
+       let
+         val z = RedPrlSym.named (Sym.toString opid ^ "'")
+         val (appArgs, subtermArgs) = ListUtil.splitAt (List.rev args, n)
+         val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
+       in
+         cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
        end
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
