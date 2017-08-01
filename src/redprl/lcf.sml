@@ -21,7 +21,7 @@ struct
   fun prettyGoal (x, jdg) =
     Fpp.nest 2 @@
       Fpp.vsep
-        [Fpp.seq [Fpp.hsep [Fpp.text "Goal", Fpp.text (Metavar.toString x)], Fpp.text "."],
+        [Fpp.seq [Fpp.hsep [Fpp.text "Goal", TermPrinter.ppMeta x], Fpp.text "."],
          RedPrlSequent.pretty RedPrlAbt.eq TermPrinter.ppTerm jdg]
 
   val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, env : J.env, idx : int} =

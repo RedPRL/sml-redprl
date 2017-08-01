@@ -35,7 +35,9 @@ sig
   val ppValence : RedPrlAbt.valence -> Fpp.doc
   val ppVar : RedPrlAbt.variable -> Fpp.doc
   val ppSym : RedPrlAbt.symbol -> Fpp.doc
+  val ppMeta : RedPrlAbt.metavariable -> Fpp.doc
   val ppParam : RedPrlAbt.param -> Fpp.doc
+  val ppOperator : RedPrlAbt.operator -> Fpp.doc
   val ppLabel : string -> Fpp.doc
 end =
 struct
@@ -54,11 +56,10 @@ struct
   val symToString = Sym.DebugShow.toString
   val varToString = Var.DebugShow.toString
 
-
   val ppSym = text o symToString
   val ppVar = text o varToString
   val ppParam = text o P.toString symToString
-  fun ppMetavar x = seq [char #"#", text (Abt.Metavar.toString x)]
+  fun ppMeta x = seq [char #"#", text (Abt.Metavar.toString x)]
 
   fun unlessEmpty xs m =
     case xs of
@@ -73,8 +74,8 @@ struct
 
   fun ppMetavarParams (x, ps) =
     case ps of
-      [] => ppMetavar x
-    | ps => Atomic.braces @@ hsep @@ ppMetavar x :: List.map (fn (p, _) => ppParam p) ps
+      [] => ppMeta x
+    | ps => Atomic.braces @@ hsep @@ ppMeta x :: List.map (fn (p, _) => ppParam p) ps
 
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
