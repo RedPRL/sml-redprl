@@ -2,9 +2,15 @@ Thm Test : [ bool ] by [
   // We can do second-order pattern matching on a term by providing a
   // sequence of match clauses. Pattern variables are bound behind the pipe,
   // and are written with a %-sigil. Think of these as if they were metavariables.
-  match (lam [x] ($ x tt))
-    [%a | (lam [x] (%a x)) => `(%a (lam [x] x)), // in this clause, we extract the body of the lambda expression "capturing" the variable
-     %a, %b | ($ %a %b) => `%a] // in this clause we extract the first element of an application expression
+  match (lam [x] ($ x tt)) {
+    // in the first clause clause, we extract the body of the lambda expression "capturing" the variable.
+    // in the second clause, we extract the first element of an application expression.
+    [%a | (lam [x] (%a x)) => exact (%a (lam [x] x))]
+    [%a, %b | ($ %a %b) => exact %a]
+  };
+  auto
+  // later on, I'll add special magic terms like 'goal', so that you can type "match goal" and it will
+  // do the appropriate thing in a proof script.
 ].
 
 Print Test.
