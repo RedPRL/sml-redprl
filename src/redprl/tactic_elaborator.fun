@@ -347,9 +347,9 @@ struct
              val pat' = defrostMetas metas pat
              val handler' = defrostMetas metas handler
              val rho = Unify.unify metas (term, pat')
-               handle exn as Unify.Unify (tm1, tm2) => 
+               (* handle exn as Unify.Unify (tm1, tm2) => 
                  (RedPrlLog.print RedPrlLog.WARN (getAnnotation pat, Fpp.hsep [Fpp.text "Failed to unify", TermPrinter.ppTerm tm1, Fpp.text "and", TermPrinter.ppTerm tm2]);
-                  raise exn)
+                  raise exn) *)
              val handler'' = substMetaenv rho handler'
            in
              tactic sign env handler'' alpha jdg

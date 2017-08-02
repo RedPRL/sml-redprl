@@ -750,7 +750,7 @@ tupleDecompPattern
    | ([])
 
  devMatchClause
-  : patvarBindings TRIANGLE_RIGHT term DOUBLE_RIGHT_ARROW tactic (patvarBindings, (term, tactic))
+  : patvarBindings PIPE term DOUBLE_RIGHT_ARROW tactic (patvarBindings, (term, tactic))
   | term DOUBLE_RIGHT_ARROW tactic ([], (term, tactic))
 
 devMatchClauses
