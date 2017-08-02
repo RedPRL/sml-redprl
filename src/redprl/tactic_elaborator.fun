@@ -14,6 +14,7 @@ sig
 end = 
 struct
   structure Tm = RedPrlAbt
+  structure Unify = AbtUnify (RedPrlAbt)
 
   type sign = Sig.sign
   type script = Tm.abt
@@ -323,6 +324,41 @@ struct
          cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
        end
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
+     | O.MONO (O.DEV_MATCH (tau, ns)) $ (_ \ term) :: clauses =>
+       let
+         fun defrostMetas metas =
+           let
+             fun go tm = 
+               case out tm of
+                  O.POLY (O.PAT_META (x, tau, rs, taus)) $ args =>
+                   if Unify.Metas.member metas x then 
+                    check (x $# (rs, List.map (fn _ \ m => m) args), tau)
+                   else 
+                     tm 
+                | _ => tm
+           in
+             go o deepMapSubterms go
+           end
+
+         fun reviveClause ((pvars,_) \ clause) alpha jdg =
+           let
+             val O.MONO (O.DEV_MATCH_CLAUSE _) $ [_ \ pat, _ \ handler] = out clause
+             val metas = List.foldl (fn (pvar, metas) => Unify.Metas.insert metas pvar) Unify.Metas.empty pvars
+             val pat' = defrostMetas metas pat
+             val handler' = defrostMetas metas handler
+             val rho = Unify.unify metas (term, pat')
+               handle exn as Unify.Unify (tm1, tm2) => 
+                 (RedPrlLog.print RedPrlLog.WARN (getAnnotation pat, Fpp.hsep [Fpp.text "Failed to unify", TermPrinter.ppTerm tm1, Fpp.text "and", TermPrinter.ppTerm tm2]);
+                  raise exn)
+             val handler'' = substMetaenv rho handler'
+           in
+             tactic sign env handler'' alpha jdg
+           end
+
+         fun fail _ _ = raise RedPrlError.error [Fpp.text "No matching clause"]
+       in
+         List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
+       end
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =

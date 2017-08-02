@@ -1,6 +1,6 @@
-structure Metavar = AbtSymbol ()
 structure RedPrlSym = AbtSymbol ()
 structure RedPrlVar = RedPrlSym
+structure Metavar = RedPrlSym
 
 structure Sym = RedPrlSym and Var = RedPrlVar
 

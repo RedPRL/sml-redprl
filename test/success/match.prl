@@ -1,0 +1,6 @@
+Thm Test : [ bool ] by [
+  match (lam [x] ($ x tt))
+    [%a :> (lam [x] (%a x)) => `(%a (lam [x] x))]
+].
+
+Print Test.

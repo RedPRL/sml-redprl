@@ -487,6 +487,7 @@ param
 
 typedParam
   : LSQUARE param COLON psort RSQUARE ((param, psort))
+  | param ((param, O.DIM))
 
 params
   : param ([param])
@@ -676,6 +677,7 @@ terms
 
 typedTerm
   : LSQUARE term COLON sort RSQUARE ((term, sort))
+  | term ((term, O.EXP))
 
 typedTerms
   : typedTerm ([typedTerm])
