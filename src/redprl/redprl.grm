@@ -268,7 +268,7 @@ end
  | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
 
  (* parameter sorts *)
- | DIM | HYP
+ | DIM | HYP | META_NAME
  (* sorts *)
  | EXP | TAC | TRIV
 
@@ -333,12 +333,15 @@ end
    (* parameters *)
  | param of string param
  | params of string param list
+ | typedParam of string param * P.param_sort
+ | typedParams of (string param * P.param_sort) list
  | dir of string param * string param
  | equation of string param * string param
  | tube of (string param * string param) * ast abs
  | tubes of ((string param * string param) * ast abs) list
 
  | metavar of string
+ | patvar of string * O.sort
  | customOpParams of (string param * P.param_sort option) list
  | customOpTerm of string * (string param * P.param_sort option) list * ast abs list
 
@@ -364,6 +367,8 @@ end
    (* a type-theoretic term, annotated with source position *)
  | term of ast
  | terms of ast list
+ | typedTerm of ast * O.sort
+ | typedTerms of (ast * O.sort) list
 
  | rawJudgment of ast
  | judgment of ast
@@ -434,6 +439,7 @@ boundVars
 psort
   : DIM (P.DIM)
   | HYP (P.HYP O.EXP)
+  | META_NAME (P.META_NAME)
 
 psorts
   : psort ([psort])
@@ -463,9 +469,17 @@ param
   : VARNAME (P.VAR VARNAME)
   | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise RedPrlError.annotate (SOME (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName))) (RedPrlError.error [Fpp.text "Invalid dimension constant"])))
 
+typedParam
+  : LSQUARE param COLON psort RSQUARE ((param, psort))
+
 params
   : param ([param])
   | param params (param :: params)
+
+typedParams
+  : typedParam ([typedParam])
+  | typedParam typedParams (typedParam :: typedParams)
+
 
 dir
   : param SQUIGGLE_ARROW param ((param1, param2))
@@ -568,6 +582,10 @@ customOpTerm
   | LBRACKET OPNAME customOpParams RBRACKET (OPNAME, customOpParams, [])
   | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (OPNAME, customOpParams, bindings)
 
+patvar
+  : PERCENT LSQUARE VARNAME COLON sort RSQUARE ((VARNAME, sort))
+  | PERCENT VARNAME ((VARNAME, O.EXP))
+
 rawTermAndTac
   : VARNAME (`` VARNAME)
 
@@ -576,6 +594,12 @@ rawTermAndTac
   | LPAREN metavar terms RPAREN (Ast.$$# (metavar, ([], terms)))
   | LBRACKET metavar params RBRACKET (Ast.$$# (metavar, (params, [])))
   | LPAREN LBRACKET metavar params RBRACKET terms RPAREN (Ast.$$# (metavar, (params, terms)))
+
+  (* pattern variables *)
+  | patvar (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, [], [])), []))
+  | LPAREN patvar typedTerms RPAREN (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, [], List.map #2 typedTerms)), List.map (fn (tm, _) => \ (([],[]), tm)) typedTerms))
+  | LBRACKET patvar typedParams RBRACKET  (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, typedParams, [])), []))
+  | LPAREN LBRACKET patvar typedParams RBRACKET typedTerms RPAREN (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, typedParams, List.map #2 typedTerms)), List.map (fn (tm, _) => \ (([],[]), tm)) typedTerms))
 
   (* custom operators *)
   | customOpTerm (makeCustom customOpTerm)
@@ -629,6 +653,14 @@ term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileNam
 terms
   : term ([term])
   | term terms (term :: terms)
+
+typedTerm
+  : LSQUARE term COLON sort RSQUARE ((term, sort))
+
+typedTerms
+  : typedTerm ([typedTerm])
+  | typedTerm typedTerms (typedTerm :: typedTerms)
+
 
 rawJudgment
   : term EQUALS term IN term (Ast.$$ (O.MONO O.JDG_EQ, [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))

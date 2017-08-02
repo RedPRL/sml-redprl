@@ -115,6 +115,7 @@ whitespace = [\ \t];
 "refine"           => (Tokens.REFINE (posTuple (size yytext)));
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
+"meta-name"        => (Tokens.META_NAME (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
