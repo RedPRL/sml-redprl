@@ -12,6 +12,7 @@ struct
    | MTAC
    | JDG
    | TRIV
+   | MATCH_CLAUSE of sort
    | PARAM_EXP of param_sort
 
   val rec sortToString = 
@@ -20,6 +21,7 @@ struct
      | MTAC => "mtac"
      | JDG => "jdg"
      | TRIV => "triv"
+     | MATCH_CLAUSE tau => "match-clause"
      | PARAM_EXP sigma => "param-exp{" ^ paramSortToString sigma ^ "}"
 
   and paramSortToString = 
@@ -151,6 +153,8 @@ struct
    | DEV_DFUN_INTRO of unit dev_pattern list
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
    | DEV_LET of RedPrlSort.t
+   | DEV_MATCH of RedPrlSort.t * int list
+   | DEV_MATCH_CLAUSE of RedPrlSort.t 
 
    | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_PARAM_SUBST of RedPrlParamSort.t list * RedPrlSort.t
 
@@ -279,6 +283,9 @@ struct
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) * [] <> TAC] ->> TAC
      | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
+
+     | DEV_MATCH (tau, ns) => ([] * [] <> tau) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE tau) ns ->> TAC
+     | DEV_MATCH_CLAUSE tau => [[] * [] <> tau, [] * [] <> TAC] ->> MATCH_CLAUSE tau
 
      | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_TRUE => [[] * [] <> EXP] ->> JDG
@@ -525,6 +532,8 @@ struct
      | DEV_DFUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
      | DEV_LET _ => "let"
+     | DEV_MATCH _ => "dev-match"
+     | DEV_MATCH_CLAUSE _ => "dev-match-clause"
 
      | JDG_EQ => "eq"
      | JDG_TRUE => "true"
