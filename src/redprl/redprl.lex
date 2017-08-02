@@ -41,7 +41,7 @@ whitespace = [\ \t];
 "-"?{digit}+       => (Tokens.NUMERAL (posTupleWith (size yytext) (valOf (IntInf.fromString yytext))));
 "//"[^\n]*         => (continue ());
 
-
+":>"               => (Tokens.TRIANGLE_RIGHT (posTuple (size yytext)));
 "<|"               => (Tokens.LANGLE_PIPE (posTuple (size yytext)));
 "|>"               => (Tokens.RANGLE_PIPE (posTuple (size yytext)));
 "("                => (Tokens.LPAREN (posTuple (size yytext)));
@@ -146,6 +146,8 @@ whitespace = [\ \t];
 "head-expand"      => (Tokens.RULE_HEAD_EXP (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
+
+"match"            => (Tokens.MATCH (posTuple (size yytext)));
 
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
 "type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));
