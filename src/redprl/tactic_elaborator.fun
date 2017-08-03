@@ -44,11 +44,11 @@ struct
 
     fun go syms m =
       case Tm.out m of
-         O.POLY (O.HYP_REF a) $ _ =>
+         O.POLY (O.HYP_REF (a, tau)) $ _ =>
            if Sym.Ctx.member syms a then
              m
            else
-             inheritAnnotation m (check (`a, O.EXP)) 
+             inheritAnnotation m (check (`a, tau)) 
        | _ => goStruct syms m
 
     and goStruct syms m =
@@ -247,7 +247,7 @@ struct
         let
           val syms = ListPair.zipEq (us, sigmas)
           val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP)) (xs, taus)
-          val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF x) $$ [])) Var.Ctx.empty (xs, taus)
+          val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF (x, tau)) $$ [])) Var.Ctx.empty (xs, taus)
           val m' = substVarenv rho m
         in
           {subtermNames = us @ xs @ subtermNames,

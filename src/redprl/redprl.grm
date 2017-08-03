@@ -670,7 +670,8 @@ rawTerm
   | HASH TAC LBRACKET tactic RBRACKET (tactic)
   | HASH JDG LBRACKET judgment RBRACKET (judgment)
   (* hypotheses *)
-  | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF VARNAME), []))
+  | COMMA LSQUARE VARNAME COLON sort RSQUARE (Ast.$$ (O.POLY (O.HYP_REF (VARNAME, sort)), []))
+  | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF (VARNAME, O.EXP)), []))
 
 term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileName)) rawTerm)
 
