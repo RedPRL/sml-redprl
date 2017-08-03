@@ -14,6 +14,7 @@ sig
 end = 
 struct
   structure Tm = RedPrlAbt
+  structure Unify = AbtUnify (RedPrlAbt)
 
   type sign = Sig.sign
   type script = Tm.abt
@@ -43,12 +44,11 @@ struct
 
     fun go syms m =
       case Tm.out m of
-         O.POLY (O.HYP_REF a) $ _ =>
+         O.POLY (O.HYP_REF (a, tau)) $ _ =>
            if Sym.Ctx.member syms a then
              m
            else
-             inheritAnnotation m (check (`a, O.EXP)) 
-              (* TODO: This can't be right *)
+             inheritAnnotation m (check (`a, tau)) 
        | _ => goStruct syms m
 
     and goStruct syms m =
@@ -246,8 +246,8 @@ struct
       fun processArg ((us, xs) \ m, ((sigmas, taus), _), {subtermNames, subtermTacs}) =
         let
           val syms = ListPair.zipEq (us, sigmas)
-          val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP tau)) (xs, taus)
-          val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF x) $$ [])) Var.Ctx.empty (xs, taus)
+          val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP)) (xs, taus)
+          val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF (x, tau)) $$ [])) Var.Ctx.empty (xs, taus)
           val m' = substVarenv rho m
         in
           {subtermNames = us @ xs @ subtermNames,
@@ -277,14 +277,14 @@ struct
        O.MONO O.TAC_MTAC $ [_ \ tm] => multitacToTac (multitactic sign env tm)
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
-     | O.POLY (O.RULE_ELIM (z, _)) $ _ => R.Elim sign z
+     | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.fromAbt (expandHypVars catjdg))
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
-     | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO (O.DEV_DFUN_INTRO pats) $ [(us, _) \ tm] => dfunIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
@@ -323,6 +323,51 @@ struct
          cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
        end
      | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
+     | O.MONO (O.DEV_MATCH (tau, ns)) $ (_ \ term) :: clauses =>
+       let
+         fun defrostMetas metas =
+           let
+             fun go tm = 
+               case out tm of
+                  O.POLY (O.PAT_META (x, tau, rs, taus)) $ args =>
+                   if Unify.Metas.member metas x then 
+                    check (x $# (rs, List.map (fn _ \ m => m) args), tau)
+                   else 
+                     tm 
+                | _ => tm
+           in
+             go o deepMapSubterms go
+           end
+
+         fun reviveClause ((pvars,_) \ clause) alpha jdg =
+           let
+             val O.MONO (O.DEV_MATCH_CLAUSE _) $ [_ \ pat, _ \ handler] = out clause
+             val metas = Unify.Metas.fromList pvars
+             val pat' = defrostMetas metas pat
+             val handler' = defrostMetas metas handler
+             val rho = Unify.unify metas (term, pat')
+               (* handle exn as Unify.Unify (tm1, tm2) => 
+                 (RedPrlLog.print RedPrlLog.WARN (getAnnotation pat, Fpp.hsep [Fpp.text "Failed to unify", TermPrinter.ppTerm tm1, Fpp.text "and", TermPrinter.ppTerm tm2]);
+                  raise exn) *)
+             val handler'' = substMetaenv rho handler'
+           in
+             tactic sign env handler'' alpha jdg
+           end
+
+         fun fail _ _ = raise RedPrlError.error [Fpp.text "No matching clause"]
+       in
+         List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
+       end
+     | O.MONO O.DEV_QUERY_GOAL $ [(_,[x]) \ tm] =>
+       (fn alpha => fn jdg as _ >> cj =>
+         let
+           val tm' = substVar (CJ.toAbt cj, x) tm
+         in
+           tactic sign env tm' alpha jdg
+         end)
+     | O.MONO (O.DEV_PRINT _) $ [_ \ tm'] =>
+       (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
+        T.idn)
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =

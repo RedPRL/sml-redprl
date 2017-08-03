@@ -165,7 +165,7 @@ struct
 
   and ppTerm m =
     case Abt.out m of
-       O.POLY (O.HYP_REF x) $ [] => seq [char #",", ppVar x]
+       O.POLY (O.HYP_REF (x, _)) $ [] => seq [char #",", ppVar x]
      | `x => ppVar x
      | O.POLY (O.LOOP x) $ [] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]

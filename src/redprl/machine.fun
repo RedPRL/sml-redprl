@@ -22,9 +22,6 @@ struct
     val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
     val auto = O.MONO O.MTAC_AUTO $$ []
 
-    fun elim (u, tau) =
-      O.POLY (O.RULE_ELIM (u, tau)) $$ []
-
     fun all t =
       O.MONO O.MTAC_ALL $$ [([],[]) \ t]
 

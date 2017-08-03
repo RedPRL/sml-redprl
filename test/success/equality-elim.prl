@@ -6,7 +6,7 @@ Tac Rewrite(#m; #n; #a; #t : tac; #c : {hyp}.exp) = [
   // Use the elimination rule for equality; we have to provide an annotation to
   // the hypothesis 'p' (sad!). We bind a new hypothesis which will represent the location
   // in the goal #c which is being rewritten.
-  fresh x <- elim p:triv;
+  fresh x -> elim p;
   [`{#c x}, id, auto, auto]
 ].
 
@@ -17,7 +17,7 @@ Thm EqualityElimTest : [
   // We'll rewrite the goal by asserting [(if tt tt ff) = tt in bool].
   (Rewrite
    (if tt tt ff) tt bool
-   #{auto}
+   #tac{auto}
    // we specify the motive (to be unified with the goal) by binding a *hypothesis* x,
    // which can then be unquoted in the term that we provide.
    {x} (-> bool (path {_} bool tt ,x)));

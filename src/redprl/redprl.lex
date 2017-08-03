@@ -41,7 +41,7 @@ whitespace = [\ \t];
 "-"?{digit}+       => (Tokens.NUMERAL (posTupleWith (size yytext) (valOf (IntInf.fromString yytext))));
 "//"[^\n]*         => (continue ());
 
-
+":>"               => (Tokens.TRIANGLE_RIGHT (posTuple (size yytext)));
 "<|"               => (Tokens.LANGLE_PIPE (posTuple (size yytext)));
 "|>"               => (Tokens.RANGLE_PIPE (posTuple (size yytext)));
 "("                => (Tokens.LPAREN (posTuple (size yytext)));
@@ -115,9 +115,11 @@ whitespace = [\ \t];
 "refine"           => (Tokens.REFINE (posTuple (size yytext)));
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
+"meta-name"        => (Tokens.META_NAME (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
+"jdg"              => (Tokens.JDG (posTuple (size yytext)));
 "triv"             => (Tokens.TRIV (posTuple (size yytext)));
 
 "tactic"           => (Tokens.TACTIC (posTuple (size yytext)));
@@ -145,6 +147,11 @@ whitespace = [\ \t];
 "head-expand"      => (Tokens.RULE_HEAD_EXP (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
+
+"match"            => (Tokens.MATCH (posTuple (size yytext)));
+"query"            => (Tokens.QUERY (posTuple (size yytext)));
+"goal"             => (Tokens.GOAL (posTuple (size yytext)));
+"print"            => (Tokens.PRINT (posTuple (size yytext)));
 
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
 "type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));

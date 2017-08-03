@@ -11,6 +11,7 @@ in
     $(LIBS)/sml-cats/cats.mlb
     $(LIBS)/sml-telescopes/telescopes.mlb
     $(LIBS)/sml-typed-abts/abt.mlb
+    $(LIBS)/sml-typed-abts/abt-unify.mlb
     $(LIBS)/sml-typed-abts/basis/basis.mlb
     $(LIBS)/sml-dependent-lcf/dependent_lcf.mlb
     $(LIBS)/sml-dependent-lcf/lcf_abt.mlb
