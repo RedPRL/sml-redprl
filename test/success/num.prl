@@ -20,7 +20,7 @@ Thm Pred : [
   (-> nat nat)
 ] by [
   lam a.
-  fresh a', ind <- elim a;
+  fresh a', ind -> elim a;
   [ `zero ];
   [ use a' ]
 ].
@@ -50,7 +50,7 @@ Thm Plus : [
   (-> nat nat nat)
 ] by [
   lam a.
-  fresh a', ind <- elim a;
+  fresh a', ind -> elim a;
   [ `(lam [x] x)
   , `(lam [x] (succ ($ ,ind x)))
   ]

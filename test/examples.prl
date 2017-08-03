@@ -18,8 +18,8 @@ Thm LowLevel : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f <- refine dfun/intro;
-  [fresh x, x/eq <- elim f;
+  fresh f -> refine dfun/intro;
+  [fresh x, x/eq -> elim f;
   [`tt, use x],
   refine dfun/eq/type;
   refine wbool/eq/type]
@@ -32,8 +32,8 @@ Thm LowLevel2 : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f <- auto;
-  fresh x, x/eq <- elim f;
+  fresh f -> auto;
+  fresh x, x/eq -> elim f;
   [`tt, use x]
 ].
 

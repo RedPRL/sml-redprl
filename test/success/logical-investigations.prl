@@ -40,9 +40,9 @@ Thm Thm3/low-level(#A; #B; #C) : [
       (-> #B #C)
       (-> #A #C))
 ] by [
-  fresh ab, bc, a <- auto;
-  fresh c <- elim bc;
-  [fresh b <- elim ab; [use a, use b], use c]
+  fresh ab, bc, a -> auto;
+  fresh c -> elim bc;
+  [fresh b -> elim ab; [use a, use b], use c]
 ].
 
 Extract Thm3/low-level.

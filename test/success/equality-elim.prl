@@ -6,7 +6,7 @@ Tac Rewrite(#m; #n; #a; #t : tac; #c : {hyp}.exp) = [
   // Use the elimination rule for equality; we have to provide an annotation to
   // the hypothesis 'p' (sad!). We bind a new hypothesis which will represent the location
   // in the goal #c which is being rewritten.
-  fresh x <- elim p;
+  fresh x -> elim p;
   [`{#c x}, id, auto, auto]
 ].
 
