@@ -309,6 +309,8 @@ end
  | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_HEAD_EXP | RULE_UNFOLD
  | RULE_EXACT
  | MATCH
+ | QUERY | GOAL
+ | PRINT
 
  (* keywords in judgments *)
  | JDG_TRUE | JDG_TYPE | JDG_SYNTH
@@ -465,6 +467,7 @@ sort
   : EXP (O.EXP)
   | TAC (O.TAC)
   | TRIV (O.TRIV)
+  | JDG (O.JDG)
 
 sorts
   : sort ([sort])
@@ -795,6 +798,8 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([VARNAME2], []), tactic2)]))
 
   | MATCH typedTerm LBRACKET devMatchClauses RBRACKET (Tac.makeMatch typedTerm devMatchClauses)
+  | QUERY VARNAME LEFT_ARROW GOAL DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY_GOAL, [\ (([],[VARNAME]), tactic)]))
+  | PRINT typedTerm (Ast.$$ (O.MONO (O.DEV_PRINT (#2 typedTerm)), [\ (([], []), #1 typedTerm)]))
 
   (* overlapping with term *)
   | rawTermAndTac (rawTermAndTac)

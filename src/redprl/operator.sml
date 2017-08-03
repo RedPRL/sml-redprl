@@ -155,6 +155,8 @@ struct
    | DEV_LET of RedPrlSort.t
    | DEV_MATCH of RedPrlSort.t * int list
    | DEV_MATCH_CLAUSE of RedPrlSort.t 
+   | DEV_QUERY_GOAL
+   | DEV_PRINT of RedPrlSort.t
 
    | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_PARAM_SUBST of RedPrlParamSort.t list * RedPrlSort.t
 
@@ -286,6 +288,8 @@ struct
 
      | DEV_MATCH (tau, ns) => ([] * [] <> tau) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE tau) ns ->> TAC
      | DEV_MATCH_CLAUSE tau => [[] * [] <> tau, [] * [] <> TAC] ->> MATCH_CLAUSE tau
+     | DEV_QUERY_GOAL => [[] * [JDG] <> TAC] ->> TAC
+     | DEV_PRINT tau => [[] * [] <> tau] ->> TAC
 
      | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
      | JDG_TRUE => [[] * [] <> EXP] ->> JDG

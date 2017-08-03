@@ -359,6 +359,16 @@ struct
        in
          List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
        end
+     | O.MONO O.DEV_QUERY_GOAL $ [(_,[x]) \ tm] =>
+       (fn alpha => fn jdg as _ >> cj =>
+         let
+           val tm' = substVar (CJ.toAbt cj, x) tm
+         in
+           tactic sign env tm' alpha jdg
+         end)
+     | O.MONO (O.DEV_PRINT _) $ [_ \ tm'] =>
+       (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
+        T.idn)
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =

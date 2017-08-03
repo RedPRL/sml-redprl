@@ -149,6 +149,9 @@ whitespace = [\ \t];
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
 
 "match"            => (Tokens.MATCH (posTuple (size yytext)));
+"query"            => (Tokens.QUERY (posTuple (size yytext)));
+"goal"             => (Tokens.GOAL (posTuple (size yytext)));
+"print"            => (Tokens.PRINT (posTuple (size yytext)));
 
 "true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
 "type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));
