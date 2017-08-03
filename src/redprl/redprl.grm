@@ -606,8 +606,8 @@ patvar
   | PERCENT VARNAME ((VARNAME, O.EXP))
 
 patvarBindings
-  : PERCENT VARNAME COMMA patvarBindings (VARNAME :: patvarBindings)
-  | PERCENT VARNAME ([VARNAME])
+  : VARNAME COMMA patvarBindings (VARNAME :: patvarBindings)
+  | VARNAME ([VARNAME])
 
 rawTermAndTac
   : VARNAME (`` VARNAME)

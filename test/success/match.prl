@@ -1,10 +1,10 @@
-Thm MatchGoal : [ (-> bool bool bool) ] by [
+Thm MatchGoal : [ (-> bool bool bool bool bool bool) ] by [
   fresh x, y <- repeat {
     query gl <- goal.
     print [gl:jdg];
     match [gl:jdg] {
-      [%a, %b | #jdg{(-> [x : %a] (%b x))} => refine dfun/intro; [id, auto]]
-      [%a | %[a:jdg] => id]
+      [a, b | #jdg{(-> [x : %a] (%b x))} => refine dfun/intro; [id, auto]]
+      [a | %[a:jdg] => id]
     }
   };
   
