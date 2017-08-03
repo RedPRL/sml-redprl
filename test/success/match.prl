@@ -5,8 +5,6 @@ Tac QueryGoalType(#t : [exp].tac) = [
   }
 ].
 
-// find hyp [a | x : %a => tac]
-
 Thm MatchGoal : [ (-> bool bool bool bool bool bool) ] by [
   fresh x, y -> repeat {
     (QueryGoalType [ty] #tac{
