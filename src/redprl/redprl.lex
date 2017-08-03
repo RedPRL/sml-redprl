@@ -119,6 +119,7 @@ whitespace = [\ \t];
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
+"jdg"              => (Tokens.JDG (posTuple (size yytext)));
 "triv"             => (Tokens.TRIV (posTuple (size yytext)));
 
 "tactic"           => (Tokens.TACTIC (posTuple (size yytext)));

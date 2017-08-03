@@ -343,7 +343,7 @@ struct
          fun reviveClause ((pvars,_) \ clause) alpha jdg =
            let
              val O.MONO (O.DEV_MATCH_CLAUSE _) $ [_ \ pat, _ \ handler] = out clause
-             val metas = List.foldl (fn (pvar, metas) => Unify.Metas.insert metas pvar) Unify.Metas.empty pvars
+             val metas = Unify.Metas.fromList pvars
              val pat' = defrostMetas metas pat
              val handler' = defrostMetas metas handler
              val rho = Unify.unify metas (term, pat')

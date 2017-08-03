@@ -64,7 +64,7 @@ Tac TryStep = [
   // We can call our Try tactical. But tactics are parsed with a different grammar than terms,
   // so to avoid ambiguity, when we need to provide a tactic expression as an argument to 
   // an operator, we wrap it in (tactic ....).
-  (Try #{auto-step})
+  (Try #tac{auto-step})
 ].
 
 Thm ApEqTest : [
