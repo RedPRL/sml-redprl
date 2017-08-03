@@ -2,7 +2,7 @@ structure RedPrlSortData =
 struct
   datatype param_sort =
      DIM
-   | HYP of sort
+   | HYP
    | META_NAME
    | OPID
 
@@ -26,7 +26,7 @@ struct
 
   and paramSortToString = 
     fn DIM => "dim"
-     | HYP tau => "hyp{" ^ sortToString tau ^ "}"
+     | HYP => "hyp"
      | META_NAME => "meta-name"
      | OPID => "opid"
 end
@@ -145,20 +145,20 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of RedPrlSort.t | RULE_HEAD_EXP
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_HEAD_EXP
    | RULE_CUT
    | RULE_PRIM of string
 
    (* development calculus terms *)
    | DEV_DFUN_INTRO of unit dev_pattern list
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
-   | DEV_LET of RedPrlSort.t
-   | DEV_MATCH of RedPrlSort.t * int list
-   | DEV_MATCH_CLAUSE of RedPrlSort.t 
+   | DEV_LET
+   | DEV_MATCH of sort * int list
+   | DEV_MATCH_CLAUSE of sort
    | DEV_QUERY_GOAL
-   | DEV_PRINT of RedPrlSort.t
+   | DEV_PRINT of sort
 
-   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of RedPrlSort.t | JDG_PARAM_SUBST of RedPrlParamSort.t list * RedPrlSort.t
+   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of sort | JDG_PARAM_SUBST of RedPrlParamSort.t list * sort
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -175,7 +175,7 @@ struct
    | PAT_META of 'a * sort * ('a P.term * psort) list * sort list
    | HYP_REF of 'a
    | PARAM_REF of psort * 'a P.term
-   | RULE_ELIM of 'a * sort
+   | RULE_ELIM of 'a
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
@@ -210,7 +210,7 @@ struct
   type 'a t = 'a operator
 
   val rec devPatternSymValence = 
-    fn PAT_VAR _ => [HYP EXP]
+    fn PAT_VAR _ => [HYP]
      | PAT_TUPLE pats => List.concat (List.map (devPatternSymValence o #2) pats)
 
   val arityMono =
@@ -284,7 +284,7 @@ struct
      | DEV_DFUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) * [] <> TAC] ->> TAC
-     | DEV_LET tau => [[] * [] <> JDG, [] * [] <> TAC, [HYP tau] * [] <> TAC] ->> TAC
+     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
 
      | DEV_MATCH (tau, ns) => ([] * [] <> tau) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE tau) ns ->> TAC
      | DEV_MATCH_CLAUSE tau => [[] * [] <> tau, [] * [] <> TAC] ->> MATCH_CLAUSE tau
@@ -396,14 +396,14 @@ struct
        | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
        | PAT_META (x, _, ps, _) => (x, META_NAME) :: paramsSupport' ps
-       | HYP_REF a => [(a, HYP EXP)]
+       | HYP_REF a => [(a, HYP)]
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
-       | RULE_ELIM (a, tau) => [(a, HYP tau)]
+       | RULE_ELIM a => [(a, HYP)]
        | RULE_UNFOLD a => [(a, OPID)]
-       | DEV_BOOL_ELIM a => [(a, HYP EXP)]
-       | DEV_S1_ELIM a => [(a, HYP EXP)]
-       | DEV_APPLY_HYP (a, _, _) => [(a, HYP EXP)]
-       | DEV_USE_HYP (a, _) => [(a, HYP EXP)]
+       | DEV_BOOL_ELIM a => [(a, HYP)]
+       | DEV_S1_ELIM a => [(a, HYP)]
+       | DEV_APPLY_HYP (a, _, _) => [(a, HYP)]
+       | DEV_USE_HYP (a, _) => [(a, HYP)]
        | DEV_APPLY_LEMMA (opid, ps, _, _, _) => (opid, OPID) :: paramsSupport ps
        | DEV_USE_LEMMA (opid, ps, _, _) => (opid, OPID) :: paramsSupport ps
   end
@@ -452,7 +452,7 @@ struct
 
        | (HYP_REF a, t) => (case t of HYP_REF b => f (a, b) | _ => false)
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
-       | (RULE_ELIM (a, _), t) => (case t of RULE_ELIM (b, _) => f (a, b) | _ => false)
+       | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
        | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
@@ -535,7 +535,7 @@ struct
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_DFUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
-     | DEV_LET _ => "let"
+     | DEV_LET => "let"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE _ => "dev-match-clause"
 
@@ -596,7 +596,7 @@ struct
            "?" ^ f x ^ "{" ^ paramsToString f ps ^ "}"
        | HYP_REF a => "hyp-ref{" ^ f a ^ "}"
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
-       | RULE_ELIM (a, _) => "elim{" ^ f a ^ "}"
+       | RULE_ELIM a => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
@@ -652,15 +652,15 @@ struct
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
        | CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
        | PAT_META (x, tau, ps, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, mapParams' f ps, taus)
-       | HYP_REF a => HYP_REF (mapSym (passSort (HYP EXP) f) a)
+       | HYP_REF a => HYP_REF (mapSym (passSort HYP f) a)
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
-       | RULE_ELIM (a, tau) => RULE_ELIM (mapSym (passSort (HYP tau) f) a, tau)
+       | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
-       | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort (HYP EXP) f) a)
-       | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort (HYP EXP) f) a)
+       | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)
+       | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
        | DEV_APPLY_LEMMA (opid, ps, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, pat, n)
-       | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort (HYP EXP) f) a, pat, spine)
-       | DEV_USE_HYP (a, n) => DEV_USE_HYP (mapSym (passSort (HYP EXP) f) a, n)
+       | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort HYP f) a, pat, spine)
+       | DEV_USE_HYP (a, n) => DEV_USE_HYP (mapSym (passSort HYP f) a, n)
        | DEV_USE_LEMMA (opid, ps, ar, n) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, n)
   end
 

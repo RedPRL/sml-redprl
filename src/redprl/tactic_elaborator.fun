@@ -49,7 +49,6 @@ struct
              m
            else
              inheritAnnotation m (check (`a, O.EXP)) 
-              (* TODO: This can't be right *)
        | _ => goStruct syms m
 
     and goStruct syms m =
@@ -247,7 +246,7 @@ struct
       fun processArg ((us, xs) \ m, ((sigmas, taus), _), {subtermNames, subtermTacs}) =
         let
           val syms = ListPair.zipEq (us, sigmas)
-          val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP tau)) (xs, taus)
+          val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP)) (xs, taus)
           val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF x) $$ [])) Var.Ctx.empty (xs, taus)
           val m' = substVarenv rho m
         in
@@ -278,14 +277,14 @@ struct
        O.MONO O.TAC_MTAC $ [_ \ tm] => multitacToTac (multitactic sign env tm)
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
-     | O.POLY (O.RULE_ELIM (z, _)) $ _ => R.Elim sign z
+     | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.fromAbt (expandHypVars catjdg))
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
-     | O.MONO (O.DEV_LET tau) $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO (O.DEV_DFUN_INTRO pats) $ [(us, _) \ tm] => dfunIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)

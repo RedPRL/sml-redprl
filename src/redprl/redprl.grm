@@ -224,7 +224,7 @@ struct
       O.POLY (O.DEV_USE_HYP (z, List.length tacs)) $$ args
     end
 
-  fun makeApplyLemma pat (opid, params, subtermArgs) tacs tac = 
+  fun makeApplyLemma pat (opid, params, subtermArgs) tacs tac =
     let
       val (pat, names) = unstitchPattern pat
       val appArgs = List.map (fn tac => ([],[]) \ tac) tacs
@@ -455,7 +455,7 @@ boundVars
 
 psort
   : DIM (P.DIM)
-  | HYP (P.HYP O.EXP)
+  | HYP (P.HYP)
   | META_NAME (P.META_NAME)
 
 psorts
@@ -765,8 +765,7 @@ atomicRawTac
   | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
-  | RULE_ELIM VARNAME COLON sort (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, sort)), []))
-  | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM (VARNAME, O.EXP)), []))
+  | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM VARNAME), []))
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
@@ -783,7 +782,7 @@ atomicRawTac
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
    | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
-      (Ast.$$ (O.MONO (O.DEV_LET (sortOfJudgment judgment)), [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
+      (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
 
   | LET devDecompPattern EQUALS VARNAME bracketedDevAppSpine DOT tactic
       (Pattern.makeApplyHyp devDecompPattern VARNAME bracketedDevAppSpine tactic)
@@ -829,7 +828,7 @@ multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultit
 
 hypBinding
   : VARNAME COLON psort (VARNAME, psort)
-  | VARNAME (VARNAME, P.HYP O.EXP)
+  | VARNAME (VARNAME, P.HYP)
 
 hypBindings
   : hypBinding ([hypBinding])

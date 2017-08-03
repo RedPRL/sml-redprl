@@ -263,7 +263,7 @@ struct
       let
         val x = NameEnv.lookup env srcname handle _ => Sym.named srcname
         val env' = NameEnv.insert env srcname x
-        val symctx' = Sym.Ctx.insert symctx x (RedPrlSortData.HYP tau)
+        val symctx' = Sym.Ctx.insert symctx x RedPrlSortData.HYP
         val varctx' = Sym.Ctx.insert varctx x tau
       in
         (env', symctx', varctx', x)
@@ -423,7 +423,7 @@ struct
                       val taux = CJ.synthesis jdgx
                     in
                       (ps,
-                       Tm.Sym.Ctx.insert ctx x (RedPrlSortData.HYP taux),
+                       Tm.Sym.Ctx.insert ctx x RedPrlSortData.HYP,
                        NameEnv.insert env (Sym.toString x) x)
                     end)
                   (params', symctx, env)
