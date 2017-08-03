@@ -758,7 +758,6 @@ tupleDecompPattern
 
 devMatchClauses
   : devMatchClause devMatchClauses (devMatchClause :: devMatchClauses)
-  | devMatchClause ([devMatchClause])
   | ([])
 
 atomicRawTac
