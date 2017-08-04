@@ -41,6 +41,7 @@ struct
   exception todo
   fun ?e = raise e
   
+  (* TODO: freshen *)
   fun unscope (x \ t) = (x, t)
   fun scope (x, t) = x \ t
   fun strScope (x, t) = x \ t
@@ -49,7 +50,7 @@ struct
     structure A2A = AstToAbt
     structure Names = A2A.NameEnv
 
-    type ostate = 
+    type ostate =
       {metactx: Tm.metactx,
        metaenv: Tm.metavariable Names.dict,
        symenv: Tm.symbol Names.dict,
