@@ -21,6 +21,7 @@ sig
 
   datatype mlterm = 
      VAR of mlvar
+   | LET of mlterm * mlterm mlscope
    | LAM of mlterm mlscope
    | APP of mlterm * mlterm
    | PAIR of mlterm * mlterm

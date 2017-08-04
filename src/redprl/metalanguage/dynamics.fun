@@ -10,6 +10,7 @@ struct
   datatype continuation =
      FUN of hole * ML.mlterm
    | ARG of ML.mlterm ML.mlscope * hole
+   | LET of ML.mlvar * hole * ML.mlterm
    | PAIR0 of hole * ML.mlterm
    | PAIR1 of ML.mlterm * hole
    | FST of hole
@@ -47,6 +48,13 @@ struct
   val step = 
     fn _ ## _ <: _ |> [] => raise Final
      | st ## ML.VAR x <: env <| ks => st ## ML.Ctx.lookup env x |> ks
+     | st ## ML.LET (t, sc) <: env <| ks => 
+       let
+         val (x, tx) = ML.unscope sc
+       in
+         st ## t <: env <| LET (x, HOLE, tx) <: env :: ks
+       end
+     | st ## v <: env |> LET (x, HOLE, tx) <: env' :: ks => st ## tx <: ML.Ctx.insert env' x (v <: env) <| ks
      | st ## ML.LAM sc <: env <| ks => st ## ML.LAM sc <: env |> ks
      | st ## ML.APP (t1, t2) <: env <| ks => st ## t1 <: env <| FUN (HOLE, t2) <: env :: ks
      | st ## ML.LAM sc <: env |> FUN (HOLE, t) <: env' :: ks => st ## t <: env' <| ARG (sc, HOLE) <: env :: ks
