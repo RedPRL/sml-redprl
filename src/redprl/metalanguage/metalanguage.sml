@@ -8,7 +8,7 @@ sig
   structure Ctx : DICT where type key = mlvar
   val freshVar : unit -> mlvar
 
-  type 'a scope
+  type 'a mlscope
 
   datatype mltype = 
      UNIT
@@ -21,7 +21,7 @@ sig
 
   datatype mlterm = 
      VAR of mlvar
-   | LAM of mlterm scope
+   | LAM of mlterm mlscope
    | APP of mlterm * mlterm
    | PAIR of mlterm * mlterm
    | FST of mlterm
@@ -32,8 +32,8 @@ sig
    | EACH of mlterm list
    | NIL
 
-  val unscope : mlterm scope -> mlvar * mlterm
-  val scope : mlvar * mlterm -> mlterm scope
+  val unscope : mlterm mlscope -> mlvar * mlterm
+  val mlscope : mlvar * mlterm -> mlterm mlscope
 
   type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
   type mlctx = mlterm Ctx.dict
@@ -56,7 +56,7 @@ struct
 
   structure Ctx : DICT = Var.Ctx
 
-  datatype 'a scope = \ of mlvar * 'a
+  datatype 'a mlscope = \ of mlvar * 'a
   infix \
 
   datatype mltype = 
@@ -70,7 +70,7 @@ struct
 
   datatype mlterm = 
      VAR of mlvar
-   | LAM of mlterm scope
+   | LAM of mlterm mlscope
    | APP of mlterm * mlterm
    | PAIR of mlterm * mlterm
    | FST of mlterm
@@ -85,7 +85,7 @@ struct
   fun ?e = raise e
   
   fun unscope (_ \ _) =  ?todo
-  fun scope _ = ?todo
+  fun mlscope _ = ?todo
 
   type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
   type mlctx = mlterm Ctx.dict
@@ -119,7 +119,7 @@ struct
 
   datatype continuation =
      FUN of hole * ML.mlterm
-   | ARG of ML.mlterm ML.scope * hole
+   | ARG of ML.mlterm ML.mlscope * hole
    | PAIR0 of hole * ML.mlterm
    | PAIR1 of ML.mlterm * hole
    | FST of hole
