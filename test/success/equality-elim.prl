@@ -1,12 +1,21 @@
-// We can write a cool user-defined tactic for asserting and then rewriting along an equality.
-// (Rewrite m n a {x} c) asserts the equality [m = n in a], and rewrites using the motive [{x} c].
-Tac Rewrite(#m; #n; #a; #t : tac; #c : {hyp}.exp) = [
-  let p : [#m = #n in #a] = #t.
+Tac GetHole(#c : [exp].exp; #t : [exp].tac) = [
+  query gl <- goal.
+  match [gl:jdg] {
+    [hole | #jdg{(#c %hole)} => (#t %hole)]
+  }
+].
 
-  // Use the elimination rule for equality. We bind a new hypothesis which will represent the location
-  // in the goal #c which is being rewritten.
-  fresh x -> elim p;
-  [`{#c x}, id, auto, auto]
+// We can write a cool user-defined tactic for asserting and then rewriting along an equality.
+// (Rewrite n a [x] c) matches the goal against the motive "[x] c" and rewrites along
+// the equality [_ = n in a].
+Tac Rewrite(#c : [exp].exp; #n; #a; #t : tac) = [
+  (GetHole [x] (#c x) [hole] #tac{
+    let p : [hole = #n in #a] = #t.
+    // Use the elimination rule for equality. We bind a new hypothesis which will represent the location
+    // in the goal #c which is being rewritten.
+    fresh x -> elim p;
+    [`(#c ,x), id, auto, auto]
+  })
 ].
 
 Thm EqualityElimTest : [
@@ -14,12 +23,9 @@ Thm EqualityElimTest : [
 ] by [
   // We're going to prove this in a silly way to illustrate equality elimination.
   // We'll rewrite the goal by asserting [(if tt tt ff) = tt in bool].
-  (Rewrite
-   (if tt tt ff) tt bool
-   #tac{auto}
-   // we specify the motive (to be unified with the goal) by binding a *hypothesis* x,
-   // which can then be unquoted in the term that we provide.
-   {x} (-> bool (path {_} bool tt ,x)));
+  (Rewrite 
+    [x] (-> bool (path {_} bool tt x))
+    tt bool #tac{auto});
 
   // observe that the goal has now been rewritten!
   ?check-this-out;
