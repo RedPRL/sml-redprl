@@ -9,6 +9,10 @@ Library
   structure FinalPrinter
   structure Fpp
   functor RedPrlMachine
+  structure RedPrlAbt
+  structure Lcf
+  functor Refiner
+  structure UniversalSpread
 is
   $/basis.cm
   $/ml-yacc-lib.cm
