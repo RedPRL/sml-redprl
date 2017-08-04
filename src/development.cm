@@ -3,4 +3,7 @@ Group is
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
   redprl.cm (bind:(anchor:libs value:../lib/))
   frontend/frontend.sml
+
+  redprl/metalanguage/metalanguage.sig
   redprl/metalanguage/metalanguage.sml
+  redprl/metalanguage/dynamics.fun
