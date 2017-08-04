@@ -6,6 +6,7 @@ struct
   datatype ('a, 'b) closure = <: of 'a * ('b, 'b) closure ML.Ctx.dict
   
   structure Rules = Refiner (Signature)
+  structure J = RedPrlSequent and CJ = RedPrlCategoricalJudgment
 
   type mlterm = ML.mlterm_
   type mlscope = (ML.mlvar, mlterm) ML.mlscope
@@ -82,6 +83,8 @@ struct
      | st ## ML.PAIR (v1, _) <: env |> FST HOLE <: _ :: ks => st ## v1 <: env |> ks
      | st ## ML.PAIR (_, v2) <: env |> SND HOLE <: _ :: ks => st ## v2 <: env |> ks
      | st ## ML.QUOTE tm <: env <| ks => st ## ML.QUOTE tm <: env |> ks
+     | (st as (LOCAL (J.>> (_, goal)), _)) ## ML.GOAL <: _ <| ks =>
+       st ## ML.QUOTE (CJ.toAbt goal) <: ML.Ctx.empty |> ks
      | (LOCAL jdg, alpha) ## ML.REFINE ruleName <: env <| ks =>
        let
          val rule = Rules.lookupRule ruleName

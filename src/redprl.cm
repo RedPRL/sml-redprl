@@ -12,6 +12,8 @@ Library
   structure RedPrlAbt
   structure RedPrlAst
   structure AstToAbt
+  structure RedPrlCategoricalJudgment
+  structure RedPrlSequent
   structure Lcf
   functor Refiner
   structure UniversalSpread

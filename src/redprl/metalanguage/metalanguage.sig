@@ -27,7 +27,7 @@ sig
    | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
    | FST of ('v, 'o) mlterm
    | SND of ('v, 'o) mlterm
-   | QUOTE of 'o
+   | QUOTE of 'o | GOAL
    | REFINE of rule_name
    | ALL of ('v, 'o) mlterm
    | EACH of ('v, 'o) mlterm list

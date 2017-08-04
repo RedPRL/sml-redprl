@@ -30,7 +30,7 @@ struct
    | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
    | FST of ('v, 'o) mlterm
    | SND of ('v, 'o) mlterm
-   | QUOTE of 'o
+   | QUOTE of 'o | GOAL
    | REFINE of rule_name
    | ALL of ('v, 'o) mlterm
    | EACH of ('v, 'o) mlterm list
@@ -79,6 +79,7 @@ struct
        | FST t => FST (resolveAux state t)
        | SND t => SND (resolveAux state t)
        | QUOTE (ast, tau) => QUOTE (resolveAbt (#ostate state) ast tau)
+       | GOAL => GOAL
        | REFINE ruleName => REFINE ruleName
        | ALL t => ALL (resolveAux state t)
        | EACH ts => EACH (List.map (resolveAux state) ts)
