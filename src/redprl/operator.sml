@@ -538,13 +538,15 @@ struct
      | DEV_LET => "let"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE _ => "dev-match-clause"
+     | DEV_QUERY_GOAL => "dev-query-goal"
+     | DEV_PRINT _ => "dev-print"
 
      | JDG_EQ => "eq"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
-     | JDG_DIM_SUBST => "dim-subst"
+     | JDG_PARAM_SUBST _ => "param-subst"
 
   local
     fun dirToString f (r, r') =
