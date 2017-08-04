@@ -28,6 +28,8 @@ sig
    | SND of mlterm
    | QUOTE of Tm.abt
    | REFINE of rule_name
+   | ALL of mlterm
+   | EACH of mlterm list
    | NIL
 
   val unscope : mlterm scope -> mlvar * mlterm
@@ -75,6 +77,8 @@ struct
    | SND of mlterm
    | QUOTE of Tm.abt
    | REFINE of rule_name
+   | ALL of mlterm
+   | EACH of mlterm list
    | NIL
 
   exception todo
@@ -120,6 +124,8 @@ struct
    | PAIR1 of ML.mlterm * hole
    | FST of hole
    | SND of hole
+   | EACH of {tactics: ML.mlterm list, done: Lcf.jdg Lcf.Tl.telescope, metaenv: Tm.metaenv}
+   | SPLICE of {tactics: ML.mlterm list, var: Lcf.L.var, done: Lcf.jdg Lcf.Tl.telescope, remaining: Lcf.jdg Lcf.Tl.telescope, metaenv: Tm.metaenv}
 
   type stack = (continuation, ML.mlterm) closure list
 
@@ -134,8 +140,23 @@ struct
 
   exception todo fun ?e = raise e
 
+  structure Tactical = RedPrlTactical (Lcf)
+
+  fun applyRule (rule : Rules.rule) (jdg, alpha) : state * names =
+    let
+      val (alpha', probe) = UniversalSpread.probe alpha
+      val state' = rule alpha' jdg
+      val beta = UniversalSpread.bite (!probe) alpha
+    in
+      (GLOBAL state', beta)
+    end
+
+  exception Final
+  exception Stuck
+
   val step = 
-    fn st ## ML.VAR x <: env <| ks => st ## ML.Ctx.lookup env x |> ks
+    fn _ ## _ <: _ |> [] => raise Final
+     | st ## ML.VAR x <: env <| ks => st ## ML.Ctx.lookup env x |> ks
      | st ## ML.LAM sc <: env <| ks => st ## ML.LAM sc <: env |> ks
      | st ## ML.APP (t1, t2) <: env <| ks => st ## t1 <: env <| FUN (HOLE, t2) <: env :: ks
      | st ## ML.LAM sc <: env |> FUN (HOLE, t) <: env' :: ks => st ## t <: env' <| ARG (sc, HOLE) <: env :: ks
@@ -160,14 +181,49 @@ struct
      | st ## ML.PAIR (v1, _) <: env |> FST HOLE <: _ :: ks => st ## v1 <: env |> ks
      | st ## ML.PAIR (_, v2) <: env |> SND HOLE <: _ :: ks => st ## v2 <: env |> ks
      | st ## ML.QUOTE tm <: env <| ks => st ## ML.QUOTE tm <: env |> ks
-     | (LOCAL jdg, alpha) ## ML.REFINE rule <: env <| ks =>
+     | (LOCAL jdg, alpha) ## ML.REFINE ruleName <: env <| ks =>
        let
-         val (alpha', probe) = UniversalSpread.probe alpha
-         val state = Rules.lookupRule rule alpha' jdg
-         val beta = UniversalSpread.bite (!probe) alpha
+         val rule = Rules.lookupRule ruleName
+         val st' = applyRule rule (jdg, alpha)
        in
-         (GLOBAL state, beta) ## ML.NIL <: env |> ks
+         st' ## ML.NIL <: ML.Ctx.empty |> ks
        end
+     | (st as (GLOBAL state, _)) ## ML.ALL t <: env <| ks =>
+       let
+         val Lcf.|> (psi, _) = state
+         val ts = Lcf.Tl.foldr (fn (_, _, ts) => t::ts) [] psi
+         val eachState = {tactics = ts, done = Lcf.Tl.empty, metaenv = Tm.Metavar.Ctx.empty}
+       in
+         st ## ML.NIL <: ML.Ctx.empty |> EACH eachState <: env :: ks
+       end
+
+     | (GLOBAL state, alpha) ## _ <: _ |> EACH {tactics, done, metaenv} <: env :: ks =>
+       let
+         val Lcf.|> (psi, evd) = state
+         open Lcf.Tl.ConsView
+       in
+         case (out psi, tactics) of
+            (EMPTY, []) => (GLOBAL (Lcf.|> (done, evd)), alpha) ## ML.NIL <: ML.Ctx.empty |> ks
+          | (CONS (x, jdg, psi), t :: ts) =>
+            let
+              val jdg' = Lcf.J.subst metaenv jdg
+              val spliceState = {tactics = ts, var = x, done = done, remaining = psi, metaenv = metaenv}
+            in
+              (LOCAL jdg', alpha) ## t <: env <| SPLICE spliceState <: env :: ks
+            end
+       end
+     
+     | (GLOBAL state, alpha) ## _ <: _ |> SPLICE {tactics, var = x, done, remaining, metaenv} <: env :: ks => 
+       let
+         val Lcf.|> (psi, evd) = state
+         val metaenv' = Tm.Metavar.Ctx.insert metaenv x evd
+         val state' = Lcf.|> (remaining, evd)
+         val eachState = {tactics = tactics, done = Lcf.Tl.append psi done, metaenv = metaenv'}
+       in
+         (GLOBAL state', alpha) ## ML.NIL <: ML.Ctx.empty |> EACH eachState <: env :: ks
+       end
+
+     | _ => raise Stuck
 
   exception todo fun ?e = raise e
 end

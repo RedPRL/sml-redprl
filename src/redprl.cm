@@ -13,6 +13,7 @@ Library
   structure Lcf
   functor Refiner
   structure UniversalSpread
+  functor RedPrlTactical
 is
   $/basis.cm
   $/ml-yacc-lib.cm
