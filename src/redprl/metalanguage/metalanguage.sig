@@ -1,4 +1,5 @@
 structure Tm = RedPrlAbt
+structure Ast = RedPrlAst
 
 signature METALANGUAGE = 
 sig
@@ -7,8 +8,7 @@ sig
 
   structure Ctx : DICT where type key = mlvar
   val freshVar : unit -> mlvar
-
-  type 'a mlscope
+  type ('v, 'a) mlscope
 
   datatype mltype = 
      UNIT
@@ -19,28 +19,32 @@ sig
 
   type rule_name = string
 
-  datatype mlterm = 
-     VAR of mlvar
-   | LET of mlterm * mlterm mlscope
-   | LAM of mlterm mlscope
-   | APP of mlterm * mlterm
-   | PAIR of mlterm * mlterm
-   | FST of mlterm
-   | SND of mlterm
-   | QUOTE of Tm.abt
+  datatype ('v, 'o) mlterm = 
+     VAR of 'v
+   | LET of ('v, 'o) mlterm * ('v, ('v, 'o) mlterm) mlscope
+   | LAM of ('v, ('v, 'o) mlterm) mlscope
+   | APP of ('v, 'o) mlterm * ('v, 'o) mlterm
+   | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
+   | FST of ('v, 'o) mlterm
+   | SND of ('v, 'o) mlterm
+   | QUOTE of 'o
    | REFINE of rule_name
-   | ALL of mlterm
-   | EACH of mlterm list
+   | ALL of ('v, 'o) mlterm
+   | EACH of ('v, 'o) mlterm list
    | NIL
 
-  val unscope : mlterm mlscope -> mlvar * mlterm
-  val mlscope : mlvar * mlterm -> mlterm mlscope
+  val unscope : (mlvar, (mlvar, 'o) mlterm) mlscope -> mlvar * (mlvar, 'o) mlterm
+  val scope : mlvar * (mlvar, 'o) mlterm -> (mlvar, (mlvar, 'o) mlterm) mlscope
+  val strScope : string * (string, 'o) mlterm -> (string, (string, 'o) mlterm) mlscope
+
+  type mlterm_ = (mlvar, Tm.abt) mlterm
+  val resolve : (string, Ast.ast) mlterm -> mlterm_
 
   type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
-  type mlctx = mlterm Ctx.dict
+  type mlctx = mlterm_ Ctx.dict
 
   datatype mode = LOCAL | GLOBAL
 
-  val infer : mode -> octx -> mlctx -> mlterm -> mltype
-  val check : mode -> octx -> mlctx -> mlterm -> mltype -> unit
+  val infer : mode -> octx -> mlctx -> mlterm_ -> mltype
+  val check : mode -> octx -> mlctx -> mlterm_ -> mltype -> unit
 end

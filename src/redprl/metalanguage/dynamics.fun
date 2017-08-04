@@ -7,22 +7,25 @@ struct
   
   structure Rules = Refiner (Signature)
 
+  type mlterm = ML.mlterm_
+  type mlscope = (ML.mlvar, mlterm) ML.mlscope
+
   datatype continuation =
-     FUN of hole * ML.mlterm
-   | ARG of ML.mlterm ML.mlscope * hole
-   | LET of ML.mlvar * hole * ML.mlterm
-   | PAIR0 of hole * ML.mlterm
-   | PAIR1 of ML.mlterm * hole
+     FUN of hole * mlterm
+   | ARG of mlscope * hole
+   | LET of ML.mlvar * hole * mlterm
+   | PAIR0 of hole * mlterm
+   | PAIR1 of mlterm * hole
    | FST of hole
    | SND of hole
-   | EACH of {tactics: ML.mlterm list, done: Lcf.jdg Lcf.Tl.telescope, metaenv: Tm.metaenv}
-   | SPLICE of {tactics: ML.mlterm list, var: Lcf.L.var, done: Lcf.jdg Lcf.Tl.telescope, remaining: Lcf.jdg Lcf.Tl.telescope, metaenv: Tm.metaenv}
+   | EACH of {tactics: mlterm list, done: Lcf.jdg Lcf.Tl.telescope, metaenv: Tm.metaenv}
+   | SPLICE of {tactics: mlterm list, var: Lcf.L.var, done: Lcf.jdg Lcf.Tl.telescope, remaining: Lcf.jdg Lcf.Tl.telescope, metaenv: Tm.metaenv}
 
-  type stack = (continuation, ML.mlterm) closure list
+  type stack = (continuation, mlterm) closure list
 
   type names = int -> Tm.symbol
   datatype state = LOCAL of Lcf.jdg | GLOBAL of Lcf.jdg Lcf.state
-  datatype control = ## of (state * names) * (ML.mlterm, ML.mlterm) closure
+  datatype control = ## of (state * names) * (mlterm, mlterm) closure
   datatype machine = |> of control * stack | <| of control * stack
 
   infix 3 ##
