@@ -27,7 +27,7 @@ sig
    | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
    | FST of ('v, 'o) mlterm
    | SND of ('v, 'o) mlterm
-   | QUOTE of 'o * Tm.sort
+   | QUOTE of 'o
    | REFINE of rule_name
    | ALL of ('v, 'o) mlterm
    | EACH of ('v, 'o) mlterm list
@@ -38,7 +38,7 @@ sig
   val strScope : string * (string, 'o) mlterm -> (string, (string, 'o) mlterm) mlscope
 
   type mlterm_ = (mlvar, Tm.abt) mlterm
-  val resolve : (string, Ast.ast) mlterm -> mlterm_
+  val resolve : (string, Ast.ast * Tm.sort) mlterm -> mlterm_
 
   structure Statics :
   sig

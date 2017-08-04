@@ -30,7 +30,7 @@ struct
    | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
    | FST of ('v, 'o) mlterm
    | SND of ('v, 'o) mlterm
-   | QUOTE of 'o * Tm.sort
+   | QUOTE of 'o
    | REFINE of rule_name
    | ALL of ('v, 'o) mlterm
    | EACH of ('v, 'o) mlterm list
@@ -69,7 +69,7 @@ struct
     fun resolveAbt {metactx, metaenv, symenv, varenv} oterm tau = 
       A2A.convertOpen (metactx, metaenv) (symenv, varenv) (oterm, tau)
 
-    fun resolveAux (state : state) : (string, Ast.ast) mlterm -> mlterm_ =
+    fun resolveAux (state : state) =
       fn VAR x => VAR (mlvar state x)
        | LET (t, sc) => LET (resolveAux state t, resolveAuxScope state sc)
        | LAM sc => LAM (resolveAuxScope state sc)
@@ -77,7 +77,7 @@ struct
        | PAIR (t1, t2) => PAIR (resolveAux state t1, resolveAux state t2)
        | FST t => FST (resolveAux state t)
        | SND t => SND (resolveAux state t)
-       | QUOTE (ast, tau) => QUOTE (resolveAbt (#ostate state) ast tau, tau)
+       | QUOTE (ast, tau) => QUOTE (resolveAbt (#ostate state) ast tau)
        | REFINE ruleName => REFINE ruleName
        | ALL t => ALL (resolveAux state t)
        | EACH ts => EACH (List.map (resolveAux state) ts)
@@ -91,8 +91,14 @@ struct
         x' \ resolveAux state' tx
       end
   in
-    fun resolve ast =
-      ?todo
+    val resolve =
+      resolveAux
+        {ostate = 
+          {metactx = Tm.Metavar.Ctx.empty,
+           metaenv = Names.empty,
+           symenv = Names.empty,
+           varenv = Names.empty},
+         mlenv = Names.empty}
   end
 
   structure Statics =
