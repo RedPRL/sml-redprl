@@ -1,6 +1,4 @@
-functor MetalanguageDynamics (ML : METALANGUAGE) :
-sig
-end = 
+functor MetalanguageDynamics (ML : METALANGUAGE) = 
 struct
   datatype hole = HOLE
   datatype ('a, 'b) closure = <: of 'a * ('b, 'b) closure ML.Ctx.dict
@@ -130,4 +128,36 @@ struct
      | _ => raise Stuck
 
   exception todo fun ?e = raise e
+
+  fun init (alpha, jdg) mlterm = 
+    (LOCAL jdg, alpha) ## mlterm <: ML.Ctx.empty <| []
+
+  fun steps cfg = 
+    steps (step cfg)
+    handle Final => cfg
+
+  fun compile mlterm alpha : Lcf.jdg Lcf.tactic = 
+    fn jdg =>
+    let
+      val (GLOBAL state, _) ## _ |> _ = steps (init (alpha, jdg) mlterm)
+    in
+      state
+    end
+
+  local
+    open ML open J infix >>
+    structure CJ = RedPrlCategoricalJudgment and Syn = Syntax
+    fun @@ (f, x) = f x infixr @@
+  in
+    val testScript = 
+      resolve @@
+        LET (REFINE "dfun/intro", strScope ("x", VAR "x"))
+
+    val jdg : Lcf.jdg = ([], Hyps.empty) >> CJ.TRUE (Syn.into @@ Syn.DFUN (Syn.into @@ Syn.BOOL, Tm.Var.named "_", Syn.into @@ Syn.BOOL))
+    val alpha = Tm.Sym.named o Int.toString
+    val test = compile testScript alpha jdg
+  end
+    
 end
+
+structure MLDynamics = MetalanguageDynamics (Metalanguage)

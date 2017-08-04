@@ -18,6 +18,7 @@ Library
   functor Refiner
   structure UniversalSpread
   functor RedPrlTactical
+  structure Syntax
 is
   $/basis.cm
   $/ml-yacc-lib.cm
