@@ -30,7 +30,7 @@ struct
    | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
    | FST of ('v, 'o) mlterm
    | SND of ('v, 'o) mlterm
-   | QUOTE of 'o
+   | QUOTE of 'o * Tm.sort
    | REFINE of rule_name
    | ALL of ('v, 'o) mlterm
    | EACH of ('v, 'o) mlterm list
@@ -41,28 +41,77 @@ struct
   exception todo
   fun ?e = raise e
   
-  fun unscope (_ \ _) =  ?todo
-  fun scope _ = ?todo
+  fun unscope (x \ t) = (x, t)
+  fun scope (x, t) = x \ t
   fun strScope (x, t) = x \ t
 
-  fun resolve _ = ?todo
+  local
+    structure A2A = AstToAbt
+    structure Names = A2A.NameEnv
 
-  type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
-  type mlctx = mlterm_ Ctx.dict
+    type ostate = 
+      {metactx: Tm.metactx,
+       metaenv: Tm.metavariable Names.dict,
+       symenv: Tm.symbol Names.dict,
+       varenv: Tm.variable Names.dict}
 
-  datatype mode = LOCAL | GLOBAL
+    type state = 
+      {ostate: ostate,
+       mlenv: mlvar Names.dict}
+    
+    fun addMlvar {ostate, mlenv} x x' = 
+      {ostate = ostate,
+       mlenv = Names.insert mlenv x x'}
 
-  fun mltypeEq (mltype1, mltype2) = ?todo
+    fun mlvar (state : state) = 
+      Names.lookup (#mlenv state)
 
-  fun infer mode octx mlctx mlterm = ?todo
+    fun resolveAbt {metactx, metaenv, symenv, varenv} oterm tau = 
+      A2A.convertOpen (metactx, metaenv) (symenv, varenv) (oterm, tau)
 
-  fun check mode octx mlctx mlterm mltype = 
-    let
-      val mltype' = infer mode octx mlctx mlterm mltype
-    in
-      if mltypeEq (mltype, mltype') then
-        ()
-      else
-        raise Fail "Type error"
-    end
+    fun resolveAux (state : state) : (string, Ast.ast) mlterm -> mlterm_ =
+      fn VAR x => VAR (mlvar state x)
+       | LET (t, sc) => LET (resolveAux state t, resolveAuxScope state sc)
+       | LAM sc => LAM (resolveAuxScope state sc)
+       | APP (t1, t2) => APP (resolveAux state t1, resolveAux state t2)
+       | PAIR (t1, t2) => PAIR (resolveAux state t1, resolveAux state t2)
+       | FST t => FST (resolveAux state t)
+       | SND t => SND (resolveAux state t)
+       | QUOTE (ast, tau) => QUOTE (resolveAbt (#ostate state) ast tau, tau)
+       | REFINE ruleName => REFINE ruleName
+       | ALL t => ALL (resolveAux state t)
+       | EACH ts => EACH (List.map (resolveAux state) ts)
+       | NIL => NIL
+
+    and resolveAuxScope (state : state) (x \ tx) = 
+      let
+        val x' = Var.named x
+        val state' = addMlvar state x x'
+      in
+        x' \ resolveAux state' tx
+      end
+  in
+    fun resolve ast =
+      ?todo
+  end
+
+  structure Statics =
+  struct
+    type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
+    type mlctx = mlterm_ Ctx.dict
+
+    datatype mode = LOCAL | GLOBAL
+    fun mltypeEq (mltype1, mltype2) = ?todo
+    fun infer mode octx mlctx mlterm = ?todo
+
+    fun check mode octx mlctx mlterm mltype = 
+      let
+        val mltype' = infer mode octx mlctx mlterm mltype
+      in
+        if mltypeEq (mltype, mltype') then
+          ()
+        else
+          raise Fail "Type error"
+      end
+  end
 end

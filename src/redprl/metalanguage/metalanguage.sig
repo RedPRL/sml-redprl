@@ -27,7 +27,7 @@ sig
    | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
    | FST of ('v, 'o) mlterm
    | SND of ('v, 'o) mlterm
-   | QUOTE of 'o
+   | QUOTE of 'o * Tm.sort
    | REFINE of rule_name
    | ALL of ('v, 'o) mlterm
    | EACH of ('v, 'o) mlterm list
@@ -40,11 +40,12 @@ sig
   type mlterm_ = (mlvar, Tm.abt) mlterm
   val resolve : (string, Ast.ast) mlterm -> mlterm_
 
-  type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
-  type mlctx = mlterm_ Ctx.dict
-
-  datatype mode = LOCAL | GLOBAL
-
-  val infer : mode -> octx -> mlctx -> mlterm_ -> mltype
-  val check : mode -> octx -> mlctx -> mlterm_ -> mltype -> unit
+  structure Statics :
+  sig
+    type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
+    type mlctx = mlterm_ Ctx.dict
+    datatype mode = LOCAL | GLOBAL
+    val infer : mode -> octx -> mlctx -> mlterm_ -> mltype
+    val check : mode -> octx -> mlctx -> mlterm_ -> mltype -> unit
+  end
 end

@@ -11,6 +11,7 @@ Library
   functor RedPrlMachine
   structure RedPrlAbt
   structure RedPrlAst
+  structure AstToAbt
   structure Lcf
   functor Refiner
   structure UniversalSpread
