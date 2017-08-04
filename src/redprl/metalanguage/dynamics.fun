@@ -78,8 +78,8 @@ struct
        in
          st ## ML.PAIR (ML.VAR x, ML.VAR y) <: envxy |> ks
        end
-     | st ## ML.FST t <: env <| ks => st ## t <: env |> FST HOLE <: env :: ks
-     | st ## ML.SND t <: env <| ks => st ## t <: env |> SND HOLE <: env :: ks
+     | st ## ML.FST t <: env <| ks => st ## t <: env <| FST HOLE <: env :: ks
+     | st ## ML.SND t <: env <| ks => st ## t <: env <| SND HOLE <: env :: ks
      | st ## ML.PAIR (v1, _) <: env |> FST HOLE <: _ :: ks => st ## v1 <: env |> ks
      | st ## ML.PAIR (_, v2) <: env |> SND HOLE <: _ :: ks => st ## v2 <: env |> ks
      | st ## ML.QUOTE tm <: env <| ks => st ## ML.QUOTE tm <: env |> ks
