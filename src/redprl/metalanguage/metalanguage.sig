@@ -30,6 +30,7 @@ sig
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
    | EACH of ('v, 'o) mlterm list
+   | TRY of ('v, 'o) mlterm * ('v, 'o) mlterm
    | NIL
 
   val unscope : (mlvar, (mlvar, 'o) mlterm) mlscope -> mlvar * (mlvar, 'o) mlterm

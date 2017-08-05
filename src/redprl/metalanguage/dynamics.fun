@@ -17,6 +17,7 @@ struct
     val get : Lcf.jdg m 
     val rule : (names -> Lcf.jdg Lcf.tactic) -> unit m
     val fork : unit m list -> unit m
+    val orelse_ : 'a m * 'a m -> 'a m
   end =
   struct
     open Lcf infix |>
@@ -53,15 +54,16 @@ struct
         (!probe, Lcf.map (fn j => (j, ())) state')
       end
 
+    (* Move to LCF library somehow *)
     fun fork ms (alpha, psi |> evd) =
       let
         open Lcf.Tl
         open ConsView
         fun go rho n (r : (jdg * unit) state telescope) =
           fn (_, EMPTY) => (n, r)
-           | ((m : unit m) :: ms, CONS (x, (jdg, ()), psi)) =>
+           | (m :: ms, CONS (x, (jdg, _), psi)) =>
              let
-               val (n':int, tjdg as psix |> vlx) = m (alpha, idn (J.subst rho jdg))
+               val (n', tjdg as psix |> vlx) = m (alpha, idn (J.subst rho jdg))
                val rho' = L.Ctx.insert rho x vlx
              in
                go rho' (Int.max (n, n')) (Tl.snoc r x tjdg) (ms, out psi)
@@ -72,6 +74,12 @@ struct
       in
         (n, Lcf.mul (isjdg ()) (ppsi |> evd))
       end
+
+
+    fun orelse_ (m1, m2) (alpha, state) =
+      m1 (alpha, state)
+        handle _ => 
+          m2 (alpha, state)
   end
 
   fun >>= (m, f) = M.bind m f infixr >>=
@@ -120,6 +128,7 @@ struct
      | ML.GOAL => getGoal <$> M.get
      | ML.REFINE ruleName => const V.NIL <$> M.rule (Rules.lookupRule ruleName)
      | ML.EACH ts => const V.NIL <$> M.fork (List.map (M.map (const ()) o eval env) ts)
+     | ML.TRY (t1, t2) => M.orelse_ (eval env t1, eval env t2)
 
 
   and app (V.FUN (sc, env), v) =

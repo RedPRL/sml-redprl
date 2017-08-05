@@ -33,6 +33,7 @@ struct
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
    | EACH of ('v, 'o) mlterm list
+   | TRY of ('v, 'o) mlterm * ('v, 'o) mlterm
    | NIL
 
   type mlterm_ = (mlvar, Tm.abt) mlterm
@@ -81,6 +82,7 @@ struct
        | GOAL => GOAL
        | REFINE ruleName => REFINE ruleName
        | EACH ts => EACH (List.map (resolveAux state) ts)
+       | TRY (t1, t2) => TRY (resolveAux state t1, resolveAux state t2)
        | NIL => NIL
 
     and resolveAuxScope (state : state) (x \ tx) = 
