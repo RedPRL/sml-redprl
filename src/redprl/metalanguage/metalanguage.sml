@@ -32,7 +32,6 @@ struct
    | SND of ('v, 'o) mlterm
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
-   | ALL of ('v, 'o) mlterm
    | EACH of ('v, 'o) mlterm list
    | NIL
 
@@ -81,7 +80,6 @@ struct
        | QUOTE (ast, tau) => QUOTE (resolveAbt (#ostate state) ast tau)
        | GOAL => GOAL
        | REFINE ruleName => REFINE ruleName
-       | ALL t => ALL (resolveAux state t)
        | EACH ts => EACH (List.map (resolveAux state) ts)
        | NIL => NIL
 

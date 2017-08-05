@@ -29,7 +29,6 @@ sig
    | SND of ('v, 'o) mlterm
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
-   | ALL of ('v, 'o) mlterm
    | EACH of ('v, 'o) mlterm list
    | NIL
 
