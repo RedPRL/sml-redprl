@@ -19,6 +19,7 @@ Library
   structure UniversalSpread
   functor RedPrlTactical
   structure Syntax
+  structure FppRenderPlainText
 is
   $/basis.cm
   $/ml-yacc-lib.cm
