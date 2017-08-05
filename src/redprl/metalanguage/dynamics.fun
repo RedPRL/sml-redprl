@@ -12,7 +12,8 @@ struct
   structure M :> sig
     type 'a m
     val pure : 'a -> 'a m
-    val bind : 'a m * ('a -> 'b m) -> 'b m
+    val bind : 'a m -> ('a -> 'b m) -> 'b m
+    val map : ('a -> 'b) -> 'a m -> 'b m
     val get : Lcf.jdg m 
     val rule : (names -> Lcf.jdg Lcf.tactic) -> unit m
     val fork : unit m list -> unit m
@@ -27,7 +28,7 @@ struct
        ren = fn ren => fn (j, n) => (#ren Lcf.isjdg ren j, n)}
 
     fun pure a (alpha, state) = (0, Lcf.map (fn jdg => (jdg, a)) state)
-    fun bind (m : 'a m, f : 'a -> 'b m) (alpha, state) =
+    fun bind (m : 'a m) (f : 'a -> 'b m) (alpha, state) =
       let
         val (n, state' : (jdg * 'a) Lcf.state) = m (alpha, state)
         val alpha' = UniversalSpread.bite n alpha
@@ -37,6 +38,8 @@ struct
       in
         (n, mul (isjdg ()) (psi' |> evd))
       end
+
+    fun map (f : 'a -> 'b) (m : 'a m) = bind m (pure o f)
 
     fun dup x = (x, x)
     fun get (alpha, state) = 
@@ -71,11 +74,13 @@ struct
       end
   end
 
-  val >>= = M.bind infixr >>=
+  fun >>= (m, f) = M.bind m f infixr >>=
   fun =<< (f, m) = m >>= f infix =<<
   fun @@ (f, x) = f x infixr @@
-  fun <$> (f, m) = m >>= (fn a => M.pure (f a))
+  fun <$> (f, m) = M.map f m
   fun <&> (m1, m2) = m1 >>= (fn a1 => m2 >>= (fn a2 => M.pure (a1, a2)))
+  fun flip f x y = f y x
+  fun const x _ = x
   infix <&> <$>
 
   structure Env = ML.Ctx
@@ -102,8 +107,8 @@ struct
        let
          val (x, tx) = ML.unscope sc
        in
-         eval env t >>= (fn v => 
-           eval (Env.insert env x v) tx)
+         eval env t >>= 
+           flip eval tx o Env.insert env x
        end
      | ML.NIL => M.pure V.NIL
      | ML.LAM sc => M.pure @@ V.FUN (sc, env)
@@ -113,13 +118,9 @@ struct
      | ML.SND t => snd <$> eval env t
      | ML.QUOTE abt => M.pure @@ V.QUOTE abt
      | ML.GOAL => getGoal <$> M.get
-     | ML.REFINE ruleName => (fn _ => V.NIL) <$> M.rule (Rules.lookupRule ruleName)
-     | ML.EACH ts =>
-       let
-         val ms = List.map (fn t => (fn _ => ()) <$> eval env t) ts
-       in
-         (fn _ => V.NIL) <$> M.fork ms
-       end
+     | ML.REFINE ruleName => const V.NIL <$> M.rule (Rules.lookupRule ruleName)
+     | ML.EACH ts => const V.NIL <$> M.fork (List.map (M.map (const ()) o eval env) ts)
+
 
   and app (V.FUN (sc, env), v) =
     let
