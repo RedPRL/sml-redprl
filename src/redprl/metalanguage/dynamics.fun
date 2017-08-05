@@ -50,8 +50,6 @@ struct
         (!probe, Lcf.map (fn j => (j, ())) state')
       end
 
-    fun asTactic (m : unit m) : jdg tactic = ?todo
-
     fun fork ms (alpha, psi |> evd) =
       let
         open Lcf.Tl
@@ -98,27 +96,27 @@ struct
   fun snd (V.PAIR (_, v2)) = v2
   fun getGoal (J.>> (_, jdg)) = V.QUOTE @@ CJ.toAbt jdg
 
-  fun tactic env : mlterm -> V.value M.m =
+  fun eval env : mlterm -> V.value M.m =
     fn ML.VAR x => M.pure @@ Env.lookup env x
      | ML.LET (t, sc) =>
        let
          val (x, tx) = ML.unscope sc
        in
-         tactic env t >>= (fn v => 
-           tactic (Env.insert env x v) tx)
+         eval env t >>= (fn v => 
+           eval (Env.insert env x v) tx)
        end
+     | ML.NIL => M.pure V.NIL
      | ML.LAM sc => M.pure @@ V.FUN (sc, env)
-
-     | ML.APP (t1, t2) => app =<< (tactic env t1 <&> tactic env t2)
-     | ML.PAIR (t1, t2) => V.PAIR <$> (tactic env t1 <&> tactic env t2)
-     | ML.FST t => fst <$> tactic env t
-     | ML.SND t => snd <$> tactic env t
+     | ML.APP (t1, t2) => app =<< (eval env t1 <&> eval env t2)
+     | ML.PAIR (t1, t2) => V.PAIR <$> (eval env t1 <&> eval env t2)
+     | ML.FST t => fst <$> eval env t
+     | ML.SND t => snd <$> eval env t
      | ML.QUOTE abt => M.pure @@ V.QUOTE abt
      | ML.GOAL => getGoal <$> M.get
      | ML.REFINE ruleName => (fn _ => V.NIL) <$> M.rule (Rules.lookupRule ruleName)
      | ML.EACH ts =>
        let
-         val ms = List.map (fn t => (fn _ => ()) <$> tactic env t) ts
+         val ms = List.map (fn t => (fn _ => ()) <$> eval env t) ts
        in
          (fn _ => V.NIL) <$> M.fork ms
        end
@@ -128,7 +126,7 @@ struct
       val (x, tx) = ML.unscope sc
       val env' = Env.insert env x v
     in
-      tactic env' tx
+      eval env' tx
     end
 
 end
