@@ -32,7 +32,7 @@ Thm LowLevel2 : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f -> auto;
+  fresh f -> repeat {refine dfun/intro; [id, auto]};
   fresh x, x/eq -> elim f;
   [`tt, use x]
 ].

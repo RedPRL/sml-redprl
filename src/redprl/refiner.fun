@@ -574,13 +574,6 @@ struct
       f jdg alpha jdg
   in
     local
-      fun StepTrue _ ty =
-        case Syn.out ty of
-           Syn.PATH_TY _ => Path.True
-         | Syn.DFUN _ => DFun.True
-         | Syn.RECORD _ => Record.True
-         | _ => raise E.error [Fpp.text "Could not find introduction rule for", TermPrinter.ppTerm ty]
-
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Bool.EqType
@@ -708,13 +701,13 @@ struct
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
       fun StepJdg sign = matchGoal
-        (fn _ >> CJ.TRUE ty => StepTrue sign ty
-          | _ >> CJ.EQ_TYPE tys => StepEqType sign tys
+        (fn _ >> CJ.EQ_TYPE tys => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> CJ.SYNTH m => StepSynth sign m
           | _ >> CJ.PARAM_SUBST _ => Misc.ParamSubst
           | MATCH _ => Misc.MatchOperator
-          | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordHeadExpansion sign then_ Record.MatchRecord)
+          | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordHeadExpansion sign then_ Record.MatchRecord
+          | _ >> jdg => raise E.error [Fpp.text "AutoStep does not apply to the judgment", CJ.pretty' TermPrinter.ppTerm jdg])
 
 
       fun isWfJdg (CJ.TRUE _) = false

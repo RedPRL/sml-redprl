@@ -40,7 +40,8 @@ Thm Thm3/low-level(#A; #B; #C) : [
       (-> #B #C)
       (-> #A #C))
 ] by [
-  fresh ab, bc, a -> auto;
+  fresh ab, bc, a -> repeat {refine dfun/intro || id};
+  auto;
   fresh c -> elim bc;
   [fresh b -> elim ab; [use a, use b], use c]
 ].
