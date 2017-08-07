@@ -8,7 +8,7 @@ sig
 
   structure Ctx : DICT where type key = mlvar
   val freshVar : unit -> mlvar
-  type ('v, 'a) mlscope
+  type ('b, 'a) scope
 
   datatype mltype = 
      UNIT
@@ -19,26 +19,32 @@ sig
 
   type rule_name = string
 
-  datatype ('v, 'o) mlterm = 
+  datatype ('v, 's, 'o) mlterm = 
      VAR of 'v
-   | LET of ('v, 'o) mlterm * ('v, ('v, 'o) mlterm) mlscope
-   | LAM of ('v, ('v, 'o) mlterm) mlscope
-   | APP of ('v, 'o) mlterm * ('v, 'o) mlterm
-   | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
-   | FST of ('v, 'o) mlterm
-   | SND of ('v, 'o) mlterm
+   | LET of ('v, 's, 'o) mlterm * ('v, ('v, 's, 'o) mlterm) scope
+   | LAM of ('v, ('v, 's, 'o) mlterm) scope
+   | APP of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
+   | PAIR of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
+   | FST of ('v, 's, 'o) mlterm
+   | SND of ('v, 's, 'o) mlterm
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
-   | EACH of ('v, 'o) mlterm list
-   | TRY of ('v, 'o) mlterm * ('v, 'o) mlterm
+   | EACH of ('v, 's, 'o) mlterm list
+   | TRY of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
+   | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
    | NIL
 
-  val unscope : (mlvar, (mlvar, 'o) mlterm) mlscope -> mlvar * (mlvar, 'o) mlterm
-  val scope : mlvar * (mlvar, 'o) mlterm -> (mlvar, (mlvar, 'o) mlterm) mlscope
-  val strScope : string * (string, 'o) mlterm -> (string, (string, 'o) mlterm) mlscope
+  type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
 
-  type mlterm_ = (mlvar, Tm.abt) mlterm
-  val resolve : (string, Ast.ast * Tm.sort) mlterm -> mlterm_
+  val unscope : ('b, ('v, 's, 'o) mlterm) scope -> 'b * ('v, 's, 'o) mlterm
+  val scope : mlvar * (mlvar, 's, 'o) mlterm -> (mlvar, (mlvar, 's, 'o) mlterm) scope
+  val oscope : Tm.symbol list * ('v, Tm.symbol, Tm.abt) mlterm -> (Tm.symbol list, ('v, Tm.symbol, Tm.abt) mlterm) scope
+
+  structure Resolver : 
+  sig
+    val strScope : string * (string, 's, 'o) mlterm -> (string, (string, 's, 'o) mlterm) scope
+    val resolve : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_
+  end
 
   structure Statics :
   sig

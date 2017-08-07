@@ -10,7 +10,7 @@ struct
 
   structure Ctx : DICT = Var.Ctx
 
-  datatype ('v, 'a) mlscope = \ of 'v * 'a
+  datatype ('v, 'a) scope = \ of 'v * 'a
   infix \
 
   datatype mltype = 
@@ -22,21 +22,21 @@ struct
 
   type rule_name = string
 
-  datatype ('v, 'o) mlterm = 
+  datatype ('v, 's, 'o) mlterm = 
      VAR of 'v
-   | LET of ('v, 'o) mlterm * ('v, ('v, 'o) mlterm) mlscope
-   | LAM of ('v, ('v, 'o) mlterm) mlscope
-   | APP of ('v, 'o) mlterm * ('v, 'o) mlterm
-   | PAIR of ('v, 'o) mlterm * ('v, 'o) mlterm
-   | FST of ('v, 'o) mlterm
-   | SND of ('v, 'o) mlterm
+   | LET of ('v, 's, 'o) mlterm * ('v, ('v, 's, 'o) mlterm) scope
+   | LAM of ('v, ('v, 's, 'o) mlterm) scope
+   | APP of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
+   | PAIR of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
+   | FST of ('v, 's, 'o) mlterm
+   | SND of ('v, 's, 'o) mlterm
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
-   | EACH of ('v, 'o) mlterm list
-   | TRY of ('v, 'o) mlterm * ('v, 'o) mlterm
+   | EACH of ('v, 's, 'o) mlterm list
+   | TRY of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
+   | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
    | NIL
-
-  type mlterm_ = (mlvar, Tm.abt) mlterm
+  type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
 
   exception todo
   fun ?e = raise e
@@ -44,11 +44,14 @@ struct
   (* TODO: freshen *)
   fun unscope (x \ t) = (x, t)
   fun scope (x, t) = x \ t
-  fun strScope (x, t) = x \ t
+  fun oscope (us, tm) = us \ tm
 
-  local
+  structure Resolver = 
+  struct
     structure A2A = AstToAbt
     structure Names = A2A.NameEnv
+
+    fun strScope (x, t) = x \ t
 
     type ostate =
       {metactx: Tm.metactx,
@@ -63,6 +66,14 @@ struct
     fun addMlvar {ostate, mlenv} x x' = 
       {ostate = ostate,
        mlenv = Names.insert mlenv x x'}
+      
+    fun addSyms {ostate = {metactx, metaenv, symenv, varenv}, mlenv} xs xs' : state = 
+      {mlenv = mlenv,
+       ostate = 
+         {metactx = metactx,
+          metaenv = metaenv,
+          symenv = ListPair.foldl (fn (x, x', r) => Names.insert r x x') symenv (xs, xs'),
+          varenv = varenv}}
 
     fun mlvar (state : state) = 
       Names.lookup (#mlenv state)
@@ -70,7 +81,7 @@ struct
     fun resolveAbt {metactx, metaenv, symenv, varenv} oterm tau = 
       A2A.convertOpen (metactx, metaenv) (symenv, varenv) (oterm, tau)
 
-    fun resolveAux (state : state) =
+    fun resolveAux (state : state) : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_ =
       fn VAR x => VAR (mlvar state x)
        | LET (t, sc) => LET (resolveAux state t, resolveAuxScope state sc)
        | LAM sc => LAM (resolveAuxScope state sc)
@@ -83,6 +94,7 @@ struct
        | REFINE ruleName => REFINE ruleName
        | EACH ts => EACH (List.map (resolveAux state) ts)
        | TRY (t1, t2) => TRY (resolveAux state t1, resolveAux state t2)
+       | PUSH sc => PUSH (resolveAuxObjScope state sc)
        | NIL => NIL
 
     and resolveAuxScope (state : state) (x \ tx) = 
@@ -92,16 +104,25 @@ struct
       in
         x' \ resolveAux state' tx
       end
-  in
-    val resolve =
+
+    and resolveAuxObjScope (state : state) (xs \ txs) =
+      let
+        val xs' = List.map Tm.Sym.named xs
+        val state' = addSyms state xs xs'
+      in
+        xs' \ resolveAux state' txs
+      end
+
+    val resolve : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_ =
       resolveAux
         {ostate = 
           {metactx = Tm.Metavar.Ctx.empty,
            metaenv = Names.empty,
            symenv = Names.empty,
            varenv = Names.empty},
-         mlenv = Names.empty}
-  end
+        mlenv = Names.empty}
+    end
+  
 
   structure Statics =
   struct

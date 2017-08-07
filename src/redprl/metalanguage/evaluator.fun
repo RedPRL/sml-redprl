@@ -6,7 +6,7 @@ struct
   structure J = RedPrlSequent and CJ = RedPrlCategoricalJudgment
 
   type mlterm = ML.mlterm_
-  type mlscope = (ML.mlvar, mlterm) ML.mlscope
+  type scope = (ML.mlvar, mlterm) ML.scope
   type names = int -> Tm.symbol
 
   fun >>= (m, f) = M.bind m f infixr >>=
@@ -24,7 +24,7 @@ struct
   struct
     datatype value =
        NIL
-     | FUN of (ML.mlvar, mlterm) ML.mlscope * env
+     | FUN of (ML.mlvar, mlterm) ML.scope * env
      | PAIR of value * value
      | QUOTE of Tm.abt
 
@@ -55,6 +55,12 @@ struct
      | ML.REFINE ruleName => const V.NIL <$> M.rule (Rules.lookupRule ruleName)
      | ML.EACH ts => const V.NIL <$> M.fork (List.map (M.map (const ()) o eval env) ts)
      | ML.TRY (t1, t2) => M.orelse_ (eval env t1, eval env t2)
+     | ML.PUSH sc =>
+       let
+         val (xs, t) = ML.unscope sc
+       in
+         M.pushNames (xs, eval env t)
+       end
 
   and app (V.FUN (sc, env), v) =
     let
