@@ -6,6 +6,8 @@ Group is
   redprl.cm (bind:(anchor:libs value:../lib/))
   frontend/frontend.sml
 
-  redprl/metalanguage/metalanguage.sig
-  redprl/metalanguage/metalanguage.sml
-  redprl/metalanguage/dynamics.fun
+  redprl/metalanguage/syntax.sig
+  redprl/metalanguage/syntax.sml
+  redprl/metalanguage/monad.sig
+  redprl/metalanguage/monad.sml
+  redprl/metalanguage/evaluator.fun
