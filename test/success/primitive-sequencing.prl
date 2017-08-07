@@ -1,5 +1,5 @@
 Thm PrimitiveSequencingTest : [(-> bool bool bool bool)] by [
-  fresh x,y,z -> repeat {refine dfun/intro; [id, auto]};
+  fresh x,y,z -> repeat {refine dfun/intro || id}; auto;
   use y
 ].
 
