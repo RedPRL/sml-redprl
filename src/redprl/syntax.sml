@@ -15,12 +15,12 @@ struct
     val empty = []
 
     exception Absent
-    fun lookup (lbl : label) fields =
-      case List.find (fn x => #1 x = lbl) fields of
+    fun lookup lbl fields =
+      case List.find (fn (lbl', _) => lbl' = lbl) fields of
         SOME (_, tm) => tm
       | NONE => raise Absent
 
-    fun remove lbl = List.filter (fn f => #1 f <> lbl)
+    fun remove lbl = List.filter (fn (lbl', _) => lbl' <> lbl)
 
     fun update (lbl, tm) fields = remove lbl fields @ [(lbl, tm)]
   end
