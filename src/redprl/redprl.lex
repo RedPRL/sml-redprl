@@ -153,9 +153,9 @@ whitespace = [\ \t];
 "goal"             => (Tokens.GOAL (posTuple (size yytext)));
 "print"            => (Tokens.PRINT (posTuple (size yytext)));
 
-"true"             => (Tokens.JDG_TRUE (posTuple (size yytext)));
-"type"             => (Tokens.JDG_TYPE (posTuple (size yytext)));
-"synth"            => (Tokens.JDG_SYNTH (posTuple (size yytext)));
+"true"             => (Tokens.TRUE (posTuple (size yytext)));
+"type"             => (Tokens.TYPE (posTuple (size yytext)));
+"synth"            => (Tokens.SYNTH (posTuple (size yytext)));
 "discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
 "kan"              => (Tokens.KAN (posTuple (size yytext)));
 "cubical"          => (Tokens.CUBICAL (posTuple (size yytext)));

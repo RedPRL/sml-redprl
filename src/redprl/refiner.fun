@@ -212,7 +212,7 @@ struct
         val goalN = makeMem (I, H) (n, (holeDom, K.top))
         val goalKind = makeTypeIfLess (I, H) (holeCod, k) K.top
       in
-        |>: goalDFun >: goalDom >: goalCod >: goalN #> (I, H, holeCod)
+        |>: goalDFun >: goalDom >: goalCod >: goalN >:? goalKind #> (I, H, holeCod)
       end
 
     fun PathApp _ jdg =
@@ -465,20 +465,6 @@ struct
       val (goal2, hole2) = makeGoal @@ (I, H @> (z, catjdg)) >> catjdg'
     in
       |>: goal1 >: goal2 #> (I, H, substVar (hole1, z) hole2)
-    end
-
-  fun makeNamePopper alpha = 
-    let
-      val ix = ref 0
-    in
-      fn () => 
-        let
-          val i = !ix
-          val h = alpha i
-        in
-          ix := i + 1;
-          h
-        end
     end
 
   fun CutLemma sign opid params alpha jdg = 

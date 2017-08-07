@@ -313,7 +313,7 @@ end
  | PRINT
 
  (* keywords in judgments *)
- | JDG_TRUE | JDG_TYPE | JDG_SYNTH
+ | TRUE | TYPE | SYNTH
 
  | DISCRETE | KAN | CUBICAL
 
@@ -388,6 +388,7 @@ end
 
  | kind of O.K.kind
  | withKind of O.K.kind
+ | kindedType of O.K.kind
 
  | rawJudgment of ast
  | judgment of ast
@@ -701,27 +702,24 @@ kind
 
 withKind
   : WITH kind (kind)
-  | (O.K.CUBICAL)
+  | (O.K.top)
+
+kindedType
+  : kind TYPE (kind)
+  | TYPE (O.K.top)
 
 rawJudgment
   : term EQUALS term IN term withKind (Ast.$$ (O.MONO (O.JDG_EQ withKind), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
   | term IN term withKind (Ast.$$ (O.MONO (O.JDG_EQ withKind), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
-  | term JDG_TRUE withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
+  | term TRUE withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
   | term withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
-  | term EQUALS term JDG_TYPE withKind (Ast.$$ (O.MONO (O.JDG_EQ_TYPE withKind), [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term JDG_TYPE withKind (Ast.$$ (O.MONO (O.JDG_EQ_TYPE withKind), [\ (([],[]), term), \ (([],[]), term)]))
-  | term JDG_SYNTH withKind (Ast.$$ (O.MONO (O.JDG_SYNTH withKind), [\ (([],[]), term)]))
+  | term EQUALS term kindedType (Ast.$$ (O.MONO (O.JDG_EQ_TYPE kindedType), [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term kindedType (Ast.$$ (O.MONO (O.JDG_EQ_TYPE kindedType), [\ (([],[]), term), \ (([],[]), term)]))
+  | term SYNTH withKind (Ast.$$ (O.MONO (O.JDG_SYNTH withKind), [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
-src_catjdg
-  : term EQUALS term JDG_TYPE withKind (CJ.EQ_TYPE ((term1, term1), withKind))
-  | term IN term withKind (CJ.MEM (term1, (term2, withKind)))
-  | term JDG_TRUE withKind (CJ.TRUE (term, withKind))
-  | term withKind (CJ.TRUE (term, withKind))
-  | term EQUALS term IN term withKind (CJ.EQ ((term1, term2), (term3, withKind)))
-  | term JDG_TYPE withKind (CJ.TYPE (term, withKind))
-  | term JDG_SYNTH withKind (CJ.SYNTH (term, withKind))
+src_catjdg : rawJudgment (CJ.fromAst rawJudgment)
 
 src_seqhyp
   : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))

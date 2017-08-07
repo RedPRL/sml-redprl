@@ -159,16 +159,24 @@ struct
     fn EQ ((m, n), (a, k)) => Fpp.expr @@ Fpp.hvsep @@ List.concat
          [ if eq (m, n) then [f m] else [f m, Fpp.Atomic.equals, f n]
          , [Fpp.hsep [Fpp.text "in", f a]]
-         , [Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]
+         , if k = RedPrlKind.top then [] else [Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]
          ]
-     | TRUE (a, k) => Fpp.expr @@ Fpp.hvsep
-         [f a, Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]
+     | TRUE (a, k) => Fpp.expr @@ Fpp.hvsep @@ List.concat
+         [ [f a]
+         , if k = RedPrlKind.top then []
+           else [Fpp.hsep [Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]]
+         ]
      | EQ_TYPE ((a, b), k) => Fpp.expr @@ Fpp.hvsep @@ List.concat
          [ if eq (a, b) then [f a] else [f a, Fpp.Atomic.equals, f b]
-         , [Fpp.hsep [Fpp.text "type", Fpp.text "with", TermPrinter.ppKind k]]
+         , if k = RedPrlKind.top
+           then [Fpp.hsep [Fpp.text "type"]]
+           else [Fpp.hsep [TermPrinter.ppKind k, Fpp.text "type"]]
          ]
-     | SYNTH (m, k) => Fpp.expr @@ Fpp.hvsep
-         [f m, Fpp.hsep [Fpp.text "synth", Fpp.text "with", TermPrinter.ppKind k]]
+     | SYNTH (m, k) => Fpp.expr @@ Fpp.hvsep @@ List.concat
+         [ [f m]
+         , if k = RedPrlKind.top then []
+           else [Fpp.hsep [Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]]
+         ]
      | TERM tau => TermPrinter.ppSort tau
      | PARAM_SUBST _ => Fpp.text "param-subst" (* TODO *)
   fun pretty' f = pretty (fn _ => false) f
