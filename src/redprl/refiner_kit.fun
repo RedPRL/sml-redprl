@@ -167,37 +167,55 @@ struct
   fun makeMem (I, H) (m, (ty, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, k))
 
   (* conditional goal making *)
+
+  fun makeTypeIfLess' (I, H) (m, k) k' =
+    case K.greatestMeetRight' (SOME k, k') of
+      NONE => NONE
+    | SOME k'' => SOME @@ makeType (I, H) (m, k'')
+
   fun makeTypeIfLess (I, H) (m, k) k' =
-    if K.leq (k', k) then NONE
-    else SOME @@ makeType (I, H) (m, k)
+    makeTypeIfLess' (I, H) (m, k) (SOME k')
+
+  fun makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) k' =
+    if Abt.eq (m, n) then makeTypeIfLess' (I, H) (m, k) k'
+    else SOME @@ makeEqType (I, H) ((m, n), k)
 
   fun makeEqTypeIfDifferent (I, H) ((m, n), k) =
-    if Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType (I, H) ((m, n), k)
+    makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) NONE
 
   fun makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k' =
-    if K.leq (k', k) andalso Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType (I, H) ((m, n), k)
+    makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) (SOME k')
 
   fun makeEqTypeIfAllDifferentOrLess (I, H) ((m, n), k) ns k' =
-    if K.leq (k', k) andalso List.exists (fn n' => Abt.eq (m, n')) ns then NONE
+    if List.exists (fn n' => Abt.eq (m, n')) ns
+    then makeTypeIfLess (I, H) (m, k) k'
     else makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k'
 
-  fun makeEqIfDifferent (I, H) ((m, n), (ty, k)) =
-    if Abt.eq (m, n) then NONE
+  fun makeMemIfLess' (I, H) (m, (ty, k)) k' =
+    case K.greatestMeetRight' (SOME k, k') of
+      NONE => NONE
+    | SOME k'' => SOME @@ makeMem (I, H) (m, (ty, k''))
+
+  fun makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) k' =
+    if Abt.eq (m, n) then makeMemIfLess' (I, H) (m, (ty, k)) k'
     else SOME @@ makeEq (I, H) ((m, n), (ty, k))
 
-  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, k)) ns =
-    if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent (I, H) ((m, n), (ty, k))
+  fun makeEqIfDifferent (I, H) ((m, n), (ty, k)) =
+    makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) NONE
 
   fun makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k' =
-    if K.leq (k', k) andalso Abt.eq (m, n) then NONE
-    else SOME @@ makeEq (I, H) ((m, n), (ty, k))
+    makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) (SOME k')
+
+  fun makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns k' =
+    if List.exists (fn n' => Abt.eq (m, n')) ns
+    then makeMemIfLess' (I, H) (m, (ty, k)) k'
+    else makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) k'
+
+  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, k)) ns =
+    makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns NONE
 
   fun makeEqIfAllDifferentOrLess (I, H) ((m, n), (ty, k)) ns k' =
-    if K.leq (k', k) andalso List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k'
+    makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns (SOME k')
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal

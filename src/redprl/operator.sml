@@ -123,28 +123,15 @@ struct
       val top : t
       val leq : t * t -> bool
       val meet : t * t -> t
+
+      (* greatestMeetRight (a, b) is the greatest element c
+       * such that meet (b, c) <= a *)
+      val greatestMeetRight : t * t -> t
     end
     =
     struct
       type t = kind
       val top = CUBICAL
-
-      val leq =
-        fn (DISCRETE, _) => true
-         | (_, DISCRETE) => false
-
-         | (KAN, _) => true
-         | (_, KAN) => false
-
-         (* CUBICAL is the top *)
-         | (CUBICAL, _) => false
-         | (_, CUBICAL) => true
-
-         (* the remaining combinations *)
-         | (HCOM, HCOM) => true
-         | (COE, COE) => true
-         | (HCOM, COE) => false
-         | (COE, HCOM) => false
 
       val meet =
         fn (DISCRETE, _) => DISCRETE
@@ -163,6 +150,22 @@ struct
          | (_, COE) => COE
 
          | (CUBICAL, CUBICAL) => CUBICAL
+
+      val greatestMeetRight =
+        fn (_, DISCRETE) => top
+         | (DISCRETE, _) => DISCRETE
+         | (_, KAN) => top
+         | (KAN, HCOM) => COE
+         | (KAN, COE) => HCOM
+         | (KAN, _) => KAN
+         | (HCOM, HCOM) => top
+         | (HCOM, _) => HCOM
+         | (COE, COE) => top
+         | (COE, _) => COE
+         | (CUBICAL, CUBICAL) => top
+
+      fun leq (a, b) = greatestMeetRight (b, a) = top
+      fun geq (a, b) = leq (b, a)
     end
   in
     open Internal
@@ -174,10 +177,15 @@ struct
     fn (NONE, b) => b
      | (a, NONE) => a
      | (SOME a, SOME b) => SOME (meet (a, b))
-  val leq' =
-    fn (_, NONE) => true
-     | (NONE, _) => false
-     | (SOME a, SOME b) => leq (a, b)
+  val greatestMeetRight' =
+    fn (NONE, _) => NONE
+     | (a, NONE) => a
+     | (SOME a, SOME b) =>
+         let val gmr = greatestMeetRight (a, b)
+         in if gmr = top then NONE else SOME gmr
+         end
+  fun leq' (a, b) = greatestMeetRight' (b, a) = top'
+  fun geq' (a, b) = leq' (b, a)
 
   fun reduce l = List.foldl meet' top' l
   fun reduceMap f = reduce o List.map f
