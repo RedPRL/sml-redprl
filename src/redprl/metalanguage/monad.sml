@@ -2,6 +2,9 @@ structure MetalanguageMonad :> METALANGUAGE_MONAD =
 struct
   type names = int -> RedPrlAbt.symbol
 
+  exception todo
+  fun ?e = raise e
+
   open Lcf infix |>
   type 'a internal = {goal: jdg, consumedNames: int, ret: 'a}
   type 'a m = names * jdg state -> 'a internal state
@@ -94,4 +97,18 @@ struct
     m1 (alpha, state)
       handle _ => 
         m2 (alpha, state)
+
+  fun pushNames (names, m) (alpha, state) =
+    let
+      val len = List.length names
+      val alpha' = UniversalSpread.prepend names alpha
+      val state' = m (alpha', state)
+      
+      fun go {consumedNames, goal, ret} =
+        {consumedNames = Int.max (0, consumedNames - len),
+         goal = goal,
+         ret = ret}
+    in
+      Lcf.map go state'
+    end
 end

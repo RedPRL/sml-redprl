@@ -10,4 +10,6 @@ sig
   val rule : (names -> Lcf.jdg Lcf.tactic) -> unit m
   val fork : unit m list -> unit m
   val orelse_ : 'a m * 'a m -> 'a m
+
+  val pushNames : RedPrlAbt.symbol list * 'a m -> 'a m
 end
