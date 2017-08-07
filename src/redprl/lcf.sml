@@ -7,7 +7,7 @@ sig
 end =
 struct
   structure Lcf = Lcf (LcfLanguage)
-  structure Def = LcfUtilPure (structure Lcf = Lcf structure J = RedPrlJudgment)
+  structure Def = LcfUtil (structure Lcf = Lcf structure J = RedPrlJudgment)
   open Def Lcf
   infix |> ||
 

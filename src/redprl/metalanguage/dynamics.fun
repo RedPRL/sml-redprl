@@ -21,60 +21,88 @@ struct
   end =
   struct
     open Lcf infix |>
-    type 'a m = names * jdg state -> int * (jdg * 'a) state
+    type 'a internal = {goal: jdg, consumedNames: int, ret: 'a}
+    type 'a m = names * jdg state -> 'a internal state
 
-    fun isjdg () : (jdg * 'a) isjdg =
-      {sort = #sort Lcf.isjdg o #1,
-       subst = fn env => fn (j, n) => (#subst Lcf.isjdg env j, n),
-       ren = fn ren => fn (j, n) => (#ren Lcf.isjdg ren j, n)}
+    fun isjdg () : 'a internal isjdg =
+      {sort = #sort Lcf.isjdg o #goal,
+       subst = fn env => fn {goal, consumedNames, ret} => {goal = #subst Lcf.isjdg env goal, consumedNames = consumedNames, ret = ret},
+       ren = fn ren => fn {goal, consumedNames, ret} => {goal = #ren Lcf.isjdg ren goal, consumedNames = consumedNames, ret = ret}}
 
-    fun pure a (alpha, state) = (0, Lcf.map (fn jdg => (jdg, a)) state)
-    fun bind (m : 'a m) (f : 'a -> 'b m) (alpha, state) =
+    fun pure a (alpha, state)=
+      Lcf.map
+        (fn jdg => {goal = jdg, consumedNames = 0, ret = a})
+        state
+
+    fun maxconsumedNames (state : 'a internal state) : int =
       let
-        val (n, state' : (jdg * 'a) Lcf.state) = m (alpha, state)
-        val alpha' = UniversalSpread.bite n alpha
-        val psi |> evd = Lcf.map (fn (jdg, a) => f a (alpha', Lcf.ret Lcf.isjdg jdg)) state'
-        val n = Tl.foldr (fn (_, (n', _), n) => Int.max (n', n)) 0 psi
-        val psi' = Tl.map (fn (n, j) => j) psi
+        val psi |> _ = state
       in
-        (n, mul (isjdg ()) (psi' |> evd))
+        Tl.foldr (fn (_, {consumedNames,...}, n) => Int.max (consumedNames, n)) 0 psi
       end
 
-    fun map (f : 'a -> 'b) (m : 'a m) = bind m (pure o f)
-
-    fun dup x = (x, x)
-    fun get (alpha, state) = 
-      (0, Lcf.map dup state)
-
-    fun rule tac (alpha, state) = 
+    fun bind (m : 'a m) (f : 'a -> 'b m) (alpha, state) : 'b internal state =
       let
-        val (alpha', probe) = UniversalSpread.probe alpha
-        val state' = Lcf.mul Lcf.isjdg (Lcf.allSeq (tac alpha') state)
+        val state' : 'a internal state = m (alpha, state)
+        val alpha' = UniversalSpread.bite (maxconsumedNames state') alpha
+        val state'' = Lcf.map (fn {goal, consumedNames, ret} => f ret (alpha', Lcf.ret Lcf.isjdg goal)) state'
       in
-        (!probe, Lcf.map (fn j => (j, ())) state')
+        mul (isjdg ()) state''
       end
 
-    (* Move to LCF library somehow *)
-    fun fork ms (alpha, psi |> evd) =
-      let
-        open Lcf.Tl
-        open ConsView
-        fun go rho n (r : (jdg * unit) state telescope) =
-          fn (_, EMPTY) => (n, r)
-           | (m :: ms, CONS (x, (jdg, _), psi)) =>
-             let
-               val (n', tjdg as psix |> vlx) = m (alpha, idn (J.subst rho jdg))
-               val rho' = L.Ctx.insert rho x vlx
-             in
-               go rho' (Int.max (n, n')) (Tl.snoc r x tjdg) (ms, out psi)
-             end
-           | ([], CONS (x, jdg, psi)) => 
-              go rho n (Tl.snoc r x (Lcf.ret (isjdg ()) jdg)) ([], out psi)
-        val (n, ppsi) = go L.Ctx.empty 0 Tl.empty (ms, out (Tl.map (fn jdg => (jdg, ())) psi))
-      in
-        (n, Lcf.mul (isjdg ()) (ppsi |> evd))
-      end
+    fun map (f : 'a -> 'b) (m : 'a m) =
+      bind m (pure o f)
 
+    fun get (alpha, state) =
+      Lcf.map
+        (fn jdg => {goal = jdg, consumedNames = 0, ret = jdg})
+        state
+
+    structure J : LCF_JUDGMENT = 
+    struct
+      type jdg = unit internal
+      type sort = J.sort
+      type env = J.env
+      type ren = J.ren
+
+      val isjdg : jdg isjdg = isjdg ()
+      val {sort, subst, ren} = isjdg
+      fun eq (jdg1 : jdg, jdg2 : jdg) = J.eq (#goal jdg1, #goal jdg2)
+    end
+
+    structure LcfUtil = LcfUtil (structure Lcf = Lcf and J = J)
+
+
+    fun asTactic alpha (m : unit m) : J.jdg tactic = fn {goal, ...} => 
+      m (alpha, idn goal)
+
+    fun fromMultitactic (mtac : J.jdg multitactic) : unit m =
+      fn (alpha, state) =>
+        Lcf.mul (isjdg ()) (mtac (pure () (alpha, state)))
+
+    fun fork (ms : unit m list) : unit m =
+      fn (alpha, state) =>
+        fromMultitactic
+          (LcfUtil.eachSeq (List.map (asTactic alpha) ms))
+          (alpha, state)
+
+    fun liftTactic (tac : names -> Lcf.jdg tactic) (alpha : names) : J.jdg tactic = 
+      fn {goal, consumedNames, ret} =>
+        let
+          val (alpha', probe) = UniversalSpread.probe alpha
+          val state = tac alpha' goal
+        in
+          Lcf.map
+            (fn jdg => {goal = jdg, consumedNames = consumedNames + !probe, ret = ret})
+            state
+        end
+
+    fun rule (tac : names -> Lcf.jdg Lcf.tactic) (alpha, state) = 
+      let
+        val state' = Lcf.map (fn jdg => {consumedNames = 0, goal = jdg, ret = ()}) state
+      in
+        Lcf.mul (isjdg ()) (LcfUtil.allSeq (liftTactic tac alpha) state')
+      end
 
     fun orelse_ (m1, m2) (alpha, state) =
       m1 (alpha, state)

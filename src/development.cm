@@ -1,6 +1,8 @@
 Group is
   ../lib/cmlib/cmlib.cm
   ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-dependent-lcf/dependent_lcf.cm (bind:(anchor:libs value:../lib/))
+
   redprl.cm (bind:(anchor:libs value:../lib/))
   frontend/frontend.sml
 
