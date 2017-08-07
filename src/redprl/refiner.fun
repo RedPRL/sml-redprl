@@ -93,13 +93,58 @@ struct
   structure TypeEquality =
   struct
     fun Symmetry _ jdg =
-    let
-      val _ = RedPrlLog.trace "Equality.Symmetry"
-      val (I, H) >> CJ.EQ_TYPE ((ty1, ty2), k) = jdg
-      val goal = makeEqType (I, H) ((ty2, ty1), k)
-    in
-      |>: goal #> (I, H, trivial)
-    end
+      let
+        val _ = RedPrlLog.trace "Equality.Symmetry"
+        val (I, H) >> CJ.EQ_TYPE ((ty1, ty2), k) = jdg
+        val goal = makeEqType (I, H) ((ty2, ty1), k)
+      in
+        |>: goal #> (I, H, trivial)
+      end
+
+    fun FromEqTypeHyp z _ jdg =
+      let
+        val _ = RedPrlLog.trace "TypeEquality.FromEqTypeHyp"
+        val (I, H) >> CJ.EQ_TYPE ((a0, b0), k0) = jdg
+        val CJ.EQ_TYPE ((a1, b1), k1) = Hyps.lookup z H
+        val _ = Assert.alphaEq (a0, a1)
+        val _ = Assert.alphaEq (b0, b1)
+        val goal =
+          case K.greatestMeetRight' (SOME k0, SOME k1) of
+            NONE => NONE
+          | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
+      in
+        |>:? goal #> (I, H, trivial)
+      end
+
+    fun FromWfHyp z _ jdg =
+      let
+        val _ = RedPrlLog.trace "TypeEquality.FromWfHyp"
+        val (I, H) >> CJ.EQ_TYPE ((a0, b0), k0) = jdg
+        val CJ.EQ (_, (a1, k1)) = Hyps.lookup z H
+        val _ = Assert.alphaEq (a0, b0)
+        val _ = Assert.alphaEq (a0, a1)
+        val goal =
+          case K.greatestMeetRight' (SOME k0, SOME k1) of
+            NONE => NONE
+          | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
+      in
+        |>:? goal #> (I, H, trivial)
+      end
+
+    fun FromTrueHyp z _ jdg =
+      let
+        val _ = RedPrlLog.trace "TypeEquality.FromTrueHyp"
+        val (I, H) >> CJ.EQ_TYPE ((a0, b0), k0) = jdg
+        val CJ.TRUE (a1, k1) = Hyps.lookup z H
+        val _ = Assert.alphaEq (a0, b0)
+        val _ = Assert.alphaEq (a0, a1)
+        val goal =
+          case K.greatestMeetRight' (SOME k0, SOME k1) of
+            NONE => NONE
+          | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
+      in
+        |>:? goal #> (I, H, trivial)
+      end
   end
 
   structure Truth =
@@ -296,6 +341,22 @@ struct
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected variable-equality sequent"]
+
+    fun FromWfHyp z _ jdg =
+      let
+        val _ = RedPrlLog.trace "TypeEquality.FromWfHyp"
+        val (I, H) >> CJ.EQ ((m0, n0), (a0, k0)) = jdg
+        val CJ.EQ ((m1, n1), (a1, k1)) = Hyps.lookup z H
+        val _ = Assert.alphaEq (m0, m1)
+        val _ = Assert.alphaEq (n0, n1)
+        val _ = Assert.alphaEq (a0, a1)
+        val goal =
+          case K.greatestMeetRight' (SOME k0, SOME k1) of
+            NONE => NONE
+          | SOME k'' => SOME @@ makeEq (I, H) ((m0, n0), (a0, k''))
+      in
+        |>:? goal #> (I, H, trivial)
+      end
 
     fun Custom sign _ jdg = 
       let
@@ -694,22 +755,49 @@ struct
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordHeadExpansion sign then_ Record.MatchRecord
           | _ >> jdg => raise E.error [Fpp.text "AutoStep does not apply to the judgment", CJ.pretty' TermPrinter.ppTerm jdg])
 
+      fun EqTypeFromHyp alpha jdg =
+        let
+          val (_, H) >> CJ.EQ_TYPE ((a0, b0), k0) = jdg
+          val isUnary = Abt.eq (a0, b0)
+          val isUseful =
+            fn CJ.EQ_TYPE ((a1, b1), k1) =>
+                 Abt.eq (a0, a1) andalso Abt.eq (b0, b1)
+                 andalso K.greatestMeetRight' (SOME k0, SOME k1) <> SOME k0
+             | CJ.EQ (_, (a1, k1)) =>
+                 isUnary andalso Abt.eq (a0, a1)
+                 andalso K.greatestMeetRight' (SOME k0, SOME k1) <> SOME k0
+             | CJ.TRUE (a1, k1) =>
+                 isUnary andalso Abt.eq (a0, a1)
+                 andalso K.greatestMeetRight' (SOME k0, SOME k1) <> SOME k0
+             | _ => false
+        in
+          case Hyps.search H isUseful of
+            SOME (lbl, _) =>
+              ( TypeEquality.FromEqTypeHyp lbl orelse_
+                TypeEquality.FromWfHyp lbl orelse_
+                TypeEquality.FromTrueHyp lbl)
+              alpha jdg
+          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
+        end
 
-      fun isWfJdg (CJ.TRUE _) = false
-        | isWfJdg _ = true
-
-      fun FindHyp alpha ((I, H) >> jdg) =
-        if isWfJdg jdg then
-          case Hyps.search H (fn jdg' => CJ.eq (jdg, jdg')) of
-             SOME (lbl, _) => Hyp.Project lbl alpha ((I, H) >> jdg)
-           | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
-        else
-          raise E.error [Fpp.text "Non-deterministic tactics can only be run on auxiliary goals"]
+      fun EqFromWfHyp alpha jdg =
+        let
+          val (_, H) >> CJ.EQ ((m0, n0), (a0, k0)) = jdg
+          val isUseful =
+            fn CJ.EQ ((m1, n1), (a1, k1)) =>
+                Abt.eq (m0, m1) andalso Abt.eq (n0, n1) andalso Abt.eq (a0, a1)
+                andalso K.greatestMeetRight' (SOME k0, SOME k1) <> SOME k0
+             | _ => false
+        in
+          case Hyps.search H isUseful of
+            SOME (lbl, _) => Equality.FromWfHyp lbl alpha jdg
+          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
+        end
     in
       fun AutoStep sign alpha jdg = 
         StepJdg sign alpha jdg
           handle exn => 
-            FindHyp alpha jdg
+            (EqTypeFromHyp orelse_ EqFromWfHyp) alpha jdg
             handle _ => raise exn
     end
 
