@@ -190,8 +190,12 @@ struct
         val CJ.TRUE (ty, _) = Hyps.lookup z H
         val Syn.WBOOL = Syn.out ty
 
-        (* kind because of FCOM *)
-        val goalKind = makeTypeIfLess (I, H) (cz, k) K.top
+        (* kind-checking because of FCOM
+         *
+         * This goal is made (explicitly) unconditional
+         * to make the lives of tactic writers easier
+         *)
+        val goalKind = makeType (I, H) (cz, k)
 
         (* tt branch *)
         val tt = Syn.into Syn.TT
@@ -207,7 +211,7 @@ struct
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val if_ = Syn.into @@ Syn.WIF ((z, cz), ztm, (holeT, holeF))
       in
-        |>: goalT >: goalF >:? goalKind #> (I, H, if_)
+        |>: goalT >: goalF >: goalKind #> (I, H, if_)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected bool elimination problem"]
@@ -526,8 +530,12 @@ struct
         val CJ.TRUE (ty, _) = Hyps.lookup z H
         val Syn.S1 = Syn.out ty
 
-        (* kind because of FCOM *)
-        val goalKind = makeTypeIfLess (I, H) (cz, k) K.top
+        (* kind-checking because of FCOM
+         *
+         * This goal is made (explicitly) unconditional
+         * to make the lives of tactic writers easier
+         *)
+        val goalKind = makeType (I, H) (cz, k)
 
         (* base branch *)
         val base = Syn.into Syn.BASE
@@ -552,7 +560,7 @@ struct
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
         val elim = Syn.into @@ Syn.S1_REC ((z, cz), ztm, (holeB, (u, holeL)))
       in
-        |>: goalB >: goalL >:? goalCoh0 >:? goalCoh1 >:? goalKind #> (I, H, elim)
+        |>: goalB >: goalL >:? goalCoh0 >:? goalCoh1 >: goalKind #> (I, H, elim)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected circle elimination problem"]
