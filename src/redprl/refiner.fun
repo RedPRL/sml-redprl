@@ -113,7 +113,7 @@ struct
         |>: goal #> (I, H, tm)
       end
       handle Bind =>
-        raise E.error [Fpp.text "Expected truth sequent but got ", RedPrlSequent.pretty' TermPrinter.ppTerm jdg]
+        raise E.error [Fpp.text "Expected truth sequent but got:", RedPrlSequent.pretty' TermPrinter.ppTerm jdg]
   end
 
   structure Term = 
