@@ -37,6 +37,13 @@ sig
     *)
    | TERM of RedPrlSort.t
 
+   (* `PARAM_SUBST (l, m, s)`:
+    *   `l` is a list of elements of shape `(pe, ps, r)`, representing a
+    *   parameter substitution, where `pe` will (eventually) be `PARAM_EXP p`
+    *   for some parameter term `p`, `r` is a parameter variable and `ps` is
+    *   the sort of `p` and `r`. `m` is an expression of sort `s`.
+    *   The realizer is the result of applying the substitution `l` to `m`.
+    *)
    | PARAM_SUBST of ('a * RedPrlParamSort.t * 'sym) list * 'a * RedPrlSort.t
 
   val MEM : 'a * ('a * kind) -> ('sym, 'a) redprl_jdg
