@@ -1,4 +1,4 @@
-structure MetalanguageSyntax : METALANGUAGE_SYNTAX = 
+structure MetalanguageSyntax : METALANGUAGE_SYNTAX =
 struct
   structure Var = AbtSymbol ()
   structure Meta = AbtSymbol ()
@@ -8,6 +8,7 @@ struct
   type oterm = Tm.abt
   type osym = Tm.symbol
   type osort = Tm.sort
+  type ovalence = Tm.valence
 
   type mlvar = Var.t
   type meta = Meta.t
@@ -19,7 +20,7 @@ struct
   datatype ('v, 'a) scope = \ of 'v * 'a
   infix \
 
-  datatype mltype = 
+  datatype mltype =
      UNIT
    | ARR of mltype * mltype
    | PROD of mltype * mltype
@@ -29,7 +30,9 @@ struct
 
   type rule_name = string
 
-  datatype ('v, 's, 'o) mlterm = 
+  type ('s, 'o, 't) omatch_clause = (('s * ovalence) list, 'o * 't) scope
+
+  datatype ('v, 's, 'o) mlterm =
      VAR of 'v
    | LET of ('v, 's, 'o) mlterm * ('v, ('v, 's, 'o) mlterm) scope
    | LAM of ('v, ('v, 's, 'o) mlterm) scope
@@ -43,19 +46,20 @@ struct
    | TRY of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
    | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
    | NIL
-   | PROVE of 'o * ('v, 's, 'o) mlterm 
+   | PROVE of 'o * ('v, 's, 'o) mlterm
+   | OMATCH of ('v, 's, 'o) mlterm * ('s, 'o, ('v, 's, 'o) mlterm) omatch_clause list
 
   type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
 
   exception todo
   fun ?e = raise e
-  
+
   (* TODO: freshen *)
   fun unscope (x \ t) = (x, t)
   fun scope (x, t) = x \ t
   fun oscope (us, tm) = us \ tm
 
-  structure Resolver = 
+  structure Resolver =
   struct
     structure A2A = AstToAbt
     structure Names = A2A.NameEnv
@@ -68,26 +72,34 @@ struct
        symenv: Tm.symbol Names.dict,
        varenv: Tm.variable Names.dict}
 
-    type state = 
+    type state =
       {ostate: ostate,
        mlenv: mlvar Names.dict}
-    
-    fun addMlvar {ostate, mlenv} x x' = 
+
+    fun addMlvar {ostate, mlenv} x x' =
       {ostate = ostate,
        mlenv = Names.insert mlenv x x'}
-      
-    fun addSyms {ostate = {metactx, metaenv, symenv, varenv}, mlenv} xs xs' : state = 
+
+    fun addSyms {ostate = {metactx, metaenv, symenv, varenv}, mlenv} xs xs' : state =
       {mlenv = mlenv,
-       ostate = 
+       ostate =
          {metactx = metactx,
           metaenv = metaenv,
           symenv = ListPair.foldl (fn (x, x', r) => Names.insert r x x') symenv (xs, xs'),
           varenv = varenv}}
 
-    fun mlvar (state : state) = 
+    fun addMetas {ostate = {metactx, metaenv, symenv, varenv}, mlenv} metas metas' : state =
+      {mlenv = mlenv,
+       ostate = 
+         {metactx = List.foldl (fn ((x, vl), r) => Tm.Metavar.Ctx.insert r x vl) metactx metas',
+          metaenv = ListPair.foldl (fn ((x, _), (x', _), r) => Names.insert r x x') metaenv (metas, metas'),
+          symenv = symenv,
+          varenv = varenv}}
+
+    fun mlvar (state : state) =
       Names.lookup (#mlenv state)
 
-    fun resolveAbt {metactx, metaenv, symenv, varenv} oterm tau = 
+    fun resolveAbt {metactx, metaenv, symenv, varenv} oterm tau =
       A2A.convertOpen (metactx, metaenv) (symenv, varenv) (oterm, tau)
 
     fun resolveAux (state : state) : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_ =
@@ -106,8 +118,9 @@ struct
        | PUSH sc => PUSH (resolveAuxObjScope state sc)
        | NIL => NIL
        | PROVE ((ast, tau), t) => PROVE (resolveAbt (#ostate state) ast tau, resolveAux state t)
+       | OMATCH (scrutinee, clauses) => OMATCH (resolveAux state scrutinee, List.map (resolveAuxObjMatchClause state) clauses)
 
-    and resolveAuxScope (state : state) (x \ tx) = 
+    and resolveAuxScope (state : state) (x \ tx) =
       let
         val x' = Var.named x
         val state' = addMlvar state x x'
@@ -123,9 +136,17 @@ struct
         xs' \ resolveAux state' txs
       end
 
+    and resolveAuxObjMatchClause (state : state) (metas \ ((pat, tau), t)) =
+      let
+        val metas' = List.map (fn (x, vl) => (Tm.Metavar.named x, vl)) metas
+        val state' = addMetas state metas metas'
+      in
+        metas' \ (resolveAbt (#ostate state') pat tau, resolveAux state' t)
+      end
+
     val resolve : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_ =
       resolveAux
-        {ostate = 
+        {ostate =
           {metactx = Tm.Metavar.Ctx.empty,
            metaenv = Names.empty,
            symenv = Names.empty,

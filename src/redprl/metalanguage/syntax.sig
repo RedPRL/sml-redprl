@@ -1,7 +1,8 @@
-signature METALANGUAGE_SYNTAX = 
+signature METALANGUAGE_SYNTAX =
 sig
   type osym
   type osort
+  type ovalence
   type oterm
   type oast
 
@@ -12,7 +13,7 @@ sig
   val freshVar : unit -> mlvar
   type ('b, 'a) scope
 
-  datatype mltype = 
+  datatype mltype =
      UNIT
    | ARR of mltype * mltype
    | PROD of mltype * mltype
@@ -22,7 +23,10 @@ sig
 
   type rule_name = string
 
-  datatype ('v, 's, 'o) mlterm = 
+
+  type ('s, 'o, 't) omatch_clause = (('s * ovalence) list, 'o * 't) scope
+
+  datatype ('v, 's, 'o) mlterm =
      VAR of 'v
    | LET of ('v, 's, 'o) mlterm * ('v, ('v, 's, 'o) mlterm) scope
    | LAM of ('v, ('v, 's, 'o) mlterm) scope
@@ -36,7 +40,8 @@ sig
    | TRY of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
    | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
    | NIL
-   | PROVE of 'o * ('v, 's, 'o) mlterm 
+   | PROVE of 'o * ('v, 's, 'o) mlterm
+   | OMATCH of ('v, 's, 'o) mlterm * ('s, 'o, ('v, 's, 'o) mlterm) omatch_clause list
 
   type mlterm_ = (mlvar, osym, oterm) mlterm
 
@@ -44,7 +49,7 @@ sig
   val scope : mlvar * (mlvar, 's, 'o) mlterm -> (mlvar, (mlvar, 's, 'o) mlterm) scope
   val oscope : osym list * ('v, osym, oterm) mlterm -> (osym list, ('v, osym, oterm) mlterm) scope
 
-  structure Resolver : 
+  structure Resolver :
   sig
     val scope : string * (string, 's, 'o) mlterm -> (string, (string, 's, 'o) mlterm) scope
     val resolve : (string, string, oast * osort) mlterm -> mlterm_
