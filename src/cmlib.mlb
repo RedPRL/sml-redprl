@@ -3,7 +3,6 @@ local
 in
   signature DICT
   signature SET
-  functor SplayDict
   functor SplaySet
   functor HashTable
   structure StringOrdered

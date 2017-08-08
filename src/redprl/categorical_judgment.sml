@@ -1,42 +1,75 @@
 structure RedPrlCategoricalJudgment :
 sig
+  type kind = RedPrlKind.t
+
   datatype ('sym, 'a) redprl_jdg =
-     EQ of ('a * 'a) * 'a
-   | TRUE of 'a
-   | EQ_TYPE of 'a * 'a
-   | SYNTH of 'a
+
+   (* `EQ ((m, n), (a, k))`:
+    *   `EQ_TYPE ((a, a), k)` and `m` and `n` are related by the PER associated with `a`.
+    *   The realizer is `TV` of sort `TRIV`.
+    *)
+     EQ of ('a * 'a) * ('a * kind)
+
+   (* `TRUE (a, k)`:
+    *   `EQ_TYPE ((a, a), k)` and there exists a term `m` such that
+    *   `EQ ((m, m), (a, k))` is provable.
+    *   The realizer is such an `m` of sort `EXP`.
+    *)
+   | TRUE of 'a * kind
+
+   (* `EQ_TYPE ((a, b), k)`:
+    *   `a` and `b` are equal types, taking into account the additional
+    *   structures specified by `k`. For example, `EQ_TYPE ((a, b), KAN)`
+    *   means they are equally Kan, in addition to being equal pretypes.
+    *   The realizer is `TV` of sort `TRIV`.
+    *)
+   | EQ_TYPE of ('a * 'a) * kind
+
+   (* `TERM tau`:
+    *   There exists some `m` of sort `tau`.
+    *   The realizer is such an `m` of sort `tau`.
+    *)
+   | SYNTH of 'a * kind
+
+   (* `TERM tau`:
+    *   There exists some `m` of sort `tau`.
+    *   The realizer is such an `m` of sort `tau`.
+    *)
    | TERM of RedPrlSort.t
+
    | PARAM_SUBST of ('a * RedPrlParamSort.t * 'sym) list * 'a * RedPrlSort.t
 
-  val MEM : 'a * 'a -> ('sym, 'a) redprl_jdg
-  val TYPE : 'a -> ('sym, 'a) redprl_jdg
+  val MEM : 'a * ('a * kind) -> ('sym, 'a) redprl_jdg
+  val TYPE : 'a * kind -> ('sym, 'a) redprl_jdg
 
   val fromAst : RedPrlAst.ast -> (string, RedPrlAst.ast) redprl_jdg
 
   include CATEGORICAL_JUDGMENT where type ('sym, 'a) jdg = ('sym, 'a) redprl_jdg
 end =
 struct
+  type kind = RedPrlKind.t
+
   datatype ('sym, 'a) redprl_jdg =
-     EQ of ('a * 'a) * 'a
-   | TRUE of 'a
-   | EQ_TYPE of 'a * 'a
-   | SYNTH of 'a
+     EQ of ('a * 'a) * ('a * kind)
+   | TRUE of 'a * kind
+   | EQ_TYPE of ('a * 'a) * kind
+   | SYNTH of 'a * kind
    | TERM of RedPrlSort.t
    | PARAM_SUBST of ('a * RedPrlParamSort.t * 'sym) list * 'a * RedPrlSort.t
 
-  fun MEM (m, a) =
-    EQ ((m, m), a)
+  fun MEM (m, (a, k)) =
+    EQ ((m, m), (a, k))
 
-  fun TYPE a =
-    EQ_TYPE (a, a)
+  fun TYPE (a, k) =
+    EQ_TYPE ((a, a), k)
 
   type ('sym, 'a) jdg = ('sym, 'a) redprl_jdg
 
   fun map sym f =
-    fn EQ ((m, n), a) => EQ ((f m, f n), f a)
-     | TRUE a => TRUE (f a)
-     | EQ_TYPE (a, b) => EQ_TYPE (f a, f b)
-     | SYNTH a => SYNTH (f a)
+    fn EQ ((m, n), (a, k)) => EQ ((f m, f n), (f a, k))
+     | TRUE (a, k) => TRUE (f a, k)
+     | EQ_TYPE ((a, b), k) => EQ_TYPE ((f a, f b), k)
+     | SYNTH (a, k) => SYNTH (f a, k)
      | TERM tau => TERM tau
      | PARAM_SUBST (psi, m, tau) => PARAM_SUBST (List.map (fn (r, sigma, u) => (f r, sigma, sym u)) psi, f m, tau) 
   
@@ -52,7 +85,7 @@ struct
      | EQ_TYPE _ => O.TRIV
      | SYNTH _ => O.EXP
      | TERM tau => tau
-     | PARAM_SUBST (_, m, tau) => tau
+     | PARAM_SUBST (_, _, tau) => tau
 
   local
     open Tm
@@ -63,10 +96,10 @@ struct
     type sort = sort
 
     val toAbt : (Sym.t, abt) jdg -> abt =
-      fn EQ ((m, n), a) => O.MONO O.JDG_EQ $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-       | TRUE a => O.MONO O.JDG_TRUE $$ [([],[]) \ a]
-       | EQ_TYPE (a, b) => O.MONO O.JDG_EQ_TYPE $$ [([],[]) \ a, ([],[]) \ b]
-       | SYNTH m => O.MONO O.JDG_SYNTH $$ [([],[]) \ m]
+      fn EQ ((m, n), (a, k)) => O.MONO (O.JDG_EQ k) $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
+       | TRUE (a, k) => O.MONO (O.JDG_TRUE k) $$ [([],[]) \ a]
+       | EQ_TYPE ((a, b), k) => O.MONO (O.JDG_EQ_TYPE k) $$ [([],[]) \ a, ([],[]) \ b]
+       | SYNTH (m, k) => O.MONO (O.JDG_SYNTH k) $$ [([],[]) \ m]
        | TERM tau => O.MONO (O.JDG_TERM tau) $$ []
        | PARAM_SUBST (psi, m, tau) =>
          let
@@ -78,10 +111,10 @@ struct
 
     fun fromAbt jdg =
       case RedPrlAbt.out jdg of
-         O.MONO O.JDG_EQ $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), a)
-       | O.MONO O.JDG_TRUE $ [_ \ a] => TRUE a
-       | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
-       | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
+         O.MONO (O.JDG_EQ k) $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, k))
+       | O.MONO (O.JDG_TRUE k) $ [_ \ a] => TRUE (a, k)
+       | O.MONO (O.JDG_EQ_TYPE k) $ [_ \ m, _ \ n] => EQ_TYPE ((m, n), k)
+       | O.MONO (O.JDG_SYNTH k) $ [_ \ m] => SYNTH (m, k)
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
        | O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $ args =>
          let
@@ -101,10 +134,10 @@ struct
   in
     fun fromAst jdg =
       case Ast.out jdg of
-         O.MONO O.JDG_EQ $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), a)
-       | O.MONO O.JDG_TRUE $ [_ \ a] => TRUE a
-       | O.MONO O.JDG_EQ_TYPE $ [_ \ m, _ \ n] => EQ_TYPE (m, n)
-       | O.MONO O.JDG_SYNTH $ [_ \ m] => SYNTH m
+         O.MONO (O.JDG_EQ k) $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, k))
+       | O.MONO (O.JDG_TRUE k) $ [_ \ a] => TRUE (a, k)
+       | O.MONO (O.JDG_EQ_TYPE k) $ [_ \ m, _ \ n] => EQ_TYPE ((m, n), k)
+       | O.MONO (O.JDG_SYNTH k) $ [_ \ m] => SYNTH (m, k)
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
        | O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $ args =>
          let
@@ -119,17 +152,31 @@ struct
 
   val metactx = RedPrlAbt.metactx o toAbt
 
+  fun @@ (f, x) = f x
+  infixr @@
+
   fun pretty eq f =
-    fn EQ ((m, n), a) =>
-         if eq (m, n)
-         then Fpp.expr (Fpp.hvsep [f m, Fpp.hsep [Fpp.text "in", f a]])
-         else Fpp.expr (Fpp.hvsep [f m, Fpp.Atomic.equals, f n, Fpp.hsep [Fpp.text "in", f a]])
-     | TRUE a => f a
-     | EQ_TYPE (a, b) =>
-         if eq (a, b)
-         then Fpp.expr (Fpp.hvsep [f a, Fpp.text "type"])
-         else Fpp.expr (Fpp.hvsep [f a, Fpp.Atomic.equals, f b, Fpp.text "type"])
-     | SYNTH m => Fpp.expr (Fpp.hvsep [f m, Fpp.text "synth"])
+    fn EQ ((m, n), (a, k)) => Fpp.expr @@ Fpp.hvsep @@ List.concat
+         [ if eq (m, n) then [f m] else [f m, Fpp.Atomic.equals, f n]
+         , [Fpp.hsep [Fpp.text "in", f a]]
+         , if k = RedPrlKind.top then [] else [Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]
+         ]
+     | TRUE (a, k) => Fpp.expr @@ Fpp.hvsep @@ List.concat
+         [ [f a]
+         , if k = RedPrlKind.top then []
+           else [Fpp.hsep [Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]]
+         ]
+     | EQ_TYPE ((a, b), k) => Fpp.expr @@ Fpp.hvsep @@ List.concat
+         [ if eq (a, b) then [f a] else [f a, Fpp.Atomic.equals, f b]
+         , if k = RedPrlKind.top
+           then [Fpp.hsep [Fpp.text "type"]]
+           else [Fpp.hsep [TermPrinter.ppKind k, Fpp.text "type"]]
+         ]
+     | SYNTH (m, k) => Fpp.expr @@ Fpp.hvsep @@ List.concat
+         [ [f m]
+         , if k = RedPrlKind.top then []
+           else [Fpp.hsep [Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]]
+         ]
      | TERM tau => TermPrinter.ppSort tau
      | PARAM_SUBST _ => Fpp.text "param-subst" (* TODO *)
   fun pretty' f = pretty (fn _ => false) f

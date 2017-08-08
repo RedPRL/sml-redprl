@@ -1,5 +1,5 @@
 Thm Connection(#A) : [
-  a/type : #A type >>
+  a/type : #A kan type >>
   (->
    [a b : #A]
    [p : (path {_} #A a b)]

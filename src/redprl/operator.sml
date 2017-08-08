@@ -94,11 +94,110 @@ structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
 
 structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
 
+
+structure RedPrlKind =
+struct
+  (*
+   * DISCRETE < KAN < HCOM < CUBICAL
+   *                < COE  <
+   *
+   * and KAN = meet (HCOM, COE)
+   *)
+  datatype kind = DISCRETE | KAN | HCOM | COE | CUBICAL
+
+  val COM = KAN
+
+  val toString =
+    fn DISCRETE => "discrete"
+     | KAN => "kan"
+     | HCOM => "hcom"
+     | COE => "coe"
+     | CUBICAL => "cubical"
+
+  local
+    structure Internal :
+    (* this could be the new meet semi-lattice *)
+    sig
+      type t = kind
+
+      val top : t
+      val leq : t * t -> bool
+      val meet : t * t -> t
+
+      (* greatestMeetRight (a, b) is the greatest element c
+       * such that meet (b, c) <= a *)
+      val greatestMeetRight : t * t -> t
+    end
+    =
+    struct
+      type t = kind
+      val top = CUBICAL
+
+      val meet =
+        fn (DISCRETE, _) => DISCRETE
+         | (_, DISCRETE) => DISCRETE
+
+         | (KAN, _) => KAN
+         | (_, KAN) => KAN
+
+         | (HCOM, COE) => KAN
+         | (COE, HCOM) => KAN
+
+         | (HCOM, _) => HCOM
+         | (_, HCOM) => HCOM
+
+         | (COE, _) => COE
+         | (_, COE) => COE
+
+         | (CUBICAL, CUBICAL) => CUBICAL
+
+      val greatestMeetRight =
+        fn (_, DISCRETE) => top
+         | (DISCRETE, _) => DISCRETE
+         | (_, KAN) => top
+         | (KAN, HCOM) => COE
+         | (KAN, COE) => HCOM
+         | (KAN, _) => KAN
+         | (HCOM, HCOM) => top
+         | (HCOM, _) => HCOM
+         | (COE, COE) => top
+         | (COE, _) => COE
+         | (CUBICAL, CUBICAL) => top
+
+      fun leq (a, b) = greatestMeetRight (b, a) = top
+      fun geq (a, b) = leq (b, a)
+    end
+  in
+    open Internal
+  end
+
+  (* lift everything to kind option. *)
+  val top' : kind option = NONE
+  val meet' =
+    fn (NONE, b) => b
+     | (a, NONE) => a
+     | (SOME a, SOME b) => SOME (meet (a, b))
+  val greatestMeetRight' =
+    fn (NONE, _) => NONE
+     | (a, NONE) => a
+     | (SOME a, SOME b) =>
+         let val gmr = greatestMeetRight (a, b)
+         in if gmr = top then NONE else SOME gmr
+         end
+  fun leq' (a, b) = greatestMeetRight' (b, a) = top'
+  fun geq' (a, b) = leq' (b, a)
+
+  fun reduce l = List.foldl meet' top' l
+  fun reduceMap f = reduce o List.map f
+end
+
 structure RedPrlOpData =
 struct
   open RedPrlSortData
   structure P = RedPrlParameterTerm
+  structure K = RedPrlKind
   type psort = RedPrlSortData.param_sort
+  type kind = RedPrlKind.kind
 
   datatype 'a dev_pattern = 
      PAT_VAR of 'a
@@ -158,7 +257,12 @@ struct
    | DEV_QUERY_GOAL
    | DEV_PRINT of sort
 
-   | JDG_EQ | JDG_TRUE | JDG_EQ_TYPE | JDG_SYNTH | JDG_TERM of sort | JDG_PARAM_SUBST of RedPrlParamSort.t list * sort
+   | JDG_EQ of kind
+   | JDG_TRUE of kind
+   | JDG_EQ_TYPE of kind
+   | JDG_SYNTH of kind
+   | JDG_TERM of sort
+   | JDG_PARAM_SUBST of RedPrlParamSort.t list * sort
 
   type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
@@ -291,10 +395,10 @@ struct
      | DEV_QUERY_GOAL => [[] * [JDG] <> TAC] ->> TAC
      | DEV_PRINT tau => [[] * [] <> tau] ->> TAC
 
-     | JDG_EQ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_TRUE => [[] * [] <> EXP] ->> JDG
-     | JDG_EQ_TYPE => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_SYNTH => [[] * [] <> EXP] ->> JDG
+     | JDG_EQ _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
+     | JDG_TRUE _ => [[] * [] <> EXP] ->> JDG
+     | JDG_EQ_TYPE _ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
+     | JDG_SYNTH _ => [[] * [] <> EXP] ->> JDG
      | JDG_TERM _ => [] ->> JDG
      | JDG_PARAM_SUBST (sigmas, tau) => List.map (fn sigma => [] * [] <> PARAM_EXP sigma) sigmas @ [sigmas * [] <> tau] ->> JDG
 
@@ -541,10 +645,10 @@ struct
      | DEV_QUERY_GOAL => "dev-query-goal"
      | DEV_PRINT _ => "dev-print"
 
-     | JDG_EQ => "eq"
-     | JDG_TRUE => "true"
-     | JDG_EQ_TYPE => "eq-type"
-     | JDG_SYNTH => "synth"
+     | JDG_EQ _ => "eq"
+     | JDG_TRUE _ => "true"
+     | JDG_EQ_TYPE _ => "eq-type"
+     | JDG_SYNTH _ => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | JDG_PARAM_SUBST _ => "param-subst"
 

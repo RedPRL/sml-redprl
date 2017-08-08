@@ -10,7 +10,20 @@ struct
   type dir = param * param
 
   type label = string
-  structure LabelDict = SplayDict (structure Key = StringOrdered)
+  structure Fields =
+  struct
+    val empty = []
+
+    exception Absent
+    fun lookup lbl fields =
+      case List.find (fn (lbl', _) => lbl' = lbl) fields of
+        SOME (_, tm) => tm
+      | NONE => raise Absent
+
+    fun remove lbl = List.filter (fn (lbl', _) => lbl' <> lbl)
+
+    fun update (lbl, tm) fields = remove lbl fields @ [(lbl, tm)]
+  end
 
   datatype 'a view =
      VAR of variable * sort
@@ -40,7 +53,7 @@ struct
    | DFUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
    (* record *)
    | RECORD of ((string * variable) * 'a) list
-   | TUPLE of 'a LabelDict.dict | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
+   | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
    (* hcom operator *)
@@ -98,19 +111,14 @@ struct
 
     fun intoTupleFields fs =
       let
-        val (lbls, tms) = ListPair.unzip (LabelDict.toList fs)
+        val (lbls, tms) = ListPair.unzip fs
         val tms = List.map (fn tm => ([],[]) \ tm) tms
       in
         (lbls, tms)
       end
 
     fun outTupleFields (lbls, args) =
-      ListPair.foldrEq
-        (fn (lbl, (_ \ tm), m) =>
-          case LabelDict.insert' m lbl tm of
-            (_ , true) => raise E.error [Fpp.text "Duplicate labels"]
-          | (dict, _) => dict)
-        LabelDict.empty (lbls, args)
+      ListPair.mapEq (fn (lbl, (_ \ tm)) => (lbl, tm)) (lbls, args)
 
 
     fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
