@@ -316,10 +316,10 @@ struct
 
         (* succ branch *)
         val succu = Syn.into @@ Syn.SUCC utm
-        val Hu = |@> (u, CJ.TRUE (nat, inherentKind))
-        val Hsuccu = Hyps.spliceThenSubst (Hu, succu, z) H
+        val cu = substVar (utm, z) cz
+        val Hsucc = H @> (u, CJ.TRUE (nat, inherentKind)) @> (v, CJ.TRUE (cu, k))
         val csuccu = substVar (succu, z) cz
-        val (goalS, holeS) = makeTrue (I, Hsuccu) (csuccu, k)
+        val (goalS, holeS) = makeTrue (I, Hsucc) (csuccu, k)
 
         (* realizer *)
         val ztm = Syn.into @@ Syn.VAR (z, O.EXP)
