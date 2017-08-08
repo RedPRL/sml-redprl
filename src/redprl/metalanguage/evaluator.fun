@@ -19,6 +19,7 @@ struct
 
   structure Rules = Refiner (Signature)
   structure J = RedPrlSequent and CJ = RedPrlCategoricalJudgment and Tm = RedPrlAbt
+  structure Unify = AbtUnify (Tm)
 
   type mlterm = ML.mlterm_
   type scope = (ML.mlvar, mlterm) ML.scope
@@ -33,8 +34,6 @@ struct
   fun const x _ = x
   infix <&> <$>
 
-  structure Env = ML.Ctx
-
   structure V =
   struct
     datatype value =
@@ -44,7 +43,19 @@ struct
      | QUOTE of Tm.abt
      | THEOREM of (ML.osym, ML.oterm) CJ.jdg * Tm.abs (* a certified proof term *)
 
-    withtype env = value Env.dict
+    withtype env = value ML.Ctx.dict * Tm.metaenv
+  end
+
+  structure Env =
+  struct
+    type env = V.env
+
+    fun lookupMl (mlenv, _) x = ML.Ctx.lookup mlenv x
+    fun insertMl (mlenv, oenv) x v = (ML.Ctx.insert mlenv x v, oenv)
+    fun insertObjMeta (mlenv, oenv) x abs = (mlenv, Tm.Metavar.Ctx.insert x abs)
+    fun insertObjMetas (mlenv, oenv) oenv' = (mlenv, Tm.Metavar.Ctx.union oenv oenv' (fn (_,_,abs) => abs))
+    
+    fun forceObjTerm (_, oenv) = Tm.substMetaenv oenv
   end
 
   type env = V.env
@@ -55,13 +66,13 @@ struct
   fun getGoal (J.>> (_, jdg)) = V.QUOTE @@ CJ.toAbt jdg
 
   fun eval env : mlterm -> V.value M.m =
-    fn ML.VAR x => M.pure @@ Env.lookup env x
+    fn ML.VAR x => M.pure @@ Env.lookupMl env x
      | ML.LET (t, sc) =>
        let
          val (x, tx) = ML.unscope sc
        in
          eval env t >>= 
-           flip eval tx o Env.insert env x
+           flip eval tx o Env.insertMl env x
        end
      | ML.NIL => M.pure V.NIL
      | ML.LAM sc => M.pure @@ V.FUN (sc, env)
@@ -69,7 +80,7 @@ struct
      | ML.PAIR (t1, t2) => V.PAIR <$> (eval env t1 <&> eval env t2)
      | ML.FST t => fst <$> eval env t
      | ML.SND t => snd <$> eval env t
-     | ML.QUOTE abt => M.pure @@ V.QUOTE abt
+     | ML.QUOTE abt => M.pure o V.QUOTE @@ Env.forceObjTerm env abt
      | ML.GOAL => getGoal <$> M.getGoal
      | ML.REFINE ruleName => const V.NIL <$> M.rule (Rules.lookupRule ruleName)
      | ML.EACH ts => const V.NIL <$> M.fork (List.map (M.map (const ()) o eval env) ts)
@@ -82,17 +93,36 @@ struct
        end
      | ML.PROVE (abt, t) =>
        let
-         val catjdg = CJ.fromAbt abt
+         val catjdg = CJ.fromAbt @@ Env.forceObjTerm env abt
          val jdg = J.>> (([], J.Hyps.empty), catjdg)
          fun makeTheorem evd = V.THEOREM (catjdg, evd)
        in
          makeTheorem <$> M.extract (M.local_ jdg (const () <$> eval env t))
        end
+     | ML.OMATCH (scrutinee, clauses) => 
+       let
+         fun matchWithClause abt clause =
+           let
+             val (pvars, (pat, t)) = ML.unscope clause
+             val metas = Unify.Metas.fromList @@ List.map (fn (x, _) => x) pvars
+             val rho = Unify.unify metas (abt, Env.forceObjTerm env pat)
+           in
+             eval (Env.insertObjMetas env rho) t
+           end
+
+         fun matchWithClauses abt =
+           fn [] => raise RedPrlError.error [Fpp.text "No pattern matched term", TermPrinter.ppTerm abt]
+            | cl::cls => 
+              (matchWithClause abt cl
+               handle Unify.Unify _ => matchWithClauses abt cls)
+       in
+         eval env scrutinee >>= (fn V.QUOTE abt => matchWithClauses abt clauses)
+       end
 
   and app (V.FUN (sc, env), v) =
     let
       val (x, tx) = ML.unscope sc
-      val env' = Env.insert env x v
+      val env' = Env.insertMl env x v
     in
       eval env' tx
     end

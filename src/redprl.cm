@@ -20,6 +20,7 @@ Library
   functor RedPrlTactical
   structure Syntax
   structure FppRenderPlainText
+  structure TermPrinter
 is
   $/basis.cm
   $/ml-yacc-lib.cm

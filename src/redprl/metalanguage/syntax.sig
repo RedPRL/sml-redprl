@@ -45,7 +45,7 @@ sig
 
   type mlterm_ = (mlvar, osym, oterm) mlterm
 
-  val unscope : ('b, ('v, 's, 'o) mlterm) scope -> 'b * ('v, 's, 'o) mlterm
+  val unscope : ('b, 't) scope -> 'b * 't
   val scope : mlvar * (mlvar, 's, 'o) mlterm -> (mlvar, (mlvar, 's, 'o) mlterm) scope
   val oscope : osym list * ('v, osym, oterm) mlterm -> (osym list, ('v, osym, oterm) mlterm) scope
 
