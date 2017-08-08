@@ -20,7 +20,7 @@ struct
       (fn jdg => {goal = jdg, consumedNames = 0, ret = a})
       state
 
-  fun maxconsumedNames (state : 'a internal state) : int =
+  fun maxConsumedNames (state : 'a internal state) : int =
     let
       val psi |> _ = state
     in
@@ -30,7 +30,7 @@ struct
   fun bind (m : 'a m) (f : 'a -> 'b m) (alpha, state) : 'b internal state =
     let
       val state' : 'a internal state = m (alpha, state)
-      val alpha' = UniversalSpread.bite (maxconsumedNames state') alpha
+      val alpha' = UniversalSpread.bite (maxConsumedNames state') alpha
       val state'' = Lcf.map (fn {goal, consumedNames, ret} => f ret (alpha', Lcf.ret Lcf.isjdg goal)) state'
     in
       mul (isjdg ()) state''
