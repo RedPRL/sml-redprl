@@ -2,9 +2,11 @@ Def Not : exp = [
   (lam [x] (if x ff tt))
 ].
 
-// An [Output] message should display for not(), even though the
+Print Not.
+
+// [Not] should still be printed, even though the
 // following theorem is malformed.
 
-Thm Foo : [ Bar = Bar in sbool ] by [
+Thm Foo : [ Bar = Bar in bool ] by [
   auto
 ].
