@@ -103,9 +103,9 @@ struct
        let
          fun matchWithClause abt clause =
            let
-             val (pvars, (pat, t)) = ML.unscope clause
-             val metas = Unify.Metas.fromList @@ List.map (fn (x, _) => x) pvars
-             val rho = Unify.unify metas (abt, Env.forceObjTerm env pat)
+             val (metas, (pat, t)) = ML.unscope clause
+             val pvars = List.foldl (fn ((x, _), metas) => Unify.Metas.insert metas x) Unify.Metas.empty metas
+             val rho = Unify.unify pvars (abt, Env.forceObjTerm env pat)
            in
              eval (Env.insertObjMetas env rho) t
            end
