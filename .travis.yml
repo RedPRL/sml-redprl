@@ -1,4 +1,4 @@
-language: sml
+language: generic
 env:
   - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex"
   - COMPILER=mlton PACKAGES="mlton"
