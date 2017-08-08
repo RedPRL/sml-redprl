@@ -42,7 +42,7 @@ struct
      | FUN of (ML.mlvar, mlterm) ML.scope * env
      | PAIR of value * value
      | QUOTE of Tm.abt
-     | THEOREM of (ML.osym, ML.oterm) CJ.jdg * ML.oterm
+     | THEOREM of (ML.osym, ML.oterm) CJ.jdg * Tm.abs (* a certified proof term *)
 
     withtype env = value Env.dict
   end
@@ -84,7 +84,7 @@ struct
        let
          val catjdg = CJ.fromAbt abt
          val jdg = J.>> (([], J.Hyps.empty), catjdg)
-         fun makeTheorem abs = case Tm.outb abs of Tm.\ (([],[]), abt) => V.THEOREM (catjdg, abt)
+         fun makeTheorem evd = V.THEOREM (catjdg, evd)
        in
          makeTheorem <$> M.extract (M.local_ jdg (const () <$> eval env t))
        end
