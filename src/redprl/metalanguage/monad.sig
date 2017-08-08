@@ -17,4 +17,6 @@ sig
   val set : Lcf.jdg -> unit m
   val local_ : Lcf.jdg -> unit m -> unit m
   val pushNames : name list * 'a m -> 'a m
+
+  val print : Pos.t option * Fpp.doc -> unit m
 end

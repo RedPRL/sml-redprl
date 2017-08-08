@@ -48,6 +48,7 @@ struct
    | NIL
    | PROVE of 'o * ('v, 's, 'o) mlterm
    | OMATCH of ('v, 's, 'o) mlterm * ('s, 'o, ('v, 's, 'o) mlterm) omatch_clause list
+   | PRINT of ('v, 's, 'o) mlterm
 
   type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
 
@@ -119,6 +120,7 @@ struct
        | NIL => NIL
        | PROVE ((ast, tau), t) => PROVE (resolveAbt (#ostate state) ast tau, resolveAux state t)
        | OMATCH (scrutinee, clauses) => OMATCH (resolveAux state scrutinee, List.map (resolveAuxObjMatchClause state) clauses)
+       | PRINT t => PRINT (resolveAux state t)
 
     and resolveAuxScope (state : state) (x \ tx) =
       let

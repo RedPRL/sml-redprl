@@ -136,5 +136,8 @@ struct
   fun local_ jdg m (alpha, state) = 
     (set jdg >>= (fn _ => m) >>= (fn _ => setState state))
       (alpha, state)
-    
+
+  fun print (pos, doc) (alpha, state) = 
+    (RedPrlLog.print RedPrlLog.INFO (pos, doc);
+     Lcf.map (fn jdg => {consumedNames = 0, goal = jdg, ret = ()}) state) 
 end

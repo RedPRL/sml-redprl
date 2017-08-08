@@ -44,6 +44,13 @@ struct
      | THEOREM of (ML.osym, ML.oterm) CJ.jdg * Tm.abs (* a certified proof term *)
 
     withtype env = value ML.Ctx.dict * Tm.metaenv
+
+    val rec ppValue = 
+      fn NIL => Fpp.text "()"
+       | FUN _ => Fpp.text "<fun>"
+       | PAIR (v1, v2) => Fpp.Atomic.parens @@ Fpp.hsep [ppValue v1, Fpp.Atomic.comma, ppValue v2]
+       | QUOTE abt => TermPrinter.ppTerm abt
+       | THEOREM _ => Fpp.text "<theorem>"
   end
 
   structure Env =
@@ -118,6 +125,9 @@ struct
        in
          eval env scrutinee >>= (fn V.QUOTE abt => matchWithClauses abt clauses)
        end
+     | ML.PRINT t => 
+       eval env t >>= (fn v => 
+         const V.NIL <$> M.print (NONE, V.ppValue v)) (* TODO: source locations *)
 
   and app (V.FUN (sc, env), v) =
     let

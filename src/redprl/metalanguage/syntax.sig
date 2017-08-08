@@ -42,6 +42,7 @@ sig
    | NIL
    | PROVE of 'o * ('v, 's, 'o) mlterm
    | OMATCH of ('v, 's, 'o) mlterm * ('s, 'o, ('v, 's, 'o) mlterm) omatch_clause list
+   | PRINT of ('v, 's, 'o) mlterm
 
   type mlterm_ = (mlvar, osym, oterm) mlterm
 
