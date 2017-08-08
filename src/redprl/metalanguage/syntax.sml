@@ -24,6 +24,7 @@ struct
    | ARR of mltype * mltype
    | PROD of mltype * mltype
    | OTERM of Tm.sort
+   | THEOREM
    | META of meta
 
   type rule_name = string

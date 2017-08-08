@@ -17,6 +17,7 @@ sig
    | ARR of mltype * mltype
    | PROD of mltype * mltype
    | OTERM of osort
+   | THEOREM
    | META of meta
 
   type rule_name = string
