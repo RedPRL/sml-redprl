@@ -24,8 +24,8 @@ struct
   type scope = (ML.mlvar, mlterm) ML.scope
   type names = int -> Tm.symbol
 
-  fun >>= (m, f) = M.bind m f infixr >>=
-  fun =<< (f, m) = m >>= f infix =<<
+  fun >>= (m, f) = M.bind m f infix >>=
+  fun =<< (f, m) = m >>= f infixr =<<
   fun @@ (f, x) = f x infixr @@
   fun <$> (f, m) = M.map f m
   fun <&> (m1, m2) = m1 >>= (fn a1 => m2 >>= (fn a2 => M.pure (a1, a2)))
@@ -42,6 +42,7 @@ struct
      | FUN of (ML.mlvar, mlterm) ML.scope * env
      | PAIR of value * value
      | QUOTE of Tm.abt
+     | THEOREM of (ML.osym, ML.oterm) CJ.jdg * ML.oterm
 
     withtype env = value Env.dict
   end
@@ -69,7 +70,7 @@ struct
      | ML.FST t => fst <$> eval env t
      | ML.SND t => snd <$> eval env t
      | ML.QUOTE abt => M.pure @@ V.QUOTE abt
-     | ML.GOAL => getGoal <$> M.get
+     | ML.GOAL => getGoal <$> M.getGoal
      | ML.REFINE ruleName => const V.NIL <$> M.rule (Rules.lookupRule ruleName)
      | ML.EACH ts => const V.NIL <$> M.fork (List.map (M.map (const ()) o eval env) ts)
      | ML.TRY (t1, t2) => M.orelse_ (eval env t1, eval env t2)
@@ -78,6 +79,14 @@ struct
          val (xs, t) = ML.unscope sc
        in
          M.pushNames (xs, eval env t)
+       end
+     | ML.PROVE (abt, t) =>
+       let
+         val catjdg = CJ.fromAbt abt
+         val jdg = J.>> (([], J.Hyps.empty), catjdg)
+         fun makeTheorem abs = case Tm.outb abs of Tm.\ (([],[]), abt) => V.THEOREM (catjdg, abt)
+       in
+         makeTheorem <$> M.extract (M.local_ jdg (const () <$> eval env t))
        end
 
   and app (V.FUN (sc, env), v) =

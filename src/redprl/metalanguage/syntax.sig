@@ -35,6 +35,7 @@ sig
    | TRY of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
    | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
    | NIL
+   | PROVE of 'o * ('v, 's, 'o) mlterm 
 
   type mlterm_ = (mlvar, osym, oterm) mlterm
 

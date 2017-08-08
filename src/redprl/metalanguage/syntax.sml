@@ -42,6 +42,8 @@ struct
    | TRY of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
    | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
    | NIL
+   | PROVE of 'o * ('v, 's, 'o) mlterm 
+
   type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
 
   exception todo
@@ -102,6 +104,7 @@ struct
        | TRY (t1, t2) => TRY (resolveAux state t1, resolveAux state t2)
        | PUSH sc => PUSH (resolveAuxObjScope state sc)
        | NIL => NIL
+       | PROVE ((ast, tau), t) => PROVE (resolveAbt (#ostate state) ast tau, resolveAux state t)
 
     and resolveAuxScope (state : state) (x \ tx) = 
       let

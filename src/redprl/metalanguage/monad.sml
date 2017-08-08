@@ -1,6 +1,7 @@
 structure MetalanguageMonad :> METALANGUAGE_MONAD = 
 struct
-  type names = int -> RedPrlAbt.symbol
+  type name = RedPrlAbt.symbol
+  type names = int -> name
 
   exception todo
   fun ?e = raise e
@@ -11,8 +12,8 @@ struct
 
   fun isjdg () : 'a internal isjdg =
     {sort = #sort Lcf.isjdg o #goal,
-      subst = fn env => fn {goal, consumedNames, ret} => {goal = #subst Lcf.isjdg env goal, consumedNames = consumedNames, ret = ret},
-      ren = fn ren => fn {goal, consumedNames, ret} => {goal = #ren Lcf.isjdg ren goal, consumedNames = consumedNames, ret = ret}}
+     subst = fn env => fn {goal, consumedNames, ret} => {goal = #subst Lcf.isjdg env goal, consumedNames = consumedNames, ret = ret},
+     ren = fn ren => fn {goal, consumedNames, ret} => {goal = #ren Lcf.isjdg ren goal, consumedNames = consumedNames, ret = ret}}
 
   fun pure a (alpha, state) =
     Lcf.map
@@ -38,7 +39,7 @@ struct
   fun map (f : 'a -> 'b) (m : 'a m) =
     bind m (pure o f)
 
-  fun get (alpha, state) =
+  fun getGoal (alpha, state) =
     Lcf.map
       (fn jdg => {goal = jdg, consumedNames = 0, ret = jdg})
       state
@@ -111,4 +112,29 @@ struct
     in
       Lcf.map go state'
     end
+
+  exception Incomplete
+
+  fun extract m (alpha, state) =
+    let
+      val psi |> evd = m (alpha, state)
+    in
+      if Tl.isEmpty psi then
+        pure evd (alpha, state)
+      else
+        raise Incomplete
+    end
+
+  fun set jdg (alpha, _) : unit internal state =
+    Lcf.ret (isjdg ()) {goal = jdg, consumedNames = 0, ret = ()}
+
+  fun setState (state : jdg state) (alpha, _) : unit internal state = 
+    Lcf.map (fn jdg => {consumedNames = 0, goal = jdg, ret = ()}) state
+
+  fun >>= (m, f) = bind m f infix >>=
+
+  fun local_ jdg m (alpha, state) = 
+    (set jdg >>= (fn _ => m) >>= (fn _ => setState state))
+      (alpha, state)
+    
 end
