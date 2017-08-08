@@ -12,10 +12,8 @@ struct
   open RedPrlSequent
   infix 2 >: >>
 
-  fun @> (H, (x, j)) = Hyps.snoc H x j
-  infix @>
-
   structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
+  structure K = RedPrlKind
   structure CJ = RedPrlCategoricalJudgment
 
   exception todo
@@ -98,13 +96,42 @@ struct
 
   (* hypotheses *)
 
-  fun hypsToSpine H =
-    Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
+  fun @> (H, (x, j)) = Hyps.snoc H x j
+  infix @>
+  fun |@> h = Hyps.empty @> h
 
-  fun lookupHyp H z =
-    Hyps.lookup H z
-    handle _ =>
-      raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
+  structure Hyps = (* favonia: not sure about the organization *)
+  struct
+    structure HypsUtil = TelescopeUtil (Hyps)
+    open HypsUtil
+
+    fun toSpine H =
+      Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
+
+    fun lookup z H =
+      Hyps.lookup H z
+      handle _ =>
+        raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
+
+    (* The telescope lib should be redesigned to make the following helper functions easier.
+     * At least the calling convention can be more consistent. *)
+
+    fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
+      Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H
+
+    fun subst (term, z) H =
+      Hyps.remove z (Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H)
+
+    fun interposeAfter (z, H') H =
+      Hyps.interposeAfter H z H'
+
+    (* repeal and replace *)
+    fun spliceThenSubst (H', term, z) H =
+      Hyps.splice (Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H) z H'
+
+    fun interposeThenSubstAfter (z, H', term) H =
+      Hyps.interposeAfter (Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H) z H'
+  end
 
   (* making goals *)
 
@@ -115,7 +142,7 @@ struct
       val (_, tau) = J.sort jdg
       val (ps, ms) =
         case jdg of
-           (I, H) >> _ => (List.map (fn (u, sigma) => (P.VAR u, sigma)) I, hypsToSpine H)
+           (I, H) >> _ => (List.map (fn (u, sigma) => (P.VAR u, sigma)) I, Hyps.toSpine H)
          | MATCH _ => ([],[])
          | MATCH_RECORD _ => ([],[])
 
@@ -126,35 +153,72 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrue (I, H) a = makeGoal @@ (I, H) >> CJ.TRUE a
-  fun makeSynth (I, H) m = makeGoal @@ (I, H) >> CJ.SYNTH m
+  fun makeTrue (I, H) (a, k) = makeGoal @@ (I, H) >> CJ.TRUE (a, k)
+  fun makeSynth (I, H) (m, k) = makeGoal @@ (I, H) >> CJ.SYNTH (m, k)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
   fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> CJ.TERM tau
   fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> CJ.PARAM_SUBST ([(r, O.DIM, u)], m, Abt.sort m)
 
   (* ignoring the trivial realizer *)
-  fun makeType (I, H) a = makeGoal' @@ (I, H) >> CJ.TYPE a
-  fun makeEqType (I, H) (a, b) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE (a, b)
-  fun makeEq (I, H) ((m, n), ty) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty)
-  fun makeMem (I, H) (m, ty) = makeGoal' @@ (I, H) >> CJ.MEM (m, ty)
+  fun makeType (I, H) (a, k) = makeGoal' @@ (I, H) >> CJ.TYPE (a, k)
+  fun makeEqType (I, H) ((a, b), k) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE ((a, b), k)
+  fun makeEq (I, H) ((m, n), (ty, k)) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), (ty, k))
+  fun makeMem (I, H) (m, (ty, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, k))
 
   (* conditional goal making *)
-  fun makeEqTypeIfDifferent (I, H) (m, n) =
-    if Abt.eq (m, n) then NONE
-    else SOME (makeGoal' @@ (I, H) >> CJ.EQ_TYPE (m, n))
 
-  fun makeEqTypeIfAllDifferent (I, H) (m, n) ns =
-    if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqTypeIfDifferent (I, H) (m, n)
+  fun makeTypeIfLess' (I, H) (m, k) k' =
+    case K.greatestMeetRight' (SOME k, k') of
+      NONE => NONE
+    | SOME k'' => SOME @@ makeType (I, H) (m, k'')
 
-  fun makeEqIfDifferent (I, H) ((m, n), ty) =
-    if Abt.eq (m, n) then NONE
-    else SOME (makeGoal' @@ (I, H) >> CJ.EQ ((m, n), ty))
+  fun makeTypeIfLess (I, H) (m, k) k' =
+    makeTypeIfLess' (I, H) (m, k) (SOME k')
 
-  fun makeEqIfAllDifferent (I, H) ((m, n), ty) ns =
-    if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent (I, H) ((m, n), ty)
+  fun makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) k' =
+    if Abt.eq (m, n) then makeTypeIfLess' (I, H) (m, k) k'
+    else SOME @@ makeEqType (I, H) ((m, n), k)
+
+  fun makeEqTypeIfDifferent (I, H) ((m, n), k) =
+    makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) NONE
+
+  fun makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k' =
+    makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) (SOME k')
+
+  fun makeEqTypeIfAllDifferentOrLess (I, H) ((m, n), k) ns k' =
+    if List.exists (fn n' => Abt.eq (m, n')) ns
+    then makeTypeIfLess (I, H) (m, k) k'
+    else makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k'
+
+  fun makeMemIfLess' (I, H) (m, (ty, k)) k' =
+    case K.greatestMeetRight' (SOME k, k') of
+      NONE => NONE
+    | SOME k'' => SOME @@ makeMem (I, H) (m, (ty, k''))
+
+  fun makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) k' =
+    if Abt.eq (m, n) then makeMemIfLess' (I, H) (m, (ty, k)) k'
+    else SOME @@ makeEq (I, H) ((m, n), (ty, k))
+
+  fun makeEqIfDifferent (I, H) ((m, n), (ty, k)) =
+    makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) NONE
+
+  fun makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k' =
+    makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) (SOME k')
+
+  fun makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns k' =
+    if List.exists (fn n' => Abt.eq (m, n')) ns
+    then makeMemIfLess' (I, H) (m, (ty, k)) k'
+    else makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) k'
+
+  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, k)) ns =
+    makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns NONE
+
+  fun makeEqIfAllDifferentOrLess (I, H) ((m, n), (ty, k)) ns k' =
+    makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns (SOME k')
+
+  fun ifAllNone l goal =
+    if List.exists Option.isSome l then NONE else SOME goal
 
   structure Assert =
   struct
@@ -169,6 +233,12 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
+
+    fun kindLeq (k1, k2) =
+      if K.leq (k1, k2) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be less than", TermPrinter.ppKind k2]
 
     fun paramEq msg (r1, r2) =
       if P.eq Sym.eq (r1, r2) then

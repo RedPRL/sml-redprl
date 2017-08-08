@@ -109,12 +109,12 @@ struct
   fun recordElim sign z (lbls, names) tac alpha jdg =
     let
       val (_, H) >> _ = jdg
-      val CJ.TRUE record = RT.lookupHyp H z
+      val CJ.TRUE (record, _) = RT.Hyps.lookup z H
       val Syn.RECORD fields = Syn.out record
-      val nameMap = ListPair.foldl (fn (lbl, name, r) => Syn.LabelDict.insert r lbl name) Syn.LabelDict.empty (lbls, names)
+      val nameMap = ListPair.zipEq (lbls, names)
       fun nameForLabel lbl = 
-        Syn.LabelDict.lookup nameMap lbl
-        handle Syn.LabelDict.Absent => Sym.named ("@" ^ lbl)
+        Syn.Fields.lookup lbl nameMap
+        handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
       val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
     in
       (RT.Record.Elim z thenl' (xs, [tac])) alpha jdg
@@ -172,7 +172,7 @@ struct
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
       val (_, H) >> _ = jdg
-      val CJ.TRUE ty = RT.lookupHyp H z
+      val CJ.TRUE (ty, _) = RT.Hyps.lookup z H
     in
       case Syn.out ty of 
          Syn.DFUN _ => (RT.DFun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
@@ -193,7 +193,7 @@ struct
 
   fun recordIntro sign lbls tacs alpha jdg = 
     let
-      val (_, _) >> CJ.TRUE record = jdg
+      val (_, _) >> CJ.TRUE (record, _) = jdg
       val Syn.RECORD fields = Syn.out record
 
       val labeledTactics = ListPair.zipEq (lbls, tacs)
@@ -289,7 +289,7 @@ struct
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]
-     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign]
+     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
      | O.POLY (O.DEV_APPLY_HYP (z, pattern, _)) $ args =>
        let
          val ((names, _) \ tm) :: args' = List.rev args

@@ -1,21 +1,16 @@
-language: sml
+language: generic
+env:
+  - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex"
+  - COMPILER=mlton PACKAGES="mlton"
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -y --force-yes smlnj mlton
+  - sudo apt-get install -y --force-yes ${PACKAGES}
 install:
   - git submodule init
   - git submodule update --init --recursive
 script:
-  - ./script/test-mlton.sh
+  - ./script/test-${COMPILER}.sh
   - cat 'build.log'
 
 notifications:
   email: false
-
-deploy:
-  provider: releases
-  api_key: ${api_key}
-  file: "bin/redprl"
-  skip_cleanup: true
-  on:
-    tags: true

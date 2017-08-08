@@ -38,6 +38,7 @@ sig
   val ppMeta : RedPrlAbt.metavariable -> Fpp.doc
   val ppParam : RedPrlAbt.param -> Fpp.doc
   val ppOperator : RedPrlAbt.operator -> Fpp.doc
+  val ppKind : RedPrlKind.kind -> Fpp.doc
   val ppLabel : string -> Fpp.doc
 end =
 struct
@@ -73,6 +74,7 @@ struct
   val ppSym = text o PrintName.sym
   val ppVar = text o PrintName.var
   val ppParam = text o P.toString PrintName.sym
+  val ppKind = text o RedPrlKind.toString
   fun ppMeta x = seq [char #"#", text @@ PrintName.meta x]
 
   fun unlessEmpty xs m =
