@@ -103,6 +103,25 @@ struct
    *
    * and KAN = meet (HCOM, COE)
    *)
+
+  (* Please keep the following invariants when adding new kinds:
+   *
+   * (1) All judgments should still be closed under any substitution! In
+   *     particular, the property that a type A has kind K is closed under any
+   *     substitution.
+   * (2) If two types are related with respect to a stronger kind (like KAN),
+   *     then they are related with respect to a weaker kind (like CUBICAL).
+   *     A stronger kind might demand more things to be equal. For example,
+   *     the equality between two types with respect to KAN means that they
+   *     are equally Kan, while the equality with respect to CUBICAL only says
+   *     they are equal cubical pretypes.
+   * (3) If two elements are related in A with respect to some weaker kind (like
+   *     CUBICAL), they are related with respect to a stronger kind (like KAN)
+   *     as well.
+   * (4) We say KAN = meet (HCOM, COE) because if two types are equally "HCOM"
+   *     and equally "COE" then they are equally Kan. Remember to always check
+   *     the binary cases.
+   *)
   datatype kind = DISCRETE | KAN | HCOM | COE | CUBICAL
 
   val COM = KAN
