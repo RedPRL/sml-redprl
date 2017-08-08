@@ -1,4 +1,4 @@
-language: sml
+language: generic
 env:
   - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex"
   - COMPILER=mlton PACKAGES="mlton"
@@ -14,11 +14,3 @@ script:
 
 notifications:
   email: false
-
-deploy:
-  provider: releases
-  api_key: ${api_key}
-  file: "bin/redprl"
-  skip_cleanup: true
-  on:
-    tags: true
