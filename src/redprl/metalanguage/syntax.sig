@@ -1,4 +1,4 @@
-signature METALANGUAGE = 
+signature METALANGUAGE_SYNTAX = 
 sig
   type osym
   type osort

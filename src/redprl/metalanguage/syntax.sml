@@ -1,4 +1,4 @@
-structure Metalanguage : METALANGUAGE = 
+structure MetalanguageSyntax : METALANGUAGE_SYNTAX = 
 struct
   structure Var = AbtSymbol ()
   structure Meta = AbtSymbol ()

@@ -1,13 +1,19 @@
 signature METALANGUAGE_EVAL_KIT = 
 sig
-  structure ML : METALANGUAGE
+  structure ML : METALANGUAGE_SYNTAX
     where type osort = RedPrlAbt.sort
     where type oterm = RedPrlAbt.abt
     where type osym = RedPrlAbt.symbol
   structure M : METALANGUAGE_MONAD
 end
 
-functor MetalanguageEval (include METALANGUAGE_EVAL_KIT) =
+functor MetalanguageEval (include METALANGUAGE_EVAL_KIT) : 
+sig
+  type env
+  type value
+
+  val eval : env -> ML.mlterm_ -> value M.m
+end =
 struct
   exception todo fun ?e = raise e
 
@@ -39,6 +45,9 @@ struct
 
     withtype env = value Env.dict
   end
+
+  type env = V.env
+  type value = V.value
 
   fun fst (V.PAIR (v1, _)) = v1
   fun snd (V.PAIR (_, v2)) = v2
