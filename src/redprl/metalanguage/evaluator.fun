@@ -118,7 +118,7 @@ struct
            end
 
          fun matchWithClauses abt =
-           fn [] => raise RedPrlError.error [Fpp.text "No pattern matched term", TermPrinter.ppTerm abt]
+           fn [] => M.fail (NONE, Fpp.hsep [Fpp.text "Scrutinee", TermPrinter.ppTerm abt, Fpp.text "did not match any provided patterns"])
             | cl::cls => 
               (matchWithClause abt cl
                handle Unify.Unify _ => matchWithClauses abt cls)

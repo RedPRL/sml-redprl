@@ -19,4 +19,5 @@ sig
   val pushNames : name list * 'a m -> 'a m
 
   val print : Pos.t option * Fpp.doc -> unit m
+  val fail : Pos.t option * Fpp.doc -> 'a m
 end
