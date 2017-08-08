@@ -3,6 +3,12 @@ struct
   structure Var = AbtSymbol ()
   structure Meta = AbtSymbol ()
 
+  structure Tm = RedPrlAbt and Ast = RedPrlAst
+  type oast = Ast.ast
+  type oterm = Tm.abt
+  type osym = Tm.symbol
+  type osort = Tm.sort
+
   type mlvar = Var.t
   type meta = Meta.t
 
@@ -51,7 +57,7 @@ struct
     structure A2A = AstToAbt
     structure Names = A2A.NameEnv
 
-    fun strScope (x, t) = x \ t
+    fun scope (x, t) = x \ t
 
     type ostate =
       {metactx: Tm.metactx,
@@ -122,25 +128,4 @@ struct
            varenv = Names.empty},
         mlenv = Names.empty}
     end
-  
-
-  structure Statics =
-  struct
-    type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
-    type mlctx = mlterm_ Ctx.dict
-
-    datatype mode = LOCAL | GLOBAL
-    fun mltypeEq (mltype1, mltype2) = ?todo
-    fun infer mode octx mlctx mlterm = ?todo
-
-    fun check mode octx mlctx mlterm mltype = 
-      let
-        val mltype' = infer mode octx mlctx mlterm mltype
-      in
-        if mltypeEq (mltype, mltype') then
-          ()
-        else
-          raise Fail "Type error"
-      end
-  end
 end

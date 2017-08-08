@@ -7,7 +7,10 @@ Group is
   frontend/frontend.sml
 
   redprl/metalanguage/syntax.sig
-  redprl/metalanguage/syntax.sml
+  redprl/metalanguage/statics.sig
   redprl/metalanguage/monad.sig
+
+  redprl/metalanguage/syntax.sml
+  redprl/metalanguage/statics.fun
   redprl/metalanguage/monad.sml
   redprl/metalanguage/evaluator.fun

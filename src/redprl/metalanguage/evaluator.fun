@@ -1,9 +1,18 @@
-functor MetalanguageEval (structure ML : METALANGUAGE and M : METALANGUAGE_MONAD) =
+signature METALANGUAGE_EVAL_KIT = 
+sig
+  structure ML : METALANGUAGE
+    where type osort = RedPrlAbt.sort
+    where type oterm = RedPrlAbt.abt
+    where type osym = RedPrlAbt.symbol
+  structure M : METALANGUAGE_MONAD
+end
+
+functor MetalanguageEval (include METALANGUAGE_EVAL_KIT) =
 struct
   exception todo fun ?e = raise e
 
   structure Rules = Refiner (Signature)
-  structure J = RedPrlSequent and CJ = RedPrlCategoricalJudgment
+  structure J = RedPrlSequent and CJ = RedPrlCategoricalJudgment and Tm = RedPrlAbt
 
   type mlterm = ML.mlterm_
   type scope = (ML.mlvar, mlterm) ML.scope

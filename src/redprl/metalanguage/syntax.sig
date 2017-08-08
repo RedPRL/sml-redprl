@@ -1,8 +1,10 @@
-structure Tm = RedPrlAbt
-structure Ast = RedPrlAst
-
 signature METALANGUAGE = 
 sig
+  type osym
+  type osort
+  type oterm
+  type oast
+
   type mlvar
   type meta
 
@@ -14,7 +16,7 @@ sig
      UNIT
    | ARR of mltype * mltype
    | PROD of mltype * mltype
-   | OTERM of Tm.sort
+   | OTERM of osort
    | META of meta
 
   type rule_name = string
@@ -34,24 +36,15 @@ sig
    | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
    | NIL
 
-  type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
+  type mlterm_ = (mlvar, osym, oterm) mlterm
 
   val unscope : ('b, ('v, 's, 'o) mlterm) scope -> 'b * ('v, 's, 'o) mlterm
   val scope : mlvar * (mlvar, 's, 'o) mlterm -> (mlvar, (mlvar, 's, 'o) mlterm) scope
-  val oscope : Tm.symbol list * ('v, Tm.symbol, Tm.abt) mlterm -> (Tm.symbol list, ('v, Tm.symbol, Tm.abt) mlterm) scope
+  val oscope : osym list * ('v, osym, oterm) mlterm -> (osym list, ('v, osym, oterm) mlterm) scope
 
   structure Resolver : 
   sig
-    val strScope : string * (string, 's, 'o) mlterm -> (string, (string, 's, 'o) mlterm) scope
-    val resolve : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_
-  end
-
-  structure Statics :
-  sig
-    type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
-    type mlctx = mlterm_ Ctx.dict
-    datatype mode = LOCAL | GLOBAL
-    val infer : mode -> octx -> mlctx -> mlterm_ -> mltype
-    val check : mode -> octx -> mlctx -> mlterm_ -> mltype -> unit
+    val scope : string * (string, 's, 'o) mlterm -> (string, (string, 's, 'o) mlterm) scope
+    val resolve : (string, string, oast * osort) mlterm -> mlterm_
   end
 end
