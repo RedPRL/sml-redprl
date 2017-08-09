@@ -126,15 +126,10 @@ struct
         T.empty #> (I, H, trivial)
       end
 
-    (* This is an induction on the full sequent, justified by
-     * the semantics of open judgments.
-     *
-     * We mimicked Nuprl to keep the variable z in the subgoals.
-     *)
-    fun Elim z _ jdg =
+    fun FullElim z _ jdg =
       let
-        val _ = RedPrlLog.trace "Bool.Elim"
-        val (I, H) >> CJ.TRUE (cz, k) = jdg
+        val _ = RedPrlLog.trace "Bool.FullElim"
+        val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (ty, _) = Hyps.lookup z H
         val Syn.BOOL = Syn.out ty
@@ -142,16 +137,22 @@ struct
         (* tt branch *)
         val tt = Syn.into Syn.TT
         val Htt = Hyps.substAfter (z, tt) H
-        val (goalT, holeT) = makeTrue (I, Htt) (substVar (tt, z) cz, k)
+        val (goalT, holeT) = makeGoal @@ (I, Htt) >> CJ.map_ (substVar (tt, z)) catjdg
 
         (* ff branch *)
         val ff = Syn.into Syn.FF
         val Hff = Hyps.substAfter (z, ff) H
-        val (goalF, holeF) = makeTrue (I, Hff) (substVar (ff, z) cz, k)
+        val (goalF, holeF) = makeGoal @@ (I, Htt) >> CJ.map_ (substVar (tt, z)) catjdg
 
-        val if_ = Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
+        val evidence =
+          case catjdg of
+             CJ.TRUE _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
+           | CJ.EQ _ => trivial
+           | CJ.EQ_TYPE _ => trivial
+           | CJ.SYNTH _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
+           | _ => raise Fail "Bool.FullElim cannot be called with this kind of goal"
       in
-        |>: goalT >: goalF #> (I, H, if_)
+        |>: goalT >: goalF #> (I, H, evidence)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
@@ -183,32 +184,6 @@ struct
       in
         |>: goalTy >: goalM >: goalT >: goalF >:? goalTy0 >: goalTy' #> (I, H, trivial)
       end
-
-    (* This is an induction on the full sequent, justified by
-     * the semantics of open judgments *)
-    fun TrivialByElim z _ jdg =
-      let
-        val _ = RedPrlLog.trace "Bool.TrivialByElim"
-        val (I, H) >> catjdg = jdg
-        val true = CJ.synthesis catjdg = O.TRIV
-        (* for now we ignore the kind in the context *)
-        val CJ.TRUE (ty, _) = Hyps.lookup z H
-        val Syn.BOOL = Syn.out ty
-
-        (* tt branch *)
-        val tt = Syn.into Syn.TT
-        val Htt = Hyps.substAfter (z, tt) H
-        val goalT = makeGoal' @@ (I, Htt) >> CJ.map_ (substVar (tt, z)) catjdg
-
-        (* ff branch *)
-        val ff = Syn.into Syn.FF
-        val Hff = Hyps.substAfter (z, ff) H
-        val goalF = makeGoal' @@ (I, Hff) >> CJ.map_ (substVar (ff, z)) catjdg
-      in
-        |>: goalT >: goalF #> (I, H, trivial)
-      end
-      handle Bind =>
-        raise E.error [Fpp.text "Expected strict bool elimination problem"]
   end
 
   structure WBool =
@@ -264,7 +239,6 @@ struct
         ComKit.EqFComDelegator alpha (I, H) args0 args1 (ty, k)
       end
 
-    (* We are not doing an induction on the full sequent because of FCOM *)
     fun Elim z _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.Elim"
@@ -367,7 +341,6 @@ struct
         |>: goal #> (I, H, trivial)
       end
 
-    (* We are not doing an induction on the full sequent because of recursion *)
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Nat.Elim"
@@ -509,9 +482,9 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun Elim z _ jdg =
+    fun FullElim z _ jdg =
       let
-        val _ = RedPrlLog.trace "Void.Elim"
+        val _ = RedPrlLog.trace "Void.FullElim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (ty, _) = Hyps.lookup z H
@@ -523,7 +496,7 @@ struct
            | CJ.EQ _ => trivial
            | CJ.EQ_TYPE _ => trivial
            | CJ.SYNTH _ => Syn.into Syn.AX
-           | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
+           | _ => raise Fail "Void.FullElim cannot be called with this kind of goal"
       in
         T.empty #> (I, H, evidence)
       end
@@ -585,7 +558,6 @@ struct
         ComKit.EqFComDelegator alpha (I, H) args0 args1 (ty, K.top)
       end
 
-    (* We are not doing an induction on the full sequent because of FCOM *)
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.Elim"

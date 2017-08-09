@@ -665,8 +665,8 @@ struct
         case (Syn.out m, blocker1, Syn.out n, blocker2) of
            (Syn.VAR _, _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.IF _, _, Syn.IF _, _) => Bool.EqElim
-         | (Syn.IF _, Machine.VAR z, _, _) => Bool.TrivialByElim z
-         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.TrivialByElim z
+         | (Syn.IF _, Machine.VAR z, _, _) => Bool.FullElim z
+         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.FullElim z
          | (Syn.WIF _, _, Syn.WIF _, _) => WBool.EqElim
          | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.EqElim
          | (Syn.APP _, _, Syn.APP _, _) => DFun.EqApp
@@ -679,8 +679,8 @@ struct
       fun StepEqNeuExpand sign blocker ty =
         case (blocker, Syn.out ty) of
            (_, Syn.DFUN _) => DFun.Eta
-         | (_, Syn.PATH_TY _) => Path.Eta
          | (_, Syn.RECORD _) => Record.Eta
+         | (_, Syn.PATH_TY _) => Path.Eta
          | (Machine.OPERATOR theta, _) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not expand neutral term of type", TermPrinter.ppTerm ty]
 
@@ -799,19 +799,19 @@ struct
     local
       fun StepTrue ty =
         case Syn.out ty of
-           Syn.BOOL => Bool.Elim
+           Syn.BOOL => Bool.FullElim
          | Syn.WBOOL => WBool.Elim
          | Syn.NAT => Nat.Elim
-         | Syn.VOID => Void.Elim
+         | Syn.VOID => Void.FullElim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
-         | Syn.PATH_TY _ => Path.Elim
          | Syn.RECORD _ => Record.Elim
+         | Syn.PATH_TY _ => Path.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepEq ty =
         case Syn.out ty of
-           Syn.BOOL => Bool.TrivialByElim
+           Syn.BOOL => Bool.FullElim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepJdg _ z alpha jdg =
