@@ -142,9 +142,9 @@ struct
       val leq : t * t -> bool
       val meet : t * t -> t
 
-      (* greatestMeetRight (a, b) is the greatest element c
+      (* greatestMeetComplement (a, b) is the greatest element c
        * such that meet (b, c) <= a *)
-      val greatestMeetRight : t * t -> t
+      val greatestMeetComplement : t * t -> t
     end
     =
     struct
@@ -169,7 +169,7 @@ struct
 
          | (CUBICAL, CUBICAL) => CUBICAL
 
-      val greatestMeetRight =
+      val greatestMeetComplement =
         fn (_, DISCRETE) => top
          | (DISCRETE, _) => DISCRETE
          | (_, KAN) => top
@@ -182,14 +182,14 @@ struct
          | (COE, _) => COE
          | (CUBICAL, CUBICAL) => top
 
-      fun leq (a, b) = greatestMeetRight (b, a) = top
+      fun leq (a, b) = greatestMeetComplement (b, a) = top
     end
   in
     open Internal
   end
 
-  fun greatestMeetRight' (a, b) =
-    let val gmr = greatestMeetRight (a, b)
+  fun greatestMeetComplement' (a, b) =
+    let val gmr = greatestMeetComplement (a, b)
     in if gmr = top then NONE else SOME gmr
     end
 end

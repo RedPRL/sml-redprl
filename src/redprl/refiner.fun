@@ -109,7 +109,7 @@ struct
         val _ = Assert.alphaEq (a0, a1)
         val _ = Assert.alphaEq (b0, b1)
         val goal =
-          case K.greatestMeetRight' (k0, k1) of
+          case K.greatestMeetComplement' (k0, k1) of
             NONE => NONE
           | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
       in
@@ -124,7 +124,7 @@ struct
         val _ = Assert.alphaEq (a0, b0)
         val _ = Assert.alphaEq (a0, a1)
         val goal =
-          case K.greatestMeetRight' (k0, k1) of
+          case K.greatestMeetComplement' (k0, k1) of
             NONE => NONE
           | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
       in
@@ -139,7 +139,7 @@ struct
         val _ = Assert.alphaEq (a0, b0)
         val _ = Assert.alphaEq (a0, a1)
         val goal =
-          case K.greatestMeetRight' (k0, k1) of
+          case K.greatestMeetComplement' (k0, k1) of
             NONE => NONE
           | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
       in
@@ -345,7 +345,7 @@ struct
         val _ = Assert.alphaEq (n0, n1)
         val _ = Assert.alphaEq (a0, a1)
         val goal =
-          case K.greatestMeetRight' (k0, k1) of
+          case K.greatestMeetComplement' (k0, k1) of
             NONE => NONE
           | SOME k'' => SOME @@ makeEq (I, H) ((m0, n0), (a0, k''))
       in
@@ -757,13 +757,13 @@ struct
           val isUseful =
             fn CJ.EQ_TYPE ((a1, b1), k1) =>
                  Abt.eq (a0, a1) andalso Abt.eq (b0, b1)
-                 andalso K.greatestMeetRight' (k0, k1) <> SOME k0
+                 andalso K.greatestMeetComplement' (k0, k1) <> SOME k0
              | CJ.EQ (_, (a1, k1)) =>
                  isUnary andalso Abt.eq (a0, a1)
-                 andalso K.greatestMeetRight' (k0, k1) <> SOME k0
+                 andalso K.greatestMeetComplement' (k0, k1) <> SOME k0
              | CJ.TRUE (a1, k1) =>
                  isUnary andalso Abt.eq (a0, a1)
-                 andalso K.greatestMeetRight' (k0, k1) <> SOME k0
+                 andalso K.greatestMeetComplement' (k0, k1) <> SOME k0
              | _ => false
         in
           case Hyps.search H isUseful of
@@ -781,7 +781,7 @@ struct
           val isUseful =
             fn CJ.EQ ((m1, n1), (a1, k1)) =>
                 Abt.eq (m0, m1) andalso Abt.eq (n0, n1) andalso Abt.eq (a0, a1)
-                andalso K.greatestMeetRight' (k0, k1) <> SOME k0
+                andalso K.greatestMeetComplement' (k0, k1) <> SOME k0
              | _ => false
         in
           case Hyps.search H isUseful of
