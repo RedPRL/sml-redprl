@@ -235,6 +235,8 @@ struct
     fn `x || _ => raise Neutral (VAR x)
      | x $# (rs, ms) || _ => raise Neutral (METAVAR x)
 
+     | O.MONO O.AX $ _ || (_, []) => raise Final
+
      | O.POLY (O.CUST (opid, ps, _)) $ args || (syms, stk) =>
        if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
@@ -340,6 +342,10 @@ struct
          CRITICAL @@ abs || (SymSet.remove syms v, stk)
        end
 
+     | O.MONO O.EQUALITY $ _ || (_, []) => raise Final
+     | O.MONO O.EQUALITY $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
+     | O.MONO O.EQUALITY $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+
      | O.MONO O.NAT $ _ || (_, []) => raise Final
      | O.MONO O.ZERO $ _ || (_, []) => raise Final
      | O.MONO O.SUCC $ _ || (_, []) => raise Final
@@ -373,7 +379,6 @@ struct
      | O.MONO O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
      | O.MONO O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | O.MONO O.AX $ _ || (_, []) => raise Final
      | O.MONO O.VOID $ _ || (_, []) => raise Final
 
      | O.MONO O.WBOOL $ _ || (_, []) => raise Final
