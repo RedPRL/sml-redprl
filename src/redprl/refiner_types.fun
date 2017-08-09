@@ -53,25 +53,14 @@ struct
    * for example: it has elements `base`, `loop` and `fcom`; there are infinitely
    * many different shapes of `fcom` and thus infinitely many cases (unless our LF
    * can deal with them uniformly), and there are (infinitely) many equalities
-   * between these elements due to cubicality.
+   * between these elements due to cubicality. Another example is the natural
+   * number type `nat` which has elements `zero`, `(succ zero)`, ...; this also
+   * leads to infinitely many cases.
    *
-   * Another example is the natural number type `nat` which has elements `zero`,
-   * `(succ zero)`, ...; this also has infinitely many cases. It is imaginable
-   * that we can generate two "higher-order subgoals" in some higher-order LF:
-   *
-   * 1. `\Gamma, x:nat, \Delta[zero/x] >> J[zero/x]`
-   * 2. if `\Gamma, x:nat, \Delta[#n/x] >> J[#n/x]` is provable for some
-   *    numeral `n`, then `\Gamma, x:nat, \Delta[(succ #n)/x] >> J[(succ #n)/x]`
-   *    is provable.
-   *
-   * One also has to think carefully about how to construct proper realizers.
-   *
-   *
-   * Before we have a more powerful LF, however, we can still have a "weaker" or
-   * "local" elimination principle, `Elim`, that is just trying to generate a
-   * term that would satisfy the structural equality of the eliminator (EqElim).
-   * For the natural number type, the weaker elimination principle generates
-   * the following two subgoals:
+   * Before we have a more powerful LF, however, we can still have the second
+   * category of elimination rules, `Elim`, which is just trying to generate
+   * a term that would satisfy the structural equality (EqElim). For the natural
+   * number type, the elimination rule of this category generates these two subgoals
    *
    * 1. `\Gamma, x:nat, \Delta >> C[zero/x] true`
    * 2. `\Gamma, x:nat, \Delta, y:nat, z:C[y/x] >> C[(succ y)/x] true`
@@ -79,10 +68,10 @@ struct
    * and combine the realizers from the two subgoals into something of the form
    * `(nat-rec x ...)`.
    *
-   * There is no reason to have a weaker elimination principle if the stronger
-   * one is already there. Therefore, there is `Bool.FullElim` but not `Bool.Elim`.
-   * In Nuprl, everything is named "elimination" but I (favonia) think maybe
-   * it is useful to remind tactic writers of what is really going on.
+   * There is no reason to have an elimination principle of the second category
+   * if there exists one of the first category. Therefore, there is `Bool.FullElim`
+   * but no `Bool.Elim`. In Nuprl, everything is named "elimination" but I (favonia)
+   * think it might be useful to remind tactic writers of its category.
    *)
 
   structure Bool =
