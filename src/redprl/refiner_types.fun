@@ -142,7 +142,7 @@ struct
         (* ff branch *)
         val ff = Syn.into Syn.FF
         val Hff = Hyps.substAfter (z, ff) H
-        val (goalF, holeF) = makeGoal @@ (I, Htt) >> CJ.map_ (substVar (tt, z)) catjdg
+        val (goalF, holeF) = makeGoal @@ (I, Hff) >> CJ.map_ (substVar (ff, z)) catjdg
 
         val evidence =
           case catjdg of
