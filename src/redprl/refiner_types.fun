@@ -18,8 +18,8 @@ struct
   (* Rules in a type should be ordered as follows:
    *
    * EqType: the type formation rule.
-   * EqX: the introduction rule for the constructor X in a positive type.
-   * True: the introduction rule in a negative type.
+   * EqX: the introduction rule for the constructor X of a positive type.
+   * True: the introduction rule of a negative type.
    * Eta: the eta rule, if any.
    * Elim/FullElim: the elimination rule (see the paragraph below).
    * EqElim/EqX: structural equality for eliminators.
