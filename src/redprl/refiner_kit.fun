@@ -119,15 +119,8 @@ struct
     fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
       Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H
 
-    fun subst (term, z) H =
-      Hyps.remove z (Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H)
-
     fun interposeAfter (z, H') H =
       Hyps.interposeAfter H z H'
-
-    (* repeal and replace *)
-    fun spliceThenSubst (H', term, z) H =
-      Hyps.splice (Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H) z H'
 
     fun interposeThenSubstAfter (z, H', term) H =
       Hyps.interposeAfter (Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H) z H'
