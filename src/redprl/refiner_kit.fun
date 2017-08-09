@@ -186,11 +186,6 @@ struct
     if Abt.eq (m, n) then makeTypeIfLess (I, H) (m, k) k'
     else SOME @@ makeEqType (I, H) ((m, n), k)
 
-  fun makeEqTypeIfAllDifferentOrLess (I, H) ((m, n), k) ns k' =
-    if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeTypeIfLess (I, H) (m, k) k'
-    else makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k'
-
   fun makeEqIfDifferent (I, H) ((m, n), (ty, k)) =
     if Abt.eq (m, n) then NONE
     else SOME @@ makeEq (I, H) ((m, n), (ty, k))
