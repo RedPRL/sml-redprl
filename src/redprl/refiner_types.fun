@@ -15,14 +15,74 @@ struct
   infix 2 >> >: >:? >:+ $$ $# // \ @>
   infix orelse_
 
-  (* order of rules:
+  (* Rules in a type should be ordered as follows:
    *
-   * EqType
-   * EqX
-   * True
-   * Eta
-   * Elim
-   * EqElim
+   * EqType: the type formation rule.
+   * EqX: the introduction rule for the constructor X in a positive type.
+   * True: the introduction rule in a negative type.
+   * Eta: the eta rule, if any.
+   * Elim/FullElim: the elimination rule (see the paragraph below).
+   * EqElim/EqX: structural equality for eliminators.
+   *   We use EqX if the eliminator has a well-known name X.
+   *   For example, we have EqApp for DFun and Path, and EqProj for Record.
+   * (others): other special rules for this type.
+   *)
+
+  (* Note that there are two categories of elimination rules for positive types.
+   * The main issue is, given the sequent `\Gamma, x:A, \Delta >> J`, how should
+   * we eliminate `x:A` for a positive type `A`?
+   *
+   * The first category, `FullElim`, works on almost arbitrary J by considering
+   * all elements in A, and is justified by the semantics of open judgments.
+   * For example, `tt` and `ff` are the only elements in Bool, and so to show
+   *
+   * `\Gamma, x:Bool, \Delta >> J`
+   *
+   * it is sufficient to consider two subgoals:
+   *
+   * 1. `\Gamma, x:bool, \Delta[tt/x] >> J[tt/x]`
+   * 2. `\Gamma, x:bool, \Delta[ff/x] >> J[ff/x]`
+   *
+   * (The `x:Bool` is kept to follow the Nuprl style. It might not be needed.)
+   * In RedPRL, we restrict J to judgments where there is a sensible realizer
+   * that can be easily reconstructed from the subgoals.
+   *
+   * Unfortunately, it seems difficult to have this powerful elimination principle
+   * for every type we have in RedPRL, because a type could have an infinite number
+   * of "cases" or demand relations between these cases. Take the circle `S1`
+   * for example: it has elements `base`, `loop` and `fcom`; there are infinitely
+   * different shapes of `fcom` and thus infinitely many cases (unless our LF
+   * can deal with them uniformly), and there are (infinitely) many equalities
+   * between these elements due to cubicality.
+   *
+   * Another example is the natural number type `nat` which has elements `zero`,
+   * `(succ zero)`, ...; this also has infinitely many cases. It is imaginable
+   * that we can generate two "higher-order subgoals" in some higher-order LF:
+   *
+   * 1. `\Gamma, x:nat, \Delta[zero/x] >> J[zero/x]`
+   * 2. if `\Gamma, x:nat, \Delta[#n/x] >> J[#n/x]` is provable for some
+   *    numeral `n`, then `\Gamma, x:nat, \Delta[(succ #n)/x] >> J[(succ #n)/x]`
+   *    is provable.
+   *
+   * One also has to think carefully about how to construct proper realizers.
+   *
+   *
+   * Before we have a more powerful LF, however, we can still have a "weaker" or
+   * "local" elimination principle, `Elim`, that is just trying to generate a
+   * term that would satisfy the structural equality of the eliminator (EqElim).
+   * For the natural number type, the weaker elimination principle generates
+   * the following two subgoals:
+   *
+   * 1. `\Gamma, x:nat, \Delta >> C[zero/x] true`
+   * 2. `\Gamma, x:nat, \Delta, y:nat, z:C[y/x] >> C[(succ y)/x] true`
+   *
+   * and combine the realizers from the two subgoals into something of the form
+   * `(nat-rec x ...)`.
+   *
+   * There is no reason to have a weaker elimination principle if the stronger
+   * one is already there. Therefore, there is `Bool.FullElim` but not `Bool.Elim`.
+   * In Nuprl, everything is named "elimination" but I (favonia) think maybe
+   * it is useful to remind tactic writers of what is really going on.
    *)
 
   structure Bool =
