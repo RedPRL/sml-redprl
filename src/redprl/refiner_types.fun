@@ -21,7 +21,7 @@ struct
    * EqX: the introduction rule for the constructor X of a positive type.
    * True: the introduction rule of a negative type.
    * Eta: the eta rule, if any.
-   * Elim/FullElim: the elimination rule (see the paragraph below).
+   * Elim/FullElim: the elimination rule (see the long comment below).
    * EqElim/EqX: structural equality for eliminators.
    *   We use EqX if the eliminator has a well-known name X.
    *   For example, we have EqApp for DFun and Path, and EqProj for Record.
@@ -51,7 +51,7 @@ struct
    * for every type we have in RedPRL, because a type could have an infinite number
    * of "cases" or demand relations between these cases. Take the circle `S1`
    * for example: it has elements `base`, `loop` and `fcom`; there are infinitely
-   * different shapes of `fcom` and thus infinitely many cases (unless our LF
+   * many different shapes of `fcom` and thus infinitely many cases (unless our LF
    * can deal with them uniformly), and there are (infinitely) many equalities
    * between these elements due to cubicality.
    *
