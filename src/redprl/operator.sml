@@ -115,9 +115,7 @@ struct
    *     the equality between two types with respect to KAN means that they
    *     are equally Kan, while the equality with respect to CUBICAL only says
    *     they are equal cubical pretypes.
-   * (3) If two elements are related in A with respect to some weaker kind (like
-   *     CUBICAL), they are related with respect to a stronger kind (like KAN)
-   *     as well.
+   * (3) The PER associated with A should not depend on its kind we are proving.
    * (4) We say KAN = meet (HCOM, COE) because if two types are equally "HCOM"
    *     and equally "COE" then they are equally Kan. Remember to always check
    *     the binary cases.
@@ -184,30 +182,15 @@ struct
          | (CUBICAL, CUBICAL) => top
 
       fun leq (a, b) = greatestMeetRight (b, a) = top
-      fun geq (a, b) = leq (b, a)
     end
   in
     open Internal
   end
 
-  (* lift everything to kind option. *)
-  val top' : kind option = NONE
-  val meet' =
-    fn (NONE, b) => b
-     | (a, NONE) => a
-     | (SOME a, SOME b) => SOME (meet (a, b))
-  val greatestMeetRight' =
-    fn (NONE, _) => NONE
-     | (a, NONE) => a
-     | (SOME a, SOME b) =>
-         let val gmr = greatestMeetRight (a, b)
-         in if gmr = top then NONE else SOME gmr
-         end
-  fun leq' (a, b) = greatestMeetRight' (b, a) = top'
-  fun geq' (a, b) = leq' (b, a)
-
-  fun reduce l = List.foldl meet' top' l
-  fun reduceMap f = reduce o List.map f
+  fun greatestMeetRight' (a, b) =
+    let val gmr = greatestMeetRight (a, b)
+    in if gmr = top then NONE else SOME gmr
+    end
 end
 
 structure RedPrlOpData =

@@ -86,7 +86,7 @@ struct
     List.foldl (fn (g, t) => t >: g) tel list
   infix 5 >:+
 
-  fun |>:+ g = T.empty >:+ g
+  fun |>:+ g = g
 
   fun >:? (tel, NONE) = tel
     | >:? (tel, SOME g) = tel >: g
@@ -168,57 +168,72 @@ struct
 
   (* conditional goal making *)
 
-  fun makeTypeIfLess' (I, H) (m, k) k' =
-    case K.greatestMeetRight' (SOME k, k') of
+  fun makeEqTypeIfDifferent (I, H) ((m, n), k) =
+    if Abt.eq (m, n) then NONE
+    else SOME @@ makeEqType (I, H) ((m, n), k)
+
+  fun makeEqTypeIfAllDifferentOrLess (I, H) ((m, n), k) ns =
+    if List.exists (fn n' => Abt.eq (m, n')) ns
+    then SOME @@ makeType (I, H) (m, k)
+    else makeEqTypeIfDifferent (I, H) ((m, n), k)
+
+  fun makeTypeIfLess (I, H) (m, k) k' =
+    case K.greatestMeetRight' (k, k') of
       NONE => NONE
     | SOME k'' => SOME @@ makeType (I, H) (m, k'')
 
-  fun makeTypeIfLess (I, H) (m, k) k' =
-    makeTypeIfLess' (I, H) (m, k) (SOME k')
-
-  fun makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) k' =
-    if Abt.eq (m, n) then makeTypeIfLess' (I, H) (m, k) k'
-    else SOME @@ makeEqType (I, H) ((m, n), k)
-
-  fun makeEqTypeIfDifferent (I, H) ((m, n), k) =
-    makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) NONE
-
   fun makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k' =
-    makeEqTypeIfDifferentOrLess' (I, H) ((m, n), k) (SOME k')
+    if Abt.eq (m, n) then makeTypeIfLess (I, H) (m, k) k'
+    else SOME @@ makeEqType (I, H) ((m, n), k)
 
   fun makeEqTypeIfAllDifferentOrLess (I, H) ((m, n), k) ns k' =
     if List.exists (fn n' => Abt.eq (m, n')) ns
     then makeTypeIfLess (I, H) (m, k) k'
     else makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k'
 
-  fun makeMemIfLess' (I, H) (m, (ty, k)) k' =
-    case K.greatestMeetRight' (SOME k, k') of
+  fun makeEqIfDifferent (I, H) ((m, n), (ty, k)) =
+    if Abt.eq (m, n) then NONE
+    else SOME @@ makeEq (I, H) ((m, n), (ty, k))
+
+  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, k)) ns =
+    if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
+    else makeEqIfDifferent (I, H) ((m, n), (ty, k))
+
+  fun makeMemIfLess (I, H) (m, (ty, k)) k' =
+    case K.greatestMeetRight' (k, k') of
       NONE => NONE
     | SOME k'' => SOME @@ makeMem (I, H) (m, (ty, k''))
 
-  fun makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) k' =
-    if Abt.eq (m, n) then makeMemIfLess' (I, H) (m, (ty, k)) k'
+  fun makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k' =
+    if Abt.eq (m, n) then makeMemIfLess (I, H) (m, (ty, k)) k'
     else SOME @@ makeEq (I, H) ((m, n), (ty, k))
 
-  fun makeEqIfDifferent (I, H) ((m, n), (ty, k)) =
-    makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) NONE
-
-  fun makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k' =
-    makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) (SOME k')
-
-  fun makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns k' =
-    if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeMemIfLess' (I, H) (m, (ty, k)) k'
-    else makeEqIfDifferentOrLess' (I, H) ((m, n), (ty, k)) k'
-
-  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, k)) ns =
-    makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns NONE
-
   fun makeEqIfAllDifferentOrLess (I, H) ((m, n), (ty, k)) ns k' =
-    makeEqIfAllDifferentOrLess' (I, H) ((m, n), (ty, k)) ns (SOME k')
+    if List.exists (fn n' => Abt.eq (m, n')) ns
+    then makeMemIfLess (I, H) (m, (ty, k)) k'
+    else makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k'
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
+
+  (* variable kit *)
+
+  structure VarKit =
+  struct
+    fun ctxFromList l = List.foldl
+          (fn ((tm, x), dict) => Var.Ctx.insert dict x tm)
+          Var.Ctx.empty l
+
+    fun toExp x = Syn.into @@ Syn.VAR (x, O.EXP)
+
+    val renameMany = Abt.renameVars o ctxFromList
+    fun rename r = renameMany [r]
+
+    val substMany = Abt.substVarenv o ctxFromList
+    fun subst s = substMany [s]
+  end
+
+  (* assertions *)
 
   structure Assert =
   struct

@@ -21,8 +21,8 @@ Thm LowLevel : [
   fresh f -> refine dfun/intro;
   [fresh x, x/eq -> elim f;
   [`tt, use x],
-  refine dfun/eq/type;
-  refine wbool/eq/type]
+  refine dfun/eqtype;
+  refine wbool/eqtype]
 ].
 
 Extract LowLevel.
