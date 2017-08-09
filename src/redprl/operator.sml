@@ -115,9 +115,10 @@ struct
    *     the equality between two types with respect to KAN means that they
    *     are equally Kan, while the equality with respect to CUBICAL only says
    *     they are equal cubical pretypes.
-   * (3) The PER associated with A should not depend on its kind we are proving.
+   * (3) The PER associated with A should *never* depend on its kind. Kinds
+   *     should be properties of (the PER of) A.
    * (4) We say KAN = meet (HCOM, COE) because if two types are equally "HCOM"
-   *     and equally "COE" then they are equally Kan. Remember to always check
+   *     and equally "COE" then they are equally Kan. Always remember to check
    *     the binary cases.
    *)
   datatype kind = DISCRETE | KAN | HCOM | COE | CUBICAL
