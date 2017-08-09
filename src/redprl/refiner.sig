@@ -36,7 +36,7 @@ sig
 
   structure Synth :
   sig
-    val FromWfHyp : hyp -> rule
+    val FromEq : hyp -> rule
   end
 
   val Exact : abt -> rule

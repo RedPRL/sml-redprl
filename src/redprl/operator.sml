@@ -103,6 +103,24 @@ struct
    *
    * and KAN = meet (HCOM, COE)
    *)
+
+  (* Please keep the following invariants when adding new kinds:
+   *
+   * (1) All judgments should still be closed under any substitution! In
+   *     particular, the property that a type A has kind K is closed under any
+   *     substitution.
+   * (2) If two types are related with respect to a stronger kind (like KAN),
+   *     then they are related with respect to a weaker kind (like CUBICAL).
+   *     A stronger kind might demand more things to be equal. For example,
+   *     the equality between two types with respect to KAN means that they
+   *     are equally Kan, while the equality with respect to CUBICAL only says
+   *     they are equal cubical pretypes.
+   * (3) The PER associated with A should *never* depend on its kind. Kinds
+   *     should be properties of (the PER of) A.
+   * (4) We say KAN = meet (HCOM, COE) because if two types are equally "HCOM"
+   *     and equally "COE" then they are equally Kan. Always remember to check
+   *     the binary cases.
+   *)
   datatype kind = DISCRETE | KAN | HCOM | COE | CUBICAL
 
   val COM = KAN
@@ -165,30 +183,15 @@ struct
          | (CUBICAL, CUBICAL) => top
 
       fun leq (a, b) = greatestMeetRight (b, a) = top
-      fun geq (a, b) = leq (b, a)
     end
   in
     open Internal
   end
 
-  (* lift everything to kind option. *)
-  val top' : kind option = NONE
-  val meet' =
-    fn (NONE, b) => b
-     | (a, NONE) => a
-     | (SOME a, SOME b) => SOME (meet (a, b))
-  val greatestMeetRight' =
-    fn (NONE, _) => NONE
-     | (a, NONE) => a
-     | (SOME a, SOME b) =>
-         let val gmr = greatestMeetRight (a, b)
-         in if gmr = top then NONE else SOME gmr
-         end
-  fun leq' (a, b) = greatestMeetRight' (b, a) = top'
-  fun geq' (a, b) = leq' (b, a)
-
-  fun reduce l = List.foldl meet' top' l
-  fun reduceMap f = reduce o List.map f
+  fun greatestMeetRight' (a, b) =
+    let val gmr = greatestMeetRight (a, b)
+    in if gmr = top then NONE else SOME gmr
+    end
 end
 
 structure RedPrlOpData =

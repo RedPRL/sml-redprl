@@ -163,17 +163,17 @@ struct
         #> (I, H, trivial)
       end
 
-    fun CapEqL alpha jdg =
+    fun EqCapL alpha jdg =
       let
-        val _ = RedPrlLog.trace "HCom.CapEq"
+        val _ = RedPrlLog.trace "HCom.EqCapL"
         val (I, H) >> CJ.EQ ((hcom, other), (ty, k)) = jdg
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
-        val () = Assert.paramEq "HCom.CapEq source and target of direction" (r, r')
+        val () = Assert.paramEq "HCom.EqCapL source and target of direction" (r, r')
 
         (* equations *)
-        val _ = Assert.tautologicalEquations "HCom.CapEq tautology checking" (List.map #1 tubes)
+        val _ = Assert.tautologicalEquations "HCom.EqCapL tautology checking" (List.map #1 tubes)
 
         (* type *)
         val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0, ty), k)
@@ -190,12 +190,10 @@ struct
         #> (I, H, trivial)
       end
 
-    (*val CapEqR = catJdgFlipWrapper CapEqL*)
-
     (* Search for the first satisfied equation in an hcom. *)
-    fun TubeEqL alpha jdg =
+    fun EqTubeL alpha jdg =
       let
-        val _ = RedPrlLog.trace "HCom.TubeEq"
+        val _ = RedPrlLog.trace "HCom.EqTubeL"
         val (I, H) >> CJ.EQ ((hcom, other), (ty, k)) = jdg
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)

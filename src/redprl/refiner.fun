@@ -52,8 +52,8 @@ struct
         val zjdg = Hyps.lookup z H
         val z' = alpha 0
 
-        val renameIn = renameVars @@ Var.Ctx.singleton z z'
-        val renameOut =  renameVars @@ Var.Ctx.singleton z' z
+        val renameIn = VarKit.rename (z', z)
+        val renameOut = VarKit.rename (z, z')
 
         val H' = Hyps.splice H z (Hyps.singleton z' zjdg)
         val H'' = Hyps.modifyAfter z' (CJ.map_ renameIn) H' 
@@ -101,45 +101,45 @@ struct
         |>: goal #> (I, H, trivial)
       end
 
-    fun FromEqTypeHyp z _ jdg =
+    fun FromEqType z _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.FromEqTypeHyp"
+        val _ = RedPrlLog.trace "TypeEquality.FromEqType"
         val (I, H) >> CJ.EQ_TYPE ((a0, b0), k0) = jdg
         val CJ.EQ_TYPE ((a1, b1), k1) = Hyps.lookup z H
         val _ = Assert.alphaEq (a0, a1)
         val _ = Assert.alphaEq (b0, b1)
         val goal =
-          case K.greatestMeetRight' (SOME k0, SOME k1) of
+          case K.greatestMeetRight' (k0, k1) of
             NONE => NONE
           | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
       in
         |>:? goal #> (I, H, trivial)
       end
 
-    fun FromWfHyp z _ jdg =
+    fun FromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.FromWfHyp"
+        val _ = RedPrlLog.trace "TypeEquality.FromEq"
         val (I, H) >> CJ.EQ_TYPE ((a0, b0), k0) = jdg
         val CJ.EQ (_, (a1, k1)) = Hyps.lookup z H
         val _ = Assert.alphaEq (a0, b0)
         val _ = Assert.alphaEq (a0, a1)
         val goal =
-          case K.greatestMeetRight' (SOME k0, SOME k1) of
+          case K.greatestMeetRight' (k0, k1) of
             NONE => NONE
           | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
       in
         |>:? goal #> (I, H, trivial)
       end
 
-    fun FromTrueHyp z _ jdg =
+    fun FromTrue z _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.FromTrueHyp"
+        val _ = RedPrlLog.trace "TypeEquality.FromTrue"
         val (I, H) >> CJ.EQ_TYPE ((a0, b0), k0) = jdg
         val CJ.TRUE (a1, k1) = Hyps.lookup z H
         val _ = Assert.alphaEq (a0, b0)
         val _ = Assert.alphaEq (a0, a1)
         val goal =
-          case K.greatestMeetRight' (SOME k0, SOME k1) of
+          case K.greatestMeetRight' (k0, k1) of
             NONE => NONE
           | SOME k'' => SOME @@ makeEqType (I, H) ((a0, b0), k'')
       in
@@ -176,9 +176,9 @@ struct
 
   structure Synth =
   struct
-    fun FromWfHyp z _ jdg =
+    fun FromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.FromWfHyp"
+        val _ = RedPrlLog.trace "Synth.FromEq"
         val (I, H) >> CJ.SYNTH (tm, k) = jdg
         val CJ.EQ ((a, b), (ty, k')) = Hyps.lookup z H
         val goalKind = makeTypeIfLess (I, H) (ty, k) k'
@@ -198,7 +198,7 @@ struct
 
         val {spec = ([],H') >> CJ.TRUE (ty, k'), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
-        val metas = Lcf.Tl.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
+        val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho =
           ListPair.foldl
             (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
@@ -326,32 +326,26 @@ struct
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
         val _ = Assert.varEq (x, y)
-        val catjdg = Hyps.lookup x H
-        val (ty', k') =
-          case catjdg of
-             CJ.TRUE (ty, k) => (ty, k)
+        val goalTy =
+          case Hyps.lookup x H of
+             CJ.TRUE (ty', k') => makeEqTypeIfDifferentOrLess (I, H) ((ty', ty), k) k'
            | _ => raise E.error [Fpp.text "Equality.Hyp: expected truth hypothesis"]
-
-        (* If the types are identical, there is no need to create a new subgoal (which would amount to proving that 'ty' is a type).
-           This is because the semantics of sequents is that by assuming that something is a member of a 'ty', we have
-           automatically assumed that 'ty' is a type. *)
-        val goalTy = makeEqTypeIfDifferentOrLess (I, H) ((ty, ty'), k) k'
       in
         |>:? goalTy #> (I, H, trivial)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected variable-equality sequent"]
 
-    fun FromWfHyp z _ jdg =
+    fun FromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.FromWfHyp"
+        val _ = RedPrlLog.trace "Equality.FromEq"
         val (I, H) >> CJ.EQ ((m0, n0), (a0, k0)) = jdg
         val CJ.EQ ((m1, n1), (a1, k1)) = Hyps.lookup z H
         val _ = Assert.alphaEq (m0, m1)
         val _ = Assert.alphaEq (n0, n1)
         val _ = Assert.alphaEq (a0, a1)
         val goal =
-          case K.greatestMeetRight' (SOME k0, SOME k1) of
+          case K.greatestMeetRight' (k0, k1) of
             NONE => NONE
           | SOME k'' => SOME @@ makeEq (I, H) ((m0, n0), (a0, k''))
       in
@@ -368,7 +362,7 @@ struct
 
         val {spec = ([],H') >> CJ.TRUE (specTy, specK), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ()) (* TODO: use alpha here??? *)
-        val metas = Lcf.Tl.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
+        val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho =
           ListPair.foldl
             (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
@@ -390,8 +384,9 @@ struct
         |>: goal #> (I, H, trivial)
       end
 
-    fun RewriteTrueWithWfHyp z alpha jdg =
+    fun RewriteTrue z alpha jdg =
       let
+        val _ = RedPrlLog.trace "Equality.RewriteTrue"
         val (I, H) >> CJ.TRUE (mainGoal, k) = jdg
         val CJ.EQ ((m, n), (ty, k')) = Hyps.lookup z H
         val x = alpha 0
@@ -417,39 +412,39 @@ struct
         val _ = RedPrlLog.trace "Coe.Eq"
         val (I, H) >> CJ.EQ ((lhs, rhs), (ty, k)) = jdg
         val k = K.meet (k, K.COE)
-        val Syn.COE {dir=(r0, r'0), ty=(u0, ty0), coercee=m0} = Syn.out lhs
-        val Syn.COE {dir=(r1, r'1), ty=(u1, ty1), coercee=m1} = Syn.out rhs
+        val Syn.COE {dir=(r0, r'0), ty=(u, ty0u), coercee=m0} = Syn.out lhs
+        val Syn.COE {dir=(r1, r'1), ty=(v, ty1v), coercee=m1} = Syn.out rhs
         val () = Assert.paramEq "Coe.Eq source of direction" (r0, r1)
         val () = Assert.paramEq "Coe.Eq target of direction" (r'0, r'1)
 
         (* type *)
         val w = alpha 0
-        val ty0w = substSymbol (P.ret w, u0) ty0
-        val ty1w = substSymbol (P.ret w, u1) ty1
+        val ty0w = substSymbol (P.ret w, u) ty0u
+        val ty1w = substSymbol (P.ret w, v) ty1v
         val goalTy = makeEqType (I @ [(w, P.DIM)], H) ((ty0w, ty1w), k)
-        (* after proving the above goal, [ty0r] must be a type *)
-        val ty0r' = substSymbol (r'0, u0) ty0
-        val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r', ty), k)
+        (* after proving the above goal, [ty0r'0] must be a type *)
+        val ty0r'0 = substSymbol (r'0, u) ty0u
+        val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r'0, ty), k)
 
         (* coercee *)
-        val ty0r = substSymbol (r0, u0) ty0
-        val goalCoercees = makeEq (I, H) ((m0, m1), (ty0r, K.top))
+        val ty0r0 = substSymbol (r0, u) ty0u
+        val goalCoercees = makeEq (I, H) ((m0, m1), (ty0r0, K.top))
       in
         |>: goalCoercees >:? goalTy0 >: goalTy #> (I, H, trivial)
       end
 
-    fun CapEqL _ jdg =
+    fun EqCapL _ jdg =
       let
-        val _ = RedPrlLog.trace "Coe.CapEq"
+        val _ = RedPrlLog.trace "Coe.EqCapL"
         val (I, H) >> CJ.EQ ((coe, other), (ty, k)) = jdg
         val k = K.meet (k, K.COE)
-        val Syn.COE {dir=(r, r'), ty=(u0, ty0), coercee=m} = Syn.out coe
-        val () = Assert.paramEq "Coe.CapEq source and target of direction" (r, r')
+        val Syn.COE {dir=(r, r'), ty=(u, ty0u), coercee=m} = Syn.out coe
+        val () = Assert.paramEq "Coe.EqCapL source and target of direction" (r, r')
 
         (* type *)
-        val goalTy = makeType (I @ [(u0, P.DIM)], H) (ty0, k)
+        val goalTy = makeType (I @ [(u, P.DIM)], H) (ty0u, k)
         (* after proving the above goal, [ty0r] must be a type *)
-        val ty0r = substSymbol (r, u0) ty0
+        val ty0r = substSymbol (r, u) ty0u
         val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r, ty), k)
 
         (* eq *)
@@ -543,7 +538,7 @@ struct
 
       val lemmaExtract' =
         let
-          val subgoalsList = Lcf.Tl.foldr (fn (x, jdg, goals) => (x, jdg) :: goals) [] lemmaSubgoals
+          val subgoalsList = T.foldr (fn (x, jdg, goals) => (x, jdg) :: goals) [] lemmaSubgoals
           val valences = List.map (RedPrlJudgment.sort o #2) subgoalsList
           val arity = (valences, CJ.synthesis specjdg)
           fun argForSubgoal ((x, jdg), vl) = outb @@ Lcf.L.var x vl
@@ -566,48 +561,48 @@ struct
 
 
   val lookupRule = 
-    fn "bool/eq/type" => Bool.EqType
+    fn "bool/eqtype" => Bool.EqType
      | "bool/eq/tt" => Bool.EqTT
      | "bool/eq/ff" => Bool.EqFF
-     | "bool/eq/if" => Bool.ElimEq
-     | "wbool/eq/type" => WBool.EqType
+     | "bool/eq/if" => Bool.EqElim
+     | "wbool/eqtype" => WBool.EqType
      | "wbool/eq/tt" => WBool.EqTT
      | "wbool/eq/ff" => WBool.EqFF
      | "wbool/eq/fcom" => WBool.EqFCom
-     | "wbool/eq/wif" => WBool.ElimEq
-     | "nat/eq/type" => Nat.EqType
+     | "wbool/eq/wif" => WBool.EqElim
+     | "nat/eqtype" => Nat.EqType
      | "nat/eq/zero" => Nat.EqZero
      | "nat/eq/succ" => Nat.EqSucc
-     | "nat/eq/nat-rec" => Nat.ElimEq
-     | "int/eq/type" => Int.EqType
+     | "nat/eq/nat-rec" => Nat.EqElim
+     | "int/eqtype" => Int.EqType
      | "int/eq/zero" => Int.EqZero
      | "int/eq/succ" => Int.EqSucc
      | "int/eq/negsucc" => Int.EqNegSucc
-     | "void/eq/type" => Void.EqType
-     | "S1/eq/type" => S1.EqType
+     | "void/eqtype" => Void.EqType
+     | "S1/eqtype" => S1.EqType
      | "S1/eq/base" => S1.EqBase
      | "S1/eq/loop" => S1.EqLoop
      | "S1/eq/fcom" => S1.EqFCom
-     | "S1/eq/S1-rec" => S1.ElimEq
-     | "dfun/eq/type" => DFun.EqType
+     | "S1/eq/S1-rec" => S1.EqElim
+     | "dfun/eqtype" => DFun.EqType
      | "dfun/eq/lam" => DFun.Eq
      | "dfun/intro" => DFun.True
      | "dfun/eq/eta" => DFun.Eta
-     | "dfun/eq/app" => DFun.AppEq
-     | "record/eq/type" => Record.EqType
+     | "dfun/eq/app" => DFun.EqApp
+     | "record/eqtype" => Record.EqType
      | "record/eq" => Record.Eq
      | "record/eq/eta" => Record.Eta
-     | "record/eq/proj" => Record.ProjEq
+     | "record/eq/proj" => Record.EqProj
      | "record/intro" => Record.True
-     | "path/eq/type" => Path.EqType
+     | "path/eqtype" => Path.EqType
      | "path/intro" => Path.True
      | "path/eq/abs" => Path.Eq
-     | "path/eq/app" => Path.AppEq
-     | "path/eq/app/const" => Path.AppConstCompute
+     | "path/eq/app" => Path.EqApp
+     | "path/eq/app/const" => Path.EqAppConst
      | "path/eq/eta" => Path.Eta
      | "hcom/eq" => HCom.Eq
-     | "hcom/eq/cap" => HCom.CapEqL
-     | "hcom/eq/tube" => HCom.TubeEqL
+     | "hcom/eq/cap" => HCom.EqCapL
+     | "hcom/eq/tube" => HCom.EqTubeL
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
@@ -669,14 +664,14 @@ struct
       fun StepEqNeu sign (blocker1, blocker2) ((m, n), ty) =
         case (Syn.out m, blocker1, Syn.out n, blocker2) of
            (Syn.VAR _, _, Syn.VAR _, _) => Equality.Hyp
-         | (Syn.IF _, _, Syn.IF _, _) => Bool.ElimEq
-         | (Syn.IF _, Machine.VAR z, _, _) => Bool.EqElimFromWfHyp z
-         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.EqElimFromWfHyp z
-         | (Syn.WIF _, _, Syn.WIF _, _) => WBool.ElimEq
-         | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.ElimEq
-         | (Syn.APP _, _, Syn.APP _, _) => DFun.AppEq
-         | (Syn.PROJ _, _, Syn.PROJ _, _) => Record.ProjEq
-         | (Syn.PATH_APP (_, P.VAR _), _, Syn.PATH_APP (_, P.VAR _), _) => Path.AppEq
+         | (Syn.IF _, _, Syn.IF _, _) => Bool.EqElim
+         | (Syn.IF _, Machine.VAR z, _, _) => Bool.FullElim z
+         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.FullElim z
+         | (Syn.WIF _, _, Syn.WIF _, _) => WBool.EqElim
+         | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.EqElim
+         | (Syn.APP _, _, Syn.APP _, _) => DFun.EqApp
+         | (Syn.PROJ _, _, Syn.PROJ _, _) => Record.EqProj
+         | (Syn.PATH_APP (_, P.VAR _), _, Syn.PATH_APP (_, P.VAR _), _) => Path.EqApp
          | (Syn.CUST, _, Syn.CUST, _) => Equality.Custom sign
          | (_, Machine.OPERATOR theta, _, _) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
@@ -684,8 +679,8 @@ struct
       fun StepEqNeuExpand sign blocker ty =
         case (blocker, Syn.out ty) of
            (_, Syn.DFUN _) => DFun.Eta
-         | (_, Syn.PATH_TY _) => Path.Eta
          | (_, Syn.RECORD _) => Record.Eta
+         | (_, Syn.PATH_TY _) => Path.Eta
          | (Machine.OPERATOR theta, _) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not expand neutral term of type", TermPrinter.ppTerm ty]
 
@@ -694,15 +689,15 @@ struct
       struct
         open HCom
 
-        val AutoEqL = CapEqL orelse_ TubeEqL orelse_ Eq
+        val AutoEqL = EqCapL orelse_ EqTubeL orelse_ Eq
 
         (* Try all the hcom rules.
          * Note that the EQ rule is invertible only when the cap and tube rules fail. *)
         val AutoEqLR =
-          CapEqL
-            orelse_ (CatJdgSymmetry then_ HCom.CapEqL)
-            orelse_ HCom.TubeEqL
-            orelse_ (CatJdgSymmetry then_ HCom.TubeEqL)
+          EqCapL
+            orelse_ (CatJdgSymmetry then_ HCom.EqCapL)
+            orelse_ HCom.EqTubeL
+            orelse_ (CatJdgSymmetry then_ HCom.EqTubeL)
             orelse_ HCom.Eq
       end
 
@@ -710,10 +705,10 @@ struct
       struct
        open Coe
 
-       val CapEqR = CatJdgSymmetry then_ CapEqL
-       val AutoEqLR = CapEqL orelse_ CapEqR orelse_ Eq
-       val AutoEqL = CapEqL orelse_ Eq
-       val AutoEqR = CapEqR orelse_ Eq
+       val EqCapR = CatJdgSymmetry then_ EqCapL
+       val AutoEqLR = EqCapL orelse_ EqCapR orelse_ Eq
+       val AutoEqL = EqCapL orelse_ Eq
+       val AutoEqR = EqCapR orelse_ Eq
       end
 
       fun TryHeadExpansionL sign alpha = Lcf.try (Computation.EqHeadExpansion sign alpha)
@@ -730,8 +725,8 @@ struct
          | (_, Machine.REDEX, _, _) => Computation.EqHeadExpansion sign
          | (_, _, _, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqHeadExpansion sign
          | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal ((m, n), ty)
-         | (Syn.PATH_APP (_, P.APP _), _, _, _) => Path.AppConstCompute
-         | (_, _, Syn.PATH_APP (_, P.APP _), _) => CatJdgSymmetry then_ Path.AppConstCompute
+         | (Syn.PATH_APP (_, P.APP _), _, _, _) => Path.EqAppConst
+         | (_, _, Syn.PATH_APP (_, P.APP _), _) => CatJdgSymmetry then_ Path.EqAppConst
          | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (blocker1, blocker2) ((m, n), ty)
          | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign blocker ty
          | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign blocker ty
@@ -762,20 +757,20 @@ struct
           val isUseful =
             fn CJ.EQ_TYPE ((a1, b1), k1) =>
                  Abt.eq (a0, a1) andalso Abt.eq (b0, b1)
-                 andalso K.greatestMeetRight' (SOME k0, SOME k1) <> SOME k0
+                 andalso K.greatestMeetRight' (k0, k1) <> SOME k0
              | CJ.EQ (_, (a1, k1)) =>
                  isUnary andalso Abt.eq (a0, a1)
-                 andalso K.greatestMeetRight' (SOME k0, SOME k1) <> SOME k0
+                 andalso K.greatestMeetRight' (k0, k1) <> SOME k0
              | CJ.TRUE (a1, k1) =>
                  isUnary andalso Abt.eq (a0, a1)
-                 andalso K.greatestMeetRight' (SOME k0, SOME k1) <> SOME k0
+                 andalso K.greatestMeetRight' (k0, k1) <> SOME k0
              | _ => false
         in
           case Hyps.search H isUseful of
             SOME (lbl, _) =>
-              ( TypeEquality.FromEqTypeHyp lbl orelse_
-                TypeEquality.FromWfHyp lbl orelse_
-                TypeEquality.FromTrueHyp lbl)
+              ( TypeEquality.FromEqType lbl orelse_
+                TypeEquality.FromEq lbl orelse_
+                TypeEquality.FromTrue lbl)
               alpha jdg
           | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
         end
@@ -786,11 +781,11 @@ struct
           val isUseful =
             fn CJ.EQ ((m1, n1), (a1, k1)) =>
                 Abt.eq (m0, m1) andalso Abt.eq (n0, n1) andalso Abt.eq (a0, a1)
-                andalso K.greatestMeetRight' (SOME k0, SOME k1) <> SOME k0
+                andalso K.greatestMeetRight' (k0, k1) <> SOME k0
              | _ => false
         in
           case Hyps.search H isUseful of
-            SOME (lbl, _) => Equality.FromWfHyp lbl alpha jdg
+            SOME (lbl, _) => Equality.FromEq lbl alpha jdg
           | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
         end
     in
@@ -804,19 +799,19 @@ struct
     local
       fun StepTrue ty =
         case Syn.out ty of
-           Syn.BOOL => Bool.Elim
+           Syn.BOOL => Bool.FullElim
          | Syn.WBOOL => WBool.Elim
          | Syn.NAT => Nat.Elim
-         | Syn.VOID => Void.Elim
+         | Syn.VOID => Void.FullElim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
-         | Syn.PATH_TY _ => Path.Elim
          | Syn.RECORD _ => Record.Elim
+         | Syn.PATH_TY _ => Path.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepEq ty =
         case Syn.out ty of
-           Syn.BOOL => Bool.EqElimFromWfHyp
+           Syn.BOOL => Bool.FullElim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepJdg _ z alpha jdg =
@@ -829,7 +824,7 @@ struct
                   CJ.TRUE _ => StepTrue hyp z alpha jdg
                 | CJ.EQ _ => StepEq hyp z alpha jdg
                 | _ => raise E.error [Fpp.text ("Could not find suitable elimination rule [TODO, display information]")])
-           | CJ.EQ _ => Equality.RewriteTrueWithWfHyp z alpha jdg
+           | CJ.EQ _ => Equality.RewriteTrue z alpha jdg
            | _ => raise E.error [Fpp.text "Could not find suitable elimination rule"]
         end
     in
