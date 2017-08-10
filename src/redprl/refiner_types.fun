@@ -294,18 +294,20 @@ struct
         val Syn.NAT = Syn.out ty
 
         val nat = Syn.into Syn.NAT
+        val zero = Syn.into Syn.ZERO
+        val succ = Syn.into o Syn.SUCC
 
         (* zero branch *)
-        val czero = substVar (Syn.into Syn.ZERO, z) cz
-        val (goalZ, holeZ) = makeTrue (I, H) (czero, k)
+        val (goalZ, holeZ) = makeTrue (I, H) (substVar (zero, z) cz, k)
 
         (* succ branch *)
         val u = alpha 0
         val v = alpha 1
         val cu = VarKit.rename (u, z) cz
-        val Hsucc = H @> (u, CJ.TRUE (nat, inherentKind)) @> (v, CJ.TRUE (cu, k))
-        val csuccu = substVar (Syn.into @@ Syn.SUCC @@ VarKit.toExp u, z) cz
-        val (goalS, holeS) = makeTrue (I, Hsucc) (csuccu, k)
+        val (goalS, holeS) =
+          makeTrue
+            (I, H @> (u, CJ.TRUE (nat, inherentKind)) @> (v, CJ.TRUE (cu, k)))
+            (substVar (succ @@ VarKit.toExp u, z) cz, k)
 
         (* realizer *)
         val evidence = Syn.into @@ Syn.NAT_REC (VarKit.toExp z, (holeZ, (u, v, holeS)))
@@ -321,6 +323,8 @@ struct
         val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
 
         val nat = Syn.into Syn.NAT
+        val zero = Syn.into Syn.ZERO
+        val succ = Syn.into o Syn.SUCC
 
         (* motive *)
         val z = alpha 0
@@ -334,20 +338,18 @@ struct
         val goalTy = makeEqTypeIfDifferent (I, H) ((substVar (m0, z) holeC, ty), k)
 
         (* zero branch *)
-        val czero = substVar (Syn.into Syn.ZERO, z) holeC
-        val goalZ = makeEq (I, H) ((n0, n1), (czero, K.top))
+        val goalZ = makeEq (I, H) ((n0, n1), (substVar (zero, z) holeC, K.top))
 
         (* succ branch *)
-        val x = alpha 1
-        val y = alpha 2
-        val cu = VarKit.rename (x, z) holeC
-        val csuccu = substVar (Syn.into @@ Syn.SUCC @@ VarKit.toExp x, z) holeC
-        val p0 = VarKit.renameMany [(x, a0), (y, b0)] p0
-        val p1 = VarKit.renameMany [(x, a1), (y, b1)] p1
+        val u = alpha 1
+        val v = alpha 2
+        val cu = VarKit.rename (u, z) holeC
+        val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
+        val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
-            (I, H @> (x, CJ.TRUE (nat, inherentKind)) @> (y, CJ.TRUE (cu, k)))
-            ((p0, p1), (csuccu, K.top))
+            (I, H @> (u, CJ.TRUE (nat, inherentKind)) @> (v, CJ.TRUE (cu, k)))
+            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, K.top))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalC' >:? goalTy #> (I, H, trivial)
       end
@@ -406,6 +408,99 @@ struct
         val goal = makeEq (I, H) ((m', n'), (Syn.into Syn.NAT, K.top))
       in
         |>: goal #> (I, H, trivial)
+      end
+
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Int.Elim"
+        val (I, H) >> CJ.TRUE (cz, k) = jdg
+        (* for now we ignore the kind in the context *)
+        val CJ.TRUE (ty, _) = Hyps.lookup z H
+        val Syn.INT = Syn.out ty
+
+        val nat = Syn.into Syn.NAT
+        val zero = Syn.into Syn.ZERO
+        val succ = Syn.into o Syn.SUCC
+        val negsucc = Syn.into o Syn.NEGSUCC
+
+        (* zero branch *)
+        val (goalZ, holeZ) = makeTrue (I, H) (substVar (zero, z) cz, k)
+
+        (* succ branch *)
+        val u = alpha 0
+        val v = alpha 1
+        val cu = VarKit.rename (u, z) cz
+        val (goalS, holeS) =
+          makeTrue
+            (I, H @> (u, CJ.TRUE (nat, Nat.inherentKind)) @> (v, CJ.TRUE (cu, k)))
+            (substVar (succ @@ VarKit.toExp u, z) cz, k)
+
+        (* (negsucc zero) branch *)
+        val (goalNSZ, holeNSZ) = makeTrue (I, H) (substVar (negsucc zero, z) cz, k)
+
+        (* (negsucc succ) branch *)
+        val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) cz
+        val (goalNSS, holeNSS) =
+          makeTrue
+            (I, H @> (u, CJ.TRUE (nat, Nat.inherentKind)) @> (v, CJ.TRUE (cnegsuccu, k)))
+            (substVar (negsucc @@ succ @@ VarKit.toExp u, z) cz, k)
+
+        (* realizer *)
+        val evidence = Syn.into @@ Syn.INT_REC (VarKit.toExp z, (holeZ, (u, v, holeS), holeNSZ, (u, v, holeNSS)))
+      in
+        |>: goalZ >: goalS >: goalNSZ >: goalNSS #> (I, H, evidence)
+      end
+
+    fun EqElim alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Int.EqElim"
+        val (I, H) >> CJ.EQ ((elim0, elim1), (ty, k)) = jdg
+        val Syn.INT_REC (m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
+        val Syn.INT_REC (m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
+
+        val nat = Syn.into Syn.NAT
+        val zero = Syn.into Syn.ZERO
+        val succ = Syn.into o Syn.SUCC
+        val negsucc = Syn.into o Syn.NEGSUCC
+
+        (* motive *)
+        val z = alpha 0
+        val (goalC, holeC) = makeTerm (I, H @> (z, CJ.TRUE (nat, inherentKind))) O.EXP
+        val goalC' = makeType (I, H @> (z, CJ.TRUE (nat, inherentKind))) (holeC, k)
+
+        (* eliminated term *)
+        val goalM = makeEq (I, H) ((m0, m1), (nat, K.top))
+
+        (* result type *)
+        val goalTy = makeEqTypeIfDifferent (I, H) ((substVar (m0, z) holeC, ty), k)
+
+        (* zero branch *)
+        val goalZ = makeEq (I, H) ((n0, n1), (substVar (zero, z) holeC, K.top))
+
+        (* succ branch *)
+        val u = alpha 1
+        val v = alpha 2
+        val cu = VarKit.rename (u, z) holeC
+        val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
+        val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
+        val goalS =
+          makeEq
+            (I, H @> (u, CJ.TRUE (nat, inherentKind)) @> (v, CJ.TRUE (cu, k)))
+            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, K.top))
+
+        (* (negsucc zero) branch *)
+        val goalNSZ = makeEq (I, H) ((q0, q1), (substVar (negsucc zero, z) holeC, K.top))
+
+        (* (negsucc succ) branch *)
+        val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) holeC
+        val r0 = VarKit.renameMany [(u, a0), (v, b0)] r0
+        val r1 = VarKit.renameMany [(u, a1), (v, b1)] r1
+        val goalNSS =
+          makeEq
+            (I, H @> (u, CJ.TRUE (nat, inherentKind)) @> (v, CJ.TRUE (cnegsuccu, k)))
+            ((p0, p1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, K.top))
+      in
+        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >:? goalTy #> (I, H, trivial)
       end
   end
 

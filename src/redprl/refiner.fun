@@ -579,6 +579,7 @@ struct
      | "int/eq/zero" => Int.EqZero
      | "int/eq/succ" => Int.EqSucc
      | "int/eq/negsucc" => Int.EqNegSucc
+     | "int/eq/int-rec" => Int.EqElim
      | "void/eqtype" => Void.EqType
      | "S1/eqtype" => S1.EqType
      | "S1/eq/base" => S1.EqBase
@@ -810,6 +811,7 @@ struct
            Syn.BOOL => Bool.Elim
          | Syn.WBOOL => WBool.Elim
          | Syn.NAT => Nat.Elim
+         | Syn.INT => Int.Elim
          | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
