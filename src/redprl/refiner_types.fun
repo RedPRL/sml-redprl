@@ -21,57 +21,12 @@ struct
    * EqX: the introduction rule for the constructor X of a positive type.
    * True: the introduction rule of a negative type.
    * Eta: the eta rule, if any.
-   * Elim/FullElim: the elimination rule (see the long comment below).
+   * Elim: the elimination rule. This should be in the strongest form we
+   *   consider to be obviously true within the limit of RedPRL.
    * EqElim/EqX: structural equality for eliminators.
    *   We use EqX if the eliminator has a well-known name X.
    *   For example, we have EqApp for DFun and Path, and EqProj for Record.
    * (others): other special rules for this type.
-   *)
-
-  (* Note that there are two categories of elimination rules for positive types.
-   * The main issue is, given the sequent `\Gamma, x:A, \Delta >> J`, how should
-   * we eliminate `x:A` for a positive type `A`?
-   *
-   * The first category, `FullElim`, works on almost arbitrary J by considering
-   * all elements in A, and is justified by the semantics of open judgments.
-   * For example, `tt` and `ff` are the only elements in Bool, and so to show
-   *
-   * `\Gamma, x:Bool, \Delta >> J`
-   *
-   * it is sufficient to consider two subgoals:
-   *
-   * 1. `\Gamma, x:bool, \Delta[tt/x] >> J[tt/x]`
-   * 2. `\Gamma, x:bool, \Delta[ff/x] >> J[ff/x]`
-   *
-   * (The `x:Bool` is kept to follow the Nuprl style. It might not be needed.)
-   * In RedPRL, we restrict J to judgments where there is a sensible realizer
-   * that can be easily reconstructed from the subgoals.
-   *
-   * Unfortunately, it seems difficult to have this powerful elimination principle
-   * for every type we have in RedPRL, because a type could have an infinite number
-   * of "cases" or demand relations between these cases. Take the circle `S1`
-   * for example: it has elements `base`, `loop` and `fcom`; there are infinitely
-   * many different shapes of `fcom` and thus infinitely many cases (unless our LF
-   * can deal with them uniformly), and there are (infinitely) many equalities
-   * between these elements due to cubicality. Another example is the natural
-   * number type `nat` which has elements `zero`, `(succ zero)`, ...; this also
-   * leads to infinitely many cases.
-   *
-   * Before we have a more powerful LF, however, we can still have the second
-   * category of elimination rules, `Elim`, which is just trying to generate
-   * a term that would satisfy the structural equality (EqElim). For the natural
-   * number type, the elimination rule of this category generates these two subgoals
-   *
-   * 1. `\Gamma, x:nat, \Delta >> C[zero/x] true`
-   * 2. `\Gamma, x:nat, \Delta, y:nat, z:C[y/x] >> C[(succ y)/x] true`
-   *
-   * and combine the realizers from the two subgoals into something of the form
-   * `(nat-rec x ...)`.
-   *
-   * There is no reason to have an elimination principle of the second category
-   * if there exists one of the first category. Therefore, there is `Bool.FullElim`
-   * but no `Bool.Elim`. In Nuprl, everything is named "elimination" but I (favonia)
-   * think it might be useful to remind tactic writers of its category.
    *)
 
   structure Bool =
@@ -115,9 +70,9 @@ struct
         T.empty #> (I, H, trivial)
       end
 
-    fun FullElim z _ jdg =
+    fun Elim z _ jdg =
       let
-        val _ = RedPrlLog.trace "Bool.FullElim"
+        val _ = RedPrlLog.trace "Bool.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (ty, _) = Hyps.lookup z H
@@ -139,7 +94,7 @@ struct
            | CJ.EQ _ => trivial
            | CJ.EQ_TYPE _ => trivial
            | CJ.SYNTH _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
-           | _ => raise Fail "Bool.FullElim cannot be called with this kind of goal"
+           | _ => raise Fail "Bool.Elim cannot be called with this kind of goal"
       in
         |>: goalT >: goalF #> (I, H, evidence)
       end
@@ -471,9 +426,9 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun FullElim z _ jdg =
+    fun Elim z _ jdg =
       let
-        val _ = RedPrlLog.trace "Void.FullElim"
+        val _ = RedPrlLog.trace "Void.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (ty, _) = Hyps.lookup z H
@@ -485,7 +440,7 @@ struct
            | CJ.EQ _ => trivial
            | CJ.EQ_TYPE _ => trivial
            | CJ.SYNTH _ => Syn.into Syn.AX
-           | _ => raise Fail "Void.FullElim cannot be called with this kind of goal"
+           | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
       in
         T.empty #> (I, H, evidence)
       end

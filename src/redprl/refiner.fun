@@ -665,8 +665,8 @@ struct
         case (Syn.out m, blocker1, Syn.out n, blocker2) of
            (Syn.VAR _, _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.IF _, _, Syn.IF _, _) => Bool.EqElim
-         | (Syn.IF _, Machine.VAR z, _, _) => Bool.FullElim z
-         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.FullElim z
+         | (Syn.IF _, Machine.VAR z, _, _) => Bool.Elim z
+         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.Elim z
          | (Syn.WIF _, _, Syn.WIF _, _) => WBool.EqElim
          | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.EqElim
          | (Syn.APP _, _, Syn.APP _, _) => DFun.EqApp
@@ -799,10 +799,10 @@ struct
     local
       fun StepTrue ty =
         case Syn.out ty of
-           Syn.BOOL => Bool.FullElim
+           Syn.BOOL => Bool.Elim
          | Syn.WBOOL => WBool.Elim
          | Syn.NAT => Nat.Elim
-         | Syn.VOID => Void.FullElim
+         | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
          | Syn.DFUN _ => DFun.Elim
          | Syn.RECORD _ => Record.Elim
@@ -811,7 +811,7 @@ struct
 
       fun StepEq ty =
         case Syn.out ty of
-           Syn.BOOL => Bool.FullElim
+           Syn.BOOL => Bool.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       fun StepJdg _ z alpha jdg =
