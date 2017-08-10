@@ -171,7 +171,7 @@ struct
     else makeEqTypeIfDifferent (I, H) ((m, n), k)
 
   fun makeTypeIfLess (I, H) (m, k) k' =
-    case K.greatestMeetRight' (k, k') of
+    case K.greatestMeetComplement' (k, k') of
       NONE => NONE
     | SOME k'' => SOME @@ makeType (I, H) (m, k'')
 
@@ -188,7 +188,7 @@ struct
     else makeEqIfDifferent (I, H) ((m, n), (ty, k))
 
   fun makeMemIfLess (I, H) (m, (ty, k)) k' =
-    case K.greatestMeetRight' (k, k') of
+    case K.greatestMeetComplement' (k, k') of
       NONE => NONE
     | SOME k'' => SOME @@ makeMem (I, H) (m, (ty, k''))
 
