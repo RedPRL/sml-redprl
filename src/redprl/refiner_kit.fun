@@ -204,23 +204,6 @@ struct
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
 
-  (* variable kit *)
-
-  structure VarKit =
-  struct
-    fun ctxFromList l = List.foldl
-          (fn ((tm, x), dict) => Var.Ctx.insert dict x tm)
-          Var.Ctx.empty l
-
-    fun toExp x = Syn.into @@ Syn.VAR (x, O.EXP)
-
-    val renameMany = Abt.renameVars o ctxFromList
-    fun rename r = renameMany [r]
-
-    val substMany = Abt.substVarenv o ctxFromList
-    fun subst s = substMany [s]
-  end
-
   (* assertions *)
 
   structure Assert =

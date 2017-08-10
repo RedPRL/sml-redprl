@@ -339,7 +339,7 @@ struct
      | NAT_REC => [[] * [] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
      | INT => [] ->> EXP
      | NEGSUCC => [[] * [] <> EXP] ->> EXP
-     | INT_REC => [[] * [] <> EXP, [] * [EXP, EXP] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
+     | INT_REC => [[] * [] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
