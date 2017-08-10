@@ -100,7 +100,7 @@
   "Syntax table for RedPRL.")
 
 (defconst redprl-declaration-keywords
-  '("Def" "Thm" "Tac" "Sym" "Record" "Print" "Extract")
+  '("Def" "Extract" "Print" "Rule" "Tac" "Thm")
   "RedPRL's keywords.")
 
 (defconst redprl-sort-keywords
@@ -126,7 +126,7 @@
 (defconst redprl-tactic-keywords
   '("auto" "auto-step" "case" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
     "head-expand" "hyp" "id" "lemma" "let" "match" "of" "print" "progress"
-    "query" "rec" "repeat" "symmetry" "then" "unfold" "use" "with")
+    "query" "rec" "refine" "repeat" "symmetry" "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")
 
 (defconst redprl-tactic-symbols
