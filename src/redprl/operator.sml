@@ -154,19 +154,14 @@ struct
       val meet =
         fn (DISCRETE, _) => DISCRETE
          | (_, DISCRETE) => DISCRETE
-
          | (KAN, _) => KAN
          | (_, KAN) => KAN
-
          | (HCOM, COE) => KAN
          | (COE, HCOM) => KAN
-
          | (HCOM, _) => HCOM
          | (_, HCOM) => HCOM
-
          | (COE, _) => COE
          | (_, COE) => COE
-
          | (CUBICAL, CUBICAL) => CUBICAL
 
       val greatestMeetComplement =
@@ -176,9 +171,11 @@ struct
          | (KAN, HCOM) => COE
          | (KAN, COE) => HCOM
          | (KAN, _) => KAN
-         | (HCOM, HCOM) => top
+         | (COE, HCOM) => COE
+         | (HCOM, COE) => HCOM
+         | (_, HCOM) => top
          | (HCOM, _) => HCOM
-         | (COE, COE) => top
+         | (_, COE) => top
          | (COE, _) => COE
          | (CUBICAL, CUBICAL) => top
 
