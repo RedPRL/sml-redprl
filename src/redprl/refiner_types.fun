@@ -1126,9 +1126,9 @@ struct
         val CJ.TRUE (ty, _) = Hyps.lookup z H
         val Syn.EQUALITY (a, m, n) = Syn.out ty
 
-        (* Adding an equality judgment diverges from Nuprl, but this could be
-         * useful because we do not demand everything in the context to be
-         * a true judgment (yet). *)
+        (* Adding an equality judgment diverges from Nuprl, but this is currently
+         * useful because in RedPRL we do not demand everything in the context to
+         * be a true judgment (yet). *)
         val u = alpha 0
         val ax = Syn.into Syn.AX
         val (goal, hole) =
@@ -1137,29 +1137,6 @@ struct
             >> CJ.map_ (substVar (ax, z)) catjdg
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
-      end
-
-    fun RewriteTrue z alpha jdg =
-      let
-        val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
-        val (I, H) >> CJ.TRUE (mainGoal, k) = jdg
-        (* for now we ignore the kind in the context *)
-        val CJ.TRUE (ty, _) = Hyps.lookup z H
-        val Syn.EQUALITY (a, m, n) = Syn.out ty
-
-        val x = alpha 0
-        val Hx = H @> (x, CJ.TRUE (a, K.top))
-        val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
-
-        val motiven = substVar (n, x) motiveHole
-        val motivem = substVar (m, x) motiveHole
-
-        val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, K.top)
-
-        val motiveWfGoal = makeType (I, Hx) (motiveHole, K.top)
-        val motiveMatchesMainGoal = makeEqType (I, H) ((motivem, mainGoal), k)
-      in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal #> (I, H, rewrittenHole)
       end
   end
 end
