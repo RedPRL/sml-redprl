@@ -72,8 +72,9 @@ struct
   fun snd (V.PAIR (_, v2)) = v2
   fun getGoal (J.>> (_, jdg)) = V.QUOTE @@ CJ.toAbt jdg
 
-  fun eval env : mlterm -> V.value M.m =
-    fn ML.VAR x => M.pure @@ Env.lookupMl env x
+  fun eval env (ML.:@ (term, pos) : mlterm) : V.value M.m =
+    case term of
+       ML.VAR x => M.pure @@ Env.lookupMl env x
      | ML.LET (t, sc) =>
        let
          val (x, tx) = ML.unscope sc
@@ -118,7 +119,7 @@ struct
            end
 
          fun matchWithClauses abt =
-           fn [] => M.fail (NONE, Fpp.hsep [Fpp.text "Scrutinee", TermPrinter.ppTerm abt, Fpp.text "did not match any provided patterns"])
+           fn [] => M.fail (pos, Fpp.hsep [Fpp.text "Scrutinee", TermPrinter.ppTerm abt, Fpp.text "did not match any provided patterns"])
             | cl::cls => 
               (matchWithClause abt cl
                handle Unify.Unify _ => matchWithClauses abt cls)
@@ -127,7 +128,7 @@ struct
        end
      | ML.PRINT t => 
        eval env t >>= (fn v => 
-         const V.NIL <$> M.print (NONE, V.ppValue v)) (* TODO: source locations *)
+         const V.NIL <$> M.print (pos, V.ppValue v))
 
   and app (V.FUN (sc, env), v) =
     let

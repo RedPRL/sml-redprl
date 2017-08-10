@@ -32,23 +32,27 @@ struct
 
   type ('s, 'o, 't) omatch_clause = (('s * ovalence) list, 'o * 't) scope
 
-  datatype ('v, 's, 'o) mlterm =
+  datatype ('v, 's, 'o, 'a) mltermf =
      VAR of 'v
-   | LET of ('v, 's, 'o) mlterm * ('v, ('v, 's, 'o) mlterm) scope
-   | LAM of ('v, ('v, 's, 'o) mlterm) scope
-   | APP of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
-   | PAIR of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
-   | FST of ('v, 's, 'o) mlterm
-   | SND of ('v, 's, 'o) mlterm
+   | LET of 'a * ('v, 'a) scope
+   | LAM of ('v, 'a) scope
+   | APP of 'a * 'a
+   | PAIR of 'a * 'a
+   | FST of 'a
+   | SND of 'a
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
-   | EACH of ('v, 's, 'o) mlterm list
-   | TRY of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
-   | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
+   | EACH of 'a list
+   | TRY of 'a * 'a
+   | PUSH of ('s list, 'a) scope
    | NIL
-   | PROVE of 'o * ('v, 's, 'o) mlterm
-   | OMATCH of ('v, 's, 'o) mlterm * ('s, 'o, ('v, 's, 'o) mlterm) omatch_clause list
-   | PRINT of ('v, 's, 'o) mlterm
+   | PROVE of 'o * 'a
+   | OMATCH of 'a * ('s, 'o, 'a) omatch_clause list
+   | PRINT of 'a
+
+  type annotation = Pos.t option
+  datatype ('v, 's, 'o) mlterm = :@ of ('v, 's, 'o, ('v, 's, 'o) mlterm) mltermf * annotation
+  infix :@
 
   type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
 
@@ -104,23 +108,23 @@ struct
       A2A.convertOpen (metactx, metaenv) (symenv, varenv) (oterm, tau)
 
     fun resolveAux (state : state) : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_ =
-      fn VAR x => VAR (mlvar state x)
-       | LET (t, sc) => LET (resolveAux state t, resolveAuxScope state sc)
-       | LAM sc => LAM (resolveAuxScope state sc)
-       | APP (t1, t2) => APP (resolveAux state t1, resolveAux state t2)
-       | PAIR (t1, t2) => PAIR (resolveAux state t1, resolveAux state t2)
-       | FST t => FST (resolveAux state t)
-       | SND t => SND (resolveAux state t)
-       | QUOTE (ast, tau) => QUOTE (resolveAbt (#ostate state) ast tau)
-       | GOAL => GOAL
-       | REFINE ruleName => REFINE ruleName
-       | EACH ts => EACH (List.map (resolveAux state) ts)
-       | TRY (t1, t2) => TRY (resolveAux state t1, resolveAux state t2)
-       | PUSH sc => PUSH (resolveAuxObjScope state sc)
-       | NIL => NIL
-       | PROVE ((ast, tau), t) => PROVE (resolveAbt (#ostate state) ast tau, resolveAux state t)
-       | OMATCH (scrutinee, clauses) => OMATCH (resolveAux state scrutinee, List.map (resolveAuxObjMatchClause state) clauses)
-       | PRINT t => PRINT (resolveAux state t)
+      fn VAR x :@ ann => VAR (mlvar state x) :@ ann
+       | LET (t, sc) :@ ann => LET (resolveAux state t, resolveAuxScope state sc) :@ ann
+       | LAM sc :@ ann => LAM (resolveAuxScope state sc) :@ ann
+       | APP (t1, t2) :@ ann => APP (resolveAux state t1, resolveAux state t2) :@ ann
+       | PAIR (t1, t2) :@ ann => PAIR (resolveAux state t1, resolveAux state t2) :@ ann
+       | FST t :@ ann => FST (resolveAux state t) :@ ann
+       | SND t :@ ann => SND (resolveAux state t) :@ ann
+       | QUOTE (ast, tau) :@ ann => QUOTE (resolveAbt (#ostate state) ast tau) :@ ann
+       | GOAL :@ ann => GOAL :@ ann
+       | REFINE ruleName :@ ann => REFINE ruleName :@ ann
+       | EACH ts :@ ann => EACH (List.map (resolveAux state) ts) :@ ann
+       | TRY (t1, t2) :@ ann => TRY (resolveAux state t1, resolveAux state t2) :@ ann
+       | PUSH sc :@ ann => PUSH (resolveAuxObjScope state sc) :@ ann
+       | NIL :@ ann => NIL :@ ann
+       | PROVE ((ast, tau), t) :@ ann => PROVE (resolveAbt (#ostate state) ast tau, resolveAux state t) :@ ann
+       | OMATCH (scrutinee, clauses) :@ ann => OMATCH (resolveAux state scrutinee, List.map (resolveAuxObjMatchClause state) clauses) :@ ann
+       | PRINT t :@ ann => PRINT (resolveAux state t) :@ ann
 
     and resolveAuxScope (state : state) (x \ tx) =
       let

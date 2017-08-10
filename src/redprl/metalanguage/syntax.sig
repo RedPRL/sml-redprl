@@ -23,26 +23,28 @@ sig
 
   type rule_name = string
 
-
   type ('s, 'o, 't) omatch_clause = (('s * ovalence) list, 'o * 't) scope
 
-  datatype ('v, 's, 'o) mlterm =
+  datatype ('v, 's, 'o, 'a) mltermf =
      VAR of 'v
-   | LET of ('v, 's, 'o) mlterm * ('v, ('v, 's, 'o) mlterm) scope
-   | LAM of ('v, ('v, 's, 'o) mlterm) scope
-   | APP of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
-   | PAIR of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
-   | FST of ('v, 's, 'o) mlterm
-   | SND of ('v, 's, 'o) mlterm
+   | LET of 'a * ('v, 'a) scope
+   | LAM of ('v, 'a) scope
+   | APP of 'a * 'a
+   | PAIR of 'a * 'a
+   | FST of 'a
+   | SND of 'a
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
-   | EACH of ('v, 's, 'o) mlterm list
-   | TRY of ('v, 's, 'o) mlterm * ('v, 's, 'o) mlterm
-   | PUSH of ('s list, ('v, 's, 'o) mlterm) scope
+   | EACH of 'a list
+   | TRY of 'a * 'a
+   | PUSH of ('s list, 'a) scope
    | NIL
-   | PROVE of 'o * ('v, 's, 'o) mlterm
-   | OMATCH of ('v, 's, 'o) mlterm * ('s, 'o, ('v, 's, 'o) mlterm) omatch_clause list
-   | PRINT of ('v, 's, 'o) mlterm
+   | PROVE of 'o * 'a
+   | OMATCH of 'a * ('s, 'o, 'a) omatch_clause list
+   | PRINT of 'a
+
+  type annotation = Pos.t option
+  datatype ('v, 's, 'o) mlterm = :@ of ('v, 's, 'o, ('v, 's, 'o) mlterm) mltermf * annotation
 
   type mlterm_ = (mlvar, osym, oterm) mlterm
 
