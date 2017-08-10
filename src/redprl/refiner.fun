@@ -805,7 +805,7 @@ struct
     end
 
     local
-      fun StepTrue ty =
+      fun FromTrue ty =
         case Syn.out ty of
            Syn.BOOL => Bool.Elim
          | Syn.WBOOL => WBool.Elim
@@ -815,26 +815,18 @@ struct
          | Syn.DFUN _ => DFun.Elim
          | Syn.RECORD _ => Record.Elim
          | Syn.PATH_TY _ => Path.Elim
-         | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
-
-      fun StepEq ty =
-        case Syn.out ty of
-           Syn.BOOL => Bool.Elim
-         | Syn.VOID => Void.Elim
          | Syn.EQUALITY _ => InternalizedEquality.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
+      val FromEq = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
+
       fun StepJdg _ z alpha jdg =
         let
-          val (_, H) >> catjdg = jdg
+          val (_, H) >> _ = jdg
         in
           case Hyps.lookup z H of
-             CJ.TRUE (hyp, _) =>
-              (case catjdg of
-                  CJ.TRUE _ => StepTrue hyp z alpha jdg
-                | CJ.EQ _ => StepEq hyp z alpha jdg
-                | _ => raise E.error [Fpp.text ("Could not find suitable elimination rule [TODO, display information]")])
-           | CJ.EQ _ => Equality.RewriteTrue z alpha jdg
+             CJ.TRUE (hyp, _) => FromTrue hyp z alpha jdg
+           | CJ.EQ _ => FromEq z alpha jdg
            | _ => raise E.error [Fpp.text "Could not find suitable elimination rule"]
         end
     in
