@@ -43,7 +43,7 @@ Tac SimpleNatRecEq = [
   }
 ].
 
-Thm Prod2Wf : [
+Thm Pred2Wf : [
   Pred2 in (-> nat nat)
 ] by [
   auto;
@@ -97,3 +97,44 @@ Thm NatSymm : [
 ].
 
 Print NatSymm.
+
+Thm IntPred : [
+  (-> int int)
+] by [
+  lam a. fresh a', junk -> elim a;
+  [ `-1, fresh n, junk -> elim a'; [`0, `(succ ,n)]
+  , `-2, `(negsucc (succ (succ ,a')))
+  ]
+].
+
+Thm IntSucc : [
+  (-> int int)
+] by [
+  lam a. fresh a', junk -> elim a;
+  [ `1, `(succ (succ ,a'))
+  , `0, `(negsucc ,a')
+  ]
+].
+
+Thm IntPlus : [
+  (-> int int int)
+] by [
+  lam a. fresh a', ind -> elim a;
+  [ lam b. use b
+  , lam b. `($ IntSucc ($ ,ind ,b))
+  , lam b. `($ IntPred ,b)
+  , lam b. `($ IntPred ($ ,ind ,b))
+  ]
+].
+
+Thm Int4Plus3 : [
+  ($ IntPlus 4 3) = 7 in int
+] by [ auto ].
+
+Thm Int-6Plus10 : [
+  ($ IntPlus -6 10) = 4 in int
+] by [ auto ].
+
+Thm Int-1Plus-9 : [
+  ($ IntPlus -1 -9) = -10 in int
+] by [ auto ].
