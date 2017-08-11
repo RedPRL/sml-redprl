@@ -12,14 +12,14 @@ Thm EqualityKind1(#A) : [
   >> (= #A a b) kan type
 ] by [ auto ].
 
-Thm EqualityReflect(#A) : [
+Thm EqualityElim(#A) : [
   a : #A,
   b : #A,
   p : (= #A a b)
   >> a = b in #A
 ] by [ fresh eq -> elim p; use eq ].
 
-Thm Equality(#A) : [
+Thm EqualityIntro(#A) : [
   a : #A,
   b : #A,
   eq : a = b in #A
