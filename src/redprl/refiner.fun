@@ -176,6 +176,15 @@ struct
 
   structure Synth =
   struct
+    fun Witness ty _ jdg =
+      let
+        val _ = RedPrlLog.trace "Synth.Witness"
+        val (I, H) >> CJ.SYNTH (tm, k) = jdg
+        val goal = makeMem (I, H) (tm, (ty, k))
+      in
+        |>: goal #> (I, H, ty)
+      end
+
     fun FromEq z _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.FromEq"
@@ -557,6 +566,7 @@ struct
 
   fun Exact tm =
     Truth.Witness tm
+      orelse_ Synth.Witness tm
       orelse_ Term.Exact tm
 
 
