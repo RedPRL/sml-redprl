@@ -1,5 +1,5 @@
 
-functor LexFn
+functor MetalanguageLexFn
    (structure Streamable : STREAMABLE
     structure Arg :
        sig

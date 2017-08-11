@@ -11,6 +11,11 @@ Group is
   redprl/metalanguage/statics.sig
   redprl/metalanguage/monad.sig
 
+  redprl/metalanguage/metalanguage.cmyacc.sml
+  redprl/metalanguage/metalanguage.cmlex.sml
+
+  redprl/metalanguage/parser.sml
+
   redprl/metalanguage/syntax.sml
   redprl/metalanguage/statics.fun
   redprl/metalanguage/monad.sml

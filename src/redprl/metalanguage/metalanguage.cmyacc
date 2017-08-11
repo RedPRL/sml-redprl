@@ -1,4 +1,4 @@
-name ParseFn
+name MetalanguageParseFn
 
 terminal LET
 terminal FN
@@ -27,10 +27,10 @@ terminal TODO /* dummy */
 start Exp
 
 /* TODO: object terms */
-nonterminal OExp: osyn = 
+nonterminal OExp: oexp = 
   TODO => todo
 
-nonterminal Atm: syn =
+nonterminal Atm: exp =
   1:IDENT => var
   GOAL => goal
   LPAREN RPAREN => nil_
@@ -46,11 +46,11 @@ nonterminal Atm: syn =
   LSQUARE 1:Exps RSQUARE => fork
   PUSH 1:Names IN 2:Exp END => push
 
-nonterminal App: syn =
+nonterminal App: exp =
   1:Atm => atm_app
   1:App 2:Atm => app
 
-nonterminal Exp: syn = 
+nonterminal Exp: exp = 
   1:App => app_exp
   PRINT 1:Atm => print
   FN 1:IDENT DOUBLE_RIGHT_ARROW 2:Exp => fn_
@@ -58,7 +58,7 @@ nonterminal Exp: syn =
 nonterminal Exps: exps = 
   1:Exp COMMA 2:Exps => exp_cons
   1:Exp => exp_singl
-  => exo_nil
+  => exp_nil
   
 nonterminal Names: names =
   1:IDENT COMMA 2:Names => names_cons

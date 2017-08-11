@@ -1,4 +1,4 @@
-name LexFn
+name MetalanguageLexFn
 alphabet 128
 
 set digit = (range '0 '9)
