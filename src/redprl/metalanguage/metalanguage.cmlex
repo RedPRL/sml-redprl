@@ -1,5 +1,5 @@
 name LexFn
-alphabet 129
+alphabet 128
 
 set digit = (range '0 '9)
 set posdigit = (range '1 '9)
@@ -17,6 +17,8 @@ function lexmain: t =
   "fn" => fn_
   "let" => let_
   "in" => in_
+  "#1" => proj1
+  "#2" => proj2
   ws => skip
   (seq '= '>) => double_right_arrow
   '{ => lbracket

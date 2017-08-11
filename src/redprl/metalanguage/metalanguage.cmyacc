@@ -4,25 +4,47 @@ terminal LET
 terminal FN
 terminal IN
 terminal DOUBLE_RIGHT_ARROW
-terminal LBRACKET
-terminal RBRACKET
 terminal LSQUARE
 terminal RSQUARE
 terminal LPAREN
 terminal RPAREN
-terminal DOT
 terminal COMMA
 terminal EQUALS
+terminal BEGIN
 terminal END
 terminal IDENT of string
+terminal PROVE
+terminal PROJ1
+terminal PROJ2
+terminal BACKTICK
+terminal REFINE
+terminal GOAL
+terminal PUSH
+terminal PRINT
+
+terminal TODO /* dummy */
 
 start Exp
 
+/* TODO: object terms */
+nonterminal OExp: osyn = 
+  TODO => todo
+
 nonterminal Atm: syn =
   1:IDENT => var
+  GOAL => goal
   LPAREN RPAREN => nil_
   LPAREN 1:Exp COMMA 2:Exp RPAREN => pair
+  PROJ1 => proj1
+  PROJ2 => proj2
   LET 1:IDENT EQUALS 2:Exp IN 3:Exp END => let_
+  PROVE 1:OExp IN 2:Exp END => prove
+  LPAREN 1:Exp RPAREN => exp_atm
+  BEGIN 1:Exp END => exp_atm
+  BACKTICK 1:OExp => quote
+  REFINE 1:IDENT => refine
+  LSQUARE 1:Exps RSQUARE => fork
+  PUSH 1:Names IN 2:Exp END => push
 
 nonterminal App: syn =
   1:Atm => atm_app
@@ -30,4 +52,15 @@ nonterminal App: syn =
 
 nonterminal Exp: syn = 
   1:App => app_exp
+  PRINT 1:Atm => print
   FN 1:IDENT DOUBLE_RIGHT_ARROW 2:Exp => fn_
+
+nonterminal Exps: exps = 
+  1:Exp COMMA 2:Exps => exp_cons
+  1:Exp => exp_singl
+  => exo_nil
+  
+nonterminal Names: names =
+  1:IDENT COMMA 2:Names => names_cons
+  1:IDENT => names_singl
+  => names_nil
