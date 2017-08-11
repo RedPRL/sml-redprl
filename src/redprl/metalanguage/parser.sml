@@ -1,3 +1,9 @@
+structure Streamable =
+  CoercedStreamable
+    (structure Streamable = StreamStreamable
+     type 'a item = 'a * Pos.t
+     fun coerce (x, _) = x)
+
 structure MetalanguageParseAction = 
 struct
   structure ML = MetalanguageSyntax
@@ -36,13 +42,16 @@ struct
   fun exp_cons (m, ms) = m :: ms
 
   fun fn_ (x, m) = 
-    R.map ML.FUN @@
-      ?hole
+    ?hole
 
-  val fn_ : string * exp -> exp = ?hole
-  val print : exp -> exp = ?hole
-  val app_exp : exp -> exp = ?hole
-  val app : exp * exp -> exp = ?hole
+  fun print m = 
+    ?hole
+    (* R.map ML.PRINT m *)
+
+  fun app_exp m = m
+  fun app (m1 : exp, m2 : exp) : exp = ?hole
+    (* m1 >>= (fn x1 => m2 >>= (fn x2 => R.ret (?hole))) *)
+
   val atm_app : exp -> exp = ?hole
   val push : names * exp -> exp = ?hole
   val fork : exps -> exp = ?hole
@@ -83,8 +92,8 @@ struct
     | PRINT
     | TODO
 
-  structure Streamable = StreamStreamable
   val error : terminal Streamable.t -> exn = ?hole
 end
 
-structure MetalanguageParse = MetalanguageParseFn (structure Streamable = StreamStreamable and Arg = MetalanguageParseAction)
+
+structure MetalanguageParse = MetalanguageParseFn (structure Streamable = Streamable and Arg = MetalanguageParseAction)
