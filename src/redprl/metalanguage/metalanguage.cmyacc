@@ -1,0 +1,33 @@
+name ParseFn
+
+terminal LET
+terminal FN
+terminal IN
+terminal DOUBLE_RIGHT_ARROW
+terminal LBRACKET
+terminal RBRACKET
+terminal LSQUARE
+terminal RSQUARE
+terminal LPAREN
+terminal RPAREN
+terminal DOT
+terminal COMMA
+terminal EQUALS
+terminal END
+terminal IDENT of string
+
+start Exp
+
+nonterminal Atm: syn =
+  1:IDENT => var
+  LPAREN RPAREN => nil_
+  LPAREN 1:Exp COMMA 2:Exp RPAREN => pair
+  LET 1:IDENT EQUALS 2:Exp IN 3:Exp END => let_
+
+nonterminal App: syn =
+  1:Atm => atm_app
+  1:App 2:Atm => app
+
+nonterminal Exp: syn = 
+  1:App => app_exp
+  FN 1:IDENT DOUBLE_RIGHT_ARROW 2:Exp => fn_

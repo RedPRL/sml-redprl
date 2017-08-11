@@ -1,0 +1,36 @@
+name LexFn
+alphabet 129
+
+set digit = (range '0 '9)
+set posdigit = (range '1 '9)
+set id_start = (| '\ '/ '- (range 'a 'z 'A 'Z))
+set id_cont = (| id_start digit '_ '')
+set white = (| 32 9 10 13)  /* space, tab, lf, cr */
+set notnewln = (~ 10)
+
+regexp ident = (seq id_start (* id_cont))
+regexp ws = (+ white)
+regexp number = (| '0 (seq posdigit (* digit)))
+
+function lexmain: t =
+  eos => eof
+  "fn" => fn_
+  "let" => let_
+  "in" => in_
+  ws => skip
+  (seq '= '>) => double_right_arrow
+  '{ => lbracket
+  '} => rbracket
+  '[ => lsquare
+  '] => rsquare
+  '( => lparen
+  ') => rparen
+  '. => dot
+  ': => colon
+  '! => bang
+  ', => comma
+  '= => equals
+
+  any => error
+  epsilon => error
+  
