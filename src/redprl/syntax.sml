@@ -56,6 +56,8 @@ struct
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
+   (* equality *)
+   | EQUALITY of 'a * 'a * 'a
    (* hcom operator *)
    | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* coe operator *)
@@ -207,6 +209,8 @@ struct
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
        | PATH_APP (m, r) => O.POLY (O.PATH_APP r) $$ [([],[]) \ m]
 
+       | EQUALITY (a, m, n) => O.MONO O.EQUALITY $$ [([],[]) \ a, ([],[]) \ m, ([],[]) \ n]
+
        | HCOM {dir, ty, cap, tubes} =>
            let
              val (eqs, tubes) = intoTubes tubes
@@ -278,6 +282,8 @@ struct
        | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
        | O.POLY (O.PATH_APP r) $ [_ \ m] => PATH_APP (m, r)
+
+       | O.MONO O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 
        | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
            HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}

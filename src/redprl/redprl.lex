@@ -75,6 +75,7 @@ whitespace = [\ \t];
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
 
+"ax"               => (Tokens.AX (posTuple (size yytext)));
 "fcom"             => (Tokens.FCOM (posTuple (size yytext)));
 "bool"             => (Tokens.BOOL (posTuple (size yytext)));
 "tt"               => (Tokens.TT (posTuple (size yytext)));
@@ -100,7 +101,7 @@ whitespace = [\ \t];
 "lam"              => (Tokens.LAMBDA (posTuple (size yytext)));
 "record"           => (Tokens.RECORD (posTuple (size yytext)));
 "tuple"            => (Tokens.TUPLE (posTuple (size yytext)));
-"path"             => (Tokens.PATHS (posTuple (size yytext)));
+"path"             => (Tokens.PATH (posTuple (size yytext)));
 "abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));

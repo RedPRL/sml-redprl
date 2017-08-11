@@ -670,9 +670,9 @@ struct
 
         val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.APP (m, VarKit.toExp x))
         val goal1 = makeMem (I, H) (m, (dfun, k))
-        val goal2 = makeEq (I, H) ((m', n), (dfun, K.top))
+        val goal2 = makeEqIfDifferent (I, H) ((m', n), (dfun, K.top))
       in
-        |>: goal1 >: goal2 #> (I, H, trivial)
+        |>: goal1 >:? goal2 #> (I, H, trivial)
       end
 
     fun Elim z alpha jdg =
@@ -1053,6 +1053,90 @@ struct
       in
         |>: goalSynth >: goalLine >: goalEndpoint >:? goalTy >: goalEq
         #> (I, H, trivial)
+      end
+  end
+
+  structure InternalizedEquality =
+  struct
+    val kindConstraintOnBase =
+      fn K.DISCRETE => K.DISCRETE
+       | K.KAN => K.DISCRETE
+       | K.HCOM => K.CUBICAL
+       | K.COE => K.DISCRETE
+       | K.CUBICAL => K.CUBICAL
+
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.EqType"
+        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), k) = jdg
+        val Syn.EQUALITY (a0, m0, n0) = Syn.out ty0
+        val Syn.EQUALITY (a1, m1, n1) = Syn.out ty1
+        val ka = kindConstraintOnBase k
+
+        val goalTy = makeEqType (I, H) ((a0, a1), ka)
+        val goalM = makeEq (I, H) ((m0, m1), (a0, K.top))
+        val goalN = makeEq (I, H) ((n0, n1), (a0, K.top))
+      in
+        |>: goalM >: goalN >: goalTy #> (I, H, trivial)
+      end
+
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.Eq"
+        val (I, H) >> CJ.EQ ((ax0, ax1), (ty, k)) = jdg
+        val Syn.EQUALITY (a, m, n) = Syn.out ty
+        val ka = kindConstraintOnBase k
+        val Syn.AX = Syn.out ax0
+        val Syn.AX = Syn.out ax1
+
+        val goal = makeEq (I, H) ((m, n), (a, ka))
+      in
+        |>: goal #> (I, H, trivial)
+      end
+
+    fun True _ jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.True"
+        val (I, H) >> CJ.TRUE (ty, k) = jdg
+        val Syn.EQUALITY (a, m, n) = Syn.out ty
+        val ka = kindConstraintOnBase k
+
+        val goal = makeEq (I, H) ((m, n), (a, ka))
+      in
+        |>: goal #> (I, H, Syn.into Syn.AX)
+      end
+
+    fun Eta _ jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.Eta"
+        val (I, H) >> CJ.EQ ((m, n), (ty, k)) = jdg
+        val Syn.EQUALITY _ = Syn.out ty
+
+        val goal1 = makeMem (I, H) (m, (ty, k))
+        val goal2 = makeEqIfDifferent (I, H) ((Syn.into Syn.AX, n), (ty, K.top))
+      in
+        |>: goal1 >:? goal2 #> (I, H, trivial)
+      end
+
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.Elim"
+        val (I, H) >> catjdg = jdg
+        (* for now we ignore the kind in the context *)
+        val CJ.TRUE (ty, _) = Hyps.lookup z H
+        val Syn.EQUALITY (a, m, n) = Syn.out ty
+
+        (* Adding an equality judgment diverges from Nuprl, but this is currently
+         * useful because in RedPRL we do not demand everything in the context to
+         * be a true judgment (yet). *)
+        val u = alpha 0
+        val ax = Syn.into Syn.AX
+        val (goal, hole) =
+          makeGoal
+            @@ (I, Hyps.interposeThenSubstAfter (z, |@> (u, CJ.EQ ((m, n), (a, K.top))), ax) H)
+            >> CJ.map_ (substVar (ax, z)) catjdg
+      in
+        |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
   end
 end

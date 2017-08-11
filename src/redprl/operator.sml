@@ -235,6 +235,8 @@ struct
    | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
    (* path: path abstraction *)
    | PATH_TY | PATH_ABS
+   (* equality *)
+   | EQUALITY
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
@@ -359,6 +361,8 @@ struct
 
      | PATH_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | PATH_ABS => [[DIM] * [] <> EXP] ->> EXP
+
+     | EQUALITY => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
@@ -614,6 +618,8 @@ struct
 
      | PATH_TY => "path"
      | PATH_ABS => "abs"
+
+     | EQUALITY => "equality"
 
      | MTAC_SEQ psorts => "seq{" ^ ListSpine.pretty RedPrlParamSort.toString "," psorts ^ "}"
      | MTAC_ORELSE => "orelse"

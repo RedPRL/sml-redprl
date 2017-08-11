@@ -389,6 +389,7 @@ struct
         val _ = RedPrlLog.trace "Equality.RewriteTrue"
         val (I, H) >> CJ.TRUE (mainGoal, k) = jdg
         val CJ.EQ ((m, n), (ty, k')) = Hyps.lookup z H
+
         val x = alpha 0
         val Hx = H @> (x, CJ.TRUE (ty, k'))
         val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
@@ -595,11 +596,15 @@ struct
      | "record/eq/proj" => Record.EqProj
      | "record/intro" => Record.True
      | "path/eqtype" => Path.EqType
-     | "path/intro" => Path.True
      | "path/eq/abs" => Path.Eq
+     | "path/intro" => Path.True
+     | "path/eq/eta" => Path.Eta
      | "path/eq/app" => Path.EqApp
      | "path/eq/app/const" => Path.EqAppConst
-     | "path/eq/eta" => Path.Eta
+     | "eq/eqtype" => InternalizedEquality.EqType
+     | "eq/eq" => InternalizedEquality.Eq
+     | "eq/ax" => InternalizedEquality.True
+     | "eq/eta" => InternalizedEquality.Eta
      | "hcom/eq" => HCom.Eq
      | "hcom/eq/cap" => HCom.EqCapL
      | "hcom/eq/tube" => HCom.EqTubeL
@@ -626,6 +631,7 @@ struct
          | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
          | (Syn.RECORD _, Syn.RECORD _) => Record.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
+         | (Syn.EQUALITY _, Syn.EQUALITY _) => InternalizedEquality.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
       fun canonicity sign = 
@@ -657,6 +663,7 @@ struct
          | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
          | (Syn.TUPLE _, Syn.TUPLE _, _) => Record.Eq
          | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
+         | (Syn.AX, Syn.AX, Syn.EQUALITY _) => InternalizedEquality.Eq
          | _ => raise E.error [Fpp.text "Could not find value equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       (* equality for neutrals: variables and elimination forms;
@@ -681,6 +688,7 @@ struct
            (_, Syn.DFUN _) => DFun.Eta
          | (_, Syn.RECORD _) => Record.Eta
          | (_, Syn.PATH_TY _) => Path.Eta
+         | (_, Syn.EQUALITY _) => InternalizedEquality.Eta
          | (Machine.OPERATOR theta, _) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not expand neutral term of type", TermPrinter.ppTerm ty]
 
@@ -775,7 +783,7 @@ struct
           | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
         end
 
-      fun EqFromWfHyp alpha jdg =
+      fun EqFromHyp alpha jdg =
         let
           val (_, H) >> CJ.EQ ((m0, n0), (a0, k0)) = jdg
           val isUseful =
@@ -792,12 +800,12 @@ struct
       fun AutoStep sign alpha jdg = 
         StepJdg sign alpha jdg
           handle exn => 
-            (EqTypeFromHyp orelse_ EqFromWfHyp) alpha jdg
+            (EqTypeFromHyp orelse_ EqFromHyp) alpha jdg
             handle _ => raise exn
     end
 
     local
-      fun StepTrue ty =
+      fun FromTrue ty =
         case Syn.out ty of
            Syn.BOOL => Bool.Elim
          | Syn.WBOOL => WBool.Elim
@@ -807,24 +815,18 @@ struct
          | Syn.DFUN _ => DFun.Elim
          | Syn.RECORD _ => Record.Elim
          | Syn.PATH_TY _ => Path.Elim
+         | Syn.EQUALITY _ => InternalizedEquality.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
-      fun StepEq ty =
-        case Syn.out ty of
-           Syn.BOOL => Bool.Elim
-         | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
+      val FromEq = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
 
       fun StepJdg _ z alpha jdg =
         let
-          val (_, H) >> catjdg = jdg
+          val (_, H) >> _ = jdg
         in
           case Hyps.lookup z H of
-             CJ.TRUE (hyp, _) =>
-              (case catjdg of
-                  CJ.TRUE _ => StepTrue hyp z alpha jdg
-                | CJ.EQ _ => StepEq hyp z alpha jdg
-                | _ => raise E.error [Fpp.text ("Could not find suitable elimination rule [TODO, display information]")])
-           | CJ.EQ _ => Equality.RewriteTrue z alpha jdg
+             CJ.TRUE (hyp, _) => FromTrue hyp z alpha jdg
+           | CJ.EQ _ => FromEq z alpha jdg
            | _ => raise E.error [Fpp.text "Could not find suitable elimination rule"]
         end
     in
