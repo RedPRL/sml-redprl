@@ -28,7 +28,7 @@ sig
   datatype ('v, 's, 'o, 'a) mltermf =
      VAR of 'v
    | LET of 'a * ('v, 'a) scope
-   | LAM of ('v, 'a) scope
+   | FUN of ('v, 'a) scope
    | APP of 'a * 'a
    | PAIR of 'a * 'a
    | FST of 'a

@@ -35,7 +35,7 @@ struct
   datatype ('v, 's, 'o, 'a) mltermf =
      VAR of 'v
    | LET of 'a * ('v, 'a) scope
-   | LAM of ('v, 'a) scope
+   | FUN of ('v, 'a) scope
    | APP of 'a * 'a
    | PAIR of 'a * 'a
    | FST of 'a
@@ -110,7 +110,7 @@ struct
     fun resolveAux (state : state) : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_ =
       fn VAR x :@ ann => VAR (mlvar state x) :@ ann
        | LET (t, sc) :@ ann => LET (resolveAux state t, resolveAuxScope state sc) :@ ann
-       | LAM sc :@ ann => LAM (resolveAuxScope state sc) :@ ann
+       | FUN sc :@ ann => FUN (resolveAuxScope state sc) :@ ann
        | APP (t1, t2) :@ ann => APP (resolveAux state t1, resolveAux state t2) :@ ann
        | PAIR (t1, t2) :@ ann => PAIR (resolveAux state t1, resolveAux state t2) :@ ann
        | FST t :@ ann => FST (resolveAux state t) :@ ann

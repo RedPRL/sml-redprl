@@ -83,7 +83,7 @@ struct
            flip eval tx o Env.insertMl env x
        end
      | ML.NIL => M.pure V.NIL
-     | ML.LAM sc => M.pure @@ V.FUN (sc, env)
+     | ML.FUN sc => M.pure @@ V.FUN (sc, env)
      | ML.APP (t1, t2) => app =<< (eval env t1 <&> eval env t2)
      | ML.PAIR (t1, t2) => V.PAIR <$> (eval env t1 <&> eval env t2)
      | ML.FST t => fst <$> eval env t
