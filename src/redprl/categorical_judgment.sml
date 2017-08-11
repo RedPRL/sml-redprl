@@ -180,7 +180,7 @@ struct
            else [Fpp.hsep [TermPrinter.ppKind k, Fpp.text "type"]]
          ]
      | SYNTH (m, k) => Fpp.expr @@ Fpp.hvsep @@ List.concat
-         [ [f m]
+         [ [f m, Fpp.text "synth"]
          , if k = RedPrlKind.top then []
            else [Fpp.hsep [Fpp.hsep [Fpp.text "with", TermPrinter.ppKind k]]]
          ]
