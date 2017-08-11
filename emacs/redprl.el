@@ -120,7 +120,7 @@
   "RedPRL's expression keywords.")
 
 (defconst redprl-expression-symbols
-  '("->" "*" "$" "!" "@")
+  '("->" "$" "*" "!" "@" "=")
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
