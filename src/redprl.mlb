@@ -30,6 +30,7 @@ in
     redprl/error.sig
     redprl/error.sml
     redprl/syntax.sml
+    redprl/univ_level.sml
     redprl/variable_kit.sml
 
     redprl/categorical_judgment.sig

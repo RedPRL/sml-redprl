@@ -5,6 +5,7 @@ struct
    | HYP
    | META_NAME
    | OPID
+   | LVL
 
   and sort =
      EXP
@@ -14,6 +15,7 @@ struct
    | TRIV
    | MATCH_CLAUSE of sort
    | PARAM_EXP of param_sort
+   | STRATIFIED of sort
 
   val rec sortToString = 
     fn EXP => "exp"
@@ -23,6 +25,7 @@ struct
      | TRIV => "triv"
      | MATCH_CLAUSE tau => "match-clause"
      | PARAM_EXP sigma => "param-exp{" ^ paramSortToString sigma ^ "}"
+     | STRATIFIED sort => "stratified{" ^ sortToString sort ^ "}"
 
   and paramSortToString = 
     fn DIM => "dim"
@@ -36,6 +39,9 @@ struct
   datatype 'a param_operator =
      DIM0
    | DIM1
+   | LZERO
+   | LSUCC of 'a
+   | LMAX of 'a * 'a
 end
 
 
@@ -65,24 +71,37 @@ struct
   open RedPrlSortData RedPrlParamData
   type 'a t = 'a param_operator
 
-  fun map _ =
+  fun map f =
     fn DIM0 => DIM0
      | DIM1 => DIM1
+     | LZERO => LZERO
+     | LSUCC l => LSUCC (f l)
+     | LMAX (l0, l1) => LMAX (f l0, f l1)
 
   structure Sort = RedPrlParamSort
 
   val arity =
     fn DIM0 => (DIM0, DIM)
      | DIM1 => (DIM1, DIM)
+     | LZERO => (LZERO, LVL)
+     | LSUCC _ => (LSUCC LVL, LVL)
+     | LMAX _ => (LMAX (LVL, LVL), LVL)
 
-  fun eq _ =
+  fun eq f =
     fn (DIM0, DIM0) => true
      | (DIM1, DIM1) => true
+     | (LZERO, LZERO) => true
+     | (LSUCC l0, LSUCC l1) => f (l0, l1)
+     | (LMAX (l0, l'0), LMAX (l1, l'1))
+         => f (l0, l'0) andalso f (l1, l'1)
      | _ => false
 
-  fun toString _ =
+  fun toString f =
     fn DIM0 => "0"
      | DIM1 => "1"
+     | LZERO => "0"
+     | LSUCC lvl => "lsucc{" ^ f lvl ^ "}"
+     | LMAX (lvl0, lvl1) => "lmax{" ^ f lvl0 ^ "," ^ f lvl1 ^ "}"
 
   fun join zer _ =
     fn DIM0 => zer
@@ -274,13 +293,17 @@ struct
      FCOM of 'a dir * 'a equation list
    | LOOP of 'a P.term
    | PATH_APP of 'a P.term
+   | UNIVERSE of kind * 'a P.term
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
    | COM of 'a dir * 'a equation list
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
+
    | PAT_META of 'a * sort * ('a P.term * psort) list * sort list
    | HYP_REF of 'a * sort
    | PARAM_REF of psort * 'a P.term
+   | IN_UNIV of sort * kind * 'a P.term
+
    | RULE_ELIM of 'a
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
@@ -435,13 +458,18 @@ struct
       fn FCOM params => arityFcom params
        | LOOP _ => [] ->> EXP
        | PATH_APP _ => [[] * [] <> EXP] ->> EXP
+       | UNIVERSE _ => [] ->> EXP
+
        | HCOM params => arityHcom params
        | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | COM params => arityCom params
        | CUST (_, _, ar) => Option.valOf ar
+
        | PAT_META (_, tau, _, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
        | HYP_REF (_, tau) => [] ->> tau
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
+       | IN_UNIV (tau, _, _) => [[] * [] <> tau] ->> STRATIFIED tau
+
        | RULE_ELIM _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
@@ -493,19 +521,25 @@ struct
           | (P.APP t, _) => P.freeVars t)
         ps
 
-
+    val levelSupport =
+      fn P.VAR a => [(a, LVL)]
+       | P.APP t => P.freeVars t
   in
     val supportPoly =
       fn FCOM params => comSupport params
        | LOOP r => dimSupport r
        | PATH_APP r => dimSupport r
+       | UNIVERSE (_, lvl) => levelSupport lvl
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
        | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
+
        | PAT_META (x, _, ps, _) => (x, META_NAME) :: paramsSupport' ps
        | HYP_REF (a, _) => [(a, HYP)]
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
+       | IN_UNIV (_, _, lvl) => levelSupport lvl
+
        | RULE_ELIM a => [(a, HYP)]
        | RULE_UNFOLD a => [(a, OPID)]
        | DEV_BOOL_ELIM a => [(a, HYP)]
@@ -537,6 +571,7 @@ struct
            | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_APP r, t) => (case t of PATH_APP r' => P.eq f (r, r') | _ => false)
+       | (UNIVERSE (k, i), t) => (case t of UNIVERSE (k', i') => k = k' andalso P.eq f (i, i') | _ => false)
        | (HCOM (dir1, eqs1), t) =>
          (case t of
              HCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
@@ -553,13 +588,18 @@ struct
          (case t of
              CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
            | _ => false)
+
        | (PAT_META (x1, tau1, ps1, taus1), t) => 
          (case t of 
              PAT_META (x2, tau2, ps2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso paramsEq f (ps1, ps2) andalso taus1 = taus2
            | _ => false)
-
        | (HYP_REF (a, _), t) => (case t of HYP_REF (b, _) => f (a, b) | _ => false)
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
+       | (IN_UNIV (tau, k, i), t) =>
+           (case t of
+              IN_UNIV (tau', k', i') => tau = tau' andalso k = k' andalso P.eq f (i, i')
+            | _ => false)
+
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
        | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
@@ -681,6 +721,7 @@ struct
              ^ "]"
        | LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
+       | UNIVERSE (k, lvl) => "universe{" ^ K.toString k ^ "," ^ P.toString f lvl ^ "}"
        | HCOM (dir, eqs) =>
            "hcom"
              ^ "["
@@ -704,10 +745,13 @@ struct
            f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
+
        | PAT_META (x, _, ps, _) =>
            "?" ^ f x ^ "{" ^ paramsToString f ps ^ "}"
        | HYP_REF (a, _) => "hyp-ref{" ^ f a ^ "}"
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
+       | IN_UNIV (tau, k, i) => "in-univ{" ^ K.toString k ^ "," ^ P.toString f i ^ "}"
+
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
@@ -759,6 +803,7 @@ struct
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
        | LOOP r => LOOP (P.bind (passSort DIM f) r)
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
+       | UNIVERSE (k, lvl) => UNIVERSE (k, P.bind (passSort LVL f) lvl)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
