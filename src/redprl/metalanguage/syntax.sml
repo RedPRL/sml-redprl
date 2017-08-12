@@ -55,6 +55,7 @@ struct
   infix :@
 
   type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
+  type src_mlterm = (string, string, oast * osort) mlterm
 
   exception todo
   fun ?e = raise e

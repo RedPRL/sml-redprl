@@ -1,26 +1,26 @@
 name MetalanguageParseFn
 
-terminal LET
-terminal FN
-terminal IN
-terminal DOUBLE_RIGHT_ARROW
-terminal LSQUARE
-terminal RSQUARE
-terminal LPAREN
-terminal RPAREN
-terminal COMMA
-terminal EQUALS
-terminal BEGIN
-terminal END
-terminal IDENT of string
-terminal PROVE
-terminal PROJ1
-terminal PROJ2
-terminal BACKTICK
-terminal REFINE
-terminal GOAL
-terminal PUSH
-terminal PRINT
+terminal LET of pos
+terminal FN of pos
+terminal IN of pos
+terminal DOUBLE_RIGHT_ARROW of pos
+terminal LSQUARE of pos
+terminal RSQUARE of pos
+terminal LPAREN of pos
+terminal RPAREN of pos
+terminal COMMA of pos
+terminal EQUALS of pos
+terminal BEGIN of pos
+terminal END of pos
+terminal IDENT of pos_string
+terminal PROVE of pos
+terminal PROJ1 of pos
+terminal PROJ2 of pos
+terminal BACKTICK of pos
+terminal REFINE of pos
+terminal GOAL of pos
+terminal PUSH of pos
+terminal PRINT of pos
 
 terminal TODO /* dummy */
 
@@ -32,7 +32,7 @@ nonterminal OExp: oexp =
 
 nonterminal Atm: exp =
   1:IDENT => var
-  GOAL => goal
+  1:GOAL => goal
   LPAREN RPAREN => nil_
   LPAREN 1:Exp COMMA 2:Exp RPAREN => pair
   PROJ1 => proj1
@@ -44,7 +44,7 @@ nonterminal Atm: exp =
   BACKTICK 1:OExp => quote
   REFINE 1:IDENT => refine
   LSQUARE 1:Exps RSQUARE => fork
-  PUSH 1:Names IN 2:Exp END => push
+  1:PUSH 2:Names IN 3:Exp 4:END => push
 
 nonterminal App: exp =
   1:Atm => atm_app

@@ -46,6 +46,7 @@ sig
   type annotation = Pos.t option
   datatype ('v, 's, 'o) mlterm = :@ of ('v, 's, 'o, ('v, 's, 'o) mlterm) mltermf * annotation
 
+  type src_mlterm = (string, string, oast * osort) mlterm
   type mlterm_ = (mlvar, osym, oterm) mlterm
 
   val unscope : ('b, 't) scope -> 'b * 't
