@@ -3,6 +3,7 @@ struct
   datatype Error
     = INVALID_DIMENSION of IntInf.int
     | INVALID_LEVEL of IntInf.int
+    | UNIMPLEMENTED of Fpp.doc
     | GENERIC of Fpp.doc list
 
   exception Err of Error
@@ -24,9 +25,11 @@ struct
   val prettyIntInf = Fpp.text o IntInf.toString
   val formatError =
     fn INVALID_DIMENSION i => Fpp.hsep
-        [Fpp.text "Number", prettyIntInf i, Fpp.text "is not a valid dimension." ]
+        [Fpp.text "Number", prettyIntInf i, Fpp.text "is not a valid dimension constant." ]
      | INVALID_LEVEL i => Fpp.hsep
-        [Fpp.text "Number", prettyIntInf i, Fpp.text "is not a valid universe level." ]
+        [Fpp.text "Number", prettyIntInf i, Fpp.text "is not a valid universe level constant." ]
+     | UNIMPLEMENTED doc => Fpp.hsep
+        [Fpp.text "The function", doc, Fpp.text "is not implemented yet."]
      | GENERIC doc => Fpp.hsep doc
   val rec format =
     fn Err err => formatError err

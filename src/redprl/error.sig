@@ -3,6 +3,7 @@ sig
   datatype Error
     = INVALID_DIMENSION of IntInf.int
     | INVALID_LEVEL of IntInf.int
+    | UNIMPLEMENTED of Fpp.doc
     | GENERIC of Fpp.doc list
 
   val raiseError : Error -> 'a
