@@ -1,8 +1,8 @@
 structure RedPrlError :> REDPRL_ERROR =
 struct
   datatype Error
-    = INVALID_DIMENSION of IntInf.int
-    | INVALID_LEVEL of IntInf.int
+    = INVALID_DIMENSION of Fpp.doc
+    | INVALID_LEVEL of Fpp.doc
     | UNIMPLEMENTED of Fpp.doc
     | GENERIC of Fpp.doc list
 
@@ -19,15 +19,12 @@ struct
   fun annotateException' (SOME pos) thunk = annotateException pos thunk
     | annotateException' NONE thunk = thunk ()
 
-  (* this function will be replaced by raiseGeneric *)
-  val error = Err o GENERIC
-
-  val prettyIntInf = Fpp.text o IntInf.toString
+  structure TP = TermPrinter
   val formatError =
-    fn INVALID_DIMENSION i => Fpp.hsep
-        [Fpp.text "Number", prettyIntInf i, Fpp.text "is not a valid dimension constant." ]
-     | INVALID_LEVEL i => Fpp.hsep
-        [Fpp.text "Number", prettyIntInf i, Fpp.text "is not a valid universe level constant." ]
+    fn INVALID_DIMENSION doc => Fpp.hsep
+        [Fpp.text "Expression", doc, Fpp.text "is not a valid dimension." ]
+     | INVALID_LEVEL doc => Fpp.hsep
+        [Fpp.text "Expression", doc, Fpp.text "is not a valid universe level." ]
      | UNIMPLEMENTED doc => Fpp.hsep
         [Fpp.text "The function", doc, Fpp.text "is not implemented yet."]
      | GENERIC doc => Fpp.hsep doc
@@ -43,4 +40,7 @@ struct
             SOME pos' => SOME pos'
           | NONE => SOME pos)
       | _ => NONE
+
+  (* this is obsolete *)
+  val error = Err o GENERIC
 end

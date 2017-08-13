@@ -1,8 +1,8 @@
 signature REDPRL_ERROR =
 sig
   datatype Error
-    = INVALID_DIMENSION of IntInf.int
-    | INVALID_LEVEL of IntInf.int
+    = INVALID_DIMENSION of Fpp.doc
+    | INVALID_LEVEL of Fpp.doc
     | UNIMPLEMENTED of Fpp.doc
     | GENERIC of Fpp.doc list
 

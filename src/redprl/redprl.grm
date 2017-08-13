@@ -16,6 +16,8 @@ end
 structure O = RedPrlOpData
 structure CJ = RedPrlCategoricalJudgment
 
+structure TP = TermPrinter
+
 fun sortOfJudgment jdg = CJ.synthesis (CJ.fromAst jdg)
 
 fun makeCustom (opid, params, bindings) =
@@ -24,7 +26,7 @@ fun makeCustom (opid, params, bindings) =
 fun makeDim pos : IntInf.int -> string param =
   fn 0 => P.APP P.DIM0
    | 1 => P.APP P.DIM1
-   | _ => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "Invalid dimension constant"])
+   | i => E.raiseAnnotatedError (pos, E.INVALID_DIMENSION (TP.ppIntInf i))
 
 structure Tac =
 struct
@@ -104,7 +106,7 @@ struct
     case IntInf.compare (i, 0) of
       GREATER => P.APP (P.LSUCC (makeLevel pos (i - 1)))
     | EQUAL => P.APP P.LZERO
-    | LESS => E.raiseAnnotatedError (pos, E.INVALID_LEVEL i)
+    | LESS => E.raiseAnnotatedError (pos, E.INVALID_LEVEL (TP.ppIntInf i))
 
   fun flatten xsys =
     List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
