@@ -16,6 +16,9 @@ struct
   structure K = RedPrlKind
   structure CJ = RedPrlCategoricalJudgment
 
+  exception todo
+  fun ?e = raise e
+
   fun @@ (f, x) = f x
   infixr @@
 
