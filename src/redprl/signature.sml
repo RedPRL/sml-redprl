@@ -81,7 +81,7 @@ struct
 
     structure Err = RedPrlError
 
-    fun error pos msg = raise Err.annotate pos (Err.error msg)
+    fun error pos msg = Err.raiseAnnotatedError' (pos, Err.GENERIC msg)
 
     (* During parsing, the arity of a custom-operator application is not known; but we can
      * derive it from the signature "so far". Prior to adding a declaration to the signature,

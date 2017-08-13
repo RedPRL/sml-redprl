@@ -263,14 +263,12 @@ struct
     end
 
   fun tactic sign env tm alpha jdg = 
-    tactic_ sign env tm alpha jdg 
-    handle exn => 
-      raise RedPrlError.annotate (Tm.getAnnotation tm) exn
+    RedPrlError.annotateException' (Tm.getAnnotation tm)
+      (fn _ => tactic_ sign env tm alpha jdg)
 
   and multitactic sign env tm alpha jdg = 
-    multitactic_ sign env tm alpha jdg
-    handle exn => 
-      raise RedPrlError.annotate (Tm.getAnnotation tm) exn
+    RedPrlError.annotateException' (Tm.getAnnotation tm)
+      (fn _ => multitactic_ sign env tm alpha jdg)
 
   and tactic_ sign env tm = 
     case Tm.out tm of 
