@@ -1,10 +1,12 @@
 structure Syntax =
 struct
   structure Tm = RedPrlAbt
+  structure K = RedPrlKind
   type variable = Tm.variable
   type symbol = Tm.symbol
   type param = Tm.param
   type sort = Tm.sort
+  type kind = K.t
 
   type equation = param * param
   type dir = param * param
@@ -58,6 +60,8 @@ struct
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
+   (* universes *)
+   | UNIVERSE of kind * param
    (* hcom operator *)
    | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* coe operator *)
@@ -211,6 +215,8 @@ struct
 
        | EQUALITY (a, m, n) => O.MONO O.EQUALITY $$ [([],[]) \ a, ([],[]) \ m, ([],[]) \ n]
 
+       | UNIVERSE (k, i) => O.POLY (O.UNIVERSE (k, i)) $$ []
+
        | HCOM {dir, ty, cap, tubes} =>
            let
              val (eqs, tubes) = intoTubes tubes
@@ -284,6 +290,8 @@ struct
        | O.POLY (O.PATH_APP r) $ [_ \ m] => PATH_APP (m, r)
 
        | O.MONO O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
+
+       | O.POLY (O.UNIVERSE (k, i)) $ _ => UNIVERSE (k, i)
 
        | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
            HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}

@@ -1,7 +1,9 @@
 signature REDPRL_ERROR =
 sig
   datatype Error
-    = GENERIC of Fpp.doc list
+    = INVALID_DIMENSION of IntInf.int
+    | INVALID_LEVEL of IntInf.int
+    | GENERIC of Fpp.doc list
 
   val raiseError : Error -> 'a
 

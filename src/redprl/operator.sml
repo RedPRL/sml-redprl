@@ -3,9 +3,9 @@ struct
   datatype param_sort =
      DIM
    | HYP
+   | LVL
    | META_NAME
    | OPID
-   | LVL
 
   and sort =
      EXP
@@ -99,7 +99,7 @@ struct
   fun toString f =
     fn DIM0 => "0"
      | DIM1 => "1"
-     | LZERO => "0"
+     | LZERO => "lzero"
      | LSUCC lvl => "lsucc{" ^ f lvl ^ "}"
      | LMAX (lvl0, lvl1) => "lmax{" ^ f lvl0 ^ "," ^ f lvl1 ^ "}"
 

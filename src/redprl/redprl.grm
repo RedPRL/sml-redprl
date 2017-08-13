@@ -96,9 +96,15 @@ struct
 
   fun makeNum i =
     case IntInf.compare (i, 0) of
-      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (IntInf.- (i, 1))]
+      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (i - 1)]
     | EQUAL => O.MONO O.ZERO $$ []
-    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum (IntInf.- (IntInf.~ i, 1))]
+    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum ((~ i) - 1)]
+
+  fun makeLevel pos i =
+    case IntInf.compare (i, 0) of
+      GREATER => P.APP (P.LSUCC (makeLevel pos (i - 1)))
+    | EQUAL => P.APP P.LZERO
+    | LESS => E.raiseAnnotatedError (pos, E.INVALID_LEVEL i)
 
   fun flatten xsys =
     List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
@@ -285,9 +291,12 @@ end
  | TRIANGLE_RIGHT
 
  (* parameter sorts *)
- | DIM | HYP | META_NAME
+ | DIM | HYP | LVL | META_NAME
  (* sorts *)
  | EXP | TAC | TRIV | JDG
+
+ (* keywords and symbols in parameters *)
+ | LZERO | LSUCC | LMAX
 
  (* keywords and symbols in expressions *)
  | AX
@@ -299,9 +308,9 @@ end
  | VOID
  | S1 | BASE | LOOP | S1_REC
  | LAMBDA | DOLLAR_SIGN
- | TIMES
- | RECORD | TUPLE | BANG
+ | RECORD | TIMES | TUPLE | BANG
  | PATH | ABS | AT_SIGN
+ | UNIV
  | HCOM | COE
 
  (* parsing "coercions" *)
@@ -354,7 +363,13 @@ end
  | valence of Ar.valence
 
    (* parameters *)
+ | numAsDimParam of string param
+ | numAsLevelParam of string param
+ | exclusivelyDimParam of string param
+ | exclusivelyLevelParam of string param
  | param of string param
+ | dimParam of string param
+ | levelParam of string param
  | params of string param list
  | typedParam of string param * P.param_sort
  | typedParams of (string param * P.param_sort) list
@@ -497,13 +512,47 @@ bindingSig
 valence
   : bindingSig sort ((bindingSig, sort))
 
+numAsDimParam
+  : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+
+exclusivelyDimParam
+  : LBRACKET DIM numAsDimParam RBRACKET (numAsDimParam)
+
+numAsLevelParam
+  : NUMERAL (Multi.makeLevel (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+
+exclusivelyLevelParam
+  : LZERO (P.APP P.LZERO)
+  | LBRACKET LSUCC param RBRACKET (P.APP (P.LSUCC param))
+  | LBRACKET LMAX param param RBRACKET (P.APP (P.LMAX (param1, param2)))
+  | LBRACKET LVL numAsLevelParam RBRACKET (numAsLevelParam)
+
 param
   : VARNAME (P.VAR VARNAME)
-  | NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+  | exclusivelyDimParam (exclusivelyDimParam)
+  | exclusivelyLevelParam (exclusivelyLevelParam)
+  | numAsDimParam (numAsDimParam)
+
+dimParam
+  : VARNAME (P.VAR VARNAME)
+  | numAsDimParam (numAsDimParam)
+  | exclusivelyDimParam (exclusivelyDimParam)
+
+levelParam
+  : VARNAME (P.VAR VARNAME)
+  | numAsLevelParam (numAsLevelParam)
+  | exclusivelyLevelParam (exclusivelyLevelParam)
 
 typedParam
-  : LSQUARE param COLON psort RSQUARE ((param, psort))
-  | param ((param, O.DIM))
+  : LSQUARE VARNAME COLON psort RSQUARE (P.VAR VARNAME, psort)
+  | LSQUARE exclusivelyDimParam COLON DIM RSQUARE (exclusivelyDimParam, O.DIM)
+  | LSQUARE NUMERAL COLON DIM RSQUARE ((makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL, O.DIM))
+  | LSQUARE exclusivelyLevelParam COLON LVL RSQUARE (exclusivelyLevelParam, O.LVL)
+  | LSQUARE NUMERAL COLON LVL RSQUARE ((Multi.makeLevel (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL, O.LVL))
+  | VARNAME (P.VAR VARNAME, O.DIM)
+  | exclusivelyDimParam (exclusivelyDimParam, O.DIM)
+  | exclusivelyLevelParam (exclusivelyLevelParam, O.LVL)
+  | numAsDimParam (numAsDimParam, O.DIM)
 
 params
   : param ([param])
@@ -591,8 +640,9 @@ monoNullaryOperator
 (* built-in nullary operators that take parameters *)
 polyNullaryOperator
   (* circle *)
-  : LOOP param (O.POLY (O.LOOP param))
-  | DIM param (O.POLY (O.PARAM_REF (O.DIM, param)))
+  : LOOP dimParam (O.POLY (O.LOOP dimParam))
+  | DIM dimParam (O.POLY (O.PARAM_REF (O.DIM, dimParam)))
+  | UNIV kind levelParam (O.POLY (O.UNIVERSE (kind, levelParam)))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator

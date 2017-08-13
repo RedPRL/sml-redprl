@@ -1,7 +1,9 @@
 structure RedPrlError :> REDPRL_ERROR =
 struct
   datatype Error
-    = GENERIC of Fpp.doc list
+    = INVALID_DIMENSION of IntInf.int
+    | INVALID_LEVEL of IntInf.int
+    | GENERIC of Fpp.doc list
 
   exception Err of Error
   exception Pos of Pos.t * exn
@@ -19,8 +21,13 @@ struct
   (* this function will be replaced by raiseGeneric *)
   val error = Err o GENERIC
 
+  val prettyIntInf = Fpp.text o IntInf.toString
   val formatError =
-    fn GENERIC doc => Fpp.hsep doc
+    fn INVALID_DIMENSION i => Fpp.hsep
+        [Fpp.text "Number", prettyIntInf i, Fpp.text "is not a valid dimension." ]
+     | INVALID_LEVEL i => Fpp.hsep
+        [Fpp.text "Number", prettyIntInf i, Fpp.text "is not a valid universe level." ]
+     | GENERIC doc => Fpp.hsep doc
   val rec format =
     fn Err err => formatError err
      | Pos (_, exn) => format exn
