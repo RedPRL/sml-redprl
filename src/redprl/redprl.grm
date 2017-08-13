@@ -4,6 +4,8 @@ structure Vl = Ar.Vl
 
 open Ast
 
+structure E = RedPrlError
+
 structure P =
 struct
   open RedPrlParamData
@@ -18,6 +20,11 @@ fun sortOfJudgment jdg = CJ.synthesis (CJ.fromAst jdg)
 
 fun makeCustom (opid, params, bindings) =
   Ast.$$ (O.POLY (O.CUST (opid, params, NONE)), bindings)
+
+fun makeDim pos : IntInf.int -> string param =
+  fn 0 => P.APP P.DIM0
+   | 1 => P.APP P.DIM1
+   | _ => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "Invalid dimension constant"])
 
 structure Tac =
 struct
@@ -109,7 +116,7 @@ struct
     let
       fun insert (lbl, set) =
         if LabelSet.member set lbl then
-          raise RedPrlError.annotate pos (RedPrlError.error [Fpp.text "Duplicate label", Fpp.text lbl])
+          E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "Duplicate label", Fpp.text lbl])
         else
           LabelSet.insert set lbl
     in
@@ -492,7 +499,7 @@ valence
 
 param
   : VARNAME (P.VAR VARNAME)
-  | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise RedPrlError.annotate (SOME (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName))) (RedPrlError.error [Fpp.text "Invalid dimension constant"])))
+  | NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
 
 typedParam
   : LSQUARE param COLON psort RSQUARE ((param, psort))
@@ -662,13 +669,13 @@ rawTermAndTac
   | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 
   (* pair types *)
-  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) quantifierData)
+  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) quantifierData)
 
   (* dependent record types *)
-  | RECORD (Multi.makeRecord (SOME (Pos.pos (RECORD1left fileName) (RECORD1right fileName))) [])
-  | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) typedBinders)
-  | TUPLE (Multi.makeTuple (SOME (Pos.pos (TUPLE1left fileName) (TUPLE1right fileName))) [])
-  | LPAREN TUPLE fields RPAREN (Multi.makeTuple (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) fields)
+  | RECORD (Multi.makeRecord (Pos.pos (RECORD1left fileName) (RECORD1right fileName)) [])
+  | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) typedBinders)
+  | TUPLE (Multi.makeTuple (Pos.pos (TUPLE1left fileName) (TUPLE1right fileName)) [])
+  | LPAREN TUPLE fields RPAREN (Multi.makeTuple (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) fields)
   | LPAREN TUPLE terms RPAREN (Multi.makeAnonymousTuple terms)
   | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
 
@@ -796,7 +803,7 @@ atomicRawTac
 
   | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
   | LANGLE boundVars RANGLE tactic (Ast.$$ (O.MONO (O.DEV_PATH_INTRO (List.length boundVars)), [\ ((Multi.addUnderscores boundVars, []), tactic)]))
-  | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (SOME (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName))) recordFieldTactics)
+  | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName)) recordFieldTactics)
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
