@@ -523,8 +523,8 @@ numAsLevelParam
 
 exclusivelyLevelParam
   : LZERO (P.APP P.LZERO)
-  | LBRACKET LSUCC param RBRACKET (P.APP (P.LSUCC param))
-  | LBRACKET LMAX param param RBRACKET (P.APP (P.LMAX (param1, param2)))
+  | LBRACKET LSUCC levelParam RBRACKET (P.APP (P.LSUCC levelParam))
+  | LBRACKET LMAX levelParam levelParam RBRACKET (P.APP (P.LMAX (levelParam1, levelParam2)))
   | LBRACKET LVL numAsLevelParam RBRACKET (numAsLevelParam)
 
 param
