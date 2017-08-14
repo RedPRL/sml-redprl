@@ -30,6 +30,8 @@ in
     redprl/error.sig
     redprl/error.sml
     redprl/syntax.sml
+    redprl/univ_level.sig
+    redprl/univ_level.sml
     redprl/variable_kit.sml
 
     redprl/categorical_judgment.sig
@@ -57,7 +59,10 @@ in
     redprl/tactical.fun
 
 
-    ann "nonexhaustiveMatch ignore" in
+    ann
+      "nonexhaustiveBind ignore"
+      "nonexhaustiveMatch ignore"
+    in
       redprl/machine.sig
       redprl/machine.fun
       redprl/refiner_kit.fun

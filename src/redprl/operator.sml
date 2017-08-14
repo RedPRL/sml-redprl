@@ -3,6 +3,7 @@ struct
   datatype param_sort =
      DIM
    | HYP
+   | LVL
    | META_NAME
    | OPID
 
@@ -27,6 +28,7 @@ struct
   and paramSortToString = 
     fn DIM => "dim"
      | HYP => "hyp"
+     | LVL => "lvl"
      | META_NAME => "meta-name"
      | OPID => "opid"
 end
@@ -36,6 +38,9 @@ struct
   datatype 'a param_operator =
      DIM0
    | DIM1
+   | LCONST of IntInf.int
+   | LABOVE of 'a * IntInf.int
+   | LMAX of 'a list
 end
 
 
@@ -65,28 +70,43 @@ struct
   open RedPrlSortData RedPrlParamData
   type 'a t = 'a param_operator
 
-  fun map _ =
+  fun map f =
     fn DIM0 => DIM0
      | DIM1 => DIM1
+     | LCONST i => LCONST i
+     | LABOVE (l, i) => LABOVE (f l, i)
+     | LMAX ls => LMAX (List.map f ls)
 
   structure Sort = RedPrlParamSort
 
   val arity =
     fn DIM0 => (DIM0, DIM)
      | DIM1 => (DIM1, DIM)
+     | LCONST i => (LCONST i, LVL)
+     | LABOVE (_, i) => (LABOVE (LVL, i), LVL)
+     | LMAX ls => (LMAX (List.map (fn _ => LVL) ls), LVL)
 
-  fun eq _ =
+  fun eq f =
     fn (DIM0, DIM0) => true
      | (DIM1, DIM1) => true
+     | (LCONST i0, LCONST i1) => i0 = i1
+     | (LABOVE (l0, i0), LABOVE (l1, i1)) => f (l0, l1) andalso i0 = i1
+     | (LMAX ls0, LMAX ls1) => ListPair.allEq f (ls0, ls1)
      | _ => false
 
-  fun toString _ =
+  fun toString f =
     fn DIM0 => "0"
      | DIM1 => "1"
+     | LCONST i => IntInf.toString i
+     | LABOVE (l, i) => "labove{" ^ f l ^ "}"
+     | LMAX ls => "lmax{" ^ String.concatWith "," (List.map f ls) ^ "}"
 
-  fun join zer _ =
+  fun join zer red =
     fn DIM0 => zer
      | DIM1 => zer
+     | LCONST _ => zer
+     | LABOVE (l, _) => red (zer, l)
+     | LMAX ls => List.foldl red zer ls
 end
 
 structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
@@ -139,7 +159,7 @@ struct
       type t = kind
 
       val top : t
-      val leq : t * t -> bool
+      val <= : t * t -> bool
       val meet : t * t -> t
 
       (* greatestMeetComplement (a, b) is the greatest element c
@@ -179,7 +199,7 @@ struct
          | (COE, _) => COE
          | (CUBICAL, CUBICAL) => top
 
-      fun leq (a, b) = greatestMeetComplement (b, a) = top
+      fun op <= (a, b) = greatestMeetComplement (b, a) = top
     end
   in
     open Internal
@@ -274,13 +294,16 @@ struct
      FCOM of 'a dir * 'a equation list
    | LOOP of 'a P.term
    | PATH_APP of 'a P.term
+   | UNIVERSE of kind * 'a P.term
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
    | COM of 'a dir * 'a equation list
    | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
+
    | PAT_META of 'a * sort * ('a P.term * psort) list * sort list
    | HYP_REF of 'a * sort
    | PARAM_REF of psort * 'a P.term
+
    | RULE_ELIM of 'a
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
@@ -435,13 +458,17 @@ struct
       fn FCOM params => arityFcom params
        | LOOP _ => [] ->> EXP
        | PATH_APP _ => [[] * [] <> EXP] ->> EXP
+       | UNIVERSE _ => [] ->> EXP
+
        | HCOM params => arityHcom params
        | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | COM params => arityCom params
        | CUST (_, _, ar) => Option.valOf ar
+
        | PAT_META (_, tau, _, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
        | HYP_REF (_, tau) => [] ->> tau
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
+
        | RULE_ELIM _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
@@ -493,19 +520,24 @@ struct
           | (P.APP t, _) => P.freeVars t)
         ps
 
-
+    val levelSupport =
+      fn P.VAR a => [(a, LVL)]
+       | P.APP t => P.freeVars t
   in
     val supportPoly =
       fn FCOM params => comSupport params
        | LOOP r => dimSupport r
        | PATH_APP r => dimSupport r
+       | UNIVERSE (_, lvl) => levelSupport lvl
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
        | COM params => comSupport params
        | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
+
        | PAT_META (x, _, ps, _) => (x, META_NAME) :: paramsSupport' ps
        | HYP_REF (a, _) => [(a, HYP)]
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
+
        | RULE_ELIM a => [(a, HYP)]
        | RULE_UNFOLD a => [(a, OPID)]
        | DEV_BOOL_ELIM a => [(a, HYP)]
@@ -537,6 +569,7 @@ struct
            | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_APP r, t) => (case t of PATH_APP r' => P.eq f (r, r') | _ => false)
+       | (UNIVERSE (k, i), t) => (case t of UNIVERSE (k', i') => k = k' andalso P.eq f (i, i') | _ => false)
        | (HCOM (dir1, eqs1), t) =>
          (case t of
              HCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
@@ -553,13 +586,14 @@ struct
          (case t of
              CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
            | _ => false)
+
        | (PAT_META (x1, tau1, ps1, taus1), t) => 
          (case t of 
              PAT_META (x2, tau2, ps2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso paramsEq f (ps1, ps2) andalso taus1 = taus2
            | _ => false)
-
        | (HYP_REF (a, _), t) => (case t of HYP_REF (b, _) => f (a, b) | _ => false)
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
+
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
        | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
@@ -681,6 +715,7 @@ struct
              ^ "]"
        | LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
+       | UNIVERSE (k, lvl) => "universe{" ^ K.toString k ^ "," ^ P.toString f lvl ^ "}"
        | HCOM (dir, eqs) =>
            "hcom"
              ^ "["
@@ -704,10 +739,12 @@ struct
            f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
+
        | PAT_META (x, _, ps, _) =>
            "?" ^ f x ^ "{" ^ paramsToString f ps ^ "}"
        | HYP_REF (a, _) => "hyp-ref{" ^ f a ^ "}"
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
+
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
@@ -759,6 +796,7 @@ struct
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
        | LOOP r => LOOP (P.bind (passSort DIM f) r)
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
+       | UNIVERSE (k, lvl) => UNIVERSE (k, P.bind (passSort LVL f) lvl)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)

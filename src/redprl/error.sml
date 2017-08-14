@@ -1,7 +1,6 @@
 structure RedPrlError :> REDPRL_ERROR =
 struct
-  datatype Error
-    = GENERIC of Fpp.doc list
+  datatype Error = datatype RedPrlData.Error
 
   exception Err of Error
   exception Pos of Pos.t * exn
@@ -16,11 +15,17 @@ struct
   fun annotateException' (SOME pos) thunk = annotateException pos thunk
     | annotateException' NONE thunk = thunk ()
 
-  (* this function will be replaced by raiseGeneric *)
-  val error = Err o GENERIC
-
+  structure TP = TermPrinter
   val formatError =
-    fn GENERIC doc => Fpp.hsep doc
+    fn INVALID_CATEGORICAL_JUDGMENT doc => Fpp.hvsep
+        [Fpp.text "Not a valid categorical judgment:", Fpp.align doc]
+     | INVALID_DIMENSION doc => Fpp.hsep
+        [Fpp.text "Not a valid dimension:", Fpp.align doc]
+     | INVALID_LEVEL doc => Fpp.hsep
+        [Fpp.text "Not a valid universe level:", Fpp.align doc]
+     | UNIMPLEMENTED doc => Fpp.hsep
+        [Fpp.text "Not implemented:", Fpp.align doc]
+     | GENERIC doc => Fpp.hsep doc
   val rec format =
     fn Err err => formatError err
      | Pos (_, exn) => format exn
@@ -33,4 +38,7 @@ struct
             SOME pos' => SOME pos'
           | NONE => SOME pos)
       | _ => NONE
+
+  (* this is obsolete *)
+  val error = Err o GENERIC
 end

@@ -1,8 +1,16 @@
+structure RedPrlData =
+struct
+  datatype Error
+    = INVALID_CATEGORICAL_JUDGMENT of Fpp.doc
+    | INVALID_DIMENSION of Fpp.doc
+    | INVALID_LEVEL of Fpp.doc
+    | UNIMPLEMENTED of Fpp.doc
+    | GENERIC of Fpp.doc list
+end
+
 signature REDPRL_ERROR =
 sig
-  datatype Error
-    = GENERIC of Fpp.doc list
-
+  datatype Error = datatype RedPrlData.Error
   val raiseError : Error -> 'a
 
   val raiseAnnotatedError : Pos.t * Error -> 'a

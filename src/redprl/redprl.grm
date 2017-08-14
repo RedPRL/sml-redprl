@@ -16,6 +16,8 @@ end
 structure O = RedPrlOpData
 structure CJ = RedPrlCategoricalJudgment
 
+structure TP = TermPrinter
+
 fun sortOfJudgment jdg = CJ.synthesis (CJ.fromAst jdg)
 
 fun makeCustom (opid, params, bindings) =
@@ -24,7 +26,7 @@ fun makeCustom (opid, params, bindings) =
 fun makeDim pos : IntInf.int -> string param =
   fn 0 => P.APP P.DIM0
    | 1 => P.APP P.DIM1
-   | _ => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "Invalid dimension constant"])
+   | i => E.raiseAnnotatedError (pos, E.INVALID_DIMENSION (TP.ppIntInf i))
 
 structure Tac =
 struct
@@ -96,9 +98,9 @@ struct
 
   fun makeNum i =
     case IntInf.compare (i, 0) of
-      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (IntInf.- (i, 1))]
+      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (i - 1)]
     | EQUAL => O.MONO O.ZERO $$ []
-    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum (IntInf.- (IntInf.~ i, 1))]
+    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum ((~ i) - 1)]
 
   fun flatten xsys =
     List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
@@ -285,9 +287,12 @@ end
  | TRIANGLE_RIGHT
 
  (* parameter sorts *)
- | DIM | HYP | META_NAME
+ | DIM | HYP | LVL | META_NAME
  (* sorts *)
  | EXP | TAC | TRIV | JDG
+
+ (* keywords and symbols in parameters *)
+ | LABOVE | LMAX
 
  (* keywords and symbols in expressions *)
  | AX
@@ -299,9 +304,9 @@ end
  | VOID
  | S1 | BASE | LOOP | S1_REC
  | LAMBDA | DOLLAR_SIGN
- | TIMES
- | RECORD | TUPLE | BANG
+ | RECORD | TIMES | TUPLE | BANG
  | PATH | ABS | AT_SIGN
+ | UNIV
  | HCOM | COE
 
  (* parsing "coercions" *)
@@ -356,6 +361,14 @@ end
    (* parameters *)
  | param of string param
  | params of string param list
+ | numAsDimParam of string param
+ | exclusivelyDimParam of string param
+ | dimParam of string param
+ | dimParams of string param list
+ | numAsLevelParam of string param
+ | exclusivelyLevelParam of string param
+ | levelParam of string param
+ | levelParams of string param list
  | typedParam of string param * P.param_sort
  | typedParams of (string param * P.param_sort) list
  | dir of string param * string param
@@ -499,15 +512,53 @@ valence
 
 param
   : VARNAME (P.VAR VARNAME)
-  | NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
-
-typedParam
-  : LSQUARE param COLON psort RSQUARE ((param, psort))
-  | param ((param, O.DIM))
+  | exclusivelyDimParam (exclusivelyDimParam)
+  | exclusivelyLevelParam (exclusivelyLevelParam)
+  | numAsDimParam (numAsDimParam)
 
 params
   : param ([param])
   | param params (param :: params)
+
+numAsDimParam
+  : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+
+exclusivelyDimParam
+  : LBRACKET DIM dimParam RBRACKET (dimParam)
+
+dimParam
+  : VARNAME (P.VAR VARNAME)
+  | numAsDimParam (numAsDimParam)
+  | exclusivelyDimParam (exclusivelyDimParam)
+
+dimParams
+  : dimParam dimParams (dimParam :: dimParams)
+  | dimParam ([dimParam])
+
+numAsLevelParam
+  : NUMERAL (if NUMERAL >= 0 then P.APP (P.LCONST NUMERAL) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
+
+exclusivelyLevelParam
+  : LBRACKET LVL levelParam RBRACKET (levelParam)
+  | LBRACKET LABOVE levelParam RBRACKET (P.APP (P.LABOVE (levelParam, 1)))
+  | LBRACKET LABOVE levelParam NUMERAL RBRACKET (if NUMERAL >= 0 then P.APP (P.LABOVE (levelParam, NUMERAL)) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
+  | LBRACKET LMAX levelParams RBRACKET (P.APP (P.LMAX levelParams))
+
+levelParam
+  : VARNAME (P.VAR VARNAME)
+  | numAsLevelParam (numAsLevelParam)
+  | exclusivelyLevelParam (exclusivelyLevelParam)
+
+levelParams
+  : levelParam levelParams (levelParam :: levelParams)
+  | levelParam ([levelParam])
+
+typedParam
+  : VARNAME (P.VAR VARNAME, O.DIM)
+  | LSQUARE VARNAME COLON psort RSQUARE (P.VAR VARNAME, psort)
+  | exclusivelyDimParam (exclusivelyDimParam, O.DIM)
+  | exclusivelyLevelParam (exclusivelyLevelParam, O.LVL)
+  | numAsDimParam (numAsDimParam, O.DIM)
 
 typedParams
   : typedParam ([typedParam])
@@ -591,8 +642,9 @@ monoNullaryOperator
 (* built-in nullary operators that take parameters *)
 polyNullaryOperator
   (* circle *)
-  : LOOP param (O.POLY (O.LOOP param))
-  | DIM param (O.POLY (O.PARAM_REF (O.DIM, param)))
+  : LOOP dimParam (O.POLY (O.LOOP dimParam))
+  | DIM dimParam (O.POLY (O.PARAM_REF (O.DIM, dimParam)))
+  | UNIV kind levelParam (O.POLY (O.UNIVERSE (kind, levelParam)))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
@@ -681,7 +733,7 @@ rawTermAndTac
 
   (* paths *)
   | LPAREN ABS LBRACKET boundVars RBRACKET term RPAREN (Multi.makePathAbs boundVars term)
-  | LPAREN AT_SIGN term params RPAREN (Multi.makePathApp term params)
+  | LPAREN AT_SIGN term dimParams RPAREN (Multi.makePathApp term dimParams)
 
 rawTerm
   : rawTermAndTac (rawTermAndTac)
@@ -795,7 +847,7 @@ atomicRawTac
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
-  | AT_SIGN param (Tac.exactDim param)
+  | AT_SIGN dimParam (Tac.exactDim dimParam)
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
