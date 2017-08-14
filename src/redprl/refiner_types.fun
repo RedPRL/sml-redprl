@@ -686,7 +686,7 @@ struct
     val kindConstraintsOnDomAndCod =
       fn K.DISCRETE => (K.DISCRETE, K.DISCRETE)
        | K.KAN => (K.COE, K.KAN)
-       | K.HCOM => (K.top, K.HCOM)
+       | K.HCOM => (K.CUBICAL, K.HCOM)
        | K.COE => (K.COE, K.COE)
        | K.CUBICAL => (K.CUBICAL, K.CUBICAL)
 
