@@ -304,7 +304,6 @@ struct
    | PAT_META of 'a * sort * ('a P.term * psort) list * sort list
    | HYP_REF of 'a * sort
    | PARAM_REF of psort * 'a P.term
-   | IN_UNIV of sort * kind * 'a P.term
 
    | RULE_ELIM of 'a
    | RULE_UNFOLD of 'a
@@ -470,7 +469,6 @@ struct
        | PAT_META (_, tau, _, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
        | HYP_REF (_, tau) => [] ->> tau
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
-       | IN_UNIV (tau, _, _) => [[] * [] <> tau] ->> STRATIFIED tau
 
        | RULE_ELIM _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
@@ -540,7 +538,6 @@ struct
        | PAT_META (x, _, ps, _) => (x, META_NAME) :: paramsSupport' ps
        | HYP_REF (a, _) => [(a, HYP)]
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
-       | IN_UNIV (_, _, lvl) => levelSupport lvl
 
        | RULE_ELIM a => [(a, HYP)]
        | RULE_UNFOLD a => [(a, OPID)]
@@ -597,10 +594,6 @@ struct
            | _ => false)
        | (HYP_REF (a, _), t) => (case t of HYP_REF (b, _) => f (a, b) | _ => false)
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
-       | (IN_UNIV (tau, k, i), t) =>
-           (case t of
-              IN_UNIV (tau', k', i') => tau = tau' andalso k = k' andalso P.eq f (i, i')
-            | _ => false)
 
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
        | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
@@ -752,7 +745,6 @@ struct
            "?" ^ f x ^ "{" ^ paramsToString f ps ^ "}"
        | HYP_REF (a, _) => "hyp-ref{" ^ f a ^ "}"
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
-       | IN_UNIV (tau, k, i) => "in-univ{" ^ K.toString k ^ "," ^ P.toString f i ^ "}"
 
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
