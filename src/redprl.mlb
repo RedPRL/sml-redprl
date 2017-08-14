@@ -59,7 +59,10 @@ in
     redprl/tactical.fun
 
 
-    ann "nonexhaustiveMatch ignore" in
+    ann
+      "nonexhaustiveBind ignore"
+      "nonexhaustiveMatch ignore"
+    in
       redprl/machine.sig
       redprl/machine.fun
       redprl/refiner_kit.fun

@@ -1,5 +1,6 @@
 functor RedPrlMachine (Sig : MINI_SIGNATURE) : REDPRL_MACHINE =
 struct
+  structure E = RedPrlError
   structure Tm = RedPrlAbt
   structure Syn = Syntax
   structure SymSet = SplaySet (structure Elem = Sym.Ord)
@@ -408,6 +409,7 @@ struct
        (case r of 
            P.APP P.DIM0 => STEP @@ Syn.into Syn.BASE || (syms, stk)
          | P.APP P.DIM1 => STEP @@ Syn.into Syn.BASE || (syms, stk)
+         | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
          | P.VAR u => 
              if stability = CUBICAL andalso not (SymSet.member syms u) then raise Unstable else
               case stk of 

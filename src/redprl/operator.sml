@@ -30,6 +30,7 @@ struct
   and paramSortToString = 
     fn DIM => "dim"
      | HYP => "hyp"
+     | LVL => "lvl"
      | META_NAME => "meta-name"
      | OPID => "opid"
 end
