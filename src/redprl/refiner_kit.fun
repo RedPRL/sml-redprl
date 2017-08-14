@@ -221,7 +221,7 @@ struct
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
 
     fun kindLeq (k1, k2) =
-      if K.leq (k1, k2) then
+      if K.<= (k1, k2) then
         ()
       else
         raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be less than", TermPrinter.ppKind k2]

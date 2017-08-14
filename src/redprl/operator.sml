@@ -158,7 +158,7 @@ struct
       type t = kind
 
       val top : t
-      val leq : t * t -> bool
+      val <= : t * t -> bool
       val meet : t * t -> t
 
       (* greatestMeetComplement (a, b) is the greatest element c
@@ -198,7 +198,7 @@ struct
          | (COE, _) => COE
          | (CUBICAL, CUBICAL) => top
 
-      fun leq (a, b) = greatestMeetComplement (b, a) = top
+      fun op <= (a, b) = greatestMeetComplement (b, a) = top
     end
   in
     open Internal
