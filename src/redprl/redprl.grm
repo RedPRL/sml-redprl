@@ -364,6 +364,7 @@ end
  | numAsDimParam of string param
  | exclusivelyDimParam of string param
  | dimParam of string param
+ | dimParams of string param list
  | numAsLevelParam of string param
  | exclusivelyLevelParam of string param
  | levelParam of string param
@@ -529,6 +530,10 @@ dimParam
   : VARNAME (P.VAR VARNAME)
   | numAsDimParam (numAsDimParam)
   | exclusivelyDimParam (exclusivelyDimParam)
+
+dimParams
+  : dimParam dimParams (dimParam :: dimParams)
+  | dimParam ([dimParam])
 
 numAsLevelParam
   : NUMERAL (if NUMERAL >= 0 then P.APP (P.LCONST NUMERAL) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
@@ -728,7 +733,7 @@ rawTermAndTac
 
   (* paths *)
   | LPAREN ABS LBRACKET boundVars RBRACKET term RPAREN (Multi.makePathAbs boundVars term)
-  | LPAREN AT_SIGN term params RPAREN (Multi.makePathApp term params)
+  | LPAREN AT_SIGN term dimParams RPAREN (Multi.makePathApp term dimParams)
 
 rawTerm
   : rawTermAndTac (rawTermAndTac)
@@ -842,7 +847,7 @@ atomicRawTac
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
-  | AT_SIGN param (Tac.exactDim param)
+  | AT_SIGN dimParam (Tac.exactDim dimParam)
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
