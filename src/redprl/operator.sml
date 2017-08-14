@@ -15,7 +15,6 @@ struct
    | TRIV
    | MATCH_CLAUSE of sort
    | PARAM_EXP of param_sort
-   | STRATIFIED of sort
 
   val rec sortToString = 
     fn EXP => "exp"
@@ -25,7 +24,6 @@ struct
      | TRIV => "triv"
      | MATCH_CLAUSE tau => "match-clause"
      | PARAM_EXP sigma => "param-exp{" ^ paramSortToString sigma ^ "}"
-     | STRATIFIED sort => "stratified{" ^ sortToString sort ^ "}"
 
   and paramSortToString = 
     fn DIM => "dim"
