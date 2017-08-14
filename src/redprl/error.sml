@@ -1,10 +1,6 @@
 structure RedPrlError :> REDPRL_ERROR =
 struct
-  datatype Error
-    = INVALID_DIMENSION of Fpp.doc
-    | INVALID_LEVEL of Fpp.doc
-    | UNIMPLEMENTED of Fpp.doc
-    | GENERIC of Fpp.doc list
+  datatype Error = datatype RedPrlData.Error
 
   exception Err of Error
   exception Pos of Pos.t * exn
@@ -21,12 +17,14 @@ struct
 
   structure TP = TermPrinter
   val formatError =
-    fn INVALID_DIMENSION doc => Fpp.hsep
-        [Fpp.text "Expression", doc, Fpp.text "is not a valid dimension." ]
+    fn INVALID_CATEGORICAL_JUDGMENT doc => Fpp.hvsep
+        [Fpp.text "Not a valid categorical judgment:", Fpp.align doc]
+     | INVALID_DIMENSION doc => Fpp.hsep
+        [Fpp.text "Not a valid dimension:", Fpp.align doc]
      | INVALID_LEVEL doc => Fpp.hsep
-        [Fpp.text "Expression", doc, Fpp.text "is not a valid universe level." ]
+        [Fpp.text "Not a valid universe level:", Fpp.align doc]
      | UNIMPLEMENTED doc => Fpp.hsep
-        [Fpp.text "The function", doc, Fpp.text "is not implemented yet."]
+        [Fpp.text "Not implemented:", Fpp.align doc]
      | GENERIC doc => Fpp.hsep doc
   val rec format =
     fn Err err => formatError err

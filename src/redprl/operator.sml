@@ -39,9 +39,9 @@ struct
   datatype 'a param_operator =
      DIM0
    | DIM1
-   | LZERO
-   | LSUCC of 'a
-   | LMAX of 'a * 'a
+   | LCONST of IntInf.int
+   | LABOVE of 'a * IntInf.int
+   | LMAX of 'a list
 end
 
 
@@ -74,38 +74,40 @@ struct
   fun map f =
     fn DIM0 => DIM0
      | DIM1 => DIM1
-     | LZERO => LZERO
-     | LSUCC l => LSUCC (f l)
-     | LMAX (l0, l1) => LMAX (f l0, f l1)
+     | LCONST i => LCONST i
+     | LABOVE (l, i) => LABOVE (f l, i)
+     | LMAX ls => LMAX (List.map f ls)
 
   structure Sort = RedPrlParamSort
 
   val arity =
     fn DIM0 => (DIM0, DIM)
      | DIM1 => (DIM1, DIM)
-     | LZERO => (LZERO, LVL)
-     | LSUCC _ => (LSUCC LVL, LVL)
-     | LMAX _ => (LMAX (LVL, LVL), LVL)
+     | LCONST i => (LCONST i, LVL)
+     | LABOVE (_, i) => (LABOVE (LVL, i), LVL)
+     | LMAX ls => (LMAX (List.map (fn _ => LVL) ls), LVL)
 
   fun eq f =
     fn (DIM0, DIM0) => true
      | (DIM1, DIM1) => true
-     | (LZERO, LZERO) => true
-     | (LSUCC l0, LSUCC l1) => f (l0, l1)
-     | (LMAX (l0, l'0), LMAX (l1, l'1))
-         => f (l0, l'0) andalso f (l1, l'1)
+     | (LCONST i0, LCONST i1) => i0 = i1
+     | (LABOVE (l0, i0), LABOVE (l1, i1)) => f (l0, l1) andalso i0 = i1
+     | (LMAX ls0, LMAX ls1) => ListPair.allEq f (ls0, ls1)
      | _ => false
 
   fun toString f =
     fn DIM0 => "0"
      | DIM1 => "1"
-     | LZERO => "lzero"
-     | LSUCC lvl => "lsucc{" ^ f lvl ^ "}"
-     | LMAX (lvl0, lvl1) => "lmax{" ^ f lvl0 ^ "," ^ f lvl1 ^ "}"
+     | LCONST i => IntInf.toString i
+     | LABOVE (l, i) => "labove{" ^ f l ^ "}"
+     | LMAX ls => "lmax{" ^ String.concatWith "," (List.map f ls) ^ "}"
 
-  fun join zer _ =
+  fun join zer red =
     fn DIM0 => zer
      | DIM1 => zer
+     | LCONST _ => zer
+     | LABOVE (l, _) => red (zer, l)
+     | LMAX ls => List.foldl red zer ls
 end
 
 structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)

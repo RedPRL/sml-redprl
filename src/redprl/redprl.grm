@@ -102,12 +102,6 @@ struct
     | EQUAL => O.MONO O.ZERO $$ []
     | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum ((~ i) - 1)]
 
-  fun makeLevel pos i =
-    case IntInf.compare (i, 0) of
-      GREATER => P.APP (P.LSUCC (makeLevel pos (i - 1)))
-    | EQUAL => P.APP P.LZERO
-    | LESS => E.raiseAnnotatedError (pos, E.INVALID_LEVEL (TP.ppIntInf i))
-
   fun flatten xsys =
     List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
 
@@ -298,7 +292,7 @@ end
  | EXP | TAC | TRIV | JDG
 
  (* keywords and symbols in parameters *)
- | LZERO | LSUCC | LMAX
+ | LABOVE | LMAX
 
  (* keywords and symbols in expressions *)
  | AX
@@ -365,14 +359,15 @@ end
  | valence of Ar.valence
 
    (* parameters *)
- | numAsDimParam of string param
- | numAsLevelParam of string param
- | exclusivelyDimParam of string param
- | exclusivelyLevelParam of string param
  | param of string param
- | dimParam of string param
- | levelParam of string param
  | params of string param list
+ | numAsDimParam of string param
+ | exclusivelyDimParam of string param
+ | dimParam of string param
+ | numAsLevelParam of string param
+ | exclusivelyLevelParam of string param
+ | levelParam of string param
+ | levelParams of string param list
  | typedParam of string param * P.param_sort
  | typedParams of (string param * P.param_sort) list
  | dir of string param * string param
@@ -514,51 +509,51 @@ bindingSig
 valence
   : bindingSig sort ((bindingSig, sort))
 
-numAsDimParam
-  : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
-
-exclusivelyDimParam
-  : LBRACKET DIM numAsDimParam RBRACKET (numAsDimParam)
-
-numAsLevelParam
-  : NUMERAL (Multi.makeLevel (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
-
-exclusivelyLevelParam
-  : LZERO (P.APP P.LZERO)
-  | LBRACKET LSUCC levelParam RBRACKET (P.APP (P.LSUCC levelParam))
-  | LBRACKET LMAX levelParam levelParam RBRACKET (P.APP (P.LMAX (levelParam1, levelParam2)))
-  | LBRACKET LVL numAsLevelParam RBRACKET (numAsLevelParam)
-
 param
   : VARNAME (P.VAR VARNAME)
   | exclusivelyDimParam (exclusivelyDimParam)
   | exclusivelyLevelParam (exclusivelyLevelParam)
   | numAsDimParam (numAsDimParam)
 
+params
+  : param ([param])
+  | param params (param :: params)
+
+numAsDimParam
+  : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+
+exclusivelyDimParam
+  : LBRACKET DIM dimParam RBRACKET (dimParam)
+
 dimParam
   : VARNAME (P.VAR VARNAME)
   | numAsDimParam (numAsDimParam)
   | exclusivelyDimParam (exclusivelyDimParam)
+
+numAsLevelParam
+  : NUMERAL (if NUMERAL >= 0 then P.APP (P.LCONST NUMERAL) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
+
+exclusivelyLevelParam
+  : LBRACKET LVL levelParam RBRACKET (levelParam)
+  | LBRACKET LABOVE levelParam RBRACKET (P.APP (P.LABOVE (levelParam, 1)))
+  | LBRACKET LABOVE levelParam NUMERAL RBRACKET (if NUMERAL >= 0 then P.APP (P.LABOVE (levelParam, NUMERAL)) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
+  | LBRACKET LMAX levelParams RBRACKET (P.APP (P.LMAX levelParams))
 
 levelParam
   : VARNAME (P.VAR VARNAME)
   | numAsLevelParam (numAsLevelParam)
   | exclusivelyLevelParam (exclusivelyLevelParam)
 
+levelParams
+  : levelParam levelParams (levelParam :: levelParams)
+  | levelParam ([levelParam])
+
 typedParam
-  : LSQUARE VARNAME COLON psort RSQUARE (P.VAR VARNAME, psort)
-  | LSQUARE exclusivelyDimParam COLON DIM RSQUARE (exclusivelyDimParam, O.DIM)
-  | LSQUARE NUMERAL COLON DIM RSQUARE ((makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL, O.DIM))
-  | LSQUARE exclusivelyLevelParam COLON LVL RSQUARE (exclusivelyLevelParam, O.LVL)
-  | LSQUARE NUMERAL COLON LVL RSQUARE ((Multi.makeLevel (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL, O.LVL))
-  | VARNAME (P.VAR VARNAME, O.DIM)
+  : VARNAME (P.VAR VARNAME, O.DIM)
+  | LSQUARE VARNAME COLON psort RSQUARE (P.VAR VARNAME, psort)
   | exclusivelyDimParam (exclusivelyDimParam, O.DIM)
   | exclusivelyLevelParam (exclusivelyLevelParam, O.LVL)
   | numAsDimParam (numAsDimParam, O.DIM)
-
-params
-  : param ([param])
-  | param params (param :: params)
 
 typedParams
   : typedParam ([typedParam])
