@@ -22,7 +22,7 @@ struct
     Fpp.nest 2 @@
       Fpp.vsep
         [Fpp.seq [Fpp.hsep [Fpp.text "Goal", TermPrinter.ppMeta x], Fpp.text "."],
-         RedPrlSequent.pretty RedPrlAbt.eq TermPrinter.ppTerm jdg]
+         RedPrlSequent.pretty jdg]
 
   val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, ren : J.ren, idx : int} =
     let

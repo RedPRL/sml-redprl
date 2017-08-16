@@ -18,8 +18,6 @@ structure CJ = RedPrlCategoricalJudgment
 
 structure TP = TermPrinter
 
-fun sortOfJudgment jdg = CJ.synthesis (CJ.fromAst jdg)
-
 fun makeCustom (opid, params, bindings) =
   Ast.$$ (O.POLY (O.CUST (opid, params, NONE)), bindings)
 
@@ -783,7 +781,7 @@ rawJudgment
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
-src_catjdg : rawJudgment (CJ.fromAst rawJudgment)
+src_catjdg : rawJudgment (CJ.astOut rawJudgment)
 
 src_seqhyp
   : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))

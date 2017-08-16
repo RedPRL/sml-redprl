@@ -7,7 +7,7 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = (Sym.t, abt) CJ.jdg
+  type catjdg = CJ.jdg
   type opid = Sig.opid
 
   infixr @@
@@ -81,12 +81,12 @@ struct
         (* tt branch *)
         val tt = Syn.into Syn.TT
         val Htt = Hyps.substAfter (z, tt) H
-        val (goalT, holeT) = makeGoal @@ (I, Htt) >> CJ.map_ (substVar (tt, z)) catjdg
+        val (goalT, holeT) = makeGoal @@ (I, Htt) >> CJ.map (substVar (tt, z)) catjdg
 
         (* ff branch *)
         val ff = Syn.into Syn.FF
         val Hff = Hyps.substAfter (z, ff) H
-        val (goalF, holeF) = makeGoal @@ (I, Hff) >> CJ.map_ (substVar (ff, z)) catjdg
+        val (goalF, holeF) = makeGoal @@ (I, Hff) >> CJ.map (substVar (ff, z)) catjdg
 
         val evidence =
           case catjdg of
@@ -1229,7 +1229,7 @@ struct
         val (goal, hole) =
           makeGoal
             @@ (I, Hyps.interposeThenSubstAfter (z, |@> (u, CJ.EQ ((m, n), (a, K.top))), ax) H)
-            >> CJ.map_ (substVar (ax, z)) catjdg
+            >> CJ.map (substVar (ax, z)) catjdg
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end

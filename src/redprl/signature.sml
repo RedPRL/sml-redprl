@@ -38,7 +38,7 @@ struct
           Fpp.seq [Fpp.text @@ Sym.toString opid, prettyArgs arguments],
           Fpp.Atomic.colon,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
-            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm spec],
+            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty spec],
             Fpp.newline],
           Fpp.Atomic.equals,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
@@ -136,7 +136,7 @@ struct
         inheritAnnotation m (processTerm' sign m)
 
       fun processSrcCatjdg sign =
-        RedPrlCategoricalJudgment.map_ (processTerm sign)
+        RedPrlCategoricalJudgment.map (processTerm sign)
 
       fun processSrcSeq sign (hyps, concl) =
         (List.map (fn (x, hyp) => (x, processSrcCatjdg sign hyp)) hyps, processSrcCatjdg sign concl)
@@ -246,7 +246,7 @@ struct
         AstToAbt.NameEnv.empty
         metactx
 
-    structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequent.Hyps
+    structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
 
     fun elabAst (metactx, env) ast : abt =
       let
@@ -255,8 +255,8 @@ struct
         abt
       end
 
-    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> (Sym.t, abt) CJ.jdg =
-      CJ.map (fn name => NameEnv.lookup env name handle _ => Sym.named name) (elabAst (metactx, env))
+    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> CJ.jdg =
+      CJ.map' (fn name => NameEnv.lookup env name handle _ => Sym.named name) (elabAst (metactx, env))
       (* TODO check scoping *)
 
     fun addHypName (env, symctx, varctx) (srcname, tau) =
@@ -278,7 +278,7 @@ struct
         (env', symctx')
       end
 
-    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * (Sym.t, abt) CJ.jdg =
+    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * CJ.jdg =
       let
         val catjdg = elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg
         val tau = CJ.synthesis catjdg
@@ -287,7 +287,7 @@ struct
         (symctx', varctx', env', x, catjdg)
       end
 
-    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * (Sym.t, abt) CJ.jdg Hyps.telescope =
+    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * CJ.jdg Hyps.telescope =
       let
         fun go env _ _ H [] = (env, H)
           | go env syms vars H (hyp :: hyps) =
@@ -389,7 +389,7 @@ struct
           fun goalEqualTo goal1 goal2 =
             if RedPrlSequent.eq (goal1, goal2) then true
             else
-              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm goal1, Fpp.text "not equal to", RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm goal2]);
+              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty goal1, Fpp.text "not equal to", RedPrlSequent.pretty goal2]);
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true

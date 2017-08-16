@@ -1,19 +1,18 @@
-functor SequentJudgment
-  (structure S : SEQUENT where type CJ.Tm.Sym.t = Sym.t and type CJ.Tm.Var.t = Sym.t and type CJ.Tm.O.Ar.Vl.S.t = RedPrlSort.t
-   structure TermPrinter : sig type t = S.CJ.Tm.abt val ppTerm : t -> Fpp.doc end) : LCF_JUDGMENT  =
+structure RedPrlJudgment : LCF_JUDGMENT  =
 struct
-  structure CJ = S.CJ
-  structure Tm = CJ.Tm
+  structure CJ = RedPrlCategoricalJudgment
+  structure S = struct open RedPrlSequentData RedPrlSequent end
+  structure Tm = RedPrlAbt
   type sort = Tm.valence
   type env = Tm.metaenv
   type ren = Tm.metavariable Tm.Metavar.Ctx.dict
-  type jdg = Tm.abt S.jdg
+  type jdg = S.jdg
 
   val subst = S.map o Tm.substMetaenv
   val ren = S.map o Tm.renameMetavars
 
   val eq = S.eq
-  val toString = FppRenderPlainText.toString o FinalPrinter.execPP o S.pretty Tm.eq TermPrinter.ppTerm
+  val toString = FppRenderPlainText.toString o FinalPrinter.execPP o S.pretty
 
   local
     open S
@@ -33,6 +32,3 @@ struct
        | MATCH_RECORD (lbl, _) => (([],[]), RedPrlSortData.EXP)
   end
 end
-
-structure RedPrlSequent = Sequent (structure CJ = RedPrlCategoricalJudgment)
-structure RedPrlJudgment = SequentJudgment (structure S = RedPrlSequent and TermPrinter = TermPrinter)

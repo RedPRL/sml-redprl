@@ -16,7 +16,8 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = (Sym.t, abt) CJ.jdg
+  type hyp = Sym.t
+  type catjdg = CJ.jdg
   type opid = Sig.opid
   type rule_name = string
 
@@ -38,9 +39,9 @@ struct
         else
           raise E.error
             [Fpp.text "Hypothesis",
-             Fpp.expr @@ Fpp.hsep [TermPrinter.ppSym z, Fpp.Atomic.colon, CJ.pretty' TermPrinter.ppTerm catjdg'],
+             Fpp.expr @@ Fpp.hsep [TermPrinter.ppSym z, Fpp.Atomic.colon, CJ.pretty catjdg'],
              Fpp.text "does not match goal",
-             CJ.pretty' TermPrinter.ppTerm catjdg]
+             CJ.pretty catjdg]
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected sequent judgment"]
@@ -56,9 +57,9 @@ struct
         val renameOut = VarKit.rename (z, z')
 
         val H' = Hyps.splice H z (Hyps.singleton z' zjdg)
-        val H'' = Hyps.modifyAfter z' (CJ.map_ renameIn) H' 
+        val H'' = Hyps.modifyAfter z' (CJ.map renameIn) H'
 
-        val (goal, hole) = makeGoal @@ (I, H'') >> CJ.map_ renameIn catjdg
+        val (goal, hole) = makeGoal @@ (I, H'') >> CJ.map renameIn catjdg
         val extract = renameOut hole
       in
         |>: goal #> (I, H, extract)
@@ -71,7 +72,7 @@ struct
 
         fun checkCJ catjdg = 
           let
-            val tm = CJ.toAbt catjdg
+            val tm = CJ.into catjdg
             val vars = varctx tm
           in
             if Var.Ctx.member vars z then 
@@ -158,7 +159,7 @@ struct
         |>: goal #> (I, H, tm)
       end
       handle Bind =>
-        raise E.error [Fpp.text "Expected truth sequent but got:", RedPrlSequent.pretty' TermPrinter.ppTerm jdg]
+        raise E.error [Fpp.text "Expected truth sequent but got:", RedPrlSequent.pretty jdg]
   end
 
   structure Term = 
@@ -557,7 +558,7 @@ struct
         end
 
       val symenv = ListPair.foldlEq (fn ((x, _), r, rho) => Sym.Ctx.insert rho x r) Sym.Ctx.empty (I_spec, List.map #1 params)
-      val H' = H @> (z, CJ.map_ (substSymenv symenv) specjdg)
+      val H' = H @> (z, CJ.map (substSymenv symenv) specjdg)
       val (mainGoal, mainHole) = makeGoal @@ (I, H') >> catjdg
       val extract = substVar (lemmaExtract', z) mainHole
     in
@@ -767,7 +768,7 @@ struct
           | _ >> CJ.PARAM_SUBST _ => Misc.ParamSubst
           | MATCH _ => Misc.MatchOperator
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordHeadExpansion sign then_ Record.MatchRecord
-          | _ >> jdg => raise E.error [Fpp.text "AutoStep does not apply to the judgment", CJ.pretty' TermPrinter.ppTerm jdg])
+          | _ >> jdg => raise E.error [Fpp.text "AutoStep does not apply to the judgment", CJ.pretty jdg])
 
       fun EqTypeFromHyp alpha jdg =
         let
