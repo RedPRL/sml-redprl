@@ -3,13 +3,19 @@ sig
   type level
   type t = level
 
-  val <= : level * level -> bool
-
   val const : IntInf.int -> level
   val zero : level
   val above : level * IntInf.int -> level
   val max : level list -> level
 
-  val fromParam : Sym.t RedPrlParameterTerm.term -> level
-  val toParam : level -> Sym.t RedPrlParameterTerm.term
+  val <= : level * level -> bool
+  val eq : level * level -> bool
+  val isZero : level -> bool
+
+  type sym
+  val pretty' : (sym -> Fpp.doc) -> level -> Fpp.doc
+
+  type param
+  val into : level -> param
+  val out : param -> level
 end
