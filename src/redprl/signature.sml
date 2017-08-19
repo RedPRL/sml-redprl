@@ -406,7 +406,7 @@ struct
                       val taux = CJ.synthesis jdgx
                     in
                       (ps,
-                       Tm.Sym.Ctx.insert ctx x taux,
+                       Tm.Sym.Ctx.insert ctx x RedPrlSortData.HYP,
                        NameEnv.insert env (Sym.toString x) x)
                     end)
                   (params', symctx, env)
