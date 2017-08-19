@@ -15,7 +15,6 @@ struct
   fun annotateException' (SOME pos) thunk = annotateException pos thunk
     | annotateException' NONE thunk = thunk ()
 
-  structure TP = TermPrinter
   val formatError =
     fn INVALID_CATEGORICAL_JUDGMENT doc => Fpp.hvsep
         [Fpp.text "Not a valid categorical judgment:", Fpp.align doc]

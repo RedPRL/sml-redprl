@@ -12,7 +12,6 @@ struct
   val ren = S.map o Tm.renameMetavars
 
   val eq = S.eq
-  val toString = FppRenderPlainText.toString o FinalPrinter.execPP o S.pretty
 
   local
     open S
@@ -29,6 +28,6 @@ struct
            in
              (([],[]), tau)
            end
-       | MATCH_RECORD (lbl, _) => (([],[]), RedPrlSortData.EXP)
+       | MATCH_RECORD _ => (([],[]), RedPrlSortData.EXP)
   end
 end

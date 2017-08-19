@@ -66,7 +66,6 @@ sig
   val synthesis : jdg -> RedPrlAbt.sort
   val into : jdg -> RedPrlAbt.abt
   val out : RedPrlAbt.abt -> jdg
-  val metactx : jdg -> RedPrlAbt.metactx
   val eq : jdg * jdg -> bool
   val pretty : jdg -> Fpp.doc
 

@@ -95,7 +95,6 @@ struct
          end
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]
 
-    val metactx = metactx o into
     val pretty : jdg -> Fpp.doc = pretty' TermPrinter.ppSym TermPrinter.ppTerm eq
     val eq = fn (j1, j2) => eq (into j1, into j2)
   end
