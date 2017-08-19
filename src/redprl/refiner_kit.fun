@@ -5,16 +5,17 @@ struct
   open Tactical
   infix orelse_ then_
 
-  structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
-  structure Env = RedPrlAbt.Metavar.Ctx
-  structure Machine = RedPrlMachine (Sig)
-  local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
-  open RedPrlSequent
-  infix 2 >: >>
-
+  structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and J = RedPrlJudgment
   structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
   structure K = RedPrlKind
   structure CJ = RedPrlCategoricalJudgment
+  structure Seq = struct open RedPrlSequentData RedPrlSequent end
+  structure Env = RedPrlAbt.Metavar.Ctx
+  structure Machine = RedPrlMachine (Sig)
+
+  local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
+  open RedPrlSequent
+  infix 2 >: >>
 
   exception todo
   fun ?e = raise e
@@ -62,8 +63,41 @@ struct
            ppVars xs]
     end
 
+  (* hypotheses *)
 
-  fun abstractEvidence (I : (sym * psort) list, H) m =
+  structure Hyps = (* favonia: not sure about the organization *)
+  struct
+    structure HypsUtil = TelescopeUtil (Seq.Hyps)
+    open HypsUtil
+
+    fun toSpine H =
+      Seq.Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
+
+    fun lookup z H =
+      Seq.Hyps.lookup H z
+      handle _ =>
+        raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
+
+    (* The telescope lib should be redesigned to make the following helper functions easier.
+     * At least the calling convention can be more consistent. *)
+
+    fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
+      Seq.Hyps.modifyAfter z (CJ.map (Abt.substVar (term, z))) H
+
+    fun interposeAfter (z, H') H =
+      Seq.Hyps.interposeAfter H z H'
+
+    fun interposeThenSubstAfter (z, H', term) H =
+      Seq.Hyps.interposeAfter (Seq.Hyps.modifyAfter z (CJ.map (Abt.substVar (term, z))) H) z H'
+  end
+
+  fun @> (H, (x, j)) = Hyps.snoc H x j
+  infix @>
+  fun |@> h = Hyps.empty @> h
+
+  (* evidence *)
+
+  fun abstractEvidence (I : (Sym.t * Abt.psort) list, H) m =
     let
       val (us, sigmas) = ListPair.unzip I
       val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, CJ.synthesis jdg::taus)) ([],[]) H
@@ -93,38 +127,6 @@ struct
   infix 5 >:?
 
   fun |>:? g = T.empty >:? g
-
-  (* hypotheses *)
-
-  fun @> (H, (x, j)) = Hyps.snoc H x j
-  infix @>
-  fun |@> h = Hyps.empty @> h
-
-  structure Hyps = (* favonia: not sure about the organization *)
-  struct
-    structure HypsUtil = TelescopeUtil (Hyps)
-    open HypsUtil
-
-    fun toSpine H =
-      Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
-
-    fun lookup z H =
-      Hyps.lookup H z
-      handle _ =>
-        raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
-
-    (* The telescope lib should be redesigned to make the following helper functions easier.
-     * At least the calling convention can be more consistent. *)
-
-    fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
-      Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H
-
-    fun interposeAfter (z, H') H =
-      Hyps.interposeAfter H z H'
-
-    fun interposeThenSubstAfter (z, H', term) H =
-      Hyps.interposeAfter (Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H) z H'
-  end
 
   (* making goals *)
 

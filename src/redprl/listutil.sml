@@ -22,12 +22,20 @@ struct
 
   (* From MLton: https://github.com/MLton/mlton/blob/master/lib/mlton/basic/list.sml *)
   fun splitAt (xs, i) = 
-   let
+    let
       val rec loop = 
         fn (0, acc, xs) => (rev acc, xs)
          | (_, _, []) => raise Fail "ListUtil.splitAt"
          | (i, acc, x::xs) => loop (i - 1, x :: acc, xs)
-   in
+    in
       loop (i, [], xs)
-   end
+    end
+
+  local
+    fun init' l [] = raise List.Empty
+      | init' l [_] = List.rev l
+      | init' l (x :: xs) = init' (x :: l) xs
+  in
+    fun init l = init' [] l
+  end
 end

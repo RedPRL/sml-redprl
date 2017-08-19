@@ -51,7 +51,7 @@ is
   redprl/sequent.sig
   redprl/sequent.sml
 
-  redprl/judgment.fun
+  redprl/judgment.sml
 
   redprl/elab_monad.sig
   redprl/elab_monad.sml

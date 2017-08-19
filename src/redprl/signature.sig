@@ -34,7 +34,7 @@ sig
 
   include MINI_SIGNATURE
 
-  type src_catjdg = (string, ast) RedPrlCategoricalJudgment.jdg
+  type src_catjdg = RedPrlCategoricalJudgment.astjdg
   type src_seqhyp = string * src_catjdg
   type src_sequent = src_seqhyp list * src_catjdg
 

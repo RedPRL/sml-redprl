@@ -5,7 +5,7 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = (Sym.t, abt) CJ.jdg
+  type catjdg = CJ.jdg
   type opid = Sig.opid
 
   infixr @@
@@ -32,7 +32,7 @@ struct
     (* Restrict a judgement (as the goal) by a list of equations.
      * Returns NONE if the resulting judgement is vacuously true.
      *)
-    val restrict : abt jdg -> (param * param) list -> abt jdg option
+    val restrict : jdg -> (param * param) list -> jdg option
   end
   =
   struct

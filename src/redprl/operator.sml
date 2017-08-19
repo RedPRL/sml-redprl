@@ -286,7 +286,6 @@ struct
    | JDG_TERM of sort
    | JDG_PARAM_SUBST of RedPrlParamSort.t list * sort
 
-  type psort = RedPrlArity.Vl.PS.t
   type 'a equation = 'a P.term * 'a P.term
   type 'a dir = 'a P.term * 'a P.term
 

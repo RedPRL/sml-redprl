@@ -7,7 +7,7 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = (Sym.t, abt) CJ.jdg
+  type catjdg = CJ.jdg
   type opid = Sig.opid
 
   infixr @@
@@ -81,12 +81,12 @@ struct
         (* tt branch *)
         val tt = Syn.into Syn.TT
         val Htt = Hyps.substAfter (z, tt) H
-        val (goalT, holeT) = makeGoal @@ (I, Htt) >> CJ.map_ (substVar (tt, z)) catjdg
+        val (goalT, holeT) = makeGoal @@ (I, Htt) >> CJ.map (substVar (tt, z)) catjdg
 
         (* ff branch *)
         val ff = Syn.into Syn.FF
         val Hff = Hyps.substAfter (z, ff) H
-        val (goalF, holeF) = makeGoal @@ (I, Hff) >> CJ.map_ (substVar (ff, z)) catjdg
+        val (goalF, holeF) = makeGoal @@ (I, Hff) >> CJ.map (substVar (ff, z)) catjdg
 
         val evidence =
           case catjdg of
@@ -493,12 +493,12 @@ struct
 
         (* (negsucc succ) branch *)
         val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) holeC
-        val r0 = VarKit.renameMany [(u, a0), (v, b0)] r0
-        val r1 = VarKit.renameMany [(u, a1), (v, b1)] r1
+        val r0 = VarKit.renameMany [(u, c0), (v, d0)] r0
+        val r1 = VarKit.renameMany [(u, c1), (v, d1)] r1
         val goalNSS =
           makeEq
             (I, H @> (u, CJ.TRUE (nat, inherentKind)) @> (v, CJ.TRUE (cnegsuccu, k)))
-            ((p0, p1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, K.top))
+            ((r0, r1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, K.top))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >:? goalTy #> (I, H, trivial)
       end
@@ -1229,7 +1229,7 @@ struct
         val (goal, hole) =
           makeGoal
             @@ (I, Hyps.interposeThenSubstAfter (z, |@> (u, CJ.EQ ((m, n), (a, K.top))), ax) H)
-            >> CJ.map_ (substVar (ax, z)) catjdg
+            >> CJ.map (substVar (ax, z)) catjdg
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
