@@ -493,12 +493,12 @@ struct
 
         (* (negsucc succ) branch *)
         val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) holeC
-        val r0 = VarKit.renameMany [(u, a0), (v, b0)] r0
-        val r1 = VarKit.renameMany [(u, a1), (v, b1)] r1
+        val r0 = VarKit.renameMany [(u, c0), (v, d0)] r0
+        val r1 = VarKit.renameMany [(u, c1), (v, d1)] r1
         val goalNSS =
           makeEq
             (I, H @> (u, CJ.TRUE (nat, inherentKind)) @> (v, CJ.TRUE (cnegsuccu, k)))
-            ((p0, p1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, K.top))
+            ((r0, r1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, K.top))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >:? goalTy #> (I, H, trivial)
       end
