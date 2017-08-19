@@ -1,6 +1,6 @@
 structure Signature :> SIGNATURE =
 struct
-  structure Tm = RedPrlAbt and Ar = RedPrlArity
+  structure Ar = RedPrlArity
   structure P = struct open RedPrlSortData RedPrlParamData end
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
@@ -17,11 +17,6 @@ struct
        [] => []
      | [x] => [x]
      | x::xs => Fpp.seq [x, s] :: intersperse s xs
-
-  fun prettyParams ps =
-    Fpp.Atomic.braces @@ Fpp.grouped @@ Fpp.hvsep @@
-      intersperse Fpp.Atomic.comma @@
-        List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Ar.Vl.PS.toString sigma)]) ps
 
   fun prettyArgs args =
     Fpp.Atomic.parens @@ Fpp.grouped @@ Fpp.hvsep @@
@@ -144,9 +139,6 @@ struct
       fun processSrcGenJdg sign (bs, seq) =
         (bs, processSrcSeq sign seq)
 
-      fun processSrcRuleSpec sign (premises, goal) =
-        (List.map (processSrcGenJdg sign) premises, processSrcSeq sign goal)
-
     in
       fun processDecl sign =
         fn DEF {arguments, params, sort, definiens} => DEF {arguments = arguments, params = params, sort = sort, definiens = processTerm sign definiens}
@@ -267,15 +259,6 @@ struct
         val varctx' = Sym.Ctx.insert varctx x tau
       in
         (env', symctx', varctx', x)
-      end
-
-    fun addSymName (env, symctx) (srcname, psort) =
-      let
-        val u = Sym.named srcname
-        val env' = NameEnv.insert env srcname u
-        val symctx' = Sym.Ctx.insert symctx u psort
-      in
-        (env', symctx')
       end
 
     fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * CJ.jdg =
