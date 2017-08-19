@@ -9,6 +9,7 @@ struct
   (* normal form: minimum distance from zero and other variables *)
   type level = IntInf.int * IntInf.int D.dict
   type t = level
+  type param = Key.t P.term
 
   (* smart constructors *)
   fun const i = (i, D.empty)
@@ -44,12 +45,11 @@ struct
   fun isZero ((gap, gapmap) : level) = gap = 0 andalso D.isEmpty gapmap
 
   (* pretty printer *)
-  type sym = Key.t
 
   (* TODO
    *   `pretty.sml` should adopt the following algorithm so that `pretty`
-   *   is just `ppParam o toParam`. *)
-  fun prettyVarGap (f : sym -> Fpp.doc) (x, i) =
+   *   is the same as `ppParam o into`. *)
+  fun prettyVarGap (f : Key.t -> Fpp.doc) (x, i) =
     if i = 0 then
       f x
     else if i = 1 then
@@ -68,7 +68,6 @@ struct
     end
 
   (* parser and generator *)
-  type param = Key.t P.term
   fun out' (f : param -> Fpp.doc) : param -> level =
     fn P.VAR x => (0, D.singleton x 0)
      | P.APP (P.LCONST i) => const i
@@ -89,7 +88,9 @@ struct
     end
 end
 
-structure RedPrlAbtLevel :> REDPRL_LEVEL =
+structure RedPrlLevel :> REDPRL_LEVEL
+where type param = Sym.t RedPrlParameterTerm.t
+=
 struct
   local
     structure L = RedPrlLevelPure (Sym.Ord)
@@ -99,7 +100,10 @@ struct
     val out = out' TP.ppParam
   end
 end
-structure RedPrlAstLevel :> REDPRL_LEVEL =
+
+structure RedPrlAstLevel :> REDPRL_LEVEL
+where type param = string RedPrlParameterTerm.t
+=
 struct
   local
     structure L = RedPrlLevelPure (StringOrdered)
