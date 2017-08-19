@@ -115,7 +115,7 @@ struct
         val goalTy' = makeType (I, Hx) (holeTy, k)
 
         (* eliminated term *)
-        val goalM = makeEq (I, H) ((m0, m1), (Syn.into Syn.WBOOL, K.top))
+        val goalM = makeEq (I, H) ((m0, m1), (Syn.into Syn.BOOL, K.top))
 
         (* result type*)
         val goalTy0 = makeEqTypeIfDifferent (I, H) ((substVar (m0, x) holeTy, ty), k)
