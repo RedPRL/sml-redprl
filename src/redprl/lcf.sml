@@ -35,7 +35,7 @@ struct
             val jdg' = J.ren ren jdg
             val ren' = Metavar.Ctx.insert ren x x'
           in
-            {doc = Fpp.seq [doc, prettyGoal (x, jdg), Fpp.newline],
+            {doc = Fpp.seq [doc, prettyGoal (x, jdg'), Fpp.newline],
              ren = ren',
              idx = idx + 1}
           end)
