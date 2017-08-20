@@ -167,11 +167,6 @@ struct
     if Abt.eq (m, n) then NONE
     else SOME @@ makeEqType (I, H) ((m, n), k)
 
-  fun makeEqTypeIfAllDifferentOrLess (I, H) ((m, n), k) ns =
-    if List.exists (fn n' => Abt.eq (m, n')) ns
-    then SOME @@ makeType (I, H) (m, k)
-    else makeEqTypeIfDifferent (I, H) ((m, n), k)
-
   fun makeTypeIfLess (I, H) (m, k) k' =
     case K.greatestMeetComplement' (k, k') of
       NONE => NONE
