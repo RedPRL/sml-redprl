@@ -2,6 +2,7 @@ signature REDPRL_LEVEL =
 sig
   type level
   type t = level
+
   type param
 
   val const : IntInf.int -> level
@@ -10,8 +11,8 @@ sig
   val max : level list -> level
 
   val <= : level * level -> bool
+  val < : level * level -> bool
   val eq : level * level -> bool
-  val isZero : level -> bool
 
   val pretty : level -> Fpp.doc
 

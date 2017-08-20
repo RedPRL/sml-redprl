@@ -29,20 +29,21 @@ struct
       List.foldl f zero ls
     end
 
-  fun op <= ((gap0, gapmap0), (gap1, gapmap1)) =
-    IntInf.<= (gap0, gap1) andalso
+  fun allBound f ((gap0, gapmap0), (gap1, gapmap1)) =
+    f (gap0, gap1) andalso
     List.all
       (fn (var, g0) =>
         case D.find gapmap1 var of
-          SOME g1 => IntInf.<= (g0, g1)
+          SOME g1 => f (g0, g1)
         | NONE => false)
       (D.toList gapmap0)
+  val op <= = allBound IntInf.<=
+  val op < = allBound IntInf.<
   fun eq ((gap0, gapmap0) : level, (gap1, gapmap1) : level)
     = gap0 = gap1 andalso
       ListPair.allEq
         (fn ((v0, g0), (v1, g1)) => Key.eq (v0, v1) andalso g0 = g1)
         (D.toList gapmap0, D.toList gapmap1)
-  fun isZero ((gap, gapmap) : level) = gap = 0 andalso D.isEmpty gapmap
 
   (* pretty printer *)
 
@@ -88,7 +89,7 @@ struct
     end
 end
 
-structure RedPrlLevel :> REDPRL_LEVEL
+structure RedPrlRawLevel :> REDPRL_LEVEL
 where type param = Sym.t RedPrlParameterTerm.t
 =
 struct
@@ -101,7 +102,7 @@ struct
   end
 end
 
-structure RedPrlAstLevel :> REDPRL_LEVEL
+structure RedPrlAstRawLevel :> REDPRL_LEVEL
 where type param = string RedPrlParameterTerm.t
 =
 struct
@@ -113,3 +114,29 @@ struct
     val out = out' (Fpp.text o RedPrlParameterTerm.toString (fn str => str))
   end
 end
+
+functor LevelUtil (L : REDPRL_LEVEL) =
+struct
+  open L
+  structure P = (* pointed *)
+  struct
+    datatype level = FIN of L.level | OMEGA
+    val op <= : level * level -> bool =
+      fn (_, OMEGA) => true
+       | (OMEGA, _) => false
+       | (FIN l1, FIN l2) => L.<= (l1, l2)
+    val op < : level * level -> bool =
+      fn (OMEGA, _) => false
+       | (_, OMEGA) => true
+       | (FIN l1, FIN l2) => L.< (l1, l2)
+    val into =
+      fn OMEGA => NONE
+       | FIN l => SOME (L.into l)
+    val out =
+      fn NONE => OMEGA
+       | SOME p => FIN (L.out p)
+  end
+end
+
+structure RedPrlLevel = LevelUtil (RedPrlRawLevel)
+structure RedPrlAstLevel = LevelUtil (RedPrlAstRawLevel)
