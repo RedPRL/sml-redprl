@@ -230,13 +230,25 @@ struct
       if L.P.<= (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected level", L.P.pretty l1, Fpp.text "to be less than", L.P.pretty l2]
+        raise E.error [Fpp.text "Expected level", L.P.pretty l1, Fpp.text "to be less than or equal to", L.P.pretty l2]
+
+    fun levelEq (l1, l2) =
+      if L.eq (l1, l2) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
 
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then
         ()
       else
-        raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be less than", TermPrinter.ppKind k2]
+        raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be stronger than or equal to", TermPrinter.ppKind k2]
+
+    fun kindEq (k1, k2) =
+      if k1 = k2 then
+        ()
+      else
+        raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be equal to", TermPrinter.ppKind k2]
 
     fun paramEq msg (r1, r2) =
       if P.eq Sym.eq (r1, r2) then

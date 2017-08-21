@@ -1267,4 +1267,59 @@ struct
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
   end
+
+  structure Universe =
+  struct
+    val inherentKind =
+      fn K.DISCRETE => K.DISCRETE
+       | K.KAN => K.KAN
+       | K.HCOM => K.COE
+       | K.COE => K.COE
+       | K.CUBICAL => K.COE
+
+    fun inherentLevel l = SOME (L.above (l, 1))
+
+    (* The following should be equivalent to
+     * `L.P.<= (inherentLevel l', l) andalso K.<= (inherentKind k', k)`
+     *)
+    fun member (l', k') (l, k) = L.P.< (SOME l', l) andalso K.<= (inherentKind k', k)
+
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.EqType"
+        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val Syn.UNIVERSE (l0, k0) = Syn.out ty0
+        val Syn.UNIVERSE (l1, k1) = Syn.out ty1
+        val _ = Assert.levelEq (l0, l1)
+        val _ = Assert.kindEq (k0, k1)
+        val true = member (l0, k0) (l, k)
+      in
+        T.empty #> (I, H, trivial)
+      end
+
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.Eq"
+        val (I, H) >> CJ.EQ ((a, b), (ty, l, k)) = jdg
+        val Syn.UNIVERSE (l0, k0) = Syn.out ty
+        val true = member (l0, k0) (l, k)
+
+        val goal = makeEqType (I, H) ((a, b), SOME l0, k0)
+      in
+        |>: goal #> (I, H, trivial)
+      end
+
+    fun True _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.True"
+        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val Syn.UNIVERSE (l0, k0) = Syn.out ty
+        val true = member (l0, k0) (l, k)
+
+        val (goalTy, holeTy) = makeTerm (I, H) O.EXP
+        val goalTy' = makeType (I, H) (holeTy, SOME l0, k0)
+      in
+        |>: goalTy >: goalTy' #> (I, H, Syn.into Syn.AX)
+      end
+  end
 end
