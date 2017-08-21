@@ -6,7 +6,9 @@ struct
 
    (* `EQ ((m, n), (a, l, k))`:
     *   `EQ_TYPE ((a, a), l, k)` and `m` and `n` are related by the PER
-    *   associated with `a`, and `a` is defined since the `l`th iteration.
+    *   associated with `a`. Moreover, `a` was already defined at the
+    *   `l'`th iteration if `l = SOME l'`. If `l = NONE` it means `a`
+    *   was defined at some level but we do not care.
     *   The realizer is `TV` of sort `TRIV`.
     *)
      EQ of ('term * 'term) * ('term * 'level * kind)
@@ -20,9 +22,10 @@ struct
 
    (* `EQ_TYPE ((a, b), l, k)`:
     *   `a` and `b` are equal types, even taking into the structures
-    *   specified by `k`. Both are defined since the `l`th iteration.
-    *   For example, `EQ_TYPE ((a, b), 2, KAN)` means `a` and `b` are
-    *   equally Kan
+    *   specified by `k`. Both were already defined at the `l'`th iteration
+    *   if `l = SOME l'`. If `l = NONE` it means both will be defined
+    *   eventually but we do not care about when. For example,
+    *   `EQ_TYPE ((a, b), SOME 2, KAN)` means `a` and `b` are equally Kan
     *   in the second iterated type theory.
     *   The realizer is `TV` of sort `TRIV`.
     *)
@@ -60,11 +63,11 @@ sig
     -> ('sym1, 'level1, 'term1) jdg' -> ('sym2, 'level2, 'term2) jdg'
   val map : ('term1 -> 'term2) -> ('sym, 'level, 'term1) jdg' -> ('sym, 'level, 'term2) jdg'
 
-  (* Pretty printer *)
+  (* raw pretty printer *)
   val pretty' : ('sym -> Fpp.doc) -> ('level -> Fpp.doc) -> ('term -> Fpp.doc)
     -> ('term * 'term -> bool) -> ('sym, 'level option, 'term) jdg' -> Fpp.doc
 
-  (* Functions for abt *)
+  (* functions for judgments based on abt *)
   type jdg = (Sym.t, RedPrlLevel.P.level, RedPrlAbt.abt) jdg'
   val synthesis : jdg -> RedPrlAbt.sort
   val into : jdg -> RedPrlAbt.abt
@@ -72,7 +75,7 @@ sig
   val eq : jdg * jdg -> bool
   val pretty : jdg -> Fpp.doc
 
-  (* Functions for ast *)
+  (* functions for judgments based on ast *)
   type astjdg = (string, RedPrlAstLevel.P.level, RedPrlAst.ast) jdg'
   val astOut : RedPrlAst.ast -> astjdg
 end
