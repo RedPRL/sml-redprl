@@ -66,15 +66,14 @@ struct
   fun prettyHyps f : 'a ctx -> Fpp.doc =
     Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppSym x, Fpp.Atomic.colon, f a] :: r) []
 
-  fun pretty' f eq : 'a jdg' -> Fpp.doc =
+  val pretty : jdg -> Fpp.doc =
     fn (I, H) >> catjdg =>
        Fpp.seq
          [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
-          if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps (CJ.pretty' TP.ppSym f eq) H, Fpp.newline],
-          Fpp.hsep [Fpp.text ">>", CJ.pretty' TP.ppSym f eq catjdg]]
-     | MATCH (th, k, a, _, _) => Fpp.hsep [f a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
-     | MATCH_RECORD (lbl, a) => Fpp.hsep [f a, Fpp.text "match_record", Fpp.text lbl]
-  val pretty = pretty' TP.ppTerm Tm.eq
+          if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps CJ.pretty H, Fpp.newline],
+          Fpp.hsep [Fpp.text ">>", CJ.pretty catjdg]]
+     | MATCH (th, k, a, _, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
+     | MATCH_RECORD (lbl, a) => Fpp.hsep [TP.ppTerm a, Fpp.text "match_record", Fpp.text lbl]
 
   val rec eq =
     fn ((I1, H1) >> catjdg1, (I2, H2) >> catjdg2) =>

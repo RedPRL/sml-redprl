@@ -1,7 +1,7 @@
 structure RedPrlSequentData =
 struct
   (* polymorphism is useful for preventing bugs *)
-  type 'a catjdg = (Sym.t, 'a) RedPrlCategoricalJudgment.jdg'
+  type 'a catjdg = (Sym.t, RedPrlLevel.P.t, 'a) RedPrlCategoricalJudgment.jdg'
 
   structure Hyps : TELESCOPE = Telescope (Sym)
   type 'a ctx = 'a Hyps.telescope
@@ -22,8 +22,6 @@ signature SEQUENT =
 sig
   datatype jdg' = datatype RedPrlSequentData.jdg'
   val map : ('a -> 'b) -> 'a jdg' -> 'b jdg'
-
-  val pretty' : ('a -> Fpp.doc) -> ('a * 'a -> bool) -> 'a jdg' -> Fpp.doc
 
   (* specialized to abt *)
   type jdg = RedPrlAbt.abt jdg'

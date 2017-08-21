@@ -8,6 +8,7 @@ struct
   structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and J = RedPrlJudgment
   structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
   structure K = RedPrlKind
+  structure L = RedPrlLevel
   structure CJ = RedPrlCategoricalJudgment
   structure Seq = struct open RedPrlSequentData RedPrlSequent end
   structure Env = RedPrlAbt.Metavar.Ctx
@@ -148,55 +149,63 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrue (I, H) (a, k) = makeGoal @@ (I, H) >> CJ.TRUE (a, k)
-  fun makeSynth (I, H) (m, k) = makeGoal @@ (I, H) >> CJ.SYNTH (m, k)
+  fun makeTrue (I, H) (a, l, k) = makeGoal @@ (I, H) >> CJ.TRUE (a, l, k)
+  fun makeSynth (I, H) (m, l, k) = makeGoal @@ (I, H) >> CJ.SYNTH (m, l, k)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
   fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> CJ.TERM tau
   fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> CJ.PARAM_SUBST ([(r, O.DIM, u)], m, Abt.sort m)
 
   (* ignoring the trivial realizer *)
-  fun makeType (I, H) (a, k) = makeGoal' @@ (I, H) >> CJ.TYPE (a, k)
-  fun makeEqType (I, H) ((a, b), k) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE ((a, b), k)
-  fun makeEq (I, H) ((m, n), (ty, k)) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), (ty, k))
-  fun makeMem (I, H) (m, (ty, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, k))
+  fun makeType (I, H) (a, l, k) = makeGoal' @@ (I, H) >> CJ.TYPE (a, l, k)
+  fun makeEqType (I, H) ((a, b), l, k) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+  fun makeEq (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+  fun makeMem (I, H) (m, (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, l, k))
 
   (* conditional goal making *)
 
-  fun makeEqTypeIfDifferent (I, H) ((m, n), k) =
+  fun makeEqTypeIfDifferent (I, H) ((m, n), l, k) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType (I, H) ((m, n), k)
+    else SOME @@ makeEqType (I, H) ((m, n), l, k)
 
-  fun makeTypeIfLess (I, H) (m, k) k' =
-    case K.greatestMeetComplement' (k, k') of
-      NONE => NONE
-    | SOME k'' => SOME @@ makeType (I, H) (m, k'')
+  fun makeEqTypeUnlessSubUniv (I, H) ((m, n), l, k) (l', k') =
+    case (L.P.< (l, l'), K.greatestMeetComplement' (k, k')) of
+      (_, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), l, k'')
+    | (true, _) => SOME @@ makeEqType (I, H) ((m, n), l, k)
+    | _ => NONE
+  
+  fun makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k') =
+    makeEqTypeUnlessSubUniv (I, H) ((m, m), l, k) (l', k')
 
-  fun makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k' =
-    if Abt.eq (m, n) then makeTypeIfLess (I, H) (m, k) k'
-    else SOME @@ makeEqType (I, H) ((m, n), k)
+  fun makeEqTypeIfDifferentOrNotSubUniv (I, H) ((m, n), l, k) (l', k') =
+    if Abt.eq (m, n) then makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k')
+    else SOME @@ makeEqType (I, H) ((m, n), l, k)
 
-  fun makeEqIfDifferent (I, H) ((m, n), (ty, k)) =
+  fun makeEqIfDifferent (I, H) ((m, n), (ty, l, k)) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEq (I, H) ((m, n), (ty, k))
+    else SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
 
-  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, k)) ns =
+  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, l, k)) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent (I, H) ((m, n), (ty, k))
+    else makeEqIfDifferent (I, H) ((m, n), (ty, l, k))
 
-  fun makeMemIfLess (I, H) (m, (ty, k)) k' =
-    case K.greatestMeetComplement' (k, k') of
-      NONE => NONE
-    | SOME k'' => SOME @@ makeMem (I, H) (m, (ty, k''))
+  fun makeEqUnlessSubUniv (I, H) ((m, n), (ty, l, k)) (l', k') =
+    case (L.P.< (l, l'), K.greatestMeetComplement' (k, k')) of
+      (_, SOME k'') => SOME @@ makeEq (I, H) ((m, n), (ty, l, k''))
+    | (true, _) => SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
+    | _ => NONE
 
-  fun makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k' =
-    if Abt.eq (m, n) then makeMemIfLess (I, H) (m, (ty, k)) k'
-    else SOME @@ makeEq (I, H) ((m, n), (ty, k))
+  fun makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k') =
+    makeEqUnlessSubUniv (I, H) ((m, m), (ty, l, k)) (l', k')
 
-  fun makeEqIfAllDifferentOrLess (I, H) ((m, n), (ty, k)) ns k' =
+  fun makeEqIfDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) (l', k') =
+    if Abt.eq (m, n) then makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k')
+    else SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
+
+  fun makeEqIfAllDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) ns (l', k') =
     if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeMemIfLess (I, H) (m, (ty, k)) k'
-    else makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k'
+    then makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k')
+    else makeEqIfDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) (l', k')
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
@@ -216,6 +225,12 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
+
+    fun levelLeq (l1, l2) =
+      if L.P.<= (l1, l2) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected level", L.P.pretty l1, Fpp.text "to be less than", L.P.pretty l2]
 
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then

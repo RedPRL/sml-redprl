@@ -164,6 +164,7 @@ whitespace = [\ \t];
 "discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
 "kan"              => (Tokens.KAN (posTuple (size yytext)));
 "cubical"          => (Tokens.CUBICAL (posTuple (size yytext)));
+"at"               => (Tokens.AT (posTuple (size yytext)));
 
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));
 {upper}{identChr}* => (Tokens.OPNAME (posTupleWith (size yytext) yytext));

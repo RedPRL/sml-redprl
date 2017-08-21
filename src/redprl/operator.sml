@@ -279,10 +279,6 @@ struct
    | DEV_QUERY_GOAL
    | DEV_PRINT of sort
 
-   | JDG_EQ of kind
-   | JDG_TRUE of kind
-   | JDG_EQ_TYPE of kind
-   | JDG_SYNTH of kind
    | JDG_TERM of sort
    | JDG_PARAM_SUBST of RedPrlParamSort.t list * sort
 
@@ -312,6 +308,13 @@ struct
    | DEV_APPLY_HYP of 'a * unit dev_pattern * int
    | DEV_USE_HYP of 'a * int
    | DEV_USE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option * int
+
+   (* When the first argument is NONE, the following four are actually MONO,
+    * but it seems better to treat them uniformly as POLY. *)
+   | JDG_EQ of 'a P.term option * kind
+   | JDG_TRUE of 'a P.term option * kind
+   | JDG_EQ_TYPE of 'a P.term option * kind
+   | JDG_SYNTH of 'a P.term option * kind
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -421,10 +424,6 @@ struct
      | DEV_QUERY_GOAL => [[] * [JDG] <> TAC] ->> TAC
      | DEV_PRINT tau => [[] * [] <> tau] ->> TAC
 
-     | JDG_EQ _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_TRUE _ => [[] * [] <> EXP] ->> JDG
-     | JDG_EQ_TYPE _ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_SYNTH _ => [[] * [] <> EXP] ->> JDG
      | JDG_TERM _ => [] ->> JDG
      | JDG_PARAM_SUBST (sigmas, tau) => List.map (fn sigma => [] * [] <> PARAM_EXP sigma) sigmas @ [sigmas * [] <> tau] ->> JDG
 
@@ -486,6 +485,11 @@ struct
          in
            vls @ List.tabulate (n, fn _ => [] * [] <> TAC) ->> TAC
          end
+
+       | JDG_EQ _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
+       | JDG_TRUE _ => [[] * [] <> EXP] ->> JDG
+       | JDG_EQ_TYPE _ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
+       | JDG_SYNTH _ => [[] * [] <> EXP] ->> JDG
   end
 
   val arity =
@@ -496,6 +500,14 @@ struct
     val dimSupport =
       fn P.VAR a => [(a, DIM)]
        | P.APP t => P.freeVars t
+
+    val levelSupport =
+      fn P.VAR a => [(a, LVL)]
+       | P.APP t => P.freeVars t
+
+    fun optSupport f =
+      fn NONE => []
+       | SOME l => f l
 
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
@@ -518,10 +530,6 @@ struct
         (fn (P.VAR a, tau) => [(a, tau)]
           | (P.APP t, _) => P.freeVars t)
         ps
-
-    val levelSupport =
-      fn P.VAR a => [(a, LVL)]
-       | P.APP t => P.freeVars t
   in
     val supportPoly =
       fn FCOM params => comSupport params
@@ -545,6 +553,11 @@ struct
        | DEV_USE_HYP (a, _) => [(a, HYP)]
        | DEV_APPLY_LEMMA (opid, ps, _, _, _) => (opid, OPID) :: paramsSupport ps
        | DEV_USE_LEMMA (opid, ps, _, _) => (opid, OPID) :: paramsSupport ps
+
+       | JDG_EQ (l, _) => optSupport levelSupport l
+       | JDG_TRUE (l, _) => optSupport levelSupport l
+       | JDG_EQ_TYPE (l, _) => optSupport levelSupport l
+       | JDG_SYNTH (l, _) => optSupport levelSupport l
   end
 
   val support =
@@ -560,6 +573,11 @@ struct
 
     fun paramsEq f =
       ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
+
+    fun optEq f =
+      fn (NONE, NONE) => true
+       | (SOME v1, SOME v2) => f (v1, v2)
+       | _ => false
   in
     fun eqPoly f =
       fn (FCOM (dir1, eqs1), t) =>
@@ -607,6 +625,24 @@ struct
          (case t of
              DEV_USE_LEMMA (opid2, ps2, _, n2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2) andalso n1 = n2
            | _ => false)
+
+       | (JDG_EQ (l, k), t) =>
+         (case t of
+             JDG_EQ (l', k') => optEq (P.eq f) (l, l') andalso k = k'
+           | _ => false)
+       | (JDG_TRUE (l, k), t) =>
+         (case t of
+             JDG_TRUE (l', k') => optEq (P.eq f) (l, l') andalso k = k'
+           | _ => false)
+       | (JDG_EQ_TYPE (l, k), t) =>
+         (case t of
+             JDG_EQ_TYPE (l', k') => optEq (P.eq f) (l, l') andalso k = k'
+           | _ => false)
+       | (JDG_SYNTH (l, k), t) =>
+         (case t of
+             JDG_SYNTH (l', k') => optEq (P.eq f) (l, l') andalso k = k'
+           | _ => false)
+
   end
 
   fun eq f =
@@ -684,10 +720,6 @@ struct
      | DEV_QUERY_GOAL => "dev-query-goal"
      | DEV_PRINT _ => "dev-print"
 
-     | JDG_EQ _ => "eq"
-     | JDG_TRUE _ => "true"
-     | JDG_EQ_TYPE _ => "eq-type"
-     | JDG_SYNTH _ => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | JDG_PARAM_SUBST _ => "param-subst"
 
@@ -752,6 +784,11 @@ struct
        | DEV_USE_HYP (a, _) => "use-hyp{" ^ f a ^ "}"
        | DEV_APPLY_LEMMA (opid, ps, _, _, _) => "apply-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
        | DEV_USE_LEMMA (opid, ps, _, _) => "use-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
+
+       | JDG_EQ _ => "eq"
+       | JDG_TRUE _ => "true"
+       | JDG_EQ_TYPE _ => "eq-type"
+       | JDG_SYNTH _ => "synth"
   end
 
   fun toString f =
@@ -761,6 +798,10 @@ struct
   local
     fun passSort sigma f =
       fn u => f (u, sigma)
+
+    fun mapOpt f =
+      fn NONE => NONE
+       | SOME p => SOME (f p)
 
     fun mapSpan f (r, r') = (P.bind (passSort DIM f) r, P.bind (passSort DIM f) r')
     fun mapSpans f = List.map (mapSpan f)
@@ -785,7 +826,6 @@ struct
              (q, tau)
            end)
 
-
     fun mapSym f a =
       case f a of
          P.VAR a' => a'
@@ -800,9 +840,11 @@ struct
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
        | CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
+
        | PAT_META (x, tau, ps, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, mapParams' f ps, taus)
        | HYP_REF (a, tau) => HYP_REF (mapSym (passSort HYP f) a, tau)
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
+
        | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)
@@ -811,6 +853,11 @@ struct
        | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort HYP f) a, pat, spine)
        | DEV_USE_HYP (a, n) => DEV_USE_HYP (mapSym (passSort HYP f) a, n)
        | DEV_USE_LEMMA (opid, ps, ar, n) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, n)
+
+       | JDG_EQ (l, k) => JDG_EQ (mapOpt (P.bind (passSort LVL f)) l, k)
+       | JDG_TRUE (l, k) =>  JDG_TRUE (mapOpt (P.bind (passSort LVL f)) l, k)
+       | JDG_EQ_TYPE (l, k) =>  JDG_EQ_TYPE (mapOpt (P.bind (passSort LVL f)) l, k)
+       | JDG_SYNTH (l, k) =>  JDG_SYNTH (mapOpt (P.bind (passSort LVL f)) l, k)
   end
 
   fun mapWithSort f =

@@ -324,7 +324,7 @@ end
  | PRINT
 
  (* keywords in judgments *)
- | TRUE | TYPE | SYNTH
+ | TRUE | TYPE | SYNTH | AT (* `WITH` is reused *)
 
  | DISCRETE | KAN | CUBICAL
 
@@ -405,6 +405,7 @@ end
  | typedTerm of ast * O.sort
  | typedTerms of (ast * O.sort) list
 
+ | atLevel of string param option
  | kind of O.K.kind
  | withKind of O.K.kind
  | kindedType of O.K.kind
@@ -755,6 +756,10 @@ typedTerms
   : typedTerm ([typedTerm])
   | typedTerm typedTerms (typedTerm :: typedTerms)
 
+atLevel
+  : AT levelParam (SOME levelParam)
+  | (NONE)
+
 kind
   : DISCRETE (O.K.DISCRETE)
   | KAN (O.K.KAN)
@@ -771,13 +776,13 @@ kindedType
   | TYPE (O.K.top)
 
 rawJudgment
-  : term EQUALS term IN term withKind (Ast.$$ (O.MONO (O.JDG_EQ withKind), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
-  | term IN term withKind (Ast.$$ (O.MONO (O.JDG_EQ withKind), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
-  | term TRUE withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
-  | term withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
-  | term EQUALS term kindedType (Ast.$$ (O.MONO (O.JDG_EQ_TYPE kindedType), [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term kindedType (Ast.$$ (O.MONO (O.JDG_EQ_TYPE kindedType), [\ (([],[]), term), \ (([],[]), term)]))
-  | term SYNTH withKind (Ast.$$ (O.MONO (O.JDG_SYNTH withKind), [\ (([],[]), term)]))
+  : term EQUALS term IN term atLevel withKind (Ast.$$ (O.POLY (O.JDG_EQ (atLevel, withKind)), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
+  | term IN term atLevel withKind (Ast.$$ (O.POLY (O.JDG_EQ (atLevel, withKind)), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
+  | term TRUE atLevel withKind (Ast.$$ (O.POLY (O.JDG_TRUE (atLevel, withKind)), [\ (([],[]), term)]))
+  | term atLevel withKind (Ast.$$ (O.POLY (O.JDG_TRUE (atLevel, withKind)), [\ (([],[]), term)]))
+  | term EQUALS term atLevel kindedType (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kindedType)), [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term kindedType atLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kindedType)), [\ (([],[]), term), \ (([],[]), term)]))
+  | term SYNTH atLevel withKind (Ast.$$ (O.POLY (O.JDG_SYNTH (atLevel, withKind)), [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
