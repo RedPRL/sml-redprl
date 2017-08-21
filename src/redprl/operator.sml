@@ -98,7 +98,7 @@ struct
     fn DIM0 => "0"
      | DIM1 => "1"
      | LCONST i => IntInf.toString i
-     | LABOVE (l, i) => "labove{" ^ f l ^ "}"
+     | LABOVE (l, i) => "labove{" ^ f l ^ "," ^ IntInf.toString i ^ "}"
      | LMAX ls => "lmax{" ^ String.concatWith "," (List.map f ls) ^ "}"
 
   fun join zer red =
