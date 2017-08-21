@@ -120,21 +120,21 @@ struct
   open L
   structure P = (* pointed *)
   struct
-    datatype level = FIN of L.level | OMEGA
+    type level = L.level option
+    type t = level
     val op <= : level * level -> bool =
-      fn (_, OMEGA) => true
-       | (OMEGA, _) => false
-       | (FIN l1, FIN l2) => L.<= (l1, l2)
+      fn (_, NONE) => true
+       | (NONE, _) => false
+       | (SOME l1, SOME l2) => L.<= (l1, l2)
     val op < : level * level -> bool =
-      fn (OMEGA, _) => false
-       | (_, OMEGA) => true
-       | (FIN l1, FIN l2) => L.< (l1, l2)
-    val into =
-      fn OMEGA => NONE
-       | FIN l => SOME (L.into l)
-    val out =
-      fn NONE => OMEGA
-       | SOME p => FIN (L.out p)
+      fn (NONE, _) => false
+       | (_, NONE) => true
+       | (SOME l1, SOME l2) => L.< (l1, l2)
+    val into = Option.map L.into
+    val out = Option.map L.out
+    val pretty =
+      fn NONE => Fpp.text "omega"
+       | SOME l => L.pretty l
   end
 end
 
