@@ -289,7 +289,7 @@ struct
      FCOM of 'a dir * 'a equation list
    | LOOP of 'a P.term
    | PATH_APP of 'a P.term
-   | UNIVERSE of kind * 'a P.term
+   | UNIVERSE of 'a P.term * kind
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
    | COM of 'a dir * 'a equation list
@@ -535,7 +535,7 @@ struct
       fn FCOM params => comSupport params
        | LOOP r => dimSupport r
        | PATH_APP r => dimSupport r
-       | UNIVERSE (_, lvl) => levelSupport lvl
+       | UNIVERSE (l, _) => levelSupport l
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
        | COM params => comSupport params
@@ -586,7 +586,7 @@ struct
            | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_APP r, t) => (case t of PATH_APP r' => P.eq f (r, r') | _ => false)
-       | (UNIVERSE (k, i), t) => (case t of UNIVERSE (k', i') => k = k' andalso P.eq f (i, i') | _ => false)
+       | (UNIVERSE (l, k), t) => (case t of UNIVERSE (l', k') => P.eq f (l, l') andalso k = k' | _ => false)
        | (HCOM (dir1, eqs1), t) =>
          (case t of
              HCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
@@ -746,7 +746,7 @@ struct
              ^ "]"
        | LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
-       | UNIVERSE (k, lvl) => "universe{" ^ K.toString k ^ "," ^ P.toString f lvl ^ "}"
+       | UNIVERSE (l, k) => "universe{" ^ P.toString f l ^ "," ^ K.toString k ^ "}"
        | HCOM (dir, eqs) =>
            "hcom"
              ^ "["
@@ -835,7 +835,7 @@ struct
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
        | LOOP r => LOOP (P.bind (passSort DIM f) r)
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
-       | UNIVERSE (k, lvl) => UNIVERSE (k, P.bind (passSort LVL f) lvl)
+       | UNIVERSE (l, k) => UNIVERSE (P.bind (passSort LVL f) l, k)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
        | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)

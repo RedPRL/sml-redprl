@@ -35,9 +35,9 @@ is
 
   redprl/operator.sml
   redprl/abt.sml
-  redprl/syntax.sml
   redprl/univ_level.sig
   redprl/univ_level.sml
+  redprl/syntax.sml
   redprl/variable_kit.sml
 
   redprl/pretty.sml
