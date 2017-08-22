@@ -1,4 +1,4 @@
-structure RedPrlData =
+structure RedPrlErrorData =
 struct
   datatype Error
     = INVALID_CATEGORICAL_JUDGMENT of Fpp.doc
@@ -10,7 +10,7 @@ end
 
 signature REDPRL_ERROR =
 sig
-  datatype Error = datatype RedPrlData.Error
+  datatype Error = datatype RedPrlErrorData.Error
   val raiseError : Error -> 'a
 
   val raiseAnnotatedError : Pos.t * Error -> 'a

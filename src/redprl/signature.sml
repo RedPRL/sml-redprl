@@ -241,14 +241,18 @@ struct
     structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
 
     fun elabAst (metactx, env) ast : abt =
-      let
-        val abt = AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, Sort.EXP)
-      in
-        abt
-      end
+      AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, Sort.EXP)
+
+    (* these should be included in the AstToAbt module *)
+    fun elabSym env (name : string) : Sym.t = NameEnv.lookup env name handle _ => Sym.named name
+
+    (* these should be included in the AstToAbt module *)
+    fun elabParam env = RedPrlParameterTerm.map (elabSym env)
+
+    fun elabLevel env = Option.map (RedPrlLevel.out o elabParam env o RedPrlAstLevel.into)
 
     fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> CJ.jdg =
-      CJ.map' (fn name => NameEnv.lookup env name handle _ => Sym.named name) (elabAst (metactx, env))
+      CJ.map' (elabSym env) (elabLevel env) (elabAst (metactx, env))
       (* TODO check scoping *)
 
     fun addHypName (env, symctx, varctx) (srcname, tau) =

@@ -2,6 +2,7 @@ structure Syntax =
 struct
   structure Tm = RedPrlAbt
   structure K = RedPrlKind
+  structure L = RedPrlLevel
   type variable = Tm.variable
   type symbol = Tm.symbol
   type param = Tm.param
@@ -61,7 +62,7 @@ struct
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* universes *)
-   | UNIVERSE of kind * param
+   | UNIVERSE of L.level * kind
    (* hcom operator *)
    | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* coe operator *)
@@ -215,7 +216,7 @@ struct
 
        | EQUALITY (a, m, n) => O.MONO O.EQUALITY $$ [([],[]) \ a, ([],[]) \ m, ([],[]) \ n]
 
-       | UNIVERSE (k, i) => O.POLY (O.UNIVERSE (k, i)) $$ []
+       | UNIVERSE (l, k) => O.POLY (O.UNIVERSE (L.into l, k)) $$ []
 
        | HCOM {dir, ty, cap, tubes} =>
            let
@@ -291,7 +292,7 @@ struct
 
        | O.MONO O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 
-       | O.POLY (O.UNIVERSE (k, i)) $ _ => UNIVERSE (k, i)
+       | O.POLY (O.UNIVERSE (l, k)) $ _ => UNIVERSE (L.out l, k)
 
        | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
            HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}

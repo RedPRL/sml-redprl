@@ -1,6 +1,6 @@
 structure RedPrlError :> REDPRL_ERROR =
 struct
-  datatype Error = datatype RedPrlData.Error
+  open RedPrlErrorData
 
   exception Err of Error
   exception Pos of Pos.t * exn

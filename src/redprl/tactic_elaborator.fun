@@ -109,7 +109,7 @@ struct
   fun recordElim sign z (lbls, names) tac alpha jdg =
     let
       val (_, H) >> _ = jdg
-      val CJ.TRUE (record, _) = RT.Hyps.lookup z H
+      val CJ.TRUE (record, _, _) = RT.Hyps.lookup z H
       val Syn.RECORD fields = Syn.out record
       val nameMap = ListPair.zipEq (lbls, names)
       fun nameForLabel lbl = 
@@ -172,7 +172,7 @@ struct
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
       val (_, H) >> _ = jdg
-      val CJ.TRUE (ty, _) = RT.Hyps.lookup z H
+      val CJ.TRUE (ty, _, _) = RT.Hyps.lookup z H
     in
       case Syn.out ty of 
          Syn.DFUN _ => (RT.DFun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
@@ -193,7 +193,7 @@ struct
 
   fun recordIntro sign lbls tacs alpha jdg = 
     let
-      val (_, _) >> CJ.TRUE (record, _) = jdg
+      val (_, _) >> CJ.TRUE (record, _, _) = jdg
       val Syn.RECORD fields = Syn.out record
 
       val labeledTactics = ListPair.zipEq (lbls, tacs)

@@ -518,6 +518,11 @@ struct
            end
          | _ => raise Fail "Impossible record type")
 
+     | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
+     | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+         E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of universes"))
+     | O.POLY (O.UNIVERSE _) $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+
      | _ => raise Stuck
 
   fun step sign stability unfolding (tm || stk) =
