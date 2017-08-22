@@ -398,7 +398,6 @@ struct
         val motivem = substVar (m, x) motiveHole
 
         val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, l, k)
-        (* favonia: this should be enough... is it? *)
         val motiveMatchesMainGoal = makeEqTypeIfDifferent (I, H) ((motivem, mainGoal), l, k)
       in
         |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal #> (I, H, rewrittenHole)
