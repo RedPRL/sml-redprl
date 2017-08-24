@@ -5,6 +5,10 @@ struct
   exception Err of error
   exception Pos of Pos.t * exn
 
+  val errorToExn = 
+    fn (SOME pos, err) => Pos (pos, Err err)
+     | (NONE, err) => Err err
+
   fun raiseError err = raise Err err
   fun raiseAnnotatedError (pos, err) = raise Pos (pos, Err err)
   val raiseAnnotatedError' =

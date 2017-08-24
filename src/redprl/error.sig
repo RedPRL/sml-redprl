@@ -12,6 +12,8 @@ signature REDPRL_ERROR =
 sig
   datatype error = datatype RedPrlErrorData.error
 
+  val errorToExn : Pos.t option * error -> exn
+  
   val raiseError : error -> 'a
 
   val raiseAnnotatedError : Pos.t * error -> 'a
