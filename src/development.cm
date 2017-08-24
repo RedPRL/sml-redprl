@@ -15,6 +15,8 @@ Group is
   redprl/metalanguage/metalanguage.cmlex.sml
 
   redprl/metalanguage/parser.sml
+  redprl/metalanguage/lexer.sml
+
 
   redprl/metalanguage/syntax.sml
   redprl/metalanguage/statics.fun

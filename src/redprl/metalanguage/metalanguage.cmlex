@@ -21,15 +21,10 @@ function lexmain: t =
   "#2" => proj2
   ws => skip
   (seq '= '>) => double_right_arrow
-  '{ => lbracket
-  '} => rbracket
   '[ => lsquare
   '] => rsquare
   '( => lparen
   ') => rparen
-  '. => dot
-  ': => colon
-  '! => bang
   ', => comma
   '= => equals
 

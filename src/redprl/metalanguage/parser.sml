@@ -4,15 +4,42 @@ structure Streamable =
      type 'a item = 'a * Pos.t
      fun coerce (x, _) = x)
 
+
+structure MetalanguageTerminal = 
+struct
+  type pos = Pos.t
+  type pos_string = pos * string
+
+  datatype terminal =
+      LET of pos
+    | FN of pos
+    | IN of pos
+    | DOUBLE_RIGHT_ARROW of pos
+    | LSQUARE of pos
+    | RSQUARE of pos
+    | LPAREN of pos
+    | RPAREN of pos
+    | COMMA of pos
+    | EQUALS of pos
+    | BEGIN of pos
+    | END of pos
+    | IDENT of pos_string
+    | PROVE of pos
+    | PROJ1 of pos
+    | PROJ2 of pos
+    | BACKTICK of pos
+    | REFINE of pos
+    | GOAL of pos
+    | PUSH of pos
+    | PRINT of pos
+    | TODO
+end
+
 structure MetalanguageParseAction = 
 struct
   structure ML = MetalanguageSyntax
-
-  fun @@ (f, x) = f x
-  infixr @@ 
-
-  type pos = Pos.t
-  type pos_string = pos * string
+  open ML infix :@
+  open MetalanguageTerminal
 
   type string = string
   type oexp = RedPrlAst.ast * ML.osort 
@@ -20,10 +47,12 @@ struct
   type exps = ML.src_mlterm list
   type names = (pos * string) list
 
+  fun @@ (f, x) = f x
+  infixr @@ 
+
   exception hole
   fun ?e = raise e
 
-  open ML infix :@
 
   val mergeAnnotation = 
     fn (SOME x, SOME y) => SOME (Pos.union x y)
@@ -93,31 +122,9 @@ struct
 
   fun todo () = raise Fail "..."
 
-  datatype terminal =
-      LET of pos
-    | FN of pos
-    | IN of pos
-    | DOUBLE_RIGHT_ARROW of pos
-    | LSQUARE of pos
-    | RSQUARE of pos
-    | LPAREN of pos
-    | RPAREN of pos
-    | COMMA of pos
-    | EQUALS of pos
-    | BEGIN of pos
-    | END of pos
-    | IDENT of pos_string
-    | PROVE of pos
-    | PROJ1 of pos
-    | PROJ2 of pos
-    | BACKTICK of pos
-    | REFINE of pos
-    | GOAL of pos
-    | PUSH of pos
-    | PRINT of pos
-    | TODO
 
-  val error : terminal Streamable.t -> exn = ?hole
+  fun error (sss : terminal Streamable.t) = 
+    Fail "Parse error!"
 end
 
 
