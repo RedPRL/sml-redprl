@@ -16,22 +16,22 @@ functor MetalanguageParseFn
           val exp_nil : unit -> exps
           val exp_singl : exp -> exps
           val exp_cons : exp * exps -> exps
-          val fn_ : pos_string * exp -> exp
-          val print : exp -> exp
+          val fn_ : pos * pos_string * exp -> exp
+          val print : pos * exp -> exp
           val app_exp : exp -> exp
           val app : exp * exp -> exp
           val atm_app : exp -> exp
           val push : pos * names * exp * pos -> exp
-          val fork : exps -> exp
-          val refine : pos_string -> exp
-          val quote : oexp -> exp
+          val fork : pos * exps * pos -> exp
+          val refine : pos * pos_string -> exp
+          val quote : pos * oexp -> exp
           val exp_atm : exp -> exp
-          val prove : oexp * exp -> exp
-          val let_ : pos_string * exp * exp -> exp
-          val proj2 : unit -> exp
-          val proj1 : unit -> exp
-          val pair : exp * exp -> exp
-          val nil_ : unit -> exp
+          val prove : pos * oexp * exp * pos -> exp
+          val let_ : pos * pos_string * exp * exp * pos -> exp
+          val proj2 : pos -> exp
+          val proj1 : pos -> exp
+          val pair : pos * exp * exp * pos -> exp
+          val nil_ : pos * pos -> exp
           val goal : pos -> exp
           val var : pos_string -> exp
           val todo : unit -> oexp
@@ -1364,23 +1364,23 @@ ParseEngine.next5x1 "\144\128\145\128\128\143\128\128\128\128\128\128\128\128\12
 Vector.fromList [(1,1,(fn _::rest => Value.oexp(Arg.todo {})::rest|_=>raise (Fail "bad parser"))),
 (2,1,(fn Value.pos_string(arg0)::rest => Value.exp(Arg.var arg0)::rest|_=>raise (Fail "bad parser"))),
 (2,1,(fn Value.pos(arg0)::rest => Value.exp(Arg.goal arg0)::rest|_=>raise (Fail "bad parser"))),
-(2,2,(fn _::_::rest => Value.exp(Arg.nil_ {})::rest|_=>raise (Fail "bad parser"))),
-(2,5,(fn _::Value.exp(arg0)::_::Value.exp(arg1)::_::rest => Value.exp(Arg.pair {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
-(2,1,(fn _::rest => Value.exp(Arg.proj1 {})::rest|_=>raise (Fail "bad parser"))),
-(2,1,(fn _::rest => Value.exp(Arg.proj2 {})::rest|_=>raise (Fail "bad parser"))),
-(2,7,(fn _::Value.exp(arg0)::_::Value.exp(arg1)::_::Value.pos_string(arg2)::_::rest => Value.exp(Arg.let_ {3=arg0,2=arg1,1=arg2})::rest|_=>raise (Fail "bad parser"))),
-(2,5,(fn _::Value.exp(arg0)::_::Value.oexp(arg1)::_::rest => Value.exp(Arg.prove {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(2,2,(fn Value.pos(arg0)::Value.pos(arg1)::rest => Value.exp(Arg.nil_ {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(2,5,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.exp(arg2)::Value.pos(arg3)::rest => Value.exp(Arg.pair {4=arg0,3=arg1,2=arg2,1=arg3})::rest|_=>raise (Fail "bad parser"))),
+(2,1,(fn Value.pos(arg0)::rest => Value.exp(Arg.proj1 arg0)::rest|_=>raise (Fail "bad parser"))),
+(2,1,(fn Value.pos(arg0)::rest => Value.exp(Arg.proj2 arg0)::rest|_=>raise (Fail "bad parser"))),
+(2,7,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.exp(arg2)::_::Value.pos_string(arg3)::Value.pos(arg4)::rest => Value.exp(Arg.let_ {5=arg0,4=arg1,3=arg2,2=arg3,1=arg4})::rest|_=>raise (Fail "bad parser"))),
+(2,5,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.oexp(arg2)::Value.pos(arg3)::rest => Value.exp(Arg.prove {4=arg0,3=arg1,2=arg2,1=arg3})::rest|_=>raise (Fail "bad parser"))),
 (2,3,(fn _::Value.exp(arg0)::_::rest => Value.exp(Arg.exp_atm arg0)::rest|_=>raise (Fail "bad parser"))),
 (2,3,(fn _::Value.exp(arg0)::_::rest => Value.exp(Arg.exp_atm arg0)::rest|_=>raise (Fail "bad parser"))),
-(2,2,(fn Value.oexp(arg0)::_::rest => Value.exp(Arg.quote arg0)::rest|_=>raise (Fail "bad parser"))),
-(2,2,(fn Value.pos_string(arg0)::_::rest => Value.exp(Arg.refine arg0)::rest|_=>raise (Fail "bad parser"))),
-(2,3,(fn _::Value.exps(arg0)::_::rest => Value.exp(Arg.fork arg0)::rest|_=>raise (Fail "bad parser"))),
+(2,2,(fn Value.oexp(arg0)::Value.pos(arg1)::rest => Value.exp(Arg.quote {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(2,2,(fn Value.pos_string(arg0)::Value.pos(arg1)::rest => Value.exp(Arg.refine {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(2,3,(fn Value.pos(arg0)::Value.exps(arg1)::Value.pos(arg2)::rest => Value.exp(Arg.fork {3=arg0,2=arg1,1=arg2})::rest|_=>raise (Fail "bad parser"))),
 (2,5,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.names(arg2)::Value.pos(arg3)::rest => Value.exp(Arg.push {4=arg0,3=arg1,2=arg2,1=arg3})::rest|_=>raise (Fail "bad parser"))),
 (5,1,(fn Value.exp(arg0)::rest => Value.exp(Arg.atm_app arg0)::rest|_=>raise (Fail "bad parser"))),
 (5,2,(fn Value.exp(arg0)::Value.exp(arg1)::rest => Value.exp(Arg.app {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
 (0,1,(fn Value.exp(arg0)::rest => Value.exp(Arg.app_exp arg0)::rest|_=>raise (Fail "bad parser"))),
-(0,2,(fn Value.exp(arg0)::_::rest => Value.exp(Arg.print arg0)::rest|_=>raise (Fail "bad parser"))),
-(0,4,(fn Value.exp(arg0)::_::Value.pos_string(arg1)::_::rest => Value.exp(Arg.fn_ {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(0,2,(fn Value.exp(arg0)::Value.pos(arg1)::rest => Value.exp(Arg.print {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(0,4,(fn Value.exp(arg0)::_::Value.pos_string(arg1)::Value.pos(arg2)::rest => Value.exp(Arg.fn_ {3=arg0,2=arg1,1=arg2})::rest|_=>raise (Fail "bad parser"))),
 (3,3,(fn Value.exps(arg0)::_::Value.exp(arg1)::rest => Value.exps(Arg.exp_cons {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
 (3,1,(fn Value.exp(arg0)::rest => Value.exps(Arg.exp_singl arg0)::rest|_=>raise (Fail "bad parser"))),
 (3,0,(fn rest => Value.exps(Arg.exp_nil {})::rest)),

@@ -31,8 +31,8 @@ sig
    | FUN of ('v, 'a) scope
    | APP of 'a * 'a
    | PAIR of 'a * 'a
-   | FST of 'a
-   | SND of 'a
+   | FST
+   | SND
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
    | EACH of 'a list
@@ -53,9 +53,15 @@ sig
   val scope : mlvar * (mlvar, 's, 'o) mlterm -> (mlvar, (mlvar, 's, 'o) mlterm) scope
   val oscope : osym list * ('v, osym, oterm) mlterm -> (osym list, ('v, osym, oterm) mlterm) scope
 
+  structure Ast :
+  sig
+    val fn_ : string * src_mlterm -> annotation -> src_mlterm
+    val let_ : src_mlterm * (string * src_mlterm) -> annotation -> src_mlterm
+    val push : string list * src_mlterm -> annotation -> src_mlterm
+  end
+
   structure Resolver :
   sig
-    val scope : string * (string, 's, 'o) mlterm -> (string, (string, 's, 'o) mlterm) scope
     val resolve : (string, string, oast * osort) mlterm -> mlterm_
   end
 end

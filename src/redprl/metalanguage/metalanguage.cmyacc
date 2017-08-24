@@ -33,17 +33,17 @@ nonterminal OExp: oexp =
 nonterminal Atm: exp =
   1:IDENT => var
   1:GOAL => goal
-  LPAREN RPAREN => nil_
-  LPAREN 1:Exp COMMA 2:Exp RPAREN => pair
-  PROJ1 => proj1
-  PROJ2 => proj2
-  LET 1:IDENT EQUALS 2:Exp IN 3:Exp END => let_
-  PROVE 1:OExp IN 2:Exp END => prove
+  1:LPAREN 2:RPAREN => nil_
+  1:LPAREN 2:Exp COMMA 3:Exp 4:RPAREN => pair
+  1:PROJ1 => proj1
+  1:PROJ2 => proj2
+  1:LET 2:IDENT EQUALS 3:Exp IN 4:Exp 5:END => let_
+  1:PROVE 2:OExp IN 3:Exp 4:END => prove
   LPAREN 1:Exp RPAREN => exp_atm
   BEGIN 1:Exp END => exp_atm
-  BACKTICK 1:OExp => quote
-  REFINE 1:IDENT => refine
-  LSQUARE 1:Exps RSQUARE => fork
+  1:BACKTICK 2:OExp => quote
+  1:REFINE 2:IDENT => refine
+  1:LSQUARE 2:Exps 3:RSQUARE => fork
   1:PUSH 2:Names IN 3:Exp 4:END => push
 
 nonterminal App: exp =
@@ -52,8 +52,8 @@ nonterminal App: exp =
 
 nonterminal Exp: exp = 
   1:App => app_exp
-  PRINT 1:Atm => print
-  FN 1:IDENT DOUBLE_RIGHT_ARROW 2:Exp => fn_
+  1:PRINT 2:Atm => print
+  1:FN 2:IDENT DOUBLE_RIGHT_ARROW 3:Exp => fn_
 
 nonterminal Exps: exps = 
   1:Exp COMMA 2:Exps => exp_cons

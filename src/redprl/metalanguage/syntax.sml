@@ -38,8 +38,8 @@ struct
    | FUN of ('v, 'a) scope
    | APP of 'a * 'a
    | PAIR of 'a * 'a
-   | FST of 'a
-   | SND of 'a
+   | FST
+   | SND
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
    | EACH of 'a list
@@ -65,12 +65,11 @@ struct
   fun scope (x, t) = x \ t
   fun oscope (us, tm) = us \ tm
 
+
   structure Resolver =
   struct
     structure A2A = AstToAbt
     structure Names = A2A.NameEnv
-
-    fun scope (x, t) = x \ t
 
     type ostate =
       {metactx: Tm.metactx,
@@ -114,8 +113,8 @@ struct
        | FUN sc :@ ann => FUN (resolveAuxScope state sc) :@ ann
        | APP (t1, t2) :@ ann => APP (resolveAux state t1, resolveAux state t2) :@ ann
        | PAIR (t1, t2) :@ ann => PAIR (resolveAux state t1, resolveAux state t2) :@ ann
-       | FST t :@ ann => FST (resolveAux state t) :@ ann
-       | SND t :@ ann => SND (resolveAux state t) :@ ann
+       | FST :@ ann => FST :@ ann
+       | SND :@ ann => SND :@ ann
        | QUOTE (ast, tau) :@ ann => QUOTE (resolveAbt (#ostate state) ast tau) :@ ann
        | GOAL :@ ann => GOAL :@ ann
        | REFINE ruleName :@ ann => REFINE ruleName :@ ann
@@ -160,4 +159,17 @@ struct
            varenv = Names.empty},
         mlenv = Names.empty}
     end
+
+  structure Ast = 
+  struct
+    fun fn_ (x, t) pos : src_mlterm = 
+      FUN (x \ t) :@ pos
+
+    fun let_ (t, (x, tx)) pos = 
+      LET (t, x \ t) :@ pos
+
+    fun push (xs : string list, t : src_mlterm) pos : src_mlterm = 
+      PUSH (xs \ t) :@ pos
+  end
+
 end

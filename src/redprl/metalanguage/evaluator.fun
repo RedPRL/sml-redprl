@@ -39,6 +39,7 @@ struct
     datatype value =
        NIL
      | FUN of (ML.mlvar, mlterm) ML.scope * env
+     | FST | SND
      | PAIR of value * value
      | QUOTE of Tm.abt
      | THEOREM of (ML.osym, ML.oterm) CJ.jdg * Tm.abs (* a certified proof term *)
@@ -86,8 +87,8 @@ struct
      | ML.FUN sc => M.pure @@ V.FUN (sc, env)
      | ML.APP (t1, t2) => app =<< (eval env t1 <&> eval env t2)
      | ML.PAIR (t1, t2) => V.PAIR <$> (eval env t1 <&> eval env t2)
-     | ML.FST t => fst <$> eval env t
-     | ML.SND t => snd <$> eval env t
+     | ML.FST => M.pure V.FST
+     | ML.SND => M.pure V.SND
      | ML.QUOTE abt => M.pure o V.QUOTE @@ Env.forceObjTerm env abt
      | ML.GOAL => getGoal <$> M.getGoal
      | ML.REFINE ruleName => const V.NIL <$> M.rule (Rules.lookupRule ruleName)
@@ -130,11 +131,15 @@ struct
        eval env t >>= (fn v => 
          const V.NIL <$> M.print (pos, V.ppValue v))
 
-  and app (V.FUN (sc, env), v) =
-    let
-      val (x, tx) = ML.unscope sc
-      val env' = Env.insertMl env x v
-    in
-      eval env' tx
-    end
+  and app (vf, v) =
+    case vf of 
+       V.FUN (sc, env) => 
+       let
+         val (x, tx) = ML.unscope sc
+         val env' = Env.insertMl env x v
+       in
+         eval env' tx
+       end
+     | V.FST => M.pure @@ fst v
+     | V.SND => M.pure @@ snd v
 end

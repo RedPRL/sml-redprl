@@ -15,11 +15,10 @@ struct
   type pos_string = pos * string
 
   type string = string
-  type oexp = ML.oterm 
+  type oexp = RedPrlAst.ast * ML.osort 
   type exp = ML.src_mlterm
   type exps = ML.src_mlterm list
   type names = (pos * string) list
-
 
   exception hole
   fun ?e = raise e
@@ -41,36 +40,58 @@ struct
   fun names_cons (x, xs) = x :: xs
 
   fun exp_nil () = []
-  fun exp_singl m = [m]
-  fun exp_cons (m, ms) = m :: ms
+  fun exp_singl e = [e]
+  fun exp_cons (e, es) = e :: es
 
-  fun fn_ (x, m) = 
-    ?hole
+  fun fn_ (posl, (_, x), e :@ pos) = 
+    Ast.fn_ (x, e :@ pos) @@ mergeAnnotation (SOME posl, pos)
 
-  fun print m = 
-    ?hole
+  fun print (posl, e :@ pos) = 
+    ML.PRINT (e :@ pos) :@ mergeAnnotation (SOME posl, pos)
 
   fun app_exp e = e
   fun app (e1, e2) = APP (e1, e2) :@ posOfTerms [e1, e2]
   fun atm_app e = e
 
-  fun push (posl, xs, e, posr) =
-    PUSH (?hole)
-      :@ SOME (Pos.union posl posr)
+  fun push (posl, xs : names, e : exp, posr) =
+    Ast.push (List.map #2 xs, e) @@ SOME (Pos.union posl posr)
 
-  val fork : exps -> exp = ?hole
-  val refine : pos * string -> exp = ?hole
-  val quote : oexp -> exp = ?hole
-  val exp_atm : exp -> exp = ?hole
-  val prove : oexp * exp -> exp = ?hole
-  val let_ : (pos * string) * exp * exp -> exp = ?hole
-  val proj2 : unit -> exp = ?hole
-  val proj1 : unit -> exp = ?hole
-  val pair : exp * exp -> exp = ?hole
-  val nil_ : unit -> exp = ?hole
-  val goal : pos -> exp = ?hole
-  val var : pos * string -> exp = ?hole
-  val todo : unit -> oexp = ?hole
+  fun fork (posl, es, posr) =
+    ML.EACH es :@ SOME (Pos.union posl posr)
+ 
+  fun refine (pos1, (pos2, str)) =
+    ML.REFINE str :@ SOME (Pos.union pos1 pos2)
+
+  fun quote (pos : pos, (oexp, osort)) : src_mlterm =
+    ML.QUOTE (oexp, osort) :@ mergeAnnotation (SOME pos, RedPrlAst.getAnnotation oexp)
+
+  fun exp_atm e = e
+
+  fun prove (posl, (oexp, osort), e, posr) = 
+    ML.PROVE ((oexp, osort), e) :@ SOME (Pos.union posl posr)
+
+  fun let_ (posl, (_, x), e, ex, posr) =
+    Ast.let_ (e, (x, ex)) @@ SOME (Pos.union posl posr)
+
+  fun proj1 pos = 
+    ML.FST :@ SOME pos
+
+  fun proj2 pos = 
+    ML.SND :@ SOME pos
+
+  fun pair (posl, e1, e2, posr) =
+    ML.PAIR (e1, e2) :@ SOME (Pos.union posl posr)
+
+  fun nil_ (posl, posr) = 
+    ML.NIL :@ SOME (Pos.union posl posr)
+
+  fun goal pos = 
+    ML.GOAL :@ SOME pos
+
+  fun var (pos, x) = 
+    ML.VAR x :@ SOME pos
+
+  fun todo () = raise Fail "..."
 
   datatype terminal =
       LET of pos
