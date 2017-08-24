@@ -1,20 +1,21 @@
 structure RedPrlErrorData =
 struct
-  datatype Error
-    = INVALID_CATEGORICAL_JUDGMENT of Fpp.doc
-    | INVALID_DIMENSION of Fpp.doc
-    | INVALID_LEVEL of Fpp.doc
-    | UNIMPLEMENTED of Fpp.doc
-    | GENERIC of Fpp.doc list
+  datatype error =
+     INVALID_CATEGORICAL_JUDGMENT of Fpp.doc
+   | INVALID_DIMENSION of Fpp.doc
+   | INVALID_LEVEL of Fpp.doc
+   | UNIMPLEMENTED of Fpp.doc
+   | GENERIC of Fpp.doc list
 end
 
 signature REDPRL_ERROR =
 sig
-  datatype Error = datatype RedPrlErrorData.Error
-  val raiseError : Error -> 'a
+  datatype error = datatype RedPrlErrorData.error
 
-  val raiseAnnotatedError : Pos.t * Error -> 'a
-  val raiseAnnotatedError' : Pos.t option * Error -> 'a
+  val raiseError : error -> 'a
+
+  val raiseAnnotatedError : Pos.t * error -> 'a
+  val raiseAnnotatedError' : Pos.t option * error -> 'a
   val annotateException : Pos.t -> (unit -> 'a) -> 'a
   val annotateException' : Pos.t option -> (unit -> 'a) -> 'a
 

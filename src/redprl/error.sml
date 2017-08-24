@@ -2,7 +2,7 @@ structure RedPrlError :> REDPRL_ERROR =
 struct
   open RedPrlErrorData
 
-  exception Err of Error
+  exception Err of error
   exception Pos of Pos.t * exn
 
   fun raiseError err = raise Err err
@@ -12,6 +12,7 @@ struct
      | (NONE, err) => raiseError err
 
   fun annotateException pos thunk = thunk () handle exn => raise Pos (pos, exn)
+
   fun annotateException' (SOME pos) thunk = annotateException pos thunk
     | annotateException' NONE thunk = thunk ()
 
@@ -25,6 +26,7 @@ struct
      | UNIMPLEMENTED doc => Fpp.hsep
         [Fpp.text "Not implemented:", Fpp.align doc]
      | GENERIC doc => Fpp.hsep doc
+
   val rec format =
     fn Err err => formatError err
      | Pos (_, exn) => format exn
