@@ -33,6 +33,8 @@ struct
     | PUSH of pos
     | PRINT of pos
     | TODO
+
+  fun terminalToString t = "TODO"
 end
 
 structure MetalanguageParseAction = 
@@ -122,9 +124,14 @@ struct
 
   fun todo () = raise Fail "..."
 
+  fun error s = 
+    case Stream.front s of
+       Stream.Nil => RedPrlError.error [Fpp.text "Syntax error at end of file"]
+     | Stream.Cons ((tok, pos), _) =>
+         RedPrlError.annotate (SOME pos) @@
+           RedPrlError.error
+             [Fpp.text "Parse error encountered at token", Fpp.text (terminalToString tok)]
 
-  fun error (sss : terminal Streamable.t) = 
-    Fail "Parse error!"
 end
 
 
