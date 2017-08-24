@@ -47,7 +47,10 @@ is
 
   redprl/operator.sml
   redprl/abt.sml
+  redprl/univ_level.sig
+  redprl/univ_level.sml
   redprl/syntax.sml
+  redprl/variable_kit.sml
 
   redprl/pretty.sml
 
@@ -60,7 +63,7 @@ is
   redprl/sequent.sig
   redprl/sequent.sml
 
-  redprl/judgment.fun
+  redprl/judgment.sml
 
   redprl/elab_monad.sig
   redprl/elab_monad.sml

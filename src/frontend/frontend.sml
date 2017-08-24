@@ -21,8 +21,9 @@ struct
     structure E = RedPrlError
   in
     fun error fileName (s, pos, pos') =
-      raise E.annotate (SOME (Pos.pos (pos fileName) (pos' fileName)))
-            (RedPrlError.error [Fpp.text s])
+      E.raiseAnnotatedError
+        (Pos.pos (pos fileName) (pos' fileName),
+         E.GENERIC [Fpp.text s])
   end
 
   local

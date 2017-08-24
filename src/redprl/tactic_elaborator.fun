@@ -109,7 +109,7 @@ struct
   fun recordElim sign z (lbls, names) tac alpha jdg =
     let
       val (_, H) >> _ = jdg
-      val CJ.TRUE (record, _) = RT.Hyps.lookup z H
+      val CJ.TRUE (record, _, _) = RT.Hyps.lookup z H
       val Syn.RECORD fields = Syn.out record
       val nameMap = ListPair.zipEq (lbls, names)
       fun nameForLabel lbl = 
@@ -172,7 +172,7 @@ struct
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
       val (_, H) >> _ = jdg
-      val CJ.TRUE (ty, _) = RT.Hyps.lookup z H
+      val CJ.TRUE (ty, _, _) = RT.Hyps.lookup z H
     in
       case Syn.out ty of 
          Syn.DFUN _ => (RT.DFun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
@@ -193,7 +193,7 @@ struct
 
   fun recordIntro sign lbls tacs alpha jdg = 
     let
-      val (_, _) >> CJ.TRUE (record, _) = jdg
+      val (_, _) >> CJ.TRUE (record, _, _) = jdg
       val Syn.RECORD fields = Syn.out record
 
       val labeledTactics = ListPair.zipEq (lbls, tacs)
@@ -263,14 +263,12 @@ struct
     end
 
   fun tactic sign env tm alpha jdg = 
-    tactic_ sign env tm alpha jdg 
-    handle exn => 
-      raise RedPrlError.annotate (Tm.getAnnotation tm) exn
+    RedPrlError.annotateException' (Tm.getAnnotation tm)
+      (fn _ => tactic_ sign env tm alpha jdg)
 
   and multitactic sign env tm alpha jdg = 
-    multitactic_ sign env tm alpha jdg
-    handle exn => 
-      raise RedPrlError.annotate (Tm.getAnnotation tm) exn
+    RedPrlError.annotateException' (Tm.getAnnotation tm)
+      (fn _ => multitactic_ sign env tm alpha jdg)
 
   and tactic_ sign env tm = 
     case Tm.out tm of 
@@ -281,10 +279,10 @@ struct
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
-     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.fromAbt (expandHypVars catjdg))
+     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.out (expandHypVars catjdg))
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
-     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.fromAbt (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.out (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO (O.DEV_DFUN_INTRO pats) $ [(us, _) \ tm] => dfunIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
@@ -361,7 +359,7 @@ struct
      | O.MONO O.DEV_QUERY_GOAL $ [(_,[x]) \ tm] =>
        (fn alpha => fn jdg as _ >> cj =>
          let
-           val tm' = substVar (CJ.toAbt cj, x) tm
+           val tm' = substVar (CJ.into cj, x) tm
          in
            tactic sign env tm' alpha jdg
          end)

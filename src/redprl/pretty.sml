@@ -40,6 +40,7 @@ sig
   val ppOperator : RedPrlAbt.operator -> Fpp.doc
   val ppKind : RedPrlKind.kind -> Fpp.doc
   val ppLabel : string -> Fpp.doc
+  val ppIntInf : IntInf.int -> Fpp.doc
 end =
 struct
   structure Abt = RedPrlAbt
@@ -97,6 +98,7 @@ struct
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
 
   val ppLabel = text
+  val ppIntInf = text o IntInf.toString
 
   fun intersperse s xs =
     case xs of
@@ -207,11 +209,14 @@ struct
              [text "tuple", expr @@ hvsep @@ ListPair.mapEq pp (lbls, data)]
          end
      | O.MONO (O.PROJ lbl) $ [_ \ m] =>
-         Atomic.parens @@ expr @@ hvsep [char #"!", text lbl, ppTerm m]
+         Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppTerm m]
      | O.MONO O.PATH_ABS $ _ =>
          printPathAbs @@ multiPathAbs [] m
      | O.POLY (O.PATH_APP _) $ _ =>
          printPathApp @@ multiPathApp m []
+     | O.MONO O.EQUALITY $ [_ \ a, _ \ m, _ \ n] =>
+         Atomic.parens @@ expr @@ hvsep
+           [char #"=", ppTerm a, ppTerm m, ppTerm n]
      | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "hcom" dir, ppBinder ty, ppBinder cap]

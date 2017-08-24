@@ -1,0 +1,27 @@
+Thm EqualityKind0(#A) : [
+  m : #A type,
+  a : #A,
+  b : #A
+  >> (= #A a b) hcom type
+] by [ auto ].
+
+Thm EqualityKind1(#A) : [
+  m : #A discrete type,
+  a : #A,
+  b : #A
+  >> (= #A a b) kan type
+] by [ auto ].
+
+Thm EqualityElim(#A) : [
+  a : #A,
+  b : #A,
+  p : (= #A a b)
+  >> a = b in #A
+] by [ fresh eq -> elim p; use eq ].
+
+Thm EqualityIntro(#A) : [
+  a : #A,
+  b : #A,
+  eq : a = b in #A
+  >> (= #A a b)
+] by [ `ax ].

@@ -1,3 +1,3 @@
-Thm BoolTest : [ (-> bool bool) true ] by [
-  { lam _. `_tt }; auto
+Thm LexicalError : [ (-> bool bool) true ] by [
+  { lam x. `_tt }; auto
 ].

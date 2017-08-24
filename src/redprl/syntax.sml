@@ -1,10 +1,13 @@
 structure Syntax =
 struct
   structure Tm = RedPrlAbt
+  structure K = RedPrlKind
+  structure L = RedPrlLevel
   type variable = Tm.variable
   type symbol = Tm.symbol
   type param = Tm.param
   type sort = Tm.sort
+  type kind = K.t
 
   type equation = param * param
   type dir = param * param
@@ -44,7 +47,7 @@ struct
    | NAT_REC of 'a * ('a * (variable * variable * 'a))
    (* integers, reusing natural numbers *)
    | INT | NEGSUCC of 'a
-   | INT_REC of 'a * ((variable * variable * 'a) * 'a * (variable * variable * 'a))
+   | INT_REC of 'a * ('a * (variable * variable * 'a) * 'a * (variable * variable * 'a))
    (* empty type *)
    | VOID
    (* circle *)
@@ -56,6 +59,10 @@ struct
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
+   (* equality *)
+   | EQUALITY of 'a * 'a * 'a
+   (* universes *)
+   | UNIVERSE of L.level * kind
    (* hcom operator *)
    | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
    (* coe operator *)
@@ -166,8 +173,8 @@ struct
 
        | INT => O.MONO O.INT $$ []
        | NEGSUCC m => O.MONO O.NEGSUCC $$ [([],[]) \ m]
-       | INT_REC (m, ((a, b, p), q, (c, d, r))) =>
-           O.MONO O.INT_REC $$ [([],[]) \ m, ([],[a,b]) \ p, ([],[]) \ q, ([],[c,d]) \ r]
+       | INT_REC (m, (n, (a, b, p), q, (c, d, r))) =>
+           O.MONO O.INT_REC $$ [([],[]) \ m, ([],[]) \ n, ([],[a,b]) \ p, ([],[]) \ q, ([],[c,d]) \ r]
 
        | VOID => O.MONO O.VOID $$ []
 
@@ -206,6 +213,10 @@ struct
        | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
        | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
        | PATH_APP (m, r) => O.POLY (O.PATH_APP r) $$ [([],[]) \ m]
+
+       | EQUALITY (a, m, n) => O.MONO O.EQUALITY $$ [([],[]) \ a, ([],[]) \ m, ([],[]) \ n]
+
+       | UNIVERSE (l, k) => O.POLY (O.UNIVERSE (L.into l, k)) $$ []
 
        | HCOM {dir, ty, cap, tubes} =>
            let
@@ -256,8 +267,8 @@ struct
 
        | O.MONO O.INT $ _ => INT
        | O.MONO O.NEGSUCC $ [_ \ m] => NEGSUCC m
-       | O.MONO O.INT_REC $ [_ \ m, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] =>
-           INT_REC (m, ((a, b, p), q, (c, d, r)))
+       | O.MONO O.INT_REC $ [_ \ m, _ \ n, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] =>
+           INT_REC (m, (n, (a, b, p), q, (c, d, r)))
 
        | O.MONO O.VOID $ _ => VOID
 
@@ -278,6 +289,10 @@ struct
        | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
        | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
        | O.POLY (O.PATH_APP r) $ [_ \ m] => PATH_APP (m, r)
+
+       | O.MONO O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
+
+       | O.POLY (O.UNIVERSE (l, k)) $ _ => UNIVERSE (L.out l, k)
 
        | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
            HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}

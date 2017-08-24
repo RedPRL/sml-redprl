@@ -4,6 +4,8 @@ structure Vl = Ar.Vl
 
 open Ast
 
+structure E = RedPrlError
+
 structure P =
 struct
   open RedPrlParamData
@@ -14,10 +16,15 @@ end
 structure O = RedPrlOpData
 structure CJ = RedPrlCategoricalJudgment
 
-fun sortOfJudgment jdg = CJ.synthesis (CJ.fromAst jdg)
+structure TP = TermPrinter
 
 fun makeCustom (opid, params, bindings) =
   Ast.$$ (O.POLY (O.CUST (opid, params, NONE)), bindings)
+
+fun makeDim pos : IntInf.int -> string param =
+  fn 0 => P.APP P.DIM0
+   | 1 => P.APP P.DIM1
+   | i => E.raiseAnnotatedError (pos, E.INVALID_DIMENSION (TP.ppIntInf i))
 
 structure Tac =
 struct
@@ -89,9 +96,9 @@ struct
 
   fun makeNum i =
     case IntInf.compare (i, 0) of
-      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (IntInf.- (i, 1))]
+      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (i - 1)]
     | EQUAL => O.MONO O.ZERO $$ []
-    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum (IntInf.- (IntInf.~ i, 1))]
+    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum ((~ i) - 1)]
 
   fun flatten xsys =
     List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
@@ -109,7 +116,7 @@ struct
     let
       fun insert (lbl, set) =
         if LabelSet.member set lbl then
-          raise RedPrlError.annotate pos (RedPrlError.error [Fpp.text "Duplicate label", Fpp.text lbl])
+          E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "Duplicate label", Fpp.text lbl])
         else
           LabelSet.insert set lbl
     in
@@ -278,11 +285,15 @@ end
  | TRIANGLE_RIGHT
 
  (* parameter sorts *)
- | DIM | HYP | META_NAME
+ | DIM | HYP | LVL | META_NAME
  (* sorts *)
  | EXP | TAC | TRIV | JDG
 
+ (* keywords and symbols in parameters *)
+ | LABOVE | LMAX
+
  (* keywords and symbols in expressions *)
+ | AX
  | FCOM
  | BOOL | TT | FF | IF
  | WBOOL | WIF
@@ -291,9 +302,9 @@ end
  | VOID
  | S1 | BASE | LOOP | S1_REC
  | LAMBDA | DOLLAR_SIGN
- | TIMES
- | RECORD | TUPLE | BANG
- | PATHS | ABS | AT_SIGN
+ | RECORD | TIMES | TUPLE | BANG
+ | PATH | ABS | AT_SIGN
+ | UNIV
  | HCOM | COE
 
  (* parsing "coercions" *)
@@ -313,7 +324,7 @@ end
  | PRINT
 
  (* keywords in judgments *)
- | TRUE | TYPE | SYNTH
+ | TRUE | TYPE | SYNTH | AT (* `WITH` is reused *)
 
  | DISCRETE | KAN | CUBICAL
 
@@ -325,7 +336,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA AMPERSAND COLON
-%nonassoc FCOM BOOL TT FF IF WBOOL WIF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATHS ABS AT_SIGN HCOM COE
+%nonassoc FCOM BOOL TT FF IF WBOOL WIF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
 
@@ -348,6 +359,14 @@ end
    (* parameters *)
  | param of string param
  | params of string param list
+ | numAsDimParam of string param
+ | exclusivelyDimParam of string param
+ | dimParam of string param
+ | dimParams of string param list
+ | numAsLevelParam of string param
+ | exclusivelyLevelParam of string param
+ | levelParam of string param
+ | levelParams of string param list
  | typedParam of string param * P.param_sort
  | typedParams of (string param * P.param_sort) list
  | dir of string param * string param
@@ -386,6 +405,7 @@ end
  | typedTerm of ast * O.sort
  | typedTerms of (ast * O.sort) list
 
+ | atLevel of string param option
  | kind of O.K.kind
  | withKind of O.K.kind
  | kindedType of O.K.kind
@@ -491,15 +511,53 @@ valence
 
 param
   : VARNAME (P.VAR VARNAME)
-  | NUMERAL (P.APP (case NUMERAL of 0 => P.DIM0 | 1 => P.DIM1 | _ => raise RedPrlError.annotate (SOME (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName))) (RedPrlError.error [Fpp.text "Invalid dimension constant"])))
-
-typedParam
-  : LSQUARE param COLON psort RSQUARE ((param, psort))
-  | param ((param, O.DIM))
+  | exclusivelyDimParam (exclusivelyDimParam)
+  | exclusivelyLevelParam (exclusivelyLevelParam)
+  | numAsDimParam (numAsDimParam)
 
 params
   : param ([param])
   | param params (param :: params)
+
+numAsDimParam
+  : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+
+exclusivelyDimParam
+  : LBRACKET DIM dimParam RBRACKET (dimParam)
+
+dimParam
+  : VARNAME (P.VAR VARNAME)
+  | numAsDimParam (numAsDimParam)
+  | exclusivelyDimParam (exclusivelyDimParam)
+
+dimParams
+  : dimParam dimParams (dimParam :: dimParams)
+  | dimParam ([dimParam])
+
+numAsLevelParam
+  : NUMERAL (if NUMERAL >= 0 then P.APP (P.LCONST NUMERAL) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
+
+exclusivelyLevelParam
+  : LBRACKET LVL levelParam RBRACKET (levelParam)
+  | LBRACKET LABOVE levelParam RBRACKET (P.APP (P.LABOVE (levelParam, 1)))
+  | LBRACKET LABOVE levelParam NUMERAL RBRACKET (if NUMERAL >= 0 then P.APP (P.LABOVE (levelParam, NUMERAL)) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
+  | LBRACKET LMAX levelParams RBRACKET (P.APP (P.LMAX levelParams))
+
+levelParam
+  : VARNAME (P.VAR VARNAME)
+  | numAsLevelParam (numAsLevelParam)
+  | exclusivelyLevelParam (exclusivelyLevelParam)
+
+levelParams
+  : levelParam levelParams (levelParam :: levelParams)
+  | levelParam ([levelParam])
+
+typedParam
+  : VARNAME (P.VAR VARNAME, O.DIM)
+  | LSQUARE VARNAME COLON psort RSQUARE (P.VAR VARNAME, psort)
+  | exclusivelyDimParam (exclusivelyDimParam, O.DIM)
+  | exclusivelyLevelParam (exclusivelyLevelParam, O.LVL)
+  | numAsDimParam (numAsDimParam, O.DIM)
 
 typedParams
   : typedParam ([typedParam])
@@ -561,8 +619,10 @@ bindings
 
 (* built-in nullary operators that take no parameters *)
 monoNullaryOperator
+  (* axiom *)
+  : AX (O.MONO O.AX)
   (* bools *)
-  : BOOL (O.MONO O.BOOL)
+  | BOOL (O.MONO O.BOOL)
   | TT (O.MONO O.TT)
   | FF (O.MONO O.FF)
   (* weak bools *)
@@ -581,8 +641,9 @@ monoNullaryOperator
 (* built-in nullary operators that take parameters *)
 polyNullaryOperator
   (* circle *)
-  : LOOP param (O.POLY (O.LOOP param))
-  | DIM param (O.POLY (O.PARAM_REF (O.DIM, param)))
+  : LOOP dimParam (O.POLY (O.LOOP dimParam))
+  | DIM dimParam (O.POLY (O.PARAM_REF (O.DIM, dimParam)))
+  | UNIV kind levelParam (O.POLY (O.UNIVERSE (levelParam, kind)))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
@@ -597,7 +658,9 @@ regularMultinaryOperator
   | NEGSUCC (O.MONO O.NEGSUCC)
   | INT_REC (O.MONO O.INT_REC)
   (* paths *)
-  | PATHS (O.MONO O.PATH_TY)
+  | PATH (O.MONO O.PATH_TY)
+  (* equality *)
+  | EQUALS (O.MONO O.EQUALITY)
   (* coe *)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
 
@@ -657,19 +720,19 @@ rawTermAndTac
   | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 
   (* pair types *)
-  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) quantifierData)
+  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) quantifierData)
 
   (* dependent record types *)
-  | RECORD (Multi.makeRecord (SOME (Pos.pos (RECORD1left fileName) (RECORD1right fileName))) [])
-  | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) typedBinders)
-  | TUPLE (Multi.makeTuple (SOME (Pos.pos (TUPLE1left fileName) (TUPLE1right fileName))) [])
-  | LPAREN TUPLE fields RPAREN (Multi.makeTuple (SOME (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName))) fields)
+  | RECORD (Multi.makeRecord (Pos.pos (RECORD1left fileName) (RECORD1right fileName)) [])
+  | LPAREN RECORD typedBinders RPAREN (Multi.makeRecord (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) typedBinders)
+  | TUPLE (Multi.makeTuple (Pos.pos (TUPLE1left fileName) (TUPLE1right fileName)) [])
+  | LPAREN TUPLE fields RPAREN (Multi.makeTuple (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) fields)
   | LPAREN TUPLE terms RPAREN (Multi.makeAnonymousTuple terms)
   | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
 
   (* paths *)
   | LPAREN ABS LBRACKET boundVars RBRACKET term RPAREN (Multi.makePathAbs boundVars term)
-  | LPAREN AT_SIGN term params RPAREN (Multi.makePathApp term params)
+  | LPAREN AT_SIGN term dimParams RPAREN (Multi.makePathApp term dimParams)
 
 rawTerm
   : rawTermAndTac (rawTermAndTac)
@@ -693,6 +756,10 @@ typedTerms
   : typedTerm ([typedTerm])
   | typedTerm typedTerms (typedTerm :: typedTerms)
 
+atLevel
+  : AT levelParam (SOME levelParam)
+  | (NONE)
+
 kind
   : DISCRETE (O.K.DISCRETE)
   | KAN (O.K.KAN)
@@ -709,17 +776,17 @@ kindedType
   | TYPE (O.K.top)
 
 rawJudgment
-  : term EQUALS term IN term withKind (Ast.$$ (O.MONO (O.JDG_EQ withKind), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
-  | term IN term withKind (Ast.$$ (O.MONO (O.JDG_EQ withKind), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
-  | term TRUE withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
-  | term withKind (Ast.$$ (O.MONO (O.JDG_TRUE withKind), [\ (([],[]), term)]))
-  | term EQUALS term kindedType (Ast.$$ (O.MONO (O.JDG_EQ_TYPE kindedType), [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term kindedType (Ast.$$ (O.MONO (O.JDG_EQ_TYPE kindedType), [\ (([],[]), term), \ (([],[]), term)]))
-  | term SYNTH withKind (Ast.$$ (O.MONO (O.JDG_SYNTH withKind), [\ (([],[]), term)]))
+  : term EQUALS term IN term atLevel withKind (Ast.$$ (O.POLY (O.JDG_EQ (atLevel, withKind)), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
+  | term IN term atLevel withKind (Ast.$$ (O.POLY (O.JDG_EQ (atLevel, withKind)), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
+  | term TRUE atLevel withKind (Ast.$$ (O.POLY (O.JDG_TRUE (atLevel, withKind)), [\ (([],[]), term)]))
+  | term atLevel withKind (Ast.$$ (O.POLY (O.JDG_TRUE (atLevel, withKind)), [\ (([],[]), term)]))
+  | term EQUALS term atLevel kindedType (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kindedType)), [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term kindedType atLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kindedType)), [\ (([],[]), term), \ (([],[]), term)]))
+  | term SYNTH atLevel withKind (Ast.$$ (O.POLY (O.JDG_SYNTH (atLevel, withKind)), [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
-src_catjdg : rawJudgment (CJ.fromAst rawJudgment)
+src_catjdg : rawJudgment (CJ.astOut rawJudgment)
 
 src_seqhyp
   : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))
@@ -766,7 +833,7 @@ tupleDecompPattern
    | labeledDecompPattern ([labeledDecompPattern])
    | ([])
 
- devMatchClause
+devMatchClause
   : LSQUARE patvarBindings PIPE term DOUBLE_RIGHT_ARROW tactic RSQUARE (patvarBindings, (term, tactic))
   | LSQUARE term DOUBLE_RIGHT_ARROW tactic RSQUARE ([], (term, tactic))
 
@@ -783,7 +850,7 @@ atomicRawTac
   | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
-  | AT_SIGN param (Tac.exactDim param)
+  | AT_SIGN dimParam (Tac.exactDim dimParam)
   | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
@@ -791,7 +858,7 @@ atomicRawTac
 
   | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
   | LANGLE boundVars RANGLE tactic (Ast.$$ (O.MONO (O.DEV_PATH_INTRO (List.length boundVars)), [\ ((Multi.addUnderscores boundVars, []), tactic)]))
-  | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (SOME (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName))) recordFieldTactics)
+  | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName)) recordFieldTactics)
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
 

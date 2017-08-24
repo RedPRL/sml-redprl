@@ -5,16 +5,18 @@ struct
   open Tactical
   infix orelse_ then_
 
-  structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and Seq = RedPrlSequent and J = RedPrlJudgment
+  structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and J = RedPrlJudgment
+  structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
+  structure K = RedPrlKind
+  structure L = RedPrlLevel
+  structure CJ = RedPrlCategoricalJudgment
+  structure Seq = struct open RedPrlSequentData RedPrlSequent end
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = RedPrlMachine (Sig)
+
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
   open RedPrlSequent
   infix 2 >: >>
-
-  structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
-  structure K = RedPrlKind
-  structure CJ = RedPrlCategoricalJudgment
 
   exception todo
   fun ?e = raise e
@@ -62,8 +64,41 @@ struct
            ppVars xs]
     end
 
+  (* hypotheses *)
 
-  fun abstractEvidence (I : (sym * psort) list, H) m =
+  structure Hyps = (* favonia: not sure about the organization *)
+  struct
+    structure HypsUtil = TelescopeUtil (Seq.Hyps)
+    open HypsUtil
+
+    fun toSpine H =
+      Seq.Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
+
+    fun lookup z H =
+      Seq.Hyps.lookup H z
+      handle _ =>
+        raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
+
+    (* The telescope lib should be redesigned to make the following helper functions easier.
+     * At least the calling convention can be more consistent. *)
+
+    fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
+      Seq.Hyps.modifyAfter z (CJ.map (Abt.substVar (term, z))) H
+
+    fun interposeAfter (z, H') H =
+      Seq.Hyps.interposeAfter H z H'
+
+    fun interposeThenSubstAfter (z, H', term) H =
+      Seq.Hyps.interposeAfter (Seq.Hyps.modifyAfter z (CJ.map (Abt.substVar (term, z))) H) z H'
+  end
+
+  fun @> (H, (x, j)) = Hyps.snoc H x j
+  infix @>
+  fun |@> h = Hyps.empty @> h
+
+  (* evidence *)
+
+  fun abstractEvidence (I : (Sym.t * Abt.psort) list, H) m =
     let
       val (us, sigmas) = ListPair.unzip I
       val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, CJ.synthesis jdg::taus)) ([],[]) H
@@ -94,38 +129,6 @@ struct
 
   fun |>:? g = T.empty >:? g
 
-  (* hypotheses *)
-
-  fun @> (H, (x, j)) = Hyps.snoc H x j
-  infix @>
-  fun |@> h = Hyps.empty @> h
-
-  structure Hyps = (* favonia: not sure about the organization *)
-  struct
-    structure HypsUtil = TelescopeUtil (Hyps)
-    open HypsUtil
-
-    fun toSpine H =
-      Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
-
-    fun lookup z H =
-      Hyps.lookup H z
-      handle _ =>
-        raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
-
-    (* The telescope lib should be redesigned to make the following helper functions easier.
-     * At least the calling convention can be more consistent. *)
-
-    fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
-      Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H
-
-    fun interposeAfter (z, H') H =
-      Hyps.interposeAfter H z H'
-
-    fun interposeThenSubstAfter (z, H', term) H =
-      Hyps.interposeAfter (Hyps.modifyAfter z (CJ.map_ (Abt.substVar (term, z))) H) z H'
-  end
-
   (* making goals *)
 
   fun makeGoal jdg =
@@ -146,80 +149,66 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrue (I, H) (a, k) = makeGoal @@ (I, H) >> CJ.TRUE (a, k)
-  fun makeSynth (I, H) (m, k) = makeGoal @@ (I, H) >> CJ.SYNTH (m, k)
+  fun makeTrue (I, H) (a, l, k) = makeGoal @@ (I, H) >> CJ.TRUE (a, l, k)
+  fun makeSynth (I, H) (m, l, k) = makeGoal @@ (I, H) >> CJ.SYNTH (m, l, k)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
   fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> CJ.TERM tau
   fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> CJ.PARAM_SUBST ([(r, O.DIM, u)], m, Abt.sort m)
 
   (* ignoring the trivial realizer *)
-  fun makeType (I, H) (a, k) = makeGoal' @@ (I, H) >> CJ.TYPE (a, k)
-  fun makeEqType (I, H) ((a, b), k) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE ((a, b), k)
-  fun makeEq (I, H) ((m, n), (ty, k)) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), (ty, k))
-  fun makeMem (I, H) (m, (ty, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, k))
+  fun makeType (I, H) (a, l, k) = makeGoal' @@ (I, H) >> CJ.TYPE (a, l, k)
+  fun makeEqType (I, H) ((a, b), l, k) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+  fun makeEq (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+  fun makeMem (I, H) (m, (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, l, k))
 
   (* conditional goal making *)
 
-  fun makeEqTypeIfDifferent (I, H) ((m, n), k) =
+  fun makeEqTypeIfDifferent (I, H) ((m, n), l, k) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType (I, H) ((m, n), k)
+    else SOME @@ makeEqType (I, H) ((m, n), l, k)
 
-  fun makeEqTypeIfAllDifferentOrLess (I, H) ((m, n), k) ns =
-    if List.exists (fn n' => Abt.eq (m, n')) ns
-    then SOME @@ makeType (I, H) (m, k)
-    else makeEqTypeIfDifferent (I, H) ((m, n), k)
+  fun makeEqTypeUnlessSubUniv (I, H) ((m, n), l, k) (l', k') =
+    case (L.P.< (l, l'), K.greatestMeetComplement' (k, k')) of
+      (_, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), l, k'')
+    | (true, _) => SOME @@ makeEqType (I, H) ((m, n), l, k)
+    | _ => NONE
+  
+  fun makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k') =
+    makeEqTypeUnlessSubUniv (I, H) ((m, m), l, k) (l', k')
 
-  fun makeTypeIfLess (I, H) (m, k) k' =
-    case K.greatestMeetRight' (k, k') of
-      NONE => NONE
-    | SOME k'' => SOME @@ makeType (I, H) (m, k'')
+  fun makeEqTypeIfDifferentOrNotSubUniv (I, H) ((m, n), l, k) (l', k') =
+    if Abt.eq (m, n) then makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k')
+    else SOME @@ makeEqType (I, H) ((m, n), l, k)
 
-  fun makeEqTypeIfDifferentOrLess (I, H) ((m, n), k) k' =
-    if Abt.eq (m, n) then makeTypeIfLess (I, H) (m, k) k'
-    else SOME @@ makeEqType (I, H) ((m, n), k)
-
-  fun makeEqIfDifferent (I, H) ((m, n), (ty, k)) =
+  fun makeEqIfDifferent (I, H) ((m, n), (ty, l, k)) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEq (I, H) ((m, n), (ty, k))
+    else SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
 
-  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, k)) ns =
+  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, l, k)) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent (I, H) ((m, n), (ty, k))
+    else makeEqIfDifferent (I, H) ((m, n), (ty, l, k))
 
-  fun makeMemIfLess (I, H) (m, (ty, k)) k' =
-    case K.greatestMeetRight' (k, k') of
-      NONE => NONE
-    | SOME k'' => SOME @@ makeMem (I, H) (m, (ty, k''))
+  fun makeEqUnlessSubUniv (I, H) ((m, n), (ty, l, k)) (l', k') =
+    case (L.P.< (l, l'), K.greatestMeetComplement' (k, k')) of
+      (_, SOME k'') => SOME @@ makeEq (I, H) ((m, n), (ty, l, k''))
+    | (true, _) => SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
+    | _ => NONE
 
-  fun makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k' =
-    if Abt.eq (m, n) then makeMemIfLess (I, H) (m, (ty, k)) k'
-    else SOME @@ makeEq (I, H) ((m, n), (ty, k))
+  fun makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k') =
+    makeEqUnlessSubUniv (I, H) ((m, m), (ty, l, k)) (l', k')
 
-  fun makeEqIfAllDifferentOrLess (I, H) ((m, n), (ty, k)) ns k' =
+  fun makeEqIfDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) (l', k') =
+    if Abt.eq (m, n) then makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k')
+    else SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
+
+  fun makeEqIfAllDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) ns (l', k') =
     if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeMemIfLess (I, H) (m, (ty, k)) k'
-    else makeEqIfDifferentOrLess (I, H) ((m, n), (ty, k)) k'
+    then makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k')
+    else makeEqIfDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) (l', k')
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
-
-  (* variable kit *)
-
-  structure VarKit =
-  struct
-    fun ctxFromList l = List.foldl
-          (fn ((tm, x), dict) => Var.Ctx.insert dict x tm)
-          Var.Ctx.empty l
-
-    fun toExp x = Syn.into @@ Syn.VAR (x, O.EXP)
-
-    val renameMany = Abt.renameVars o ctxFromList
-    fun rename r = renameMany [r]
-
-    val substMany = Abt.substVarenv o ctxFromList
-    fun subst s = substMany [s]
-  end
 
   (* assertions *)
 
@@ -237,11 +226,29 @@ struct
       else
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
 
-    fun kindLeq (k1, k2) =
-      if K.leq (k1, k2) then
+    fun levelLeq (l1, l2) =
+      if L.P.<= (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be less than", TermPrinter.ppKind k2]
+        raise E.error [Fpp.text "Expected level", L.P.pretty l1, Fpp.text "to be less than or equal to", L.P.pretty l2]
+
+    fun levelEq (l1, l2) =
+      if L.eq (l1, l2) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
+
+    fun kindLeq (k1, k2) =
+      if K.<= (k1, k2) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be stronger than or equal to", TermPrinter.ppKind k2]
+
+    fun kindEq (k1, k2) =
+      if k1 = k2 then
+        ()
+      else
+        raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be equal to", TermPrinter.ppKind k2]
 
     fun paramEq msg (r1, r2) =
       if P.eq Sym.eq (r1, r2) then
@@ -275,13 +282,19 @@ struct
           | goEqs (state as (zeros, ones)) (eq :: eqs) =
               case eq of
                 (P.APP P.DIM0, P.APP P.DIM0) => true
-              | (P.APP P.DIM0, _) => goEqs state eqs
+              | (P.APP P.DIM0, P.APP P.DIM1) => goEqs state eqs
+              | (P.APP P.DIM0, P.APP _) => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (#2 eq)))
+              | (P.APP P.DIM0, P.VAR _) => goEqs state eqs
               | (P.APP P.DIM1, P.APP P.DIM1) => true
-              | (P.APP P.DIM1, _) => goEqs state eqs
+              | (P.APP P.DIM1, P.APP P.DIM0) => goEqs state eqs
+              | (P.APP P.DIM1, P.APP _) =>  E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (#2 eq)))
+              | (P.APP P.DIM1, P.VAR _) => goEqs state eqs
+              | (P.APP _, _) => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (#1 eq)))
               | (P.VAR u, P.APP P.DIM0) =>
                   SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
               | (P.VAR u, P.APP P.DIM1) =>
                   SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
+              | (P.VAR _, P.APP _) => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (#2 eq)))
               | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
         fun prettyEq (r1, r2) = [TermPrinter.ppParam r1, Fpp.text "=", TermPrinter.ppParam r2, Fpp.text ";"]
       in

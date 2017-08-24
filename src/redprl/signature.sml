@@ -1,6 +1,6 @@
 structure Signature :> SIGNATURE =
 struct
-  structure Tm = RedPrlAbt and Ar = RedPrlArity
+  structure Ar = RedPrlArity
   structure P = struct open RedPrlSortData RedPrlParamData end
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
@@ -18,11 +18,6 @@ struct
      | [x] => [x]
      | x::xs => Fpp.seq [x, s] :: intersperse s xs
 
-  fun prettyParams ps =
-    Fpp.Atomic.braces @@ Fpp.grouped @@ Fpp.hvsep @@
-      intersperse Fpp.Atomic.comma @@
-        List.map (fn (u, sigma) => Fpp.hsep [Fpp.text (Sym.toString u), Fpp.Atomic.colon, Fpp.text (Ar.Vl.PS.toString sigma)]) ps
-
   fun prettyArgs args =
     Fpp.Atomic.parens @@ Fpp.grouped @@ Fpp.hvsep @@
       intersperse (Fpp.text ";") @@
@@ -38,7 +33,7 @@ struct
           Fpp.seq [Fpp.text @@ Sym.toString opid, prettyArgs arguments],
           Fpp.Atomic.colon,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
-            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm spec],
+            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty spec],
             Fpp.newline],
           Fpp.Atomic.equals,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
@@ -81,7 +76,7 @@ struct
 
     structure Err = RedPrlError
 
-    fun error pos msg = raise Err.annotate pos (Err.error msg)
+    fun error pos msg = Err.raiseAnnotatedError' (pos, Err.GENERIC msg)
 
     (* During parsing, the arity of a custom-operator application is not known; but we can
      * derive it from the signature "so far". Prior to adding a declaration to the signature,
@@ -136,16 +131,13 @@ struct
         inheritAnnotation m (processTerm' sign m)
 
       fun processSrcCatjdg sign =
-        RedPrlCategoricalJudgment.map_ (processTerm sign)
+        RedPrlCategoricalJudgment.map (processTerm sign)
 
       fun processSrcSeq sign (hyps, concl) =
         (List.map (fn (x, hyp) => (x, processSrcCatjdg sign hyp)) hyps, processSrcCatjdg sign concl)
 
       fun processSrcGenJdg sign (bs, seq) =
         (bs, processSrcSeq sign seq)
-
-      fun processSrcRuleSpec sign (premises, goal) =
-        (List.map (processSrcGenJdg sign) premises, processSrcSeq sign goal)
 
     in
       fun processDecl sign =
@@ -246,17 +238,21 @@ struct
         AstToAbt.NameEnv.empty
         metactx
 
-    structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequent.Hyps
+    structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
 
     fun elabAst (metactx, env) ast : abt =
-      let
-        val abt = AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, Sort.EXP)
-      in
-        abt
-      end
+      AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, Sort.EXP)
 
-    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> (Sym.t, abt) CJ.jdg =
-      CJ.map (fn name => NameEnv.lookup env name handle _ => Sym.named name) (elabAst (metactx, env))
+    (* these should be included in the AstToAbt module *)
+    fun elabSym env (name : string) : Sym.t = NameEnv.lookup env name handle _ => Sym.named name
+
+    (* these should be included in the AstToAbt module *)
+    fun elabParam env = RedPrlParameterTerm.map (elabSym env)
+
+    fun elabLevel env = Option.map (RedPrlLevel.out o elabParam env o RedPrlAstLevel.into)
+
+    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> CJ.jdg =
+      CJ.map' (elabSym env) (elabLevel env) (elabAst (metactx, env))
       (* TODO check scoping *)
 
     fun addHypName (env, symctx, varctx) (srcname, tau) =
@@ -269,16 +265,7 @@ struct
         (env', symctx', varctx', x)
       end
 
-    fun addSymName (env, symctx) (srcname, psort) =
-      let
-        val u = Sym.named srcname
-        val env' = NameEnv.insert env srcname u
-        val symctx' = Sym.Ctx.insert symctx u psort
-      in
-        (env', symctx')
-      end
-
-    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * (Sym.t, abt) CJ.jdg =
+    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * CJ.jdg =
       let
         val catjdg = elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg
         val tau = CJ.synthesis catjdg
@@ -287,7 +274,7 @@ struct
         (symctx', varctx', env', x, catjdg)
       end
 
-    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * (Sym.t, abt) CJ.jdg Hyps.telescope =
+    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * CJ.jdg Hyps.telescope =
       let
         fun go env _ _ H [] = (env, H)
           | go env syms vars H (hyp :: hyps) =
@@ -389,7 +376,7 @@ struct
           fun goalEqualTo goal1 goal2 =
             if RedPrlSequent.eq (goal1, goal2) then true
             else
-              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm goal1, Fpp.text "not equal to", RedPrlSequent.pretty Tm.eq TermPrinter.ppTerm goal2]);
+              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty goal1, Fpp.text "not equal to", RedPrlSequent.pretty goal2]);
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true

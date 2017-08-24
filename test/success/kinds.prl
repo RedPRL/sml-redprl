@@ -1,0 +1,45 @@
+Thm Kind0(#A) : [
+  #A hcom type,
+  >> #A type
+] by [ auto ].
+
+Thm Kind1(#A) : [
+  #A type,
+  >> #A type
+] by [ auto ].
+
+Thm Kind2(#A) : [
+  #A cubical type,
+  >> #A type
+] by [ auto ].
+
+Thm Kind3(#A) : [
+  #A type,
+  >> #A cubical type
+] by [ auto ].
+
+Thm Kind4(#A) : [
+  x : #A hcom type,
+  y : #A coe type
+  >> #A kan type
+] by [ auto ].
+
+Thm Kind5(#A) : [
+  #A discrete type,
+  >> #A kan type
+] by [ auto ].
+
+Thm Kind6(#A) : [
+  #A kan type,
+  >> #A kan type
+] by [ auto ].
+
+Thm Kind7(#A) : [
+  #A discrete type,
+  >> #A hcom type
+] by [ auto ].
+
+Thm Kind8(#A) : [
+  #A discrete type,
+  >> #A coe type
+] by [ auto ].

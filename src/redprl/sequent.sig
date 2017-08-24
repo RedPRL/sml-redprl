@@ -1,32 +1,31 @@
-signature SEQUENT =
-sig
-  structure CJ : CATEGORICAL_JUDGMENT
+structure RedPrlSequentData =
+struct
+  (* polymorphism is useful for preventing bugs *)
+  type 'a catjdg = (Sym.t, RedPrlLevel.P.t, 'a) RedPrlCategoricalJudgment.jdg'
 
-  type var = CJ.Tm.variable
-  type sym = CJ.Tm.symbol
-  type psort = CJ.Tm.psort
-  type sort = CJ.Tm.sort
-  type operator = CJ.Tm.operator
-  type param = CJ.Tm.param
-  type hyp = sym
-  type abt = CJ.Tm.abt
-  type label = string
-
-  structure Hyps : TELESCOPE where type Label.t = hyp
-
+  structure Hyps : TELESCOPE = Telescope (Sym)
   type 'a ctx = 'a Hyps.telescope
 
-  datatype 'a jdg =
-     >> of ((sym * psort) list * (Sym.t, 'a) CJ.jdg ctx) * (Sym.t, 'a) CJ.jdg     (* sequents / formal hypothetical judgment *)
-   | MATCH of operator * int * 'a * param list * 'a list        (* unify a term w/ a head operator and extract the kth subterm *)
-   | MATCH_RECORD of label * 'a                                 (* unify a term w/ RECORD and extract the subterm of the label *)
+  type label = string
 
-  val map : ('a -> 'b) -> 'a jdg -> 'b jdg
+  (* polymorphism is useful for preventing bugs *)
+  datatype 'a jdg' =
+     (* sequents / formal hypothetical judgment *)
+     >> of ((Sym.t * RedPrlAbt.psort) list * 'a catjdg ctx) * 'a catjdg
+     (* unify a term w/ a head operator and extract the kth subterm *)
+   | MATCH of RedPrlAbt.operator * int * 'a * RedPrlAbt.param list * 'a list
+     (* unify a term w/ RECORD and extract the subterm of the label *)
+   | MATCH_RECORD of label * 'a
+end
 
-  val pretty : ('a * 'a -> bool) -> ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
-  val pretty' : ('a -> Fpp.doc) -> 'a jdg -> Fpp.doc
+signature SEQUENT =
+sig
+  datatype jdg' = datatype RedPrlSequentData.jdg'
+  val map : ('a -> 'b) -> 'a jdg' -> 'b jdg'
 
-  val eq : CJ.Tm.abt jdg * CJ.Tm.abt jdg -> bool
-
-  val relabel : hyp CJ.Tm.Sym.Ctx.dict -> abt jdg -> abt jdg
+  (* specialized to abt *)
+  type jdg = RedPrlAbt.abt jdg'
+  val pretty : jdg -> Fpp.doc
+  val eq : jdg * jdg -> bool
+  val relabel : Sym.t Sym.Ctx.dict -> jdg -> jdg
 end

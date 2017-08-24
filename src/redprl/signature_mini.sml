@@ -22,11 +22,10 @@ struct
      spec : jdg,
      state : names -> Lcf.jdg Lcf.state}
 
-  type src_catjdg = (string, ast) RedPrlCategoricalJudgment.jdg
+  type src_catjdg = RedPrlCategoricalJudgment.astjdg
   type src_seqhyp = string * src_catjdg
   type src_sequent = src_seqhyp list * src_catjdg
   type src_genjdg = (string * psort) list * src_sequent
-  type src_rulespec = src_genjdg list * src_sequent
 
   datatype src_decl =
       DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}

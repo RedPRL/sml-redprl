@@ -75,6 +75,7 @@ whitespace = [\ \t];
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
 
+"ax"               => (Tokens.AX (posTuple (size yytext)));
 "fcom"             => (Tokens.FCOM (posTuple (size yytext)));
 "bool"             => (Tokens.BOOL (posTuple (size yytext)));
 "tt"               => (Tokens.TT (posTuple (size yytext)));
@@ -100,7 +101,7 @@ whitespace = [\ \t];
 "lam"              => (Tokens.LAMBDA (posTuple (size yytext)));
 "record"           => (Tokens.RECORD (posTuple (size yytext)));
 "tuple"            => (Tokens.TUPLE (posTuple (size yytext)));
-"path"             => (Tokens.PATHS (posTuple (size yytext)));
+"path"             => (Tokens.PATH (posTuple (size yytext)));
 "abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
@@ -115,7 +116,11 @@ whitespace = [\ \t];
 "refine"           => (Tokens.REFINE (posTuple (size yytext)));
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
+"lvl"              => (Tokens.LVL (posTuple (size yytext)));
 "meta-name"        => (Tokens.META_NAME (posTuple (size yytext)));
+
+"labove"           => (Tokens.LABOVE (posTuple (size yytext)));
+"lmax"             => (Tokens.LMAX (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
@@ -159,6 +164,7 @@ whitespace = [\ \t];
 "discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
 "kan"              => (Tokens.KAN (posTuple (size yytext)));
 "cubical"          => (Tokens.CUBICAL (posTuple (size yytext)));
+"at"               => (Tokens.AT (posTuple (size yytext)));
 
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));
 {upper}{identChr}* => (Tokens.OPNAME (posTupleWith (size yytext) yytext));
