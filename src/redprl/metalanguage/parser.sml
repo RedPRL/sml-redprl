@@ -34,7 +34,31 @@ struct
     | PRINT of pos
     | TODO
 
-  fun terminalToString t = "TODO"
+  val terminalToString = 
+    fn LET _ => "LET"
+     | FN _ => "FN"
+     | IN _ => "IN"
+     | DOUBLE_RIGHT_ARROW _ => "DOUBLE_RIGHT_ARROW"
+     | LSQUARE _ => "LSQUARE"
+     | RSQUARE _ => "RSQUARE"
+     | LPAREN _ => "LPAREN"
+     | RPAREN _ => "RPAREN"
+     | COMMA _ => "COMMA"
+     | EQUALS _ => "EQUALS"
+     | BEGIN _ => "BEGIN"
+     | END _ => "END"
+     | IDENT _ => "IDENT"
+     | PROVE _ => "PROVE"
+     | PROJ1 _ => "PROJ1"
+     | PROJ2 _ => "PROJ2"
+     | BACKTICK _ => "BACKTICK"
+     | REFINE _ => "REFINE"
+     | GOAL _ => "GOAL"
+     | PUSH _ => "PUSH"
+     | PRINT _ => "PRINT"
+     | TODO => "TODO"
+
+
 end
 
 structure MetalanguageParseAction = 
@@ -128,9 +152,9 @@ struct
     case Stream.front s of
        Stream.Nil => RedPrlError.error [Fpp.text "Syntax error at end of file"]
      | Stream.Cons ((tok, pos), _) =>
-         RedPrlError.annotate (SOME pos) @@
-           RedPrlError.error
-             [Fpp.text "Parse error encountered at token", Fpp.text (terminalToString tok)]
+       RedPrlError.syntaxError pos 
+         [Fpp.text "Parse error encountered at token",
+          Fpp.text (terminalToString tok)]
 
 end
 

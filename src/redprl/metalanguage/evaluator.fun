@@ -42,7 +42,7 @@ struct
      | FST | SND
      | PAIR of value * value
      | QUOTE of Tm.abt
-     | THEOREM of (ML.osym, ML.oterm) CJ.jdg * Tm.abs (* a certified proof term *)
+     | THEOREM of CJ.jdg * Tm.abs (* a certified proof term *)
 
     withtype env = value ML.Ctx.dict * Tm.metaenv
 
@@ -71,7 +71,7 @@ struct
 
   fun fst (V.PAIR (v1, _)) = v1
   fun snd (V.PAIR (_, v2)) = v2
-  fun getGoal (J.>> (_, jdg)) = V.QUOTE @@ CJ.toAbt jdg
+  fun getGoal (J.>> (_, jdg)) = V.QUOTE @@ CJ.into jdg
 
   fun eval env (ML.:@ (term, pos) : mlterm) : V.value M.m =
     case term of
@@ -102,8 +102,8 @@ struct
        end
      | ML.PROVE (abt, t) =>
        let
-         val catjdg = CJ.fromAbt @@ Env.forceObjTerm env abt
-         val jdg = J.>> (([], J.Hyps.empty), catjdg)
+         val catjdg = CJ.out @@ Env.forceObjTerm env abt
+         val jdg = J.>> (([], RedPrlSequentData.Hyps.empty), catjdg)
          fun makeTheorem evd = V.THEOREM (catjdg, evd)
        in
          makeTheorem <$> M.extract (M.local_ jdg (const () <$> eval env t))

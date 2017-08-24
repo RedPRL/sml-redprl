@@ -21,6 +21,7 @@ Library
   structure Syntax
   structure FppRenderPlainText
   structure TermPrinter
+  structure RedPrlSequentData
 is
   $/basis.cm
   $/ml-yacc-lib.cm

@@ -142,5 +142,5 @@ struct
      Lcf.map (fn jdg => {consumedNames = 0, goal = jdg, ret = ()}) state) 
   
   fun fail (pos, doc) (alpha, state) = 
-    raise RedPrlError.annotate pos (RedPrlError.error [doc])
+    RedPrlError.raiseAnnotatedError' (pos, RedPrlError.GENERIC [doc])
 end

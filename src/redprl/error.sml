@@ -25,6 +25,7 @@ struct
      | UNIMPLEMENTED doc => Fpp.hsep
         [Fpp.text "Not implemented:", Fpp.align doc]
      | GENERIC doc => Fpp.hsep doc
+
   val rec format =
     fn Err err => formatError err
      | Pos (_, exn) => format exn
@@ -37,6 +38,8 @@ struct
             SOME pos' => SOME pos'
           | NONE => SOME pos)
       | _ => NONE
+
+  fun syntaxError pos err = raise Match
 
   (* this is obsolete *)
   val error = Err o GENERIC

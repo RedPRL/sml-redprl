@@ -21,6 +21,8 @@ sig
   val format : exn -> Fpp.doc
   val annotation : exn -> Pos.t option
 
+  val syntaxError : Pos.t -> Fpp.doc list -> exn
+
   (* this is obsolete *)
   val error : Fpp.doc list -> exn
 end
