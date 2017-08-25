@@ -2,8 +2,12 @@ structure RedPrlError :> REDPRL_ERROR =
 struct
   open RedPrlErrorData
 
-  exception Err of Error
+  exception Err of error
   exception Pos of Pos.t * exn
+
+  val errorToExn = 
+    fn (SOME pos, err) => Pos (pos, Err err)
+     | (NONE, err) => Err err
 
   fun raiseError err = raise Err err
   fun raiseAnnotatedError (pos, err) = raise Pos (pos, Err err)
@@ -12,6 +16,7 @@ struct
      | (NONE, err) => raiseError err
 
   fun annotateException pos thunk = thunk () handle exn => raise Pos (pos, exn)
+
   fun annotateException' (SOME pos) thunk = annotateException pos thunk
     | annotateException' NONE thunk = thunk ()
 
