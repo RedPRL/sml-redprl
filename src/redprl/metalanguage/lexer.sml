@@ -18,6 +18,9 @@ struct
      follow: symbol Streamable.t,
      self: self}
 
+  fun @@ (f, x) = f x
+  infixr @@
+
   exception hole
   fun ?e = raise e
   fun ?! _ = ?hole
@@ -35,8 +38,8 @@ struct
 
   fun error ({match, ...} : info) = 
     case match of
-       [] => raise Fail ("Encountered unexpected error with lexing")
-     | _ => raise Fail ("Encountered error lexing \""^ stringRange match ^ "\" at " ^ Pos.toString (posRange match))
+       [] => RedPrlError.raiseError @@ RedPrlError.GENERIC [Fpp.text "Encountered unexpected error with lexing"]
+     | _ => RedPrlError.raiseAnnotatedError (posRange match, RedPrlError.GENERIC [Fpp.text @@ "Encountered error lexing \"" ^ stringRange match ^"\""])
 
   fun skip ({self, follow, ...} : info) =
     #lexmain self follow
