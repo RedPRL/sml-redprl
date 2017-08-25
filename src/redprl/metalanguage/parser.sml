@@ -152,9 +152,11 @@ struct
     case Stream.front s of
        Stream.Nil => RedPrlError.error [Fpp.text "Syntax error at end of file"]
      | Stream.Cons ((tok, pos), _) =>
-       RedPrlError.syntaxError pos 
-         [Fpp.text "Parse error encountered at token",
-          Fpp.text (terminalToString tok)]
+       RedPrlError.errorToExn
+         (SOME pos,
+          RedPrlError.GENERIC
+            [Fpp.text "Parse error encountered at token",
+             Fpp.text (terminalToString tok)])
 
 end
 

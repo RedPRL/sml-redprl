@@ -44,8 +44,6 @@ struct
           | NONE => SOME pos)
       | _ => NONE
 
-  fun syntaxError pos err = raise Match
-
   (* this is obsolete *)
   val error = Err o GENERIC
 end
