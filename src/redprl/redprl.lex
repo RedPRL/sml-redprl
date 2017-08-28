@@ -102,6 +102,7 @@ whitespace = [\ \t];
 "record"           => (Tokens.RECORD (posTuple (size yytext)));
 "tuple"            => (Tokens.TUPLE (posTuple (size yytext)));
 "path"             => (Tokens.PATH (posTuple (size yytext)));
+"univ"             => (Tokens.UNIV (posTuple (size yytext)));
 "abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));

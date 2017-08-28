@@ -481,6 +481,7 @@ boundVars
 
 psort
   : DIM (P.DIM)
+  | LVL (P.LVL)
   | HYP (P.HYP)
   | META_NAME (P.META_NAME)
 
@@ -643,7 +644,7 @@ polyNullaryOperator
   (* circle *)
   : LOOP dimParam (O.POLY (O.LOOP dimParam))
   | DIM dimParam (O.POLY (O.PARAM_REF (O.DIM, dimParam)))
-  | UNIV kind levelParam (O.POLY (O.UNIVERSE (levelParam, kind)))
+  | UNIV levelParam kind (O.POLY (O.UNIVERSE (levelParam, kind)))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
