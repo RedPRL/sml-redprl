@@ -230,6 +230,10 @@ struct
              in
                CRITICAL @@ com || (syms, stk)
              end
+           | HCOM (dir, HOLE, cap, tubes) :: stk =>
+               E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of fcom types"))
+           | COE (_, (u, _), coercee) :: stk =>
+               E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of fcom types"))
            | _ => raise Stuck)
 
   fun stepView sign stability unfolding tau =
@@ -520,7 +524,15 @@ struct
 
      | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
      | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-         E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of universes"))
+       let
+         val fcom =
+           Syn.into @@ Syn.FCOM
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         CRITICAL @@ fcom || (syms, stk)
+       end
      | O.POLY (O.UNIVERSE _) $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | _ => raise Stuck
