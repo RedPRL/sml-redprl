@@ -1246,6 +1246,8 @@ struct
         |>: goal1 >:? goal2 #> (I, H, trivial)
       end
 
+    (* This rule will be removed once every hypothesis
+     * is required to be `A true`. *)
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Elim"
@@ -1320,6 +1322,25 @@ struct
         val goalTy' = makeType (I, H) (holeTy, SOME l0, k0)
       in
         |>: goalTy >: goalTy' #> (I, H, Syn.into Syn.AX)
+      end
+
+    (* This rule will be removed once every hypothesis
+     * is required to be `A true`. *)
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.Elim"
+        val (I, H) >> catjdg = jdg
+        (* for now we ignore the kind in the context *)
+        val CJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val Syn.UNIVERSE (l, k) = Syn.out ty
+
+        val u = alpha 0
+        val (goal, hole) =
+          makeGoal
+            @@ (I, Hyps.interposeAfter (z, |@> (u, CJ.TYPE (VarKit.toExp z, SOME l, k))) H)
+            >> catjdg
+      in
+        |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
   end
 end

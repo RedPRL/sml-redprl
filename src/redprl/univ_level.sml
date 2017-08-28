@@ -64,8 +64,10 @@ struct
       val varGaps = List.map (prettyVarGap f) (D.toList gapmap)
       val args = if gap = 0 then varGaps else TP.ppIntInf gap :: varGaps
     in
-      if List.null args then TP.ppIntInf 0
-      else Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep (Fpp.text "lmax" :: args)))
+      case args of
+        [] => TP.ppIntInf 0
+      | [arg] => arg
+      | _ => Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep (Fpp.text "lmax" :: args)))
     end
 
   (* parser and generator *)

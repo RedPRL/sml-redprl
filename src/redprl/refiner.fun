@@ -827,6 +827,7 @@ struct
          | Syn.RECORD _ => Record.Elim
          | Syn.PATH_TY _ => Path.Elim
          | Syn.EQUALITY _ => InternalizedEquality.Elim
+         | Syn.UNIVERSE _ => Universe.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       val FromEq = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
