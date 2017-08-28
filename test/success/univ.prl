@@ -1,0 +1,11 @@
+Thm Univ0 {i:lvl, j:lvl} : [
+  (univ i cubical) type at {labove {lmax i j}}
+] by [
+  auto
+].
+
+Thm Univ1 {i:lvl} : [
+  nat in (univ i discrete)
+] by [
+  auto
+].
