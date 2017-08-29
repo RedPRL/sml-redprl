@@ -68,6 +68,7 @@ struct
 
   type env = V.env
   type value = V.value
+  structure Hyps = RedPrlSequentData.Hyps
 
   fun fst (V.PAIR (v1, _)) = v1
   fun snd (V.PAIR (_, v2)) = v2
@@ -103,7 +104,7 @@ struct
      | ML.PROVE (abt, t) =>
        let
          val catjdg = CJ.out @@ Env.forceObjTerm env abt
-         val jdg = J.>> (([], RedPrlSequentData.Hyps.empty), catjdg)
+         val jdg = J.>> (([], Hyps.empty), catjdg)
          fun makeTheorem evd = V.THEOREM (catjdg, evd)
        in
          makeTheorem <$> M.extract (M.local_ jdg (const () <$> eval env t))

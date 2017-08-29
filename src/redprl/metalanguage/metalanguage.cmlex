@@ -17,6 +17,7 @@ function lexmain: t =
   "fn" => fn_
   "let" => let_
   "in" => in_
+  "end" => end_
   "#1" => proj1
   "#2" => proj2
   ws => skip
@@ -27,6 +28,7 @@ function lexmain: t =
   ') => rparen
   ', => comma
   '= => equals
+  ident => ident
 
   any => error
   epsilon => error

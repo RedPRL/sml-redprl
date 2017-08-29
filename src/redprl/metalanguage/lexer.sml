@@ -10,12 +10,12 @@ struct
   val ord = fn (_, c) => Int.min (128, Char.ord c)
   type t = (token * pos) Stream.front
 
-  type self = {lexmain: symbol Streamable.t -> t}
+  type self = {lexmain: symbol StreamStreamable.t -> t}
   type info =
     {match: symbol list,
      len: int,
-     start: symbol Streamable.t,
-     follow: symbol Streamable.t,
+     start: symbol StreamStreamable.t,
+     follow: symbol StreamStreamable.t,
      self: self}
 
   fun @@ (f, x) = f x
@@ -71,9 +71,10 @@ struct
   val proj1 = simple T.PROJ1
   val proj2 = simple T.PROJ2
   val in_ = simple T.IN
+  val end_ = simple T.END
   val comma = simple T.COMMA
   val double_right_arrow = simple T.DOUBLE_RIGHT_ARROW
   val equals = simple T.EQUALS
 end
 
-structure MetalanguageLex = MetalanguageLexFn (structure Streamable = Streamable and Arg = MetalanguageLexAction)
+structure MetalanguageLex = MetalanguageLexFn (structure Streamable = StreamStreamable and Arg = MetalanguageLexAction)
