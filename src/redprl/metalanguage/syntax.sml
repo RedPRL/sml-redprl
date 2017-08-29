@@ -166,7 +166,7 @@ struct
       FUN (x \ t) :@ pos
 
     fun let_ (t, (x, tx)) pos = 
-      LET (t, x \ t) :@ pos
+      LET (t, x \ tx) :@ pos
 
     fun push (xs : string list, t : src_mlterm) pos : src_mlterm = 
       PUSH (xs \ t) :@ pos
