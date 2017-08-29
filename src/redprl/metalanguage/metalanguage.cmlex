@@ -21,6 +21,7 @@ function lexmain: t =
   "#1" => proj1
   "#2" => proj2
   "print" => print
+  "goal" => goal
   ws => skip
   (seq '= '>) => double_right_arrow
   '[ => lsquare

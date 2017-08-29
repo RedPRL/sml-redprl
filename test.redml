@@ -1,1 +1,1 @@
-let x = () in print (x,fn y => y) end
+let x = () in print goal end

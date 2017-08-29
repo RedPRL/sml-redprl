@@ -76,6 +76,7 @@ struct
   val double_right_arrow = simple T.DOUBLE_RIGHT_ARROW
   val equals = simple T.EQUALS
   val print = simple T.PRINT
+  val goal = simple T.GOAL
 end
 
 structure MetalanguageLex = MetalanguageLexFn (structure Streamable = StreamStreamable and Arg = MetalanguageLexAction)
