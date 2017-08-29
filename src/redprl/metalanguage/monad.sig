@@ -20,4 +20,6 @@ sig
 
   val print : Pos.t option * Fpp.doc -> unit m
   val fail : Pos.t option * Fpp.doc -> 'a m
+
+  val run : 'a m -> unit
 end

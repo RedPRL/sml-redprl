@@ -75,6 +75,7 @@ struct
   val comma = simple T.COMMA
   val double_right_arrow = simple T.DOUBLE_RIGHT_ARROW
   val equals = simple T.EQUALS
+  val print = simple T.PRINT
 end
 
 structure MetalanguageLex = MetalanguageLexFn (structure Streamable = StreamStreamable and Arg = MetalanguageLexAction)

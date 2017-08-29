@@ -29,17 +29,25 @@ struct
          | _ => true)
       | _ => false
 
+  structure ML = MetalanguageSyntax
+  structure Eval = MetalanguageEval (structure ML = ML and M = MetalanguageMonad)
+
   fun parseFile s =
     let
       val textStream = TextIO.openIn s
-      val str = Stream.eager o Lex.lexmain o coordinate eol (Coord.init s) @@ Stream.fromTextInstream textStream
-      val (tops, _) =
-        Parse.parse str handle exn =>
-          (TextIO.closeIn textStream;
-           RedPrlLog.print RedPrlLog.FAIL (RedPrlError.annotation exn, RedPrlError.format exn);
-           raise exn)
     in
-      tops
-      before TextIO.closeIn textStream
+      let
+        val str = Stream.eager o Lex.lexmain o coordinate eol (Coord.init s) @@ Stream.fromTextInstream textStream
+        val (ast, _) = Parse.parse str
+        val mlterm = ML.Resolver.resolve ast
+        val _ = MetalanguageMonad.run @@ Eval.eval0 mlterm
+      in
+        TextIO.closeIn textStream;
+        mlterm
+      end
+      handle exn => 
+        (TextIO.closeIn textStream;
+         RedPrlLog.print RedPrlLog.FAIL (RedPrlError.annotation exn, RedPrlError.format exn);
+         raise exn)
     end
 end

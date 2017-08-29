@@ -20,6 +20,7 @@ function lexmain: t =
   "end" => end_
   "#1" => proj1
   "#2" => proj2
+  "print" => print
   ws => skip
   (seq '= '>) => double_right_arrow
   '[ => lsquare

@@ -1,0 +1,1 @@
+let x = () in print (x,fn y => y) end

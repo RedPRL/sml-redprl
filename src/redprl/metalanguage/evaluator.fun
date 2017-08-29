@@ -13,6 +13,7 @@ sig
   type value
 
   val eval : env -> ML.mlterm_ -> value M.m
+  val eval0 : ML.mlterm_ -> value M.m
 end =
 struct
   exception todo fun ?e = raise e
@@ -86,7 +87,7 @@ struct
        end
      | ML.NIL => M.pure V.NIL
      | ML.FUN sc => M.pure @@ V.FUN (sc, env)
-     | ML.APP (t1, t2) => app =<< (eval env t1 <&> eval env t2)
+     | ML.APP (t1, t2) => app pos =<< (eval env t1 <&> eval env t2)
      | ML.PAIR (t1, t2) => V.PAIR <$> (eval env t1 <&> eval env t2)
      | ML.FST => M.pure V.FST
      | ML.SND => M.pure V.SND
@@ -132,7 +133,7 @@ struct
        eval env t >>= (fn v => 
          const V.NIL <$> M.print (pos, V.ppValue v))
 
-  and app (vf, v) =
+  and app pos (vf, v) =
     case vf of 
        V.FUN (sc, env) => 
        let
@@ -143,4 +144,7 @@ struct
        end
      | V.FST => M.pure @@ fst v
      | V.SND => M.pure @@ snd v
+     | _ => RedPrlError.raiseAnnotatedError' (pos, RedPrlError.GENERIC [Fpp.text "Impossible application"])
+
+  val eval0 = eval (ML.Ctx.empty, Tm.Metavar.Ctx.empty)
 end

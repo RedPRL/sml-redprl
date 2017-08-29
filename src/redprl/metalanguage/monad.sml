@@ -143,4 +143,15 @@ struct
   
   fun fail (pos, doc) (alpha, state) = 
     RedPrlError.raiseAnnotatedError' (pos, RedPrlError.GENERIC [doc])
+
+  structure OTm = RedPrlAbt and OSyn = Syntax
+
+  fun run m =
+    let
+      val jdg = RedPrlSequent.>> (([], RedPrlSequentData.Hyps.empty), RedPrlCategoricalJudgment.TERM RedPrlSortData.TRIV)
+      val state : jdg state = Lcf.idn jdg
+      val welp = m (fn i => RedPrlAbt.Sym.named (Int.toString i), state)
+    in
+      ()
+    end
 end
