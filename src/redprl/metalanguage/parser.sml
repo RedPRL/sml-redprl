@@ -84,6 +84,7 @@ struct
     fn (SOME x, SOME y) => SOME (Pos.union x y)
      | (NONE, SOME x) => SOME x
      | (SOME x, _) => SOME x
+     | _ => NONE
 
   val posOfTerms : exp list -> ML.annotation =
     List.foldl
