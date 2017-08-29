@@ -27,7 +27,6 @@ struct
      * Returns NONE if the resulting judgement is vacuously true.
      *)
     val restrict : (param * param) list -> (abt -> abt) option
-    val restrictJdg : (param * param) list -> jdg -> jdg option
   end
   =
   struct
@@ -53,8 +52,30 @@ struct
           (substSymbol rv o f)
 
     fun restrict eqs = restrict' eqs (fn x => x)
+  end
+  (* adding some helper functions *)
+  structure Restriction =
+  struct
+    open Restriction
 
     fun restrictJdg eqs jdg = Option.map (fn f => Seq.map f jdg) (restrict eqs)
+
+    local
+      fun makeEq' f (I, H) ((m, n), (ty, l, k)) =
+        makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+    in
+      fun makeEq eqs (I, H) ((m, n), (ty, l, k)) =
+        Option.map
+          (fn f => makeEq' f (I, H) ((m, n), (ty, l, k)))
+          (restrict eqs)
+
+      fun makeEqIfDifferent eqs (I, H) ((m, n), (ty, l, k)) =
+        Option.mapPartial
+          (fn f =>
+            if Abt.eq (f m, f n) then NONE
+            else SOME @@ makeEq' f (I, H) ((m, n), (ty, l, k)))
+          (restrict eqs)
+    end
   end
 
   (* code shared by Com, HCom and FCom. *)
@@ -75,9 +96,8 @@ struct
           let
             val tube0 = substSymbol (P.ret w, u) tube0
             val tube1 = substSymbol (P.ret w, v) tube1
-            val J = (I @ [(w,P.DIM)], H) >> CJ.EQ ((tube0, tube1), (ty, l, k))
           in
-            Option.map makeGoal' (Restriction.restrictJdg [eq0, eq1] J)
+            Restriction.makeEq [eq0, eq1] (I @ [(w,P.DIM)], H) ((tube0, tube1), (ty, l, k))
           end
         fun goTubePairs [] [] = []
           | goTubePairs (t0 :: ts0) (t1 :: ts1) =
@@ -92,14 +112,10 @@ struct
          forall i.
            M = N_i<r/y> in A [Psi | r_i = r_i']
      *)
-    fun genCapTubeGoals (I, H) (ty, l, k) r cap tubes =
+    fun genCapTubeGoalsWhenDifferent (I, H) (ty, l, k) r cap tubes =
       let
         fun capTube (eq, (u, tube)) =
-          let
-            val J = (I, H) >> CJ.EQ ((cap, substSymbol (r, u) tube), (ty, l, k))
-          in
-            Option.map makeGoal' (Restriction.restrictJdg [eq] J)
-          end
+          Restriction.makeEqIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), (ty, l, k))
       in
         List.mapPartial capTube tubes
       end
@@ -107,7 +123,7 @@ struct
     (* Note that this does not check whether the 'ty' is a base type.
      * It's caller's responsibility to check whether the type 'ty'
      * recognizes FCOM as values. *)
-    fun EqFComDelegator alpha (I, H) args0 args1 (ty, l, k) =
+    fun EqHeterogeneousFComDelegate alpha (I, H) args0 args1 (tyCap, lCap, kCap) (tyTube, lTube, kTube) =
       let
         val {dir=(r0, r'0), cap=cap0, tubes=tubes0} = args0
         val {dir=(r1, r'1), cap=cap1, tubes=tubes1} = args1
@@ -118,15 +134,18 @@ struct
         val _ = ListPair.mapEq (Assert.equationEq "EqFComDelegator equations") (eqs0, eqs1)
         val _ = Assert.tautologicalEquations "EqFComDelegator tautology checking" eqs0
 
-        val goalCap = makeEq (I, H) ((cap0, cap1), (ty, l, k))
+        val goalCap = makeEq (I, H) ((cap0, cap1), (tyCap, lCap, kCap))
 
         val w = alpha 0
       in
         |>: goalCap
-         >:+ genInterTubeGoals (I, H) w (ty, l, k) tubes0 tubes1
-         >:+ genCapTubeGoals (I, H) (ty, l, k) r0 cap0 tubes0
+         >:+ genInterTubeGoals (I, H) w (tyTube, lTube, kTube) tubes0 tubes1
+         >:+ genCapTubeGoalsWhenDifferent (I, H) (tyCap, NONE, K.top) r0 cap0 tubes0
         #> (I, H, trivial)
       end
+
+    fun EqFComDelegate alpha (I, H) args0 args1 (ty, l, k) =
+      EqHeterogeneousFComDelegate alpha (I, H) args0 args1 (ty, l, k) (ty, l, k)
   end
 
   structure HCom =
@@ -159,7 +178,7 @@ struct
       in
         |>: goalCap
          >:+ ComKit.genInterTubeGoals (I, H) w (ty0, l, k) tubes0 tubes1
-         >:+ ComKit.genCapTubeGoals (I, H) (ty, l, k) r0 cap0 tubes0
+         >:+ ComKit.genCapTubeGoalsWhenDifferent (I, H) (ty, NONE, K.top) r0 cap0 tubes0
          >:? goalTy0 >:? goalTy
         #> (I, H, trivial)
       end
@@ -186,7 +205,7 @@ struct
       in
         |>: goalEq
          >:+ ComKit.genInterTubeGoals (I, H) w (ty, l, k) tubes tubes
-         >:+ ComKit.genCapTubeGoals (I, H) (ty, l, k) r cap tubes
+         >:+ ComKit.genCapTubeGoalsWhenDifferent (I, H) (ty, NONE, K.top) r cap tubes
          >:? goalTy0
         #> (I, H, trivial)
       end
@@ -222,7 +241,7 @@ struct
       in
         |>:? goalEq
          >:+ ComKit.genInterTubeGoals (I, H) w (ty, l, k) tubes tubes
-         >:+ ComKit.genCapTubeGoals (I, H) (ty, l, k) r cap tubes
+         >:+ ComKit.genCapTubeGoalsWhenDifferent (I, H) (ty, NONE, K.top) r cap tubes
          >:? goalTy0
         #> (I, H, trivial)
       end

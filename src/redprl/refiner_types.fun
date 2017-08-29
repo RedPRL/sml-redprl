@@ -193,7 +193,7 @@ struct
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
       in
-        ComKit.EqFComDelegator alpha (I, H) args0 args1 (ty, NONE, K.top)
+        ComKit.EqFComDelegate alpha (I, H) args0 args1 (ty, NONE, K.top)
       end
 
     fun Elim z _ jdg =
@@ -626,7 +626,7 @@ struct
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
       in
-        ComKit.EqFComDelegator alpha (I, H) args0 args1 (ty, NONE, K.top)
+        ComKit.EqFComDelegate alpha (I, H) args0 args1 (ty, NONE, K.top)
       end
 
     fun Elim z alpha jdg =
