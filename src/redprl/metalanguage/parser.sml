@@ -32,7 +32,7 @@ struct
     | GOAL of pos
     | PUSH of pos
     | PRINT of pos
-    | TODO
+    | BOOL of pos
 
   val terminalToString = 
     fn LET _ => "LET"
@@ -56,7 +56,7 @@ struct
      | GOAL _ => "GOAL"
      | PUSH _ => "PUSH"
      | PRINT _ => "PRINT"
-     | TODO => "TODO"
+     | BOOL _ => "BOOL"
 
 
 end
@@ -123,8 +123,8 @@ struct
 
   fun exp_atm e = e
 
-  fun prove (posl, (oexp, osort), e, posr) = 
-    ML.PROVE ((oexp, osort), e) :@ SOME (Pos.union posl posr)
+  fun prove (posl, e1, e2, posr) = 
+    ML.PROVE (e1, e2) :@ SOME (Pos.union posl posr)
 
   fun let_ (posl, (_, x), e, ex, posr) =
     Ast.let_ (e, (x, ex)) @@ SOME (Pos.union posl posr)
@@ -147,7 +147,14 @@ struct
   fun var (pos, x) = 
     ML.VAR x :@ SOME pos
 
-  fun todo () = raise Fail "..."
+  local
+    open RedPrlAst
+    structure O = RedPrlOpData
+    infixr 3 $$
+  in
+    fun obool pos = 
+      (annotate pos @@ O.MONO O.BOOL $$ [], O.EXP)
+  end
 
   fun error s = 
     case Stream.front s of

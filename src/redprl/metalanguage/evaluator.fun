@@ -102,14 +102,16 @@ struct
        in
          M.pushNames (xs, eval env t)
        end
-     | ML.PROVE (abt, t) =>
-       let
-         val catjdg = CJ.out @@ Env.forceObjTerm env abt
-         val jdg = J.>> (([], Hyps.empty), catjdg)
-         fun makeTheorem evd = V.THEOREM (catjdg, evd)
-       in
-         makeTheorem <$> M.extract (M.local_ jdg (const () <$> eval env t))
-       end
+     | ML.PROVE (t1, t2) =>
+        eval env t1 >>= (fn V.QUOTE abt => 
+          let
+            val abt' = Env.forceObjTerm env abt
+            val catjdg : CJ.jdg = CJ.out abt' handle _ => CJ.TRUE (abt', NONE, RedPrlKind.top)
+            val jdg = J.>> (([], Hyps.empty), catjdg)
+            fun makeTheorem evd = V.THEOREM (catjdg, evd) 
+          in
+            makeTheorem <$> M.extract (M.local_ jdg (const () <$> eval env t2))
+          end)
      | ML.OMATCH (scrutinee, clauses) => 
        let
          fun matchWithClause abt clause =

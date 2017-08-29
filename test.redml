@@ -1,1 +1,7 @@
-let x = () in print goal end
+let
+  x = ()
+in
+  prove `bool in
+    print goal
+  end
+end

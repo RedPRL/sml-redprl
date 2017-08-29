@@ -77,6 +77,9 @@ struct
   val equals = simple T.EQUALS
   val print = simple T.PRINT
   val goal = simple T.GOAL
+  val prove = simple T.PROVE
+  val backtick = simple T.BACKTICK
+  val bool = simple T.BOOL
 end
 
 structure MetalanguageLex = MetalanguageLexFn (structure Streamable = StreamStreamable and Arg = MetalanguageLexAction)

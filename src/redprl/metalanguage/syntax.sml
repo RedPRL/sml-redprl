@@ -46,7 +46,7 @@ struct
    | TRY of 'a * 'a
    | PUSH of ('s list, 'a) scope
    | NIL
-   | PROVE of 'o * 'a
+   | PROVE of 'a * 'a
    | OMATCH of 'a * ('s, 'o, 'a) omatch_clause list
    | PRINT of 'a
 
@@ -122,7 +122,7 @@ struct
        | TRY (t1, t2) :@ ann => TRY (resolveAux state t1, resolveAux state t2) :@ ann
        | PUSH sc :@ ann => PUSH (resolveAuxObjScope state sc) :@ ann
        | NIL :@ ann => NIL :@ ann
-       | PROVE ((ast, tau), t) :@ ann => PROVE (resolveAbt (#ostate state) ast tau, resolveAux state t) :@ ann
+       | PROVE (t1, t2) :@ ann => PROVE (resolveAux state t1, resolveAux state t2) :@ ann
        | OMATCH (scrutinee, clauses) :@ ann => OMATCH (resolveAux state scrutinee, List.map (resolveAuxObjMatchClause state) clauses) :@ ann
        | PRINT t :@ ann => PRINT (resolveAux state t) :@ ann
 

@@ -22,6 +22,8 @@ function lexmain: t =
   "#2" => proj2
   "print" => print
   "goal" => goal
+  "prove" => prove
+  "bool" => bool
   ws => skip
   (seq '= '>) => double_right_arrow
   '[ => lsquare
@@ -30,6 +32,7 @@ function lexmain: t =
   ') => rparen
   ', => comma
   '= => equals
+  '` => backtick
   ident => ident
 
   any => error

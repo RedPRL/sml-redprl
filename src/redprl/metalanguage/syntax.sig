@@ -39,7 +39,7 @@ sig
    | TRY of 'a * 'a
    | PUSH of ('s list, 'a) scope
    | NIL
-   | PROVE of 'o * 'a
+   | PROVE of 'a * 'a
    | OMATCH of 'a * ('s, 'o, 'a) omatch_clause list
    | PRINT of 'a
 

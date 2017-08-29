@@ -15,6 +15,8 @@ functor MetalanguageLexFn
                         follow : symbol Streamable.t,
                         self : self }
 
+          val backtick : info -> t
+          val bool : info -> t
           val comma : info -> t
           val double_right_arrow : info -> t
           val end_ : info -> t
@@ -31,6 +33,7 @@ functor MetalanguageLexFn
           val print : info -> t
           val proj1 : info -> t
           val proj2 : info -> t
+          val prove : info -> t
           val rparen : info -> t
           val rsquare : info -> t
           val skip : info -> t
@@ -47,356 +50,455 @@ AUTOMATON LISTINGS
 ==================
 
 Automaton lexmain
-initial state = 27
-total states = 37
+initial state = 18
+total states = 45
 
 -----
 
-lexmain state 11 (final:goal):
+lexmain state 12 (final:print):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-122 => state 22   (final:ident)
-
------
-
-lexmain state 12 (final:ident):
-
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-109 => state 22   (final:ident)
-110 => state 15   (final:ident)
-111-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 13 (final:print):
+lexmain state 13 (final:skip):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-122 => state 22   (final:ident)
+9-10 => state 35   (final:skip)
+13 => state 35   (final:skip)
+32 => state 35   (final:skip)
 
 -----
 
-lexmain state 14 (final:ident):
+lexmain state 14 (final:equals):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-110 => state 22   (final:ident)
-111 => state 17   (final:ident)
-112-122 => state 22   (final:ident)
+62 => state 2   (sink:double_right_arrow)
 
 -----
 
 lexmain state 15 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-115 => state 22   (final:ident)
-116 => state 13   (final:print)
-117-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-104 => state 42   (final:ident)
+105 => state 40   (final:ident)
+106-110 => state 42   (final:ident)
+111 => state 41   (final:ident)
+112-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 16 (final:skip):
+lexmain state 16 (final:end_):
 
-9-10 => state 16   (final:skip)
-13 => state 16   (final:skip)
-32 => state 16   (final:skip)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
 
 -----
 
 lexmain state 17 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97 => state 20   (final:ident)
-98-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-115 => state 42   (final:ident)
+116 => state 43   (final:let_)
+117-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 18 (final:skip):
+lexmain state 18 (initial, final:error):
 
-9-10 => state 16   (final:skip)
-13 => state 16   (final:skip)
-32 => state 16   (final:skip)
+0-8 => state 1   (sink:error)
+9-10 => state 13   (final:skip)
+11-12 => state 1   (sink:error)
+13 => state 13   (final:skip)
+14-31 => state 1   (sink:error)
+32 => state 13   (final:skip)
+33-34 => state 1   (sink:error)
+35 => state 33   (final:error)
+36-39 => state 1   (sink:error)
+40 => state 9   (sink:lparen)
+41 => state 10   (sink:rparen)
+42-43 => state 1   (sink:error)
+44 => state 7   (sink:comma)
+45 => state 26   (final:ident)
+46 => state 1   (sink:error)
+47 => state 26   (final:ident)
+48-60 => state 1   (sink:error)
+61 => state 14   (final:equals)
+62-64 => state 1   (sink:error)
+65-90 => state 26   (final:ident)
+91 => state 5   (sink:lsquare)
+92 => state 26   (final:ident)
+93 => state 8   (sink:rsquare)
+94-95 => state 1   (sink:error)
+96 => state 4   (sink:backtick)
+97 => state 26   (final:ident)
+98 => state 34   (final:ident)
+99-100 => state 26   (final:ident)
+101 => state 30   (final:ident)
+102 => state 37   (final:ident)
+103 => state 20   (final:ident)
+104 => state 26   (final:ident)
+105 => state 31   (final:ident)
+106-107 => state 26   (final:ident)
+108 => state 44   (final:ident)
+109-111 => state 26   (final:ident)
+112 => state 39   (final:ident)
+113-122 => state 26   (final:ident)
+123-127 => state 1   (sink:error)
+EOS => state 11   (sink:eof)
 
 -----
 
 lexmain state 19 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-109 => state 22   (final:ident)
-110 => state 26   (final:fn_)
-111-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-115 => state 42   (final:ident)
+116 => state 12   (final:print)
+117-122 => state 42   (final:ident)
 
 -----
 
 lexmain state 20 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-107 => state 22   (final:ident)
-108 => state 11   (final:goal)
-109-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-110 => state 42   (final:ident)
+111 => state 21   (final:ident)
+112-122 => state 42   (final:ident)
 
 -----
 
 lexmain state 21 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-115 => state 22   (final:ident)
-116 => state 30   (final:let_)
-117-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97 => state 23   (final:ident)
+98-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 22 (final:ident):
+lexmain state 22 (final:goal):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
 
 -----
 
 lexmain state 23 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-107 => state 42   (final:ident)
+108 => state 22   (final:goal)
+109-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 24 (final:end_):
+lexmain state 24 (final:bool):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-122 => state 22   (final:ident)
-
------
-
-lexmain state 25 (final:equals):
-
-62 => state 3   (sink:double_right_arrow)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 26 (final:fn_):
+lexmain state 25 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-122 => state 22   (final:ident)
-
------
-
-lexmain state 27 (initial, final:error):
-
-0-8 => state 7   (sink:error)
-9-10 => state 18   (final:skip)
-11-12 => state 7   (sink:error)
-13 => state 18   (final:skip)
-14-31 => state 7   (sink:error)
-32 => state 18   (final:skip)
-33-34 => state 7   (sink:error)
-35 => state 31   (final:error)
-36-39 => state 7   (sink:error)
-40 => state 1   (sink:lparen)
-41 => state 9   (sink:rparen)
-42-43 => state 7   (sink:error)
-44 => state 4   (sink:comma)
-45 => state 23   (final:ident)
-46 => state 7   (sink:error)
-47 => state 23   (final:ident)
-48-60 => state 7   (sink:error)
-61 => state 25   (final:equals)
-62-64 => state 7   (sink:error)
-65-90 => state 23   (final:ident)
-91 => state 6   (sink:lsquare)
-92 => state 23   (final:ident)
-93 => state 8   (sink:rsquare)
-94-96 => state 7   (sink:error)
-97-100 => state 23   (final:ident)
-101 => state 28   (final:ident)
-102 => state 19   (final:ident)
-103 => state 14   (final:ident)
-104 => state 23   (final:ident)
-105 => state 34   (final:ident)
-106-107 => state 23   (final:ident)
-108 => state 36   (final:ident)
-109-111 => state 23   (final:ident)
-112 => state 33   (final:ident)
-113-122 => state 23   (final:ident)
-123-127 => state 7   (sink:error)
-EOS => state 10   (sink:eof)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-100 => state 42   (final:ident)
+101 => state 32   (final:prove)
+102-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 28 (final:ident):
+lexmain state 26 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-109 => state 22   (final:ident)
-110 => state 32   (final:ident)
-111-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 27 (final:fn_):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 28 (final:in_):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
 
 -----
 
 lexmain state 29 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-104 => state 22   (final:ident)
-105 => state 12   (final:ident)
-106-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-99 => state 42   (final:ident)
+100 => state 16   (final:end_)
+101-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 30 (final:let_):
+lexmain state 30 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-122 => state 22   (final:ident)
-
------
-
-lexmain state 31 (final:error):
-
-49 => state 2   (sink:proj1)
-50 => state 5   (sink:proj2)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-109 => state 42   (final:ident)
+110 => state 29   (final:ident)
+111-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 32 (final:ident):
+lexmain state 31 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-99 => state 22   (final:ident)
-100 => state 24   (final:end_)
-101-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-109 => state 42   (final:ident)
+110 => state 28   (final:in_)
+111-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 33 (final:ident):
+lexmain state 32 (final:prove):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-113 => state 22   (final:ident)
-114 => state 29   (final:ident)
-115-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 33 (final:error):
+
+49 => state 3   (sink:proj1)
+50 => state 6   (sink:proj2)
 
 -----
 
 lexmain state 34 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-109 => state 22   (final:ident)
-110 => state 35   (final:in_)
-111-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-110 => state 42   (final:ident)
+111 => state 36   (final:ident)
+112-122 => state 42   (final:ident)
 
 -----
 
-lexmain state 35 (final:in_):
+lexmain state 35 (final:skip):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-122 => state 22   (final:ident)
+9-10 => state 35   (final:skip)
+13 => state 35   (final:skip)
+32 => state 35   (final:skip)
 
 -----
 
 lexmain state 36 (final:ident):
 
-39 => state 22   (final:ident)
-45 => state 22   (final:ident)
-47-57 => state 22   (final:ident)
-65-90 => state 22   (final:ident)
-92 => state 22   (final:ident)
-95 => state 22   (final:ident)
-97-100 => state 22   (final:ident)
-101 => state 21   (final:ident)
-102-122 => state 22   (final:ident)
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-110 => state 42   (final:ident)
+111 => state 38   (final:ident)
+112-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 37 (final:ident):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-109 => state 42   (final:ident)
+110 => state 27   (final:fn_)
+111-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 38 (final:ident):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-107 => state 42   (final:ident)
+108 => state 24   (final:bool)
+109-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 39 (final:ident):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-113 => state 42   (final:ident)
+114 => state 15   (final:ident)
+115-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 40 (final:ident):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-109 => state 42   (final:ident)
+110 => state 19   (final:ident)
+111-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 41 (final:ident):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-117 => state 42   (final:ident)
+118 => state 25   (final:ident)
+119-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 42 (final:ident):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 43 (final:let_):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-122 => state 42   (final:ident)
+
+-----
+
+lexmain state 44 (final:ident):
+
+39 => state 42   (final:ident)
+45 => state 42   (final:ident)
+47-57 => state 42   (final:ident)
+65-90 => state 42   (final:ident)
+92 => state 42   (final:ident)
+95 => state 42   (final:ident)
+97-100 => state 42   (final:ident)
+101 => state 17   (final:ident)
+102-122 => state 42   (final:ident)
 
 *)
 
@@ -407,7 +509,7 @@ type symbol = Arg.symbol
 val ord = Arg.ord)
 structure Tables = struct
 fun epsilon _ = raise (Fail "Illegal lexeme")
-val lexmain = (27, 10, 36, Vector.fromList [Arg.lparen,Arg.proj1,Arg.double_right_arrow,Arg.comma,Arg.proj2,Arg.lsquare,Arg.error,Arg.rsquare,Arg.rparen,Arg.eof,Arg.goal,Arg.ident,Arg.print,Arg.ident,Arg.ident,Arg.skip,Arg.ident,Arg.skip,Arg.ident,Arg.ident,Arg.ident,Arg.ident,Arg.ident,Arg.end_,Arg.equals,Arg.fn_,Arg.error,Arg.ident,Arg.ident,Arg.let_,Arg.error,Arg.ident,Arg.ident,Arg.ident,Arg.in_,Arg.ident], LexEngine.next7x1 128 "\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^O\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^Q\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\r\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^P\^P\^@\^@\^P\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^P\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^T\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^P\^P\^@\^@\^P\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^P\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^Z\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\v\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^^\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^C\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\a\a\a\a\a\a\a\a\a\^R\^R\a\a\^R\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\^R\a\a\^_\a\a\a\a\^A\t\a\a\^D\^W\a\^W\a\a\a\a\a\a\a\a\a\a\a\a\a\^Y\a\a\a\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\^F\^W\b\a\a\a\^W\^W\^W\^W\^\\^S\^N\^W\"\^W\^W$\^W\^W\^W!\^W\^W\^W\^W\^W\^W\^W\^W\^W\^W\a\a\a\a\a\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V \^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\f\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^B\^E\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^X\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^]\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V#\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^V\^@\^@\^@\^@\^@\^V\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@\^@\^@\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^V\^@\^@\^V\^@\^V\^V\^V\^V\^U\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^V\^@\^@\^@\^@\^@", LexEngine.next0x1 "\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\n\^@\^@\^@\^@\^@\^@\^@\^@\^@")
+val lexmain = (18, 11, 44, Vector.fromList [Arg.error,Arg.double_right_arrow,Arg.proj1,Arg.backtick,Arg.lsquare,Arg.proj2,Arg.comma,Arg.rsquare,Arg.lparen,Arg.rparen,Arg.eof,Arg.print,Arg.skip,Arg.equals,Arg.ident,Arg.end_,Arg.ident,Arg.error,Arg.ident,Arg.ident,Arg.ident,Arg.goal,Arg.ident,Arg.bool,Arg.ident,Arg.ident,Arg.fn_,Arg.in_,Arg.ident,Arg.ident,Arg.ident,Arg.prove,Arg.error,Arg.ident,Arg.skip,Arg.ident,Arg.ident,Arg.ident,Arg.ident,Arg.ident,Arg.ident,Arg.ident,Arg.let_,Arg.ident], LexEngine.next7x1 128 "\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@##\^@\^@#\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@#\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^B\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@********(*****)***********\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@*******************+******\^@\^@\^@\^@\^@\^A\^A\^A\^A\^A\^A\^A\^A\^A\r\r\^A\^A\r\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\r\^A\^A!\^A\^A\^A\^A\t\n\^A\^A\a\^Z\^A\^Z\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^A\^N\^A\^A\^A\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^E\^Z\b\^A\^A\^D\^Z\"\^Z\^Z\^^%\^T\^Z\^_\^Z\^Z,\^Z\^Z\^Z'\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^Z\^A\^A\^A\^A\^A\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@*******************\f******\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************\^U***********\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@\^W*************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@***********\^V**************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**** *********************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@***\^P**********************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@*************\^]************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@*************\^\************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^C\^F\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************$***********\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@##\^@\^@#\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@#\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************&***********\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@*************\^[************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@***********\^X**************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@*****************\^O********\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@*************\^S************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@*********************\^Y****\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@**************************\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@*\^@\^@\^@\^@\^@*\^@***********\^@\^@\^@\^@\^@\^@\^@**************************\^@*\^@\^@*\^@****\^Q*********************\^@\^@\^@\^@\^@", LexEngine.next0x1 "\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\v\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@\^@")
 end
 in
 fun lexmain s = LexEngine.lex {lexmain=lexmain} Tables.lexmain s

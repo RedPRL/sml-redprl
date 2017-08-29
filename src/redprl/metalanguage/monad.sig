@@ -14,7 +14,7 @@ sig
 
   val extract : 'a m -> Lcf.L.term m
 
-  val set : Lcf.jdg -> unit m
+  (* val set : Lcf.jdg -> unit m *)
   val local_ : Lcf.jdg -> unit m -> unit m
   val pushNames : name list * 'a m -> 'a m
 

@@ -21,14 +21,9 @@ terminal REFINE of pos
 terminal GOAL of pos
 terminal PUSH of pos
 terminal PRINT of pos
-
-terminal TODO /* dummy */
+terminal BOOL of pos
 
 start Exp
-
-/* TODO: object terms */
-nonterminal OExp: oexp = 
-  TODO => todo
 
 nonterminal Atm: exp =
   1:IDENT => var
@@ -38,7 +33,7 @@ nonterminal Atm: exp =
   1:PROJ1 => proj1
   1:PROJ2 => proj2
   1:LET 2:IDENT EQUALS 3:Exp IN 4:Exp 5:END => let_
-  1:PROVE 2:OExp IN 3:Exp 4:END => prove
+  1:PROVE 2:Exp IN 3:Exp 4:END => prove
   LPAREN 1:Exp RPAREN => exp_atm
   BEGIN 1:Exp END => exp_atm
   1:BACKTICK 2:OExp => quote
@@ -64,3 +59,9 @@ nonterminal Names: names =
   1:IDENT COMMA 2:Names => names_cons
   1:IDENT => names_singl
   => names_nil
+
+
+
+/* TODO: object terms */
+nonterminal OExp: oexp = 
+  1:BOOL => obool
