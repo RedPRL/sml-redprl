@@ -256,6 +256,21 @@ struct
       else
         raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", TermPrinter.ppParam r1, Fpp.text "to be equal to", TermPrinter.ppParam r2]
 
+    fun dirEq msg ((r1, r1'), (r2, r2')) =
+      if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
+        ()
+      else
+        raise E.error
+          [Fpp.text (msg ^ ":"),
+           Fpp.text "Expected direction",
+           TermPrinter.ppParam r1,
+           Fpp.text "~>",
+           TermPrinter.ppParam r1',
+           Fpp.text "to be equal to",
+           TermPrinter.ppParam r2,
+           Fpp.text "~>",
+           TermPrinter.ppParam r2']
+
     fun equationEq msg ((r1, r1'), (r2, r2')) =
       if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
         ()
@@ -270,6 +285,8 @@ struct
            TermPrinter.ppParam r2,
            Fpp.text "=",
            TermPrinter.ppParam r2']
+
+    fun equationsEq msg = ListPair.mapEq (equationEq msg)
 
     (* The following is a sufficient condition for tautology:
      * the list contains a true equation `r = r` or both `r = 0`

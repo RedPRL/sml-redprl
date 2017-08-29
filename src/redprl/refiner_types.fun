@@ -1270,6 +1270,116 @@ struct
       end
   end
 
+  structure FormalComposition =
+  struct
+    val kindConstraintOnCapAndTubes =
+      fn K.DISCRETE => (K.DISCRETE, K.DISCRETE)
+       | K.KAN => (K.KAN, K.KAN) (* XXX more research needed *)
+       | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
+       | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
+       | K.CUBICAL => (K.CUBICAL, K.COE) (* XXX more research needed *)
+
+    (* see the function of th same name in `ComKit` *)
+    fun genInterTubeGoals (I, H) w (l, k) tubes0 tubes1 =
+      let
+        val alphaRename = List.map (fn (eq, (u, tube)) => (eq, substSymbol (P.ret w, u) tube))
+        val tubes0 = alphaRename tubes0
+        val tubes1 = alphaRename tubes1
+
+        fun interTube (eq0, tube0) (eq1, tube1) =
+          Restriction.makeEqType [eq0, eq1] (I @ [(w,P.DIM)], H) ((tube0, tube1), l, k)
+
+        fun goTubePairs [] [] = []
+          | goTubePairs (t0 :: ts0) (t1 :: ts1) =
+              List.mapPartial (interTube t0) (t1 :: ts1) :: goTubePairs ts0 ts1
+          | goTubePairs _ _ = raise
+              E.error [Fpp.text "interTubeGoals: the tubes are of different lengths"]
+      in
+        List.concat (goTubePairs tubes0 tubes1)
+      end
+
+    (* see the function of th same name in `ComKit` *)
+    fun genCapTubeGoalsIfDifferent (I, H) (l, k) r cap tubes =
+      let
+        fun capTube (eq, (u, tube)) =
+          Restriction.makeEqTypeIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), l, k)
+      in
+        List.mapPartial capTube tubes
+      end
+
+    fun EqType alpha jdg =
+      let
+        val _ = RedPrlLog.trace "FormalComposition.EqType"
+        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val Syn.FCOM {dir=dir0, cap=cap0, tubes=tubes0} = Syn.out ty0
+        val Syn.FCOM {dir=dir1, cap=cap1, tubes=tubes1} = Syn.out ty1
+        val () = Assert.dirEq "FormalComposition.EqType direction" (dir0, dir1)
+        val eqs0 = List.map #1 tubes0
+        val eqs1 = List.map #1 tubes1
+        val _ = Assert.equationsEq "FormalComposition.EqType equations" (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "FormalComposition.EqType tautology checking" eqs0
+
+        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+
+        val goalCap = makeEqType (I, H) ((cap0, cap1), l, kCap)
+
+        val w = alpha 0
+      in
+        |>: goalCap
+         >:+ genInterTubeGoals (I, H) w (l, kTube) tubes0 tubes1
+         >:+ genCapTubeGoalsIfDifferent (I, H) (NONE, K.top) (#1 dir0) cap0 tubes0
+        #> (I, H, trivial)
+      end
+
+    fun Eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "FormalComposition.Eq"
+        val (I, H) >> CJ.EQ ((box0, box1), (ty, l, k)) = jdg
+        val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
+        val Syn.BOX {dir=dir0, cap=cap0, boundaries=boundaries0} = Syn.out box0
+        val Syn.BOX {dir=dir1, cap=cap1, boundaries=boundaries1} = Syn.out box1
+        val () = Assert.dirEq "FormalComposition.Eq direction" (dir0, dir1)
+        val () = Assert.dirEq "FormalComposition.Eq direction" (dir0, dir)
+        val eqs0 = List.map #1 boundaries0
+        val eqs1 = List.map #1 boundaries1
+        val eqs = List.map #1 tyTubes
+        val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs1)
+        val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs)
+        val _ = Assert.tautologicalEquations "FormalComposition.Eq tautology checking" eqs
+        (* dropping the equations after checking them *)
+        val boundaries0 = List.map #2 boundaries0
+        val boundaries1 = List.map #2 boundaries1
+
+        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+
+        val goalCap = makeEq (I, H) ((cap0, cap1), (tyCap, l, kCap))
+
+        val goalBoundaries =
+          List.mapPartial
+            (fn ((b0, b1), (eq, (u, tyTube))) =>
+              Restriction.makeEq [eq] (I, H) ((b0, b1), (substSymbol (#2 dir, u) tyTube, NONE, K.top)))
+            (ListPair.zip (ListPair.zip (boundaries0, boundaries1), tyTubes))
+
+        val reversedDir = (#2 dir, #1 dir)
+
+        val goalCapBoundaries =
+          List.mapPartial
+            (fn (b, (eq, ty)) =>
+              Restriction.makeEqIfDifferent [eq] (I, H)
+                ((cap0, Syn.into (Syn.COE {dir=reversedDir, ty=ty, coercee=b})), (tyCap, NONE, K.top)))
+            (ListPair.zip (boundaries0, tyTubes))
+
+        val w = alpha 0
+      in
+        |>: goalCap
+         >:+ goalBoundaries
+         >:+ goalCapBoundaries
+         >:+ genInterTubeGoals (I, H) w (l, kTube) tyTubes tyTubes
+         >:+ genCapTubeGoalsIfDifferent (I, H) (NONE, K.top) (#1 dir) tyCap tyTubes
+        #> (I, H, trivial)
+      end
+  end
+
   structure Universe =
   struct
     val inherentKind =

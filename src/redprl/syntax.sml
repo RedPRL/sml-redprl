@@ -61,6 +61,8 @@ struct
    | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
+   (* fcom types *)
+   | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
@@ -82,20 +84,34 @@ struct
     fun intoTubes tubes =
       let
         val (eqs, tubes) = ListPair.unzip tubes
-        val tubes = List.map (fn (d, t) => ([d], []) \ t) tubes
+        val tubes = List.map (fn (d, t) => ([d],[]) \ t) tubes
       in
         (eqs, tubes)
       end
 
     fun outTubes (eqs, tubes) =
       let
-        fun goTube (([d], []) \ tube) = (d, tube)
+        fun goTube (([d],_) \ tube) = (d, tube)
           | goTube _ = raise E.error [Fpp.text "Syntax.outTubes: Malformed tube"]
       in
         ListPair.zipEq (eqs, List.map goTube tubes)
       end
 
-  in
+    fun intoFcom {dir, cap, tubes} =
+      let val (eqs, tubes) = intoTubes tubes
+      in O.POLY (O.FCOM (dir, eqs)) $$ (([],[]) \ cap) :: tubes
+      end
+
+    fun intoHcom {dir, ty, cap, tubes} =
+      let val (eqs, tubes) = intoTubes tubes
+      in O.POLY (O.HCOM (dir, eqs)) $$ (([],[]) \ ty) :: (([],[]) \ cap) :: tubes
+      end
+
+    fun intoCom {dir, ty=(u,a), cap, tubes} =
+      let val (eqs, tubes) = intoTubes tubes
+      in O.POLY (O.COM (dir, eqs)) $$ (([u],[]) \ a) :: (([],[]) \ cap) :: tubes
+      end
+
     fun outRecordFields (lbls, args) =
       let
         val init = {rcd = [], vars = []}
@@ -116,6 +132,22 @@ struct
         List.rev rcd
       end
 
+    fun intoBoundaries boundaries =
+      let
+        val (eqs, boundaries) = ListPair.unzip boundaries
+        val boundaries = List.map (fn b => ([], []) \ b) boundaries
+      in
+        (eqs, boundaries)
+      end
+
+    fun outBoudaries (eqs, boundaries) =
+      ListPair.zipEq (eqs, List.map (fn (_ \ b) => b) boundaries)
+
+    fun intoBox {dir, cap, boundaries} =
+      let val (eqs, boundaries) = intoBoundaries boundaries
+      in O.POLY (O.BOX (dir, eqs)) $$ (([],[]) \ cap) :: boundaries
+      end
+  in
     fun intoTupleFields fs =
       let
         val (lbls, tms) = ListPair.unzip fs
@@ -127,36 +159,13 @@ struct
     fun outTupleFields (lbls, args) =
       ListPair.mapEq (fn (lbl, (_ \ tm)) => (lbl, tm)) (lbls, args)
 
-
-    fun intoFcom' (dir, eqs) args = O.POLY (O.FCOM (dir, eqs)) $$ args
-
-    fun intoFcom (dir, eqs) (cap, tubes) =
-      intoFcom' (dir, eqs) ((([],[]) \ cap) :: tubes)
-
-    fun intoHcom' (dir, eqs) (ty, args) =
-      O.POLY (O.HCOM (dir, eqs)) $$ (([],[]) \ ty) :: args
-
-    fun intoHcom (dir, eqs) (ty, cap, tubes) =
-      intoHcom' (dir, eqs) (ty, (([],[]) \ cap) :: tubes)
-
-    fun intoCom' (dir, eqs) ((u, a), args) =
-      O.POLY (O.COM (dir, eqs)) $$ (([u],[]) \ a) :: args
-
-    fun intoCom (dir, eqs) (ty, cap, tubes) =
-      intoCom' (dir, eqs) (ty, (([],[]) \ cap) :: tubes)
-
     val into =
       fn VAR (x, tau) => check (`x, tau)
 
        | TV => O.MONO O.TV $$ []
        | AX => O.MONO O.AX $$ []
 
-       | FCOM {dir, cap, tubes} =>
-           let
-             val (eqs, tubes) = intoTubes tubes
-           in
-             intoFcom (dir, eqs) (cap, tubes)
-           end
+       | FCOM args => intoFcom args
 
        | BOOL => O.MONO O.BOOL $$ []
        | TT => O.MONO O.TT $$ []
@@ -216,22 +225,14 @@ struct
 
        | EQUALITY (a, m, n) => O.MONO O.EQUALITY $$ [([],[]) \ a, ([],[]) \ m, ([],[]) \ n]
 
+       | BOX args => intoBox args
+
        | UNIVERSE (l, k) => O.POLY (O.UNIVERSE (L.into l, k)) $$ []
 
-       | HCOM {dir, ty, cap, tubes} =>
-           let
-             val (eqs, tubes) = intoTubes tubes
-           in
-             intoHcom (dir, eqs) (ty, cap, tubes)
-           end
+       | HCOM args => intoHcom args
        | COE {dir, ty = (u, a), coercee} =>
            O.POLY (O.COE dir) $$ [([u],[]) \ a, ([],[]) \ coercee]
-       | COM {dir, ty = (u, a), cap, tubes} =>
-           let
-             val (eqs, tubes) = intoTubes tubes
-           in
-             intoCom (dir, eqs) ((u, a), cap, tubes)
-           end
+       | COM args => intoCom args
 
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
@@ -291,6 +292,9 @@ struct
        | O.POLY (O.PATH_APP r) $ [_ \ m] => PATH_APP (m, r)
 
        | O.MONO O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
+
+       | O.POLY (O.BOX (dir, eqs)) $ (_ \ cap) :: boundaries =>
+           BOX {dir = dir, cap = cap, boundaries = outBoudaries (eqs, boundaries)}
 
        | O.POLY (O.UNIVERSE (l, k)) $ _ => UNIVERSE (L.out l, k)
 
