@@ -20,40 +20,41 @@ struct
        Realizability", page 46.
 
        On 2017/06/14, favonia implemented a function to handle
-       all cases. We need to generalize the old handling to
-       welcome new hcom operators. (It is true that we still
-       only need to handle context restrictions with at most two
-       equations, but it seems easier to just handle all cases.)
-
-       Such automation is possible because the rules are "syntax
-       directed" on the restriction being performed.
+       all cases.
      *)
 
     (* Restrict a judgement (as the goal) by a list of equations.
      * Returns NONE if the resulting judgement is vacuously true.
      *)
-    val restrict : jdg -> (param * param) list -> jdg option
+    val restrict : (param * param) list -> (abt -> abt) option
+    val restrictJdg : (param * param) list -> jdg -> jdg option
   end
   =
   struct
     (* A helper function which does substitution in a parameter. *)
     fun substSymInParam (r, v) = P.bind (fn u => if Sym.eq (u, v) then r else P.ret u)
 
-    fun restrict jdg [] = SOME jdg
-      | restrict jdg ((P.APP d1, P.APP d2) :: eqs) =
+    (* precondition: all parameters in equations are of sorts `DIM` *)
+    fun restrict' [] f = SOME f
+      | restrict' ((P.APP d1, P.APP d2) :: eqs) f =
           (* The following line is correct because we only have constants
            * (DIM0 and DIM1). If in the future we want to have connections
            * or other stuff, then a real unification algorithm might be needed.
            *)
-          if P.Sig.eq (fn _ => true) (d1, d2) then restrict jdg eqs else NONE
-      | restrict jdg ((r1 as P.VAR v1, r2) :: eqs) =
-          if P.eq Sym.eq (r1, r2) then restrict jdg eqs else substAndRestrict (r2, v1) jdg eqs
-      | restrict jdg ((r1, P.VAR v2) :: eqs) =
-          substAndRestrict (r1, v2) jdg eqs
+          if P.Sig.eq (fn _ => true) (d1, d2) then restrict' eqs f else NONE
+      | restrict' ((r1 as P.VAR v1, r2) :: eqs) f =
+          if P.eq Sym.eq (r1, r2) then restrict' eqs f else substAndRestrict' (r2, v1) eqs f
+      | restrict' ((r1, P.VAR v2) :: eqs) f =
+          substAndRestrict' (r1, v2) eqs f
 
-    and substAndRestrict rv jdg eqs = restrict
-          (Seq.map (substSymbol rv) jdg)
-          (List.map (fn (r, r') => (substSymInParam rv r, substSymInParam rv r')) eqs)
+    and substAndRestrict' rv eqs f =
+          restrict'
+            (List.map (fn (r, r') => (substSymInParam rv r, substSymInParam rv r')) eqs)
+          (substSymbol rv o f)
+
+    fun restrict eqs = restrict' eqs (fn x => x)
+
+    fun restrictJdg eqs jdg = Option.map (fn f => Seq.map f jdg) (restrict eqs)
   end
 
   (* code shared by Com, HCom and FCom. *)
@@ -76,7 +77,7 @@ struct
             val tube1 = substSymbol (P.ret w, v) tube1
             val J = (I @ [(w,P.DIM)], H) >> CJ.EQ ((tube0, tube1), (ty, l, k))
           in
-            Option.map makeGoal' (Restriction.restrict J [eq0, eq1])
+            Option.map makeGoal' (Restriction.restrictJdg [eq0, eq1] J)
           end
         fun goTubePairs [] [] = []
           | goTubePairs (t0 :: ts0) (t1 :: ts1) =
@@ -97,7 +98,7 @@ struct
           let
             val J = (I, H) >> CJ.EQ ((cap, substSymbol (r, u) tube), (ty, l, k))
           in
-            Option.map makeGoal' (Restriction.restrict J [eq])
+            Option.map makeGoal' (Restriction.restrictJdg [eq] J)
           end
       in
         List.mapPartial capTube tubes
