@@ -1388,13 +1388,12 @@ struct
 
         val (goalCap, holeCap) = makeTrue (I, H) (tyCap, l, kCap)
 
-        fun genBoundary (eq, (u, tyTube)) =
+        fun foldBoundary ((eq, (u, tyTube)), (goals, holes)) =
           case Restriction.makeTrue [eq] (I, H) (substSymbol (#2 dir, u) tyTube, NONE, K.top) of
-            NONE => (NONE, Syn.into Syn.AX) (* or any other term *)
-          | SOME (goal, hole) => (SOME goal, hole)
-        val (goalBoundaries', holeBoundaries) =
-          ListPair.unzip (List.map genBoundary tyTubes)
-        val goalBoundaries = List.mapPartial (fn x => x) goalBoundaries'
+            NONE => (goals, Syn.into Syn.AX :: holes) (* or any other term *)
+          | SOME (goal, hole) => (goal :: goals, hole :: holes)
+        val (goalBoundaries, holeBoundaries) =
+          List.foldr foldBoundary ([],[]) tyTubes
 
         val w = alpha 0
 
