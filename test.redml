@@ -6,9 +6,10 @@ let
         val thm2 =
           prove `wbool by
             let
-              val x = exact `tt
+              val _ = exact `tt
+              val _ = refine wbool/eq/tt
             in
-              refine wbool/eq/tt
+              ()
             end
           end
         val _ = print thm2
