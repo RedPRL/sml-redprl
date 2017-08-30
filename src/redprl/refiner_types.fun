@@ -1436,6 +1436,8 @@ struct
          >:+ genCapTubeGoalsIfDifferent (I, H) ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
         #> (I, H, box)
       end
+
+    (* TODO Add the Elim, EqCap and Eta rules. *)
   end
 
   structure Universe =
