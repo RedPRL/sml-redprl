@@ -1280,7 +1280,7 @@ struct
        | K.CUBICAL => (K.CUBICAL, K.COE) (* XXX more research needed *)
 
     (* see the function of th same name in `ComKit` *)
-    fun genInterTubeGoals (I, H) w (l, k) tubes0 tubes1 =
+    fun genInterTubeGoals (I, H) w ((tubes0, tubes1), l, k) =
       let
         val tubes0 = ComKit.alphaRenameTubes w tubes0
         val tubes1 = ComKit.alphaRenameTubes w tubes1
@@ -1298,7 +1298,7 @@ struct
       end
 
     (* see the function of th same name in `ComKit` *)
-    fun genCapTubeGoalsIfDifferent (I, H) (l, k) r cap tubes =
+    fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), l, k) =
       let
         fun capTube (eq, (u, tube)) =
           Restriction.makeEqTypeIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), l, k)
@@ -1306,12 +1306,45 @@ struct
         List.mapPartial capTube tubes
       end
 
-    fun genCapBoundaryGoals (I, H) tyCap (r, r') cap (boundaries, tyTubes) =
-      List.mapPartial
-        (fn (b, (eq, ty)) =>
-          Restriction.makeEqIfDifferent [eq] (I, H)
-            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=b})), tyCap))
-        (ListPair.zip (boundaries, tyTubes))
+    local
+      fun interBoundary (I, H) (eq0, b0) (ty, l, k) (eq1, b1) =
+        Restriction.makeEq [eq0, eq1] (I, H) ((b0, b1), (ty, l, k))
+    in
+      fun genInterBoundaryGoalsNoDiagonal (I, H) ((boundaries0, boundaries1), (tyTubes, l, k)) =
+        let
+          fun goBoundaryPairs [] [] [] = []
+            | goBoundaryPairs (b0 :: bs0) (b1 :: bs1) (ty :: tys) =
+                List.mapPartial (interBoundary (I, H) b0 (ty, l, k)) bs1 :: goBoundaryPairs bs0 bs1 tys
+            | goBoundaryPairs _ _ _ = E.raiseError @@ E.IMPOSSIBLE @@
+                Fpp.text "genInterBoundaryGoalsNoDiagonal: the boundaries are of different lengths"
+        in
+          List.concat (goBoundaryPairs boundaries0 boundaries1 tyTubes)
+        end
+      fun genInterBoundaryGoals (I, H) ((boundaries0, boundaries1), (tyTubes, l, k)) =
+        let
+          fun goBoundaryPairs [] [] [] = []
+            | goBoundaryPairs (b0 :: bs0) (b1 :: bs1) (ty :: tys) =
+                List.mapPartial (interBoundary (I, H) b0 (ty, l, k)) (b1 :: bs1) :: goBoundaryPairs bs0 bs1 tys
+            | goBoundaryPairs _ _ _ = E.raiseError @@ E.IMPOSSIBLE @@
+                Fpp.text "genInterBoundaryGoals: the boundaries are of different lengths"
+        in
+          List.concat (goBoundaryPairs boundaries0 boundaries1 tyTubes)
+        end
+    end
+
+    fun genCapBoundaryGoals (I, H) ((cap, ((r, r'), tyTubes, boundaries)), (tyCap, l, k)) =
+      ListPair.foldrEq
+        (fn ((eq, ty), boundary, goals) =>
+          let
+            val goalOpt = Restriction.makeEqIfDifferent [eq] (I, H)
+              ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l, k))
+          in
+            case goalOpt of
+              NONE => goals
+            | SOME goal => goal :: goals
+          end)
+        []
+        (tyTubes, boundaries)
 
     fun EqType alpha jdg =
       let
@@ -1332,8 +1365,8 @@ struct
         val w = alpha 0
       in
         |>: goalCap
-         >:+ genInterTubeGoals (I, H) w (l, kTube) tubes0 tubes1
-         >:+ genCapTubeGoalsIfDifferent (I, H) (NONE, K.top) (#1 dir0) cap0 tubes0
+         >:+ genInterTubeGoals (I, H) w ((tubes0, tubes1), l, kTube)
+         >:+ genCapTubeGoalsIfDifferent (I, H) ((cap0, (#1 dir0, tubes0)), NONE, K.top)
         #> (I, H, trivial)
       end
 
@@ -1346,33 +1379,26 @@ struct
         val Syn.BOX {dir=dir1, cap=cap1, boundaries=boundaries1} = Syn.out box1
         val () = Assert.dirEq "FormalComposition.Eq direction" (dir0, dir1)
         val () = Assert.dirEq "FormalComposition.Eq direction" (dir0, dir)
-        val eqs0 = List.map #1 boundaries0
+        val (eqs0, boundaries') = ListPair.unzip boundaries0
         val eqs1 = List.map #1 boundaries1
-        val eqs = List.map #1 tyTubes
+        val (eqs, tyTubes') = ListPair.unzip tyTubes
         val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs1)
         val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs)
         val _ = Assert.tautologicalEquations "FormalComposition.Eq tautology checking" eqs
-        (* dropping the equations after checking them *)
-        val boundaries0 = List.map #2 boundaries0
-        val boundaries1 = List.map #2 boundaries1
 
         val (kCap, kTube) = kindConstraintOnCapAndTubes k
 
         val goalCap = makeEq (I, H) ((cap0, cap1), (tyCap, l, kCap))
 
-        val goalBoundaries =
-          List.mapPartial
-            (fn ((b0, b1), (eq, (u, tyTube))) =>
-              Restriction.makeEq [eq] (I, H) ((b0, b1), (substSymbol (#2 dir, u) tyTube, NONE, K.top)))
-            (ListPair.zip (ListPair.zip (boundaries0, boundaries1), tyTubes))
+        val tyBoundaries = List.map (fn (u, ty) => substSymbol (#2 dir, u) ty) tyTubes'
 
         val w = alpha 0
       in
         |>: goalCap
-         >:+ goalBoundaries
-         >:+ genCapBoundaryGoals (I, H) (tyCap, NONE, K.top) dir cap0 (boundaries0, tyTubes)
-         >:+ genInterTubeGoals (I, H) w (l, kTube) tyTubes tyTubes
-         >:+ genCapTubeGoalsIfDifferent (I, H) (NONE, K.top) (#1 dir) tyCap tyTubes
+         >:+ genInterBoundaryGoals (I, H) ((boundaries0, boundaries1), (tyBoundaries, NONE, K.top))
+         >:+ genCapBoundaryGoals (I, H) ((cap0, (dir, tyTubes, boundaries')), (tyCap, NONE, K.top))
+         >:+ genInterTubeGoals (I, H) w ((tyTubes, tyTubes), l, kTube)
+         >:+ genCapTubeGoalsIfDifferent (I, H) ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
         #> (I, H, trivial)
       end
 
@@ -1381,7 +1407,7 @@ struct
         val _ = RedPrlLog.trace "FormalComposition.True"
         val (I, H) >> CJ.TRUE (ty, l, k) = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
-        val eqs = List.map #1 tyTubes
+        val (eqs, tyTubes') = ListPair.unzip tyTubes
         val _ = Assert.tautologicalEquations "FormalComposition.True tautology checking" eqs
 
         val (kCap, kTube) = kindConstraintOnCapAndTubes k
@@ -1395,16 +1421,19 @@ struct
         val (goalBoundaries, holeBoundaries) =
           List.foldr foldBoundary ([],[]) tyTubes
 
+        val tyBoundaries = List.map (fn (u, ty) => substSymbol (#2 dir, u) ty) tyTubes'
+        val holeBoundaries' = ListPair.zipEq (eqs, holeBoundaries)
+
         val w = alpha 0
 
-        val box = Syn.into @@ Syn.BOX
-          {dir=dir, cap=holeCap, boundaries=ListPair.zipEq (eqs, holeBoundaries)}
+        val box = Syn.into @@ Syn.BOX {dir=dir, cap=holeCap, boundaries=holeBoundaries'}
       in
         |>: goalCap
          >:+ goalBoundaries
-         >:+ genCapBoundaryGoals (I, H) (tyCap, NONE, K.top) dir holeCap (holeBoundaries, tyTubes)
-         >:+ genInterTubeGoals (I, H) w (l, kTube) tyTubes tyTubes
-         >:+ genCapTubeGoalsIfDifferent (I, H) (NONE, K.top) (#1 dir) tyCap tyTubes
+         >:+ genInterBoundaryGoalsNoDiagonal (I, H) ((holeBoundaries', holeBoundaries'), (tyBoundaries, NONE, K.top))
+         >:+ genCapBoundaryGoals (I, H) ((holeCap, (dir, tyTubes, holeBoundaries)), (tyCap, NONE, K.top))
+         >:+ genInterTubeGoals (I, H) w ((tyTubes, tyTubes), l, kTube)
+         >:+ genCapTubeGoalsIfDifferent (I, H) ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
         #> (I, H, box)
       end
   end

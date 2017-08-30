@@ -113,7 +113,7 @@ struct
            N_i = P_j in A [Psi, y | r_i = r_i', r_j = r_j']
      *)
     fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substSymbol (P.ret w, u) tube))
-    fun genInterTubeGoals (I, H) w (ty, l, k) tubes0 tubes1 =
+    fun genInterTubeGoals (I, H) w ((tubes0, tubes1), (ty, l, k)) =
       let
         val tubes0 = alphaRenameTubes w tubes0
         val tubes1 = alphaRenameTubes w tubes1
@@ -134,7 +134,7 @@ struct
          forall i.
            M = N_i<r/y> in A [Psi | r_i = r_i']
      *)
-    fun genCapTubeGoalsIfDifferent (I, H) (ty, l, k) r cap tubes =
+    fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), (ty, l, k)) =
       let
         fun capTube (eq, (u, tube)) =
           Restriction.makeEqIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), (ty, l, k))
@@ -160,8 +160,8 @@ struct
         val w = alpha 0
       in
         |>: goalCap
-         >:+ genInterTubeGoals (I, H) w (ty, l, k) tubes0 tubes1
-         >:+ genCapTubeGoalsIfDifferent (I, H) (ty, NONE, K.top) (#1 dir0) cap0 tubes0
+         >:+ genInterTubeGoals (I, H) w ((tubes0, tubes1), (ty, l, k))
+         >:+ genCapTubeGoalsIfDifferent (I, H) ((cap0, (#1 dir0, tubes0)), (ty, NONE, K.top))
         #> (I, H, trivial)
       end
   end
@@ -194,8 +194,8 @@ struct
         val w = alpha 0
       in
         |>: goalCap
-         >:+ ComKit.genInterTubeGoals (I, H) w (ty0, l, k) tubes0 tubes1
-         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) (ty, NONE, K.top) (#1 dir0) cap0 tubes0
+         >:+ ComKit.genInterTubeGoals (I, H) w ((tubes0, tubes1), (ty0, l, k))
+         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) ((cap0, (#1 dir0, tubes0)), (ty, NONE, K.top))
          >:? goalTy0 >:? goalTy
         #> (I, H, trivial)
       end
@@ -221,8 +221,8 @@ struct
         val w = alpha 0
       in
         |>: goalEq
-         >:+ ComKit.genInterTubeGoals (I, H) w (ty, l, k) tubes tubes
-         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) (ty, NONE, K.top) r cap tubes
+         >:+ ComKit.genInterTubeGoals (I, H) w ((tubes, tubes), (ty, l, k))
+         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), (ty, NONE, K.top))
          >:? goalTy0
         #> (I, H, trivial)
       end
@@ -257,8 +257,8 @@ struct
         val w = alpha 0
       in
         |>:? goalEq
-         >:+ ComKit.genInterTubeGoals (I, H) w (ty, l, k) tubes tubes
-         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) (ty, NONE, K.top) r cap tubes
+         >:+ ComKit.genInterTubeGoals (I, H) w ((tubes, tubes), (ty, l, k))
+         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), (ty, NONE, K.top))
          >:? goalTy0
         #> (I, H, trivial)
       end
