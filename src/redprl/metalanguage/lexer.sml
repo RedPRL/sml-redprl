@@ -81,8 +81,10 @@ struct
   val backtick = simple T.BACKTICK
   val bool = simple T.BOOL
   val tt = simple T.TT
+  val ff = simple T.FF
   val exact = simple T.EXACT
   val refine = simple T.REFINE
+  val wbool = simple T.WBOOL
 end
 
 structure MetalanguageLex = MetalanguageLexFn (structure Streamable = StreamStreamable and Arg = MetalanguageLexAction)

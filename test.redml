@@ -2,9 +2,19 @@ let
   welp =
     prove `bool in
       let
-        x = exact `tt
+        x = exact `ff
       in
-        refine bool/eq/tt
+        let
+          welp2 =
+            prove `wbool in
+              let x = exact `tt
+              in refine wbool/eq/tt end
+            end
+        in
+          let asdf = print welp2 in
+            refine bool/eq/ff
+          end
+        end
       end
     end
 in

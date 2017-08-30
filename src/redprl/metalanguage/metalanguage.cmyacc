@@ -23,7 +23,9 @@ terminal GOAL of pos
 terminal PUSH of pos
 terminal PRINT of pos
 terminal BOOL of pos
+terminal WBOOL of pos
 terminal TT of pos
+terminal FF of pos
 terminal EXACT of pos
 
 start Exp
@@ -69,4 +71,6 @@ nonterminal Names: names =
 /* TODO: object terms */
 nonterminal OExp: oexp = 
   1:BOOL => obool
+  1:WBOOL => owbool
   1:TT => ott
+  1:FF => off

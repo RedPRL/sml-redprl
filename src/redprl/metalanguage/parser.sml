@@ -34,7 +34,9 @@ struct
     | PUSH of pos
     | PRINT of pos
     | BOOL of pos
+    | WBOOL of pos
     | TT of pos
+    | FF of pos
     | EXACT of pos
 
   val terminalToString = 
@@ -61,7 +63,9 @@ struct
      | PUSH _ => "PUSH"
      | PRINT _ => "PRINT"
      | BOOL _ => "BOOL"
+     | WBOOL _ => "WBOOL"
      | TT _ => "TT"
+     | FF _ => "FF"
      | EXACT _ => "EXACT"
 
 end
@@ -163,8 +167,15 @@ struct
     fun obool pos = 
       (annotate pos @@ O.MONO O.BOOL $$ [], O.EXP)
 
+    fun owbool pos = 
+      (annotate pos @@ O.MONO O.WBOOL $$ [], O.EXP)
+
     fun ott pos = 
       (annotate pos @@ O.MONO O.TT $$ [], O.EXP)
+
+    fun off pos = 
+      (annotate pos @@ O.MONO O.FF $$ [], O.EXP)
+
   end
 
   fun error s = 

@@ -52,7 +52,7 @@ struct
        | FUN _ => Fpp.text "<fun>"
        | PAIR (v1, v2) => Fpp.Atomic.parens @@ Fpp.hsep [ppValue v1, Fpp.Atomic.comma, ppValue v2]
        | QUOTE abt => TermPrinter.ppTerm abt
-       | THEOREM _ => Fpp.text "<theorem>"
+       | THEOREM (jdg, evd) => Fpp.hsepTight [Fpp.text "<", Fpp.text "theorem", RedPrlCategoricalJudgment.pretty jdg, Fpp.text "ext", TermPrinter.ppAbs evd, Fpp.text ">"]
   end
 
   structure Env =
