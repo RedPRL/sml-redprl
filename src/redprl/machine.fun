@@ -63,6 +63,7 @@ struct
 
 
   type tube = symbol O.equation * (symbol * abt)
+  type boundary = symbol O.equation * abt
   datatype hole = HOLE
   datatype frame =
      APP of hole * abt
@@ -76,6 +77,7 @@ struct
    | INT_REC of hole * abt * (variable * variable * abt) * abt * (variable * variable * abt)
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
+   | CAP of symbol O.dir * tube list * hole
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -98,6 +100,7 @@ struct
        | INT_REC (HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC (m, (zer, (x,y,succ), negone, (x',y',negss)))
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
        | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
+       | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
   in
     fun unload (m || (syms, stk)) = 
       case stk of
@@ -166,15 +169,15 @@ struct
                 raise Unstable
             end
 
-  fun findTubeWithTrueEquation stability syms = 
+  fun findFirstWithTrueEquation stability syms =
     let
       val rec aux = 
         fn [] => NONE
-         | (eq, (u, n)) :: tubes =>
+         | (eq, x) :: xs =>
            if dimensionsEqual stability syms eq then 
-             SOME (u, n)
+             SOME x
            else 
-             aux tubes
+             aux xs
     in
       aux
     end
@@ -184,8 +187,12 @@ struct
   fun zipTubesWith f : symbol O.equation list * abt bview list -> tube list =
     ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
 
+  fun zipBoundariesWith f : symbol O.equation list * abt bview list -> boundary list =
+    ListPair.map (fn (eq, _ \ n) => (eq, f n))
+
   fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
+  val zipBoundaries = zipBoundariesWith (fn n => n)
 
   datatype 'a action = 
      COMPAT of 'a
@@ -196,7 +203,7 @@ struct
     if dimensionsEqual stability syms dir then 
       STEP @@ cap || (syms, stk)
     else
-      case findTubeWithTrueEquation stability syms tubes of
+      case findFirstWithTrueEquation stability syms tubes of
          SOME (u, n) => STEP @@ substSymbol (r', u) n || (syms, stk)
        | NONE =>
          (case stk of
@@ -242,6 +249,27 @@ struct
            | COE (_, (u, _), coercee) :: stk =>
                E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of fcom types"))
            | _ => raise Stuck)
+
+  fun stepBox stability ({dir = dir as (r, r'), cap, boundaries} || (syms, stk)) =
+    if dimensionsEqual stability syms dir then
+      STEP @@ cap || (syms, stk)
+    else
+      case findFirstWithTrueEquation stability syms boundaries of
+         SOME b => STEP @@ b || (syms, stk)
+       | NONE =>
+         (case stk of
+             [] => raise Final
+           | CAP _ :: stk =>
+               STEP @@ cap || (syms, stk)
+           | _ => raise Stuck)
+
+  fun stepCap stability ({dir = dir as (r, r'), tubes, coercee} || (syms, stk)) =
+    if dimensionsEqual stability syms dir then
+      STEP @@ coercee || (syms, stk)
+    else
+      case findFirstWithTrueEquation stability syms tubes of
+         SOME (u, a) => STEP @@ (Syn.into @@ Syn.COE {dir = (r', r), ty = (u, a), coercee = coercee}) || (syms, stk)
+       | NONE => COMPAT @@ coercee || (syms, CAP (dir, tubes, HOLE) :: stk)
 
   fun stepView sign stability unfolding tau =
     fn `x || _ => raise Neutral (VAR x)
@@ -528,6 +556,11 @@ struct
              CRITICAL @@ tail || (syms, TUPLE_UPDATE (lbl, head r', HOLE) :: stk)
            end
          | _ => raise Fail "Impossible record type")
+
+     | O.POLY (O.BOX (dir, eqs)) $ (_ \ cap :: boundaries) || (syms, stk) =>
+       stepBox stability ({dir = dir, cap = cap, boundaries = zipBoundaries (eqs, boundaries)} || (syms, stk))
+     | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee :: tubes) || (syms, stk) =>
+       stepCap stability ({dir = dir, coercee = coercee, tubes = zipTubes (eqs, tubes)} || (syms, stk))
 
      | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
      | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>

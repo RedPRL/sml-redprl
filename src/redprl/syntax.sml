@@ -63,6 +63,7 @@ struct
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
    | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
+   | CAP of {dir: dir, tubes: (equation * (symbol * 'a)) list, coercee: 'a}
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
@@ -147,6 +148,12 @@ struct
       let val (eqs, boundaries) = intoBoundaries boundaries
       in O.POLY (O.BOX (dir, eqs)) $$ (([],[]) \ cap) :: boundaries
       end
+
+    (* note that the coercee goes first! *)
+    fun intoCap {dir, tubes, coercee} =
+      let val (eqs, tubes) = intoTubes tubes
+      in O.POLY (O.CAP (dir, eqs)) $$ (([],[]) \ coercee) :: tubes
+      end
   in
     fun intoTupleFields fs =
       let
@@ -226,6 +233,7 @@ struct
        | EQUALITY (a, m, n) => O.MONO O.EQUALITY $$ [([],[]) \ a, ([],[]) \ m, ([],[]) \ n]
 
        | BOX args => intoBox args
+       | CAP args => intoCap args
 
        | UNIVERSE (l, k) => O.POLY (O.UNIVERSE (L.into l, k)) $$ []
 
@@ -295,6 +303,9 @@ struct
 
        | O.POLY (O.BOX (dir, eqs)) $ (_ \ cap) :: boundaries =>
            BOX {dir = dir, cap = cap, boundaries = outBoudaries (eqs, boundaries)}
+       (* note that the coercee goes first! *)
+       | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee) :: tubes =>
+           CAP {dir = dir, tubes = outTubes (eqs, tubes), coercee = coercee}
 
        | O.POLY (O.UNIVERSE (l, k)) $ _ => UNIVERSE (L.out l, k)
 

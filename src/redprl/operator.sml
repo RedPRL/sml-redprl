@@ -290,6 +290,7 @@ struct
    | LOOP of 'a P.term
    | PATH_APP of 'a P.term
    | BOX of 'a dir * 'a equation list
+   | CAP of 'a dir * 'a equation list
    | UNIVERSE of 'a P.term * kind
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
@@ -443,6 +444,14 @@ struct
       in
         capArg :: boundaryArgs ->> EXP
       end
+    fun arityCap (_, eqs) =
+      let
+        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
+        val coerceeArg = [] * [] <> EXP
+      in
+        (* note that the coercee goes first! *)
+        coerceeArg :: tubeArgs ->> EXP
+      end
     fun arityHcom (_, eqs) =
       let
         val typeArg = [] * [] <> EXP
@@ -465,6 +474,7 @@ struct
        | LOOP _ => [] ->> EXP
        | PATH_APP _ => [[] * [] <> EXP] ->> EXP
        | BOX params => arityBox params
+       | CAP params => arityCap params
        | UNIVERSE _ => [] ->> EXP
 
        | HCOM params => arityHcom params
@@ -545,6 +555,7 @@ struct
        | LOOP r => dimSupport r
        | PATH_APP r => dimSupport r
        | BOX params => comSupport params
+       | CAP params => comSupport params
        | UNIVERSE (l, _) => levelSupport l
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
@@ -599,6 +610,10 @@ struct
        | (BOX (dir1, eqs1), t) =>
          (case t of
              BOX (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+           | _ => false)
+       | (CAP (dir1, eqs1), t) =>
+         (case t of
+             CAP (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
            | _ => false)
        | (UNIVERSE (l, k), t) => (case t of UNIVERSE (l', k') => P.eq f (l, l') andalso k = k' | _ => false)
        | (HCOM (dir1, eqs1), t) =>
@@ -767,6 +782,13 @@ struct
              ^ "; "
              ^ equationsToString f eqs
              ^ "]"
+       | CAP (dir, eqs) =>
+           "cap"
+             ^ "["
+             ^ dirToString f dir
+             ^ "; "
+             ^ equationsToString f eqs
+             ^ "]"
        | UNIVERSE (l, k) => "universe{" ^ P.toString f l ^ "," ^ K.toString k ^ "}"
        | HCOM (dir, eqs) =>
            "hcom"
@@ -857,6 +879,7 @@ struct
        | LOOP r => LOOP (P.bind (passSort DIM f) r)
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
        | BOX (dir, eqs) => BOX (mapSpan f dir, mapSpans f eqs)
+       | CAP (dir, eqs) => CAP (mapSpan f dir, mapSpans f eqs)
        | UNIVERSE (l, k) => UNIVERSE (P.bind (passSort LVL f) l, k)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
