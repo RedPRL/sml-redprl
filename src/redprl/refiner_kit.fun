@@ -149,7 +149,8 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrue (I, H) (a, l, k) = makeGoal @@ (I, H) >> CJ.TRUE (a, l, k)
+  fun makeTrueWith f (I, H) (ty, l, k) = makeGoal @@ Seq.map f @@ (I, H) >> CJ.TRUE (ty, l, k)
+  val makeTrue = makeTrueWith (fn j => j)
   fun makeSynth (I, H) (m, l, k) = makeGoal @@ (I, H) >> CJ.SYNTH (m, l, k)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
@@ -158,8 +159,10 @@ struct
 
   (* ignoring the trivial realizer *)
   fun makeType (I, H) (a, l, k) = makeGoal' @@ (I, H) >> CJ.TYPE (a, l, k)
-  fun makeEqType (I, H) ((a, b), l, k) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
-  fun makeEq (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+  fun makeEqTypeWith f (I, H) ((a, b), l, k) = makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+  val makeEqType = makeEqTypeWith (fn j => j)
+  fun makeEqWith f (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+  val makeEq = makeEqWith (fn j => j)
   fun makeMem (I, H) (m, (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, l, k))
 
   (* conditional goal making *)

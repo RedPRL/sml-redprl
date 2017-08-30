@@ -60,45 +60,34 @@ struct
 
     fun restrictJdg eqs jdg = Option.map (fn f => Seq.map f jdg) (restrict eqs)
 
-    local
-      fun makeEq' f (I, H) ((m, n), (ty, l, k)) =
-        makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+    fun makeEq eqs (I, H) ((m, n), (ty, l, k)) =
+      Option.map
+        (fn f => makeEqWith f (I, H) ((m, n), (ty, l, k)))
+        (restrict eqs)
 
-      fun makeEqType' f (I, H) ((a, b), l, k) =
-        makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+    fun makeEqIfDifferent eqs (I, H) ((m, n), (ty, l, k)) =
+      Option.mapPartial
+        (fn f =>
+          if Abt.eq (f m, f n) then NONE
+          else SOME @@ makeEqWith f (I, H) ((m, n), (ty, l, k)))
+        (restrict eqs)
 
-      fun makeTrue' f (I, H) (ty, l, k) =
-        makeGoal @@ Seq.map f @@ (I, H) >> CJ.TRUE (ty, l, k)
-    in
-      fun makeEq eqs (I, H) ((m, n), (ty, l, k)) =
-        Option.map
-          (fn f => makeEq' f (I, H) ((m, n), (ty, l, k)))
-          (restrict eqs)
+    fun makeEqType eqs (I, H) ((a, b), l, k) =
+      Option.map
+        (fn f => makeEqTypeWith f (I, H) ((a, b), l, k))
+        (restrict eqs)
 
-      fun makeEqIfDifferent eqs (I, H) ((m, n), (ty, l, k)) =
-        Option.mapPartial
-          (fn f =>
-            if Abt.eq (f m, f n) then NONE
-            else SOME @@ makeEq' f (I, H) ((m, n), (ty, l, k)))
-          (restrict eqs)
+    fun makeEqTypeIfDifferent eqs (I, H) ((a, b), l, k) =
+      Option.mapPartial
+        (fn f =>
+          if Abt.eq (f a, f b) then NONE
+          else SOME @@ makeEqTypeWith f (I, H) ((a, b), l, k))
+        (restrict eqs)
 
-      fun makeEqType eqs (I, H) ((a, b), l, k) =
-        Option.map
-          (fn f => makeEqType' f (I, H) ((a, b), l, k))
-          (restrict eqs)
-
-      fun makeEqTypeIfDifferent eqs (I, H) ((a, b), l, k) =
-        Option.mapPartial
-          (fn f =>
-            if Abt.eq (f a, f b) then NONE
-            else SOME @@ makeEqType' f (I, H) ((a, b), l, k))
-          (restrict eqs)
-
-      fun makeTrue eqs (I, H) (a, l, k) =
-        Option.map
-          (fn f => makeTrue' f (I, H) (a, l, k))
-          (restrict eqs)
-    end
+    fun makeTrue eqs (I, H) (a, l, k) =
+      Option.map
+        (fn f => makeTrueWith f (I, H) (a, l, k))
+        (restrict eqs)
   end
 
   (* code shared by Com, HCom and FCom. *)
