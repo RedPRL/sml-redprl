@@ -1307,6 +1307,13 @@ struct
         List.mapPartial capTube tubes
       end
 
+    fun genCapBoundaryGoals (I, H) tyCap (r, r') cap (boundaries, tyTubes) =
+      List.mapPartial
+        (fn (b, (eq, ty)) =>
+          Restriction.makeEqIfDifferent [eq] (I, H)
+            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=b})), tyCap))
+        (ListPair.zip (boundaries, tyTubes))
+
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.EqType"
@@ -1360,23 +1367,47 @@ struct
               Restriction.makeEq [eq] (I, H) ((b0, b1), (substSymbol (#2 dir, u) tyTube, NONE, K.top)))
             (ListPair.zip (ListPair.zip (boundaries0, boundaries1), tyTubes))
 
-        val reversedDir = (#2 dir, #1 dir)
-
-        val goalCapBoundaries =
-          List.mapPartial
-            (fn (b, (eq, ty)) =>
-              Restriction.makeEqIfDifferent [eq] (I, H)
-                ((cap0, Syn.into (Syn.COE {dir=reversedDir, ty=ty, coercee=b})), (tyCap, NONE, K.top)))
-            (ListPair.zip (boundaries0, tyTubes))
-
         val w = alpha 0
       in
         |>: goalCap
          >:+ goalBoundaries
-         >:+ goalCapBoundaries
+         >:+ genCapBoundaryGoals (I, H) (tyCap, NONE, K.top) dir cap0 (boundaries0, tyTubes)
          >:+ genInterTubeGoals (I, H) w (l, kTube) tyTubes tyTubes
          >:+ genCapTubeGoalsIfDifferent (I, H) (NONE, K.top) (#1 dir) tyCap tyTubes
         #> (I, H, trivial)
+      end
+
+    fun True alpha jdg =
+      let
+        val _ = RedPrlLog.trace "FormalComposition.True"
+        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
+        val eqs = List.map #1 tyTubes
+        val _ = Assert.tautologicalEquations "FormalComposition.True tautology checking" eqs
+
+        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+
+        val (goalCap, holeCap) = makeTrue (I, H) (tyCap, l, kCap)
+
+        fun genBoundary (eq, (u, tyTube)) =
+          case Restriction.makeTrue [eq] (I, H) (substSymbol (#2 dir, u) tyTube, NONE, K.top) of
+            NONE => (NONE, Syn.into Syn.AX) (* or any other term *)
+          | SOME (goal, hole) => (SOME goal, hole)
+        val (goalBoundaries', holeBoundaries) =
+          ListPair.unzip (List.map genBoundary tyTubes)
+        val goalBoundaries = List.mapPartial (fn x => x) goalBoundaries'
+
+        val w = alpha 0
+
+        val box = Syn.into @@ Syn.BOX
+          {dir=dir, cap=holeCap, boundaries=ListPair.zipEq (eqs, holeBoundaries)}
+      in
+        |>: goalCap
+         >:+ goalBoundaries
+         >:+ genCapBoundaryGoals (I, H) (tyCap, NONE, K.top) dir holeCap (holeBoundaries, tyTubes)
+         >:+ genInterTubeGoals (I, H) w (l, kTube) tyTubes tyTubes
+         >:+ genCapTubeGoalsIfDifferent (I, H) (NONE, K.top) (#1 dir) tyCap tyTubes
+        #> (I, H, box)
       end
   end
 

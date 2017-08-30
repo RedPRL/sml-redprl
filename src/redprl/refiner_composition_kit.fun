@@ -66,6 +66,9 @@ struct
 
       fun makeEqType' f (I, H) ((a, b), l, k) =
         makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+
+      fun makeTrue' f (I, H) (ty, l, k) =
+        makeGoal @@ Seq.map f @@ (I, H) >> CJ.TRUE (ty, l, k)
     in
       fun makeEq eqs (I, H) ((m, n), (ty, l, k)) =
         Option.map
@@ -89,6 +92,11 @@ struct
           (fn f =>
             if Abt.eq (f a, f b) then NONE
             else SOME @@ makeEqType' f (I, H) ((a, b), l, k))
+          (restrict eqs)
+
+      fun makeTrue eqs (I, H) (a, l, k) =
+        Option.map
+          (fn f => makeTrue' f (I, H) (a, l, k))
           (restrict eqs)
     end
   end
