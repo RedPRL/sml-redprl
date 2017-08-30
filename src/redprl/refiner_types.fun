@@ -1282,9 +1282,8 @@ struct
     (* see the function of th same name in `ComKit` *)
     fun genInterTubeGoals (I, H) w (l, k) tubes0 tubes1 =
       let
-        val alphaRename = List.map (fn (eq, (u, tube)) => (eq, substSymbol (P.ret w, u) tube))
-        val tubes0 = alphaRename tubes0
-        val tubes1 = alphaRename tubes1
+        val tubes0 = ComKit.alphaRenameTubes w tubes0
+        val tubes1 = ComKit.alphaRenameTubes w tubes1
 
         fun interTube (eq0, tube0) (eq1, tube1) =
           Restriction.makeEqType [eq0, eq1] (I @ [(w,P.DIM)], H) ((tube0, tube1), l, k)
@@ -1292,8 +1291,8 @@ struct
         fun goTubePairs [] [] = []
           | goTubePairs (t0 :: ts0) (t1 :: ts1) =
               List.mapPartial (interTube t0) (t1 :: ts1) :: goTubePairs ts0 ts1
-          | goTubePairs _ _ = raise
-              E.error [Fpp.text "interTubeGoals: the tubes are of different lengths"]
+          | goTubePairs _ _ = E.raiseError @@ E.IMPOSSIBLE @@
+              Fpp.text "interTubeGoals: the tubes are of different lengths"
       in
         List.concat (goTubePairs tubes0 tubes1)
       end

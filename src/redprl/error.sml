@@ -21,7 +21,10 @@ struct
     | annotateException' NONE thunk = thunk ()
 
   val formatError =
-    fn INVALID_CATEGORICAL_JUDGMENT doc => Fpp.hvsep
+    fn IMPOSSIBLE doc => Fpp.hvsep
+        [Fpp.text "The impossible happened!", doc,
+         Fpp.text "Please report this bug."]
+     | INVALID_CATEGORICAL_JUDGMENT doc => Fpp.hvsep
         [Fpp.text "Not a valid categorical judgment:", Fpp.align doc]
      | INVALID_DIMENSION doc => Fpp.hsep
         [Fpp.text "Not a valid dimension:", Fpp.align doc]
