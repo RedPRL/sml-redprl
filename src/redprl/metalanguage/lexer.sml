@@ -71,6 +71,7 @@ struct
   val proj1 = simple T.PROJ1
   val proj2 = simple T.PROJ2
   val in_ = simple T.IN
+  val by = simple T.BY
   val end_ = simple T.END
   val comma = simple T.COMMA
   val double_right_arrow = simple T.DOUBLE_RIGHT_ARROW

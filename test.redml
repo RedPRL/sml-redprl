@@ -1,12 +1,12 @@
 let
   welp =
-    prove `bool in
+    prove `bool by
       let
         x = exact `ff
       in
         let
           welp2 =
-            prove `wbool in
+            prove `wbool by
               let x = exact `tt
               in refine wbool/eq/tt end
             end

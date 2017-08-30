@@ -17,6 +17,7 @@ function lexmain: t =
   "fn" => fn_
   "let" => let_
   "in" => in_
+  "by" => by
   "end" => end_
   "#1" => proj1
   "#2" => proj2

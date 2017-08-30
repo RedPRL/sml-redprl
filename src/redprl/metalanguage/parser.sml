@@ -14,6 +14,7 @@ struct
       LET of pos
     | FN of pos
     | IN of pos
+    | BY of pos
     | DOUBLE_RIGHT_ARROW of pos
     | LSQUARE of pos
     | RSQUARE of pos
@@ -43,6 +44,7 @@ struct
     fn LET _ => "LET"
      | FN _ => "FN"
      | IN _ => "IN"
+     | BY _ => "BY"
      | DOUBLE_RIGHT_ARROW _ => "DOUBLE_RIGHT_ARROW"
      | LSQUARE _ => "LSQUARE"
      | RSQUARE _ => "RSQUARE"
