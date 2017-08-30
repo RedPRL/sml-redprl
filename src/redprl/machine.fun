@@ -137,12 +137,6 @@ struct
   exception Final
   exception Stuck
 
-  (* Is it safe to observe the identity of a dimension? *)
-  fun dimensionSafeToObserve syms r = 
-    case r of 
-       P.VAR x => SymSet.member syms x
-     | _ => true
-
   fun dimensionsEqual stability syms (r1, r2) = 
     (* If two dimensions are equal, then no substitution can ever change that. *)
     if P.eq Sym.eq (r1, r2) then 
@@ -154,10 +148,23 @@ struct
           NOMINAL => false
           (* An observation of apartness is only stable if one of the compared dimensions is bound. *)
         | CUBICAL =>
-            if dimensionSafeToObserve syms r1 orelse dimensionSafeToObserve syms r2 then 
-              false 
-            else
-              raise Unstable
+            let
+              fun isBound syms r =
+                case r of
+                   P.VAR x => SymSet.member syms x
+                 | P.APP _ => false
+              fun isConstant r =
+                case r of
+                   P.VAR _ => false
+                 | P.APP P.DIM0 => true
+                 | P.APP P.DIM1 => true
+                 | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
+            in
+              if isBound syms r1 orelse isBound syms r2 orelse (isConstant r1 andalso isConstant r2) then
+                false
+              else
+                raise Unstable
+            end
 
   fun findTubeWithTrueEquation stability syms = 
     let
