@@ -6,6 +6,8 @@ functor MetalanguageParseFn
           type pos
           type pos_string
           type exp
+          type decl
+          type decls
           type exps
           type names
           type oexp
@@ -25,6 +27,9 @@ functor MetalanguageParseFn
           val app_exp : exp -> exp
           val app : exp * exp -> exp
           val atm_app : exp -> exp
+          val decl_nil : unit -> decls
+          val decl_cons : decl * decls -> decls
+          val declVal : pos_string * exp -> decl
           val push : pos * names * exp * pos -> exp
           val fork : pos * exps * pos -> exp
           val exact : pos * exp -> exp
@@ -32,7 +37,7 @@ functor MetalanguageParseFn
           val quote : pos * oexp -> exp
           val exp_atm : exp -> exp
           val prove : pos * exp * exp * pos -> exp
-          val let_ : pos * pos_string * exp * exp * pos -> exp
+          val let_ : pos * decls * exp * pos -> exp
           val proj2 : pos -> exp
           val proj1 : pos -> exp
           val pair : pos * exp * exp * pos -> exp
@@ -43,6 +48,7 @@ functor MetalanguageParseFn
           datatype terminal =
              LET of pos
            | FN of pos
+           | VAL of pos
            | IN of pos
            | BY of pos
            | DOUBLE_RIGHT_ARROW of pos
@@ -92,7 +98,7 @@ start -> . Exp  / 0
 3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 1
 4 : Atm -> . PROJ1  / 1
 5 : Atm -> . PROJ2  / 1
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 1
+6 : Atm -> . LET Decls IN Exp END  / 1
 7 : Atm -> . PROVE Exp BY Exp END  / 1
 8 : Atm -> . LPAREN Exp RPAREN  / 1
 9 : Atm -> . BEGIN Exp END  / 1
@@ -101,11 +107,11 @@ start -> . Exp  / 0
 12 : Atm -> . EXACT Atm  / 1
 13 : Atm -> . LSQUARE Exps RSQUARE  / 1
 14 : Atm -> . PUSH Names IN Exp END  / 1
-15 : App -> . Atm  / 1
-16 : App -> . App Atm  / 1
-17 : Exp -> . App  / 0
-18 : Exp -> . PRINT Atm  / 0
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 0
+18 : App -> . Atm  / 1
+19 : App -> . App Atm  / 1
+20 : Exp -> . App  / 0
+21 : Exp -> . PRINT Atm  / 0
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 0
 
 LET => shift 2
 FN => shift 1
@@ -130,7 +136,7 @@ App => goto 18
 
 State 1:
 
-19 : Exp -> FN . IDENT DOUBLE_RIGHT_ARROW Exp  / 2
+22 : Exp -> FN . IDENT DOUBLE_RIGHT_ARROW Exp  / 2
 
 IDENT => shift 19
 
@@ -138,56 +144,62 @@ IDENT => shift 19
 
 State 2:
 
-6 : Atm -> LET . IDENT EQUALS Exp IN Exp END  / 3
+6 : Atm -> LET . Decls IN Exp END  / 3
+15 : Decl -> . VAL IDENT EQUALS Exp  / 4
+16 : Decls -> . Decl Decls  / 5
+17 : Decls -> .  / 5
 
-IDENT => shift 20
+VAL => shift 22
+IN => reduce 17
+Decls => goto 21
+Decl => goto 20
 
 -----
 
 State 3:
 
 14 : Atm -> PUSH . Names IN Exp END  / 3
-23 : Names -> . IDENT COMMA Names  / 4
-24 : Names -> . IDENT  / 4
-25 : Names -> .  / 4
+26 : Names -> . IDENT COMMA Names  / 5
+27 : Names -> . IDENT  / 5
+28 : Names -> .  / 5
 
-IN => reduce 25
-IDENT => shift 21
-Names => goto 22
+IN => reduce 28
+IDENT => shift 23
+Names => goto 24
 
 -----
 
 State 4:
 
-0 : Atm -> . IDENT  / 5
-1 : Atm -> . GOAL  / 5
-2 : Atm -> . LPAREN RPAREN  / 5
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 5
-4 : Atm -> . PROJ1  / 5
-5 : Atm -> . PROJ2  / 5
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 5
-7 : Atm -> . PROVE Exp BY Exp END  / 5
-8 : Atm -> . LPAREN Exp RPAREN  / 5
-9 : Atm -> . BEGIN Exp END  / 5
-10 : Atm -> . BACKTICK OExp  / 5
-11 : Atm -> . REFINE IDENT  / 5
-12 : Atm -> . EXACT Atm  / 5
-13 : Atm -> . LSQUARE Exps RSQUARE  / 5
+0 : Atm -> . IDENT  / 6
+1 : Atm -> . GOAL  / 6
+2 : Atm -> . LPAREN RPAREN  / 6
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 6
+4 : Atm -> . PROJ1  / 6
+5 : Atm -> . PROJ2  / 6
+6 : Atm -> . LET Decls IN Exp END  / 6
+7 : Atm -> . PROVE Exp BY Exp END  / 6
+8 : Atm -> . LPAREN Exp RPAREN  / 6
+9 : Atm -> . BEGIN Exp END  / 6
+10 : Atm -> . BACKTICK OExp  / 6
+11 : Atm -> . REFINE IDENT  / 6
+12 : Atm -> . EXACT Atm  / 6
+13 : Atm -> . LSQUARE Exps RSQUARE  / 6
 13 : Atm -> LSQUARE . Exps RSQUARE  / 3
-14 : Atm -> . PUSH Names IN Exp END  / 5
-15 : App -> . Atm  / 5
-16 : App -> . App Atm  / 5
-17 : Exp -> . App  / 6
-18 : Exp -> . PRINT Atm  / 6
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 6
-20 : Exps -> . Exp COMMA Exps  / 7
-21 : Exps -> . Exp  / 7
-22 : Exps -> .  / 7
+14 : Atm -> . PUSH Names IN Exp END  / 6
+18 : App -> . Atm  / 6
+19 : App -> . App Atm  / 6
+20 : Exp -> . App  / 7
+21 : Exp -> . PRINT Atm  / 7
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 7
+23 : Exps -> . Exp COMMA Exps  / 8
+24 : Exps -> . Exp  / 8
+25 : Exps -> .  / 8
 
 LET => shift 2
 FN => shift 1
 LSQUARE => shift 4
-RSQUARE => reduce 22
+RSQUARE => reduce 25
 LPAREN => shift 7
 BEGIN => shift 8
 IDENT => shift 10
@@ -200,9 +212,9 @@ GOAL => shift 5
 PUSH => shift 3
 PRINT => shift 14
 EXACT => shift 16
-Exp => goto 23
+Exp => goto 25
 Atm => goto 15
-Exps => goto 24
+Exps => goto 26
 App => goto 18
 
 -----
@@ -213,6 +225,7 @@ State 5:
 
 $ => reduce 1
 LET => reduce 1
+VAL => reduce 1
 IN => reduce 1
 BY => reduce 1
 LSQUARE => reduce 1
@@ -237,140 +250,50 @@ EXACT => reduce 1
 State 6:
 
 10 : Atm -> BACKTICK . OExp  / 3
-26 : OExp -> . BOOL  / 3
-27 : OExp -> . WBOOL  / 3
-28 : OExp -> . TT  / 3
-29 : OExp -> . FF  / 3
+29 : OExp -> . BOOL  / 3
+30 : OExp -> . WBOOL  / 3
+31 : OExp -> . TT  / 3
+32 : OExp -> . FF  / 3
 
-BOOL => shift 28
-WBOOL => shift 27
-TT => shift 26
-FF => shift 25
-OExp => goto 29
+BOOL => shift 30
+WBOOL => shift 29
+TT => shift 28
+FF => shift 27
+OExp => goto 31
 
 -----
 
 State 7:
 
-0 : Atm -> . IDENT  / 8
-1 : Atm -> . GOAL  / 8
-2 : Atm -> . LPAREN RPAREN  / 8
+0 : Atm -> . IDENT  / 9
+1 : Atm -> . GOAL  / 9
+2 : Atm -> . LPAREN RPAREN  / 9
 2 : Atm -> LPAREN . RPAREN  / 3
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 8
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 9
 3 : Atm -> LPAREN . Exp COMMA Exp RPAREN  / 3
-4 : Atm -> . PROJ1  / 8
-5 : Atm -> . PROJ2  / 8
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 8
-7 : Atm -> . PROVE Exp BY Exp END  / 8
-8 : Atm -> . LPAREN Exp RPAREN  / 8
+4 : Atm -> . PROJ1  / 9
+5 : Atm -> . PROJ2  / 9
+6 : Atm -> . LET Decls IN Exp END  / 9
+7 : Atm -> . PROVE Exp BY Exp END  / 9
+8 : Atm -> . LPAREN Exp RPAREN  / 9
 8 : Atm -> LPAREN . Exp RPAREN  / 3
-9 : Atm -> . BEGIN Exp END  / 8
-10 : Atm -> . BACKTICK OExp  / 8
-11 : Atm -> . REFINE IDENT  / 8
-12 : Atm -> . EXACT Atm  / 8
-13 : Atm -> . LSQUARE Exps RSQUARE  / 8
-14 : Atm -> . PUSH Names IN Exp END  / 8
-15 : App -> . Atm  / 8
-16 : App -> . App Atm  / 8
-17 : Exp -> . App  / 9
-18 : Exp -> . PRINT Atm  / 9
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 9
+9 : Atm -> . BEGIN Exp END  / 9
+10 : Atm -> . BACKTICK OExp  / 9
+11 : Atm -> . REFINE IDENT  / 9
+12 : Atm -> . EXACT Atm  / 9
+13 : Atm -> . LSQUARE Exps RSQUARE  / 9
+14 : Atm -> . PUSH Names IN Exp END  / 9
+18 : App -> . Atm  / 9
+19 : App -> . App Atm  / 9
+20 : Exp -> . App  / 10
+21 : Exp -> . PRINT Atm  / 10
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 10
 
 LET => shift 2
 FN => shift 1
 LSQUARE => shift 4
 LPAREN => shift 7
-RPAREN => shift 30
-BEGIN => shift 8
-IDENT => shift 10
-PROVE => shift 9
-PROJ1 => shift 12
-PROJ2 => shift 11
-BACKTICK => shift 6
-REFINE => shift 13
-GOAL => shift 5
-PUSH => shift 3
-PRINT => shift 14
-EXACT => shift 16
-Exp => goto 31
-Atm => goto 15
-App => goto 18
-
------
-
-State 8:
-
-0 : Atm -> . IDENT  / 10
-1 : Atm -> . GOAL  / 10
-2 : Atm -> . LPAREN RPAREN  / 10
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 10
-4 : Atm -> . PROJ1  / 10
-5 : Atm -> . PROJ2  / 10
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 10
-7 : Atm -> . PROVE Exp BY Exp END  / 10
-8 : Atm -> . LPAREN Exp RPAREN  / 10
-9 : Atm -> . BEGIN Exp END  / 10
-9 : Atm -> BEGIN . Exp END  / 3
-10 : Atm -> . BACKTICK OExp  / 10
-11 : Atm -> . REFINE IDENT  / 10
-12 : Atm -> . EXACT Atm  / 10
-13 : Atm -> . LSQUARE Exps RSQUARE  / 10
-14 : Atm -> . PUSH Names IN Exp END  / 10
-15 : App -> . Atm  / 10
-16 : App -> . App Atm  / 10
-17 : Exp -> . App  / 11
-18 : Exp -> . PRINT Atm  / 11
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 11
-
-LET => shift 2
-FN => shift 1
-LSQUARE => shift 4
-LPAREN => shift 7
-BEGIN => shift 8
-IDENT => shift 10
-PROVE => shift 9
-PROJ1 => shift 12
-PROJ2 => shift 11
-BACKTICK => shift 6
-REFINE => shift 13
-GOAL => shift 5
-PUSH => shift 3
-PRINT => shift 14
-EXACT => shift 16
-Exp => goto 32
-Atm => goto 15
-App => goto 18
-
------
-
-State 9:
-
-0 : Atm -> . IDENT  / 12
-1 : Atm -> . GOAL  / 12
-2 : Atm -> . LPAREN RPAREN  / 12
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 12
-4 : Atm -> . PROJ1  / 12
-5 : Atm -> . PROJ2  / 12
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 12
-7 : Atm -> . PROVE Exp BY Exp END  / 12
-7 : Atm -> PROVE . Exp BY Exp END  / 3
-8 : Atm -> . LPAREN Exp RPAREN  / 12
-9 : Atm -> . BEGIN Exp END  / 12
-10 : Atm -> . BACKTICK OExp  / 12
-11 : Atm -> . REFINE IDENT  / 12
-12 : Atm -> . EXACT Atm  / 12
-13 : Atm -> . LSQUARE Exps RSQUARE  / 12
-14 : Atm -> . PUSH Names IN Exp END  / 12
-15 : App -> . Atm  / 12
-16 : App -> . App Atm  / 12
-17 : Exp -> . App  / 13
-18 : Exp -> . PRINT Atm  / 13
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 13
-
-LET => shift 2
-FN => shift 1
-LSQUARE => shift 4
-LPAREN => shift 7
+RPAREN => shift 32
 BEGIN => shift 8
 IDENT => shift 10
 PROVE => shift 9
@@ -388,12 +311,103 @@ App => goto 18
 
 -----
 
+State 8:
+
+0 : Atm -> . IDENT  / 11
+1 : Atm -> . GOAL  / 11
+2 : Atm -> . LPAREN RPAREN  / 11
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 11
+4 : Atm -> . PROJ1  / 11
+5 : Atm -> . PROJ2  / 11
+6 : Atm -> . LET Decls IN Exp END  / 11
+7 : Atm -> . PROVE Exp BY Exp END  / 11
+8 : Atm -> . LPAREN Exp RPAREN  / 11
+9 : Atm -> . BEGIN Exp END  / 11
+9 : Atm -> BEGIN . Exp END  / 3
+10 : Atm -> . BACKTICK OExp  / 11
+11 : Atm -> . REFINE IDENT  / 11
+12 : Atm -> . EXACT Atm  / 11
+13 : Atm -> . LSQUARE Exps RSQUARE  / 11
+14 : Atm -> . PUSH Names IN Exp END  / 11
+18 : App -> . Atm  / 11
+19 : App -> . App Atm  / 11
+20 : Exp -> . App  / 12
+21 : Exp -> . PRINT Atm  / 12
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 12
+
+LET => shift 2
+FN => shift 1
+LSQUARE => shift 4
+LPAREN => shift 7
+BEGIN => shift 8
+IDENT => shift 10
+PROVE => shift 9
+PROJ1 => shift 12
+PROJ2 => shift 11
+BACKTICK => shift 6
+REFINE => shift 13
+GOAL => shift 5
+PUSH => shift 3
+PRINT => shift 14
+EXACT => shift 16
+Exp => goto 34
+Atm => goto 15
+App => goto 18
+
+-----
+
+State 9:
+
+0 : Atm -> . IDENT  / 13
+1 : Atm -> . GOAL  / 13
+2 : Atm -> . LPAREN RPAREN  / 13
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 13
+4 : Atm -> . PROJ1  / 13
+5 : Atm -> . PROJ2  / 13
+6 : Atm -> . LET Decls IN Exp END  / 13
+7 : Atm -> . PROVE Exp BY Exp END  / 13
+7 : Atm -> PROVE . Exp BY Exp END  / 3
+8 : Atm -> . LPAREN Exp RPAREN  / 13
+9 : Atm -> . BEGIN Exp END  / 13
+10 : Atm -> . BACKTICK OExp  / 13
+11 : Atm -> . REFINE IDENT  / 13
+12 : Atm -> . EXACT Atm  / 13
+13 : Atm -> . LSQUARE Exps RSQUARE  / 13
+14 : Atm -> . PUSH Names IN Exp END  / 13
+18 : App -> . Atm  / 13
+19 : App -> . App Atm  / 13
+20 : Exp -> . App  / 14
+21 : Exp -> . PRINT Atm  / 14
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 14
+
+LET => shift 2
+FN => shift 1
+LSQUARE => shift 4
+LPAREN => shift 7
+BEGIN => shift 8
+IDENT => shift 10
+PROVE => shift 9
+PROJ1 => shift 12
+PROJ2 => shift 11
+BACKTICK => shift 6
+REFINE => shift 13
+GOAL => shift 5
+PUSH => shift 3
+PRINT => shift 14
+EXACT => shift 16
+Exp => goto 35
+Atm => goto 15
+App => goto 18
+
+-----
+
 State 10:
 
 0 : Atm -> IDENT .  / 3
 
 $ => reduce 0
 LET => reduce 0
+VAL => reduce 0
 IN => reduce 0
 BY => reduce 0
 LSQUARE => reduce 0
@@ -421,6 +435,7 @@ State 11:
 
 $ => reduce 5
 LET => reduce 5
+VAL => reduce 5
 IN => reduce 5
 BY => reduce 5
 LSQUARE => reduce 5
@@ -448,6 +463,7 @@ State 12:
 
 $ => reduce 4
 LET => reduce 4
+VAL => reduce 4
 IN => reduce 4
 BY => reduce 4
 LSQUARE => reduce 4
@@ -473,7 +489,7 @@ State 13:
 
 11 : Atm -> REFINE . IDENT  / 3
 
-IDENT => shift 34
+IDENT => shift 36
 
 -----
 
@@ -485,7 +501,7 @@ State 14:
 3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 2
 4 : Atm -> . PROJ1  / 2
 5 : Atm -> . PROJ2  / 2
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 2
+6 : Atm -> . LET Decls IN Exp END  / 2
 7 : Atm -> . PROVE Exp BY Exp END  / 2
 8 : Atm -> . LPAREN Exp RPAREN  / 2
 9 : Atm -> . BEGIN Exp END  / 2
@@ -494,7 +510,7 @@ State 14:
 12 : Atm -> . EXACT Atm  / 2
 13 : Atm -> . LSQUARE Exps RSQUARE  / 2
 14 : Atm -> . PUSH Names IN Exp END  / 2
-18 : Exp -> PRINT . Atm  / 2
+21 : Exp -> PRINT . Atm  / 2
 
 LET => shift 2
 LSQUARE => shift 4
@@ -509,34 +525,35 @@ REFINE => shift 13
 GOAL => shift 5
 PUSH => shift 3
 EXACT => shift 16
-Atm => goto 35
+Atm => goto 37
 
 -----
 
 State 15:
 
-15 : App -> Atm .  / 3
+18 : App -> Atm .  / 3
 
-$ => reduce 15
-LET => reduce 15
-IN => reduce 15
-BY => reduce 15
-LSQUARE => reduce 15
-RSQUARE => reduce 15
-LPAREN => reduce 15
-RPAREN => reduce 15
-COMMA => reduce 15
-BEGIN => reduce 15
-END => reduce 15
-IDENT => reduce 15
-PROVE => reduce 15
-PROJ1 => reduce 15
-PROJ2 => reduce 15
-BACKTICK => reduce 15
-REFINE => reduce 15
-GOAL => reduce 15
-PUSH => reduce 15
-EXACT => reduce 15
+$ => reduce 18
+LET => reduce 18
+VAL => reduce 18
+IN => reduce 18
+BY => reduce 18
+LSQUARE => reduce 18
+RSQUARE => reduce 18
+LPAREN => reduce 18
+RPAREN => reduce 18
+COMMA => reduce 18
+BEGIN => reduce 18
+END => reduce 18
+IDENT => reduce 18
+PROVE => reduce 18
+PROJ1 => reduce 18
+PROJ2 => reduce 18
+BACKTICK => reduce 18
+REFINE => reduce 18
+GOAL => reduce 18
+PUSH => reduce 18
+EXACT => reduce 18
 
 -----
 
@@ -548,7 +565,7 @@ State 16:
 3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 3
 4 : Atm -> . PROJ1  / 3
 5 : Atm -> . PROJ2  / 3
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 3
+6 : Atm -> . LET Decls IN Exp END  / 3
 7 : Atm -> . PROVE Exp BY Exp END  / 3
 8 : Atm -> . LPAREN Exp RPAREN  / 3
 9 : Atm -> . BEGIN Exp END  / 3
@@ -572,7 +589,7 @@ REFINE => shift 13
 GOAL => shift 5
 PUSH => shift 3
 EXACT => shift 16
-Atm => goto 36
+Atm => goto 38
 
 -----
 
@@ -592,7 +609,7 @@ State 18:
 3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 3
 4 : Atm -> . PROJ1  / 3
 5 : Atm -> . PROJ2  / 3
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 3
+6 : Atm -> . LET Decls IN Exp END  / 3
 7 : Atm -> . PROVE Exp BY Exp END  / 3
 8 : Atm -> . LPAREN Exp RPAREN  / 3
 9 : Atm -> . BEGIN Exp END  / 3
@@ -601,20 +618,21 @@ State 18:
 12 : Atm -> . EXACT Atm  / 3
 13 : Atm -> . LSQUARE Exps RSQUARE  / 3
 14 : Atm -> . PUSH Names IN Exp END  / 3
-16 : App -> App . Atm  / 3
-17 : Exp -> App .  / 2
+19 : App -> App . Atm  / 3
+20 : Exp -> App .  / 2
 
-$ => reduce 17
+$ => reduce 20
 LET => shift 2
-IN => reduce 17
-BY => reduce 17
+VAL => reduce 20
+IN => reduce 20
+BY => reduce 20
 LSQUARE => shift 4
-RSQUARE => reduce 17
+RSQUARE => reduce 20
 LPAREN => shift 7
-RPAREN => reduce 17
-COMMA => reduce 17
+RPAREN => reduce 20
+COMMA => reduce 20
 BEGIN => shift 8
-END => reduce 17
+END => reduce 20
 IDENT => shift 10
 PROVE => shift 9
 PROJ1 => shift 12
@@ -624,68 +642,175 @@ REFINE => shift 13
 GOAL => shift 5
 PUSH => shift 3
 EXACT => shift 16
-Atm => goto 37
+Atm => goto 39
 
 -----
 
 State 19:
 
-19 : Exp -> FN IDENT . DOUBLE_RIGHT_ARROW Exp  / 2
+22 : Exp -> FN IDENT . DOUBLE_RIGHT_ARROW Exp  / 2
 
-DOUBLE_RIGHT_ARROW => shift 38
+DOUBLE_RIGHT_ARROW => shift 40
 
 -----
 
 State 20:
 
-6 : Atm -> LET IDENT . EQUALS Exp IN Exp END  / 3
+15 : Decl -> . VAL IDENT EQUALS Exp  / 4
+16 : Decls -> . Decl Decls  / 5
+16 : Decls -> Decl . Decls  / 5
+17 : Decls -> .  / 5
 
-EQUALS => shift 39
+VAL => shift 22
+IN => reduce 17
+Decls => goto 41
+Decl => goto 20
 
 -----
 
 State 21:
 
-23 : Names -> IDENT . COMMA Names  / 4
-24 : Names -> IDENT .  / 4
+6 : Atm -> LET Decls . IN Exp END  / 3
 
-IN => reduce 24
-COMMA => shift 40
+IN => shift 42
 
 -----
 
 State 22:
 
-14 : Atm -> PUSH Names . IN Exp END  / 3
+15 : Decl -> VAL . IDENT EQUALS Exp  / 4
 
-IN => shift 41
+IDENT => shift 43
 
 -----
 
 State 23:
 
-20 : Exps -> Exp . COMMA Exps  / 7
-21 : Exps -> Exp .  / 7
+26 : Names -> IDENT . COMMA Names  / 5
+27 : Names -> IDENT .  / 5
 
-RSQUARE => reduce 21
-COMMA => shift 42
+IN => reduce 27
+COMMA => shift 44
 
 -----
 
 State 24:
 
-13 : Atm -> LSQUARE Exps . RSQUARE  / 3
+14 : Atm -> PUSH Names . IN Exp END  / 3
 
-RSQUARE => shift 43
+IN => shift 45
 
 -----
 
 State 25:
 
-29 : OExp -> FF .  / 3
+23 : Exps -> Exp . COMMA Exps  / 8
+24 : Exps -> Exp .  / 8
+
+RSQUARE => reduce 24
+COMMA => shift 46
+
+-----
+
+State 26:
+
+13 : Atm -> LSQUARE Exps . RSQUARE  / 3
+
+RSQUARE => shift 47
+
+-----
+
+State 27:
+
+32 : OExp -> FF .  / 3
+
+$ => reduce 32
+LET => reduce 32
+VAL => reduce 32
+IN => reduce 32
+BY => reduce 32
+LSQUARE => reduce 32
+RSQUARE => reduce 32
+LPAREN => reduce 32
+RPAREN => reduce 32
+COMMA => reduce 32
+BEGIN => reduce 32
+END => reduce 32
+IDENT => reduce 32
+PROVE => reduce 32
+PROJ1 => reduce 32
+PROJ2 => reduce 32
+BACKTICK => reduce 32
+REFINE => reduce 32
+GOAL => reduce 32
+PUSH => reduce 32
+EXACT => reduce 32
+
+-----
+
+State 28:
+
+31 : OExp -> TT .  / 3
+
+$ => reduce 31
+LET => reduce 31
+VAL => reduce 31
+IN => reduce 31
+BY => reduce 31
+LSQUARE => reduce 31
+RSQUARE => reduce 31
+LPAREN => reduce 31
+RPAREN => reduce 31
+COMMA => reduce 31
+BEGIN => reduce 31
+END => reduce 31
+IDENT => reduce 31
+PROVE => reduce 31
+PROJ1 => reduce 31
+PROJ2 => reduce 31
+BACKTICK => reduce 31
+REFINE => reduce 31
+GOAL => reduce 31
+PUSH => reduce 31
+EXACT => reduce 31
+
+-----
+
+State 29:
+
+30 : OExp -> WBOOL .  / 3
+
+$ => reduce 30
+LET => reduce 30
+VAL => reduce 30
+IN => reduce 30
+BY => reduce 30
+LSQUARE => reduce 30
+RSQUARE => reduce 30
+LPAREN => reduce 30
+RPAREN => reduce 30
+COMMA => reduce 30
+BEGIN => reduce 30
+END => reduce 30
+IDENT => reduce 30
+PROVE => reduce 30
+PROJ1 => reduce 30
+PROJ2 => reduce 30
+BACKTICK => reduce 30
+REFINE => reduce 30
+GOAL => reduce 30
+PUSH => reduce 30
+EXACT => reduce 30
+
+-----
+
+State 30:
+
+29 : OExp -> BOOL .  / 3
 
 $ => reduce 29
 LET => reduce 29
+VAL => reduce 29
 IN => reduce 29
 BY => reduce 29
 LSQUARE => reduce 29
@@ -707,93 +832,13 @@ EXACT => reduce 29
 
 -----
 
-State 26:
-
-28 : OExp -> TT .  / 3
-
-$ => reduce 28
-LET => reduce 28
-IN => reduce 28
-BY => reduce 28
-LSQUARE => reduce 28
-RSQUARE => reduce 28
-LPAREN => reduce 28
-RPAREN => reduce 28
-COMMA => reduce 28
-BEGIN => reduce 28
-END => reduce 28
-IDENT => reduce 28
-PROVE => reduce 28
-PROJ1 => reduce 28
-PROJ2 => reduce 28
-BACKTICK => reduce 28
-REFINE => reduce 28
-GOAL => reduce 28
-PUSH => reduce 28
-EXACT => reduce 28
-
------
-
-State 27:
-
-27 : OExp -> WBOOL .  / 3
-
-$ => reduce 27
-LET => reduce 27
-IN => reduce 27
-BY => reduce 27
-LSQUARE => reduce 27
-RSQUARE => reduce 27
-LPAREN => reduce 27
-RPAREN => reduce 27
-COMMA => reduce 27
-BEGIN => reduce 27
-END => reduce 27
-IDENT => reduce 27
-PROVE => reduce 27
-PROJ1 => reduce 27
-PROJ2 => reduce 27
-BACKTICK => reduce 27
-REFINE => reduce 27
-GOAL => reduce 27
-PUSH => reduce 27
-EXACT => reduce 27
-
------
-
-State 28:
-
-26 : OExp -> BOOL .  / 3
-
-$ => reduce 26
-LET => reduce 26
-IN => reduce 26
-BY => reduce 26
-LSQUARE => reduce 26
-RSQUARE => reduce 26
-LPAREN => reduce 26
-RPAREN => reduce 26
-COMMA => reduce 26
-BEGIN => reduce 26
-END => reduce 26
-IDENT => reduce 26
-PROVE => reduce 26
-PROJ1 => reduce 26
-PROJ2 => reduce 26
-BACKTICK => reduce 26
-REFINE => reduce 26
-GOAL => reduce 26
-PUSH => reduce 26
-EXACT => reduce 26
-
------
-
-State 29:
+State 31:
 
 10 : Atm -> BACKTICK OExp .  / 3
 
 $ => reduce 10
 LET => reduce 10
+VAL => reduce 10
 IN => reduce 10
 BY => reduce 10
 LSQUARE => reduce 10
@@ -815,12 +860,13 @@ EXACT => reduce 10
 
 -----
 
-State 30:
+State 32:
 
 2 : Atm -> LPAREN RPAREN .  / 3
 
 $ => reduce 2
 LET => reduce 2
+VAL => reduce 2
 IN => reduce 2
 BY => reduce 2
 LSQUARE => reduce 2
@@ -842,38 +888,39 @@ EXACT => reduce 2
 
 -----
 
-State 31:
+State 33:
 
 3 : Atm -> LPAREN Exp . COMMA Exp RPAREN  / 3
 8 : Atm -> LPAREN Exp . RPAREN  / 3
 
-RPAREN => shift 44
-COMMA => shift 45
-
------
-
-State 32:
-
-9 : Atm -> BEGIN Exp . END  / 3
-
-END => shift 46
-
------
-
-State 33:
-
-7 : Atm -> PROVE Exp . BY Exp END  / 3
-
-BY => shift 47
+RPAREN => shift 48
+COMMA => shift 49
 
 -----
 
 State 34:
 
+9 : Atm -> BEGIN Exp . END  / 3
+
+END => shift 50
+
+-----
+
+State 35:
+
+7 : Atm -> PROVE Exp . BY Exp END  / 3
+
+BY => shift 51
+
+-----
+
+State 36:
+
 11 : Atm -> REFINE IDENT .  / 3
 
 $ => reduce 11
 LET => reduce 11
+VAL => reduce 11
 IN => reduce 11
 BY => reduce 11
 LSQUARE => reduce 11
@@ -895,26 +942,28 @@ EXACT => reduce 11
 
 -----
 
-State 35:
+State 37:
 
-18 : Exp -> PRINT Atm .  / 2
+21 : Exp -> PRINT Atm .  / 2
 
-$ => reduce 18
-IN => reduce 18
-BY => reduce 18
-RSQUARE => reduce 18
-RPAREN => reduce 18
-COMMA => reduce 18
-END => reduce 18
+$ => reduce 21
+VAL => reduce 21
+IN => reduce 21
+BY => reduce 21
+RSQUARE => reduce 21
+RPAREN => reduce 21
+COMMA => reduce 21
+END => reduce 21
 
 -----
 
-State 36:
+State 38:
 
 12 : Atm -> EXACT Atm .  / 3
 
 $ => reduce 12
 LET => reduce 12
+VAL => reduce 12
 IN => reduce 12
 BY => reduce 12
 LSQUARE => reduce 12
@@ -936,34 +985,35 @@ EXACT => reduce 12
 
 -----
 
-State 37:
+State 39:
 
-16 : App -> App Atm .  / 3
+19 : App -> App Atm .  / 3
 
-$ => reduce 16
-LET => reduce 16
-IN => reduce 16
-BY => reduce 16
-LSQUARE => reduce 16
-RSQUARE => reduce 16
-LPAREN => reduce 16
-RPAREN => reduce 16
-COMMA => reduce 16
-BEGIN => reduce 16
-END => reduce 16
-IDENT => reduce 16
-PROVE => reduce 16
-PROJ1 => reduce 16
-PROJ2 => reduce 16
-BACKTICK => reduce 16
-REFINE => reduce 16
-GOAL => reduce 16
-PUSH => reduce 16
-EXACT => reduce 16
+$ => reduce 19
+LET => reduce 19
+VAL => reduce 19
+IN => reduce 19
+BY => reduce 19
+LSQUARE => reduce 19
+RSQUARE => reduce 19
+LPAREN => reduce 19
+RPAREN => reduce 19
+COMMA => reduce 19
+BEGIN => reduce 19
+END => reduce 19
+IDENT => reduce 19
+PROVE => reduce 19
+PROJ1 => reduce 19
+PROJ2 => reduce 19
+BACKTICK => reduce 19
+REFINE => reduce 19
+GOAL => reduce 19
+PUSH => reduce 19
+EXACT => reduce 19
 
 -----
 
-State 38:
+State 40:
 
 0 : Atm -> . IDENT  / 3
 1 : Atm -> . GOAL  / 3
@@ -971,7 +1021,7 @@ State 38:
 3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 3
 4 : Atm -> . PROJ1  / 3
 5 : Atm -> . PROJ2  / 3
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 3
+6 : Atm -> . LET Decls IN Exp END  / 3
 7 : Atm -> . PROVE Exp BY Exp END  / 3
 8 : Atm -> . LPAREN Exp RPAREN  / 3
 9 : Atm -> . BEGIN Exp END  / 3
@@ -980,12 +1030,12 @@ State 38:
 12 : Atm -> . EXACT Atm  / 3
 13 : Atm -> . LSQUARE Exps RSQUARE  / 3
 14 : Atm -> . PUSH Names IN Exp END  / 3
-15 : App -> . Atm  / 3
-16 : App -> . App Atm  / 3
-17 : Exp -> . App  / 2
-18 : Exp -> . PRINT Atm  / 2
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 2
-19 : Exp -> FN IDENT DOUBLE_RIGHT_ARROW . Exp  / 2
+18 : App -> . Atm  / 3
+19 : App -> . App Atm  / 3
+20 : Exp -> . App  / 2
+21 : Exp -> . PRINT Atm  / 2
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 2
+22 : Exp -> FN IDENT DOUBLE_RIGHT_ARROW . Exp  / 2
 
 LET => shift 2
 FN => shift 1
@@ -1002,242 +1052,43 @@ GOAL => shift 5
 PUSH => shift 3
 PRINT => shift 14
 EXACT => shift 16
-Exp => goto 48
+Exp => goto 52
 Atm => goto 15
 App => goto 18
-
------
-
-State 39:
-
-0 : Atm -> . IDENT  / 14
-1 : Atm -> . GOAL  / 14
-2 : Atm -> . LPAREN RPAREN  / 14
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 14
-4 : Atm -> . PROJ1  / 14
-5 : Atm -> . PROJ2  / 14
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 14
-6 : Atm -> LET IDENT EQUALS . Exp IN Exp END  / 3
-7 : Atm -> . PROVE Exp BY Exp END  / 14
-8 : Atm -> . LPAREN Exp RPAREN  / 14
-9 : Atm -> . BEGIN Exp END  / 14
-10 : Atm -> . BACKTICK OExp  / 14
-11 : Atm -> . REFINE IDENT  / 14
-12 : Atm -> . EXACT Atm  / 14
-13 : Atm -> . LSQUARE Exps RSQUARE  / 14
-14 : Atm -> . PUSH Names IN Exp END  / 14
-15 : App -> . Atm  / 14
-16 : App -> . App Atm  / 14
-17 : Exp -> . App  / 4
-18 : Exp -> . PRINT Atm  / 4
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 4
-
-LET => shift 2
-FN => shift 1
-LSQUARE => shift 4
-LPAREN => shift 7
-BEGIN => shift 8
-IDENT => shift 10
-PROVE => shift 9
-PROJ1 => shift 12
-PROJ2 => shift 11
-BACKTICK => shift 6
-REFINE => shift 13
-GOAL => shift 5
-PUSH => shift 3
-PRINT => shift 14
-EXACT => shift 16
-Exp => goto 49
-Atm => goto 15
-App => goto 18
-
------
-
-State 40:
-
-23 : Names -> . IDENT COMMA Names  / 4
-23 : Names -> IDENT COMMA . Names  / 4
-24 : Names -> . IDENT  / 4
-25 : Names -> .  / 4
-
-IN => reduce 25
-IDENT => shift 21
-Names => goto 50
 
 -----
 
 State 41:
 
-0 : Atm -> . IDENT  / 10
-1 : Atm -> . GOAL  / 10
-2 : Atm -> . LPAREN RPAREN  / 10
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 10
-4 : Atm -> . PROJ1  / 10
-5 : Atm -> . PROJ2  / 10
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 10
-7 : Atm -> . PROVE Exp BY Exp END  / 10
-8 : Atm -> . LPAREN Exp RPAREN  / 10
-9 : Atm -> . BEGIN Exp END  / 10
-10 : Atm -> . BACKTICK OExp  / 10
-11 : Atm -> . REFINE IDENT  / 10
-12 : Atm -> . EXACT Atm  / 10
-13 : Atm -> . LSQUARE Exps RSQUARE  / 10
-14 : Atm -> . PUSH Names IN Exp END  / 10
-14 : Atm -> PUSH Names IN . Exp END  / 3
-15 : App -> . Atm  / 10
-16 : App -> . App Atm  / 10
-17 : Exp -> . App  / 11
-18 : Exp -> . PRINT Atm  / 11
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 11
+16 : Decls -> Decl Decls .  / 5
 
-LET => shift 2
-FN => shift 1
-LSQUARE => shift 4
-LPAREN => shift 7
-BEGIN => shift 8
-IDENT => shift 10
-PROVE => shift 9
-PROJ1 => shift 12
-PROJ2 => shift 11
-BACKTICK => shift 6
-REFINE => shift 13
-GOAL => shift 5
-PUSH => shift 3
-PRINT => shift 14
-EXACT => shift 16
-Exp => goto 51
-Atm => goto 15
-App => goto 18
+IN => reduce 16
 
 -----
 
 State 42:
 
-0 : Atm -> . IDENT  / 5
-1 : Atm -> . GOAL  / 5
-2 : Atm -> . LPAREN RPAREN  / 5
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 5
-4 : Atm -> . PROJ1  / 5
-5 : Atm -> . PROJ2  / 5
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 5
-7 : Atm -> . PROVE Exp BY Exp END  / 5
-8 : Atm -> . LPAREN Exp RPAREN  / 5
-9 : Atm -> . BEGIN Exp END  / 5
-10 : Atm -> . BACKTICK OExp  / 5
-11 : Atm -> . REFINE IDENT  / 5
-12 : Atm -> . EXACT Atm  / 5
-13 : Atm -> . LSQUARE Exps RSQUARE  / 5
-14 : Atm -> . PUSH Names IN Exp END  / 5
-15 : App -> . Atm  / 5
-16 : App -> . App Atm  / 5
-17 : Exp -> . App  / 6
-18 : Exp -> . PRINT Atm  / 6
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 6
-20 : Exps -> . Exp COMMA Exps  / 7
-20 : Exps -> Exp COMMA . Exps  / 7
-21 : Exps -> . Exp  / 7
-22 : Exps -> .  / 7
-
-LET => shift 2
-FN => shift 1
-LSQUARE => shift 4
-RSQUARE => reduce 22
-LPAREN => shift 7
-BEGIN => shift 8
-IDENT => shift 10
-PROVE => shift 9
-PROJ1 => shift 12
-PROJ2 => shift 11
-BACKTICK => shift 6
-REFINE => shift 13
-GOAL => shift 5
-PUSH => shift 3
-PRINT => shift 14
-EXACT => shift 16
-Exp => goto 23
-Atm => goto 15
-Exps => goto 52
-App => goto 18
-
------
-
-State 43:
-
-13 : Atm -> LSQUARE Exps RSQUARE .  / 3
-
-$ => reduce 13
-LET => reduce 13
-IN => reduce 13
-BY => reduce 13
-LSQUARE => reduce 13
-RSQUARE => reduce 13
-LPAREN => reduce 13
-RPAREN => reduce 13
-COMMA => reduce 13
-BEGIN => reduce 13
-END => reduce 13
-IDENT => reduce 13
-PROVE => reduce 13
-PROJ1 => reduce 13
-PROJ2 => reduce 13
-BACKTICK => reduce 13
-REFINE => reduce 13
-GOAL => reduce 13
-PUSH => reduce 13
-EXACT => reduce 13
-
------
-
-State 44:
-
-8 : Atm -> LPAREN Exp RPAREN .  / 3
-
-$ => reduce 8
-LET => reduce 8
-IN => reduce 8
-BY => reduce 8
-LSQUARE => reduce 8
-RSQUARE => reduce 8
-LPAREN => reduce 8
-RPAREN => reduce 8
-COMMA => reduce 8
-BEGIN => reduce 8
-END => reduce 8
-IDENT => reduce 8
-PROVE => reduce 8
-PROJ1 => reduce 8
-PROJ2 => reduce 8
-BACKTICK => reduce 8
-REFINE => reduce 8
-GOAL => reduce 8
-PUSH => reduce 8
-EXACT => reduce 8
-
------
-
-State 45:
-
-0 : Atm -> . IDENT  / 15
-1 : Atm -> . GOAL  / 15
-2 : Atm -> . LPAREN RPAREN  / 15
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 15
-3 : Atm -> LPAREN Exp COMMA . Exp RPAREN  / 3
-4 : Atm -> . PROJ1  / 15
-5 : Atm -> . PROJ2  / 15
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 15
-7 : Atm -> . PROVE Exp BY Exp END  / 15
-8 : Atm -> . LPAREN Exp RPAREN  / 15
-9 : Atm -> . BEGIN Exp END  / 15
-10 : Atm -> . BACKTICK OExp  / 15
-11 : Atm -> . REFINE IDENT  / 15
-12 : Atm -> . EXACT Atm  / 15
-13 : Atm -> . LSQUARE Exps RSQUARE  / 15
-14 : Atm -> . PUSH Names IN Exp END  / 15
-15 : App -> . Atm  / 15
-16 : App -> . App Atm  / 15
-17 : Exp -> . App  / 16
-18 : Exp -> . PRINT Atm  / 16
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 16
+0 : Atm -> . IDENT  / 11
+1 : Atm -> . GOAL  / 11
+2 : Atm -> . LPAREN RPAREN  / 11
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 11
+4 : Atm -> . PROJ1  / 11
+5 : Atm -> . PROJ2  / 11
+6 : Atm -> . LET Decls IN Exp END  / 11
+6 : Atm -> LET Decls IN . Exp END  / 3
+7 : Atm -> . PROVE Exp BY Exp END  / 11
+8 : Atm -> . LPAREN Exp RPAREN  / 11
+9 : Atm -> . BEGIN Exp END  / 11
+10 : Atm -> . BACKTICK OExp  / 11
+11 : Atm -> . REFINE IDENT  / 11
+12 : Atm -> . EXACT Atm  / 11
+13 : Atm -> . LSQUARE Exps RSQUARE  / 11
+14 : Atm -> . PUSH Names IN Exp END  / 11
+18 : App -> . Atm  / 11
+19 : App -> . App Atm  / 11
+20 : Exp -> . App  / 12
+21 : Exp -> . PRINT Atm  / 12
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 12
 
 LET => shift 2
 FN => shift 1
@@ -1260,12 +1111,230 @@ App => goto 18
 
 -----
 
+State 43:
+
+15 : Decl -> VAL IDENT . EQUALS Exp  / 4
+
+EQUALS => shift 54
+
+-----
+
+State 44:
+
+26 : Names -> . IDENT COMMA Names  / 5
+26 : Names -> IDENT COMMA . Names  / 5
+27 : Names -> . IDENT  / 5
+28 : Names -> .  / 5
+
+IN => reduce 28
+IDENT => shift 23
+Names => goto 55
+
+-----
+
+State 45:
+
+0 : Atm -> . IDENT  / 11
+1 : Atm -> . GOAL  / 11
+2 : Atm -> . LPAREN RPAREN  / 11
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 11
+4 : Atm -> . PROJ1  / 11
+5 : Atm -> . PROJ2  / 11
+6 : Atm -> . LET Decls IN Exp END  / 11
+7 : Atm -> . PROVE Exp BY Exp END  / 11
+8 : Atm -> . LPAREN Exp RPAREN  / 11
+9 : Atm -> . BEGIN Exp END  / 11
+10 : Atm -> . BACKTICK OExp  / 11
+11 : Atm -> . REFINE IDENT  / 11
+12 : Atm -> . EXACT Atm  / 11
+13 : Atm -> . LSQUARE Exps RSQUARE  / 11
+14 : Atm -> . PUSH Names IN Exp END  / 11
+14 : Atm -> PUSH Names IN . Exp END  / 3
+18 : App -> . Atm  / 11
+19 : App -> . App Atm  / 11
+20 : Exp -> . App  / 12
+21 : Exp -> . PRINT Atm  / 12
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 12
+
+LET => shift 2
+FN => shift 1
+LSQUARE => shift 4
+LPAREN => shift 7
+BEGIN => shift 8
+IDENT => shift 10
+PROVE => shift 9
+PROJ1 => shift 12
+PROJ2 => shift 11
+BACKTICK => shift 6
+REFINE => shift 13
+GOAL => shift 5
+PUSH => shift 3
+PRINT => shift 14
+EXACT => shift 16
+Exp => goto 56
+Atm => goto 15
+App => goto 18
+
+-----
+
 State 46:
+
+0 : Atm -> . IDENT  / 6
+1 : Atm -> . GOAL  / 6
+2 : Atm -> . LPAREN RPAREN  / 6
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 6
+4 : Atm -> . PROJ1  / 6
+5 : Atm -> . PROJ2  / 6
+6 : Atm -> . LET Decls IN Exp END  / 6
+7 : Atm -> . PROVE Exp BY Exp END  / 6
+8 : Atm -> . LPAREN Exp RPAREN  / 6
+9 : Atm -> . BEGIN Exp END  / 6
+10 : Atm -> . BACKTICK OExp  / 6
+11 : Atm -> . REFINE IDENT  / 6
+12 : Atm -> . EXACT Atm  / 6
+13 : Atm -> . LSQUARE Exps RSQUARE  / 6
+14 : Atm -> . PUSH Names IN Exp END  / 6
+18 : App -> . Atm  / 6
+19 : App -> . App Atm  / 6
+20 : Exp -> . App  / 7
+21 : Exp -> . PRINT Atm  / 7
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 7
+23 : Exps -> . Exp COMMA Exps  / 8
+23 : Exps -> Exp COMMA . Exps  / 8
+24 : Exps -> . Exp  / 8
+25 : Exps -> .  / 8
+
+LET => shift 2
+FN => shift 1
+LSQUARE => shift 4
+RSQUARE => reduce 25
+LPAREN => shift 7
+BEGIN => shift 8
+IDENT => shift 10
+PROVE => shift 9
+PROJ1 => shift 12
+PROJ2 => shift 11
+BACKTICK => shift 6
+REFINE => shift 13
+GOAL => shift 5
+PUSH => shift 3
+PRINT => shift 14
+EXACT => shift 16
+Exp => goto 25
+Atm => goto 15
+Exps => goto 57
+App => goto 18
+
+-----
+
+State 47:
+
+13 : Atm -> LSQUARE Exps RSQUARE .  / 3
+
+$ => reduce 13
+LET => reduce 13
+VAL => reduce 13
+IN => reduce 13
+BY => reduce 13
+LSQUARE => reduce 13
+RSQUARE => reduce 13
+LPAREN => reduce 13
+RPAREN => reduce 13
+COMMA => reduce 13
+BEGIN => reduce 13
+END => reduce 13
+IDENT => reduce 13
+PROVE => reduce 13
+PROJ1 => reduce 13
+PROJ2 => reduce 13
+BACKTICK => reduce 13
+REFINE => reduce 13
+GOAL => reduce 13
+PUSH => reduce 13
+EXACT => reduce 13
+
+-----
+
+State 48:
+
+8 : Atm -> LPAREN Exp RPAREN .  / 3
+
+$ => reduce 8
+LET => reduce 8
+VAL => reduce 8
+IN => reduce 8
+BY => reduce 8
+LSQUARE => reduce 8
+RSQUARE => reduce 8
+LPAREN => reduce 8
+RPAREN => reduce 8
+COMMA => reduce 8
+BEGIN => reduce 8
+END => reduce 8
+IDENT => reduce 8
+PROVE => reduce 8
+PROJ1 => reduce 8
+PROJ2 => reduce 8
+BACKTICK => reduce 8
+REFINE => reduce 8
+GOAL => reduce 8
+PUSH => reduce 8
+EXACT => reduce 8
+
+-----
+
+State 49:
+
+0 : Atm -> . IDENT  / 15
+1 : Atm -> . GOAL  / 15
+2 : Atm -> . LPAREN RPAREN  / 15
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 15
+3 : Atm -> LPAREN Exp COMMA . Exp RPAREN  / 3
+4 : Atm -> . PROJ1  / 15
+5 : Atm -> . PROJ2  / 15
+6 : Atm -> . LET Decls IN Exp END  / 15
+7 : Atm -> . PROVE Exp BY Exp END  / 15
+8 : Atm -> . LPAREN Exp RPAREN  / 15
+9 : Atm -> . BEGIN Exp END  / 15
+10 : Atm -> . BACKTICK OExp  / 15
+11 : Atm -> . REFINE IDENT  / 15
+12 : Atm -> . EXACT Atm  / 15
+13 : Atm -> . LSQUARE Exps RSQUARE  / 15
+14 : Atm -> . PUSH Names IN Exp END  / 15
+18 : App -> . Atm  / 15
+19 : App -> . App Atm  / 15
+20 : Exp -> . App  / 16
+21 : Exp -> . PRINT Atm  / 16
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 16
+
+LET => shift 2
+FN => shift 1
+LSQUARE => shift 4
+LPAREN => shift 7
+BEGIN => shift 8
+IDENT => shift 10
+PROVE => shift 9
+PROJ1 => shift 12
+PROJ2 => shift 11
+BACKTICK => shift 6
+REFINE => shift 13
+GOAL => shift 5
+PUSH => shift 3
+PRINT => shift 14
+EXACT => shift 16
+Exp => goto 58
+Atm => goto 15
+App => goto 18
+
+-----
+
+State 50:
 
 9 : Atm -> BEGIN Exp END .  / 3
 
 $ => reduce 9
 LET => reduce 9
+VAL => reduce 9
 IN => reduce 9
 BY => reduce 9
 LSQUARE => reduce 9
@@ -1287,136 +1356,29 @@ EXACT => reduce 9
 
 -----
 
-State 47:
-
-0 : Atm -> . IDENT  / 10
-1 : Atm -> . GOAL  / 10
-2 : Atm -> . LPAREN RPAREN  / 10
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 10
-4 : Atm -> . PROJ1  / 10
-5 : Atm -> . PROJ2  / 10
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 10
-7 : Atm -> . PROVE Exp BY Exp END  / 10
-7 : Atm -> PROVE Exp BY . Exp END  / 3
-8 : Atm -> . LPAREN Exp RPAREN  / 10
-9 : Atm -> . BEGIN Exp END  / 10
-10 : Atm -> . BACKTICK OExp  / 10
-11 : Atm -> . REFINE IDENT  / 10
-12 : Atm -> . EXACT Atm  / 10
-13 : Atm -> . LSQUARE Exps RSQUARE  / 10
-14 : Atm -> . PUSH Names IN Exp END  / 10
-15 : App -> . Atm  / 10
-16 : App -> . App Atm  / 10
-17 : Exp -> . App  / 11
-18 : Exp -> . PRINT Atm  / 11
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 11
-
-LET => shift 2
-FN => shift 1
-LSQUARE => shift 4
-LPAREN => shift 7
-BEGIN => shift 8
-IDENT => shift 10
-PROVE => shift 9
-PROJ1 => shift 12
-PROJ2 => shift 11
-BACKTICK => shift 6
-REFINE => shift 13
-GOAL => shift 5
-PUSH => shift 3
-PRINT => shift 14
-EXACT => shift 16
-Exp => goto 54
-Atm => goto 15
-App => goto 18
-
------
-
-State 48:
-
-19 : Exp -> FN IDENT DOUBLE_RIGHT_ARROW Exp .  / 2
-
-$ => reduce 19
-IN => reduce 19
-BY => reduce 19
-RSQUARE => reduce 19
-RPAREN => reduce 19
-COMMA => reduce 19
-END => reduce 19
-
------
-
-State 49:
-
-6 : Atm -> LET IDENT EQUALS Exp . IN Exp END  / 3
-
-IN => shift 55
-
------
-
-State 50:
-
-23 : Names -> IDENT COMMA Names .  / 4
-
-IN => reduce 23
-
------
-
 State 51:
 
-14 : Atm -> PUSH Names IN Exp . END  / 3
-
-END => shift 56
-
------
-
-State 52:
-
-20 : Exps -> Exp COMMA Exps .  / 7
-
-RSQUARE => reduce 20
-
------
-
-State 53:
-
-3 : Atm -> LPAREN Exp COMMA Exp . RPAREN  / 3
-
-RPAREN => shift 57
-
------
-
-State 54:
-
-7 : Atm -> PROVE Exp BY Exp . END  / 3
-
-END => shift 58
-
------
-
-State 55:
-
-0 : Atm -> . IDENT  / 10
-1 : Atm -> . GOAL  / 10
-2 : Atm -> . LPAREN RPAREN  / 10
-3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 10
-4 : Atm -> . PROJ1  / 10
-5 : Atm -> . PROJ2  / 10
-6 : Atm -> . LET IDENT EQUALS Exp IN Exp END  / 10
-6 : Atm -> LET IDENT EQUALS Exp IN . Exp END  / 3
-7 : Atm -> . PROVE Exp BY Exp END  / 10
-8 : Atm -> . LPAREN Exp RPAREN  / 10
-9 : Atm -> . BEGIN Exp END  / 10
-10 : Atm -> . BACKTICK OExp  / 10
-11 : Atm -> . REFINE IDENT  / 10
-12 : Atm -> . EXACT Atm  / 10
-13 : Atm -> . LSQUARE Exps RSQUARE  / 10
-14 : Atm -> . PUSH Names IN Exp END  / 10
-15 : App -> . Atm  / 10
-16 : App -> . App Atm  / 10
-17 : Exp -> . App  / 11
-18 : Exp -> . PRINT Atm  / 11
-19 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 11
+0 : Atm -> . IDENT  / 11
+1 : Atm -> . GOAL  / 11
+2 : Atm -> . LPAREN RPAREN  / 11
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 11
+4 : Atm -> . PROJ1  / 11
+5 : Atm -> . PROJ2  / 11
+6 : Atm -> . LET Decls IN Exp END  / 11
+7 : Atm -> . PROVE Exp BY Exp END  / 11
+7 : Atm -> PROVE Exp BY . Exp END  / 3
+8 : Atm -> . LPAREN Exp RPAREN  / 11
+9 : Atm -> . BEGIN Exp END  / 11
+10 : Atm -> . BACKTICK OExp  / 11
+11 : Atm -> . REFINE IDENT  / 11
+12 : Atm -> . EXACT Atm  / 11
+13 : Atm -> . LSQUARE Exps RSQUARE  / 11
+14 : Atm -> . PUSH Names IN Exp END  / 11
+18 : App -> . Atm  / 11
+19 : App -> . App Atm  / 11
+20 : Exp -> . App  / 12
+21 : Exp -> . PRINT Atm  / 12
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 12
 
 LET => shift 2
 FN => shift 1
@@ -1439,101 +1401,121 @@ App => goto 18
 
 -----
 
-State 56:
+State 52:
 
-14 : Atm -> PUSH Names IN Exp END .  / 3
+22 : Exp -> FN IDENT DOUBLE_RIGHT_ARROW Exp .  / 2
 
-$ => reduce 14
-LET => reduce 14
-IN => reduce 14
-BY => reduce 14
-LSQUARE => reduce 14
-RSQUARE => reduce 14
-LPAREN => reduce 14
-RPAREN => reduce 14
-COMMA => reduce 14
-BEGIN => reduce 14
-END => reduce 14
-IDENT => reduce 14
-PROVE => reduce 14
-PROJ1 => reduce 14
-PROJ2 => reduce 14
-BACKTICK => reduce 14
-REFINE => reduce 14
-GOAL => reduce 14
-PUSH => reduce 14
-EXACT => reduce 14
+$ => reduce 22
+VAL => reduce 22
+IN => reduce 22
+BY => reduce 22
+RSQUARE => reduce 22
+RPAREN => reduce 22
+COMMA => reduce 22
+END => reduce 22
 
 -----
 
-State 57:
+State 53:
 
-3 : Atm -> LPAREN Exp COMMA Exp RPAREN .  / 3
-
-$ => reduce 3
-LET => reduce 3
-IN => reduce 3
-BY => reduce 3
-LSQUARE => reduce 3
-RSQUARE => reduce 3
-LPAREN => reduce 3
-RPAREN => reduce 3
-COMMA => reduce 3
-BEGIN => reduce 3
-END => reduce 3
-IDENT => reduce 3
-PROVE => reduce 3
-PROJ1 => reduce 3
-PROJ2 => reduce 3
-BACKTICK => reduce 3
-REFINE => reduce 3
-GOAL => reduce 3
-PUSH => reduce 3
-EXACT => reduce 3
-
------
-
-State 58:
-
-7 : Atm -> PROVE Exp BY Exp END .  / 3
-
-$ => reduce 7
-LET => reduce 7
-IN => reduce 7
-BY => reduce 7
-LSQUARE => reduce 7
-RSQUARE => reduce 7
-LPAREN => reduce 7
-RPAREN => reduce 7
-COMMA => reduce 7
-BEGIN => reduce 7
-END => reduce 7
-IDENT => reduce 7
-PROVE => reduce 7
-PROJ1 => reduce 7
-PROJ2 => reduce 7
-BACKTICK => reduce 7
-REFINE => reduce 7
-GOAL => reduce 7
-PUSH => reduce 7
-EXACT => reduce 7
-
------
-
-State 59:
-
-6 : Atm -> LET IDENT EQUALS Exp IN Exp . END  / 3
+6 : Atm -> LET Decls IN Exp . END  / 3
 
 END => shift 60
 
 -----
 
+State 54:
+
+0 : Atm -> . IDENT  / 17
+1 : Atm -> . GOAL  / 17
+2 : Atm -> . LPAREN RPAREN  / 17
+3 : Atm -> . LPAREN Exp COMMA Exp RPAREN  / 17
+4 : Atm -> . PROJ1  / 17
+5 : Atm -> . PROJ2  / 17
+6 : Atm -> . LET Decls IN Exp END  / 17
+7 : Atm -> . PROVE Exp BY Exp END  / 17
+8 : Atm -> . LPAREN Exp RPAREN  / 17
+9 : Atm -> . BEGIN Exp END  / 17
+10 : Atm -> . BACKTICK OExp  / 17
+11 : Atm -> . REFINE IDENT  / 17
+12 : Atm -> . EXACT Atm  / 17
+13 : Atm -> . LSQUARE Exps RSQUARE  / 17
+14 : Atm -> . PUSH Names IN Exp END  / 17
+15 : Decl -> VAL IDENT EQUALS . Exp  / 4
+18 : App -> . Atm  / 17
+19 : App -> . App Atm  / 17
+20 : Exp -> . App  / 4
+21 : Exp -> . PRINT Atm  / 4
+22 : Exp -> . FN IDENT DOUBLE_RIGHT_ARROW Exp  / 4
+
+LET => shift 2
+FN => shift 1
+LSQUARE => shift 4
+LPAREN => shift 7
+BEGIN => shift 8
+IDENT => shift 10
+PROVE => shift 9
+PROJ1 => shift 12
+PROJ2 => shift 11
+BACKTICK => shift 6
+REFINE => shift 13
+GOAL => shift 5
+PUSH => shift 3
+PRINT => shift 14
+EXACT => shift 16
+Exp => goto 61
+Atm => goto 15
+App => goto 18
+
+-----
+
+State 55:
+
+26 : Names -> IDENT COMMA Names .  / 5
+
+IN => reduce 26
+
+-----
+
+State 56:
+
+14 : Atm -> PUSH Names IN Exp . END  / 3
+
+END => shift 62
+
+-----
+
+State 57:
+
+23 : Exps -> Exp COMMA Exps .  / 8
+
+RSQUARE => reduce 23
+
+-----
+
+State 58:
+
+3 : Atm -> LPAREN Exp COMMA Exp . RPAREN  / 3
+
+RPAREN => shift 63
+
+-----
+
+State 59:
+
+7 : Atm -> PROVE Exp BY Exp . END  / 3
+
+END => shift 64
+
+-----
+
 State 60:
 
-6 : Atm -> LET IDENT EQUALS Exp IN Exp END .  / 3
+6 : Atm -> LET Decls IN Exp END .  / 3
 
 $ => reduce 6
 LET => reduce 6
+VAL => reduce 6
 IN => reduce 6
 BY => reduce 6
 LSQUARE => reduce 6
@@ -1555,23 +1537,117 @@ EXACT => reduce 6
 
 -----
 
+State 61:
+
+15 : Decl -> VAL IDENT EQUALS Exp .  / 4
+
+VAL => reduce 15
+IN => reduce 15
+
+-----
+
+State 62:
+
+14 : Atm -> PUSH Names IN Exp END .  / 3
+
+$ => reduce 14
+LET => reduce 14
+VAL => reduce 14
+IN => reduce 14
+BY => reduce 14
+LSQUARE => reduce 14
+RSQUARE => reduce 14
+LPAREN => reduce 14
+RPAREN => reduce 14
+COMMA => reduce 14
+BEGIN => reduce 14
+END => reduce 14
+IDENT => reduce 14
+PROVE => reduce 14
+PROJ1 => reduce 14
+PROJ2 => reduce 14
+BACKTICK => reduce 14
+REFINE => reduce 14
+GOAL => reduce 14
+PUSH => reduce 14
+EXACT => reduce 14
+
+-----
+
+State 63:
+
+3 : Atm -> LPAREN Exp COMMA Exp RPAREN .  / 3
+
+$ => reduce 3
+LET => reduce 3
+VAL => reduce 3
+IN => reduce 3
+BY => reduce 3
+LSQUARE => reduce 3
+RSQUARE => reduce 3
+LPAREN => reduce 3
+RPAREN => reduce 3
+COMMA => reduce 3
+BEGIN => reduce 3
+END => reduce 3
+IDENT => reduce 3
+PROVE => reduce 3
+PROJ1 => reduce 3
+PROJ2 => reduce 3
+BACKTICK => reduce 3
+REFINE => reduce 3
+GOAL => reduce 3
+PUSH => reduce 3
+EXACT => reduce 3
+
+-----
+
+State 64:
+
+7 : Atm -> PROVE Exp BY Exp END .  / 3
+
+$ => reduce 7
+LET => reduce 7
+VAL => reduce 7
+IN => reduce 7
+BY => reduce 7
+LSQUARE => reduce 7
+RSQUARE => reduce 7
+LPAREN => reduce 7
+RPAREN => reduce 7
+COMMA => reduce 7
+BEGIN => reduce 7
+END => reduce 7
+IDENT => reduce 7
+PROVE => reduce 7
+PROJ1 => reduce 7
+PROJ2 => reduce 7
+BACKTICK => reduce 7
+REFINE => reduce 7
+GOAL => reduce 7
+PUSH => reduce 7
+EXACT => reduce 7
+
+-----
+
 lookahead 0 = $ 
 lookahead 1 = $ LET LSQUARE LPAREN BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
-lookahead 2 = $ IN BY RSQUARE RPAREN COMMA END 
-lookahead 3 = $ LET IN BY LSQUARE RSQUARE LPAREN RPAREN COMMA BEGIN END IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
-lookahead 4 = IN 
-lookahead 5 = LET LSQUARE RSQUARE LPAREN COMMA BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
-lookahead 6 = RSQUARE COMMA 
-lookahead 7 = RSQUARE 
-lookahead 8 = LET LSQUARE LPAREN RPAREN COMMA BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
-lookahead 9 = RPAREN COMMA 
-lookahead 10 = LET LSQUARE LPAREN BEGIN END IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
-lookahead 11 = END 
-lookahead 12 = LET BY LSQUARE LPAREN BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
-lookahead 13 = BY 
-lookahead 14 = LET IN LSQUARE LPAREN BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
+lookahead 2 = $ VAL IN BY RSQUARE RPAREN COMMA END 
+lookahead 3 = $ LET VAL IN BY LSQUARE RSQUARE LPAREN RPAREN COMMA BEGIN END IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
+lookahead 4 = VAL IN 
+lookahead 5 = IN 
+lookahead 6 = LET LSQUARE RSQUARE LPAREN COMMA BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
+lookahead 7 = RSQUARE COMMA 
+lookahead 8 = RSQUARE 
+lookahead 9 = LET LSQUARE LPAREN RPAREN COMMA BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
+lookahead 10 = RPAREN COMMA 
+lookahead 11 = LET LSQUARE LPAREN BEGIN END IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
+lookahead 12 = END 
+lookahead 13 = LET BY LSQUARE LPAREN BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
+lookahead 14 = BY 
 lookahead 15 = LET LSQUARE LPAREN RPAREN BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
 lookahead 16 = RPAREN 
+lookahead 17 = LET VAL IN LSQUARE LPAREN BEGIN IDENT PROVE PROJ1 PROJ2 BACKTICK REFINE GOAL PUSH EXACT 
 
 *)
 
@@ -1583,6 +1659,8 @@ nonterminal
 | pos of Arg.pos
 | pos_string of Arg.pos_string
 | exp of Arg.exp
+| decl of Arg.decl
+| decls of Arg.decls
 | exps of Arg.exps
 | names of Arg.names
 | oexp of Arg.oexp
@@ -1595,45 +1673,46 @@ fun read terminal =
 (case terminal of
 Arg.LET x => (1, Value.pos x)
 | Arg.FN x => (2, Value.pos x)
-| Arg.IN x => (3, Value.pos x)
-| Arg.BY x => (4, Value.pos x)
-| Arg.DOUBLE_RIGHT_ARROW x => (5, Value.pos x)
-| Arg.LSQUARE x => (6, Value.pos x)
-| Arg.RSQUARE x => (7, Value.pos x)
-| Arg.LPAREN x => (8, Value.pos x)
-| Arg.RPAREN x => (9, Value.pos x)
-| Arg.COMMA x => (10, Value.pos x)
-| Arg.SEMI x => (11, Value.pos x)
-| Arg.EQUALS x => (12, Value.pos x)
-| Arg.BEGIN x => (13, Value.pos x)
-| Arg.END x => (14, Value.pos x)
-| Arg.IDENT x => (15, Value.pos_string x)
-| Arg.PROVE x => (16, Value.pos x)
-| Arg.PROJ1 x => (17, Value.pos x)
-| Arg.PROJ2 x => (18, Value.pos x)
-| Arg.BACKTICK x => (19, Value.pos x)
-| Arg.REFINE x => (20, Value.pos x)
-| Arg.GOAL x => (21, Value.pos x)
-| Arg.PUSH x => (22, Value.pos x)
-| Arg.PRINT x => (23, Value.pos x)
-| Arg.BOOL x => (24, Value.pos x)
-| Arg.WBOOL x => (25, Value.pos x)
-| Arg.TT x => (26, Value.pos x)
-| Arg.FF x => (27, Value.pos x)
-| Arg.EXACT x => (28, Value.pos x)
+| Arg.VAL x => (3, Value.pos x)
+| Arg.IN x => (4, Value.pos x)
+| Arg.BY x => (5, Value.pos x)
+| Arg.DOUBLE_RIGHT_ARROW x => (6, Value.pos x)
+| Arg.LSQUARE x => (7, Value.pos x)
+| Arg.RSQUARE x => (8, Value.pos x)
+| Arg.LPAREN x => (9, Value.pos x)
+| Arg.RPAREN x => (10, Value.pos x)
+| Arg.COMMA x => (11, Value.pos x)
+| Arg.SEMI x => (12, Value.pos x)
+| Arg.EQUALS x => (13, Value.pos x)
+| Arg.BEGIN x => (14, Value.pos x)
+| Arg.END x => (15, Value.pos x)
+| Arg.IDENT x => (16, Value.pos_string x)
+| Arg.PROVE x => (17, Value.pos x)
+| Arg.PROJ1 x => (18, Value.pos x)
+| Arg.PROJ2 x => (19, Value.pos x)
+| Arg.BACKTICK x => (20, Value.pos x)
+| Arg.REFINE x => (21, Value.pos x)
+| Arg.GOAL x => (22, Value.pos x)
+| Arg.PUSH x => (23, Value.pos x)
+| Arg.PRINT x => (24, Value.pos x)
+| Arg.BOOL x => (25, Value.pos x)
+| Arg.WBOOL x => (26, Value.pos x)
+| Arg.TT x => (27, Value.pos x)
+| Arg.FF x => (28, Value.pos x)
+| Arg.EXACT x => (29, Value.pos x)
 )
 )
 in
 val parse = ParseEngine.parse (
-ParseEngine.next5x1 "\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\148\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\149\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128e\128\128\128\128\128\128\128\128\128\128\128\150\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\130\128\128\128\133h\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128}}\128}}\128}}}}}\128\128}}}}}}}}}}\128\128\128\128\128}\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\157\156\155\154\128\128\128\128\128\131\130\128\128\128\133\128\136\159\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128~~\128~~\128~~~~~\128\128~~~~~~~~~~\128\128\128\128\128~\128\128\128yy\128yy\128yyyyy\128\128yyyyyyyyyy\128\128\128\128\128y\128\128\128zz\128zz\128zzzzz\128\128zzzzzzzzzz\128\128\128\128\128z\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\163\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\128\128\128\128\128\145\128\128\128oo\128oo\128ooooo\128\128oooooooooo\128\128\128\128\128o\128\128\128\128\131\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\128\128\128\128\128\145\128\128\128\127\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128m\131\128mm\128\133m\136mm\128\128\137m\139\138\141\140\135\142\134\132\128\128\128\128\128\145\128\128\128\128\128\128\128\128\167\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\168\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128f\128\128\128\128\128\128\169\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\170\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128i\128\128\171\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\172\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128aa\128aa\128aaaaa\128\128aaaaaaaaaa\128\128\128\128\128a\128\128\128bb\128bb\128bbbbb\128\128bbbbbbbbbb\128\128\128\128\128b\128\128\128cc\128cc\128ccccc\128\128cccccccccc\128\128\128\128\128c\128\128\128dd\128dd\128ddddd\128\128dddddddddd\128\128\128\128\128d\128\128\128tt\128tt\128ttttt\128\128tttttttttt\128\128\128\128\128t\128\128\128||\128||\128|||||\128\128||||||||||\128\128\128\128\128|\128\128\128\128\128\128\128\128\128\128\128\128\173\174\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\175\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\176\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128ss\128ss\128sssss\128\128ssssssssss\128\128\128\128\128s\128\128\128l\128\128ll\128\128l\128ll\128\128\128l\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128rr\128rr\128rrrrr\128\128rrrrrrrrrr\128\128\128\128\128r\128\128\128nn\128nn\128nnnnn\128\128nnnnnnnnnn\128\128\128\128\128n\128\128\128\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\128\128e\128\128\128\128\128\128\128\128\128\128\128\150\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\131\130\128\128\128\133h\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128qq\128qq\128qqqqq\128\128qqqqqqqqqq\128\128\128\128\128q\128\128\128vv\128vv\128vvvvv\128\128vvvvvvvvvv\128\128\128\128\128v\128\128\128\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128uu\128uu\128uuuuu\128\128uuuuuuuuuu\128\128\128\128\128u\128\128\128\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128k\128\128kk\128\128k\128kk\128\128\128k\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\184\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128g\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\185\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128j\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\186\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\187\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\130\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128pp\128pp\128ppppp\128\128pppppppppp\128\128\128\128\128p\128\128\128{{\128{{\128{{{{{\128\128{{{{{{{{{{\128\128\128\128\128{\128\128\128ww\128ww\128wwwww\128\128wwwwwwwwww\128\128\128\128\128w\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\189\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128xx\128xx\128xxxxx\128\128xxxxxxxxxx\128\128\128\128\128x\128\128\128",
-ParseEngine.next5x1 "\145\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\150\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\151\143\128\152\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\157\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\159\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\160\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\161\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\163\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\164\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\165\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\176\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\177\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\178\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\179\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\151\143\128\180\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\181\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\182\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\187\143\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128",
+ParseEngine.next5x1 "\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\148\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\151m\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128b\128\128\128\128\128\128\128\128\128\128\128\152\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\130\128\128\128\128\133e\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128}}\128}}}\128}}}}}\128\128}}}}}}}}}}\128\128\128\128\128}\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\159\158\157\156\128\128\128\128\131\130\128\128\128\128\133\128\136\161\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128~~\128~~~\128~~~~~\128\128~~~~~~~~~~\128\128\128\128\128~\128\128yy\128yyy\128yyyyy\128\128yyyyyyyyyy\128\128\128\128\128y\128\128zz\128zzz\128zzzzz\128\128zzzzzzzzzz\128\128\128\128\128z\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\165\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\128\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\128\128\128\128\128\145\128\128ll\128lll\128lllll\128\128llllllllll\128\128\128\128\128l\128\128\128\131\128\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\128\128\128\128\128\145\128\128\127\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128j\131\128jjj\128\133j\136jj\128\128\137j\139\138\141\140\135\142\134\132\128\128\128\128\128\145\128\128\128\128\128\128\128\128\169\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\151m\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\171\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\172\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128c\128\128\128\128\128\128\173\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\174\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128f\128\128\175\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\176\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128^^\128^^^\128^^^^^\128\128^^^^^^^^^^\128\128\128\128\128^\128\128__\128___\128_____\128\128__________\128\128\128\128\128_\128\128``\128```\128`````\128\128``````````\128\128\128\128\128`\128\128aa\128aaa\128aaaaa\128\128aaaaaaaaaa\128\128\128\128\128a\128\128tt\128ttt\128ttttt\128\128tttttttttt\128\128\128\128\128t\128\128||\128|||\128|||||\128\128||||||||||\128\128\128\128\128|\128\128\128\128\128\128\128\128\128\128\128\128\177\178\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\179\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\180\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128ss\128sss\128sssss\128\128ssssssssss\128\128\128\128\128s\128\128i\128\128iii\128\128i\128ii\128\128\128i\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128rr\128rrr\128rrrrr\128\128rrrrrrrrrr\128\128\128\128\128r\128\128kk\128kkk\128kkkkk\128\128kkkkkkkkkk\128\128\128\128\128k\128\128\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\128\128n\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\183\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128b\128\128\128\128\128\128\128\128\128\128\128\152\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\131\130\128\128\128\128\133e\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128qq\128qqq\128qqqqq\128\128qqqqqqqqqq\128\128\128\128\128q\128\128vv\128vvv\128vvvvv\128\128vvvvvvvvvv\128\128\128\128\128v\128\128\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128uu\128uuu\128uuuuu\128\128uuuuuuuuuu\128\128\128\128\128u\128\128\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128h\128\128hhh\128\128h\128hh\128\128\128h\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\189\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\131\130\128\128\128\128\133\128\136\128\128\128\128\137\128\139\138\141\140\135\142\134\132\143\128\128\128\128\145\128\128\128\128\128\128d\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\191\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128g\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\192\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\193\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128xx\128xxx\128xxxxx\128\128xxxxxxxxxx\128\128\128\128\128x\128\128\128\128\128oo\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128pp\128ppp\128ppppp\128\128pppppppppp\128\128\128\128\128p\128\128{{\128{{{\128{{{{{\128\128{{{{{{{{{{\128\128\128\128\128{\128\128ww\128www\128wwwww\128\128wwwwwwwwww\128\128\128\128\128w\128\128",
+ParseEngine.next5x1 "\145\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\149\128\128\128\148\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\152\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\153\143\128\128\154\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\159\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\161\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\162\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\163\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\165\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\166\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\167\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\169\128\128\128\148\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\180\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\181\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\183\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\184\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\153\143\128\128\185\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\186\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\187\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\189\143\128\128\128\128\128\146\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128\128",
 Vector.fromList [(1,1,(fn Value.pos_string(arg0)::rest => Value.exp(Arg.var arg0)::rest|_=>raise (Fail "bad parser"))),
 (1,1,(fn Value.pos(arg0)::rest => Value.exp(Arg.goal arg0)::rest|_=>raise (Fail "bad parser"))),
 (1,2,(fn Value.pos(arg0)::Value.pos(arg1)::rest => Value.exp(Arg.nil_ {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
 (1,5,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.exp(arg2)::Value.pos(arg3)::rest => Value.exp(Arg.pair {4=arg0,3=arg1,2=arg2,1=arg3})::rest|_=>raise (Fail "bad parser"))),
 (1,1,(fn Value.pos(arg0)::rest => Value.exp(Arg.proj1 arg0)::rest|_=>raise (Fail "bad parser"))),
 (1,1,(fn Value.pos(arg0)::rest => Value.exp(Arg.proj2 arg0)::rest|_=>raise (Fail "bad parser"))),
-(1,7,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.exp(arg2)::_::Value.pos_string(arg3)::Value.pos(arg4)::rest => Value.exp(Arg.let_ {5=arg0,4=arg1,3=arg2,2=arg3,1=arg4})::rest|_=>raise (Fail "bad parser"))),
+(1,5,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.decls(arg2)::Value.pos(arg3)::rest => Value.exp(Arg.let_ {4=arg0,3=arg1,2=arg2,1=arg3})::rest|_=>raise (Fail "bad parser"))),
 (1,5,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.exp(arg2)::Value.pos(arg3)::rest => Value.exp(Arg.prove {4=arg0,3=arg1,2=arg2,1=arg3})::rest|_=>raise (Fail "bad parser"))),
 (1,3,(fn _::Value.exp(arg0)::_::rest => Value.exp(Arg.exp_atm arg0)::rest|_=>raise (Fail "bad parser"))),
 (1,3,(fn _::Value.exp(arg0)::_::rest => Value.exp(Arg.exp_atm arg0)::rest|_=>raise (Fail "bad parser"))),
@@ -1642,21 +1721,24 @@ Vector.fromList [(1,1,(fn Value.pos_string(arg0)::rest => Value.exp(Arg.var arg0
 (1,2,(fn Value.exp(arg0)::Value.pos(arg1)::rest => Value.exp(Arg.exact {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
 (1,3,(fn Value.pos(arg0)::Value.exps(arg1)::Value.pos(arg2)::rest => Value.exp(Arg.fork {3=arg0,2=arg1,1=arg2})::rest|_=>raise (Fail "bad parser"))),
 (1,5,(fn Value.pos(arg0)::Value.exp(arg1)::_::Value.names(arg2)::Value.pos(arg3)::rest => Value.exp(Arg.push {4=arg0,3=arg1,2=arg2,1=arg3})::rest|_=>raise (Fail "bad parser"))),
-(5,1,(fn Value.exp(arg0)::rest => Value.exp(Arg.atm_app arg0)::rest|_=>raise (Fail "bad parser"))),
-(5,2,(fn Value.exp(arg0)::Value.exp(arg1)::rest => Value.exp(Arg.app {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(6,4,(fn Value.exp(arg0)::_::Value.pos_string(arg1)::_::rest => Value.decl(Arg.declVal {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(2,2,(fn Value.decls(arg0)::Value.decl(arg1)::rest => Value.decls(Arg.decl_cons {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(2,0,(fn rest => Value.decls(Arg.decl_nil {})::rest)),
+(7,1,(fn Value.exp(arg0)::rest => Value.exp(Arg.atm_app arg0)::rest|_=>raise (Fail "bad parser"))),
+(7,2,(fn Value.exp(arg0)::Value.exp(arg1)::rest => Value.exp(Arg.app {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
 (0,1,(fn Value.exp(arg0)::rest => Value.exp(Arg.app_exp arg0)::rest|_=>raise (Fail "bad parser"))),
 (0,2,(fn Value.exp(arg0)::Value.pos(arg1)::rest => Value.exp(Arg.print {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
 (0,4,(fn Value.exp(arg0)::_::Value.pos_string(arg1)::Value.pos(arg2)::rest => Value.exp(Arg.fn_ {3=arg0,2=arg1,1=arg2})::rest|_=>raise (Fail "bad parser"))),
-(3,3,(fn Value.exps(arg0)::_::Value.exp(arg1)::rest => Value.exps(Arg.exp_cons {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
-(3,1,(fn Value.exp(arg0)::rest => Value.exps(Arg.exp_singl arg0)::rest|_=>raise (Fail "bad parser"))),
-(3,0,(fn rest => Value.exps(Arg.exp_nil {})::rest)),
-(4,3,(fn Value.names(arg0)::_::Value.pos_string(arg1)::rest => Value.names(Arg.names_cons {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
-(4,1,(fn Value.pos_string(arg0)::rest => Value.names(Arg.names_singl arg0)::rest|_=>raise (Fail "bad parser"))),
-(4,0,(fn rest => Value.names(Arg.names_nil {})::rest)),
-(2,1,(fn Value.pos(arg0)::rest => Value.oexp(Arg.obool arg0)::rest|_=>raise (Fail "bad parser"))),
-(2,1,(fn Value.pos(arg0)::rest => Value.oexp(Arg.owbool arg0)::rest|_=>raise (Fail "bad parser"))),
-(2,1,(fn Value.pos(arg0)::rest => Value.oexp(Arg.ott arg0)::rest|_=>raise (Fail "bad parser"))),
-(2,1,(fn Value.pos(arg0)::rest => Value.oexp(Arg.off arg0)::rest|_=>raise (Fail "bad parser")))],
+(4,3,(fn Value.exps(arg0)::_::Value.exp(arg1)::rest => Value.exps(Arg.exp_cons {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(4,1,(fn Value.exp(arg0)::rest => Value.exps(Arg.exp_singl arg0)::rest|_=>raise (Fail "bad parser"))),
+(4,0,(fn rest => Value.exps(Arg.exp_nil {})::rest)),
+(5,3,(fn Value.names(arg0)::_::Value.pos_string(arg1)::rest => Value.names(Arg.names_cons {2=arg0,1=arg1})::rest|_=>raise (Fail "bad parser"))),
+(5,1,(fn Value.pos_string(arg0)::rest => Value.names(Arg.names_singl arg0)::rest|_=>raise (Fail "bad parser"))),
+(5,0,(fn rest => Value.names(Arg.names_nil {})::rest)),
+(3,1,(fn Value.pos(arg0)::rest => Value.oexp(Arg.obool arg0)::rest|_=>raise (Fail "bad parser"))),
+(3,1,(fn Value.pos(arg0)::rest => Value.oexp(Arg.owbool arg0)::rest|_=>raise (Fail "bad parser"))),
+(3,1,(fn Value.pos(arg0)::rest => Value.oexp(Arg.ott arg0)::rest|_=>raise (Fail "bad parser"))),
+(3,1,(fn Value.pos(arg0)::rest => Value.oexp(Arg.off arg0)::rest|_=>raise (Fail "bad parser")))],
 (fn Value.exp x => x | _ => raise (Fail "bad parser")), Arg.error)
 end
 end

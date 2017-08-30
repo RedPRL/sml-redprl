@@ -1,22 +1,22 @@
 let
-  welp =
+  val thm1 =
     prove `bool by
       let
-        x = exact `ff
-      in
-        let
-          welp2 =
-            prove `wbool by
-              let x = exact `tt
-              in refine wbool/eq/tt end
+        val _ = exact `ff
+        val thm2 =
+          prove `wbool by
+            let
+              val x = exact `tt
+            in
+              refine wbool/eq/tt
             end
-        in
-          let asdf = print welp2 in
-            refine bool/eq/ff
           end
-        end
+        val _ = print thm2
+        val _ = refine bool/eq/ff
+      in
+        ()
       end
     end
 in
-  print welp
+  print thm1
 end

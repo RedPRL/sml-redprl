@@ -2,6 +2,7 @@ name MetalanguageParseFn
 
 terminal LET of pos
 terminal FN of pos
+terminal VAL of pos
 terminal IN of pos
 terminal BY of pos
 terminal DOUBLE_RIGHT_ARROW of pos
@@ -38,7 +39,7 @@ nonterminal Atm: exp =
   1:LPAREN 2:Exp COMMA 3:Exp 4:RPAREN => pair
   1:PROJ1 => proj1
   1:PROJ2 => proj2
-  1:LET 2:IDENT EQUALS 3:Exp IN 4:Exp 5:END => let_
+  1:LET 2:Decls IN 3:Exp 4:END => let_
   1:PROVE 2:Exp BY 3:Exp 4:END => prove
   LPAREN 1:Exp RPAREN => exp_atm
   BEGIN 1:Exp END => exp_atm
@@ -47,6 +48,13 @@ nonterminal Atm: exp =
   1:EXACT 2:Atm => exact
   1:LSQUARE 2:Exps 3:RSQUARE => fork
   1:PUSH 2:Names IN 3:Exp 4:END => push
+
+nonterminal Decl: decl =
+  VAL 1:IDENT EQUALS 2:Exp => declVal
+
+nonterminal Decls: decls =
+  1:Decl 2:Decls => decl_cons
+  => decl_nil
 
 nonterminal App: exp =
   1:Atm => atm_app

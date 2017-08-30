@@ -68,6 +68,7 @@ struct
   val rsquare = simple T.RSQUARE
   val let_ = simple T.LET
   val fn_ = simple T.FN
+  val val_ = simple T.VAL
   val proj1 = simple T.PROJ1
   val proj2 = simple T.PROJ2
   val in_ = simple T.IN

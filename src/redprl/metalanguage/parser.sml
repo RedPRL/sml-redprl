@@ -13,6 +13,7 @@ struct
   datatype terminal =
       LET of pos
     | FN of pos
+    | VAL of pos
     | IN of pos
     | BY of pos
     | DOUBLE_RIGHT_ARROW of pos
@@ -42,6 +43,7 @@ struct
 
   val terminalToString = 
     fn LET _ => "LET"
+     | VAL _ => "VAL"
      | FN _ => "FN"
      | IN _ => "IN"
      | BY _ => "BY"
@@ -83,6 +85,8 @@ struct
   type exp = ML.src_mlterm
   type exps = ML.src_mlterm list
   type names = (pos * string) list
+  type decl = (pos * string) * ML.src_mlterm
+  type decls = decl list
 
   fun @@ (f, x) = f x
   infixr @@ 
@@ -140,8 +144,11 @@ struct
   fun prove (posl, e1, e2, posr) = 
     ML.PROVE (e1, e2) :@ SOME (Pos.union posl posr)
 
-  fun let_ (posl, (_, x), e, ex, posr) =
-    Ast.let_ (e, (x, ex)) @@ SOME (Pos.union posl posr)
+  fun let_ (posl, decls, e, posr) = 
+    case decls of 
+       [] => e
+     | (((_, x), e') ::ds) =>
+         Ast.let_ (e', (x, let_ (posl, ds, e, posr))) @@ SOME (Pos.union posl posr)
 
   fun proj1 pos = 
     ML.FST :@ SOME pos
@@ -160,6 +167,11 @@ struct
 
   fun var (pos, x) = 
     ML.VAR x :@ SOME pos
+
+  fun declVal (ident, e) = (ident, e)
+  fun decl_nil () = []
+  fun decl_singl d = [d]
+  fun decl_cons (d, ds) = d :: ds
 
   local
     open RedPrlAst

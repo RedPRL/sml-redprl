@@ -3,7 +3,7 @@ alphabet 128
 
 set digit = (range '0 '9)
 set posdigit = (range '1 '9)
-set id_start = (| '\ '/ '- (range 'a 'z 'A 'Z))
+set id_start = (| '_ '\ '/ '- (range 'a 'z 'A 'Z))
 set id_cont = (| id_start digit '_ '')
 set white = (| 32 9 10 13)  /* space, tab, lf, cr */
 set notnewln = (~ 10)
@@ -16,6 +16,7 @@ function lexmain: t =
   eos => eof
   "fn" => fn_
   "let" => let_
+  "val" => val_
   "in" => in_
   "by" => by
   "end" => end_
