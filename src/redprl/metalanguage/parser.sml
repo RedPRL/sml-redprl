@@ -20,6 +20,7 @@ struct
     | LPAREN of pos
     | RPAREN of pos
     | COMMA of pos
+    | SEMI of pos
     | EQUALS of pos
     | BEGIN of pos
     | END of pos
@@ -33,6 +34,8 @@ struct
     | PUSH of pos
     | PRINT of pos
     | BOOL of pos
+    | TT of pos
+    | EXACT of pos
 
   val terminalToString = 
     fn LET _ => "LET"
@@ -44,6 +47,7 @@ struct
      | LPAREN _ => "LPAREN"
      | RPAREN _ => "RPAREN"
      | COMMA _ => "COMMA"
+     | SEMI _ => "SEMI"
      | EQUALS _ => "EQUALS"
      | BEGIN _ => "BEGIN"
      | END _ => "END"
@@ -57,7 +61,8 @@ struct
      | PUSH _ => "PUSH"
      | PRINT _ => "PRINT"
      | BOOL _ => "BOOL"
-
+     | TT _ => "TT"
+     | EXACT _ => "EXACT"
 
 end
 
@@ -121,6 +126,9 @@ struct
   fun quote (pos : pos, (oexp, osort)) : src_mlterm =
     ML.QUOTE (oexp, osort) :@ mergeAnnotation (SOME pos, RedPrlAst.getAnnotation oexp)
 
+  fun exact (pos : pos, e :@ pos') : src_mlterm = 
+    ML.EXACT (e :@ pos') :@ mergeAnnotation (SOME pos, pos')
+
   fun exp_atm e = e
 
   fun prove (posl, e1, e2, posr) = 
@@ -154,6 +162,9 @@ struct
   in
     fun obool pos = 
       (annotate pos @@ O.MONO O.BOOL $$ [], O.EXP)
+
+    fun ott pos = 
+      (annotate pos @@ O.MONO O.TT $$ [], O.EXP)
   end
 
   fun error s = 

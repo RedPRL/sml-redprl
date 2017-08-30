@@ -9,6 +9,7 @@ terminal RSQUARE of pos
 terminal LPAREN of pos
 terminal RPAREN of pos
 terminal COMMA of pos
+terminal SEMI of pos
 terminal EQUALS of pos
 terminal BEGIN of pos
 terminal END of pos
@@ -22,6 +23,8 @@ terminal GOAL of pos
 terminal PUSH of pos
 terminal PRINT of pos
 terminal BOOL of pos
+terminal TT of pos
+terminal EXACT of pos
 
 start Exp
 
@@ -38,6 +41,7 @@ nonterminal Atm: exp =
   BEGIN 1:Exp END => exp_atm
   1:BACKTICK 2:OExp => quote
   1:REFINE 2:IDENT => refine
+  1:EXACT 2:Atm => exact
   1:LSQUARE 2:Exps 3:RSQUARE => fork
   1:PUSH 2:Names IN 3:Exp 4:END => push
 
@@ -65,3 +69,4 @@ nonterminal Names: names =
 /* TODO: object terms */
 nonterminal OExp: oexp = 
   1:BOOL => obool
+  1:TT => ott

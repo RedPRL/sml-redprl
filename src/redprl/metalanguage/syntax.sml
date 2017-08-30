@@ -49,6 +49,7 @@ struct
    | PROVE of 'a * 'a
    | OMATCH of 'a * ('s, 'o, 'a) omatch_clause list
    | PRINT of 'a
+   | EXACT of 'a
 
   type annotation = Pos.t option
   datatype ('v, 's, 'o) mlterm = :@ of ('v, 's, 'o, ('v, 's, 'o) mlterm) mltermf * annotation
@@ -125,6 +126,7 @@ struct
        | PROVE (t1, t2) :@ ann => PROVE (resolveAux state t1, resolveAux state t2) :@ ann
        | OMATCH (scrutinee, clauses) :@ ann => OMATCH (resolveAux state scrutinee, List.map (resolveAuxObjMatchClause state) clauses) :@ ann
        | PRINT t :@ ann => PRINT (resolveAux state t) :@ ann
+       | EXACT t :@ ann => EXACT (resolveAux state t) :@ ann
 
     and resolveAuxScope (state : state) (x \ tx) =
       let

@@ -24,6 +24,9 @@ function lexmain: t =
   "goal" => goal
   "prove" => prove
   "bool" => bool
+  "tt" => tt
+  "exact" => exact
+  "refine" => refine
   ws => skip
   (seq '= '>) => double_right_arrow
   '[ => lsquare

@@ -1,7 +1,12 @@
 let
-  x = ()
+  welp =
+    prove `bool in
+      let
+        x = exact `tt
+      in
+        refine bool/eq/tt
+      end
+    end
 in
-  prove `bool in
-    print goal
-  end
+  print welp
 end

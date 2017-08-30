@@ -113,16 +113,15 @@ struct
       Lcf.map go state'
     end
 
-  exception Incomplete
-
-  fun extract m (alpha, state) =
+  fun extract pos m (alpha, state) =
     let
       val psi |> evd = m (alpha, state)
     in
       if Tl.isEmpty psi then
         pure evd (alpha, state)
       else
-        raise Incomplete
+        RedPrlError.raiseAnnotatedError'
+          (pos, RedPrlError.GENERIC [Fpp.text "Incomplete proof"])
     end
 
   fun set jdg (alpha, _) : unit internal state =
@@ -133,9 +132,8 @@ struct
 
   fun >>= (m, f) = bind m f infix >>=
 
-  fun local_ jdg m (alpha, state) = 
-    (set jdg >>= (fn _ => m) >>= (fn _ => setState state))
-      (alpha, state)
+  fun local_ jdg m = 
+    set jdg >>= (fn _ => m)
 
   fun print (pos, doc) (alpha, state) = 
     (RedPrlLog.print RedPrlLog.INFO (pos, doc);
@@ -144,11 +142,11 @@ struct
   fun fail (pos, doc) (alpha, state) = 
     RedPrlError.raiseAnnotatedError' (pos, RedPrlError.GENERIC [doc])
 
-  structure OTm = RedPrlAbt and OSyn = Syntax
+  structure OTm = RedPrlAbt and OSyn = Syntax and CJ = RedPrlCategoricalJudgment
 
   fun run m =
     let
-      val jdg = RedPrlSequent.>> (([], RedPrlSequentData.Hyps.empty), RedPrlCategoricalJudgment.TERM RedPrlSortData.TRIV)
+      val jdg = RedPrlSequent.>> (([], RedPrlSequentData.Hyps.empty), CJ.TERM RedPrlSortData.TRIV)
       val state : jdg state = Lcf.idn jdg
       val welp = m (fn i => RedPrlAbt.Sym.named (Int.toString i), state)
     in

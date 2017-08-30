@@ -12,7 +12,7 @@ sig
   val fork : unit m list -> unit m
   val orelse_ : 'a m * 'a m -> 'a m
 
-  val extract : 'a m -> Lcf.L.term m
+  val extract : Pos.t option -> 'a m -> Lcf.L.term m
 
   (* val set : Lcf.jdg -> unit m *)
   val local_ : Lcf.jdg -> unit m -> unit m

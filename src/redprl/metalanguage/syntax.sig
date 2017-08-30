@@ -42,6 +42,7 @@ sig
    | PROVE of 'a * 'a
    | OMATCH of 'a * ('s, 'o, 'a) omatch_clause list
    | PRINT of 'a
+   | EXACT of 'a
 
   type annotation = Pos.t option
   datatype ('v, 's, 'o) mlterm = :@ of ('v, 's, 'o, ('v, 's, 'o) mlterm) mltermf * annotation
