@@ -129,10 +129,10 @@ struct
          OPERATOR theta =>
          let
            val (vls, tau) = Tm.O.arity theta
-           val (args, []) = readOpArgs state (vls, stk) []
+           val (args, stk) = readOpArgs state (vls, stk) []
            val term = check (theta $ args, tau)
          in
-           term
+           plugTerm state (term, stk)
          end
        | METAVAR (a, ((psorts, sorts), tau)) =>
          let
