@@ -280,8 +280,9 @@ end
  | QUESTION
  | SEMI
  (* arrows *)
- | SQUIGGLE_ARROW
- | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
+ | SQUIGGLE_RIGHT_ARROW | SQUIGGLE_LEFT_ARROW
+ | RIGHT_ARROW | LEFT_ARROW
+ | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | TRIANGLE_RIGHT
 
  (* parameter sorts *)
@@ -371,6 +372,7 @@ end
  | typedParam of string param * P.param_sort
  | typedParams of (string param * P.param_sort) list
  | dir of string param * string param
+ | backDir of string param * string param
  | equation of string param * string param
  | tube of (string param * string param) * ast abs
  | tubes of ((string param * string param) * ast abs) list
@@ -567,7 +569,10 @@ typedParams
 
 
 dir
-  : param SQUIGGLE_ARROW param ((param1, param2))
+  : param SQUIGGLE_RIGHT_ARROW param ((param1, param2))
+
+backDir
+  : param SQUIGGLE_LEFT_ARROW param ((param1, param2))
 
 equation
   : LPAREN equation RPAREN (equation)
@@ -709,8 +714,8 @@ rawTermAndTac
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
   | LPAREN BOX LBRACKET dir RBRACKET binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.BOX (dir, eqs)), (binding :: tubes)) end)
-  | LPAREN CAP LBRACKET dir RBRACKET binding tubes RPAREN
-      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.CAP (dir, eqs)), (binding :: tubes)) end)
+  | LPAREN CAP LBRACKET backDir RBRACKET binding tubes RPAREN
+      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.CAP (backDir, eqs)), (binding :: tubes)) end)
   | LPAREN HCOM LBRACKET dir RBRACKET binding binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.HCOM (dir, eqs)), (binding1 :: binding2 :: tubes)) end)
 

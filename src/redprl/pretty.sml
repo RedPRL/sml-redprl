@@ -97,6 +97,9 @@ struct
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
 
+  fun ppComHeadBackward name (r, r') =
+    seq [text name, Atomic.braces @@ seq [ppParam r, text "<~", ppParam r']]
+
   val ppLabel = text
   val ppIntInf = text o IntInf.toString
 
@@ -226,7 +229,7 @@ struct
              :: [ppBoundaries (eqs, boundaries)]
      | O.POLY (O.CAP (dir, eqs)) $ (coercee :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "cap" dir, ppBinder coercee]
+           hvsep [ppComHeadBackward "cap" dir, ppBinder coercee]
              :: [ppTubes (eqs, tubes)]
      | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@
