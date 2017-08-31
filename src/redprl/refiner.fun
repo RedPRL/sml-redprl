@@ -651,18 +651,20 @@ struct
   structure Computation =
   struct
     open Computation
-    fun TryEqHeadExpansionTy sign alpha = Lcf.try (EqHeadExpansionTy sign alpha)
-    fun TryEqHeadExpansionL sign alpha = Lcf.try (EqHeadExpansionL sign alpha)
-    fun TryEqHeadExpansionR sign alpha = Lcf.try (EqHeadExpansionR sign alpha)
+    fun TryEqHeadExpansionTy sign alpha = Lcf.try @@ EqHeadExpansionTy sign alpha
+    fun TryEqHeadExpansionL sign alpha = Lcf.try @@ EqHeadExpansionL sign alpha
+    fun TryEqHeadExpansionR sign alpha = Lcf.try @@ EqHeadExpansionR sign alpha
     fun TryEqHeadExpansionLR sign = TryEqHeadExpansionL sign then_ TryEqHeadExpansionR sign
-    fun TryEqTypeHeadExpansionL sign alpha = Lcf.try (EqTypeHeadExpansionL sign alpha)
-    fun TryEqTypeHeadExpansionR sign alpha = Lcf.try (EqTypeHeadExpansionR sign alpha)
+    fun TryEqTypeHeadExpansionL sign alpha = Lcf.try @@ EqTypeHeadExpansionL sign alpha
+    fun TryEqTypeHeadExpansionR sign alpha = Lcf.try @@ EqTypeHeadExpansionR sign alpha
+    fun TryMatchRecordHeadExpansion sign alpha = Lcf.try @@ MatchRecordHeadExpansion sign alpha
     fun HeadExpansion sign =
       TryEqHeadExpansionTy sign then_
       TryEqHeadExpansionL sign then_
       TryEqHeadExpansionR sign then_
       TryEqTypeHeadExpansionL sign then_
-      TryEqTypeHeadExpansionR sign
+      TryEqTypeHeadExpansionR sign then_
+      TryMatchRecordHeadExpansion sign
   end
 
   local
