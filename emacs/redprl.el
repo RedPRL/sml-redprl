@@ -51,6 +51,10 @@
   '((t (:inherit font-lock-variable-name-face))) "Face for RedPRL's meta variables."
   :group 'redprl)
 
+(defface redprl-number-face
+  '((t (:inherit font-lock-constant-face))) "Face for RedPRL's numbers."
+  :group 'redprl)
+
 (defface redprl-expression-keyword-face
   '((t (:inherit font-lock-builtin-face))) "Face for RedPRL's expression keywords."
   :group 'redprl)
@@ -116,12 +120,13 @@
     "lam" "app"
     "record" "tuple"
     "path" "abs"
+    "box" "cap"
     "univ"
     "hcom" "coe" "com")
   "RedPRL's expression keywords.")
 
 (defconst redprl-expression-symbols
-  '("->" "$" "*" "!" "@" "=")
+  '("->" "~>" "<~" "$" "*" "!" "@" "=")
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
@@ -174,6 +179,9 @@
 
     ;; Meta variables
     (,(rx "#" (+ word)) 0 'redprl-metavar-face)
+
+    ;; Numbers
+    (,(rx (? "-") (+ digit)) 0 'redprl-number-face)
 
     ;; Built-in expressions
     (,(regexp-opt redprl-expression-keywords 'words) 0 'redprl-expression-keyword-face)
