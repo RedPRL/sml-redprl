@@ -289,6 +289,8 @@ struct
      FCOM of 'a dir * 'a equation list
    | LOOP of 'a P.term
    | PATH_APP of 'a P.term
+   | BOX of 'a dir * 'a equation list
+   | CAP of 'a dir * 'a equation list
    | UNIVERSE of 'a P.term * kind
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
@@ -435,6 +437,21 @@ struct
       in
         capArg :: tubeArgs ->> EXP
       end
+    fun arityBox (_, eqs) =
+      let
+        val capArg = [] * [] <> EXP
+        val boundaryArgs = List.map (fn _ => [] * [] <> EXP) eqs
+      in
+        capArg :: boundaryArgs ->> EXP
+      end
+    fun arityCap (_, eqs) =
+      let
+        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
+        val coerceeArg = [] * [] <> EXP
+      in
+        (* note that the coercee goes first! *)
+        coerceeArg :: tubeArgs ->> EXP
+      end
     fun arityHcom (_, eqs) =
       let
         val typeArg = [] * [] <> EXP
@@ -456,6 +473,8 @@ struct
       fn FCOM params => arityFcom params
        | LOOP _ => [] ->> EXP
        | PATH_APP _ => [[] * [] <> EXP] ->> EXP
+       | BOX params => arityBox params
+       | CAP params => arityCap params
        | UNIVERSE _ => [] ->> EXP
 
        | HCOM params => arityHcom params
@@ -535,6 +554,8 @@ struct
       fn FCOM params => comSupport params
        | LOOP r => dimSupport r
        | PATH_APP r => dimSupport r
+       | BOX params => comSupport params
+       | CAP params => comSupport params
        | UNIVERSE (l, _) => levelSupport l
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
@@ -586,6 +607,14 @@ struct
            | _ => false)
        | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
        | (PATH_APP r, t) => (case t of PATH_APP r' => P.eq f (r, r') | _ => false)
+       | (BOX (dir1, eqs1), t) =>
+         (case t of
+             BOX (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+           | _ => false)
+       | (CAP (dir1, eqs1), t) =>
+         (case t of
+             CAP (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
+           | _ => false)
        | (UNIVERSE (l, k), t) => (case t of UNIVERSE (l', k') => P.eq f (l, l') andalso k = k' | _ => false)
        | (HCOM (dir1, eqs1), t) =>
          (case t of
@@ -740,19 +769,33 @@ struct
       fn FCOM (dir, eqs) =>
            "fcom"
              ^ "["
-             ^ equationsToString f eqs
-             ^ "; "
              ^ dirToString f dir
+             ^ "; "
+             ^ equationsToString f eqs
              ^ "]"
        | LOOP r => "loop[" ^ P.toString f r ^ "]"
        | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
+       | BOX (dir, eqs) =>
+           "box"
+             ^ "["
+             ^ dirToString f dir
+             ^ "; "
+             ^ equationsToString f eqs
+             ^ "]"
+       | CAP (dir, eqs) =>
+           "cap"
+             ^ "["
+             ^ dirToString f dir
+             ^ "; "
+             ^ equationsToString f eqs
+             ^ "]"
        | UNIVERSE (l, k) => "universe{" ^ P.toString f l ^ "," ^ K.toString k ^ "}"
        | HCOM (dir, eqs) =>
            "hcom"
              ^ "["
-             ^ equationsToString f eqs
-             ^ "; "
              ^ dirToString f dir
+             ^ "; "
+             ^ equationsToString f eqs
              ^ "]"
        | COE dir =>
            "coe"
@@ -762,9 +805,9 @@ struct
        | COM (dir, eqs) =>
            "com"
              ^ "["
-             ^ equationsToString f eqs
-             ^ "; "
              ^ dirToString f dir
+             ^ "; "
+             ^ equationsToString f eqs
              ^ "]"
        | CUST (opid, [], _) =>
            f opid
@@ -835,6 +878,8 @@ struct
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
        | LOOP r => LOOP (P.bind (passSort DIM f) r)
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
+       | BOX (dir, eqs) => BOX (mapSpan f dir, mapSpans f eqs)
+       | CAP (dir, eqs) => CAP (mapSpan f dir, mapSpans f eqs)
        | UNIVERSE (l, k) => UNIVERSE (P.bind (passSort LVL f) l, k)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)

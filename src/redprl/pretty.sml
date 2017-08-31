@@ -98,6 +98,9 @@ struct
   fun ppComHead name (r, r') =
     seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
 
+  fun ppComHeadBackward name (r, r') =
+    seq [text name, Atomic.braces @@ seq [ppParam r, text "<~", ppParam r']]
+
   val ppLabel = text
   val ppIntInf = text o IntInf.toString
 
@@ -172,6 +175,10 @@ struct
     case Abt.out m of
        O.POLY (O.HYP_REF (x, _)) $ [] => seq [char #",", ppVar x]
      | `x => ppVar x
+     | O.POLY (O.FCOM (dir, eqs)) $ (cap :: tubes) =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [ppComHead "fcom" dir, ppBinder cap]
+             :: [ppTubes (eqs, tubes)]
      | O.POLY (O.LOOP x) $ [] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
      | O.MONO O.DFUN $ _ =>
@@ -203,28 +210,31 @@ struct
      | O.MONO (O.TUPLE []) $ _ => text "tuple"
      | O.MONO (O.TUPLE lbls) $ data =>
          let
-           val data = List.map (fn (_ \ a) => a) data
-           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, ppTerm a]
+           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, ppBinder a]
          in
            Atomic.parens @@ expr @@ hvsep
              [text "tuple", expr @@ hvsep @@ ListPair.mapEq pp (lbls, data)]
          end
-     | O.MONO (O.PROJ lbl) $ [_ \ m] =>
-         Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppTerm m]
+     | O.MONO (O.PROJ lbl) $ [m] =>
+         Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder m]
      | O.MONO O.PATH_ABS $ _ =>
          printPathAbs @@ multiPathAbs [] m
      | O.POLY (O.PATH_APP _) $ _ =>
          printPathApp @@ multiPathApp m []
-     | O.MONO O.EQUALITY $ [_ \ a, _ \ m, _ \ n] =>
-         Atomic.parens @@ expr @@ hvsep
-           [char #"=", ppTerm a, ppTerm m, ppTerm n]
+     | O.MONO O.EQUALITY $ args =>
+         Atomic.parens @@ expr @@ hvsep @@
+           char #"=" :: List.map ppBinder args
+     | O.POLY (O.BOX (dir, eqs)) $ (cap :: boundaries) =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [ppComHead "box" dir, ppBinder cap]
+             :: [ppBoundaries (eqs, boundaries)]
+     | O.POLY (O.CAP (dir, eqs)) $ (coercee :: tubes) =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [ppComHeadBackward "cap" dir, ppBinder coercee]
+             :: [ppTubes (eqs, tubes)]
      | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "hcom" dir, ppBinder ty, ppBinder cap]
-             :: [ppTubes (eqs, tubes)]
-     | O.POLY (O.FCOM (dir, eqs)) $ (cap :: tubes) =>
-         Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "fcom" dir, ppBinder cap]
              :: [ppTubes (eqs, tubes)]
 
      | theta $ [] =>
@@ -244,10 +254,19 @@ struct
   and ppTubes (eqs, tubes) =
     expr @@ hvsep @@
       ListPair.map
-        (fn ((r1, r2), ([u], _) \ mx) =>
+        (fn ((r1, r2), ([u], _) \ mu) =>
           Atomic.squares @@ hsep
             [seq [ppParam r1, Atomic.equals, ppParam r2],
-             nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mx]])
+             nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mu]])
+        (eqs, tubes)
+
+  and ppBoundaries (eqs, tubes) =
+    expr @@ hvsep @@
+      ListPair.map
+        (fn ((r1, r2), _ \ m) =>
+          Atomic.squares @@ hsep
+            [seq [ppParam r1, Atomic.equals, ppParam r2],
+             nest 1 @@ ppTerm m])
         (eqs, tubes)
 
 

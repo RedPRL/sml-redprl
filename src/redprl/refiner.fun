@@ -605,6 +605,12 @@ struct
      | "eq/eq" => InternalizedEquality.Eq
      | "eq/ax" => InternalizedEquality.True
      | "eq/eta" => InternalizedEquality.Eta
+     | "fcom/eqtype" => FormalComposition.EqType
+     | "fcom/eq" => FormalComposition.Eq
+     | "fcom/intro" => FormalComposition.True
+     | "univ/eqtype" => Universe.EqType
+     | "univ/eq" => Universe.Eq
+     | "univ/intro" => Universe.True
      | "hcom/eq" => HCom.Eq
      | "hcom/eq/cap" => HCom.EqCapL
      | "hcom/eq/tube" => HCom.EqTubeL
@@ -632,6 +638,8 @@ struct
          | (Syn.RECORD _, Syn.RECORD _) => Record.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => InternalizedEquality.EqType
+         | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
+         | (Syn.FCOM _, Syn.FCOM _) => FormalComposition.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
       fun canonicity sign = 
@@ -660,10 +668,12 @@ struct
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => S1.EqFCom
-         | (Syn.LAM _, Syn.LAM _, _) => DFun.Eq
-         | (Syn.TUPLE _, Syn.TUPLE _, _) => Record.Eq
-         | (Syn.PATH_ABS _, Syn.PATH_ABS _, _) => Path.Eq
-         | (Syn.AX, Syn.AX, Syn.EQUALITY _) => InternalizedEquality.Eq
+         | (_, _, Syn.DFUN _) => DFun.Eq
+         | (_, _, Syn.RECORD _) => Record.Eq
+         | (_, _, Syn.PATH_TY _) => Path.Eq
+         | (_, _, Syn.EQUALITY _) => InternalizedEquality.Eq
+         | (_, _, Syn.FCOM _) => FormalComposition.Eq
+         | (_, _, Syn.UNIVERSE _) => Universe.Eq
          | _ => raise E.error [Fpp.text "Could not find value equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       (* equality for neutrals: variables and elimination forms;
@@ -822,6 +832,7 @@ struct
          | Syn.RECORD _ => Record.Elim
          | Syn.PATH_TY _ => Path.Elim
          | Syn.EQUALITY _ => InternalizedEquality.Elim
+         | Syn.UNIVERSE _ => Universe.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
       val FromEq = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)

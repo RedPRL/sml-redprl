@@ -63,6 +63,7 @@ struct
 
 
   type tube = symbol O.equation * (symbol * abt)
+  type boundary = symbol O.equation * abt
   datatype hole = HOLE
   datatype frame =
      APP of hole * abt
@@ -76,6 +77,7 @@ struct
    | INT_REC of hole * abt * (variable * variable * abt) * abt * (variable * variable * abt)
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
+   | CAP of symbol O.dir * tube list * hole
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -98,6 +100,7 @@ struct
        | INT_REC (HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC (m, (zer, (x,y,succ), negone, (x',y',negss)))
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
        | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
+       | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
   in
     fun unload (m || (syms, stk)) = 
       case stk of
@@ -137,12 +140,6 @@ struct
   exception Final
   exception Stuck
 
-  (* Is it safe to observe the identity of a dimension? *)
-  fun dimensionSafeToObserve syms r = 
-    case r of 
-       P.VAR x => SymSet.member syms x
-     | _ => true
-
   fun dimensionsEqual stability syms (r1, r2) = 
     (* If two dimensions are equal, then no substitution can ever change that. *)
     if P.eq Sym.eq (r1, r2) then 
@@ -154,20 +151,33 @@ struct
           NOMINAL => false
           (* An observation of apartness is only stable if one of the compared dimensions is bound. *)
         | CUBICAL =>
-            if dimensionSafeToObserve syms r1 orelse dimensionSafeToObserve syms r2 then 
-              false 
-            else
-              raise Unstable
+            let
+              fun isBound syms r =
+                case r of
+                   P.VAR x => SymSet.member syms x
+                 | P.APP _ => false
+              fun isConstant r =
+                case r of
+                   P.VAR _ => false
+                 | P.APP P.DIM0 => true
+                 | P.APP P.DIM1 => true
+                 | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
+            in
+              if isBound syms r1 orelse isBound syms r2 orelse (isConstant r1 andalso isConstant r2) then
+                false
+              else
+                raise Unstable
+            end
 
-  fun findTubeWithTrueEquation stability syms = 
+  fun findFirstWithTrueEquation stability syms =
     let
       val rec aux = 
         fn [] => NONE
-         | (eq, (u, n)) :: tubes =>
+         | (eq, x) :: xs =>
            if dimensionsEqual stability syms eq then 
-             SOME (u, n)
+             SOME x
            else 
-             aux tubes
+             aux xs
     in
       aux
     end
@@ -177,8 +187,12 @@ struct
   fun zipTubesWith f : symbol O.equation list * abt bview list -> tube list =
     ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
 
+  fun zipBoundariesWith f : symbol O.equation list * abt bview list -> boundary list =
+    ListPair.map (fn (eq, _ \ n) => (eq, f n))
+
   fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
+  val zipBoundaries = zipBoundariesWith (fn n => n)
 
   datatype 'a action = 
      COMPAT of 'a
@@ -189,7 +203,7 @@ struct
     if dimensionsEqual stability syms dir then 
       STEP @@ cap || (syms, stk)
     else
-      case findTubeWithTrueEquation stability syms tubes of
+      case findFirstWithTrueEquation stability syms tubes of
          SOME (u, n) => STEP @@ substSymbol (r', u) n || (syms, stk)
        | NONE =>
          (case stk of
@@ -230,7 +244,32 @@ struct
              in
                CRITICAL @@ com || (syms, stk)
              end
+           | HCOM _ :: stk =>
+               E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of fcom types"))
+           | COE _ :: stk =>
+               E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of fcom types"))
            | _ => raise Stuck)
+
+  fun stepBox stability ({dir, cap, boundaries} || (syms, stk)) =
+    if dimensionsEqual stability syms dir then
+      STEP @@ cap || (syms, stk)
+    else
+      case findFirstWithTrueEquation stability syms boundaries of
+         SOME b => STEP @@ b || (syms, stk)
+       | NONE =>
+         (case stk of
+             [] => raise Final
+           | CAP _ :: stk =>
+               STEP @@ cap || (syms, stk)
+           | _ => raise Stuck)
+
+  fun stepCap stability ({dir as (r, r'), tubes, coercee} || (syms, stk)) =
+    if dimensionsEqual stability syms dir then
+      STEP @@ coercee || (syms, stk)
+    else
+      case findFirstWithTrueEquation stability syms tubes of
+         SOME (u, a) => STEP @@ (Syn.into @@ Syn.COE {dir = (r', r), ty = (u, a), coercee = coercee}) || (syms, stk)
+       | NONE => COMPAT @@ coercee || (syms, CAP (dir, tubes, HOLE) :: stk)
 
   fun stepView sign stability unfolding tau =
     fn `x || _ => raise Neutral (VAR x)
@@ -518,9 +557,22 @@ struct
            end
          | _ => raise Fail "Impossible record type")
 
+     | O.POLY (O.BOX (dir, eqs)) $ (_ \ cap :: boundaries) || (syms, stk) =>
+       stepBox stability ({dir = dir, cap = cap, boundaries = zipBoundaries (eqs, boundaries)} || (syms, stk))
+     | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee :: tubes) || (syms, stk) =>
+       stepCap stability ({dir = dir, coercee = coercee, tubes = zipTubes (eqs, tubes)} || (syms, stk))
+
      | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
      | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-         E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of universes"))
+       let
+         val fcom =
+           Syn.into @@ Syn.FCOM
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         CRITICAL @@ fcom || (syms, stk)
+       end
      | O.POLY (O.UNIVERSE _) $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | _ => raise Stuck
