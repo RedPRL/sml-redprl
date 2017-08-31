@@ -193,7 +193,7 @@ struct
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
       in
-        ComKit.EqFComDelegator alpha (I, H) args0 args1 (ty, NONE, K.top)
+        ComKit.EqFComDelegate alpha (I, H) args0 args1 (ty, NONE, K.top)
       end
 
     fun Elim z _ jdg =
@@ -626,7 +626,7 @@ struct
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
       in
-        ComKit.EqFComDelegator alpha (I, H) args0 args1 (ty, NONE, K.top)
+        ComKit.EqFComDelegate alpha (I, H) args0 args1 (ty, NONE, K.top)
       end
 
     fun Elim z alpha jdg =
@@ -1246,6 +1246,8 @@ struct
         |>: goal1 >:? goal2 #> (I, H, trivial)
       end
 
+    (* This rule will be removed once every hypothesis
+     * is required to be `A true`. *)
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Elim"
@@ -1266,6 +1268,176 @@ struct
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
+  end
+
+  structure FormalComposition =
+  struct
+    val kindConstraintOnCapAndTubes =
+      fn K.DISCRETE => (K.DISCRETE, K.DISCRETE) (* XXX more research needed *)
+       | K.KAN => (K.KAN, K.KAN) (* XXX more research needed *)
+       | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
+       | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
+       | K.CUBICAL => (K.CUBICAL, K.COE) (* XXX more research needed *)
+
+    (* see the function of th same name in `ComKit` *)
+    fun genInterTubeGoals (I, H) w ((tubes0, tubes1), l, k) =
+      let
+        val tubes0 = ComKit.alphaRenameTubes w tubes0
+        val tubes1 = ComKit.alphaRenameTubes w tubes1
+
+        fun interTube (eq0, tube0) (eq1, tube1) =
+          Restriction.makeEqType [eq0, eq1] (I @ [(w,P.DIM)], H) ((tube0, tube1), l, k)
+
+        fun goTubePairs [] [] = []
+          | goTubePairs (t0 :: ts0) (t1 :: ts1) =
+              List.mapPartial (interTube t0) (t1 :: ts1) :: goTubePairs ts0 ts1
+          | goTubePairs _ _ = E.raiseError @@ E.IMPOSSIBLE @@
+              Fpp.text "interTubeGoals: the tubes are of different lengths"
+      in
+        List.concat (goTubePairs tubes0 tubes1)
+      end
+
+    (* see the function of th same name in `ComKit` *)
+    fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), l, k) =
+      let
+        fun capTube (eq, (u, tube)) =
+          Restriction.makeEqTypeIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), l, k)
+      in
+        List.mapPartial capTube tubes
+      end
+
+    local
+      fun interBoundary (I, H) (eq0, b0) (ty, l, k) (eq1, b1) =
+        Restriction.makeEq [eq0, eq1] (I, H) ((b0, b1), (ty, l, k))
+    in
+      fun genInterBoundaryGoalsNoDiagonal (I, H) ((boundaries0, boundaries1), (tyTubes, l, k)) =
+        let
+          fun goBoundaryPairs [] [] [] = []
+            | goBoundaryPairs (b0 :: bs0) (_ :: bs1) (ty :: tys) =
+                List.mapPartial (interBoundary (I, H) b0 (ty, l, k)) bs1 :: goBoundaryPairs bs0 bs1 tys
+            | goBoundaryPairs _ _ _ = E.raiseError @@ E.IMPOSSIBLE @@
+                Fpp.text "genInterBoundaryGoalsNoDiagonal: the boundaries are of different lengths"
+        in
+          List.concat (goBoundaryPairs boundaries0 boundaries1 tyTubes)
+        end
+      fun genInterBoundaryGoals (I, H) ((boundaries0, boundaries1), (tyTubes, l, k)) =
+        let
+          fun goBoundaryPairs [] [] [] = []
+            | goBoundaryPairs (b0 :: bs0) (b1 :: bs1) (ty :: tys) =
+                List.mapPartial (interBoundary (I, H) b0 (ty, l, k)) (b1 :: bs1) :: goBoundaryPairs bs0 bs1 tys
+            | goBoundaryPairs _ _ _ = E.raiseError @@ E.IMPOSSIBLE @@
+                Fpp.text "genInterBoundaryGoals: the boundaries are of different lengths"
+        in
+          List.concat (goBoundaryPairs boundaries0 boundaries1 tyTubes)
+        end
+    end
+
+    fun genCapBoundaryGoals (I, H) ((cap, ((r, r'), tyTubes, boundaries)), (tyCap, l, k)) =
+      ListPair.foldrEq
+        (fn ((eq, ty), boundary, goals) =>
+          let
+            val goalOpt = Restriction.makeEqIfDifferent [eq] (I, H)
+              ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l, k))
+          in
+            case goalOpt of
+              NONE => goals
+            | SOME goal => goal :: goals
+          end)
+        []
+        (tyTubes, boundaries)
+
+    fun EqType alpha jdg =
+      let
+        val _ = RedPrlLog.trace "FormalComposition.EqType"
+        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val Syn.FCOM {dir=dir0, cap=cap0, tubes=tubes0} = Syn.out ty0
+        val Syn.FCOM {dir=dir1, cap=cap1, tubes=tubes1} = Syn.out ty1
+        val () = Assert.dirEq "FormalComposition.EqType direction" (dir0, dir1)
+        val eqs0 = List.map #1 tubes0
+        val eqs1 = List.map #1 tubes1
+        val _ = Assert.equationsEq "FormalComposition.EqType equations" (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "FormalComposition.EqType tautology checking" eqs0
+
+        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+
+        val goalCap = makeEqType (I, H) ((cap0, cap1), l, kCap)
+
+        val w = alpha 0
+      in
+        |>: goalCap
+         >:+ genInterTubeGoals (I, H) w ((tubes0, tubes1), l, kTube)
+         >:+ genCapTubeGoalsIfDifferent (I, H) ((cap0, (#1 dir0, tubes0)), NONE, K.top)
+        #> (I, H, trivial)
+      end
+
+    fun Eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "FormalComposition.Eq"
+        val (I, H) >> CJ.EQ ((box0, box1), (ty, l, k)) = jdg
+        val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
+        val Syn.BOX {dir=dir0, cap=cap0, boundaries=boundaries0} = Syn.out box0
+        val Syn.BOX {dir=dir1, cap=cap1, boundaries=boundaries1} = Syn.out box1
+        val () = Assert.dirEq "FormalComposition.Eq direction" (dir0, dir1)
+        val () = Assert.dirEq "FormalComposition.Eq direction" (dir0, dir)
+        val (eqs0, boundaries') = ListPair.unzip boundaries0
+        val eqs1 = List.map #1 boundaries1
+        val (eqs, tyTubes') = ListPair.unzip tyTubes
+        val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs1)
+        val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs)
+        val _ = Assert.tautologicalEquations "FormalComposition.Eq tautology checking" eqs
+
+        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+
+        val goalCap = makeEq (I, H) ((cap0, cap1), (tyCap, l, kCap))
+
+        val tyBoundaries = List.map (fn (u, ty) => substSymbol (#2 dir, u) ty) tyTubes'
+
+        val w = alpha 0
+      in
+        |>: goalCap
+         >:+ genInterBoundaryGoals (I, H) ((boundaries0, boundaries1), (tyBoundaries, NONE, K.top))
+         >:+ genCapBoundaryGoals (I, H) ((cap0, (dir, tyTubes, boundaries')), (tyCap, NONE, K.top))
+         >:+ genInterTubeGoals (I, H) w ((tyTubes, tyTubes), l, kTube)
+         >:+ genCapTubeGoalsIfDifferent (I, H) ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
+        #> (I, H, trivial)
+      end
+
+    fun True alpha jdg =
+      let
+        val _ = RedPrlLog.trace "FormalComposition.True"
+        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
+        val (eqs, tyTubes') = ListPair.unzip tyTubes
+        val _ = Assert.tautologicalEquations "FormalComposition.True tautology checking" eqs
+
+        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+
+        val (goalCap, holeCap) = makeTrue (I, H) (tyCap, l, kCap)
+
+        fun foldBoundary ((eq, (u, tyTube)), (goals, holes)) =
+          case Restriction.makeTrue [eq] (I, H) (substSymbol (#2 dir, u) tyTube, NONE, K.top) of
+            NONE => (goals, Syn.into Syn.AX :: holes) (* or any other term *)
+          | SOME (goal, hole) => (goal :: goals, hole :: holes)
+        val (goalBoundaries, holeBoundaries) =
+          List.foldr foldBoundary ([],[]) tyTubes
+
+        val tyBoundaries = List.map (fn (u, ty) => substSymbol (#2 dir, u) ty) tyTubes'
+        val holeBoundaries' = ListPair.zipEq (eqs, holeBoundaries)
+
+        val w = alpha 0
+
+        val box = Syn.into @@ Syn.BOX {dir=dir, cap=holeCap, boundaries=holeBoundaries'}
+      in
+        |>: goalCap
+         >:+ goalBoundaries
+         >:+ genInterBoundaryGoalsNoDiagonal (I, H) ((holeBoundaries', holeBoundaries'), (tyBoundaries, NONE, K.top))
+         >:+ genCapBoundaryGoals (I, H) ((holeCap, (dir, tyTubes, holeBoundaries)), (tyCap, NONE, K.top))
+         >:+ genInterTubeGoals (I, H) w ((tyTubes, tyTubes), l, kTube)
+         >:+ genCapTubeGoalsIfDifferent (I, H) ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
+        #> (I, H, box)
+      end
+
+    (* TODO Add the Elim, EqCap and Eta rules. *)
   end
 
   structure Universe =
@@ -1320,6 +1492,25 @@ struct
         val goalTy' = makeType (I, H) (holeTy, SOME l0, k0)
       in
         |>: goalTy >: goalTy' #> (I, H, Syn.into Syn.AX)
+      end
+
+    (* This rule will be removed once every hypothesis
+     * is required to be `A true`. *)
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.Elim"
+        val (I, H) >> catjdg = jdg
+        (* for now we ignore the kind in the context *)
+        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val Syn.UNIVERSE (l, k) = Syn.out ty
+
+        val u = alpha 0
+        val (goal, hole) =
+          makeGoal
+            @@ (I, Hyps.interposeAfter (z, |@> (u, CJ.TYPE (VarKit.toExp z, SOME l, k))) H)
+            >> catjdg
+      in
+        |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
   end
 end

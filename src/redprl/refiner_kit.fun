@@ -149,7 +149,8 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrue (I, H) (a, l, k) = makeGoal @@ (I, H) >> CJ.TRUE (a, l, k)
+  fun makeTrueWith f (I, H) (ty, l, k) = makeGoal @@ Seq.map f @@ (I, H) >> CJ.TRUE (ty, l, k)
+  val makeTrue = makeTrueWith (fn j => j)
   fun makeSynth (I, H) (m, l, k) = makeGoal @@ (I, H) >> CJ.SYNTH (m, l, k)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
@@ -158,8 +159,10 @@ struct
 
   (* ignoring the trivial realizer *)
   fun makeType (I, H) (a, l, k) = makeGoal' @@ (I, H) >> CJ.TYPE (a, l, k)
-  fun makeEqType (I, H) ((a, b), l, k) = makeGoal' @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
-  fun makeEq (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+  fun makeEqTypeWith f (I, H) ((a, b), l, k) = makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+  val makeEqType = makeEqTypeWith (fn j => j)
+  fun makeEqWith f (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+  val makeEq = makeEqWith (fn j => j)
   fun makeMem (I, H) (m, (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, l, k))
 
   (* conditional goal making *)
@@ -256,6 +259,21 @@ struct
       else
         raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", TermPrinter.ppParam r1, Fpp.text "to be equal to", TermPrinter.ppParam r2]
 
+    fun dirEq msg ((r1, r1'), (r2, r2')) =
+      if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
+        ()
+      else
+        raise E.error
+          [Fpp.text (msg ^ ":"),
+           Fpp.text "Expected direction",
+           TermPrinter.ppParam r1,
+           Fpp.text "~>",
+           TermPrinter.ppParam r1',
+           Fpp.text "to be equal to",
+           TermPrinter.ppParam r2,
+           Fpp.text "~>",
+           TermPrinter.ppParam r2']
+
     fun equationEq msg ((r1, r1'), (r2, r2')) =
       if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
         ()
@@ -270,6 +288,8 @@ struct
            TermPrinter.ppParam r2,
            Fpp.text "=",
            TermPrinter.ppParam r2']
+
+    fun equationsEq msg = ListPair.mapEq (equationEq msg)
 
     (* The following is a sufficient condition for tautology:
      * the list contains a true equation `r = r` or both `r = 0`

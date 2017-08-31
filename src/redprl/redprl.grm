@@ -280,8 +280,9 @@ end
  | QUESTION
  | SEMI
  (* arrows *)
- | SQUIGGLE_ARROW
- | RIGHT_ARROW | LEFT_ARROW | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
+ | SQUIGGLE_RIGHT_ARROW | SQUIGGLE_LEFT_ARROW
+ | RIGHT_ARROW | LEFT_ARROW
+ | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | TRIANGLE_RIGHT
 
  (* parameter sorts *)
@@ -304,6 +305,7 @@ end
  | LAMBDA | DOLLAR_SIGN
  | RECORD | TIMES | TUPLE | BANG
  | PATH | ABS | AT_SIGN
+ | BOX | CAP
  | UNIV
  | HCOM | COE
 
@@ -370,6 +372,7 @@ end
  | typedParam of string param * P.param_sort
  | typedParams of (string param * P.param_sort) list
  | dir of string param * string param
+ | backDir of string param * string param
  | equation of string param * string param
  | tube of (string param * string param) * ast abs
  | tubes of ((string param * string param) * ast abs) list
@@ -481,6 +484,7 @@ boundVars
 
 psort
   : DIM (P.DIM)
+  | LVL (P.LVL)
   | HYP (P.HYP)
   | META_NAME (P.META_NAME)
 
@@ -565,7 +569,10 @@ typedParams
 
 
 dir
-  : param SQUIGGLE_ARROW param ((param1, param2))
+  : param SQUIGGLE_RIGHT_ARROW param ((param1, param2))
+
+backDir
+  : param SQUIGGLE_LEFT_ARROW param ((param1, param2))
 
 equation
   : LPAREN equation RPAREN (equation)
@@ -575,8 +582,8 @@ tube
   : LSQUARE equation binding RSQUARE (equation, binding)
 
 tubes
-  : tube ([tube])
-  | tube tubes (tube :: tubes)
+  : tube tubes (tube :: tubes)
+  | ([])
 
 metavar
   : HASH ident (ident)
@@ -643,7 +650,8 @@ polyNullaryOperator
   (* circle *)
   : LOOP dimParam (O.POLY (O.LOOP dimParam))
   | DIM dimParam (O.POLY (O.PARAM_REF (O.DIM, dimParam)))
-  | UNIV kind levelParam (O.POLY (O.UNIVERSE (levelParam, kind)))
+  | UNIV levelParam (O.POLY (O.UNIVERSE (levelParam, RedPrlKind.top)))
+  | UNIV levelParam kind (O.POLY (O.UNIVERSE (levelParam, kind)))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
@@ -704,12 +712,12 @@ rawTermAndTac
   (* compositions *)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
-  | LPAREN FCOM LBRACKET dir RBRACKET binding RPAREN
-      (Ast.$$ (O.POLY (O.FCOM (dir, [])), [binding]))
+  | LPAREN BOX LBRACKET dir RBRACKET binding tubes RPAREN
+      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.BOX (dir, eqs)), (binding :: tubes)) end)
+  | LPAREN CAP LBRACKET backDir RBRACKET binding tubes RPAREN
+      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.CAP (backDir, eqs)), (binding :: tubes)) end)
   | LPAREN HCOM LBRACKET dir RBRACKET binding binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.HCOM (dir, eqs)), (binding1 :: binding2 :: tubes)) end)
-  | LPAREN HCOM LBRACKET dir RBRACKET binding binding RPAREN
-      (Ast.$$ (O.POLY (O.HCOM (dir, [])), [binding1, binding2]))
 
   (* numbers *)
   | NUMERAL (Multi.makeNum NUMERAL)
