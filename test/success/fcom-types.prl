@@ -21,11 +21,11 @@ Thm Fcom/Reduce : [
   auto
 ].
 
-//Thm Fcom/Cap1 : [
-//  tt in (fcom{0~>1} bool [0=0 {j} bool])
-//] by [
-//  auto
-//].
+Thm Fcom/Cap1 : [
+  tt in (fcom{0~>1} bool [0=0 {j} bool])
+] by [
+  auto
+].
 
 Thm Fcom/Cap2 : [
   (cap{0<~1} (box{0~>1} tt [0=0 tt]) [0=0 {j} bool]) in bool
