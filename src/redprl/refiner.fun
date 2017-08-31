@@ -725,20 +725,27 @@ struct
          | (_, _, Syn.UNIVERSE _) => Universe.Eq
          | _ => raise E.error [Fpp.text "Could not find value equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
+      fun AutoElim z =
+        Bool.Elim z orelse_
+        Void.Elim z orelse_
+        InternalizedEquality.Elim z
+
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
       fun StepEqNeu sign (blocker1, blocker2) ((m, n), ty) =
         case (Syn.out m, blocker1, Syn.out n, blocker2) of
            (Syn.VAR _, _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.IF _, _, Syn.IF _, _) => Bool.EqElim
-         | (Syn.IF _, Machine.VAR z, _, _) => Bool.Elim z
-         | (_, _, Syn.IF _, Machine.VAR z) => Bool.Elim z
          | (Syn.WIF _, _, Syn.WIF _, _) => WBool.EqElim
          | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.EqElim
          | (Syn.APP _, _, Syn.APP _, _) => DFun.EqApp
          | (Syn.PROJ _, _, Syn.PROJ _, _) => Record.EqProj
          | (Syn.PATH_APP (_, P.VAR _), _, Syn.PATH_APP (_, P.VAR _), _) => Path.EqApp
          | (Syn.CUST, _, Syn.CUST, _) => Equality.Custom sign
+         | (_, Machine.VAR z, _, Machine.OPERATOR theta) => AutoElim z orelse_ Computation.Unfold sign theta
+         | (_, Machine.VAR z, _, _) => AutoElim z
+         | (_, Machine.OPERATOR theta, _, Machine.VAR z) => AutoElim z orelse_ Computation.Unfold sign theta
+         | (_, _, _, Machine.VAR z) => AutoElim z
          | (_, Machine.OPERATOR theta, _, _) => Computation.Unfold sign theta
          | (_, _, _, Machine.OPERATOR theta) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
