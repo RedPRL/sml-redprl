@@ -36,6 +36,7 @@ struct
       mul (isjdg ()) state''
     end
 
+
   fun map (f : 'a -> 'b) (m : 'a m) =
     bind m (pure o f)
 
@@ -70,13 +71,15 @@ struct
            (fn jdg => {consumedNames = 0, ret = (), goal = jdg})
            state))
 
-  (* We need to explicitly support different forms of composition in the language
-   * and have a variant of 'bind' for forking. *)
-  fun fork (ms : unit m list) : unit m =
-    fn (alpha, state) =>
-      fromMultitactic
-        (LcfUtil.eachSeq (List.map (asTactic alpha) ms))
-        (alpha, state)
+  fun multibind (m : unit m) (ms : unit m list) (alpha, state) : unit internal state =
+    let
+      val state' as Lcf.|> (psi, evd) = m (alpha, state)
+      val goals = Lcf.Tl.foldr (fn (x,j,r) => j::r) [] psi
+      val tacs = ListPair.map (fn ({consumedNames, ...}, n) => asTactic (UniversalSpread.bite consumedNames alpha) n) (goals, ms)
+    in
+      fromMultitactic (LcfUtil.eachSeq tacs) (alpha, Lcf.map (fn {goal,...} => goal) state')
+    end
+
 
   fun liftTactic (tac : names -> Lcf.jdg tactic) (alpha : names) : J.jdg tactic = 
     fn {goal, consumedNames, ret} =>

@@ -84,6 +84,8 @@ struct
          eval env t >>= 
            flip eval tx o Env.insertMl env x
        end
+     | ML.SEQ_FORK (t, ts) => 
+       const V.NIL <$> M.multibind (const () <$> eval env t) (List.map (fn t' => const () <$> eval env t') ts)
      | ML.NIL => M.pure V.NIL
      | ML.FUN sc => M.pure @@ V.FUN (sc, env)
      | ML.APP (t1, t2) => app pos =<< (eval env t1 <&> eval env t2)
@@ -93,7 +95,6 @@ struct
      | ML.QUOTE abt => M.pure o V.QUOTE @@ Env.forceObjTerm env abt
      | ML.GOAL => getGoal <$> M.getGoal
      | ML.REFINE ruleName => const V.NIL <$> M.rule (Rules.lookupRule ruleName)
-     | ML.EACH ts => const V.NIL <$> M.fork (List.map (M.map (const ()) o eval env) ts)
      | ML.TRY (t1, t2) => M.orelse_ (eval env t1, eval env t2)
      | ML.PUSH sc =>
        let

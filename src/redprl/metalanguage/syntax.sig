@@ -27,6 +27,7 @@ sig
   datatype ('v, 's, 'o, 'a) mltermf =
      VAR of 'v
    | LET of 'a * ('v, 'a) scope
+   | SEQ_FORK of 'a * 'a list
    | FUN of ('v, 'a) scope
    | APP of 'a * 'a
    | PAIR of 'a * 'a
@@ -34,7 +35,6 @@ sig
    | SND
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
-   | EACH of 'a list
    | TRY of 'a * 'a
    | PUSH of ('s list, 'a) scope
    | NIL

@@ -34,6 +34,7 @@ struct
   datatype ('v, 's, 'o, 'a) mltermf =
      VAR of 'v
    | LET of 'a * ('v, 'a) scope
+   | SEQ_FORK of 'a * 'a list
    | FUN of ('v, 'a) scope
    | APP of 'a * 'a
    | PAIR of 'a * 'a
@@ -41,7 +42,6 @@ struct
    | SND
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
-   | EACH of 'a list
    | TRY of 'a * 'a
    | PUSH of ('s list, 'a) scope
    | NIL
@@ -80,6 +80,7 @@ struct
       {ostate = ostate,
        mlenv = Names.insert mlenv x x'}
 
+    (* TODO: update symctx *)
     fun addSyms {ostate = {metactx, symctx, varctx, metaenv, symenv, varenv}, mlenv} xs xs' : state =
       {mlenv = mlenv,
        ostate =
@@ -106,6 +107,7 @@ struct
     fun resolveAux (state : state) : (string, string, rexpr) mlterm -> mlterm_ =
       fn VAR x :@ ann => VAR (mlvar state x) :@ ann
        | LET (t, sc) :@ ann => LET (resolveAux state t, resolveAuxScope state sc) :@ ann
+       | SEQ_FORK (t, ts) :@ ann => SEQ_FORK (resolveAux state t, List.map (resolveAux state) ts) :@ ann
        | FUN sc :@ ann => FUN (resolveAuxScope state sc) :@ ann
        | APP (t1, t2) :@ ann => APP (resolveAux state t1, resolveAux state t2) :@ ann
        | PAIR (t1, t2) :@ ann => PAIR (resolveAux state t1, resolveAux state t2) :@ ann
@@ -114,7 +116,6 @@ struct
        | QUOTE rexpr :@ ann => QUOTE (RedExpr.reader (#ostate state) rexpr) :@ ann
        | GOAL :@ ann => GOAL :@ ann
        | REFINE ruleName :@ ann => REFINE ruleName :@ ann
-       | EACH ts :@ ann => EACH (List.map (resolveAux state) ts) :@ ann
        | TRY (t1, t2) :@ ann => TRY (resolveAux state t1, resolveAux state t2) :@ ann
        | PUSH sc :@ ann => PUSH (resolveAuxObjScope state sc) :@ ann
        | NIL :@ ann => NIL :@ ann

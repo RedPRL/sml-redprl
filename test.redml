@@ -1,6 +1,11 @@
 print begin
   prove `(dfun bool [x] bool) by
-    refine dfun/intro;
-    print goal
+    push a in
+      refine dfun/intro;
+      [ exact `tt;
+        refine bool/eq/tt
+      , refine bool/eqtype
+      ]
+    end
   end
 end

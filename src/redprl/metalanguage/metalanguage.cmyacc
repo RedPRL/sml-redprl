@@ -42,7 +42,6 @@ nonterminal Atm: exp =
   1:BACKTICK 2:OExp => quote
   1:REFINE 2:IDENT => refine
   1:EXACT 2:Atm => exact
-  1:LSQUARE 2:Exps 3:RSQUARE => fork
   1:PUSH 2:Names IN 3:Exp 4:END => push
   1:PRINT 2:Atm => print
 
@@ -57,9 +56,11 @@ nonterminal App: exp =
   1:Atm => identity
   1:App 2:Atm => app
 
-nonterminal SeqExp: exp = 
+/* TODO: fix shift-reduce conflicts */
+nonterminal SeqExp: exp =
   1:App => identity
-  1:App SEMI 2:SeqExp => seqExpCons
+  1:SeqExp SEMI 2:Exp => seqExpSnoc
+  1:SeqExp SEMI LSQUARE 2:Exps 3:RSQUARE => seqExpSnocFork
 
 nonterminal Exp: exp = 
   1:SeqExp => identity

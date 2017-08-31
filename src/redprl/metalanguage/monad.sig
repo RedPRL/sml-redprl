@@ -6,10 +6,11 @@ sig
   type 'a m
   val pure : 'a -> 'a m
   val bind : 'a m -> ('a -> 'b m) -> 'b m
+  val multibind : unit m -> unit m list -> unit m
+  
   val map : ('a -> 'b) -> 'a m -> 'b m
   val getGoal : Lcf.jdg m 
   val rule : (names -> Lcf.jdg Lcf.tactic) -> unit m
-  val fork : unit m list -> unit m
   val orelse_ : 'a m * 'a m -> 'a m
 
   val extract : Pos.t option -> 'a m -> Lcf.L.term m

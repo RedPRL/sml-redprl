@@ -119,9 +119,6 @@ struct
 
   fun push (posl, xs : names, e : exp, posr) =
     Ast.push (List.map #2 xs, e) @@ SOME (Pos.union posl posr)
-
-  fun fork (posl, es, posr) =
-    ML.EACH es :@ SOME (Pos.union posl posr)
  
   fun refine (pos1, (pos2, str)) =
     ML.REFINE str :@ SOME (Pos.union pos1 pos2)
@@ -138,11 +135,14 @@ struct
   fun let_ (posl, decls, e, posr) = 
     case decls of 
        [] => e
-     | (((_, x), e') ::ds) =>
+     | (((_, x), e') :: ds) =>
          Ast.let_ (e', (x, let_ (posl, ds, e, posr))) @@ SOME (Pos.union posl posr)
 
-  fun seqExpCons (e, e') = 
+  fun seqExpSnoc (e, e') = 
     Ast.let_ (e, ("_", e')) @@ posOfTerms [e,e']
+
+  fun seqExpSnocFork (e, es, posr) = 
+    ML.SEQ_FORK (e, es) :@ mergeAnnotation (posOfTerms [e], SOME posr)
 
   fun proj1 pos = 
     ML.FST :@ SOME pos
