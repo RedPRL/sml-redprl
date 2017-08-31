@@ -277,7 +277,7 @@ struct
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
-     | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.EqHeadExpansion sign
+     | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.HeadExpansion sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.out (expandHypVars catjdg))
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
