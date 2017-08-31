@@ -25,13 +25,13 @@ struct
         [Fpp.text "The impossible happened!", doc,
          Fpp.text "Please report this bug."]
      | INVALID_CATEGORICAL_JUDGMENT doc => Fpp.hvsep
-        [Fpp.text "Not a valid categorical judgment:", Fpp.align doc]
+        [Fpp.text "Not a valid categorical judgment:", Fpp.nest 2 doc]
      | INVALID_DIMENSION doc => Fpp.hsep
-        [Fpp.text "Not a valid dimension:", Fpp.align doc]
+        [Fpp.text "Not a valid dimension:", Fpp.nest 2 doc]
      | INVALID_LEVEL doc => Fpp.hsep
-        [Fpp.text "Not a valid universe level:", Fpp.align doc]
+        [Fpp.text "Not a valid universe level:", Fpp.nest 2 doc]
      | UNIMPLEMENTED doc => Fpp.hsep
-        [Fpp.text "Not implemented:", Fpp.align doc]
+        [Fpp.text "Not implemented:", Fpp.nest 2 doc]
      | GENERIC doc => Fpp.hsep doc
 
   val rec format =
