@@ -11,6 +11,7 @@ Library
   functor RedPrlMachine
   structure RedPrlSortData
   structure RedPrlOpData
+  structure RedPrlParamData
   structure RedPrlLevel
   structure RedPrlKind
   structure RedPrlAbt

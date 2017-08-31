@@ -7,6 +7,9 @@ Group is
   redprl.cm (bind:(anchor:libs value:../lib/))
   frontend/frontend.sml
 
+  redprl/metalanguage/redexpr.sig
+  redprl/metalanguage/redexpr.sml
+
   redprl/metalanguage/syntax.sig
   redprl/metalanguage/statics.sig
   redprl/metalanguage/monad.sig

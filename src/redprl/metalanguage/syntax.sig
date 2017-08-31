@@ -63,6 +63,7 @@ sig
 
   structure Resolver :
   sig
+    type state
     val resolve : (string, string, oast * osort) mlterm -> mlterm_
   end
 end
