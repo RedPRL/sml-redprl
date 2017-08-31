@@ -479,35 +479,66 @@ struct
         |>: goal #> (I, H, hole)
       end
 
-    fun EqHeadExpansion sign _ jdg =
+    fun HeadExpansionDelegate sign (I, H) jdgMaker m =
       let
-        val _ = RedPrlLog.trace "Computation.EqHeadExpansion"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
-        val m' = Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign) m
-        val goal = makeEq (I, H) ((m', n), (ty, l, k))
+        val (goal, hole) = makeGoal @@ jdgMaker @@
+          Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign) m
       in
-        |>: goal #> (I, H, trivial)
+        |>: goal #> (I, H, hole)
       end
-      handle _ => raise E.error [Fpp.text "EqHeadExpansion!"]
 
-    fun EqTypeHeadExpansion sign _ jdg =
+    fun EqHeadExpansionL sign _ jdg =
       let
-        val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansion"
-        val (I, H) >> CJ.EQ_TYPE ((ty1, ty2), l, k) = jdg
-        val ty1' = Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign) ty1
-        val goal = makeEqType (I, H) ((ty1', ty2), l, k)
+        val _ = RedPrlLog.trace "Computation.EqHeadExpansionL"
+        val           (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        fun maker m = (I, H) >> CJ.EQ ((m, n), (ty, l, k))
       in
-        |>: goal #> (I, H, trivial)
+        HeadExpansionDelegate sign (I, H) maker m
+      end
+
+    fun EqHeadExpansionR sign _ jdg =
+      let
+        val _ = RedPrlLog.trace "Computation.EqHeadExpansionR"
+        val           (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        fun maker n = (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+      in
+        HeadExpansionDelegate sign (I, H) maker n
+      end
+
+    fun EqHeadExpansionTy sign _ jdg =
+      let
+        val _ = RedPrlLog.trace "Computation.EqHeadExpansionTy"
+        val            (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        fun maker ty = (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+      in
+        HeadExpansionDelegate sign (I, H) maker ty
+      end
+
+    fun EqTypeHeadExpansionL sign _ jdg =
+      let
+        val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansionL"
+        val           (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+        fun maker a = (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+      in
+        HeadExpansionDelegate sign (I, H) maker a
+      end
+
+    fun EqTypeHeadExpansionR sign _ jdg =
+      let
+        val _ = RedPrlLog.trace "Computation.EqTypeHeadExpansionR"
+        val           (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+        fun maker b = (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+      in
+        HeadExpansionDelegate sign (I, H) maker b
       end
     
     fun MatchRecordHeadExpansion sign _ jdg = 
       let
         val _ = RedPrlLog.trace "Record.MatchRecord"
-        val MATCH_RECORD (lbl, tm) = jdg
-        val tm' = Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign) tm
-        val (goal, hole) = makeMatchRecord (lbl, tm')
+        val            MATCH_RECORD (lbl, tm) = jdg
+        fun maker tm = MATCH_RECORD (lbl, tm)
       in
-        |>: goal #> ([], Hyps.empty, hole)
+        HeadExpansionDelegate sign ([], Hyps.empty) maker tm
       end
   end
 
@@ -617,6 +648,24 @@ struct
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
+  structure Computation =
+  struct
+    open Computation
+    fun TryEqHeadExpansionTy sign alpha = Lcf.try @@ EqHeadExpansionTy sign alpha
+    fun TryEqHeadExpansionL sign alpha = Lcf.try @@ EqHeadExpansionL sign alpha
+    fun TryEqHeadExpansionR sign alpha = Lcf.try @@ EqHeadExpansionR sign alpha
+    fun TryEqHeadExpansionLR sign = TryEqHeadExpansionL sign then_ TryEqHeadExpansionR sign
+    fun TryEqTypeHeadExpansionL sign alpha = Lcf.try @@ EqTypeHeadExpansionL sign alpha
+    fun TryEqTypeHeadExpansionR sign alpha = Lcf.try @@ EqTypeHeadExpansionR sign alpha
+    fun TryMatchRecordHeadExpansion sign alpha = Lcf.try @@ MatchRecordHeadExpansion sign alpha
+    fun HeadExpansion sign =
+      TryEqHeadExpansionTy sign then_
+      TryEqHeadExpansionL sign then_
+      TryEqHeadExpansionR sign then_
+      TryEqTypeHeadExpansionL sign then_
+      TryEqTypeHeadExpansionR sign then_
+      TryMatchRecordHeadExpansion sign
+  end
 
   local
     val CatJdgSymmetry : tactic =
@@ -647,8 +696,8 @@ struct
 
       fun StepEqType sign (ty1, ty2) =
         case (canonicity sign ty1, canonicity sign ty2) of
-           (Machine.REDEX, _) => Computation.EqTypeHeadExpansion sign
-         | (_, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqTypeHeadExpansion sign
+           (Machine.REDEX, _) => Computation.EqTypeHeadExpansionL sign
+         | (_, Machine.REDEX) => Computation.EqTypeHeadExpansionR sign
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
@@ -683,7 +732,7 @@ struct
            (Syn.VAR _, _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.IF _, _, Syn.IF _, _) => Bool.EqElim
          | (Syn.IF _, Machine.VAR z, _, _) => Bool.Elim z
-         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.Elim z
+         | (_, _, Syn.IF _, Machine.VAR z) => Bool.Elim z
          | (Syn.WIF _, _, Syn.WIF _, _) => WBool.EqElim
          | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.EqElim
          | (Syn.APP _, _, Syn.APP _, _) => DFun.EqApp
@@ -691,6 +740,7 @@ struct
          | (Syn.PATH_APP (_, P.VAR _), _, Syn.PATH_APP (_, P.VAR _), _) => Path.EqApp
          | (Syn.CUST, _, Syn.CUST, _) => Equality.Custom sign
          | (_, Machine.OPERATOR theta, _, _) => Computation.Unfold sign theta
+         | (_, _, _, Machine.OPERATOR theta) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       fun StepEqNeuExpand sign blocker ty =
@@ -729,26 +779,23 @@ struct
        val AutoEqR = EqCapR orelse_ Eq
       end
 
-      fun TryHeadExpansionL sign alpha = Lcf.try (Computation.EqHeadExpansion sign alpha)
-      fun TryHeadExpansionLR sign = TryHeadExpansionL sign then_ CatJdgSymmetry then_ TryHeadExpansionL sign then_ CatJdgSymmetry
-
       fun StepEq sign ((m, n), ty) =
-        case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of 
-           (Syn.HCOM _, _, Syn.HCOM _, _) => HCom.AutoEqLR orelse_ TryHeadExpansionLR sign
-         | (Syn.HCOM _, _, _, _) => HCom.AutoEqL orelse_ TryHeadExpansionLR sign
-         | (_, _, Syn.HCOM _, _) => HCom.AutoEqLR orelse_ TryHeadExpansionLR sign
-         | (Syn.COE _, _, Syn.COE _, _) => Coe.AutoEqLR orelse_ TryHeadExpansionLR sign
-         | (Syn.COE _, _, _, _) => Coe.AutoEqL orelse_ TryHeadExpansionLR sign
-         | (_, _, Syn.COE _, _) => Coe.AutoEqR orelse_ TryHeadExpansionLR sign
-         | (_, Machine.REDEX, _, _) => Computation.EqHeadExpansion sign
-         (* TODO swap the sides back after EqHeadExpansion *)
-         | (_, _, _, Machine.REDEX) => CatJdgSymmetry then_ Computation.EqHeadExpansion sign
-         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal ((m, n), ty)
-         | (Syn.PATH_APP (_, P.APP _), _, _, _) => Path.EqAppConst
-         | (_, _, Syn.PATH_APP (_, P.APP _), _) => CatJdgSymmetry then_ Path.EqAppConst
-         | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (blocker1, blocker2) ((m, n), ty)
-         | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign blocker ty
-         | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign blocker ty
+        case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n, canonicity sign ty) of
+           (Syn.HCOM _, _, Syn.HCOM _, _, _) => HCom.AutoEqLR orelse_ Computation.TryEqHeadExpansionLR sign
+         | (Syn.HCOM _, _, _, _, _) => HCom.AutoEqL orelse_ Computation.TryEqHeadExpansionLR sign
+         | (_, _, Syn.HCOM _, _, _) => HCom.AutoEqLR orelse_ Computation.TryEqHeadExpansionLR sign
+         | (Syn.COE _, _, Syn.COE _, _, _) => Coe.AutoEqLR orelse_ Computation.TryEqHeadExpansionLR sign
+         | (Syn.COE _, _, _, _, _) => Coe.AutoEqL orelse_ Computation.TryEqHeadExpansionLR sign
+         | (_, _, Syn.COE _, _, _) => Coe.AutoEqR orelse_ Computation.TryEqHeadExpansionLR sign
+         | (_, _, _, _, Machine.REDEX) => Computation.EqHeadExpansionTy sign
+         | (_, Machine.REDEX, _, _, _) => Computation.EqHeadExpansionL sign
+         | (_, _, _, Machine.REDEX, _) => Computation.EqHeadExpansionR sign
+         | (_, Machine.CANONICAL, _, Machine.CANONICAL, _) => StepEqVal ((m, n), ty)
+         | (Syn.PATH_APP (_, P.APP _), _, _, _, _) => Path.EqAppConst
+         | (_, _, Syn.PATH_APP (_, P.APP _), _, _) => CatJdgSymmetry then_ Path.EqAppConst
+         | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2, _) => StepEqNeu sign (blocker1, blocker2) ((m, n), ty)
+         | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL, _) => StepEqNeuExpand sign blocker ty
+         | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker, _) => CatJdgSymmetry then_ StepEqNeuExpand sign blocker ty
 
       fun StepSynth sign m =
         case Syn.out m of
