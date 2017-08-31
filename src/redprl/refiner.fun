@@ -738,6 +738,7 @@ struct
          | (Syn.PATH_APP (_, P.VAR _), _, Syn.PATH_APP (_, P.VAR _), _) => Path.EqApp
          | (Syn.CUST, _, Syn.CUST, _) => Equality.Custom sign
          | (_, Machine.OPERATOR theta, _, _) => Computation.Unfold sign theta
+         | (_, _, _, Machine.OPERATOR theta) => Computation.Unfold sign theta
          | _ => raise E.error [Fpp.text "Could not find neutral equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
       fun StepEqNeuExpand sign blocker ty =
