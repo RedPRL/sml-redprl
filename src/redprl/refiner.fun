@@ -605,6 +605,9 @@ struct
      | "eq/eq" => InternalizedEquality.Eq
      | "eq/ax" => InternalizedEquality.True
      | "eq/eta" => InternalizedEquality.Eta
+     | "fcom/eqtype" => FormalComposition.EqType
+     | "fcom/eq" => FormalComposition.Eq
+     | "fcom/intro" => FormalComposition.True
      | "univ/eqtype" => Universe.EqType
      | "univ/eq" => Universe.Eq
      | "univ/intro" => Universe.True
@@ -636,6 +639,7 @@ struct
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => InternalizedEquality.EqType
          | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
+         | (Syn.FCOM _, Syn.FCOM _) => FormalComposition.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
       fun canonicity sign = 
@@ -668,6 +672,7 @@ struct
          | (_, _, Syn.RECORD _) => Record.Eq
          | (_, _, Syn.PATH_TY _) => Path.Eq
          | (_, _, Syn.EQUALITY _) => InternalizedEquality.Eq
+         | (_, _, Syn.FCOM _) => FormalComposition.Eq
          | (_, _, Syn.UNIVERSE _) => Universe.Eq
          | _ => raise E.error [Fpp.text "Could not find value equality rule for", TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n, Fpp.text "at type", TermPrinter.ppTerm ty]
 
