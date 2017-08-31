@@ -1,7 +1,6 @@
 signature METALANGUAGE_STATICS_KIT = 
 sig
   include METALANGUAGE_SYNTAX
-    where type osort = RedPrlAbt.sort
     where type oterm = RedPrlAbt.abt
     where type osym = RedPrlAbt.symbol
 end

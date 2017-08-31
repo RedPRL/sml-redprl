@@ -1,7 +1,6 @@
 signature METALANGUAGE_EVAL_KIT = 
 sig
   structure ML : METALANGUAGE_SYNTAX
-    where type osort = RedPrlAbt.sort
     where type oterm = RedPrlAbt.abt
     where type osym = RedPrlAbt.symbol
   structure M : METALANGUAGE_MONAD

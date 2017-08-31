@@ -6,7 +6,7 @@ sig
 
   datatype 'a expr = 
      IDENT of 'a ident
-   | NUMERAL of int
+   | NUMERAL of int * annotation
    | BINDING of 'a ident list * annotation
    | TYPED_BINDING of 'a ident list * 'a expr * annotation
    | GROUP of 'a expr list * annotation
@@ -16,5 +16,6 @@ sig
   type abt
   type state
 
+  val getAnnotation : 'a expr -> annotation
   val reader : state -> string expr -> abt
 end

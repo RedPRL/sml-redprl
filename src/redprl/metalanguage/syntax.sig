@@ -1,10 +1,9 @@
 signature METALANGUAGE_SYNTAX =
 sig
   type osym
-  type osort
   type ovalence
   type oterm
-  type oast
+  type rexpr
 
   type mlvar
   type meta
@@ -17,7 +16,7 @@ sig
      UNIT
    | ARR of mltype * mltype
    | PROD of mltype * mltype
-   | OTERM of osort
+   | OTERM
    | THEOREM
    | META of meta
 
@@ -47,7 +46,7 @@ sig
   type annotation = Pos.t option
   datatype ('v, 's, 'o) mlterm = :@ of ('v, 's, 'o, ('v, 's, 'o) mlterm) mltermf * annotation
 
-  type src_mlterm = (string, string, oast * osort) mlterm
+  type src_mlterm = (string, string, rexpr) mlterm
   type mlterm_ = (mlvar, osym, oterm) mlterm
 
   val unscope : ('b, 't) scope -> 'b * 't
@@ -64,6 +63,6 @@ sig
   structure Resolver :
   sig
     type state
-    val resolve : (string, string, oast * osort) mlterm -> mlterm_
+    val resolve : (string, string, rexpr) mlterm -> mlterm_
   end
 end

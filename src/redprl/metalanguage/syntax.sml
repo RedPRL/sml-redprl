@@ -3,11 +3,10 @@ struct
   structure Var = AbtSymbol ()
   structure Meta = AbtSymbol ()
 
-  structure Tm = RedPrlAbt and Ast = RedPrlAst
-  type oast = Ast.ast
+  structure Tm = RedPrlAbt
   type oterm = Tm.abt
   type osym = Tm.symbol
-  type osort = Tm.sort
+  type rexpr = string RedExpr.expr
   type ovalence = Tm.valence
 
   type mlvar = Var.t
@@ -24,7 +23,7 @@ struct
      UNIT
    | ARR of mltype * mltype
    | PROD of mltype * mltype
-   | OTERM of Tm.sort
+   | OTERM
    | THEOREM
    | META of meta
 
@@ -56,7 +55,7 @@ struct
   infix :@
 
   type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
-  type src_mlterm = (string, string, oast * osort) mlterm
+  type src_mlterm = (string, string, rexpr) mlterm
 
   exception todo
   fun ?e = raise e
@@ -69,14 +68,9 @@ struct
 
   structure Resolver =
   struct
-    structure A2A = AstToAbt
-    structure Names = A2A.NameEnv
+    structure Names = StringListDict
 
-    type ostate =
-      {metactx: Tm.metactx,
-       metaenv: Tm.metavariable Names.dict,
-       symenv: Tm.symbol Names.dict,
-       varenv: Tm.variable Names.dict}
+    type ostate = RedExpr.state
 
     type state =
       {ostate: ostate,
@@ -86,18 +80,22 @@ struct
       {ostate = ostate,
        mlenv = Names.insert mlenv x x'}
 
-    fun addSyms {ostate = {metactx, metaenv, symenv, varenv}, mlenv} xs xs' : state =
+    fun addSyms {ostate = {metactx, symctx, varctx, metaenv, symenv, varenv}, mlenv} xs xs' : state =
       {mlenv = mlenv,
        ostate =
          {metactx = metactx,
+          symctx = symctx,
+          varctx = varctx,
           metaenv = metaenv,
           symenv = ListPair.foldl (fn (x, x', r) => Names.insert r x x') symenv (xs, xs'),
           varenv = varenv}}
 
-    fun addMetas {ostate = {metactx, metaenv, symenv, varenv}, mlenv} metas metas' : state =
+    fun addMetas {ostate = {metactx, symctx, varctx, metaenv, symenv, varenv}, mlenv} metas metas' : state =
       {mlenv = mlenv,
        ostate = 
          {metactx = List.foldl (fn ((x, vl), r) => Tm.Metavar.Ctx.insert r x vl) metactx metas',
+          symctx = symctx,
+          varctx = varctx,
           metaenv = ListPair.foldl (fn ((x, _), (x', _), r) => Names.insert r x x') metaenv (metas, metas'),
           symenv = symenv,
           varenv = varenv}}
@@ -105,10 +103,7 @@ struct
     fun mlvar (state : state) =
       Names.lookup (#mlenv state)
 
-    fun resolveAbt {metactx, metaenv, symenv, varenv} oterm tau =
-      A2A.convertOpen (metactx, metaenv) (symenv, varenv) (oterm, tau)
-
-    fun resolveAux (state : state) : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_ =
+    fun resolveAux (state : state) : (string, string, rexpr) mlterm -> mlterm_ =
       fn VAR x :@ ann => VAR (mlvar state x) :@ ann
        | LET (t, sc) :@ ann => LET (resolveAux state t, resolveAuxScope state sc) :@ ann
        | FUN sc :@ ann => FUN (resolveAuxScope state sc) :@ ann
@@ -116,7 +111,7 @@ struct
        | PAIR (t1, t2) :@ ann => PAIR (resolveAux state t1, resolveAux state t2) :@ ann
        | FST :@ ann => FST :@ ann
        | SND :@ ann => SND :@ ann
-       | QUOTE (ast, tau) :@ ann => QUOTE (resolveAbt (#ostate state) ast tau) :@ ann
+       | QUOTE rexpr :@ ann => QUOTE (RedExpr.reader (#ostate state) rexpr) :@ ann
        | GOAL :@ ann => GOAL :@ ann
        | REFINE ruleName :@ ann => REFINE ruleName :@ ann
        | EACH ts :@ ann => EACH (List.map (resolveAux state) ts) :@ ann
@@ -144,18 +139,20 @@ struct
         xs' \ resolveAux state' txs
       end
 
-    and resolveAuxObjMatchClause (state : state) (metas \ ((pat, tau), t)) =
+    and resolveAuxObjMatchClause (state : state) (metas \ (rexpr, t)) =
       let
         val metas' = List.map (fn (x, vl) => (Tm.Metavar.named x, vl)) metas
         val state' = addMetas state metas metas'
       in
-        metas' \ (resolveAbt (#ostate state') pat tau, resolveAux state' t)
+        metas' \ (RedExpr.reader (#ostate state') rexpr, resolveAux state' t)
       end
 
-    val resolve : (string, string, Ast.ast * Tm.sort) mlterm -> mlterm_ =
+    val resolve : (string, string, rexpr) mlterm -> mlterm_ =
       resolveAux
         {ostate =
           {metactx = Tm.Metavar.Ctx.empty,
+           varctx = Tm.Var.Ctx.empty,
+           symctx = Tm.Sym.Ctx.empty,
            metaenv = Names.empty,
            symenv = Names.empty,
            varenv = Names.empty},

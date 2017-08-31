@@ -70,6 +70,7 @@ struct
            (fn jdg => {consumedNames = 0, ret = (), goal = jdg})
            state))
 
+  (* INCORRECT: for some reason, we don't have the full proof state here *)
   fun fork (ms : unit m list) : unit m =
     fn (alpha, state) =>
       fromMultitactic

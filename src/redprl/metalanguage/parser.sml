@@ -35,10 +35,6 @@ struct
     | GOAL of pos
     | PUSH of pos
     | PRINT of pos
-    | BOOL of pos
-    | WBOOL of pos
-    | TT of pos
-    | FF of pos
     | EXACT of pos
 
   val terminalToString = 
@@ -66,10 +62,6 @@ struct
      | GOAL _ => "GOAL"
      | PUSH _ => "PUSH"
      | PRINT _ => "PRINT"
-     | BOOL _ => "BOOL"
-     | WBOOL _ => "WBOOL"
-     | TT _ => "TT"
-     | FF _ => "FF"
      | EXACT _ => "EXACT"
 
 end
@@ -81,7 +73,8 @@ struct
   open MetalanguageTerminal
 
   type string = string
-  type oexp = RedPrlAst.ast * ML.osort 
+  type oexp = string RedExpr.expr
+  type oexps = oexp list
   type exp = ML.src_mlterm
   type exps = ML.src_mlterm list
   type names = (pos * string) list
@@ -133,8 +126,8 @@ struct
   fun refine (pos1, (pos2, str)) =
     ML.REFINE str :@ SOME (Pos.union pos1 pos2)
 
-  fun quote (pos : pos, (oexp, osort)) : src_mlterm =
-    ML.QUOTE (oexp, osort) :@ mergeAnnotation (SOME pos, RedPrlAst.getAnnotation oexp)
+  fun quote (pos : pos, rexpr) : src_mlterm =
+    ML.QUOTE rexpr :@ mergeAnnotation (SOME pos, RedExpr.getAnnotation rexpr)
 
   fun exact (pos : pos, e :@ pos') : src_mlterm = 
     ML.EXACT (e :@ pos') :@ mergeAnnotation (SOME pos, pos')
@@ -174,22 +167,15 @@ struct
   fun declsCons (d, ds) = d :: ds
 
   local
-    open RedPrlAst
-    structure O = RedPrlOpData
-    infixr 3 $$
+    structure R = RedExpr
   in
-    fun obool pos = 
-      (annotate pos @@ O.MONO O.BOOL $$ [], O.EXP)
+    fun oexpsNil _ = []
+    fun oexpsCons (e, es) = e::es
 
-    fun owbool pos = 
-      (annotate pos @@ O.MONO O.WBOOL $$ [], O.EXP)
-
-    fun ott pos = 
-      (annotate pos @@ O.MONO O.TT $$ [], O.EXP)
-
-    fun off pos = 
-      (annotate pos @@ O.MONO O.FF $$ [], O.EXP)
-
+    fun identFromName (pos, x) = (x, SOME pos)
+    fun oident (pos, x) = R.IDENT (x, SOME pos)
+    fun obinding (posl, xs:names, posr) = R.BINDING (List.map identFromName xs, SOME (Pos.union posl posr))
+    fun ogroup (posl, es, posr) = R.GROUP (es, SOME (Pos.union posl posr))
   end
 
   fun error s = 

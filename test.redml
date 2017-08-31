@@ -1,38 +1,6 @@
-let
-  // "tactics" are just functions unit -> unit in RedPRL ML.
-  val myTac =
-    fn _ =>
-      exact `tt;
-      refine wbool/eq/tt
-
-  // theorems are values of abstract type which seal together
-  // the proved judgment and the constructed evidence.
-  val thm1 =
-    // a theorem is introduced using the "prove e1 by e2 end" form;
-    // the first argument should evaluate to a quoted object term.
-    prove `bool by
-      exact `ff;
-      let
-        // the "prove" construction can be nested too
-        val thm2 =
-          prove `wbool by
-            myTac ()
-          end
-      in
-        // In RedPRL ML, any value can be printed; this is crucial for debugging.
-        print thm2;
-        refine bool/eq/ff
-      end
-    end
-
-  val thm3 =
-    prove `bool by
-      push a, b, c in // pushing fresh names onto the stack
-        exact `tt;
-        refine bool/eq/tt
-      end
-    end
-in
-  print thm1;
-  print thm3
+print begin
+  prove `(dfun bool [x] bool) by
+    refine dfun/intro;
+    print goal
+  end
 end

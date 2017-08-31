@@ -74,6 +74,7 @@ struct
   val in_ = simple T.IN
   val by = simple T.BY
   val end_ = simple T.END
+  val begin = simple T.BEGIN
   val comma = simple T.COMMA
   val semi = simple T.SEMI
   val double_right_arrow = simple T.DOUBLE_RIGHT_ARROW
@@ -83,12 +84,8 @@ struct
   val prove = simple T.PROVE
   val push = simple T.PUSH
   val backtick = simple T.BACKTICK
-  val bool = simple T.BOOL
-  val tt = simple T.TT
-  val ff = simple T.FF
   val exact = simple T.EXACT
   val refine = simple T.REFINE
-  val wbool = simple T.WBOOL
 end
 
 structure MetalanguageLex = MetalanguageLexFn (structure Streamable = StreamStreamable and Arg = MetalanguageLexAction)

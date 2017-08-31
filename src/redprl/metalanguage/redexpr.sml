@@ -6,19 +6,24 @@ struct
 
   datatype 'a expr = 
      IDENT of 'a ident
-   | NUMERAL of int
+   | NUMERAL of int * annotation
    | BINDING of 'a ident list * annotation
    | TYPED_BINDING of 'a ident list * 'a expr * annotation
-   | GROUP of 'a expr list * annotation
+   | GROUP of 'a forest * annotation
 
-  type 'a forest = 'a expr list
+  withtype 'a forest = 'a expr list
+
+  val getAnnotation = 
+    fn IDENT (_, ann) => ann
+     | NUMERAL (_, ann) => ann
+     | BINDING (_, ann) => ann
+     | TYPED_BINDING (_, _, ann) => ann
+     | GROUP (_, ann) => ann
 
   fun @@ (f, x) = f x
   infixr @@
 
   local
-    structure ML = MetalanguageSyntax
-    structure MLR = ML.Resolver
     structure Tm = RedPrlAbt
     structure Names = StringListDict
 
@@ -108,13 +113,15 @@ struct
          "bool" => (O.MONO O.BOOL, stk)
        | "wbool" => (O.MONO O.WBOOL, stk)
        | "dfun" => (O.MONO O.DFUN, stk)
+       | "tt" => (O.MONO O.TT, stk)
+       | "ff" => (O.MONO O.FF, stk)
        | _ => raise Fail "unknown operator"
 
     and readParam (state : state) (rexpr, sigma) : Tm.param =
       case rexpr of 
          IDENT (a, _) => Tm.O.P.VAR (Names.lookup (#symenv state) a)
-       | NUMERAL 0 => Tm.O.P.APP RedPrlParamData.DIM0
-       | NUMERAL 1 => Tm.O.P.APP RedPrlParamData.DIM1
+       | NUMERAL (0, _) => Tm.O.P.APP RedPrlParamData.DIM0
+       | NUMERAL (1, _) => Tm.O.P.APP RedPrlParamData.DIM1
        | _ => raise Fail "unknown parameter"
 
     and plugHead (state : state) (hd : head, stk : stack) = 
