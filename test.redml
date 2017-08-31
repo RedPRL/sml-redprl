@@ -26,8 +26,8 @@ let
     end
 
   val thm3 =
-    push a, b, c in // pushing fresh names onto the stack
-      prove `bool by
+    prove `bool by
+      push a, b, c in // pushing fresh names onto the stack
         exact `tt;
         refine bool/eq/tt
       end
