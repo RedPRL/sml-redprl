@@ -24,7 +24,7 @@ sig
   structure Computation :
   sig
     val Unfold : sign -> opid -> rule
-    val EqHeadExpansion : sign -> rule
+    val HeadExpansion : sign -> rule
   end
 
   structure Hyp :
