@@ -1,4 +1,4 @@
-Thm FHcom/trans3 : [
+Thm Fcom/trans3 : [
   (-> [a b c d : wbool]
    (path {_} wbool a b)
    (path {_} wbool a c)
@@ -9,9 +9,9 @@ Thm FHcom/trans3 : [
     <i> `(fcom{0~>1} (@ ,pab i) [i=0 {j} (@ ,pac j)] [i=1 {j} (@ ,pbd j)])
 ].
 
-Print FHcom/trans3.
+Print Fcom/trans3.
 
-Thm FHcom/trans2 : [
+Thm Fcom/trans2 : [
   (-> [a b c : wbool]
    (path {_} wbool a b)
    (path {_} wbool b c)
@@ -21,7 +21,7 @@ Thm FHcom/trans2 : [
     <i> `(fcom{0~>1} (@ ,pab i) [i=0 {_} ,a] [i=1 {j} (@ ,pbc j)])
 ].
 
-Thm FHcom/symm : [
+Thm Fcom/symm : [
   (-> [a b : wbool]
    (path {_} wbool a b)
    (path {_} wbool b a))
