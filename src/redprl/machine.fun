@@ -244,13 +244,13 @@ struct
              in
                CRITICAL @@ com || (syms, stk)
              end
-           | HCOM (dir, HOLE, cap, tubes) :: stk =>
+           | HCOM _ :: stk =>
                E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of fcom types"))
-           | COE (_, (u, _), coercee) :: stk =>
+           | COE _ :: stk =>
                E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of fcom types"))
            | _ => raise Stuck)
 
-  fun stepBox stability ({dir = dir as (r, r'), cap, boundaries} || (syms, stk)) =
+  fun stepBox stability ({dir, cap, boundaries} || (syms, stk)) =
     if dimensionsEqual stability syms dir then
       STEP @@ cap || (syms, stk)
     else
@@ -263,7 +263,7 @@ struct
                STEP @@ cap || (syms, stk)
            | _ => raise Stuck)
 
-  fun stepCap stability ({dir = dir as (r, r'), tubes, coercee} || (syms, stk)) =
+  fun stepCap stability ({dir as (r, r'), tubes, coercee} || (syms, stk)) =
     if dimensionsEqual stability syms dir then
       STEP @@ coercee || (syms, stk)
     else

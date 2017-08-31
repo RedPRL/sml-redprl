@@ -1313,7 +1313,7 @@ struct
       fun genInterBoundaryGoalsNoDiagonal (I, H) ((boundaries0, boundaries1), (tyTubes, l, k)) =
         let
           fun goBoundaryPairs [] [] [] = []
-            | goBoundaryPairs (b0 :: bs0) (b1 :: bs1) (ty :: tys) =
+            | goBoundaryPairs (b0 :: bs0) (_ :: bs1) (ty :: tys) =
                 List.mapPartial (interBoundary (I, H) b0 (ty, l, k)) bs1 :: goBoundaryPairs bs0 bs1 tys
             | goBoundaryPairs _ _ _ = E.raiseError @@ E.IMPOSSIBLE @@
                 Fpp.text "genInterBoundaryGoalsNoDiagonal: the boundaries are of different lengths"
@@ -1501,7 +1501,7 @@ struct
         val _ = RedPrlLog.trace "Universe.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val CJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.UNIVERSE (l, k) = Syn.out ty
 
         val u = alpha 0

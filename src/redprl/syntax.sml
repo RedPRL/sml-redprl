@@ -79,7 +79,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData and P = RedPrlParameterTerm and E = RedPrlError
+    structure O = RedPrlOpData and E = RedPrlError
     infix $ $$ $# \
 
     fun intoTubes tubes =
