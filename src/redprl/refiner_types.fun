@@ -1273,7 +1273,7 @@ struct
   structure FormalComposition =
   struct
     val kindConstraintOnCapAndTubes =
-      fn K.DISCRETE => (K.DISCRETE, K.DISCRETE)
+      fn K.DISCRETE => (K.DISCRETE, K.DISCRETE) (* XXX more research needed *)
        | K.KAN => (K.KAN, K.KAN) (* XXX more research needed *)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
