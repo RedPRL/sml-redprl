@@ -41,8 +41,8 @@ nonterminal Atm: exp =
   1:PROJ2 => proj2
   1:LET 2:Decls IN 3:Exp 4:END => let_
   1:PROVE 2:Exp BY 3:Exp 4:END => prove
-  LPAREN 1:Exp RPAREN => exp_atm
-  BEGIN 1:Exp END => exp_atm
+  LPAREN 1:Exp RPAREN => identity
+  BEGIN 1:Exp END => identity
   1:BACKTICK 2:OExp => quote
   1:REFINE 2:IDENT => refine
   1:EXACT 2:Atm => exact
@@ -54,30 +54,30 @@ nonterminal Decl: decl =
   VAL 1:IDENT EQUALS 2:Exp => declVal
 
 nonterminal Decls: decls =
-  1:Decl 2:Decls => decl_cons
-  => decl_nil
+  1:Decl 2:Decls => declsCons
+  => declsNil
 
 nonterminal App: exp =
-  1:Atm => atm_app
+  1:Atm => identity
   1:App 2:Atm => app
 
 nonterminal SeqExp: exp = 
-  1:App => app_exp
+  1:App => identity
   1:App SEMI 2:SeqExp => seqExpCons
 
 nonterminal Exp: exp = 
-  1:SeqExp => seqExpExp
+  1:SeqExp => identity
   1:FN 2:IDENT DOUBLE_RIGHT_ARROW 3:Exp => fn_
 
 nonterminal Exps: exps = 
-  1:Exp COMMA 2:Exps => exp_cons
-  1:Exp => exp_singl
-  => exp_nil
+  1:Exp COMMA 2:Exps => expsCons
+  1:Exp => expsSingl
+  => expsNil
   
 nonterminal Names: names =
-  1:IDENT COMMA 2:Names => names_cons
-  1:IDENT => names_singl
-  => names_nil
+  1:IDENT COMMA 2:Names => namesCons
+  1:IDENT => namesSingl
+  => namesNil
 
 
 

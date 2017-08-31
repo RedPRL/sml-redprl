@@ -106,13 +106,15 @@ struct
       (fn (_ :@ ann', ann) => mergeAnnotation (ann', ann))
       NONE
 
-  fun names_nil () = []
-  fun names_singl x = [x]
-  fun names_cons (x, xs) = x :: xs
+  fun namesNil () = []
+  fun namesSingl x = [x]
+  fun namesCons (x, xs) = x :: xs
 
-  fun exp_nil () = []
-  fun exp_singl e = [e]
-  fun exp_cons (e, es) = e :: es
+  fun expsNil () = []
+  fun expsSingl e = [e]
+  fun expsCons (e, es) = e :: es
+
+  fun identity e = e
 
   fun fn_ (posl, (_, x), e :@ pos) = 
     Ast.fn_ (x, e :@ pos) @@ mergeAnnotation (SOME posl, pos)
@@ -120,9 +122,7 @@ struct
   fun print (posl, e :@ pos) = 
     ML.PRINT (e :@ pos) :@ mergeAnnotation (SOME posl, pos)
 
-  fun app_exp e = e
   fun app (e1, e2) = APP (e1, e2) :@ posOfTerms [e1, e2]
-  fun atm_app e = e
 
   fun push (posl, xs : names, e : exp, posr) =
     Ast.push (List.map #2 xs, e) @@ SOME (Pos.union posl posr)
@@ -139,8 +139,6 @@ struct
   fun exact (pos : pos, e :@ pos') : src_mlterm = 
     ML.EXACT (e :@ pos') :@ mergeAnnotation (SOME pos, pos')
 
-  fun exp_atm e = e
-
   fun prove (posl, e1, e2, posr) = 
     ML.PROVE (e1, e2) :@ SOME (Pos.union posl posr)
 
@@ -150,7 +148,6 @@ struct
      | (((_, x), e') ::ds) =>
          Ast.let_ (e', (x, let_ (posl, ds, e, posr))) @@ SOME (Pos.union posl posr)
 
-  fun seqExpExp e = e
   fun seqExpCons (e, e') = 
     Ast.let_ (e, ("_", e')) @@ posOfTerms [e,e']
 
@@ -173,9 +170,8 @@ struct
     ML.VAR x :@ SOME pos
 
   fun declVal (ident, e) = (ident, e)
-  fun decl_nil () = []
-  fun decl_singl d = [d]
-  fun decl_cons (d, ds) = d :: ds
+  fun declsNil () = []
+  fun declsCons (d, ds) = d :: ds
 
   local
     open RedPrlAst

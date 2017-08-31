@@ -10,7 +10,7 @@ struct
   val ord = fn (_, c) => Int.min (128, Char.ord c)
   type t = (token * pos) Stream.front
 
-  type self = {lexmain: symbol StreamStreamable.t -> t}
+  type self = {lexMain: symbol StreamStreamable.t -> t}
   type info =
     {match: symbol list,
      len: int,
@@ -42,7 +42,7 @@ struct
      | _ => RedPrlError.raiseAnnotatedError (posRange match, RedPrlError.GENERIC [Fpp.text @@ "Encountered error lexing \"" ^ stringRange match ^"\""])
 
   fun skip ({self, follow, ...} : info) =
-    #lexmain self follow
+    #lexMain self follow
 
   fun ident ({self, match, follow, ...} : info) =
     let
@@ -50,7 +50,7 @@ struct
     in
       Stream.Cons
         ((T.IDENT (pos, stringRange match), pos),
-         Stream.lazy (fn () => #lexmain self follow))
+         Stream.lazy (fn () => #lexMain self follow))
     end
 
   fun simple token ({self, match, follow, ...}: info) =
@@ -59,7 +59,7 @@ struct
     in
       Stream.Cons
         ((token pos, pos), 
-         Stream.lazy (fn () => #lexmain self follow))
+         Stream.lazy (fn () => #lexMain self follow))
     end
 
   val lparen = simple T.LPAREN
@@ -81,6 +81,7 @@ struct
   val print = simple T.PRINT
   val goal = simple T.GOAL
   val prove = simple T.PROVE
+  val push = simple T.PUSH
   val backtick = simple T.BACKTICK
   val bool = simple T.BOOL
   val tt = simple T.TT

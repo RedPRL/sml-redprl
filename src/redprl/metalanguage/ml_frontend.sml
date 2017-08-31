@@ -37,7 +37,7 @@ struct
       val textStream = TextIO.openIn s
     in
       let
-        val str = Stream.eager o Lex.lexmain o coordinate eol (Coord.init s) @@ Stream.fromTextInstream textStream
+        val str = Stream.eager o Lex.lexMain o coordinate eol (Coord.init s) @@ Stream.fromTextInstream textStream
         val (ast, _) = Parse.parse str
         val mlterm = ML.Resolver.resolve ast
         val _ = MetalanguageMonad.run @@ Eval.eval0 mlterm

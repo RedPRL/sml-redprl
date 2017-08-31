@@ -13,6 +13,15 @@ let
         refine bool/eq/ff
       end
     end
+
+  val thm3 =
+    push a, b, c in // pushing fresh names onto the stack
+      prove `bool by
+        exact `tt;
+        refine bool/eq/tt
+      end
+    end
 in
-  print thm1
+  print thm1;
+  print thm3
 end

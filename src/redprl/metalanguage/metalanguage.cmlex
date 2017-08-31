@@ -10,9 +10,10 @@ set notnewln = (~ 10)
 
 regexp ident = (seq id_start (* id_cont))
 regexp ws = (+ white)
+regexp comment = (seq '/ '/ (+ notnewln))
 regexp number = (| '0 (seq posdigit (* digit)))
 
-function lexmain: t =
+function lexMain: t =
   eos => eof
   "fn" => fn_
   "let" => let_
@@ -25,6 +26,7 @@ function lexmain: t =
   "print" => print
   "goal" => goal
   "prove" => prove
+  "push" => push
   "bool" => bool
   "wbool" => wbool
   "tt" => tt
@@ -32,6 +34,7 @@ function lexmain: t =
   "exact" => exact
   "refine" => refine
   ws => skip
+  comment => skip
   (seq '= '>) => double_right_arrow
   '[ => lsquare
   '] => rsquare
