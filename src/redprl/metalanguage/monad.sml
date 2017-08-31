@@ -70,7 +70,8 @@ struct
            (fn jdg => {consumedNames = 0, ret = (), goal = jdg})
            state))
 
-  (* INCORRECT: for some reason, we don't have the full proof state here *)
+  (* We need to explicitly support different forms of composition in the language
+   * and have a variant of 'bind' for forking. *)
   fun fork (ms : unit m list) : unit m =
     fn (alpha, state) =>
       fromMultitactic
