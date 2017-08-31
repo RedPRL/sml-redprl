@@ -48,6 +48,7 @@ nonterminal Atm: exp =
   1:EXACT 2:Atm => exact
   1:LSQUARE 2:Exps 3:RSQUARE => fork
   1:PUSH 2:Names IN 3:Exp 4:END => push
+  1:PRINT 2:Atm => print
 
 nonterminal Decl: decl =
   VAL 1:IDENT EQUALS 2:Exp => declVal
@@ -60,9 +61,12 @@ nonterminal App: exp =
   1:Atm => atm_app
   1:App 2:Atm => app
 
-nonterminal Exp: exp = 
+nonterminal SeqExp: exp = 
   1:App => app_exp
-  1:PRINT 2:Atm => print
+  1:App SEMI 2:SeqExp => seqExpCons
+
+nonterminal Exp: exp = 
+  1:SeqExp => seqExpExp
   1:FN 2:IDENT DOUBLE_RIGHT_ARROW 3:Exp => fn_
 
 nonterminal Exps: exps = 

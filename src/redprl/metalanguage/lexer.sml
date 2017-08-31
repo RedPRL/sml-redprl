@@ -75,6 +75,7 @@ struct
   val by = simple T.BY
   val end_ = simple T.END
   val comma = simple T.COMMA
+  val semi = simple T.SEMI
   val double_right_arrow = simple T.DOUBLE_RIGHT_ARROW
   val equals = simple T.EQUALS
   val print = simple T.PRINT

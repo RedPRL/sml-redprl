@@ -150,6 +150,10 @@ struct
      | (((_, x), e') ::ds) =>
          Ast.let_ (e', (x, let_ (posl, ds, e, posr))) @@ SOME (Pos.union posl posr)
 
+  fun seqExpExp e = e
+  fun seqExpCons (e, e') = 
+    Ast.let_ (e, ("_", e')) @@ posOfTerms [e,e']
+
   fun proj1 pos = 
     ML.FST :@ SOME pos
 
