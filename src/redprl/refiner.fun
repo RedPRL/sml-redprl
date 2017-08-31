@@ -730,7 +730,7 @@ struct
            (Syn.VAR _, _, Syn.VAR _, _) => Equality.Hyp
          | (Syn.IF _, _, Syn.IF _, _) => Bool.EqElim
          | (Syn.IF _, Machine.VAR z, _, _) => Bool.Elim z
-         | (_, _, Syn.IF _, Machine.VAR z) => CatJdgSymmetry then_ Bool.Elim z
+         | (_, _, Syn.IF _, Machine.VAR z) => Bool.Elim z
          | (Syn.WIF _, _, Syn.WIF _, _) => WBool.EqElim
          | (Syn.S1_REC _, _, Syn.S1_REC _, _) => S1.EqElim
          | (Syn.APP _, _, Syn.APP _, _) => DFun.EqApp
