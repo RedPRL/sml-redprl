@@ -71,7 +71,6 @@ struct
         check (`a', tau)
       end
 
-    type stack = string expr list
 
     fun bindSymbols {metactx,varctx,symctx,metaenv,symenv,varenv} (idents : string ident list, sorts) : symbol list * state =
       let
@@ -93,13 +92,19 @@ struct
         (xs', {metactx = metactx, varctx = varctx', symctx = symctx, metaenv = metaenv, varenv = varenv', symenv = symenv})
       end
 
-    fun readHead (state : state) (rexpr, stk : stack) : head * stack =
+    type stack = string expr list
+    type sstack = stack list
+
+    fun readHead (state : state) (rexpr, sstk : sstack) : head * sstack =
       case rexpr of 
-          IDENT (a, pos) => readIdentHead state (a, stk)
-        | GROUP (hd :: rexprs, _) => readHead state (hd, rexprs @ stk)
+          IDENT (a : string, pos) =>
+          (case sstk of 
+             stk :: sstk => let val (hd, stk') = readIdentHead state (a, stk) in (hd, stk' :: sstk) end
+           | [] => let val (hd, _) = readIdentHead state (a, []) in (hd, []) end)
+        | GROUP (hd :: rexprs, _) => readHead state (hd, rexprs :: sstk)
         | _ => raise Fail "Syntax error"
 
-    and readIdentHead (state : state) (a, stk) : head * stack = 
+    and readIdentHead (state : state) (a, stk : stack) : head * stack = 
       (TERM (readVarTerm state a) handle _ => METAVAR (lookupMetavarName state a), stk)
       handle _ => 
         let
@@ -115,6 +120,11 @@ struct
        | "dfun" => (O.MONO O.DFUN, stk)
        | "tt" => (O.MONO O.TT, stk)
        | "ff" => (O.MONO O.FF, stk)
+       | "path" => (O.MONO O.PATH_TY, stk)
+       | "loop" =>
+         (case stk of
+             rexpr::stk => (O.POLY (O.LOOP (readParam state (rexpr, O.DIM))), stk)
+           | _ => raise Fail "invalid loop expr")
        | _ => raise Fail "unknown operator"
 
     and readParam (state : state) (rexpr, sigma) : Tm.param =
@@ -124,7 +134,7 @@ struct
        | NUMERAL (1, _) => Tm.O.P.APP RedPrlParamData.DIM1
        | _ => raise Fail "unknown parameter"
 
-    and plugHead (state : state) (hd : head, stk : stack) = 
+    and plugHead (state : state) (hd : head, stk : stack) : abt = 
       case hd of 
          OPERATOR theta =>
          let
@@ -143,6 +153,21 @@ struct
            plugTerm state (term, stk)
          end
        | TERM e => plugTerm state (e, stk)
+
+    and plugHead' (state : state) (hd : head, sstk : sstack) = 
+      case sstk of 
+         [] => plugHead state (hd, [])
+       | stk :: sstk => plugTerm' state (plugHead state (hd, stk), sstk)
+
+    and plugTerm (state : state) (e : abt, stk : stack) : abt =
+      case stk of 
+         [] => e
+       | rexpr :: stk => plugTerm state (O.MONO O.APP $$ [([],[]) \ e, ([],[]) \ reader state rexpr], stk)
+
+    and plugTerm' (state : state) (e : abt, sstk : sstack) : abt =
+      case sstk of
+         [] => e
+       | stk :: sstk => plugTerm' state (plugTerm state (e, stk), sstk)
 
     and readParams (state : state) (psorts, stk : stack) memo : (param * psort) list * stack =
       case (psorts, stk) of
@@ -190,13 +215,8 @@ struct
            (binder, stk)
          end
 
-    and plugTerm (state : state) (e : abt, stk : stack) =
-      case stk of 
-         [] => e
-       | rexpr :: stk => plugTerm state (O.MONO O.APP $$ [([],[]) \ e, ([],[]) \ reader state rexpr], stk)
-
     and reader state rexpr =
-      plugHead state @@
+      plugHead' state @@
         readHead state (rexpr, [])
   end
 end
