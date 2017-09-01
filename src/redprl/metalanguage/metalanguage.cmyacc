@@ -8,6 +8,8 @@ terminal BY of pos
 terminal DOUBLE_RIGHT_ARROW of pos
 terminal LSQUARE of pos
 terminal RSQUARE of pos
+terminal LBRACE of pos
+terminal RBRACE of pos
 terminal LPAREN of pos
 terminal RPAREN of pos
 terminal COMMA of pos
@@ -79,11 +81,11 @@ nonterminal SortedNames: sorted_names =
   => sortedNamesNil
 
 
-/* TODO: object terms */
 nonterminal OExp: oexp =
   1:IDENT => oident
   1:LPAREN 2:OExps 3:RPAREN => ogroup
   1:LSQUARE 2:OIdents 3:RSQUARE => obinding
+  1:LBRACE 2:OIdents 3:RBRACE => obinding
 
 nonterminal OExps: oexps =
   1:OExp 2:OExps => oexpsCons

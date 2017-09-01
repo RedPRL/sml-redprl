@@ -21,6 +21,8 @@ struct
     | RSQUARE of pos
     | LPAREN of pos
     | RPAREN of pos
+    | LBRACE of pos
+    | RBRACE of pos
     | COMMA of pos
     | SEMI of pos
     | COLON of pos

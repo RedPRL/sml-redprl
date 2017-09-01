@@ -66,6 +66,8 @@ struct
   val rparen = simple T.RPAREN
   val lsquare = simple T.LSQUARE
   val rsquare = simple T.RSQUARE
+  val lbrace = simple T.LBRACE
+  val rbrace = simple T.RBRACE
   val let_ = simple T.LET
   val fn_ = simple T.FN
   val val_ = simple T.VAL
