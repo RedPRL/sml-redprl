@@ -59,7 +59,7 @@ nonterminal App: exp =
 /* TODO: fix shift-reduce conflicts */
 nonterminal SeqExp: exp =
   1:App => identity
-  1:SeqExp SEMI 2:Exp => seqExpSnoc
+  1:SeqExp SEMI 2:App => seqExpSnoc
   1:SeqExp SEMI LSQUARE 2:Exps 3:RSQUARE => seqExpSnocFork
 
 nonterminal Exp: exp = 
