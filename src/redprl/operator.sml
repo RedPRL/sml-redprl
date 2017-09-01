@@ -291,6 +291,9 @@ struct
    | PATH_APP of 'a P.term
    | BOX of 'a dir * 'a equation list
    | CAP of 'a dir * 'a equation list
+   | UA of 'a P.term
+   | UAIN of 'a P.term
+   | UAPROJ of 'a P.term
    | UNIVERSE of 'a P.term * kind
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
@@ -475,6 +478,9 @@ struct
        | PATH_APP _ => [[] * [] <> EXP] ->> EXP
        | BOX params => arityBox params
        | CAP params => arityCap params
+       | UA _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | UAIN _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | UAPROJ _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | UNIVERSE _ => [] ->> EXP
 
        | HCOM params => arityHcom params
@@ -556,6 +562,9 @@ struct
        | PATH_APP r => dimSupport r
        | BOX params => comSupport params
        | CAP params => comSupport params
+       | UA r => dimSupport r
+       | UAIN r => dimSupport r
+       | UAPROJ r => dimSupport r
        | UNIVERSE (l, _) => levelSupport l
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
@@ -615,6 +624,9 @@ struct
          (case t of
              CAP (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
            | _ => false)
+       | (UA r, t) => (case t of UA r' => P.eq f (r, r') | _ => false)
+       | (UAIN r, t) => (case t of UAIN r' => P.eq f (r, r') | _ => false)
+       | (UAPROJ r, t) => (case t of UAPROJ r' => P.eq f (r, r') | _ => false)
        | (UNIVERSE (l, k), t) => (case t of UNIVERSE (l', k') => P.eq f (l, l') andalso k = k' | _ => false)
        | (HCOM (dir1, eqs1), t) =>
          (case t of
@@ -789,6 +801,9 @@ struct
              ^ "; "
              ^ equationsToString f eqs
              ^ "]"
+       | UA r => "ua[" ^ P.toString f r ^ "]"
+       | UAIN r => "uain[" ^ P.toString f r ^ "]"
+       | UAPROJ r => "uaproj[" ^ P.toString f r ^ "]"
        | UNIVERSE (l, k) => "universe{" ^ P.toString f l ^ "," ^ K.toString k ^ "}"
        | HCOM (dir, eqs) =>
            "hcom"
@@ -880,6 +895,9 @@ struct
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
        | BOX (dir, eqs) => BOX (mapSpan f dir, mapSpans f eqs)
        | CAP (dir, eqs) => CAP (mapSpan f dir, mapSpans f eqs)
+       | UA r => UA (P.bind (passSort DIM f) r)
+       | UAIN r => UAIN (P.bind (passSort DIM f) r)
+       | UAPROJ r => UAPROJ (P.bind (passSort DIM f) r)
        | UNIVERSE (l, k) => UNIVERSE (P.bind (passSort LVL f) l, k)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
