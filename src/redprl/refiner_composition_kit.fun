@@ -102,34 +102,46 @@ struct
            N_i = P_j in A [Psi, y | r_i = r_i', r_j = r_j']
      *)
     fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substSymbol (P.ret w, u) tube))
-    fun genInterTubeGoals (I, H) w ((tubes0, tubes1), (ty, l, k)) =
+    fun enumInterExceptDiag f =
       let
-        val tubes0 = alphaRenameTubes w tubes0
-        val tubes1 = alphaRenameTubes w tubes1
-
-        fun interTube (eq0, tube0) (eq1, tube1) =
-          Restriction.makeEq [eq0, eq1] (I @ [(w,P.DIM)], H) ((tube0, tube1), (ty, l, k))
-
-        fun goTubePairs [] [] = []
-          | goTubePairs (t0 :: ts0) (t1 :: ts1) =
-              List.mapPartial (interTube t0) (t1 :: ts1) :: goTubePairs ts0 ts1
-          | goTubePairs _ _ = E.raiseError @@ E.IMPOSSIBLE @@
-              Fpp.text "interTubeGoals: the tubes are of different lengths"
+        fun enum ([], []) = []
+          | enum ((t0 :: ts0), (_ :: ts1)) = List.mapPartial (fn t1 => f (t0, t1)) ts1 :: enum (ts0, ts1)
+          | enum _ = E.raiseError @@ E.IMPOSSIBLE @@ Fpp.text "enumInterExceptDiag: inputs are of different lengths"
       in
-        List.concat (goTubePairs tubes0 tubes1)
+        List.concat o enum
       end
+
+    local
+      fun genTubeGoals' (I, H) ((tubes0, tubes1), (ty, l, k)) =
+        ListPairUtil.mapPartialEq
+          (fn ((eq, t0), (_, t1)) => Restriction.makeEq [eq] (I, H) ((t0, t1), (ty, l, k)))
+          (tubes0, tubes1)
+      fun genInterTubeGoalsExceptDiag' (I, H) ((tubes0, tubes1), (ty, l, k)) =
+        enumInterExceptDiag
+          (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent [eq0, eq1] (I, H) ((t0, t1), (ty, l, k)))
+          (tubes0, tubes1)
+    in
+      fun genInterTubeGoals (I, H) w ((tubes0, tubes1), (ty, l, k)) =
+        let
+          val tubes0 = alphaRenameTubes w tubes0
+          val tubes1 = alphaRenameTubes w tubes1
+
+          val goalsOnDiag = genTubeGoals' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), (ty, l, k))
+          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), (ty, NONE, K.top))
+        in
+          goalsOnDiag @ goalsNotOnDiag
+        end
+    end
 
     (* Produce the list of goals requiring that tube aspects agree with the cap.
          forall i.
            M = N_i<r/y> in A [Psi | r_i = r_i']
      *)
     fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), (ty, l, k)) =
-      let
-        fun capTube (eq, (u, tube)) =
-          Restriction.makeEqIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), (ty, l, k))
-      in
-        List.mapPartial capTube tubes
-      end
+      List.mapPartial
+        (fn (eq, (u, tube)) =>
+          Restriction.makeEqIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), (ty, l, k)))
+        tubes
 
     (* Note that this does not check whether the 'ty' is a base type.
      * It's caller's responsibility to check whether the type 'ty'

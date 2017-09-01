@@ -39,3 +39,14 @@ struct
     fun init l = init' [] l
   end
 end
+
+structure ListPairUtil =
+struct
+  fun mapPartialEq f =
+    ListPair.foldrEq
+      (fn (x1, x2, ys) =>
+        case f (x1, x2) of
+          NONE => ys
+        | SOME y => y :: ys)
+      []
+end

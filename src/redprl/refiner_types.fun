@@ -805,7 +805,7 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "DFun.Elim"
-        val (I, H) >> CJ.TRUE (cz, l, k) = jdg
+        val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (dfun, l', _) = Hyps.lookup z H
         val Syn.DFUN (a, x, bx) = Syn.out dfun
@@ -819,9 +819,12 @@ struct
         val v = alpha 1
         val aptm = Syn.into @@ Syn.APP (VarKit.toExp z, holeA)
         (* note: a and bx come from the telescope so they are types *)
-        val H' = |@> (u, CJ.TRUE (b', l', K.top)) @> (v, CJ.EQ ((VarKit.toExp u, aptm), (b', l', K.top)))
-        val H'' = Hyps.interposeAfter (z, H') H
-        val (goalF, holeF) = makeTrue (I, H'') (cz, l, k)
+        val H' = Hyps.interposeAfter
+          (z, |@> (u, CJ.TRUE (b', l', K.top))
+               @> (v, CJ.EQ ((VarKit.toExp u, aptm), (b', l', K.top))))
+          H
+
+        val (goalF, holeF) = makeGoal @@ (I, H') >> catjdg
       in
         |>: goalA >: goalF #> (I, H, VarKit.substMany [(aptm, u), (trivial, v)] holeF)
       end
@@ -998,7 +1001,7 @@ struct
     fun Elim z alpha jdg = 
       let
         val _ = RedPrlLog.trace "Record.Elim"
-        val (I, H) >> CJ.TRUE (motivez, l, k) = jdg
+        val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (record, l', _) = Hyps.lookup z H
         val Syn.RECORD fields = Syn.out record
@@ -1017,8 +1020,7 @@ struct
             (fields, names)
         val H' = Hyps.interposeThenSubstAfter (z, hyps, tuple) H
 
-        val motive' = substVar (tuple, z) motivez
-        val (goal, hole) = makeTrue (I,  H') (motive', l, k)
+        val (goal, hole) = makeGoal @@ (I, H') >> CJ.map (substVar (tuple, z)) catjdg
 
         val projEnv =
           ListPair.foldlEq
@@ -1126,8 +1128,7 @@ struct
     fun Elim z alpha jdg = 
       let
         val _ = RedPrlLog.trace "Path.Elim"
-
-        val (I, H) >> CJ.TRUE (motive, l, k) = jdg
+        val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (ty, l', _) = Hyps.lookup z H
         val Syn.PATH_TY ((u, a), _, _) = Syn.out ty
@@ -1141,9 +1142,12 @@ struct
         val w = Sym.named "w"
         val (pathAppGoal, pathAppHole) = makeDimSubst (I, H) (dimHole, w, Syn.into @@ Syn.PATH_APP (VarKit.toExp z, P.ret w))
 
-        val H' = |@> (x, CJ.TRUE (arHole, l', K.top)) @> (y, CJ.EQ ((VarKit.toExp x, pathAppHole), (arHole, l', K.top)))
-        val H'' = Hyps.interposeAfter (z, H') H
-        val (mainGoal, mainHole) = makeTrue (I, H'') (motive, l, k)
+        val H' = Hyps.interposeAfter
+          (z, |@> (x, CJ.TRUE (arHole, l', K.top))
+               @> (y, CJ.EQ ((VarKit.toExp x, pathAppHole), (arHole, l', K.top))))
+          H
+
+        val (mainGoal, mainHole) = makeGoal @@ (I, H') >> catjdg
       in
         |>: dimGoal >: arGoal >: pathAppGoal >: mainGoal
         #> (I, H, VarKit.substMany [(pathAppHole, x), (trivial, y)] mainHole)
@@ -1280,70 +1284,52 @@ struct
        | K.CUBICAL => (K.CUBICAL, K.COE) (* XXX more research needed *)
 
     (* see the function of th same name in `ComKit` *)
-    fun genInterTubeGoals (I, H) w ((tubes0, tubes1), l, k) =
-      let
-        val tubes0 = ComKit.alphaRenameTubes w tubes0
-        val tubes1 = ComKit.alphaRenameTubes w tubes1
-
-        fun interTube (eq0, tube0) (eq1, tube1) =
-          Restriction.makeEqType [eq0, eq1] (I @ [(w,P.DIM)], H) ((tube0, tube1), l, k)
-
-        fun goTubePairs [] [] = []
-          | goTubePairs (t0 :: ts0) (t1 :: ts1) =
-              List.mapPartial (interTube t0) (t1 :: ts1) :: goTubePairs ts0 ts1
-          | goTubePairs _ _ = E.raiseError @@ E.IMPOSSIBLE @@
-              Fpp.text "interTubeGoals: the tubes are of different lengths"
-      in
-        List.concat (goTubePairs tubes0 tubes1)
-      end
-
-    (* see the function of th same name in `ComKit` *)
-    fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), l, k) =
-      let
-        fun capTube (eq, (u, tube)) =
-          Restriction.makeEqTypeIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), l, k)
-      in
-        List.mapPartial capTube tubes
-      end
-
     local
-      fun interBoundary (I, H) (eq0, b0) (ty, l, k) (eq1, b1) =
-        Restriction.makeEq [eq0, eq1] (I, H) ((b0, b1), (ty, l, k))
+      fun genTubeGoals' (I, H) ((tubes0, tubes1), l, k) =
+        ListPairUtil.mapPartialEq
+          (fn ((eq, t0), (_, t1)) => Restriction.makeEqType [eq] (I, H) ((t0, t1), l, k))
+          (tubes0, tubes1)
+      fun genInterTubeGoalsExceptDiag' (I, H) ((tubes0, tubes1), l, k) =
+        ComKit.enumInterExceptDiag
+          (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqTypeIfDifferent [eq0, eq1] (I, H) ((t0, t1), l, k))
+          (tubes0, tubes1)
     in
-      fun genInterBoundaryGoalsNoDiagonal (I, H) ((boundaries0, boundaries1), (tyTubes, l, k)) =
+      fun genInterTubeGoals (I, H) w ((tubes0, tubes1), l, k) =
         let
-          fun goBoundaryPairs [] [] [] = []
-            | goBoundaryPairs (b0 :: bs0) (_ :: bs1) (ty :: tys) =
-                List.mapPartial (interBoundary (I, H) b0 (ty, l, k)) bs1 :: goBoundaryPairs bs0 bs1 tys
-            | goBoundaryPairs _ _ _ = E.raiseError @@ E.IMPOSSIBLE @@
-                Fpp.text "genInterBoundaryGoalsNoDiagonal: the boundaries are of different lengths"
+          val tubes0 = ComKit.alphaRenameTubes w tubes0
+          val tubes1 = ComKit.alphaRenameTubes w tubes1
+
+          val goalsOnDiag = genTubeGoals' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), l, k)
+          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), NONE, K.top)
         in
-          List.concat (goBoundaryPairs boundaries0 boundaries1 tyTubes)
-        end
-      fun genInterBoundaryGoals (I, H) ((boundaries0, boundaries1), (tyTubes, l, k)) =
-        let
-          fun goBoundaryPairs [] [] [] = []
-            | goBoundaryPairs (b0 :: bs0) (b1 :: bs1) (ty :: tys) =
-                List.mapPartial (interBoundary (I, H) b0 (ty, l, k)) (b1 :: bs1) :: goBoundaryPairs bs0 bs1 tys
-            | goBoundaryPairs _ _ _ = E.raiseError @@ E.IMPOSSIBLE @@
-                Fpp.text "genInterBoundaryGoals: the boundaries are of different lengths"
-        in
-          List.concat (goBoundaryPairs boundaries0 boundaries1 tyTubes)
+          goalsOnDiag @ goalsNotOnDiag
         end
     end
 
+    (* see the function of th same name in `ComKit` *)
+    fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), l, k) =
+      List.mapPartial
+        (fn (eq, (u, tube)) =>
+          Restriction.makeEqTypeIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), l, k))
+        tubes
+
+    fun genBoundaryGoals (I, H) ((boundaries0, boundaries1), (tubes, l, k)) =
+      ListPairUtil.mapPartialEq
+        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq [eq] (I, H) ((b0, b1), (t, l, k)))
+        (ListPair.zipEq (boundaries0, tubes), boundaries1)
+    fun genInterBoundaryGoalsExceptDiag (I, H) ((boundaries0, boundaries1), (tubes, l, k)) =
+      ComKit.enumInterExceptDiag
+        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent [eq0, eq1] (I, H) ((b0, b1), (t, l, k)))
+        (ListPair.zipEq (boundaries0, tubes), boundaries1)
+    fun genInterBoundaryGoals (I, H) ((boundaries0, boundaries1), (tubes, l, k)) =
+      genBoundaryGoals (I, H) ((boundaries0, boundaries1), (tubes, l, k)) @
+      genInterBoundaryGoalsExceptDiag (I, H) ((boundaries0, boundaries1), (tubes, NONE, K.top))
+
     fun genCapBoundaryGoals (I, H) ((cap, ((r, r'), tyTubes, boundaries)), (tyCap, l, k)) =
-      ListPair.foldrEq
-        (fn ((eq, ty), boundary, goals) =>
-          let
-            val goalOpt = Restriction.makeEqIfDifferent [eq] (I, H)
-              ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l, k))
-          in
-            case goalOpt of
-              NONE => goals
-            | SOME goal => goal :: goals
-          end)
-        []
+      ListPairUtil.mapPartialEq
+        (fn ((eq, ty), boundary) =>
+          Restriction.makeEqIfDifferent [eq] (I, H)
+            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l, k)))
         (tyTubes, boundaries)
 
     fun EqType alpha jdg =
@@ -1430,7 +1416,7 @@ struct
       in
         |>: goalCap
          >:+ goalBoundaries
-         >:+ genInterBoundaryGoalsNoDiagonal (I, H) ((holeBoundaries', holeBoundaries'), (tyBoundaries, NONE, K.top))
+         >:+ genInterBoundaryGoalsExceptDiag (I, H) ((holeBoundaries', holeBoundaries'), (tyBoundaries, NONE, K.top))
          >:+ genCapBoundaryGoals (I, H) ((holeCap, (dir, tyTubes, holeBoundaries)), (tyCap, NONE, K.top))
          >:+ genInterTubeGoals (I, H) w ((tyTubes, tyTubes), l, kTube)
          >:+ genCapTubeGoalsIfDifferent (I, H) ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
