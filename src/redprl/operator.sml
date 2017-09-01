@@ -776,54 +776,23 @@ struct
 
     fun paramsToString f =
       ListSpine.pretty (fn (p, _) => P.toString f p) ","
+
+    fun comParamsToString f (dir, eqs) =
+      dirToString f dir ^ ";" ^ equationsToString f eqs
   in
     fun toStringPoly f =
-      fn FCOM (dir, eqs) =>
-           "fcom"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
-       | LOOP r => "loop[" ^ P.toString f r ^ "]"
+      fn FCOM params => "fcom{" ^ comParamsToString f params ^ "}"
+       | LOOP r => "loop{" ^ P.toString f r ^ "}"
        | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
-       | BOX (dir, eqs) =>
-           "box"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
-       | CAP (dir, eqs) =>
-           "cap"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
-       | UA r => "ua[" ^ P.toString f r ^ "]"
-       | UAIN r => "uain[" ^ P.toString f r ^ "]"
-       | UAPROJ r => "uaproj[" ^ P.toString f r ^ "]"
+       | BOX params => "box{" ^ comParamsToString f params ^ "}"
+       | CAP params => "cap{" ^ comParamsToString f params ^ "}"
+       | UA r => "ua{" ^ P.toString f r ^ "}"
+       | UAIN r => "uain{" ^ P.toString f r ^ "}"
+       | UAPROJ r => "uaproj{" ^ P.toString f r ^ "}"
        | UNIVERSE (l, k) => "universe{" ^ P.toString f l ^ "," ^ K.toString k ^ "}"
-       | HCOM (dir, eqs) =>
-           "hcom"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
-       | COE dir =>
-           "coe"
-             ^ "["
-             ^ dirToString f dir
-             ^ "]"
-       | COM (dir, eqs) =>
-           "com"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
+       | HCOM params => "hcom{" ^ comParamsToString f params ^ "}"
+       | COE dir => "coe{" ^ dirToString f dir ^ "}"
+       | COM params => "com{" ^ comParamsToString f params ^ "}"
        | CUST (opid, [], _) =>
            f opid
        | CUST (opid, ps, _) =>
