@@ -64,6 +64,9 @@ struct
    (* fcom types *)
    | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
    | CAP of {dir: dir, tubes: (equation * (symbol * 'a)) list, coercee: 'a}
+   (* univalence *)
+   | UA of param * 'a * 'a * 'a
+   | UAIN of param * 'a * 'a | UAPROJ of param * 'a * 'a
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
@@ -235,6 +238,10 @@ struct
        | BOX args => intoBox args
        | CAP args => intoCap args
 
+       | UA (r, a, b, e) => O.POLY (O.UA r) $$ [([],[]) \ a, ([],[]) \ b, ([],[]) \ e]
+       | UAIN (r, m, n) => O.POLY (O.UAIN r) $$ [([],[]) \ m, ([],[]) \ n]
+       | UAPROJ (r, m, f) => O.POLY (O.UA r) $$ [([],[]) \ m, ([],[]) \ f]
+
        | UNIVERSE (l, k) => O.POLY (O.UNIVERSE (L.into l, k)) $$ []
 
        | HCOM args => intoHcom args
@@ -306,6 +313,10 @@ struct
        (* note that the coercee goes first! *)
        | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee) :: tubes =>
            CAP {dir = dir, tubes = outTubes (eqs, tubes), coercee = coercee}
+
+       | O.POLY (O.UA r) $ [_ \ a, _ \ b, _ \ e] => UA (r, a, b, e)
+       | O.POLY (O.UAIN r) $ [_ \ m, _ \ n] => UAIN (r, m, n)
+       | O.POLY (O.UAPROJ r) $ [_ \ m, _ \ f] => UAPROJ (r, m, f)
 
        | O.POLY (O.UNIVERSE (l, k)) $ _ => UNIVERSE (L.out l, k)
 
