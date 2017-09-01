@@ -100,7 +100,7 @@ struct
        let
          val (xs, t) = ML.unscope sc
        in
-         M.pushNames (xs, eval env t)
+         M.pushNames (List.map #1 xs, eval env t)
        end
      | ML.PROVE (t1, t2) =>
         eval env t1 >>= (fn V.QUOTE abt => 

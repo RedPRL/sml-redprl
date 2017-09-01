@@ -12,6 +12,8 @@ sig
   val freshVar : unit -> mlvar
   type ('b, 'a) scope
 
+  datatype osort = OSORT of RedPrlAbt.sort | PSORT of RedPrlAbt.psort
+
   datatype mltype =
      UNIT
    | ARR of mltype * mltype
@@ -36,7 +38,7 @@ sig
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
    | TRY of 'a * 'a
-   | PUSH of ('s list, 'a) scope
+   | PUSH of (('s * osort) list, 'a) scope
    | NIL
    | PROVE of 'a * 'a
    | OMATCH of 'a * ('s, 'o, 'a) omatch_clause list
@@ -57,7 +59,7 @@ sig
   sig
     val fn_ : string * src_mlterm -> annotation -> src_mlterm
     val let_ : src_mlterm * (string * src_mlterm) -> annotation -> src_mlterm
-    val push : string list * src_mlterm -> annotation -> src_mlterm
+    val push : (string * osort) list * src_mlterm -> annotation -> src_mlterm
   end
 
   structure Resolver :

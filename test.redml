@@ -1,9 +1,9 @@
 print begin
   prove `(dfun bool [x] bool) by
-    push a in
+    push a:exp in
       refine dfun/intro;
-      [ exact `tt;
-        refine bool/eq/tt
+      [ exact `a;
+        refine equality/hyp
       , refine bool/eqtype
       ]
     end

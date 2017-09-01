@@ -12,6 +12,8 @@ struct
   type mlvar = Var.t
   type meta = Meta.t
 
+  datatype osort = OSORT of Tm.sort | PSORT of Tm.psort
+
   val freshVar = Var.new
 
   structure Ctx : DICT = Var.Ctx
@@ -43,7 +45,7 @@ struct
    | QUOTE of 'o | GOAL
    | REFINE of rule_name
    | TRY of 'a * 'a
-   | PUSH of ('s list, 'a) scope
+   | PUSH of (('s * osort) list, 'a) scope
    | NIL
    | PROVE of 'a * 'a
    | OMATCH of 'a * ('s, 'o, 'a) omatch_clause list
@@ -80,16 +82,15 @@ struct
       {ostate = ostate,
        mlenv = Names.insert mlenv x x'}
 
-    (* TODO: update symctx *)
-    fun addSyms {ostate = {metactx, symctx, varctx, metaenv, symenv, varenv}, mlenv} xs xs' : state =
+    fun addObjectNames {ostate = {metactx, symctx, varctx, metaenv, symenv, varenv}, mlenv} (xs : (string * osort) list) (xs' : (Tm.symbol * osort) list) : state =
       {mlenv = mlenv,
-       ostate =
+       ostate = 
          {metactx = metactx,
-          symctx = symctx,
-          varctx = varctx,
+          symctx = List.foldl (fn ((x, PSORT sigma), r) => Tm.Sym.Ctx.insert r x sigma | (_, r) => r) symctx xs',
+          varctx = List.foldl (fn ((x, OSORT tau), r) => Tm.Var.Ctx.insert r x tau | (_, r) => r) varctx xs',
           metaenv = metaenv,
-          symenv = ListPair.foldl (fn (x, x', r) => Names.insert r x x') symenv (xs, xs'),
-          varenv = varenv}}
+          symenv = ListPair.foldl (fn ((x, _), (x', PSORT _), r) => Names.insert r x x' | (_, _, r) => r) symenv (xs, xs'),
+          varenv = ListPair.foldl (fn ((x, _), (x', OSORT _), r) => Names.insert r x x' | (_, _, r) => r) varenv (xs, xs')}}
 
     fun addMetas {ostate = {metactx, symctx, varctx, metaenv, symenv, varenv}, mlenv} metas metas' : state =
       {mlenv = mlenv,
@@ -132,10 +133,10 @@ struct
         x' \ resolveAux state' tx
       end
 
-    and resolveAuxObjScope (state : state) (xs \ txs) =
+    and resolveAuxObjScope (state : state) ((xs : (string * osort) list) \ txs) =
       let
-        val xs' = List.map Tm.Sym.named xs
-        val state' = addSyms state xs xs'
+        val xs' = List.map (fn (x, osort) => (Tm.Sym.named x, osort)) xs
+        val state' = addObjectNames state xs xs'
       in
         xs' \ resolveAux state' txs
       end
@@ -168,7 +169,7 @@ struct
     fun let_ (t, (x, tx)) pos = 
       LET (t, x \ tx) :@ pos
 
-    fun push (xs : string list, t : src_mlterm) pos : src_mlterm = 
+    fun push (xs : (string * osort) list, t : src_mlterm) pos : src_mlterm = 
       PUSH (xs \ t) :@ pos
   end
 

@@ -30,6 +30,8 @@ function lexMain: t =
   "push" => push
   "exact" => exact
   "refine" => refine
+  "exp" => exp
+  "dim" => dim
   ws => skip
   comment => skip
   (seq '= '>) => double_right_arrow
@@ -39,6 +41,7 @@ function lexMain: t =
   ') => rparen
   ', => comma
   '; => semi
+  ': => colon
   '= => equals
   '` => backtick
   ident => ident

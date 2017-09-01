@@ -77,6 +77,7 @@ struct
   val begin = simple T.BEGIN
   val comma = simple T.COMMA
   val semi = simple T.SEMI
+  val colon = simple T.COLON
   val double_right_arrow = simple T.DOUBLE_RIGHT_ARROW
   val equals = simple T.EQUALS
   val print = simple T.PRINT
@@ -86,6 +87,8 @@ struct
   val backtick = simple T.BACKTICK
   val exact = simple T.EXACT
   val refine = simple T.REFINE
+  val exp = simple T.EXP
+  val dim = simple T.DIM
 end
 
 structure MetalanguageLex = MetalanguageLexFn (structure Streamable = StreamStreamable and Arg = MetalanguageLexAction)

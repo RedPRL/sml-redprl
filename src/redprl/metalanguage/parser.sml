@@ -23,6 +23,7 @@ struct
     | RPAREN of pos
     | COMMA of pos
     | SEMI of pos
+    | COLON of pos
     | EQUALS of pos
     | BEGIN of pos
     | END of pos
@@ -36,6 +37,8 @@ struct
     | PUSH of pos
     | PRINT of pos
     | EXACT of pos
+    | EXP of pos
+    | DIM of pos
 
   val terminalToString = 
     fn LET _ => "LET"
@@ -50,6 +53,7 @@ struct
      | RPAREN _ => "RPAREN"
      | COMMA _ => "COMMA"
      | SEMI _ => "SEMI"
+     | COLON _ => "COLON"
      | EQUALS _ => "EQUALS"
      | BEGIN _ => "BEGIN"
      | END _ => "END"
@@ -63,12 +67,14 @@ struct
      | PUSH _ => "PUSH"
      | PRINT _ => "PRINT"
      | EXACT _ => "EXACT"
+     | EXP _ => "exp"
+     | DIM _ => "dim"
 
 end
 
 structure MetalanguageParseAction = 
 struct
-  structure ML = MetalanguageSyntax
+  structure ML = MetalanguageSyntax and Tm = RedPrlAbt
   open ML infix :@
   open MetalanguageTerminal
 
@@ -77,8 +83,10 @@ struct
   type oexps = oexp list
   type exp = ML.src_mlterm
   type exps = ML.src_mlterm list
-  type names = (pos * string) list
-  type decl = (pos * string) * ML.src_mlterm
+  type ident = pos * string
+  type names = ident list
+  type sorted_names = (ident * osort) list
+  type decl = ident * ML.src_mlterm
   type decls = decl list
 
   fun @@ (f, x) = f x
@@ -103,6 +111,10 @@ struct
   fun namesSingl x = [x]
   fun namesCons (x, xs) = x :: xs
 
+  fun sortedNamesNil () = []
+  fun sortedNamesSingl (x, tau) = [(x, tau)]
+  fun sortedNamesCons (x, tau, xs) = (x, tau) :: xs
+
   fun expsNil () = []
   fun expsSingl e = [e]
   fun expsCons (e, es) = e :: es
@@ -117,8 +129,8 @@ struct
 
   fun app (e1, e2) = APP (e1, e2) :@ posOfTerms [e1, e2]
 
-  fun push (posl, xs : names, e : exp, posr) =
-    Ast.push (List.map #2 xs, e) @@ SOME (Pos.union posl posr)
+  fun push (posl, xs : sorted_names, e : exp, posr) =
+    Ast.push (List.map (fn ((pos, x), sort) => (x, sort)) xs, e) @@ SOME (Pos.union posl posr)
  
   fun refine (pos1, (pos2, str)) =
     ML.REFINE str :@ SOME (Pos.union pos1 pos2)
@@ -167,8 +179,11 @@ struct
   fun declsCons (d, ds) = d :: ds
 
   local
-    structure R = RedExpr
+    structure R = RedExpr and O = RedPrlOpData
   in
+    fun osortExp () = OSORT O.EXP
+    fun osortDim () = PSORT O.DIM
+
     fun oexpsNil _ = []
     fun oexpsCons (e, es) = e::es
 

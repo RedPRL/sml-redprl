@@ -12,6 +12,7 @@ terminal LPAREN of pos
 terminal RPAREN of pos
 terminal COMMA of pos
 terminal SEMI of pos
+terminal COLON of pos
 terminal EQUALS of pos
 terminal BEGIN of pos
 terminal END of pos
@@ -25,6 +26,8 @@ terminal GOAL of pos
 terminal PUSH of pos
 terminal PRINT of pos
 terminal EXACT of pos
+terminal EXP of pos
+terminal DIM of pos
 
 start Exp
 
@@ -42,7 +45,7 @@ nonterminal Atm: exp =
   1:BACKTICK 2:OExp => quote
   1:REFINE 2:IDENT => refine
   1:EXACT 2:Atm => exact
-  1:PUSH 2:Names IN 3:Exp 4:END => push
+  1:PUSH 2:SortedNames IN 3:Exp 4:END => push
   1:PRINT 2:Atm => print
 
 nonterminal Decl: decl =
@@ -70,12 +73,11 @@ nonterminal Exps: exps =
   1:Exp COMMA 2:Exps => expsCons
   1:Exp => expsSingl
   => expsNil
-  
-nonterminal Names: names =
-  1:IDENT COMMA 2:Names => namesCons
-  1:IDENT => namesSingl
-  => namesNil
 
+nonterminal SortedNames: sorted_names =
+  1:IDENT COLON 2:OSort COMMA 3:SortedNames => sortedNamesCons
+  1:IDENT COLON 2:OSort => sortedNamesSingl
+  => sortedNamesNil
 
 
 /* TODO: object terms */
@@ -91,3 +93,7 @@ nonterminal OExps: oexps =
 nonterminal OIdents: names = 
   1:IDENT 2:OIdents => namesCons
   => namesNil
+
+nonterminal OSort: osort = 
+  EXP => osortExp
+  DIM => osortDim
