@@ -78,6 +78,7 @@ struct
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
    | CAP of symbol O.dir * tube list * hole
+   | UAPROJ of symbol * hole * abt
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -101,6 +102,7 @@ struct
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
        | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
        | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
+       | UAPROJ (x, HOLE, f) => Syn.into @@ Syn.UAPROJ (P.VAR x, m, f)
   in
     fun unload (m || (syms, stk)) = 
       case stk of
@@ -139,6 +141,22 @@ struct
   exception Unstable
   exception Final
   exception Stuck
+
+  local
+    fun assertVariable stability syms u =
+      case stability of
+        NOMINAL => ()
+      | CUBICAL =>
+          if SymSet.member syms u then ()
+          else raise Unstable
+  in
+    fun branchOnDim stability syms r f0 f1 fu =
+      case r of
+        P.APP P.DIM0 => f0
+      | P.APP P.DIM1 => f1
+      | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
+      | P.VAR u => (assertVariable stability syms u; fu u)
+  end
 
   fun dimensionsEqual stability syms (r1, r2) = 
     (* If two dimensions are equal, then no substitution can ever change that. *)
@@ -445,16 +463,14 @@ struct
      | O.MONO O.S1 $ _ || (_, []) => raise Final
      | O.MONO O.BASE $ _ || (_, []) => raise Final
      | O.POLY (O.LOOP r) $ _ || (syms, stk) =>
-       (case r of 
-           P.APP P.DIM0 => STEP @@ Syn.into Syn.BASE || (syms, stk)
-         | P.APP P.DIM1 => STEP @@ Syn.into Syn.BASE || (syms, stk)
-         | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
-         | P.VAR u => 
-             if stability = CUBICAL andalso not (SymSet.member syms u) then raise Unstable else
-              case stk of 
-                 [] => raise Final
-               | S1_REC (_, HOLE, _, (v, loop)) :: stk => CRITICAL @@ substSymbol (P.ret u, v) loop || (syms, stk)
-               | _ => raise Stuck)
+         branchOnDim stability syms r
+           (STEP @@ Syn.into Syn.BASE || (syms, stk))
+           (STEP @@ Syn.into Syn.BASE || (syms, stk))
+           (fn u =>
+             case stk of
+               [] => raise Final
+             | S1_REC (_, HOLE, _, (v, loop)) :: stk => CRITICAL @@ substSymbol (P.ret u, v) loop || (syms, stk)
+             | _ => raise Stuck)
      | O.MONO O.BASE $ _ || (syms, S1_REC (_, HOLE, base, _) :: stk) => CRITICAL @@ base || (syms, stk)
      | O.MONO O.S1 $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
@@ -561,6 +577,38 @@ struct
        stepBox stability ({dir = dir, cap = cap, boundaries = zipBoundaries (eqs, boundaries)} || (syms, stk))
      | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee :: tubes) || (syms, stk) =>
        stepCap stability ({dir = dir, coercee = coercee, tubes = zipTubes (eqs, tubes)} || (syms, stk))
+
+     | O.POLY (O.UA r) $ [_ \ a, _ \ b, _] || (syms, stk) =>
+         branchOnDim stability syms r
+           (STEP @@ a || (syms, stk))
+           (STEP @@ b || (syms, stk))
+           (fn u =>
+             case stk of
+               [] => raise Final
+             | HCOM _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of ua types"))
+             | COE _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of ua types"))
+             | _ => raise Stuck)
+     | O.POLY (O.UAIN r) $ [_ \ m, _ \ n] || (syms, stk) =>
+         branchOnDim stability syms r
+           (STEP @@ m || (syms, stk))
+           (STEP @@ n || (syms, stk))
+           (fn u =>
+             case stk of
+               [] => raise Final
+             | UAPROJ (v, HOLE, f) :: stk =>
+                 (* the following line should be equivalent to direct comparison
+                  * due to the invariants of the machine, but it does not hurt
+                  * much (I hope) to check stability again. *)
+                 if dimensionsEqual stability syms (r, P.VAR v) then
+                   CRITICAL @@ n || (syms, stk)
+                 else
+                   raise Stuck
+             | _ => raise Stuck)
+     | O.POLY (O.UAPROJ r) $ [_ \ m, _ \ f] || (syms, stk) =>
+         branchOnDim stability syms r
+           (STEP @@ Syn.into (Syn.APP (f, m)) || (syms, stk))
+           (STEP @@ m || (syms, stk))
+           (fn u => COMPAT @@ m || (syms, UAPROJ (u, HOLE, f) :: stk))
 
      | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
      | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
