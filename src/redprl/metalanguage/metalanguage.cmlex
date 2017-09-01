@@ -10,7 +10,7 @@ set notnewln = (~ 10)
 
 regexp ident = (seq id_start (* id_cont))
 regexp ws = (+ white)
-regexp comment = (seq '/ '/ (+ notnewln))
+regexp comment = (seq '/ '/ (* notnewln))
 regexp number = (| '0 (seq posdigit (* digit)))
 
 function lexMain: t =
