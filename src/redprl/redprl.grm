@@ -571,14 +571,13 @@ typedParams
 
 
 dir
-  : param SQUIGGLE_RIGHT_ARROW param ((param1, param2))
+  : dimParam SQUIGGLE_RIGHT_ARROW dimParam ((dimParam1, dimParam2))
 
 backDir
-  : param SQUIGGLE_LEFT_ARROW param ((param1, param2))
+  : dimParam SQUIGGLE_LEFT_ARROW dimParam ((dimParam1, dimParam2))
 
 equation
-  : LPAREN equation RPAREN (equation)
-  | param EQUALS param (param1, param2)
+  : dimParam EQUALS dimParam (dimParam1, dimParam2)
 
 tube
   : LSQUARE equation binding RSQUARE (equation, binding)
