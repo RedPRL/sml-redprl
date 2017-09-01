@@ -30,6 +30,8 @@ struct
         [Fpp.text "Not a valid dimension:", Fpp.nest 2 doc]
      | INVALID_LEVEL doc => Fpp.hsep
         [Fpp.text "Not a valid universe level:", Fpp.nest 2 doc]
+     | NOT_APPLICABLE (tool, obj) => Fpp.hsep
+        [tool, Fpp.text "is not applicable to:", Fpp.nest 2 obj]
      | UNIMPLEMENTED doc => Fpp.hsep
         [Fpp.text "Not implemented:", Fpp.nest 2 doc]
      | GENERIC doc => Fpp.hsep doc

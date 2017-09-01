@@ -805,7 +805,7 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "DFun.Elim"
-        val (I, H) >> CJ.TRUE (cz, l, k) = jdg
+        val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (dfun, l', _) = Hyps.lookup z H
         val Syn.DFUN (a, x, bx) = Syn.out dfun
@@ -819,9 +819,12 @@ struct
         val v = alpha 1
         val aptm = Syn.into @@ Syn.APP (VarKit.toExp z, holeA)
         (* note: a and bx come from the telescope so they are types *)
-        val H' = |@> (u, CJ.TRUE (b', l', K.top)) @> (v, CJ.EQ ((VarKit.toExp u, aptm), (b', l', K.top)))
-        val H'' = Hyps.interposeAfter (z, H') H
-        val (goalF, holeF) = makeTrue (I, H'') (cz, l, k)
+        val H' = Hyps.interposeAfter
+          (z, |@> (u, CJ.TRUE (b', l', K.top))
+               @> (v, CJ.EQ ((VarKit.toExp u, aptm), (b', l', K.top))))
+          H
+
+        val (goalF, holeF) = makeGoal @@ (I, H') >> catjdg
       in
         |>: goalA >: goalF #> (I, H, VarKit.substMany [(aptm, u), (trivial, v)] holeF)
       end
@@ -998,7 +1001,7 @@ struct
     fun Elim z alpha jdg = 
       let
         val _ = RedPrlLog.trace "Record.Elim"
-        val (I, H) >> CJ.TRUE (motivez, l, k) = jdg
+        val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (record, l', _) = Hyps.lookup z H
         val Syn.RECORD fields = Syn.out record
@@ -1017,8 +1020,7 @@ struct
             (fields, names)
         val H' = Hyps.interposeThenSubstAfter (z, hyps, tuple) H
 
-        val motive' = substVar (tuple, z) motivez
-        val (goal, hole) = makeTrue (I,  H') (motive', l, k)
+        val (goal, hole) = makeGoal @@ (I, H') >> CJ.map (substVar (tuple, z)) catjdg
 
         val projEnv =
           ListPair.foldlEq
@@ -1126,8 +1128,7 @@ struct
     fun Elim z alpha jdg = 
       let
         val _ = RedPrlLog.trace "Path.Elim"
-
-        val (I, H) >> CJ.TRUE (motive, l, k) = jdg
+        val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val CJ.TRUE (ty, l', _) = Hyps.lookup z H
         val Syn.PATH_TY ((u, a), _, _) = Syn.out ty
@@ -1141,9 +1142,12 @@ struct
         val w = Sym.named "w"
         val (pathAppGoal, pathAppHole) = makeDimSubst (I, H) (dimHole, w, Syn.into @@ Syn.PATH_APP (VarKit.toExp z, P.ret w))
 
-        val H' = |@> (x, CJ.TRUE (arHole, l', K.top)) @> (y, CJ.EQ ((VarKit.toExp x, pathAppHole), (arHole, l', K.top)))
-        val H'' = Hyps.interposeAfter (z, H') H
-        val (mainGoal, mainHole) = makeTrue (I, H'') (motive, l, k)
+        val H' = Hyps.interposeAfter
+          (z, |@> (x, CJ.TRUE (arHole, l', K.top))
+               @> (y, CJ.EQ ((VarKit.toExp x, pathAppHole), (arHole, l', K.top))))
+          H
+
+        val (mainGoal, mainHole) = makeGoal @@ (I, H') >> catjdg
       in
         |>: dimGoal >: arGoal >: pathAppGoal >: mainGoal
         #> (I, H, VarKit.substMany [(pathAppHole, x), (trivial, y)] mainHole)
