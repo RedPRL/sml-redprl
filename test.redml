@@ -1,11 +1,21 @@
-print begin
-  prove `(dfun bool [x] bool) by
-    push a:exp in
-      refine dfun/intro;
-      [ exact `a;
-        refine equality/hyp
-      , refine bool/eqtype
-      ]
+let
+  // A tactic which takes as an argument a tactic f : term -> unit.
+  // In the body of the tactic 'f', the argument `a will stand for the
+  // input to the lambda expression. Concretely, it will be an object
+  // variable.
+  //
+  // This will be even more useful once I add 'unquote'.
+  val lam =
+    fn f =>
+      push a:exp in
+        refine dfun/intro;
+        [ f `a ]
+      end
+in
+  print begin
+    prove `(dfun bool [x] bool) by
+      lam (fn x => exact x; refine equality/hyp);
+      refine bool/eqtype
     end
   end
 end
