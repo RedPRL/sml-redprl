@@ -59,7 +59,6 @@ nonterminal App: exp =
   1:Atm => identity
   1:App 2:Atm => app
 
-/* TODO: fix shift-reduce conflicts */
 nonterminal SeqExp: exp =
   1:App => identity
   1:SeqExp SEMI 2:App => seqExpSnoc
