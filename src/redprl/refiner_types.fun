@@ -859,7 +859,7 @@ struct
        | K.COE => (K.COE, K.COE)
        | K.CUBICAL => (K.CUBICAL, K.CUBICAL)
 
-    fun EqType _ jdg =
+    fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "Record.EqType"
         val (I, H) >> CJ.EQ_TYPE ((record0, record1), l, k) = jdg
@@ -867,12 +867,14 @@ struct
         val Syn.RECORD fields1 = Syn.out record1
         val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
+        val fresh = makeNamePopper alpha
+
         val {goals, ...} =
           ListPair.foldlEq
             (fn (((lbl0, var0), ty0), ((lbl1, var1), ty1), {goals, hyps, ren0, ren1, isFirst}) =>
                let
                  val () = Assert.labelEq "Record.EqType" (lbl0, lbl1)
-                 val var = Var.named lbl0
+                 val var = fresh ()
                  val ty0' = renameVars ren0 ty0
                  val ty1' = renameVars ren1 ty1
                  val kind = if isFirst then headKind else tailKind
