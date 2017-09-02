@@ -1280,7 +1280,7 @@ struct
   struct
     val kindConstraintOnCapAndTubes =
       fn K.DISCRETE => (K.DISCRETE, K.DISCRETE) (* XXX more research needed *)
-       | K.KAN => (K.KAN, K.KAN) (* XXX more research needed *)
+       | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
        | K.CUBICAL => (K.CUBICAL, K.COE) (* XXX more research needed *)
