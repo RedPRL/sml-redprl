@@ -15,7 +15,7 @@ struct
      (* unify a term w/ a head operator and extract the kth subterm *)
    | MATCH of RedPrlAbt.operator * int * 'a * RedPrlAbt.param list * 'a list
      (* unify a term w/ RECORD and extract the subterm of the label *)
-   | MATCH_RECORD of label * 'a
+   | MATCH_RECORD of label * 'a * 'a
 end
 
 signature SEQUENT =

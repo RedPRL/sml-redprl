@@ -261,6 +261,18 @@ struct
         |>: goalDFun >: goalDom >: goalCod >: goalN >:? goalKind #> (I, H, holeCod)
       end
 
+    fun Proj _ jdg =
+      let
+        val _ = RedPrlLog.trace "Synth.Proj"
+        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val Syn.PROJ (lbl, n) = Syn.out tm
+        val (goalRecord, holeRecord) = makeSynth (I, H) (n, NONE, K.top)
+        val (goalTy, holeTy) = makeMatchRecord (lbl, holeRecord, n)
+        val goalKind = makeTypeUnlessSubUniv (I, H) (holeTy, l, k) (NONE, K.top)
+      in
+        |>: goalRecord >: goalTy >:? goalKind #> (I, H, holeTy)
+      end
+
     fun PathApp _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.PathApp"
@@ -539,9 +551,9 @@ struct
     
     fun MatchRecordHeadExpansion sign _ jdg = 
       let
-        val _ = RedPrlLog.trace "Record.MatchRecord"
-        val            MATCH_RECORD (lbl, tm) = jdg
-        fun maker tm = MATCH_RECORD (lbl, tm)
+        val _ = RedPrlLog.trace "Computation.MatchRecordHeadExpansion"
+        val            MATCH_RECORD (lbl, tm, m) = jdg
+        fun maker tm = MATCH_RECORD (lbl, tm, m)
       in
         HeadExpansionDelegate sign ([], Hyps.empty) maker tm
       end
@@ -867,9 +879,10 @@ struct
       fun StepSynth sign m =
         case Syn.out m of
            Syn.VAR _ => Synth.Hyp
-         | Syn.APP _ => Synth.App
-         | Syn.S1_REC _ => Synth.S1Rec
          | Syn.WIF _ => Synth.WIf
+         | Syn.S1_REC _ => Synth.S1Rec
+         | Syn.APP _ => Synth.App
+         | Syn.PROJ _ => Synth.Proj
          | Syn.PATH_APP _ => Synth.PathApp
          | Syn.CUST => Synth.Custom sign
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]

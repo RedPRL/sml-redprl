@@ -14,7 +14,7 @@ struct
   fun map f =
     fn (I, H) >> catjdg => (I, Hyps.map (CJ.map f) H) >> CJ.map f catjdg
      | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
-     | MATCH_RECORD (lbl, tm) => MATCH_RECORD (lbl, f tm)
+     | MATCH_RECORD (lbl, tm, tuple) => MATCH_RECORD (lbl, f tm, f tuple)
 
   fun renameHypsInTerm srho =
     Tm.substSymenv (Sym.Ctx.map P.VAR srho)
@@ -73,7 +73,7 @@ struct
           if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps CJ.pretty H, Fpp.newline],
           Fpp.hsep [Fpp.text ">>", CJ.pretty catjdg]]
      | MATCH (th, k, a, _, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
-     | MATCH_RECORD (lbl, a) => Fpp.hsep [TP.ppTerm a, Fpp.text "match_record", Fpp.text lbl]
+     | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match_record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
   val rec eq =
     fn ((I1, H1) >> catjdg1, (I2, H2) >> catjdg2) =>
@@ -107,7 +107,7 @@ struct
             andalso Tm.eq (a1, a2)
             andalso ListPair.allEq (O.P.eq Sym.eq) (ps1, ps2)
             andalso ListPair.allEq Tm.eq (ms1, ms2)
-     | (MATCH_RECORD (lbl1, a1), MATCH_RECORD (lbl2, a2)) =>
-          lbl1 = lbl2 andalso Tm.eq (a1, a2)
+     | (MATCH_RECORD (lbl1, a1, m1), MATCH_RECORD (lbl2, a2, m2)) =>
+          lbl1 = lbl2 andalso Tm.eq (a1, a2) andalso Tm.eq (m1, m2)
      | _ => false
 end

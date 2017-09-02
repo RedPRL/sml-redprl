@@ -972,13 +972,19 @@ struct
     fun MatchRecord _ jdg =
       let
         val _ = RedPrlLog.trace "Record.MatchRecord"
-        val MATCH_RECORD (lbl, tm) = jdg
+        val MATCH_RECORD (lbl, tm, tuple) = jdg
 
         val Abt.$ (O.MONO (O.RECORD lbls), args) = Abt.out tm
 
-        val (_ \ arg) = List.nth (args, #1 (Option.valOf (ListUtil.findEqIndex lbl lbls)))
+        val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
+        val ((_,us) \ ty) = List.nth (args, i)
+
+        (* supply the dependencies *)
+        val lblPrefix = List.take (lbls, i)
+        val projs = List.map (fn lbl => Syn.into @@ Syn.PROJ (lbl, tuple)) lblPrefix
+        val ty = VarKit.substMany (ListPair.zipEq (projs, us)) ty
       in
-        Lcf.|> (T.empty, abtToAbs arg)
+        Lcf.|> (T.empty, abtToAbs ty)
       end
       handle _ =>
         raise E.error [Fpp.text "MATCH_RECORD judgment failed to unify"]
@@ -992,7 +998,7 @@ struct
         val () = Assert.labelEq "Record.EqProj" (lbl0, lbl1)
 
         val (goalTy, holeTy) = makeSynth (I, H) (m0, NONE, K.top)
-        val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy)
+        val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy, m0)
         val goalEq = makeEqIfDifferent (I, H) ((m0, m1), (holeTy, NONE, K.top)) (* m0 well-typed *)
         val goalEqTy = makeEqTypeIfDifferentOrNotSubUniv (I, H) ((holeTyP, ty), l, k) (NONE, K.top) (* holeTyP type *)
       in
