@@ -644,6 +644,9 @@ struct
      | "fcom/eqtype" => FormalComposition.EqType
      | "fcom/eq" => FormalComposition.Eq
      | "fcom/intro" => FormalComposition.True
+     | "ua/eqtype" => Univalence.EqType
+     | "ua/eq" => Univalence.Eq
+     | "ua/intro" => Univalence.True
      | "univ/eqtype" => Universe.EqType
      | "univ/eq" => Universe.Eq
      | "univ/intro" => Universe.True
@@ -693,8 +696,9 @@ struct
          | (Syn.RECORD _, Syn.RECORD _) => Record.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => InternalizedEquality.EqType
-         | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
          | (Syn.FCOM _, Syn.FCOM _) => FormalComposition.EqType
+         | (Syn.UA _, Syn.UA _) => Univalence.EqType
+         | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
       fun canonicity sign = 
@@ -763,6 +767,7 @@ struct
          | (_, _, Syn.PATH_TY _) => Path.Eq
          | (_, _, Syn.EQUALITY _) => InternalizedEquality.Eq
          | (_, _, Syn.FCOM _) => FormalComposition.Eq
+         | (_, _, Syn.UA _) => Univalence.Eq
          | (_, _, Syn.UNIVERSE _) => Universe.Eq
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", CJ.pretty (CJ.EQ ((m, n), (ty, NONE, K.top))))
 
