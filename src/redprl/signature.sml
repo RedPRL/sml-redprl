@@ -348,9 +348,11 @@ struct
 
             fun state alpha =
               let
+                val binder = (List.map #1 params', []) \ definiens'
+                val valence = ((List.map #2 params', []), tau)
                 val subgoals = argumentsToSubgoals alpha arguments'
               in
-                Lcf.|> (subgoals, checkb (([],[]) \ definiens', (([],[]), tau)))
+                Lcf.|> (subgoals, checkb (binder, valence))
               end
 
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM tau)
@@ -440,13 +442,14 @@ struct
     fun elabTac (sign : sign) opid {arguments, params, script} =
       let
         val (arguments', metactx) = elabDeclArguments arguments
-        val (params', symctx, env) = elabDeclParams sign params
+        val (params' : symbol params, symctx, env) = elabDeclParams sign params
       in
         convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
           let
             open O Tm infix \
-            fun state alpha =
-              Lcf.|> (argumentsToSubgoals alpha arguments', checkb (([],[]) \ script', (([],[]), TAC)))
+            val binder = (List.map #1 params', []) \ script'
+            val valence = ((List.map #2 params', []), TAC)
+            fun state alpha = Lcf.|> (argumentsToSubgoals alpha arguments', checkb (binder, valence))
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM TAC)
           in
             E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
