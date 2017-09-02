@@ -87,10 +87,15 @@ struct
           else SOME @@ makeEqTypeWith f (I, H) ((a, b), l, k))
         (restrict eqs)
 
-    fun makeTrue eqs (I, H) (a, l, k) =
-      Option.map
-        (fn f => makeTrueWith f (I, H) (a, l, k))
-        (restrict eqs)
+    fun makeTrue eqs default (I, H) (a, l, k) =
+      case restrict eqs of
+        NONE => (NONE, default)
+      | SOME f =>
+          let
+            val (goal, hole) = makeTrueWith f (I, H) (a, l, k)
+          in
+            (SOME goal, hole)
+          end
   end
 
   (* code shared by Com, HCom and FCom. *)

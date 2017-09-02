@@ -1402,12 +1402,11 @@ struct
 
         val (goalCap, holeCap) = makeTrue (I, H) (tyCap, l, kCap)
 
-        fun foldBoundary ((eq, (u, tyTube)), (goals, holes)) =
-          case Restriction.makeTrue [eq] (I, H) (substSymbol (#2 dir, u) tyTube, NONE, K.top) of
-            NONE => (goals, Syn.into Syn.AX :: holes) (* or any other term *)
-          | SOME (goal, hole) => (goal :: goals, hole :: holes)
-        val (goalBoundaries, holeBoundaries) =
-          List.foldr foldBoundary ([],[]) tyTubes
+        fun goTube (eq, (u, tyTube)) =
+          Restriction.makeTrue [eq] (Syn.into Syn.AX) (I, H) (substSymbol (#2 dir, u) tyTube, NONE, K.top)
+        val goalHoleBoundaries = List.map goTube tyTubes
+        val goalBoundaries = List.mapPartial #1 goalHoleBoundaries
+        val holeBoundaries = List.map #2 goalHoleBoundaries
 
         val tyBoundaries = List.map (fn (u, ty) => substSymbol (#2 dir, u) ty) tyTubes'
         val holeBoundaries' = ListPair.zipEq (eqs, holeBoundaries)
@@ -1530,6 +1529,27 @@ struct
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (I, H, trivial)
       end
+
+    fun True _ jdg =
+      let
+        val _ = RedPrlLog.trace "Univalence.True"
+        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val Syn.UA (r, a, b, e) = Syn.out ty
+        val (kA, kB) = kindConstraintOnEnds k
+
+        val eq = (r, P.APP P.DIM0)
+
+        val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) (I, H) (a, l, kA)
+        val (goalN, holeN) = makeTrue (I, H) (b, l, kB)
+        val goalCoh = Restriction.makeEqIfDifferent [eq] (I, H)
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("f", e), holeM), holeN), (b, NONE, K.top))
+        val goalEquiv = Restriction.makeMem [eq] (I, H) (e, (intoEquiv a b, NONE, K.top))
+      in
+        |>:? goalM >: goalN >:? goalCoh >:? goalEquiv
+        #> (I, H, Syn.into @@ Syn.UAIN (r, holeM, holeN))
+      end
+
+    (* TODO Add the Elim, EqProj and Eta rules. *)
   end
 
   structure Universe =
