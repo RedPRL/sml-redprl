@@ -782,7 +782,7 @@ struct
         val (goalLam, hole) = makeTrue (I, H @> (z, CJ.TRUE (a, l, ka))) (bz, l, kb)
 
         (* realizer *)
-        val lam = Syn.into @@ Syn.LAM (z, hole)
+        val lam = Syn.intoLam (z, hole)
       in
         |>: goalLam >: goalA #> (I, H, lam)
       end
@@ -795,7 +795,7 @@ struct
         val (I, H) >> CJ.EQ ((m, n), (dfun, l, k)) = jdg
         val Syn.DFUN (_, x, _) = Syn.out dfun
 
-        val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.APP (m, VarKit.toExp x))
+        val m' = Syn.intoLam (x, Syn.intoApp (m, VarKit.toExp x))
         val goal1 = makeMem (I, H) (m, (dfun, l, k))
         val goal2 = makeEqIfDifferent (I, H) ((m', n), (dfun, NONE, K.top))
       in
@@ -817,7 +817,7 @@ struct
         val b' = substVar (holeA, x) bx
         val u = alpha 0
         val v = alpha 1
-        val aptm = Syn.into @@ Syn.APP (VarKit.toExp z, holeA)
+        val aptm = Syn.intoApp (VarKit.toExp z, holeA)
         (* note: a and bx come from the telescope so they are types *)
         val H' = Hyps.interposeAfter
           (z, |@> (u, CJ.TRUE (b', l', K.top))
@@ -1426,6 +1426,86 @@ struct
       end
 
     (* TODO Add the Elim, EqCap and Eta rules. *)
+  end
+
+  structure Univalence =
+  struct
+    val kindConstraintOnEnds =
+      fn K.DISCRETE => E.raiseError (E.UNIMPLEMENTED (Fpp.text "discrete univalence types"))
+       | K.KAN => (K.KAN, K.KAN)
+       | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
+       | K.COE => (K.COE, K.COM) (* XXX more research needed *)
+       | K.CUBICAL => (K.CUBICAL, K.CUBICAL)
+
+    fun intoHasAllPaths C =
+      let
+        val c = Var.named "c"
+        val c' = Var.named "c'"
+        val dummy = Sym.named ""
+      in
+        Syn.into @@ Syn.DFUN (C, c,
+          Syn.into @@ Syn.DFUN (C, c',
+            Syn.into @@ Syn.PATH_TY ((dummy, C), VarKit.toExp c, VarKit.toExp c')))
+      end
+
+    fun intoIsContr C =
+      let
+        val proj1 = Var.named "proj1"
+        val proj2 = Var.named "proj2"
+      in
+        Syn.into @@ Syn.RECORD
+          [(("proj1", proj1), C)
+          ,(("proj2", proj2), intoHasAllPaths C)]
+      end
+
+    fun intoFiber A B f b =
+      let
+        val a = Var.named "proj1"
+        val proj2 = Var.named "proj2"
+        val dummy = Sym.named ""
+      in
+        Syn.into @@ Syn.RECORD
+          [(("proj1", a), A)
+          ,(("proj2", proj2),
+            Syn.into @@ Syn.PATH_TY
+              ((dummy, B), Syn.intoApp (f, VarKit.toExp a), b))]
+      end
+
+    fun intoIsEquiv A B f =
+      let
+        val b = Var.named "b"
+      in
+        Syn.into @@ Syn.DFUN
+          (B, b, intoIsContr (intoFiber A B f (VarKit.toExp b)))
+      end
+
+    fun intoEquiv A B =
+      let
+        val f = Var.named "proj1"
+        val dummy = Var.named ""
+        val proj2 = Var.named "proj2"
+      in
+        Syn.into @@ Syn.RECORD
+          [(("proj1", f), Syn.into @@ Syn.DFUN (A, dummy, B))
+          ,(("proj2", proj2), intoIsEquiv A B (VarKit.toExp f))]
+      end
+
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Univalence.EqType"
+        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val Syn.UA (r0, a0, b0, e0) = Syn.out ty0
+        val Syn.UA (r1, a1, b1, e1) = Syn.out ty1
+        val () = Assert.paramEq "Univalence.EqType" (r0, r1)
+        val (kA, kB) = kindConstraintOnEnds k
+
+        val goalA = Restriction.makeEqType [(r0, P.APP P.DIM0)] (I, H) ((a0, a1), l, kA)
+        val goalB = makeEqType (I, H) ((b0, b1), l, kB)
+        val goalEquiv = Restriction.makeEq [(r0, P.APP P.DIM0)] (I, H)
+          ((e0, e1), (intoEquiv a0 b0, NONE, K.top))
+      in
+        |>:? goalEquiv >:? goalA >: goalB #> (I, H, trivial)
+      end
   end
 
   structure Universe =

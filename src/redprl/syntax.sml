@@ -252,7 +252,7 @@ struct
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
 
-    val intoAp = into o APP
+    val intoApp = into o APP
     val intoLam = into o LAM
 
     fun intoCoe dir (ty, m) =

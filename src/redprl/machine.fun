@@ -90,7 +90,7 @@ struct
 
   local
     fun plug m = 
-      fn APP (HOLE, n) => Syn.into @@ Syn.APP (m, n)
+      fn APP (HOLE, n) => Syn.intoApp (m, n)
        | HCOM (dir, HOLE, cap, tubes) => Syn.into @@ Syn.HCOM {dir = dir, ty = m, cap = cap, tubes = tubes}
        | COE (dir, (u, HOLE), coercee) => Syn.into @@ Syn.COE {dir = dir, ty = (u, m), coercee = coercee}
        | IF (HOLE, t, f) => Syn.into @@ Syn.IF (m, (t, f))
@@ -336,8 +336,8 @@ struct
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => CRITICAL @@ substVar (n, x) m || (syms, stk)
      | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
-         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
-         fun apx n = Syn.into @@ Syn.APP (n, xtm)
+         val xtm = VarKit.toExp x
+         fun apx n = Syn.intoApp (n, xtm)
          val hcomx =
            Syn.into @@ Syn.HCOM
              {dir = dir,
@@ -362,7 +362,7 @@ struct
               Syn.into @@ Syn.COE 
                 {dir = dir,
                  ty = (u, substVar (xcoe (P.ret u), x) tyBx),
-                 coercee = Syn.into @@ Syn.APP (coercee, xcoe r)})
+                 coercee = Syn.intoApp (coercee, xcoe r)})
        in
          CRITICAL @@ lambda || (SymSet.remove syms u, stk)
        end
@@ -606,7 +606,7 @@ struct
              | _ => raise Stuck)
      | O.POLY (O.UAPROJ r) $ [_ \ m, _ \ f] || (syms, stk) =>
          branchOnDim stability syms r
-           (STEP @@ Syn.into (Syn.APP (f, m)) || (syms, stk))
+           (STEP @@ Syn.intoApp (f, m) || (syms, stk))
            (STEP @@ m || (syms, stk))
            (fn u => COMPAT @@ m || (syms, UAPROJ (u, HOLE, f) :: stk))
 
