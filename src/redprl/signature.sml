@@ -425,7 +425,6 @@ struct
                 let
                   fun state alpha =
                     let
-                      val _ = RedPrlLog.print RedPrlLog.INFO (NONE, TermPrinter.ppBinder (outb validation))
                       val argSubgoals = argumentsToSubgoals alpha arguments'
                       (* TODO: relabel ordinary subgoals using alpha too *)
                     in
