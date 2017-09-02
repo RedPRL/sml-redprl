@@ -1450,23 +1450,23 @@ struct
 
     fun intoIsContr C =
       let
-        val proj1 = Var.named "proj1"
-        val proj2 = Var.named "proj2"
+        val center = Var.named "center"
+        val path = Var.named "path"
       in
         Syn.into @@ Syn.RECORD
-          [(("proj1", proj1), C)
-          ,(("proj2", proj2), intoHasAllPaths C)]
+          [(("center", center), C)
+          ,(("path", path), intoHasAllPaths C)]
       end
 
     fun intoFiber A B f b =
       let
-        val a = Var.named "proj1"
-        val proj2 = Var.named "proj2"
+        val a = Var.named "a"
+        val path = Var.named "path"
         val dummy = Sym.named ""
       in
         Syn.into @@ Syn.RECORD
-          [(("proj1", a), A)
-          ,(("proj2", proj2),
+          [(("a", a), A)
+          ,(("path", path),
             Syn.into @@ Syn.PATH_TY
               ((dummy, B), Syn.intoApp (f, VarKit.toExp a), b))]
       end
@@ -1481,13 +1481,13 @@ struct
 
     fun intoEquiv A B =
       let
-        val f = Var.named "proj1"
+        val f = Var.named "f"
         val dummy = Var.named ""
-        val proj2 = Var.named "proj2"
+        val isequiv = Var.named "isequiv"
       in
         Syn.into @@ Syn.RECORD
-          [(("proj1", f), Syn.into @@ Syn.DFUN (A, dummy, B))
-          ,(("proj2", proj2), intoIsEquiv A B (VarKit.toExp f))]
+          [(("f", f), Syn.into @@ Syn.DFUN (A, dummy, B))
+          ,(("isequiv", isequiv), intoIsEquiv A B (VarKit.toExp f))]
       end
 
     fun EqType _ jdg =
@@ -1499,12 +1499,36 @@ struct
         val () = Assert.paramEq "Univalence.EqType" (r0, r1)
         val (kA, kB) = kindConstraintOnEnds k
 
-        val goalA = Restriction.makeEqType [(r0, P.APP P.DIM0)] (I, H) ((a0, a1), l, kA)
+        val eq = (r0, P.APP P.DIM0)
+
+        val goalA = Restriction.makeEqType [eq] (I, H) ((a0, a1), l, kA)
         val goalB = makeEqType (I, H) ((b0, b1), l, kB)
-        val goalEquiv = Restriction.makeEq [(r0, P.APP P.DIM0)] (I, H)
+        val goalEquiv = Restriction.makeEq [eq] (I, H)
           ((e0, e1), (intoEquiv a0 b0, NONE, K.top))
       in
         |>:? goalEquiv >:? goalA >: goalB #> (I, H, trivial)
+      end
+
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Univalence.Eq"
+        val (I, H) >> CJ.EQ ((in0, in1), (ty, l, k)) = jdg
+        val Syn.UA (r, a, b, e) = Syn.out ty
+        val Syn.UAIN (r0, m0, n0) = Syn.out in0
+        val Syn.UAIN (r1, m1, n1) = Syn.out in1
+        val () = Assert.paramEq "Univalence.Eq" (r0, r1)
+        val () = Assert.paramEq "Univalence.Eq" (r0, r)
+        val (kA, kB) = kindConstraintOnEnds k
+
+        val eq = (r0, P.APP P.DIM0)
+
+        val goalM = Restriction.makeEq [eq] (I, H) ((m0, m1), (a, l, kA))
+        val goalN = makeEq (I, H) ((n0, n1), (b, l, kB))
+        val goalCoh = Restriction.makeEqIfDifferent [eq] (I, H)
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("f", e), m0), n0), (b, NONE, K.top))
+        val goalEquiv = Restriction.makeMem [eq] (I, H) (e, (intoEquiv a b, NONE, K.top))
+      in
+        |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (I, H, trivial)
       end
   end
 

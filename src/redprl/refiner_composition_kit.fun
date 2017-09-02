@@ -72,6 +72,9 @@ struct
           else SOME @@ makeEqWith f (I, H) ((m, n), (ty, l, k)))
         (restrict eqs)
 
+    fun makeMem eqs (I, H) (m, (ty, l, k)) =
+      makeEq eqs (I, H) ((m, m), (ty, l, k))
+
     fun makeEqType eqs (I, H) ((a, b), l, k) =
       Option.map
         (fn f => makeEqTypeWith f (I, H) ((a, b), l, k))
