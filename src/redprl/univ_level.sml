@@ -45,30 +45,39 @@ struct
         (fn ((v0, g0), (v1, g1)) => Key.eq (v0, v1) andalso g0 = g1)
         (D.toList gapmap0, D.toList gapmap1)
 
+  (* the code shared by the pretty printer and `into` *)
+  fun into' intoConst intoVarGap intoMax ((gap, gapmap) : level) =
+    let
+      val varGapList = List.map intoVarGap (D.toList gapmap)
+      val gapImpliedByMap = D.foldl (fn (_, a, b) => IntInf.max (a, b)) 0 gapmap
+      val args = if gap > gapImpliedByMap
+                 then intoConst gap :: varGapList
+                 else varGapList
+    in
+      intoMax args
+    end
+
   (* pretty printer *)
 
   (* TODO
    *   `pretty.sml` should adopt the following algorithm so that `pretty`
    *   is the same as `ppParam o into`. *)
+  val prettyConst = Fpp.text o IntInf.toString
   fun prettyVarGap (f : Key.t -> Fpp.doc) (x, i) =
     if i = 0 then
       f x
     else if i = 1 then
       Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
-        [Fpp.text "labove", f x]))
+        [Fpp.text "lsucc", f x]))
     else
       Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
-        [Fpp.text "labove", f x, TP.ppIntInf i]))
-  fun pretty' f (gap, gapmap) =
-    let
-      val varGaps = List.map (prettyVarGap f) (D.toList gapmap)
-      val args = if gap = 0 then varGaps else TP.ppIntInf gap :: varGaps
-    in
-      case args of
-        [] => TP.ppIntInf 0
-      | [arg] => arg
-      | _ => Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep (Fpp.text "lmax" :: args)))
-    end
+        [Fpp.text "labove", f x, prettyConst i]))
+  val prettyMax =
+    fn [] => prettyConst 0
+     | [arg] => arg
+     | args => Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep (Fpp.text "lmax" :: args)))
+
+  fun pretty' f = into' prettyConst (prettyVarGap f) prettyMax
 
   (* parser and generator *)
   fun out' (f : param -> Fpp.doc) : param -> level =
@@ -82,13 +91,11 @@ struct
   fun varGapToParam (x, i) =
     if i = 0 then P.VAR x
     else P.APP (P.LABOVE (P.VAR x, i))
-  fun into (gap, gapmap) =
-    let
-      val varGapList = List.map varGapToParam (D.toList gapmap)
-      val args = if gap = 0 then varGapList else constToParam gap :: varGapList
-    in
-      if List.null args then constToParam 0 else P.APP (P.LMAX args)
-    end
+  val maxToParam =
+    fn [] => constToParam 0
+     | [arg] => arg
+     | args => P.APP (P.LMAX args)
+  val into = into'  constToParam varGapToParam maxToParam
 end
 
 structure RedPrlRawLevel :> REDPRL_LEVEL
