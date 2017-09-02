@@ -416,9 +416,10 @@ struct
                   (params', symctx, env)
                   hyps
 
+              val seqjdg' = (params' @ syms, hyps) >> concl
             in
               convertToAbt (metactx, symctx', env') script TAC >>= 
-              (fn scriptTm => elabRefine sign globalNameSequence (seqjdg, scriptTm)) >>= 
+              (fn scriptTm => elabRefine sign globalNameSequence (seqjdg', scriptTm)) >>= 
               checkProofState (pos, []) >>=
               (fn Lcf.|> (subgoals, validation) => 
                 let
