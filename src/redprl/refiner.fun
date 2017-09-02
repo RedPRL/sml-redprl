@@ -548,6 +548,15 @@ struct
       in
         HeadExpansionDelegate sign (I, H) maker b
       end
+
+    fun TrueHeadExpansion sign _ jdg =
+      let
+        val _ = RedPrlLog.trace "Computation.TrueHeadExpansion"
+        val            (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        fun maker ty = (I, H) >> CJ.TRUE (ty, l, k)
+      in
+        HeadExpansionDelegate sign (I, H) maker ty
+      end
     
     fun MatchRecordHeadExpansion sign _ jdg = 
       let
@@ -676,6 +685,7 @@ struct
     fun TryEqHeadExpansionR sign alpha = Lcf.try @@ EqHeadExpansionR sign alpha
     fun TryEqTypeHeadExpansionL sign alpha = Lcf.try @@ EqTypeHeadExpansionL sign alpha
     fun TryEqTypeHeadExpansionR sign alpha = Lcf.try @@ EqTypeHeadExpansionR sign alpha
+    fun TryTrueHeadExpansion sign alpha = Lcf.try @@ TrueHeadExpansion sign alpha
     fun TryMatchRecordHeadExpansion sign alpha = Lcf.try @@ MatchRecordHeadExpansion sign alpha
     fun HeadExpansion sign =
       TryEqHeadExpansionTy sign then_
@@ -683,6 +693,7 @@ struct
       TryEqHeadExpansionR sign then_
       TryEqTypeHeadExpansionL sign then_
       TryEqTypeHeadExpansionR sign then_
+      TryTrueHeadExpansion sign then_
       TryMatchRecordHeadExpansion sign
   end
 
