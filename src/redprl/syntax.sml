@@ -255,9 +255,6 @@ struct
     val intoApp = into o APP
     val intoLam = into o LAM
 
-    fun intoCoe dir (ty, m) =
-      into (COE {dir = dir, ty = ty, coercee = m})
-
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
