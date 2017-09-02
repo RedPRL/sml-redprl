@@ -32,10 +32,3 @@ Thm Monoid{i:lvl}  : [ (univ {labove i}) ] by [
 ].
 
 Print Monoid.
-
-
-// Thm Asdf : [ (univ 1) ] by [
-//   exact {Monoid {lvl 0}};
-//   unfold Monoid;
-//   ?
-// ].
