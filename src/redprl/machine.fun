@@ -185,10 +185,10 @@ struct
   fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
 
   fun zipTubesWith f : symbol O.equation list * abt bview list -> tube list =
-    ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
+    ListPair.mapEq (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
 
   fun zipBoundariesWith f : symbol O.equation list * abt bview list -> boundary list =
-    ListPair.map (fn (eq, _ \ n) => (eq, f n))
+    ListPair.mapEq (fn (eq, _ \ n) => (eq, f n))
 
   fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
