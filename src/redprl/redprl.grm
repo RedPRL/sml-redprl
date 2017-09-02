@@ -18,13 +18,15 @@ structure CJ = RedPrlCategoricalJudgment
 
 structure TP = TermPrinter
 
+val ppIntInf = Fpp.text o IntInf.toString
+
 fun makeCustom (opid, params, bindings) =
   Ast.$$ (O.POLY (O.CUST (opid, params, NONE)), bindings)
 
 fun makeDim pos : IntInf.int -> string param =
   fn 0 => P.APP P.DIM0
    | 1 => P.APP P.DIM1
-   | i => E.raiseAnnotatedError (pos, E.INVALID_DIMENSION (TP.ppIntInf i))
+   | i => E.raiseAnnotatedError (pos, E.INVALID_DIMENSION (ppIntInf i))
 
 structure Tac =
 struct
@@ -291,7 +293,7 @@ end
  | EXP | TAC | TRIV | JDG
 
  (* keywords and symbols in parameters *)
- | LABOVE | LMAX
+ | LABOVE | LSUCC | LMAX
 
  (* keywords and symbols in expressions *)
  | AX
@@ -539,12 +541,12 @@ dimParams
   | dimParam ([dimParam])
 
 numAsLevelParam
-  : NUMERAL (if NUMERAL >= 0 then P.APP (P.LCONST NUMERAL) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
+  : NUMERAL (if NUMERAL >= 0 then P.APP (P.LCONST NUMERAL) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (ppIntInf NUMERAL)))
 
 exclusivelyLevelParam
   : LBRACKET LVL levelParam RBRACKET (levelParam)
-  | LBRACKET LABOVE levelParam RBRACKET (P.APP (P.LABOVE (levelParam, 1)))
-  | LBRACKET LABOVE levelParam NUMERAL RBRACKET (if NUMERAL >= 0 then P.APP (P.LABOVE (levelParam, NUMERAL)) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (TP.ppIntInf NUMERAL)))
+  | LBRACKET LSUCC levelParam RBRACKET (P.APP (P.LABOVE (levelParam, 1)))
+  | LBRACKET LABOVE levelParam NUMERAL RBRACKET (if NUMERAL >= 0 then P.APP (P.LABOVE (levelParam, NUMERAL)) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (ppIntInf NUMERAL)))
   | LBRACKET LMAX levelParams RBRACKET (P.APP (P.LMAX levelParams))
 
 levelParam
