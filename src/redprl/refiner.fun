@@ -730,7 +730,6 @@ struct
       fun AutoElim z =
         Bool.Elim z orelse_
         Void.Elim z orelse_
-        Record.Elim z orelse_
         InternalizedEquality.Elim z
 
       fun StepEqTypeNeuByElim sign tys =
