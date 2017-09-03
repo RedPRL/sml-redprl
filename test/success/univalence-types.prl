@@ -10,8 +10,8 @@ Def Equiv (#A;#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
 
 Def Id = [(lam [a] a)].
 
-Thm IdIsEquiv{i:lvl} : [
-  (-> [ty : (U i hcom)] (IsEquiv ty ty Id))
+Thm IdIsEquiv{l:lvl} : [
+  (-> [ty : (U l hcom)] (IsEquiv ty ty Id))
 ] by [
   unfold IsEquiv; unfold IsContr; unfold Fiber; unfold HasAllPaths;
   lam ty, a.
@@ -32,27 +32,129 @@ Thm IdIsEquiv{i:lvl} : [
   >
 ].
 
-Thm IdEquiv{i:lvl} : [
-  (-> [ty : (U i hcom)] (Equiv ty ty))
+Thm IdEquiv{l:lvl} : [
+  (-> [ty : (U l hcom)] (Equiv ty ty))
 ] by [
   lam ty.
     unfold Equiv;
     <proj1 = `Id,
-     proj2 = use {IdIsEquiv i} [use ty]>
+     proj2 = use {IdIsEquiv l} [use ty]>
 ].
 
 Def Member(#M; #A) = [
   (= #A #M #M)
 ].
 
-Thm IdUnivalence {i:dim, l:lvl} : [
+Def IdUnivalence {l:lvl,i:dim}(#ty) = [
+  (univalence i #ty #ty ($ {IdEquiv l} #ty))
+].
+
+Thm IdUnivalence/Wf {l:lvl,i:dim} : [
   (->
    [ty : (U l hcom)]
-   (Member
-    (univalence i ty ty ($ {IdEquiv l} ty))
-    (U l)))
+   (Member ({IdUnivalence l i} ty) (U l)))
 ] by [
   lam ty.
+    unfold Member;
+    refine eq/intro;
+    auto
+].
+
+Thm IdUnivalence/Test0 {l:lvl,i:dim} : [
+  (->
+   [ty : (U l hcom)]
+   [a : ty]
+   (Member (univalence-in i a a) ({IdUnivalence l i} ty)))
+] by [
+  lam ty, a.
+    unfold Member;
+    refine eq/intro;
+    auto
+].
+
+Thm IdUnivalence/Test1 {l:lvl,i:dim} : [
+  (->
+   [ty : (U l hcom)]
+   [a : ty]
+   (= ty (univalence-proj 0 (univalence-in 0 a a) Id) a))
+] by [
+  lam ty, a.
+    refine eq/intro;
+    auto
+].
+
+Def Not = [(lam [b] (if b ff tt))].
+
+Thm Bool/reflect : [
+ (->
+  [a b : bool]
+  [p : (path {_} bool a b)]
+  (= bool a b))
+] by [
+  lam a, b, p. `(coe{0~>1} {x} (= bool ,a (@ ,p x)) ax)
+].
+
+Tac Bool/contra/inverse (#p:exp) = [
+  query gl <- goal.
+  match [gl:jdg] {
+    [a, b | #jdg{%a = %b in bool} =>
+      let eq : [(= bool %b %a)] = `($ Bool/reflect %b %a #p); auto. symmetry; elim eq; auto
+    ]
+    [a | %[a:jdg] => id]
+  }
+].
+
+Thm NotIsEquiv : [
+  (IsEquiv bool bool Not)
+] by [
+  unfold IsEquiv; unfold IsContr; unfold Fiber; unfold HasAllPaths;
+  lam b.
+  < proj1 =
+     <proj1 = `($ Not ,b),
+      proj2 = <_> use b
+     >
+  , proj2 =
+      lam <proj1 = a, proj2 = p>, <proj1 = a', proj2 = p'>.
+        {<i>
+          < proj1 =
+	     `($ Not (hcom{1~>0} bool ,b
+                      [i=0 {j} (@ ,p j)]
+                      [i=1 {j} (@ ,p' j)]))
+	  , proj2 =
+             <j> `(hcom{1~>j} bool ,b
+                   [i=0 {j} (@ ,p j)]
+                   [i=1 {j} (@ ,p' j)])
+	  >
+	};
+	(Bool/contra/inverse ,p);
+	(Bool/contra/inverse ,p')
+  >
+].
+
+Thm NotEquiv : [
+  (Equiv bool bool)
+] by [
+  unfold Equiv;
+  <proj1 = `Not,
+   proj2 = `NotIsEquiv>
+].
+
+Def NotUnivalence {i:dim} = [(univalence i bool bool NotEquiv)].
+
+Thm NotUnivalence/Wf {i:dim} : [
+  (Member {NotUnivalence i} (U 0 kan))
+] by [
+  unfold Member;
+  refine eq/intro;
+  auto
+].
+
+Thm NotUnivalence/Test0 {i:dim} : [
+  (->
+   [a : bool]
+   (Member (univalence-in i ($ Not a) a) {NotUnivalence i}))
+] by [
+  lam a.
     unfold Member;
     refine eq/intro;
     auto
