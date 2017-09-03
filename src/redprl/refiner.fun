@@ -195,16 +195,23 @@ struct
         val _ = RedPrlLog.trace "Synth.Custom"
         val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
 
-        val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out tm
+        val Abt.$ (O.POLY (O.CUST (name, rs, _)), args) = Abt.out tm
 
-        val {spec = ([],H') >> CJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
+        val {spec = (I',H') >> CJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
-        val rho =
-          ListPair.foldl
+        val mrho =
+          ListPair.foldlEq
             (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
-            Metavar.Ctx.empty (metas, args)
-        val ty' = substMetaenv rho ty
+            Metavar.Ctx.empty
+            (metas, args)
+        val srho =
+          ListPair.foldlEq
+            (fn ((u, _), (r, _), rho) => Sym.Ctx.insert rho u r)
+            Sym.Ctx.empty
+            (I', rs)
+
+        val ty' = substSymenv srho (substMetaenv mrho ty)
         val _ = if Hyps.isEmpty H' then () else raise Fail "Synth.Custom only works with empty sequent"
 
         val goalKind = makeTypeUnlessSubUniv (I, H) (ty', l, k) (l', k')
@@ -259,6 +266,18 @@ struct
         val goalKind = makeTypeUnlessSubUniv (I, H) (holeCod, l, k) (NONE, K.top)
       in
         |>: goalDFun >: goalDom >: goalCod >: goalN >:? goalKind #> (I, H, holeCod)
+      end
+
+    fun Proj _ jdg =
+      let
+        val _ = RedPrlLog.trace "Synth.Proj"
+        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val Syn.PROJ (lbl, n) = Syn.out tm
+        val (goalRecord, holeRecord) = makeSynth (I, H) (n, NONE, K.top)
+        val (goalTy, holeTy) = makeMatchRecord (lbl, holeRecord, n)
+        val goalKind = makeTypeUnlessSubUniv (I, H) (holeTy, l, k) (NONE, K.top)
+      in
+        |>: goalRecord >: goalTy >:? goalKind #> (I, H, holeTy)
       end
 
     fun PathApp _ jdg =
@@ -536,12 +555,21 @@ struct
       in
         HeadExpansionDelegate sign (I, H) maker b
       end
+
+    fun TrueHeadExpansion sign _ jdg =
+      let
+        val _ = RedPrlLog.trace "Computation.TrueHeadExpansion"
+        val            (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        fun maker ty = (I, H) >> CJ.TRUE (ty, l, k)
+      in
+        HeadExpansionDelegate sign (I, H) maker ty
+      end
     
     fun MatchRecordHeadExpansion sign _ jdg = 
       let
-        val _ = RedPrlLog.trace "Record.MatchRecord"
-        val            MATCH_RECORD (lbl, tm) = jdg
-        fun maker tm = MATCH_RECORD (lbl, tm)
+        val _ = RedPrlLog.trace "Computation.MatchRecordHeadExpansion"
+        val            MATCH_RECORD (lbl, tm, m) = jdg
+        fun maker tm = MATCH_RECORD (lbl, tm, m)
       in
         HeadExpansionDelegate sign ([], Hyps.empty) maker tm
       end
@@ -627,7 +655,7 @@ struct
      | "dfun/eq/eta" => DFun.Eta
      | "dfun/eq/app" => DFun.EqApp
      | "record/eqtype" => Record.EqType
-     | "record/eq" => Record.Eq
+     | "record/eq/tuple" => Record.Eq
      | "record/eq/eta" => Record.Eta
      | "record/eq/proj" => Record.EqProj
      | "record/intro" => Record.True
@@ -638,12 +666,15 @@ struct
      | "path/eq/app" => Path.EqApp
      | "path/eq/app/const" => Path.EqAppConst
      | "eq/eqtype" => InternalizedEquality.EqType
-     | "eq/eq" => InternalizedEquality.Eq
-     | "eq/ax" => InternalizedEquality.True
+     | "eq/eq/ax" => InternalizedEquality.Eq
+     | "eq/intro" => InternalizedEquality.True
      | "eq/eta" => InternalizedEquality.Eta
      | "fcom/eqtype" => FormalComposition.EqType
-     | "fcom/eq" => FormalComposition.Eq
+     | "fcom/eq/box" => FormalComposition.Eq
      | "fcom/intro" => FormalComposition.True
+     | "ua/eqtype" => Univalence.EqType
+     | "ua/eq/uain" => Univalence.Eq
+     | "ua/intro" => Univalence.True
      | "univ/eqtype" => Universe.EqType
      | "univ/eq" => Universe.Eq
      | "univ/intro" => Universe.True
@@ -661,6 +692,7 @@ struct
     fun TryEqHeadExpansionR sign alpha = Lcf.try @@ EqHeadExpansionR sign alpha
     fun TryEqTypeHeadExpansionL sign alpha = Lcf.try @@ EqTypeHeadExpansionL sign alpha
     fun TryEqTypeHeadExpansionR sign alpha = Lcf.try @@ EqTypeHeadExpansionR sign alpha
+    fun TryTrueHeadExpansion sign alpha = Lcf.try @@ TrueHeadExpansion sign alpha
     fun TryMatchRecordHeadExpansion sign alpha = Lcf.try @@ MatchRecordHeadExpansion sign alpha
     fun HeadExpansion sign =
       TryEqHeadExpansionTy sign then_
@@ -668,6 +700,7 @@ struct
       TryEqHeadExpansionR sign then_
       TryEqTypeHeadExpansionL sign then_
       TryEqTypeHeadExpansionR sign then_
+      TryTrueHeadExpansion sign then_
       TryMatchRecordHeadExpansion sign
   end
 
@@ -693,8 +726,9 @@ struct
          | (Syn.RECORD _, Syn.RECORD _) => Record.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => InternalizedEquality.EqType
-         | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
          | (Syn.FCOM _, Syn.FCOM _) => FormalComposition.EqType
+         | (Syn.UA _, Syn.UA _) => Univalence.EqType
+         | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
       fun canonicity sign = 
@@ -703,7 +737,6 @@ struct
       fun AutoElim z =
         Bool.Elim z orelse_
         Void.Elim z orelse_
-        Record.Elim z orelse_
         InternalizedEquality.Elim z
 
 
@@ -810,6 +843,7 @@ struct
          | (_, _, Syn.PATH_TY _) => Path.Eq
          | (_, _, Syn.EQUALITY _) => InternalizedEquality.Eq
          | (_, _, Syn.FCOM _) => FormalComposition.Eq
+         | (_, _, Syn.UA _) => Univalence.Eq
          | (_, _, Syn.UNIVERSE _) => Universe.Eq
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", CJ.pretty (CJ.EQ ((m, n), (ty, NONE, K.top))))
 
@@ -909,9 +943,10 @@ struct
       fun StepSynth sign m =
         case Syn.out m of
            Syn.VAR _ => Synth.Hyp
-         | Syn.APP _ => Synth.App
-         | Syn.S1_REC _ => Synth.S1Rec
          | Syn.WIF _ => Synth.WIf
+         | Syn.S1_REC _ => Synth.S1Rec
+         | Syn.APP _ => Synth.App
+         | Syn.PROJ _ => Synth.Proj
          | Syn.PATH_APP _ => Synth.PathApp
          | Syn.CUST => Synth.Custom sign
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]

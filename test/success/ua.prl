@@ -1,0 +1,59 @@
+Def HasAllPaths (#C) = [(-> [c c' : #C] (path {_} #C c c'))].
+
+Def IsContr (#C) = [(* [c : #C] (HasAllPaths #C))].
+
+Def Fiber (#A;#B;#f;#b) = [(* [a : #A] (path {_} #B ($ #f a) #b))].
+
+Def IsEquiv (#A;#B;#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
+
+Def Equiv (#A;#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
+
+Def Id = [(lam [a] a)].
+
+Thm IdIsEquiv{i:lvl} : [
+  (-> [ty : (univ i hcom)] (IsEquiv ty ty Id))
+] by [
+  unfold IsEquiv; unfold IsContr; unfold Fiber; unfold HasAllPaths;
+  lam ty, a.
+  < proj1 =
+     <proj1 = use a,
+      proj2 = <_> use a>
+  , proj2 =
+     lam <proj2 = c>, <proj2 = c'>. <i>
+       < proj1 =
+          `(hcom{1~>0} ,ty ,a
+            [i=0 {j} (@ ,c j)]
+            [i=1 {j} (@ ,c' j)])
+       , proj2 =
+           <j> `(hcom{1~>j} ,ty ,a
+                 [i=0 {j} (@ ,c j)]
+                 [i=1 {j} (@ ,c' j)])
+       >
+  >
+].
+
+Thm IdEquiv{i:lvl} : [
+  (-> [ty : (univ i hcom)] (Equiv ty ty))
+] by [
+  lam ty.
+    unfold Equiv;
+    <proj1 = `Id,
+     proj2 = use {IdIsEquiv i} [use ty]>
+].
+
+Def Member(#M; #A) = [
+  (= #A #M #M)
+].
+
+Thm IdUnivalence {i:dim, l:lvl} : [
+  (->
+   [ty : (univ l hcom)]
+   (Member
+    (ua{i} ty ty ($ {IdEquiv l} ty))
+    (univ l)))
+] by [
+  lam ty.
+    unfold Member;
+    refine eq/intro;
+    auto
+].

@@ -782,7 +782,7 @@ struct
         val (goalLam, hole) = makeTrue (I, H @> (z, CJ.TRUE (a, l, ka))) (bz, l, kb)
 
         (* realizer *)
-        val lam = Syn.into @@ Syn.LAM (z, hole)
+        val lam = Syn.intoLam (z, hole)
       in
         |>: goalLam >: goalA #> (I, H, lam)
       end
@@ -795,7 +795,7 @@ struct
         val (I, H) >> CJ.EQ ((m, n), (dfun, l, k)) = jdg
         val Syn.DFUN (_, x, _) = Syn.out dfun
 
-        val m' = Syn.into @@ Syn.LAM (x, Syn.into @@ Syn.APP (m, VarKit.toExp x))
+        val m' = Syn.intoLam (x, Syn.intoApp (m, VarKit.toExp x))
         val goal1 = makeMem (I, H) (m, (dfun, l, k))
         val goal2 = makeEqIfDifferent (I, H) ((m', n), (dfun, NONE, K.top))
       in
@@ -817,7 +817,7 @@ struct
         val b' = substVar (holeA, x) bx
         val u = alpha 0
         val v = alpha 1
-        val aptm = Syn.into @@ Syn.APP (VarKit.toExp z, holeA)
+        val aptm = Syn.intoApp (VarKit.toExp z, holeA)
         (* note: a and bx come from the telescope so they are types *)
         val H' = Hyps.interposeAfter
           (z, |@> (u, CJ.TRUE (b', l', K.top))
@@ -972,13 +972,19 @@ struct
     fun MatchRecord _ jdg =
       let
         val _ = RedPrlLog.trace "Record.MatchRecord"
-        val MATCH_RECORD (lbl, tm) = jdg
+        val MATCH_RECORD (lbl, tm, tuple) = jdg
 
         val Abt.$ (O.MONO (O.RECORD lbls), args) = Abt.out tm
 
-        val (_ \ arg) = List.nth (args, #1 (Option.valOf (ListUtil.findEqIndex lbl lbls)))
+        val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
+        val ((_,us) \ ty) = List.nth (args, i)
+
+        (* supply the dependencies *)
+        val lblPrefix = List.take (lbls, i)
+        val projs = List.map (fn lbl => Syn.into @@ Syn.PROJ (lbl, tuple)) lblPrefix
+        val ty = VarKit.substMany (ListPair.zipEq (projs, us)) ty
       in
-        Lcf.|> (T.empty, abtToAbs arg)
+        Lcf.|> (T.empty, abtToAbs ty)
       end
       handle _ =>
         raise E.error [Fpp.text "MATCH_RECORD judgment failed to unify"]
@@ -992,7 +998,7 @@ struct
         val () = Assert.labelEq "Record.EqProj" (lbl0, lbl1)
 
         val (goalTy, holeTy) = makeSynth (I, H) (m0, NONE, K.top)
-        val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy)
+        val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy, m0)
         val goalEq = makeEqIfDifferent (I, H) ((m0, m1), (holeTy, NONE, K.top)) (* m0 well-typed *)
         val goalEqTy = makeEqTypeIfDifferentOrNotSubUniv (I, H) ((holeTyP, ty), l, k) (NONE, K.top) (* holeTyP type *)
       in
@@ -1185,7 +1191,7 @@ struct
         val goalTy = makeEqTypeIfDifferent (I, H) ((holeLine, a), NONE, K.top) (* holeLine should be well-typed *)
         val goalEq = makeEq (I, H) ((holeEndpoint, p), (a, l, k))
       in
-        |>: goalSynth >: goalLine >: goalEndpoint >:? goalTy >: goalEq
+        |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >:? goalTy
         #> (I, H, trivial)
       end
   end
@@ -1280,7 +1286,7 @@ struct
   struct
     val kindConstraintOnCapAndTubes =
       fn K.DISCRETE => (K.DISCRETE, K.DISCRETE) (* XXX more research needed *)
-       | K.KAN => (K.KAN, K.KAN) (* XXX more research needed *)
+       | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
        | K.CUBICAL => (K.CUBICAL, K.COE) (* XXX more research needed *)
@@ -1402,12 +1408,11 @@ struct
 
         val (goalCap, holeCap) = makeTrue (I, H) (tyCap, l, kCap)
 
-        fun foldBoundary ((eq, (u, tyTube)), (goals, holes)) =
-          case Restriction.makeTrue [eq] (I, H) (substSymbol (#2 dir, u) tyTube, NONE, K.top) of
-            NONE => (goals, Syn.into Syn.AX :: holes) (* or any other term *)
-          | SOME (goal, hole) => (goal :: goals, hole :: holes)
-        val (goalBoundaries, holeBoundaries) =
-          List.foldr foldBoundary ([],[]) tyTubes
+        fun goTube (eq, (u, tyTube)) =
+          Restriction.makeTrue [eq] (Syn.into Syn.AX) (I, H) (substSymbol (#2 dir, u) tyTube, NONE, K.top)
+        val goalHoleBoundaries = List.map goTube tyTubes
+        val goalBoundaries = List.mapPartial #1 goalHoleBoundaries
+        val holeBoundaries = List.map #2 goalHoleBoundaries
 
         val tyBoundaries = List.map (fn (u, ty) => substSymbol (#2 dir, u) ty) tyTubes'
         val holeBoundaries' = ListPair.zipEq (eqs, holeBoundaries)
@@ -1426,6 +1431,123 @@ struct
       end
 
     (* TODO Add the Elim, EqCap and Eta rules. *)
+  end
+
+  structure Univalence =
+  struct
+    val kindConstraintOnEnds =
+      fn K.DISCRETE => E.raiseError (E.UNIMPLEMENTED (Fpp.text "discrete univalence types"))
+       | K.KAN => (K.KAN, K.KAN)
+       | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
+       | K.COE => (K.COE, K.COM) (* XXX more research needed *)
+       | K.CUBICAL => (K.CUBICAL, K.CUBICAL)
+
+    fun intoHasAllPaths C =
+      let
+        val c = Var.named "c"
+        val c' = Var.named "c'"
+        val dummy = Sym.named "_"
+      in
+        Syn.into @@ Syn.DFUN (C, c,
+          Syn.into @@ Syn.DFUN (C, c',
+            Syn.into @@ Syn.PATH_TY ((dummy, C), VarKit.toExp c, VarKit.toExp c')))
+      end
+
+    fun intoIsContr C =
+      let
+        val center = Var.named "center"
+      in
+        Syn.intoDProd [(center, C)] @@ intoHasAllPaths C
+      end
+
+    fun intoFiber A B f b =
+      let
+        val a = Var.named "a"
+        val dummy = Sym.named "_"
+      in
+        Syn.intoDProd [(a, A)] @@
+          Syn.into @@ Syn.PATH_TY
+            ((dummy, B), Syn.intoApp (f, VarKit.toExp a), b)
+      end
+
+    fun intoIsEquiv A B f =
+      let
+        val b = Var.named "b"
+      in
+        Syn.into @@ Syn.DFUN
+          (B, b, intoIsContr (intoFiber A B f (VarKit.toExp b)))
+      end
+
+    fun intoEquiv A B =
+      let
+        val f = Var.named "f"
+        val dummy = Var.named "_"
+      in
+        Syn.intoDProd [(f, Syn.into @@ Syn.DFUN (A, dummy, B))] @@
+          intoIsEquiv A B (VarKit.toExp f)
+      end
+
+    fun EqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Univalence.EqType"
+        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val Syn.UA (r0, a0, b0, e0) = Syn.out ty0
+        val Syn.UA (r1, a1, b1, e1) = Syn.out ty1
+        val () = Assert.paramEq "Univalence.EqType" (r0, r1)
+        val (kA, kB) = kindConstraintOnEnds k
+
+        val eq = (r0, P.APP P.DIM0)
+
+        val goalA = Restriction.makeEqType [eq] (I, H) ((a0, a1), l, kA)
+        val goalB = makeEqType (I, H) ((b0, b1), l, kB)
+        val goalEquiv = Restriction.makeEq [eq] (I, H)
+          ((e0, e1), (intoEquiv a0 b0, NONE, K.top))
+      in
+        |>:? goalEquiv >:? goalA >: goalB #> (I, H, trivial)
+      end
+
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "Univalence.Eq"
+        val (I, H) >> CJ.EQ ((in0, in1), (ty, l, k)) = jdg
+        val Syn.UA (r, a, b, e) = Syn.out ty
+        val Syn.UAIN (r0, m0, n0) = Syn.out in0
+        val Syn.UAIN (r1, m1, n1) = Syn.out in1
+        val () = Assert.paramEq "Univalence.Eq" (r0, r1)
+        val () = Assert.paramEq "Univalence.Eq" (r0, r)
+        val (kA, kB) = kindConstraintOnEnds k
+
+        val eq = (r0, P.APP P.DIM0)
+
+        val goalM = Restriction.makeEq [eq] (I, H) ((m0, m1), (a, l, kA))
+        val goalN = makeEq (I, H) ((n0, n1), (b, l, kB))
+        val goalCoh = Restriction.makeEqIfDifferent [eq] (I, H)
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("f", e), m0), n0), (b, NONE, K.top))
+        val goalEquiv = Restriction.makeMem [eq] (I, H) (e, (intoEquiv a b, NONE, K.top))
+      in
+        |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (I, H, trivial)
+      end
+
+    fun True _ jdg =
+      let
+        val _ = RedPrlLog.trace "Univalence.True"
+        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val Syn.UA (r, a, b, e) = Syn.out ty
+        val (kA, kB) = kindConstraintOnEnds k
+
+        val eq = (r, P.APP P.DIM0)
+
+        val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) (I, H) (a, l, kA)
+        val (goalN, holeN) = makeTrue (I, H) (b, l, kB)
+        val goalCoh = Restriction.makeEqIfDifferent [eq] (I, H)
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("f", e), holeM), holeN), (b, NONE, K.top))
+        val goalEquiv = Restriction.makeMem [eq] (I, H) (e, (intoEquiv a b, NONE, K.top))
+      in
+        |>:? goalM >: goalN >:? goalCoh >:? goalEquiv
+        #> (I, H, Syn.into @@ Syn.UAIN (r, holeM, holeN))
+      end
+
+    (* TODO Add the Elim, EqProj and Eta rules. *)
   end
 
   structure Universe =

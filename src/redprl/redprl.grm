@@ -308,6 +308,7 @@ end
  | RECORD | TIMES | TUPLE | BANG
  | PATH | ABS | AT_SIGN
  | BOX | CAP
+ | UA | UAIN | UAPROJ
  | UNIV
  | HCOM | COE
 
@@ -571,14 +572,13 @@ typedParams
 
 
 dir
-  : param SQUIGGLE_RIGHT_ARROW param ((param1, param2))
+  : dimParam SQUIGGLE_RIGHT_ARROW dimParam ((dimParam1, dimParam2))
 
 backDir
-  : param SQUIGGLE_LEFT_ARROW param ((param1, param2))
+  : dimParam SQUIGGLE_LEFT_ARROW dimParam ((dimParam1, dimParam2))
 
 equation
-  : LPAREN equation RPAREN (equation)
-  | param EQUALS param (param1, param2)
+  : dimParam EQUALS dimParam (dimParam1, dimParam2)
 
 tube
   : LSQUARE equation binding RSQUARE (equation, binding)
@@ -671,6 +671,10 @@ regularMultinaryOperator
   | PATH (O.MONO O.PATH_TY)
   (* equality *)
   | EQUALS (O.MONO O.EQUALITY)
+  (* ua *)
+  | UA LBRACKET dimParam RBRACKET (O.POLY (O.UA dimParam))
+  | UAIN LBRACKET dimParam RBRACKET (O.POLY (O.UAIN dimParam))
+  | UAPROJ LBRACKET dimParam RBRACKET (O.POLY (O.UAPROJ dimParam))
   (* coe *)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
 

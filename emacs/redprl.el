@@ -111,6 +111,10 @@
   '("dim" "hyp" "exp" "lvl" "tac" "triv" "jdg")
   "RedPRL's built-in sorts.")
 
+(defconst redprl-parameter-keywords
+  '("labove" "lsucc" "lmax")
+  "RedPRL's parameter keywords.")
+
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
     "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec" "wif"
@@ -121,6 +125,7 @@
     "record" "tuple"
     "path" "abs"
     "box" "cap"
+    "ua" "uain" "uaproj"
     "univ"
     "hcom" "coe" "com")
   "RedPRL's expression keywords.")
@@ -182,6 +187,9 @@
 
     ;; Numbers
     (,(rx (? "-") (+ digit)) 0 'redprl-number-face)
+
+    ;; Built-in parameters
+    (,(regexp-opt redprl-parameter-keywords 'words) 0 'redprl-expression-keyword-face)
 
     ;; Built-in expressions
     (,(regexp-opt redprl-expression-keywords 'words) 0 'redprl-expression-keyword-face)
