@@ -706,9 +706,56 @@ struct
         Record.Elim z orelse_
         InternalizedEquality.Elim z
 
+
+      fun inUsefulSubUniv (l', k') (l, k) =
+        K.greatestMeetComplement' (k, k') <> SOME k
+        andalso L.P.<= (l', l)
+
+      fun EqTypeFromHyp alpha jdg =
+        let
+          val (_, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+          val isUnary = Abt.eq (a, b)
+          val isUseful =
+            fn CJ.EQ_TYPE ((a', b'), l', k') =>
+                 Abt.eq (a', a) andalso Abt.eq (b', b)
+                 andalso inUsefulSubUniv (l', k') (l, k)
+             | CJ.EQ (_, (a', l', k')) =>
+                 isUnary andalso Abt.eq (a', a)
+                 andalso inUsefulSubUniv (l', k') (l, k)
+             | CJ.TRUE (a', l', k') =>
+                 isUnary andalso Abt.eq (a', a)
+                 andalso inUsefulSubUniv (l', k') (l, k)
+             | _ => false
+        in
+          case Hyps.search H isUseful of
+            SOME (lbl, _) =>
+              ( TypeEquality.FromEqType lbl orelse_
+                TypeEquality.FromEq lbl orelse_
+                TypeEquality.FromTrue lbl)
+              alpha jdg
+          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
+        end
+
+      fun EqFromHyp alpha jdg =
+        let
+          val (_, H) >> CJ.EQ ((m, n), (a, l, k)) = jdg
+          val isUseful =
+            fn CJ.EQ ((m', n'), (a', l', k')) =>
+                 Abt.eq (m', m) andalso Abt.eq (n', n) andalso Abt.eq (a', a)
+                 andalso inUsefulSubUniv (l', k') (l, k)
+             | _ => false
+        in
+          case Hyps.search H isUseful of
+            SOME (lbl, _) => Equality.FromEq lbl alpha jdg
+          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
+        end
+
+      fun UniverseVarToType z  = 
+        Universe.Elim z then_ EqTypeFromHyp 
+
       fun StepEqTypeNeuByElim sign tys =
-        fn (Machine.VAR z, _) => AutoElim z
-         | (_, Machine.VAR z) => AutoElim z
+        fn (Machine.VAR z, _) => AutoElim z orelse_ UniverseVarToType z
+         | (_, Machine.VAR z) => AutoElim z orelse_ UniverseVarToType z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByElim", CJ.pretty @@ CJ.EQ_TYPE (tys, NONE, K.top))
 
       fun StepEqTypeNeuByUnfold sign tys =
@@ -878,48 +925,6 @@ struct
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordHeadExpansion sign then_ Record.MatchRecord
           | _ >> jdg => raise E.error [Fpp.text "AutoStep does not apply to the judgment", CJ.pretty jdg])
 
-      fun inUsefulSubUniv (l', k') (l, k) =
-        K.greatestMeetComplement' (k, k') <> SOME k
-        andalso L.P.<= (l', l)
-
-      fun EqTypeFromHyp alpha jdg =
-        let
-          val (_, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
-          val isUnary = Abt.eq (a, b)
-          val isUseful =
-            fn CJ.EQ_TYPE ((a', b'), l', k') =>
-                 Abt.eq (a', a) andalso Abt.eq (b', b)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | CJ.EQ (_, (a', l', k')) =>
-                 isUnary andalso Abt.eq (a', a)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | CJ.TRUE (a', l', k') =>
-                 isUnary andalso Abt.eq (a', a)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | _ => false
-        in
-          case Hyps.search H isUseful of
-            SOME (lbl, _) =>
-              ( TypeEquality.FromEqType lbl orelse_
-                TypeEquality.FromEq lbl orelse_
-                TypeEquality.FromTrue lbl)
-              alpha jdg
-          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
-        end
-
-      fun EqFromHyp alpha jdg =
-        let
-          val (_, H) >> CJ.EQ ((m, n), (a, l, k)) = jdg
-          val isUseful =
-            fn CJ.EQ ((m', n'), (a', l', k')) =>
-                 Abt.eq (m', m) andalso Abt.eq (n', n) andalso Abt.eq (a', a)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | _ => false
-        in
-          case Hyps.search H isUseful of
-            SOME (lbl, _) => Equality.FromEq lbl alpha jdg
-          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
-        end
     in
       fun AutoStep sign alpha jdg = 
         StepJdg sign alpha jdg
