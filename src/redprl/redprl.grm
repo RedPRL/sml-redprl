@@ -309,7 +309,7 @@ end
  | PATH | ABS | AT_SIGN
  | BOX | CAP
  | UNIVALENCE | UNIVALENCE_IN | UNIVALENCE_PROJ
- | UNIV
+ | UNIVERSE
  | HCOM | COE
 
  (* parsing "coercions" *)
@@ -652,8 +652,8 @@ polyNullaryOperator
   (* circle *)
   : LOOP dimParam (O.POLY (O.LOOP dimParam))
   | DIM dimParam (O.POLY (O.PARAM_REF (O.DIM, dimParam)))
-  | UNIV levelParam (O.POLY (O.UNIVERSE (levelParam, RedPrlKind.top)))
-  | UNIV levelParam kind (O.POLY (O.UNIVERSE (levelParam, kind)))
+  | UNIVERSE levelParam (O.POLY (O.UNIVERSE (levelParam, RedPrlKind.top)))
+  | UNIVERSE levelParam kind (O.POLY (O.UNIVERSE (levelParam, kind)))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator

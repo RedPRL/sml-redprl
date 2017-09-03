@@ -11,7 +11,7 @@ Def Equiv (#A;#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
 Def Id = [(lam [a] a)].
 
 Thm IdIsEquiv{i:lvl} : [
-  (-> [ty : (univ i hcom)] (IsEquiv ty ty Id))
+  (-> [ty : (U i hcom)] (IsEquiv ty ty Id))
 ] by [
   unfold IsEquiv; unfold IsContr; unfold Fiber; unfold HasAllPaths;
   lam ty, a.
@@ -33,7 +33,7 @@ Thm IdIsEquiv{i:lvl} : [
 ].
 
 Thm IdEquiv{i:lvl} : [
-  (-> [ty : (univ i hcom)] (Equiv ty ty))
+  (-> [ty : (U i hcom)] (Equiv ty ty))
 ] by [
   lam ty.
     unfold Equiv;
@@ -47,10 +47,10 @@ Def Member(#M; #A) = [
 
 Thm IdUnivalence {i:dim, l:lvl} : [
   (->
-   [ty : (univ l hcom)]
+   [ty : (U l hcom)]
    (Member
     (univalence{i} ty ty ($ {IdEquiv l} ty))
-    (univ l)))
+    (U l)))
 ] by [
   lam ty.
     unfold Member;

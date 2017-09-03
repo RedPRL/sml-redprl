@@ -675,9 +675,9 @@ struct
      | "univalence/eqtype" => Univalence.EqType
      | "univalence/eq/uain" => Univalence.Eq
      | "univalence/intro" => Univalence.True
-     | "univ/eqtype" => Universe.EqType
-     | "univ/eq" => Universe.Eq
-     | "univ/intro" => Universe.True
+     | "universe/eqtype" => Universe.EqType
+     | "universe/eq" => Universe.Eq
+     | "universe/intro" => Universe.True
      | "hcom/eq" => HCom.Eq
      | "hcom/eq/cap" => HCom.EqCapL
      | "hcom/eq/tube" => HCom.EqTubeL

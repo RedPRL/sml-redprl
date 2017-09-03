@@ -194,7 +194,7 @@ Thm Not : [(-> [_ : wbool] wbool)] by [
 
 Thm FunExt{l:lvl} : [
   (->
-   [a b : (univ l)]
+   [a b : (U l)]
    [f g : (-> a b)]
    [p : (-> [y : a] (path {_} b ($ f y) ($ g y)))]
    (path {_} (-> a b) f g))
@@ -234,7 +234,7 @@ Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
 
 Thm PathEta{l:lvl} : [
   (->
-   [a : (univ l)]
+   [a : (U l)]
    [m n : a]
    (path {_} a m n)
    (path {_} a m n))
