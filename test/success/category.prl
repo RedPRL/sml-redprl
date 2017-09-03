@@ -1,0 +1,17 @@
+Thm Category{i:lvl} : [ (univ {lsucc i}) ] by [
+  exact
+   (record
+    [ob : (univ i)]
+    [hom : (-> ob ob (univ i))]
+    [idn : (-> [a : ob] ($ hom a a))]); // fill in the rest, but this suffices as an example
+  refine univ/eq;
+  fresh ob, hom, idn -> refine record/eqtype;
+  [ auto
+  , elim ob; auto
+  , fresh a -> refine dfun/eqtype;
+    [ elim ob; auto
+    , let mem : [($ ,hom ,a ,a) in (univ i)] = auto.
+      elim mem; auto
+    ]
+  ]
+].
