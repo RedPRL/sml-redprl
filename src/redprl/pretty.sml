@@ -95,8 +95,8 @@ struct
 
   val ppParamWithSort =
     fn (p, NONE) => ppParam p
-     | (P.VAR x, SOME s) => Atomic.braces @@ hsep [text @@ S.paramSortToString s, ppSym x]
-     | (P.APP (P.LCONST i), SOME S.LVL) => Atomic.braces @@ hsep [text "lvl", ppIntInf i]
+     | (p as P.VAR x, SOME _) => ppParam p
+     | (p as P.APP (P.LCONST i), SOME S.LVL) => Atomic.braces @@ hsep [text "lvl", ppParam p]
      | (p as P.APP (P.LABOVE _), SOME S.LVL) => ppParam p
      | (p as P.APP (P.LMAX _), SOME S.LVL) => ppParam p
      | (p, SOME S.LVL) => raise Fail "ppParamWithSort encountered an invalid level term."
