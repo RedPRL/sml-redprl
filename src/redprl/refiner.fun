@@ -648,7 +648,7 @@ struct
      | "dfun/eq/eta" => DFun.Eta
      | "dfun/eq/app" => DFun.EqApp
      | "record/eqtype" => Record.EqType
-     | "record/eq" => Record.Eq
+     | "record/eq/tuple" => Record.Eq
      | "record/eq/eta" => Record.Eta
      | "record/eq/proj" => Record.EqProj
      | "record/intro" => Record.True
@@ -659,14 +659,14 @@ struct
      | "path/eq/app" => Path.EqApp
      | "path/eq/app/const" => Path.EqAppConst
      | "eq/eqtype" => InternalizedEquality.EqType
-     | "eq/eq" => InternalizedEquality.Eq
-     | "eq/ax" => InternalizedEquality.True
+     | "eq/eq/ax" => InternalizedEquality.Eq
+     | "eq/intro" => InternalizedEquality.True
      | "eq/eta" => InternalizedEquality.Eta
      | "fcom/eqtype" => FormalComposition.EqType
-     | "fcom/eq" => FormalComposition.Eq
+     | "fcom/eq/box" => FormalComposition.Eq
      | "fcom/intro" => FormalComposition.True
      | "ua/eqtype" => Univalence.EqType
-     | "ua/eq" => Univalence.Eq
+     | "ua/eq/uain" => Univalence.Eq
      | "ua/intro" => Univalence.True
      | "univ/eqtype" => Universe.EqType
      | "univ/eq" => Universe.Eq
