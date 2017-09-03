@@ -1,0 +1,10 @@
+Thm Discrete/reflection {l:lvl} : [
+  (->
+   [ty : (U l discrete)]
+   [a b : ty]
+   [p : (path {_} ty a b)]
+   (= ty a b))
+] by [
+  lam ty, a, b, p. elim ty;
+    `(coe{0~>1} {x} (= ,ty ,a (@ ,p x)) ax)
+].
