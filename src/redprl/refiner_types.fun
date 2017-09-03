@@ -1484,11 +1484,11 @@ struct
 
     (* This rule will be removed once every hypothesis
      * is required to be `A true`. *)
-    fun Elim z alpha jdg =
+    fun ElimFromTrue z alpha jdg =
       let
-        val _ = RedPrlLog.trace "Universe.Elim"
+        val _ = RedPrlLog.trace "Universe.ElimFromTrue"
         val (I, H) >> catjdg = jdg
-        (* for now we ignore the kind in the context *)
+        (* for now we ignore the kind and the level in the context *)
         val CJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.UNIVERSE (l, k) = Syn.out ty
 
@@ -1500,5 +1500,26 @@ struct
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
+
+    (* This rule will also be removed once every hypothesis
+     * is required to be `A true`. *)
+    fun ElimFromEq z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.ElimFromEq"
+        val (I, H) >> catjdg = jdg
+        (* for now we ignore the kind and the level in the context *)
+        val CJ.EQ ((ty1, ty2), (univ, _, _)) = Hyps.lookup z H
+        val Syn.UNIVERSE (l, k) = Syn.out univ
+
+        val u = alpha 0
+        val (goal, hole) =
+          makeGoal
+            @@ (I, Hyps.interposeAfter (z, |@> (u, CJ.EQ_TYPE ((ty1, ty2), SOME l, k))) H)
+            >> catjdg
+      in
+        |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
+      end
+
+    fun Elim z = ElimFromTrue z orelse_ ElimFromEq z
   end
 end
