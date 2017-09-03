@@ -1491,8 +1491,8 @@ struct
       let
         val _ = RedPrlLog.trace "Univalence.EqType"
         val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val Syn.UA (r0, a0, b0, e0) = Syn.out ty0
-        val Syn.UA (r1, a1, b1, e1) = Syn.out ty1
+        val Syn.UNIVALENCE (r0, a0, b0, e0) = Syn.out ty0
+        val Syn.UNIVALENCE (r1, a1, b1, e1) = Syn.out ty1
         val () = Assert.paramEq "Univalence.EqType" (r0, r1)
         val (kA, kB) = kindConstraintOnEnds k
 
@@ -1510,9 +1510,9 @@ struct
       let
         val _ = RedPrlLog.trace "Univalence.Eq"
         val (I, H) >> CJ.EQ ((in0, in1), (ty, l, k)) = jdg
-        val Syn.UA (r, a, b, e) = Syn.out ty
-        val Syn.UAIN (r0, m0, n0) = Syn.out in0
-        val Syn.UAIN (r1, m1, n1) = Syn.out in1
+        val Syn.UNIVALENCE (r, a, b, e) = Syn.out ty
+        val Syn.UNIVALENCE_IN (r0, m0, n0) = Syn.out in0
+        val Syn.UNIVALENCE_IN (r1, m1, n1) = Syn.out in1
         val () = Assert.paramEq "Univalence.Eq" (r0, r1)
         val () = Assert.paramEq "Univalence.Eq" (r0, r)
         val (kA, kB) = kindConstraintOnEnds k
@@ -1532,7 +1532,7 @@ struct
       let
         val _ = RedPrlLog.trace "Univalence.True"
         val (I, H) >> CJ.TRUE (ty, l, k) = jdg
-        val Syn.UA (r, a, b, e) = Syn.out ty
+        val Syn.UNIVALENCE (r, a, b, e) = Syn.out ty
         val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r, P.APP P.DIM0)
@@ -1544,7 +1544,7 @@ struct
         val goalEquiv = Restriction.makeMem [eq] (I, H) (e, (intoEquiv a b, NONE, K.top))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv
-        #> (I, H, Syn.into @@ Syn.UAIN (r, holeM, holeN))
+        #> (I, H, Syn.into @@ Syn.UNIVALENCE_IN (r, holeM, holeN))
       end
 
     (* TODO Add the Elim, EqProj and Eta rules. *)
