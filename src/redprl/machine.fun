@@ -185,10 +185,10 @@ struct
   fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
 
   fun zipTubesWith f : symbol O.equation list * abt bview list -> tube list =
-    ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
+    ListPair.mapEq (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
 
   fun zipBoundariesWith f : symbol O.equation list * abt bview list -> boundary list =
-    ListPair.map (fn (eq, _ \ n) => (eq, f n))
+    ListPair.mapEq (fn (eq, _ \ n) => (eq, f n))
 
   fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
@@ -281,9 +281,9 @@ struct
        if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
          val entry as {state, ...} = Sig.lookup sign opid
+         val Lcf.|> (psi, evd) = state (fn _ => Sym.named "?")
          val state = state (fn _ => RedPrlSym.new ())
-         val (mrho, srho) = Sig.applyCustomOperator entry (List.map #1 ps) args
-         val term = substSymenv srho (substMetaenv mrho (Sig.extract state))
+         val term = Sig.unfoldCustomOperator entry (List.map #1 ps) args
        in
          STEP @@ term || (syms, stk)
        end  

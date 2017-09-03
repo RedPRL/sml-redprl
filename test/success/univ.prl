@@ -17,3 +17,17 @@ Thm Univ2 : [
 ] by [
   fresh y -> elim x; use y
 ].
+
+Thm Monoid{i:lvl}  : [ (univ {lsucc i}) ] by [
+  fresh ob -> `(record
+    [ob : (univ i)]
+    [one : ob]
+    [mul : (-> ob ob ob)]
+    [idn/l : (-> [m : ob] (= ob ($ mul one m) m))]
+    [idn/r : (-> [m : ob] (= ob ($ mul m one) m))]
+    [assoc : (-> [l m n : ob] (path {_} ob ($ mul l ($ mul m n)) ($ mul ($ mul m n) l)))]);
+  elim ob;
+  auto
+].
+
+Print Monoid.

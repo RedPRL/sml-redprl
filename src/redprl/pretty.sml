@@ -30,6 +30,7 @@ sig
   type t = RedPrlAbt.abt
   val toString : t -> string
   val ppTerm : t -> Fpp.doc
+  val ppBinder : t RedPrlAbt.bview -> Fpp.doc
   val ppSort : RedPrlAbt.sort -> Fpp.doc
   val ppPsort : RedPrlAbt.psort -> Fpp.doc
   val ppValence : RedPrlAbt.valence -> Fpp.doc
@@ -250,7 +251,7 @@ struct
 
   and ppTubes (eqs, tubes) =
     expr @@ hvsep @@
-      ListPair.map
+      ListPair.mapEq
         (fn ((r1, r2), ([u], _) \ mu) =>
           Atomic.squares @@ hsep
             [seq [ppParam r1, Atomic.equals, ppParam r2],
@@ -259,7 +260,7 @@ struct
 
   and ppBoundaries (eqs, tubes) =
     expr @@ hvsep @@
-      ListPair.map
+      ListPair.mapEq
         (fn ((r1, r2), _ \ m) =>
           Atomic.squares @@ hsep
             [seq [ppParam r1, Atomic.equals, ppParam r2],

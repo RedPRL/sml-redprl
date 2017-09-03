@@ -27,6 +27,7 @@ struct
     let
       val arguments = entryArguments entry
       val state = state (fn _ => RedPrlSym.new ())
+      val Lcf.|> (_, evd) = state
     in
       Fpp.hsep
         [Fpp.text "Def",
@@ -37,7 +38,7 @@ struct
             Fpp.newline],
           Fpp.Atomic.equals,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
-            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm @@ extract state],
+            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppBinder (Tm.outb evd)],
             Fpp.newline],
           Fpp.char #"."]
     end
@@ -347,9 +348,11 @@ struct
 
             fun state alpha =
               let
+                val binder = (List.map #1 params', []) \ definiens'
+                val valence = ((List.map #2 params', []), tau)
                 val subgoals = argumentsToSubgoals alpha arguments'
               in
-                Lcf.|> (subgoals, checkb (([],[]) \ definiens', (([],[]), tau)))
+                Lcf.|> (subgoals, checkb (binder, valence))
               end
 
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM tau)
@@ -403,17 +406,16 @@ struct
           E.wrap (pos, fn () => elabSrcSequent (metactx, symctx, Var.Ctx.empty, env) goal) >>= (fn (_, seqjdg as (syms, hyps) >> concl) =>
             let
               (* TODO: deal with syms ?? *)
-              val (params'', symctx', env') =
+              val (symctx', env') =
                 Hyps.foldr
-                  (fn (x, jdgx, (ps, ctx, env)) =>
+                  (fn (x, jdgx, (ctx, env)) =>
                     let
                       val taux = CJ.synthesis jdgx
                     in
-                      (ps,
-                       Tm.Sym.Ctx.insert ctx x RedPrlSortData.HYP,
+                      (Tm.Sym.Ctx.insert ctx x RedPrlSortData.HYP,
                        NameEnv.insert env (Sym.toString x) x)
                     end)
-                  (params', symctx, env)
+                  (symctx, env)
                   hyps
 
               val seqjdg' = (params' @ syms, hyps) >> concl
@@ -430,9 +432,8 @@ struct
                     in
                       Lcf.|> (Lcf.Tl.append argSubgoals subgoals, validation)
                     end
-                  val spec = (params'' @ syms, hyps) >> concl
                 in
-                  E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
+                  E.ret @@ EDEF {sourceOpid = opid, spec = seqjdg', state = state}
                 end)
             end)
         end
@@ -441,13 +442,14 @@ struct
     fun elabTac (sign : sign) opid {arguments, params, script} =
       let
         val (arguments', metactx) = elabDeclArguments arguments
-        val (params', symctx, env) = elabDeclParams sign params
+        val (params' : symbol params, symctx, env) = elabDeclParams sign params
       in
         convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
           let
             open O Tm infix \
-            fun state alpha =
-              Lcf.|> (argumentsToSubgoals alpha arguments', checkb (([],[]) \ script', (([],[]), TAC)))
+            val binder = (List.map #1 params', []) \ script'
+            val valence = ((List.map #2 params', []), TAC)
+            fun state alpha = Lcf.|> (argumentsToSubgoals alpha arguments', checkb (binder, valence))
             val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM TAC)
           in
             E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
