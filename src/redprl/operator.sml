@@ -291,9 +291,9 @@ struct
    | PATH_APP of 'a P.term
    | BOX of 'a dir * 'a equation list
    | CAP of 'a dir * 'a equation list
-   | UA of 'a P.term
-   | UAIN of 'a P.term
-   | UAPROJ of 'a P.term
+   | UNIVALENCE of 'a P.term
+   | UNIVALENCE_IN of 'a P.term
+   | UNIVALENCE_PROJ of 'a P.term
    | UNIVERSE of 'a P.term * kind
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
@@ -479,9 +479,9 @@ struct
        | PATH_APP _ => [[] * [] <> EXP] ->> EXP
        | BOX params => arityBox params
        | CAP params => arityCap params
-       | UA _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-       | UAIN _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
-       | UAPROJ _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | UNIVALENCE _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | UNIVALENCE_IN _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | UNIVALENCE_PROJ _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | UNIVERSE _ => [] ->> EXP
 
        | HCOM params => arityHcom params
@@ -564,9 +564,9 @@ struct
        | PATH_APP r => dimSupport r
        | BOX params => comSupport params
        | CAP params => comSupport params
-       | UA r => dimSupport r
-       | UAIN r => dimSupport r
-       | UAPROJ r => dimSupport r
+       | UNIVALENCE r => dimSupport r
+       | UNIVALENCE_IN r => dimSupport r
+       | UNIVALENCE_PROJ r => dimSupport r
        | UNIVERSE (l, _) => levelSupport l
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
@@ -627,9 +627,9 @@ struct
          (case t of
              CAP (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
            | _ => false)
-       | (UA r, t) => (case t of UA r' => P.eq f (r, r') | _ => false)
-       | (UAIN r, t) => (case t of UAIN r' => P.eq f (r, r') | _ => false)
-       | (UAPROJ r, t) => (case t of UAPROJ r' => P.eq f (r, r') | _ => false)
+       | (UNIVALENCE r, t) => (case t of UNIVALENCE r' => P.eq f (r, r') | _ => false)
+       | (UNIVALENCE_IN r, t) => (case t of UNIVALENCE_IN r' => P.eq f (r, r') | _ => false)
+       | (UNIVALENCE_PROJ r, t) => (case t of UNIVALENCE_PROJ r' => P.eq f (r, r') | _ => false)
        | (UNIVERSE (l, k), t) => (case t of UNIVERSE (l', k') => P.eq f (l, l') andalso k = k' | _ => false)
        | (HCOM (dir1, eqs1), t) =>
          (case t of
@@ -790,9 +790,9 @@ struct
        | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
        | BOX params => "box{" ^ comParamsToString f params ^ "}"
        | CAP params => "cap{" ^ comParamsToString f params ^ "}"
-       | UA r => "ua{" ^ P.toString f r ^ "}"
-       | UAIN r => "uain{" ^ P.toString f r ^ "}"
-       | UAPROJ r => "uaproj{" ^ P.toString f r ^ "}"
+       | UNIVALENCE r => "univalence{" ^ P.toString f r ^ "}"
+       | UNIVALENCE_IN r => "univalence-in{" ^ P.toString f r ^ "}"
+       | UNIVALENCE_PROJ r => "univalence-proj{" ^ P.toString f r ^ "}"
        | UNIVERSE (l, k) => "universe{" ^ P.toString f l ^ "," ^ K.toString k ^ "}"
        | HCOM params => "hcom{" ^ comParamsToString f params ^ "}"
        | COE dir => "coe{" ^ dirToString f dir ^ "}"
@@ -869,9 +869,9 @@ struct
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
        | BOX (dir, eqs) => BOX (mapSpan f dir, mapSpans f eqs)
        | CAP (dir, eqs) => CAP (mapSpan f dir, mapSpans f eqs)
-       | UA r => UA (P.bind (passSort DIM f) r)
-       | UAIN r => UAIN (P.bind (passSort DIM f) r)
-       | UAPROJ r => UAPROJ (P.bind (passSort DIM f) r)
+       | UNIVALENCE r => UNIVALENCE (P.bind (passSort DIM f) r)
+       | UNIVALENCE_IN r => UNIVALENCE_IN (P.bind (passSort DIM f) r)
+       | UNIVALENCE_PROJ r => UNIVALENCE_PROJ (P.bind (passSort DIM f) r)
        | UNIVERSE (l, k) => UNIVERSE (P.bind (passSort LVL f) l, k)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)

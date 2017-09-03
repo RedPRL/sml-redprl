@@ -672,12 +672,12 @@ struct
      | "fcom/eqtype" => FormalComposition.EqType
      | "fcom/eq/box" => FormalComposition.Eq
      | "fcom/intro" => FormalComposition.True
-     | "ua/eqtype" => Univalence.EqType
-     | "ua/eq/uain" => Univalence.Eq
-     | "ua/intro" => Univalence.True
-     | "univ/eqtype" => Universe.EqType
-     | "univ/eq" => Universe.Eq
-     | "univ/intro" => Universe.True
+     | "univalence/eqtype" => Univalence.EqType
+     | "univalence/eq/uain" => Univalence.Eq
+     | "univalence/intro" => Univalence.True
+     | "universe/eqtype" => Universe.EqType
+     | "universe/eq" => Universe.Eq
+     | "universe/intro" => Universe.True
      | "hcom/eq" => HCom.Eq
      | "hcom/eq/cap" => HCom.EqCapL
      | "hcom/eq/tube" => HCom.EqTubeL
@@ -727,7 +727,7 @@ struct
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => InternalizedEquality.EqType
          | (Syn.FCOM _, Syn.FCOM _) => FormalComposition.EqType
-         | (Syn.UA _, Syn.UA _) => Univalence.EqType
+         | (Syn.UNIVALENCE _, Syn.UNIVALENCE _) => Univalence.EqType
          | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
@@ -843,7 +843,7 @@ struct
          | (_, _, Syn.PATH_TY _) => Path.Eq
          | (_, _, Syn.EQUALITY _) => InternalizedEquality.Eq
          | (_, _, Syn.FCOM _) => FormalComposition.Eq
-         | (_, _, Syn.UA _) => Univalence.Eq
+         | (_, _, Syn.UNIVALENCE _) => Univalence.Eq
          | (_, _, Syn.UNIVERSE _) => Universe.Eq
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", CJ.pretty (CJ.EQ ((m, n), (ty, NONE, K.top))))
 
