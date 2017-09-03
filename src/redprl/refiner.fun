@@ -195,16 +195,23 @@ struct
         val _ = RedPrlLog.trace "Synth.Custom"
         val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
 
-        val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out tm
+        val Abt.$ (O.POLY (O.CUST (name, rs, _)), args) = Abt.out tm
 
-        val {spec = ([],H') >> CJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
+        val {spec = (I',H') >> CJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
-        val rho =
-          ListPair.foldl
+        val mrho =
+          ListPair.foldlEq
             (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
-            Metavar.Ctx.empty (metas, args)
-        val ty' = substMetaenv rho ty
+            Metavar.Ctx.empty
+            (metas, args)
+        val srho =
+          ListPair.foldlEq
+            (fn ((u, _), (r, _), rho) => Sym.Ctx.insert rho u r)
+            Sym.Ctx.empty
+            (I', rs)
+
+        val ty' = substSymenv srho (substMetaenv mrho ty)
         val _ = if Hyps.isEmpty H' then () else raise Fail "Synth.Custom only works with empty sequent"
 
         val goalKind = makeTypeUnlessSubUniv (I, H) (ty', l, k) (l', k')

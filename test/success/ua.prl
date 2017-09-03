@@ -10,42 +10,50 @@ Def Equiv (#A;#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
 
 Def Id = [(lam [a] a)].
 
-Thm IdIsEquiv (#A) : [
-  #A hcom type
-  >>
-  (IsEquiv #A #A Id)
+Thm IdIsEquiv{i:lvl} : [
+  (-> [ty : (univ i hcom)] (IsEquiv ty ty Id))
 ] by [
   unfold IsEquiv; unfold IsContr; unfold Fiber; unfold HasAllPaths;
-  lam a.
+  lam ty, a.
   < proj1 =
      <proj1 = use a,
       proj2 = <_> use a>
   , proj2 =
      lam <proj2 = c>, <proj2 = c'>. <i>
        < proj1 =
-          `(hcom{1~>0} #A ,a
+          `(hcom{1~>0} ,ty ,a
             [i=0 {j} (@ ,c j)]
             [i=1 {j} (@ ,c' j)])
        , proj2 =
-           <j> `(hcom{1~>j} #A ,a
+           <j> `(hcom{1~>j} ,ty ,a
                  [i=0 {j} (@ ,c j)]
                  [i=1 {j} (@ ,c' j)])
        >
   >
 ].
 
-Thm IdEquiv (#A) : [
-  #A hcom type
-  >>
-  (Equiv #A #A)
+Thm IdEquiv{i:lvl} : [
+  (-> [ty : (univ i hcom)] (Equiv ty ty))
 ] by [
-  `(tuple Id (IdIsEquiv #A))
+  lam ty.
+    unfold Equiv;
+    <proj1 = `Id,
+     proj2 = use {IdIsEquiv i} [use ty]>
 ].
 
-Thm IdUnivalence {i:dim} (#A) : [
-  #A hcom type
-  >>
-  (ua{i} #A #A (IdEquiv #A)) type
+Def Member(#M; #A) = [
+  (= #A #M #M)
+].
+
+Thm IdUnivalence {i:dim, l:lvl} : [
+  (->
+   [ty : (univ l hcom)]
+   (Member
+    (ua{i} ty ty ($ {IdEquiv l} ty))
+    (univ l)))
 ] by [
-  auto
+  lam ty.
+    unfold Member;
+    refine eq/intro;
+    auto
 ].
