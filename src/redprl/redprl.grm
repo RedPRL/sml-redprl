@@ -672,9 +672,9 @@ regularMultinaryOperator
   (* equality *)
   | EQUALS (O.MONO O.EQUALITY)
   (* ua *)
-  | UNIVALENCE LBRACKET dimParam RBRACKET (O.POLY (O.UNIVALENCE dimParam))
-  | UNIVALENCE_IN LBRACKET dimParam RBRACKET (O.POLY (O.UNIVALENCE_IN dimParam))
-  | UNIVALENCE_PROJ LBRACKET dimParam RBRACKET (O.POLY (O.UNIVALENCE_PROJ dimParam))
+  | UNIVALENCE dimParam (O.POLY (O.UNIVALENCE dimParam))
+  | UNIVALENCE_IN dimParam (O.POLY (O.UNIVALENCE_IN dimParam))
+  | UNIVALENCE_PROJ dimParam (O.POLY (O.UNIVALENCE_PROJ dimParam))
   (* coe *)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
 

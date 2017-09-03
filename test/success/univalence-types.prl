@@ -49,7 +49,7 @@ Thm IdUnivalence {i:dim, l:lvl} : [
   (->
    [ty : (U l hcom)]
    (Member
-    (univalence{i} ty ty ($ {IdEquiv l} ty))
+    (univalence i ty ty ($ {IdEquiv l} ty))
     (U l)))
 ] by [
   lam ty.
