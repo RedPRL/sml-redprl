@@ -114,7 +114,7 @@ Thm NotIsEquiv : [
       proj2 = <_> use b
      >
   , proj2 =
-      lam <proj1 = a, proj2 = p>, <proj1 = a', proj2 = p'>.
+      lam <proj2 = p>, <proj2 = p'>.
         {<i>
           < proj1 =
 	     `($ Not (hcom{1~>0} bool ,b
