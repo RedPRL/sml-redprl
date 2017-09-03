@@ -799,7 +799,7 @@ struct
         val goal1 = makeMem (I, H) (m, (dfun, l, k))
         val goal2 = makeEqIfDifferent (I, H) ((m', n), (dfun, NONE, K.top))
       in
-        |>: goal1 >:? goal2 #> (I, H, trivial)
+        |>:? goal2 >: goal1 #> (I, H, trivial)
       end
 
     fun Elim z alpha jdg =
@@ -966,7 +966,7 @@ struct
         val goal1 = makeMem (I, H) (m, (record, l, k))
         val goal2 = makeEqIfDifferent (I, H) ((m', n), (record, l, k)) (* m' well-typed *)
       in
-        |>: goal1 >:? goal2 #> (I, H, trivial)
+        |>:? goal2 >: goal1 #> (I, H, trivial)
       end
 
     fun MatchRecord _ jdg =
@@ -1130,7 +1130,7 @@ struct
         val goal1 = makeMem (I, H) (m, (pathTy, l, k))
         val goal2 = makeEqIfDifferent (I, H) ((m', n), (pathTy, NONE, K.top)) (* m' will-typed *)
       in
-        |>: goal1 >:? goal2 #> (I, H, trivial)
+        |>:? goal2 >: goal1 #> (I, H, trivial)
       end
 
     fun Elim z alpha jdg = 
@@ -1255,7 +1255,7 @@ struct
         val goal1 = makeMem (I, H) (m, (ty, l, k))
         val goal2 = makeEqIfDifferent (I, H) ((Syn.into Syn.AX, n), (ty, NONE, K.top))
       in
-        |>: goal1 >:? goal2 #> (I, H, trivial)
+        |>:? goal2 >: goal1 #> (I, H, trivial)
       end
 
     (* This rule will be removed once every hypothesis
@@ -1522,7 +1522,7 @@ struct
         val goalM = Restriction.makeEq [eq] (I, H) ((m0, m1), (a, l, kA))
         val goalN = makeEq (I, H) ((n0, n1), (b, l, kB))
         val goalCoh = Restriction.makeEqIfDifferent [eq] (I, H)
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("f", e), m0), n0), (b, NONE, K.top))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("proj1", e), m0), n0), (b, NONE, K.top))
         val goalEquiv = Restriction.makeMem [eq] (I, H) (e, (intoEquiv a b, NONE, K.top))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (I, H, trivial)
@@ -1540,7 +1540,7 @@ struct
         val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) (I, H) (a, l, kA)
         val (goalN, holeN) = makeTrue (I, H) (b, l, kB)
         val goalCoh = Restriction.makeEqIfDifferent [eq] (I, H)
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("f", e), holeM), holeN), (b, NONE, K.top))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("proj1", e), holeM), holeN), (b, NONE, K.top))
         val goalEquiv = Restriction.makeMem [eq] (I, H) (e, (intoEquiv a b, NONE, K.top))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv

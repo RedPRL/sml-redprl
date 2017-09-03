@@ -872,8 +872,8 @@ struct
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqNeu sign tms blockers =
-        StepEqNeuByStruct sign tms orelse_
         StepEqNeuByElim sign tms blockers orelse_
+        StepEqNeuByStruct sign tms orelse_
         StepEqNeuByUnfold sign tms blockers
 
       fun StepEqNeuExpand sign m blocker ty =
