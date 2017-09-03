@@ -14,6 +14,7 @@ sig
   val CutLemma : sign -> opid -> (param * psort option) list -> rule
 
   val Elim : sign -> hyp -> rule
+  val Rewrite : sign -> hyp -> rule
   val AutoStep : sign -> rule
 
   structure Equality :

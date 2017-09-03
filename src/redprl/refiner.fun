@@ -959,5 +959,7 @@ struct
       val Elim = StepJdg
     end
 
+    fun Rewrite _ = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
+
   end
 end

@@ -302,6 +302,7 @@ struct
    | PARAM_REF of psort * 'a P.term
 
    | RULE_ELIM of 'a
+   | RULE_REWRITE of 'a
    | RULE_UNFOLD of 'a
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
@@ -487,6 +488,7 @@ struct
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
 
        | RULE_ELIM _ => [] ->> TAC
+       | RULE_REWRITE _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
@@ -567,6 +569,7 @@ struct
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
 
        | RULE_ELIM a => [(a, HYP)]
+       | RULE_REWRITE a => [(a, HYP)]
        | RULE_UNFOLD a => [(a, OPID)]
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
@@ -641,6 +644,7 @@ struct
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
 
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
+       | (RULE_REWRITE a, t) => (case t of RULE_REWRITE b => f (a, b) | _ => false)
        | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
@@ -820,6 +824,7 @@ struct
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
 
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
+       | RULE_REWRITE a => "rewrite{" ^ f a ^ "}"
        | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
@@ -891,6 +896,7 @@ struct
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
 
        | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
+       | RULE_REWRITE a => RULE_REWRITE (mapSym (passSort HYP f) a)
        | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
