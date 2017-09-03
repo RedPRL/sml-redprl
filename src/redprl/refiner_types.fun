@@ -1191,7 +1191,7 @@ struct
         val goalTy = makeEqTypeIfDifferent (I, H) ((holeLine, a), NONE, K.top) (* holeLine should be well-typed *)
         val goalEq = makeEq (I, H) ((holeEndpoint, p), (a, l, k))
       in
-        |>: goalSynth >: goalLine >: goalEndpoint >:? goalTy >: goalEq
+        |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >:? goalTy
         #> (I, H, trivial)
       end
   end
