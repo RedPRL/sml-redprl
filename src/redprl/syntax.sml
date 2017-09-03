@@ -255,6 +255,22 @@ struct
     val intoApp = into o APP
     val intoLam = into o LAM
 
+    fun intoDProd quantifiers last =
+      let
+        val lastVar = Var.named "_"
+        val lastIndex = List.length quantifiers
+
+        fun indexToLabel i = "proj" ^ Int.toString (i + 1)
+        val projQuantifiers =
+          ListUtil.mapWithIndex
+            (fn (i, (var, tm)) => ((indexToLabel i, var), tm))
+            quantifiers
+        val projs = projQuantifiers @
+          [((indexToLabel lastIndex, lastVar), last)]
+      in
+        into (RECORD projs)
+      end
+
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)

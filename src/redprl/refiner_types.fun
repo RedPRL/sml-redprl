@@ -1446,7 +1446,7 @@ struct
       let
         val c = Var.named "c"
         val c' = Var.named "c'"
-        val dummy = Sym.named ""
+        val dummy = Sym.named "_"
       in
         Syn.into @@ Syn.DFUN (C, c,
           Syn.into @@ Syn.DFUN (C, c',
@@ -1456,24 +1456,18 @@ struct
     fun intoIsContr C =
       let
         val center = Var.named "center"
-        val path = Var.named "path"
       in
-        Syn.into @@ Syn.RECORD
-          [(("center", center), C)
-          ,(("path", path), intoHasAllPaths C)]
+        Syn.intoDProd [(center, C)] @@ intoHasAllPaths C
       end
 
     fun intoFiber A B f b =
       let
         val a = Var.named "a"
-        val path = Var.named "path"
-        val dummy = Sym.named ""
+        val dummy = Sym.named "_"
       in
-        Syn.into @@ Syn.RECORD
-          [(("a", a), A)
-          ,(("path", path),
-            Syn.into @@ Syn.PATH_TY
-              ((dummy, B), Syn.intoApp (f, VarKit.toExp a), b))]
+        Syn.intoDProd [(a, A)] @@
+          Syn.into @@ Syn.PATH_TY
+            ((dummy, B), Syn.intoApp (f, VarKit.toExp a), b)
       end
 
     fun intoIsEquiv A B f =
@@ -1487,12 +1481,10 @@ struct
     fun intoEquiv A B =
       let
         val f = Var.named "f"
-        val dummy = Var.named ""
-        val isequiv = Var.named "isequiv"
+        val dummy = Var.named "_"
       in
-        Syn.into @@ Syn.RECORD
-          [(("f", f), Syn.into @@ Syn.DFUN (A, dummy, B))
-          ,(("isequiv", isequiv), intoIsEquiv A B (VarKit.toExp f))]
+        Syn.intoDProd [(f, Syn.into @@ Syn.DFUN (A, dummy, B))] @@
+          intoIsEquiv A B (VarKit.toExp f)
       end
 
     fun EqType _ jdg =
