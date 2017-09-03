@@ -18,8 +18,8 @@ Thm Univ2 : [
   fresh y -> elim x; use y
 ].
 
-Thm Monoid{i:lvl}  : [ (univ {labove i}) ] by [
   fresh ob ->
+Thm Monoid{i:lvl}  : [ (univ {lsucc i}) ] by [
   `(record
     [ob : (univ i)]
     [one : ob]
