@@ -41,7 +41,6 @@ sig
   val ppOperator : RedPrlAbt.operator -> Fpp.doc
   val ppKind : RedPrlKind.kind -> Fpp.doc
   val ppLabel : string -> Fpp.doc
-  val ppIntInf : IntInf.int -> Fpp.doc
 end =
 struct
   structure Abt = RedPrlAbt
@@ -102,7 +101,6 @@ struct
     seq [text name, Atomic.braces @@ seq [ppParam r, text "<~", ppParam r']]
 
   val ppLabel = text
-  val ppIntInf = text o IntInf.toString
 
   fun intersperse s xs =
     case xs of

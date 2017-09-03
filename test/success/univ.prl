@@ -1,5 +1,5 @@
 Thm Univ0 {i:lvl, j:lvl} : [
-  (univ i cubical) type at {labove {lmax i j}}
+  (univ i cubical) type at {lsucc {lmax i j}}
 ] by [
   auto
 ].

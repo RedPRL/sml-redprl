@@ -123,6 +123,7 @@ whitespace = [\ \t];
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
 "meta-name"        => (Tokens.META_NAME (posTuple (size yytext)));
 
+"lsucc"            => (Tokens.LSUCC (posTuple (size yytext)));
 "labove"           => (Tokens.LABOVE (posTuple (size yytext)));
 "lmax"             => (Tokens.LMAX (posTuple (size yytext)));
 
