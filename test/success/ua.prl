@@ -15,21 +15,23 @@ Thm IdIsEquiv (#A) : [
   >>
   (IsEquiv #A #A Id)
 ] by [
-  unfold IsEquiv;
-  fresh a -> refine dfun/intro;
-  [ unfold IsContr;
-    [ refine record/intro;
-      [ `(tuple ,a (abs {_} ,a))
-      , unfold HasAllPaths;
-        lam c, c'. <i>
-	  `(tuple
-	    (hcom{1~>0} #A ,a [i=0 {j} (@ (! proj2 ,c) j)] [i=1 {j} (@ (! proj2 ,c') j)])
-	    (abs {j} (hcom{1~>j} #A ,a [i=0 {j} (@ (! proj2 ,c) j)] [i=1 {j} (@ (! proj2 ,c') j)])))
-      , auto
-      ]
-    ]
-  , auto
-  ]
+  unfold IsEquiv; unfold IsContr; unfold Fiber; unfold HasAllPaths;
+  lam a.
+  < proj1 =
+     <proj1 = use a,
+      proj2 = <_> use a>
+  , proj2 =
+     lam <proj2 = c>, <proj2 = c'>. <i>
+       < proj1 =
+          `(hcom{1~>0} #A ,a
+            [i=0 {j} (@ ,c j)]
+            [i=1 {j} (@ ,c' j)])
+       , proj2 =
+           <j> `(hcom{1~>j} #A ,a
+                 [i=0 {j} (@ ,c j)]
+                 [i=1 {j} (@ ,c' j)])
+       >
+  >
 ].
 
 Thm IdEquiv (#A) : [
