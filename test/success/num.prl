@@ -89,7 +89,7 @@ Thm Plus2UnitR : [
   [
     fresh n', ind -> elim n;
     [ `ax
-    , fresh eq -> elim ind; fresh x -> elim eq;
+    , fresh eq -> elim ind; fresh x -> rewrite eq;
       [ `(= nat (succ ,x) (succ ,n'))
       , `ax
       , auto

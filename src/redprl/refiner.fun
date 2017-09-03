@@ -984,7 +984,7 @@ struct
          | Syn.UNIVERSE _ => Universe.Elim
          | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
 
-      val FromEq = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
+      val FromEq = Universe.Elim
 
       fun StepJdg _ z alpha jdg =
         let
@@ -998,6 +998,8 @@ struct
     in
       val Elim = StepJdg
     end
+
+    fun Rewrite _ = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
 
   end
 end
