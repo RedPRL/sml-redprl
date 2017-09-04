@@ -277,6 +277,7 @@ struct
      | O.POLY (O.RULE_REWRITE z) $ _ => R.Rewrite sign z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.HeadExpansion sign
+     | O.MONO O.RULE_INTERNALIZE $ _ => R.Internalize sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.out (expandHypVars catjdg))
      | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid

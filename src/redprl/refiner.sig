@@ -15,6 +15,7 @@ sig
 
   val Elim : sign -> hyp -> rule
   val Rewrite : sign -> hyp -> rule
+  val Internalize : sign -> rule
   val AutoStep : sign -> rule
 
   structure Equality :

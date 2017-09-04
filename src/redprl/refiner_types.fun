@@ -1280,6 +1280,17 @@ struct
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
+
+    fun InternalizeEq _ jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.InternalizeEq"
+        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+
+        (* the realizer must be `AX` *)
+        val (goal, _) = makeTrue (I, H) (Syn.into (Syn.EQUALITY (ty, m, n)), l, k)
+      in
+        |>: goal #> (I, H, trivial)
+      end
   end
 
   structure FormalComposition =
@@ -1643,5 +1654,15 @@ struct
       end
 
     fun Elim z = ElimFromTrue z orelse_ ElimFromEq z
+
+    fun InternalizeEqType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.InternalizeEqType"
+        val (I, H) >> (CJ.EQ_TYPE ((ty1, ty2), SOME l, k)) = jdg
+
+        val goal = makeEq (I, H) ((ty1, ty2), (Syn.into (Syn.UNIVERSE (l, k)), NONE, K.top))
+      in
+        |>: goal #> (I, H, trivial)
+      end
   end
 end

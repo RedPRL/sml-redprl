@@ -161,6 +161,7 @@ whitespace = [\ \t];
 "rewrite"          => (Tokens.RULE_REWRITE (posTuple (size yytext)));
 "head-expand"      => (Tokens.RULE_HEAD_EXP (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
+"internalize"      => (Tokens.RULE_INTERNALIZE (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
 
 "match"            => (Tokens.MATCH (posTuple (size yytext)));

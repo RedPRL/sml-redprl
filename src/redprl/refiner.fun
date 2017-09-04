@@ -1001,5 +1001,9 @@ struct
 
     fun Rewrite _ = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
 
+    fun Internalize _ =
+      InternalizedEquality.InternalizeEq orelse_
+      Universe.InternalizeEqType
+
   end
 end

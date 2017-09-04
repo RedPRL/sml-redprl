@@ -136,7 +136,7 @@
 
 (defconst redprl-tactic-keywords
   '("auto" "auto-step" "case" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
-    "head-expand" "hyp" "id" "lemma" "let" "match" "of" "print" "progress"
+    "head-expand" "hyp" "id" "internalize" "lemma" "let" "match" "of" "print" "progress"
     "query" "rec" "refine" "repeat" "rewrite" "symmetry" "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")
 
