@@ -1287,9 +1287,10 @@ struct
         val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
 
         (* the realizer must be `AX` *)
-        val (goal, _) = makeTrue (I, H) (Syn.into (Syn.EQUALITY (ty, m, n)), l, k)
+        val (goal, _) = makeTrue (I, H) (Syn.into (Syn.EQUALITY (ty, m, n)), l, K.top)
+        val goalKind = makeTypeUnlessSubUniv (I, H) (ty, l, k) (l, K.top)
       in
-        |>: goal #> (I, H, trivial)
+        |>: goal >:? goalKind #> (I, H, trivial)
       end
   end
 
