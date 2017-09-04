@@ -85,20 +85,16 @@ Thm Plus2UnitL : [
 Thm Plus2UnitR : [
   n : nat >> ($ Plus2 n 0) = n in nat
 ] by [
-  let eq : [(= nat ($ Plus2 ,n 0) ,n)] =
-  [
-    fresh n', ind -> elim n;
-    [ `ax
-    , fresh eq -> elim ind; fresh x -> rewrite eq;
-      [ `(= nat (succ ,x) (succ ,n'))
-      , `ax
-      , auto
-      , auto; [`(-> nat nat)];
-        auto; refine nat/eq/nat-rec; [`(-> nat nat)]; auto
-      ]
+  internalize;
+  fresh n', ind -> elim n;
+  [ `ax
+  , fresh eq -> elim ind; fresh x -> rewrite eq;
+    [ `(= nat (succ ,x) (succ ,n'))
+    , `ax
+    , auto
+    , auto; [`(-> nat nat)]; auto; SimpleNatRecEq
     ]
-  ].
-  fresh eq' -> elim eq; use eq'
+  ]
 ].
 
 Thm NatSymm : [
