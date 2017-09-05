@@ -117,17 +117,17 @@ Thm NotIsEquiv : [
       lam <proj2 = p>, <proj2 = p'>.
         {<i>
           < proj1 =
-	     `($ Not (hcom{1~>0} bool ,b
+             `($ Not (hcom{1~>0} bool ,b
                       [i=0 {j} (@ ,p j)]
                       [i=1 {j} (@ ,p' j)]))
-	  , proj2 =
+          , proj2 =
              <j> `(hcom{1~>j} bool ,b
                    [i=0 {j} (@ ,p j)]
                    [i=1 {j} (@ ,p' j)])
-	  >
-	};
-	(Bool/contra/inverse ,p);
-	(Bool/contra/inverse ,p')
+          >
+        };
+        (Bool/contra/inverse ,p);
+        (Bool/contra/inverse ,p')
   >
 ].
 
