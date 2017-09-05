@@ -1,0 +1,97 @@
+Tac EqNatRec = [
+  query gl <- goal.
+  match [gl:jdg] {
+    [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} => {
+      refine nat/eq/nat-rec; [`%ty]; auto
+    }]
+  }
+].
+
+Tac At0 = [
+  query gl <- goal.
+  match [gl:jdg] {
+    [ty | #jdg{%ty type} => {
+      let p : [%ty type at 0] = internalize. auto
+    }]
+    [ty | #jdg{%ty type at 0} => { // this should be "at %l"
+      let p : [%ty type at 0] = internalize. auto
+    }]
+  }
+].
+
+Tac NatArg = [
+  query gl <- goal.
+  match [gl:jdg] {
+    [tm, ty | #jdg{%tm in %ty} => {
+      refine dfun/eq/app; [`(-> nat %ty)]; auto
+    }]
+    [tm, ty | #jdg{%tm in %ty at 0} => {
+      refine dfun/eq/app; [`(-> nat %ty)]; auto
+    }]
+  }
+].
+
+Thm Pick : [
+  // pick #(first argument) from #(second argument)
+  (-> nat nat (U 0))
+] by [
+  lam n. fresh n', n'/ih -> elim n;
+  [ lam n. `record
+  , lam m. fresh m', m'/ih -> elim m;
+    [ `void
+    , `(record
+        [head : bool]
+        [tail : (if head ($ ,n'/ih ,m') ,m'/ih)]
+       )
+    ]
+  ];
+  internalize; auto
+].
+
+Thm Pick/compose : [
+  (->
+   [a b c : nat]
+   ($ Pick b c)
+   ($ Pick a b)
+   ($ Pick a c))
+] by [
+  lam a. fresh a', a'/ih -> elim a;
+  [ lam b, c, p1, p2. `tuple
+  , lam b. fresh b', b'/ih -> elim b;
+    [ lam c, p1, p2. unfold Pick; head-expand; elim p2
+    , lam c. fresh c', c'/ih -> elim c;
+      [ lam p1. unfold Pick; head-expand; elim p1
+      , lam p1, p2. unfold Pick; head-expand;
+        fresh p1/head, p1/tail -> elim p1; elim p1/head; head-expand;
+	[ fresh p2/head, p2/tail -> elim p2; elim p2/head; head-expand;
+	  [ < head = `tt
+	    , tail = `($ ,a'/ih ,b' ,c' ,p1/tail ,p2/tail);
+ 	             [At0; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	    >;
+	    [auto; At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
+	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	  , < head = `ff
+	    , tail = `($ ,b'/ih ,c' ,p1/tail ,p2/tail);
+	      [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	    >;
+	    [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
+	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	  ]
+	, < head = `ff
+	  , tail = `($ ,c'/ih ,p1/tail ,p2);
+	    [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
+	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto];
+	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	  >;
+	  [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
+	  [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	]
+      ];
+      [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
+      [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto];
+      [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
+      [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+    ]
+  ];
+  [At0; NatArg; EqNatRec; EqNatRec; internalize; auto]
+].
