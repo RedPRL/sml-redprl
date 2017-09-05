@@ -524,15 +524,6 @@ struct
         |>: goal #> (I, H, hole)
       end
 
-    fun MatchHeadExpansion sign _ jdg =
-      let
-        val _ = RedPrlLog.trace "Computation.MatchHeadExpansion"
-        val MATCH _ = jdg
-        val (goal, hole) = makeGoal @@ Seq.map (eval sign) jdg
-      in
-        |>: goal #> ([], Hyps.empty, hole)
-      end
-    
     fun MatchRecordHeadExpansion sign _ jdg = 
       let
         val _ = RedPrlLog.trace "Computation.MatchRecordHeadExpansion"
@@ -657,7 +648,6 @@ struct
     open Computation
     fun HeadExpansion sign =
       SequentHeadExpansion sign orelse_
-      MatchHeadExpansion sign orelse_
       MatchRecordHeadExpansion sign
   end
 
