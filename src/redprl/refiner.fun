@@ -809,7 +809,6 @@ struct
       fun StepEqNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Equality.Hyp
-         | (Syn.IF _, Syn.IF _) => Bool.EqElim
          | (Syn.WIF _, Syn.WIF _) => WBool.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => S1.EqElim
          | (Syn.APP _, Syn.APP _) => DFun.EqApp
