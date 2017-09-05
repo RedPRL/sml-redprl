@@ -66,36 +66,21 @@ Thm Pick/compose : [
         fresh p1/head, p1/tail -> elim p1; elim p1/head; head-expand;
 	[ lam p2. head-expand; fresh p2/head, p2/tail -> elim p2; elim p2/head; head-expand;
 	  [ < head = `tt
-	    , tail = `($ ,a'/ih ,b' ,c' ,p1/tail ,p2/tail);
- 	             [At0; NatArg; EqNatRec; EqNatRec; internalize; auto]
-	    >;
-	    [auto; At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
-	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	    , tail = `($ ,a'/ih ,b' ,c' ,p1/tail ,p2/tail)
+	    >
 	  , < head = `ff
-	    , tail = `($ ,b'/ih ,c' ,p1/tail ,p2/tail);
-	      [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
-	    >;
-	    [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
-	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	    , tail = `($ ,b'/ih ,c' ,p1/tail ,p2/tail)
+	    >
 	  ]
 	, lam p2. head-expand;
 	  < head = `ff
-	  , tail = `($ ,c'/ih ,p1/tail ,p2);
-	    [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
-	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto];
-	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
-	  >;
-	  [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
-	  [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+	  , tail = `($ ,c'/ih ,p1/tail ,p2)
+	  >
 	]
-      ];
-      [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
-      [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto];
-      [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
-      [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto];
-      [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
-      [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
+      ]
     ]
   ];
-  [At0; NatArg; EqNatRec; EqNatRec; internalize; auto]
+
+  // one line to solve all well-formedness goals
+  At0; <| <| EqNatRec; internalize |> || id |>; NatArg; EqNatRec; EqNatRec; internalize; auto
 ].
