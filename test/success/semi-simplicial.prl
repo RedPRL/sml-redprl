@@ -55,15 +55,16 @@ Thm Pick/compose : [
    ($ Pick a b)
    ($ Pick a c))
 ] by [
+  unfold Pick;
   lam a. fresh a', a'/ih -> elim a;
   [ lam b, c, p1, p2. `tuple
   , lam b. fresh b', b'/ih -> elim b;
-    [ lam c, p1, p2. unfold Pick; head-expand; elim p2
+    [ lam c, p1, p2. head-expand; elim p2
     , lam c. fresh c', c'/ih -> elim c;
-      [ lam p1. unfold Pick; head-expand; elim p1
-      , lam p1, p2. unfold Pick; head-expand;
+      [ lam p1. head-expand; elim p1
+      , lam p1. head-expand;
         fresh p1/head, p1/tail -> elim p1; elim p1/head; head-expand;
-	[ fresh p2/head, p2/tail -> elim p2; elim p2/head; head-expand;
+	[ lam p2. head-expand; fresh p2/head, p2/tail -> elim p2; elim p2/head; head-expand;
 	  [ < head = `tt
 	    , tail = `($ ,a'/ih ,b' ,c' ,p1/tail ,p2/tail);
  	             [At0; NatArg; EqNatRec; EqNatRec; internalize; auto]
@@ -77,7 +78,8 @@ Thm Pick/compose : [
 	    [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
 	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
 	  ]
-	, < head = `ff
+	, lam p2. head-expand;
+	  < head = `ff
 	  , tail = `($ ,c'/ih ,p1/tail ,p2);
 	    [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
 	    [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto];
@@ -87,6 +89,8 @@ Thm Pick/compose : [
 	  [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto]
 	]
       ];
+      [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
+      [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto];
       [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
       [At0; EqNatRec; internalize; NatArg; EqNatRec; EqNatRec; internalize; auto];
       [At0; NatArg; EqNatRec; EqNatRec; internalize; auto];
