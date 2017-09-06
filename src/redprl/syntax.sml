@@ -255,7 +255,7 @@ struct
     val intoApp = into o APP
     val intoLam = into o LAM
 
-    fun intoDProd quantifiers last =
+    fun intoProd quantifiers last =
       let
         val lastVar = Var.named "_"
         val lastIndex = List.length quantifiers

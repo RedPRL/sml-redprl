@@ -1532,7 +1532,7 @@ struct
       let
         val center = Var.named "center"
       in
-        Syn.intoDProd [(center, C)] @@ intoHasAllPaths C
+        Syn.intoProd [(center, C)] @@ intoHasAllPaths C
       end
 
     fun intoFiber A B f b =
@@ -1540,7 +1540,7 @@ struct
         val a = Var.named "a"
         val dummy = Sym.named "_"
       in
-        Syn.intoDProd [(a, A)] @@
+        Syn.intoProd [(a, A)] @@
           Syn.into @@ Syn.PATH_TY
             ((dummy, B), Syn.intoApp (f, VarKit.toExp a), b)
       end
@@ -1558,7 +1558,7 @@ struct
         val f = Var.named "f"
         val dummy = Var.named "_"
       in
-        Syn.intoDProd [(f, Syn.into @@ Syn.FUN (A, dummy, B))] @@
+        Syn.intoProd [(f, Syn.into @@ Syn.FUN (A, dummy, B))] @@
           intoIsEquiv A B (VarKit.toExp f)
       end
 

@@ -147,7 +147,7 @@ struct
       (lbls, List.rev args)
     end
 
-  fun makeDProd pos (tbs, ty) =
+  fun makeProd pos (tbs, ty) =
     let
       val (_, args) = makeRecordAux pos (tbs @ [([NONE], ty)])
       val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) args
@@ -184,14 +184,6 @@ struct
       checkNoDuplicates pos lbls;
       O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
     end
-
-  fun dprodIntro pos tacs =
-    let
-      val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) tacs
-    in
-      O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
-    end
-
 end
 
 structure Pattern =
@@ -737,7 +729,7 @@ rawTermAndTac
   | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 
   (* pair types *)
-  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) quantifierData)
+  | LPAREN TIMES quantifierData RPAREN (Multi.makeProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) quantifierData)
 
   (* dependent record types *)
   | RECORD (Multi.makeRecord (Pos.pos (RECORD1left fileName) (RECORD1right fileName)) [])
