@@ -315,10 +315,9 @@ struct
         val _ = RedPrlLog.trace "Coe.Eq"
         val (I, H) >> CJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
         val k = K.meet (k, K.COE)
-        val Syn.COE {dir=(r0, r'0), ty=(u, ty0u), coercee=m0} = Syn.out lhs
-        val Syn.COE {dir=(r1, r'1), ty=(v, ty1v), coercee=m1} = Syn.out rhs
-        val () = Assert.paramEq "Coe.Eq source of direction" (r0, r1)
-        val () = Assert.paramEq "Coe.Eq target of direction" (r'0, r'1)
+        val Syn.COE {dir=dir0, ty=(u, ty0u), coercee=m0} = Syn.out lhs
+        val Syn.COE {dir=dir1, ty=(v, ty1v), coercee=m1} = Syn.out rhs
+        val () = Assert.dirEq "Coe.Eq direction" (dir0, dir1)
 
         (* type *)
         val w = alpha 0
@@ -326,11 +325,11 @@ struct
         val ty1w = substSymbol (P.ret w, v) ty1v
         val goalTy = makeEqType (I @ [(w, P.DIM)], H) ((ty0w, ty1w), l, k)
         (* after proving the above goal, [ty0r'0] must be a type *)
-        val ty0r'0 = substSymbol (r'0, u) ty0u
+        val ty0r'0 = substSymbol (#2 dir0, u) ty0u
         val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r'0, ty), l, k)
 
         (* coercee *)
-        val ty0r0 = substSymbol (r0, u) ty0u
+        val ty0r0 = substSymbol (#1 dir0, u) ty0u
         val goalCoercees = makeEq (I, H) ((m0, m1), (ty0r0, NONE, K.top))
       in
         |>: goalCoercees >:? goalTy0 >: goalTy #> (I, H, trivial)
