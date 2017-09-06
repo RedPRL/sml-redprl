@@ -23,10 +23,16 @@ sig
     val Symmetry : rule
   end
 
+  structure Custom :
+  sig
+    val UnfoldAll : sign -> opid list -> rule
+    val Unfold : sign -> opid list -> hyp RedPrlOpData.selector list -> rule
+  end
+
   structure Computation :
   sig
-    val Unfold : sign -> opid -> rule
-    val HeadExpansion : sign -> rule
+    val ReduceAll : sign -> rule
+    val Reduce : sign -> hyp RedPrlOpData.selector list -> rule
   end
 
   structure Hyp :

@@ -218,6 +218,7 @@ struct
   structure K = RedPrlKind
   type psort = RedPrlSortData.param_sort
   type kind = RedPrlKind.kind
+  datatype 'a selector = IN_GOAL | IN_HYP of 'a
 
   datatype 'a dev_pattern = 
      PAT_VAR of 'a
@@ -266,7 +267,7 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_HEAD_EXP | RULE_INTERNALIZE
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_REDUCE_ALL | RULE_INTERNALIZE
    | RULE_CUT
    | RULE_PRIM of string
 
@@ -306,7 +307,9 @@ struct
 
    | RULE_ELIM of 'a
    | RULE_REWRITE of 'a
-   | RULE_UNFOLD of 'a
+   | RULE_REDUCE of 'a selector list
+   | RULE_UNFOLD_ALL of 'a list
+   | RULE_UNFOLD of 'a list * 'a selector list
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
 
@@ -416,7 +419,7 @@ struct
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_EXACT tau => [[] * [] <> tau] ->> TAC
-     | RULE_HEAD_EXP => [] ->> TAC
+     | RULE_REDUCE_ALL => [] ->> TAC
      | RULE_INTERNALIZE => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
@@ -496,6 +499,8 @@ struct
 
        | RULE_ELIM _ => [] ->> TAC
        | RULE_REWRITE _ => [] ->> TAC
+       | RULE_REDUCE _ => [] ->> TAC
+       | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
@@ -558,6 +563,15 @@ struct
         (fn (P.VAR a, tau) => [(a, tau)]
           | (P.APP t, _) => P.freeVars t)
         ps
+
+    fun selectorsSupport ps =
+      ListMonad.bind
+        (fn IN_GOAL => []
+          | IN_HYP a => [(a, HYP)])
+        ps
+
+    fun opidsSupport os =
+      List.map (fn name => (name, OPID)) os
   in
     val supportPoly =
       fn FCOM params => comSupport params
@@ -580,7 +594,9 @@ struct
 
        | RULE_ELIM a => [(a, HYP)]
        | RULE_REWRITE a => [(a, HYP)]
-       | RULE_UNFOLD a => [(a, OPID)]
+       | RULE_REDUCE selectors => selectorsSupport selectors
+       | RULE_UNFOLD_ALL names => opidsSupport names
+       | RULE_UNFOLD (names, selectors) => opidsSupport names @ selectorsSupport selectors
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_APPLY_HYP (a, _, _) => [(a, HYP)]
@@ -612,6 +628,15 @@ struct
       fn (NONE, NONE) => true
        | (SOME v1, SOME v2) => f (v1, v2)
        | _ => false
+
+    fun selectorEq f =
+      fn (IN_GOAL, IN_GOAL) => true
+       | (IN_HYP a, IN_HYP b) => f (a, b)
+       | _ => false
+
+    fun selectorsEq f = ListPair.allEq (selectorEq f)
+
+    fun opidsEq f = ListPair.allEq f
   in
     fun eqPoly f =
       fn (FCOM (dir1, eqs1), t) =>
@@ -658,7 +683,9 @@ struct
 
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
        | (RULE_REWRITE a, t) => (case t of RULE_REWRITE b => f (a, b) | _ => false)
-       | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
+       | (RULE_REDUCE ss1, t) => (case t of RULE_REDUCE ss2 => selectorsEq f (ss1, ss2) | _ => false)
+       | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
+       | (RULE_UNFOLD (os1, ss1), t) => (case t of RULE_UNFOLD (os2, ss2) => opidsEq f (os1, os2) andalso selectorsEq f (ss1, ss2) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_APPLY_HYP (a, pat, n), t) => (case t of DEV_APPLY_HYP (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
@@ -753,7 +780,7 @@ struct
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
      | RULE_EXACT _ => "exact"
-     | RULE_HEAD_EXP => "head-expand"
+     | RULE_REDUCE_ALL => "reduce-all"
      | RULE_INTERNALIZE => "internalize"
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
@@ -785,6 +812,16 @@ struct
 
     fun comParamsToString f (dir, eqs) =
       dirToString f dir ^ ";" ^ equationsToString f eqs
+
+    fun selectorToString f =
+      fn IN_GOAL => "goal"
+       | IN_HYP a => f a
+
+    fun selectorsToString f =
+      ListSpine.pretty (selectorToString f) ","
+
+    fun opidsToString f =
+      ListSpine.pretty f ","
   in
     fun toStringPoly f =
       fn FCOM params => "fcom{" ^ comParamsToString f params ^ "}"
@@ -811,7 +848,9 @@ struct
 
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
        | RULE_REWRITE a => "rewrite{" ^ f a ^ "}"
-       | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
+       | RULE_REDUCE ss => "reduce{" ^ selectorsToString f ss ^ "}"
+       | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
+       | RULE_UNFOLD (os, ss) => "unfold{" ^ opidsToString f os ^ "," ^ selectorsToString f ss ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_APPLY_HYP (a, _, _) => "apply-hyp{" ^ f a ^ "}"
@@ -833,9 +872,7 @@ struct
     fun passSort sigma f =
       fn u => f (u, sigma)
 
-    fun mapOpt f =
-      fn NONE => NONE
-       | SOME p => SOME (f p)
+    val mapOpt = Option.map
 
     fun mapSpan f (r, r') = (P.bind (passSort DIM f) r, P.bind (passSort DIM f) r')
     fun mapSpans f = List.map (mapSpan f)
@@ -864,6 +901,10 @@ struct
       case f a of
          P.VAR a' => a'
        | P.APP _ => raise Fail "Expected symbol, but got application"
+
+    fun mapSelector f =
+      fn IN_GOAL => IN_GOAL
+       | IN_HYP a => IN_HYP (f a)
   in
     fun mapPolyWithSort f =
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
@@ -886,7 +927,9 @@ struct
 
        | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
        | RULE_REWRITE a => RULE_REWRITE (mapSym (passSort HYP f) a)
-       | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
+       | RULE_REDUCE ss => RULE_REDUCE (List.map (mapSelector (mapSym (passSort HYP f))) ss)
+       | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
+       | RULE_UNFOLD (ns, ss) => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns, List.map (mapSelector (mapSym (passSort HYP f))) ss)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
        | DEV_APPLY_LEMMA (opid, ps, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, pat, n)

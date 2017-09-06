@@ -55,26 +55,28 @@ Thm Pick/compose : [
    ($ Pick a b)
    ($ Pick a c))
 ] by [
-  unfold Pick;
   lam a. fresh a', a'/ih -> elim a;
   [ lam b, c, p1, p2. `tuple
   , lam b. fresh b', b'/ih -> elim b;
-    [ lam c, p1, p2. head-expand; elim p2
+    [ lam c, p1, p2. unfold Pick in p2; reduce in p2; elim p2
     , lam c. fresh c', c'/ih -> elim c;
-      [ lam p1. head-expand; elim p1
-      , lam p1. head-expand;
-        fresh p1/head, p1/tail -> elim p1; elim p1/head; head-expand;
-        [ lam p2. head-expand; fresh p2/head, p2/tail -> elim p2; elim p2/head; head-expand;
+      [ lam p1. unfold Pick in p1; reduce in p1; elim p1
+      , lam p1. unfold Pick in p1; reduce in p1;
+        let < head = p1/h, tail = p1/t > = p1. elim p1/h; reduce in p1/t;
+        [ lam p2. unfold Pick in p2; reduce in p2;
+          let < head = p2/h, tail = p2/t > = p2. elim p2/h; reduce in p2/t;
+          unfold Pick in goal; reduce in goal;
           [ < head = `tt
-            , tail = `($ ,a'/ih ,b' ,c' ,p1/tail ,p2/tail)
+            , tail = `($ ,a'/ih ,b' ,c' ,p1/t ,p2/t)
             >
           , < head = `ff
-            , tail = `($ ,b'/ih ,c' ,p1/tail ,p2/tail)
+            , tail = `($ ,b'/ih ,c' ,p1/t ,p2/t)
             >
           ]
-        , lam p2. head-expand;
+        , lam p2. unfold Pick in p2; reduce in p2;
+          unfold Pick in goal; reduce in goal;
           < head = `ff
-          , tail = `($ ,c'/ih ,p1/tail ,p2)
+          , tail = `($ ,c'/ih ,p1/t ,p2)
           >
         ]
       ]

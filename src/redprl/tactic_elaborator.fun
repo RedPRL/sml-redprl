@@ -276,11 +276,13 @@ struct
      | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
      | O.POLY (O.RULE_REWRITE z) $ _ => R.Rewrite sign z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
-     | O.MONO O.RULE_HEAD_EXP $ _ => R.Computation.HeadExpansion sign
      | O.MONO O.RULE_INTERNALIZE $ _ => R.Internalize sign
      | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.out (expandHypVars catjdg))
-     | O.POLY (O.RULE_UNFOLD opid) $ _ => R.Computation.Unfold sign opid
+     | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
+     | O.POLY (O.RULE_REDUCE sels) $ _ => R.Computation.Reduce sign sels
+     | O.POLY (O.RULE_UNFOLD_ALL opids) $ _ => R.Custom.UnfoldAll sign opids
+     | O.POLY (O.RULE_UNFOLD (opids, sels)) $ _ => R.Custom.Unfold sign opids sels
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
      | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.out (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO (O.DEV_DFUN_INTRO pats) $ [(us, _) \ tm] => dfunIntros sign (pats, us) (tactic sign env tm)

@@ -78,6 +78,7 @@ is
   redprl/refiner_kit.fun
   redprl/refiner_composition_kit.fun
   redprl/refiner_types.fun
+  redprl/refiner_misc.fun
   redprl/refiner.sig
   redprl/refiner.fun
   redprl/lcf.sml
