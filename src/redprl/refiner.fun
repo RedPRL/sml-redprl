@@ -229,70 +229,6 @@ struct
       in
         |>:? goalKind #> (I, H, a)
       end
-
-    fun WIf _ jdg =
-      let
-        val _ = RedPrlLog.trace "Synth.WIf"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
-        val Syn.WIF ((x,cx), m, _) = Syn.out tm
-
-        val cm = substVar (m, x) cx
-        val goal = makeMem (I, H) (tm, (cm, l, k))
-      in
-        |>: goal #> (I, H, cm)
-      end
-
-    fun S1Rec _ jdg =
-      let
-        val _ = RedPrlLog.trace "Synth.S1Rec"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
-        val Syn.S1_REC ((x,cx), m, _) = Syn.out tm
-
-        val cm = substVar (m, x) cx
-        val goal = makeMem (I, H) (tm, (cm, l, k))
-      in
-        |>: goal #> (I, H, cm)
-      end
-
-    fun App _ jdg =
-      let
-        val _ = RedPrlLog.trace "Synth.App"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
-        val Syn.APP (m, n) = Syn.out tm
-        val (goalDFun, holeDFun) = makeSynth (I, H) (m, NONE, K.top)
-        val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun, [], [])
-        val (goalCod, holeCod) = makeMatch (O.MONO O.DFUN, 1, holeDFun, [], [n])
-        val goalN = makeMem (I, H) (n, (holeDom, NONE, K.top))
-        val goalKind = makeTypeUnlessSubUniv (I, H) (holeCod, l, k) (NONE, K.top)
-      in
-        |>: goalDFun >: goalDom >: goalCod >: goalN >:? goalKind #> (I, H, holeCod)
-      end
-
-    fun Proj _ jdg =
-      let
-        val _ = RedPrlLog.trace "Synth.Proj"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
-        val Syn.PROJ (lbl, n) = Syn.out tm
-        val (goalRecord, holeRecord) = makeSynth (I, H) (n, NONE, K.top)
-        val (goalTy, holeTy) = makeMatchRecord (lbl, holeRecord, n)
-        val goalKind = makeTypeUnlessSubUniv (I, H) (holeTy, l, k) (NONE, K.top)
-      in
-        |>: goalRecord >: goalTy >:? goalKind #> (I, H, holeTy)
-      end
-
-    fun PathApp _ jdg =
-      let
-        val _ = RedPrlLog.trace "Synth.PathApp"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
-        val Syn.PATH_APP (m, r) = Syn.out tm
-        val (goalPathTy, holePathTy) = makeSynth (I, H) (m, NONE, K.top)
-        val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holePathTy, [r], [])
-        val goalKind = makeTypeUnlessSubUniv (I, H) (holeLine, l, k) (NONE, K.top)
-      in
-        |>: goalPathTy >: goalLine >:? goalKind #> (I, H, holeLine)
-      end
-
-    (* TODO: add Proj / record rule!!! *)
   end
 
   structure Misc =
@@ -889,11 +825,11 @@ struct
       fun StepSynth sign m =
         case Syn.out m of
            Syn.VAR _ => Synth.Hyp
-         | Syn.WIF _ => Synth.WIf
-         | Syn.S1_REC _ => Synth.S1Rec
-         | Syn.APP _ => Synth.App
-         | Syn.PROJ _ => Synth.Proj
-         | Syn.PATH_APP _ => Synth.PathApp
+         | Syn.WIF _ => WBool.SynthElim
+         | Syn.S1_REC _ => S1.SynthElim
+         | Syn.APP _ => DFun.SynthApp
+         | Syn.PROJ _ => Record.SynthProj
+         | Syn.PATH_APP _ => Path.SynthApp
          | Syn.CUST => Synth.Custom sign
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
