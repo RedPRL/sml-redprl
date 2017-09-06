@@ -25,7 +25,7 @@ struct
    *   consider to be obviously true within the limit of RedPRL.
    * EqElim/EqX: structural equality for eliminators.
    *   We use EqX if the eliminator has a well-known name X.
-   *   For example, we have EqApp for DFun and Path, and EqProj for Record.
+   *   For example, we have EqApp for Fun and Path, and EqProj for Record.
    * SynthElim/SynthX: synthesizing the types of eliminators.
    * (others): other special rules for this type.
    *)
@@ -738,7 +738,7 @@ struct
       end
   end
 
-  structure DFun =
+  structure Fun =
   struct
     val kindConstraintsOnDomAndCod =
       fn K.DISCRETE => (K.DISCRETE, K.DISCRETE)
@@ -749,10 +749,10 @@ struct
 
     fun EqType alpha jdg =
       let
-        val _ = RedPrlLog.trace "DFun.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((dfun0, dfun1), l, k) = jdg
-        val Syn.DFUN (a0, x, b0x) = Syn.out dfun0
-        val Syn.DFUN (a1, y, b1y) = Syn.out dfun1
+        val _ = RedPrlLog.trace "Fun.EqType"
+        val (I, H) >> CJ.EQ_TYPE ((fun0, fun1), l, k) = jdg
+        val Syn.FUN (a0, x, b0x) = Syn.out fun0
+        val Syn.FUN (a1, y, b1y) = Syn.out fun1
         val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain *)
@@ -767,15 +767,15 @@ struct
         |>: goalA >: goalB #> (I, H, trivial)
       end
       handle Bind =>
-        raise E.error [Fpp.text "Expected dfun typehood sequent"]
+        raise E.error [Fpp.text "Expected fun typehood sequent"]
 
     fun Eq alpha jdg =
       let
-        val _ = RedPrlLog.trace "DFun.Eq"
-        val (I, H) >> CJ.EQ ((lam0, lam1), (dfun, l, k)) = jdg
+        val _ = RedPrlLog.trace "Fun.Eq"
+        val (I, H) >> CJ.EQ ((lam0, lam1), (ty, l, k)) = jdg
         val Syn.LAM (x, m0x) = Syn.out lam0
         val Syn.LAM (y, m1y) = Syn.out lam1
-        val Syn.DFUN (a, z, bz) = Syn.out dfun
+        val Syn.FUN (a, z, bz) = Syn.out ty
         val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain *)
@@ -793,9 +793,9 @@ struct
 
     fun True alpha jdg =
       let
-        val _ = RedPrlLog.trace "DFun.True"
-        val (I, H) >> CJ.TRUE (dfun, l, k) = jdg
-        val Syn.DFUN (a, x, bx) = Syn.out dfun
+        val _ = RedPrlLog.trace "Fun.True"
+        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val Syn.FUN (a, x, bx) = Syn.out ty
         val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain*)
@@ -812,28 +812,28 @@ struct
         |>: goalLam >: goalA #> (I, H, lam)
       end
       handle Bind =>
-        raise E.error [Fpp.text "Expected dfun truth sequent"]
+        raise E.error [Fpp.text "Expected fun truth sequent"]
 
     fun Eta _ jdg =
       let
-        val _ = RedPrlLog.trace "DFun.Eta"
-        val (I, H) >> CJ.EQ ((m, n), (dfun, l, k)) = jdg
-        val Syn.DFUN (_, x, _) = Syn.out dfun
+        val _ = RedPrlLog.trace "Fun.Eta"
+        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val Syn.FUN (_, x, _) = Syn.out ty
 
         val m' = Syn.intoLam (x, Syn.intoApp (m, VarKit.toExp x))
-        val goal1 = makeMem (I, H) (m, (dfun, l, k))
-        val goal2 = makeEqIfDifferent (I, H) ((m', n), (dfun, NONE, K.top))
+        val goal1 = makeMem (I, H) (m, (ty, l, k))
+        val goal2 = makeEqIfDifferent (I, H) ((m', n), (ty, NONE, K.top))
       in
         |>:? goal2 >: goal1 #> (I, H, trivial)
       end
 
     fun Elim z alpha jdg =
       let
-        val _ = RedPrlLog.trace "DFun.Elim"
+        val _ = RedPrlLog.trace "Fun.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val CJ.TRUE (dfun, l', _) = Hyps.lookup z H
-        val Syn.DFUN (a, x, bx) = Syn.out dfun
+        val CJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val Syn.FUN (a, x, bx) = Syn.out ty
 
         (* argument *)
         val (goalA, holeA) = makeTrue (I, H) (a, NONE, K.top)
@@ -856,34 +856,34 @@ struct
 
     fun EqApp _ jdg =
       let
-        val _ = RedPrlLog.trace "DFun.EqApp"
+        val _ = RedPrlLog.trace "Fun.EqApp"
         val (I, H) >> CJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
         val Syn.APP (m0, n0) = Syn.out ap0
         val Syn.APP (m1, n1) = Syn.out ap1
 
-        val (goalDFun, holeDFun) = makeSynth (I, H) (m0, NONE, K.top)
-        val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun, [], [])
-        val (goalCod, holeCod) = makeMatch (O.MONO O.DFUN, 1, holeDFun, [], [n0])
-        val goalFunEq = makeEqIfDifferent (I, H) ((m0, m1), (holeDFun, NONE, K.top))
+        val (goalFun, holeFun) = makeSynth (I, H) (m0, NONE, K.top)
+        val (goalDom, holeDom) = makeMatch (O.MONO O.FUN, 0, holeFun, [], [])
+        val (goalCod, holeCod) = makeMatch (O.MONO O.FUN, 1, holeFun, [], [n0])
+        val goalFunEq = makeEqIfDifferent (I, H) ((m0, m1), (holeFun, NONE, K.top))
         val goalArgEq = makeEq (I, H) ((n0, n1), (holeDom, NONE, K.top))
         val goalTyEq = makeEqTypeIfDifferentOrNotSubUniv (I, H) ((holeCod, ty), l, k) (NONE, K.top)
       in
-        |>: goalDFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >:? goalTyEq
+        |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >:? goalTyEq
         #> (I, H, trivial)
       end
 
     fun SynthApp _ jdg =
       let
-        val _ = RedPrlLog.trace "DFun.SynthApp"
+        val _ = RedPrlLog.trace "Fun.SynthApp"
         val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
         val Syn.APP (m, n) = Syn.out tm
-        val (goalDFun, holeDFun) = makeSynth (I, H) (m, NONE, K.top)
-        val (goalDom, holeDom) = makeMatch (O.MONO O.DFUN, 0, holeDFun, [], [])
-        val (goalCod, holeCod) = makeMatch (O.MONO O.DFUN, 1, holeDFun, [], [n])
+        val (goalFun, holeFun) = makeSynth (I, H) (m, NONE, K.top)
+        val (goalDom, holeDom) = makeMatch (O.MONO O.FUN, 0, holeFun, [], [])
+        val (goalCod, holeCod) = makeMatch (O.MONO O.FUN, 1, holeFun, [], [n])
         val goalN = makeMem (I, H) (n, (holeDom, NONE, K.top))
         val goalKind = makeTypeUnlessSubUniv (I, H) (holeCod, l, k) (NONE, K.top)
       in
-        |>: goalDFun >: goalDom >: goalCod >: goalN >:? goalKind #> (I, H, holeCod)
+        |>: goalFun >: goalDom >: goalCod >: goalN >:? goalKind #> (I, H, holeCod)
       end
   end
 
@@ -1523,8 +1523,8 @@ struct
         val c' = Var.named "c'"
         val dummy = Sym.named "_"
       in
-        Syn.into @@ Syn.DFUN (C, c,
-          Syn.into @@ Syn.DFUN (C, c',
+        Syn.into @@ Syn.FUN (C, c,
+          Syn.into @@ Syn.FUN (C, c',
             Syn.into @@ Syn.PATH_TY ((dummy, C), VarKit.toExp c, VarKit.toExp c')))
       end
 
@@ -1549,7 +1549,7 @@ struct
       let
         val b = Var.named "b"
       in
-        Syn.into @@ Syn.DFUN
+        Syn.into @@ Syn.FUN
           (B, b, intoIsContr (intoFiber A B f (VarKit.toExp b)))
       end
 
@@ -1558,7 +1558,7 @@ struct
         val f = Var.named "f"
         val dummy = Var.named "_"
       in
-        Syn.intoDProd [(f, Syn.into @@ Syn.DFUN (A, dummy, B))] @@
+        Syn.intoDProd [(f, Syn.into @@ Syn.FUN (A, dummy, B))] @@
           intoIsEquiv A B (VarKit.toExp f)
       end
 

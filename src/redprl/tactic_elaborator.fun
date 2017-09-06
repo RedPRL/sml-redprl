@@ -173,7 +173,7 @@ struct
       val CJ.TRUE (ty, _, _) = RT.Hyps.lookup z H
     in
       case Syn.out ty of 
-         Syn.DFUN _ => (RT.DFun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+         Syn.FUN _ => (RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | Syn.PATH_TY _ => (RT.Path.Elim z thenl' (names, [appTac, autoTac sign, autoTac sign, contTac])) alpha jdg
        | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
     end
@@ -213,20 +213,20 @@ struct
        O.PAT_VAR x => x
      | O.PAT_TUPLE lpats => Sym.named (ListSpine.pretty (Sym.toString o nameForPattern o #2) "-" lpats)
 
-  fun dfunIntros sign (pats, names) tac =
+  fun funIntros sign (pats, names) tac =
     case pats of 
        [] => tac
      | pat::pats => 
        let
          val (pat', names') = stitchPattern (pat, names)
          val name = nameForPattern pat'
-         val intros = dfunIntros sign (pats, names') tac
+         val intros = funIntros sign (pats, names') tac
          val continue =
            case pat' of
               O.PAT_VAR _ => intros
             | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
        in
-         RT.DFun.True thenl' ([name], [continue, autoTac sign])
+         RT.Fun.True thenl' ([name], [continue, autoTac sign])
        end
 
   fun pathIntros sign us tac =
@@ -285,7 +285,7 @@ struct
      | O.POLY (O.RULE_UNFOLD (opids, sels)) $ _ => R.Custom.Unfold sign opids sels
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
      | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.out (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
-     | O.MONO (O.DEV_DFUN_INTRO pats) $ [(us, _) \ tm] => dfunIntros sign (pats, us) (tactic sign env tm)
+     | O.MONO (O.DEV_FUN_INTRO pats) $ [(us, _) \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]

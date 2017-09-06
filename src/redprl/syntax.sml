@@ -53,7 +53,7 @@ struct
    (* circle *)
    | S1 | BASE | LOOP of param | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
    (* function: lambda and app *)
-   | DFUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
+   | FUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
    (* record *)
    | RECORD of ((string * variable) * 'a) list
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
@@ -202,7 +202,7 @@ struct
        | LOOP r => O.POLY (O.LOOP r) $$ []
        | S1_REC ((x, cx), m, (b, (u, l))) => O.MONO O.S1_REC $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([u],[]) \ l]
 
-       | DFUN (a, x, bx) => O.MONO O.DFUN $$ [([],[]) \ a, ([],[x]) \ bx]
+       | FUN (a, x, bx) => O.MONO O.FUN $$ [([],[]) \ a, ([],[x]) \ bx]
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
        | APP (m, n) => O.MONO O.APP $$ [([],[]) \ m, ([],[]) \ n]
 
@@ -306,7 +306,7 @@ struct
        | O.POLY (O.LOOP r) $ _ => LOOP r
        | O.MONO O.S1_REC $ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] => S1_REC ((x, cx), m, (b, (u, l)))
 
-       | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] => DFUN (a, x, bx)
+       | O.MONO O.FUN $ [_ \ a, (_,[x]) \ bx] => FUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
        | O.MONO O.APP $ [_ \ m, _ \ n] => APP (m, n)
 

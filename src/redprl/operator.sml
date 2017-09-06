@@ -251,7 +251,7 @@ struct
    (* circle *)
    | S1 | BASE | S1_REC
    (* function: lambda and app *)
-   | DFUN | LAM | APP
+   | FUN | LAM | APP
    (* record and tuple *)
    | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
    (* path: path abstraction *)
@@ -272,7 +272,7 @@ struct
    | RULE_PRIM of string
 
    (* development calculus terms *)
-   | DEV_DFUN_INTRO of unit dev_pattern list
+   | DEV_FUN_INTRO of unit dev_pattern list
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
    | DEV_LET
    | DEV_MATCH of sort * int list
@@ -379,7 +379,7 @@ struct
      | BASE => [] ->> EXP
      | S1_REC => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
 
-     | DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
+     | FUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
      | LAM => [[] * [EXP] <> EXP] ->> EXP
      | APP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
@@ -424,7 +424,7 @@ struct
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
 
-     | DEV_DFUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
+     | DEV_FUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) * [] <> TAC] ->> TAC
      | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
@@ -749,7 +749,7 @@ struct
      | BASE => "base"
      | S1_REC => "S1-rec"
 
-     | DFUN => "dfun"
+     | FUN => "fun"
      | LAM => "lam"
      | APP => "app"
 
@@ -786,7 +786,7 @@ struct
      | RULE_PRIM name => "refine{" ^ name ^ "}"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
-     | DEV_DFUN_INTRO pats => "fun-intro"
+     | DEV_FUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
      | DEV_LET => "let"
      | DEV_MATCH _ => "dev-match"

@@ -109,7 +109,7 @@ struct
     | makeQuant opr ((x, a) :: doms) cod =
        O.MONO opr $$ [([],[]) \ a, ([],[Option.getOpt (x, "_")]) \ makeQuant opr doms cod]
 
-  val makeDFun = makeQuant O.DFUN o flatten
+  val makeFun = makeQuant O.FUN o flatten
 
   structure LabelSet = SplaySet (structure Elem = StringOrdered)
 
@@ -215,7 +215,7 @@ struct
       val (pats', namess) = ListPair.unzip (List.map unstitchPattern pats)
       val names = List.concat namess
     in
-      O.MONO (O.DEV_DFUN_INTRO pats') $$ [(names, []) \ tac]
+      O.MONO (O.DEV_FUN_INTRO pats') $$ [(names, []) \ tac]
     end
 
   fun makeApplyHyp pat z tacs tac =
@@ -732,7 +732,7 @@ rawTermAndTac
   | NUMERAL (Multi.makeNum NUMERAL)
 
   (* function types *)
-  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
+  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeFun (#1 quantifierData) (#2 quantifierData))
   | LPAREN LAMBDA LSQUARE boundVars RSQUARE term RPAREN (Multi.makeLam boundVars term)
   | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 

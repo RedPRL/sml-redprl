@@ -23,10 +23,10 @@ Tac NatArg = [
   query gl <- goal.
   match [gl:jdg] {
     [tm, ty | #jdg{%tm in %ty} => {
-      refine dfun/eq/app; [`(-> nat %ty)]; auto
+      refine fun/eq/app; [`(-> nat %ty)]; auto
     }]
     [tm, ty | #jdg{%tm in %ty at 0} => {
-      refine dfun/eq/app; [`(-> nat %ty)]; auto
+      refine fun/eq/app; [`(-> nat %ty)]; auto
     }]
   }
 ].

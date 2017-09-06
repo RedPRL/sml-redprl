@@ -430,11 +430,11 @@ struct
      | "S1/eq/loop" => S1.EqLoop
      | "S1/eq/fcom" => S1.EqFCom
      | "S1/eq/S1-rec" => S1.EqElim
-     | "dfun/eqtype" => DFun.EqType
-     | "dfun/eq/lam" => DFun.Eq
-     | "dfun/intro" => DFun.True
-     | "dfun/eq/eta" => DFun.Eta
-     | "dfun/eq/app" => DFun.EqApp
+     | "fun/eqtype" => Fun.EqType
+     | "fun/eq/lam" => Fun.Eq
+     | "fun/intro" => Fun.True
+     | "fun/eq/eta" => Fun.Eta
+     | "fun/eq/app" => Fun.EqApp
      | "record/eqtype" => Record.EqType
      | "record/eq/tuple" => Record.Eq
      | "record/eq/eta" => Record.Eta
@@ -490,7 +490,7 @@ struct
          | (Syn.INT, Syn.INT) => Int.EqType
          | (Syn.VOID, Syn.VOID) => Void.EqType
          | (Syn.S1, Syn.S1) => S1.EqType
-         | (Syn.DFUN _, Syn.DFUN _) => DFun.EqType
+         | (Syn.FUN _, Syn.FUN _) => Fun.EqType
          | (Syn.RECORD _, Syn.RECORD _) => Record.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Path.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => InternalizedEquality.EqType
@@ -606,7 +606,7 @@ struct
          | (Syn.BASE, Syn.BASE, Syn.S1) => S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => S1.EqLoop
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => S1.EqFCom
-         | (_, _, Syn.DFUN _) => DFun.Eq
+         | (_, _, Syn.FUN _) => Fun.Eq
          | (_, _, Syn.RECORD _) => Record.Eq
          | (_, _, Syn.PATH_TY _) => Path.Eq
          | (_, _, Syn.EQUALITY _) => InternalizedEquality.Eq
@@ -622,7 +622,7 @@ struct
            (Syn.VAR _, Syn.VAR _) => Equality.Hyp
          | (Syn.WIF _, Syn.WIF _) => WBool.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => S1.EqElim
-         | (Syn.APP _, Syn.APP _) => DFun.EqApp
+         | (Syn.APP _, Syn.APP _) => Fun.EqApp
          | (Syn.PROJ _, Syn.PROJ _) => Record.EqProj
          | (Syn.PATH_APP (_, P.VAR _), Syn.PATH_APP (_, P.VAR _)) => Path.EqApp
          | (Syn.CUST, Syn.CUST) => Custom.Eq sign
@@ -645,7 +645,7 @@ struct
 
       fun StepEqNeuExpand sign m blocker ty =
         case (blocker, Syn.out ty) of
-           (_, Syn.DFUN _) => DFun.Eta
+           (_, Syn.FUN _) => Fun.Eta
          | (_, Syn.RECORD _) => Record.Eta
          | (_, Syn.PATH_TY _) => Path.Eta
          | (_, Syn.EQUALITY _) => InternalizedEquality.Eta
@@ -712,7 +712,7 @@ struct
            Syn.VAR _ => Synth.Hyp
          | Syn.WIF _ => WBool.SynthElim
          | Syn.S1_REC _ => S1.SynthElim
-         | Syn.APP _ => DFun.SynthApp
+         | Syn.APP _ => Fun.SynthApp
          | Syn.PROJ _ => Record.SynthProj
          | Syn.PATH_APP _ => Path.SynthApp
          | Syn.CUST => Custom.Synth sign
@@ -744,7 +744,7 @@ struct
          | Syn.INT => Int.Elim
          | Syn.VOID => Void.Elim
          | Syn.S1 => S1.Elim
-         | Syn.DFUN _ => DFun.Elim
+         | Syn.FUN _ => Fun.Elim
          | Syn.RECORD _ => Record.Elim
          | Syn.PATH_TY _ => Path.Elim
          | Syn.EQUALITY _ => InternalizedEquality.Elim

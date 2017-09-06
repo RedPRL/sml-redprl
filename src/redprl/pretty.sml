@@ -133,16 +133,16 @@ struct
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
 
-  fun multiDFun (doms : (variable list * abt) list) m =
+  fun multiFun (doms : (variable list * abt) list) m =
     case Abt.out m of
-       O.MONO O.DFUN $ [_ \ a, (_, [x]) \ bx] =>
+       O.MONO O.FUN $ [_ \ a, (_, [x]) \ bx] =>
          (case doms of
-             [] => multiDFun (([x], a) :: doms) bx
+             [] => multiFun (([x], a) :: doms) bx
            | (xs, a') :: doms' =>
                if Abt.eq (a, a') then
-                 multiDFun ((xs @ [x], a) :: doms') bx
+                 multiFun ((xs @ [x], a) :: doms') bx
                else
-                 multiDFun (([x], a) :: doms) bx)
+                 multiFun (([x], a) :: doms) bx)
      | _ => (List.rev doms, m)
 
   fun multiLam (xs : variable list) m =
@@ -201,8 +201,8 @@ struct
              :: [ppTubes (eqs, tubes)]
      | O.POLY (O.LOOP x) $ [] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
-     | O.MONO O.DFUN $ _ =>
-         printQuant "->" @@ multiDFun [] m
+     | O.MONO O.FUN $ _ =>
+         printQuant "->" @@ multiFun [] m
      | O.MONO O.LAM $ _ =>
          printLam @@ multiLam [] m
      | O.MONO O.APP $ _ =>
