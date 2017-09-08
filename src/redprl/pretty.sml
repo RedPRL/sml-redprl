@@ -133,16 +133,18 @@ struct
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
 
-  fun multiFun (doms : (variable list * abt) list) m =
+  fun multiFun (doms : (variable list option * abt) list) m =
     case Abt.out m of
        O.MONO O.FUN $ [_ \ a, (_, [x]) \ bx] =>
-         (case doms of
-             [] => multiFun (([x], a) :: doms) bx
-           | (xs, a') :: doms' =>
-               if Abt.eq (a, a') then
-                 multiFun ((xs @ [x], a) :: doms') bx
-               else
-                 multiFun (([x], a) :: doms) bx)
+         if Abt.Var.Ctx.member (Abt.varctx bx) x then
+           case doms of
+              (SOME xs, a') :: doms' =>
+                if Abt.eq (a, a') then
+                  multiFun ((SOME (xs @ [x]), a) :: doms') bx
+                else
+                  multiFun ((SOME [x], a) :: doms) bx
+            | _ => multiFun ((SOME [x], a) :: doms) bx
+         else multiFun ((NONE, a) :: doms) bx
      | _ => (List.rev doms, m)
 
   fun multiLam (xs : variable list) m =
@@ -172,7 +174,10 @@ struct
   fun printQuant opr (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
       (text opr)
-        :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]) doms
+        :: List.map
+            (fn (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]
+              | (NONE, a) => ppTerm a)
+            doms
           @ [ppTerm cod]
 
   and printLam (xs, m) =
