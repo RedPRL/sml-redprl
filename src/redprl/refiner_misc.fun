@@ -14,14 +14,51 @@ struct
   infix 1 || #>
   infix 2 >> >: >:? >:+ $$ $# // \ @>
 
-  structure MiscKit =
+  structure Coe =
   struct
-    fun selectiveMap f selectors (H, catjdg) =
+    fun Eq alpha jdg =
       let
-        fun folder (O.IN_GOAL, (H, catjdg)) = (H, CJ.map f catjdg)
-          | folder (O.IN_HYP x, (H, catjdg)) = (Hyps.modify x (CJ.map f) H, catjdg)
+        val _ = RedPrlLog.trace "Coe.Eq"
+        val (I, H) >> CJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val k = K.meet (k, K.COE)
+        val Syn.COE {dir=dir0, ty=(u, ty0u), coercee=m0} = Syn.out lhs
+        val Syn.COE {dir=dir1, ty=(v, ty1v), coercee=m1} = Syn.out rhs
+        val () = Assert.dirEq "Coe.Eq direction" (dir0, dir1)
+
+        (* type *)
+        val w = alpha 0
+        val ty0w = substSymbol (P.ret w, u) ty0u
+        val ty1w = substSymbol (P.ret w, v) ty1v
+        val goalTy = makeEqType (I @ [(w, P.DIM)], H) ((ty0w, ty1w), l, k)
+        (* after proving the above goal, [ty0r'0] must be a type *)
+        val ty0r'0 = substSymbol (#2 dir0, u) ty0u
+        val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r'0, ty), l, k)
+
+        (* coercee *)
+        val ty0r0 = substSymbol (#1 dir0, u) ty0u
+        val goalCoercees = makeEq (I, H) ((m0, m1), (ty0r0, NONE, K.top))
       in
-        List.foldl folder (H, catjdg) selectors
+        |>: goalCoercees >:? goalTy0 >: goalTy #> (I, H, trivial)
+      end
+
+    fun EqCapL _ jdg =
+      let
+        val _ = RedPrlLog.trace "Coe.EqCapL"
+        val (I, H) >> CJ.EQ ((coe, other), (ty, l, k)) = jdg
+        val k = K.meet (k, K.COE)
+        val Syn.COE {dir=(r, r'), ty=(u, ty0u), coercee=m} = Syn.out coe
+        val () = Assert.paramEq "Coe.EqCapL source and target of direction" (r, r')
+
+        (* type *)
+        val goalTy = makeType (I @ [(u, P.DIM)], H) (ty0u, l, k)
+        (* after proving the above goal, [ty0r] must be a type *)
+        val ty0r = substSymbol (r, u) ty0u
+        val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r, ty), l, k)
+
+        (* eq *)
+        val goalEq = makeEq (I, H) ((m, other), (ty, NONE, K.top))
+      in
+        |>: goalEq >:? goalTy0 >: goalTy #> (I, H, trivial)
       end
   end
 
@@ -30,18 +67,11 @@ struct
     fun reduce sign =
       Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign)
 
-    (* favonia: the following should be generalized and put into the Sequent
-     * module such that a single template function `HeadExpansionDelegate`
-     * can generate all the following functions.
-     *)
-
-    open MiscKit
-
     fun SequentReduce sign selectors _ jdg =
       let
         val _ = RedPrlLog.trace "Computation.Reduce"
         val (I, H) >> catjdg = jdg
-        val (H', catjdg') = selectiveMap (reduce sign) selectors (H, catjdg)
+        val (H', catjdg') = Selector.map (reduce sign) selectors (H, catjdg)
         val (goal, hole) = makeGoal @@ (I, H') >> catjdg'
       in
         |>: goal #> (I, H, hole)
@@ -85,8 +115,6 @@ struct
       fun unfold sign opids m = List.foldl (fn (opid, m) => unfoldOne sign opid m) m opids
     end
 
-    open MiscKit
-
     fun UnfoldAll sign opids _ jdg =
       let
         val _ = RedPrlLog.trace "Custom.UnfoldAll"
@@ -100,7 +128,7 @@ struct
       let
         val _ = RedPrlLog.trace "Custom.Unfold"
         val (I, H) >> catjdg = jdg
-        val (H', catjdg') = selectiveMap (unfold sign opids) selectors (H, catjdg)
+        val (H', catjdg') = Selector.map (unfold sign opids) selectors (H, catjdg)
         val (goal, hole) = makeGoal @@ (I, H') >> catjdg'
       in
         |>: goal #> (I, H, hole)

@@ -359,4 +359,17 @@ struct
     fun labelsEq msg (l0, l1) =
       ListPair.appEq (labelEq msg) (l0, l1)
   end
+
+  (* maps with selectors *)
+
+  structure Selector =
+  struct
+    fun map f selectors (H, catjdg) =
+      let
+        fun folder (O.IN_GOAL, (H, catjdg)) = (H, CJ.map f catjdg)
+          | folder (O.IN_HYP x, (H, catjdg)) = (Hyps.modify x (CJ.map f) H, catjdg)
+      in
+        List.foldl folder (H, catjdg) selectors
+      end
+  end
 end

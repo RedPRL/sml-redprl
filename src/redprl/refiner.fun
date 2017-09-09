@@ -191,9 +191,9 @@ struct
           raise Fail "Did not match"
       end
 
-    fun Hyp _ jdg =
+    fun VarFromTrue _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.Hyp"
+        val _ = RedPrlLog.trace "Synth.FromTrue"
         val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
         val CJ.TRUE (a, l', k') = Hyps.lookup z H
@@ -201,6 +201,8 @@ struct
       in
         |>:? goalKind #> (I, H, a)
       end
+
+    val Var = VarFromTrue
   end
 
   structure Misc =
@@ -305,54 +307,6 @@ struct
         val motiveMatchesMainGoal = makeEqTypeIfDifferent (I, H) ((motivem, mainGoal), l, k)
       in
         |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal #> (I, H, rewrittenHole)
-      end
-  end
-
-  structure Coe =
-  struct
-    fun Eq alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Coe.Eq"
-        val (I, H) >> CJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
-        val k = K.meet (k, K.COE)
-        val Syn.COE {dir=dir0, ty=(u, ty0u), coercee=m0} = Syn.out lhs
-        val Syn.COE {dir=dir1, ty=(v, ty1v), coercee=m1} = Syn.out rhs
-        val () = Assert.dirEq "Coe.Eq direction" (dir0, dir1)
-
-        (* type *)
-        val w = alpha 0
-        val ty0w = substSymbol (P.ret w, u) ty0u
-        val ty1w = substSymbol (P.ret w, v) ty1v
-        val goalTy = makeEqType (I @ [(w, P.DIM)], H) ((ty0w, ty1w), l, k)
-        (* after proving the above goal, [ty0r'0] must be a type *)
-        val ty0r'0 = substSymbol (#2 dir0, u) ty0u
-        val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r'0, ty), l, k)
-
-        (* coercee *)
-        val ty0r0 = substSymbol (#1 dir0, u) ty0u
-        val goalCoercees = makeEq (I, H) ((m0, m1), (ty0r0, NONE, K.top))
-      in
-        |>: goalCoercees >:? goalTy0 >: goalTy #> (I, H, trivial)
-      end
-
-    fun EqCapL _ jdg =
-      let
-        val _ = RedPrlLog.trace "Coe.EqCapL"
-        val (I, H) >> CJ.EQ ((coe, other), (ty, l, k)) = jdg
-        val k = K.meet (k, K.COE)
-        val Syn.COE {dir=(r, r'), ty=(u, ty0u), coercee=m} = Syn.out coe
-        val () = Assert.paramEq "Coe.EqCapL source and target of direction" (r, r')
-
-        (* type *)
-        val goalTy = makeType (I @ [(u, P.DIM)], H) (ty0u, l, k)
-        (* after proving the above goal, [ty0r] must be a type *)
-        val ty0r = substSymbol (r, u) ty0u
-        val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r, ty), l, k)
-
-        (* eq *)
-        val goalEq = makeEq (I, H) ((m, other), (ty, NONE, K.top))
-      in
-        |>: goalEq >:? goalTy0 >: goalTy #> (I, H, trivial)
       end
   end
 
@@ -537,20 +491,6 @@ struct
           | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
         end
 
-      fun EqFromHyp alpha jdg =
-        let
-          val (_, H) >> CJ.EQ ((m, n), (a, l, k)) = jdg
-          val isUseful =
-            fn CJ.EQ ((m', n'), (a', l', k')) =>
-                 Abt.eq (m', m) andalso Abt.eq (n', n) andalso Abt.eq (a', a)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | _ => false
-        in
-          case Hyps.search H isUseful of
-            SOME (lbl, _) => Equality.FromEq lbl alpha jdg
-          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
-        end
-
       fun UniverseVarToType z  = 
         Universe.Elim z then_ EqTypeFromHyp 
 
@@ -582,6 +522,20 @@ struct
          | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqTypeNeuExpand sign ty1 blocker
          | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqTypeNeuExpand sign ty2 blocker
          | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", CJ.pretty @@ CJ.EQ_TYPE ((ty1, ty2), NONE, K.top))
+
+      fun EqFromHyp alpha jdg =
+        let
+          val (_, H) >> CJ.EQ ((m, n), (a, l, k)) = jdg
+          val isUseful =
+            fn CJ.EQ ((m', n'), (a', l', k')) =>
+                 Abt.eq (m', m) andalso Abt.eq (n', n) andalso Abt.eq (a', a)
+                 andalso inUsefulSubUniv (l', k') (l, k)
+             | _ => false
+        in
+          case Hyps.search H isUseful of
+            SOME (lbl, _) => Equality.FromEq lbl alpha jdg
+          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
+        end
 
       fun StepEqAtType sign ty =
         case canonicity sign ty of
@@ -709,7 +663,7 @@ struct
 
       fun StepSynth sign m =
         case Syn.out m of
-           Syn.VAR _ => Synth.Hyp
+           Syn.VAR _ => Synth.Var
          | Syn.WIF _ => WBool.SynthElim
          | Syn.S1_REC _ => S1.SynthElim
          | Syn.APP _ => Fun.SynthApp
