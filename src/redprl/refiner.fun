@@ -193,7 +193,7 @@ struct
 
     fun VarFromTrue _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.FromTrue"
+        val _ = RedPrlLog.trace "Synth.VarFromTrue"
         val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
         val CJ.TRUE (a, l', k') = Hyps.lookup z H
