@@ -661,6 +661,13 @@ struct
          | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", CJ.pretty @@ CJ.EQ ((m, n), (ty, NONE, K.top))))
 
+      fun StepTrue sign ty =
+        case Syn.out ty of
+           Syn.RECORD [] => Record.True (* the unit type *)
+         | Syn.EQUALITY _ => InternalizedEquality.True
+         | Syn.UNIVERSE _ => Universe.True
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepTrue", TermPrinter.ppTerm ty)
+
       fun StepSynth sign m =
         case Syn.out m of
            Syn.VAR _ => Synth.Var
@@ -675,11 +682,12 @@ struct
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
+          | _ >> CJ.TRUE (ty, _, _) => StepTrue sign ty
           | _ >> CJ.SYNTH (m, _, _) => StepSynth sign m
           | _ >> CJ.PARAM_SUBST _ => Misc.ParamSubst
           | MATCH _ => Misc.MatchOperator
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordReduce sign then_ Record.MatchRecord
-          | _ >> jdg => raise E.error [Fpp.text "AutoStep does not apply to the judgment", CJ.pretty jdg])
+          | _ >> jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "AutoStep", CJ.pretty jdg))
 
     in
       fun AutoStep sign alpha jdg = 
