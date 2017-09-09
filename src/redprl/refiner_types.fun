@@ -1729,4 +1729,15 @@ struct
         |>: goal #> (I, H, trivial)
       end
   end
+
+  structure Subtyping =
+  struct
+    fun isSubtypeOf (ty0, ty1) =
+      case (Syn.out ty0, Syn.out ty1) of
+         (Syn.BOOL, Syn.WBOOL) => true
+       | (Syn.NAT, Syn.INT) => true
+       | (Syn.VOID, _) => true
+       | (Syn.UNIVERSE (l0, k0), Syn.UNIVERSE (l1, k1)) => L.<= (l0, l1) andalso K.<= (k0, k1)
+       | _ => Abt.eq (ty0, ty1)
+  end
 end
