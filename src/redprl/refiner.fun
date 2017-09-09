@@ -96,7 +96,7 @@ struct
   struct
     fun Symmetry _ jdg =
       let
-        val _ = RedPrlLog.trace "Equality.Symmetry"
+        val _ = RedPrlLog.trace "TypeEquality.Symmetry"
         val (I, H) >> CJ.EQ_TYPE ((ty1, ty2), l, k) = jdg
         val goal = makeEqType (I, H) ((ty2, ty1), l, k)
       in
