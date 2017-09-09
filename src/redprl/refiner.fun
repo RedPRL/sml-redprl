@@ -249,18 +249,15 @@ struct
 
   structure Equality =
   struct
-    fun Hyp _ jdg =
+    fun VarFromTrue _ jdg =
       let
-        val _ = RedPrlLog.trace "Equality.Hyp"
+        val _ = RedPrlLog.trace "Equality.VarFromTrue"
         val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
         val _ = Assert.varEq (x, y)
-        val goalTy =
-          case Hyps.lookup x H of
-             CJ.TRUE (ty', l', k') =>
-               makeEqTypeIfDifferentOrNotSubUniv (I, H) ((ty', ty), l, k) (l', k')
-           | _ => raise E.error [Fpp.text "Equality.Hyp: expected truth hypothesis"]
+        val CJ.TRUE (ty', l', k') = Hyps.lookup x H
+        val goalTy = makeEqTypeIfDifferentOrNotSubUniv (I, H) ((ty', ty), l, k) (l', k')
       in
         |>:? goalTy #> (I, H, trivial)
       end
@@ -573,7 +570,7 @@ struct
        * this includes structural equality and typed computation principles *)
       fun StepEqNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
-           (Syn.VAR _, Syn.VAR _) => Equality.Hyp
+           (Syn.VAR _, Syn.VAR _) => Equality.VarFromTrue
          | (Syn.WIF _, Syn.WIF _) => WBool.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => S1.EqElim
          | (Syn.APP _, Syn.APP _) => Fun.EqApp
