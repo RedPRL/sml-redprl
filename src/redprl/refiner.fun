@@ -443,7 +443,31 @@ struct
     fun matchGoal f alpha jdg =
       f jdg alpha jdg
 
+    fun matchHyp z f alpha (jdg as (_, H) >> _) =
+      f (Hyps.lookup z H) z alpha jdg
+
+    fun canonicity sign =
+      Machine.canonicity sign Machine.NOMINAL (Machine.Unfolding.default sign)
+
     fun fail err _ _ = E.raiseError err
+
+    fun AutoElimBasis ty =
+      case Syn.out ty of
+         Syn.BOOL => Bool.Elim
+       | Syn.VOID => Void.Elim
+       | Syn.EQUALITY _ => InternalizedEquality.Elim
+       | _ => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoElim", TermPrinter.ppTerm ty))
+
+    fun ElimHypDelegate tac sign z = matchHyp z
+      (fn CJ.TRUE (ty, _, _) =>
+        (case canonicity sign ty of
+            Machine.REDEX => (fn _ => Computation.SequentReduceHyp sign z then_ ElimHypDelegate tac sign z)
+          | Machine.NEUTRAL (Machine.VAR z') => (fn _ => AutoElim sign z' then_ ElimHypDelegate tac sign z)
+          | Machine.NEUTRAL (Machine.OPERATOR theta) => (fn _ => Custom.UnfoldHyp sign [theta] z then_ ElimHypDelegate tac sign z)
+          | Machine.CANONICAL => tac ty
+          | _ => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "ElimHypDelegate", TermPrinter.ppTerm ty)))
+        | jdg => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "ElimHypDelegate", CJ.pretty jdg)))
+    and AutoElim sign = ElimHypDelegate AutoElimBasis sign
   in
     local
       fun StepEqTypeVal (ty1, ty2) =
@@ -463,14 +487,6 @@ struct
          | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
-      fun canonicity sign = 
-        Machine.canonicity sign Machine.NOMINAL (Machine.Unfolding.default sign)
-
-      fun AutoElim z =
-        Bool.Elim z orelse_
-        Void.Elim z orelse_
-        InternalizedEquality.Elim z
-
 
       (* favonia:
        * I temporarily disabled the checking before trying the rules
@@ -479,12 +495,11 @@ struct
       fun EqTypeFromHyp alpha jdg =
         let
           val (_, H) >> CJ.EQ_TYPE _ = jdg
-          fun try jdg z =
-            case jdg of
-               CJ.EQ_TYPE _ => TypeEquality.FromEqType z
-             | CJ.EQ _ => TypeEquality.FromEq z orelse_ Universe.EqTypeFromEq z
-             | CJ.TRUE _ => TypeEquality.FromTrue z
-             | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
+          val try =
+            fn CJ.EQ_TYPE _ => TypeEquality.FromEqType
+             | CJ.EQ _ => (fn z => TypeEquality.FromEq z orelse_ Universe.EqTypeFromEq z)
+             | CJ.TRUE _ => TypeEquality.FromTrue
+             | _ => fn z => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
         in
           (Hyps.foldl
             (fn (z, jdg, tac) => tac orelse_ try jdg z)
@@ -494,8 +509,8 @@ struct
         end
 
       fun StepEqTypeNeuByElim sign tys =
-        fn (Machine.VAR z, _) => AutoElim z
-         | (_, Machine.VAR z) => AutoElim z
+        fn (Machine.VAR z, _) => AutoElim sign z
+         | (_, Machine.VAR z) => AutoElim sign z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByElim", CJ.pretty @@ CJ.EQ_TYPE (tys, NONE, K.top))
 
       fun StepEqTypeNeuByUnfold sign tys =
@@ -509,7 +524,7 @@ struct
         orelse_ StepEqTypeNeuByUnfold sign tys blockers
 
       fun StepEqTypeNeuExpand sign ty =
-        fn Machine.VAR z => AutoElim z
+        fn Machine.VAR z => AutoElim sign z
          | Machine.OPERATOR theta => Custom.Unfold sign [theta] [O.IN_GOAL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuExpand", TermPrinter.ppTerm ty)
 
@@ -546,7 +561,7 @@ struct
       fun StepEqAtType sign ty =
         case canonicity sign ty of
            Machine.REDEX => Computation.SequentReduce sign [O.IN_GOAL]
-         | Machine.NEUTRAL (Machine.VAR z) => AutoElim z
+         | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqAtType", TermPrinter.ppTerm ty)
 
@@ -589,8 +604,8 @@ struct
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqNeuByElim sign (m, n) =
-        fn (Machine.VAR z, _) => AutoElim z
-         | (_, Machine.VAR z) => AutoElim z
+        fn (Machine.VAR z, _) => AutoElim sign z
+         | (_, Machine.VAR z) => AutoElim sign z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByElim", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqNeuByUnfold sign (m, n) =
@@ -609,7 +624,7 @@ struct
          | (_, Syn.RECORD _) => Record.Eta
          | (_, Syn.PATH_TY _) => Path.Eta
          | (_, Syn.EQUALITY _) => InternalizedEquality.Eta
-         | (Machine.VAR z, _) => AutoElim z
+         | (Machine.VAR z, _) => AutoElim sign z
          | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuExpand", CJ.pretty @@ CJ.MEM (m, (ty, NONE, K.top)))
 
@@ -704,7 +719,7 @@ struct
     end
 
     local
-      fun FromTrue ty =
+      fun ElimBasis ty =
         case Syn.out ty of
            Syn.BOOL => Bool.Elim
          | Syn.WBOOL => WBool.Elim
@@ -717,21 +732,9 @@ struct
          | Syn.PATH_TY _ => Path.Elim
          | Syn.EQUALITY _ => InternalizedEquality.Elim
          | Syn.UNIVERSE _ => Universe.Elim
-         | _ => raise E.error [Fpp.text "Could not find suitable elimination rule for", TermPrinter.ppTerm ty]
-
-      val FromEq = Universe.Elim
-
-      fun StepJdg _ z alpha jdg =
-        let
-          val (_, H) >> _ = jdg
-        in
-          case Hyps.lookup z H of
-             CJ.TRUE (hyp, _, _) => FromTrue hyp z alpha jdg
-           | CJ.EQ _ => FromEq z alpha jdg
-           | _ => raise E.error [Fpp.text "Could not find suitable elimination rule"]
-        end
+         | _ => raise E.error [Fpp.text "elim tactic", TermPrinter.ppTerm ty]
     in
-      val Elim = StepJdg
+      val Elim = ElimHypDelegate ElimBasis
     end
 
     fun Rewrite _ = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)

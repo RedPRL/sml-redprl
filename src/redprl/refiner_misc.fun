@@ -86,6 +86,8 @@ struct
         |>: goal #> (I, H, hole)
       end
 
+    fun SequentReduceHyp sign z = SequentReduce sign [O.IN_HYP z]
+
     fun MatchRecordReduce sign _ jdg = 
       let
         val _ = RedPrlLog.trace "Computation.MatchRecordReduce"
@@ -133,6 +135,8 @@ struct
       in
         |>: goal #> (I, H, hole)
       end
+
+    fun UnfoldHyp sign opids z = Unfold sign opids [O.IN_HYP z]
 
     fun Eq sign _ jdg =
       let

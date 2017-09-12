@@ -58,9 +58,9 @@ Thm Pick/compose : [
   lam a. fresh a', a'/ih -> elim a;
   [ lam b, c, p1, p2. `tuple
   , lam b. fresh b', b'/ih -> elim b;
-    [ lam c, p1, p2. unfold Pick in p2; reduce in p2; elim p2
+    [ lam c, p1, p2. elim p2
     , lam c. fresh c', c'/ih -> elim c;
-      [ lam p1. unfold Pick in p1; reduce in p1; elim p1
+      [ lam p1. elim p1
       , lam p1. unfold Pick in p1; reduce in p1;
         let < head = p1/h, tail = p1/t > = p1. elim p1/h; reduce in p1/t;
         [ lam p2. unfold Pick in p2; reduce in p2;
