@@ -539,8 +539,8 @@ struct
          | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", CJ.pretty @@ CJ.EQ_TYPE ((ty1, ty2), NONE, K.top))
 
       (* favonia:
-       * I temporarily disabled the checking before trying the rules
-       * because everything is moving now.
+       * I temporarily disabled the checking before running the rules
+       * because everything is subject to change now.
        *)
       fun EqFromHyp alpha jdg =
         let
