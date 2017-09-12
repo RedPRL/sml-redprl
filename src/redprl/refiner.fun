@@ -458,16 +458,16 @@ struct
        | Syn.EQUALITY _ => InternalizedEquality.Elim
        | _ => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoElim", TermPrinter.ppTerm ty))
 
-    fun ElimHypDelegate tac sign z = matchHyp z
+    (* trying to normalize TRUE hypothesis `z` and then run `tac ty z` *)
+    fun NormalizeHypDelegate tac sign z = matchHyp z
       (fn CJ.TRUE (ty, _, _) =>
         (case canonicity sign ty of
-            Machine.REDEX => (fn _ => Computation.SequentReduceHyp sign z then_ ElimHypDelegate tac sign z)
-          | Machine.NEUTRAL (Machine.VAR z') => (fn _ => AutoElim sign z' then_ ElimHypDelegate tac sign z)
-          | Machine.NEUTRAL (Machine.OPERATOR theta) => (fn _ => Custom.UnfoldHyp sign [theta] z then_ ElimHypDelegate tac sign z)
-          | Machine.CANONICAL => tac ty
-          | _ => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "ElimHypDelegate", TermPrinter.ppTerm ty)))
-        | jdg => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "ElimHypDelegate", CJ.pretty jdg)))
-    and AutoElim sign = ElimHypDelegate AutoElimBasis sign
+            Machine.REDEX => (fn _ => Computation.SequentReduceHyp sign z then_ NormalizeHypDelegate tac sign z)
+          | Machine.NEUTRAL (Machine.VAR z') => (fn _ => (AutoElim sign z' then_ NormalizeHypDelegate tac sign z) orelse_ tac ty z)
+          | Machine.NEUTRAL (Machine.OPERATOR theta) => (fn _ => Custom.UnfoldHyp sign [theta] z then_ NormalizeHypDelegate tac sign z)
+          | _ => tac ty)
+        | jdg => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "NormalizeHypDelegate", CJ.pretty jdg)))
+    and AutoElim sign = NormalizeHypDelegate AutoElimBasis sign
   in
     local
       fun StepEqTypeVal (ty1, ty2) =
@@ -734,7 +734,7 @@ struct
          | Syn.UNIVERSE _ => Universe.Elim
          | _ => raise E.error [Fpp.text "elim tactic", TermPrinter.ppTerm ty]
     in
-      val Elim = ElimHypDelegate ElimBasis
+      val Elim = NormalizeHypDelegate ElimBasis
     end
 
     fun Rewrite _ = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
