@@ -42,10 +42,7 @@ sig
     val Delete : hyp -> rule
   end
 
-  structure Synth :
-  sig
-    val FromEq : hyp -> rule
-  end
+  val SynthFromHyp : hyp -> rule
 
   val Exact : abt -> rule
 

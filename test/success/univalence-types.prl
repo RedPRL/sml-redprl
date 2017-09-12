@@ -56,7 +56,6 @@ Thm IdUnivalence/Wf {l:lvl,i:dim} : [
 ] by [
   lam ty.
     unfold Member;
-    refine eq/intro;
     auto
 ].
 
@@ -68,7 +67,6 @@ Thm IdUnivalence/Test0 {l:lvl,i:dim} : [
 ] by [
   lam ty, a.
     unfold Member;
-    refine eq/intro;
     auto
 ].
 
@@ -78,9 +76,7 @@ Thm IdUnivalence/Test1 {l:lvl,i:dim} : [
    [a : ty]
    (= ty (univalence-proj 0 (univalence-in 0 a a) Id) a))
 ] by [
-  lam ty, a.
-    refine eq/intro;
-    auto
+  lam ty, a. auto
 ].
 
 Def Not = [(lam [b] (if b ff tt))].

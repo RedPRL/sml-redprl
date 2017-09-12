@@ -1,4 +1,4 @@
-functor RedPrlLevelPure (Key : ORDERED)
+functor RedPrlLevelBasis (Key : ORDERED)
 =
 struct
   structure E = RedPrlError
@@ -103,7 +103,7 @@ where type param = Sym.t RedPrlParameterTerm.t
 =
 struct
   local
-    structure L = RedPrlLevelPure (Sym.Ord)
+    structure L = RedPrlLevelBasis (Sym.Ord)
   in
     open L
     val pretty = pretty' TP.ppSym
@@ -116,7 +116,7 @@ where type param = string RedPrlParameterTerm.t
 =
 struct
   local
-    structure L = RedPrlLevelPure (StringOrdered)
+    structure L = RedPrlLevelBasis (StringOrdered)
   in
     open L
     val pretty = pretty' Fpp.text

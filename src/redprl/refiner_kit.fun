@@ -187,9 +187,10 @@ struct
 
   fun makeEqTypeUnlessSubUniv (I, H) ((m, n), l, k) (l', k') =
     case (L.P.< (l, l'), K.greatestMeetComplement' (k, k')) of
-      (_, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), l, k'')
-    | (true, _) => SOME @@ makeEqType (I, H) ((m, n), l, k)
-    | _ => NONE
+      (true, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), l, k'')
+    | (false, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), NONE, k'')
+    | (true, NONE) => SOME @@ makeEqType (I, H) ((m, n), l, K.top)
+    | (false, NONE) => NONE
   
   fun makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k') =
     makeEqTypeUnlessSubUniv (I, H) ((m, m), l, k) (l', k')
@@ -227,6 +228,13 @@ struct
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
 
+  (* subtyping *)
+
+  (* It is not clear how exactly the subtyping should be implemented;
+   * therefore we have a dummy implementation here. *)
+  fun makeSubType (I, H) (ty1, l1, k1) (ty0, l0, k0) =
+    makeEqTypeIfDifferentOrNotSubUniv (I, H) ((ty1, ty0), l0, k0) (l1, k1)
+
   (* assertions *)
 
   structure Assert =
@@ -242,6 +250,12 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
+
+    fun alphaEqEither (m, (n0, n1)) =
+      if Abt.eq (m, n0) orelse Abt.eq (m, n1) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n0, Fpp.text "or", TermPrinter.ppTerm n1]
 
     fun levelLeq (l1, l2) =
       if L.P.<= (l1, l2) then

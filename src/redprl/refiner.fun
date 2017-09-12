@@ -103,11 +103,16 @@ struct
         |>: goal #> (I, H, trivial)
       end
 
+    fun inUsefulSubUniv (l', k') (l, k) =
+      K.greatestMeetComplement' (k, k') <> SOME k orelse
+      (Option.isSome l andalso L.P.<= (l', l))
+
     fun FromEqType z _ jdg =
       let
         val _ = RedPrlLog.trace "TypeEquality.FromEqType"
         val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
         val CJ.EQ_TYPE ((a', b'), l', k') = Hyps.lookup z H
+        val true = inUsefulSubUniv (l', k') (l, k)
         val _ = Assert.alphaEq (a', a)
         val _ = Assert.alphaEq (b', b)
         val goal = makeEqTypeUnlessSubUniv (I, H) ((a, b), l, k) (l', k')
@@ -120,6 +125,7 @@ struct
         val _ = RedPrlLog.trace "TypeEquality.FromEq"
         val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
         val CJ.EQ (_, (a', l', k')) = Hyps.lookup z H
+        val true = inUsefulSubUniv (l', k') (l, k)
         val _ = Assert.alphaEq (a, b)
         val _ = Assert.alphaEq (a', a)
         val goal = makeTypeUnlessSubUniv (I, H) (a, l, k) (l', k')
@@ -132,6 +138,7 @@ struct
         val _ = RedPrlLog.trace "TypeEquality.FromTrue"
         val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
         val CJ.TRUE (a', l', k') = Hyps.lookup z H
+        val true = inUsefulSubUniv (l', k') (l, k)
         val _ = Assert.alphaEq (a, b)
         val _ = Assert.alphaEq (a', a)
         val goal = makeTypeUnlessSubUniv (I, H) (a, l, k) (l', k')
@@ -205,6 +212,13 @@ struct
     val Var = VarFromTrue
   end
 
+  (* XXX Maybe we should look up `z` first? *)
+  fun SynthFromHyp z =
+    Synth.FromEq z orelse_
+    Universe.SynthFromEq z orelse_
+    Universe.SynthFromTrue z orelse_
+    Universe.SynthFromEqType z
+
   structure Misc =
   struct
     fun MatchOperator _ jdg =
@@ -257,7 +271,7 @@ struct
         val Syn.VAR (y, _) = Syn.out n
         val _ = Assert.varEq (x, y)
         val CJ.TRUE (ty', l', k') = Hyps.lookup x H
-        val goalTy = makeEqTypeIfDifferentOrNotSubUniv (I, H) ((ty', ty), l, k) (l', k')
+        val goalTy = makeSubType (I, H) (ty', l', k') (ty, l, k)
       in
         |>:? goalTy #> (I, H, trivial)
       end
@@ -267,14 +281,13 @@ struct
     fun FromEq z _ jdg =
       let
         val _ = RedPrlLog.trace "Equality.FromEq"
-        val (I, H) >> CJ.EQ ((m, n), (a, l, k)) = jdg
-        val CJ.EQ ((m', n'), (a', l', k')) = Hyps.lookup z H
-        val _ = Assert.alphaEq (m', m)
-        val _ = Assert.alphaEq (n', n)
-        val _ = Assert.alphaEq (a', a)
-        val goal = makeEqUnlessSubUniv (I, H) ((m, n), (a, l, k)) (l', k')
+        val (I, H) >> CJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
+        val CJ.EQ ((m0, n0), (ty0, l0, k0)) = Hyps.lookup z H
+        val _ = Assert.alphaEq (m0, m1)
+        val _ = Assert.alphaEq (n0, n1)
+        val goalTy = makeSubType (I, H) (ty0, l0, k0) (ty1, l1, k1)
       in
-        |>:? goal #> (I, H, trivial)
+        |>:? goalTy #> (I, H, trivial)
       end
 
     fun Symmetry _ jdg =
@@ -459,41 +472,30 @@ struct
         InternalizedEquality.Elim z
 
 
-      fun inUsefulSubUniv (l', k') (l, k) =
-        K.greatestMeetComplement' (k, k') <> SOME k
-        andalso L.P.<= (l', l)
-
+      (* favonia:
+       * I temporarily disabled the checking before trying the rules
+       * because everything is moving now.
+       *)
       fun EqTypeFromHyp alpha jdg =
         let
-          val (_, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
-          val isUnary = Abt.eq (a, b)
-          val isUseful =
-            fn CJ.EQ_TYPE ((a', b'), l', k') =>
-                 Abt.eq (a', a) andalso Abt.eq (b', b)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | CJ.EQ (_, (a', l', k')) =>
-                 isUnary andalso Abt.eq (a', a)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | CJ.TRUE (a', l', k') =>
-                 isUnary andalso Abt.eq (a', a)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | _ => false
+          val (_, H) >> CJ.EQ_TYPE _ = jdg
+          fun try jdg z =
+            case jdg of
+               CJ.EQ_TYPE _ => TypeEquality.FromEqType z
+             | CJ.EQ _ => TypeEquality.FromEq z orelse_ Universe.EqTypeFromEq z
+             | CJ.TRUE _ => TypeEquality.FromTrue z
+             | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
         in
-          case Hyps.search H isUseful of
-            SOME (lbl, _) =>
-              ( TypeEquality.FromEqType lbl orelse_
-                TypeEquality.FromEq lbl orelse_
-                TypeEquality.FromTrue lbl)
-              alpha jdg
-          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
+          (Hyps.foldl
+            (fn (z, jdg, tac) => tac orelse_ try jdg z)
+            (fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.text "empty context"))
+            H)
+          alpha jdg
         end
 
-      fun UniverseVarToType z  = 
-        Universe.Elim z then_ EqTypeFromHyp 
-
       fun StepEqTypeNeuByElim sign tys =
-        fn (Machine.VAR z, _) => AutoElim z orelse_ UniverseVarToType z
-         | (_, Machine.VAR z) => AutoElim z orelse_ UniverseVarToType z
+        fn (Machine.VAR z, _) => AutoElim z
+         | (_, Machine.VAR z) => AutoElim z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByElim", CJ.pretty @@ CJ.EQ_TYPE (tys, NONE, K.top))
 
       fun StepEqTypeNeuByUnfold sign tys =
@@ -502,8 +504,9 @@ struct
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByUnfold", CJ.pretty @@ CJ.EQ_TYPE (tys, NONE, K.top))
 
       fun StepEqTypeNeu sign tys blockers =
-        StepEqTypeNeuByElim sign tys blockers orelse_
-        StepEqTypeNeuByUnfold sign tys blockers
+                Universe.VarFromTrue
+        orelse_ StepEqTypeNeuByElim sign tys blockers
+        orelse_ StepEqTypeNeuByUnfold sign tys blockers
 
       fun StepEqTypeNeuExpand sign ty =
         fn Machine.VAR z => AutoElim z
@@ -520,18 +523,24 @@ struct
          | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqTypeNeuExpand sign ty2 blocker
          | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", CJ.pretty @@ CJ.EQ_TYPE ((ty1, ty2), NONE, K.top))
 
+      (* favonia:
+       * I temporarily disabled the checking before trying the rules
+       * because everything is moving now.
+       *)
       fun EqFromHyp alpha jdg =
         let
-          val (_, H) >> CJ.EQ ((m, n), (a, l, k)) = jdg
-          val isUseful =
-            fn CJ.EQ ((m', n'), (a', l', k')) =>
-                 Abt.eq (m', m) andalso Abt.eq (n', n) andalso Abt.eq (a', a)
-                 andalso inUsefulSubUniv (l', k') (l, k)
-             | _ => false
+          val (_, H) >> CJ.EQ _ = jdg
+          val try =
+            fn CJ.EQ _ => Equality.FromEq
+             | CJ.TRUE _ => InternalizedEquality.EqFromTrue
+             | CJ.EQ_TYPE _ => Universe.EqFromEqType
+             | _ => fn z => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
         in
-          case Hyps.search H isUseful of
-            SOME (lbl, _) => Equality.FromEq lbl alpha jdg
-          | NONE => raise E.error [Fpp.text "Could not find suitable hypothesis"]
+          (Hyps.foldl
+            (fn (z, jdg, tac) => tac orelse_ try jdg z)
+            (fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.text "empty context"))
+            H)
+          alpha jdg
         end
 
       fun StepEqAtType sign ty =

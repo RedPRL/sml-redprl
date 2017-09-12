@@ -16,6 +16,12 @@ Thm NatOne : [
   auto
 ].
 
+Thm NatIsInt : [
+  (-> [x : nat] (= int x x))
+] by [
+  lam x. fresh x', x'/ih -> elim x; auto
+].
+
 Thm Pred : [
   (-> nat nat)
 ] by [

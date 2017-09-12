@@ -32,7 +32,7 @@ struct
         val goalTy = makeEqType (I @ [(w, P.DIM)], H) ((ty0w, ty1w), l, k)
         (* after proving the above goal, [ty0r'0] must be a type *)
         val ty0r'0 = substSymbol (#2 dir0, u) ty0u
-        val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r'0, ty), l, k)
+        val goalTy0 = makeSubType (I, H) (ty0r'0, l, k) (ty, l, k)
 
         (* coercee *)
         val ty0r0 = substSymbol (#1 dir0, u) ty0u
@@ -53,7 +53,7 @@ struct
         val goalTy = makeType (I @ [(u, P.DIM)], H) (ty0u, l, k)
         (* after proving the above goal, [ty0r] must be a type *)
         val ty0r = substSymbol (r, u) ty0u
-        val goalTy0 = makeEqTypeIfDifferent (I, H) ((ty0r, ty), l, k)
+        val goalTy0 = makeSubType (I, H) (ty0r, l, k) (ty, l, k)
 
         (* eq *)
         val goalEq = makeEq (I, H) ((m, other), (ty, NONE, K.top))
@@ -152,7 +152,7 @@ struct
         val specTy' = substMetaenv rho specTy
         val _ = if Hyps.isEmpty H' then () else raise Fail "Equality.Custom only works with empty sequent"
 
-        val goalTy = makeEqTypeIfDifferentOrNotSubUniv (I, H) ((ty, specTy'), l, k) (specL, specK)
+        val goalTy = makeSubType (I, H) (specTy', specL, specK) (ty, l, k)
       in
         |>:? goalTy #> (I, H, trivial)
       end

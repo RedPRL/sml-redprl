@@ -85,7 +85,7 @@ struct
   fun hyp z alpha jdg =
     R.Hyp.Project z alpha jdg
     handle exn =>
-      R.Synth.FromEq z alpha jdg
+      R.SynthFromHyp z alpha jdg
       handle _ => raise exn
 
   open RedPrlSequent infix >>
