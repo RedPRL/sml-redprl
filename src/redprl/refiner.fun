@@ -440,16 +440,22 @@ struct
     val CatJdgSymmetry : tactic =
       Equality.Symmetry orelse_ TypeEquality.Symmetry
 
+    fun fail err _ _ = E.raiseError err
+
     fun matchGoal f alpha jdg =
       f jdg alpha jdg
 
-    fun matchHyp z f alpha (jdg as (_, H) >> _) =
-      f (Hyps.lookup z H) z alpha jdg
+    fun matchSeqSel O.IN_GOAL f = matchGoal
+        (fn _ >> catjdg => f catjdg
+          | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchSeqSel", Seq.pretty seq))
+      | matchSeqSel (O.IN_HYP z) f = matchGoal
+        (fn (_, H) >> _ => f (Hyps.lookup z H)
+          | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchSeqSel", Seq.pretty seq))
+
+    fun matchHyp z f = matchSeqSel (O.IN_HYP z) (fn catjdg => f catjdg z)
 
     fun canonicity sign =
       Machine.canonicity sign Machine.NOMINAL (Machine.Unfolding.default sign)
-
-    fun fail err _ _ = E.raiseError err
 
     fun AutoElimBasis ty =
       case Syn.out ty of
@@ -458,16 +464,29 @@ struct
        | Syn.EQUALITY _ => InternalizedEquality.Elim
        | _ => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoElim", TermPrinter.ppTerm ty))
 
+    fun AutoElim sign = NormalizeHypDelegate AutoElimBasis sign
+
     (* trying to normalize TRUE hypothesis `z` and then run `tac ty z` *)
-    fun NormalizeHypDelegate tac sign z = matchHyp z
-      (fn CJ.TRUE (ty, _, _) =>
-        (case canonicity sign ty of
-            Machine.REDEX => (fn _ => Computation.SequentReduceHyp sign z then_ NormalizeHypDelegate tac sign z)
-          | Machine.NEUTRAL (Machine.VAR z') => (fn _ => (AutoElim sign z' then_ NormalizeHypDelegate tac sign z) orelse_ tac ty z)
-          | Machine.NEUTRAL (Machine.OPERATOR theta) => (fn _ => Custom.UnfoldHyp sign [theta] z then_ NormalizeHypDelegate tac sign z)
-          | _ => tac ty)
-        | jdg => (fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "NormalizeHypDelegate", CJ.pretty jdg)))
-    and AutoElim sign = NormalizeHypDelegate AutoElimBasis sign
+    and NormalizeHypDelegate tac sign z =
+      NormalizeDelegate (fn ty => tac ty z) sign (O.IN_HYP z)
+
+    (* trying to normalize TRUE hypothesis and then run `tac ty` *)
+    and NormalizeDelegate tac sign =
+      let
+        fun go sel = matchSeqSel sel
+          (fn CJ.TRUE (ty, _, _) =>
+            (case canonicity sign ty of
+                Machine.REDEX => Computation.SequentReduce sign [sel] then_ go sel
+              | Machine.NEUTRAL (Machine.VAR z') => (AutoElim sign z' then_ go sel) orelse_ tac ty
+              | Machine.NEUTRAL (Machine.OPERATOR theta) => Custom.Unfold sign [theta] [sel] then_ go sel
+              | _ => tac ty)
+            | jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "Normalize", CJ.pretty jdg))
+      in
+        go
+      end
+
+    (* trying to normalize TRUE goal and then run `tac ty` *)
+    fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign O.IN_GOAL
   in
     local
       fun StepEqTypeVal (ty1, ty2) =
