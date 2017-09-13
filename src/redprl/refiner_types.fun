@@ -1368,6 +1368,61 @@ struct
       in
         |>: goal >:? goalKind #> (I, H, trivial)
       end
+
+    fun RewriteTrue eq alpha jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
+        val (I, H) >> CJ.TRUE (mainGoal, l, k) = jdg
+
+        val (goalEq, holeEquality) = makeSynth (I, H) (eq, NONE, K.top)
+        val (goalTy, holeTy) = makeMatch (O.MONO O.EQUALITY, 0, holeEquality, [], [])
+        val (goalM, holeM) = makeMatch (O.MONO O.EQUALITY, 1, holeEquality, [], [])
+        val (goalN, holeN) = makeMatch (O.MONO O.EQUALITY, 2, holeEquality, [], [])
+
+        val x = alpha 0
+        val Hx = H @> (x, CJ.TRUE (holeTy, NONE, K.top))
+        val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
+        val motiveWfGoal = makeType (I, Hx) (motiveHole, l, k)
+
+        val motiven = substVar (holeN, x) motiveHole
+        val motivem = substVar (holeM, x) motiveHole
+
+        val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, NONE, K.top)
+        val motiveMatchesMainGoal = makeSubType (I, H) (motivem, l, k) (mainGoal, l, k)
+      in
+        |>: goalEq >: goalTy >: goalM >: goalN >: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal #> (I, H, rewrittenHole)
+      end
+
+    fun RewriteTrueByTrue z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrueByTrue"
+        val (I, H) >> CJ.TRUE (mainGoal, l, k) = jdg
+        val CJ.TRUE (equal, l', _) = Hyps.lookup z H
+        val Syn.EQUALITY (ty, m, n) = Syn.out equal
+
+        val x = alpha 0
+        val Hx = H @> (x, CJ.TRUE (ty, l', K.top))
+        val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
+        val motiveWfGoal = makeType (I, Hx) (motiveHole, l, k)
+
+        val motiven = substVar (n, x) motiveHole
+        val motivem = substVar (m, x) motiveHole
+
+        val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, NONE, K.top)
+        val motiveMatchesMainGoal = makeSubType (I, H) (motivem, l, k) (mainGoal, l, k)
+      in
+        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal #> (I, H, rewrittenHole)
+      end
+
+    fun Symmetry _ jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.Symmetry"
+        val (I, H) >> CJ.TRUE (equal, l, k) = jdg
+        val Syn.EQUALITY (ty, m, n) = Syn.out equal
+        val (goal, hole) = makeTrue (I, H) (Syn.into (Syn.EQUALITY (ty, n, m)), l, k)
+      in
+        |>: goal #> (I, H, Syn.into Syn.AX)
+      end
   end
 
   structure FormalComposition =

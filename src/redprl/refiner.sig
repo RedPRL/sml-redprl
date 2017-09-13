@@ -14,14 +14,11 @@ sig
   val CutLemma : sign -> opid -> (param * psort option) list -> rule
 
   val Elim : sign -> hyp -> rule
-  val Rewrite : sign -> hyp -> rule
-  val Internalize : sign -> rule
+  val Rewrite : sign -> abt -> rule
+  val RewriteHyp : sign -> hyp -> rule
+  val Internalize : rule
+  val Symmetry : rule
   val AutoStep : sign -> rule
-
-  structure Equality :
-  sig
-    val Symmetry : rule
-  end
 
   structure Custom :
   sig

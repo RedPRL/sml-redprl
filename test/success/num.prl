@@ -31,14 +31,6 @@ Thm Pred : [
   [ `,a' ]
 ].
 
-Extract Pred.
-
-Def Pred2 = [
-  (lam [x] (nat-rec x zero [y z] y))
-].
-
-Extract Pred2.
-
 // A tactic to infer and supply a simple (non-dependent) motive to the nat/eq/nat-rec rule.
 Tac SimpleNatRecEq = [
   query gl <- goal.
@@ -47,13 +39,6 @@ Tac SimpleNatRecEq = [
       refine nat/eq/nat-rec; [`%ty]; auto
     }]
   }
-].
-
-Thm Pred2Wf : [
-  Pred2 in (-> nat nat)
-] by [
-  auto;
-  SimpleNatRecEq
 ].
 
 Thm Plus : [
@@ -66,41 +51,80 @@ Thm Plus : [
   ]
 ].
 
-Extract Plus.
-
-Def Plus2 = [
-  (lam [a]
-   (nat-rec
-    a
-    (lam [x] x)
-    [a' ind] (lam [x] (succ ($ ind x)))))
-].
-
-Thm Plus2Wf : [
-  Plus2 in (-> nat nat nat)
-] by [
-  auto; SimpleNatRecEq
-].
-
-Thm Plus2UnitL : [
-  n : nat >> ($ Plus2 0 n) = n in nat
+Thm Plus/wf : [
+  Plus in (-> nat nat nat)
 ] by [
   auto
 ].
 
-Thm Plus2UnitR : [
-  n : nat >> ($ Plus2 n 0) = n in nat
+Thm Plus/zeroL : [
+  (-> [n : nat] (= nat ($ Plus 0 n) n))
 ] by [
-  internalize;
-  fresh n', ind -> elim n;
-  [ `ax
-  , fresh eq -> elim ind; fresh x -> rewrite eq;
-    [ `(= nat (succ ,x) (succ ,n'))
-    , `ax
-    , auto
-    , auto; [`(-> nat nat)]; auto; SimpleNatRecEq
+  lam n. auto
+].
+
+Thm Plus/zero/R : [
+  (-> [n : nat] (= nat ($ Plus n 0) n))
+] by [
+  lam n.
+    fresh n', ind -> elim n;
+    [ `ax
+    , fresh x -> rewrite-hyp ind;
+      [ `(= nat (succ ,x) (succ ,n'))
+      , auto
+      , auto
+      , auto; [`(-> nat nat)]; auto; SimpleNatRecEq
+      ]
     ]
-  ]
+].
+
+Thm Plus/succ/L : [
+  (-> [n m : nat] (= nat ($ Plus (succ n) m) (succ ($ Plus n m))))
+] by [
+  lam n, m. auto; [`(-> nat nat)]; auto; SimpleNatRecEq
+].
+
+Thm Plus/succ/R : [
+  (-> [n m : nat] (= nat ($ Plus n (succ m)) (succ ($ Plus n m))))
+] by [
+  lam n, m. fresh n', n'/ih -> elim n;
+    [ auto
+    , fresh x -> rewrite ($ Plus/succ/L ,n' (succ ,m));
+      [`(= nat ,x (succ ($ Plus (succ ,n') ,m)))];
+      [ fresh x -> rewrite ($ Plus/succ/L ,n' ,m);
+        [ `(= nat (succ ($ Plus ,n' (succ ,m))) (succ ,x))
+        , fresh x -> rewrite-hyp n'/ih;
+          [ `(= nat (succ ,x) (succ (succ ($ Plus ,n' ,m))))
+          , auto
+          ]
+        ]
+      ]
+    ];
+
+    auto
+].
+
+Thm Eq/sym : [
+  (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
+] by [
+  lam ty, a, b, eq. symmetry; auto
+].
+
+Thm Plus/comm : [
+  (-> [n m : nat] (= nat ($ Plus n m) ($ Plus m n)))
+] by [
+  lam n, m. fresh n', n'/ih -> elim n;
+    [ symmetry; `($ Plus/zero/R ,m)
+    , fresh x -> rewrite ($ Plus/succ/L ,n' ,m);
+      [ `(= nat ,x ($ Plus ,m (succ ,n')))
+      , fresh x -> rewrite-hyp n'/ih;
+        [ `(= nat (succ ,x) ($ Plus ,m (succ ,n')))
+        , symmetry; `($ Plus/succ/R ,m ,n')
+        ]
+      ]
+    ];
+
+    auto
 ].
 
 Thm NatSymm : [

@@ -267,7 +267,7 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_REDUCE_ALL | RULE_INTERNALIZE
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_REWRITE | RULE_EXACT of sort | RULE_REDUCE_ALL | RULE_INTERNALIZE
    | RULE_CUT
    | RULE_PRIM of string
 
@@ -306,7 +306,7 @@ struct
    | PARAM_REF of psort * 'a P.term
 
    | RULE_ELIM of 'a
-   | RULE_REWRITE of 'a
+   | RULE_REWRITE_HYP of 'a
    | RULE_REDUCE of 'a selector list
    | RULE_UNFOLD_ALL of 'a list
    | RULE_UNFOLD of 'a list * 'a selector list
@@ -418,6 +418,7 @@ struct
      | RULE_ID => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
+     | RULE_REWRITE => [[] * [] <> EXP] ->> TAC
      | RULE_EXACT tau => [[] * [] <> tau] ->> TAC
      | RULE_REDUCE_ALL => [] ->> TAC
      | RULE_INTERNALIZE => [] ->> TAC
@@ -498,7 +499,7 @@ struct
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
 
        | RULE_ELIM _ => [] ->> TAC
-       | RULE_REWRITE _ => [] ->> TAC
+       | RULE_REWRITE_HYP _ => [] ->> TAC
        | RULE_REDUCE _ => [] ->> TAC
        | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
@@ -593,7 +594,7 @@ struct
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
 
        | RULE_ELIM a => [(a, HYP)]
-       | RULE_REWRITE a => [(a, HYP)]
+       | RULE_REWRITE_HYP a => [(a, HYP)]
        | RULE_REDUCE selectors => selectorsSupport selectors
        | RULE_UNFOLD_ALL names => opidsSupport names
        | RULE_UNFOLD (names, selectors) => opidsSupport names @ selectorsSupport selectors
@@ -682,7 +683,7 @@ struct
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
 
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
-       | (RULE_REWRITE a, t) => (case t of RULE_REWRITE b => f (a, b) | _ => false)
+       | (RULE_REWRITE_HYP a, t) => (case t of RULE_REWRITE_HYP b => f (a, b) | _ => false)
        | (RULE_REDUCE ss1, t) => (case t of RULE_REDUCE ss2 => selectorsEq f (ss1, ss2) | _ => false)
        | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
        | (RULE_UNFOLD (os1, ss1), t) => (case t of RULE_UNFOLD (os2, ss2) => opidsEq f (os1, os2) andalso selectorsEq f (ss1, ss2) | _ => false)
@@ -779,6 +780,7 @@ struct
      | RULE_ID => "id"
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
+     | RULE_REWRITE => "rewrite"
      | RULE_EXACT _ => "exact"
      | RULE_REDUCE_ALL => "reduce-all"
      | RULE_INTERNALIZE => "internalize"
@@ -847,7 +849,7 @@ struct
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
 
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
-       | RULE_REWRITE a => "rewrite{" ^ f a ^ "}"
+       | RULE_REWRITE_HYP a => "rewrite-hyp{" ^ f a ^ "}"
        | RULE_REDUCE ss => "reduce{" ^ selectorsToString f ss ^ "}"
        | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
        | RULE_UNFOLD (os, ss) => "unfold{" ^ opidsToString f os ^ "," ^ selectorsToString f ss ^ "}"
@@ -926,7 +928,7 @@ struct
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
 
        | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
-       | RULE_REWRITE a => RULE_REWRITE (mapSym (passSort HYP f) a)
+       | RULE_REWRITE_HYP a => RULE_REWRITE_HYP (mapSym (passSort HYP f) a)
        | RULE_REDUCE ss => RULE_REDUCE (List.map (mapSelector (mapSym (passSort HYP f))) ss)
        | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
        | RULE_UNFOLD (ns, ss) => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns, List.map (mapSelector (mapSym (passSort HYP f))) ss)

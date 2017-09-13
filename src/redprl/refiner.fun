@@ -308,12 +308,12 @@ struct
         val x = alpha 0
         val Hx = H @> (x, CJ.TRUE (ty, l', k'))
         val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
-        val motiveWfGoal = makeType (I, Hx) (motiveHole, NONE, K.top)
+        val motiveWfGoal = makeType (I, Hx) (motiveHole, l, k)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
 
-        val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, l, k)
+        val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, NONE, K.top)
         val motiveMatchesMainGoal = makeSubType (I, H) (motivem, l, k) (mainGoal, l, k)
       in
         |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal #> (I, H, rewrittenHole)
@@ -737,11 +737,23 @@ struct
       val Elim = NormalizeHypDelegate ElimBasis
     end
 
-    fun Rewrite _ = Equality.RewriteTrue (* todo: rewrite other kinds of goals *)
+    fun RewriteHyp _ z = matchHyp z
+      (fn CJ.EQ _ => Equality.RewriteTrue
+        | CJ.TRUE _ => InternalizedEquality.RewriteTrueByTrue
+        | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite-hyp tactic", CJ.pretty jdg))
 
-    fun Internalize _ =
-      InternalizedEquality.InternalizeEq orelse_
-      Universe.InternalizeEqType
+    fun Rewrite _ = InternalizedEquality.RewriteTrue
+
+    val Internalize : rule = matchGoal
+      (fn _ >> CJ.EQ_TYPE _ => Universe.InternalizeEqType
+        | _ >> CJ.EQ _ => InternalizedEquality.InternalizeEq
+        | seq => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "internalize tactic", Seq.pretty seq))
+
+    val Symmetry : rule = matchGoal
+      (fn _ >> CJ.EQ_TYPE _ => TypeEquality.Symmetry
+        | _ >> CJ.EQ _ => Equality.Symmetry
+        | _ >> CJ.TRUE _ => InternalizedEquality.Symmetry
+        | seq => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "internalize tactic", Seq.pretty seq))
 
   end
 end

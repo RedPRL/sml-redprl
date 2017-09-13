@@ -274,10 +274,11 @@ struct
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
-     | O.POLY (O.RULE_REWRITE z) $ _ => R.Rewrite sign z
+     | O.MONO O.RULE_REWRITE $ [_ \ tm] => R.Rewrite sign (expandHypVars tm) thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
+     | O.POLY (O.RULE_REWRITE_HYP z) $ _ => R.RewriteHyp sign z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
-     | O.MONO O.RULE_INTERNALIZE $ _ => R.Internalize sign
-     | O.MONO O.RULE_SYMMETRY $ _ => R.Equality.Symmetry
+     | O.MONO O.RULE_INTERNALIZE $ _ => R.Internalize
+     | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.out (expandHypVars catjdg))
      | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
      | O.POLY (O.RULE_REDUCE sels) $ _ => R.Computation.Reduce sign sels

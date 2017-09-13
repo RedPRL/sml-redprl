@@ -137,8 +137,8 @@
 (defconst redprl-tactic-keywords
   '("auto" "auto-step" "case" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
     "hyp" "id" "internalize" "lemma" "let" "match" "of" "print" "progress"
-    "query" "rec" "reduce" "refine" "repeat" "rewrite" "symmetry" "then"
-    "unfold" "use" "with")
+    "query" "rec" "reduce" "refine" "repeat" "rewrite" "rewrite-hyp" "symmetry"
+    "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")
 
 (defconst redprl-tactic-symbols
