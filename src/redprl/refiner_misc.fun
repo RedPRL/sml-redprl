@@ -99,21 +99,27 @@ struct
   (* everything with custom operators *)
   structure Custom =
   struct
-    local
-      infix $
-      fun unfoldOneTopLevel sign opid m : abt =
-        case out m of
-           O.POLY (O.CUST (opid',_,_)) $ _ =>
-             if Sym.eq (opid, opid') then
-               Machine.steps sign Machine.CUBICAL Machine.Unfolding.always 1 m
-                 handle exn => E.raiseError @@ E.IMPOSSIBLE @@ Fpp.text @@ "Impossible failure during safeUnfold: " ^ exnMessage exn
-             else
-               m
-         | _ => m
-      fun unfoldOne sign opid = let val f = unfoldOneTopLevel sign opid in f o Abt.deepMapSubterms f end
-    in
-      fun unfold sign opids m = List.foldl (fn (opid, m) => unfoldOne sign opid m) m opids
-    end
+    fun unfold sign opids m : abt =
+      let
+        infix $
+        fun shallowUnfold m =
+          case out m of
+             O.POLY (O.CUST (opid',_,_)) $ _ =>
+               (case List.find (fn opid => Sym.eq (opid, opid')) opids of
+                   SOME _ =>
+                     let
+                       val m' = Machine.steps sign Machine.CUBICAL Machine.Unfolding.always 1 m
+                         handle exn => E.raiseError @@ E.IMPOSSIBLE @@ Fpp.hvsep
+                           [Fpp.text "unfolding", TermPrinter.ppTerm m, Fpp.text ":", E.format exn]
+                     in
+                       deepUnfold m'
+                     end
+                 | NONE => m)
+           | _ => m
+        and deepUnfold m = shallowUnfold (Abt.deepMapSubterms shallowUnfold m)
+      in
+        deepUnfold m
+      end
 
     fun UnfoldAll sign opids _ jdg =
       let
