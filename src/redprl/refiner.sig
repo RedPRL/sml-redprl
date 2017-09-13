@@ -13,12 +13,14 @@ sig
   val Cut : catjdg -> rule
   val CutLemma : sign -> opid -> (param * psort option) list -> rule
 
+  val AutoStep : sign -> rule
   val Elim : sign -> hyp -> rule
+  val Exact : abt -> rule
+  val Internalize : rule
   val Rewrite : sign -> abt -> rule
   val RewriteHyp : sign -> hyp -> rule
-  val Internalize : rule
   val Symmetry : rule
-  val AutoStep : sign -> rule
+  val SynthFromHyp : hyp -> rule
 
   structure Custom :
   sig
@@ -39,10 +41,11 @@ sig
     val Delete : hyp -> rule
   end
 
-  val SynthFromHyp : hyp -> rule
-
-  val Exact : abt -> rule
-
+  structure Tactical :
+  sig
+    val NormalizeGoalDelegate : (abt -> rule) -> sign -> rule
+    val NormalizeHypDelegate : (abt -> hyp -> rule) -> sign -> hyp -> rule
+  end
 
   type rule_name = string
   val lookupRule : rule_name -> rule

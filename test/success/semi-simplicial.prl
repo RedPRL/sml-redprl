@@ -61,11 +61,8 @@ Thm Pick/compose : [
     [ lam c, p1, p2. elim p2
     , lam c. fresh c', c'/ih -> elim c;
       [ lam p1. elim p1
-      , lam p1. unfold Pick in p1; reduce in p1;
-        let < head = p1/h, tail = p1/t > = p1. elim p1/h; reduce in p1/t;
-        [ lam p2. unfold Pick in p2; reduce in p2;
-          let < head = p2/h, tail = p2/t > = p2. elim p2/h; reduce in p2/t;
-          unfold Pick in goal; reduce in goal;
+      , lam p1. let < head = p1/h, tail = p1/t > = p1. elim p1/h;
+        [ lam p2. let < head = p2/h, tail = p2/t > = p2. elim p2/h;
           [ < head = `tt
             , tail = `($ ,a'/ih ,b' ,c' ,p1/t ,p2/t)
             >
@@ -73,8 +70,7 @@ Thm Pick/compose : [
             , tail = `($ ,b'/ih ,c' ,p1/t ,p2/t)
             >
           ]
-        , lam p2. unfold Pick in p2; reduce in p2;
-          unfold Pick in goal; reduce in goal;
+        , lam p2.
           < head = `ff
           , tail = `($ ,c'/ih ,p1/t ,p2)
           >

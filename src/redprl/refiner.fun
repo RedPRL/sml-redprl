@@ -488,6 +488,12 @@ struct
     (* trying to normalize TRUE goal and then run `tac ty` *)
     fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign O.IN_GOAL
   in
+    structure Tactical =
+    struct
+      val NormalizeGoalDelegate = NormalizeGoalDelegate
+      val NormalizeHypDelegate = NormalizeHypDelegate
+    end
+
     local
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of

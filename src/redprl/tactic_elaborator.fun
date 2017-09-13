@@ -104,19 +104,23 @@ struct
   fun elimRule sign z xs tacs = 
     R.Elim sign z thenl' (xs, tacs)
 
-  fun recordElim sign z (lbls, names) tac alpha jdg =
-    let
-      val (_, H) >> _ = jdg
-      val CJ.TRUE (record, _, _) = RT.Hyps.lookup z H
-      val Syn.RECORD fields = Syn.out record
-      val nameMap = ListPair.zipEq (lbls, names)
-      fun nameForLabel lbl = 
-        Syn.Fields.lookup lbl nameMap
-        handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
-      val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
-    in
-      (RT.Record.Elim z thenl' (xs, [tac])) alpha jdg
-    end
+  local
+    fun recordElimBasis (lbls, names) tac ty z =
+      let
+        val Syn.RECORD fields = Syn.out ty
+        val nameMap = ListPair.zipEq (lbls, names)
+        fun nameForLabel lbl =
+          Syn.Fields.lookup lbl nameMap
+          handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
+        val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
+      in
+        RT.Record.Elim z thenl' (xs, [tac])
+      end
+  in
+    fun recordElim (lbls, names) tac =
+      R.Tactical.NormalizeHypDelegate
+        (recordElimBasis (lbls, names) tac)
+  end
 
   fun stitchPattern (pattern : unit O.dev_pattern, names : Sym.t list) : Sym.t O.dev_pattern * Sym.t list =
     let
@@ -159,7 +163,7 @@ struct
 
           val continue = go (ListPair.zip (names, pats))
         in
-          recordElim sign z (lbls, names) continue
+          recordElim (lbls, names) continue sign z
         end
 
   fun decompose sign z =
@@ -189,23 +193,28 @@ struct
          apply sign z [z',p] (appTac, applications sign z' (pattern, names) tacs tac)
        end
 
-  fun recordIntro sign lbls tacs alpha jdg = 
-    let
-      val (_, _) >> CJ.TRUE (record, _, _) = jdg
-      val Syn.RECORD fields = Syn.out record
+  local
+    fun recordIntroBasis sign lbls tacs ty =
+      let
+        val Syn.RECORD fields = Syn.out ty
 
-      val labeledTactics = ListPair.zipEq (lbls, tacs)
+        val labeledTactics = ListPair.zipEq (lbls, tacs)
 
-      fun tacticForLabel lbl = 
-        case ListUtil.findIndex (fn (lbl', _) => lbl = lbl') labeledTactics of
-           SOME (_, (_, tac)) => tac
-         | NONE => idn
+        fun tacticForLabel lbl =
+          case ListUtil.findIndex (fn (lbl', _) => lbl = lbl') labeledTactics of
+             SOME (_, (_, tac)) => tac
+           | NONE => idn
 
-      val fieldTactics = List.map (fn ((lbl, _), _) => tacticForLabel lbl) fields
-      val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTac sign)
-    in
-      (RT.Record.True thenl fieldTactics @ famTactics) alpha jdg
-    end
+        val fieldTactics = List.map (fn ((lbl, _), _) => tacticForLabel lbl) fields
+        val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTac sign)
+      in
+        RT.Record.True thenl fieldTactics @ famTactics
+      end
+  in
+    fun recordIntro sign lbls tacs =
+      R.Tactical.NormalizeGoalDelegate
+        (recordIntroBasis sign lbls tacs) sign
+  end
 
 
   fun nameForPattern pat = 
@@ -213,27 +222,42 @@ struct
        O.PAT_VAR x => x
      | O.PAT_TUPLE lpats => Sym.named (ListSpine.pretty (Sym.toString o nameForPattern o #2) "-" lpats)
 
-  fun funIntros sign (pats, names) tac =
-    case pats of 
-       [] => tac
-     | pat::pats => 
-       let
-         val (pat', names') = stitchPattern (pat, names)
-         val name = nameForPattern pat'
-         val intros = funIntros sign (pats, names') tac
-         val continue =
-           case pat' of
-              O.PAT_VAR _ => intros
-            | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
-       in
-         RT.Fun.True thenl' ([name], [continue, autoTac sign])
-       end
+  local
+    fun funIntrosBasis sign (pats, names) tac _ =
+      case pats of
+         [] => tac
+       | pat::pats =>
+         let
+           val (pat', names') = stitchPattern (pat, names)
+           val name = nameForPattern pat'
+           val intros = funIntros sign (pats, names') tac
+           val continue =
+             case pat' of
+                O.PAT_VAR _ => intros
+              | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
+         in
+           RT.Fun.True thenl' ([name], [continue, autoTac sign])
+         end
 
-  fun pathIntros sign us tac =
-    case us of 
-       [] => tac
-     | u::us => RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+    and funIntros sign (pats, names) tac =
+      R.Tactical.NormalizeGoalDelegate
+        (funIntrosBasis sign (pats, names) tac) sign
+  in
+    val funIntros = funIntros
+  end
 
+  local
+    fun pathIntrosBasis sign us tac _ =
+      case us of
+         [] => tac
+       | u::us => RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+
+    and pathIntros sign us tac =
+      R.Tactical.NormalizeGoalDelegate
+        (pathIntrosBasis sign us tac) sign
+  in
+    val pathIntros = pathIntros
+  end
 
   fun exactAuto sign m = 
     R.Exact (expandHypVars m) thenl [autoTac sign]
