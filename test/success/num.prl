@@ -104,6 +104,14 @@ Thm Plus/succ/R : [
     auto
 ].
 
+Thm Plus/test0 : [
+  (-> [n m : nat] [eq : (= nat ($ Plus n zero) m)] (= nat n m))
+] by [
+  lam n, m, eq.
+    fresh x -> rewrite ($ Plus/zero/R ,n) in eq;
+    [ `(= nat ,x ,m) ]; auto
+].
+
 Thm Eq/sym : [
   (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
 ] by [
