@@ -525,27 +525,6 @@ struct
          | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqType
          | _ => raise E.error [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
-
-      (* favonia:
-       * I temporarily disabled the checking before trying the rules
-       * because everything is moving now.
-       *)
-      fun EqTypeFromHyp alpha jdg =
-        let
-          val (_, H) >> CJ.EQ_TYPE _ = jdg
-          val try =
-            fn CJ.EQ_TYPE _ => TypeEquality.FromEqType
-             | CJ.EQ _ => (fn z => TypeEquality.FromEq z orelse_ Universe.EqTypeFromEq z)
-             | CJ.TRUE _ => TypeEquality.FromTrue
-             | _ => fn z => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
-        in
-          (Hyps.foldl
-            (fn (z, jdg, tac) => tac orelse_ try jdg z)
-            (fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.text "empty context"))
-            H)
-          alpha jdg
-        end
-
       fun StepEqTypeNeuByElim sign tys =
         fn (Machine.VAR z, _) => AutoElim sign z
          | (_, Machine.VAR z) => AutoElim sign z
@@ -575,26 +554,6 @@ struct
          | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqTypeNeuExpand sign ty1 blocker
          | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqTypeNeuExpand sign ty2 blocker
          | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", CJ.pretty @@ CJ.EQ_TYPE ((ty1, ty2), NONE, K.top))
-
-      (* favonia:
-       * I temporarily disabled the checking before running the rules
-       * because everything is subject to change now.
-       *)
-      fun EqFromHyp alpha jdg =
-        let
-          val (_, H) >> CJ.EQ _ = jdg
-          val try =
-            fn CJ.EQ _ => Equality.FromEq
-             | CJ.TRUE _ => InternalizedEquality.EqFromTrue
-             | CJ.EQ_TYPE _ => Universe.EqFromEqType
-             | _ => fn z => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
-        in
-          (Hyps.foldl
-            (fn (z, jdg, tac) => tac orelse_ try jdg z)
-            (fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.text "empty context"))
-            H)
-          alpha jdg
-        end
 
       fun StepEqAtType sign ty =
         case canonicity sign ty of
@@ -748,6 +707,42 @@ struct
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordReduce sign then_ Record.MatchRecord
           | _ >> jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "AutoStep", CJ.pretty jdg))
 
+      (* favonia:
+       * I temporarily disabled the checking before running the rules
+       * because everything is subject to change now.
+       *)
+
+      fun EqTypeFromHyp alpha jdg =
+        let
+          val (_, H) >> CJ.EQ_TYPE _ = jdg
+          val try =
+            fn CJ.EQ_TYPE _ => TypeEquality.FromEqType
+             | CJ.EQ _ => (fn z => TypeEquality.FromEq z orelse_ Universe.EqTypeFromEq z)
+             | CJ.TRUE _ => TypeEquality.FromTrue
+             | _ => fn z => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
+        in
+          (Hyps.foldl
+            (fn (z, jdg, tac) => tac orelse_ try jdg z)
+            (fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.text "empty context"))
+            H)
+          alpha jdg
+        end
+
+      fun EqFromHyp alpha jdg =
+        let
+          val (_, H) >> CJ.EQ _ = jdg
+          val try =
+            fn CJ.EQ _ => Equality.FromEq
+             | CJ.TRUE _ => InternalizedEquality.EqFromTrue
+             | CJ.EQ_TYPE _ => Universe.EqFromEqType
+             | _ => fn z => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
+        in
+          (Hyps.foldl
+            (fn (z, jdg, tac) => tac orelse_ try jdg z)
+            (fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.text "empty context"))
+            H)
+          alpha jdg
+        end
     in
       fun AutoStep sign alpha jdg = 
         StepJdg sign alpha jdg
