@@ -90,8 +90,8 @@ Thm Plus/succ/R : [
   lam n, m. fresh n', n'/ih -> elim n;
     [ auto
     , fresh x -> rewrite ($ Plus/succ/L ,n' (succ ,m));
-      [`(= nat ,x (succ ($ Plus (succ ,n') ,m)))];
-      [ fresh x -> rewrite ($ Plus/succ/L ,n' ,m);
+      [ `(= nat ,x (succ ($ Plus (succ ,n') ,m)))
+      , fresh x -> rewrite ($ Plus/succ/L ,n' ,m);
         [ `(= nat (succ ($ Plus ,n' (succ ,m))) (succ ,x))
         , fresh x -> rewrite-hyp n'/ih;
           [ `(= nat (succ ,x) (succ (succ ($ Plus ,n' ,m))))
