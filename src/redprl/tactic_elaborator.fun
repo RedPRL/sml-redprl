@@ -223,38 +223,39 @@ struct
      | O.PAT_TUPLE lpats => Sym.named (ListSpine.pretty (Sym.toString o nameForPattern o #2) "-" lpats)
 
   local
-    fun funIntrosBasis sign (pats, names) tac _ =
-      case pats of
-         [] => tac
-       | pat::pats =>
-         let
-           val (pat', names') = stitchPattern (pat, names)
-           val name = nameForPattern pat'
-           val intros = funIntros sign (pats, names') tac
-           val continue =
-             case pat' of
-                O.PAT_VAR _ => intros
-              | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
-         in
-           RT.Fun.True thenl' ([name], [continue, autoTac sign])
-         end
+    fun funIntrosBasis sign (pat, pats, names) tac _ =
+      let
+        val (pat', names') = stitchPattern (pat, names)
+        val name = nameForPattern pat'
+        val intros = funIntros sign (pats, names') tac
+        val continue =
+          case pat' of
+             O.PAT_VAR _ => intros
+           | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
+      in
+        RT.Fun.True thenl' ([name], [continue, autoTac sign])
+      end
 
     and funIntros sign (pats, names) tac =
-      R.Tactical.NormalizeGoalDelegate
-        (funIntrosBasis sign (pats, names) tac) sign
+      case pats of
+         [] => tac
+       | pat :: pats =>
+           R.Tactical.NormalizeGoalDelegate
+             (funIntrosBasis sign (pat, pats, names) tac) sign
   in
     val funIntros = funIntros
   end
 
   local
-    fun pathIntrosBasis sign us tac _ =
-      case us of
-         [] => tac
-       | u::us => RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+    fun pathIntrosBasis sign (u, us) tac _ =
+      RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
 
     and pathIntros sign us tac =
-      R.Tactical.NormalizeGoalDelegate
-        (pathIntrosBasis sign us tac) sign
+      case us of
+         [] => tac
+       | u :: us =>
+           R.Tactical.NormalizeGoalDelegate
+             (pathIntrosBasis sign (u, us) tac) sign
   in
     val pathIntros = pathIntros
   end

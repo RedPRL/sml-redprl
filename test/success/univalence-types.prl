@@ -13,7 +13,6 @@ Def Id = [(lam [a] a)].
 Thm IdIsEquiv{l:lvl} : [
   (-> [ty : (U l hcom)] (IsEquiv ty ty Id))
 ] by [
-  unfold IsEquiv; unfold IsContr; unfold Fiber; unfold HasAllPaths;
   lam ty, a.
   < proj1 =
      <proj1 = use a,
@@ -36,7 +35,6 @@ Thm IdEquiv{l:lvl} : [
   (-> [ty : (U l hcom)] (Equiv ty ty))
 ] by [
   lam ty.
-    unfold Equiv;
     <proj1 = `Id,
      proj2 = use {IdIsEquiv l} [use ty]>
 ].
@@ -54,9 +52,7 @@ Thm IdUnivalence/Wf {l:lvl,i:dim} : [
    [ty : (U l hcom)]
    (Member ({IdUnivalence l i} ty) (U l)))
 ] by [
-  lam ty.
-    unfold Member;
-    auto
+  lam ty. `ax
 ].
 
 Thm IdUnivalence/Test0 {l:lvl,i:dim} : [
@@ -65,9 +61,7 @@ Thm IdUnivalence/Test0 {l:lvl,i:dim} : [
    [a : ty]
    (Member (univalence-in i a a) ({IdUnivalence l i} ty)))
 ] by [
-  lam ty, a.
-    unfold Member;
-    auto
+  lam ty, a. `ax
 ].
 
 Thm IdUnivalence/Test1 {l:lvl,i:dim} : [
@@ -103,7 +97,6 @@ Tac Bool/contra/inverse (#p:exp) = [
 Thm NotIsEquiv : [
   (IsEquiv bool bool Not)
 ] by [
-  unfold IsEquiv; unfold IsContr; unfold Fiber; unfold HasAllPaths;
   lam b.
   < proj1 =
      <proj1 = `($ Not ,b),
@@ -130,7 +123,6 @@ Thm NotIsEquiv : [
 Thm NotEquiv : [
   (Equiv bool bool)
 ] by [
-  unfold Equiv;
   <proj1 = `Not,
    proj2 = `NotIsEquiv>
 ].
@@ -140,9 +132,7 @@ Def NotUnivalence {i:dim} = [(univalence i bool bool NotEquiv)].
 Thm NotUnivalence/Wf {i:dim} : [
   (Member {NotUnivalence i} (U 0 kan))
 ] by [
-  unfold Member;
-  refine eq/intro;
-  auto
+  `ax
 ].
 
 Thm NotUnivalence/Test0 {i:dim} : [
@@ -150,8 +140,5 @@ Thm NotUnivalence/Test0 {i:dim} : [
    [a : bool]
    (Member (univalence-in i ($ Not a) a) {NotUnivalence i}))
 ] by [
-  lam a.
-    unfold Member;
-    refine eq/intro;
-    auto
+  lam a. `ax
 ].

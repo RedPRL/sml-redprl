@@ -16,9 +16,7 @@ Thm Times/Proj(#A) : [
   a/type : #A type 
   >> (-> (Times bool #A) #A)
 ] by [
-  lam x. 
-  unfold Times;
-  {Proj2 x}
+  lam x. {Proj2 x}
 ].
 
 Extract Times/Proj.
