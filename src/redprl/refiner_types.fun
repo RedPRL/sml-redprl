@@ -1369,49 +1369,78 @@ struct
         |>: goal >:? goalKind #> (I, H, trivial)
       end
 
-    fun RewriteTrue eq alpha jdg =
+    fun RewriteTrue sel eqterm alpha jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
-        val (I, H) >> CJ.TRUE (mainGoal, l, k) = jdg
+        val (I, H) >> catjdg = jdg
 
-        val (goalEq, holeEquality) = makeSynth (I, H) (eq, NONE, K.top)
-        val (goalTy, holeTy) = makeMatch (O.MONO O.EQUALITY, 0, holeEquality, [], [])
-        val (goalM, holeM) = makeMatch (O.MONO O.EQUALITY, 1, holeEquality, [], [])
-        val (goalN, holeN) = makeMatch (O.MONO O.EQUALITY, 2, holeEquality, [], [])
+        val (currentTy, l, k) =
+          case Selector.lookup sel (H, catjdg) of
+             CJ.TRUE params => params
+           | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", CJ.pretty jdg)
+
+        val truncatedH = Selector.truncateFrom sel H
+
+        val (goalTyOfEq, holeTyOfEq) = makeSynth (I, truncatedH) (eqterm, NONE, K.top)
+        val (goalTy, holeTy) = makeMatch (O.MONO O.EQUALITY, 0, holeTyOfEq, [], [])
+        val (goalM, holeM) = makeMatch (O.MONO O.EQUALITY, 1, holeTyOfEq, [], [])
+        val (goalN, holeN) = makeMatch (O.MONO O.EQUALITY, 2, holeTyOfEq, [], [])
 
         val x = alpha 0
-        val Hx = H @> (x, CJ.TRUE (holeTy, NONE, K.top))
-        val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
-        val motiveWfGoal = makeType (I, Hx) (motiveHole, l, k)
+        val truncatedHx = truncatedH @> (x, CJ.TRUE (holeTy, NONE, K.top))
+        val (motiveGoal, motiveHole) = makeTerm (I, truncatedHx) O.EXP
+        val motiveWfGoal = makeType (I, truncatedHx) (motiveHole, l, k)
 
         val motiven = substVar (holeN, x) motiveHole
         val motivem = substVar (holeM, x) motiveHole
 
-        val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, NONE, K.top)
-        val motiveMatchesMainGoal = makeSubType (I, H) (motivem, l, k) (mainGoal, l, k)
+        val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
+        val (rewrittenGoal, rewrittenHole) = makeGoal @@ (I, H') >> catjdg'
+
+        (* XXX When sel != O.IN_GOAL, the following subgoal is suboptimal because we already
+         * knew `currentTy` is a type. *)
+        (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
+        val motiveMatchesMainGoal = makeSubType (I, truncatedH) (motivem, l, k) (currentTy, l, k)
       in
-        |>: goalEq >: goalTy >: goalM >: goalN >: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal #> (I, H, rewrittenHole)
+        |>: goalTyOfEq >: goalTy >: goalM >: goalN
+         >: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
+         #> (I, H, rewrittenHole)
       end
 
-    fun RewriteTrueByTrue z alpha jdg =
+    (* XXX this should be merged into the previous rule `RewriteTrue`, once
+     * we have better ways to apply the auto tactic to the first four subgoals. *)
+    fun RewriteTrueByTrue sel z alpha jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrueByTrue"
-        val (I, H) >> CJ.TRUE (mainGoal, l, k) = jdg
-        val CJ.TRUE (equal, l', _) = Hyps.lookup z H
+        val (I, H) >> catjdg = jdg
+
+        val (currentTy, l, k) =
+          case Selector.lookup sel (H, catjdg) of
+             CJ.TRUE params => params
+           | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", CJ.pretty jdg)
+
+        val truncatedH = Selector.truncateFrom sel H
+        val CJ.TRUE (equal, l', _) = Hyps.lookup z truncatedH
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
 
         val x = alpha 0
-        val Hx = H @> (x, CJ.TRUE (ty, l', K.top))
-        val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
-        val motiveWfGoal = makeType (I, Hx) (motiveHole, l, k)
+        val truncatedHx = truncatedH @> (x, CJ.TRUE (ty, l', K.top))
+        val (motiveGoal, motiveHole) = makeTerm (I, truncatedHx) O.EXP
+        val motiveWfGoal = makeType (I, truncatedHx) (motiveHole, l, k)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
 
-        val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, NONE, K.top)
-        val motiveMatchesMainGoal = makeSubType (I, H) (motivem, l, k) (mainGoal, l, k)
+        val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
+        val (rewrittenGoal, rewrittenHole) = makeGoal @@ (I, H') >> catjdg'
+
+        (* XXX When sel != O.IN_GOAL, the following subgoal is suboptimal because we already
+         * knew `currentTy` is a type. *)
+        (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
+        val motiveMatchesMainGoal = makeSubType (I, truncatedH) (motivem, l, k) (currentTy, l, k)
       in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal #> (I, H, rewrittenHole)
+        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
+         #> (I, H, rewrittenHole)
       end
 
     fun Symmetry _ jdg =

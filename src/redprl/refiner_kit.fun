@@ -378,12 +378,22 @@ struct
 
   structure Selector =
   struct
-    fun map f selectors (H, catjdg) =
-      let
-        fun folder (O.IN_GOAL, (H, catjdg)) = (H, CJ.map f catjdg)
-          | folder (O.IN_HYP x, (H, catjdg)) = (Hyps.modify x (CJ.map f) H, catjdg)
-      in
-        List.foldl folder (H, catjdg) selectors
-      end
+    fun map sel f (H, catjdg) =
+      case sel of
+         O.IN_GOAL => (H, CJ.map f catjdg)
+       | O.IN_HYP x => (Hyps.modify x (CJ.map f) H, catjdg)
+
+    fun multiMap sels f (H, catjdg) =
+      List.foldl (fn (sel, state) => map sel f state) (H, catjdg) sels
+
+    fun lookup sel (H, catjdg) =
+      case sel of
+         O.IN_GOAL => catjdg
+       | O.IN_HYP x => Hyps.lookup x H
+
+    fun truncateFrom sel H =
+      case sel of
+         O.IN_GOAL => H
+       | O.IN_HYP x => Hyps.truncateFrom H x
   end
 end

@@ -299,24 +299,37 @@ struct
         |>: goal #> (I, H, trivial)
       end
 
-    fun RewriteTrue z alpha jdg =
+    fun RewriteTrueByEq sel z alpha jdg =
       let
-        val _ = RedPrlLog.trace "Equality.RewriteTrue"
-        val (I, H) >> CJ.TRUE (mainGoal, l, k) = jdg
-        val CJ.EQ ((m, n), (ty, l', k')) = Hyps.lookup z H
+        val _ = RedPrlLog.trace "Equality.RewriteTrueByEq"
+        val (I, H) >> catjdg = jdg
+
+        val (currentTy, l, k) =
+          case Selector.lookup sel (H, catjdg) of
+             CJ.TRUE params => params
+           | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", CJ.pretty jdg)
+
+        val truncatedH = Selector.truncateFrom sel H
+        val CJ.EQ ((m, n), (ty, l', k')) = Hyps.lookup z truncatedH
 
         val x = alpha 0
-        val Hx = H @> (x, CJ.TRUE (ty, l', k'))
-        val (motiveGoal, motiveHole) = makeTerm (I, Hx) O.EXP
-        val motiveWfGoal = makeType (I, Hx) (motiveHole, l, k)
+        val truncatedHx = truncatedH @> (x, CJ.TRUE (ty, l', k'))
+        val (motiveGoal, motiveHole) = makeTerm (I, truncatedHx) O.EXP
+        val motiveWfGoal = makeType (I, truncatedHx) (motiveHole, l, k)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
 
-        val (rewrittenGoal, rewrittenHole) = makeTrue (I, H) (motiven, NONE, K.top)
-        val motiveMatchesMainGoal = makeSubType (I, H) (motivem, l, k) (mainGoal, l, k)
+        val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
+        val (rewrittenGoal, rewrittenHole) = makeGoal @@ (I, H') >> catjdg'
+
+        (* XXX When sel != O.IN_GOAL, the following subgoal is suboptimal because we already
+         * knew `currentTy` is a type. *)
+        (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
+        val motiveMatchesMainGoal = makeSubType (I, truncatedH) (motivem, l, k) (currentTy, l, k)
       in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal #> (I, H, rewrittenHole)
+        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
+         #> (I, H, rewrittenHole)
       end
   end
 
@@ -762,9 +775,9 @@ struct
       val Elim = NormalizeHypDelegate ElimBasis
     end
 
-    fun RewriteHyp _ z = matchHyp z
-      (fn CJ.EQ _ => Equality.RewriteTrue
-        | CJ.TRUE _ => InternalizedEquality.RewriteTrueByTrue
+    fun RewriteHyp _ sel z = matchHyp z
+      (fn CJ.EQ _ => Equality.RewriteTrueByEq sel
+        | CJ.TRUE _ => InternalizedEquality.RewriteTrueByTrue sel
         | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite-hyp tactic", CJ.pretty jdg))
 
     fun Rewrite _ = InternalizedEquality.RewriteTrue

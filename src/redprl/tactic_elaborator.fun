@@ -299,8 +299,8 @@ struct
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
-     | O.MONO O.RULE_REWRITE $ [_ \ tm] => R.Rewrite sign (expandHypVars tm) thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
-     | O.POLY (O.RULE_REWRITE_HYP z) $ _ => R.RewriteHyp sign z
+     | O.POLY (O.RULE_REWRITE sel) $ [_ \ tm] => R.Rewrite sign sel (expandHypVars tm) thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
+     | O.POLY (O.RULE_REWRITE_HYP (sel, z)) $ _ => R.RewriteHyp sign sel z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_INTERNALIZE $ _ => R.Internalize
      | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
