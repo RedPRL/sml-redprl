@@ -302,7 +302,6 @@ struct
      | O.POLY (O.RULE_REWRITE sel) $ [_ \ tm] => R.Rewrite sign sel (expandHypVars tm) thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
      | O.POLY (O.RULE_REWRITE_HYP (sel, z)) $ _ => R.RewriteHyp sign sel z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
-     | O.MONO O.RULE_INTERNALIZE $ _ => R.Internalize
      | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.out (expandHypVars catjdg))
      | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign

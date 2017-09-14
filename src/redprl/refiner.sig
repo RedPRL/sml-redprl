@@ -16,7 +16,6 @@ sig
   val AutoStep : sign -> rule
   val Elim : sign -> hyp -> rule
   val Exact : abt -> rule
-  val Internalize : rule
   val Rewrite : sign -> hyp RedPrlOpData.selector -> abt -> rule
   val RewriteHyp : sign -> hyp RedPrlOpData.selector -> hyp -> rule
   val Symmetry : rule

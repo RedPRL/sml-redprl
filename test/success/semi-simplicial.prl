@@ -45,7 +45,7 @@ Thm Pick : [
        )
     ]
   ];
-  internalize; auto
+  auto
 ].
 
 Thm Pick/zero/L : [

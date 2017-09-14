@@ -441,6 +441,7 @@ struct
      | "eq/eq/ax" => InternalizedEquality.Eq
      | "eq/intro" => InternalizedEquality.True
      | "eq/eta" => InternalizedEquality.Eta
+     | "eq/internalize" => InternalizedEquality.InternalizeEq
      | "fcom/eqtype" => FormalComposition.EqType
      | "fcom/eq/box" => FormalComposition.Eq
      | "fcom/intro" => FormalComposition.True
@@ -892,11 +893,6 @@ struct
         | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite-hyp tactic", CJ.pretty jdg))
 
     fun Rewrite _ = InternalizedEquality.RewriteTrue
-
-    val Internalize : rule = matchGoal
-      (fn _ >> CJ.EQ_TYPE _ => Universe.InternalizeEqType
-        | _ >> CJ.EQ _ => InternalizedEquality.InternalizeEq
-        | seq => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "internalize tactic", Seq.pretty seq))
 
     val Symmetry : rule = matchGoal
       (fn _ >> CJ.EQ_TYPE _ => TypeEquality.Symmetry

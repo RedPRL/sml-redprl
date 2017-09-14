@@ -267,7 +267,7 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_REDUCE_ALL | RULE_INTERNALIZE
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_REDUCE_ALL
    | RULE_CUT
    | RULE_PRIM of string
 
@@ -422,7 +422,6 @@ struct
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_EXACT tau => [[] * [] <> tau] ->> TAC
      | RULE_REDUCE_ALL => [] ->> TAC
-     | RULE_INTERNALIZE => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
 
@@ -793,7 +792,6 @@ struct
      | RULE_SYMMETRY => "symmetry"
      | RULE_EXACT _ => "exact"
      | RULE_REDUCE_ALL => "reduce-all"
-     | RULE_INTERNALIZE => "internalize"
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
 

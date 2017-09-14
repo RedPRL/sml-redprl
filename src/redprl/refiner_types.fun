@@ -1909,16 +1909,6 @@ struct
         T.empty #> (I, H, trivial)
       end
 
-    fun InternalizeEqType _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.InternalizeEqType"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), SOME l, k) = jdg
-
-        val goal = makeEq (I, H) ((ty0, ty1), (Syn.into (Syn.UNIVERSE (l, k)), NONE, K.top))
-      in
-        |>: goal #> (I, H, trivial)
-      end
-
     fun EqTypeFromEq z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.EqFromEqType"
