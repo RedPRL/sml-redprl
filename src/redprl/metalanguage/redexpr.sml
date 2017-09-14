@@ -117,7 +117,7 @@ struct
       case opname of
          "bool" => (O.MONO O.BOOL, stk)
        | "wbool" => (O.MONO O.WBOOL, stk)
-       | "dfun" => (O.MONO O.DFUN, stk)
+       | "fun" => (O.MONO O.FUN, stk)
        | "tt" => (O.MONO O.TT, stk)
        | "ff" => (O.MONO O.FF, stk)
        | "path" => (O.MONO O.PATH_TY, stk)

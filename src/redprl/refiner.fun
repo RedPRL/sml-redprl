@@ -425,7 +425,7 @@ struct
      | "path/eq/eta" => Path.Eta
      | "path/eq/app" => Path.EqApp
      | "path/eq/app/const" => Path.EqAppConst
-     | "equality/hyp" => Equality.Hyp
+     | "equality/hyp" => Equality.VarFromTrue
      | "eq/eqtype" => InternalizedEquality.EqType
      | "eq/eq/ax" => InternalizedEquality.Eq
      | "eq/intro" => InternalizedEquality.True
