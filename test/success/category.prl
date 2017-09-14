@@ -3,11 +3,11 @@ Tac CatWfTac{i:lvl} = [
   match [gl:jdg] {
     [a | #jdg{%a type at {lsucc i}} =>
       let mem : [%a in (U i)] = auto.
-      elim mem; auto
+      auto
     ]
     [a | #jdg{%a type} =>
       let mem : [%a in (U i)] = auto.
-      elim mem; auto
+      auto
     ]
     [a | %[a:jdg] => id]
   }

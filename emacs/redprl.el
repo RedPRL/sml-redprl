@@ -136,8 +136,9 @@
 
 (defconst redprl-tactic-keywords
   '("auto" "auto-step" "case" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
-    "head-expand" "hyp" "id" "lemma" "let" "match" "of" "print" "progress"
-    "query" "rec" "refine" "repeat" "rewrite" "symmetry" "then" "unfold" "use" "with")
+    "hyp" "id" "internalize" "lemma" "let" "match" "of" "print" "progress"
+    "query" "rec" "reduce" "refine" "repeat" "rewrite" "rewrite-hyp" "symmetry"
+    "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")
 
 (defconst redprl-tactic-symbols
@@ -145,7 +146,7 @@
   "RedPRL's tactic symbols.")
 
 (defconst redprl-sequent-keywords
-  '("true" "type" "synth" "discrete" "kan" "hcom" "coe" "cubical")
+  '("in" "true" "type" "synth" "discrete" "kan" "hcom" "coe" "cubical")
   "RedPRL's sequent keywords.")
 
 (defconst redprl-sequent-symbols

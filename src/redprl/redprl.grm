@@ -109,7 +109,7 @@ struct
     | makeQuant opr ((x, a) :: doms) cod =
        O.MONO opr $$ [([],[]) \ a, ([],[Option.getOpt (x, "_")]) \ makeQuant opr doms cod]
 
-  val makeDFun = makeQuant O.DFUN o flatten
+  val makeFun = makeQuant O.FUN o flatten
 
   structure LabelSet = SplaySet (structure Elem = StringOrdered)
 
@@ -147,7 +147,7 @@ struct
       (lbls, List.rev args)
     end
 
-  fun makeDProd pos (tbs, ty) =
+  fun makeProd pos (tbs, ty) =
     let
       val (_, args) = makeRecordAux pos (tbs @ [([NONE], ty)])
       val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) args
@@ -184,14 +184,6 @@ struct
       checkNoDuplicates pos lbls;
       O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
     end
-
-  fun dprodIntro pos tacs =
-    let
-      val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) tacs
-    in
-      O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
-    end
-
 end
 
 structure Pattern =
@@ -215,7 +207,7 @@ struct
       val (pats', namess) = ListPair.unzip (List.map unstitchPattern pats)
       val names = List.concat namess
     in
-      O.MONO (O.DEV_DFUN_INTRO pats') $$ [(names, []) \ tac]
+      O.MONO (O.DEV_FUN_INTRO pats') $$ [(names, []) \ tac]
     end
 
   fun makeApplyHyp pat z tacs tac =
@@ -322,7 +314,7 @@ end
  | THEN | ELSE
  | REFINE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
- | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_REWRITE | RULE_HEAD_EXP | RULE_UNFOLD
+ | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_REWRITE | RULE_REWRITE_HYP | RULE_REDUCE | RULE_UNFOLD
  | RULE_EXACT
  | MATCH
  | QUERY | GOAL
@@ -413,8 +405,7 @@ end
 
  | atLevel of string param option
  | kind of O.K.kind
- | withKind of O.K.kind
- | kindedType of O.K.kind
+ | withKindAtLevel of string param option * O.K.kind
 
  | rawJudgment of ast
  | judgment of ast
@@ -436,17 +427,20 @@ end
  | tactic of ast
  | tactics of ast list
 
- | devDecompPattern of string O.dev_pattern
- | devDecompPatterns of string O.dev_pattern list
- | tupleDecompPattern of (string * string O.dev_pattern) list
- | labeledDecompPattern of string * string O.dev_pattern
+ | recordFieldTactics of (string * ast) list
  | devAppSpine of ast list
  | bracketedDevAppSpine of ast list
-
+ | devDecompPattern of string O.dev_pattern
+ | devDecompPatterns of string O.dev_pattern list
+ | labeledDecompPattern of string * string O.dev_pattern
+ | tupleDecompPattern of (string * string O.dev_pattern) list
  | devMatchClause of string list * (ast * ast)
  | devMatchClauses of (string list * (ast * ast)) list
-
- | recordFieldTactics of (string * ast) list
+ | selector of string O.selector
+ | selectors of string O.selector list
+ | bracketedSelectors of string O.selector list
+ | opnames of string list
+ | bracketedOpnames of string list
 
  | declArgument of metavariable * Ar.valence
  | declArguments of string Signature.arguments
@@ -729,12 +723,12 @@ rawTermAndTac
   | NUMERAL (Multi.makeNum NUMERAL)
 
   (* function types *)
-  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeDFun (#1 quantifierData) (#2 quantifierData))
+  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeFun (#1 quantifierData) (#2 quantifierData))
   | LPAREN LAMBDA LSQUARE boundVars RSQUARE term RPAREN (Multi.makeLam boundVars term)
   | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 
   (* pair types *)
-  | LPAREN TIMES quantifierData RPAREN (Multi.makeDProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) quantifierData)
+  | LPAREN TIMES quantifierData RPAREN (Multi.makeProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) quantifierData)
 
   (* dependent record types *)
   | RECORD (Multi.makeRecord (Pos.pos (RECORD1left fileName) (RECORD1right fileName)) [])
@@ -781,22 +775,23 @@ kind
   | COE (O.K.COE)
   | CUBICAL (O.K.CUBICAL)
 
-withKind
-  : WITH kind (kind)
-  | (O.K.top)
-
-kindedType
-  : kind TYPE (kind)
-  | TYPE (O.K.top)
+withKindAtLevel
+  : WITH kind AT levelParam (SOME levelParam, kind)
+  | AT levelParam WITH kind (SOME levelParam, kind)
+  | WITH kind (NONE, kind)
+  | AT levelParam (SOME levelParam, O.K.top)
+  | (NONE, O.K.top)
 
 rawJudgment
-  : term EQUALS term IN term atLevel withKind (Ast.$$ (O.POLY (O.JDG_EQ (atLevel, withKind)), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
-  | term IN term atLevel withKind (Ast.$$ (O.POLY (O.JDG_EQ (atLevel, withKind)), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
-  | term TRUE atLevel withKind (Ast.$$ (O.POLY (O.JDG_TRUE (atLevel, withKind)), [\ (([],[]), term)]))
-  | term atLevel withKind (Ast.$$ (O.POLY (O.JDG_TRUE (atLevel, withKind)), [\ (([],[]), term)]))
-  | term EQUALS term atLevel kindedType (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kindedType)), [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term kindedType atLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kindedType)), [\ (([],[]), term), \ (([],[]), term)]))
-  | term SYNTH atLevel withKind (Ast.$$ (O.POLY (O.JDG_SYNTH (atLevel, withKind)), [\ (([],[]), term)]))
+  : term EQUALS term IN term withKindAtLevel (Ast.$$ (O.POLY (O.JDG_EQ withKindAtLevel), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
+  | term IN term withKindAtLevel (Ast.$$ (O.POLY (O.JDG_EQ withKindAtLevel), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
+  | term TRUE withKindAtLevel (Ast.$$ (O.POLY (O.JDG_TRUE withKindAtLevel), [\ (([],[]), term)]))
+  | term withKindAtLevel (Ast.$$ (O.POLY (O.JDG_TRUE withKindAtLevel), [\ (([],[]), term)]))
+  | term EQUALS term TYPE withKindAtLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE withKindAtLevel), [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term TYPE withKindAtLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE withKindAtLevel), [\ (([],[]), term), \ (([],[]), term)]))
+  | term EQUALS term kind TYPE atLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kind)), [\ (([],[]), term1), \ (([],[]), term2)]))
+  | term kind TYPE atLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kind)), [\ (([],[]), term), \ (([],[]), term)]))
+  | term SYNTH withKindAtLevel (Ast.$$ (O.POLY (O.JDG_SYNTH withKindAtLevel), [\ (([],[]), term)]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
@@ -855,18 +850,46 @@ devMatchClauses
   : devMatchClause devMatchClauses (devMatchClause :: devMatchClauses)
   | ([])
 
+selector
+  : GOAL (O.IN_GOAL)
+  | VARNAME (O.IN_HYP VARNAME)
+
+selectors
+  : selector COMMA selectors (selector :: selectors)
+  | selector ([selector])
+
+bracketedSelectors
+  : LSQUARE selectors RSQUARE (selectors)
+  | selector ([selector])
+
+opnames
+  : OPNAME COMMA opnames (OPNAME :: opnames)
+  | OPNAME ([OPNAME])
+
+bracketedOpnames
+  : LSQUARE opnames RSQUARE (opnames)
+  | OPNAME ([OPNAME])
+
 atomicRawTac
   : REFINE VARNAME (Ast.$$ (O.MONO (O.RULE_PRIM VARNAME), []))
   | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
   | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM VARNAME), []))
-  | RULE_REWRITE VARNAME (Ast.$$ (O.POLY (O.RULE_REWRITE VARNAME), []))
-  | RULE_UNFOLD OPNAME (Ast.$$ (O.POLY (O.RULE_UNFOLD OPNAME), []))
+  | RULE_REWRITE term (Ast.$$ (O.POLY (O.RULE_REWRITE O.IN_GOAL), [Ast.\ (([],[]), term)]))
+  | RULE_REWRITE term IN selector (Ast.$$ (O.POLY (O.RULE_REWRITE selector), [Ast.\ (([],[]), term)]))
+  | RULE_REWRITE IN selector term (Ast.$$ (O.POLY (O.RULE_REWRITE selector), [Ast.\ (([],[]), term)]))
+  | RULE_REWRITE_HYP VARNAME (Ast.$$ (O.POLY (O.RULE_REWRITE_HYP (O.IN_GOAL, VARNAME)), []))
+  | RULE_REWRITE_HYP VARNAME IN selector (Ast.$$ (O.POLY (O.RULE_REWRITE_HYP (selector, VARNAME)), []))
+  | RULE_REWRITE_HYP IN selector VARNAME (Ast.$$ (O.POLY (O.RULE_REWRITE_HYP (selector, VARNAME)), []))
+  | RULE_REDUCE (Ast.$$ (O.MONO O.RULE_REDUCE_ALL, []))
+  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_REDUCE bracketedSelectors), []))
+  | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD_ALL bracketedOpnames), []))
+  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames, bracketedSelectors)), []))
+  | RULE_UNFOLD IN bracketedSelectors bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames, bracketedSelectors)), []))
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
   | AT_SIGN dimParam (Tac.exactDim dimParam)
-  | RULE_HEAD_EXP (Ast.$$ (O.MONO O.RULE_HEAD_EXP, []))
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
@@ -877,7 +900,7 @@ atomicRawTac
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
-   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
+  | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
       (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
 
   | LET devDecompPattern EQUALS VARNAME bracketedDevAppSpine DOT tactic

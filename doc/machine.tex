@@ -29,7 +29,7 @@
 \newcommand\Com[5]{\mathsf{com}^{#1\leadsto{#2}}_{#3} (#4;#5)}
 \newcommand\HCom[5]{\mathsf{hcom}^{#1\leadsto{#2}}_{#3} (#4;#5)}
 \newcommand\FCom[4]{\mathsf{fcom}^{#1\leadsto{#2}} (#3;#4)}
-\newcommand\DFun[3]{\perfectparens{#1:#2}\to{#3}}
+\newcommand\Fun[3]{\perfectparens{#1:#2}\to{#3}}
 \newcommand\DPair[3]{\perfectparens{#1:#2}\times{#3}}
 \newcommand\PAbs[2]{\perfectunary{CurrentHeight}{\langle}{\rangle}{#1}{#2}}
 \newcommand\PApp[2]{#1\mathbin{@}#2}
@@ -250,7 +250,7 @@ the stack.
   }{
     \Step{\mu}{
       \Cfg{
-        \DFun{a}{A}{B}
+        \Fun{a}{A}{B}
       }{
         \Cons{
           \Frame{
@@ -273,7 +273,7 @@ the stack.
   }{
     \Step{\mu}{
       \Cfg{
-        \DFun{a}{A}{B}
+        \Fun{a}{A}{B}
       }{
         \Cons{
           \Frame{\Coe{r}{r'}{\Box}{M}}{x}

@@ -159,7 +159,8 @@ whitespace = [\ \t];
 "hyp"              => (Tokens.HYP (posTuple (size yytext)));
 "elim"             => (Tokens.RULE_ELIM (posTuple (size yytext)));
 "rewrite"          => (Tokens.RULE_REWRITE (posTuple (size yytext)));
-"head-expand"      => (Tokens.RULE_HEAD_EXP (posTuple (size yytext)));
+"rewrite-hyp"      => (Tokens.RULE_REWRITE_HYP (posTuple (size yytext)));
+"reduce"           => (Tokens.RULE_REDUCE (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
 

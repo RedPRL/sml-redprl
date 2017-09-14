@@ -1,0 +1,118 @@
+Tac EqNatRec = [
+  query gl <- goal.
+  match [gl:jdg] {
+    [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} => {
+      refine nat/eq/nat-rec; [`%ty]; auto
+    }]
+    [n,z,s | #jdg{(nat-rec %n %z [x y] (%s x y)) type at 0} => {
+      refine nat/eqtype/nat-rec; [`(U 0)]; auto
+    }]
+    [n,z,s | #jdg{(nat-rec %n %z [x y] (%s x y)) type} => {
+      refine nat/eqtype/nat-rec; [`(U 0)]; auto
+    }]
+  }
+].
+
+Tac NatArg = [
+  query gl <- goal.
+  match [gl:jdg] {
+    [tm, ty | #jdg{%tm in %ty} => {
+      refine fun/eq/app; [`(-> nat %ty)]; auto
+    }]
+    [tm, ty | #jdg{%tm in %ty at 0} => {
+      refine fun/eq/app; [`(-> nat %ty)]; auto
+    }]
+    [tm | #jdg{%tm type at 0} => {
+      refine fun/eqtype/app; [`(-> nat (U 0))]; auto
+    }]
+    [tm | #jdg{%tm type} => {
+      refine fun/eqtype/app; [`(-> nat (U 0))]; auto
+    }]
+  }
+].
+
+Thm Pick : [
+  // pick #(first argument) from #(second argument)
+  (-> nat nat (U 0))
+] by [
+  lam n. fresh n', n'/ih -> elim n;
+  [ lam n. `record
+  , lam m. fresh m', m'/ih -> elim m;
+    [ `void
+    , `(record
+        [head : bool]
+        [tail : (if head ($ ,n'/ih ,m') ,m'/ih)]
+       )
+    ]
+  ];
+  auto
+].
+
+Thm Pick/zero/L : [
+  (-> [n : nat] (= (U 0) ($ Pick zero m) record))
+] by [
+  lam n. auto
+].
+
+Thm Pick/zero/R : [
+  (-> [n : nat] (= (U 0) ($ Pick (succ n) zero) void))
+] by [
+  lam n. auto
+].
+
+Thm Pick/succ : [
+  (-> [n m : nat]
+   (= (U 0)
+    ($ Pick (succ n) (succ m))
+    (record
+     [head : bool]
+     [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
+] by [
+  lam n, m. auto;
+
+  repeat { NatArg || EqNatRec }
+].
+
+Tac Replace{z:hyp}(#A:exp) = [
+  fresh ty -> rewrite #A in z; [`,ty]; auto
+].
+
+Tac ReplaceGoal(#A:exp) = [
+  fresh ty -> rewrite #A in goal; [`,ty]; auto
+].
+
+Thm Pick/compose : [
+  (->
+   [a b c : nat]
+   ($ Pick b c)
+   ($ Pick a b)
+   ($ Pick a c))
+] by [
+  lam a. fresh a', a'/ih -> elim a;
+  [ lam b, c, p1, p2. `tuple
+  , lam b. fresh b', b'/ih -> elim b;
+    [ lam c, p1, p2. elim p2
+    , lam c. fresh c', c'/ih -> elim c;
+      [ lam p1. elim p1
+      , lam p1. ({Replace p1} ($ Pick/succ ,b' ,c'));
+        let < head = p1/h, tail = p1/t > = p1. elim p1/h;
+        [ lam p2. ({Replace p2} ($ Pick/succ ,a' ,b'));
+          let < head = p2/h, tail = p2/t > = p2. elim p2/h;
+          (ReplaceGoal ($ Pick/succ ,a' ,c'));
+          [ < head = `tt
+            , tail = `($ ,a'/ih ,b' ,c' ,p1/t ,p2/t)
+            >
+          , < head = `ff
+            , tail = `($ ,b'/ih ,c' ,p1/t ,p2/t)
+            >
+          ]
+        , lam p2.
+          (ReplaceGoal ($ Pick/succ ,a' ,c'));
+          < head = `ff
+          , tail = `($ ,c'/ih ,p1/t ,p2)
+          >
+        ]
+      ]
+    ]
+  ]
+].

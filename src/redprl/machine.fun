@@ -330,11 +330,11 @@ struct
        stepFCom stability ({dir = dir, cap = cap, tubes = zipTubes (eqs, tubes)} || (syms, stk))
 
      | O.MONO O.LAM $ _ || (_, []) => raise Final
-     | O.MONO O.DFUN $ _ || (_, []) => raise Final
+     | O.MONO O.FUN $ _ || (_, []) => raise Final
 
      | O.MONO O.APP $ [_ \ m, _ \ n] || (syms, stk) => COMPAT @@ m || (syms, APP (HOLE, n) :: stk)
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => CRITICAL @@ substVar (n, x) m || (syms, stk)
-     | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.MONO O.FUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val xtm = VarKit.toExp x
          fun apx n = Syn.intoApp (n, xtm)
@@ -348,7 +348,7 @@ struct
        in
          CRITICAL @@ lambda || (syms, stk)
        end
-     | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+     | O.MONO O.FUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
        let
          val (r, r') = dir
          val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
