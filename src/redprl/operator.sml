@@ -292,9 +292,9 @@ struct
    | PATH_APP of 'a P.term
    | BOX of 'a dir * 'a equation list
    | CAP of 'a dir * 'a equation list
-   | UNIVALENCE of 'a P.term
-   | UNIVALENCE_IN of 'a P.term
-   | UNIVALENCE_PROJ of 'a P.term
+   | V of 'a P.term
+   | VIN of 'a P.term
+   | VPROJ of 'a P.term
    | UNIVERSE of 'a P.term * kind
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
@@ -484,9 +484,9 @@ struct
        | PATH_APP _ => [[] * [] <> EXP] ->> EXP
        | BOX params => arityBox params
        | CAP params => arityCap params
-       | UNIVALENCE _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-       | UNIVALENCE_IN _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
-       | UNIVALENCE_PROJ _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | V _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | VIN _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | VPROJ _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | UNIVERSE _ => [] ->> EXP
 
        | HCOM params => arityHcom params
@@ -583,9 +583,9 @@ struct
        | PATH_APP r => dimSupport r
        | BOX params => comSupport params
        | CAP params => comSupport params
-       | UNIVALENCE r => dimSupport r
-       | UNIVALENCE_IN r => dimSupport r
-       | UNIVALENCE_PROJ r => dimSupport r
+       | V r => dimSupport r
+       | VIN r => dimSupport r
+       | VPROJ r => dimSupport r
        | UNIVERSE (l, _) => levelSupport l
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
@@ -659,9 +659,9 @@ struct
          (case t of
              CAP (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
            | _ => false)
-       | (UNIVALENCE r, t) => (case t of UNIVALENCE r' => P.eq f (r, r') | _ => false)
-       | (UNIVALENCE_IN r, t) => (case t of UNIVALENCE_IN r' => P.eq f (r, r') | _ => false)
-       | (UNIVALENCE_PROJ r, t) => (case t of UNIVALENCE_PROJ r' => P.eq f (r, r') | _ => false)
+       | (V r, t) => (case t of V r' => P.eq f (r, r') | _ => false)
+       | (VIN r, t) => (case t of VIN r' => P.eq f (r, r') | _ => false)
+       | (VPROJ r, t) => (case t of VPROJ r' => P.eq f (r, r') | _ => false)
        | (UNIVERSE (l, k), t) => (case t of UNIVERSE (l', k') => P.eq f (l, l') andalso k = k' | _ => false)
        | (HCOM (dir1, eqs1), t) =>
          (case t of
@@ -839,9 +839,9 @@ struct
        | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
        | BOX params => "box{" ^ comParamsToString f params ^ "}"
        | CAP params => "cap{" ^ comParamsToString f params ^ "}"
-       | UNIVALENCE r => "univalence{" ^ P.toString f r ^ "}"
-       | UNIVALENCE_IN r => "univalence-in{" ^ P.toString f r ^ "}"
-       | UNIVALENCE_PROJ r => "univalence-proj{" ^ P.toString f r ^ "}"
+       | V r => "V{" ^ P.toString f r ^ "}"
+       | VIN r => "Vin{" ^ P.toString f r ^ "}"
+       | VPROJ r => "Vproj{" ^ P.toString f r ^ "}"
        | UNIVERSE (l, k) => "universe{" ^ P.toString f l ^ "," ^ K.toString k ^ "}"
        | HCOM params => "hcom{" ^ comParamsToString f params ^ "}"
        | COE dir => "coe{" ^ dirToString f dir ^ "}"
@@ -924,9 +924,9 @@ struct
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
        | BOX (dir, eqs) => BOX (mapSpan f dir, mapSpans f eqs)
        | CAP (dir, eqs) => CAP (mapSpan f dir, mapSpans f eqs)
-       | UNIVALENCE r => UNIVALENCE (P.bind (passSort DIM f) r)
-       | UNIVALENCE_IN r => UNIVALENCE_IN (P.bind (passSort DIM f) r)
-       | UNIVALENCE_PROJ r => UNIVALENCE_PROJ (P.bind (passSort DIM f) r)
+       | V r => V (P.bind (passSort DIM f) r)
+       | VIN r => VIN (P.bind (passSort DIM f) r)
+       | VPROJ r => VPROJ (P.bind (passSort DIM f) r)
        | UNIVERSE (l, k) => UNIVERSE (P.bind (passSort LVL f) l, k)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)

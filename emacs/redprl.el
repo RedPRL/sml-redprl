@@ -125,7 +125,7 @@
     "record" "tuple"
     "path" "abs"
     "box" "cap"
-    "univalence" "univalence-in" "univalence-proj"
+    "V" "Vin" "Vproj"
     "universe" "U"
     "hcom" "coe" "com")
   "RedPRL's expression keywords.")
