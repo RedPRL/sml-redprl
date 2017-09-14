@@ -64,9 +64,9 @@ struct
    (* fcom types *)
    | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
    | CAP of {dir: dir, tubes: (equation * (symbol * 'a)) list, coercee: 'a}
-   (* univalence *)
-   | UNIVALENCE of param * 'a * 'a * 'a
-   | UNIVALENCE_IN of param * 'a * 'a | UNIVALENCE_PROJ of param * 'a * 'a
+   (* V *)
+   | V of param * 'a * 'a * 'a
+   | VIN of param * 'a * 'a | VPROJ of param * 'a * 'a
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
@@ -238,9 +238,9 @@ struct
        | BOX args => intoBox args
        | CAP args => intoCap args
 
-       | UNIVALENCE (r, a, b, e) => O.POLY (O.UNIVALENCE r) $$ [([],[]) \ a, ([],[]) \ b, ([],[]) \ e]
-       | UNIVALENCE_IN (r, m, n) => O.POLY (O.UNIVALENCE_IN r) $$ [([],[]) \ m, ([],[]) \ n]
-       | UNIVALENCE_PROJ (r, m, f) => O.POLY (O.UNIVALENCE_PROJ r) $$ [([],[]) \ m, ([],[]) \ f]
+       | V (r, a, b, e) => O.POLY (O.V r) $$ [([],[]) \ a, ([],[]) \ b, ([],[]) \ e]
+       | VIN (r, m, n) => O.POLY (O.VIN r) $$ [([],[]) \ m, ([],[]) \ n]
+       | VPROJ (r, m, f) => O.POLY (O.VPROJ r) $$ [([],[]) \ m, ([],[]) \ f]
 
        | UNIVERSE (l, k) => O.POLY (O.UNIVERSE (L.into l, k)) $$ []
 
@@ -327,9 +327,9 @@ struct
        | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee) :: tubes =>
            CAP {dir = dir, tubes = outTubes (eqs, tubes), coercee = coercee}
 
-       | O.POLY (O.UNIVALENCE r) $ [_ \ a, _ \ b, _ \ e] => UNIVALENCE (r, a, b, e)
-       | O.POLY (O.UNIVALENCE_IN r) $ [_ \ m, _ \ n] => UNIVALENCE_IN (r, m, n)
-       | O.POLY (O.UNIVALENCE_PROJ r) $ [_ \ m, _ \ f] => UNIVALENCE_PROJ (r, m, f)
+       | O.POLY (O.V r) $ [_ \ a, _ \ b, _ \ e] => V (r, a, b, e)
+       | O.POLY (O.VIN r) $ [_ \ m, _ \ n] => VIN (r, m, n)
+       | O.POLY (O.VPROJ r) $ [_ \ m, _ \ f] => VPROJ (r, m, f)
 
        | O.POLY (O.UNIVERSE (l, k)) $ _ => UNIVERSE (L.out l, k)
 

@@ -78,7 +78,7 @@ struct
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
    | CAP of symbol O.dir * tube list * hole
-   | UNIVALENCE_PROJ of symbol * hole * abt
+   | VPROJ of symbol * hole * abt
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -102,7 +102,7 @@ struct
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
        | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
        | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
-       | UNIVALENCE_PROJ (x, HOLE, f) => Syn.into @@ Syn.UNIVALENCE_PROJ (P.VAR x, m, f)
+       | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (P.VAR x, m, f)
   in
     fun unload (m || (syms, stk)) = 
       case stk of
@@ -578,7 +578,7 @@ struct
      | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee :: tubes) || (syms, stk) =>
        stepCap stability ({dir = dir, coercee = coercee, tubes = zipTubes (eqs, tubes)} || (syms, stk))
 
-     | O.POLY (O.UNIVALENCE r) $ [_ \ a, _ \ b, _] || (syms, stk) =>
+     | O.POLY (O.V r) $ [_ \ a, _ \ b, _] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ a || (syms, stk))
            (STEP @@ b || (syms, stk))
@@ -588,14 +588,14 @@ struct
              | HCOM _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of ua types"))
              | COE _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of ua types"))
              | _ => raise Stuck)
-     | O.POLY (O.UNIVALENCE_IN r) $ [_ \ m, _ \ n] || (syms, stk) =>
+     | O.POLY (O.VIN r) $ [_ \ m, _ \ n] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ m || (syms, stk))
            (STEP @@ n || (syms, stk))
            (fn u =>
              case stk of
                [] => raise Final
-             | UNIVALENCE_PROJ (v, HOLE, f) :: stk =>
+             | VPROJ (v, HOLE, f) :: stk =>
                  (* the following line should be equivalent to direct comparison
                   * due to the invariants of the machine, but it does not hurt
                   * much (I hope) to check stability again. *)
@@ -604,11 +604,11 @@ struct
                  else
                    raise Stuck
              | _ => raise Stuck)
-     | O.POLY (O.UNIVALENCE_PROJ r) $ [_ \ m, _ \ f] || (syms, stk) =>
+     | O.POLY (O.VPROJ r) $ [_ \ m, _ \ f] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ Syn.intoApp (f, m) || (syms, stk))
            (STEP @@ m || (syms, stk))
-           (fn u => COMPAT @@ m || (syms, UNIVALENCE_PROJ (u, HOLE, f) :: stk))
+           (fn u => COMPAT @@ m || (syms, VPROJ (u, HOLE, f) :: stk))
 
      | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
      | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>

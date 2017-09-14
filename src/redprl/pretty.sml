@@ -257,12 +257,12 @@ struct
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHeadBackward "cap" dir, ppBinder coercee]
              :: [ppTubes (eqs, tubes)]
-     | O.POLY (O.UNIVALENCE r) $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "univalence" :: ppParam r :: List.map ppBinder args
-     | O.POLY (O.UNIVALENCE_IN r) $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "univalence-in" :: ppParam r :: List.map ppBinder args
-     | O.POLY (O.UNIVALENCE_PROJ r) $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "univalence-proj" :: ppParam r :: List.map ppBinder args
+     | O.POLY (O.V r) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "V" :: ppParam r :: List.map ppBinder args
+     | O.POLY (O.VIN r) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "Vin" :: ppParam r :: List.map ppBinder args
+     | O.POLY (O.VPROJ r) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "Vproj" :: ppParam r :: List.map ppBinder args
      | O.POLY (O.UNIVERSE (l, k)) $ [] =>
          if k = RedPrlKind.top then
            Atomic.parens @@ expr @@ hvsep @@ [text "U", ppParam l]

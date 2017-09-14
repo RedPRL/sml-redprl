@@ -1680,10 +1680,10 @@ struct
     (* TODO Add the Elim, EqCap and Eta rules. *)
   end
 
-  structure Univalence =
+  structure V =
   struct
     val kindConstraintOnEnds =
-      fn K.DISCRETE => E.raiseError (E.UNIMPLEMENTED (Fpp.text "discrete univalence types"))
+      fn K.DISCRETE => E.raiseError (E.UNIMPLEMENTED (Fpp.text "discrete V types"))
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)
@@ -1736,11 +1736,11 @@ struct
 
     fun EqType _ jdg =
       let
-        val _ = RedPrlLog.trace "Univalence.EqType"
+        val _ = RedPrlLog.trace "V.EqType"
         val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val Syn.UNIVALENCE (r0, a0, b0, e0) = Syn.out ty0
-        val Syn.UNIVALENCE (r1, a1, b1, e1) = Syn.out ty1
-        val () = Assert.paramEq "Univalence.EqType" (r0, r1)
+        val Syn.V (r0, a0, b0, e0) = Syn.out ty0
+        val Syn.V (r1, a1, b1, e1) = Syn.out ty1
+        val () = Assert.paramEq "V.EqType" (r0, r1)
         val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r0, P.APP P.DIM0)
@@ -1755,13 +1755,13 @@ struct
 
     fun Eq _ jdg =
       let
-        val _ = RedPrlLog.trace "Univalence.Eq"
+        val _ = RedPrlLog.trace "V.Eq"
         val (I, H) >> CJ.EQ ((in0, in1), (ty, l, k)) = jdg
-        val Syn.UNIVALENCE (r, a, b, e) = Syn.out ty
-        val Syn.UNIVALENCE_IN (r0, m0, n0) = Syn.out in0
-        val Syn.UNIVALENCE_IN (r1, m1, n1) = Syn.out in1
-        val () = Assert.paramEq "Univalence.Eq" (r0, r1)
-        val () = Assert.paramEq "Univalence.Eq" (r0, r)
+        val Syn.V (r, a, b, e) = Syn.out ty
+        val Syn.VIN (r0, m0, n0) = Syn.out in0
+        val Syn.VIN (r1, m1, n1) = Syn.out in1
+        val () = Assert.paramEq "V.Eq" (r0, r1)
+        val () = Assert.paramEq "V.Eq" (r0, r)
         val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r0, P.APP P.DIM0)
@@ -1777,9 +1777,9 @@ struct
 
     fun True _ jdg =
       let
-        val _ = RedPrlLog.trace "Univalence.True"
+        val _ = RedPrlLog.trace "V.True"
         val (I, H) >> CJ.TRUE (ty, l, k) = jdg
-        val Syn.UNIVALENCE (r, a, b, e) = Syn.out ty
+        val Syn.V (r, a, b, e) = Syn.out ty
         val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r, P.APP P.DIM0)
@@ -1791,7 +1791,7 @@ struct
         val goalEquiv = Restriction.makeMem [eq] (I, H) (e, (intoEquiv a b, NONE, K.top))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv
-        #> (I, H, Syn.into @@ Syn.UNIVALENCE_IN (r, holeM, holeN))
+        #> (I, H, Syn.into @@ Syn.VIN (r, holeM, holeN))
       end
 
     (* TODO Add the Elim, EqProj and Eta rules. *)
