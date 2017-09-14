@@ -70,8 +70,7 @@ Thm Pick/succ : [
 ] by [
   lam n, m. auto;
 
-  [ NatArg; EqNatRec; EqNatRec ];
-  [ EqNatRec; NatArg; EqNatRec; EqNatRec ]
+  repeat { NatArg || EqNatRec }
 ].
 
 Tac Replace{z:hyp}(#A:exp) = [
