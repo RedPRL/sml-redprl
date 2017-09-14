@@ -125,6 +125,7 @@ struct
          (case stk of
              rexpr::stk => (O.POLY (O.LOOP (readParam state (rexpr, O.DIM))), stk)
            | _ => raise Fail "invalid loop expr")
+       | "if" => (O.MONO O.IF, stk)
        | _ => raise Fail "unknown operator"
 
     and readParam (state : state) (rexpr, sigma) : Tm.param =

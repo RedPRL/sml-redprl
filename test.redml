@@ -11,11 +11,12 @@ let
         refine dfun/intro;
         [ f `a ]
       end
+
 in
   print begin
     prove `(dfun bool [x] bool) by
       lam (fn x => exact x; refine equality/hyp);
       refine bool/eqtype
     end
-  end
+  end;
 end
