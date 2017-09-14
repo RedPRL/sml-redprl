@@ -218,6 +218,7 @@ struct
   structure K = RedPrlKind
   type psort = RedPrlSortData.param_sort
   type kind = RedPrlKind.kind
+  datatype 'a selector = IN_GOAL | IN_HYP of 'a
 
   datatype 'a dev_pattern = 
      PAT_VAR of 'a
@@ -250,7 +251,7 @@ struct
    (* circle *)
    | S1 | BASE | S1_REC
    (* function: lambda and app *)
-   | DFUN | LAM | APP
+   | FUN | LAM | APP
    (* record and tuple *)
    | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
    (* path: path abstraction *)
@@ -266,12 +267,12 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_HEAD_EXP
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_REDUCE_ALL
    | RULE_CUT
    | RULE_PRIM of string
 
    (* development calculus terms *)
-   | DEV_DFUN_INTRO of unit dev_pattern list
+   | DEV_FUN_INTRO of unit dev_pattern list
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
    | DEV_LET
    | DEV_MATCH of sort * int list
@@ -291,6 +292,9 @@ struct
    | PATH_APP of 'a P.term
    | BOX of 'a dir * 'a equation list
    | CAP of 'a dir * 'a equation list
+   | UNIVALENCE of 'a P.term
+   | UNIVALENCE_IN of 'a P.term
+   | UNIVALENCE_PROJ of 'a P.term
    | UNIVERSE of 'a P.term * kind
    | HCOM of 'a dir * 'a equation list
    | COE of 'a dir
@@ -302,7 +306,11 @@ struct
    | PARAM_REF of psort * 'a P.term
 
    | RULE_ELIM of 'a
-   | RULE_UNFOLD of 'a
+   | RULE_REWRITE of 'a selector
+   | RULE_REWRITE_HYP of 'a selector * 'a
+   | RULE_REDUCE of 'a selector list
+   | RULE_UNFOLD_ALL of 'a list
+   | RULE_UNFOLD of 'a list * 'a selector list
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
 
@@ -316,6 +324,7 @@ struct
    | JDG_EQ of 'a P.term option * kind
    | JDG_TRUE of 'a P.term option * kind
    | JDG_EQ_TYPE of 'a P.term option * kind
+   | JDG_SUB_UNIVERSE of 'a P.term option * kind
    | JDG_SYNTH of 'a P.term option * kind
 
   (* We split our operator signature into a couple datatypes, because the implementation of
@@ -372,7 +381,7 @@ struct
      | BASE => [] ->> EXP
      | S1_REC => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
 
-     | DFUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
+     | FUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
      | LAM => [[] * [EXP] <> EXP] ->> EXP
      | APP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
@@ -412,11 +421,11 @@ struct
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_EXACT tau => [[] * [] <> tau] ->> TAC
-     | RULE_HEAD_EXP => [] ->> TAC
+     | RULE_REDUCE_ALL => [] ->> TAC
      | RULE_CUT => [[] * [] <> JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
 
-     | DEV_DFUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
+     | DEV_FUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) * [] <> TAC] ->> TAC
      | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
@@ -475,6 +484,9 @@ struct
        | PATH_APP _ => [[] * [] <> EXP] ->> EXP
        | BOX params => arityBox params
        | CAP params => arityCap params
+       | UNIVALENCE _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | UNIVALENCE_IN _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+       | UNIVALENCE_PROJ _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | UNIVERSE _ => [] ->> EXP
 
        | HCOM params => arityHcom params
@@ -487,6 +499,10 @@ struct
        | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
 
        | RULE_ELIM _ => [] ->> TAC
+       | RULE_REWRITE _ => [[] * [] <> EXP] ->> TAC
+       | RULE_REWRITE_HYP _ => [] ->> TAC
+       | RULE_REDUCE _ => [] ->> TAC
+       | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
@@ -508,6 +524,7 @@ struct
        | JDG_EQ _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
        | JDG_TRUE _ => [[] * [] <> EXP] ->> JDG
        | JDG_EQ_TYPE _ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
+       | JDG_SUB_UNIVERSE _ => [[] * [] <> EXP] ->> JDG
        | JDG_SYNTH _ => [[] * [] <> EXP] ->> JDG
   end
 
@@ -549,6 +566,16 @@ struct
         (fn (P.VAR a, tau) => [(a, tau)]
           | (P.APP t, _) => P.freeVars t)
         ps
+
+    val selectorSupport =
+      fn IN_GOAL => []
+       | IN_HYP a => [(a, HYP)]
+
+    fun selectorsSupport ps =
+      ListMonad.bind selectorSupport ps
+
+    fun opidsSupport os =
+      List.map (fn name => (name, OPID)) os
   in
     val supportPoly =
       fn FCOM params => comSupport params
@@ -556,6 +583,9 @@ struct
        | PATH_APP r => dimSupport r
        | BOX params => comSupport params
        | CAP params => comSupport params
+       | UNIVALENCE r => dimSupport r
+       | UNIVALENCE_IN r => dimSupport r
+       | UNIVALENCE_PROJ r => dimSupport r
        | UNIVERSE (l, _) => levelSupport l
        | HCOM params => comSupport params
        | COE dir => spanSupport dir
@@ -567,7 +597,11 @@ struct
        | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
 
        | RULE_ELIM a => [(a, HYP)]
-       | RULE_UNFOLD a => [(a, OPID)]
+       | RULE_REWRITE sel => selectorSupport sel
+       | RULE_REWRITE_HYP (sel, a) => selectorSupport sel @ [(a, HYP)]
+       | RULE_REDUCE selectors => selectorsSupport selectors
+       | RULE_UNFOLD_ALL names => opidsSupport names
+       | RULE_UNFOLD (names, selectors) => opidsSupport names @ selectorsSupport selectors
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_APPLY_HYP (a, _, _) => [(a, HYP)]
@@ -578,6 +612,7 @@ struct
        | JDG_EQ (l, _) => optSupport levelSupport l
        | JDG_TRUE (l, _) => optSupport levelSupport l
        | JDG_EQ_TYPE (l, _) => optSupport levelSupport l
+       | JDG_SUB_UNIVERSE (l, _) => optSupport levelSupport l
        | JDG_SYNTH (l, _) => optSupport levelSupport l
   end
 
@@ -599,6 +634,15 @@ struct
       fn (NONE, NONE) => true
        | (SOME v1, SOME v2) => f (v1, v2)
        | _ => false
+
+    fun selectorEq f =
+      fn (IN_GOAL, IN_GOAL) => true
+       | (IN_HYP a, IN_HYP b) => f (a, b)
+       | _ => false
+
+    fun selectorsEq f = ListPair.allEq (selectorEq f)
+
+    fun opidsEq f = ListPair.allEq f
   in
     fun eqPoly f =
       fn (FCOM (dir1, eqs1), t) =>
@@ -615,6 +659,9 @@ struct
          (case t of
              CAP (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
            | _ => false)
+       | (UNIVALENCE r, t) => (case t of UNIVALENCE r' => P.eq f (r, r') | _ => false)
+       | (UNIVALENCE_IN r, t) => (case t of UNIVALENCE_IN r' => P.eq f (r, r') | _ => false)
+       | (UNIVALENCE_PROJ r, t) => (case t of UNIVALENCE_PROJ r' => P.eq f (r, r') | _ => false)
        | (UNIVERSE (l, k), t) => (case t of UNIVERSE (l', k') => P.eq f (l, l') andalso k = k' | _ => false)
        | (HCOM (dir1, eqs1), t) =>
          (case t of
@@ -641,7 +688,11 @@ struct
        | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
 
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
-       | (RULE_UNFOLD a, t) => (case t of RULE_UNFOLD b => f (a, b) | _ => false)
+       | (RULE_REWRITE s1, t) => (case t of RULE_REWRITE s2 => selectorEq f (s1, s2) | _ => false)
+       | (RULE_REWRITE_HYP (s1, a), t) => (case t of RULE_REWRITE_HYP (s2, b) => selectorEq f (s1, s2) andalso f (a, b) | _ => false)
+       | (RULE_REDUCE ss1, t) => (case t of RULE_REDUCE ss2 => selectorsEq f (ss1, ss2) | _ => false)
+       | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
+       | (RULE_UNFOLD (os1, ss1), t) => (case t of RULE_UNFOLD (os2, ss2) => opidsEq f (os1, os2) andalso selectorsEq f (ss1, ss2) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_APPLY_HYP (a, pat, n), t) => (case t of DEV_APPLY_HYP (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
@@ -666,6 +717,10 @@ struct
        | (JDG_EQ_TYPE (l, k), t) =>
          (case t of
              JDG_EQ_TYPE (l', k') => optEq (P.eq f) (l, l') andalso k = k'
+           | _ => false)
+       | (JDG_SUB_UNIVERSE (l, k), t) =>
+         (case t of
+             JDG_SUB_UNIVERSE (l', k') => optEq (P.eq f) (l, l') andalso k = k'
            | _ => false)
        | (JDG_SYNTH (l, k), t) =>
          (case t of
@@ -705,7 +760,7 @@ struct
      | BASE => "base"
      | S1_REC => "S1-rec"
 
-     | DFUN => "dfun"
+     | FUN => "fun"
      | LAM => "lam"
      | APP => "app"
 
@@ -736,12 +791,12 @@ struct
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
      | RULE_EXACT _ => "exact"
-     | RULE_HEAD_EXP => "head-expand"
+     | RULE_REDUCE_ALL => "reduce-all"
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
-     | DEV_DFUN_INTRO pats => "fun-intro"
+     | DEV_FUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
      | DEV_LET => "let"
      | DEV_MATCH _ => "dev-match"
@@ -764,51 +819,33 @@ struct
 
     fun paramsToString f =
       ListSpine.pretty (fn (p, _) => P.toString f p) ","
+
+    fun comParamsToString f (dir, eqs) =
+      dirToString f dir ^ ";" ^ equationsToString f eqs
+
+    fun selectorToString f =
+      fn IN_GOAL => "goal"
+       | IN_HYP a => f a
+
+    fun selectorsToString f =
+      ListSpine.pretty (selectorToString f) ","
+
+    fun opidsToString f =
+      ListSpine.pretty f ","
   in
     fun toStringPoly f =
-      fn FCOM (dir, eqs) =>
-           "fcom"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
-       | LOOP r => "loop[" ^ P.toString f r ^ "]"
+      fn FCOM params => "fcom{" ^ comParamsToString f params ^ "}"
+       | LOOP r => "loop{" ^ P.toString f r ^ "}"
        | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
-       | BOX (dir, eqs) =>
-           "box"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
-       | CAP (dir, eqs) =>
-           "cap"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
+       | BOX params => "box{" ^ comParamsToString f params ^ "}"
+       | CAP params => "cap{" ^ comParamsToString f params ^ "}"
+       | UNIVALENCE r => "univalence{" ^ P.toString f r ^ "}"
+       | UNIVALENCE_IN r => "univalence-in{" ^ P.toString f r ^ "}"
+       | UNIVALENCE_PROJ r => "univalence-proj{" ^ P.toString f r ^ "}"
        | UNIVERSE (l, k) => "universe{" ^ P.toString f l ^ "," ^ K.toString k ^ "}"
-       | HCOM (dir, eqs) =>
-           "hcom"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
-       | COE dir =>
-           "coe"
-             ^ "["
-             ^ dirToString f dir
-             ^ "]"
-       | COM (dir, eqs) =>
-           "com"
-             ^ "["
-             ^ dirToString f dir
-             ^ "; "
-             ^ equationsToString f eqs
-             ^ "]"
+       | HCOM params => "hcom{" ^ comParamsToString f params ^ "}"
+       | COE dir => "coe{" ^ dirToString f dir ^ "}"
+       | COM params => "com{" ^ comParamsToString f params ^ "}"
        | CUST (opid, [], _) =>
            f opid
        | CUST (opid, ps, _) =>
@@ -820,7 +857,11 @@ struct
        | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
 
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
-       | RULE_UNFOLD a => "unfold{" ^ f a ^ "}"
+       | RULE_REWRITE s => "rewrite{" ^ selectorToString f s ^ "}"
+       | RULE_REWRITE_HYP (s, a) => "rewrite-hyp{" ^ selectorToString f s ^ "," ^ f a ^ "}"
+       | RULE_REDUCE ss => "reduce{" ^ selectorsToString f ss ^ "}"
+       | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
+       | RULE_UNFOLD (os, ss) => "unfold{" ^ opidsToString f os ^ "," ^ selectorsToString f ss ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_APPLY_HYP (a, _, _) => "apply-hyp{" ^ f a ^ "}"
@@ -831,6 +872,7 @@ struct
        | JDG_EQ _ => "eq"
        | JDG_TRUE _ => "true"
        | JDG_EQ_TYPE _ => "eq-type"
+       | JDG_SUB_UNIVERSE _ => "sub-universe"
        | JDG_SYNTH _ => "synth"
   end
 
@@ -842,9 +884,7 @@ struct
     fun passSort sigma f =
       fn u => f (u, sigma)
 
-    fun mapOpt f =
-      fn NONE => NONE
-       | SOME p => SOME (f p)
+    val mapOpt = Option.map
 
     fun mapSpan f (r, r') = (P.bind (passSort DIM f) r, P.bind (passSort DIM f) r')
     fun mapSpans f = List.map (mapSpan f)
@@ -873,6 +913,10 @@ struct
       case f a of
          P.VAR a' => a'
        | P.APP _ => raise Fail "Expected symbol, but got application"
+
+    fun mapSelector f =
+      fn IN_GOAL => IN_GOAL
+       | IN_HYP a => IN_HYP (f a)
   in
     fun mapPolyWithSort f =
       fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
@@ -880,6 +924,9 @@ struct
        | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
        | BOX (dir, eqs) => BOX (mapSpan f dir, mapSpans f eqs)
        | CAP (dir, eqs) => CAP (mapSpan f dir, mapSpans f eqs)
+       | UNIVALENCE r => UNIVALENCE (P.bind (passSort DIM f) r)
+       | UNIVALENCE_IN r => UNIVALENCE_IN (P.bind (passSort DIM f) r)
+       | UNIVALENCE_PROJ r => UNIVALENCE_PROJ (P.bind (passSort DIM f) r)
        | UNIVERSE (l, k) => UNIVERSE (P.bind (passSort LVL f) l, k)
        | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
        | COE dir => COE (mapSpan f dir)
@@ -891,7 +938,11 @@ struct
        | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
 
        | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
-       | RULE_UNFOLD a => RULE_UNFOLD (mapSym (passSort OPID f) a)
+       | RULE_REWRITE s => RULE_REWRITE (mapSelector (mapSym (passSort HYP f)) s)
+       | RULE_REWRITE_HYP (s, a) => RULE_REWRITE_HYP (mapSelector (mapSym (passSort HYP f)) s, mapSym (passSort HYP f) a)
+       | RULE_REDUCE ss => RULE_REDUCE (List.map (mapSelector (mapSym (passSort HYP f))) ss)
+       | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
+       | RULE_UNFOLD (ns, ss) => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns, List.map (mapSelector (mapSym (passSort HYP f))) ss)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
        | DEV_APPLY_LEMMA (opid, ps, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, pat, n)
@@ -902,6 +953,7 @@ struct
        | JDG_EQ (l, k) => JDG_EQ (mapOpt (P.bind (passSort LVL f)) l, k)
        | JDG_TRUE (l, k) =>  JDG_TRUE (mapOpt (P.bind (passSort LVL f)) l, k)
        | JDG_EQ_TYPE (l, k) =>  JDG_EQ_TYPE (mapOpt (P.bind (passSort LVL f)) l, k)
+       | JDG_SUB_UNIVERSE (l, k) =>  JDG_SUB_UNIVERSE (mapOpt (P.bind (passSort LVL f)) l, k)
        | JDG_SYNTH (l, k) =>  JDG_SYNTH (mapOpt (P.bind (passSort LVL f)) l, k)
   end
 

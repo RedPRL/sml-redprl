@@ -18,10 +18,10 @@ Thm LowLevel : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f -> refine dfun/intro;
+  fresh f -> refine fun/intro;
   [fresh x, x/eq -> elim f;
   [`tt, use x],
-  refine dfun/eqtype;
+  refine fun/eqtype;
   refine wbool/eqtype]
 ].
 
@@ -32,7 +32,7 @@ Thm LowLevel2 : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f -> repeat {refine dfun/intro; [id, auto]};
+  fresh f -> repeat {refine fun/intro; [id, auto]};
   fresh x, x/eq -> elim f;
   [`tt, use x]
 ].
@@ -192,31 +192,32 @@ Thm Not : [(-> [_ : wbool] wbool)] by [
   {lam x. if x then `ff else `tt}; auto
 ].
 
-Thm FunExt(#A; #B) : [
-  type/A : #A type,
-  type/B : #B type
-  >>
+Thm FunExt{l:lvl} : [
   (->
-   [f : (-> #A #B)]
-   [g : (-> #A #B)]
-   [p : (-> [y : #A] (path {_} #B ($ f y) ($ g y)))]
-   (path {_} (-> #A #B) f g))
+   [a b : (U l)]
+   [f g : (-> a b)]
+   [p : (-> [y : a] (path {_} b ($ f y) ($ g y)))]
+   (path {_} (-> a b) f g))
 ] by [
-  lam f, g, p.
-    <i> lam a. use p [use a, @i]
+  lam a, b, f, g, p.
+    <i> lam x. use p [use x, @i]
 ].
 
 Print FunExt.
 
-
-Tac FunExtTac(#A; #B; #F; #G) = [
-  let p : [(-> [x : #A] (path {_} wbool ($ #F x) ($ #G x)))] = id.
-  <i> lam a. use p [use a, @i]
+Tac FunExtTac{l:lvl} = [
+  query gl <- goal.
+  match [gl:jdg] {
+    [a, b, f, g | #jdg{(path {_} (-> %a %b) %f %g) true} =>
+      use {FunExt l}
+        [ `%a, `%b, `%f, `%g, id ]]
+  }
 ].
 
 Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
-  (FunExtTac wbool wbool (Cmp Not Not) (lam [x] x));
-  {lam x. if x then <_> `tt else <_> `ff}; auto
+  {FunExtTac {lvl 0}};
+  {lam x. if x then <_> `tt else <_> `ff};
+  auto
 ].
 
 Extract NotNotPath.
@@ -231,14 +232,14 @@ Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
   lam x. use x [@0]
 ].
 
-Thm PathEta(#A) : [
-  type/A : #A type >>
+Thm PathEta{l:lvl} : [
   (->
-   [m n : #A]
-   (path {_} #A m n)
-   (path {_} #A m n))
+   [a : (U l)]
+   [m n : a]
+   (path {_} a m n)
+   (path {_} a m n))
 ] by [
-  lam m, n, p. <j> use p [@j]
+  lam a, m, n, p. <j> use p [@j]
 ].
 
 Print PathEta.

@@ -13,18 +13,24 @@ sig
   val Cut : catjdg -> rule
   val CutLemma : sign -> opid -> (param * psort option) list -> rule
 
-  val Elim : sign -> hyp -> rule
   val AutoStep : sign -> rule
+  val Elim : sign -> hyp -> rule
+  val Exact : abt -> rule
+  val Rewrite : sign -> hyp RedPrlOpData.selector -> abt -> rule
+  val RewriteHyp : sign -> hyp RedPrlOpData.selector -> hyp -> rule
+  val Symmetry : rule
+  val SynthFromHyp : hyp -> rule
 
-  structure Equality :
+  structure Custom :
   sig
-    val Symmetry : rule
+    val UnfoldAll : sign -> opid list -> rule
+    val Unfold : sign -> opid list -> hyp RedPrlOpData.selector list -> rule
   end
 
   structure Computation :
   sig
-    val Unfold : sign -> opid -> rule
-    val HeadExpansion : sign -> rule
+    val ReduceAll : sign -> rule
+    val Reduce : sign -> hyp RedPrlOpData.selector list -> rule
   end
 
   structure Hyp :
@@ -34,13 +40,11 @@ sig
     val Delete : hyp -> rule
   end
 
-  structure Synth :
+  structure Tactical :
   sig
-    val FromEq : hyp -> rule
+    val NormalizeGoalDelegate : (abt -> rule) -> sign -> rule
+    val NormalizeHypDelegate : (abt -> hyp -> rule) -> sign -> hyp -> rule
   end
-
-  val Exact : abt -> rule
-
 
   type rule_name = string
   val lookupRule : rule_name -> rule

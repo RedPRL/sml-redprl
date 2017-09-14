@@ -36,6 +36,20 @@ struct
       end
   end
 
+  fun makeNamePopper alpha = 
+    let
+      val ix = ref 0
+    in
+      fn () => 
+        let
+          val i = !ix
+          val h = alpha i
+        in
+          ix := i + 1;
+          h
+        end
+    end
+
   (* assert that the term 'm' has only free symbols 'us' and free variables 'xs' at most. *)
   fun assertWellScoped (us, xs) m = 
     let
@@ -164,6 +178,7 @@ struct
   fun makeEqWith f (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
   val makeEq = makeEqWith (fn j => j)
   fun makeMem (I, H) (m, (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, l, k))
+  fun makeSubUniverse (I, H) (u, l, k) = makeGoal' @@ (I, H) >> CJ.SUB_UNIVERSE (u, l, k)
 
   (* conditional goal making *)
 
@@ -173,9 +188,10 @@ struct
 
   fun makeEqTypeUnlessSubUniv (I, H) ((m, n), l, k) (l', k') =
     case (L.P.< (l, l'), K.greatestMeetComplement' (k, k')) of
-      (_, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), l, k'')
-    | (true, _) => SOME @@ makeEqType (I, H) ((m, n), l, k)
-    | _ => NONE
+      (true, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), l, k'')
+    | (false, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), NONE, k'')
+    | (true, NONE) => SOME @@ makeEqType (I, H) ((m, n), l, K.top)
+    | (false, NONE) => NONE
   
   fun makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k') =
     makeEqTypeUnlessSubUniv (I, H) ((m, m), l, k) (l', k')
@@ -213,6 +229,13 @@ struct
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
 
+  (* subtyping *)
+
+  (* It is not clear how exactly the subtyping should be implemented;
+   * therefore we have a dummy implementation here. *)
+  fun makeSubType (I, H) (ty1, l1, k1) (ty0, l0, k0) =
+    makeEqTypeIfDifferentOrNotSubUniv (I, H) ((ty1, ty0), l0, k0) (l1, k1)
+
   (* assertions *)
 
   structure Assert =
@@ -228,6 +251,12 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
+
+    fun alphaEqEither (m, (n0, n1)) =
+      if Abt.eq (m, n0) orelse Abt.eq (m, n1) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n0, Fpp.text "or", TermPrinter.ppTerm n1]
 
     fun levelLeq (l1, l2) =
       if L.P.<= (l1, l2) then
@@ -344,5 +373,28 @@ struct
 
     fun labelsEq msg (l0, l1) =
       ListPair.appEq (labelEq msg) (l0, l1)
+  end
+
+  (* maps with selectors *)
+
+  structure Selector =
+  struct
+    fun map sel f (H, catjdg) =
+      case sel of
+         O.IN_GOAL => (H, CJ.map f catjdg)
+       | O.IN_HYP x => (Hyps.modify x (CJ.map f) H, catjdg)
+
+    fun multiMap sels f (H, catjdg) =
+      List.foldl (fn (sel, state) => map sel f state) (H, catjdg) sels
+
+    fun lookup sel (H, catjdg) =
+      case sel of
+         O.IN_GOAL => catjdg
+       | O.IN_HYP x => Hyps.lookup x H
+
+    fun truncateFrom sel H =
+      case sel of
+         O.IN_GOAL => H
+       | O.IN_HYP x => Hyps.truncateFrom H x
   end
 end

@@ -53,7 +53,7 @@ struct
    (* circle *)
    | S1 | BASE | LOOP of param | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
    (* function: lambda and app *)
-   | DFUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
+   | FUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
    (* record *)
    | RECORD of ((string * variable) * 'a) list
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
@@ -64,6 +64,9 @@ struct
    (* fcom types *)
    | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
    | CAP of {dir: dir, tubes: (equation * (symbol * 'a)) list, coercee: 'a}
+   (* univalence *)
+   | UNIVALENCE of param * 'a * 'a * 'a
+   | UNIVALENCE_IN of param * 'a * 'a | UNIVALENCE_PROJ of param * 'a * 'a
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
@@ -199,7 +202,7 @@ struct
        | LOOP r => O.POLY (O.LOOP r) $$ []
        | S1_REC ((x, cx), m, (b, (u, l))) => O.MONO O.S1_REC $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([u],[]) \ l]
 
-       | DFUN (a, x, bx) => O.MONO O.DFUN $$ [([],[]) \ a, ([],[x]) \ bx]
+       | FUN (a, x, bx) => O.MONO O.FUN $$ [([],[]) \ a, ([],[x]) \ bx]
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
        | APP (m, n) => O.MONO O.APP $$ [([],[]) \ m, ([],[]) \ n]
 
@@ -235,6 +238,10 @@ struct
        | BOX args => intoBox args
        | CAP args => intoCap args
 
+       | UNIVALENCE (r, a, b, e) => O.POLY (O.UNIVALENCE r) $$ [([],[]) \ a, ([],[]) \ b, ([],[]) \ e]
+       | UNIVALENCE_IN (r, m, n) => O.POLY (O.UNIVALENCE_IN r) $$ [([],[]) \ m, ([],[]) \ n]
+       | UNIVALENCE_PROJ (r, m, f) => O.POLY (O.UNIVALENCE_PROJ r) $$ [([],[]) \ m, ([],[]) \ f]
+
        | UNIVERSE (l, k) => O.POLY (O.UNIVERSE (L.into l, k)) $$ []
 
        | HCOM args => intoHcom args
@@ -245,11 +252,24 @@ struct
        | CUST => raise Fail "CUST"
        | META => raise Fail "META"
 
-    val intoAp = into o APP
+    val intoApp = into o APP
     val intoLam = into o LAM
 
-    fun intoCoe dir (ty, m) =
-      into (COE {dir = dir, ty = ty, coercee = m})
+    fun intoProd quantifiers last =
+      let
+        val lastVar = Var.named "_"
+        val lastIndex = List.length quantifiers
+
+        fun indexToLabel i = "proj" ^ Int.toString (i + 1)
+        val projQuantifiers =
+          ListUtil.mapWithIndex
+            (fn (i, (var, tm)) => ((indexToLabel i, var), tm))
+            quantifiers
+        val projs = projQuantifiers @
+          [((indexToLabel lastIndex, lastVar), last)]
+      in
+        into (RECORD projs)
+      end
 
     fun out m =
       case Tm.out m of
@@ -286,7 +306,7 @@ struct
        | O.POLY (O.LOOP r) $ _ => LOOP r
        | O.MONO O.S1_REC $ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] => S1_REC ((x, cx), m, (b, (u, l)))
 
-       | O.MONO O.DFUN $ [_ \ a, (_,[x]) \ bx] => DFUN (a, x, bx)
+       | O.MONO O.FUN $ [_ \ a, (_,[x]) \ bx] => FUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
        | O.MONO O.APP $ [_ \ m, _ \ n] => APP (m, n)
 
@@ -306,6 +326,10 @@ struct
        (* note that the coercee goes first! *)
        | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee) :: tubes =>
            CAP {dir = dir, tubes = outTubes (eqs, tubes), coercee = coercee}
+
+       | O.POLY (O.UNIVALENCE r) $ [_ \ a, _ \ b, _ \ e] => UNIVALENCE (r, a, b, e)
+       | O.POLY (O.UNIVALENCE_IN r) $ [_ \ m, _ \ n] => UNIVALENCE_IN (r, m, n)
+       | O.POLY (O.UNIVALENCE_PROJ r) $ [_ \ m, _ \ f] => UNIVALENCE_PROJ (r, m, f)
 
        | O.POLY (O.UNIVERSE (l, k)) $ _ => UNIVERSE (L.out l, k)
 

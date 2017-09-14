@@ -1,29 +1,22 @@
 // Some theorems from http://www.nuprl.org/MathLibrary/LogicalInvestigations/.
 
-// We will prove the theorem A -> B -> A. In a traditional proof assistant for type theory, the 
-// types/propositions A, B would be quantified over using dependent function types and a universe.
-// However, RedPRL doesn't yet have a universe! So, what we have to do is treat A and B as parameters
-// to the theorem, and add explicit *hypotheses* that they are types.
-//
-// In RedPRL, parameters to definitions and theorems are prefixed by a #; this distinguishes them from 
-// object variables.
-//
-// Once we have a universe, this will be much simpler.
-Thm Thm1(#A; #B) : [
-  type/A : #A type,
-  type/B : #B type
-  >> (-> #A #B #A)
+Thm Thm1 : [
+  (-> 
+   [p q : (U 0)]
+   p q p)
 ] by [
-  lam a, b. use a
+  lam p, q, a, b. use a
 ].
 
-Thm Thm2(#A; #B; #C) : [
-  type/A : #A type,
-  type/B : #B type,
-  type/C : #C type
-  >> (-> (-> #A #B) (-> #A #B #C) #A #C)
+Thm Thm2 : [
+  (->
+   [p q r : (U 0)]
+   (-> p q)
+   (-> p q r)
+   p r
+  )
 ] by [
-  lam f, g, a.
+  lam p, q, r, f, g, a.
   use g [use a, use f [use a]]
 ].
 
@@ -31,19 +24,17 @@ Thm Thm2(#A; #B; #C) : [
 Extract Thm2.
 
 // here's a proof using lower-level scripting
-Thm Thm3/low-level(#A; #B; #C) : [
-  type/A : #A type,
-  type/B : #B type,
-  type/C : #C type
-  >> (->
-      (-> #A #B)
-      (-> #B #C)
-      (-> #A #C))
+Thm Thm3/low-level : [
+  (->
+   [p q r : (U 0)]
+   (-> p q)
+   (-> q r)
+   (-> p r))
 ] by [
-  fresh ab, bc, a -> repeat {refine dfun/intro || id};
+  fresh p, q, r, pq, qr, x -> repeat {refine fun/intro || id};
   auto;
-  fresh c -> elim bc;
-  [fresh b -> elim ab; [use a, use b], use c]
+  fresh z -> elim qr;
+  [fresh y -> elim pq; [use x, use y], use z]
 ].
 
 Extract Thm3/low-level.
@@ -51,46 +42,34 @@ Extract Thm3/low-level.
 // here's a high-level version of the above proof. proofs using the high-level 
 // programming calculus may be longer, but they are often easier to engineer, 
 // and nicely segregate main goals from auxiliary goals.
-Thm Thm3/high-level(#A; #B; #C) : [
-  type/A : #A type,
-  type/B : #B type,
-  type/C : #C type
-  >> (->
-      (-> #A #B)
-      (-> #B #C)
-      (-> #A #C))
+Thm Thm3/high-level : [
+  (->
+   [p q r : (U 0)]
+   (-> p q)
+   (-> q r)
+   (-> p r))
 ] by [
-  lam ab, bc, a.
-  use bc [use ab [use a]]
+  lam p, q, r, f, g, x.
+  use g [use f [use x]]
 ].
 
 Extract Thm3/high-level.
 
 Def Not(#A) = [ (-> #A void) ].
 
-Thm Not/wf(#A) : [
-  type/A : #A type
-  >> (Not #A) type
+Thm Thm4 : [
+  (-> [p q : (U 0)] (Not p) p q)
 ] by [
-  auto
-].
-
-
-Thm Thm4(#A; #B) : [
-  type/A : #A type
-  >> (-> (Not #A) #A #B)
-] by [
-  lam r, a.
+  lam p, q, r, a.
   unfold Not;
   let boom = r [use a].
   elim boom
 ].
 
-Thm Thm5(#A) : [
-  type/A : #A type
-  >> (-> #A (Not (Not #A)))
+Thm Thm5 : [
+  (-> [p : (U 0)] p (Not (Not p)))
 ] by [
-  lam a. unfold Not; lam r.
+  lam p, a. unfold Not; lam r.
   use r [use a]
 ].
 
@@ -99,10 +78,10 @@ Print Thm5.
 
 
 Thm Thm6(#A;#B) : [
-  type/A : #A type,
-  type/B : #B type
-  >> (-> (-> #A #B) (Not #B) (Not #A))
+  (-> [p q : (U 0)] (-> p q) (Not q) (Not p))
 ] by [
-  lam ab, nb. unfold Not; lam a.
-  use nb [use ab [use a]]
+  lam p, q, f, g. unfold Not; lam a.
+  use g [use f [use a]]
 ].
+
+Print Thm6.

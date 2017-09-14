@@ -24,7 +24,7 @@ sig
 
   val entryParams : entry -> symbol params
 
-  val applyCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> RedPrlAbt.metaenv * RedPrlAbt.symenv
+  val unfoldCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> abt
   val extract : Lcf.jdg Lcf.state -> abt
 end
 

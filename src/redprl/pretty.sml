@@ -31,6 +31,7 @@ sig
   val toString : t -> string
   val ppTerm : t -> Fpp.doc
   val ppAbs : RedPrlAbt.abs -> Fpp.doc
+  val ppBinder : t RedPrlAbt.bview -> Fpp.doc
   val ppSort : RedPrlAbt.sort -> Fpp.doc
   val ppPsort : RedPrlAbt.psort -> Fpp.doc
   val ppValence : RedPrlAbt.valence -> Fpp.doc
@@ -41,11 +42,10 @@ sig
   val ppOperator : RedPrlAbt.operator -> Fpp.doc
   val ppKind : RedPrlKind.kind -> Fpp.doc
   val ppLabel : string -> Fpp.doc
-  val ppIntInf : IntInf.int -> Fpp.doc
 end =
 struct
   structure Abt = RedPrlAbt
-  structure P = RedPrlParameterTerm and Ar = Abt.O.Ar
+  structure S = RedPrlSortData and P = struct open RedPrlParamData RedPrlParameterTerm end and Ar = Abt.O.Ar
 
   open FppBasis Fpp Abt
   structure O = RedPrlOpData
@@ -75,7 +75,6 @@ struct
 
   val ppSym = text o PrintName.sym
   val ppVar = text o PrintName.var
-  val ppParam = text o P.toString PrintName.sym
   val ppKind = text o RedPrlKind.toString
   fun ppMeta x = seq [char #"#", text @@ PrintName.meta x]
 
@@ -84,10 +83,33 @@ struct
        [] => empty
      | _ => m
 
+  val ppIntInf = text o IntInf.toString
+
+  val rec ppParam =
+    fn P.VAR x => ppSym x
+     | P.APP (P.LCONST i) => ppIntInf i
+     | P.APP (P.LABOVE (p, 1)) => Atomic.braces @@ hsep [text "lsucc", ppParam p]
+     | P.APP (P.LABOVE (p, i)) => Atomic.braces @@ hsep [text "labove", ppParam p, ppIntInf i]
+     | P.APP (P.LMAX ps) => Atomic.braces @@ hsep @@ text "lmax" :: List.map ppParam ps
+     | P.APP P.DIM0 => text "0"
+     | P.APP P.DIM1 => text "1"
+
+  val ppParamWithSort =
+    fn (p, NONE) => ppParam p
+     | (p as P.VAR x, SOME _) => ppParam p
+     | (p as P.APP (P.LCONST i), SOME S.LVL) => Atomic.braces @@ hsep [text "lvl", ppParam p]
+     | (p as P.APP (P.LABOVE _), SOME S.LVL) => ppParam p
+     | (p as P.APP (P.LMAX _), SOME S.LVL) => ppParam p
+     | (p, SOME S.LVL) => raise Fail "ppParamWithSort encountered an invalid level term."
+     | (p as P.APP P.DIM0, SOME S.DIM) => ppParam p (* sort DIM is the default for numerals *)
+     | (p as P.APP P.DIM1, SOME S.DIM) => ppParam p (* sort DIM is the default for numerals *)
+     | (p, SOME S.DIM) => raise Fail "ppParamWithSort encountered an invalid dimension term."
+     | (p, SOME _) => raise Fail "ppParamWithSort encountered an invalid term."
+
   fun ppOperator theta =
     case theta of 
        O.POLY (O.CUST (opid, [], _)) => ppSym opid
-     | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map (fn (p, _) => ppParam p) params
+     | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map ppParamWithSort params
      | _ =>  text @@ RedPrlOperator.toString PrintName.sym theta
 
   fun ppMetavarParams (x, ps) =
@@ -102,7 +124,6 @@ struct
     seq [text name, Atomic.braces @@ seq [ppParam r, text "<~", ppParam r']]
 
   val ppLabel = text
-  val ppIntInf = text o IntInf.toString
 
   fun intersperse s xs =
     case xs of
@@ -113,16 +134,18 @@ struct
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
 
-  fun multiDFun (doms : (variable list * abt) list) m =
+  fun multiFun (doms : (variable list option * abt) list) m =
     case Abt.out m of
-       O.MONO O.DFUN $ [_ \ a, (_, [x]) \ bx] =>
-         (case doms of
-             [] => multiDFun (([x], a) :: doms) bx
-           | (xs, a') :: doms' =>
-               if Abt.eq (a, a') then
-                 multiDFun ((xs @ [x], a) :: doms') bx
-               else
-                 multiDFun (([x], a) :: doms) bx)
+       O.MONO O.FUN $ [_ \ a, (_, [x]) \ bx] =>
+         if Abt.Var.Ctx.member (Abt.varctx bx) x then
+           case doms of
+              (SOME xs, a') :: doms' =>
+                if Abt.eq (a, a') then
+                  multiFun ((SOME (xs @ [x]), a) :: doms') bx
+                else
+                  multiFun ((SOME [x], a) :: doms) bx
+            | _ => multiFun ((SOME [x], a) :: doms) bx
+         else multiFun ((NONE, a) :: doms) bx
      | _ => (List.rev doms, m)
 
   fun multiLam (xs : variable list) m =
@@ -152,7 +175,10 @@ struct
   fun printQuant opr (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
       (text opr)
-        :: List.map (fn (xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]) doms
+        :: List.map
+            (fn (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]
+              | (NONE, a) => ppTerm a)
+            doms
           @ [ppTerm cod]
 
   and printLam (xs, m) =
@@ -181,8 +207,8 @@ struct
              :: [ppTubes (eqs, tubes)]
      | O.POLY (O.LOOP x) $ [] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
-     | O.MONO O.DFUN $ _ =>
-         printQuant "->" @@ multiDFun [] m
+     | O.MONO O.FUN $ _ =>
+         printQuant "->" @@ multiFun [] m
      | O.MONO O.LAM $ _ =>
          printLam @@ multiLam [] m
      | O.MONO O.APP $ _ =>
@@ -207,7 +233,7 @@ struct
          in
            Atomic.parens @@ expr @@ hvsep @@ text "record" :: List.rev fields
          end 
-     | O.MONO (O.TUPLE []) $ _ => text "tuple"
+     | O.MONO (O.TUPLE []) $ [] => text "tuple"
      | O.MONO (O.TUPLE lbls) $ data =>
          let
            fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, ppBinder a]
@@ -232,6 +258,17 @@ struct
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHeadBackward "cap" dir, ppBinder coercee]
              :: [ppTubes (eqs, tubes)]
+     | O.POLY (O.UNIVALENCE r) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "univalence" :: ppParam r :: List.map ppBinder args
+     | O.POLY (O.UNIVALENCE_IN r) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "univalence-in" :: ppParam r :: List.map ppBinder args
+     | O.POLY (O.UNIVALENCE_PROJ r) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "univalence-proj" :: ppParam r :: List.map ppBinder args
+     | O.POLY (O.UNIVERSE (l, k)) $ [] =>
+         if k = RedPrlKind.top then
+           Atomic.parens @@ expr @@ hvsep @@ [text "U", ppParam l]
+         else
+           Atomic.parens @@ expr @@ hvsep @@ [text "U", ppParam l, ppKind k]
      | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "hcom" dir, ppBinder ty, ppBinder cap]
@@ -253,7 +290,7 @@ struct
 
   and ppTubes (eqs, tubes) =
     expr @@ hvsep @@
-      ListPair.map
+      ListPair.mapEq
         (fn ((r1, r2), ([u], _) \ mu) =>
           Atomic.squares @@ hsep
             [seq [ppParam r1, Atomic.equals, ppParam r2],
@@ -262,7 +299,7 @@ struct
 
   and ppBoundaries (eqs, tubes) =
     expr @@ hvsep @@
-      ListPair.map
+      ListPair.mapEq
         (fn ((r1, r2), _ \ m) =>
           Atomic.squares @@ hsep
             [seq [ppParam r1, Atomic.equals, ppParam r2],

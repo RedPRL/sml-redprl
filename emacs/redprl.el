@@ -111,6 +111,10 @@
   '("dim" "hyp" "exp" "lvl" "tac" "triv" "jdg")
   "RedPRL's built-in sorts.")
 
+(defconst redprl-parameter-keywords
+  '("labove" "lsucc" "lmax")
+  "RedPRL's parameter keywords.")
+
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
     "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec" "wif"
@@ -121,7 +125,8 @@
     "record" "tuple"
     "path" "abs"
     "box" "cap"
-    "univ"
+    "univalence" "univalence-in" "univalence-proj"
+    "universe" "U"
     "hcom" "coe" "com")
   "RedPRL's expression keywords.")
 
@@ -131,8 +136,9 @@
 
 (defconst redprl-tactic-keywords
   '("auto" "auto-step" "case" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
-    "head-expand" "hyp" "id" "lemma" "let" "match" "of" "print" "progress"
-    "query" "rec" "refine" "repeat" "symmetry" "then" "unfold" "use" "with")
+    "hyp" "id" "internalize" "lemma" "let" "match" "of" "print" "progress"
+    "query" "rec" "reduce" "refine" "repeat" "rewrite" "rewrite-hyp" "symmetry"
+    "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")
 
 (defconst redprl-tactic-symbols
@@ -140,7 +146,7 @@
   "RedPRL's tactic symbols.")
 
 (defconst redprl-sequent-keywords
-  '("true" "type" "synth" "discrete" "kan" "hcom" "coe" "cubical")
+  '("in" "true" "type" "synth" "discrete" "kan" "hcom" "coe" "cubical")
   "RedPRL's sequent keywords.")
 
 (defconst redprl-sequent-symbols
@@ -182,6 +188,9 @@
 
     ;; Numbers
     (,(rx (? "-") (+ digit)) 0 'redprl-number-face)
+
+    ;; Built-in parameters
+    (,(regexp-opt redprl-parameter-keywords 'words) 0 'redprl-expression-keyword-face)
 
     ;; Built-in expressions
     (,(regexp-opt redprl-expression-keywords 'words) 0 'redprl-expression-keyword-face)

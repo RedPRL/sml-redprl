@@ -31,6 +31,11 @@ struct
     *)
    | EQ_TYPE of ('term * 'term) * 'level * kind
 
+   (* `SUB_UNIVERSE (u, l, k)`
+    *   `u` is a sub-universe of the universe specified by `l` and `k`.
+    *)
+   | SUB_UNIVERSE of 'term * 'level * kind
+
    (* `TERM tau`:
     *   There exists some `m` of sort `tau`.
     *   The realizer is such an `m` of sort `tau`.

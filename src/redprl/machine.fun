@@ -78,6 +78,7 @@ struct
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
    | CAP of symbol O.dir * tube list * hole
+   | UNIVALENCE_PROJ of symbol * hole * abt
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -89,7 +90,7 @@ struct
 
   local
     fun plug m = 
-      fn APP (HOLE, n) => Syn.into @@ Syn.APP (m, n)
+      fn APP (HOLE, n) => Syn.intoApp (m, n)
        | HCOM (dir, HOLE, cap, tubes) => Syn.into @@ Syn.HCOM {dir = dir, ty = m, cap = cap, tubes = tubes}
        | COE (dir, (u, HOLE), coercee) => Syn.into @@ Syn.COE {dir = dir, ty = (u, m), coercee = coercee}
        | IF (HOLE, t, f) => Syn.into @@ Syn.IF (m, (t, f))
@@ -101,6 +102,7 @@ struct
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
        | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
        | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
+       | UNIVALENCE_PROJ (x, HOLE, f) => Syn.into @@ Syn.UNIVALENCE_PROJ (P.VAR x, m, f)
   in
     fun unload (m || (syms, stk)) = 
       case stk of
@@ -139,6 +141,22 @@ struct
   exception Unstable
   exception Final
   exception Stuck
+
+  local
+    fun assertVariable stability syms u =
+      case stability of
+        NOMINAL => ()
+      | CUBICAL =>
+          if SymSet.member syms u then ()
+          else raise Unstable
+  in
+    fun branchOnDim stability syms r f0 f1 fu =
+      case r of
+        P.APP P.DIM0 => f0
+      | P.APP P.DIM1 => f1
+      | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
+      | P.VAR u => (assertVariable stability syms u; fu u)
+  end
 
   fun dimensionsEqual stability syms (r1, r2) = 
     (* If two dimensions are equal, then no substitution can ever change that. *)
@@ -185,10 +203,10 @@ struct
   fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
 
   fun zipTubesWith f : symbol O.equation list * abt bview list -> tube list =
-    ListPair.map (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
+    ListPair.mapEq (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
 
   fun zipBoundariesWith f : symbol O.equation list * abt bview list -> boundary list =
-    ListPair.map (fn (eq, _ \ n) => (eq, f n))
+    ListPair.mapEq (fn (eq, _ \ n) => (eq, f n))
 
   fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
@@ -281,9 +299,9 @@ struct
        if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
          val entry as {state, ...} = Sig.lookup sign opid
+         val Lcf.|> (psi, evd) = state (fn _ => Sym.named "?")
          val state = state (fn _ => RedPrlSym.new ())
-         val (mrho, srho) = Sig.applyCustomOperator entry (List.map #1 ps) args
-         val term = substSymenv srho (substMetaenv mrho (Sig.extract state))
+         val term = Sig.unfoldCustomOperator entry (List.map #1 ps) args
        in
          STEP @@ term || (syms, stk)
        end  
@@ -312,14 +330,14 @@ struct
        stepFCom stability ({dir = dir, cap = cap, tubes = zipTubes (eqs, tubes)} || (syms, stk))
 
      | O.MONO O.LAM $ _ || (_, []) => raise Final
-     | O.MONO O.DFUN $ _ || (_, []) => raise Final
+     | O.MONO O.FUN $ _ || (_, []) => raise Final
 
      | O.MONO O.APP $ [_ \ m, _ \ n] || (syms, stk) => COMPAT @@ m || (syms, APP (HOLE, n) :: stk)
      | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => CRITICAL @@ substVar (n, x) m || (syms, stk)
-     | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.MONO O.FUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
-         val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
-         fun apx n = Syn.into @@ Syn.APP (n, xtm)
+         val xtm = VarKit.toExp x
+         fun apx n = Syn.intoApp (n, xtm)
          val hcomx =
            Syn.into @@ Syn.HCOM
              {dir = dir,
@@ -330,7 +348,7 @@ struct
        in
          CRITICAL @@ lambda || (syms, stk)
        end
-     | O.MONO O.DFUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+     | O.MONO O.FUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
        let
          val (r, r') = dir
          val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
@@ -344,7 +362,7 @@ struct
               Syn.into @@ Syn.COE 
                 {dir = dir,
                  ty = (u, substVar (xcoe (P.ret u), x) tyBx),
-                 coercee = Syn.into @@ Syn.APP (coercee, xcoe r)})
+                 coercee = Syn.intoApp (coercee, xcoe r)})
        in
          CRITICAL @@ lambda || (SymSet.remove syms u, stk)
        end
@@ -445,16 +463,14 @@ struct
      | O.MONO O.S1 $ _ || (_, []) => raise Final
      | O.MONO O.BASE $ _ || (_, []) => raise Final
      | O.POLY (O.LOOP r) $ _ || (syms, stk) =>
-       (case r of 
-           P.APP P.DIM0 => STEP @@ Syn.into Syn.BASE || (syms, stk)
-         | P.APP P.DIM1 => STEP @@ Syn.into Syn.BASE || (syms, stk)
-         | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
-         | P.VAR u => 
-             if stability = CUBICAL andalso not (SymSet.member syms u) then raise Unstable else
-              case stk of 
-                 [] => raise Final
-               | S1_REC (_, HOLE, _, (v, loop)) :: stk => CRITICAL @@ substSymbol (P.ret u, v) loop || (syms, stk)
-               | _ => raise Stuck)
+         branchOnDim stability syms r
+           (STEP @@ Syn.into Syn.BASE || (syms, stk))
+           (STEP @@ Syn.into Syn.BASE || (syms, stk))
+           (fn u =>
+             case stk of
+               [] => raise Final
+             | S1_REC (_, HOLE, _, (v, loop)) :: stk => CRITICAL @@ substSymbol (P.ret u, v) loop || (syms, stk)
+             | _ => raise Stuck)
      | O.MONO O.BASE $ _ || (syms, S1_REC (_, HOLE, base, _) :: stk) => CRITICAL @@ base || (syms, stk)
      | O.MONO O.S1 $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
@@ -561,6 +577,38 @@ struct
        stepBox stability ({dir = dir, cap = cap, boundaries = zipBoundaries (eqs, boundaries)} || (syms, stk))
      | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee :: tubes) || (syms, stk) =>
        stepCap stability ({dir = dir, coercee = coercee, tubes = zipTubes (eqs, tubes)} || (syms, stk))
+
+     | O.POLY (O.UNIVALENCE r) $ [_ \ a, _ \ b, _] || (syms, stk) =>
+         branchOnDim stability syms r
+           (STEP @@ a || (syms, stk))
+           (STEP @@ b || (syms, stk))
+           (fn u =>
+             case stk of
+               [] => raise Final
+             | HCOM _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of ua types"))
+             | COE _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of ua types"))
+             | _ => raise Stuck)
+     | O.POLY (O.UNIVALENCE_IN r) $ [_ \ m, _ \ n] || (syms, stk) =>
+         branchOnDim stability syms r
+           (STEP @@ m || (syms, stk))
+           (STEP @@ n || (syms, stk))
+           (fn u =>
+             case stk of
+               [] => raise Final
+             | UNIVALENCE_PROJ (v, HOLE, f) :: stk =>
+                 (* the following line should be equivalent to direct comparison
+                  * due to the invariants of the machine, but it does not hurt
+                  * much (I hope) to check stability again. *)
+                 if dimensionsEqual stability syms (r, P.VAR v) then
+                   CRITICAL @@ n || (syms, stk)
+                 else
+                   raise Stuck
+             | _ => raise Stuck)
+     | O.POLY (O.UNIVALENCE_PROJ r) $ [_ \ m, _ \ f] || (syms, stk) =>
+         branchOnDim stability syms r
+           (STEP @@ Syn.intoApp (f, m) || (syms, stk))
+           (STEP @@ m || (syms, stk))
+           (fn u => COMPAT @@ m || (syms, UNIVALENCE_PROJ (u, HOLE, f) :: stk))
 
      | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
      | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>

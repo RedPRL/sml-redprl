@@ -89,14 +89,15 @@ struct
       RedPrlCategoricalJudgment.synthesis jdg
     end
 
-  fun applyCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : Tm.metaenv * Tm.symenv =
+  fun unfoldCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : abt =
     let
-      val params = entryParams entry
       val arguments = entryArguments entry
-      val srho = ListPair.foldl (fn ((u, _), p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (params, ps)
-      val mrho = ListPair.foldl (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
+      val Lcf.|> (_, evd) = #state entry (fn _ => Sym.new ())
+      val Tm.\ ((us, []), term) = Tm.outb evd
+      val srho = ListPair.foldlEq (fn (u, p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (us, ps)
+      val mrho = ListPair.foldlEq  (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
     in
-      (mrho, srho)
+      Tm.substSymenv srho (Tm.substMetaenv mrho term)
     end
 
   fun extract (Lcf.|> (_, validation)) =

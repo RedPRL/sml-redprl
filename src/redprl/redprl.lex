@@ -105,7 +105,11 @@ whitespace = [\ \t];
 "path"             => (Tokens.PATH (posTuple (size yytext)));
 "box"              => (Tokens.BOX (posTuple (size yytext)));
 "cap"              => (Tokens.CAP (posTuple (size yytext)));
-"univ"             => (Tokens.UNIV (posTuple (size yytext)));
+"univalence"       => (Tokens.UNIVALENCE (posTuple (size yytext)));
+"univalence-in"    => (Tokens.UNIVALENCE_IN (posTuple (size yytext)));
+"univalence-proj"  => (Tokens.UNIVALENCE_PROJ (posTuple (size yytext)));
+"universe"         => (Tokens.UNIVERSE (posTuple (size yytext)));
+"U"                => (Tokens.UNIVERSE (posTuple (size yytext)));
 "abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
@@ -123,6 +127,7 @@ whitespace = [\ \t];
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
 "meta-name"        => (Tokens.META_NAME (posTuple (size yytext)));
 
+"lsucc"            => (Tokens.LSUCC (posTuple (size yytext)));
 "labove"           => (Tokens.LABOVE (posTuple (size yytext)));
 "lmax"             => (Tokens.LMAX (posTuple (size yytext)));
 
@@ -153,7 +158,9 @@ whitespace = [\ \t];
 "auto"             => (Tokens.MTAC_AUTO (posTuple (size yytext)));
 "hyp"              => (Tokens.HYP (posTuple (size yytext)));
 "elim"             => (Tokens.RULE_ELIM (posTuple (size yytext)));
-"head-expand"      => (Tokens.RULE_HEAD_EXP (posTuple (size yytext)));
+"rewrite"          => (Tokens.RULE_REWRITE (posTuple (size yytext)));
+"rewrite-hyp"      => (Tokens.RULE_REWRITE_HYP (posTuple (size yytext)));
+"reduce"           => (Tokens.RULE_REDUCE (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
 
