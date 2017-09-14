@@ -43,32 +43,32 @@ Def Member(#M; #A) = [
   (= #A #M #M)
 ].
 
-Def IdUnivalence {l:lvl,i:dim}(#ty) = [
-  (univalence i #ty #ty ($ {IdEquiv l} #ty))
+Def IdV {l:lvl,i:dim}(#ty) = [
+  (V i #ty #ty ($ {IdEquiv l} #ty))
 ].
 
-Thm IdUnivalence/Wf {l:lvl,i:dim} : [
+Thm IdV/Wf {l:lvl,i:dim} : [
   (->
    [ty : (U l hcom)]
-   (Member ({IdUnivalence l i} ty) (U l)))
+   (Member ({IdV l i} ty) (U l)))
 ] by [
   lam ty. `ax
 ].
 
-Thm IdUnivalence/Test0 {l:lvl,i:dim} : [
+Thm IdV/Test0 {l:lvl,i:dim} : [
   (->
    [ty : (U l hcom)]
    [a : ty]
-   (Member (univalence-in i a a) ({IdUnivalence l i} ty)))
+   (Member (Vin i a a) ({IdV l i} ty)))
 ] by [
   lam ty, a. `ax
 ].
 
-Thm IdUnivalence/Test1 {l:lvl,i:dim} : [
+Thm IdV/Test1 {l:lvl,i:dim} : [
   (->
    [ty : (U l hcom)]
    [a : ty]
-   (= ty (univalence-proj 0 (univalence-in 0 a a) Id) a))
+   (= ty (Vproj 0 (Vin 0 a a) Id) a))
 ] by [
   lam ty, a. auto
 ].
@@ -127,18 +127,18 @@ Thm NotEquiv : [
    proj2 = `NotIsEquiv>
 ].
 
-Def NotUnivalence {i:dim} = [(univalence i bool bool NotEquiv)].
+Def NotV {i:dim} = [(V i bool bool NotEquiv)].
 
-Thm NotUnivalence/Wf {i:dim} : [
-  (Member {NotUnivalence i} (U 0 kan))
+Thm NotV/Wf {i:dim} : [
+  (Member {NotV i} (U 0 kan))
 ] by [
   `ax
 ].
 
-Thm NotUnivalence/Test0 {i:dim} : [
+Thm NotV/Test0 {i:dim} : [
   (->
    [a : bool]
-   (Member (univalence-in i ($ Not a) a) {NotUnivalence i}))
+   (Member (Vin i ($ Not a) a) {NotV i}))
 ] by [
   lam a. `ax
 ].

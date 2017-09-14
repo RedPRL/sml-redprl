@@ -300,7 +300,7 @@ end
  | RECORD | TIMES | TUPLE | BANG
  | PATH | ABS | AT_SIGN
  | BOX | CAP
- | UNIVALENCE | UNIVALENCE_IN | UNIVALENCE_PROJ
+ | V | VIN | VPROJ
  | UNIVERSE
  | HCOM | COE
 
@@ -666,9 +666,9 @@ regularMultinaryOperator
   (* equality *)
   | EQUALS (O.MONO O.EQUALITY)
   (* ua *)
-  | UNIVALENCE dimParam (O.POLY (O.UNIVALENCE dimParam))
-  | UNIVALENCE_IN dimParam (O.POLY (O.UNIVALENCE_IN dimParam))
-  | UNIVALENCE_PROJ dimParam (O.POLY (O.UNIVALENCE_PROJ dimParam))
+  | V dimParam (O.POLY (O.V dimParam))
+  | VIN dimParam (O.POLY (O.VIN dimParam))
+  | VPROJ dimParam (O.POLY (O.VPROJ dimParam))
   (* coe *)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
 
