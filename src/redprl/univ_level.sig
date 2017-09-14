@@ -13,6 +13,7 @@ sig
   val <= : level * level -> bool
   val < : level * level -> bool
   val eq : level * level -> bool
+  val residual : level * level -> level option
 
   val pretty : level -> Fpp.doc
 

@@ -162,9 +162,12 @@ struct
       val <= : t * t -> bool
       val meet : t * t -> t
 
-      (* greatestMeetComplement (a, b) is the greatest element c
-       * such that meet (b, c) <= a *)
-      val greatestMeetComplement : t * t -> t
+      (* residual (a, b)
+       *
+       * Let c be the greatest element such that `meet (b, c) <= a`.
+       * The return value is SOME c if c is not top, or NONE otherwise.
+       * *)
+      val residual : t * t -> t option
     end
     =
     struct
@@ -184,31 +187,26 @@ struct
          | (_, COE) => COE
          | (CUBICAL, CUBICAL) => CUBICAL
 
-      val greatestMeetComplement =
-        fn (_, DISCRETE) => top
-         | (DISCRETE, _) => DISCRETE
-         | (_, KAN) => top
-         | (KAN, HCOM) => COE
-         | (KAN, COE) => HCOM
-         | (KAN, _) => KAN
-         | (COE, HCOM) => COE
-         | (HCOM, COE) => HCOM
-         | (_, HCOM) => top
-         | (HCOM, _) => HCOM
-         | (_, COE) => top
-         | (COE, _) => COE
-         | (CUBICAL, CUBICAL) => top
+      val residual =
+        fn (_, DISCRETE) => NONE
+         | (DISCRETE, _) => SOME DISCRETE
+         | (_, KAN) => NONE
+         | (KAN, HCOM) => SOME COE
+         | (KAN, COE) => SOME HCOM
+         | (KAN, _) => SOME KAN
+         | (COE, HCOM) => SOME COE
+         | (HCOM, COE) => SOME HCOM
+         | (_, HCOM) => NONE
+         | (HCOM, _) => SOME HCOM
+         | (_, COE) => NONE
+         | (COE, _) => SOME COE
+         | (CUBICAL, CUBICAL) => NONE
 
-      fun op <= (a, b) = greatestMeetComplement (b, a) = top
+      fun op <= (a, b) = residual (b, a) = NONE
     end
   in
     open Internal
   end
-
-  fun greatestMeetComplement' (a, b) =
-    let val gmr = greatestMeetComplement (a, b)
-    in if gmr = top then NONE else SOME gmr
-    end
 end
 
 structure RedPrlOpData =
@@ -541,9 +539,7 @@ struct
       fn P.VAR a => [(a, LVL)]
        | P.APP t => P.freeVars t
 
-    fun optSupport f =
-      fn NONE => []
-       | SOME l => f l
+    val optSupport = OptionUtil.concat
 
     fun spanSupport (r, r') =
       dimSupport r @ dimSupport r'
@@ -630,10 +626,7 @@ struct
     fun paramsEq f =
       ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
 
-    fun optEq f =
-      fn (NONE, NONE) => true
-       | (SOME v1, SOME v2) => f (v1, v2)
-       | _ => false
+    val optEq = OptionUtil.eq
 
     fun selectorEq f =
       fn (IN_GOAL, IN_GOAL) => true

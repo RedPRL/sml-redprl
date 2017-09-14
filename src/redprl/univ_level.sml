@@ -44,6 +44,7 @@ struct
       ListPair.allEq
         (fn ((v0, g0), (v1, g1)) => Key.eq (v0, v1) andalso g0 = g1)
         (D.toList gapmap0, D.toList gapmap1)
+  fun residual (l0, l1) = if l1 <= l0 then NONE else SOME l0
 
   (* the code shared by the pretty printer and `into` *)
   fun into' intoConst intoVarGap intoMax ((gap, gapmap) : level) =
@@ -127,10 +128,11 @@ end
 functor LevelUtil (L : REDPRL_LEVEL) =
 struct
   open L
-  structure P = (* pointed *)
+  structure Pointed = (* pointed *)
   struct
     type level = L.level option
     type t = level
+    val top = NONE
     val op <= : level * level -> bool =
       fn (_, NONE) => true
        | (NONE, _) => false
@@ -139,16 +141,30 @@ struct
       fn (NONE, _) => false
        | (_, NONE) => true
        | (SOME l1, SOME l2) => L.< (l1, l2)
-    val eq : level * level -> bool =
-      fn (NONE, NONE) => true
-       | (SOME l1, SOME l2) => L.eq (l1, l2)
-       | _ => false
+    val eq : level * level -> bool = OptionUtil.eq L.eq
+    val residual : level * level -> level option =
+      fn (NONE, _) => NONE
+       | (l, NONE) => SOME l
+       | (SOME l1, SOME l2) => Option.map SOME (L.residual (l1, l2))
     val into = Option.map L.into
     val out = Option.map L.out
     val pretty =
       fn NONE => Fpp.text "omega"
        | SOME l => L.pretty l
   end
+  structure P = Pointed
+
+  structure PointedWithKind =
+  struct
+    fun eq ((l1, k1), (l2, k2)) = P.eq (l1, l2) andalso k1 = k2
+    fun residual ((l1, k1), (l2, k2)) =
+      case (P.residual (l1, l1), RedPrlKind.residual (k2, k2)) of
+         (NONE, NONE) => NONE
+       | (SOME l, NONE) => SOME (l, RedPrlKind.top)
+       | (NONE, SOME k) => SOME (P.top, k)
+       | (SOME l, SOME k) => SOME (l, k)
+  end
+  structure PK = PointedWithKind
 end
 
 structure RedPrlLevel = LevelUtil (RedPrlRawLevel)
