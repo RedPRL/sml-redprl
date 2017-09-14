@@ -1895,14 +1895,11 @@ struct
 
     fun Elim z = ElimFromTrue z orelse_ ElimFromEq z
 
-    fun EqSubUniverse _ jdg =
+    fun SubUniverse _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.EqSubUniverse"
-        val (I, H) >> CJ.EQ_SUB_UNIVERSE ((ty0, ty1), l, k) = jdg
-        val Syn.UNIVERSE (l0, k0) = Syn.out ty0
-        val Syn.UNIVERSE (l1, k1) = Syn.out ty1
-        val _ = Assert.levelEq (l0, l1)
-        val _ = Assert.kindEq (k0, k1)
+        val _ = RedPrlLog.trace "Universe.SubUniverse"
+        val (I, H) >> CJ.SUB_UNIVERSE (univ, l, k) = jdg
+        val Syn.UNIVERSE (l0, k0) = Syn.out univ
         val _ = Assert.levelLeq (SOME l0, l)
         val _ = Assert.kindLeq (k0, k)
       in

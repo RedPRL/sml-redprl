@@ -333,18 +333,6 @@ struct
       end
   end
 
-  structure SubUniverseEquality =
-  struct
-    fun Symmetry _ jdg =
-      let
-        val _ = RedPrlLog.trace "SubUniverseEquality.Symmetry"
-        val (I, H) >> CJ.EQ_SUB_UNIVERSE ((u1, u2), l, k) = jdg
-        val goal = makeEqSubUniverse (I, H) ((u2, u1), l, k)
-      in
-        |>: goal #> (I, H, trivial)
-      end
-  end
-
   fun Cut catjdg alpha jdg =
     let
       val _ = RedPrlLog.trace "Cut"
@@ -469,8 +457,6 @@ struct
       Equality.Symmetry
         orelse_
       TypeEquality.Symmetry
-        orelse_
-      SubUniverseEquality.Symmetry
 
     fun fail err _ _ = E.raiseError err
 
@@ -770,55 +756,25 @@ struct
          | Syn.CUST => Custom.Synth sign
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
-      fun StepEqSubUniverseVal (u, v) =
-        case (Syn.out u, Syn.out v) of
-           (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqSubUniverse
-         | _ => fail @@ E.NOT_APPLICABLE
-             (Fpp.text "StepEqSubUniverseVal",
-              Fpp.hvsep [TermPrinter.ppTerm u, Fpp.text "and", TermPrinter.ppTerm v])
-
-      fun StepEqSubUniverseNeuByElim sign (u, v) =
-        fn (Machine.VAR z, _) => AutoElim sign z
-         | (_, Machine.VAR z) => AutoElim sign z
-         | _ => fail @@ E.NOT_APPLICABLE
-             (Fpp.text "StepEqSubUniverseNeuByElim",
-              Fpp.hvsep [TermPrinter.ppTerm u, Fpp.text "and", TermPrinter.ppTerm v])
-
-      fun StepEqSubUniverseNeuByUnfold sign (u, v) =
-        fn (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
-         | (_, Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
-         | _ => fail @@ E.NOT_APPLICABLE
-             (Fpp.text "StepEqSubUniverseNeuByUnfold",
-              Fpp.hvsep [TermPrinter.ppTerm u, Fpp.text "and", TermPrinter.ppTerm v])
-
-      fun StepEqSubUniverseNeu sign univs blockers =
-        StepEqSubUniverseNeuByElim sign univs blockers
-          orelse_
-        StepEqSubUniverseNeuByUnfold sign univs blockers
-
-      fun StepEqSubUniverseNeuExpand sign u =
+      fun StepSubUniverseNeuExpand sign u =
         fn Machine.VAR z => AutoElim sign z
          | Machine.OPERATOR theta => Custom.Unfold sign [theta] [O.IN_GOAL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubUniverseNeuExpand", TermPrinter.ppTerm u)
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverseNeuExpand", TermPrinter.ppTerm u)
 
-      fun StepEqSubUniverse sign (u, v) =
-        case (Syn.out u, canonicity sign u, Syn.out v, canonicity sign v) of
-           (_, Machine.REDEX, _, _) => Computation.SequentReduce sign [O.IN_GOAL]
-         | (_, _, _, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
-         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqSubUniverseVal (u, v)
-         | (Syn.PATH_APP (_, P.APP _), _, _, _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqSubUniverse with (@ p const)"
-         | (_, _, Syn.PATH_APP (_, P.APP _), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqSubUniverse with (@ p const)"
-         | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqSubUniverseNeu sign (u, v) (blocker1, blocker2)
-         | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqSubUniverseNeuExpand sign u blocker
-         | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqSubUniverseNeuExpand sign v blocker
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubUniverse", Fpp.hvsep [TermPrinter.ppTerm u, Fpp.text "and", TermPrinter.ppTerm v])
+      fun StepSubUniverse sign u =
+        case (Syn.out u, canonicity sign u) of
+           (_, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
+         | (_, Machine.CANONICAL) => Universe.SubUniverse
+         | (Syn.PATH_APP (_, P.APP _), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p const)"
+         | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
           | _ >> CJ.TRUE (ty, _, _) => StepTrue sign ty
           | _ >> CJ.SYNTH (m, _, _) => StepSynth sign m
-          | _ >> CJ.EQ_SUB_UNIVERSE (univs, _, _) => StepEqSubUniverse sign univs
+          | _ >> CJ.SUB_UNIVERSE (univ, _, _) => StepSubUniverse sign univ
           | _ >> CJ.PARAM_SUBST _ => Misc.ParamSubst
           | MATCH _ => Misc.MatchOperator
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordReduce sign then_ Record.MatchRecord

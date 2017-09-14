@@ -8,14 +8,11 @@ struct
   fun TYPE (a, l, k) =
     EQ_TYPE ((a, a), l, k)
 
-  fun SUB_UNIVERSE (a, l, k) =
-    EQ_SUB_UNIVERSE ((a, a), l, k)
-
   fun map' f g h =
     fn EQ ((m, n), (a, l, k)) => EQ ((h m, h n), (h a, g l, k))
      | TRUE (a, l, k) => TRUE (h a, g l, k)
      | EQ_TYPE ((a, b), l, k) => EQ_TYPE ((h a, h b), g l, k)
-     | EQ_SUB_UNIVERSE ((u, v), l, k) => EQ_SUB_UNIVERSE ((h u, h v), g l, k)
+     | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (h u, g l, k)
      | SYNTH (a, l, k) => SYNTH (h a, g l, k)
      | TERM tau => TERM tau
      | PARAM_SUBST (psi, m, tau) => PARAM_SUBST
@@ -50,14 +47,14 @@ struct
              else [hsep [TermPrinter.ppKind k, text "type"]]
            , case l of NONE => [] | SOME l => [hsep [text "at", g l]]
            ]
-       | EQ_SUB_UNIVERSE ((a, b), l, k) => expr @@ hvsep @@ List.concat
-           [ if eq (a, b) then [h a] else [h a, Atomic.equals, h b]
-           , [text "<="]
-           , [Atomic.parens @@ expr @@ hsep @@ List.concat
-               [ [Fpp.text "U"]
-               , case l of NONE => [text "omega"] | SOME l => [g l]
-               , if k = RedPrlKind.top then [] else [TermPrinter.ppKind k]
-               ]]
+       | SUB_UNIVERSE (u, l, k) => expr @@ hvsep
+           [ h u
+           , text "<="
+           , Atomic.parens @@ expr @@ hsep
+               [ text "U"
+               , case l of NONE => text "omega" | SOME l => g l
+               , if k = RedPrlKind.top then empty else TermPrinter.ppKind k
+               ]
            ]
        | SYNTH (m, l, k) => expr @@ hvsep @@ List.concat
            [ [h m, text "synth"]
@@ -75,7 +72,7 @@ struct
     fn EQ _ => O.TRIV
      | TRUE _ => O.EXP
      | EQ_TYPE _ => O.TRIV
-     | EQ_SUB_UNIVERSE _ => O.TRIV
+     | SUB_UNIVERSE _ => O.TRIV
      | SYNTH _ => O.EXP
      | TERM tau => tau
      | PARAM_SUBST (_, _, tau) => tau
@@ -92,7 +89,7 @@ struct
       fn EQ ((m, n), (a, l, k)) => O.POLY (O.JDG_EQ (L.P.into l, k)) $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
        | TRUE (a, l, k) => O.POLY (O.JDG_TRUE (L.P.into l, k)) $$ [([],[]) \ a]
        | EQ_TYPE ((a, b), l, k) => O.POLY (O.JDG_EQ_TYPE (L.P.into l, k)) $$ [([],[]) \ a, ([],[]) \ b]
-       | EQ_SUB_UNIVERSE ((u, v), l, k) => O.POLY (O.JDG_EQ_SUB_UNIVERSE (L.P.into l, k)) $$ [([],[]) \ u, ([],[]) \ v]
+       | SUB_UNIVERSE (u, l, k) => O.POLY (O.JDG_SUB_UNIVERSE (L.P.into l, k)) $$ [([],[]) \ u]
        | SYNTH (m, l, k) => O.POLY (O.JDG_SYNTH (L.P.into l, k)) $$ [([],[]) \ m]
        | TERM tau => O.MONO (O.JDG_TERM tau) $$ []
        | PARAM_SUBST (psi, m, tau) =>
@@ -108,7 +105,7 @@ struct
          O.POLY (O.JDG_EQ (l, k)) $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, L.P.out l, k))
        | O.POLY (O.JDG_TRUE (l, k)) $ [_ \ a] => TRUE (a, L.P.out l, k)
        | O.POLY (O.JDG_EQ_TYPE (l, k)) $ [_ \ a, _ \ b] => EQ_TYPE ((a, b), L.P.out l, k)
-       | O.POLY (O.JDG_EQ_SUB_UNIVERSE (l, k)) $ [_ \ u, _ \ v] => EQ_SUB_UNIVERSE ((u, v), L.P.out l, k)
+       | O.POLY (O.JDG_SUB_UNIVERSE (l, k)) $ [_ \ u] => SUB_UNIVERSE (u, L.P.out l, k)
        | O.POLY (O.JDG_SYNTH (l, k)) $ [_ \ m] => SYNTH (m, L.P.out l, k)
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
        | O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $ args =>
