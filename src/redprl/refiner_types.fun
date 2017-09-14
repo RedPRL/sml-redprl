@@ -26,6 +26,7 @@ struct
    * EqElim/EqX: structural equality for eliminators.
    *   We use EqX if the eliminator has a well-known name X.
    *   For example, we have EqApp for Fun and Path, and EqProj for Record.
+   * EqTypeElim/EqTypeX: similar to EqElim but for EQ_TYPE judgments.
    * SynthElim/SynthX: synthesizing the types of eliminators.
    * (others): other special rules for this type.
    *)
@@ -33,6 +34,21 @@ struct
   (* Remember to consult `alpha` whenever some goals introduce new hypotheses
    * or new parameter variables.
    *)
+
+  (* Here is the function that will be used in other types *)
+  structure Universe =
+  struct
+    val inherentKind =
+      fn K.DISCRETE => K.DISCRETE
+       | K.KAN => K.KAN
+       | K.HCOM => K.COE
+       | K.COE => K.COE
+       | K.CUBICAL => K.COE
+
+    fun inherentLevel l = SOME (L.above (l, 1))
+
+    val inherentLevel' = Option.mapPartial inherentLevel
+  end
 
   structure Bool =
   struct
@@ -384,6 +400,47 @@ struct
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalC' >:? goalTy #> (I, H, trivial)
+      end
+
+    fun EqTypeElim alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Nat.EqTypeElim"
+        val (I, H) >> CJ.EQ_TYPE ((elim0, elim1), l, k) = jdg
+        val Syn.NAT_REC (m0, (n0, (a0, b0, p0))) = Syn.out elim0
+        val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
+
+        val nat = Syn.into Syn.NAT
+        val zero = Syn.into Syn.ZERO
+        val succ = Syn.into o Syn.SUCC
+
+        (* motive *)
+        val z = alpha 0
+        val Hz = H @> (z, CJ.TRUE (nat, SOME inherentLevel, inherentKind))
+        val (goalC, holeC) = makeTerm (I, Hz) O.EXP
+        val goalC' = makeType (I, Hz) (holeC, NONE, K.top)
+
+        (* eliminated term *)
+        val goalM = makeEq (I, H) ((m0, m1), (nat, NONE, K.top))
+
+        (* result type *)
+        val goalTy = makeSubUniverse (I, H) (substVar (m0, z) holeC, l, k)
+
+        (* zero branch *)
+        val goalZ = makeEq (I, H) ((n0, n1), (substVar (zero, z) holeC, NONE, K.top))
+
+        (* succ branch *)
+        val u = alpha 1
+        val v = alpha 2
+        val cu = VarKit.rename (u, z) holeC
+        val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
+        val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
+        val goalS =
+          makeEq
+            (I, H @> (u, CJ.TRUE (nat, SOME inherentLevel, inherentKind))
+                  @> (v, CJ.TRUE (cu, Universe.inherentLevel' l, Universe.inherentKind k)))
+            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
+      in
+        |>: goalC >: goalM >: goalZ >: goalS >: goalC' >: goalTy #> (I, H, trivial)
       end
   end
 
@@ -869,6 +926,24 @@ struct
         val goalTy = makeSubType (I, H) (holeCod, NONE, K.top) (ty, l, k)
       in
         |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >:? goalTy
+        #> (I, H, trivial)
+      end
+
+    fun EqTypeApp _ jdg =
+      let
+        val _ = RedPrlLog.trace "Fun.EqTypeApp"
+        val (I, H) >> CJ.EQ_TYPE ((ap0, ap1), l, k) = jdg
+        val Syn.APP (m0, n0) = Syn.out ap0
+        val Syn.APP (m1, n1) = Syn.out ap1
+
+        val (goalFun, holeFun) = makeSynth (I, H) (m0, NONE, K.top)
+        val (goalDom, holeDom) = makeMatch (O.MONO O.FUN, 0, holeFun, [], [])
+        val (goalCod, holeCod) = makeMatch (O.MONO O.FUN, 1, holeFun, [], [n0])
+        val goalFunEq = makeEqIfDifferent (I, H) ((m0, m1), (holeFun, NONE, K.top))
+        val goalArgEq = makeEq (I, H) ((n0, n1), (holeDom, NONE, K.top))
+        val goalTy = makeSubUniverse (I, H) (holeCod, l, k)
+      in
+        |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >: goalTy
         #> (I, H, trivial)
       end
 
@@ -1724,14 +1799,7 @@ struct
 
   structure Universe =
   struct
-    val inherentKind =
-      fn K.DISCRETE => K.DISCRETE
-       | K.KAN => K.KAN
-       | K.HCOM => K.COE
-       | K.COE => K.COE
-       | K.CUBICAL => K.COE
-
-    fun inherentLevel l = SOME (L.above (l, 1))
+    open Universe
 
     (* The following should be equivalent to
      * `L.P.<= (inherentLevel l', l) andalso K.<= (inherentKind k', k)`
@@ -1826,6 +1894,20 @@ struct
       end
 
     fun Elim z = ElimFromTrue z orelse_ ElimFromEq z
+
+    fun EqSubUniverse _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.EqSubUniverse"
+        val (I, H) >> CJ.EQ_SUB_UNIVERSE ((ty0, ty1), l, k) = jdg
+        val Syn.UNIVERSE (l0, k0) = Syn.out ty0
+        val Syn.UNIVERSE (l1, k1) = Syn.out ty1
+        val _ = Assert.levelEq (l0, l1)
+        val _ = Assert.kindEq (k0, k1)
+        val _ = Assert.levelLeq (SOME l0, l)
+        val _ = Assert.kindLeq (k0, k)
+      in
+        T.empty #> (I, H, trivial)
+      end
 
     fun InternalizeEqType _ jdg =
       let

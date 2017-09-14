@@ -139,6 +139,10 @@ struct
       fn (NONE, _) => false
        | (_, NONE) => true
        | (SOME l1, SOME l2) => L.< (l1, l2)
+    val eq : level * level -> bool =
+      fn (NONE, NONE) => true
+       | (SOME l1, SOME l2) => L.eq (l1, l2)
+       | _ => false
     val into = Option.map L.into
     val out = Option.map L.out
     val pretty =

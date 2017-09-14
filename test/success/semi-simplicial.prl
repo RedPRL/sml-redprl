@@ -4,17 +4,11 @@ Tac EqNatRec = [
     [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} => {
       refine nat/eq/nat-rec; [`%ty]; auto
     }]
-  }
-].
-
-Tac At0 = [
-  query gl <- goal.
-  match [gl:jdg] {
-    [ty | #jdg{%ty type} => {
-      let p : [%ty type at 0] = internalize. auto
+    [n,z,s | #jdg{(nat-rec %n %z [x y] (%s x y)) type at 0} => {
+      refine nat/eqtype/nat-rec; [`(U 0)]; auto
     }]
-    [ty | #jdg{%ty type at 0} => { // this should be "at %l"
-      let p : [%ty type at 0] = internalize. auto
+    [n,z,s | #jdg{(nat-rec %n %z [x y] (%s x y)) type} => {
+      refine nat/eqtype/nat-rec; [`(U 0)]; auto
     }]
   }
 ].
@@ -27,6 +21,12 @@ Tac NatArg = [
     }]
     [tm, ty | #jdg{%tm in %ty at 0} => {
       refine fun/eq/app; [`(-> nat %ty)]; auto
+    }]
+    [tm | #jdg{%tm type at 0} => {
+      refine fun/eqtype/app; [`(-> nat (U 0))]; auto
+    }]
+    [tm | #jdg{%tm type} => {
+      refine fun/eqtype/app; [`(-> nat (U 0))]; auto
     }]
   }
 ].
@@ -48,6 +48,40 @@ Thm Pick : [
   internalize; auto
 ].
 
+Thm Pick/zero/L : [
+  (-> [n : nat] (= (U 0) ($ Pick zero m) record))
+] by [
+  lam n. auto
+].
+
+Thm Pick/zero/R : [
+  (-> [n : nat] (= (U 0) ($ Pick (succ n) zero) void))
+] by [
+  lam n. auto
+].
+
+Thm Pick/succ : [
+  (-> [n m : nat]
+   (= (U 0)
+    ($ Pick (succ n) (succ m))
+    (record
+     [head : bool]
+     [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
+] by [
+  lam n, m. auto;
+
+  [ NatArg; EqNatRec; EqNatRec ];
+  [ EqNatRec; NatArg; EqNatRec; EqNatRec ]
+].
+
+Tac Replace{z:hyp}(#A:exp) = [
+  fresh ty -> rewrite #A in z; [`,ty]; auto
+].
+
+Tac ReplaceGoal(#A:exp) = [
+  fresh ty -> rewrite #A in goal; [`,ty]; auto
+].
+
 Thm Pick/compose : [
   (->
    [a b c : nat]
@@ -61,8 +95,11 @@ Thm Pick/compose : [
     [ lam c, p1, p2. elim p2
     , lam c. fresh c', c'/ih -> elim c;
       [ lam p1. elim p1
-      , lam p1. let < head = p1/h, tail = p1/t > = p1. elim p1/h;
-        [ lam p2. let < head = p2/h, tail = p2/t > = p2. elim p2/h;
+      , lam p1. ({Replace p1} ($ Pick/succ ,b' ,c'));
+        let < head = p1/h, tail = p1/t > = p1. elim p1/h;
+        [ lam p2. ({Replace p2} ($ Pick/succ ,a' ,b'));
+          let < head = p2/h, tail = p2/t > = p2. elim p2/h;
+          (ReplaceGoal ($ Pick/succ ,a' ,c'));
           [ < head = `tt
             , tail = `($ ,a'/ih ,b' ,c' ,p1/t ,p2/t)
             >
@@ -71,14 +108,12 @@ Thm Pick/compose : [
             >
           ]
         , lam p2.
+          (ReplaceGoal ($ Pick/succ ,a' ,c'));
           < head = `ff
           , tail = `($ ,c'/ih ,p1/t ,p2)
           >
         ]
       ]
     ]
-  ];
-
-  // one line to solve all well-formedness goals
-  At0; <| <| EqNatRec; internalize |> || id |>; NatArg; EqNatRec; EqNatRec; internalize; auto
+  ]
 ].

@@ -73,7 +73,7 @@ Thm Plus/zero/R : [
       [ `(= nat (succ ,x) (succ ,n'))
       , auto
       , auto
-      , auto; [`(-> nat nat)]; auto; SimpleNatRecEq
+      , auto; refine fun/eq/app; [`(-> nat nat)]; auto; SimpleNatRecEq
       ]
     ]
 ].
@@ -81,7 +81,7 @@ Thm Plus/zero/R : [
 Thm Plus/succ/L : [
   (-> [n m : nat] (= nat ($ Plus (succ n) m) (succ ($ Plus n m))))
 ] by [
-  lam n, m. auto; [`(-> nat nat)]; auto; SimpleNatRecEq
+  lam n, m. auto; refine fun/eq/app; [`(-> nat nat)]; auto; SimpleNatRecEq
 ].
 
 Thm Plus/succ/R : [

@@ -31,6 +31,11 @@ struct
     *)
    | EQ_TYPE of ('term * 'term) * 'level * kind
 
+   (* `EQ_SUB_UNIVERSE ((u, v), (l, k))`
+    *   `u` and `v` are the same sub-universe of the universe specified by `l` and `k`.
+    *)
+   | EQ_SUB_UNIVERSE of ('term * 'term) * 'level * kind
+
    (* `TERM tau`:
     *   There exists some `m` of sort `tau`.
     *   The realizer is such an `m` of sort `tau`.
@@ -58,6 +63,7 @@ sig
   datatype jdg' = datatype RedPrlCategoricalJudgmentData.jdg'
   val MEM : 'term * ('term * 'level * RedPrlKind.t) -> ('sym, 'level, 'term) jdg'
   val TYPE : 'term * 'level * RedPrlKind.t -> ('sym, 'level, 'term) jdg'
+  val SUB_UNIVERSE : 'term * 'level * RedPrlKind.t -> ('sym, 'level, 'term) jdg'
 
   val map' : ('sym1 -> 'sym2) -> ('level1 -> 'level2) -> ('term1 -> 'term2)
     -> ('sym1, 'level1, 'term1) jdg' -> ('sym2, 'level2, 'term2) jdg'

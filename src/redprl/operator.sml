@@ -324,6 +324,7 @@ struct
    | JDG_EQ of 'a P.term option * kind
    | JDG_TRUE of 'a P.term option * kind
    | JDG_EQ_TYPE of 'a P.term option * kind
+   | JDG_EQ_SUB_UNIVERSE of 'a P.term option * kind
    | JDG_SYNTH of 'a P.term option * kind
 
   (* We split our operator signature into a couple datatypes, because the implementation of
@@ -524,6 +525,7 @@ struct
        | JDG_EQ _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
        | JDG_TRUE _ => [[] * [] <> EXP] ->> JDG
        | JDG_EQ_TYPE _ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
+       | JDG_EQ_SUB_UNIVERSE _ => [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
        | JDG_SYNTH _ => [[] * [] <> EXP] ->> JDG
   end
 
@@ -611,6 +613,7 @@ struct
        | JDG_EQ (l, _) => optSupport levelSupport l
        | JDG_TRUE (l, _) => optSupport levelSupport l
        | JDG_EQ_TYPE (l, _) => optSupport levelSupport l
+       | JDG_EQ_SUB_UNIVERSE (l, _) => optSupport levelSupport l
        | JDG_SYNTH (l, _) => optSupport levelSupport l
   end
 
@@ -715,6 +718,10 @@ struct
        | (JDG_EQ_TYPE (l, k), t) =>
          (case t of
              JDG_EQ_TYPE (l', k') => optEq (P.eq f) (l, l') andalso k = k'
+           | _ => false)
+       | (JDG_EQ_SUB_UNIVERSE (l, k), t) =>
+         (case t of
+             JDG_EQ_SUB_UNIVERSE (l', k') => optEq (P.eq f) (l, l') andalso k = k'
            | _ => false)
        | (JDG_SYNTH (l, k), t) =>
          (case t of
@@ -867,6 +874,7 @@ struct
        | JDG_EQ _ => "eq"
        | JDG_TRUE _ => "true"
        | JDG_EQ_TYPE _ => "eq-type"
+       | JDG_EQ_SUB_UNIVERSE _ => "eq-sub-universe"
        | JDG_SYNTH _ => "synth"
   end
 
@@ -947,6 +955,7 @@ struct
        | JDG_EQ (l, k) => JDG_EQ (mapOpt (P.bind (passSort LVL f)) l, k)
        | JDG_TRUE (l, k) =>  JDG_TRUE (mapOpt (P.bind (passSort LVL f)) l, k)
        | JDG_EQ_TYPE (l, k) =>  JDG_EQ_TYPE (mapOpt (P.bind (passSort LVL f)) l, k)
+       | JDG_EQ_SUB_UNIVERSE (l, k) =>  JDG_EQ_SUB_UNIVERSE (mapOpt (P.bind (passSort LVL f)) l, k)
        | JDG_SYNTH (l, k) =>  JDG_SYNTH (mapOpt (P.bind (passSort LVL f)) l, k)
   end
 

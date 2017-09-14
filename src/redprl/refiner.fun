@@ -333,6 +333,18 @@ struct
       end
   end
 
+  structure SubUniverseEquality =
+  struct
+    fun Symmetry _ jdg =
+      let
+        val _ = RedPrlLog.trace "SubUniverseEquality.Symmetry"
+        val (I, H) >> CJ.EQ_SUB_UNIVERSE ((u1, u2), l, k) = jdg
+        val goal = makeEqSubUniverse (I, H) ((u2, u1), l, k)
+      in
+        |>: goal #> (I, H, trivial)
+      end
+  end
+
   fun Cut catjdg alpha jdg =
     let
       val _ = RedPrlLog.trace "Cut"
@@ -396,6 +408,7 @@ struct
      | "nat/eq/zero" => Nat.EqZero
      | "nat/eq/succ" => Nat.EqSucc
      | "nat/eq/nat-rec" => Nat.EqElim
+     | "nat/eqtype/nat-rec" => Nat.EqTypeElim
      | "int/eqtype" => Int.EqType
      | "int/eq/zero" => Int.EqZero
      | "int/eq/succ" => Int.EqSucc
@@ -412,6 +425,7 @@ struct
      | "fun/intro" => Fun.True
      | "fun/eq/eta" => Fun.Eta
      | "fun/eq/app" => Fun.EqApp
+     | "fun/eqtype/app" => Fun.EqTypeApp
      | "record/eqtype" => Record.EqType
      | "record/eq/tuple" => Record.Eq
      | "record/eq/eta" => Record.Eta
@@ -451,7 +465,11 @@ struct
 
   local
     val CatJdgSymmetry : tactic =
-      Equality.Symmetry orelse_ TypeEquality.Symmetry
+      Equality.Symmetry
+        orelse_
+      TypeEquality.Symmetry
+        orelse_
+      SubUniverseEquality.Symmetry
 
     fun fail err _ _ = E.raiseError err
 
@@ -500,6 +518,17 @@ struct
 
     (* trying to normalize TRUE goal and then run `tac ty` *)
     fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign O.IN_GOAL
+
+    fun autoSynthesizableNeu sign m =
+      case Syn.out m of
+         Syn.VAR _ => true
+       | Syn.WIF _ => true
+       | Syn.S1_REC _ => true
+       | Syn.APP (f, _) => autoSynthesizableNeu sign f
+       | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
+       | Syn.PATH_APP (l, _) => autoSynthesizableNeu sign l
+       | Syn.CUST => true (* XXX should check the signature *)
+       | _ => false
   in
     structure Tactical =
     struct
@@ -530,15 +559,33 @@ struct
          | (_, Machine.VAR z) => AutoElim sign z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByElim", CJ.pretty @@ CJ.EQ_TYPE (tys, NONE, K.top))
 
+      fun StepEqTypeNeuByStruct sign (m, n) =
+        case (Syn.out m, Syn.out n) of
+           (Syn.VAR _, Syn.VAR _) => Universe.VarFromTrue
+         | (Syn.WIF _, Syn.WIF _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with wif"
+         | (Syn.S1_REC _, Syn.S1_REC _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with S1-rec"
+         | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Fun.EqTypeApp
+                                          else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
+         | (Syn.PROJ _, Syn.PROJ _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `!`"
+         | (Syn.PATH_APP (_, P.VAR _), Syn.PATH_APP (_, P.VAR _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`"
+         | (Syn.CUST, Syn.CUST) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with custom operators"
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
+
       fun StepEqTypeNeuByUnfold sign tys =
-        fn (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
+        fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE
+              (Fpp.text "StepEqTypeNeuByUnfold", TermPrinter.ppMeta a)
+         | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE
+              (Fpp.text "StepEqTypeNeuByUnfold", TermPrinter.ppMeta a)
+         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
          | (_, Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByUnfold", CJ.pretty @@ CJ.EQ_TYPE (tys, NONE, K.top))
 
       fun StepEqTypeNeu sign tys blockers =
-                Universe.VarFromTrue
-        orelse_ StepEqTypeNeuByElim sign tys blockers
-        orelse_ StepEqTypeNeuByUnfold sign tys blockers
+        StepEqTypeNeuByElim sign tys blockers
+          orelse_
+        StepEqTypeNeuByStruct sign tys
+          orelse_
+        StepEqTypeNeuByUnfold sign tys blockers
 
       fun StepEqTypeNeuExpand sign ty =
         fn Machine.VAR z => AutoElim sign z
@@ -555,16 +602,24 @@ struct
          | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqTypeNeuExpand sign ty2 blocker
          | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", CJ.pretty @@ CJ.EQ_TYPE ((ty1, ty2), NONE, K.top))
 
-      fun StepEqAtType sign ty =
+      fun StepEqAtTypeVal ty =
+        case Syn.out ty of
+           Syn.UNIVERSE _ => Universe.Eq
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqAtTypeVal", TermPrinter.ppTerm ty)
+
+      fun StepEqValAtType sign ty =
         case canonicity sign ty of
            Machine.REDEX => Computation.SequentReduce sign [O.IN_GOAL]
+         | Machine.CANONICAL => StepEqAtTypeVal ty
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqAtType", TermPrinter.ppTerm ty)
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqValAtType", TermPrinter.ppTerm ty)
 
       (* equality of canonical forms *)
-      fun StepEqVal ((m, n), ty) =
-        case (Syn.out m, Syn.out n, Syn.out ty) of
+      fun StepEqVal sign (m, n) ty =
+        StepEqValAtType sign ty
+          orelse_
+        (case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.TT, Syn.TT, Syn.WBOOL) => WBool.EqTT
          | (Syn.FF, Syn.FF, Syn.WBOOL) => WBool.EqFF
          | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => WBool.EqFCom
@@ -585,19 +640,27 @@ struct
          | (_, _, Syn.FCOM _) => FormalComposition.Eq
          | (_, _, Syn.UNIVALENCE _) => Univalence.Eq
          | (_, _, Syn.UNIVERSE _) => Universe.Eq
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", CJ.pretty (CJ.EQ ((m, n), (ty, NONE, K.top))))
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", CJ.pretty (CJ.EQ ((m, n), (ty, NONE, K.top)))))
 
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
+      fun StepEqNeuAtType sign ty =
+        case canonicity sign ty of
+           Machine.REDEX => Computation.SequentReduce sign [O.IN_GOAL]
+         | Machine.CANONICAL => StepEqAtTypeVal ty
+         | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuAtType", TermPrinter.ppTerm ty)
+
       fun StepEqNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Equality.VarFromTrue
          | (Syn.WIF _, Syn.WIF _) => WBool.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => S1.EqElim
-         | (Syn.APP _, Syn.APP _) => Fun.EqApp
-         | (Syn.PROJ _, Syn.PROJ _) => Record.EqProj
-         | (Syn.PATH_APP (_, P.VAR _), Syn.PATH_APP (_, P.VAR _)) => Path.EqApp
-         | (Syn.CUST, Syn.CUST) => Custom.Eq sign
+         | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Fun.EqApp
+                                          else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
+         | (Syn.PROJ _, Syn.PROJ _) => Record.EqProj (* XXX should consult autoSynthesizableNeu *)
+         | (Syn.PATH_APP (_, P.VAR _), Syn.PATH_APP (_, P.VAR _)) => Path.EqApp (* XXX should consult autoSynthesizableNeu *)
+         | (Syn.CUST, Syn.CUST) => Custom.Eq sign (* XXX should consult autoSynthesizableNeu *)
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqNeuByElim sign (m, n) =
@@ -606,24 +669,32 @@ struct
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByElim", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqNeuByUnfold sign (m, n) =
-        fn (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
+        fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", TermPrinter.ppMeta a)
+         | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", TermPrinter.ppMeta a)
+         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
          | (_, Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
-      fun StepEqNeu sign tms blockers =
-        StepEqNeuByElim sign tms blockers orelse_
-        StepEqNeuByStruct sign tms orelse_
+      fun StepEqNeu sign tms blockers ty =
+        StepEqNeuAtType sign ty
+          orelse_
+        StepEqNeuByElim sign tms blockers
+          orelse_
+        StepEqNeuByStruct sign tms
+          orelse_
         StepEqNeuByUnfold sign tms blockers
 
       fun StepEqNeuExpand sign m blocker ty =
-        case (blocker, Syn.out ty) of
-           (_, Syn.FUN _) => Fun.Eta
+        StepEqValAtType sign ty
+          orelse_
+        (case (blocker, Syn.out ty) of
+           (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuExpand", TermPrinter.ppMeta a)
+         | (_, Syn.FUN _) => Fun.Eta
          | (_, Syn.RECORD _) => Record.Eta
          | (_, Syn.PATH_TY _) => Path.Eta
          | (_, Syn.EQUALITY _) => InternalizedEquality.Eta
          | (Machine.VAR z, _) => AutoElim sign z
-         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuExpand", CJ.pretty @@ CJ.MEM (m, (ty, NONE, K.top)))
+         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL])
 
 
       structure HCom =
@@ -653,7 +724,7 @@ struct
        val AutoEqLR = EqCapL orelse_ EqCapR orelse_ Eq
       end
 
-      fun StepEqKanStructural sign (m, n) =
+      fun StepEqKanStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.HCOM _, Syn.HCOM _) => HCom.AutoEqLR
          | (Syn.HCOM _, _) => HCom.AutoEqL
@@ -664,17 +735,18 @@ struct
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqKanStructural", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEq sign ((m, n), ty) =
-        StepEqAtType sign ty orelse_
-        (* the handling of hcom/coe and `(@ x 1)` in `ty` should be here,
+        (* XXX something is missing here!
+         * the handling of hcom/coe and `(@ x 1)` in `ty` should be here,
          * between the above and the next lines. *)
-        StepEqKanStructural sign (m, n) orelse_
+        StepEqKanStruct sign (m, n)
+          orelse_
         (case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
            (_, Machine.REDEX, _, _) => Computation.SequentReduce sign [O.IN_GOAL]
          | (_, _, _, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
-         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal ((m, n), ty)
+         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
          | (Syn.PATH_APP (_, P.APP _), _, _, _) => Path.EqAppConst
          | (_, _, Syn.PATH_APP (_, P.APP _), _) => CatJdgSymmetry then_ Path.EqAppConst
-         | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2)
+         | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
          | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
          | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", CJ.pretty @@ CJ.EQ ((m, n), (ty, NONE, K.top))))
@@ -697,11 +769,55 @@ struct
          | Syn.CUST => Custom.Synth sign
          | _ => raise E.error [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
+      fun StepEqSubUniverseVal (u, v) =
+        case (Syn.out u, Syn.out v) of
+           (Syn.UNIVERSE _, Syn.UNIVERSE _) => Universe.EqSubUniverse
+         | _ => fail @@ E.NOT_APPLICABLE
+             (Fpp.text "StepEqSubUniverseVal",
+              Fpp.hvsep [TermPrinter.ppTerm u, Fpp.text "and", TermPrinter.ppTerm v])
+
+      fun StepEqSubUniverseNeuByElim sign (u, v) =
+        fn (Machine.VAR z, _) => AutoElim sign z
+         | (_, Machine.VAR z) => AutoElim sign z
+         | _ => fail @@ E.NOT_APPLICABLE
+             (Fpp.text "StepEqSubUniverseNeuByElim",
+              Fpp.hvsep [TermPrinter.ppTerm u, Fpp.text "and", TermPrinter.ppTerm v])
+
+      fun StepEqSubUniverseNeuByUnfold sign (u, v) =
+        fn (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
+         | (_, Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
+         | _ => fail @@ E.NOT_APPLICABLE
+             (Fpp.text "StepEqSubUniverseNeuByUnfold",
+              Fpp.hvsep [TermPrinter.ppTerm u, Fpp.text "and", TermPrinter.ppTerm v])
+
+      fun StepEqSubUniverseNeu sign univs blockers =
+        StepEqSubUniverseNeuByElim sign univs blockers
+          orelse_
+        StepEqSubUniverseNeuByUnfold sign univs blockers
+
+      fun StepEqSubUniverseNeuExpand sign u =
+        fn Machine.VAR z => AutoElim sign z
+         | Machine.OPERATOR theta => Custom.Unfold sign [theta] [O.IN_GOAL]
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubUniverseNeuExpand", TermPrinter.ppTerm u)
+
+      fun StepEqSubUniverse sign (u, v) =
+        case (Syn.out u, canonicity sign u, Syn.out v, canonicity sign v) of
+           (_, Machine.REDEX, _, _) => Computation.SequentReduce sign [O.IN_GOAL]
+         | (_, _, _, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
+         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqSubUniverseVal (u, v)
+         | (Syn.PATH_APP (_, P.APP _), _, _, _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqSubUniverse with (@ p const)"
+         | (_, _, Syn.PATH_APP (_, P.APP _), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqSubUniverse with (@ p const)"
+         | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqSubUniverseNeu sign (u, v) (blocker1, blocker2)
+         | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqSubUniverseNeuExpand sign u blocker
+         | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqSubUniverseNeuExpand sign v blocker
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubUniverse", Fpp.hvsep [TermPrinter.ppTerm u, Fpp.text "and", TermPrinter.ppTerm v])
+
       fun StepJdg sign = matchGoal
         (fn _ >> CJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
           | _ >> CJ.TRUE (ty, _, _) => StepTrue sign ty
           | _ >> CJ.SYNTH (m, _, _) => StepSynth sign m
+          | _ >> CJ.EQ_SUB_UNIVERSE (univs, _, _) => StepEqSubUniverse sign univs
           | _ >> CJ.PARAM_SUBST _ => Misc.ParamSubst
           | MATCH _ => Misc.MatchOperator
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordReduce sign then_ Record.MatchRecord
