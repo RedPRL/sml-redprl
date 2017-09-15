@@ -479,7 +479,12 @@ struct
     local
       open Tm infix $ \
       fun printExtractOf (pos, state) : unit E.t =
-        E.info (SOME pos, Fpp.vsep [Fpp.text "Extract:", TermPrinter.ppTerm (extract state)])
+        let
+          val Lcf.|> (_, evd) = state
+          val _ \ term = outb evd
+        in
+          E.info (SOME pos, Fpp.vsep [Fpp.text "Extract:", TermPrinter.ppTerm term])
+        end
     in
       fun elabExtract (sign : sign) (pos, opid) =
         E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid =>

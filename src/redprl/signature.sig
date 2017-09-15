@@ -23,9 +23,7 @@ sig
   val lookup : sign -> opid -> entry
 
   val entryParams : entry -> symbol params
-
   val unfoldCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> abt
-  val extract : Lcf.jdg Lcf.state -> abt
 end
 
 signature SIGNATURE =
