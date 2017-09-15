@@ -146,7 +146,7 @@
   "RedPRL's tactic symbols.")
 
 (defconst redprl-sequent-keywords
-  '("in" "true" "type" "synth" "discrete" "kan" "hcom" "coe" "cubical")
+  '("at" "by" "in" "true" "type" "synth" "discrete" "kan" "hcom" "coe" "cubical")
   "RedPRL's sequent keywords.")
 
 (defconst redprl-sequent-symbols
