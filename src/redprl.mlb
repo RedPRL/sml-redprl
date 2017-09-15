@@ -20,7 +20,8 @@ in
 
     debug.mlb
 
-    redprl/listutil.sml
+    redprl/list_util.sml
+    redprl/option_util.sml
 
     redprl/operator.sml
     redprl/abt.sml
