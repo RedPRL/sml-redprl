@@ -1,29 +1,3 @@
-Tac EqNatRec = [
-  query gl <- goal.
-  match [gl:jdg] {
-    [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
-      refine nat/eq/nat-rec; [`%ty]; auto]
-    [n,z,s,l | #jdg{(nat-rec %n %z [x y] (%s x y)) type at %l} =>
-      refine nat/eqtype/nat-rec; [`(U 0)]; auto]
-  }
-].
-
-Tac EqApp(#dom) = [
-  query gl <- goal.
-  match [gl:jdg] {
-    [tm0, tm1, ty | #jdg{%tm0 = %tm1 in %ty} =>
-      refine fun/eq/app; [`(-> #dom %ty)]; auto]
-    [tm, ty | #jdg{%tm in %ty at 0} =>
-      refine fun/eq/app; [`(-> #dom %ty)]; auto]
-    [tm | #jdg{%tm type at 0} =>
-      refine fun/eqtype/app; [`(-> #dom (U 0))]; auto]
-    [tm | #jdg{%tm type} =>
-      refine fun/eqtype/app; [`(-> #dom (U 0))]; auto]
-  }
-].
-
-Tac NatArg = [ (EqApp nat) ].
-
 Thm Pick : [
   // pick #(first argument) from #(second argument)
   (-> nat nat (U 0))
