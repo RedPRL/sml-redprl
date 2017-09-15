@@ -121,6 +121,46 @@ Thm Pick/compose/zero/0 : [
   lam a, b, p0, p1. auto
 ].
 
+Thm Pick/compose/tt/4/0/tt/5/0 : [
+  (->
+   [a b c : nat]
+   [p0/t : ($ Pick b c)]
+   [p1/t : ($ Pick a b)]
+   (=
+    ($ Pick (succ a) (succ c))
+    ($ Pick/compose (succ a) (succ b) (succ c)
+       (tuple [head tt] [tail p0/t]) (tuple [head tt] [tail p1/t]))
+    (tuple [head tt] [tail ($ Pick/compose a b c p0/t p1/t)])))
+] by [
+  lam a, b, c, p0/t, p1/t.
+    let aux0 :
+      [  ($ Pick/compose ,a ,b ,c (! tail (tuple [head tt] [tail ,p0/t])) (! tail (tuple [head tt] [tail ,p1/t])))
+      =  ($ Pick/compose ,a ,b ,c ,p0/t ,p1/t)
+      in ($ Pick ,a ,c) ] = auto.
+    let aux1 : [ ($ Pick (succ ,a) ,c) type at 0 ] = auto.
+    unfold [Pick, Pick/compose]; reduce; auto
+].
+
+Thm Pick/compose/tt/4/0/ff/5/0 : [
+  (->
+   [a b c : nat]
+   [p0/t : ($ Pick b c)]
+   [p1/t : ($ Pick (succ a) b)]
+   (=
+    ($ Pick (succ a) (succ c))
+    ($ Pick/compose (succ a) (succ b) (succ c)
+       (tuple [head tt] [tail p0/t]) (tuple [head ff] [tail p1/t]))
+    (tuple [head ff] [tail ($ Pick/compose (succ a) b c p0/t p1/t)])))
+] by [
+  lam a, b, c, p0/t, p1/t.
+    let aux0 :
+      [  ($ Pick/compose (succ ,a) ,b ,c (! tail (tuple [head tt] [tail ,p0/t])) (! tail (tuple [head ff] [tail ,p1/t])))
+      =  ($ Pick/compose (succ ,a) ,b ,c ,p0/t ,p1/t)
+      in ($ Pick (succ ,a) ,c) ] = auto.
+    let aux1 : [ ($ Pick ,a ,c) type at 0 ] = auto.
+    unfold [Pick, Pick/compose]; reduce; auto
+].
+
 Thm Pick/compose/ff/4/0 : [
   (->
    [a b c : nat]
@@ -129,13 +169,14 @@ Thm Pick/compose/ff/4/0 : [
    (=
     ($ Pick (succ a) (succ c))
     ($ Pick/compose (succ a) (succ b) (succ c)
-        (tuple [head ff] [tail p0/t]) p1)
+       (tuple [head ff] [tail p0/t]) p1)
     (tuple [head ff] [tail ($ Pick/compose (succ a) (succ b) c p0/t p1)])))
 ] by [
   lam a, b, c, p0/t, p1.
-    let aux0 : [ ($ Pick/compose (succ ,a) (succ ,b) ,c (! tail (tuple [head ff] [tail ,p0/t])) ,p1)
-               = ($ Pick/compose (succ ,a) (succ ,b) ,c ,p0/t ,p1)
-              in ($ Pick (succ ,a) ,c) ] = auto.
+    let aux0 :
+      [  ($ Pick/compose (succ ,a) (succ ,b) ,c (! tail (tuple [head ff] [tail ,p0/t])) ,p1)
+      =  ($ Pick/compose (succ ,a) (succ ,b) ,c ,p0/t ,p1)
+      in ($ Pick (succ ,a) ,c) ] = auto.
     let aux1 : [ ($ Pick ,a ,c) type at 0 ] = auto.
     unfold [Pick, Pick/compose]; reduce; auto
 ].
