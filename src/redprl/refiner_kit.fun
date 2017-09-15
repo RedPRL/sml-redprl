@@ -187,11 +187,9 @@ struct
     else SOME @@ makeEqType (I, H) ((m, n), l, k)
 
   fun makeEqTypeUnlessSubUniv (I, H) ((m, n), l, k) (l', k') =
-    case (L.P.< (l, l'), K.greatestMeetComplement' (k, k')) of
-      (true, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), l, k'')
-    | (false, SOME k'') => SOME @@ makeEqType (I, H) ((m, n), NONE, k'')
-    | (true, NONE) => SOME @@ makeEqType (I, H) ((m, n), l, K.top)
-    | (false, NONE) => NONE
+    Option.map
+      (fn (l, k) => makeEqType (I, H) ((m, n), l, k))
+      (L.PK.residual ((l, k), (l', k')))
   
   fun makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k') =
     makeEqTypeUnlessSubUniv (I, H) ((m, m), l, k) (l', k')
@@ -209,10 +207,9 @@ struct
     else makeEqIfDifferent (I, H) ((m, n), (ty, l, k))
 
   fun makeEqUnlessSubUniv (I, H) ((m, n), (ty, l, k)) (l', k') =
-    case (L.P.< (l, l'), K.greatestMeetComplement' (k, k')) of
-      (_, SOME k'') => SOME @@ makeEq (I, H) ((m, n), (ty, l, k''))
-    | (true, _) => SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
-    | _ => NONE
+    Option.map
+      (fn (l, k) => makeEq (I, H) ((m, n), (ty, l, k)))
+      (L.PK.residual ((l, k), (l', k')))
 
   fun makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k') =
     makeEqUnlessSubUniv (I, H) ((m, m), (ty, l, k)) (l', k')
@@ -230,6 +227,9 @@ struct
     if List.exists Option.isSome l then NONE else SOME goal
 
   (* subtyping *)
+
+  fun isInUsefulUniv (l', k') (l, k) =
+    not (OptionUtil.eq L.PK.eq (L.PK.residual ((l, k), (l', k')), SOME (l, k)))
 
   (* It is not clear how exactly the subtyping should be implemented;
    * therefore we have a dummy implementation here. *)
@@ -252,11 +252,11 @@ struct
       else
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
 
-    fun alphaEqEither (m, (n0, n1)) =
-      if Abt.eq (m, n0) orelse Abt.eq (m, n1) then
+    fun alphaEqEither ((m0, m1), n) =
+      if Abt.eq (m0, n) orelse Abt.eq (m1, n) then
         ()
       else
-        raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n0, Fpp.text "or", TermPrinter.ppTerm n1]
+        raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m0, Fpp.text "or", TermPrinter.ppTerm m1, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
 
     fun levelLeq (l1, l2) =
       if L.P.<= (l1, l2) then
@@ -281,6 +281,12 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be equal to", TermPrinter.ppKind k2]
+
+    fun inUsefulUniv (l', k') (l, k) =
+      if isInUsefulUniv (l', k') (l, k) then
+        ()
+      else
+        E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.P.pretty l', Fpp.text "and kind", TermPrinter.ppKind k, Fpp.text "to be useful"]
 
     fun paramEq msg (r1, r2) =
       if P.eq Sym.eq (r1, r2) then

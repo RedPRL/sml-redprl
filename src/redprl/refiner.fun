@@ -103,18 +103,14 @@ struct
         |>: goal #> (I, H, trivial)
       end
 
-    fun inUsefulSubUniv (l', k') (l, k) =
-      K.greatestMeetComplement' (k, k') <> SOME k orelse
-      (Option.isSome l andalso L.P.<= (l', l))
-
     fun FromEqType z _ jdg =
       let
         val _ = RedPrlLog.trace "TypeEquality.FromEqType"
         val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
         val CJ.EQ_TYPE ((a', b'), l', k') = Hyps.lookup z H
-        val true = inUsefulSubUniv (l', k') (l, k)
-        val _ = Assert.alphaEq (a', a)
-        val _ = Assert.alphaEq (b', b)
+        val _ = Assert.alphaEqEither ((a', b'), a)
+        val _ = Assert.alphaEqEither ((a', b'), b)
+        val _ = Assert.inUsefulUniv (l', k') (l, k)
         val goal = makeEqTypeUnlessSubUniv (I, H) ((a, b), l, k) (l', k')
       in
         |>:? goal #> (I, H, trivial)
@@ -125,9 +121,9 @@ struct
         val _ = RedPrlLog.trace "TypeEquality.FromEq"
         val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
         val CJ.EQ (_, (a', l', k')) = Hyps.lookup z H
-        val true = inUsefulSubUniv (l', k') (l, k)
         val _ = Assert.alphaEq (a, b)
         val _ = Assert.alphaEq (a', a)
+        val _ = Assert.inUsefulUniv (l', k') (l, k)
         val goal = makeTypeUnlessSubUniv (I, H) (a, l, k) (l', k')
       in
         |>:? goal #> (I, H, trivial)
@@ -138,9 +134,9 @@ struct
         val _ = RedPrlLog.trace "TypeEquality.FromTrue"
         val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
         val CJ.TRUE (a', l', k') = Hyps.lookup z H
-        val true = inUsefulSubUniv (l', k') (l, k)
         val _ = Assert.alphaEq (a, b)
         val _ = Assert.alphaEq (a', a)
+        val _ = Assert.inUsefulUniv (l', k') (l, k)
         val goal = makeTypeUnlessSubUniv (I, H) (a, l, k) (l', k')
       in
         |>:? goal #> (I, H, trivial)
@@ -190,12 +186,10 @@ struct
         val _ = RedPrlLog.trace "Synth.FromEq"
         val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
         val CJ.EQ ((a, b), (ty, l', k')) = Hyps.lookup z H
+        val _ = Assert.alphaEqEither ((a, b), tm)
         val goalKind = makeTypeUnlessSubUniv (I, H) (ty, l, k) (l', k')
       in
-        if Abt.eq (a, tm) orelse Abt.eq (b, tm) then
-          |>:? goalKind #> (I, H, ty)
-        else
-          raise Fail "Did not match"
+        |>:? goalKind #> (I, H, ty)
       end
 
     fun VarFromTrue _ jdg =
@@ -211,13 +205,6 @@ struct
 
     val Var = VarFromTrue
   end
-
-  (* XXX Maybe we should look up `z` first? *)
-  fun SynthFromHyp z =
-    Synth.FromEq z orelse_
-    Universe.SynthFromEq z orelse_
-    Universe.SynthFromTrue z orelse_
-    Universe.SynthFromEqType z
 
   structure Misc =
   struct
@@ -461,17 +448,17 @@ struct
 
     fun fail err _ _ = E.raiseError err
 
-    fun matchGoal f alpha jdg =
+    fun matchSeq f alpha jdg =
       f jdg alpha jdg
 
-    fun matchSeqSel O.IN_GOAL f = matchGoal
+    fun matchSeqSel O.IN_GOAL f = matchSeq
         (fn _ >> catjdg => f catjdg
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchSeqSel", Seq.pretty seq))
-      | matchSeqSel (O.IN_HYP z) f = matchGoal
+      | matchSeqSel (O.IN_HYP z) f = matchSeq
         (fn (_, H) >> _ => f (Hyps.lookup z H)
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchSeqSel", Seq.pretty seq))
 
-    fun matchHyp z f = matchSeqSel (O.IN_HYP z) (fn catjdg => f catjdg z)
+    fun matchHyp z = matchSeqSel (O.IN_HYP z)
 
     fun canonicity sign =
       Machine.canonicity sign Machine.NOMINAL (Machine.Unfolding.default sign)
@@ -518,6 +505,21 @@ struct
        | Syn.CUST => true (* XXX should check the signature *)
        | _ => false
   in
+    fun SynthFromHyp z = matchHyp z
+      (fn CJ.EQ_TYPE _ =>
+            Universe.SynthFromEqType z
+        | CJ.EQ _ =>
+            Synth.FromEq z
+              orelse_
+            Universe.SynthFromEqAtType z
+        | CJ.TRUE _ =>
+            Universe.SynthFromTrue z
+              orelse_
+            InternalizedEquality.SynthFromTrueEq z
+              orelse_
+            Universe.SynthFromTrueEqAtType z
+        | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "SynthFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z]))
+
     structure Tactical =
     struct
       val NormalizeGoalDelegate = NormalizeGoalDelegate
@@ -770,7 +772,7 @@ struct
          | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 
-      fun StepJdg sign = matchGoal
+      fun StepJdg sign = matchSeq
         (fn _ >> CJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
           | _ >> CJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
           | _ >> CJ.TRUE (ty, _, _) => StepTrue sign ty
@@ -786,43 +788,43 @@ struct
        * because everything is subject to change now.
        *)
 
-      fun EqTypeFromHyp alpha jdg =
-        let
-          val (_, H) >> CJ.EQ_TYPE _ = jdg
-          val try =
-            fn CJ.EQ_TYPE _ => TypeEquality.FromEqType
-             | CJ.EQ _ => (fn z => TypeEquality.FromEq z orelse_ Universe.EqTypeFromEq z)
-             | CJ.TRUE _ => TypeEquality.FromTrue
-             | _ => fn z => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
-        in
-          (Hyps.foldl
-            (fn (z, jdg, tac) => tac orelse_ try jdg z)
-            (fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.text "empty context"))
-            H)
-          alpha jdg
-        end
+      fun FromHypDelegate tac = matchSeq
+        (fn (_, H) >> _ =>
+              Hyps.foldr
+                (fn (z, jdg, accum) => tac (z, jdg) orelse_ accum)
+                (fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Fpp.text "empty context"))
+                H
+          | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
 
-      fun EqFromHyp alpha jdg =
-        let
-          val (_, H) >> CJ.EQ _ = jdg
-          val try =
-            fn CJ.EQ _ => Equality.FromEq
-             | CJ.TRUE _ => InternalizedEquality.EqFromTrue
-             | CJ.EQ_TYPE _ => Universe.EqFromEqType
-             | _ => fn z => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z])
-        in
-          (Hyps.foldl
-            (fn (z, jdg, tac) => tac orelse_ try jdg z)
-            (fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.text "empty context"))
-            H)
-          alpha jdg
-        end
+      val EqTypeFromHyp = FromHypDelegate
+        (fn (z, CJ.EQ_TYPE _) => TypeEquality.FromEqType z
+          | (z, CJ.EQ _) =>
+              TypeEquality.FromEq z
+                orelse_
+              Universe.EqTypeFromEq z
+          | (z, CJ.TRUE _) =>
+              TypeEquality.FromTrue z
+                orelse_
+              InternalizedEquality.TypeFromTrueEqAtType z
+                orelse_
+              Universe.EqTypeFromTrueEqType z
+          | (z, _)  => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z]))
+
+      val EqFromHyp = FromHypDelegate
+        (fn (z, CJ.EQ _) => Equality.FromEq z
+          | (z, CJ.TRUE _) => InternalizedEquality.EqFromTrueEq z
+          | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z]))
+
+      val StepJdgFromHyp = matchSeq
+        (fn _ >> CJ.EQ_TYPE _ => EqTypeFromHyp
+          | _ >> CJ.EQ _ => EqFromHyp
+          | seq => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
     in
       fun AutoStep sign alpha jdg = 
         StepJdg sign alpha jdg
-          handle exn => 
-            (EqTypeFromHyp orelse_ EqFromHyp) alpha jdg
-            handle _ => raise exn
+          handle exn =>
+            StepJdgFromHyp alpha jdg
+              handle _ => raise exn
     end
 
     local
@@ -845,13 +847,13 @@ struct
     end
 
     fun RewriteHyp _ sel z = matchHyp z
-      (fn CJ.EQ _ => Equality.RewriteTrueByEq sel
-        | CJ.TRUE _ => InternalizedEquality.RewriteTrueByTrue sel
+      (fn CJ.EQ _ => Equality.RewriteTrueByEq sel z
+        | CJ.TRUE _ => InternalizedEquality.RewriteTrueByTrue sel z
         | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite-hyp tactic", CJ.pretty jdg))
 
     fun Rewrite _ = InternalizedEquality.RewriteTrue
 
-    val Symmetry : rule = matchGoal
+    val Symmetry : rule = matchSeq
       (fn _ >> CJ.EQ_TYPE _ => TypeEquality.Symmetry
         | _ >> CJ.EQ _ => Equality.Symmetry
         | _ >> CJ.TRUE _ => InternalizedEquality.Symmetry

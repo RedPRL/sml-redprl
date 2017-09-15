@@ -1396,7 +1396,7 @@ struct
         |>:? goal2 >: goal1 #> (I, H, trivial)
       end
 
-    (* This rule will be removed once every hypothesis
+    (* This rule will be changed once every hypothesis
      * is required to be `A true`. *)
     fun Elim z alpha jdg =
       let
@@ -1419,17 +1419,36 @@ struct
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
 
-    fun EqFromTrue z _ jdg =
+    (* (= ty m n) at l >> m = n in ty at l *)
+    (* this is for non-deterministic search *)
+    fun EqFromTrueEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "InternalizedEquality.EqFromTrue"
+        val _ = RedPrlLog.trace "InternalizedEquality.EqFromTrueEq"
         val (I, H) >> CJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
         val CJ.TRUE (ty0', l', _) = Hyps.lookup z H
         val Syn.EQUALITY (ty0, m0, n0) = Syn.out ty0'
-        val _ = Assert.alphaEq (m0, m1)
-        val _ = Assert.alphaEq (n0, n1)
-        val goalTy = makeSubType (I, H) (ty0, l', K.top) (ty1, l1, k1)
+        val _ = Assert.alphaEqEither ((m0, n0), m1)
+        val _ = Assert.alphaEqEither ((m0, n0), n1)
+        val _ = Assert.alphaEq (ty0, ty1)
+        val goalTy = makeTypeUnlessSubUniv (I, H) (ty1, l1, k1) (l', K.top)
       in
         |>:? goalTy #> (I, H, trivial)
+      end
+
+    (* (= ty m n) at l >> ty = ty at l *)
+    (* this is for non-deterministic search *)
+    fun TypeFromTrueEqAtType z _ jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.TypeFromTrueEqAtType"
+        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val CJ.TRUE (eq, l', _) = Hyps.lookup z H
+        val Syn.EQUALITY (ty', _, _) = Syn.out eq
+        val _ = Assert.alphaEq (ty0, ty1)
+        val _ = Assert.alphaEq (ty', ty0)
+        val _ = Assert.inUsefulUniv (l', K.top) (l, k)
+        val goal = makeTypeUnlessSubUniv (I, H) (ty0, l, k) (l', K.top)
+      in
+        |>:? goal #> (I, H, trivial)
       end
 
     fun InternalizeEq _ jdg =
@@ -1442,6 +1461,19 @@ struct
         val goalKind = makeTypeUnlessSubUniv (I, H) (ty, l, k) (l, K.top)
       in
         |>: goal >:? goalKind #> (I, H, trivial)
+      end
+
+    (* (= ty a b) => a synth ~~> ty *)
+    fun SynthFromTrueEq z _ jdg =
+      let
+        val _ = RedPrlLog.trace "InternalizedEquality.SynthFromTrueEq"
+        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val CJ.TRUE (equal, l', _) = Hyps.lookup z H
+        val Syn.EQUALITY (ty, a, b) = Syn.out equal
+        val _ = Assert.alphaEqEither ((a, b), tm)
+        val goalKind = makeTypeUnlessSubUniv (I, H) (ty, l, k) (l', K.top)
+      in
+        |>:? goalKind #> (I, H, ty)
       end
 
     fun RewriteTrue sel eqterm alpha jdg =
@@ -1817,6 +1849,14 @@ struct
              Fpp.text "be at level", L.P.pretty l1, Fpp.text "with kind", TermPrinter.ppKind k1]]
     end
 
+    (* XXX needs double-checking *)
+    val kindConstraint =
+      fn K.DISCRETE => K.DISCRETE
+       | K.KAN => K.KAN
+       | K.HCOM => K.KAN
+       | K.COE => K.CUBICAL
+       | K.CUBICAL => K.CUBICAL
+
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.EqType"
@@ -1906,69 +1946,90 @@ struct
         T.empty #> (I, H, trivial)
       end
 
+    (* ty0 = ty1 in (U l k) >> ty0 = ty1 at l with k *)
+    (* this is for non-deterministic search *)
     fun EqTypeFromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.EqFromEqType"
+        val _ = RedPrlLog.trace "Universe.EqTypeFromEq"
         val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val CJ.EQ ((ty0', ty1'), (univ, _, _)) = Hyps.lookup z H
         val Syn.UNIVERSE (l', k') = Syn.out univ
-        val _ = Assert.alphaEq (ty0', ty0)
-        val _ = Assert.alphaEq (ty1', ty1)
+        val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
+        val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
         val _ = Assert.levelLeq (SOME l', l)
         val _ = Assert.kindLeq (k', k)
       in
         T.empty #> (I, H, trivial)
       end
 
-    fun EqFromEqType z _ jdg =
+    (* (= (U l k) ty0 ty1) >> ty0 = ty1 at l with k *)
+    (* this is for non-deterministic search *)
+    fun EqTypeFromTrueEqType z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.EqFromEqType"
-        val (I, H) >> CJ.EQ ((ty0, ty1), (univ, l2, k2)) = jdg
-        val Syn.UNIVERSE (l, k) = Syn.out univ
-        val CJ.EQ_TYPE ((ty0', ty1'), l', k') = Hyps.lookup z H
-        val _ = Assert.alphaEq (ty0', ty0)
-        val _ = Assert.alphaEq (ty1', ty1)
-        val _ = Assert.levelLeq (l', SOME l)
+        val _ = RedPrlLog.trace "Universe.EqTypeFromEq"
+        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val CJ.TRUE (eq, _, _) = Hyps.lookup z H
+        val Syn.EQUALITY (univ, ty0', ty1') = Syn.out eq
+        val Syn.UNIVERSE (l', k') = Syn.out univ
+        val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
+        val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
+        val _ = Assert.levelLeq (SOME l', l)
         val _ = Assert.kindLeq (k', k)
-        val _ = Assert.univMem (l, k) (l2, k2)
       in
         T.empty #> (I, H, trivial)
       end
 
+    (* ty0 = ty1 at l >> ty ~~> (U l) *)
     fun SynthFromEqType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SynthFromEqType"
         val (I, H) >> CJ.SYNTH (ty2, l2, k2) = jdg
         val CJ.EQ_TYPE ((ty0, ty1), SOME l0, k0) = Hyps.lookup z H
-        val _ = Assert.alphaEqEither (ty2, (ty0, ty1))
+        val _ = Assert.alphaEqEither ((ty0, ty1), ty2)
+        (* TODO maybe generating a subgoal when it's not a member? *)
         val _ = Assert.univMem (l0, k0) (l2, k2)
       in
-        T.empty #> (I, H, trivial)
+        T.empty #> (I, H, Syn.into @@ Syn.UNIVERSE (l0, k0))
       end
 
-    fun SynthFromEq z _ jdg =
+    (* (= ty m n) at l >> ty synth ~~> (U l) *)
+    fun SynthFromTrueEqAtType z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.SynthFromEq"
+        val _ = RedPrlLog.trace "Universe.SynthFromTrueEqAtType"
+        val (I, H) >> CJ.SYNTH (ty1, l1, k1) = jdg
+        val CJ.TRUE (eq, SOME l0, _) = Hyps.lookup z H
+        val Syn.EQUALITY (ty0, _, _) = Syn.out eq
+        val _ = Assert.alphaEq (ty0, ty1)
+        (* TODO maybe generating a subgoal when it's not a member? *)
+        val _ = Assert.univMem (l0, K.top) (l1, k1)
+      in
+        T.empty #> (I, H, Syn.into @@ Syn.UNIVERSE (l0, K.top))
+      end
+
+    (* m = n in ty at l >> ty synth ~~> (U l) *)
+    fun SynthFromEqAtType z _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.SynthFromEqAtType"
         val (I, H) >> CJ.SYNTH (ty1, l1, k1) = jdg
         val CJ.EQ (_, (ty0, SOME l0, k0)) = Hyps.lookup z H
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.univMem (l0, k0) (l1, k1)
       in
-        T.empty #> (I, H, trivial)
+        T.empty #> (I, H, Syn.into @@ Syn.UNIVERSE (l0, k0))
       end
 
+    (* ty at l >> ty synth ~~> (U l) *)
     fun SynthFromTrue z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SynthFromTrue"
         val (I, H) >> CJ.SYNTH (ty1, l1, k1) = jdg
         val CJ.TRUE (ty0, SOME l0, k0) = Hyps.lookup z H
         val _ = Assert.alphaEq (ty0, ty1)
+        (* TODO maybe generating a subgoal when it's not a member? *)
         val _ = Assert.univMem (l0, k0) (l1, k1)
       in
-        T.empty #> (I, H, trivial)
+        T.empty #> (I, H, Syn.into @@ Syn.UNIVERSE (l0, k0))
       end
-
-    (* favonia: maybe also a rule for `(= A m n) at l >> A synth ~~> (U l)`?*)
 
     fun VarFromTrue _ jdg =
       let
