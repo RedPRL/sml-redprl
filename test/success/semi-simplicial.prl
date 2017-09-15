@@ -8,15 +8,21 @@ Tac EqNatRec = [
   }
 ].
 
-Tac NatArg = [
+Tac EqApp(#dom) = [
   query gl <- goal.
   match [gl:jdg] {
-    [tm, ty, l | #jdg{%tm in %ty at %l} =>
-      refine fun/eq/app; [`(-> nat %ty)]; auto]
-    [tm, l | #jdg{%tm type at %l} =>
-      refine fun/eqtype/app; [`(-> nat (U 0))]; auto]
+    [tm0, tm1, ty | #jdg{%tm0 = %tm1 in %ty} =>
+      refine fun/eq/app; [`(-> #dom %ty)]; auto]
+    [tm, ty | #jdg{%tm in %ty at 0} =>
+      refine fun/eq/app; [`(-> #dom %ty)]; auto]
+    [tm | #jdg{%tm type at 0} =>
+      refine fun/eqtype/app; [`(-> #dom (U 0))]; auto]
+    [tm | #jdg{%tm type} =>
+      refine fun/eqtype/app; [`(-> #dom (U 0))]; auto]
   }
 ].
+
+Tac NatArg = [ (EqApp nat) ].
 
 Thm Pick : [
   // pick #(first argument) from #(second argument)
@@ -41,13 +47,13 @@ Thm Pick/zero/L : [
   lam n. auto
 ].
 
-Thm Pick/zero/R : [
+Thm Pick/succ/0/zero/1 : [
   (-> [n : nat] (= (U 0) ($ Pick (succ n) zero) void))
 ] by [
   lam n. auto
 ].
 
-Thm Pick/succ : [
+Thm Pick/succ/0/succ/1 : [
   (-> [n m : nat]
    (= (U 0)
     ($ Pick (succ n) (succ m))
@@ -55,9 +61,10 @@ Thm Pick/succ : [
      [head : bool]
      [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
 ] by [
-  lam n, m. auto;
-
-  repeat { NatArg || EqNatRec }
+  lam n, m.
+    let aux0 : [($ Pick ,n ,m) type at 0] = auto.
+    let aux1 : [($ Pick (succ ,n) ,m) type at 0] = auto.
+    unfold Pick; reduce; auto
 ].
 
 Tac Replace{z:hyp}(#A:exp) = [
@@ -76,30 +83,59 @@ Thm Pick/compose : [
    ($ Pick a c))
 ] by [
   lam a. fresh a', a'/ih -> elim a;
-  [ lam b, c, p1, p2. `tuple
+  [ lam b, c, p0, p1. `tuple
   , lam b. fresh b', b'/ih -> elim b;
-    [ lam c, p1, p2. elim p2
+    [ lam c, p0, p1. elim p1
     , lam c. fresh c', c'/ih -> elim c;
-      [ lam p1. elim p1
-      , lam p1. ({Replace p1} ($ Pick/succ ,b' ,c'));
-        let {head = p1/h, tail = p1/t} = p1. elim p1/h;
-        [ lam p2. ({Replace p2} ($ Pick/succ ,a' ,b'));
-          let {head = p2/h, tail = p2/t} = p2. elim p2/h;
-          (ReplaceGoal ($ Pick/succ ,a' ,c'));
+      [ lam p0. elim p0
+      , lam p0. ({Replace p0} ($ Pick/succ/0/succ/1 ,b' ,c'));
+        let {head = p0/h, tail = p0/t} = p0. elim p0/h;
+        [ lam p1. ({Replace p1} ($ Pick/succ/0/succ/1 ,a' ,b'));
+          let {head = p1/h, tail = p1/t} = p1. elim p1/h;
+          (ReplaceGoal ($ Pick/succ/0/succ/1 ,a' ,c'));
           [ { head = `tt
-            , tail = `($ ,a'/ih ,b' ,c' ,p1/t ,p2/t)
-          }
+            , tail = `($ ,a'/ih ,b' ,c' ,p0/t ,p1/t)
+            }
           , { head = `ff
-            , tail = `($ ,b'/ih ,c' ,p1/t ,p2/t)
+            , tail = `($ ,b'/ih ,c' ,p0/t ,p1/t)
             }
           ]
-        , lam p2.
-          (ReplaceGoal ($ Pick/succ ,a' ,c'));
+        , lam p1.
+          (ReplaceGoal ($ Pick/succ/0/succ/1 ,a' ,c'));
           { head = `ff
-          , tail = `($ ,c'/ih ,p1/t ,p2)
+          , tail = `($ ,c'/ih ,p0/t ,p1)
           }
         ]
       ]
     ]
   ]
+].
+
+Thm Pick/compose/zero/0 : [
+  (->
+   [b c : nat]
+   [p0 : ($ Pick b c)]
+   [p1 : ($ Pick 0 b)]
+   (= ($ Pick 0 c) ($ Pick/compose 0 b c p0 p1) tuple))
+] by [
+  lam a, b, p0, p1. auto
+].
+
+Thm Pick/compose/ff/4/0 : [
+  (->
+   [a b c : nat]
+   [p0/t : ($ Pick (succ b) c)]
+   [p1 : ($ Pick (succ a) (succ b))]
+   (=
+    ($ Pick (succ a) (succ c))
+    ($ Pick/compose (succ a) (succ b) (succ c)
+        (tuple [head ff] [tail p0/t]) p1)
+    (tuple [head ff] [tail ($ Pick/compose (succ a) (succ b) c p0/t p1)])))
+] by [
+  lam a, b, c, p0/t, p1.
+    let aux0 : [ ($ Pick/compose (succ ,a) (succ ,b) ,c (! tail (tuple [head ff] [tail ,p0/t])) ,p1)
+               = ($ Pick/compose (succ ,a) (succ ,b) ,c ,p0/t ,p1)
+              in ($ Pick (succ ,a) ,c) ] = auto.
+    let aux1 : [ ($ Pick ,a ,c) type at 0 ] = auto.
+    unfold [Pick, Pick/compose]; reduce; auto
 ].
