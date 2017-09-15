@@ -1,4 +1,4 @@
-Def Cmp(#m; #n) = [
+Def Cmp(#m, #n) = [
   (lam [x] ($ #m ($ #n x)))
 ].
 

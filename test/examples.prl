@@ -165,7 +165,7 @@ Thm PairTest : [ (* [a : S1] (path {_} S1 a base)) ] by [
 ].
 
 
-Def Cmp(#f; #g) = [
+Def Cmp(#f, #g) = [
   (lam [x] ($ #f ($ #g x)))
 ].
 
