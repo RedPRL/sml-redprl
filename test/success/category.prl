@@ -1,21 +1,4 @@
-Tac CatWfTac{i:lvl} = [
-  query gl <- goal.
-  match [gl:jdg] {
-    [a | #jdg{%a type at {lsucc i}} =>
-      let mem : [%a in (U i)] = auto.
-      auto
-    ]
-    [a | #jdg{%a type} =>
-      let mem : [%a in (U i)] = auto.
-      auto
-    ]
-    [a | %[a:jdg] => id]
-  }
-].
-
-
 Thm Category{i:lvl} : [ (U {lsucc i}) ] by [
-  fresh ob, hom, x, y ->
    `(record
      [ob : (U i)]
      [hom : (-> ob ob (U i))]
@@ -36,9 +19,7 @@ Thm Category{i:lvl} : [ (U {lsucc i}) ] by [
        (=
         ($ hom a b)
         ($ cmp a a b f ($ idn a))
-        f))]); // fill in the rest, but this suffices as an example
-
-  {CatWfTac i}
+        f))]) // fill in the rest, but this suffices as an example
 ].
 
 Print Category.
