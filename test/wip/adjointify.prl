@@ -21,22 +21,6 @@ Def Iso(#A; #B) = [
    [coh2 : (-> [a : #A] (path {_} #A ($ from ($ to a)) a))])
 ].
 
-
-Thm Path/Symm{l:lvl} : [
-  (->
-   [ty : (U l kan)]
-   [a b : ty]
-   (path {_} ty a b)
-   (path {_} ty b a))
-] by [
-  lam ty, a, b, pab.
-    <i>
-      `(hcom{0 ~> 1} ,ty ,a
-        [i=0 {j} (@ ,pab j)]
-        [i=1 {_} ,a])
-].
-
-
 Thm Adointify{l:lvl} : [
   (->
    [ty1 : (U l kan)]
@@ -50,13 +34,7 @@ Thm Adointify{l:lvl} : [
        lam b.
          <proj1 =
           <pt = use from [use b],
-           ray = <i>
-             use {Path/Symm l}
-               [use ty2,
-                use to [use from [use b]],
-                use b,
-                use coh1 [use b],
-                @i]>,
+           ray = use coh1 [use b]>,
           proj2 =
             lam fib1, fib2.
               ?oh-dear>>
