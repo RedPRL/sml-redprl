@@ -673,7 +673,7 @@ struct
           orelse_
         StepEqNeuByUnfold sign tms blockers
 
-      fun StepEqNeuExpand sign m blocker ty =
+      fun StepEqNeuExpand sign _ blocker ty =
         StepEqValAtType sign ty
           orelse_
         (case (blocker, Syn.out ty) of

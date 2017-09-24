@@ -1,0 +1,7 @@
+Thm Path/Symm{l:lvl} : [
+  ty : (U l)
+  >>
+  ty hcom type
+] by [
+  auto
+].
