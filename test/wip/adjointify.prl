@@ -21,6 +21,20 @@ Def Iso(#A; #B) = [
    [coh2 : (-> [a : #A] (path {_} #A ($ from ($ to a)) a))])
 ].
 
+Thm Path/Symm{l:lvl} : [
+ (->
+  [ty : (U l kan)]
+  [a b : ty]
+  (path {_} ty a b)
+  (path {_} ty b a))
+] by [
+ lam ty, a, b, pab.
+   <i>
+     `(hcom{0 ~> 1} ,ty ,a
+       [i=0 {j} (@ ,pab j)]
+       [i=1 {_} ,a])
+].
+
 Thm Adointify{l:lvl} : [
   (->
    [ty1 : (U l kan)]
@@ -36,6 +50,36 @@ Thm Adointify{l:lvl} : [
           <pt = use from [use b],
            ray = use coh1 [use b]>,
           proj2 =
-            lam fib1, fib2.
-              ?oh-dear>>
+            lam <pt = pt1, ray = r1>, <pt = pt2, ray = r2>.
+
+              let alpha : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,pt1))) ] =
+                use {Path/Symm l}
+                  [use ty1,
+                   use from [use to [use pt1]],
+                   use from [use b],
+                   <i> use from [use r1 [@i]]].
+
+              let beta : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,pt2))) ] =
+                use {Path/Symm l}
+                  [use ty1,
+                   use from [use to [use pt2]],
+                   use from [use b],
+                   <i> use from [use r2 [@i]]].
+
+
+              let gamma : [ (path {_} ,ty1 ($ ,from ($ ,to ,pt1)) ($ ,from ($ ,to ,pt2))) ] =
+                <i>
+                  `(hcom{0~>1} ,ty1 ($ ,from ,b)
+                    [i=0 {j} (@,alpha j)]
+                    [i=1 {j} (@,beta j)]).
+
+              let pt12 : [ (path {_} ,ty1 ,pt1 ,pt2) ] =
+                <i>
+                  `(hcom{0~>1} ,ty1 (@ ,gamma i)
+                    [i=0 {j} (@ ($ ,coh2 ,pt1) j)]
+                    [i=1 {j} (@ ($ ,coh2 ,pt2) j)]).
+
+              <i>
+               <pt = use pt12 [@i],
+                ray = ?oh-dear>>>
 ].
