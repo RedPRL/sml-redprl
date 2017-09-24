@@ -1,0 +1,41 @@
+Def HasAllPaths(#C) = [(-> [c c' : #C] (path {_} #C c c'))].
+
+Def IsContr(#C) = [(* [c : #C] (HasAllPaths #C))].
+
+Def Fiber(#A;#B;#f;#b) = [(* [a : #A] (path {_} #B ($ #f a) #b))].
+
+Def IsEquiv(#A;#B;#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
+
+Def Equiv(#A;#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
+
+
+Def Iso(#A; #B) = [
+  (record
+   [to : (-> #A #B)]
+   [from : (-> #B #A)]
+   [coh1 : (-> [b : #B] (path {_} #B ($ to ($ from b)) b))]
+   [coh2 : (-> [a : #A] (path {_} #A ($ from ($ to a)) a))])
+].
+
+Thm Adointify{l:lvl} : [
+  (->
+   [ty1 : (U l)]
+   [ty2 : (U l)]
+   (Iso ty1 ty2)
+   (Equiv ty1 ty2))
+] by [
+  lam ty1, ty2, <to, from, coh1, coh2>.
+    <proj1 = use to,
+     proj2 =
+       lam b.
+         <proj1 =
+          <proj1 = use from [use b],
+           proj2 = <i>
+             let cohb = coh1 [use b].
+             `(hcom{0~>1} ,ty2 ($ ,to ($ ,from ,b))
+               [i=0 {j} (@ ,cohb j)]
+               [i=1 {_} ($ ,to ($ ,from ,b))])>,
+          proj2 =
+            lam <proj1 = a1, proj2 = p1>, <proj1 = a2, proj2 = p2>.
+              ?oh-dear>>
+].
