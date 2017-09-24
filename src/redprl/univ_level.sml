@@ -158,7 +158,7 @@ struct
   struct
     fun eq ((l1, k1), (l2, k2)) = P.eq (l1, l2) andalso k1 = k2
     fun residual ((l1, k1), (l2, k2)) =
-      case (P.residual (l1, l1), RedPrlKind.residual (k2, k2)) of
+      case (P.residual (l1, l2), RedPrlKind.residual (k1, k2)) of
          (NONE, NONE) => NONE
        | (SOME l, NONE) => SOME (l, RedPrlKind.top)
        | (NONE, SOME k) => SOME (P.top, k)
