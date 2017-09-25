@@ -1,16 +1,32 @@
-Def HasAllPaths(#C) = [(-> [c c' : #C] (path {_} #C c c'))].
+Def HasAllPaths(#C) = [
+  (->
+   [c c' : #C]
+   (path {_} #C c c'))
+].
 
-Def IsContr(#C) = [(* [c : #C] (HasAllPaths #C))].
+Def IsContr(#C) = [
+  (record
+   [point : #C]
+   [rays : (HasAllPaths #C)])
+].
 
 Def Fiber(#A;#B;#f;#b) = [
   (record
-    [pt : #A]
-    [ray : (path {_} #B ($ #f pt) #b)])
+   [point : #A]
+   [ray : (path {_} #B ($ #f point) #b)])
 ].
 
-Def IsEquiv(#A;#B;#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
+Def IsEquiv(#A;#B;#f) = [
+  (->
+   [b : #B]
+   (IsContr (Fiber #A #B #f b)))
+].
 
-Def Equiv(#A;#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
+Def Equiv(#A;#B) = [
+  (record
+   [to : (-> #A #B)]
+   [to/equiv : (IsEquiv #A #B to)])
+].
 
 
 Def Iso(#A; #B) = [
@@ -43,43 +59,48 @@ Thm Adointify{l:lvl} : [
    (Equiv ty1 ty2))
 ] by [
   lam ty1, ty2, <to, from, coh1, coh2>.
-    <proj1 = use to,
-     proj2 =
+    <to = use to,
+     to/equiv =
        lam b.
-         <proj1 =
-          <pt = use from [use b],
+         <point =
+          <point = use from [use b],
            ray = use coh1 [use b]>,
-          proj2 =
-            lam <pt = pt1, ray = r1>, <pt = pt2, ray = r2>.
+          rays =
+            lam <point = point1, ray = r1>, <point = point2, ray = r2>.
 
-              let alpha : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,pt1))) ] =
+              let alpha : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,point1))) ] =
                 use {Path/Symm l}
                   [use ty1,
-                   use from [use to [use pt1]],
+                   use from [use to [use point1]],
                    use from [use b],
                    <i> use from [use r1 [@i]]].
 
-              let beta : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,pt2))) ] =
+              let beta : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,point2))) ] =
                 use {Path/Symm l}
                   [use ty1,
-                   use from [use to [use pt2]],
+                   use from [use to [use point2]],
                    use from [use b],
                    <i> use from [use r2 [@i]]].
 
 
-              let gamma : [ (path {_} ,ty1 ($ ,from ($ ,to ,pt1)) ($ ,from ($ ,to ,pt2))) ] =
+              let gamma : [ (path {_} ,ty1 ($ ,from ($ ,to ,point1)) ($ ,from ($ ,to ,point2))) ] =
                 <i>
                   `(hcom{0~>1} ,ty1 ($ ,from ,b)
                     [i=0 {j} (@,alpha j)]
                     [i=1 {j} (@,beta j)]).
 
-              let pt12 : [ (path {_} ,ty1 ,pt1 ,pt2) ] =
+              let point12 : [ (path {_} ,ty1 ,point1 ,point2) ] =
                 <i>
                   `(hcom{0~>1} ,ty1 (@ ,gamma i)
-                    [i=0 {j} (@ ($ ,coh2 ,pt1) j)]
-                    [i=1 {j} (@ ($ ,coh2 ,pt2) j)]).
+                    [i=0 {j} (@ ($ ,coh2 ,point1) j)]
+                    [i=1 {j} (@ ($ ,coh2 ,point2) j)]).
+
 
               <i>
-               <pt = use pt12 [@i],
-                ray = ?oh-dear>>>
+
+               let welp : [ (path {_} ,ty1 (@ ,point12 i) ,point1) ] =
+                 id.
+
+               <point = use point12 [@i],
+                ray = ?>>>
 ].
