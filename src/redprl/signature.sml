@@ -4,7 +4,7 @@ struct
   structure P = struct open RedPrlSortData RedPrlParamData end
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
-  structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
+  structure AJ = RedPrlAtomicJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
 
   open ElabNotation infix >>= *> <*
 
@@ -246,9 +246,9 @@ struct
         handle AstToAbt.BadConversion (msg, pos) => error pos [Fpp.text msg])
       >>= scopeCheck (metactx, symctx, varctx)
 
-    fun elabSrcCatjdg (metactx, symctx, varctx, env) ast : CJ.jdg E.t =
+    fun elabSrcCatjdg (metactx, symctx, varctx, env) ast : AJ.jdg E.t =
       convertToAbt (metactx, symctx, varctx, env) ast O.JDG >>= 
-        E.ret o CJ.out
+        E.ret o AJ.out
 
     fun addHypName (env, symctx, varctx) (srcname, tau) : symbol NameEnv.dict * Tm.symctx * Tm.varctx * Tm.symbol =
       let
@@ -260,16 +260,16 @@ struct
         (env', symctx', varctx', x)
       end
 
-    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : (Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * CJ.jdg) E.t =
+    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : (Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * AJ.jdg) E.t =
       elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg >>= (fn catjdg => 
         let
-          val tau = CJ.synthesis catjdg
+          val tau = AJ.synthesis catjdg
           val (env', symctx', varctx', x) = addHypName (env, symctx, varctx) (srcname, tau)
         in
           E.ret (symctx', varctx', env', x, catjdg)
         end)
 
-    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> (Tm.symctx * Tm.varctx * symbol NameEnv.dict * CJ.jdg Hyps.telescope) E.t =
+    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> (Tm.symctx * Tm.varctx * symbol NameEnv.dict * AJ.jdg Hyps.telescope) E.t =
       let
         fun go env syms vars H [] = E.ret (syms, vars, env, H)
           | go env syms vars H (hyp :: hyps) =
@@ -305,7 +305,7 @@ struct
 
     fun valenceToSequent alpha ((sigmas, taus), tau) =
       let
-        open RedPrlSequent CJ infix >>
+        open RedPrlSequent AJ infix >>
         val fresh = makeNamePopper alpha
         val I = List.map (fn sigma => (fresh (), sigma)) sigmas
         val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ List.rev taus
@@ -341,7 +341,7 @@ struct
                 Lcf.|> (subgoals, checkb (binder, valence))
               end
 
-            val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM tau)
+            val spec = RedPrlSequent.>> ((params', Hyps.empty), AJ.TERM tau)
           in
             E.ret (EDEF {sourceOpid = opid, spec = spec, state = state})
           end)
@@ -396,7 +396,7 @@ struct
                 Hyps.foldr
                   (fn (x, jdgx, (ctx, env)) =>
                     let
-                      val taux = CJ.synthesis jdgx
+                      val taux = AJ.synthesis jdgx
                     in
                       (Tm.Sym.Ctx.insert ctx x RedPrlSortData.HYP,
                        NameEnv.insert env (Sym.toString x) x)
@@ -436,7 +436,7 @@ struct
             val binder = (List.map #1 params', []) \ script'
             val valence = ((List.map #2 params', []), TAC)
             fun state alpha = Lcf.|> (argumentsToSubgoals alpha arguments', checkb (binder, valence))
-            val spec = RedPrlSequent.>> ((params', Hyps.empty), CJ.TERM TAC)
+            val spec = RedPrlSequent.>> ((params', Hyps.empty), AJ.TERM TAC)
           in
             E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
           end)

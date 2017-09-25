@@ -89,7 +89,7 @@ struct
       handle _ => raise exn
 
   open RedPrlSequent infix >>
-  structure CJ = RedPrlCategoricalJudgment and Syn = Syntax
+  structure AJ = RedPrlAtomicJudgment and Syn = Syntax
 
   val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
@@ -174,7 +174,7 @@ struct
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
       val (_, H) >> _ = jdg
-      val CJ.TRUE (ty, _, _) = RT.Hyps.lookup z H
+      val AJ.TRUE (ty, _, _) = RT.Hyps.lookup z H
     in
       case Syn.out ty of 
          Syn.FUN _ => (RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
@@ -303,13 +303,13 @@ struct
      | O.POLY (O.RULE_REWRITE_HYP (sel, z)) $ _ => R.RewriteHyp sign sel z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
      | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
-     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (CJ.out (expandHypVars catjdg))
+     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out (expandHypVars catjdg))
      | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
      | O.POLY (O.RULE_REDUCE sels) $ _ => R.Computation.Reduce sign sels
      | O.POLY (O.RULE_UNFOLD_ALL opids) $ _ => R.Custom.UnfoldAll sign opids
      | O.POLY (O.RULE_UNFOLD (opids, sels)) $ _ => R.Custom.Unfold sign opids sels
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
-     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (CJ.out (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (AJ.out (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO (O.DEV_FUN_INTRO pats) $ [(us, _) \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
@@ -386,7 +386,7 @@ struct
      | O.MONO O.DEV_QUERY_GOAL $ [(_,[x]) \ tm] =>
        (fn alpha => fn jdg as _ >> cj =>
          let
-           val tm' = substVar (CJ.into cj, x) tm
+           val tm' = substVar (AJ.into cj, x) tm
          in
            tactic sign env tm' alpha jdg
          end)

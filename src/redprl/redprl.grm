@@ -14,7 +14,7 @@ struct
 end
 
 structure O = RedPrlOpData
-structure CJ = RedPrlCategoricalJudgment
+structure AJ = RedPrlAtomicJudgment
 
 structure TP = TermPrinter
 

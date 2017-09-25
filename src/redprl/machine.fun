@@ -129,7 +129,7 @@ struct
         open RedPrlSequent infix >>
       in
         case spec of
-          _ >> RedPrlCategoricalJudgment.TRUE _ => false
+          _ >> RedPrlAtomicJudgment.TRUE _ => false
         | _ => true
       end
 
