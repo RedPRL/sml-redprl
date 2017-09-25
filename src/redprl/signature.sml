@@ -4,6 +4,8 @@ struct
   structure P = struct open RedPrlSortData RedPrlParamData end
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
+  structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
+
   open ElabNotation infix >>= *> <*
 
   fun @@ (f, x) = f x
@@ -238,8 +240,6 @@ struct
         AstToAbt.NameEnv.empty
         metactx
 
-    structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
-
     fun convertToAbt (metactx, symctx, varctx, env) ast sort : abt E.t =
       E.wrap (RedPrlAst.getAnnotation ast, fn () =>
         AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, sort)
@@ -305,7 +305,7 @@ struct
 
     fun valenceToSequent alpha ((sigmas, taus), tau) =
       let
-        open RedPrlSequent RedPrlCategoricalJudgment infix >>
+        open RedPrlSequent CJ infix >>
         val fresh = makeNamePopper alpha
         val I = List.map (fn sigma => (fresh (), sigma)) sigmas
         val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ List.rev taus
