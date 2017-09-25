@@ -131,8 +131,7 @@ struct
       and processTerm sign m =
         inheritAnnotation m (processTerm' sign m)
 
-      fun processSrcCatjdg sign =
-        RedPrlCategoricalJudgment.map (processTerm sign)
+      fun processSrcCatjdg sign = processTerm sign
 
       fun processSrcSeq sign (hyps, concl) =
         (List.map (fn (x, hyp) => (x, processSrcCatjdg sign hyp)) hyps, processSrcCatjdg sign concl)
@@ -216,7 +215,7 @@ struct
                       SOME (pos :: _) => SOME pos
                     | _ => termPos
                in
-                 E.when (tau' = NONE, E.fail (pos, Fpp.text ("Unbound variable: " ^ xstr)))
+                 E.when (tau' = NONE, E.fail (pos, Fpp.hsep [Fpp.text "Unbound variable:", Fpp.text xstr]))
                   *> E.when (Option.isSome tau' andalso not (tau' = SOME tau), E.fail (pos, Fpp.text ("Variable sort mismatch: " ^ xstr)))
                   *> r
                end)
@@ -241,21 +240,17 @@ struct
 
     structure CJ = RedPrlCategoricalJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
 
-    fun elabAst (metactx, env) ast : abt =
-      AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, Sort.EXP)
+    fun convertToAbt (metactx, symctx, varctx, env) ast sort : abt E.t =
+      E.wrap (RedPrlAst.getAnnotation ast, fn () =>
+        AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, sort)
+        handle AstToAbt.BadConversion (msg, pos) => error pos [Fpp.text msg])
+      >>= scopeCheck (metactx, symctx, varctx)
 
-    (* these should be included in the AstToAbt module *)
-    fun elabSym env (name : string) : Sym.t = NameEnv.lookup env name
+    fun elabSrcCatjdg (metactx, symctx, varctx, env) ast : CJ.jdg E.t =
+      convertToAbt (metactx, symctx, varctx, env) ast O.JDG >>= 
+        E.ret o CJ.out
 
-    (* these should be included in the AstToAbt module *)
-    fun elabParam env = RedPrlParameterTerm.map (elabSym env)
-
-    fun elabLevel env = Option.map (RedPrlLevel.out o elabParam env o RedPrlAstLevel.into)
-
-    fun elabSrcCatjdg (metactx, symctx, varctx, env) src_cjdg : CJ.jdg =
-      CJ.map' (elabSym env) (elabLevel env) (elabAst (metactx, env)) src_cjdg
-
-    fun addHypName (env, symctx, varctx) (srcname, tau) =
+    fun addHypName (env, symctx, varctx) (srcname, tau) : symbol NameEnv.dict * Tm.symctx * Tm.varctx * Tm.symbol =
       let
         val x = NameEnv.lookup env srcname handle _ => Sym.named srcname
         val env' = NameEnv.insert env srcname x
@@ -265,42 +260,34 @@ struct
         (env', symctx', varctx', x)
       end
 
-    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * CJ.jdg =
-      let
-        val catjdg = elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg
-        val tau = CJ.synthesis catjdg
-        val (env', symctx', varctx', x) = addHypName (env, symctx, varctx) (srcname, tau)
-      in
-        (symctx', varctx', env', x, catjdg)
-      end
+    fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : (Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * CJ.jdg) E.t =
+      elabSrcCatjdg (metactx, symctx, varctx, env) srcjdg >>= (fn catjdg => 
+        let
+          val tau = CJ.synthesis catjdg
+          val (env', symctx', varctx', x) = addHypName (env, symctx, varctx) (srcname, tau)
+        in
+          E.ret (symctx', varctx', env', x, catjdg)
+        end)
 
-    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> symbol NameEnv.dict * CJ.jdg Hyps.telescope =
+    fun elabSrcSeqHyps (metactx, symctx, varctx, env) : src_seqhyp list -> (Tm.symctx * Tm.varctx * symbol NameEnv.dict * CJ.jdg Hyps.telescope) E.t =
       let
-        fun go env _ _ H [] = (env, H)
+        fun go env syms vars H [] = E.ret (syms, vars, env, H)
           | go env syms vars H (hyp :: hyps) =
-              let
-                val (syms', vars', env', x, jdg) = elabSrcSeqHyp (metactx, syms, vars, env) hyp
-              in
-                go env' syms' vars' (Hyps.snoc H x jdg) hyps
-              end
+              elabSrcSeqHyp (metactx, syms, vars, env) hyp >>= (fn (syms', vars', env', x, jdg) => 
+                go env' syms' vars' (Hyps.snoc H x jdg) hyps)
       in
         go env symctx varctx Hyps.empty
       end
 
-    fun elabSrcSequent (metactx, symctx, varctx, env) (seq : src_sequent) : symbol NameEnv.dict * jdg =
+    fun elabSrcSequent (metactx, symctx, varctx, env) (seq : src_sequent) : (symbol NameEnv.dict * jdg) E.t =
       let
         val (hyps, concl) = seq
-        val (env', hyps') = elabSrcSeqHyps (metactx, symctx, varctx, env) hyps
-        val concl' = elabSrcCatjdg (metactx, symctx, varctx, env') concl
       in
-        (env', RedPrlSequent.>> (([], hyps'), concl')) (* todo: I := ? *)
+        elabSrcSeqHyps (metactx, symctx, varctx, env) hyps >>= (fn (symctx', varctx', env', hyps') =>
+          elabSrcCatjdg (metactx, symctx', varctx', env') concl >>= (fn concl' =>
+             (* todo: I := ? *)
+            E.ret (env', RedPrlSequent.>> (([], hyps'), concl'))))
       end
-
-    fun convertToAbt (metactx, symctx, env) ast sort =
-      E.wrap (RedPrlAst.getAnnotation ast, fn () =>
-        AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, NameEnv.empty) (ast, sort)
-        handle AstToAbt.BadConversion (msg, pos) => error pos [Fpp.text msg])
-      >>= scopeCheck (metactx, symctx, Var.Ctx.empty)
 
     fun makeNamePopper alpha = 
       let
@@ -340,7 +327,7 @@ struct
         val (arguments', metactx) = elabDeclArguments arguments
         val (params', symctx, env) = elabDeclParams sign params
       in
-        convertToAbt (metactx, symctx, env) definiens sort >>= (fn definiens' =>
+        convertToAbt (metactx, symctx, Var.Ctx.empty, env) definiens sort >>= (fn definiens' =>
           let
             val tau = sort
             open Tm infix \
@@ -402,7 +389,7 @@ struct
           val (arguments', metactx) = elabDeclArguments arguments
           val (params', symctx, env) = elabDeclParams sign params
         in
-          E.wrap (pos, fn () => elabSrcSequent (metactx, symctx, Var.Ctx.empty, env) goal) >>= (fn (_, seqjdg as (syms, hyps) >> concl) =>
+          elabSrcSequent (metactx, symctx, Var.Ctx.empty, env) goal >>= (fn (_, seqjdg as (syms, hyps) >> concl) =>
             let
               (* TODO: deal with syms ?? *)
               val (symctx', env') =
@@ -419,7 +406,7 @@ struct
 
               val seqjdg' = (params' @ syms, hyps) >> concl
             in
-              convertToAbt (metactx, symctx', env') script TAC >>= 
+              convertToAbt (metactx, symctx', Var.Ctx.empty, env') script TAC >>= 
               (fn scriptTm => elabRefine sign globalNameSequence (seqjdg', scriptTm)) >>= 
               checkProofState (pos, []) >>=
               (fn Lcf.|> (subgoals, validation) => 
@@ -443,7 +430,7 @@ struct
         val (arguments', metactx) = elabDeclArguments arguments
         val (params' : symbol params, symctx, env) = elabDeclParams sign params
       in
-        convertToAbt (metactx, symctx, env) script O.TAC >>= (fn script' =>
+        convertToAbt (metactx, symctx, Var.Ctx.empty, env) script O.TAC >>= (fn script' =>
           let
             open O Tm infix \
             val binder = (List.map #1 params', []) \ script'
