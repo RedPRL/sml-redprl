@@ -64,22 +64,7 @@ sig
   val MEM : 'term * ('term * 'level * RedPrlKind.t) -> ('sym, 'level, 'term) jdg'
   val TYPE : 'term * 'level * RedPrlKind.t -> ('sym, 'level, 'term) jdg'
 
-  val map'
-    : ('sym1 -> 'sym2)
-    -> ('level1 -> 'level2)
-    -> ('term1 -> 'term2)
-    -> ('sym1, 'level1, 'term1) jdg'
-    -> ('sym2, 'level2, 'term2) jdg'
   val map : ('term1 -> 'term2) -> ('sym, 'level, 'term1) jdg' -> ('sym, 'level, 'term2) jdg'
-
-  (* raw pretty printer *)
-  val pretty'
-    : ('sym -> Fpp.doc)
-    -> ('level -> Fpp.doc)
-    -> ('term -> Fpp.doc)
-    -> ('term * 'term -> bool)
-    -> ('sym, 'level option, 'term) jdg'
-    -> Fpp.doc
 
   (* functions for judgments based on abt *)
   type jdg = (Sym.t, RedPrlLevel.P.level, RedPrlAbt.abt) jdg'
