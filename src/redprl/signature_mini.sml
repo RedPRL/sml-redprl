@@ -99,10 +99,6 @@ struct
     in
       Tm.substSymenv srho (Tm.substMetaenv mrho term)
     end
-
-  fun extract (Lcf.|> (_, validation)) =
-    case RedPrlAbt.outb validation of
-       RedPrlAbt.\ (_, term) => term
 end
 
 structure MiniSig_ : MINI_SIGNATURE = MiniSig
