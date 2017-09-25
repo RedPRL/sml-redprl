@@ -15,8 +15,7 @@ struct
      | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (h u, g l, k)
      | SYNTH (a, l, k) => SYNTH (h a, g l, k)
      | TERM tau => TERM tau
-     | PARAM_SUBST (psi, m, tau) => PARAM_SUBST
-         (List.map (fn (r, sigma, u) => (h r, sigma, f u)) psi, h m, tau)
+     | PARAM_SUBST (psi, m, tau) => PARAM_SUBST (List.map (fn (r, sigma, u) => (h r, sigma, f u)) psi, h m, tau)
   
   fun map f = map' (fn x => x) (fn x => x) f
 
