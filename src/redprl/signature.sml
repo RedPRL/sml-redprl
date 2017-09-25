@@ -245,16 +245,15 @@ struct
       AstToAbt.convertOpen (metactx, metactxToNameEnv metactx) (env, env) (ast, Sort.EXP)
 
     (* these should be included in the AstToAbt module *)
-    fun elabSym env (name : string) : Sym.t = NameEnv.lookup env name handle _ => Sym.named name
+    fun elabSym env (name : string) : Sym.t = NameEnv.lookup env name
 
     (* these should be included in the AstToAbt module *)
     fun elabParam env = RedPrlParameterTerm.map (elabSym env)
 
     fun elabLevel env = Option.map (RedPrlLevel.out o elabParam env o RedPrlAstLevel.into)
 
-    fun elabSrcCatjdg (metactx, symctx, varctx, env) : src_catjdg -> CJ.jdg =
-      CJ.map' (elabSym env) (elabLevel env) (elabAst (metactx, env))
-      (* TODO check scoping *)
+    fun elabSrcCatjdg (metactx, symctx, varctx, env) src_cjdg : CJ.jdg =
+      CJ.map' (elabSym env) (elabLevel env) (elabAst (metactx, env)) src_cjdg
 
     fun addHypName (env, symctx, varctx) (srcname, tau) =
       let
