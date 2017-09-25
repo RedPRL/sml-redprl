@@ -49,7 +49,7 @@ Thm Pick : [
 ].
 
 Thm Pick/zero/L : [
-  (-> [n : nat] (= (U 0) ($ Pick zero m) record))
+  (-> [n : nat] (= (U 0) ($ Pick zero n) record))
 ] by [
   lam n. auto
 ].
