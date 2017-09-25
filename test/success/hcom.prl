@@ -1,75 +1,73 @@
-// Here are some cool examples of using RedPRL's generic and hypothetical judgment to reason
-// semi-externally.
-
-// We can prove the following path composition theorem for any arbitrary type #A; this 'thm'
-// declaration elaborates to a definition Hcom/Poly{a:hyp}(#A:exp), so when you want to use 
-// this as a lemma, you simply supply to the operator the appropriate hypothesis in your context
-// which witnesses that #A = #A type. We could add a generic tactic that applies a lemma and 
-// *asserts* all its hypotheses, or tries to unify these with the context, etc.
-Thm Hcom/Poly(#A) : [
-  a/type : #A kan type
-  >>
+Thm Hcom/Poly{l:lvl} : [
   (->
-   [a b c d : #A]
-   (path {_} #A a b)
-   (path {_} #A a c)
-   (path {_} #A b d)
-   (path {_} #A c d))
+   [ty : (U l hcom)]
+   [a b c d : ty]
+   (path {_} ty a b)
+   (path {_} ty a c)
+   (path {_} ty b d)
+   (path {_} ty c d))
 ] by [
-  lam a, b, c, d, pab, pac, pbd.
-    <i> 
-      `(hcom{0 ~> 1} #A (@ ,pab i) 
+  lam ty, a, b, c, d, pab, pac, pbd.
+    <i>
+      `(hcom{0 ~> 1} ,ty (@ ,pab i)
         [i=0 {j} (@ ,pac j)]
         [i=1 {j} (@ ,pbd j)])
 ].
 
 Extract Hcom/Poly.
 
-Thm Hcom/trans(#A) : [
-  a/type : #A kan type
-  >>
+Thm Hcom/trans{l:lvl} : [
   (->
-   [a b c : #A]
-   (path {_} #A a b)
-   (path {_} #A b c)
-   (path {_} #A a c))
+   [ty : (U l hcom)]
+   [a b c : ty]
+   (path {_} ty a b)
+   (path {_} ty b c)
+   (path {_} ty a c))
 ] by [
-  lam a, b, c, pab, pbc.
+  lam ty, a, b, c, pab, pbc.
     <i>
-      `(hcom{0 ~> 1} #A (@ ,pab i) 
-        [i=0 {_} ,a] 
+      `(hcom{0 ~> 1} ,ty (@ ,pab i)
+        [i=0 {_} ,a]
         [i=1 {j} (@ ,pbc j)])
 ].
 
-Thm Hcom/symm(#A) : [
-  a/type : #A kan type
-  >> 
+Thm Hcom/symm{l:lvl} : [
   (->
-   [a b : #A]
-   (path {_} #A a b)
-   (path {_} #A b a))
+   [ty : (U l hcom)]
+   [a b : ty]
+   (path {_} ty a b)
+   (path {_} ty b a))
 ] by [
-  lam a, b, pab.
+  lam ty, a, b, pab.
     <i>
-      `(hcom{0 ~> 1} #A ,a 
+      `(hcom{0 ~> 1} ,ty ,a
         [i=0 {j} (@ ,pab j)]
         [i=1 {_} ,a])
 ].
 
-Thm Cap{i : dim}(#A) : [ 
-  a/type : #A hcom type,
-  x : #A
-  >> (hcom{0 ~> 0} #A x [i=0 {_} x] [i=1 {_} x]) = x in #A
+// An example of using the internalized exact equality type.
+Thm Cap{i:dim, l:lvl} : [
+  (->
+   [ty : (U l hcom)]
+   [x : ty]
+   (= ty
+      (hcom{0 ~> 0} ty x [i=0 {_} x] [i=1 {_} x])
+      x))
 ] by [
-  auto
+  lam ty, x. auto
 ].
 
-Thm Tube(#A) : [
-  a/type : #A hcom type,
-  x : #A
-  >> (hcom{0 ~> 1} #A x [1=1 {_} x] [0=0 {_} x]) = x in #A
+
+
+Thm Tube{l:lvl} : [
+  (->
+   [ty : (U l hcom)]
+   [x : ty]
+   (= ty
+      (hcom{0 ~> 1} ty x [1=1 {_} x] [0=0 {_} x])
+      x))
 ] by [
-  auto
+  lam ty, x. auto
 ].
 
 Thm TrueByEvaluation : [
