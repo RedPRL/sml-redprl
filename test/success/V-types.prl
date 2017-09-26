@@ -132,7 +132,7 @@ Thm NotEquiv : [
 Def NotV {i:dim} = [(V i bool bool NotEquiv)].
 
 Thm NotV/Wf {i:dim} : [
-  (Member {NotV i} (U (lvl 0) kan))
+  (Member {NotV i} (U 0 kan))
 ] by [
   `ax
 ].

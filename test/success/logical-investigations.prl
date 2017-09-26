@@ -2,7 +2,7 @@
 
 Thm Thm1 : [
   (-> 
-   [p q : (U (lvl 0))]
+   [p q : (U 0)]
    p q p)
 ] by [
   lam p, q, a, b. use a
@@ -10,7 +10,7 @@ Thm Thm1 : [
 
 Thm Thm2 : [
   (->
-   [p q r : (U (lvl 0))]
+   [p q r : (U 0)]
    (-> p q)
    (-> p q r)
    p r)
@@ -25,7 +25,7 @@ Extract Thm2.
 // here's a proof using lower-level scripting
 Thm Thm3/low-level : [
   (->
-   [p q r : (U (lvl 0))]
+   [p q r : (U 0)]
    (-> p q)
    (-> q r)
    (-> p r))
@@ -43,7 +43,7 @@ Extract Thm3/low-level.
 // and nicely segregate main goals from auxiliary goals.
 Thm Thm3/high-level : [
   (->
-   [p q r : (U (lvl 0))]
+   [p q r : (U 0)]
    (-> p q)
    (-> q r)
    (-> p r))
@@ -57,7 +57,7 @@ Extract Thm3/high-level.
 Def Not(#A) = [ (-> #A void) ].
 
 Thm Thm4 : [
-  (-> [p q : (U (lvl 0))] (Not p) p q)
+  (-> [p q : (U 0)] (Not p) p q)
 ] by [
   lam p, q, r, a.
   unfold Not;
@@ -66,7 +66,7 @@ Thm Thm4 : [
 ].
 
 Thm Thm5 : [
-  (-> [p : (U (lvl 0))] p (Not (Not p)))
+  (-> [p : (U 0)] p (Not (Not p)))
 ] by [
   lam p, a. unfold Not; lam r.
   use r [use a]
@@ -77,7 +77,7 @@ Print Thm5.
 
 
 Thm Thm6(#A;#B) : [
-  (-> [p q : (U (lvl 0))] (-> p q) (Not q) (Not p))
+  (-> [p q : (U 0)] (-> p q) (Not q) (Not p))
 ] by [
   lam p, q, f, g. unfold Not; lam a.
   use g [use f [use a]]

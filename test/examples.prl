@@ -217,7 +217,7 @@ Tac FunExtTac(#l : lvl) = [
 Print FunExtTac.
 
 Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
-  (FunExtTac (lvl 0));
+  (FunExtTac #lvl{0});
   {lam x. if x then <_> `tt else <_> `ff};
   auto
 ].

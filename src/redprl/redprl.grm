@@ -286,6 +286,7 @@ end
  | RIGHT_ARROW | LEFT_ARROW
  | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | TRIANGLE_RIGHT
+ | PLUS
 
  (* parameter sorts *)
  | DIM | HYP | META_NAME
@@ -293,7 +294,7 @@ end
  | EXP | TAC | TRIV | JDG | LVL
 
  (* keywords and symbols in parameters *)
- | LPLUS | LSUCC | LMAX
+ | LMAX
 
  (* keywords and symbols in expressions *)
  | AX
@@ -402,6 +403,8 @@ end
  | regularMultinaryOperator of string operator
  | rawTermAndTac of ast (* shared with tactics *)
  | rawTerm of ast
+ | level of ast
+ | levels of ast list
 
    (* a type-theoretic term, annotated with source position *)
  | term of ast
@@ -409,7 +412,6 @@ end
  | typedTerm of ast * O.sort
  | typedTerms of (ast * O.sort) list
 
- | atLevel of ast option
  | kind of O.K.kind
  | withKindAtLevel of ast option * O.K.kind
 
@@ -633,7 +635,6 @@ polyNullaryOperator
   (* circle *)
   : LOOP dimParam (O.POLY (O.LOOP dimParam))
   | DIM dimParam (O.POLY (O.PARAM_REF (O.DIM, dimParam)))
-  | LVL NUMERAL (O.MONO (O.LCONST NUMERAL))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
@@ -657,7 +658,6 @@ regularMultinaryOperator
   | VPROJ dimParam (O.POLY (O.VPROJ dimParam))
   (* coe *)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
-  | LSUCC (O.MONO (O.LPLUS 1))
 
 
 customOpTerm
@@ -697,12 +697,8 @@ rawTermAndTac
   | LPAREN polyNullaryOperator RPAREN (Ast.$$ (polyNullaryOperator, []))
   | LPAREN regularMultinaryOperator bindings RPAREN (Ast.$$ (regularMultinaryOperator, bindings))
 
-
-  | LPAREN LPLUS term NUMERAL RPAREN (Ast.$$ (O.MONO (O.LPLUS NUMERAL), [Ast.\ (([],[]), term)]))
-  | LPAREN LMAX terms RPAREN (Ast.$$ (O.MONO (O.LMAX (List.length terms)), List.map (fn e => Ast.\ (([],[]), e)) terms))
-
-  | LPAREN UNIVERSE term RPAREN (Ast.$$ (O.MONO (O.UNIVERSE RedPrlKind.top), [Ast.\ (([],[]), term)]))
-  | LPAREN UNIVERSE term kind RPAREN (Ast.$$ (O.MONO (O.UNIVERSE kind), [Ast.\ (([],[]), term)]))
+  | LPAREN UNIVERSE level RPAREN (Ast.$$ (O.MONO (O.UNIVERSE RedPrlKind.top), [Ast.\ (([],[]), level)]))
+  | LPAREN UNIVERSE level kind RPAREN (Ast.$$ (O.MONO (O.UNIVERSE kind), [Ast.\ (([],[]), level)]))
 
   (* compositions *)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
@@ -737,10 +733,23 @@ rawTermAndTac
   | LPAREN ABS LBRACKET boundVars RBRACKET term RPAREN (Multi.makePathAbs boundVars term)
   | LPAREN AT_SIGN term dimParams RPAREN (Multi.makePathApp term dimParams)
 
+level
+  : NUMERAL (Ast.$$ (O.MONO (O.LCONST NUMERAL), []))
+  | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.MONO (O.LPLUS NUMERAL), [Ast.\ (([],[]), level)]))
+  | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.MONO (O.LPLUS 1), [Ast.\ (([],[]), level)]))
+  | LPAREN LMAX levels RPAREN (Ast.$$ (O.MONO (O.LMAX (List.length levels)), List.map (fn e => Ast.\ (([],[]), e)) levels))
+  | metavar (Ast.$$# (metavar, ([], [])))
+  | PERCENT VARNAME (Ast.$$ (O.POLY (O.PAT_META (VARNAME, O.LVL, [], [])), []))
+
+levels
+  : level ([level])
+  | levels level (level :: levels)
+
 rawTerm
   : rawTermAndTac (rawTermAndTac)
   | HASH TAC LBRACKET tactic RBRACKET (tactic)
   | HASH JDG LBRACKET judgment RBRACKET (judgment)
+  | HASH LVL LBRACKET level RBRACKET (level)
   (* hypotheses *)
   | COMMA LSQUARE VARNAME COLON sort RSQUARE (Ast.$$ (O.POLY (O.HYP_REF (VARNAME, sort)), []))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF (VARNAME, O.EXP)), []))
@@ -759,10 +768,6 @@ typedTerms
   : typedTerm ([typedTerm])
   | typedTerm typedTerms (typedTerm :: typedTerms)
 
-atLevel
-  : AT term (SOME term)
-  | (NONE)
-
 kind
   : DISCRETE (O.K.DISCRETE)
   | KAN (O.K.KAN)
@@ -771,10 +776,10 @@ kind
   | CUBICAL (O.K.CUBICAL)
 
 withKindAtLevel
-  : WITH kind AT term (SOME term, kind)
-  | AT term WITH kind (SOME term, kind)
+  : WITH kind AT level (SOME level, kind)
+  | AT level WITH kind (SOME level, kind)
   | WITH kind (NONE, kind)
-  | AT term (SOME term, O.K.top)
+  | AT level (SOME level, O.K.top)
   | (NONE, O.K.top)
 
 rawJudgment
