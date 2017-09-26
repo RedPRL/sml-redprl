@@ -7,7 +7,7 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = CJ.jdg
+  type catjdg = AJ.jdg
   type opid = Sig.opid
 
   infixr @@
@@ -58,7 +58,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((a, b), l, k) = jdg
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
         val _ = Assert.levelLeq (SOME inherentLevel, l)
@@ -72,7 +72,7 @@ struct
     fun EqTT _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqTT"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.BOOL = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -85,7 +85,7 @@ struct
     fun EqFF _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqFF"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.BOOL = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -100,25 +100,25 @@ struct
         val _ = RedPrlLog.trace "Bool.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.BOOL = Syn.out ty
 
         (* tt branch *)
         val tt = Syn.into Syn.TT
         val Htt = Hyps.substAfter (z, tt) H
-        val (goalT, holeT) = makeGoal @@ (I, Htt) >> CJ.map (substVar (tt, z)) catjdg
+        val (goalT, holeT) = makeGoal @@ (I, Htt) >> AJ.map (substVar (tt, z)) catjdg
 
         (* ff branch *)
         val ff = Syn.into Syn.FF
         val Hff = Hyps.substAfter (z, ff) H
-        val (goalF, holeF) = makeGoal @@ (I, Hff) >> CJ.map (substVar (ff, z)) catjdg
+        val (goalF, holeF) = makeGoal @@ (I, Hff) >> AJ.map (substVar (ff, z)) catjdg
 
         val evidence =
           case catjdg of
-             CJ.TRUE _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
-           | CJ.EQ _ => trivial
-           | CJ.EQ_TYPE _ => trivial
-           | CJ.SYNTH _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
+             AJ.TRUE _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
+           | AJ.EQ _ => trivial
+           | AJ.EQ_TYPE _ => trivial
+           | AJ.SYNTH _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
            | _ => raise Fail "Bool.Elim cannot be called with this kind of goal"
       in
         |>: goalT >: goalF #> (I, H, evidence)
@@ -129,13 +129,13 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqElim"
-        val (I, H) >> CJ.EQ ((if0, if1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((if0, if1), (ty, l, k)) = jdg
         val Syn.IF (m0, (t0, f0)) = Syn.out if0
         val Syn.IF (m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
         val x = alpha 0
-        val Hx = H @> (x, CJ.TRUE (Syn.into Syn.BOOL, SOME inherentLevel, inherentKind))
+        val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL, SOME inherentLevel, inherentKind))
         val (goalTy, holeTy) = makeTerm (I, Hx) O.EXP
         val goalTy' = makeType (I, Hx) (holeTy, NONE, K.top)
 
@@ -163,7 +163,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((a, b), l, k) = jdg
         val Syn.WBOOL = Syn.out a
         val Syn.WBOOL = Syn.out b
         val _ = Assert.levelLeq (SOME inherentLevel, l)
@@ -177,7 +177,7 @@ struct
     fun EqTT _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqTT"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.WBOOL = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -190,7 +190,7 @@ struct
     fun EqFF _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqFF"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.WBOOL = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -203,7 +203,7 @@ struct
     fun EqFCom alpha jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqFCom"
-        val (I, H) >> CJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
         val Syn.WBOOL = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -216,11 +216,11 @@ struct
     fun Elim z _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.Elim"
-        val (I, H) >> CJ.TRUE (cz, l, k) = jdg
+        val (I, H) >> AJ.TRUE (cz, l, k) = jdg
         (* if(FCOM) steps to COM *)
         val k = K.meet (k, K.COM)
         (* for now we ignore the kind and the level in the context *)
-        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.WBOOL = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
@@ -245,7 +245,7 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqElim"
-        val (I, H) >> CJ.EQ ((if0, if1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((if0, if1), (ty, l, k)) = jdg
         (* if(FCOM) steps to COM *)
         val k = K.meet (k, K.COM)
         val Syn.WIF ((x, c0x), m0, (t0, f0)) = Syn.out if0
@@ -255,7 +255,7 @@ struct
         val z = alpha 0
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
-        val Hz = H @> (z, CJ.TRUE (Syn.into Syn.WBOOL, SOME inherentLevel, inherentKind))
+        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.WBOOL, SOME inherentLevel, inherentKind))
         val goalTy = makeEqType (I, Hz) ((c0z, c1z), NONE, K.top)
 
         (* eliminated term *)
@@ -276,7 +276,7 @@ struct
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.SynthElim"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val (I, H) >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.WIF ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
@@ -294,7 +294,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Nat.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((a, b), l, k) = jdg
         val Syn.NAT = Syn.out a
         val Syn.NAT = Syn.out b
         val _ = Assert.levelLeq (SOME inherentLevel, l)
@@ -308,7 +308,7 @@ struct
     fun EqZero _ jdg =
       let
         val _ = RedPrlLog.trace "Nat.EqZero"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.NAT = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -321,7 +321,7 @@ struct
     fun EqSucc _ jdg =
       let
         val _ = RedPrlLog.trace "Nat.EqSucc"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.NAT = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -335,9 +335,9 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Nat.Elim"
-        val (I, H) >> CJ.TRUE (cz, l, k) = jdg
+        val (I, H) >> AJ.TRUE (cz, l, k) = jdg
         (* for now we ignore the kind and the level in the context *)
-        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.NAT = Syn.out ty
 
         val nat = Syn.into Syn.NAT
@@ -353,7 +353,7 @@ struct
         val cu = VarKit.rename (u, z) cz
         val (goalS, holeS) =
           makeTrue
-            (I, H @> (u, CJ.TRUE (nat, SOME inherentLevel, inherentKind)) @> (v, CJ.TRUE (cu, l, k)))
+            (I, H @> (u, AJ.TRUE (nat, SOME inherentLevel, inherentKind)) @> (v, AJ.TRUE (cu, l, k)))
             (substVar (succ @@ VarKit.toExp u, z) cz, l, k)
 
         (* realizer *)
@@ -365,7 +365,7 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Nat.EqElim"
-        val (I, H) >> CJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
         val Syn.NAT_REC (m0, (n0, (a0, b0, p0))) = Syn.out elim0
         val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
 
@@ -375,7 +375,7 @@ struct
 
         (* motive *)
         val z = alpha 0
-        val Hz = H @> (z, CJ.TRUE (nat, SOME inherentLevel, inherentKind))
+        val Hz = H @> (z, AJ.TRUE (nat, SOME inherentLevel, inherentKind))
         val (goalC, holeC) = makeTerm (I, Hz) O.EXP
         val goalC' = makeType (I, Hz) (holeC, NONE, K.top)
 
@@ -396,7 +396,7 @@ struct
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
-            (I, H @> (u, CJ.TRUE (nat, SOME inherentLevel, inherentKind)) @> (v, CJ.TRUE (cu, l, k)))
+            (I, H @> (u, AJ.TRUE (nat, SOME inherentLevel, inherentKind)) @> (v, AJ.TRUE (cu, l, k)))
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalC' >:? goalTy #> (I, H, trivial)
@@ -405,7 +405,7 @@ struct
     fun EqTypeElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Nat.EqTypeElim"
-        val (I, H) >> CJ.EQ_TYPE ((elim0, elim1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((elim0, elim1), l, k) = jdg
         val Syn.NAT_REC (m0, (n0, (a0, b0, p0))) = Syn.out elim0
         val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
 
@@ -415,7 +415,7 @@ struct
 
         (* motive *)
         val z = alpha 0
-        val Hz = H @> (z, CJ.TRUE (nat, SOME inherentLevel, inherentKind))
+        val Hz = H @> (z, AJ.TRUE (nat, SOME inherentLevel, inherentKind))
         val (goalC, holeC) = makeTerm (I, Hz) O.EXP
         val goalC' = makeType (I, Hz) (holeC, NONE, K.top)
 
@@ -436,8 +436,8 @@ struct
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
-            (I, H @> (u, CJ.TRUE (nat, SOME inherentLevel, inherentKind))
-                  @> (v, CJ.TRUE (cu, Universe.inherentLevel' l, Universe.inherentKind k)))
+            (I, H @> (u, AJ.TRUE (nat, SOME inherentLevel, inherentKind))
+                  @> (v, AJ.TRUE (cu, Universe.inherentLevel' l, Universe.inherentKind k)))
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalC' >: goalTy #> (I, H, trivial)
@@ -452,7 +452,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Int.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((a, b), l, k) = jdg
         val Syn.INT = Syn.out a
         val Syn.INT = Syn.out b
         val _ = Assert.levelLeq (SOME inherentLevel, l)
@@ -466,7 +466,7 @@ struct
     fun EqZero _ jdg =
       let
         val _ = RedPrlLog.trace "Int.EqZero"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.INT = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -479,7 +479,7 @@ struct
     fun EqSucc _ jdg =
       let
         val _ = RedPrlLog.trace "Int.EqSucc"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.INT = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -493,7 +493,7 @@ struct
     fun EqNegSucc _ jdg =
       let
         val _ = RedPrlLog.trace "Int.EqNegSucc"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.INT = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -507,9 +507,9 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Int.Elim"
-        val (I, H) >> CJ.TRUE (cz, l, k) = jdg
+        val (I, H) >> AJ.TRUE (cz, l, k) = jdg
         (* for now we ignore the kind and the level in the context *)
-        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.INT = Syn.out ty
 
         val nat = Syn.into Syn.NAT
@@ -526,7 +526,7 @@ struct
         val cu = VarKit.rename (u, z) cz
         val (goalS, holeS) =
           makeTrue
-            (I, H @> (u, CJ.TRUE (nat, SOME Nat.inherentLevel, Nat.inherentKind)) @> (v, CJ.TRUE (cu, l, k)))
+            (I, H @> (u, AJ.TRUE (nat, SOME Nat.inherentLevel, Nat.inherentKind)) @> (v, AJ.TRUE (cu, l, k)))
             (substVar (succ @@ VarKit.toExp u, z) cz, l, k)
 
         (* (negsucc zero) branch *)
@@ -536,7 +536,7 @@ struct
         val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) cz
         val (goalNSS, holeNSS) =
           makeTrue
-            (I, H @> (u, CJ.TRUE (nat, SOME Nat.inherentLevel, Nat.inherentKind)) @> (v, CJ.TRUE (cnegsuccu, l, k)))
+            (I, H @> (u, AJ.TRUE (nat, SOME Nat.inherentLevel, Nat.inherentKind)) @> (v, AJ.TRUE (cnegsuccu, l, k)))
             (substVar (negsucc @@ succ @@ VarKit.toExp u, z) cz, l, k)
 
         (* realizer *)
@@ -548,7 +548,7 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Int.EqElim"
-        val (I, H) >> CJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
         val Syn.INT_REC (m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
         val Syn.INT_REC (m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
 
@@ -559,7 +559,7 @@ struct
 
         (* motive *)
         val z = alpha 0
-        val Hz = H @> (z, CJ.TRUE (nat, SOME Nat.inherentLevel, Nat.inherentKind))
+        val Hz = H @> (z, AJ.TRUE (nat, SOME Nat.inherentLevel, Nat.inherentKind))
         val (goalC, holeC) = makeTerm (I, Hz) O.EXP
         val goalC' = makeType (I, Hz) (holeC, NONE, K.top)
 
@@ -580,7 +580,7 @@ struct
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
-            (I, H @> (u, CJ.TRUE (nat, SOME Nat.inherentLevel, Nat.inherentKind)) @> (v, CJ.TRUE (cu, l, k)))
+            (I, H @> (u, AJ.TRUE (nat, SOME Nat.inherentLevel, Nat.inherentKind)) @> (v, AJ.TRUE (cu, l, k)))
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
 
         (* (negsucc zero) branch *)
@@ -592,7 +592,7 @@ struct
         val r1 = VarKit.renameMany [(u, c1), (v, d1)] r1
         val goalNSS =
           makeEq
-            (I, H @> (u, CJ.TRUE (nat, l, inherentKind)) @> (v, CJ.TRUE (cnegsuccu, l, k)))
+            (I, H @> (u, AJ.TRUE (nat, l, inherentKind)) @> (v, AJ.TRUE (cnegsuccu, l, k)))
             ((r0, r1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >:? goalTy #> (I, H, trivial)
@@ -607,7 +607,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Void.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((a, b), l, k) = jdg
         val Syn.VOID = Syn.out a
         val Syn.VOID = Syn.out b
         val _ = Assert.levelLeq (SOME inherentLevel, l)
@@ -623,15 +623,15 @@ struct
         val _ = RedPrlLog.trace "Void.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.VOID = Syn.out ty
 
         val evidence =
           case catjdg of
-             CJ.TRUE _ => Syn.into Syn.AX (* should be some fancy symbol *)
-           | CJ.EQ _ => trivial
-           | CJ.EQ_TYPE _ => trivial
-           | CJ.SYNTH _ => Syn.into Syn.AX
+             AJ.TRUE _ => Syn.into Syn.AX (* should be some fancy symbol *)
+           | AJ.EQ _ => trivial
+           | AJ.EQ_TYPE _ => trivial
+           | AJ.SYNTH _ => Syn.into Syn.AX
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
       in
         T.empty #> (I, H, evidence)
@@ -648,7 +648,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((a, b), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((a, b), l, k) = jdg
         val Syn.S1 = Syn.out a
         val Syn.S1 = Syn.out b
         val _ = Assert.levelLeq (SOME inherentLevel, l)
@@ -662,7 +662,7 @@ struct
     fun EqBase _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqBase"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -675,7 +675,7 @@ struct
     fun EqLoop _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqLoop"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -689,7 +689,7 @@ struct
     fun EqFCom alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.EqFCom"
-        val (I, H) >> CJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (SOME inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
@@ -702,11 +702,11 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.Elim"
-        val (I, H) >> CJ.TRUE (cz, l, k) = jdg
+        val (I, H) >> AJ.TRUE (cz, l, k) = jdg
         (* S1-rec(FCOM) steps to COM *)
         val k = K.meet (k, K.COM)
         (* for now we ignore the kind and the level in the context *)
-        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.S1 = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
@@ -741,7 +741,7 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.EqElim"
-        val (I, H) >> CJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
         (* S1-rec(FCOM) steps to COM *)
         val k = K.meet (k, K.COM)
         val Syn.S1_REC ((x, c0x), m0, (b0, (u, l0u))) = Syn.out elim0
@@ -753,7 +753,7 @@ struct
         val z = alpha 0
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
-        val goalC = makeEqType (I, H @> (z, CJ.TRUE (S1, SOME inherentLevel, inherentKind))) ((c0z, c1z), l, k)
+        val goalC = makeEqType (I, H @> (z, AJ.TRUE (S1, SOME inherentLevel, inherentKind))) ((c0z, c1z), l, k)
 
         (* eliminated term *)
         val goalM = makeEq (I, H) ((m0, m1), (S1, NONE, K.top))
@@ -785,7 +785,7 @@ struct
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "S1.SynthElim"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val (I, H) >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.S1_REC ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
@@ -807,7 +807,7 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "Fun.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((fun0, fun1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((fun0, fun1), l, k) = jdg
         val Syn.FUN (a0, x, b0x) = Syn.out fun0
         val Syn.FUN (a1, y, b1y) = Syn.out fun1
         val (ka, kb) = kindConstraintsOnDomAndCod k
@@ -819,7 +819,7 @@ struct
         val z = alpha 0
         val b0z = VarKit.rename (z, x) b0x
         val b1z = VarKit.rename (z, y) b1y
-        val goalB = makeEqType (I, H @> (z, CJ.TRUE (a0, l, ka))) ((b0z, b1z), l, kb)
+        val goalB = makeEqType (I, H @> (z, AJ.TRUE (a0, l, ka))) ((b0z, b1z), l, kb)
       in
         |>: goalA >: goalB #> (I, H, trivial)
       end
@@ -829,7 +829,7 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Fun.Eq"
-        val (I, H) >> CJ.EQ ((lam0, lam1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((lam0, lam1), (ty, l, k)) = jdg
         val Syn.LAM (x, m0x) = Syn.out lam0
         val Syn.LAM (y, m1y) = Syn.out lam1
         val Syn.FUN (a, z, bz) = Syn.out ty
@@ -843,7 +843,7 @@ struct
         val m0w = VarKit.rename (w, x) m0x
         val m1w = VarKit.rename (w, y) m1y
         val bw = VarKit.rename (w, z) bz
-        val goalM = makeEq (I, H @> (w, CJ.TRUE (a, l, ka))) ((m0w, m1w), (bw, l, kb))
+        val goalM = makeEq (I, H @> (w, AJ.TRUE (a, l, ka))) ((m0w, m1w), (bw, l, kb))
       in
         |>: goalM >: goalA #> (I, H, trivial)
       end
@@ -851,7 +851,7 @@ struct
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "Fun.True"
-        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val (I, H) >> AJ.TRUE (ty, l, k) = jdg
         val Syn.FUN (a, x, bx) = Syn.out ty
         val (ka, kb) = kindConstraintsOnDomAndCod k
 
@@ -861,7 +861,7 @@ struct
         (* function *)
         val z = alpha 0
         val bz = VarKit.rename (z, x) bx
-        val (goalLam, hole) = makeTrue (I, H @> (z, CJ.TRUE (a, l, ka))) (bz, l, kb)
+        val (goalLam, hole) = makeTrue (I, H @> (z, AJ.TRUE (a, l, ka))) (bz, l, kb)
 
         (* realizer *)
         val lam = Syn.intoLam (z, hole)
@@ -874,7 +874,7 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.Eta"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.FUN (_, x, _) = Syn.out ty
 
         val m' = Syn.intoLam (x, Syn.intoApp (m, VarKit.toExp x))
@@ -889,7 +889,7 @@ struct
         val _ = RedPrlLog.trace "Fun.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val CJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val AJ.TRUE (ty, l', _) = Hyps.lookup z H
         val Syn.FUN (a, x, bx) = Syn.out ty
 
         (* argument *)
@@ -902,8 +902,8 @@ struct
         val aptm = Syn.intoApp (VarKit.toExp z, holeA)
         (* note: a and bx come from the telescope so they are types *)
         val H' = Hyps.interposeAfter
-          (z, |@> (u, CJ.TRUE (b', l', K.top))
-               @> (v, CJ.EQ ((VarKit.toExp u, aptm), (b', l', K.top))))
+          (z, |@> (u, AJ.TRUE (b', l', K.top))
+               @> (v, AJ.EQ ((VarKit.toExp u, aptm), (b', l', K.top))))
           H
 
         val (goalF, holeF) = makeGoal @@ (I, H') >> catjdg
@@ -914,7 +914,7 @@ struct
     fun EqApp _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.EqApp"
-        val (I, H) >> CJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
         val Syn.APP (m0, n0) = Syn.out ap0
         val Syn.APP (m1, n1) = Syn.out ap1
 
@@ -932,7 +932,7 @@ struct
     fun EqTypeApp _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.EqTypeApp"
-        val (I, H) >> CJ.EQ_TYPE ((ap0, ap1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((ap0, ap1), l, k) = jdg
         val Syn.APP (m0, n0) = Syn.out ap0
         val Syn.APP (m1, n1) = Syn.out ap1
 
@@ -950,7 +950,7 @@ struct
     fun SynthApp _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.SynthApp"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val (I, H) >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.APP (m, n) = Syn.out tm
         val (goalFun, holeFun) = makeSynth (I, H) (m, NONE, K.top)
         val (goalDom, holeDom) = makeMatch (O.MONO O.FUN, 0, holeFun, [], [])
@@ -976,7 +976,7 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "Record.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((record0, record1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((record0, record1), l, k) = jdg
         val Syn.RECORD fields0 = Syn.out record0
         val Syn.RECORD fields1 = Syn.out record1
         val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
@@ -993,7 +993,7 @@ struct
                  val ty1' = renameVars ren1 ty1
                  val kind = if isFirst then headKind else tailKind
                  val goals' = goals >: makeEqType (I, hyps) ((ty0', ty1'), l, kind)
-                 val hyps' = hyps @> (var, CJ.TRUE (ty0', l, kind))
+                 val hyps' = hyps @> (var, AJ.TRUE (ty0', l, kind))
                  val ren0' = Var.Ctx.insert ren0 var0 var
                  val ren1' = Var.Ctx.insert ren1 var1 var
                in
@@ -1008,7 +1008,7 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "Record.Eq"
-        val (I, H) >> CJ.EQ ((tuple0, tuple1), (record, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((tuple0, tuple1), (record, l, k)) = jdg
         val Syn.RECORD fields = Syn.out record
         val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
@@ -1027,7 +1027,7 @@ struct
                  val kind = if isFirst then headKind else tailKind
                  val goals' = goals >: makeEq (I, H) ((m0, m1), (ty', l, kind))
                  val famGoals' = if isFirst then famGoals else famGoals >: makeType (I, hyps) (ty, l, kind)
-                 val hyps' = hyps @> (var, CJ.TRUE (ty, l, kind))
+                 val hyps' = hyps @> (var, AJ.TRUE (ty, l, kind))
                in
                  {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}
                end)
@@ -1040,7 +1040,7 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "Record.True"
-        val (I, H) >> CJ.TRUE (record, l, k) = jdg
+        val (I, H) >> AJ.TRUE (record, l, k) = jdg
         val Syn.RECORD fields = Syn.out record
         val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
@@ -1049,7 +1049,7 @@ struct
             (fn (((lbl, var), ty), {goals, famGoals, elements, env, hyps, isFirst}) =>
                let
                  val kind = if isFirst then headKind else tailKind
-                 val hyps' = hyps @> (var, CJ.TRUE (ty, l, kind))
+                 val hyps' = hyps @> (var, AJ.TRUE (ty, l, kind))
                  val ty' = substVarenv env ty
                  val (elemGoal, elemHole) = makeTrue (I, H) (ty', l, kind)
                  val env' = Var.Ctx.insert env var elemHole
@@ -1070,7 +1070,7 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Record.Eta"
-        val (I, H) >> CJ.EQ ((m, n), (record, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (record, l, k)) = jdg
         val Syn.RECORD rcd = Syn.out record
         val dom = List.map (#1 o #1) rcd
 
@@ -1108,7 +1108,7 @@ struct
         val _ = RedPrlLog.trace "Record.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val CJ.TRUE (record, l', _) = Hyps.lookup z H
+        val AJ.TRUE (record, l', _) = Hyps.lookup z H
         val Syn.RECORD fields = Syn.out record
 
         val names = List.tabulate (List.length fields, alpha)
@@ -1116,7 +1116,7 @@ struct
           ListPair.foldlEq
             (fn (name, ((_, var), ty), {ren, hyps}) =>
               {ren = Var.Ctx.insert ren var name,
-               hyps = hyps @> (name, CJ.TRUE (renameVars ren ty, l', K.top))})
+               hyps = hyps @> (name, AJ.TRUE (renameVars ren ty, l', K.top))})
             {ren = Var.Ctx.empty, hyps = Hyps.empty}
             (names, fields)
         val tuple = Syn.into @@ Syn.TUPLE @@
@@ -1125,7 +1125,7 @@ struct
             (fields, names)
         val H' = Hyps.interposeThenSubstAfter (z, hyps, tuple) H
 
-        val (goal, hole) = makeGoal @@ (I, H') >> CJ.map (substVar (tuple, z)) catjdg
+        val (goal, hole) = makeGoal @@ (I, H') >> AJ.map (substVar (tuple, z)) catjdg
 
         val projEnv =
           ListPair.foldlEq
@@ -1139,7 +1139,7 @@ struct
     fun EqProj _ jdg =
       let
         val _ = RedPrlLog.trace "Record.EqProj"
-        val (I, H) >> CJ.EQ ((proj0, proj1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((proj0, proj1), (ty, l, k)) = jdg
         val Syn.PROJ (lbl0, m0) = Syn.out proj0
         val Syn.PROJ (lbl1, m1) = Syn.out proj1
         val () = Assert.labelEq "Record.EqProj" (lbl0, lbl1)
@@ -1156,7 +1156,7 @@ struct
     fun SynthProj _ jdg =
       let
         val _ = RedPrlLog.trace "Record.SynthProj"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val (I, H) >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.PROJ (lbl, n) = Syn.out tm
         val (goalRecord, holeRecord) = makeSynth (I, H) (n, NONE, K.top)
         val (goalTy, holeTy) = makeMatchRecord (lbl, holeRecord, n)
@@ -1178,7 +1178,7 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "Path.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val Syn.PATH_TY ((u, a0u), m0, n0) = Syn.out ty0
         val Syn.PATH_TY ((v, a1v), m1, n1) = Syn.out ty1
         val ka = kindConstraintOnBase k
@@ -1199,7 +1199,7 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Path.Eq"
-        val (I, H) >> CJ.EQ ((abs0, abs1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((abs0, abs1), (ty, l, k)) = jdg
         val Syn.PATH_TY ((u, au), p0, p1) = Syn.out ty
         val ka = kindConstraintOnBase k
         val Syn.PATH_ABS (v, m0v) = Syn.out abs0
@@ -1225,7 +1225,7 @@ struct
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "Path.True"
-        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val (I, H) >> AJ.TRUE (ty, l, k) = jdg
         val Syn.PATH_TY ((u, au), p0, p1) = Syn.out ty
         val ka = kindConstraintOnBase k
         val a0 = substSymbol (P.APP P.DIM0, u) au
@@ -1249,7 +1249,7 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Path.Eta"
-        val (I, H) >> CJ.EQ ((m, n), (pathTy, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (pathTy, l, k)) = jdg
         val Syn.PATH_TY ((u, _), _, _) = Syn.out pathTy
 
         val m' = Syn.into @@ Syn.PATH_ABS (u, Syn.into @@ Syn.PATH_APP (m, P.ret u))
@@ -1264,7 +1264,7 @@ struct
         val _ = RedPrlLog.trace "Path.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val CJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val AJ.TRUE (ty, l', _) = Hyps.lookup z H
         val Syn.PATH_TY ((u, a), _, _) = Syn.out ty
 
         val x = alpha 0
@@ -1277,8 +1277,8 @@ struct
         val (pathAppGoal, pathAppHole) = makeDimSubst (I, H) (dimHole, w, Syn.into @@ Syn.PATH_APP (VarKit.toExp z, P.ret w))
 
         val H' = Hyps.interposeAfter
-          (z, |@> (x, CJ.TRUE (arHole, l', K.top))
-               @> (y, CJ.EQ ((VarKit.toExp x, pathAppHole), (arHole, l', K.top))))
+          (z, |@> (x, AJ.TRUE (arHole, l', K.top))
+               @> (y, AJ.EQ ((VarKit.toExp x, pathAppHole), (arHole, l', K.top))))
           H
 
         val (mainGoal, mainHole) = makeGoal @@ (I, H') >> catjdg
@@ -1290,7 +1290,7 @@ struct
     fun EqApp _ jdg =
       let
         val _ = RedPrlLog.trace "Path.EqApp"
-        val (I, H) >> CJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
         val Syn.PATH_APP (m0, r0) = Syn.out ap0
         val Syn.PATH_APP (m1, r1) = Syn.out ap1
         val () = Assert.paramEq "Path.EqApp" (r0, r1)
@@ -1306,7 +1306,7 @@ struct
     fun SynthApp _ jdg =
       let
         val _ = RedPrlLog.trace "Path.SynthApp"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val (I, H) >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.PATH_APP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth (I, H) (m, NONE, K.top)
         val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holePathTy, [r], [])
@@ -1318,7 +1318,7 @@ struct
     fun EqAppConst _ jdg =
       let
         val _ = RedPrlLog.trace "Path.EqAppConst"
-        val (I, H) >> CJ.EQ ((ap, p), (a, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((ap, p), (a, l, k)) = jdg
         val Syn.PATH_APP (m, P.APP r) = Syn.out ap
 
         val (goalSynth, holeSynth) = makeSynth (I, H) (m, NONE, K.top)
@@ -1346,7 +1346,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val Syn.EQUALITY (a0, m0, n0) = Syn.out ty0
         val Syn.EQUALITY (a1, m1, n1) = Syn.out ty1
         val ka = kindConstraintOnBase k
@@ -1361,7 +1361,7 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eq"
-        val (I, H) >> CJ.EQ ((ax0, ax1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((ax0, ax1), (ty, l, k)) = jdg
         val Syn.EQUALITY (a, m, n) = Syn.out ty
         val ka = kindConstraintOnBase k
         val Syn.AX = Syn.out ax0
@@ -1375,7 +1375,7 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.True"
-        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val (I, H) >> AJ.TRUE (ty, l, k) = jdg
         val Syn.EQUALITY (a, m, n) = Syn.out ty
         val ka = kindConstraintOnBase k
 
@@ -1387,7 +1387,7 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eta"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
         val Syn.EQUALITY _ = Syn.out ty
 
         val goal1 = makeMem (I, H) (m, (ty, l, k))
@@ -1403,7 +1403,7 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.Elim"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val CJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val AJ.TRUE (ty, l', _) = Hyps.lookup z H
         val Syn.EQUALITY (a, m, n) = Syn.out ty
 
         (* Adding an equality judgment diverges from Nuprl, but this is currently
@@ -1413,8 +1413,8 @@ struct
         val ax = Syn.into Syn.AX
         val (goal, hole) =
           makeGoal
-            @@ (I, Hyps.interposeThenSubstAfter (z, |@> (u, CJ.EQ ((m, n), (a, l', K.top))), ax) H)
-            >> CJ.map (substVar (ax, z)) catjdg
+            @@ (I, Hyps.interposeThenSubstAfter (z, |@> (u, AJ.EQ ((m, n), (a, l', K.top))), ax) H)
+            >> AJ.map (substVar (ax, z)) catjdg
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
       end
@@ -1424,8 +1424,8 @@ struct
     fun EqFromTrueEq z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.EqFromTrueEq"
-        val (I, H) >> CJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
-        val CJ.TRUE (ty0', l', _) = Hyps.lookup z H
+        val (I, H) >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
+        val AJ.TRUE (ty0', l', _) = Hyps.lookup z H
         val Syn.EQUALITY (ty0, m0, n0) = Syn.out ty0'
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
@@ -1440,8 +1440,8 @@ struct
     fun TypeFromTrueEqAtType z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.TypeFromTrueEqAtType"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val CJ.TRUE (eq, l', _) = Hyps.lookup z H
+        val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val AJ.TRUE (eq, l', _) = Hyps.lookup z H
         val Syn.EQUALITY (ty', _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.alphaEq (ty', ty0)
@@ -1454,7 +1454,7 @@ struct
     fun InternalizeEq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.InternalizeEq"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
 
         (* the realizer must be `AX` *)
         val (goal, _) = makeTrue (I, H) (Syn.into (Syn.EQUALITY (ty, m, n)), l, K.top)
@@ -1467,8 +1467,8 @@ struct
     fun SynthFromTrueEq z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.SynthFromTrueEq"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
-        val CJ.TRUE (equal, l', _) = Hyps.lookup z H
+        val (I, H) >> AJ.SYNTH (tm, l, k) = jdg
+        val AJ.TRUE (equal, l', _) = Hyps.lookup z H
         val Syn.EQUALITY (ty, a, b) = Syn.out equal
         val _ = Assert.alphaEqEither ((a, b), tm)
         val goalKind = makeTypeUnlessSubUniv (I, H) (ty, l, k) (l', K.top)
@@ -1483,8 +1483,8 @@ struct
 
         val (currentTy, l, k) =
           case Selector.lookup sel (H, catjdg) of
-             CJ.TRUE params => params
-           | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", CJ.pretty jdg)
+             AJ.TRUE params => params
+           | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
 
@@ -1494,7 +1494,7 @@ struct
         val (goalN, holeN) = makeMatch (O.MONO O.EQUALITY, 2, holeTyOfEq, [], [])
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, CJ.TRUE (holeTy, NONE, K.top))
+        val truncatedHx = truncatedH @> (x, AJ.TRUE (holeTy, NONE, K.top))
         val (motiveGoal, motiveHole) = makeTerm (I, truncatedHx) O.EXP
         val motiveWfGoal = makeType (I, truncatedHx) (motiveHole, l, k)
 
@@ -1523,15 +1523,15 @@ struct
 
         val (currentTy, l, k) =
           case Selector.lookup sel (H, catjdg) of
-             CJ.TRUE params => params
-           | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", CJ.pretty jdg)
+             AJ.TRUE params => params
+           | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
-        val CJ.TRUE (equal, l', _) = Hyps.lookup z truncatedH
+        val AJ.TRUE (equal, l', _) = Hyps.lookup z truncatedH
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, CJ.TRUE (ty, l', K.top))
+        val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l', K.top))
         val (motiveGoal, motiveHole) = makeTerm (I, truncatedHx) O.EXP
         val motiveWfGoal = makeType (I, truncatedHx) (motiveHole, l, k)
 
@@ -1553,7 +1553,7 @@ struct
     fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Symmetry"
-        val (I, H) >> CJ.TRUE (equal, l, k) = jdg
+        val (I, H) >> AJ.TRUE (equal, l, k) = jdg
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
         val (goal, hole) = makeTrue (I, H) (Syn.into (Syn.EQUALITY (ty, n, m)), l, k)
       in
@@ -1622,7 +1622,7 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val Syn.FCOM {dir=dir0, cap=cap0, tubes=tubes0} = Syn.out ty0
         val Syn.FCOM {dir=dir1, cap=cap1, tubes=tubes1} = Syn.out ty1
         val () = Assert.dirEq "FormalComposition.EqType direction" (dir0, dir1)
@@ -1646,7 +1646,7 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.Eq"
-        val (I, H) >> CJ.EQ ((box0, box1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((box0, box1), (ty, l, k)) = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
         val Syn.BOX {dir=dir0, cap=cap0, boundaries=boundaries0} = Syn.out box0
         val Syn.BOX {dir=dir1, cap=cap1, boundaries=boundaries1} = Syn.out box1
@@ -1678,7 +1678,7 @@ struct
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.True"
-        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val (I, H) >> AJ.TRUE (ty, l, k) = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
         val (eqs, tyTubes') = ListPair.unzip tyTubes
         val _ = Assert.tautologicalEquations "FormalComposition.True tautology checking" eqs
@@ -1769,7 +1769,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "V.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val Syn.V (r0, a0, b0, e0) = Syn.out ty0
         val Syn.V (r1, a1, b1, e1) = Syn.out ty1
         val () = Assert.paramEq "V.EqType" (r0, r1)
@@ -1788,7 +1788,7 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "V.Eq"
-        val (I, H) >> CJ.EQ ((in0, in1), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((in0, in1), (ty, l, k)) = jdg
         val Syn.V (r, a, b, e) = Syn.out ty
         val Syn.VIN (r0, m0, n0) = Syn.out in0
         val Syn.VIN (r1, m1, n1) = Syn.out in1
@@ -1810,7 +1810,7 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "V.True"
-        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val (I, H) >> AJ.TRUE (ty, l, k) = jdg
         val Syn.V (r, a, b, e) = Syn.out ty
         val (kA, kB) = kindConstraintOnEnds k
 
@@ -1860,7 +1860,7 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.EqType"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val Syn.UNIVERSE (l0, k0) = Syn.out ty0
         val Syn.UNIVERSE (l1, k1) = Syn.out ty1
         val _ = Assert.levelEq (l0, l1)
@@ -1873,7 +1873,7 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.Eq"
-        val (I, H) >> CJ.EQ ((a, b), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((a, b), (ty, l, k)) = jdg
         val Syn.UNIVERSE (l0, k0) = Syn.out ty
         val _ = Assert.univMem (l0, k0) (l, k)
 
@@ -1885,7 +1885,7 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.True"
-        val (I, H) >> CJ.TRUE (ty, l, k) = jdg
+        val (I, H) >> AJ.TRUE (ty, l, k) = jdg
         val Syn.UNIVERSE (l0, k0) = Syn.out ty
         val _ = Assert.univMem (l0, k0) (l, k)
 
@@ -1902,13 +1902,13 @@ struct
         val _ = RedPrlLog.trace "Universe.ElimFromTrue"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val CJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
         val Syn.UNIVERSE (l, k) = Syn.out ty
 
         val u = alpha 0
         val (goal, hole) =
           makeGoal
-            @@ (I, Hyps.interposeAfter (z, |@> (u, CJ.TYPE (VarKit.toExp z, SOME l, k))) H)
+            @@ (I, Hyps.interposeAfter (z, |@> (u, AJ.TYPE (VarKit.toExp z, SOME l, k))) H)
             >> catjdg
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
@@ -1921,13 +1921,13 @@ struct
         val _ = RedPrlLog.trace "Universe.ElimFromEq"
         val (I, H) >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val CJ.EQ ((ty1, ty2), (univ, _, _)) = Hyps.lookup z H
+        val AJ.EQ ((ty1, ty2), (univ, _, _)) = Hyps.lookup z H
         val Syn.UNIVERSE (l, k) = Syn.out univ
 
         val u = alpha 0
         val (goal, hole) =
           makeGoal
-            @@ (I, Hyps.interposeAfter (z, |@> (u, CJ.EQ_TYPE ((ty1, ty2), SOME l, k))) H)
+            @@ (I, Hyps.interposeAfter (z, |@> (u, AJ.EQ_TYPE ((ty1, ty2), SOME l, k))) H)
             >> catjdg
       in
         |>: goal #> (I, H, VarKit.subst (trivial, u) hole)
@@ -1938,7 +1938,7 @@ struct
     fun SubUniverse _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SubUniverse"
-        val (I, H) >> CJ.SUB_UNIVERSE (univ, l, k) = jdg
+        val (I, H) >> AJ.SUB_UNIVERSE (univ, l, k) = jdg
         val Syn.UNIVERSE (l0, k0) = Syn.out univ
         val _ = Assert.levelLeq (SOME l0, l)
         val _ = Assert.kindLeq (k0, k)
@@ -1951,8 +1951,8 @@ struct
     fun EqTypeFromEq z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.EqTypeFromEq"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val CJ.EQ ((ty0', ty1'), (univ, _, _)) = Hyps.lookup z H
+        val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val AJ.EQ ((ty0', ty1'), (univ, _, _)) = Hyps.lookup z H
         val Syn.UNIVERSE (l', k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
@@ -1967,8 +1967,8 @@ struct
     fun EqTypeFromTrueEqType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.EqTypeFromEq"
-        val (I, H) >> CJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val CJ.TRUE (eq, _, _) = Hyps.lookup z H
+        val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val AJ.TRUE (eq, _, _) = Hyps.lookup z H
         val Syn.EQUALITY (univ, ty0', ty1') = Syn.out eq
         val Syn.UNIVERSE (l', k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
@@ -1983,8 +1983,8 @@ struct
     fun SynthFromEqType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SynthFromEqType"
-        val (I, H) >> CJ.SYNTH (ty2, l2, k2) = jdg
-        val CJ.EQ_TYPE ((ty0, ty1), SOME l0, k0) = Hyps.lookup z H
+        val (I, H) >> AJ.SYNTH (ty2, l2, k2) = jdg
+        val AJ.EQ_TYPE ((ty0, ty1), SOME l0, k0) = Hyps.lookup z H
         val _ = Assert.alphaEqEither ((ty0, ty1), ty2)
         (* TODO maybe generating a subgoal when it's not a member? *)
         val _ = Assert.univMem (l0, k0) (l2, k2)
@@ -1996,8 +1996,8 @@ struct
     fun SynthFromTrueEqAtType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SynthFromTrueEqAtType"
-        val (I, H) >> CJ.SYNTH (ty1, l1, k1) = jdg
-        val CJ.TRUE (eq, SOME l0, _) = Hyps.lookup z H
+        val (I, H) >> AJ.SYNTH (ty1, l1, k1) = jdg
+        val AJ.TRUE (eq, SOME l0, _) = Hyps.lookup z H
         val Syn.EQUALITY (ty0, _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
         (* TODO maybe generating a subgoal when it's not a member? *)
@@ -2010,8 +2010,8 @@ struct
     fun SynthFromEqAtType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SynthFromEqAtType"
-        val (I, H) >> CJ.SYNTH (ty1, l1, k1) = jdg
-        val CJ.EQ (_, (ty0, SOME l0, k0)) = Hyps.lookup z H
+        val (I, H) >> AJ.SYNTH (ty1, l1, k1) = jdg
+        val AJ.EQ (_, (ty0, SOME l0, k0)) = Hyps.lookup z H
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.univMem (l0, k0) (l1, k1)
       in
@@ -2022,8 +2022,8 @@ struct
     fun SynthFromTrue z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SynthFromTrue"
-        val (I, H) >> CJ.SYNTH (ty1, l1, k1) = jdg
-        val CJ.TRUE (ty0, SOME l0, k0) = Hyps.lookup z H
+        val (I, H) >> AJ.SYNTH (ty1, l1, k1) = jdg
+        val AJ.TRUE (ty0, SOME l0, k0) = Hyps.lookup z H
         val _ = Assert.alphaEq (ty0, ty1)
         (* TODO maybe generating a subgoal when it's not a member? *)
         val _ = Assert.univMem (l0, k0) (l1, k1)
@@ -2034,11 +2034,11 @@ struct
     fun VarFromTrue _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.VarFromTrue"
-        val (I, H) >> CJ.EQ_TYPE ((ty1, ty2), l1, k1) = jdg
+        val (I, H) >> AJ.EQ_TYPE ((ty1, ty2), l1, k1) = jdg
         val Syn.VAR (x1, _) = Syn.out ty1
         val Syn.VAR (x2, _) = Syn.out ty2
         val _ = Assert.varEq (x1, x2)
-        val CJ.TRUE (univ0, _, _) = Hyps.lookup x1 H
+        val AJ.TRUE (univ0, _, _) = Hyps.lookup x1 H
         val Syn.UNIVERSE (l0, k0) = Syn.out univ0
 
         val goal = makeTypeUnlessSubUniv (I, H) (ty1, l1, k1) (SOME l0, k0)

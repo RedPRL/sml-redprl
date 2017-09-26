@@ -9,7 +9,7 @@ struct
   structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
   structure K = RedPrlKind
   structure L = RedPrlLevel
-  structure CJ = RedPrlCategoricalJudgment
+  structure AJ = RedPrlAtomicJudgment
   structure Seq = struct open RedPrlSequentData RedPrlSequent end
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = RedPrlMachine (Sig)
@@ -86,7 +86,7 @@ struct
     open HypsUtil
 
     fun toSpine H =
-      Seq.Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, CJ.synthesis jdg) :: r) [] H
+      Seq.Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, AJ.synthesis jdg) :: r) [] H
 
     fun lookup z H =
       Seq.Hyps.lookup H z
@@ -97,13 +97,13 @@ struct
      * At least the calling convention can be more consistent. *)
 
     fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
-      Seq.Hyps.modifyAfter z (CJ.map (Abt.substVar (term, z))) H
+      Seq.Hyps.modifyAfter z (AJ.map (Abt.substVar (term, z))) H
 
     fun interposeAfter (z, H') H =
       Seq.Hyps.interposeAfter H z H'
 
     fun interposeThenSubstAfter (z, H', term) H =
-      Seq.Hyps.interposeAfter (Seq.Hyps.modifyAfter z (CJ.map (Abt.substVar (term, z))) H) z H'
+      Seq.Hyps.interposeAfter (Seq.Hyps.modifyAfter z (AJ.map (Abt.substVar (term, z))) H) z H'
   end
 
   fun @> (H, (x, j)) = Hyps.snoc H x j
@@ -115,7 +115,7 @@ struct
   fun abstractEvidence (I : (Sym.t * Abt.psort) list, H) m =
     let
       val (us, sigmas) = ListPair.unzip I
-      val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, CJ.synthesis jdg::taus)) ([],[]) H
+      val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, AJ.synthesis jdg::taus)) ([],[]) H
     in
       assertWellScoped (us, xs) m;
       Abt.checkb (Abt.\ ((us, xs), m), ((sigmas, taus), Abt.sort m))
@@ -163,22 +163,22 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrueWith f (I, H) (ty, l, k) = makeGoal @@ Seq.map f @@ (I, H) >> CJ.TRUE (ty, l, k)
+  fun makeTrueWith f (I, H) (ty, l, k) = makeGoal @@ Seq.map f @@ (I, H) >> AJ.TRUE (ty, l, k)
   val makeTrue = makeTrueWith (fn j => j)
-  fun makeSynth (I, H) (m, l, k) = makeGoal @@ (I, H) >> CJ.SYNTH (m, l, k)
+  fun makeSynth (I, H) (m, l, k) = makeGoal @@ (I, H) >> AJ.SYNTH (m, l, k)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
-  fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> CJ.TERM tau
-  fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> CJ.PARAM_SUBST ([(r, O.DIM, u)], m, Abt.sort m)
+  fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> AJ.TERM tau
+  fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> AJ.PARAM_SUBST ([(r, O.DIM, u)], m, Abt.sort m)
 
   (* ignoring the trivial realizer *)
-  fun makeType (I, H) (a, l, k) = makeGoal' @@ (I, H) >> CJ.TYPE (a, l, k)
-  fun makeEqTypeWith f (I, H) ((a, b), l, k) = makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ_TYPE ((a, b), l, k)
+  fun makeType (I, H) (a, l, k) = makeGoal' @@ (I, H) >> AJ.TYPE (a, l, k)
+  fun makeEqTypeWith f (I, H) ((a, b), l, k) = makeGoal' @@ Seq.map f @@ (I, H) >> AJ.EQ_TYPE ((a, b), l, k)
   val makeEqType = makeEqTypeWith (fn j => j)
-  fun makeEqWith f (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ (I, H) >> CJ.EQ ((m, n), (ty, l, k))
+  fun makeEqWith f (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ (I, H) >> AJ.EQ ((m, n), (ty, l, k))
   val makeEq = makeEqWith (fn j => j)
-  fun makeMem (I, H) (m, (ty, l, k)) = makeGoal' @@ (I, H) >> CJ.MEM (m, (ty, l, k))
-  fun makeSubUniverse (I, H) (u, l, k) = makeGoal' @@ (I, H) >> CJ.SUB_UNIVERSE (u, l, k)
+  fun makeMem (I, H) (m, (ty, l, k)) = makeGoal' @@ (I, H) >> AJ.MEM (m, (ty, l, k))
+  fun makeSubUniverse (I, H) (u, l, k) = makeGoal' @@ (I, H) >> AJ.SUB_UNIVERSE (u, l, k)
 
   (* conditional goal making *)
 
@@ -387,8 +387,8 @@ struct
   struct
     fun map sel f (H, catjdg) =
       case sel of
-         O.IN_GOAL => (H, CJ.map f catjdg)
-       | O.IN_HYP x => (Hyps.modify x (CJ.map f) H, catjdg)
+         O.IN_GOAL => (H, AJ.map f catjdg)
+       | O.IN_HYP x => (Hyps.modify x (AJ.map f) H, catjdg)
 
     fun multiMap sels f (H, catjdg) =
       List.foldl (fn (sel, state) => map sel f state) (H, catjdg) sels

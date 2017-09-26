@@ -19,7 +19,7 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Coe.Eq"
-        val (I, H) >> CJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
         val k = K.meet (k, K.COE)
         val Syn.COE {dir=dir0, ty=(u, ty0u), coercee=m0} = Syn.out lhs
         val Syn.COE {dir=dir1, ty=(v, ty1v), coercee=m1} = Syn.out rhs
@@ -44,7 +44,7 @@ struct
     fun EqCapL _ jdg =
       let
         val _ = RedPrlLog.trace "Coe.EqCapL"
-        val (I, H) >> CJ.EQ ((coe, other), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((coe, other), (ty, l, k)) = jdg
         val k = K.meet (k, K.COE)
         val Syn.COE {dir=(r, r'), ty=(u, ty0u), coercee=m} = Syn.out coe
         val () = Assert.paramEq "Coe.EqCapL source and target of direction" (r, r')
@@ -143,12 +143,12 @@ struct
     fun Eq sign _ jdg =
       let
         val _ = RedPrlLog.trace "Custom.Eq"
-        val (I, H) >> CJ.EQ ((m, n), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((m, n), (ty, l, k)) = jdg
 
         val Abt.$ (O.POLY (O.CUST (name, _, _)), args) = Abt.out m
         val _ = Assert.alphaEq (m, n)
 
-        val {spec = ([],H') >> CJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
+        val {spec = ([],H') >> AJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ()) (* TODO: use alpha here??? *)
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho =
@@ -166,11 +166,11 @@ struct
     fun Synth sign _ jdg = 
       let
         val _ = RedPrlLog.trace "Custom.Synth"
-        val (I, H) >> CJ.SYNTH (tm, l, k) = jdg
+        val (I, H) >> AJ.SYNTH (tm, l, k) = jdg
 
         val Abt.$ (O.POLY (O.CUST (name, rs, _)), args) = Abt.out tm
 
-        val {spec = (I',H') >> CJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
+        val {spec = (I',H') >> AJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val mrho =

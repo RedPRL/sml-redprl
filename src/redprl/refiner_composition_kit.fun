@@ -5,7 +5,7 @@ struct
 
   type sign = Sig.sign
   type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
-  type catjdg = CJ.jdg
+  type catjdg = AJ.jdg
   type opid = Sig.opid
 
   infixr @@
@@ -180,7 +180,7 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.Eq"
-        val (I, H) >> CJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)
         val Syn.HCOM {dir=dir0, ty=ty0, cap=cap0, tubes=tubes0} = Syn.out lhs
@@ -212,7 +212,7 @@ struct
     fun EqCapL alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.EqCapL"
-        val (I, H) >> CJ.EQ ((hcom, other), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((hcom, other), (ty, l, k)) = jdg
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
@@ -240,7 +240,7 @@ struct
     fun EqTubeL alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.EqTubeL"
-        val (I, H) >> CJ.EQ ((hcom, other), (ty, l, k)) = jdg
+        val (I, H) >> AJ.EQ ((hcom, other), (ty, l, k)) = jdg
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom

@@ -1,6 +1,6 @@
 structure RedPrlSequent : SEQUENT =
 struct
-  structure CJ = RedPrlCategoricalJudgment
+  structure AJ = RedPrlAtomicJudgment
   structure Tm = RedPrlAbt
   structure O = RedPrlOperator
   structure TP = TermPrinter
@@ -9,10 +9,9 @@ struct
 
   open RedPrlSequentData
   infix >>
-  type jdg = Tm.abt jdg'
 
   fun map f =
-    fn (I, H) >> catjdg => (I, Hyps.map (CJ.map f) H) >> CJ.map f catjdg
+    fn (I, H) >> catjdg => (I, Hyps.map (AJ.map f) H) >> AJ.map f catjdg
      | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
      | MATCH_RECORD (lbl, tm, tuple) => MATCH_RECORD (lbl, f tm, f tuple)
 
@@ -28,7 +27,7 @@ struct
          (EMPTY, EMPTY) => true
        | (CONS (x, catjdg1, t1'), CONS (y, catjdg2, t2')) =>
            Sym.eq (x, y)
-             andalso CJ.eq (catjdg1, catjdg2)
+             andalso AJ.eq (catjdg1, catjdg2)
              andalso telescopeEq (t1', t2')
        | _ => false
 
@@ -40,7 +39,7 @@ struct
            EMPTY => Hyps.empty
          | CONS (x, catjdg, Hx) =>
            let
-             val catjdg' = CJ.map (Tm.substSymenv srho') catjdg
+             val catjdg' = AJ.map (Tm.substSymenv srho') catjdg
            in
              case Sym.Ctx.find srho x of
                  NONE => Hyps.cons x catjdg' (relabelHyps Hx srho)
@@ -53,7 +52,7 @@ struct
   fun relabel srho =
     fn (I, H) >> catjdg =>
        (List.map (fn (u, sigma) => (Sym.Ctx.lookup srho u handle _ => u, sigma)) I, relabelHyps H srho)
-         >> CJ.map (renameHypsInTerm srho) catjdg
+         >> AJ.map (renameHypsInTerm srho) catjdg
      | jdg => map (renameHypsInTerm srho) jdg
 
   fun prettySyms syms =
@@ -70,8 +69,8 @@ struct
     fn (I, H) >> catjdg =>
        Fpp.seq
          [case I of [] => Fpp.empty | _ => Fpp.seq [prettySyms I, Fpp.newline],
-          if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps CJ.pretty H, Fpp.newline],
-          Fpp.hsep [Fpp.text ">>", CJ.pretty catjdg]]
+          if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps AJ.pretty H, Fpp.newline],
+          Fpp.hsep [Fpp.text ">>", AJ.pretty catjdg]]
      | MATCH (th, k, a, _, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
      | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match_record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
@@ -92,13 +91,13 @@ struct
          val xrho1 = ListPair.foldr (fn (x1, x, rho) => Sym.Ctx.insert rho x1 x) Sym.Ctx.empty (xs1, xs)
          val xrho2 = ListPair.foldr (fn (x2, x, rho) => Sym.Ctx.insert rho x2 x) Sym.Ctx.empty (xs2, xs)
 
-         val H1' = Hyps.map (CJ.map (Tm.substSymenv srho1)) (relabelHyps H1 xrho1)
-         val H2' = Hyps.map (CJ.map (Tm.substSymenv srho2)) (relabelHyps H2 xrho2)
-         val catjdg1' = CJ.map (Tm.substSymenv srho1 o renameHypsInTerm xrho1) catjdg1
-         val catjdg2' = CJ.map (Tm.substSymenv srho2 o renameHypsInTerm xrho2) catjdg2
+         val H1' = Hyps.map (AJ.map (Tm.substSymenv srho1)) (relabelHyps H1 xrho1)
+         val H2' = Hyps.map (AJ.map (Tm.substSymenv srho2)) (relabelHyps H2 xrho2)
+         val catjdg1' = AJ.map (Tm.substSymenv srho1 o renameHypsInTerm xrho1) catjdg1
+         val catjdg2' = AJ.map (Tm.substSymenv srho2 o renameHypsInTerm xrho2) catjdg2
        in
          telescopeEq (H1', H2')
-           andalso CJ.eq (catjdg1', catjdg2')
+           andalso AJ.eq (catjdg1', catjdg2')
        end
        handle _ => false)
      | (MATCH (th1, k1, a1, ps1, ms1), MATCH (th2, k2, a2, ps2, ms2)) =>

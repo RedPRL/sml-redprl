@@ -25,7 +25,7 @@ struct
         [Fpp.text "The impossible happened!", doc,
          Fpp.text "Please report this bug."]
      | INVALID_CATEGORICAL_JUDGMENT doc => Fpp.hvsep
-        [Fpp.text "Not a valid categorical judgment:", Fpp.nest 2 doc]
+        [Fpp.text "Not a valid atomic judgment:", Fpp.nest 2 doc]
      | INVALID_DIMENSION doc => Fpp.hsep
         [Fpp.text "Not a valid dimension:", Fpp.nest 2 doc]
      | INVALID_LEVEL doc => Fpp.hsep

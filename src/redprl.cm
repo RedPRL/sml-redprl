@@ -46,8 +46,8 @@ is
   redprl/error.sig
   redprl/error.sml
 
-  redprl/categorical_judgment.sig
-  redprl/categorical_judgment.sml
+  redprl/atomic_judgment.sig
+  redprl/atomic_judgment.sml
 
   redprl/sequent.sig
   redprl/sequent.sml

@@ -1,6 +1,8 @@
-structure RedPrlCategoricalJudgment : CATEGORICAL_JUDGMENT =
+structure RedPrlAtomicJudgment : CATEGORICAL_JUDGMENT =
 struct
-  open RedPrlCategoricalJudgmentData
+  open RedPrlAtomicJudgmentData
+  type abt = RedPrlAbt.abt
+  type level = RedPrlLevel.P.level
 
   fun MEM (m, (a, l, k)) =
     EQ ((m, m), (a, l, k))
@@ -82,8 +84,6 @@ struct
     structure O = RedPrlOpData
     infix $ $$ \
   in
-    type jdg = (Sym.t, L.P.level, abt) jdg'
-
     val into : jdg -> abt =
       fn EQ ((m, n), (a, l, k)) => O.POLY (O.JDG_EQ (L.P.into l, k)) $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
        | TRUE (a, l, k) => O.POLY (O.JDG_TRUE (L.P.into l, k)) $$ [([],[]) \ a]
@@ -120,31 +120,5 @@ struct
     val pretty : jdg -> Fpp.doc = pretty'
       TermPrinter.ppSym L.pretty TermPrinter.ppTerm eq
     val eq = fn (j1, j2) => eq (into j1, into j2)
-  end
-
-  local
-    open RedPrlAst
-    structure L = RedPrlAstLevel
-    structure O = RedPrlOpData
-    infix $ \
-  in
-    type astjdg = (string, L.P.level, ast) jdg'
-
-    fun astOut jdg =
-      case RedPrlAst.out jdg of
-         O.POLY (O.JDG_EQ (l, k)) $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, L.P.out l, k))
-       | O.POLY (O.JDG_TRUE (l, k)) $ [_ \ a] => TRUE (a, L.P.out l, k)
-       | O.POLY (O.JDG_EQ_TYPE (l, k)) $ [_ \ m, _ \ n] => EQ_TYPE ((m, n), L.P.out l, k)
-       | O.POLY (O.JDG_SYNTH (l, k)) $ [_ \ m] => SYNTH (m, L.P.out l, k)
-       | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
-       | O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $ args =>
-         let
-           val (us , _) \ m = List.last args
-           val rs = List.map (fn _ \ r => r) (ListUtil.init args)
-           val psi = ListPair.mapEq (fn ((r, sigma), u) => (r, sigma, u)) (ListPair.zipEq (rs, sigmas), us)
-         in
-           PARAM_SUBST (psi, m, tau)
-         end
-       | _ => raise RedPrlError.error [Fpp.text "Invalid judgment"]
   end
 end

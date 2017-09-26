@@ -86,7 +86,7 @@ struct
     let
       val RedPrlSequent.>> (_, jdg) = #spec entry
     in
-      RedPrlCategoricalJudgment.synthesis jdg
+      RedPrlAtomicJudgment.synthesis jdg
     end
 
   fun unfoldCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : abt =
