@@ -35,11 +35,12 @@ Thm Pred : [
 Tac SimpleNatRecEq = [
   query gl <- goal.
   match [gl:jdg] {
-    [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} => {
-      refine nat/eq/nat-rec; [`%ty]; auto
-    }]
+    [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
+      refine nat/eq/nat-rec; [`%ty]; auto]
   }
 ].
+
+Print SimpleNatRecEq.
 
 Thm Plus : [
   (-> nat nat nat)
@@ -83,6 +84,7 @@ Thm Plus/succ/L : [
 ] by [
   lam n, m. auto; refine fun/eq/app; [`(-> nat nat)]; auto; SimpleNatRecEq
 ].
+
 
 Thm Plus/succ/R : [
   (-> [n m : nat] (= nat ($ Plus n (succ m)) (succ ($ Plus n m))))

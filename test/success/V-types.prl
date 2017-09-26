@@ -105,7 +105,7 @@ Thm NotIsEquiv : [
       proj2 = <_> use b}
   , proj2 =
       lam {proj2 = p}, {proj2 = p'}.
-        {<i>
+        (<i>
           { proj1 =
              `($ Not (hcom{1~>0} bool ,b
                       [i=0 {j} (@ ,p j)]
@@ -115,7 +115,7 @@ Thm NotIsEquiv : [
                    [i=0 {j} (@ ,p j)]
                    [i=1 {j} (@ ,p' j)])
           }
-        };
+        );
         (Bool/contra/inverse ,p);
         (Bool/contra/inverse ,p')
   }
@@ -124,8 +124,7 @@ Thm NotIsEquiv : [
 Thm NotEquiv : [
   (Equiv bool bool)
 ] by [
-  {proj1 = `Not,
-   proj2 = `NotIsEquiv}
+  {`Not, `NotIsEquiv}
 ].
 
 Def NotV {i:dim} = [(V i bool bool NotEquiv)].
