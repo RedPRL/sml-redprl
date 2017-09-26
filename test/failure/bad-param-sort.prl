@@ -1,5 +1,5 @@
-Thm Cap{i : lvl}(#A) : [ 
-  a/type : #A hcom type,
+Thm Cap{i : hyp}(#A) : [ 
+  a/type : #A type with hcom,
   x : #A
   >> (hcom{0 ~> 0} #A x [i=0 {_} x] [i=1 {_} x]) = x in #A
 ] by [
