@@ -436,6 +436,7 @@ end
  | tactics of ast list
 
  | recordFieldTactics of (string * ast) list
+
  | devAppSpine of ast list
  | bracketedDevAppSpine of ast list
  | devDecompPattern of string O.dev_pattern
@@ -825,7 +826,7 @@ bracketedDevAppSpine
 
 devDecompPattern
   : VARNAME (O.PAT_VAR VARNAME)
-  | LANGLE tupleDecompPattern RANGLE (O.PAT_TUPLE tupleDecompPattern)
+  | LBRACKET tupleDecompPattern RBRACKET (O.PAT_TUPLE tupleDecompPattern)
 
 devDecompPatterns
   : devDecompPattern COMMA devDecompPatterns (devDecompPattern :: devDecompPatterns)
@@ -894,7 +895,8 @@ atomicRawTac
 
   | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
   | LANGLE boundVars RANGLE tactic (Ast.$$ (O.MONO (O.DEV_PATH_INTRO (List.length boundVars)), [\ ((Multi.addUnderscores boundVars, []), tactic)]))
-  | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName)) recordFieldTactics)
+  | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
+  
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
 

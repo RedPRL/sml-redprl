@@ -37,9 +37,9 @@ Def Iso(#A; #B) = [
    [coh2 : (-> [a : #A] (path {_} #A ($ from ($ to a)) a))])
 ].
 
-Thm Path/Symm{l:lvl} : [
+Thm Path/Symm(#l:lvl) : [
  (->
-  [ty : (U l kan)]
+  [ty : (U #l kan)]
   [a b : ty]
   (path {_} ty a b)
   (path {_} ty b a))
@@ -51,22 +51,22 @@ Thm Path/Symm{l:lvl} : [
        [i=1 {_} ,a])
 ].
 
-Thm Adointify{l:lvl} : [
+Thm Adointify(#l:lvl) : [
   (->
-   [ty1 : (U l kan)]
-   [ty2 : (U l kan)]
+   [ty1 : (U #l kan)]
+   [ty2 : (U #l kan)]
    (Iso ty1 ty2)
    (Equiv ty1 ty2))
 ] by [
-  lam ty1, ty2, <to, from, coh1, coh2>.
-    <to = use to,
+  lam ty1, ty2, {to, from, coh1, coh2}.
+    {to = use to,
      to/equiv =
        lam b.
-         <point =
-          <point = use from [use b],
-           ray = use coh1 [use b]>,
+         {point =
+          {point = use from [use b],
+           ray = use coh1 [use b]},
           rays =
-            lam <point = point1, ray = r1>, <point = point2, ray = r2>.
+            lam {point = point1, ray = r1}, {point = point2, ray = r2}.
 
               let alpha : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,point1))) ] =
                 use {Path/Symm l}
@@ -101,6 +101,6 @@ Thm Adointify{l:lvl} : [
                let welp : [ (path {_} ,ty1 (@ ,point12 i) ,point1) ] =
                  id.
 
-               <point = use point12 [@i],
-                ray = ?>>>
+               {point = use point12 [@i],
+                ray = ?}}}
 ].

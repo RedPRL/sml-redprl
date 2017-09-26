@@ -161,7 +161,8 @@ Thm PathTest3 : [
 Print PathTest3.
 
 Thm PairTest : [ (* [a : S1] (path {_} S1 a base)) ] by [
-  <proj1 = `base, proj2 = <x> `(loop x)>
+  {proj1 = `base,
+   proj2 = <x> `(loop x)}
 ].
 
 
@@ -203,7 +204,7 @@ Thm FunExt(#l:lvl) : [
     <i> lam x. use p [use x, @i]
 ].
 
-// Print FunExt.
+Print FunExt.
 
 Tac FunExtTac(#l : lvl) = [
   query gl <- goal.
@@ -227,7 +228,8 @@ Print FunExtTac.
 Print NotNotPath.
 
 Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
-  <proj1 = `tt, proj2 = <_> `tt>
+  {proj1 = `tt,
+   proj2 = <_> `tt}
 ].
 
 Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [

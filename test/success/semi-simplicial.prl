@@ -86,22 +86,22 @@ Thm Pick/compose : [
     , lam c. fresh c', c'/ih -> elim c;
       [ lam p1. elim p1
       , lam p1. ({Replace p1} ($ Pick/succ ,b' ,c'));
-        let < head = p1/h, tail = p1/t > = p1. elim p1/h;
+        let {head = p1/h, tail = p1/t} = p1. elim p1/h;
         [ lam p2. ({Replace p2} ($ Pick/succ ,a' ,b'));
-          let < head = p2/h, tail = p2/t > = p2. elim p2/h;
+          let {head = p2/h, tail = p2/t} = p2. elim p2/h;
           (ReplaceGoal ($ Pick/succ ,a' ,c'));
-          [ < head = `tt
+          [ { head = `tt
             , tail = `($ ,a'/ih ,b' ,c' ,p1/t ,p2/t)
-            >
-          , < head = `ff
+          }
+          , { head = `ff
             , tail = `($ ,b'/ih ,c' ,p1/t ,p2/t)
-            >
+            }
           ]
         , lam p2.
           (ReplaceGoal ($ Pick/succ ,a' ,c'));
-          < head = `ff
+          { head = `ff
           , tail = `($ ,c'/ih ,p1/t ,p2)
-          >
+          }
         ]
       ]
     ]
