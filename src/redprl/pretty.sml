@@ -254,11 +254,8 @@ struct
          Atomic.parens @@ expr @@ hvsep @@ text "Vin" :: ppParam r :: List.map ppBinder args
      | O.POLY (O.VPROJ r) $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "Vproj" :: ppParam r :: List.map ppBinder args
-     | O.MONO (O.UNIVERSE k) $ [_ \ l] =>
-         if k = RedPrlKind.top then
-           Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l]
-         else
-           Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l, ppKind k]
+     | O.MONO O.UNIVERSE $ [_ \ l, _ \ k] =>
+         Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l, ppTerm k]
      | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "hcom" dir, ppBinder ty, ppBinder cap]

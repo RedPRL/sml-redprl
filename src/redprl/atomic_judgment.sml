@@ -84,17 +84,20 @@ struct
     structure O = RedPrlOpData
     infix $ $$ \
   in
+    fun kconst k = 
+      O.MONO (O.KCONST k) $$ []
+
     val into : jdg -> abt =
-      fn EQ ((m, n), (a, SOME l, k)) => O.MONO (O.JDG_EQ (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-       | EQ ((m, n), (a, NONE, k)) => O.MONO (O.JDG_EQ (false, k)) $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-       | TRUE (a, SOME l, k) => O.MONO (O.JDG_TRUE (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ a]
-       | TRUE (a, NONE, k) => O.MONO (O.JDG_TRUE (false, k)) $$ [([],[]) \ a]
-       | EQ_TYPE ((a, b), SOME l, k) => O.MONO (O.JDG_EQ_TYPE (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ a, ([],[]) \ b]
-       | EQ_TYPE ((a, b), NONE, k) => O.MONO (O.JDG_EQ_TYPE (false, k)) $$ [([],[]) \ a, ([],[]) \ b]
-       | SUB_UNIVERSE (u, SOME l, k) => O.MONO (O.JDG_SUB_UNIVERSE (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ u]
-       | SUB_UNIVERSE (u, NONE, k) => O.MONO (O.JDG_SUB_UNIVERSE (false, k)) $$ [([],[]) \ u]
-       | SYNTH (m, SOME l, k) => O.MONO (O.JDG_SYNTH (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ m]
-       | SYNTH (m, NONE, k) => O.MONO (O.JDG_SYNTH (false, k)) $$ [([],[]) \ m]
+      fn EQ ((m, n), (a, SOME l, k)) => O.MONO (O.JDG_EQ true) $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
+       | EQ ((m, n), (a, NONE, k)) => O.MONO (O.JDG_EQ false) $$ [([],[]) \ kconst k, ([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
+       | TRUE (a, SOME l, k) => O.MONO (O.JDG_TRUE true) $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ a]
+       | TRUE (a, NONE, k) => O.MONO (O.JDG_TRUE false) $$ [([],[]) \ kconst k, ([],[]) \ a]
+       | EQ_TYPE ((a, b), SOME l, k) => O.MONO (O.JDG_EQ_TYPE true) $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ a, ([],[]) \ b]
+       | EQ_TYPE ((a, b), NONE, k) => O.MONO (O.JDG_EQ_TYPE false) $$ [([],[]) \ kconst k, ([],[]) \ a, ([],[]) \ b]
+       | SUB_UNIVERSE (u, SOME l, k) => O.MONO (O.JDG_SUB_UNIVERSE true) $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ u]
+       | SUB_UNIVERSE (u, NONE, k) => O.MONO (O.JDG_SUB_UNIVERSE false) $$ [([],[]) \ kconst k, ([],[]) \ u]
+       | SYNTH (m, SOME l, k) => O.MONO (O.JDG_SYNTH true) $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ m]
+       | SYNTH (m, NONE, k) => O.MONO (O.JDG_SYNTH false) $$ [([],[]) \ kconst k, ([],[]) \ m]
 
        | TERM tau => O.MONO (O.JDG_TERM tau) $$ []
        | PARAM_SUBST (psi, m, tau) =>
@@ -105,18 +108,23 @@ struct
            O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $$ List.map (fn r => ([],[]) \ r) rs @ [(us,[]) \ m]
          end
 
+    fun outk kexpr = 
+      case RedPrlAbt.out kexpr of
+         O.MONO (O.KCONST k) $ _ => k
+       | _ => raise RedPrlError.error [Fpp.text "Invalid kind expression"]
+
     fun out jdg =
       case RedPrlAbt.out jdg of
-         O.MONO (O.JDG_EQ (true, k)) $ [_ \ l, _ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, SOME (L.out l), k))
-       | O.MONO (O.JDG_EQ (false, k)) $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, NONE, k))
-       | O.MONO (O.JDG_TRUE (true, k)) $ [_ \ l, _ \ a] => TRUE (a, SOME (L.out l), k)
-       | O.MONO (O.JDG_TRUE (false, k)) $ [_ \ a] => TRUE (a, NONE, k)
-       | O.MONO (O.JDG_EQ_TYPE (true, k)) $ [_ \ l, _ \ a, _ \ b] => EQ_TYPE ((a, b), SOME (L.out l), k)
-       | O.MONO (O.JDG_EQ_TYPE (false, k)) $ [_ \ a, _ \ b] => EQ_TYPE ((a, b), NONE, k)
-       | O.MONO (O.JDG_SUB_UNIVERSE (true, k)) $ [_ \ l, _ \ u] => SUB_UNIVERSE (u, SOME (L.out l), k)
-       | O.MONO (O.JDG_SUB_UNIVERSE (false, k)) $ [_ \ u] => SUB_UNIVERSE (u, NONE, k)
-       | O.MONO (O.JDG_SYNTH (true, k)) $ [_ \ l, _ \ m] => SYNTH (m, SOME (L.out l), k)
-       | O.MONO (O.JDG_SYNTH (false, k)) $ [_ \ m] => SYNTH (m, NONE, k)
+         O.MONO (O.JDG_EQ true) $ [_ \ l, _ \ k, _ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, SOME (L.out l), outk k))
+       | O.MONO (O.JDG_EQ false) $ [_ \ k, _ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, NONE, outk k))
+       | O.MONO (O.JDG_TRUE true) $ [_ \ l, _ \ k, _ \ a] => TRUE (a, SOME (L.out l), outk k)
+       | O.MONO (O.JDG_TRUE false) $ [_ \ k, _ \ a] => TRUE (a, NONE, outk k)
+       | O.MONO (O.JDG_EQ_TYPE true) $ [_ \ l, _ \ k, _ \ a, _ \ b] => EQ_TYPE ((a, b), SOME (L.out l), outk k)
+       | O.MONO (O.JDG_EQ_TYPE false) $ [_ \ k, _ \ a, _ \ b] => EQ_TYPE ((a, b), NONE, outk k)
+       | O.MONO (O.JDG_SUB_UNIVERSE true) $ [_ \ l, _ \ k, _ \ u] => SUB_UNIVERSE (u, SOME (L.out l), outk k)
+       | O.MONO (O.JDG_SUB_UNIVERSE false) $ [_ \ k, _ \ u] => SUB_UNIVERSE (u, NONE, outk k)
+       | O.MONO (O.JDG_SYNTH true) $ [_ \ l, _ \ k, _ \ m] => SYNTH (m, SOME (L.out l), outk k)
+       | O.MONO (O.JDG_SYNTH false) $ [_ \ k, _ \ m] => SYNTH (m, NONE, outk k)
 
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
        | O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $ args =>
