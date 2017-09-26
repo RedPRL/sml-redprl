@@ -14,29 +14,23 @@ Thm IdIsEquiv(#l:lvl) : [
   (-> [ty : (U #l hcom)] (IsEquiv ty ty Id))
 ] by [
   lam ty, a.
-  < proj1 =
-     <proj1 = use a,
-      proj2 = <_> use a>
-  , proj2 =
-     lam <proj2 = c>, <proj2 = c'>. <i>
-       < proj1 =
-          `(hcom{1~>0} ,ty ,a
-            [i=0 {j} (@ ,c j)]
-            [i=1 {j} (@ ,c' j)])
-       , proj2 =
-           <j> `(hcom{1~>j} ,ty ,a
-                 [i=0 {j} (@ ,c j)]
-                 [i=1 {j} (@ ,c' j)])
-       >
-  >
+  { {use a, <_> use a}
+  , lam {_,c}, {_,c'}. <i>
+       { `(hcom{1~>0} ,ty ,a
+           [i=0 {j} (@ ,c j)]
+           [i=1 {j} (@ ,c' j)])
+       , <j> `(hcom{1~>j} ,ty ,a
+               [i=0 {j} (@ ,c j)]
+               [i=1 {j} (@ ,c' j)])
+       }
+  }
 ].
 
 Thm IdEquiv(#l:lvl) : [
   (-> [ty : (U #l hcom)] (Equiv ty ty))
 ] by [
   lam ty.
-    <proj1 = `Id,
-     proj2 = use (IdIsEquiv #l) [use ty]>
+    {`Id, use (IdIsEquiv #l) [use ty]}
 ].
 
 Print IdEquiv.
@@ -100,33 +94,26 @@ Thm NotIsEquiv : [
   (IsEquiv bool bool Not)
 ] by [
   lam b.
-  < proj1 =
-     <proj1 = `($ Not ,b),
-      proj2 = <_> use b
-     >
-  , proj2 =
-      lam <proj2 = p>, <proj2 = p'>.
-        {<i>
-          < proj1 =
-             `($ Not (hcom{1~>0} bool ,b
-                      [i=0 {j} (@ ,p j)]
-                      [i=1 {j} (@ ,p' j)]))
-          , proj2 =
-             <j> `(hcom{1~>j} bool ,b
-                   [i=0 {j} (@ ,p j)]
-                   [i=1 {j} (@ ,p' j)])
-          >
-        };
+  { {`($ Not ,b), <_> use b}
+  , lam {_,p}, {_,p'}.
+        (<i>
+          { `($ Not (hcom{1~>0} bool ,b
+                     [i=0 {j} (@ ,p j)]
+                     [i=1 {j} (@ ,p' j)]))
+          , <j> `(hcom{1~>j} bool ,b
+                  [i=0 {j} (@ ,p j)]
+                  [i=1 {j} (@ ,p' j)])
+          }
+        );
         (Bool/contra/inverse ,p);
         (Bool/contra/inverse ,p')
-  >
+  }
 ].
 
 Thm NotEquiv : [
   (Equiv bool bool)
 ] by [
-  <proj1 = `Not,
-   proj2 = `NotIsEquiv>
+  {`Not, `NotIsEquiv}
 ].
 
 Def NotV {i:dim} = [(V i bool bool NotEquiv)].

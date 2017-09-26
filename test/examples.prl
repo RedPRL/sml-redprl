@@ -3,7 +3,7 @@ Thm BoolTest : [
 ] by [
   // A term/witness can be supplied to the refiner at any point in a tactic script
   // using the quotation operator `.
-  {lam x. if x then `tt else `ff}; auto
+  (lam x. if x then `tt else `ff); auto
 ].
 
 
@@ -99,7 +99,7 @@ Print BoolEta.
 Thm BoolEtaFunction : [
   (-> wbool wbool)
 ] by [
-  {lam b. if b then `tt else `ff}; auto
+  (lam b. if b then `tt else `ff); auto
 ].
 
 Extract BoolEtaFunction.
@@ -123,7 +123,7 @@ Thm PathTest2 : [
   <x>
     // now, we are constructing a line of functions; so we use a
     // lambda.
-    {lam b.
+    (lam b.
       // for our b:wbool, we will construct a path between b and
       // (BoolEta b).
       let p : [(path {_} wbool ,b (BoolEta ,b))] =
@@ -133,8 +133,8 @@ Thm PathTest2 : [
       // interactive tactic environment, dimension expressions are
       // supplied to the refiner using the '@' "dimension quotation"
       // operator.
-      use p [@x]
-    }; auto
+      use p [@x]);
+     auto
 ].
 
 // It turns out that it is just as good to figure out what the witness
@@ -161,7 +161,7 @@ Thm PathTest3 : [
 Print PathTest3.
 
 Thm PairTest : [ (* [a : S1] (path {_} S1 a base)) ] by [
-  <proj1 = `base, proj2 = <x> `(loop x)>
+  {`base, <x> `(loop x)}
 ].
 
 
@@ -189,7 +189,7 @@ Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by 
 ].
 
 Thm Not : [(-> [_ : wbool] wbool)] by [
-  {lam x. if x then `ff else `tt}; auto
+  (lam x. if x then `ff else `tt); auto
 ].
 
 Thm FunExt(#l:lvl) : [
@@ -203,7 +203,7 @@ Thm FunExt(#l:lvl) : [
     <i> lam x. use p [use x, @i]
 ].
 
-// Print FunExt.
+Print FunExt.
 
 Tac FunExtTac(#l : lvl) = [
   query gl <- goal.
@@ -218,7 +218,7 @@ Print FunExtTac.
 
 Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac #lvl{0});
-  {lam x. if x then <_> `tt else <_> `ff};
+  (lam x. if x then <_> `tt else <_> `ff);
   auto
 ].
 
@@ -227,7 +227,7 @@ Print FunExtTac.
 Print NotNotPath.
 
 Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
-  <proj1 = `tt, proj2 = <_> `tt>
+  {`tt, <_> `tt}
 ].
 
 Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [

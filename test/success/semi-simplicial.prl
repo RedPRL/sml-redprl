@@ -1,24 +1,20 @@
 Tac EqNatRec = [
   query gl <- goal.
   match [gl:jdg] {
-    [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} => {
-      refine nat/eq/nat-rec; [`%ty]; auto
-    }]
-    [n,z,s,l | #jdg{(nat-rec %n %z [x y] (%s x y)) type at %l} => {
-      refine nat/eqtype/nat-rec; [`(U 0)]; auto
-    }]
+    [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
+      refine nat/eq/nat-rec; [`%ty]; auto]
+    [n,z,s,l | #jdg{(nat-rec %n %z [x y] (%s x y)) type at %l} =>
+      refine nat/eqtype/nat-rec; [`(U 0)]; auto]
   }
 ].
 
 Tac NatArg = [
   query gl <- goal.
   match [gl:jdg] {
-    [tm, ty, l | #jdg{%tm in %ty at %l} => {
-      refine fun/eq/app; [`(-> nat %ty)]; auto
-    }]
-    [tm, l | #jdg{%tm type at %l} => {
-      refine fun/eqtype/app; [`(-> nat (U 0))]; auto
-    }]
+    [tm, ty, l | #jdg{%tm in %ty at %l} =>
+      refine fun/eq/app; [`(-> nat %ty)]; auto]
+    [tm, l | #jdg{%tm type at %l} =>
+      refine fun/eqtype/app; [`(-> nat (U 0))]; auto]
   }
 ].
 
@@ -86,22 +82,22 @@ Thm Pick/compose : [
     , lam c. fresh c', c'/ih -> elim c;
       [ lam p1. elim p1
       , lam p1. ({Replace p1} ($ Pick/succ ,b' ,c'));
-        let < head = p1/h, tail = p1/t > = p1. elim p1/h;
+        let {head = p1/h, tail = p1/t} = p1. elim p1/h;
         [ lam p2. ({Replace p2} ($ Pick/succ ,a' ,b'));
-          let < head = p2/h, tail = p2/t > = p2. elim p2/h;
+          let {head = p2/h, tail = p2/t} = p2. elim p2/h;
           (ReplaceGoal ($ Pick/succ ,a' ,c'));
-          [ < head = `tt
+          [ { head = `tt
             , tail = `($ ,a'/ih ,b' ,c' ,p1/t ,p2/t)
-            >
-          , < head = `ff
+          }
+          , { head = `ff
             , tail = `($ ,b'/ih ,c' ,p1/t ,p2/t)
-            >
+            }
           ]
         , lam p2.
           (ReplaceGoal ($ Pick/succ ,a' ,c'));
-          < head = `ff
+          { head = `ff
           , tail = `($ ,c'/ih ,p1/t ,p2)
-          >
+          }
         ]
       ]
     ]

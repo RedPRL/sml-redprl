@@ -1,7 +1,7 @@
-Thm Path/Symm{l:lvl} : [
-  ty : (U l)
+Thm Path/Symm(#l:lvl) : [
+  ty : (U #l)
   >>
-  ty hcom type
+  ty type with hcom
 ] by [
   auto
 ].

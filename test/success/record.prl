@@ -49,7 +49,7 @@ Thm RecordTest6 : [
     [p : (record [a : bool] [b c : record])]
     bool)
 ] by [
-  lam <a>. use a
+  lam {a = a}. use a
 ].
 
 Thm RecordTest7 : [
@@ -57,7 +57,7 @@ Thm RecordTest7 : [
    [a : S1]
    [b : (path {_} S1 a a)])
 ] by [
-  <a = `base, b = <i> `(loop i)>
+  {a = `base, b = <i> `(loop i)}
 ].
 
 Thm RecordElimTest : [
@@ -68,9 +68,8 @@ Thm RecordElimTest : [
     [p : (path {_} bool b b)])
    (* [b : bool] (path {_} bool b b)))
 ] by [
-  lam <b = welp, p = hello>.
-    <proj2 = use hello,
-     proj1 = use welp>
+  lam {b = welp, p = hello}.
+    {use welp, use hello}
 ].
 
 Print RecordElimTest.

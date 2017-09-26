@@ -184,11 +184,26 @@ struct
       checkNoDuplicates pos lbls;
       O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
     end
+
+
+  fun sigmaIntro tacs =
+    let
+      val lbls = List.tabulate (List.length tacs, anonRecordLabelForIndex)
+    in
+      O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
+    end
 end
 
 structure Pattern =
 struct
   infix $$ $ \
+
+  fun labelAnonTuplePattern pats = 
+    let
+      val lbls = List.tabulate (List.length pats, Multi.anonRecordLabelForIndex)
+    in
+      ListPair.zip (lbls, pats)
+    end
 
   (* this code is kind of crappy, feel free to improve it *)
   fun unstitchPattern (pat : 'a O.dev_pattern) : unit O.dev_pattern * 'a list =
@@ -436,11 +451,14 @@ end
  | tactics of ast list
 
  | recordFieldTactics of (string * ast) list
+
  | devAppSpine of ast list
  | bracketedDevAppSpine of ast list
  | devDecompPattern of string O.dev_pattern
  | devDecompPatterns of string O.dev_pattern list
  | labeledDecompPattern of string * string O.dev_pattern
+ | anonTupleDecompPattern of string O.dev_pattern list
+ | labeledTupleDecompPattern of (string * string O.dev_pattern) list
  | tupleDecompPattern of (string * string O.dev_pattern) list
  | devMatchClause of string list * (ast * ast)
  | devMatchClauses of (string list * (ast * ast)) list
@@ -825,7 +843,8 @@ bracketedDevAppSpine
 
 devDecompPattern
   : VARNAME (O.PAT_VAR VARNAME)
-  | LANGLE tupleDecompPattern RANGLE (O.PAT_TUPLE tupleDecompPattern)
+  | UNDER (O.PAT_VAR "_")
+  | LBRACKET tupleDecompPattern RBRACKET (O.PAT_TUPLE tupleDecompPattern)
 
 devDecompPatterns
   : devDecompPattern COMMA devDecompPatterns (devDecompPattern :: devDecompPatterns)
@@ -833,12 +852,19 @@ devDecompPatterns
 
 labeledDecompPattern
   : VARNAME EQUALS devDecompPattern (VARNAME, devDecompPattern)
-  | VARNAME (VARNAME, O.PAT_VAR VARNAME)
 
-tupleDecompPattern
-   : labeledDecompPattern COMMA tupleDecompPattern (labeledDecompPattern :: tupleDecompPattern)
+labeledTupleDecompPattern
+   : labeledDecompPattern COMMA labeledTupleDecompPattern (labeledDecompPattern :: labeledTupleDecompPattern)
    | labeledDecompPattern ([labeledDecompPattern])
    | ([])
+
+anonTupleDecompPattern
+   : devDecompPattern COMMA anonTupleDecompPattern (devDecompPattern :: anonTupleDecompPattern)
+   | devDecompPattern ([devDecompPattern])
+
+tupleDecompPattern
+  : labeledTupleDecompPattern (labeledTupleDecompPattern)
+  | anonTupleDecompPattern (Pattern.labelAnonTuplePattern anonTupleDecompPattern)
 
 devMatchClause
   : LSQUARE patvarBindings PIPE term DOUBLE_RIGHT_ARROW tactic RSQUARE (patvarBindings, (term, tactic))
@@ -894,7 +920,9 @@ atomicRawTac
 
   | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
   | LANGLE boundVars RANGLE tactic (Ast.$$ (O.MONO (O.DEV_PATH_INTRO (List.length boundVars)), [\ ((Multi.addUnderscores boundVars, []), tactic)]))
-  | LANGLE recordFieldTactics RANGLE (Multi.recordIntro (Pos.pos (LANGLE1left fileName) (RANGLE1right fileName)) recordFieldTactics)
+  | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
+  | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
+  
   | IF VARNAME THEN tactic ELSE tactic
       (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
@@ -928,7 +956,7 @@ atomicRawMultitac
   | MTAC_AUTO (Tac.autoMtac)
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
   | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
-  | LBRACKET multitac RBRACKET (multitac)
+  | LPAREN multitac RPAREN (multitac)
   | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
   | QUESTION ident (Ast.$$ (O.MONO (O.MTAC_HOLE (SOME ident)), []))
