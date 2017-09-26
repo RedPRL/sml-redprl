@@ -15,6 +15,7 @@ struct
    | MATCH_CLAUSE of sort
    | PARAM_EXP of param_sort
    | LVL
+   | KIND
 
   val rec sortToString = 
     fn EXP => "exp"
@@ -25,6 +26,7 @@ struct
      | MATCH_CLAUSE tau => "match-clause"
      | PARAM_EXP sigma => "param-exp{" ^ paramSortToString sigma ^ "}"
      | LVL => "lvl"
+     | KIND => "kind"
 
   and paramSortToString = 
     fn DIM => "dim"
@@ -239,7 +241,7 @@ struct
    (* equality *)
    | EQUALITY
    (* universe *)
-   | UNIVERSE of kind
+   | UNIVERSE
 
 
    (* level expressions *)
@@ -247,11 +249,13 @@ struct
    | LPLUS of IntInf.int
    | LMAX of int
 
-   | JDG_EQ of bool * kind
-   | JDG_TRUE of bool * kind
-   | JDG_EQ_TYPE of bool * kind
-   | JDG_SUB_UNIVERSE of bool * kind
-   | JDG_SYNTH of bool * kind
+   | KCONST of kind
+
+   | JDG_EQ of bool
+   | JDG_TRUE of bool 
+   | JDG_EQ_TYPE of bool 
+   | JDG_SUB_UNIVERSE of bool 
+   | JDG_SYNTH of bool
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
@@ -383,20 +387,21 @@ struct
      | PATH_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
      | PATH_ABS => [[DIM] * [] <> EXP] ->> EXP
 
-     | UNIVERSE _ => [[] * [] <> LVL] ->> EXP
+     | UNIVERSE => [[] * [] <> LVL, [] * [] <> KIND] ->> EXP
      | EQUALITY => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] * [] <> LVL] ->> LVL
      | LMAX n => List.tabulate (n, fn _ => [] * [] <> LVL) ->> LVL
 
+     | KCONST _ => [] ->> KIND
 
-     | JDG_EQ (b, k) => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_TRUE (b, k) => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> EXP] ->> JDG
-     | JDG_EQ_TYPE (b, k) => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_SUB_UNIVERSE (b, k) => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> EXP] ->> JDG
-     | JDG_SYNTH (b, k) => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> EXP] ->> JDG
 
+     | JDG_EQ b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
+     | JDG_TRUE b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP] ->> JDG
+     | JDG_EQ_TYPE b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
+     | JDG_SUB_UNIVERSE b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP] ->> JDG
+     | JDG_SYNTH b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP] ->> JDG
 
      | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
      | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
@@ -725,12 +730,14 @@ struct
      | PATH_TY => "path"
      | PATH_ABS => "abs"
 
-     | UNIVERSE k => "universe{" ^ K.toString k ^ "}"
+     | UNIVERSE => "U"
      | EQUALITY => "equality"
 
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
      | LPLUS i => "{lsuc " ^ IntInf.toString i ^ "}"
      | LMAX n => "lmax"
+
+     | KCONST k => RedPrlKind.toString k
 
      | MTAC_SEQ psorts => "seq{" ^ ListSpine.pretty RedPrlParamSort.toString "," psorts ^ "}"
      | MTAC_ORELSE => "orelse"

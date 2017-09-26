@@ -261,10 +261,10 @@ end
 structure Jdg = 
 struct
   open Ast infix $$ \
-  fun makeAtLvl theta (lvl, k) es = 
+  fun makeAtLvl theta (lvl, k : ast) es = 
     case lvl of
-       NONE => O.MONO (theta (false, k)) $$ List.map (fn e => ([],[]) \ e) es
-     | SOME lvl => O.MONO (theta (true, k)) $$ List.map (fn e => ([],[]) \ e) (lvl :: es)
+       NONE => O.MONO (theta false) $$ List.map (fn e => ([],[]) \ e) (k :: es)
+     | SOME lvl => O.MONO (theta true) $$ List.map (fn e => ([],[]) \ e) (lvl :: k :: es)
 end
 
 %%
@@ -428,7 +428,7 @@ end
  | typedTerms of (ast * O.sort) list
 
  | kind of O.K.kind
- | withKindAtLevel of ast option * O.K.kind
+ | withKindAtLevel of ast option * ast
 
  | rawJudgment of ast
  | judgment of ast
@@ -647,6 +647,7 @@ monoNullaryOperator
   (* circle *)
   | S1 (O.MONO O.S1)
   | BASE (O.MONO O.BASE)
+  | kind (O.MONO (O.KCONST kind))
 
 (* built-in nullary operators that take parameters *)
 polyNullaryOperator
@@ -715,8 +716,8 @@ rawTermAndTac
   | LPAREN polyNullaryOperator RPAREN (Ast.$$ (polyNullaryOperator, []))
   | LPAREN regularMultinaryOperator bindings RPAREN (Ast.$$ (regularMultinaryOperator, bindings))
 
-  | LPAREN UNIVERSE level RPAREN (Ast.$$ (O.MONO (O.UNIVERSE RedPrlKind.top), [Ast.\ (([],[]), level)]))
-  | LPAREN UNIVERSE level kind RPAREN (Ast.$$ (O.MONO (O.UNIVERSE kind), [Ast.\ (([],[]), level)]))
+  | LPAREN UNIVERSE level RPAREN (Ast.$$ (O.MONO O.UNIVERSE, [Ast.\ (([],[]), level), Ast.\ (([],[]), Ast.$$ (O.MONO (O.KCONST RedPrlKind.top), []))]))
+  | LPAREN UNIVERSE level term RPAREN (Ast.$$ (O.MONO O.UNIVERSE, [Ast.\ (([],[]), level), Ast.\ (([],[]), term)]))
 
   (* compositions *)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
@@ -794,11 +795,11 @@ kind
   | CUBICAL (O.K.CUBICAL)
 
 withKindAtLevel
-  : WITH kind AT level (SOME level, kind)
-  | AT level WITH kind (SOME level, kind)
-  | WITH kind (NONE, kind)
-  | AT level (SOME level, O.K.top)
-  | (NONE, O.K.top)
+  : WITH term AT level (SOME level, term)
+  | AT level WITH term (SOME level, term)
+  | WITH term (NONE, term)
+  | AT level (SOME level, Ast.$$ (O.MONO (O.KCONST (O.K.top)), []))
+  | (NONE, Ast.$$ (O.MONO (O.KCONST (O.K.top)), []))
 
 rawJudgment
   : term EQUALS term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term2, term3])

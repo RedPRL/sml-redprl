@@ -608,8 +608,8 @@ struct
            (STEP @@ m || (syms, stk))
            (fn u => COMPAT @@ m || (syms, VPROJ (u, HOLE, f) :: stk))
 
-     | O.MONO (O.UNIVERSE _) $ _ || (_, []) => raise Final
-     | O.MONO (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.MONO O.UNIVERSE $ _ || (_, []) => raise Final
+     | O.MONO O.UNIVERSE $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val fcom =
            Syn.into @@ Syn.FCOM
@@ -619,7 +619,7 @@ struct
        in
          CRITICAL @@ fcom || (syms, stk)
        end
-     | O.MONO (O.UNIVERSE _) $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.MONO O.UNIVERSE $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | _ => raise Stuck
 

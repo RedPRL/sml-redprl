@@ -242,7 +242,7 @@ struct
        | VIN (r, m, n) => O.POLY (O.VIN r) $$ [([],[]) \ m, ([],[]) \ n]
        | VPROJ (r, m, f) => O.POLY (O.VPROJ r) $$ [([],[]) \ m, ([],[]) \ f]
 
-       | UNIVERSE (l, k) => O.MONO (O.UNIVERSE k) $$ [([],[]) \ L.into l]
+       | UNIVERSE (l, k) => O.MONO O.UNIVERSE $$ [([],[]) \ L.into l, ([],[]) \ (O.MONO (O.KCONST k) $$ [])]
 
        | HCOM args => intoHcom args
        | COE {dir, ty = (u, a), coercee} =>
@@ -331,7 +331,12 @@ struct
        | O.POLY (O.VIN r) $ [_ \ m, _ \ n] => VIN (r, m, n)
        | O.POLY (O.VPROJ r) $ [_ \ m, _ \ f] => VPROJ (r, m, f)
 
-       | O.MONO (O.UNIVERSE k) $ [_ \ l] => UNIVERSE (L.out l, k)
+       | O.MONO O.UNIVERSE $ [_ \ l, _ \ k] =>
+         let
+           val O.MONO (O.KCONST k) $ _ = Tm.out k
+         in
+           UNIVERSE (L.out l, k)
+         end
 
        | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
            HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}
