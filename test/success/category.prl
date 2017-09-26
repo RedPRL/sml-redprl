@@ -1,7 +1,7 @@
-Thm Category{i:lvl} : [ (U {lsucc i}) ] by [
+Thm Category(#i:lvl) : [ (U (lsucc #i)) ] by [
    `(record
-     [ob : (U i)]
-     [hom : (-> ob ob (U i))]
+     [ob : (U #i)]
+     [hom : (-> ob ob (U #i))]
      [idn : (-> [a : ob] ($ hom a a))]
      [cmp : (-> [a b c : ob] ($ hom b c) ($ hom a b) ($ hom a c))]
      [idn/l :

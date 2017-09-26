@@ -1,6 +1,6 @@
-Thm Connection{l:lvl} : [
+Thm Connection(#l:lvl) : [
   (->
-   [ty : (U l kan)]
+   [ty : (U #l kan)]
    [a b : ty]
    [p : (path {_} ty a b)]
    (path {i} (path {_} ty a (@ p i)) (abs {_} a) p))

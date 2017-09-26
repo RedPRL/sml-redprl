@@ -2,14 +2,14 @@ Thm EqualityKind0(#A) : [
   m : #A type,
   a : #A,
   b : #A
-  >> (= #A a b) hcom type
+  >> (= #A a b) type with hcom
 ] by [ auto ].
 
 Thm EqualityKind1(#A) : [
-  m : #A discrete type,
+  m : #A type with discrete,
   a : #A,
   b : #A
-  >> (= #A a b) kan type
+  >> (= #A a b) type with kan
 ] by [ auto ].
 
 Thm EqualityElim(#A) : [

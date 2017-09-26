@@ -192,9 +192,9 @@ Thm Not : [(-> [_ : wbool] wbool)] by [
   {lam x. if x then `ff else `tt}; auto
 ].
 
-Thm FunExt{l:lvl} : [
+Thm FunExt(#l:lvl) : [
   (->
-   [a b : (U l)]
+   [a b : (U #l)]
    [f g : (-> a b)]
    [p : (-> [y : a] (path {_} b ($ f y) ($ g y)))]
    (path {_} (-> a b) f g))
@@ -203,19 +203,21 @@ Thm FunExt{l:lvl} : [
     <i> lam x. use p [use x, @i]
 ].
 
-Print FunExt.
+// Print FunExt.
 
-Tac FunExtTac{l:lvl} = [
+Tac FunExtTac(#l : lvl) = [
   query gl <- goal.
   match [gl:jdg] {
     [a, b, f, g | #jdg{(path {_} (-> %a %b) %f %g) true} =>
-      use {FunExt l}
-        [ `%a, `%b, `%f, `%g, id ]]
+      use (FunExt #l) [`%a, `%b, `%f, `%g, id]
+    ]
   }
 ].
 
+Print FunExtTac.
+
 Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
-  {FunExtTac {lvl 0}};
+  (FunExtTac (lvl 0));
   {lam x. if x then <_> `tt else <_> `ff};
   auto
 ].
@@ -232,9 +234,9 @@ Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
   lam x. use x [@0]
 ].
 
-Thm PathEta{l:lvl} : [
+Thm PathEta(#l:lvl) : [
   (->
-   [a : (U l)]
+   [a : (U #l)]
    [m n : a]
    (path {_} a m n)
    (path {_} a m n))

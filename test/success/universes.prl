@@ -1,26 +1,26 @@
-Thm Univ0 {i:lvl, j:lvl} : [
-  (U i) type at {lsucc {lmax i j}}
+Thm Univ0(#i:lvl; #j:lvl) : [
+  (U #i) type at (lsucc (lmax #i #j))
 ] by [
   auto
 ].
 
-Thm Univ1 {i:lvl} : [
-  nat in (U i discrete)
+Thm Univ1(#i:lvl) : [
+  nat in (U #i discrete)
 ] by [
   auto
 ].
 
 Thm Univ2 : [
-  x : (U 2)
+  x : (U (lvl 2))
   >>
-  x type at 2
+  x type at (lvl 2)
 ] by [
   auto
 ].
 
-Thm Monoid{i:lvl}  : [ (U {lsucc i}) ] by [
+Thm Monoid(#i:lvl) : [ (U (lsucc #i)) ] by [
   `(record
-    [ob : (U i)]
+    [ob : (U #i)]
     [one : ob]
     [mul : (-> ob ob ob)]
     [idn/l : (-> [m : ob] (= ob ($ mul one m) m))]

@@ -85,11 +85,17 @@ struct
     infix $ $$ \
   in
     val into : jdg -> abt =
-      fn EQ ((m, n), (a, l, k)) => O.POLY (O.JDG_EQ (L.P.into l, k)) $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-       | TRUE (a, l, k) => O.POLY (O.JDG_TRUE (L.P.into l, k)) $$ [([],[]) \ a]
-       | EQ_TYPE ((a, b), l, k) => O.POLY (O.JDG_EQ_TYPE (L.P.into l, k)) $$ [([],[]) \ a, ([],[]) \ b]
-       | SUB_UNIVERSE (u, l, k) => O.POLY (O.JDG_SUB_UNIVERSE (L.P.into l, k)) $$ [([],[]) \ u]
-       | SYNTH (m, l, k) => O.POLY (O.JDG_SYNTH (L.P.into l, k)) $$ [([],[]) \ m]
+      fn EQ ((m, n), (a, SOME l, k)) => O.MONO (O.JDG_EQ (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
+       | EQ ((m, n), (a, NONE, k)) => O.MONO (O.JDG_EQ (false, k)) $$ [([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
+       | TRUE (a, SOME l, k) => O.MONO (O.JDG_TRUE (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ a]
+       | TRUE (a, NONE, k) => O.MONO (O.JDG_TRUE (false, k)) $$ [([],[]) \ a]
+       | EQ_TYPE ((a, b), SOME l, k) => O.MONO (O.JDG_EQ_TYPE (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ a, ([],[]) \ b]
+       | EQ_TYPE ((a, b), NONE, k) => O.MONO (O.JDG_EQ_TYPE (false, k)) $$ [([],[]) \ a, ([],[]) \ b]
+       | SUB_UNIVERSE (u, SOME l, k) => O.MONO (O.JDG_SUB_UNIVERSE (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ u]
+       | SUB_UNIVERSE (u, NONE, k) => O.MONO (O.JDG_SUB_UNIVERSE (false, k)) $$ [([],[]) \ u]
+       | SYNTH (m, SOME l, k) => O.MONO (O.JDG_SYNTH (true, k)) $$ [([],[]) \ L.into l, ([],[]) \ m]
+       | SYNTH (m, NONE, k) => O.MONO (O.JDG_SYNTH (false, k)) $$ [([],[]) \ m]
+
        | TERM tau => O.MONO (O.JDG_TERM tau) $$ []
        | PARAM_SUBST (psi, m, tau) =>
          let
@@ -101,11 +107,17 @@ struct
 
     fun out jdg =
       case RedPrlAbt.out jdg of
-         O.POLY (O.JDG_EQ (l, k)) $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, L.P.out l, k))
-       | O.POLY (O.JDG_TRUE (l, k)) $ [_ \ a] => TRUE (a, L.P.out l, k)
-       | O.POLY (O.JDG_EQ_TYPE (l, k)) $ [_ \ a, _ \ b] => EQ_TYPE ((a, b), L.P.out l, k)
-       | O.POLY (O.JDG_SUB_UNIVERSE (l, k)) $ [_ \ u] => SUB_UNIVERSE (u, L.P.out l, k)
-       | O.POLY (O.JDG_SYNTH (l, k)) $ [_ \ m] => SYNTH (m, L.P.out l, k)
+         O.MONO (O.JDG_EQ (true, k)) $ [_ \ l, _ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, SOME (L.out l), k))
+       | O.MONO (O.JDG_EQ (false, k)) $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, NONE, k))
+       | O.MONO (O.JDG_TRUE (true, k)) $ [_ \ l, _ \ a] => TRUE (a, SOME (L.out l), k)
+       | O.MONO (O.JDG_TRUE (false, k)) $ [_ \ a] => TRUE (a, NONE, k)
+       | O.MONO (O.JDG_EQ_TYPE (true, k)) $ [_ \ l, _ \ a, _ \ b] => EQ_TYPE ((a, b), SOME (L.out l), k)
+       | O.MONO (O.JDG_EQ_TYPE (false, k)) $ [_ \ a, _ \ b] => EQ_TYPE ((a, b), NONE, k)
+       | O.MONO (O.JDG_SUB_UNIVERSE (true, k)) $ [_ \ l, _ \ u] => SUB_UNIVERSE (u, SOME (L.out l), k)
+       | O.MONO (O.JDG_SUB_UNIVERSE (false, k)) $ [_ \ u] => SUB_UNIVERSE (u, NONE, k)
+       | O.MONO (O.JDG_SYNTH (true, k)) $ [_ \ l, _ \ m] => SYNTH (m, SOME (L.out l), k)
+       | O.MONO (O.JDG_SYNTH (false, k)) $ [_ \ m] => SYNTH (m, NONE, k)
+
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
        | O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $ args =>
          let

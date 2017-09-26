@@ -1,6 +1,6 @@
-Thm Discrete/reflection {l:lvl} : [
+Thm Discrete/reflection(#l:lvl) : [
   (->
-   [ty : (U l discrete)]
+   [ty : (U #l discrete)]
    [a b : ty]
    [p : (path {_} ty a b)]
    (= ty a b))

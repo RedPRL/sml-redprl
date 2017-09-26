@@ -338,18 +338,14 @@ struct
               case eq of
                 (P.APP P.DIM0, P.APP P.DIM0) => true
               | (P.APP P.DIM0, P.APP P.DIM1) => goEqs state eqs
-              | (P.APP P.DIM0, P.APP _) => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (#2 eq)))
               | (P.APP P.DIM0, P.VAR _) => goEqs state eqs
               | (P.APP P.DIM1, P.APP P.DIM1) => true
               | (P.APP P.DIM1, P.APP P.DIM0) => goEqs state eqs
-              | (P.APP P.DIM1, P.APP _) =>  E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (#2 eq)))
               | (P.APP P.DIM1, P.VAR _) => goEqs state eqs
-              | (P.APP _, _) => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (#1 eq)))
               | (P.VAR u, P.APP P.DIM0) =>
                   SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
               | (P.VAR u, P.APP P.DIM1) =>
                   SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
-              | (P.VAR _, P.APP _) => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (#2 eq)))
               | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
         fun prettyEq (r1, r2) = [TermPrinter.ppParam r1, Fpp.text "=", TermPrinter.ppParam r2, Fpp.text ";"]
       in

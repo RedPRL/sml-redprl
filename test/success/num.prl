@@ -113,7 +113,7 @@ Thm Plus/test0 : [
 ].
 
 Thm Eq/sym : [
-  (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
+  (-> [ty : (U (lvl 0))] [a b : ty] (= ty a b) (= ty b a))
 ] by [
   lam ty, a, b, eq. symmetry; auto
 ].

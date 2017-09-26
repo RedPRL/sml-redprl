@@ -1,6 +1,6 @@
-Thm Hcom/Poly{l:lvl} : [
+Thm Hcom/Poly(#l:lvl) : [
   (->
-   [ty : (U l hcom)]
+   [ty : (U #l hcom)]
    [a b c d : ty]
    (path {_} ty a b)
    (path {_} ty a c)
@@ -16,9 +16,9 @@ Thm Hcom/Poly{l:lvl} : [
 
 Extract Hcom/Poly.
 
-Thm Hcom/trans{l:lvl} : [
+Thm Hcom/trans(#l:lvl) : [
   (->
-   [ty : (U l hcom)]
+   [ty : (U #l hcom)]
    [a b c : ty]
    (path {_} ty a b)
    (path {_} ty b c)
@@ -31,9 +31,9 @@ Thm Hcom/trans{l:lvl} : [
         [i=1 {j} (@ ,pbc j)])
 ].
 
-Thm Hcom/symm{l:lvl} : [
+Thm Hcom/symm(#l:lvl) : [
   (->
-   [ty : (U l hcom)]
+   [ty : (U #l hcom)]
    [a b : ty]
    (path {_} ty a b)
    (path {_} ty b a))
@@ -46,9 +46,9 @@ Thm Hcom/symm{l:lvl} : [
 ].
 
 // An example of using the internalized exact equality type.
-Thm Cap{i:dim, l:lvl} : [
+Thm Cap{i:dim}(#l:lvl) : [
   (->
-   [ty : (U l hcom)]
+   [ty : (U #l hcom)]
    [x : ty]
    (= ty
       (hcom{0 ~> 0} ty x [i=0 {_} x] [i=1 {_} x])
@@ -59,9 +59,9 @@ Thm Cap{i:dim, l:lvl} : [
 
 
 
-Thm Tube{l:lvl} : [
+Thm Tube(#l:lvl) : [
   (->
-   [ty : (U l hcom)]
+   [ty : (U #l hcom)]
    [x : ty]
    (= ty
       (hcom{0 ~> 1} ty x [1=1 {_} x] [0=0 {_} x])

@@ -154,7 +154,6 @@ struct
       case r of
         P.APP P.DIM0 => f0
       | P.APP P.DIM1 => f1
-      | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
       | P.VAR u => (assertVariable stability syms u; fu u)
   end
 
@@ -179,7 +178,6 @@ struct
                    P.VAR _ => false
                  | P.APP P.DIM0 => true
                  | P.APP P.DIM1 => true
-                 | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
             in
               if isBound syms r1 orelse isBound syms r2 orelse (isConstant r1 andalso isConstant r2) then
                 false
@@ -610,8 +608,8 @@ struct
            (STEP @@ m || (syms, stk))
            (fn u => COMPAT @@ m || (syms, VPROJ (u, HOLE, f) :: stk))
 
-     | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
-     | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.MONO (O.UNIVERSE _) $ _ || (_, []) => raise Final
+     | O.MONO (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val fcom =
            Syn.into @@ Syn.FCOM
@@ -621,7 +619,7 @@ struct
        in
          CRITICAL @@ fcom || (syms, stk)
        end
-     | O.POLY (O.UNIVERSE _) $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.MONO (O.UNIVERSE _) $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | _ => raise Stuck
 

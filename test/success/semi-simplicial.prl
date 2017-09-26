@@ -4,11 +4,8 @@ Tac EqNatRec = [
     [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} => {
       refine nat/eq/nat-rec; [`%ty]; auto
     }]
-    [n,z,s | #jdg{(nat-rec %n %z [x y] (%s x y)) type at 0} => {
-      refine nat/eqtype/nat-rec; [`(U 0)]; auto
-    }]
-    [n,z,s | #jdg{(nat-rec %n %z [x y] (%s x y)) type} => {
-      refine nat/eqtype/nat-rec; [`(U 0)]; auto
+    [n,z,s,l | #jdg{(nat-rec %n %z [x y] (%s x y)) type at %[l:lvl]} => {
+      refine nat/eqtype/nat-rec; [`(U (lvl 0))]; auto
     }]
   }
 ].
@@ -16,24 +13,18 @@ Tac EqNatRec = [
 Tac NatArg = [
   query gl <- goal.
   match [gl:jdg] {
-    [tm, ty | #jdg{%tm in %ty} => {
+    [tm, ty, l | #jdg{%tm in %ty at %[l:lvl]} => {
       refine fun/eq/app; [`(-> nat %ty)]; auto
     }]
-    [tm, ty | #jdg{%tm in %ty at 0} => {
-      refine fun/eq/app; [`(-> nat %ty)]; auto
-    }]
-    [tm | #jdg{%tm type at 0} => {
-      refine fun/eqtype/app; [`(-> nat (U 0))]; auto
-    }]
-    [tm | #jdg{%tm type} => {
-      refine fun/eqtype/app; [`(-> nat (U 0))]; auto
+    [tm, l | #jdg{%tm type at %[l:lvl]} => {
+      refine fun/eqtype/app; [`(-> nat (U (lvl 0)))]; auto
     }]
   }
 ].
 
 Thm Pick : [
   // pick #(first argument) from #(second argument)
-  (-> nat nat (U 0))
+  (-> nat nat (U (lvl 0)))
 ] by [
   lam n. fresh n', n'/ih -> elim n;
   [ lam n. `record
@@ -49,20 +40,20 @@ Thm Pick : [
 ].
 
 Thm Pick/zero/L : [
-  (-> [n : nat] (= (U 0) ($ Pick zero n) record))
+  (-> [n : nat] (= (U (lvl 0)) ($ Pick zero n) record))
 ] by [
   lam n. auto
 ].
 
 Thm Pick/zero/R : [
-  (-> [n : nat] (= (U 0) ($ Pick (succ n) zero) void))
+  (-> [n : nat] (= (U (lvl 0)) ($ Pick (succ n) zero) void))
 ] by [
   lam n. auto
 ].
 
 Thm Pick/succ : [
   (-> [n m : nat]
-   (= (U 0)
+   (= (U (lvl 0))
     ($ Pick (succ n) (succ m))
     (record
      [head : bool]

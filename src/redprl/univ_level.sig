@@ -3,7 +3,7 @@ sig
   type level
   type t = level
 
-  type param
+  type term
 
   val const : IntInf.int -> level
   val zero : level
@@ -17,6 +17,6 @@ sig
 
   val pretty : level -> Fpp.doc
 
-  val into : level -> param
-  val out : param -> level
+  val into : level -> term
+  val out : term -> level
 end
