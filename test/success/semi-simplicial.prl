@@ -4,10 +4,7 @@ Tac EqNatRec = [
     [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} => {
       refine nat/eq/nat-rec; [`%ty]; auto
     }]
-    [n,z,s | #jdg{(nat-rec %n %z [x y] (%s x y)) type at 0} => {
-      refine nat/eqtype/nat-rec; [`(U 0)]; auto
-    }]
-    [n,z,s | #jdg{(nat-rec %n %z [x y] (%s x y)) type} => {
+    [n,z,s,l | #jdg{(nat-rec %n %z [x y] (%s x y)) type at %l} => {
       refine nat/eqtype/nat-rec; [`(U 0)]; auto
     }]
   }
@@ -16,16 +13,10 @@ Tac EqNatRec = [
 Tac NatArg = [
   query gl <- goal.
   match [gl:jdg] {
-    [tm, ty | #jdg{%tm in %ty} => {
+    [tm, ty, l | #jdg{%tm in %ty at %l} => {
       refine fun/eq/app; [`(-> nat %ty)]; auto
     }]
-    [tm, ty | #jdg{%tm in %ty at 0} => {
-      refine fun/eq/app; [`(-> nat %ty)]; auto
-    }]
-    [tm | #jdg{%tm type at 0} => {
-      refine fun/eqtype/app; [`(-> nat (U 0))]; auto
-    }]
-    [tm | #jdg{%tm type} => {
+    [tm, l | #jdg{%tm type at %l} => {
       refine fun/eqtype/app; [`(-> nat (U 0))]; auto
     }]
   }

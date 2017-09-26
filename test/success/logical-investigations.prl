@@ -13,8 +13,7 @@ Thm Thm2 : [
    [p q r : (U 0)]
    (-> p q)
    (-> p q r)
-   p r
-  )
+   p r)
 ] by [
   lam p, q, r, f, g, a.
   use g [use a, use f [use a]]

@@ -236,13 +236,21 @@ struct
 
   fun makeUseLemma (opid, params, subtermArgs) tacs = 
     let
-      val args = List.map (fn tac => ([],[]) \ tac) tacs
+      val args = subtermArgs @ List.map (fn tac => ([],[]) \ tac) tacs
     in
       O.POLY (O.DEV_USE_LEMMA (opid, params, NONE, List.length tacs)) $$ args
     end
 
 end
 
+structure Jdg = 
+struct
+  open Ast infix $$ \
+  fun makeAtLvl theta (lvl, k) es = 
+    case lvl of
+       NONE => O.MONO (theta (false, k)) $$ List.map (fn e => ([],[]) \ e) es
+     | SOME lvl => O.MONO (theta (true, k)) $$ List.map (fn e => ([],[]) \ e) (lvl :: es)
+end
 
 %%
 %header (functor RedPrlLrValsFun (structure Token : TOKEN))
@@ -278,14 +286,15 @@ end
  | RIGHT_ARROW | LEFT_ARROW
  | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | TRIANGLE_RIGHT
+ | PLUS
 
  (* parameter sorts *)
- | DIM | HYP | LVL | META_NAME
+ | DIM | HYP | META_NAME
  (* sorts *)
- | EXP | TAC | TRIV | JDG
+ | EXP | TAC | TRIV | JDG | LVL
 
  (* keywords and symbols in parameters *)
- | LABOVE | LSUCC | LMAX
+ | LMAX
 
  (* keywords and symbols in expressions *)
  | AX
@@ -362,8 +371,6 @@ end
  | dimParams of string param list
  | numAsLevelParam of string param
  | exclusivelyLevelParam of string param
- | levelParam of string param
- | levelParams of string param list
  | typedParam of string param * P.param_sort
  | typedParams of (string param * P.param_sort) list
  | dir of string param * string param
@@ -396,6 +403,8 @@ end
  | regularMultinaryOperator of string operator
  | rawTermAndTac of ast (* shared with tactics *)
  | rawTerm of ast
+ | level of ast
+ | levels of ast list
 
    (* a type-theoretic term, annotated with source position *)
  | term of ast
@@ -403,9 +412,8 @@ end
  | typedTerm of ast * O.sort
  | typedTerms of (ast * O.sort) list
 
- | atLevel of string param option
  | kind of O.K.kind
- | withKindAtLevel of string param option * O.K.kind
+ | withKindAtLevel of ast option * O.K.kind
 
  | rawJudgment of ast
  | judgment of ast
@@ -481,7 +489,6 @@ boundVars
 
 psort
   : DIM (P.DIM)
-  | LVL (P.LVL)
   | HYP (P.HYP)
   | META_NAME (P.META_NAME)
 
@@ -495,6 +502,7 @@ sort
   | TAC (O.TAC)
   | TRIV (O.TRIV)
   | JDG (O.JDG)
+  | LVL (P.LVL)
 
 sorts
   : sort ([sort])
@@ -535,29 +543,10 @@ dimParams
   : dimParam dimParams (dimParam :: dimParams)
   | dimParam ([dimParam])
 
-numAsLevelParam
-  : NUMERAL (if NUMERAL >= 0 then P.APP (P.LCONST NUMERAL) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (ppIntInf NUMERAL)))
-
-exclusivelyLevelParam
-  : LBRACKET LVL levelParam RBRACKET (levelParam)
-  | LBRACKET LSUCC levelParam RBRACKET (P.APP (P.LABOVE (levelParam, 1)))
-  | LBRACKET LABOVE levelParam NUMERAL RBRACKET (if NUMERAL >= 0 then P.APP (P.LABOVE (levelParam, NUMERAL)) else E.raiseAnnotatedError (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName), E.INVALID_LEVEL (ppIntInf NUMERAL)))
-  | LBRACKET LMAX levelParams RBRACKET (P.APP (P.LMAX levelParams))
-
-levelParam
-  : VARNAME (P.VAR VARNAME)
-  | numAsLevelParam (numAsLevelParam)
-  | exclusivelyLevelParam (exclusivelyLevelParam)
-
-levelParams
-  : levelParam levelParams (levelParam :: levelParams)
-  | levelParam ([levelParam])
-
 typedParam
   : VARNAME (P.VAR VARNAME, O.DIM)
   | LSQUARE VARNAME COLON psort RSQUARE (P.VAR VARNAME, psort)
   | exclusivelyDimParam (exclusivelyDimParam, O.DIM)
-  | exclusivelyLevelParam (exclusivelyLevelParam, O.LVL)
   | numAsDimParam (numAsDimParam, O.DIM)
 
 typedParams
@@ -646,8 +635,6 @@ polyNullaryOperator
   (* circle *)
   : LOOP dimParam (O.POLY (O.LOOP dimParam))
   | DIM dimParam (O.POLY (O.PARAM_REF (O.DIM, dimParam)))
-  | UNIVERSE levelParam (O.POLY (O.UNIVERSE (levelParam, RedPrlKind.top)))
-  | UNIVERSE levelParam kind (O.POLY (O.UNIVERSE (levelParam, kind)))
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
@@ -671,6 +658,7 @@ regularMultinaryOperator
   | VPROJ dimParam (O.POLY (O.VPROJ dimParam))
   (* coe *)
   | COE LBRACKET dir RBRACKET (O.POLY (O.COE dir))
+
 
 customOpTerm
   : OPNAME (OPNAME, [], [])
@@ -709,6 +697,9 @@ rawTermAndTac
   | LPAREN polyNullaryOperator RPAREN (Ast.$$ (polyNullaryOperator, []))
   | LPAREN regularMultinaryOperator bindings RPAREN (Ast.$$ (regularMultinaryOperator, bindings))
 
+  | LPAREN UNIVERSE level RPAREN (Ast.$$ (O.MONO (O.UNIVERSE RedPrlKind.top), [Ast.\ (([],[]), level)]))
+  | LPAREN UNIVERSE level kind RPAREN (Ast.$$ (O.MONO (O.UNIVERSE kind), [Ast.\ (([],[]), level)]))
+
   (* compositions *)
   | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
       (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
@@ -742,10 +733,23 @@ rawTermAndTac
   | LPAREN ABS LBRACKET boundVars RBRACKET term RPAREN (Multi.makePathAbs boundVars term)
   | LPAREN AT_SIGN term dimParams RPAREN (Multi.makePathApp term dimParams)
 
+level
+  : NUMERAL (Ast.$$ (O.MONO (O.LCONST NUMERAL), []))
+  | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.MONO (O.LPLUS NUMERAL), [Ast.\ (([],[]), level)]))
+  | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.MONO (O.LPLUS 1), [Ast.\ (([],[]), level)]))
+  | LPAREN LMAX levels RPAREN (Ast.$$ (O.MONO (O.LMAX (List.length levels)), List.map (fn e => Ast.\ (([],[]), e)) levels))
+  | metavar (Ast.$$# (metavar, ([], [])))
+  | PERCENT VARNAME (Ast.$$ (O.POLY (O.PAT_META (VARNAME, O.LVL, [], [])), []))
+
+levels
+  : level ([level])
+  | levels level (level :: levels)
+
 rawTerm
   : rawTermAndTac (rawTermAndTac)
   | HASH TAC LBRACKET tactic RBRACKET (tactic)
   | HASH JDG LBRACKET judgment RBRACKET (judgment)
+  | HASH LVL LBRACKET level RBRACKET (level)
   (* hypotheses *)
   | COMMA LSQUARE VARNAME COLON sort RSQUARE (Ast.$$ (O.POLY (O.HYP_REF (VARNAME, sort)), []))
   | COMMA VARNAME (Ast.$$ (O.POLY (O.HYP_REF (VARNAME, O.EXP)), []))
@@ -764,10 +768,6 @@ typedTerms
   : typedTerm ([typedTerm])
   | typedTerm typedTerms (typedTerm :: typedTerms)
 
-atLevel
-  : AT levelParam (SOME levelParam)
-  | (NONE)
-
 kind
   : DISCRETE (O.K.DISCRETE)
   | KAN (O.K.KAN)
@@ -776,26 +776,24 @@ kind
   | CUBICAL (O.K.CUBICAL)
 
 withKindAtLevel
-  : WITH kind AT levelParam (SOME levelParam, kind)
-  | AT levelParam WITH kind (SOME levelParam, kind)
+  : WITH kind AT level (SOME level, kind)
+  | AT level WITH kind (SOME level, kind)
   | WITH kind (NONE, kind)
-  | AT levelParam (SOME levelParam, O.K.top)
+  | AT level (SOME level, O.K.top)
   | (NONE, O.K.top)
 
 rawJudgment
-  : term EQUALS term IN term withKindAtLevel (Ast.$$ (O.POLY (O.JDG_EQ withKindAtLevel), [\ (([],[]), term1), \ (([],[]), term2), \ (([],[]), term3)]))
-  | term IN term withKindAtLevel (Ast.$$ (O.POLY (O.JDG_EQ withKindAtLevel), [\ (([],[]), term1), \ (([],[]), term1), \ (([],[]), term2)]))
-  | term TRUE withKindAtLevel (Ast.$$ (O.POLY (O.JDG_TRUE withKindAtLevel), [\ (([],[]), term)]))
-  | term withKindAtLevel (Ast.$$ (O.POLY (O.JDG_TRUE withKindAtLevel), [\ (([],[]), term)]))
-  | term EQUALS term TYPE withKindAtLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE withKindAtLevel), [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term TYPE withKindAtLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE withKindAtLevel), [\ (([],[]), term), \ (([],[]), term)]))
-  | term EQUALS term kind TYPE atLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kind)), [\ (([],[]), term1), \ (([],[]), term2)]))
-  | term kind TYPE atLevel (Ast.$$ (O.POLY (O.JDG_EQ_TYPE (atLevel, kind)), [\ (([],[]), term), \ (([],[]), term)]))
-  | term SYNTH withKindAtLevel (Ast.$$ (O.POLY (O.JDG_SYNTH withKindAtLevel), [\ (([],[]), term)]))
+  : term EQUALS term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term2, term3])
+  | term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term1, term2])
+  | term TRUE withKindAtLevel (Jdg.makeAtLvl O.JDG_TRUE withKindAtLevel [term])
+  | term withKindAtLevel (Jdg.makeAtLvl O.JDG_TRUE withKindAtLevel [term])
+  | term EQUALS term TYPE withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ_TYPE withKindAtLevel [term1, term2])
+  | term TYPE withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ_TYPE withKindAtLevel [term, term])
+  | term SYNTH withKindAtLevel (Jdg.makeAtLvl O.JDG_SYNTH withKindAtLevel [term])
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
-src_catjdg : rawJudgment (rawJudgment)
+src_catjdg : judgment (judgment)
 
 src_seqhyp
   : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))

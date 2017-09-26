@@ -1,15 +1,13 @@
-functor RedPrlLevelBasis (Key : ORDERED)
-=
+structure RedPrlRawLevel =
 struct
   structure E = RedPrlError
-  structure P = struct open RedPrlParamData RedPrlParameterTerm end
-  structure D = SplayDict (structure Key = Key)
+  structure D = Metavar.Ctx
   structure TP = TermPrinter
 
   (* normal form: minimum distance from zero and other variables *)
   type level = IntInf.int * IntInf.int D.dict
   type t = level
-  type param = Key.t P.term
+  type term = RedPrlAbt.abt
 
   (* smart constructors *)
   fun const i = (i, D.empty)
@@ -39,10 +37,10 @@ struct
       (D.toList gapmap0)
   val op <= = allBound IntInf.<=
   val op < = allBound IntInf.<
-  fun eq ((gap0, gapmap0) : level, (gap1, gapmap1) : level)
-    = gap0 = gap1 andalso
+  fun eq ((gap0, gapmap0) : level, (gap1, gapmap1) : level) =
+    gap0 = gap1 andalso
       ListPair.allEq
-        (fn ((v0, g0), (v1, g1)) => Key.eq (v0, v1) andalso g0 = g1)
+        (fn ((v0, g0), (v1, g1)) => Var.eq (v0, v1) andalso g0 = g1)
         (D.toList gapmap0, D.toList gapmap1)
   fun residual (l0, l1) = if l1 <= l0 then NONE else SOME l0
 
@@ -51,9 +49,10 @@ struct
     let
       val varGapList = List.map intoVarGap (D.toList gapmap)
       val gapImpliedByMap = D.foldl (fn (_, a, b) => IntInf.max (a, b)) 0 gapmap
-      val args = if gap > gapImpliedByMap
-                 then intoConst gap :: varGapList
-                 else varGapList
+      val args =
+        if gap > gapImpliedByMap
+        then intoConst gap :: varGapList
+        else varGapList
     in
       intoMax args
     end
@@ -64,64 +63,52 @@ struct
    *   `pretty.sml` should adopt the following algorithm so that `pretty`
    *   is the same as `ppParam o into`. *)
   val prettyConst = Fpp.text o IntInf.toString
-  fun prettyVarGap (f : Key.t -> Fpp.doc) (x, i) =
+  fun prettyVarGap (x, i) =
     if i = 0 then
-      f x
+      TermPrinter.ppVar x
     else if i = 1 then
       Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
-        [Fpp.text "lsucc", f x]))
+        [Fpp.text "lsucc", TermPrinter.ppVar x]))
     else
       Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
-        [Fpp.text "labove", f x, prettyConst i]))
+        [Fpp.text "lplus", TermPrinter.ppVar x, prettyConst i]))
+
   val prettyMax =
     fn [] => prettyConst 0
      | [arg] => arg
      | args => Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep (Fpp.text "lmax" :: args)))
 
-  fun pretty' f = into' prettyConst (prettyVarGap f) prettyMax
+  val pretty = into' prettyConst prettyVarGap prettyMax
 
-  (* parser and generator *)
-  fun out' (f : param -> Fpp.doc) : param -> level =
-    fn P.VAR x => (0, D.singleton x 0)
-     | P.APP (P.LCONST i) => const i
-     | P.APP (P.LABOVE (l, i)) => above (out' f l, i)
-     | P.APP (P.LMAX ls) => max (List.map (out' f) ls)
-     | p => E.raiseError (E.INVALID_LEVEL (f p))
-
-  fun constToParam i = P.APP (P.LCONST i)
-  fun varGapToParam (x, i) =
-    if i = 0 then P.VAR x
-    else P.APP (P.LABOVE (P.VAR x, i))
-  val maxToParam =
-    fn [] => constToParam 0
-     | [arg] => arg
-     | args => P.APP (P.LMAX args)
-  val into = into'  constToParam varGapToParam maxToParam
-end
-
-structure RedPrlRawLevel :> REDPRL_LEVEL
-where type param = Sym.t RedPrlParameterTerm.t
-=
-struct
   local
-    structure L = RedPrlLevelBasis (Sym.Ord)
+    open RedPrlAbt
+    structure O = RedPrlOpData
+    infix $ \ $$ $#
   in
-    open L
-    val pretty = pretty' TP.ppSym
-    val out = out' TP.ppParam
-  end
-end
+    (* parser and generator *)
+    fun out (tm : term) : level =
+      case RedPrlAbt.out tm of
+         x $# ([], [])=> (0, D.singleton x 0)
+       | O.MONO (O.LCONST i) $ _ => const i
+       | O.MONO (O.LPLUS i) $ [_ \ l] => above (out l, i)
+       | O.MONO (O.LMAX _) $ ls => max (List.map (fn _ \ l => out l) ls)
+       | _ => E.raiseError (E.INVALID_LEVEL (TermPrinter.ppTerm tm))
 
-structure RedPrlAstRawLevel :> REDPRL_LEVEL
-where type param = string RedPrlParameterTerm.t
-=
-struct
-  local
-    structure L = RedPrlLevelBasis (StringOrdered)
-  in
-    open L
-    val pretty = pretty' Fpp.text
-    val out = out' (Fpp.text o RedPrlParameterTerm.toString (fn str => str))
+    fun constToParam i = O.MONO (O.LCONST i) $$ []
+
+    fun makeVar x = 
+      check (x $# ([],[]), O.LVL)
+
+    fun varGapToParam (x, i) =
+      if i = 0 then makeVar x
+      else O.MONO (O.LPLUS i) $$ [([],[]) \ makeVar x]
+
+    val maxToParam =
+      fn [] => constToParam 0
+       | [arg] => arg
+       | args => O.MONO (O.LMAX (List.length args)) $$ (List.map (fn l => ([],[]) \ l) args)
+
+    val into = into' constToParam varGapToParam maxToParam
   end
 end
 
@@ -168,4 +155,3 @@ struct
 end
 
 structure RedPrlLevel = LevelUtil (RedPrlRawLevel)
-structure RedPrlAstLevel = LevelUtil (RedPrlAstRawLevel)

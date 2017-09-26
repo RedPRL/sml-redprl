@@ -1323,7 +1323,7 @@ struct
 
         val (goalSynth, holeSynth) = makeSynth (I, H) (m, NONE, K.top)
 
-        val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2 | _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam (P.APP r)))
+        val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2
         val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [P.APP r], [])
         val (goalEndpoint, holeEndpoint) = makeMatch (O.MONO O.PATH_TY, dimAddr, holeSynth, [], [])
         val goalTy = makeSubType (I, H) (holeLine, NONE, K.top) (a, NONE, K.top) (* holeLine should be well-typed *)
