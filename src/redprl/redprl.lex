@@ -129,6 +129,7 @@ whitespace = [\ \t];
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
+"kind"             => (Tokens.KIND (posTuple (size yytext)));
 "meta-name"        => (Tokens.META_NAME (posTuple (size yytext)));
 
 "lmax"             => (Tokens.LMAX (posTuple (size yytext)));

@@ -306,7 +306,7 @@ end
  (* parameter sorts *)
  | DIM | HYP | META_NAME
  (* sorts *)
- | EXP | TAC | TRIV | JDG | LVL
+ | EXP | TAC | TRIV | JDG | LVL | KIND
 
  (* keywords and symbols in parameters *)
  | LMAX
@@ -521,6 +521,7 @@ sort
   | TRIV (O.TRIV)
   | JDG (O.JDG)
   | LVL (P.LVL)
+  | KIND (P.KIND)
 
 sorts
   : sort ([sort])
