@@ -198,6 +198,13 @@ structure Pattern =
 struct
   infix $$ $ \
 
+  fun labelAnonTuplePattern pats = 
+    let
+      val lbls = List.tabulate (List.length pats, Multi.anonRecordLabelForIndex)
+    in
+      ListPair.zip (lbls, pats)
+    end
+
   (* this code is kind of crappy, feel free to improve it *)
   fun unstitchPattern (pat : 'a O.dev_pattern) : unit O.dev_pattern * 'a list =
     case pat of
@@ -450,6 +457,8 @@ end
  | devDecompPattern of string O.dev_pattern
  | devDecompPatterns of string O.dev_pattern list
  | labeledDecompPattern of string * string O.dev_pattern
+ | anonTupleDecompPattern of string O.dev_pattern list
+ | labeledTupleDecompPattern of (string * string O.dev_pattern) list
  | tupleDecompPattern of (string * string O.dev_pattern) list
  | devMatchClause of string list * (ast * ast)
  | devMatchClauses of (string list * (ast * ast)) list
@@ -834,6 +843,7 @@ bracketedDevAppSpine
 
 devDecompPattern
   : VARNAME (O.PAT_VAR VARNAME)
+  | UNDER (O.PAT_VAR "_")
   | LBRACKET tupleDecompPattern RBRACKET (O.PAT_TUPLE tupleDecompPattern)
 
 devDecompPatterns
@@ -842,12 +852,19 @@ devDecompPatterns
 
 labeledDecompPattern
   : VARNAME EQUALS devDecompPattern (VARNAME, devDecompPattern)
-  | VARNAME (VARNAME, O.PAT_VAR VARNAME)
 
-tupleDecompPattern
-   : labeledDecompPattern COMMA tupleDecompPattern (labeledDecompPattern :: tupleDecompPattern)
+labeledTupleDecompPattern
+   : labeledDecompPattern COMMA labeledTupleDecompPattern (labeledDecompPattern :: labeledTupleDecompPattern)
    | labeledDecompPattern ([labeledDecompPattern])
    | ([])
+
+anonTupleDecompPattern
+   : devDecompPattern COMMA anonTupleDecompPattern (devDecompPattern :: anonTupleDecompPattern)
+   | devDecompPattern ([devDecompPattern])
+
+tupleDecompPattern
+  : labeledTupleDecompPattern (labeledTupleDecompPattern)
+  | anonTupleDecompPattern (Pattern.labelAnonTuplePattern anonTupleDecompPattern)
 
 devMatchClause
   : LSQUARE patvarBindings PIPE term DOUBLE_RIGHT_ARROW tactic RSQUARE (patvarBindings, (term, tactic))
