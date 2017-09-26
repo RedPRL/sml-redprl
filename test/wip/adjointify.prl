@@ -58,7 +58,7 @@ Thm Adointify(#l:lvl) : [
    (Iso ty1 ty2)
    (Equiv ty1 ty2))
 ] by [
-  lam ty1, ty2, {to, from, coh1, coh2}.
+  lam ty1, ty2, {to=to, from=from, coh1=coh1, coh2=coh2}.
     {to = use to,
      to/equiv =
        lam b.
@@ -69,14 +69,14 @@ Thm Adointify(#l:lvl) : [
             lam {point = point1, ray = r1}, {point = point2, ray = r2}.
 
               let alpha : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,point1))) ] =
-                use {Path/Symm l}
+                use (Path/Symm #l)
                   [use ty1,
                    use from [use to [use point1]],
                    use from [use b],
                    <i> use from [use r1 [@i]]].
 
               let beta : [ (path {_} ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,point2))) ] =
-                use {Path/Symm l}
+                use (Path/Symm #l)
                   [use ty1,
                    use from [use to [use point2]],
                    use from [use b],
