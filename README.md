@@ -18,13 +18,7 @@ refinement.
 RedPRL is (becoming) a proof assistant for Computational Cubical Type Theory,
 as described by Angiuli and Harper in [Computational Higher Type Theory II:
 Dependent Cubical Realizability](http://arxiv.org/abs/1606.09638).  The
-syntactic framework is described in a note by Jon Sterling called [Aspects of
-Cubical Type
-Theory](https://github.com/jonsterling/aspects-of-cubical-type-theory), and is
-inspired by Harper's "abstract binding trees" (Harper, [Practical Foundations
-for Programming Languages](http://www.cs.cmu.edu/~rwh/pfpl.html); Sterling &
-Morrison, [Syntax and Semantics of Abstract Binding
-Trees](https://github.com/jonsterling/syntax-and-semantics-of-abts)).
+syntactic framework is inspired by second-order abstract syntax (relevant names include Aczel, Martin-Löf, Fiore, Plotkin, Turi, Harper, and many others).
 
 
 ### What is this repository?
