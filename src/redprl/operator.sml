@@ -14,6 +14,7 @@ struct
    | TRIV
    | MATCH_CLAUSE of sort
    | PARAM_EXP of param_sort
+   | DIM' | TUBE | SYSTEM
    | LVL
    | KIND
 
@@ -25,6 +26,9 @@ struct
      | TRIV => "triv"
      | MATCH_CLAUSE tau => "match-clause"
      | PARAM_EXP sigma => "param-exp{" ^ paramSortToString sigma ^ "}"
+     | DIM' => "dim"
+     | TUBE => "tube"
+     | SYSTEM => "system"
      | LVL => "lvl"
      | KIND => "kind"
 
@@ -243,6 +247,12 @@ struct
    (* universe *)
    | UNIVERSE
 
+   (* dimension expressions *)
+
+   | DIM0'
+   | DIM1'
+   | MK_TUBE
+   | MK_SYSTEM of int
 
    (* level expressions *)
    | LCONST of IntInf.int
@@ -389,6 +399,11 @@ struct
 
      | UNIVERSE => [[] * [] <> LVL, [] * [] <> KIND] ->> EXP
      | EQUALITY => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+
+     | DIM0' => [] ->> DIM'
+     | DIM1' => [] ->> DIM'
+     | MK_TUBE => [[] * [] <> DIM', [] * [] <> DIM', [] * [] <> EXP] ->> TUBE
+     | MK_SYSTEM n => List.tabulate (n, fn _ => [] * [] <> TUBE) ->> SYSTEM
 
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] * [] <> LVL] ->> LVL
@@ -732,6 +747,11 @@ struct
 
      | UNIVERSE => "U"
      | EQUALITY => "equality"
+
+     | DIM0' => "dim0"
+     | DIM1' => "dim1"
+     | MK_TUBE => "tube"
+     | MK_SYSTEM _ => "system" 
 
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
      | LPLUS i => "{lsuc " ^ IntInf.toString i ^ "}"
