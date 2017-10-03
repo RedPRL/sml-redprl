@@ -26,30 +26,25 @@ struct
     (* Restrict a judgement (as the goal) by a list of equations.
      * Returns NONE if the resulting judgement is vacuously true.
      *)
-    val restrict : (param * param) list -> (abt -> abt) option
+    val restrict : (abt * abt) list -> (abt -> abt) option
   end
   =
   struct
-    (* A helper function which does substitution in a parameter. *)
-    fun substSymInParam (r, v) = P.bind (fn u => if Sym.eq (u, v) then r else P.ret u)
-
-    (* precondition: all parameters in equations are of sorts `DIM` *)
-    fun restrict' [] f = SOME f
-      | restrict' ((P.APP d1, P.APP d2) :: eqs) f =
-          (* The following line is correct because we only have constants
-           * (DIM0 and DIM1). If in the future we want to have connections
-           * or other stuff, then a real unification algorithm might be needed.
-           *)
-          if P.Sig.eq (fn _ => true) (d1, d2) then restrict' eqs f else NONE
-      | restrict' ((r1 as P.VAR v1, r2) :: eqs) f =
-          if P.eq Sym.eq (r1, r2) then restrict' eqs f else substAndRestrict' (r2, v1) eqs f
-      | restrict' ((r1, P.VAR v2) :: eqs) f =
-          substAndRestrict' (r1, v2) eqs f
+    (* precondition: all term in equations are of sort `DIM` *)
+    fun restrict' [] (f : abt -> abt) = SOME f
+      | restrict' ((r1, r2) :: eqs) (f : abt -> abt) = 
+          (case (Syn.out r1, Syn.out r2) of
+              (Syn.DIM0, Syn.DIM0) => restrict' eqs f
+            | (Syn.DIM0, Syn.DIM1) => NONE
+            | (Syn.DIM1, Syn.DIM1) => restrict' eqs f
+            | (Syn.DIM1, Syn.DIM0) => NONE
+            | (Syn.VAR (v1, _), _) => if Abt.eq (r1, r2) then restrict' eqs f else substAndRestrict' (r2, v1) eqs f
+            | (_, Syn.VAR (v2, _)) => substAndRestrict' (r1, v2) eqs f)
 
     and substAndRestrict' rv eqs f =
           restrict'
-            (List.map (fn (r, r') => (substSymInParam rv r, substSymInParam rv r')) eqs)
-          (substSymbol rv o f)
+            (List.map (fn (r, r') => (substVar rv r, substVar rv r')) eqs)
+            (substVar rv o f)
 
     fun restrict eqs = restrict' eqs (fn x => x)
   end
@@ -109,7 +104,7 @@ struct
          forall i <= j.
            N_i = P_j in A [Psi, y | r_i = r_i', r_j = r_j']
      *)
-    fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substSymbol (P.ret w, u) tube))
+    fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substVar (VarKit.toDim w, u) tube))
     fun enumInterExceptDiag f =
       let
         fun enum ([], []) = []
@@ -134,8 +129,8 @@ struct
           val tubes0 = alphaRenameTubes w tubes0
           val tubes1 = alphaRenameTubes w tubes1
 
-          val goalsOnDiag = genTubeGoals' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), (ty, l, k))
-          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), (ty, NONE, K.top))
+          val goalsOnDiag = genTubeGoals' (I, H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), (ty, l, k))
+          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (I, H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), (ty, NONE, K.top))
         in
           goalsOnDiag @ goalsNotOnDiag
         end
@@ -148,7 +143,7 @@ struct
     fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), (ty, l, k)) =
       List.mapPartial
         (fn (eq, (u, tube)) =>
-          Restriction.makeEqIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), (ty, l, k)))
+          Restriction.makeEqIfDifferent [eq] (I, H) ((cap, substVar (r, u) tube), (ty, l, k)))
         tubes
 
     (* Note that this does not check whether the 'ty' is a base type.
@@ -156,8 +151,8 @@ struct
      * recognizes FCOM as values. *)
     fun EqFComDelegate alpha (I, H) args0 args1 (ty, l, k) =
       let
-        val {dir=dir0, cap=cap0, tubes=tubes0} = args0
-        val {dir=dir1, cap=cap1, tubes=tubes1} = args1
+        val {dir=dir0, cap=cap0, tubes=tubes0 : abt Syn.tube list} = args0
+        val {dir=dir1, cap=cap1, tubes=tubes1 : abt Syn.tube list} = args1
         val () = Assert.dirEq "EqFComDelegator direction" (dir0, dir1)
         val eqs0 = List.map #1 tubes0
         val eqs1 = List.map #1 tubes1
@@ -216,7 +211,7 @@ struct
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
-        val () = Assert.paramEq "HCom.EqCapL source and target of direction" (r, r')
+        val () = Assert.alphaEq' "HCom.EqCapL source and target of direction" (r, r')
 
         (* equations *)
         val _ = Assert.tautologicalEquations "HCom.EqCapL tautology checking" (List.map #1 tubes)
@@ -246,7 +241,7 @@ struct
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
 
         (* equations. they must be tautological because one of them is true. *)
-        val (_, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
+        val (_, (u, tube)) = Option.valOf (List.find (fn (eq, _) => Abt.eq eq) tubes)
 
         (* type *)
         (* the cap-tube adjacency premise guarantees that [ty0] is a type
@@ -261,7 +256,7 @@ struct
         (* eq *)
         (* the tube-tube adjacency premise guarantees that this particular tube
          * is unconditionally in [ty], and thus alpha-equivalence is sufficient. *)
-        val goalEq = makeEqIfDifferent (I, H) ((substSymbol (r', u) tube, other), (ty0, l, k))
+        val goalEq = makeEqIfDifferent (I, H) ((substVar (r', u) tube, other), (ty0, l, k))
 
         val w = alpha 0
       in

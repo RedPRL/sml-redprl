@@ -27,15 +27,15 @@ struct
 
         (* type *)
         val w = alpha 0
-        val ty0w = substSymbol (P.ret w, u) ty0u
-        val ty1w = substSymbol (P.ret w, v) ty1v
-        val goalTy = makeEqType (I @ [(w, P.DIM)], H) ((ty0w, ty1w), l, k)
+        val ty0w = substVar (VarKit.toDim w, u) ty0u
+        val ty1w = substVar (VarKit.toDim w, v) ty1v
+        val goalTy = makeEqType (I, H @> (w, AJ.TERM O.DIM)) ((ty0w, ty1w), l, k)
         (* after proving the above goal, [ty0r'0] must be a type *)
-        val ty0r'0 = substSymbol (#2 dir0, u) ty0u
+        val ty0r'0 = substVar (#2 dir0, u) ty0u
         val goalTy0 = makeSubType (I, H) (ty0r'0, l, k) (ty, l, k)
 
         (* coercee *)
-        val ty0r0 = substSymbol (#1 dir0, u) ty0u
+        val ty0r0 = substVar (#1 dir0, u) ty0u
         val goalCoercees = makeEq (I, H) ((m0, m1), (ty0r0, NONE, K.top))
       in
         |>: goalCoercees >:? goalTy0 >: goalTy #> (I, H, trivial)
@@ -47,12 +47,12 @@ struct
         val (I, H) >> AJ.EQ ((coe, other), (ty, l, k)) = jdg
         val k = K.meet (k, K.COE)
         val Syn.COE {dir=(r, r'), ty=(u, ty0u), coercee=m} = Syn.out coe
-        val () = Assert.paramEq "Coe.EqCapL source and target of direction" (r, r')
+        val () = Assert.alphaEq' "Coe.EqCapL source and target of direction" (r, r')
 
         (* type *)
-        val goalTy = makeType (I @ [(u, P.DIM)], H) (ty0u, l, k)
+        val goalTy = makeType (I, H @> (u, AJ.TERM O.DIM)) (ty0u, l, k)
         (* after proving the above goal, [ty0r] must be a type *)
-        val ty0r = substSymbol (r, u) ty0u
+        val ty0r = substVar (r, u) ty0u
         val goalTy0 = makeSubType (I, H) (ty0r, l, k) (ty, l, k)
 
         (* eq *)

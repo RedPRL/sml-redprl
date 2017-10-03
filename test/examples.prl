@@ -8,7 +8,7 @@ Thm BoolTest : [
 
 
 Thm PathTest : [
-  (path {_} S1 base base)
+  (path [_] S1 base base)
 ] by [
   <x> `(loop x)
 ].
@@ -49,7 +49,7 @@ Thm FunElimTest : [
 
 Thm S1ElimTest : [ (-> S1 S1) ] by [
   lam s.
-    case s of
+    case s of 
        base => `base
      | loop x => `(loop x)
 ].

@@ -8,6 +8,7 @@ struct
       Var.Ctx.empty l
 
   fun toExp x = Syntax.into (Syntax.VAR (x, RedPrlSortData.EXP))
+  fun toDim x = Syntax.into (Syntax.VAR (x, RedPrlSortData.DIM))
 
   val renameMany = RedPrlAbt.renameVars o ctxFromList
   fun rename r = renameMany [r]

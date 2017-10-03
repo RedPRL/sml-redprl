@@ -681,7 +681,7 @@ struct
         val _ = Assert.kindLeq (inherentKind, k)
         val Syn.LOOP r1 = Syn.out m
         val Syn.LOOP r2 = Syn.out n
-        val () = Assert.paramEq "S1.EqLoop" (r1, r2)
+        val () = Assert.alphaEq' "S1.EqLoop" (r1, r2)
       in
         T.empty #> (I, H, trivial)
       end
@@ -720,13 +720,13 @@ struct
 
         (* loop branch *)
         val u = alpha 0
-        val loop = Syn.into o Syn.LOOP @@ P.ret u
+        val loop = Syn.into o Syn.LOOP @@ VarKit.toDim u
         val cloop = substVar (loop, z) cz
-        val (goalL, holeL) = makeTrue (I @ [(u,P.DIM)], H) (cloop, NONE, K.top)
+        val (goalL, holeL) = makeTrue (I, H @> (u, AJ.TERM O.DIM)) (cloop, NONE, K.top)
 
         (* coherence *)
-        val l0 = substSymbol (P.APP P.DIM0, u) holeL
-        val l1 = substSymbol (P.APP P.DIM1, u) holeL
+        val l0 = substVar (Syn.into Syn.DIM0, u) holeL
+        val l1 = substVar (Syn.into Syn.DIM1, u) holeL
         val goalCoh0 = makeEqIfDifferent (I, H) ((l0, holeB), (cbase, NONE, K.top)) (* holeB well-typed *)
         val goalCoh1 = makeEqIfAllDifferent (I, H) ((l1, holeB), (cbase, NONE, K.top)) [l0]
 
@@ -767,14 +767,14 @@ struct
 
         (* loop branch*)
         val w = alpha 1
-        val l0w = substSymbol (P.ret w, u) l0u
-        val l1w = substSymbol (P.ret w, v) l1v
-        val cloop = substVar (Syn.into @@ Syn.LOOP (P.ret w), x) c0x
-        val goalL = makeEq (I @ [(w,P.DIM)], H) ((l0w, l1w), (cloop, NONE, K.top))
+        val l0w = substVar (VarKit.toDim w, u) l0u
+        val l1w = substVar (VarKit.toDim w, v) l1v
+        val cloop = substVar (Syn.into @@ Syn.LOOP (VarKit.toDim w), x) c0x
+        val goalL = makeEq (I, H @> (w, AJ.TERM O.DIM)) ((l0w, l1w), (cloop, NONE, K.top))
 
         (* coherence *)
-        val l00 = substSymbol (P.APP P.DIM0, u) l0u
-        val l01 = substSymbol (P.APP P.DIM1, u) l0u
+        val l00 = substVar (Syn.into Syn.DIM0, u) l0u
+        val l01 = substVar (Syn.into Syn.DIM1, u) l0u
         val goalCoh0 = makeEqIfAllDifferent (I, H) ((l00, b0), (cbase, NONE, K.top)) [b1]
         val goalCoh1 = makeEqIfAllDifferent (I, H) ((l01, b0), (cbase, NONE, K.top)) [l00, b1]
       in
@@ -1184,12 +1184,12 @@ struct
         val ka = kindConstraintOnBase k
 
         val w = alpha 0
-        val a0w = substSymbol (P.ret w, u) a0u
-        val a1w = substSymbol (P.ret w, v) a1v
-        val tyGoal = makeEqType (I @ [(w,P.DIM)], H) ((a0w, a1w), l, ka)
+        val a0w = substVar (VarKit.toDim w, u) a0u
+        val a1w = substVar (VarKit.toDim w, v) a1v
+        val tyGoal = makeEqType (I, H @> (w, AJ.TERM O.DIM)) ((a0w, a1w), l, ka)
 
-        val a00 = substSymbol (P.APP P.DIM0, u) a0u
-        val a01 = substSymbol (P.APP P.DIM1, u) a0u
+        val a00 = substVar (Syn.into Syn.DIM0, u) a0u
+        val a01 = substVar (Syn.into Syn.DIM1, u) a0u
         val goal0 = makeEq (I, H) ((m0, m1), (a00, NONE, K.top))
         val goal1 = makeEq (I, H) ((n0, n1), (a01, NONE, K.top))
       in
@@ -1206,15 +1206,15 @@ struct
         val Syn.PATH_ABS (w, m1w) = Syn.out abs1
 
         val z = alpha 0
-        val az = substSymbol (P.ret z, u) au
-        val m0z = substSymbol (P.ret z, v) m0v
-        val m1z = substSymbol (P.ret z, w) m1w
-        val goalM = makeEq (I @ [(z,P.DIM)], H) ((m0z, m1z), (az, l, ka))
+        val az = substVar (VarKit.toDim z, u) au
+        val m0z = substVar (VarKit.toDim z, v) m0v
+        val m1z = substVar (VarKit.toDim z, w) m1w
+        val goalM = makeEq (I, H @> (z, AJ.TERM O.DIM)) ((m0z, m1z), (az, l, ka))
 
-        val a0 = substSymbol (P.APP P.DIM0, u) au
-        val a1 = substSymbol (P.APP P.DIM1, u) au
-        val m00 = substSymbol (P.APP P.DIM0, v) m0v
-        val m01 = substSymbol (P.APP P.DIM1, v) m0v
+        val a0 = substVar (Syn.into Syn.DIM0, u) au
+        val a1 = substVar (Syn.into Syn.DIM1, u) au
+        val m00 = substVar (Syn.into Syn.DIM0, v) m0v
+        val m01 = substVar (Syn.into Syn.DIM1, v) m0v
         (* note: m00 and m01 are well-typed and az is well-kinded  *)
         val goalCoh0 = makeEqIfDifferent (I, H) ((m00, p0), (a0, NONE, K.top))
         val goalCoh1 = makeEqIfDifferent (I, H) ((m01, p1), (a1, NONE, K.top))
@@ -1228,16 +1228,16 @@ struct
         val (I, H) >> AJ.TRUE (ty, l, k) = jdg
         val Syn.PATH_TY ((u, au), p0, p1) = Syn.out ty
         val ka = kindConstraintOnBase k
-        val a0 = substSymbol (P.APP P.DIM0, u) au
-        val a1 = substSymbol (P.APP P.DIM1, u) au
+        val a0 = substVar (Syn.into Syn.DIM0, u) au
+        val a1 = substVar (Syn.into Syn.DIM1, u) au
 
         val v = alpha 0
-        val av = substSymbol (P.ret v, u) au
-        val (mainGoal, mhole) = makeTrue (I @ [(v,P.DIM)], H) (av, l, ka)
+        val av = substVar (VarKit.toDim v, u) au
+        val (mainGoal, mhole) = makeTrue (I, H @> (v, AJ.TERM O.DIM)) (av, l, ka)
 
         (* note: m0 and m1 are already well-typed *)
-        val m0 = substSymbol (P.APP P.DIM0, v) mhole
-        val m1 = substSymbol (P.APP P.DIM1, v) mhole
+        val m0 = substVar (Syn.into Syn.DIM0, v) mhole
+        val m1 = substVar (Syn.into Syn.DIM1, v) mhole
         val goalCoh0 = makeEqIfDifferent (I, H) ((m0, p0), (a0, NONE, K.top))
         val goalCoh1 = makeEqIfDifferent (I, H) ((m1, p1), (a1, NONE, K.top))
 
@@ -1252,7 +1252,7 @@ struct
         val (I, H) >> AJ.EQ ((m, n), (pathTy, l, k)) = jdg
         val Syn.PATH_TY ((u, _), _, _) = Syn.out pathTy
 
-        val m' = Syn.into @@ Syn.PATH_ABS (u, Syn.into @@ Syn.PATH_APP (m, P.ret u))
+        val m' = Syn.into @@ Syn.PATH_ABS (u, Syn.into @@ Syn.PATH_APP (m, VarKit.toDim u))
         val goal1 = makeMem (I, H) (m, (pathTy, l, k))
         val goal2 = makeEqIfDifferent (I, H) ((m', n), (pathTy, NONE, K.top)) (* m' will-typed *)
       in
@@ -1270,21 +1270,22 @@ struct
         val x = alpha 0
         val y = alpha 1
         
-        val (dimGoal, dimHole) = makeTerm (I, H) @@ O.PARAM_EXP O.DIM
-        val (arGoal, arHole) = makeDimSubst (I, H) (dimHole, u, a)
+        val (dimGoal, dimHole) = makeTerm (I, H) @@ O.DIM
+        val ar = substVar (dimHole, u) a
+
 
         val w = Sym.named "w"
-        val (pathAppGoal, pathAppHole) = makeDimSubst (I, H) (dimHole, w, Syn.into @@ Syn.PATH_APP (VarKit.toExp z, P.ret w))
+        val pathApp = substVar (dimHole, w) @@ Syn.into @@ Syn.PATH_APP (VarKit.toExp z, VarKit.toDim w)
 
         val H' = Hyps.interposeAfter
-          (z, |@> (x, AJ.TRUE (arHole, l', K.top))
-               @> (y, AJ.EQ ((VarKit.toExp x, pathAppHole), (arHole, l', K.top))))
+          (z, |@> (x, AJ.TRUE (ar, l', K.top))
+               @> (y, AJ.EQ ((VarKit.toExp x, pathApp), (ar, l', K.top))))
           H
 
         val (mainGoal, mainHole) = makeGoal @@ (I, H') >> catjdg
       in
-        |>: dimGoal >: arGoal >: pathAppGoal >: mainGoal
-        #> (I, H, VarKit.substMany [(pathAppHole, x), (trivial, y)] mainHole)
+        |>: dimGoal >: mainGoal
+        #> (I, H, VarKit.substMany [(pathApp, x), (trivial, y)] mainHole)
       end
 
     fun EqApp _ jdg =
@@ -1293,11 +1294,11 @@ struct
         val (I, H) >> AJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
         val Syn.PATH_APP (m0, r0) = Syn.out ap0
         val Syn.PATH_APP (m1, r1) = Syn.out ap1
-        val () = Assert.paramEq "Path.EqApp" (r0, r1)
+        val () = Assert.alphaEq (r0, r1)
 
         val (goalSynth, holeSynth) = makeSynth (I, H) (m0, NONE, K.top)
         val goalMem = makeEqIfDifferent (I, H) ((m0, m1), (holeSynth, NONE, K.top)) (* m0 well-typed *)
-        val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [r0], [])
+        val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [], [r0])
         val goalTy = makeSubType (I, H) (holeLine, NONE, K.top) (ty, l, k) (* holeLine type *)
       in
         |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (I, H, trivial)
@@ -1309,7 +1310,7 @@ struct
         val (I, H) >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.PATH_APP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth (I, H) (m, NONE, K.top)
-        val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holePathTy, [r], [])
+        val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holePathTy, [], [r])
         val goalKind = makeTypeUnlessSubUniv (I, H) (holeLine, l, k) (NONE, K.top)
       in
         |>: goalPathTy >: goalLine >:? goalKind #> (I, H, holeLine)
@@ -1319,12 +1320,13 @@ struct
       let
         val _ = RedPrlLog.trace "Path.EqAppConst"
         val (I, H) >> AJ.EQ ((ap, p), (a, l, k)) = jdg
-        val Syn.PATH_APP (m, P.APP r) = Syn.out ap
+        val Syn.PATH_APP (m, r) = Syn.out ap
+
+        val dimAddr = case Syn.out r of Syn.DIM0 => 1 | Syn.DIM1 => 2
 
         val (goalSynth, holeSynth) = makeSynth (I, H) (m, NONE, K.top)
 
-        val dimAddr = case r of P.DIM0 => 1 | P.DIM1 => 2
-        val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [P.APP r], [])
+        val (goalLine, holeLine) = makeMatch (O.MONO O.PATH_TY, 0, holeSynth, [], [r])
         val (goalEndpoint, holeEndpoint) = makeMatch (O.MONO O.PATH_TY, dimAddr, holeSynth, [], [])
         val goalTy = makeSubType (I, H) (holeLine, NONE, K.top) (a, NONE, K.top) (* holeLine should be well-typed *)
         val goalEq = makeEq (I, H) ((holeEndpoint, p), (a, l, k))
@@ -1586,8 +1588,8 @@ struct
           val tubes0 = ComKit.alphaRenameTubes w tubes0
           val tubes1 = ComKit.alphaRenameTubes w tubes1
 
-          val goalsOnDiag = genTubeGoals' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), l, k)
-          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), NONE, K.top)
+          val goalsOnDiag = genTubeGoals' (I, H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), l, k)
+          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (I, H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), NONE, K.top)
         in
           goalsOnDiag @ goalsNotOnDiag
         end
@@ -1597,7 +1599,7 @@ struct
     fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), l, k) =
       List.mapPartial
         (fn (eq, (u, tube)) =>
-          Restriction.makeEqTypeIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), l, k))
+          Restriction.makeEqTypeIfDifferent [eq] (I, H) ((cap, substVar (r, u) tube), l, k))
         tubes
 
     fun genBoundaryGoals (I, H) ((boundaries0, boundaries1), (tubes, l, k)) =
@@ -1663,7 +1665,7 @@ struct
 
         val goalCap = makeEq (I, H) ((cap0, cap1), (tyCap, l, kCap))
 
-        val tyBoundaries = List.map (fn (u, ty) => substSymbol (#2 dir, u) ty) tyTubes'
+        val tyBoundaries = List.map (fn (u, ty) => substVar (#2 dir, u) ty) tyTubes'
 
         val w = alpha 0
       in
@@ -1688,12 +1690,12 @@ struct
         val (goalCap, holeCap) = makeTrue (I, H) (tyCap, l, kCap)
 
         fun goTube (eq, (u, tyTube)) =
-          Restriction.makeTrue [eq] (Syn.into Syn.AX) (I, H) (substSymbol (#2 dir, u) tyTube, NONE, K.top)
+          Restriction.makeTrue [eq] (Syn.into Syn.AX) (I, H) (substVar (#2 dir, u) tyTube, NONE, K.top)
         val goalHoleBoundaries = List.map goTube tyTubes
         val goalBoundaries = List.mapPartial #1 goalHoleBoundaries
         val holeBoundaries = List.map #2 goalHoleBoundaries
 
-        val tyBoundaries = List.map (fn (u, ty) => substSymbol (#2 dir, u) ty) tyTubes'
+        val tyBoundaries = List.map (fn (u, ty) => substVar (#2 dir, u) ty) tyTubes'
         val holeBoundaries' = ListPair.zipEq (eqs, holeBoundaries)
 
         val w = alpha 0
@@ -1772,15 +1774,14 @@ struct
         val (I, H) >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val Syn.V (r0, a0, b0, e0) = Syn.out ty0
         val Syn.V (r1, a1, b1, e1) = Syn.out ty1
-        val () = Assert.paramEq "V.EqType" (r0, r1)
+        val () = Assert.alphaEq' "V.EqType" (r0, r1)
         val (kA, kB) = kindConstraintOnEnds k
 
-        val eq = (r0, P.APP P.DIM0)
+        val eq = (r0, Syn.into Syn.DIM0)
 
         val goalA = Restriction.makeEqType [eq] (I, H) ((a0, a1), l, kA)
         val goalB = makeEqType (I, H) ((b0, b1), l, kB)
-        val goalEquiv = Restriction.makeEq [eq] (I, H)
-          ((e0, e1), (intoEquiv a0 b0, NONE, K.top))
+        val goalEquiv = Restriction.makeEq [eq] (I, H) ((e0, e1), (intoEquiv a0 b0, NONE, K.top))
       in
         |>:? goalEquiv >:? goalA >: goalB #> (I, H, trivial)
       end
@@ -1792,11 +1793,11 @@ struct
         val Syn.V (r, a, b, e) = Syn.out ty
         val Syn.VIN (r0, m0, n0) = Syn.out in0
         val Syn.VIN (r1, m1, n1) = Syn.out in1
-        val () = Assert.paramEq "V.Eq" (r0, r1)
-        val () = Assert.paramEq "V.Eq" (r0, r)
+        val () = Assert.alphaEq' "V.Eq" (r0, r1)
+        val () = Assert.alphaEq' "V.Eq" (r0, r)
         val (kA, kB) = kindConstraintOnEnds k
 
-        val eq = (r0, P.APP P.DIM0)
+        val eq = (r0, Syn.into Syn.DIM0)
 
         val goalM = Restriction.makeEq [eq] (I, H) ((m0, m1), (a, l, kA))
         val goalN = makeEq (I, H) ((n0, n1), (b, l, kB))
@@ -1814,7 +1815,7 @@ struct
         val Syn.V (r, a, b, e) = Syn.out ty
         val (kA, kB) = kindConstraintOnEnds k
 
-        val eq = (r, P.APP P.DIM0)
+        val eq = (r, Syn.into Syn.DIM0)
 
         val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) (I, H) (a, l, kA)
         val (goalN, holeN) = makeTrue (I, H) (b, l, kB)

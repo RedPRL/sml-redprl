@@ -6,7 +6,7 @@ struct
   infix orelse_ then_
 
   structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and J = RedPrlJudgment
-  structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
+  structure P = struct open RedPrlSortData RedPrlParameterTerm end
   structure K = RedPrlKind
   structure L = RedPrlLevel
   structure AJ = RedPrlAtomicJudgment
@@ -169,7 +169,6 @@ struct
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
   fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> AJ.TERM tau
-  fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> AJ.PARAM_SUBST ([(r, O.DIM, u)], m, Abt.sort m)
 
   (* ignoring the trivial realizer *)
   fun makeType (I, H) (a, l, k) = makeGoal' @@ (I, H) >> AJ.TYPE (a, l, k)
@@ -246,6 +245,12 @@ struct
       else
         raise E.error [Fpp.text "Expected sort", TermPrinter.ppSort tau1, Fpp.text "to be equal to", TermPrinter.ppSort tau2]
 
+    fun alphaEq' msg (m, n) =
+      if Abt.eq (m, n) then
+        ()
+      else
+        raise E.error [Fpp.text msg, Fpp.text ":", Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
+
     fun alphaEq (m, n) =
       if Abt.eq (m, n) then
         ()
@@ -295,34 +300,34 @@ struct
         raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", TermPrinter.ppParam r1, Fpp.text "to be equal to", TermPrinter.ppParam r2]
 
     fun dirEq msg ((r1, r1'), (r2, r2')) =
-      if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
+      if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then
         ()
       else
         raise E.error
           [Fpp.text (msg ^ ":"),
            Fpp.text "Expected direction",
-           TermPrinter.ppParam r1,
+           TermPrinter.ppTerm r1,
            Fpp.text "~>",
-           TermPrinter.ppParam r1',
+           TermPrinter.ppTerm r1',
            Fpp.text "to be equal to",
-           TermPrinter.ppParam r2,
+           TermPrinter.ppTerm r2,
            Fpp.text "~>",
-           TermPrinter.ppParam r2']
+           TermPrinter.ppTerm r2']
 
     fun equationEq msg ((r1, r1'), (r2, r2')) =
-      if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
+      if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then
         ()
       else
         raise E.error
           [Fpp.text (msg ^ ":"),
            Fpp.text "Expected equation",
-           TermPrinter.ppParam r1,
+           TermPrinter.ppTerm r1,
            Fpp.text "=",
-           TermPrinter.ppParam r1',
+           TermPrinter.ppTerm r1',
            Fpp.text "to be equal to",
-           TermPrinter.ppParam r2,
+           TermPrinter.ppTerm r2,
            Fpp.text "=",
-           TermPrinter.ppParam r2']
+           TermPrinter.ppTerm r2']
 
     fun equationsEq msg = ListPair.mapEq (equationEq msg)
 
@@ -334,20 +339,20 @@ struct
     fun tautologicalEquations msg eqs =
       let
         fun goEqs _ [] = false
-          | goEqs (state as (zeros, ones)) (eq :: eqs) =
-              case eq of
-                (P.APP P.DIM0, P.APP P.DIM0) => true
-              | (P.APP P.DIM0, P.APP P.DIM1) => goEqs state eqs
-              | (P.APP P.DIM0, P.VAR _) => goEqs state eqs
-              | (P.APP P.DIM1, P.APP P.DIM1) => true
-              | (P.APP P.DIM1, P.APP P.DIM0) => goEqs state eqs
-              | (P.APP P.DIM1, P.VAR _) => goEqs state eqs
-              | (P.VAR u, P.APP P.DIM0) =>
+          | goEqs (state as (zeros, ones)) ((r1, r2) :: eqs) =
+              case (Syn.out r1, Syn.out r2) of
+                (Syn.DIM0, Syn.DIM0) => true
+              | (Syn.DIM0, Syn.DIM1) => goEqs state eqs
+              | (Syn.DIM0, Syn.VAR _) => goEqs state eqs
+              | (Syn.DIM1, Syn.DIM1) => true
+              | (Syn.DIM1, Syn.DIM0) => goEqs state eqs
+              | (Syn.DIM1, Syn.VAR _) => goEqs state eqs
+              | (Syn.VAR (u, _), Syn.DIM0) =>
                   SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
-              | (P.VAR u, P.APP P.DIM1) =>
+              | (Syn.VAR (u, _), Syn.DIM1) =>
                   SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
-              | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
-        fun prettyEq (r1, r2) = [TermPrinter.ppParam r1, Fpp.text "=", TermPrinter.ppParam r2, Fpp.text ";"]
+              | (Syn.VAR (u, _), Syn.VAR (v, _)) => Sym.eq (u, v) orelse goEqs state eqs
+        fun prettyEq (r1, r2) = [TermPrinter.ppTerm r1, Fpp.text "=", TermPrinter.ppTerm r2, Fpp.text ";"]
       in
         if goEqs (SymSet.empty, SymSet.empty) eqs then
           ()

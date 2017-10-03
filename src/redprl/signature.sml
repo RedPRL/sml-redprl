@@ -1,7 +1,7 @@
 structure Signature :> SIGNATURE =
 struct
   structure Ar = RedPrlArity
-  structure P = struct open RedPrlSortData RedPrlParamData end
+  structure P = RedPrlSortData
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
   structure AJ = RedPrlAtomicJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps

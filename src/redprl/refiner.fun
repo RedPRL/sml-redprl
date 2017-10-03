@@ -556,7 +556,7 @@ struct
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Fun.EqTypeApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `!`"
-         | (Syn.PATH_APP (_, P.VAR _), Syn.PATH_APP (_, P.VAR _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`"
+         | (Syn.PATH_APP (_, _), Syn.PATH_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
          | (Syn.CUST, Syn.CUST) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with custom operators"
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
@@ -648,7 +648,7 @@ struct
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Fun.EqApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => Record.EqProj (* XXX should consult autoSynthesizableNeu *)
-         | (Syn.PATH_APP (_, P.VAR _), Syn.PATH_APP (_, P.VAR _)) => Path.EqApp (* XXX should consult autoSynthesizableNeu *)
+         | (Syn.PATH_APP (_, _), Syn.PATH_APP (_, _)) => Path.EqApp (* XXX should consult autoSynthesizableNeu; also, pattern used to have a var for the dim: needed? *)
          | (Syn.CUST, Syn.CUST) => Custom.Eq sign (* XXX should consult autoSynthesizableNeu *)
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
@@ -733,8 +733,8 @@ struct
            (_, Machine.REDEX, _, _) => Computation.SequentReduce sign [O.IN_GOAL]
          | (_, _, _, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
          | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
-         | (Syn.PATH_APP (_, P.APP _), _, _, _) => Path.EqAppConst
-         | (_, _, Syn.PATH_APP (_, P.APP _), _) => CatJdgSymmetry then_ Path.EqAppConst
+         | (Syn.PATH_APP (_, _), _, _, _) => Path.EqAppConst (* TODO: pattern used to have a constant for the dim *)
+         | (_, _, Syn.PATH_APP (_, _), _) => CatJdgSymmetry then_ Path.EqAppConst
          | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
          | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
          | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
@@ -767,7 +767,7 @@ struct
         case (Syn.out u, canonicity sign u) of
            (_, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
          | (_, Machine.CANONICAL) => Universe.SubUniverse
-         | (Syn.PATH_APP (_, P.APP _), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p const)"
+         | (Syn.PATH_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
          | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 

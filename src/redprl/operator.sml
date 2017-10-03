@@ -1,8 +1,7 @@
 structure RedPrlSortData =
 struct
   datatype param_sort =
-     DIM
-   | HYP
+     HYP
    | META_NAME
    | OPID
 
@@ -14,7 +13,8 @@ struct
    | TRIV
    | MATCH_CLAUSE of sort
    | PARAM_EXP of param_sort
-   | DIM' | TUBE | SYSTEM
+   | DIM | TUBE | BOUNDARY
+   | VEC of sort
    | LVL
    | KIND
 
@@ -26,26 +26,18 @@ struct
      | TRIV => "triv"
      | MATCH_CLAUSE tau => "match-clause"
      | PARAM_EXP sigma => "param-exp{" ^ paramSortToString sigma ^ "}"
-     | DIM' => "dim"
+     | DIM => "dim"
      | TUBE => "tube"
-     | SYSTEM => "system"
+     | BOUNDARY => "boundary"
+     | VEC tau => "vec{" ^ sortToString tau ^ "}"
      | LVL => "lvl"
      | KIND => "kind"
 
   and paramSortToString = 
-    fn DIM => "dim"
-     | HYP => "hyp"
+    fn HYP => "hyp"
      | META_NAME => "meta-name"
      | OPID => "opid"
 end
-
-structure RedPrlParamData =
-struct
-  datatype 'a param_operator =
-     DIM0
-   | DIM1
-end
-
 
 structure RedPrlSort : ABT_SORT =
 struct
@@ -60,7 +52,7 @@ end
 
 structure RedPrlParamSort : ABT_SORT =
 struct
-  open RedPrlSortData RedPrlParamData
+  open RedPrlSortData
 
   type t = param_sort
   val eq : t * t -> bool = op=
@@ -68,35 +60,7 @@ struct
   val toString = paramSortToString
 end
 
-structure RedPrlParameter : ABT_PARAMETER =
-struct
-  open RedPrlSortData RedPrlParamData
-  type 'a t = 'a param_operator
-
-  fun map f =
-    fn DIM0 => DIM0
-     | DIM1 => DIM1
-
-  structure Sort = RedPrlParamSort
-
-  val arity =
-    fn DIM0 => (DIM0, DIM)
-     | DIM1 => (DIM1, DIM)
-
-  fun eq f =
-    fn (DIM0, DIM0) => true
-     | (DIM1, DIM1) => true
-     | _ => false
-
-  fun toString f =
-    fn DIM0 => "0"
-     | DIM1 => "1"
-
-  fun join zer red =
-    fn DIM0 => zer
-     | DIM1 => zer
-end
-
+structure RedPrlParameter = AbtEmptyParameter (RedPrlParamSort)
 structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
 
 
@@ -235,24 +199,30 @@ struct
    (* empty type *)
    | VOID
    (* circle *)
-   | S1 | BASE | S1_REC
+   | S1 | BASE | LOOP | S1_REC
    (* function: lambda and app *)
    | FUN | LAM | APP
    (* record and tuple *)
    | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
-   (* path: path abstraction *)
-   | PATH_TY | PATH_ABS
+   (* path: path abstraction and application *)
+   | PATH_TY | PATH_ABS | PATH_APP
    (* equality *)
    | EQUALITY
    (* universe *)
    | UNIVERSE
+   | V
+   | VIN
+   | VPROJ
+
+   | FCOM | BOX | CAP | HCOM | COE | COM
 
    (* dimension expressions *)
 
    | DIM0'
    | DIM1'
    | MK_TUBE
-   | MK_SYSTEM of int
+   | MK_BOUNDARY
+   | MK_VEC of sort * int
 
    (* level expressions *)
    | LCONST of IntInf.int
@@ -295,19 +265,7 @@ struct
   type 'a dir = 'a P.term * 'a P.term
 
   datatype 'a poly_operator =
-     FCOM of 'a dir * 'a equation list
-   | LOOP of 'a P.term
-   | PATH_APP of 'a P.term
-   | BOX of 'a dir * 'a equation list
-   | CAP of 'a dir * 'a equation list
-   | V of 'a P.term
-   | VIN of 'a P.term
-   | VPROJ of 'a P.term
-   | HCOM of 'a dir * 'a equation list
-   | COE of 'a dir
-   | COM of 'a dir * 'a equation list
-   | CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-
+     CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | PAT_META of 'a * sort * ('a P.term * psort) list * sort list
    | HYP_REF of 'a * sort
    | PARAM_REF of psort * 'a P.term
@@ -345,7 +303,7 @@ structure RedPrlOperator : ABT_OPERATOR =
 struct
   structure Ar = RedPrlArity
 
-  open RedPrlParamData RedPrlOpData
+  open RedPrlOpData
   open ArityNotation infix <> ->>
 
   type 'a t = 'a operator
@@ -378,7 +336,8 @@ struct
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
-     | S1_REC => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [DIM] * [] <> EXP] ->> EXP
+     | LOOP => [[] * [] <> DIM] ->> EXP
+     | S1_REC => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [DIM] <> EXP] ->> EXP
 
      | FUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
      | LAM => [[] * [EXP] <> EXP] ->> EXP
@@ -394,16 +353,29 @@ struct
      | PROJ lbl => [[] * [] <> EXP] ->> EXP
      | TUPLE_UPDATE lbl => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
-     | PATH_TY => [[DIM] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-     | PATH_ABS => [[DIM] * [] <> EXP] ->> EXP
+     | PATH_TY => [[] * [DIM] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | PATH_ABS => [[] * [DIM] <> EXP] ->> EXP
+     | PATH_APP => [[] * [] <> EXP, [] * [] <> DIM] ->> EXP
+
+     | FCOM => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP, [] * [] <> VEC TUBE] ->> EXP
+     | BOX => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP, [] * [] <> VEC BOUNDARY] ->> EXP
+     | CAP => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP, [] * [] <> VEC TUBE] ->> EXP
+     | HCOM => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> VEC TUBE] ->> EXP
+     | COE => [[] * [] <> DIM, [] * [] <> DIM, [] * [DIM] <> EXP, [] * [] <> EXP] ->> EXP
+     | COM => [[] * [] <> DIM, [] * [] <> DIM, [] * [DIM] <> EXP, [] * [] <> EXP, [] * [] <> VEC TUBE] ->> EXP
 
      | UNIVERSE => [[] * [] <> LVL, [] * [] <> KIND] ->> EXP
+     | V => [[] * [] <> DIM, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | VIN => [[] * [] <> DIM, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | VPROJ => [[] * [] <> DIM, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+
      | EQUALITY => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
 
-     | DIM0' => [] ->> DIM'
-     | DIM1' => [] ->> DIM'
-     | MK_TUBE => [[] * [] <> DIM', [] * [] <> DIM', [] * [] <> EXP] ->> TUBE
-     | MK_SYSTEM n => List.tabulate (n, fn _ => [] * [] <> TUBE) ->> SYSTEM
+     | DIM0' => [] ->> DIM
+     | DIM1' => [] ->> DIM
+     | MK_TUBE => [[] * [] <> DIM, [] * [] <> DIM, [] * [DIM] <> EXP] ->> TUBE
+     | MK_BOUNDARY => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP] ->> BOUNDARY
+     | MK_VEC (tau, n) => List.tabulate (n, fn _ => [] * [] <> tau) ->> VEC tau
 
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] * [] <> LVL] ->> LVL
@@ -445,7 +417,7 @@ struct
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
-     | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) * [] <> TAC] ->> TAC
+     | DEV_PATH_INTRO n => [[] * List.tabulate (n, fn _ => DIM) <> TAC] ->> TAC
      | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
 
      | DEV_MATCH (tau, ns) => ([] * [] <> tau) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE tau) ns ->> TAC
@@ -457,59 +429,9 @@ struct
      | JDG_PARAM_SUBST (sigmas, tau) => List.map (fn sigma => [] * [] <> PARAM_EXP sigma) sigmas @ [sigmas * [] <> tau] ->> JDG
 
   local
-    fun arityFcom (_, eqs) =
-      let
-        val capArg = [] * [] <> EXP
-        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
-      in
-        capArg :: tubeArgs ->> EXP
-      end
-    fun arityBox (_, eqs) =
-      let
-        val capArg = [] * [] <> EXP
-        val boundaryArgs = List.map (fn _ => [] * [] <> EXP) eqs
-      in
-        capArg :: boundaryArgs ->> EXP
-      end
-    fun arityCap (_, eqs) =
-      let
-        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
-        val coerceeArg = [] * [] <> EXP
-      in
-        (* note that the coercee goes first! *)
-        coerceeArg :: tubeArgs ->> EXP
-      end
-    fun arityHcom (_, eqs) =
-      let
-        val typeArg = [] * [] <> EXP
-        val capArg = [] * [] <> EXP
-        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
-      in
-        typeArg :: capArg :: tubeArgs ->> EXP
-      end
-    fun arityCom (_, eqs) =
-      let
-        val typeArg = [DIM] * [] <> EXP
-        val capArg = [] * [] <> EXP
-        val tubeArgs = List.map (fn _ => [DIM] * [] <> EXP) eqs
-      in
-        typeArg :: capArg :: tubeArgs ->> EXP
-      end
   in
     val arityPoly =
-      fn FCOM params => arityFcom params
-       | LOOP _ => [] ->> EXP
-       | PATH_APP _ => [[] * [] <> EXP] ->> EXP
-       | BOX params => arityBox params
-       | CAP params => arityCap params
-       | V _ => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-       | VIN _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
-       | VPROJ _ => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
-
-       | HCOM params => arityHcom params
-       | COE _ => [[DIM] * [] <> EXP, [] * [] <> EXP] ->> EXP
-       | COM params => arityCom params
-       | CUST (_, _, ar) => Option.valOf ar
+      fn CUST (_, _, ar) => Option.valOf ar
 
        | PAT_META (_, tau, _, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
        | HYP_REF (_, tau) => [] ->> tau
@@ -522,7 +444,7 @@ struct
        | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
-       | DEV_S1_ELIM _ => [[] * [] <> TAC, [DIM] * [] <> TAC] ->> TAC
+       | DEV_S1_ELIM _ => [[] * [] <> TAC, [] * [DIM] <> TAC] ->> TAC
        | DEV_APPLY_HYP (_, pat, n) => List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
        | DEV_USE_HYP (_, n) => List.tabulate (n, fn _ => [] * [] <> TAC) ->> TAC
        | DEV_APPLY_LEMMA (_, _, ar, pat, n) => 
@@ -544,20 +466,7 @@ struct
      | POLY th => arityPoly th
 
   local
-    val dimSupport =
-      fn P.VAR a => [(a, DIM)]
-       | P.APP t => P.freeVars t
-
     val optSupport = OptionUtil.concat
-
-    fun spanSupport (r, r') =
-      dimSupport r @ dimSupport r'
-
-    fun spansSupport ss =
-      ListMonad.bind spanSupport ss
-
-    fun comSupport (dir, eqs) =
-      spanSupport dir @ spansSupport eqs
 
     fun paramsSupport ps =
       ListMonad.bind
@@ -583,18 +492,7 @@ struct
       List.map (fn name => (name, OPID)) os
   in
     val supportPoly =
-      fn FCOM params => comSupport params
-       | LOOP r => dimSupport r
-       | PATH_APP r => dimSupport r
-       | BOX params => comSupport params
-       | CAP params => comSupport params
-       | V r => dimSupport r
-       | VIN r => dimSupport r
-       | VPROJ r => dimSupport r
-       | HCOM params => comSupport params
-       | COE dir => spanSupport dir
-       | COM params => comSupport params
-       | CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
+      fn CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
 
        | PAT_META (x, _, ps, _) => (x, META_NAME) :: paramsSupport' ps
        | HYP_REF (a, _) => [(a, HYP)]
@@ -640,36 +538,7 @@ struct
     fun opidsEq f = ListPair.allEq f
   in
     fun eqPoly f =
-      fn (FCOM (dir1, eqs1), t) =>
-         (case t of
-             FCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
-           | _ => false)
-       | (LOOP r, t) => (case t of LOOP r' => P.eq f (r, r') | _ => false)
-       | (PATH_APP r, t) => (case t of PATH_APP r' => P.eq f (r, r') | _ => false)
-       | (BOX (dir1, eqs1), t) =>
-         (case t of
-             BOX (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
-           | _ => false)
-       | (CAP (dir1, eqs1), t) =>
-         (case t of
-             CAP (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
-           | _ => false)
-       | (V r, t) => (case t of V r' => P.eq f (r, r') | _ => false)
-       | (VIN r, t) => (case t of VIN r' => P.eq f (r, r') | _ => false)
-       | (VPROJ r, t) => (case t of VPROJ r' => P.eq f (r, r') | _ => false)
-       | (HCOM (dir1, eqs1), t) =>
-         (case t of
-             HCOM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
-           | _ => false)
-       | (COE dir1, t) =>
-         (case t of
-             COE dir2 => spanEq f (dir1, dir2)
-            | _ => false)
-       | (COM (dir1, eqs1), t) =>
-         (case t of
-             COM (dir2, eqs2) => spanEq f (dir1, dir2) andalso spansEq f (eqs1, eqs2)
-            | _ => false)
-       | (CUST (opid1, ps1, _), t) =>
+      fn (CUST (opid1, ps1, _), t) =>
          (case t of
              CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
            | _ => false)
@@ -731,6 +600,7 @@ struct
 
      | S1 => "S1"
      | BASE => "base"
+     | LOOP => "loop"
      | S1_REC => "S1-rec"
 
      | FUN => "fun"
@@ -744,14 +614,20 @@ struct
 
      | PATH_TY => "path"
      | PATH_ABS => "abs"
+     | PATH_APP => "path-app"
 
      | UNIVERSE => "U"
+     | V => "V"
+     | VIN => "Vin"
+     | VPROJ => "Vproj"
+
      | EQUALITY => "equality"
 
      | DIM0' => "dim0"
      | DIM1' => "dim1"
      | MK_TUBE => "tube"
-     | MK_SYSTEM _ => "system" 
+     | MK_BOUNDARY => "boundary"
+     | MK_VEC _ => "vec" 
 
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
      | LPLUS i => "{lsuc " ^ IntInf.toString i ^ "}"
@@ -826,18 +702,7 @@ struct
       ListSpine.pretty f ","
   in
     fun toStringPoly f =
-      fn FCOM params => "fcom{" ^ comParamsToString f params ^ "}"
-       | LOOP r => "loop{" ^ P.toString f r ^ "}"
-       | PATH_APP r => "pathapp{" ^ P.toString f r ^ "}"
-       | BOX params => "box{" ^ comParamsToString f params ^ "}"
-       | CAP params => "cap{" ^ comParamsToString f params ^ "}"
-       | V r => "V{" ^ P.toString f r ^ "}"
-       | VIN r => "Vin{" ^ P.toString f r ^ "}"
-       | VPROJ r => "Vproj{" ^ P.toString f r ^ "}"
-       | HCOM params => "hcom{" ^ comParamsToString f params ^ "}"
-       | COE dir => "coe{" ^ dirToString f dir ^ "}"
-       | COM params => "com{" ^ comParamsToString f params ^ "}"
-       | CUST (opid, [], _) =>
+      fn CUST (opid, [], _) =>
            f opid
        | CUST (opid, ps, _) =>
            f opid ^ "{" ^ paramsToString f ps ^ "}"
@@ -871,8 +736,6 @@ struct
 
     val mapOpt = Option.map
 
-    fun mapSpan f (r, r') = (P.bind (passSort DIM f) r, P.bind (passSort DIM f) r')
-    fun mapSpans f = List.map (mapSpan f)
     fun mapParams (f : 'a * psort -> 'b P.term) =
       List.map
         (fn (p, SOME tau) =>
@@ -904,18 +767,7 @@ struct
        | IN_HYP a => IN_HYP (f a)
   in
     fun mapPolyWithSort f =
-      fn FCOM (dir, eqs) => FCOM (mapSpan f dir, mapSpans f eqs)
-       | LOOP r => LOOP (P.bind (passSort DIM f) r)
-       | PATH_APP r => PATH_APP (P.bind (passSort DIM f) r)
-       | BOX (dir, eqs) => BOX (mapSpan f dir, mapSpans f eqs)
-       | CAP (dir, eqs) => CAP (mapSpan f dir, mapSpans f eqs)
-       | V r => V (P.bind (passSort DIM f) r)
-       | VIN r => VIN (P.bind (passSort DIM f) r)
-       | VPROJ r => VPROJ (P.bind (passSort DIM f) r)
-       | HCOM (dir, eqs) => HCOM (mapSpan f dir, mapSpans f eqs)
-       | COE dir => COE (mapSpan f dir)
-       | COM (dir, eqs) => COM (mapSpan f dir, mapSpans f eqs)
-       | CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
+      fn CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
 
        | PAT_META (x, tau, ps, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, mapParams' f ps, taus)
        | HYP_REF (a, tau) => HYP_REF (mapSym (passSort HYP f) a, tau)
