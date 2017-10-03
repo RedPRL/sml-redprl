@@ -1,8 +1,8 @@
-Def HasAllPaths (#C) = [(-> [c c' : #C] (path {_} #C c c'))].
+Def HasAllPaths (#C) = [(-> [c c' : #C] (path [_] #C c c'))].
 
 Def IsContr (#C) = [(* [c : #C] (HasAllPaths #C))].
 
-Def Fiber (#A;#B;#f;#b) = [(* [a : #A] (path {_} #B ($ #f a) #b))].
+Def Fiber (#A;#B;#f;#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
 
 Def IsEquiv (#A;#B;#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
 
@@ -74,7 +74,7 @@ Def Not = [(lam [b] (if b ff tt))].
 Thm Bool/reflect : [
  (->
   [a b : bool]
-  [p : (path {_} bool a b)]
+  [p : (path [_] bool a b)]
   (= bool a b))
 ] by [
   lam a, b, p. `(coe{0~>1} {x} (= bool ,a (@ ,p x)) ax)

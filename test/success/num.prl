@@ -140,8 +140,8 @@ Thm Plus/comm : [
 Thm NatSymm : [
   (->
    [a b : nat]
-   (path {_} nat a b)
-   (path {_} nat b a))
+   (path [_] nat a b)
+   (path [_] nat b a))
 ] by [
   lam a, b, pab.
   <i>

@@ -19,12 +19,12 @@ Tac Rewrite(#c : [exp].exp; #n; #a; #t : tac) = [
 ].
 
 Thm EqualityElimTest : [
-  (-> [b : bool] (path {_} bool tt (if tt tt ff)))
+  (-> [b : bool] (path [_] bool tt (if tt tt ff)))
 ] by [
   // We're going to prove this in a silly way to illustrate equality elimination.
   // We'll rewrite the goal by asserting [(if tt tt ff) = tt in bool].
   (Rewrite 
-    [x] (-> bool (path {_} bool tt x))
+    [x] (-> bool (path [_] bool tt x))
     tt bool #tac{auto});
 
   // observe that the goal has now been rewritten!

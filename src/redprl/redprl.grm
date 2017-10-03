@@ -413,7 +413,6 @@ end
 
    (* a type-theoretic term *)
  | monoNullaryOperator of string operator
- | polyNullaryOperator of string operator
  | regularMultinaryOperator of string operator
  | rawTermAndTac of ast (* shared with tactics *)
  | rawTerm of ast
@@ -520,6 +519,7 @@ sort
   | JDG (O.JDG)
   | LVL (P.LVL)
   | KIND (P.KIND)
+  | DIM (O.DIM)
 
 sorts
   : sort ([sort])
@@ -537,9 +537,6 @@ valence
 
 param
   : VARNAME (P.VAR VARNAME)
-  (* | exclusivelyDimension (exclusivelyDimension) *)
-  | exclusivelyLevelParam (exclusivelyLevelParam)
-  (* | numAsDimension (numAsDimension) *)
 
 params
   : param ([param])
@@ -553,6 +550,7 @@ exclusivelyDimension
 
 dimension
   : VARNAME (`` VARNAME)
+  | metavar (Ast.$$# (metavar, ([], [])))
   | numAsDimension (numAsDimension)
   | exclusivelyDimension (exclusivelyDimension)
 
@@ -567,7 +565,7 @@ typedParams
   : typedParam ([typedParam])
   | typedParam typedParams (typedParam :: typedParams)
 
-
+(* 
 dir
   : dimension SQUIGGLE_RIGHT_ARROW dimension ((dimension1, dimension2))
 
@@ -582,7 +580,7 @@ tube
 
 tubes
   : tube tubes (tube :: tubes)
-  | ([])
+  | ([]) *)
 
 metavar
   : HASH ident (ident)
@@ -705,7 +703,6 @@ rawTermAndTac
 
   (* built-in operators that can be handled uniformly *)
   | monoNullaryOperator (Ast.$$ (monoNullaryOperator, []))
-  | LPAREN polyNullaryOperator RPAREN (Ast.$$ (polyNullaryOperator, []))
   | LPAREN regularMultinaryOperator bindings RPAREN (Ast.$$ (regularMultinaryOperator, bindings))
 
   | LPAREN UNIVERSE level RPAREN (Ast.$$ (O.MONO O.UNIVERSE, [Ast.\ (([],[]), level), Ast.\ (([],[]), Ast.$$ (O.MONO (O.KCONST RedPrlKind.top), []))]))
@@ -749,7 +746,7 @@ rawTermAndTac
   | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
 
   (* paths *)
-  | LPAREN ABS LBRACKET boundVars RBRACKET term RPAREN (Multi.makePathAbs boundVars term)
+  | LPAREN ABS LSQUARE boundVars RSQUARE term RPAREN (Multi.makePathAbs boundVars term)
   | LPAREN AT_SIGN term dimensions RPAREN (Multi.makePathApp term dimensions)
 
 level

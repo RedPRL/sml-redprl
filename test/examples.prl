@@ -70,7 +70,7 @@ Tac TryStep = [
 Thm ApEqTest : [
   (->
    [f : (-> wbool wbool)]
-   (path {_} wbool ($ f tt) ($ f tt)))
+   (path [_] wbool ($ f tt) ($ f tt)))
 ] by [
   // This is a good example of the difference between hypotheses and variables. A tactic script is
   // a program, and itself may have variables in it---such as a variable ranging over a tactic, induced
@@ -115,7 +115,7 @@ Extract BoolEtaFunction.
 //
 Thm PathTest2 : [
   (path
-    {_} (-> wbool wbool)
+    [_] (-> wbool wbool)
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
@@ -126,7 +126,7 @@ Thm PathTest2 : [
     (lam b.
       // for our b:wbool, we will construct a path between b and
       // (BoolEta b).
-      let p : [(path {_} wbool ,b (BoolEta ,b))] =
+      let p : [(path [_] wbool ,b (BoolEta ,b))] =
         if b then <y> `tt else <y> `ff.
 
       // Now, we will project the 'x'-side of our path. In the
@@ -146,7 +146,7 @@ Thm PathTest2 : [
 // of it.
 Thm PathTest3 : [
   (path
-    {_} (-> wbool wbool)
+    [_] (-> wbool wbool)
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
@@ -154,13 +154,13 @@ Thm PathTest3 : [
   // encouraging.
   `(abs {x}
     (lam [b]
-     (@ (wbool-rec [b] (path {_} wbool b (BoolEta b)) b (abs {_} tt) (abs {_} ff))
+     (@ (wbool-rec [b] (path [_] wbool b (BoolEta b)) b (abs [_] tt) (abs [_] ff))
         x)))
 ].
 
 Print PathTest3.
 
-Thm PairTest : [ (* [a : S1] (path {_} S1 a base)) ] by [
+Thm PairTest : [ (* [a : S1] (path [_] S1 a base)) ] by [
   {`base, <x> `(loop x)}
 ].
 
@@ -170,12 +170,12 @@ Def Cmp(#f; #g) = [
 ].
 
 
-Def MyLoop{x:dim}(#m) = [
-  (tuple [proj1 #m] [proj2 (loop x)])
+Def MyLoop(#x:dim; #m) = [
+  (tuple [proj1 #m] [proj2 (loop #x)])
 ].
 
 Def Test = [
-  ({MyLoop 0} (loop 1))
+  (MyLoop (dim 0) (loop 1))
 ].
 
 Print Test.
@@ -196,11 +196,11 @@ Thm FunExt(#l:lvl) : [
   (->
    [a b : (U #l)]
    [f g : (-> a b)]
-   [p : (-> [y : a] (path {_} b ($ f y) ($ g y)))]
-   (path {_} (-> a b) f g))
+   [p : (-> [y : a] (path [_] b ($ f y) ($ g y)))]
+   (path [_] (-> a b) f g))
 ] by [
   lam a, b, f, g, p.
-    <i> lam x. use p [use x, @i]
+    <i> lam x. let asdf = p [use x, @i]. ?
 ].
 
 Print FunExt.
@@ -208,7 +208,7 @@ Print FunExt.
 Tac FunExtTac(#l : lvl) = [
   query gl <- goal.
   match [gl:jdg] {
-    [a, b, f, g, k| #jdg{(path {_} (-> %a %b) %f %g) true with %[k:kind]} =>
+    [a, b, f, g, k| #jdg{(path [_] (-> %a %b) %f %g) true with %[k:kind]} =>
       use (FunExt #l) [`%a, `%b, `%f, `%g, id]
     ]
   }
@@ -216,7 +216,7 @@ Tac FunExtTac(#l : lvl) = [
 
 Print FunExtTac.
 
-Thm NotNotPath : [(path {_} (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
+Thm NotNotPath : [(path [_] (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac #lvl{0});
   (lam x. if x then <_> `tt else <_> `ff);
   auto
@@ -226,11 +226,11 @@ Extract NotNotPath.
 Print FunExtTac.
 Print NotNotPath.
 
-Thm Singleton : [(* [x : wbool] (path {_} wbool x tt))] by [
+Thm Singleton : [(* [x : wbool] (path [_] wbool x tt))] by [
   {`tt, <_> `tt}
 ].
 
-Thm PathElimTest : [(-> (path {_} bool tt tt) bool)] by [
+Thm PathElimTest : [(-> (path [_] bool tt tt) bool)] by [
   lam x. use x [@0]
 ].
 
@@ -238,8 +238,8 @@ Thm PathEta(#l:lvl) : [
   (->
    [a : (U #l)]
    [m n : a]
-   (path {_} a m n)
-   (path {_} a m n))
+   (path [_] a m n)
+   (path [_] a m n))
 ] by [
   lam a, m, n, p. <j> use p [@j]
 ].

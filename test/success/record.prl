@@ -1,5 +1,5 @@
 Thm RecordTypeTest : [
-  (record [a : bool] [b : (path {_} bool a a)] [c : bool] [d : S1]) type
+  (record [a : bool] [b : (path [_] bool a a)] [c : bool] [d : S1]) type
 ] by [
   auto
 ].
@@ -55,7 +55,7 @@ Thm RecordTest6 : [
 Thm RecordTest7 : [
   (record
    [a : S1]
-   [b : (path {_} S1 a a)])
+   [b : (path [_] S1 a a)])
 ] by [
   {a = `base, b = <i> `(loop i)}
 ].
@@ -65,8 +65,8 @@ Thm RecordElimTest : [
    (record
     [b : bool]
     [c : S1]
-    [p : (path {_} bool b b)])
-   (* [b : bool] (path {_} bool b b)))
+    [p : (path [_] bool b b)])
+   (* [b : bool] (path [_] bool b b)))
 ] by [
   lam {b = welp, p = hello}.
     {use welp, use hello}

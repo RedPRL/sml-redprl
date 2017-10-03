@@ -1,5 +1,5 @@
 Thm PathApConst : [
-  (-> (path {_} bool tt tt) bool)
+  (-> (path [_] bool tt tt) bool)
 ] by [
   lam p. use p [@0]
 ].

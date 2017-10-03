@@ -2,10 +2,10 @@ Thm Hcom/Poly(#l:lvl) : [
   (->
    [ty : (U #l hcom)]
    [a b c d : ty]
-   (path {_} ty a b)
-   (path {_} ty a c)
-   (path {_} ty b d)
-   (path {_} ty c d))
+   (path [_] ty a b)
+   (path [_] ty a c)
+   (path [_] ty b d)
+   (path [_] ty c d))
 ] by [
   lam ty, a, b, c, d, pab, pac, pbd.
     <i>
@@ -20,9 +20,9 @@ Thm Hcom/trans(#l:lvl) : [
   (->
    [ty : (U #l hcom)]
    [a b c : ty]
-   (path {_} ty a b)
-   (path {_} ty b c)
-   (path {_} ty a c))
+   (path [_] ty a b)
+   (path [_] ty b c)
+   (path [_] ty a c))
 ] by [
   lam ty, a, b, c, pab, pbc.
     <i>
@@ -35,8 +35,8 @@ Thm Hcom/symm(#l:lvl) : [
   (->
    [ty : (U #l hcom)]
    [a b : ty]
-   (path {_} ty a b)
-   (path {_} ty b a))
+   (path [_] ty a b)
+   (path [_] ty b a))
 ] by [
   lam ty, a, b, pab.
     <i>
