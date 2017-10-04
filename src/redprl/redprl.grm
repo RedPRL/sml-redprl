@@ -875,7 +875,7 @@ atomicRawTac
   | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
-  | RULE_ELIM VARNAME (Ast.$$ (O.POLY (O.RULE_ELIM VARNAME), []))
+  | RULE_ELIM VARNAME (Ast.$$ (O.MONO (O.RULE_ELIM O.EXP), [Ast.\ (([],[]), Ast.`` VARNAME)]))
   | RULE_REWRITE term (Ast.$$ (O.POLY (O.RULE_REWRITE O.IN_GOAL), [Ast.\ (([],[]), term)]))
   | RULE_REWRITE term IN selector (Ast.$$ (O.POLY (O.RULE_REWRITE selector), [Ast.\ (([],[]), term)]))
   | RULE_REWRITE IN selector term (Ast.$$ (O.POLY (O.RULE_REWRITE selector), [Ast.\ (([],[]), term)]))

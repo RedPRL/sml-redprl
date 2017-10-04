@@ -255,7 +255,7 @@ struct
        O.MONO O.TAC_MTAC $ [_ \ tm] => multitacToTac (multitactic sign env tm)
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
-     | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
+     | O.MONO (O.RULE_ELIM _) $ [_ \ z] => R.Elim sign (VarKit.fromTerm z)
      | O.POLY (O.RULE_REWRITE sel) $ [_ \ tm] => R.Rewrite sign sel tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
      | O.POLY (O.RULE_REWRITE_HYP (sel, z)) $ _ => R.RewriteHyp sign sel z
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact tm

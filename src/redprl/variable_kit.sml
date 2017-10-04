@@ -10,6 +10,13 @@ struct
   fun toExp x = Syntax.into (Syntax.VAR (x, RedPrlSortData.EXP))
   fun toDim x = Syntax.into (Syntax.VAR (x, RedPrlSortData.DIM))
 
+  fun fromTerm e = 
+    let
+      val Syntax.VAR (x, _) = Syntax.out e
+    in
+      x
+    end
+
   val renameMany = RedPrlAbt.renameVars o ctxFromList
   fun rename r = renameMany [r]
 
