@@ -301,7 +301,7 @@ struct
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
          val tac = tactic sign env tm
        in
-         cutLemma sign opid (Option.valOf ar) (List.rev subtermArgs) (pat, names) (List.rev appTacs) tac
+         cutLemma sign opid (Option.valOf ar) subtermArgs (pat, names) appTacs tac
        end
      | O.POLY (O.DEV_USE_LEMMA (opid, ar)) $ args =>
        let
@@ -312,7 +312,7 @@ struct
          val z = RedPrlSym.named (Sym.toString opid ^ "'")
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
        in
-         cutLemma sign opid (Option.valOf ar) (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
+         cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp z)
        end
      | O.POLY (O.CUST (opid, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, args))
      | O.MONO (O.DEV_MATCH (tau, ns)) $ (_ \ term) :: clauses =>
