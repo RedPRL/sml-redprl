@@ -458,9 +458,9 @@ end
  | tupleDecompPattern of (string * string O.dev_pattern) list
  | devMatchClause of string list * (ast * ast)
  | devMatchClauses of (string list * (ast * ast)) list
- | selector of string O.selector
- | selectors of string O.selector list
- | bracketedSelectors of string O.selector list
+ | selector of ast
+ | selectors of ast list
+ | bracketedSelectors of ast list
  | opnames of string list
  | bracketedOpnames of string list
 
@@ -851,8 +851,9 @@ devMatchClauses
   | ([])
 
 selector
-  : GOAL (O.IN_GOAL)
-  | VARNAME (O.IN_HYP VARNAME)
+  : GOAL (Ast.$$ (O.MONO O.SEL_GOAL, []))
+  | VARNAME (Ast.$$ (O.MONO (O.SEL_HYP O.EXP), [Ast.\ (([],[]), Ast.``VARNAME)]))
+  | VARNAME COLON sort (Ast.$$ (O.MONO (O.SEL_HYP sort), [Ast.\ (([],[]), Ast.``VARNAME)]))
 
 selectors
   : selector COMMA selectors (selector :: selectors)
@@ -876,17 +877,15 @@ atomicRawTac
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
   | RULE_ELIM VARNAME (Ast.$$ (O.MONO (O.RULE_ELIM O.EXP), [Ast.\ (([],[]), Ast.`` VARNAME)]))
-  | RULE_REWRITE term (Ast.$$ (O.POLY (O.RULE_REWRITE O.IN_GOAL), [Ast.\ (([],[]), term)]))
-  | RULE_REWRITE term IN selector (Ast.$$ (O.POLY (O.RULE_REWRITE selector), [Ast.\ (([],[]), term)]))
-  | RULE_REWRITE IN selector term (Ast.$$ (O.POLY (O.RULE_REWRITE selector), [Ast.\ (([],[]), term)]))
-  | RULE_REWRITE_HYP VARNAME (Ast.$$ (O.POLY (O.RULE_REWRITE_HYP (O.IN_GOAL, VARNAME)), []))
-  | RULE_REWRITE_HYP VARNAME IN selector (Ast.$$ (O.POLY (O.RULE_REWRITE_HYP (selector, VARNAME)), []))
-  | RULE_REWRITE_HYP IN selector VARNAME (Ast.$$ (O.POLY (O.RULE_REWRITE_HYP (selector, VARNAME)), []))
+  | RULE_REWRITE term (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), term)]))
+  | RULE_REWRITE term IN selector (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), selector), Ast.\ (([],[]), term)]))
+  | RULE_REWRITE_HYP VARNAME (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), Ast.`` VARNAME)]))
+  | RULE_REWRITE_HYP VARNAME IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), Ast.`` VARNAME)]))
   | RULE_REDUCE (Ast.$$ (O.MONO O.RULE_REDUCE_ALL, []))
-  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_REDUCE bracketedSelectors), []))
+  (* | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_REDUCE bracketedSelectors), []))
   | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD_ALL bracketedOpnames), []))
   | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames, bracketedSelectors)), []))
-  | RULE_UNFOLD IN bracketedSelectors bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames, bracketedSelectors)), []))
+  | RULE_UNFOLD IN bracketedSelectors bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames, bracketedSelectors)), [])) *)
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
   | AT_SIGN dimension (Tac.exactDim dimension)

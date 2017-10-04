@@ -85,11 +85,20 @@ struct
    | META
 
 
+
   local
     open Tm
     structure O = RedPrlOpData and E = RedPrlError
     infix $ $$ $# \
   in
+    fun outSelector (s : abt) : Tm.variable O.selector = 
+      case Tm.out s of 
+         O.MONO O.SEL_GOAL $ _ => O.IN_GOAL
+       | O.MONO (O.SEL_HYP _) $ [_ \ e] =>
+         (case Tm.out e of
+             `x => O.IN_HYP x
+           | _ => raise Fail "Invalid selector")
+
     fun outTube tube = 
       let
         val O.MONO O.MK_TUBE $ [_ \ r1, _ \ r2, (_,[u]) \ mu] = Tm.out tube

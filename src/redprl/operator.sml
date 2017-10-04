@@ -168,6 +168,8 @@ struct
   structure K = RedPrlKind
   type psort = RedPrlSortData.param_sort
   type kind = RedPrlKind.kind
+
+  (* TODO: move elsewhere *)
   datatype 'a selector = IN_GOAL | IN_HYP of 'a
 
   datatype 'a dev_pattern = 
@@ -251,6 +253,8 @@ struct
    | RULE_CUT
    | RULE_PRIM of string
    | RULE_ELIM of sort
+   | RULE_REWRITE
+   | RULE_REWRITE_HYP
 
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
@@ -268,8 +272,6 @@ struct
      CUST of 'a * RedPrlArity.t option
    | PAT_META of 'a * sort * sort list
 
-   | RULE_REWRITE of 'a selector
-   | RULE_REWRITE_HYP of 'a selector * 'a
    | RULE_REDUCE of 'a selector list
    | RULE_UNFOLD_ALL of 'a list
    | RULE_UNFOLD of 'a list * 'a selector list
@@ -413,6 +415,8 @@ struct
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
      | RULE_ELIM tau => [[] |: tau] ->> TAC
+     | RULE_REWRITE => [[] |: SELECTOR, [] |: EXP] ->> TAC
+     | RULE_REWRITE_HYP => [[] |: SELECTOR, [] |: TRIV] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -436,8 +440,6 @@ struct
 
        | PAT_META (_, tau, taus) => List.map (fn tau => [] |: tau) taus ->> tau
 
-       | RULE_REWRITE _ => [[] |: EXP] ->> TAC
-       | RULE_REWRITE_HYP _ => [] ->> TAC
        | RULE_REDUCE _ => [] ->> TAC
        | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
@@ -492,8 +494,6 @@ struct
     val supportPoly =
       fn CUST (opid, _) => [(opid, OPID)]
        | PAT_META (x, _, _) => [(x, META_NAME)]
-       | RULE_REWRITE sel => selectorSupport sel
-       | RULE_REWRITE_HYP (sel, a) => selectorSupport sel @ [(a, HYP)]
        | RULE_REDUCE selectors => selectorsSupport selectors
        | RULE_UNFOLD_ALL names => opidsSupport names
        | RULE_UNFOLD (names, selectors) => opidsSupport names @ selectorsSupport selectors
@@ -526,14 +526,10 @@ struct
          (case t of
              CUST (opid2, _) => f (opid1, opid2)
            | _ => false)
-
        | (PAT_META (x1, tau1, taus1), t) => 
          (case t of 
              PAT_META (x2, tau2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso taus1 = taus2
            | _ => false)
-
-       | (RULE_REWRITE s1, t) => (case t of RULE_REWRITE s2 => selectorEq f (s1, s2) | _ => false)
-       | (RULE_REWRITE_HYP (s1, a), t) => (case t of RULE_REWRITE_HYP (s2, b) => selectorEq f (s1, s2) andalso f (a, b) | _ => false)
        | (RULE_REDUCE ss1, t) => (case t of RULE_REDUCE ss2 => selectorsEq f (ss1, ss2) | _ => false)
        | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
        | (RULE_UNFOLD (os1, ss1), t) => (case t of RULE_UNFOLD (os2, ss2) => opidsEq f (os1, os2) andalso selectorsEq f (ss1, ss2) | _ => false)
@@ -637,7 +633,8 @@ struct
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
      | RULE_ELIM _ => "elim"
-
+     | RULE_REWRITE => "rewrite"
+     | RULE_REWRITE_HYP => "rewrite-hyp"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
@@ -675,8 +672,6 @@ struct
     fun toStringPoly f =
       fn CUST (opid, _) => f opid
        | PAT_META (x, _, _) => "?" ^ f x
-       | RULE_REWRITE s => "rewrite{" ^ selectorToString f s ^ "}"
-       | RULE_REWRITE_HYP (s, a) => "rewrite-hyp{" ^ selectorToString f s ^ "," ^ f a ^ "}"
        | RULE_REDUCE ss => "reduce{" ^ selectorsToString f ss ^ "}"
        | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
        | RULE_UNFOLD (os, ss) => "unfold{" ^ opidsToString f os ^ "," ^ selectorsToString f ss ^ "}"
@@ -710,8 +705,6 @@ struct
     fun mapPolyWithSort f =
       fn CUST (opid, ar) => CUST (mapSym (passSort OPID f) opid, ar)
        | PAT_META (x, tau, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, taus)
-       | RULE_REWRITE s => RULE_REWRITE (mapSelector (mapSym (passSort HYP f)) s)
-       | RULE_REWRITE_HYP (s, a) => RULE_REWRITE_HYP (mapSelector (mapSym (passSort HYP f)) s, mapSym (passSort HYP f) a)
        | RULE_REDUCE ss => RULE_REDUCE (List.map (mapSelector (mapSym (passSort HYP f))) ss)
        | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
        | RULE_UNFOLD (ns, ss) => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns, List.map (mapSelector (mapSym (passSort HYP f))) ss)

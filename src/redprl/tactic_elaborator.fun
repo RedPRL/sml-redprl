@@ -256,8 +256,8 @@ struct
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.MONO (O.RULE_ELIM _) $ [_ \ z] => R.Elim sign (VarKit.fromTerm z)
-     | O.POLY (O.RULE_REWRITE sel) $ [_ \ tm] => R.Rewrite sign sel tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
-     | O.POLY (O.RULE_REWRITE_HYP (sel, z)) $ _ => R.RewriteHyp sign sel z
+     | O.MONO O.RULE_REWRITE $ [_ \ sel, _ \ tm] => R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
+     | O.MONO O.RULE_REWRITE_HYP $ [_ \ sel, _ \ var] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm var)
      | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact tm
      | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out catjdg)
