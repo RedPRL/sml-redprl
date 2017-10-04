@@ -885,10 +885,9 @@ atomicRawTac
   | RULE_REWRITE_HYP VARNAME IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), Ast.`` VARNAME)]))
   | RULE_REDUCE (Ast.$$ (O.MONO O.RULE_REDUCE_ALL, []))
   | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.MONO O.RULE_REDUCE, [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
-  (*
   | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD_ALL bracketedOpnames), []))
-  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames, bracketedSelectors)), []))
- *)
+  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames)), [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
+
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
   | AT_SIGN dimension (Tac.exactDim dimension)

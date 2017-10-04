@@ -274,7 +274,7 @@ struct
    | PAT_META of 'a * sort * sort list
 
    | RULE_UNFOLD_ALL of 'a list
-   | RULE_UNFOLD of 'a list * 'a selector list
+   | RULE_UNFOLD of 'a list
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
 
@@ -443,7 +443,7 @@ struct
        | PAT_META (_, tau, taus) => List.map (fn tau => [] |: tau) taus ->> tau
 
        | RULE_UNFOLD_ALL _ => [] ->> TAC
-       | RULE_UNFOLD _ => [] ->> TAC
+       | RULE_UNFOLD _ => [[] |: VEC SELECTOR] ->> TAC
        | DEV_BOOL_ELIM _ => [[] |: TAC, [] |: TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] |: TAC, [DIM] |: TAC] ->> TAC
        | DEV_APPLY_HYP (_, pat) => [[] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
@@ -496,7 +496,7 @@ struct
       fn CUST (opid, _) => [(opid, OPID)]
        | PAT_META (x, _, _) => [(x, META_NAME)]
        | RULE_UNFOLD_ALL names => opidsSupport names
-       | RULE_UNFOLD (names, selectors) => opidsSupport names @ selectorsSupport selectors
+       | RULE_UNFOLD names => opidsSupport names
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_APPLY_HYP (a, _) => [(a, HYP)]
@@ -531,7 +531,7 @@ struct
              PAT_META (x2, tau2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso taus1 = taus2
            | _ => false)
        | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
-       | (RULE_UNFOLD (os1, ss1), t) => (case t of RULE_UNFOLD (os2, ss2) => opidsEq f (os1, os2) andalso selectorsEq f (ss1, ss2) | _ => false)
+       | (RULE_UNFOLD os1, t) => (case t of RULE_UNFOLD os2 => opidsEq f (os1, os2) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_APPLY_HYP (a, pat), t) => (case t of DEV_APPLY_HYP (b, pat') => f (a, b) andalso pat = pat' | _ => false)
@@ -673,7 +673,7 @@ struct
       fn CUST (opid, _) => f opid
        | PAT_META (x, _, _) => "?" ^ f x
        | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
-       | RULE_UNFOLD (os, ss) => "unfold{" ^ opidsToString f os ^ "," ^ selectorsToString f ss ^ "}"
+       | RULE_UNFOLD os => "unfold{" ^ opidsToString f os ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_APPLY_HYP (a, _) => "apply-hyp{" ^ f a ^ "}"
@@ -705,7 +705,7 @@ struct
       fn CUST (opid, ar) => CUST (mapSym (passSort OPID f) opid, ar)
        | PAT_META (x, tau, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, taus)
        | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
-       | RULE_UNFOLD (ns, ss) => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns, List.map (mapSelector (mapSym (passSort HYP f))) ss)
+       | RULE_UNFOLD ns => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
        | DEV_APPLY_LEMMA (opid, ar, pat) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, ar, pat)

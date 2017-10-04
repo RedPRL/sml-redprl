@@ -264,7 +264,7 @@ struct
      | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
      | O.MONO O.RULE_REDUCE $ [_ \ sels] => R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
      | O.POLY (O.RULE_UNFOLD_ALL opids) $ _ => R.Custom.UnfoldAll sign opids
-     | O.POLY (O.RULE_UNFOLD (opids, sels)) $ _ => R.Custom.Unfold sign opids sels
+     | O.POLY (O.RULE_UNFOLD opids) $ [_ \ vec] => R.Custom.Unfold sign opids (Syntax.outVec' Syntax.outSelector vec)
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
      | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([],[u]) \ tm2] => R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO (O.DEV_FUN_INTRO pats) $ [(_, us) \ tm] => funIntros sign (pats, us) (tactic sign env tm)
