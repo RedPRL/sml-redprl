@@ -112,10 +112,10 @@ whitespace = [\ \t];
 "WU"               => (Tokens.V (posTuple (size yytext)));
 "Vin"              => (Tokens.VIN (posTuple (size yytext)));
 "Vproj"            => (Tokens.VPROJ (posTuple (size yytext)));
-"universe"         => (Tokens.UNIVERSE (posTuple (size yytext)));
 "U"                => (Tokens.UNIVERSE (posTuple (size yytext)));
 "abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
+"com"              => (Tokens.COM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
 
 "then"             => (Tokens.THEN (posTuple (size yytext)));

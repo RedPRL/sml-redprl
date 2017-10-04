@@ -325,7 +325,7 @@ end
  | BOX | CAP
  | V | VIN | VPROJ
  | UNIVERSE
- | HCOM | COE
+ | HCOM | COE | COM
 
  (* parsing "coercions" *)
  | TACTIC
@@ -388,8 +388,12 @@ end
  | dir of ast * ast
  | backDir of ast * ast
  | equation of ast * ast
- | tube of (ast * ast) * ast abs
- | tubes of ((ast * ast) * ast abs) list
+ | tube of ast
+ | tubes of ast list
+ | boundary of ast
+ | boundaries of ast list
+ | tubeVec of ast
+ | boundaryVec of ast
 
  | metavar of string
  | patvar of string * O.sort
@@ -555,7 +559,6 @@ dimensions
   : dimension dimensions (dimension :: dimensions)
   | dimension ([dimension])
 
-(* 
 dir
   : dimension SQUIGGLE_RIGHT_ARROW dimension ((dimension1, dimension2))
 
@@ -566,11 +569,24 @@ equation
   : dimension EQUALS dimension (dimension1, dimension2)
 
 tube
-  : LSQUARE equation binding RSQUARE (equation, binding)
+  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MONO O.MK_TUBE, [\ (([],[]), #1 equation), \ (([],[]), #2 equation), binding]))
+
+boundary
+  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MONO O.MK_BOUNDARY, [\ (([],[]), #1 equation), \ (([],[]), #2 equation), binding]))
 
 tubes
   : tube tubes (tube :: tubes)
-  | ([]) *)
+  | ([])
+
+boundaries
+  : boundary boundaries (boundary :: boundaries)
+  | ([])
+
+tubeVec
+  : tubes (Multi.makeVec O.TUBE tubes)
+
+boundaryVec
+  : boundaries (Multi.makeVec O.BOUNDARY boundaries)
 
 metavar
   : HASH ident (ident)
@@ -697,17 +713,16 @@ rawTermAndTac
   (* coe *)
   | LPAREN COE LBRACKET dir RBRACKET binding term RPAREN
     (Ast.$$ (O.MONO O.COE, [Ast.\ (([],[]), #1 dir), Ast.\ (([],[]), #2 dir), binding, Ast.\ (([],[]), term)]))
-
-(* TODO!!
-  (* compositions *)
-  | LPAREN FCOM LBRACKET dir RBRACKET binding tubes RPAREN
-      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.FCOM (dir, eqs)), (binding :: tubes)) end)
-  | LPAREN BOX LBRACKET dir RBRACKET binding tubes RPAREN
-      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.BOX (dir, eqs)), (binding :: tubes)) end)
-  | LPAREN CAP LBRACKET backDir RBRACKET binding tubes RPAREN
-      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.CAP (backDir, eqs)), (binding :: tubes)) end)
-  | LPAREN HCOM LBRACKET dir RBRACKET binding binding tubes RPAREN
-      (let val (eqs, tubes) = ListPair.unzip tubes in Ast.$$ (O.POLY (O.HCOM (dir, eqs)), (binding1 :: binding2 :: tubes)) end) *)
+  | LPAREN FCOM dir binding tubeVec RPAREN
+    (Ast.$$ (O.MONO O.FCOM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding, \(([],[]), tubeVec)]))
+  | LPAREN HCOM dir binding binding tubeVec RPAREN
+    (Ast.$$ (O.MONO O.HCOM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding1, binding2, \(([],[]), tubeVec)]))
+  | LPAREN COM dir binding binding tubeVec RPAREN
+    (Ast.$$ (O.MONO O.COM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding1, binding2, \(([],[]), tubeVec)]))
+  | LPAREN BOX dir binding boundaryVec RPAREN
+    (Ast.$$ (O.MONO O.BOX, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding, \(([],[]), boundaryVec)]))
+  | LPAREN CAP backDir binding tubeVec RPAREN
+    (Ast.$$ (O.MONO O.CAP, [\ (([],[]), #1 backDir), \(([],[]), #2 backDir), binding, \(([],[]), tubeVec)]))
 
   (* numbers *)
   | NUMERAL (Multi.makeNum NUMERAL)
