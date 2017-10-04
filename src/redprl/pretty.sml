@@ -185,8 +185,7 @@ struct
 
   and ppTerm m =
     case Abt.out m of
-       O.POLY (O.HYP_REF (x, _)) $ [] => seq [char #",", ppVar x]
-     | `x => ppVar x
+       `x => ppVar x
      | O.MONO O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "fcom" (r1, r2), ppTerm cap]

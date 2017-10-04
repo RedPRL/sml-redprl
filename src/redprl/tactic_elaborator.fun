@@ -36,42 +36,6 @@ struct
   open Tm infix $ $$ $# \
   structure O = RedPrlOpData
 
-  local
-    fun inheritAnnotation t1 t2 =
-      case getAnnotation t2 of
-         NONE => setAnnotation (getAnnotation t1) t2
-       | _ => t2
-
-    fun go syms m =
-      case Tm.out m of
-         O.POLY (O.HYP_REF (a, tau)) $ _ =>
-           if Sym.Ctx.member syms a then
-             m
-           else
-             inheritAnnotation m (check (`a, tau)) 
-       | _ => goStruct syms m
-
-    and goStruct syms m =
-      inheritAnnotation m
-        (case out m of
-           theta $ es =>
-             theta $$ List.map (goAbs syms) es
-         | x $# (ps, ms) =>
-             check (x $# (ps, List.map (go syms) ms), sort m)
-         | _ => m)
-
-    and goAbs syms ((us,xs) \ m) =
-      let
-        val syms' = List.foldl (fn (u, acc) => Sym.Ctx.insert acc u ()) syms us
-      in
-        (us,xs) \ go syms' m
-      end
-  in
-    (* Replace hypothesis-references with variables; this will *only* expand
-     * unbound hyp-refs. *)
-    val expandHypVars = go Sym.Ctx.empty
-  end
-
   fun hole (pos : Pos.t, name : string option) : multitactic = 
     fn alpha => fn state =>
       let
@@ -257,7 +221,7 @@ struct
   end
 
   fun exactAuto sign m = 
-    R.Exact (expandHypVars m) thenl [autoTac sign]
+    R.Exact m thenl [autoTac sign]
 
   fun cutLemma sign opid ar (args : abt bview list) (pattern, names) appTacs tac =
     let
@@ -265,12 +229,9 @@ struct
       fun processArg ((us, xs) \ m, ((sigmas, taus), _), {subtermNames, subtermTacs}) =
         let
           val syms = ListPair.zipEq (us, sigmas)
-          val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP)) (xs, taus)
-          val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF (x, tau)) $$ [])) Var.Ctx.empty (xs, taus)
-          val m' = substVarenv rho m
         in
           {subtermNames = us @ xs @ subtermNames,
-           subtermTacs = exactAuto sign m' :: subtermTacs}
+           subtermTacs = exactAuto sign m :: subtermTacs}
         end
 
       val {subtermNames, subtermTacs} = ListPair.foldr processArg {subtermNames = [], subtermTacs = []} (args, vls)
@@ -295,17 +256,17 @@ struct
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
-     | O.POLY (O.RULE_REWRITE sel) $ [_ \ tm] => R.Rewrite sign sel (expandHypVars tm) thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
+     | O.POLY (O.RULE_REWRITE sel) $ [_ \ tm] => R.Rewrite sign sel tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
      | O.POLY (O.RULE_REWRITE_HYP (sel, z)) $ _ => R.RewriteHyp sign sel z
-     | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
+     | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact tm
      | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
-     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out (expandHypVars catjdg))
+     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out catjdg)
      | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
      | O.POLY (O.RULE_REDUCE sels) $ _ => R.Computation.Reduce sign sels
      | O.POLY (O.RULE_UNFOLD_ALL opids) $ _ => R.Custom.UnfoldAll sign opids
      | O.POLY (O.RULE_UNFOLD (opids, sels)) $ _ => R.Custom.Unfold sign opids sels
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
-     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (AJ.out (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.MONO (O.DEV_FUN_INTRO pats) $ [(us, _) \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [([], us) \ tm] => pathIntros sign us (tactic sign env tm)

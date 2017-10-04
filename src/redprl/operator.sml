@@ -261,7 +261,6 @@ struct
   datatype 'a poly_operator =
      CUST of 'a * RedPrlArity.t option
    | PAT_META of 'a * sort * sort list
-   | HYP_REF of 'a * sort
 
    | RULE_ELIM of 'a
    | RULE_REWRITE of 'a selector
@@ -272,10 +271,12 @@ struct
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
 
-   | DEV_APPLY_LEMMA of 'a * RedPrlArity.t option * unit dev_pattern * int
    | DEV_APPLY_HYP of 'a * unit dev_pattern * int
-   | DEV_USE_HYP of 'a * int
    | DEV_USE_LEMMA of 'a * RedPrlArity.t option * int
+
+
+   | DEV_APPLY_LEMMA of 'a * RedPrlArity.t option * unit dev_pattern * int
+   | DEV_USE_HYP of 'a * int
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -426,7 +427,6 @@ struct
       fn CUST (_, ar) => Option.valOf ar
 
        | PAT_META (_, tau, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
-       | HYP_REF (_, tau) => [] ->> tau
 
        | RULE_ELIM _ => [] ->> TAC
        | RULE_REWRITE _ => [[] * [] <> EXP] ->> TAC
@@ -486,7 +486,6 @@ struct
       fn CUST (opid, _) => [(opid, OPID)]
 
        | PAT_META (x, _, _) => [(x, META_NAME)]
-       | HYP_REF (a, _) => [(a, HYP)]
 
        | RULE_ELIM a => [(a, HYP)]
        | RULE_REWRITE sel => selectorSupport sel
@@ -528,7 +527,6 @@ struct
          (case t of 
              PAT_META (x2, tau2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso taus1 = taus2
            | _ => false)
-       | (HYP_REF (a, _), t) => (case t of HYP_REF (b, _) => f (a, b) | _ => false)
 
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
        | (RULE_REWRITE s1, t) => (case t of RULE_REWRITE s2 => selectorEq f (s1, s2) | _ => false)
@@ -683,7 +681,6 @@ struct
     fun toStringPoly f =
       fn CUST (opid, _) => f opid
        | PAT_META (x, _, _) => "?" ^ f x
-       | HYP_REF (a, _) => "hyp-ref{" ^ f a ^ "}"
 
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
        | RULE_REWRITE s => "rewrite{" ^ selectorToString f s ^ "}"
@@ -722,7 +719,6 @@ struct
       fn CUST (opid, ar) => CUST (mapSym (passSort OPID f) opid, ar)
 
        | PAT_META (x, tau, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, taus)
-       | HYP_REF (a, tau) => HYP_REF (mapSym (passSort HYP f) a, tau)
 
        | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
        | RULE_REWRITE s => RULE_REWRITE (mapSelector (mapSym (passSort HYP f)) s)
