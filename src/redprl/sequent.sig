@@ -10,7 +10,7 @@ struct
 
   datatype jdg =
      (* sequents / formal hypothetical judgment *)
-     >> of ((Sym.t * RedPrlAbt.psort) list * catjdg ctx) * catjdg
+     >> of catjdg ctx * catjdg
      (* unify a term w/ a head operator and extract the kth subterm *)
    | MATCH of RedPrlAbt.operator * int * abt * RedPrlAbt.param list * abt list
      (* unify a term w/ RECORD and extract the type of the label;

@@ -12,7 +12,6 @@ struct
   type opid = Tm.symbol
   type jdg = RedPrlJudgment.jdg
 
-  type 'a params = ('a * psort) list
   type 'a arguments = ('a * valence) list
 
   type names = int -> symbol
@@ -28,9 +27,9 @@ struct
   type src_genjdg = (string * psort) list * src_sequent
 
   datatype src_decl =
-      DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
-    | THM of {arguments : string arguments, params : string params, goal : src_sequent, script : ast}
-    | TAC of {arguments : string arguments, params : string params, script : ast}
+      DEF of {arguments : string arguments, sort : sort, definiens : ast}
+    | THM of {arguments : string arguments, goal : src_sequent, script : ast}
+    | TAC of {arguments : string arguments, script : ast}
 
   datatype 'opid cmd =
       PRINT of 'opid
@@ -68,13 +67,6 @@ struct
         SOME (EDEF defn) => defn
       | _ => raise Fail "Elaboration failed"
 
-  fun entryParams (entry : entry) : symbol params = 
-    let
-      val RedPrlSequent.>> ((I, _), _) = #spec entry
-    in
-      I
-    end
-
   fun entryArguments (entry : entry) : metavar arguments =
     let
       val Lcf.|> (subgoals, _) = #state entry (fn _ => Sym.new ())
@@ -89,15 +81,14 @@ struct
       RedPrlAtomicJudgment.synthesis jdg
     end
 
-  fun unfoldCustomOperator (entry : entry) (ps : Tm.param list) (es : abt Tm.bview list) : abt =
+  fun unfoldCustomOperator (entry : entry) (es : abt Tm.bview list) : abt =
     let
       val arguments = entryArguments entry
       val Lcf.|> (_, evd) = #state entry (fn _ => Sym.new ())
       val Tm.\ ((us, []), term) = Tm.outb evd
-      val srho = ListPair.foldlEq (fn (u, p, ctx) => Sym.Ctx.insert ctx u p) Sym.Ctx.empty (us, ps)
       val mrho = ListPair.foldlEq  (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
     in
-      Tm.substSymenv srho (Tm.substMetaenv mrho term)
+      Tm.substMetaenv mrho term
     end
 end
 

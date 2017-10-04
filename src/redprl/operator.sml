@@ -258,12 +258,9 @@ struct
 
    | JDG_TERM of sort
 
-  type 'a equation = 'a P.term * 'a P.term
-  type 'a dir = 'a P.term * 'a P.term
-
   datatype 'a poly_operator =
-     CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
-   | PAT_META of 'a * sort * ('a P.term * psort) list * sort list
+     CUST of 'a * RedPrlArity.t option
+   | PAT_META of 'a * sort * sort list
    | HYP_REF of 'a * sort
 
    | RULE_ELIM of 'a
@@ -275,10 +272,10 @@ struct
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
 
-   | DEV_APPLY_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option * unit dev_pattern * int
+   | DEV_APPLY_LEMMA of 'a * RedPrlArity.t option * unit dev_pattern * int
    | DEV_APPLY_HYP of 'a * unit dev_pattern * int
    | DEV_USE_HYP of 'a * int
-   | DEV_USE_LEMMA of 'a * ('a P.term * psort option) list * RedPrlArity.t option * int
+   | DEV_USE_LEMMA of 'a * RedPrlArity.t option * int
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -426,9 +423,9 @@ struct
   local
   in
     val arityPoly =
-      fn CUST (_, _, ar) => Option.valOf ar
+      fn CUST (_, ar) => Option.valOf ar
 
-       | PAT_META (_, tau, _, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
+       | PAT_META (_, tau, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
        | HYP_REF (_, tau) => [] ->> tau
 
        | RULE_ELIM _ => [] ->> TAC
@@ -441,13 +438,13 @@ struct
        | DEV_S1_ELIM _ => [[] * [] <> TAC, [] * [DIM] <> TAC] ->> TAC
        | DEV_APPLY_HYP (_, pat, n) => List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
        | DEV_USE_HYP (_, n) => List.tabulate (n, fn _ => [] * [] <> TAC) ->> TAC
-       | DEV_APPLY_LEMMA (_, _, ar, pat, n) => 
+       | DEV_APPLY_LEMMA (_, ar, pat, n) => 
          let
            val (vls, tau) = Option.valOf ar
          in
            vls @ List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
          end
-       | DEV_USE_LEMMA (_, _, ar, n) => 
+       | DEV_USE_LEMMA (_, ar, n) => 
          let
            val (vls, tau) = Option.valOf ar
          in
@@ -486,9 +483,9 @@ struct
       List.map (fn name => (name, OPID)) os
   in
     val supportPoly =
-      fn CUST (opid, ps, _) => (opid, OPID) :: paramsSupport ps
+      fn CUST (opid, _) => [(opid, OPID)]
 
-       | PAT_META (x, _, ps, _) => (x, META_NAME) :: paramsSupport' ps
+       | PAT_META (x, _, _) => [(x, META_NAME)]
        | HYP_REF (a, _) => [(a, HYP)]
 
        | RULE_ELIM a => [(a, HYP)]
@@ -501,8 +498,8 @@ struct
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_APPLY_HYP (a, _, _) => [(a, HYP)]
        | DEV_USE_HYP (a, _) => [(a, HYP)]
-       | DEV_APPLY_LEMMA (opid, ps, _, _, _) => (opid, OPID) :: paramsSupport ps
-       | DEV_USE_LEMMA (opid, ps, _, _) => (opid, OPID) :: paramsSupport ps
+       | DEV_APPLY_LEMMA (opid, _, _, _) => [(opid, OPID)]
+       | DEV_USE_LEMMA (opid,  _, _) => [(opid, OPID)]
   end
 
   val support =
@@ -510,15 +507,6 @@ struct
      | POLY th => supportPoly th
 
   local
-    fun spanEq f ((r1, r'1), (r2, r'2)) =
-      P.eq f (r1, r2) andalso P.eq f (r'1, r'2)
-
-    fun spansEq f =
-      ListPair.allEq (spanEq f)
-
-    fun paramsEq f =
-      ListPair.allEq (fn ((p, _), (q, _)) => P.eq f (p, q))
-
     val optEq = OptionUtil.eq
 
     fun selectorEq f =
@@ -531,14 +519,14 @@ struct
     fun opidsEq f = ListPair.allEq f
   in
     fun eqPoly f =
-      fn (CUST (opid1, ps1, _), t) =>
+      fn (CUST (opid1, _), t) =>
          (case t of
-             CUST (opid2, ps2, _) => f (opid1, opid2) andalso paramsEq f (ps1, ps2)
+             CUST (opid2, _) => f (opid1, opid2)
            | _ => false)
 
-       | (PAT_META (x1, tau1, ps1, taus1), t) => 
+       | (PAT_META (x1, tau1, taus1), t) => 
          (case t of 
-             PAT_META (x2, tau2, ps2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso paramsEq f (ps1, ps2) andalso taus1 = taus2
+             PAT_META (x2, tau2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso taus1 = taus2
            | _ => false)
        | (HYP_REF (a, _), t) => (case t of HYP_REF (b, _) => f (a, b) | _ => false)
 
@@ -552,13 +540,13 @@ struct
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_APPLY_HYP (a, pat, n), t) => (case t of DEV_APPLY_HYP (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
        | (DEV_USE_HYP (a, n), t) => (case t of DEV_USE_HYP (b, n') => f (a, b) andalso n = n' | _ => false)
-       | (DEV_APPLY_LEMMA (opid1, ps1, _, pat1, n1), t) =>
+       | (DEV_APPLY_LEMMA (opid1, _, pat1, n1), t) =>
          (case t of
-             DEV_APPLY_LEMMA (opid2, ps2, _, pat2, n2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2) andalso pat1 = pat2 andalso n1 = n2
+             DEV_APPLY_LEMMA (opid2, _, pat2, n2) => f (opid1, opid2) andalso pat1 = pat2 andalso n1 = n2
            | _ => false)
-       | (DEV_USE_LEMMA (opid1, ps1, _, n1), t) =>
+       | (DEV_USE_LEMMA (opid1, _, n1), t) =>
          (case t of
-             DEV_USE_LEMMA (opid2, ps2, _, n2) => f (opid1, opid2) andalso paramsEq f (ps1, ps2) andalso n1 = n2
+             DEV_USE_LEMMA (opid2, _, n2) => f (opid1, opid2) andalso n1 = n2
            | _ => false)
 
   end
@@ -693,13 +681,8 @@ struct
       ListSpine.pretty f ","
   in
     fun toStringPoly f =
-      fn CUST (opid, [], _) =>
-           f opid
-       | CUST (opid, ps, _) =>
-           f opid ^ "{" ^ paramsToString f ps ^ "}"
-
-       | PAT_META (x, _, ps, _) =>
-           "?" ^ f x ^ "{" ^ paramsToString f ps ^ "}"
+      fn CUST (opid, _) => f opid
+       | PAT_META (x, _, _) => "?" ^ f x
        | HYP_REF (a, _) => "hyp-ref{" ^ f a ^ "}"
 
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
@@ -712,8 +695,8 @@ struct
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_APPLY_HYP (a, _, _) => "apply-hyp{" ^ f a ^ "}"
        | DEV_USE_HYP (a, _) => "use-hyp{" ^ f a ^ "}"
-       | DEV_APPLY_LEMMA (opid, ps, _, _, _) => "apply-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
-       | DEV_USE_LEMMA (opid, ps, _, _) => "use-lemma{" ^ f opid ^ "}{" ^ paramsToString f ps ^ "}"
+       | DEV_APPLY_LEMMA (opid, _, _, _) => "apply-lemma{" ^ f opid ^ "}"
+       | DEV_USE_LEMMA (opid, _, _) => "use-lemma{" ^ f opid ^ "}"
   end
 
   fun toString f =
@@ -726,27 +709,6 @@ struct
 
     val mapOpt = Option.map
 
-    fun mapParams (f : 'a * psort -> 'b P.term) =
-      List.map
-        (fn (p, SOME tau) =>
-           let
-             val q = P.bind (passSort tau f) p
-             val _ = P.check tau q
-           in
-             (q, SOME tau)
-           end
-          | _ => raise Fail "operator.sml, uh-oh")
-
-    fun mapParams' (f : 'a * psort -> 'b P.term) =
-      List.map
-        (fn (p, tau) =>
-           let
-             val q = P.bind (passSort tau f) p
-             val _ = P.check tau q
-           in
-             (q, tau)
-           end)
-
     fun mapSym f a =
       case f a of
          P.VAR a' => a'
@@ -757,9 +719,9 @@ struct
        | IN_HYP a => IN_HYP (f a)
   in
     fun mapPolyWithSort f =
-      fn CUST (opid, ps, ar) => CUST (mapSym (passSort OPID f) opid, mapParams f ps, ar)
+      fn CUST (opid, ar) => CUST (mapSym (passSort OPID f) opid, ar)
 
-       | PAT_META (x, tau, ps, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, mapParams' f ps, taus)
+       | PAT_META (x, tau, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, taus)
        | HYP_REF (a, tau) => HYP_REF (mapSym (passSort HYP f) a, tau)
 
        | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
@@ -770,10 +732,10 @@ struct
        | RULE_UNFOLD (ns, ss) => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns, List.map (mapSelector (mapSym (passSort HYP f))) ss)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
-       | DEV_APPLY_LEMMA (opid, ps, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, pat, n)
+       | DEV_APPLY_LEMMA (opid, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, ar, pat, n)
        | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort HYP f) a, pat, spine)
        | DEV_USE_HYP (a, n) => DEV_USE_HYP (mapSym (passSort HYP f) a, n)
-       | DEV_USE_LEMMA (opid, ps, ar, n) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, mapParams f ps, ar, n)
+       | DEV_USE_LEMMA (opid, ar, n) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, ar, n)
   end
 
   fun mapWithSort f =

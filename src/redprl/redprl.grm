@@ -19,8 +19,8 @@ structure TP = TermPrinter
 
 val ppIntInf = Fpp.text o IntInf.toString
 
-fun makeCustom (opid, params, bindings) =
-  Ast.$$ (O.POLY (O.CUST (opid, params, NONE)), bindings)
+fun makeCustom (opid, bindings) =
+  Ast.$$ (O.POLY (O.CUST (opid, NONE)), bindings)
 
 fun makeDim pos : IntInf.int -> ast =
   fn 0 => Ast.$$ (O.MONO O.DIM0', [])
@@ -90,7 +90,7 @@ struct
     List.foldl (fn (n, app) => O.MONO O.APP $$ [([],[]) \ app, ([],[]) \ n]) m ns
 
   fun makePathAbs [] m = m
-    | makePathAbs (u::us) m = O.MONO O.PATH_ABS $$ [([Option.getOpt (u, "_")],[]) \ makePathAbs us m]
+    | makePathAbs (u::us) m = O.MONO O.PATH_ABS $$ [([], [Option.getOpt (u, "_")]) \ makePathAbs us m]
 
   fun makePathApp m ns =
     List.foldl (fn (r, app) => O.MONO O.PATH_APP $$ [([],[]) \ app, ([],[]) \ r]) m ns
@@ -239,20 +239,20 @@ struct
       O.POLY (O.DEV_USE_HYP (z, List.length tacs)) $$ args
     end
 
-  fun makeApplyLemma pat (opid, params, subtermArgs) tacs tac =
+  fun makeApplyLemma pat (opid, subtermArgs) tacs tac =
     let
       val (pat, names) = unstitchPattern pat
       val appArgs = List.map (fn tac => ([],[]) \ tac) tacs
       val args = subtermArgs @ appArgs @ [(names, []) \ tac]
     in
-      O.POLY (O.DEV_APPLY_LEMMA (opid, params, NONE, pat, List.length tacs)) $$ args
+      O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat, List.length tacs)) $$ args
     end
 
-  fun makeUseLemma (opid, params, subtermArgs) tacs = 
+  fun makeUseLemma (opid, subtermArgs) tacs = 
     let
       val args = subtermArgs @ List.map (fn tac => ([],[]) \ tac) tacs
     in
-      O.POLY (O.DEV_USE_LEMMA (opid, params, NONE, List.length tacs)) $$ args
+      O.POLY (O.DEV_USE_LEMMA (opid, NONE, List.length tacs)) $$ args
     end
 
 end
@@ -385,8 +385,6 @@ end
  | dimensions of ast list
  | numAsLevelParam of string param
  | exclusivelyLevelParam of string param
- | typedParam of string param * P.param_sort
- | typedParams of (string param * P.param_sort) list
  | dir of ast * ast
  | backDir of ast * ast
  | equation of ast * ast
@@ -396,8 +394,7 @@ end
  | metavar of string
  | patvar of string * O.sort
  | patvarBindings of string list
- | customOpParams of (string param * P.param_sort option) list
- | customOpTerm of string * (string param * P.param_sort option) list * ast abs list
+ | customOpTerm of string * ast abs list
 
 
  | typedBinder of string option list * ast
@@ -469,9 +466,6 @@ end
  | declArgument of metavariable * Ar.valence
  | declArguments of string Signature.arguments
  | declArgumentsParens of string Signature.arguments
- | declParam of string * P.param_sort
- | declParams of string Signature.params
- | declParamsBrackets of string Signature.params
 
    (* a declaration, annotated with source position *)
  | decl of string * Signature.src_decl * Pos.t
@@ -558,13 +552,6 @@ dimensions
   : dimension dimensions (dimension :: dimensions)
   | dimension ([dimension])
 
-typedParam
-  : LSQUARE VARNAME COLON psort RSQUARE (P.VAR VARNAME, psort)
-
-typedParams
-  : typedParam ([typedParam])
-  | typedParam typedParams (typedParam :: typedParams)
-
 (* 
 dir
   : dimension SQUIGGLE_RIGHT_ARROW dimension ((dimension1, dimension2))
@@ -584,9 +571,6 @@ tubes
 
 metavar
   : HASH ident (ident)
-
-customOpParams
-  : params (List.map (fn x => (x, NONE)) params)
 
 typedBinder
   : LSQUARE boundVars COLON term RSQUARE ((boundVars, term))
@@ -670,10 +654,8 @@ regularMultinaryOperator
 
 
 customOpTerm
-  : OPNAME (OPNAME, [], [])
-  | LPAREN OPNAME bindings RPAREN (OPNAME, [], bindings)
-  | LBRACKET OPNAME customOpParams RBRACKET (OPNAME, customOpParams, [])
-  | LPAREN LBRACKET OPNAME customOpParams RBRACKET bindings RPAREN (OPNAME, customOpParams, bindings)
+  : OPNAME (OPNAME, [])
+  | LPAREN OPNAME bindings RPAREN (OPNAME, bindings)
 
 patvar
   : PERCENT LSQUARE VARNAME COLON sort RSQUARE ((VARNAME, sort))
@@ -693,10 +675,8 @@ rawTermAndTac
   | LPAREN LBRACKET metavar params RBRACKET terms RPAREN (Ast.$$# (metavar, (params, terms)))
 
   (* pattern variables *)
-  | patvar (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, [], [])), []))
-  | LPAREN patvar typedTerms RPAREN (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, [], List.map #2 typedTerms)), List.map (fn (tm, _) => \ (([],[]), tm)) typedTerms))
-  | LBRACKET patvar typedParams RBRACKET  (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, typedParams, [])), []))
-  | LPAREN LBRACKET patvar typedParams RBRACKET typedTerms RPAREN (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, typedParams, List.map #2 typedTerms)), List.map (fn (tm, _) => \ (([],[]), tm)) typedTerms))
+  | patvar (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, [])), []))
+  | LPAREN patvar typedTerms RPAREN (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, List.map #2 typedTerms)), List.map (fn (tm, _) => \ (([],[]), tm)) typedTerms))
 
   (* custom operators *)
   | customOpTerm (makeCustom customOpTerm)
@@ -755,7 +735,7 @@ level
   | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.MONO (O.LPLUS 1), [Ast.\ (([],[]), level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.MONO (O.LMAX (List.length levels)), List.map (fn e => Ast.\ (([],[]), e)) levels))
   | metavar (Ast.$$# (metavar, ([], [])))
-  | PERCENT VARNAME (Ast.$$ (O.POLY (O.PAT_META (VARNAME, O.LVL, [], [])), []))
+  | PERCENT VARNAME (Ast.$$ (O.POLY (O.PAT_META (VARNAME, O.LVL, [])), []))
 
 levels
   : level ([level])
@@ -1001,27 +981,15 @@ declArgumentsParens
   : LPAREN declArguments RPAREN (declArguments)
   | ([])
 
-declParam
-  : VARNAME COLON psort (VARNAME, psort)
-
-declParams
-  : declParam ([declParam])
-  | declParam COMMA declParams (declParam :: declParams)
-  | ([])
-
-declParamsBrackets
-  : LBRACKET declParams RBRACKET (declParams)
-  | ([])
-
 decl
-  : DCL_DEF OPNAME declParamsBrackets declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
-      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_DEF OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE term RSQUARE
-      (OPNAME, Signature.DEF {arguments = declArgumentsParens, params = declParamsBrackets, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_TAC OPNAME declParamsBrackets declArgumentsParens EQUALS LSQUARE tactic RSQUARE
-      (OPNAME, Signature.TAC {arguments = declArgumentsParens, params = declParamsBrackets, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_THM OPNAME declParamsBrackets declArgumentsParens COLON LSQUARE src_sequent RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.THM {arguments = declArgumentsParens, params = declParamsBrackets, goal = src_sequent, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
+      (OPNAME, Signature.DEF {arguments = declArgumentsParens, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  | DCL_DEF OPNAME declArgumentsParens EQUALS LSQUARE term RSQUARE
+      (OPNAME, Signature.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
+      (OPNAME, Signature.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_sequent RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, goal = src_sequent, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
 
 rawCmd
   : CMD_PRINT OPNAME (Signature.PRINT OPNAME)

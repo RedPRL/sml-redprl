@@ -11,7 +11,7 @@ sig
   type 'a bview
 
   val Cut : catjdg -> rule
-  val CutLemma : sign -> opid -> (param * psort option) list -> rule
+  val CutLemma : sign -> opid -> rule
 
   val AutoStep : sign -> rule
   val Elim : sign -> hyp -> rule

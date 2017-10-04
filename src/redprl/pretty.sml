@@ -94,9 +94,8 @@ struct
 
   fun ppOperator theta =
     case theta of 
-       O.POLY (O.CUST (opid, [], _)) => ppSym opid
-     | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map ppParamWithSort params
-     | _ =>  text @@ RedPrlOperator.toString PrintName.sym theta
+       O.POLY (O.CUST (opid, _)) => ppSym opid
+     | _ => text @@ RedPrlOperator.toString PrintName.sym theta
 
   fun ppMetavarParams (x, ps) =
     case ps of

@@ -94,12 +94,8 @@ struct
   val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
 
-  fun unfoldCustomOperator sign (opid, ps, args) = 
-    let
-      val entry as {state, ...} = Sig.lookup sign opid
-    in
-      Sig.unfoldCustomOperator entry (List.map (fn (r, _) => r) ps) args
-    end
+  fun unfoldCustomOperator sign (opid, args) = 
+    Sig.unfoldCustomOperator (Sig.lookup sign opid) args
 
   fun elimRule sign z xs tacs = 
     R.Elim sign z thenl' (xs, tacs)
@@ -173,7 +169,7 @@ struct
 
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
-      val (_, H) >> _ = jdg
+      val H >> _ = jdg
       val AJ.TRUE (ty, _, _) = RT.Hyps.lookup z H
     in
       case Syn.out ty of 
@@ -263,7 +259,7 @@ struct
   fun exactAuto sign m = 
     R.Exact (expandHypVars m) thenl [autoTac sign]
 
-  fun cutLemma sign opid ar ps (args : abt bview list) (pattern, names) appTacs tac =
+  fun cutLemma sign opid ar (args : abt bview list) (pattern, names) appTacs tac =
     let
       val (vls, _) = ar
       fun processArg ((us, xs) \ m, ((sigmas, taus), _), {subtermNames, subtermTacs}) =
@@ -282,7 +278,7 @@ struct
       val z = RedPrlSym.new ()
       val continue = applications sign z (pattern, names) appTacs tac
     in
-      R.CutLemma sign opid ps thenl' (z :: subtermNames, subtermTacs @ [continue])
+      R.CutLemma sign opid thenl' (z :: subtermNames, subtermTacs @ [continue])
     end
 
   fun tactic sign env tm alpha jdg = 
@@ -330,33 +326,33 @@ struct
        in
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
        end
-     | O.POLY (O.DEV_APPLY_LEMMA (opid, ps, ar, pat, n)) $ args =>
+     | O.POLY (O.DEV_APPLY_LEMMA (opid, ar, pat, n)) $ args =>
        let
          val ((names, []) \ tm) :: args' = List.rev args
          val (appArgs, subtermArgs) = ListUtil.splitAt (args', n)
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
          val tac = tactic sign env tm
        in
-         cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (pat, names) (List.rev appTacs) tac
+         cutLemma sign opid (Option.valOf ar) (List.rev subtermArgs) (pat, names) (List.rev appTacs) tac
        end
-     | O.POLY (O.DEV_USE_LEMMA (opid, ps, ar, n)) $ args =>
+     | O.POLY (O.DEV_USE_LEMMA (opid, ar, n)) $ args =>
        let
          val z = RedPrlSym.named (Sym.toString opid ^ "'")
          val (appArgs, subtermArgs) = ListUtil.splitAt (List.rev args, n)
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
        in
-         cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
+         cutLemma sign opid (Option.valOf ar) (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
        end
-     | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
+     | O.POLY (O.CUST (opid, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, args))
      | O.MONO (O.DEV_MATCH (tau, ns)) $ (_ \ term) :: clauses =>
        let
          fun defrostMetas metas =
            let
              fun go tm = 
                case out tm of
-                  O.POLY (O.PAT_META (x, tau, rs, taus)) $ args =>
+                  O.POLY (O.PAT_META (x, tau, taus)) $ args =>
                    if Unify.Metas.member metas x then 
-                    check (x $# (rs, List.map (fn _ \ m => m) args), tau)
+                    check (x $# ([], List.map (fn _ \ m => m) args), tau)
                    else 
                      tm 
                 | _ => tm
@@ -407,7 +403,7 @@ struct
      | O.MONO (O.MTAC_HOLE msg) $ _ => hole (Option.valOf (Tm.getAnnotation tm), msg)
      | O.MONO O.MTAC_REPEAT $ [_ \ tm] => T.mrepeat (multitactic sign env tm)
      | O.MONO O.MTAC_AUTO $ _ => autoMtac sign
-     | O.POLY (O.CUST (opid, ps, _)) $ args => multitactic sign env (unfoldCustomOperator sign (opid, ps, args))
+     | O.POLY (O.CUST (opid, _)) $ args => multitactic sign env (unfoldCustomOperator sign (opid, args))
      | `x => Var.Ctx.lookup env x
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized multitactic", TermPrinter.ppTerm tm]
 

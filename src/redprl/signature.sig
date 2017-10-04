@@ -11,7 +11,6 @@ sig
   type jdg = RedPrlJudgment.jdg
 
   type 'a arguments = ('a * valence) list
-  type 'a params = ('a * psort) list
   type names = int -> symbol
 
   type sign
@@ -22,8 +21,7 @@ sig
 
   val lookup : sign -> opid -> entry
 
-  val entryParams : entry -> symbol params
-  val unfoldCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> abt
+  val unfoldCustomOperator : entry -> abt RedPrlAbt.bview list -> abt
 end
 
 signature SIGNATURE =
@@ -37,9 +35,9 @@ sig
   type src_sequent = src_seqhyp list * src_catjdg
 
   datatype src_decl =
-     DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
-   | THM of {arguments : string arguments, params : string params, goal : src_sequent, script : ast}
-   | TAC of {arguments : string arguments, params : string params, script : ast}
+     DEF of {arguments : string arguments, sort : sort, definiens : ast}
+   | THM of {arguments : string arguments, goal : src_sequent, script : ast}
+   | TAC of {arguments : string arguments, script : ast}
 
   datatype 'opid cmd =
      PRINT of 'opid

@@ -58,11 +58,10 @@ struct
 
     fun arityOfDecl (entry : entry) : Tm.psort list * Tm.O.Ar.t =
       let
-        val params = entryParams entry
         val arguments = entryArguments entry
         val sort = entrySort entry
       in
-        (List.map #2 params, (List.map #2 arguments, sort))
+        ([], (List.map #2 arguments, sort))
       end
 
     structure OptionMonad = MonadNotation (OptionMonad)
@@ -95,32 +94,17 @@ struct
         | _ => t2
 
       fun processOp pos sign =
-        fn O.POLY (O.CUST (opid, ps, NONE)) =>
+        fn O.POLY (O.CUST (opid, NONE)) =>
            (case arityOfOpid sign opid of
-               SOME (psorts, ar) =>
-                 let
-                   val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
-                 in
-                   O.POLY (O.CUST (opid, ps', SOME ar))
-                 end
+               SOME (psorts, ar) => O.POLY (O.CUST (opid, SOME ar))
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.DEV_APPLY_LEMMA (opid, ps, NONE, pat, n)) =>
+         | O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat, n)) =>
            (case arityOfOpid sign opid of
-               SOME (psorts, ar) =>
-                 let
-                   val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
-                 in
-                   O.POLY (O.DEV_APPLY_LEMMA (opid, ps', SOME ar, pat, n))
-                 end
+               SOME (psorts, ar) => O.POLY (O.DEV_APPLY_LEMMA (opid, SOME ar, pat, n))
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.DEV_USE_LEMMA (opid, ps, NONE, n)) =>
+         | O.POLY (O.DEV_USE_LEMMA (opid, NONE, n)) =>
            (case arityOfOpid sign opid of
-               SOME (psorts, ar) =>
-                 let
-                   val ps' = ListPair.mapEq (fn ((p, _), tau) => (O.P.check tau p; (p, SOME tau))) (ps, psorts)
-                 in
-                   O.POLY (O.DEV_USE_LEMMA (opid, ps', SOME ar, n))
-                 end
+               SOME (psorts, ar) => O.POLY (O.DEV_USE_LEMMA (opid, SOME ar, n))
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th => th
 
@@ -143,9 +127,9 @@ struct
 
     in
       fun processDecl sign =
-        fn DEF {arguments, params, sort, definiens} => DEF {arguments = arguments, params = params, sort = sort, definiens = processTerm sign definiens}
-         | THM {arguments, params, goal, script} => THM {arguments = arguments, params = params, goal = processSrcSeq sign goal, script = processTerm sign script}
-         | TAC {arguments, params, script} => TAC {arguments = arguments, params = params, script = processTerm sign script}
+        fn DEF {arguments, sort, definiens} => DEF {arguments = arguments, sort = sort, definiens = processTerm sign definiens}
+         | THM {arguments, goal, script} => THM {arguments = arguments, goal = processSrcSeq sign goal, script = processTerm sign script}
+         | TAC {arguments, script} => TAC {arguments = arguments, script = processTerm sign script}
     end
 
     structure MetaCtx = Tm.Metavar.Ctx
@@ -162,25 +146,6 @@ struct
           end)
         ([], MetaCtx.empty)
         args
-
-    fun elabDeclParams (sign : sign) (params : string params) : symbol params * Tm.symctx * symbol NameEnv.dict =
-      let
-        val (ctx0, env0) =
-          ETelescope.foldl
-            (fn (x, _, (ctx, env)) => (Tm.Sym.Ctx.insert ctx x P.OPID, NameEnv.insert env (Tm.Sym.toString x) x))
-            (Tm.Sym.Ctx.empty, NameEnv.empty)
-            (#elabSign sign)
-      in
-        List.foldr
-          (fn ((x, tau), (ps, ctx, env)) =>
-            let
-              val x' = Tm.Sym.named x
-            in
-              ((x', tau) :: ps, Tm.Sym.Ctx.insert ctx x' tau, NameEnv.insert env x x')
-            end)
-          ([], ctx0, env0)
-          params
-      end
 
     fun scopeCheck (metactx, symctx, varctx) term : Tm.abt E.t =
       let
@@ -286,7 +251,7 @@ struct
         elabSrcSeqHyps (metactx, symctx, varctx, env) hyps >>= (fn (symctx', varctx', env', hyps') =>
           elabSrcCatjdg (metactx, symctx', varctx', env') concl >>= (fn concl' =>
              (* todo: I := ? *)
-            E.ret (env', RedPrlSequent.>> (([], hyps'), concl'))))
+            E.ret (env', RedPrlSequent.>> (hyps', concl'))))
       end
 
     fun makeNamePopper alpha = 
@@ -310,7 +275,7 @@ struct
         val I = List.map (fn sigma => (fresh (), sigma)) sigmas
         val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ List.rev taus
       in
-        (I, H) >> TERM tau
+        H >> TERM tau
       end
 
     fun argumentsToSubgoals alpha arguments = 
@@ -322,10 +287,18 @@ struct
 
     fun globalNameSequence i = Sym.named ("@" ^ Int.toString i)
 
-    fun elabDef (sign : sign) opid {arguments, params, sort, definiens} =
+
+    fun initialEnv (sign : sign) : Tm.symctx * symbol NameEnv.dict =
+      ETelescope.foldl
+        (fn (x, _, (ctx, env)) => (Tm.Sym.Ctx.insert ctx x P.OPID, NameEnv.insert env (Tm.Sym.toString x) x))
+        (Tm.Sym.Ctx.empty, NameEnv.empty)
+        (#elabSign sign)
+  
+
+    fun elabDef (sign : sign) opid {arguments, sort, definiens} =
       let
         val (arguments', metactx) = elabDeclArguments arguments
-        val (params', symctx, env) = elabDeclParams sign params
+        val (symctx, env) = initialEnv sign
       in
         convertToAbt (metactx, symctx, Var.Ctx.empty, env) definiens sort >>= (fn definiens' =>
           let
@@ -334,14 +307,14 @@ struct
 
             fun state alpha =
               let
-                val binder = (List.map #1 params', []) \ definiens'
-                val valence = ((List.map #2 params', []), tau)
+                val binder = ([], []) \ definiens'
+                val valence = (([], []), tau)
                 val subgoals = argumentsToSubgoals alpha arguments'
               in
                 Lcf.|> (subgoals, checkb (binder, valence))
               end
 
-            val spec = RedPrlSequent.>> ((params', Hyps.empty), AJ.TERM tau)
+            val spec = RedPrlSequent.>> (Hyps.empty, AJ.TERM tau)
           in
             E.ret (EDEF {sourceOpid = opid, spec = spec, state = state})
           end)
@@ -384,29 +357,16 @@ struct
         end
     in
 
-      fun elabThm sign opid pos {arguments, params, goal, script} =
+      fun elabThm sign opid pos {arguments, goal, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
-          val (params', symctx, env) = elabDeclParams sign params
+          val (symctx, env) = initialEnv sign
         in
-          elabSrcSequent (metactx, symctx, Var.Ctx.empty, env) goal >>= (fn (_, seqjdg as (syms, hyps) >> concl) =>
+          elabSrcSequent (metactx, symctx, Var.Ctx.empty, env) goal >>= (fn (_, seqjdg as hyps >> concl) =>
             let
-              (* TODO: deal with syms ?? *)
-              val (symctx', env') =
-                Hyps.foldr
-                  (fn (x, jdgx, (ctx, env)) =>
-                    let
-                      val taux = AJ.synthesis jdgx
-                    in
-                      (Tm.Sym.Ctx.insert ctx x RedPrlSortData.HYP,
-                       NameEnv.insert env (Sym.toString x) x)
-                    end)
-                  (symctx, env)
-                  hyps
-
-              val seqjdg' = (params' @ syms, hyps) >> concl
+              val seqjdg' = hyps >> concl
             in
-              convertToAbt (metactx, symctx', Var.Ctx.empty, env') script TAC >>= 
+              convertToAbt (metactx, symctx, Var.Ctx.empty, env) script TAC >>= 
               (fn scriptTm => elabRefine sign globalNameSequence (seqjdg', scriptTm)) >>= 
               checkProofState (pos, []) >>=
               (fn Lcf.|> (subgoals, validation) => 
@@ -425,18 +385,18 @@ struct
         end
       end
 
-    fun elabTac (sign : sign) opid {arguments, params, script} =
+    fun elabTac (sign : sign) opid {arguments, script} =
       let
         val (arguments', metactx) = elabDeclArguments arguments
-        val (params' : symbol params, symctx, env) = elabDeclParams sign params
+        val (symctx, env) = initialEnv sign
       in
         convertToAbt (metactx, symctx, Var.Ctx.empty, env) script O.TAC >>= (fn script' =>
           let
             open O Tm infix \
-            val binder = (List.map #1 params', []) \ script'
-            val valence = ((List.map #2 params', []), TAC)
+            val binder = ([], []) \ script'
+            val valence = (([], []), TAC)
             fun state alpha = Lcf.|> (argumentsToSubgoals alpha arguments', checkb (binder, valence))
-            val spec = RedPrlSequent.>> ((params', Hyps.empty), AJ.TERM TAC)
+            val spec = RedPrlSequent.>> (Hyps.empty, AJ.TERM TAC)
           in
             E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
           end)

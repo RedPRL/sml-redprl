@@ -294,13 +294,13 @@ struct
 
      | O.MONO O.AX $ _ || (_, []) => raise Final
 
-     | O.POLY (O.CUST (opid, ps, _)) $ args || (syms, stk) =>
+     | O.POLY (O.CUST (opid, _)) $ args || (syms, stk) =>
        if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
          val entry as {state, ...} = Sig.lookup sign opid
          val Lcf.|> (psi, evd) = state (fn _ => Sym.named "?")
          val state = state (fn _ => RedPrlSym.new ())
-         val term = Sig.unfoldCustomOperator entry (List.map #1 ps) args
+         val term = Sig.unfoldCustomOperator entry args
        in
          STEP @@ term || (syms, stk)
        end  
