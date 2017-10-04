@@ -81,7 +81,7 @@ Thm ApEqTest : [
   // variables is mediated using an "unquotation" operator, written ','. When supplying a witness, the hypothesis
   // name is "unquoted" using the comma operator, which causes it to become the appropriate object
   // variable.
-  lam f. <_> `($ ,f tt)
+  lam f. <_> `($ f tt)
 ].
 
 // 'wif' stands for "weak if", which is the recursor for the weak booleans. It differs
@@ -126,7 +126,7 @@ Thm PathTest2 : [
     (lam b.
       // for our b:wbool, we will construct a path between b and
       // (BoolEta b).
-      let p : [(path [_] wbool ,b (BoolEta ,b))] =
+      let p : [(path [_] wbool b (BoolEta b))] =
         if b then <y> `tt else <y> `ff.
 
       // Now, we will project the 'x'-side of our path. In the
@@ -170,7 +170,7 @@ Def Cmp(#f, #g) = [
 ].
 
 
-Def MyLoop(#x:dim; #m) = [
+Def MyLoop(#x:dim, #m) = [
   (tuple [proj1 #m] [proj2 (loop #x)])
 ].
 
@@ -200,7 +200,7 @@ Thm FunExt(#l:lvl) : [
    (path [_] (-> a b) f g))
 ] by [
   lam a, b, f, g, p.
-    <i> lam x. {let asdf = p [use x, @i]. ?}; ?
+    <i> lam x. use p [use x, @i]
 ].
 
 Print FunExt.
@@ -208,42 +208,42 @@ Print FunExt.
 Tac FunExtTac(#l : lvl) = [
   query gl <- goal.
   match [gl:jdg] {
-    [a, b, f, g, k| #jdg{(path [_] (-> %a %b) %f %g) true with %[k:kind]} => ?
-  //     use (FunExt #l) [`%a, `%b, `%f, `%g, id]
+    [a, b, f, g, k| #jdg{(path [_] (-> %a %b) %f %g) true with %[k:kind]} =>
+      use (FunExt #l) [`%a, `%b, `%f, `%g, id]
     ]
   }
 ].
 
 Print FunExtTac.
 
-// Thm NotNotPath : [(path [_] (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
-//   (FunExtTac #lvl{0});
-//   (lam x. if x then <_> `tt else <_> `ff);
-//   auto
-// ].
+Thm NotNotPath : [(path [_] (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
+  (FunExtTac #lvl{0});
+  (lam x. if x then <_> `tt else <_> `ff);
+  auto
+].
 
-// Extract NotNotPath.
-// Print FunExtTac.
-// Print NotNotPath.
+Extract NotNotPath.
+Print FunExtTac.
+Print NotNotPath.
 
-// Thm Singleton : [(* [x : wbool] (path [_] wbool x tt))] by [
-//   {`tt, <_> `tt}
-// ].
+Thm Singleton : [(* [x : wbool] (path [_] wbool x tt))] by [
+  {`tt, <_> `tt}
+].
 
-// Thm PathElimTest : [(-> (path [_] bool tt tt) bool)] by [
-//   lam x. use x [@0]
-// ].
+Thm PathElimTest : [(-> (path [_] bool tt tt) bool)] by [
+  lam x. use x [@0]
+].
 
-// Thm PathEta(#l:lvl) : [
-//   (->
-//    [a : (U #l)]
-//    [m n : a]
-//    (path [_] a m n)
-//    (path [_] a m n))
-// ] by [
-//   lam a, m, n, p. <j> use p [@j]
-// ].
+Thm PathEta(#l:lvl) : [
+  (->
+   [a : (U #l)]
+   [m n : a]
+   (path [_] a m n)
+   (path [_] a m n))
+] by [
+  lam a, m, n, p. <j> use p [@j]
+].
 
-// Print PathEta.
+Print PathEta.
 
-// Print PathElimTest.
+Print PathElimTest.
