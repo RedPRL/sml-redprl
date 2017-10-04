@@ -156,6 +156,7 @@ struct
          Syn.DIM0 => f0
        | Syn.DIM1 => f1
        | Syn.VAR (u, _) => (assertVariable stability syms u; fu u)
+       | Syn.META (u, _) => (assertVariable stability syms u; fu u)
   end
 
   fun dimensionsEqual stability syms (r1, r2) = 

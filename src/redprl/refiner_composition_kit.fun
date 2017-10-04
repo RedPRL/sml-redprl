@@ -39,7 +39,18 @@ struct
             | (Syn.DIM1, Syn.DIM1) => restrict' eqs f
             | (Syn.DIM1, Syn.DIM0) => NONE
             | (Syn.VAR (v1, _), _) => if Abt.eq (r1, r2) then restrict' eqs f else substAndRestrict' (r2, v1) eqs f
-            | (_, Syn.VAR (v2, _)) => substAndRestrict' (r1, v2) eqs f)
+            | (Syn.META (v1, _), _) => if Abt.eq (r1, r2) then restrict' eqs f else substMetaAndRestrict' (r2, v1) eqs f
+            | (_, Syn.VAR (v2, _)) => substAndRestrict' (r1, v2) eqs f
+            | (_, Syn.META (v2, _)) => substMetaAndRestrict' (r1, v2) eqs f)
+
+    and substMetaAndRestrict' (r, v) eqs f =
+        let
+          val abs = abtToAbs r
+        in
+          restrict'
+            (List.map (fn (r1, r2) => (substMetavar (abs, v) r1, substMetavar (abs, v) r2)) eqs)
+            (substMetavar (abs, v) o f)
+        end
 
     and substAndRestrict' rv eqs f =
           restrict'

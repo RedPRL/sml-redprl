@@ -641,6 +641,13 @@ struct
      | DEV_APPLY_HYP _ => "apply-hyp"
      | DEV_USE_HYP => "use-hyp"
 
+     | FCOM => "fcom"
+     | BOX => "box"
+     | CAP => "cap"
+     | HCOM => "hcom"
+     | COM => "com"
+     | COE => "coe"
+
      | SEL_HYP => "select-hyp"
      | SEL_GOAL => "select-goal"
 

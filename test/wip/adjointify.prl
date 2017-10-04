@@ -10,26 +10,26 @@ Def IsContr(#C) = [
    [rays : (HasAllPaths #C)])
 ].
 
-Def Fiber(#A;#B;#f;#b) = [
+Def Fiber(#A,#B,#f,#b) = [
   (record
    [point : #A]
    [ray : (path [_] #B ($ #f point) #b)])
 ].
 
-Def IsEquiv(#A;#B;#f) = [
+Def IsEquiv(#A,#B,#f) = [
   (->
    [b : #B]
    (IsContr (Fiber #A #B #f b)))
 ].
 
-Def Equiv(#A;#B) = [
+Def Equiv(#A,#B) = [
   (record
    [to : (-> #A #B)]
    [to/equiv : (IsEquiv #A #B to)])
 ].
 
 
-Def Iso(#A; #B) = [
+Def Iso(#A, #B) = [
   (record
    [to : (-> #A #B)]
    [from : (-> #B #A)]
@@ -46,9 +46,9 @@ Thm Path/Symm(#l:lvl) : [
 ] by [
  lam ty, a, b, pab.
    <i>
-     `(hcom{0 ~> 1} ,ty ,a
-       [i=0 {j} (@ ,pab j)]
-       [i=1 {_} ,a])
+     `(hcom 0~>1 ty a
+       [i=0 [j] (@ pab j)]
+       [i=1 [_] a])
 ].
 
 Thm Adointify(#l:lvl) : [
@@ -68,39 +68,39 @@ Thm Adointify(#l:lvl) : [
           rays =
             lam {point = point1, ray = r1}, {point = point2, ray = r2}.
 
-              let alpha : [ (path [_] ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,point1))) ] =
+              let alpha : [ (path [_] ty1 ($ from b) ($ from ($ to point1))) ] =
                 use (Path/Symm #l)
                   [use ty1,
                    use from [use to [use point1]],
                    use from [use b],
-                   <i> use from [use r1 [@i]]].
+                   <i> use from [use r1 [`i]]].
 
-              let beta : [ (path [_] ,ty1 ($ ,from ,b) ($ ,from ($ ,to ,point2))) ] =
+              let beta : [ (path [_] ty1 ($ from b) ($ from ($ to point2))) ] =
                 use (Path/Symm #l)
                   [use ty1,
                    use from [use to [use point2]],
                    use from [use b],
-                   <i> use from [use r2 [@i]]].
+                   <i> use from [use r2 [`i]]].
 
 
-              let gamma : [ (path [_] ,ty1 ($ ,from ($ ,to ,point1)) ($ ,from ($ ,to ,point2))) ] =
+              let gamma : [ (path [_] ty1 ($ from ($ to point1)) ($ from ($ to point2))) ] =
                 <i>
-                  `(hcom{0~>1} ,ty1 ($ ,from ,b)
-                    [i=0 {j} (@,alpha j)]
-                    [i=1 {j} (@,beta j)]).
+                  `(hcom 0~>1 ty1 ($ from b)
+                    [i=0 [j] (@ alpha j)]
+                    [i=1 [j] (@ beta j)]).
 
-              let point12 : [ (path [_] ,ty1 ,point1 ,point2) ] =
+              let point12 : [ (path [_] ty1 point1 point2) ] =
                 <i>
-                  `(hcom{0~>1} ,ty1 (@ ,gamma i)
-                    [i=0 {j} (@ ($ ,coh2 ,point1) j)]
-                    [i=1 {j} (@ ($ ,coh2 ,point2) j)]).
+                  `(hcom 0~>1 ty1 (@ gamma i)
+                    [i=0 [j] (@ ($ coh2 point1) j)]
+                    [i=1 [j] (@ ($ coh2 point2) j)]).
 
 
               <i>
 
-               let welp : [ (path [_] ,ty1 (@ ,point12 i) ,point1) ] =
+               let welp : [ (path [_] ty1 (@ point12 i) point1) ] =
                  id.
 
-               {point = use point12 [@i],
+               {point = use point12 [`i],
                 ray = ?}}}
 ].

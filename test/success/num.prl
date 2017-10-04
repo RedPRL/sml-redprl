@@ -145,9 +145,9 @@ Thm NatSymm : [
 ] by [
   lam a, b, pab.
   <i>
-    `(hcom{0 ~> 1} nat ,a 
-      [i=0 {j} (@ ,pab j)]
-      [i=1 {_} ,a])
+    `(hcom 0~>1 nat a 
+      [i=0 [j] (@ pab j)]
+      [i=1 [_] a])
 ].
 
 Print NatSymm.

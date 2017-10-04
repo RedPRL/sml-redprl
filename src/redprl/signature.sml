@@ -93,9 +93,13 @@ struct
           NONE => setAnnotation (getAnnotation t1) t2
         | _ => t2
 
-      fun guessSort varctx (tm : ast) : sort =
+      fun guessSort sign varctx (tm : ast) : sort =
         case out tm of
            `x => (StringListDict.lookup varctx x handle _ => error (getAnnotation tm) [Fpp.text ("Could not resolve variable " ^ x)])
+         | O.POLY (O.CUST (opid, _)) $ _ => 
+           (case arityOfOpid sign opid of
+               SOME (psorts, ar) => #2 ar
+             | NONE => error (getAnnotation tm) [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th $ _ =>
            let
              val (_, tau) = Tm.O.arity th
@@ -126,7 +130,7 @@ struct
          | O.MONO (O.MK_ANY NONE) $ [_ \ m] => 
            let
              val m' = processTerm sign varctx m
-             val tau = guessSort varctx m
+             val tau = guessSort sign varctx m
            in
              O.MONO (O.MK_ANY (SOME tau)) $$ [([],[]) \ m']
            end

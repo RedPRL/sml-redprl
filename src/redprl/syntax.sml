@@ -82,7 +82,7 @@ struct
    (* custom operators *)
    | CUST
    (* meta *)
-   | META
+   | META of Tm.metavariable * sort
 
 
 
@@ -336,7 +336,7 @@ struct
        | DIM0 => O.MONO O.DIM0' $$ []
        | DIM1 => O.MONO O.DIM1' $$ []
        | CUST => raise Fail "CUST"
-       | META => raise Fail "META"
+       | META (x, tau) => check (x $# ([],[]), tau)
 
     val intoApp = into o APP
     val intoLam = into o LAM
@@ -360,7 +360,6 @@ struct
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
-
        | O.MONO O.TV $ _ => TV
        | O.MONO O.AX $ _ => AX
 
@@ -426,14 +425,14 @@ struct
 
        | O.MONO O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ tubes] =>
            HCOM {dir = (r1, r2), ty = ty, cap = cap, tubes = outTubes tubes}
-       | O.MONO O.COE $ [_ \ r1, _ \ r2, ([u],_) \ a, _ \ m] =>
+       | O.MONO O.COE $ [_ \ r1, _ \ r2, (_,[u]) \ a, _ \ m] =>
            COE {dir = (r1, r2), ty = (u, a), coercee = m}
 
        | O.MONO O.DIM0' $ _ => DIM0
        | O.MONO O.DIM1' $ _ => DIM1
 
        | O.POLY (O.CUST _) $ _ => CUST
-       | _ $# _ => META
+       | x $# ([],[]) => META (x, Tm.sort m)
        | _ => raise E.error [Fpp.text "Syntax view encountered unrecognized term", TermPrinter.ppTerm m]
   end
 end

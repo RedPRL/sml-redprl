@@ -380,7 +380,6 @@ end
  | param of string param
  | params of string param list
  | numAsDimension of ast
- | exclusivelyDimension of ast
  | dimension of ast
  | dimensions of ast list
  | numAsLevelParam of string param
@@ -546,14 +545,10 @@ params
 numAsDimension
   : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
 
-exclusivelyDimension
-  : LBRACKET DIM dimension RBRACKET (dimension)
-
 dimension
   : VARNAME (`` VARNAME)
   | metavar (Ast.$$# (metavar, ([], [])))
   | numAsDimension (numAsDimension)
-  | exclusivelyDimension (exclusivelyDimension)
 
 dimensions
   : dimension dimensions (dimension :: dimensions)
@@ -645,10 +640,6 @@ monoNullaryOperator
   | S1 (O.MONO O.S1)
   | BASE (O.MONO O.BASE)
 
-  (* V *)
-  | V (O.MONO O.V)
-  | VIN (O.MONO O.VIN)
-  | VPROJ (O.MONO O.VPROJ)
 
   | kind (O.MONO (O.KCONST kind))
 
@@ -669,6 +660,12 @@ regularMultinaryOperator
   | PATH (O.MONO O.PATH_TY)
   (* equality *)
   | EQUALS (O.MONO O.EQUALITY)
+
+  (* V *)
+  | V (O.MONO O.V)
+  | VIN (O.MONO O.VIN)
+  | VPROJ (O.MONO O.VPROJ)
+
 
 
 
@@ -711,7 +708,7 @@ rawTermAndTac
   | LPAREN DIM dimension RPAREN (dimension)
 
   (* coe *)
-  | LPAREN COE LBRACKET dir RBRACKET binding term RPAREN
+  | LPAREN COE dir binding term RPAREN
     (Ast.$$ (O.MONO O.COE, [Ast.\ (([],[]), #1 dir), Ast.\ (([],[]), #2 dir), binding, Ast.\ (([],[]), term)]))
   | LPAREN FCOM dir binding tubeVec RPAREN
     (Ast.$$ (O.MONO O.FCOM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding, \(([],[]), tubeVec)]))
@@ -869,7 +866,7 @@ devMatchClauses
 
 selector
   : GOAL (Ast.$$ (O.MONO O.SEL_GOAL, []))
-  | VARNAME (Ast.$$ (O.MONO O.SEL_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO (O.MK_ANY NONE), [Ast.\ (([],[]), ``VARNAME)]))]))
+  | elimTargetAnySort (Ast.$$ (O.MONO O.SEL_HYP, [Ast.\ (([],[]), elimTargetAnySort)]))
 
 selectors
   : selector COMMA selectors (selector :: selectors)

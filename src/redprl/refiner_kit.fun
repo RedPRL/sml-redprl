@@ -343,14 +343,22 @@ struct
                 (Syn.DIM0, Syn.DIM0) => true
               | (Syn.DIM0, Syn.DIM1) => goEqs state eqs
               | (Syn.DIM0, Syn.VAR _) => goEqs state eqs
+              | (Syn.DIM0, Syn.META _) => goEqs state eqs
               | (Syn.DIM1, Syn.DIM1) => true
               | (Syn.DIM1, Syn.DIM0) => goEqs state eqs
               | (Syn.DIM1, Syn.VAR _) => goEqs state eqs
+              | (Syn.DIM1, Syn.META _) => goEqs state eqs
               | (Syn.VAR (u, _), Syn.DIM0) =>
+                  SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
+              | (Syn.META (u, _), Syn.DIM0) =>
                   SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
               | (Syn.VAR (u, _), Syn.DIM1) =>
                   SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
+              | (Syn.META (u, _), Syn.DIM1) =>
+                  SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
               | (Syn.VAR (u, _), Syn.VAR (v, _)) => Sym.eq (u, v) orelse goEqs state eqs
+              | (Syn.META (u, _), Syn.META (v, _)) => Sym.eq (u, v) orelse goEqs state eqs
+              | _ => raise E.error [Fpp.text "Expected equation but got ", TermPrinter.ppTerm r1, Fpp.text "=", TermPrinter.ppTerm r2]
         fun prettyEq (r1, r2) = [TermPrinter.ppTerm r1, Fpp.text "=", TermPrinter.ppTerm r2, Fpp.text ";"]
       in
         if goEqs (SymSet.empty, SymSet.empty) eqs then
