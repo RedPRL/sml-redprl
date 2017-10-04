@@ -232,14 +232,14 @@ struct
       val (pat, names) = unstitchPattern pat
       val vec = Multi.makeVec O.TAC tacs
     in
-      O.MONO (O.DEV_APPLY_HYP pat) $$ [([],[]) \ ``z, ([],[]) \ vec, ([], names) \ tac]
+      O.MONO (O.DEV_APPLY_HYP pat) $$ [([],[]) \ z, ([],[]) \ vec, ([], names) \ tac]
     end
 
   fun makeUseHyp z tacs = 
     let
       val vec = Multi.makeVec O.TAC tacs
     in
-      O.MONO O.DEV_USE_HYP $$ [([],[]) \ ``z, ([],[]) \ vec]
+      O.MONO O.DEV_USE_HYP $$ [([],[]) \ z, ([],[]) \ vec]
     end
 
   fun makeApplyLemma pat (opid, subtermArgs) tacs tac =
@@ -877,11 +877,11 @@ atomicRawTac
   | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
-  | RULE_ELIM VARNAME (Ast.$$ (O.MONO (O.RULE_ELIM O.EXP), [Ast.\ (([],[]), Ast.`` VARNAME)]))
+  | RULE_ELIM term (Ast.$$ (O.MONO (O.RULE_ELIM O.EXP), [Ast.\ (([],[]), term)]))
   | RULE_REWRITE term (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), term)]))
   | RULE_REWRITE term IN selector (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), selector), Ast.\ (([],[]), term)]))
-  | RULE_REWRITE_HYP VARNAME (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), Ast.`` VARNAME)]))
-  | RULE_REWRITE_HYP VARNAME IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), Ast.`` VARNAME)]))
+  | RULE_REWRITE_HYP term (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), term)]))
+  | RULE_REWRITE_HYP term IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), term)]))
   | RULE_REDUCE (Ast.$$ (O.MONO O.RULE_REDUCE_ALL, []))
   | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.MONO O.RULE_REDUCE, [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
   | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD_ALL bracketedOpnames), []))
@@ -899,22 +899,22 @@ atomicRawTac
   | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
   | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
   
-  | IF VARNAME THEN tactic ELSE tactic
-      (Ast.$$ (O.MONO O.DEV_BOOL_ELIM, [\ (([],[]), ``VARNAME), \ (([],[]), tactic1), \ (([],[]), tactic2)]))
+  | IF term THEN tactic ELSE tactic
+      (Ast.$$ (O.MONO O.DEV_BOOL_ELIM, [\ (([],[]), term), \ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
       (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([],[VARNAME]), tactic2)]))
 
-  | LET devDecompPattern EQUALS VARNAME bracketedDevAppSpine DOT tactic
-      (Pattern.makeApplyHyp devDecompPattern VARNAME bracketedDevAppSpine tactic)
+  | LET devDecompPattern EQUALS term bracketedDevAppSpine DOT tactic
+      (Pattern.makeApplyHyp devDecompPattern term bracketedDevAppSpine tactic)
 
   | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine DOT tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
 
-  | USE VARNAME bracketedDevAppSpine (Pattern.makeUseHyp VARNAME bracketedDevAppSpine)
+  | USE term bracketedDevAppSpine (Pattern.makeUseHyp term bracketedDevAppSpine)
   | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
 
-  | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
-      (Ast.$$ (O.MONO O.DEV_S1_ELIM, [\ (([],[]), ``VARNAME), \ (([],[]), tactic1), \(([], [VARNAME2]), tactic2)]))
+  | CASE term OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
+      (Ast.$$ (O.MONO O.DEV_S1_ELIM, [\ (([],[]), term), \ (([],[]), tactic1), \(([], [VARNAME]), tactic2)]))
 
   | MATCH typedTerm LBRACKET devMatchClauses RBRACKET (Tac.makeMatch typedTerm devMatchClauses)
   | QUERY VARNAME LEFT_ARROW GOAL DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY_GOAL, [\ (([],[VARNAME]), tactic)]))
