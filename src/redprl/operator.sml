@@ -255,6 +255,7 @@ struct
    | RULE_ELIM of sort
    | RULE_REWRITE
    | RULE_REWRITE_HYP
+   | RULE_REDUCE
 
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
@@ -272,7 +273,6 @@ struct
      CUST of 'a * RedPrlArity.t option
    | PAT_META of 'a * sort * sort list
 
-   | RULE_REDUCE of 'a selector list
    | RULE_UNFOLD_ALL of 'a list
    | RULE_UNFOLD of 'a list * 'a selector list
    | DEV_BOOL_ELIM of 'a
@@ -412,6 +412,8 @@ struct
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_EXACT tau => [[] |: tau] ->> TAC
      | RULE_REDUCE_ALL => [] ->> TAC
+     | RULE_REDUCE => [[] |: VEC SELECTOR] ->> TAC
+
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
      | RULE_ELIM tau => [[] |: tau] ->> TAC
@@ -440,7 +442,6 @@ struct
 
        | PAT_META (_, tau, taus) => List.map (fn tau => [] |: tau) taus ->> tau
 
-       | RULE_REDUCE _ => [] ->> TAC
        | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] |: TAC, [] |: TAC] ->> TAC
@@ -494,7 +495,6 @@ struct
     val supportPoly =
       fn CUST (opid, _) => [(opid, OPID)]
        | PAT_META (x, _, _) => [(x, META_NAME)]
-       | RULE_REDUCE selectors => selectorsSupport selectors
        | RULE_UNFOLD_ALL names => opidsSupport names
        | RULE_UNFOLD (names, selectors) => opidsSupport names @ selectorsSupport selectors
        | DEV_BOOL_ELIM a => [(a, HYP)]
@@ -530,7 +530,6 @@ struct
          (case t of 
              PAT_META (x2, tau2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso taus1 = taus2
            | _ => false)
-       | (RULE_REDUCE ss1, t) => (case t of RULE_REDUCE ss2 => selectorsEq f (ss1, ss2) | _ => false)
        | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
        | (RULE_UNFOLD (os1, ss1), t) => (case t of RULE_UNFOLD (os2, ss2) => opidsEq f (os1, os2) andalso selectorsEq f (ss1, ss2) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
@@ -630,6 +629,7 @@ struct
      | RULE_SYMMETRY => "symmetry"
      | RULE_EXACT _ => "exact"
      | RULE_REDUCE_ALL => "reduce-all"
+     | RULE_REDUCE => "reduce"
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
      | RULE_ELIM _ => "elim"
@@ -672,7 +672,6 @@ struct
     fun toStringPoly f =
       fn CUST (opid, _) => f opid
        | PAT_META (x, _, _) => "?" ^ f x
-       | RULE_REDUCE ss => "reduce{" ^ selectorsToString f ss ^ "}"
        | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
        | RULE_UNFOLD (os, ss) => "unfold{" ^ opidsToString f os ^ "," ^ selectorsToString f ss ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
@@ -705,7 +704,6 @@ struct
     fun mapPolyWithSort f =
       fn CUST (opid, ar) => CUST (mapSym (passSort OPID f) opid, ar)
        | PAT_META (x, tau, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, taus)
-       | RULE_REDUCE ss => RULE_REDUCE (List.map (mapSelector (mapSym (passSort HYP f))) ss)
        | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
        | RULE_UNFOLD (ns, ss) => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns, List.map (mapSelector (mapSym (passSort HYP f))) ss)
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)

@@ -262,7 +262,7 @@ struct
      | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out catjdg)
      | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
-     | O.POLY (O.RULE_REDUCE sels) $ _ => R.Computation.Reduce sign sels
+     | O.MONO O.RULE_REDUCE $ [_ \ sels] => R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
      | O.POLY (O.RULE_UNFOLD_ALL opids) $ _ => R.Custom.UnfoldAll sign opids
      | O.POLY (O.RULE_UNFOLD (opids, sels)) $ _ => R.Custom.Unfold sign opids sels
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName

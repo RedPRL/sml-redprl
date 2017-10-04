@@ -91,6 +91,15 @@ struct
     structure O = RedPrlOpData and E = RedPrlError
     infix $ $$ $# \
   in
+    fun outVec' (f : abt -> 'a) (vec : abt) : 'a list =
+      let
+        val O.MONO (O.MK_VEC _) $ args = Tm.out vec
+      in
+        List.map (fn _ \ t => f t) args
+      end
+
+    val outVec = outVec' (fn x => x)
+
     fun outSelector (s : abt) : Tm.variable O.selector = 
       case Tm.out s of 
          O.MONO O.SEL_GOAL $ _ => O.IN_GOAL
@@ -113,6 +122,7 @@ struct
         ((r1, r2), m)
       end
 
+    (* TODO: use outVec' *)
     fun outTubes system =
       let
         val O.MONO (O.MK_VEC _) $ args = Tm.out system

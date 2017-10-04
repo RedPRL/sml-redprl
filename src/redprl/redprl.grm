@@ -191,6 +191,9 @@ struct
     in
       O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
     end
+
+  fun makeVec tau xs = 
+    O.MONO (O.MK_VEC (tau, List.length xs)) $$ List.map (fn x => ([],[]) \ x) xs
 end
 
 structure Pattern =
@@ -227,15 +230,14 @@ struct
   fun makeApplyHyp pat z tacs tac =
     let
       val (pat, names) = unstitchPattern pat
-      val vec = O.MONO (O.MK_VEC (O.TAC, List.length tacs)) $$ (List.map (fn tac => ([],[]) \ tac) tacs)
+      val vec = Multi.makeVec O.TAC tacs
     in
       O.POLY (O.DEV_APPLY_HYP (z, pat)) $$ [([],[]) \ vec, ([], names) \ tac]
     end
 
   fun makeUseHyp z tacs = 
     let
-      val args = List.map (fn tac => ([],[]) \ tac) tacs
-      val vec = O.MONO (O.MK_VEC (O.TAC, List.length tacs)) $$ args
+      val vec = Multi.makeVec O.TAC tacs
     in
       O.POLY (O.DEV_USE_HYP z) $$ [([],[]) \ vec]
     end
@@ -243,7 +245,7 @@ struct
   fun makeApplyLemma pat (opid, subtermArgs) tacs tac =
     let
       val (pat, names) = unstitchPattern pat
-      val vec = O.MONO (O.MK_VEC (O.TAC, List.length tacs)) $$ List.map (fn tac => ([],[]) \ tac) tacs
+      val vec = Multi.makeVec O.TAC tacs
       val args = subtermArgs @ [([],[]) \ vec, ([], names) \ tac]
     in
       O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat)) $$ args
@@ -251,7 +253,7 @@ struct
 
   fun makeUseLemma (opid, subtermArgs) tacs = 
     let
-      val vec = O.MONO (O.MK_VEC (O.TAC, List.length tacs)) $$ List.map (fn tac => ([],[]) \ tac) tacs
+      val vec = Multi.makeVec O.TAC tacs
     in
       O.POLY (O.DEV_USE_LEMMA (opid, NONE)) $$ subtermArgs @ [([],[]) \ vec]
     end
@@ -882,10 +884,11 @@ atomicRawTac
   | RULE_REWRITE_HYP VARNAME (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), Ast.`` VARNAME)]))
   | RULE_REWRITE_HYP VARNAME IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), Ast.`` VARNAME)]))
   | RULE_REDUCE (Ast.$$ (O.MONO O.RULE_REDUCE_ALL, []))
-  (* | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_REDUCE bracketedSelectors), []))
+  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.MONO O.RULE_REDUCE, [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
+  (*
   | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD_ALL bracketedOpnames), []))
   | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames, bracketedSelectors)), []))
-  | RULE_UNFOLD IN bracketedSelectors bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames, bracketedSelectors)), [])) *)
+ *)
   | BACK_TICK term (Tac.exactAuto O.EXP term)
   | RULE_EXACT term (Tac.exact O.EXP term)
   | AT_SIGN dimension (Tac.exactDim dimension)
