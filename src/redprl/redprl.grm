@@ -302,13 +302,9 @@ end
  | TRIANGLE_RIGHT
  | PLUS
 
- (* parameter sorts *)
- | DIM | META_NAME
  (* sorts *)
- | EXP | TAC | TRIV | JDG | LVL | KIND
+ | DIM | EXP | TAC | TRIV | JDG | LVL | KIND
 
- (* keywords and symbols in parameters *)
- | LMAX
 
  (* keywords and symbols in expressions *)
  | AX
@@ -326,6 +322,8 @@ end
  | V | VIN | VPROJ
  | UNIVERSE
  | HCOM | COE | COM
+
+ | LMAX
 
  (* parsing "coercions" *)
  | TACTIC
@@ -368,8 +366,6 @@ end
  | boundVar of string option
  | boundVars of string option list
 
- | psort of P.param_sort
- | psorts of P.param_sort list
  | sort of O.sort
  | sorts of O.sort list
 
@@ -377,8 +373,6 @@ end
  | valence of Ar.valence
 
    (* parameters *)
- | param of string param
- | params of string param list
  | numAsDimension of ast
  | dimension of ast
  | dimensions of ast list
@@ -504,14 +498,6 @@ boundVars
   : boundVar ([boundVar])
   | boundVar boundVars (boundVar :: boundVars)
 
-psort
-  : META_NAME (P.META_NAME)
-
-psorts
-  : psort ([psort])
-  | psort COMMA psorts (psort :: psorts)
-  | ([])
-
 sort
   : EXP (O.EXP)
   | TAC (O.TAC)
@@ -527,20 +513,11 @@ sorts
   | ([])
 
 bindingSig
-  : LBRACKET psorts RBRACKET LSQUARE sorts RSQUARE DOT (psorts, sorts)
-  | LBRACKET psorts RBRACKET DOT (psorts, [])
-  | LSQUARE sorts RSQUARE DOT ([], sorts)
+  : LSQUARE sorts RSQUARE DOT ([], sorts)
   | ([], [])
 
 valence
   : bindingSig sort ((bindingSig, sort))
-
-param
-  : VARNAME (P.VAR VARNAME)
-
-params
-  : param ([param])
-  | param params (param :: params)
 
 numAsDimension
   : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
@@ -606,9 +583,7 @@ fields
   | field ([field])
 
 binder
-  : LBRACKET boundVars RBRACKET LSQUARE boundVars RSQUARE (Multi.addUnderscores boundVars1, Multi.addUnderscores boundVars2)
-  | LBRACKET boundVars RBRACKET (Multi.addUnderscores boundVars, [])
-  | LSQUARE boundVars RSQUARE ([], Multi.addUnderscores boundVars)
+  : LSQUARE boundVars RSQUARE ([], Multi.addUnderscores boundVars)
 
 binding
   : binder term (\ (binder, term))
@@ -667,8 +642,6 @@ regularMultinaryOperator
   | VPROJ (O.MONO O.VPROJ)
 
 
-
-
 customOpTerm
   : OPNAME (OPNAME, [])
   | LPAREN OPNAME bindings RPAREN (OPNAME, bindings)
@@ -687,8 +660,6 @@ rawTermAndTac
   (* meta variable *)
   | metavar (Ast.$$# (metavar, ([], [])))
   | LPAREN metavar terms RPAREN (Ast.$$# (metavar, ([], terms)))
-  | LBRACKET metavar params RBRACKET (Ast.$$# (metavar, (params, [])))
-  | LPAREN LBRACKET metavar params RBRACKET terms RPAREN (Ast.$$# (metavar, (params, terms)))
 
   (* pattern variables *)
   | patvar (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, [])), []))
