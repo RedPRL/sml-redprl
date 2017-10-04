@@ -235,8 +235,9 @@ struct
   fun makeUseHyp z tacs = 
     let
       val args = List.map (fn tac => ([],[]) \ tac) tacs
+      val vec = O.MONO (O.MK_VEC (O.TAC, List.length tacs)) $$ args
     in
-      O.POLY (O.DEV_USE_HYP (z, List.length tacs)) $$ args
+      O.POLY (O.DEV_USE_HYP z) $$ [([],[]) \ vec]
     end
 
   fun makeApplyLemma pat (opid, subtermArgs) tacs tac =

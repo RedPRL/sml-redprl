@@ -280,8 +280,9 @@ struct
        in
          applications sign z (pattern, names) tacs tac
        end
-     | O.POLY (O.DEV_USE_HYP (z, n)) $ args => 
+     | O.POLY (O.DEV_USE_HYP z) $ [_ \ vec] => 
        let
+         val O.MONO (O.MK_VEC n) $ args = Tm.out vec
          val z' = RedPrlSym.named (Sym.toString z ^ "'")
          val tacs = List.map (fn _ \ tm => tactic sign env tm) args
        in

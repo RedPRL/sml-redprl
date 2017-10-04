@@ -16,6 +16,7 @@ struct
    | VEC of sort
    | LVL
    | KIND
+   | SELECTOR
 
   val rec sortToString = 
     fn EXP => "exp"
@@ -30,6 +31,7 @@ struct
      | VEC tau => "vec{" ^ sortToString tau ^ "}"
      | LVL => "lvl"
      | KIND => "kind"
+     | SELECTOR => "selector"
 
   and paramSortToString = 
     fn HYP => "hyp"
@@ -234,6 +236,8 @@ struct
    | JDG_EQ_TYPE of bool 
    | JDG_SUB_UNIVERSE of bool 
    | JDG_SYNTH of bool
+   | JDG_TERM of sort
+
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of sort list | MTAC_ORELSE | MTAC_REC
@@ -256,7 +260,8 @@ struct
    | DEV_QUERY_GOAL
    | DEV_PRINT of sort
 
-   | JDG_TERM of sort
+   | SEL_GOAL
+   | SEL_HYP of sort
 
   datatype 'a poly_operator =
      CUST of 'a * RedPrlArity.t option
@@ -273,10 +278,8 @@ struct
 
    | DEV_APPLY_HYP of 'a * unit dev_pattern * int
    | DEV_USE_LEMMA of 'a * RedPrlArity.t option * int
-
-
    | DEV_APPLY_LEMMA of 'a * RedPrlArity.t option * unit dev_pattern * int
-   | DEV_USE_HYP of 'a * int
+   | DEV_USE_HYP of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -420,6 +423,9 @@ struct
      | DEV_QUERY_GOAL => [[JDG] |: TAC] ->> TAC
      | DEV_PRINT tau => [[] |: tau] ->> TAC
 
+     | SEL_HYP tau => [[] |: tau] ->> SELECTOR
+     | SEL_GOAL => [] ->> SELECTOR
+
      | JDG_TERM _ => [] ->> JDG
 
   local
@@ -438,8 +444,8 @@ struct
        | DEV_BOOL_ELIM _ => [[] |: TAC, [] |: TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] |: TAC, [DIM] |: TAC] ->> TAC
        | DEV_APPLY_HYP (_, pat, n) => List.tabulate (n, fn _ => [] |: TAC) @ [devPatternValence pat |: TAC] ->> TAC
-       | DEV_USE_HYP (_, n) => List.tabulate (n, fn _ => [] |: TAC) ->> TAC
-       | DEV_APPLY_LEMMA (_, ar, pat, n) => 
+       | DEV_USE_HYP _ => [[] |: VEC TAC] ->> TAC
+       | DEV_APPLY_LEMMA (_, ar, pat, n) =>
          let
            val (vls, tau) = Option.valOf ar
          in
@@ -497,7 +503,7 @@ struct
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
        | DEV_APPLY_HYP (a, _, _) => [(a, HYP)]
-       | DEV_USE_HYP (a, _) => [(a, HYP)]
+       | DEV_USE_HYP a => [(a, HYP)]
        | DEV_APPLY_LEMMA (opid, _, _, _) => [(opid, OPID)]
        | DEV_USE_LEMMA (opid,  _, _) => [(opid, OPID)]
   end
@@ -538,7 +544,7 @@ struct
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
        | (DEV_APPLY_HYP (a, pat, n), t) => (case t of DEV_APPLY_HYP (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
-       | (DEV_USE_HYP (a, n), t) => (case t of DEV_USE_HYP (b, n') => f (a, b) andalso n = n' | _ => false)
+       | (DEV_USE_HYP a, t) => (case t of DEV_USE_HYP b => f (a, b) | _ => false)
        | (DEV_APPLY_LEMMA (opid1, _, pat1, n1), t) =>
          (case t of
              DEV_APPLY_LEMMA (opid2, _, pat2, n2) => f (opid1, opid2) andalso pat1 = pat2 andalso n1 = n2
@@ -644,6 +650,9 @@ struct
      | DEV_QUERY_GOAL => "dev-query-goal"
      | DEV_PRINT _ => "dev-print"
 
+     | SEL_HYP _ => "select-hyp"
+     | SEL_GOAL => "select-goal"
+
 
      | JDG_EQ _ => "eq"
      | JDG_TRUE _ => "true"
@@ -692,7 +701,7 @@ struct
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
        | DEV_APPLY_HYP (a, _, _) => "apply-hyp{" ^ f a ^ "}"
-       | DEV_USE_HYP (a, _) => "use-hyp{" ^ f a ^ "}"
+       | DEV_USE_HYP a => "use-hyp{" ^ f a ^ "}"
        | DEV_APPLY_LEMMA (opid, _, _, _) => "apply-lemma{" ^ f opid ^ "}"
        | DEV_USE_LEMMA (opid, _, _) => "use-lemma{" ^ f opid ^ "}"
   end
@@ -731,7 +740,7 @@ struct
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
        | DEV_APPLY_LEMMA (opid, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, ar, pat, n)
        | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort HYP f) a, pat, spine)
-       | DEV_USE_HYP (a, n) => DEV_USE_HYP (mapSym (passSort HYP f) a, n)
+       | DEV_USE_HYP a => DEV_USE_HYP (mapSym (passSort HYP f) a)
        | DEV_USE_LEMMA (opid, ar, n) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, ar, n)
   end
 
