@@ -628,7 +628,11 @@ struct
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Fun.EqApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => Record.EqProj (* XXX should consult autoSynthesizableNeu *)
-         | (Syn.PATH_APP (_, _), Syn.PATH_APP (_, _)) => Path.EqApp (* XXX should consult autoSynthesizableNeu; also, pattern used to have a var for the dim: needed? *)
+         | (Syn.PATH_APP (_, r1), Syn.PATH_APP (_, r2)) =>
+           (case (Abt.out r1, Abt.out r2) of 
+               (`_, `_) => Path.EqApp
+             | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
+              (* XXX should consult autoSynthesizableNeu *)
          | (Syn.CUST, Syn.CUST) => Custom.Eq sign (* XXX should consult autoSynthesizableNeu *)
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
@@ -703,22 +707,34 @@ struct
          | (_, Syn.COE _) => Coe.AutoEqR
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqKanStructural", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
+      (* This is really ugly; feel free to refactor, sorry. Wish we had 'backtracking case statements' in SML. *)
+      fun StepEqAux sign ((m, n), ty) kont = 
+        case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
+           (_, Machine.REDEX, _, _) => Computation.SequentReduce sign [O.IN_GOAL]
+         | (_, _, _, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
+         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
+         | (Syn.PATH_APP (_, r), _, _, _) => 
+           (case Abt.out r of 
+              `_ => kont ((m, n), ty)
+             | _ => Path.EqAppConst)
+         | (_, _, Syn.PATH_APP (_, r), _) =>
+           (case Abt.out r of 
+              `_ => kont ((m, n), ty)
+             | _ => CatJdgSymmetry then_ Path.EqAppConst)
+         | _ => kont ((m, n), ty)
+
       fun StepEq sign ((m, n), ty) =
         (* XXX something is missing here!
          * the handling of hcom/coe and `(@ x 1)` in `ty` should be here,
          * between the above and the next lines. *)
         StepEqKanStruct sign (m, n)
           orelse_
-        (case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
-           (_, Machine.REDEX, _, _) => Computation.SequentReduce sign [O.IN_GOAL]
-         | (_, _, _, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
-         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
-         | (Syn.PATH_APP (_, _), _, _, _) => Path.EqAppConst (* TODO: pattern used to have a constant for the dim *)
-         | (_, _, Syn.PATH_APP (_, _), _) => CatJdgSymmetry then_ Path.EqAppConst
-         | (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
-         | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
-         | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", AJ.pretty @@ AJ.EQ ((m, n), (ty, NONE, K.top))))
+        StepEqAux sign ((m, n), ty) (fn ((m, n), ty) => 
+          case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
+             (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
+           | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
+           | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
+           | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", AJ.pretty @@ AJ.EQ ((m, n), (ty, NONE, K.top))))
 
       fun StepTrue sign ty =
         case Syn.out ty of
