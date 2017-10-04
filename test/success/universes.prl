@@ -1,4 +1,4 @@
-Thm Univ0(#i:lvl; #j:lvl) : [
+Thm Univ0(#i:lvl, #j:lvl) : [
   (U #i) type at (++ (lmax #i #j))
 ] by [
   auto

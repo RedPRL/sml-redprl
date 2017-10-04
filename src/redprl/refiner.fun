@@ -250,8 +250,8 @@ struct
         val _ = RedPrlLog.trace "Equality.FromEq"
         val H >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
         val AJ.EQ ((m0, n0), (ty0, l0, k0)) = Hyps.lookup z H
-        val _ = Assert.alphaEq (m0, m1)
-        val _ = Assert.alphaEq (n0, n1)
+        val _ = Assert.alphaEqEither ((m0, n0), m1)
+        val _ = Assert.alphaEqEither ((m0, n0), n1)
         val goalTy = makeSubType H (ty0, l0, k0) (ty1, l1, k1)
       in
         |>:? goalTy #> (H, trivial)

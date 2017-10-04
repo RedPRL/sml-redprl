@@ -971,7 +971,7 @@ declArgument
 
 declArguments
   : declArgument ([declArgument])
-  | declArgument SEMI declArguments (declArgument :: declArguments)
+  | declArgument COMMA declArguments (declArgument :: declArguments)
   | ([])
 
 declArgumentsParens

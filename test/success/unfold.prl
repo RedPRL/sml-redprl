@@ -1,4 +1,4 @@
-Def Times(#A; #B) = [
+Def Times(#A, #B) = [
   (* #A #B)
 ].
 
