@@ -901,7 +901,7 @@ atomicRawTac
   | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
   
   | IF VARNAME THEN tactic ELSE tactic
-      (Ast.$$ (O.POLY (O.DEV_BOOL_ELIM VARNAME), [\ (([],[]), tactic1), \ (([],[]), tactic2)]))
+      (Ast.$$ (O.MONO O.DEV_BOOL_ELIM, [\ (([],[]), ``VARNAME), \ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
       (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
