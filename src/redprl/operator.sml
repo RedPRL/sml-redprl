@@ -12,7 +12,6 @@ struct
    | JDG
    | TRIV
    | MATCH_CLAUSE of sort
-   | PARAM_EXP of param_sort
    | DIM | TUBE | BOUNDARY
    | VEC of sort
    | LVL
@@ -25,7 +24,6 @@ struct
      | JDG => "jdg"
      | TRIV => "triv"
      | MATCH_CLAUSE tau => "match-clause"
-     | PARAM_EXP sigma => "param-exp{" ^ paramSortToString sigma ^ "}"
      | DIM => "dim"
      | TUBE => "tube"
      | BOUNDARY => "boundary"
@@ -259,7 +257,6 @@ struct
    | DEV_PRINT of sort
 
    | JDG_TERM of sort
-   | JDG_PARAM_SUBST of RedPrlParamSort.t list * sort
 
   type 'a equation = 'a P.term * 'a P.term
   type 'a dir = 'a P.term * 'a P.term
@@ -268,7 +265,6 @@ struct
      CUST of 'a * ('a P.term * psort option) list * RedPrlArity.t option
    | PAT_META of 'a * sort * ('a P.term * psort) list * sort list
    | HYP_REF of 'a * sort
-   | PARAM_REF of psort * 'a P.term
 
    | RULE_ELIM of 'a
    | RULE_REWRITE of 'a selector
@@ -426,7 +422,6 @@ struct
      | DEV_PRINT tau => [[] * [] <> tau] ->> TAC
 
      | JDG_TERM _ => [] ->> JDG
-     | JDG_PARAM_SUBST (sigmas, tau) => List.map (fn sigma => [] * [] <> PARAM_EXP sigma) sigmas @ [sigmas * [] <> tau] ->> JDG
 
   local
   in
@@ -435,7 +430,6 @@ struct
 
        | PAT_META (_, tau, _, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
        | HYP_REF (_, tau) => [] ->> tau
-       | PARAM_REF (sigma, _) => [] ->> PARAM_EXP sigma
 
        | RULE_ELIM _ => [] ->> TAC
        | RULE_REWRITE _ => [[] * [] <> EXP] ->> TAC
@@ -496,7 +490,6 @@ struct
 
        | PAT_META (x, _, ps, _) => (x, META_NAME) :: paramsSupport' ps
        | HYP_REF (a, _) => [(a, HYP)]
-       | PARAM_REF (sigma, r) => paramsSupport [(r, SOME sigma)]
 
        | RULE_ELIM a => [(a, HYP)]
        | RULE_REWRITE sel => selectorSupport sel
@@ -548,7 +541,6 @@ struct
              PAT_META (x2, tau2, ps2, taus2) => f (x1, x2) andalso tau1 = tau2 andalso paramsEq f (ps1, ps2) andalso taus1 = taus2
            | _ => false)
        | (HYP_REF (a, _), t) => (case t of HYP_REF (b, _) => f (a, b) | _ => false)
-       | (PARAM_REF (sigma1, r1), t) => (case t of PARAM_REF (sigma2, r2) => sigma1 = sigma2 andalso P.eq f (r1, r2) | _ => false)
 
        | (RULE_ELIM a, t) => (case t of RULE_ELIM b => f (a, b) | _ => false)
        | (RULE_REWRITE s1, t) => (case t of RULE_REWRITE s2 => selectorEq f (s1, s2) | _ => false)
@@ -673,7 +665,6 @@ struct
      | JDG_SYNTH _ => "synth"
 
      | JDG_TERM tau => RedPrlSort.toString tau
-     | JDG_PARAM_SUBST _ => "param-subst"
 
   local
     fun dirToString f (r, r') =
@@ -710,7 +701,6 @@ struct
        | PAT_META (x, _, ps, _) =>
            "?" ^ f x ^ "{" ^ paramsToString f ps ^ "}"
        | HYP_REF (a, _) => "hyp-ref{" ^ f a ^ "}"
-       | PARAM_REF (_, r) => "param-ref{" ^ P.toString f r ^ "}"
 
        | RULE_ELIM a => "elim{" ^ f a ^ "}"
        | RULE_REWRITE s => "rewrite{" ^ selectorToString f s ^ "}"
@@ -771,7 +761,6 @@ struct
 
        | PAT_META (x, tau, ps, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, mapParams' f ps, taus)
        | HYP_REF (a, tau) => HYP_REF (mapSym (passSort HYP f) a, tau)
-       | PARAM_REF (sigma, r) => PARAM_REF (sigma, P.bind (passSort sigma f) r)
 
        | RULE_ELIM a => RULE_ELIM (mapSym (passSort HYP f) a)
        | RULE_REWRITE s => RULE_REWRITE (mapSelector (mapSym (passSort HYP f)) s)

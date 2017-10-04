@@ -226,26 +226,6 @@ struct
       end
       handle _ =>
         raise E.error [Fpp.text "MATCH judgment failed to unify"]
-
-    fun ParamSubst _ jdg = 
-      let
-        val _ = RedPrlLog.trace "Misc.ParamSubst"
-        val (I, H) >> AJ.PARAM_SUBST (psi, m, _) = jdg
-
-        fun getSubstitution (rtm, sigma, u) = 
-          case Abt.out rtm of
-             Abt.$ (O.POLY (O.PARAM_REF (sigma', r)), _) =>
-               if sigma = sigma' then
-                 (r, u)
-               else
-                 raise E.error [Fpp.text "ParamSubst: parameter sort mismatch"]
-           | _ => raise E.error [Fpp.text "Parameter substitution not yet materialized"]
-
-        val substitutions = List.map getSubstitution psi
-        val rho = List.foldl (fn ((r, u), rho) => Sym.Ctx.insert rho u r) Sym.Ctx.empty substitutions
-      in
-        T.empty #> (I, H, substSymenv rho m)
-      end
   end
 
   structure Equality =
@@ -777,7 +757,6 @@ struct
           | _ >> AJ.TRUE (ty, _, _) => StepTrue sign ty
           | _ >> AJ.SYNTH (m, _, _) => StepSynth sign m
           | _ >> AJ.SUB_UNIVERSE (univ, _, _) => StepSubUniverse sign univ
-          | _ >> AJ.PARAM_SUBST _ => Misc.ParamSubst
           | MATCH _ => Misc.MatchOperator
           | MATCH_RECORD _ => Record.MatchRecord orelse_ Computation.MatchRecordReduce sign then_ Record.MatchRecord
           | _ >> jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "AutoStep", AJ.pretty jdg))
