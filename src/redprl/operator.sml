@@ -661,20 +661,8 @@ struct
      | JDG_TERM tau => RedPrlSort.toString tau
 
   local
-    fun dirToString f (r, r') =
-      P.toString f r ^ " ~> " ^ P.toString f r'
-
-    fun equationToString f (r, r') =
-      P.toString f r ^ "=" ^ P.toString f r'
-
-    fun equationsToString f =
-      ListSpine.pretty (equationToString f) ","
-
     fun paramsToString f =
       ListSpine.pretty (fn (p, _) => P.toString f p) ","
-
-    fun comParamsToString f (dir, eqs) =
-      dirToString f dir ^ ";" ^ equationsToString f eqs
 
     fun selectorToString f =
       fn IN_GOAL => "goal"
