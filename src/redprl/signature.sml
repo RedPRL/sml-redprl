@@ -219,10 +219,9 @@ struct
       let
         val x = NameEnv.lookup env srcname handle _ => Sym.named srcname
         val env' = NameEnv.insert env srcname x
-        val symctx' = Sym.Ctx.insert symctx x RedPrlSortData.HYP
         val varctx' = Sym.Ctx.insert varctx x tau
       in
-        (env', symctx', varctx', x)
+        (env', symctx, varctx', x)
       end
 
     fun elabSrcSeqHyp (metactx, symctx, varctx, env) (srcname, srcjdg) : (Tm.symctx * Tm.varctx * symbol NameEnv.dict * symbol * AJ.jdg) E.t =

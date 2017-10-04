@@ -306,7 +306,7 @@ end
  | PLUS
 
  (* parameter sorts *)
- | DIM | HYP | META_NAME
+ | DIM | META_NAME
  (* sorts *)
  | EXP | TAC | TRIV | JDG | LVL | KIND
 
@@ -501,8 +501,7 @@ boundVars
   | boundVar boundVars (boundVar :: boundVars)
 
 psort
-  : HYP (P.HYP)
-  | META_NAME (P.META_NAME)
+  : META_NAME (P.META_NAME)
 
 psorts
   : psort ([psort])
@@ -904,7 +903,7 @@ atomicRawTac
       (Ast.$$ (O.MONO O.DEV_BOOL_ELIM, [\ (([],[]), ``VARNAME), \ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
-      (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([VARNAME],[]), tactic2)]))
+      (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([],[VARNAME]), tactic2)]))
 
   | LET devDecompPattern EQUALS VARNAME bracketedDevAppSpine DOT tactic
       (Pattern.makeApplyHyp devDecompPattern VARNAME bracketedDevAppSpine tactic)

@@ -159,7 +159,6 @@ whitespace = [\ \t];
 "symmetry"         => (Tokens.RULE_SYMMETRY (posTuple (size yytext)));
 "auto-step"        => (Tokens.RULE_AUTO_STEP (posTuple (size yytext)));
 "auto"             => (Tokens.MTAC_AUTO (posTuple (size yytext)));
-"hyp"              => (Tokens.HYP (posTuple (size yytext)));
 "elim"             => (Tokens.RULE_ELIM (posTuple (size yytext)));
 "rewrite"          => (Tokens.RULE_REWRITE (posTuple (size yytext)));
 "rewrite-hyp"      => (Tokens.RULE_REWRITE_HYP (posTuple (size yytext)));

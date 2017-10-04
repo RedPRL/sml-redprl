@@ -1,8 +1,7 @@
 structure RedPrlSortData =
 struct
   datatype param_sort =
-     HYP
-   | META_NAME
+     META_NAME
    | OPID
 
   and sort =
@@ -34,8 +33,7 @@ struct
      | SELECTOR => "selector"
 
   and paramSortToString = 
-    fn HYP => "hyp"
-     | META_NAME => "meta-name"
+    fn META_NAME => "meta-name"
      | OPID => "opid"
 end
 
@@ -482,13 +480,6 @@ struct
         (fn (P.VAR a, tau) => [(a, tau)]
           | (P.APP t, _) => P.freeVars t)
         ps
-
-    val selectorSupport =
-      fn IN_GOAL => []
-       | IN_HYP a => [(a, HYP)]
-
-    fun selectorsSupport ps =
-      ListMonad.bind selectorSupport ps
 
     fun opidsSupport os =
       List.map (fn name => (name, OPID)) os
