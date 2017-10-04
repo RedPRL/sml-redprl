@@ -1,4 +1,4 @@
-Tac GetHole(#c : [exp].exp; #t : [exp].tac) = [
+Tac GetHole(#c : [exp].exp, #t : [exp].tac) = [
   query gl <- goal.
   match [gl:jdg] {
     [hole | #jdg{(#c %hole)} => (#t %hole)]
@@ -8,7 +8,7 @@ Tac GetHole(#c : [exp].exp; #t : [exp].tac) = [
 // We can write a cool user-defined tactic for asserting and then rewriting along an equality.
 // (Rewrite n a [x] c) matches the goal against the motive "[x] c" and rewrites along
 // the equality [_ = n in a].
-Tac Rewrite(#c : [exp].exp; #n; #a; #t : tac) = [
+Tac Rewrite(#c : [exp].exp, #n, #a, #t : tac) = [
   (GetHole [x] (#c x) [hole] #tac{
     let p : [hole = #n in #a] = #t.
     // Use the elimination rule for equality. We bind a new hypothesis which will represent the location

@@ -76,7 +76,7 @@ Print Thm4.
 Print Thm5.
 
 
-Thm Thm6(#A;#B) : [
+Thm Thm6(#A,#B) : [
   (-> [p q : (U 0)] (-> p q) (Not q) (Not p))
 ] by [
   lam p, q, f, g. unfold Not; lam a.
