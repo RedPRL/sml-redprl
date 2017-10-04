@@ -276,7 +276,6 @@ struct
        let
          val z = VarKit.fromTerm var
          val tacs = Syn.outVec' (tactic sign env) vec
-         val _ = RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm)
          val tac = tactic sign env tm'
        in
          applications sign z (pattern, names) tacs tac
