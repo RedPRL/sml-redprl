@@ -232,14 +232,14 @@ struct
       val (pat, names) = unstitchPattern pat
       val vec = Multi.makeVec O.TAC tacs
     in
-      O.POLY (O.DEV_APPLY_HYP (z, pat)) $$ [([],[]) \ vec, ([], names) \ tac]
+      O.MONO (O.DEV_APPLY_HYP pat) $$ [([],[]) \ ``z, ([],[]) \ vec, ([], names) \ tac]
     end
 
   fun makeUseHyp z tacs = 
     let
       val vec = Multi.makeVec O.TAC tacs
     in
-      O.POLY (O.DEV_USE_HYP z) $$ [([],[]) \ vec]
+      O.MONO O.DEV_USE_HYP $$ [([],[]) \ ``z, ([],[]) \ vec]
     end
 
   fun makeApplyLemma pat (opid, subtermArgs) tacs tac =
@@ -915,7 +915,7 @@ atomicRawTac
   | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
 
   | CASE VARNAME OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
-      (Ast.$$ (O.POLY (O.DEV_S1_ELIM VARNAME1), [\ (([],[]), tactic1), \(([], [VARNAME2]), tactic2)]))
+      (Ast.$$ (O.MONO O.DEV_S1_ELIM, [\ (([],[]), ``VARNAME), \ (([],[]), tactic1), \(([], [VARNAME2]), tactic2)]))
 
   | MATCH typedTerm LBRACKET devMatchClauses RBRACKET (Tac.makeMatch typedTerm devMatchClauses)
   | QUERY VARNAME LEFT_ARROW GOAL DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY_GOAL, [\ (([],[VARNAME]), tactic)]))

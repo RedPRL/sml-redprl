@@ -271,17 +271,19 @@ struct
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [([], us) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.MONO O.DEV_BOOL_ELIM $ [_ \ var, _ \ tm1, _ \ tm2] => elimRule sign (VarKit.fromTerm var) [] [tactic sign env tm1, tactic sign env tm2]
-     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, (_, [v]) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
-     | O.POLY (O.DEV_APPLY_HYP (z, pattern)) $ [_ \ vec, (_, names) \ tm] =>
+     | O.MONO O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, (_, [v]) \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
+     | O.MONO (O.DEV_APPLY_HYP pattern) $ [_ \ var, _ \ vec, (_, names) \ tm] =>
        let
+         val z = VarKit.fromTerm var
          val O.MONO (O.MK_VEC _) $ args = Tm.out vec
          val tacs = List.map (fn _ \ tm => tactic sign env tm) (List.rev args)
          val tac = tactic sign env tm
        in
          applications sign z (pattern, names) tacs tac
        end
-     | O.POLY (O.DEV_USE_HYP z) $ [_ \ vec] => 
+     | O.MONO O.DEV_USE_HYP $ [_ \ var, _ \ vec] => 
        let
+         val z = VarKit.fromTerm var
          val O.MONO (O.MK_VEC n) $ args = Tm.out vec
          val z' = RedPrlSym.named (Sym.toString z ^ "'")
          val tacs = List.map (fn _ \ tm => tactic sign env tm) args

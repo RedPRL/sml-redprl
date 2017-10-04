@@ -266,6 +266,9 @@ struct
    | DEV_QUERY_GOAL
    | DEV_PRINT of sort
    | DEV_BOOL_ELIM
+   | DEV_S1_ELIM
+   | DEV_APPLY_HYP of unit dev_pattern
+   | DEV_USE_HYP
 
    | SEL_GOAL
    | SEL_HYP of sort
@@ -277,12 +280,9 @@ struct
    | RULE_UNFOLD_ALL of 'a list
    | RULE_UNFOLD of 'a list
 
-   | DEV_S1_ELIM of 'a
 
-   | DEV_APPLY_HYP of 'a * unit dev_pattern
    | DEV_USE_LEMMA of 'a * RedPrlArity.t option
    | DEV_APPLY_LEMMA of 'a * RedPrlArity.t option * unit dev_pattern
-   | DEV_USE_HYP of 'a
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
@@ -431,7 +431,9 @@ struct
      | DEV_QUERY_GOAL => [[JDG] |: TAC] ->> TAC
      | DEV_PRINT tau => [[] |: tau] ->> TAC
      | DEV_BOOL_ELIM => [[] |: EXP, [] |: TAC, [] |: TAC] ->> TAC
-
+     | DEV_S1_ELIM => [[] |: EXP, [] |: TAC, [DIM] |: TAC] ->> TAC
+     | DEV_APPLY_HYP pat => [[] |: EXP, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
+     | DEV_USE_HYP => [[] |: EXP, [] |: VEC TAC] ->> TAC
 
      | SEL_HYP tau => [[] |: tau] ->> SELECTOR
      | SEL_GOAL => [] ->> SELECTOR
@@ -447,9 +449,6 @@ struct
 
        | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [[] |: VEC SELECTOR] ->> TAC
-       | DEV_S1_ELIM _ => [[] |: TAC, [DIM] |: TAC] ->> TAC
-       | DEV_APPLY_HYP (_, pat) => [[] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
-       | DEV_USE_HYP _ => [[] |: VEC TAC] ->> TAC
        | DEV_APPLY_LEMMA (_, ar, pat) =>
          let
            val (vls, tau) = Option.valOf ar
@@ -499,9 +498,6 @@ struct
        | PAT_META (x, _, _) => [(x, META_NAME)]
        | RULE_UNFOLD_ALL names => opidsSupport names
        | RULE_UNFOLD names => opidsSupport names
-       | DEV_S1_ELIM a => [(a, HYP)]
-       | DEV_APPLY_HYP (a, _) => [(a, HYP)]
-       | DEV_USE_HYP a => [(a, HYP)]
        | DEV_APPLY_LEMMA (opid, _, _) => [(opid, OPID)]
        | DEV_USE_LEMMA (opid,  _) => [(opid, OPID)]
   end
@@ -533,9 +529,6 @@ struct
            | _ => false)
        | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
        | (RULE_UNFOLD os1, t) => (case t of RULE_UNFOLD os2 => opidsEq f (os1, os2) | _ => false)
-       | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
-       | (DEV_APPLY_HYP (a, pat), t) => (case t of DEV_APPLY_HYP (b, pat') => f (a, b) andalso pat = pat' | _ => false)
-       | (DEV_USE_HYP a, t) => (case t of DEV_USE_HYP b => f (a, b) | _ => false)
        | (DEV_APPLY_LEMMA (opid1, _, pat1), t) =>
          (case t of
              DEV_APPLY_LEMMA (opid2, _, pat2) => f (opid1, opid2) andalso pat1 = pat2
@@ -645,6 +638,9 @@ struct
      | DEV_QUERY_GOAL => "dev-query-goal"
      | DEV_PRINT _ => "dev-print"
      | DEV_BOOL_ELIM => "dev-bool-elim"
+     | DEV_S1_ELIM => "dev-s1-elim"
+     | DEV_APPLY_HYP _ => "apply-hyp"
+     | DEV_USE_HYP => "use-hyp"
 
      | SEL_HYP _ => "select-hyp"
      | SEL_GOAL => "select-goal"
@@ -675,9 +671,6 @@ struct
        | PAT_META (x, _, _) => "?" ^ f x
        | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
        | RULE_UNFOLD os => "unfold{" ^ opidsToString f os ^ "}"
-       | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
-       | DEV_APPLY_HYP (a, _) => "apply-hyp{" ^ f a ^ "}"
-       | DEV_USE_HYP a => "use-hyp{" ^ f a ^ "}"
        | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ f opid ^ "}"
        | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ f opid ^ "}"
   end
@@ -706,10 +699,7 @@ struct
        | PAT_META (x, tau, taus) => PAT_META (mapSym (passSort META_NAME f) x, tau, taus)
        | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
        | RULE_UNFOLD ns => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns)
-       | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
        | DEV_APPLY_LEMMA (opid, ar, pat) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, ar, pat)
-       | DEV_APPLY_HYP (a, pat) => DEV_APPLY_HYP (mapSym (passSort HYP f) a, pat)
-       | DEV_USE_HYP a => DEV_USE_HYP (mapSym (passSort HYP f) a)
        | DEV_USE_LEMMA (opid, ar) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, ar)
   end
 
