@@ -133,7 +133,7 @@ Thm PathTest2 : [
       // interactive tactic environment, dimension expressions are
       // supplied to the refiner using the '@' "dimension quotation"
       // operator.
-      use p [@x]);
+      use p [`x]);
      auto
 ].
 
@@ -200,7 +200,7 @@ Thm FunExt(#l:lvl) : [
    (path [_] (-> a b) f g))
 ] by [
   lam a, b, f, g, p.
-    <i> lam x. use p [use x, @i]
+    <i> lam x. use p [use x, `i]
 ].
 
 Print FunExt.
@@ -231,7 +231,7 @@ Thm Singleton : [(* [x : wbool] (path [_] wbool x tt))] by [
 ].
 
 Thm PathElimTest : [(-> (path [_] bool tt tt) bool)] by [
-  lam x. use x [@0]
+  lam x. use x [`(dim 0)]
 ].
 
 Thm PathEta(#l:lvl) : [
@@ -241,7 +241,7 @@ Thm PathEta(#l:lvl) : [
    (path [_] a m n)
    (path [_] a m n))
 ] by [
-  lam a, m, n, p. <j> use p [@j]
+  lam a, m, n, p. <j> use p [`j]
 ].
 
 Print PathEta.
