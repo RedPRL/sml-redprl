@@ -100,11 +100,18 @@ struct
 
     val outVec = outVec' (fn x => x)
 
+    fun unpackAny m =
+      let
+        val O.MONO (O.MK_ANY _) $ [_ \ m'] = Tm.out m
+      in
+        m'
+      end
+
     fun outSelector (s : abt) : Tm.variable O.selector = 
       case Tm.out s of 
          O.MONO O.SEL_GOAL $ _ => O.IN_GOAL
-       | O.MONO (O.SEL_HYP _) $ [_ \ e] =>
-         (case Tm.out e of
+       | O.MONO O.SEL_HYP $ [_ \ e] =>
+         (case Tm.out (unpackAny e) of
              `x => O.IN_HYP x
            | _ => raise Fail "Invalid selector")
 

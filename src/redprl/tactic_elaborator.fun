@@ -255,10 +255,10 @@ struct
        O.MONO O.TAC_MTAC $ [_ \ tm] => multitacToTac (multitactic sign env tm)
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
-     | O.MONO (O.RULE_ELIM _) $ [_ \ z] => R.Elim sign (VarKit.fromTerm z)
+     | O.MONO O.RULE_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
      | O.MONO O.RULE_REWRITE $ [_ \ sel, _ \ tm] => R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
-     | O.MONO O.RULE_REWRITE_HYP $ [_ \ sel, _ \ var] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm var)
-     | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact tm
+     | O.MONO O.RULE_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
+     | O.MONO O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
      | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
      | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out catjdg)
      | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
@@ -356,7 +356,7 @@ struct
          in
            tactic sign env tm' alpha jdg
          end)
-     | O.MONO (O.DEV_PRINT _) $ [_ \ tm'] =>
+     | O.MONO O.DEV_PRINT $ [_ \ tm'] =>
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
         T.idn)
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]

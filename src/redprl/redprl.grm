@@ -58,14 +58,11 @@ struct
   val autoMtac = O.MONO O.MTAC_AUTO $$ []
   val autoTac = multitacToTac autoMtac
 
-  fun exact tau m =
-    O.MONO (O.RULE_EXACT tau) $$ [([],[]) \ m]
+  fun exact m =
+    O.MONO O.RULE_EXACT $$ [([],[]) \ m]
 
-  fun exactAuto tau m =
-    then_ (exact tau m, autoTac)
-
-  fun exactDim r =
-    exactAuto O.DIM r
+  fun exactAuto m =
+    then_ (exact m, autoTac)
 
   fun makeMatch (term, tau) clauses = 
     let
@@ -435,6 +432,8 @@ end
  | src_seqhyp of Signature.src_seqhyp
  | src_seqhyps of Signature.src_seqhyp list
  | src_sequent of Signature.src_sequent
+
+ | termAnySort of ast
 
  | atomicRawTac of ast
  | atomicTac of ast
@@ -853,8 +852,7 @@ devMatchClauses
 
 selector
   : GOAL (Ast.$$ (O.MONO O.SEL_GOAL, []))
-  | VARNAME (Ast.$$ (O.MONO (O.SEL_HYP O.EXP), [Ast.\ (([],[]), Ast.``VARNAME)]))
-  | VARNAME COLON sort (Ast.$$ (O.MONO (O.SEL_HYP sort), [Ast.\ (([],[]), Ast.``VARNAME)]))
+  | VARNAME (Ast.$$ (O.MONO O.SEL_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO (O.MK_ANY NONE), [Ast.\ (([],[]), ``VARNAME)]))]))
 
 selectors
   : selector COMMA selectors (selector :: selectors)
@@ -872,24 +870,26 @@ bracketedOpnames
   : LSQUARE opnames RSQUARE (opnames)
   | OPNAME ([OPNAME])
 
+termAnySort
+  : term (Ast.$$ (O.MONO (O.MK_ANY NONE), [Ast.\ (([],[]), term)]))
+
 atomicRawTac
   : REFINE VARNAME (Ast.$$ (O.MONO (O.RULE_PRIM VARNAME), []))
   | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
-  | RULE_ELIM term (Ast.$$ (O.MONO (O.RULE_ELIM O.EXP), [Ast.\ (([],[]), term)]))
+  | RULE_ELIM termAnySort (Ast.$$ (O.MONO O.RULE_ELIM, [Ast.\ (([],[]), termAnySort)]))
   | RULE_REWRITE term (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), term)]))
   | RULE_REWRITE term IN selector (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), selector), Ast.\ (([],[]), term)]))
-  | RULE_REWRITE_HYP term (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), term)]))
-  | RULE_REWRITE_HYP term IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), term)]))
+  | RULE_REWRITE_HYP termAnySort (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), termAnySort)]))
+  | RULE_REWRITE_HYP termAnySort IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), termAnySort)]))
   | RULE_REDUCE (Ast.$$ (O.MONO O.RULE_REDUCE_ALL, []))
   | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.MONO O.RULE_REDUCE, [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
   | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD_ALL bracketedOpnames), []))
   | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames)), [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
 
-  | BACK_TICK term (Tac.exactAuto O.EXP term)
-  | RULE_EXACT term (Tac.exact O.EXP term)
-  | AT_SIGN dimension (Tac.exactDim dimension)
+  | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
+  | RULE_EXACT termAnySort (Tac.exact termAnySort)
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
@@ -918,7 +918,7 @@ atomicRawTac
 
   | MATCH typedTerm LBRACKET devMatchClauses RBRACKET (Tac.makeMatch typedTerm devMatchClauses)
   | QUERY VARNAME LEFT_ARROW GOAL DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY_GOAL, [\ (([],[VARNAME]), tactic)]))
-  | PRINT typedTerm (Ast.$$ (O.MONO (O.DEV_PRINT (#2 typedTerm)), [\ (([], []), #1 typedTerm)]))
+  | PRINT termAnySort (Ast.$$ (O.MONO O.DEV_PRINT, [\ (([], []), termAnySort)]))
 
   (* overlapping with term *)
   | rawTermAndTac (rawTermAndTac)

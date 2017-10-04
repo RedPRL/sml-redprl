@@ -93,8 +93,20 @@ struct
           NONE => setAnnotation (getAnnotation t1) t2
         | _ => t2
 
-      fun processOp pos sign =
-        fn O.POLY (O.CUST (opid, NONE)) =>
+      fun guessSort varctx (tm : ast) : sort =
+        case out tm of
+           `x => (StringListDict.lookup varctx x handle _ => error (getAnnotation tm) [Fpp.text ("Could not resolve variable " ^ x)])
+         | th $ _ =>
+           let
+             val (_, tau) = Tm.O.arity th
+           in
+             tau
+           end
+         | _ => O.EXP
+
+      fun processOp pos sign varctx th  =
+        case th of
+           O.POLY (O.CUST (opid, NONE)) =>
            (case arityOfOpid sign opid of
                SOME (psorts, ar) => O.POLY (O.CUST (opid, SOME ar))
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
@@ -108,28 +120,69 @@ struct
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th => th
 
-      fun processTerm' sign m =
+      and processTerm' sign varctx m =
         case out m of
            `x => ``x
-         | th $ es => processOp (getAnnotation m) sign th $$ List.map (fn bs \ m => bs \ processTerm sign m) es
-         | x $# (ps, ms) => x $$# (ps, List.map (processTerm sign) ms)
+         | O.MONO (O.MK_ANY NONE) $ [_ \ m] => 
+           let
+             val m' = processTerm sign varctx m
+             val tau = guessSort varctx m
+           in
+             O.MONO (O.MK_ANY (SOME tau)) $$ [([],[]) \ m']
+           end
+         | th $ es =>
+           let
+             val th' = processOp (getAnnotation m) sign varctx th
+             val (vls, _) = Tm.O.arity th'
+             val es' = ListPair.map (fn (e, vl) => processBinder sign varctx vl e) (es, vls)
+           in
+             th' $$ es'
+           end
+         | x $# (ps, ms) => x $$# (ps, List.map (processTerm sign varctx) ms)
 
-      and processTerm sign m =
-        inheritAnnotation m (processTerm' sign m)
+      and processBinder sign varctx ((sigmas, taus), _) ((us, xs) \ m) = 
+        let
+          val varctx' = ListPair.foldl (fn (x, tau, vars) => StringListDict.insert vars x tau) varctx (xs, taus)
+        in
+          (us, xs) \ processTerm sign varctx' m
+        end
+
+      and processTerm sign varctx m =
+        inheritAnnotation m (processTerm' sign varctx m)
 
       fun processSrcCatjdg sign = processTerm sign
 
-      fun processSrcSeq sign (hyps, concl) =
-        (List.map (fn (x, hyp) => (x, processSrcCatjdg sign hyp)) hyps, processSrcCatjdg sign concl)
+      fun catjdgEvidence jdg = 
+        case out jdg of 
+           O.MONO (O.JDG_TRUE _) $ _ => O.EXP
+         | O.MONO (O.JDG_SYNTH _) $ _ => O.EXP
+         | O.MONO (O.JDG_TERM tau) $ _ => tau
+         | _ => O.TRIV
 
-      fun processSrcGenJdg sign (bs, seq) =
-        (bs, processSrcSeq sign seq)
+      fun processSrcHyps sign varctx hyps =
+        case hyps of
+           [] => ([], varctx)
+         | (x, hyp) :: hyps => 
+           let
+             val hyp' = processSrcCatjdg sign varctx hyp
+             val varctx' = StringListDict.insert varctx x (catjdgEvidence hyp')
+             val (hyps', varctx'') = processSrcHyps sign varctx' hyps
+           in
+             ((x, hyp') :: hyps', varctx'')
+           end
+
+      fun processSrcSeq sign varctx (hyps, concl) = 
+        let
+          val (hyps', varctx') = processSrcHyps sign varctx hyps
+        in
+          (hyps', processSrcCatjdg sign varctx' concl)
+        end
 
     in
       fun processDecl sign =
-        fn DEF {arguments, sort, definiens} => DEF {arguments = arguments, sort = sort, definiens = processTerm sign definiens}
-         | THM {arguments, goal, script} => THM {arguments = arguments, goal = processSrcSeq sign goal, script = processTerm sign script}
-         | TAC {arguments, script} => TAC {arguments = arguments, script = processTerm sign script}
+        fn DEF {arguments, sort, definiens} => DEF {arguments = arguments, sort = sort, definiens = processTerm sign StringListDict.empty definiens}
+         | THM {arguments, goal, script} => THM {arguments = arguments, goal = processSrcSeq sign StringListDict.empty goal, script = processTerm sign StringListDict.empty script}
+         | TAC {arguments, script} => TAC {arguments = arguments, script = processTerm sign StringListDict.empty script}
     end
 
     structure MetaCtx = Tm.Metavar.Ctx

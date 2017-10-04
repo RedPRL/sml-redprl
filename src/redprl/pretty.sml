@@ -267,6 +267,7 @@ struct
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
           nest 1 @@ ppTerm m]
+     | O.MONO (O.MK_ANY _) $ [_ \ m] => ppTerm m
      | theta $ [] =>
         ppOperator theta
      | theta $ [([], []) \ arg] =>

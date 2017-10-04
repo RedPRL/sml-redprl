@@ -16,6 +16,7 @@ struct
    | LVL
    | KIND
    | SELECTOR
+   | ANY
 
   val rec sortToString = 
     fn EXP => "exp"
@@ -31,6 +32,7 @@ struct
      | LVL => "lvl"
      | KIND => "kind"
      | SELECTOR => "selector"
+     | ANY => "any"
 
   and paramSortToString = 
     fn META_NAME => "meta-name"
@@ -216,6 +218,8 @@ struct
 
    | FCOM | BOX | CAP | HCOM | COE | COM
 
+   | MK_ANY of sort option
+
    (* dimension expressions *)
 
    | DIM0'
@@ -247,10 +251,10 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT of sort | RULE_REDUCE_ALL
+   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT | RULE_REDUCE_ALL
    | RULE_CUT
    | RULE_PRIM of string
-   | RULE_ELIM of sort
+   | RULE_ELIM
    | RULE_REWRITE
    | RULE_REWRITE_HYP
    | RULE_REDUCE
@@ -262,14 +266,14 @@ struct
    | DEV_MATCH of sort * int list
    | DEV_MATCH_CLAUSE of sort
    | DEV_QUERY_GOAL
-   | DEV_PRINT of sort
+   | DEV_PRINT
    | DEV_BOOL_ELIM
    | DEV_S1_ELIM
    | DEV_APPLY_HYP of unit dev_pattern
    | DEV_USE_HYP
 
    | SEL_GOAL
-   | SEL_HYP of sort
+   | SEL_HYP
 
   datatype 'a poly_operator =
      CUST of 'a * RedPrlArity.t option
@@ -370,6 +374,8 @@ struct
 
      | EQUALITY => [[] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
+     | MK_ANY tau => [[] |: Option.valOf tau] ->> ANY
+
      | DIM0' => [] ->> DIM
      | DIM1' => [] ->> DIM
      | MK_TUBE => [[] |: DIM, [] |: DIM, [DIM] |: EXP] ->> TUBE
@@ -409,15 +415,15 @@ struct
      | RULE_ID => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
-     | RULE_EXACT tau => [[] |: tau] ->> TAC
+     | RULE_EXACT => [[] |: ANY] ->> TAC
      | RULE_REDUCE_ALL => [] ->> TAC
      | RULE_REDUCE => [[] |: VEC SELECTOR] ->> TAC
 
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
-     | RULE_ELIM tau => [[] |: tau] ->> TAC
+     | RULE_ELIM => [[] |: ANY] ->> TAC
      | RULE_REWRITE => [[] |: SELECTOR, [] |: EXP] ->> TAC
-     | RULE_REWRITE_HYP => [[] |: SELECTOR, [] |: TRIV] ->> TAC
+     | RULE_REWRITE_HYP => [[] |: SELECTOR, [] |: ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -427,13 +433,13 @@ struct
      | DEV_MATCH (tau, ns) => ([] |: tau) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE tau) ns ->> TAC
      | DEV_MATCH_CLAUSE tau => [[] |: tau, [] |: TAC] ->> MATCH_CLAUSE tau
      | DEV_QUERY_GOAL => [[JDG] |: TAC] ->> TAC
-     | DEV_PRINT tau => [[] |: tau] ->> TAC
+     | DEV_PRINT => [[] |: ANY] ->> TAC
      | DEV_BOOL_ELIM => [[] |: EXP, [] |: TAC, [] |: TAC] ->> TAC
      | DEV_S1_ELIM => [[] |: EXP, [] |: TAC, [DIM] |: TAC] ->> TAC
      | DEV_APPLY_HYP pat => [[] |: EXP, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_HYP => [[] |: EXP, [] |: VEC TAC] ->> TAC
 
-     | SEL_HYP tau => [[] |: tau] ->> SELECTOR
+     | SEL_HYP => [[] |: ANY] ->> SELECTOR
      | SEL_GOAL => [] ->> SELECTOR
 
      | JDG_TERM _ => [] ->> JDG
@@ -583,6 +589,8 @@ struct
 
      | EQUALITY => "equality"
 
+     | MK_ANY _ => "any"
+
      | DIM0' => "dim0"
      | DIM1' => "dim1"
      | MK_TUBE => "tube"
@@ -611,12 +619,12 @@ struct
      | RULE_ID => "id"
      | RULE_AUTO_STEP => "auto-step"
      | RULE_SYMMETRY => "symmetry"
-     | RULE_EXACT _ => "exact"
+     | RULE_EXACT => "exact"
      | RULE_REDUCE_ALL => "reduce-all"
      | RULE_REDUCE => "reduce"
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
-     | RULE_ELIM _ => "elim"
+     | RULE_ELIM => "elim"
      | RULE_REWRITE => "rewrite"
      | RULE_REWRITE_HYP => "rewrite-hyp"
 
@@ -627,13 +635,13 @@ struct
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE _ => "dev-match-clause"
      | DEV_QUERY_GOAL => "dev-query-goal"
-     | DEV_PRINT _ => "dev-print"
+     | DEV_PRINT => "dev-print"
      | DEV_BOOL_ELIM => "dev-bool-elim"
      | DEV_S1_ELIM => "dev-s1-elim"
      | DEV_APPLY_HYP _ => "apply-hyp"
      | DEV_USE_HYP => "use-hyp"
 
-     | SEL_HYP _ => "select-hyp"
+     | SEL_HYP => "select-hyp"
      | SEL_GOAL => "select-goal"
 
      | JDG_EQ _ => "eq"
