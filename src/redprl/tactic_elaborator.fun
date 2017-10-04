@@ -138,7 +138,7 @@ struct
     in
       case Syn.out ty of 
          Syn.FUN _ => (RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.PATH_TY _ => (RT.Path.Elim z thenl' (names, [appTac, autoTac sign, autoTac sign, contTac])) alpha jdg
+       | Syn.PATH_TY _ => (RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
     end
 
