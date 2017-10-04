@@ -32,11 +32,11 @@ struct
   type binding = (string * P.param_sort) list * ast
   infix $$ $ \
 
-  fun makeSeq mt (us : (string * P.param_sort) list) mt' =
+  fun makeSeq mt (us : (string * O.sort) list) mt' =
     let
       val (syms, sorts) = ListPair.unzip us
     in
-      O.MONO (O.MTAC_SEQ sorts) $$ [([],[]) \ mt, (syms,[]) \ mt']
+      O.MONO (O.MTAC_SEQ sorts) $$ [([],[]) \ mt, ([],syms) \ mt']
     end
 
   fun multitacToTac mt =
@@ -221,13 +221,13 @@ struct
       val (pats', namess) = ListPair.unzip (List.map unstitchPattern pats)
       val names = List.concat namess
     in
-      O.MONO (O.DEV_FUN_INTRO pats') $$ [(names, []) \ tac]
+      O.MONO (O.DEV_FUN_INTRO pats') $$ [([], names) \ tac]
     end
 
   fun makeApplyHyp pat z tacs tac =
     let
       val (pat, names) = unstitchPattern pat
-      val args = (List.map (fn tac => ([],[]) \ tac) tacs) @ [(names, []) \ tac]
+      val args = (List.map (fn tac => ([],[]) \ tac) tacs) @ [([], names) \ tac]
     in
       O.POLY (O.DEV_APPLY_HYP (z, pat, List.length tacs)) $$ args
     end
@@ -243,7 +243,7 @@ struct
     let
       val (pat, names) = unstitchPattern pat
       val appArgs = List.map (fn tac => ([],[]) \ tac) tacs
-      val args = subtermArgs @ appArgs @ [(names, []) \ tac]
+      val args = subtermArgs @ appArgs @ [([], names) \ tac]
     in
       O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat, List.length tacs)) $$ args
     end
@@ -439,8 +439,8 @@ end
  | atomicMultitac of ast
  | rawMultitac of ast
  | multitac of ast
- | hypBinding of string * P.param_sort
- | hypBindings of (string * P.param_sort) list
+ | hypBinding of string * O.sort
+ | hypBindings of (string * O.sort) list
  | rawTactic of ast
  | tactic of ast
  | tactics of ast list
@@ -947,8 +947,8 @@ rawMultitac
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
 hypBinding
-  : VARNAME COLON psort (VARNAME, psort)
-  | VARNAME (VARNAME, P.HYP)
+  : VARNAME COLON sort (VARNAME, sort)
+  | VARNAME (VARNAME, O.EXP)
 
 hypBindings
   : hypBinding ([hypBinding])

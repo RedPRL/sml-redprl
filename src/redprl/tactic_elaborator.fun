@@ -266,8 +266,8 @@ struct
      | O.POLY (O.RULE_UNFOLD_ALL opids) $ _ => R.Custom.UnfoldAll sign opids
      | O.POLY (O.RULE_UNFOLD (opids, sels)) $ _ => R.Custom.Unfold sign opids sels
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
-     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
-     | O.MONO (O.DEV_FUN_INTRO pats) $ [(us, _) \ tm] => funIntros sign (pats, us) (tactic sign env tm)
+     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([],[u]) \ tm2] => R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.MONO (O.DEV_FUN_INTRO pats) $ [(_, us) \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.MONO (O.DEV_PATH_INTRO _) $ [([], us) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]
@@ -289,7 +289,7 @@ struct
        end
      | O.POLY (O.DEV_APPLY_LEMMA (opid, ar, pat, n)) $ args =>
        let
-         val ((names, []) \ tm) :: args' = List.rev args
+         val (([], names) \ tm) :: args' = List.rev args
          val (appArgs, subtermArgs) = ListUtil.splitAt (args', n)
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
          val tac = tactic sign env tm
@@ -359,7 +359,7 @@ struct
      | O.MONO (O.MTAC_FOCUS i) $ [_ \ tm] => T.only (i, tactic sign env tm)
      | O.MONO O.MTAC_PROGRESS $ [_ \ tm] => T.mprogress (multitactic sign env tm)
      | O.MONO O.MTAC_REC $ [(_,[x]) \ tm] => T.mrec (fn mt => multitactic sign (Var.Ctx.insert env x mt) tm)
-     | O.MONO (O.MTAC_SEQ _) $ [_ \ tm1, (us, _) \ tm2] => T.seq (multitactic sign env tm1, (us, multitactic sign env tm2))
+     | O.MONO (O.MTAC_SEQ _) $ [_ \ tm1, (_, us) \ tm2] => T.seq (multitactic sign env tm1, (us, multitactic sign env tm2))
      | O.MONO O.MTAC_ORELSE $ [_ \ tm1, _ \ tm2] => T.morelse (multitactic sign env tm1, multitactic sign env tm2)
      | O.MONO (O.MTAC_HOLE msg) $ _ => hole (Option.valOf (Tm.getAnnotation tm), msg)
      | O.MONO O.MTAC_REPEAT $ [_ \ tm] => T.mrepeat (multitactic sign env tm)

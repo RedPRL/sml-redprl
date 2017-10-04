@@ -236,7 +236,7 @@ struct
    | JDG_SYNTH of bool
 
    (* primitive tacticals and multitacticals *)
-   | MTAC_SEQ of psort list | MTAC_ORELSE | MTAC_REC
+   | MTAC_SEQ of sort list | MTAC_ORELSE | MTAC_REC
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
    | MTAC_HOLE of string option
@@ -290,6 +290,7 @@ structure ArityNotation =
 struct
   fun op* (a, b) = (a, b) (* symbols sorts, variable sorts *)
   fun op<> (a, b) = (a, b) (* valence *)
+  fun op|: (a, b) = (([], a), b)
   fun op->> (a, b) = (a, b) (* arity *)
 end
 
@@ -298,13 +299,13 @@ struct
   structure Ar = RedPrlArity
 
   open RedPrlOpData
-  open ArityNotation infix <> ->>
+  open ArityNotation infix <> ->> |:
 
   type 'a t = 'a operator
 
-  val rec devPatternSymValence = 
-    fn PAT_VAR _ => [HYP]
-     | PAT_TUPLE pats => List.concat (List.map (devPatternSymValence o #2) pats)
+  val rec devPatternValence = 
+    fn PAT_VAR _ => [EXP]
+     | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
 
   val arityMono =
     fn TV => [] ->> TRIV
@@ -313,111 +314,111 @@ struct
      | BOOL => [] ->> EXP
      | TT => [] ->> EXP
      | FF => [] ->> EXP
-     | IF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | IF => [[] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | WBOOL => [] ->> EXP
-     | WIF => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | WIF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | VOID => [] ->> EXP
 
      | NAT => [] ->> EXP
      | ZERO => [] ->> EXP
-     | SUCC => [[] * [] <> EXP] ->> EXP
-     | NAT_REC => [[] * [] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
+     | SUCC => [[] |: EXP] ->> EXP
+     | NAT_REC => [[] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
      | INT => [] ->> EXP
-     | NEGSUCC => [[] * [] <> EXP] ->> EXP
-     | INT_REC => [[] * [] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP, [] * [] <> EXP, [] * [EXP, EXP] <> EXP] ->> EXP
+     | NEGSUCC => [[] |: EXP] ->> EXP
+     | INT_REC => [[] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
-     | LOOP => [[] * [] <> DIM] ->> EXP
-     | S1_REC => [[] * [EXP] <> EXP, [] * [] <> EXP, [] * [] <> EXP, [] * [DIM] <> EXP] ->> EXP
+     | LOOP => [[] |: DIM] ->> EXP
+     | S1_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [DIM] |: EXP] ->> EXP
 
-     | FUN => [[] * [] <> EXP, [] * [EXP] <> EXP] ->> EXP
-     | LAM => [[] * [EXP] <> EXP] ->> EXP
-     | APP => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | FUN => [[] |: EXP, [EXP] |: EXP] ->> EXP
+     | LAM => [[EXP] |: EXP] ->> EXP
+     | APP => [[] |: EXP, [] |: EXP] ->> EXP
 
      | RECORD lbls =>
        let
-         val (_, valences) = List.foldr (fn (_, (taus, vls)) => (EXP :: taus, ([] * taus <> EXP) :: vls)) ([], []) lbls
+         val (_, valences) = List.foldr (fn (_, (taus, vls)) => (EXP :: taus, (taus |: EXP) :: vls)) ([], []) lbls
        in 
          List.rev valences ->> EXP
        end
-     | TUPLE lbls => (map (fn _ => ([] * [] <> EXP)) lbls) ->> EXP
-     | PROJ lbl => [[] * [] <> EXP] ->> EXP
-     | TUPLE_UPDATE lbl => [[] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | TUPLE lbls => (map (fn _ => ([] |: EXP)) lbls) ->> EXP
+     | PROJ lbl => [[] |: EXP] ->> EXP
+     | TUPLE_UPDATE lbl => [[] |: EXP, [] |: EXP] ->> EXP
 
-     | PATH_TY => [[] * [DIM] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-     | PATH_ABS => [[] * [DIM] <> EXP] ->> EXP
-     | PATH_APP => [[] * [] <> EXP, [] * [] <> DIM] ->> EXP
+     | PATH_TY => [[DIM] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | PATH_ABS => [[DIM] |: EXP] ->> EXP
+     | PATH_APP => [[] |: EXP, [] |: DIM] ->> EXP
 
-     | FCOM => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP, [] * [] <> VEC TUBE] ->> EXP
-     | BOX => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP, [] * [] <> VEC BOUNDARY] ->> EXP
-     | CAP => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP, [] * [] <> VEC TUBE] ->> EXP
-     | HCOM => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> VEC TUBE] ->> EXP
-     | COE => [[] * [] <> DIM, [] * [] <> DIM, [] * [DIM] <> EXP, [] * [] <> EXP] ->> EXP
-     | COM => [[] * [] <> DIM, [] * [] <> DIM, [] * [DIM] <> EXP, [] * [] <> EXP, [] * [] <> VEC TUBE] ->> EXP
+     | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BOUNDARY] ->> EXP
+     | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | HCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | COE => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP] ->> EXP
+     | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
 
-     | UNIVERSE => [[] * [] <> LVL, [] * [] <> KIND] ->> EXP
-     | V => [[] * [] <> DIM, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-     | VIN => [[] * [] <> DIM, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
-     | VPROJ => [[] * [] <> DIM, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | UNIVERSE => [[] |: LVL, [] |: KIND] ->> EXP
+     | V => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | VIN => [[] |: DIM, [] |: EXP, [] |: EXP] ->> EXP
+     | VPROJ => [[] |: DIM, [] |: EXP, [] |: EXP] ->> EXP
 
-     | EQUALITY => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
+     | EQUALITY => [[] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | DIM0' => [] ->> DIM
      | DIM1' => [] ->> DIM
-     | MK_TUBE => [[] * [] <> DIM, [] * [] <> DIM, [] * [DIM] <> EXP] ->> TUBE
-     | MK_BOUNDARY => [[] * [] <> DIM, [] * [] <> DIM, [] * [] <> EXP] ->> BOUNDARY
-     | MK_VEC (tau, n) => List.tabulate (n, fn _ => [] * [] <> tau) ->> VEC tau
+     | MK_TUBE => [[] |: DIM, [] |: DIM, [DIM] |: EXP] ->> TUBE
+     | MK_BOUNDARY => [[] |: DIM, [] |: DIM, [] |: EXP] ->> BOUNDARY
+     | MK_VEC (tau, n) => List.tabulate (n, fn _ => [] |: tau) ->> VEC tau
 
      | LCONST i => [] ->> LVL
-     | LPLUS i => [[] * [] <> LVL] ->> LVL
-     | LMAX n => List.tabulate (n, fn _ => [] * [] <> LVL) ->> LVL
+     | LPLUS i => [[] |: LVL] ->> LVL
+     | LMAX n => List.tabulate (n, fn _ => [] |: LVL) ->> LVL
 
      | KCONST _ => [] ->> KIND
 
 
-     | JDG_EQ b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_TRUE b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP] ->> JDG
-     | JDG_EQ_TYPE b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP, [] * [] <> EXP] ->> JDG
-     | JDG_SUB_UNIVERSE b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP] ->> JDG
-     | JDG_SYNTH b => (if b then [[] * [] <> LVL] else []) @ [[] * [] <> KIND, [] * [] <> EXP] ->> JDG
+     | JDG_EQ b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
+     | JDG_EQ_TYPE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_UNIVERSE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
+     | JDG_SYNTH b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
 
-     | MTAC_SEQ psorts => [[] * [] <> MTAC, psorts * [] <> MTAC] ->> MTAC
-     | MTAC_ORELSE => [[] * [] <> MTAC, [] * [] <> MTAC] ->> MTAC
-     | MTAC_REC => [[] * [MTAC] <> MTAC] ->> MTAC
-     | MTAC_REPEAT => [[] * [] <> MTAC] ->> MTAC
+     | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
+     | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
+     | MTAC_REC => [[MTAC] |: MTAC] ->> MTAC
+     | MTAC_REPEAT => [[] |: MTAC] ->> MTAC
      | MTAC_AUTO => [] ->> MTAC
-     | MTAC_PROGRESS => [[] * [] <> MTAC] ->> MTAC
-     | MTAC_ALL => [[] * [] <> TAC] ->> MTAC
+     | MTAC_PROGRESS => [[] |: MTAC] ->> MTAC
+     | MTAC_ALL => [[] |: TAC] ->> MTAC
      | MTAC_EACH n =>
          let
-           val tacs = List.tabulate (n, fn _ => [] * [] <> TAC)
+           val tacs = List.tabulate (n, fn _ => [] |: TAC)
          in
            tacs ->> MTAC
          end
-     | MTAC_FOCUS _ => [[] * [] <> TAC] ->> MTAC
+     | MTAC_FOCUS _ => [[] |: TAC] ->> MTAC
      | MTAC_HOLE _ => [] ->> MTAC
-     | TAC_MTAC => [[] * [] <> MTAC] ->> TAC
+     | TAC_MTAC => [[] |: MTAC] ->> TAC
 
      | RULE_ID => [] ->> TAC
      | RULE_AUTO_STEP => [] ->> TAC
      | RULE_SYMMETRY => [] ->> TAC
-     | RULE_EXACT tau => [[] * [] <> tau] ->> TAC
+     | RULE_EXACT tau => [[] |: tau] ->> TAC
      | RULE_REDUCE_ALL => [] ->> TAC
-     | RULE_CUT => [[] * [] <> JDG] ->> TAC
+     | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
 
-     | DEV_FUN_INTRO pats => [List.concat (List.map devPatternSymValence pats) * [] <> TAC] ->> TAC
-     | DEV_RECORD_INTRO lbls => List.map (fn _ => [] * [] <> TAC) lbls ->> TAC
-     | DEV_PATH_INTRO n => [[] * List.tabulate (n, fn _ => DIM) <> TAC] ->> TAC
-     | DEV_LET => [[] * [] <> JDG, [] * [] <> TAC, [HYP] * [] <> TAC] ->> TAC
+     | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
+     | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
+     | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) |: TAC] ->> TAC
+     | DEV_LET => [[] |: JDG, [] |: TAC, [EXP] |: TAC] ->> TAC (* TODO: need tau instead of EXP *)
 
-     | DEV_MATCH (tau, ns) => ([] * [] <> tau) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE tau) ns ->> TAC
-     | DEV_MATCH_CLAUSE tau => [[] * [] <> tau, [] * [] <> TAC] ->> MATCH_CLAUSE tau
-     | DEV_QUERY_GOAL => [[] * [JDG] <> TAC] ->> TAC
-     | DEV_PRINT tau => [[] * [] <> tau] ->> TAC
+     | DEV_MATCH (tau, ns) => ([] |: tau) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE tau) ns ->> TAC
+     | DEV_MATCH_CLAUSE tau => [[] |: tau, [] |: TAC] ->> MATCH_CLAUSE tau
+     | DEV_QUERY_GOAL => [[JDG] |: TAC] ->> TAC
+     | DEV_PRINT tau => [[] |: tau] ->> TAC
 
      | JDG_TERM _ => [] ->> JDG
 
@@ -426,29 +427,29 @@ struct
     val arityPoly =
       fn CUST (_, ar) => Option.valOf ar
 
-       | PAT_META (_, tau, taus) => List.map (fn tau => [] * [] <> tau) taus ->> tau
+       | PAT_META (_, tau, taus) => List.map (fn tau => [] |: tau) taus ->> tau
 
        | RULE_ELIM _ => [] ->> TAC
-       | RULE_REWRITE _ => [[] * [] <> EXP] ->> TAC
+       | RULE_REWRITE _ => [[] |: EXP] ->> TAC
        | RULE_REWRITE_HYP _ => [] ->> TAC
        | RULE_REDUCE _ => [] ->> TAC
        | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [] ->> TAC
-       | DEV_BOOL_ELIM _ => [[] * [] <> TAC, [] * [] <> TAC] ->> TAC
-       | DEV_S1_ELIM _ => [[] * [] <> TAC, [] * [DIM] <> TAC] ->> TAC
-       | DEV_APPLY_HYP (_, pat, n) => List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
-       | DEV_USE_HYP (_, n) => List.tabulate (n, fn _ => [] * [] <> TAC) ->> TAC
+       | DEV_BOOL_ELIM _ => [[] |: TAC, [] |: TAC] ->> TAC
+       | DEV_S1_ELIM _ => [[] |: TAC, [DIM] |: TAC] ->> TAC
+       | DEV_APPLY_HYP (_, pat, n) => List.tabulate (n, fn _ => [] |: TAC) @ [devPatternValence pat |: TAC] ->> TAC
+       | DEV_USE_HYP (_, n) => List.tabulate (n, fn _ => [] |: TAC) ->> TAC
        | DEV_APPLY_LEMMA (_, ar, pat, n) => 
          let
            val (vls, tau) = Option.valOf ar
          in
-           vls @ List.tabulate (n, fn _ => [] * [] <> TAC) @ [devPatternSymValence pat * [] <> TAC] ->> TAC
+           vls @ List.tabulate (n, fn _ => [] |: TAC) @ [devPatternValence pat |: TAC] ->> TAC
          end
        | DEV_USE_LEMMA (_, ar, n) => 
          let
            val (vls, tau) = Option.valOf ar
          in
-           vls @ List.tabulate (n, fn _ => [] * [] <> TAC) ->> TAC
+           vls @ List.tabulate (n, fn _ => [] |: TAC) ->> TAC
          end
   end
 
@@ -613,7 +614,7 @@ struct
 
      | KCONST k => RedPrlKind.toString k
 
-     | MTAC_SEQ psorts => "seq{" ^ ListSpine.pretty RedPrlParamSort.toString "," psorts ^ "}"
+     | MTAC_SEQ sorts => "seq{" ^ ListSpine.pretty RedPrlSort.toString "," sorts ^ "}"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
      | MTAC_REPEAT => "repeat"
