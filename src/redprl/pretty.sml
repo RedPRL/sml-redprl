@@ -285,13 +285,8 @@ struct
     case Abt.out vec of
        O.MONO (O.MK_VEC _) $ args => 
          expr @@ hvsep @@ 
-           List.map (fn _ \ t => ppTube t) args
-     | _ => raise Fail "invalid system"
-
-  and ppTube tube = 
-    case Abt.out tube of 
-       O.MONO O.MK_TUBE $ _ => raise Match
-     | _ => raise Fail "invalid tube"
+           List.map (fn _ \ t => ppTerm t) args
+     | _ => raise Fail "invalid vector"
 
   and ppBinder ((us, xs) \ m) =
     case (us, xs) of
