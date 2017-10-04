@@ -227,9 +227,9 @@ struct
   fun makeApplyHyp pat z tacs tac =
     let
       val (pat, names) = unstitchPattern pat
-      val args = (List.map (fn tac => ([],[]) \ tac) tacs) @ [([], names) \ tac]
+      val vec = O.MONO (O.MK_VEC (O.TAC, List.length tacs)) $$ (List.map (fn tac => ([],[]) \ tac) tacs)
     in
-      O.POLY (O.DEV_APPLY_HYP (z, pat, List.length tacs)) $$ args
+      O.POLY (O.DEV_APPLY_HYP (z, pat)) $$ [([],[]) \ vec, ([], names) \ tac]
     end
 
   fun makeUseHyp z tacs = 

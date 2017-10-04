@@ -276,7 +276,7 @@ struct
    | DEV_BOOL_ELIM of 'a
    | DEV_S1_ELIM of 'a
 
-   | DEV_APPLY_HYP of 'a * unit dev_pattern * int
+   | DEV_APPLY_HYP of 'a * unit dev_pattern
    | DEV_USE_LEMMA of 'a * RedPrlArity.t option * int
    | DEV_APPLY_LEMMA of 'a * RedPrlArity.t option * unit dev_pattern * int
    | DEV_USE_HYP of 'a
@@ -443,7 +443,7 @@ struct
        | RULE_UNFOLD _ => [] ->> TAC
        | DEV_BOOL_ELIM _ => [[] |: TAC, [] |: TAC] ->> TAC
        | DEV_S1_ELIM _ => [[] |: TAC, [DIM] |: TAC] ->> TAC
-       | DEV_APPLY_HYP (_, pat, n) => List.tabulate (n, fn _ => [] |: TAC) @ [devPatternValence pat |: TAC] ->> TAC
+       | DEV_APPLY_HYP (_, pat) => [[] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
        | DEV_USE_HYP _ => [[] |: VEC TAC] ->> TAC
        | DEV_APPLY_LEMMA (_, ar, pat, n) =>
          let
@@ -502,7 +502,7 @@ struct
        | RULE_UNFOLD (names, selectors) => opidsSupport names @ selectorsSupport selectors
        | DEV_BOOL_ELIM a => [(a, HYP)]
        | DEV_S1_ELIM a => [(a, HYP)]
-       | DEV_APPLY_HYP (a, _, _) => [(a, HYP)]
+       | DEV_APPLY_HYP (a, _) => [(a, HYP)]
        | DEV_USE_HYP a => [(a, HYP)]
        | DEV_APPLY_LEMMA (opid, _, _, _) => [(opid, OPID)]
        | DEV_USE_LEMMA (opid,  _, _) => [(opid, OPID)]
@@ -543,7 +543,7 @@ struct
        | (RULE_UNFOLD (os1, ss1), t) => (case t of RULE_UNFOLD (os2, ss2) => opidsEq f (os1, os2) andalso selectorsEq f (ss1, ss2) | _ => false)
        | (DEV_BOOL_ELIM a, t) => (case t of DEV_BOOL_ELIM b => f (a, b) | _ => false)
        | (DEV_S1_ELIM a, t) => (case t of DEV_S1_ELIM b => f (a, b) | _ => false)
-       | (DEV_APPLY_HYP (a, pat, n), t) => (case t of DEV_APPLY_HYP (b, pat', n') => f (a, b) andalso pat = pat' andalso n = n' | _ => false)
+       | (DEV_APPLY_HYP (a, pat), t) => (case t of DEV_APPLY_HYP (b, pat') => f (a, b) andalso pat = pat' | _ => false)
        | (DEV_USE_HYP a, t) => (case t of DEV_USE_HYP b => f (a, b) | _ => false)
        | (DEV_APPLY_LEMMA (opid1, _, pat1, n1), t) =>
          (case t of
@@ -653,13 +653,11 @@ struct
      | SEL_HYP _ => "select-hyp"
      | SEL_GOAL => "select-goal"
 
-
      | JDG_EQ _ => "eq"
      | JDG_TRUE _ => "true"
      | JDG_EQ_TYPE _ => "eq-type"
      | JDG_SUB_UNIVERSE _ => "sub-universe"
      | JDG_SYNTH _ => "synth"
-
      | JDG_TERM tau => RedPrlSort.toString tau
 
   local
@@ -700,7 +698,7 @@ struct
        | RULE_UNFOLD (os, ss) => "unfold{" ^ opidsToString f os ^ "," ^ selectorsToString f ss ^ "}"
        | DEV_BOOL_ELIM a => "bool-elim{" ^ f a ^ "}"
        | DEV_S1_ELIM a => "s1-elim{" ^ f a ^ "}"
-       | DEV_APPLY_HYP (a, _, _) => "apply-hyp{" ^ f a ^ "}"
+       | DEV_APPLY_HYP (a, _) => "apply-hyp{" ^ f a ^ "}"
        | DEV_USE_HYP a => "use-hyp{" ^ f a ^ "}"
        | DEV_APPLY_LEMMA (opid, _, _, _) => "apply-lemma{" ^ f opid ^ "}"
        | DEV_USE_LEMMA (opid, _, _) => "use-lemma{" ^ f opid ^ "}"
@@ -739,7 +737,7 @@ struct
        | DEV_BOOL_ELIM a => DEV_BOOL_ELIM (mapSym (passSort HYP f) a)
        | DEV_S1_ELIM a => DEV_S1_ELIM (mapSym (passSort HYP f) a)
        | DEV_APPLY_LEMMA (opid, ar, pat, n) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, ar, pat, n)
-       | DEV_APPLY_HYP (a, pat, spine) => DEV_APPLY_HYP (mapSym (passSort HYP f) a, pat, spine)
+       | DEV_APPLY_HYP (a, pat) => DEV_APPLY_HYP (mapSym (passSort HYP f) a, pat)
        | DEV_USE_HYP a => DEV_USE_HYP (mapSym (passSort HYP f) a)
        | DEV_USE_LEMMA (opid, ar, n) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, ar, n)
   end

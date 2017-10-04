@@ -272,10 +272,10 @@ struct
      | O.MONO (O.DEV_PATH_INTRO _) $ [([], us) \ tm] => pathIntros sign us (tactic sign env tm)
      | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]
      | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, (_, [v]) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
-     | O.POLY (O.DEV_APPLY_HYP (z, pattern, _)) $ args =>
+     | O.POLY (O.DEV_APPLY_HYP (z, pattern)) $ [_ \ vec, (_, names) \ tm] =>
        let
-         val ((names, _) \ tm) :: args' = List.rev args
-         val tacs = List.map (fn _ \ tm => tactic sign env tm) (List.rev args')
+         val O.MONO (O.MK_VEC _) $ args = Tm.out vec
+         val tacs = List.map (fn _ \ tm => tactic sign env tm) (List.rev args)
          val tac = tactic sign env tm
        in
          applications sign z (pattern, names) tacs tac
