@@ -98,13 +98,13 @@ struct
            (case arityOfOpid sign opid of
                SOME (psorts, ar) => O.POLY (O.CUST (opid, SOME ar))
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat, n)) =>
+         | O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat)) =>
            (case arityOfOpid sign opid of
-               SOME (psorts, ar) => O.POLY (O.DEV_APPLY_LEMMA (opid, SOME ar, pat, n))
+               SOME (psorts, ar) => O.POLY (O.DEV_APPLY_LEMMA (opid, SOME ar, pat))
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.DEV_USE_LEMMA (opid, NONE, n)) =>
+         | O.POLY (O.DEV_USE_LEMMA (opid, NONE)) =>
            (case arityOfOpid sign opid of
-               SOME (psorts, ar) => O.POLY (O.DEV_USE_LEMMA (opid, SOME ar, n))
+               SOME (psorts, ar) => O.POLY (O.DEV_USE_LEMMA (opid, SOME ar))
              | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
          | th => th
 

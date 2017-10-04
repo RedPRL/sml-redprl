@@ -243,17 +243,17 @@ struct
   fun makeApplyLemma pat (opid, subtermArgs) tacs tac =
     let
       val (pat, names) = unstitchPattern pat
-      val appArgs = List.map (fn tac => ([],[]) \ tac) tacs
-      val args = subtermArgs @ appArgs @ [([], names) \ tac]
+      val vec = O.MONO (O.MK_VEC (O.TAC, List.length tacs)) $$ List.map (fn tac => ([],[]) \ tac) tacs
+      val args = subtermArgs @ [([],[]) \ vec, ([], names) \ tac]
     in
-      O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat, List.length tacs)) $$ args
+      O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat)) $$ args
     end
 
   fun makeUseLemma (opid, subtermArgs) tacs = 
     let
-      val args = subtermArgs @ List.map (fn tac => ([],[]) \ tac) tacs
+      val vec = O.MONO (O.MK_VEC (O.TAC, List.length tacs)) $$ List.map (fn tac => ([],[]) \ tac) tacs
     in
-      O.POLY (O.DEV_USE_LEMMA (opid, NONE, List.length tacs)) $$ args
+      O.POLY (O.DEV_USE_LEMMA (opid, NONE)) $$ subtermArgs @ [([],[]) \ vec]
     end
 
 end

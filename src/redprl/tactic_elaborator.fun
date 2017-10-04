@@ -288,19 +288,24 @@ struct
        in
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
        end
-     | O.POLY (O.DEV_APPLY_LEMMA (opid, ar, pat, n)) $ args =>
+     | O.POLY (O.DEV_APPLY_LEMMA (opid, ar, pat)) $ args =>
        let
-         val (([], names) \ tm) :: args' = List.rev args
-         val (appArgs, subtermArgs) = ListUtil.splitAt (args', n)
+         val (([], names) \ tac) :: (_ \ vec) :: revSubtermArgs = List.rev args
+         val subtermArgs = List.rev revSubtermArgs
+         val O.MONO (O.MK_VEC _) $ appArgs = Tm.out vec
+
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
          val tac = tactic sign env tm
        in
          cutLemma sign opid (Option.valOf ar) (List.rev subtermArgs) (pat, names) (List.rev appTacs) tac
        end
-     | O.POLY (O.DEV_USE_LEMMA (opid, ar, n)) $ args =>
+     | O.POLY (O.DEV_USE_LEMMA (opid, ar)) $ args =>
        let
+         val (_ \ vec) :: revSubtermArgs = List.rev args
+         val subtermArgs = List.rev revSubtermArgs
+         val O.MONO (O.MK_VEC _) $ appArgs = Tm.out vec
+
          val z = RedPrlSym.named (Sym.toString opid ^ "'")
-         val (appArgs, subtermArgs) = ListUtil.splitAt (List.rev args, n)
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
        in
          cutLemma sign opid (Option.valOf ar) (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
