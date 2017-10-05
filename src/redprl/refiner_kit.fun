@@ -88,7 +88,7 @@ struct
     fun toList H =
       Seq.Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, AJ.synthesis jdg) :: r) [] H
 
-    fun lookup z H =
+    fun lookup H z =
       Seq.Hyps.lookup H z
       handle _ =>
         raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
@@ -387,28 +387,5 @@ struct
 
     fun labelsEq msg (l0, l1) =
       ListPair.appEq (labelEq msg) (l0, l1)
-  end
-
-  (* maps with selectors *)
-
-  structure Selector =
-  struct
-    fun map sel f (H, catjdg) =
-      case sel of
-         O.IN_CONCL => (H, AJ.map f catjdg)
-       | O.IN_HYP x => (Hyps.modify x (AJ.map f) H, catjdg)
-
-    fun multiMap sels f (H, catjdg) =
-      List.foldl (fn (sel, state) => map sel f state) (H, catjdg) sels
-
-    fun lookup sel (H, catjdg) =
-      case sel of
-         O.IN_CONCL => catjdg
-       | O.IN_HYP x => Hyps.lookup x H
-
-    fun truncateFrom sel H =
-      case sel of
-         O.IN_CONCL => H
-       | O.IN_HYP x => Hyps.truncateFrom H x
   end
 end

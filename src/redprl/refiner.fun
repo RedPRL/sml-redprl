@@ -33,7 +33,7 @@ struct
       let
         val _ = RedPrlLog.trace "Hyp.Project"
         val H >> catjdg = jdg
-        val catjdg' = Hyps.lookup z H
+        val catjdg' = Hyps.lookup H z
       in
         if AJ.eq (catjdg, catjdg') then
           T.empty #> (H, Syn.into (Syn.VAR (z, AJ.synthesis catjdg)))
@@ -51,7 +51,7 @@ struct
       let
         val _ = RedPrlLog.trace "Hyp.Rename"
         val H >> catjdg = jdg
-        val zjdg = Hyps.lookup z H
+        val zjdg = Hyps.lookup H z
         val z' = alpha 0
 
         val renameIn = VarKit.rename (z', z)
@@ -107,7 +107,7 @@ struct
       let
         val _ = RedPrlLog.trace "TypeEquality.FromEqType"
         val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
-        val AJ.EQ_TYPE ((a', b'), l', k') = Hyps.lookup z H
+        val AJ.EQ_TYPE ((a', b'), l', k') = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((a', b'), a)
         val _ = Assert.alphaEqEither ((a', b'), b)
         val _ = Assert.inUsefulUniv (l', k') (l, k)
@@ -120,7 +120,7 @@ struct
       let
         val _ = RedPrlLog.trace "TypeEquality.FromEq"
         val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
-        val AJ.EQ (_, (a', l', k')) = Hyps.lookup z H
+        val AJ.EQ (_, (a', l', k')) = Hyps.lookup H z
         val _ = Assert.alphaEq (a, b)
         val _ = Assert.alphaEq (a', a)
         val _ = Assert.inUsefulUniv (l', k') (l, k)
@@ -133,7 +133,7 @@ struct
       let
         val _ = RedPrlLog.trace "TypeEquality.FromTrue"
         val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
-        val AJ.TRUE (a', l', k') = Hyps.lookup z H
+        val AJ.TRUE (a', l', k') = Hyps.lookup H z
         val _ = Assert.alphaEq (a, b)
         val _ = Assert.alphaEq (a', a)
         val _ = Assert.inUsefulUniv (l', k') (l, k)
@@ -185,7 +185,7 @@ struct
       let
         val _ = RedPrlLog.trace "Synth.FromEq"
         val H >> AJ.SYNTH (tm, l, k) = jdg
-        val AJ.EQ ((a, b), (ty, l', k')) = Hyps.lookup z H
+        val AJ.EQ ((a, b), (ty, l', k')) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((a, b), tm)
         val goalKind = makeTypeUnlessSubUniv H (ty, l, k) (l', k')
       in
@@ -197,7 +197,7 @@ struct
         val _ = RedPrlLog.trace "Synth.VarFromTrue"
         val H >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
-        val AJ.TRUE (a, l', k') = Hyps.lookup z H
+        val AJ.TRUE (a, l', k') = Hyps.lookup H z
         val goalKind = makeTypeUnlessSubUniv H (a, l, k) (l', k')
       in
         |>:? goalKind #> (H, a)
@@ -237,7 +237,7 @@ struct
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
         val _ = Assert.varEq (x, y)
-        val AJ.TRUE (ty', l', k') = Hyps.lookup x H
+        val AJ.TRUE (ty', l', k') = Hyps.lookup H x
         val goalTy = makeSubType H (ty', l', k') (ty, l, k)
       in
         |>:? goalTy #> (H, trivial)
@@ -249,7 +249,7 @@ struct
       let
         val _ = RedPrlLog.trace "Equality.FromEq"
         val H >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
-        val AJ.EQ ((m0, n0), (ty0, l0, k0)) = Hyps.lookup z H
+        val AJ.EQ ((m0, n0), (ty0, l0, k0)) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
         val goalTy = makeSubType H (ty0, l0, k0) (ty1, l1, k1)
@@ -277,7 +277,7 @@ struct
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
-        val AJ.EQ ((m, n), (ty, l', k')) = Hyps.lookup z truncatedH
+        val AJ.EQ ((m, n), (ty, l', k')) = Hyps.lookup truncatedH z
 
         val x = alpha 0
         val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l', k'))
@@ -434,7 +434,7 @@ struct
         (fn _ >> catjdg => f catjdg
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchGoalSel", Seq.pretty seq))
       | matchGoalSel (O.IN_HYP z) f = matchGoal
-        (fn H >> _ => f (Hyps.lookup z H)
+        (fn H >> _ => f (Hyps.lookup H z)
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchGoalSel", Seq.pretty seq))
 
     fun matchHyp z = matchGoalSel (O.IN_HYP z)

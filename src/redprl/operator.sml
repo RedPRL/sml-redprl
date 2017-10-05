@@ -257,7 +257,7 @@ struct
    | DEV_LET of sort option
    | DEV_MATCH of int list
    | DEV_MATCH_CLAUSE
-   | DEV_QUERY_CONCL
+   | DEV_QUERY
    | DEV_PRINT
    | DEV_BOOL_ELIM
    | DEV_S1_ELIM
@@ -424,7 +424,7 @@ struct
 
      | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
-     | DEV_QUERY_CONCL => [[JDG] |: TAC] ->> TAC
+     | DEV_QUERY => [[] |: SELECTOR, [JDG] |: TAC] ->> TAC
      | DEV_PRINT => [[] |: ANY] ->> TAC
      | DEV_BOOL_ELIM => [[] |: EXP, [] |: TAC, [] |: TAC] ->> TAC
      | DEV_S1_ELIM => [[] |: EXP, [] |: TAC, [DIM] |: TAC] ->> TAC
@@ -609,7 +609,7 @@ struct
      | DEV_LET _ => "let"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE => "dev-match-clause"
-     | DEV_QUERY_CONCL => "dev-query-concl"
+     | DEV_QUERY => "dev-query"
      | DEV_PRINT => "dev-print"
      | DEV_BOOL_ELIM => "dev-bool-elim"
      | DEV_S1_ELIM => "dev-s1-elim"
