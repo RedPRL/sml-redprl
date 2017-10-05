@@ -1,8 +1,7 @@
 structure RedPrlSortData =
 struct
   datatype param_sort =
-     META_NAME
-   | OPID
+     OPID
 
   and sort =
      EXP
@@ -17,6 +16,7 @@ struct
    | KIND
    | SELECTOR
    | ANY
+   | META_NAME
 
   val rec sortToString = 
     fn EXP => "exp"
@@ -33,10 +33,10 @@ struct
      | KIND => "kind"
      | SELECTOR => "selector"
      | ANY => "any"
+     | META_NAME => "meta-name"
 
   and paramSortToString = 
-    fn META_NAME => "meta-name"
-     | OPID => "opid"
+    fn OPID => "opid"
 end
 
 structure RedPrlSort : ABT_SORT =
@@ -267,9 +267,10 @@ struct
    | SEL_CONCL
    | SEL_HYP
 
+   | PAT_META of sort
+
   datatype 'a poly_operator =
      CUST of 'a * RedPrlArity.t option
-   | PAT_META of 'a * sort
 
    | RULE_UNFOLD_ALL of 'a list
    | RULE_UNFOLD of 'a list
@@ -422,7 +423,7 @@ struct
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) |: TAC] ->> TAC
      | DEV_LET tau => [[] |: JDG, [] |: TAC, [Option.valOf tau] |: TAC] ->> TAC
 
-     | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE) ns ->> TAC
+     | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) |: MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
      | DEV_QUERY => [[] |: SELECTOR, [JDG] |: TAC] ->> TAC
      | DEV_PRINT => [[] |: ANY] ->> TAC
@@ -434,13 +435,14 @@ struct
      | SEL_HYP => [[] |: ANY] ->> SELECTOR
      | SEL_CONCL => [] ->> SELECTOR
 
+     | PAT_META tau => [[] |: META_NAME, [] |: VEC ANY] ->> tau
+
      | JDG_TERM _ => [] ->> JDG
 
   local
   in
     val arityPoly =
       fn CUST (_, ar) => Option.valOf ar
-       | PAT_META (_, tau) => [[] |: VEC ANY] ->> tau
        | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [[] |: VEC SELECTOR] ->> TAC
        | DEV_APPLY_LEMMA (_, ar, pat) =>
@@ -467,7 +469,6 @@ struct
   in
     val supportPoly =
       fn CUST (opid, _) => [(opid, OPID)]
-       | PAT_META (x, _) => [(x, META_NAME)]
        | RULE_UNFOLD_ALL names => opidsSupport names
        | RULE_UNFOLD names => opidsSupport names
        | DEV_APPLY_LEMMA (opid, _, _) => [(opid, OPID)]
@@ -494,10 +495,6 @@ struct
       fn (CUST (opid1, _), t) =>
          (case t of
              CUST (opid2, _) => f (opid1, opid2)
-           | _ => false)
-       | (PAT_META (x1, tau1), t) => 
-         (case t of 
-             PAT_META (x2, tau2) => f (x1, x2) andalso tau1 = tau2
            | _ => false)
        | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
        | (RULE_UNFOLD os1, t) => (case t of RULE_UNFOLD os2 => opidsEq f (os1, os2) | _ => false)
@@ -625,6 +622,7 @@ struct
 
      | SEL_HYP => "select-hyp"
      | SEL_CONCL => "select-goal"
+     | PAT_META _ => "pat-meta"
 
      | JDG_EQ _ => "eq"
      | JDG_TRUE _ => "true"
@@ -639,7 +637,6 @@ struct
   in
     fun toStringPoly f =
       fn CUST (opid, _) => f opid
-       | PAT_META (x, _) => "%" ^ f x
        | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
        | RULE_UNFOLD os => "unfold{" ^ opidsToString f os ^ "}"
        | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ f opid ^ "}"
@@ -667,7 +664,6 @@ struct
   in
     fun mapPolyWithSort f =
       fn CUST (opid, ar) => CUST (mapSym (passSort OPID f) opid, ar)
-       | PAT_META (x, tau) => PAT_META (mapSym (passSort META_NAME f) x, tau)
        | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
        | RULE_UNFOLD ns => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns)
        | DEV_APPLY_LEMMA (opid, ar, pat) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, ar, pat)

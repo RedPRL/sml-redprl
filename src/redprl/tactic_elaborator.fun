@@ -320,8 +320,9 @@ struct
            let
              fun go tm = 
                case out tm of
-                  O.POLY (O.PAT_META (x, tau)) $ [_ \ vec] =>
+                  O.MONO (O.PAT_META tau) $ [_ \ meta, _ \ vec] =>
                   let
+                    val x = VarKit.fromTerm meta
                     val args = Syn.outVec' Syn.unpackAny vec
                   in
                     if Unify.Metas.member metas x then 
@@ -334,7 +335,7 @@ struct
              go o deepMapSubterms go
            end
 
-         fun reviveClause ((pvars,_) \ clause) alpha jdg =
+         fun reviveClause ((_,pvars) \ clause) alpha jdg =
            let
              val O.MONO O.DEV_MATCH_CLAUSE $ [_ \ pat, _ \ handler] = out clause
              val metas = Unify.Metas.fromList pvars

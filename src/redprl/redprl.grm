@@ -67,7 +67,7 @@ struct
   fun makeMatch term clauses = 
     let
       fun makeClause t1 t2 = O.MONO O.DEV_MATCH_CLAUSE $$ [([],[]) \ t1, ([],[]) \ t2]
-      val clauseArgs = List.map (fn (xs, (t1, t2)) => (xs,[]) \ makeClause t1 t2) clauses
+      val clauseArgs = List.map (fn (xs, (t1, t2)) => ([],xs) \ makeClause t1 t2) clauses
       val ns = List.map (List.length o #1) clauses
     in
       O.MONO (O.DEV_MATCH ns) $$ (([],[]) \ term) :: clauseArgs
@@ -661,8 +661,8 @@ rawTermAndTac
   | LPAREN metavar terms RPAREN (Ast.$$# (metavar, ([], terms)))
 
   (* pattern variables *)
-  | patvar (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar)), [\ (([],[]), Multi.makeVec O.ANY [])]))
-  | LPAREN patvar termsAnySort RPAREN (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar)), [\ (([],[]), Multi.makeVec O.ANY termsAnySort)]))
+  | patvar (Ast.$$ (O.MONO (O.PAT_META (#2 patvar)), [\ (([],[]), ``(#1 patvar)), \ (([],[]), Multi.makeVec O.ANY [])]))
+  | LPAREN patvar termsAnySort RPAREN (Ast.$$ (O.MONO (O.PAT_META (#2 patvar)), [\ (([],[]), ``(#1 patvar)), \ (([],[]), Multi.makeVec O.ANY termsAnySort)]))
 
   (* custom operators *)
   | customOpTerm (makeCustom customOpTerm)
@@ -720,7 +720,7 @@ level
   | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.MONO (O.LPLUS 1), [Ast.\ (([],[]), level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.MONO O.LMAX, [\ (([],[]), Multi.makeVec O.LVL levels)]))
   | metavar (Ast.$$# (metavar, ([], [])))
-  | PERCENT VARNAME (Ast.$$ (O.POLY (O.PAT_META (VARNAME, O.LVL)), [\ (([],[]), Multi.makeVec O.ANY [])]))
+  | PERCENT VARNAME (Ast.$$ (O.MONO (O.PAT_META O.LVL), [\ (([],[]), ``VARNAME), \ (([],[]), Multi.makeVec O.ANY [])]))
 
 levels
   : level ([level])
