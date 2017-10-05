@@ -1,0 +1,15 @@
+Thm Choice(#i:lvl) : [
+  (->
+   [a b : (U #i)]
+   [r : (-> a b (U #i))]
+   [f : (-> [x : a] (* [y : b] ($ r x y)))]
+   (*
+    [f : (-> a b)]
+    (-> [x : a] ($ r x ($ f x)))))
+] by [
+  lam a, b, r, f. 
+    {lam x. let {proj1 = y} = f [use x]. use y,
+     lam x. `(! proj2 ($ f x))}
+].
+
+Print Choice.
