@@ -332,7 +332,7 @@ struct
         arguments
 
 
-    fun globalNameSequence i = Sym.named ("@" ^ Int.toString i)
+    fun globalNameSequence i = Sym.named ("_" ^ Int.toString i)
 
 
     fun initialEnv (sign : sign) : Tm.symctx * symbol NameEnv.dict =
