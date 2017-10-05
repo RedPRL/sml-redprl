@@ -719,7 +719,7 @@ level
   : NUMERAL (Ast.$$ (O.MONO (O.LCONST NUMERAL), []))
   | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.MONO (O.LPLUS NUMERAL), [Ast.\ (([],[]), level)]))
   | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.MONO (O.LPLUS 1), [Ast.\ (([],[]), level)]))
-  | LPAREN LMAX levels RPAREN (Ast.$$ (O.MONO (O.LMAX (List.length levels)), List.map (fn e => Ast.\ (([],[]), e)) levels))
+  | LPAREN LMAX levels RPAREN (Ast.$$ (O.MONO O.LMAX, [\ (([],[]), Multi.makeVec O.LVL levels)]))
   | metavar (Ast.$$# (metavar, ([], [])))
   | PERCENT VARNAME (Ast.$$ (O.POLY (O.PAT_META (VARNAME, O.LVL, [])), []))
 

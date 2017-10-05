@@ -231,7 +231,7 @@ struct
    (* level expressions *)
    | LCONST of IntInf.int
    | LPLUS of IntInf.int
-   | LMAX of int
+   | LMAX
 
    | KCONST of kind
 
@@ -384,7 +384,7 @@ struct
 
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] |: LVL] ->> LVL
-     | LMAX n => List.tabulate (n, fn _ => [] |: LVL) ->> LVL
+     | LMAX => [[] |: VEC LVL] ->> LVL
 
      | KCONST _ => [] ->> KIND
 
@@ -582,7 +582,7 @@ struct
 
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
      | LPLUS i => "{lsuc " ^ IntInf.toString i ^ "}"
-     | LMAX n => "lmax"
+     | LMAX => "lmax"
 
      | KCONST k => RedPrlKind.toString k
 
