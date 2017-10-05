@@ -1,39 +1,30 @@
-signature SPREAD =
+signature NAME_SEQ =
 sig
-  (* A choice sequence, or an "ideal point". *)
-  type 'a point
+  type 'a seq
 
-  (* A finite approximation, or a "neighborhood". *)
-  type 'a neigh = 'a list
-
-  val map
-    : ('a -> 'b)
-    -> 'a point
-    -> 'b point
-
-  (* Take the [i]th element in the choice sequence. *)
+  (* Take the [i]th element in the sequence. *)
   val at
-    : 'a point
+    : 'a seq
     -> int
     -> 'a
 
   (* Prepend elements to the front of the choice sequence. *)
   val prepend
-    : 'a neigh
-    -> 'a point
-    -> 'a point
+    : 'a list
+    -> 'a seq
+    -> 'a seq
 
   (* Remove [n] elements from the front of the choice sequence. *)
   val bite
     : int
-    -> 'a point
-    -> 'a point
+    -> 'a seq
+    -> 'a seq
 
   (* Booby-trap a choice sequence to witness continuity theorems; by
    * passing a "probed" choice sequence to a functional, you can calculate
    * the functional's modulus of continuity by observing the returned
    * reference. *)
   val probe
-    : 'a point
-    -> 'a point * int ref
+    : 'a seq
+    -> 'a seq * int ref
 end

@@ -22,7 +22,7 @@ sig
 end = 
 struct
   local
-    structure Spr = UniversalSpread
+    structure Spr = NameSeq
   in
     type 'a nominal = (int -> Sym.t) -> 'a
     type multitactic = Lcf.jdg Lcf.multitactic nominal
@@ -50,6 +50,7 @@ struct
     fun mrec (f : multitactic -> multitactic) : multitactic =
       fn alpha => 
         f (mrec f) alpha
+
 
     fun multitacToTac (mt : multitactic) : tactic =
       fn alpha => 

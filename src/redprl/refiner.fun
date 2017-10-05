@@ -314,7 +314,7 @@ struct
       val H >> catjdg = jdg
 
       val {spec, state, ...} = Sig.lookup sign opid
-      val Lcf.|> (lemmaSubgoals, _) = state @@ UniversalSpread.bite 1 alpha
+      val Lcf.|> (lemmaSubgoals, _) = state @@ NameSeq.bite 1 alpha
 
       val H_spec >> specjdg = spec
       val _ = 
