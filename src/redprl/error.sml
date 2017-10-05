@@ -39,7 +39,7 @@ struct
   val rec format =
     fn Err err => formatError err
      | Pos (_, exn) => format exn
-     | RedPrlAbt.BadSubstMetaenv {description,...} => Fpp.text description
+     | RedPrlAbt.SortError {description,...} => Fpp.text description
      | exn => Fpp.text (exnMessage exn)
 
    val rec annotation =
@@ -47,6 +47,7 @@ struct
         (case annotation exn of
             SOME pos' => SOME pos'
           | NONE => SOME pos)
+      | RedPrlAbt.SortError {annotation = ann,...} => ann
       | _ => NONE
 
   (* this is obsolete *)
