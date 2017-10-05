@@ -314,17 +314,21 @@ struct
          cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp z)
        end
      | O.POLY (O.CUST (opid, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, args))
-     | O.MONO (O.DEV_MATCH (tau, ns)) $ (_ \ term) :: clauses =>
+     | O.MONO (O.DEV_MATCH ns) $ (_ \ term) :: clauses =>
        let
          fun defrostMetas metas =
            let
              fun go tm = 
                case out tm of
-                  O.POLY (O.PAT_META (x, tau, taus)) $ args =>
-                   if Unify.Metas.member metas x then 
-                    check (x $# ([], List.map (fn _ \ m => m) args), tau)
-                   else 
-                     tm 
+                  O.POLY (O.PAT_META (x, tau)) $ [_ \ vec] =>
+                  let
+                    val args = Syn.outVec' Syn.unpackAny vec
+                  in
+                    if Unify.Metas.member metas x then 
+                     check (x $# ([], args), tau)
+                    else 
+                      tm 
+                  end
                 | _ => tm
            in
              go o deepMapSubterms go
@@ -332,11 +336,11 @@ struct
 
          fun reviveClause ((pvars,_) \ clause) alpha jdg =
            let
-             val O.MONO (O.DEV_MATCH_CLAUSE _) $ [_ \ pat, _ \ handler] = out clause
+             val O.MONO O.DEV_MATCH_CLAUSE $ [_ \ pat, _ \ handler] = out clause
              val metas = Unify.Metas.fromList pvars
-             val pat' = defrostMetas metas pat
+             val pat' = defrostMetas metas (Syn.unpackAny pat)
              val handler' = defrostMetas metas handler
-             val rho = Unify.unify metas (term, pat')
+             val rho = Unify.unify metas (Syn.unpackAny term, pat')
                (* handle exn as Unify.Unify (tm1, tm2) => 
                  (RedPrlLog.print RedPrlLog.WARN (getAnnotation pat, Fpp.hsep [Fpp.text "Failed to unify", TermPrinter.ppTerm tm1, Fpp.text "and", TermPrinter.ppTerm tm2]);
                   raise exn) *)

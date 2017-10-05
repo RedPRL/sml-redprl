@@ -1,6 +1,6 @@
 Tac GetHole(#c : [exp].exp, #t : [exp].tac) = [
   query gl <- goal.
-  match [gl:jdg] {
+  match gl {
     [hole | #jdg{(#c %hole)} => (#t %hole)]
   }
 ].

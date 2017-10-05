@@ -64,13 +64,13 @@ struct
   fun exactAuto m =
     then_ (exact m, autoTac)
 
-  fun makeMatch (term, tau) clauses = 
+  fun makeMatch term clauses = 
     let
-      fun makeClause t1 t2 = O.MONO (O.DEV_MATCH_CLAUSE tau) $$ [([],[]) \ t1, ([],[]) \ t2]
+      fun makeClause t1 t2 = O.MONO O.DEV_MATCH_CLAUSE $$ [([],[]) \ t1, ([],[]) \ t2]
       val clauseArgs = List.map (fn (xs, (t1, t2)) => (xs,[]) \ makeClause t1 t2) clauses
       val ns = List.map (List.length o #1) clauses
     in
-      O.MONO (O.DEV_MATCH (tau, ns)) $$ (([],[]) \ term) :: clauseArgs
+      O.MONO (O.DEV_MATCH ns) $$ (([],[]) \ term) :: clauseArgs
     end
 end
 
@@ -416,8 +416,6 @@ end
    (* a type-theoretic term, annotated with source position *)
  | term of ast
  | terms of ast list
- | typedTerm of ast * O.sort
- | typedTerms of (ast * O.sort) list
 
  | kind of O.K.kind
  | withKindAtLevel of ast option * ast
@@ -431,6 +429,7 @@ end
  | src_sequent of Signature.src_sequent
 
  | termAnySort of ast
+ | termsAnySort of ast list
  | elimTarget of ast
  | elimTargetAnySort of ast
 
@@ -662,8 +661,8 @@ rawTermAndTac
   | LPAREN metavar terms RPAREN (Ast.$$# (metavar, ([], terms)))
 
   (* pattern variables *)
-  | patvar (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, [])), []))
-  | LPAREN patvar typedTerms RPAREN (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar, List.map #2 typedTerms)), List.map (fn (tm, _) => \ (([],[]), tm)) typedTerms))
+  | patvar (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar)), [\ (([],[]), Multi.makeVec O.ANY [])]))
+  | LPAREN patvar termsAnySort RPAREN (Ast.$$ (O.POLY (O.PAT_META (#1 patvar, #2 patvar)), [\ (([],[]), Multi.makeVec O.ANY termsAnySort)]))
 
   (* custom operators *)
   | customOpTerm (makeCustom customOpTerm)
@@ -721,7 +720,7 @@ level
   | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.MONO (O.LPLUS 1), [Ast.\ (([],[]), level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.MONO O.LMAX, [\ (([],[]), Multi.makeVec O.LVL levels)]))
   | metavar (Ast.$$# (metavar, ([], [])))
-  | PERCENT VARNAME (Ast.$$ (O.POLY (O.PAT_META (VARNAME, O.LVL, [])), []))
+  | PERCENT VARNAME (Ast.$$ (O.POLY (O.PAT_META (VARNAME, O.LVL)), [\ (([],[]), Multi.makeVec O.ANY [])]))
 
 levels
   : level ([level])
@@ -738,14 +737,6 @@ term : rawTerm (annotate (Pos.pos (rawTerm1left fileName) (rawTerm1right fileNam
 terms
   : term ([term])
   | term terms (term :: terms)
-
-typedTerm
-  : LSQUARE term COLON sort RSQUARE ((term, sort))
-  | term ((term, O.EXP))
-
-typedTerms
-  : typedTerm ([typedTerm])
-  | typedTerm typedTerms (typedTerm :: typedTerms)
 
 kind
   : DISCRETE (O.K.DISCRETE)
@@ -828,8 +819,8 @@ tupleDecompPattern
   | anonTupleDecompPattern (Pattern.labelAnonTuplePattern anonTupleDecompPattern)
 
 devMatchClause
-  : LSQUARE patvarBindings PIPE term DOUBLE_RIGHT_ARROW tactic RSQUARE (patvarBindings, (term, tactic))
-  | LSQUARE term DOUBLE_RIGHT_ARROW tactic RSQUARE ([], (term, tactic))
+  : LSQUARE patvarBindings PIPE termAnySort DOUBLE_RIGHT_ARROW tactic RSQUARE (patvarBindings, (termAnySort, tactic))
+  | LSQUARE termAnySort DOUBLE_RIGHT_ARROW tactic RSQUARE ([], (termAnySort, tactic))
 
 devMatchClauses
   : devMatchClause devMatchClauses (devMatchClause :: devMatchClauses)
@@ -858,6 +849,10 @@ bracketedOpnames
 termAnySort
   : term (Ast.$$ (O.MONO (O.MK_ANY NONE), [Ast.\ (([],[]), term)]))
 
+
+termsAnySort
+  : termAnySort ([termAnySort])
+  | termAnySort termsAnySort (termAnySort :: termsAnySort)
 
 elimTarget
   : VARNAME (``VARNAME)
@@ -910,7 +905,7 @@ atomicRawTac
   | CASE elimTarget OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.MONO O.DEV_S1_ELIM, [\ (([],[]), elimTarget), \ (([],[]), tactic1), \(([], [VARNAME]), tactic2)]))
 
-  | MATCH typedTerm LBRACKET devMatchClauses RBRACKET (Tac.makeMatch typedTerm devMatchClauses)
+  | MATCH termAnySort LBRACKET devMatchClauses RBRACKET (Tac.makeMatch termAnySort devMatchClauses)
   | QUERY VARNAME LEFT_ARROW GOAL DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY_GOAL, [\ (([],[VARNAME]), tactic)]))
   | PRINT termAnySort (Ast.$$ (O.MONO O.DEV_PRINT, [\ (([], []), termAnySort)]))
 

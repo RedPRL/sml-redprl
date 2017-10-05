@@ -34,7 +34,7 @@ Thm Pred : [
 // A tactic to infer and supply a simple (non-dependent) motive to the nat/eq/nat-rec rule.
 Tac SimpleNatRecEq = [
   query gl <- goal.
-  match [gl:jdg] {
+  match gl {
     [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
       refine nat/eq/nat-rec; [`%ty]; auto]
   }
