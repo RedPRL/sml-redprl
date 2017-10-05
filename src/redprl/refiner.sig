@@ -6,8 +6,6 @@ sig
   type rule
   type hyp
   type opid
-  type param
-  type psort
   type 'a bview
 
   val Cut : catjdg -> rule

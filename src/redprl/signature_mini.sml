@@ -6,15 +6,14 @@ struct
   type metavar = Tm.metavariable
   type ast = RedPrlAst.ast
   type sort = Tm.sort
-  type psort = Tm.psort
   type valence = RedPrlArity.valence
-  type symbol = Tm.symbol
-  type opid = Tm.symbol
+  type variable = Tm.variable
+  type opid = RedPrlOpData.opid
   type jdg = RedPrlJudgment.jdg
 
   type 'a arguments = ('a * valence) list
 
-  type names = int -> symbol
+  type names = int -> variable
   type src_opid = string
   type entry =
     {sourceOpid : src_opid,
@@ -24,7 +23,6 @@ struct
   type src_catjdg = ast
   type src_seqhyp = string * src_catjdg
   type src_sequent = src_seqhyp list * src_catjdg
-  type src_genjdg = (string * psort) list * src_sequent
 
   datatype src_decl =
       DEF of {arguments : string arguments, sort : sort, definiens : ast}
@@ -47,23 +45,22 @@ struct
     | ECMD of opid cmd
 
   structure Telescope = Telescope (StringAbtSymbol)
-  structure ETelescope = Telescope (Tm.Sym)
   structure NameEnv = AstToAbt.NameEnv
 
   (* A signature / [sign] is a telescope of declarations. *)
   type src_sign = (src_decl * Pos.t option) Telescope.telescope
 
   (* An elaborated signature is a telescope of definitions. *)
-  type elab_sign = elab_decl ElabMonad.t ETelescope.telescope
+  type elab_sign = elab_decl ElabMonad.t Telescope.telescope
 
   type sign =
     {sourceSign : src_sign,
      elabSign : elab_sign,
-     nameEnv : Tm.symbol NameEnv.dict}
+     nameEnv : Tm.variable NameEnv.dict}
 
   structure E = ElabMonadUtil (ElabMonad)
   fun lookup ({elabSign, ...} : sign) opid =
-    case E.run (ETelescope.lookup elabSign opid) of
+    case E.run (Telescope.lookup elabSign opid) of
         SOME (EDEF defn) => defn
       | _ => raise Fail "Elaboration failed"
 
@@ -85,7 +82,7 @@ struct
     let
       val arguments = entryArguments entry
       val Lcf.|> (_, evd) = #state entry (fn _ => Sym.new ())
-      val Tm.\ ((us, []), term) = Tm.outb evd
+      val Tm.\ ([], term) = Tm.outb evd
       val mrho = ListPair.foldlEq  (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
     in
       Tm.substMetaenv mrho term

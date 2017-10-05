@@ -40,7 +40,7 @@ struct
         else
           raise E.error
             [Fpp.text "Hypothesis",
-             Fpp.expr @@ Fpp.hsep [TermPrinter.ppSym z, Fpp.Atomic.colon, AJ.pretty catjdg'],
+             Fpp.expr @@ Fpp.hsep [TermPrinter.ppVar z, Fpp.Atomic.colon, AJ.pretty catjdg'],
              Fpp.text "does not match goal",
              AJ.pretty catjdg]
       end
@@ -211,16 +211,13 @@ struct
     fun MatchOperator _ jdg =
       let
         val _ = RedPrlLog.trace "Misc.MatchOperator"
-        val MATCH (th, k, tm, ps, ms) = jdg
-
+        val MATCH (th, k, tm, ms) = jdg
         val Abt.$ (th', args) = Abt.out tm
-        val true = Abt.O.eq Sym.eq (th, th')
+        val true = Abt.O.eq (th, th')
 
-        val (us, xs) \ arg = List.nth (args, k)
-        val srho = ListPair.foldrEq (fn (u,p,rho) => Sym.Ctx.insert rho u p) Sym.Ctx.empty (us, ps)
+        val xs \ arg = List.nth (args, k)
         val vrho = ListPair.foldrEq (fn (x,m,rho) => Var.Ctx.insert rho x m) Var.Ctx.empty (xs, ms)
-
-        val arg' = substEnv (srho, vrho) arg
+        val arg' = substVarenv vrho arg
       in
         Lcf.|> (T.empty, abtToAbs arg')
       end
@@ -331,7 +328,7 @@ struct
           val arity = (valences, AJ.synthesis specjdg)
           fun argForSubgoal ((x, jdg), vl) = outb @@ Lcf.L.var x vl
         in
-          O.POLY (O.CUST (opid, SOME arity)) $$ ListPair.mapEq argForSubgoal (subgoalsList, valences)
+          O.CUST (opid, SOME arity) $$ ListPair.mapEq argForSubgoal (subgoalsList, valences)
         end
 
 
@@ -497,7 +494,7 @@ struct
             InternalizedEquality.SynthFromTrueEq z
               orelse_
             Universe.SynthFromTrueEqAtType z
-        | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "SynthFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z]))
+        | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "SynthFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
     structure Tactical =
     struct
@@ -802,12 +799,12 @@ struct
               InternalizedEquality.TypeFromTrueEqAtType z
                 orelse_
               Universe.EqTypeFromTrueEqType z
-          | (z, _)  => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z]))
+          | (z, _)  => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
       val EqFromHyp = FromHypDelegate
         (fn (z, AJ.EQ _) => Equality.FromEq z
           | (z, AJ.TRUE _) => InternalizedEquality.EqFromTrueEq z
-          | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z]))
+          | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
       val StepJdgFromHyp = matchGoal
         (fn _ >> AJ.EQ_TYPE _ => EqTypeFromHyp

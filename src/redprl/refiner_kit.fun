@@ -6,7 +6,6 @@ struct
   infix orelse_ then_
 
   structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and J = RedPrlJudgment
-  structure P = struct open RedPrlSortData RedPrlParameterTerm end
   structure K = RedPrlKind
   structure L = RedPrlLevel
   structure AJ = RedPrlAtomicJudgment
@@ -50,31 +49,23 @@ struct
         end
     end
 
-  (* assert that the term 'm' has only free symbols 'us' and free variables 'xs' at most. *)
-  fun assertWellScoped (us, xs) m = 
+  (* assert that the term 'm' has only free variables 'us' and free variables 'xs' at most. *)
+  fun assertWellScoped xs m = 
     let
-      val syms = List.foldl (fn (u, syms) => Sym.Ctx.remove syms u) (Abt.symctx m) us
       val vars = List.foldl (fn (x, vars) => Var.Ctx.remove vars x) (Abt.varctx m) xs
-      fun ppSyms us = Fpp.Atomic.braces @@ Fpp.hsep @@ List.map TermPrinter.ppSym us
       fun ppVars us = Fpp.Atomic.squares @@ Fpp.hsep @@ List.map TermPrinter.ppVar us
-
-      val symsOk = Sym.Ctx.foldl (fn (u, sigma, ok) => sigma = O.OPID andalso ok) true syms
       val varsOk = Var.Ctx.isEmpty vars
     in
-      if symsOk andalso varsOk then
+      if varsOk then
         ()
       else
         raise E.error
           [Fpp.text "Internal Error:",
            Fpp.text "Validation term",
            TermPrinter.ppTerm m,
-           Fpp.text "had unbound symbols",
-           ppSyms (Sym.Ctx.domain syms),
-           Fpp.text "and unbound variables",
+           Fpp.text "had unbound variables",
            ppVars (Var.Ctx.domain vars),
            Fpp.text "whereas we expected only",
-           ppSyms us,
-           Fpp.text "and",
            ppVars xs]
     end
 
@@ -91,7 +82,7 @@ struct
     fun lookup H z =
       Seq.Hyps.lookup H z
       handle _ =>
-        raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppSym z]
+        raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppVar z]
 
     (* The telescope lib should be redesigned to make the following helper functions easier.
      * At least the calling convention can be more consistent. *)
@@ -116,8 +107,8 @@ struct
     let
       val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, AJ.synthesis jdg::taus)) ([],[]) H
     in
-      assertWellScoped ([], xs) m;
-      Abt.checkb (Abt.\ (([], xs), m), (([], taus), Abt.sort m))
+      assertWellScoped xs m;
+      Abt.checkb (Abt.\ (xs, m), (taus, Abt.sort m))
     end
 
   fun #> (psi, (H, m)) =
@@ -149,13 +140,13 @@ struct
       open Abt infix 1 $#
       val x = newMeta ""
       val (_, tau) = J.sort jdg
-      val (ps, ms) =
+      val ms =
         case jdg of
-           H >> _ => ([], Hyps.toList H)
-         | MATCH _ => ([],[])
-         | MATCH_RECORD _ => ([],[])
+           H >> _ => Hyps.toList H
+         | MATCH _ => []
+         | MATCH_RECORD _ => []
 
-      val hole = check (x $# (ps, ms), tau)
+      val hole = check (x $# ms, tau)
     in
       ((x, jdg), hole)
     end
@@ -291,12 +282,6 @@ struct
         ()
       else
         E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.P.pretty l', Fpp.text "and kind", TermPrinter.ppKind k, Fpp.text "to be useful"]
-
-    fun paramEq msg (r1, r2) =
-      if P.eq Sym.eq (r1, r2) then
-        ()
-      else
-        raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", TermPrinter.ppParam r1, Fpp.text "to be equal to", TermPrinter.ppParam r2]
 
     fun dirEq msg ((r1, r1'), (r2, r2')) =
       if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then

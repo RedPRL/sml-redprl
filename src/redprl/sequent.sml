@@ -4,20 +4,14 @@ struct
   structure Tm = RedPrlAbt
   structure O = RedPrlOperator
   structure TP = TermPrinter
-  structure PS = RedPrlParamSort
-  structure P = RedPrlParameterTerm
 
   open RedPrlSequentData
   infix >>
 
   fun map f =
     fn H >> catjdg => Hyps.map (AJ.map f) H >> AJ.map f catjdg
-     | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
+     | MATCH (th, k, a, ms) => MATCH (th, k, f a, List.map f ms)
      | MATCH_RECORD (lbl, tm, tuple) => MATCH_RECORD (lbl, f tm, f tuple)
-
-  fun renameHypsInTerm srho =
-    Tm.substSymenv (Sym.Ctx.map P.VAR srho)
-      o Tm.renameVars srho
 
   local
     open Hyps.ConsView
@@ -31,37 +25,33 @@ struct
              andalso telescopeEq (t1', t2')
        | _ => false
 
-    fun relabelHyps H srho =
-      let
-        val srho' = Sym.Ctx.map P.VAR srho
-      in
-        case out H of
-           EMPTY => Hyps.empty
-         | CONS (x, catjdg, Hx) =>
-           let
-             val catjdg' = AJ.map (Tm.substSymenv srho') catjdg
-           in
-             case Sym.Ctx.find srho x of
-                 NONE => Hyps.cons x catjdg' (relabelHyps Hx srho)
-               | SOME y => Hyps.cons y catjdg' (relabelHyps Hx srho)
-           end
-      end
+    fun relabelHyps H rho =
+      case out H of
+          EMPTY => Hyps.empty
+        | CONS (x, catjdg, Hx) =>
+          let
+            val catjdg' = AJ.map (Tm.renameVars rho) catjdg
+          in
+            case Var.Ctx.find rho x of
+                NONE => Hyps.cons x catjdg' (relabelHyps Hx rho)
+              | SOME y => Hyps.cons y catjdg' (relabelHyps Hx rho)
+          end
 
   end
 
   fun relabel srho =
-    fn H >> catjdg => relabelHyps H srho >> AJ.map (renameHypsInTerm srho) catjdg
-     | jdg => map (renameHypsInTerm srho) jdg
+    fn H >> catjdg => relabelHyps H srho >> AJ.map (Tm.renameVars srho) catjdg
+     | jdg => map (Tm.renameVars srho) jdg
 
   fun prettyHyps f : 'a ctx -> Fpp.doc =
-    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppSym x, Fpp.Atomic.colon, f a] :: r) []
+    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, f a] :: r) []
 
   val pretty : jdg -> Fpp.doc =
     fn H >> catjdg =>
        Fpp.seq
          [if Hyps.isEmpty H then Fpp.empty else Fpp.seq [prettyHyps AJ.pretty H, Fpp.newline],
           Fpp.hsep [Fpp.text ">>", AJ.pretty catjdg]]
-     | MATCH (th, k, a, _, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
+     | MATCH (th, k, a, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
      | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match_record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
   val rec eq =
@@ -75,18 +65,17 @@ struct
 
          val H1' = relabelHyps H1 xrho1
          val H2' = relabelHyps H2 xrho2
-         val catjdg1' = AJ.map (renameHypsInTerm xrho1) catjdg1
-         val catjdg2' = AJ.map (renameHypsInTerm xrho2) catjdg2
+         val catjdg1' = AJ.map (Tm.renameVars xrho1) catjdg1
+         val catjdg2' = AJ.map (Tm.renameVars xrho2) catjdg2
        in
          telescopeEq (H1', H2')
            andalso AJ.eq (catjdg1', catjdg2')
        end
        handle _ => false)
-     | (MATCH (th1, k1, a1, ps1, ms1), MATCH (th2, k2, a2, ps2, ms2)) =>
-          O.eq Sym.eq (th1, th2)
+     | (MATCH (th1, k1, a1, ms1), MATCH (th2, k2, a2, ms2)) =>
+          O.eq (th1, th2)
             andalso k1 = k2
             andalso Tm.eq (a1, a2)
-            andalso ListPair.allEq (O.P.eq Sym.eq) (ps1, ps2)
             andalso ListPair.allEq Tm.eq (ms1, ms2)
      | (MATCH_RECORD (lbl1, a1, m1), MATCH_RECORD (lbl2, a2, m2)) =>
           lbl1 = lbl2 andalso Tm.eq (a1, a2) andalso Tm.eq (m1, m2)

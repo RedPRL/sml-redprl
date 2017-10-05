@@ -19,15 +19,15 @@ struct
   in
     val rec sort =
       fn H >> catjdg =>
-           (([], Hyps.foldr (fn (_, jdg, r) => AJ.synthesis jdg :: r) [] H),
+           (Hyps.foldr (fn (_, jdg, r) => AJ.synthesis jdg :: r) [] H,
             AJ.synthesis catjdg)
-       | MATCH (th, k, _, _, _) =>
+       | MATCH (th, k, _, _) =>
            let
              val (vls, _) = Tm.O.arity th
              val (_, tau) = List.nth (vls, k)
            in
-             (([],[]), tau)
+             ([], tau)
            end
-       | MATCH_RECORD _ => (([],[]), RedPrlSortData.EXP)
+       | MATCH_RECORD _ => ([], RedPrlSortData.EXP)
   end
 end
