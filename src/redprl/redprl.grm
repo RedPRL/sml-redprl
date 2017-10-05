@@ -872,7 +872,6 @@ atomicRawTac
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
-  | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
   | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
   | LANGLE boundVars RANGLE tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (Multi.addUnderscores boundVars, tactic)]))
