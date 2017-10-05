@@ -94,7 +94,7 @@ struct
 
   fun ppOperator theta =
     case theta of 
-       O.POLY (O.CUST (opid, _)) => ppSym opid
+       O.POLY (O.CUST (opid, _)) => text opid
      | _ => text @@ RedPrlOperator.toString PrintName.sym theta
 
   fun ppMetavarParams (x, ps) =

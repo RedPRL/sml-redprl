@@ -308,7 +308,7 @@ struct
          val subtermArgs = List.rev revSubtermArgs
          val O.MONO (O.MK_VEC _) $ appArgs = Tm.out vec
 
-         val z = RedPrlSym.named (Sym.toString opid ^ "'")
+         val z = RedPrlSym.named (opid ^ "'")
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
        in
          cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp z)

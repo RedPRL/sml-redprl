@@ -155,6 +155,8 @@ end
 
 structure RedPrlOpData =
 struct
+  type opid = string (* TODO: structured representation to allow namespacing!! *)
+
   open RedPrlSortData
   structure P = RedPrlParameterTerm
   structure K = RedPrlKind
@@ -269,22 +271,22 @@ struct
 
    | PAT_META of sort
 
-  datatype 'a poly_operator =
-     CUST of 'a * RedPrlArity.t option
+  datatype poly_operator =
+     CUST of opid * RedPrlArity.t option
 
-   | RULE_UNFOLD_ALL of 'a list
-   | RULE_UNFOLD of 'a list
+   | RULE_UNFOLD_ALL of opid list
+   | RULE_UNFOLD of opid list
 
 
-   | DEV_USE_LEMMA of 'a * RedPrlArity.t option
-   | DEV_APPLY_LEMMA of 'a * RedPrlArity.t option * unit dev_pattern
+   | DEV_USE_LEMMA of opid * RedPrlArity.t option
+   | DEV_APPLY_LEMMA of opid * RedPrlArity.t option * unit dev_pattern
 
   (* We split our operator signature into a couple datatypes, because the implementation of
    * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
    * which we call "monomorphic". *)
   datatype 'a operator =
      MONO of mono_operator
-   | POLY of 'a poly_operator
+   | POLY of poly_operator
 end
 
 structure ArityNotation =
@@ -463,55 +465,14 @@ struct
     fn MONO th => arityMono th
      | POLY th => arityPoly th
 
-  local
-    fun opidsSupport os =
-      List.map (fn name => (name, OPID)) os
-  in
-    val supportPoly =
-      fn CUST (opid, _) => [(opid, OPID)]
-       | RULE_UNFOLD_ALL names => opidsSupport names
-       | RULE_UNFOLD names => opidsSupport names
-       | DEV_APPLY_LEMMA (opid, _, _) => [(opid, OPID)]
-       | DEV_USE_LEMMA (opid,  _) => [(opid, OPID)]
-  end
 
   val support =
     fn MONO _ => []
-     | POLY th => supportPoly th
-
-  local
-    val optEq = OptionUtil.eq
-
-    fun selectorEq f =
-      fn (IN_CONCL, IN_CONCL) => true
-       | (IN_HYP a, IN_HYP b) => f (a, b)
-       | _ => false
-
-    fun selectorsEq f = ListPair.allEq (selectorEq f)
-
-    fun opidsEq f = ListPair.allEq f
-  in
-    fun eqPoly f =
-      fn (CUST (opid1, _), t) =>
-         (case t of
-             CUST (opid2, _) => f (opid1, opid2)
-           | _ => false)
-       | (RULE_UNFOLD_ALL os1, t) => (case t of RULE_UNFOLD_ALL os2 => opidsEq f (os1, os2) | _ => false)
-       | (RULE_UNFOLD os1, t) => (case t of RULE_UNFOLD os2 => opidsEq f (os1, os2) | _ => false)
-       | (DEV_APPLY_LEMMA (opid1, _, pat1), t) =>
-         (case t of
-             DEV_APPLY_LEMMA (opid2, _, pat2) => f (opid1, opid2) andalso pat1 = pat2
-           | _ => false)
-       | (DEV_USE_LEMMA (opid1, _), t) =>
-         (case t of
-             DEV_USE_LEMMA (opid2, _) => f (opid1, opid2)
-           | _ => false)
-
-  end
+     | POLY th => []
 
   fun eq f =
     fn (MONO th1, MONO th2) => th1 = th2
-     | (POLY th1, POLY th2) => eqPoly f (th1, th2)
+     | (POLY th1, POLY th2) => th1 = th2
      | _ => false
 
   val toStringMono =
@@ -632,43 +593,22 @@ struct
      | JDG_TERM tau => RedPrlSort.toString tau
 
   local
-    fun opidsToString f =
-      ListSpine.pretty f ","
+    val opidsToString =
+      ListSpine.pretty (fn x => x) ","
   in
-    fun toStringPoly f =
-      fn CUST (opid, _) => f opid
-       | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString f os ^ "}"
-       | RULE_UNFOLD os => "unfold{" ^ opidsToString f os ^ "}"
-       | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ f opid ^ "}"
-       | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ f opid ^ "}"
+    val toStringPoly =
+      fn CUST (opid, _) => opid
+       | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
+       | RULE_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
+       | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ opid ^ "}"
+       | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ opid ^ "}"
   end
 
   fun toString f =
     fn MONO th => toStringMono th
-     | POLY th => toStringPoly f th
+     | POLY th => toStringPoly th
 
-  local
-    fun passSort sigma f =
-      fn u => f (u, sigma)
-
-    val mapOpt = Option.map
-
-    fun mapSym f a =
-      case f a of
-         P.VAR a' => a'
-       | P.APP _ => raise Fail "Expected symbol, but got application"
-
-    fun mapSelector f =
-      fn IN_CONCL => IN_CONCL
-       | IN_HYP a => IN_HYP (f a)
-  in
-    fun mapPolyWithSort f =
-      fn CUST (opid, ar) => CUST (mapSym (passSort OPID f) opid, ar)
-       | RULE_UNFOLD_ALL ns => RULE_UNFOLD_ALL (List.map (mapSym (passSort OPID f)) ns)
-       | RULE_UNFOLD ns => RULE_UNFOLD (List.map (mapSym (passSort OPID f)) ns)
-       | DEV_APPLY_LEMMA (opid, ar, pat) => DEV_APPLY_LEMMA (mapSym (passSort OPID f) opid, ar, pat)
-       | DEV_USE_LEMMA (opid, ar) => DEV_USE_LEMMA (mapSym (passSort OPID f) opid, ar)
-  end
+  fun mapPolyWithSort f th = th
 
   fun mapWithSort f =
     fn MONO th => MONO th

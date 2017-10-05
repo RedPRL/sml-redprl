@@ -9,7 +9,7 @@ struct
   type psort = Tm.psort
   type valence = RedPrlArity.valence
   type symbol = Tm.symbol
-  type opid = Tm.symbol
+  type opid = RedPrlOpData.opid
   type jdg = RedPrlJudgment.jdg
 
   type 'a arguments = ('a * valence) list
@@ -47,14 +47,13 @@ struct
     | ECMD of opid cmd
 
   structure Telescope = Telescope (StringAbtSymbol)
-  structure ETelescope = Telescope (Tm.Sym)
   structure NameEnv = AstToAbt.NameEnv
 
   (* A signature / [sign] is a telescope of declarations. *)
   type src_sign = (src_decl * Pos.t option) Telescope.telescope
 
   (* An elaborated signature is a telescope of definitions. *)
-  type elab_sign = elab_decl ElabMonad.t ETelescope.telescope
+  type elab_sign = elab_decl ElabMonad.t Telescope.telescope
 
   type sign =
     {sourceSign : src_sign,
@@ -63,7 +62,7 @@ struct
 
   structure E = ElabMonadUtil (ElabMonad)
   fun lookup ({elabSign, ...} : sign) opid =
-    case E.run (ETelescope.lookup elabSign opid) of
+    case E.run (Telescope.lookup elabSign opid) of
         SOME (EDEF defn) => defn
       | _ => raise Fail "Elaboration failed"
 

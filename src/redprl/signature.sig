@@ -2,7 +2,7 @@ signature MINI_SIGNATURE =
 sig
   type metavar = RedPrlAbt.metavariable
   type symbol = RedPrlAbt.symbol
-  type opid = RedPrlAbt.symbol
+  type opid = RedPrlOpData.opid
   type abt = RedPrlAbt.abt
   type valence = RedPrlAbt.valence
   type sort = RedPrlAbt.sort

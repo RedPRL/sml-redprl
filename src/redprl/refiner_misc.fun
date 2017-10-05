@@ -105,7 +105,7 @@ struct
         fun shallowUnfold m =
           case out m of
              O.POLY (O.CUST (opid',_)) $ _ =>
-               (case List.find (fn opid => Sym.eq (opid, opid')) opids of
+               (case List.find (fn opid => opid = opid') opids of
                    SOME _ =>
                      let
                        val m' = Machine.steps sign Machine.CUBICAL Machine.Unfolding.always 1 m

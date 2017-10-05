@@ -118,7 +118,7 @@ struct
   datatype blocker =
      VAR of RedPrlAbt.variable
    | METAVAR of RedPrlAbt.metavariable
-   | OPERATOR of RedPrlAbt.symbol
+   | OPERATOR of Sig.opid
 
   structure Unfolding = 
   struct

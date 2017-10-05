@@ -25,7 +25,7 @@ struct
       intersperse (Fpp.text ";") @@
         List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
-  fun prettyEntry (_ : sign) (opid : symbol, entry as {spec, state,...} : entry) : Fpp.doc =
+  fun prettyEntry (_ : sign) (opid : opid, entry as {spec, state,...} : entry) : Fpp.doc =
     let
       val arguments = entryArguments entry
       val state = state (fn _ => RedPrlSym.new ())
@@ -33,7 +33,7 @@ struct
     in
       Fpp.hsep
         [Fpp.text "Def",
-          Fpp.seq [Fpp.text @@ Sym.toString opid, prettyArgs arguments],
+          Fpp.seq [Fpp.text opid, prettyArgs arguments],
           Fpp.Atomic.colon,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
             [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty spec],
@@ -48,7 +48,7 @@ struct
 
   val empty =
     {sourceSign = Telescope.empty,
-     elabSign = ETelescope.empty,
+     elabSign = Telescope.empty,
      nameEnv = NameEnv.empty}
 
   local
@@ -70,8 +70,7 @@ struct
       let
         open OptionMonad infix >>=
       in
-        NameEnv.find (#nameEnv sign) opid
-          >>= ETelescope.find (#elabSign sign)
+        Telescope.find (#elabSign sign) opid
           >>= E.run
           >>= Option.map arityOfDecl o getEntry
       end
@@ -347,10 +346,7 @@ struct
 
 
     fun initialEnv (sign : sign) : Tm.symctx * symbol NameEnv.dict =
-      ETelescope.foldl
-        (fn (x, _, (ctx, env)) => (Tm.Sym.Ctx.insert ctx x P.OPID, NameEnv.insert env (Tm.Sym.toString x) x))
-        (Tm.Sym.Ctx.empty, NameEnv.empty)
-        (#elabSign sign)
+      (Tm.Sym.Ctx.empty, NameEnv.empty)
   
 
     fun elabDef (sign : sign) opid {arguments, sort, definiens} =
@@ -460,25 +456,24 @@ struct
           end)
       end
 
-    fun elabDecl (sign : sign) (opid, eopid) (decl : src_decl, pos) : elab_sign =
+    fun elabDecl (sign : sign) opid (decl : src_decl, pos) : elab_sign =
       let
-        val esign' = ETelescope.truncateFrom (#elabSign sign) eopid
+        val esign' = Telescope.truncateFrom (#elabSign sign) opid
         val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
       in
-        ETelescope.snoc esign' eopid (E.delay (fn _ =>
+        Telescope.snoc esign' opid (E.delay (fn _ =>
           case processDecl sign decl of
              DEF defn => elabDef sign' opid defn
            | THM defn => elabThm sign' opid pos defn
            | TAC defn => elabTac sign' opid defn))
       end
 
-    fun elabPrint (sign : sign) (pos, opid) =
-      E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid =>
-        E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
-          E.ret (ECMD (PRINT eopid)) <*
-            (case edecl of
-                EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", prettyEntry sign (eopid, entry)])
-              | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
+    fun elabPrint (sign : sign) (pos, opid : opid) =
+      E.hush (Telescope.lookup (#elabSign sign) opid) >>= (fn edecl =>
+        E.ret (ECMD (PRINT opid)) <*
+          (case edecl of
+              EDEF entry => E.info (SOME pos, Fpp.vsep [Fpp.text "Elaborated:", prettyEntry sign (opid, entry)])
+            | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name")))
 
     local
       open Tm infix $ \
@@ -491,27 +486,28 @@ struct
         end
     in
       fun elabExtract (sign : sign) (pos, opid) =
-        E.wrap (SOME pos, fn _ => NameEnv.lookup (#nameEnv sign) opid) >>= (fn eopid =>
-          E.hush (ETelescope.lookup (#elabSign sign) eopid) >>= (fn edecl =>
-            E.ret (ECMD (EXTRACT eopid)) <*
-              (case edecl of
-                  EDEF entry => printExtractOf (pos, #state entry (fn _ => RedPrlSym.new ()))
-                | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name"))))
+        E.hush (Telescope.lookup (#elabSign sign) opid) >>= (fn edecl =>
+          E.ret (ECMD (EXTRACT opid)) <*
+            (case edecl of
+                EDEF entry => printExtractOf (pos, #state entry (fn _ => RedPrlSym.new ()))
+              | _ => E.warn (SOME pos, Fpp.text "Invalid declaration name")))
     end
 
     fun elabCmd (sign : sign) (cmd, pos) : elab_sign =
       case cmd of
          PRINT opid =>
            let
-             val fresh = Sym.named "_"
+             (* TODO: weird *)
+             val fresh = Sym.DebugShow.toString (Sym.named "_")
            in
-             ETelescope.snoc (#elabSign sign) fresh (E.delay (fn _ => elabPrint sign (pos, opid)))
+             Telescope.snoc (#elabSign sign) fresh (E.delay (fn _ => elabPrint sign (pos, opid)))
            end
        | EXTRACT opid =>
            let
-             val fresh = Sym.named "_"
+             (* TODO: weird *)
+             val fresh = Sym.DebugShow.toString (Sym.named "_")
            in
-             ETelescope.snoc (#elabSign sign) fresh (E.delay (fn _ => elabExtract sign (pos, opid)))
+             Telescope.snoc (#elabSign sign) fresh (E.delay (fn _ => elabExtract sign (pos, opid)))
            end
 
 
@@ -527,12 +523,9 @@ struct
     fun insert (sign : sign) opid (decl, pos) =
       let
         val sourceSign = insertAstDecl (#sourceSign sign) opid (decl, pos)
-
-        val eopid = Tm.Sym.named opid
-        val elabSign = elabDecl sign (opid, eopid) (decl, pos)
-        val nameEnv = NameEnv.insert (#nameEnv sign) opid eopid
+        val elabSign = elabDecl sign opid (decl, pos)
       in
-        {sourceSign = sourceSign, elabSign = elabSign, nameEnv = nameEnv}
+        {sourceSign = sourceSign, elabSign = elabSign, nameEnv = #nameEnv sign}
       end
 
     fun command (sign : sign) (cmd, pos) =
@@ -554,5 +547,5 @@ struct
      fail = fn (msg, _) => (L.print L.FAIL msg; false)}
 
   fun check ({elabSign,...} : sign) =
-    ETelescope.foldl (fn (_, e, r) => E.fold checkAlg e andalso r) true elabSign
+    Telescope.foldl (fn (_, e, r) => E.fold checkAlg e andalso r) true elabSign
 end
