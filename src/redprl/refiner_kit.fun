@@ -395,7 +395,7 @@ struct
   struct
     fun map sel f (H, catjdg) =
       case sel of
-         O.IN_GOAL => (H, AJ.map f catjdg)
+         O.IN_CONCL => (H, AJ.map f catjdg)
        | O.IN_HYP x => (Hyps.modify x (AJ.map f) H, catjdg)
 
     fun multiMap sels f (H, catjdg) =
@@ -403,12 +403,12 @@ struct
 
     fun lookup sel (H, catjdg) =
       case sel of
-         O.IN_GOAL => catjdg
+         O.IN_CONCL => catjdg
        | O.IN_HYP x => Hyps.lookup x H
 
     fun truncateFrom sel H =
       case sel of
-         O.IN_GOAL => H
+         O.IN_CONCL => H
        | O.IN_HYP x => Hyps.truncateFrom H x
   end
 end

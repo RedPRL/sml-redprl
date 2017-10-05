@@ -46,7 +46,7 @@ Tac Replace(#z, #A) = [
 ].
 
 Tac ReplaceGoal(#A:exp) = [
-  fresh ty -> rewrite #A in goal; [`ty]; auto
+  fresh ty -> rewrite #A in concl; [`ty]; auto
 ].
 
 Thm Pick/compose : [

@@ -162,7 +162,7 @@ struct
   type kind = RedPrlKind.kind
 
   (* TODO: move elsewhere *)
-  datatype 'a selector = IN_GOAL | IN_HYP of 'a
+  datatype 'a selector = IN_CONCL | IN_HYP of 'a
 
   datatype 'a dev_pattern = 
      PAT_VAR of 'a
@@ -257,14 +257,14 @@ struct
    | DEV_LET
    | DEV_MATCH of int list
    | DEV_MATCH_CLAUSE
-   | DEV_QUERY_GOAL
+   | DEV_QUERY_CONCL
    | DEV_PRINT
    | DEV_BOOL_ELIM
    | DEV_S1_ELIM
    | DEV_APPLY_HYP of unit dev_pattern
    | DEV_USE_HYP
 
-   | SEL_GOAL
+   | SEL_CONCL
    | SEL_HYP
 
   datatype 'a poly_operator =
@@ -424,7 +424,7 @@ struct
 
      | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
-     | DEV_QUERY_GOAL => [[JDG] |: TAC] ->> TAC
+     | DEV_QUERY_CONCL => [[JDG] |: TAC] ->> TAC
      | DEV_PRINT => [[] |: ANY] ->> TAC
      | DEV_BOOL_ELIM => [[] |: EXP, [] |: TAC, [] |: TAC] ->> TAC
      | DEV_S1_ELIM => [[] |: EXP, [] |: TAC, [DIM] |: TAC] ->> TAC
@@ -432,7 +432,7 @@ struct
      | DEV_USE_HYP => [[] |: EXP, [] |: VEC TAC] ->> TAC
 
      | SEL_HYP => [[] |: ANY] ->> SELECTOR
-     | SEL_GOAL => [] ->> SELECTOR
+     | SEL_CONCL => [] ->> SELECTOR
 
      | JDG_TERM _ => [] ->> JDG
 
@@ -482,7 +482,7 @@ struct
     val optEq = OptionUtil.eq
 
     fun selectorEq f =
-      fn (IN_GOAL, IN_GOAL) => true
+      fn (IN_CONCL, IN_CONCL) => true
        | (IN_HYP a, IN_HYP b) => f (a, b)
        | _ => false
 
@@ -609,7 +609,7 @@ struct
      | DEV_LET => "let"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE => "dev-match-clause"
-     | DEV_QUERY_GOAL => "dev-query-goal"
+     | DEV_QUERY_CONCL => "dev-query-concl"
      | DEV_PRINT => "dev-print"
      | DEV_BOOL_ELIM => "dev-bool-elim"
      | DEV_S1_ELIM => "dev-s1-elim"
@@ -624,7 +624,7 @@ struct
      | COE => "coe"
 
      | SEL_HYP => "select-hyp"
-     | SEL_GOAL => "select-goal"
+     | SEL_CONCL => "select-goal"
 
      | JDG_EQ _ => "eq"
      | JDG_TRUE _ => "true"
@@ -662,7 +662,7 @@ struct
        | P.APP _ => raise Fail "Expected symbol, but got application"
 
     fun mapSelector f =
-      fn IN_GOAL => IN_GOAL
+      fn IN_CONCL => IN_CONCL
        | IN_HYP a => IN_HYP (f a)
   in
     fun mapPolyWithSort f =

@@ -81,7 +81,7 @@ Thm Bool/reflect : [
 ].
 
 Tac Bool/contra/inverse (#p:exp) = [
-  query gl <- goal.
+  query gl <- concl.
   match gl {
     [a, b | #jdg{%a = %b in bool} =>
       let eq : [(= bool %b %a)] = use Bool/reflect [`%b, `%a, `#p]; auto. symmetry; elim eq; auto

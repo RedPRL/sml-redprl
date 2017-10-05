@@ -338,7 +338,7 @@ end
  | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_REWRITE | RULE_REWRITE_HYP | RULE_REDUCE | RULE_UNFOLD
  | RULE_EXACT
  | MATCH
- | QUERY | GOAL
+ | QUERY | CONCL
  | PRINT
 
  (* keywords in judgments *)
@@ -827,7 +827,7 @@ devMatchClauses
   | ([])
 
 selector
-  : GOAL (Ast.$$ (O.MONO O.SEL_GOAL, []))
+  : CONCL (Ast.$$ (O.MONO O.SEL_CONCL, []))
   | elimTargetAnySort (Ast.$$ (O.MONO O.SEL_HYP, [Ast.\ (([],[]), elimTargetAnySort)]))
 
 selectors
@@ -868,9 +868,9 @@ atomicRawTac
   | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
   | RULE_ELIM elimTargetAnySort (Ast.$$ (O.MONO O.RULE_ELIM, [Ast.\ (([],[]), elimTargetAnySort)]))
-  | RULE_REWRITE term (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), term)]))
+  | RULE_REWRITE term (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_CONCL, [])), Ast.\ (([],[]), term)]))
   | RULE_REWRITE term IN selector (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), selector), Ast.\ (([],[]), term)]))
-  | RULE_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_GOAL, [])), Ast.\ (([],[]), elimTargetAnySort)]))
+  | RULE_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_CONCL, [])), Ast.\ (([],[]), elimTargetAnySort)]))
   | RULE_REWRITE_HYP elimTargetAnySort IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), elimTargetAnySort)]))
   | RULE_REDUCE (Ast.$$ (O.MONO O.RULE_REDUCE_ALL, []))
   | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.MONO O.RULE_REDUCE, [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
@@ -906,7 +906,7 @@ atomicRawTac
       (Ast.$$ (O.MONO O.DEV_S1_ELIM, [\ (([],[]), elimTarget), \ (([],[]), tactic1), \(([], [VARNAME]), tactic2)]))
 
   | MATCH termAnySort LBRACKET devMatchClauses RBRACKET (Tac.makeMatch termAnySort devMatchClauses)
-  | QUERY VARNAME LEFT_ARROW GOAL DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY_GOAL, [\ (([],[VARNAME]), tactic)]))
+  | QUERY VARNAME LEFT_ARROW CONCL DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY_CONCL, [\ (([],[VARNAME]), tactic)]))
   | PRINT termAnySort (Ast.$$ (O.MONO O.DEV_PRINT, [\ (([], []), termAnySort)]))
 
   (* overlapping with term *)

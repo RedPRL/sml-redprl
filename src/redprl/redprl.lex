@@ -167,7 +167,7 @@ whitespace = [\ \t];
 
 "match"            => (Tokens.MATCH (posTuple (size yytext)));
 "query"            => (Tokens.QUERY (posTuple (size yytext)));
-"goal"             => (Tokens.GOAL (posTuple (size yytext)));
+"concl"            => (Tokens.CONCL (posTuple (size yytext)));
 "print"            => (Tokens.PRINT (posTuple (size yytext)));
 
 "true"             => (Tokens.TRUE (posTuple (size yytext)));

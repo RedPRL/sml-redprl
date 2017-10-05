@@ -353,7 +353,7 @@ struct
        in
          List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
        end
-     | O.MONO O.DEV_QUERY_GOAL $ [(_,[x]) \ tm] =>
+     | O.MONO O.DEV_QUERY_CONCL $ [(_,[x]) \ tm] =>
        (fn alpha => fn jdg as _ >> cj =>
          let
            val tm' = substVar (AJ.into cj, x) tm

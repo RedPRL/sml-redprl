@@ -290,7 +290,7 @@ struct
         val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> catjdg'
 
-        (* XXX When sel != O.IN_GOAL, the following subgoal is suboptimal because we already
+        (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
          * knew `currentTy` is a type. *)
         (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
         val motiveMatchesMainGoal = makeSubType (truncatedH) (motivem, l, k) (currentTy, l, k)
@@ -427,17 +427,17 @@ struct
 
     fun fail err _ _ = E.raiseError err
 
-    fun matchSeq f alpha jdg =
+    fun matchGoal f alpha jdg =
       f jdg alpha jdg
 
-    fun matchSeqSel O.IN_GOAL f = matchSeq
+    fun matchGoalSel O.IN_CONCL f = matchGoal
         (fn _ >> catjdg => f catjdg
-          | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchSeqSel", Seq.pretty seq))
-      | matchSeqSel (O.IN_HYP z) f = matchSeq
+          | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchGoalSel", Seq.pretty seq))
+      | matchGoalSel (O.IN_HYP z) f = matchGoal
         (fn H >> _ => f (Hyps.lookup z H)
-          | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchSeqSel", Seq.pretty seq))
+          | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchGoalSel", Seq.pretty seq))
 
-    fun matchHyp z = matchSeqSel (O.IN_HYP z)
+    fun matchHyp z = matchGoalSel (O.IN_HYP z)
 
     fun canonicity sign =
       Machine.canonicity sign Machine.NOMINAL (Machine.Unfolding.default sign)
@@ -458,7 +458,7 @@ struct
     (* trying to normalize TRUE hypothesis and then run `tac ty` *)
     and NormalizeDelegate tac sign =
       let
-        fun go sel = matchSeqSel sel
+        fun go sel = matchGoalSel sel
           (fn AJ.TRUE (ty, _, _) =>
             (case canonicity sign ty of
                 Machine.REDEX => Computation.SequentReduce sign [sel] then_ go sel
@@ -471,7 +471,7 @@ struct
       end
 
     (* trying to normalize TRUE goal and then run `tac ty` *)
-    fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign O.IN_GOAL
+    fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign O.IN_CONCL
 
     fun autoSynthesizableNeu sign m =
       case Syn.out m of
@@ -545,8 +545,8 @@ struct
               (Fpp.text "StepEqTypeNeuByUnfold", TermPrinter.ppMeta a)
          | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE
               (Fpp.text "StepEqTypeNeuByUnfold", TermPrinter.ppMeta a)
-         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
-         | (_, Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
+         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_CONCL]
+         | (_, Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByUnfold", AJ.pretty @@ AJ.EQ_TYPE (tys, NONE, K.top))
 
       fun StepEqTypeNeu sign tys blockers =
@@ -558,13 +558,13 @@ struct
 
       fun StepEqTypeNeuExpand sign ty =
         fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Custom.Unfold sign [theta] [O.IN_GOAL]
+         | Machine.OPERATOR theta => Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuExpand", TermPrinter.ppTerm ty)
 
       fun StepEqType sign (ty1, ty2) =
         case (canonicity sign ty1, canonicity sign ty2) of
-           (Machine.REDEX, _) => Computation.SequentReduce sign [O.IN_GOAL]
-         | (_, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
+           (Machine.REDEX, _) => Computation.SequentReduce sign [O.IN_CONCL]
+         | (_, Machine.REDEX) => Computation.SequentReduce sign [O.IN_CONCL]
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
          | (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqTypeNeu sign (ty1, ty2) (blocker1, blocker2)
          | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqTypeNeuExpand sign ty1 blocker
@@ -578,10 +578,10 @@ struct
 
       fun StepEqValAtType sign ty =
         case canonicity sign ty of
-           Machine.REDEX => Computation.SequentReduce sign [O.IN_GOAL]
+           Machine.REDEX => Computation.SequentReduce sign [O.IN_CONCL]
          | Machine.CANONICAL => StepEqAtTypeVal ty
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
-         | Machine.NEUTRAL (Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
+         | Machine.NEUTRAL (Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqValAtType", TermPrinter.ppTerm ty)
 
       (* equality of canonical forms *)
@@ -615,7 +615,7 @@ struct
        * this includes structural equality and typed computation principles *)
       fun StepEqNeuAtType sign ty =
         case canonicity sign ty of
-           Machine.REDEX => Computation.SequentReduce sign [O.IN_GOAL]
+           Machine.REDEX => Computation.SequentReduce sign [O.IN_CONCL]
          | Machine.CANONICAL => StepEqAtTypeVal ty
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuAtType", TermPrinter.ppTerm ty)
@@ -644,8 +644,8 @@ struct
       fun StepEqNeuByUnfold sign (m, n) =
         fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", TermPrinter.ppMeta a)
          | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", TermPrinter.ppMeta a)
-         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL]
-         | (_, Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_GOAL]
+         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_CONCL]
+         | (_, Machine.OPERATOR theta) => Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqNeu sign tms blockers ty =
@@ -667,7 +667,7 @@ struct
          | (_, Syn.PATH_TY _) => Path.Eta
          | (_, Syn.EQUALITY _) => InternalizedEquality.Eta
          | (Machine.VAR z, _) => AutoElim sign z
-         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_GOAL])
+         | (Machine.OPERATOR theta, _) => Custom.Unfold sign [theta] [O.IN_CONCL])
 
 
       structure HCom =
@@ -710,8 +710,8 @@ struct
       (* This is really ugly; feel free to refactor, sorry. Wish we had 'backtracking case statements' in SML. *)
       fun StepEqAux sign ((m, n), ty) kont = 
         case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
-           (_, Machine.REDEX, _, _) => Computation.SequentReduce sign [O.IN_GOAL]
-         | (_, _, _, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
+           (_, Machine.REDEX, _, _) => Computation.SequentReduce sign [O.IN_CONCL]
+         | (_, _, _, Machine.REDEX) => Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
          | (Syn.PATH_APP (_, r), _, _, _) => 
            (case Abt.out r of 
@@ -756,18 +756,18 @@ struct
 
       fun StepSubUniverseNeuExpand sign u =
         fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Custom.Unfold sign [theta] [O.IN_GOAL]
+         | Machine.OPERATOR theta => Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverseNeuExpand", TermPrinter.ppTerm u)
 
       fun StepSubUniverse sign u =
         case (Syn.out u, canonicity sign u) of
-           (_, Machine.REDEX) => Computation.SequentReduce sign [O.IN_GOAL]
+           (_, Machine.REDEX) => Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.CANONICAL) => Universe.SubUniverse
          | (Syn.PATH_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
          | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 
-      fun StepJdg sign = matchSeq
+      fun StepJdg sign = matchGoal
         (fn _ >> AJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
           | _ >> AJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
           | _ >> AJ.TRUE (ty, _, _) => StepTrue sign ty
@@ -782,7 +782,7 @@ struct
        * because everything is subject to change now.
        *)
 
-      fun FromHypDelegate tac = matchSeq
+      fun FromHypDelegate tac = matchGoal
         (fn H >> _ =>
               Hyps.foldr
                 (fn (z, jdg, accum) => tac (z, jdg) orelse_ accum)
@@ -809,7 +809,7 @@ struct
           | (z, AJ.TRUE _) => InternalizedEquality.EqFromTrueEq z
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppSym z]))
 
-      val StepJdgFromHyp = matchSeq
+      val StepJdgFromHyp = matchGoal
         (fn _ >> AJ.EQ_TYPE _ => EqTypeFromHyp
           | _ >> AJ.EQ _ => EqFromHyp
           | seq => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
@@ -847,7 +847,7 @@ struct
 
     fun Rewrite _ = InternalizedEquality.RewriteTrue
 
-    val Symmetry : rule = matchSeq
+    val Symmetry : rule = matchGoal
       (fn _ >> AJ.EQ_TYPE _ => TypeEquality.Symmetry
         | _ >> AJ.EQ _ => Equality.Symmetry
         | _ >> AJ.TRUE _ => InternalizedEquality.Symmetry

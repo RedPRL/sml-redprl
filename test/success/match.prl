@@ -1,5 +1,5 @@
 Tac QueryGoalType(#t : [exp].tac) = [
-  query gl <- goal.
+  query gl <- concl.
   match gl {
     [a | #jdg{%a true} => (#t %a)]
   }

@@ -109,7 +109,7 @@ struct
 
     fun outSelector (s : abt) : Tm.variable O.selector = 
       case Tm.out s of 
-         O.MONO O.SEL_GOAL $ _ => O.IN_GOAL
+         O.MONO O.SEL_CONCL $ _ => O.IN_CONCL
        | O.MONO O.SEL_HYP $ [_ \ e] =>
          (case Tm.out (unpackAny e) of
              `x => O.IN_HYP x
