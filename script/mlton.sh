@@ -6,4 +6,4 @@ mlyacc src/redprl/redprl.grm
 mllex src/redprl/redprl.lex
 
 mkdir -p bin
-mlton -codegen c -verbose 1 -mlb-path-var "LIBS $LIBS" -output bin/redprl src/frontend.mlb
+mlton -verbose 1 -mlb-path-var "LIBS $LIBS" -output bin/redprl src/frontend.mlb
