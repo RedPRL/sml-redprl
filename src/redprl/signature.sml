@@ -299,7 +299,6 @@ struct
       in
         elabSrcSeqHyps (metactx, symctx, varctx, env) hyps >>= (fn (symctx', varctx', env', hyps') =>
           elabSrcCatjdg (metactx, symctx', varctx', env') concl >>= (fn concl' =>
-             (* todo: I := ? *)
             E.ret (env', RedPrlSequent.>> (hyps', concl'))))
       end
 
@@ -321,7 +320,6 @@ struct
       let
         open RedPrlSequent AJ infix >>
         val fresh = makeNamePopper alpha
-        val I = List.map (fn sigma => (fresh (), sigma)) sigmas
         val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ List.rev taus
       in
         H >> TERM tau
