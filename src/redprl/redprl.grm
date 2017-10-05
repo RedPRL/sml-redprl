@@ -892,7 +892,7 @@ atomicRawTac
       (Ast.$$ (O.MONO O.DEV_BOOL_ELIM, [\ (([],[]), elimTarget), \ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
-      (Ast.$$ (O.MONO O.DEV_LET, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([],[VARNAME]), tactic2)]))
+      (Ast.$$ (O.MONO (O.DEV_LET NONE), [\ (([],[]), judgment), \ (([],[]), tactic1), \(([],[VARNAME]), tactic2)]))
 
   | LET devDecompPattern EQUALS elimTarget bracketedDevAppSpine DOT tactic
       (Pattern.makeApplyHyp devDecompPattern elimTarget bracketedDevAppSpine tactic)

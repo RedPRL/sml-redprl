@@ -254,7 +254,7 @@ struct
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
-   | DEV_LET
+   | DEV_LET of sort option
    | DEV_MATCH of int list
    | DEV_MATCH_CLAUSE
    | DEV_QUERY_CONCL
@@ -420,7 +420,7 @@ struct
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) |: TAC] ->> TAC
-     | DEV_LET => [[] |: JDG, [] |: TAC, [EXP] |: TAC] ->> TAC (* TODO: need tau instead of EXP *)
+     | DEV_LET tau => [[] |: JDG, [] |: TAC, [Option.valOf tau] |: TAC] ->> TAC
 
      | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) * [] <> MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
@@ -606,7 +606,7 @@ struct
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
-     | DEV_LET => "let"
+     | DEV_LET _ => "let"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE => "dev-match-clause"
      | DEV_QUERY_CONCL => "dev-query-concl"

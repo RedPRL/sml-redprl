@@ -93,6 +93,14 @@ struct
           NONE => setAnnotation (getAnnotation t1) t2
         | _ => t2
 
+
+      fun catjdgEvidence jdg = 
+        case out jdg of 
+           O.MONO (O.JDG_TRUE _) $ _ => O.EXP
+         | O.MONO (O.JDG_SYNTH _) $ _ => O.EXP
+         | O.MONO (O.JDG_TERM tau) $ _ => tau
+         | _ => O.TRIV
+
       fun lookupArity sign pos opid = 
         case arityOfOpid sign opid of
            SOME ar => ar
@@ -127,6 +135,15 @@ struct
            in
              O.MONO (O.MK_ANY (SOME tau)) $$ [([],[]) \ m']
            end
+         | O.MONO (O.DEV_LET NONE) $ [_ \ jdg, _ \ tac1, tac2] =>
+           let
+             val jdg' = processTerm' sign varctx jdg
+             val tau = catjdgEvidence jdg
+             val tac1' = processTerm' sign varctx tac1
+             val tac2' = processBinder sign varctx (([], [tau]), O.TAC) tac2
+           in
+             O.MONO (O.DEV_LET (SOME tau)) $$ [([],[]) \ jdg', ([],[]) \ tac1', tac2']
+           end
          | th $ es =>
            let
              val th' = processOp (getAnnotation m) sign varctx th
@@ -149,12 +166,6 @@ struct
 
       fun processSrcCatjdg sign = processTerm sign
 
-      fun catjdgEvidence jdg = 
-        case out jdg of 
-           O.MONO (O.JDG_TRUE _) $ _ => O.EXP
-         | O.MONO (O.JDG_SYNTH _) $ _ => O.EXP
-         | O.MONO (O.JDG_TERM tau) $ _ => tau
-         | _ => O.TRIV
 
       fun processSrcHyps sign varctx hyps =
         case hyps of
