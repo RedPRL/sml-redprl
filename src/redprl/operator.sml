@@ -222,8 +222,8 @@ struct
 
    (* dimension expressions *)
 
-   | DIM0'
-   | DIM1'
+   | DIM0
+   | DIM1
    | MK_TUBE
    | MK_BOUNDARY
    | MK_VEC of sort * int
@@ -376,8 +376,8 @@ struct
 
      | MK_ANY tau => [[] |: Option.valOf tau] ->> ANY
 
-     | DIM0' => [] ->> DIM
-     | DIM1' => [] ->> DIM
+     | DIM0 => [] ->> DIM
+     | DIM1 => [] ->> DIM
      | MK_TUBE => [[] |: DIM, [] |: DIM, [DIM] |: EXP] ->> TUBE
      | MK_BOUNDARY => [[] |: DIM, [] |: DIM, [] |: EXP] ->> BOUNDARY
      | MK_VEC (tau, n) => List.tabulate (n, fn _ => [] |: tau) ->> VEC tau
@@ -448,9 +448,7 @@ struct
   in
     val arityPoly =
       fn CUST (_, ar) => Option.valOf ar
-
        | PAT_META (_, tau, taus) => List.map (fn tau => [] |: tau) taus ->> tau
-
        | RULE_UNFOLD_ALL _ => [] ->> TAC
        | RULE_UNFOLD _ => [[] |: VEC SELECTOR] ->> TAC
        | DEV_APPLY_LEMMA (_, ar, pat) =>
@@ -591,8 +589,8 @@ struct
 
      | MK_ANY _ => "any"
 
-     | DIM0' => "dim0"
-     | DIM1' => "dim1"
+     | DIM0 => "dim0"
+     | DIM1 => "dim1"
      | MK_TUBE => "tube"
      | MK_BOUNDARY => "boundary"
      | MK_VEC _ => "vec" 

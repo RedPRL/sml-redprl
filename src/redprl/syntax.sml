@@ -333,8 +333,8 @@ struct
            O.MONO O.COE $$ [([],[]) \ r1, ([],[]) \ r2, ([],[u]) \ a, ([],[]) \ coercee]
        | COM args => intoCom args
 
-       | DIM0 => O.MONO O.DIM0' $$ []
-       | DIM1 => O.MONO O.DIM1' $$ []
+       | DIM0 => O.MONO O.DIM0 $$ []
+       | DIM1 => O.MONO O.DIM1 $$ []
        | CUST => raise Fail "CUST"
        | META (x, tau) => check (x $# ([],[]), tau)
 
@@ -428,8 +428,8 @@ struct
        | O.MONO O.COE $ [_ \ r1, _ \ r2, (_,[u]) \ a, _ \ m] =>
            COE {dir = (r1, r2), ty = (u, a), coercee = m}
 
-       | O.MONO O.DIM0' $ _ => DIM0
-       | O.MONO O.DIM1' $ _ => DIM1
+       | O.MONO O.DIM0 $ _ => DIM0
+       | O.MONO O.DIM1 $ _ => DIM1
 
        | O.POLY (O.CUST _) $ _ => CUST
        | x $# ([],[]) => META (x, Tm.sort m)

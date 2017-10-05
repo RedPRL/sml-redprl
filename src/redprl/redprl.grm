@@ -23,8 +23,8 @@ fun makeCustom (opid, bindings) =
   Ast.$$ (O.POLY (O.CUST (opid, NONE)), bindings)
 
 fun makeDim pos : IntInf.int -> ast =
-  fn 0 => Ast.$$ (O.MONO O.DIM0', [])
-   | 1 => Ast.$$ (O.MONO O.DIM1', [])
+  fn 0 => Ast.$$ (O.MONO O.DIM0, [])
+   | 1 => Ast.$$ (O.MONO O.DIM1, [])
    | i => E.raiseAnnotatedError (pos, E.INVALID_DIMENSION (ppIntInf i))
 
 structure Tac =
