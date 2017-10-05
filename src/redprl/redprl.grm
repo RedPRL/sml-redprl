@@ -6,12 +6,6 @@ open Ast
 
 structure E = RedPrlError
 
-structure P =
-struct
-  open RedPrlSortData
-  open RedPrlParameterTerm
-end
-
 structure O = RedPrlOpData
 structure AJ = RedPrlAtomicJudgment
 
@@ -20,57 +14,56 @@ structure TP = TermPrinter
 val ppIntInf = Fpp.text o IntInf.toString
 
 fun makeCustom (opid, bindings) =
-  Ast.$$ (O.POLY (O.CUST (opid, NONE)), bindings)
+  Ast.$$ (O.CUST (opid, NONE), bindings)
 
 fun makeDim pos : IntInf.int -> ast =
-  fn 0 => Ast.$$ (O.MONO O.DIM0, [])
-   | 1 => Ast.$$ (O.MONO O.DIM1, [])
+  fn 0 => Ast.$$ (O.DIM0, [])
+   | 1 => Ast.$$ (O.DIM1, [])
    | i => E.raiseAnnotatedError (pos, E.INVALID_DIMENSION (ppIntInf i))
 
 structure Tac =
 struct
-  type binding = (string * P.param_sort) list * ast
   infix $$ $ \
 
   fun makeSeq mt (us : (string * O.sort) list) mt' =
     let
       val (syms, sorts) = ListPair.unzip us
     in
-      O.MONO (O.MTAC_SEQ sorts) $$ [([],[]) \ mt, ([],syms) \ mt']
+      O.MTAC_SEQ sorts $$ [([],[]) \ mt, ([],syms) \ mt']
     end
 
   fun multitacToTac mt =
     case out mt of
-       O.MONO O.MTAC_ALL $ [_ \ t] => t
-     | _ => setAnnotation (getAnnotation mt) (O.MONO O.TAC_MTAC $$ [([],[]) \ mt])
+       O.MTAC_ALL $ [_ \ t] => t
+     | _ => setAnnotation (getAnnotation mt) (O.TAC_MTAC $$ [([],[]) \ mt])
 
   fun tacToMultitac t =
     case out t of
-       O.MONO O.TAC_MTAC $ [_ \ mt] => mt
-     | _ => setAnnotation (getAnnotation t) (O.MONO O.MTAC_ALL $$ [([],[]) \ t])
+       O.TAC_MTAC $ [_ \ mt] => mt
+     | _ => setAnnotation (getAnnotation t) (O.MTAC_ALL $$ [([],[]) \ t])
 
   fun orElse (t1, t2) =
-    multitacToTac (O.MONO O.MTAC_ORELSE $$ [([],[]) \ tacToMultitac t1, ([],[]) \ tacToMultitac t2])
+    multitacToTac (O.MTAC_ORELSE $$ [([],[]) \ tacToMultitac t1, ([],[]) \ tacToMultitac t2])
 
   fun then_ (t1, t2) =
     multitacToTac (makeSeq (tacToMultitac t1) [] (tacToMultitac t2))
 
-  val autoMtac = O.MONO O.MTAC_AUTO $$ []
+  val autoMtac = O.MTAC_AUTO $$ []
   val autoTac = multitacToTac autoMtac
 
   fun exact m =
-    O.MONO O.RULE_EXACT $$ [([],[]) \ m]
+    O.RULE_EXACT $$ [([],[]) \ m]
 
   fun exactAuto m =
     then_ (exact m, autoTac)
 
   fun makeMatch term clauses = 
     let
-      fun makeClause t1 t2 = O.MONO O.DEV_MATCH_CLAUSE $$ [([],[]) \ t1, ([],[]) \ t2]
+      fun makeClause t1 t2 = O.DEV_MATCH_CLAUSE $$ [([],[]) \ t1, ([],[]) \ t2]
       val clauseArgs = List.map (fn (xs, (t1, t2)) => ([],xs) \ makeClause t1 t2) clauses
       val ns = List.map (List.length o #1) clauses
     in
-      O.MONO (O.DEV_MATCH ns) $$ (([],[]) \ term) :: clauseArgs
+      O.DEV_MATCH ns $$ (([],[]) \ term) :: clauseArgs
     end
 end
 
@@ -81,22 +74,22 @@ struct
   val addUnderscores = List.map (fn SOME x => x | NONE => "_")
 
   fun makeLam [] m = m
-    | makeLam (x::xs) m = O.MONO O.LAM $$ [([],[Option.getOpt (x, "_")]) \ makeLam xs m]
+    | makeLam (x::xs) m = O.LAM $$ [([],[Option.getOpt (x, "_")]) \ makeLam xs m]
 
   fun makeApp m ns =
-    List.foldl (fn (n, app) => O.MONO O.APP $$ [([],[]) \ app, ([],[]) \ n]) m ns
+    List.foldl (fn (n, app) => O.APP $$ [([],[]) \ app, ([],[]) \ n]) m ns
 
   fun makePathAbs [] m = m
-    | makePathAbs (u::us) m = O.MONO O.PATH_ABS $$ [([], [Option.getOpt (u, "_")]) \ makePathAbs us m]
+    | makePathAbs (u::us) m = O.PATH_ABS $$ [([], [Option.getOpt (u, "_")]) \ makePathAbs us m]
 
   fun makePathApp m ns =
-    List.foldl (fn (r, app) => O.MONO O.PATH_APP $$ [([],[]) \ app, ([],[]) \ r]) m ns
+    List.foldl (fn (r, app) => O.PATH_APP $$ [([],[]) \ app, ([],[]) \ r]) m ns
 
   fun makeNum i =
     case IntInf.compare (i, 0) of
-      GREATER => O.MONO O.SUCC $$ [([],[]) \ makeNum (i - 1)]
-    | EQUAL => O.MONO O.ZERO $$ []
-    | LESS => O.MONO O.NEGSUCC $$ [([],[]) \ makeNum ((~ i) - 1)]
+      GREATER => O.SUCC $$ [([],[]) \ makeNum (i - 1)]
+    | EQUAL => O.ZERO $$ []
+    | LESS => O.NEGSUCC $$ [([],[]) \ makeNum ((~ i) - 1)]
 
   fun flatten xsys =
     List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
@@ -148,14 +141,14 @@ struct
       val (_, args) = makeRecordAux pos (tbs @ [([NONE], ty)])
       val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) args
     in
-      O.MONO (O.RECORD lbls) $$ args
+      O.RECORD lbls $$ args
     end
 
   fun makeRecord pos tbs =
     let
       val (lbls, args) = makeRecordAux pos tbs
     in
-      O.MONO (O.RECORD lbls) $$ args
+      O.RECORD lbls $$ args
     end
 
   fun makeTuple pos fields =
@@ -163,14 +156,14 @@ struct
       val (lbls, args) = ListPair.unzip fields
     in
       checkNoDuplicates pos lbls;
-      O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) args
+      O.TUPLE lbls $$ List.map (fn a => ([],[]) \ a) args
     end
 
   fun makeAnonymousTuple terms =
     let
       val lbls = ListUtil.mapWithIndex (anonRecordLabelForIndex o #1) terms
     in
-      O.MONO (O.TUPLE lbls) $$ List.map (fn a => ([],[]) \ a) terms
+      O.TUPLE lbls $$ List.map (fn a => ([],[]) \ a) terms
     end
 
   fun recordIntro pos fields =
@@ -178,7 +171,7 @@ struct
       val (lbls, tacs) = ListPair.unzip fields
     in
       checkNoDuplicates pos lbls;
-      O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
+      O.DEV_RECORD_INTRO lbls $$ List.map (fn tac => ([],[]) \ tac) tacs
     end
 
 
@@ -186,11 +179,11 @@ struct
     let
       val lbls = List.tabulate (List.length tacs, anonRecordLabelForIndex)
     in
-      O.MONO (O.DEV_RECORD_INTRO lbls) $$ List.map (fn tac => ([],[]) \ tac) tacs
+      O.DEV_RECORD_INTRO lbls $$ List.map (fn tac => ([],[]) \ tac) tacs
     end
 
   fun makeVec tau xs = 
-    O.MONO (O.MK_VEC (tau, List.length xs)) $$ List.map (fn x => ([],[]) \ x) xs
+    O.MK_VEC (tau, List.length xs) $$ List.map (fn x => ([],[]) \ x) xs
 end
 
 structure Pattern =
@@ -221,7 +214,7 @@ struct
       val (pats', namess) = ListPair.unzip (List.map unstitchPattern pats)
       val names = List.concat namess
     in
-      O.MONO (O.DEV_FUN_INTRO pats') $$ [([], names) \ tac]
+      O.DEV_FUN_INTRO pats' $$ [([], names) \ tac]
     end
 
   fun makeApplyHyp pat z tacs tac =
@@ -229,14 +222,14 @@ struct
       val (pat, names) = unstitchPattern pat
       val vec = Multi.makeVec O.TAC tacs
     in
-      O.MONO (O.DEV_APPLY_HYP pat) $$ [([],[]) \ z, ([],[]) \ vec, ([], names) \ tac]
+      O.DEV_APPLY_HYP pat $$ [([],[]) \ z, ([],[]) \ vec, ([], names) \ tac]
     end
 
   fun makeUseHyp z tacs = 
     let
       val vec = Multi.makeVec O.TAC tacs
     in
-      O.MONO O.DEV_USE_HYP $$ [([],[]) \ z, ([],[]) \ vec]
+      O.DEV_USE_HYP $$ [([],[]) \ z, ([],[]) \ vec]
     end
 
   fun makeApplyLemma pat (opid, subtermArgs) tacs tac =
@@ -245,14 +238,14 @@ struct
       val vec = Multi.makeVec O.TAC tacs
       val args = subtermArgs @ [([],[]) \ vec, ([], names) \ tac]
     in
-      O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat)) $$ args
+      O.DEV_APPLY_LEMMA (opid, NONE, pat) $$ args
     end
 
   fun makeUseLemma (opid, subtermArgs) tacs = 
     let
       val vec = Multi.makeVec O.TAC tacs
     in
-      O.POLY (O.DEV_USE_LEMMA (opid, NONE)) $$ subtermArgs @ [([],[]) \ vec]
+      O.DEV_USE_LEMMA (opid, NONE) $$ subtermArgs @ [([],[]) \ vec]
     end
 
 end
@@ -262,8 +255,8 @@ struct
   open Ast infix $$ \
   fun makeAtLvl theta (lvl, k : ast) es = 
     case lvl of
-       NONE => O.MONO (theta false) $$ List.map (fn e => ([],[]) \ e) (k :: es)
-     | SOME lvl => O.MONO (theta true) $$ List.map (fn e => ([],[]) \ e) (lvl :: k :: es)
+       NONE => theta false $$ List.map (fn e => ([],[]) \ e) (k :: es)
+     | SOME lvl => theta true $$ List.map (fn e => ([],[]) \ e) (lvl :: k :: es)
 end
 
 %%
@@ -369,7 +362,7 @@ end
  | sort of O.sort
  | sorts of O.sort list
 
- | bindingSig of P.param_sort list * O.sort list
+ | bindingSig of O.sort list
  | valence of Ar.valence
 
    (* parameters *)
@@ -502,8 +495,8 @@ sort
   | TAC (O.TAC)
   | TRIV (O.TRIV)
   | JDG (O.JDG)
-  | LVL (P.LVL)
-  | KIND (P.KIND)
+  | LVL (O.LVL)
+  | KIND (O.KIND)
   | DIM (O.DIM)
 
 sorts
@@ -512,11 +505,11 @@ sorts
   | ([])
 
 bindingSig
-  : LSQUARE sorts RSQUARE DOT ([], sorts)
-  | ([], [])
+  : LSQUARE sorts RSQUARE DOT (sorts)
+  | ([])
 
 valence
-  : bindingSig sort ((bindingSig, sort))
+  : bindingSig sort ((([], bindingSig), sort))
 
 numAsDimension
   : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
@@ -540,10 +533,10 @@ equation
   : dimension EQUALS dimension (dimension1, dimension2)
 
 tube
-  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MONO O.MK_TUBE, [\ (([],[]), #1 equation), \ (([],[]), #2 equation), binding]))
+  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_TUBE, [\ (([],[]), #1 equation), \ (([],[]), #2 equation), binding]))
 
 boundary
-  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MONO O.MK_BOUNDARY, [\ (([],[]), #1 equation), \ (([],[]), #2 equation), binding]))
+  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_BOUNDARY, [\ (([],[]), #1 equation), \ (([],[]), #2 equation), binding]))
 
 tubes
   : tube tubes (tube :: tubes)
@@ -596,49 +589,49 @@ bindings
 (* built-in nullary operators that take no parameters *)
 monoNullaryOperator
   (* axiom *)
-  : AX (O.MONO O.AX)
+  : AX (O.AX)
   (* bools *)
-  | BOOL (O.MONO O.BOOL)
-  | TT (O.MONO O.TT)
-  | FF (O.MONO O.FF)
+  | BOOL (O.BOOL)
+  | TT (O.TT)
+  | FF (O.FF)
   (* weak bools *)
-  | WBOOL (O.MONO O.WBOOL)
+  | WBOOL (O.WBOOL)
   (* natural numbers *)
-  | NAT (O.MONO O.NAT)
-  | ZERO (O.MONO O.ZERO)
+  | NAT (O.NAT)
+  | ZERO (O.ZERO)
   (* integers *)
-  | INT (O.MONO O.INT)
+  | INT (O.INT)
   (* void *)
-  | VOID (O.MONO O.VOID)
+  | VOID (O.VOID)
   (* circle *)
-  | S1 (O.MONO O.S1)
-  | BASE (O.MONO O.BASE)
+  | S1 (O.S1)
+  | BASE (O.BASE)
 
 
-  | kind (O.MONO (O.KCONST kind))
+  | kind (O.KCONST kind)
 
 
 (* built-in operators that do not have special form *)
 regularMultinaryOperator
   (* bools *)
-  : IF (O.MONO O.IF)
+  : IF (O.IF)
   (* weak bools *)
-  | WIF (O.MONO O.WIF)
+  | WIF (O.WIF)
   (* natural numbers *)
-  | SUCC (O.MONO O.SUCC)
-  | NAT_REC (O.MONO O.NAT_REC)
+  | SUCC (O.SUCC)
+  | NAT_REC (O.NAT_REC)
   (* integers *)
-  | NEGSUCC (O.MONO O.NEGSUCC)
-  | INT_REC (O.MONO O.INT_REC)
+  | NEGSUCC (O.NEGSUCC)
+  | INT_REC (O.INT_REC)
   (* paths *)
-  | PATH (O.MONO O.PATH_TY)
+  | PATH (O.PATH_TY)
   (* equality *)
-  | EQUALS (O.MONO O.EQUALITY)
+  | EQUALS (O.EQUALITY)
 
   (* V *)
-  | V (O.MONO O.V)
-  | VIN (O.MONO O.VIN)
-  | VPROJ (O.MONO O.VPROJ)
+  | V (O.V)
+  | VIN (O.VIN)
+  | VPROJ (O.VPROJ)
 
 
 customOpTerm
@@ -661,8 +654,8 @@ rawTermAndTac
   | LPAREN metavar terms RPAREN (Ast.$$# (metavar, ([], terms)))
 
   (* pattern variables *)
-  | patvar (Ast.$$ (O.MONO (O.PAT_META (#2 patvar)), [\ (([],[]), ``(#1 patvar)), \ (([],[]), Multi.makeVec O.ANY [])]))
-  | LPAREN patvar termsAnySort RPAREN (Ast.$$ (O.MONO (O.PAT_META (#2 patvar)), [\ (([],[]), ``(#1 patvar)), \ (([],[]), Multi.makeVec O.ANY termsAnySort)]))
+  | patvar (Ast.$$ (O.PAT_META (#2 patvar), [\ (([],[]), ``(#1 patvar)), \ (([],[]), Multi.makeVec O.ANY [])]))
+  | LPAREN patvar termsAnySort RPAREN (Ast.$$ (O.PAT_META (#2 patvar), [\ (([],[]), ``(#1 patvar)), \ (([],[]), Multi.makeVec O.ANY termsAnySort)]))
 
   (* custom operators *)
   | customOpTerm (makeCustom customOpTerm)
@@ -671,25 +664,25 @@ rawTermAndTac
   | monoNullaryOperator (Ast.$$ (monoNullaryOperator, []))
   | LPAREN regularMultinaryOperator bindings RPAREN (Ast.$$ (regularMultinaryOperator, bindings))
 
-  | LPAREN UNIVERSE level RPAREN (Ast.$$ (O.MONO O.UNIVERSE, [Ast.\ (([],[]), level), Ast.\ (([],[]), Ast.$$ (O.MONO (O.KCONST RedPrlKind.top), []))]))
-  | LPAREN UNIVERSE level term RPAREN (Ast.$$ (O.MONO O.UNIVERSE, [Ast.\ (([],[]), level), Ast.\ (([],[]), term)]))
+  | LPAREN UNIVERSE level RPAREN (Ast.$$ (O.UNIVERSE, [Ast.\ (([],[]), level), Ast.\ (([],[]), Ast.$$ (O.KCONST RedPrlKind.top, []))]))
+  | LPAREN UNIVERSE level term RPAREN (Ast.$$ (O.UNIVERSE, [Ast.\ (([],[]), level), Ast.\ (([],[]), term)]))
 
-  | LPAREN LOOP dimension RPAREN (Ast.$$ (O.MONO O.LOOP, [Ast.\ (([],[]), dimension)]))
+  | LPAREN LOOP dimension RPAREN (Ast.$$ (O.LOOP, [Ast.\ (([],[]), dimension)]))
   | LPAREN DIM dimension RPAREN (dimension)
 
   (* coe *)
   | LPAREN COE dir binding term RPAREN
-    (Ast.$$ (O.MONO O.COE, [Ast.\ (([],[]), #1 dir), Ast.\ (([],[]), #2 dir), binding, Ast.\ (([],[]), term)]))
+    (Ast.$$ (O.COE, [Ast.\ (([],[]), #1 dir), Ast.\ (([],[]), #2 dir), binding, Ast.\ (([],[]), term)]))
   | LPAREN FCOM dir binding tubeVec RPAREN
-    (Ast.$$ (O.MONO O.FCOM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding, \(([],[]), tubeVec)]))
+    (Ast.$$ (O.FCOM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding, \(([],[]), tubeVec)]))
   | LPAREN HCOM dir binding binding tubeVec RPAREN
-    (Ast.$$ (O.MONO O.HCOM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding1, binding2, \(([],[]), tubeVec)]))
+    (Ast.$$ (O.HCOM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding1, binding2, \(([],[]), tubeVec)]))
   | LPAREN COM dir binding binding tubeVec RPAREN
-    (Ast.$$ (O.MONO O.COM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding1, binding2, \(([],[]), tubeVec)]))
+    (Ast.$$ (O.COM, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding1, binding2, \(([],[]), tubeVec)]))
   | LPAREN BOX dir binding boundaryVec RPAREN
-    (Ast.$$ (O.MONO O.BOX, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding, \(([],[]), boundaryVec)]))
+    (Ast.$$ (O.BOX, [\ (([],[]), #1 dir), \(([],[]), #2 dir), binding, \(([],[]), boundaryVec)]))
   | LPAREN CAP backDir binding tubeVec RPAREN
-    (Ast.$$ (O.MONO O.CAP, [\ (([],[]), #1 backDir), \(([],[]), #2 backDir), binding, \(([],[]), tubeVec)]))
+    (Ast.$$ (O.CAP, [\ (([],[]), #1 backDir), \(([],[]), #2 backDir), binding, \(([],[]), tubeVec)]))
 
   (* numbers *)
   | NUMERAL (Multi.makeNum NUMERAL)
@@ -708,19 +701,19 @@ rawTermAndTac
   | TUPLE (Multi.makeTuple (Pos.pos (TUPLE1left fileName) (TUPLE1right fileName)) [])
   | LPAREN TUPLE fields RPAREN (Multi.makeTuple (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) fields)
   | LPAREN TUPLE terms RPAREN (Multi.makeAnonymousTuple terms)
-  | LPAREN BANG ident term RPAREN (Ast.$$ (O.MONO (O.PROJ ident), [\ (([], []), term)]))
+  | LPAREN BANG ident term RPAREN (Ast.$$ (O.PROJ ident, [\ (([], []), term)]))
 
   (* paths *)
   | LPAREN ABS LSQUARE boundVars RSQUARE term RPAREN (Multi.makePathAbs boundVars term)
   | LPAREN AT_SIGN term dimensions RPAREN (Multi.makePathApp term dimensions)
 
 level
-  : NUMERAL (Ast.$$ (O.MONO (O.LCONST NUMERAL), []))
-  | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.MONO (O.LPLUS NUMERAL), [Ast.\ (([],[]), level)]))
-  | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.MONO (O.LPLUS 1), [Ast.\ (([],[]), level)]))
-  | LPAREN LMAX levels RPAREN (Ast.$$ (O.MONO O.LMAX, [\ (([],[]), Multi.makeVec O.LVL levels)]))
+  : NUMERAL (Ast.$$ (O.LCONST NUMERAL, []))
+  | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ (([],[]), level)]))
+  | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ (([],[]), level)]))
+  | LPAREN LMAX levels RPAREN (Ast.$$ (O.LMAX, [\ (([],[]), Multi.makeVec O.LVL levels)]))
   | metavar (Ast.$$# (metavar, ([], [])))
-  | PERCENT VARNAME (Ast.$$ (O.MONO (O.PAT_META O.LVL), [\ (([],[]), ``VARNAME), \ (([],[]), Multi.makeVec O.ANY [])]))
+  | PERCENT VARNAME (Ast.$$ (O.PAT_META O.LVL, [\ (([],[]), ``VARNAME), \ (([],[]), Multi.makeVec O.ANY [])]))
 
 levels
   : level ([level])
@@ -749,8 +742,8 @@ withKindAtLevel
   : WITH term AT level (SOME level, term)
   | AT level WITH term (SOME level, term)
   | WITH term (NONE, term)
-  | AT level (SOME level, Ast.$$ (O.MONO (O.KCONST (O.K.top)), []))
-  | (NONE, Ast.$$ (O.MONO (O.KCONST (O.K.top)), []))
+  | AT level (SOME level, Ast.$$ (O.KCONST (O.K.top), []))
+  | (NONE, Ast.$$ (O.KCONST (O.K.top), []))
 
 rawJudgment
   : term EQUALS term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term2, term3])
@@ -827,8 +820,8 @@ devMatchClauses
   | ([])
 
 selector
-  : CONCL (Ast.$$ (O.MONO O.SEL_CONCL, []))
-  | elimTargetAnySort (Ast.$$ (O.MONO O.SEL_HYP, [Ast.\ (([],[]), elimTargetAnySort)]))
+  : CONCL (Ast.$$ (O.SEL_CONCL, []))
+  | elimTargetAnySort (Ast.$$ (O.SEL_HYP, [Ast.\ (([],[]), elimTargetAnySort)]))
 
 selectors
   : selector COMMA selectors (selector :: selectors)
@@ -847,7 +840,7 @@ bracketedOpnames
   | OPNAME ([OPNAME])
 
 termAnySort
-  : term (Ast.$$ (O.MONO (O.MK_ANY NONE), [Ast.\ (([],[]), term)]))
+  : term (Ast.$$ (O.MK_ANY NONE, [Ast.\ (([],[]), term)]))
 
 
 termsAnySort
@@ -859,23 +852,23 @@ elimTarget
   | metavar (Ast.$$# (metavar, ([], [])))
 
 elimTargetAnySort
-  : elimTarget (Ast.$$ (O.MONO (O.MK_ANY NONE), [Ast.\ (([],[]), elimTarget)]))
+  : elimTarget (Ast.$$ (O.MK_ANY NONE, [Ast.\ (([],[]), elimTarget)]))
 
 
 atomicRawTac
-  : REFINE VARNAME (Ast.$$ (O.MONO (O.RULE_PRIM VARNAME), []))
-  | RULE_ID (Ast.$$ (O.MONO O.RULE_ID, []))
-  | RULE_AUTO_STEP (Ast.$$ (O.MONO O.RULE_AUTO_STEP, []))
-  | RULE_SYMMETRY (Ast.$$ (O.MONO O.RULE_SYMMETRY, []))
-  | RULE_ELIM elimTargetAnySort (Ast.$$ (O.MONO O.RULE_ELIM, [Ast.\ (([],[]), elimTargetAnySort)]))
-  | RULE_REWRITE term (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_CONCL, [])), Ast.\ (([],[]), term)]))
-  | RULE_REWRITE term IN selector (Ast.$$ (O.MONO O.RULE_REWRITE, [Ast.\ (([],[]), selector), Ast.\ (([],[]), term)]))
-  | RULE_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.MONO O.SEL_CONCL, [])), Ast.\ (([],[]), elimTargetAnySort)]))
-  | RULE_REWRITE_HYP elimTargetAnySort IN selector (Ast.$$ (O.MONO O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), elimTargetAnySort)]))
-  | RULE_REDUCE (Ast.$$ (O.MONO O.RULE_REDUCE_ALL, []))
-  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.MONO O.RULE_REDUCE, [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
-  | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.POLY (O.RULE_UNFOLD_ALL bracketedOpnames), []))
-  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.POLY (O.RULE_UNFOLD (bracketedOpnames)), [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
+  : REFINE VARNAME (Ast.$$ (O.RULE_PRIM VARNAME, []))
+  | RULE_ID (Ast.$$ (O.RULE_ID, []))
+  | RULE_AUTO_STEP (Ast.$$ (O.RULE_AUTO_STEP, []))
+  | RULE_SYMMETRY (Ast.$$ (O.RULE_SYMMETRY, []))
+  | RULE_ELIM elimTargetAnySort (Ast.$$ (O.RULE_ELIM, [Ast.\ (([],[]), elimTargetAnySort)]))
+  | RULE_REWRITE term (Ast.$$ (O.RULE_REWRITE, [Ast.\ (([],[]), Ast.$$ (O.SEL_CONCL, [])), Ast.\ (([],[]), term)]))
+  | RULE_REWRITE term IN selector (Ast.$$ (O.RULE_REWRITE, [Ast.\ (([],[]), selector), Ast.\ (([],[]), term)]))
+  | RULE_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.RULE_REWRITE_HYP, [Ast.\ (([],[]), Ast.$$ (O.SEL_CONCL, [])), Ast.\ (([],[]), elimTargetAnySort)]))
+  | RULE_REWRITE_HYP elimTargetAnySort IN selector (Ast.$$ (O.RULE_REWRITE_HYP, [Ast.\ (([],[]), selector), Ast.\ (([],[]), elimTargetAnySort)]))
+  | RULE_REDUCE (Ast.$$ (O.RULE_REDUCE_ALL, []))
+  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.RULE_REDUCE, [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
+  | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.RULE_UNFOLD_ALL bracketedOpnames, []))
+  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.RULE_UNFOLD (bracketedOpnames), [Ast.\ (([],[]), Multi.makeVec O.SELECTOR bracketedSelectors)]))
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
@@ -884,15 +877,15 @@ atomicRawTac
   | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
   | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
-  | LANGLE boundVars RANGLE tactic (Ast.$$ (O.MONO (O.DEV_PATH_INTRO (List.length boundVars)), [\ (([], Multi.addUnderscores boundVars), tactic)]))
+  | LANGLE boundVars RANGLE tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (([], Multi.addUnderscores boundVars), tactic)]))
   | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
   | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
   
   | IF elimTarget THEN tactic ELSE tactic
-      (Ast.$$ (O.MONO O.DEV_BOOL_ELIM, [\ (([],[]), elimTarget), \ (([],[]), tactic1), \ (([],[]), tactic2)]))
+      (Ast.$$ (O.DEV_BOOL_ELIM, [\ (([],[]), elimTarget), \ (([],[]), tactic1), \ (([],[]), tactic2)]))
 
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
-      (Ast.$$ (O.MONO (O.DEV_LET NONE), [\ (([],[]), judgment), \ (([],[]), tactic1), \(([],[VARNAME]), tactic2)]))
+      (Ast.$$ (O.DEV_LET NONE, [\ (([],[]), judgment), \ (([],[]), tactic1), \(([],[VARNAME]), tactic2)]))
 
   | LET devDecompPattern EQUALS elimTarget bracketedDevAppSpine DOT tactic
       (Pattern.makeApplyHyp devDecompPattern elimTarget bracketedDevAppSpine tactic)
@@ -903,11 +896,11 @@ atomicRawTac
   | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
 
   | CASE elimTarget OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
-      (Ast.$$ (O.MONO O.DEV_S1_ELIM, [\ (([],[]), elimTarget), \ (([],[]), tactic1), \(([], [VARNAME]), tactic2)]))
+      (Ast.$$ (O.DEV_S1_ELIM, [\ (([],[]), elimTarget), \ (([],[]), tactic1), \(([], [VARNAME]), tactic2)]))
 
   | MATCH termAnySort LBRACKET devMatchClauses RBRACKET (Tac.makeMatch termAnySort devMatchClauses)
-  | QUERY VARNAME LEFT_ARROW selector DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY, [\ (([],[]), selector), \ (([],[VARNAME]), tactic)]))
-  | PRINT termAnySort (Ast.$$ (O.MONO O.DEV_PRINT, [\ (([], []), termAnySort)]))
+  | QUERY VARNAME LEFT_ARROW selector DOT tactic (Ast.$$ (O.DEV_QUERY, [\ (([],[]), selector), \ (([],[VARNAME]), tactic)]))
+  | PRINT termAnySort (Ast.$$ (O.DEV_PRINT, [\ (([], []), termAnySort)]))
 
   (* overlapping with term *)
   | rawTermAndTac (rawTermAndTac)
@@ -915,17 +908,17 @@ atomicRawTac
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 
 atomicRawMultitac
-  : LSQUARE tactics RSQUARE (Ast.$$ (O.MONO (O.MTAC_EACH (List.length tactics)), List.map (fn t => \ (([],[]), t)) tactics))
-  | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MONO (O.MTAC_FOCUS (IntInf.toInt NUMERAL)), [\ (([],[]), tactic)]))
-  | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REPEAT, [\ (([], []), multitac)]))
+  : LSQUARE tactics RSQUARE (Ast.$$ (O.MTAC_EACH (List.length tactics), List.map (fn t => \ (([],[]), t)) tactics))
+  | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MTAC_FOCUS (IntInf.toInt NUMERAL), [\ (([],[]), tactic)]))
+  | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REPEAT, [\ (([], []), multitac)]))
   | MTAC_AUTO (Tac.autoMtac)
-  | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_PROGRESS, [\ (([], []), multitac)]))
-  | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MONO O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
+  | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_PROGRESS, [\ (([], []), multitac)]))
+  | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REC, [\ (([],[VARNAME]), multitac)]))
   | LPAREN multitac RPAREN (multitac)
   | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
-  | atomicTac %prec SEMI (Ast.$$ (O.MONO O.MTAC_ALL, [\ (([],[]), atomicTac)]))
-  | QUESTION ident (Ast.$$ (O.MONO (O.MTAC_HOLE (SOME ident)), []))
-  | QUESTION (Ast.$$ (O.MONO (O.MTAC_HOLE NONE), []))
+  | atomicTac %prec SEMI (Ast.$$ (O.MTAC_ALL, [\ (([],[]), atomicTac)]))
+  | QUESTION ident (Ast.$$ (O.MTAC_HOLE (SOME ident), []))
+  | QUESTION (Ast.$$ (O.MTAC_HOLE NONE, []))
 
 atomicMultitac
   : atomicRawMultitac (annotate (Pos.pos (atomicRawMultitac1left fileName) (atomicRawMultitac1right fileName)) atomicRawMultitac)

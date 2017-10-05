@@ -104,7 +104,7 @@ struct
         infix $
         fun shallowUnfold m =
           case out m of
-             O.POLY (O.CUST (opid',_)) $ _ =>
+             O.CUST (opid',_) $ _ =>
                (case List.find (fn opid => opid = opid') opids of
                    SOME _ =>
                      let
@@ -145,7 +145,7 @@ struct
         val _ = RedPrlLog.trace "Custom.Eq"
         val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
 
-        val Abt.$ (O.POLY (O.CUST (name, _)), args) = Abt.out m
+        val Abt.$ (O.CUST (name, _), args) = Abt.out m
         val _ = Assert.alphaEq (m, n)
 
         val {spec = H' >> AJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
@@ -168,7 +168,7 @@ struct
         val _ = RedPrlLog.trace "Custom.Synth"
         val H >> AJ.SYNTH (tm, l, k) = jdg
 
-        val Abt.$ (O.POLY (O.CUST (name, _)), args) = Abt.out tm
+        val Abt.$ (O.CUST (name, _), args) = Abt.out tm
 
         val {spec = H' >> AJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())

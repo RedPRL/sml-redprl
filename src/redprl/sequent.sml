@@ -15,10 +15,6 @@ struct
      | MATCH (th, k, a, ps, ms) => MATCH (th, k, f a, ps, List.map f ms)
      | MATCH_RECORD (lbl, tm, tuple) => MATCH_RECORD (lbl, f tm, f tuple)
 
-  fun renameHypsInTerm srho =
-    Tm.substSymenv (Sym.Ctx.map P.VAR srho)
-      o Tm.renameVars srho
-
   local
     open Hyps.ConsView
   in
@@ -31,27 +27,23 @@ struct
              andalso telescopeEq (t1', t2')
        | _ => false
 
-    fun relabelHyps H srho =
-      let
-        val srho' = Sym.Ctx.map P.VAR srho
-      in
-        case out H of
-           EMPTY => Hyps.empty
-         | CONS (x, catjdg, Hx) =>
-           let
-             val catjdg' = AJ.map (Tm.substSymenv srho') catjdg
-           in
-             case Sym.Ctx.find srho x of
-                 NONE => Hyps.cons x catjdg' (relabelHyps Hx srho)
-               | SOME y => Hyps.cons y catjdg' (relabelHyps Hx srho)
-           end
-      end
+    fun relabelHyps H rho =
+      case out H of
+          EMPTY => Hyps.empty
+        | CONS (x, catjdg, Hx) =>
+          let
+            val catjdg' = AJ.map (Tm.renameVars rho) catjdg
+          in
+            case Var.Ctx.find rho x of
+                NONE => Hyps.cons x catjdg' (relabelHyps Hx rho)
+              | SOME y => Hyps.cons y catjdg' (relabelHyps Hx rho)
+          end
 
   end
 
   fun relabel srho =
-    fn H >> catjdg => relabelHyps H srho >> AJ.map (renameHypsInTerm srho) catjdg
-     | jdg => map (renameHypsInTerm srho) jdg
+    fn H >> catjdg => relabelHyps H srho >> AJ.map (Tm.renameVars srho) catjdg
+     | jdg => map (Tm.renameVars srho) jdg
 
   fun prettyHyps f : 'a ctx -> Fpp.doc =
     Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppSym x, Fpp.Atomic.colon, f a] :: r) []
@@ -75,8 +67,8 @@ struct
 
          val H1' = relabelHyps H1 xrho1
          val H2' = relabelHyps H2 xrho2
-         val catjdg1' = AJ.map (renameHypsInTerm xrho1) catjdg1
-         val catjdg2' = AJ.map (renameHypsInTerm xrho2) catjdg2
+         val catjdg1' = AJ.map (Tm.renameVars xrho1) catjdg1
+         val catjdg2' = AJ.map (Tm.renameVars xrho2) catjdg2
        in
          telescopeEq (H1', H2')
            andalso AJ.eq (catjdg1', catjdg2')

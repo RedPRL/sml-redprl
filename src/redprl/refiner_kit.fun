@@ -58,7 +58,7 @@ struct
       fun ppSyms us = Fpp.Atomic.braces @@ Fpp.hsep @@ List.map TermPrinter.ppSym us
       fun ppVars us = Fpp.Atomic.squares @@ Fpp.hsep @@ List.map TermPrinter.ppVar us
 
-      val symsOk = Sym.Ctx.foldl (fn (u, sigma, ok) => sigma = O.OPID andalso ok) true syms
+      val symsOk = Sym.Ctx.isEmpty syms
       val varsOk = Var.Ctx.isEmpty vars
     in
       if symsOk andalso varsOk then
@@ -291,12 +291,6 @@ struct
         ()
       else
         E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.P.pretty l', Fpp.text "and kind", TermPrinter.ppKind k, Fpp.text "to be useful"]
-
-    fun paramEq msg (r1, r2) =
-      if P.eq Sym.eq (r1, r2) then
-        ()
-      else
-        raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", TermPrinter.ppParam r1, Fpp.text "to be equal to", TermPrinter.ppParam r2]
 
     fun dirEq msg ((r1, r1'), (r2, r2')) =
       if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then

@@ -1,9 +1,6 @@
 structure RedPrlSortData =
 struct
-  datatype param_sort =
-     OPID
-
-  and sort =
+  datatype sort =
      EXP
    | TAC
    | MTAC
@@ -34,9 +31,6 @@ struct
      | SELECTOR => "selector"
      | ANY => "any"
      | META_NAME => "meta-name"
-
-  and paramSortToString = 
-    fn OPID => "opid"
 end
 
 structure RedPrlSort : ABT_SORT =
@@ -50,9 +44,9 @@ end
 structure RedPrlParamSort : ABT_SORT =
 struct
   open RedPrlSortData
-  type t = param_sort
+  type t = unit
   val eq : t * t -> bool = op=
-  val toString = paramSortToString
+  fun toString _ = "*"
 end
 
 structure RedPrlParameter = AbtEmptyParameter (RedPrlParamSort)
@@ -160,7 +154,6 @@ struct
   open RedPrlSortData
   structure P = RedPrlParameterTerm
   structure K = RedPrlKind
-  type psort = RedPrlSortData.param_sort
   type kind = RedPrlKind.kind
 
   (* TODO: move elsewhere *)
@@ -177,7 +170,7 @@ struct
    * Practically, the difference is:
    * MONO: the Standard ML built-in equality properly compares the operators.
    * POLY: we have to compare the operators manually. *)
-  datatype mono_operator =
+  datatype operator =
    (* the trivial realizer of sort TRIV for judgments lacking interesting
     * computational content. *)
      TV
@@ -270,23 +263,13 @@ struct
    | SEL_HYP
 
    | PAT_META of sort
-
-  datatype poly_operator =
-     CUST of opid * RedPrlArity.t option
-
+ 
+   | CUST of opid * RedPrlArity.t option
    | RULE_UNFOLD_ALL of opid list
    | RULE_UNFOLD of opid list
-
-
    | DEV_USE_LEMMA of opid * RedPrlArity.t option
    | DEV_APPLY_LEMMA of opid * RedPrlArity.t option * unit dev_pattern
 
-  (* We split our operator signature into a couple datatypes, because the implementation of
-   * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
-   * which we call "monomorphic". *)
-  datatype 'a operator =
-     MONO of mono_operator
-   | POLY of poly_operator
 end
 
 structure ArityNotation =
@@ -297,20 +280,20 @@ struct
   fun op->> (a, b) = (a, b) (* arity *)
 end
 
-structure RedPrlOperator : ABT_OPERATOR =
+structure RedPrlSimpleOperator : ABT_SIMPLE_OPERATOR =
 struct
   structure Ar = RedPrlArity
 
   open RedPrlOpData
   open ArityNotation infix <> ->> |:
 
-  type 'a t = 'a operator
+  type t = operator
 
   val rec devPatternValence = 
     fn PAT_VAR _ => [EXP]
      | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
 
-  val arityMono =
+  val arity =
     fn TV => [] ->> TRIV
      | AX => [] ->> EXP
 
@@ -440,42 +423,28 @@ struct
      | PAT_META tau => [[] |: META_NAME, [] |: VEC ANY] ->> tau
 
      | JDG_TERM _ => [] ->> JDG
+     | CUST (_, ar) => Option.valOf ar
+     | RULE_UNFOLD_ALL _ => [] ->> TAC
+     | RULE_UNFOLD _ => [[] |: VEC SELECTOR] ->> TAC
+     | DEV_APPLY_LEMMA (_, ar, pat) =>
+       let
+         val (vls, tau) = Option.valOf ar
+       in
+         vls @ [[] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
+       end
+     | DEV_USE_LEMMA (_, ar) => 
+       let
+         val (vls, tau) = Option.valOf ar
+       in
+         vls @ [[] |: VEC TAC] ->> TAC
+       end
 
-  local
-  in
-    val arityPoly =
-      fn CUST (_, ar) => Option.valOf ar
-       | RULE_UNFOLD_ALL _ => [] ->> TAC
-       | RULE_UNFOLD _ => [[] |: VEC SELECTOR] ->> TAC
-       | DEV_APPLY_LEMMA (_, ar, pat) =>
-         let
-           val (vls, tau) = Option.valOf ar
-         in
-           vls @ [[] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
-         end
-       | DEV_USE_LEMMA (_, ar) => 
-         let
-           val (vls, tau) = Option.valOf ar
-         in
-           vls @ [[] |: VEC TAC] ->> TAC
-         end
-  end
+  fun eq (th1, th2) = th1 = th2
 
-  val arity =
-    fn MONO th => arityMono th
-     | POLY th => arityPoly th
+  val opidsToString =
+   ListSpine.pretty (fn x => x) ","
 
-
-  val support =
-    fn MONO _ => []
-     | POLY th => []
-
-  fun eq f =
-    fn (MONO th1, MONO th2) => th1 = th2
-     | (POLY th1, POLY th2) => th1 = th2
-     | _ => false
-
-  val toStringMono =
+  val toString =
     fn TV => "tv"
      | AX => "ax"
 
@@ -591,29 +560,11 @@ struct
      | JDG_SUB_UNIVERSE _ => "sub-universe"
      | JDG_SYNTH _ => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
-
-  local
-    val opidsToString =
-      ListSpine.pretty (fn x => x) ","
-  in
-    val toStringPoly =
-      fn CUST (opid, _) => opid
-       | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
-       | RULE_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
-       | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ opid ^ "}"
-       | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ opid ^ "}"
-  end
-
-  fun toString f =
-    fn MONO th => toStringMono th
-     | POLY th => toStringPoly th
-
-  fun mapPolyWithSort f th = th
-
-  fun mapWithSort f =
-    fn MONO th => MONO th
-     | POLY th => POLY (mapPolyWithSort f th)
-
-  fun map f = 
-    mapWithSort (fn (u, _) => f u)
+     | CUST (opid, _) => opid
+     | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
+     | RULE_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
+     | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ opid ^ "}"
+     | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ opid ^ "}"
 end
+
+structure RedPrlOperator = AbtSimpleOperator (RedPrlSimpleOperator)

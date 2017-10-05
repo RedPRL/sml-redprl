@@ -32,12 +32,10 @@ sig
   val ppTerm : t -> Fpp.doc
   val ppBinder : t RedPrlAbt.bview -> Fpp.doc
   val ppSort : RedPrlAbt.sort -> Fpp.doc
-  val ppPsort : RedPrlAbt.psort -> Fpp.doc
   val ppValence : RedPrlAbt.valence -> Fpp.doc
   val ppVar : RedPrlAbt.variable -> Fpp.doc
   val ppSym : RedPrlAbt.symbol -> Fpp.doc
   val ppMeta : RedPrlAbt.metavariable -> Fpp.doc
-  val ppParam : RedPrlAbt.param -> Fpp.doc
   val ppOperator : RedPrlAbt.operator -> Fpp.doc
   val ppKind : RedPrlKind.kind -> Fpp.doc
   val ppLabel : string -> Fpp.doc
@@ -84,24 +82,10 @@ struct
 
   val ppIntInf = text o IntInf.toString
 
-  val rec ppParam =
-    fn P.VAR x => ppSym x
-
-  val ppParamWithSort =
-    fn (p, NONE) => ppParam p
-     | (p as P.VAR x, SOME _) => ppParam p
-     | (p, SOME _) => raise Fail "ppParamWithSort encountered an invalid term."
-
   fun ppOperator theta =
     case theta of 
-       O.POLY (O.CUST (opid, _)) => text opid
+       O.CUST (opid, _) => text opid
      | _ => text @@ RedPrlOperator.toString PrintName.sym theta
-
-  fun ppMetavarParams (x, ps) =
-    case ps of
-      [] => ppMeta x
-    | ps => Atomic.braces @@ hsep @@ ppMeta x :: List.map (fn (p, _) => ppParam p) ps
-
 
   val ppLabel = text
 
@@ -116,7 +100,7 @@ struct
 
   fun multiFun (doms : (variable list option * abt) list) m =
     case Abt.out m of
-       O.MONO O.FUN $ [_ \ a, (_, [x]) \ bx] =>
+       O.FUN $ [_ \ a, (_, [x]) \ bx] =>
          if Abt.Var.Ctx.member (Abt.varctx bx) x then
            case doms of
               (SOME xs, a') :: doms' =>
@@ -130,25 +114,25 @@ struct
 
   fun multiLam (xs : variable list) m =
     case Abt.out m of
-       O.MONO O.LAM $ [(_, [x]) \ mx] =>
+       O.LAM $ [(_, [x]) \ mx] =>
          multiLam (x :: xs) mx
      | _ => (List.rev xs, m)
 
   fun multiApp m (ns : abt list) =
     case Abt.out m of
-       O.MONO O.APP $ [_ \ m, _ \ n] =>
+       O.APP $ [_ \ m, _ \ n] =>
          multiApp m (n :: ns)
      | _ => (m, ns)
 
   fun multiPathAbs (us : symbol list) m =
     case Abt.out m of
-       O.MONO O.PATH_ABS $ [(_, [u]) \ mu] =>
+       O.PATH_ABS $ [(_, [u]) \ mu] =>
          multiPathAbs (u :: us) mu
      | _ => (List.rev us, m)
 
   fun multiPathApp m (rs : abt list) =
     case Abt.out m of
-       O.MONO O.PATH_APP $ [_ \ m, _ \ r] =>
+       O.PATH_APP $ [_ \ m, _ \ r] =>
          multiPathApp m (r :: rs)
      | _ => (m, rs)
 
@@ -186,31 +170,31 @@ struct
   and ppTerm m =
     case Abt.out m of
        `x => ppVar x
-     | O.MONO O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
+     | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "fcom" (r1, r2), ppTerm cap]
              :: [ppVector system]
 
-     | O.MONO O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
+     | O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "hcom" (r1, r2), ppTerm ty, ppTerm cap]
              :: [ppVector system]
 
-     | O.MONO O.COM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
+     | O.COM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "com" (r1, r2), ppBinder ty, ppTerm cap]
              :: [ppVector system]
 
-     | O.MONO O.LOOP $ [_ \ r] =>
+     | O.LOOP $ [_ \ r] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppTerm r]
-     | O.MONO O.FUN $ _ =>
+     | O.FUN $ _ =>
          printQuant "->" @@ multiFun [] m
-     | O.MONO O.LAM $ _ =>
+     | O.LAM $ _ =>
          printLam @@ multiLam [] m
-     | O.MONO O.APP $ _ =>
+     | O.APP $ _ =>
          printApp @@ multiApp m []
-     | O.MONO (O.RECORD []) $ _ => text "record"
-     | O.MONO (O.RECORD lbls) $ args =>
+     | O.RECORD [] $ _ => text "record"
+     | O.RECORD lbls $ args =>
          let
            val init = {fields = [], vars = []}
            val {fields, ...} = 
@@ -229,45 +213,45 @@ struct
          in
            Atomic.parens @@ expr @@ hvsep @@ text "record" :: List.rev fields
          end 
-     | O.MONO (O.TUPLE []) $ [] => text "tuple"
-     | O.MONO (O.TUPLE lbls) $ data =>
+     | O.TUPLE [] $ [] => text "tuple"
+     | O.TUPLE lbls $ data =>
          let
            fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, ppBinder a]
          in
            Atomic.parens @@ expr @@ hvsep
              [text "tuple", expr @@ hvsep @@ ListPair.mapEq pp (lbls, data)]
          end
-     | O.MONO (O.PROJ lbl) $ [m] =>
+     | O.PROJ lbl $ [m] =>
          Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder m]
-     | O.MONO O.PATH_ABS $ _ =>
+     | O.PATH_ABS $ _ =>
          printPathAbs @@ multiPathAbs [] m
-     | O.MONO O.PATH_APP $ _ =>
+     | O.PATH_APP $ _ =>
          printPathApp @@ multiPathApp m []
-     | O.MONO O.EQUALITY $ args =>
+     | O.EQUALITY $ args =>
          Atomic.parens @@ expr @@ hvsep @@
            char #"=" :: List.map ppBinder args
-     | O.MONO O.BOX $ [_ \ r1, _ \ r2, cap, _ \ boundaries] =>
+     | O.BOX $ [_ \ r1, _ \ r2, cap, _ \ boundaries] =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [ppComHead "box" (r1, r2), ppBinder cap]
              :: [ppVector boundaries]
-     | O.MONO O.V $ args =>
+     | O.V $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "V" :: List.map ppBinder args
-     | O.MONO O.VIN $ args =>
+     | O.VIN $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "Vin" :: List.map ppBinder args
-     | O.MONO O.VPROJ $ args =>
+     | O.VPROJ $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "Vproj" :: List.map ppBinder args
-     | O.MONO O.UNIVERSE $ [_ \ l, _ \ k] =>
+     | O.UNIVERSE $ [_ \ l, _ \ k] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l, ppTerm k]
 
-     | O.MONO O.MK_TUBE $ [_ \ r1, _ \ r2, (_, [u]) \ mu]  => 
+     | O.MK_TUBE $ [_ \ r1, _ \ r2, (_, [u]) \ mu]  => 
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
           nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mu]]
-     | O.MONO O.MK_BOUNDARY $ [_ \ r1, _ \ r2, _ \ m] => 
+     | O.MK_BOUNDARY $ [_ \ r1, _ \ r2, _ \ m] => 
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
           nest 1 @@ ppTerm m]
-     | O.MONO (O.MK_ANY _) $ [_ \ m] => ppTerm m
+     | O.MK_ANY _ $ [_ \ m] => ppTerm m
      | theta $ [] =>
         ppOperator theta
      | theta $ [([], []) \ arg] =>
@@ -278,12 +262,12 @@ struct
         Atomic.parens @@ expr @@
           hvsep @@ ppOperator theta :: List.map ppBinder args
 
-     | x $# (ps, []) => ppMetavarParams (x, ps)
-     | x $# (ps, ms) => Atomic.parens @@ expr @@ hvsep @@ ppMetavarParams (x, ps) :: List.map ppTerm ms
+     | x $# ([], []) => ppMeta x
+     | x $# ([], ms) => Atomic.parens @@ expr @@ hvsep @@ ppMeta x :: List.map ppTerm ms
 
   and ppVector (vec : abt) : Fpp.doc =
     case Abt.out vec of
-       O.MONO (O.MK_VEC _) $ args => 
+       O.MK_VEC _ $ args => 
          expr @@ hvsep @@ 
            List.map (fn _ \ t => ppTerm t) args
      | _ => raise Fail "invalid vector"

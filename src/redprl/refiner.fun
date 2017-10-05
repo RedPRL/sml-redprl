@@ -331,7 +331,7 @@ struct
           val arity = (valences, AJ.synthesis specjdg)
           fun argForSubgoal ((x, jdg), vl) = outb @@ Lcf.L.var x vl
         in
-          O.POLY (O.CUST (opid, SOME arity)) $$ ListPair.mapEq argForSubgoal (subgoalsList, valences)
+          O.CUST (opid, SOME arity) $$ ListPair.mapEq argForSubgoal (subgoalsList, valences)
         end
 
 

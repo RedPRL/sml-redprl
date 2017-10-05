@@ -95,9 +95,9 @@ struct
 
       fun catjdgEvidence jdg = 
         case out jdg of 
-           O.MONO (O.JDG_TRUE _) $ _ => O.EXP
-         | O.MONO (O.JDG_SYNTH _) $ _ => O.EXP
-         | O.MONO (O.JDG_TERM tau) $ _ => tau
+           O.JDG_TRUE _ $ _ => O.EXP
+         | O.JDG_SYNTH _ $ _ => O.EXP
+         | O.JDG_TERM tau $ _ => tau
          | _ => O.TRIV
 
       fun lookupArity sign pos opid = 
@@ -108,7 +108,7 @@ struct
       fun guessSort sign varctx (tm : ast) : sort =
         case out tm of
            `x => (StringListDict.lookup varctx x handle _ => error (getAnnotation tm) [Fpp.text ("Could not resolve variable " ^ x)])
-         | O.POLY (O.CUST (opid, _)) $ _ => #2 (lookupArity sign (getAnnotation tm) opid)
+         | O.CUST (opid, _) $ _ => #2 (lookupArity sign (getAnnotation tm) opid)
          | th $ _ =>
            let
              val (_, tau) = Tm.O.arity th
@@ -119,29 +119,29 @@ struct
 
       fun processOp pos sign varctx th  =
         case th of
-           O.POLY (O.CUST (opid, NONE)) => O.POLY (O.CUST (opid, SOME (lookupArity sign pos opid)))
-         | O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat)) => O.POLY (O.DEV_APPLY_LEMMA (opid, SOME (lookupArity sign pos opid), pat))
-         | O.POLY (O.DEV_USE_LEMMA (opid, NONE)) => O.POLY (O.DEV_USE_LEMMA (opid, SOME (lookupArity sign pos opid)))
+           O.CUST (opid, NONE) => O.CUST (opid, SOME (lookupArity sign pos opid))
+         | O.DEV_APPLY_LEMMA (opid, NONE, pat) => O.DEV_APPLY_LEMMA (opid, SOME (lookupArity sign pos opid), pat)
+         | O.DEV_USE_LEMMA (opid, NONE) => O.DEV_USE_LEMMA (opid, SOME (lookupArity sign pos opid))
          | th => th
 
       and processTerm' sign varctx m =
         case out m of
            `x => ``x
-         | O.MONO (O.MK_ANY NONE) $ [_ \ m] => 
+         | O.MK_ANY NONE $ [_ \ m] => 
            let
              val m' = processTerm sign varctx m
              val tau = guessSort sign varctx m
            in
-             O.MONO (O.MK_ANY (SOME tau)) $$ [([],[]) \ m']
+             O.MK_ANY (SOME tau) $$ [([],[]) \ m']
            end
-         | O.MONO (O.DEV_LET NONE) $ [_ \ jdg, _ \ tac1, tac2] =>
+         | O.DEV_LET NONE $ [_ \ jdg, _ \ tac1, tac2] =>
            let
              val jdg' = processTerm' sign varctx jdg
              val tau = catjdgEvidence jdg
              val tac1' = processTerm' sign varctx tac1
              val tac2' = processBinder sign varctx (([], [tau]), O.TAC) tac2
            in
-             O.MONO (O.DEV_LET (SOME tau)) $$ [([],[]) \ jdg', ([],[]) \ tac1', tac2']
+             O.DEV_LET (SOME tau) $$ [([],[]) \ jdg', ([],[]) \ tac1', tac2']
            end
          | th $ es =>
            let
