@@ -17,7 +17,6 @@ struct
      | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (h u, g l, k)
      | SYNTH (a, l, k) => SYNTH (h a, g l, k)
      | TERM tau => TERM tau
-     | PARAM_SUBST (psi, m, tau) => PARAM_SUBST (List.map (fn (r, sigma, u) => (h r, sigma, f u)) psi, h m, tau)
   
   fun map f = map' (fn x => x) (fn x => x) f
 
@@ -64,7 +63,6 @@ struct
              else [hsep [hsep [text "with", TermPrinter.ppKind k]]]
            ]
        | TERM tau => TermPrinter.ppSort tau
-       | PARAM_SUBST _ => text "param-subst" (* TODO *)
   end
 
   structure O = RedPrlOpData
@@ -76,7 +74,6 @@ struct
      | SUB_UNIVERSE _ => O.TRIV
      | SYNTH _ => O.EXP
      | TERM tau => tau
-     | PARAM_SUBST (_, _, tau) => tau
 
   local
     open RedPrlAbt
@@ -100,13 +97,6 @@ struct
        | SYNTH (m, NONE, k) => O.MONO (O.JDG_SYNTH false) $$ [([],[]) \ kconst k, ([],[]) \ m]
 
        | TERM tau => O.MONO (O.JDG_TERM tau) $$ []
-       | PARAM_SUBST (psi, m, tau) =>
-         let
-           val (rs, us) = ListPair.unzip (List.map (fn (r, sigma, u) => ((r, sigma), u)) psi)
-           val (rs, sigmas) = ListPair.unzip rs
-         in
-           O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $$ List.map (fn r => ([],[]) \ r) rs @ [(us,[]) \ m]
-         end
 
     fun outk kexpr = 
       case RedPrlAbt.out kexpr of
@@ -127,14 +117,6 @@ struct
        | O.MONO (O.JDG_SYNTH false) $ [_ \ k, _ \ m] => SYNTH (m, NONE, outk k)
 
        | O.MONO (O.JDG_TERM tau) $ [] => TERM tau
-       | O.MONO (O.JDG_PARAM_SUBST (sigmas, tau)) $ args =>
-         let
-           val (us , _) \ m = List.last args
-           val rs = List.map (fn _ \ r => r) (ListUtil.init args)
-           val psi = ListPair.mapEq (fn ((r, sigma), u) => (r, sigma, u)) (ListPair.zipEq (rs, sigmas), us)
-         in
-           PARAM_SUBST (psi, m, tau)
-         end
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]
 
     val pretty : jdg -> Fpp.doc = pretty'

@@ -26,30 +26,36 @@ struct
     (* Restrict a judgement (as the goal) by a list of equations.
      * Returns NONE if the resulting judgement is vacuously true.
      *)
-    val restrict : (param * param) list -> (abt -> abt) option
+    val restrict : (abt * abt) list -> (abt -> abt) option
   end
   =
   struct
-    (* A helper function which does substitution in a parameter. *)
-    fun substSymInParam (r, v) = P.bind (fn u => if Sym.eq (u, v) then r else P.ret u)
+    (* precondition: all term in equations are of sort `DIM` *)
+    fun restrict' [] (f : abt -> abt) = SOME f
+      | restrict' ((r1, r2) :: eqs) (f : abt -> abt) = 
+          (case (Syn.out r1, Syn.out r2) of
+              (Syn.DIM0, Syn.DIM0) => restrict' eqs f
+            | (Syn.DIM0, Syn.DIM1) => NONE
+            | (Syn.DIM1, Syn.DIM1) => restrict' eqs f
+            | (Syn.DIM1, Syn.DIM0) => NONE
+            | (Syn.VAR (v1, _), _) => if Abt.eq (r1, r2) then restrict' eqs f else substAndRestrict' (r2, v1) eqs f
+            | (Syn.META (v1, _), _) => if Abt.eq (r1, r2) then restrict' eqs f else substMetaAndRestrict' (r2, v1) eqs f
+            | (_, Syn.VAR (v2, _)) => substAndRestrict' (r1, v2) eqs f
+            | (_, Syn.META (v2, _)) => substMetaAndRestrict' (r1, v2) eqs f)
 
-    (* precondition: all parameters in equations are of sorts `DIM` *)
-    fun restrict' [] f = SOME f
-      | restrict' ((P.APP d1, P.APP d2) :: eqs) f =
-          (* The following line is correct because we only have constants
-           * (DIM0 and DIM1). If in the future we want to have connections
-           * or other stuff, then a real unification algorithm might be needed.
-           *)
-          if P.Sig.eq (fn _ => true) (d1, d2) then restrict' eqs f else NONE
-      | restrict' ((r1 as P.VAR v1, r2) :: eqs) f =
-          if P.eq Sym.eq (r1, r2) then restrict' eqs f else substAndRestrict' (r2, v1) eqs f
-      | restrict' ((r1, P.VAR v2) :: eqs) f =
-          substAndRestrict' (r1, v2) eqs f
+    and substMetaAndRestrict' (r, v) eqs f =
+        let
+          val abs = abtToAbs r
+        in
+          restrict'
+            (List.map (fn (r1, r2) => (substMetavar (abs, v) r1, substMetavar (abs, v) r2)) eqs)
+            (substMetavar (abs, v) o f)
+        end
 
     and substAndRestrict' rv eqs f =
           restrict'
-            (List.map (fn (r, r') => (substSymInParam rv r, substSymInParam rv r')) eqs)
-          (substSymbol rv o f)
+            (List.map (fn (r, r') => (substVar rv r, substVar rv r')) eqs)
+            (substVar rv o f)
 
     fun restrict eqs = restrict' eqs (fn x => x)
   end
@@ -60,39 +66,39 @@ struct
 
     fun restrictJdg eqs jdg = Option.map (fn f => Seq.map f jdg) (restrict eqs)
 
-    fun makeEq eqs (I, H) ((m, n), (ty, l, k)) =
+    fun makeEq eqs H ((m, n), (ty, l, k)) =
       Option.map
-        (fn f => makeEqWith f (I, H) ((m, n), (ty, l, k)))
+        (fn f => makeEqWith f H ((m, n), (ty, l, k)))
         (restrict eqs)
 
-    fun makeEqIfDifferent eqs (I, H) ((m, n), (ty, l, k)) =
+    fun makeEqIfDifferent eqs H ((m, n), (ty, l, k)) =
       Option.mapPartial
         (fn f =>
           if Abt.eq (f m, f n) then NONE
-          else SOME @@ makeEqWith f (I, H) ((m, n), (ty, l, k)))
+          else SOME @@ makeEqWith f H ((m, n), (ty, l, k)))
         (restrict eqs)
 
-    fun makeMem eqs (I, H) (m, (ty, l, k)) =
-      makeEq eqs (I, H) ((m, m), (ty, l, k))
+    fun makeMem eqs H (m, (ty, l, k)) =
+      makeEq eqs H ((m, m), (ty, l, k))
 
-    fun makeEqType eqs (I, H) ((a, b), l, k) =
+    fun makeEqType eqs H ((a, b), l, k) =
       Option.map
-        (fn f => makeEqTypeWith f (I, H) ((a, b), l, k))
+        (fn f => makeEqTypeWith f H ((a, b), l, k))
         (restrict eqs)
 
-    fun makeEqTypeIfDifferent eqs (I, H) ((a, b), l, k) =
+    fun makeEqTypeIfDifferent eqs H ((a, b), l, k) =
       Option.mapPartial
         (fn f =>
           if Abt.eq (f a, f b) then NONE
-          else SOME @@ makeEqTypeWith f (I, H) ((a, b), l, k))
+          else SOME @@ makeEqTypeWith f H ((a, b), l, k))
         (restrict eqs)
 
-    fun makeTrue eqs default (I, H) (a, l, k) =
+    fun makeTrue eqs default H (a, l, k) =
       case restrict eqs of
         NONE => (NONE, default)
       | SOME f =>
           let
-            val (goal, hole) = makeTrueWith f (I, H) (a, l, k)
+            val (goal, hole) = makeTrueWith f H (a, l, k)
           in
             (SOME goal, hole)
           end
@@ -109,7 +115,7 @@ struct
          forall i <= j.
            N_i = P_j in A [Psi, y | r_i = r_i', r_j = r_j']
      *)
-    fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substSymbol (P.ret w, u) tube))
+    fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substVar (VarKit.toDim w, u) tube))
     fun enumInterExceptDiag f =
       let
         fun enum ([], []) = []
@@ -120,22 +126,23 @@ struct
       end
 
     local
-      fun genTubeGoals' (I, H) ((tubes0, tubes1), (ty, l, k)) =
+      fun genTubeGoals' (H : AJ.jdg Hyps.telescope) ((tubes0, tubes1), (ty, l, k)) =
         ListPairUtil.mapPartialEq
-          (fn ((eq, t0), (_, t1)) => Restriction.makeEq [eq] (I, H) ((t0, t1), (ty, l, k)))
+          (fn ((eq, t0), (_, t1)) => Restriction.makeEq [eq] H ((t0, t1), (ty, l, k)))
           (tubes0, tubes1)
-      fun genInterTubeGoalsExceptDiag' (I, H) ((tubes0, tubes1), (ty, l, k)) =
+
+      fun genInterTubeGoalsExceptDiag' (H : AJ.jdg Hyps.telescope) ((tubes0, tubes1), (ty, l, k)) =
         enumInterExceptDiag
-          (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent [eq0, eq1] (I, H) ((t0, t1), (ty, l, k)))
+          (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent [eq0, eq1] H ((t0, t1), (ty, l, k)))
           (tubes0, tubes1)
     in
-      fun genInterTubeGoals (I, H) w ((tubes0, tubes1), (ty, l, k)) =
+      fun genInterTubeGoals (H : AJ.jdg Hyps.telescope) w ((tubes0, tubes1), (ty, l, k)) =
         let
           val tubes0 = alphaRenameTubes w tubes0
           val tubes1 = alphaRenameTubes w tubes1
 
-          val goalsOnDiag = genTubeGoals' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), (ty, l, k))
-          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (I @ [(w,P.DIM)], H) ((tubes0, tubes1), (ty, NONE, K.top))
+          val goalsOnDiag = genTubeGoals' (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), (ty, l, k))
+          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), (ty, NONE, K.top))
         in
           goalsOnDiag @ goalsNotOnDiag
         end
@@ -145,33 +152,33 @@ struct
          forall i.
            M = N_i<r/y> in A [Psi | r_i = r_i']
      *)
-    fun genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), (ty, l, k)) =
+    fun genCapTubeGoalsIfDifferent H ((cap, (r, tubes)), (ty, l, k)) =
       List.mapPartial
         (fn (eq, (u, tube)) =>
-          Restriction.makeEqIfDifferent [eq] (I, H) ((cap, substSymbol (r, u) tube), (ty, l, k)))
+          Restriction.makeEqIfDifferent [eq] H ((cap, substVar (r, u) tube), (ty, l, k)))
         tubes
 
     (* Note that this does not check whether the 'ty' is a base type.
      * It's caller's responsibility to check whether the type 'ty'
      * recognizes FCOM as values. *)
-    fun EqFComDelegate alpha (I, H) args0 args1 (ty, l, k) =
+    fun EqFComDelegate alpha H args0 args1 (ty, l, k) =
       let
-        val {dir=dir0, cap=cap0, tubes=tubes0} = args0
-        val {dir=dir1, cap=cap1, tubes=tubes1} = args1
+        val {dir=dir0, cap=cap0, tubes=tubes0 : abt Syn.tube list} = args0
+        val {dir=dir1, cap=cap1, tubes=tubes1 : abt Syn.tube list} = args1
         val () = Assert.dirEq "EqFComDelegator direction" (dir0, dir1)
         val eqs0 = List.map #1 tubes0
         val eqs1 = List.map #1 tubes1
         val _ = Assert.equationsEq "EqFComDelegator equations" (eqs0, eqs1)
         val _ = Assert.tautologicalEquations "EqFComDelegator tautology checking" eqs0
 
-        val goalCap = makeEq (I, H) ((cap0, cap1), (ty, l, k))
+        val goalCap = makeEq H ((cap0, cap1), (ty, l, k))
 
         val w = alpha 0
       in
         |>: goalCap
-         >:+ genInterTubeGoals (I, H) w ((tubes0, tubes1), (ty, l, k))
-         >:+ genCapTubeGoalsIfDifferent (I, H) ((cap0, (#1 dir0, tubes0)), (ty, NONE, K.top))
-        #> (I, H, trivial)
+         >:+ genInterTubeGoals H w ((tubes0, tubes1), (ty, l, k))
+         >:+ genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), (ty, NONE, K.top))
+        #> (H, trivial)
       end
   end
 
@@ -180,7 +187,7 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.Eq"
-        val (I, H) >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)
         val Syn.HCOM {dir=dir0, ty=ty0, cap=cap0, tubes=tubes0} = Syn.out lhs
@@ -194,65 +201,65 @@ struct
         val _ = Assert.tautologicalEquations "HCom.Eq tautology checking" eqs0
 
         (* type *)
-        val goalTy = makeEqTypeIfDifferent (I, H) ((ty0, ty1), l, k) (* (ty0, l, k) is proved in goalCap *)
-        val goalTy0 = makeSubType (I, H) (ty0, l, k) (ty, l, k) (* (ty0, l, k) is proved in goalCap *)
+        val goalTy = makeEqTypeIfDifferent H ((ty0, ty1), l, k) (* (ty0, l, k) is proved in goalCap *)
+        val goalTy0 = makeSubType H (ty0, l, k) (ty, l, k) (* (ty0, l, k) is proved in goalCap *)
 
         (* cap *)
-        val goalCap = makeEq (I, H) ((cap0, cap1), (ty0, l, k))
+        val goalCap = makeEq H ((cap0, cap1), (ty0, l, k))
 
         val w = alpha 0
       in
         |>: goalCap
-         >:+ ComKit.genInterTubeGoals (I, H) w ((tubes0, tubes1), (ty0, NONE, K.top))
-         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) ((cap0, (#1 dir0, tubes0)), (ty0, NONE, K.top))
+         >:+ ComKit.genInterTubeGoals H w ((tubes0, tubes1), (ty0, NONE, K.top))
+         >:+ ComKit.genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), (ty0, NONE, K.top))
          >:? goalTy0 >:? goalTy
-        #> (I, H, trivial)
+        #> (H, trivial)
       end
 
     fun EqCapL alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.EqCapL"
-        val (I, H) >> AJ.EQ ((hcom, other), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((hcom, other), (ty, l, k)) = jdg
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
-        val () = Assert.paramEq "HCom.EqCapL source and target of direction" (r, r')
+        val () = Assert.alphaEq' "HCom.EqCapL source and target of direction" (r, r')
 
         (* equations *)
         val _ = Assert.tautologicalEquations "HCom.EqCapL tautology checking" (List.map #1 tubes)
 
         (* type *)
-        val goalTy0 = makeSubType (I, H) (ty0, l, k) (ty, NONE, K.top) (* (ty0, l, k) proved in `genInterTubeGoals` *)
+        val goalTy0 = makeSubType H (ty0, l, k) (ty, NONE, K.top) (* (ty0, l, k) proved in `genInterTubeGoals` *)
 
         (* eq *)
-        val goalEq = makeEq (I, H) ((cap, other), (ty, l, k))
+        val goalEq = makeEq H ((cap, other), (ty, l, k))
 
         val w = alpha 0
       in
         |>: goalEq
-         >:+ ComKit.genInterTubeGoals (I, H) w ((tubes, tubes), (ty0, l, k))
-         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), (ty0, NONE, K.top))
+         >:+ ComKit.genInterTubeGoals H w ((tubes, tubes), (ty0, l, k))
+         >:+ ComKit.genCapTubeGoalsIfDifferent H ((cap, (r, tubes)), (ty0, NONE, K.top))
          >:? goalTy0
-        #> (I, H, trivial)
+        #> (H, trivial)
       end
 
     (* Search for the first satisfied equation in an hcom. *)
     fun EqTubeL alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.EqTubeL"
-        val (I, H) >> AJ.EQ ((hcom, other), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((hcom, other), (ty, l, k)) = jdg
         val k = K.meet (k, K.HCOM)
         (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
 
         (* equations. they must be tautological because one of them is true. *)
-        val (_, (u, tube)) = Option.valOf (List.find (fn (eq, _) => P.eq Sym.eq eq) tubes)
+        val (_, (u, tube)) = Option.valOf (List.find (fn (eq, _) => Abt.eq eq) tubes)
 
         (* type *)
         (* the cap-tube adjacency premise guarantees that [ty0] is a type
          * because one of the equations is true, and thus alpha-equivalence
          * is sufficient. *)
-        val goalTy0 = makeSubType (I, H) (ty0, l, k) (ty, l, k)
+        val goalTy0 = makeSubType H (ty0, l, k) (ty, l, k)
 
         (* cap *)
         (* the cap-tube adjacency premise guarantees that [cap] is in [ty0],
@@ -261,15 +268,15 @@ struct
         (* eq *)
         (* the tube-tube adjacency premise guarantees that this particular tube
          * is unconditionally in [ty], and thus alpha-equivalence is sufficient. *)
-        val goalEq = makeEqIfDifferent (I, H) ((substSymbol (r', u) tube, other), (ty0, l, k))
+        val goalEq = makeEqIfDifferent H ((substVar (r', u) tube, other), (ty0, l, k))
 
         val w = alpha 0
       in
         |>:? goalEq
-         >:+ ComKit.genInterTubeGoals (I, H) w ((tubes, tubes), (ty0, l, k))
-         >:+ ComKit.genCapTubeGoalsIfDifferent (I, H) ((cap, (r, tubes)), (ty0, NONE, K.top))
+         >:+ ComKit.genInterTubeGoals H w ((tubes, tubes), (ty0, l, k))
+         >:+ ComKit.genCapTubeGoalsIfDifferent H ((cap, (r, tubes)), (ty0, NONE, K.top))
          >:? goalTy0
-        #> (I, H, trivial)
+        #> (H, trivial)
       end
   end
 end

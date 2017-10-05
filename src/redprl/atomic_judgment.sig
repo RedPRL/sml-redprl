@@ -53,15 +53,6 @@ struct
       *   The realizer is such an `m` of sort `tau`.
       *)
      | TERM of sort
-
-     (* `PARAM_SUBST (l, m, s)`:
-      *   `l` is a list of elements of shape `(pe, ps, r)`, representing a
-      *   parameter substitution, where `pe` will (eventually) be `PARAM_EXP p`
-      *   for some parameter term `p`, `r` is a parameter variable and `ps` is
-      *   the sort of `p` and `r`. `m` is an expression of sort `s`.
-      *   The realizer is the result of applying the substitution `l` to `m`.
-      *)
-     | PARAM_SUBST of (abt * RedPrlParamSort.t * symbol) list * abt * sort
   end
 end
 

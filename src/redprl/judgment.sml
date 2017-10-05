@@ -18,8 +18,8 @@ struct
     infix >>
   in
     val rec sort =
-      fn (I, H) >> catjdg =>
-           ((List.map #2 I, Hyps.foldr (fn (_, jdg, r) => AJ.synthesis jdg :: r) [] H),
+      fn H >> catjdg =>
+           (([], Hyps.foldr (fn (_, jdg, r) => AJ.synthesis jdg :: r) [] H),
             AJ.synthesis catjdg)
        | MATCH (th, k, _, _, _) =>
            let

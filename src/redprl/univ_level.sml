@@ -91,24 +91,37 @@ struct
          x $# ([], [])=> (0, D.singleton x 0)
        | O.MONO (O.LCONST i) $ _ => const i
        | O.MONO (O.LPLUS i) $ [_ \ l] => above (out l, i)
-       | O.MONO (O.LMAX _) $ ls => max (List.map (fn _ \ l => out l) ls)
+       | O.MONO O.LMAX $ [_ \ vec] => max (outVec vec)
        | _ => E.raiseError (E.INVALID_LEVEL (TermPrinter.ppTerm tm))
 
-    fun constToParam i = O.MONO (O.LCONST i) $$ []
+    and outVec tm = 
+      let
+        val O.MONO (O.MK_VEC _) $ xs = RedPrlAbt.out tm
+      in
+        List.map (fn _ \ x => out x) xs
+      end
+      handle Bind => 
+        raise E.error [Fpp.text "Invalid level vector", TermPrinter.ppTerm tm]
+        
+
+    fun constToTerm i = O.MONO (O.LCONST i) $$ []
 
     fun makeVar x = 
       check (x $# ([],[]), O.LVL)
 
-    fun varGapToParam (x, i) =
+    fun makeVec xs = 
+      O.MONO (O.MK_VEC (O.LVL, List.length xs)) $$ List.map (fn x => ([],[]) \ x) xs
+
+    fun varGapToTerm (x, i) =
       if i = 0 then makeVar x
       else O.MONO (O.LPLUS i) $$ [([],[]) \ makeVar x]
 
-    val maxToParam =
-      fn [] => constToParam 0
+    val maxToTerm : abt list -> abt =
+      fn [] => constToTerm 0
        | [arg] => arg
-       | args => O.MONO (O.LMAX (List.length args)) $$ (List.map (fn l => ([],[]) \ l) args)
+       | args => O.MONO O.LMAX $$ [([],[]) \ makeVec args]
 
-    val into = into' constToParam varGapToParam maxToParam
+    val into = into' constToTerm varGapToTerm maxToTerm
   end
 end
 

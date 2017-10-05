@@ -9,6 +9,7 @@ in
   functor HashTable
   structure StringOrdered
   structure IntHashable
+  structure StringListDict
   structure Sum
   structure Susp
   structure Pos

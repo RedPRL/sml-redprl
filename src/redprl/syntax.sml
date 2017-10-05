@@ -9,8 +9,9 @@ struct
   type sort = Tm.sort
   type kind = K.t
 
-  type equation = param * param
-  type dir = param * param
+  type equation = Tm.abt * Tm.abt
+  type dir = Tm.abt * Tm.abt
+  type 'a tube = equation * (variable * 'a)
 
   type label = string
   structure Fields =
@@ -37,7 +38,7 @@ struct
     * computational content. This is the "ax(iom)" in Nuprl. *)
    | AX
    (* formal composition *)
-   | FCOM of {dir: dir, cap: 'a, tubes: (equation * (symbol * 'a)) list}
+   | FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
    (* strict bool *)
    | BOOL | TT | FF | IF of 'a * ('a * 'a)
    (* weak bool *)
@@ -51,22 +52,22 @@ struct
    (* empty type *)
    | VOID
    (* circle *)
-   | S1 | BASE | LOOP of param | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
+   | S1 | BASE | LOOP of 'a | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
    (* function: lambda and app *)
    | FUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
    (* record *)
    | RECORD of ((string * variable) * 'a) list
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
-   | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * param
+   | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * 'a
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
    | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
    | CAP of {dir: dir, tubes: (equation * (symbol * 'a)) list, coercee: 'a}
    (* V *)
-   | V of param * 'a * 'a * 'a
-   | VIN of param * 'a * 'a | VPROJ of param * 'a * 'a
+   | V of 'a * 'a * 'a * 'a
+   | VIN of 'a * 'a * 'a | VPROJ of 'a * 'a * 'a
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
@@ -75,46 +76,150 @@ struct
    | COE of {dir: dir, ty: (symbol * 'a), coercee: 'a}
    (* com operator *)
    | COM of {dir: dir, ty: (symbol * 'a), cap: 'a, tubes: (equation * (symbol * 'a)) list}
+
+   | DIM0 | DIM1
+
    (* custom operators *)
    | CUST
    (* meta *)
-   | META
+   | META of Tm.metavariable * sort
+
+
+
+  local
+    open Tm
+    structure O = RedPrlOpData and E = RedPrlError
+    infix $ $$ $# \
+  in
+    fun outVec' (f : abt -> 'a) (vec : abt) : 'a list =
+      let
+        val O.MONO (O.MK_VEC _) $ args = Tm.out vec
+      in
+        List.map (fn _ \ t => f t) args
+      end
+
+    val outVec = outVec' (fn x => x)
+
+    fun unpackAny m =
+      let
+        val O.MONO (O.MK_ANY _) $ [_ \ m'] = Tm.out m
+      in
+        m'
+      end
+
+    fun outSelector (s : abt) : Tm.variable O.selector = 
+      case Tm.out s of 
+         O.MONO O.SEL_CONCL $ _ => O.IN_CONCL
+       | O.MONO O.SEL_HYP $ [_ \ e] =>
+         (case Tm.out (unpackAny e) of
+             `x => O.IN_HYP x
+           | _ => raise Fail "Invalid selector")
+
+    fun outTube tube = 
+      let
+        val O.MONO O.MK_TUBE $ [_ \ r1, _ \ r2, (_,[u]) \ mu] = Tm.out tube
+      in
+        ((r1, r2), (u, mu))
+      end
+
+    fun outBoundary boundary = 
+      let
+        val O.MONO O.MK_BOUNDARY $ [_ \ r1, _ \ r2, _ \ m] = Tm.out boundary
+      in
+        ((r1, r2), m)
+      end
+
+    (* TODO: use outVec' *)
+    fun outTubes system =
+      let
+        val O.MONO (O.MK_VEC _) $ args = Tm.out system
+      in
+        List.map (fn _ \ t => outTube t) args
+      end
+
+    fun outBoundaries boundaries =
+      let
+        val O.MONO (O.MK_VEC _) $ args = Tm.out boundaries
+      in
+        List.map (fn _ \ b => outBoundary b) args
+      end
+
+    fun intoTube ((r1, r2), (u, e)) = 
+      O.MONO O.MK_TUBE $$ 
+        [([],[]) \ r1,
+         ([],[]) \ r2,
+         ([],[u]) \ e]
+
+    fun intoBoundary ((r1, r2), e) = 
+      O.MONO O.MK_BOUNDARY $$ 
+        [([],[]) \ r1,
+         ([],[]) \ r2,
+         ([],[]) \ e]
+
+
+    fun intoTubes tubes = 
+      let
+        val n = List.length tubes
+      in
+        O.MONO (O.MK_VEC (O.TUBE, n)) $$
+          List.map (fn t => ([],[]) \ intoTube t) tubes
+      end
+
+    fun intoBoundaries boundaries = 
+      let
+        val n = List.length boundaries
+      in
+        O.MONO (O.MK_VEC (O.BOUNDARY, n)) $$
+          List.map (fn b => ([],[]) \ intoBoundary b) boundaries
+      end
+  end
 
   local
     open Tm
     structure O = RedPrlOpData and E = RedPrlError
     infix $ $$ $# \
 
-    fun intoTubes tubes =
-      let
-        val (eqs, tubes) = ListPair.unzip tubes
-        val tubes = List.map (fn (d, t) => ([d],[]) \ t) tubes
-      in
-        (eqs, tubes)
-      end
 
-    fun outTubes (eqs, tubes) =
-      let
-        fun goTube (([d],_) \ tube) = (d, tube)
-          | goTube _ = raise E.error [Fpp.text "Syntax.outTubes: Malformed tube"]
-      in
-        ListPair.zipEq (eqs, List.map goTube tubes)
-      end
+    fun intoFcom {dir = (r1, r2), cap, tubes} =
+      O.MONO O.FCOM $$
+        [([],[]) \ r1,
+         ([],[]) \ r2,
+         ([],[]) \ cap,
+         ([],[]) \ intoTubes tubes]
 
-    fun intoFcom {dir, cap, tubes} =
-      let val (eqs, tubes) = intoTubes tubes
-      in O.POLY (O.FCOM (dir, eqs)) $$ (([],[]) \ cap) :: tubes
-      end
+    fun intoHcom {dir = (r1, r2), ty, cap, tubes} =
+      O.MONO O.HCOM $$ 
+        [([],[]) \ r1,
+         ([],[]) \ r2,
+         ([],[]) \ ty,
+         ([],[]) \ cap,
+         ([],[]) \ intoTubes tubes]
 
-    fun intoHcom {dir, ty, cap, tubes} =
-      let val (eqs, tubes) = intoTubes tubes
-      in O.POLY (O.HCOM (dir, eqs)) $$ (([],[]) \ ty) :: (([],[]) \ cap) :: tubes
-      end
+    fun intoCom {dir = (r1, r2), ty=(u,a), cap, tubes} =
+      O.MONO O.COM $$ 
+        [([],[]) \ r1,
+         ([],[]) \ r2,
+         ([],[u]) \ a,
+         ([],[]) \ cap,
+         ([],[]) \ intoTubes tubes]
 
-    fun intoCom {dir, ty=(u,a), cap, tubes} =
-      let val (eqs, tubes) = intoTubes tubes
-      in O.POLY (O.COM (dir, eqs)) $$ (([u],[]) \ a) :: (([],[]) \ cap) :: tubes
-      end
+
+    (* fun outBoudaries (eqs, boundaries) =
+      ListPair.zipEq (eqs, List.map (fn (_ \ b) => b) boundaries) *)
+
+    fun intoBox {dir = (r1, r2), cap, boundaries} =
+      O.MONO O.BOX $$ 
+        [([],[]) \ r1,
+         ([],[]) \ r2,
+         ([],[]) \ cap,
+         ([],[]) \ intoBoundaries boundaries]
+
+    fun intoCap {dir = (r1, r2), coercee, tubes} =
+      O.MONO O.CAP $$ 
+        [([],[]) \ r1,
+         ([],[]) \ r2,
+         ([], []) \ coercee,
+         ([],[]) \ intoTubes tubes]
 
     fun outRecordFields (lbls, args) =
       let
@@ -136,27 +241,6 @@ struct
         List.rev rcd
       end
 
-    fun intoBoundaries boundaries =
-      let
-        val (eqs, boundaries) = ListPair.unzip boundaries
-        val boundaries = List.map (fn b => ([], []) \ b) boundaries
-      in
-        (eqs, boundaries)
-      end
-
-    fun outBoudaries (eqs, boundaries) =
-      ListPair.zipEq (eqs, List.map (fn (_ \ b) => b) boundaries)
-
-    fun intoBox {dir, cap, boundaries} =
-      let val (eqs, boundaries) = intoBoundaries boundaries
-      in O.POLY (O.BOX (dir, eqs)) $$ (([],[]) \ cap) :: boundaries
-      end
-
-    (* note that the coercee goes first! *)
-    fun intoCap {dir, tubes, coercee} =
-      let val (eqs, tubes) = intoTubes tubes
-      in O.POLY (O.CAP (dir, eqs)) $$ (([],[]) \ coercee) :: tubes
-      end
   in
     fun intoTupleFields fs =
       let
@@ -199,8 +283,8 @@ struct
 
        | S1 => O.MONO O.S1 $$ []
        | BASE => O.MONO O.BASE $$ []
-       | LOOP r => O.POLY (O.LOOP r) $$ []
-       | S1_REC ((x, cx), m, (b, (u, l))) => O.MONO O.S1_REC $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([u],[]) \ l]
+       | LOOP r => O.MONO O.LOOP $$ [([],[]) \ r]
+       | S1_REC ((x, cx), m, (b, (u, l))) => O.MONO O.S1_REC $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([],[u]) \ l]
 
        | FUN (a, x, bx) => O.MONO O.FUN $$ [([],[]) \ a, ([],[x]) \ bx]
        | LAM (x, mx) => O.MONO O.LAM $$ [([],[x]) \ mx]
@@ -229,28 +313,30 @@ struct
        | PROJ (lbl, a) => O.MONO (O.PROJ lbl) $$ [([],[]) \ a]
        | TUPLE_UPDATE ((lbl, n), m) => O.MONO (O.TUPLE_UPDATE lbl) $$ [([],[]) \ n, ([],[]) \ m]
 
-       | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([u],[]) \ a, ([],[]) \ m, ([],[]) \ n]
-       | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([u],[]) \ m]
-       | PATH_APP (m, r) => O.POLY (O.PATH_APP r) $$ [([],[]) \ m]
+       | PATH_TY ((u, a), m, n) => O.MONO O.PATH_TY $$ [([],[u]) \ a, ([],[]) \ m, ([],[]) \ n]
+       | PATH_ABS (u, m) => O.MONO O.PATH_ABS $$ [([],[u]) \ m]
+       | PATH_APP (m, r) => O.MONO O.PATH_APP $$ [([],[]) \ m, ([],[]) \ r]
 
        | EQUALITY (a, m, n) => O.MONO O.EQUALITY $$ [([],[]) \ a, ([],[]) \ m, ([],[]) \ n]
 
        | BOX args => intoBox args
        | CAP args => intoCap args
 
-       | V (r, a, b, e) => O.POLY (O.V r) $$ [([],[]) \ a, ([],[]) \ b, ([],[]) \ e]
-       | VIN (r, m, n) => O.POLY (O.VIN r) $$ [([],[]) \ m, ([],[]) \ n]
-       | VPROJ (r, m, f) => O.POLY (O.VPROJ r) $$ [([],[]) \ m, ([],[]) \ f]
+       | V (r, a, b, e) => O.MONO O.V $$ [([],[]) \ r, ([],[]) \ a, ([],[]) \ b, ([],[]) \ e]
+       | VIN (r, m, n) => O.MONO O.VIN $$ [([],[]) \ r, ([],[]) \ m, ([],[]) \ n]
+       | VPROJ (r, m, f) => O.MONO O.VPROJ $$ [([],[]) \ r, ([],[]) \ m, ([],[]) \ f]
 
        | UNIVERSE (l, k) => O.MONO O.UNIVERSE $$ [([],[]) \ L.into l, ([],[]) \ (O.MONO (O.KCONST k) $$ [])]
 
        | HCOM args => intoHcom args
-       | COE {dir, ty = (u, a), coercee} =>
-           O.POLY (O.COE dir) $$ [([u],[]) \ a, ([],[]) \ coercee]
+       | COE {dir = (r1, r2), ty = (u, a), coercee} =>
+           O.MONO O.COE $$ [([],[]) \ r1, ([],[]) \ r2, ([],[u]) \ a, ([],[]) \ coercee]
        | COM args => intoCom args
 
+       | DIM0 => O.MONO O.DIM0 $$ []
+       | DIM1 => O.MONO O.DIM1 $$ []
        | CUST => raise Fail "CUST"
-       | META => raise Fail "META"
+       | META (x, tau) => check (x $# ([],[]), tau)
 
     val intoApp = into o APP
     val intoLam = into o LAM
@@ -274,12 +360,11 @@ struct
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
-
        | O.MONO O.TV $ _ => TV
        | O.MONO O.AX $ _ => AX
 
-       | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap) :: tubes =>
-           FCOM {dir = dir, cap = cap, tubes = outTubes (eqs, tubes)}
+       | O.MONO O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>
+           FCOM {dir = (r1, r2), cap = cap, tubes = outTubes tubes}
 
        | O.MONO O.BOOL $ _ => BOOL
        | O.MONO O.TT $ _ => TT
@@ -303,8 +388,8 @@ struct
 
        | O.MONO O.S1 $ _ => S1
        | O.MONO O.BASE $ _ => BASE
-       | O.POLY (O.LOOP r) $ _ => LOOP r
-       | O.MONO O.S1_REC $ [(_,[x]) \ cx, _ \ m, _ \ b, ([u],_) \ l] => S1_REC ((x, cx), m, (b, (u, l)))
+       | O.MONO O.LOOP $ [_ \ r] => LOOP r
+       | O.MONO O.S1_REC $ [(_,[x]) \ cx, _ \ m, _ \ b, (_,[u]) \ l] => S1_REC ((x, cx), m, (b, (u, l)))
 
        | O.MONO O.FUN $ [_ \ a, (_,[x]) \ bx] => FUN (a, x, bx)
        | O.MONO O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
@@ -315,21 +400,21 @@ struct
        | O.MONO (O.PROJ lbl) $ [_ \ m] => PROJ (lbl, m)
        | O.MONO (O.TUPLE_UPDATE lbl) $ [_ \ n, _ \ m] => TUPLE_UPDATE ((lbl, n), m)
 
-       | O.MONO O.PATH_TY $ [([u],_) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
-       | O.MONO O.PATH_ABS $ [([u],_) \ m] => PATH_ABS (u, m)
-       | O.POLY (O.PATH_APP r) $ [_ \ m] => PATH_APP (m, r)
+       | O.MONO O.PATH_TY $ [(_,[u]) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
+       | O.MONO O.PATH_ABS $ [(_,[u]) \ m] => PATH_ABS (u, m)
+       | O.MONO O.PATH_APP $ [_ \ m, _ \ r] => PATH_APP (m, r)
 
        | O.MONO O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 
-       | O.POLY (O.BOX (dir, eqs)) $ (_ \ cap) :: boundaries =>
-           BOX {dir = dir, cap = cap, boundaries = outBoudaries (eqs, boundaries)}
-       (* note that the coercee goes first! *)
-       | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee) :: tubes =>
-           CAP {dir = dir, tubes = outTubes (eqs, tubes), coercee = coercee}
+       | O.MONO O.BOX $ [_ \ r1, _ \ r2, _ \ cap, _ \ boundaries] =>
+           BOX {dir = (r1, r2), cap = cap, boundaries = outBoundaries boundaries}
 
-       | O.POLY (O.V r) $ [_ \ a, _ \ b, _ \ e] => V (r, a, b, e)
-       | O.POLY (O.VIN r) $ [_ \ m, _ \ n] => VIN (r, m, n)
-       | O.POLY (O.VPROJ r) $ [_ \ m, _ \ f] => VPROJ (r, m, f)
+       | O.MONO O.CAP $ [_ \ r1, _ \ r2, _ \ coercee, _ \ tubes] =>
+           CAP {dir = (r1, r2), coercee = coercee, tubes = outTubes tubes}
+
+       | O.MONO O.V $ [_ \ r, _ \ a, _ \ b, _ \ e] => V (r, a, b, e)
+       | O.MONO O.VIN $ [_ \ r, _ \ m, _ \ n] => VIN (r, m, n)
+       | O.MONO O.VPROJ $ [_ \ r, _ \ m, _ \ f] => VPROJ (r, m, f)
 
        | O.MONO O.UNIVERSE $ [_ \ l, _ \ k] =>
          let
@@ -338,13 +423,16 @@ struct
            UNIVERSE (L.out l, k)
          end
 
-       | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty) :: (_ \ cap) :: tubes =>
-           HCOM {dir = dir, ty = ty, cap = cap, tubes = outTubes (eqs, tubes)}
-       | O.POLY (O.COE dir) $ [([u],_) \ a, _ \ m] =>
-           COE {dir = dir, ty = (u, a), coercee = m}
+       | O.MONO O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ tubes] =>
+           HCOM {dir = (r1, r2), ty = ty, cap = cap, tubes = outTubes tubes}
+       | O.MONO O.COE $ [_ \ r1, _ \ r2, (_,[u]) \ a, _ \ m] =>
+           COE {dir = (r1, r2), ty = (u, a), coercee = m}
+
+       | O.MONO O.DIM0 $ _ => DIM0
+       | O.MONO O.DIM1 $ _ => DIM1
 
        | O.POLY (O.CUST _) $ _ => CUST
-       | _ $# _ => META
+       | x $# ([],[]) => META (x, Tm.sort m)
        | _ => raise E.error [Fpp.text "Syntax view encountered unrecognized term", TermPrinter.ppTerm m]
   end
 end

@@ -44,7 +44,7 @@ sig
 end =
 struct
   structure Abt = RedPrlAbt
-  structure S = RedPrlSortData and P = struct open RedPrlParamData RedPrlParameterTerm end and Ar = Abt.O.Ar
+  structure S = RedPrlSortData and P = RedPrlParameterTerm and Ar = Abt.O.Ar
 
   open FppBasis Fpp Abt
   structure O = RedPrlOpData
@@ -86,32 +86,22 @@ struct
 
   val rec ppParam =
     fn P.VAR x => ppSym x
-     | P.APP P.DIM0 => text "0"
-     | P.APP P.DIM1 => text "1"
 
   val ppParamWithSort =
     fn (p, NONE) => ppParam p
      | (p as P.VAR x, SOME _) => ppParam p
-     | (p as P.APP P.DIM0, SOME S.DIM) => ppParam p (* sort DIM is the default for numerals *)
-     | (p as P.APP P.DIM1, SOME S.DIM) => ppParam p (* sort DIM is the default for numerals *)
      | (p, SOME _) => raise Fail "ppParamWithSort encountered an invalid term."
 
   fun ppOperator theta =
     case theta of 
-       O.POLY (O.CUST (opid, [], _)) => ppSym opid
-     | O.POLY (O.CUST (opid, params, _)) => Atomic.braces @@ hsep @@ ppSym opid :: List.map ppParamWithSort params
-     | _ =>  text @@ RedPrlOperator.toString PrintName.sym theta
+       O.POLY (O.CUST (opid, _)) => ppSym opid
+     | _ => text @@ RedPrlOperator.toString PrintName.sym theta
 
   fun ppMetavarParams (x, ps) =
     case ps of
       [] => ppMeta x
     | ps => Atomic.braces @@ hsep @@ ppMeta x :: List.map (fn (p, _) => ppParam p) ps
 
-  fun ppComHead name (r, r') =
-    seq [text name, Atomic.braces @@ seq [ppParam r, text "~>", ppParam r']]
-
-  fun ppComHeadBackward name (r, r') =
-    seq [text name, Atomic.braces @@ seq [ppParam r, text "<~", ppParam r']]
 
   val ppLabel = text
 
@@ -152,13 +142,13 @@ struct
 
   fun multiPathAbs (us : symbol list) m =
     case Abt.out m of
-       O.MONO O.PATH_ABS $ [([u], _) \ mu] =>
+       O.MONO O.PATH_ABS $ [(_, [u]) \ mu] =>
          multiPathAbs (u :: us) mu
      | _ => (List.rev us, m)
 
-  fun multiPathApp m (rs : param list) =
+  fun multiPathApp m (rs : abt list) =
     case Abt.out m of
-       O.POLY (O.PATH_APP r) $ [_ \ m] =>
+       O.MONO O.PATH_APP $ [_ \ m, _ \ r] =>
          multiPathApp m (r :: rs)
      | _ => (m, rs)
 
@@ -185,18 +175,34 @@ struct
 
   and printPathApp (m, rs) =
     Atomic.parens @@ expr @@ hvsep
-      (char #"@" :: ppTerm m :: List.map ppParam rs)
+      (char #"@" :: ppTerm m :: List.map ppTerm rs)
+
+  and ppComHead name (r, r') =
+    seq [text name, Atomic.braces @@ seq [ppTerm r, text "~>", ppTerm r']]
+
+  and ppComHeadBackward name (r, r') =
+    seq [text name, Atomic.braces @@ seq [ppTerm r, text "<~", ppTerm r']]
 
   and ppTerm m =
     case Abt.out m of
-       O.POLY (O.HYP_REF (x, _)) $ [] => seq [char #",", ppVar x]
-     | `x => ppVar x
-     | O.POLY (O.FCOM (dir, eqs)) $ (cap :: tubes) =>
+       `x => ppVar x
+     | O.MONO O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "fcom" dir, ppBinder cap]
-             :: [ppTubes (eqs, tubes)]
-     | O.POLY (O.LOOP x) $ [] =>
-         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppParam x]
+           hvsep [ppComHead "fcom" (r1, r2), ppTerm cap]
+             :: [ppVector system]
+
+     | O.MONO O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [ppComHead "hcom" (r1, r2), ppTerm ty, ppTerm cap]
+             :: [ppVector system]
+
+     | O.MONO O.COM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [ppComHead "com" (r1, r2), ppBinder ty, ppTerm cap]
+             :: [ppVector system]
+
+     | O.MONO O.LOOP $ [_ \ r] =>
+         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppTerm r]
      | O.MONO O.FUN $ _ =>
          printQuant "->" @@ multiFun [] m
      | O.MONO O.LAM $ _ =>
@@ -235,32 +241,33 @@ struct
          Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder m]
      | O.MONO O.PATH_ABS $ _ =>
          printPathAbs @@ multiPathAbs [] m
-     | O.POLY (O.PATH_APP _) $ _ =>
+     | O.MONO O.PATH_APP $ _ =>
          printPathApp @@ multiPathApp m []
      | O.MONO O.EQUALITY $ args =>
          Atomic.parens @@ expr @@ hvsep @@
            char #"=" :: List.map ppBinder args
-     | O.POLY (O.BOX (dir, eqs)) $ (cap :: boundaries) =>
+     | O.MONO O.BOX $ [_ \ r1, _ \ r2, cap, _ \ boundaries] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "box" dir, ppBinder cap]
-             :: [ppBoundaries (eqs, boundaries)]
-     | O.POLY (O.CAP (dir, eqs)) $ (coercee :: tubes) =>
-         Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHeadBackward "cap" dir, ppBinder coercee]
-             :: [ppTubes (eqs, tubes)]
-     | O.POLY (O.V r) $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "V" :: ppParam r :: List.map ppBinder args
-     | O.POLY (O.VIN r) $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "Vin" :: ppParam r :: List.map ppBinder args
-     | O.POLY (O.VPROJ r) $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "Vproj" :: ppParam r :: List.map ppBinder args
+           hvsep [ppComHead "box" (r1, r2), ppBinder cap]
+             :: [ppVector boundaries]
+     | O.MONO O.V $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "V" :: List.map ppBinder args
+     | O.MONO O.VIN $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "Vin" :: List.map ppBinder args
+     | O.MONO O.VPROJ $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ text "Vproj" :: List.map ppBinder args
      | O.MONO O.UNIVERSE $ [_ \ l, _ \ k] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l, ppTerm k]
-     | O.POLY (O.HCOM (dir, eqs)) $ (ty :: cap :: tubes) =>
-         Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "hcom" dir, ppBinder ty, ppBinder cap]
-             :: [ppTubes (eqs, tubes)]
 
+     | O.MONO O.MK_TUBE $ [_ \ r1, _ \ r2, (_, [u]) \ mu]  => 
+       Atomic.squares @@ hsep
+         [seq [ppTerm r1, Atomic.equals, ppTerm r2],
+          nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mu]]
+     | O.MONO O.MK_BOUNDARY $ [_ \ r1, _ \ r2, _ \ m] => 
+       Atomic.squares @@ hsep
+         [seq [ppTerm r1, Atomic.equals, ppTerm r2],
+          nest 1 @@ ppTerm m]
+     | O.MONO (O.MK_ANY _) $ [_ \ m] => ppTerm m
      | theta $ [] =>
         ppOperator theta
      | theta $ [([], []) \ arg] =>
@@ -272,27 +279,14 @@ struct
           hvsep @@ ppOperator theta :: List.map ppBinder args
 
      | x $# (ps, []) => ppMetavarParams (x, ps)
-     | x $# (ps, ms) =>
-        Atomic.parens @@ expr @@ hvsep @@ ppMetavarParams (x, ps) :: List.map ppTerm ms
+     | x $# (ps, ms) => Atomic.parens @@ expr @@ hvsep @@ ppMetavarParams (x, ps) :: List.map ppTerm ms
 
-  and ppTubes (eqs, tubes) =
-    expr @@ hvsep @@
-      ListPair.mapEq
-        (fn ((r1, r2), ([u], _) \ mu) =>
-          Atomic.squares @@ hsep
-            [seq [ppParam r1, Atomic.equals, ppParam r2],
-             nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mu]])
-        (eqs, tubes)
-
-  and ppBoundaries (eqs, tubes) =
-    expr @@ hvsep @@
-      ListPair.mapEq
-        (fn ((r1, r2), _ \ m) =>
-          Atomic.squares @@ hsep
-            [seq [ppParam r1, Atomic.equals, ppParam r2],
-             nest 1 @@ ppTerm m])
-        (eqs, tubes)
-
+  and ppVector (vec : abt) : Fpp.doc =
+    case Abt.out vec of
+       O.MONO (O.MK_VEC _) $ args => 
+         expr @@ hvsep @@ 
+           List.map (fn _ \ t => ppTerm t) args
+     | _ => raise Fail "invalid vector"
 
   and ppBinder ((us, xs) \ m) =
     case (us, xs) of

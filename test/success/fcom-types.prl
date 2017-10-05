@@ -1,14 +1,14 @@
-Thm Fcom/bool {i:dim} : [
-  (fcom{0~>1} bool [i=0 {j} bool] [i=1 {j} bool]) type
+Thm Fcom/bool(#i:dim) : [
+  (fcom 0~>1 bool [#i=0 [j] bool] [#i=1 [j] bool]) type
 ] by [
   auto
 ].
 
 Print Fcom/bool.
 
-Thm Fcom/Box {i:dim} : [
-  (box{0~>1} tt [i=0 tt] [i=1 tt]) in
-  (fcom{0~>1} bool [i=0 {j} bool] [i=1 {j} bool])
+Thm Fcom/Box(#i:dim) : [
+  (box 0~>1 tt [#i=0 tt] [#i=1 tt]) in
+  (fcom 0~>1 bool [#i=0 [j] bool] [#i=1 [j] bool])
 ] by [
   auto
 ].
@@ -16,20 +16,19 @@ Thm Fcom/Box {i:dim} : [
 Print Fcom/Box.
 
 Thm Fcom/Reduce : [
-  (fcom{0~>1} bool [0=0 {j} bool]) = bool type
+  (fcom 0~>1 bool [0=0 [j] bool]) = bool type
 ] by [
   auto
 ].
 
 Thm Fcom/Cap1 : [
-  tt in (fcom{0~>1} bool [0=0 {j} bool])
+  tt in (fcom 0~>1 bool [0=0 [j] bool])
 ] by [
   auto
 ].
 
 Thm Fcom/Cap2 : [
-  (cap{0<~1} (box{0~>1} tt [0=0 tt]) [0=0 {j} bool]) in bool
+  (cap 0<~1 (box 0~>1 tt [0=0 tt]) [0=0 [j] bool]) in bool
 ] by [
   auto
 ].
-

@@ -14,14 +14,14 @@ Thm Apply : [
    (->
     bool
     bool
-    (path {_}
+    (path [_]
      (record [a : S1])
      (tuple [a base])
      (tuple [a base])))
    S1)
 ] by [
   lam f.
-    let {a = a} = f [`tt, `ff, @0].
+    let {a = a} = f [`tt, `ff, `(dim 0)].
     use a
 ].
 
@@ -43,19 +43,3 @@ Thm UseLemmaTest : [
   lam x.
   use UseHypTest [use x]
 ].
-
-
-Thm MyLemma(#m: {dim,dim}[exp,exp].exp) : [
-  (-> [b : bool] [p : (path {_} bool b tt)] (* bool (path {_} bool tt b)))
-] by [
-  lam b, p. {`tt, <i> `(hcom{0~>1} bool ,b [i=0 {j} (@ ,p j)] [i=1 {_} ,b])}
-].
-
-Thm UsingLemma : [
-  (path {_} bool tt tt)
-] by [
-  let {_,lem} = (MyLemma {i j} [x y] (@ (abs {_} y) i)) [`tt, <_> `tt].
-  use lem
-].
-
-Print UsingLemma.

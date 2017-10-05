@@ -36,42 +36,6 @@ struct
   open Tm infix $ $$ $# \
   structure O = RedPrlOpData
 
-  local
-    fun inheritAnnotation t1 t2 =
-      case getAnnotation t2 of
-         NONE => setAnnotation (getAnnotation t1) t2
-       | _ => t2
-
-    fun go syms m =
-      case Tm.out m of
-         O.POLY (O.HYP_REF (a, tau)) $ _ =>
-           if Sym.Ctx.member syms a then
-             m
-           else
-             inheritAnnotation m (check (`a, tau)) 
-       | _ => goStruct syms m
-
-    and goStruct syms m =
-      inheritAnnotation m
-        (case out m of
-           theta $ es =>
-             theta $$ List.map (goAbs syms) es
-         | x $# (ps, ms) =>
-             check (x $# (ps, List.map (go syms) ms), sort m)
-         | _ => m)
-
-    and goAbs syms ((us,xs) \ m) =
-      let
-        val syms' = List.foldl (fn (u, acc) => Sym.Ctx.insert acc u ()) syms us
-      in
-        (us,xs) \ go syms' m
-      end
-  in
-    (* Replace hypothesis-references with variables; this will *only* expand
-     * unbound hyp-refs. *)
-    val expandHypVars = go Sym.Ctx.empty
-  end
-
   fun hole (pos : Pos.t, name : string option) : multitactic = 
     fn alpha => fn state =>
       let
@@ -94,12 +58,8 @@ struct
   val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
 
-  fun unfoldCustomOperator sign (opid, ps, args) = 
-    let
-      val entry as {state, ...} = Sig.lookup sign opid
-    in
-      Sig.unfoldCustomOperator entry (List.map (fn (r, _) => r) ps) args
-    end
+  fun unfoldCustomOperator sign (opid, args) = 
+    Sig.unfoldCustomOperator (Sig.lookup sign opid) args
 
   fun elimRule sign z xs tacs = 
     R.Elim sign z thenl' (xs, tacs)
@@ -173,12 +133,12 @@ struct
 
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
-      val (_, H) >> _ = jdg
+      val H >> _ = jdg
       val AJ.TRUE (ty, _, _) = RT.Hyps.lookup z H
     in
       case Syn.out ty of 
          Syn.FUN _ => (RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.PATH_TY _ => (RT.Path.Elim z thenl' (names, [appTac, autoTac sign, autoTac sign, contTac])) alpha jdg
+       | Syn.PATH_TY _ => (RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
     end
 
@@ -261,20 +221,17 @@ struct
   end
 
   fun exactAuto sign m = 
-    R.Exact (expandHypVars m) thenl [autoTac sign]
+    R.Exact m thenl [autoTac sign]
 
-  fun cutLemma sign opid ar ps (args : abt bview list) (pattern, names) appTacs tac =
+  fun cutLemma sign opid ar (args : abt bview list) (pattern, names) appTacs tac =
     let
       val (vls, _) = ar
       fun processArg ((us, xs) \ m, ((sigmas, taus), _), {subtermNames, subtermTacs}) =
         let
           val syms = ListPair.zipEq (us, sigmas)
-          val vars = ListPair.mapEq (fn (x, tau) => (x, O.HYP)) (xs, taus)
-          val rho = ListPair.foldl (fn (x, tau, rho) => Var.Ctx.insert rho x (O.POLY (O.HYP_REF (x, tau)) $$ [])) Var.Ctx.empty (xs, taus)
-          val m' = substVarenv rho m
         in
           {subtermNames = us @ xs @ subtermNames,
-           subtermTacs = exactAuto sign m' :: subtermTacs}
+           subtermTacs = exactAuto sign m :: subtermTacs}
         end
 
       val {subtermNames, subtermTacs} = ListPair.foldr processArg {subtermNames = [], subtermTacs = []} (args, vls)
@@ -282,7 +239,7 @@ struct
       val z = RedPrlSym.new ()
       val continue = applications sign z (pattern, names) appTacs tac
     in
-      R.CutLemma sign opid ps thenl' (z :: subtermNames, subtermTacs @ [continue])
+      R.CutLemma sign opid thenl' (z :: subtermNames, subtermTacs @ [continue])
     end
 
   fun tactic sign env tm alpha jdg = 
@@ -298,67 +255,80 @@ struct
        O.MONO O.TAC_MTAC $ [_ \ tm] => multitacToTac (multitactic sign env tm)
      | O.MONO O.RULE_ID $ _ => idn
      | O.MONO O.RULE_AUTO_STEP $ _ => R.AutoStep sign
-     | O.POLY (O.RULE_ELIM z) $ _ => R.Elim sign z
-     | O.POLY (O.RULE_REWRITE sel) $ [_ \ tm] => R.Rewrite sign sel (expandHypVars tm) thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
-     | O.POLY (O.RULE_REWRITE_HYP (sel, z)) $ _ => R.RewriteHyp sign sel z
-     | O.MONO (O.RULE_EXACT _) $ [_ \ tm] => R.Exact (expandHypVars tm)
+     | O.MONO O.RULE_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
+     | O.MONO O.RULE_REWRITE $ [_ \ sel, _ \ tm] => R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
+     | O.MONO O.RULE_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
+     | O.MONO O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
      | O.MONO O.RULE_SYMMETRY $ _ => R.Symmetry
-     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out (expandHypVars catjdg))
+     | O.MONO O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out catjdg)
      | O.MONO O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
-     | O.POLY (O.RULE_REDUCE sels) $ _ => R.Computation.Reduce sign sels
+     | O.MONO O.RULE_REDUCE $ [_ \ sels] => R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
      | O.POLY (O.RULE_UNFOLD_ALL opids) $ _ => R.Custom.UnfoldAll sign opids
-     | O.POLY (O.RULE_UNFOLD (opids, sels)) $ _ => R.Custom.Unfold sign opids sels
+     | O.POLY (O.RULE_UNFOLD opids) $ [_ \ vec] => R.Custom.Unfold sign opids (Syntax.outVec' Syntax.outSelector vec)
      | O.MONO (O.RULE_PRIM ruleName) $ _ => R.lookupRule ruleName
-     | O.MONO O.DEV_LET $ [_ \ jdg, _ \ tm1, ([u],_) \ tm2] => R.Cut (AJ.out (expandHypVars jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
-     | O.MONO (O.DEV_FUN_INTRO pats) $ [(us, _) \ tm] => funIntros sign (pats, us) (tactic sign env tm)
+     | O.MONO (O.DEV_LET _) $ [_ \ jdg, _ \ tm1, ([],[u]) \ tm2] => R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.MONO (O.DEV_FUN_INTRO pats) $ [(_, us) \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.MONO (O.DEV_RECORD_INTRO lbls) $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
-     | O.MONO (O.DEV_PATH_INTRO _) $ [(us, _) \ tm] => pathIntros sign us (tactic sign env tm)
-     | O.POLY (O.DEV_BOOL_ELIM z) $ [_ \ tm1, _ \ tm2] => elimRule sign z [] [tactic sign env tm1, tactic sign env tm2]
-     | O.POLY (O.DEV_S1_ELIM z) $ [_ \ tm1, ([v], _) \ tm2] => elimRule sign z [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
-     | O.POLY (O.DEV_APPLY_HYP (z, pattern, _)) $ args =>
+     | O.MONO (O.DEV_PATH_INTRO _) $ [([], us) \ tm] => pathIntros sign us (tactic sign env tm)
+     | O.MONO O.DEV_BOOL_ELIM $ [_ \ var, _ \ tm1, _ \ tm2] => elimRule sign (VarKit.fromTerm var) [] [tactic sign env tm1, tactic sign env tm2]
+     | O.MONO O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, (_, [v]) \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
+     | O.MONO (O.DEV_APPLY_HYP pattern) $ [_ \ var, _ \ vec, (_, names) \ tm'] =>
        let
-         val ((names, _) \ tm) :: args' = List.rev args
-         val tacs = List.map (fn _ \ tm => tactic sign env tm) (List.rev args')
-         val tac = tactic sign env tm
+         val z = VarKit.fromTerm var
+         val tacs = Syn.outVec' (tactic sign env) vec
+         val tac = tactic sign env tm'
        in
          applications sign z (pattern, names) tacs tac
        end
-     | O.POLY (O.DEV_USE_HYP (z, n)) $ args => 
+     | O.MONO O.DEV_USE_HYP $ [_ \ var, _ \ vec] => 
        let
+         val z = VarKit.fromTerm var
+         val tacs = Syntax.outVec' (tactic sign env) vec
          val z' = RedPrlSym.named (Sym.toString z ^ "'")
-         val tacs = List.map (fn _ \ tm => tactic sign env tm) args
        in
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
        end
-     | O.POLY (O.DEV_APPLY_LEMMA (opid, ps, ar, pat, n)) $ args =>
+
+
+       (* TODO: check all these weird list reversals *)
+     | O.POLY (O.DEV_APPLY_LEMMA (opid, ar, pat)) $ args =>
        let
-         val ((names, []) \ tm) :: args' = List.rev args
-         val (appArgs, subtermArgs) = ListUtil.splitAt (args', n)
+         val (([], names) \ tac) :: (_ \ vec) :: revSubtermArgs = List.rev args
+         val subtermArgs = List.rev revSubtermArgs
+         val O.MONO (O.MK_VEC _) $ appArgs = Tm.out vec
+
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
          val tac = tactic sign env tm
        in
-         cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (pat, names) (List.rev appTacs) tac
+         cutLemma sign opid (Option.valOf ar) subtermArgs (pat, names) appTacs tac
        end
-     | O.POLY (O.DEV_USE_LEMMA (opid, ps, ar, n)) $ args =>
+     | O.POLY (O.DEV_USE_LEMMA (opid, ar)) $ args =>
        let
+         val (_ \ vec) :: revSubtermArgs = List.rev args
+         val subtermArgs = List.rev revSubtermArgs
+         val O.MONO (O.MK_VEC _) $ appArgs = Tm.out vec
+
          val z = RedPrlSym.named (Sym.toString opid ^ "'")
-         val (appArgs, subtermArgs) = ListUtil.splitAt (List.rev args, n)
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
        in
-         cutLemma sign opid (Option.valOf ar) ps (List.rev subtermArgs) (O.PAT_VAR (), [z]) (List.rev appTacs) (hyp z)
+         cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp z)
        end
-     | O.POLY (O.CUST (opid, ps, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, ps, args))
-     | O.MONO (O.DEV_MATCH (tau, ns)) $ (_ \ term) :: clauses =>
+     | O.POLY (O.CUST (opid, _)) $ args => tactic sign env (unfoldCustomOperator sign (opid, args))
+     | O.MONO (O.DEV_MATCH ns) $ (_ \ term) :: clauses =>
        let
          fun defrostMetas metas =
            let
              fun go tm = 
                case out tm of
-                  O.POLY (O.PAT_META (x, tau, rs, taus)) $ args =>
-                   if Unify.Metas.member metas x then 
-                    check (x $# (rs, List.map (fn _ \ m => m) args), tau)
-                   else 
-                     tm 
+                  O.POLY (O.PAT_META (x, tau)) $ [_ \ vec] =>
+                  let
+                    val args = Syn.outVec' Syn.unpackAny vec
+                  in
+                    if Unify.Metas.member metas x then 
+                     check (x $# ([], args), tau)
+                    else 
+                      tm 
+                  end
                 | _ => tm
            in
              go o deepMapSubterms go
@@ -366,11 +336,11 @@ struct
 
          fun reviveClause ((pvars,_) \ clause) alpha jdg =
            let
-             val O.MONO (O.DEV_MATCH_CLAUSE _) $ [_ \ pat, _ \ handler] = out clause
+             val O.MONO O.DEV_MATCH_CLAUSE $ [_ \ pat, _ \ handler] = out clause
              val metas = Unify.Metas.fromList pvars
-             val pat' = defrostMetas metas pat
+             val pat' = defrostMetas metas (Syn.unpackAny pat)
              val handler' = defrostMetas metas handler
-             val rho = Unify.unify metas (term, pat')
+             val rho = Unify.unify metas (Syn.unpackAny term, pat')
                (* handle exn as Unify.Unify (tm1, tm2) => 
                  (RedPrlLog.print RedPrlLog.WARN (getAnnotation pat, Fpp.hsep [Fpp.text "Failed to unify", TermPrinter.ppTerm tm1, Fpp.text "and", TermPrinter.ppTerm tm2]);
                   raise exn) *)
@@ -383,14 +353,14 @@ struct
        in
          List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
        end
-     | O.MONO O.DEV_QUERY_GOAL $ [(_,[x]) \ tm] =>
+     | O.MONO O.DEV_QUERY_CONCL $ [(_,[x]) \ tm] =>
        (fn alpha => fn jdg as _ >> cj =>
          let
            val tm' = substVar (AJ.into cj, x) tm
          in
            tactic sign env tm' alpha jdg
          end)
-     | O.MONO (O.DEV_PRINT _) $ [_ \ tm'] =>
+     | O.MONO O.DEV_PRINT $ [_ \ tm'] =>
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
         T.idn)
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
@@ -402,12 +372,12 @@ struct
      | O.MONO (O.MTAC_FOCUS i) $ [_ \ tm] => T.only (i, tactic sign env tm)
      | O.MONO O.MTAC_PROGRESS $ [_ \ tm] => T.mprogress (multitactic sign env tm)
      | O.MONO O.MTAC_REC $ [(_,[x]) \ tm] => T.mrec (fn mt => multitactic sign (Var.Ctx.insert env x mt) tm)
-     | O.MONO (O.MTAC_SEQ _) $ [_ \ tm1, (us, _) \ tm2] => T.seq (multitactic sign env tm1, (us, multitactic sign env tm2))
+     | O.MONO (O.MTAC_SEQ _) $ [_ \ tm1, (_, us) \ tm2] => T.seq (multitactic sign env tm1, (us, multitactic sign env tm2))
      | O.MONO O.MTAC_ORELSE $ [_ \ tm1, _ \ tm2] => T.morelse (multitactic sign env tm1, multitactic sign env tm2)
      | O.MONO (O.MTAC_HOLE msg) $ _ => hole (Option.valOf (Tm.getAnnotation tm), msg)
      | O.MONO O.MTAC_REPEAT $ [_ \ tm] => T.mrepeat (multitactic sign env tm)
      | O.MONO O.MTAC_AUTO $ _ => autoMtac sign
-     | O.POLY (O.CUST (opid, ps, _)) $ args => multitactic sign env (unfoldCustomOperator sign (opid, ps, args))
+     | O.POLY (O.CUST (opid, _)) $ args => multitactic sign env (unfoldCustomOperator sign (opid, args))
      | `x => Var.Ctx.lookup env x
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized multitactic", TermPrinter.ppTerm tm]
 

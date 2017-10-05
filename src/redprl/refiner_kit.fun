@@ -6,7 +6,7 @@ struct
   infix orelse_ then_
 
   structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and J = RedPrlJudgment
-  structure P = struct open RedPrlSortData RedPrlParameterTerm RedPrlParamData end
+  structure P = struct open RedPrlSortData RedPrlParameterTerm end
   structure K = RedPrlKind
   structure L = RedPrlLevel
   structure AJ = RedPrlAtomicJudgment
@@ -85,7 +85,7 @@ struct
     structure HypsUtil = TelescopeUtil (Seq.Hyps)
     open HypsUtil
 
-    fun toSpine H =
+    fun toList H =
       Seq.Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, AJ.synthesis jdg) :: r) [] H
 
     fun lookup z H =
@@ -112,17 +112,16 @@ struct
 
   (* evidence *)
 
-  fun abstractEvidence (I : (Sym.t * Abt.psort) list, H) m =
+  fun abstractEvidence H m =
     let
-      val (us, sigmas) = ListPair.unzip I
       val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, AJ.synthesis jdg::taus)) ([],[]) H
     in
-      assertWellScoped (us, xs) m;
-      Abt.checkb (Abt.\ ((us, xs), m), ((sigmas, taus), Abt.sort m))
+      assertWellScoped ([], xs) m;
+      Abt.checkb (Abt.\ (([], xs), m), (([], taus), Abt.sort m))
     end
 
-  fun #> (psi, (I, H, m)) =
-    Lcf.|> (psi, abstractEvidence (I, H) m)
+  fun #> (psi, (H, m)) =
+    Lcf.|> (psi, abstractEvidence H m)
   infix #>
 
   val trivial = Syn.into Syn.TV
@@ -152,7 +151,7 @@ struct
       val (_, tau) = J.sort jdg
       val (ps, ms) =
         case jdg of
-           (I, H) >> _ => (List.map (fn (u, sigma) => (P.VAR u, sigma)) I, Hyps.toSpine H)
+           H >> _ => ([], Hyps.toList H)
          | MATCH _ => ([],[])
          | MATCH_RECORD _ => ([],[])
 
@@ -163,65 +162,64 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrueWith f (I, H) (ty, l, k) = makeGoal @@ Seq.map f @@ (I, H) >> AJ.TRUE (ty, l, k)
+  fun makeTrueWith f H (ty, l, k) = makeGoal @@ Seq.map f @@ H >> AJ.TRUE (ty, l, k)
   val makeTrue = makeTrueWith (fn j => j)
-  fun makeSynth (I, H) (m, l, k) = makeGoal @@ (I, H) >> AJ.SYNTH (m, l, k)
+  fun makeSynth H (m, l, k) = makeGoal @@ H >> AJ.SYNTH (m, l, k)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
-  fun makeTerm (I, H) tau = makeGoal @@ (I, H) >> AJ.TERM tau
-  fun makeDimSubst (I, H) (r, u, m) = makeGoal @@ (I, H) >> AJ.PARAM_SUBST ([(r, O.DIM, u)], m, Abt.sort m)
+  fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
 
   (* ignoring the trivial realizer *)
-  fun makeType (I, H) (a, l, k) = makeGoal' @@ (I, H) >> AJ.TYPE (a, l, k)
-  fun makeEqTypeWith f (I, H) ((a, b), l, k) = makeGoal' @@ Seq.map f @@ (I, H) >> AJ.EQ_TYPE ((a, b), l, k)
+  fun makeType H (a, l, k) = makeGoal' @@ H >> AJ.TYPE (a, l, k)
+  fun makeEqTypeWith f H ((a, b), l, k) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), l, k)
   val makeEqType = makeEqTypeWith (fn j => j)
-  fun makeEqWith f (I, H) ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ (I, H) >> AJ.EQ ((m, n), (ty, l, k))
+  fun makeEqWith f H ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l, k))
   val makeEq = makeEqWith (fn j => j)
-  fun makeMem (I, H) (m, (ty, l, k)) = makeGoal' @@ (I, H) >> AJ.MEM (m, (ty, l, k))
-  fun makeSubUniverse (I, H) (u, l, k) = makeGoal' @@ (I, H) >> AJ.SUB_UNIVERSE (u, l, k)
+  fun makeMem H (m, (ty, l, k)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l, k))
+  fun makeSubUniverse H (u, l, k) = makeGoal' @@ H >> AJ.SUB_UNIVERSE (u, l, k)
 
   (* conditional goal making *)
 
-  fun makeEqTypeIfDifferent (I, H) ((m, n), l, k) =
+  fun makeEqTypeIfDifferent H ((m, n), l, k) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType (I, H) ((m, n), l, k)
+    else SOME @@ makeEqType H ((m, n), l, k)
 
-  fun makeEqTypeUnlessSubUniv (I, H) ((m, n), l, k) (l', k') =
+  fun makeEqTypeUnlessSubUniv H ((m, n), l, k) (l', k') =
     Option.map
-      (fn (l, k) => makeEqType (I, H) ((m, n), l, k))
+      (fn (l, k) => makeEqType H ((m, n), l, k))
       (L.PK.residual ((l, k), (l', k')))
   
-  fun makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k') =
-    makeEqTypeUnlessSubUniv (I, H) ((m, m), l, k) (l', k')
+  fun makeTypeUnlessSubUniv H (m, l, k) (l', k') =
+    makeEqTypeUnlessSubUniv H ((m, m), l, k) (l', k')
 
-  fun makeEqTypeIfDifferentOrNotSubUniv (I, H) ((m, n), l, k) (l', k') =
-    if Abt.eq (m, n) then makeTypeUnlessSubUniv (I, H) (m, l, k) (l', k')
-    else SOME @@ makeEqType (I, H) ((m, n), l, k)
+  fun makeEqTypeIfDifferentOrNotSubUniv H ((m, n), l, k) (l', k') =
+    if Abt.eq (m, n) then makeTypeUnlessSubUniv H (m, l, k) (l', k')
+    else SOME @@ makeEqType H ((m, n), l, k)
 
-  fun makeEqIfDifferent (I, H) ((m, n), (ty, l, k)) =
+  fun makeEqIfDifferent H ((m, n), (ty, l, k)) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
+    else SOME @@ makeEq H ((m, n), (ty, l, k))
 
-  fun makeEqIfAllDifferent (I, H) ((m, n), (ty, l, k)) ns =
+  fun makeEqIfAllDifferent H ((m, n), (ty, l, k)) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent (I, H) ((m, n), (ty, l, k))
+    else makeEqIfDifferent H ((m, n), (ty, l, k))
 
-  fun makeEqUnlessSubUniv (I, H) ((m, n), (ty, l, k)) (l', k') =
+  fun makeEqUnlessSubUniv H ((m, n), (ty, l, k)) (l', k') =
     Option.map
-      (fn (l, k) => makeEq (I, H) ((m, n), (ty, l, k)))
+      (fn (l, k) => makeEq H ((m, n), (ty, l, k)))
       (L.PK.residual ((l, k), (l', k')))
 
-  fun makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k') =
-    makeEqUnlessSubUniv (I, H) ((m, m), (ty, l, k)) (l', k')
+  fun makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k') =
+    makeEqUnlessSubUniv H ((m, m), (ty, l, k)) (l', k')
 
-  fun makeEqIfDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) (l', k') =
-    if Abt.eq (m, n) then makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k')
-    else SOME @@ makeEq (I, H) ((m, n), (ty, l, k))
+  fun makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k') =
+    if Abt.eq (m, n) then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
+    else SOME @@ makeEq H ((m, n), (ty, l, k))
 
-  fun makeEqIfAllDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) ns (l', k') =
+  fun makeEqIfAllDifferentOrNotSubUniv H ((m, n), (ty, l, k)) ns (l', k') =
     if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeMemUnlessSubUniv (I, H) (m, (ty, l, k)) (l', k')
-    else makeEqIfDifferentOrNotSubUniv (I, H) ((m, n), (ty, l, k)) (l', k')
+    then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
+    else makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k')
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
@@ -233,8 +231,8 @@ struct
 
   (* It is not clear how exactly the subtyping should be implemented;
    * therefore we have a dummy implementation here. *)
-  fun makeSubType (I, H) (ty1, l1, k1) (ty0, l0, k0) =
-    makeEqTypeIfDifferentOrNotSubUniv (I, H) ((ty1, ty0), l0, k0) (l1, k1)
+  fun makeSubType H (ty1, l1, k1) (ty0, l0, k0) =
+    makeEqTypeIfDifferentOrNotSubUniv H ((ty1, ty0), l0, k0) (l1, k1)
 
   (* assertions *)
 
@@ -245,6 +243,12 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected sort", TermPrinter.ppSort tau1, Fpp.text "to be equal to", TermPrinter.ppSort tau2]
+
+    fun alphaEq' msg (m, n) =
+      if Abt.eq (m, n) then
+        ()
+      else
+        raise E.error [Fpp.text msg, Fpp.text ":", Fpp.text "Expected", TermPrinter.ppTerm m, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
 
     fun alphaEq (m, n) =
       if Abt.eq (m, n) then
@@ -295,34 +299,34 @@ struct
         raise E.error [Fpp.text (msg ^ ":"), Fpp.text "Expected parameter", TermPrinter.ppParam r1, Fpp.text "to be equal to", TermPrinter.ppParam r2]
 
     fun dirEq msg ((r1, r1'), (r2, r2')) =
-      if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
+      if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then
         ()
       else
         raise E.error
           [Fpp.text (msg ^ ":"),
            Fpp.text "Expected direction",
-           TermPrinter.ppParam r1,
+           TermPrinter.ppTerm r1,
            Fpp.text "~>",
-           TermPrinter.ppParam r1',
+           TermPrinter.ppTerm r1',
            Fpp.text "to be equal to",
-           TermPrinter.ppParam r2,
+           TermPrinter.ppTerm r2,
            Fpp.text "~>",
-           TermPrinter.ppParam r2']
+           TermPrinter.ppTerm r2']
 
     fun equationEq msg ((r1, r1'), (r2, r2')) =
-      if P.eq Sym.eq (r1, r2) andalso P.eq Sym.eq (r1', r2') then
+      if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then
         ()
       else
         raise E.error
           [Fpp.text (msg ^ ":"),
            Fpp.text "Expected equation",
-           TermPrinter.ppParam r1,
+           TermPrinter.ppTerm r1,
            Fpp.text "=",
-           TermPrinter.ppParam r1',
+           TermPrinter.ppTerm r1',
            Fpp.text "to be equal to",
-           TermPrinter.ppParam r2,
+           TermPrinter.ppTerm r2,
            Fpp.text "=",
-           TermPrinter.ppParam r2']
+           TermPrinter.ppTerm r2']
 
     fun equationsEq msg = ListPair.mapEq (equationEq msg)
 
@@ -334,20 +338,28 @@ struct
     fun tautologicalEquations msg eqs =
       let
         fun goEqs _ [] = false
-          | goEqs (state as (zeros, ones)) (eq :: eqs) =
-              case eq of
-                (P.APP P.DIM0, P.APP P.DIM0) => true
-              | (P.APP P.DIM0, P.APP P.DIM1) => goEqs state eqs
-              | (P.APP P.DIM0, P.VAR _) => goEqs state eqs
-              | (P.APP P.DIM1, P.APP P.DIM1) => true
-              | (P.APP P.DIM1, P.APP P.DIM0) => goEqs state eqs
-              | (P.APP P.DIM1, P.VAR _) => goEqs state eqs
-              | (P.VAR u, P.APP P.DIM0) =>
+          | goEqs (state as (zeros, ones)) ((r1, r2) :: eqs) =
+              case (Syn.out r1, Syn.out r2) of
+                (Syn.DIM0, Syn.DIM0) => true
+              | (Syn.DIM0, Syn.DIM1) => goEqs state eqs
+              | (Syn.DIM0, Syn.VAR _) => goEqs state eqs
+              | (Syn.DIM0, Syn.META _) => goEqs state eqs
+              | (Syn.DIM1, Syn.DIM1) => true
+              | (Syn.DIM1, Syn.DIM0) => goEqs state eqs
+              | (Syn.DIM1, Syn.VAR _) => goEqs state eqs
+              | (Syn.DIM1, Syn.META _) => goEqs state eqs
+              | (Syn.VAR (u, _), Syn.DIM0) =>
                   SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
-              | (P.VAR u, P.APP P.DIM1) =>
+              | (Syn.META (u, _), Syn.DIM0) =>
+                  SymSet.member ones u orelse goEqs (SymSet.insert zeros u, ones) eqs
+              | (Syn.VAR (u, _), Syn.DIM1) =>
                   SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
-              | (P.VAR u, P.VAR v) => Sym.eq (u, v) orelse goEqs state eqs
-        fun prettyEq (r1, r2) = [TermPrinter.ppParam r1, Fpp.text "=", TermPrinter.ppParam r2, Fpp.text ";"]
+              | (Syn.META (u, _), Syn.DIM1) =>
+                  SymSet.member zeros u orelse goEqs (zeros, SymSet.insert ones u) eqs
+              | (Syn.VAR (u, _), Syn.VAR (v, _)) => Sym.eq (u, v) orelse goEqs state eqs
+              | (Syn.META (u, _), Syn.META (v, _)) => Sym.eq (u, v) orelse goEqs state eqs
+              | _ => raise E.error [Fpp.text "Expected equation but got ", TermPrinter.ppTerm r1, Fpp.text "=", TermPrinter.ppTerm r2]
+        fun prettyEq (r1, r2) = [TermPrinter.ppTerm r1, Fpp.text "=", TermPrinter.ppTerm r2, Fpp.text ";"]
       in
         if goEqs (SymSet.empty, SymSet.empty) eqs then
           ()
@@ -383,7 +395,7 @@ struct
   struct
     fun map sel f (H, catjdg) =
       case sel of
-         O.IN_GOAL => (H, AJ.map f catjdg)
+         O.IN_CONCL => (H, AJ.map f catjdg)
        | O.IN_HYP x => (Hyps.modify x (AJ.map f) H, catjdg)
 
     fun multiMap sels f (H, catjdg) =
@@ -391,12 +403,12 @@ struct
 
     fun lookup sel (H, catjdg) =
       case sel of
-         O.IN_GOAL => catjdg
+         O.IN_CONCL => catjdg
        | O.IN_HYP x => Hyps.lookup x H
 
     fun truncateFrom sel H =
       case sel of
-         O.IN_GOAL => H
+         O.IN_CONCL => H
        | O.IN_HYP x => Hyps.truncateFrom H x
   end
 end

@@ -112,10 +112,10 @@ whitespace = [\ \t];
 "WU"               => (Tokens.V (posTuple (size yytext)));
 "Vin"              => (Tokens.VIN (posTuple (size yytext)));
 "Vproj"            => (Tokens.VPROJ (posTuple (size yytext)));
-"universe"         => (Tokens.UNIVERSE (posTuple (size yytext)));
 "U"                => (Tokens.UNIVERSE (posTuple (size yytext)));
 "abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
+"com"              => (Tokens.COM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
 
 "then"             => (Tokens.THEN (posTuple (size yytext)));
@@ -130,7 +130,6 @@ whitespace = [\ \t];
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
 "kind"             => (Tokens.KIND (posTuple (size yytext)));
-"meta-name"        => (Tokens.META_NAME (posTuple (size yytext)));
 
 "lmax"             => (Tokens.LMAX (posTuple (size yytext)));
 
@@ -159,7 +158,6 @@ whitespace = [\ \t];
 "symmetry"         => (Tokens.RULE_SYMMETRY (posTuple (size yytext)));
 "auto-step"        => (Tokens.RULE_AUTO_STEP (posTuple (size yytext)));
 "auto"             => (Tokens.MTAC_AUTO (posTuple (size yytext)));
-"hyp"              => (Tokens.HYP (posTuple (size yytext)));
 "elim"             => (Tokens.RULE_ELIM (posTuple (size yytext)));
 "rewrite"          => (Tokens.RULE_REWRITE (posTuple (size yytext)));
 "rewrite-hyp"      => (Tokens.RULE_REWRITE_HYP (posTuple (size yytext)));
@@ -169,7 +167,7 @@ whitespace = [\ \t];
 
 "match"            => (Tokens.MATCH (posTuple (size yytext)));
 "query"            => (Tokens.QUERY (posTuple (size yytext)));
-"goal"             => (Tokens.GOAL (posTuple (size yytext)));
+"concl"            => (Tokens.CONCL (posTuple (size yytext)));
 "print"            => (Tokens.PRINT (posTuple (size yytext)));
 
 "true"             => (Tokens.TRUE (posTuple (size yytext)));
