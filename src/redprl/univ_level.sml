@@ -88,7 +88,7 @@ struct
     (* parser and generator *)
     fun out (tm : term) : level =
       case RedPrlAbt.out tm of
-         x $# ([], [])=> (0, D.singleton x 0)
+         x $# [] => (0, D.singleton x 0)
        | O.LCONST i $ _ => const i
        | O.LPLUS i $ [_ \ l] => above (out l, i)
        | O.LMAX $ [_ \ vec] => max (outVec vec)
@@ -107,19 +107,19 @@ struct
     fun constToTerm i = O.LCONST i $$ []
 
     fun makeVar x = 
-      check (x $# ([],[]), O.LVL)
+      check (x $# [], O.LVL)
 
     fun makeVec xs = 
-      O.MK_VEC (O.LVL, List.length xs) $$ List.map (fn x => ([],[]) \ x) xs
+      O.MK_VEC (O.LVL, List.length xs) $$ List.map (fn x => [] \ x) xs
 
     fun varGapToTerm (x, i) =
       if i = 0 then makeVar x
-      else O.LPLUS i $$ [([],[]) \ makeVar x]
+      else O.LPLUS i $$ [[] \ makeVar x]
 
     val maxToTerm : abt list -> abt =
       fn [] => constToTerm 0
        | [arg] => arg
-       | args => O.LMAX $$ [([],[]) \ makeVec args]
+       | args => O.LMAX $$ [[] \ makeVec args]
 
     val into = into' constToTerm varGapToTerm maxToTerm
   end

@@ -34,7 +34,6 @@ sig
   val ppSort : RedPrlAbt.sort -> Fpp.doc
   val ppValence : RedPrlAbt.valence -> Fpp.doc
   val ppVar : RedPrlAbt.variable -> Fpp.doc
-  val ppSym : RedPrlAbt.symbol -> Fpp.doc
   val ppMeta : RedPrlAbt.metavariable -> Fpp.doc
   val ppOperator : RedPrlAbt.operator -> Fpp.doc
   val ppKind : RedPrlKind.kind -> Fpp.doc
@@ -42,7 +41,7 @@ sig
 end =
 struct
   structure Abt = RedPrlAbt
-  structure S = RedPrlSortData and P = RedPrlParameterTerm and Ar = Abt.O.Ar
+  structure S = RedPrlSortData and Ar = Abt.O.Ar
 
   open FppBasis Fpp Abt
   structure O = RedPrlOpData
@@ -70,7 +69,7 @@ struct
   (* To debug scoping issues, switch below to DebugPrintName. *)
   structure PrintName = NormalPrintName
 
-  val ppSym = text o PrintName.sym
+  val ppVar = text o PrintName.sym
   val ppVar = text o PrintName.var
   val ppKind = text o RedPrlKind.toString
   fun ppMeta x = seq [char #"#", text @@ PrintName.meta x]
@@ -85,7 +84,7 @@ struct
   fun ppOperator theta =
     case theta of 
        O.CUST (opid, _) => text opid
-     | _ => text @@ RedPrlOperator.toString PrintName.sym theta
+     | _ => text @@ RedPrlOperator.toString theta
 
   val ppLabel = text
 
@@ -100,7 +99,7 @@ struct
 
   fun multiFun (doms : (variable list option * abt) list) m =
     case Abt.out m of
-       O.FUN $ [_ \ a, (_, [x]) \ bx] =>
+       O.FUN $ [_ \ a, [x] \ bx] =>
          if Abt.Var.Ctx.member (Abt.varctx bx) x then
            case doms of
               (SOME xs, a') :: doms' =>
@@ -114,7 +113,7 @@ struct
 
   fun multiLam (xs : variable list) m =
     case Abt.out m of
-       O.LAM $ [(_, [x]) \ mx] =>
+       O.LAM $ [[x] \ mx] =>
          multiLam (x :: xs) mx
      | _ => (List.rev xs, m)
 
@@ -124,9 +123,9 @@ struct
          multiApp m (n :: ns)
      | _ => (m, ns)
 
-  fun multiPathAbs (us : symbol list) m =
+  fun multiPathAbs (us : variable list) m =
     case Abt.out m of
-       O.PATH_ABS $ [(_, [u]) \ mu] =>
+       O.PATH_ABS $ [[u] \ mu] =>
          multiPathAbs (u :: us) mu
      | _ => (List.rev us, m)
 
@@ -199,7 +198,7 @@ struct
            val init = {fields = [], vars = []}
            val {fields, ...} = 
              ListPair.foldlEq
-               (fn (lbl, (_, xs) \ ty, {fields, vars}) =>
+               (fn (lbl, xs \ ty, {fields, vars}) =>
                  let
                    val ren = ListPair.foldlEq (fn (x, var, ren) => Var.Ctx.insert ren x var) Var.Ctx.empty (xs, vars)
                    val ty' = RedPrlAbt.renameVars ren ty
@@ -243,10 +242,10 @@ struct
      | O.UNIVERSE $ [_ \ l, _ \ k] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l, ppTerm k]
 
-     | O.MK_TUBE $ [_ \ r1, _ \ r2, (_, [u]) \ mu]  => 
+     | O.MK_TUBE $ [_ \ r1, _ \ r2, [u] \ mu]  => 
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
-          nest 1 @@ hvsep [Atomic.braces @@ ppSym u, ppTerm mu]]
+          nest 1 @@ hvsep [Atomic.braces @@ ppVar u, ppTerm mu]]
      | O.MK_BOUNDARY $ [_ \ r1, _ \ r2, _ \ m] => 
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
@@ -254,16 +253,16 @@ struct
      | O.MK_ANY _ $ [_ \ m] => ppTerm m
      | theta $ [] =>
         ppOperator theta
-     | theta $ [([], []) \ arg] =>
+     | theta $ [[] \ arg] =>
         Atomic.parens @@ expr @@ hvsep @@ [ppOperator theta, atLevel 10 @@ ppTerm arg]
-     | theta $ [(us, xs) \ arg] =>
-        Atomic.parens @@ expr @@ hvsep [hvsep [ppOperator theta, seq [symBinding us, varBinding xs]], align @@ ppTerm arg]
+     | theta $ [xs \ arg] =>
+        Atomic.parens @@ expr @@ hvsep [hvsep [ppOperator theta, varBinding xs], align @@ ppTerm arg]
      | theta $ args =>
         Atomic.parens @@ expr @@
           hvsep @@ ppOperator theta :: List.map ppBinder args
 
-     | x $# ([], []) => ppMeta x
-     | x $# ([], ms) => Atomic.parens @@ expr @@ hvsep @@ ppMeta x :: List.map ppTerm ms
+     | x $# [] => ppMeta x
+     | x $# ms => Atomic.parens @@ expr @@ hvsep @@ ppMeta x :: List.map ppTerm ms
 
   and ppVector (vec : abt) : Fpp.doc =
     case Abt.out vec of
@@ -272,15 +271,15 @@ struct
            List.map (fn _ \ t => ppTerm t) args
      | _ => raise Fail "invalid vector"
 
-  and ppBinder ((us, xs) \ m) =
-    case (us, xs) of
-        ([], []) => atLevel 10 @@ ppTerm m
-      | _ => grouped @@ hvsep [seq [symBinding us, varBinding xs], align @@ ppTerm m]
+  and ppBinder (xs \ m) =
+    case xs of
+        [] => atLevel 10 @@ ppTerm m
+      | _ => grouped @@ hvsep [varBinding xs, align @@ ppTerm m]
 
   and symBinding us =
     unlessEmpty us @@
       Atomic.braces @@
-        hsep @@ List.map ppSym us
+        hsep @@ List.map ppVar us
 
   and varBinding xs =
     unlessEmpty xs @@
@@ -289,22 +288,16 @@ struct
 
 
   val ppSort = text o Ar.Vl.S.toString
-  val ppPsort = text o Ar.Vl.PS.toString
 
-  fun ppValence ((sigmas, taus), tau) =
+  fun ppValence (taus, tau) =
     let
       val prefix =
-        case (sigmas, taus) of
-           ([], []) => empty
-         | _ => seq [symSorts sigmas, varSorts taus, char #"."]
+        case taus of
+           [] => empty
+         | _ => seq [varSorts taus, char #"."]
     in
       seq [prefix, ppSort tau]
     end
-
-  and symSorts sigmas =
-    unlessEmpty sigmas @@
-      Atomic.braces @@
-        hsep @@ intersperse Atomic.comma @@ List.map ppPsort sigmas
 
   and varSorts taus =
     unlessEmpty taus @@

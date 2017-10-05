@@ -26,7 +26,7 @@ struct
   local
     open Fpp
   in
-    fun pretty' _ g h eq =
+    fun pretty' g h eq =
       fn EQ ((m, n), (a, l, k)) => expr @@ hvsep @@ List.concat
            [ if eq (m, n) then [h m] else [h m, Atomic.equals, h n]
            , [hsep [text "in", h a]]
@@ -85,16 +85,16 @@ struct
       O.KCONST k $$ []
 
     val into : jdg -> abt =
-      fn EQ ((m, n), (a, SOME l, k)) => O.JDG_EQ true $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-       | EQ ((m, n), (a, NONE, k)) => O.JDG_EQ false $$ [([],[]) \ kconst k, ([],[]) \ m, ([],[]) \ n, ([],[]) \ a]
-       | TRUE (a, SOME l, k) => O.JDG_TRUE true $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ a]
-       | TRUE (a, NONE, k) => O.JDG_TRUE false $$ [([],[]) \ kconst k, ([],[]) \ a]
-       | EQ_TYPE ((a, b), SOME l, k) => O.JDG_EQ_TYPE true $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ a, ([],[]) \ b]
-       | EQ_TYPE ((a, b), NONE, k) => O.JDG_EQ_TYPE false $$ [([],[]) \ kconst k, ([],[]) \ a, ([],[]) \ b]
-       | SUB_UNIVERSE (u, SOME l, k) => O.JDG_SUB_UNIVERSE true $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ u]
-       | SUB_UNIVERSE (u, NONE, k) => O.JDG_SUB_UNIVERSE false $$ [([],[]) \ kconst k, ([],[]) \ u]
-       | SYNTH (m, SOME l, k) => O.JDG_SYNTH true $$ [([],[]) \ L.into l, ([],[]) \ kconst k, ([],[]) \ m]
-       | SYNTH (m, NONE, k) => O.JDG_SYNTH false $$ [([],[]) \ kconst k, ([],[]) \ m]
+      fn EQ ((m, n), (a, SOME l, k)) => O.JDG_EQ true $$ [[] \ L.into l, [] \ kconst k, [] \ m, [] \ n, [] \ a]
+       | EQ ((m, n), (a, NONE, k)) => O.JDG_EQ false $$ [[] \ kconst k, [] \ m, [] \ n, [] \ a]
+       | TRUE (a, SOME l, k) => O.JDG_TRUE true $$ [[] \ L.into l, [] \ kconst k, [] \ a]
+       | TRUE (a, NONE, k) => O.JDG_TRUE false $$ [[] \ kconst k, [] \ a]
+       | EQ_TYPE ((a, b), SOME l, k) => O.JDG_EQ_TYPE true $$ [[] \ L.into l, [] \ kconst k, [] \ a, [] \ b]
+       | EQ_TYPE ((a, b), NONE, k) => O.JDG_EQ_TYPE false $$ [[] \ kconst k, [] \ a, [] \ b]
+       | SUB_UNIVERSE (u, SOME l, k) => O.JDG_SUB_UNIVERSE true $$ [[] \ L.into l, [] \ kconst k, [] \ u]
+       | SUB_UNIVERSE (u, NONE, k) => O.JDG_SUB_UNIVERSE false $$ [[] \ kconst k, [] \ u]
+       | SYNTH (m, SOME l, k) => O.JDG_SYNTH true $$ [[] \ L.into l, [] \ kconst k, [] \ m]
+       | SYNTH (m, NONE, k) => O.JDG_SYNTH false $$ [[] \ kconst k, [] \ m]
 
        | TERM tau => O.JDG_TERM tau $$ []
 
@@ -119,8 +119,7 @@ struct
        | O.JDG_TERM tau $ [] => TERM tau
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]
 
-    val pretty : jdg -> Fpp.doc = pretty'
-      TermPrinter.ppSym L.pretty TermPrinter.ppTerm eq
+    val pretty : jdg -> Fpp.doc = pretty' L.pretty TermPrinter.ppTerm eq
     val eq = fn (j1, j2) => eq (into j1, into j2)
   end
 end

@@ -41,17 +41,7 @@ struct
   val toString = sortToString
 end
 
-structure RedPrlParamSort : ABT_SORT =
-struct
-  open RedPrlSortData
-  type t = unit
-  val eq : t * t -> bool = op=
-  fun toString _ = "*"
-end
-
-structure RedPrlParameter = AbtEmptyParameter (RedPrlParamSort)
-structure RedPrlParameterTerm = AbtParameterTerm (RedPrlParameter)
-structure RedPrlArity = ListAbtArity (structure PS = RedPrlParamSort and S = RedPrlSort)
+structure RedPrlArity = ListAbtArity (structure S = RedPrlSort)
 
 structure RedPrlKind =
 struct
@@ -152,7 +142,6 @@ struct
   type opid = string (* TODO: structured representation to allow namespacing!! *)
 
   open RedPrlSortData
-  structure P = RedPrlParameterTerm
   structure K = RedPrlKind
   type kind = RedPrlKind.kind
 
@@ -163,13 +152,6 @@ struct
      PAT_VAR of 'a
    | PAT_TUPLE of (string * 'a dev_pattern) list
 
-  (* We split our operator signature into a couple datatypes, because the implementation of
-   * some of the 2nd-order signature obligations can be made trivial for "constant" operators,
-   * which we call "monomorphic".
-   *
-   * Practically, the difference is:
-   * MONO: the Standard ML built-in equality properly compares the operators.
-   * POLY: we have to compare the operators manually. *)
   datatype operator =
    (* the trivial realizer of sort TRIV for judgments lacking interesting
     * computational content. *)
@@ -274,13 +256,11 @@ end
 
 structure ArityNotation =
 struct
-  fun op* (a, b) = (a, b) (* symbols sorts, variable sorts *)
-  fun op<> (a, b) = (a, b) (* valence *)
-  fun op|: (a, b) = (([], a), b)
+  fun op|: (a, b) = (a, b)
   fun op->> (a, b) = (a, b) (* arity *)
 end
 
-structure RedPrlSimpleOperator : ABT_SIMPLE_OPERATOR =
+structure RedPrlOperator : ABT_OPERATOR =
 struct
   structure Ar = RedPrlArity
 
@@ -566,5 +546,3 @@ struct
      | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ opid ^ "}"
      | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ opid ^ "}"
 end
-
-structure RedPrlOperator = AbtSimpleOperator (RedPrlSimpleOperator)

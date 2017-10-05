@@ -1,17 +1,16 @@
 signature MINI_SIGNATURE =
 sig
   type metavar = RedPrlAbt.metavariable
-  type symbol = RedPrlAbt.symbol
   type opid = RedPrlOpData.opid
   type abt = RedPrlAbt.abt
   type valence = RedPrlAbt.valence
   type sort = RedPrlAbt.sort
-  type psort = RedPrlAbt.psort
+  type variable = RedPrlAbt.variable
   type src_opid = string
   type jdg = RedPrlJudgment.jdg
 
   type 'a arguments = ('a * valence) list
-  type names = int -> symbol
+  type names = int -> variable
 
   type sign
   type entry =

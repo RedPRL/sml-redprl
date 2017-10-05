@@ -4,8 +4,6 @@ struct
   structure K = RedPrlKind
   structure L = RedPrlLevel
   type variable = Tm.variable
-  type symbol = Tm.symbol
-  type param = Tm.param
   type sort = Tm.sort
   type kind = K.t
 
@@ -52,30 +50,30 @@ struct
    (* empty type *)
    | VOID
    (* circle *)
-   | S1 | BASE | LOOP of 'a | S1_REC of (variable * 'a) * 'a * ('a * (symbol * 'a))
+   | S1 | BASE | LOOP of 'a | S1_REC of (variable * 'a) * 'a * ('a * (variable * 'a))
    (* function: lambda and app *)
    | FUN of 'a * variable * 'a | LAM of variable * 'a | APP of 'a * 'a
    (* record *)
    | RECORD of ((string * variable) * 'a) list
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
-   | PATH_TY of (symbol * 'a) * 'a * 'a | PATH_ABS of symbol * 'a | PATH_APP of 'a * 'a
+   | PATH_TY of (variable * 'a) * 'a * 'a | PATH_ABS of variable * 'a | PATH_APP of 'a * 'a
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
    | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
-   | CAP of {dir: dir, tubes: (equation * (symbol * 'a)) list, coercee: 'a}
+   | CAP of {dir: dir, tubes: (equation * (variable * 'a)) list, coercee: 'a}
    (* V *)
    | V of 'a * 'a * 'a * 'a
    | VIN of 'a * 'a * 'a | VPROJ of 'a * 'a * 'a
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
-   | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (symbol * 'a)) list}
+   | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (variable * 'a)) list}
    (* coe operator *)
-   | COE of {dir: dir, ty: (symbol * 'a), coercee: 'a}
+   | COE of {dir: dir, ty: (variable * 'a), coercee: 'a}
    (* com operator *)
-   | COM of {dir: dir, ty: (symbol * 'a), cap: 'a, tubes: (equation * (symbol * 'a)) list}
+   | COM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: (equation * (variable * 'a)) list}
 
    | DIM0 | DIM1
 
@@ -117,7 +115,7 @@ struct
 
     fun outTube tube = 
       let
-        val O.MK_TUBE $ [_ \ r1, _ \ r2, (_,[u]) \ mu] = Tm.out tube
+        val O.MK_TUBE $ [_ \ r1, _ \ r2, [u] \ mu] = Tm.out tube
       in
         ((r1, r2), (u, mu))
       end
@@ -146,15 +144,15 @@ struct
 
     fun intoTube ((r1, r2), (u, e)) = 
       O.MK_TUBE $$ 
-        [([],[]) \ r1,
-         ([],[]) \ r2,
-         ([],[u]) \ e]
+        [[] \ r1,
+         [] \ r2,
+         [u] \ e]
 
     fun intoBoundary ((r1, r2), e) = 
       O.MK_BOUNDARY $$ 
-        [([],[]) \ r1,
-         ([],[]) \ r2,
-         ([],[]) \ e]
+        [[] \ r1,
+         [] \ r2,
+         [] \ e]
 
 
     fun intoTubes tubes = 
@@ -162,7 +160,7 @@ struct
         val n = List.length tubes
       in
         O.MK_VEC (O.TUBE, n) $$
-          List.map (fn t => ([],[]) \ intoTube t) tubes
+          List.map (fn t => [] \ intoTube t) tubes
       end
 
     fun intoBoundaries boundaries = 
@@ -170,7 +168,7 @@ struct
         val n = List.length boundaries
       in
         O.MK_VEC (O.BOUNDARY, n) $$
-          List.map (fn b => ([],[]) \ intoBoundary b) boundaries
+          List.map (fn b => [] \ intoBoundary b) boundaries
       end
   end
 
@@ -182,26 +180,26 @@ struct
 
     fun intoFcom {dir = (r1, r2), cap, tubes} =
       O.FCOM $$
-        [([],[]) \ r1,
-         ([],[]) \ r2,
-         ([],[]) \ cap,
-         ([],[]) \ intoTubes tubes]
+        [[] \ r1,
+         [] \ r2,
+         [] \ cap,
+         [] \ intoTubes tubes]
 
     fun intoHcom {dir = (r1, r2), ty, cap, tubes} =
       O.HCOM $$ 
-        [([],[]) \ r1,
-         ([],[]) \ r2,
-         ([],[]) \ ty,
-         ([],[]) \ cap,
-         ([],[]) \ intoTubes tubes]
+        [[] \ r1,
+         [] \ r2,
+         [] \ ty,
+         [] \ cap,
+         [] \ intoTubes tubes]
 
     fun intoCom {dir = (r1, r2), ty=(u,a), cap, tubes} =
       O.COM $$ 
-        [([],[]) \ r1,
-         ([],[]) \ r2,
-         ([],[u]) \ a,
-         ([],[]) \ cap,
-         ([],[]) \ intoTubes tubes]
+        [[] \ r1,
+         [] \ r2,
+         [u] \ a,
+         [] \ cap,
+         [] \ intoTubes tubes]
 
 
     (* fun outBoudaries (eqs, boundaries) =
@@ -209,24 +207,24 @@ struct
 
     fun intoBox {dir = (r1, r2), cap, boundaries} =
       O.BOX $$ 
-        [([],[]) \ r1,
-         ([],[]) \ r2,
-         ([],[]) \ cap,
-         ([],[]) \ intoBoundaries boundaries]
+        [[] \ r1,
+         [] \ r2,
+         [] \ cap,
+         [] \ intoBoundaries boundaries]
 
     fun intoCap {dir = (r1, r2), coercee, tubes} =
       O.CAP $$ 
-        [([],[]) \ r1,
-         ([],[]) \ r2,
-         ([], []) \ coercee,
-         ([],[]) \ intoTubes tubes]
+        [[] \ r1,
+         [] \ r2,
+         [] \ coercee,
+         [] \ intoTubes tubes]
 
     fun outRecordFields (lbls, args) =
       let
         val init = {rcd = [], vars = []}
         val {rcd, ...} = 
           ListPair.foldlEq
-            (fn (lbl, (_, xs) \ ty, {rcd, vars}) =>
+            (fn (lbl, xs \ ty, {rcd, vars}) =>
               let
                 val ren = ListPair.foldlEq (fn (x, var, ren) => Var.Ctx.insert ren x var) Var.Ctx.empty (xs, vars)
                 val ty' = Tm.renameVars ren ty
@@ -245,7 +243,7 @@ struct
     fun intoTupleFields fs =
       let
         val (lbls, tms) = ListPair.unzip fs
-        val tms = List.map (fn tm => ([],[]) \ tm) tms
+        val tms = List.map (fn tm => [] \ tm) tms
       in
         (lbls, tms)
       end
@@ -264,31 +262,31 @@ struct
        | BOOL => O.BOOL $$ []
        | TT => O.TT $$ []
        | FF => O.FF $$ []
-       | IF (m, (t, f)) => O.IF $$ [([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
+       | IF (m, (t, f)) => O.IF $$ [[] \ m, [] \ t, [] \ f]
 
        | WBOOL => O.WBOOL $$ []
-       | WIF ((x, cx), m, (t, f)) => O.WIF $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ t, ([],[]) \ f]
+       | WIF ((x, cx), m, (t, f)) => O.WIF $$ [[x] \ cx, [] \ m, [] \ t, [] \ f]
 
        | NAT => O.NAT $$ []
        | ZERO => O.ZERO $$ []
-       | SUCC m => O.SUCC $$ [([],[]) \ m]
-       | NAT_REC (m, (n, (a, b, p))) => O.NAT_REC $$ [([],[]) \ m, ([],[]) \ n, ([],[a,b]) \ p]
+       | SUCC m => O.SUCC $$ [[] \ m]
+       | NAT_REC (m, (n, (a, b, p))) => O.NAT_REC $$ [[] \ m, [] \ n, [a,b] \ p]
 
        | INT => O.INT $$ []
-       | NEGSUCC m => O.NEGSUCC $$ [([],[]) \ m]
+       | NEGSUCC m => O.NEGSUCC $$ [[] \ m]
        | INT_REC (m, (n, (a, b, p), q, (c, d, r))) =>
-           O.INT_REC $$ [([],[]) \ m, ([],[]) \ n, ([],[a,b]) \ p, ([],[]) \ q, ([],[c,d]) \ r]
+           O.INT_REC $$ [[] \ m, [] \ n, [a,b] \ p, [] \ q, [c,d] \ r]
 
        | VOID => O.VOID $$ []
 
        | S1 => O.S1 $$ []
        | BASE => O.BASE $$ []
-       | LOOP r => O.LOOP $$ [([],[]) \ r]
-       | S1_REC ((x, cx), m, (b, (u, l))) => O.S1_REC $$ [([],[x]) \ cx, ([],[]) \ m, ([],[]) \ b, ([],[u]) \ l]
+       | LOOP r => O.LOOP $$ [[] \ r]
+       | S1_REC ((x, cx), m, (b, (u, l))) => O.S1_REC $$ [[x] \ cx, [] \ m, [] \ b, [u] \ l]
 
-       | FUN (a, x, bx) => O.FUN $$ [([],[]) \ a, ([],[x]) \ bx]
-       | LAM (x, mx) => O.LAM $$ [([],[x]) \ mx]
-       | APP (m, n) => O.APP $$ [([],[]) \ m, ([],[]) \ n]
+       | FUN (a, x, bx) => O.FUN $$ [[] \ a, [x] \ bx]
+       | LAM (x, mx) => O.LAM $$ [[x] \ mx]
+       | APP (m, n) => O.APP $$ [[] \ m, [] \ n]
 
        | RECORD fields =>
             let
@@ -298,7 +296,7 @@ struct
                  (fn (((lbl, var), ty), {labels, args, vars}) =>
                      {labels = lbl :: labels,
                       vars = vars @ [var],
-                      args = (([],vars) \ ty) :: args})
+                      args = (vars \ ty) :: args})
                  init
                  fields
            in
@@ -310,33 +308,33 @@ struct
            in
              O.TUPLE lbls $$ tys
            end
-       | PROJ (lbl, a) => O.PROJ lbl $$ [([],[]) \ a]
-       | TUPLE_UPDATE ((lbl, n), m) => O.TUPLE_UPDATE lbl $$ [([],[]) \ n, ([],[]) \ m]
+       | PROJ (lbl, a) => O.PROJ lbl $$ [[] \ a]
+       | TUPLE_UPDATE ((lbl, n), m) => O.TUPLE_UPDATE lbl $$ [[] \ n, [] \ m]
 
-       | PATH_TY ((u, a), m, n) => O.PATH_TY $$ [([],[u]) \ a, ([],[]) \ m, ([],[]) \ n]
-       | PATH_ABS (u, m) => O.PATH_ABS $$ [([],[u]) \ m]
-       | PATH_APP (m, r) => O.PATH_APP $$ [([],[]) \ m, ([],[]) \ r]
+       | PATH_TY ((u, a), m, n) => O.PATH_TY $$ [[u] \ a, [] \ m, [] \ n]
+       | PATH_ABS (u, m) => O.PATH_ABS $$ [[u] \ m]
+       | PATH_APP (m, r) => O.PATH_APP $$ [[] \ m, [] \ r]
 
-       | EQUALITY (a, m, n) => O.EQUALITY $$ [([],[]) \ a, ([],[]) \ m, ([],[]) \ n]
+       | EQUALITY (a, m, n) => O.EQUALITY $$ [[] \ a, [] \ m, [] \ n]
 
        | BOX args => intoBox args
        | CAP args => intoCap args
 
-       | V (r, a, b, e) => O.V $$ [([],[]) \ r, ([],[]) \ a, ([],[]) \ b, ([],[]) \ e]
-       | VIN (r, m, n) => O.VIN $$ [([],[]) \ r, ([],[]) \ m, ([],[]) \ n]
-       | VPROJ (r, m, f) => O.VPROJ $$ [([],[]) \ r, ([],[]) \ m, ([],[]) \ f]
+       | V (r, a, b, e) => O.V $$ [[] \ r, [] \ a, [] \ b, [] \ e]
+       | VIN (r, m, n) => O.VIN $$ [[] \ r, [] \ m, [] \ n]
+       | VPROJ (r, m, f) => O.VPROJ $$ [[] \ r, [] \ m, [] \ f]
 
-       | UNIVERSE (l, k) => O.UNIVERSE $$ [([],[]) \ L.into l, ([],[]) \ (O.KCONST k $$ [])]
+       | UNIVERSE (l, k) => O.UNIVERSE $$ [[] \ L.into l, [] \ (O.KCONST k $$ [])]
 
        | HCOM args => intoHcom args
        | COE {dir = (r1, r2), ty = (u, a), coercee} =>
-           O.COE $$ [([],[]) \ r1, ([],[]) \ r2, ([],[u]) \ a, ([],[]) \ coercee]
+           O.COE $$ [[] \ r1, [] \ r2, [u] \ a, [] \ coercee]
        | COM args => intoCom args
 
        | DIM0 => O.DIM0 $$ []
        | DIM1 => O.DIM1 $$ []
        | CUST => raise Fail "CUST"
-       | META (x, tau) => check (x $# ([],[]), tau)
+       | META (x, tau) => check (x $# [], tau)
 
     val intoApp = into o APP
     val intoLam = into o LAM
@@ -372,16 +370,16 @@ struct
        | O.IF $ [_ \ m, _ \ t, _ \ f] => IF (m, (t, f))
 
        | O.WBOOL $ _ => WBOOL
-       | O.WIF $ [(_,[x]) \ cx, _ \ m, _ \ t, _ \ f] => WIF ((x, cx), m, (t, f))
+       | O.WIF $ [[x] \ cx, _ \ m, _ \ t, _ \ f] => WIF ((x, cx), m, (t, f))
 
        | O.NAT $ _ => NAT
        | O.ZERO $ _ => ZERO
        | O.SUCC $ [_ \ m] => SUCC m
-       | O.NAT_REC $ [_ \ m, _ \ n, (_,[a,b]) \ p] => NAT_REC (m, (n, (a, b, p)))
+       | O.NAT_REC $ [_ \ m, _ \ n, [a,b] \ p] => NAT_REC (m, (n, (a, b, p)))
 
        | O.INT $ _ => INT
        | O.NEGSUCC $ [_ \ m] => NEGSUCC m
-       | O.INT_REC $ [_ \ m, _ \ n, (_,[a,b]) \ p, _ \ q, (_,[c,d]) \ r] =>
+       | O.INT_REC $ [_ \ m, _ \ n, [a,b] \ p, _ \ q, [c,d] \ r] =>
            INT_REC (m, (n, (a, b, p), q, (c, d, r)))
 
        | O.VOID $ _ => VOID
@@ -389,10 +387,10 @@ struct
        | O.S1 $ _ => S1
        | O.BASE $ _ => BASE
        | O.LOOP $ [_ \ r] => LOOP r
-       | O.S1_REC $ [(_,[x]) \ cx, _ \ m, _ \ b, (_,[u]) \ l] => S1_REC ((x, cx), m, (b, (u, l)))
+       | O.S1_REC $ [[x] \ cx, _ \ m, _ \ b, [u] \ l] => S1_REC ((x, cx), m, (b, (u, l)))
 
-       | O.FUN $ [_ \ a, (_,[x]) \ bx] => FUN (a, x, bx)
-       | O.LAM $ [(_,[x]) \ mx] => LAM (x, mx)
+       | O.FUN $ [_ \ a, [x] \ bx] => FUN (a, x, bx)
+       | O.LAM $ [[x] \ mx] => LAM (x, mx)
        | O.APP $ [_ \ m, _ \ n] => APP (m, n)
 
        | O.RECORD lbls $ tms => RECORD (outRecordFields (lbls, tms)) 
@@ -400,8 +398,8 @@ struct
        | O.PROJ lbl $ [_ \ m] => PROJ (lbl, m)
        | O.TUPLE_UPDATE lbl $ [_ \ n, _ \ m] => TUPLE_UPDATE ((lbl, n), m)
 
-       | O.PATH_TY $ [(_,[u]) \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
-       | O.PATH_ABS $ [(_,[u]) \ m] => PATH_ABS (u, m)
+       | O.PATH_TY $ [[u] \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
+       | O.PATH_ABS $ [[u] \ m] => PATH_ABS (u, m)
        | O.PATH_APP $ [_ \ m, _ \ r] => PATH_APP (m, r)
 
        | O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
@@ -425,14 +423,14 @@ struct
 
        | O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ tubes] =>
            HCOM {dir = (r1, r2), ty = ty, cap = cap, tubes = outTubes tubes}
-       | O.COE $ [_ \ r1, _ \ r2, (_,[u]) \ a, _ \ m] =>
+       | O.COE $ [_ \ r1, _ \ r2, [u] \ a, _ \ m] =>
            COE {dir = (r1, r2), ty = (u, a), coercee = m}
 
        | O.DIM0 $ _ => DIM0
        | O.DIM1 $ _ => DIM1
 
        | O.CUST _ $ _ => CUST
-       | x $# ([],[]) => META (x, Tm.sort m)
+       | x $# [] => META (x, Tm.sort m)
        | _ => raise E.error [Fpp.text "Syntax view encountered unrecognized term", TermPrinter.ppTerm m]
   end
 end

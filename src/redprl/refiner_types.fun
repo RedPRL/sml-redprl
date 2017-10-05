@@ -628,7 +628,7 @@ struct
 
         val evidence =
           case catjdg of
-             AJ.TRUE _ => Syn.into Syn.AX (* should be some fancy symbol *)
+             AJ.TRUE _ => Syn.into Syn.AX (* should be some fancy variable *)
            | AJ.EQ _ => trivial
            | AJ.EQ_TYPE _ => trivial
            | AJ.SYNTH _ => Syn.into Syn.AX
@@ -919,8 +919,8 @@ struct
         val Syn.APP (m1, n1) = Syn.out ap1
 
         val (goalFun, holeFun) = makeSynth H (m0, NONE, K.top)
-        val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [], [])
-        val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [], [n0])
+        val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
+        val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n0])
         val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, NONE, K.top))
         val goalArgEq = makeEq H ((n0, n1), (holeDom, NONE, K.top))
         val goalTy = makeSubType H (holeCod, NONE, K.top) (ty, l, k)
@@ -937,8 +937,8 @@ struct
         val Syn.APP (m1, n1) = Syn.out ap1
 
         val (goalFun, holeFun) = makeSynth H (m0, NONE, K.top)
-        val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [], [])
-        val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [], [n0])
+        val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
+        val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n0])
         val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, NONE, K.top))
         val goalArgEq = makeEq H ((n0, n1), (holeDom, NONE, K.top))
         val goalTy = makeSubUniverse H (holeCod, l, k)
@@ -953,8 +953,8 @@ struct
         val H >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.APP (m, n) = Syn.out tm
         val (goalFun, holeFun) = makeSynth H (m, NONE, K.top)
-        val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [], [])
-        val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [], [n])
+        val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
+        val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n])
         val goalN = makeMem H (n, (holeDom, NONE, K.top))
         val goalKind = makeTypeUnlessSubUniv H (holeCod, l, k) (NONE, K.top)
       in
@@ -1055,7 +1055,7 @@ struct
                  val env' = Var.Ctx.insert env var elemHole
                  val goals' = goals >: elemGoal
                  val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, kind)
-                 val elements' = (lbl, ([],[]) \ elemHole) :: elements
+                 val elements' = (lbl, [] \ elemHole) :: elements
                in
                  {goals = goals', famGoals = famGoals', elements = elements', env = env', hyps = hyps', isFirst = false}
                end)
@@ -1074,7 +1074,7 @@ struct
         val Syn.RECORD rcd = Syn.out record
         val dom = List.map (#1 o #1) rcd
 
-        fun goLabel lbl = ([],[]) \ (Syn.into @@ Syn.PROJ (lbl, m))
+        fun goLabel lbl = [] \ (Syn.into @@ Syn.PROJ (lbl, m))
 
         val m' = O.TUPLE dom $$ List.map goLabel dom
         val goal1 = makeMem H (m, (record, l, k))
@@ -1091,7 +1091,7 @@ struct
         val Abt.$ (O.RECORD lbls, args) = Abt.out tm
 
         val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
-        val ((_,us) \ ty) = List.nth (args, i)
+        val (us \ ty) = List.nth (args, i)
 
         (* supply the dependencies *)
         val lblPrefix = List.take (lbls, i)
@@ -1298,7 +1298,7 @@ struct
 
         val (goalSynth, holeSynth) = makeSynth H (m0, NONE, K.top)
         val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, NONE, K.top)) (* m0 well-typed *)
-        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holeSynth, [], [r0])
+        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holeSynth, [r0])
         val goalTy = makeSubType H (holeLine, NONE, K.top) (ty, l, k) (* holeLine type *)
       in
         |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (H, trivial)
@@ -1310,7 +1310,7 @@ struct
         val H >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.PATH_APP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth H (m, NONE, K.top)
-        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holePathTy, [], [r])
+        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holePathTy, [r])
         val goalKind = makeTypeUnlessSubUniv H (holeLine, l, k) (NONE, K.top)
       in
         |>: goalPathTy >: goalLine >:? goalKind #> (H, holeLine)
@@ -1326,8 +1326,8 @@ struct
 
         val (goalSynth, holeSynth) = makeSynth H (m, NONE, K.top)
 
-        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holeSynth, [], [r])
-        val (goalEndpoint, holeEndpoint) = makeMatch (O.PATH_TY, dimAddr, holeSynth, [], [])
+        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holeSynth, [r])
+        val (goalEndpoint, holeEndpoint) = makeMatch (O.PATH_TY, dimAddr, holeSynth, [])
         val goalTy = makeSubType H (holeLine, NONE, K.top) (a, NONE, K.top) (* holeLine should be well-typed *)
         val goalEq = makeEq H ((holeEndpoint, p), (a, l, k))
       in
@@ -1491,9 +1491,9 @@ struct
         val truncatedH = Selector.truncateFrom sel H
 
         val (goalTyOfEq, holeTyOfEq) = makeSynth (truncatedH) (eqterm, NONE, K.top)
-        val (goalTy, holeTy) = makeMatch (O.EQUALITY, 0, holeTyOfEq, [], [])
-        val (goalM, holeM) = makeMatch (O.EQUALITY, 1, holeTyOfEq, [], [])
-        val (goalN, holeN) = makeMatch (O.EQUALITY, 2, holeTyOfEq, [], [])
+        val (goalTy, holeTy) = makeMatch (O.EQUALITY, 0, holeTyOfEq, [])
+        val (goalM, holeM) = makeMatch (O.EQUALITY, 1, holeTyOfEq, [])
+        val (goalN, holeN) = makeMatch (O.EQUALITY, 2, holeTyOfEq, [])
 
         val x = alpha 0
         val truncatedHx = truncatedH @> (x, AJ.TRUE (holeTy, NONE, K.top))
