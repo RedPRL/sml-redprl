@@ -53,13 +53,6 @@ struct
     fn H >> catjdg => relabelHyps H srho >> AJ.map (renameHypsInTerm srho) catjdg
      | jdg => map (renameHypsInTerm srho) jdg
 
-  fun prettySyms syms =
-    Fpp.collection
-      (Fpp.char #"{")
-      (Fpp.char #"}")
-      (Fpp.Atomic.comma)
-      (List.map (fn (u, sigma) => Fpp.hsep [TP.ppSym u, Fpp.Atomic.colon, Fpp.text (PS.toString sigma)]) syms)
-
   fun prettyHyps f : 'a ctx -> Fpp.doc =
     Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppSym x, Fpp.Atomic.colon, f a] :: r) []
 
@@ -74,10 +67,6 @@ struct
   val rec eq =
     fn (H1 >> catjdg1, H2 >> catjdg2) =>
        (let
-         fun unifyPsorts (sigma1, sigma2) =
-           if PS.eq (sigma1, sigma2) then sigma1 else
-             raise Fail "psort mismatch in Sequent.eq"
-
          val xs1 = Hyps.foldr (fn (x, _, xs) => x :: xs) [] H1
          val xs2 = Hyps.foldr (fn (x, _, xs) => x :: xs) [] H2
          val xs = ListPair.mapEq (fn _ => Sym.new ()) (xs1, xs2)
