@@ -56,12 +56,12 @@ struct
       fn EDEF entry => SOME entry
        | _ => NONE
 
-    fun arityOfDecl (entry : entry) : Tm.psort list * Tm.O.Ar.t =
+    fun arityOfDecl (entry : entry) : Tm.O.Ar.t =
       let
         val arguments = entryArguments entry
         val sort = entrySort entry
       in
-        ([], (List.map #2 arguments, sort))
+        (List.map #2 arguments, sort)
       end
 
     structure OptionMonad = MonadNotation (OptionMonad)
@@ -93,13 +93,15 @@ struct
           NONE => setAnnotation (getAnnotation t1) t2
         | _ => t2
 
+      fun lookupArity sign pos opid = 
+        case arityOfOpid sign opid of
+           SOME ar => ar
+         | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid]
+
       fun guessSort sign varctx (tm : ast) : sort =
         case out tm of
            `x => (StringListDict.lookup varctx x handle _ => error (getAnnotation tm) [Fpp.text ("Could not resolve variable " ^ x)])
-         | O.POLY (O.CUST (opid, _)) $ _ => 
-           (case arityOfOpid sign opid of
-               SOME (psorts, ar) => #2 ar
-             | NONE => error (getAnnotation tm) [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
+         | O.POLY (O.CUST (opid, _)) $ _ => #2 (lookupArity sign (getAnnotation tm) opid)
          | th $ _ =>
            let
              val (_, tau) = Tm.O.arity th
@@ -110,18 +112,9 @@ struct
 
       fun processOp pos sign varctx th  =
         case th of
-           O.POLY (O.CUST (opid, NONE)) =>
-           (case arityOfOpid sign opid of
-               SOME (psorts, ar) => O.POLY (O.CUST (opid, SOME ar))
-             | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat)) =>
-           (case arityOfOpid sign opid of
-               SOME (psorts, ar) => O.POLY (O.DEV_APPLY_LEMMA (opid, SOME ar, pat))
-             | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
-         | O.POLY (O.DEV_USE_LEMMA (opid, NONE)) =>
-           (case arityOfOpid sign opid of
-               SOME (psorts, ar) => O.POLY (O.DEV_USE_LEMMA (opid, SOME ar))
-             | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid])
+           O.POLY (O.CUST (opid, NONE)) => O.POLY (O.CUST (opid, SOME (lookupArity sign pos opid)))
+         | O.POLY (O.DEV_APPLY_LEMMA (opid, NONE, pat)) => O.POLY (O.DEV_APPLY_LEMMA (opid, SOME (lookupArity sign pos opid), pat))
+         | O.POLY (O.DEV_USE_LEMMA (opid, NONE)) => O.POLY (O.DEV_USE_LEMMA (opid, SOME (lookupArity sign pos opid)))
          | th => th
 
       and processTerm' sign varctx m =
