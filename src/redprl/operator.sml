@@ -642,16 +642,6 @@ struct
      | JDG_TERM tau => RedPrlSort.toString tau
 
   local
-    fun paramsToString f =
-      ListSpine.pretty (fn (p, _) => P.toString f p) ","
-
-    fun selectorToString f =
-      fn IN_GOAL => "goal"
-       | IN_HYP a => f a
-
-    fun selectorsToString f =
-      ListSpine.pretty (selectorToString f) ","
-
     fun opidsToString f =
       ListSpine.pretty f ","
   in
