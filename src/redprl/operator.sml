@@ -470,21 +470,6 @@ struct
      | POLY th => arityPoly th
 
   local
-    val optSupport = OptionUtil.concat
-
-    fun paramsSupport ps =
-      ListMonad.bind
-        (fn (P.VAR a, SOME tau) => [(a, tau)]
-          | (P.VAR _, NONE) => raise Fail "Encountered unannotated parameter in custom operator"
-          | (P.APP t, _) => P.freeVars t)
-        ps
-
-    fun paramsSupport' ps =
-      ListMonad.bind
-        (fn (P.VAR a, tau) => [(a, tau)]
-          | (P.APP t, _) => P.freeVars t)
-        ps
-
     fun opidsSupport os =
       List.map (fn name => (name, OPID)) os
   in
