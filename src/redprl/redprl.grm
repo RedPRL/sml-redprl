@@ -872,7 +872,6 @@ atomicRawTac
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
-  | LANGLE_PIPE multitac RANGLE_PIPE (Tac.multitacToTac multitac)
 
   | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
   | LANGLE boundVars RANGLE tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (Multi.addUnderscores boundVars, tactic)]))
@@ -906,7 +905,7 @@ atomicRawTac
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 
 atomicRawMultitac
-  : LSQUARE tactics RSQUARE (Ast.$$ (O.MTAC_EACH (List.length tactics), List.map (fn t => \ ([], t)) tactics))
+  : LSQUARE tactics RSQUARE (Ast.$$ (O.MTAC_EACH, [\([], Multi.makeVec O.TAC tactics)]))
   | HASH NUMERAL LBRACKET tactic RBRACKET (Ast.$$ (O.MTAC_FOCUS (IntInf.toInt NUMERAL), [\ ([], tactic)]))
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REPEAT, [\ ([], multitac)]))
   | MTAC_AUTO (Tac.autoMtac)

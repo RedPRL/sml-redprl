@@ -55,8 +55,8 @@ in
     redprl/log.sml
     
 
-    redprl/spread.sig
-    redprl/spread.sml
+    redprl/name_seq.sig
+    redprl/name_seq.sml
     redprl/tactical.fun
 
 

@@ -215,7 +215,7 @@ struct
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ of sort list | MTAC_ORELSE | MTAC_REC
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
-   | MTAC_ALL | MTAC_EACH of int | MTAC_FOCUS of int
+   | MTAC_ALL | MTAC_EACH | MTAC_FOCUS of int
    | MTAC_HOLE of string option
    | TAC_MTAC
 
@@ -360,12 +360,7 @@ struct
      | MTAC_AUTO => [] ->> MTAC
      | MTAC_PROGRESS => [[] |: MTAC] ->> MTAC
      | MTAC_ALL => [[] |: TAC] ->> MTAC
-     | MTAC_EACH n =>
-         let
-           val tacs = List.tabulate (n, fn _ => [] |: TAC)
-         in
-           tacs ->> MTAC
-         end
+     | MTAC_EACH => [[] |: VEC TAC] ->> MTAC
      | MTAC_FOCUS _ => [[] |: TAC] ->> MTAC
      | MTAC_HOLE _ => [] ->> MTAC
      | TAC_MTAC => [[] |: MTAC] ->> TAC
@@ -492,7 +487,7 @@ struct
      | MTAC_AUTO => "auto"
      | MTAC_PROGRESS => "multi-progress"
      | MTAC_ALL => "all"
-     | MTAC_EACH _ => "each"
+     | MTAC_EACH => "each"
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
      | MTAC_HOLE (SOME x) => "?" ^ x
      | MTAC_HOLE NONE => "?"

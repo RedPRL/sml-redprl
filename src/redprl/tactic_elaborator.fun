@@ -286,8 +286,6 @@ struct
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
        end
 
-
-       (* TODO: check all these weird list reversals *)
      | O.DEV_APPLY_LEMMA (opid, ar, pat) $ args =>
        let
          val (names \ tac) :: (_ \ vec) :: revSubtermArgs = List.rev args
@@ -324,7 +322,7 @@ struct
                   in
                     if Unify.Metas.member metas x then 
                      check (x $# args, tau)
-                    else 
+                    else
                       tm 
                   end
                 | _ => tm
@@ -368,7 +366,7 @@ struct
   and multitactic_ sign env tm =
     case Tm.out tm of 
        O.MTAC_ALL $ [_ \ tm] => T.all (tactic sign env tm)
-     | O.MTAC_EACH _ $ args => T.each (List.map (fn _ \ tm => tactic sign env tm) args)
+     | O.MTAC_EACH $ [_ \ vec] => T.each (Syntax.outVec' (tactic sign env) vec)
      | O.MTAC_FOCUS i $ [_ \ tm] => T.only (i, tactic sign env tm)
      | O.MTAC_PROGRESS $ [_ \ tm] => T.mprogress (multitactic sign env tm)
      | O.MTAC_REC $ [[x] \ tm] => T.mrec (fn mt => multitactic sign (Var.Ctx.insert env x mt) tm)
