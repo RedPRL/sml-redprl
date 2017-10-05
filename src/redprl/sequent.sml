@@ -92,3 +92,30 @@ struct
           lbl1 = lbl2 andalso Tm.eq (a1, a2) andalso Tm.eq (m1, m2)
      | _ => false
 end
+
+structure Selector =
+struct
+  local
+    structure AJ = RedPrlAtomicJudgment
+    structure O = RedPrlOpData (* TODO: we should move the selector crap out of there! *)
+    structure Hyps = RedPrlSequentData.Hyps
+  in
+    fun map sel f (H : AJ.jdg Hyps.telescope, catjdg) =
+      case sel of
+         O.IN_CONCL => (H, AJ.map f catjdg)
+       | O.IN_HYP x => (Hyps.modify x (AJ.map f) H, catjdg)
+
+    fun multiMap sels f (H, catjdg) =
+      List.foldl (fn (sel, state) => map sel f state) (H, catjdg) sels
+
+    fun lookup sel (H : AJ.jdg Hyps.telescope, catjdg : AJ.jdg) : AJ.jdg =
+      case sel of
+         O.IN_CONCL => catjdg
+       | O.IN_HYP x => Hyps.lookup H x
+
+    fun truncateFrom sel H =
+      case sel of
+         O.IN_CONCL => H
+       | O.IN_HYP x => Hyps.truncateFrom H x
+  end
+end

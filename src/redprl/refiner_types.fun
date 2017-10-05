@@ -100,7 +100,7 @@ struct
         val _ = RedPrlLog.trace "Bool.Elim"
         val H >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
         val Syn.BOOL = Syn.out ty
 
         (* tt branch *)
@@ -220,7 +220,7 @@ struct
         (* if(FCOM) steps to COM *)
         val k = K.meet (k, K.COM)
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
         val Syn.WBOOL = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
@@ -337,7 +337,7 @@ struct
         val _ = RedPrlLog.trace "Nat.Elim"
         val H >> AJ.TRUE (cz, l, k) = jdg
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
         val Syn.NAT = Syn.out ty
 
         val nat = Syn.into Syn.NAT
@@ -509,7 +509,7 @@ struct
         val _ = RedPrlLog.trace "Int.Elim"
         val H >> AJ.TRUE (cz, l, k) = jdg
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
         val Syn.INT = Syn.out ty
 
         val nat = Syn.into Syn.NAT
@@ -623,7 +623,7 @@ struct
         val _ = RedPrlLog.trace "Void.Elim"
         val H >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
         val Syn.VOID = Syn.out ty
 
         val evidence =
@@ -706,7 +706,7 @@ struct
         (* S1-rec(FCOM) steps to COM *)
         val k = K.meet (k, K.COM)
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
         val Syn.S1 = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
@@ -889,7 +889,7 @@ struct
         val _ = RedPrlLog.trace "Fun.Elim"
         val H >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
         val Syn.FUN (a, x, bx) = Syn.out ty
 
         (* argument *)
@@ -1108,7 +1108,7 @@ struct
         val _ = RedPrlLog.trace "Record.Elim"
         val H >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val AJ.TRUE (record, l', _) = Hyps.lookup z H
+        val AJ.TRUE (record, l', _) = Hyps.lookup H z
         val Syn.RECORD fields = Syn.out record
 
         val names = List.tabulate (List.length fields, alpha)
@@ -1264,7 +1264,7 @@ struct
         val _ = RedPrlLog.trace "Path.Elim"
         val H >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
         val Syn.PATH_TY ((u, a), _, _) = Syn.out ty
 
         val x = alpha 0
@@ -1405,7 +1405,7 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.Elim"
         val H >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup z H
+        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
         val Syn.EQUALITY (a, m, n) = Syn.out ty
 
         (* Adding an equality judgment diverges from Nuprl, but this is currently
@@ -1427,7 +1427,7 @@ struct
       let
         val _ = RedPrlLog.trace "InternalizedEquality.EqFromTrueEq"
         val H >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
-        val AJ.TRUE (ty0', l', _) = Hyps.lookup z H
+        val AJ.TRUE (ty0', l', _) = Hyps.lookup H z
         val Syn.EQUALITY (ty0, m0, n0) = Syn.out ty0'
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
@@ -1443,7 +1443,7 @@ struct
       let
         val _ = RedPrlLog.trace "InternalizedEquality.TypeFromTrueEqAtType"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.TRUE (eq, l', _) = Hyps.lookup z H
+        val AJ.TRUE (eq, l', _) = Hyps.lookup H z
         val Syn.EQUALITY (ty', _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.alphaEq (ty', ty0)
@@ -1470,7 +1470,7 @@ struct
       let
         val _ = RedPrlLog.trace "InternalizedEquality.SynthFromTrueEq"
         val H >> AJ.SYNTH (tm, l, k) = jdg
-        val AJ.TRUE (equal, l', _) = Hyps.lookup z H
+        val AJ.TRUE (equal, l', _) = Hyps.lookup H z
         val Syn.EQUALITY (ty, a, b) = Syn.out equal
         val _ = Assert.alphaEqEither ((a, b), tm)
         val goalKind = makeTypeUnlessSubUniv H (ty, l, k) (l', K.top)
@@ -1529,7 +1529,7 @@ struct
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
-        val AJ.TRUE (equal, l', _) = Hyps.lookup z truncatedH
+        val AJ.TRUE (equal, l', _) = Hyps.lookup truncatedH z
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
 
         val x = alpha 0
@@ -1903,7 +1903,7 @@ struct
         val _ = RedPrlLog.trace "Universe.ElimFromTrue"
         val H >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup z H
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
         val Syn.UNIVERSE (l, k) = Syn.out ty
 
         val u = alpha 0
@@ -1922,7 +1922,7 @@ struct
         val _ = RedPrlLog.trace "Universe.ElimFromEq"
         val H >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val AJ.EQ ((ty1, ty2), (univ, _, _)) = Hyps.lookup z H
+        val AJ.EQ ((ty1, ty2), (univ, _, _)) = Hyps.lookup H z
         val Syn.UNIVERSE (l, k) = Syn.out univ
 
         val u = alpha 0
@@ -1953,7 +1953,7 @@ struct
       let
         val _ = RedPrlLog.trace "Universe.EqTypeFromEq"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.EQ ((ty0', ty1'), (univ, _, _)) = Hyps.lookup z H
+        val AJ.EQ ((ty0', ty1'), (univ, _, _)) = Hyps.lookup H z
         val Syn.UNIVERSE (l', k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
@@ -1969,7 +1969,7 @@ struct
       let
         val _ = RedPrlLog.trace "Universe.EqTypeFromEq"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.TRUE (eq, _, _) = Hyps.lookup z H
+        val AJ.TRUE (eq, _, _) = Hyps.lookup H z
         val Syn.EQUALITY (univ, ty0', ty1') = Syn.out eq
         val Syn.UNIVERSE (l', k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
@@ -1985,7 +1985,7 @@ struct
       let
         val _ = RedPrlLog.trace "Universe.SynthFromEqType"
         val H >> AJ.SYNTH (ty2, l2, k2) = jdg
-        val AJ.EQ_TYPE ((ty0, ty1), SOME l0, k0) = Hyps.lookup z H
+        val AJ.EQ_TYPE ((ty0, ty1), SOME l0, k0) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((ty0, ty1), ty2)
         (* TODO maybe generating a subgoal when it's not a member? *)
         val _ = Assert.univMem (l0, k0) (l2, k2)
@@ -1998,7 +1998,7 @@ struct
       let
         val _ = RedPrlLog.trace "Universe.SynthFromTrueEqAtType"
         val H >> AJ.SYNTH (ty1, l1, k1) = jdg
-        val AJ.TRUE (eq, SOME l0, _) = Hyps.lookup z H
+        val AJ.TRUE (eq, SOME l0, _) = Hyps.lookup H z
         val Syn.EQUALITY (ty0, _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
         (* TODO maybe generating a subgoal when it's not a member? *)
@@ -2012,7 +2012,7 @@ struct
       let
         val _ = RedPrlLog.trace "Universe.SynthFromEqAtType"
         val H >> AJ.SYNTH (ty1, l1, k1) = jdg
-        val AJ.EQ (_, (ty0, SOME l0, k0)) = Hyps.lookup z H
+        val AJ.EQ (_, (ty0, SOME l0, k0)) = Hyps.lookup H z
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.univMem (l0, k0) (l1, k1)
       in
@@ -2024,7 +2024,7 @@ struct
       let
         val _ = RedPrlLog.trace "Universe.SynthFromTrue"
         val H >> AJ.SYNTH (ty1, l1, k1) = jdg
-        val AJ.TRUE (ty0, SOME l0, k0) = Hyps.lookup z H
+        val AJ.TRUE (ty0, SOME l0, k0) = Hyps.lookup H z
         val _ = Assert.alphaEq (ty0, ty1)
         (* TODO maybe generating a subgoal when it's not a member? *)
         val _ = Assert.univMem (l0, k0) (l1, k1)
@@ -2039,7 +2039,7 @@ struct
         val Syn.VAR (x1, _) = Syn.out ty1
         val Syn.VAR (x2, _) = Syn.out ty2
         val _ = Assert.varEq (x1, x2)
-        val AJ.TRUE (univ0, _, _) = Hyps.lookup x1 H
+        val AJ.TRUE (univ0, _, _) = Hyps.lookup H x1
         val Syn.UNIVERSE (l0, k0) = Syn.out univ0
 
         val goal = makeTypeUnlessSubUniv H (ty1, l1, k1) (SOME l0, k0)

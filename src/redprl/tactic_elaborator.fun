@@ -134,7 +134,7 @@ struct
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
       val H >> _ = jdg
-      val AJ.TRUE (ty, _, _) = RT.Hyps.lookup z H
+      val AJ.TRUE (ty, _, _) = RT.Hyps.lookup H z
     in
       case Syn.out ty of 
          Syn.FUN _ => (RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
@@ -353,10 +353,12 @@ struct
        in
          List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
        end
-     | O.MONO O.DEV_QUERY_CONCL $ [(_,[x]) \ tm] =>
-       (fn alpha => fn jdg as _ >> cj =>
+     | O.MONO O.DEV_QUERY $ [_ \ selTm, (_,[x]) \ tm] =>
+       (fn alpha => fn jdg as H >> concl =>
          let
-           val tm' = substVar (AJ.into cj, x) tm
+           val sel = Syn.outSelector selTm
+           val atjdg = Selector.lookup sel (H, concl)
+           val tm' = substVar (AJ.into concl, x) tm
          in
            tactic sign env tm' alpha jdg
          end)

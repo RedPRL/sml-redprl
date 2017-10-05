@@ -906,7 +906,7 @@ atomicRawTac
       (Ast.$$ (O.MONO O.DEV_S1_ELIM, [\ (([],[]), elimTarget), \ (([],[]), tactic1), \(([], [VARNAME]), tactic2)]))
 
   | MATCH termAnySort LBRACKET devMatchClauses RBRACKET (Tac.makeMatch termAnySort devMatchClauses)
-  | QUERY VARNAME LEFT_ARROW CONCL DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY_CONCL, [\ (([],[VARNAME]), tactic)]))
+  | QUERY VARNAME LEFT_ARROW selector DOT tactic (Ast.$$ (O.MONO O.DEV_QUERY, [\ (([],[]), selector), \ (([],[VARNAME]), tactic)]))
   | PRINT termAnySort (Ast.$$ (O.MONO O.DEV_PRINT, [\ (([], []), termAnySort)]))
 
   (* overlapping with term *)
