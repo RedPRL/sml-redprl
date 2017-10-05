@@ -884,12 +884,12 @@ atomicRawTac
   | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
       (Ast.$$ (O.DEV_LET NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
 
-  | LET devDecompPattern EQUALS elimTarget bracketedDevAppSpine DOT tactic
-      (Pattern.makeApplyHyp devDecompPattern elimTarget bracketedDevAppSpine tactic)
+  | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine DOT tactic
+      (Pattern.makeApplyHyp devDecompPattern elimTargetAnySort bracketedDevAppSpine tactic)
 
   | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine DOT tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
 
-  | USE elimTarget bracketedDevAppSpine (Pattern.makeUseHyp elimTarget bracketedDevAppSpine)
+  | USE elimTargetAnySort bracketedDevAppSpine (Pattern.makeUseHyp elimTargetAnySort bracketedDevAppSpine)
   | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
 
   | CASE elimTarget OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic

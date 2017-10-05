@@ -389,8 +389,8 @@ struct
      | DEV_PRINT => [[] |: ANY] ->> TAC
      | DEV_BOOL_ELIM => [[] |: EXP, [] |: TAC, [] |: TAC] ->> TAC
      | DEV_S1_ELIM => [[] |: EXP, [] |: TAC, [DIM] |: TAC] ->> TAC
-     | DEV_APPLY_HYP pat => [[] |: EXP, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
-     | DEV_USE_HYP => [[] |: EXP, [] |: VEC TAC] ->> TAC
+     | DEV_APPLY_HYP pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
+     | DEV_USE_HYP => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
      | SEL_HYP => [[] |: ANY] ->> SELECTOR
      | SEL_CONCL => [] ->> SELECTOR

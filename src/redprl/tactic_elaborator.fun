@@ -271,7 +271,7 @@ struct
      | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
      | O.DEV_APPLY_HYP pattern $ [_ \ var, _ \ vec, names \ tm'] =>
        let
-         val z = VarKit.fromTerm var
+         val z = VarKit.fromTerm (Syntax.unpackAny var)
          val tacs = Syn.outVec' (tactic sign env) vec
          val tac = tactic sign env tm'
        in
@@ -279,7 +279,7 @@ struct
        end
      | O.DEV_USE_HYP $ [_ \ var, _ \ vec] => 
        let
-         val z = VarKit.fromTerm var
+         val z = VarKit.fromTerm (Syntax.unpackAny var)
          val tacs = Syntax.outVec' (tactic sign env) vec
          val z' = RedPrlSym.named (Sym.toString z ^ "'")
        in
