@@ -112,7 +112,7 @@
   "RedPRL's built-in sorts.")
 
 (defconst redprl-parameter-keywords
-  '("labove" "lsucc" "lmax")
+  '("+" "++" "lmax")
   "RedPRL's parameter keywords.")
 
 (defconst redprl-expression-keywords

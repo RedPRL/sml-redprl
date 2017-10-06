@@ -293,7 +293,7 @@ end
  | RIGHT_ARROW | LEFT_ARROW
  | DOUBLE_RIGHT_ARROW | LONG_RIGHT_ARROW
  | TRIANGLE_RIGHT
- | PLUS
+ | PLUS | DOUBLE_PLUS
 
  (* sorts *)
  | DIM | EXP | TAC | TRIV | JDG | LVL | KIND
@@ -708,7 +708,7 @@ rawTermAndTac
 level
   : NUMERAL (Ast.$$ (O.LCONST NUMERAL, []))
   | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ ([], level)]))
-  | LPAREN PLUS PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ ([], level)]))
+  | LPAREN DOUBLE_PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ ([], level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.LMAX, [\ ([], Multi.makeVec O.LVL levels)]))
   | metavar (Ast.$$# (metavar, []))
   | PERCENT VARNAME (Ast.$$ (O.PAT_META O.LVL, [\ ([], ``VARNAME), \ ([], Multi.makeVec O.ANY [])]))
