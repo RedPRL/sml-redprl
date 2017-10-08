@@ -180,7 +180,7 @@ struct
   fun nameForPattern pat = 
     case pat of 
        O.PAT_VAR x => x
-     | O.PAT_TUPLE lpats => Sym.named (ListSpine.pretty (Sym.toString o nameForPattern o #2) "-" lpats)
+     | O.PAT_TUPLE lpats => Sym.named (ListUtil.joinWith (Sym.toString o nameForPattern o #2) "-" lpats)
 
   local
     fun funIntrosBasis sign (pat, pats, names) tac _ =
