@@ -23,3 +23,27 @@ sig
 
   val run : 'a m -> unit
 end
+
+signature MONAD_ALTERNATIVE = 
+sig
+  include MONAD
+  val fail : 'a m
+  val <+> : 'a m * 'a m -> 'a m
+end
+
+(* Another idea, where we distinguish between local and global tactics. *)
+signature METALANGUAGE_MONAD2 = 
+sig
+  type name = RedPrlAbt.variable
+  type names = int -> name
+
+  structure L : MONAD_ALTERNATIVE (* LOCAL *)
+  structure G : MONAD_ALTERNATIVE (* GLOBAL *)
+
+  val enter : 'a L.m -> 'a list G.m
+  val fork : 'a L.m list -> 'a list G.m
+  val unfocus : 'a G.m -> 'a L.m
+
+  val goal : Lcf.jdg L.m
+  val rule : (names -> Lcf.jdg Lcf.tactic) -> unit L.m
+end

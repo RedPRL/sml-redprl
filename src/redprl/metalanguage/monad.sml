@@ -1,3 +1,124 @@
+structure MetalanguageMonad2 :> METALANGUAGE_MONAD2 = 
+struct
+  open Lcf infix |>
+
+  type name = RedPrlAbt.variable
+  type names = int -> name
+
+  type 'a consumer = {value: 'a, consumedNames: int}
+
+  fun consumer (a : 'a) : 'a consumer =
+    {value = a, consumedNames = 0}
+
+  fun commuteConsumer (st : 'a consumer state) : 'a state consumer =
+    let
+      val psi |> vld = st
+      val (psi', max) = Tl.foldl (fn (x, cjdg, (psi, n)) => (Tl.snoc psi x (#value cjdg), Int.max (#consumedNames cjdg, n))) (Tl.empty, 0) psi
+    in
+      {value = psi' |> vld, consumedNames = max}
+    end
+
+  structure G =
+  struct
+    type 'a m = names * jdg state -> 'a * jdg consumer state
+
+    fun return (a : 'a) : 'a m = fn (alpha, state) => 
+      (a, Lcf.map consumer state)
+
+    fun bind (m : 'a m) (f : 'a -> 'b m) : 'b m = fn (alpha, state) =>
+      let
+        val (a, state') = m (alpha, state)
+        val {value = state'', consumedNames} = commuteConsumer state'
+        val alpha' = UniversalSpread.bite consumedNames alpha
+      in
+        f a (alpha', state'')
+      end
+
+    fun seq m1 m2 = 
+      bind m1 (fn _ => m2)
+
+    fun fail _ = 
+      raise Fail "Fail"
+    
+    fun <+> (m1, m2) (alpha, state) = 
+      m1 (alpha, state) handle _ => m2 (alpha, state)
+  end
+
+  structure L =
+  struct
+    type 'a m = names * jdg -> ('a * jdg consumer) state
+
+    fun isjdg' () : ('a * jdg consumer) isjdg =
+      {sort = #sort isjdg o #value o #2,
+       subst = fn env => fn (a, {consumedNames, value}) => (a, {consumedNames = consumedNames, value = #subst isjdg env value}),
+       ren = fn ren => fn (a, {consumedNames, value}) => (a, {consumedNames = consumedNames, value = #ren isjdg ren value})}
+
+    fun return (a : 'a) : 'a m = fn (alpha, jdg) => 
+      Lcf.ret (isjdg' ()) (a, consumer jdg)
+
+    fun bind (m : 'a m) (f : 'a -> 'b m) : 'b m = fn (alpha, jdg) => 
+      let
+        val state = m (alpha, jdg)
+        val state' = Lcf.map (fn (a, {consumedNames, value}) => f a (UniversalSpread.bite consumedNames alpha, value)) state
+      in
+        Lcf.mul (isjdg' ()) state'
+      end
+
+    fun seq m1 m2 =
+      bind m1 (fn _ => m2)
+
+    fun fail _ = raise Fail "Fail"
+
+    fun <+> (m1, m2) (alpha, jdg) =
+      m1 (alpha, jdg)
+      handle _ => m2 (alpha, jdg)
+  end
+
+  fun fork (ls : 'a L.m list) : 'a list G.m = fn (alpha, state : jdg state) =>
+    let
+      open Tl.ConsView
+      fun loop (vs : 'a list, env : Lcf.L.env, acc : jdg consumer Tl.telescope) =
+        fn (_, EMPTY) => (List.rev vs, env, acc)
+         | (l :: ls, CONS (x, jdg, psi)) => 
+           let
+             val psix |> vldx = l (alpha, jdg)
+             val acc' = Tl.append acc (Tl.map #2 psix)
+             val env' = Lcf.L.Ctx.insert env x vldx
+             val vs' = Tl.foldl (fn (_, (v, _), vs) => v :: vs) vs psix (* double check *)
+           in
+             loop (vs', env', acc') (ls, out psi)
+           end
+
+      val psi |> vld = state
+      val (vs, env, psi') = loop ([], Lcf.L.Ctx.empty, Tl.empty) (ls, out psi)
+      val vld' = Lcf.L.subst env vld
+    in
+      (vs, psi' |> vld')
+    end
+
+  fun enter l (alpha, state) =
+    let
+      val psi |> _ = state
+      val ls = Tl.foldr (fn (_, _, ls) => l :: ls) [] psi
+    in
+      fork ls (alpha, state)
+    end
+
+  fun unfocus (m : 'a G.m) = fn (alpha, jdg) =>
+    raise Match
+
+  fun goal (alpha, jdg) =
+    L.return jdg (alpha, jdg)
+
+  fun rule tac (alpha, jdg) =
+    let
+      val (alpha', probe) = UniversalSpread.probe alpha
+      val state = tac alpha' jdg
+    in
+      Lcf.map (fn jdg => ((), {consumedNames = !probe, value = jdg})) state
+    end
+end
+
 structure MetalanguageMonad :> METALANGUAGE_MONAD = 
 struct
   type name = RedPrlAbt.symbol
