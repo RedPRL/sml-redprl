@@ -417,7 +417,7 @@ struct
   fun eq (th1, th2) = th1 = th2
 
   val opidsToString =
-   ListSpine.pretty (fn x => x) ","
+   ListUtil.joinWith (fn x => x) ","
 
   val toString =
     fn TV => "tv"
@@ -450,8 +450,8 @@ struct
      | LAM => "lam"
      | APP => "app"
 
-     | RECORD lbls => "record{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
-     | TUPLE lbls => "tuple{" ^ ListSpine.pretty (fn s => s) "," lbls ^ "}"
+     | RECORD lbls => "record{" ^ ListUtil.joinWith (fn s => s) "," lbls ^ "}"
+     | TUPLE lbls => "tuple{" ^ ListUtil.joinWith (fn s => s) "," lbls ^ "}"
      | PROJ lbl => "proj{" ^ lbl ^ "}"
      | TUPLE_UPDATE lbl => "update{" ^ lbl ^ "}"
 
@@ -480,7 +480,7 @@ struct
 
      | KCONST k => RedPrlKind.toString k
 
-     | MTAC_SEQ sorts => "seq{" ^ ListSpine.pretty RedPrlSort.toString "," sorts ^ "}"
+     | MTAC_SEQ sorts => "seq{" ^ ListUtil.joinWith RedPrlSort.toString "," sorts ^ "}"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
      | MTAC_REPEAT => "repeat"
@@ -507,7 +507,7 @@ struct
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
-     | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListSpine.pretty (fn x => x) "," lbls ^ "}"
+     | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListUtil.joinWith (fn x => x) "," lbls ^ "}"
      | DEV_LET _ => "let"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE => "dev-match-clause"
