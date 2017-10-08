@@ -76,6 +76,7 @@ whitespace = [\ \t];
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
 "+"                => (Tokens.PLUS (posTuple (size yytext)));
+"++"               => (Tokens.DOUBLE_PLUS (posTuple (size yytext)));
 
 
 "ax"               => (Tokens.AX (posTuple (size yytext)));

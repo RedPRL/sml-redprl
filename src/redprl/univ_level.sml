@@ -68,10 +68,10 @@ struct
       TermPrinter.ppVar x
     else if i = 1 then
       Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
-        [Fpp.text "lsucc", TermPrinter.ppVar x]))
+        [Fpp.text "++", TermPrinter.ppVar x]))
     else
       Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
-        [Fpp.text "lplus", TermPrinter.ppVar x, prettyConst i]))
+        [Fpp.text "+", TermPrinter.ppVar x, prettyConst i]))
 
   val prettyMax =
     fn [] => prettyConst 0
