@@ -539,8 +539,8 @@ struct
            (fn u =>
              case stk of
                [] => raise Final
-             | HCOM _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of ua types"))
-             | COE _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of ua types"))
+             | HCOM _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of V types"))
+             | COE _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of V types"))
              | _ => raise Stuck)
      | O.VIN $ [_ \ r, _ \ m, _ \ n] || (syms, stk) =>
          branchOnDim stability syms r
