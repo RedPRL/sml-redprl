@@ -10,15 +10,13 @@ struct
   fun TYPE (a, l, k) =
     EQ_TYPE ((a, a), l, k)
 
-  fun map' f g h =
-    fn EQ ((m, n), (a, l, k)) => EQ ((h m, h n), (h a, g l, k))
-     | TRUE (a, l, k) => TRUE (h a, g l, k)
-     | EQ_TYPE ((a, b), l, k) => EQ_TYPE ((h a, h b), g l, k)
-     | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (h u, g l, k)
-     | SYNTH (a, l, k) => SYNTH (h a, g l, k)
+  fun map f =
+    fn EQ ((m, n), (a, l, k)) => EQ ((f m, f n), (f a, l, k))
+     | TRUE (a, l, k) => TRUE (f a, l, k)
+     | EQ_TYPE ((a, b), l, k) => EQ_TYPE ((f a, f b), l, k)
+     | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (f u, l, k)
+     | SYNTH (a, l, k) => SYNTH (f a, l, k)
      | TERM tau => TERM tau
-  
-  fun map f = map' (fn x => x) (fn x => x) f
 
   fun @@ (f, x) = f x
   infixr @@
@@ -26,39 +24,41 @@ struct
   local
     open Fpp
   in
-    fun pretty' g h eq =
+    val pretty =
       fn EQ ((m, n), (a, l, k)) => expr @@ hvsep @@ List.concat
-           [ if eq (m, n) then [h m] else [h m, Atomic.equals, h n]
-           , [hsep [text "in", h a]]
-           , case l of NONE => [] | SOME l => [hsep [text "at", g l]]
+           [ if RedPrlAbt.eq (m, n) then [TermPrinter.ppTerm m]
+             else [TermPrinter.ppTerm m, Atomic.equals, TermPrinter.ppTerm n]
+           , [hsep [text "in", TermPrinter.ppTerm a]]
+           , case l of NONE => [] | SOME l => [hsep [text "at", RedPrlLevel.pretty l]]
            , if k = RedPrlKind.top then []
              else [hsep [text "with", TermPrinter.ppKind k]]
            ]
        | TRUE (a, l, k) => expr @@ hvsep @@ List.concat
-           [ [h a]
-           , case l of NONE => [] | SOME l => [hsep [text "at", g l]]
+           [ [TermPrinter.ppTerm a]
+           , case l of NONE => [] | SOME l => [hsep [text "at", RedPrlLevel.pretty l]]
            , if k = RedPrlKind.top then []
              else [hsep [text "with", TermPrinter.ppKind k]]
            ]
        | EQ_TYPE ((a, b), l, k) => expr @@ hvsep @@ List.concat
-           [ if eq (a, b) then [h a] else [h a, Atomic.equals, h b]
+           [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm a]
+             else [TermPrinter.ppTerm a, Atomic.equals, TermPrinter.ppTerm b]
            , if k = RedPrlKind.top
              then [hsep [text "type"]]
              else [hsep [TermPrinter.ppKind k, text "type"]]
-           , case l of NONE => [] | SOME l => [hsep [text "at", g l]]
+           , case l of NONE => [] | SOME l => [hsep [text "at", RedPrlLevel.pretty l]]
            ]
        | SUB_UNIVERSE (u, l, k) => expr @@ hvsep
-           [ h u
+           [ TermPrinter.ppTerm u
            , text "<="
            , Atomic.parens @@ expr @@ hsep
                [ text "U"
-               , case l of NONE => text "omega" | SOME l => g l
+               , case l of NONE => text "omega" | SOME l => RedPrlLevel.pretty l
                , if k = RedPrlKind.top then empty else TermPrinter.ppKind k
                ]
            ]
        | SYNTH (m, l, k) => expr @@ hvsep @@ List.concat
-           [ [h m, text "synth"]
-           , case l of NONE => [] | SOME l => [hsep [text "at", g l]]
+           [ [TermPrinter.ppTerm m, text "synth"]
+           , case l of NONE => [] | SOME l => [hsep [text "at", RedPrlLevel.pretty l]]
            , if k = RedPrlKind.top then []
              else [hsep [hsep [text "with", TermPrinter.ppKind k]]]
            ]
@@ -119,7 +119,6 @@ struct
        | O.JDG_TERM tau $ [] => TERM tau
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]
 
-    val pretty : jdg -> Fpp.doc = pretty' L.pretty TermPrinter.ppTerm eq
     val eq = fn (j1, j2) => eq (into j1, into j2)
   end
 end
