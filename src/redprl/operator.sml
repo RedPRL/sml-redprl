@@ -5,13 +5,13 @@ struct
    | TAC
    | MTAC
    | JDG
-   | TRIV
+   | TRV
    | MATCH_CLAUSE
-   | DIM | TUBE | BOUNDARY
+   | DIM | TUBE | BDRY
    | VEC of sort
    | LVL
-   | KIND
-   | SELECTOR
+   | KND
+   | SEL
    | ANY
    | META_NAME
 
@@ -20,15 +20,15 @@ struct
      | TAC => "tac"
      | MTAC => "mtac"
      | JDG => "jdg"
-     | TRIV => "triv"
+     | TRV => "trv"
      | MATCH_CLAUSE => "match-clause"
      | DIM => "dim"
      | TUBE => "tube"
-     | BOUNDARY => "boundary"
+     | BDRY => "bdry"
      | VEC tau => "vec{" ^ sortToString tau ^ "}"
      | LVL => "lvl"
-     | KIND => "kind"
-     | SELECTOR => "selector"
+     | KND => "knd"
+     | SEL => "sel"
      | ANY => "any"
      | META_NAME => "meta-name"
 end
@@ -153,7 +153,7 @@ struct
    | PAT_TUPLE of (string * 'a dev_pattern) list
 
   datatype operator =
-   (* the trivial realizer of sort TRIV for judgments lacking interesting
+   (* the trivial realizer of sort TRV for judgments lacking interesting
     * computational content. *)
      TV
    (* the trivial realizer of sort EXP for types lacking interesting
@@ -194,7 +194,7 @@ struct
    | DIM0
    | DIM1
    | MK_TUBE
-   | MK_BOUNDARY
+   | MK_BDRY
    | MK_VEC of sort * int
 
    (* level expressions *)
@@ -275,7 +275,7 @@ struct
      | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
 
   val arity =
-    fn TV => [] ->> TRIV
+    fn TV => [] ->> TRV
      | AX => [] ->> EXP
 
      | BOOL => [] ->> EXP
@@ -320,13 +320,13 @@ struct
      | PATH_APP => [[] |: EXP, [] |: DIM] ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BOUNDARY] ->> EXP
+     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
      | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | HCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | COE => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP] ->> EXP
      | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
 
-     | UNIVERSE => [[] |: LVL, [] |: KIND] ->> EXP
+     | UNIVERSE => [[] |: LVL, [] |: KND] ->> EXP
      | V => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | VIN => [[] |: DIM, [] |: EXP, [] |: EXP] ->> EXP
      | VPROJ => [[] |: DIM, [] |: EXP, [] |: EXP] ->> EXP
@@ -338,7 +338,7 @@ struct
      | DIM0 => [] ->> DIM
      | DIM1 => [] ->> DIM
      | MK_TUBE => [[] |: DIM, [] |: DIM, [DIM] |: EXP] ->> TUBE
-     | MK_BOUNDARY => [[] |: DIM, [] |: DIM, [] |: EXP] ->> BOUNDARY
+     | MK_BDRY => [[] |: DIM, [] |: DIM, [] |: EXP] ->> BDRY
      | MK_VEC (tau, n) => List.tabulate (n, fn _ => [] |: tau) ->> VEC tau
 
      | LCONST i => [] ->> LVL
@@ -346,14 +346,14 @@ struct
      | LMAX => [[] |: VEC LVL] ->> LVL
      | LOMEGA => [] ->> LVL
 
-     | KCONST _ => [] ->> KIND
+     | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ => [[] |: LVL, [] |: KIND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_TRUE => [[] |: LVL, [] |: KIND, [] |: EXP] ->> JDG
-     | JDG_EQ_TYPE => [[] |: LVL, [] |: KIND, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KIND, [] |: EXP] ->> JDG
-     | JDG_SYNTH => [[] |: LVL, [] |: KIND, [] |: EXP] ->> JDG
+     | JDG_EQ => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
+     | JDG_SYNTH => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -372,13 +372,13 @@ struct
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_EXACT => [[] |: ANY] ->> TAC
      | RULE_REDUCE_ALL => [] ->> TAC
-     | RULE_REDUCE => [[] |: VEC SELECTOR] ->> TAC
+     | RULE_REDUCE => [[] |: VEC SEL] ->> TAC
 
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
      | RULE_ELIM => [[] |: ANY] ->> TAC
-     | RULE_REWRITE => [[] |: SELECTOR, [] |: EXP] ->> TAC
-     | RULE_REWRITE_HYP => [[] |: SELECTOR, [] |: ANY] ->> TAC
+     | RULE_REWRITE => [[] |: SEL, [] |: EXP] ->> TAC
+     | RULE_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -387,22 +387,22 @@ struct
 
      | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) |: MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
-     | DEV_QUERY => [[] |: SELECTOR, [JDG] |: TAC] ->> TAC
+     | DEV_QUERY => [[] |: SEL, [JDG] |: TAC] ->> TAC
      | DEV_PRINT => [[] |: ANY] ->> TAC
      | DEV_BOOL_ELIM => [[] |: EXP, [] |: TAC, [] |: TAC] ->> TAC
      | DEV_S1_ELIM => [[] |: EXP, [] |: TAC, [DIM] |: TAC] ->> TAC
      | DEV_APPLY_HYP pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_HYP => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
-     | SEL_HYP => [[] |: ANY] ->> SELECTOR
-     | SEL_CONCL => [] ->> SELECTOR
+     | SEL_HYP => [[] |: ANY] ->> SEL
+     | SEL_CONCL => [] ->> SEL
 
      | PAT_META tau => [[] |: META_NAME, [] |: VEC ANY] ->> tau
 
      | JDG_TERM _ => [] ->> JDG
      | CUST (_, ar) => Option.valOf ar
      | RULE_UNFOLD_ALL _ => [] ->> TAC
-     | RULE_UNFOLD _ => [[] |: VEC SELECTOR] ->> TAC
+     | RULE_UNFOLD _ => [[] |: VEC SEL] ->> TAC
      | DEV_APPLY_LEMMA (_, ar, pat) =>
        let
          val (vls, tau) = Option.valOf ar
@@ -473,7 +473,7 @@ struct
      | DIM0 => "dim0"
      | DIM1 => "dim1"
      | MK_TUBE => "tube"
-     | MK_BOUNDARY => "boundary"
+     | MK_BDRY => "bdry"
      | MK_VEC _ => "vec" 
 
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"

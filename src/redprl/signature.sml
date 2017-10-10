@@ -98,7 +98,7 @@ struct
            O.JDG_TRUE $ _ => O.EXP
          | O.JDG_SYNTH $ _ => O.EXP
          | O.JDG_TERM tau $ _ => tau
-         | _ => O.TRIV
+         | _ => O.TRV
 
       fun lookupArity sign pos opid = 
         case arityOfOpid sign opid of

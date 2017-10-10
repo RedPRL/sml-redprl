@@ -71,10 +71,10 @@ struct
   structure O = RedPrlOpData
 
   val synthesis =
-    fn EQ _ => O.TRIV
+    fn EQ _ => O.TRV
      | TRUE _ => O.EXP
-     | EQ_TYPE _ => O.TRIV
-     | SUB_UNIVERSE _ => O.TRIV
+     | EQ_TYPE _ => O.TRV
+     | SUB_UNIVERSE _ => O.TRV
      | SYNTH _ => O.EXP
      | TERM tau => tau
 

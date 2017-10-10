@@ -130,7 +130,7 @@ whitespace = [\ \t];
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
-"kind"             => (Tokens.KIND (posTuple (size yytext)));
+"knd"              => (Tokens.KND (posTuple (size yytext)));
 
 "lmax"             => (Tokens.LMAX (posTuple (size yytext)));
 "omega"            => (Tokens.LOMEGA (posTuple (size yytext)));
@@ -138,7 +138,7 @@ whitespace = [\ \t];
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
 "jdg"              => (Tokens.JDG (posTuple (size yytext)));
-"triv"             => (Tokens.TRIV (posTuple (size yytext)));
+"trv"              => (Tokens.TRV (posTuple (size yytext)));
 
 "tactic"           => (Tokens.TACTIC (posTuple (size yytext)));
 

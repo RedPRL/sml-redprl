@@ -15,7 +15,7 @@ struct
       *   associated with `a`. Moreover, `a` was already defined at the
       *   `l'`th iteration if `l = SOME l'`. If `l = NONE` it means `a`
       *   was defined at some level but we do not care.
-      *   The realizer is `TV` of sort `TRIV`.
+      *   The realizer is `TV` of sort `TRV`.
       *)
        EQ of (abt * abt) * (abt * level * kind)
 
@@ -33,7 +33,7 @@ struct
       *   eventually but we do not care about when. For example,
       *   `EQ_TYPE ((a, b), SOME 2, KAN)` means `a` and `b` are equally Kan
       *   in the second iterated type theory.
-      *   The realizer is `TV` of sort `TRIV`.
+      *   The realizer is `TV` of sort `TRV`.
       *)
      | EQ_TYPE of (abt * abt) * level * kind
 

@@ -29,7 +29,7 @@ struct
 
   datatype 'a view =
      VAR of variable * sort
-   (* the trivial realizer of sort TRIV for judgments lacking interesting
+   (* the trivial realizer of sort TRV for judgments lacking interesting
     * computational content. *)
    | TV
    (* the trivial realizer of sort EXP for types lacking interesting
@@ -122,7 +122,7 @@ struct
 
     fun outBoundary boundary = 
       let
-        val O.MK_BOUNDARY $ [_ \ r1, _ \ r2, _ \ m] = Tm.out boundary
+        val O.MK_BDRY $ [_ \ r1, _ \ r2, _ \ m] = Tm.out boundary
       in
         ((r1, r2), m)
       end
@@ -149,7 +149,7 @@ struct
          [u] \ e]
 
     fun intoBoundary ((r1, r2), e) = 
-      O.MK_BOUNDARY $$ 
+      O.MK_BDRY $$
         [[] \ r1,
          [] \ r2,
          [] \ e]
@@ -167,7 +167,7 @@ struct
       let
         val n = List.length boundaries
       in
-        O.MK_VEC (O.BOUNDARY, n) $$
+        O.MK_VEC (O.BDRY, n) $$
           List.map (fn b => [] \ intoBoundary b) boundaries
       end
   end

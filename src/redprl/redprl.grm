@@ -294,7 +294,7 @@ end
  | PLUS | DOUBLE_PLUS
 
  (* sorts *)
- | DIM | EXP | TAC | TRIV | JDG | LVL | KIND
+ | DIM | EXP | TAC | TRV | JDG | LVL | KND
 
 
  (* keywords and variables in expressions *)
@@ -489,10 +489,10 @@ boundVars
 sort
   : EXP (O.EXP)
   | TAC (O.TAC)
-  | TRIV (O.TRIV)
+  | TRV (O.TRV)
   | JDG (O.JDG)
   | LVL (O.LVL)
-  | KIND (O.KIND)
+  | KND (O.KND)
   | DIM (O.DIM)
 
 sorts
@@ -532,7 +532,7 @@ tube
   : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_TUBE, [\ ([], #1 equation), \ ([], #2 equation), binding]))
 
 boundary
-  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_BOUNDARY, [\ ([], #1 equation), \ ([], #2 equation), binding]))
+  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_BDRY, [\ ([], #1 equation), \ ([], #2 equation), binding]))
 
 tubes
   : tube tubes (tube :: tubes)
@@ -546,7 +546,7 @@ tubeVec
   : tubes (Multi.makeVec O.TUBE tubes)
 
 boundaryVec
-  : boundaries (Multi.makeVec O.BOUNDARY boundaries)
+  : boundaries (Multi.makeVec O.BDRY boundaries)
 
 metavar
   : HASH ident (ident)
@@ -863,9 +863,9 @@ atomicRawTac
   | RULE_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.RULE_REWRITE_HYP, [Ast.\ ([], Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], elimTargetAnySort)]))
   | RULE_REWRITE_HYP elimTargetAnySort IN selector (Ast.$$ (O.RULE_REWRITE_HYP, [Ast.\ ([], selector), Ast.\ ([], elimTargetAnySort)]))
   | RULE_REDUCE (Ast.$$ (O.RULE_REDUCE_ALL, []))
-  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.RULE_REDUCE, [Ast.\ ([], Multi.makeVec O.SELECTOR bracketedSelectors)]))
+  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.RULE_REDUCE, [Ast.\ ([], Multi.makeVec O.SEL bracketedSelectors)]))
   | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.RULE_UNFOLD_ALL bracketedOpnames, []))
-  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.RULE_UNFOLD (bracketedOpnames), [Ast.\ ([], Multi.makeVec O.SELECTOR bracketedSelectors)]))
+  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.RULE_UNFOLD (bracketedOpnames), [Ast.\ ([], Multi.makeVec O.SEL bracketedSelectors)]))
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
