@@ -28,13 +28,15 @@ struct
            [ if RedPrlAbt.eq (m, n) then [TermPrinter.ppTerm m]
              else [TermPrinter.ppTerm m, Atomic.equals, TermPrinter.ppTerm n]
            , [hsep [text "in", TermPrinter.ppTerm a]]
-           , [hsep [text "at", RedPrlLevel.pretty l]]
+           , if RedPrlLevel.eq (l, RedPrlLevel.top) then []
+             else [hsep [text "at", RedPrlLevel.pretty l]]
            , if k = RedPrlKind.top then []
              else [hsep [text "with", TermPrinter.ppKind k]]
            ]
        | TRUE (a, l, k) => expr @@ hvsep @@ List.concat
            [ [TermPrinter.ppTerm a]
-           , [hsep [text "at", RedPrlLevel.pretty l]]
+           , if RedPrlLevel.eq (l, RedPrlLevel.top) then []
+             else [hsep [text "at", RedPrlLevel.pretty l]]
            , if k = RedPrlKind.top then []
              else [hsep [text "with", TermPrinter.ppKind k]]
            ]
@@ -44,7 +46,8 @@ struct
            , if k = RedPrlKind.top
              then [hsep [text "type"]]
              else [hsep [TermPrinter.ppKind k, text "type"]]
-           , [hsep [text "at", RedPrlLevel.pretty l]]
+           , if RedPrlLevel.eq (l, RedPrlLevel.top) then []
+             else [hsep [text "at", RedPrlLevel.pretty l]]
            ]
        | SUB_UNIVERSE (u, l, k) => expr @@ hvsep
            [ TermPrinter.ppTerm u
@@ -57,7 +60,8 @@ struct
            ]
        | SYNTH (m, l, k) => expr @@ hvsep @@ List.concat
            [ [TermPrinter.ppTerm m, text "synth"]
-           , [hsep [text "at", RedPrlLevel.pretty l]]
+           , if RedPrlLevel.eq (l, RedPrlLevel.top) then []
+             else [hsep [text "at", RedPrlLevel.pretty l]]
            , if k = RedPrlKind.top then []
              else [hsep [hsep [text "with", TermPrinter.ppKind k]]]
            ]
