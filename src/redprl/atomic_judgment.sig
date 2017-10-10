@@ -1,7 +1,7 @@
 structure RedPrlAtomicJudgmentData =
 struct
   type kind = RedPrlKind.t
-  type level = RedPrlLevel.P.level
+  type level = RedPrlLevel.t
 
   structure Tm = RedPrlAbt
 
@@ -60,7 +60,8 @@ signature CATEGORICAL_JUDGMENT =
 sig
   datatype jdg = datatype RedPrlAtomicJudgmentData.jdg
   type abt = RedPrlAbt.abt
-  type level = RedPrlLevel.P.level
+  type level = RedPrlLevel.t
+  type kind = RedPrlKind.t
 
   val MEM : abt * (abt * level * RedPrlKind.t) -> jdg
   val TYPE : abt * level * RedPrlKind.t -> jdg

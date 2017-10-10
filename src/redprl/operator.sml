@@ -201,14 +201,15 @@ struct
    | LCONST of IntInf.int
    | LPLUS of IntInf.int
    | LMAX
+   | LOMEGA
 
    | KCONST of kind
 
-   | JDG_EQ of bool
-   | JDG_TRUE of bool 
-   | JDG_EQ_TYPE of bool 
-   | JDG_SUB_UNIVERSE of bool 
-   | JDG_SYNTH of bool
+   | JDG_EQ
+   | JDG_TRUE
+   | JDG_EQ_TYPE
+   | JDG_SUB_UNIVERSE
+   | JDG_SYNTH
    | JDG_TERM of sort
 
 
@@ -343,15 +344,16 @@ struct
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] |: LVL] ->> LVL
      | LMAX => [[] |: VEC LVL] ->> LVL
+     | LOMEGA => [] ->> LVL
 
      | KCONST _ => [] ->> KIND
 
 
-     | JDG_EQ b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_TRUE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
-     | JDG_EQ_TYPE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
-     | JDG_SYNTH b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
+     | JDG_EQ => [[] |: LVL, [] |: KIND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE => [[] |: LVL, [] |: KIND, [] |: EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] |: LVL, [] |: KIND, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KIND, [] |: EXP] ->> JDG
+     | JDG_SYNTH => [[] |: LVL, [] |: KIND, [] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -475,8 +477,9 @@ struct
      | MK_VEC _ => "vec" 
 
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
-     | LPLUS i => "{lsuc " ^ IntInf.toString i ^ "}"
+     | LPLUS i => "{lplus " ^ IntInf.toString i ^ "}"
      | LMAX => "lmax"
+     | LOMEGA => "lomega"
 
      | KCONST k => RedPrlKind.toString k
 
@@ -529,11 +532,11 @@ struct
      | SEL_CONCL => "select-goal"
      | PAT_META _ => "pat-meta"
 
-     | JDG_EQ _ => "eq"
-     | JDG_TRUE _ => "true"
-     | JDG_EQ_TYPE _ => "eq-type"
-     | JDG_SUB_UNIVERSE _ => "sub-universe"
-     | JDG_SYNTH _ => "synth"
+     | JDG_EQ => "eq"
+     | JDG_TRUE => "true"
+     | JDG_EQ_TYPE => "eq-type"
+     | JDG_SUB_UNIVERSE => "sub-universe"
+     | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | CUST (opid, _) => opid
      | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
