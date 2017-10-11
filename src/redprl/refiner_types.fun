@@ -1715,7 +1715,8 @@ struct
   structure V =
   struct
     val kindConstraintOnEnds =
-      fn K.DISCRETE => E.raiseError (E.UNIMPLEMENTED (Fpp.text "discrete V types"))
+      fn K.DISCRETE => E.raiseError @@
+          E.NOT_APPLICABLE (Fpp.text "V.kindConstraintOnEnds", Fpp.text "DISCRETE")
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)
