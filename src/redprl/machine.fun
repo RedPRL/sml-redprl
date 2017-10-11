@@ -565,16 +565,22 @@ struct
            (fn u => COMPAT @@ m || (syms, VPROJ (u, HOLE, f) :: stk))
 
      | O.UNIVERSE $ _ || (_, []) => raise Final
-     | O.UNIVERSE $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-       let
-         val fcom =
-           Syn.into @@ Syn.FCOM
-             {dir = dir,
-              cap = cap,
-              tubes = tubes}
-       in
-         CRITICAL @@ fcom || (syms, stk)
-       end
+     | O.UNIVERSE $ (_ :: _ \ k :: _) || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+         (case Tm.out k of
+            O.KCONST k $ _ =>
+              if k = RedPrlKind.DISCRETE then
+                CRITICAL @@ cap || (syms, stk)
+              else
+                let
+                  val fcom =
+                    Syn.into @@ Syn.FCOM
+                      {dir = dir,
+                       cap = cap,
+                       tubes = tubes}
+                in
+                  CRITICAL @@ fcom || (syms, stk)
+                end
+          | _ => raise Stuck)
      | O.UNIVERSE $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | _ => raise Stuck
