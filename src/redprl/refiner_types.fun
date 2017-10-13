@@ -43,7 +43,7 @@ struct
        | K.KAN => K.KAN
        | K.HCOM => K.COE
        | K.COE => K.COE
-       | K.CUBICAL => K.COE
+       | K.STABLE => K.COE
 
     fun inherentLevel l = L.plus (l, 1)
   end
@@ -798,9 +798,9 @@ struct
     val kindConstraintsOnDomAndCod =
       fn K.DISCRETE => (K.DISCRETE, K.DISCRETE)
        | K.KAN => (K.COE, K.KAN)
-       | K.HCOM => (K.CUBICAL, K.HCOM)
+       | K.HCOM => (K.STABLE, K.HCOM)
        | K.COE => (K.COE, K.COE)
-       | K.CUBICAL => (K.CUBICAL, K.CUBICAL)
+       | K.STABLE => (K.STABLE, K.STABLE)
 
     fun EqType alpha jdg =
       let
@@ -969,7 +969,7 @@ struct
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN)
        | K.COE => (K.COE, K.COE)
-       | K.CUBICAL => (K.CUBICAL, K.CUBICAL)
+       | K.STABLE => (K.STABLE, K.STABLE)
 
     fun EqType alpha jdg =
       let
@@ -1171,7 +1171,7 @@ struct
        | K.KAN => K.KAN
        | K.HCOM => K.HCOM
        | K.COE => K.KAN
-       | K.CUBICAL => K.CUBICAL
+       | K.STABLE => K.STABLE
 
     fun EqType alpha jdg =
       let
@@ -1339,9 +1339,9 @@ struct
     val kindConstraintOnBase =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.DISCRETE
-       | K.HCOM => K.CUBICAL
+       | K.HCOM => K.STABLE
        | K.COE => K.DISCRETE
-       | K.CUBICAL => K.CUBICAL
+       | K.STABLE => K.STABLE
 
     fun EqType _ jdg =
       let
@@ -1568,7 +1568,7 @@ struct
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
-       | K.CUBICAL => (K.CUBICAL, K.COE) (* XXX more research needed *)
+       | K.STABLE => (K.STABLE, K.COE) (* XXX more research needed *)
 
     (* see the function of th same name in `ComKit` *)
     local
@@ -1720,7 +1720,7 @@ struct
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)
-       | K.CUBICAL => (K.CUBICAL, K.CUBICAL)
+       | K.STABLE => (K.STABLE, K.STABLE)
 
     fun intoHasAllPaths C =
       let
@@ -1854,8 +1854,8 @@ struct
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.KAN
        | K.HCOM => K.KAN
-       | K.COE => K.CUBICAL
-       | K.CUBICAL => K.CUBICAL
+       | K.COE => K.STABLE
+       | K.STABLE => K.STABLE
 
     fun EqType _ jdg =
       let

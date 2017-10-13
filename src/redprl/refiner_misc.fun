@@ -65,7 +65,7 @@ struct
   structure Computation =
   struct
     fun reduce sign =
-      Machine.eval sign Machine.CUBICAL (Machine.Unfolding.default sign)
+      Machine.eval sign Machine.STABLE (Machine.Unfolding.default sign)
 
     fun SequentReduce sign selectors _ jdg =
       let
@@ -108,7 +108,7 @@ struct
                (case List.find (fn opid => opid = opid') opids of
                    SOME _ =>
                      let
-                       val m' = Machine.steps sign Machine.CUBICAL Machine.Unfolding.always 1 m
+                       val m' = Machine.steps sign Machine.STABLE Machine.Unfolding.always 1 m
                          handle exn => E.raiseError @@ E.IMPOSSIBLE @@ Fpp.hvsep
                            [Fpp.text "unfolding", TermPrinter.ppTerm m, Fpp.text ":", E.format exn]
                      in

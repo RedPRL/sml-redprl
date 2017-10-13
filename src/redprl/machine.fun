@@ -68,7 +68,7 @@ struct
   end
 
   datatype stability = 
-     CUBICAL
+     STABLE
    | NOMINAL
 
   datatype blocker =
@@ -103,7 +103,7 @@ struct
     fun assertVariable stability syms u =
       case stability of
         NOMINAL => ()
-      | CUBICAL =>
+      | STABLE =>
           if SymSet.member syms u then ()
           else raise Unstable
   in
@@ -125,7 +125,7 @@ struct
           (* An observation of apartness is stable under permutations. *)
           NOMINAL => false
           (* An observation of apartness is only stable if one of the compared dimensions is bound. *)
-        | CUBICAL =>
+        | STABLE =>
             let
               fun isBound syms r =
                 case Tm.out r of
@@ -581,7 +581,7 @@ struct
                 | K.KAN => CRITICAL @@ fcom || (syms, stk)
                 | K.HCOM => CRITICAL @@ fcom || (syms, stk)
                 | K.COE => raise Stuck
-                | K.CUBICAL => raise Stuck)
+                | K.STABLE => raise Stuck)
            | _ => raise Stuck
          end
      | O.UNIVERSE $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)

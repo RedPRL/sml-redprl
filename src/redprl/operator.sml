@@ -46,7 +46,7 @@ structure RedPrlArity = ListAbtArity (structure S = RedPrlSort)
 structure RedPrlKind =
 struct
   (*
-   * DISCRETE < KAN < HCOM < CUBICAL
+   * DISCRETE < KAN < HCOM < STABLE
    *                < COE  <
    *
    * and KAN = meet (HCOM, COE)
@@ -58,18 +58,18 @@ struct
    *     particular, the property that a type A has kind K is closed under any
    *     substitution.
    * (2) If two types are related with respect to a stronger kind (like KAN),
-   *     then they are related with respect to a weaker kind (like CUBICAL).
+   *     then they are related with respect to a weaker kind (like STABLE).
    *     A stronger kind might demand more things to be equal. For example,
    *     the equality between two types with respect to KAN means that they
-   *     are equally Kan, while the equality with respect to CUBICAL only says
-   *     they are equal cubical pretypes.
+   *     are equally Kan, while the equality with respect to STABLE only says
+   *     they are equal pretypes.
    * (3) The PER associated with A should *never* depend on its kind. Kinds
    *     should be properties of (the PER of) A.
    * (4) We say KAN = meet (HCOM, COE) because if two types are equally "HCOM"
    *     and equally "COE" then they are equally Kan. Always remember to check
    *     the binary cases.
    *)
-  datatype kind = DISCRETE | KAN | HCOM | COE | CUBICAL
+  datatype kind = DISCRETE | KAN | HCOM | COE | STABLE
 
   val COM = KAN
 
@@ -78,7 +78,7 @@ struct
      | KAN => "kan"
      | HCOM => "hcom"
      | COE => "coe"
-     | CUBICAL => "cubical"
+     | STABLE => "stable"
 
   local
     structure Internal :
@@ -100,7 +100,7 @@ struct
     =
     struct
       type t = kind
-      val top = CUBICAL
+      val top = STABLE
 
       val meet =
         fn (DISCRETE, _) => DISCRETE
@@ -113,7 +113,7 @@ struct
          | (_, HCOM) => HCOM
          | (COE, _) => COE
          | (_, COE) => COE
-         | (CUBICAL, CUBICAL) => CUBICAL
+         | (STABLE, STABLE) => STABLE
 
       val residual =
         fn (_, DISCRETE) => NONE
@@ -128,7 +128,7 @@ struct
          | (HCOM, _) => SOME HCOM
          | (_, COE) => NONE
          | (COE, _) => SOME COE
-         | (CUBICAL, CUBICAL) => NONE
+         | (STABLE, STABLE) => NONE
 
       fun op <= (a, b) = residual (b, a) = NONE
     end

@@ -177,7 +177,7 @@ whitespace = [\ \t];
 "synth"            => (Tokens.SYNTH (posTuple (size yytext)));
 "discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
 "kan"              => (Tokens.KAN (posTuple (size yytext)));
-"cubical"          => (Tokens.CUBICAL (posTuple (size yytext)));
+"stable"           => (Tokens.STABLE (posTuple (size yytext)));
 "at"               => (Tokens.AT (posTuple (size yytext)));
 
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));

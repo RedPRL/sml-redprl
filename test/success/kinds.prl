@@ -9,13 +9,13 @@ Thm Kind1(#A) : [
 ] by [ auto ].
 
 Thm Kind2(#A) : [
-  #A type with cubical,
+  #A type with stable,
   >> #A type
 ] by [ auto ].
 
 Thm Kind3(#A) : [
   #A type,
-  >> #A type with cubical
+  >> #A type with stable
 ] by [ auto ].
 
 Thm Kind4(#A) : [

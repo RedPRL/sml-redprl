@@ -335,7 +335,7 @@ end
  (* keywords in judgments *)
  | TRUE | TYPE | SYNTH | AT (* `WITH` is reused *)
 
- | DISCRETE | KAN | CUBICAL
+ | DISCRETE | KAN | STABLE
 
  (* commands and declarations *)
  | CMD_PRINT | CMD_EXTRACT
@@ -733,7 +733,7 @@ kind
   | KAN (O.K.KAN)
   | HCOM (O.K.HCOM)
   | COE (O.K.COE)
-  | CUBICAL (O.K.CUBICAL)
+  | STABLE (O.K.STABLE)
 
 withKindAtLevel
   : WITH term AT level (level, term)
