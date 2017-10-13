@@ -16,6 +16,7 @@ struct
 
   open Tm infix 7 $ $$ $# infix 6 \
   structure O = RedPrlOpData
+  structure K = RedPrlKind
 
   type tube = Syn.equation * (variable * abt)
   type boundary = Syn.equation * abt
@@ -566,21 +567,23 @@ struct
 
      | O.UNIVERSE $ _ || (_, []) => raise Final
      | O.UNIVERSE $ (_ :: _ \ k :: _) || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-         (case Tm.out k of
-            O.KCONST k $ _ =>
-              if k = RedPrlKind.DISCRETE then
-                CRITICAL @@ cap || (syms, stk)
-              else
-                let
-                  val fcom =
-                    Syn.into @@ Syn.FCOM
-                      {dir = dir,
-                       cap = cap,
-                       tubes = tubes}
-                in
-                  CRITICAL @@ fcom || (syms, stk)
-                end
-          | _ => raise Stuck)
+         let
+           val fcom =
+             Syn.into @@ Syn.FCOM
+               {dir = dir,
+                cap = cap,
+                tubes = tubes}
+         in
+           case Tm.out k of
+             O.KCONST k $ _ =>
+               (case k of
+                  K.DISCRETE => CRITICAL @@ cap || (syms, stk)
+                | K.KAN => CRITICAL @@ fcom || (syms, stk)
+                | K.HCOM => CRITICAL @@ fcom || (syms, stk)
+                | K.COE => raise Stuck
+                | K.CUBICAL => raise Stuck)
+           | _ => raise Stuck
+         end
      | O.UNIVERSE $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | _ => raise Stuck
