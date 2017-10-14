@@ -254,9 +254,7 @@ structure Jdg =
 struct
   open Ast infix $$ \
   fun makeAtLvl theta (lvl, k : ast) es = 
-    case lvl of
-       NONE => theta false $$ List.map (fn e => [] \ e) (k :: es)
-     | SOME lvl => theta true $$ List.map (fn e => [] \ e) (lvl :: k :: es)
+     theta $$ List.map (fn e => [] \ e) (lvl :: k :: es)
 end
 
 %%
@@ -296,7 +294,7 @@ end
  | PLUS | DOUBLE_PLUS
 
  (* sorts *)
- | DIM | EXP | TAC | TRIV | JDG | LVL | KIND
+ | DIM | EXP | TAC | TRV | JDG | LVL | KND
 
 
  (* keywords and variables in expressions *)
@@ -316,7 +314,7 @@ end
  | UNIVERSE
  | HCOM | COE | COM
 
- | LMAX
+ | LMAX | LOMEGA
 
  (* parsing "coercions" *)
  | TACTIC
@@ -337,7 +335,7 @@ end
  (* keywords in judgments *)
  | TRUE | TYPE | SYNTH | AT (* `WITH` is reused *)
 
- | DISCRETE | KAN | CUBICAL
+ | DISCRETE | KAN | STABLE
 
  (* commands and declarations *)
  | CMD_PRINT | CMD_EXTRACT
@@ -409,7 +407,7 @@ end
  | terms of ast list
 
  | kind of O.K.kind
- | withKindAtLevel of ast option * ast
+ | withKindAtLevel of ast * ast
 
  | rawJudgment of ast
  | judgment of ast
@@ -491,10 +489,10 @@ boundVars
 sort
   : EXP (O.EXP)
   | TAC (O.TAC)
-  | TRIV (O.TRIV)
+  | TRV (O.TRV)
   | JDG (O.JDG)
   | LVL (O.LVL)
-  | KIND (O.KIND)
+  | KND (O.KND)
   | DIM (O.DIM)
 
 sorts
@@ -534,7 +532,7 @@ tube
   : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_TUBE, [\ ([], #1 equation), \ ([], #2 equation), binding]))
 
 boundary
-  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_BOUNDARY, [\ ([], #1 equation), \ ([], #2 equation), binding]))
+  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_BDRY, [\ ([], #1 equation), \ ([], #2 equation), binding]))
 
 tubes
   : tube tubes (tube :: tubes)
@@ -548,7 +546,7 @@ tubeVec
   : tubes (Multi.makeVec O.TUBE tubes)
 
 boundaryVec
-  : boundaries (Multi.makeVec O.BOUNDARY boundaries)
+  : boundaries (Multi.makeVec O.BDRY boundaries)
 
 metavar
   : HASH ident (ident)
@@ -710,6 +708,7 @@ level
   | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ ([], level)]))
   | LPAREN DOUBLE_PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ ([], level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.LMAX, [\ ([], Multi.makeVec O.LVL levels)]))
+  | LOMEGA (Ast.$$ (O.LOMEGA, []))
   | metavar (Ast.$$# (metavar, []))
   | PERCENT VARNAME (Ast.$$ (O.PAT_META O.LVL, [\ ([], ``VARNAME), \ ([], Multi.makeVec O.ANY [])]))
 
@@ -734,14 +733,14 @@ kind
   | KAN (O.K.KAN)
   | HCOM (O.K.HCOM)
   | COE (O.K.COE)
-  | CUBICAL (O.K.CUBICAL)
+  | STABLE (O.K.STABLE)
 
 withKindAtLevel
-  : WITH term AT level (SOME level, term)
-  | AT level WITH term (SOME level, term)
-  | WITH term (NONE, term)
-  | AT level (SOME level, Ast.$$ (O.KCONST (O.K.top), []))
-  | (NONE, Ast.$$ (O.KCONST (O.K.top), []))
+  : WITH term AT level (level, term)
+  | AT level WITH term (level, term)
+  | WITH term (Ast.$$ (O.LOMEGA, []), term)
+  | AT level (level, Ast.$$ (O.KCONST (O.K.top), []))
+  | (Ast.$$ (O.LOMEGA, []), Ast.$$ (O.KCONST (O.K.top), []))
 
 rawJudgment
   : term EQUALS term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term2, term3])
@@ -864,9 +863,9 @@ atomicRawTac
   | RULE_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.RULE_REWRITE_HYP, [Ast.\ ([], Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], elimTargetAnySort)]))
   | RULE_REWRITE_HYP elimTargetAnySort IN selector (Ast.$$ (O.RULE_REWRITE_HYP, [Ast.\ ([], selector), Ast.\ ([], elimTargetAnySort)]))
   | RULE_REDUCE (Ast.$$ (O.RULE_REDUCE_ALL, []))
-  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.RULE_REDUCE, [Ast.\ ([], Multi.makeVec O.SELECTOR bracketedSelectors)]))
+  | RULE_REDUCE IN bracketedSelectors (Ast.$$ (O.RULE_REDUCE, [Ast.\ ([], Multi.makeVec O.SEL bracketedSelectors)]))
   | RULE_UNFOLD bracketedOpnames (Ast.$$ (O.RULE_UNFOLD_ALL bracketedOpnames, []))
-  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.RULE_UNFOLD (bracketedOpnames), [Ast.\ ([], Multi.makeVec O.SELECTOR bracketedSelectors)]))
+  | RULE_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.RULE_UNFOLD (bracketedOpnames), [Ast.\ ([], Multi.makeVec O.SEL bracketedSelectors)]))
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)

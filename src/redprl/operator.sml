@@ -5,13 +5,13 @@ struct
    | TAC
    | MTAC
    | JDG
-   | TRIV
+   | TRV
    | MATCH_CLAUSE
-   | DIM | TUBE | BOUNDARY
+   | DIM | TUBE | BDRY
    | VEC of sort
    | LVL
-   | KIND
-   | SELECTOR
+   | KND
+   | SEL
    | ANY
    | META_NAME
 
@@ -20,15 +20,15 @@ struct
      | TAC => "tac"
      | MTAC => "mtac"
      | JDG => "jdg"
-     | TRIV => "triv"
+     | TRV => "trv"
      | MATCH_CLAUSE => "match-clause"
      | DIM => "dim"
      | TUBE => "tube"
-     | BOUNDARY => "boundary"
+     | BDRY => "bdry"
      | VEC tau => "vec{" ^ sortToString tau ^ "}"
      | LVL => "lvl"
-     | KIND => "kind"
-     | SELECTOR => "selector"
+     | KND => "knd"
+     | SEL => "sel"
      | ANY => "any"
      | META_NAME => "meta-name"
 end
@@ -46,7 +46,7 @@ structure RedPrlArity = ListAbtArity (structure S = RedPrlSort)
 structure RedPrlKind =
 struct
   (*
-   * DISCRETE < KAN < HCOM < CUBICAL
+   * DISCRETE < KAN < HCOM < STABLE
    *                < COE  <
    *
    * and KAN = meet (HCOM, COE)
@@ -58,18 +58,18 @@ struct
    *     particular, the property that a type A has kind K is closed under any
    *     substitution.
    * (2) If two types are related with respect to a stronger kind (like KAN),
-   *     then they are related with respect to a weaker kind (like CUBICAL).
+   *     then they are related with respect to a weaker kind (like STABLE).
    *     A stronger kind might demand more things to be equal. For example,
    *     the equality between two types with respect to KAN means that they
-   *     are equally Kan, while the equality with respect to CUBICAL only says
-   *     they are equal cubical pretypes.
+   *     are equally Kan, while the equality with respect to STABLE only says
+   *     they are equal pretypes.
    * (3) The PER associated with A should *never* depend on its kind. Kinds
    *     should be properties of (the PER of) A.
    * (4) We say KAN = meet (HCOM, COE) because if two types are equally "HCOM"
    *     and equally "COE" then they are equally Kan. Always remember to check
    *     the binary cases.
    *)
-  datatype kind = DISCRETE | KAN | HCOM | COE | CUBICAL
+  datatype kind = DISCRETE | KAN | HCOM | COE | STABLE
 
   val COM = KAN
 
@@ -78,7 +78,7 @@ struct
      | KAN => "kan"
      | HCOM => "hcom"
      | COE => "coe"
-     | CUBICAL => "cubical"
+     | STABLE => "stable"
 
   local
     structure Internal :
@@ -100,7 +100,7 @@ struct
     =
     struct
       type t = kind
-      val top = CUBICAL
+      val top = STABLE
 
       val meet =
         fn (DISCRETE, _) => DISCRETE
@@ -113,7 +113,7 @@ struct
          | (_, HCOM) => HCOM
          | (COE, _) => COE
          | (_, COE) => COE
-         | (CUBICAL, CUBICAL) => CUBICAL
+         | (STABLE, STABLE) => STABLE
 
       val residual =
         fn (_, DISCRETE) => NONE
@@ -128,7 +128,7 @@ struct
          | (HCOM, _) => SOME HCOM
          | (_, COE) => NONE
          | (COE, _) => SOME COE
-         | (CUBICAL, CUBICAL) => NONE
+         | (STABLE, STABLE) => NONE
 
       fun op <= (a, b) = residual (b, a) = NONE
     end
@@ -153,7 +153,7 @@ struct
    | PAT_TUPLE of (string * 'a dev_pattern) list
 
   datatype operator =
-   (* the trivial realizer of sort TRIV for judgments lacking interesting
+   (* the trivial realizer of sort TRV for judgments lacking interesting
     * computational content. *)
      TV
    (* the trivial realizer of sort EXP for types lacking interesting
@@ -194,21 +194,22 @@ struct
    | DIM0
    | DIM1
    | MK_TUBE
-   | MK_BOUNDARY
+   | MK_BDRY
    | MK_VEC of sort * int
 
    (* level expressions *)
    | LCONST of IntInf.int
    | LPLUS of IntInf.int
    | LMAX
+   | LOMEGA
 
    | KCONST of kind
 
-   | JDG_EQ of bool
-   | JDG_TRUE of bool 
-   | JDG_EQ_TYPE of bool 
-   | JDG_SUB_UNIVERSE of bool 
-   | JDG_SYNTH of bool
+   | JDG_EQ
+   | JDG_TRUE
+   | JDG_EQ_TYPE
+   | JDG_SUB_UNIVERSE
+   | JDG_SYNTH
    | JDG_TERM of sort
 
 
@@ -274,7 +275,7 @@ struct
      | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
 
   val arity =
-    fn TV => [] ->> TRIV
+    fn TV => [] ->> TRV
      | AX => [] ->> EXP
 
      | BOOL => [] ->> EXP
@@ -319,13 +320,13 @@ struct
      | PATH_APP => [[] |: EXP, [] |: DIM] ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BOUNDARY] ->> EXP
+     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
      | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | HCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | COE => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP] ->> EXP
      | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
 
-     | UNIVERSE => [[] |: LVL, [] |: KIND] ->> EXP
+     | UNIVERSE => [[] |: LVL, [] |: KND] ->> EXP
      | V => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | VIN => [[] |: DIM, [] |: EXP, [] |: EXP] ->> EXP
      | VPROJ => [[] |: DIM, [] |: EXP, [] |: EXP] ->> EXP
@@ -337,21 +338,22 @@ struct
      | DIM0 => [] ->> DIM
      | DIM1 => [] ->> DIM
      | MK_TUBE => [[] |: DIM, [] |: DIM, [DIM] |: EXP] ->> TUBE
-     | MK_BOUNDARY => [[] |: DIM, [] |: DIM, [] |: EXP] ->> BOUNDARY
+     | MK_BDRY => [[] |: DIM, [] |: DIM, [] |: EXP] ->> BDRY
      | MK_VEC (tau, n) => List.tabulate (n, fn _ => [] |: tau) ->> VEC tau
 
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] |: LVL] ->> LVL
      | LMAX => [[] |: VEC LVL] ->> LVL
+     | LOMEGA => [] ->> LVL
 
-     | KCONST _ => [] ->> KIND
+     | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_TRUE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
-     | JDG_EQ_TYPE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
-     | JDG_SYNTH b => (if b then [[] |: LVL] else []) @ [[] |: KIND, [] |: EXP] ->> JDG
+     | JDG_EQ => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
+     | JDG_SYNTH => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -370,13 +372,13 @@ struct
      | RULE_SYMMETRY => [] ->> TAC
      | RULE_EXACT => [[] |: ANY] ->> TAC
      | RULE_REDUCE_ALL => [] ->> TAC
-     | RULE_REDUCE => [[] |: VEC SELECTOR] ->> TAC
+     | RULE_REDUCE => [[] |: VEC SEL] ->> TAC
 
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
      | RULE_ELIM => [[] |: ANY] ->> TAC
-     | RULE_REWRITE => [[] |: SELECTOR, [] |: EXP] ->> TAC
-     | RULE_REWRITE_HYP => [[] |: SELECTOR, [] |: ANY] ->> TAC
+     | RULE_REWRITE => [[] |: SEL, [] |: EXP] ->> TAC
+     | RULE_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -385,22 +387,22 @@ struct
 
      | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) |: MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
-     | DEV_QUERY => [[] |: SELECTOR, [JDG] |: TAC] ->> TAC
+     | DEV_QUERY => [[] |: SEL, [JDG] |: TAC] ->> TAC
      | DEV_PRINT => [[] |: ANY] ->> TAC
      | DEV_BOOL_ELIM => [[] |: EXP, [] |: TAC, [] |: TAC] ->> TAC
      | DEV_S1_ELIM => [[] |: EXP, [] |: TAC, [DIM] |: TAC] ->> TAC
      | DEV_APPLY_HYP pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_HYP => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
-     | SEL_HYP => [[] |: ANY] ->> SELECTOR
-     | SEL_CONCL => [] ->> SELECTOR
+     | SEL_HYP => [[] |: ANY] ->> SEL
+     | SEL_CONCL => [] ->> SEL
 
      | PAT_META tau => [[] |: META_NAME, [] |: VEC ANY] ->> tau
 
      | JDG_TERM _ => [] ->> JDG
      | CUST (_, ar) => Option.valOf ar
      | RULE_UNFOLD_ALL _ => [] ->> TAC
-     | RULE_UNFOLD _ => [[] |: VEC SELECTOR] ->> TAC
+     | RULE_UNFOLD _ => [[] |: VEC SEL] ->> TAC
      | DEV_APPLY_LEMMA (_, ar, pat) =>
        let
          val (vls, tau) = Option.valOf ar
@@ -471,12 +473,13 @@ struct
      | DIM0 => "dim0"
      | DIM1 => "dim1"
      | MK_TUBE => "tube"
-     | MK_BOUNDARY => "boundary"
+     | MK_BDRY => "bdry"
      | MK_VEC _ => "vec" 
 
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
-     | LPLUS i => "{lsuc " ^ IntInf.toString i ^ "}"
+     | LPLUS i => "{lplus " ^ IntInf.toString i ^ "}"
      | LMAX => "lmax"
+     | LOMEGA => "lomega"
 
      | KCONST k => RedPrlKind.toString k
 
@@ -529,11 +532,11 @@ struct
      | SEL_CONCL => "select-goal"
      | PAT_META _ => "pat-meta"
 
-     | JDG_EQ _ => "eq"
-     | JDG_TRUE _ => "true"
-     | JDG_EQ_TYPE _ => "eq-type"
-     | JDG_SUB_UNIVERSE _ => "sub-universe"
-     | JDG_SYNTH _ => "synth"
+     | JDG_EQ => "eq"
+     | JDG_TRUE => "true"
+     | JDG_EQ_TYPE => "eq-type"
+     | JDG_SUB_UNIVERSE => "sub-universe"
+     | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | CUST (opid, _) => opid
      | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"

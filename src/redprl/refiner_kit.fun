@@ -178,7 +178,7 @@ struct
   fun makeEqTypeUnlessSubUniv H ((m, n), l, k) (l', k') =
     Option.map
       (fn (l, k) => makeEqType H ((m, n), l, k))
-      (L.PK.residual ((l, k), (l', k')))
+      (L.WK.residual ((l, k), (l', k')))
   
   fun makeTypeUnlessSubUniv H (m, l, k) (l', k') =
     makeEqTypeUnlessSubUniv H ((m, m), l, k) (l', k')
@@ -198,7 +198,7 @@ struct
   fun makeEqUnlessSubUniv H ((m, n), (ty, l, k)) (l', k') =
     Option.map
       (fn (l, k) => makeEq H ((m, n), (ty, l, k)))
-      (L.PK.residual ((l, k), (l', k')))
+      (L.WK.residual ((l, k), (l', k')))
 
   fun makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k') =
     makeEqUnlessSubUniv H ((m, m), (ty, l, k)) (l', k')
@@ -218,7 +218,7 @@ struct
   (* subtyping *)
 
   fun isInUsefulUniv (l', k') (l, k) =
-    not (OptionUtil.eq L.PK.eq (L.PK.residual ((l, k), (l', k')), SOME (l, k)))
+    not (OptionUtil.eq L.WK.eq (L.WK.residual ((l, k), (l', k')), SOME (l, k)))
 
   (* It is not clear how exactly the subtyping should be implemented;
    * therefore we have a dummy implementation here. *)
@@ -254,16 +254,22 @@ struct
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m0, Fpp.text "or", TermPrinter.ppTerm m1, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
 
     fun levelLeq (l1, l2) =
-      if L.P.<= (l1, l2) then
+      if L.<= (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected level", L.P.pretty l1, Fpp.text "to be less than or equal to", L.P.pretty l2]
+        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than or equal to", L.pretty l2]
 
     fun levelEq (l1, l2) =
       if L.eq (l1, l2) then
         ()
       else
         raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
+
+    fun levelNotOmega l =
+      if not (L.eq (l, L.omega)) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected level", L.pretty l, Fpp.text "not to be", L.pretty L.omega]
 
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then
@@ -281,7 +287,7 @@ struct
       if isInUsefulUniv (l', k') (l, k) then
         ()
       else
-        E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.P.pretty l', Fpp.text "and kind", TermPrinter.ppKind k, Fpp.text "to be useful"]
+        E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.pretty l', Fpp.text "and kind", TermPrinter.ppKind k, Fpp.text "to be useful"]
 
     fun dirEq msg ((r1, r1'), (r2, r2')) =
       if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then

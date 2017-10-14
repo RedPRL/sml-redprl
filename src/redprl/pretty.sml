@@ -246,7 +246,7 @@ struct
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
           nest 1 @@ hvsep [Atomic.braces @@ ppVar u, ppTerm mu]]
-     | O.MK_BOUNDARY $ [_ \ r1, _ \ r2, _ \ m] => 
+     | O.MK_BDRY $ [_ \ r1, _ \ r2, _ \ m] =>
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
           nest 1 @@ ppTerm m]
