@@ -179,6 +179,8 @@ struct
    | PATH | ABS | DIM_APP
    (* lines: paths without fixed endpoints *)
    | LINE
+   (* pushout *)
+   | PUSHOUT | LEFT | RIGHT | GLUE
    (* equality *)
    | EQUALITY
    (* universe *)
@@ -325,6 +327,11 @@ struct
      | ABS => [[DIM] |: EXP] ->> EXP
      | DIM_APP => [[] |: EXP, [] |: DIM] ->> EXP
 
+     | PUSHOUT => [[] |: EXP, [] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP] ->> EXP
+     | LEFT => [[] |: EXP] ->> EXP
+     | RIGHT => [[] |: EXP] ->> EXP
+     | GLUE => [[EXP] |: EXP, [EXP] |: EXP, [] |: DIM, [] |: EXP] ->> EXP
+
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
      | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
@@ -470,6 +477,11 @@ struct
      | LINE => "line"
      | ABS => "abs"
      | DIM_APP => "path-app"
+
+     | PUSHOUT => "pushout"
+     | LEFT => "left"
+     | RIGHT => "right"
+     | GLUE => "glue"
 
      | UNIVERSE => "U"
      | V => "V"
