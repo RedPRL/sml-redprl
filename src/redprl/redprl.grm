@@ -323,6 +323,7 @@ end
  | LAMBDA | DOLLAR_SIGN
  | RECORD | TIMES | TUPLE | BANG
  | PATH | LINE | ABS | AT_SIGN
+ | PUSHOUT | LEFT | RIGHT | GLUE
  | BOX | CAP
  | V | VIN | VPROJ
  | UNIVERSE
@@ -652,9 +653,13 @@ regularMultinaryOperator
   | PATH (O.PATH)
   (* lines *)
   | LINE (O.LINE)
+  (* pushouts *)
+  | PUSHOUT (O.PUSHOUT)
+  | LEFT (O.LEFT)
+  | RIGHT (O.RIGHT)
+  | GLUE (O.GLUE)
   (* equality *)
   | EQUALS (O.EQUALITY)
-
   (* V *)
   | V (O.V)
   | VIN (O.VIN)
@@ -697,7 +702,7 @@ rawTermAndTac
   | LPAREN LOOP dimension RPAREN (Ast.$$ (O.LOOP, [Ast.\ ([], dimension)]))
   | LPAREN DIM dimension RPAREN (dimension)
 
-  (* coe *)
+  (* Kan operators *)
   | LPAREN COE dir binding term RPAREN
     (Ast.$$ (O.COE, [Ast.\ ([], #1 dir), Ast.\ ([], #2 dir), binding, Ast.\ ([], term)]))
   | LPAREN FCOM dir binding tubeVec RPAREN
