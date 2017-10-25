@@ -1,6 +1,6 @@
-Def HasAllPaths (#C) = [(-> [c c' : #C] (path [_] #C c c'))].
+Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
 
-Def IsContr (#C) = [(* [c : #C] (HasAllPaths #C))].
+Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
 
 Def Fiber (#A,#B,#f,#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
 
@@ -15,13 +15,13 @@ Thm IdIsEquiv(#l:lvl) : [
 ] by [
   lam ty, a.
   { {use a, <_> use a}
-  , lam {_,c}, {_,c'}. <i>
+  , lam {_,c'}. <i>
        { `(hcom 1~>0 ty a
-           [i=0 [j] (@ c j)]
-           [i=1 [j] (@ c' j)])
+           [i=1 [j] a]
+           [i=0 [j] (@ c' j)])
        , <j> `(hcom 1~>j ty a
-               [i=0 [j] (@ c j)]
-               [i=1 [j] (@ c' j)])
+               [i=1 [j] a]
+               [i=0 [j] (@ c' j)])
        }
   }
 ].
@@ -95,17 +95,16 @@ Thm NotIsEquiv : [
 ] by [
   lam b.
   { {`($ Not b), <_> use b}
-  , lam {_,p}, {_,p'}.
+  , lam {_,p'}.
         (<i>
           { `($ Not (hcom 1~>0 bool b
-                     [i=0 [j] (@ p j)]
-                     [i=1 [j] (@ p' j)]))
+                     [i=1 [j] b]
+                     [i=0 [j] (@ p' j)]))
           , <j> `(hcom 1~>j bool b
-                  [i=0 [j] (@ p j)]
-                  [i=1 [j] (@ p' j)])
+                  [i=1 [j] b]
+                  [i=0 [j] (@ p' j)])
           }
         );
-        (Bool/contra/inverse p);
         (Bool/contra/inverse p')
   }
 ].

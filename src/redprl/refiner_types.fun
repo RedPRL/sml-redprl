@@ -1722,22 +1722,20 @@ struct
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun intoHasAllPaths C =
+    fun intoHasAllPathsTo C c =
       let
-        val c = Var.named "c"
         val c' = Var.named "c'"
         val dummy = Sym.named "_"
       in
-        Syn.into @@ Syn.FUN (C, c,
-          Syn.into @@ Syn.FUN (C, c',
-            Syn.into @@ Syn.PATH_TY ((dummy, C), VarKit.toExp c, VarKit.toExp c')))
+        Syn.into @@ Syn.FUN (C, c',
+          Syn.into @@ Syn.PATH_TY ((dummy, C), VarKit.toExp c', c))
       end
 
     fun intoIsContr C =
       let
         val center = Var.named "center"
       in
-        Syn.intoProd [(center, C)] @@ intoHasAllPaths C
+        Syn.intoProd [(center, C)] @@ intoHasAllPathsTo C (VarKit.toExp center)
       end
 
     fun intoFiber A B f b =
