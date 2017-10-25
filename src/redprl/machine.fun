@@ -533,14 +533,30 @@ struct
      | O.CAP $ [_ \ r1, _ \ r2, _ \ coercee, _ \ tubes] || (syms, stk) => 
        stepCap stability ({dir = (r1, r2), coercee = coercee, tubes = Syn.outTubes tubes} || (syms, stk))
 
-     | O.V $ [_ \ r, _ \ a, _ \ b, _] || (syms, stk) =>
+     | O.V $ [_ \ r, _ \ a, _ \ b, _ \ e] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ a || (syms, stk))
            (STEP @@ b || (syms, stk))
            (fn u =>
              case stk of
                [] => raise Final
-             | HCOM _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of V types"))
+             | HCOM (dir, HOLE, cap, tubes) :: stk =>
+                 let
+                   val v = Sym.named "v"
+                   val f = Syn.intoFst e
+                   fun vproj m = Syn.into @@ Syn.VPROJ (r, m, f)
+                   fun m' ty y = Syn.into @@ Syn.HCOM
+                     {dir = (#1 dir, y), ty = ty, cap = cap, tubes = tubes}
+                   val n = Syn.into @@ Syn.HCOM
+                     {dir = dir, ty = b,
+                      cap = vproj cap,
+                      tubes =
+                           ((VarKit.toDim u, Syn.intoDim0), (v, Syn.intoApp (f, m' a (VarKit.toDim v))))
+                        :: ((VarKit.toDim u, Syn.intoDim1), (v, m' b (VarKit.toDim v)))
+                        :: mapTubes_ vproj tubes}
+                 in
+                   CRITICAL @@ Syn.into (Syn.VIN (r, m' a (#2 dir), n)) || (syms, stk)
+                 end
              | COE _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of V types"))
              | _ => raise Stuck)
      | O.VIN $ [_ \ r, _ \ m, _ \ n] || (syms, stk) =>
