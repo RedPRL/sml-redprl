@@ -234,7 +234,7 @@ struct
          (case stk of
              [] => raise Final
            | CAP _ :: stk =>
-               STEP @@ cap || (syms, stk)
+               CRITICAL @@ cap || (syms, stk)
            | _ => raise Stuck)
 
   fun stepCap stability ({dir as (r, r'), tubes, coercee} || (syms, stk)) =
