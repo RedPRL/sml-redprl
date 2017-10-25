@@ -356,7 +356,7 @@ struct
        end
 
      | O.EQUALITY $ _ || (_, []) => raise Final
-     | O.EQUALITY $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
+     | O.EQUALITY $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ Syn.into Syn.AX || (syms, stk)
      | O.EQUALITY $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | O.NAT $ _ || (_, []) => raise Final
