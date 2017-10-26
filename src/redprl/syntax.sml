@@ -360,8 +360,9 @@ struct
 
     val intoApp = into o APP
     val intoLam = into o LAM
-    fun intoDim (0 : IntInf.int) = into DIM0
+    fun intoDim 0 = into DIM0
       | intoDim 1 = into DIM1
+      | intoDim i = E.raiseError (E.INVALID_DIMENSION (Fpp.text (IntInf.toString i)))
 
     val intoFcom = into o FCOM
     val intoHcom = into o HCOM
