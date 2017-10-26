@@ -148,3 +148,11 @@ Thm NotV/Test1 : [
 ] by [
   lam a. auto
 ].
+
+Thm NotV/Test2 : [
+  (->
+   [a : bool]
+   (= bool (coe 1~>0 [x] (NotV x) a) ($ Not a)))
+] by [
+  lam a. auto
+].
