@@ -650,7 +650,21 @@ struct
                               end)
                        end
                      else
-                       E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of V types"))
+                       let
+                         fun m ty s = Syn.intoCoe {dir = (#1 dir, s), ty = (v, ty), coercee = coercee}
+                         val n =
+                           Syn.intoCom
+                             {dir = dir,
+                              ty = (v, b),
+                              cap = Syn.into @@ Syn.VPROJ (r, coercee, Syn.intoFst @@ substVar (#1 dir, v) e),
+                              tubes =
+                                [ ((r, Syn.intoDim0),
+                                   (v, Syn.intoApp (Syn.intoFst e, m a (VarKit.toDim v))))
+                                , ((r, Syn.intoDim1),
+                                   (v, m b (VarKit.toDim v))) ]}
+                       in
+                         Syn.into @@ Syn.VIN (r, m a (#2 dir), n)
+                       end
                  in
                    CRITICAL @@ result || (syms', stk)
                  end
