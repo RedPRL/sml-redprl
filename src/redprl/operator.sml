@@ -253,6 +253,8 @@ struct
    | DEV_USE_LEMMA of opid * RedPrlArity.t option
    | DEV_APPLY_LEMMA of opid * RedPrlArity.t option * unit dev_pattern
 
+   (* where should this function go? *)
+   fun indexToLabel i = "proj" ^ Int.toString (i + 1)
 end
 
 structure ArityNotation =
