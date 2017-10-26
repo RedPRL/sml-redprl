@@ -69,6 +69,16 @@ Thm IdV/Test1(#l:lvl) : [
   lam ty, a. auto
 ].
 
+Thm IdV/Test2(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   (= ty (coe 0~>1 [x] (IdV x #l ty) a)
+         (coe 0~>1 [_] ty a)))
+] by [
+  lam ty, a. refine eq/intro; reduce; auto
+].
+
 Def Not = [(lam [b] (if b ff tt))].
 
 Thm Bool/reflect : [
@@ -129,4 +139,12 @@ Thm NotV/Test0(#i:dim) : [
    (Member (Vin #i ($ Not a) a) (NotV #i)))
 ] by [
   lam a. `ax
+].
+
+Thm NotV/Test1 : [
+  (->
+   [a : bool]
+   (= bool (coe 0~>1 [x] (NotV x) a) ($ Not a)))
+] by [
+  lam a. auto
 ].
