@@ -185,7 +185,7 @@ struct
    | VIN
    | VPROJ
 
-   | FCOM | BOX | CAP | HCOM | COE | COM
+   | FCOM | BOX | CAP | HCOM | GHCOM | COE | COM | GCOM
 
    | MK_ANY of sort option
 
@@ -325,8 +325,10 @@ struct
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
      | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | HCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | GHCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | COE => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP] ->> EXP
      | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | GCOM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
 
      | UNIVERSE => [[] |: LVL, [] |: KND] ->> EXP
      | V => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
@@ -527,8 +529,10 @@ struct
      | BOX => "box"
      | CAP => "cap"
      | HCOM => "hcom"
-     | COM => "com"
+     | GHCOM => "ghcom"
      | COE => "coe"
+     | COM => "com"
+     | GCOM => "com"
 
      | SEL_HYP => "select-hyp"
      | SEL_CONCL => "select-goal"
