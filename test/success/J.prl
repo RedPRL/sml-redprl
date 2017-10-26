@@ -4,8 +4,6 @@ Def J/square(#i:dim,#j:dim, #ty, #a, #p) = [
    [#i=1 [j] (@ #p j)])
 ].
 
-Print Welp.
-
 Thm J(#l:lvl) : [
   (->
    [ty : (U #l kan)]
