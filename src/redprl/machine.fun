@@ -618,7 +618,7 @@ struct
              | COE (dir, (v, HOLE), coercee) :: stk =>
                  let
                    val syms' = SymSet.remove syms v
-                   val result =
+                   val vin =
                      (* Sym.eq (u, v) is stable because v is bound *)
                      if Sym.eq (u, v) then
                        let
@@ -704,7 +704,7 @@ struct
                                             (w, Syn.into @@ Syn.PATH_APP (Syn.intoSnd frontFiber, VarKit.toDim w))) ]}
                                   end
                               in
-                                Syn.into @@ Syn.VPROJ (#2 dir, Syn.intoFst frontFiber, n)
+                                Syn.into @@ Syn.VIN (#2 dir, Syn.intoFst frontFiber, n)
                               end)
                        end
                      else
@@ -724,7 +724,7 @@ struct
                          Syn.into @@ Syn.VIN (r, m a (#2 dir), n)
                        end
                  in
-                   CRITICAL @@ result || (syms', stk)
+                   CRITICAL @@ vin || (syms', stk)
                  end
              | _ => raise Stuck)
      | O.VIN $ [_ \ r, _ \ m, _ \ n] || (syms, stk) =>
