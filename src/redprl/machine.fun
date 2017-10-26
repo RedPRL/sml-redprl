@@ -561,7 +561,7 @@ struct
                  let
                    val syms' = SymSet.remove syms v
                    val result =
-                     (* this is stable because v is bound *)
+                     (* Sym.eq (u, v) is stable because v is bound *)
                      if Sym.eq (u, v) then
                        let
                          fun nFromZero s = Syn.intoCoe
@@ -569,11 +569,11 @@ struct
                             coercee = Syn.intoApp (Syn.intoFst (substVar (Syn.intoDim0, v) e), coercee)}
                          fun projFromOne s = Syn.intoCoe {dir = (Syn.intoDim1, s), ty = (v, b), coercee = coercee}
                          fun fiberFromOne s = Syn.intoFst @@ Syn.intoApp (Syn.intoSnd (substVar (s, v) e), projFromOne s)
-                         fun nFromOne s t =
+                         fun nFromOne s t = (* t is the dimension used in the hcom to fix the zero-end. *)
                            let
                              val w = Sym.named "w"
                            in
-                             Syn.intoHcom (* t is the dimension to fix the end. *)
+                             Syn.intoHcom
                                {dir = (Syn.intoDim1, t),
                                 ty = substVar (s, v) b,
                                 cap = projFromOne s,
@@ -610,7 +610,7 @@ struct
                                       [ m
                                       , Syn.into @@ Syn.PATH_ABS (z,
                                           Syn.intoCom
-                                            {dir = (Syn.intoDim0, VarKit.toDim y), (* should I worry about name collision here? *)
+                                            {dir = (Syn.intoDim0, VarKit.toDim y),
                                              ty = (y, substVar (Syn.intoDim0, v) b),
                                              cap = coercee,
                                              tubes =
