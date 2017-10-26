@@ -1,0 +1,26 @@
+Def J/square(#i:dim,#j:dim, #ty, #a, #p) = [
+  (hcom 0~>#j #ty #a
+   [#i=0 [_] #a]
+   [#i=1 [j] (@ #p j)])
+].
+
+Thm J(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   [fam : (-> [x : ty] (path [_] ty a x) (U #l kan))]
+   [d : ($ fam a (abs [_] a))]
+   [x : ty]
+   [p : (path [_] ty a x)]
+   ($ fam x p))
+] by [
+  lam ty, a, fam, d, x, p.
+    `(coe 0~>1
+      [i] ($ fam
+             (J/square i (dim 1) ty a p)
+             (abs [j] (J/square i j ty a p)))
+      d)
+].
+
+
+Print J.

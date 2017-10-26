@@ -293,7 +293,7 @@ struct
          val O.MK_VEC _ $ appArgs = Tm.out vec
 
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
-         val tac = tactic sign env tm
+         val tac = tactic sign env tac
        in
          cutLemma sign opid (Option.valOf ar) subtermArgs (pat, names) appTacs tac
        end
