@@ -1,8 +1,3 @@
-Def Singl(#A, #a) = [
-  (* [x : #A] (path [_] #A #a x))
-].
-
-
 Thm Connection(#l:lvl) : [
   (->
    [ty : (U #l kan)]
@@ -35,23 +30,6 @@ Thm Connection(#l:lvl) : [
           [k=1 [l] (@ p l)])])
 ].
 
-Thm ContrSingl(#l:lvl) : [
-  (->
-   [ty : (U #l kan)]
-   [a b : ty]
-   [p : (path [_] ty a b)]
-   (path
-    [_] (Singl ty a)
-    (tuple a (abs [_] a))
-    (tuple b p)))
-] by [
-  lam ty, a, b, p.
-  <i>
-    { use p [`i]
-    , use (Connection #l) [use ty, use a, use b, use p, `i]
-    }
-].
-
 Thm J(#l:lvl) : [
   (->
    [ty : (U #l kan)]
@@ -63,11 +41,10 @@ Thm J(#l:lvl) : [
    ($ fam x p))
 ] by [
   lam ty, a, fam, d, x, p.
-    // sadly our tactics aren't good enough yet to construct this part
-    // interactively.
     `(coe 0~>1
-      [i] ($ fam
-             (!proj1 (@ ($ (ContrSingl #l) ty a x p) i))
-             (!proj2 (@ ($ (ContrSingl #l) ty a x p) i)))
+      [i] ($ fam (@ p i) (@ ($ (Connection #l) ty a x p) i))
       d)
 ].
+
+
+Print J.
