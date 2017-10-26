@@ -270,6 +270,7 @@ struct
               let
                 fun hcom x eps =
                   let
+                    (* maybe we can reuse (#1 tube)? *)
                     val y = Sym.named "y"
                   in
                     Syn.intoHcom
@@ -288,6 +289,7 @@ struct
                   end
                 val result =
                   let
+                    (* maybe we can reuse (#1 tube)? *)
                     val z = Sym.named "z"
                   in
                     Syn.intoHcom
@@ -319,6 +321,22 @@ struct
                tubes = List.map (fn ((r1, r2), (u, n)) => ((r1, r2), (u, coe (VarKit.toDim u) n))) (Syn.outTubes system)}
        in
          STEP @@ hcom || (syms, stk)
+       end
+     | O.GCOM $ [_ \ r, _ \ r', [u] \ ty, _ \ cap, _ \ system] || (syms, stk) =>
+       let
+         fun coe s m =
+           Syn.intoCoe
+             {dir = (s, r'),
+              ty = (u, ty),
+              coercee = m}
+          val ghcom =
+            Syn.intoGhcom
+              {dir = (r, r'),
+               ty = substVar (r', u) ty,
+               cap = coe r cap,
+               tubes = List.map (fn ((r1, r2), (u, n)) => ((r1, r2), (u, coe (VarKit.toDim u) n))) (Syn.outTubes system)}
+       in
+         STEP @@ ghcom || (syms, stk)
        end
 
      | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] || (syms, stk) => 
