@@ -1,6 +1,6 @@
-Def HasAllPaths (#C) = [(-> [c c' : #C] (path [_] #C c c'))].
+Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
 
-Def IsContr (#C) = [(* [c : #C] (HasAllPaths #C))].
+Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
 
 Def Fiber (#A,#B,#f,#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
 
@@ -15,13 +15,13 @@ Thm IdIsEquiv(#l:lvl) : [
 ] by [
   lam ty, a.
   { {use a, <_> use a}
-  , lam {_,c}, {_,c'}. <i>
+  , lam {_,c'}. <i>
        { `(hcom 1~>0 ty a
-           [i=0 [j] (@ c j)]
-           [i=1 [j] (@ c' j)])
+           [i=0 [j] (@ c' j)]
+           [i=1 [j] a])
        , <j> `(hcom 1~>j ty a
-               [i=0 [j] (@ c j)]
-               [i=1 [j] (@ c' j)])
+               [i=0 [j] (@ c' j)]
+               [i=1 [j] a])
        }
   }
 ].
@@ -69,6 +69,16 @@ Thm IdV/Test1(#l:lvl) : [
   lam ty, a. auto
 ].
 
+Thm IdV/Test2(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   (= ty (coe 0~>1 [x] (IdV x #l ty) a)
+         (coe 0~>1 [_] ty a)))
+] by [
+  lam ty, a. refine eq/intro; reduce; auto
+].
+
 Def Not = [(lam [b] (if b ff tt))].
 
 Thm Bool/reflect : [
@@ -95,17 +105,16 @@ Thm NotIsEquiv : [
 ] by [
   lam b.
   { {`($ Not b), <_> use b}
-  , lam {_,p}, {_,p'}.
+  , lam {_,p'}.
         (<i>
           { `($ Not (hcom 1~>0 bool b
-                     [i=0 [j] (@ p j)]
-                     [i=1 [j] (@ p' j)]))
+                     [i=0 [j] (@ p' j)]
+                     [i=1 [j] b]))
           , <j> `(hcom 1~>j bool b
-                  [i=0 [j] (@ p j)]
-                  [i=1 [j] (@ p' j)])
+                  [i=0 [j] (@ p' j)]
+                  [i=1 [j] b])
           }
         );
-        (Bool/contra/inverse p);
         (Bool/contra/inverse p')
   }
 ].
@@ -130,4 +139,20 @@ Thm NotV/Test0(#i:dim) : [
    (Member (Vin #i ($ Not a) a) (NotV #i)))
 ] by [
   lam a. `ax
+].
+
+Thm NotV/Test1 : [
+  (->
+   [a : bool]
+   (= bool (coe 0~>1 [x] (NotV x) a) ($ Not a)))
+] by [
+  lam a. auto
+].
+
+Thm NotV/Test2 : [
+  (->
+   [a : bool]
+   (= bool (coe 1~>0 [x] (NotV x) a) ($ Not a)))
+] by [
+  lam a. auto
 ].

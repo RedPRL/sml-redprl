@@ -338,19 +338,30 @@ struct
 
     val intoApp = into o APP
     val intoLam = into o LAM
+    val intoDim0 = into DIM0
+    val intoDim1 = into DIM1
+
+    val intoCoe = into o COE
+    val intoHcom = into o HCOM
+    val intoCom = into o COM
+    val intoFcom = into o FCOM
+
+    fun intoFst m = into (PROJ (O.indexToLabel 0, m))
+    fun intoSnd m = into (PROJ (O.indexToLabel 1, m))
+    val intoAnonTuple = into o TUPLE o
+      ListUtil.mapWithIndex (fn (i, tm) => (O.indexToLabel i, tm))
 
     fun intoProd quantifiers last =
       let
         val lastVar = Var.named "_"
         val lastIndex = List.length quantifiers
 
-        fun indexToLabel i = "proj" ^ Int.toString (i + 1)
         val projQuantifiers =
           ListUtil.mapWithIndex
-            (fn (i, (var, tm)) => ((indexToLabel i, var), tm))
+            (fn (i, (var, tm)) => ((O.indexToLabel i, var), tm))
             quantifiers
         val projs = projQuantifiers @
-          [((indexToLabel lastIndex, lastVar), last)]
+          [((O.indexToLabel lastIndex, lastVar), last)]
       in
         into (RECORD projs)
       end
