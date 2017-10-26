@@ -17,11 +17,11 @@ Thm IdIsEquiv(#l:lvl) : [
   { {use a, <_> use a}
   , lam {_,c'}. <i>
        { `(hcom 1~>0 ty a
-           [i=1 [j] a]
-           [i=0 [j] (@ c' j)])
+           [i=0 [j] (@ c' j)]
+           [i=1 [j] a])
        , <j> `(hcom 1~>j ty a
-               [i=1 [j] a]
-               [i=0 [j] (@ c' j)])
+               [i=0 [j] (@ c' j)]
+               [i=1 [j] a])
        }
   }
 ].
@@ -108,11 +108,11 @@ Thm NotIsEquiv : [
   , lam {_,p'}.
         (<i>
           { `($ Not (hcom 1~>0 bool b
-                     [i=1 [j] b]
-                     [i=0 [j] (@ p' j)]))
+                     [i=0 [j] (@ p' j)]
+                     [i=1 [j] b]))
           , <j> `(hcom 1~>j bool b
-                  [i=1 [j] b]
-                  [i=0 [j] (@ p' j)])
+                  [i=0 [j] (@ p' j)]
+                  [i=1 [j] b])
           }
         );
         (Bool/contra/inverse p')
