@@ -1,3 +1,11 @@
+Def J/square(#i:dim,#j:dim, #ty, #a, #p) = [
+  (hcom 0~>#j #ty #a
+   [#i=0 [_] #a]
+   [#i=1 [j] (@ #p j)])
+].
+
+Print Welp.
+
 Thm J(#l:lvl) : [
   (->
    [ty : (U #l kan)]
@@ -10,8 +18,9 @@ Thm J(#l:lvl) : [
 ] by [
   lam ty, a, fam, d, x, p.
     `(coe 0~>1
-      [i] ($ fam (hcom 0~>1 ty a [i=0 [_] a] [i=1 [j] (@ p j)])
-                 (abs [j] (hcom 0~>j ty a [i=0 [_] a] [i=1 [k] (@ p k)])))
+      [i] ($ fam
+             (J/square i (dim 1) ty a p)
+             (abs [j] (J/square i j ty a p)))
       d)
 ].
 
