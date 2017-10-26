@@ -354,7 +354,7 @@ struct
          let
            val sel = Syn.outSelector selTm
            val atjdg = Selector.lookup sel (H, concl)
-           val tm' = substVar (AJ.into concl, x) tm
+           val tm' = substVar (AJ.into atjdg, x) tm
          in
            tactic sign env tm' alpha jdg
          end)
