@@ -551,8 +551,8 @@ struct
                      {dir = dir, ty = b,
                       cap = vproj cap,
                       tubes =
-                           ((VarKit.toDim u, Syn.intoDim0), (v, Syn.intoApp (f, m' a (VarKit.toDim v))))
-                        :: ((VarKit.toDim u, Syn.intoDim1), (v, m' b (VarKit.toDim v)))
+                           ((VarKit.toDim u, Syn.intoDim 0), (v, Syn.intoApp (f, m' a (VarKit.toDim v))))
+                        :: ((VarKit.toDim u, Syn.intoDim 1), (v, m' b (VarKit.toDim v)))
                         :: mapTubes_ vproj tubes}
                  in
                    CRITICAL @@ Syn.into (Syn.VIN (r, m' a (#2 dir), n)) || (syms, stk)
@@ -565,26 +565,26 @@ struct
                      if Sym.eq (u, v) then
                        let
                          fun nFromZero s = Syn.intoCoe
-                           {dir = (Syn.intoDim0, s), ty = (v, b),
-                            coercee = Syn.intoApp (Syn.intoFst (substVar (Syn.intoDim0, v) e), coercee)}
-                         fun projFromOne s = Syn.intoCoe {dir = (Syn.intoDim1, s), ty = (v, b), coercee = coercee}
+                           {dir = (Syn.intoDim 0, s), ty = (v, b),
+                            coercee = Syn.intoApp (Syn.intoFst (substVar (Syn.intoDim 0, v) e), coercee)}
+                         fun projFromOne s = Syn.intoCoe {dir = (Syn.intoDim 1, s), ty = (v, b), coercee = coercee}
                          fun fiberFromOne s = Syn.intoFst @@ Syn.intoApp (Syn.intoSnd (substVar (s, v) e), projFromOne s)
                          fun nFromOne s t = (* t is the dimension used in the hcom to fix the zero-end. *)
                            let
                              val w = Sym.named "w"
                            in
                              Syn.intoHcom
-                               {dir = (Syn.intoDim1, t),
+                               {dir = (Syn.intoDim 1, t),
                                 ty = substVar (s, v) b,
                                 cap = projFromOne s,
                                 tubes =
-                                  [ ((s, Syn.intoDim0), (w, Syn.into @@ Syn.PATH_APP (Syn.intoSnd (fiberFromOne s), VarKit.toDim w)))
-                                  , ((s, Syn.intoDim1), (w, projFromOne s)) ]}
+                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.PATH_APP (Syn.intoSnd (fiberFromOne s), VarKit.toDim w)))
+                                  , ((s, Syn.intoDim 1), (w, projFromOne s)) ]}
                            end
                        in
                          branchOnDim stability syms' (#1 dir)
                            (Syn.into @@ Syn.VIN (#2 dir, coercee, nFromZero (#2 dir)))
-                           (Syn.into @@ Syn.VIN (#2 dir, Syn.intoFst (fiberFromOne (#2 dir)), nFromOne (#2 dir) Syn.intoDim1))
+                           (Syn.into @@ Syn.VIN (#2 dir, Syn.intoFst (fiberFromOne (#2 dir)), nFromOne (#2 dir) (Syn.intoDim 1)))
                            (fn y =>
                               let
                                 fun base x =
@@ -595,54 +595,54 @@ struct
                                       {dir = (#1 dir, x), ty = (v, b),
                                        cap = Syn.into @@ Syn.VPROJ (#1 dir, coercee, Syn.intoFst @@ substVar (#1 dir, v) e),
                                        tubes =
-                                         [ ((#1 dir, Syn.intoDim0), (w, nFromZero (VarKit.toDim w)))
-                                         , ((#1 dir, Syn.intoDim0), (w, projFromOne (VarKit.toDim w))) ]}
+                                         [ ((#1 dir, Syn.intoDim 0), (w, nFromZero (VarKit.toDim w)))
+                                         , ((#1 dir, Syn.intoDim 0), (w, projFromOne (VarKit.toDim w))) ]}
                                   end
                                 val wallZero =
                                   let
                                     val z = Sym.named "z"
                                     val m = Syn.intoCoe
-                                      {dir = (Syn.intoDim0, VarKit.toDim y),
-                                       ty = (y, substVar (Syn.intoDim0, v) a),
-                                       coercee = substVar (Syn.intoDim0, y) coercee}
+                                      {dir = (Syn.intoDim 0, VarKit.toDim y),
+                                       ty = (y, substVar (Syn.intoDim 0, v) a),
+                                       coercee = substVar (Syn.intoDim 0, y) coercee}
                                   in
                                     Syn.intoAnonTuple
                                       [ m
                                       , Syn.into @@ Syn.PATH_ABS (z,
                                           Syn.intoCom
-                                            {dir = (Syn.intoDim0, VarKit.toDim y),
-                                             ty = (y, substVar (Syn.intoDim0, v) b),
+                                            {dir = (Syn.intoDim 0, VarKit.toDim y),
+                                             ty = (y, substVar (Syn.intoDim 0, v) b),
                                              cap = coercee,
                                              tubes =
-                                               [ ((VarKit.toDim z, Syn.intoDim0),
+                                               [ ((VarKit.toDim z, Syn.intoDim 0),
                                                   (y, Syn.intoApp
-                                                        (Syn.intoFst (substVar (Syn.intoDim0, v) e), m)))
-                                               , ((VarKit.toDim z, Syn.intoDim1),
-                                                  (y, base Syn.intoDim0)) ]}) ]
+                                                        (Syn.intoFst (substVar (Syn.intoDim 0, v) e), m)))
+                                               , ((VarKit.toDim z, Syn.intoDim 1),
+                                                  (y, base (Syn.intoDim 0))) ]}) ]
                                   end
                                 val frontFiber =
                                   Syn.intoApp
                                     (Syn.intoSnd
                                       (Syn.intoApp
-                                        (Syn.intoSnd (substVar (Syn.intoDim0, v) e),
-                                         base Syn.intoDim0)),
+                                        (Syn.intoSnd (substVar (Syn.intoDim 0, v) e),
+                                         base (Syn.intoDim 0))),
                                      wallZero)
                                 val n =
                                   let
                                     val w = Sym.named "w"
                                   in
                                     Syn.intoHcom
-                                      {dir = (Syn.intoDim0, Syn.intoDim1),
+                                      {dir = (Syn.intoDim 0, Syn.intoDim 1),
                                        ty = substVar (#2 dir, v) b,
                                        cap = base (#2 dir),
                                        tubes =
-                                         [ ((#1 dir, Syn.intoDim0),
+                                         [ ((#1 dir, Syn.intoDim 0),
                                             (w, nFromZero (#2 dir)))
-                                         , ((#1 dir, Syn.intoDim1),
+                                         , ((#1 dir, Syn.intoDim 1),
                                             (w, nFromOne (#2 dir) (VarKit.toDim w)))
                                          , ((#1 dir, #2 dir),
                                             (w, Syn.into @@ Syn.VPROJ (#2 dir, coercee, Syn.intoFst @@ substVar (#2 dir, v) e)))
-                                         , ((#2 dir, Syn.intoDim0),
+                                         , ((#2 dir, Syn.intoDim 0),
                                             (w, Syn.into @@ Syn.PATH_APP (Syn.intoSnd frontFiber, VarKit.toDim w))) ]}
                                   end
                               in
@@ -658,9 +658,9 @@ struct
                               ty = (v, b),
                               cap = Syn.into @@ Syn.VPROJ (r, coercee, Syn.intoFst @@ substVar (#1 dir, v) e),
                               tubes =
-                                [ ((r, Syn.intoDim0),
+                                [ ((r, Syn.intoDim 0),
                                    (v, Syn.intoApp (Syn.intoFst e, m a (VarKit.toDim v))))
-                                , ((r, Syn.intoDim1),
+                                , ((r, Syn.intoDim 1),
                                    (v, m b (VarKit.toDim v))) ]}
                        in
                          Syn.into @@ Syn.VIN (r, m a (#2 dir), n)

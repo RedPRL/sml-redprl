@@ -360,8 +360,8 @@ struct
 
     val intoApp = into o APP
     val intoLam = into o LAM
-    val intoDim0 = into DIM0
-    val intoDim1 = into DIM1
+    fun intoDim (0 : IntInf.int) = into DIM0
+      | intoDim 1 = into DIM1
 
     val intoFcom = into o FCOM
     val intoHcom = into o HCOM
