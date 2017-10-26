@@ -263,6 +263,46 @@ struct
        end  
 
      | O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] || (syms, stk) => COMPAT @@ ty || (syms, HCOM ((r1, r2), HOLE, cap, Syn.outTubes system) :: stk)
+     | O.GHCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] || (syms, stk) =>
+         (case Syn.outTubes system of
+            [] => STEP @@ cap || (syms, stk)
+          | (eq, tube) :: tubes =>
+              let
+                fun hcom x eps =
+                  let
+                    val y = Sym.named "y"
+                  in
+                    Syn.intoHcom
+                      {dir = (r1, VarKit.toDim x),
+                       ty = ty,
+                       cap = cap,
+                       tubes =
+                            ((#2 eq, Syn.intoDim eps), tube)
+                         :: ((#2 eq, Syn.intoDim (1 - eps)),
+                             (y, Syn.intoGhcom
+                               {dir = (r1, VarKit.toDim y),
+                                ty = ty,
+                                cap = cap,
+                                tubes = tubes}))
+                         :: tubes}
+                  end
+                val result =
+                  let
+                    val z = Sym.named "z"
+                  in
+                    Syn.intoHcom
+                      {dir = (r1, r2),
+                       cap = cap,
+                       ty = ty,
+                       tubes =
+                            ((#1 eq, Syn.intoDim 0), (z, hcom z 0))
+                         :: ((#1 eq, Syn.intoDim 1), (z, hcom z 1))
+                         :: (eq, tube)
+                         :: tubes}
+                  end
+              in
+                STEP @@ result || (syms, stk)
+              end)
      | O.COE $ [_ \ r1, _ \ r2, [u] \ ty, _ \ coercee] || (syms, stk) => COMPAT @@ ty || (SymSet.insert syms u, COE ((r1,r2), (u, HOLE), coercee) :: stk)
      | O.COM $ [_ \ r, _ \ r', [u] \ ty, _ \ cap, _ \ system] || (syms, stk) =>
        let
