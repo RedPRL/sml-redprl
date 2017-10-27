@@ -157,6 +157,7 @@ struct
     end
 
   fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
+  fun mapSnd f = List.map (fn (a, b) => (a, f b))
 
   fun zipTubesWith f : Syn.equation list * abt bview list -> tube list =
     ListPair.mapEq (fn (eq, [u] \ n) => (eq, (u, f (u, n))))
@@ -167,6 +168,15 @@ struct
   fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
   val zipBoundaries = zipBoundariesWith (fn n => n)
+
+  (* assuming u is bound and so the comparison is stable,
+   * which is the case in its usage (Kan operations of fcom). *)
+  fun keepApartTubes u : tube list -> tube list =
+    let
+      fun apart r = branchOnDim NOMINAL SymSet.empty r true true (fn v => not (Sym.eq (u, v)))
+    in
+      List.filter (fn ((r1, r2), _) => apart r1 andalso apart r2)
+    end
 
   datatype 'a action = 
      COMPAT of 'a
@@ -220,8 +230,100 @@ struct
              end
            | HCOM _ :: stk =>
                E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of fcom types"))
-           | COE _ :: stk =>
-               E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of fcom types"))
+           | COE (dir as coeDir, ty as (u, HOLE), coercee) :: stk =>
+               let
+                 val fcomDir = dir
+                 val a = cap
+                 fun origin z = substVar (#1 coeDir, u) @@
+                   (* note: the above substitution is different from paper in that
+                    * it applies to `z` as well, and this is exactly what we want. *)
+                   Syn.intoHcom
+                     {dir = (#2 fcomDir, z), ty = a,
+                      cap = Syn.into @@ Syn.CAP {dir = fcomDir, coercee = coercee, tubes = tubes},
+                      tubes = mapSnd
+                        (fn (v, b) =>
+                          (v, Syn.intoCoe
+                            {dir = (VarKit.toDim v, #1 fcomDir),
+                             ty = (v, b),
+                             coercee = Syn.intoCoe
+                               {dir = (#2 fcomDir, VarKit.toDim v),
+                                ty = (v, b),
+                                coercee = coercee}}))
+                        tubes}
+                 val coerced = Syn.intoGcom
+                   {dir = fcomDir, ty = (u, a),
+                    cap = origin (#1 fcomDir),
+                    tubes =
+                      keepApartTubes u
+                        [((#1 fcomDir, #2 fcomDir),
+                          (u, Syn.intoCoe
+                            {dir = (#1 coeDir, VarKit.toDim u),
+                             ty = (u, a),
+                             coercee = coercee}))]
+                      @
+                      mapSnd
+                        (fn (v, b) =>
+                          (u, Syn.intoCoe
+                            {dir = (#2 fcomDir, #1 fcomDir),
+                             ty = (v, b),
+                             coercee = Syn.intoCoe
+                               {dir = (#1 coeDir, VarKit.toDim u),
+                                ty = (u, substVar (#2 fcomDir, v) b),
+                                coercee = coercee}}))
+                        (keepApartTubes u tubes)}
+                 fun recovery (v, b) dest =
+                   let
+                     val coeDestSubst = substVar (#2 coeDir, u)
+                   in
+                     Syn.intoGcom
+                       {dir = (coeDestSubst (#1 fcomDir), dest),
+                        ty = (v, coeDestSubst b),
+                        cap = coerced,
+                        tubes =
+                             ((#1 coeDir, #2 coeDir),
+                              (v, Syn.intoCoe
+                                {dir = (coeDestSubst (#2 fcomDir), VarKit.toDim v),
+                                 ty = (v, coeDestSubst b),
+                                 coercee = coercee}))
+                          :: mapSnd
+                            (fn (v, b) =>
+                              (v, Syn.intoCoe
+                                {dir = (#2 fcomDir, VarKit.toDim v),
+                                 ty = (v, b),
+                                 coercee = Syn.intoCoe
+                                   {dir = coeDir,
+                                    ty = (u, substVar (#2 fcomDir, v) b),
+                                    coercee = coercee}}))
+                            (keepApartTubes u tubes)}
+                   end
+                 val result =
+                   let
+                     val w = Sym.named "w"
+                   in
+                     substVar (#2 coeDir, u) @@ Syn.into @@ Syn.BOX
+                       {dir = fcomDir,
+                        cap = Syn.intoHcom
+                          {dir = fcomDir,
+                           ty = a,
+                           cap = coerced,
+                           tubes =
+                             ((#1 coeDir, #2 coeDir),(w, origin (VarKit.toDim w)))
+                             ::
+                             mapSnd
+                               (fn (v, b) =>
+                                 (w, Syn.intoCoe
+                                   {dir = (VarKit.toDim w, #2 fcomDir),
+                                    ty = (v, b),
+                                    coercee = recovery (v, b) (VarKit.toDim w)}))
+                             tubes},
+                        boundaries = List.map
+                          (fn (eq, (v, b)) =>
+                            (eq, recovery (v, b) (#2 fcomDir)))
+                          tubes}
+                   end
+               in
+                 CRITICAL @@ result || (SymSet.remove syms u, stk)
+               end
            | _ => raise Stuck)
 
   fun stepBox stability ({dir, cap, boundaries} || (syms, stk)) =
@@ -266,42 +368,32 @@ struct
      | O.GHCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] || (syms, stk) =>
          (case Syn.outTubes system of
             [] => STEP @@ cap || (syms, stk)
-          | (eq, tube) :: tubes =>
+          | (tube as (eq, (y, tm))) :: tubes =>
               let
                 fun hcom x eps =
-                  let
-                    (* maybe we can reuse (#1 tube)? *)
-                    val y = Sym.named "y"
-                  in
-                    Syn.intoHcom
-                      {dir = (r1, VarKit.toDim x),
-                       ty = ty,
-                       cap = cap,
-                       tubes =
-                            ((#2 eq, Syn.intoDim eps), tube)
-                         :: ((#2 eq, Syn.intoDim (1 - eps)),
-                             (y, Syn.intoGhcom
-                               {dir = (r1, VarKit.toDim y),
-                                ty = ty,
-                                cap = cap,
-                                tubes = tubes}))
-                         :: tubes}
-                  end
+                  Syn.intoHcom
+                    {dir = (r1, VarKit.toDim x),
+                     ty = ty,
+                     cap = cap,
+                     tubes =
+                          ((#2 eq, Syn.intoDim eps), (y, tm))
+                       :: ((#2 eq, Syn.intoDim (1 - eps)),
+                           (y, Syn.intoGhcom
+                             {dir = (r1, VarKit.toDim y),
+                              ty = ty,
+                              cap = cap,
+                              tubes = tubes}))
+                       :: tubes}
                 val result =
-                  let
-                    (* maybe we can reuse (#1 tube)? *)
-                    val z = Sym.named "z"
-                  in
-                    Syn.intoHcom
-                      {dir = (r1, r2),
-                       cap = cap,
-                       ty = ty,
-                       tubes =
-                            ((#1 eq, Syn.intoDim 0), (z, hcom z 0))
-                         :: ((#1 eq, Syn.intoDim 1), (z, hcom z 1))
-                         :: (eq, tube)
-                         :: tubes}
-                  end
+                  Syn.intoHcom
+                    {dir = (r1, r2),
+                     cap = cap,
+                     ty = ty,
+                     tubes =
+                          ((#1 eq, Syn.intoDim 0), (y, hcom y 0))
+                       :: ((#1 eq, Syn.intoDim 1), (y, hcom y 1))
+                       :: tube
+                       :: tubes}
               in
                 STEP @@ result || (syms, stk)
               end)
