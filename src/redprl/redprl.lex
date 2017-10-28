@@ -166,6 +166,7 @@ whitespace = [\ \t];
 "reduce"           => (Tokens.RULE_REDUCE (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
+"inversion"        => (Tokens.TAC_INVERSION (posTuple (size yytext)));
 
 "match"            => (Tokens.MATCH (posTuple (size yytext)));
 "query"            => (Tokens.QUERY (posTuple (size yytext)));

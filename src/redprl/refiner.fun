@@ -850,5 +850,6 @@ struct
         | _ >> AJ.TRUE _ => InternalizedEquality.Symmetry
         | seq => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "internalize tactic", Seq.pretty seq))
 
+    fun Inversion z : rule = Record.EqInv z
   end
 end

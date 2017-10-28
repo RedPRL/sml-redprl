@@ -65,6 +65,10 @@ struct
     in
       O.DEV_MATCH ns $$ ([] \ term) :: clauseArgs
     end
+
+  val inversion = 
+    O.DEV_INVERSION $$ []
+
 end
 
 structure Multi =
@@ -325,6 +329,7 @@ end
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
  | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_REWRITE | RULE_REWRITE_HYP | RULE_REDUCE | RULE_UNFOLD
  | RULE_EXACT
+ | TAC_INVERSION
  | MATCH
  | QUERY | CONCL
  | PRINT
@@ -866,6 +871,8 @@ atomicRawTac
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
+
+  | TAC_INVERSION (Tac.inversion)
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
 

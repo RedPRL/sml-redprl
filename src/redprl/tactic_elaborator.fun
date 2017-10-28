@@ -238,6 +238,11 @@ struct
     in
       R.CutLemma sign opid thenl' (z :: subtermNames, subtermTacs @ [continue])
     end
+    
+  fun onAllHyps tac alpha (H >> jdg) =
+    (RedPrlSequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
+
+  val inversions = onAllHyps (T.try o R.Inversion)
 
   fun tactic sign env tm alpha jdg = 
     RedPrlError.annotateException' (Tm.getAnnotation tm)
@@ -257,6 +262,7 @@ struct
      | O.RULE_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
      | O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
      | O.RULE_SYMMETRY $ _ => R.Symmetry
+     | O.DEV_INVERSION $ _ => inversions
      | O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out catjdg)
      | O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
      | O.RULE_REDUCE $ [_ \ sels] => R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)

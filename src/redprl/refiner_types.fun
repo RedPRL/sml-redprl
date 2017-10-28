@@ -1035,6 +1035,38 @@ struct
         T.append goals famGoals #> (H, trivial)
       end
 
+    fun EqInv z alpha jdg =
+      let
+        val H >> ajdg = jdg
+        val _ = RedPrlLog.trace "Record.EqInv"
+        val AJ.EQ ((m1, m2), (record, l, k)) = Hyps.lookup H z
+        val Syn.RECORD fields = Syn.out record
+        val fresh = makeNamePopper alpha
+
+        val (hyps, _) =
+          List.foldl
+            (fn (field, (hyps, env)) =>
+               let
+                 val ((name, var), ty) = field
+                 val proj1 = Syn.into @@ Syn.PROJ (name, m1)
+                 val proj2 = Syn.into @@ Syn.PROJ (name, m2)
+                 val x = fresh ()
+                 val eqjdg = AJ.EQ ((proj1, proj2), (substVarenv env ty, l, k))
+                 val env' = Var.Ctx.insert env var proj1
+               in
+                 (hyps @> (x, eqjdg), env')
+               end)
+            (Hyps.empty, Var.Ctx.empty)
+            fields
+
+        val H' = Hyps.remove z (Hyps.interposeThenSubstAfter (z, hyps, Syn.into Syn.TV) H)
+        val ajdg' = AJ.map (substVar (Syn.into Syn.TV, z)) ajdg
+        val (goal, hole) = makeGoal @@ H' >> ajdg'
+        val extractEnv = Hyps.foldl (fn (x, _, rho) => Var.Ctx.insert rho x (Syn.into Syn.TV)) Var.Ctx.empty hyps
+      in
+        |>: goal #> (H, substVarenv extractEnv hole)
+      end
+
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "Record.True"
@@ -1117,10 +1149,12 @@ struct
                hyps = hyps @> (name, AJ.TRUE (renameVars ren ty, l', K.top))})
             {ren = Var.Ctx.empty, hyps = Hyps.empty}
             (names, fields)
+
         val tuple = Syn.into @@ Syn.TUPLE @@
           ListPair.mapEq
             (fn (((lbl, _), _), name) => (lbl, Syn.into @@ Syn.VAR (name, O.EXP)))
             (fields, names)
+
         val H' = Hyps.interposeThenSubstAfter (z, hyps, tuple) H
 
         val (goal, hole) = makeGoal @@ H' >> AJ.map (substVar (tuple, z)) catjdg

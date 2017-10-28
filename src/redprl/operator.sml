@@ -241,6 +241,7 @@ struct
    | DEV_S1_ELIM
    | DEV_APPLY_HYP of unit dev_pattern
    | DEV_USE_HYP
+   | DEV_INVERSION
 
    | SEL_CONCL
    | SEL_HYP
@@ -395,6 +396,7 @@ struct
      | DEV_S1_ELIM => [[] |: EXP, [] |: TAC, [DIM] |: TAC] ->> TAC
      | DEV_APPLY_HYP pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_HYP => [[] |: ANY, [] |: VEC TAC] ->> TAC
+     | DEV_INVERSION => [] ->> TAC
 
      | SEL_HYP => [[] |: ANY] ->> SEL
      | SEL_CONCL => [] ->> SEL
@@ -522,6 +524,7 @@ struct
      | DEV_S1_ELIM => "dev-s1-elim"
      | DEV_APPLY_HYP _ => "apply-hyp"
      | DEV_USE_HYP => "use-hyp"
+     | DEV_INVERSION => "inversion"
 
      | FCOM => "fcom"
      | BOX => "box"

@@ -19,6 +19,8 @@ sig
   val Symmetry : rule
   val SynthFromHyp : hyp -> rule
 
+  val Inversion : hyp -> rule
+
   structure Custom :
   sig
     val UnfoldAll : sign -> opid list -> rule
