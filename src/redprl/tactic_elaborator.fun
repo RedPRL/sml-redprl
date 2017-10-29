@@ -246,12 +246,6 @@ struct
   fun addPosition tm exn = 
     let
       val pos = Tm.getAnnotation tm
-      val _ = print (exnMessage exn ^ ": ")
-      val _ =
-        case pos of 
-           SOME _ => print "found annotation"
-         | NONE => print "no annotation"
-      val _ = print "\n"
     in
       RedPrlError.addPosition (pos, exn)
     end
