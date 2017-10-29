@@ -33,9 +33,6 @@ struct
 
   fun force susp =
     Debug.wrap (fn _ => Susp.force susp)
-    handle exn =>
-      {result = FAILURE (RedPrlError.annotation exn, RedPrlError.format exn),
-       messages = DList.empty}
 
   structure Monad =
   struct
