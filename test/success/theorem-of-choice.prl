@@ -8,10 +8,9 @@ Thm Choice(#i:lvl) : [
     (-> [x : a] ($ r x ($ f x)))))
 ] by [
   lam a, b, r, f.
-    {lam x. let {proj1 = y} = f [use x]. use y,
-     lam x. let {proj2 = z} = f [use x].
-      `z; repeat {inversion}; reduce; auto
-    }
+    {lam x. let {y,_} = f [`x]. `y,
+     lam x. let {_,z} = f [`x]. `z};
+    inversion; reduce; auto
 ].
 
 Print Choice.

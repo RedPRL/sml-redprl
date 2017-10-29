@@ -1968,7 +1968,7 @@ struct
         |>: goal #> (H, VarKit.subst (trivial, u) hole)
       end
 
-    fun Elim z = ElimFromTrue z orelse_ ElimFromEq z
+    fun Elim z = (Lcf.rule o ElimFromTrue z) orelse_ (Lcf.rule o ElimFromEq z)
 
     fun SubUniverse _ jdg =
       let

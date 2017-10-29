@@ -1,4 +1,4 @@
-functor RedPrlTactical (Lcf : LCF_UTIL) :
+functor RedPrlTactical (Lcf : LCF_TACTIC ) :
 sig
   type 'a nominal = (int -> Sym.t) -> 'a
   type multitactic = Lcf.jdg Lcf.multitactic nominal
@@ -53,8 +53,9 @@ struct
 
 
     fun multitacToTac (mt : multitactic) : tactic =
-      fn alpha => 
-        Lcf.mul Lcf.isjdg o mt alpha o Lcf.idn
+      fn alpha => fn jdg => 
+        Lcf.M.map (Lcf.mul Lcf.isjdg) (Lcf.M.mul (Lcf.M.map (mt alpha) (Lcf.idn jdg)))
+
 
     fun seq (mt1 : multitactic, (us : Sym.t list, mt2 : multitactic)) : multitactic = fn alpha => fn st =>
       let
@@ -63,7 +64,7 @@ struct
         val st' = mt1 beta' st
         val l = Int.max (0, !modulus - List.length us)
       in
-        mt2 (Spr.bite l alpha) (Lcf.mul Lcf.isjdg st')
+        Lcf.M.mul (Lcf.M.map (mt2 (Spr.bite l alpha) o Lcf.mul Lcf.isjdg) st')
       end
 
     fun then_ (t1 : tactic, t2 : tactic) : tactic = 

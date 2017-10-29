@@ -26,7 +26,7 @@ struct
   structure RT = RefinerTypeRules (Sig)
   structure T = RedPrlTactical (Lcf)
 
-  open T infix seq then_ thenl thenl'
+  open T infix seq then_ thenl thenl' orelse_
 
   type env = multitactic Var.Ctx.dict
 
@@ -46,11 +46,10 @@ struct
         Lcf.all Lcf.idn state
       end
 
-  fun hyp z alpha jdg =
-    R.Hyp.Project z alpha jdg
-    handle exn =>
-      R.SynthFromHyp z alpha jdg
-      handle _ => raise exn
+  fun hyp z =
+    Lcf.rule o R.Hyp.Project z
+    orelse_
+      R.SynthFromHyp z
 
   open RedPrlSequent infix >>
   structure AJ = RedPrlAtomicJudgment and Syn = Syntax
@@ -74,7 +73,7 @@ struct
           handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
         val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
       in
-        RT.Record.Elim z thenl' (xs, [tac])
+        (Lcf.rule o RT.Record.Elim z) thenl' (xs, [tac])
       end
   in
     fun recordElim (lbls, names) tac =
@@ -107,11 +106,11 @@ struct
 
   (* R.Hyp.Delete can fail if the hypothesis is mentioned. *)
   fun deleteHyp name = 
-    T.try (R.Hyp.Delete name)
+    T.try (Lcf.rule o R.Hyp.Delete name)
 
   fun decomposeStitched sign z (pattern : Sym.t O.dev_pattern) tac = 
     case pattern of 
-        O.PAT_VAR u => R.Hyp.Rename z thenl' ([u], [tac])
+        O.PAT_VAR u => Lcf.rule o (R.Hyp.Rename z) thenl' ([u], [tac])
       | O.PAT_TUPLE labeledPatterns =>
         let
           val (lbls, pats) = ListPair.unzip labeledPatterns
@@ -137,8 +136,8 @@ struct
       val AJ.TRUE (ty, _, _) = RT.Hyps.lookup H z
     in
       case Syn.out ty of 
-         Syn.FUN _ => (RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.PATH_TY _ => (RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+         Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+       | Syn.PATH_TY _ => (Lcf.rule o RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
     end
 
@@ -168,7 +167,7 @@ struct
         val fieldTactics = List.map (fn ((lbl, _), _) => tacticForLabel lbl) fields
         val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTac sign)
       in
-        RT.Record.True thenl fieldTactics @ famTactics
+        Lcf.rule o RT.Record.True thenl fieldTactics @ famTactics
       end
   in
     fun recordIntro sign lbls tacs =
@@ -193,7 +192,7 @@ struct
              O.PAT_VAR _ => intros
            | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
       in
-        RT.Fun.True thenl' ([name], [continue, autoTac sign])
+        Lcf.rule o RT.Fun.True thenl' ([name], [continue, autoTac sign])
       end
 
     and funIntros sign (pats, names) tac =
@@ -208,7 +207,7 @@ struct
 
   local
     fun pathIntrosBasis sign (u, us) tac _ =
-      RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+      Lcf.rule o RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
 
     and pathIntros sign us tac =
       case us of
@@ -236,7 +235,7 @@ struct
       val z = RedPrlSym.new ()
       val continue = applications sign z (pattern, names) appTacs tac
     in
-      R.CutLemma sign opid thenl' (z :: subtermNames, subtermTacs @ [continue])
+      Lcf.rule o R.CutLemma sign opid thenl' (z :: subtermNames, subtermTacs @ [continue])
     end
     
   fun onAllHyps tac alpha (H >> jdg) =
@@ -258,18 +257,18 @@ struct
      | O.RULE_ID $ _ => idn
      | O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.RULE_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
-     | O.RULE_REWRITE $ [_ \ sel, _ \ tm] => R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
+     | O.RULE_REWRITE $ [_ \ sel, _ \ tm] => Lcf.rule o R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
      | O.RULE_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
      | O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
      | O.RULE_SYMMETRY $ _ => R.Symmetry
      | O.DEV_INVERSION $ _ => inversions
-     | O.RULE_CUT $ [_ \ catjdg] => R.Cut (AJ.out catjdg)
+     | O.RULE_CUT $ [_ \ catjdg] => Lcf.rule o R.Cut (AJ.out catjdg)
      | O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
-     | O.RULE_REDUCE $ [_ \ sels] => R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
-     | O.RULE_UNFOLD_ALL opids $ _ => R.Custom.UnfoldAll sign opids
-     | O.RULE_UNFOLD opids $ [_ \ vec] => R.Custom.Unfold sign opids (Syntax.outVec' Syntax.outSelector vec)
+     | O.RULE_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
+     | O.RULE_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
+     | O.RULE_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syntax.outVec' Syntax.outSelector vec)
      | O.RULE_PRIM ruleName $ _ => R.lookupRule ruleName
-     | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule o R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.DEV_RECORD_INTRO lbls $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.DEV_PATH_INTRO _ $ [us \ tm] => pathIntros sign us (tactic sign env tm)
