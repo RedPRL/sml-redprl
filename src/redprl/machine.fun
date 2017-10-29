@@ -156,8 +156,8 @@ struct
       aux
     end
 
-  fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
-  fun mapSnd f = List.map (fn (a, b) => (a, f b))
+  fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, f (u, n)))
+  fun mapTubes_ f = mapTubes (fn (v, tm) => (v, f tm))
 
   fun zipTubesWith f : Syn.equation list * abt bview list -> tube list =
     ListPair.mapEq (fn (eq, [u] \ n) => (eq, (u, f (u, n))))
@@ -165,7 +165,6 @@ struct
   fun zipBoundariesWith f : Syn.equation list * abt bview list -> boundary list =
     ListPair.mapEq (fn (eq, _ \ n) => (eq, f n))
 
-  fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
   val zipBoundaries = zipBoundariesWith (fn n => n)
 
@@ -228,19 +227,89 @@ struct
              in
                CRITICAL @@ com || (syms, stk)
              end
-           | HCOM _ :: stk =>
-               E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of fcom types"))
-           | COE (dir as coeDir, ty as (u, HOLE), coercee) :: stk =>
+           | HCOM (hcomDir, HOLE, hcomCap, hcomTubes) :: stk =>
+               (* favonia: the version implemented below is different from the one
+                *          in CHTT Part III. I do not know which one is better. *)
+               let
+                 val fcomDir = dir
+                 val fcomTubes = tubes
+                 val a = cap
+                 val dir = () (* prevents any ambiguous usage *)
+                 val tubes = () (* prevents any ambiguous usage *)
+                 val cap = () (* prevents any ambiguous usage *)
+                 fun capOf x = Syn.into @@ Syn.CAP
+                   {dir = fcomDir, coercee = x, tubes = fcomTubes}
+                 (* within a tube face, the cap operator is simplified: *)
+                 fun capOfInTube (v, b) x = Syn.intoCoe
+                   {dir = (#2 fcomDir, #1 fcomDir),
+                    ty = (v, b),
+                    coercee = x}
+                 fun hcomCoe (v, b) dest = Syn.intoHcom
+                   {dir = (#1 hcomDir, dest),
+                    ty = a,
+                    cap = capOfInTube (v, b) hcomCap,
+                    tubes = mapTubes_ (capOfInTube (v, b)) hcomTubes
+                    (* here the bound variable is reused *)}
+                 fun coeHcom (v, b) dest = capOfInTube (v, b) @@ Syn.intoHcom
+                   {dir = (#1 hcomDir, dest),
+                    ty = substVar (#2 fcomDir, v) b,
+                    cap = hcomCap,
+                    tubes = hcomTubes}
+                 fun recovery (v, b) recoverDim =
+                   let
+                     val y = Sym.named "y"
+                   in
+                     Syn.intoHcom
+                       {dir = hcomDir,
+                        ty = a,
+                        cap = capOfInTube (v, b) hcomCap,
+                        tubes =
+                          ((recoverDim, #1 fcomDir), (y, hcomCoe (v, b) (VarKit.toDim y)))
+                          ::
+                          ((recoverDim, #2 fcomDir), (y, coeHcom (v, b) (VarKit.toDim y)))
+                          ::
+                          mapTubes_ (capOfInTube (v, b)) hcomTubes}
+                   end
+                 val recovered =
+                   let
+                     val dummy = Sym.named "_"
+                   in
+                     Syn.intoHcom
+                       {dir = fcomDir,
+                        ty = a,
+                        cap = Syn.intoHcom
+                          {dir = hcomDir,
+                           ty = a,
+                           cap = capOf hcomCap,
+                           tubes = mapTubes_ capOf hcomTubes},
+                        tubes =
+                          ((#1 hcomDir, #2 hcomDir), (dummy, capOf hcomCap))
+                          ::
+                          mapTubes (fn (y, tm) => (dummy, substVar (#2 hcomDir, y) tm)) hcomTubes
+                          @
+                          mapTubes (fn (v, b) => (v, recovery (v, b) (VarKit.toDim v))) fcomTubes}
+                   end
+                 val result = Syn.into @@ Syn.BOX
+                   {dir = fcomDir,
+                    cap = recovered,
+                    boundaries = List.map (fn (eq, (v, b)) => (eq, coeHcom (v, b) (#2 hcomDir))) hcomTubes
+                   }
+               in
+                 CRITICAL @@ result || (syms, stk)
+               end
+           | COE (coeDir, (u, HOLE), coercee) :: stk =>
                let
                  val fcomDir = dir
                  val a = cap
+                 val dir = () (* prevents any ambiguous usage of `dir` *)
+                 val cap = () (* prevents any ambiguous usage of `cap` *)
                  fun origin z = substVar (#1 coeDir, u) @@
                    (* note: the above substitution is different from paper in that
                     * it applies to `z` as well, and this is exactly what we want. *)
                    Syn.intoHcom
                      {dir = (#2 fcomDir, z), ty = a,
                       cap = Syn.into @@ Syn.CAP {dir = fcomDir, coercee = coercee, tubes = tubes},
-                      tubes = mapSnd
+                      tubes = mapTubes
                         (fn (v, b) =>
                           (v, Syn.intoCoe
                             {dir = (VarKit.toDim v, #1 fcomDir),
@@ -261,7 +330,7 @@ struct
                              ty = (u, a),
                              coercee = coercee}))]
                       @
-                      mapSnd
+                      mapTubes
                         (fn (v, b) =>
                           (u, Syn.intoCoe
                             {dir = (#2 fcomDir, #1 fcomDir),
@@ -285,7 +354,7 @@ struct
                                 {dir = (coeDestSubst (#2 fcomDir), VarKit.toDim v),
                                  ty = (v, coeDestSubst b),
                                  coercee = coercee}))
-                          :: mapSnd
+                          :: mapTubes
                             (fn (v, b) =>
                               (v, Syn.intoCoe
                                 {dir = (#2 fcomDir, VarKit.toDim v),
@@ -309,7 +378,7 @@ struct
                            tubes =
                              ((#1 coeDir, #2 coeDir),(w, origin (VarKit.toDim w)))
                              ::
-                             mapSnd
+                             mapTubes
                                (fn (v, b) =>
                                  (w, Syn.intoCoe
                                    {dir = (VarKit.toDim w, #2 fcomDir),
