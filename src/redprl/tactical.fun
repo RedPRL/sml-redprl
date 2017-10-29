@@ -15,6 +15,7 @@ sig
   val thenl : tactic * tactic list -> tactic
   val thenl' : tactic * (Sym.t list * tactic list) -> tactic
   val orelse_ : tactic * tactic -> tactic
+  val par : tactic * tactic -> tactic
   val morelse : multitactic * multitactic -> multitactic
   val mrepeat : multitactic -> multitactic
   val try : tactic -> tactic
@@ -83,6 +84,10 @@ struct
     fun orelse_ (t1 : tactic, t2 : tactic) : tactic = 
       fn alpha =>
         Lcf.orelse_ (t1 alpha, t2 alpha)
+
+    fun par (t1 : tactic, t2 : tactic) : tactic =
+      fn alpha =>
+        Lcf.par (t1 alpha, t2 alpha)
 
     fun mtry (mt : multitactic) : multitactic = 
       morelse (mt, all idn)

@@ -41,7 +41,7 @@ Thm RecordTest5(#p) : [
   >>
   #p = tuple in record
 ] by [
-  refine record/eq/eta; auto
+  auto
 ].
 
 Thm RecordTest6 : [

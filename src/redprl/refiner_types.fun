@@ -1167,6 +1167,7 @@ struct
       in
         |>: goal #> (H, substVarenv projEnv hole)
       end
+      handle _ => raise E.error [Fpp.text "Record.Elim"]
 
     fun EqProj _ jdg =
       let
