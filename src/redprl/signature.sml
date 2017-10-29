@@ -361,7 +361,7 @@ struct
         let
           val pos = getAnnotation script
         in
-          E.wrap (pos, fn _ => Lcf.M.run (Lcf.complete (TacticElaborator.tactic sign Var.Ctx.empty script alpha) seqjdg))
+          E.ret (Lcf.M.run (TacticElaborator.tactic sign Var.Ctx.empty script alpha seqjdg, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi))
         end
 
       structure Tl = TelescopeUtil (Lcf.Tl)

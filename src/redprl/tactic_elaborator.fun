@@ -243,13 +243,26 @@ struct
 
   val inversions = onAllHyps (T.try o R.Inversion)
 
+  fun addPosition tm exn = 
+    let
+      val pos = Tm.getAnnotation tm
+      val _ = print (exnMessage exn ^ ": ")
+      val _ =
+        case pos of 
+           SOME _ => print "found annotation"
+         | NONE => print "no annotation"
+      val _ = print "\n"
+    in
+      RedPrlError.addPosition (pos, exn)
+    end
+
   fun tactic sign env tm alpha jdg = 
-    RedPrlError.annotateException' (Tm.getAnnotation tm)
-      (fn _ => tactic_ sign env tm alpha jdg)
+    Lcf.M.mapErr (addPosition tm) (tactic_ sign env tm alpha jdg)
 
   and multitactic sign env tm alpha jdg = 
-    RedPrlError.annotateException' (Tm.getAnnotation tm)
-      (fn _ => multitactic_ sign env tm alpha jdg)
+    Lcf.M.mapErr
+      (addPosition tm)
+      (multitactic_ sign env tm alpha jdg)
 
   and tactic_ sign env tm = 
     case Tm.out tm of 

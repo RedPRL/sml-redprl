@@ -14,14 +14,14 @@ signature REDPRL_ERROR =
 sig
   datatype error = datatype RedPrlErrorData.error
 
+  val addPosition : Pos.t option * exn -> exn
+  
   val errorToExn : Pos.t option * error -> exn
   
   val raiseError : error -> 'a
 
   val raiseAnnotatedError : Pos.t * error -> 'a
   val raiseAnnotatedError' : Pos.t option * error -> 'a
-  val annotateException : Pos.t -> (unit -> 'a) -> 'a
-  val annotateException' : Pos.t option -> (unit -> 'a) -> 'a
 
   val format : exn -> Fpp.doc
   val annotation : exn -> Pos.t option
