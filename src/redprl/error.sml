@@ -40,6 +40,8 @@ struct
     fn Err err => formatError err
      | Pos (_, exn) => format exn
      | RedPrlAbt.SortError {description,...} => Fpp.text description
+     | LcfMonadBT.Refine [] => Fpp.text "No solution found"
+     | LcfMonadBT.Refine exns => Fpp.vsep (List.map format exns)
      | exn => Fpp.text (exnMessage exn)
 
    val rec annotation =
