@@ -76,7 +76,7 @@ struct
           handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
         val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
       in
-        (Lcf.rule o RT.Record.Elim z) thenl' (xs, [tac])
+        Lcf.rule o RT.Record.Elim z thenl' (xs, [tac])
       end
   in
     fun recordElim (lbls, names) tac =

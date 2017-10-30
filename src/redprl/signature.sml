@@ -360,8 +360,13 @@ struct
       fun elabRefine sign alpha (seqjdg, script) =
         let
           val pos = getAnnotation script
+          val results = TacticElaborator.tactic sign Var.Ctx.empty script alpha seqjdg
+          (* TODO: somehow show all the states! *)
+          val result =
+            Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
+              handle _ => Lcf.M.run (results, fn _ => true)
         in
-          E.ret (Lcf.M.run (TacticElaborator.tactic sign Var.Ctx.empty script alpha seqjdg, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi))
+          E.ret result
         end
 
       structure Tl = TelescopeUtil (Lcf.Tl)
