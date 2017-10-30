@@ -70,10 +70,14 @@ struct
    | UNIVERSE of L.level * kind
    (* hcom operator *)
    | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (variable * 'a)) list}
+   (* ghcom operator *)
+   | GHCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (variable * 'a)) list}
    (* coe operator *)
    | COE of {dir: dir, ty: (variable * 'a), coercee: 'a}
    (* com operator *)
    | COM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: (equation * (variable * 'a)) list}
+   (* gcom operator *)
+   | GCOM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: (equation * (variable * 'a)) list}
 
    | DIM0 | DIM1
 
@@ -193,8 +197,24 @@ struct
          [] \ cap,
          [] \ intoTubes tubes]
 
+    fun intoGhcom {dir = (r1, r2), ty, cap, tubes} =
+      O.GHCOM $$
+        [[] \ r1,
+         [] \ r2,
+         [] \ ty,
+         [] \ cap,
+         [] \ intoTubes tubes]
+
     fun intoCom {dir = (r1, r2), ty=(u,a), cap, tubes} =
       O.COM $$ 
+        [[] \ r1,
+         [] \ r2,
+         [u] \ a,
+         [] \ cap,
+         [] \ intoTubes tubes]
+
+    fun intoGcom {dir = (r1, r2), ty=(u,a), cap, tubes} =
+      O.GCOM $$
         [[] \ r1,
          [] \ r2,
          [u] \ a,
@@ -327,9 +347,11 @@ struct
        | UNIVERSE (l, k) => O.UNIVERSE $$ [[] \ L.into l, [] \ (O.KCONST k $$ [])]
 
        | HCOM args => intoHcom args
+       | GHCOM args => intoGhcom args
        | COE {dir = (r1, r2), ty = (u, a), coercee} =>
            O.COE $$ [[] \ r1, [] \ r2, [u] \ a, [] \ coercee]
        | COM args => intoCom args
+       | GCOM args => intoGcom args
 
        | DIM0 => O.DIM0 $$ []
        | DIM1 => O.DIM1 $$ []
@@ -338,13 +360,16 @@ struct
 
     val intoApp = into o APP
     val intoLam = into o LAM
-    val intoDim0 = into DIM0
-    val intoDim1 = into DIM1
+    fun intoDim 0 = into DIM0
+      | intoDim 1 = into DIM1
+      | intoDim i = E.raiseError (E.INVALID_DIMENSION (Fpp.text (IntInf.toString i)))
 
-    val intoCoe = into o COE
-    val intoHcom = into o HCOM
-    val intoCom = into o COM
     val intoFcom = into o FCOM
+    val intoHcom = into o HCOM
+    val intoGhcom = into o GHCOM
+    val intoCoe = into o COE
+    val intoCom = into o COM
+    val intoGcom = into o GCOM
 
     fun intoFst m = into (PROJ (O.indexToLabel 0, m))
     fun intoSnd m = into (PROJ (O.indexToLabel 1, m))
@@ -417,7 +442,6 @@ struct
 
        | O.BOX $ [_ \ r1, _ \ r2, _ \ cap, _ \ boundaries] =>
            BOX {dir = (r1, r2), cap = cap, boundaries = outBoundaries boundaries}
-
        | O.CAP $ [_ \ r1, _ \ r2, _ \ coercee, _ \ tubes] =>
            CAP {dir = (r1, r2), coercee = coercee, tubes = outTubes tubes}
 
@@ -434,8 +458,14 @@ struct
 
        | O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ tubes] =>
            HCOM {dir = (r1, r2), ty = ty, cap = cap, tubes = outTubes tubes}
+       | O.GHCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ tubes] =>
+           GHCOM {dir = (r1, r2), ty = ty, cap = cap, tubes = outTubes tubes}
        | O.COE $ [_ \ r1, _ \ r2, [u] \ a, _ \ m] =>
            COE {dir = (r1, r2), ty = (u, a), coercee = m}
+       | O.COM $ [_ \ r1, _ \ r2, [u] \ ty, _ \ cap, _ \ tubes] =>
+           COM {dir = (r1, r2), ty = (u, ty), cap = cap, tubes = outTubes tubes}
+       | O.GCOM $ [_ \ r1, _ \ r2, [u] \ ty, _ \ cap, _ \ tubes] =>
+           GCOM {dir = (r1, r2), ty = (u, ty), cap = cap, tubes = outTubes tubes}
 
        | O.DIM0 $ _ => DIM0
        | O.DIM1 $ _ => DIM1
