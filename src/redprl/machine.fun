@@ -302,6 +302,8 @@ struct
                  val a = cap
                  val dir = () (* prevents any ambiguous usage of `dir` *)
                  val cap = () (* prevents any ambiguous usage of `cap` *)
+                 (* the `origin` handles the case where the coercion should be
+                  * the identity function *)
                  fun origin z = substVar (#1 coeDir, u) @@
                    (* note: the above substitution is different from paper in that
                     * it applies to `z` as well, and this is exactly what we want. *)
@@ -318,7 +320,8 @@ struct
                                 ty = (v, b),
                                 coercee = coercee}}))
                         tubes}
-                 val coerced = Syn.intoGcom
+                 (* this is the coerced term *)
+                 val naivelyCoercedCap = Syn.intoGcom
                    {dir = fcomDir, ty = (u, a),
                     cap = origin (#1 fcomDir),
                     tubes =
@@ -346,7 +349,7 @@ struct
                      Syn.intoGcom
                        {dir = (coeDestSubst (#1 fcomDir), dest),
                         ty = (v, coeDestSubst b),
-                        cap = coerced,
+                        cap = naivelyCoercedCap,
                         tubes =
                              ((#1 coeDir, #2 coeDir),
                               (v, Syn.intoCoe
@@ -364,31 +367,33 @@ struct
                                     coercee = coercee}}))
                             (keepApartTubes u tubes)}
                    end
-                 val result =
+                 val coercedCap =
                    let
                      val w = Sym.named "w"
                    in
+                     Syn.intoHcom
+                       {dir = fcomDir,
+                        ty = a,
+                        cap = naivelyCoercedCap,
+                        tubes =
+                          ((#1 coeDir, #2 coeDir),(w, origin (VarKit.toDim w)))
+                          ::
+                          mapTubes
+                            (fn (v, b) =>
+                              (w, Syn.intoCoe
+                                {dir = (VarKit.toDim w, #2 fcomDir),
+                                   ty = (v, b),
+                                   coercee = recovery (v, b) (VarKit.toDim w)}))
+                          tubes}
+                   end
+                 val result =
                      substVar (#2 coeDir, u) @@ Syn.into @@ Syn.BOX
                        {dir = fcomDir,
-                        cap = Syn.intoHcom
-                          {dir = fcomDir,
-                           ty = a,
-                           cap = coerced,
-                           tubes =
-                             ((#1 coeDir, #2 coeDir),(w, origin (VarKit.toDim w)))
-                             ::
-                             mapTubes
-                               (fn (v, b) =>
-                                 (w, Syn.intoCoe
-                                   {dir = (VarKit.toDim w, #2 fcomDir),
-                                    ty = (v, b),
-                                    coercee = recovery (v, b) (VarKit.toDim w)}))
-                             tubes},
+                        cap = coercedCap,
                         boundaries = List.map
                           (fn (eq, (v, b)) =>
                             (eq, recovery (v, b) (#2 fcomDir)))
                           tubes}
-                   end
                in
                  CRITICAL @@ result || (SymSet.remove syms u, stk)
                end
