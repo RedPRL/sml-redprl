@@ -550,6 +550,7 @@ struct
         val Syn.INT_REC (m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
         val Syn.INT_REC (m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
 
+        val int = Syn.into Syn.INT
         val nat = Syn.into Syn.NAT
         val zero = Syn.into Syn.ZERO
         val succ = Syn.into o Syn.SUCC
@@ -557,12 +558,12 @@ struct
 
         (* motive *)
         val z = alpha 0
-        val Hz = H @> (z, AJ.TRUE (nat, Nat.inherentLevel, Nat.inherentKind))
+        val Hz = H @> (z, AJ.TRUE (int, inherentLevel, inherentKind))
         val (goalC, holeC) = makeTerm (Hz) O.EXP
         val goalC' = makeType (Hz) (holeC, NONE, K.top)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (nat, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (int, NONE, K.top))
 
         (* result type *)
         val goalTy = makeSubType H (substVar (m0, z) holeC, NONE, K.top) (ty, l, k)
@@ -590,7 +591,7 @@ struct
         val r1 = VarKit.renameMany [(u, c1), (v, d1)] r1
         val goalNSS =
           makeEq
-            (H @> (u, AJ.TRUE (nat, l, inherentKind)) @> (v, AJ.TRUE (cnegsuccu, l, k)))
+            (H @> (u, AJ.TRUE (nat, l, Nat.inherentKind)) @> (v, AJ.TRUE (cnegsuccu, l, k)))
             ((r0, r1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >:? goalTy #> (H, trivial)
