@@ -1,4 +1,4 @@
-functor RedPrlTactical (Lcf : LCF_UTIL) :
+functor RedPrlTactical (Lcf : LCF_TACTIC ) :
 sig
   type 'a nominal = (int -> Sym.t) -> 'a
   type multitactic = Lcf.jdg Lcf.multitactic nominal
@@ -15,6 +15,7 @@ sig
   val thenl : tactic * tactic list -> tactic
   val thenl' : tactic * (Sym.t list * tactic list) -> tactic
   val orelse_ : tactic * tactic -> tactic
+  val par : tactic * tactic -> tactic
   val morelse : multitactic * multitactic -> multitactic
   val mrepeat : multitactic -> multitactic
   val try : tactic -> tactic
@@ -53,8 +54,9 @@ struct
 
 
     fun multitacToTac (mt : multitactic) : tactic =
-      fn alpha => 
-        Lcf.mul Lcf.isjdg o mt alpha o Lcf.idn
+      fn alpha => fn jdg => 
+        Lcf.M.map (Lcf.mul Lcf.isjdg) (Lcf.M.mul (Lcf.M.map (mt alpha) (Lcf.idn jdg)))
+
 
     fun seq (mt1 : multitactic, (us : Sym.t list, mt2 : multitactic)) : multitactic = fn alpha => fn st =>
       let
@@ -63,7 +65,7 @@ struct
         val st' = mt1 beta' st
         val l = Int.max (0, !modulus - List.length us)
       in
-        mt2 (Spr.bite l alpha) (Lcf.mul Lcf.isjdg st')
+        Lcf.M.mul (Lcf.M.map (mt2 (Spr.bite l alpha) o Lcf.mul Lcf.isjdg) st')
       end
 
     fun then_ (t1 : tactic, t2 : tactic) : tactic = 
@@ -82,6 +84,10 @@ struct
     fun orelse_ (t1 : tactic, t2 : tactic) : tactic = 
       fn alpha =>
         Lcf.orelse_ (t1 alpha, t2 alpha)
+
+    fun par (t1 : tactic, t2 : tactic) : tactic =
+      fn alpha =>
+        Lcf.par (t1 alpha, t2 alpha)
 
     fun mtry (mt : multitactic) : multitactic = 
       morelse (mt, all idn)

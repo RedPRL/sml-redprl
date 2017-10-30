@@ -4,7 +4,8 @@ Thm WBoolSym : [
    (path [_] wbool a b)
    (path [_] wbool b a))
 ] by [
-  (lam a, b, p. <i> 
-     exact (hcom 0~>1 wbool a [i=0 [j] (@ p j)] [i=1 [_] a]));
-  auto
+  lam a, b, p. <i> 
+     `(hcom 0~>1 wbool a [i=0 [j] (@ p j)] [i=1 [_] a])
 ].
+
+Print WBoolSym.

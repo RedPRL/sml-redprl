@@ -76,3 +76,6 @@ Thm BetterConnectionTest0 (#l:lvl) : [
 ] by [
   lam ty, a, b, p. unfold BetterConnection; auto
 ].
+
+
+Print BetterConnectionTest0.

@@ -76,8 +76,10 @@ Thm IdV/Test2(#l:lvl) : [
    (= ty (coe 0~>1 [x] (IdV x #l ty) a)
          (coe 0~>1 [_] ty a)))
 ] by [
-  lam ty, a. refine eq/intro; reduce; auto
+  lam ty, a. auto
 ].
+
+Print IdV/Test2.
 
 Def Not = [(lam [b] (if b ff tt))].
 
