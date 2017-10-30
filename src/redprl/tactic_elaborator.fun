@@ -13,6 +13,9 @@ sig
   val multitactic : sign -> env -> script -> multitactic
 end = 
 struct
+
+  (* HINT: raise exceptions for fatal internal/implementation errors; but use Lcf.M.throw for user errors. *)
+
   structure Tm = RedPrlAbt
   structure Unify = AbtUnify (RedPrlAbt)
 
@@ -356,7 +359,7 @@ struct
              tactic sign env handler'' alpha jdg
            end
 
-         fun fail _ _ = raise RedPrlError.error [Fpp.text "No matching clause"]
+         fun fail _ _ = Lcf.M.throw (RedPrlError.errorToExn (Tm.getAnnotation tm, RedPrlError.GENERIC [Fpp.text "No matching clause"]))
        in
          List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
        end
