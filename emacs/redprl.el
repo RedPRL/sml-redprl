@@ -118,7 +118,7 @@
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
     "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec" "wif"
-    "nat" "zero" "succ" "nat-rec" "int" "negsucc"
+    "nat" "zero" "succ" "nat-rec" "int" "negsucc" "int-rec"
     "void"
     "S1" "base" "loop" "S1-rec"
     "lam" "app"
@@ -127,7 +127,7 @@
     "box" "cap"
     "V" "Vin" "Vproj"
     "universe" "U"
-    "hcom" "coe" "com")
+    "hcom" "ghcom" "coe" "com" "gcom")
   "RedPRL's expression keywords.")
 
 (defconst redprl-expression-symbols
