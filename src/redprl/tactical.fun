@@ -55,8 +55,7 @@ struct
 
     fun multitacToTac (mt : multitactic) : tactic =
       fn alpha => fn jdg => 
-        Lcf.M.map (Lcf.mul Lcf.isjdg) (Lcf.M.mul (Lcf.M.map (mt alpha) (Lcf.idn jdg)))
-
+        Lcf.M.map (Lcf.mul Lcf.isjdg) (Lcf.M.bind (Lcf.idn jdg, mt alpha))
 
     fun seq (mt1 : multitactic, (us : Sym.t list, mt2 : multitactic)) : multitactic = fn alpha => fn st =>
       let
@@ -65,7 +64,7 @@ struct
         val st' = mt1 beta' st
         val l = Int.max (0, !modulus - List.length us)
       in
-        Lcf.M.mul (Lcf.M.map (mt2 (Spr.bite l alpha) o Lcf.mul Lcf.isjdg) st')
+        Lcf.M.bind (st', (mt2 (Spr.bite l alpha) o Lcf.mul Lcf.isjdg) )
       end
 
     fun then_ (t1 : tactic, t2 : tactic) : tactic = 
