@@ -621,6 +621,8 @@ regularMultinaryOperator
   (* integers *)
   | NEGSUCC (O.NEGSUCC)
   | INT_REC (O.INT_REC)
+  (* S1 *)
+  | S1_REC (O.S1_REC)
   (* paths *)
   | PATH (O.PATH_TY)
   (* equality *)
