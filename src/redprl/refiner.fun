@@ -367,11 +367,11 @@ struct
      | "int/eq/negsucc" => Lcf.rule o Int.EqNegSucc
      | "int/eq/int-rec" => Lcf.rule o Int.EqElim
      | "void/eqtype" => Lcf.rule o Void.EqType
-     | "S1/eqtype" => Lcf.rule o S1.EqType
-     | "S1/eq/base" => Lcf.rule o S1.EqBase
-     | "S1/eq/loop" => Lcf.rule o S1.EqLoop
-     | "S1/eq/fcom" => Lcf.rule o S1.EqFCom
-     | "S1/eq/S1-rec" => Lcf.rule o S1.EqElim
+     | "s1/eqtype" => Lcf.rule o S1.EqType
+     | "s1/eq/base" => Lcf.rule o S1.EqBase
+     | "s1/eq/loop" => Lcf.rule o S1.EqLoop
+     | "s1/eq/fcom" => Lcf.rule o S1.EqFCom
+     | "s1/eq/s1-rec" => Lcf.rule o S1.EqElim
      | "fun/eqtype" => Lcf.rule o Fun.EqType
      | "fun/eq/lam" => Lcf.rule o Fun.Eq
      | "fun/intro" => Lcf.rule o Fun.True

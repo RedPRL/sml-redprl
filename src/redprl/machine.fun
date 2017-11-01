@@ -650,6 +650,7 @@ struct
              | S1_REC (_, HOLE, _, (v, loop)) :: stk => CRITICAL @@ substVar (VarKit.toDim u, v) loop || (syms, stk)
              | _ => raise Stuck)
      | O.BASE $ _ || (syms, S1_REC (_, HOLE, base, _) :: stk) => CRITICAL @@ base || (syms, stk)
+     | O.S1_REC $ [[x] \ c, _ \ m, _ \ b, [x'] \ l] || (syms, stk) => COMPAT @@ m || (syms, S1_REC ((x,c), HOLE, b, (x',l)) :: stk)
      | O.S1 $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val fcom =
