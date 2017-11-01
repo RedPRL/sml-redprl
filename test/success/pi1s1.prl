@@ -86,13 +86,12 @@ Thm S1UnivCover : [
 
 // Needs rewriting on types
 //
-//Thm S1LoopToInt' : [
+//Thm S1LoopToInt : [
 //  (->
-//   [x : S1]
-//   [p : (path [_] S1 base x)]
-//   ($ S1UnivCover x))
+//   [l : (path [_] S1 base base)]
+//   int)
 //] by [
-//  lam x, p. `(coe 0~>1 [x] ($ S1UnivCover (@ p x)) 0)
+//  lam l. `(coe 0~>1 [x] ($ S1UnivCover (@ l x)) 0)
 //].
 
 Thm S1UnivCover/Test0 : [
