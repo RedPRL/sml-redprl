@@ -71,3 +71,58 @@ Thm IntSuccEquiv : [
 ] by [
   {`IntSucc, `IntSuccIsEquiv}
 ].
+
+Thm IntSuccPath : [
+  (path [_] (U 0 kan) int int)
+] by [
+  <x> `(V x int int IntSuccEquiv)
+].
+
+Thm S1UnivCover : [
+  (-> S1 (U 0 kan))
+] by [
+  lam x. exact (S1-rec [_] (U 0 kan) x int [x] (@ IntSuccPath x)); refine s1/eq/s1-rec; auto
+].
+
+// Needs rewriting on types
+//
+//Thm S1LoopToInt' : [
+//  (->
+//   [x : S1]
+//   [p : (path [_] S1 base x)]
+//   ($ S1UnivCover x))
+//] by [
+//  lam x, p. `(coe 0~>1 [x] ($ S1UnivCover (@ p x)) 0)
+//].
+
+Thm S1UnivCover/Test0 : [
+  (= int (coe 0~>1 [x] ($ S1UnivCover (loop x)) 0) 1)
+] by [
+  `ax
+].
+
+Thm S1Concat : [
+  (->
+   [a b c : S1]
+   [p : (path [_] S1 a b)]
+   [q : (path [_] S1 b c)]
+   (path [_] S1 a c))
+] by [
+  lam a, b, c, p, q.
+    <x> `(hcom 0~>1 S1 (@ p x) [x=0 [_] a] [x=1 [y] (@ q y)])
+].
+
+Thm S1UnivCover/Test1 : [
+  (= int
+   (coe 0~>1
+    [x] ($ S1UnivCover
+         (@
+          ($
+           S1Concat base base base
+            (abs [y] (loop y))
+            (abs [y] (loop y))) x))
+    0)
+   2)
+] by [
+  auto
+].
