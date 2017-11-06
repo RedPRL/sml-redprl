@@ -79,34 +79,3 @@ Thm TrueByEvaluation : [
 ] by [
   auto
 ].
-
-// Groupoid laws for symmetry and transitivity of paths defined above.
-// Thm TransPSymP(#l:lvl) : [
-//   (->
-//     [ty : (U #l hcom)]
-//     [a b : ty]
-//     [p : (path [_] ty a b)]
-//     (path [_] (path [_] ty a a) ($ (Hcom/trans #l) ty a b a p ($ (Hcom/symm #l) ty a b p)) (abs [_] a)))
-// ] by [
-//   lam ty, a, b, p. ?
-// ].
-
-Thm TransPSymP(#l:lvl) : [
-  ty : (U #l hcom),
-  a : ty,
-  b : ty,
-  p : (path [_] ty a b)
-  >> (path
-        [_] (path [_] ty a a)
-        ($
-         (Hcom/trans #l)
-         ty
-         a
-         b
-         a
-         p
-         ($ (Hcom/symm #l) ty a b p))
-        (abs [_] a))
-] by [
-  ?
-].
