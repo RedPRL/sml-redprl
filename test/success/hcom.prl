@@ -31,6 +31,8 @@ Thm Hcom/trans(#l:lvl) : [
         [i=1 [j] (@ pbc j)])
 ].
 
+Extract Hcom/trans.
+
 Thm Hcom/symm(#l:lvl) : [
   (->
    [ty : (U #l hcom)]
@@ -44,6 +46,8 @@ Thm Hcom/symm(#l:lvl) : [
         [i=0 [j] (@ pab j)]
         [i=1 [_] a])
 ].
+
+Extract Hcom/symm.
 
 // An example of using the internalized exact equality type.
 Thm Cap(#i:dim, #l:lvl) : [
@@ -74,4 +78,25 @@ Thm TrueByEvaluation : [
   (hcom 0~>0 bool tt) in bool
 ] by [
   auto
+].
+
+// Groupoid laws for symmetry and transitivity of paths defined above.
+Thm TransPSymP(#l:lvl) : [
+  ty : (U #l hcom),
+  a : ty,
+  b : ty,
+  p : (path [_] ty a b)
+  >> (path
+        [_] (path [_] ty a a)
+        ($
+         (Hcom/trans #l)
+         ty
+         a
+         b
+         a
+         p
+         ($ (Hcom/symm #l) ty a b p))
+        (abs [_] a))
+] by [
+  ?
 ].
