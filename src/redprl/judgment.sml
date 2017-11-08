@@ -1,6 +1,6 @@
 structure RedPrlJudgment : LCF_JUDGMENT  =
 struct
-  structure CJ = RedPrlCategoricalJudgment
+  structure AJ = RedPrlAtomicJudgment
   structure S = struct open RedPrlSequentData RedPrlSequent end
   structure Tm = RedPrlAbt
   type sort = Tm.valence
@@ -18,16 +18,16 @@ struct
     infix >>
   in
     val rec sort =
-      fn (I, H) >> catjdg =>
-           ((List.map #2 I, Hyps.foldr (fn (_, jdg, r) => CJ.synthesis jdg :: r) [] H),
-            CJ.synthesis catjdg)
-       | MATCH (th, k, _, _, _) =>
+      fn H >> catjdg =>
+           (Hyps.foldr (fn (_, jdg, r) => AJ.synthesis jdg :: r) [] H,
+            AJ.synthesis catjdg)
+       | MATCH (th, k, _, _) =>
            let
              val (vls, _) = Tm.O.arity th
              val (_, tau) = List.nth (vls, k)
            in
-             (([],[]), tau)
+             ([], tau)
            end
-       | MATCH_RECORD _ => (([],[]), RedPrlSortData.EXP)
+       | MATCH_RECORD _ => ([], RedPrlSortData.EXP)
   end
 end

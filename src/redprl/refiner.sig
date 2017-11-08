@@ -4,22 +4,23 @@ sig
   type abt
   type catjdg
   type rule
+  type tactic
   type hyp
   type opid
-  type param
-  type psort
   type 'a bview
 
   val Cut : catjdg -> rule
-  val CutLemma : sign -> opid -> (param * psort option) list -> rule
+  val CutLemma : sign -> opid -> rule
 
-  val AutoStep : sign -> rule
-  val Elim : sign -> hyp -> rule
-  val Exact : abt -> rule
+  val AutoStep : sign -> tactic
+  val Elim : sign -> hyp -> tactic
+  val Exact : abt -> tactic
   val Rewrite : sign -> hyp RedPrlOpData.selector -> abt -> rule
-  val RewriteHyp : sign -> hyp RedPrlOpData.selector -> hyp -> rule
-  val Symmetry : rule
-  val SynthFromHyp : hyp -> rule
+  val RewriteHyp : sign -> hyp RedPrlOpData.selector -> hyp -> tactic
+  val Symmetry : tactic
+  val SynthFromHyp : hyp -> tactic
+
+  val Inversion : hyp -> tactic
 
   structure Custom :
   sig
@@ -29,7 +30,7 @@ sig
 
   structure Computation :
   sig
-    val ReduceAll : sign -> rule
+    val ReduceAll : sign -> tactic
     val Reduce : sign -> hyp RedPrlOpData.selector list -> rule
   end
 
@@ -42,10 +43,10 @@ sig
 
   structure Tactical :
   sig
-    val NormalizeGoalDelegate : (abt -> rule) -> sign -> rule
-    val NormalizeHypDelegate : (abt -> hyp -> rule) -> sign -> hyp -> rule
+    val NormalizeGoalDelegate : (abt -> tactic) -> sign -> tactic
+    val NormalizeHypDelegate : (abt -> hyp -> tactic) -> sign -> hyp -> tactic
   end
 
   type rule_name = string
-  val lookupRule : rule_name -> rule
+  val lookupRule : rule_name -> tactic
 end

@@ -16,69 +16,26 @@ struct
 
   open Tm infix 7 $ $$ $# infix 6 \
   structure O = RedPrlOpData
-  structure P = struct open RedPrlParameterTerm RedPrlSortData RedPrlParamData end
+  structure K = RedPrlKind
 
-  structure Tac =
-  struct
-    val autoStep = O.MONO O.RULE_AUTO_STEP $$ []
-    val auto = O.MONO O.MTAC_AUTO $$ []
+  type tube = Syn.equation * (variable * abt)
+  type boundary = Syn.equation * abt
 
-    fun all t =
-      O.MONO O.MTAC_ALL $$ [([],[]) \ t]
-
-    fun each ts =
-      O.MONO (O.MTAC_EACH (List.length ts)) $$ List.map (fn t => ([],[]) \ t) ts
-
-    fun seq mt1 bs mt2 =
-      let
-        val (us, sorts) = ListPair.unzip bs
-      in
-        O.MONO (O.MTAC_SEQ sorts) $$ [([],[]) \ mt1, (us, []) \ mt2]
-      end
-
-    fun mtac mt =
-      O.MONO O.TAC_MTAC $$ [([],[]) \ mt]
-
-
-    fun mtry mt =
-      O.MONO O.MTAC_ORELSE $$ [([],[]) \ mt, ([],[]) \ all (O.MONO O.RULE_ID $$ [])]
-
-    fun try t =
-      mtac (mtry (all t))
-
-    fun mprogress mt =
-      O.MONO O.MTAC_PROGRESS $$ [([],[]) \ mt]
-
-    fun multirepeat mt =
-      O.MONO O.MTAC_REPEAT $$ [([],[]) \ mt]
-
-    fun cut jdg =
-      O.MONO O.RULE_CUT $$ [([],[]) \ jdg]
-
-    val autoTac = mtac auto
-
-    fun prim name = 
-      O.MONO (O.RULE_PRIM name) $$ []
-  end
-
-
-  type tube = symbol O.equation * (symbol * abt)
-  type boundary = symbol O.equation * abt
   datatype hole = HOLE
   datatype frame =
      APP of hole * abt
-   | HCOM of symbol O.dir * hole * abt * tube list
-   | COE of symbol O.dir * (symbol * hole) * abt
+   | HCOM of Syn.dir * hole * abt * tube list
+   | COE of Syn.dir * (variable * hole) * abt
    | WIF of (variable * abt) * hole * abt * abt
-   | S1_REC of (variable * abt) * hole * abt * (symbol * abt)
+   | S1_REC of (variable * abt) * hole * abt * (variable * abt)
    | IF of hole * abt * abt
-   | PATH_APP of hole * symbol P.t
+   | PATH_APP of hole * abt
    | NAT_REC of hole * abt * (variable * variable * abt)
    | INT_REC of hole * abt * (variable * variable * abt) * abt * (variable * variable * abt)
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
-   | CAP of symbol O.dir * tube list * hole
-   | VPROJ of symbol * hole * abt
+   | CAP of Syn.dir * tube list * hole
+   | VPROJ of variable * hole * abt
 
   type stack = frame list
   type bound_syms = SymSet.set
@@ -91,8 +48,8 @@ struct
   local
     fun plug m = 
       fn APP (HOLE, n) => Syn.intoApp (m, n)
-       | HCOM (dir, HOLE, cap, tubes) => Syn.into @@ Syn.HCOM {dir = dir, ty = m, cap = cap, tubes = tubes}
-       | COE (dir, (u, HOLE), coercee) => Syn.into @@ Syn.COE {dir = dir, ty = (u, m), coercee = coercee}
+       | HCOM (dir, HOLE, cap, tubes) => Syn.intoHcom {dir = dir, ty = m, cap = cap, tubes = tubes}
+       | COE (dir, (u, HOLE), coercee) => Syn.intoCoe {dir = dir, ty = (u, m), coercee = coercee}
        | IF (HOLE, t, f) => Syn.into @@ Syn.IF (m, (t, f))
        | WIF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
        | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
@@ -102,7 +59,7 @@ struct
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
        | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
        | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
-       | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (P.VAR x, m, f)
+       | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
   in
     fun unload (m || (syms, stk)) = 
       case stk of
@@ -111,13 +68,13 @@ struct
   end
 
   datatype stability = 
-     CUBICAL
+     STABLE
    | NOMINAL
 
   datatype blocker =
      VAR of RedPrlAbt.variable
    | METAVAR of RedPrlAbt.metavariable
-   | OPERATOR of RedPrlAbt.symbol
+   | OPERATOR of Sig.opid
 
   structure Unfolding = 
   struct
@@ -129,7 +86,7 @@ struct
         open RedPrlSequent infix >>
       in
         case spec of
-          _ >> RedPrlCategoricalJudgment.TRUE _ => false
+          _ >> RedPrlAtomicJudgment.TRUE _ => false
         | _ => true
       end
 
@@ -146,21 +103,21 @@ struct
     fun assertVariable stability syms u =
       case stability of
         NOMINAL => ()
-      | CUBICAL =>
+      | STABLE =>
           if SymSet.member syms u then ()
           else raise Unstable
   in
     fun branchOnDim stability syms r f0 f1 fu =
-      case r of
-        P.APP P.DIM0 => f0
-      | P.APP P.DIM1 => f1
-      | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
-      | P.VAR u => (assertVariable stability syms u; fu u)
+      case Syn.out r of
+         Syn.DIM0 => f0
+       | Syn.DIM1 => f1
+       | Syn.VAR (u, _) => (assertVariable stability syms u; fu u)
+       | Syn.META (u, _) => (assertVariable stability syms u; fu u)
   end
 
   fun dimensionsEqual stability syms (r1, r2) = 
     (* If two dimensions are equal, then no substitution can ever change that. *)
-    if P.eq Sym.eq (r1, r2) then 
+    if Tm.eq (r1, r2) then 
       true
     else
       (* On the other hand, if they are not equal, this observation may not commute with cubical substitutions. *)
@@ -168,18 +125,17 @@ struct
           (* An observation of apartness is stable under permutations. *)
           NOMINAL => false
           (* An observation of apartness is only stable if one of the compared dimensions is bound. *)
-        | CUBICAL =>
+        | STABLE =>
             let
               fun isBound syms r =
-                case r of
-                   P.VAR x => SymSet.member syms x
-                 | P.APP _ => false
+                case Tm.out r of
+                   ` x => SymSet.member syms x
+                 | _ => false
               fun isConstant r =
-                case r of
-                   P.VAR _ => false
-                 | P.APP P.DIM0 => true
-                 | P.APP P.DIM1 => true
-                 | P.APP _ => E.raiseError (E.INVALID_DIMENSION (TermPrinter.ppParam r))
+                case Syn.out r of
+                   Syn.DIM0 => true
+                 | Syn.DIM1 => true
+                 | _ => false
             in
               if isBound syms r1 orelse isBound syms r2 orelse (isConstant r1 andalso isConstant r2) then
                 false
@@ -200,17 +156,26 @@ struct
       aux
     end
 
-  fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, (u, f (u, n))))
+  fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, f (u, n)))
+  fun mapTubes_ f = mapTubes (fn (v, tm) => (v, f tm))
 
-  fun zipTubesWith f : symbol O.equation list * abt bview list -> tube list =
-    ListPair.mapEq (fn (eq, ([u], _) \ n) => (eq, (u, f (u, n))))
+  fun zipTubesWith f : Syn.equation list * abt bview list -> tube list =
+    ListPair.mapEq (fn (eq, [u] \ n) => (eq, (u, f (u, n))))
 
-  fun zipBoundariesWith f : symbol O.equation list * abt bview list -> boundary list =
+  fun zipBoundariesWith f : Syn.equation list * abt bview list -> boundary list =
     ListPair.mapEq (fn (eq, _ \ n) => (eq, f n))
 
-  fun mapTubes_ f = mapTubes (f o #2)
   val zipTubes = zipTubesWith #2
   val zipBoundaries = zipBoundariesWith (fn n => n)
+
+  (* assuming u is bound and so the comparison is stable,
+   * which is the case in its usage (Kan operations of fcom). *)
+  fun keepApartTubes u : tube list -> tube list =
+    let
+      fun apart r = branchOnDim NOMINAL SymSet.empty r true true (fn v => not (Sym.eq (u, v)))
+    in
+      List.filter (fn ((r1, r2), _) => apart r1 andalso apart r2)
+    end
 
   datatype 'a action = 
      COMPAT of 'a
@@ -222,7 +187,7 @@ struct
       STEP @@ cap || (syms, stk)
     else
       case findFirstWithTrueEquation stability syms tubes of
-         SOME (u, n) => STEP @@ substSymbol (r', u) n || (syms, stk)
+         SOME (u, n) => STEP @@ substVar (r', u) n || (syms, stk)
        | NONE =>
          (case stk of
              [] => raise Final
@@ -230,8 +195,8 @@ struct
              let
                val u = Sym.named "u"
                val fcomu =
-                 Syn.into @@ Syn.FCOM
-                   {dir = (r, P.ret u),
+                 Syn.intoFcom
+                   {dir = (r, VarKit.toDim u),
                     cap = cap,
                     tubes = tubes}
                fun if_ m = Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
@@ -248,8 +213,8 @@ struct
              let
                val u = Sym.named "u"
                val fcomu =
-                 Syn.into @@ Syn.FCOM
-                   {dir = (r, P.ret u),
+                 Syn.intoFcom
+                   {dir = (r, VarKit.toDim u),
                     cap = cap,
                     tubes = tubes}
                fun s1rec m = Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (v, loop)))
@@ -262,10 +227,176 @@ struct
              in
                CRITICAL @@ com || (syms, stk)
              end
-           | HCOM _ :: stk =>
-               E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of fcom types"))
-           | COE _ :: stk =>
-               E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of fcom types"))
+           | HCOM (hcomDir, HOLE, hcomCap, hcomTubes) :: stk =>
+               (* favonia: the version implemented below is different from the one
+                *          in CHTT Part III. I do not know which one is better. *)
+               let
+                 val fcomDir = dir
+                 val fcomTubes = tubes
+                 val a = cap
+                 val dir = () (* prevents any ambiguous usage *)
+                 val tubes = () (* prevents any ambiguous usage *)
+                 val cap = () (* prevents any ambiguous usage *)
+                 fun capOf x = Syn.into @@ Syn.CAP
+                   {dir = fcomDir, coercee = x, tubes = fcomTubes}
+                 (* within a tube face, the cap operator is simplified: *)
+                 fun capOfInTube (v, b) x = Syn.intoCoe
+                   {dir = (#2 fcomDir, #1 fcomDir),
+                    ty = (v, b),
+                    coercee = x}
+                 fun hcomCoe (v, b) dest = Syn.intoHcom
+                   {dir = (#1 hcomDir, dest),
+                    ty = a,
+                    cap = capOfInTube (v, b) hcomCap,
+                    tubes = mapTubes_ (capOfInTube (v, b)) hcomTubes
+                    (* here the bound variable is reused *)}
+                 fun coeHcom (v, b) dest = capOfInTube (v, b) @@ Syn.intoHcom
+                   {dir = (#1 hcomDir, dest),
+                    ty = substVar (#2 fcomDir, v) b,
+                    cap = hcomCap,
+                    tubes = hcomTubes}
+                 fun recovery (v, b) recoverDim =
+                   let
+                     val y = Sym.named "y"
+                   in
+                     Syn.intoHcom
+                       {dir = hcomDir,
+                        ty = a,
+                        cap = capOfInTube (v, b) hcomCap,
+                        tubes =
+                          ((recoverDim, #1 fcomDir), (y, hcomCoe (v, b) (VarKit.toDim y)))
+                          ::
+                          ((recoverDim, #2 fcomDir), (y, coeHcom (v, b) (VarKit.toDim y)))
+                          ::
+                          mapTubes_ (capOfInTube (v, b)) hcomTubes}
+                   end
+                 val recovered =
+                   let
+                     val dummy = Sym.named "_"
+                   in
+                     Syn.intoHcom
+                       {dir = fcomDir,
+                        ty = a,
+                        cap = Syn.intoHcom
+                          {dir = hcomDir,
+                           ty = a,
+                           cap = capOf hcomCap,
+                           tubes = mapTubes_ capOf hcomTubes},
+                        tubes =
+                          ((#1 hcomDir, #2 hcomDir), (dummy, capOf hcomCap))
+                          ::
+                          mapTubes (fn (y, tm) => (dummy, substVar (#2 hcomDir, y) tm)) hcomTubes
+                          @
+                          mapTubes (fn (v, b) => (v, recovery (v, b) (VarKit.toDim v))) fcomTubes}
+                   end
+                 val result = Syn.into @@ Syn.BOX
+                   {dir = fcomDir,
+                    cap = recovered,
+                    boundaries = List.map (fn (eq, (v, b)) => (eq, coeHcom (v, b) (#2 hcomDir))) hcomTubes}
+               in
+                 CRITICAL @@ result || (syms, stk)
+               end
+           | COE (coeDir, (u, HOLE), coercee) :: stk =>
+               let
+                 val fcomDir = dir
+                 val a = cap
+                 val dir = () (* prevents any ambiguous usage of `dir` *)
+                 val cap = () (* prevents any ambiguous usage of `cap` *)
+                 (* the `origin` handles the case where the coercion should be
+                  * the identity function *)
+                 fun origin z = substVar (#1 coeDir, u) @@
+                   (* note: the above substitution is different from paper in that
+                    * it applies to `z` as well, and this is exactly what we want. *)
+                   Syn.intoHcom
+                     {dir = (#2 fcomDir, z), ty = a,
+                      cap = Syn.into @@ Syn.CAP {dir = fcomDir, coercee = coercee, tubes = tubes},
+                      tubes = mapTubes
+                        (fn (v, b) =>
+                          (v, Syn.intoCoe
+                            {dir = (VarKit.toDim v, #1 fcomDir),
+                             ty = (v, b),
+                             coercee = Syn.intoCoe
+                               {dir = (#2 fcomDir, VarKit.toDim v),
+                                ty = (v, b),
+                                coercee = coercee}}))
+                        tubes}
+                 (* this is the coerced term *)
+                 val naivelyCoercedCap = Syn.intoGcom
+                   {dir = fcomDir, ty = (u, a),
+                    cap = origin (#1 fcomDir),
+                    tubes =
+                      keepApartTubes u
+                        [((#1 fcomDir, #2 fcomDir),
+                          (u, Syn.intoCoe
+                            {dir = (#1 coeDir, VarKit.toDim u),
+                             ty = (u, a),
+                             coercee = coercee}))]
+                      @
+                      mapTubes
+                        (fn (v, b) =>
+                          (u, Syn.intoCoe
+                            {dir = (#2 fcomDir, #1 fcomDir),
+                             ty = (v, b),
+                             coercee = Syn.intoCoe
+                               {dir = (#1 coeDir, VarKit.toDim u),
+                                ty = (u, substVar (#2 fcomDir, v) b),
+                                coercee = coercee}}))
+                        (keepApartTubes u tubes)}
+                 fun recovery (v, b) dest =
+                   let
+                     val coeDestSubst = substVar (#2 coeDir, u)
+                   in
+                     Syn.intoGcom
+                       {dir = (coeDestSubst (#1 fcomDir), dest),
+                        ty = (v, coeDestSubst b),
+                        cap = naivelyCoercedCap,
+                        tubes =
+                             ((#1 coeDir, #2 coeDir),
+                              (v, Syn.intoCoe
+                                {dir = (coeDestSubst (#2 fcomDir), VarKit.toDim v),
+                                 ty = (v, coeDestSubst b),
+                                 coercee = coercee}))
+                          :: mapTubes
+                            (fn (v, b) =>
+                              (v, Syn.intoCoe
+                                {dir = (#2 fcomDir, VarKit.toDim v),
+                                 ty = (v, b),
+                                 coercee = Syn.intoCoe
+                                   {dir = coeDir,
+                                    ty = (u, substVar (#2 fcomDir, v) b),
+                                    coercee = coercee}}))
+                            (keepApartTubes u tubes)}
+                   end
+                 val coercedCap =
+                   let
+                     val w = Sym.named "w"
+                   in
+                     Syn.intoHcom
+                       {dir = fcomDir,
+                        ty = a,
+                        cap = naivelyCoercedCap,
+                        tubes =
+                          ((#1 coeDir, #2 coeDir),(w, origin (VarKit.toDim w)))
+                          ::
+                          mapTubes
+                            (fn (v, b) =>
+                              (w, Syn.intoCoe
+                                {dir = (VarKit.toDim w, #2 fcomDir),
+                                   ty = (v, b),
+                                   coercee = recovery (v, b) (VarKit.toDim w)}))
+                          tubes}
+                   end
+                 val result =
+                     substVar (#2 coeDir, u) @@ Syn.into @@ Syn.BOX
+                       {dir = fcomDir,
+                        cap = coercedCap,
+                        boundaries = List.map
+                          (fn (eq, (v, b)) =>
+                            (eq, recovery (v, b) (#2 fcomDir)))
+                          tubes}
+               in
+                 CRITICAL @@ result || (SymSet.remove syms u, stk)
+               end
            | _ => raise Stuck)
 
   fun stepBox stability ({dir, cap, boundaries} || (syms, stk)) =
@@ -278,7 +409,7 @@ struct
          (case stk of
              [] => raise Final
            | CAP _ :: stk =>
-               STEP @@ cap || (syms, stk)
+               CRITICAL @@ cap || (syms, stk)
            | _ => raise Stuck)
 
   fun stepCap stability ({dir as (r, r'), tubes, coercee} || (syms, stk)) =
@@ -286,60 +417,107 @@ struct
       STEP @@ coercee || (syms, stk)
     else
       case findFirstWithTrueEquation stability syms tubes of
-         SOME (u, a) => STEP @@ (Syn.into @@ Syn.COE {dir = (r', r), ty = (u, a), coercee = coercee}) || (syms, stk)
+         SOME (u, a) => STEP @@ (Syn.intoCoe {dir = (r', r), ty = (u, a), coercee = coercee}) || (syms, stk)
        | NONE => COMPAT @@ coercee || (syms, CAP (dir, tubes, HOLE) :: stk)
 
   fun stepView sign stability unfolding tau =
     fn `x || _ => raise Neutral (VAR x)
-     | x $# (rs, ms) || _ => raise Neutral (METAVAR x)
+     | x $# _ || _ => raise Neutral (METAVAR x)
 
-     | O.MONO O.AX $ _ || (_, []) => raise Final
+     | O.AX $ _ || (_, []) => raise Final
 
-     | O.POLY (O.CUST (opid, ps, _)) $ args || (syms, stk) =>
+     | O.CUST (opid, _) $ args || (syms, stk) =>
        if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
          val entry as {state, ...} = Sig.lookup sign opid
          val Lcf.|> (psi, evd) = state (fn _ => Sym.named "?")
          val state = state (fn _ => RedPrlSym.new ())
-         val term = Sig.unfoldCustomOperator entry (List.map #1 ps) args
+         val term = Sig.unfoldCustomOperator entry args
        in
          STEP @@ term || (syms, stk)
        end  
 
-     | O.POLY (O.HCOM (dir, eqs)) $ (_ \ ty :: _ \ cap :: tubes) || (syms, stk) => COMPAT @@ ty || (syms, HCOM (dir, HOLE, cap, zipTubes (eqs, tubes)) :: stk)
-     | O.POLY (O.COE dir) $ [([u], _) \ ty, _ \ coercee] || (syms, stk) => COMPAT @@ ty || (SymSet.insert syms u, COE (dir, (u, HOLE), coercee) :: stk)
-     | O.POLY (O.COM (dir, eqs)) $ (([u], _) \ ty :: _ \ cap :: tubes) || (syms, stk) =>
+     | O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] || (syms, stk) => COMPAT @@ ty || (syms, HCOM ((r1, r2), HOLE, cap, Syn.outTubes system) :: stk)
+     | O.GHCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] || (syms, stk) =>
+         (case Syn.outTubes system of
+            [] => STEP @@ cap || (syms, stk)
+          | (tube as (eq, (y, tm))) :: tubes =>
+              let
+                fun hcom x eps =
+                  Syn.intoHcom
+                    {dir = (r1, VarKit.toDim x),
+                     ty = ty,
+                     cap = cap,
+                     tubes =
+                          ((#2 eq, Syn.intoDim eps), (y, tm))
+                       :: ((#2 eq, Syn.intoDim (1 - eps)),
+                           (y, Syn.intoGhcom
+                             {dir = (r1, VarKit.toDim y),
+                              ty = ty,
+                              cap = cap,
+                              tubes = tubes}))
+                       :: tubes}
+                val result =
+                  Syn.intoHcom
+                    {dir = (r1, r2),
+                     cap = cap,
+                     ty = ty,
+                     tubes =
+                          ((#1 eq, Syn.intoDim 0), (y, hcom y 0))
+                       :: ((#1 eq, Syn.intoDim 1), (y, hcom y 1))
+                       :: tube
+                       :: tubes}
+              in
+                STEP @@ result || (syms, stk)
+              end)
+     | O.COE $ [_ \ r1, _ \ r2, [u] \ ty, _ \ coercee] || (syms, stk) => COMPAT @@ ty || (SymSet.insert syms u, COE ((r1,r2), (u, HOLE), coercee) :: stk)
+     | O.COM $ [_ \ r, _ \ r', [u] \ ty, _ \ cap, _ \ system] || (syms, stk) =>
        let
-         val (r, r') = dir
          fun coe s m = 
-           Syn.into @@ Syn.COE
+           Syn.intoCoe
              {dir = (s, r'),
               ty = (u, ty),
               coercee = m}
           val hcom =
-            Syn.into @@ Syn.HCOM
-              {dir = dir,
-               ty = substSymbol (r', u) ty,
+            Syn.intoHcom
+              {dir = (r, r'),
+               ty = substVar (r', u) ty,
                cap = coe r cap,
-               tubes = zipTubesWith (fn (u, n) => coe (P.ret u) n) (eqs, tubes)}
+               tubes = List.map (fn ((r1, r2), (u, n)) => ((r1, r2), (u, coe (VarKit.toDim u) n))) (Syn.outTubes system)}
        in
          STEP @@ hcom || (syms, stk)
        end
+     | O.GCOM $ [_ \ r, _ \ r', [u] \ ty, _ \ cap, _ \ system] || (syms, stk) =>
+       let
+         fun coe s m =
+           Syn.intoCoe
+             {dir = (s, r'),
+              ty = (u, ty),
+              coercee = m}
+          val ghcom =
+            Syn.intoGhcom
+              {dir = (r, r'),
+               ty = substVar (r', u) ty,
+               cap = coe r cap,
+               tubes = List.map (fn ((r1, r2), (u, n)) => ((r1, r2), (u, coe (VarKit.toDim u) n))) (Syn.outTubes system)}
+       in
+         STEP @@ ghcom || (syms, stk)
+       end
 
-     | O.POLY (O.FCOM (dir, eqs)) $ (_ \ cap :: tubes) || (syms, stk) =>
-       stepFCom stability ({dir = dir, cap = cap, tubes = zipTubes (eqs, tubes)} || (syms, stk))
+     | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] || (syms, stk) => 
+       stepFCom stability ({dir = (r1,r2), cap = cap, tubes = Syn.outTubes tubes} || (syms, stk))
 
-     | O.MONO O.LAM $ _ || (_, []) => raise Final
-     | O.MONO O.FUN $ _ || (_, []) => raise Final
+     | O.LAM $ _ || (_, []) => raise Final
+     | O.FUN $ _ || (_, []) => raise Final
 
-     | O.MONO O.APP $ [_ \ m, _ \ n] || (syms, stk) => COMPAT @@ m || (syms, APP (HOLE, n) :: stk)
-     | O.MONO O.LAM $ [(_,[x]) \ m] || (syms, APP (HOLE, n) :: stk) => CRITICAL @@ substVar (n, x) m || (syms, stk)
-     | O.MONO O.FUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.APP $ [_ \ m, _ \ n] || (syms, stk) => COMPAT @@ m || (syms, APP (HOLE, n) :: stk)
+     | O.LAM $ [[x] \ m] || (syms, APP (HOLE, n) :: stk) => CRITICAL @@ substVar (n, x) m || (syms, stk)
+     | O.FUN $ [_ \ tyA, [x] \ tyBx] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val xtm = VarKit.toExp x
          fun apx n = Syn.intoApp (n, xtm)
          val hcomx =
-           Syn.into @@ Syn.HCOM
+           Syn.intoHcom
              {dir = dir,
               ty = tyBx,
               cap = apx cap,
@@ -348,161 +526,162 @@ struct
        in
          CRITICAL @@ lambda || (syms, stk)
        end
-     | O.MONO O.FUN $ [_ \ tyA, (_,[x]) \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+     | O.FUN $ [_ \ tyA, [x] \ tyBx] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
        let
          val (r, r') = dir
          val xtm = Syn.into @@ Syn.VAR (x, O.EXP)
          fun xcoe s =
-           Syn.into @@ Syn.COE
+           Syn.intoCoe
              {dir = (r', s),
               ty = (u, tyA),
               coercee = xtm}
           val lambda =
             Syn.into @@ Syn.LAM (x,
-              Syn.into @@ Syn.COE 
+              Syn.intoCoe
                 {dir = dir,
-                 ty = (u, substVar (xcoe (P.ret u), x) tyBx),
+                 ty = (u, substVar (xcoe (VarKit.toDim u), x) tyBx),
                  coercee = Syn.intoApp (coercee, xcoe r)})
        in
          CRITICAL @@ lambda || (SymSet.remove syms u, stk)
        end
 
-     | O.MONO O.PATH_ABS $ _ || (_, []) => raise Final
-     | O.MONO O.PATH_TY $ _ || (_, []) => raise Final
+     | O.PATH_ABS $ _ || (_, []) => raise Final
+     | O.PATH_TY $ _ || (_, []) => raise Final
 
-     | O.POLY (O.PATH_APP r) $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PATH_APP (HOLE, r) :: stk)
-     | O.MONO O.PATH_ABS $ [([u], _) \ m] || (syms, PATH_APP (HOLE, r) :: stk) => CRITICAL @@ substSymbol (r, u) m || (syms, stk)
+     | O.PATH_APP $ [_ \ m, _ \ r] || (syms, stk) => COMPAT @@ m || (syms, PATH_APP (HOLE, r) :: stk)
+     | O.PATH_ABS $ [[x] \ m] || (syms, PATH_APP (HOLE, r) :: stk) => CRITICAL @@ substVar (r, x) m || (syms, stk)
 
-     | O.MONO O.PATH_TY $ [([u], _) \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.PATH_TY $ [[u] \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
-         fun apu m = Syn.into @@ Syn.PATH_APP (m, P.ret u)
+         fun apu m = Syn.into @@ Syn.PATH_APP (m, check (`u, O.DIM))
          val v = Sym.named "_"
          val hcomu =
-           Syn.into @@ Syn.HCOM
+           Syn.intoHcom
              {dir = dir,
               ty = tyu,
               cap = apu cap,
-              tubes = ((P.ret u, P.APP P.DIM0), (v, m0)) :: ((P.ret u, P.APP P.DIM1), (v, m1)) :: mapTubes_ apu tubes}
+              tubes = ((VarKit.toDim u, Syn.into Syn.DIM0), (v, m0)) :: ((VarKit.toDim u, Syn.into Syn.DIM1), (v, m1)) :: mapTubes_ apu tubes}
          val abs = Syn.into @@ Syn.PATH_ABS (u, hcomu)
        in
          CRITICAL @@ abs || (syms, stk)
        end
-     | O.MONO O.PATH_TY $ [([u], _) \ tyuv, _ \ m0v, _ \ m1v] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+     | O.PATH_TY $ [[u] \ tyuv, _ \ m0v, _ \ m1v] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
        let
          val comu =
            Syn.into @@ Syn.COM
              {dir = dir,
               ty = (v, tyuv),
-              cap = Syn.into @@ Syn.PATH_APP (coercee, P.ret u),
-              tubes = [((P.ret u, P.APP P.DIM0), (v, m0v)), ((P.ret u, P.APP P.DIM1), (v, m1v))]}
+              cap = Syn.into @@ Syn.PATH_APP (coercee, check (`u, O.DIM)),
+              tubes = [((VarKit.toDim u, Syn.into Syn.DIM0), (v, m0v)), ((VarKit.toDim u, Syn.into Syn.DIM1), (v, m1v))]}
          val abs = Syn.into @@ Syn.PATH_ABS (u, comu)
        in
          CRITICAL @@ abs || (SymSet.remove syms v, stk)
        end
 
-     | O.MONO O.EQUALITY $ _ || (_, []) => raise Final
-     | O.MONO O.EQUALITY $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
-     | O.MONO O.EQUALITY $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.EQUALITY $ _ || (_, []) => raise Final
+     | O.EQUALITY $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ Syn.into Syn.AX || (syms, stk)
+     | O.EQUALITY $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | O.MONO O.NAT $ _ || (_, []) => raise Final
-     | O.MONO O.ZERO $ _ || (_, []) => raise Final
-     | O.MONO O.SUCC $ _ || (_, []) => raise Final
-     | O.MONO O.NAT_REC $ [_ \ m, _ \ n, (_,[x,y]) \ p] || (syms, stk) => COMPAT @@ m || (syms, NAT_REC (HOLE, n, (x,y,p)) :: stk)
-     | O.MONO O.ZERO $ _ || (syms, NAT_REC (HOLE, zer, _) :: stk) => CRITICAL @@ zer || (syms, stk)
-     | O.MONO O.SUCC $ [_ \ n] || (syms, NAT_REC (HOLE, zer, (x,y, succ)) :: stk) =>
+     | O.NAT $ _ || (_, []) => raise Final
+     | O.ZERO $ _ || (_, []) => raise Final
+     | O.SUCC $ _ || (_, []) => raise Final
+     | O.NAT_REC $ [_ \ m, _ \ n, [x,y] \ p] || (syms, stk) => COMPAT @@ m || (syms, NAT_REC (HOLE, n, (x,y,p)) :: stk)
+     | O.ZERO $ _ || (syms, NAT_REC (HOLE, zer, _) :: stk) => CRITICAL @@ zer || (syms, stk)
+     | O.SUCC $ [_ \ n] || (syms, NAT_REC (HOLE, zer, (x,y, succ)) :: stk) =>
        let
          val rho = VarKit.ctxFromList [(n, x), (Syn.into @@ Syn.NAT_REC (n, (zer, (x,y,succ))), y)]
        in
          CRITICAL @@ substVarenv rho succ || (syms, stk)
        end
-     | O.MONO O.NAT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
-     | O.MONO O.NAT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.NAT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
+     | O.NAT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | O.MONO O.INT $ _ || (_, []) => raise Final
-     | O.MONO O.NEGSUCC $ _ || (_, []) => raise Final
-     | O.MONO O.INT_REC $ [_ \ m, _ \ n, (_,[x,y]) \ p, _ \ q, (_,[x',y']) \ r] || (syms, stk) => COMPAT @@ m || (syms, INT_REC (HOLE, n, (x,y,p), q, (x',y',r)) :: stk)
-     | O.MONO O.ZERO $ _ || (syms, INT_REC (HOLE, n, _, _, _) :: stk) => CRITICAL @@ n || (syms, stk)
-     | O.MONO O.SUCC $ [_ \ m] || (syms, INT_REC (HOLE, n, (x,y,p), _, _) :: stk) =>
+     | O.INT $ _ || (_, []) => raise Final
+     | O.NEGSUCC $ _ || (_, []) => raise Final
+     | O.INT_REC $ [_ \ m, _ \ n, [x,y] \ p, _ \ q, [x',y'] \ r] || (syms, stk) => COMPAT @@ m || (syms, INT_REC (HOLE, n, (x,y,p), q, (x',y',r)) :: stk)
+     | O.ZERO $ _ || (syms, INT_REC (HOLE, n, _, _, _) :: stk) => CRITICAL @@ n || (syms, stk)
+     | O.SUCC $ [_ \ m] || (syms, INT_REC (HOLE, n, (x,y,p), _, _) :: stk) =>
        let
          val rho = VarKit.ctxFromList [(m, x), (Syn.into @@ Syn.NAT_REC (m, (n, (x,y,p))), y)]
        in
          CRITICAL @@ substVarenv rho p || (syms, stk)
        end
-     | O.MONO O.NEGSUCC $ [_ \ m] || (syms, INT_REC (HOLE, _, _, q, (x,y,r)) :: stk) =>
+     | O.NEGSUCC $ [_ \ m] || (syms, INT_REC (HOLE, _, _, q, (x,y,r)) :: stk) =>
        COMPAT @@ m || (syms, NAT_REC (HOLE, q, (x,y,r)) :: stk)
-     | O.MONO O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
-     | O.MONO O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
+     | O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | O.MONO O.VOID $ _ || (_, []) => raise Final
+     | O.VOID $ _ || (_, []) => raise Final
 
-     | O.MONO O.WBOOL $ _ || (_, []) => raise Final
-     | O.MONO O.BOOL $ _ || (_, []) => raise Final
-     | O.MONO O.TT $ _ || (_, []) => raise Final
-     | O.MONO O.FF $ _ || (_, []) => raise Final
+     | O.WBOOL $ _ || (_, []) => raise Final
+     | O.BOOL $ _ || (_, []) => raise Final
+     | O.TT $ _ || (_, []) => raise Final
+     | O.FF $ _ || (_, []) => raise Final
 
-     | O.MONO O.IF $ [_ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, IF (HOLE, t, f) :: stk)
-     | O.MONO O.WIF $ [(_,[x]) \ tyx, _ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, WIF ((x, tyx), HOLE, t, f) :: stk)
-     | O.MONO O.TT $ _ || (syms, IF (HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
-     | O.MONO O.TT $ _ || (syms, WIF (_, HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
-     | O.MONO O.FF $ _ || (syms, IF (HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
-     | O.MONO O.FF $ _ || (syms, WIF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
-     | O.MONO O.BOOL $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
-     | O.MONO O.BOOL $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
-     | O.MONO O.WBOOL $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.IF $ [_ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, IF (HOLE, t, f) :: stk)
+     | O.WIF $ [[x] \ tyx, _ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, WIF ((x, tyx), HOLE, t, f) :: stk)
+     | O.TT $ _ || (syms, IF (HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
+     | O.TT $ _ || (syms, WIF (_, HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
+     | O.FF $ _ || (syms, IF (HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
+     | O.FF $ _ || (syms, WIF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
+     | O.BOOL $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
+     | O.BOOL $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.WBOOL $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val fcom =
-           Syn.into @@ Syn.FCOM
+           Syn.intoFcom
              {dir = dir,
               cap = cap,
               tubes = tubes}
        in
          CRITICAL @@ fcom || (syms, stk)
        end
-     | O.MONO O.WBOOL $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.WBOOL $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | O.MONO O.S1 $ _ || (_, []) => raise Final
-     | O.MONO O.BASE $ _ || (_, []) => raise Final
-     | O.POLY (O.LOOP r) $ _ || (syms, stk) =>
+     | O.S1 $ _ || (_, []) => raise Final
+     | O.BASE $ _ || (_, []) => raise Final
+     | O.LOOP $ [_ \ r] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ Syn.into Syn.BASE || (syms, stk))
            (STEP @@ Syn.into Syn.BASE || (syms, stk))
            (fn u =>
              case stk of
                [] => raise Final
-             | S1_REC (_, HOLE, _, (v, loop)) :: stk => CRITICAL @@ substSymbol (P.ret u, v) loop || (syms, stk)
+             | S1_REC (_, HOLE, _, (v, loop)) :: stk => CRITICAL @@ substVar (VarKit.toDim u, v) loop || (syms, stk)
              | _ => raise Stuck)
-     | O.MONO O.BASE $ _ || (syms, S1_REC (_, HOLE, base, _) :: stk) => CRITICAL @@ base || (syms, stk)
-     | O.MONO O.S1 $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.BASE $ _ || (syms, S1_REC (_, HOLE, base, _) :: stk) => CRITICAL @@ base || (syms, stk)
+     | O.S1_REC $ [[x] \ c, _ \ m, _ \ b, [x'] \ l] || (syms, stk) => COMPAT @@ m || (syms, S1_REC ((x,c), HOLE, b, (x',l)) :: stk)
+     | O.S1 $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val fcom =
-           Syn.into @@ Syn.FCOM
+           Syn.intoFcom
              {dir = dir,
               cap = cap,
               tubes = tubes}
        in
          CRITICAL @@ fcom || (syms, stk)
        end
-     | O.MONO O.S1 $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.S1 $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
-     | O.MONO (O.RECORD _) $ _ || (_, []) => raise Final
-     | O.MONO (O.TUPLE _) $ _ || (_, []) => raise Final
-     | O.MONO (O.PROJ lbl) $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PROJ (lbl, HOLE) :: stk)
-     | O.MONO (O.TUPLE_UPDATE lbl) $ [_ \ n, _ \ m] || (syms, stk) => COMPAT @@ m || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk)
-     | O.MONO (O.TUPLE lbls) $ args || (syms, PROJ (lbl, HOLE) :: stk) =>
+     | O.RECORD _ $ _ || (_, []) => raise Final
+     | O.TUPLE _ $ _ || (_, []) => raise Final
+     | O.PROJ lbl $ [_ \ m] || (syms, stk) => COMPAT @@ m || (syms, PROJ (lbl, HOLE) :: stk)
+     | O.TUPLE_UPDATE lbl $ [_ \ n, _ \ m] || (syms, stk) => COMPAT @@ m || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk)
+     | O.TUPLE lbls $ args || (syms, PROJ (lbl, HOLE) :: stk) =>
        let
          val fields = Syn.outTupleFields (lbls, args)
        in
          CRITICAL @@ Syn.Fields.lookup lbl fields || (syms, stk)
          handle Syn.Fields.Absent => raise Stuck
        end
-     | O.MONO (O.TUPLE lbls) $ args || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk) =>
+     | O.TUPLE lbls $ args || (syms, TUPLE_UPDATE (lbl, n, HOLE) :: stk) =>
        let
          val fields = Syn.outTupleFields (lbls, args)
          val (lbls', args') = Syn.intoTupleFields @@ Syn.Fields.update (lbl, n) fields
        in
-         CRITICAL @@ O.MONO (O.TUPLE lbls') $$ args' || (syms, stk)
+         CRITICAL @@ O.TUPLE lbls' $$ args' || (syms, stk)
        end
-     | O.MONO (O.RECORD lbls) $ args || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) => 
+     | O.RECORD lbls $ args || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) => 
        (case (lbls, args) of 
            ([], []) =>
            let
@@ -510,23 +689,23 @@ struct
            in
              CRITICAL @@ tuple || (syms, stk)
            end
-         | (lbl :: lbls, ([],[]) \ ty :: args) =>
+         | (lbl :: lbls, [] \ ty :: args) =>
            let
              val (r, r') = dir
              fun proj m = Syn.into @@ Syn.PROJ (lbl, m)
              fun head s =
-               Syn.into @@ Syn.HCOM
+               Syn.intoHcom
                  {dir = (r, s),
                   ty = ty,
                   cap = proj cap,
                   tubes = mapTubes_ proj tubes}
 
              fun shiftField s = 
-               fn ([], x :: xs) \ ty => ([], xs) \ substVar (head s, x) ty
+               fn (x :: xs) \ ty => xs \ substVar (head s, x) ty
                 | _ => raise Fail "Impossible field"
 
              val u = Sym.named "u"
-             val ty'u = O.MONO (O.RECORD lbls) $$ List.map (shiftField (P.ret u)) args
+             val ty'u = O.RECORD lbls $$ List.map (shiftField (VarKit.toDim u)) args
 
              val tail =
                Syn.into @@ Syn.COM
@@ -538,7 +717,7 @@ struct
              CRITICAL @@ tail || (syms, TUPLE_UPDATE (lbl, head r', HOLE) :: stk)
            end
          | _ => raise Fail "Impossible record type")
-     | O.MONO (O.RECORD lbls) $ args || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>  
+     | O.RECORD lbls $ args || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>  
        (case (lbls, args) of 
            ([], []) =>
            let
@@ -546,25 +725,25 @@ struct
            in
              CRITICAL @@ tuple || (syms, stk)
            end
-         | (lbl :: lbls, ([],[]) \ ty :: args) =>
+         | (lbl :: lbls, [] \ ty :: args) =>
            let
              val (r, r') = dir
              fun proj m = Syn.into @@ Syn.PROJ (lbl, m)
              fun head s =
-               Syn.into @@ Syn.COE
+               Syn.intoCoe
                  {dir = (r, s),
                   ty = (u, ty),
                   coercee = proj coercee}
 
              fun shiftField s = 
-               fn ([], x :: xs) \ ty => ([], xs) \ substVar (head s, x) ty
+               fn (x :: xs) \ ty => xs \ substVar (head s, x) ty
                 | _ => raise Fail "Impossible field"
 
              val u = Sym.named "u"
-             val ty'u = O.MONO (O.RECORD lbls) $$ List.map (shiftField (P.ret u)) args
+             val ty'u = O.RECORD lbls $$ List.map (shiftField (VarKit.toDim u)) args
 
              val tail =
-               Syn.into @@ Syn.COE
+               Syn.intoCoe
                  {dir = dir,
                   ty = (u, ty'u),
                   coercee = coercee}
@@ -573,22 +752,148 @@ struct
            end
          | _ => raise Fail "Impossible record type")
 
-     | O.POLY (O.BOX (dir, eqs)) $ (_ \ cap :: boundaries) || (syms, stk) =>
-       stepBox stability ({dir = dir, cap = cap, boundaries = zipBoundaries (eqs, boundaries)} || (syms, stk))
-     | O.POLY (O.CAP (dir, eqs)) $ (_ \ coercee :: tubes) || (syms, stk) =>
-       stepCap stability ({dir = dir, coercee = coercee, tubes = zipTubes (eqs, tubes)} || (syms, stk))
+     | O.BOX $ [_ \ r1, _ \ r2, _ \ cap, _ \ boundaries] || (syms, stk) => 
+       stepBox stability ({dir = (r1, r2), cap = cap, boundaries = Syn.outBoundaries boundaries} || (syms, stk))
+     | O.CAP $ [_ \ r1, _ \ r2, _ \ coercee, _ \ tubes] || (syms, stk) => 
+       stepCap stability ({dir = (r1, r2), coercee = coercee, tubes = Syn.outTubes tubes} || (syms, stk))
 
-     | O.POLY (O.V r) $ [_ \ a, _ \ b, _] || (syms, stk) =>
+     | O.V $ [_ \ r, _ \ a, _ \ b, _ \ e] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ a || (syms, stk))
            (STEP @@ b || (syms, stk))
            (fn u =>
              case stk of
                [] => raise Final
-             | HCOM _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "hcom operations of ua types"))
-             | COE _ :: stk => E.raiseError (E.UNIMPLEMENTED (Fpp.text "coe operations of ua types"))
+             | HCOM (dir, HOLE, cap, tubes) :: stk =>
+                 let
+                   val v = Sym.named "v"
+                   val f = Syn.intoFst e
+                   fun vproj m = Syn.into @@ Syn.VPROJ (r, m, f)
+                   fun m' ty y = Syn.intoHcom
+                     {dir = (#1 dir, y), ty = ty, cap = cap, tubes = tubes}
+                   val n = Syn.intoHcom
+                     {dir = dir, ty = b,
+                      cap = vproj cap,
+                      tubes =
+                           ((VarKit.toDim u, Syn.intoDim 0), (v, Syn.intoApp (f, m' a (VarKit.toDim v))))
+                        :: ((VarKit.toDim u, Syn.intoDim 1), (v, m' b (VarKit.toDim v)))
+                        :: mapTubes_ vproj tubes}
+                 in
+                   CRITICAL @@ Syn.into (Syn.VIN (r, m' a (#2 dir), n)) || (syms, stk)
+                 end
+             | COE (dir, (v, HOLE), coercee) :: stk =>
+                 let
+                   val syms' = SymSet.remove syms v
+                   val vin =
+                     (* Sym.eq (u, v) is stable because v is bound *)
+                     if Sym.eq (u, v) then
+                       let
+                         fun nFromZero s = Syn.intoCoe
+                           {dir = (Syn.intoDim 0, s), ty = (v, b),
+                            coercee = Syn.intoApp (Syn.intoFst (substVar (Syn.intoDim 0, v) e), coercee)}
+                         fun projFromOne s = Syn.intoCoe {dir = (Syn.intoDim 1, s), ty = (v, b), coercee = coercee}
+                         fun fiberFromOne s = Syn.intoFst @@ Syn.intoApp (Syn.intoSnd (substVar (s, v) e), projFromOne s)
+                         fun nFromOne s t = (* t is the dimension used in the hcom to fix the zero-end. *)
+                           let
+                             val w = Sym.named "w"
+                           in
+                             Syn.intoHcom
+                               {dir = (Syn.intoDim 1, t),
+                                ty = substVar (s, v) b,
+                                cap = projFromOne s,
+                                tubes =
+                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.PATH_APP (Syn.intoSnd (fiberFromOne s), VarKit.toDim w)))
+                                  , ((s, Syn.intoDim 1), (w, projFromOne s)) ]}
+                           end
+                       in
+                         branchOnDim stability syms' (#1 dir)
+                           (Syn.into @@ Syn.VIN (#2 dir, coercee, nFromZero (#2 dir)))
+                           (Syn.into @@ Syn.VIN (#2 dir, Syn.intoFst (fiberFromOne (#2 dir)), nFromOne (#2 dir) (Syn.intoDim 1)))
+                           (fn y =>
+                              let
+                                fun base x =
+                                  let
+                                    val w = Sym.named "w"
+                                  in
+                                    Syn.intoCom
+                                      {dir = (#1 dir, x), ty = (v, b),
+                                       cap = Syn.into @@ Syn.VPROJ (#1 dir, coercee, Syn.intoFst @@ substVar (#1 dir, v) e),
+                                       tubes =
+                                         [ ((#1 dir, Syn.intoDim 0), (w, nFromZero (VarKit.toDim w)))
+                                         , ((#1 dir, Syn.intoDim 0), (w, projFromOne (VarKit.toDim w))) ]}
+                                  end
+                                val wallZero =
+                                  let
+                                    val z = Sym.named "z"
+                                    val m = Syn.intoCoe
+                                      {dir = (Syn.intoDim 0, VarKit.toDim y),
+                                       ty = (y, substVar (Syn.intoDim 0, v) a),
+                                       coercee = substVar (Syn.intoDim 0, y) coercee}
+                                  in
+                                    Syn.intoAnonTuple
+                                      [ m
+                                      , Syn.into @@ Syn.PATH_ABS (z,
+                                          Syn.intoCom
+                                            {dir = (Syn.intoDim 0, VarKit.toDim y),
+                                             ty = (y, substVar (Syn.intoDim 0, v) b),
+                                             cap = coercee,
+                                             tubes =
+                                               [ ((VarKit.toDim z, Syn.intoDim 0),
+                                                  (y, Syn.intoApp
+                                                        (Syn.intoFst (substVar (Syn.intoDim 0, v) e), m)))
+                                               , ((VarKit.toDim z, Syn.intoDim 1),
+                                                  (y, base (Syn.intoDim 0))) ]}) ]
+                                  end
+                                val frontFiber =
+                                  Syn.intoApp
+                                    (Syn.intoSnd
+                                      (Syn.intoApp
+                                        (Syn.intoSnd (substVar (Syn.intoDim 0, v) e),
+                                         base (Syn.intoDim 0))),
+                                     wallZero)
+                                val n =
+                                  let
+                                    val w = Sym.named "w"
+                                  in
+                                    Syn.intoHcom
+                                      {dir = (Syn.intoDim 0, Syn.intoDim 1),
+                                       ty = substVar (#2 dir, v) b,
+                                       cap = base (#2 dir),
+                                       tubes =
+                                         [ ((#1 dir, Syn.intoDim 0),
+                                            (w, nFromZero (#2 dir)))
+                                         , ((#1 dir, Syn.intoDim 1),
+                                            (w, nFromOne (#2 dir) (VarKit.toDim w)))
+                                         , ((#1 dir, #2 dir),
+                                            (w, Syn.into @@ Syn.VPROJ (#2 dir, coercee, Syn.intoFst @@ substVar (#2 dir, v) e)))
+                                         , ((#2 dir, Syn.intoDim 0),
+                                            (w, Syn.into @@ Syn.PATH_APP (Syn.intoSnd frontFiber, VarKit.toDim w))) ]}
+                                  end
+                              in
+                                Syn.into @@ Syn.VIN (#2 dir, Syn.intoFst frontFiber, n)
+                              end)
+                       end
+                     else
+                       let
+                         fun m ty s = Syn.intoCoe {dir = (#1 dir, s), ty = (v, ty), coercee = coercee}
+                         val n =
+                           Syn.intoCom
+                             {dir = dir,
+                              ty = (v, b),
+                              cap = Syn.into @@ Syn.VPROJ (r, coercee, Syn.intoFst @@ substVar (#1 dir, v) e),
+                              tubes =
+                                [ ((r, Syn.intoDim 0),
+                                   (v, Syn.intoApp (Syn.intoFst e, m a (VarKit.toDim v))))
+                                , ((r, Syn.intoDim 1),
+                                   (v, m b (VarKit.toDim v))) ]}
+                       in
+                         Syn.into @@ Syn.VIN (r, m a (#2 dir), n)
+                       end
+                 in
+                   CRITICAL @@ vin || (syms', stk)
+                 end
              | _ => raise Stuck)
-     | O.POLY (O.VIN r) $ [_ \ m, _ \ n] || (syms, stk) =>
+     | O.VIN $ [_ \ r, _ \ m, _ \ n] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ m || (syms, stk))
            (STEP @@ n || (syms, stk))
@@ -599,29 +904,37 @@ struct
                  (* the following line should be equivalent to direct comparison
                   * due to the invariants of the machine, but it does not hurt
                   * much (I hope) to check stability again. *)
-                 if dimensionsEqual stability syms (r, P.VAR v) then
+                 if dimensionsEqual stability syms (r, VarKit.toDim v) then
                    CRITICAL @@ n || (syms, stk)
                  else
                    raise Stuck
              | _ => raise Stuck)
-     | O.POLY (O.VPROJ r) $ [_ \ m, _ \ f] || (syms, stk) =>
+     | O.VPROJ $ [_ \ r, _ \ m, _ \ f] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ Syn.intoApp (f, m) || (syms, stk))
            (STEP @@ m || (syms, stk))
            (fn u => COMPAT @@ m || (syms, VPROJ (u, HOLE, f) :: stk))
 
-     | O.POLY (O.UNIVERSE _) $ _ || (_, []) => raise Final
-     | O.POLY (O.UNIVERSE _) $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-       let
-         val fcom =
-           Syn.into @@ Syn.FCOM
-             {dir = dir,
-              cap = cap,
-              tubes = tubes}
-       in
-         CRITICAL @@ fcom || (syms, stk)
-       end
-     | O.POLY (O.UNIVERSE _) $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
+     | O.UNIVERSE $ _ || (_, []) => raise Final
+     | O.UNIVERSE $ (_ :: _ \ k :: _) || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+         let
+           val fcom =
+             Syn.intoFcom
+               {dir = dir,
+                cap = cap,
+                tubes = tubes}
+         in
+           case Tm.out k of
+             O.KCONST k $ _ =>
+               (case k of
+                  K.DISCRETE => CRITICAL @@ cap || (syms, stk)
+                | K.KAN => CRITICAL @@ fcom || (syms, stk)
+                | K.HCOM => CRITICAL @@ fcom || (syms, stk)
+                | K.COE => raise Stuck
+                | K.STABLE => raise Stuck)
+           | _ => raise Stuck
+         end
+     | O.UNIVERSE $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | _ => raise Stuck
 

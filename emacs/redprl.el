@@ -112,13 +112,13 @@
   "RedPRL's built-in sorts.")
 
 (defconst redprl-parameter-keywords
-  '("labove" "lsucc" "lmax")
+  '("+" "++" "lmax")
   "RedPRL's parameter keywords.")
 
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
     "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec" "wif"
-    "nat" "zero" "succ" "nat-rec" "int" "negsucc"
+    "nat" "zero" "succ" "nat-rec" "int" "negsucc" "int-rec"
     "void"
     "S1" "base" "loop" "S1-rec"
     "lam" "app"
@@ -127,7 +127,7 @@
     "box" "cap"
     "V" "Vin" "Vproj"
     "universe" "U"
-    "hcom" "coe" "com")
+    "hcom" "ghcom" "coe" "com" "gcom")
   "RedPRL's expression keywords.")
 
 (defconst redprl-expression-symbols
@@ -136,7 +136,7 @@
 
 (defconst redprl-tactic-keywords
   '("auto" "auto-step" "case" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
-    "hyp" "id" "internalize" "lemma" "let" "match" "of" "print" "progress"
+    "hyp" "id" "lemma" "let" "match" "of" "print" "progress"
     "query" "rec" "reduce" "refine" "repeat" "rewrite" "rewrite-hyp" "symmetry"
     "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")

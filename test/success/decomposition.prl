@@ -3,8 +3,8 @@ Thm Decomposition : [
    (record [foo : (record [a : bool] [b : (* bool bool)])] [bar : S1])
    bool)
 ] by [
-  lam <foo = <a, b = <proj1>>>.
-  use proj1
+  lam {foo = {a = a, b = {welp}}}.
+  use welp
 ].
 
 Extract Decomposition.
@@ -14,15 +14,15 @@ Thm Apply : [
    (->
     bool
     bool
-    (path {_}
+    (path [_]
      (record [a : S1])
      (tuple [a base])
      (tuple [a base])))
    S1)
 ] by [
   lam f.
-    let <a> = f [`tt, `ff, @0].
-    use a 
+    let {a = a} = f [`tt, `ff, `(dim 0)].
+    use a
 ].
 
 Extract Apply.
@@ -43,19 +43,3 @@ Thm UseLemmaTest : [
   lam x.
   use UseHypTest [use x]
 ].
-
-
-Thm MyLemma(#m: {dim,dim}[exp,exp].exp) : [
-  (-> [b : bool] [p : (path {_} bool b tt)] (* bool (path {_} bool tt b)))
-] by [
-  lam b, p. <proj1 = `tt, proj2 = <i> `(hcom{0~>1} bool ,b [i=0 {j} (@ ,p j)] [i=1 {_} ,b])>
-].
-
-Thm UsingLemma : [
-  (path {_} bool tt tt)
-] by [
-  let <proj2 = lem> = (MyLemma {i j} [x y] (@ (abs {_} y) i)) [`tt, <_> `tt].
-  use lem
-].
-
-Print UsingLemma.

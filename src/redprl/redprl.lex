@@ -75,6 +75,9 @@ whitespace = [\ \t];
 "%"                => (Tokens.PERCENT (posTuple (size yytext)));
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
 "?"                => (Tokens.QUESTION (posTuple (size yytext)));
+"+"                => (Tokens.PLUS (posTuple (size yytext)));
+"++"               => (Tokens.DOUBLE_PLUS (posTuple (size yytext)));
+
 
 "ax"               => (Tokens.AX (posTuple (size yytext)));
 "fcom"             => (Tokens.FCOM (posTuple (size yytext)));
@@ -110,10 +113,10 @@ whitespace = [\ \t];
 "WU"               => (Tokens.V (posTuple (size yytext)));
 "Vin"              => (Tokens.VIN (posTuple (size yytext)));
 "Vproj"            => (Tokens.VPROJ (posTuple (size yytext)));
-"universe"         => (Tokens.UNIVERSE (posTuple (size yytext)));
 "U"                => (Tokens.UNIVERSE (posTuple (size yytext)));
 "abs"              => (Tokens.ABS (posTuple (size yytext)));
 "hcom"             => (Tokens.HCOM (posTuple (size yytext)));
+"com"              => (Tokens.COM (posTuple (size yytext)));
 "coe"              => (Tokens.COE (posTuple (size yytext)));
 
 "then"             => (Tokens.THEN (posTuple (size yytext)));
@@ -127,16 +130,15 @@ whitespace = [\ \t];
 
 "dim"              => (Tokens.DIM (posTuple (size yytext)));
 "lvl"              => (Tokens.LVL (posTuple (size yytext)));
-"meta-name"        => (Tokens.META_NAME (posTuple (size yytext)));
+"knd"              => (Tokens.KND (posTuple (size yytext)));
 
-"lsucc"            => (Tokens.LSUCC (posTuple (size yytext)));
-"labove"           => (Tokens.LABOVE (posTuple (size yytext)));
 "lmax"             => (Tokens.LMAX (posTuple (size yytext)));
+"omega"            => (Tokens.LOMEGA (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
 "jdg"              => (Tokens.JDG (posTuple (size yytext)));
-"triv"             => (Tokens.TRIV (posTuple (size yytext)));
+"trv"              => (Tokens.TRV (posTuple (size yytext)));
 
 "tactic"           => (Tokens.TACTIC (posTuple (size yytext)));
 
@@ -158,17 +160,17 @@ whitespace = [\ \t];
 "symmetry"         => (Tokens.RULE_SYMMETRY (posTuple (size yytext)));
 "auto-step"        => (Tokens.RULE_AUTO_STEP (posTuple (size yytext)));
 "auto"             => (Tokens.MTAC_AUTO (posTuple (size yytext)));
-"hyp"              => (Tokens.HYP (posTuple (size yytext)));
 "elim"             => (Tokens.RULE_ELIM (posTuple (size yytext)));
 "rewrite"          => (Tokens.RULE_REWRITE (posTuple (size yytext)));
 "rewrite-hyp"      => (Tokens.RULE_REWRITE_HYP (posTuple (size yytext)));
 "reduce"           => (Tokens.RULE_REDUCE (posTuple (size yytext)));
 "unfold"           => (Tokens.RULE_UNFOLD (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));
+"inversion"        => (Tokens.TAC_INVERSION (posTuple (size yytext)));
 
 "match"            => (Tokens.MATCH (posTuple (size yytext)));
 "query"            => (Tokens.QUERY (posTuple (size yytext)));
-"goal"             => (Tokens.GOAL (posTuple (size yytext)));
+"concl"            => (Tokens.CONCL (posTuple (size yytext)));
 "print"            => (Tokens.PRINT (posTuple (size yytext)));
 
 "true"             => (Tokens.TRUE (posTuple (size yytext)));
@@ -176,7 +178,7 @@ whitespace = [\ \t];
 "synth"            => (Tokens.SYNTH (posTuple (size yytext)));
 "discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
 "kan"              => (Tokens.KAN (posTuple (size yytext)));
-"cubical"          => (Tokens.CUBICAL (posTuple (size yytext)));
+"stable"           => (Tokens.STABLE (posTuple (size yytext)));
 "at"               => (Tokens.AT (posTuple (size yytext)));
 
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));

@@ -8,9 +8,17 @@ struct
            else findIndex' p (i+1) l
   in
     fun findIndex p l = findIndex' p 0 l
-
     fun findEqIndex x l = findIndex (fn y => x = y) l
   end
+
+  fun joinWith (f : 'a -> string) (sep : string) : 'a list -> string =
+    let
+      fun go [] = ""
+        | go (x :: []) = f x
+        | go (x :: xs) = f x ^ sep ^ go xs
+    in
+      go
+    end
   
   fun mapWithIndex f = 
     let

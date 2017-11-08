@@ -1,4 +1,4 @@
-Def Cmp(#m; #n) = [
+Def Cmp(#m, #n) = [
   (lam [x] ($ #m ($ #n x)))
 ].
 
@@ -14,7 +14,7 @@ Thm Bool/Not-Not-Id : [
 
 Thm SBool/Not-Not-Id-Path : [
   (path
-    {_} (-> bool bool)
+    [_] (-> bool bool)
     (Cmp Bool/Not Bool/Not)
     (lam [x] x))
 ] by [

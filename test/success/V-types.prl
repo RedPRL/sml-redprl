@@ -1,92 +1,100 @@
-Def HasAllPaths (#C) = [(-> [c c' : #C] (path {_} #C c c'))].
+Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
 
-Def IsContr (#C) = [(* [c : #C] (HasAllPaths #C))].
+Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
 
-Def Fiber (#A;#B;#f;#b) = [(* [a : #A] (path {_} #B ($ #f a) #b))].
+Def Fiber (#A,#B,#f,#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
 
-Def IsEquiv (#A;#B;#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
+Def IsEquiv (#A,#B,#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
 
-Def Equiv (#A;#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
+Def Equiv (#A,#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
 
 Def Id = [(lam [a] a)].
 
-Thm IdIsEquiv{l:lvl} : [
-  (-> [ty : (U l hcom)] (IsEquiv ty ty Id))
+Thm IdIsEquiv(#l:lvl) : [
+  (-> [ty : (U #l hcom)] (IsEquiv ty ty Id))
 ] by [
   lam ty, a.
-  < proj1 =
-     <proj1 = use a,
-      proj2 = <_> use a>
-  , proj2 =
-     lam <proj2 = c>, <proj2 = c'>. <i>
-       < proj1 =
-          `(hcom{1~>0} ,ty ,a
-            [i=0 {j} (@ ,c j)]
-            [i=1 {j} (@ ,c' j)])
-       , proj2 =
-           <j> `(hcom{1~>j} ,ty ,a
-                 [i=0 {j} (@ ,c j)]
-                 [i=1 {j} (@ ,c' j)])
-       >
-  >
+  { {use a, <_> use a}
+  , lam {_,c'}. <i>
+       { `(hcom 1~>0 ty a
+           [i=0 [j] (@ c' j)]
+           [i=1 [j] a])
+       , <j> `(hcom 1~>j ty a
+               [i=0 [j] (@ c' j)]
+               [i=1 [j] a])
+       }
+  }
 ].
 
-Thm IdEquiv{l:lvl} : [
-  (-> [ty : (U l hcom)] (Equiv ty ty))
+Thm IdEquiv(#l:lvl) : [
+  (-> [ty : (U #l hcom)] (Equiv ty ty))
 ] by [
   lam ty.
-    <proj1 = `Id,
-     proj2 = use {IdIsEquiv l} [use ty]>
+    {`Id, use (IdIsEquiv #l) [use ty]}
 ].
 
-Def Member(#M; #A) = [
+Print IdEquiv.
+
+Def Member(#M, #A) = [
   (= #A #M #M)
 ].
 
-Def IdV {l:lvl,i:dim}(#ty) = [
-  (V i #ty #ty ($ {IdEquiv l} #ty))
+Def IdV(#i:dim, #l:lvl, #ty) = [
+  (V #i #ty #ty ($ (IdEquiv #l) #ty))
 ].
 
-Thm IdV/Wf {l:lvl,i:dim} : [
+Thm IdV/Wf(#i:dim, #l:lvl) : [
   (->
-   [ty : (U l hcom)]
-   (Member ({IdV l i} ty) (U l)))
+   [ty : (U #l hcom)]
+   (Member (IdV #i #l ty) (U #l)))
 ] by [
   lam ty. `ax
 ].
 
-Thm IdV/Test0 {l:lvl,i:dim} : [
+Thm IdV/Test0(#i:dim, #l:lvl) : [
   (->
-   [ty : (U l hcom)]
+   [ty : (U #l hcom)]
    [a : ty]
-   (Member (Vin i a a) ({IdV l i} ty)))
+   (Member (Vin #i a a) (IdV #i #l ty)))
 ] by [
   lam ty, a. `ax
 ].
 
-Thm IdV/Test1 {l:lvl,i:dim} : [
+Thm IdV/Test1(#l:lvl) : [
   (->
-   [ty : (U l hcom)]
+   [ty : (U #l hcom)]
    [a : ty]
-   (= ty (Vproj 0 (Vin 0 a a) Id) a))
+   (= ty (Vproj (dim 0) (Vin (dim 0) a a) Id) a))
 ] by [
   lam ty, a. auto
 ].
+
+Thm IdV/Test2(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   (= ty (coe 0~>1 [x] (IdV x #l ty) a)
+         (coe 0~>1 [_] ty a)))
+] by [
+  lam ty, a. auto
+].
+
+Print IdV/Test2.
 
 Def Not = [(lam [b] (if b ff tt))].
 
 Thm Bool/reflect : [
  (->
   [a b : bool]
-  [p : (path {_} bool a b)]
+  [p : (path [_] bool a b)]
   (= bool a b))
 ] by [
-  lam a, b, p. `(coe{0~>1} {x} (= bool ,a (@ ,p x)) ax)
+  lam a, b, p. `(coe 0~>1 [x] (= bool a (@ p x)) ax)
 ].
 
 Tac Bool/contra/inverse (#p:exp) = [
-  query gl <- goal.
-  match [gl:jdg] {
+  query gl <- concl.
+  match gl {
     [a, b | #jdg{%a = %b in bool} =>
       let eq : [(= bool %b %a)] = use Bool/reflect [`%b, `%a, `#p]; auto. symmetry; elim eq; auto
     ]
@@ -98,47 +106,55 @@ Thm NotIsEquiv : [
   (IsEquiv bool bool Not)
 ] by [
   lam b.
-  < proj1 =
-     <proj1 = `($ Not ,b),
-      proj2 = <_> use b
-     >
-  , proj2 =
-      lam <proj2 = p>, <proj2 = p'>.
-        {<i>
-          < proj1 =
-             `($ Not (hcom{1~>0} bool ,b
-                      [i=0 {j} (@ ,p j)]
-                      [i=1 {j} (@ ,p' j)]))
-          , proj2 =
-             <j> `(hcom{1~>j} bool ,b
-                   [i=0 {j} (@ ,p j)]
-                   [i=1 {j} (@ ,p' j)])
-          >
-        };
-        (Bool/contra/inverse ,p);
-        (Bool/contra/inverse ,p')
-  >
+  { {`($ Not b), <_> use b}
+  , lam {_,p'}.
+        (<i>
+          { `($ Not (hcom 1~>0 bool b
+                     [i=0 [j] (@ p' j)]
+                     [i=1 [j] b]))
+          , <j> `(hcom 1~>j bool b
+                  [i=0 [j] (@ p' j)]
+                  [i=1 [j] b])
+          }
+        );
+        (Bool/contra/inverse p')
+  }
 ].
 
 Thm NotEquiv : [
   (Equiv bool bool)
 ] by [
-  <proj1 = `Not,
-   proj2 = `NotIsEquiv>
+  {`Not, `NotIsEquiv}
 ].
 
-Def NotV {i:dim} = [(V i bool bool NotEquiv)].
+Def NotV(#i:dim) = [(V #i bool bool NotEquiv)].
 
-Thm NotV/Wf {i:dim} : [
-  (Member {NotV i} (U 0 kan))
+Thm NotV/Wf(#i:dim) : [
+  (Member (NotV #i) (U 0 kan))
 ] by [
   `ax
 ].
 
-Thm NotV/Test0 {i:dim} : [
+Thm NotV/Test0(#i:dim) : [
   (->
    [a : bool]
-   (Member (Vin i ($ Not a) a) {NotV i}))
+   (Member (Vin #i ($ Not a) a) (NotV #i)))
 ] by [
   lam a. `ax
+].
+
+Thm NotV/Test1 : [
+  (->
+   [a : bool]
+   (= bool (coe 0~>1 [x] (NotV x) a) ($ Not a)))
+] by [
+  lam a. auto
+].
+
+Thm NotV/Test2 : [
+  (->
+   [a : bool]
+   (= bool (coe 1~>0 [x] (NotV x) a) ($ Not a)))
+] by [
+  lam a. auto
 ].

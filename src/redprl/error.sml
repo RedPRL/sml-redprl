@@ -15,17 +15,18 @@ struct
     fn (SOME pos, err) => raiseAnnotatedError (pos, err)
      | (NONE, err) => raiseError err
 
-  fun annotateException pos thunk = thunk () handle exn => raise Pos (pos, exn)
-
-  fun annotateException' (SOME pos) thunk = annotateException pos thunk
-    | annotateException' NONE thunk = thunk ()
+  fun addPosition (pos, exn) = 
+    case (pos, exn) of 
+       (_, Pos _) => exn
+     | (SOME pos, _) => Pos (pos, exn)
+     | _ => exn
 
   val formatError =
     fn IMPOSSIBLE doc => Fpp.hvsep
         [Fpp.text "The impossible happened!", doc,
          Fpp.text "Please report this bug."]
      | INVALID_CATEGORICAL_JUDGMENT doc => Fpp.hvsep
-        [Fpp.text "Not a valid categorical judgment:", Fpp.nest 2 doc]
+        [Fpp.text "Not a valid atomic judgment:", Fpp.nest 2 doc]
      | INVALID_DIMENSION doc => Fpp.hsep
         [Fpp.text "Not a valid dimension:", Fpp.nest 2 doc]
      | INVALID_LEVEL doc => Fpp.hsep
@@ -39,7 +40,9 @@ struct
   val rec format =
     fn Err err => formatError err
      | Pos (_, exn) => format exn
-     | RedPrlAbt.BadSubstMetaenv {description,...} => Fpp.text description
+     | RedPrlAbt.SortError {description,...} => Fpp.text description
+     | LcfMonadBT.Refine [] => Fpp.text "No solution found"
+     | LcfMonadBT.Refine exns => Fpp.vsep (List.map format exns)
      | exn => Fpp.text (exnMessage exn)
 
    val rec annotation =
@@ -47,7 +50,15 @@ struct
         (case annotation exn of
             SOME pos' => SOME pos'
           | NONE => SOME pos)
+      | LcfMonadBT.Refine exns => annotationInExns exns
+      | RedPrlAbt.SortError {annotation = ann,...} => ann
       | _ => NONE
+  and annotationInExns = 
+    fn [] => NONE
+     | e::es => 
+       (case annotation e of
+           SOME p => SOME p
+         | NONE => annotationInExns es)
 
   (* this is obsolete *)
   val error = Err o GENERIC

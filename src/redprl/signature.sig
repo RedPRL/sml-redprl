@@ -1,18 +1,16 @@
 signature MINI_SIGNATURE =
 sig
   type metavar = RedPrlAbt.metavariable
-  type symbol = RedPrlAbt.symbol
-  type opid = RedPrlAbt.symbol
+  type opid = RedPrlOpData.opid
   type abt = RedPrlAbt.abt
   type valence = RedPrlAbt.valence
   type sort = RedPrlAbt.sort
-  type psort = RedPrlAbt.psort
+  type variable = RedPrlAbt.variable
   type src_opid = string
   type jdg = RedPrlJudgment.jdg
 
   type 'a arguments = ('a * valence) list
-  type 'a params = ('a * psort) list
-  type names = int -> symbol
+  type names = int -> variable
 
   type sign
   type entry =
@@ -22,8 +20,7 @@ sig
 
   val lookup : sign -> opid -> entry
 
-  val entryParams : entry -> symbol params
-  val unfoldCustomOperator : entry -> RedPrlAbt.param list -> abt RedPrlAbt.bview list -> abt
+  val unfoldCustomOperator : entry -> abt RedPrlAbt.bview list -> abt
 end
 
 signature SIGNATURE =
@@ -32,14 +29,14 @@ sig
 
   include MINI_SIGNATURE
 
-  type src_catjdg = RedPrlCategoricalJudgment.astjdg
+  type src_catjdg = ast
   type src_seqhyp = string * src_catjdg
   type src_sequent = src_seqhyp list * src_catjdg
 
   datatype src_decl =
-     DEF of {arguments : string arguments, params : string params, sort : sort, definiens : ast}
-   | THM of {arguments : string arguments, params : string params, goal : src_sequent, script : ast}
-   | TAC of {arguments : string arguments, params : string params, script : ast}
+     DEF of {arguments : string arguments, sort : sort, definiens : ast}
+   | THM of {arguments : string arguments, goal : src_sequent, script : ast}
+   | TAC of {arguments : string arguments, script : ast}
 
   datatype 'opid cmd =
      PRINT of 'opid

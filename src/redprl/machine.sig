@@ -10,11 +10,11 @@ sig
      involves observations that are not preserved by general substitutions of dimensions.
      
      Our machine can be run with respect to these two notions of 'stability'; NOMINAL
-     stability is the most permissive, whereas steps observed under CUBICAL must always
-     commute with cubical substitutions. If the machine is run under CUBICAL stability
+     stability is the most permissive, whereas steps observed under STABLE must always
+     commute with cubical substitutions. If the machine is run under STABLE stability
      and an unstable observation is made, the Unstable exception is raised.*)
   datatype stability = 
-     CUBICAL
+     STABLE
    | NOMINAL
 
   datatype blocker =

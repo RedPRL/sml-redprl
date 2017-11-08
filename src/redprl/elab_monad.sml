@@ -33,9 +33,6 @@ struct
 
   fun force susp =
     Debug.wrap (fn _ => Susp.force susp)
-    handle exn =>
-      {result = FAILURE (RedPrlError.annotation exn, RedPrlError.format exn),
-       messages = DList.empty}
 
   structure Monad =
   struct
@@ -114,7 +111,7 @@ struct
      init : 'b,
      succeed : 'a * 'b -> 'b}
 
-  fun fold (alg : ('a, 'b) alg) susp =
+  fun fold (alg : ('a, 'b) alg) (susp : 'a state Susp.susp) =
     let
       val st = force susp
       val messages = DList.toList (#messages st)

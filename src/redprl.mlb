@@ -35,8 +35,8 @@ in
     redprl/syntax.sml
     redprl/variable_kit.sml
 
-    redprl/categorical_judgment.sig
-    redprl/categorical_judgment.sml
+    redprl/atomic_judgment.sig
+    redprl/atomic_judgment.sml
 
     redprl/sequent.sig
     redprl/sequent.sml
@@ -55,8 +55,8 @@ in
     redprl/log.sml
     
 
-    redprl/spread.sig
-    redprl/spread.sml
+    redprl/name_seq.sig
+    redprl/name_seq.sml
     redprl/tactical.fun
 
 

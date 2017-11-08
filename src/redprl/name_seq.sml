@@ -1,10 +1,6 @@
-structure UniversalSpread : SPREAD =
+structure NameSeq : NAME_SEQ =
 struct
-  type 'a point = int -> 'a
-  type 'a neigh = 'a list
-
-  fun map f alpha =
-    f o alpha
+  type 'a seq = int -> 'a
 
   fun at alpha i =
     alpha i

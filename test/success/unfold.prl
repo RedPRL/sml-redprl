@@ -1,22 +1,22 @@
-Def Times(#A; #B) = [
+Def Times(#A, #B) = [
   (* #A #B)
 ].
 
-Tac Proj1{z:hyp} = [
-  let <proj1> = z.
-  use proj1
+Tac Proj1(#z) = [
+  let {x} = #z.
+  use x
 ].
 
-Tac Proj2{z:hyp} = [
-  let <proj2> = z.
-  use proj2
+Tac Proj2(#z) = [
+  let {welp, x} = #z.
+  use x
 ].
 
 Thm Times/Proj(#A) : [
   a/type : #A type 
   >> (-> (Times bool #A) #A)
 ] by [
-  lam x. {Proj2 x}
+  lam x. (Proj2 x)
 ].
 
 Extract Times/Proj.

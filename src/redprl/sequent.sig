@@ -1,31 +1,31 @@
 structure RedPrlSequentData =
 struct
-  (* polymorphism is useful for preventing bugs *)
-  type 'a catjdg = (Sym.t, RedPrlLevel.P.t, 'a) RedPrlCategoricalJudgment.jdg'
+  type catjdg = RedPrlAtomicJudgment.jdg
+  type abt = RedPrlAbt.abt
 
   structure Hyps : TELESCOPE = Telescope (Sym)
   type 'a ctx = 'a Hyps.telescope
 
   type label = string
 
-  (* polymorphism is useful for preventing bugs *)
-  datatype 'a jdg' =
+  datatype jdg =
      (* sequents / formal hypothetical judgment *)
-     >> of ((Sym.t * RedPrlAbt.psort) list * 'a catjdg ctx) * 'a catjdg
+     >> of catjdg ctx * catjdg
      (* unify a term w/ a head operator and extract the kth subterm *)
-   | MATCH of RedPrlAbt.operator * int * 'a * RedPrlAbt.param list * 'a list
+   | MATCH of RedPrlAbt.operator * int * abt * abt list
      (* unify a term w/ RECORD and extract the type of the label;
       * the third argument is the tuple. *)
-   | MATCH_RECORD of label * 'a * 'a
+   | MATCH_RECORD of label * abt * abt
 end
 
 signature SEQUENT =
 sig
-  datatype jdg' = datatype RedPrlSequentData.jdg'
-  val map : ('a -> 'b) -> 'a jdg' -> 'b jdg'
+  datatype jdg = datatype RedPrlSequentData.jdg
+  type abt = RedPrlAbt.abt
+
+  val map : (abt -> abt) -> jdg -> jdg
 
   (* specialized to abt *)
-  type jdg = RedPrlAbt.abt jdg'
   val pretty : jdg -> Fpp.doc
   val eq : jdg * jdg -> bool
   val relabel : Sym.t Sym.Ctx.dict -> jdg -> jdg

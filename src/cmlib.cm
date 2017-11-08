@@ -6,6 +6,7 @@ Library
   functor SplaySet
   functor HashTable
   structure StringOrdered
+  structure StringListDict
   structure IntHashable
   structure Sum
   structure Susp
