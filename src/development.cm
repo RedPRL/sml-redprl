@@ -20,6 +20,11 @@ Group is
   redprl/metalanguage/parser.sml
   redprl/metalanguage/lexer.sml
 
+  redprl/metalanguage/kernel.sig
+  redprl/metalanguage/kernel.sml
+
+  redprl/metalanguage/core_syntax.sig
+
 
   redprl/metalanguage/syntax.sml
   redprl/metalanguage/statics.fun
