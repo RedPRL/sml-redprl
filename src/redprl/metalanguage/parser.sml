@@ -184,7 +184,7 @@ struct
     structure R = RedExpr and O = RedPrlOpData
   in
     fun osortExp () = OSORT O.EXP
-    fun osortDim () = PSORT O.DIM
+    fun osortDim () = OSORT O.DIM
 
     fun oexpsNil _ = []
     fun oexpsCons (e, es) = e::es

@@ -30,7 +30,7 @@ struct
       | _ => false
 
   structure ML = MetalanguageSyntax
-  structure Eval = MetalanguageEval (structure ML = ML and M = MetalanguageMonad)
+  (* structure Eval = MetalanguageEval (structure ML = ML and M = MetalanguageMonad) *)
 
   fun parseFile s =
     let
@@ -40,7 +40,7 @@ struct
         val str = Stream.eager o Lex.lexMain o coordinate eol (Coord.init s) @@ Stream.fromTextInstream textStream
         val (ast, _) = Parse.parse str
         val mlterm = ML.Resolver.resolve ast
-        val _ = MetalanguageMonad.run @@ Eval.eval0 mlterm
+        (* val _ = MetalanguageMonad.run @@ Eval.eval0 mlterm *)
       in
         TextIO.closeIn textStream;
         mlterm

@@ -5,14 +5,14 @@ struct
 
   structure Tm = RedPrlAbt
   type oterm = Tm.abt
-  type osym = Tm.symbol
+  type osym = Tm.variable
   type rexpr = string RedExpr.expr
   type ovalence = Tm.valence
 
   type mlvar = Var.t
   type meta = Meta.t
 
-  datatype osort = OSORT of Tm.sort | PSORT of Tm.psort
+  datatype osort = OSORT of Tm.sort
 
   val freshVar = Var.new
 
@@ -56,7 +56,7 @@ struct
   datatype ('v, 's, 'o) mlterm = :@ of ('v, 's, 'o, ('v, 's, 'o) mlterm) mltermf * annotation
   infix :@
 
-  type mlterm_ = (mlvar, Tm.symbol, Tm.abt) mlterm
+  type mlterm_ = (mlvar, Tm.variable, Tm.abt) mlterm
   type src_mlterm = (string, string, rexpr) mlterm
 
   exception todo
@@ -82,24 +82,20 @@ struct
       {ostate = ostate,
        mlenv = Names.insert mlenv x x'}
 
-    fun addObjectNames {ostate = {metactx, symctx, varctx, metaenv, symenv, varenv}, mlenv} (xs : (string * osort) list) (xs' : (Tm.symbol * osort) list) : state =
+    fun addObjectNames {ostate = {metactx, varctx, metaenv, varenv}, mlenv} (xs : (string * osort) list) (xs' : (Tm.variable * osort) list) : state =
       {mlenv = mlenv,
        ostate = 
          {metactx = metactx,
-          symctx = List.foldl (fn ((x, PSORT sigma), r) => Tm.Sym.Ctx.insert r x sigma | (_, r) => r) symctx xs',
-          varctx = List.foldl (fn ((x, OSORT tau), r) => Tm.Var.Ctx.insert r x tau | (_, r) => r) varctx xs',
+          varctx = List.foldl (fn ((x, OSORT tau), r) => Tm.Var.Ctx.insert r x tau) varctx xs',
           metaenv = metaenv,
-          symenv = ListPair.foldl (fn ((x, _), (x', PSORT _), r) => Names.insert r x x' | (_, _, r) => r) symenv (xs, xs'),
-          varenv = ListPair.foldl (fn ((x, _), (x', OSORT _), r) => Names.insert r x x' | (_, _, r) => r) varenv (xs, xs')}}
+          varenv = ListPair.foldl (fn ((x, _), (x', OSORT _), r) => Names.insert r x x') varenv (xs, xs')}}
 
-    fun addMetas {ostate = {metactx, symctx, varctx, metaenv, symenv, varenv}, mlenv} metas metas' : state =
+    fun addMetas {ostate = {metactx, varctx, metaenv, varenv}, mlenv} metas metas' : state =
       {mlenv = mlenv,
        ostate = 
          {metactx = List.foldl (fn ((x, vl), r) => Tm.Metavar.Ctx.insert r x vl) metactx metas',
-          symctx = symctx,
           varctx = varctx,
           metaenv = ListPair.foldl (fn ((x, _), (x', _), r) => Names.insert r x x') metaenv (metas, metas'),
-          symenv = symenv,
           varenv = varenv}}
 
     fun mlvar (state : state) =
@@ -135,7 +131,7 @@ struct
 
     and resolveAuxObjScope (state : state) ((xs : (string * osort) list) \ txs) =
       let
-        val xs' = List.map (fn (x, osort) => (Tm.Sym.named x, osort)) xs
+        val xs' = List.map (fn (x, osort) => (Tm.Var.named x, osort)) xs
         val state' = addObjectNames state xs xs'
       in
         xs' \ resolveAux state' txs
@@ -154,9 +150,7 @@ struct
         {ostate =
           {metactx = Tm.Metavar.Ctx.empty,
            varctx = Tm.Var.Ctx.empty,
-           symctx = Tm.Sym.Ctx.empty,
            metaenv = Names.empty,
-           symenv = Names.empty,
            varenv = Names.empty},
         mlenv = Names.empty}
     end

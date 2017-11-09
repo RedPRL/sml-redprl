@@ -23,6 +23,5 @@ Group is
 
   redprl/metalanguage/syntax.sml
   redprl/metalanguage/statics.fun
-  redprl/metalanguage/monad.sml
   redprl/metalanguage/evaluator.fun
   redprl/metalanguage/ml_frontend.sml

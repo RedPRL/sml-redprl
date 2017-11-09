@@ -2,7 +2,7 @@ signature METALANGUAGE_EVAL_KIT =
 sig
   structure ML : METALANGUAGE_SYNTAX
     where type oterm = RedPrlAbt.abt
-    where type osym = RedPrlAbt.symbol
+    where type osym = RedPrlAbt.variable
   structure M : METALANGUAGE_MONAD
 end
 
@@ -18,12 +18,12 @@ struct
   exception todo fun ?e = raise e
 
   structure Rules = Refiner (Signature)
-  structure J = RedPrlSequent and CJ = RedPrlCategoricalJudgment and Tm = RedPrlAbt
+  structure J = RedPrlSequent and CJ = RedPrlAtomicJudgment and Tm = RedPrlAbt
   structure Unify = AbtUnify (Tm)
 
   type mlterm = ML.mlterm_
   type scope = (ML.mlvar, mlterm) ML.scope
-  type names = int -> Tm.symbol
+  type names = int -> Tm.variable
 
   fun >>= (m, f) = M.bind m f infix >>=
   fun =<< (f, m) = m >>= f infixr =<<
@@ -51,7 +51,7 @@ struct
        | FUN _ => Fpp.text "<fun>"
        | PAIR (v1, v2) => Fpp.Atomic.parens @@ Fpp.hsep [ppValue v1, Fpp.Atomic.comma, ppValue v2]
        | QUOTE abt => TermPrinter.ppTerm abt
-       | THEOREM (jdg, evd) => Fpp.hsepTight [Fpp.text "<", Fpp.text "theorem", RedPrlCategoricalJudgment.pretty jdg, Fpp.text "ext", TermPrinter.ppAbs evd, Fpp.text ">"]
+       | THEOREM (jdg, evd) => Fpp.hsepTight [Fpp.text "<", Fpp.text "theorem", RedPrlAtomicJudgment.pretty jdg, Fpp.text "ext", TermPrinter.ppAbs evd, Fpp.text ">"]
   end
 
   structure Env =
@@ -106,7 +106,7 @@ struct
         eval env t1 >>= (fn V.QUOTE abt => 
           let
             val catjdg : CJ.jdg = CJ.out abt handle _ => CJ.TRUE (abt, NONE, RedPrlKind.top)
-            val jdg = J.>> (([], Hyps.empty), catjdg)
+            val jdg = J.>> (Hyps.empty, catjdg)
             fun makeTheorem evd = V.THEOREM (catjdg, evd) 
           in
             makeTheorem <$>  M.extract pos (M.local_ jdg (const () <$> eval env t2))

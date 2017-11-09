@@ -2,7 +2,7 @@ signature METALANGUAGE_STATICS_KIT =
 sig
   include METALANGUAGE_SYNTAX
     where type oterm = RedPrlAbt.abt
-    where type osym = RedPrlAbt.symbol
+    where type osym = RedPrlAbt.variable
 end
 
 
@@ -14,7 +14,7 @@ struct
   exception todo
   fun ?e = raise e
 
-  type octx = {metas: Tm.metactx, syms: Tm.symctx, vars: Tm.varctx}
+  type octx = {metas: Tm.metactx, vars: Tm.varctx}
   type mlctx = mlterm_ Ctx.dict
 
   fun mltypeEq (mltype1, mltype2) = ?todo

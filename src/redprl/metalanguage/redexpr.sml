@@ -38,9 +38,7 @@ struct
     type state =
       {metactx: Tm.metactx,
        varctx: Tm.varctx,
-       symctx : Tm.symctx,
        metaenv: Tm.metavariable Names.dict,
-       symenv: Tm.symbol Names.dict,
        varenv: Tm.variable Names.dict}
 
     datatype head = 
@@ -71,25 +69,14 @@ struct
         check (`a', tau)
       end
 
-
-    fun bindSymbols {metactx,varctx,symctx,metaenv,symenv,varenv} (idents : string ident list, sorts) : symbol list * state =
-      let
-        val xs = List.map #1 idents
-        val xs' = List.map Sym.named xs
-        val symenv' = ListPair.foldl (fn (x,x',rho) => Names.insert rho x x') symenv (xs, xs')
-        val symctx' = ListPair.foldl (fn (x,sigma,rho) => Sym.Ctx.insert rho x sigma) symctx (xs', sorts)
-      in
-        (xs', {metactx = metactx, varctx = varctx, symctx = symctx', metaenv = metaenv, varenv = varenv, symenv = symenv'})
-      end
-
-    fun bindVars {metactx,varctx,symctx,metaenv,symenv,varenv} (idents : string ident list, sorts) : variable list * state =
+    fun bindVars {metactx,varctx,metaenv,varenv} (idents : string ident list, sorts) : variable list * state =
       let
         val xs = List.map #1 idents
         val xs' = List.map Var.named xs
         val varenv' = ListPair.foldl (fn (x,x',rho) => Names.insert rho x x') varenv (xs, xs')
         val varctx' = ListPair.foldl (fn (x,tau,rho) => Var.Ctx.insert rho x tau) varctx (xs', sorts)
       in
-        (xs', {metactx = metactx, varctx = varctx', symctx = symctx, metaenv = metaenv, varenv = varenv', symenv = symenv})
+        (xs', {metactx = metactx, varctx = varctx', metaenv = metaenv, varenv = varenv'})
       end
 
     type stack = string expr list
@@ -115,25 +102,15 @@ struct
 
     and readOperator state (opname, stk) : Tm.operator * stack =
       case opname of
-         "bool" => (O.MONO O.BOOL, stk)
-       | "wbool" => (O.MONO O.WBOOL, stk)
-       | "fun" => (O.MONO O.FUN, stk)
-       | "tt" => (O.MONO O.TT, stk)
-       | "ff" => (O.MONO O.FF, stk)
-       | "path" => (O.MONO O.PATH_TY, stk)
-       | "loop" =>
-         (case stk of
-             rexpr::stk => (O.POLY (O.LOOP (readParam state (rexpr, O.DIM))), stk)
-           | _ => raise Fail "invalid loop expr")
-       | "if" => (O.MONO O.IF, stk)
+         "bool" => (O.BOOL, stk)
+       | "wbool" => (O.WBOOL, stk)
+       | "fun" => (O.FUN, stk)
+       | "tt" => (O.TT, stk)
+       | "ff" => (O.FF, stk)
+       | "path" => (O.PATH_TY, stk)
+       | "loop" => (O.LOOP, stk)
+       | "if" => (O.IF, stk)
        | _ => raise Fail "unknown operator"
-
-    and readParam (state : state) (rexpr, sigma) : Tm.param =
-      case rexpr of 
-         IDENT (a, _) => Tm.O.P.VAR (Names.lookup (#symenv state) a)
-       | NUMERAL (0, _) => Tm.O.P.APP RedPrlParamData.DIM0
-       | NUMERAL (1, _) => Tm.O.P.APP RedPrlParamData.DIM1
-       | _ => raise Fail "unknown parameter"
 
     and plugHead (state : state) (hd : head, stk : stack) : abt = 
       case hd of 
@@ -145,11 +122,10 @@ struct
          in
            plugTerm state (term, stk)
          end
-       | METAVAR (a, ((psorts, sorts), tau)) =>
+       | METAVAR (a, (sorts, tau)) =>
          let
-           val (params, stk) = readParams state (psorts, stk) []
            val (args, stk) = readMetaArgs state (sorts, stk) []
-           val term = check (a $# (params, args), tau)
+           val term = check (a $# args, tau)
          in
            plugTerm state (term, stk)
          end
@@ -163,17 +139,12 @@ struct
     and plugTerm (state : state) (e : abt, stk : stack) : abt =
       case stk of 
          [] => e
-       | rexpr :: stk => plugTerm state (O.MONO O.APP $$ [([],[]) \ e, ([],[]) \ reader state rexpr], stk)
+       | rexpr :: stk => plugTerm state (O.APP $$ [[] \ e, [] \ reader state rexpr], stk)
 
     and plugTerm' (state : state) (e : abt, sstk : sstack) : abt =
       case sstk of
          [] => e
        | stk :: sstk => plugTerm' state (plugTerm state (e, stk), sstk)
-
-    and readParams (state : state) (psorts, stk : stack) memo : (param * psort) list * stack =
-      case (psorts, stk) of
-         ([], _) => (List.rev memo, stk)
-       | (sigma :: psorts, r :: stk) => readParams state (psorts, stk) ((readParam state (r, sigma), sigma) :: memo)
 
     and readMetaArgs (state : state) (sorts, stk : stack) memo : abt list * stack = 
       case (sorts, stk) of 
@@ -192,26 +163,11 @@ struct
 
     and readBinderArg (state : state) (valence, stk : stack) : abt bview * stack =
       case (valence, stk) of 
-         ((([],[]), _), e::stk) => (([],[]) \ reader state e, stk)
-       | (((ssorts, []), _), BINDING (us, _) :: e :: stk) =>
-         let
-           val (us', state) = bindSymbols state (us, ssorts)
-           val binder = (us', []) \ reader state e
-         in
-           (binder, stk)
-         end
-       | ((([], vsorts), _), BINDING (xs, _) :: e :: stk) =>
+         (([], _), e::stk) => ([] \ reader state e, stk)
+       | ((vsorts, _), BINDING (xs, _) :: e :: stk) =>
          let
            val (xs', state) = bindVars state (xs, vsorts)
-           val binder = ([], xs') \ reader state e
-         in
-           (binder, stk)
-         end
-       | (((ssorts, vsorts), _), BINDING (us, _) :: BINDING (xs, _) :: e :: stk) =>
-         let
-           val (us', state) = bindSymbols state (us, ssorts)
-           val (xs', state) = bindVars state (xs, vsorts)
-           val binder = (us', xs') \ reader state e
+           val binder = xs' \ reader state e
          in
            (binder, stk)
          end

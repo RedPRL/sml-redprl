@@ -11,22 +11,23 @@ Library
   functor RedPrlMachine
   structure RedPrlSortData
   structure RedPrlOpData
-  structure RedPrlParamData
+
   structure RedPrlLevel
   structure RedPrlKind
   structure RedPrlAbt
   structure RedPrlAst
   structure AstToAbt
-  structure RedPrlCategoricalJudgment
+  structure RedPrlAtomicJudgment
   structure RedPrlSequent
   structure Lcf
   functor Refiner
-  structure UniversalSpread
   functor RedPrlTactical
   structure Syntax
   structure FppRenderPlainText
   structure TermPrinter
   structure RedPrlSequentData
+
+  structure NameSeq
 is
   $/basis.cm
   $/ml-yacc-lib.cm

@@ -12,7 +12,7 @@ sig
   val freshVar : unit -> mlvar
   type ('b, 'a) scope
 
-  datatype osort = OSORT of RedPrlAbt.sort | PSORT of RedPrlAbt.psort
+  datatype osort = OSORT of RedPrlAbt.sort
 
   datatype mltype =
      UNIT
