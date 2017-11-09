@@ -3,16 +3,15 @@ sig
   structure ML : METALANGUAGE_SYNTAX
     where type oterm = RedPrlAbt.abt
     where type osym = RedPrlAbt.variable
-  structure M : METALANGUAGE_MONAD
 end
 
 functor MetalanguageEval (include METALANGUAGE_EVAL_KIT) : 
 sig
-  type env
-  type value
+  (* type env
+  type value *)
 
-  val eval : env -> ML.mlterm_ -> value M.m
-  val eval0 : ML.mlterm_ -> value M.m
+  (* val eval : env -> ML.mlterm_ -> value M.m *)
+  (* val eval0 : ML.mlterm_ -> value M.m *)
 end =
 struct
   exception todo fun ?e = raise e
@@ -25,7 +24,7 @@ struct
   type scope = (ML.mlvar, mlterm) ML.scope
   type names = int -> Tm.variable
 
-  fun >>= (m, f) = M.bind m f infix >>=
+  (* fun >>= (m, f) = M.bind m f infix >>=
   fun =<< (f, m) = m >>= f infixr =<<
   fun @@ (f, x) = f x infixr @@
   fun <$> (f, m) = M.map f m
@@ -150,5 +149,5 @@ struct
      | V.SND => M.pure @@ snd v
      | _ => RedPrlError.raiseAnnotatedError' (pos, RedPrlError.GENERIC [Fpp.text "Impossible application"])
 
-  val eval0 = eval (ML.Ctx.empty, Tm.Metavar.Ctx.empty)
+  val eval0 = eval (ML.Ctx.empty, Tm.Metavar.Ctx.empty) *)
 end
