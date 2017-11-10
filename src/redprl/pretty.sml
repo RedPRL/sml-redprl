@@ -165,7 +165,7 @@ struct
 
   and printAbs (us, m) =
     Atomic.parens @@ expr @@ hvsep @@
-      [hvsep [text "abs", symBinding us], align @@ ppTerm m]
+      [hvsep [text "abs", varBinding us], align @@ ppTerm m]
 
   and printDimApp (m, rs) =
     Atomic.parens @@ expr @@ hvsep
@@ -267,10 +267,10 @@ struct
 
      | O.DIM0 $ _ => char #"0"
      | O.DIM1 $ _ => char #"1"
-     | O.MK_TUBE $ [_ \ r1, _ \ r2, [u] \ mu]  => 
+     | O.MK_TUBE $ [_ \ r1, _ \ r2, tube]  =>
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
-          nest 1 @@ hvsep [Atomic.braces @@ ppVar u, ppTerm mu]]
+          nest 1 @@ ppBinder tube]
      | O.MK_BDRY $ [_ \ r1, _ \ r2, _ \ m] =>
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
@@ -300,11 +300,6 @@ struct
     case xs of
         [] => atLevel 10 @@ ppTerm m
       | _ => grouped @@ hvsep [varBinding xs, align @@ ppTerm m]
-
-  and symBinding us =
-    unlessEmpty us @@
-      Atomic.braces @@
-        hsep @@ List.map ppVar us
 
   and varBinding xs =
     unlessEmpty xs @@
