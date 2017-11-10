@@ -199,6 +199,8 @@ Thm UABeta(#l:lvl) : [
 //      lam {w1, w2}.
 //        <x>
 //          {`(V x ty/a w1 w2),
-// 	  lam v. `(Vproj x v (!proj1 w2)),
-// 	  `(@ q x)}}
+//           {lam v. `(Vproj x v (!proj1 w2)),
+//            let qx = q [`x]. ?
+//            }}};
+//   ?
 // ].
