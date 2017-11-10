@@ -482,7 +482,7 @@ struct
        | Syn.S1_REC _ => true
        | Syn.APP (f, _) => autoSynthesizableNeu sign f
        | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
-       | Syn.PATH_APP (l, _) => autoSynthesizableNeu sign l
+       | Syn.DIM_APP (l, _) => autoSynthesizableNeu sign l
        | Syn.CUST => true (* XXX should check the signature *)
        | _ => false
   in
@@ -538,7 +538,7 @@ struct
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqTypeApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `!`"
-         | (Syn.PATH_APP (_, _), Syn.PATH_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
+         | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
          | (Syn.CUST, Syn.CUST) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with custom operators"
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
@@ -631,7 +631,7 @@ struct
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj (* XXX should consult autoSynthesizableNeu *)
-         | (Syn.PATH_APP (_, r1), Syn.PATH_APP (_, r2)) =>
+         | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>
            (case (Abt.out r1, Abt.out r2) of 
                (`_, `_) => Lcf.rule o Path.EqApp orelse_ Lcf.rule o Line.EqApp
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
@@ -723,11 +723,11 @@ struct
            (_, Machine.REDEX, _, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, _, _, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
-         | (Syn.PATH_APP (_, r), _, _, _) => 
+         | (Syn.DIM_APP (_, r), _, _, _) =>
            (case Abt.out r of 
               `_ => kont ((m, n), ty)
              | _ => Lcf.rule o Path.EqAppConst)
-         | (_, _, Syn.PATH_APP (_, r), _) =>
+         | (_, _, Syn.DIM_APP (_, r), _) =>
            (case Abt.out r of 
               `_ => kont ((m, n), ty)
              | _ => CatJdgSymmetry then_ Lcf.rule o Path.EqAppConst)
@@ -760,7 +760,7 @@ struct
          | Syn.S1_REC _ => Lcf.rule o S1.SynthElim
          | Syn.APP _ => Lcf.rule o Fun.SynthApp
          | Syn.PROJ _ => Lcf.rule o Record.SynthProj
-         | Syn.PATH_APP _ => Lcf.rule o Path.SynthApp par Lcf.rule o Line.SynthApp
+         | Syn.DIM_APP _ => Lcf.rule o Path.SynthApp par Lcf.rule o Line.SynthApp
          | Syn.CUST => Lcf.rule o Custom.Synth sign
          | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
@@ -773,7 +773,7 @@ struct
         case (Syn.out u, canonicity sign u) of
            (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.CANONICAL) => Lcf.rule o Universe.SubUniverse
-         | (Syn.PATH_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
+         | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
          | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 

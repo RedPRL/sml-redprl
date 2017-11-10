@@ -57,7 +57,7 @@ struct
    | RECORD of ((string * variable) * 'a) list
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
-   | PATH_TY of (variable * 'a) * 'a * 'a | PATH_ABS of variable * 'a | PATH_APP of 'a * 'a
+   | PATH_TY of (variable * 'a) * 'a * 'a | ABS of variable * 'a | DIM_APP of 'a * 'a
    | LINE_TY of variable * 'a
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
@@ -334,8 +334,8 @@ struct
 
        | PATH_TY ((u, a), m, n) => O.PATH_TY $$ [[u] \ a, [] \ m, [] \ n]
        | LINE_TY (u, a) => O.LINE_TY $$ [[u] \ a]
-       | PATH_ABS (u, m) => O.PATH_ABS $$ [[u] \ m]
-       | PATH_APP (m, r) => O.PATH_APP $$ [[] \ m, [] \ r]
+       | ABS (u, m) => O.ABS $$ [[u] \ m]
+       | DIM_APP (m, r) => O.DIM_APP $$ [[] \ m, [] \ r]
 
        | EQUALITY (a, m, n) => O.EQUALITY $$ [[] \ a, [] \ m, [] \ n]
 
@@ -438,8 +438,8 @@ struct
 
        | O.PATH_TY $ [[u] \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
        | O.LINE_TY $ [[u] \ a] => LINE_TY (u, a)
-       | O.PATH_ABS $ [[u] \ m] => PATH_ABS (u, m)
-       | O.PATH_APP $ [_ \ m, _ \ r] => PATH_APP (m, r)
+       | O.ABS $ [[u] \ m] => ABS (u, m)
+       | O.DIM_APP $ [_ \ m, _ \ r] => DIM_APP (m, r)
 
        | O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 

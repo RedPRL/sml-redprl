@@ -176,7 +176,7 @@ struct
    (* record and tuple *)
    | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
    (* path: path abstraction and application *)
-   | PATH_TY | PATH_ABS | PATH_APP
+   | PATH_TY | ABS | DIM_APP
    (* lines: paths without fixed endpoints *)
    | LINE_TY
    (* equality *)
@@ -322,8 +322,8 @@ struct
 
      | PATH_TY => [[DIM] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | LINE_TY => [[DIM] |: EXP] ->> EXP
-     | PATH_ABS => [[DIM] |: EXP] ->> EXP
-     | PATH_APP => [[] |: EXP, [] |: DIM] ->> EXP
+     | ABS => [[DIM] |: EXP] ->> EXP
+     | DIM_APP => [[] |: EXP, [] |: DIM] ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
@@ -468,8 +468,8 @@ struct
 
      | PATH_TY => "path"
      | LINE_TY => "line"
-     | PATH_ABS => "abs"
-     | PATH_APP => "path-app"
+     | ABS => "abs"
+     | DIM_APP => "path-app"
 
      | UNIVERSE => "U"
      | V => "V"

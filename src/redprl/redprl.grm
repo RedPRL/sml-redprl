@@ -84,10 +84,10 @@ struct
     List.foldl (fn (n, app) => O.APP $$ [[] \ app, [] \ n]) m ns
 
   fun makePathAbs [] m = m
-    | makePathAbs (u::us) m = O.PATH_ABS $$ [[Option.getOpt (u, "_")] \ makePathAbs us m]
+    | makePathAbs (u::us) m = O.ABS $$ [[Option.getOpt (u, "_")] \ makePathAbs us m]
 
   fun makePathApp m ns =
-    List.foldl (fn (r, app) => O.PATH_APP $$ [[] \ app, [] \ r]) m ns
+    List.foldl (fn (r, app) => O.DIM_APP $$ [[] \ app, [] \ r]) m ns
 
   fun makeNum i =
     case IntInf.compare (i, 0) of

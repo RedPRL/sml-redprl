@@ -125,13 +125,13 @@ struct
 
   fun multiPathAbs (us : variable list) m =
     case Abt.out m of
-       O.PATH_ABS $ [[u] \ mu] =>
+       O.ABS $ [[u] \ mu] =>
          multiPathAbs (u :: us) mu
      | _ => (List.rev us, m)
 
   fun multiPathApp m (rs : abt list) =
     case Abt.out m of
-       O.PATH_APP $ [_ \ m, _ \ r] =>
+       O.DIM_APP $ [_ \ m, _ \ r] =>
          multiPathApp m (r :: rs)
      | _ => (m, rs)
 
@@ -222,9 +222,9 @@ struct
          end
      | O.PROJ lbl $ [m] =>
          Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder m]
-     | O.PATH_ABS $ _ =>
+     | O.ABS $ _ =>
          printPathAbs @@ multiPathAbs [] m
-     | O.PATH_APP $ _ =>
+     | O.DIM_APP $ _ =>
          printPathApp @@ multiPathApp m []
      | O.EQUALITY $ args =>
          Atomic.parens @@ expr @@ hvsep @@
