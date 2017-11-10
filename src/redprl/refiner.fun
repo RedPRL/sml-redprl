@@ -389,6 +389,11 @@ struct
      | "path/eq/eta" => Lcf.rule o Path.Eta
      | "path/eq/app" => Lcf.rule o Path.EqApp
      | "path/eq/app/const" => Lcf.rule o Path.EqAppConst
+     | "line/eqtype" => Lcf.rule o Line.EqType
+     | "line/eq/abs" => Lcf.rule o Line.Eq
+     | "line/intro" => Lcf.rule o Line.True
+     | "line/eq/eta" => Lcf.rule o Line.Eta
+     | "line/eq/app" => Lcf.rule o Line.EqApp
      | "eq/eqtype" => Lcf.rule o InternalizedEquality.EqType
      | "eq/eq/ax" => Lcf.rule o InternalizedEquality.Eq
      | "eq/intro" => Lcf.rule o InternalizedEquality.True
@@ -628,7 +633,7 @@ struct
          | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj (* XXX should consult autoSynthesizableNeu *)
          | (Syn.PATH_APP (_, r1), Syn.PATH_APP (_, r2)) =>
            (case (Abt.out r1, Abt.out r2) of 
-               (`_, `_) => Lcf.rule o Path.EqApp
+               (`_, `_) => Lcf.rule o Path.EqApp orelse_ Lcf.rule o Line.EqApp
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
               (* XXX should consult autoSynthesizableNeu *)
          | (Syn.CUST, Syn.CUST) => Lcf.rule o Custom.Eq sign (* XXX should consult autoSynthesizableNeu *)
@@ -662,6 +667,7 @@ struct
            (_, Syn.FUN _) => Lcf.rule o Fun.Eta
          | (_, Syn.RECORD _) => Lcf.rule o Record.Eta
          | (_, Syn.PATH_TY _) => Lcf.rule o Path.Eta
+         | (_, Syn.LINE_TY _) => Lcf.rule o Line.Eta
          | (_, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eta
          | (Machine.VAR z, _) => AutoElim sign z
          | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL])
@@ -754,7 +760,7 @@ struct
          | Syn.S1_REC _ => Lcf.rule o S1.SynthElim
          | Syn.APP _ => Lcf.rule o Fun.SynthApp
          | Syn.PROJ _ => Lcf.rule o Record.SynthProj
-         | Syn.PATH_APP _ => Lcf.rule o Path.SynthApp
+         | Syn.PATH_APP _ => Lcf.rule o Path.SynthApp par Lcf.rule o Line.SynthApp
          | Syn.CUST => Lcf.rule o Custom.Synth sign
          | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
@@ -836,6 +842,7 @@ struct
          | Syn.FUN _ => Lcf.rule o Fun.Elim z
          | Syn.RECORD _ => Lcf.rule o Record.Elim z
          | Syn.PATH_TY _ => Lcf.rule o Path.Elim z
+         | Syn.LINE_TY _ => Lcf.rule o Line.Elim z
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.Elim z
          | Syn.UNIVERSE _ => Universe.Elim z
          | _ => fail @@ E.GENERIC [Fpp.text "elim tactic", TermPrinter.ppTerm ty]

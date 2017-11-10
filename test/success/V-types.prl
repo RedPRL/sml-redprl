@@ -108,16 +108,16 @@ Thm NotIsEquiv : [
   lam b.
   { {`($ Not b), <_> use b}
   , lam {_,p'}.
-        (<i>
-          { `($ Not (hcom 1~>0 bool b
-                     [i=0 [j] (@ p' j)]
-                     [i=1 [j] b]))
-          , <j> `(hcom 1~>j bool b
-                  [i=0 [j] (@ p' j)]
-                  [i=1 [j] b])
-          }
-        );
-        (Bool/contra/inverse p')
+     (<i>
+        { `($ Not (hcom 1~>0 bool b
+                    [i=0 [j] (@ p' j)]
+                    [i=1 [j] b]))
+        , <j> `(hcom 1~>j bool b
+                [i=0 [j] (@ p' j)]
+                [i=1 [j] b])
+        }
+      );
+      auto; (Bool/contra/inverse p')
   }
 ].
 
