@@ -595,9 +595,15 @@ struct
        end
 
      | O.LINE_TY $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
-       let  
+       let
+         val coe = 
+           Syn.intoCoe
+             {dir = dir,
+              ty = (v, tyuv),
+              coercee = Syn.into @@ Syn.PATH_APP (coercee, VarKit.toDim u)}
+         val abs = Syn.into @@ Syn.PATH_ABS (u,coe)
        in
-         ?todo
+         CRITICAL @@ abs || (SymSet.remove syms u, stk)
        end
 
      | O.EQUALITY $ _ || (_, []) => raise Final
