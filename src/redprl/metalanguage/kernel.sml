@@ -21,7 +21,7 @@ struct
       fun alpha i =
         List.nth (xs, i)
         handle Subscript =>
-          Tm.Var.named ("_" ^ Int.toString i)
+          Tm.Var.named ("_" ^ rname ^ "_" ^ Int.toString i)
     in
       (Rules.lookupRule rname alpha jdg, jdg)
     end
