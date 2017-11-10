@@ -579,6 +579,9 @@ struct
          CRITICAL @@ abs || (SymSet.remove syms v, stk)
        end
 
+     | O.LINE_TY $ [[u] \ tyu] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) => ?todo
+     | O.LINE_TY $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) => ?todo
+
      | O.EQUALITY $ _ || (_, []) => raise Final
      | O.EQUALITY $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ Syn.into Syn.AX || (syms, stk)
      | O.EQUALITY $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
