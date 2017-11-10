@@ -97,18 +97,27 @@ struct
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
 
-  fun multiFun (doms : (variable list option * abt) list) m =
+  datatype ('a, 'b) binder = DIM of 'a | TERM of ('a * 'b)
+
+  fun multiFunOrLine (doms : (variable list option, abt) binder list) m =
     case Abt.out m of
        O.FUN $ [_ \ a, [x] \ bx] =>
          if Abt.Var.Ctx.member (Abt.varctx bx) x then
            case doms of
-              (SOME xs, a') :: doms' =>
+              TERM (SOME xs, a') :: doms' =>
                 if Abt.eq (a, a') then
-                  multiFun ((SOME (xs @ [x]), a) :: doms') bx
+                  multiFunOrLine (TERM (SOME (xs @ [x]), a) :: doms') bx
                 else
-                  multiFun ((SOME [x], a) :: doms) bx
-            | _ => multiFun ((SOME [x], a) :: doms) bx
-         else multiFun ((NONE, a) :: doms) bx
+                  multiFunOrLine (TERM (SOME [x], a) :: doms) bx
+            | _ => multiFunOrLine (TERM (SOME [x], a) :: doms) bx
+         else multiFunOrLine (TERM (NONE, a) :: doms) bx
+     | O.LINE_TY $ [[x] \ ax] =>
+         if Abt.Var.Ctx.member (Abt.varctx ax) x then
+           case doms of
+              DIM (SOME xs) :: doms' =>
+                multiFunOrLine (DIM (SOME (xs @ [x])) :: doms') ax
+            | _ => multiFunOrLine (DIM (SOME [x]) :: doms) ax
+         else multiFunOrLine (DIM NONE :: doms) ax
      | _ => (List.rev doms, m)
 
   fun multiLam (xs : variable list) m =
@@ -123,24 +132,26 @@ struct
          multiApp m (n :: ns)
      | _ => (m, ns)
 
-  fun multiPathAbs (us : variable list) m =
+  fun multiAbs (us : variable list) m =
     case Abt.out m of
        O.ABS $ [[u] \ mu] =>
-         multiPathAbs (u :: us) mu
+         multiAbs (u :: us) mu
      | _ => (List.rev us, m)
 
-  fun multiPathApp m (rs : abt list) =
+  fun multiDimApp m (rs : abt list) =
     case Abt.out m of
        O.DIM_APP $ [_ \ m, _ \ r] =>
-         multiPathApp m (r :: rs)
+         multiDimApp m (r :: rs)
      | _ => (m, rs)
 
-  fun printQuant opr (doms, cod) =
+  fun printFunOrLine (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
-      (text opr)
+      (text "->")
         :: List.map
-            (fn (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]
-              | (NONE, a) => ppTerm a)
+            (fn TERM (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]
+              | TERM (NONE, a) => ppTerm a
+              | DIM (SOME xs) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", text "dim"]
+              | DIM NONE => text "dim")
             doms
           @ [ppTerm cod]
 
@@ -152,11 +163,11 @@ struct
     Atomic.parens @@ expr @@ hvsep
       (char #"$" :: ppTerm m :: List.map ppTerm ns)
 
-  and printPathAbs (us, m) =
+  and printAbs (us, m) =
     Atomic.parens @@ expr @@ hvsep @@
       [hvsep [text "abs", symBinding us], align @@ ppTerm m]
 
-  and printPathApp (m, rs) =
+  and printDimApp (m, rs) =
     Atomic.parens @@ expr @@ hvsep
       (char #"@" :: ppTerm m :: List.map ppTerm rs)
 
@@ -187,7 +198,7 @@ struct
      | O.LOOP $ [_ \ r] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppTerm r]
      | O.FUN $ _ =>
-         printQuant "->" @@ multiFun [] m
+         printFunOrLine @@ multiFunOrLine [] m
      | O.LAM $ _ =>
          printLam @@ multiLam [] m
      | O.APP $ _ =>
@@ -223,9 +234,9 @@ struct
      | O.PROJ lbl $ [m] =>
          Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder m]
      | O.ABS $ _ =>
-         printPathAbs @@ multiPathAbs [] m
+         printAbs @@ multiAbs [] m
      | O.DIM_APP $ _ =>
-         printPathApp @@ multiPathApp m []
+         printDimApp @@ multiDimApp m []
      | O.EQUALITY $ args =>
          Atomic.parens @@ expr @@ hvsep @@
            char #"=" :: List.map ppBinder args
