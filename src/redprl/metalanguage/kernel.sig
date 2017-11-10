@@ -11,5 +11,7 @@ sig
   val init : jdg -> proof
   val rule : jdg -> rule * name list -> proof
 
-  val subst : proof * meta -> proof -> proof
+  type action
+  val subst : proof * meta -> action
+  val apply: action list * proof -> action
 end

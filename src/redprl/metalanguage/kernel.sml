@@ -28,10 +28,19 @@ struct
 
   fun concl (_, jdg) = jdg
 
+  datatype action = 
+    subst of proof * meta
+
+  fun apply (acts, prf) = 
+    case acts of 
+       [] => prf
+     | _ => ?todo
+
+(* 
   fun subst (q, x) p =
     let
       val (Lcf.|> (psi, evd), _) = p
     in
       ?todo
-    end
+    end *)
 end
