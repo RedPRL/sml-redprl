@@ -547,6 +547,7 @@ struct
 
      | O.PATH_ABS $ _ || (_, []) => raise Final
      | O.PATH_TY $ _ || (_, []) => raise Final
+     | O.LINE_TY $ _ || (_, []) => raise Final
 
      | O.PATH_APP $ [_ \ m, _ \ r] || (syms, stk) => COMPAT @@ m || (syms, PATH_APP (HOLE, r) :: stk)
      | O.PATH_ABS $ [[x] \ m] || (syms, PATH_APP (HOLE, r) :: stk) => CRITICAL @@ substVar (r, x) m || (syms, stk)
@@ -576,6 +577,33 @@ struct
          val abs = Syn.into @@ Syn.PATH_ABS (u, comu)
        in
          CRITICAL @@ abs || (SymSet.remove syms v, stk)
+       end
+
+     | O.LINE_TY $ [[u] \ tyu] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val utm = VarKit.toDim u
+         fun apu n = Syn.into @@ Syn.PATH_APP (n, utm)
+         val hcomu = 
+           Syn.intoHcom
+             {dir = dir,
+              ty = tyu,
+              cap = apu cap,
+              tubes = mapTubes_ apu tubes}
+         val abs = Syn.into @@ Syn.PATH_ABS (u, hcomu)
+       in
+         CRITICAL @@ abs || (syms, stk)
+       end
+
+     | O.LINE_TY $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+       let
+         val coe = 
+           Syn.intoCoe
+             {dir = dir,
+              ty = (v, tyuv),
+              coercee = Syn.into @@ Syn.PATH_APP (coercee, VarKit.toDim u)}
+         val abs = Syn.into @@ Syn.PATH_ABS (u,coe)
+       in
+         CRITICAL @@ abs || (SymSet.remove syms u, stk)
        end
 
      | O.EQUALITY $ _ || (_, []) => raise Final

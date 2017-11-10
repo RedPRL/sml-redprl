@@ -146,6 +146,7 @@ struct
       case Syn.out ty of 
          Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | Syn.PATH_TY _ => (Lcf.rule o RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+       | Syn.LINE_TY _ => (Lcf.rule o RT.Line.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
     end
 
@@ -214,15 +215,21 @@ struct
   end
 
   local
-    fun pathIntrosBasis sign (u, us) tac _ =
-      Lcf.rule o RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTacComplete sign, autoTacComplete sign])
+    fun lineIntrosBasis sign (u, us) tac _ = 
+      Lcf.rule o RT.Line.True
+        thenl' ([u], [pathIntros sign us tac])
+
+    and pathIntrosBasis sign (u, us) tac _ =
+      Lcf.rule o RT.Path.True
+        thenl' ([u], [pathIntros sign us tac, autoTacComplete sign, autoTacComplete sign])
 
     and pathIntros sign us tac =
       case us of
          [] => tac
        | u :: us =>
            R.Tactical.NormalizeGoalDelegate
-             (pathIntrosBasis sign (u, us) tac) sign
+             (fn alpha => pathIntrosBasis sign (u, us) tac alpha orelse_ lineIntrosBasis sign (u, us) tac alpha)
+             sign
   in
     val pathIntros = pathIntros
   end
