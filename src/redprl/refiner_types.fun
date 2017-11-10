@@ -1206,7 +1206,7 @@ struct
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.KAN
        | K.HCOM => K.HCOM
-       | K.COE => K.KAN
+       | K.COE => K.COE
        | K.STABLE => K.STABLE
 
     fun EqType alpha jdg =
@@ -1221,9 +1221,6 @@ struct
         val a0w = substVar (VarKit.toDim w, u) a0u
         val a1w = substVar (VarKit.toDim w, v) a1v
         val tyGoal = makeEqType (H @> (w, AJ.TERM O.DIM)) ((a0w, a1w), l, ka)
-
-        val a00 = substVar (Syn.into Syn.DIM0, u) a0u
-        val a01 = substVar (Syn.into Syn.DIM1, u) a0u
       in
         |>: tyGoal #> (H, trivial)
       end
