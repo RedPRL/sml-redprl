@@ -187,12 +187,20 @@ struct
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [text "hcom", ppDir (r1, r2), ppTerm ty, ppTerm cap]
              :: [ppVector system]
+     | O.GHCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [text "ghcom", ppDir (r1, r2), ppTerm ty, ppTerm cap]
+             :: [ppVector system]
      | O.COE $ [_ \ r1, _ \ r2, ty, _ \ coercee] =>
          Atomic.parens @@ expr @@ hvsep @@
            [text "coe", ppDir (r1, r2), ppBinder ty, ppTerm coercee]
      | O.COM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [text "com", ppDir (r1, r2), ppBinder ty, ppTerm cap]
+             :: [ppVector system]
+     | O.GCOM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [text "gcom", ppDir (r1, r2), ppBinder ty, ppTerm cap]
              :: [ppVector system]
 
      | O.LOOP $ [_ \ r] =>
