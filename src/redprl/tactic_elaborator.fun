@@ -141,6 +141,7 @@ struct
       case Syn.out ty of 
          Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | Syn.PATH_TY _ => (Lcf.rule o RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+       | Syn.LINE_TY _ => (Lcf.rule o RT.Line.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
     end
 
@@ -210,7 +211,9 @@ struct
 
   local
     fun pathIntrosBasis sign (u, us) tac _ =
-      Lcf.rule o RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+      (Lcf.rule o RT.Path.True orelse_
+       Lcf.rule o RT.Line.True)
+      thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
 
     and pathIntros sign us tac =
       case us of
