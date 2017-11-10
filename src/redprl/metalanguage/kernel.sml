@@ -30,18 +30,22 @@ struct
 
   exception JudgmentMismatch of jdg * jdg
 
-  fun subst (q, x) p =
-    let
-      val (Lcf.|> (psi, evd), mainJdg) = p
-      val (Lcf.|> (qpsi, qevd), qjdg) = q
+  local
+    open Lcf infix |>
+  in
+    fun subst (q, x) p =
+      let
+        val (psi |> evd, mainJdg) = p
+        val (qpsi |> qevd, qjdg) = q
 
-      val jdgx = Lcf.Tl.lookup psi x
-      val _ = if Lcf.J.eq (qjdg, jdgx) then () else raise JudgmentMismatch (qjdg, jdgx)
+        val jdgx = Tl.lookup psi x
+        val _ = if J.eq (qjdg, jdgx) then () else raise JudgmentMismatch (qjdg, jdgx)
 
-      val rho = Env.singleton x qevd
-      val psi' = Lcf.Tl.splice qpsi x (Lcf.Tl.modifyAfter x (Lcf.J.subst rho) psi)
-      val evd' = Lcf.L.subst rho evd
-    in
-      (Lcf.|> (psi', evd'), mainJdg)
-    end
+        val rho = Env.singleton x qevd
+        val psi' = Tl.splice qpsi x (Tl.modifyAfter x (J.subst rho) psi)
+        val evd' = L.subst rho evd
+      in
+        (psi' |> evd', mainJdg)
+      end
+  end
 end
