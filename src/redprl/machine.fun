@@ -579,8 +579,26 @@ struct
          CRITICAL @@ abs || (SymSet.remove syms v, stk)
        end
 
-     | O.LINE_TY $ [[u] \ tyu] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) => ?todo
-     | O.LINE_TY $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) => ?todo
+     | O.LINE_TY $ [[u] \ tyu] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val utm = VarKit.toDim u
+         fun apu n = Syn.into @@ Syn.PATH_APP (n, utm)
+         val hcomu = 
+           Syn.intoHcom
+             {dir = dir,
+              ty = tyu,
+              cap = apu cap,
+              tubes = mapTubes_ apu tubes}
+         val abs = Syn.into @@ Syn.PATH_ABS (u, hcomu)
+       in
+         CRITICAL @@ abs || (syms, stk)
+       end
+
+     | O.LINE_TY $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+       let  
+       in
+         ?todo
+       end
 
      | O.EQUALITY $ _ || (_, []) => raise Final
      | O.EQUALITY $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ Syn.into Syn.AX || (syms, stk)
