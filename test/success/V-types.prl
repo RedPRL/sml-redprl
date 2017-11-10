@@ -108,7 +108,7 @@ Thm NotIsEquiv : [
   lam b.
   { {`($ Not b), <_> use b}
   , lam {_,p'}.
-      fresh i:dim -> refine path/intro; [
+     (<i>
         { `($ Not (hcom 1~>0 bool b
                     [i=0 [j] (@ p' j)]
                     [i=1 [j] b]))
@@ -116,7 +116,7 @@ Thm NotIsEquiv : [
                 [i=0 [j] (@ p' j)]
                 [i=1 [j] b])
         }
-      ];
+      );
       auto; (Bool/contra/inverse p')
   }
 ].
