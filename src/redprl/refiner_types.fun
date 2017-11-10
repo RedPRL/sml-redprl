@@ -1754,7 +1754,7 @@ struct
       fn K.DISCRETE => E.raiseError @@
           E.NOT_APPLICABLE (Fpp.text "V.kindConstraintOnEnds", Fpp.text "DISCRETE")
        | K.KAN => (K.KAN, K.KAN)
-       | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
+       | K.HCOM => (K.HCOM, K.HCOM) (* XXX more research needed *)
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)
        | K.STABLE => (K.STABLE, K.STABLE)
 
