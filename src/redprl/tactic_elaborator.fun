@@ -49,6 +49,10 @@ struct
         Lcf.all Lcf.idn state
       end
 
+  fun fail msg = 
+    fn alpha => fn state => 
+      RedPrlError.raiseError (RedPrlError.GENERIC [Fpp.text msg])
+
   fun hyp z =
     Lcf.rule o R.Hyp.Project z
     orelse_
@@ -59,6 +63,7 @@ struct
 
   val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
+  fun autoTacComplete sign = autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal"
 
   fun unfoldCustomOperator sign (opid, args) = 
     Sig.unfoldCustomOperator (Sig.lookup sign opid) args
@@ -168,7 +173,7 @@ struct
            | NONE => idn
 
         val fieldTactics = List.map (fn ((lbl, _), _) => tacticForLabel lbl) fields
-        val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTac sign)
+        val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTacComplete sign)
       in
         Lcf.rule o RT.Record.True thenl fieldTactics @ famTactics
       end
@@ -195,7 +200,7 @@ struct
              O.PAT_VAR _ => intros
            | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
       in
-        Lcf.rule o RT.Fun.True thenl' ([name], [continue, autoTac sign])
+        Lcf.rule o RT.Fun.True thenl' ([name], [continue, autoTacComplete sign])
       end
 
     and funIntros sign (pats, names) tac =
@@ -210,7 +215,7 @@ struct
 
   local
     fun pathIntrosBasis sign (u, us) tac _ =
-      Lcf.rule o RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+      Lcf.rule o RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTacComplete sign, autoTacComplete sign])
 
     and pathIntros sign us tac =
       case us of
@@ -223,7 +228,7 @@ struct
   end
 
   fun exactAuto sign m = 
-    R.Exact m thenl [autoTac sign]
+    R.Exact m thenl [autoTacComplete sign]
 
   fun cutLemma sign opid ar (args : abt bview list) (pattern, names) appTacs tac =
     let
@@ -269,7 +274,7 @@ struct
      | O.RULE_ID $ _ => idn
      | O.RULE_AUTO_STEP $ _ => R.AutoStep sign
      | O.RULE_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
-     | O.RULE_REWRITE $ [_ \ sel, _ \ tm] => Lcf.rule o R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
+     | O.RULE_REWRITE $ [_ \ sel, _ \ tm] => Lcf.rule o R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTacComplete sign, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign])
      | O.RULE_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
      | O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
      | O.RULE_SYMMETRY $ _ => R.Symmetry
@@ -285,7 +290,7 @@ struct
      | O.DEV_RECORD_INTRO lbls $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.DEV_PATH_INTRO _ $ [us \ tm] => pathIntros sign us (tactic sign env tm)
      | O.DEV_BOOL_ELIM $ [_ \ var, _ \ tm1, _ \ tm2] => elimRule sign (VarKit.fromTerm var) [] [tactic sign env tm1, tactic sign env tm2]
-     | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
+     | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign]
      | O.DEV_APPLY_HYP pattern $ [_ \ var, _ \ vec, names \ tm'] =>
        let
          val z = VarKit.fromTerm (Syntax.unpackAny var)
