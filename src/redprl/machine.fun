@@ -547,6 +547,7 @@ struct
 
      | O.PATH_ABS $ _ || (_, []) => raise Final
      | O.PATH_TY $ _ || (_, []) => raise Final
+     | O.LINE_TY $ _ || (_, []) => raise Final
 
      | O.PATH_APP $ [_ \ m, _ \ r] || (syms, stk) => COMPAT @@ m || (syms, PATH_APP (HOLE, r) :: stk)
      | O.PATH_ABS $ [[x] \ m] || (syms, PATH_APP (HOLE, r) :: stk) => CRITICAL @@ substVar (r, x) m || (syms, stk)
