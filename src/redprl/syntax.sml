@@ -58,6 +58,7 @@ struct
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
    | PATH_TY of (variable * 'a) * 'a * 'a | PATH_ABS of variable * 'a | PATH_APP of 'a * 'a
+   | LINE_TY of variable * 'a
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
@@ -332,6 +333,7 @@ struct
        | TUPLE_UPDATE ((lbl, n), m) => O.TUPLE_UPDATE lbl $$ [[] \ n, [] \ m]
 
        | PATH_TY ((u, a), m, n) => O.PATH_TY $$ [[u] \ a, [] \ m, [] \ n]
+       | LINE_TY (u, a) => O.LINE_TY $$ [[u] \ a]
        | PATH_ABS (u, m) => O.PATH_ABS $$ [[u] \ m]
        | PATH_APP (m, r) => O.PATH_APP $$ [[] \ m, [] \ r]
 
@@ -435,6 +437,7 @@ struct
        | O.TUPLE_UPDATE lbl $ [_ \ n, _ \ m] => TUPLE_UPDATE ((lbl, n), m)
 
        | O.PATH_TY $ [[u] \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
+       | O.LINE_TY $ [[u] \ a] => LINE_TY (u, a)
        | O.PATH_ABS $ [[u] \ m] => PATH_ABS (u, m)
        | O.PATH_APP $ [_ \ m, _ \ r] => PATH_APP (m, r)
 

@@ -309,7 +309,7 @@ end
  | S1 | BASE | LOOP | S1_REC
  | LAMBDA | DOLLAR_SIGN
  | RECORD | TIMES | TUPLE | BANG
- | PATH | ABS | AT_SIGN
+ | PATH | LINE | ABS | AT_SIGN
  | BOX | CAP
  | V | VIN | VPROJ
  | UNIVERSE
@@ -625,6 +625,8 @@ regularMultinaryOperator
   | S1_REC (O.S1_REC)
   (* paths *)
   | PATH (O.PATH_TY)
+  (* lines *)
+  | LINE (O.LINE_TY)
   (* equality *)
   | EQUALS (O.EQUALITY)
 
