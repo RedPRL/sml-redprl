@@ -47,5 +47,6 @@ struct
       in
         (psi' |> evd', mainJdg)
       end
+      handle Tl.Absent => p
   end
 end
