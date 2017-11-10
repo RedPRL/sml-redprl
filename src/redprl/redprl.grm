@@ -95,14 +95,23 @@ struct
     | EQUAL => O.ZERO $$ []
     | LESS => O.NEGSUCC $$ [[] \ makeNum ((~ i) - 1)]
 
-  fun flatten xsys =
-    List.concat (List.map (fn (xs, y) => List.map (fn x => (x, y)) xs) xsys)
+  datatype ('a, 'b) binder = DIM of 'a | TERM of ('a * 'b)
 
-  fun makeQuant opr [] cod = cod
-    | makeQuant opr ((x, a) :: doms) cod =
-       opr $$ [[] \ a, [Option.getOpt (x, "_")] \ makeQuant opr doms cod]
+  fun flatten (quant : ('a list,'b) binder list) : ('a,'b) binder list =
+    let
+      fun expand (DIM vars) = List.map DIM vars
+        | expand (TERM (vars, term)) = List.map (fn var => TERM (var, term)) vars
+    in
+      List.concat (List.map expand quant)
+    end
 
-  val makeFun = makeQuant O.FUN o flatten
+  fun makeFunOrLineAux [] cod = cod
+    | makeFunOrLineAux (TERM (x, a) :: doms) cod =
+       O.FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ makeFunOrLineAux doms cod]
+    | makeFunOrLineAux (DIM x :: doms) cod =
+       O.LINE_TY $$ [[Option.getOpt (x, "_")] \ makeFunOrLineAux doms cod]
+
+  val makeFunOrLine = makeFunOrLineAux o flatten
 
   structure LabelSet = SplaySet (structure Elem = StringOrdered)
 
@@ -121,7 +130,11 @@ struct
 
   fun makeRecordAux pos tbs =
     let
-      val fields = ListUtil.mapWithIndex (fn (_, (SOME x, ty)) => (x, ty) | (i, (NONE, ty)) => (O.indexToLabel i, ty)) (flatten tbs)
+      val fields = ListUtil.mapWithIndex
+        (fn (_, TERM (SOME x, ty)) => (x, ty)
+          | (i, TERM (NONE, ty)) => (O.indexToLabel i, ty)
+          | (_, DIM _) => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "No dimension binders in record types."]))
+        (flatten tbs)
       val init = {labels = [], args = []}
       val {labels, args} =
         List.foldl
@@ -139,7 +152,7 @@ struct
 
   fun makeProd pos (tbs, ty) =
     let
-      val (_, args) = makeRecordAux pos (tbs @ [([NONE], ty)])
+      val (_, args) = makeRecordAux pos (tbs @ [TERM ([NONE], ty)])
       val lbls = ListUtil.mapWithIndex (O.indexToLabel o #1) args
     in
       O.RECORD lbls $$ args
@@ -385,9 +398,11 @@ end
  | customOpTerm of string * ast abs list
 
 
- | typedBinder of string option list * ast
- | typedBinders of (string option list * ast) list
- | quantifierData of (string option list * ast) list * ast
+ | typedBinder of (string option list, ast) Multi.binder
+ | typedBinders of (string option list, ast) Multi.binder list
+ | dimBinder of (string option list, ast) Multi.binder
+ | arrowQuantifierData of (string option list, ast) Multi.binder list * ast
+ | timesQuantifierData of (string option list, ast) Multi.binder list * ast
  | field of string * ast
  | fields of (string * ast) list
 
@@ -554,15 +569,25 @@ metavar
   : HASH ident (ident)
 
 typedBinder
-  : LSQUARE boundVars COLON term RSQUARE ((boundVars, term))
+  : LSQUARE boundVars COLON term RSQUARE (Multi.TERM (boundVars, term))
 
 typedBinders
   : typedBinder ([typedBinder])
   | typedBinder typedBinders (typedBinder :: typedBinders)
 
-quantifierData
-  : typedBinder quantifierData ((typedBinder :: #1 quantifierData), #2 quantifierData)
-  | term quantifierData ((([NONE], term) :: #1 quantifierData), #2 quantifierData)
+dimBinder
+  : LSQUARE boundVars COLON DIM RSQUARE (Multi.DIM boundVars)
+
+arrowQuantifierData
+  : typedBinder arrowQuantifierData ((typedBinder :: #1 arrowQuantifierData), #2 arrowQuantifierData)
+  | dimBinder arrowQuantifierData ((dimBinder :: #1 arrowQuantifierData), #2 arrowQuantifierData)
+  | term arrowQuantifierData ((Multi.TERM ([NONE], term) :: #1 arrowQuantifierData), #2 arrowQuantifierData)
+  | DIM arrowQuantifierData ((Multi.DIM [NONE] :: #1 arrowQuantifierData), #2 arrowQuantifierData)
+  | term ([], term)
+
+timesQuantifierData
+  : typedBinder timesQuantifierData ((typedBinder :: #1 timesQuantifierData), #2 timesQuantifierData)
+  | term timesQuantifierData ((Multi.TERM ([NONE], term) :: #1 timesQuantifierData), #2 timesQuantifierData)
   | term ([], term)
 
 field
@@ -690,12 +715,12 @@ rawTermAndTac
   | NUMERAL (Multi.makeNum NUMERAL)
 
   (* function types *)
-  | LPAREN RIGHT_ARROW quantifierData RPAREN (Multi.makeFun (#1 quantifierData) (#2 quantifierData))
+  | LPAREN RIGHT_ARROW arrowQuantifierData RPAREN (Multi.makeFunOrLine (#1 arrowQuantifierData) (#2 arrowQuantifierData))
   | LPAREN LAMBDA LSQUARE boundVars RSQUARE term RPAREN (Multi.makeLam boundVars term)
   | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 
   (* pair types *)
-  | LPAREN TIMES quantifierData RPAREN (Multi.makeProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) quantifierData)
+  | LPAREN TIMES timesQuantifierData RPAREN (Multi.makeProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) timesQuantifierData)
 
   (* dependent record types *)
   | RECORD (Multi.makeRecord (Pos.pos (RECORD1left fileName) (RECORD1right fileName)) [])
