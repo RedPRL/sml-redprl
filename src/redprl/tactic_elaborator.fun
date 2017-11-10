@@ -210,17 +210,21 @@ struct
   end
 
   local
-    fun pathIntrosBasis sign (u, us) tac _ =
-      (Lcf.rule o RT.Path.True orelse_
-       Lcf.rule o RT.Line.True)
-      thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+    fun lineIntrosBasis sign (u, us) tac _ = 
+      Lcf.rule o RT.Line.True
+        thenl' ([u], [pathIntros sign us tac])
+
+    and pathIntrosBasis sign (u, us) tac _ =
+      Lcf.rule o RT.Path.True
+        thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
 
     and pathIntros sign us tac =
       case us of
          [] => tac
        | u :: us =>
            R.Tactical.NormalizeGoalDelegate
-             (pathIntrosBasis sign (u, us) tac) sign
+             (fn alpha => pathIntrosBasis sign (u, us) tac alpha orelse_ lineIntrosBasis sign (u, us) tac alpha)
+             sign
   in
     val pathIntros = pathIntros
   end
