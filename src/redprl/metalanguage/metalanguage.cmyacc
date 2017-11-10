@@ -1,0 +1,101 @@
+name MetalanguageParseFn
+
+terminal LET of pos
+terminal FN of pos
+terminal VAL of pos
+terminal IN of pos
+terminal BY of pos
+terminal DOUBLE_RIGHT_ARROW of pos
+terminal LSQUARE of pos
+terminal RSQUARE of pos
+terminal LBRACE of pos
+terminal RBRACE of pos
+terminal LPAREN of pos
+terminal RPAREN of pos
+terminal COMMA of pos
+terminal SEMI of pos
+terminal COLON of pos
+terminal EQUALS of pos
+terminal BEGIN of pos
+terminal END of pos
+terminal IDENT of pos_string
+terminal PROVE of pos
+terminal PROJ1 of pos
+terminal PROJ2 of pos
+terminal BACKTICK of pos
+terminal REFINE of pos
+terminal GOAL of pos
+terminal PUSH of pos
+terminal PRINT of pos
+terminal EXACT of pos
+terminal EXP of pos
+terminal DIM of pos
+
+start Exp
+
+nonterminal Atm: exp =
+  1:IDENT => var
+  1:GOAL => goal
+  1:LPAREN 2:RPAREN => nil_
+  1:LPAREN 2:Exp COMMA 3:Exp 4:RPAREN => pair
+  1:PROJ1 => proj1
+  1:PROJ2 => proj2
+  1:LET 2:Decls IN 3:Exp 4:END => let_
+  1:PROVE 2:Exp BY 3:Exp 4:END => prove
+  LPAREN 1:Exp RPAREN => identity
+  BEGIN 1:Exp END => identity
+  1:BACKTICK 2:OExp => quote
+  1:REFINE 2:IDENT => refine
+  1:EXACT 2:Atm => exact
+  1:PUSH 2:SortedNames IN 3:Exp 4:END => push
+  1:PRINT 2:Atm => print
+
+nonterminal Decl: decl =
+  VAL 1:IDENT EQUALS 2:Exp => declVal
+
+nonterminal Decls: decls =
+  1:Decl 2:Decls => declsCons
+  => declsNil
+
+nonterminal App: exp =
+  1:Atm => identity
+  1:App 2:Atm => app
+
+nonterminal SeqExp: exp =
+  1:App => identity
+  1:SeqExp SEMI => identity
+  1:SeqExp SEMI 2:App => seqExpSnoc
+  1:SeqExp SEMI LSQUARE 2:Exps 3:RSQUARE => seqExpSnocFork
+
+nonterminal Exp: exp = 
+  1:SeqExp => identity
+  1:FN 2:IDENT DOUBLE_RIGHT_ARROW 3:Exp => fn_
+
+nonterminal Exps: exps = 
+  1:Exp COMMA 2:Exps => expsCons
+  1:Exp => expsSingl
+  => expsNil
+
+nonterminal SortedNames: sorted_names =
+  1:IDENT COLON 2:OSort COMMA 3:SortedNames => sortedNamesCons
+  1:IDENT COLON 2:OSort => sortedNamesSingl
+  => sortedNamesNil
+
+
+nonterminal OExp: oexp =
+  1:IDENT => oident
+  1:LPAREN 2:OExps 3:RPAREN => ogroup
+  1:LSQUARE 2:OIdents 3:RSQUARE => obinding
+  1:LBRACE 2:OIdents 3:RBRACE => obinding
+
+nonterminal OExps: oexps =
+  1:OExp 2:OExps => oexpsCons
+  => oexpsNil
+
+nonterminal OIdents: names = 
+  1:IDENT 2:OIdents => namesCons
+  => namesNil
+
+nonterminal OSort: osort = 
+  EXP => osortExp
+  DIM => osortDim

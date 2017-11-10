@@ -98,5 +98,19 @@ in
     structure RedPrlLrVals
     structure FinalPrinter
     structure Fpp
+    functor RedPrlMachine
+    structure RedPrlAbt
+    structure RedPrlAst
+    structure AstToAbt
+    structure RedPrlCategoricalJudgment
+    structure RedPrlSequent
+    structure Lcf
+    functor Refiner
+    structure UniversalSpread
+    functor RedPrlTactical
+    structure Syntax
+    structure FppRenderPlainText
+    structure TermPrinter
+    structure RedPrlSequentData
   end
 end

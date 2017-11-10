@@ -1,0 +1,53 @@
+name MetalanguageLexFn
+alphabet 128
+
+set digit = (range '0 '9)
+set posdigit = (range '1 '9)
+set id_start = (| '_ '\ '/ '- (range 'a 'z 'A 'Z))
+set id_cont = (| id_start digit '_ '')
+set white = (| 32 9 10 13)  /* space, tab, lf, cr */
+set notnewln = (~ 10)
+
+regexp ident = (seq id_start (* id_cont))
+regexp ws = (+ white)
+regexp comment = (seq '/ '/ (* notnewln))
+regexp number = (| '0 (seq posdigit (* digit)))
+
+function lexMain: t =
+  eos => eof
+  "fn" => fn_
+  "let" => let_
+  "val" => val_
+  "in" => in_
+  "by" => by
+  "begin" => begin
+  "end" => end_
+  "#1" => proj1
+  "#2" => proj2
+  "print" => print
+  "goal" => goal
+  "prove" => prove
+  "push" => push
+  "exact" => exact
+  "refine" => refine
+  "exp" => exp
+  "dim" => dim
+  ws => skip
+  comment => skip
+  (seq '= '>) => double_right_arrow
+  '[ => lsquare
+  '] => rsquare
+  '( => lparen
+  ') => rparen
+  '{ => lbrace
+  '} => rbrace
+  ', => comma
+  '; => semi
+  ': => colon
+  '= => equals
+  '` => backtick
+  ident => ident
+
+  any => error
+  epsilon => error
+  

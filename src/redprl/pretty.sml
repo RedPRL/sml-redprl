@@ -30,6 +30,7 @@ sig
   type t = RedPrlAbt.abt
   val toString : t -> string
   val ppTerm : t -> Fpp.doc
+  val ppAbs : RedPrlAbt.abs -> Fpp.doc
   val ppBinder : t RedPrlAbt.bview -> Fpp.doc
   val ppSort : RedPrlAbt.sort -> Fpp.doc
   val ppValence : RedPrlAbt.valence -> Fpp.doc
@@ -275,6 +276,9 @@ struct
     case xs of
         [] => atLevel 10 @@ ppTerm m
       | _ => grouped @@ hvsep [varBinding xs, align @@ ppTerm m]
+
+  and ppAbs abs = 
+    ppBinder (outb abs)
 
   and symBinding us =
     unlessEmpty us @@

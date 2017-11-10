@@ -48,5 +48,5 @@ sig
   end
 
   type rule_name = string
-  val lookupRule : rule_name -> tactic
+  val lookupRule : rule_name -> rule
 end

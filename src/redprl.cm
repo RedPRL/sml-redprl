@@ -9,6 +9,25 @@ Library
   structure FinalPrinter
   structure Fpp
   functor RedPrlMachine
+  structure RedPrlSortData
+  structure RedPrlOpData
+
+  structure RedPrlLevel
+  structure RedPrlKind
+  structure RedPrlAbt
+  structure RedPrlAst
+  structure AstToAbt
+  structure RedPrlAtomicJudgment
+  structure RedPrlSequent
+  structure Lcf
+  functor Refiner
+  functor RedPrlTactical
+  structure Syntax
+  structure FppRenderPlainText
+  structure TermPrinter
+  structure RedPrlSequentData
+
+  structure NameSeq
 is
   $/basis.cm
   $/ml-yacc-lib.cm

@@ -1,4 +1,31 @@
 Group is
-  $/basis.cm
+  ../lib/cmlib/cmlib.cm
+  ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-typed-abts/abt-unify.cm (bind:(anchor:libs value:../lib/))
+  ../lib/sml-dependent-lcf/dependent_lcf.cm (bind:(anchor:libs value:../lib/))
+
   redprl.cm (bind:(anchor:libs value:../lib/))
   frontend/frontend.sml
+
+  redprl/metalanguage/redexpr.sig
+  redprl/metalanguage/redexpr.sml
+
+  redprl/metalanguage/syntax.sig
+  redprl/metalanguage/statics.sig
+
+  redprl/metalanguage/metalanguage.cmyacc.sml
+  redprl/metalanguage/metalanguage.cmlex.sml
+
+  redprl/metalanguage/parser.sml
+  redprl/metalanguage/lexer.sml
+
+  redprl/metalanguage/kernel.sig
+  redprl/metalanguage/kernel.sml
+
+  redprl/metalanguage/core_syntax.sig
+
+
+  redprl/metalanguage/syntax.sml
+  redprl/metalanguage/statics.fun
+  redprl/metalanguage/evaluator.fun
+  redprl/metalanguage/ml_frontend.sml
