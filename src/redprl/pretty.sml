@@ -171,28 +171,28 @@ struct
     Atomic.parens @@ expr @@ hvsep
       (char #"@" :: ppTerm m :: List.map ppTerm rs)
 
-  and ppComHead name (r, r') =
-    seq [text name, Atomic.braces @@ seq [ppTerm r, text "~>", ppTerm r']]
+  and ppDir (r, r') = seq [ppTerm r, text "~>", ppTerm r']
 
-  and ppComHeadBackward name (r, r') =
-    seq [text name, Atomic.braces @@ seq [ppTerm r, text "<~", ppTerm r']]
+  and ppBackwardDir (r, r') = seq [ppTerm r, text "<~", ppTerm r']
 
   and ppTerm m =
     case Abt.out m of
        `x => ppVar x
      | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "fcom" (r1, r2), ppTerm cap]
+           hvsep [text "fcom", ppDir (r1, r2), ppTerm cap]
              :: [ppVector system]
 
      | O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "hcom" (r1, r2), ppTerm ty, ppTerm cap]
+           hvsep [text "hcom", ppDir (r1, r2), ppTerm ty, ppTerm cap]
              :: [ppVector system]
-
+     | O.COE $ [_ \ r1, _ \ r2, ty, _ \ coercee] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           [text "coe", ppDir (r1, r2), ppBinder ty, ppTerm coercee]
      | O.COM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "com" (r1, r2), ppBinder ty, ppTerm cap]
+           hvsep [text "com", ppDir (r1, r2), ppBinder ty, ppTerm cap]
              :: [ppVector system]
 
      | O.LOOP $ [_ \ r] =>
@@ -242,8 +242,12 @@ struct
            char #"=" :: List.map ppBinder args
      | O.BOX $ [_ \ r1, _ \ r2, cap, _ \ boundaries] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "box" (r1, r2), ppBinder cap]
+           hvsep [text "box", ppDir (r1, r2), ppBinder cap]
              :: [ppVector boundaries]
+     | O.CAP $ [_ \ r1, _ \ r2, coercee, _ \ tubes] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [text "cap", ppBackwardDir (r1, r2), ppBinder coercee]
+             :: [ppVector tubes]
      | O.V $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "V" :: List.map ppBinder args
      | O.VIN $ args =>
@@ -253,6 +257,8 @@ struct
      | O.UNIVERSE $ [_ \ l, _ \ k] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l, ppTerm k]
 
+     | O.DIM0 $ _ => char #"0"
+     | O.DIM1 $ _ => char #"1"
      | O.MK_TUBE $ [_ \ r1, _ \ r2, [u] \ mu]  => 
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
