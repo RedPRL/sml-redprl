@@ -12,7 +12,6 @@ Group is
 
   redprl/metalanguage/syntax.sig
   redprl/metalanguage/statics.sig
-  redprl/metalanguage/monad.sig
 
   redprl/metalanguage/metalanguage.cmyacc.sml
   redprl/metalanguage/metalanguage.cmlex.sml

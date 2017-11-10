@@ -1,12 +1,12 @@
 structure Kernel :> KERNEL = 
 struct
   structure Tm = RedPrlAbt
+  structure Env = Tm.Metavar.Ctx
 
   type jdg = Lcf.jdg
   type meta = Lcf.L.var
   type name = Tm.variable
   type proof = jdg Lcf.state * jdg
-
   type rule = string
 
   exception todo fun ?e = raise e
@@ -28,19 +28,20 @@ struct
 
   fun concl (_, jdg) = jdg
 
-  datatype action = 
-    subst of proof * meta
+  exception JudgmentMismatch of jdg * jdg
 
-  fun apply (acts, prf) = 
-    case acts of 
-       [] => prf
-     | _ => ?todo
-
-(* 
   fun subst (q, x) p =
     let
-      val (Lcf.|> (psi, evd), _) = p
+      val (Lcf.|> (psi, evd), mainJdg) = p
+      val (Lcf.|> (qpsi, qevd), qjdg) = q
+
+      val jdgx = Lcf.Tl.lookup psi x
+      val _ = if Lcf.J.eq (qjdg, jdgx) then () else raise JudgmentMismatch (qjdg, jdgx)
+
+      val rho = Env.singleton x qevd
+      val psi' = Lcf.Tl.splice qpsi x (Lcf.Tl.modifyAfter x (Lcf.J.subst rho) psi)
+      val evd' = Lcf.L.subst rho evd
     in
-      ?todo
-    end *)
+      (Lcf.|> (psi', evd'), mainJdg)
+    end
 end
