@@ -411,6 +411,8 @@ struct
      | "hcom/eq" => Lcf.rule o HCom.Eq
      | "hcom/eq/cap" => Lcf.rule o HCom.EqCapL
      | "hcom/eq/tube" => Lcf.rule o HCom.EqTubeL
+     | "coe/eq" => Lcf.rule o Coe.Eq
+     | "coe/eq/cap" => Lcf.rule o Coe.EqCapL
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
@@ -482,7 +484,7 @@ struct
        | Syn.S1_REC _ => true
        | Syn.APP (f, _) => autoSynthesizableNeu sign f
        | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
-       | Syn.PATH_APP (l, _) => autoSynthesizableNeu sign l
+       | Syn.DIM_APP (l, _) => autoSynthesizableNeu sign l
        | Syn.CUST => true (* XXX should check the signature *)
        | _ => false
   in
@@ -518,7 +520,8 @@ struct
          | (Syn.S1, Syn.S1) => Lcf.rule o S1.EqType
          | (Syn.FUN _, Syn.FUN _) => Lcf.rule o Fun.EqType
          | (Syn.RECORD _, Syn.RECORD _) => Lcf.rule o Record.EqType
-         | (Syn.PATH_TY _, Syn.PATH_TY _) => Lcf.rule o Path.EqType
+         | (Syn.PATH _, Syn.PATH _) => Lcf.rule o Path.EqType
+         | (Syn.LINE _, Syn.LINE _) => Lcf.rule o Line.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.EqType
          | (Syn.FCOM _, Syn.FCOM _) => Lcf.rule o FormalComposition.EqType
          | (Syn.V _, Syn.V _) => Lcf.rule o V.EqType
@@ -538,7 +541,7 @@ struct
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqTypeApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `!`"
-         | (Syn.PATH_APP (_, _), Syn.PATH_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
+         | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
          | (Syn.CUST, Syn.CUST) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with custom operators"
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
@@ -607,7 +610,8 @@ struct
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => Lcf.rule o S1.EqFCom
          | (_, _, Syn.FUN _) => Lcf.rule o Fun.Eq
          | (_, _, Syn.RECORD _) => Lcf.rule o Record.Eq
-         | (_, _, Syn.PATH_TY _) => Lcf.rule o Path.Eq
+         | (_, _, Syn.PATH _) => Lcf.rule o Path.Eq
+         | (_, _, Syn.LINE _) => Lcf.rule o Line.Eq
          | (_, _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eq
          | (_, _, Syn.FCOM _) => Lcf.rule o FormalComposition.Eq
          | (_, _, Syn.V _) => Lcf.rule o V.Eq
@@ -631,7 +635,7 @@ struct
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj (* XXX should consult autoSynthesizableNeu *)
-         | (Syn.PATH_APP (_, r1), Syn.PATH_APP (_, r2)) =>
+         | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>
            (case (Abt.out r1, Abt.out r2) of 
                (`_, `_) => Lcf.rule o Path.EqApp orelse_ Lcf.rule o Line.EqApp
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
@@ -666,8 +670,8 @@ struct
         (case (blocker, Syn.out ty) of
            (_, Syn.FUN _) => Lcf.rule o Fun.Eta
          | (_, Syn.RECORD _) => Lcf.rule o Record.Eta
-         | (_, Syn.PATH_TY _) => Lcf.rule o Path.Eta
-         | (_, Syn.LINE_TY _) => Lcf.rule o Line.Eta
+         | (_, Syn.PATH _) => Lcf.rule o Path.Eta
+         | (_, Syn.LINE _) => Lcf.rule o Line.Eta
          | (_, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eta
          | (Machine.VAR z, _) => AutoElim sign z
          | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL])
@@ -723,11 +727,11 @@ struct
            (_, Machine.REDEX, _, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, _, _, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
-         | (Syn.PATH_APP (_, r), _, _, _) => 
+         | (Syn.DIM_APP (_, r), _, _, _) =>
            (case Abt.out r of 
               `_ => kont ((m, n), ty)
              | _ => Lcf.rule o Path.EqAppConst)
-         | (_, _, Syn.PATH_APP (_, r), _) =>
+         | (_, _, Syn.DIM_APP (_, r), _) =>
            (case Abt.out r of 
               `_ => kont ((m, n), ty)
              | _ => CatJdgSymmetry then_ Lcf.rule o Path.EqAppConst)
@@ -760,7 +764,7 @@ struct
          | Syn.S1_REC _ => Lcf.rule o S1.SynthElim
          | Syn.APP _ => Lcf.rule o Fun.SynthApp
          | Syn.PROJ _ => Lcf.rule o Record.SynthProj
-         | Syn.PATH_APP _ => Lcf.rule o Path.SynthApp par Lcf.rule o Line.SynthApp
+         | Syn.DIM_APP _ => Lcf.rule o Path.SynthApp par Lcf.rule o Line.SynthApp
          | Syn.CUST => Lcf.rule o Custom.Synth sign
          | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
@@ -773,7 +777,7 @@ struct
         case (Syn.out u, canonicity sign u) of
            (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.CANONICAL) => Lcf.rule o Universe.SubUniverse
-         | (Syn.PATH_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
+         | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
          | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 
@@ -841,8 +845,8 @@ struct
          | Syn.S1 => Lcf.rule o S1.Elim z
          | Syn.FUN _ => Lcf.rule o Fun.Elim z
          | Syn.RECORD _ => Lcf.rule o Record.Elim z
-         | Syn.PATH_TY _ => Lcf.rule o Path.Elim z
-         | Syn.LINE_TY _ => Lcf.rule o Line.Elim z
+         | Syn.PATH _ => Lcf.rule o Path.Elim z
+         | Syn.LINE _ => Lcf.rule o Line.Elim z
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.Elim z
          | Syn.UNIVERSE _ => Universe.Elim z
          | _ => fail @@ E.GENERIC [Fpp.text "elim tactic", TermPrinter.ppTerm ty]

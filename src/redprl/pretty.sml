@@ -97,18 +97,27 @@ struct
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
 
-  fun multiFun (doms : (variable list option * abt) list) m =
+  datatype ('a, 'b) binder = DIM of 'a | TERM of ('a * 'b)
+
+  fun multiFunOrLine (doms : (variable list option, abt) binder list) m =
     case Abt.out m of
        O.FUN $ [_ \ a, [x] \ bx] =>
          if Abt.Var.Ctx.member (Abt.varctx bx) x then
            case doms of
-              (SOME xs, a') :: doms' =>
+              TERM (SOME xs, a') :: doms' =>
                 if Abt.eq (a, a') then
-                  multiFun ((SOME (xs @ [x]), a) :: doms') bx
+                  multiFunOrLine (TERM (SOME (xs @ [x]), a) :: doms') bx
                 else
-                  multiFun ((SOME [x], a) :: doms) bx
-            | _ => multiFun ((SOME [x], a) :: doms) bx
-         else multiFun ((NONE, a) :: doms) bx
+                  multiFunOrLine (TERM (SOME [x], a) :: doms) bx
+            | _ => multiFunOrLine (TERM (SOME [x], a) :: doms) bx
+         else multiFunOrLine (TERM (NONE, a) :: doms) bx
+     | O.LINE $ [[x] \ ax] =>
+         if Abt.Var.Ctx.member (Abt.varctx ax) x then
+           case doms of
+              DIM (SOME xs) :: doms' =>
+                multiFunOrLine (DIM (SOME (xs @ [x])) :: doms') ax
+            | _ => multiFunOrLine (DIM (SOME [x]) :: doms) ax
+         else multiFunOrLine (DIM NONE :: doms) ax
      | _ => (List.rev doms, m)
 
   fun multiLam (xs : variable list) m =
@@ -123,24 +132,26 @@ struct
          multiApp m (n :: ns)
      | _ => (m, ns)
 
-  fun multiPathAbs (us : variable list) m =
+  fun multiAbs (us : variable list) m =
     case Abt.out m of
-       O.PATH_ABS $ [[u] \ mu] =>
-         multiPathAbs (u :: us) mu
+       O.ABS $ [[u] \ mu] =>
+         multiAbs (u :: us) mu
      | _ => (List.rev us, m)
 
-  fun multiPathApp m (rs : abt list) =
+  fun multiDimApp m (rs : abt list) =
     case Abt.out m of
-       O.PATH_APP $ [_ \ m, _ \ r] =>
-         multiPathApp m (r :: rs)
+       O.DIM_APP $ [_ \ m, _ \ r] =>
+         multiDimApp m (r :: rs)
      | _ => (m, rs)
 
-  fun printQuant opr (doms, cod) =
+  fun printFunOrLine (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
-      (text opr)
+      (text "->")
         :: List.map
-            (fn (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]
-              | (NONE, a) => ppTerm a)
+            (fn TERM (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]
+              | TERM (NONE, a) => ppTerm a
+              | DIM (SOME xs) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", text "dim"]
+              | DIM NONE => text "dim")
             doms
           @ [ppTerm cod]
 
@@ -152,42 +163,50 @@ struct
     Atomic.parens @@ expr @@ hvsep
       (char #"$" :: ppTerm m :: List.map ppTerm ns)
 
-  and printPathAbs (us, m) =
+  and printAbs (us, m) =
     Atomic.parens @@ expr @@ hvsep @@
-      [hvsep [text "abs", symBinding us], align @@ ppTerm m]
+      [hvsep [text "abs", varBinding us], align @@ ppTerm m]
 
-  and printPathApp (m, rs) =
+  and printDimApp (m, rs) =
     Atomic.parens @@ expr @@ hvsep
       (char #"@" :: ppTerm m :: List.map ppTerm rs)
 
-  and ppComHead name (r, r') =
-    seq [text name, Atomic.braces @@ seq [ppTerm r, text "~>", ppTerm r']]
+  and ppDir (r, r') = seq [ppTerm r, text "~>", ppTerm r']
 
-  and ppComHeadBackward name (r, r') =
-    seq [text name, Atomic.braces @@ seq [ppTerm r, text "<~", ppTerm r']]
+  and ppBackwardDir (r, r') = seq [ppTerm r, text "<~", ppTerm r']
 
   and ppTerm m =
     case Abt.out m of
        `x => ppVar x
      | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "fcom" (r1, r2), ppTerm cap]
+           hvsep [text "fcom", ppDir (r1, r2), ppTerm cap]
              :: [ppVector system]
 
      | O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "hcom" (r1, r2), ppTerm ty, ppTerm cap]
+           hvsep [text "hcom", ppDir (r1, r2), ppTerm ty, ppTerm cap]
              :: [ppVector system]
-
+     | O.GHCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [text "ghcom", ppDir (r1, r2), ppTerm ty, ppTerm cap]
+             :: [ppVector system]
+     | O.COE $ [_ \ r1, _ \ r2, ty, _ \ coercee] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           [text "coe", ppDir (r1, r2), ppBinder ty, ppTerm coercee]
      | O.COM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "com" (r1, r2), ppBinder ty, ppTerm cap]
+           hvsep [text "com", ppDir (r1, r2), ppBinder ty, ppTerm cap]
+             :: [ppVector system]
+     | O.GCOM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [text "gcom", ppDir (r1, r2), ppBinder ty, ppTerm cap]
              :: [ppVector system]
 
      | O.LOOP $ [_ \ r] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppTerm r]
      | O.FUN $ _ =>
-         printQuant "->" @@ multiFun [] m
+         printFunOrLine @@ multiFunOrLine [] m
      | O.LAM $ _ =>
          printLam @@ multiLam [] m
      | O.APP $ _ =>
@@ -222,17 +241,23 @@ struct
          end
      | O.PROJ lbl $ [m] =>
          Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder m]
-     | O.PATH_ABS $ _ =>
-         printPathAbs @@ multiPathAbs [] m
-     | O.PATH_APP $ _ =>
-         printPathApp @@ multiPathApp m []
+     | O.LINE $ _ =>
+         printFunOrLine @@ multiFunOrLine [] m
+     | O.ABS $ _ =>
+         printAbs @@ multiAbs [] m
+     | O.DIM_APP $ _ =>
+         printDimApp @@ multiDimApp m []
      | O.EQUALITY $ args =>
          Atomic.parens @@ expr @@ hvsep @@
            char #"=" :: List.map ppBinder args
      | O.BOX $ [_ \ r1, _ \ r2, cap, _ \ boundaries] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [ppComHead "box" (r1, r2), ppBinder cap]
+           hvsep [text "box", ppDir (r1, r2), ppBinder cap]
              :: [ppVector boundaries]
+     | O.CAP $ [_ \ r1, _ \ r2, coercee, _ \ tubes] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [text "cap", ppBackwardDir (r1, r2), ppBinder coercee]
+             :: [ppVector tubes]
      | O.V $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "V" :: List.map ppBinder args
      | O.VIN $ args =>
@@ -242,10 +267,12 @@ struct
      | O.UNIVERSE $ [_ \ l, _ \ k] =>
          Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l, ppTerm k]
 
-     | O.MK_TUBE $ [_ \ r1, _ \ r2, [u] \ mu]  => 
+     | O.DIM0 $ _ => char #"0"
+     | O.DIM1 $ _ => char #"1"
+     | O.MK_TUBE $ [_ \ r1, _ \ r2, tube]  =>
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
-          nest 1 @@ hvsep [Atomic.braces @@ ppVar u, ppTerm mu]]
+          nest 1 @@ ppBinder tube]
      | O.MK_BDRY $ [_ \ r1, _ \ r2, _ \ m] =>
        Atomic.squares @@ hsep
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
@@ -275,11 +302,6 @@ struct
     case xs of
         [] => atLevel 10 @@ ppTerm m
       | _ => grouped @@ hvsep [varBinding xs, align @@ ppTerm m]
-
-  and symBinding us =
-    unlessEmpty us @@
-      Atomic.braces @@
-        hsep @@ List.map ppVar us
 
   and varBinding xs =
     unlessEmpty xs @@

@@ -29,7 +29,7 @@ struct
    | WIF of (variable * abt) * hole * abt * abt
    | S1_REC of (variable * abt) * hole * abt * (variable * abt)
    | IF of hole * abt * abt
-   | PATH_APP of hole * abt
+   | DIM_APP of hole * abt
    | NAT_REC of hole * abt * (variable * variable * abt)
    | INT_REC of hole * abt * (variable * variable * abt) * abt * (variable * variable * abt)
    | PROJ of string * hole
@@ -53,7 +53,7 @@ struct
        | IF (HOLE, t, f) => Syn.into @@ Syn.IF (m, (t, f))
        | WIF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
        | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
-       | PATH_APP (HOLE, r) => Syn.into @@ Syn.PATH_APP (m, r)
+       | DIM_APP (HOLE, r) => Syn.into @@ Syn.DIM_APP (m, r)
        | NAT_REC (HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC (m, (zer, (x, y, succ)))
        | INT_REC (HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC (m, (zer, (x,y,succ), negone, (x',y',negss)))
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
@@ -545,16 +545,16 @@ struct
          CRITICAL @@ lambda || (SymSet.remove syms u, stk)
        end
 
-     | O.PATH_ABS $ _ || (_, []) => raise Final
-     | O.PATH_TY $ _ || (_, []) => raise Final
-     | O.LINE_TY $ _ || (_, []) => raise Final
+     | O.ABS $ _ || (_, []) => raise Final
+     | O.PATH $ _ || (_, []) => raise Final
+     | O.LINE $ _ || (_, []) => raise Final
 
-     | O.PATH_APP $ [_ \ m, _ \ r] || (syms, stk) => COMPAT @@ m || (syms, PATH_APP (HOLE, r) :: stk)
-     | O.PATH_ABS $ [[x] \ m] || (syms, PATH_APP (HOLE, r) :: stk) => CRITICAL @@ substVar (r, x) m || (syms, stk)
+     | O.DIM_APP $ [_ \ m, _ \ r] || (syms, stk) => COMPAT @@ m || (syms, DIM_APP (HOLE, r) :: stk)
+     | O.ABS $ [[x] \ m] || (syms, DIM_APP (HOLE, r) :: stk) => CRITICAL @@ substVar (r, x) m || (syms, stk)
 
-     | O.PATH_TY $ [[u] \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.PATH $ [[u] \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
-         fun apu m = Syn.into @@ Syn.PATH_APP (m, check (`u, O.DIM))
+         fun apu m = Syn.into @@ Syn.DIM_APP (m, check (`u, O.DIM))
          val v = Sym.named "_"
          val hcomu =
            Syn.intoHcom
@@ -562,46 +562,46 @@ struct
               ty = tyu,
               cap = apu cap,
               tubes = ((VarKit.toDim u, Syn.into Syn.DIM0), (v, m0)) :: ((VarKit.toDim u, Syn.into Syn.DIM1), (v, m1)) :: mapTubes_ apu tubes}
-         val abs = Syn.into @@ Syn.PATH_ABS (u, hcomu)
+         val abs = Syn.into @@ Syn.ABS (u, hcomu)
        in
          CRITICAL @@ abs || (syms, stk)
        end
-     | O.PATH_TY $ [[u] \ tyuv, _ \ m0v, _ \ m1v] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+     | O.PATH $ [[u] \ tyuv, _ \ m0v, _ \ m1v] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
        let
          val comu =
            Syn.into @@ Syn.COM
              {dir = dir,
               ty = (v, tyuv),
-              cap = Syn.into @@ Syn.PATH_APP (coercee, check (`u, O.DIM)),
+              cap = Syn.into @@ Syn.DIM_APP (coercee, check (`u, O.DIM)),
               tubes = [((VarKit.toDim u, Syn.into Syn.DIM0), (v, m0v)), ((VarKit.toDim u, Syn.into Syn.DIM1), (v, m1v))]}
-         val abs = Syn.into @@ Syn.PATH_ABS (u, comu)
+         val abs = Syn.into @@ Syn.ABS (u, comu)
        in
          CRITICAL @@ abs || (SymSet.remove syms v, stk)
        end
 
-     | O.LINE_TY $ [[u] \ tyu] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.LINE $ [[u] \ tyu] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val utm = VarKit.toDim u
-         fun apu n = Syn.into @@ Syn.PATH_APP (n, utm)
+         fun apu n = Syn.into @@ Syn.DIM_APP (n, utm)
          val hcomu = 
            Syn.intoHcom
              {dir = dir,
               ty = tyu,
               cap = apu cap,
               tubes = mapTubes_ apu tubes}
-         val abs = Syn.into @@ Syn.PATH_ABS (u, hcomu)
+         val abs = Syn.into @@ Syn.ABS (u, hcomu)
        in
          CRITICAL @@ abs || (syms, stk)
        end
 
-     | O.LINE_TY $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+     | O.LINE $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
        let
          val coe = 
            Syn.intoCoe
              {dir = dir,
               ty = (v, tyuv),
-              coercee = Syn.into @@ Syn.PATH_APP (coercee, VarKit.toDim u)}
-         val abs = Syn.into @@ Syn.PATH_ABS (u,coe)
+              coercee = Syn.into @@ Syn.DIM_APP (coercee, VarKit.toDim u)}
+         val abs = Syn.into @@ Syn.ABS (u,coe)
        in
          CRITICAL @@ abs || (SymSet.remove syms u, stk)
        end
@@ -830,7 +830,7 @@ struct
                                 ty = substVar (s, v) b,
                                 cap = projFromOne s,
                                 tubes =
-                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.PATH_APP (Syn.intoSnd (fiberFromOne s), VarKit.toDim w)))
+                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.DIM_APP (Syn.intoSnd (fiberFromOne s), VarKit.toDim w)))
                                   , ((s, Syn.intoDim 1), (w, projFromOne s)) ]}
                            end
                        in
@@ -860,7 +860,7 @@ struct
                                   in
                                     Syn.intoAnonTuple
                                       [ m
-                                      , Syn.into @@ Syn.PATH_ABS (z,
+                                      , Syn.into @@ Syn.ABS (z,
                                           Syn.intoCom
                                             {dir = (Syn.intoDim 0, VarKit.toDim y),
                                              ty = (y, substVar (Syn.intoDim 0, v) b),
@@ -895,7 +895,7 @@ struct
                                          , ((#1 dir, #2 dir),
                                             (w, Syn.into @@ Syn.VPROJ (#2 dir, coercee, Syn.intoFst @@ substVar (#2 dir, v) e)))
                                          , ((#2 dir, Syn.intoDim 0),
-                                            (w, Syn.into @@ Syn.PATH_APP (Syn.intoSnd frontFiber, VarKit.toDim w))) ]}
+                                            (w, Syn.into @@ Syn.DIM_APP (Syn.intoSnd frontFiber, VarKit.toDim w))) ]}
                                   end
                               in
                                 Syn.into @@ Syn.VIN (#2 dir, Syn.intoFst frontFiber, n)
