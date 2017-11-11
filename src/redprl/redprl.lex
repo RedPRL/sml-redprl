@@ -111,6 +111,7 @@ whitespace = [\ \t];
 "left"             => (Tokens.LEFT (posTuple (size yytext)));
 "right"            => (Tokens.RIGHT (posTuple (size yytext)));
 "glue"             => (Tokens.GLUE (posTuple (size yytext)));
+"pushout-rec"      => (Tokens.PUSHOUT_REC (posTuple (size yytext)));
 "box"              => (Tokens.BOX (posTuple (size yytext)));
 "cap"              => (Tokens.CAP (posTuple (size yytext)));
 "V"                => (Tokens.V (posTuple (size yytext)));
