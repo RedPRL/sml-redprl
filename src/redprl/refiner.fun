@@ -411,6 +411,8 @@ struct
      | "hcom/eq" => Lcf.rule o HCom.Eq
      | "hcom/eq/cap" => Lcf.rule o HCom.EqCapL
      | "hcom/eq/tube" => Lcf.rule o HCom.EqTubeL
+     | "coe/eq" => Lcf.rule o Coe.Eq
+     | "coe/eq/cap" => Lcf.rule o Coe.EqCapL
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
