@@ -5,6 +5,7 @@ PROBLEM=0
 
 # Ensure that the examples file and all suceeding tests succeed
 for f in test/examples.prl test/success/*.prl ; do
+    echo "Testing $f"
     if ! $REDPRL $f >$f.log 2>&1 ; then
         PROBLEM=1
         echo "Test $f should succeed but failed!"
