@@ -176,9 +176,9 @@ struct
    (* record and tuple *)
    | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
    (* path: path abstraction and application *)
-   | PATH_TY | ABS | DIM_APP
+   | PATH | ABS | DIM_APP
    (* lines: paths without fixed endpoints *)
-   | LINE_TY
+   | LINE
    (* equality *)
    | EQUALITY
    (* universe *)
@@ -320,8 +320,8 @@ struct
      | PROJ lbl => [[] |: EXP] ->> EXP
      | TUPLE_UPDATE lbl => [[] |: EXP, [] |: EXP] ->> EXP
 
-     | PATH_TY => [[DIM] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
-     | LINE_TY => [[DIM] |: EXP] ->> EXP
+     | PATH => [[DIM] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | LINE => [[DIM] |: EXP] ->> EXP
      | ABS => [[DIM] |: EXP] ->> EXP
      | DIM_APP => [[] |: EXP, [] |: DIM] ->> EXP
 
@@ -466,8 +466,8 @@ struct
      | PROJ lbl => "proj{" ^ lbl ^ "}"
      | TUPLE_UPDATE lbl => "update{" ^ lbl ^ "}"
 
-     | PATH_TY => "path"
-     | LINE_TY => "line"
+     | PATH => "path"
+     | LINE => "line"
      | ABS => "abs"
      | DIM_APP => "path-app"
 

@@ -1213,8 +1213,8 @@ struct
       let
         val _ = RedPrlLog.trace "Line.EqType"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val Syn.LINE_TY (u, a0u) = Syn.out ty0
-        val Syn.LINE_TY (v, a1v) = Syn.out ty1
+        val Syn.LINE (u, a0u) = Syn.out ty0
+        val Syn.LINE (v, a1v) = Syn.out ty1
         val ka = kindConstraintOnBase k
 
         val w = alpha 0
@@ -1229,7 +1229,7 @@ struct
       let
         val _ = RedPrlLog.trace "Line.Eq"
         val H >> AJ.EQ ((abs0, abs1), (ty, l, k)) = jdg
-        val Syn.LINE_TY (u, au) = Syn.out ty
+        val Syn.LINE (u, au) = Syn.out ty
         val ka = kindConstraintOnBase k
         val Syn.ABS (v, m0v) = Syn.out abs0
         val Syn.ABS (w, m1w) = Syn.out abs1
@@ -1247,7 +1247,7 @@ struct
       let
         val _ = RedPrlLog.trace "Line.True"
         val H >> AJ.TRUE (ty, l, k) = jdg
-        val Syn.LINE_TY (u, au) = Syn.out ty
+        val Syn.LINE (u, au) = Syn.out ty
         val ka = kindConstraintOnBase k
         val a0 = substVar (Syn.into Syn.DIM0, u) au
         val a1 = substVar (Syn.into Syn.DIM1, u) au
@@ -1265,7 +1265,7 @@ struct
       let
         val _ = RedPrlLog.trace "Line.Eta"
         val H >> AJ.EQ ((m, n), (pathTy, l, k)) = jdg
-        val Syn.LINE_TY (u, _) = Syn.out pathTy
+        val Syn.LINE (u, _) = Syn.out pathTy
 
         val m' = Syn.into @@ Syn.ABS (u, Syn.into @@ Syn.DIM_APP (m, VarKit.toDim u))
         val goal1 = makeMem H (m, (pathTy, l, k))
@@ -1280,7 +1280,7 @@ struct
         val H >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val AJ.TRUE (ty, l', _) = Hyps.lookup H z
-        val Syn.LINE_TY (u, a) = Syn.out ty
+        val Syn.LINE (u, a) = Syn.out ty
 
         val x = alpha 0
         val y = alpha 1
@@ -1312,7 +1312,7 @@ struct
 
         val (goalSynth, holeSynth) = makeSynth H (m0, NONE, K.top)
         val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, NONE, K.top)) (* m0 well-typed *)
-        val (goalLine, holeLine) = makeMatch (O.LINE_TY, 0, holeSynth, [r0])
+        val (goalLine, holeLine) = makeMatch (O.LINE, 0, holeSynth, [r0])
         val goalTy = makeSubType H (holeLine, NONE, K.top) (ty, l, k) (* holeLine type *)
       in
         |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (H, trivial)
@@ -1324,7 +1324,7 @@ struct
         val H >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.DIM_APP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth H (m, NONE, K.top)
-        val (goalLine, holeLine) = makeMatch (O.LINE_TY, 0, holePathTy, [r])
+        val (goalLine, holeLine) = makeMatch (O.LINE, 0, holePathTy, [r])
         val goalKind = makeTypeUnlessSubUniv H (holeLine, l, k) (NONE, K.top)
       in
         |>: goalPathTy >: goalLine >:? goalKind #> (H, holeLine)
@@ -1345,8 +1345,8 @@ struct
       let
         val _ = RedPrlLog.trace "Path.EqType"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val Syn.PATH_TY ((u, a0u), m0, n0) = Syn.out ty0
-        val Syn.PATH_TY ((v, a1v), m1, n1) = Syn.out ty1
+        val Syn.PATH ((u, a0u), m0, n0) = Syn.out ty0
+        val Syn.PATH ((v, a1v), m1, n1) = Syn.out ty1
         val ka = kindConstraintOnBase k
 
         val w = alpha 0
@@ -1366,7 +1366,7 @@ struct
       let
         val _ = RedPrlLog.trace "Path.Eq"
         val H >> AJ.EQ ((abs0, abs1), (ty, l, k)) = jdg
-        val Syn.PATH_TY ((u, au), p0, p1) = Syn.out ty
+        val Syn.PATH ((u, au), p0, p1) = Syn.out ty
         val ka = kindConstraintOnBase k
         val Syn.ABS (v, m0v) = Syn.out abs0
         val Syn.ABS (w, m1w) = Syn.out abs1
@@ -1392,7 +1392,7 @@ struct
       let
         val _ = RedPrlLog.trace "Path.True"
         val H >> AJ.TRUE (ty, l, k) = jdg
-        val Syn.PATH_TY ((u, au), p0, p1) = Syn.out ty
+        val Syn.PATH ((u, au), p0, p1) = Syn.out ty
         val ka = kindConstraintOnBase k
         val a0 = substVar (Syn.into Syn.DIM0, u) au
         val a1 = substVar (Syn.into Syn.DIM1, u) au
@@ -1416,7 +1416,7 @@ struct
       let
         val _ = RedPrlLog.trace "Path.Eta"
         val H >> AJ.EQ ((m, n), (pathTy, l, k)) = jdg
-        val Syn.PATH_TY ((u, _), _, _) = Syn.out pathTy
+        val Syn.PATH ((u, _), _, _) = Syn.out pathTy
 
         val m' = Syn.into @@ Syn.ABS (u, Syn.into @@ Syn.DIM_APP (m, VarKit.toDim u))
         val goal1 = makeMem H (m, (pathTy, l, k))
@@ -1431,7 +1431,7 @@ struct
         val H >> catjdg = jdg
         (* for now we ignore the kind in the context *)
         val AJ.TRUE (ty, l', _) = Hyps.lookup H z
-        val Syn.PATH_TY ((u, a), _, _) = Syn.out ty
+        val Syn.PATH ((u, a), _, _) = Syn.out ty
 
         val x = alpha 0
         val y = alpha 1
@@ -1464,7 +1464,7 @@ struct
 
         val (goalSynth, holeSynth) = makeSynth H (m0, NONE, K.top)
         val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, NONE, K.top)) (* m0 well-typed *)
-        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holeSynth, [r0])
+        val (goalLine, holeLine) = makeMatch (O.PATH, 0, holeSynth, [r0])
         val goalTy = makeSubType H (holeLine, NONE, K.top) (ty, l, k) (* holeLine type *)
       in
         |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (H, trivial)
@@ -1476,7 +1476,7 @@ struct
         val H >> AJ.SYNTH (tm, l, k) = jdg
         val Syn.DIM_APP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth H (m, NONE, K.top)
-        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holePathTy, [r])
+        val (goalLine, holeLine) = makeMatch (O.PATH, 0, holePathTy, [r])
         val goalKind = makeTypeUnlessSubUniv H (holeLine, l, k) (NONE, K.top)
       in
         |>: goalPathTy >: goalLine >:? goalKind #> (H, holeLine)
@@ -1492,8 +1492,8 @@ struct
 
         val (goalSynth, holeSynth) = makeSynth H (m, NONE, K.top)
 
-        val (goalLine, holeLine) = makeMatch (O.PATH_TY, 0, holeSynth, [r])
-        val (goalEndpoint, holeEndpoint) = makeMatch (O.PATH_TY, dimAddr, holeSynth, [])
+        val (goalLine, holeLine) = makeMatch (O.PATH, 0, holeSynth, [r])
+        val (goalEndpoint, holeEndpoint) = makeMatch (O.PATH, dimAddr, holeSynth, [])
         val goalTy = makeSubType H (holeLine, NONE, K.top) (a, NONE, K.top) (* holeLine should be well-typed *)
         val goalEq = makeEq H ((holeEndpoint, p), (a, l, k))
       in
@@ -1896,7 +1896,7 @@ struct
         val dummy = Sym.named "_"
       in
         Syn.into @@ Syn.FUN (C, c',
-          Syn.into @@ Syn.PATH_TY ((dummy, C), VarKit.toExp c', c))
+          Syn.into @@ Syn.PATH ((dummy, C), VarKit.toExp c', c))
       end
 
     fun intoIsContr C =
@@ -1912,7 +1912,7 @@ struct
         val dummy = Sym.named "_"
       in
         Syn.intoProd [(a, A)] @@
-          Syn.into @@ Syn.PATH_TY
+          Syn.into @@ Syn.PATH
             ((dummy, B), Syn.intoApp (f, VarKit.toExp a), b)
       end
 

@@ -546,13 +546,13 @@ struct
        end
 
      | O.ABS $ _ || (_, []) => raise Final
-     | O.PATH_TY $ _ || (_, []) => raise Final
-     | O.LINE_TY $ _ || (_, []) => raise Final
+     | O.PATH $ _ || (_, []) => raise Final
+     | O.LINE $ _ || (_, []) => raise Final
 
      | O.DIM_APP $ [_ \ m, _ \ r] || (syms, stk) => COMPAT @@ m || (syms, DIM_APP (HOLE, r) :: stk)
      | O.ABS $ [[x] \ m] || (syms, DIM_APP (HOLE, r) :: stk) => CRITICAL @@ substVar (r, x) m || (syms, stk)
 
-     | O.PATH_TY $ [[u] \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.PATH $ [[u] \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          fun apu m = Syn.into @@ Syn.DIM_APP (m, check (`u, O.DIM))
          val v = Sym.named "_"
@@ -566,7 +566,7 @@ struct
        in
          CRITICAL @@ abs || (syms, stk)
        end
-     | O.PATH_TY $ [[u] \ tyuv, _ \ m0v, _ \ m1v] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+     | O.PATH $ [[u] \ tyuv, _ \ m0v, _ \ m1v] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
        let
          val comu =
            Syn.into @@ Syn.COM
@@ -579,7 +579,7 @@ struct
          CRITICAL @@ abs || (SymSet.remove syms v, stk)
        end
 
-     | O.LINE_TY $ [[u] \ tyu] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+     | O.LINE $ [[u] \ tyu] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val utm = VarKit.toDim u
          fun apu n = Syn.into @@ Syn.DIM_APP (n, utm)
@@ -594,7 +594,7 @@ struct
          CRITICAL @@ abs || (syms, stk)
        end
 
-     | O.LINE_TY $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
+     | O.LINE $ [[u] \ tyuv] || (syms, COE (dir, (v, HOLE), coercee) :: stk) =>
        let
          val coe = 
            Syn.intoCoe

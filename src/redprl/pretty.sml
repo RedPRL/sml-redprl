@@ -111,7 +111,7 @@ struct
                   multiFunOrLine (TERM (SOME [x], a) :: doms) bx
             | _ => multiFunOrLine (TERM (SOME [x], a) :: doms) bx
          else multiFunOrLine (TERM (NONE, a) :: doms) bx
-     | O.LINE_TY $ [[x] \ ax] =>
+     | O.LINE $ [[x] \ ax] =>
          if Abt.Var.Ctx.member (Abt.varctx ax) x then
            case doms of
               DIM (SOME xs) :: doms' =>

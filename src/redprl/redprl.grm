@@ -109,7 +109,7 @@ struct
     | makeFunOrLineAux (TERM (x, a) :: doms) cod =
        O.FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ makeFunOrLineAux doms cod]
     | makeFunOrLineAux (DIM x :: doms) cod =
-       O.LINE_TY $$ [[Option.getOpt (x, "_")] \ makeFunOrLineAux doms cod]
+       O.LINE $$ [[Option.getOpt (x, "_")] \ makeFunOrLineAux doms cod]
 
   val makeFunOrLine = makeFunOrLineAux o flatten
 
@@ -649,9 +649,9 @@ regularMultinaryOperator
   (* S1 *)
   | S1_REC (O.S1_REC)
   (* paths *)
-  | PATH (O.PATH_TY)
+  | PATH (O.PATH)
   (* lines *)
-  | LINE (O.LINE_TY)
+  | LINE (O.LINE)
   (* equality *)
   | EQUALS (O.EQUALITY)
 
