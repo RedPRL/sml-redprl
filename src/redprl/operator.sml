@@ -180,7 +180,7 @@ struct
    (* lines: paths without fixed endpoints *)
    | LINE
    (* pushout *)
-   | PUSHOUT | LEFT | RIGHT | GLUE
+   | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
    (* equality *)
    | EQUALITY
    (* universe *)
@@ -331,6 +331,7 @@ struct
      | LEFT => [[] |: EXP] ->> EXP
      | RIGHT => [[] |: EXP] ->> EXP
      | GLUE => [[EXP] |: EXP, [EXP] |: EXP, [] |: DIM, [] |: EXP] ->> EXP
+     | PUSHOUT_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
@@ -482,6 +483,7 @@ struct
      | LEFT => "left"
      | RIGHT => "right"
      | GLUE => "glue"
+     | PUSHOUT_REC => "pushout-rec"
 
      | UNIVERSE => "U"
      | V => "V"

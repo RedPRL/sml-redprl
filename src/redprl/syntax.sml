@@ -63,6 +63,7 @@ struct
    | PUSHOUT of 'a * 'a * 'a * (variable * 'a) * (variable * 'a)
    | LEFT of 'a | RIGHT of 'a
    | GLUE of 'a * 'a * 'a * 'a
+   | PUSHOUT_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * 'a) * (variable * variable * 'a))
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
@@ -346,6 +347,8 @@ struct
        | LEFT m => O.LEFT $$ [[] \ m]
        | RIGHT m => O.RIGHT $$ [[] \ m]
        | GLUE (r, m, fm, gm) => O.GLUE $$ [[] \ r, [] \ m, [] \ fm, [] \ gm]
+       | PUSHOUT_REC ((x, cx), m, ((y, ly), (z, rz), (w1, w2, gw))) =>
+           O.PUSHOUT_REC $$ [[x] \ cx, [] \ m, [y] \ ly, [z] \ rz, [w1, w2] \ gw]
 
        | EQUALITY (a, m, n) => O.EQUALITY $$ [[] \ a, [] \ m, [] \ n]
 
@@ -456,6 +459,8 @@ struct
        | O.LEFT $ [_ \ m] => LEFT m
        | O.RIGHT $ [_ \ m] => RIGHT m
        | O.GLUE $ [_ \ r, _ \ m, _ \ fm, _ \ gm] => GLUE (r, m, fm, gm)
+       | O.PUSHOUT_REC $ [[x] \ cx, _ \ m, [y] \ ly, [z] \ rz, [w1, w2] \ gw] =>
+           PUSHOUT_REC ((x, cx), m, ((y, ly), (z, rz), (w1, w2, gw)))
 
        | O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 
