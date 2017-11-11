@@ -123,7 +123,7 @@
     "S1" "base" "loop" "S1-rec"
     "lam" "app"
     "record" "tuple"
-    "path" "abs"
+    "path" "line" "abs"
     "pushout" "left" "right" "glue"
     "box" "cap"
     "V" "Vin" "Vproj"
