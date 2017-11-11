@@ -241,6 +241,8 @@ struct
          end
      | O.PROJ lbl $ [m] =>
          Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder m]
+     | O.LINE $ _ =>
+         printFunOrLine @@ multiFunOrLine [] m
      | O.ABS $ _ =>
          printAbs @@ multiAbs [] m
      | O.DIM_APP $ _ =>
