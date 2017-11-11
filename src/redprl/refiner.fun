@@ -519,6 +519,7 @@ struct
          | (Syn.FUN _, Syn.FUN _) => Lcf.rule o Fun.EqType
          | (Syn.RECORD _, Syn.RECORD _) => Lcf.rule o Record.EqType
          | (Syn.PATH_TY _, Syn.PATH_TY _) => Lcf.rule o Path.EqType
+         | (Syn.LINE_TY _, Syn.LINE_TY _) => Lcf.rule o Line.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.EqType
          | (Syn.FCOM _, Syn.FCOM _) => Lcf.rule o FormalComposition.EqType
          | (Syn.V _, Syn.V _) => Lcf.rule o V.EqType
@@ -608,6 +609,7 @@ struct
          | (_, _, Syn.FUN _) => Lcf.rule o Fun.Eq
          | (_, _, Syn.RECORD _) => Lcf.rule o Record.Eq
          | (_, _, Syn.PATH_TY _) => Lcf.rule o Path.Eq
+         | (_, _, Syn.LINE_TY _) => Lcf.rule o Line.Eq
          | (_, _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eq
          | (_, _, Syn.FCOM _) => Lcf.rule o FormalComposition.Eq
          | (_, _, Syn.V _) => Lcf.rule o V.Eq
