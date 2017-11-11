@@ -637,7 +637,7 @@ struct
          | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj (* XXX should consult autoSynthesizableNeu *)
          | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>
            (case (Abt.out r1, Abt.out r2) of 
-               (`_, `_) => Lcf.rule o Path.EqApp orelse_ Lcf.rule o Line.EqApp
+               (`_, `_) => Lcf.rule o Path.EqApp
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
               (* XXX should consult autoSynthesizableNeu *)
          | (Syn.CUST, Syn.CUST) => Lcf.rule o Custom.Eq sign (* XXX should consult autoSynthesizableNeu *)
@@ -730,11 +730,11 @@ struct
          | (Syn.DIM_APP (_, r), _, _, _) =>
            (case Abt.out r of 
               `_ => kont ((m, n), ty)
-             | _ => Lcf.rule o Path.EqAppConst)
+             | _ => Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp)
          | (_, _, Syn.DIM_APP (_, r), _) =>
            (case Abt.out r of 
               `_ => kont ((m, n), ty)
-             | _ => CatJdgSymmetry then_ Lcf.rule o Path.EqAppConst)
+             | _ => CatJdgSymmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp))
          | _ => kont ((m, n), ty)
 
       fun StepEq sign ((m, n), ty) =
