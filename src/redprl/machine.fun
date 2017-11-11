@@ -28,6 +28,7 @@ struct
    | COE of Syn.dir * (variable * hole) * abt
    | WIF of (variable * abt) * hole * abt * abt
    | S1_REC of (variable * abt) * hole * abt * (variable * abt)
+   | PUSHOUT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt) * (variable * variable * abt)
    | IF of hole * abt * abt
    | DIM_APP of hole * abt
    | NAT_REC of hole * abt * (variable * variable * abt)
@@ -58,6 +59,7 @@ struct
        | INT_REC (HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC (m, (zer, (x,y,succ), negone, (x',y',negss)))
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
        | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
+       | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
        | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
        | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
   in
@@ -779,6 +781,74 @@ struct
              CRITICAL @@ tail || (syms, TUPLE_UPDATE (lbl, head r', HOLE) :: stk)
            end
          | _ => raise Fail "Impossible record type")
+
+     | O.PUSHOUT $ _ || (_, []) => raise Final
+     | O.LEFT $ _ || (_, []) => raise Final
+     | O.RIGHT $ _ || (_, []) => raise Final
+     | O.GLUE $ [_ \ r, _ \ m, _ \ fm, _ \ gm] || (syms, stk) =>
+         branchOnDim stability syms r
+           (STEP @@ fm || (syms, stk))
+           (STEP @@ gm || (syms, stk))
+           (fn u =>
+             case stk of
+               [] => raise Final
+             | PUSHOUT_REC (_, HOLE, _, _, (v, w, glue)) :: stk =>
+                 CRITICAL @@ VarKit.substMany [(VarKit.toDim u, v), (m, w)] glue || (syms, stk)
+             | _ => raise Stuck)
+     | O.LEFT $ [_ \ m] || (syms, PUSHOUT_REC (_, HOLE, (y, ly), _, _) :: stk) => CRITICAL @@ substVar (m, y) ly || (syms, stk)
+     | O.RIGHT $ [_ \ m] || (syms, PUSHOUT_REC (_, HOLE, _, (z, rz), _) :: stk) => CRITICAL @@ substVar (m, z) rz || (syms, stk)
+     | O.PUSHOUT_REC $ [[x] \ cx, _ \ m, [y] \ ly, [z] \ rz, [w1, w2] \ gw] || (syms, stk) => COMPAT @@ m || (syms, PUSHOUT_REC ((x,cx), HOLE, (y,ly), (z,rz), (w1,w2,gw)) :: stk)
+     | O.PUSHOUT $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val fcom =
+           Syn.intoFcom
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         CRITICAL @@ fcom || (syms, stk)
+       end
+     | O.PUSHOUT $ [_ \ a, _ \ b, _ \ c, [x] \ fx, [y] \ gy] || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+       let
+         fun left src m =
+           Syn.into @@ Syn.LEFT @@ Syn.intoCoe
+             {dir = (src, #2 dir), ty = (u, a), coercee = m}
+         fun right src m =
+           Syn.into @@ Syn.RIGHT @@ Syn.intoCoe
+             {dir = (src, #2 dir), ty = (u, b), coercee = m}
+         fun glue v m =
+           let
+             fun m' dest = Syn.intoCoe {dir = (#1 dir, dest), ty = (u, c), coercee = m}
+             fun fm' dest = substVar (m' dest, x) fx
+             fun gm' dest = substVar (m' dest, y) gy
+             val z = Sym.named "y"
+             val ztm = VarKit.toDim y
+             val vtm = VarKit.toDim v
+           in
+             Syn.intoFcom
+               {dir = (#2 dir, #1 dir),
+                cap = Syn.into @@ Syn.GLUE (vtm, m' (#2 dir), fm' (#2 dir), gm' (#2 dir)),
+                tubes =
+                  [ ((vtm, Syn.intoDim 0), (z, left ztm (fm' ztm)))
+                  , ((vtm, Syn.intoDim 1), (z, right ztm (gm' ztm)))
+                  ]}
+           end
+         val result =
+           let
+             val dummy = Sym.named "_"
+             val v = Sym.named "v"
+             val m = Sym.named "m"
+           in
+             Syn.into @@ Syn.PUSHOUT_REC
+               ((dummy, substVar (#2 dir, u) (Syn.into @@ Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)))),
+                coercee,
+                ((m, left (#1 dir) (VarKit.toExp m)),
+                 (m, right (#1 dir) (VarKit.toExp m)),
+                 (v, m, glue v (VarKit.toExp m))))
+           end
+       in
+         CRITICAL @@ result || (SymSet.remove syms u, stk)
+       end
 
      | O.BOX $ [_ \ r1, _ \ r2, _ \ cap, _ \ boundaries] || (syms, stk) => 
        stepBox stability ({dir = (r1, r2), cap = cap, boundaries = Syn.outBoundaries boundaries} || (syms, stk))
