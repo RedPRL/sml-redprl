@@ -124,7 +124,7 @@
     "lam" "app"
     "record" "tuple"
     "path" "line" "abs"
-    "pushout" "left" "right" "glue"
+    "pushout" "left" "right" "glue" "pushout-rec"
     "box" "cap"
     "V" "Vin" "Vproj"
     "universe" "U"

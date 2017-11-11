@@ -323,7 +323,7 @@ end
  | LAMBDA | DOLLAR_SIGN
  | RECORD | TIMES | TUPLE | BANG
  | PATH | LINE | ABS | AT_SIGN
- | PUSHOUT | LEFT | RIGHT | GLUE
+ | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
  | BOX | CAP
  | V | VIN | VPROJ
  | UNIVERSE
@@ -658,6 +658,7 @@ regularMultinaryOperator
   | LEFT (O.LEFT)
   | RIGHT (O.RIGHT)
   | GLUE (O.GLUE)
+  | PUSHOUT_REC (O.PUSHOUT_REC)
   (* equality *)
   | EQUALS (O.EQUALITY)
   (* V *)
