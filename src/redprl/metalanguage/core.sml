@@ -32,11 +32,15 @@ struct
      | (RECORD mrow, OBJ crow) => Row.app (fn (lbl, d) => rinv (G, W, Row.lookup mrow lbl, d)) crow
 
   and linv (G, W, m, c) =
-    case (W, m, c) of 
-       ([], CNEU r, c) => assert (eqCtype (lfoc (G, r), c))
-     | ([], RET v, UP a) => rfoc (G, v, a)
-     | ([], _, _) => raise Fail "Impossible?"
-     | (p :: W', m, c) => linvPat (G, W, p, m, c)
+    case W of
+       [] => stable (G, m, c)
+     | p :: W' => linvPat (G, W, p, m, c)
+
+  and stable (G, m, c) = 
+    case (m, c) of 
+       (CNEU r, _) => assert (eqCtype (lfoc (G, r), c))
+     | (FORCE r, _) => let val DOWN d = rfocNeu (G, r) in assert (eqCtype (d, c)) end
+     | (RET v, UP a) => rfoc (G, v, a)
 
   and linvPat (G, W, (p, a), m, c) =
     case (p, a, m) of
@@ -84,13 +88,8 @@ struct
 
   and lfoc (G, r) =
     case r of
-       FORCE r =>
-       let
-         val DOWN c = rfocNeu (G, r)
-       in
-         c
-       end
-     | PROJ (r, lbl) => 
+
+       PROJ (r, lbl) => 
        let
          val OBJ crow = lfoc (G, r)
        in

@@ -15,12 +15,16 @@ sig
   (* inversion context *)
   type ictx = (vpat * vtype) list
 
+  (* check computations (inversion) *)
   val rinv : ctx * ictx * cterm * ctype -> unit
   val linv : ctx * ictx * cterm * ctype -> unit
 
-  (* check a value (right focus) *)
+  (* check values (right focus) *)
   val rfoc : ctx * vterm * vtype -> unit
 
-  (* infer a computation (left focus) *)
+  (* infer neutral values (right focus) *)
+  val rfocNeu : ctx * vneu -> vtype
+
+  (* infer neutral computations (left focus) *)
   val lfoc : ctx * cneu -> ctype
 end

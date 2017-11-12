@@ -45,10 +45,10 @@ struct
     | RECORD of cterm row
     | LET of vpat * cneu * cterm
     | RET of vterm
+    | FORCE of vneu
   
    and cneu =
-      FORCE of vneu
-    | PROJ of cneu * string
+      PROJ of cneu * string
     | APP of cneu * vterm
     | CTERM of cterm * ctype
   end
