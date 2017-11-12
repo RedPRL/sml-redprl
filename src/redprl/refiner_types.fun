@@ -104,12 +104,12 @@ struct
         (* tt branch *)
         val tt = Syn.into Syn.TT
         val Htt = Hyps.substAfter (z, tt) H
-        val (goalT, holeT) = makeGoal @@ (Htt) >> AJ.map (substVar (tt, z)) catjdg
+        val (goalT, holeT) = makeGoal @@ Htt >> AJ.map (substVar (tt, z)) catjdg
 
         (* ff branch *)
         val ff = Syn.into Syn.FF
         val Hff = Hyps.substAfter (z, ff) H
-        val (goalF, holeF) = makeGoal @@ (Hff) >> AJ.map (substVar (ff, z)) catjdg
+        val (goalF, holeF) = makeGoal @@ Hff >> AJ.map (substVar (ff, z)) catjdg
 
         val evidence =
           case catjdg of
