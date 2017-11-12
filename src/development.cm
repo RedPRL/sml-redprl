@@ -22,7 +22,9 @@ Group is
   redprl/metalanguage/kernel.sig
   redprl/metalanguage/kernel.sml
 
-  redprl/metalanguage/core_syntax.sig
+  redprl/metalanguage/syntax_data.sml
+  redprl/metalanguage/core.sig
+  redprl/metalanguage/core.sml
 
 
   redprl/metalanguage/syntax.sml
