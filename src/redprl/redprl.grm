@@ -430,9 +430,6 @@ end
  | judgment of ast
 
  | src_catjdg of Signature.src_catjdg
- | src_seqhyp of Signature.src_seqhyp
- | src_seqhyps of Signature.src_seqhyp list
- | src_sequent of Signature.src_sequent
 
  | termAnySort of ast
  | termsAnySort of ast list
@@ -786,20 +783,6 @@ judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgme
 
 src_catjdg : judgment (judgment)
 
-src_seqhyp
-  : VARNAME COLON src_catjdg ((VARNAME, src_catjdg))
-  | UNDER COLON src_catjdg (("_", src_catjdg))
-  | src_catjdg (("_", src_catjdg))
-
-src_seqhyps
-  : src_seqhyp ([src_seqhyp])
-  | src_seqhyp COMMA src_seqhyps (src_seqhyp :: src_seqhyps)
-  | ([])
-
-src_sequent
-  : src_catjdg ([], src_catjdg)
-  | src_seqhyps RANGLE RANGLE src_catjdg (src_seqhyps, src_catjdg)
-
 recordFieldTactics
    : VARNAME EQUALS tactic COMMA recordFieldTactics ((VARNAME, tactic) :: recordFieldTactics)
    | VARNAME EQUALS tactic ([(VARNAME, tactic)])
@@ -997,8 +980,8 @@ decl
       (OPNAME, Signature.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
       (OPNAME, Signature.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_sequent RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.THM {arguments = declArgumentsParens, goal = src_sequent, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_catjdg RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, goal = src_catjdg, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
 
 rawCmd
   : CMD_PRINT OPNAME (Signature.PRINT OPNAME)
