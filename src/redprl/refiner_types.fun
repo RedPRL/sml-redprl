@@ -1958,7 +1958,7 @@ struct
   struct
     val kindConstraintOnEnds =
       fn K.DISCRETE => E.raiseError @@
-          E.NOT_APPLICABLE (Fpp.text "V.kindConstraintOnEnds", Fpp.text "DISCRETE")
+          E.NOT_APPLICABLE (Fpp.text "V types", Fpp.text "discrete universes")
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.HCOM) (* XXX more research needed *)
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)
