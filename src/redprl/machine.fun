@@ -787,8 +787,8 @@ struct
      | O.RIGHT $ _ || (_, []) => raise Final
      | O.GLUE $ [_ \ r, _ \ m, _ \ fm, _ \ gm] || (syms, stk) =>
          branchOnDim stability syms r
-           (STEP @@ fm || (syms, stk))
-           (STEP @@ gm || (syms, stk))
+           (STEP @@ Syn.into (Syn.LEFT fm) || (syms, stk))
+           (STEP @@ Syn.into (Syn.RIGHT gm) || (syms, stk))
            (fn u =>
              case stk of
                [] => raise Final
