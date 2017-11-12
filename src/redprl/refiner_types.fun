@@ -207,8 +207,11 @@ struct
         val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
+
+        val w = alpha 0
       in
-        ComKit.EqFComDelegate alpha H args0 args1 (ty, NONE, K.top)
+        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, NONE, K.top))
+        #> (H, trivial)
       end
 
     fun Elim z _ jdg =
@@ -694,8 +697,11 @@ struct
         val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
+
+        val w = alpha 0
       in
-        ComKit.EqFComDelegate alpha H args0 args1 (ty, NONE, K.top)
+        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, NONE, K.top))
+        #> (H, trivial)
       end
 
     fun Elim z alpha jdg =
@@ -1596,6 +1602,28 @@ struct
         val goalCohG = makeEq H ((substVar (m0, y) gy, gm0), (b, L.top, K.top))
       in
         |>: goalC >: goalA >: goalB >: goalCohF >: goalCohG >: goalF >: goalG #> (H, trivial)
+      end
+
+    fun EqFCom alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqFCom"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.FCOM args0 = Syn.out tm0
+        val Syn.FCOM args1 = Syn.out tm1
+
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+        val goalA = makeType H (a, l, kEnd)
+        val goalB = makeType H (b, l, kEnd)
+        val goalC = makeType H (c, l, kApex)
+
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+      in
+        |>: goalF >: goalG >: goalA >: goalB >: goalC
+         >:+ ComKit.genEqFComGoals H z (args0, args1) (ty, L.top, K.top)
+        #> (H, trivial)
       end
   end
 
