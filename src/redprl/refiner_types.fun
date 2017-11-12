@@ -1574,6 +1574,29 @@ struct
       in
         |>: goalB >: goalF >: goalG >: goalA >: goalC #> (H, trivial)
       end
+
+    fun EqGlue alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqGlue"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.GLUE (r0, m0, fm0, gm0) = Syn.out tm0
+        val Syn.GLUE (r1, m1, fm1, gm1) = Syn.out tm1
+        val () = Assert.alphaEq' "Pushout.EqGlue" (r0, r1)
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+
+        val goalC = makeEq H ((m0, m1), (c, l, kApex))
+        val goalA = makeEq H ((fm0, fm1), (a, l, kEnd))
+        val goalB = makeEq H ((gm0, gm1), (b, l, kEnd))
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+
+        val goalCohF = makeEq H ((substVar (m0, x) fx, fm0), (a, L.top, K.top))
+        val goalCohG = makeEq H ((substVar (m0, y) gy, gm0), (b, L.top, K.top))
+      in
+        |>: goalC >: goalA >: goalB >: goalCohF >: goalCohG >: goalF >: goalG #> (H, trivial)
+      end
   end
 
   structure InternalizedEquality =
