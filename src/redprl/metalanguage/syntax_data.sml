@@ -9,6 +9,7 @@ struct
   datatype vtype = 
      UNIT
    | TENSOR of vtype row
+   | PLUS of vtype row
    | DOWN of ctype
    | PROOF
    | OEXP
