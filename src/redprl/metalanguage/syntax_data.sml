@@ -20,6 +20,7 @@ struct
    | OBJ of ctype row
    | ARR of vtype * ctype
 
+  (* internal language *)
   structure I = 
   struct
     datatype vpat = 
@@ -53,6 +54,7 @@ struct
     | CTERM of cterm * ctype
   end
 
+  (* external language *)
   structure E = 
   struct
     type var = string

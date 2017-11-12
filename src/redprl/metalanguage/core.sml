@@ -88,23 +88,8 @@ struct
 
   and lfoc (G, r) =
     case r of
-
-       PROJ (r, lbl) => 
-       let
-         val OBJ crow = lfoc (G, r)
-       in
-         Row.lookup crow lbl
-       end
-     | APP (r, v) =>
-       let
-         val ARR (a, c) = lfoc (G, r)
-       in
-         rfoc (G, v, a);
-         c
-       end
-     | CTERM (m, c) =>
-       (rinv (G, [], m, c);
-        c)
-       
+       PROJ (r, lbl) => let val OBJ crow = lfoc (G, r) in Row.lookup crow lbl end
+     | APP (r, v) => let val ARR (a, c) = lfoc (G, r) in rfoc (G, v, a); c end
+     | CTERM (m, c) => (rinv (G, [], m, c); c)
 
 end
