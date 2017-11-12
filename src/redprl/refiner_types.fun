@@ -1502,6 +1502,80 @@ struct
       end
   end
 
+  structure Pushout =
+  struct
+    val kindConstraintOnEndsAndApex =
+      fn K.DISCRETE => E.raiseError @@
+           E.NOT_APPLICABLE (Fpp.text "Pushouts", Fpp.text "discrete universes")
+       | K.KAN => (K.COE, K.COE)
+       | K.COE => (K.COE, K.COE)
+       | K.HCOM => (K.STABLE, K.STABLE)
+       | K.STABLE => (K.STABLE, K.STABLE)
+
+    fun EqType alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqType"
+        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val Syn.PUSHOUT (a0, b0, c0, (x0, f0x0), (y0, g0y0)) = Syn.out ty0
+        val Syn.PUSHOUT (a1, b1, c1, (x1, f1x1), (y1, g1y1)) = Syn.out ty1
+
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+        val goalA = makeEqType H ((a0, a1), l, kEnd)
+        val goalB = makeEqType H ((b0, b1), l, kEnd)
+        val goalC = makeEqType H ((c0, c1), l, kApex)
+
+        val z = alpha 0
+        val f0z = VarKit.rename (z, x0) f0x0
+        val f1z = VarKit.rename (z, x1) f1x1
+        val goalF = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((f0z, f1z), (a0, l, K.top))
+        val g0z = VarKit.rename (z, y0) g0y0
+        val g1z = VarKit.rename (z, y1) g1y1
+        val goalG = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((g0z, g1z), (b0, l, K.top))
+      in
+        |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, trivial)
+      end
+
+    fun EqLeft alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqLeft"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.LEFT m0 = Syn.out tm0
+        val Syn.LEFT m1 = Syn.out tm1
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+
+        val goalA = makeEq H ((m0, m1), (a, l, kEnd))
+
+        val goalB = makeType H (b, l, kEnd)
+        val goalC = makeType H (c, l, kApex)
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, l, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, l, K.top))
+      in
+        |>: goalA >: goalF >: goalG >: goalB >: goalC #> (H, trivial)
+      end
+
+    fun EqRight alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqRight"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.RIGHT m0 = Syn.out tm0
+        val Syn.RIGHT m1 = Syn.out tm1
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+
+        val goalB = makeEq H ((m0, m1), (b, l, kEnd))
+
+        val goalA = makeType H (a, l, kEnd)
+        val goalC = makeType H (c, l, kApex)
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, l, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, l, K.top))
+      in
+        |>: goalB >: goalF >: goalG >: goalA >: goalC #> (H, trivial)
+      end
+  end
+
   structure InternalizedEquality =
   struct
     val kindConstraintOnBase =
