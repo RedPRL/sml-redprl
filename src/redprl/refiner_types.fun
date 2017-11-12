@@ -1527,10 +1527,10 @@ struct
         val z = alpha 0
         val f0z = VarKit.rename (z, x0) f0x0
         val f1z = VarKit.rename (z, x1) f1x1
-        val goalF = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((f0z, f1z), (a0, l, K.top))
+        val goalF = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((f0z, f1z), (a0, L.top, K.top))
         val g0z = VarKit.rename (z, y0) g0y0
         val g1z = VarKit.rename (z, y1) g1y1
-        val goalG = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((g0z, g1z), (b0, l, K.top))
+        val goalG = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((g0z, g1z), (b0, L.top, K.top))
       in
         |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, trivial)
       end
@@ -1549,8 +1549,8 @@ struct
         val goalB = makeType H (b, l, kEnd)
         val goalC = makeType H (c, l, kApex)
         val z = alpha 0
-        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, l, K.top))
-        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, l, K.top))
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
       in
         |>: goalA >: goalF >: goalG >: goalB >: goalC #> (H, trivial)
       end
@@ -1569,8 +1569,8 @@ struct
         val goalA = makeType H (a, l, kEnd)
         val goalC = makeType H (c, l, kApex)
         val z = alpha 0
-        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, l, K.top))
-        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, l, K.top))
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
       in
         |>: goalB >: goalF >: goalG >: goalA >: goalC #> (H, trivial)
       end
