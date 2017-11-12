@@ -9,21 +9,18 @@ sig
   datatype cneu = datatype SyntaxData.I.cneu
   type var = SyntaxData.Var.t
 
+  (* variable context *)
   type ctx = (var * vtype) list
+
+  (* inversion context *)
   type ictx = (vpat * vtype) list
 
-  (* check a computation (right inversion) *)
-  val chk_cr : ctx * ictx * cterm * ctype -> unit
-
-  (* check a computation (left inversion *)
-  val chk_cl : ctx * ictx * cterm * ctype -> unit
+  val rinv : ctx * ictx * cterm * ctype -> unit
+  val linv : ctx * ictx * cterm * ctype -> unit
 
   (* check a value (right focus) *)
-  val chk_v : ctx * vterm * vtype -> unit
+  val rfoc : ctx * vterm * vtype -> unit
 
   (* infer a computation (left focus) *)
-  val inf_c : ctx * cneu -> ctype
-
-  (* infer a value *)
-  val inf_v : ctx * vneu -> vtype
+  val lfoc : ctx * cneu -> ctype
 end

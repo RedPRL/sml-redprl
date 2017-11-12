@@ -17,7 +17,7 @@ struct
 
   and ctype = 
      UP of vtype 
-   | AND of ctype row
+   | OBJ of ctype row
    | ARR of vtype * ctype
 
   structure I = 
@@ -37,18 +37,19 @@ struct
 
     and vneu = 
        VAR of Var.t
-     | VTERM of Var.t * vtype
+     | VTERM of vterm * vtype
 
    and cterm = 
       CNEU of cneu
     | FUN of vpat * cterm
     | RECORD of cterm row
     | LET of vpat * cneu * cterm
+    | RET of vterm
   
    and cneu =
       FORCE of vneu
-    | PROJ of vneu * string
-    | APP of vneu * vterm
+    | PROJ of cneu * string
+    | APP of cneu * vterm
     | CTERM of cterm * ctype
   end
 
