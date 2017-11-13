@@ -33,10 +33,10 @@ struct
 
   and linv (G, W, m, c) =
     case W of
-       [] => stable (G, m, c)
+       [] => linvEmpty (G, m, c)
      | p :: W' => linvPat (G, W, p, m, c)
 
-  and stable (G, m, c) = 
+  and linvEmpty (G, m, c) = 
     case (m, c) of 
        (CNEU r, _) => assert (eqCtype (lfoc (G, r), c))
      | (FORCE r, _) => let val DOWN d = rfocNeu (G, r) in assert (eqCtype (d, c)) end
