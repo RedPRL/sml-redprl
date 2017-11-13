@@ -41,6 +41,12 @@ struct
        (CNEU r, _) => assert (eqCtype (lfoc (G, r), c))
      | (FORCE r, _) => let val DOWN d = rfocNeu (G, r) in assert (eqCtype (d, c)) end
      | (RET v, UP a) => rfoc (G, v, a)
+     | (LET (p, r, n), _) =>
+       let
+         val UP a = lfoc (G, r)
+       in
+         rinv (G, [(p, a)], n, c)
+       end
 
   and linvPat (G, W, (p, a), m, c) =
     case (p, a, m) of
