@@ -9,15 +9,6 @@ Thm Univ1(#i:lvl) : [
 ] by [
   auto
 ].
-
-Thm Univ2 : [
-  x : (U 2)
-  >>
-  x type at 2
-] by [
-  auto
-].
-
 Thm Monoid(#i:lvl) : [ (U (++ #i)) ] by [
   `(record
     [ob : (U #i)]
