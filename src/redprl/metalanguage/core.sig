@@ -16,8 +16,7 @@ sig
   type ictx = (vpat * vtype) list
 
   (* check computations (inversion) *)
-  val rinv : ctx * ictx * cterm * ctype -> unit
-  val linv : ctx * ictx * cterm * ctype -> unit
+  val inv : ctx * ictx * cterm * ctype -> unit
 
   (* check values (right focus) *)
   val rfoc : ctx * vterm * vtype -> unit
