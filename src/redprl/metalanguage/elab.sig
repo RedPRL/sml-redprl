@@ -4,7 +4,8 @@ sig
 
   datatype eterm = datatype SyntaxData.E.term
 
-  type name_env = I.var StringListDict.dict
+  type env
 
-  val elabCterm : name_env -> eterm * I.ctype -> I.cterm
+  val elabCterm : env -> eterm * I.ctype -> I.cterm
+  val elabVterm : env -> eterm * I.vtype -> I.vterm
 end

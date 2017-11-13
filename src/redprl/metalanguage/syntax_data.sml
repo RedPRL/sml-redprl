@@ -71,7 +71,6 @@ struct
      | CON of string * term
 
     and branch = BRANCH of pat * term
-
-    and decl = DECL (* TODO *)
+    and decl = DECL of pat * term * term
   end
 end
