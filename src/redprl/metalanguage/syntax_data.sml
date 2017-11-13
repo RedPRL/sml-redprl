@@ -58,12 +58,20 @@ struct
   structure E = 
   struct
     type var = string
+    datatype pat = 
+       PVAR of string
+     | PRCD of (string * pat) list
+     | PCON of string * pat
+
     datatype term =
        VAR of string
      | LET of decl list * term
-     | RCD of term row
+     | RCD of (string * term) list
+     | FUN of branch list
+     | CON of string * term
+
+    and branch = BRANCH of pat * term
 
     and decl = DECL (* TODO *)
-    and pat = PAT (* TODO *)
   end
 end

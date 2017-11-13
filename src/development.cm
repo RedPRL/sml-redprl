@@ -25,7 +25,8 @@ Group is
   redprl/metalanguage/syntax_data.sml
   redprl/metalanguage/core.sig
   redprl/metalanguage/core.sml
-
+  redprl/metalanguage/elab.sig
+  redprl/metalanguage/elab.sml
 
   redprl/metalanguage/syntax.sml
   redprl/metalanguage/statics.fun

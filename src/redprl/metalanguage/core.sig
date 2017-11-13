@@ -1,4 +1,4 @@
-signature ML_CORE = 
+signature ML_DATA = 
 sig
   datatype vtype = datatype SyntaxData.vtype
   datatype ctype = datatype SyntaxData.ctype
@@ -8,6 +8,11 @@ sig
   datatype cterm = datatype SyntaxData.I.cterm
   datatype cneu = datatype SyntaxData.I.cneu
   type var = SyntaxData.Var.t
+end
+
+signature ML_CORE = 
+sig
+  include ML_DATA
 
   (* variable context *)
   type ctx = (var * vtype) list
