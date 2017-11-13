@@ -1625,6 +1625,56 @@ struct
          >:+ ComKit.genEqFComGoals H z (args0, args1) (ty, L.top, K.top)
         #> (H, trivial)
       end
+
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.Elim"
+        val H >> AJ.TRUE (dz, l, k) = jdg
+        (* pushout-rec(FCOM) steps to COM *)
+        val k = K.meet (k, K.COM)
+        (* for now we ignore the kind and the level in the context *)
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+
+        (* We need to kind-check cz because of FCOM
+         * This goal is made (explicitly) unconditional to simplify tactic writing
+         *)
+        val goalKind = makeType H (dz, l, k)
+
+        val m = alpha 0
+        val mtm = VarKit.toExp m
+
+        (* left branch *)
+        fun dleft tm = substVar (Syn.into (Syn.LEFT tm), z) dz
+        val (goalL, holeL) = makeTrue (H @> (m, AJ.TRUE (a, L.top, K.top))) (dleft mtm, L.top, K.top)
+
+        (* right branch *)
+        fun dright tm = substVar (Syn.into (Syn.RIGHT tm), z) dz
+        val (goalR, holeR) = makeTrue (H @> (m, AJ.TRUE (b, L.top, K.top))) (dright mtm, L.top, K.top)
+
+        (* glue branch *)
+        val v = alpha 1
+        val vtm = VarKit.toDim v
+        val fm = substVar (mtm, x) fx
+        val gm = substVar (mtm, y) gy
+        val glue = Syn.into @@ Syn.GLUE (vtm, mtm, fm, gm)
+        val dglue = substVar (glue, z) dz
+        val Hglue = H @> (v, AJ.TERM O.DIM) @> (m, AJ.TRUE (c, L.top, K.top))
+        val (goalG, holeG) = makeTrue Hglue (dglue, L.top, K.top)
+
+        (* coherence *)
+        val g0 = substVar (Syn.intoDim 0, v) holeG
+        val lf = substVar (fm, m) holeL
+        val goalCohL = makeEq (H @> (m, AJ.TRUE (c, L.top, K.top))) ((g0, lf), (dleft fm, L.top, K.top))
+
+        val g1 = substVar (Syn.intoDim 1, v) holeG
+        val rg = substVar (gm, m) holeR
+        val goalCohR = makeEq (H @> (m, AJ.TRUE (c, L.top, K.top))) ((g1, rg), (dright gm, L.top, K.top))
+
+        val elim = Syn.into @@ Syn.PUSHOUT_REC ((z, dz), VarKit.toExp z, ((m, holeL), (m, holeR), (v, m, holeG)))
+      in
+        |>: goalL >: goalR >: goalG >: goalCohL >: goalCohR >: goalKind #> (H, elim)
+      end
   end
 
   structure InternalizedEquality =
