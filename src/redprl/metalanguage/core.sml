@@ -65,7 +65,6 @@ struct
        in
          Row.app chkCase brow
        end
-     | (PNULL, UNIT, _) => inv (G, W, m, c)
      | (PVAR x, _, _) => inv ((x, a) :: G, W, m, c)
 
   and rfoc (G, v, a) =
@@ -74,7 +73,6 @@ struct
      | (TUPLE vrow, TENSOR brow) => Row.app (fn (lbl, b) => rfoc (G, Row.lookup vrow lbl, b)) brow
      | (CON (lbl, v), PLUS brow) => rfoc (G, v, Row.lookup brow lbl)
      | (THUNK m, DOWN c) => inv (G, [], m, c)
-     | (VNULL, UNIT) => ()
 
   and rfocNeu (G, r) =
     case r of 

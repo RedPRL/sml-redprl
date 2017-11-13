@@ -7,8 +7,7 @@ struct
   type 'a con = string * 'a
 
   datatype vtype = 
-     UNIT
-   | TENSOR of vtype row
+     TENSOR of vtype row
    | PLUS of vtype row
    | DOWN of ctype
    | PROOF
@@ -23,18 +22,21 @@ struct
   (* internal language *)
   structure I = 
   struct
+    datatype eff = 
+       EVAR of Var.t
+       (* builtin effects *)
+     | MATCH of string * ctype
+
     datatype vpat = 
        PTUPLE of vpat row
      | PCON of vpat row
      | PVAR of Var.t
-     | PNULL
 
     datatype vterm =
        VNEU of vneu
      | TUPLE of vterm row
      | CON of vterm con
      | THUNK of cterm
-     | VNULL
 
     and vneu = 
        VAR of Var.t
