@@ -7,12 +7,17 @@ sig
   datatype vneu = datatype SyntaxData.I.vneu
   datatype cterm = datatype SyntaxData.I.cterm
   datatype cneu = datatype SyntaxData.I.cneu
+  datatype eff = datatype SyntaxData.I.eff
   type var = SyntaxData.Var.t
+  type sym = SyntaxData.Sym.t
 end
 
 signature ML_CORE = 
 sig
   include ML_DATA
+
+  (* effect signature *)
+  type sign = (sym * vtype * vtype) list
 
   (* variable context *)
   type ctx = (var * vtype) list
@@ -21,14 +26,14 @@ sig
   type ictx = (vpat * vtype) list
 
   (* check computations (inversion) *)
-  val inv : ctx * ictx * cterm * ctype -> unit
+  val inv : sign * ctx * ictx * cterm * ctype -> unit
 
   (* check values (right focus) *)
-  val rfoc : ctx * vterm * vtype -> unit
+  val rfoc : sign * ctx * vterm * vtype -> unit
 
   (* infer neutral values (right focus) *)
-  val rfocNeu : ctx * vneu -> vtype
+  val rfocNeu : sign * ctx * vneu -> vtype
 
   (* infer neutral computations (left focus) *)
-  val lfoc : ctx * cneu -> ctype
+  val lfoc : sign * ctx * cneu -> ctype
 end

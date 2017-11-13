@@ -9,7 +9,9 @@ struct
     datatype vneu = datatype SyntaxData.I.vneu
     datatype cterm = datatype SyntaxData.I.cterm
     datatype cneu = datatype SyntaxData.I.cneu
+    datatype eff = datatype SyntaxData.I.eff
     type var = SyntaxData.Var.t
+    type sym = SyntaxData.Sym.t
   end
 
   structure Var = SyntaxData.Var
@@ -28,8 +30,22 @@ struct
        (_, I.UP a) => I.RET (elabVterm env (e, a))
      | (LET _, _) => ?todo
 
-     (* TODO: insert dummy clauses to cover missing ones *)
-     | (RCD rs, I.OBJ crow) => I.RECORD (List.foldl (fn ((lbl,e), row) => Row.insert row lbl (elabCterm env (e, Row.lookup crow lbl))) Row.empty rs)
+     | (RCD rs, I.OBJ crow) => 
+       let
+         fun go (lbl, e) =
+           case Row.find crow lbl of
+              SOME a => elabCterm env (e, Row.lookup crow lbl)
+            | NONE =>
+              let
+                fun abort r = I.LET (I.PCON Row.empty, r, I.RECORD Row.empty)
+                val raiseMatch = I.RAISE (I.MATCH lbl, I.TUPLE Row.empty)
+              in
+                abort raiseMatch
+              end
+       in
+         I.RECORD (List.foldl (fn ((lbl, e), row) => Row.insert row lbl (go (lbl, e))) Row.empty rs)
+       end
+
      | (FUN brs, I.ARR (a, b)) => ?todo
 
   and elabVterm env (e, a) = 

@@ -1,6 +1,7 @@
 structure SyntaxData = 
 struct
   structure Var = AbtSymbol ()
+  structure Sym = AbtSymbol ()
   structure Row = StringListDict
 
   type 'a row = 'a Row.dict
@@ -23,9 +24,9 @@ struct
   structure I = 
   struct
     datatype eff = 
-       EVAR of Var.t
+       OP of Sym.t
        (* builtin effects *)
-     | MATCH of string * ctype
+     | MATCH of string
 
     datatype vpat = 
        PTUPLE of vpat row
@@ -54,6 +55,7 @@ struct
       PROJ of cneu * string
     | APP of cneu * vterm
     | CTERM of cterm * ctype
+    | RAISE of eff * vterm
   end
 
   (* external language *)
