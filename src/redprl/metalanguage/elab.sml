@@ -48,11 +48,14 @@ struct
 
      | (FUN brs, I.ARR (a, b)) => ?todo
 
+     | (APP _, _) => ?todo
+
   and elabVterm env (e, a) = 
     case (e, a) of
        (_, I.DOWN c) => I.THUNK (elabCterm env (e, c))
      | (VAR x, _) => I.VNEU (I.VAR (elabVar env (x, a)))
      | (RCD rs, I.TENSOR arow) => I.TUPLE (List.foldl (fn ((lbl,e), row) => Row.insert row lbl (elabVterm env (e, Row.lookup arow lbl))) Row.empty rs)
+     | (CON (lbl, e), I.PLUS arow) => I.CON (lbl, elabVterm env (e, Row.lookup arow lbl))
      | _ => ?todo
 
   and elabVar (names, _) (x, _) =

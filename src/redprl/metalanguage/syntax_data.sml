@@ -73,6 +73,7 @@ struct
      | RCD of (string * term) list
      | FUN of branch list
      | CON of string * term
+     | APP of term * term
 
     and branch = BRANCH of pat * term
     and decl = DECL of pat * term * term
