@@ -188,7 +188,7 @@ struct
     in
       fun processDecl sign =
         fn DEF {arguments, sort, definiens} => DEF {arguments = arguments, sort = sort, definiens = processTerm sign StringListDict.empty definiens}
-         | THM {arguments, goal, script} => THM {arguments = arguments, goal = processSrcSeq sign StringListDict.empty goal, script = processTerm sign StringListDict.empty script}
+         | THM {arguments, goal, script} => THM {arguments = arguments, goal = processSrcCatjdg sign StringListDict.empty goal, script = processTerm sign StringListDict.empty script}
          | TAC {arguments, script} => TAC {arguments = arguments, script = processTerm sign StringListDict.empty script}
     end
 
@@ -273,25 +273,6 @@ struct
         in
           E.ret (varctx', env', x, catjdg)
         end)
-
-    fun elabSrcSeqHyps (metactx, varctx, env) : src_seqhyp list -> (Tm.varctx * variable NameEnv.dict * AJ.jdg Hyps.telescope) E.t =
-      let
-        fun go env vars H [] = E.ret (vars, env, H)
-          | go env vars H (hyp :: hyps) =
-              elabSrcSeqHyp (metactx, vars, env) hyp >>= (fn (vars', env', x, jdg) => 
-                go env' vars' (Hyps.snoc H x jdg) hyps)
-      in
-        go env varctx Hyps.empty
-      end
-
-    fun elabSrcSequent (metactx, varctx, env) (seq : src_sequent) : (variable NameEnv.dict * jdg) E.t =
-      let
-        val (hyps, concl) = seq
-      in
-        elabSrcSeqHyps (metactx, varctx, env) hyps >>= (fn (varctx', env', hyps') =>
-          elabSrcCatjdg (metactx, varctx', env') concl >>= (fn concl' =>
-            E.ret (env', RedPrlSequent.>> (hyps', concl'))))
-      end
 
     fun makeNamePopper alpha = 
       let
@@ -395,32 +376,27 @@ struct
               *> E.ret state
         end
     in
-
       fun elabThm sign opid pos {arguments, goal, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val env = initialEnv sign
         in
-          elabSrcSequent (metactx, Var.Ctx.empty, env) goal >>= (fn (_, seqjdg as hyps >> concl) =>
-            let
-              val seqjdg' = hyps >> concl
-            in
-              convertToAbt (metactx, Var.Ctx.empty, env) script TAC >>= 
-              (fn scriptTm => elabRefine sign globalNameSequence (seqjdg', scriptTm)) >>= 
-              checkProofState (pos, []) >>=
-              (fn Lcf.|> (subgoals, validation) => 
-                let
-                  fun state alpha =
-                    let
-                      val argSubgoals = argumentsToSubgoals alpha arguments'
-                      (* TODO: relabel ordinary subgoals using alpha too *)
-                    in
-                      Lcf.|> (Lcf.Tl.append argSubgoals subgoals, validation)
-                    end
-                in
-                  E.ret @@ EDEF {sourceOpid = opid, spec = seqjdg', state = state}
-                end)
-            end)
+          elabSrcCatjdg (metactx, Var.Ctx.empty, env) goal >>= (fn concl =>
+            convertToAbt (metactx, Var.Ctx.empty, env) script TAC >>= 
+            (fn scriptTm => elabRefine sign globalNameSequence (Hyps.empty >> concl, scriptTm)) >>= 
+            checkProofState (pos, []) >>=
+            (fn Lcf.|> (subgoals, validation) => 
+              let
+                fun state alpha =
+                  let
+                    val argSubgoals = argumentsToSubgoals alpha arguments'
+                    (* TODO: relabel ordinary subgoals using alpha too *)
+                  in
+                    Lcf.|> (Lcf.Tl.append argSubgoals subgoals, validation)
+                  end
+              in
+                E.ret @@ EDEF {sourceOpid = opid, spec = Hyps.empty >> concl, state = state}
+              end))
         end
       end
 

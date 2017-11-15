@@ -30,12 +30,10 @@ sig
   include MINI_SIGNATURE
 
   type src_catjdg = ast
-  type src_seqhyp = string * src_catjdg
-  type src_sequent = src_seqhyp list * src_catjdg
 
   datatype src_decl =
      DEF of {arguments : string arguments, sort : sort, definiens : ast}
-   | THM of {arguments : string arguments, goal : src_sequent, script : ast}
+   | THM of {arguments : string arguments, goal : src_catjdg, script : ast}
    | TAC of {arguments : string arguments, script : ast}
 
   datatype 'opid cmd =
