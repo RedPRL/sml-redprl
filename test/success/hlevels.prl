@@ -32,8 +32,7 @@ Thm PropSet(#l:lvl) : [
    (IsSet tyA)
   )
 ] by [
-  // unfold IsSet, IsProp; // why can't I chain unfolds like I can for lam?
-  unfold IsSet; unfold IsProp; // why do I need a ; and not .?
+  unfold [IsSet, IsProp];
   lam tyA, h, a, b, p, q.
   <j i> `(hcom 0~>1 tyA a
                [i=0 [k] (@ ($ h a a) k)]
@@ -42,26 +41,21 @@ Thm PropSet(#l:lvl) : [
                [j=1 [k] (@ ($ h a (@ q i)) k)])
 ].
 
-// // This proof should be easy, but it is not...
-// Thm IsPropIsProp(#l:lvl) : [
-//   (->
-//    [tyA : (U #l kan)]
-//    (IsProp (IsProp tyA))
-//   )
-// ] by [
-//   unfold IsProp; // If I don't unfold here I get a ton of obligations...
-//   lam tyA, h1, h2. // why is 1 and 2 blue?
-//   <i> lam a, b.
-//   // I want to write something simple like this:
-//   // `(@ (PropSet #l tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
-//   // But that gives 10 obligations, so I try to manually instantiate the lemma
-//   let foo : [(IsSet tyA)] = `(PropSet #l tyA h1).
-//   unfold IsSet; unfold IsProp;
-//   let bar : [(path [_] (path [_] tyA a b) ($ h1 a b) ($ h2 a b))] =
-//     `($ foo a b ($ h1 a b) ($ h2 a b)).
-//   `(@ bar i)
-//   // But this gives 29 obligations... ugh, giving up!
-// ].
+// This proof should be easy, but it is not...
+Thm IsPropIsProp(#l:lvl) : [
+  (->
+   [tyA : (U #l kan)]
+   (IsProp (IsProp tyA))
+  )
+] by [
+  unfold IsProp; // If I don't unfold here I get a ton of obligations...
+  lam tyA, h1, h2. // why is 1 and 2 blue?
+  (<i> lam a, b.
+    let foo = (PropSet #l) [`tyA, `h1].
+    unfold [IsSet, IsProp];
+    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]);
+  unfold PropSet; auto
+].
 
 // // This should be exactly like the one above:
 // Thm IsPropIsSet(#l:lvl) : [

@@ -10,7 +10,6 @@ install:
   - git submodule update --init --recursive
 script:
   - ./script/test-${COMPILER}.sh
-  - cat 'build.log'
 
 notifications:
   email: false

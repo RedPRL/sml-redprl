@@ -37,11 +37,9 @@ Thm RecordTest4 : [
 ].
 
 Thm RecordTest5(#p) : [
-  #p in record
-  >>
-  #p = tuple in record
+  (-> [p : record] (= record p tuple))
 ] by [
-  auto
+  lam _. auto
 ].
 
 Thm RecordTest6 : [
