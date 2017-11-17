@@ -35,6 +35,10 @@ struct
         [tool, Fpp.text "is not applicable to:", Fpp.nest 2 obj]
      | UNIMPLEMENTED doc => Fpp.hsep
         [Fpp.text "Not implemented:", Fpp.nest 2 doc]
+     | INCORRECT_ARITY (ast, ar) =>
+        Fpp.vsep
+          [Fpp.hsep [Fpp.text "Incorrect arity in term:", Fpp.text (RedPrlAst.toString ast)],
+           Fpp.hsep [Fpp.text "Expected: ", Fpp.text (RedPrlArity.toString ar)]]
      | GENERIC doc => Fpp.hsep doc
 
   val rec format =
