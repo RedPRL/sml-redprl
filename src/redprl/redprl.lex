@@ -158,6 +158,7 @@ whitespace = [\ \t];
 "repeat"           => (Tokens.MTAC_REPEAT (posTuple (size yytext)));
 "progress"         => (Tokens.MTAC_PROGRESS (posTuple (size yytext)));
 "id"               => (Tokens.RULE_ID (posTuple (size yytext)));
+"fail"             => (Tokens.TAC_FAIL (posTuple (size yytext)));
 "symmetry"         => (Tokens.RULE_SYMMETRY (posTuple (size yytext)));
 "auto-step"        => (Tokens.RULE_AUTO_STEP (posTuple (size yytext)));
 "auto"             => (Tokens.MTAC_AUTO (posTuple (size yytext)));

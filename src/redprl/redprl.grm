@@ -54,8 +54,13 @@ struct
   fun exact m =
     O.RULE_EXACT $$ [[] \ m]
 
+  val fail = O.TAC_FAIL $$ []
+
+  fun try t = 
+    orElse (t, O.RULE_ID $$ [])
+
   fun exactAuto m =
-    then_ (exact m, autoTac)
+    then_ (exact m, try (then_ (autoTac, fail)))
 
   fun makeMatch term clauses = 
     let
@@ -340,7 +345,7 @@ end
  | THEN | ELSE
  | REFINE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
- | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_REWRITE | RULE_REWRITE_HYP | RULE_REDUCE | RULE_UNFOLD
+ | RULE_ID | TAC_FAIL | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_ELIM | RULE_REWRITE | RULE_REWRITE_HYP | RULE_REDUCE | RULE_UNFOLD
  | RULE_EXACT
  | TAC_INVERSION
  | MATCH
@@ -869,6 +874,7 @@ elimTargetAnySort
 atomicRawTac
   : REFINE VARNAME (Ast.$$ (O.RULE_PRIM VARNAME, []))
   | RULE_ID (Ast.$$ (O.RULE_ID, []))
+  | TAC_FAIL (Ast.$$ (O.TAC_FAIL, []))
   | RULE_AUTO_STEP (Ast.$$ (O.RULE_AUTO_STEP, []))
   | RULE_SYMMETRY (Ast.$$ (O.RULE_SYMMETRY, []))
   | RULE_ELIM elimTargetAnySort (Ast.$$ (O.RULE_ELIM, [Ast.\ ([], elimTargetAnySort)]))

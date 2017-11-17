@@ -220,6 +220,7 @@ struct
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH | MTAC_FOCUS of int
    | MTAC_HOLE of string option
+   | TAC_FAIL
    | TAC_MTAC
 
    (* primitive rules *)
@@ -373,6 +374,7 @@ struct
      | MTAC_EACH => [[] |: VEC TAC] ->> MTAC
      | MTAC_FOCUS _ => [[] |: TAC] ->> MTAC
      | MTAC_HOLE _ => [] ->> MTAC
+     | TAC_FAIL => [] ->> TAC
      | TAC_MTAC => [[] |: MTAC] ->> TAC
 
      | RULE_ID => [] ->> TAC
@@ -504,6 +506,7 @@ struct
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
      | MTAC_HOLE (SOME x) => "?" ^ x
      | MTAC_HOLE NONE => "?"
+     | TAC_FAIL => "fail"
      | TAC_MTAC => "mtac"
 
      | RULE_ID => "id"

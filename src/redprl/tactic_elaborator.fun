@@ -387,6 +387,7 @@ struct
      | O.DEV_PRINT $ [_ \ tm'] =>
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
         T.idn)
+     | O.TAC_FAIL $ _ => fail "fail"
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =
