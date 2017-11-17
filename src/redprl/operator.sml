@@ -220,16 +220,17 @@ struct
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH | MTAC_FOCUS of int
    | MTAC_HOLE of string option
+   | TAC_FAIL
    | TAC_MTAC
 
    (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT | RULE_REDUCE_ALL
+   | TAC_ID | TAC_AUTO_STEP | TAC_SYMMETRY | RULE_EXACT | TAC_REDUCE_ALL
    | RULE_CUT
    | RULE_PRIM of string
-   | RULE_ELIM
-   | RULE_REWRITE
-   | RULE_REWRITE_HYP
-   | RULE_REDUCE
+   | TAC_ELIM
+   | TAC_REWRITE
+   | TAC_REWRITE_HYP
+   | TAC_REDUCE
 
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
@@ -251,8 +252,8 @@ struct
    | PAT_META of sort
  
    | CUST of opid * RedPrlArity.t option
-   | RULE_UNFOLD_ALL of opid list
-   | RULE_UNFOLD of opid list
+   | TAC_UNFOLD_ALL of opid list
+   | TAC_UNFOLD of opid list
    | DEV_USE_LEMMA of opid * RedPrlArity.t option
    | DEV_APPLY_LEMMA of opid * RedPrlArity.t option * unit dev_pattern
 
@@ -373,20 +374,21 @@ struct
      | MTAC_EACH => [[] |: VEC TAC] ->> MTAC
      | MTAC_FOCUS _ => [[] |: TAC] ->> MTAC
      | MTAC_HOLE _ => [] ->> MTAC
+     | TAC_FAIL => [] ->> TAC
      | TAC_MTAC => [[] |: MTAC] ->> TAC
 
-     | RULE_ID => [] ->> TAC
-     | RULE_AUTO_STEP => [] ->> TAC
-     | RULE_SYMMETRY => [] ->> TAC
+     | TAC_ID => [] ->> TAC
+     | TAC_AUTO_STEP => [] ->> TAC
+     | TAC_SYMMETRY => [] ->> TAC
      | RULE_EXACT => [[] |: ANY] ->> TAC
-     | RULE_REDUCE_ALL => [] ->> TAC
-     | RULE_REDUCE => [[] |: VEC SEL] ->> TAC
+     | TAC_REDUCE_ALL => [] ->> TAC
+     | TAC_REDUCE => [[] |: VEC SEL] ->> TAC
 
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
-     | RULE_ELIM => [[] |: ANY] ->> TAC
-     | RULE_REWRITE => [[] |: SEL, [] |: EXP] ->> TAC
-     | RULE_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
+     | TAC_ELIM => [[] |: ANY] ->> TAC
+     | TAC_REWRITE => [[] |: SEL, [] |: EXP] ->> TAC
+     | TAC_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -410,8 +412,8 @@ struct
 
      | JDG_TERM _ => [] ->> JDG
      | CUST (_, ar) => Option.valOf ar
-     | RULE_UNFOLD_ALL _ => [] ->> TAC
-     | RULE_UNFOLD _ => [[] |: VEC SEL] ->> TAC
+     | TAC_UNFOLD_ALL _ => [] ->> TAC
+     | TAC_UNFOLD _ => [[] |: VEC SEL] ->> TAC
      | DEV_APPLY_LEMMA (_, ar, pat) =>
        let
          val (vls, tau) = Option.valOf ar
@@ -504,19 +506,20 @@ struct
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
      | MTAC_HOLE (SOME x) => "?" ^ x
      | MTAC_HOLE NONE => "?"
+     | TAC_FAIL => "fail"
      | TAC_MTAC => "mtac"
 
-     | RULE_ID => "id"
-     | RULE_AUTO_STEP => "auto-step"
-     | RULE_SYMMETRY => "symmetry"
+     | TAC_ID => "id"
+     | TAC_AUTO_STEP => "auto-step"
+     | TAC_SYMMETRY => "symmetry"
      | RULE_EXACT => "exact"
-     | RULE_REDUCE_ALL => "reduce-all"
-     | RULE_REDUCE => "reduce"
+     | TAC_REDUCE_ALL => "reduce-all"
+     | TAC_REDUCE => "reduce"
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
-     | RULE_ELIM => "elim"
-     | RULE_REWRITE => "rewrite"
-     | RULE_REWRITE_HYP => "rewrite-hyp"
+     | TAC_ELIM => "elim"
+     | TAC_REWRITE => "rewrite"
+     | TAC_REWRITE_HYP => "rewrite-hyp"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
@@ -552,8 +555,8 @@ struct
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | CUST (opid, _) => opid
-     | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
-     | RULE_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
+     | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
+     | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
      | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ opid ^ "}"
      | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ opid ^ "}"
 end
