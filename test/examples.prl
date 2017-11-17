@@ -67,23 +67,6 @@ Tac TryStep = [
   (Try #tac{auto-step})
 ].
 
-Thm ApEqTest : [
-  (->
-   [f : (-> wbool wbool)]
-   (path [_] wbool ($ f tt) ($ f tt)))
-] by [
-  // This is a good example of the difference between hypotheses and variables. A tactic script is
-  // a program, and itself may have variables in it---such as a variable ranging over a tactic, induced
-  // by the recursion tactical, etc.
-
-  // On the other hand, tactics like 'lam' introduce *hypothesis names*, which are not variables; they are
-  // *names* of object variables. The contradiction between hypotheses qua names and hypotheses qua object
-  // variables is mediated using an "unquotation" operator, written ','. When supplying a witness, the hypothesis
-  // name is "unquoted" using the comma operator, which causes it to become the appropriate object
-  // variable.
-  lam f. <_> `($ f tt)
-].
-
 // 'wif' stands for "weak if", which is the recursor for the weak booleans. It differs
 // from ordinary 'if' in that it must take the motive of induction as an argument;
 // this is computationally relevant in the case of hcoms.
