@@ -6,7 +6,7 @@ Tac QueryGoalType(#t : [exp].tac) = [
 ].
 
 Thm MatchGoal : [ (-> bool bool bool bool bool bool) ] by [
-  fresh x y -> repeat {
+  fresh x y in repeat {
     (QueryGoalType [ty] #tac{
       match ty {
         [a, b | (-> [x:%a] (%b x)) => refine fun/intro; [id, auto]]

@@ -13,7 +13,7 @@ Tac Rewrite(#c : [exp].exp, #n, #a, #t : tac) = [
     assert p : [hole = #n in #a] by [#t] in
     // Use the elimination rule for equality. We bind a new hypothesis which will represent the location
     // in the goal #c which is being rewritten.
-    fresh x -> rewrite-hyp p;
+    fresh x in rewrite-hyp p;
     [`(#c x), id, auto, auto]
   })
 ].
