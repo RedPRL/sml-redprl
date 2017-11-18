@@ -13,7 +13,7 @@ Def Id = [(lam [a] a)].
 Thm IdIsEquiv(#l:lvl) : [
   (-> [ty : (U #l hcom)] (IsEquiv ty ty Id))
 ] by [
-  lam ty, a =>
+  lam ty a =>
   { {use a, abs _ => use a}
   , lam {_,c'} => abs i =>
        { `(hcom 1~>0 ty a
@@ -58,7 +58,7 @@ Thm IdV/Test0(#i:dim, #l:lvl) : [
    [a : ty]
    (Member (Vin #i a a) (IdV #i #l ty)))
 ] by [
-  lam ty, a => `ax
+  lam ty a => `ax
 ].
 
 Thm IdV/Test1(#l:lvl) : [
@@ -67,7 +67,7 @@ Thm IdV/Test1(#l:lvl) : [
    [a : ty]
    (= ty (Vproj (dim 0) (Vin (dim 0) a a) Id) a))
 ] by [
-  lam ty, a => auto
+  lam ty a => auto
 ].
 
 Thm IdV/Test2(#l:lvl) : [
@@ -77,7 +77,7 @@ Thm IdV/Test2(#l:lvl) : [
    (= ty (coe 0~>1 [x] (IdV x #l ty) a)
          (coe 0~>1 [_] ty a)))
 ] by [
-  lam ty, a => auto
+  lam ty a => auto
 ].
 
 Print IdV/Test2.
@@ -90,7 +90,7 @@ Thm Bool/reflect : [
   [p : (path [_] bool a b)]
   (= bool a b))
 ] by [
-  lam a, b, p => `(coe 0~>1 [x] (= bool a (@ p x)) ax)
+  lam a b p => `(coe 0~>1 [x] (= bool a (@ p x)) ax)
 ].
 
 Tac Bool/contra/inverse (#p:exp) = [

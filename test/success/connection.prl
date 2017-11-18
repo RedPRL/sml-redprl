@@ -5,7 +5,7 @@ Thm Connection(#l:lvl) : [
    [p : (path [_] ty a b)]
    (path [i] (path [_] ty a (@ p i)) (abs [_] a) p))
 ] by [
-  lam ty, a, b, p =>
+  lam ty a b p =>
     abs i j =>
       `(hcom 0~>1 ty a
         [i=0 [k]
@@ -42,7 +42,7 @@ Thm BetterConnection(#l:lvl) : [
    [p : (path [_] ty a b)]
    (path [i] (path [_] ty a (@ p i)) (abs [_] a) p))
 ] by [
-  lam ty, a, b, p =>
+  lam ty a b p =>
     abs i j =>
       `(hcom 0~>1 ty a
         [i=0 [k]
@@ -74,7 +74,7 @@ Thm BetterConnectionTest0 (#l:lvl) : [
    [p : (path [_] ty a b)]
    (= (path [_] ty a b) (abs [i] (@ ($ (BetterConnection #l) ty a b p) i i)) p))
 ] by [
-  lam ty, a, b, p => unfold BetterConnection; auto
+  lam ty a b p => unfold BetterConnection; auto
 ].
 
 

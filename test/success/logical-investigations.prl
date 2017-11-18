@@ -5,7 +5,7 @@ Thm Thm1 : [
    [p q : (U 0)]
    p q p)
 ] by [
-  lam p, q, a, b => use a
+  lam p q a b => use a
 ].
 
 Thm Thm2 : [
@@ -15,7 +15,7 @@ Thm Thm2 : [
    (-> p q r)
    p r)
 ] by [
-  lam p, q, r, f, g, a =>
+  lam p q r f g a =>
   use g [use a, use f [use a]]
 ].
 
@@ -30,7 +30,7 @@ Thm Thm3/low-level : [
    (-> q r)
    (-> p r))
 ] by [
-  fresh p, q, r, pq, qr, x -> repeat {refine fun/intro || id};
+  fresh p q r pq qr x -> repeat {refine fun/intro || id};
   auto;
   fresh z -> elim qr;
   [fresh y -> elim pq; [use x, use y], use z]
@@ -48,7 +48,7 @@ Thm Thm3/high-level : [
    (-> q r)
    (-> p r))
 ] by [
-  lam p, q, r, f, g, x =>
+  lam p q r f g x =>
   use g [use f [use x]]
 ].
 
@@ -59,7 +59,7 @@ Def Not(#A) = [ (-> #A void) ].
 Thm Thm4 : [
   (-> [p q : (U 0)] (Not p) p q)
 ] by [
-  lam p, q, r, a =>
+  lam p q r a =>
   unfold Not;
   let boom = r [use a] in
   elim boom
@@ -68,7 +68,7 @@ Thm Thm4 : [
 Thm Thm5 : [
   (-> [p : (U 0)] p (Not (Not p)))
 ] by [
-  lam p, a => unfold Not; lam r =>
+  lam p a => unfold Not; lam r =>
   use r [use a]
 ].
 
@@ -79,7 +79,7 @@ Print Thm5.
 Thm Thm6(#A,#B) : [
   (-> [p q : (U 0)] (-> p q) (Not q) (Not p))
 ] by [
-  lam p, q, f, g => unfold Not; lam a =>
+  lam p q f g => unfold Not; lam a =>
   use g [use f [use a]]
 ].
 

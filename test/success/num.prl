@@ -19,14 +19,14 @@ Thm NatOne : [
 Thm NatIsInt : [
   (-> [x : nat] (= int x x))
 ] by [
-  lam x => fresh x', x'/ih -> elim x; auto
+  lam x => fresh x' x'/ih -> elim x; auto
 ].
 
 Thm Pred : [
   (-> nat nat)
 ] by [
   lam a =>
-  fresh a', ind -> elim a;
+  fresh a' ind -> elim a;
   [ `zero ];
   [ `a' ]
 ].
@@ -46,7 +46,7 @@ Thm Plus : [
   (-> nat nat nat)
 ] by [
   lam a =>
-  fresh a', ind -> elim a;
+  fresh a' ind -> elim a;
   [ lam x => use x
   , lam x => let ih/x = ind [use x] in `(succ ih/x)
   ]
@@ -68,7 +68,7 @@ Thm Plus/zero/R : [
   (-> [n : nat] (= nat ($ Plus n 0) n))
 ] by [
   lam n =>
-    fresh n', ind -> elim n;
+    fresh n' ind -> elim n;
     [ `ax
     , fresh x -> rewrite-hyp ind;
       [ `(= nat (succ x) (succ n'))
@@ -82,14 +82,14 @@ Thm Plus/zero/R : [
 Thm Plus/succ/L : [
   (-> [n m : nat] (= nat ($ Plus (succ n) m) (succ ($ Plus n m))))
 ] by [
-  lam n, m => auto; refine fun/eq/app; [`(-> nat nat)]; auto; SimpleNatRecEq
+  lam n m => auto; refine fun/eq/app; [`(-> nat nat)]; auto; SimpleNatRecEq
 ].
 
 
 Thm Plus/succ/R : [
   (-> [n m : nat] (= nat ($ Plus n (succ m)) (succ ($ Plus n m))))
 ] by [
-  lam n, m => fresh n', n'/ih -> elim n;
+  lam n m => fresh n' n'/ih -> elim n;
     [ auto
     , fresh x -> rewrite ($ Plus/succ/L n' (succ m));
       [ `(= nat x (succ ($ Plus (succ n') m)))
@@ -109,7 +109,7 @@ Thm Plus/succ/R : [
 Thm Plus/test0 : [
   (-> [n m : nat] [eq : (= nat ($ Plus n zero) m)] (= nat n m))
 ] by [
-  lam n, m, eq =>
+  lam n m eq =>
     fresh x -> rewrite ($ Plus/zero/R n) in eq;
     [ `(= nat x m) ]; auto
 ].
@@ -117,13 +117,13 @@ Thm Plus/test0 : [
 Thm Eq/sym : [
   (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
 ] by [
-  lam ty, a, b, eq => symmetry; auto
+  lam ty a b eq => symmetry; auto
 ].
 
 Thm Plus/comm : [
   (-> [n m : nat] (= nat ($ Plus n m) ($ Plus m n)))
 ] by [
-  lam n, m => fresh n', n'/ih -> elim n;
+  lam n m => fresh n' n'/ih -> elim n;
     [ symmetry; `($ Plus/zero/R  m)
     , fresh x -> rewrite ($ Plus/succ/L n' m);
       [ `(= nat x ($ Plus m (succ n')))
@@ -143,7 +143,7 @@ Thm NatSymm : [
    (path [_] nat a b)
    (path [_] nat b a))
 ] by [
-  lam a, b, pab => 
+  lam a b pab => 
   abs i =>
     `(hcom 0~>1 nat a 
       [i=0 [j] (@ pab j)]
@@ -155,8 +155,8 @@ Print NatSymm.
 Thm IntPred : [
   (-> int int)
 ] by [
-  lam a => fresh a', junk -> elim a;
-  [ `-1, fresh n, junk -> elim a'; [`0, `(succ n)]
+  lam a => fresh a' junk -> elim a;
+  [ `-1, fresh n junk -> elim a'; [`0, `(succ n)]
   , `-2, `(negsucc (succ (succ a')))
   ]
 ].
@@ -164,7 +164,7 @@ Thm IntPred : [
 Thm IntSucc : [
   (-> int int)
 ] by [
-  lam a => fresh a', junk -> elim a;
+  lam a => fresh a' junk -> elim a;
   [ `1, `(succ (succ a'))
   , `0, `(negsucc a')
   ]
@@ -173,7 +173,7 @@ Thm IntSucc : [
 Thm IntPlus : [
   (-> int int int)
 ] by [
-  lam a => fresh a', ind -> elim a;
+  lam a => fresh a' ind -> elim a;
   [ lam b => use b
   , lam b => `($ IntSucc ($ ind b))
   , lam b => `($ IntPred b)

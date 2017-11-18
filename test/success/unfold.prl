@@ -15,7 +15,7 @@ Tac Proj2(#z) = [
 Thm Times/Proj : [
   (-> [ty : (U 0)] (Times bool ty) ty)
 ] by [
-  lam ty, x => (Proj2 x)
+  lam ty x => (Proj2 x)
 ].
 
 Extract Times/Proj.

@@ -11,7 +11,7 @@ Thm InhPropIsContr(#l:lvl) : [
   (IsContr ty))
 ] by [
   unfold IsProp;
-  lam ty, h, a => {use a, lam x => `($ h x a)}
+  lam ty h a => {use a, lam x => `($ h x a)}
 ].
 
 Thm PropPi(#l:lvl) : [
@@ -21,7 +21,7 @@ Thm PropPi(#l:lvl) : [
   [h : (-> [x : tyA] (IsProp ($ tyB x)))]
   (IsProp (-> [x : tyA] ($ tyB x))))
 ] by [
-  unfold IsProp; lam tyA, tyB, h, f, g =>
+  unfold IsProp; lam tyA tyB h f g =>
   abs i => lam x => `(@ ($ h x ($ f x) ($ g x)) i)
 ].
 
@@ -31,8 +31,8 @@ Thm PropSet(#l:lvl) : [
    [h : (IsProp tyA)]
    (IsSet tyA))
 ] by [
-  unfold [IsSet, IsProp];
-  lam tyA, h, a, b, p, q => 
+  unfold IsSet IsProp;
+  lam tyA h a b p q => 
   abs j i =>
     `(hcom 0~>1 tyA a
       [i=0 [k] (@ ($ h a a) k)]
@@ -49,10 +49,10 @@ Thm IsPropIsProp(#l:lvl) : [
   )
 ] by [
   unfold IsProp;
-  lam tyA, h1, h2 =>
-  (abs i => lam a, b =>
+  lam tyA h1 h2 =>
+  (abs i => lam a b =>
     let foo = (PropSet #l) [`tyA, `h1] in
-    unfold [IsSet, IsProp];
+    unfold IsSet IsProp;
     use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]);
   unfold PropSet; auto
 ].

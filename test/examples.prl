@@ -19,7 +19,7 @@ Thm LowLevel : [
     wbool)
 ] by [
   fresh f -> refine fun/intro;
-  [fresh x, x/eq -> elim f;
+  [fresh x x/eq -> elim f;
   [`tt, use x],
   refine fun/eqtype;
   refine wbool/eqtype]
@@ -33,7 +33,7 @@ Thm LowLevel2 : [
     wbool)
 ] by [
   fresh f -> repeat {refine fun/intro; [id, auto]};
-  fresh x, x/eq -> elim f;
+  fresh x x/eq -> elim f;
   [`tt, use x]
 ].
 
@@ -183,7 +183,7 @@ Thm FunExt(#l:lvl) : [
    [p : (-> [y : a] (path [_] b ($ f y) ($ g y)))]
    (path [_] (-> a b) f g))
 ] by [
-  lam a, b, f, g, p =>
+  lam a b f g p =>
     abs i => lam x => use p [use x, `i]
 ].
 
@@ -225,7 +225,7 @@ Thm PathEta(#l:lvl) : [
    (path [_] a m n)
    (path [_] a m n))
 ] by [
-  lam a, m, n, p => abs j => use p [`j]
+  lam a m n p => abs j => use p [`j]
 ].
 
 Print PathEta.

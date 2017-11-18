@@ -2,9 +2,9 @@ Thm Pick : [
   // pick #(first argument) from #(second argument)
   (-> nat nat (U 0))
 ] by [
-  lam n => fresh n', n'/ih -> elim n;
+  lam n => fresh n' n'/ih -> elim n;
   [ lam n => `record
-  , lam m => fresh m', m'/ih -> elim m;
+  , lam m => fresh m' m'/ih -> elim m;
     [ `void
     , `(record
         [head : bool]
@@ -35,7 +35,7 @@ Thm Pick/succ/0/succ/1 : [
      [head : bool]
      [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
 ] by [
-  lam n, m =>
+  lam n m =>
     let aux0 : [($ Pick n m) type at 0] = {auto} in
     let aux1 : [($ Pick (succ n) m) type at 0] = {auto} in
     unfold Pick; reduce; auto
@@ -56,11 +56,11 @@ Thm Pick/compose : [
    ($ Pick a b)
    ($ Pick a c))
 ] by [
-  lam a => fresh a', a'/ih -> elim a;
-  [ lam b, c, p0, p1 => `tuple
-  , lam b => fresh b', b'/ih -> elim b;
-    [ lam c, p0, p1 => elim p1
-    , lam c => fresh c', c'/ih -> elim c;
+  lam a => fresh a' a'/ih -> elim a;
+  [ lam b c p0 p1 => `tuple
+  , lam b => fresh b' b'/ih -> elim b;
+    [ lam c p0 p1 => elim p1
+    , lam c => fresh c' c'/ih -> elim c;
       [ lam p0 => elim p0
       , lam p0 => (Replace p0 ($ Pick/succ/0/succ/1 b' c'));
         let {head = p0/h, tail = p0/t} = p0 in elim p0/h;
@@ -92,7 +92,7 @@ Thm Pick/compose/zero/0 : [
    [p1 : ($ Pick 0 b)]
    (= ($ Pick 0 c) ($ Pick/compose 0 b c p0 p1) tuple))
 ] by [
-  lam a, b, p0, p1 => auto
+  lam a b p0 p1 => auto
 ].
 
 Thm Pick/compose/tt/4/0/tt/5/0 : [
@@ -106,14 +106,14 @@ Thm Pick/compose/tt/4/0/tt/5/0 : [
        (tuple [head tt] [tail p0/t]) (tuple [head tt] [tail p1/t]))
     (tuple [head tt] [tail ($ Pick/compose a b c p0/t p1/t)])))
 ] by [
-  lam a, b, c, p0/t, p1/t =>
+  lam a b c p0/t p1/t =>
     let aux0 :
       [  ($ Pick/compose a b c (! tail (tuple [head tt] [tail p0/t])) (! tail (tuple [head tt] [tail p1/t])))
       =  ($ Pick/compose a b c p0/t p1/t)
       in ($ Pick a c)
       ] = {auto} in 
     let aux1 : [ ($ Pick (succ a) c) type at 0 ] = {auto} in
-      unfold [Pick, Pick/compose]; reduce; auto
+      unfold Pick Pick/compose; reduce; auto
 ].
 
 Thm Pick/compose/tt/4/0/ff/5/0 : [
@@ -127,14 +127,14 @@ Thm Pick/compose/tt/4/0/ff/5/0 : [
        (tuple [head tt] [tail p0/t]) (tuple [head ff] [tail p1/t]))
     (tuple [head ff] [tail ($ Pick/compose (succ a) b c p0/t p1/t)])))
 ] by [
-  lam a, b, c, p0/t, p1/t =>
+  lam a b c p0/t p1/t =>
     let aux0 :
       [  ($ Pick/compose (succ a) b c (! tail (tuple [head tt] [tail p0/t])) (! tail (tuple [head ff] [tail p1/t])))
       =  ($ Pick/compose (succ a) b c p0/t p1/t)
       in ($ Pick (succ a) c)
       ] = {auto} in
     let aux1 : [ ($ Pick a c) type at 0 ] = {auto} in
-    unfold [Pick, Pick/compose]; reduce; auto
+    unfold Pick Pick/compose; reduce; auto
 ].
 
 Thm Pick/compose/ff/4/0 : [
@@ -148,12 +148,12 @@ Thm Pick/compose/ff/4/0 : [
        (tuple [head ff] [tail p0/t]) p1)
     (tuple [head ff] [tail ($ Pick/compose (succ a) (succ b) c p0/t p1)])))
 ] by [
-  lam a, b, c, p0/t, p1 =>
+  lam a b c p0/t p1 =>
     let aux0 :
       [  ($ Pick/compose (succ a) (succ b) c (! tail (tuple [head ff] [tail p0/t])) p1)
       =  ($ Pick/compose (succ a) (succ b) c p0/t p1)
       in ($ Pick (succ a) c)
       ] = {auto} in
     let aux1 : [ ($ Pick a c) type at 0 ] = {auto} in
-    unfold [Pick, Pick/compose]; reduce; auto
+    unfold Pick Pick/compose; reduce; auto
 ].

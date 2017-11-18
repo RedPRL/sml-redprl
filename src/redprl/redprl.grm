@@ -467,9 +467,7 @@ end
  | devMatchClauses of (string list * (ast * ast)) list
  | selector of ast
  | selectors of ast list
- | bracketedSelectors of ast list
  | opnames of string list
- | bracketedOpnames of string list
 
  | declArgument of metavariable * Ar.valence
  | declArguments of string Signature.arguments
@@ -808,7 +806,7 @@ devDecompPattern
   | LBRACKET tupleDecompPattern RBRACKET (O.PAT_TUPLE tupleDecompPattern)
 
 devDecompPatterns
-  : devDecompPattern COMMA devDecompPatterns (devDecompPattern :: devDecompPatterns)
+  : devDecompPattern devDecompPatterns (devDecompPattern :: devDecompPatterns)
   | devDecompPattern ([devDecompPattern])
 
 labeledDecompPattern
@@ -840,24 +838,15 @@ selector
   | elimTargetAnySort (Ast.$$ (O.SEL_HYP, [Ast.\ ([], elimTargetAnySort)]))
 
 selectors
-  : selector COMMA selectors (selector :: selectors)
-  | selector ([selector])
-
-bracketedSelectors
-  : LSQUARE selectors RSQUARE (selectors)
+  : selector selectors (selector :: selectors)
   | selector ([selector])
 
 opnames
-  : OPNAME COMMA opnames (OPNAME :: opnames)
-  | OPNAME ([OPNAME])
-
-bracketedOpnames
-  : LSQUARE opnames RSQUARE (opnames)
+  : OPNAME opnames (OPNAME :: opnames)
   | OPNAME ([OPNAME])
 
 termAnySort
   : term (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], term)]))
-
 
 termsAnySort
   : termAnySort ([termAnySort])
@@ -883,9 +872,9 @@ atomicRawTac
   | TAC_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.TAC_REWRITE_HYP, [Ast.\ ([], Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], elimTargetAnySort)]))
   | TAC_REWRITE_HYP elimTargetAnySort IN selector (Ast.$$ (O.TAC_REWRITE_HYP, [Ast.\ ([], selector), Ast.\ ([], elimTargetAnySort)]))
   | TAC_REDUCE (Ast.$$ (O.TAC_REDUCE_ALL, []))
-  | TAC_REDUCE IN bracketedSelectors (Ast.$$ (O.TAC_REDUCE, [Ast.\ ([], Multi.makeVec O.SEL bracketedSelectors)]))
-  | TAC_UNFOLD bracketedOpnames (Ast.$$ (O.TAC_UNFOLD_ALL bracketedOpnames, []))
-  | TAC_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.TAC_UNFOLD (bracketedOpnames), [Ast.\ ([], Multi.makeVec O.SEL bracketedSelectors)]))
+  | TAC_REDUCE IN selectors (Ast.$$ (O.TAC_REDUCE, [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_UNFOLD opnames (Ast.$$ (O.TAC_UNFOLD_ALL opnames, []))
+  | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD (opnames), [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
@@ -933,7 +922,7 @@ atomicRawMultitac
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_PROGRESS, [\ ([], multitac)]))
   | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REC, [\ ([VARNAME], multitac)]))
   | LPAREN multitac RPAREN (multitac)
-  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
+  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MTAC_ALL, [\ ([], atomicTac)]))
   | QUESTION ident (Ast.$$ (O.MTAC_HOLE (SOME ident), []))
   | QUESTION (Ast.$$ (O.MTAC_HOLE NONE, []))
@@ -952,8 +941,7 @@ hypBinding
   | VARNAME (VARNAME, O.EXP)
 
 hypBindings
-  : hypBinding ([hypBinding])
-  | hypBinding COMMA hypBindings %prec COMMA (hypBinding :: hypBindings)
+  : hypBinding hypBindings %prec COMMA (hypBinding :: hypBindings)
   | ([])
 
 rawTactic

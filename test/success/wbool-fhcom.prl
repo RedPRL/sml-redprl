@@ -4,7 +4,7 @@ Thm WBoolSym : [
    (path [_] wbool a b)
    (path [_] wbool b a))
 ] by [
-  lam a, b, p => abs i =>
+  lam a b p => abs i =>
      `(hcom 0~>1 wbool a [i=0 [j] (@ p j)] [i=1 [_] a])
 ].
 

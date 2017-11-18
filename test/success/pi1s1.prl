@@ -50,7 +50,7 @@ Thm IntSuccIsEquiv : [
 ] by [
   lam i =>
     let eq : [(= int ($ IntSucc ($ IntPred i)) i)] = {use IntSuccIntPred [`i]} in
-      fresh eq' -> elim eq; unfold [IntSucc, IntPred] in eq'; reduce in eq';
+      fresh eq' -> elim eq; unfold IntSucc IntPred in eq'; reduce in eq';
     {
       {use IntPred [`i], abs _ => `i}
     , lam {i',p'} =>
@@ -110,7 +110,7 @@ Thm S1Concat : [
    [q : (path [_] S1 b c)]
    (path [_] S1 a c))
 ] by [
-  lam a, b, c, p, q =>
+  lam a b c p q =>
     abs x => `(hcom 0~>1 S1 (@ p x) [x=0 [_] a] [x=1 [y] (@ q y)])
 ].
 
