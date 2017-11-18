@@ -331,7 +331,7 @@ struct
      | PUSHOUT => [[] |: EXP, [] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP] ->> EXP
      | LEFT => [[] |: EXP] ->> EXP
      | RIGHT => [[] |: EXP] ->> EXP
-     | GLUE => [[EXP] |: EXP, [EXP] |: EXP, [] |: DIM, [] |: EXP] ->> EXP
+     | GLUE => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | PUSHOUT_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
