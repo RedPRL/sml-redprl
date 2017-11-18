@@ -1678,6 +1678,74 @@ struct
       in
         |>: goalL >: goalR >: goalG >: goalCohL >: goalCohR >: goalKind #> (H, elim)
       end
+
+    fun EqElim alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqElim"
+        val H >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        (* pushout-rec(FCOM) steps to COM *)
+        val k = K.meet (k, K.COM)
+        val Syn.PUSHOUT_REC ((z0, d0z0), m0, ((a0, n0a0), (b0, p0b0), (v0, c0, q0v0c0))) = Syn.out elim0
+        val Syn.PUSHOUT_REC ((z1, d1z1), m1, ((a1, n1a1), (b1, p1b1), (v1, c1, q1v1c1))) = Syn.out elim1
+        (* type of eliminated term *)
+        val (goalTyPushout, holeTyPushout) = makeSynth H (m0, L.top, K.top)
+
+        (* motive *)
+        val z = alpha 0
+        val d0z = VarKit.rename (z, z0) d0z0
+        val d1z = VarKit.rename (z, z1) d1z1
+        val goalC = makeEqType (H @> (z, AJ.TRUE (holeTyPushout, L.top, K.top))) ((d0z, d1z), l, k)
+
+        (* eliminated term *)
+        val goalM = makeEqIfDifferent H ((m0, m1), (holeTyPushout, L.top, K.top))
+
+        (* result type*)
+        val goalTy0 = makeSubType H (substVar (m0, z0) d0z0, L.top, K.top) (ty, l, k)
+
+        (* left branch *)
+        val (goalTyA, holeTyA) = makeMatch (O.PUSHOUT, 0, holeTyPushout, [])
+        val a = alpha 1
+        val atm = VarKit.toExp a
+        val n0a = VarKit.rename (a, a0) n0a0
+        val n1a = VarKit.rename (a, a1) n1a1
+        fun dleft tm = substVar (Syn.into (Syn.LEFT tm), z0) d0z0
+        val goalN = makeEq (H @> (a, AJ.TRUE (holeTyA, L.top, K.top))) ((n0a, n1a), (dleft atm, L.top, K.top))
+
+        (* right branch *)
+        val (goalTyB, holeTyB) = makeMatch (O.PUSHOUT, 1, holeTyPushout, [])
+        val b = alpha 2
+        val btm = VarKit.toExp b
+        val p0b = VarKit.rename (b, b0) p0b0
+        val p1b = VarKit.rename (b, b1) p1b1
+        fun dright tm = substVar (Syn.into (Syn.RIGHT tm), z0) d0z0
+        val goalP = makeEq (H @> (b, AJ.TRUE (holeTyB, L.top, K.top))) ((p0b, p1b), (dright btm, L.top, K.top))
+
+        (* glue branch *)
+        val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 3, holeTyPushout, [])
+        val v = alpha 2
+        val vtm = VarKit.toDim v
+        val c = alpha 3
+        val ctm = VarKit.toExp c
+        val q0vc = VarKit.renameMany [(v, v0), (c, c0)] q0v0c0
+        val q1vc = VarKit.renameMany [(v, v1), (c, c1)] q1v1c1
+        val (goalF, holeF) = makeMatch (O.PUSHOUT, 4, holeTyPushout, [ctm])
+        val (goalG, holeG) = makeMatch (O.PUSHOUT, 5, holeTyPushout, [ctm])
+        val glue = Syn.into @@ Syn.GLUE (vtm, ctm, holeF, holeG)
+        val dglue = substVar (glue, z0) d0z0
+        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE (holeTyC, L.top, K.top))
+        val goalQ = makeEq Hglue ((q0vc, q1vc), (dglue, L.top, K.top))
+
+        (* coherence *)
+        val q00c = substVar (Syn.intoDim 0, v) q0vc
+        val lfc = substVar (holeF, a0) n0a0
+        val goalCohL = makeEq (H @> (c, AJ.TRUE (holeTyC, L.top, K.top))) ((q00c, lfc), (dleft holeF, L.top, K.top))
+
+        val q01c = substVar (Syn.intoDim 1, v) q0vc
+        val rgc = substVar (holeG, b0) p0b0
+        val goalCohR = makeEq (H @> (c, AJ.TRUE (holeTyC, L.top, K.top))) ((q01c, rgc), (dright holeG, L.top, K.top))
+      in
+        |>: goalTyPushout >: goalC >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy0 #> (H, trivial)
+      end
   end
 
   structure InternalizedEquality =
