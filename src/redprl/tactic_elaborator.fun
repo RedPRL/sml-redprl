@@ -278,19 +278,19 @@ struct
   and tactic_ sign env tm = 
     case Tm.out tm of 
        O.TAC_MTAC $ [_ \ tm] => multitacToTac (multitactic sign env tm)
-     | O.RULE_ID $ _ => idn
-     | O.RULE_AUTO_STEP $ _ => R.AutoStep sign
-     | O.RULE_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
-     | O.RULE_REWRITE $ [_ \ sel, _ \ tm] => Lcf.rule o R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTacComplete sign, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign])
-     | O.RULE_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
+     | O.TAC_ID $ _ => idn
+     | O.TAC_AUTO_STEP $ _ => R.AutoStep sign
+     | O.TAC_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
+     | O.TAC_REWRITE $ [_ \ sel, _ \ tm] => Lcf.rule o R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTacComplete sign, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign])
+     | O.TAC_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
      | O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
-     | O.RULE_SYMMETRY $ _ => R.Symmetry
+     | O.TAC_SYMMETRY $ _ => R.Symmetry
      | O.DEV_INVERSION $ _ => inversions
      | O.RULE_CUT $ [_ \ catjdg] => Lcf.rule o R.Cut (AJ.out catjdg)
-     | O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
-     | O.RULE_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
-     | O.RULE_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
-     | O.RULE_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syntax.outVec' Syntax.outSelector vec)
+     | O.TAC_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
+     | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
+     | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
+     | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syntax.outVec' Syntax.outSelector vec)
      | O.RULE_PRIM ruleName $ _ => R.lookupRule ruleName
      | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule o R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
@@ -387,6 +387,7 @@ struct
      | O.DEV_PRINT $ [_ \ tm'] =>
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
         T.idn)
+     | O.TAC_FAIL $ _ => fail "fail"
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =

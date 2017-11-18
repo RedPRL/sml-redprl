@@ -2213,7 +2213,7 @@ struct
         val goalM = Restriction.makeEq [eq] H ((m0, m1), (a, l, kA))
         val goalN = makeEq H ((n0, n1), (b, l, kB))
         val goalCoh = Restriction.makeEqIfDifferent [eq] H
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("proj1", e), m0), n0), (b, NONE, K.top))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), m0), n0), (b, NONE, K.top))
         val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, NONE, K.top))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (H, trivial)
@@ -2231,7 +2231,7 @@ struct
         val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) H (a, l, kA)
         val (goalN, holeN) = makeTrue H (b, l, kB)
         val goalCoh = Restriction.makeEqIfDifferent [eq] H
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ ("proj1", e), holeM), holeN), (b, NONE, K.top))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), (b, NONE, K.top))
         val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, NONE, K.top))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv

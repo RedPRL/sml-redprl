@@ -44,7 +44,13 @@ struct
      | jdg => map (Tm.renameVars srho) jdg
 
   fun prettyHyps f : 'a ctx -> Fpp.doc =
-    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, f a] :: r) []
+    let
+      val comma =
+        fn [] => Fpp.empty
+         | _ => Fpp.Atomic.comma
+    in
+      Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.seq [Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, f a], comma r] :: r) []
+    end
 
   val pretty : jdg -> Fpp.doc =
     fn H >> catjdg =>

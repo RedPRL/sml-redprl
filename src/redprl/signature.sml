@@ -145,11 +145,14 @@ struct
            end
          | th $ es =>
            let
-             val th' = processOp (getAnnotation m) sign varctx th
-             val (vls, _) = Tm.O.arity th'
-             val es' = ListPair.map (fn (e, vl) => processBinder sign varctx vl e) (es, vls)
+             val pos = getAnnotation m
+             val th' = processOp pos sign varctx th
+             val ar as (vls, _) = Tm.O.arity th'
            in
-             th' $$ es'
+             if List.length vls = List.length es then
+               th' $$ ListPair.map (fn (e, vl) => processBinder sign varctx vl e) (es, vls)
+             else
+               RedPrlError.raiseAnnotatedError' (pos, RedPrlError.INCORRECT_ARITY (m, ar))
            end
          | x $# ms => x $$# List.map (processTerm sign varctx) ms
 
