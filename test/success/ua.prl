@@ -12,6 +12,8 @@ Def Id = [(lam [a] a)].
 
 Def IsProp (#C) = [(-> [c c' : #C] (path [_] #C c c'))].
 
+Def IsSet (#C) = [(-> [c c' : #C] (IsProp (path [_] #C c c')))].
+
 Tac ReflectUniv(#l:lvl, #k:knd, #t:tac) = [
   query goal <- concl.
   match goal {
@@ -113,7 +115,7 @@ Thm PathToEquiv(#l:lvl) : [
 //   ;?bar
 // ].
 
-// general definitions and theorems
+// general results (closely following the cubicaltt prelude)
 
 Thm Retract(#l:lvl) : [
   (->
@@ -142,17 +144,121 @@ Thm LemPropF(#l:lvl) : [
   `(@ ($ prop/b (@ p x) (coe 0~>x [i] ($ ty/b (@ p i)) b0) (coe 1~>x [i] ($ ty/b (@ p i)) b1)) x)
 ].
 
-// Thm EquivFst(#l:lvl) : [
+Thm LemSig(#l:lvl) : [
+  (->
+   [ty/a : (U #l kan)]
+   [ty/b : (-> ty/a (U #l kan))]
+   [prop/b : (-> [a : ty/a] (IsProp ($ ty/b a)))]
+   [u v : (* [a : ty/a] ($ ty/b a))]
+   [p : (path [_] ty/a (!proj1 u) (!proj1 v))]
+   (path [_] (* [a : ty/a] ($ ty/b a)) u v))
+] by [
+  lam ty/a, ty/b, prop/b, u, v, p. <x>
+  {`(@ p x), `(@ ($ (LemPropF #l) ty/a ty/b prop/b (!proj1 u) (!proj1 v) p (!proj2 u) (!proj2 v)) x)}
+].
+
+Thm PropSig(#l:lvl) : [
+  (->
+   [ty/a : (U #l kan)]
+   [ty/b : (-> ty/a (U #l kan))]
+   [prop/a : (IsProp ty/a)]
+   [prop/b : (-> [a : ty/a] (IsProp ($ ty/b a)))]
+   [u v : (* [a : ty/a] ($ ty/b a))]
+   (path [_] (* [a : ty/a] ($ ty/b a)) u v))
+] by [
+  unfold IsProp;
+  lam ty/a, ty/b, prop/a, prop/b, u, v.
+  `($ (LemSig #l) ty/a ty/b prop/b u v ($ prop/a (!proj1 u) (!proj1 v)))
+].
+
+Thm PropPi(#l:lvl) : [
+  (->
+   [ty/a : (U #l kan)]
+   [ty/b : (-> ty/a (U #l kan))]
+   [prop/b : (-> [a : ty/a] (IsProp ($ ty/b a)))]
+   [f g : (-> [a : ty/a] ($ ty/b a))]
+   (path [_] (-> [a : ty/a] ($ ty/b a)) f g))
+] by [
+  unfold IsProp;
+  lam ty/a, ty/b, prop/b, f, g.
+  <x> lam a. `(@ ($ prop/b a ($ f a) ($ g a)) x)
+].
+
+Thm LemProp(#l:lvl) : [
+ (->
+  [ty/a : (U #l kan)]
+  [prop/a : (IsProp ty/a)]
+  [a : ty/a]
+  (IsContr ty/a))
+] by [
+  unfold IsProp;
+  lam ty/a, prop/a, a.
+  {`a , lam a'. `($ prop/a a' a)}
+].
+
+Thm PropSet(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [prop : (IsProp ty)]
+   (IsSet ty))
+] by [
+  unfold [IsProp, IsSet];
+  lam ty, prop.
+  lam a, b, p, q. <x y>
+  `(hcom 0~>1 ty a
+     [y=0 [z] (@ ($ prop a a) z)]
+     [y=1 [z] (@ ($ prop a b) z)]
+     [x=0 [z] (@ ($ prop a (@ p y)) z)]
+     [x=1 [z] (@ ($ prop a (@ q y)) z)])
+].
+
+// Thm PropIsContr(#l:lvl) : [
+//   (->
+//    [ty/a : (U #l kan)]
+//    (IsProp (IsContr ty/a)))
+// ] by [
+//   lam ty/a.
+//   `($ (LemProp #l) (IsContr ty/a)
+//       (lam [contr/a]
+//         ($ (PropSig #l) ty/a
+//            (-> [a a' : ty/a] (path [_] ty/a a a'))
+//            (lam [a] (lam [a'] ??))
+//         )));
+//   ?foo
+// ].
+
+// TODO ROADMAP:
+// propIsContr
+// propIsEquiv (below) -> propIsContr
+// equivLemma (below) -> propIsEquiv
+// uaret (below) -> equivLemma
+// uaretsig -> uaret
+// univalenceAlt2 -> retIsContr, uaretsig, isContrPath
+
+// Thm PropIsEquiv(#l:lvl) : [
+//   (->
+//    [ty/a ty/b : (U #l kan)]
+//    [f : (-> ty/a ty/b)]
+//    (IsProp (IsEquiv ty/a ty/b f)))
+// ] by [
+//   unfold IsEquiv;
+//   lam ty/a, ty/b, f.
+//   lam e0, e1. <x> lam b.
+//   `(@ ($ (PropIsContr #l) (Fiber ty/a ty/b f b) ($ e0 b) ($ e1 b)) x);
+//   auto; ?foo
+// ].
+
+// Thm EquivLemma(#l:lvl) : [
 //   (->
 //    [ty/a ty/b : (U #l kan)]
 //    [e1 e2 : (Equiv ty/a ty/b)]
 //    (path [_] (-> ty/a ty/b) (!proj1 e1) (!proj1 e2))
 //    (path [_] (Equiv ty/a ty/b) e1 e2))
 // ] by [
-//   ?x
+//   lam ty/a, ty/b. ?x
 // ].
 
-// Thm UARetract(#l:lvl) : [
+// Thm UARet(#l:lvl) : [
 //   (->
 //    [ty/a ty/b : (U #l kan)]
 //    ($ (Retract #l)
@@ -163,27 +269,4 @@ Thm LemPropF(#l:lvl) : [
 // ] by [
 //   lam ty/a, ty/b, e.
 //   ?x
-// ].
-
-// Thm UAFromVProjEquiv(#l:lvl) : [
-//   (->
-//    [ty/a ty/b : (U #l kan)]
-//    [e : (Equiv ty/a ty/b)]
-//    (line [x]
-//     (IsEquiv
-//      (V x ty/a ty/b e)
-//      ty/b
-//      (lam [u]
-//       (Vproj x u (!proj1 e)))))
-//    (IsContr (* [ty/c : (U #l kan)] (Equiv ty/a ty/c))))
-// ] by [
-//   lam ty/a, ty/b, e, q.
-//     {{`ty/a, `($ (IdEquiv #l) ty/a)},
-//      lam {w1, w2}.
-//        <x>
-//          {`(V x ty/a w1 w2),
-//           {lam v. `(Vproj x v (!proj1 w2)),
-//            let qx = q [`x]. ?
-//            }}};
-//   ?
 // ].
