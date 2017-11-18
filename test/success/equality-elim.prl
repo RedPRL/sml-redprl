@@ -10,7 +10,7 @@ Tac GetHole(#c : [exp].exp, #t : [exp].tac) = [
 // the equality [_ = n in a].
 Tac Rewrite(#c : [exp].exp, #n, #a, #t : tac) = [
   (GetHole [x] (#c x) [hole] #tac{
-    let p : [hole = #n in #a] = {#t} in
+    assert p : [hole = #n in #a] by [#t] in
     // Use the elimination rule for equality. We bind a new hypothesis which will represent the location
     // in the goal #c which is being rewritten.
     fresh x -> rewrite-hyp p;

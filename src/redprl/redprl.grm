@@ -341,7 +341,7 @@ end
  (* keywords in tactics *)
  | CASE | OF
  | FRESH
- | LET | USE | WITH
+ | LET | ASSERT | USE | WITH
  | THEN | ELSE
  | REFINE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
@@ -891,7 +891,7 @@ atomicRawTac
   | IF elimTarget THEN tactic ELSE tactic
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))
 
-  | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS LBRACKET tactic RBRACKET IN tactic
+  | ASSERT VARNAME COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE IN tactic
       (Ast.$$ (O.DEV_LET NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
 
   | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine IN tactic

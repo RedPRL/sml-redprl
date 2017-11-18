@@ -31,7 +31,7 @@ Thm UseHypTest : [
   (-> bool bool)
 ] by [
   lam x =>
-  let p : [(-> bool S1 bool)] = {lam b c => use b} in
+  assert p : [(-> bool S1 bool)] by [lam b c => use b] in
   use p [use x, `(loop 0)]
 ].
 

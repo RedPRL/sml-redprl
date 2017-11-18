@@ -109,9 +109,9 @@ Thm PathTest2 : [
     (lam b =>
       // for our b:wbool, we will construct a path between b and
       // (BoolEta b).
-      let p : [(path [_] wbool b (BoolEta b))] = {
+      assert p : [(path [_] wbool b (BoolEta b))] by [
         if b then abs y => `tt else abs y => `ff
-      } in
+      ] in
 
       // Now, we will project the 'x'-side of our path. In the
       // interactive tactic environment, dimension expressions are

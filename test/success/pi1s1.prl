@@ -49,18 +49,18 @@ Thm IntSuccIsEquiv : [
   (IsEquiv int int IntSucc)
 ] by [
   lam i =>
-    let eq : [(= int ($ IntSucc ($ IntPred i)) i)] = {use IntSuccIntPred [`i]} in
+    assert eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]] in
       fresh eq' -> elim eq; unfold IntSucc IntPred in eq'; reduce in eq';
     {
       {use IntPred [`i], abs _ => `i}
     , lam {i',p'} =>
-        let eq0 : [(= int i ($ IntSucc i'))] = {`(coe 1~>0 [x] (= int i (@ p' x)) ax)} in
-        let eq1 : [(= int ($ IntPred i) i')] = {
+        assert eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)] in
+        assert eq1 : [(= int ($ IntPred i) i')] by [
           fresh i'' ->
             rewrite eq0;
             [`(= int ($ IntPred i'') i'), `($ IntPredIntSucc i')];
             auto
-        } in
+        ] in
 
         (abs x =>
           {`($ IntPred i), abs y => `(hcom 1~>y int i [x=0 [y] (@ p' y)] [x=1 [_] i])});
