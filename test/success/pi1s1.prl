@@ -49,13 +49,13 @@ Thm IntSuccIsEquiv : [
   (IsEquiv int int IntSucc)
 ] by [
   lam i =>
-    assert eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]] in
+    claim eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]] in
       fresh eq' in elim eq; unfold IntSucc IntPred in eq'; reduce in eq';
     {
       {use IntPred [`i], abs _ => `i}
     , lam {i',p'} =>
-        assert eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)] in
-        assert eq1 : [(= int ($ IntPred i) i')] by [
+        claim eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)] in
+        claim eq1 : [(= int ($ IntPred i) i')] by [
           fresh i'' in
             rewrite eq0;
             [`(= int ($ IntPred i'') i'), `($ IntPredIntSucc i')];

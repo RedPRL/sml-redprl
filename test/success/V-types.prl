@@ -97,7 +97,7 @@ Tac Bool/contra/inverse (#p:exp) = [
   query gl <- concl in
   match gl {
     [a, b | #jdg{%a = %b in bool} =>
-      assert eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto] in symmetry; elim eq; auto
+      claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto] in symmetry; elim eq; auto
     ]
     [a | %[a:jdg] => id]
   }

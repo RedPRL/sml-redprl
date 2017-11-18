@@ -22,7 +22,8 @@ Thm PropPi(#l:lvl) : [
   (IsProp (-> [x : tyA] ($ tyB x))))
 ] by [
   unfold IsProp; lam tyA tyB h f g =>
-  abs i => lam x => `(@ ($ h x ($ f x) ($ g x)) i)
+  abs i => lam x => 
+    use h [`x, use f [`x], use g [`x], `i]
 ].
 
 Thm PropSet(#l:lvl) : [

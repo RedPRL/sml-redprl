@@ -36,8 +36,8 @@ Thm Pick/succ/0/succ/1 : [
      [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
 ] by [
   lam n m =>
-    assert aux0 : [($ Pick n m) type at 0] by [auto] in
-    assert aux1 : [($ Pick (succ n) m) type at 0] by [auto] in
+    claim aux0 : [($ Pick n m) type at 0] by [auto] in
+    claim aux1 : [($ Pick (succ n) m) type at 0] by [auto] in
     unfold Pick; reduce; auto
 ].
 
@@ -107,12 +107,12 @@ Thm Pick/compose/tt/4/0/tt/5/0 : [
     (tuple [head tt] [tail ($ Pick/compose a b c p0/t p1/t)])))
 ] by [
   lam a b c p0/t p1/t =>
-    assert aux0 :
+    claim aux0 :
       [  ($ Pick/compose a b c (! tail (tuple [head tt] [tail p0/t])) (! tail (tuple [head tt] [tail p1/t])))
       =  ($ Pick/compose a b c p0/t p1/t)
       in ($ Pick a c)
       ] by [auto] in 
-    assert aux1 : [ ($ Pick (succ a) c) type at 0 ] by [auto] in
+    claim aux1 : [ ($ Pick (succ a) c) type at 0 ] by [auto] in
       unfold Pick Pick/compose; reduce; auto
 ].
 
@@ -128,12 +128,12 @@ Thm Pick/compose/tt/4/0/ff/5/0 : [
     (tuple [head ff] [tail ($ Pick/compose (succ a) b c p0/t p1/t)])))
 ] by [
   lam a b c p0/t p1/t =>
-    assert aux0 :
+    claim aux0 :
       [  ($ Pick/compose (succ a) b c (! tail (tuple [head tt] [tail p0/t])) (! tail (tuple [head ff] [tail p1/t])))
       =  ($ Pick/compose (succ a) b c p0/t p1/t)
       in ($ Pick (succ a) c)
       ] by [auto] in
-    assert aux1 : [ ($ Pick a c) type at 0 ] by [auto] in
+    claim aux1 : [ ($ Pick a c) type at 0 ] by [auto] in
     unfold Pick Pick/compose; reduce; auto
 ].
 
@@ -149,11 +149,11 @@ Thm Pick/compose/ff/4/0 : [
     (tuple [head ff] [tail ($ Pick/compose (succ a) (succ b) c p0/t p1)])))
 ] by [
   lam a b c p0/t p1 =>
-    assert aux0 :
+    claim aux0 :
       [  ($ Pick/compose (succ a) (succ b) c (! tail (tuple [head ff] [tail p0/t])) p1)
       =  ($ Pick/compose (succ a) (succ b) c p0/t p1)
       in ($ Pick (succ a) c)
       ] by [auto] in
-    assert aux1 : [ ($ Pick a c) type at 0 ] by [auto] in
+    claim aux1 : [ ($ Pick a c) type at 0 ] by [auto] in
     unfold Pick Pick/compose; reduce; auto
 ].
