@@ -1746,6 +1746,18 @@ struct
       in
         |>: goalTyPushout >: goalC >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy0 #> (H, trivial)
       end
+
+    fun SynthElim _ jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.SynthElim"
+        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val Syn.PUSHOUT_REC ((z,dz), m, _) = Syn.out tm
+
+        val dm = substVar (m, z) dz
+        val goal = makeMem H (tm, (dm, l, k))
+      in
+        |>: goal #> (H, dm)
+      end
   end
 
   structure InternalizedEquality =
