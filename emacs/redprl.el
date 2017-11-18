@@ -131,12 +131,12 @@
   "RedPRL's expression keywords.")
 
 (defconst redprl-expression-symbols
-  '("->" "~>" "<~" "$" "*" "!" "@" "=")
+  '("->" "~>" "<~" "$" "*" "!" "@" "=" "=>")
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
   '("auto" "auto-step" "case" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
-    "hyp" "id" "lemma" "let" "match" "of" "print" "progress"
+    "hyp" "id" "lemma" "let" "claim" "match" "of" "print" "progress"
     "query" "rec" "reduce" "refine" "repeat" "rewrite" "rewrite-hyp" "symmetry"
     "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")
@@ -162,18 +162,10 @@
 (defconst redprl-tac-name-regexp
   '(: "Tac" (+ whitespace) (group-n 1 (+ word)) not-wordchar))
 
-(defconst redprl-sym-name-regexp
-  '(: "Sym" (+ whitespace) (group-n 1 (+ word)) not-wordchar))
-
-(defconst redprl-record-name-regexp
-  '(: "Record" (+ whitespace) (group-n 1 (+ word)) not-wordchar))
-
 (defconst redprl-declaration-name-regexp
   `(or ,redprl-def-name-regexp
        ,redprl-thm-name-regexp
-       ,redprl-tac-name-regexp
-       ,redprl-sym-name-regexp
-       ,redprl-record-name-regexp))
+       ,redprl-tac-name-regexp))
 
 (defvar redprl-mode-font-lock-keywords
   `(
@@ -224,8 +216,10 @@
            (end-pos (match-end 0))
            (candidates (cl-remove-if-not
                         (apply-partially #'string-prefix-p match)
-                        (append redprl-keywords
-                                redprl-builtin-sorts
+                        (append redprl-tactic-keywords
+                                redprl-expression-keywords
+                                redprl-sequent-keywords
+                                redprl-sort-keywords
                                 (redprl-defined-names)))))
       (if (null candidates)
           nil
@@ -285,9 +279,7 @@
   (set (make-local-variable 'imenu-generic-expression)
        `(("Def" ,(rx-to-string redprl-def-name-regexp) 1)
          ("Thm" ,(rx-to-string redprl-thm-name-regexp) 1)
-         ("Tac" ,(rx-to-string redprl-tac-name-regexp) 1)
-         ("Sym" ,(rx-to-string redprl-sym-name-regexp) 1)
-         ("Record" ,(rx-to-string redprl-record-name-regexp) 1)))
+         ("Tac" ,(rx-to-string redprl-tac-name-regexp) 1)))
 
   ;; Bind mode-specific commands to keys
   (define-key redprl-mode-map (kbd "C-c C-l") 'redprl-compile-buffer)
