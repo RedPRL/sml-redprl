@@ -894,21 +894,21 @@ atomicRawTac
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
 
-  | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
-  | LANGLE boundVars RANGLE tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (Multi.addUnderscores boundVars, tactic)]))
+  | LAMBDA devDecompPatterns DOUBLE_RIGHT_ARROW tactic (Pattern.makeLambda devDecompPatterns tactic)
+  | ABS boundVars DOUBLE_RIGHT_ARROW tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (Multi.addUnderscores boundVars, tactic)]))
   | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
   | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
   
   | IF elimTarget THEN tactic ELSE tactic
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))
 
-  | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
+  | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS LBRACKET tactic RBRACKET IN tactic
       (Ast.$$ (O.DEV_LET NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
 
-  | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine DOT tactic
+  | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine IN tactic
       (Pattern.makeApplyHyp devDecompPattern elimTargetAnySort bracketedDevAppSpine tactic)
 
-  | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine DOT tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
+  | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine IN tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
 
   | USE elimTargetAnySort bracketedDevAppSpine (Pattern.makeUseHyp elimTargetAnySort bracketedDevAppSpine)
   | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
@@ -917,7 +917,7 @@ atomicRawTac
       (Ast.$$ (O.DEV_S1_ELIM, [\ ([], elimTarget), \ ([], tactic1), \([VARNAME], tactic2)]))
 
   | MATCH termAnySort LBRACKET devMatchClauses RBRACKET (Tac.makeMatch termAnySort devMatchClauses)
-  | QUERY VARNAME LEFT_ARROW selector DOT tactic (Ast.$$ (O.DEV_QUERY, [\ ([], selector), \ ([VARNAME], tactic)]))
+  | QUERY VARNAME LEFT_ARROW selector IN tactic (Ast.$$ (O.DEV_QUERY, [\ ([], selector), \ ([VARNAME], tactic)]))
   | PRINT termAnySort (Ast.$$ (O.DEV_PRINT, [\ ([], termAnySort)]))
 
   (* overlapping with term *)

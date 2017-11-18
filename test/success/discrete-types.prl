@@ -5,5 +5,5 @@ Thm Discrete/reflection(#l:lvl) : [
    [p : (path [_] ty a b)]
    (= ty a b))
 ] by [
-  lam ty, a, b, p. `(coe 0~>1 [x] (= ty a (@ p x)) ax)
+  lam ty, a, b, p => `(coe 0~>1 [x] (= ty a (@ p x)) ax)
 ].

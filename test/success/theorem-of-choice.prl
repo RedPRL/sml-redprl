@@ -7,9 +7,9 @@ Thm Choice(#i:lvl) : [
     [f : (-> a b)]
     (-> [x : a] ($ r x ($ f x)))))
 ] by [
-  lam a, b, r, f.
-    {lam x. let {y,_} = f [`x]. `y,
-     lam x. let {_,z} = f [`x]. `z};
+  lam a, b, r, f =>
+    {lam x => let {y,_} = f [`x] in `y,
+     lam x => let {_,z} = f [`x] in `z};
     inversion; reduce; auto
 ].
 

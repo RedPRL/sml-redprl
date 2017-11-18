@@ -5,8 +5,8 @@ Thm Fcom/trans3 : [
    (path [_] wbool b d)
    (path [_] wbool c d))
 ] by [
-  lam a, b, c, d, pab, pac, pbd.
-    <i> `(fcom 0~>1 (@ pab i) [i=0 [j] (@ pac j)] [i=1 [j] (@ pbd j)])
+  lam a, b, c, d, pab, pac, pbd =>
+    abs i => `(fcom 0~>1 (@ pab i) [i=0 [j] (@ pac j)] [i=1 [j] (@ pbd j)])
 ].
 
 Print Fcom/trans3.
@@ -17,8 +17,8 @@ Thm Fcom/trans2 : [
    (path [_] wbool b c)
    (path [_] wbool a c))
 ] by [
-  lam a, b, c, pab, pbc.
-    <i> `(fcom 0~>1 (@ pab i) [i=0 [_] a] [i=1 [j] (@ pbc j)])
+  lam a, b, c, pab, pbc =>
+    abs i => `(fcom 0~>1 (@ pab i) [i=0 [_] a] [i=1 [j] (@ pbc j)])
 ].
 
 Thm Fcom/symm : [
@@ -26,8 +26,8 @@ Thm Fcom/symm : [
    (path [_] wbool a b)
    (path [_] wbool b a))
 ] by [
-  lam a, b, pab.
-    <i> `(fcom 0~>1 a [i=0 [j] (@ pab j)] [i=1 [_] a])
+  lam a, b, pab =>
+    abs i => `(fcom 0~>1 a [i=0 [j] (@ pab j)] [i=1 [_] a])
 ].
 
 Thm Tube : [
@@ -35,7 +35,7 @@ Thm Tube : [
    [x : wbool]
    (= wbool (fcom 0~>1 x [1=1 [_] x] [0=0 [_] x]) x))
 ] by [
-  lam x. auto
+  lam x => auto
 ].
 
 Thm TrueByEvaluation : [

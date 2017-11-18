@@ -11,7 +11,7 @@ Thm InhPropIsContr(#l:lvl) : [
   (IsContr ty))
 ] by [
   unfold IsProp;
-  lam ty, h, a. {use a,lam x. `($ h x a)}
+  lam ty, h, a => {use a, lam x => `($ h x a)}
 ].
 
 Thm PropPi(#l:lvl) : [
@@ -21,24 +21,24 @@ Thm PropPi(#l:lvl) : [
   [h : (-> [x : tyA] (IsProp ($ tyB x)))]
   (IsProp (-> [x : tyA] ($ tyB x))))
 ] by [
-  unfold IsProp; lam tyA, tyB, h, f, g.
-  <i> lam x. `(@ ($ h x ($ f x) ($ g x)) i)
+  unfold IsProp; lam tyA, tyB, h, f, g =>
+  abs i => lam x => `(@ ($ h x ($ f x) ($ g x)) i)
 ].
 
 Thm PropSet(#l:lvl) : [
   (->
    [tyA : (U #l kan)]
    [h : (IsProp tyA)]
-   (IsSet tyA)
-  )
+   (IsSet tyA))
 ] by [
   unfold [IsSet, IsProp];
-  lam tyA, h, a, b, p, q.
-  <j i> `(hcom 0~>1 tyA a
-               [i=0 [k] (@ ($ h a a) k)]
-               [i=1 [k] (@ ($ h a b) k)]
-               [j=0 [k] (@ ($ h a (@ p i)) k)]
-               [j=1 [k] (@ ($ h a (@ q i)) k)])
+  lam tyA, h, a, b, p, q => 
+  abs j i =>
+    `(hcom 0~>1 tyA a
+      [i=0 [k] (@ ($ h a a) k)]
+      [i=1 [k] (@ ($ h a b) k)]
+      [j=0 [k] (@ ($ h a (@ p i)) k)]
+      [j=1 [k] (@ ($ h a (@ q i)) k)])
 ].
 
 // This proof should be easy, but it is not...
@@ -48,10 +48,10 @@ Thm IsPropIsProp(#l:lvl) : [
    (IsProp (IsProp tyA))
   )
 ] by [
-  unfold IsProp; // If I don't unfold here I get a ton of obligations...
-  lam tyA, h1, h2. // why is 1 and 2 blue?
-  (<i> lam a, b.
-    let foo = (PropSet #l) [`tyA, `h1].
+  unfold IsProp;
+  lam tyA, h1, h2 =>
+  (abs i => lam a, b =>
+    let foo = (PropSet #l) [`tyA, `h1] in
     unfold [IsSet, IsProp];
     use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]);
   unfold PropSet; auto
