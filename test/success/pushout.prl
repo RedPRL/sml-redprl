@@ -32,3 +32,14 @@ Thm PushoutToS1 : [
     ];
     auto
 ].
+
+Thm PushoutToS1/Test0 : [
+  (= (-> S1' S1) PushoutToS1 PushoutToS1)
+] by [
+  unfold PushoutToS1; // otherwise too easy
+  unfold S1'; // can be omitted once the great auto-unfolding is done
+  refine eq/intro;
+  fresh s1 -> refine fun/eq/lam;
+  [ refine pushout/eq/pushout-rec ];
+  auto
+].
