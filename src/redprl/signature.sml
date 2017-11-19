@@ -105,9 +105,15 @@ struct
            SOME ar => ar
          | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid]
 
-      fun guessSort sign varctx (tm : ast) : sort =
+      fun guessSort sign metactx varctx (tm : ast) : sort =
         case out tm of
            `x => (StringListDict.lookup varctx x handle _ => error (getAnnotation tm) [Fpp.text ("Could not resolve variable " ^ x)])
+         | x $# _ => 
+           let
+             val (_, tau) = StringListDict.lookup metactx x handle _ => error (getAnnotation tm) [Fpp.text ("Could not resolve metavariable " ^ x)]
+           in
+             tau
+           end
          | O.CUST (opid, _) $ _ => #2 (lookupArity sign (getAnnotation tm) opid)
          | th $ _ =>
            let
@@ -115,7 +121,6 @@ struct
            in
              tau
            end
-         | _ => O.EXP
 
       fun processOp pos sign varctx th  =
         case th of
@@ -124,22 +129,22 @@ struct
          | O.DEV_USE_LEMMA (opid, NONE) => O.DEV_USE_LEMMA (opid, SOME (lookupArity sign pos opid))
          | th => th
 
-      and processTerm' sign varctx m =
+      and processTerm' sign metactx varctx m =
         case out m of
            `x => ``x
          | O.MK_ANY NONE $ [_ \ m] => 
            let
-             val m' = processTerm sign varctx m
-             val tau = guessSort sign varctx m
+             val m' = processTerm sign metactx varctx m
+             val tau = guessSort sign metactx varctx m
            in
              O.MK_ANY (SOME tau) $$ [[] \ m']
            end
          | O.DEV_LET NONE $ [_ \ jdg, _ \ tac1, tac2] =>
            let
-             val jdg' = processTerm' sign varctx jdg
+             val jdg' = processTerm' sign metactx varctx jdg
              val tau = catjdgEvidence jdg
-             val tac1' = processTerm' sign varctx tac1
-             val tac2' = processBinder sign varctx ([tau], O.TAC) tac2
+             val tac1' = processTerm' sign metactx varctx tac1
+             val tac2' = processBinder sign metactx varctx ([tau], O.TAC) tac2
            in
              O.DEV_LET (SOME tau) $$ [[] \ jdg', [] \ tac1', tac2']
            end
@@ -150,49 +155,42 @@ struct
              val ar as (vls, _) = Tm.O.arity th'
            in
              if List.length vls = List.length es then
-               th' $$ ListPair.map (fn (e, vl) => processBinder sign varctx vl e) (es, vls)
+               th' $$ ListPair.map (fn (e, vl) => processBinder sign metactx varctx vl e) (es, vls)
              else
                RedPrlError.raiseAnnotatedError' (pos, RedPrlError.INCORRECT_ARITY (m, ar))
            end
-         | x $# ms => x $$# List.map (processTerm sign varctx) ms
+         | x $# ms => x $$# List.map (processTerm sign metactx varctx) ms
 
-      and processBinder sign varctx (taus, _) (xs \ m) = 
+      and processBinder sign metactx varctx (taus, _) (xs \ m) = 
         let
           val varctx' = ListPair.foldl (fn (x, tau, vars) => StringListDict.insert vars x tau) varctx (xs, taus)
         in
-          xs \ processTerm sign varctx' m
+          xs \ processTerm sign metactx varctx' m
         end
 
-      and processTerm sign varctx m =
-        inheritAnnotation m (processTerm' sign varctx m)
+      and processTerm sign metactx varctx m =
+        inheritAnnotation m (processTerm' sign metactx varctx m)
 
-      fun processSrcCatjdg sign = processTerm sign
-
-
-      fun processSrcHyps sign varctx hyps =
-        case hyps of
-           [] => ([], varctx)
-         | (x, hyp) :: hyps => 
-           let
-             val hyp' = processSrcCatjdg sign varctx hyp
-             val varctx' = StringListDict.insert varctx x (catjdgEvidence hyp')
-             val (hyps', varctx'') = processSrcHyps sign varctx' hyps
-           in
-             ((x, hyp') :: hyps', varctx'')
-           end
-
-      fun processSrcSeq sign varctx (hyps, concl) = 
-        let
-          val (hyps', varctx') = processSrcHyps sign varctx hyps
-        in
-          (hyps', processSrcCatjdg sign varctx' concl)
-        end
+      fun metasFromArgs arguments =
+        List.foldl (fn ((x, vl), metas) => StringListDict.insert metas x vl) StringListDict.empty arguments
 
     in
       fun processDecl sign =
-        fn DEF {arguments, sort, definiens} => DEF {arguments = arguments, sort = sort, definiens = processTerm sign StringListDict.empty definiens}
-         | THM {arguments, goal, script} => THM {arguments = arguments, goal = processSrcCatjdg sign StringListDict.empty goal, script = processTerm sign StringListDict.empty script}
-         | TAC {arguments, script} => TAC {arguments = arguments, script = processTerm sign StringListDict.empty script}
+        fn DEF {arguments, sort, definiens} =>
+           DEF {arguments = arguments,
+                sort = sort,
+                definiens = processTerm sign (metasFromArgs arguments) StringListDict.empty definiens}
+         | THM {arguments, goal, script} =>
+           let
+             val metactx = metasFromArgs arguments
+           in
+             THM {arguments = arguments,
+                  goal = processTerm sign metactx StringListDict.empty goal,
+                  script = processTerm sign metactx StringListDict.empty script}
+           end
+         | TAC {arguments, script} =>
+           TAC {arguments = arguments,
+                script = processTerm sign (metasFromArgs arguments) StringListDict.empty script}
     end
 
     structure MetaCtx = Tm.Metavar.Ctx
@@ -295,7 +293,7 @@ struct
       let
         open RedPrlSequent AJ infix >>
         val fresh = makeNamePopper alpha
-        val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ List.rev taus
+        val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ taus
       in
         H >> TERM tau
       end
