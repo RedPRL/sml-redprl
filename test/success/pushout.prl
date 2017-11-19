@@ -1,0 +1,34 @@
+Thm Pushout/Test0 : [
+  (pushout record record bool [_] tuple [_] tuple)
+] by [
+  `(left tuple)
+].
+
+Thm Pushout/Test1 : [
+  (pushout bool bool bool [x] x [x] x)
+] by [
+  `(right tt)
+].
+
+Thm Pushout/Test2 : [
+  (-> dim (pushout bool bool bool [x] x [x] x))
+] by [
+  <u> `(glue u tt tt tt)
+].
+
+Def S1' = [(pushout record record bool [_] tuple [_] tuple)].
+
+// Someone told me the following is an equivalence
+Thm PushoutToS1 : [
+  (-> S1' S1)
+] by [
+  lam p. fresh a, b, u:dim, c -> elim p;
+    [ `base
+    , `base
+    , elim c;
+      [ `(loop u)
+      , `base
+      ]
+    ];
+    auto
+].
