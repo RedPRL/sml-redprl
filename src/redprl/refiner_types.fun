@@ -1687,6 +1687,7 @@ struct
         val k = K.meet (k, K.COM)
         val Syn.PUSHOUT_REC ((z0, d0z0), m0, ((a0, n0a0), (b0, p0b0), (v0, c0, q0v0c0))) = Syn.out elim0
         val Syn.PUSHOUT_REC ((z1, d1z1), m1, ((a1, n1a1), (b1, p1b1), (v1, c1, q1v1c1))) = Syn.out elim1
+
         (* type of eliminated term *)
         val (goalTyPushout, holeTyPushout) = makeSynth H (m0, L.top, K.top)
 
