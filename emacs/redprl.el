@@ -111,10 +111,6 @@
   '("dim" "hyp" "exp" "lvl" "tac" "triv" "jdg")
   "RedPRL's built-in sorts.")
 
-(defconst redprl-parameter-keywords
-  '("+" "++" "lmax")
-  "RedPRL's parameter keywords.")
-
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
     "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec" "wif"
@@ -128,11 +124,12 @@
     "box" "cap"
     "V" "Vin" "Vproj"
     "universe" "U"
-    "hcom" "ghcom" "coe" "com" "gcom")
+    "hcom" "ghcom" "coe" "com" "gcom"
+    "lmax")
   "RedPRL's expression keywords.")
 
 (defconst redprl-expression-symbols
-  '("->" "~>" "<~" "$" "*" "!" "@" "=")
+  '("->" "~>" "<~" "$" "*" "!" "@" "=" "+" "++")
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
@@ -188,10 +185,7 @@
     (,(rx "#" (+ word)) 0 'redprl-metavar-face)
 
     ;; Numbers
-    (,(rx (? "-") (+ digit)) 0 'redprl-number-face)
-
-    ;; Built-in parameters
-    (,(regexp-opt redprl-parameter-keywords 'words) 0 'redprl-expression-keyword-face)
+    (,(rx word-start (? "-") (+ digit)) 0 'redprl-number-face)
 
     ;; Built-in expressions
     (,(regexp-opt redprl-expression-keywords 'words) 0 'redprl-expression-keyword-face)
