@@ -426,7 +426,9 @@ struct
   struct
     open Computation
     fun Reduce sign = SequentReduce sign
-    fun ReduceAll sign = Lcf.rule o SequentReduceAll sign orelse_ Lcf.rule o MatchRecordReduce sign
+    fun ReduceAll sign = Lcf.rule o SequentReduceAll sign
+      orelse_ Lcf.rule o MatchReduce sign
+      orelse_ Lcf.rule o MatchRecordReduce sign
   end
 
   local
@@ -796,14 +798,28 @@ struct
          | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 
+      fun StepMatch sign u =
+        case canonicity sign u of
+           Machine.REDEX => Lcf.rule o Computation.MatchReduce sign
+         | Machine.CANONICAL => Lcf.rule o Misc.MatchOperator
+         | Machine.NEUTRAL (Machine.VAR x) => fail @@ E.NOT_APPLICABLE (Fpp.text "match", TermPrinter.ppTerm u)
+         | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
+
+      fun StepMatchRecord sign u =
+        case canonicity sign u of
+           Machine.REDEX => Lcf.rule o Computation.MatchRecordReduce sign
+         | Machine.CANONICAL => Lcf.rule o Record.MatchRecord
+         | Machine.NEUTRAL (Machine.VAR x) => fail @@ E.NOT_APPLICABLE (Fpp.text "match-record", TermPrinter.ppTerm u)
+         | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
+
       fun StepJdg sign = matchGoal
         (fn _ >> AJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
           | _ >> AJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
           | _ >> AJ.TRUE (ty, _, _) => StepTrue sign ty
           | _ >> AJ.SYNTH (m, _, _) => StepSynth sign m
           | _ >> AJ.SUB_UNIVERSE (univ, _, _) => StepSubUniverse sign univ
-          | MATCH _ => Lcf.rule o Misc.MatchOperator
-          | MATCH_RECORD _ => Lcf.rule o Record.MatchRecord orelse_ Lcf.rule o Computation.MatchRecordReduce sign then_ Lcf.rule o Record.MatchRecord
+          | MATCH (_, _, m, _) => StepMatch sign m
+          | MATCH_RECORD (_, m, _) => StepMatchRecord sign m
           | _ >> jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoStep", AJ.pretty jdg))
 
       (* favonia:
