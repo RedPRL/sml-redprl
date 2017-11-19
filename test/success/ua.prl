@@ -217,23 +217,23 @@ Thm PropIsContr(#l:lvl) : [
    [ty/a : (U #l kan)]
    (IsProp (IsContr ty/a)))
 ] by [
-  unfold [IsContr, HasAllPathsTo];
-  lam ty/a. lam contr/a.
-  let prop/a : [(IsProp ty/a)] =
-    lam a, a'. <x>
-    `(hcom 1~>0 ty/a (@ ($ (!proj2 contr/a) a) x)
-       [x=0 [_] a]
-       [x=1 [y] (@ ($ (!proj2 contr/a) a') y)]).
-  let prop/contr/a = (PropSig #l)
-    [`ty/a,
-     lam a. `(-> [a' : ty/a] (path [_] ty/a a a')),
-     `prop/a,
-     lam a. let prop/pathsTo = (PropPi #l)
-              [`ty/a,
-               `(lam [a'] (path [_] ty/a a a')),
-               `($ (PropSet #l) ty/a prop/a a);
-               ?helpmejon]. `prop/pathsTo].
-  `($ prop/contr/a contr/a contr/a)
+  lam ty/a.
+  let fun : [(-> (IsContr ty/a) (IsProp (IsContr ty/a)))] =
+    lam contr/a.
+    let prop/a : [(IsProp ty/a)] =
+      lam a, a'. <x>
+      `(hcom 1~>0 ty/a (@ ($ (!proj2 contr/a) a) x)
+         [x=0 [_] a]
+         [x=1 [y] (@ ($ (!proj2 contr/a) a') y)]).
+    let prop/contr/a = (PropSig #l)
+      [`ty/a,
+       lam a. `(-> [a' : ty/a] (path [_] ty/a a a')),
+       `prop/a,
+       lam a. `($ (PropPi #l) ty/a
+                  (lam [a'] (path [_] ty/a a a'))
+                  ($ (PropSet #l) ty/a prop/a a))].
+    `prop/contr/a; ?foo.
+  lam x. `($ fun x x)
 ].
 
 // TODO ROADMAP:
