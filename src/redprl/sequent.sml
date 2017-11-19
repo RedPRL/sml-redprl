@@ -59,7 +59,7 @@ struct
        else
          Fpp.seq [prettyHyps AJ.pretty H, Fpp.newline, Fpp.hsep [Fpp.text ">>", AJ.pretty catjdg]]
      | MATCH (th, k, a, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
-     | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match_record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
+     | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match-record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
   val rec eq =
     fn (H1 >> catjdg1, H2 >> catjdg2) =>
