@@ -117,17 +117,6 @@ Thm PathToEquiv(#l:lvl) : [
 
 // general results (closely following the cubicaltt prelude)
 
-Thm Retract(#l:lvl) : [
-  (->
-   [ty/a ty/b : (U #l kan)]
-   [f : (-> ty/a ty/b)]
-   [g : (-> ty/b ty/a)]
-   (U #l kan))
-] by [
-  lam ty/a, ty/b, f, g.
-    `(-> [a : ty/a] (path [_] ty/a ($ g ($ f a)) a))
-].
-
 Thm LemPropF(#l:lvl) : [
   (->
    [ty/a : (U #l kan)]
@@ -221,61 +210,75 @@ Thm PropIsContr(#l:lvl) : [
   let fun : [(-> (IsContr ty/a) (IsProp (IsContr ty/a)))] =
     lam contr/a.
     let prop/a : [(IsProp ty/a)] =
-      lam a, a'. <x>
+      (lam a, a'. <x>
       `(hcom 1~>0 ty/a (@ ($ (!proj2 contr/a) a) x)
          [x=0 [_] a]
-         [x=1 [y] (@ ($ (!proj2 contr/a) a') y)]).
+         [x=1 [y] (@ ($ (!proj2 contr/a) a') y)])).
     let prop/contr/a = (PropSig #l)
       [`ty/a,
-       lam a. `(-> [a' : ty/a] (path [_] ty/a a a')),
+       lam a. `(-> [a' : ty/a] (path [_] ty/a a' a)),
        `prop/a,
-       lam a. `($ (PropPi #l) ty/a
-                  (lam [a'] (path [_] ty/a a a'))
-                  ($ (PropSet #l) ty/a prop/a a))].
-    `prop/contr/a; ?foo.
+       lam a.
+         `($ (PropPi #l)
+             ty/a
+             (lam [a'] (path [_] ty/a a' a))
+             (lam [a'] ($ (PropSet #l) ty/a prop/a a' a)))
+      ].
+    `prop/contr/a.
   lam x. `($ fun x x)
 ].
 
+Thm PropIsEquiv(#l:lvl) : [
+  (->
+   [ty/a ty/b : (U #l kan)]
+   [f : (-> ty/a ty/b)]
+   (IsProp (IsEquiv ty/a ty/b f)))
+] by [
+  lam ty/a, ty/b, f.
+  lam e0, e1. <x> lam b.
+  `(@ ($ (PropIsContr #l) (Fiber ty/a ty/b f b) ($ e0 b) ($ e1 b)) x)
+].
+
+Thm EquivLemma(#l:lvl) : [
+  (->
+   [ty/a ty/b : (U #l kan)]
+   [e1 e2 : (Equiv ty/a ty/b)]
+   (path [_] (-> ty/a ty/b) (!proj1 e1) (!proj1 e2))
+   (path [_] (Equiv ty/a ty/b) e1 e2))
+] by [
+  lam ty/a, ty/b.
+  `($ (LemSig #l) (-> ty/a ty/b) (lam [f] (IsEquiv ty/a ty/b f)) ($ (PropIsEquiv #l) ty/a ty/b))
+].
+
+Thm Retract(#l:lvl) : [
+  (->
+   [ty/a ty/b : (U #l kan)]
+   [f : (-> ty/a ty/b)]
+   [g : (-> ty/b ty/a)]
+   (U #l kan))
+] by [
+  lam ty/a, ty/b, f, g.
+    `(-> [a : ty/a] (path [_] ty/a ($ g ($ f a)) a))
+].
+
+Thm UARet(#l:lvl) : [
+  (->
+   [ty/a ty/b : (U #l kan)]
+   ($ (Retract #l)
+      (Equiv ty/a ty/b)
+      (path [_] (U #l kan) ty/a ty/b)
+      ($ (UA #l) ty/a ty/b)
+      ($ (PathToEquiv #l) ty/a ty/b)))
+] by [
+  lam ty/a, ty/b, e.
+  `($ (EquivLemma #l) ty/a ty/b
+      ($ (PathToEquiv #l) ty/a ty/b ($ (UA #l) ty/a ty/b e))
+      e
+      ($ (UABeta #l) ty/a ty/b e));
+  ?foo
+].
+
 // TODO ROADMAP:
-// propIsContr
-// propIsEquiv (below) -> propIsContr
-// equivLemma (below) -> propIsEquiv
-// uaret (below) -> equivLemma
+// uaret
 // uaretsig -> uaret
 // univalenceAlt2 -> retIsContr, uaretsig, isContrPath
-
-// Thm PropIsEquiv(#l:lvl) : [
-//   (->
-//    [ty/a ty/b : (U #l kan)]
-//    [f : (-> ty/a ty/b)]
-//    (IsProp (IsEquiv ty/a ty/b f)))
-// ] by [
-//   unfold IsEquiv;
-//   lam ty/a, ty/b, f.
-//   lam e0, e1. <x> lam b.
-//   `(@ ($ (PropIsContr #l) (Fiber ty/a ty/b f b) ($ e0 b) ($ e1 b)) x);
-//   auto; ?foo
-// ].
-
-// Thm EquivLemma(#l:lvl) : [
-//   (->
-//    [ty/a ty/b : (U #l kan)]
-//    [e1 e2 : (Equiv ty/a ty/b)]
-//    (path [_] (-> ty/a ty/b) (!proj1 e1) (!proj1 e2))
-//    (path [_] (Equiv ty/a ty/b) e1 e2))
-// ] by [
-//   lam ty/a, ty/b. ?x
-// ].
-
-// Thm UARet(#l:lvl) : [
-//   (->
-//    [ty/a ty/b : (U #l kan)]
-//    ($ (Retract #l)
-//       (Equiv ty/a ty/b)
-//       (path [_] (U #l kan) ty/a ty/b)
-//       ($ (UA #l) ty/a ty/b)
-//       ($ (PathToEquiv #l) ty/a ty/b)))
-// ] by [
-//   lam ty/a, ty/b, e.
-//   ?x
-// ].
