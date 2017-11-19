@@ -88,10 +88,10 @@ struct
   fun makeApp m ns =
     List.foldl (fn (n, app) => O.APP $$ [[] \ app, [] \ n]) m ns
 
-  fun makePathAbs [] m = m
-    | makePathAbs (u::us) m = O.ABS $$ [[Option.getOpt (u, "_")] \ makePathAbs us m]
+  fun makeAbs [] m = m
+    | makeAbs (u::us) m = O.ABS $$ [[Option.getOpt (u, "_")] \ makeAbs us m]
 
-  fun makePathApp m ns =
+  fun makeDimApp m ns =
     List.foldl (fn (r, app) => O.DIM_APP $$ [[] \ app, [] \ r]) m ns
 
   fun makeNum i =
@@ -328,6 +328,7 @@ end
  | LAMBDA | DOLLAR_SIGN
  | RECORD | TIMES | TUPLE | BANG
  | PATH | LINE | ABS | AT_SIGN
+ | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
  | BOX | CAP
  | V | VIN | VPROJ
  | UNIVERSE
@@ -417,8 +418,8 @@ end
  | bindings of ast abs list
 
    (* a type-theoretic term *)
- | monoNullaryOperator of operator
- | regularMultinaryOperator of operator
+ | nullaryOperator of operator
+ | multinaryOperator of operator
  | rawTermAndTac of ast (* shared with tactics *)
  | rawTerm of ast
  | level of ast
@@ -612,7 +613,7 @@ bindings
 
 
 (* built-in nullary operators that take no parameters *)
-monoNullaryOperator
+nullaryOperator
   (* axiom *)
   : AX (O.AX)
   (* bools *)
@@ -632,12 +633,11 @@ monoNullaryOperator
   | S1 (O.S1)
   | BASE (O.BASE)
 
-
   | kind (O.KCONST kind)
 
 
 (* built-in operators that do not have special form *)
-regularMultinaryOperator
+multinaryOperator
   (* bools *)
   : IF (O.IF)
   (* weak bools *)
@@ -654,9 +654,14 @@ regularMultinaryOperator
   | PATH (O.PATH)
   (* lines *)
   | LINE (O.LINE)
+  (* pushouts *)
+  | PUSHOUT (O.PUSHOUT)
+  | LEFT (O.LEFT)
+  | RIGHT (O.RIGHT)
+  | GLUE (O.GLUE)
+  | PUSHOUT_REC (O.PUSHOUT_REC)
   (* equality *)
   | EQUALS (O.EQUALITY)
-
   (* V *)
   | V (O.V)
   | VIN (O.VIN)
@@ -690,16 +695,15 @@ rawTermAndTac
   | customOpTerm (makeCustom customOpTerm)
 
   (* built-in operators that can be handled uniformly *)
-  | monoNullaryOperator (Ast.$$ (monoNullaryOperator, []))
-  | LPAREN regularMultinaryOperator bindings RPAREN (Ast.$$ (regularMultinaryOperator, bindings))
+  | nullaryOperator (Ast.$$ (nullaryOperator, []))
+  | LPAREN multinaryOperator bindings RPAREN (Ast.$$ (multinaryOperator, bindings))
 
   | LPAREN UNIVERSE level RPAREN (Ast.$$ (O.UNIVERSE, [Ast.\ ([], level), Ast.\ ([], Ast.$$ (O.KCONST RedPrlKind.top, []))]))
   | LPAREN UNIVERSE level term RPAREN (Ast.$$ (O.UNIVERSE, [Ast.\ ([], level), Ast.\ ([], term)]))
 
   | LPAREN LOOP dimension RPAREN (Ast.$$ (O.LOOP, [Ast.\ ([], dimension)]))
-  | LPAREN DIM dimension RPAREN (dimension)
 
-  (* coe *)
+  (* Kan operators *)
   | LPAREN COE dir binding term RPAREN
     (Ast.$$ (O.COE, [Ast.\ ([], #1 dir), Ast.\ ([], #2 dir), binding, Ast.\ ([], term)]))
   | LPAREN FCOM dir binding tubeVec RPAREN
@@ -713,8 +717,9 @@ rawTermAndTac
   | LPAREN CAP backDir binding tubeVec RPAREN
     (Ast.$$ (O.CAP, [\ ([], #1 backDir), \([], #2 backDir), binding, \([], tubeVec)]))
 
-  (* numbers *)
+  (* numbers and dimensions *)
   | NUMERAL (Multi.makeNum NUMERAL)
+  | LPAREN DIM dimension RPAREN (dimension)
 
   (* function types *)
   | LPAREN RIGHT_ARROW arrowQuantifierData RPAREN (Multi.makeFunOrLine (#1 arrowQuantifierData) (#2 arrowQuantifierData))
@@ -733,8 +738,8 @@ rawTermAndTac
   | LPAREN BANG ident term RPAREN (Ast.$$ (O.PROJ ident, [\ ([], term)]))
 
   (* paths *)
-  | LPAREN ABS LSQUARE boundVars RSQUARE term RPAREN (Multi.makePathAbs boundVars term)
-  | LPAREN AT_SIGN term dimensions RPAREN (Multi.makePathApp term dimensions)
+  | LPAREN ABS LSQUARE boundVars RSQUARE term RPAREN (Multi.makeAbs boundVars term)
+  | LPAREN AT_SIGN term dimensions RPAREN (Multi.makeDimApp term dimensions)
 
 level
   : NUMERAL (Ast.$$ (O.LCONST NUMERAL, []))

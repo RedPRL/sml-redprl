@@ -161,24 +161,21 @@ struct
     (* Note that this does not check whether the 'ty' is a base type.
      * It's caller's responsibility to check whether the type 'ty'
      * recognizes FCOM as values. *)
-    fun EqFComDelegate alpha H args0 args1 (ty, l, k) =
+    fun genEqFComGoals H w (args0, args1) (ty, l, k) =
       let
         val {dir=dir0, cap=cap0, tubes=tubes0 : abt Syn.tube list} = args0
         val {dir=dir1, cap=cap1, tubes=tubes1 : abt Syn.tube list} = args1
-        val () = Assert.dirEq "EqFComDelegator direction" (dir0, dir1)
+        val () = Assert.dirEq "genFComGoals" (dir0, dir1)
         val eqs0 = List.map #1 tubes0
         val eqs1 = List.map #1 tubes1
-        val _ = Assert.equationsEq "EqFComDelegator equations" (eqs0, eqs1)
-        val _ = Assert.tautologicalEquations "EqFComDelegator tautology checking" eqs0
+        val _ = Assert.equationsEq "genFComGoals equations" (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "genFComGoals tautology checking" eqs0
 
         val goalCap = makeEq H ((cap0, cap1), (ty, l, k))
-
-        val w = alpha 0
       in
-        |>: goalCap
-         >:+ genInterTubeGoals H w ((tubes0, tubes1), (ty, l, k))
-         >:+ genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), (ty, NONE, K.top))
-        #> (H, trivial)
+           goalCap
+        :: genInterTubeGoals H w ((tubes0, tubes1), (ty, l, k))
+         @ genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), (ty, NONE, K.top))
       end
   end
 
