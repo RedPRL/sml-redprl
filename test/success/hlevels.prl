@@ -10,7 +10,6 @@ Thm InhPropIsContr(#l:lvl) : [
   [a : ty]
   (IsContr ty))
 ] by [
-  unfold IsProp;
   lam ty, h, a. {use a,lam x. `($ h x a)}
 ].
 
@@ -21,8 +20,7 @@ Thm PropPi(#l:lvl) : [
   [h : (-> [x : tyA] (IsProp ($ tyB x)))]
   (IsProp (-> [x : tyA] ($ tyB x))))
 ] by [
-  unfold IsProp; lam tyA, tyB, h, f, g.
-  <i> lam x. `(@ ($ h x ($ f x) ($ g x)) i)
+  lam tyA, tyB, h, f, g. <i> lam x. `(@ ($ h x ($ f x) ($ g x)) i)
 ].
 
 Thm PropSet(#l:lvl) : [
@@ -32,7 +30,6 @@ Thm PropSet(#l:lvl) : [
    (IsSet tyA)
   )
 ] by [
-  unfold [IsSet, IsProp];
   lam tyA, h, a, b, p, q.
   <j i> `(hcom 0~>1 tyA a
                [i=0 [k] (@ ($ h a a) k)]
@@ -48,13 +45,20 @@ Thm IsPropIsProp(#l:lvl) : [
    (IsProp (IsProp tyA))
   )
 ] by [
-  unfold IsProp; // If I don't unfold here I get a ton of obligations...
   lam tyA, h1, h2. // why is 1 and 2 blue?
-  (<i> lam a, b.
+  <i> lam a, b.
     let foo = (PropSet #l) [`tyA, `h1].
     unfold [IsSet, IsProp];
-    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]);
-  unfold PropSet; auto
+    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]
+].
+
+Thm IsPropIsProp'(#l:lvl) : [
+  (->
+   [tyA : (U #l kan)]
+   (IsProp (IsProp tyA))
+  )
+] by [
+  lam tyA, h1, h2. <i> lam a, b. `(@ ($ (PropSet #l) tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
 ].
 
 // // This should be exactly like the one above:
