@@ -1721,15 +1721,15 @@ struct
         val goalP = makeEq (H @> (b, AJ.TRUE (holeTyB, L.top, K.top))) ((p0b, p1b), (dright btm, L.top, K.top))
 
         (* glue branch *)
-        val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 3, holeTyPushout, [])
+        val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 2, holeTyPushout, [])
         val v = alpha 2
         val vtm = VarKit.toDim v
         val c = alpha 3
         val ctm = VarKit.toExp c
         val q0vc = VarKit.renameMany [(v, v0), (c, c0)] q0v0c0
         val q1vc = VarKit.renameMany [(v, v1), (c, c1)] q1v1c1
-        val (goalF, holeF) = makeMatch (O.PUSHOUT, 4, holeTyPushout, [ctm])
-        val (goalG, holeG) = makeMatch (O.PUSHOUT, 5, holeTyPushout, [ctm])
+        val (goalF, holeF) = makeMatch (O.PUSHOUT, 3, holeTyPushout, [ctm])
+        val (goalG, holeG) = makeMatch (O.PUSHOUT, 4, holeTyPushout, [ctm])
         val glue = Syn.into @@ Syn.GLUE (vtm, ctm, holeF, holeG)
         val dglue = substVar (glue, z0) d0z0
         val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE (holeTyC, L.top, K.top))
