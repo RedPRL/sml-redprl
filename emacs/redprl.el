@@ -185,7 +185,7 @@
     (,(rx "#" (+ word)) 0 'redprl-metavar-face)
 
     ;; Numbers
-    (,(rx (? "-") (+ digit)) 0 'redprl-number-face)
+    (,(rx word-start (? "-") (+ digit)) 0 'redprl-number-face)
 
     ;; Built-in expressions
     (,(regexp-opt redprl-expression-keywords 'words) 0 'redprl-expression-keyword-face)
