@@ -594,10 +594,12 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqType"
-        val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
+        val H >> AJ.EQ ((a, b), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.S1 = Syn.out a
         val Syn.S1 = Syn.out b
         val _ = Assert.levelLeq (inherentLevel, l)
+        val _ = Assert.levelLess (l, l')
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -608,10 +610,9 @@ struct
     fun EqBase _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqBase"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.BASE = Syn.out m
         val Syn.BASE = Syn.out n
       in
@@ -621,10 +622,9 @@ struct
     fun EqLoop _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqLoop"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.LOOP r1 = Syn.out m
         val Syn.LOOP r2 = Syn.out n
         val () = Assert.alphaEq' "S1.EqLoop" (r1, r2)
@@ -635,27 +635,26 @@ struct
     fun EqFCom alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.EqFCom"
-        val H >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((lhs, rhs), (ty, l)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
 
         val w = alpha 0
       in
-        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, NONE, K.top))
+        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, l))
         #> (H, trivial)
       end
 
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.Elim"
-        val H >> AJ.TRUE (cz, l, k) = jdg
+        val H >> AJ.TRUE (cz, l) = jdg
         (* S1-rec(FCOM) steps to COM *)
-        val k = K.meet (k, K.COM)
+        val k = K.COM
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.S1 = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
@@ -665,24 +664,24 @@ struct
 
         (* base branch *)
         val cbase = substVar (Syn.into Syn.BASE, z) cz
-        val (goalB, holeB) = makeTrue H (cbase, NONE, K.top)
+        val (goalB, holeB) = makeTrue H (cbase, l)
 
         (* loop branch *)
         val u = alpha 0
         val loop = Syn.into o Syn.LOOP @@ VarKit.toDim u
         val cloop = substVar (loop, z) cz
-        val (goalL, holeL) = makeTrue (H @> (u, AJ.TERM O.DIM)) (cloop, NONE, K.top)
+        val (goalL, holeL) = makeTrue (H @> (u, AJ.TERM O.DIM)) (cloop, l)
 
         (* coherence *)
         val l0 = substVar (Syn.into Syn.DIM0, u) holeL
         val l1 = substVar (Syn.into Syn.DIM1, u) holeL
-        val goalCoh0 = makeEqIfDifferent H ((l0, holeB), (cbase, NONE, K.top)) (* holeB well-typed *)
-        val goalCoh1 = makeEqIfAllDifferent H ((l1, holeB), (cbase, NONE, K.top)) [l0]
+        val goalCoh0 = makeEq H ((l0, holeB), (cbase, l))
+        val goalCoh1 = makeEqIfAllDifferent H ((l1, holeB), (cbase, l)) [l0] (* l0 well-typed *)
 
         (* realizer *)
         val elim = Syn.into @@ Syn.S1_REC ((z, cz), VarKit.toExp z, (holeB, (u, holeL)))
       in
-        |>: goalB >: goalL >:? goalCoh0 >:? goalCoh1 >: goalKind #> (H, elim)
+        |>: goalB >: goalL >: goalCoh0 >:? goalCoh1 >: goalKind #> (H, elim)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected circle elimination problem"]
@@ -690,9 +689,9 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.EqElim"
-        val H >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((elim0, elim1), (ty, l)) = jdg
         (* S1-rec(FCOM) steps to COM *)
-        val k = K.meet (k, K.COM)
+        val k = K.COM
         val Syn.S1_REC ((x, c0x), m0, (b0, (u, l0u))) = Syn.out elim0
         val Syn.S1_REC ((y, c1y), m1, (b1, (v, l1v))) = Syn.out elim1
 
@@ -702,30 +701,30 @@ struct
         val z = alpha 0
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
-        val goalC = makeEqType (H @> (z, AJ.TRUE (S1, inherentLevel, inherentKind))) ((c0z, c1z), l, k)
+        val goalC = makeEqType (H @> (z, AJ.TRUE (S1, inherentLevel))) ((c0z, c1z), l, k)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (S1, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (S1, l))
 
         (* result type *)
-        val goalTy = makeSubType H (substVar (m0, x) c0x, l, k) (ty, l, k) (* c0m0 type *)
+        val goalTy = makeEqTypeIfDifferent H ((substVar (m0, x) c0x, ty), l, k) (* c0m0 well-type *)
 
         (* base branch *)
         val cbase = substVar (Syn.into Syn.BASE, x) c0x
-        val goalB = makeEq H ((b0, b1), (cbase, NONE, K.top))
+        val goalB = makeEq H ((b0, b1), (cbase, l))
 
         (* loop branch*)
         val w = alpha 1
         val l0w = substVar (VarKit.toDim w, u) l0u
         val l1w = substVar (VarKit.toDim w, v) l1v
         val cloop = substVar (Syn.into @@ Syn.LOOP (VarKit.toDim w), x) c0x
-        val goalL = makeEq (H @> (w, AJ.TERM O.DIM)) ((l0w, l1w), (cloop, NONE, K.top))
+        val goalL = makeEq (H @> (w, AJ.TERM O.DIM)) ((l0w, l1w), (cloop, l))
 
         (* coherence *)
         val l00 = substVar (Syn.into Syn.DIM0, u) l0u
         val l01 = substVar (Syn.into Syn.DIM1, u) l0u
-        val goalCoh0 = makeEqIfAllDifferent H ((l00, b0), (cbase, NONE, K.top)) [b1]
-        val goalCoh1 = makeEqIfAllDifferent H ((l01, b0), (cbase, NONE, K.top)) [l00, b1]
+        val goalCoh0 = makeEqIfAllDifferent H ((l00, b0), (cbase, l)) [b1]
+        val goalCoh1 = makeEqIfAllDifferent H ((l01, b0), (cbase, l)) [l00, b1]
       in
         |>: goalC >: goalM >: goalB >: goalL >:? goalTy >:? goalCoh0 >:? goalCoh1
         #> (H, trivial)
@@ -734,11 +733,11 @@ struct
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "S1.SynthElim"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.S1_REC ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
-        val goal = makeMem H (tm, (cm, l, k))
+        val goal = makeMem H (tm, (cm, l))
       in
         |>: goal #> (H, cm)
       end
