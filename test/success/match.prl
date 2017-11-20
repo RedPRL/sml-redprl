@@ -1,12 +1,12 @@
 Tac QueryGoalType(#t : [exp].tac) = [
-  query gl <- concl in
+  query gl <- concl;
   match gl {
     [a | #jdg{%a true} => (#t %a)]
   }
 ].
 
 Thm MatchGoal : [ (-> bool bool bool bool bool bool) ] by [
-  fresh x y in repeat {
+  fresh x y -> repeat {
     (QueryGoalType [ty] #tac{
       match ty {
         [a, b | (-> [x:%a] (%b x)) => refine fun/intro; [id, auto]]

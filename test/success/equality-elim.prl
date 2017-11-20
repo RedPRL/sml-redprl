@@ -1,5 +1,5 @@
 Tac GetHole(#c : [exp].exp, #t : [exp].tac) = [
-  query gl <- concl in
+  query gl <- concl;
   match gl {
     [hole | #jdg{(#c %hole)} => (#t %hole)]
   }
@@ -10,10 +10,10 @@ Tac GetHole(#c : [exp].exp, #t : [exp].tac) = [
 // the equality [_ = n in a].
 Tac Rewrite(#c : [exp].exp, #n, #a, #t : tac) = [
   (GetHole [x] (#c x) [hole] #tac{
-    claim p : [hole = #n in #a] by [#t] in
+    claim p : [hole = #n in #a] by [#t];
     // Use the elimination rule for equality. We bind a new hypothesis which will represent the location
     // in the goal #c which is being rewritten.
-    fresh x in rewrite-hyp p;
+    fresh x -> rewrite-hyp p;
     [`(#c x), id, auto, auto]
   })
 ].

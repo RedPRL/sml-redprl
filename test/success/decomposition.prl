@@ -21,7 +21,7 @@ Thm Apply : [
    S1)
 ] by [
   lam f =>
-    let {a = a} = f [`tt, `ff, `(dim 0)] in
+    let {a = a} = f [`tt, `ff, `(dim 0)];
     use a
 ].
 
@@ -31,7 +31,7 @@ Thm UseHypTest : [
   (-> bool bool)
 ] by [
   lam x =>
-  claim p : [(-> bool S1 bool)] by [lam b c => use b] in
+  claim p : [(-> bool S1 bool)] by [lam b c => use b];
   use p [use x, `(loop 0)]
 ].
 

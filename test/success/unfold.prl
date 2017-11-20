@@ -3,12 +3,12 @@ Def Times(#A, #B) = [
 ].
 
 Tac Proj1(#z) = [
-  let {x} = #z in
+  let {x} = #z;
   use x
 ].
 
 Tac Proj2(#z) = [
-  let {welp, x} = #z in
+  let {welp, x} = #z;
   use x
 ].
 

@@ -19,21 +19,21 @@ Thm NatOne : [
 Thm NatIsInt : [
   (-> [x : nat] (= int x x))
 ] by [
-  lam x => fresh x' x'/ih in elim x; auto
+  lam x => fresh x' x'/ih -> elim x; auto
 ].
 
 Thm Pred : [
   (-> nat nat)
 ] by [
   lam a =>
-  fresh a' ind in elim a;
+  fresh a' ind -> elim a;
   [ `zero ];
   [ `a' ]
 ].
 
 // A tactic to infer and supply a simple (non-dependent) motive to the nat/eq/nat-rec rule.
 Tac SimpleNatRecEq = [
-  query gl <- concl in
+  query gl <- concl;
   match gl {
     [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
       refine nat/eq/nat-rec; [`%ty]; auto]
@@ -46,9 +46,9 @@ Thm Plus : [
   (-> nat nat nat)
 ] by [
   lam a =>
-  fresh a' ind in elim a;
+  fresh a' ind -> elim a;
   [ lam x => use x
-  , lam x => let ih/x = ind [use x] in `(succ ih/x)
+  , lam x => let ih/x = ind [use x]; `(succ ih/x)
   ]
 ].
 
@@ -68,9 +68,9 @@ Thm Plus/zero/R : [
   (-> [n : nat] (= nat ($ Plus n 0) n))
 ] by [
   lam n =>
-    fresh n' ind in elim n;
+    fresh n' ind -> elim n;
     [ `ax
-    , fresh x in rewrite-hyp ind;
+    , fresh x -> rewrite-hyp ind;
       [ `(= nat (succ x) (succ n'))
       , auto
       , auto
@@ -89,13 +89,13 @@ Thm Plus/succ/L : [
 Thm Plus/succ/R : [
   (-> [n m : nat] (= nat ($ Plus n (succ m)) (succ ($ Plus n m))))
 ] by [
-  lam n m => fresh n' n'/ih in elim n;
+  lam n m => fresh n' n'/ih -> elim n;
     [ auto
-    , fresh x in rewrite ($ Plus/succ/L n' (succ m));
+    , fresh x -> rewrite ($ Plus/succ/L n' (succ m));
       [ `(= nat x (succ ($ Plus (succ n') m)))
-      , fresh x in rewrite ($ Plus/succ/L n' m);
+      , fresh x -> rewrite ($ Plus/succ/L n' m);
         [ `(= nat (succ ($ Plus n' (succ m))) (succ x))
-        , fresh x in rewrite-hyp n'/ih;
+        , fresh x -> rewrite-hyp n'/ih;
           [ `(= nat (succ x) (succ (succ ($ Plus n' m))))
           , auto
           ]
@@ -110,7 +110,7 @@ Thm Plus/test0 : [
   (-> [n m : nat] [eq : (= nat ($ Plus n zero) m)] (= nat n m))
 ] by [
   lam n m eq =>
-    fresh x in rewrite ($ Plus/zero/R n) in eq;
+    fresh x -> rewrite ($ Plus/zero/R n) in eq;
     [ `(= nat x m) ]; auto
 ].
 
@@ -123,11 +123,11 @@ Thm Eq/sym : [
 Thm Plus/comm : [
   (-> [n m : nat] (= nat ($ Plus n m) ($ Plus m n)))
 ] by [
-  lam n m => fresh n' n'/ih in elim n;
+  lam n m => fresh n' n'/ih -> elim n;
     [ symmetry; `($ Plus/zero/R  m)
-    , fresh x in rewrite ($ Plus/succ/L n' m);
+    , fresh x -> rewrite ($ Plus/succ/L n' m);
       [ `(= nat x ($ Plus m (succ n')))
-      , fresh x in rewrite-hyp n'/ih;
+      , fresh x -> rewrite-hyp n'/ih;
         [ `(= nat (succ x) ($ Plus m (succ n')))
         , symmetry; `($ Plus/succ/R m n')
         ]
@@ -155,8 +155,8 @@ Print NatSymm.
 Thm IntPred : [
   (-> int int)
 ] by [
-  lam a => fresh a' junk in elim a;
-  [ `-1, fresh n junk in elim a'; [`0, `(succ n)]
+  lam a => fresh a' junk -> elim a;
+  [ `-1, fresh n junk -> elim a'; [`0, `(succ n)]
   , `-2, `(negsucc (succ (succ a')))
   ]
 ].
@@ -164,7 +164,7 @@ Thm IntPred : [
 Thm IntSucc : [
   (-> int int)
 ] by [
-  lam a => fresh a' junk in elim a;
+  lam a => fresh a' junk -> elim a;
   [ `1, `(succ (succ a'))
   , `0, `(negsucc a')
   ]
@@ -173,7 +173,7 @@ Thm IntSucc : [
 Thm IntPlus : [
   (-> int int int)
 ] by [
-  lam a => fresh a' ind in elim a;
+  lam a => fresh a' ind -> elim a;
   [ lam b => use b
   , lam b => `($ IntSucc ($ ind b))
   , lam b => `($ IntPred b)

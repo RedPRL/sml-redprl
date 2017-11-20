@@ -16,7 +16,7 @@ Thm IntPred : [
 Thm IntSuccIntPred : [
   (-> [i : int] (= int ($ IntSucc ($ IntPred i)) i))
 ] by [
-  lam i => fresh n in elim i;
+  lam i => fresh n -> elim i;
     [ auto
     , elim n; auto
     , auto
@@ -27,7 +27,7 @@ Thm IntSuccIntPred : [
 Thm IntPredIntSucc : [
   (-> [i : int] (= int ($ IntPred ($ IntSucc i)) i))
 ] by [
-  lam i => fresh n in elim i;
+  lam i => fresh n -> elim i;
     [ auto
     , auto
     , auto
@@ -49,23 +49,23 @@ Thm IntSuccIsEquiv : [
   (IsEquiv int int IntSucc)
 ] by [
   lam i =>
-    claim eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]] in
-      fresh eq' in elim eq; unfold IntSucc IntPred in eq'; reduce in eq';
+    claim eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]];
+    fresh eq' -> elim eq; unfold IntSucc IntPred in eq'; reduce in eq';
     {
       {use IntPred [`i], abs _ => `i}
     , lam {i',p'} =>
-        claim eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)] in
+        claim eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)];
         claim eq1 : [(= int ($ IntPred i) i')] by [
-          fresh i'' in
+          fresh i'' ->
             rewrite eq0;
             [`(= int ($ IntPred i'') i'), `($ IntPredIntSucc i')];
             auto
-        ] in
+        ];
 
         (abs x =>
           {`($ IntPred i), abs y => `(hcom 1~>y int i [x=0 [y] (@ p' y)] [x=1 [_] i])});
         
-        auto; fresh eq1' in elim eq1; unfold IntPred in eq1'; reduce in eq1'; auto
+        auto; fresh eq1' -> elim eq1; unfold IntPred in eq1'; reduce in eq1'; auto
     }
 ].
 

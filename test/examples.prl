@@ -18,8 +18,8 @@ Thm LowLevel : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f in refine fun/intro;
-  [fresh x x/eq in elim f;
+  fresh f -> refine fun/intro;
+  [fresh x x/eq -> elim f;
   [`tt, use x],
   refine fun/eqtype;
   refine wbool/eqtype]
@@ -32,8 +32,8 @@ Thm LowLevel2 : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f in repeat {refine fun/intro; [id, auto]};
-  fresh x x/eq in elim f;
+  fresh f -> repeat {refine fun/intro; [id, auto]};
+  fresh x x/eq -> elim f;
   [`tt, use x]
 ].
 
@@ -111,7 +111,7 @@ Thm PathTest2 : [
       // (BoolEta b).
       claim p : [(path [_] wbool b (BoolEta b))] by [
         if b then abs y => `tt else abs y => `ff
-      ] in
+      ];
 
       // Now, we will project the 'x'-side of our path. In the
       // interactive tactic environment, dimension expressions are
@@ -190,7 +190,7 @@ Thm FunExt(#l:lvl) : [
 Print FunExt.
 
 Tac FunExtTac(#l : lvl) = [
-  query gl <- concl in
+  query gl <- concl;
   match gl {
     [a, b, f, g, k| #jdg{(path [_] (-> %a %b) %f %g) true with %[k:knd]} =>
       use (FunExt #l) [`%a, `%b, `%f, `%g, id]

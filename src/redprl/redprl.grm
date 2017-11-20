@@ -896,13 +896,13 @@ atomicRawTac
   | IF elimTarget THEN tactic ELSE tactic
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))
 
-  | CLAIM VARNAME COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE IN tactic
+  | CLAIM VARNAME COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE SEMI tactic
       (Ast.$$ (O.DEV_LET NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
 
-  | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine IN tactic
+  | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine SEMI tactic
       (Pattern.makeApplyHyp devDecompPattern elimTargetAnySort bracketedDevAppSpine tactic)
 
-  | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine IN tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
+  | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine SEMI tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
 
   | USE elimTargetAnySort bracketedDevAppSpine (Pattern.makeUseHyp elimTargetAnySort bracketedDevAppSpine)
   | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
@@ -911,7 +911,7 @@ atomicRawTac
       (Ast.$$ (O.DEV_S1_ELIM, [\ ([], elimTarget), \ ([], tactic1), \([VARNAME], tactic2)]))
 
   | MATCH termAnySort LBRACKET devMatchClauses RBRACKET (Tac.makeMatch termAnySort devMatchClauses)
-  | QUERY VARNAME LEFT_ARROW selector IN tactic (Ast.$$ (O.DEV_QUERY, [\ ([], selector), \ ([VARNAME], tactic)]))
+  | QUERY VARNAME LEFT_ARROW selector SEMI tactic (Ast.$$ (O.DEV_QUERY, [\ ([], selector), \ ([VARNAME], tactic)]))
   | PRINT termAnySort (Ast.$$ (O.DEV_PRINT, [\ ([], termAnySort)]))
 
   (* overlapping with term *)
@@ -925,9 +925,9 @@ atomicRawMultitac
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REPEAT, [\ ([], multitac)]))
   | MTAC_AUTO (Tac.autoMtac)
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_PROGRESS, [\ ([], multitac)]))
-  | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REC, [\ ([VARNAME], multitac)]))
+  | MTAC_REC VARNAME DOUBLE_RIGHT_ARROW LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REC, [\ ([VARNAME], multitac)]))
   | LPAREN multitac RPAREN (multitac)
-  | FRESH hypBindings IN atomicRawMultitac SEMI multitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
+  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MTAC_ALL, [\ ([], atomicTac)]))
   | QUESTION ident (Ast.$$ (O.MTAC_HOLE (SOME ident), []))
   | QUESTION (Ast.$$ (O.MTAC_HOLE NONE, []))
