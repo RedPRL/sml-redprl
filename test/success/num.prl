@@ -155,8 +155,8 @@ Print NatSymm.
 Thm IntPred : [
   (-> int int)
 ] by [
-  lam a => fresh a' junk -> elim a;
-  [ `-1, fresh n junk -> elim a'; [`0, `(succ n)]
+  lam a => fresh a' _ -> elim a;
+  [ `-1, fresh n _ -> elim a'; [`0, `(succ n)]
   , `-2, `(negsucc (succ (succ a')))
   ]
 ].
@@ -164,7 +164,7 @@ Thm IntPred : [
 Thm IntSucc : [
   (-> int int)
 ] by [
-  lam a => fresh a' junk -> elim a;
+  lam a => fresh a' _ -> elim a;
   [ `1, `(succ (succ a'))
   , `0, `(negsucc a')
   ]

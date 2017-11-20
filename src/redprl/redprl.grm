@@ -943,8 +943,8 @@ rawMultitac
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
 hypBinding
-  : VARNAME COLON sort (VARNAME, sort)
-  | VARNAME (VARNAME, O.EXP)
+  : boundVar COLON sort (Option.getOpt (boundVar, "_"), sort)
+  | boundVar (Option.getOpt (boundVar, "_"), O.EXP)
 
 hypBindings
   : hypBinding hypBindings %prec COMMA (hypBinding :: hypBindings)
