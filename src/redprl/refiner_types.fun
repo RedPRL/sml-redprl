@@ -904,9 +904,11 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "Record.EqType"
-        val H >> AJ.EQ_TYPE ((record0, record1), l, k) = jdg
+        val H >> AJ.EQ ((record0, record1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.RECORD fields0 = Syn.out record0
         val Syn.RECORD fields1 = Syn.out record1
+        val _ = Assert.levelLess (l, l')
         val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
         val fresh = makeNamePopper alpha
@@ -921,7 +923,7 @@ struct
                  val ty1' = renameVars ren1 ty1
                  val kind = if isFirst then headKind else tailKind
                  val goals' = goals >: makeEqType (hyps) ((ty0', ty1'), l, kind)
-                 val hyps' = hyps @> (var, AJ.TRUE (ty0', l, kind))
+                 val hyps' = hyps @> (var, AJ.TRUE (ty0', l))
                  val ren0' = Var.Ctx.insert ren0 var0 var
                  val ren1' = Var.Ctx.insert ren1 var1 var
                in
@@ -936,9 +938,8 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "Record.Eq"
-        val H >> AJ.EQ ((tuple0, tuple1), (record, l, k)) = jdg
+        val H >> AJ.EQ ((tuple0, tuple1), (record, l)) = jdg
         val Syn.RECORD fields = Syn.out record
-        val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
         (* these operations could be expensive *)
         val Syn.TUPLE map0 = Syn.out tuple0
@@ -952,10 +953,9 @@ struct
                  val m0 = Fields.lookup lbl map0
                  val m1 = Fields.lookup lbl map1
                  val env' = Var.Ctx.insert env var m0
-                 val kind = if isFirst then headKind else tailKind
-                 val goals' = goals >: makeEq H ((m0, m1), (ty', l, kind))
-                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, kind)
-                 val hyps' = hyps @> (var, AJ.TRUE (ty, l, kind))
+                 val goals' = goals >: makeEq H ((m0, m1), (ty', l))
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, K.STABLE)
+                 val hyps' = hyps @> (var, AJ.TRUE (ty, l))
                in
                  {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}
                end)
@@ -969,7 +969,7 @@ struct
       let
         val H >> ajdg = jdg
         val _ = RedPrlLog.trace "Record.EqInv"
-        val AJ.EQ ((m1, m2), (record, l, k)) = Hyps.lookup H z
+        val AJ.EQ ((m1, m2), (record, l)) = Hyps.lookup H z
         val Syn.RECORD fields = Syn.out record
         val fresh = makeNamePopper alpha
 
@@ -981,7 +981,7 @@ struct
                  val proj1 = Syn.into @@ Syn.PROJ (name, m1)
                  val proj2 = Syn.into @@ Syn.PROJ (name, m2)
                  val x = fresh ()
-                 val eqjdg = AJ.EQ ((proj1, proj2), (substVarenv env ty, l, k))
+                 val eqjdg = AJ.EQ ((proj1, proj2), (substVarenv env ty, l))
                  val env' = Var.Ctx.insert env var proj1
                in
                  (hyps @> (x, eqjdg), env')
@@ -1000,21 +1000,19 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "Record.True"
-        val H >> AJ.TRUE (record, l, k) = jdg
+        val H >> AJ.TRUE (record, l) = jdg
         val Syn.RECORD fields = Syn.out record
-        val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
         val {goals, famGoals, elements, ...} =
           List.foldl
             (fn (((lbl, var), ty), {goals, famGoals, elements, env, hyps, isFirst}) =>
                let
-                 val kind = if isFirst then headKind else tailKind
-                 val hyps' = hyps @> (var, AJ.TRUE (ty, l, kind))
+                 val hyps' = hyps @> (var, AJ.TRUE (ty, l))
                  val ty' = substVarenv env ty
-                 val (elemGoal, elemHole) = makeTrue H (ty', l, kind)
+                 val (elemGoal, elemHole) = makeTrue H (ty', l)
                  val env' = Var.Ctx.insert env var elemHole
                  val goals' = goals >: elemGoal
-                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, kind)
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, K.STABLE)
                  val elements' = (lbl, [] \ elemHole) :: elements
                in
                  {goals = goals', famGoals = famGoals', elements = elements', env = env', hyps = hyps', isFirst = false}
@@ -1030,15 +1028,15 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Record.Eta"
-        val H >> AJ.EQ ((m, n), (record, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (record, l)) = jdg
         val Syn.RECORD rcd = Syn.out record
         val dom = List.map (#1 o #1) rcd
 
         fun goLabel lbl = [] \ (Syn.into @@ Syn.PROJ (lbl, m))
 
         val m' = O.TUPLE dom $$ List.map goLabel dom
-        val goal1 = makeMem H (m, (record, l, k))
-        val goal2 = makeEqIfDifferent H ((m', n), (record, l, k)) (* m' well-typed *)
+        val goal1 = makeMem H (m, (record, l))
+        val goal2 = makeEqIfDifferent H ((m', n), (record, l)) (* m' well-typed *)
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -1068,7 +1066,7 @@ struct
         val _ = RedPrlLog.trace "Record.Elim"
         val H >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val AJ.TRUE (record, l', _) = Hyps.lookup H z
+        val AJ.TRUE (record, l') = Hyps.lookup H z
         val Syn.RECORD fields = Syn.out record
 
         val names = List.tabulate (List.length fields, alpha)
@@ -1076,13 +1074,13 @@ struct
           ListPair.foldlEq
             (fn (name, ((_, var), ty), {ren, hyps}) =>
               {ren = Var.Ctx.insert ren var name,
-               hyps = hyps @> (name, AJ.TRUE (renameVars ren ty, l', K.top))})
+               hyps = hyps @> (name, AJ.TRUE (renameVars ren ty, l'))})
             {ren = Var.Ctx.empty, hyps = Hyps.empty}
             (names, fields)
 
         val tuple = Syn.into @@ Syn.TUPLE @@
           ListPair.mapEq
-            (fn (((lbl, _), _), name) => (lbl, Syn.into @@ Syn.VAR (name, O.EXP)))
+            (fn (((lbl, _), _), name) => (lbl, VarKit.toExp name))
             (fields, names)
 
         val H' = Hyps.interposeThenSubstAfter (z, hyps, tuple) H
@@ -1102,30 +1100,29 @@ struct
     fun EqProj _ jdg =
       let
         val _ = RedPrlLog.trace "Record.EqProj"
-        val H >> AJ.EQ ((proj0, proj1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((proj0, proj1), (ty, l)) = jdg
         val Syn.PROJ (lbl0, m0) = Syn.out proj0
         val Syn.PROJ (lbl1, m1) = Syn.out proj1
         val () = Assert.labelEq "Record.EqProj" (lbl0, lbl1)
 
-        val (goalTy, holeTy) = makeSynth H (m0, NONE, K.top)
+        val (goalTy, holeTy) = makeSynth H (m0, l)
         val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy, m0)
-        val goalEq = makeEqIfDifferent H ((m0, m1), (holeTy, NONE, K.top)) (* m0 well-typed *)
-        val goalTy' = makeSubType H (holeTyP, NONE, K.top) (ty, l, k)
+        val goalEq = makeEqIfDifferent H ((m0, m1), (holeTy, l)) (* m0 well-typed *)
+        val goalTy' = makeSubType H ((holeTyP, ty), l, K.STABLE)
       in
-        |>: goalTy >: goalTyP >:? goalEq >:? goalTy'
+        |>: goalTy >: goalTyP >:? goalEq >: goalTy'
         #> (H, trivial)
       end
 
     fun SynthProj _ jdg =
       let
         val _ = RedPrlLog.trace "Record.SynthProj"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.PROJ (lbl, n) = Syn.out tm
-        val (goalRecord, holeRecord) = makeSynth H (n, NONE, K.top)
+        val (goalRecord, holeRecord) = makeSynth H (n, l)
         val (goalTy, holeTy) = makeMatchRecord (lbl, holeRecord, n)
-        val goalKind = makeTypeUnlessSubUniv H (holeTy, l, k) (NONE, K.top)
       in
-        |>: goalRecord >: goalTy >:? goalKind #> (H, holeTy)
+        |>: goalRecord >: goalTy #> (H, holeTy)
       end
   end
 

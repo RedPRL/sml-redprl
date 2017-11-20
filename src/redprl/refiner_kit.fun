@@ -164,7 +164,7 @@ struct
   fun makeEqWith f H ((m, n), (ty, l)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l))
   val makeEq = makeEqWith (fn j => j)
   fun makeMem H (m, (ty, l)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l))
-  fun makeSubUniverse H (u, l, k) = makeGoal' @@ H >> AJ.SUB_UNIVERSE (u, l, k)
+  fun makeSubType H ((a, b), l, k) = makeGoal' @@ H >> AJ.SUB_TYPE ((a, b), l, k)
 
   (* conditional goal making *)
 
@@ -175,6 +175,10 @@ struct
   fun makeEqIfAllDifferent H ((m, n), (ty, l)) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
     else makeEqIfDifferent H ((m, n), (ty, l))
+
+  fun makeSubTypeIfDifferent H ((a, b), l, k) =
+    if Abt.eq (a, b) then NONE
+    else SOME @@ makeSubType H ((a, b), l, k)
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
@@ -192,15 +196,10 @@ struct
   fun makeEqTypeIfDifferent H ((a, b), l, k) =
     makeEqIfDifferent H ((a, b), (Syn.intoU (l, k), Universe.inherentLevel l))
 
-  (* subtyping *)
+  (* aux functions for subtyping *)
 
   fun isInUsefulUniv (l', k') (l, k) =
     not (OptionUtil.eq L.WK.eq (L.WK.residual ((l, k), (l', k')), SOME (l, k)))
-
-  (* It is not clear how exactly the subtyping should be implemented;
-   * therefore we have a dummy implementation here. *)
-  val makeSubType = makeEqType
-  val makeSubTypeIfDifferent = makeEqTypeIfDifferent
 
   (* assertions *)
 

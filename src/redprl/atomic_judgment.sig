@@ -28,10 +28,14 @@ struct
       *)
      | TRUE of abt * level
 
-     (* `SUB_UNIVERSE (u, l, k)`
-      *   `u` is a sub-universe of the universe specified by `l` and `k`.
+     (* `SUB_TYPE ((a, b), l, k)`
+      *   Already in the `l`th iteration of universe hierarchy construction,
+      *   `a` is associated with some PER that is a subrelation of some PER
+      *   associated with `b`. Note that the RedPRL proof theory is
+      *   intentionally weak so that the only provable non-trivial subtyping
+      *   relations are the ones between universes.
       *)
-     | SUB_UNIVERSE of abt * level * kind
+     | SUB_TYPE of (abt * abt) * level * kind
 
      (* `SYNTH (m, l)`:
       *   Already in the `l`th iteration of universe hierarchy construction,

@@ -9,7 +9,7 @@ struct
   fun map f =
     fn EQ ((m, n), (a, l)) => EQ ((f m, f n), (f a, l))
      | TRUE (a, l) => TRUE (f a, l)
-     | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (f u, l, k)
+     | SUB_TYPE ((a, b), l, k) => SUB_TYPE ((f a, f b), l, k)
      | SYNTH (a, l) => SYNTH (f a, l)
      | TERM tau => TERM tau
 
@@ -30,14 +30,11 @@ struct
            [ TermPrinter.ppTerm a
            , hsep [text "at", RedPrlLevel.pretty l]
            ]
-       | SUB_UNIVERSE (u, l, k) => expr @@ hvsep
-           [ TermPrinter.ppTerm u
+       | SUB_TYPE ((a, b), l, k) => expr @@ hvsep
+           [ TermPrinter.ppTerm a
            , text "<="
-           , Atomic.parens @@ expr @@ hsep
-               [ text "U"
-               , RedPrlLevel.pretty l
-               , if k = RedPrlKind.top then empty else TermPrinter.ppKind k
-               ]
+           , TermPrinter.ppTerm b
+           , hsep [text "in", TermPrinter.ppTerm (Syntax.intoU (l, k))]
            ]
        | SYNTH (m, l) => expr @@ hvsep
            [ TermPrinter.ppTerm m, text "synth"
@@ -51,7 +48,7 @@ struct
   val synthesis =
     fn EQ _ => O.TRV
      | TRUE _ => O.EXP
-     | SUB_UNIVERSE _ => O.TRV
+     | SUB_TYPE _ => O.TRV
      | SYNTH _ => O.EXP
      | TERM tau => tau
 
@@ -67,7 +64,7 @@ struct
     val into : jdg -> abt =
       fn EQ ((m, n), (a, l)) => O.JDG_EQ $$ [[] \ L.into l, [] \ m, [] \ n, [] \ a]
        | TRUE (a, l) => O.JDG_TRUE $$ [[] \ L.into l, [] \ a]
-       | SUB_UNIVERSE (u, l, k) => O.JDG_SUB_UNIVERSE $$ [[] \ L.into l, [] \ kconst k, [] \ u]
+       | SUB_TYPE ((a, b), l, k) => O.JDG_SUB_TYPE $$ [[] \ L.into l, [] \ kconst k, [] \ a, [] \ b]
        | SYNTH (m, l) => O.JDG_SYNTH $$ [[] \ L.into l, [] \ m]
 
        | TERM tau => O.JDG_TERM tau $$ []
@@ -81,7 +78,7 @@ struct
       case RedPrlAbt.out jdg of
          O.JDG_EQ $ [_ \ l, _ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, L.out l))
        | O.JDG_TRUE $ [_ \ l, _ \ a] => TRUE (a, L.out l)
-       | O.JDG_SUB_UNIVERSE $ [_ \ l, _ \ k, _ \ u] => SUB_UNIVERSE (u, L.out l, outk k)
+       | O.JDG_SUB_TYPE $ [_ \ l, _ \ k, _ \ a, _ \ b] => SUB_TYPE ((a, b), L.out l, outk k)
        | O.JDG_SYNTH $ [_ \ l, _ \ m] => SYNTH (m, L.out l)
 
        | O.JDG_TERM tau $ [] => TERM tau
