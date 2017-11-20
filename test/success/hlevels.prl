@@ -38,6 +38,7 @@ Thm PropSet(#l:lvl) : [
       [j=1 [k] (@ ($ h a (@ q i)) k)])
 ].
 
+// This proof should be easy, but it is not...
 Thm IsPropIsProp(#l:lvl) : [
   (->
    [tyA : (U #l kan)]
@@ -45,8 +46,11 @@ Thm IsPropIsProp(#l:lvl) : [
   )
 ] by [
   lam tyA h1 h2 =>
-  abs i => lam a b =>
-    `(@ ($ (PropSet #l) tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
+  (abs i => lam a b =>
+    let foo = (PropSet #l) [`tyA, `h1];
+    unfold IsSet IsProp;
+    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]);
+  unfold PropSet; auto
 ].
 
 Thm IsPropIsProp'(#l:lvl) : [
