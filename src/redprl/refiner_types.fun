@@ -552,10 +552,12 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Void.EqType"
-        val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
+        val H >> AJ.EQ ((a, b), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.VOID = Syn.out a
         val Syn.VOID = Syn.out b
         val _ = Assert.levelLeq (inherentLevel, l)
+        val _ = Assert.levelLess (l, l')
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -567,15 +569,14 @@ struct
       let
         val _ = RedPrlLog.trace "Void.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        (* for now we ignore the level in the context *)
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.VOID = Syn.out ty
 
         val evidence =
           case catjdg of
              AJ.TRUE _ => Syn.into Syn.AX (* should be some fancy variable *)
            | AJ.EQ _ => trivial
-           | AJ.EQ_TYPE _ => trivial
            | AJ.SYNTH _ => Syn.into Syn.AX
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
       in
