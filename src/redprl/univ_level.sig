@@ -9,13 +9,11 @@ sig
   val zero : level
   val plus : level * IntInf.int -> level (* the second argument must >= 0 *)
   val max : level list -> level
-  val omega : level
 
   val <= : level * level -> bool
   val < : level * level -> bool
   val eq : level * level -> bool
 
-  val top : level
   val residual : level * level -> level option
 
   val pretty : level -> Fpp.doc
