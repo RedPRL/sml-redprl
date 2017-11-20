@@ -31,8 +31,8 @@ struct
      (* `SUB_TYPE ((a, b), l, k)`
       *   Already in the `l`th iteration of universe hierarchy construction,
       *   `a` is a subtype of `b`. The RedPRL proof theory is intentionally
-      *   weak so that the only provable instances of non-trivial subtyping
-      *   are the ones between universes.
+      *   weak so that there are only a few provable instances of non-trivial
+      *   subtyping.
       *)
      | SUB_TYPE of (abt * abt) * level * kind
 
