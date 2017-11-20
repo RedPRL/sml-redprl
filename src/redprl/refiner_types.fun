@@ -35,19 +35,6 @@ struct
    * or new parameter variables.
    *)
 
-  (* Here is the function that will be used in other types *)
-  structure Universe =
-  struct
-    val inherentKind =
-      fn K.DISCRETE => K.DISCRETE
-       | K.KAN => K.KAN
-       | K.HCOM => K.COE
-       | K.COE => K.COE
-       | K.STABLE => K.COE
-
-    val inherentLevel = L.succ
-  end
-
   structure Bool =
   struct
     val inherentLevel = L.zero
@@ -2214,6 +2201,13 @@ struct
   structure Universe =
   struct
     open Universe
+
+    val inherentKind =
+      fn K.DISCRETE => K.DISCRETE
+       | K.KAN => K.KAN
+       | K.HCOM => K.COE
+       | K.COE => K.COE
+       | K.STABLE => K.COE
 
     (* The following should be equivalent to
      * `L.<= (inherentLevel l', l) andalso K.<= (inherentKind k', k)`

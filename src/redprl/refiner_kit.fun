@@ -180,12 +180,17 @@ struct
     if List.exists Option.isSome l then NONE else SOME goal
 
   (* internalized EQ_TYPE *)
+
+  structure Universe =
+  struct
+    val inherentLevel = L.succ
+  end
   fun makeEqTypeWith f H ((a, b), l, k) =
-    makeEqWith f H ((a, b), (Syn.intoU (l, k), L.succ l))
+    makeEqWith f H ((a, b), (Syn.intoU (l, k), Universe.inherentLevel l))
   val makeEqType = makeEqTypeWith (fn j => j)
   fun makeType H (a, l, k) = makeEqType H ((a, a), l, k)
   fun makeEqTypeIfDifferent H ((a, b), l, k) =
-    makeEqIfDifferent H ((a, b), (Syn.intoU (l, k), L.succ l))
+    makeEqIfDifferent H ((a, b), (Syn.intoU (l, k), Universe.inherentLevel l))
 
   (* subtyping *)
 
