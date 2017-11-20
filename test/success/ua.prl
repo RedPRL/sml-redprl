@@ -274,11 +274,37 @@ Thm UARet(#l:lvl) : [
   `($ (EquivLemma #l) ty/a ty/b
       ($ (PathToEquiv #l) ty/a ty/b ($ (UA #l) ty/a ty/b e))
       e
-      ($ (UABeta #l) ty/a ty/b e));
-  ?foo
+      (abs [x] (lam [a]
+        (@ ($ (UABeta #l) ty/a ty/b e (coe 1~>x [_] ty/a a)) x))))
+].
+
+Thm IsContrPath(#l:lvl) : [
+  (->
+   [ty/a : (U #l kan)]
+   (IsContr (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))))
+] by [
+  lam ty/a.
+  {{use ty/a, <_> use ty/a},
+   lam {ty/b,p}. <x>
+   {`(hcom 0~>1 (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a]);
+    (CrushTyEq #l),
+    <y> `(hcom 0~>y (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a]);
+    auto-step;
+    [auto,
+     auto-step;
+    (ReflectUniv #l kan #tac{auto-step; ?}); // jon
+      ?,
+     auto,
+     id];
+    id
+   }
+  }
 ].
 
 // TODO ROADMAP:
-// uaret
-// uaretsig -> uaret
+// isContrPath
+// retIsContr
+// uaretsig
 // univalenceAlt2 -> retIsContr, uaretsig, isContrPath
+
+// remove unnecessary unfoldings from earlier proofs?
