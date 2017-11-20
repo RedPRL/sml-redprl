@@ -104,12 +104,12 @@ struct
         (* tt branch *)
         val tt = Syn.into Syn.TT
         val Htt = Hyps.substAfter (z, tt) H
-        val (goalT, holeT) = makeGoal @@ (Htt) >> AJ.map (substVar (tt, z)) catjdg
+        val (goalT, holeT) = makeGoal @@ Htt >> AJ.map (substVar (tt, z)) catjdg
 
         (* ff branch *)
         val ff = Syn.into Syn.FF
         val Hff = Hyps.substAfter (z, ff) H
-        val (goalF, holeF) = makeGoal @@ (Hff) >> AJ.map (substVar (ff, z)) catjdg
+        val (goalF, holeF) = makeGoal @@ Hff >> AJ.map (substVar (ff, z)) catjdg
 
         val evidence =
           case catjdg of
@@ -207,8 +207,11 @@ struct
         val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
+
+        val w = alpha 0
       in
-        ComKit.EqFComDelegate alpha H args0 args1 (ty, NONE, K.top)
+        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, NONE, K.top))
+        #> (H, trivial)
       end
 
     fun Elim z _ jdg =
@@ -694,8 +697,11 @@ struct
         val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
+
+        val w = alpha 0
       in
-        ComKit.EqFComDelegate alpha H args0 args1 (ty, NONE, K.top)
+        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, NONE, K.top))
+        #> (H, trivial)
       end
 
     fun Elim z alpha jdg =
@@ -1502,6 +1508,259 @@ struct
       end
   end
 
+  structure Pushout =
+  struct
+    val kindConstraintOnEndsAndApex =
+      fn K.DISCRETE => E.raiseError @@
+           E.NOT_APPLICABLE (Fpp.text "Pushouts", Fpp.text "discrete universes")
+       | K.KAN => (K.COE, K.COE)
+       | K.COE => (K.COE, K.COE)
+       | K.HCOM => (K.STABLE, K.STABLE)
+       | K.STABLE => (K.STABLE, K.STABLE)
+
+    fun EqType alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqType"
+        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val Syn.PUSHOUT (a0, b0, c0, (x0, f0x0), (y0, g0y0)) = Syn.out ty0
+        val Syn.PUSHOUT (a1, b1, c1, (x1, f1x1), (y1, g1y1)) = Syn.out ty1
+
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+        val goalA = makeEqType H ((a0, a1), l, kEnd)
+        val goalB = makeEqType H ((b0, b1), l, kEnd)
+        val goalC = makeEqType H ((c0, c1), l, kApex)
+
+        val z = alpha 0
+        val f0z = VarKit.rename (z, x0) f0x0
+        val f1z = VarKit.rename (z, x1) f1x1
+        val goalF = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((f0z, f1z), (a0, L.top, K.top))
+        val g0z = VarKit.rename (z, y0) g0y0
+        val g1z = VarKit.rename (z, y1) g1y1
+        val goalG = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((g0z, g1z), (b0, L.top, K.top))
+      in
+        |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, trivial)
+      end
+
+    fun EqLeft alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqLeft"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.LEFT m0 = Syn.out tm0
+        val Syn.LEFT m1 = Syn.out tm1
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+
+        val goalA = makeEq H ((m0, m1), (a, l, kEnd))
+
+        val goalB = makeType H (b, l, kEnd)
+        val goalC = makeType H (c, l, kApex)
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+      in
+        |>: goalA >: goalF >: goalG >: goalB >: goalC #> (H, trivial)
+      end
+
+    fun EqRight alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqRight"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.RIGHT m0 = Syn.out tm0
+        val Syn.RIGHT m1 = Syn.out tm1
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+
+        val goalB = makeEq H ((m0, m1), (b, l, kEnd))
+
+        val goalA = makeType H (a, l, kEnd)
+        val goalC = makeType H (c, l, kApex)
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+      in
+        |>: goalB >: goalF >: goalG >: goalA >: goalC #> (H, trivial)
+      end
+
+    fun EqGlue alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqGlue"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.GLUE (r0, m0, fm0, gm0) = Syn.out tm0
+        val Syn.GLUE (r1, m1, fm1, gm1) = Syn.out tm1
+        val () = Assert.alphaEq' "Pushout.EqGlue" (r0, r1)
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+
+        val goalC = makeEq H ((m0, m1), (c, l, kApex))
+        val goalA = makeEq H ((fm0, fm1), (a, l, kEnd))
+        val goalB = makeEq H ((gm0, gm1), (b, l, kEnd))
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+
+        val goalCohF = makeEq H ((substVar (m0, x) fx, fm0), (a, L.top, K.top))
+        val goalCohG = makeEq H ((substVar (m0, y) gy, gm0), (b, L.top, K.top))
+      in
+        |>: goalC >: goalA >: goalB >: goalCohF >: goalCohG >: goalF >: goalG #> (H, trivial)
+      end
+
+    fun EqFCom alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqFCom"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.FCOM args0 = Syn.out tm0
+        val Syn.FCOM args1 = Syn.out tm1
+
+        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+        val goalA = makeType H (a, l, kEnd)
+        val goalB = makeType H (b, l, kEnd)
+        val goalC = makeType H (c, l, kApex)
+
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+      in
+        |>: goalF >: goalG >: goalA >: goalB >: goalC
+         >:+ ComKit.genEqFComGoals H z (args0, args1) (ty, L.top, K.top)
+        #> (H, trivial)
+      end
+
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.Elim"
+        val H >> AJ.TRUE (dz, l, k) = jdg
+        (* pushout-rec(FCOM) steps to COM *)
+        val k = K.meet (k, K.COM)
+        (* for now we ignore the kind and the level in the context *)
+        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val Syn.PUSHOUT (tyA, tyB, tyC, (x, fx), (y, gy)) = Syn.out ty
+
+        (* We need to kind-check cz because of FCOM
+         * This goal is made (explicitly) unconditional to simplify tactic writing
+         *)
+        val goalKind = makeType H (dz, l, k)
+
+        (* left branch *)
+        val a = alpha 0
+        val atm = VarKit.toExp a
+        fun dleft tm = substVar (Syn.into (Syn.LEFT tm), z) dz
+        val (goalL, holeL) = makeTrue (H @> (a, AJ.TRUE (tyA, L.top, K.top))) (dleft atm, L.top, K.top)
+
+        (* right branch *)
+        val b = alpha 1
+        val btm = VarKit.toExp b
+        fun dright tm = substVar (Syn.into (Syn.RIGHT tm), z) dz
+        val (goalR, holeR) = makeTrue (H @> (b, AJ.TRUE (tyB, L.top, K.top))) (dright btm, L.top, K.top)
+
+        (* glue branch *)
+        val v = alpha 2
+        val vtm = VarKit.toDim v
+        val c = alpha 3
+        val ctm = VarKit.toExp c
+        val fc = substVar (ctm, x) fx
+        val gc = substVar (ctm, y) gy
+        val glue = Syn.into @@ Syn.GLUE (vtm, ctm, fc, gc)
+        val dglue = substVar (glue, z) dz
+        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE (tyC, L.top, K.top))
+        val (goalG, holeG) = makeTrue Hglue (dglue, L.top, K.top)
+
+        (* coherence *)
+        val g0c = substVar (Syn.intoDim 0, v) holeG
+        val lfc = substVar (fc, a) holeL
+        val goalCohL = makeEq (H @> (c, AJ.TRUE (tyC, L.top, K.top))) ((g0c, lfc), (dleft fc, L.top, K.top))
+
+        val g1c = substVar (Syn.intoDim 1, v) holeG
+        val rgc = substVar (gc, b) holeR
+        val goalCohR = makeEq (H @> (c, AJ.TRUE (tyC, L.top, K.top))) ((g1c, rgc), (dright gc, L.top, K.top))
+
+        val elim = Syn.into @@ Syn.PUSHOUT_REC ((z, dz), VarKit.toExp z, ((a, holeL), (b, holeR), (v, c, holeG)))
+      in
+        |>: goalL >: goalR >: goalG >: goalCohL >: goalCohR >: goalKind #> (H, elim)
+      end
+
+    fun EqElim alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqElim"
+        val H >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        (* pushout-rec(FCOM) steps to COM *)
+        val k = K.meet (k, K.COM)
+        val Syn.PUSHOUT_REC ((z0, d0z0), m0, ((a0, n0a0), (b0, p0b0), (v0, c0, q0v0c0))) = Syn.out elim0
+        val Syn.PUSHOUT_REC ((z1, d1z1), m1, ((a1, n1a1), (b1, p1b1), (v1, c1, q1v1c1))) = Syn.out elim1
+
+        (* type of eliminated term *)
+        val (goalTyPushout, holeTyPushout) = makeSynth H (m0, L.top, K.top)
+
+        (* motive *)
+        val z = alpha 0
+        val d0z = VarKit.rename (z, z0) d0z0
+        val d1z = VarKit.rename (z, z1) d1z1
+        val goalC = makeEqType (H @> (z, AJ.TRUE (holeTyPushout, L.top, K.top))) ((d0z, d1z), l, k)
+
+        (* eliminated term *)
+        val goalM = makeEqIfDifferent H ((m0, m1), (holeTyPushout, L.top, K.top))
+
+        (* result type*)
+        val goalTy0 = makeSubType H (substVar (m0, z0) d0z0, L.top, K.top) (ty, l, k)
+
+        (* left branch *)
+        val (goalTyA, holeTyA) = makeMatch (O.PUSHOUT, 0, holeTyPushout, [])
+        val a = alpha 1
+        val atm = VarKit.toExp a
+        val n0a = VarKit.rename (a, a0) n0a0
+        val n1a = VarKit.rename (a, a1) n1a1
+        fun dleft tm = substVar (Syn.into (Syn.LEFT tm), z0) d0z0
+        val goalN = makeEq (H @> (a, AJ.TRUE (holeTyA, L.top, K.top))) ((n0a, n1a), (dleft atm, L.top, K.top))
+
+        (* right branch *)
+        val (goalTyB, holeTyB) = makeMatch (O.PUSHOUT, 1, holeTyPushout, [])
+        val b = alpha 2
+        val btm = VarKit.toExp b
+        val p0b = VarKit.rename (b, b0) p0b0
+        val p1b = VarKit.rename (b, b1) p1b1
+        fun dright tm = substVar (Syn.into (Syn.RIGHT tm), z0) d0z0
+        val goalP = makeEq (H @> (b, AJ.TRUE (holeTyB, L.top, K.top))) ((p0b, p1b), (dright btm, L.top, K.top))
+
+        (* glue branch *)
+        val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 2, holeTyPushout, [])
+        val v = alpha 2
+        val vtm = VarKit.toDim v
+        val c = alpha 3
+        val ctm = VarKit.toExp c
+        val q0vc = VarKit.renameMany [(v, v0), (c, c0)] q0v0c0
+        val q1vc = VarKit.renameMany [(v, v1), (c, c1)] q1v1c1
+        val (goalF, holeF) = makeMatch (O.PUSHOUT, 3, holeTyPushout, [ctm])
+        val (goalG, holeG) = makeMatch (O.PUSHOUT, 4, holeTyPushout, [ctm])
+        val glue = Syn.into @@ Syn.GLUE (vtm, ctm, holeF, holeG)
+        val dglue = substVar (glue, z0) d0z0
+        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE (holeTyC, L.top, K.top))
+        val goalQ = makeEq Hglue ((q0vc, q1vc), (dglue, L.top, K.top))
+
+        (* coherence *)
+        val q00c = substVar (Syn.intoDim 0, v) q0vc
+        val lfc = substVar (holeF, a0) n0a0
+        val goalCohL = makeEq (H @> (c, AJ.TRUE (holeTyC, L.top, K.top))) ((q00c, lfc), (dleft holeF, L.top, K.top))
+
+        val q01c = substVar (Syn.intoDim 1, v) q0vc
+        val rgc = substVar (holeG, b0) p0b0
+        val goalCohR = makeEq (H @> (c, AJ.TRUE (holeTyC, L.top, K.top))) ((q01c, rgc), (dright holeG, L.top, K.top))
+      in
+        |>: goalTyPushout >: goalC >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy0 #> (H, trivial)
+      end
+
+    fun SynthElim _ jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.SynthElim"
+        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val Syn.PUSHOUT_REC ((z,dz), m, _) = Syn.out tm
+
+        val dm = substVar (m, z) dz
+        val goal = makeMem H (tm, (dm, l, k))
+      in
+        |>: goal #> (H, dm)
+      end
+  end
+
   structure InternalizedEquality =
   struct
     val kindConstraintOnBase =
@@ -1884,7 +2143,7 @@ struct
   struct
     val kindConstraintOnEnds =
       fn K.DISCRETE => E.raiseError @@
-          E.NOT_APPLICABLE (Fpp.text "V.kindConstraintOnEnds", Fpp.text "DISCRETE")
+          E.NOT_APPLICABLE (Fpp.text "V types", Fpp.text "discrete universes")
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.HCOM) (* XXX more research needed *)
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)

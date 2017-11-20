@@ -394,6 +394,12 @@ struct
      | "line/intro" => Lcf.rule o Line.True
      | "line/eq/eta" => Lcf.rule o Line.Eta
      | "line/eq/app" => Lcf.rule o Line.EqApp
+     | "pushout/eqtype" => Lcf.rule o Pushout.EqType
+     | "pushout/eq/left" => Lcf.rule o Pushout.EqLeft
+     | "pushout/eq/right" => Lcf.rule o Pushout.EqRight
+     | "pushout/eq/glue" => Lcf.rule o Pushout.EqGlue
+     | "pushout/eq/fcom" => Lcf.rule o Pushout.EqFCom
+     | "pushout/eq/pushout-rec" => Lcf.rule o Pushout.EqElim
      | "eq/eqtype" => Lcf.rule o InternalizedEquality.EqType
      | "eq/eq/ax" => Lcf.rule o InternalizedEquality.Eq
      | "eq/intro" => Lcf.rule o InternalizedEquality.True
@@ -420,7 +426,9 @@ struct
   struct
     open Computation
     fun Reduce sign = SequentReduce sign
-    fun ReduceAll sign = Lcf.rule o SequentReduceAll sign orelse_ Lcf.rule o MatchRecordReduce sign
+    fun ReduceAll sign = Lcf.rule o SequentReduceAll sign
+      orelse_ Lcf.rule o MatchReduce sign
+      orelse_ Lcf.rule o MatchRecordReduce sign
   end
 
   local
@@ -485,6 +493,7 @@ struct
        | Syn.APP (f, _) => autoSynthesizableNeu sign f
        | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
        | Syn.DIM_APP (l, _) => autoSynthesizableNeu sign l
+       | Syn.PUSHOUT_REC _ => true
        | Syn.CUST => true (* XXX should check the signature *)
        | _ => false
   in
@@ -522,6 +531,7 @@ struct
          | (Syn.RECORD _, Syn.RECORD _) => Lcf.rule o Record.EqType
          | (Syn.PATH _, Syn.PATH _) => Lcf.rule o Path.EqType
          | (Syn.LINE _, Syn.LINE _) => Lcf.rule o Line.EqType
+         | (Syn.PUSHOUT _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.EqType
          | (Syn.FCOM _, Syn.FCOM _) => Lcf.rule o FormalComposition.EqType
          | (Syn.V _, Syn.V _) => Lcf.rule o V.EqType
@@ -542,6 +552,7 @@ struct
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `!`"
          | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
+         | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with pushout-rec"
          | (Syn.CUST, Syn.CUST) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with custom operators"
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
@@ -612,6 +623,10 @@ struct
          | (_, _, Syn.RECORD _) => Lcf.rule o Record.Eq
          | (_, _, Syn.PATH _) => Lcf.rule o Path.Eq
          | (_, _, Syn.LINE _) => Lcf.rule o Line.Eq
+         | (Syn.LEFT _, Syn.LEFT _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqLeft
+         | (Syn.RIGHT _, Syn.RIGHT _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqRight
+         | (Syn.GLUE _, Syn.GLUE _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqGlue
+         | (Syn.FCOM _, Syn.FCOM _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqFCom
          | (_, _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eq
          | (_, _, Syn.FCOM _) => Lcf.rule o FormalComposition.Eq
          | (_, _, Syn.V _) => Lcf.rule o V.Eq
@@ -640,6 +655,7 @@ struct
                (`_, `_) => Lcf.rule o Path.EqApp
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
               (* XXX should consult autoSynthesizableNeu *)
+         | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Lcf.rule o Pushout.EqElim
          | (Syn.CUST, Syn.CUST) => Lcf.rule o Custom.Eq sign (* XXX should consult autoSynthesizableNeu *)
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
@@ -765,6 +781,7 @@ struct
          | Syn.APP _ => Lcf.rule o Fun.SynthApp
          | Syn.PROJ _ => Lcf.rule o Record.SynthProj
          | Syn.DIM_APP _ => Lcf.rule o Path.SynthApp par Lcf.rule o Line.SynthApp
+         | Syn.PUSHOUT_REC _ => Lcf.rule o Pushout.SynthElim
          | Syn.CUST => Lcf.rule o Custom.Synth sign
          | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
@@ -781,14 +798,28 @@ struct
          | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 
+      fun StepMatch sign u =
+        case canonicity sign u of
+           Machine.REDEX => Lcf.rule o Computation.MatchReduce sign
+         | Machine.CANONICAL => Lcf.rule o Misc.MatchOperator
+         | Machine.NEUTRAL (Machine.VAR x) => fail @@ E.NOT_APPLICABLE (Fpp.text "match", TermPrinter.ppTerm u)
+         | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
+
+      fun StepMatchRecord sign u =
+        case canonicity sign u of
+           Machine.REDEX => Lcf.rule o Computation.MatchRecordReduce sign
+         | Machine.CANONICAL => Lcf.rule o Record.MatchRecord
+         | Machine.NEUTRAL (Machine.VAR x) => fail @@ E.NOT_APPLICABLE (Fpp.text "match-record", TermPrinter.ppTerm u)
+         | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
+
       fun StepJdg sign = matchGoal
         (fn _ >> AJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
           | _ >> AJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
           | _ >> AJ.TRUE (ty, _, _) => StepTrue sign ty
           | _ >> AJ.SYNTH (m, _, _) => StepSynth sign m
           | _ >> AJ.SUB_UNIVERSE (univ, _, _) => StepSubUniverse sign univ
-          | MATCH _ => Lcf.rule o Misc.MatchOperator
-          | MATCH_RECORD _ => Lcf.rule o Record.MatchRecord orelse_ Lcf.rule o Computation.MatchRecordReduce sign then_ Lcf.rule o Record.MatchRecord
+          | MATCH (_, _, m, _) => StepMatch sign m
+          | MATCH_RECORD (_, m, _) => StepMatchRecord sign m
           | _ >> jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoStep", AJ.pretty jdg))
 
       (* favonia:
@@ -847,6 +878,7 @@ struct
          | Syn.RECORD _ => Lcf.rule o Record.Elim z
          | Syn.PATH _ => Lcf.rule o Path.Elim z
          | Syn.LINE _ => Lcf.rule o Line.Elim z
+         | Syn.PUSHOUT _ => Lcf.rule o Pushout.Elim z
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.Elim z
          | Syn.UNIVERSE _ => Universe.Elim z
          | _ => fail @@ E.GENERIC [Fpp.text "elim tactic", TermPrinter.ppTerm ty]
