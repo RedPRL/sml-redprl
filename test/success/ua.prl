@@ -292,7 +292,7 @@ Thm IsContrPath(#l:lvl) : [
     auto-step;
     [auto,
      auto-step;
-    (ReflectUniv #l kan #tac{auto-step; ?}); // jon
+    (ReflectUniv #l kan #tac{refine path/eq/app}); auto;
       ?,
      auto,
      id];
