@@ -927,6 +927,7 @@ atomicRawMultitac
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_PROGRESS, [\ ([], multitac)]))
   | MTAC_REC VARNAME DOUBLE_RIGHT_ARROW LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REC, [\ ([VARNAME], multitac)]))
   | LPAREN multitac RPAREN (multitac)
+  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings (Tac.tacToMultitac (Ast.$$ (O.TAC_ID, []))))
   | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MTAC_ALL, [\ ([], atomicTac)]))
   | QUESTION ident (Ast.$$ (O.MTAC_HOLE (SOME ident), []))
