@@ -179,10 +179,21 @@ struct
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
 
+  (* internalized EQ_TYPE *)
+  fun makeEqTypeWith f H ((a, b), l, k) =
+    makeEqWith f H ((a, b), (Syn.intoU (l, k), L.succ l))
+  val makeEqType = makeEqTypeWith (fn j => j)
+  fun makeEqTypeIfDifferent H ((a, b), l, k) =
+    makeEqIfDifferent H ((a, b), (Syn.intoU (l, k), L.succ l))
+
   (* subtyping *)
 
   fun isInUsefulUniv (l', k') (l, k) =
     not (OptionUtil.eq L.WK.eq (L.WK.residual ((l, k), (l', k')), SOME (l, k)))
+
+  (* It is not clear how exactly the subtyping should be implemented;
+   * therefore we have a dummy implementation here. *)
+  val makeSubType = makeEqTypeIfDifferent
 
   (* assertions *)
 
