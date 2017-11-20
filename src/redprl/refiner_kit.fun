@@ -199,7 +199,8 @@ struct
 
   (* It is not clear how exactly the subtyping should be implemented;
    * therefore we have a dummy implementation here. *)
-  val makeSubType = makeEqTypeIfDifferent
+  val makeSubType = makeEqType
+  val makeSubTypeIfDifferent = makeEqTypeIfDifferent
 
   (* assertions *)
 

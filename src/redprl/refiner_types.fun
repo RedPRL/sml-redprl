@@ -755,9 +755,11 @@ struct
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "Fun.EqType"
-        val H >> AJ.EQ_TYPE ((fun0, fun1), l, k) = jdg
+        val H >> AJ.EQ ((fun0, fun1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.FUN (a0, x, b0x) = Syn.out fun0
         val Syn.FUN (a1, y, b1y) = Syn.out fun1
+        val _ = Assert.levelLess (l, l')
         val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain *)
@@ -767,7 +769,7 @@ struct
         val z = alpha 0
         val b0z = VarKit.rename (z, x) b0x
         val b1z = VarKit.rename (z, y) b1y
-        val goalB = makeEqType (H @> (z, AJ.TRUE (a0, l, ka))) ((b0z, b1z), l, kb)
+        val goalB = makeEqType (H @> (z, AJ.TRUE (a0, l))) ((b0z, b1z), l, kb)
       in
         |>: goalA >: goalB #> (H, trivial)
       end
@@ -777,21 +779,20 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Fun.Eq"
-        val H >> AJ.EQ ((lam0, lam1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((lam0, lam1), (ty, l)) = jdg
         val Syn.LAM (x, m0x) = Syn.out lam0
         val Syn.LAM (y, m1y) = Syn.out lam1
         val Syn.FUN (a, z, bz) = Syn.out ty
-        val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain *)
-        val goalA = makeType H (a, l, ka)
+        val goalA = makeType H (a, l, K.STABLE)
 
         (* function *)
         val w = alpha 0
         val m0w = VarKit.rename (w, x) m0x
         val m1w = VarKit.rename (w, y) m1y
         val bw = VarKit.rename (w, z) bz
-        val goalM = makeEq (H @> (w, AJ.TRUE (a, l, ka))) ((m0w, m1w), (bw, l, kb))
+        val goalM = makeEq (H @> (w, AJ.TRUE (a, l))) ((m0w, m1w), (bw, l))
       in
         |>: goalM >: goalA #> (H, trivial)
       end
@@ -799,17 +800,16 @@ struct
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "Fun.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.FUN (a, x, bx) = Syn.out ty
-        val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain*)
-        val goalA = makeType H (a, l, ka)
+        val goalA = makeType H (a, l, K.STABLE)
 
         (* function *)
         val z = alpha 0
         val bz = VarKit.rename (z, x) bx
-        val (goalLam, hole) = makeTrue (H @> (z, AJ.TRUE (a, l, ka))) (bz, l, kb)
+        val (goalLam, hole) = makeTrue (H @> (z, AJ.TRUE (a, l))) (bz, l)
 
         (* realizer *)
         val lam = Syn.intoLam (z, hole)
@@ -822,12 +822,12 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.Eta"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.FUN (_, x, _) = Syn.out ty
 
         val m' = Syn.intoLam (x, Syn.intoApp (m, VarKit.toExp x))
-        val goal1 = makeMem H (m, (ty, l, k))
-        val goal2 = makeEqIfDifferent H ((m', n), (ty, NONE, K.top))
+        val goal1 = makeMem H (m, (ty, l))
+        val goal2 = makeEqIfDifferent H ((m', n), (ty, l))
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -836,12 +836,11 @@ struct
       let
         val _ = RedPrlLog.trace "Fun.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
+        val AJ.TRUE (ty, l') = Hyps.lookup H z
         val Syn.FUN (a, x, bx) = Syn.out ty
 
         (* argument *)
-        val (goalA, holeA) = makeTrue H (a, NONE, K.top)
+        val (goalA, holeA) = makeTrue H (a, l')
 
         (* new context *)
         val b' = substVar (holeA, x) bx
@@ -850,8 +849,8 @@ struct
         val aptm = Syn.intoApp (VarKit.toExp z, holeA)
         (* note: a and bx come from the telescope so they are types *)
         val H' = Hyps.interposeAfter
-          (z, |@> (u, AJ.TRUE (b', l', K.top))
-               @> (v, AJ.EQ ((VarKit.toExp u, aptm), (b', l', K.top))))
+          (z, |@> (u, AJ.TRUE (b', l'))
+               @> (v, AJ.EQ ((VarKit.toExp u, aptm), (b', l'))))
           H
 
         val (goalF, holeF) = makeGoal @@ H' >> catjdg
@@ -862,34 +861,16 @@ struct
     fun EqApp _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.EqApp"
-        val H >> AJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((ap0, ap1), (ty, l)) = jdg
         val Syn.APP (m0, n0) = Syn.out ap0
         val Syn.APP (m1, n1) = Syn.out ap1
 
-        val (goalFun, holeFun) = makeSynth H (m0, NONE, K.top)
+        val (goalFun, holeFun) = makeSynth H (m0, l)
         val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
         val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n0])
-        val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, NONE, K.top))
-        val goalArgEq = makeEq H ((n0, n1), (holeDom, NONE, K.top))
-        val goalTy = makeSubType H (holeCod, NONE, K.top) (ty, l, k)
-      in
-        |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >:? goalTy
-        #> (H, trivial)
-      end
-
-    fun EqTypeApp _ jdg =
-      let
-        val _ = RedPrlLog.trace "Fun.EqTypeApp"
-        val H >> AJ.EQ_TYPE ((ap0, ap1), l, k) = jdg
-        val Syn.APP (m0, n0) = Syn.out ap0
-        val Syn.APP (m1, n1) = Syn.out ap1
-
-        val (goalFun, holeFun) = makeSynth H (m0, NONE, K.top)
-        val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
-        val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n0])
-        val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, NONE, K.top))
-        val goalArgEq = makeEq H ((n0, n1), (holeDom, NONE, K.top))
-        val goalTy = makeSubUniverse H (holeCod, l, k)
+        val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, l))
+        val goalArgEq = makeEq H ((n0, n1), (holeDom, l))
+        val goalTy = makeSubType H ((holeCod, ty), l, K.STABLE)
       in
         |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >: goalTy
         #> (H, trivial)
@@ -898,15 +879,14 @@ struct
     fun SynthApp _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.SynthApp"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.APP (m, n) = Syn.out tm
-        val (goalFun, holeFun) = makeSynth H (m, NONE, K.top)
+        val (goalFun, holeFun) = makeSynth H (m, l)
         val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
         val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n])
-        val goalN = makeMem H (n, (holeDom, NONE, K.top))
-        val goalKind = makeTypeUnlessSubUniv H (holeCod, l, k) (NONE, K.top)
+        val goalN = makeMem H (n, (holeDom, l))
       in
-        |>: goalFun >: goalDom >: goalCod >: goalN >:? goalKind #> (H, holeCod)
+        |>: goalFun >: goalDom >: goalCod >: goalN #> (H, holeCod)
       end
   end
 
