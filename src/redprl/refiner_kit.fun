@@ -183,6 +183,7 @@ struct
   fun makeEqTypeWith f H ((a, b), l, k) =
     makeEqWith f H ((a, b), (Syn.intoU (l, k), L.succ l))
   val makeEqType = makeEqTypeWith (fn j => j)
+  fun makeType H (a, l, k) = makeEqType H ((a, a), l, k)
   fun makeEqTypeIfDifferent H ((a, b), l, k) =
     makeEqIfDifferent H ((a, b), (Syn.intoU (l, k), L.succ l))
 
@@ -228,6 +229,12 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than or equal to", L.pretty l2]
+
+    fun levelLess (l1, l2) =
+      if L.< (l1, l2) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than", L.pretty l2]
 
     fun levelEq (l1, l2) =
       if L.eq (l1, l2) then
