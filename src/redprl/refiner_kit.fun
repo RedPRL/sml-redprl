@@ -153,64 +153,28 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrueWith f H (ty, l, k) = makeGoal @@ Seq.map f @@ H >> AJ.TRUE (ty, l, k)
+  fun makeTrueWith f H (ty, l) = makeGoal @@ Seq.map f @@ H >> AJ.TRUE (ty, l)
   val makeTrue = makeTrueWith (fn j => j)
-  fun makeSynth H (m, l, k) = makeGoal @@ H >> AJ.SYNTH (m, l, k)
+  fun makeSynth H (m, l) = makeGoal @@ H >> AJ.SYNTH (m, l)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
   fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
 
   (* ignoring the trivial realizer *)
-  fun makeType H (a, l, k) = makeGoal' @@ H >> AJ.TYPE (a, l, k)
-  fun makeEqTypeWith f H ((a, b), l, k) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), l, k)
-  val makeEqType = makeEqTypeWith (fn j => j)
-  fun makeEqWith f H ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l, k))
+  fun makeEqWith f H ((m, n), (ty, l)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l))
   val makeEq = makeEqWith (fn j => j)
-  fun makeMem H (m, (ty, l, k)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l, k))
+  fun makeMem H (m, (ty, l)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l))
   fun makeSubUniverse H (u, l, k) = makeGoal' @@ H >> AJ.SUB_UNIVERSE (u, l, k)
 
   (* conditional goal making *)
 
-  fun makeEqTypeIfDifferent H ((m, n), l, k) =
+  fun makeEqIfDifferent H ((m, n), (ty, l)) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType H ((m, n), l, k)
+    else SOME @@ makeEq H ((m, n), (ty, l))
 
-  fun makeEqTypeUnlessSubUniv H ((m, n), l, k) (l', k') =
-    Option.map
-      (fn (l, k) => makeEqType H ((m, n), l, k))
-      (L.WK.residual ((l, k), (l', k')))
-  
-  fun makeTypeUnlessSubUniv H (m, l, k) (l', k') =
-    makeEqTypeUnlessSubUniv H ((m, m), l, k) (l', k')
-
-  fun makeEqTypeIfDifferentOrNotSubUniv H ((m, n), l, k) (l', k') =
-    if Abt.eq (m, n) then makeTypeUnlessSubUniv H (m, l, k) (l', k')
-    else SOME @@ makeEqType H ((m, n), l, k)
-
-  fun makeEqIfDifferent H ((m, n), (ty, l, k)) =
-    if Abt.eq (m, n) then NONE
-    else SOME @@ makeEq H ((m, n), (ty, l, k))
-
-  fun makeEqIfAllDifferent H ((m, n), (ty, l, k)) ns =
+  fun makeEqIfAllDifferent H ((m, n), (ty, l)) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent H ((m, n), (ty, l, k))
-
-  fun makeEqUnlessSubUniv H ((m, n), (ty, l, k)) (l', k') =
-    Option.map
-      (fn (l, k) => makeEq H ((m, n), (ty, l, k)))
-      (L.WK.residual ((l, k), (l', k')))
-
-  fun makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k') =
-    makeEqUnlessSubUniv H ((m, m), (ty, l, k)) (l', k')
-
-  fun makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k') =
-    if Abt.eq (m, n) then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
-    else SOME @@ makeEq H ((m, n), (ty, l, k))
-
-  fun makeEqIfAllDifferentOrNotSubUniv H ((m, n), (ty, l, k)) ns (l', k') =
-    if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
-    else makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k')
+    else makeEqIfDifferent H ((m, n), (ty, l))
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
@@ -219,11 +183,6 @@ struct
 
   fun isInUsefulUniv (l', k') (l, k) =
     not (OptionUtil.eq L.WK.eq (L.WK.residual ((l, k), (l', k')), SOME (l, k)))
-
-  (* It is not clear how exactly the subtyping should be implemented;
-   * therefore we have a dummy implementation here. *)
-  fun makeSubType H (ty1, l1, k1) (ty0, l0, k0) =
-    makeEqTypeIfDifferentOrNotSubUniv H ((ty1, ty0), l0, k0) (l1, k1)
 
   (* assertions *)
 
@@ -264,12 +223,6 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
-
-    fun levelNotOmega l =
-      if not (L.eq (l, L.omega)) then
-        ()
-      else
-        raise E.error [Fpp.text "Expected level", L.pretty l, Fpp.text "not to be", L.pretty L.omega]
 
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then
