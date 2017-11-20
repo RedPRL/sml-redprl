@@ -57,7 +57,7 @@ sig
   type level = RedPrlLevel.t
   type kind = RedPrlKind.t
 
-  val MEM : abt * (abt * level * RedPrlKind.t) -> jdg
+  val MEM : abt * (abt * level) -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg
 
