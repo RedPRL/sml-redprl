@@ -35,7 +35,7 @@ Thm Pred : [
 Tac SimpleNatRecEq = [
   query gl <- concl;
   match gl {
-    [n,z,s,ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
+    [n z s ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
       refine nat/eq/nat-rec; [`%ty]; auto]
   }
 ].

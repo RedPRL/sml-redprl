@@ -96,7 +96,7 @@ Thm Bool/reflect : [
 Tac Bool/contra/inverse (#p:exp) = [
   query gl <- concl;
   match gl {
-    [a, b | #jdg{%a = %b in bool} =>
+    [a b | #jdg{%a = %b in bool} =>
       claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
       symmetry; elim eq; auto
     ]
