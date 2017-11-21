@@ -6,4 +6,4 @@ mlyacc src/redprl/redprl.grm
 mllex src/redprl/redprl.lex
 
 mkdir -p bin
-mlton -native-live-transfer 0 -verbose 2 -mlb-path-var "LIBS $LIBS" -output bin/redprl src/frontend.mlb
+mlton -verbose 2 -polyvariance false -mlb-path-var "LIBS $LIBS" -output bin/redprl src/frontend.mlb
