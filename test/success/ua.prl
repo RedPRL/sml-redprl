@@ -248,7 +248,10 @@ Thm EquivLemma(#l:lvl) : [
    (path [_] (Equiv ty/a ty/b) e1 e2))
 ] by [
   lam ty/a, ty/b.
-  `($ (LemSig #l) (-> ty/a ty/b) (lam [f] (IsEquiv ty/a ty/b f)) ($ (PropIsEquiv #l) ty/a ty/b))
+  `($ (LemSig #l)
+      (-> ty/a ty/b)
+      (lam [f] (IsEquiv ty/a ty/b f))
+      ($ (PropIsEquiv #l) ty/a ty/b))
 ].
 
 Thm Retract(#l:lvl) : [
@@ -293,7 +296,76 @@ Thm IsContrPath(#l:lvl) : [
   auto; (CrushTyEq #l)
 ].
 
+// BUG: should be stated at #l not (++ #l) but can't instantiate there.
+
+Thm RetIsContr(#l:lvl) : [
+  (->
+   [ty/a ty/b : (U (++ #l) kan)]
+   [f : (-> ty/a ty/b)]
+   [g : (-> ty/b ty/a)]
+   [h : (-> [a : ty/a] (path [_] ty/a ($ g ($ f a)) a))]
+   [contr/b : (IsContr ty/b)]
+   (IsContr ty/a))
+] by [
+  lam ty/a, ty/b, f, g, h, {b,p}.
+  {`($ g b),
+   lam a. <x>
+     `(hcom 0~>1 ty/a ($ g (@ ($ p ($ f a)) x))
+        [x=0 [y] (@ ($ h a) y)]
+        [x=1 [_] ($ g b)])}
+].
+
+Thm SigEquivToPath(#l:lvl) : [
+  (->
+   [ty/a : (U #l kan)]
+   (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
+   (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b)))
+] by [
+  lam ty/a, {ty/b,equiv}.
+  {use ty/b, <x> `(V x ty/a ty/b equiv)}
+].
+
+Thm SigPathToEquiv(#l:lvl) : [
+  (->
+   [ty/a : (U #l kan)]
+   (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
+   (* [ty/b : (U #l kan)] (Equiv ty/a ty/b)))
+] by [
+  lam ty/a, {ty/b,p}.
+  {use ty/b, `($ (PathToEquiv #l) ty/a ty/b p)}
+].
+
+Thm UARetSig(#l:lvl) : [
+  (->
+   [ty/a : (U #l kan)]
+   ($ (Retract #l)
+      (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
+      (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
+      ($ (SigEquivToPath #l) ty/a)
+      ($ (SigPathToEquiv #l) ty/a)))
+] by [
+  lam ty/a, {ty/b,equiv}. <x>
+  ?
+  // BUG: loops forever??
+  // {use ty/b, `(@ ($ (UARet #l) ty/a ty/b equiv) x)}
+].
+
+// Thm EquivInduction(#l:lvl) : [
+//   (->
+//    [ty/a : (U #l kan)]
+//    (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))
+// ] by [
+//   lam ty/a.
+//   let contr = (RetIsContr #l)
+//     [`(* [ty/b : (U #l kan)] (Equiv ty/a ty/b)),
+//      `(* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b)),
+//      `($ (SigEquivToPath #l) ty/a),
+//      `($ (SigPathToEquiv #l) ty/a),
+//      `($ (UARetSig #l) ty/a),
+//      `($ (IsContrPath #l) ty/a)].
+//   use contr
+// ].
+
 // TODO ROADMAP:
-// retIsContr
 // uaretsig
-// univalenceAlt2 -> retIsContr, uaretsig, isContrPath
+// univalenceAlt2 -> uaretsig
