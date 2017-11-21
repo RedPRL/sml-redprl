@@ -2107,17 +2107,19 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "V.EqType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val H >> AJ.EQ ((ty0, ty1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.V (r0, a0, b0, e0) = Syn.out ty0
         val Syn.V (r1, a1, b1, e1) = Syn.out ty1
         val () = Assert.alphaEq' "V.EqType" (r0, r1)
+        val _ = Assert.levelMem (l, l')
         val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r0, Syn.into Syn.DIM0)
 
         val goalA = Restriction.makeEqType [eq] H ((a0, a1), l, kA)
         val goalB = makeEqType H ((b0, b1), l, kB)
-        val goalEquiv = Restriction.makeEq [eq] H ((e0, e1), (intoEquiv a0 b0, NONE, K.top))
+        val goalEquiv = Restriction.makeEq [eq] H ((e0, e1), (intoEquiv a0 b0, l))
       in
         |>:? goalEquiv >:? goalA >: goalB #> (H, trivial)
       end
@@ -2125,21 +2127,20 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "V.Eq"
-        val H >> AJ.EQ ((in0, in1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((in0, in1), (ty, l)) = jdg
         val Syn.V (r, a, b, e) = Syn.out ty
         val Syn.VIN (r0, m0, n0) = Syn.out in0
         val Syn.VIN (r1, m1, n1) = Syn.out in1
         val () = Assert.alphaEq' "V.Eq" (r0, r1)
         val () = Assert.alphaEq' "V.Eq" (r0, r)
-        val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r0, Syn.into Syn.DIM0)
 
-        val goalM = Restriction.makeEq [eq] H ((m0, m1), (a, l, kA))
-        val goalN = makeEq H ((n0, n1), (b, l, kB))
+        val goalM = Restriction.makeEq [eq] H ((m0, m1), (a, l))
+        val goalN = makeEq H ((n0, n1), (b, l))
         val goalCoh = Restriction.makeEqIfDifferent [eq] H
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), m0), n0), (b, NONE, K.top))
-        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, NONE, K.top))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), m0), n0), (b, l))
+        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, l))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (H, trivial)
       end
@@ -2147,17 +2148,16 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "V.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.V (r, a, b, e) = Syn.out ty
-        val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r, Syn.into Syn.DIM0)
 
-        val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) H (a, l, kA)
-        val (goalN, holeN) = makeTrue H (b, l, kB)
+        val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) H (a, l)
+        val (goalN, holeN) = makeTrue H (b, l)
         val goalCoh = Restriction.makeEqIfDifferent [eq] H
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), (b, NONE, K.top))
-        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, NONE, K.top))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), (b, l))
+        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, l))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv
         #> (H, Syn.into @@ Syn.VIN (r, holeM, holeN))
