@@ -41,6 +41,9 @@ Thm IdEquiv(#l:lvl) : [
   }
 ].
 
+// per Dan Licata, UA and UABeta suffice for full univalence:
+// https://groups.google.com/forum/#!topic/homotopytypetheory/j2KBIvDw53s
+
 Thm UA(#l:lvl) : [
   (-> [ty/a ty/b : (U #l kan)]
       [e : (Equiv ty/a ty/b)]
@@ -64,7 +67,8 @@ Thm UABeta(#l:lvl) : [
     abs x => `(coe x~>1 [_] ty/b ($ f a))
 ].
 
-// coe{0~>1} is an equivalence
+// To prove univalence from UA and UABeta, we need some basic results.
+// (What follows is adapted from the cubicaltt prelude.)
 
 Thm PathToEquiv(#l:lvl) : [
   (->
@@ -76,33 +80,6 @@ Thm PathToEquiv(#l:lvl) : [
   `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a));
   (CrushTyEq #l)
 ].
-
-// Thm PathToEquivDirect(#l:lvl) : [
-//   (->
-//    [ty/a ty/b : (U #l kan)]
-//    [p : (path [_] (U #l kan) ty/a ty/b)]
-//    (Equiv ty/a ty/b))
-// ] by [
-//   lam ty/a ty/b p =>
-//   { lam a =>
-//       `(coe 0~>1 [i] (@ p i) a); (CrushTyEq #l)
-//   , lam b =>
-//       {
-//         { `(coe 1~>0 [i] (@ p i) b)
-//         , abs x => `(coe x~>1 [i] (@ p i) (coe 1~>x [i] (@ p i) b))
-//         }; (CrushTyEq #l)
-//       , lam c => abs x =>
-//         { `(com 1~>0 [i] (@ p i) (@ (!proj2 c) x)
-//              [x=0 [z] (coe 0~>z [i] (@ p i) (!proj1 c))]
-//              [x=1 [z] (coe 1~>z [i] (@ p i) b)]);
-//           (CrushTyEq #l)
-//         , abs y => id
-//         }
-//       }
-//   }
-// ].
-
-// general results (closely following the cubicaltt prelude)
 
 Thm LemPropF(#l:lvl) : [
   (->
@@ -224,7 +201,6 @@ Thm PropIsContr(#l:lvl) : [
     `($ contr/a/prop isContr)
 ].
 
-
 Thm PropIsEquiv(#l:lvl) : [
   (->
    [ty/a ty/b : (U #l kan)]
@@ -236,8 +212,6 @@ Thm PropIsEquiv(#l:lvl) : [
   unfold Fiber;
   `(@ ($ (PropIsContr #l) (Fiber ty/a ty/b f b) ($ e0 b) ($ e1 b)) x)
 ].
-
-// try writing PropIsEquivDirect
 
 Thm EquivLemma(#l:lvl) : [
   (->
@@ -336,7 +310,10 @@ Thm UARetSig(#l:lvl) : [
 
 
 
-// Equivalence induction.
+// The following is a formulation of univalence proposed by Martin Escardo:
+// https://groups.google.com/forum/#!msg/homotopytypetheory/HfCB_b-PNEU/Ibb48LvUMeUJ
+// See also Theorem 5.8.4 of the HoTT Book.
+
 Thm Univalence(#l:lvl) : [
   (->
    [ty/a : (U #l kan)]
