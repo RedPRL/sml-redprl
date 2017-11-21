@@ -296,11 +296,9 @@ Thm IsContrPath(#l:lvl) : [
   auto; (CrushTyEq #l)
 ].
 
-// BUG: should be stated at #l not (++ #l) but can't instantiate there.
-
 Thm RetIsContr(#l:lvl) : [
   (->
-   [ty/a ty/b : (U (++ #l) kan)]
+   [ty/a ty/b : (U #l kan)]
    [f : (-> ty/a ty/b)]
    [g : (-> ty/b ty/a)]
    [h : (-> [a : ty/a] (path [_] ty/a ($ g ($ f a)) a))]
@@ -344,9 +342,10 @@ Thm UARetSig(#l:lvl) : [
       ($ (SigEquivToPath #l) ty/a)
       ($ (SigPathToEquiv #l) ty/a)))
 ] by [
-  lam ty/a, {ty/b,equiv}. <x>
-  ?
-  // BUG: loops forever??
+  (lam ty/a, {ty/b,equiv}. <x>
+  {use ty/b, ?});
+  unfold [PathToEquiv, SigPathToEquiv, SigEquivToPath];
+  [id,?, id]
   // {use ty/b, `(@ ($ (UARet #l) ty/a ty/b equiv) x)}
 ].
 
@@ -356,7 +355,7 @@ Thm UARetSig(#l:lvl) : [
 //    (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))
 // ] by [
 //   lam ty/a.
-//   let contr = (RetIsContr #l)
+//   let contr = (RetIsContr #lvl{(++ #l)})
 //     [`(* [ty/b : (U #l kan)] (Equiv ty/a ty/b)),
 //      `(* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b)),
 //      `($ (SigEquivToPath #l) ty/a),
