@@ -15,10 +15,10 @@ Def IsProp (#C) = [(-> [c c' : #C] (path [_] #C c c'))].
 Def IsSet (#C) = [(-> [c c' : #C] (IsProp (path [_] #C c c')))].
 
 Tac ReflectUniv(#l:lvl, #k:knd, #t:tac) = [
-  query goal <- concl.
+  query goal <- concl;
   match goal {
-    [a, b, k, l | #jdg{%a = %b type at %l with %[k:knd]} =>
-      let aux : [%a = %b in (U #l #k)] = #t. auto
+    [a b k l | #jdg{%a = %b type at %l with %[k:knd]} =>
+      claim aux : [%a = %b in (U #l #k)] by [#t]; auto
     ]
   }
 ].
@@ -32,15 +32,16 @@ Tac CrushTyEq(#l:lvl) = [
 Thm IdIsEquiv(#l:lvl) : [
   (-> [ty : (U #l hcom)] (IsEquiv ty ty Id))
 ] by [
-  lam ty, a.
-  { {use a, <_> use a}
-  , lam {_,c'}. <i>
+  lam ty a =>
+  { {use a, abs _ => use a}
+  , lam {_,c'} => abs i =>
        { `(hcom 1~>0 ty a
            [i=0 [j] (@ c' j)]
            [i=1 [j] a])
-       , <j> `(hcom 1~>j ty a
-               [i=0 [j] (@ c' j)]
-               [i=1 [j] a])
+       , abs j =>
+           `(hcom 1~>j ty a
+             [i=0 [j] (@ c' j)]
+             [i=1 [j] a])
        }
   }
 ].
@@ -48,7 +49,7 @@ Thm IdIsEquiv(#l:lvl) : [
 Thm IdEquiv(#l:lvl) : [
   (-> [ty : (U #l hcom)] (Equiv ty ty))
 ] by [
-  lam ty.
+  lam ty =>
     {`Id, use (IdIsEquiv #l) [use ty]}
 ].
 
@@ -57,8 +58,8 @@ Thm UA(#l:lvl) : [
       [e : (Equiv ty/a ty/b)]
       (path [_] (U #l kan) ty/a ty/b))
 ] by [
-  lam ty/a, ty/b, e.
-    <x> `(V x ty/a ty/b e)
+  lam ty/a ty/b e =>
+    abs x => `(V x ty/a ty/b e)
 ].
 
 Thm UABeta(#l:lvl) : [
@@ -71,8 +72,8 @@ Thm UABeta(#l:lvl) : [
     ($ (!proj1 e) a)))
 ] by [
   unfold UA;
-  lam ty/a, ty/b, e, a.
-    <x> `(coe x~>1 [_] ty/b ($ (! proj1 e) a))
+  lam ty/a ty/b e a =>
+    abs x => `(coe x~>1 [_] ty/b ($ (! proj1 e) a))
 ].
 
 // coe{0~>1} is an equivalence
@@ -83,7 +84,7 @@ Thm PathToEquiv(#l:lvl) : [
    [p : (path [_] (U #l kan) ty/a ty/b)]
    (Equiv ty/a ty/b))
 ] by [
-  lam ty/a, ty/b, p.
+  lam ty/a ty/b p =>
   `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a));
   (CrushTyEq #l)
 ].
@@ -94,21 +95,21 @@ Thm PathToEquiv(#l:lvl) : [
 //    [p : (path [_] (U #l kan) ty/a ty/b)]
 //    (Equiv ty/a ty/b))
 // ] by [
-//   unfold [Equiv, IsEquiv, IsContr, Fiber, HasAllPathsTo];
-//   lam ty/a, ty/b, p.
-//   { lam a.
+//   unfold Equiv IsEquiv IsContr Fiber HasAllPathsTo;
+//   lam ty/a ty/b p =>
+//   { lam a =>
 //       `(coe 0~>1 [i] (@ p i) a); (CrushTyEq #l)
-//   , lam b.
+//   , lam b =>
 //       {
 //         { `(coe 1~>0 [i] (@ p i) b)
 //         , <x> `(coe x~>1 [i] (@ p i) (coe 1~>x [i] (@ p i) b))
 //         }; (CrushTyEq #l)
-//       , lam c. <x>
+//       , lam c => abs x =>
 //         { `(com 1~>0 [i] (@ p i) (@ (!proj2 c) x)
 //              [x=0 [z] (coe 0~>z [i] (@ p i) (!proj1 c))]
 //              [x=1 [z] (coe 1~>z [i] (@ p i) b)]);
 //           (CrushTyEq #l)
-//         , <y> ?foo
+//         , abs y => ?foo
 //         }
 //       }
 //   }
@@ -129,7 +130,7 @@ Thm LemPropF(#l:lvl) : [
    (path [x] ($ ty/b (@ p x)) b0 b1))
 ] by [
   unfold IsProp;
-  lam ty/a, ty/b, prop/b, a0, a1, p, b0, b1. <x>
+  lam ty/a ty/b prop/b a0 a1 p b0 b1 => abs x =>
   `(@ ($ prop/b (@ p x) (coe 0~>x [i] ($ ty/b (@ p i)) b0) (coe 1~>x [i] ($ ty/b (@ p i)) b1)) x)
 ].
 
@@ -142,7 +143,7 @@ Thm LemSig(#l:lvl) : [
    [p : (path [_] ty/a (!proj1 u) (!proj1 v))]
    (path [_] (* [a : ty/a] ($ ty/b a)) u v))
 ] by [
-  lam ty/a, ty/b, prop/b, {u1, u2}, {v1, v2}, p. <x>
+  lam ty/a ty/b prop/b {u1, u2} {v1, v2} p => abs x =>
   {`(@ p x), `(@ ($ (LemPropF #l) ty/a ty/b prop/b u1 v1 p u2 v2) x)}
 ].
 
@@ -156,7 +157,7 @@ Thm PropSig(#l:lvl) : [
    (path [_] (* [a : ty/a] ($ ty/b a)) u v))
 ] by [
   unfold IsProp;
-  lam ty/a, ty/b, prop/a, prop/b, u, v.
+  lam ty/a ty/b prop/a prop/b u v =>
   `($ (LemSig #l) ty/a ty/b prop/b u v ($ prop/a (!proj1 u) (!proj1 v)))
 ].
 
@@ -169,8 +170,8 @@ Thm PropPi(#l:lvl) : [
    (path [_] (-> [a : ty/a] ($ ty/b a)) f g))
 ] by [
   unfold IsProp;
-  lam ty/a, ty/b, prop/b, f, g.
-  <x> lam a. `(@ ($ prop/b a ($ f a) ($ g a)) x)
+  lam ty/a ty/b prop/b f g =>
+  abs x => lam a => `(@ ($ prop/b a ($ f a) ($ g a)) x)
 ].
 
 Thm LemProp(#l:lvl) : [
@@ -181,8 +182,8 @@ Thm LemProp(#l:lvl) : [
   (IsContr ty/a))
 ] by [
   unfold IsProp;
-  lam ty/a, prop/a, a.
-  {`a , lam a'. `($ prop/a a' a)}
+  lam ty/a prop/a a =>
+  {`a , lam a' => `($ prop/a a' a)}
 ].
 
 Thm PropSet(#l:lvl) : [
@@ -191,9 +192,9 @@ Thm PropSet(#l:lvl) : [
    [prop : (IsProp ty)]
    (IsSet ty))
 ] by [
-  unfold [IsProp, IsSet];
-  lam ty, prop.
-  lam a, b, p, q. <x y>
+  unfold IsProp IsSet;
+  lam ty prop =>
+  lam a b p q => abs x y =>
   `(hcom 0~>1 ty a
      [y=0 [z] (@ ($ prop a a) z)]
      [y=1 [z] (@ ($ prop a b) z)]
@@ -206,26 +207,28 @@ Thm PropIsContr(#l:lvl) : [
    [ty/a : (U #l kan)]
    (IsProp (IsContr ty/a)))
 ] by [
-  lam ty/a.
-  let fun : [(-> (IsContr ty/a) (IsProp (IsContr ty/a)))] =
-    lam contr/a.
-    let prop/a : [(IsProp ty/a)] =
-      (lam a, a'. <x>
-      `(hcom 1~>0 ty/a (@ ($ (!proj2 contr/a) a) x)
+  lam ty/a =>
+  claim fun : [(-> (IsContr ty/a) (IsProp (IsContr ty/a)))] by [
+    lam contr/a =>
+    claim prop/a : [(IsProp ty/a)] by [
+      (lam a a' => abs x =>
+       `(hcom 1~>0 ty/a (@ ($ (!proj2 contr/a) a) x)
          [x=0 [_] a]
-         [x=1 [y] (@ ($ (!proj2 contr/a) a') y)])).
+         [x=1 [y] (@ ($ (!proj2 contr/a) a') y)]))
+    ];
     let prop/contr/a = (PropSig #l)
       [`ty/a,
-       lam a. `(-> [a' : ty/a] (path [_] ty/a a' a)),
+       lam a => `(-> [a' : ty/a] (path [_] ty/a a' a)),
        `prop/a,
-       lam a.
+       lam a =>
          `($ (PropPi #l)
              ty/a
              (lam [a'] (path [_] ty/a a' a))
              (lam [a'] ($ (PropSet #l) ty/a prop/a a' a)))
-      ].
-    `prop/contr/a.
-  lam x. `($ fun x x)
+      ];
+    `prop/contr/a
+  ];
+  lam x => `($ fun x x)
 ].
 
 // try to write PropIsEquivDirect
@@ -235,8 +238,8 @@ Thm PropIsEquiv(#l:lvl) : [
    [f : (-> ty/a ty/b)]
    (IsProp (IsEquiv ty/a ty/b f)))
 ] by [
-  lam ty/a, ty/b, f.
-  lam e0, e1. <x> lam b.
+  lam ty/a ty/b f =>
+  lam e0 e1 => abs x => lam b =>
   `(@ ($ (PropIsContr #l) (Fiber ty/a ty/b f b) ($ e0 b) ($ e1 b)) x)
 ].
 
@@ -247,7 +250,7 @@ Thm EquivLemma(#l:lvl) : [
    (path [_] (-> ty/a ty/b) (!proj1 e1) (!proj1 e2))
    (path [_] (Equiv ty/a ty/b) e1 e2))
 ] by [
-  lam ty/a, ty/b.
+  lam ty/a ty/b =>
   `($ (LemSig #l)
       (-> ty/a ty/b)
       (lam [f] (IsEquiv ty/a ty/b f))
@@ -261,7 +264,7 @@ Thm Retract(#l:lvl) : [
    [g : (-> ty/b ty/a)]
    (U #l kan))
 ] by [
-  lam ty/a, ty/b, f, g.
+  lam ty/a ty/b f g =>
     `(-> [a : ty/a] (path [_] ty/a ($ g ($ f a)) a))
 ].
 
@@ -274,7 +277,7 @@ Thm UARet(#l:lvl) : [
       ($ (UA #l) ty/a ty/b)
       ($ (PathToEquiv #l) ty/a ty/b)))
 ] by [
-  lam ty/a, ty/b, e.
+  lam ty/a ty/b e =>
   `($ (EquivLemma #l) ty/a ty/b
       ($ (PathToEquiv #l) ty/a ty/b ($ (UA #l) ty/a ty/b e))
       e
@@ -287,11 +290,11 @@ Thm IsContrPath(#l:lvl) : [
    [ty/a : (U #l kan)]
    (IsContr (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))))
 ] by [
-  lam ty/a.
-  {{use ty/a, <_> use ty/a},
-   lam {ty/b,p}. <x>
+  lam ty/a =>
+  {{use ty/a, abs _ => use ty/a},
+   lam {ty/b,p} => abs x =>
      {`(hcom 0~>1 (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a]),
-      <y> `(hcom 0~>y (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a])}
+      abs y => `(hcom 0~>y (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a])}
   };
   auto; (CrushTyEq #l)
 ].
@@ -305,9 +308,9 @@ Thm RetIsContr(#l:lvl) : [
    [contr/b : (IsContr ty/b)]
    (IsContr ty/a))
 ] by [
-  lam ty/a, ty/b, f, g, h, {b,p}.
+  lam ty/a ty/b f g h {b,p} =>
   {`($ g b),
-   lam a. <x>
+   lam a => abs x =>
      `(hcom 0~>1 ty/a ($ g (@ ($ p ($ f a)) x))
         [x=0 [y] (@ ($ h a) y)]
         [x=1 [_] ($ g b)])}
@@ -319,8 +322,8 @@ Thm SigEquivToPath(#l:lvl) : [
    (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
    (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b)))
 ] by [
-  lam ty/a, {ty/b,equiv}.
-  {use ty/b, <x> `(V x ty/a ty/b equiv)}
+  lam ty/a {ty/b,equiv} =>
+  {use ty/b, abs x => `(V x ty/a ty/b equiv)}
 ].
 
 Thm SigPathToEquiv(#l:lvl) : [
@@ -329,7 +332,7 @@ Thm SigPathToEquiv(#l:lvl) : [
    (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
    (* [ty/b : (U #l kan)] (Equiv ty/a ty/b)))
 ] by [
-  lam ty/a, {ty/b,p}.
+  lam ty/a {ty/b,p} =>
   {use ty/b, `($ (PathToEquiv #l) ty/a ty/b p)}
 ].
 
@@ -342,9 +345,9 @@ Thm UARetSig(#l:lvl) : [
       ($ (SigEquivToPath #l) ty/a)
       ($ (SigPathToEquiv #l) ty/a)))
 ] by [
-  (lam ty/a, {ty/b,equiv}. <x>
+  (lam ty/a {ty/b,equiv} => abs x =>
   {use ty/b, ?});
-  unfold [PathToEquiv, SigPathToEquiv, SigEquivToPath];
+  unfold PathToEquiv SigPathToEquiv SigEquivToPath;
   [id,?, id]
   // {use ty/b, `(@ ($ (UARet #l) ty/a ty/b equiv) x)}
 ].
@@ -354,14 +357,14 @@ Thm UARetSig(#l:lvl) : [
 //    [ty/a : (U #l kan)]
 //    (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))
 // ] by [
-//   lam ty/a.
-//   let contr = (RetIsContr #lvl{(++ #l)})
+//   lam ty/a =>
+//   let contr = (RetIsContr (++ #l))
 //     [`(* [ty/b : (U #l kan)] (Equiv ty/a ty/b)),
 //      `(* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b)),
 //      `($ (SigEquivToPath #l) ty/a),
 //      `($ (SigPathToEquiv #l) ty/a),
 //      `($ (UARetSig #l) ty/a),
-//      `($ (IsContrPath #l) ty/a)].
+//      `($ (IsContrPath #l) ty/a)];
 //   use contr
 // ].
 
