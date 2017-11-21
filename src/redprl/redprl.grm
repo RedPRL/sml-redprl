@@ -938,6 +938,7 @@ atomicMultitac
 
 rawMultitac
   : multitac SEMI atomicMultitac %prec SEMI (Tac.makeSeq multitac [] atomicMultitac)
+  | multitac SEMI (multitac)
   | atomicMultitac %prec SEMI (atomicMultitac)
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
@@ -959,6 +960,7 @@ tactic
 tactics
   : tactic ([tactic])
   | tactic COMMA tactics (tactic :: tactics)
+  | tactic COMMA ([tactic])
 
 declArgument
   : metavar COLON valence ((metavar, valence))
