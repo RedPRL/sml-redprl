@@ -3,7 +3,7 @@ Thm Decomposition : [
    (record [foo : (record [a : bool] [b : (* bool bool)])] [bar : S1])
    bool)
 ] by [
-  lam {foo = {a = a, b = {welp}}}.
+  lam {foo = {a = a, b = {welp}}} =>
   use welp
 ].
 
@@ -20,8 +20,8 @@ Thm Apply : [
      (tuple [a base])))
    S1)
 ] by [
-  lam f.
-    let {a = a} = f [`tt, `ff, `(dim 0)].
+  lam f =>
+    let {a = a} = f [`tt, `ff, `(dim 0)];
     use a
 ].
 
@@ -30,8 +30,8 @@ Extract Apply.
 Thm UseHypTest : [
   (-> bool bool)
 ] by [
-  lam x.
-  let p : [(-> bool S1 bool)] = lam b, c. use b.
+  lam x =>
+  claim p : [(-> bool S1 bool)] by [lam b c => use b];
   use p [use x, `(loop 0)]
 ].
 
@@ -40,6 +40,6 @@ Print UseHypTest.
 Thm UseLemmaTest : [
   (-> bool bool)
 ] by [
-  lam x.
+  lam x =>
   use UseHypTest [use x]
 ].

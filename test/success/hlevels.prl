@@ -10,7 +10,7 @@ Thm InhPropIsContr(#l:lvl) : [
   [a : ty]
   (IsContr ty))
 ] by [
-  lam ty, h, a. {use a,lam x. `($ h x a)}
+  lam ty h a => {use a, lam x => `($ h x a)}
 ].
 
 Thm PropPi(#l:lvl) : [
@@ -20,22 +20,22 @@ Thm PropPi(#l:lvl) : [
   [h : (-> [x : tyA] (IsProp ($ tyB x)))]
   (IsProp (-> [x : tyA] ($ tyB x))))
 ] by [
-  lam tyA, tyB, h, f, g. <i> lam x. `(@ ($ h x ($ f x) ($ g x)) i)
+  lam tyA tyB h f g => abs i => lam x => `(@ ($ h x ($ f x) ($ g x)) i)
 ].
 
 Thm PropSet(#l:lvl) : [
   (->
    [tyA : (U #l kan)]
    [h : (IsProp tyA)]
-   (IsSet tyA)
-  )
+   (IsSet tyA))
 ] by [
-  lam tyA, h, a, b, p, q.
-  <j i> `(hcom 0~>1 tyA a
-               [i=0 [k] (@ ($ h a a) k)]
-               [i=1 [k] (@ ($ h a b) k)]
-               [j=0 [k] (@ ($ h a (@ p i)) k)]
-               [j=1 [k] (@ ($ h a (@ q i)) k)])
+  lam tyA h a b p q => 
+  abs j i =>
+    `(hcom 0~>1 tyA a
+      [i=0 [k] (@ ($ h a a) k)]
+      [i=1 [k] (@ ($ h a b) k)]
+      [j=0 [k] (@ ($ h a (@ p i)) k)]
+      [j=1 [k] (@ ($ h a (@ q i)) k)])
 ].
 
 // This proof should be easy, but it is not...
@@ -45,11 +45,12 @@ Thm IsPropIsProp(#l:lvl) : [
    (IsProp (IsProp tyA))
   )
 ] by [
-  lam tyA, h1, h2. // why is 1 and 2 blue?
-  <i> lam a, b.
-    let foo = (PropSet #l) [`tyA, `h1].
-    unfold [IsSet, IsProp];
-    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]
+  lam tyA h1 h2 =>
+  (abs i => lam a b =>
+    let foo = (PropSet #l) [`tyA, `h1];
+    unfold IsSet IsProp;
+    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]);
+  unfold PropSet; auto
 ].
 
 Thm IsPropIsProp'(#l:lvl) : [
@@ -58,7 +59,7 @@ Thm IsPropIsProp'(#l:lvl) : [
    (IsProp (IsProp tyA))
   )
 ] by [
-  lam tyA, h1, h2. <i> lam a, b. `(@ ($ (PropSet #l) tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
+  lam tyA h1 h2 => abs i => lam a b => `(@ ($ (PropSet #l) tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
 ].
 
 // // This should be exactly like the one above:

@@ -13,7 +13,7 @@ Thm Pushout/Test1 : [
 Thm Pushout/Test2 : [
   (-> dim (pushout bool bool bool [x] x [x] x))
 ] by [
-  <u> `(glue u tt tt tt)
+  abs u => `(glue u tt tt tt)
 ].
 
 Def S1' = [(pushout record record bool [_] tuple [_] tuple)].
@@ -22,7 +22,7 @@ Def S1' = [(pushout record record bool [_] tuple [_] tuple)].
 Thm PushoutToS1 : [
   (-> S1' S1)
 ] by [
-  lam p. fresh a, b, u:dim, c -> elim p;
+  lam p => fresh a b u:dim c -> elim p;
     [ `base
     , `base
     , elim c;
