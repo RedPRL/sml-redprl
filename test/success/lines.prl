@@ -4,5 +4,5 @@ Thm Line/Test0 : [
    [l : (-> dim a)]
    (= a (coe 0~>1 [_] a (@ l 0)) (@ (coe 0~>1 [_] (-> dim a) l) 0)))
 ] by [
-  lam a, l. `ax
+  lam a l => `ax
 ].

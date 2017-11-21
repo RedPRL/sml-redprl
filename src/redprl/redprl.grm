@@ -342,7 +342,7 @@ end
  (* keywords in tactics *)
  | CASE | OF
  | FRESH
- | LET | USE | WITH
+ | LET | CLAIM | USE | WITH
  | THEN | ELSE
  | REFINE
  | MTAC_REC | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
@@ -468,9 +468,7 @@ end
  | devMatchClauses of (string list * (ast * ast)) list
  | selector of ast
  | selectors of ast list
- | bracketedSelectors of ast list
  | opnames of string list
- | bracketedOpnames of string list
 
  | declArgument of metavariable * Ar.valence
  | declArguments of string Signature.arguments
@@ -677,7 +675,7 @@ patvar
   | PERCENT VARNAME ((VARNAME, O.EXP))
 
 patvarBindings
-  : VARNAME COMMA patvarBindings (VARNAME :: patvarBindings)
+  : VARNAME patvarBindings (VARNAME :: patvarBindings)
   | VARNAME ([VARNAME])
 
 rawTermAndTac
@@ -740,6 +738,13 @@ rawTermAndTac
   (* paths *)
   | LPAREN ABS LSQUARE boundVars RSQUARE term RPAREN (Multi.makeAbs boundVars term)
   | LPAREN AT_SIGN term dimensions RPAREN (Multi.makeDimApp term dimensions)
+
+  (* levels *)
+  | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ ([], level)]))
+  | LPAREN DOUBLE_PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ ([], level)]))
+  | LPAREN LMAX levels RPAREN (Ast.$$ (O.LMAX, [\ ([], Multi.makeVec O.LVL levels)]))
+  | LOMEGA (Ast.$$ (O.LOMEGA, []))
+
 
 level
   : NUMERAL (Ast.$$ (O.LCONST NUMERAL, []))
@@ -813,7 +818,7 @@ devDecompPattern
   | LBRACKET tupleDecompPattern RBRACKET (O.PAT_TUPLE tupleDecompPattern)
 
 devDecompPatterns
-  : devDecompPattern COMMA devDecompPatterns (devDecompPattern :: devDecompPatterns)
+  : devDecompPattern devDecompPatterns (devDecompPattern :: devDecompPatterns)
   | devDecompPattern ([devDecompPattern])
 
 labeledDecompPattern
@@ -845,24 +850,15 @@ selector
   | elimTargetAnySort (Ast.$$ (O.SEL_HYP, [Ast.\ ([], elimTargetAnySort)]))
 
 selectors
-  : selector COMMA selectors (selector :: selectors)
-  | selector ([selector])
-
-bracketedSelectors
-  : LSQUARE selectors RSQUARE (selectors)
+  : selector selectors (selector :: selectors)
   | selector ([selector])
 
 opnames
-  : OPNAME COMMA opnames (OPNAME :: opnames)
-  | OPNAME ([OPNAME])
-
-bracketedOpnames
-  : LSQUARE opnames RSQUARE (opnames)
+  : OPNAME opnames (OPNAME :: opnames)
   | OPNAME ([OPNAME])
 
 termAnySort
   : term (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], term)]))
-
 
 termsAnySort
   : termAnySort ([termAnySort])
@@ -888,9 +884,9 @@ atomicRawTac
   | TAC_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.TAC_REWRITE_HYP, [Ast.\ ([], Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], elimTargetAnySort)]))
   | TAC_REWRITE_HYP elimTargetAnySort IN selector (Ast.$$ (O.TAC_REWRITE_HYP, [Ast.\ ([], selector), Ast.\ ([], elimTargetAnySort)]))
   | TAC_REDUCE (Ast.$$ (O.TAC_REDUCE_ALL, []))
-  | TAC_REDUCE IN bracketedSelectors (Ast.$$ (O.TAC_REDUCE, [Ast.\ ([], Multi.makeVec O.SEL bracketedSelectors)]))
-  | TAC_UNFOLD bracketedOpnames (Ast.$$ (O.TAC_UNFOLD_ALL bracketedOpnames, []))
-  | TAC_UNFOLD bracketedOpnames IN bracketedSelectors (Ast.$$ (O.TAC_UNFOLD (bracketedOpnames), [Ast.\ ([], Multi.makeVec O.SEL bracketedSelectors)]))
+  | TAC_REDUCE IN selectors (Ast.$$ (O.TAC_REDUCE, [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_UNFOLD opnames (Ast.$$ (O.TAC_UNFOLD_ALL opnames, []))
+  | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD (opnames), [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
@@ -899,21 +895,21 @@ atomicRawTac
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
 
-  | LAMBDA devDecompPatterns DOT tactic (Pattern.makeLambda devDecompPatterns tactic)
-  | LANGLE boundVars RANGLE tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (Multi.addUnderscores boundVars, tactic)]))
+  | LAMBDA devDecompPatterns DOUBLE_RIGHT_ARROW tactic (Pattern.makeLambda devDecompPatterns tactic)
+  | ABS boundVars DOUBLE_RIGHT_ARROW tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (Multi.addUnderscores boundVars, tactic)]))
   | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
   | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
   
   | IF elimTarget THEN tactic ELSE tactic
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))
 
-  | LET VARNAME COLON LSQUARE judgment RSQUARE EQUALS tactic DOT tactic
+  | CLAIM VARNAME COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE SEMI tactic
       (Ast.$$ (O.DEV_LET NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
 
-  | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine DOT tactic
+  | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine SEMI tactic
       (Pattern.makeApplyHyp devDecompPattern elimTargetAnySort bracketedDevAppSpine tactic)
 
-  | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine DOT tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
+  | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine SEMI tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
 
   | USE elimTargetAnySort bracketedDevAppSpine (Pattern.makeUseHyp elimTargetAnySort bracketedDevAppSpine)
   | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
@@ -922,7 +918,7 @@ atomicRawTac
       (Ast.$$ (O.DEV_S1_ELIM, [\ ([], elimTarget), \ ([], tactic1), \([VARNAME], tactic2)]))
 
   | MATCH termAnySort LBRACKET devMatchClauses RBRACKET (Tac.makeMatch termAnySort devMatchClauses)
-  | QUERY VARNAME LEFT_ARROW selector DOT tactic (Ast.$$ (O.DEV_QUERY, [\ ([], selector), \ ([VARNAME], tactic)]))
+  | QUERY VARNAME LEFT_ARROW selector SEMI tactic (Ast.$$ (O.DEV_QUERY, [\ ([], selector), \ ([VARNAME], tactic)]))
   | PRINT termAnySort (Ast.$$ (O.DEV_PRINT, [\ ([], termAnySort)]))
 
   (* overlapping with term *)
@@ -936,9 +932,10 @@ atomicRawMultitac
   | MTAC_REPEAT LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REPEAT, [\ ([], multitac)]))
   | MTAC_AUTO (Tac.autoMtac)
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_PROGRESS, [\ ([], multitac)]))
-  | MTAC_REC VARNAME IN LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REC, [\ ([VARNAME], multitac)]))
+  | MTAC_REC VARNAME DOUBLE_RIGHT_ARROW LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REC, [\ ([VARNAME], multitac)]))
   | LPAREN multitac RPAREN (multitac)
-  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec LEFT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
+  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings (Tac.tacToMultitac (Ast.$$ (O.TAC_ID, []))))
+  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MTAC_ALL, [\ ([], atomicTac)]))
   | QUESTION ident (Ast.$$ (O.MTAC_HOLE (SOME ident), []))
   | QUESTION (Ast.$$ (O.MTAC_HOLE NONE, []))
@@ -948,17 +945,17 @@ atomicMultitac
 
 rawMultitac
   : multitac SEMI atomicMultitac %prec SEMI (Tac.makeSeq multitac [] atomicMultitac)
+  | multitac SEMI (multitac)
   | atomicMultitac %prec SEMI (atomicMultitac)
 
 multitac : rawMultitac (annotate (Pos.pos (rawMultitac1left fileName) (rawMultitac1right fileName)) rawMultitac)
 
 hypBinding
-  : VARNAME COLON sort (VARNAME, sort)
-  | VARNAME (VARNAME, O.EXP)
+  : boundVar COLON sort (Option.getOpt (boundVar, "_"), sort)
+  | boundVar (Option.getOpt (boundVar, "_"), O.EXP)
 
 hypBindings
-  : hypBinding ([hypBinding])
-  | hypBinding COMMA hypBindings %prec COMMA (hypBinding :: hypBindings)
+  : hypBinding hypBindings %prec COMMA (hypBinding :: hypBindings)
   | ([])
 
 rawTactic
@@ -970,6 +967,7 @@ tactic
 tactics
   : tactic ([tactic])
   | tactic COMMA tactics (tactic :: tactics)
+  | tactic COMMA ([tactic])
 
 declArgument
   : metavar COLON valence ((metavar, valence))

@@ -4,7 +4,7 @@ Thm EqualityKind0(#A) : [
    [a b : ty]
    (= (U 0 hcom) (= ty a b) (= ty a b)))
 ] by [ 
-  lam ty, a, b. auto
+  lam ty a b => auto
 ].
 
 Thm EqualityKind1(#A) : [
@@ -13,5 +13,5 @@ Thm EqualityKind1(#A) : [
    [a b : ty]
    (= (U 0 kan) (= ty a b) (= ty a b)))
 ] by [ 
-  lam ty, a, b. auto
+  lam ty a b => auto
 ].
