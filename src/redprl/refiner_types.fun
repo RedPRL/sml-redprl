@@ -1684,14 +1684,16 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.EqType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val H >> AJ.EQ ((ty0, ty1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.EQUALITY (a0, m0, n0) = Syn.out ty0
         val Syn.EQUALITY (a1, m1, n1) = Syn.out ty1
+        val _ = Assert.levelLess (l, l')
         val ka = kindConstraintOnBase k
 
         val goalTy = makeEqType H ((a0, a1), l, ka)
-        val goalM = makeEq H ((m0, m1), (a0, NONE, K.top))
-        val goalN = makeEq H ((n0, n1), (a0, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (a0, l))
+        val goalN = makeEq H ((n0, n1), (a0, l))
       in
         |>: goalM >: goalN >: goalTy #> (H, trivial)
       end
@@ -1699,13 +1701,12 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eq"
-        val H >> AJ.EQ ((ax0, ax1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((ax0, ax1), (ty, l)) = jdg
         val Syn.EQUALITY (a, m, n) = Syn.out ty
-        val ka = kindConstraintOnBase k
         val Syn.AX = Syn.out ax0
         val Syn.AX = Syn.out ax1
 
-        val goal = makeEq H ((m, n), (a, l, ka))
+        val goal = makeEq H ((m, n), (a, l))
       in
         |>: goal #> (H, trivial)
       end
@@ -1713,11 +1714,10 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.EQUALITY (a, m, n) = Syn.out ty
-        val ka = kindConstraintOnBase k
 
-        val goal = makeEq H ((m, n), (a, l, ka))
+        val goal = makeEq H ((m, n), (a, l))
       in
         |>: goal #> (H, Syn.into Syn.AX)
       end
@@ -1725,11 +1725,11 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eta"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.EQUALITY _ = Syn.out ty
 
-        val goal1 = makeMem H (m, (ty, l, k))
-        val goal2 = makeEqIfDifferent H ((Syn.into Syn.AX, n), (ty, NONE, K.top))
+        val goal1 = makeMem H (m, (ty, l))
+        val goal2 = makeEqIfDifferent H ((Syn.into Syn.AX, n), (ty, l))
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -1740,8 +1740,7 @@ struct
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
+        val AJ.TRUE (ty, l') = Hyps.lookup H z
         val Syn.EQUALITY (a, m, n) = Syn.out ty
 
         (* Adding an equality judgment diverges from Nuprl, but this is currently
@@ -1751,7 +1750,7 @@ struct
         val ax = Syn.into Syn.AX
         val (goal, hole) =
           makeGoal
-            @@ (Hyps.interposeThenSubstAfter (z, |@> (u, AJ.EQ ((m, n), (a, l', K.top))), ax) H)
+            @@ (Hyps.interposeThenSubstAfter (z, |@> (u, AJ.EQ ((m, n), (a, l'))), ax) H)
             >> AJ.map (substVar (ax, z)) catjdg
       in
         |>: goal #> (H, VarKit.subst (trivial, u) hole)
@@ -1759,59 +1758,58 @@ struct
 
     (* (= ty m n) at l >> m = n in ty at l *)
     (* this is for non-deterministic search *)
-    fun EqFromTrueEq z _ jdg =
+    fun NondetEqFromTrueEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "InternalizedEquality.EqFromTrueEq"
-        val H >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
-        val AJ.TRUE (ty0', l', _) = Hyps.lookup H z
+        val _ = RedPrlLog.trace "InternalizedEquality.NondetEqFromTrueEq"
+        val H >> AJ.EQ ((m1, n1), (ty1, l1)) = jdg
+        val AJ.TRUE (ty0', l0) = Hyps.lookup H z
         val Syn.EQUALITY (ty0, m0, n0) = Syn.out ty0'
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
         val _ = Assert.alphaEq (ty0, ty1)
-        val goalTy = makeTypeUnlessSubUniv H (ty1, l1, k1) (l', K.top)
+        val _ = Assert.levelLeq (l0, l1)
       in
-        |>:? goalTy #> (H, trivial)
+        T.empty #> (H, trivial)
       end
 
-    (* (= ty m n) at l >> ty = ty at l *)
+    (* (= ty m n) at l >> ty in (U l) *)
     (* this is for non-deterministic search *)
-    fun TypeFromTrueEqAtType z _ jdg =
+    fun NondetTypeFromTrueEqAtType z _ jdg =
       let
-        val _ = RedPrlLog.trace "InternalizedEquality.TypeFromTrueEqAtType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.TRUE (eq, l', _) = Hyps.lookup H z
+        val _ = RedPrlLog.trace "InternalizedEquality.NondetTypeFromTrueEqAtType"
+        val H >> AJ.EQ ((ty0, ty1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, K.STABLE) = Syn.out univ
+        val AJ.TRUE (eq, l'') = Hyps.lookup H z
         val Syn.EQUALITY (ty', _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.alphaEq (ty', ty0)
-        val _ = Assert.inUsefulUniv (l', K.top) (l, k)
-        val goal = makeTypeUnlessSubUniv H (ty0, l, k) (l', K.top)
+        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelLeq (l'', l)
       in
-        |>:? goal #> (H, trivial)
+        T.empty #> (H, trivial)
       end
 
     fun InternalizeEq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.InternalizeEq"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
 
         (* the realizer must be `AX` *)
-        val (goal, _) = makeTrue H (Syn.into (Syn.EQUALITY (ty, m, n)), l, K.top)
-        val goalKind = makeTypeUnlessSubUniv H (ty, l, k) (l, K.top)
+        val (goal, _) = makeTrue H (Syn.into (Syn.EQUALITY (ty, m, n)), l)
       in
-        |>: goal >:? goalKind #> (H, trivial)
+        |>: goal #> (H, trivial)
       end
 
     (* (= ty a b) => a synth ~~> ty *)
-    fun SynthFromTrueEq z _ jdg =
+    fun NondetSynthFromTrueEq z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.SynthFromTrueEq"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
-        val AJ.TRUE (equal, l', _) = Hyps.lookup H z
+        val H >> AJ.SYNTH (tm, l) = jdg
+        val AJ.TRUE (equal, l') = Hyps.lookup H z
         val Syn.EQUALITY (ty, a, b) = Syn.out equal
         val _ = Assert.alphaEqEither ((a, b), tm)
-        val goalKind = makeTypeUnlessSubUniv H (ty, l, k) (l', K.top)
       in
-        |>:? goalKind #> (H, ty)
+        T.empty #> (H, ty)
       end
 
     fun RewriteTrue sel eqterm alpha jdg =
@@ -1819,22 +1817,22 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
         val H >> catjdg = jdg
 
-        val (currentTy, l, k) =
+        val (currentTy, l) =
           case Selector.lookup sel (H, catjdg) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
 
-        val (goalTyOfEq, holeTyOfEq) = makeSynth (truncatedH) (eqterm, NONE, K.top)
+        val (goalTyOfEq, holeTyOfEq) = makeSynth truncatedH (eqterm, l)
         val (goalTy, holeTy) = makeMatch (O.EQUALITY, 0, holeTyOfEq, [])
         val (goalM, holeM) = makeMatch (O.EQUALITY, 1, holeTyOfEq, [])
         val (goalN, holeN) = makeMatch (O.EQUALITY, 2, holeTyOfEq, [])
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, AJ.TRUE (holeTy, NONE, K.top))
-        val (motiveGoal, motiveHole) = makeTerm (truncatedHx) O.EXP
-        val motiveWfGoal = makeType (truncatedHx) (motiveHole, l, k)
+        val truncatedHx = truncatedH @> (x, AJ.TRUE (holeTy, l))
+        val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
+        val motiveWfGoal = makeType truncatedHx (motiveHole, l, K.STABLE)
 
         val motiven = substVar (holeN, x) motiveHole
         val motivem = substVar (holeM, x) motiveHole
@@ -1845,10 +1843,10 @@ struct
         (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
          * knew `currentTy` is a type. *)
         (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
-        val motiveMatchesMainGoal = makeSubType (truncatedH) (motivem, l, k) (currentTy, l, k)
+        val motiveMatchesMainGoal = makeSubType truncatedH ((motivem, currentTy), l, K.STABLE)
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
-         >: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
+         >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
 
@@ -1859,19 +1857,19 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrueByTrue"
         val H >> catjdg = jdg
 
-        val (currentTy, l, k) =
+        val (currentTy, l) =
           case Selector.lookup sel (H, catjdg) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
-        val AJ.TRUE (equal, l', _) = Hyps.lookup truncatedH z
+        val AJ.TRUE (equal, l') = Hyps.lookup truncatedH z
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l', K.top))
-        val (motiveGoal, motiveHole) = makeTerm (truncatedHx) O.EXP
-        val motiveWfGoal = makeType (truncatedHx) (motiveHole, l, k)
+        val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l'))
+        val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
+        val motiveWfGoal = makeType truncatedHx (motiveHole, l, K.STABLE)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
@@ -1882,18 +1880,18 @@ struct
         (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
          * knew `currentTy` is a type. *)
         (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
-        val motiveMatchesMainGoal = makeSubType (truncatedH) (motivem, l, k) (currentTy, l, k)
+        val motiveMatchesMainGoal = makeSubType truncatedH ((motivem, currentTy), l, K.STABLE)
       in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
+        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
 
     fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Symmetry"
-        val H >> AJ.TRUE (equal, l, k) = jdg
+        val H >> AJ.TRUE (equal, l) = jdg
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
-        val (goal, hole) = makeTrue H (Syn.into (Syn.EQUALITY (ty, n, m)), l, k)
+        val (goal, hole) = makeTrue H (Syn.into (Syn.EQUALITY (ty, n, m)), l)
       in
         |>: goal #> (H, Syn.into Syn.AX)
       end
