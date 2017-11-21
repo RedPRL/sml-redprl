@@ -48,7 +48,7 @@ struct
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -152,7 +152,7 @@ struct
         val Syn.WBOOL = Syn.out a
         val Syn.WBOOL = Syn.out b
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -285,7 +285,7 @@ struct
         val Syn.NAT = Syn.out a
         val Syn.NAT = Syn.out b
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -402,7 +402,7 @@ struct
         val Syn.INT = Syn.out a
         val Syn.INT = Syn.out b
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -557,7 +557,7 @@ struct
         val Syn.VOID = Syn.out a
         val Syn.VOID = Syn.out b
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -599,7 +599,7 @@ struct
         val Syn.S1 = Syn.out a
         val Syn.S1 = Syn.out b
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -759,7 +759,7 @@ struct
         val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.FUN (a0, x, b0x) = Syn.out fun0
         val Syn.FUN (a1, y, b1y) = Syn.out fun1
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain *)
@@ -908,7 +908,7 @@ struct
         val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.RECORD fields0 = Syn.out record0
         val Syn.RECORD fields1 = Syn.out record1
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
         val fresh = makeNamePopper alpha
@@ -1142,7 +1142,7 @@ struct
         val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.PATH ((u, a0u), m0, n0) = Syn.out ty0
         val Syn.PATH ((v, a1v), m1, n1) = Syn.out ty1
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val ka = kindConstraintOnBase k
 
         val w = alpha 0
@@ -1308,7 +1308,7 @@ struct
         val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.LINE (u, a0u) = Syn.out ty0
         val Syn.LINE (v, a1v) = Syn.out ty1
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val ka = kindConstraintOnBase k
 
         val w = alpha 0
@@ -1438,7 +1438,7 @@ struct
         val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.PUSHOUT (a0, b0, c0, (x0, f0x0), (y0, g0y0)) = Syn.out ty0
         val Syn.PUSHOUT (a1, b1, c1, (x1, f1x1), (y1, g1y1)) = Syn.out ty1
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val (kEnd, kApex) = kindConstraintOnEndsAndApex k
 
         val goalA = makeEqType H ((a0, a1), l, kEnd)
@@ -1688,7 +1688,7 @@ struct
         val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.EQUALITY (a0, m0, n0) = Syn.out ty0
         val Syn.EQUALITY (a1, m1, n1) = Syn.out ty1
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val ka = kindConstraintOnBase k
 
         val goalTy = makeEqType H ((a0, a1), l, ka)
@@ -1783,7 +1783,7 @@ struct
         val Syn.EQUALITY (ty', _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.alphaEq (ty', ty0)
-        val _ = Assert.levelLess (l, l')
+        val _ = Assert.levelMem (l, l')
         val _ = Assert.levelLeq (l'', l)
       in
         T.empty #> (H, trivial)

@@ -189,6 +189,14 @@ struct
   struct
     val inherentLevel = L.succ
   end
+  structure Assert =
+  struct
+    fun levelMem (l1, l2) =
+      if L.< (l1, l2) then
+        ()
+      else
+        E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than", L.pretty l2]
+  end
   fun makeEqTypeWith f H ((a, b), l, k) =
     makeEqWith f H ((a, b), (Syn.intoU (l, k), Universe.inherentLevel l))
   val makeEqType = makeEqTypeWith (fn j => j)
@@ -205,6 +213,7 @@ struct
 
   structure Assert =
   struct
+    open Assert
     fun sortEq (tau1, tau2) = 
       if tau1 = tau2 then 
         ()
@@ -234,12 +243,6 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than or equal to", L.pretty l2]
-
-    fun levelLess (l1, l2) =
-      if L.< (l1, l2) then
-        ()
-      else
-        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than", L.pretty l2]
 
     fun levelEq (l1, l2) =
       if L.eq (l1, l2) then
