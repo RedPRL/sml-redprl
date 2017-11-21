@@ -1924,7 +1924,7 @@ struct
           val tubes1 = ComKit.alphaRenameTubes w tubes1
 
           val goalsOnDiag = genTubeGoals' (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), l, k)
-          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), NONE, K.top)
+          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), l, k)
         in
           goalsOnDiag @ goalsNotOnDiag
         end
@@ -1937,31 +1937,33 @@ struct
           Restriction.makeEqTypeIfDifferent [eq] H ((cap, substVar (r, u) tube), l, k))
         tubes
 
-    fun genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l, k)) =
+    fun genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) =
       ListPairUtil.mapPartialEq
-        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq [eq] H ((b0, b1), (t, l, k)))
+        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq [eq] H ((b0, b1), (t, l)))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
-    fun genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, l, k)) =
+    fun genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, l)) =
       ComKit.enumInterExceptDiag
-        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent [eq0, eq1] H ((b0, b1), (t, l, k)))
+        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent [eq0, eq1] H ((b0, b1), (t, l)))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
-    fun genInterBoundaryGoals H ((boundaries0, boundaries1), (tubes, l, k)) =
-      genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l, k)) @
-      genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, NONE, K.top))
+    fun genInterBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) =
+      genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) @
+      genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, l))
 
-    fun genCapBoundaryGoals H ((cap, ((r, r'), tyTubes, boundaries)), (tyCap, l, k)) =
+    fun genCapBoundaryGoals H ((cap, ((r, r'), tyTubes, boundaries)), (tyCap, l)) =
       ListPairUtil.mapPartialEq
         (fn ((eq, ty), boundary) =>
           Restriction.makeEqIfDifferent [eq] H
-            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l, k)))
+            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l)))
         (tyTubes, boundaries)
 
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.EqType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val H >> AJ.EQ ((ty0, ty1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, k) = Syn.out univ
         val Syn.FCOM {dir=dir0, cap=cap0, tubes=tubes0} = Syn.out ty0
         val Syn.FCOM {dir=dir1, cap=cap1, tubes=tubes1} = Syn.out ty1
+        val _ = Assert.levelMem (l, l')
         val () = Assert.dirEq "FormalComposition.EqType direction" (dir0, dir1)
         val eqs0 = List.map #1 tubes0
         val eqs1 = List.map #1 tubes1
@@ -1976,14 +1978,14 @@ struct
       in
         |>: goalCap
          >:+ genInterTubeGoals H w ((tubes0, tubes1), l, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), NONE, K.top)
+         >:+ genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), l, kCap) (* kCap is less demanding *)
         #> (H, trivial)
       end
 
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.Eq"
-        val H >> AJ.EQ ((box0, box1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((box0, box1), (ty, l)) = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
         val Syn.BOX {dir=dir0, cap=cap0, boundaries=boundaries0} = Syn.out box0
         val Syn.BOX {dir=dir1, cap=cap1, boundaries=boundaries1} = Syn.out box1
@@ -1996,36 +1998,36 @@ struct
         val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs)
         val _ = Assert.tautologicalEquations "FormalComposition.Eq tautology checking" eqs
 
-        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+        val (kCap, kTube) = kindConstraintOnCapAndTubes K.STABLE
 
-        val goalCap = makeEq H ((cap0, cap1), (tyCap, l, kCap))
+        val goalCap = makeEq H ((cap0, cap1), (tyCap, l))
 
         val tyBoundaries = List.map (fn (u, ty) => substVar (#2 dir, u) ty) tyTubes'
 
         val w = alpha 0
       in
         |>: goalCap
-         >:+ genInterBoundaryGoals H ((boundaries0, boundaries1), (tyBoundaries, NONE, K.top))
-         >:+ genCapBoundaryGoals H ((cap0, (dir, tyTubes, boundaries')), (tyCap, NONE, K.top))
+         >:+ genInterBoundaryGoals H ((boundaries0, boundaries1), (tyBoundaries, l))
+         >:+ genCapBoundaryGoals H ((cap0, (dir, tyTubes, boundaries')), (tyCap, l))
          >:+ genInterTubeGoals H w ((tyTubes, tyTubes), l, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
+         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), l, kCap)
         #> (H, trivial)
       end
 
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
         val (eqs, tyTubes') = ListPair.unzip tyTubes
         val _ = Assert.tautologicalEquations "FormalComposition.True tautology checking" eqs
 
-        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+        val (kCap, kTube) = kindConstraintOnCapAndTubes K.STABLE
 
-        val (goalCap, holeCap) = makeTrue H (tyCap, l, kCap)
+        val (goalCap, holeCap) = makeTrue H (tyCap, l)
 
         fun goTube (eq, (u, tyTube)) =
-          Restriction.makeTrue [eq] (Syn.into Syn.AX) H (substVar (#2 dir, u) tyTube, NONE, K.top)
+          Restriction.makeTrue [eq] (Syn.into Syn.AX) H (substVar (#2 dir, u) tyTube, l)
         val goalHoleBoundaries = List.map goTube tyTubes
         val goalBoundaries = List.mapPartial #1 goalHoleBoundaries
         val holeBoundaries = List.map #2 goalHoleBoundaries
@@ -2039,10 +2041,10 @@ struct
       in
         |>: goalCap
          >:+ goalBoundaries
-         >:+ genInterBoundaryGoalsExceptDiag H ((holeBoundaries', holeBoundaries'), (tyBoundaries, NONE, K.top))
-         >:+ genCapBoundaryGoals H ((holeCap, (dir, tyTubes, holeBoundaries)), (tyCap, NONE, K.top))
+         >:+ genInterBoundaryGoalsExceptDiag H ((holeBoundaries', holeBoundaries'), (tyBoundaries, l))
+         >:+ genCapBoundaryGoals H ((holeCap, (dir, tyTubes, holeBoundaries)), (tyCap, l))
          >:+ genInterTubeGoals H w ((tyTubes, tyTubes), l, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
+         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), l, kCap)
         #> (H, box)
       end
 
