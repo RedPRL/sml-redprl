@@ -345,29 +345,27 @@ Thm UARetSig(#l:lvl) : [
       ($ (SigEquivToPath #l) ty/a)
       ($ (SigPathToEquiv #l) ty/a)))
 ] by [
-  (lam ty/a {ty/b,equiv} => abs x =>
-  {use ty/b, ?});
-  unfold PathToEquiv SigPathToEquiv SigEquivToPath;
-  [id,?, id]
-  // {use ty/b, `(@ ($ (UARet #l) ty/a ty/b equiv) x)}
+  lam ty/a {ty/b,equiv} =>
+  fresh x:dim -> refine path/intro; [
+    {use ty/b, `(@ ($ (UARet #l) ty/a ty/b equiv) x)}
+  ];
+  unfold SigPathToEquiv SigEquivToPath;
+  reduce;
+  auto
 ].
 
-// Thm EquivInduction(#l:lvl) : [
-//   (->
-//    [ty/a : (U #l kan)]
-//    (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))
-// ] by [
-//   lam ty/a =>
-//   let contr = (RetIsContr (++ #l))
-//     [`(* [ty/b : (U #l kan)] (Equiv ty/a ty/b)),
-//      `(* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b)),
-//      `($ (SigEquivToPath #l) ty/a),
-//      `($ (SigPathToEquiv #l) ty/a),
-//      `($ (UARetSig #l) ty/a),
-//      `($ (IsContrPath #l) ty/a)];
-//   use contr
-// ].
-
-// TODO ROADMAP:
-// uaretsig
-// univalenceAlt2 -> uaretsig
+Thm EquivInduction(#l:lvl) : [
+  (->
+   [ty/a : (U #l kan)]
+   (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))
+] by [
+  lam ty/a =>
+  `($
+    (RetIsContr (++ #l))
+    (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
+    (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
+    ($ (SigEquivToPath #l) ty/a)
+    ($ (SigPathToEquiv #l) ty/a)
+    ($ (UARetSig #l) ty/a)
+    ($ (IsContrPath #l) ty/a))
+].
