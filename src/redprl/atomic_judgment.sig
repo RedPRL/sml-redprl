@@ -1,6 +1,5 @@
 structure RedPrlAtomicJudgmentData =
 struct
-  type kind = RedPrlKind.t
   type level = RedPrlLevel.t
 
   structure Tm = RedPrlAbt
@@ -34,7 +33,7 @@ struct
       *   weak so that there are only a few provable instances of non-trivial
       *   subtyping.
       *)
-     | SUB_TYPE of (abt * abt) * level * kind
+     | SUB_TYPE of (abt * abt) * level
 
      (* `SYNTH (m, l)`:
       *   Already in the `l`th iteration of universe hierarchy construction,
@@ -58,7 +57,6 @@ sig
   datatype jdg = datatype RedPrlAtomicJudgmentData.jdg
   type abt = RedPrlAbt.abt
   type level = RedPrlLevel.t
-  type kind = RedPrlKind.t
 
   val MEM : abt * (abt * level) -> jdg
 

@@ -199,7 +199,7 @@ struct
 
         (* type *)
         val goalTy = makeEqType H ((ty0, ty1), l, k)
-        val goalTy0 = makeSubTypeIfDifferent H ((ty0, ty), l, k) (* (ty0, l, k) is proved *)
+        val goalTy0 = makeSubTypeIfDifferent H ((ty0, ty), l) (* (ty0, l, k) is proved *)
 
         (* cap *)
         val goalCap = makeEq H ((cap0, cap1), (ty0, l))

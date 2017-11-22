@@ -870,7 +870,7 @@ struct
         val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n0])
         val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, l))
         val goalArgEq = makeEq H ((n0, n1), (holeDom, l))
-        val goalTy = makeSubType H ((holeCod, ty), l, K.top)
+        val goalTy = makeSubType H ((holeCod, ty), l)
       in
         |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >: goalTy
         #> (H, trivial)
@@ -1108,7 +1108,7 @@ struct
         val (goalTy, holeTy) = makeSynth H (m0, l)
         val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy, m0)
         val goalEq = makeEqIfDifferent H ((m0, m1), (holeTy, l)) (* m0 well-typed *)
-        val goalTy' = makeSubType H ((holeTyP, ty), l, K.top)
+        val goalTy' = makeSubType H ((holeTyP, ty), l)
       in
         |>: goalTy >: goalTyP >:? goalEq >: goalTy'
         #> (H, trivial)
@@ -1257,7 +1257,7 @@ struct
         val (goalSynth, holeSynth) = makeSynth H (m0, l)
         val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, l)) (* m0 well-typed *)
         val (goalPath, holePath) = makeMatch (O.PATH, 0, holeSynth, [r0])
-        val goalTy = makeSubType H ((holePath, ty), l, K.top) (* holePath type *)
+        val goalTy = makeSubType H ((holePath, ty), l) (* holePath type *)
       in
         |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, trivial)
       end
@@ -1284,7 +1284,7 @@ struct
         val (goalSynth, holeSynth) = makeSynth H (m, l)
         val (goalLine, holeLine) = makeMatch (O.PATH, 0, holeSynth, [r])
         val (goalEndpoint, holeEndpoint) = makeMatch (O.PATH, dimAddr, holeSynth, [])
-        val goalTy = makeSubType H ((holeLine, a), l, K.top)
+        val goalTy = makeSubType H ((holeLine, a), l)
         val goalEq = makeEq H ((holeEndpoint, p), (a, l))
       in
         |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >: goalTy
@@ -1404,7 +1404,7 @@ struct
         val (goalSynth, holeSynth) = makeSynth H (m0, l)
         val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, l)) (* m0 well-typed *)
         val (goalLine, holeLine) = makeMatch (O.LINE, 0, holeSynth, [r0])
-        val goalTy = makeSubType H ((holeLine, ty), l, K.top) (* holeLine type *)
+        val goalTy = makeSubType H ((holeLine, ty), l) (* holeLine type *)
       in
         |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (H, trivial)
       end
@@ -1606,13 +1606,13 @@ struct
         val z = alpha 0
         val d0z = VarKit.rename (z, z0) d0z0
         val d1z = VarKit.rename (z, z1) d1z1
-        val goalC = makeEqType (H @> (z, AJ.TRUE (holeTyPushout, l))) ((d0z, d1z), l, k)
+        val goalD = makeEqType (H @> (z, AJ.TRUE (holeTyPushout, l))) ((d0z, d1z), l, k)
 
         (* eliminated term *)
         val goalM = makeEqIfDifferent H ((m0, m1), (holeTyPushout, l))
 
         (* result type*)
-        val goalTy0 = makeSubType H ((substVar (m0, z0) d0z0, ty), l, k)
+        val goalTy0 = makeSubType H ((substVar (m0, z0) d0z0, ty), l)
 
         (* left branch *)
         val (goalTyA, holeTyA) = makeMatch (O.PUSHOUT, 0, holeTyPushout, [])
@@ -1656,7 +1656,7 @@ struct
         val rgc = substVar (holeG, b0) p0b0
         val goalCohR = makeEq (H @> (c, AJ.TRUE (holeTyC, l))) ((q01c, rgc), (dright holeG, l))
       in
-        |>: goalTyPushout >: goalC >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >: goalTy0 #> (H, trivial)
+        |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >: goalTy0 #> (H, trivial)
       end
 
     fun SynthElim _ jdg =
@@ -1844,7 +1844,7 @@ struct
         (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
          * knew `currentTy` is a type. *)
         (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
-        val motiveMatchesMainGoal = makeSubType truncatedH ((motivem, currentTy), l, K.top)
+        val motiveMatchesMainGoal = makeSubType truncatedH ((motivem, currentTy), l)
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
          >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
@@ -1881,7 +1881,7 @@ struct
         (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
          * knew `currentTy` is a type. *)
         (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
-        val motiveMatchesMainGoal = makeSubType truncatedH ((motivem, currentTy), l, K.top)
+        val motiveMatchesMainGoal = makeSubType truncatedH ((motivem, currentTy), l)
       in
         |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
@@ -2181,13 +2181,13 @@ struct
     (* The following should be equivalent to
      * `L.<= (inherentLevel l', l) andalso K.<= (inherentKind k', k)`
      *)
-    fun member (l', k') (l, k) = L.< (l', l) andalso K.<= (inherentKind k', k)
+    fun member ((l', k'), (l, k)) = L.< (l', l) andalso K.<= (inherentKind k', k)
 
     structure Assert =
     struct
       open Assert
-      fun univMem (l0,k0) (l1,k1) =
-        if member (l0,k0) (l1,k1) then ()
+      fun univMem ((l0,k0), (l1,k1)) =
+        if member ((l0,k0), (l1,k1)) then ()
         else E.raiseError @@ E.GENERIC
           [Fpp.hvsep
             [Fpp.text "Expected universe", L.pretty l0, TermPrinter.ppKind k0,
@@ -2211,7 +2211,7 @@ struct
         val Syn.UNIVERSE (l1, k1) = Syn.out ty1
         val _ = Assert.levelEq (l0, l1)
         val _ = Assert.kindEq (k0, k1)
-        val _ = Assert.univMem (l0, k0) (l, k)
+        val _ = Assert.univMem ((l0, k0), (l, k))
         val _ = Assert.levelMem (l, l')
       in
         T.empty #> (H, trivial)
@@ -2225,7 +2225,6 @@ struct
         val _ = Assert.levelMem (l, l')
 
         val (goalTy, holeTy) = makeTerm H O.EXP
-        (* l0 is not omega because of Assert.univMem *)
         val goalTy' = makeType H (holeTy, l, k)
       in
         |>: goalTy >: goalTy' #> (H, Syn.into Syn.AX)
@@ -2234,12 +2233,12 @@ struct
     fun SubType _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SubType"
-        val H >> AJ.SUB_TYPE ((ty0, ty1), l, k) = jdg
+        val H >> AJ.SUB_TYPE ((ty0, ty1), l) = jdg
         val Syn.UNIVERSE (l0, k0) = Syn.out ty0
         val Syn.UNIVERSE (l1, k1) = Syn.out ty1
         val _ = Assert.levelLeq (l0, l1)
         val _ = Assert.kindLeq (k0, k1)
-        val _ = Assert.univMem (l1, k1) (l, k)
+        val _ = Assert.levelMem (l1, l)
       in
         T.empty #> (H, trivial)
       end
@@ -2268,7 +2267,6 @@ struct
         val _ = Assert.alphaEq (ty0, ty)
         val _ = Assert.levelMem (l0, l')
       in
-        (* l0 is not omega because of univMem *)
         T.empty #> (H, Syn.intoU (l0, K.top))
       end
 
@@ -2280,10 +2278,8 @@ struct
         val H >> AJ.SYNTH (ty, l') = jdg
         val AJ.TRUE (ty0, l0) = Hyps.lookup H z
         val _ = Assert.alphaEq (ty0, ty)
-        (* TODO maybe generating a subgoal when it's not a member? *)
         val _ = Assert.levelMem (l0, l')
       in
-        (* l0 is not omega because of univMem *)
         T.empty #> (H, Syn.intoU (l0, K.top))
       end
   end

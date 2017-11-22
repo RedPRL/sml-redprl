@@ -32,7 +32,7 @@ struct
         val goalTy = makeEqType (H @> (w, AJ.TERM O.DIM)) ((ty0w, ty1w), l, k)
         (* after proving the above goal, [ty0r'0] must be a type *)
         val ty0r'0 = substVar (#2 dir0, u) ty0u
-        val goalTy0 = makeSubTypeIfDifferent H ((ty0r'0, ty), l, k)
+        val goalTy0 = makeSubTypeIfDifferent H ((ty0r'0, ty), l)
 
         (* coercee *)
         val ty0r0 = substVar (#1 dir0, u) ty0u
@@ -53,7 +53,7 @@ struct
         val goalTy = makeType (H @> (u, AJ.TERM O.DIM)) (ty0u, l, k)
         (* after proving the above goal, [ty0r] must be a type *)
         val ty0r = substVar (r, u) ty0u
-        val goalTy0 = makeSubTypeIfDifferent H ((ty0r, ty), l, k)
+        val goalTy0 = makeSubTypeIfDifferent H ((ty0r, ty), l)
 
         (* eq *)
         val goalEq = makeEq H ((m, other), (ty, l))
@@ -156,12 +156,12 @@ struct
     fun Eq sign _ jdg =
       let
         val _ = RedPrlLog.trace "Custom.Eq"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out m
         val _ = Assert.alphaEq (m, n)
 
-        val {spec = H' >> AJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
+        val {spec = H' >> AJ.TRUE (specTy, specL), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ()) (* TODO: use alpha here??? *)
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho =
@@ -169,9 +169,10 @@ struct
             (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
             Metavar.Ctx.empty (metas, args)
         val specTy' = substMetaenv rho specTy
-        val _ = if Hyps.isEmpty H' then () else raise Fail "Equality.Custom only works with empty sequent"
+        val _ = if Hyps.isEmpty H' then () else
+          E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
 
-        val goalTy = makeSubType H (specTy', specL, specK) (ty, l, k)
+        val goalTy = makeSubTypeIfDifferentOrAtLowerLevel H (((specTy', ty), l), specL)
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -179,11 +180,11 @@ struct
     fun Synth sign _ jdg = 
       let
         val _ = RedPrlLog.trace "Custom.Synth"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out tm
 
-        val {spec = H' >> AJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
+        val {spec = H' >> AJ.TRUE (ty, l'), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val mrho =
@@ -192,13 +193,13 @@ struct
             Metavar.Ctx.empty
             (metas, args)
 
-
         val ty' = substMetaenv mrho ty
-        val _ = if Hyps.isEmpty H' then () else raise Fail "Synth.Custom only works with empty sequent"
+        val _ = if Hyps.isEmpty H' then () else
+          E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
 
-        val goalKind = makeTypeUnlessSubUniv H (ty', l, k) (l', k')
+        val _ = Assert.levelLeq (l', l)
       in
-        |>:? goalKind #> (H, ty')
+        T.empty #> (H, ty')
       end
   end
 end

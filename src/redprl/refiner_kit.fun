@@ -164,7 +164,7 @@ struct
   fun makeEqWith f H ((m, n), (ty, l)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l))
   val makeEq = makeEqWith (fn j => j)
   fun makeMem H (m, (ty, l)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l))
-  fun makeSubType H ((a, b), l, k) = makeGoal' @@ H >> AJ.SUB_TYPE ((a, b), l, k)
+  fun makeSubType H ((a, b), l) = makeGoal' @@ H >> AJ.SUB_TYPE ((a, b), l)
 
   (* conditional goal making *)
 
@@ -176,9 +176,13 @@ struct
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
     else makeEqIfDifferent H ((m, n), (ty, l))
 
-  fun makeSubTypeIfDifferent H ((a, b), l, k) =
+  fun makeSubTypeIfDifferent H ((a, b), l) =
     if Abt.eq (a, b) then NONE
-    else SOME @@ makeSubType H ((a, b), l, k)
+    else SOME @@ makeSubType H ((a, b), l)
+
+  fun makeSubTypeIfDifferentOrAtLowerLevel H (((a, b), l), l') =
+    if L.< (l, l') then SOME @@ makeSubType H ((a, b), l)
+    else makeSubTypeIfDifferent H ((a, b), l)
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal

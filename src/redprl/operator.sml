@@ -367,7 +367,7 @@ struct
 
      | JDG_EQ => [[] |: LVL, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
      | JDG_TRUE => [[] |: LVL, [] |: EXP] ->> JDG
-     | JDG_SUB_TYPE => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_TYPE => [[] |: LVL, [] |: EXP, [] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: LVL, [] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
