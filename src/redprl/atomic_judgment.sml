@@ -34,7 +34,7 @@ struct
            [ TermPrinter.ppTerm a
            , text "<="
            , TermPrinter.ppTerm b
-           , hsep [text "in", TermPrinter.ppTerm (Syntax.intoU (l, RedPrlKind.top))]
+           , hsep [text "at", RedPrlLevel.pretty l]
            ]
        | SYNTH (m, l) => expr @@ hvsep
            [ TermPrinter.ppTerm m, text "synth"
