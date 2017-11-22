@@ -16,7 +16,7 @@ sig
   val Elim : sign -> hyp -> tactic
   val Exact : abt -> tactic
   val Rewrite : sign -> hyp RedPrlOpData.selector -> abt -> rule
-  val RewriteHyp : sign -> hyp RedPrlOpData.selector -> hyp -> tactic
+  val RewriteHyp : sign -> hyp RedPrlOpData.selector -> hyp -> rule
   val Symmetry : tactic
   val SynthFromHyp : hyp -> tactic
 

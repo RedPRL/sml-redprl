@@ -189,10 +189,6 @@ struct
 
   (* internalized EQ_TYPE *)
 
-  structure Universe =
-  struct
-    val inherentLevel = L.succ
-  end
   structure Assert =
   struct
     fun levelMem (l1, l2) =
@@ -201,12 +197,22 @@ struct
       else
         E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than", L.pretty l2]
   end
-  fun makeEqTypeWith f H ((a, b), l, k) =
-    makeEqWith f H ((a, b), (Syn.intoU (l, k), Universe.inherentLevel l))
-  val makeEqType = makeEqTypeWith (fn j => j)
-  fun makeType H (a, l, k) = makeEqType H ((a, a), l, k)
-  fun makeEqTypeIfDifferent H ((a, b), l, k) =
-    makeEqIfDifferent H ((a, b), (Syn.intoU (l, k), Universe.inherentLevel l))
+
+  local
+    fun internalizeEqType ((a, b), l, k) =
+      ((a, b), (Syn.intoU (l, k), L.succ l))
+  in
+    fun makeEqTypeWith f H = makeEqWith f H o internalizeEqType
+    val makeEqType = makeEqTypeWith (fn j => j)
+
+    fun makeType H (a, l, k) = makeEqType H ((a, a), l, k)
+
+    fun makeTypeIfAtLowerLevel H ((a, l), l') =
+      if L.< (l, l') then SOME @@ makeType H (a, l, K.top)
+      else NONE
+
+    fun makeEqTypeIfDifferent H = makeEqIfDifferent H o internalizeEqType
+  end
 
   (* aux functions for subtyping *)
 

@@ -1772,23 +1772,6 @@ struct
         T.empty #> (H, trivial)
       end
 
-    (* (= ty m n) at l >> ty in (U l) *)
-    (* this is for non-deterministic search *)
-    fun NondetTypeFromTrueEqAtType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "InternalizedEquality.NondetTypeFromTrueEqAtType"
-        val H >> AJ.EQ ((ty0, ty1), (univ, l')) = jdg
-        val Syn.UNIVERSE (l, K.STABLE) = Syn.out univ
-        val AJ.TRUE (eq, l'') = Hyps.lookup H z
-        val Syn.EQUALITY (ty', _, _) = Syn.out eq
-        val _ = Assert.alphaEq (ty0, ty1)
-        val _ = Assert.alphaEq (ty', ty0)
-        val _ = Assert.levelMem (l, l')
-        val _ = Assert.levelLeq (l'', l)
-      in
-        T.empty #> (H, trivial)
-      end
-
     fun InternalizeEq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.InternalizeEq"
@@ -1841,49 +1824,13 @@ struct
         val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> catjdg'
 
-        (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
-         * knew `currentTy` is a type. *)
-        (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
-        val motiveMatchesMainGoal = makeSubType truncatedH ((motivem, currentTy), l)
+        val motiveMatchesMainGoal =
+          case sel of
+            O.IN_CONCL => makeSubType truncatedH ((motivem, currentTy), l)
+          | O.IN_HYP _ => makeSubType truncatedH ((currentTy, motivem), l)
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
          >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
-         #> (H, rewrittenHole)
-      end
-
-    (* XXX this should be merged into the previous rule `RewriteTrue`, once
-     * we have better ways to apply the auto tactic to the first four subgoals. *)
-    fun RewriteTrueByTrue sel z alpha jdg =
-      let
-        val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrueByTrue"
-        val H >> catjdg = jdg
-
-        val (currentTy, l) =
-          case Selector.lookup sel (H, catjdg) of
-             AJ.TRUE params => params
-           | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
-
-        val truncatedH = Selector.truncateFrom sel H
-        val AJ.TRUE (equal, l') = Hyps.lookup truncatedH z
-        val Syn.EQUALITY (ty, m, n) = Syn.out equal
-
-        val x = alpha 0
-        val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l'))
-        val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
-        val motiveWfGoal = makeType truncatedHx (motiveHole, l, K.top)
-
-        val motiven = substVar (n, x) motiveHole
-        val motivem = substVar (m, x) motiveHole
-
-        val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
-        val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> catjdg'
-
-        (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
-         * knew `currentTy` is a type. *)
-        (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
-        val motiveMatchesMainGoal = makeSubType truncatedH ((motivem, currentTy), l)
-      in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
 
@@ -2169,8 +2116,7 @@ struct
 
   structure Universe =
   struct
-    open Universe
-
+    val inherentLevel = L.succ
     val inherentKind =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.KAN
@@ -2243,6 +2189,56 @@ struct
         T.empty #> (H, trivial)
       end
 
+    (* ty at l >> ty in (U l) *)
+    (* this is for non-deterministic search *)
+    fun NondetMemFromTrueAtType z _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.NondetMemFromTrueAtType"
+        val H >> AJ.EQ ((ty0, ty1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, k) = Syn.out univ
+        val AJ.TRUE (zty, zl) = Hyps.lookup H z
+        val _ = Assert.alphaEq (ty0, ty1)
+        val _ = Assert.kindEq (k, K.top)
+        val _ = Assert.levelMem (l, l')
+        val _ = Assert.alphaEq (zty, ty0)
+        val _ = Assert.levelLeq (zl, l)
+      in
+        T.empty #> (H, trivial)
+      end
+
+    (* m = n in ty at l >> ty in (U l) *)
+    (* this is for non-deterministic search *)
+    fun NondetMemFromEqAtType z _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.NondetTypeFromTrueEqAtType"
+        val H >> AJ.EQ ((ty0, ty1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, K.STABLE) = Syn.out univ
+        val AJ.EQ (_, (ty'', l'')) = Hyps.lookup H z
+        val _ = Assert.alphaEq (ty0, ty1)
+        val _ = Assert.levelMem (l, l')
+        val _ = Assert.alphaEq (ty'', ty0)
+        val _ = Assert.levelLeq (l'', l)
+      in
+        T.empty #> (H, trivial)
+      end
+
+    (* (= ty m n) at l >> ty in (U l) *)
+    (* this is for non-deterministic search *)
+    fun NondetMemFromTrueEqAtType z _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.NondetTypeFromTrueEqAtType"
+        val H >> AJ.EQ ((ty0, ty1), (univ, l')) = jdg
+        val Syn.UNIVERSE (l, K.STABLE) = Syn.out univ
+        val AJ.TRUE (eq, l'') = Hyps.lookup H z
+        val Syn.EQUALITY (ty'', _, _) = Syn.out eq
+        val _ = Assert.alphaEq (ty0, ty1)
+        val _ = Assert.levelMem (l, l')
+        val _ = Assert.alphaEq (ty'', ty0)
+        val _ = Assert.levelLeq (l'', l)
+      in
+        T.empty #> (H, trivial)
+      end
+
     (* (= ty m n) at l >> ty synth ~~> (U l) *)
     (* this is for non-deterministic search *)
     fun NondetSynthFromTrueEqAtType z _ jdg =
@@ -2272,9 +2268,9 @@ struct
 
     (* ty at l >> ty synth ~~> (U l) *)
     (* this is for non-deterministic search *)
-    fun NondetSynthFromTrue z _ jdg =
+    fun NondetSynthFromTrueAtType z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.NondetSynthFromTrue"
+        val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueAtType"
         val H >> AJ.SYNTH (ty, l') = jdg
         val AJ.TRUE (ty0, l0) = Hyps.lookup H z
         val _ = Assert.alphaEq (ty0, ty)

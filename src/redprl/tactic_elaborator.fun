@@ -141,7 +141,7 @@ struct
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
       val H >> _ = jdg
-      val AJ.TRUE (ty, _, _) = RT.Hyps.lookup H z
+      val AJ.TRUE (ty, _) = RT.Hyps.lookup H z
     in
       case Syn.out ty of 
          Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
@@ -282,7 +282,7 @@ struct
      | O.TAC_AUTO_STEP $ _ => R.AutoStep sign
      | O.TAC_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
      | O.TAC_REWRITE $ [_ \ sel, _ \ tm] => Lcf.rule o R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTacComplete sign, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign])
-     | O.TAC_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
+     | O.TAC_REWRITE_HYP $ [_ \ sel, _ \ any] => Lcf.rule o R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
      | O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
      | O.TAC_SYMMETRY $ _ => R.Symmetry
      | O.DEV_INVERSION $ _ => inversions

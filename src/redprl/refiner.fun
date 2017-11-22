@@ -92,64 +92,25 @@ struct
       end
   end
 
-  structure TypeEquality =
+  structure SubType =
   struct
-    fun Symmetry _ jdg =
+    fun EqType _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.Symmetry"
-        val H >> AJ.EQ_TYPE ((ty1, ty2), l, k) = jdg
-        val goal = makeEqType H ((ty2, ty1), l, k)
+        val _ = RedPrlLog.trace "SubType.EqType"
+        val H >> AJ.SUB_TYPE ((a, b), l) = jdg
+        val goal = makeEqType H ((a, b), l, K.top)
       in
         |>: goal #> (H, trivial)
       end
-
-    fun FromEqType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "TypeEquality.FromEqType"
-        val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
-        val AJ.EQ_TYPE ((a', b'), l', k') = Hyps.lookup H z
-        val _ = Assert.alphaEqEither ((a', b'), a)
-        val _ = Assert.alphaEqEither ((a', b'), b)
-        val _ = Assert.inUsefulUniv (l', k') (l, k)
-        val goal = makeEqTypeUnlessSubUniv H ((a, b), l, k) (l', k')
-      in
-        |>:? goal #> (H, trivial)
-      end
-
-    fun FromEq z _ jdg =
-      let
-        val _ = RedPrlLog.trace "TypeEquality.FromEq"
-        val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
-        val AJ.EQ (_, (a', l', k')) = Hyps.lookup H z
-        val _ = Assert.alphaEq (a, b)
-        val _ = Assert.alphaEq (a', a)
-        val _ = Assert.inUsefulUniv (l', k') (l, k)
-        val goal = makeTypeUnlessSubUniv H (a, l, k) (l', k')
-      in
-        |>:? goal #> (H, trivial)
-      end
-
-    fun FromTrue z _ jdg =
-      let
-        val _ = RedPrlLog.trace "TypeEquality.FromTrue"
-        val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
-        val AJ.TRUE (a', l', k') = Hyps.lookup H z
-        val _ = Assert.alphaEq (a, b)
-        val _ = Assert.alphaEq (a', a)
-        val _ = Assert.inUsefulUniv (l', k') (l, k)
-        val goal = makeTypeUnlessSubUniv H (a, l, k) (l', k')
-      in
-        |>:? goal #> (H, trivial)
-      end
   end
 
-  structure Truth =
+  structure True =
   struct
     fun Witness tm _ jdg =
       let
         val _ = RedPrlLog.trace "True.Witness"
-        val H >> AJ.TRUE (ty, l, k) = jdg
-        val goal = makeMem H (tm, (ty, l, k))
+        val H >> AJ.TRUE (ty, l) = jdg
+        val goal = makeMem H (tm, (ty, l))
       in
         |>: goal #> (H, tm)
       end
@@ -175,32 +136,32 @@ struct
     fun Witness ty _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.Witness"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
-        val goal = makeMem H (tm, (ty, l, k))
+        val H >> AJ.SYNTH (tm, l) = jdg
+        val goal = makeMem H (tm, (ty, l))
       in
         |>: goal #> (H, ty)
       end
 
-    fun FromEq z _ jdg =
+    fun NondetFromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.FromEq"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
-        val AJ.EQ ((a, b), (ty, l', k')) = Hyps.lookup H z
+        val _ = RedPrlLog.trace "Synth.NondetFromEq"
+        val H >> AJ.SYNTH (tm, l) = jdg
+        val AJ.EQ ((a, b), (ty, l')) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((a, b), tm)
-        val goalKind = makeTypeUnlessSubUniv H (ty, l, k) (l', k')
+        val _ = Assert.levelLeq (l', l)
       in
-        |>:? goalKind #> (H, ty)
+        T.empty #> (H, ty)
       end
 
     fun VarFromTrue _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.VarFromTrue"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
-        val AJ.TRUE (a, l', k') = Hyps.lookup H z
-        val goalKind = makeTypeUnlessSubUniv H (a, l, k) (l', k')
+        val AJ.TRUE (a, l') = Hyps.lookup H z
+        val goalLevel = makeTypeIfAtLowerLevel H ((a, l), l')
       in
-        |>:? goalKind #> (H, a)
+        |>:? goalLevel #> (H, a)
       end
 
     val Var = VarFromTrue
@@ -230,26 +191,26 @@ struct
     fun VarFromTrue _ jdg =
       let
         val _ = RedPrlLog.trace "Equality.VarFromTrue"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
         val _ = Assert.varEq (x, y)
-        val AJ.TRUE (ty', l', k') = Hyps.lookup H x
-        val goalTy = makeSubType H (ty', l', k') (ty, l, k)
+        val AJ.TRUE (ty', l') = Hyps.lookup H x
+        val goalTy = makeSubTypeIfDifferentOrAtLowerLevel H (((ty', ty), l), l')
       in
         |>:? goalTy #> (H, trivial)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected variable-equality sequent"]
 
-    fun FromEq z _ jdg =
+    fun NondetFromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "Equality.FromEq"
-        val H >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
-        val AJ.EQ ((m0, n0), (ty0, l0, k0)) = Hyps.lookup H z
+        val _ = RedPrlLog.trace "NondetEquality.FromEq"
+        val H >> AJ.EQ ((m1, n1), (ty1, l1)) = jdg
+        val AJ.EQ ((m0, n0), (ty0, l0)) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
-        val goalTy = makeSubType H (ty0, l0, k0) (ty1, l1, k1)
+        val goalTy = makeSubTypeIfDifferentOrAtLowerLevel H (((ty0, ty1), l1), l0)
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -257,8 +218,8 @@ struct
     fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "Equality.Symmetry"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
-        val goal = makeEq H ((n, m), (ty, l, k))
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
+        val goal = makeEq H ((n, m), (ty, l))
       in
         |>: goal #> (H, trivial)
       end
@@ -268,18 +229,18 @@ struct
         val _ = RedPrlLog.trace "Equality.RewriteTrueByEq"
         val H >> catjdg = jdg
 
-        val (currentTy, l, k) =
+        val (currentTy, l) =
           case Selector.lookup sel (H, catjdg) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
-        val AJ.EQ ((m, n), (ty, l', k')) = Hyps.lookup truncatedH z
+        val AJ.EQ ((m, n), (ty, l')) = Hyps.lookup truncatedH z
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l', k'))
-        val (motiveGoal, motiveHole) = makeTerm (truncatedHx) O.EXP
-        val motiveWfGoal = makeType (truncatedHx) (motiveHole, l, k)
+        val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l'))
+        val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
+        val motiveWfGoal = makeType truncatedHx (motiveHole, l, K.STABLE)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
@@ -287,12 +248,12 @@ struct
         val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> catjdg'
 
-        (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
-         * knew `currentTy` is a type. *)
-        (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
-        val motiveMatchesMainGoal = makeSubType (truncatedH) (motivem, l, k) (currentTy, l, k)
+        val motiveMatchesMainGoal =
+          case sel of
+            O.IN_CONCL => makeSubType truncatedH ((motivem, currentTy), l)
+          | O.IN_HYP _ => makeSubType truncatedH ((currentTy, motivem), l)
       in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
+        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
   end
@@ -340,7 +301,7 @@ struct
     end
 
   fun Exact tm =
-    Lcf.rule o Truth.Witness tm
+    Lcf.rule o True.Witness tm
       orelse_ Lcf.rule o Synth.Witness tm
       orelse_ Lcf.rule o Term.Exact tm
 
@@ -360,7 +321,6 @@ struct
      | "nat/eq/zero" => Lcf.rule o Nat.EqZero
      | "nat/eq/succ" => Lcf.rule o Nat.EqSucc
      | "nat/eq/nat-rec" => Lcf.rule o Nat.EqElim
-     | "nat/eqtype/nat-rec" => Lcf.rule o Nat.EqTypeElim
      | "int/eqtype" => Lcf.rule o Int.EqType
      | "int/eq/zero" => Lcf.rule o Int.EqZero
      | "int/eq/succ" => Lcf.rule o Int.EqSucc
@@ -377,7 +337,6 @@ struct
      | "fun/intro" => Lcf.rule o Fun.True
      | "fun/eq/eta" => Lcf.rule o Fun.Eta
      | "fun/eq/app" => Lcf.rule o Fun.EqApp
-     | "fun/eqtype/app" => Lcf.rule o Fun.EqTypeApp
      | "record/eqtype" => Lcf.rule o Record.EqType
      | "record/eq/tuple" => Lcf.rule o Record.Eq
      | "record/eq/eta" => Lcf.rule o Record.Eta
@@ -412,7 +371,6 @@ struct
      | "V/eq/uain" => Lcf.rule o V.Eq
      | "V/intro" => Lcf.rule o V.True
      | "universe/eqtype" => Lcf.rule o Universe.EqType
-     | "universe/eq" => Lcf.rule o Universe.Eq
      | "universe/intro" => Lcf.rule o Universe.True
      | "hcom/eq" => Lcf.rule o HCom.Eq
      | "hcom/eq/cap" => Lcf.rule o HCom.EqCapL
@@ -434,8 +392,6 @@ struct
   local
     val CatJdgSymmetry : tactic =
       (Lcf.rule o Equality.Symmetry)
-        orelse_
-      (Lcf.rule o TypeEquality.Symmetry)
 
     fun fail err _ _ = Lcf.M.throw (E.errorToExn (NONE, err))
 
@@ -471,7 +427,7 @@ struct
     and NormalizeDelegate (tac : abt -> tactic) sign =
       let
         fun go sel = matchGoalSel sel
-          (fn AJ.TRUE (ty, _, _) =>
+          (fn AJ.TRUE (ty, _) =>
             (case canonicity sign ty of
                 Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [sel] then_ go sel
               | Machine.NEUTRAL (Machine.VAR z') => (AutoElim sign z' then_ go sel) orelse_ tac ty
@@ -498,18 +454,16 @@ struct
        | _ => false
   in
     fun SynthFromHyp z = matchHyp z
-      (fn AJ.EQ_TYPE _ =>
-           Lcf.rule o Universe.SynthFromEqType z
-        | AJ.EQ _ =>
-           Lcf.rule o Synth.FromEq z
+      (fn AJ.EQ _ =>
+           Lcf.rule o Synth.NondetFromEq z
               orelse_
-           Lcf.rule o Universe.SynthFromEqAtType z
+           Lcf.rule o Universe.NondetSynthFromEqAtType z
         | AJ.TRUE _ =>
-            Lcf.rule o Universe.SynthFromTrue z
+            Lcf.rule o Universe.NondetSynthFromTrueAtType z
               orelse_
-            Lcf.rule o InternalizedEquality.SynthFromTrueEq z
+            Lcf.rule o InternalizedEquality.NondetSynthFromTrueEq z
               orelse_
-            Lcf.rule o Universe.SynthFromTrueEqAtType z
+            Lcf.rule o Universe.NondetSynthFromTrueEqAtType z
         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "SynthFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
     structure Tactical =
@@ -519,126 +473,64 @@ struct
     end
 
     local
-      fun StepEqTypeVal (ty1, ty2) =
-        case (Syn.out ty1, Syn.out ty2) of
-           (Syn.BOOL, Syn.BOOL) => Lcf.rule o Bool.EqType
-         | (Syn.WBOOL, Syn.WBOOL) => Lcf.rule o WBool.EqType
-         | (Syn.NAT, Syn.NAT) => Lcf.rule o Nat.EqType
-         | (Syn.INT, Syn.INT) => Lcf.rule o Int.EqType
-         | (Syn.VOID, Syn.VOID) => Lcf.rule o Void.EqType
-         | (Syn.S1, Syn.S1) => Lcf.rule o S1.EqType
-         | (Syn.FUN _, Syn.FUN _) => Lcf.rule o Fun.EqType
-         | (Syn.RECORD _, Syn.RECORD _) => Lcf.rule o Record.EqType
-         | (Syn.PATH _, Syn.PATH _) => Lcf.rule o Path.EqType
-         | (Syn.LINE _, Syn.LINE _) => Lcf.rule o Line.EqType
-         | (Syn.PUSHOUT _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqType
-         | (Syn.EQUALITY _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.EqType
-         | (Syn.FCOM _, Syn.FCOM _) => Lcf.rule o FormalComposition.EqType
-         | (Syn.V _, Syn.V _) => Lcf.rule o V.EqType
-         | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule o Universe.EqType
-         | _ => fail @@ E.GENERIC [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
-
-      fun StepEqTypeNeuByElim sign tys =
-        fn (Machine.VAR z, _) => AutoElim sign z
-         | (_, Machine.VAR z) => AutoElim sign z
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByElim", AJ.pretty @@ AJ.EQ_TYPE (tys, NONE, K.top))
-
-      fun StepEqTypeNeuByStruct sign (m, n) =
-        case (Syn.out m, Syn.out n) of
-           (Syn.VAR _, Syn.VAR _) => Lcf.rule o Universe.VarFromTrue
-         | (Syn.WIF _, Syn.WIF _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with wif"
-         | (Syn.S1_REC _, Syn.S1_REC _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with S1-rec"
-         | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqTypeApp
-                                          else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
-         | (Syn.PROJ _, Syn.PROJ _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `!`"
-         | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
-         | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with pushout-rec"
-         | (Syn.CUST, Syn.CUST) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with custom operators"
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
-
-      fun StepEqTypeNeuByUnfold sign tys =
-        fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE
-              (Fpp.text "StepEqTypeNeuByUnfold", TermPrinter.ppMeta a)
-         | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE
-              (Fpp.text "StepEqTypeNeuByUnfold", TermPrinter.ppMeta a)
-         | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | (_, Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByUnfold", AJ.pretty @@ AJ.EQ_TYPE (tys, NONE, K.top))
-
-      fun StepEqTypeNeu sign tys blockers =
-        StepEqTypeNeuByElim sign tys blockers
-          orelse_
-        StepEqTypeNeuByStruct sign tys
-          orelse_
-        StepEqTypeNeuByUnfold sign tys blockers
-
-      fun StepEqTypeNeuExpand sign ty =
-        fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuExpand", TermPrinter.ppTerm ty)
-
-      fun StepEqType sign (ty1, ty2) =
-        (Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]) then_ 
-        (case (canonicity sign ty1, canonicity sign ty2) of
-           (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
-         | (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqTypeNeu sign (ty1, ty2) (blocker1, blocker2)
-         | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqTypeNeuExpand sign ty1 blocker
-         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqTypeNeuExpand sign ty2 blocker
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", AJ.pretty @@ AJ.EQ_TYPE ((ty1, ty2), NONE, K.top)))
-
-      fun StepEqAtTypeVal ty =
-        case Syn.out ty of
-           Syn.UNIVERSE _ => Lcf.rule o Universe.Eq
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqAtTypeVal", TermPrinter.ppTerm ty)
-
       fun StepEqValAtType sign ty =
         case canonicity sign ty of
            Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | Machine.CANONICAL => StepEqAtTypeVal ty
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqValAtType", TermPrinter.ppTerm ty)
 
       (* equality of canonical forms *)
-      fun StepEqVal sign (m, n) ty =
+      fun StepEqVal sign ((m, n), (ty, l)) =
         StepEqValAtType sign ty
           orelse_
         (case (Syn.out m, Syn.out n, Syn.out ty) of
-           (Syn.TT, Syn.TT, Syn.WBOOL) => Lcf.rule o WBool.EqTT
-         | (Syn.FF, Syn.FF, Syn.WBOOL) => Lcf.rule o WBool.EqFF
-         | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => Lcf.rule o WBool.EqFCom
+           (Syn.BOOL, Syn.BOOL, Syn.UNIVERSE _) => Lcf.rule o Bool.EqType
          | (Syn.TT, Syn.TT, Syn.BOOL) => Lcf.rule o Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Lcf.rule o Bool.EqFF
+         | (Syn.WBOOL, Syn.WBOOL, Syn.UNIVERSE _) => Lcf.rule o WBool.EqType
+         | (Syn.TT, Syn.TT, Syn.WBOOL) => Lcf.rule o WBool.EqTT
+         | (Syn.FF, Syn.FF, Syn.WBOOL) => Lcf.rule o WBool.EqFF
+         | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => Lcf.rule o WBool.EqFCom
+         | (Syn.NAT, Syn.NAT, Syn.UNIVERSE _) => Lcf.rule o Nat.EqType
          | (Syn.ZERO, Syn.ZERO, Syn.NAT) => Lcf.rule o Nat.EqZero
          | (Syn.SUCC _, Syn.SUCC _, Syn.NAT) => Lcf.rule o Nat.EqSucc
+         | (Syn.INT, Syn.INT, Syn.UNIVERSE _) => Lcf.rule o Int.EqType
          | (Syn.ZERO, Syn.ZERO, Syn.INT) => Lcf.rule o Int.EqZero
          | (Syn.SUCC _, Syn.SUCC _, Syn.INT) => Lcf.rule o Int.EqSucc
          | (Syn.NEGSUCC _, Syn.NEGSUCC _, Syn.INT) => Lcf.rule o Int.EqNegSucc
+         | (Syn.VOID, Syn.VOID, Syn.UNIVERSE _) => Lcf.rule o Void.EqType
+         | (Syn.S1, Syn.S1, Syn.UNIVERSE _) => Lcf.rule o S1.EqType
          | (Syn.BASE, Syn.BASE, Syn.S1) => Lcf.rule o S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => Lcf.rule o S1.EqLoop
          | (Syn.FCOM _, Syn.FCOM _, Syn.S1) => Lcf.rule o S1.EqFCom
+         | (Syn.FUN _, Syn.FUN _, Syn.UNIVERSE _) => Lcf.rule o Fun.EqType
          | (_, _, Syn.FUN _) => Lcf.rule o Fun.Eq
+         | (Syn.RECORD _, Syn.RECORD _, Syn.UNIVERSE _) => Lcf.rule o Record.EqType
          | (_, _, Syn.RECORD _) => Lcf.rule o Record.Eq
+         | (Syn.PATH _, Syn.PATH _, Syn.UNIVERSE _) => Lcf.rule o Path.EqType
          | (_, _, Syn.PATH _) => Lcf.rule o Path.Eq
+         | (Syn.LINE _, Syn.LINE _, Syn.UNIVERSE _) => Lcf.rule o Line.EqType
          | (_, _, Syn.LINE _) => Lcf.rule o Line.Eq
+         | (Syn.PUSHOUT _, Syn.PUSHOUT _, Syn.UNIVERSE _) => Lcf.rule o Pushout.EqType
          | (Syn.LEFT _, Syn.LEFT _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqLeft
          | (Syn.RIGHT _, Syn.RIGHT _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqRight
          | (Syn.GLUE _, Syn.GLUE _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqGlue
          | (Syn.FCOM _, Syn.FCOM _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqFCom
+         | (Syn.EQUALITY _, Syn.EQUALITY _, Syn.UNIVERSE _) => Lcf.rule o InternalizedEquality.EqType
          | (_, _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eq
          | (_, _, Syn.FCOM _) => Lcf.rule o FormalComposition.Eq
+         | (Syn.V _, Syn.V _, Syn.UNIVERSE _) => Lcf.rule o V.EqType
          | (_, _, Syn.V _) => Lcf.rule o V.Eq
-         | (_, _, Syn.UNIVERSE _) => Lcf.rule o Universe.Eq
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", AJ.pretty (AJ.EQ ((m, n), (ty, NONE, K.top)))))
+         | (Syn.FCOM _, Syn.FCOM _, Syn.UNIVERSE _) => Lcf.rule o FormalComposition.EqType
+         | (Syn.UNIVERSE _, Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule o Universe.EqType
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", AJ.pretty (AJ.EQ ((m, n), (ty, l)))))
 
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
       fun StepEqNeuAtType sign ty =
         case canonicity sign ty of
            Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | Machine.CANONICAL => StepEqAtTypeVal ty
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuAtType", TermPrinter.ppTerm ty)
 
@@ -659,26 +551,26 @@ struct
          | (Syn.CUST, Syn.CUST) => Lcf.rule o Custom.Eq sign (* XXX should consult autoSynthesizableNeu *)
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
-      fun StepEqNeuByElim sign (m, n) =
+      fun StepNeuByElim sign (m, n) =
         fn (Machine.VAR z, _) => AutoElim sign z
          | (_, Machine.VAR z) => AutoElim sign z
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByElim", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByElim", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
-      fun StepEqNeuByUnfold sign (m, n) =
-        fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", TermPrinter.ppMeta a)
-         | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", TermPrinter.ppMeta a)
+      fun StepNeuByUnfold sign (m, n) =
+        fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
+         | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
          | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
          | (_, Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqNeu sign tms blockers ty =
         StepEqNeuAtType sign ty
           orelse_
-        StepEqNeuByElim sign tms blockers
+        StepNeuByElim sign tms blockers
           orelse_
         StepEqNeuByStruct sign tms
           orelse_
-        StepEqNeuByUnfold sign tms blockers
+        StepNeuByUnfold sign tms blockers
 
       fun StepEqNeuExpand sign _ blocker ty =
         StepEqValAtType sign ty
@@ -738,33 +630,33 @@ struct
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqKanStructural", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
 
       (* This is really ugly; feel free to refactor, sorry. Wish we had 'backtracking case statements' in SML. *)
-      fun StepEqAux sign ((m, n), ty) kont = 
+      fun StepEqAux sign ((m, n), (ty, l)) kont =
         case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
            (_, Machine.REDEX, _, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, _, _, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
+         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign ((m, n), (ty, l))
          | (Syn.DIM_APP (_, r), _, _, _) =>
            (case Abt.out r of 
-              `_ => kont ((m, n), ty)
+              `_ => kont
              | _ => Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp)
          | (_, _, Syn.DIM_APP (_, r), _) =>
            (case Abt.out r of 
-              `_ => kont ((m, n), ty)
+              `_ => kont
              | _ => CatJdgSymmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp))
-         | _ => kont ((m, n), ty)
+         | _ => kont
 
-      fun StepEq sign ((m, n), ty) =
+      fun StepEq sign ((m, n), (ty, l)) =
         (* XXX something is missing here!
          * the handling of hcom/coe and `(@ x 1)` in `ty` should be here,
          * between the above and the next lines. *)
         StepEqKanStruct sign (m, n)
           orelse_
-        StepEqAux sign ((m, n), ty) (fn ((m, n), ty) => 
-          case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
-             (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
-           | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
-           | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
-           | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", AJ.pretty @@ AJ.EQ ((m, n), (ty, NONE, K.top))))
+        StepEqAux sign ((m, n), (ty, l))
+          (case (canonicity sign m, canonicity sign n) of
+             (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
+           | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
+           | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
+           | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", AJ.pretty @@ AJ.EQ ((m, n), (ty, l))))
 
       fun StepTrue sign ty =
         case Syn.out ty of
@@ -772,6 +664,34 @@ struct
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.True
          | Syn.UNIVERSE _ => Lcf.rule o Universe.True
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepTrue", TermPrinter.ppTerm ty)
+
+      fun StepSubTypeVal (ty1, ty2) =
+        case (Syn.out ty1, Syn.out ty2) of
+           (Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule o Universe.SubType
+         | _ => Lcf.rule o SubType.EqType
+
+      fun StepSubTypeNeu sign tms blockers =
+        StepNeuByElim sign tms blockers
+          orelse_
+        ((Lcf.rule o SubType.EqType) then_ StepEqNeuByStruct sign tms)
+          orelse_
+        StepNeuByUnfold sign tms blockers
+
+      fun StepSubTypeNeuExpand sign m blocker =
+        case blocker of
+           Machine.VAR z => AutoElim sign z
+         | Machine.METAVAR _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubTypeNeuExpand", TermPrinter.ppTerm m)
+         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
+
+      fun StepSubType sign (ty1, ty2) =
+        case (canonicity sign ty1, canonicity sign ty2) of
+           (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+         | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+         | (Machine.CANONICAL, Machine.CANONICAL) => StepSubTypeVal (ty1, ty2)
+         | (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepSubTypeNeu sign (ty1, ty2) (blocker1, blocker2)
+         | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepSubTypeNeuExpand sign ty1 blocker
+         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => StepSubTypeNeuExpand sign ty2 blocker
+         | _ => Lcf.rule o SubType.EqType
 
       fun StepSynth sign m =
         case Syn.out m of
@@ -784,19 +704,6 @@ struct
          | Syn.PUSHOUT_REC _ => Lcf.rule o Pushout.SynthElim
          | Syn.CUST => Lcf.rule o Custom.Synth sign
          | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
-
-      fun StepSubUniverseNeuExpand sign u =
-        fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverseNeuExpand", TermPrinter.ppTerm u)
-
-      fun StepSubUniverse sign u =
-        case (Syn.out u, canonicity sign u) of
-           (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, Machine.CANONICAL) => Lcf.rule o Universe.SubUniverse
-         | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
-         | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 
       fun StepMatch sign u =
         case canonicity sign u of
@@ -813,11 +720,10 @@ struct
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
 
       fun StepJdg sign = matchGoal
-        (fn _ >> AJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
-          | _ >> AJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
-          | _ >> AJ.TRUE (ty, _, _) => StepTrue sign ty
-          | _ >> AJ.SYNTH (m, _, _) => StepSynth sign m
-          | _ >> AJ.SUB_UNIVERSE (univ, _, _) => StepSubUniverse sign univ
+        (fn _ >> AJ.EQ params => StepEq sign params
+          | _ >> AJ.TRUE (ty, _) => StepTrue sign ty
+          | _ >> AJ.SUB_TYPE (tys, _) => StepSubType sign tys
+          | _ >> AJ.SYNTH (m, _) => StepSynth sign m
           | MATCH (_, _, m, _) => StepMatch sign m
           | MATCH_RECORD (_, m, _) => StepMatchRecord sign m
           | _ >> jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoStep", AJ.pretty jdg))
@@ -835,28 +741,21 @@ struct
                 H
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
 
-      val EqTypeFromHyp = FromHypDelegate
-        (fn (z, AJ.EQ_TYPE _) => Lcf.rule o TypeEquality.FromEqType z
-          | (z, AJ.EQ _) =>
-              Lcf.rule o TypeEquality.FromEq z
-                orelse_
-              Lcf.rule o Universe.EqTypeFromEq z
-          | (z, AJ.TRUE _) =>
-              Lcf.rule o TypeEquality.FromTrue z
-                orelse_
-              Lcf.rule o InternalizedEquality.TypeFromTrueEqAtType z
-                orelse_
-              Lcf.rule o Universe.EqTypeFromTrueEqType z
-          | (z, _)  => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
-
       val EqFromHyp = FromHypDelegate
-        (fn (z, AJ.EQ _) => Lcf.rule o Equality.FromEq z
-          | (z, AJ.TRUE _) => Lcf.rule o InternalizedEquality.EqFromTrueEq z
+        (fn (z, AJ.EQ _) =>
+              Lcf.rule o Equality.NondetFromEq z
+                orelse_
+              Lcf.rule o Universe.NondetMemFromEqAtType z
+          | (z, AJ.TRUE _) =>
+              Lcf.rule o Universe.NondetMemFromTrueAtType z
+                orelse_
+              Lcf.rule o Universe.NondetMemFromTrueEqAtType z
+                orelse_
+              Lcf.rule o InternalizedEquality.NondetEqFromTrueEq z
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
       val StepJdgFromHyp = matchGoal
-        (fn _ >> AJ.EQ_TYPE _ => EqTypeFromHyp
-          | _ >> AJ.EQ _ => EqFromHyp
+        (fn _ >> AJ.EQ _ => EqFromHyp
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
     in
       fun AutoStep sign =
@@ -880,22 +779,17 @@ struct
          | Syn.LINE _ => Lcf.rule o Line.Elim z
          | Syn.PUSHOUT _ => Lcf.rule o Pushout.Elim z
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.Elim z
-         | Syn.UNIVERSE _ => Universe.Elim z
          | _ => fail @@ E.GENERIC [Fpp.text "elim tactic", TermPrinter.ppTerm ty]
     in
       val Elim = NormalizeHypDelegate ElimBasis
     end
 
-    fun RewriteHyp _ sel z = matchHyp z
-      (fn AJ.EQ _ => Lcf.rule o Equality.RewriteTrueByEq sel z
-        | AJ.TRUE _ => Lcf.rule o InternalizedEquality.RewriteTrueByTrue sel z
-        | jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "rewrite-hyp tactic", AJ.pretty jdg))
+    fun RewriteHyp _ = Equality.RewriteTrueByEq
 
     fun Rewrite _ = InternalizedEquality.RewriteTrue
 
     val Symmetry : tactic = matchGoal
-      (fn _ >> AJ.EQ_TYPE _ => Lcf.rule o TypeEquality.Symmetry
-        | _ >> AJ.EQ _ => Lcf.rule o Equality.Symmetry
+      (fn _ >> AJ.EQ _ => Lcf.rule o Equality.Symmetry
         | _ >> AJ.TRUE _ => Lcf.rule o InternalizedEquality.Symmetry
         | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "internalize tactic", Seq.pretty seq))
 
