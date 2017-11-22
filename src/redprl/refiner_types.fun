@@ -1198,12 +1198,12 @@ struct
         (* note: m0 and m1 are already well-typed *)
         val m0 = substVar (Syn.into Syn.DIM0, v) mhole
         val m1 = substVar (Syn.into Syn.DIM1, v) mhole
-        val goalCoh0 = makeEqIfDifferent H ((m0, p0), (a0, l))
-        val goalCoh1 = makeEqIfDifferent H ((m1, p1), (a1, l))
+        val goalCoh0 = makeEq H ((m0, p0), (a0, l))
+        val goalCoh1 = makeEq H ((m1, p1), (a1, l))
 
         val abstr = Syn.into @@ Syn.ABS (v, mhole)
       in
-        |>: mainGoal >:? goalCoh0 >:? goalCoh1 #> (H, abstr)
+        |>: mainGoal >: goalCoh0 >: goalCoh1 #> (H, abstr)
       end
 
     fun Eta _ jdg =
@@ -2156,7 +2156,7 @@ struct
 
         val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) H (a, l)
         val (goalN, holeN) = makeTrue H (b, l)
-        val goalCoh = Restriction.makeEqIfDifferent [eq] H
+        val goalCoh = Restriction.makeEq [eq] H
           ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), (b, l))
         val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, l))
       in
