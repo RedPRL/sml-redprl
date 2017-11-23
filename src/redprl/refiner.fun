@@ -377,6 +377,7 @@ struct
      | "hcom/eq/tube" => Lcf.rule o HCom.EqTubeL
      | "coe/eq" => Lcf.rule o Coe.Eq
      | "coe/eq/cap" => Lcf.rule o Coe.EqCapL
+     | "subtype/eq" => Lcf.rule o SubType.EqType
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
@@ -629,34 +630,45 @@ struct
          | (_, Syn.COE _) => Coe.AutoEqR
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqKanStructural", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
 
-      (* This is really ugly; feel free to refactor, sorry. Wish we had 'backtracking case statements' in SML. *)
-      fun StepEqAux sign ((m, n), (ty, l)) kont =
-        case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
-           (_, Machine.REDEX, _, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, _, _, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign ((m, n), (ty, l))
-         | (Syn.DIM_APP (_, r), _, _, _) =>
-           (case Abt.out r of 
-              `_ => kont
-             | _ => Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp)
-         | (_, _, Syn.DIM_APP (_, r), _) =>
-           (case Abt.out r of 
-              `_ => kont
-             | _ => CatJdgSymmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp))
-         | _ => kont
+      fun StepReduceAux sign (m, n) canons tac =
+        case canons of
+           (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+         | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+         | (Machine.CANONICAL, Machine.CANONICAL) => tac
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepReduceAux",
+            Fpp.hvsep @@ TermPrinter.ppList TermPrinter.ppTerm (Fpp.text "and") [m, n])
+
+      fun StepEqDimAppConst sign (m, n) =
+        let
+          val fail = fn l => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqDimAppConst",
+            Fpp.hvsep @@ TermPrinter.ppList TermPrinter.ppTerm (Fpp.text "or") l)
+        in
+          case (Syn.out m, Syn.out n) of
+             (Syn.DIM_APP (_, r), _) =>
+             (case Abt.out r of
+                `_ => fail [m]
+               | _ => Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp)
+           | (_, Syn.DIM_APP (_, r)) =>
+             (case Abt.out r of
+                `_ => fail [n]
+               | _ => CatJdgSymmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp))
+           | _ => fail [m, n]
+        end
 
       fun StepEq sign ((m, n), (ty, l)) =
-        (* XXX something is missing here!
-         * the handling of hcom/coe and `(@ x 1)` in `ty` should be here,
-         * between the above and the next lines. *)
         StepEqKanStruct sign (m, n)
           orelse_
-        StepEqAux sign ((m, n), (ty, l))
-          (case (canonicity sign m, canonicity sign n) of
+        let val canons = (canonicity sign m, canonicity sign n) in
+          StepReduceAux sign (m, n) canons (StepEqVal sign ((m, n), (ty, l)))
+            orelse_
+          StepEqDimAppConst sign (m, n)
+            orelse_
+          (case canons of
              (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
            | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
            | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
            | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", AJ.pretty @@ AJ.EQ ((m, n), (ty, l))))
+        end
 
       fun StepTrue sign ty =
         case Syn.out ty of
@@ -665,7 +677,7 @@ struct
          | Syn.UNIVERSE _ => Lcf.rule o Universe.True
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepTrue", TermPrinter.ppTerm ty)
 
-      fun StepSubTypeVal (ty1, ty2) =
+      fun StepSubTypeVal sign (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule o Universe.SubType
          | _ => Lcf.rule o SubType.EqType
@@ -673,7 +685,7 @@ struct
       fun StepSubTypeNeu sign tms blockers =
         StepNeuByElim sign tms blockers
           orelse_
-        ((Lcf.rule o SubType.EqType) then_ StepEqNeuByStruct sign tms)
+        (Lcf.rule o SubType.EqType then_ StepEqNeuByStruct sign tms)
           orelse_
         StepNeuByUnfold sign tms blockers
 
@@ -684,14 +696,19 @@ struct
          | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
 
       fun StepSubType sign (ty1, ty2) =
-        case (canonicity sign ty1, canonicity sign ty2) of
-           (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (Machine.CANONICAL, Machine.CANONICAL) => StepSubTypeVal (ty1, ty2)
-         | (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepSubTypeNeu sign (ty1, ty2) (blocker1, blocker2)
-         | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepSubTypeNeuExpand sign ty1 blocker
-         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => StepSubTypeNeuExpand sign ty2 blocker
-         | _ => Lcf.rule o SubType.EqType
+        (Lcf.rule o SubType.EqType then_ StepEqKanStruct sign (ty1, ty2))
+          orelse_
+        let val canons = (canonicity sign ty1, canonicity sign ty2) in
+          StepReduceAux sign (ty1, ty2) canons (StepSubTypeVal sign (ty1, ty2))
+            orelse_
+          (Lcf.rule o SubType.EqType then_ StepEqDimAppConst sign (ty1, ty2))
+            orelse_
+          (case canons of
+             (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepSubTypeNeu sign (ty1, ty2) (blocker1, blocker2)
+           | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepSubTypeNeuExpand sign ty1 blocker
+           | (Machine.CANONICAL, Machine.NEUTRAL blocker) => StepSubTypeNeuExpand sign ty1 blocker
+           | _ => Lcf.rule o SubType.EqType)
+        end
 
       fun StepSynth sign m =
         case Syn.out m of

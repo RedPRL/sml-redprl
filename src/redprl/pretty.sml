@@ -38,6 +38,7 @@ sig
   val ppOperator : RedPrlAbt.operator -> Fpp.doc
   val ppKind : RedPrlKind.kind -> Fpp.doc
   val ppLabel : string -> Fpp.doc
+  val ppList : ('a -> Fpp.doc) -> Fpp.doc -> 'a list -> Fpp.doc list
 end =
 struct
   structure Abt = RedPrlAbt
@@ -88,11 +89,12 @@ struct
 
   val ppLabel = text
 
-  fun intersperse s xs =
-    case xs of
-       [] => []
+  fun intersperse s =
+    fn [] => []
      | [x] => [x]
      | x::xs => seq [x, s] :: intersperse s xs
+
+  fun ppList p sep = intersperse sep o List.map p
 
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
@@ -324,7 +326,7 @@ struct
   and varSorts taus =
     unlessEmpty taus @@
       Atomic.squares @@
-        hsep @@ intersperse Atomic.comma @@ List.map ppSort taus
+        hsep @@ ppList ppSort Atomic.comma taus
 
   val toString =
     FppRenderPlainText.toString
