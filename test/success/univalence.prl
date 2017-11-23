@@ -62,12 +62,10 @@ Thm PathToEquiv(#l:lvl) at (++ #l) : [
    (Equiv ty/a ty/b))
 ] by [
   lam ty/a ty/b p =>
-  `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a)); reduce; auto;
-     [ auto; auto; ?
-     ]
+  `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a))
 ].
 
-Thm LemPropF(#l:lvl) : [
+Thm LemPropF(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -89,7 +87,7 @@ Thm LemPropF(#l:lvl) : [
     x)
 ].
 
-Thm LemSig(#l:lvl) : [
+Thm LemSig(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -102,7 +100,7 @@ Thm LemSig(#l:lvl) : [
   {`(@ p x), `(@ ($ (LemPropF #l) ty/a ty/b prop/b u1 v1 p u2 v2) x)}
 ].
 
-Thm PropSig(#l:lvl) : [
+Thm PropSig(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -162,9 +160,9 @@ Thm PropIsContr(#l:lvl) at (++ #l) : [
    (IsProp (IsContr ty/a)))
 ] by [
   lam ty/a isContr =>
-    claim contr/a/prop : [(IsProp (IsContr ty/a))] by [
+    claim contr/a/prop : [(IsProp (IsContr ty/a)) at (++ #l)] by [
       let {_,contr} = isContr;
-      claim prop/a : [(IsProp ty/a)] by [
+      claim prop/a : [(IsProp ty/a) at (++ #l)] by [
         lam a a' => abs x =>
           `(hcom 1~>0 ty/a (@ ($ contr a) x)
             [x=0 [_] a]
