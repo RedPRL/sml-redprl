@@ -329,6 +329,7 @@ end
  | RECORD | TIMES | TUPLE | BANG
  | PATH | LINE | ABS | AT_SIGN
  | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
+ | MEM
  | BOX | CAP
  | V | VIN | VPROJ
  | UNIVERSE
@@ -738,6 +739,9 @@ rawTermAndTac
   (* paths *)
   | LPAREN ABS LSQUARE boundVars RSQUARE term RPAREN (Multi.makeAbs boundVars term)
   | LPAREN AT_SIGN term dimensions RPAREN (Multi.makeDimApp term dimensions)
+
+  (* Abbreviation for membership *)
+  | LPAREN MEM term term RPAREN (Ast.$$ (O.EQUALITY, [Ast.\ ([], term1), Ast.\ ([], term2), Ast.\ ([], term2)]))
 
   (* levels *)
   | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ ([], level)]))
