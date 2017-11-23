@@ -12,8 +12,8 @@ Def IsSet (#C) = [(-> [c c' : #C] (IsProp (path [_] #C c c')))].
 
 Def Retract (#A,#f,#g) = [(-> [a : #A] (path [_] #A ($ #g ($ #f a)) a))].
 
-Thm IdEquiv(#l:lvl) at (++ #l) : [
-  (-> [ty : (U #l hcom)] (Equiv ty ty))
+Thm IdEquiv(#ll:lvl) at (++ #ll) : [
+  (-> [ty : (U #ll hcom)] (Equiv ty ty))
 ] by [
   lam ty =>
   {lam a => use a,
@@ -114,7 +114,7 @@ Thm PropSig(#l:lvl) at (++ #l) : [
   `($ (LemSig #l) ty/a ty/b prop/b u v ($ prop/a (!proj1 u) (!proj1 v)))
 ].
 
-Thm PropPi(#l:lvl) : [
+Thm PropPi(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -127,7 +127,7 @@ Thm PropPi(#l:lvl) : [
   abs x => lam a => `(@ ($ prop/b a ($ f a) ($ g a)) x)
 ].
 
-Thm LemProp(#l:lvl) : [
+Thm LemProp(#l:lvl) at (++ #l) : [
  (->
   [ty/a : (U #l kan)]
   [prop/a : (IsProp ty/a)]
@@ -139,7 +139,7 @@ Thm LemProp(#l:lvl) : [
   {`a , lam a' => `($ prop/a a' a)}
 ].
 
-Thm PropSet(#l:lvl) : [
+Thm PropSet(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l kan)]
    [prop : (IsProp ty)]
@@ -185,7 +185,7 @@ Thm PropIsContr(#l:lvl) at (++ #l) : [
     `($ contr/a/prop isContr)
 ].
 
-Thm PropIsEquiv(#l:lvl) : [
+Thm PropIsEquiv(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [f : (-> ty/a ty/b)]
@@ -197,7 +197,7 @@ Thm PropIsEquiv(#l:lvl) : [
   `(@ ($ (PropIsContr #l) (Fiber ty/a ty/b f b) ($ e0 b) ($ e1 b)) x)
 ].
 
-Thm EquivLemma(#l:lvl) : [
+Thm EquivLemma(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [e1 e2 : (Equiv ty/a ty/b)]
@@ -212,7 +212,7 @@ Thm EquivLemma(#l:lvl) : [
     ($ (PropIsEquiv #l) ty/a ty/b))
 ].
 
-Thm UARet(#l:lvl) : [
+Thm UARet(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    (Retract
@@ -227,7 +227,7 @@ Thm UARet(#l:lvl) : [
     (abs [x] (lam [a] (@ ($ (UABeta #l) ty/a ty/b e (coe 1~>x [_] ty/a a)) x))))
 ].
 
-Thm IsContrPath(#l:lvl) : [
+Thm IsContrPath(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (IsContr (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))))
@@ -237,11 +237,10 @@ Thm IsContrPath(#l:lvl) : [
    lam {ty/b,p} => abs x =>
      {`(hcom 0~>1 (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a]),
       abs y => `(hcom 0~>y (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a])}
-  };
-  auto; (CrushTyEq #l)
+  }
 ].
 
-Thm RetIsContr(#l:lvl) : [
+Thm RetIsContr(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [f : (-> ty/a ty/b)]
@@ -258,7 +257,7 @@ Thm RetIsContr(#l:lvl) : [
         [x=1 [_] ($ g b)])}
 ].
 
-Thm SigEquivToPath(#l:lvl) : [
+Thm SigEquivToPath(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
@@ -268,7 +267,7 @@ Thm SigEquivToPath(#l:lvl) : [
   {use ty/b, abs x => `(V x ty/a ty/b equiv)}
 ].
 
-Thm SigPathToEquiv(#l:lvl) : [
+Thm SigPathToEquiv(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
@@ -278,7 +277,7 @@ Thm SigPathToEquiv(#l:lvl) : [
   {use ty/b, `($ (PathToEquiv #l) ty/a ty/b p)}
 ].
 
-Thm UARetSig(#l:lvl) : [
+Thm UARetSig(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (Retract
@@ -298,7 +297,7 @@ Thm UARetSig(#l:lvl) : [
 // https://groups.google.com/forum/#!msg/homotopytypetheory/HfCB_b-PNEU/Ibb48LvUMeUJ
 // See also Theorem 5.8.4 of the HoTT Book.
 
-Thm Univalence(#l:lvl) : [
+Thm Univalence(#l:lvl) at (+ #l 2) : [
   (->
    [ty/a : (U #l kan)]
    (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))

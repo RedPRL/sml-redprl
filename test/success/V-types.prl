@@ -44,12 +44,12 @@ Def IdV(#i:dim, #l:lvl, #ty) = [
   (V #i #ty #ty ($ (IdEquiv #l) #ty))
 ].
 
-Thm IdV/Wf(#i:dim, #l:lvl) : [
+Thm IdV/Wf(#i:dim, #l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    (Member (IdV #i #l ty) (U #l)))
 ] by [
-  lam ty => `ax
+  lam ty => `ax; unfold Member; refine eq/eq/ax; auto; ?
 ].
 
 Thm IdV/Test0(#i:dim, #l:lvl) : [

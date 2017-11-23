@@ -53,7 +53,7 @@ Thm IsPropIsProp(#l:lvl) at (++ #l) : [
   unfold PropSet; auto
 ].
 
-Thm IsPropIsProp'(#l:lvl) : [
+Thm IsPropIsProp'(#l:lvl) at (++ #l) : [
   (->
    [tyA : (U #l kan)]
    (IsProp (IsProp tyA))
