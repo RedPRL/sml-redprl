@@ -22,4 +22,5 @@ sig
 
   val into : level -> term
   val out : term -> level
+  val map : (term -> term) -> level -> level
 end
