@@ -169,8 +169,10 @@ struct
             (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
             Metavar.Ctx.empty (metas, args)
         val specTy' = substMetaenv rho specTy
-        val _ = if Hyps.isEmpty H' then () else raise Fail "Equality.Custom only works with empty sequent"
-
+        val specL' = L.map (substMetaenv rho) specL
+        val _ = if Hyps.isEmpty H' then () else
+          E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
+        
         val goalTy = makeSubType H (specTy', specL, specK) (ty, l, k)
       in
         |>:? goalTy #> (H, trivial)
@@ -183,7 +185,7 @@ struct
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out tm
 
-        val {spec = H' >> AJ.TRUE (ty, l', k'), state, ...} = Sig.lookup sign name
+        val {spec = H' >> AJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val mrho =
@@ -192,13 +194,14 @@ struct
             Metavar.Ctx.empty
             (metas, args)
 
+        val specTy' = substMetaenv mrho specTy
+        val specL' = L.map (substMetaenv mrho) specL
+        val _ = if Hyps.isEmpty H' then () else
+          E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
 
-        val ty' = substMetaenv mrho ty
-        val _ = if Hyps.isEmpty H' then () else raise Fail "Synth.Custom only works with empty sequent"
-
-        val goalKind = makeTypeUnlessSubUniv H (ty', l, k) (l', k')
+        val goalKind = makeTypeUnlessSubUniv H (specTy', l, k) (specL', specK)
       in
-        |>:? goalKind #> (H, ty')
+        |>:? goalKind #> (H, specTy')
       end
   end
 end
