@@ -44,15 +44,15 @@ Def IdV(#i:dim, #l:lvl, #ty) = [
   (V #i #ty #ty ($ (IdEquiv #l) #ty))
 ].
 
-Thm IdV/Wf(#i:dim, #l:lvl) at (++ #l) : [
+Thm IdV/Wf(#i:dim, #l:lvl) at (+ #l 2) : [
   (->
    [ty : (U #l hcom)]
-   (Member (IdV #i #l ty) (U #l)))
+   (Member (IdV #i #l ty) (U (++ #l))))
 ] by [
-  lam ty => `ax; unfold Member; refine eq/eq/ax; auto; ?
+  lam ty => `ax
 ].
 
-Thm IdV/Test0(#i:dim, #l:lvl) : [
+Thm IdV/Test0(#i:dim, #l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a : ty]
@@ -61,7 +61,7 @@ Thm IdV/Test0(#i:dim, #l:lvl) : [
   lam ty a => `ax
 ].
 
-Thm IdV/Test1(#l:lvl) : [
+Thm IdV/Test1(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a : ty]
@@ -70,7 +70,7 @@ Thm IdV/Test1(#l:lvl) : [
   lam ty a => auto
 ].
 
-Thm IdV/Test2(#l:lvl) : [
+Thm IdV/Test2(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -132,7 +132,7 @@ Thm NotEquiv : [
 
 Def NotV(#i:dim) = [(V #i bool bool NotEquiv)].
 
-Thm NotV/Wf(#i:dim) : [
+Thm NotV/Wf(#i:dim) at 1 : [
   (Member (NotV #i) (U 0 kan))
 ] by [
   `ax
