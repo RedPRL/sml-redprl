@@ -1801,6 +1801,7 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
         val H >> catjdg = jdg
 
+
         val (currentTy, l) =
           case Selector.lookup sel (H, catjdg) of
              AJ.TRUE params => params
@@ -1821,13 +1822,19 @@ struct
         val motiven = substVar (holeN, x) motiveHole
         val motivem = substVar (holeM, x) motiveHole
 
-        val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
+        fun replace jdg = 
+          case jdg of 
+             AJ.TRUE (_, l) => AJ.TRUE (motiven, l)
+           | _ => jdg
+
+        val (H', catjdg') = Selector.map sel replace (H, catjdg)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> catjdg'
 
         val motiveMatchesMainGoal =
           case sel of
             O.IN_CONCL => makeSubType truncatedH ((motivem, currentTy), l)
           | O.IN_HYP _ => makeSubType truncatedH ((currentTy, motivem), l)
+
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
          >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal

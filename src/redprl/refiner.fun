@@ -245,7 +245,12 @@ struct
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
 
-        val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
+        fun replace jdg = 
+          case jdg of 
+             AJ.TRUE (_, l) => AJ.TRUE (motiven, l)
+           | _ => jdg
+
+        val (H', catjdg') = Selector.map sel replace (H, catjdg)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> catjdg'
 
         val motiveMatchesMainGoal =
