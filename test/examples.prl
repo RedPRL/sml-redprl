@@ -49,7 +49,7 @@ Thm FunElimTest : [
 
 Thm S1ElimTest : [ (-> S1 S1) ] by [
   lam s =>
-    case s of 
+    case s of
        base => `base
      | loop x => `(loop x)
 ].
@@ -62,7 +62,7 @@ Tac Try(#t : tac) = [
 // what is being done.
 Tac TryStep = [
   // We can call our Try tactical. But tactics are parsed with a different grammar than terms,
-  // so to avoid ambiguity, when we need to provide a tactic expression as an argument to 
+  // so to avoid ambiguity, when we need to provide a tactic expression as an argument to
   // an operator, we wrap it in (tactic ....).
   (Try #tac{auto-step})
 ].
@@ -192,7 +192,7 @@ Print FunExt.
 Tac FunExtTac(#l : lvl) = [
   query gl <- concl;
   match gl {
-    [a b f g k | #jdg{(path [_] (-> %a %b) %f %g) at #l} =>
+    [a b f g k l | #jdg{(path [_] (-> %a %b) %f %g) at %l} =>
       use (FunExt #l) [`%a, `%b, `%f, `%g, id]
     ]
   }
@@ -200,7 +200,12 @@ Tac FunExtTac(#l : lvl) = [
 
 Print FunExtTac.
 
-Thm NotNotPath : [(path [_] (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
+Tac Debug(#e:exp) = [
+  query t <- #e;
+  print t
+].
+
+Thm NotNotPath : [(path [_] (-> wbool wbool) (Cmp Not Not) (lam [x] x)) at 1] by [
   (FunExtTac #lvl{0});
   (lam x => if x then abs _ => `tt else abs _ => `ff);
   auto
@@ -224,10 +229,10 @@ Thm PathEta(#l:lvl) : [
    [m n : a]
    (path [_] a m n)
    (path [_] a m n))
+  at (++ #l)
 ] by [
   lam a m n p => abs j => use p [`j]
 ].
 
 Print PathEta.
-
 Print PathElimTest.
