@@ -23,16 +23,15 @@ struct
     | plus (NONE, i) = E.raiseError
       (E.INVALID_LEVEL (Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
         [Fpp.text "+", Fpp.text "omega", Fpp.text (IntInf.toString i)]))))
-  fun max ls =
-    let
-      fun f (NONE, _) = NONE
-        | f (_, NONE) = NONE
-        | f (SOME (gap0, gapmap0), SOME (gap1, gapmap1)) =
-          SOME (IntInf.max (gap0, gap1),
-           D.union gapmap0 gapmap1 (fn (_, g0, g1) => IntInf.max (g0, g1)))
-    in
-      List.foldl f zero ls
-    end
+  fun succ l = plus (l, 1)    
+  val join =
+    fn (NONE, _) => NONE
+     | (_, NONE) => NONE
+     | (SOME (gap0, gapmap0), SOME (gap1, gapmap1)) =>
+        SOME (IntInf.max (gap0, gap1),
+         D.union gapmap0 gapmap1 (fn (_, g0, g1) => IntInf.max (g0, g1)))
+  val max = List.foldl join zero
+
   val omega = NONE
 
   fun allBound f ((gap0, gapmap0), (gap1, gapmap1)) =
