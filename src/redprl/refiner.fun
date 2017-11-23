@@ -280,7 +280,7 @@ struct
       val H_spec >> specjdg = spec
       val _ = 
         if Hyps.isEmpty H_spec then () else 
-          raise E.error [Fpp.text "Lemmas must have a atomic judgment as a conclusion"]
+          raise E.error [Fpp.text "Lemmas must have an atomic judgment as a conclusion"]
 
       val lemmaExtract' =
         let
