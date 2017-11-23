@@ -24,7 +24,7 @@ struct
 
   datatype src_decl =
       DEF of {arguments : string arguments, sort : sort, definiens : ast}
-    | THM of {arguments : string arguments, goal : src_catjdg, script : ast}
+    | THM of {arguments : string arguments, goal : ast, level : ast option, script : ast}
     | TAC of {arguments : string arguments, script : ast}
 
   datatype 'opid cmd =

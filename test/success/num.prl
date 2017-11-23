@@ -1,17 +1,17 @@
 Thm One : [
-  1 in int
+  (mem int 1)
 ] by [
   auto
 ].
 
 Thm NegOne : [
-  -1 in int
+  (mem int -1)
 ] by [
   auto
 ].
 
 Thm NatOne : [
-  1 in nat
+  (mem nat 1)
 ] by [
   auto
 ].
@@ -35,7 +35,7 @@ Thm Pred : [
 Tac SimpleNatRecEq = [
   query gl <- concl;
   match gl {
-    [n z s ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
+    [n z s ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty at 0} =>
       refine nat/eq/nat-rec; [`%ty]; auto]
   }
 ].
@@ -53,7 +53,7 @@ Thm Plus : [
 ].
 
 Thm Plus/wf : [
-  Plus in (-> nat nat nat)
+  (mem (-> nat nat nat) Plus)
 ] by [
   auto
 ].
@@ -70,7 +70,7 @@ Thm Plus/zero/R : [
   lam n =>
     fresh n' ind -> elim n;
     [ `ax
-    , fresh x -> rewrite-hyp ind;
+    , fresh x -> rewrite ind;
       [ `(= nat (succ x) (succ n'))
       , auto
       , auto
@@ -95,7 +95,7 @@ Thm Plus/succ/R : [
       [ `(= nat x (succ ($ Plus (succ n') m)))
       , fresh x -> rewrite ($ Plus/succ/L n' m);
         [ `(= nat (succ ($ Plus n' (succ m))) (succ x))
-        , fresh x -> rewrite-hyp n'/ih;
+        , fresh x -> rewrite n'/ih;
           [ `(= nat (succ x) (succ (succ ($ Plus n' m))))
           , auto
           ]
@@ -114,7 +114,7 @@ Thm Plus/test0 : [
     [ `(= nat x m) ]; auto
 ].
 
-Thm Eq/sym : [
+Thm Eq/sym at 1 : [
   (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
 ] by [
   lam ty a b eq => symmetry; auto
@@ -127,7 +127,7 @@ Thm Plus/comm : [
     [ symmetry; `($ Plus/zero/R  m)
     , fresh x -> rewrite ($ Plus/succ/L n' m);
       [ `(= nat x ($ Plus m (succ n')))
-      , fresh x -> rewrite-hyp n'/ih;
+      , fresh x -> rewrite n'/ih;
         [ `(= nat (succ x) ($ Plus m (succ n')))
         , symmetry; `($ Plus/succ/R m n')
         ]
@@ -182,13 +182,13 @@ Thm IntPlus : [
 ].
 
 Thm Int4Plus3 : [
-  ($ IntPlus 4 3) = 7 in int
+  (= int ($ IntPlus 4 3) 7)
 ] by [ auto ].
 
 Thm Int-6Plus10 : [
-  ($ IntPlus -6 10) = 4 in int
+  (= int ($ IntPlus -6 10) 4)
 ] by [ auto ].
 
 Thm Int-1Plus-9 : [
-  ($ IntPlus -1 -9) = -10 in int
+  (= int ($ IntPlus -1 -9) -10)
 ] by [ auto ].

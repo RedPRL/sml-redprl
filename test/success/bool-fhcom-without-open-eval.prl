@@ -39,7 +39,7 @@ Thm Tube : [
 ].
 
 Thm TrueByEvaluation : [
-  (fcom 0~>0 tt) in wbool
+  (mem wbool (fcom 0~>0 tt))
 ] by [
   auto
 ].

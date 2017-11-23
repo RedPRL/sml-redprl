@@ -109,7 +109,7 @@ Thm PathTest2 : [
     (lam b =>
       // for our b:wbool, we will construct a path between b and
       // (BoolEta b).
-      claim p : [(path [_] wbool b (BoolEta b))] by [
+      claim p : [(path [_] wbool b (BoolEta b)) at 0] by [
         if b then abs y => `tt else abs y => `ff
       ];
 
@@ -168,7 +168,7 @@ Thm SNot : [(-> bool bool)] by [
   lam b => if b then `ff else `tt
 ].
 
-Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by [
+Thm StrictBoolTest : [ (= (-> bool bool) SNot (Cmp SNot (Cmp SNot SNot))) ] by [
   auto
 ].
 
@@ -176,7 +176,7 @@ Thm Not : [(-> [_ : wbool] wbool)] by [
   (lam x => if x then `ff else `tt); auto
 ].
 
-Thm FunExt(#l:lvl) : [
+Thm FunExt(#l:lvl) at (++ #l) : [
   (->
    [a b : (U #l)]
    [f g : (-> a b)]
@@ -192,7 +192,7 @@ Print FunExt.
 Tac FunExtTac(#l : lvl) = [
   query gl <- concl;
   match gl {
-    [a b f g k | #jdg{(path [_] (-> %a %b) %f %g) true with %[k:knd]} =>
+    [a b f g k | #jdg{(path [_] (-> %a %b) %f %g) at #l} =>
       use (FunExt #l) [`%a, `%b, `%f, `%g, id]
     ]
   }

@@ -12,22 +12,7 @@ Def IsSet (#C) = [(-> [c c' : #C] (IsProp (path [_] #C c c')))].
 
 Def Retract (#A,#f,#g) = [(-> [a : #A] (path [_] #A ($ #g ($ #f a)) a))].
 
-Tac ReflectUniv(#l:lvl, #k:knd, #t:tac) = [
-  query goal <- concl;
-  match goal {
-    [a b k l | #jdg{%a = %b type at %l with %[k:knd]} =>
-      claim aux : [%a = %b in (U #l #k)] by [#t]; auto
-    ]
-  }
-].
-
-Tac CrushTyEq(#l:lvl) = [
-  auto;
-  (ReflectUniv #l kan #tac{auto});
-  (ReflectUniv #l kan #tac{refine path/eq/app; auto})
-].
-
-Thm IdEquiv(#l:lvl) : [
+Thm IdEquiv(#l:lvl) at (++ #l) : [
   (-> [ty : (U #l hcom)] (Equiv ty ty))
 ] by [
   lam ty =>
@@ -41,7 +26,7 @@ Thm IdEquiv(#l:lvl) : [
   }
 ].
 
-Thm UA(#l:lvl) : [
+Thm UA(#l:lvl) at (++ #l) : [
   (-> [ty/a ty/b : (U #l kan)]
       [e : (Equiv ty/a ty/b)]
       (path [_] (U #l kan) ty/a ty/b))
@@ -50,7 +35,7 @@ Thm UA(#l:lvl) : [
     abs x => `(V x ty/a ty/b e)
 ].
 
-Thm UABeta(#l:lvl) : [
+Thm UABeta(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [e : (Equiv ty/a ty/b)]
@@ -66,15 +51,16 @@ Thm UABeta(#l:lvl) : [
 
 // coe{0~>1} is an equivalence
 
-Thm PathToEquiv(#l:lvl) : [
+Thm PathToEquiv(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [p : (path [_] (U #l kan) ty/a ty/b)]
    (Equiv ty/a ty/b))
 ] by [
   lam ty/a ty/b p =>
-  `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a));
-  (CrushTyEq #l)
+  `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a)); reduce; auto;
+     [ auto; auto; ?
+     ]
 ].
 
 // Thm PathToEquivDirect(#l:lvl) : [
@@ -188,15 +174,15 @@ Thm PropSet(#l:lvl) : [
      [x=1 [z] (@ ($ prop a (@ q y)) z)])
 ].
 
-Thm PropIsContr(#l:lvl) : [
+Thm PropIsContr(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (IsProp (IsContr ty/a)))
 ] by [
   lam ty/a =>
-  claim fun : [(-> (IsContr ty/a) (IsProp (IsContr ty/a)))] by [
+  claim fun : [(-> (IsContr ty/a) (IsProp (IsContr ty/a))) at #l] by [
     lam {_,contr} =>
-    claim prop/a : [(IsProp ty/a)] by [
+    claim prop/a : [(IsProp ty/a) at #l] by [
       (lam a a' => abs x =>
        `(hcom 1~>0 ty/a (@ ($ contr a) x)
          [x=0 [_] a]

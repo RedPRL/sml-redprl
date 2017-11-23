@@ -59,6 +59,8 @@ whitespace = [\ \t];
 ";"                => (Tokens.SEMI (posTuple (size yytext)));
 "#"                => (Tokens.HASH (posTuple (size yytext)));
 "="                => (Tokens.EQUALS (posTuple (size yytext)));
+"mem"              => (Tokens.MEM (posTuple (size yytext)));
+"ni"               => (Tokens.MEM (posTuple (size yytext)));
 "->"               => (Tokens.RIGHT_ARROW (posTuple (size yytext)));
 "<-"               => (Tokens.LEFT_ARROW (posTuple (size yytext)));
 "~>"               => (Tokens.SQUIGGLE_RIGHT_ARROW (posTuple (size yytext)));
@@ -140,7 +142,6 @@ whitespace = [\ \t];
 "knd"              => (Tokens.KND (posTuple (size yytext)));
 
 "lmax"             => (Tokens.LMAX (posTuple (size yytext)));
-"omega"            => (Tokens.LOMEGA (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));

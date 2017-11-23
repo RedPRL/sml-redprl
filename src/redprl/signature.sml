@@ -180,12 +180,13 @@ struct
            DEF {arguments = arguments,
                 sort = sort,
                 definiens = processTerm sign (metasFromArgs arguments) StringListDict.empty definiens}
-         | THM {arguments, goal, script} =>
+         | THM {arguments, goal, level, script} =>
            let
              val metactx = metasFromArgs arguments
            in
              THM {arguments = arguments,
                   goal = processTerm sign metactx StringListDict.empty goal,
+                  level = Option.map (processTerm sign metactx StringListDict.empty) level,
                   script = processTerm sign metactx StringListDict.empty script}
            end
          | TAC {arguments, script} =>
@@ -376,14 +377,26 @@ struct
             E.warn (pos, Fpp.text (Int.toString (subgoalsCount) ^ " Remaining Obligations"))
               *> E.ret state
         end
+
+      fun elabLevelOpt sign metactx goal =
+        let
+          val env = initialEnv sign
+        in
+          fn NONE => E.ret RedPrlLevel.zero
+             (* XXX should be some algorithm inferring the level from the elaborated goal *)
+           | SOME l => convertToAbt (metactx, Var.Ctx.empty, env) l LVL >>= E.ret o RedPrlLevel.out
+        end
+
     in
-      fun elabThm sign opid pos {arguments, goal, script} =
+      fun elabThm sign opid pos {arguments, goal, level, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val env = initialEnv sign
         in
-          elabSrcCatjdg (metactx, Var.Ctx.empty, env) goal >>= (fn concl =>
-            convertToAbt (metactx, Var.Ctx.empty, env) script TAC >>= 
+          convertToAbt (metactx, Var.Ctx.empty, env) goal EXP >>=
+          (fn goal => elabLevelOpt sign metactx goal level >>=
+          (fn level => let val concl = AJ.TRUE (goal, level) in
+            convertToAbt (metactx, Var.Ctx.empty, env) script TAC >>=
             (fn scriptTm => elabRefine sign globalNameSequence (Hyps.empty >> concl, scriptTm)) >>= 
             checkProofState (pos, []) >>=
             (fn Lcf.|> (subgoals, validation) => 
@@ -397,7 +410,8 @@ struct
                   end
               in
                 E.ret @@ EDEF {sourceOpid = opid, spec = Hyps.empty >> concl, state = state}
-              end))
+              end)
+          end))
         end
       end
 

@@ -1,4 +1,4 @@
-Thm Discrete/reflection(#l:lvl) : [
+Thm Discrete/reflection(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l discrete)]
    [a b : ty]

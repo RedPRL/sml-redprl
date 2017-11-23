@@ -1,4 +1,4 @@
-Thm Hcom/Poly(#l:lvl) : [
+Thm Hcom/Poly(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a b c d : ty]
@@ -16,7 +16,7 @@ Thm Hcom/Poly(#l:lvl) : [
 
 Extract Hcom/Poly.
 
-Thm Hcom/trans(#l:lvl) : [
+Thm Hcom/trans(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a b c : ty]
@@ -33,7 +33,7 @@ Thm Hcom/trans(#l:lvl) : [
 
 Extract Hcom/trans.
 
-Thm Hcom/symm(#l:lvl) : [
+Thm Hcom/symm(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a b : ty]
@@ -50,7 +50,7 @@ Thm Hcom/symm(#l:lvl) : [
 Extract Hcom/symm.
 
 // An example of using the internalized exact equality type.
-Thm Cap(#i:dim, #l:lvl) : [
+Thm Cap(#i:dim, #l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [x : ty]
@@ -63,7 +63,7 @@ Thm Cap(#i:dim, #l:lvl) : [
 
 
 
-Thm Tube(#l:lvl) : [
+Thm Tube(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [x : ty]
@@ -75,7 +75,7 @@ Thm Tube(#l:lvl) : [
 ].
 
 Thm TrueByEvaluation : [
-  (hcom 0~>0 bool tt) in bool
+  (mem bool (hcom 0~>0 bool tt))
 ] by [
   auto
 ].

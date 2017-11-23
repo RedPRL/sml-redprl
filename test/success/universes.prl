@@ -1,15 +1,15 @@
-Thm Univ0(#i:lvl, #j:lvl) : [
-  (U #i) type at (++ (lmax #i #j))
+Thm Univ0(#i:lvl, #j:lvl) at (+ (lmax #i #j) 2) : [
+  (mem (U (++ (lmax #i #j))) (U #i))
 ] by [
   auto
 ].
 
-Thm Univ1(#i:lvl) : [
-  nat in (U #i discrete)
+Thm Univ1(#i:lvl) at (++ #i) : [
+  (mem (U #i discrete) nat)
 ] by [
   auto
 ].
-Thm Monoid(#i:lvl) : [ (U (++ #i)) ] by [
+Thm Monoid(#i:lvl) at (+ #i 2) : [ (U (++ #i)) ] by [
   `(record
     [ob : (U #i)]
     [one : ob]

@@ -1,4 +1,4 @@
-Thm Line/Test0 : [
+Thm Line/Test0 at 1 : [
   (->
    [a : (U 0 kan)]
    [l : (-> dim a)]

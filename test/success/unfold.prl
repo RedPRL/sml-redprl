@@ -12,7 +12,7 @@ Tac Proj2(#z) = [
   use x
 ].
 
-Thm Times/Proj : [
+Thm Times/Proj at 1 : [
   (-> [ty : (U 0)] (Times bool ty) ty)
 ] by [
   lam ty x => (Proj2 x)

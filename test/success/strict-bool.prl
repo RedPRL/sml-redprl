@@ -7,7 +7,7 @@ Def Bool/Not = [
 ].
 
 Thm Bool/Not-Not-Id : [
-  (Cmp Bool/Not Bool/Not) = (lam [x] x) in (-> bool bool)
+  (= (-> bool bool) (Cmp Bool/Not Bool/Not) (lam [x] x))
 ] by [
   auto
 ].

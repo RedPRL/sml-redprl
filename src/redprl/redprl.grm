@@ -272,8 +272,8 @@ end
 structure Jdg = 
 struct
   open Ast infix $$ \
-  fun makeAtLvl theta (lvl, k : ast) es = 
-     theta $$ List.map (fn e => [] \ e) (lvl :: k :: es)
+  fun makeAtLvl theta (lvl : ast) es =
+     theta $$ List.map (fn e => [] \ e) (lvl :: es)
 end
 
 %%
@@ -329,12 +329,13 @@ end
  | RECORD | TIMES | TUPLE | BANG
  | PATH | LINE | ABS | AT_SIGN
  | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
+ | MEM
  | BOX | CAP
  | V | VIN | VPROJ
  | UNIVERSE
  | HCOM | COE | COM
 
- | LMAX | LOMEGA
+ | LMAX
 
  (* parsing "coercions" *)
  | TACTIC
@@ -430,7 +431,7 @@ end
  | terms of ast list
 
  | kind of O.K.kind
- | withKindAtLevel of ast * ast
+ | atLevel of ast
 
  | rawJudgment of ast
  | judgment of ast
@@ -739,11 +740,13 @@ rawTermAndTac
   | LPAREN ABS LSQUARE boundVars RSQUARE term RPAREN (Multi.makeAbs boundVars term)
   | LPAREN AT_SIGN term dimensions RPAREN (Multi.makeDimApp term dimensions)
 
+  (* membership *)
+  | LPAREN MEM term term RPAREN (Ast.$$ (O.EQUALITY, [Ast.\ ([], term1), Ast.\ ([], term2), Ast.\ ([], term2)]))
+
   (* levels *)
   | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ ([], level)]))
   | LPAREN DOUBLE_PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ ([], level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.LMAX, [\ ([], Multi.makeVec O.LVL levels)]))
-  | LOMEGA (Ast.$$ (O.LOMEGA, []))
 
 
 level
@@ -751,7 +754,6 @@ level
   | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ ([], level)]))
   | LPAREN DOUBLE_PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ ([], level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.LMAX, [\ ([], Multi.makeVec O.LVL levels)]))
-  | LOMEGA (Ast.$$ (O.LOMEGA, []))
   | metavar (Ast.$$# (metavar, []))
   | PERCENT VARNAME (Ast.$$ (O.PAT_META O.LVL, [\ ([], ``VARNAME), \ ([], Multi.makeVec O.ANY [])]))
 
@@ -778,21 +780,15 @@ kind
   | COE (O.K.COE)
   | STABLE (O.K.STABLE)
 
-withKindAtLevel
-  : WITH term AT level (level, term)
-  | AT level WITH term (level, term)
-  | WITH term (Ast.$$ (O.LOMEGA, []), term)
-  | AT level (level, Ast.$$ (O.KCONST (O.K.top), []))
-  | (Ast.$$ (O.LOMEGA, []), Ast.$$ (O.KCONST (O.K.top), []))
+atLevel
+  : AT level (level)
 
 rawJudgment
-  : term EQUALS term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term2, term3])
-  | term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term1, term2])
-  | term TRUE withKindAtLevel (Jdg.makeAtLvl O.JDG_TRUE withKindAtLevel [term])
-  | term withKindAtLevel (Jdg.makeAtLvl O.JDG_TRUE withKindAtLevel [term])
-  | term EQUALS term TYPE withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ_TYPE withKindAtLevel [term1, term2])
-  | term TYPE withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ_TYPE withKindAtLevel [term, term])
-  | term SYNTH withKindAtLevel (Jdg.makeAtLvl O.JDG_SYNTH withKindAtLevel [term])
+  : term EQUALS term IN term atLevel (Jdg.makeAtLvl O.JDG_EQ atLevel [term1, term2, term3])
+  | term IN term atLevel (Jdg.makeAtLvl O.JDG_EQ atLevel [term1, term1, term2])
+  | term TRUE atLevel (Jdg.makeAtLvl O.JDG_TRUE atLevel [term])
+  | term atLevel (Jdg.makeAtLvl O.JDG_TRUE atLevel [term])
+  | term SYNTH atLevel (Jdg.makeAtLvl O.JDG_SYNTH atLevel [term])
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
@@ -989,8 +985,12 @@ decl
       (OPNAME, Signature.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
       (OPNAME, Signature.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_catjdg RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.THM {arguments = declArgumentsParens, goal = src_catjdg, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE term RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, goal = term, level = NONE, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  | DCL_THM OPNAME declArgumentsParens AT level COLON LSQUARE term RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, goal = term, level = SOME level, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE term AT level RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, Signature.THM {arguments = declArgumentsParens, goal = term, level = SOME level, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
 
 rawCmd
   : CMD_PRINT OPNAME (Signature.PRINT OPNAME)

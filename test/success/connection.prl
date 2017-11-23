@@ -1,4 +1,4 @@
-Thm Connection(#l:lvl) : [
+Thm Connection(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a b : ty]
@@ -35,7 +35,7 @@ Thm Connection(#l:lvl) : [
 Print Connection.
 Extract Connection.
 
-Thm BetterConnection(#l:lvl) : [
+Thm BetterConnection(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a b : ty]
@@ -67,7 +67,7 @@ Thm BetterConnection(#l:lvl) : [
           [k=1 [l] (@ p l)])])
 ].
 
-Thm BetterConnectionTest0 (#l:lvl) : [
+Thm BetterConnectionTest0 (#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a b : ty]

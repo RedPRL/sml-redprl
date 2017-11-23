@@ -3,7 +3,7 @@ Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
 Def IsProp (#A) = [(-> [a b : #A] (path [_] #A a b))].
 Def IsSet (#A) = [(-> [a b : #A] (IsProp (path [_] #A a b)))].
 
-Thm InhPropIsContr(#l:lvl) : [
+Thm InhPropIsContr(#l:lvl) at (++ #l) : [
  (->
   [ty : (U #l kan)] // can I use pre here?
   [h : (IsProp ty)]
@@ -13,7 +13,7 @@ Thm InhPropIsContr(#l:lvl) : [
   lam ty h a => {use a, lam x => `($ h x a)}
 ].
 
-Thm PropPi(#l:lvl) : [
+Thm PropPi(#l:lvl) at (++ #l) : [
  (->
   [tyA : (U #l kan)]
   [tyB : (-> tyA (U #l kan))]
@@ -23,7 +23,7 @@ Thm PropPi(#l:lvl) : [
   lam tyA tyB h f g => abs i => lam x => `(@ ($ h x ($ f x) ($ g x)) i)
 ].
 
-Thm PropSet(#l:lvl) : [
+Thm PropSet(#l:lvl) at (++ #l) : [
   (->
    [tyA : (U #l kan)]
    [h : (IsProp tyA)]
@@ -39,7 +39,7 @@ Thm PropSet(#l:lvl) : [
 ].
 
 // This proof should be easy, but it is not...
-Thm IsPropIsProp(#l:lvl) : [
+Thm IsPropIsProp(#l:lvl) at (++ #l) : [
   (->
    [tyA : (U #l kan)]
    (IsProp (IsProp tyA))

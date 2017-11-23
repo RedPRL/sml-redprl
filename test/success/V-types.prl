@@ -10,7 +10,7 @@ Def Equiv (#A,#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
 
 Def Id = [(lam [a] a)].
 
-Thm IdIsEquiv(#l:lvl) : [
+Thm IdIsEquiv(#l:lvl) at (++ #l) : [
   (-> [ty : (U #l hcom)] (IsEquiv ty ty Id))
 ] by [
   lam ty a =>
@@ -27,7 +27,7 @@ Thm IdIsEquiv(#l:lvl) : [
   }
 ].
 
-Thm IdEquiv(#l:lvl) : [
+Thm IdEquiv(#l:lvl) at (++ #l) : [
   (-> [ty : (U #l hcom)] (Equiv ty ty))
 ] by [
   lam ty =>
@@ -96,8 +96,8 @@ Thm Bool/reflect : [
 Tac Bool/contra/inverse (#p:exp) = [
   query gl <- concl;
   match gl {
-    [a b | #jdg{%a = %b in bool} =>
-      claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
+    [a b | #jdg{%a = %b in bool at 0} =>
+      claim eq : [(= bool %b %a) at 0] by [use Bool/reflect [`%b, `%a, `#p]; auto];
       symmetry; elim eq; auto
     ]
     [a | %[a:jdg] => id]
