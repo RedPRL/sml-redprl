@@ -120,6 +120,8 @@ struct
        | args => O.LMAX $$ [[] \ makeVec args]
 
     val into = into' constToTerm varGapToTerm maxToTerm
+
+    fun map f = out o f o into
   end
 end
 
