@@ -1848,9 +1848,9 @@ struct
 
     (* (= ty m n) at l >> m = n in ty at l *)
     (* this is for non-deterministic search *)
-    fun EqFromTrueEq z _ jdg =
+    fun NondetEqFromTrueEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "InternalizedEquality.EqFromTrueEq"
+        val _ = RedPrlLog.trace "InternalizedEquality.NondetEqFromTrueEq"
         val H >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
         val AJ.TRUE (ty0', l', _) = Hyps.lookup H z
         val Syn.EQUALITY (ty0, m0, n0) = Syn.out ty0'
@@ -1864,9 +1864,9 @@ struct
 
     (* (= ty m n) at l >> ty = ty at l *)
     (* this is for non-deterministic search *)
-    fun TypeFromTrueEqAtType z _ jdg =
+    fun NondetTypeFromTrueEqAtType z _ jdg =
       let
-        val _ = RedPrlLog.trace "InternalizedEquality.TypeFromTrueEqAtType"
+        val _ = RedPrlLog.trace "InternalizedEquality.NondetTypeFromTrueEqAtType"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val AJ.TRUE (eq, l', _) = Hyps.lookup H z
         val Syn.EQUALITY (ty', _, _) = Syn.out eq
@@ -1891,9 +1891,9 @@ struct
       end
 
     (* (= ty a b) => a synth ~~> ty *)
-    fun SynthFromTrueEq z _ jdg =
+    fun NondetSynthFromTrueEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "InternalizedEquality.SynthFromTrueEq"
+        val _ = RedPrlLog.trace "InternalizedEquality.NondetSynthFromTrueEq"
         val H >> AJ.SYNTH (tm, l, k) = jdg
         val AJ.TRUE (equal, l', _) = Hyps.lookup H z
         val Syn.EQUALITY (ty, a, b) = Syn.out equal
@@ -2350,9 +2350,9 @@ struct
 
     (* ty0 = ty1 in (U l k) >> ty0 = ty1 at l with k *)
     (* this is for non-deterministic search *)
-    fun EqTypeFromEq z _ jdg =
+    fun NondetEqTypeFromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.EqTypeFromEq"
+        val _ = RedPrlLog.trace "Universe.NondetEqTypeFromEq"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val AJ.EQ ((ty0', ty1'), (univ, _, _)) = Hyps.lookup H z
         val Syn.UNIVERSE (l', k') = Syn.out univ
@@ -2366,9 +2366,9 @@ struct
 
     (* (= (U l k) ty0 ty1) >> ty0 = ty1 at l with k *)
     (* this is for non-deterministic search *)
-    fun EqTypeFromTrueEqType z _ jdg =
+    fun NondetEqTypeFromTrueEqType z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.EqTypeFromEq"
+        val _ = RedPrlLog.trace "Universe.NondetEqTypeFromEq"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val AJ.TRUE (eq, _, _) = Hyps.lookup H z
         val Syn.EQUALITY (univ, ty0', ty1') = Syn.out eq
@@ -2382,9 +2382,10 @@ struct
       end
 
     (* ty0 = ty1 at l >> ty ~~> (U l) *)
-    fun SynthFromEqType z _ jdg =
+    (* this is for non-deterministic search *)
+    fun NondetSynthFromEqType z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.SynthFromEqType"
+        val _ = RedPrlLog.trace "Universe.NondetSynthFromEqType"
         val H >> AJ.SYNTH (ty2, l2, k2) = jdg
         val AJ.EQ_TYPE ((ty0, ty1), l0, k0) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((ty0, ty1), ty2)
@@ -2396,9 +2397,10 @@ struct
       end
 
     (* (= ty m n) at l >> ty synth ~~> (U l) *)
-    fun SynthFromTrueEqAtType z _ jdg =
+    (* this is for non-deterministic search *)
+    fun NondetSynthFromTrueEqAtType z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.SynthFromTrueEqAtType"
+        val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueEqAtType"
         val H >> AJ.SYNTH (ty1, l1, k1) = jdg
         val AJ.TRUE (eq, l0, _) = Hyps.lookup H z
         val Syn.EQUALITY (ty0, _, _) = Syn.out eq
@@ -2411,9 +2413,10 @@ struct
       end
 
     (* m = n in ty at l >> ty synth ~~> (U l) *)
-    fun SynthFromEqAtType z _ jdg =
+    (* this is for non-deterministic search *)
+    fun NondetSynthFromEqAtType z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.SynthFromEqAtType"
+        val _ = RedPrlLog.trace "Universe.NondetSynthFromEqAtType"
         val H >> AJ.SYNTH (ty1, l1, k1) = jdg
         val AJ.EQ (_, (ty0, l0, k0)) = Hyps.lookup H z
         val _ = Assert.alphaEq (ty0, ty1)
@@ -2424,9 +2427,10 @@ struct
       end
 
     (* ty at l >> ty synth ~~> (U l) *)
-    fun SynthFromTrue z _ jdg =
+    (* this is for non-deterministic search *)
+    fun NondetSynthFromTrueAtType z _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.SynthFromTrue"
+        val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueAtType"
         val H >> AJ.SYNTH (ty1, l1, k1) = jdg
         val AJ.TRUE (ty0, l0, k0) = Hyps.lookup H z
         val _ = Assert.alphaEq (ty0, ty1)
