@@ -2392,7 +2392,7 @@ struct
         val _ = Assert.univMem (l0, k0) (l2, k2)
       in
         (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.into @@ Syn.UNIVERSE (l0, k0))
+        T.empty #> (H, Syn.intoU (l0, k0))
       end
 
     (* (= ty m n) at l >> ty synth ~~> (U l) *)
@@ -2408,7 +2408,7 @@ struct
         val _ = Assert.univMem (l0, K.top) (l1, k1)
       in
         (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.into @@ Syn.UNIVERSE (l0, K.top))
+        T.empty #> (H, Syn.intoU (l0, K.top))
       end
 
     (* m = n in ty at l >> ty synth ~~> (U l) *)
@@ -2422,7 +2422,7 @@ struct
         val _ = Assert.univMem (l0, k0) (l1, k1)
       in
         (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.into @@ Syn.UNIVERSE (l0, k0))
+        T.empty #> (H, Syn.intoU (l0, k0))
       end
 
     (* ty at l >> ty synth ~~> (U l) *)
@@ -2437,7 +2437,7 @@ struct
         val _ = Assert.univMem (l0, k0) (l1, k1)
       in
         (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.into @@ Syn.UNIVERSE (l0, k0))
+        T.empty #> (H, Syn.intoU (l0, k0))
       end
 
     fun VarFromTrue _ jdg =

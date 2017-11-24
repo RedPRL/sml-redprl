@@ -406,6 +406,8 @@ struct
         into (RECORD projs)
       end
 
+    val intoU = into o UNIVERSE
+
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
