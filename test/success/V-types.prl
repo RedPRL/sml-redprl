@@ -36,10 +36,6 @@ Thm IdEquiv(#l:lvl) : [
 
 Print IdEquiv.
 
-Def Member(#M, #A) = [
-  (= #A #M #M)
-].
-
 Def IdV(#i:dim, #l:lvl, #ty) = [
   (V #i #ty #ty ($ (IdEquiv #l) #ty))
 ].
@@ -47,18 +43,18 @@ Def IdV(#i:dim, #l:lvl, #ty) = [
 Thm IdV/Wf(#i:dim, #l:lvl) : [
   (->
    [ty : (U #l hcom)]
-   (Member (IdV #i #l ty) (U #l)))
+   (mem (U #l) (IdV #i #l ty)))
 ] by [
-  lam ty => `ax
+  lam ty => auto
 ].
 
 Thm IdV/Test0(#i:dim, #l:lvl) : [
   (->
    [ty : (U #l hcom)]
    [a : ty]
-   (Member (Vin #i a a) (IdV #i #l ty)))
+   (mem (IdV #i #l ty) (Vin #i a a)))
 ] by [
-  lam ty a => `ax
+  lam ty a => auto
 ].
 
 Thm IdV/Test1(#l:lvl) : [
@@ -133,17 +129,17 @@ Thm NotEquiv : [
 Def NotV(#i:dim) = [(V #i bool bool NotEquiv)].
 
 Thm NotV/Wf(#i:dim) : [
-  (Member (NotV #i) (U 0 kan))
+  (mem (U 0 kan) (NotV #i))
 ] by [
-  `ax
+  auto
 ].
 
 Thm NotV/Test0(#i:dim) : [
   (->
    [a : bool]
-   (Member (Vin #i ($ Not a) a) (NotV #i)))
+   (mem (NotV #i) (Vin #i ($ Not a) a)))
 ] by [
-  lam a => `ax
+  lam a => auto
 ].
 
 Thm NotV/Test1 : [
