@@ -282,8 +282,8 @@ struct
 
         val x = alpha 0
         val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l', k'))
-        val (motiveGoal, motiveHole) = makeTerm (truncatedHx) O.EXP
-        val motiveWfGoal = makeType (truncatedHx) (motiveHole, l, k)
+        val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
+        val motiveWfGoal = makeType truncatedHx (motiveHole, l, k)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole

@@ -134,8 +134,8 @@ struct
         (* motive *)
         val x = alpha 0
         val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL, inherentLevel, inherentKind))
-        val (goalTy, holeTy) = makeTerm (Hx) O.EXP
-        val goalTy' = makeType (Hx) (holeTy, NONE, K.top)
+        val (goalTy, holeTy) = makeTerm Hx O.EXP
+        val goalTy' = makeType Hx (holeTy, NONE, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), (Syn.into Syn.BOOL, NONE, K.top))
@@ -257,7 +257,7 @@ struct
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
         val Hz = H @> (z, AJ.TRUE (Syn.into Syn.WBOOL, inherentLevel, inherentKind))
-        val goalTy = makeEqType (Hz) ((c0z, c1z), NONE, K.top)
+        val goalTy = makeEqType Hz ((c0z, c1z), NONE, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), (Syn.into Syn.WBOOL, NONE, K.top))
@@ -377,8 +377,8 @@ struct
         (* motive *)
         val z = alpha 0
         val Hz = H @> (z, AJ.TRUE (nat, inherentLevel, inherentKind))
-        val (goalC, holeC) = makeTerm (Hz) O.EXP
-        val goalC' = makeType (Hz) (holeC, NONE, K.top)
+        val (goalC, holeC) = makeTerm Hz O.EXP
+        val goalC' = makeType Hz (holeC, NONE, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), (nat, NONE, K.top))
@@ -417,8 +417,8 @@ struct
         (* motive *)
         val z = alpha 0
         val Hz = H @> (z, AJ.TRUE (nat, inherentLevel, inherentKind))
-        val (goalC, holeC) = makeTerm (Hz) O.EXP
-        val goalC' = makeType (Hz) (holeC, NONE, K.top)
+        val (goalC, holeC) = makeTerm Hz O.EXP
+        val goalC' = makeType Hz (holeC, NONE, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), (nat, NONE, K.top))
@@ -562,8 +562,8 @@ struct
         (* motive *)
         val z = alpha 0
         val Hz = H @> (z, AJ.TRUE (int, inherentLevel, inherentKind))
-        val (goalC, holeC) = makeTerm (Hz) O.EXP
-        val goalC' = makeType (Hz) (holeC, NONE, K.top)
+        val (goalC, holeC) = makeTerm Hz O.EXP
+        val goalC' = makeType Hz (holeC, NONE, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), (int, NONE, K.top))
@@ -997,7 +997,7 @@ struct
                  val ty0' = renameVars ren0 ty0
                  val ty1' = renameVars ren1 ty1
                  val kind = if isFirst then headKind else tailKind
-                 val goals' = goals >: makeEqType (hyps) ((ty0', ty1'), l, kind)
+                 val goals' = goals >: makeEqType hyps ((ty0', ty1'), l, kind)
                  val hyps' = hyps @> (var, AJ.TRUE (ty0', l, kind))
                  val ren0' = Var.Ctx.insert ren0 var0 var
                  val ren1' = Var.Ctx.insert ren1 var1 var
@@ -1031,7 +1031,7 @@ struct
                  val env' = Var.Ctx.insert env var m0
                  val kind = if isFirst then headKind else tailKind
                  val goals' = goals >: makeEq H ((m0, m1), (ty', l, kind))
-                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, kind)
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType hyps (ty, l, kind)
                  val hyps' = hyps @> (var, AJ.TRUE (ty, l, kind))
                in
                  {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}
@@ -1091,7 +1091,7 @@ struct
                  val (elemGoal, elemHole) = makeTrue H (ty', l, kind)
                  val env' = Var.Ctx.insert env var elemHole
                  val goals' = goals >: elemGoal
-                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, kind)
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType hyps (ty, l, kind)
                  val elements' = (lbl, [] \ elemHole) :: elements
                in
                  {goals = goals', famGoals = famGoals', elements = elements', env = env', hyps = hyps', isFirst = false}
@@ -1914,15 +1914,15 @@ struct
 
         val truncatedH = Selector.truncateFrom sel H
 
-        val (goalTyOfEq, holeTyOfEq) = makeSynth (truncatedH) (eqterm, NONE, K.top)
+        val (goalTyOfEq, holeTyOfEq) = makeSynth truncatedH (eqterm, NONE, K.top)
         val (goalTy, holeTy) = makeMatch (O.EQUALITY, 0, holeTyOfEq, [])
         val (goalM, holeM) = makeMatch (O.EQUALITY, 1, holeTyOfEq, [])
         val (goalN, holeN) = makeMatch (O.EQUALITY, 2, holeTyOfEq, [])
 
         val x = alpha 0
         val truncatedHx = truncatedH @> (x, AJ.TRUE (holeTy, NONE, K.top))
-        val (motiveGoal, motiveHole) = makeTerm (truncatedHx) O.EXP
-        val motiveWfGoal = makeType (truncatedHx) (motiveHole, l, k)
+        val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
+        val motiveWfGoal = makeType truncatedHx (motiveHole, l, k)
 
         val motiven = substVar (holeN, x) motiveHole
         val motivem = substVar (holeM, x) motiveHole
