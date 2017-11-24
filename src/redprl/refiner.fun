@@ -528,6 +528,18 @@ struct
     end
 
     local
+      fun StepNeuByElim sign tys =
+        fn (Machine.VAR z, _) => AutoElim sign z
+         | (_, Machine.VAR z) => AutoElim sign z
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByElim", AJ.pretty @@ AJ.EQ_TYPE (tys, NONE, K.top))
+
+      fun StepNeuByUnfold sign (m, n) =
+        fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
+         | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
+         | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
+         | (_, Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
+
       fun StepEqTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Lcf.rule o Bool.EqType
@@ -546,18 +558,6 @@ struct
          | (Syn.V _, Syn.V _) => Lcf.rule o V.EqType
          | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule o Universe.EqType
          | _ => fail @@ E.GENERIC [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
-
-      fun StepNeuByElim sign tys =
-        fn (Machine.VAR z, _) => AutoElim sign z
-         | (_, Machine.VAR z) => AutoElim sign z
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByElim", AJ.pretty @@ AJ.EQ_TYPE (tys, NONE, K.top))
-
-      fun StepNeuByUnfold sign (m, n) =
-        fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
-         | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
-         | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | (_, Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqTypeNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
