@@ -9,6 +9,7 @@ sig
   val zero : level
   val plus : level * IntInf.int -> level (* the second argument must >= 0 *)
   val succ : level -> level
+  val join : level * level -> level
   val max : level list -> level
 
   val <= : level * level -> bool

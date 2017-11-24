@@ -740,7 +740,7 @@ rawTermAndTac
   | LPAREN ABS LSQUARE boundVars RSQUARE term RPAREN (Multi.makeAbs boundVars term)
   | LPAREN AT_SIGN term dimensions RPAREN (Multi.makeDimApp term dimensions)
 
-  (* membership *)
+  (* Abbreviation for membership *)
   | LPAREN MEM term term RPAREN (Ast.$$ (O.EQUALITY, [Ast.\ ([], term1), Ast.\ ([], term2), Ast.\ ([], term2)]))
 
   (* levels *)

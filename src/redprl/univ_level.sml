@@ -19,14 +19,10 @@ struct
       (shift gap, D.map shift gapmap)
     end
   fun succ l = plus (l, 1)
-  fun max ls =
-    let
-      fun f ((gap0, gapmap0), (gap1, gapmap1)) =
-          (IntInf.max (gap0, gap1),
-           D.union gapmap0 gapmap1 (fn (_, g0, g1) => IntInf.max (g0, g1)))
-    in
-      List.foldl f zero ls
-    end
+  fun join ((gap0, gapmap0), (gap1, gapmap1)) =
+    (IntInf.max (gap0, gap1),
+     D.union gapmap0 gapmap1 (fn (_, g0, g1) => IntInf.max (g0, g1)))
+  val max = List.foldl join zero
 
   fun allBound f ((gap0, gapmap0), (gap1, gapmap1)) =
     f (gap0, gap1) andalso

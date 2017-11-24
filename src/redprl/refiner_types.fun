@@ -1841,6 +1841,10 @@ struct
          #> (H, rewrittenHole)
       end
 
+    (* XXX deprecated *)
+    fun RewriteTrueByTrue sel z alpha jdg =
+      E.raiseError @@ E.GENERIC [Fpp.text "Use rewrite instead."]
+
     fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Symmetry"
