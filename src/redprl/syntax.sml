@@ -385,7 +385,6 @@ struct
     val intoCoe = into o COE
     val intoCom = into o COM
     val intoGcom = into o GCOM
-    val intoU = into o UNIVERSE
 
     fun intoFst m = into (PROJ (O.indexToLabel 0, m))
     fun intoSnd m = into (PROJ (O.indexToLabel 1, m))
@@ -406,6 +405,8 @@ struct
       in
         into (RECORD projs)
       end
+
+    val intoU = into o UNIVERSE
 
     fun out m =
       case Tm.out m of
