@@ -88,9 +88,8 @@ struct
 
   val ppLabel = text
 
-  fun intersperse s xs =
-    case xs of
-       [] => []
+  fun intersperse s =
+    fn [] => []
      | [x] => [x]
      | x::xs => seq [x, s] :: intersperse s xs
 
