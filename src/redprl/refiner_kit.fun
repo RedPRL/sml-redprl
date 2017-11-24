@@ -214,11 +214,6 @@ struct
     fun makeEqTypeIfDifferent H = makeEqIfDifferent H o internalizeEqType
   end
 
-  (* aux functions for subtyping *)
-
-  fun isInUsefulUniv (l', k') (l, k) =
-    not (OptionUtil.eq L.WK.eq (L.WK.residual ((l, k), (l', k')), SOME (l, k)))
-
   (* assertions *)
 
   structure Assert =
@@ -271,12 +266,6 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be equal to", TermPrinter.ppKind k2]
-
-    fun inUsefulUniv (l', k') (l, k) =
-      if isInUsefulUniv (l', k') (l, k) then
-        ()
-      else
-        E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.pretty l', Fpp.text "and kind", TermPrinter.ppKind k, Fpp.text "to be useful"]
 
     fun dirEq msg ((r1, r1'), (r2, r2')) =
       if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then

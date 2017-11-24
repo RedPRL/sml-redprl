@@ -1,4 +1,4 @@
-structure RedPrlRawLevel =
+structure RedPrlLevel =
 struct
   structure E = RedPrlError
   structure D = Metavar.Ctx
@@ -120,25 +120,3 @@ struct
     fun map f = out o f o into
   end
 end
-
-(* This is assuming that, if a type `a` is of some kind `k`
- * in later iterations, then it is of the same kind `k`
- * in earlier iterations. That is, kinds of types will not change.
- *)
-functor LevelUtil (L : REDPRL_LEVEL) =
-struct
-  open L
-  structure WithKind =
-  struct
-    fun eq ((l1, k1), (l2, k2 : RedPrlKind.t)) = L.eq (l1, l2) andalso k1 = k2
-    fun residual ((l1, k1), (l2, k2)) =
-      case (L.residual (l1, l2), RedPrlKind.residual (k1, k2)) of
-         (NONE, NONE) => NONE
-       | (SOME l, NONE) => SOME (l, RedPrlKind.top)
-       | (NONE, SOME k) => SOME (l1, k)
-       | (SOME l, SOME k) => SOME (l, k)
-  end
-  structure WK = WithKind
-end
-
-structure RedPrlLevel = LevelUtil (RedPrlRawLevel)
