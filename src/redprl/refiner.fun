@@ -528,11 +528,11 @@ struct
     end
 
     local
-      fun StepNeuByElim sign tys =
+      fun StepNeuByElim sign (m, n) =
         fn (Machine.VAR z, _) => AutoElim sign z
          | (_, Machine.VAR z) => AutoElim sign z
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByElim", AJ.pretty @@ AJ.EQ_TYPE (tys, NONE, K.top))
-
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByElim", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm
+ n])
       fun StepNeuByUnfold sign (m, n) =
         fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
          | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
