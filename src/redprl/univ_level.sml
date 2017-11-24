@@ -114,14 +114,10 @@ struct
        | O.LOMEGA $ _ => omega
        | _ => E.raiseError (E.INVALID_LEVEL (TermPrinter.ppTerm tm))
 
-    and outVec tm = 
-      let
-        val O.MK_VEC _ $ xs = RedPrlAbt.out tm
-      in
-        List.map (fn _ \ x => out x) xs
-      end
-      handle Bind => 
-        raise E.error [Fpp.text "Invalid level vector", TermPrinter.ppTerm tm]
+    and outVec tm =
+      case RedPrlAbt.out tm of
+        O.MK_VEC _ $ xs => List.map (fn _ \ x => out x) xs
+      | _ => E.raiseError (E.INVALID_LEVEL (TermPrinter.ppTerm tm))
         
 
     val omegaToTerm = O.LOMEGA $$ []
