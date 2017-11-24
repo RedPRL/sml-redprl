@@ -895,8 +895,7 @@ struct
       (fn AJ.EQ _ => Lcf.rule o Equality.RewriteTrueByEq sel z
         | AJ.TRUE _ => Lcf.rule o InternalizedEquality.RewriteTrueByTrue sel z
         | jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "rewrite-hyp tactic", AJ.pretty jdg))
-
-    fun Rewrite _ = InternalizedEquality.RewriteTrue
+    fun Rewrite _ sel m = Lcf.rule o InternalizedEquality.RewriteTrue sel m
 
     val Symmetry : tactic = matchGoal
       (fn _ >> AJ.EQ_TYPE _ => Lcf.rule o TypeEquality.Symmetry
