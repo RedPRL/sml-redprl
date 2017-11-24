@@ -59,8 +59,6 @@ whitespace = [\ \t];
 ";"                => (Tokens.SEMI (posTuple (size yytext)));
 "#"                => (Tokens.HASH (posTuple (size yytext)));
 "="                => (Tokens.EQUALS (posTuple (size yytext)));
-"mem"              => (Tokens.MEM (posTuple (size yytext)));
-"ni"               => (Tokens.MEM (posTuple (size yytext)));
 "->"               => (Tokens.RIGHT_ARROW (posTuple (size yytext)));
 "<-"               => (Tokens.LEFT_ARROW (posTuple (size yytext)));
 "~>"               => (Tokens.SQUIGGLE_RIGHT_ARROW (posTuple (size yytext)));
