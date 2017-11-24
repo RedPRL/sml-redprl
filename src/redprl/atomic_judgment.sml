@@ -10,11 +10,11 @@ struct
     EQ_TYPE ((a, a), l, k)
 
   fun map f =
-    fn EQ ((m, n), (a, l, k)) => EQ ((f m, f n), (f a, l, k))
-     | TRUE (a, l, k) => TRUE (f a, l, k)
-     | EQ_TYPE ((a, b), l, k) => EQ_TYPE ((f a, f b), l, k)
-     | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (f u, l, k)
-     | SYNTH (a, l, k) => SYNTH (f a, l, k)
+    fn EQ ((m, n), (a, l, k)) => EQ ((f m, f n), (f a, RedPrlLevel.map f l, k))
+     | TRUE (a, l, k) => TRUE (f a, RedPrlLevel.map f l, k)
+     | EQ_TYPE ((a, b), l, k) => EQ_TYPE ((f a, f b), RedPrlLevel.map f l, k)
+     | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (f u, RedPrlLevel.map f l, k)
+     | SYNTH (a, l, k) => SYNTH (f a, RedPrlLevel.map f l, k)
      | TERM tau => TERM tau
 
   fun @@ (f, x) = f x

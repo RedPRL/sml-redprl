@@ -284,13 +284,18 @@ struct
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
 
-        val (H', catjdg') = Selector.map sel (fn _ => motiven) (H, catjdg)
+        fun replace jdg = 
+          case jdg of 
+             AJ.TRUE (_, l, k) => AJ.TRUE (motiven, l, k)
+           | _ => jdg
+
+        val (H', catjdg') = Selector.map sel replace (H, catjdg)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> catjdg'
 
-        (* XXX When sel != O.IN_CONCL, the following subgoal is suboptimal because we already
-         * knew `currentTy` is a type. *)
-        (* XXX This two types will never be alpha-equivalent, and so we should skip the checking. *)
-        val motiveMatchesMainGoal = makeSubType (truncatedH) (motivem, l, k) (currentTy, l, k)
+        val motiveMatchesMainGoal =
+          case sel of
+            O.IN_CONCL => makeSubType truncatedH (motivem, l, k) (currentTy, l, k)
+          | O.IN_HYP _ => makeSubType truncatedH (currentTy, l, k) (motivem, l, k)
       in
         |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
          #> (H, rewrittenHole)

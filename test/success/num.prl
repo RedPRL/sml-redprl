@@ -70,7 +70,7 @@ Thm Plus/zero/R : [
   lam n =>
     fresh n' ind -> elim n;
     [ `ax
-    , fresh x -> rewrite-hyp ind;
+    , fresh x -> rewrite ind;
       [ `(= nat (succ x) (succ n'))
       , auto
       , auto
@@ -95,7 +95,7 @@ Thm Plus/succ/R : [
       [ `(= nat x (succ ($ Plus (succ n') m)))
       , fresh x -> rewrite ($ Plus/succ/L n' m);
         [ `(= nat (succ ($ Plus n' (succ m))) (succ x))
-        , fresh x -> rewrite-hyp n'/ih;
+        , fresh x -> rewrite n'/ih;
           [ `(= nat (succ x) (succ (succ ($ Plus n' m))))
           , auto
           ]
@@ -127,7 +127,7 @@ Thm Plus/comm : [
     [ symmetry; `($ Plus/zero/R  m)
     , fresh x -> rewrite ($ Plus/succ/L n' m);
       [ `(= nat x ($ Plus m (succ n')))
-      , fresh x -> rewrite-hyp n'/ih;
+      , fresh x -> rewrite n'/ih;
         [ `(= nat (succ x) ($ Plus m (succ n')))
         , symmetry; `($ Plus/succ/R m n')
         ]

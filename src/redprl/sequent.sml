@@ -98,8 +98,8 @@ struct
   in
     fun map sel f (H : AJ.jdg Hyps.telescope, catjdg) =
       case sel of
-         O.IN_CONCL => (H, AJ.map f catjdg)
-       | O.IN_HYP x => (Hyps.modify x (AJ.map f) H, catjdg)
+         O.IN_CONCL => (H, f catjdg)
+       | O.IN_HYP x => (Hyps.modify x f H, catjdg)
 
     fun multiMap sels f (H, catjdg) =
       List.foldl (fn (sel, state) => map sel f state) (H, catjdg) sels
