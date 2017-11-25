@@ -143,7 +143,7 @@ struct
         (* ff branch *)
         val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy))
       in
-        |>: goalTy >: goalM >: goalT >: goalF >: goalTy0 >: goalTy' #> (H, trivial)
+        |>: goalTy >: goalM >: goalT >: goalF >: goalTy0 >:+ goalTy' #> (H, trivial)
       end
   end
 
@@ -223,7 +223,7 @@ struct
         (* realizer *)
         val if_ = Syn.into @@ Syn.WIF ((z, cz), VarKit.toExp z, (holeT, holeF))
       in
-        |>: goalT >: goalF >: goalKind #> (H, if_)
+        |>: goalT >: goalF >:+ goalKind #> (H, if_)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected bool elimination problem"]
@@ -379,7 +379,7 @@ struct
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC))
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalC' >: goalTy #> (H, trivial)
+        |>: goalC >: goalM >: goalZ >: goalS >:+ goalC' >: goalTy #> (H, trivial)
       end
   end
 
@@ -528,7 +528,7 @@ struct
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cnegsuccu))
             ((r0, r1), substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC)
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >: goalTy #> (H, trivial)
+        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >:+ goalC' >: goalTy #> (H, trivial)
       end
   end
 
@@ -635,7 +635,7 @@ struct
         (* We need to kind-check cz because of FCOM
          * This goal is made (explicitly) unconditional to simplify tactic writing
          *)
-        val goalKind = makeType H cz
+        val goalKind = makeType H cz (* TODO: kind check *)
 
         (* base branch *)
         val cbase = substVar (Syn.into Syn.BASE, z) cz
@@ -656,7 +656,7 @@ struct
         (* realizer *)
         val elim = Syn.into @@ Syn.S1_REC ((z, cz), VarKit.toExp z, (holeB, (u, holeL)))
       in
-        |>: goalB >: goalL >:? goalCoh0 >:? goalCoh1 >: goalKind #> (H, elim)
+        |>: goalB >: goalL >:? goalCoh0 >:? goalCoh1 >:+ goalKind #> (H, elim)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected circle elimination problem"]
@@ -765,7 +765,7 @@ struct
         val bw = VarKit.rename (w, z) bz
         val goalM = makeEq (H @> (w, AJ.TRUE a)) ((m0w, m1w), bw)
       in
-        |>: goalM >: goalA #> (H, trivial)
+        |>: goalM >:+ goalA #> (H, trivial)
       end
 
     fun True alpha jdg =
@@ -785,7 +785,7 @@ struct
         (* realizer *)
         val lam = Syn.intoLam (z, hole)
       in
-        |>: goalLam >: goalA #> (H, lam)
+        |>: goalLam >:+ goalA #> (H, lam)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected fun truth sequent"]
@@ -857,9 +857,8 @@ struct
         val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
         val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n])
         val goalN = makeMem H (n, holeDom)
-        val goalKind = makeType H holeCod
       in
-        |>: goalFun >: goalDom >: goalCod >: goalN >: goalKind #> (H, holeCod)
+        |>: goalFun >: goalDom >: goalCod >: goalN #> (H, holeCod)
       end
   end
 
@@ -924,7 +923,7 @@ struct
                  val m1 = Fields.lookup lbl map1
                  val env' = Var.Ctx.insert env var m0
                  val goals' = goals >: makeEq H ((m0, m1), ty')
-                 val famGoals' = if isFirst then famGoals else famGoals >: makeType hyps ty
+                 val famGoals' = if isFirst then famGoals else famGoals >:+ makeType hyps ty
                  val hyps' = hyps @> (var, AJ.TRUE ty)
                in
                  {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}
@@ -982,7 +981,7 @@ struct
                  val (elemGoal, elemHole) = makeTrue H ty'
                  val env' = Var.Ctx.insert env var elemHole
                  val goals' = goals >: elemGoal
-                 val famGoals' = if isFirst then famGoals else famGoals >: makeType hyps ty
+                 val famGoals' = if isFirst then famGoals else famGoals >:+ makeType hyps ty
                  val elements' = (lbl, [] \ elemHole) :: elements
                in
                  {goals = goals', famGoals = famGoals', elements = elements', env = env', hyps = hyps', isFirst = false}
@@ -1091,9 +1090,8 @@ struct
         val Syn.PROJ (lbl, n) = Syn.out tm
         val (goalRecord, holeRecord) = makeSynth H n
         val (goalTy, holeTy) = makeMatchRecord (lbl, holeRecord, n)
-        val goalKind = makeType H holeTy
       in
-        |>: goalRecord >: goalTy >: goalKind #> (H, holeTy)
+        |>: goalRecord >: goalTy #> (H, holeTy)
       end
   end
 
@@ -1244,9 +1242,8 @@ struct
         val Syn.DIM_APP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth H m
         val (goalLine, holeLine) = makeMatch (O.PATH, 0, holePathTy, [r])
-        val goalKind = makeType H holeLine
       in
-        |>: goalPathTy >: goalLine >: goalKind #> (H, holeLine)
+        |>: goalPathTy >: goalLine #> (H, holeLine)
       end
 
     fun EqAppConst _ jdg =
@@ -1395,9 +1392,8 @@ struct
         val Syn.DIM_APP (m, r) = Syn.out tm
         val (goalPathTy, holePathTy) = makeSynth H m
         val (goalLine, holeLine) = makeMatch (O.LINE, 0, holePathTy, [r])
-        val goalKind = makeType H holeLine (* this goal should be redundant???? *)
       in
-        |>: goalPathTy >: goalLine >: goalKind #> (H, holeLine)
+        |>: goalPathTy >: goalLine #> (H, holeLine)
       end
   end
 
@@ -1452,7 +1448,7 @@ struct
         val goalF = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
       in
-        |>: goalA >: goalF >: goalG >: goalB >: goalC #> (H, trivial)
+        |>: goalA >: goalF >: goalG >:+ goalB >:+ goalC #> (H, trivial)
       end
 
     fun EqRight alpha jdg =
@@ -1471,7 +1467,7 @@ struct
         val goalF = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
       in
-        |>: goalB >: goalF >: goalG >: goalA >: goalC #> (H, trivial)
+        |>: goalB >: goalF >: goalG >:+ goalA >:+ goalC #> (H, trivial)
       end
 
     fun EqGlue alpha jdg =
@@ -1512,7 +1508,7 @@ struct
         val goalF = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
       in
-        |>: goalF >: goalG >: goalA >: goalB >: goalC
+        |>: goalF >: goalG >:+ goalA >:+ goalB >:+ goalC
          >:+ ComKit.genEqFComGoals H z (args0, args1) ty
         #> (H, trivial)
       end
@@ -1528,7 +1524,7 @@ struct
         (* We need to kind-check cz because of FCOM
          * This goal is made (explicitly) unconditional to simplify tactic writing
          *)
-        val goalKind = makeType H dz
+        val goalKind = makeType H dz (* TODO: kind check *)
 
         (* left branch *)
         val a = alpha 0
@@ -1565,7 +1561,7 @@ struct
 
         val elim = Syn.into @@ Syn.PUSHOUT_REC ((z, dz), VarKit.toExp z, ((a, holeL), (b, holeR), (v, c, holeG)))
       in
-        |>: goalL >: goalR >: goalG >: goalCohL >: goalCohR >: goalKind #> (H, elim)
+        |>: goalL >: goalR >: goalG >: goalCohL >: goalCohR >:+ goalKind #> (H, elim)
       end
 
     fun EqElim alpha jdg =
@@ -1748,9 +1744,8 @@ struct
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
         val _ = Assert.alphaEq (ty0, ty1)
-        val goalTy = makeType H ty1 (* what is this premise for ?? *)
       in
-        |>: goalTy #> (H, trivial)
+        Lcf.Tl.empty #> (H, trivial)
       end
 
     fun InternalizeEq _ jdg =
@@ -1815,7 +1810,7 @@ struct
           | O.IN_HYP _ => makeSubType truncatedH currentTy motivem
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
-         >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
+         >: motiveGoal >: rewrittenGoal >:+ motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
 
@@ -2150,7 +2145,7 @@ struct
         (* l0 is not omega because of Assert.univMem *)
         val goalTy' = makeType H holeTy
       in
-        |>: goalTy >: goalTy' #> (H, Syn.into Syn.AX)
+        |>: goalTy >:+ goalTy' #> (H, Syn.into Syn.AX)
       end
 
     (* This rule will be removed once every hypothesis

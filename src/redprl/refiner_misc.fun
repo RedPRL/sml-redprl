@@ -58,7 +58,7 @@ struct
         (* eq *)
         val goalEq = makeEq H ((m, other), ty)
       in
-        |>: goalEq >: goalTy0 >: goalTy #> (H, trivial)
+        |>: goalEq >: goalTy0 >:+ goalTy #> (H, trivial)
       end
   end
 

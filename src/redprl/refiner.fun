@@ -247,7 +247,7 @@ struct
             O.IN_CONCL => makeSubType truncatedH motivem currentTy
           | O.IN_HYP _ => makeSubType truncatedH currentTy motivem
       in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
+        |>: motiveGoal >: rewrittenGoal >:+ motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
   end

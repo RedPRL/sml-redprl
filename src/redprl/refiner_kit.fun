@@ -121,7 +121,7 @@ struct
 
   fun |>: g = T.empty >: g
 
-  fun >:+ (tel, list) : 'a telescope =
+  fun >:+ (tel : 'a telescope, list : (label * 'a) list) : 'a telescope =
     List.foldl (fn (g, t) => t >: g) tel list
   infix 5 >:+
 
@@ -161,7 +161,7 @@ struct
   fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
 
   (* ignoring the trivial realizer *)
-  fun makeType H a = raise Fail "TODO"
+  fun makeType H a : (label * jdg) list = raise Fail "TODO"
   fun makeEqTypeWith f H (a:abt, b:abt) = makeGoal' @@ Seq.map f @@ H >> (raise Fail "TODO")
   val makeEqType = makeEqTypeWith (fn j => j)
   fun makeEqWith f H ((m, n), ty) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
