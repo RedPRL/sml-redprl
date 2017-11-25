@@ -366,7 +366,6 @@ struct
      | "nat/eq/zero" => Lcf.rule o Nat.EqZero
      | "nat/eq/succ" => Lcf.rule o Nat.EqSucc
      | "nat/eq/nat-rec" => Lcf.rule o Nat.EqElim
-     | "nat/eqtype/nat-rec" => Lcf.rule o Nat.EqTypeElim
      | "int/eqtype" => Lcf.rule o Int.EqType
      | "int/eq/zero" => Lcf.rule o Int.EqZero
      | "int/eq/succ" => Lcf.rule o Int.EqSucc
@@ -383,7 +382,6 @@ struct
      | "fun/intro" => Lcf.rule o Fun.True
      | "fun/eq/eta" => Lcf.rule o Fun.Eta
      | "fun/eq/app" => Lcf.rule o Fun.EqApp
-     | "fun/eqtype/app" => Lcf.rule o Fun.EqTypeApp
      | "record/eqtype" => Lcf.rule o Record.EqType
      | "record/eq/tuple" => Lcf.rule o Record.Eq
      | "record/eq/eta" => Lcf.rule o Record.Eta
@@ -418,7 +416,6 @@ struct
      | "V/eq/uain" => Lcf.rule o V.Eq
      | "V/intro" => Lcf.rule o V.True
      | "universe/eqtype" => Lcf.rule o Universe.EqType
-     | "universe/eq" => Lcf.rule o Universe.Eq
      | "universe/intro" => Lcf.rule o Universe.True
      | "hcom/eq" => Lcf.rule o HCom.Eq
      | "hcom/eq/cap" => Lcf.rule o HCom.EqCapL
@@ -561,8 +558,8 @@ struct
            (Syn.VAR _, Syn.VAR _) => Lcf.rule o Universe.VarFromTrue
          | (Syn.WIF _, Syn.WIF _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with wif"
          | (Syn.S1_REC _, Syn.S1_REC _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with S1-rec"
-         | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqTypeApp
-                                          else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
+         (* | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqTypeApp
+                                          else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth") *)
          | (Syn.PROJ _, Syn.PROJ _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `!`"
          | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
          | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with pushout-rec"
@@ -592,15 +589,9 @@ struct
          | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqTypeNeuExpand sign ty2 blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", AJ.pretty @@ AJ.EQ_TYPE (ty1, ty2)))
 
-      fun StepEqAtTypeVal ty =
-        case Syn.out ty of
-           Syn.UNIVERSE _ => Lcf.rule o Universe.Eq
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqAtTypeVal", TermPrinter.ppTerm ty)
-
       fun StepEqValAtType sign ty =
         case canonicity sign ty of
            Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | Machine.CANONICAL => StepEqAtTypeVal ty
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqValAtType", TermPrinter.ppTerm ty)
@@ -634,7 +625,6 @@ struct
          | (_, _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eq
          | (_, _, Syn.FCOM _) => Lcf.rule o FormalComposition.Eq
          | (_, _, Syn.V _) => Lcf.rule o V.Eq
-         | (_, _, Syn.UNIVERSE _) => Lcf.rule o Universe.Eq
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", AJ.pretty (AJ.EQ ((m, n), ty))))
 
       (* equality for neutrals: variables and elimination forms;
@@ -642,7 +632,6 @@ struct
       fun StepEqNeuAtType sign ty =
         case canonicity sign ty of
            Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | Machine.CANONICAL => StepEqAtTypeVal ty
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuAtType", TermPrinter.ppTerm ty)
 
@@ -829,16 +818,8 @@ struct
 
       val EqTypeFromHyp = FromHypDelegate
         (fn (z, AJ.EQ_TYPE _) => Lcf.rule o TypeEquality.NondetFromEqType z
-          | (z, AJ.EQ _) =>
-              Lcf.rule o TypeEquality.NondetFromEq z
-                orelse_
-              Lcf.rule o Universe.NondetEqTypeFromEq z
-          | (z, AJ.TRUE _) =>
-              Lcf.rule o TypeEquality.NondetFromTrue z
-                orelse_
-              Lcf.rule o InternalizedEquality.NondetTypeFromTrueEqAtType z
-                orelse_
-              Lcf.rule o Universe.NondetEqTypeFromTrueEqType z
+          | (z, AJ.EQ _) => Lcf.rule o TypeEquality.NondetFromEq z
+          | (z, AJ.TRUE _) => Lcf.rule o TypeEquality.NondetFromTrue z
           | (z, _)  => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
       val EqFromHyp = FromHypDelegate
