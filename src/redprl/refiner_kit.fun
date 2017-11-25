@@ -150,23 +150,42 @@ struct
     in
       ((x, jdg), hole)
     end
+
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
-  (* needing the realizer *)
-  fun makeTrueWith f H ty = makeGoal @@ Seq.map f @@ H >> AJ.TRUE ty
-  val makeTrue = makeTrueWith (fn j => j)
-  fun makeSynth H m = makeGoal @@ H >> AJ.SYNTH m
-  fun makeMatch part = makeGoal @@ MATCH part
-  fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
-  fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
+  fun makeTrueWith f H ty =
+    makeGoal @@ Seq.map f @@ H >> AJ.TRUE ty
 
-  (* ignoring the trivial realizer *)
-  fun makeType H a : (label * jdg) list = raise Fail "TODO"
-  fun makeEqTypeWith f H (a:abt, b:abt) = makeGoal' @@ Seq.map f @@ H >> (raise Fail "TODO")
-  val makeEqType = makeEqTypeWith (fn j => j)
-  fun makeEqWith f H ((m, n), ty) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
-  val makeEq = makeEqWith (fn j => j)
-  fun makeMem H (m, ty) = makeGoal' @@ H >> AJ.MEM (m, ty)
+  val makeTrue =
+    makeTrueWith (fn j => j)
+
+  fun makeSynth H m =
+    makeGoal @@ H >> AJ.SYNTH m
+
+  val makeMatch = makeGoal o MATCH
+  val makeMatchRecord = makeGoal o MATCH_RECORD
+
+  fun makeTerm H tau =
+    makeGoal @@ H >> AJ.TERM tau
+
+  (* TODO: add a kind parameter here! *)
+  fun makeType H (a : abt) : (label * jdg) list =
+    raise Fail "TODO"
+
+  fun makeEqTypeWith f H (a:abt, b:abt) : (label * jdg) =
+    makeGoal' @@ Seq.map f @@ H >> (raise Fail "TODO")
+
+  val makeEqType : AJ.jdg Hyps.telescope -> abt * abt -> label * jdg =
+    makeEqTypeWith (fn j => j)
+
+  fun makeEqWith f H ((m, n), ty) =
+    makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
+
+  val makeEq : AJ.jdg Hyps.telescope -> (abt * abt) * abt -> label * jdg =
+    makeEqWith (fn j => j)
+
+  fun makeMem H (m, ty) =
+    makeGoal' @@ H >> AJ.MEM (m, ty)
 
   (* conditional goal making *)
 
