@@ -47,7 +47,7 @@ ML installed. Then, simply run
 Then, a binary will be placed in `./bin/redprl`, which you may run as
 follows
 
-    ./bin/redprl test/examples.prl
+    ./bin/redprl example/README.prl
 
 
 ### Editor Support: Visual Studio Code
