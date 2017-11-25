@@ -335,7 +335,7 @@ end
  | UNIVERSE
  | HCOM | COE | COM
 
- | LMAX | LOMEGA
+ | LMAX
 
  (* parsing "coercions" *)
  | TACTIC
@@ -431,7 +431,6 @@ end
  | terms of ast list
 
  | kind of O.K.kind
- | withKindAtLevel of ast * ast
 
  | rawJudgment of ast
  | judgment of ast
@@ -747,7 +746,6 @@ rawTermAndTac
   | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ ([], level)]))
   | LPAREN DOUBLE_PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ ([], level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.LMAX, [\ ([], Multi.makeVec O.LVL levels)]))
-  | LOMEGA (Ast.$$ (O.LOMEGA, []))
 
 
 level
@@ -755,7 +753,6 @@ level
   | LPAREN PLUS level NUMERAL RPAREN (Ast.$$ (O.LPLUS NUMERAL, [Ast.\ ([], level)]))
   | LPAREN DOUBLE_PLUS level RPAREN (Ast.$$ (O.LPLUS 1, [Ast.\ ([], level)]))
   | LPAREN LMAX levels RPAREN (Ast.$$ (O.LMAX, [\ ([], Multi.makeVec O.LVL levels)]))
-  | LOMEGA (Ast.$$ (O.LOMEGA, []))
   | metavar (Ast.$$# (metavar, []))
   | PERCENT VARNAME (Ast.$$ (O.PAT_META O.LVL, [\ ([], ``VARNAME), \ ([], Multi.makeVec O.ANY [])]))
 
@@ -781,13 +778,6 @@ kind
   | HCOM (O.K.HCOM)
   | COE (O.K.COE)
   | STABLE (O.K.STABLE)
-
-withKindAtLevel
-  : WITH term AT level (level, term)
-  | AT level WITH term (level, term)
-  | WITH term (Ast.$$ (O.LOMEGA, []), term)
-  | AT level (level, Ast.$$ (O.KCONST (O.K.top), []))
-  | (Ast.$$ (O.LOMEGA, []), Ast.$$ (O.KCONST (O.K.top), []))
 
 rawJudgment
   : term EQUALS term IN term (Jdg.make O.JDG_EQ [term1, term2, term3])

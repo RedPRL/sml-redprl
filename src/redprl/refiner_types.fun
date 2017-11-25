@@ -2133,7 +2133,6 @@ struct
         val Syn.UNIVERSE (l0, k0) = Syn.out ty0
         val Syn.UNIVERSE (l1, k1) = Syn.out ty1
         val _ = Assert.levelEq (l0, l1)
-        val _ = Assert.levelNotOmega l0
         val _ = Assert.kindEq (k0, k1)
         (* TODO: constraint on l *)
         (* TODO: constraint on k? *)

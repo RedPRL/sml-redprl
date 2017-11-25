@@ -236,12 +236,6 @@ struct
       else
         raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
 
-    fun levelNotOmega l =
-      if not (L.eq (l, L.omega)) then
-        ()
-      else
-        raise E.error [Fpp.text "Expected level", L.pretty l, Fpp.text "not to be", L.pretty L.omega]
-
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then
         ()
