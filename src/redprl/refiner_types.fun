@@ -2196,18 +2196,6 @@ struct
 
     fun Elim z = (Lcf.rule o ElimFromTrue z)
 
-    fun SubUniverse _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.SubUniverse"
-        val H >> AJ.SUB_UNIVERSE (univ, l, k) = jdg
-        val Syn.UNIVERSE (l0, k0) = Syn.out univ
-        val _ = Assert.levelLeq (l0, l)
-        val _ = Assert.levelNotOmega l0
-        val _ = Assert.kindLeq (k0, k)
-      in
-        T.empty #> (H, trivial)
-      end
-
     (* TODO: rename these rules - JMS *)
 
     (* ty0 = ty1 at l >> ty synth ~~> (U l) *)

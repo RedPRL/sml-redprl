@@ -13,7 +13,6 @@ struct
     fn EQ ((m, n), a) => EQ ((f m, f n), f a)
      | TRUE a => TRUE (f a)
      | EQ_TYPE (a, b) => EQ_TYPE (f a, f b)
-     | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (f u, RedPrlLevel.map f l, k)
      | SYNTH a => SYNTH (f a)
      | TERM tau => TERM tau
 
@@ -34,15 +33,6 @@ struct
            [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm a]
              else [TermPrinter.ppTerm a, Atomic.equals, TermPrinter.ppTerm b]
            ]
-       | SUB_UNIVERSE (u, l, k) => expr @@ hvsep
-           [ TermPrinter.ppTerm u
-           , text "<="
-           , Atomic.parens @@ expr @@ hsep
-               [ text "U"
-               , RedPrlLevel.pretty l
-               , if k = RedPrlKind.top then empty else TermPrinter.ppKind k
-               ]
-           ]
        | SYNTH m => expr @@ hvsep @@ [TermPrinter.ppTerm m, text "synth"]
        | TERM tau => TermPrinter.ppSort tau
   end
@@ -53,7 +43,6 @@ struct
     fn EQ _ => O.TRV
      | TRUE _ => O.EXP
      | EQ_TYPE _ => O.TRV
-     | SUB_UNIVERSE _ => O.TRV
      | SYNTH _ => O.EXP
      | TERM tau => tau
 
@@ -70,7 +59,6 @@ struct
       fn EQ ((m, n), a) => O.JDG_EQ $$ [[] \ m, [] \ n, [] \ a]
        | TRUE a => O.JDG_TRUE $$ [[] \ a]
        | EQ_TYPE (a, b) => O.JDG_EQ_TYPE $$ [[] \ a, [] \ b]
-       | SUB_UNIVERSE (u, l, k) => O.JDG_SUB_UNIVERSE $$ [[] \ L.into l, [] \ kconst k, [] \ u]
        | SYNTH m => O.JDG_SYNTH $$ [[] \ m]
        | TERM tau => O.JDG_TERM tau $$ []
 
@@ -84,7 +72,6 @@ struct
          O.JDG_EQ $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), a)
        | O.JDG_TRUE $ [_ \ a] => TRUE a
        | O.JDG_EQ_TYPE $ [_ \ a, _ \ b] => EQ_TYPE (a, b)
-       | O.JDG_SUB_UNIVERSE $ [_ \ l, _ \ k, _ \ u] => SUB_UNIVERSE (u, L.out l, outk k)
        | O.JDG_SYNTH $ [_ \ m] => SYNTH m
        | O.JDG_TERM tau $ [] => TERM tau
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]

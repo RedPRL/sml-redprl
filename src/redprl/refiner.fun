@@ -766,19 +766,6 @@ struct
          | Syn.CUST => Lcf.rule o Custom.Synth sign
          | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
-      fun StepSubUniverseNeuExpand sign u =
-        fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverseNeuExpand", TermPrinter.ppTerm u)
-
-      fun StepSubUniverse sign u =
-        case (Syn.out u, canonicity sign u) of
-           (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, Machine.CANONICAL) => Lcf.rule o Universe.SubUniverse
-         | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
-         | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
-
       fun StepMatch sign u =
         case canonicity sign u of
            Machine.REDEX => Lcf.rule o Computation.MatchReduce sign
@@ -798,7 +785,6 @@ struct
           | _ >> AJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> AJ.TRUE ty => StepTrue sign ty
           | _ >> AJ.SYNTH m => StepSynth sign m
-          | _ >> AJ.SUB_UNIVERSE (univ, _, _) => StepSubUniverse sign univ
           | MATCH (_, _, m, _) => StepMatch sign m
           | MATCH_RECORD (_, m, _) => StepMatchRecord sign m
           | _ >> jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoStep", AJ.pretty jdg))

@@ -212,7 +212,6 @@ struct
    | JDG_EQ
    | JDG_TRUE
    | JDG_EQ_TYPE
-   | JDG_SUB_UNIVERSE
    | JDG_SYNTH
    | JDG_TERM of sort
 
@@ -369,7 +368,6 @@ struct
      | JDG_EQ => [[] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
      | JDG_TRUE => [[] |: EXP] ->> JDG
      | JDG_EQ_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE => [[] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
@@ -565,7 +563,6 @@ struct
      | JDG_EQ => "eq"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
-     | JDG_SUB_UNIVERSE => "sub-universe"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | CUST (opid, _) => opid

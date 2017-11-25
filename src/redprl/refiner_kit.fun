@@ -167,7 +167,6 @@ struct
   fun makeEqWith f H ((m, n), ty) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
   val makeEq = makeEqWith (fn j => j)
   fun makeMem H (m, ty) = makeGoal' @@ H >> AJ.MEM (m, ty)
-  fun makeSubUniverse H (u, l, k) = makeGoal' @@ H >> AJ.SUB_UNIVERSE (u, l, k)
 
   (* conditional goal making *)
 
