@@ -3,7 +3,7 @@
 REDPRL=./bin/redprl
 PROBLEM=0
 
-# Ensure that all suceeding tests and examples type-check
+# Ensure that all succeeding tests and examples type-check
 for f in test/success/*.prl example/*.prl ; do
     echo "Testing $f"
     if ! $REDPRL $f >$f.log 2>&1 ; then
