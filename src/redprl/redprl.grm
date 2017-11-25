@@ -272,8 +272,8 @@ end
 structure Jdg = 
 struct
   open Ast infix $$ \
-  fun makeAtLvl theta (lvl, k : ast) es = 
-     theta $$ List.map (fn e => [] \ e) (lvl :: k :: es)
+  fun make theta es = 
+     theta $$ List.map (fn e => [] \ e) es
 end
 
 %%
@@ -790,13 +790,13 @@ withKindAtLevel
   | (Ast.$$ (O.LOMEGA, []), Ast.$$ (O.KCONST (O.K.top), []))
 
 rawJudgment
-  : term EQUALS term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term2, term3])
-  | term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term1, term2])
-  | term TRUE withKindAtLevel (Jdg.makeAtLvl O.JDG_TRUE withKindAtLevel [term])
-  | term withKindAtLevel (Jdg.makeAtLvl O.JDG_TRUE withKindAtLevel [term])
-  | term EQUALS term TYPE withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ_TYPE withKindAtLevel [term1, term2])
-  | term TYPE withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ_TYPE withKindAtLevel [term, term])
-  | term SYNTH withKindAtLevel (Jdg.makeAtLvl O.JDG_SYNTH withKindAtLevel [term])
+  : term EQUALS term IN term (Jdg.make O.JDG_EQ [term1, term2, term3])
+  | term IN term (Jdg.make O.JDG_EQ [term1, term1, term2])
+  | term TRUE (Jdg.make O.JDG_TRUE [term])
+  | term (Jdg.make O.JDG_TRUE [term])
+  | term EQUALS term TYPE (Jdg.make O.JDG_EQ_TYPE [term1, term2])
+  | term TYPE (Jdg.make O.JDG_EQ_TYPE [term, term])
+  | term SYNTH (Jdg.make O.JDG_SYNTH [term])
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 

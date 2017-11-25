@@ -366,11 +366,11 @@ struct
      | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_TRUE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
-     | JDG_EQ_TYPE => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
-     | JDG_SYNTH => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
+     | JDG_EQ => [[] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE => [[] |: EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_UNIVERSE => [[] |: EXP] ->> JDG
+     | JDG_SYNTH => [[] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
