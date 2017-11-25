@@ -161,8 +161,8 @@ struct
   fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
 
   (* ignoring the trivial realizer *)
-  fun makeType H a = makeGoal' @@ H >> AJ.TYPE a
-  fun makeEqTypeWith f H (a, b) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ_TYPE (a, b)
+  fun makeType H a = raise Fail "TODO"
+  fun makeEqTypeWith f H (a:abt, b:abt) = makeGoal' @@ Seq.map f @@ H >> (raise Fail "TODO")
   val makeEqType = makeEqTypeWith (fn j => j)
   fun makeEqWith f H ((m, n), ty) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
   val makeEq = makeEqWith (fn j => j)

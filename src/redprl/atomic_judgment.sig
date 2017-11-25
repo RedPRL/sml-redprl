@@ -26,17 +26,6 @@ struct
       *)
      | TRUE of abt
 
-     (* `EQ_TYPE ((a, b), l, k)`:
-      *   `a` and `b` are equal types, even taking into the structures
-      *   specified by `k`. Both were already defined at the `l'`th iteration
-      *   if `l = SOME l'`. If `l = NONE` it means both will be defined
-      *   eventually but we do not care about when. For example,
-      *   `EQ_TYPE ((a, b), SOME 2, KAN)` means `a` and `b` are equally Kan
-      *   in the second iterated type theory.
-      *   The realizer is `TV` of sort `TRV`.
-      *)
-     | EQ_TYPE of abt * abt
-
      (* `TERM tau`:
       *   There exists some `m` of sort `tau`.
       *   The realizer is such an `m` of sort `tau`.
@@ -59,7 +48,6 @@ sig
   type kind = RedPrlKind.t
 
   val MEM : abt * abt -> jdg
-  val TYPE : abt -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg
 

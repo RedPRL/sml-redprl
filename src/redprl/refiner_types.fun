@@ -110,7 +110,6 @@ struct
           case catjdg of
              AJ.TRUE _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
            | AJ.EQ _ => trivial
-           | AJ.EQ_TYPE _ => trivial
            | AJ.SYNTH _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
            | _ => raise Fail "Bool.Elim cannot be called with this kind of goal"
       in
@@ -563,7 +562,6 @@ struct
           case catjdg of
              AJ.TRUE _ => Syn.into Syn.AX (* should be some fancy variable *)
            | AJ.EQ _ => trivial
-           | AJ.EQ_TYPE _ => trivial
            | AJ.SYNTH _ => Syn.into Syn.AX
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
       in
@@ -2158,7 +2156,7 @@ struct
 
     (* This rule will be removed once every hypothesis
      * is required to be `A true`. *)
-    fun ElimFromTrue z alpha jdg =
+    (* fun ElimFromTrue z alpha jdg =
       let
         val _ = RedPrlLog.trace "Universe.ElimFromTrue"
         val H >> catjdg = jdg
@@ -2173,7 +2171,7 @@ struct
             >> catjdg
       in
         |>: goal #> (H, VarKit.subst (trivial, u) hole)
-      end
+      end *)
 
     (* This rule will also be removed once every hypothesis
      * is required to be `A true`. *)
@@ -2194,7 +2192,7 @@ struct
         |>: goal #> (H, VarKit.subst (trivial, u) hole)
       end *)
 
-    fun Elim z = (Lcf.rule o ElimFromTrue z)
+    (* fun Elim z = (Lcf.rule o ElimFromTrue z) *)
 
     (* TODO: rename these rules - JMS *)
 

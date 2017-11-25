@@ -92,57 +92,6 @@ struct
       end
   end
 
-  structure TypeEquality =
-  struct
-    fun Symmetry _ jdg =
-      let
-        val _ = RedPrlLog.trace "TypeEquality.Symmetry"
-        val H >> AJ.EQ_TYPE (ty1, ty2) = jdg
-        val goal = makeEqType H (ty2, ty1)
-      in
-        |>: goal #> (H, trivial)
-      end
-
-    (* TODO: rename these rules - JMS *)
-
-    (* this is for non-deterministic search *)
-    fun NondetFromEqType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "TypeEquality.NondetFromEqType"
-        val H >> AJ.EQ_TYPE (a, b) = jdg
-        val AJ.EQ_TYPE (a', b') = Hyps.lookup H z
-        val _ = Assert.alphaEqEither ((a', b'), a)
-        val _ = Assert.alphaEqEither ((a', b'), b)
-        val goal = makeEqType H (a, b)
-      in
-        |>: goal #> (H, trivial)
-      end
-
-    (* this is for non-deterministic search *)
-    fun NondetFromEq z _ jdg =
-      let
-        val _ = RedPrlLog.trace "TypeEquality.NondetFromEq"
-        val H >> AJ.EQ_TYPE (a, b) = jdg
-        val AJ.EQ (_, a') = Hyps.lookup H z
-        val _ = Assert.alphaEq (a, b)
-        val _ = Assert.alphaEq (a', a)
-      in
-        Lcf.Tl.empty #> (H, trivial)
-      end
-
-    (* this is for non-deterministic search *)
-    fun NondetFromTrue z _ jdg =
-      let
-        val _ = RedPrlLog.trace "TypeEquality.NondetFromTrue"
-        val H >> AJ.EQ_TYPE (a, b) = jdg
-        val AJ.TRUE a' = Hyps.lookup H z
-        val _ = Assert.alphaEq (a, b)
-        val _ = Assert.alphaEq (a', a)
-      in
-        Lcf.Tl.empty #> (H, trivial)
-      end
-  end
-
   structure True =
   struct
     fun Witness tm _ jdg =
@@ -436,9 +385,7 @@ struct
 
   local
     val CatJdgSymmetry : tactic =
-      (Lcf.rule o Equality.Symmetry)
-        orelse_
-      (Lcf.rule o TypeEquality.Symmetry)
+      Lcf.rule o Equality.Symmetry
 
     fun fail err _ _ = Lcf.M.throw (E.errorToExn (NONE, err))
 
@@ -501,9 +448,7 @@ struct
        | _ => false
   in
     fun SynthFromHyp z = matchHyp z
-      (fn AJ.EQ_TYPE _ =>
-           Lcf.rule o Universe.NondetSynthFromEqType z
-        | AJ.EQ _ =>
+      (fn AJ.EQ _ =>
            Lcf.rule o Synth.NondetFromEq z
               orelse_
            Lcf.rule o Universe.NondetSynthFromEqAtType z
@@ -577,17 +522,6 @@ struct
         fn Machine.VAR z => AutoElim sign z
          | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuExpand", TermPrinter.ppTerm ty)
-
-      fun StepEqType sign (ty1, ty2) =
-        (Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]) then_ 
-        (case (canonicity sign ty1, canonicity sign ty2) of
-           (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
-         | (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqTypeNeu sign (ty1, ty2) (blocker1, blocker2)
-         | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqTypeNeuExpand sign ty1 blocker
-         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqTypeNeuExpand sign ty2 blocker
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", AJ.pretty @@ AJ.EQ_TYPE (ty1, ty2)))
 
       fun StepEqValAtType sign ty =
         case canonicity sign ty of
@@ -781,8 +715,7 @@ struct
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
 
       fun StepJdg sign = matchGoal
-        (fn _ >> AJ.EQ_TYPE tys => StepEqType sign tys
-          | _ >> AJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
+        (fn _ >> AJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> AJ.TRUE ty => StepTrue sign ty
           | _ >> AJ.SYNTH m => StepSynth sign m
           | MATCH (_, _, m, _) => StepMatch sign m
@@ -802,20 +735,13 @@ struct
                 H
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
 
-      val EqTypeFromHyp = FromHypDelegate
-        (fn (z, AJ.EQ_TYPE _) => Lcf.rule o TypeEquality.NondetFromEqType z
-          | (z, AJ.EQ _) => Lcf.rule o TypeEquality.NondetFromEq z
-          | (z, AJ.TRUE _) => Lcf.rule o TypeEquality.NondetFromTrue z
-          | (z, _)  => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
-
       val EqFromHyp = FromHypDelegate
         (fn (z, AJ.EQ _) => Lcf.rule o Equality.FromEq z
           | (z, AJ.TRUE _) => Lcf.rule o InternalizedEquality.NondetEqFromTrueEq z
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
       val StepJdgFromHyp = matchGoal
-        (fn _ >> AJ.EQ_TYPE _ => EqTypeFromHyp
-          | _ >> AJ.EQ _ => EqFromHyp
+        (fn _ >> AJ.EQ _ => EqFromHyp
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
     in
       fun AutoStep sign =
@@ -839,7 +765,6 @@ struct
          | Syn.LINE _ => Lcf.rule o Line.Elim z
          | Syn.PUSHOUT _ => Lcf.rule o Pushout.Elim z
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.Elim z
-         | Syn.UNIVERSE _ => Universe.Elim z
          | _ => fail @@ E.GENERIC [Fpp.text "elim tactic", TermPrinter.ppTerm ty]
     in
       val Elim = NormalizeHypDelegate ElimBasis
@@ -852,8 +777,7 @@ struct
     fun Rewrite _ sel m = Lcf.rule o InternalizedEquality.RewriteTrue sel m
 
     val Symmetry : tactic = matchGoal
-      (fn _ >> AJ.EQ_TYPE _ => Lcf.rule o TypeEquality.Symmetry
-        | _ >> AJ.EQ _ => Lcf.rule o Equality.Symmetry
+      (fn _ >> AJ.EQ _ => Lcf.rule o Equality.Symmetry
         | _ >> AJ.TRUE _ => Lcf.rule o InternalizedEquality.Symmetry
         | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "internalize tactic", Seq.pretty seq))
 
