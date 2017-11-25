@@ -2209,44 +2209,6 @@ struct
         T.empty #> (H, univ)
       end
 
-    (* (= ty m n) at l >> ty synth ~~> (U l) *)
-    (* this is for non-deterministic search *)
-    fun NondetSynthFromTrueEqAtType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueEqAtType"
-        val H >> AJ.SYNTH ty1 = jdg
-        val AJ.TRUE eq = Hyps.lookup H z
-        val Syn.EQUALITY (ty0, _, _) = Syn.out eq
-        val _ = Assert.alphaEq (ty0, ty1)
-      in
-        T.empty #> (H, Syn.intoU (raise Fail "TODO", raise Fail "TODO"))
-      end
-
-    (* m = n in ty at l >> ty synth ~~> (U l) *)
-    (* this is for non-deterministic search *)
-    fun NondetSynthFromEqAtType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.NondetSynthFromEqAtType"
-        val H >> AJ.SYNTH ty1 = jdg
-        val AJ.EQ (_, ty0) = Hyps.lookup H z
-        val _ = Assert.alphaEq (ty0, ty1)
-      in
-        (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.intoU (raise Fail "TODO", raise Fail "TODO"))
-      end
-
-    (* ty at l >> ty synth ~~> (U l) *)
-    (* this is for non-deterministic search *)
-    fun NondetSynthFromTrueAtType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueAtType"
-        val H >> AJ.SYNTH ty1 = jdg
-        val AJ.TRUE ty0 = Hyps.lookup H z
-        val _ = Assert.alphaEq (ty0, ty1)
-      in
-        T.empty #> (H, Syn.intoU (raise Fail "TODO", raise Fail "TODO"))
-      end
-
     fun VarFromTrue _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.VarFromTrue"

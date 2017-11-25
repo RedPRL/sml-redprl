@@ -448,16 +448,8 @@ struct
        | _ => false
   in
     fun SynthFromHyp z = matchHyp z
-      (fn AJ.EQ _ =>
-           Lcf.rule o Synth.NondetFromEq z
-              orelse_
-           Lcf.rule o Universe.NondetSynthFromEqAtType z
-        | AJ.TRUE _ =>
-            Lcf.rule o Universe.NondetSynthFromTrueAtType z
-              orelse_
-            Lcf.rule o InternalizedEquality.NondetSynthFromTrueEq z
-              orelse_
-            Lcf.rule o Universe.NondetSynthFromTrueEqAtType z
+      (fn AJ.EQ _ => Lcf.rule o Synth.NondetFromEq z
+        | AJ.TRUE _ => Lcf.rule o InternalizedEquality.NondetSynthFromTrueEq z
         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "SynthFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
     structure Tactical =
