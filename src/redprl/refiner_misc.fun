@@ -50,7 +50,7 @@ struct
         val () = Assert.alphaEq' "Coe.EqCapL source and target of direction" (r, r')
 
         (* type *)
-        val goalTy = makeType (H @> (u, AJ.TERM O.DIM)) ty0u
+        val goalTy = makeType (H @> (u, AJ.TERM O.DIM)) (ty0u, K.top) (* TODO: Favonia, is this right? - JMS *)
         (* after proving the above goal, [ty0r] must be a type *)
         val ty0r = substVar (r, u) ty0u
         val goalTy0 = makeSubType H ty0r ty

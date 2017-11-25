@@ -169,7 +169,7 @@ struct
     makeGoal @@ H >> AJ.TERM tau
 
   (* TODO: add a kind parameter here! *)
-  fun makeType H (a : abt) : (label * jdg) list =
+  fun makeType H (a : abt, k : K.kind) : (label * jdg) list =
     raise Fail "TODO"
 
   fun makeEqTypeWith f H (a:abt, b:abt) : (label * jdg) =

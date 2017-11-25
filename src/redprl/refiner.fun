@@ -229,7 +229,7 @@ struct
         val x = alpha 0
         val truncatedHx = truncatedH @> (x, AJ.TRUE ty)
         val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
-        val motiveWfGoal = makeType truncatedHx motiveHole
+        val motiveWfGoal = makeType truncatedHx (motiveHole, K.top)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
@@ -365,7 +365,6 @@ struct
      | "V/eq/uain" => Lcf.rule o V.Eq
      | "V/intro" => Lcf.rule o V.True
      | "universe/eqtype" => Lcf.rule o Universe.EqType
-     | "universe/intro" => Lcf.rule o Universe.True
      | "hcom/eq" => Lcf.rule o HCom.Eq
      | "hcom/eq/cap" => Lcf.rule o HCom.EqCapL
      | "hcom/eq/tube" => Lcf.rule o HCom.EqTubeL
@@ -677,7 +676,6 @@ struct
         case Syn.out ty of
            Syn.RECORD [] => Lcf.rule o Record.True (* the unit type *)
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.True
-         | Syn.UNIVERSE _ => Lcf.rule o Universe.True
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepTrue", TermPrinter.ppTerm ty)
 
       fun StepSynth sign m =

@@ -129,7 +129,7 @@ struct
         val x = alpha 0
         val Hx = H @> (x, AJ.TRUE @@ Syn.into Syn.BOOL)
         val (goalTy, holeTy) = makeTerm Hx O.EXP
-        val goalTy' = makeType Hx holeTy
+        val goalTy' = makeType Hx (holeTy, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), Syn.into Syn.BOOL)
@@ -212,7 +212,7 @@ struct
         (* We need to kind-check cz because of FCOM
          * This goal is made (explicitly) unconditional to simplify tactic writing
          *)
-        val goalKind = makeType H cz
+        val goalKind = makeType H (cz, K.COM)
 
         (* tt branch *)
         val (goalT, holeT) = makeTrue H (substVar (Syn.into Syn.TT, z) cz)
@@ -357,7 +357,7 @@ struct
         val z = alpha 0
         val Hz = H @> (z, AJ.TRUE nat)
         val (goalC, holeC) = makeTerm Hz O.EXP
-        val goalC' = makeType Hz holeC
+        val goalC' = makeType Hz (holeC, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), nat)
@@ -494,7 +494,7 @@ struct
         val z = alpha 0
         val Hz = H @> (z, AJ.TRUE int)
         val (goalC, holeC) = makeTerm Hz O.EXP
-        val goalC' = makeType Hz holeC
+        val goalC' = makeType Hz (holeC, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), int)
@@ -635,7 +635,7 @@ struct
         (* We need to kind-check cz because of FCOM
          * This goal is made (explicitly) unconditional to simplify tactic writing
          *)
-        val goalKind = makeType H cz (* TODO: kind check *)
+        val goalKind = makeType H (cz, K.COM)
 
         (* base branch *)
         val cbase = substVar (Syn.into Syn.BASE, z) cz
@@ -756,7 +756,7 @@ struct
         val Syn.FUN (a, z, bz) = Syn.out ty
 
         (* domain *)
-        val goalA = makeType H a
+        val goalA = makeType H (a, K.COE) (* TODO: Favonia, is this right? - JMS *)
 
         (* function *)
         val w = alpha 0
@@ -775,7 +775,7 @@ struct
         val Syn.FUN (a, x, bx) = Syn.out ty
 
         (* domain*)
-        val goalA = makeType H a
+        val goalA = makeType H (a, K.COE) (* TODO: Favonia, is the right? - JMS *)
 
         (* function *)
         val z = alpha 0
@@ -923,7 +923,7 @@ struct
                  val m1 = Fields.lookup lbl map1
                  val env' = Var.Ctx.insert env var m0
                  val goals' = goals >: makeEq H ((m0, m1), ty')
-                 val famGoals' = if isFirst then famGoals else famGoals >:+ makeType hyps ty
+                 val famGoals' = if isFirst then famGoals else famGoals >:+ makeType hyps (ty, K.top)
                  val hyps' = hyps @> (var, AJ.TRUE ty)
                in
                  {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}
@@ -981,7 +981,7 @@ struct
                  val (elemGoal, elemHole) = makeTrue H ty'
                  val env' = Var.Ctx.insert env var elemHole
                  val goals' = goals >: elemGoal
-                 val famGoals' = if isFirst then famGoals else famGoals >:+ makeType hyps ty
+                 val famGoals' = if isFirst then famGoals else famGoals >:+ makeType hyps (ty, K.top)
                  val elements' = (lbl, [] \ elemHole) :: elements
                in
                  {goals = goals', famGoals = famGoals', elements = elements', env = env', hyps = hyps', isFirst = false}
@@ -1442,8 +1442,9 @@ struct
 
         val goalA = makeEq H ((m0, m1), a)
 
-        val goalB = makeType H b
-        val goalC = makeType H c
+        (* TODO: Favonia, are these kind constraints correct? - JMS *)
+        val goalB = makeType H (b, K.COE)
+        val goalC = makeType H (c, K.COE)
         val z = alpha 0
         val goalF = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
@@ -1461,8 +1462,8 @@ struct
 
         val goalB = makeEq H ((m0, m1), b)
 
-        val goalA = makeType H a
-        val goalC = makeType H c
+        val goalA = makeType H (a, K.COE)
+        val goalC = makeType H (c, K.COE)
         val z = alpha 0
         val goalF = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
@@ -1500,9 +1501,10 @@ struct
         val Syn.FCOM args0 = Syn.out tm0
         val Syn.FCOM args1 = Syn.out tm1
 
-        val goalA = makeType H a
-        val goalB = makeType H b
-        val goalC = makeType H c
+        (* TODO: Favonia, is this right? - JMS *)
+        val goalA = makeType H (a, K.COE)
+        val goalB = makeType H (b, K.COE)
+        val goalC = makeType H (c, K.COE)
 
         val z = alpha 0
         val goalF = makeMem (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
@@ -1524,7 +1526,7 @@ struct
         (* We need to kind-check cz because of FCOM
          * This goal is made (explicitly) unconditional to simplify tactic writing
          *)
-        val goalKind = makeType H dz (* TODO: kind check *)
+        val goalKind = makeType H (dz, K.COM)
 
         (* left branch *)
         val a = alpha 0
@@ -1791,7 +1793,7 @@ struct
         val x = alpha 0
         val truncatedHx = truncatedH @> (x, AJ.TRUE holeTy)
         val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
-        val motiveWfGoal = makeType truncatedHx motiveHole
+        val motiveWfGoal = makeType truncatedHx (motiveHole, K.top)
 
         val motiven = substVar (holeN, x) motiveHole
         val motivem = substVar (holeM, x) motiveHole
@@ -2133,19 +2135,6 @@ struct
         (* TODO: constraint on k? *)
       in
         T.empty #> (H, trivial)
-      end
-
-    fun True _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.True"
-        val H >> AJ.TRUE ty = jdg
-        val Syn.UNIVERSE (l0, k0) = Syn.out ty
-
-        val (goalTy, holeTy) = makeTerm H O.EXP
-        (* l0 is not omega because of Assert.univMem *)
-        val goalTy' = makeType H holeTy
-      in
-        |>: goalTy >:+ goalTy' #> (H, Syn.into Syn.AX)
       end
 
     (* This rule will be removed once every hypothesis
