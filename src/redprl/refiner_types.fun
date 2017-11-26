@@ -1963,7 +1963,8 @@ struct
   structure FormalComposition =
   struct
     val kindConstraintOnCapAndTubes =
-      fn K.DISCRETE => (K.DISCRETE, K.DISCRETE) (* XXX more research needed *)
+      fn K.DISCRETE => E.raiseError @@
+          E.NOT_APPLICABLE (Fpp.text "fcom types", Fpp.text "discrete universes")
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
