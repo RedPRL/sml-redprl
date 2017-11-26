@@ -272,7 +272,9 @@ end
 structure Jdg = 
 struct
   open Ast infix $$ \
-  fun makeAtLvl theta (lvl, k : ast) es = 
+  fun makeAtLvl theta (lvl : ast) es =
+     theta $$ List.map (fn e => [] \ e) (lvl :: es)
+  fun makeAtLvlWithKind theta (lvl : ast, k) es =
      theta $$ List.map (fn e => [] \ e) (lvl :: k :: es)
 end
 
@@ -431,7 +433,8 @@ end
  | terms of ast list
 
  | kind of O.K.kind
- | withKindAtLevel of ast * ast
+ | atLevel of ast
+ | atLevelWithKind of ast * ast
 
  | rawJudgment of ast
  | judgment of ast
@@ -782,21 +785,25 @@ kind
   | COE (O.K.COE)
   | STABLE (O.K.STABLE)
 
-withKindAtLevel
+atLevel
+  : AT level (level)
+  | (Ast.$$ (O.LOMEGA, []))
+
+atLevelWithKind
   : WITH term AT level (level, term)
   | AT level WITH term (level, term)
   | WITH term (Ast.$$ (O.LOMEGA, []), term)
-  | AT level (level, Ast.$$ (O.KCONST (O.K.top), []))
-  | (Ast.$$ (O.LOMEGA, []), Ast.$$ (O.KCONST (O.K.top), []))
+  | AT level (level, Ast.$$ (O.KCONST O.K.top, []))
+  | (Ast.$$ (O.LOMEGA, []), Ast.$$ (O.KCONST O.K.top, []))
 
 rawJudgment
-  : term EQUALS term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term2, term3])
-  | term IN term withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ withKindAtLevel [term1, term1, term2])
-  | term TRUE withKindAtLevel (Jdg.makeAtLvl O.JDG_TRUE withKindAtLevel [term])
-  | term withKindAtLevel (Jdg.makeAtLvl O.JDG_TRUE withKindAtLevel [term])
-  | term EQUALS term TYPE withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ_TYPE withKindAtLevel [term1, term2])
-  | term TYPE withKindAtLevel (Jdg.makeAtLvl O.JDG_EQ_TYPE withKindAtLevel [term, term])
-  | term SYNTH withKindAtLevel (Jdg.makeAtLvl O.JDG_SYNTH withKindAtLevel [term])
+  : term EQUALS term IN term atLevel (Jdg.makeAtLvl O.JDG_EQ atLevel [term1, term2, term3])
+  | term IN term atLevel (Jdg.makeAtLvl O.JDG_EQ atLevel [term1, term1, term2])
+  | term TRUE atLevel (Jdg.makeAtLvl O.JDG_TRUE atLevel [term])
+  | term atLevel (Jdg.makeAtLvl O.JDG_TRUE atLevel [term])
+  | term EQUALS term TYPE atLevelWithKind (Jdg.makeAtLvlWithKind O.JDG_EQ_TYPE atLevelWithKind [term1, term2])
+  | term TYPE atLevelWithKind (Jdg.makeAtLvlWithKind O.JDG_EQ_TYPE atLevelWithKind [term, term])
+  | term SYNTH atLevel (Jdg.makeAtLvl O.JDG_SYNTH atLevel [term])
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 

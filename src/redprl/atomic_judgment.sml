@@ -3,18 +3,18 @@ struct
   open RedPrlAtomicJudgmentData
   type abt = RedPrlAbt.abt
 
-  fun MEM (m, (a, l, k)) =
-    EQ ((m, m), (a, l, k))
+  fun MEM (m, (a, l)) =
+    EQ ((m, m), (a, l))
 
   fun TYPE (a, l, k) =
     EQ_TYPE ((a, a), l, k)
 
   fun map f =
-    fn EQ ((m, n), (a, l, k)) => EQ ((f m, f n), (f a, RedPrlLevel.map f l, k))
-     | TRUE (a, l, k) => TRUE (f a, RedPrlLevel.map f l, k)
+    fn EQ ((m, n), (a, l)) => EQ ((f m, f n), (f a, RedPrlLevel.map f l))
+     | TRUE (a, l) => TRUE (f a, RedPrlLevel.map f l)
      | EQ_TYPE ((a, b), l, k) => EQ_TYPE ((f a, f b), RedPrlLevel.map f l, k)
      | SUB_UNIVERSE (u, l, k) => SUB_UNIVERSE (f u, RedPrlLevel.map f l, k)
-     | SYNTH (a, l, k) => SYNTH (f a, RedPrlLevel.map f l, k)
+     | SYNTH (a, l) => SYNTH (f a, RedPrlLevel.map f l)
      | TERM tau => TERM tau
 
   fun @@ (f, x) = f x
@@ -24,21 +24,15 @@ struct
     open Fpp
   in
     val pretty =
-      fn EQ ((m, n), (a, l, k)) => expr @@ hvsep @@ List.concat
+      fn EQ ((m, n), (a, l)) => expr @@ hvsep @@ List.concat
            [ if RedPrlAbt.eq (m, n) then [TermPrinter.ppTerm m]
              else [TermPrinter.ppTerm m, Atomic.equals, TermPrinter.ppTerm n]
            , [hsep [text "in", TermPrinter.ppTerm a]]
-           , if RedPrlLevel.eq (l, RedPrlLevel.top) then []
-             else [hsep [text "at", RedPrlLevel.pretty l]]
-           , if k = RedPrlKind.top then []
-             else [hsep [text "with", TermPrinter.ppKind k]]
+           , [hsep [text "at", RedPrlLevel.pretty l]]
            ]
-       | TRUE (a, l, k) => expr @@ hvsep @@ List.concat
-           [ [TermPrinter.ppTerm a]
-           , if RedPrlLevel.eq (l, RedPrlLevel.top) then []
-             else [hsep [text "at", RedPrlLevel.pretty l]]
-           , if k = RedPrlKind.top then []
-             else [hsep [text "with", TermPrinter.ppKind k]]
+       | TRUE (a, l) => expr @@ hvsep
+           [ TermPrinter.ppTerm a
+           , hsep [text "at", RedPrlLevel.pretty l]
            ]
        | EQ_TYPE ((a, b), l, k) => expr @@ hvsep @@ List.concat
            [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm a]
@@ -52,18 +46,11 @@ struct
        | SUB_UNIVERSE (u, l, k) => expr @@ hvsep
            [ TermPrinter.ppTerm u
            , text "<="
-           , Atomic.parens @@ expr @@ hsep
-               [ text "U"
-               , RedPrlLevel.pretty l
-               , if k = RedPrlKind.top then empty else TermPrinter.ppKind k
-               ]
+           , TermPrinter.ppTerm (Syntax.intoU (l, k))
            ]
-       | SYNTH (m, l, k) => expr @@ hvsep @@ List.concat
-           [ [TermPrinter.ppTerm m, text "synth"]
-           , if RedPrlLevel.eq (l, RedPrlLevel.top) then []
-             else [hsep [text "at", RedPrlLevel.pretty l]]
-           , if k = RedPrlKind.top then []
-             else [hsep [hsep [text "with", TermPrinter.ppKind k]]]
+       | SYNTH (m, l) => expr @@ hvsep
+           [ TermPrinter.ppTerm m, text "synth"
+           , hsep [text "at", RedPrlLevel.pretty l]
            ]
        | TERM tau => TermPrinter.ppSort tau
   end
@@ -84,30 +71,30 @@ struct
     structure O = RedPrlOpData
     infix $ $$ \
   in
-    fun kconst k = 
+    fun kconst k =
       O.KCONST k $$ []
 
     val into : jdg -> abt =
-      fn EQ ((m, n), (a, l, k)) => O.JDG_EQ $$ [[] \ L.into l, [] \ kconst k, [] \ m, [] \ n, [] \ a]
-       | TRUE (a, l, k) => O.JDG_TRUE $$ [[] \ L.into l, [] \ kconst k, [] \ a]
+      fn EQ ((m, n), (a, l)) => O.JDG_EQ $$ [[] \ L.into l, [] \ m, [] \ n, [] \ a]
+       | TRUE (a, l) => O.JDG_TRUE $$ [[] \ L.into l, [] \ a]
        | EQ_TYPE ((a, b), l, k) => O.JDG_EQ_TYPE $$ [[] \ L.into l, [] \ kconst k, [] \ a, [] \ b]
        | SUB_UNIVERSE (u, l, k) => O.JDG_SUB_UNIVERSE $$ [[] \ L.into l, [] \ kconst k, [] \ u]
-       | SYNTH (m, l, k) => O.JDG_SYNTH $$ [[] \ L.into l, [] \ kconst k, [] \ m]
+       | SYNTH (m, l) => O.JDG_SYNTH $$ [[] \ L.into l, [] \ m]
 
        | TERM tau => O.JDG_TERM tau $$ []
 
-    fun outk kexpr = 
+    fun outk kexpr =
       case RedPrlAbt.out kexpr of
          O.KCONST k $ _ => k
        | _ => raise RedPrlError.error [Fpp.text "Invalid kind expression"]
 
     fun out jdg =
       case RedPrlAbt.out jdg of
-         O.JDG_EQ $ [_ \ l, _ \ k, _ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, L.out l, outk k))
-       | O.JDG_TRUE $ [_ \ l, _ \ k, _ \ a] => TRUE (a, L.out l, outk k)
+         O.JDG_EQ $ [_ \ l, _ \ m, _ \ n, _ \ a] => EQ ((m, n), (a, L.out l))
+       | O.JDG_TRUE $ [_ \ l, _ \ a] => TRUE (a, L.out l)
        | O.JDG_EQ_TYPE $ [_ \ l, _ \ k, _ \ a, _ \ b] => EQ_TYPE ((a, b), L.out l, outk k)
        | O.JDG_SUB_UNIVERSE $ [_ \ l, _ \ k, _ \ u] => SUB_UNIVERSE (u, L.out l, outk k)
-       | O.JDG_SYNTH $ [_ \ l, _ \ k, _ \ m] => SYNTH (m, L.out l, outk k)
+       | O.JDG_SYNTH $ [_ \ l, _ \ m] => SYNTH (m, L.out l)
 
        | O.JDG_TERM tau $ [] => TERM tau
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]

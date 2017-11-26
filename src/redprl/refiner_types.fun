@@ -70,10 +70,9 @@ struct
     fun EqTT _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqTT"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.BOOL = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.TT = Syn.out m
         val Syn.TT = Syn.out n
       in
@@ -83,10 +82,9 @@ struct
     fun EqFF _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqFF"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.BOOL = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FF = Syn.out m
         val Syn.FF = Syn.out n
       in
@@ -97,8 +95,8 @@ struct
       let
         val _ = RedPrlLog.trace "Bool.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        (* for now we ignore the level in the context *)
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.BOOL = Syn.out ty
 
         (* tt branch *)
@@ -127,29 +125,29 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqElim"
-        val H >> AJ.EQ ((if0, if1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((if0, if1), (ty, l)) = jdg
         val Syn.IF (m0, (t0, f0)) = Syn.out if0
         val Syn.IF (m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
         val x = alpha 0
-        val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL, inherentLevel, inherentKind))
+        val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL, inherentLevel))
         val (goalTy, holeTy) = makeTerm Hx O.EXP
-        val goalTy' = makeType Hx (holeTy, NONE, K.top)
+        val goalTy' = makeType Hx (holeTy, l, K.top)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (Syn.into Syn.BOOL, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (Syn.into Syn.BOOL, l))
 
         (* result type*)
-        val goalTy0 = makeSubType H (substVar (m0, x) holeTy, NONE, K.top) (ty, l, k)
+        val goalTy0 = makeEqType H ((substVar (m0, x) holeTy, ty), l, K.top)
 
         (* tt branch *)
-        val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy, NONE, K.top))
+        val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy, l))
 
         (* ff branch *)
-        val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy, NONE, K.top))
+        val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy, l))
       in
-        |>: goalTy >: goalM >: goalT >: goalF >:? goalTy0 >: goalTy' #> (H, trivial)
+        |>: goalTy >: goalM >: goalT >: goalF >: goalTy0 >: goalTy' #> (H, trivial)
       end
   end
 
@@ -175,10 +173,9 @@ struct
     fun EqTT _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqTT"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.WBOOL = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.TT = Syn.out m
         val Syn.TT = Syn.out n
       in
@@ -188,10 +185,9 @@ struct
     fun EqFF _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqFF"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.WBOOL = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FF = Syn.out m
         val Syn.FF = Syn.out n
       in
@@ -201,27 +197,26 @@ struct
     fun EqFCom alpha jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqFCom"
-        val H >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((lhs, rhs), (ty, l)) = jdg
         val Syn.WBOOL = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
 
         val w = alpha 0
       in
-        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, NONE, K.top))
+        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, l))
         #> (H, trivial)
       end
 
     fun Elim z _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.Elim"
-        val H >> AJ.TRUE (cz, l, k) = jdg
+        val H >> AJ.TRUE (cz, l) = jdg
         (* if(FCOM) steps to COM *)
-        val k = K.meet (k, K.COM)
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val k = K.COM
+        (* for now we ignore the level in the context *)
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.WBOOL = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
@@ -230,10 +225,10 @@ struct
         val goalKind = makeType H (cz, l, k)
 
         (* tt branch *)
-        val (goalT, holeT) = makeTrue H (substVar (Syn.into Syn.TT, z) cz, NONE, K.top)
+        val (goalT, holeT) = makeTrue H (substVar (Syn.into Syn.TT, z) cz, l)
 
         (* ff branch *)
-        val (goalF, holeF) = makeTrue H (substVar (Syn.into Syn.FF, z) cz, NONE, K.top)
+        val (goalF, holeF) = makeTrue H (substVar (Syn.into Syn.FF, z) cz, l)
 
         (* realizer *)
         val if_ = Syn.into @@ Syn.WIF ((z, cz), VarKit.toExp z, (holeT, holeF))
@@ -246,9 +241,9 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqElim"
-        val H >> AJ.EQ ((if0, if1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((if0, if1), (ty, l)) = jdg
         (* if(FCOM) steps to COM *)
-        val k = K.meet (k, K.COM)
+        val k = K.COM
         val Syn.WIF ((x, c0x), m0, (t0, f0)) = Syn.out if0
         val Syn.WIF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
@@ -256,20 +251,20 @@ struct
         val z = alpha 0
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
-        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.WBOOL, inherentLevel, inherentKind))
-        val goalTy = makeEqType Hz ((c0z, c1z), NONE, K.top)
+        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.WBOOL, inherentLevel))
+        val goalTy = makeEqType Hz ((c0z, c1z), l, k)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (Syn.into Syn.WBOOL, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (Syn.into Syn.WBOOL, l))
 
         (* result type*)
-        val goalTy0 = makeSubType H (substVar (m0, x) c0x, NONE, K.top) (ty, l, k)
+        val goalTy0 = makeEqTypeIfDifferent H ((substVar (m0, x) c0x, ty), l, k)
 
         (* tt branch *)
-        val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x, NONE, K.top))
+        val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x, l))
 
         (* ff branch *)
-        val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x, NONE, K.top))
+        val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x, l))
       in
         |>: goalM >: goalT >: goalF >:? goalTy0 >: goalTy #> (H, trivial)
       end
@@ -277,11 +272,11 @@ struct
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.SynthElim"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.WIF ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
-        val goal = makeMem H (tm, (cm, l, k))
+        val goal = makeMem H (tm, (cm, l))
       in
         |>: goal #> (H, cm)
       end
@@ -309,10 +304,9 @@ struct
     fun EqZero _ jdg =
       let
         val _ = RedPrlLog.trace "Nat.EqZero"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.NAT = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.ZERO = Syn.out m
         val Syn.ZERO = Syn.out n
       in
@@ -322,13 +316,12 @@ struct
     fun EqSucc _ jdg =
       let
         val _ = RedPrlLog.trace "Nat.EqSucc"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.NAT = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.SUCC m' = Syn.out m
         val Syn.SUCC n' = Syn.out n
-        val goal = makeEq H ((m', n'), (Syn.into Syn.NAT, NONE, K.top))
+        val goal = makeEq H ((m', n'), (Syn.into Syn.NAT, l))
       in
         |>: goal #> (H, trivial)
       end
@@ -336,9 +329,9 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Nat.Elim"
-        val H >> AJ.TRUE (cz, l, k) = jdg
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val H >> AJ.TRUE (cz, l) = jdg
+        (* for now we ignore the level in the context *)
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.NAT = Syn.out ty
 
         val nat = Syn.into Syn.NAT
@@ -346,7 +339,7 @@ struct
         val succ = Syn.into o Syn.SUCC
 
         (* zero branch *)
-        val (goalZ, holeZ) = makeTrue H (substVar (zero, z) cz, l, k)
+        val (goalZ, holeZ) = makeTrue H (substVar (zero, z) cz, l)
 
         (* succ branch *)
         val u = alpha 0
@@ -354,8 +347,8 @@ struct
         val cu = VarKit.rename (u, z) cz
         val (goalS, holeS) =
           makeTrue
-            (H @> (u, AJ.TRUE (nat, inherentLevel, inherentKind)) @> (v, AJ.TRUE (cu, l, k)))
-            (substVar (succ @@ VarKit.toExp u, z) cz, l, k)
+            (H @> (u, AJ.TRUE (nat, inherentLevel)) @> (v, AJ.TRUE (cu, l)))
+            (substVar (succ @@ VarKit.toExp u, z) cz, l)
 
         (* realizer *)
         val evidence = Syn.into @@ Syn.NAT_REC (VarKit.toExp z, (holeZ, (u, v, holeS)))
@@ -366,7 +359,7 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Nat.EqElim"
-        val H >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((elim0, elim1), (ty, l)) = jdg
         val Syn.NAT_REC (m0, (n0, (a0, b0, p0))) = Syn.out elim0
         val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
 
@@ -376,18 +369,18 @@ struct
 
         (* motive *)
         val z = alpha 0
-        val Hz = H @> (z, AJ.TRUE (nat, inherentLevel, inherentKind))
+        val Hz = H @> (z, AJ.TRUE (nat, inherentLevel))
         val (goalC, holeC) = makeTerm Hz O.EXP
-        val goalC' = makeType Hz (holeC, NONE, K.top)
+        val goalC' = makeType Hz (holeC, l, K.top)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (nat, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (nat, l))
 
         (* result type *)
-        val goalTy = makeSubType H (substVar (m0, z) holeC, NONE, K.top) (ty, l, k)
+        val goalTy = makeSubType H ((substVar (m0, z) holeC, ty), l)
 
         (* zero branch *)
-        val goalZ = makeEq H ((n0, n1), (substVar (zero, z) holeC, NONE, K.top))
+        val goalZ = makeEq H ((n0, n1), (substVar (zero, z) holeC, l))
 
         (* succ branch *)
         val u = alpha 1
@@ -397,10 +390,10 @@ struct
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
-            (H @> (u, AJ.TRUE (nat, inherentLevel, inherentKind)) @> (v, AJ.TRUE (cu, l, k)))
-            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
+            (H @> (u, AJ.TRUE (nat, inherentLevel)) @> (v, AJ.TRUE (cu, l)))
+            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, l))
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalC' >:? goalTy #> (H, trivial)
+        |>: goalC >: goalM >: goalZ >: goalS >: goalC' >: goalTy #> (H, trivial)
       end
 
     fun EqTypeElim alpha jdg =
@@ -416,18 +409,18 @@ struct
 
         (* motive *)
         val z = alpha 0
-        val Hz = H @> (z, AJ.TRUE (nat, inherentLevel, inherentKind))
+        val Hz = H @> (z, AJ.TRUE (nat, inherentLevel))
         val (goalC, holeC) = makeTerm Hz O.EXP
-        val goalC' = makeType Hz (holeC, NONE, K.top)
+        val goalC' = makeType Hz (holeC, l, K.top)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (nat, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (nat, l))
 
         (* result type *)
         val goalTy = makeSubUniverse H (substVar (m0, z) holeC, l, k)
 
         (* zero branch *)
-        val goalZ = makeEq H ((n0, n1), (substVar (zero, z) holeC, NONE, K.top))
+        val goalZ = makeEq H ((n0, n1), (substVar (zero, z) holeC, l))
 
         (* succ branch *)
         val u = alpha 1
@@ -437,9 +430,8 @@ struct
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
-            (H @> (u, AJ.TRUE (nat, inherentLevel, inherentKind))
-                  @> (v, AJ.TRUE (cu, Universe.inherentLevel l, Universe.inherentKind k)))
-            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
+            (H @> (u, AJ.TRUE (nat, inherentLevel)) @> (v, AJ.TRUE (cu, l)))
+            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, l))
       in
         |>: goalC >: goalM >: goalZ >: goalS >: goalC' >: goalTy #> (H, trivial)
       end
@@ -467,10 +459,9 @@ struct
     fun EqZero _ jdg =
       let
         val _ = RedPrlLog.trace "Int.EqZero"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.INT = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.ZERO = Syn.out m
         val Syn.ZERO = Syn.out n
       in
@@ -480,13 +471,12 @@ struct
     fun EqSucc _ jdg =
       let
         val _ = RedPrlLog.trace "Int.EqSucc"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.INT = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.SUCC m' = Syn.out m
         val Syn.SUCC n' = Syn.out n
-        val goal = makeEq H ((m', n'), (Syn.into Syn.NAT, NONE, K.top))
+        val goal = makeEq H ((m', n'), (Syn.into Syn.NAT, l))
       in
         |>: goal #> (H, trivial)
       end
@@ -494,13 +484,12 @@ struct
     fun EqNegSucc _ jdg =
       let
         val _ = RedPrlLog.trace "Int.EqNegSucc"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.INT = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.NEGSUCC m' = Syn.out m
         val Syn.NEGSUCC n' = Syn.out n
-        val goal = makeEq H ((m', n'), (Syn.into Syn.NAT, NONE, K.top))
+        val goal = makeEq H ((m', n'), (Syn.into Syn.NAT, l))
       in
         |>: goal #> (H, trivial)
       end
@@ -508,9 +497,9 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Int.Elim"
-        val H >> AJ.TRUE (cz, l, k) = jdg
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val H >> AJ.TRUE (cz, l) = jdg
+        (* for now we ignore the level in the context *)
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.INT = Syn.out ty
 
         val nat = Syn.into Syn.NAT
@@ -519,7 +508,7 @@ struct
         val negsucc = Syn.into o Syn.NEGSUCC
 
         (* zero branch *)
-        val (goalZ, holeZ) = makeTrue H (substVar (zero, z) cz, l, k)
+        val (goalZ, holeZ) = makeTrue H (substVar (zero, z) cz, l)
 
         (* succ branch *)
         val u = alpha 0
@@ -527,18 +516,18 @@ struct
         val cu = VarKit.rename (u, z) cz
         val (goalS, holeS) =
           makeTrue
-            (H @> (u, AJ.TRUE (nat, Nat.inherentLevel, Nat.inherentKind)) @> (v, AJ.TRUE (cu, l, k)))
-            (substVar (succ @@ VarKit.toExp u, z) cz, l, k)
+            (H @> (u, AJ.TRUE (nat, Nat.inherentLevel)) @> (v, AJ.TRUE (cu, l)))
+            (substVar (succ @@ VarKit.toExp u, z) cz, l)
 
         (* (negsucc zero) branch *)
-        val (goalNSZ, holeNSZ) = makeTrue H (substVar (negsucc zero, z) cz, l, k)
+        val (goalNSZ, holeNSZ) = makeTrue H (substVar (negsucc zero, z) cz, l)
 
         (* (negsucc succ) branch *)
         val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) cz
         val (goalNSS, holeNSS) =
           makeTrue
-            (H @> (u, AJ.TRUE (nat, Nat.inherentLevel, Nat.inherentKind)) @> (v, AJ.TRUE (cnegsuccu, l, k)))
-            (substVar (negsucc @@ succ @@ VarKit.toExp u, z) cz, l, k)
+            (H @> (u, AJ.TRUE (nat, Nat.inherentLevel)) @> (v, AJ.TRUE (cnegsuccu, l)))
+            (substVar (negsucc @@ succ @@ VarKit.toExp u, z) cz, l)
 
         (* realizer *)
         val evidence = Syn.into @@ Syn.INT_REC (VarKit.toExp z, (holeZ, (u, v, holeS), holeNSZ, (u, v, holeNSS)))
@@ -549,7 +538,7 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Int.EqElim"
-        val H >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((elim0, elim1), (ty, l)) = jdg
         val Syn.INT_REC (m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
         val Syn.INT_REC (m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
 
@@ -561,18 +550,18 @@ struct
 
         (* motive *)
         val z = alpha 0
-        val Hz = H @> (z, AJ.TRUE (int, inherentLevel, inherentKind))
+        val Hz = H @> (z, AJ.TRUE (int, inherentLevel))
         val (goalC, holeC) = makeTerm Hz O.EXP
-        val goalC' = makeType Hz (holeC, NONE, K.top)
+        val goalC' = makeType Hz (holeC, l, K.top)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (int, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (int, l))
 
         (* result type *)
-        val goalTy = makeSubType H (substVar (m0, z) holeC, NONE, K.top) (ty, l, k)
+        val goalTy = makeEqType H ((substVar (m0, z) holeC, ty), l, K.top)
 
         (* zero branch *)
-        val goalZ = makeEq H ((n0, n1), (substVar (zero, z) holeC, NONE, K.top))
+        val goalZ = makeEq H ((n0, n1), (substVar (zero, z) holeC, l))
 
         (* succ branch *)
         val u = alpha 1
@@ -582,11 +571,11 @@ struct
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
-            (H @> (u, AJ.TRUE (nat, Nat.inherentLevel, Nat.inherentKind)) @> (v, AJ.TRUE (cu, l, k)))
-            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
+            (H @> (u, AJ.TRUE (nat, Nat.inherentLevel)) @> (v, AJ.TRUE (cu, l)))
+            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC, l))
 
         (* (negsucc zero) branch *)
-        val goalNSZ = makeEq H ((q0, q1), (substVar (negsucc zero, z) holeC, NONE, K.top))
+        val goalNSZ = makeEq H ((q0, q1), (substVar (negsucc zero, z) holeC, l))
 
         (* (negsucc succ) branch *)
         val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) holeC
@@ -594,10 +583,10 @@ struct
         val r1 = VarKit.renameMany [(u, c1), (v, d1)] r1
         val goalNSS =
           makeEq
-            (H @> (u, AJ.TRUE (nat, l, Nat.inherentKind)) @> (v, AJ.TRUE (cnegsuccu, l, k)))
-            ((r0, r1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, NONE, K.top))
+            (H @> (u, AJ.TRUE (nat, l)) @> (v, AJ.TRUE (cnegsuccu, l)))
+            ((r0, r1), (substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC, l))
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >:? goalTy #> (H, trivial)
+        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >: goalTy #> (H, trivial)
       end
   end
 
@@ -624,8 +613,8 @@ struct
       let
         val _ = RedPrlLog.trace "Void.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        (* for now we ignore the level in the context *)
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.VOID = Syn.out ty
 
         val evidence =
@@ -664,10 +653,9 @@ struct
     fun EqBase _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqBase"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.BASE = Syn.out m
         val Syn.BASE = Syn.out n
       in
@@ -677,10 +665,9 @@ struct
     fun EqLoop _ jdg =
       let
         val _ = RedPrlLog.trace "S1.EqLoop"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.LOOP r1 = Syn.out m
         val Syn.LOOP r2 = Syn.out n
         val () = Assert.alphaEq' "S1.EqLoop" (r1, r2)
@@ -691,27 +678,26 @@ struct
     fun EqFCom alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.EqFCom"
-        val H >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((lhs, rhs), (ty, l)) = jdg
         val Syn.S1 = Syn.out ty
         val _ = Assert.levelLeq (inherentLevel, l)
-        val _ = Assert.kindLeq (inherentKind, k)
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
 
         val w = alpha 0
       in
-        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, NONE, K.top))
+        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, l))
         #> (H, trivial)
       end
 
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.Elim"
-        val H >> AJ.TRUE (cz, l, k) = jdg
+        val H >> AJ.TRUE (cz, l) = jdg
         (* S1-rec(FCOM) steps to COM *)
-        val k = K.meet (k, K.COM)
+        val k = K.COM
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.S1 = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
@@ -721,24 +707,24 @@ struct
 
         (* base branch *)
         val cbase = substVar (Syn.into Syn.BASE, z) cz
-        val (goalB, holeB) = makeTrue H (cbase, NONE, K.top)
+        val (goalB, holeB) = makeTrue H (cbase, l)
 
         (* loop branch *)
         val u = alpha 0
         val loop = Syn.into o Syn.LOOP @@ VarKit.toDim u
         val cloop = substVar (loop, z) cz
-        val (goalL, holeL) = makeTrue (H @> (u, AJ.TERM O.DIM)) (cloop, NONE, K.top)
+        val (goalL, holeL) = makeTrue (H @> (u, AJ.TERM O.DIM)) (cloop, l)
 
         (* coherence *)
         val l0 = substVar (Syn.into Syn.DIM0, u) holeL
         val l1 = substVar (Syn.into Syn.DIM1, u) holeL
-        val goalCoh0 = makeEqIfDifferent H ((l0, holeB), (cbase, NONE, K.top)) (* holeB well-typed *)
-        val goalCoh1 = makeEqIfAllDifferent H ((l1, holeB), (cbase, NONE, K.top)) [l0]
+        val goalCoh0 = makeEq H ((l0, holeB), (cbase, l))
+        val goalCoh1 = makeEqIfAllDifferent H ((l1, holeB), (cbase, l)) [l0] (* l0 well-typed *)
 
         (* realizer *)
         val elim = Syn.into @@ Syn.S1_REC ((z, cz), VarKit.toExp z, (holeB, (u, holeL)))
       in
-        |>: goalB >: goalL >:? goalCoh0 >:? goalCoh1 >: goalKind #> (H, elim)
+        |>: goalB >: goalL >: goalCoh0 >:? goalCoh1 >: goalKind #> (H, elim)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected circle elimination problem"]
@@ -746,9 +732,9 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.EqElim"
-        val H >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((elim0, elim1), (ty, l)) = jdg
         (* S1-rec(FCOM) steps to COM *)
-        val k = K.meet (k, K.COM)
+        val k = K.COM
         val Syn.S1_REC ((x, c0x), m0, (b0, (u, l0u))) = Syn.out elim0
         val Syn.S1_REC ((y, c1y), m1, (b1, (v, l1v))) = Syn.out elim1
 
@@ -758,30 +744,30 @@ struct
         val z = alpha 0
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
-        val goalC = makeEqType (H @> (z, AJ.TRUE (S1, inherentLevel, inherentKind))) ((c0z, c1z), l, k)
+        val goalC = makeEqType (H @> (z, AJ.TRUE (S1, inherentLevel))) ((c0z, c1z), l, k)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (S1, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (S1, l))
 
         (* result type *)
-        val goalTy = makeSubType H (substVar (m0, x) c0x, l, k) (ty, l, k) (* c0m0 type *)
+        val goalTy = makeSubTypeIfDifferent H ((substVar (m0, x) c0x, ty), l)
 
         (* base branch *)
         val cbase = substVar (Syn.into Syn.BASE, x) c0x
-        val goalB = makeEq H ((b0, b1), (cbase, NONE, K.top))
+        val goalB = makeEq H ((b0, b1), (cbase, l))
 
         (* loop branch*)
         val w = alpha 1
         val l0w = substVar (VarKit.toDim w, u) l0u
         val l1w = substVar (VarKit.toDim w, v) l1v
         val cloop = substVar (Syn.into @@ Syn.LOOP (VarKit.toDim w), x) c0x
-        val goalL = makeEq (H @> (w, AJ.TERM O.DIM)) ((l0w, l1w), (cloop, NONE, K.top))
+        val goalL = makeEq (H @> (w, AJ.TERM O.DIM)) ((l0w, l1w), (cloop, l))
 
         (* coherence *)
         val l00 = substVar (Syn.into Syn.DIM0, u) l0u
         val l01 = substVar (Syn.into Syn.DIM1, u) l0u
-        val goalCoh0 = makeEqIfAllDifferent H ((l00, b0), (cbase, NONE, K.top)) [b1]
-        val goalCoh1 = makeEqIfAllDifferent H ((l01, b0), (cbase, NONE, K.top)) [l00, b1]
+        val goalCoh0 = makeEqIfAllDifferent H ((l00, b0), (cbase, l)) [b1]
+        val goalCoh1 = makeEqIfAllDifferent H ((l01, b0), (cbase, l)) [l00, b1]
       in
         |>: goalC >: goalM >: goalB >: goalL >:? goalTy >:? goalCoh0 >:? goalCoh1
         #> (H, trivial)
@@ -790,11 +776,11 @@ struct
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "S1.SynthElim"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.S1_REC ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
-        val goal = makeMem H (tm, (cm, l, k))
+        val goal = makeMem H (tm, (cm, l))
       in
         |>: goal #> (H, cm)
       end
@@ -824,7 +810,7 @@ struct
         val z = alpha 0
         val b0z = VarKit.rename (z, x) b0x
         val b1z = VarKit.rename (z, y) b1y
-        val goalB = makeEqType (H @> (z, AJ.TRUE (a0, l, ka))) ((b0z, b1z), l, kb)
+        val goalB = makeEqType (H @> (z, AJ.TRUE (a0, l))) ((b0z, b1z), l, kb)
       in
         |>: goalA >: goalB #> (H, trivial)
       end
@@ -834,21 +820,20 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Fun.Eq"
-        val H >> AJ.EQ ((lam0, lam1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((lam0, lam1), (ty, l)) = jdg
         val Syn.LAM (x, m0x) = Syn.out lam0
         val Syn.LAM (y, m1y) = Syn.out lam1
         val Syn.FUN (a, z, bz) = Syn.out ty
-        val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain *)
-        val goalA = makeType H (a, l, ka)
+        val goalA = makeType H (a, l, K.top)
 
         (* function *)
         val w = alpha 0
         val m0w = VarKit.rename (w, x) m0x
         val m1w = VarKit.rename (w, y) m1y
         val bw = VarKit.rename (w, z) bz
-        val goalM = makeEq (H @> (w, AJ.TRUE (a, l, ka))) ((m0w, m1w), (bw, l, kb))
+        val goalM = makeEq (H @> (w, AJ.TRUE (a, l))) ((m0w, m1w), (bw, l))
       in
         |>: goalM >: goalA #> (H, trivial)
       end
@@ -856,17 +841,16 @@ struct
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "Fun.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.FUN (a, x, bx) = Syn.out ty
-        val (ka, kb) = kindConstraintsOnDomAndCod k
 
         (* domain*)
-        val goalA = makeType H (a, l, ka)
+        val goalA = makeType H (a, l, K.top)
 
         (* function *)
         val z = alpha 0
         val bz = VarKit.rename (z, x) bx
-        val (goalLam, hole) = makeTrue (H @> (z, AJ.TRUE (a, l, ka))) (bz, l, kb)
+        val (goalLam, hole) = makeTrue (H @> (z, AJ.TRUE (a, l))) (bz, l)
 
         (* realizer *)
         val lam = Syn.intoLam (z, hole)
@@ -879,12 +863,12 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.Eta"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.FUN (_, x, _) = Syn.out ty
 
         val m' = Syn.intoLam (x, Syn.intoApp (m, VarKit.toExp x))
-        val goal1 = makeMem H (m, (ty, l, k))
-        val goal2 = makeEqIfDifferent H ((m', n), (ty, NONE, K.top))
+        val goal1 = makeMem H (m, (ty, l))
+        val goal2 = makeEqIfDifferent H ((m', n), (ty, l))
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -893,12 +877,11 @@ struct
       let
         val _ = RedPrlLog.trace "Fun.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
+        val AJ.TRUE (ty, l') = Hyps.lookup H z
         val Syn.FUN (a, x, bx) = Syn.out ty
 
         (* argument *)
-        val (goalA, holeA) = makeTrue H (a, NONE, K.top)
+        val (goalA, holeA) = makeTrue H (a, l')
 
         (* new context *)
         val b' = substVar (holeA, x) bx
@@ -907,8 +890,8 @@ struct
         val aptm = Syn.intoApp (VarKit.toExp z, holeA)
         (* note: a and bx come from the telescope so they are types *)
         val H' = Hyps.interposeAfter
-          (z, |@> (u, AJ.TRUE (b', l', K.top))
-               @> (v, AJ.EQ ((VarKit.toExp u, aptm), (b', l', K.top))))
+          (z, |@> (u, AJ.TRUE (b', l'))
+               @> (v, AJ.EQ ((VarKit.toExp u, aptm), (b', l'))))
           H
 
         val (goalF, holeF) = makeGoal @@ H' >> catjdg
@@ -919,18 +902,18 @@ struct
     fun EqApp _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.EqApp"
-        val H >> AJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((ap0, ap1), (ty, l)) = jdg
         val Syn.APP (m0, n0) = Syn.out ap0
         val Syn.APP (m1, n1) = Syn.out ap1
 
-        val (goalFun, holeFun) = makeSynth H (m0, NONE, K.top)
+        val (goalFun, holeFun) = makeSynth H (m0, L.top)
         val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
         val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n0])
-        val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, NONE, K.top))
-        val goalArgEq = makeEq H ((n0, n1), (holeDom, NONE, K.top))
-        val goalTy = makeSubType H (holeCod, NONE, K.top) (ty, l, k)
+        val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, L.top))
+        val goalArgEq = makeEq H ((n0, n1), (holeDom, L.top))
+        val goalTy = makeSubType H ((holeCod, ty), l)
       in
-        |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >:? goalTy
+        |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >: goalTy
         #> (H, trivial)
       end
 
@@ -941,11 +924,11 @@ struct
         val Syn.APP (m0, n0) = Syn.out ap0
         val Syn.APP (m1, n1) = Syn.out ap1
 
-        val (goalFun, holeFun) = makeSynth H (m0, NONE, K.top)
+        val (goalFun, holeFun) = makeSynth H (m0, L.top)
         val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
         val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n0])
-        val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, NONE, K.top))
-        val goalArgEq = makeEq H ((n0, n1), (holeDom, NONE, K.top))
+        val goalFunEq = makeEqIfDifferent H ((m0, m1), (holeFun, L.top))
+        val goalArgEq = makeEq H ((n0, n1), (holeDom, L.top))
         val goalTy = makeSubUniverse H (holeCod, l, k)
       in
         |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >: goalTy
@@ -955,15 +938,14 @@ struct
     fun SynthApp _ jdg =
       let
         val _ = RedPrlLog.trace "Fun.SynthApp"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.APP (m, n) = Syn.out tm
-        val (goalFun, holeFun) = makeSynth H (m, NONE, K.top)
+        val (goalFun, holeFun) = makeSynth H (m, l)
         val (goalDom, holeDom) = makeMatch (O.FUN, 0, holeFun, [])
         val (goalCod, holeCod) = makeMatch (O.FUN, 1, holeFun, [n])
-        val goalN = makeMem H (n, (holeDom, NONE, K.top))
-        val goalKind = makeTypeUnlessSubUniv H (holeCod, l, k) (NONE, K.top)
+        val goalN = makeMem H (n, (holeDom, l))
       in
-        |>: goalFun >: goalDom >: goalCod >: goalN >:? goalKind #> (H, holeCod)
+        |>: goalFun >: goalDom >: goalCod >: goalN #> (H, holeCod)
       end
   end
 
@@ -997,8 +979,8 @@ struct
                  val ty0' = renameVars ren0 ty0
                  val ty1' = renameVars ren1 ty1
                  val kind = if isFirst then headKind else tailKind
-                 val goals' = goals >: makeEqType hyps ((ty0', ty1'), l, kind)
-                 val hyps' = hyps @> (var, AJ.TRUE (ty0', l, kind))
+                 val goals' = goals >: makeEqType (hyps) ((ty0', ty1'), l, kind)
+                 val hyps' = hyps @> (var, AJ.TRUE (ty0', l))
                  val ren0' = Var.Ctx.insert ren0 var0 var
                  val ren1' = Var.Ctx.insert ren1 var1 var
                in
@@ -1013,9 +995,8 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "Record.Eq"
-        val H >> AJ.EQ ((tuple0, tuple1), (record, l, k)) = jdg
+        val H >> AJ.EQ ((tuple0, tuple1), (record, l)) = jdg
         val Syn.RECORD fields = Syn.out record
-        val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
         (* these operations could be expensive *)
         val Syn.TUPLE map0 = Syn.out tuple0
@@ -1029,10 +1010,9 @@ struct
                  val m0 = Fields.lookup lbl map0
                  val m1 = Fields.lookup lbl map1
                  val env' = Var.Ctx.insert env var m0
-                 val kind = if isFirst then headKind else tailKind
-                 val goals' = goals >: makeEq H ((m0, m1), (ty', l, kind))
-                 val famGoals' = if isFirst then famGoals else famGoals >: makeType hyps (ty, l, kind)
-                 val hyps' = hyps @> (var, AJ.TRUE (ty, l, kind))
+                 val goals' = goals >: makeEq H ((m0, m1), (ty', l))
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, K.top)
+                 val hyps' = hyps @> (var, AJ.TRUE (ty, l))
                in
                  {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}
                end)
@@ -1046,7 +1026,7 @@ struct
       let
         val H >> ajdg = jdg
         val _ = RedPrlLog.trace "Record.EqInv"
-        val AJ.EQ ((m1, m2), (record, l, k)) = Hyps.lookup H z
+        val AJ.EQ ((m1, m2), (record, l)) = Hyps.lookup H z
         val Syn.RECORD fields = Syn.out record
         val fresh = makeNamePopper alpha
 
@@ -1058,7 +1038,7 @@ struct
                  val proj1 = Syn.into @@ Syn.PROJ (name, m1)
                  val proj2 = Syn.into @@ Syn.PROJ (name, m2)
                  val x = fresh ()
-                 val eqjdg = AJ.EQ ((proj1, proj2), (substVarenv env ty, l, k))
+                 val eqjdg = AJ.EQ ((proj1, proj2), (substVarenv env ty, l))
                  val env' = Var.Ctx.insert env var proj1
                in
                  (hyps @> (x, eqjdg), env')
@@ -1077,21 +1057,19 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "Record.True"
-        val H >> AJ.TRUE (record, l, k) = jdg
+        val H >> AJ.TRUE (record, l) = jdg
         val Syn.RECORD fields = Syn.out record
-        val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
         val {goals, famGoals, elements, ...} =
           List.foldl
             (fn (((lbl, var), ty), {goals, famGoals, elements, env, hyps, isFirst}) =>
                let
-                 val kind = if isFirst then headKind else tailKind
-                 val hyps' = hyps @> (var, AJ.TRUE (ty, l, kind))
+                 val hyps' = hyps @> (var, AJ.TRUE (ty, l))
                  val ty' = substVarenv env ty
-                 val (elemGoal, elemHole) = makeTrue H (ty', l, kind)
+                 val (elemGoal, elemHole) = makeTrue H (ty', l)
                  val env' = Var.Ctx.insert env var elemHole
                  val goals' = goals >: elemGoal
-                 val famGoals' = if isFirst then famGoals else famGoals >: makeType hyps (ty, l, kind)
+                 val famGoals' = if isFirst then famGoals else famGoals >: makeType (hyps) (ty, l, K.top)
                  val elements' = (lbl, [] \ elemHole) :: elements
                in
                  {goals = goals', famGoals = famGoals', elements = elements', env = env', hyps = hyps', isFirst = false}
@@ -1107,15 +1085,15 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Record.Eta"
-        val H >> AJ.EQ ((m, n), (record, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (record, l)) = jdg
         val Syn.RECORD rcd = Syn.out record
         val dom = List.map (#1 o #1) rcd
 
         fun goLabel lbl = [] \ (Syn.into @@ Syn.PROJ (lbl, m))
 
         val m' = O.TUPLE dom $$ List.map goLabel dom
-        val goal1 = makeMem H (m, (record, l, k))
-        val goal2 = makeEqIfDifferent H ((m', n), (record, l, k)) (* m' well-typed *)
+        val goal1 = makeMem H (m, (record, l))
+        val goal2 = makeEqIfDifferent H ((m', n), (record, l)) (* m' well-typed *)
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -1145,7 +1123,7 @@ struct
         val _ = RedPrlLog.trace "Record.Elim"
         val H >> catjdg = jdg
         (* for now we ignore the kind in the context *)
-        val AJ.TRUE (record, l', _) = Hyps.lookup H z
+        val AJ.TRUE (record, l') = Hyps.lookup H z
         val Syn.RECORD fields = Syn.out record
 
         val names = List.tabulate (List.length fields, alpha)
@@ -1153,13 +1131,13 @@ struct
           ListPair.foldlEq
             (fn (name, ((_, var), ty), {ren, hyps}) =>
               {ren = Var.Ctx.insert ren var name,
-               hyps = hyps @> (name, AJ.TRUE (renameVars ren ty, l', K.top))})
+               hyps = hyps @> (name, AJ.TRUE (renameVars ren ty, l'))})
             {ren = Var.Ctx.empty, hyps = Hyps.empty}
             (names, fields)
 
         val tuple = Syn.into @@ Syn.TUPLE @@
           ListPair.mapEq
-            (fn (((lbl, _), _), name) => (lbl, Syn.into @@ Syn.VAR (name, O.EXP)))
+            (fn (((lbl, _), _), name) => (lbl, VarKit.toExp name))
             (fields, names)
 
         val H' = Hyps.interposeThenSubstAfter (z, hyps, tuple) H
@@ -1179,30 +1157,29 @@ struct
     fun EqProj _ jdg =
       let
         val _ = RedPrlLog.trace "Record.EqProj"
-        val H >> AJ.EQ ((proj0, proj1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((proj0, proj1), (ty, l)) = jdg
         val Syn.PROJ (lbl0, m0) = Syn.out proj0
         val Syn.PROJ (lbl1, m1) = Syn.out proj1
         val () = Assert.labelEq "Record.EqProj" (lbl0, lbl1)
 
-        val (goalTy, holeTy) = makeSynth H (m0, NONE, K.top)
+        val (goalTy, holeTy) = makeSynth H (m0, l)
         val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy, m0)
-        val goalEq = makeEqIfDifferent H ((m0, m1), (holeTy, NONE, K.top)) (* m0 well-typed *)
-        val goalTy' = makeSubType H (holeTyP, NONE, K.top) (ty, l, k)
+        val goalEq = makeEqIfDifferent H ((m0, m1), (holeTy, l)) (* m0 well-typed *)
+        val goalTy' = makeSubType H ((holeTyP, ty), l)
       in
-        |>: goalTy >: goalTyP >:? goalEq >:? goalTy'
+        |>: goalTy >: goalTyP >:? goalEq >: goalTy'
         #> (H, trivial)
       end
 
     fun SynthProj _ jdg =
       let
         val _ = RedPrlLog.trace "Record.SynthProj"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.PROJ (lbl, n) = Syn.out tm
-        val (goalRecord, holeRecord) = makeSynth H (n, NONE, K.top)
+        val (goalRecord, holeRecord) = makeSynth H (n, l)
         val (goalTy, holeTy) = makeMatchRecord (lbl, holeRecord, n)
-        val goalKind = makeTypeUnlessSubUniv H (holeTy, l, k) (NONE, K.top)
       in
-        |>: goalRecord >: goalTy >:? goalKind #> (H, holeTy)
+        |>: goalRecord >: goalTy #> (H, holeTy)
       end
   end
 
@@ -1230,8 +1207,8 @@ struct
 
         val a00 = substVar (Syn.into Syn.DIM0, u) a0u
         val a01 = substVar (Syn.into Syn.DIM1, u) a0u
-        val goal0 = makeEq H ((m0, m1), (a00, NONE, K.top))
-        val goal1 = makeEq H ((n0, n1), (a01, NONE, K.top))
+        val goal0 = makeEq H ((m0, m1), (a00, l))
+        val goal1 = makeEq H ((n0, n1), (a01, l))
       in
         |>: tyGoal >: goal0 >: goal1 #> (H, trivial)
       end
@@ -1239,9 +1216,8 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Path.Eq"
-        val H >> AJ.EQ ((abs0, abs1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((abs0, abs1), (ty, l)) = jdg
         val Syn.PATH ((u, au), p0, p1) = Syn.out ty
-        val ka = kindConstraintOnBase k
         val Syn.ABS (v, m0v) = Syn.out abs0
         val Syn.ABS (w, m1w) = Syn.out abs1
 
@@ -1249,15 +1225,15 @@ struct
         val az = substVar (VarKit.toDim z, u) au
         val m0z = substVar (VarKit.toDim z, v) m0v
         val m1z = substVar (VarKit.toDim z, w) m1w
-        val goalM = makeEq (H @> (z, AJ.TERM O.DIM)) ((m0z, m1z), (az, l, ka))
+        val goalM = makeEq (H @> (z, AJ.TERM O.DIM)) ((m0z, m1z), (az, l))
 
         val a0 = substVar (Syn.into Syn.DIM0, u) au
         val a1 = substVar (Syn.into Syn.DIM1, u) au
         val m00 = substVar (Syn.into Syn.DIM0, v) m0v
         val m01 = substVar (Syn.into Syn.DIM1, v) m0v
         (* note: m00 and m01 are well-typed and az is well-kinded  *)
-        val goalCoh0 = makeEqIfDifferent H ((m00, p0), (a0, NONE, K.top))
-        val goalCoh1 = makeEqIfDifferent H ((m01, p1), (a1, NONE, K.top))
+        val goalCoh0 = makeEqIfDifferent H ((m00, p0), (a0, l))
+        val goalCoh1 = makeEqIfDifferent H ((m01, p1), (a1, l))
       in
         |>: goalM >:? goalCoh0 >:? goalCoh1 #> (H, trivial)
       end
@@ -1265,36 +1241,35 @@ struct
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "Path.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.PATH ((u, au), p0, p1) = Syn.out ty
-        val ka = kindConstraintOnBase k
         val a0 = substVar (Syn.into Syn.DIM0, u) au
         val a1 = substVar (Syn.into Syn.DIM1, u) au
 
         val v = alpha 0
         val av = substVar (VarKit.toDim v, u) au
-        val (mainGoal, mhole) = makeTrue (H @> (v, AJ.TERM O.DIM)) (av, l, ka)
+        val (mainGoal, mhole) = makeTrue (H @> (v, AJ.TERM O.DIM)) (av, l)
 
         (* note: m0 and m1 are already well-typed *)
         val m0 = substVar (Syn.into Syn.DIM0, v) mhole
         val m1 = substVar (Syn.into Syn.DIM1, v) mhole
-        val goalCoh0 = makeEqIfDifferent H ((m0, p0), (a0, NONE, K.top))
-        val goalCoh1 = makeEqIfDifferent H ((m1, p1), (a1, NONE, K.top))
+        val goalCoh0 = makeEq H ((m0, p0), (a0, l))
+        val goalCoh1 = makeEq H ((m1, p1), (a1, l))
 
         val abstr = Syn.into @@ Syn.ABS (v, mhole)
       in
-        |>: mainGoal >:? goalCoh0 >:? goalCoh1 #> (H, abstr)
+        |>: mainGoal >: goalCoh0 >: goalCoh1 #> (H, abstr)
       end
 
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Path.Eta"
-        val H >> AJ.EQ ((m, n), (pathTy, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (pathTy, l)) = jdg
         val Syn.PATH ((u, _), _, _) = Syn.out pathTy
 
         val m' = Syn.into @@ Syn.ABS (u, Syn.into @@ Syn.DIM_APP (m, VarKit.toDim u))
-        val goal1 = makeMem H (m, (pathTy, l, k))
-        val goal2 = makeEqIfDifferent H ((m', n), (pathTy, NONE, K.top)) (* m' will-typed *)
+        val goal1 = makeMem H (m, (pathTy, l))
+        val goal2 = makeEqIfDifferent H ((m', n), (pathTy, l)) (* m' will-typed *)
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -1303,8 +1278,7 @@ struct
       let
         val _ = RedPrlLog.trace "Path.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
+        val AJ.TRUE (ty, l') = Hyps.lookup H z
         val Syn.PATH ((u, a), _, _) = Syn.out ty
 
         val x = alpha 0
@@ -1313,13 +1287,12 @@ struct
         val (dimGoal, dimHole) = makeTerm H @@ O.DIM
         val ar = substVar (dimHole, u) a
 
-
         val w = Sym.named "w"
         val pathApp = substVar (dimHole, w) @@ Syn.into @@ Syn.DIM_APP (VarKit.toExp z, VarKit.toDim w)
 
         val H' = Hyps.interposeAfter
-          (z, |@> (x, AJ.TRUE (ar, l', K.top))
-               @> (y, AJ.EQ ((VarKit.toExp x, pathApp), (ar, l', K.top))))
+          (z, |@> (x, AJ.TRUE (ar, l'))
+               @> (y, AJ.EQ ((VarKit.toExp x, pathApp), (ar, l'))))
           H
 
         val (mainGoal, mainHole) = makeGoal @@ H' >> catjdg
@@ -1331,47 +1304,45 @@ struct
     fun EqApp _ jdg =
       let
         val _ = RedPrlLog.trace "Path.EqApp"
-        val H >> AJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((ap0, ap1), (ty, l)) = jdg
         val Syn.DIM_APP (m0, r0) = Syn.out ap0
         val Syn.DIM_APP (m1, r1) = Syn.out ap1
         val () = Assert.alphaEq (r0, r1)
 
-        val (goalSynth, holeSynth) = makeSynth H (m0, NONE, K.top)
-        val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, NONE, K.top)) (* m0 well-typed *)
-        val (goalLine, holeLine) = makeMatch (O.PATH, 0, holeSynth, [r0])
-        val goalTy = makeSubType H (holeLine, NONE, K.top) (ty, l, k) (* holeLine type *)
+        val (goalSynth, holeSynth) = makeSynth H (m0, l)
+        val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, l)) (* m0 well-typed *)
+        val (goalPath, holePath) = makeMatch (O.PATH, 0, holeSynth, [r0])
+        val goalTy = makeSubType H ((holePath, ty), l) (* holePath type *)
       in
-        |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (H, trivial)
+        |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, trivial)
       end
 
     fun SynthApp _ jdg =
       let
         val _ = RedPrlLog.trace "Path.SynthApp"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.DIM_APP (m, r) = Syn.out tm
-        val (goalPathTy, holePathTy) = makeSynth H (m, NONE, K.top)
-        val (goalLine, holeLine) = makeMatch (O.PATH, 0, holePathTy, [r])
-        val goalKind = makeTypeUnlessSubUniv H (holeLine, l, k) (NONE, K.top)
+        val (goalPathTy, holePathTy) = makeSynth H (m, l)
+        val (goalPath, holePath) = makeMatch (O.PATH, 0, holePathTy, [r])
       in
-        |>: goalPathTy >: goalLine >:? goalKind #> (H, holeLine)
+        |>: goalPathTy >: goalPath #> (H, holePath)
       end
 
     fun EqAppConst _ jdg =
       let
         val _ = RedPrlLog.trace "Path.EqAppConst"
-        val H >> AJ.EQ ((ap, p), (a, l, k)) = jdg
+        val H >> AJ.EQ ((ap, p), (a, l)) = jdg
         val Syn.DIM_APP (m, r) = Syn.out ap
 
         val dimAddr = case Syn.out r of Syn.DIM0 => 1 | Syn.DIM1 => 2
 
-        val (goalSynth, holeSynth) = makeSynth H (m, NONE, K.top)
-
+        val (goalSynth, holeSynth) = makeSynth H (m, l)
         val (goalLine, holeLine) = makeMatch (O.PATH, 0, holeSynth, [r])
         val (goalEndpoint, holeEndpoint) = makeMatch (O.PATH, dimAddr, holeSynth, [])
-        val goalTy = makeSubType H (holeLine, NONE, K.top) (a, NONE, K.top) (* holeLine should be well-typed *)
-        val goalEq = makeEq H ((holeEndpoint, p), (a, l, k))
+        val goalTy = makeSubType H ((holeLine, a), l)
+        val goalEq = makeEq H ((holeEndpoint, p), (a, l))
       in
-        |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >:? goalTy
+        |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >: goalTy
         #> (H, trivial)
       end
   end
@@ -1404,9 +1375,8 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Line.Eq"
-        val H >> AJ.EQ ((abs0, abs1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((abs0, abs1), (ty, l)) = jdg
         val Syn.LINE (u, au) = Syn.out ty
-        val ka = kindConstraintOnBase k
         val Syn.ABS (v, m0v) = Syn.out abs0
         val Syn.ABS (w, m1w) = Syn.out abs1
 
@@ -1414,7 +1384,7 @@ struct
         val az = substVar (VarKit.toDim z, u) au
         val m0z = substVar (VarKit.toDim z, v) m0v
         val m1z = substVar (VarKit.toDim z, w) m1w
-        val goalM = makeEq (H @> (z, AJ.TERM O.DIM)) ((m0z, m1z), (az, l, ka))
+        val goalM = makeEq (H @> (z, AJ.TERM O.DIM)) ((m0z, m1z), (az, l))
       in
         |>: goalM #> (H, trivial)
       end
@@ -1422,15 +1392,14 @@ struct
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "Line.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.LINE (u, au) = Syn.out ty
-        val ka = kindConstraintOnBase k
         val a0 = substVar (Syn.into Syn.DIM0, u) au
         val a1 = substVar (Syn.into Syn.DIM1, u) au
 
         val v = alpha 0
         val av = substVar (VarKit.toDim v, u) au
-        val (mainGoal, mhole) = makeTrue (H @> (v, AJ.TERM O.DIM)) (av, l, ka)
+        val (mainGoal, mhole) = makeTrue (H @> (v, AJ.TERM O.DIM)) (av, l)
 
         val abstr = Syn.into @@ Syn.ABS (v, mhole)
       in
@@ -1440,12 +1409,12 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "Line.Eta"
-        val H >> AJ.EQ ((m, n), (pathTy, l, k)) = jdg
-        val Syn.LINE (u, _) = Syn.out pathTy
+        val H >> AJ.EQ ((m, n), (lineTy, l)) = jdg
+        val Syn.LINE (u, _) = Syn.out lineTy
 
         val m' = Syn.into @@ Syn.ABS (u, Syn.into @@ Syn.DIM_APP (m, VarKit.toDim u))
-        val goal1 = makeMem H (m, (pathTy, l, k))
-        val goal2 = makeEqIfDifferent H ((m', n), (pathTy, NONE, K.top)) (* m' will-typed *)
+        val goal1 = makeMem H (m, (lineTy, l))
+        val goal2 = makeEqIfDifferent H ((m', n), (lineTy, l)) (* m' will-typed *)
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -1454,8 +1423,7 @@ struct
       let
         val _ = RedPrlLog.trace "Line.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
+        val AJ.TRUE (ty, l') = Hyps.lookup H z
         val Syn.LINE (u, a) = Syn.out ty
 
         val x = alpha 0
@@ -1465,45 +1433,44 @@ struct
         val ar = substVar (dimHole, u) a
 
         val w = Sym.named "w"
-        val pathApp = substVar (dimHole, w) @@ Syn.into @@ Syn.DIM_APP (VarKit.toExp z, VarKit.toDim w)
+        val lineApp = substVar (dimHole, w) @@ Syn.into @@ Syn.DIM_APP (VarKit.toExp z, VarKit.toDim w)
 
         val H' = Hyps.interposeAfter
-          (z, |@> (x, AJ.TRUE (ar, l', K.top))
-               @> (y, AJ.EQ ((VarKit.toExp x, pathApp), (ar, l', K.top))))
+          (z, |@> (x, AJ.TRUE (ar, l'))
+               @> (y, AJ.EQ ((VarKit.toExp x, lineApp), (ar, l'))))
           H
 
         val (mainGoal, mainHole) = makeGoal @@ H' >> catjdg
       in
         |>: dimGoal >: mainGoal
-        #> (H, VarKit.substMany [(pathApp, x), (trivial, y)] mainHole)
+        #> (H, VarKit.substMany [(lineApp, x), (trivial, y)] mainHole)
       end
 
     fun EqApp _ jdg =
       let
         val _ = RedPrlLog.trace "Line.EqApp"
-        val H >> AJ.EQ ((ap0, ap1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((ap0, ap1), (ty, l)) = jdg
         val Syn.DIM_APP (m0, r0) = Syn.out ap0
         val Syn.DIM_APP (m1, r1) = Syn.out ap1
         val () = Assert.alphaEq (r0, r1)
 
-        val (goalSynth, holeSynth) = makeSynth H (m0, NONE, K.top)
-        val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, NONE, K.top)) (* m0 well-typed *)
+        val (goalSynth, holeSynth) = makeSynth H (m0, l)
+        val goalMem = makeEqIfDifferent H ((m0, m1), (holeSynth, l)) (* m0 well-typed *)
         val (goalLine, holeLine) = makeMatch (O.LINE, 0, holeSynth, [r0])
-        val goalTy = makeSubType H (holeLine, NONE, K.top) (ty, l, k) (* holeLine type *)
+        val goalTy = makeSubType H ((holeLine, ty), l) (* holeLine type *)
       in
-        |>: goalSynth >:? goalMem >: goalLine >:? goalTy #> (H, trivial)
+        |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (H, trivial)
       end
 
     fun SynthApp _ jdg =
       let
         val _ = RedPrlLog.trace "Line.SynthApp"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.DIM_APP (m, r) = Syn.out tm
-        val (goalPathTy, holePathTy) = makeSynth H (m, NONE, K.top)
-        val (goalLine, holeLine) = makeMatch (O.LINE, 0, holePathTy, [r])
-        val goalKind = makeTypeUnlessSubUniv H (holeLine, l, k) (NONE, K.top)
+        val (goalLineTy, holeLineTy) = makeSynth H (m, l)
+        val (goalLine, holeLine) = makeMatch (O.LINE, 0, holeLineTy, [r])
       in
-        |>: goalPathTy >: goalLine >:? goalKind #> (H, holeLine)
+        |>: goalLineTy >: goalLine #> (H, holeLine)
       end
   end
 
@@ -1523,8 +1490,8 @@ struct
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
         val Syn.PUSHOUT (a0, b0, c0, (x0, f0x0), (y0, g0y0)) = Syn.out ty0
         val Syn.PUSHOUT (a1, b1, c1, (x1, f1x1), (y1, g1y1)) = Syn.out ty1
-
         val (kEnd, kApex) = kindConstraintOnEndsAndApex k
+
         val goalA = makeEqType H ((a0, a1), l, kEnd)
         val goalB = makeEqType H ((b0, b1), l, kEnd)
         val goalC = makeEqType H ((c0, c1), l, kApex)
@@ -1532,10 +1499,10 @@ struct
         val z = alpha 0
         val f0z = VarKit.rename (z, x0) f0x0
         val f1z = VarKit.rename (z, x1) f1x1
-        val goalF = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((f0z, f1z), (a0, L.top, K.top))
+        val goalF = makeEq (H @> (z, AJ.TRUE (c0, l))) ((f0z, f1z), (a0, l))
         val g0z = VarKit.rename (z, y0) g0y0
         val g1z = VarKit.rename (z, y1) g1y1
-        val goalG = makeEq (H @> (z, AJ.TRUE (c0, l, kApex))) ((g0z, g1z), (b0, L.top, K.top))
+        val goalG = makeEq (H @> (z, AJ.TRUE (c0, l))) ((g0z, g1z), (b0, l))
       in
         |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, trivial)
       end
@@ -1543,19 +1510,18 @@ struct
     fun EqLeft alpha jdg =
       let
         val _ = RedPrlLog.trace "Pushout.EqLeft"
-        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((tm0, tm1), (ty, l)) = jdg
         val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
         val Syn.LEFT m0 = Syn.out tm0
         val Syn.LEFT m1 = Syn.out tm1
-        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
 
-        val goalA = makeEq H ((m0, m1), (a, l, kEnd))
+        val goalA = makeEq H ((m0, m1), (a, l))
 
-        val goalB = makeType H (b, l, kEnd)
-        val goalC = makeType H (c, l, kApex)
+        val goalB = makeType H (b, l, K.top)
+        val goalC = makeType H (c, l, K.top)
         val z = alpha 0
-        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
-        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l))) (VarKit.rename (z, x) fx, (a, l))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l))) (VarKit.rename (z, y) gy, (b, l))
       in
         |>: goalA >: goalF >: goalG >: goalB >: goalC #> (H, trivial)
       end
@@ -1563,19 +1529,18 @@ struct
     fun EqRight alpha jdg =
       let
         val _ = RedPrlLog.trace "Pushout.EqRight"
-        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((tm0, tm1), (ty, l)) = jdg
         val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
         val Syn.RIGHT m0 = Syn.out tm0
         val Syn.RIGHT m1 = Syn.out tm1
-        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
 
-        val goalB = makeEq H ((m0, m1), (b, l, kEnd))
+        val goalB = makeEq H ((m0, m1), (b, l))
 
-        val goalA = makeType H (a, l, kEnd)
-        val goalC = makeType H (c, l, kApex)
+        val goalA = makeType H (a, l, K.top)
+        val goalC = makeType H (c, l, K.top)
         val z = alpha 0
-        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
-        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l))) (VarKit.rename (z, x) fx, (a, l))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l))) (VarKit.rename (z, y) gy, (b, l))
       in
         |>: goalB >: goalF >: goalG >: goalA >: goalC #> (H, trivial)
       end
@@ -1583,56 +1548,54 @@ struct
     fun EqGlue alpha jdg =
       let
         val _ = RedPrlLog.trace "Pushout.EqGlue"
-        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((tm0, tm1), (ty, l)) = jdg
         val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
         val Syn.GLUE (r0, m0, fm0, gm0) = Syn.out tm0
         val Syn.GLUE (r1, m1, fm1, gm1) = Syn.out tm1
         val () = Assert.alphaEq' "Pushout.EqGlue" (r0, r1)
-        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
 
-        val goalC = makeEq H ((m0, m1), (c, l, kApex))
-        val goalA = makeEq H ((fm0, fm1), (a, l, kEnd))
-        val goalB = makeEq H ((gm0, gm1), (b, l, kEnd))
+        val goalC = makeEq H ((m0, m1), (c, l))
+        val goalA = makeEq H ((fm0, fm1), (a, l))
+        val goalB = makeEq H ((gm0, gm1), (b, l))
         val z = alpha 0
-        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
-        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l))) (VarKit.rename (z, x) fx, (a, l))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l))) (VarKit.rename (z, y) gy, (b, l))
 
-        val goalCohF = makeEq H ((substVar (m0, x) fx, fm0), (a, L.top, K.top))
-        val goalCohG = makeEq H ((substVar (m0, y) gy, gm0), (b, L.top, K.top))
+        val goalCohF = makeEqIfDifferent H ((substVar (m0, x) fx, fm0), (a, l))
+        val goalCohG = makeEqIfDifferent H ((substVar (m0, y) gy, gm0), (b, l))
       in
-        |>: goalC >: goalA >: goalB >: goalCohF >: goalCohG >: goalF >: goalG #> (H, trivial)
+        |>: goalC >: goalA >: goalB >:? goalCohF >:? goalCohG >: goalF >: goalG #> (H, trivial)
       end
 
     fun EqFCom alpha jdg =
       let
         val _ = RedPrlLog.trace "Pushout.EqFCom"
-        val H >> AJ.EQ ((tm0, tm1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((tm0, tm1), (ty, l)) = jdg
         val Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)) = Syn.out ty
         val Syn.FCOM args0 = Syn.out tm0
         val Syn.FCOM args1 = Syn.out tm1
 
-        val (kEnd, kApex) = kindConstraintOnEndsAndApex k
-        val goalA = makeType H (a, l, kEnd)
-        val goalB = makeType H (b, l, kEnd)
-        val goalC = makeType H (c, l, kApex)
+        val goalA = makeType H (a, l, K.top)
+        val goalB = makeType H (b, l, K.top)
+        val goalC = makeType H (c, l, K.top)
 
         val z = alpha 0
-        val goalF = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, x) fx, (a, L.top, K.top))
-        val goalG = makeMem (H @> (z, AJ.TRUE (c, l, kApex))) (VarKit.rename (z, y) gy, (b, L.top, K.top))
+        val goalF = makeMem (H @> (z, AJ.TRUE (c, l))) (VarKit.rename (z, x) fx, (a, l))
+        val goalG = makeMem (H @> (z, AJ.TRUE (c, l))) (VarKit.rename (z, y) gy, (b, l))
       in
         |>: goalF >: goalG >: goalA >: goalB >: goalC
-         >:+ ComKit.genEqFComGoals H z (args0, args1) (ty, L.top, K.top)
+         >:+ ComKit.genEqFComGoals H z (args0, args1) (ty, l)
         #> (H, trivial)
       end
 
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Pushout.Elim"
-        val H >> AJ.TRUE (dz, l, k) = jdg
+        val H >> AJ.TRUE (dz, l) = jdg
         (* pushout-rec(FCOM) steps to COM *)
-        val k = K.meet (k, K.COM)
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val k = K.COM
+        (* for now we ignore the kind in the context *)
+        val AJ.TRUE (ty, l') = Hyps.lookup H z
         val Syn.PUSHOUT (tyA, tyB, tyC, (x, fx), (y, gy)) = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
@@ -1644,13 +1607,13 @@ struct
         val a = alpha 0
         val atm = VarKit.toExp a
         fun dleft tm = substVar (Syn.into (Syn.LEFT tm), z) dz
-        val (goalL, holeL) = makeTrue (H @> (a, AJ.TRUE (tyA, L.top, K.top))) (dleft atm, L.top, K.top)
+        val (goalL, holeL) = makeTrue (H @> (a, AJ.TRUE (tyA, l'))) (dleft atm, l)
 
         (* right branch *)
         val b = alpha 1
         val btm = VarKit.toExp b
         fun dright tm = substVar (Syn.into (Syn.RIGHT tm), z) dz
-        val (goalR, holeR) = makeTrue (H @> (b, AJ.TRUE (tyB, L.top, K.top))) (dright btm, L.top, K.top)
+        val (goalR, holeR) = makeTrue (H @> (b, AJ.TRUE (tyB, l'))) (dright btm, l)
 
         (* glue branch *)
         val v = alpha 2
@@ -1661,17 +1624,17 @@ struct
         val gc = substVar (ctm, y) gy
         val glue = Syn.into @@ Syn.GLUE (vtm, ctm, fc, gc)
         val dglue = substVar (glue, z) dz
-        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE (tyC, L.top, K.top))
-        val (goalG, holeG) = makeTrue Hglue (dglue, L.top, K.top)
+        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE (tyC, l'))
+        val (goalG, holeG) = makeTrue Hglue (dglue, l)
 
         (* coherence *)
         val g0c = substVar (Syn.intoDim 0, v) holeG
         val lfc = substVar (fc, a) holeL
-        val goalCohL = makeEq (H @> (c, AJ.TRUE (tyC, L.top, K.top))) ((g0c, lfc), (dleft fc, L.top, K.top))
+        val goalCohL = makeEq (H @> (c, AJ.TRUE (tyC, l'))) ((g0c, lfc), (dleft fc, l))
 
         val g1c = substVar (Syn.intoDim 1, v) holeG
         val rgc = substVar (gc, b) holeR
-        val goalCohR = makeEq (H @> (c, AJ.TRUE (tyC, L.top, K.top))) ((g1c, rgc), (dright gc, L.top, K.top))
+        val goalCohR = makeEq (H @> (c, AJ.TRUE (tyC, l'))) ((g1c, rgc), (dright gc, l))
 
         val elim = Syn.into @@ Syn.PUSHOUT_REC ((z, dz), VarKit.toExp z, ((a, holeL), (b, holeR), (v, c, holeG)))
       in
@@ -1681,26 +1644,26 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Pushout.EqElim"
-        val H >> AJ.EQ ((elim0, elim1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((elim0, elim1), (ty, l)) = jdg
         (* pushout-rec(FCOM) steps to COM *)
-        val k = K.meet (k, K.COM)
+        val k = K.COM
         val Syn.PUSHOUT_REC ((z0, d0z0), m0, ((a0, n0a0), (b0, p0b0), (v0, c0, q0v0c0))) = Syn.out elim0
         val Syn.PUSHOUT_REC ((z1, d1z1), m1, ((a1, n1a1), (b1, p1b1), (v1, c1, q1v1c1))) = Syn.out elim1
 
         (* type of eliminated term *)
-        val (goalTyPushout, holeTyPushout) = makeSynth H (m0, L.top, K.top)
+        val (goalTyPushout, holeTyPushout) = makeSynth H (m0, l)
 
         (* motive *)
         val z = alpha 0
         val d0z = VarKit.rename (z, z0) d0z0
         val d1z = VarKit.rename (z, z1) d1z1
-        val goalC = makeEqType (H @> (z, AJ.TRUE (holeTyPushout, L.top, K.top))) ((d0z, d1z), l, k)
+        val goalD = makeEqType (H @> (z, AJ.TRUE (holeTyPushout, l))) ((d0z, d1z), l, k)
 
         (* eliminated term *)
-        val goalM = makeEqIfDifferent H ((m0, m1), (holeTyPushout, L.top, K.top))
+        val goalM = makeEqIfDifferent H ((m0, m1), (holeTyPushout, l))
 
         (* result type*)
-        val goalTy0 = makeSubType H (substVar (m0, z0) d0z0, L.top, K.top) (ty, l, k)
+        val goalTy0 = makeSubType H ((substVar (m0, z0) d0z0, ty), l)
 
         (* left branch *)
         val (goalTyA, holeTyA) = makeMatch (O.PUSHOUT, 0, holeTyPushout, [])
@@ -1709,7 +1672,7 @@ struct
         val n0a = VarKit.rename (a, a0) n0a0
         val n1a = VarKit.rename (a, a1) n1a1
         fun dleft tm = substVar (Syn.into (Syn.LEFT tm), z0) d0z0
-        val goalN = makeEq (H @> (a, AJ.TRUE (holeTyA, L.top, K.top))) ((n0a, n1a), (dleft atm, L.top, K.top))
+        val goalN = makeEq (H @> (a, AJ.TRUE (holeTyA, l))) ((n0a, n1a), (dleft atm, l))
 
         (* right branch *)
         val (goalTyB, holeTyB) = makeMatch (O.PUSHOUT, 1, holeTyPushout, [])
@@ -1718,7 +1681,7 @@ struct
         val p0b = VarKit.rename (b, b0) p0b0
         val p1b = VarKit.rename (b, b1) p1b1
         fun dright tm = substVar (Syn.into (Syn.RIGHT tm), z0) d0z0
-        val goalP = makeEq (H @> (b, AJ.TRUE (holeTyB, L.top, K.top))) ((p0b, p1b), (dright btm, L.top, K.top))
+        val goalP = makeEq (H @> (b, AJ.TRUE (holeTyB, l))) ((p0b, p1b), (dright btm, l))
 
         (* glue branch *)
         val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 2, holeTyPushout, [])
@@ -1732,29 +1695,29 @@ struct
         val (goalG, holeG) = makeMatch (O.PUSHOUT, 4, holeTyPushout, [ctm])
         val glue = Syn.into @@ Syn.GLUE (vtm, ctm, holeF, holeG)
         val dglue = substVar (glue, z0) d0z0
-        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE (holeTyC, L.top, K.top))
-        val goalQ = makeEq Hglue ((q0vc, q1vc), (dglue, L.top, K.top))
+        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE (holeTyC, l))
+        val goalQ = makeEq Hglue ((q0vc, q1vc), (dglue, l))
 
         (* coherence *)
         val q00c = substVar (Syn.intoDim 0, v) q0vc
         val lfc = substVar (holeF, a0) n0a0
-        val goalCohL = makeEq (H @> (c, AJ.TRUE (holeTyC, L.top, K.top))) ((q00c, lfc), (dleft holeF, L.top, K.top))
+        val goalCohL = makeEq (H @> (c, AJ.TRUE (holeTyC, l))) ((q00c, lfc), (dleft holeF, l))
 
         val q01c = substVar (Syn.intoDim 1, v) q0vc
         val rgc = substVar (holeG, b0) p0b0
-        val goalCohR = makeEq (H @> (c, AJ.TRUE (holeTyC, L.top, K.top))) ((q01c, rgc), (dright holeG, L.top, K.top))
+        val goalCohR = makeEq (H @> (c, AJ.TRUE (holeTyC, l))) ((q01c, rgc), (dright holeG, l))
       in
-        |>: goalTyPushout >: goalC >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy0 #> (H, trivial)
+        |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >: goalTy0 #> (H, trivial)
       end
 
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "Pushout.SynthElim"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.PUSHOUT_REC ((z,dz), m, _) = Syn.out tm
 
         val dm = substVar (m, z) dz
-        val goal = makeMem H (tm, (dm, l, k))
+        val goal = makeMem H (tm, (dm, l))
       in
         |>: goal #> (H, dm)
       end
@@ -1778,8 +1741,8 @@ struct
         val ka = kindConstraintOnBase k
 
         val goalTy = makeEqType H ((a0, a1), l, ka)
-        val goalM = makeEq H ((m0, m1), (a0, NONE, K.top))
-        val goalN = makeEq H ((n0, n1), (a0, NONE, K.top))
+        val goalM = makeEq H ((m0, m1), (a0, l))
+        val goalN = makeEq H ((n0, n1), (a0, l))
       in
         |>: goalM >: goalN >: goalTy #> (H, trivial)
       end
@@ -1787,13 +1750,12 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eq"
-        val H >> AJ.EQ ((ax0, ax1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((ax0, ax1), (ty, l)) = jdg
         val Syn.EQUALITY (a, m, n) = Syn.out ty
-        val ka = kindConstraintOnBase k
         val Syn.AX = Syn.out ax0
         val Syn.AX = Syn.out ax1
 
-        val goal = makeEq H ((m, n), (a, l, ka))
+        val goal = makeEq H ((m, n), (a, l))
       in
         |>: goal #> (H, trivial)
       end
@@ -1801,11 +1763,10 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.EQUALITY (a, m, n) = Syn.out ty
-        val ka = kindConstraintOnBase k
 
-        val goal = makeEq H ((m, n), (a, l, ka))
+        val goal = makeEq H ((m, n), (a, l))
       in
         |>: goal #> (H, Syn.into Syn.AX)
       end
@@ -1813,11 +1774,11 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eta"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.EQUALITY _ = Syn.out ty
 
-        val goal1 = makeMem H (m, (ty, l, k))
-        val goal2 = makeEqIfDifferent H ((Syn.into Syn.AX, n), (ty, NONE, K.top))
+        val goal1 = makeMem H (m, (ty, l))
+        val goal2 = makeEqIfDifferent H ((Syn.into Syn.AX, n), (ty, l))
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -1828,8 +1789,7 @@ struct
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the kind in the context *)
-        val AJ.TRUE (ty, l', _) = Hyps.lookup H z
+        val AJ.TRUE (ty, l') = Hyps.lookup H z
         val Syn.EQUALITY (a, m, n) = Syn.out ty
 
         (* Adding an equality judgment diverges from Nuprl, but this is currently
@@ -1839,24 +1799,24 @@ struct
         val ax = Syn.into Syn.AX
         val (goal, hole) =
           makeGoal
-            @@ (Hyps.interposeThenSubstAfter (z, |@> (u, AJ.EQ ((m, n), (a, l', K.top))), ax) H)
+            @@ (Hyps.interposeThenSubstAfter (z, |@> (u, AJ.EQ ((m, n), (a, l'))), ax) H)
             >> AJ.map (substVar (ax, z)) catjdg
       in
         |>: goal #> (H, VarKit.subst (trivial, u) hole)
       end
 
-    (* (= ty m n) at l >> m = n in ty at l *)
+    (* (= ty m n) at l >> m/n = m/n in ty at l *)
     (* this is for non-deterministic search *)
     fun NondetEqFromTrueEq z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetEqFromTrueEq"
-        val H >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
-        val AJ.TRUE (ty0', l', _) = Hyps.lookup H z
+        val H >> AJ.EQ ((m1, n1), (ty1, l1)) = jdg
+        val AJ.TRUE (ty0', l0) = Hyps.lookup H z
         val Syn.EQUALITY (ty0, m0, n0) = Syn.out ty0'
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
         val _ = Assert.alphaEq (ty0, ty1)
-        val goalTy = makeTypeUnlessSubUniv H (ty1, l1, k1) (l', K.top)
+        val goalTy = makeTypeUnlessSubUniv H (ty1, l1, K.top) (l0, K.top)
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -1867,39 +1827,38 @@ struct
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetTypeFromTrueEqAtType"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.TRUE (eq, l', _) = Hyps.lookup H z
+        val AJ.TRUE (eq, l') = Hyps.lookup H z
         val Syn.EQUALITY (ty', _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.alphaEq (ty', ty0)
         val _ = Assert.inUsefulUniv (l', K.top) (l, k)
         val goal = makeTypeUnlessSubUniv H (ty0, l, k) (l', K.top)
       in
-        |>:? goal #> (H, trivial)
+        T.empty #> (H, trivial)
       end
 
     fun InternalizeEq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.InternalizeEq"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
 
         (* the realizer must be `AX` *)
-        val (goal, _) = makeTrue H (Syn.into (Syn.EQUALITY (ty, m, n)), l, K.top)
-        val goalKind = makeTypeUnlessSubUniv H (ty, l, k) (l, K.top)
+        val (goal, _) = makeTrue H (Syn.into (Syn.EQUALITY (ty, m, n)), l)
       in
-        |>: goal >:? goalKind #> (H, trivial)
+        |>: goal #> (H, trivial)
       end
 
     (* (= ty a b) => a synth ~~> ty *)
+    (* this is for non-deterministic search *)
     fun NondetSynthFromTrueEq z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetSynthFromTrueEq"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
-        val AJ.TRUE (equal, l', _) = Hyps.lookup H z
+        val H >> AJ.SYNTH (tm, l) = jdg
+        val AJ.TRUE (equal, l') = Hyps.lookup H z
         val Syn.EQUALITY (ty, a, b) = Syn.out equal
         val _ = Assert.alphaEqEither ((a, b), tm)
-        val goalKind = makeTypeUnlessSubUniv H (ty, l, k) (l', K.top)
       in
-        |>:? goalKind #> (H, ty)
+        T.empty #> (H, ty)
       end
 
     fun RewriteTrue sel eqterm alpha jdg =
@@ -1907,29 +1866,29 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
         val H >> catjdg = jdg
 
-        val (currentTy, l, k) =
+        val (currentTy, l) =
           case Selector.lookup sel (H, catjdg) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
 
-        val (goalTyOfEq, holeTyOfEq) = makeSynth truncatedH (eqterm, NONE, K.top)
+        val (goalTyOfEq, holeTyOfEq) = makeSynth truncatedH (eqterm, l)
         val (goalTy, holeTy) = makeMatch (O.EQUALITY, 0, holeTyOfEq, [])
         val (goalM, holeM) = makeMatch (O.EQUALITY, 1, holeTyOfEq, [])
         val (goalN, holeN) = makeMatch (O.EQUALITY, 2, holeTyOfEq, [])
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, AJ.TRUE (holeTy, NONE, K.top))
+        val truncatedHx = truncatedH @> (x, AJ.TRUE (holeTy, l))
         val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
-        val motiveWfGoal = makeType truncatedHx (motiveHole, l, k)
+        val motiveWfGoal = makeType truncatedHx (motiveHole, l, K.top)
 
         val motiven = substVar (holeN, x) motiveHole
         val motivem = substVar (holeM, x) motiveHole
 
         fun replace jdg = 
           case jdg of 
-             AJ.TRUE (_, l, k) => AJ.TRUE (motiven, l, k)
+             AJ.TRUE (_, l) => AJ.TRUE (motiven, l)
            | _ => jdg
 
         val (H', catjdg') = Selector.map sel replace (H, catjdg)
@@ -1937,11 +1896,12 @@ struct
 
         val motiveMatchesMainGoal =
           case sel of
-            O.IN_CONCL => makeSubType truncatedH (motivem, l, k) (currentTy, l, k)
-          | O.IN_HYP _ => makeSubType truncatedH (currentTy, l, k) (motivem, l, k)
+            O.IN_CONCL => makeSubType truncatedH ((motivem, currentTy), l)
+          | O.IN_HYP _ => makeSubType truncatedH ((currentTy, motivem), l)
+
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
-         >: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
+         >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
 
@@ -1952,9 +1912,9 @@ struct
     fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Symmetry"
-        val H >> AJ.TRUE (equal, l, k) = jdg
+        val H >> AJ.TRUE (equal, l) = jdg
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
-        val (goal, hole) = makeTrue H (Syn.into (Syn.EQUALITY (ty, n, m)), l, k)
+        val (goal, hole) = makeTrue H (Syn.into (Syn.EQUALITY (ty, n, m)), l)
       in
         |>: goal #> (H, Syn.into Syn.AX)
       end
@@ -1987,7 +1947,7 @@ struct
           val tubes1 = ComKit.alphaRenameTubes w tubes1
 
           val goalsOnDiag = genTubeGoals' (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), l, k)
-          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), NONE, K.top)
+          val goalsNotOnDiag = genInterTubeGoalsExceptDiag' (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), l, k)
         in
           goalsOnDiag @ goalsNotOnDiag
         end
@@ -2000,23 +1960,23 @@ struct
           Restriction.makeEqTypeIfDifferent [eq] H ((cap, substVar (r, u) tube), l, k))
         tubes
 
-    fun genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l, k)) =
+    fun genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) =
       ListPairUtil.mapPartialEq
-        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq [eq] H ((b0, b1), (t, l, k)))
+        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq [eq] H ((b0, b1), (t, l)))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
-    fun genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, l, k)) =
+    fun genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, l)) =
       ComKit.enumInterExceptDiag
-        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent [eq0, eq1] H ((b0, b1), (t, l, k)))
+        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent [eq0, eq1] H ((b0, b1), (t, l)))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
-    fun genInterBoundaryGoals H ((boundaries0, boundaries1), (tubes, l, k)) =
-      genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l, k)) @
-      genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, NONE, K.top))
+    fun genInterBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) =
+      genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) @
+      genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, l))
 
-    fun genCapBoundaryGoals H ((cap, ((r, r'), tyTubes, boundaries)), (tyCap, l, k)) =
+    fun genCapBoundaryGoals H ((cap, ((r, r'), tyTubes, boundaries)), (tyCap, l)) =
       ListPairUtil.mapPartialEq
         (fn ((eq, ty), boundary) =>
           Restriction.makeEqIfDifferent [eq] H
-            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l, k)))
+            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l)))
         (tyTubes, boundaries)
 
     fun EqType alpha jdg =
@@ -2039,14 +1999,14 @@ struct
       in
         |>: goalCap
          >:+ genInterTubeGoals H w ((tubes0, tubes1), l, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), NONE, K.top)
+         >:+ genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), l, kCap) (* kCap is less demanding *)
         #> (H, trivial)
       end
 
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.Eq"
-        val H >> AJ.EQ ((box0, box1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((box0, box1), (ty, l)) = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
         val Syn.BOX {dir=dir0, cap=cap0, boundaries=boundaries0} = Syn.out box0
         val Syn.BOX {dir=dir1, cap=cap1, boundaries=boundaries1} = Syn.out box1
@@ -2059,36 +2019,36 @@ struct
         val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs)
         val _ = Assert.tautologicalEquations "FormalComposition.Eq tautology checking" eqs
 
-        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+        val (kCap, kTube) = kindConstraintOnCapAndTubes K.STABLE
 
-        val goalCap = makeEq H ((cap0, cap1), (tyCap, l, kCap))
+        val goalCap = makeEq H ((cap0, cap1), (tyCap, l))
 
         val tyBoundaries = List.map (fn (u, ty) => substVar (#2 dir, u) ty) tyTubes'
 
         val w = alpha 0
       in
         |>: goalCap
-         >:+ genInterBoundaryGoals H ((boundaries0, boundaries1), (tyBoundaries, NONE, K.top))
-         >:+ genCapBoundaryGoals H ((cap0, (dir, tyTubes, boundaries')), (tyCap, NONE, K.top))
+         >:+ genInterBoundaryGoals H ((boundaries0, boundaries1), (tyBoundaries, l))
+         >:+ genCapBoundaryGoals H ((cap0, (dir, tyTubes, boundaries')), (tyCap, l))
          >:+ genInterTubeGoals H w ((tyTubes, tyTubes), l, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
+         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), l, kCap)
         #> (H, trivial)
       end
 
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
         val (eqs, tyTubes') = ListPair.unzip tyTubes
         val _ = Assert.tautologicalEquations "FormalComposition.True tautology checking" eqs
 
-        val (kCap, kTube) = kindConstraintOnCapAndTubes k
+        val (kCap, kTube) = kindConstraintOnCapAndTubes K.STABLE
 
-        val (goalCap, holeCap) = makeTrue H (tyCap, l, kCap)
+        val (goalCap, holeCap) = makeTrue H (tyCap, l)
 
         fun goTube (eq, (u, tyTube)) =
-          Restriction.makeTrue [eq] (Syn.into Syn.AX) H (substVar (#2 dir, u) tyTube, NONE, K.top)
+          Restriction.makeTrue [eq] (Syn.into Syn.AX) H (substVar (#2 dir, u) tyTube, l)
         val goalHoleBoundaries = List.map goTube tyTubes
         val goalBoundaries = List.mapPartial #1 goalHoleBoundaries
         val holeBoundaries = List.map #2 goalHoleBoundaries
@@ -2102,10 +2062,10 @@ struct
       in
         |>: goalCap
          >:+ goalBoundaries
-         >:+ genInterBoundaryGoalsExceptDiag H ((holeBoundaries', holeBoundaries'), (tyBoundaries, NONE, K.top))
-         >:+ genCapBoundaryGoals H ((holeCap, (dir, tyTubes, holeBoundaries)), (tyCap, NONE, K.top))
+         >:+ genInterBoundaryGoalsExceptDiag H ((holeBoundaries', holeBoundaries'), (tyBoundaries, l))
+         >:+ genCapBoundaryGoals H ((holeCap, (dir, tyTubes, holeBoundaries)), (tyCap, l))
          >:+ genInterTubeGoals H w ((tyTubes, tyTubes), l, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), NONE, K.top)
+         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), l, kCap)
         #> (H, box)
       end
 
@@ -2178,7 +2138,7 @@ struct
 
         val goalA = Restriction.makeEqType [eq] H ((a0, a1), l, kA)
         val goalB = makeEqType H ((b0, b1), l, kB)
-        val goalEquiv = Restriction.makeEq [eq] H ((e0, e1), (intoEquiv a0 b0, NONE, K.top))
+        val goalEquiv = Restriction.makeEq [eq] H ((e0, e1), (intoEquiv a0 b0, l))
       in
         |>:? goalEquiv >:? goalA >: goalB #> (H, trivial)
       end
@@ -2186,21 +2146,20 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "V.Eq"
-        val H >> AJ.EQ ((in0, in1), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((in0, in1), (ty, l)) = jdg
         val Syn.V (r, a, b, e) = Syn.out ty
         val Syn.VIN (r0, m0, n0) = Syn.out in0
         val Syn.VIN (r1, m1, n1) = Syn.out in1
         val () = Assert.alphaEq' "V.Eq" (r0, r1)
         val () = Assert.alphaEq' "V.Eq" (r0, r)
-        val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r0, Syn.into Syn.DIM0)
 
-        val goalM = Restriction.makeEq [eq] H ((m0, m1), (a, l, kA))
-        val goalN = makeEq H ((n0, n1), (b, l, kB))
+        val goalM = Restriction.makeEq [eq] H ((m0, m1), (a, l))
+        val goalN = makeEq H ((n0, n1), (b, l))
         val goalCoh = Restriction.makeEqIfDifferent [eq] H
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), m0), n0), (b, NONE, K.top))
-        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, NONE, K.top))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), m0), n0), (b, l))
+        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, l))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (H, trivial)
       end
@@ -2208,17 +2167,16 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "V.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.V (r, a, b, e) = Syn.out ty
-        val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r, Syn.into Syn.DIM0)
 
-        val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) H (a, l, kA)
-        val (goalN, holeN) = makeTrue H (b, l, kB)
-        val goalCoh = Restriction.makeEqIfDifferent [eq] H
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), (b, NONE, K.top))
-        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, NONE, K.top))
+        val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) H (a, l)
+        val (goalN, holeN) = makeTrue H (b, l)
+        val goalCoh = Restriction.makeEq [eq] H
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), (b, l))
+        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, l))
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv
         #> (H, Syn.into @@ Syn.VIN (r, holeM, holeN))
@@ -2234,13 +2192,20 @@ struct
     (* The following should be equivalent to
      * `L.<= (inherentLevel l', l) andalso K.<= (inherentKind k', k)`
      *)
-    fun member (l', k') (l, k) = L.< (l', l) andalso K.<= (inherentKind k', k)
+    fun member ((l', k'), (l, k)) = L.< (l', l) andalso K.<= (inherentKind k', k)
 
     structure Assert =
     struct
       open Assert
-      fun univMem (l0,k0) (l1,k1) =
-        if member (l0,k0) (l1,k1) then ()
+
+      fun levelMem (l1, l2) =
+        if L.< (l1, l2) then
+          ()
+        else
+          E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than", L.pretty l2]
+
+      fun univMem ((l0,k0), (l1,k1)) =
+        if member ((l0,k0), (l1,k1)) then ()
         else E.raiseError @@ E.GENERIC
           [Fpp.hvsep
             [Fpp.text "Expected universe", L.pretty l0, TermPrinter.ppKind k0,
@@ -2264,7 +2229,7 @@ struct
         val _ = Assert.levelEq (l0, l1)
         val _ = Assert.levelNotOmega l0
         val _ = Assert.kindEq (k0, k1)
-        val _ = Assert.univMem (l0, k0) (l, k)
+        val _ = Assert.univMem ((l0, k0), (l, k))
       in
         T.empty #> (H, trivial)
       end
@@ -2272,9 +2237,9 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.Eq"
-        val H >> AJ.EQ ((a, b), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((a, b), (ty, l)) = jdg
         val Syn.UNIVERSE (l0, k0) = Syn.out ty
-        val _ = Assert.univMem (l0, k0) (l, k)
+        val _ = Assert.levelMem (l0, l)
 
         (* l0 is not omega because of Assert.univMem *)
         val goal = makeEqType H ((a, b), l0, k0)
@@ -2285,9 +2250,9 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.True"
-        val H >> AJ.TRUE (ty, l, k) = jdg
+        val H >> AJ.TRUE (ty, l) = jdg
         val Syn.UNIVERSE (l0, k0) = Syn.out ty
-        val _ = Assert.univMem (l0, k0) (l, k)
+        val _ = Assert.levelMem (l0, l)
 
         val (goalTy, holeTy) = makeTerm H O.EXP
         (* l0 is not omega because of Assert.univMem *)
@@ -2303,7 +2268,7 @@ struct
         val _ = RedPrlLog.trace "Universe.ElimFromTrue"
         val H >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _, _) = Hyps.lookup H z
+        val AJ.TRUE (ty, _) = Hyps.lookup H z
         val Syn.UNIVERSE (l, k) = Syn.out ty
 
         val u = alpha 0
@@ -2322,7 +2287,7 @@ struct
         val _ = RedPrlLog.trace "Universe.ElimFromEq"
         val H >> catjdg = jdg
         (* for now we ignore the kind and the level in the context *)
-        val AJ.EQ ((ty1, ty2), (univ, _, _)) = Hyps.lookup H z
+        val AJ.EQ ((ty1, ty2), (univ, _)) = Hyps.lookup H z
         val Syn.UNIVERSE (l, k) = Syn.out univ
 
         val u = alpha 0
@@ -2354,7 +2319,7 @@ struct
       let
         val _ = RedPrlLog.trace "Universe.NondetEqTypeFromEq"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.EQ ((ty0', ty1'), (univ, _, _)) = Hyps.lookup H z
+        val AJ.EQ ((ty0', ty1'), (univ, _)) = Hyps.lookup H z
         val Syn.UNIVERSE (l', k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
@@ -2370,7 +2335,7 @@ struct
       let
         val _ = RedPrlLog.trace "Universe.NondetEqTypeFromEq"
         val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.TRUE (eq, _, _) = Hyps.lookup H z
+        val AJ.TRUE (eq, _) = Hyps.lookup H z
         val Syn.EQUALITY (univ, ty0', ty1') = Syn.out eq
         val Syn.UNIVERSE (l', k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
@@ -2386,11 +2351,10 @@ struct
     fun NondetSynthFromEqType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.NondetSynthFromEqType"
-        val H >> AJ.SYNTH (ty2, l2, k2) = jdg
+        val H >> AJ.SYNTH (ty2, l2) = jdg
         val AJ.EQ_TYPE ((ty0, ty1), l0, k0) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((ty0, ty1), ty2)
-        (* TODO maybe generating a subgoal when it's not a member? *)
-        val _ = Assert.univMem (l0, k0) (l2, k2)
+        val _ = Assert.levelMem (l0, l2)
       in
         (* l0 is not omega because of univMem *)
         T.empty #> (H, Syn.intoU (l0, k0))
@@ -2401,12 +2365,11 @@ struct
     fun NondetSynthFromTrueEqAtType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueEqAtType"
-        val H >> AJ.SYNTH (ty1, l1, k1) = jdg
-        val AJ.TRUE (eq, l0, _) = Hyps.lookup H z
+        val H >> AJ.SYNTH (ty1, l1) = jdg
+        val AJ.TRUE (eq, l0) = Hyps.lookup H z
         val Syn.EQUALITY (ty0, _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
-        (* TODO maybe generating a subgoal when it's not a member? *)
-        val _ = Assert.univMem (l0, K.top) (l1, k1)
+        val _ = Assert.levelMem (l0, l1)
       in
         (* l0 is not omega because of univMem *)
         T.empty #> (H, Syn.intoU (l0, K.top))
@@ -2417,13 +2380,13 @@ struct
     fun NondetSynthFromEqAtType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.NondetSynthFromEqAtType"
-        val H >> AJ.SYNTH (ty1, l1, k1) = jdg
-        val AJ.EQ (_, (ty0, l0, k0)) = Hyps.lookup H z
+        val H >> AJ.SYNTH (ty1, l1) = jdg
+        val AJ.EQ (_, (ty0, l0)) = Hyps.lookup H z
         val _ = Assert.alphaEq (ty0, ty1)
-        val _ = Assert.univMem (l0, k0) (l1, k1)
+        val _ = Assert.levelMem (l0, l1)
       in
         (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.intoU (l0, k0))
+        T.empty #> (H, Syn.intoU (l0, K.top))
       end
 
     (* ty at l >> ty synth ~~> (U l) *)
@@ -2431,14 +2394,14 @@ struct
     fun NondetSynthFromTrueAtType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueAtType"
-        val H >> AJ.SYNTH (ty1, l1, k1) = jdg
-        val AJ.TRUE (ty0, l0, k0) = Hyps.lookup H z
+        val H >> AJ.SYNTH (ty1, l1) = jdg
+        val AJ.TRUE (ty0, l0) = Hyps.lookup H z
         val _ = Assert.alphaEq (ty0, ty1)
         (* TODO maybe generating a subgoal when it's not a member? *)
-        val _ = Assert.univMem (l0, k0) (l1, k1)
+        val _ = Assert.levelMem (l0, l1)
       in
         (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.intoU (l0, k0))
+        T.empty #> (H, Syn.intoU (l0, K.top))
       end
 
     fun VarFromTrue _ jdg =
@@ -2448,7 +2411,7 @@ struct
         val Syn.VAR (x1, _) = Syn.out ty1
         val Syn.VAR (x2, _) = Syn.out ty2
         val _ = Assert.varEq (x1, x2)
-        val AJ.TRUE (univ0, _, _) = Hyps.lookup H x1
+        val AJ.TRUE (univ0, _) = Hyps.lookup H x1
         val Syn.UNIVERSE (l0, k0) = Syn.out univ0
 
         val goal = makeTypeUnlessSubUniv H (ty1, l1, k1) (l0, k0)

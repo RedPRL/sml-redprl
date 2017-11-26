@@ -153,9 +153,9 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrueWith f H (ty, l, k) = makeGoal @@ Seq.map f @@ H >> AJ.TRUE (ty, l, k)
+  fun makeTrueWith f H (ty, l) = makeGoal @@ Seq.map f @@ H >> AJ.TRUE (ty, l)
   val makeTrue = makeTrueWith (fn j => j)
-  fun makeSynth H (m, l, k) = makeGoal @@ H >> AJ.SYNTH (m, l, k)
+  fun makeSynth H (m, l) = makeGoal @@ H >> AJ.SYNTH (m, l)
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
   fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
@@ -164,9 +164,9 @@ struct
   fun makeType H (a, l, k) = makeGoal' @@ H >> AJ.TYPE (a, l, k)
   fun makeEqTypeWith f H ((a, b), l, k) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), l, k)
   val makeEqType = makeEqTypeWith (fn j => j)
-  fun makeEqWith f H ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l, k))
+  fun makeEqWith f H ((m, n), (ty, l)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l))
   val makeEq = makeEqWith (fn j => j)
-  fun makeMem H (m, (ty, l, k)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l, k))
+  fun makeMem H (m, (ty, l)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l))
   fun makeSubUniverse H (u, l, k) = makeGoal' @@ H >> AJ.SUB_UNIVERSE (u, l, k)
 
   (* conditional goal making *)
@@ -187,33 +187,30 @@ struct
     if Abt.eq (m, n) then makeTypeUnlessSubUniv H (m, l, k) (l', k')
     else SOME @@ makeEqType H ((m, n), l, k)
 
-  fun makeEqIfDifferent H ((m, n), (ty, l, k)) =
+  fun makeEqIfDifferent H ((m, n), (ty, l)) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEq H ((m, n), (ty, l, k))
+    else SOME @@ makeEq H ((m, n), (ty, l))
 
-  fun makeEqIfAllDifferent H ((m, n), (ty, l, k)) ns =
+  fun makeEqIfAllDifferent H ((m, n), (ty, l)) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent H ((m, n), (ty, l, k))
+    else makeEqIfDifferent H ((m, n), (ty, l))
 
-  fun makeEqUnlessSubUniv H ((m, n), (ty, l, k)) (l', k') =
+  fun makeEqIfAtLowerLevel H ((m, n), (ty, l)) l' =
     Option.map
-      (fn (l, k) => makeEq H ((m, n), (ty, l, k)))
-      (L.WK.residual ((l, k), (l', k')))
+      (fn l => makeEq H ((m, n), (ty, l)))
+      (L.residual (l, l'))
 
-  fun makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k') =
-    makeEqUnlessSubUniv H ((m, m), (ty, l, k)) (l', k')
+  fun makeMemIfAtLowerLevel H (m, (ty, l)) l' =
+    makeEqIfAtLowerLevel H ((m, m), (ty, l)) l'
 
-  fun makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k') =
-    if Abt.eq (m, n) then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
-    else SOME @@ makeEq H ((m, n), (ty, l, k))
+  fun makeEqIfDifferentOrAtLowerLevel H ((m, n), (ty, l)) l' =
+    if Abt.eq (m, n) then makeMemIfAtLowerLevel H (m, (ty, l)) l'
+    else SOME @@ makeEq H ((m, n), (ty, l))
 
-  fun makeEqIfAllDifferentOrNotSubUniv H ((m, n), (ty, l, k)) ns (l', k') =
+  fun makeEqIfAllDifferentOrAtLowerLevel H ((m, n), (ty, l)) ns l' =
     if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
-    else makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k')
-
-  fun ifAllNone l goal =
-    if List.exists Option.isSome l then NONE else SOME goal
+    then makeMemIfAtLowerLevel H (m, (ty, l)) l'
+    else makeEqIfDifferentOrAtLowerLevel H ((m, n), (ty, l)) l'
 
   (* subtyping *)
 
@@ -222,8 +219,9 @@ struct
 
   (* It is not clear how exactly the subtyping should be implemented;
    * therefore we have a dummy implementation here. *)
-  fun makeSubType H (ty1, l1, k1) (ty0, l0, k0) =
-    makeEqTypeIfDifferentOrNotSubUniv H ((ty1, ty0), l0, k0) (l1, k1)
+  fun makeSubType H ((m, n), l) = makeEqType H ((m, n), l, K.top)
+  fun makeSubTypeIfDifferent H ((m, n), l) = makeEqTypeIfDifferent H ((m, n), l, K.top)
+  fun makeSubTypeIfDifferentOrAtLowerLevel H ((m, n), l) l' = makeEqTypeIfDifferentOrNotSubUniv H ((m, n), l, K.top) (l', K.top)
 
   (* assertions *)
 

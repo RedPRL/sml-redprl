@@ -192,7 +192,7 @@ Print FunExt.
 Tac FunExtTac(#l : lvl) = [
   query gl <- concl;
   match gl {
-    [a b f g k | #jdg{(path [_] (-> %a %b) %f %g) true with %[k:knd]} =>
+    [a b f g | #jdg{(path [_] (-> %a %b) %f %g) true} =>
       use (FunExt #l) [`%a, `%b, `%f, `%g, id]
     ]
   }
