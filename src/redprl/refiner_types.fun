@@ -127,7 +127,7 @@ struct
         val goalM = makeEq H ((m0, m1), (Syn.into Syn.BOOL, l))
 
         (* result type*)
-        val goalTy0 = makeEqType H ((substVar (m0, x) holeTy, ty), l, K.top)
+        val goalTy0 = makeSubType H ((substVar (m0, x) holeTy, ty), l)
 
         (* tt branch *)
         val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy, l))
@@ -248,7 +248,7 @@ struct
         val goalM = makeEq H ((m0, m1), (Syn.into Syn.WBOOL, l))
 
         (* result type*)
-        val goalTy0 = makeEqTypeIfDifferent H ((substVar (m0, x) c0x, ty), l, k)
+        val goalTy0 = makeSubTypeIfDifferent H ((substVar (m0, x) c0x, ty), l)
 
         (* tt branch *)
         val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x, l))
@@ -369,7 +369,7 @@ struct
         val goalM = makeEq H ((m0, m1), (nat, l))
 
         (* result type *)
-        val goalTy = makeEqType H ((substVar (m0, z) holeC, ty), l, K.top)
+        val goalTy = makeSubType H ((substVar (m0, z) holeC, ty), l)
 
         (* zero branch *)
         val goalZ = makeEq H ((n0, n1), (substVar (zero, z) holeC, l))
@@ -512,7 +512,7 @@ struct
         val goalM = makeEq H ((m0, m1), (int, l))
 
         (* result type *)
-        val goalTy = makeEqType H ((substVar (m0, z) holeC, ty), l, K.top)
+        val goalTy = makeSubType H ((substVar (m0, z) holeC, ty), l)
 
         (* zero branch *)
         val goalZ = makeEq H ((n0, n1), (substVar (zero, z) holeC, l))
@@ -707,7 +707,7 @@ struct
         val goalM = makeEq H ((m0, m1), (S1, l))
 
         (* result type *)
-        val goalTy = makeEqTypeIfDifferent H ((substVar (m0, x) c0x, ty), l, k) (* c0m0 well-type *)
+        val goalTy = makeSubTypeIfDifferent H ((substVar (m0, x) c0x, ty), l)
 
         (* base branch *)
         val cbase = substVar (Syn.into Syn.BASE, x) c0x
