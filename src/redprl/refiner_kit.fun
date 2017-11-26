@@ -184,9 +184,6 @@ struct
     if L.< (l, l') then SOME @@ makeSubType H ((a, b), l)
     else makeSubTypeIfDifferent H ((a, b), l)
 
-  fun ifAllNone l goal =
-    if List.exists Option.isSome l then NONE else SOME goal
-
   (* internalized EQ_TYPE *)
 
   structure Assert =
