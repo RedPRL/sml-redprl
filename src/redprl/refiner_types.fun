@@ -1801,7 +1801,6 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
         val H >> catjdg = jdg
 
-
         val (currentTy, l) =
           case Selector.lookup sel (H, catjdg) of
              AJ.TRUE params => params

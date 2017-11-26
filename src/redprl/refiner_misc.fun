@@ -199,9 +199,9 @@ struct
         val _ = if Hyps.isEmpty H' then () else
           E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
 
-        val _ = Assert.levelLeq (specL', l)
+        val goalTy = makeTypeIfAtLowerLevel H ((specTy', l), specL')
       in
-        T.empty #> (H, specTy')
+        |>:? goalTy #> (H, specTy')
       end
   end
 end
