@@ -10,7 +10,7 @@ struct
     datatype jdg =
 
      (* `EQ ((m, n), a)`:
-      *   The term `a` was associated with a PER and terms `m` and `n` were
+      *   The term `a` was associated with a PER and terms `m` and `n` are
       *   related by that PER.
       *
       *   The realizer is `TV` of sort `TRV`.
@@ -18,8 +18,8 @@ struct
        EQ of (abt * abt) * abt
 
      (* `TRUE a`:
-      *   The term `a` was associated with a PER and there existed a term `m`
-      *   such that `m` was related to itself in that PER.
+      *   The term `a` is associated with a PER and there exists a term `m`
+      *   such that `m` is related to itself in that PER.
       *
       *   The realizer is such an `m` of sort `EXP`.
       *)
@@ -48,9 +48,9 @@ struct
       *)
      | SUB_UNIVERSE of abt * kind
 
-     (* `SYNTH a`:
-      *   There existed a term `a` associated with a PER and the term `m`
-      *   was related to itself in that PER.
+     (* `SYNTH m`:
+      *   There exists a term `a` associated with a PER and the term `m`
+      *   is related to itself by that PER.
       *
       *   The realizer is such an `a` of sort `exp`.
       *)
