@@ -1,0 +1,41 @@
+Thm Connection(#l:lvl) : [
+  (->
+   [ty : (U #l hcom)]
+   [a b : ty]
+   [p : (path [_] ty a b)]
+   (path [i] (path [_] ty a (@ p i)) (abs [_] a) p))
+] by [
+  lam ty a b p =>
+    abs i j =>
+      `(hcom 0~>1 ty a
+        [i=0 [k]
+         (hcom 1~>0 ty (@ p k)
+          [k=0 [_] a]
+          [k=1 [l] (@ p l)])]
+        [i=1 [k]
+         (hcom 1~>j ty (@ p k)
+          [k=0 [_] a]
+          [k=1 [l] (@ p l)])]
+        [j=0 [k]
+         (hcom 1~>0 ty (@ p k)
+          [k=0 [_] a]
+          [k=1 [l] (@ p l)])]
+        [j=1 [k]
+         (hcom 1~>i ty (@ p k)
+          [k=0 [_] a]
+          [k=1 [l] (@ p l)])]
+        [i=j [k]
+         (hcom 1~>i ty (@ p k)
+          [k=0 [_] a]
+          [k=1 [l] (@ p l)])])
+].
+
+Thm Connection/Test0 (#l:lvl) : [
+  (->
+   [ty : (U #l hcom)]
+   [a b : ty]
+   [p : (path [_] ty a b)]
+   (= (path [_] ty a b) (abs [i] (@ ($ (Connection #l) ty a b p) i i)) p))
+] by [
+  lam ty a b p => unfold Connection; auto
+].
