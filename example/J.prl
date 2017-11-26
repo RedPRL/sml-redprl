@@ -4,7 +4,7 @@ Def J/square(#i:dim,#j:dim, #ty, #a, #p) = [
    [#i=1 [j] (@ #p j)])
 ].
 
-Thm J(#l:lvl) : [
+Thm J(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l kan)]
    [a : ty]

@@ -1,5 +1,5 @@
-Thm RecordTypeTest : [
-  (record [a : bool] [b : (path [_] bool a a)] [c : bool] [d : S1]) type
+Thm RecordTypeTest at 1 : [
+  (mem (U 0) (record [a : bool] [b : (path [_] bool a a)] [c : bool] [d : S1]))
 ] by [
   auto
 ].
@@ -7,31 +7,35 @@ Thm RecordTypeTest : [
 Print RecordTypeTest.
 
 Thm RecordTest0 : [
-  tuple in record
+  (mem record tuple)
 ] by [
   auto
 ].
 
 Thm RecordTest1 : [
-  (tuple [a tt]) in (record [a : bool])
+  (mem (record [a : bool]) (tuple [a tt]))
 ] by [
   auto
 ].
 
 Thm RecordTest2 : [
-  (tuple [a tt] [b tuple]) in (record [b : record] [a : bool])
+  (mem
+   (record [b : record] [a : bool])
+   (tuple [a tt] [b tuple]))
 ] by [
   auto
 ].
 
 Thm RecordTest3 : [
-  (tuple [a tt] [b ff]) in (record [b a : bool])
+  (mem
+   (record [b a : bool])
+   (tuple [a tt] [b ff]))
 ] by [
   auto
 ].
 
 Thm RecordTest4 : [
-  (! a (tuple [a tt] [b ff])) = tt in bool
+  (= bool (! a (tuple [a tt] [b ff])) tt)
 ] by [
   auto
 ].

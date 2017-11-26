@@ -1,4 +1,4 @@
-Thm EqualityKind0(#A) : [
+Thm EqualityKind0(#A) at 1 : [
   (->
    [ty : (U 0 stable)]
    [a b : ty]
@@ -7,7 +7,7 @@ Thm EqualityKind0(#A) : [
   lam ty a b => auto
 ].
 
-Thm EqualityKind1(#A) : [
+Thm EqualityKind1(#A) at 1 : [
   (->
    [ty : (U 0 discrete)]
    [a b : ty]

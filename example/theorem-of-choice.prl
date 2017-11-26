@@ -1,4 +1,4 @@
-Thm Choice(#i:lvl) : [
+Thm Choice(#i:lvl) at (++ #i) : [
   (->
    [a b : (U #i)]
    [r : (-> a b (U #i))]

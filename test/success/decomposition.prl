@@ -31,7 +31,7 @@ Thm UseHypTest : [
   (-> bool bool)
 ] by [
   lam x =>
-  claim p : [(-> bool S1 bool)] by [lam b c => use b];
+  claim p : [(-> bool S1 bool) at 0] by [lam b c => use b];
   use p [use x, `(loop 0)]
 ].
 

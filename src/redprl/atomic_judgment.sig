@@ -1,6 +1,5 @@
 structure RedPrlAtomicJudgmentData =
 struct
-  type kind = RedPrlKind.t
   type level = RedPrlLevel.t
 
   structure Tm = RedPrlAbt
@@ -28,19 +27,13 @@ struct
       *)
      | TRUE of abt * level
 
-     (* `EQ_TYPE ((a, b), l, k)`:
+     (* `SUB_TYPE ((a, b), l, k)`
       *   Already in the `l`th iteration of universe hierarchy construction,
-      *   `a` and `b` are equal types and have equal structures specified by `k`.
-      *   This implies they have the same PER.
-      *
-      *   The realizer is `TV` of sort `TRV`.
+      *   `a` is a subtype of `b`. The RedPRL proof theory is intentionally
+      *   weak so that there are only a few provable instances of non-trivial
+      *   subtyping.
       *)
-     | EQ_TYPE of (abt * abt) * level * kind
-
-     (* `SUB_UNIVERSE (u, l, k)`
-      *   `u` is a sub-universe of the universe specified by `l` and `k`.
-      *)
-     | SUB_UNIVERSE of abt * level * kind
+     | SUB_TYPE of (abt * abt) * level
 
      (* `SYNTH (m, l)`:
       *   Already in the `l`th iteration of universe hierarchy construction,
@@ -64,9 +57,7 @@ sig
   datatype jdg = datatype RedPrlAtomicJudgmentData.jdg
   type abt = RedPrlAbt.abt
   type level = RedPrlLevel.t
-  type kind = RedPrlKind.t
 
-  val TYPE : abt * level * RedPrlKind.t -> jdg
   val MEM : abt * (abt * level) -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg

@@ -12,26 +12,8 @@ Def IsSet (#C) = [(-> [c c' : #C] (IsProp (path [_] #C c c')))].
 
 Def Retract (#A,#f,#g) = [(-> [a : #A] (path [_] #A ($ #g ($ #f a)) a))].
 
-Tac ReflectUniv(#l:lvl, #k:knd, #t:tac) = [
-  query goal <- concl;
-  match goal {
-    [a b l k | #jdg{%a = %b type at %l with %[k:knd]} =>
-      claim aux : [%a = %b in (U #l #k)] by [#t]; auto
-    ]
-    [a b k | #jdg{%a = %b type with %[k:knd]} =>
-      claim aux : [%a = %b in (U #l #k)] by [#t]; auto
-    ]
-  }
-].
-
-Tac CrushTyEq(#l:lvl) = [
-  auto;
-  (ReflectUniv #l kan #tac{auto});
-  (ReflectUniv #l kan #tac{refine path/eq/app; auto})
-].
-
-Thm IdEquiv(#l:lvl) : [
-  (-> [ty : (U #l hcom)] (Equiv ty ty))
+Thm IdEquiv(#ll:lvl) at (++ #ll) : [
+  (-> [ty : (U #ll hcom)] (Equiv ty ty))
 ] by [
   lam ty =>
   {lam a => use a,
@@ -47,7 +29,7 @@ Thm IdEquiv(#l:lvl) : [
 // per Dan Licata, UA and UABeta suffice for full univalence:
 // https://groups.google.com/forum/#!topic/homotopytypetheory/j2KBIvDw53s
 
-Thm UA(#l:lvl) : [
+Thm UA(#l:lvl) at (++ #l) : [
   (-> [ty/a ty/b : (U #l kan)]
       [e : (Equiv ty/a ty/b)]
       (path [_] (U #l kan) ty/a ty/b))
@@ -56,7 +38,7 @@ Thm UA(#l:lvl) : [
     abs x => `(V x ty/a ty/b e)
 ].
 
-Thm UABeta(#l:lvl) : [
+Thm UABeta(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [e : (Equiv ty/a ty/b)]
@@ -73,18 +55,17 @@ Thm UABeta(#l:lvl) : [
 // To prove univalence from UA and UABeta, we need some basic results.
 // (What follows is adapted from the cubicaltt prelude.)
 
-Thm PathToEquiv(#l:lvl) : [
+Thm PathToEquiv(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [p : (path [_] (U #l kan) ty/a ty/b)]
    (Equiv ty/a ty/b))
 ] by [
   lam ty/a ty/b p =>
-  `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a));
-  (CrushTyEq #l)
+  `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a))
 ].
 
-Thm LemPropF(#l:lvl) : [
+Thm LemPropF(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -106,7 +87,7 @@ Thm LemPropF(#l:lvl) : [
     x)
 ].
 
-Thm LemSig(#l:lvl) : [
+Thm LemSig(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -119,7 +100,7 @@ Thm LemSig(#l:lvl) : [
   {`(@ p x), `(@ ($ (LemPropF #l) ty/a ty/b prop/b u1 v1 p u2 v2) x)}
 ].
 
-Thm PropSig(#l:lvl) : [
+Thm PropSig(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -133,7 +114,7 @@ Thm PropSig(#l:lvl) : [
   `($ (LemSig #l) ty/a ty/b prop/b u v ($ prop/a (!proj1 u) (!proj1 v)))
 ].
 
-Thm PropPi(#l:lvl) : [
+Thm PropPi(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -146,7 +127,7 @@ Thm PropPi(#l:lvl) : [
   abs x => lam a => `(@ ($ prop/b a ($ f a) ($ g a)) x)
 ].
 
-Thm LemProp(#l:lvl) : [
+Thm LemProp(#l:lvl) at (++ #l) : [
  (->
   [ty/a : (U #l kan)]
   [prop/a : (IsProp ty/a)]
@@ -158,7 +139,7 @@ Thm LemProp(#l:lvl) : [
   {`a , lam a' => `($ prop/a a' a)}
 ].
 
-Thm PropSet(#l:lvl) : [
+Thm PropSet(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l kan)]
    [prop : (IsProp ty)]
@@ -173,15 +154,15 @@ Thm PropSet(#l:lvl) : [
       [x=1 [z] (@ ($ prop a (@ q y)) z)])
 ].
 
-Thm PropIsContr(#l:lvl) : [
+Thm PropIsContr(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (IsProp (IsContr ty/a)))
 ] by [
   lam ty/a isContr =>
-    claim contr/a/prop : [(IsProp (IsContr ty/a))] by [
+    claim contr/a/prop : [(IsProp (IsContr ty/a)) at (++ #l)] by [
       let {_,contr} = isContr;
-      claim prop/a : [(IsProp ty/a)] by [
+      claim prop/a : [(IsProp ty/a) at (++ #l)] by [
         lam a a' => abs x =>
           `(hcom 1~>0 ty/a (@ ($ contr a) x)
             [x=0 [_] a]
@@ -204,7 +185,7 @@ Thm PropIsContr(#l:lvl) : [
     `($ contr/a/prop isContr)
 ].
 
-Thm PropIsEquiv(#l:lvl) : [
+Thm PropIsEquiv(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [f : (-> ty/a ty/b)]
@@ -216,7 +197,7 @@ Thm PropIsEquiv(#l:lvl) : [
   `(@ ($ (PropIsContr #l) (Fiber ty/a ty/b f b) ($ e0 b) ($ e1 b)) x)
 ].
 
-Thm EquivLemma(#l:lvl) : [
+Thm EquivLemma(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [e1 e2 : (Equiv ty/a ty/b)]
@@ -231,7 +212,7 @@ Thm EquivLemma(#l:lvl) : [
     ($ (PropIsEquiv #l) ty/a ty/b))
 ].
 
-Thm UARet(#l:lvl) : [
+Thm UARet(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    (Retract
@@ -246,7 +227,7 @@ Thm UARet(#l:lvl) : [
     (abs [x] (lam [a] (@ ($ (UABeta #l) ty/a ty/b e (coe 1~>x [_] ty/a a)) x))))
 ].
 
-Thm IsContrPath(#l:lvl) : [
+Thm IsContrPath(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (IsContr (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))))
@@ -256,11 +237,10 @@ Thm IsContrPath(#l:lvl) : [
    lam {ty/b,p} => abs x =>
      {`(hcom 0~>1 (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a]),
       abs y => `(hcom 0~>y (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a])}
-  };
-  auto; (CrushTyEq #l)
+  }
 ].
 
-Thm RetIsContr(#l:lvl) : [
+Thm RetIsContr(#l:lvl) at (++ #l) : [
   (->
    [ty/a ty/b : (U #l kan)]
    [f : (-> ty/a ty/b)]
@@ -277,7 +257,7 @@ Thm RetIsContr(#l:lvl) : [
         [x=1 [_] ($ g b)])}
 ].
 
-Thm SigEquivToPath(#l:lvl) : [
+Thm SigEquivToPath(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
@@ -287,7 +267,7 @@ Thm SigEquivToPath(#l:lvl) : [
   {use ty/b, abs x => `(V x ty/a ty/b equiv)}
 ].
 
-Thm SigPathToEquiv(#l:lvl) : [
+Thm SigPathToEquiv(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
@@ -297,7 +277,7 @@ Thm SigPathToEquiv(#l:lvl) : [
   {use ty/b, `($ (PathToEquiv #l) ty/a ty/b p)}
 ].
 
-Thm UARetSig(#l:lvl) : [
+Thm UARetSig(#l:lvl) at (++ #l) : [
   (->
    [ty/a : (U #l kan)]
    (Retract
@@ -317,7 +297,7 @@ Thm UARetSig(#l:lvl) : [
 // https://groups.google.com/forum/#!msg/homotopytypetheory/HfCB_b-PNEU/Ibb48LvUMeUJ
 // See also Theorem 5.8.4 of the HoTT Book.
 
-Thm Univalence(#l:lvl) : [
+Thm Univalence(#l:lvl) at (+ #l 2) : [
   (->
    [ty/a : (U #l kan)]
    (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))

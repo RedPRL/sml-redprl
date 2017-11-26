@@ -1,4 +1,4 @@
-Thm Category(#i:lvl) : [ (U (++ #i)) ] by [
+Thm Category(#i:lvl) at (+ #i 2) : [ (U (++ #i)) ] by [
    `(record
      [ob : (U #i)]
      [hom : (-> ob ob (U #i))]

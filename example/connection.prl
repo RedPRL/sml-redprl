@@ -1,4 +1,4 @@
-Thm Connection(#l:lvl) : [
+Thm Connection(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a b : ty]
@@ -30,7 +30,7 @@ Thm Connection(#l:lvl) : [
           [k=1 [l] (@ p l)])])
 ].
 
-Thm Connection/Test0 (#l:lvl) : [
+Thm Connection/Test0 (#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a b : ty]

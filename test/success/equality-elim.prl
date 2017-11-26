@@ -1,21 +1,21 @@
-Tac GetHole(#c : [exp].exp, #t : [exp].tac) = [
+Tac GetHole(#c : [exp].exp, #t : [exp].tac, #l : lvl) = [
   query gl <- concl;
   match gl {
-    [hole | #jdg{(#c %hole)} => (#t %hole)]
+    [hole | #jdg{(#c %hole) at #l} => (#t %hole)]
   }
 ].
 
 // We can write a cool user-defined tactic for claiming and then rewriting along an equality.
 // (Rewrite n a [x] c) matches the goal against the motive "[x] c" and rewrites along
 // the equality [_ = n in a].
-Tac Rewrite(#c : [exp].exp, #n, #a, #t : tac) = [
+Tac Rewrite(#c : [exp].exp, #n, #a, #t : tac, #l : lvl) = [
   (GetHole [x] (#c x) [hole] #tac{
-    claim p : [hole = #n in #a] by [#t];
+    claim p : [hole = #n in #a at #l] by [#t];
     // Use the elimination rule for equality. We bind a new hypothesis which will represent the location
     // in the goal #c which is being rewritten.
     fresh x -> rewrite-hyp p;
     [`(#c x), id, auto, auto]
-  })
+  } #lvl{0})
 ].
 
 Thm EqualityElimTest : [
@@ -25,7 +25,7 @@ Thm EqualityElimTest : [
   // We'll rewrite the goal by claiming [(if tt tt ff) = tt in bool].
   (Rewrite 
     [x] (-> bool (path [_] bool tt x))
-    tt bool #tac{auto});
+    tt bool #tac{auto} #lvl{0});
   // observe that the goal has now been rewritten!
   ?check-this-out;
   lam b => abs _ => `tt

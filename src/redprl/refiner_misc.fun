@@ -173,7 +173,7 @@ struct
         val _ = if Hyps.isEmpty H' then () else
           E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
 
-        val goalTy = makeSubTypeIfDifferentOrAtLowerLevel H ((specTy', ty), l) specL'
+        val goalTy = makeSubTypeIfDifferentOrAtLowerLevel H (((specTy', ty), l), specL')
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -199,7 +199,7 @@ struct
         val _ = if Hyps.isEmpty H' then () else
           E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
 
-        val goalTy = makeTypeUnlessSubUniv H (specTy', l, K.top) (specL', K.top)
+        val goalTy = makeTypeIfAtLowerLevel H ((specTy', l), specL')
       in
         |>:? goalTy #> (H, specTy')
       end

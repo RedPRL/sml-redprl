@@ -10,7 +10,7 @@ Def Equiv (#A,#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
 
 Def Id = [(lam [a] a)].
 
-Thm IdIsEquiv(#l:lvl) : [
+Thm IdIsEquiv(#l:lvl) at (++ #l) : [
   (-> [ty : (U #l hcom)] (IsEquiv ty ty Id))
 ] by [
   lam ty a =>
@@ -27,7 +27,7 @@ Thm IdIsEquiv(#l:lvl) : [
   }
 ].
 
-Thm IdEquiv(#l:lvl) : [
+Thm IdEquiv(#l:lvl) at (++ #l) : [
   (-> [ty : (U #l hcom)] (Equiv ty ty))
 ] by [
   lam ty =>
@@ -40,15 +40,15 @@ Def IdV(#i:dim, #l:lvl, #ty) = [
   (V #i #ty #ty ($ (IdEquiv #l) #ty))
 ].
 
-Thm IdV/Wf(#i:dim, #l:lvl) : [
+Thm IdV/Wf(#i:dim, #l:lvl) at (+ #l 2) : [
   (->
    [ty : (U #l hcom)]
-   (mem (U #l) (IdV #i #l ty)))
+   (mem (U (++ #l)) (IdV #i #l ty)))
 ] by [
   lam ty => auto
 ].
 
-Thm IdV/Test0(#i:dim, #l:lvl) : [
+Thm IdV/Test0(#i:dim, #l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a : ty]
@@ -57,7 +57,7 @@ Thm IdV/Test0(#i:dim, #l:lvl) : [
   lam ty a => auto
 ].
 
-Thm IdV/Test1(#l:lvl) : [
+Thm IdV/Test1(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l hcom)]
    [a : ty]
@@ -66,7 +66,7 @@ Thm IdV/Test1(#l:lvl) : [
   lam ty a => auto
 ].
 
-Thm IdV/Test2(#l:lvl) : [
+Thm IdV/Test2(#l:lvl) at (++ #l) : [
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -92,8 +92,8 @@ Thm Bool/reflect : [
 Tac Bool/contra/inverse (#p:exp) = [
   query gl <- concl;
   match gl {
-    [a b | #jdg{%a = %b in bool} =>
-      claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
+    [a b | #jdg{%a = %b in bool at 0} =>
+      claim eq : [(= bool %b %a) at 0] by [use Bool/reflect [`%b, `%a, `#p]; auto];
       symmetry; elim eq; auto
     ]
     [a | %[a:jdg] => id]
@@ -128,7 +128,7 @@ Thm NotEquiv : [
 
 Def NotV(#i:dim) = [(V #i bool bool NotEquiv)].
 
-Thm NotV/Wf(#i:dim) : [
+Thm NotV/Wf(#i:dim) at 1 : [
   (mem (U 0 kan) (NotV #i))
 ] by [
   auto
