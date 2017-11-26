@@ -19,8 +19,8 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Coe.Eq"
-        val H >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
-        val k = K.meet (k, K.COE)
+        val H >> AJ.EQ ((lhs, rhs), (ty, l)) = jdg
+        val k = K.COE
         val Syn.COE {dir=dir0, ty=(u, ty0u), coercee=m0} = Syn.out lhs
         val Syn.COE {dir=dir1, ty=(v, ty1v), coercee=m1} = Syn.out rhs
         val () = Assert.dirEq "Coe.Eq direction" (dir0, dir1)
@@ -32,11 +32,11 @@ struct
         val goalTy = makeEqType (H @> (w, AJ.TERM O.DIM)) ((ty0w, ty1w), l, k)
         (* after proving the above goal, [ty0r'0] must be a type *)
         val ty0r'0 = substVar (#2 dir0, u) ty0u
-        val goalTy0 = makeSubType H (ty0r'0, l, k) (ty, l, k)
+        val goalTy0 = makeSubTypeIfDifferent H ((ty0r'0, ty), l)
 
         (* coercee *)
         val ty0r0 = substVar (#1 dir0, u) ty0u
-        val goalCoercees = makeEq H ((m0, m1), (ty0r0, NONE, K.top))
+        val goalCoercees = makeEq H ((m0, m1), (ty0r0, l))
       in
         |>: goalCoercees >:? goalTy0 >: goalTy #> (H, trivial)
       end
@@ -44,8 +44,8 @@ struct
     fun EqCapL _ jdg =
       let
         val _ = RedPrlLog.trace "Coe.EqCapL"
-        val H >> AJ.EQ ((coe, other), (ty, l, k)) = jdg
-        val k = K.meet (k, K.COE)
+        val H >> AJ.EQ ((coe, other), (ty, l)) = jdg
+        val k = K.COE
         val Syn.COE {dir=(r, r'), ty=(u, ty0u), coercee=m} = Syn.out coe
         val () = Assert.alphaEq' "Coe.EqCapL source and target of direction" (r, r')
 
@@ -53,10 +53,10 @@ struct
         val goalTy = makeType (H @> (u, AJ.TERM O.DIM)) (ty0u, l, k)
         (* after proving the above goal, [ty0r] must be a type *)
         val ty0r = substVar (r, u) ty0u
-        val goalTy0 = makeSubType H (ty0r, l, k) (ty, l, k)
+        val goalTy0 = makeSubTypeIfDifferent H ((ty0r, ty), l)
 
         (* eq *)
-        val goalEq = makeEq H ((m, other), (ty, NONE, K.top))
+        val goalEq = makeEq H ((m, other), (ty, l))
       in
         |>: goalEq >:? goalTy0 >: goalTy #> (H, trivial)
       end
@@ -156,12 +156,12 @@ struct
     fun Eq sign _ jdg =
       let
         val _ = RedPrlLog.trace "Custom.Eq"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out m
         val _ = Assert.alphaEq (m, n)
 
-        val {spec = H' >> AJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
+        val {spec = H' >> AJ.TRUE (specTy, specL), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ()) (* TODO: use alpha here??? *)
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho =
@@ -172,8 +172,8 @@ struct
         val specL' = L.map (substMetaenv rho) specL
         val _ = if Hyps.isEmpty H' then () else
           E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
-        
-        val goalTy = makeSubType H (specTy', specL, specK) (ty, l, k)
+
+        val goalTy = makeSubTypeIfDifferentOrAtLowerLevel H ((specTy', ty), l) specL'
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -181,11 +181,11 @@ struct
     fun Synth sign _ jdg = 
       let
         val _ = RedPrlLog.trace "Custom.Synth"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out tm
 
-        val {spec = H' >> AJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
+        val {spec = H' >> AJ.TRUE (specTy, specL), state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val mrho =
@@ -199,9 +199,9 @@ struct
         val _ = if Hyps.isEmpty H' then () else
           E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
 
-        val goalKind = makeTypeUnlessSubUniv H (specTy', l, k) (specL', specK)
+        val goalTy = makeTypeUnlessSubUniv H (specTy', l, K.top) (specL', K.top)
       in
-        |>:? goalKind #> (H, specTy')
+        |>:? goalTy #> (H, specTy')
       end
   end
 end

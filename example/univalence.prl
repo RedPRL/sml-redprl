@@ -15,7 +15,10 @@ Def Retract (#A,#f,#g) = [(-> [a : #A] (path [_] #A ($ #g ($ #f a)) a))].
 Tac ReflectUniv(#l:lvl, #k:knd, #t:tac) = [
   query goal <- concl;
   match goal {
-    [a b k l | #jdg{%a = %b type at %l with %[k:knd]} =>
+    [a b l k | #jdg{%a = %b type at %l with %[k:knd]} =>
+      claim aux : [%a = %b in (U #l #k)] by [#t]; auto
+    ]
+    [a b k | #jdg{%a = %b type with %[k:knd]} =>
       claim aux : [%a = %b in (U #l #k)] by [#t]; auto
     ]
   }

@@ -141,7 +141,7 @@ struct
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
       val H >> _ = jdg
-      val AJ.TRUE (ty, _, _) = RT.Hyps.lookup H z
+      val AJ.TRUE (ty, _) = RT.Hyps.lookup H z
     in
       case Syn.out ty of 
          Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg

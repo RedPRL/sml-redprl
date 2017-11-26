@@ -122,11 +122,11 @@ struct
       let
         val _ = RedPrlLog.trace "TypeEquality.NondetFromEq"
         val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
-        val AJ.EQ (_, (a', l', k')) = Hyps.lookup H z
+        val AJ.EQ (_, (a', l')) = Hyps.lookup H z
         val _ = Assert.alphaEq (a, b)
         val _ = Assert.alphaEq (a', a)
-        val _ = Assert.inUsefulUniv (l', k') (l, k)
-        val goal = makeTypeUnlessSubUniv H (a, l, k) (l', k')
+        val _ = Assert.inUsefulUniv (l', K.top) (l, k)
+        val goal = makeTypeUnlessSubUniv H (a, l, k) (l', K.top)
       in
         |>:? goal #> (H, trivial)
       end
@@ -136,11 +136,11 @@ struct
       let
         val _ = RedPrlLog.trace "TypeEquality.NondetFromTrue"
         val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
-        val AJ.TRUE (a', l', k') = Hyps.lookup H z
+        val AJ.TRUE (a', l') = Hyps.lookup H z
         val _ = Assert.alphaEq (a, b)
         val _ = Assert.alphaEq (a', a)
-        val _ = Assert.inUsefulUniv (l', k') (l, k)
-        val goal = makeTypeUnlessSubUniv H (a, l, k) (l', k')
+        val _ = Assert.inUsefulUniv (l', K.top) (l, k)
+        val goal = makeTypeUnlessSubUniv H (a, l, k) (l', K.top)
       in
         |>:? goal #> (H, trivial)
       end
@@ -151,8 +151,8 @@ struct
     fun Witness tm _ jdg =
       let
         val _ = RedPrlLog.trace "True.Witness"
-        val H >> AJ.TRUE (ty, l, k) = jdg
-        val goal = makeMem H (tm, (ty, l, k))
+        val H >> AJ.TRUE (ty, l) = jdg
+        val goal = makeMem H (tm, (ty, l))
       in
         |>: goal #> (H, tm)
       end
@@ -178,8 +178,8 @@ struct
     fun Witness ty _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.Witness"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
-        val goal = makeMem H (tm, (ty, l, k))
+        val H >> AJ.SYNTH (tm, l) = jdg
+        val goal = makeMem H (tm, (ty, l))
       in
         |>: goal #> (H, ty)
       end
@@ -188,23 +188,23 @@ struct
     fun NondetFromEq z _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.NondetFromEq"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
-        val AJ.EQ ((a, b), (ty, l', k')) = Hyps.lookup H z
+        val H >> AJ.SYNTH (tm, l) = jdg
+        val AJ.EQ ((a, b), (ty, l')) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((a, b), tm)
-        val goalKind = makeTypeUnlessSubUniv H (ty, l, k) (l', k')
+        val _ = Assert.levelLeq (l', l)
       in
-        |>:? goalKind #> (H, ty)
+        T.empty #> (H, ty)
       end
 
     fun VarFromTrue _ jdg =
       let
         val _ = RedPrlLog.trace "Synth.VarFromTrue"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH (tm, l) = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
-        val AJ.TRUE (a, l', k') = Hyps.lookup H z
-        val goalKind = makeTypeUnlessSubUniv H (a, l, k) (l', k')
+        val AJ.TRUE (a, l') = Hyps.lookup H z
+        val goalLevel = makeTypeUnlessSubUniv H (a, l, K.top) (l', K.top)
       in
-        |>:? goalKind #> (H, a)
+        |>:? goalLevel #> (H, a)
       end
 
     val Var = VarFromTrue
@@ -234,12 +234,12 @@ struct
     fun VarFromTrue _ jdg =
       let
         val _ = RedPrlLog.trace "Equality.VarFromTrue"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
         val _ = Assert.varEq (x, y)
-        val AJ.TRUE (ty', l', k') = Hyps.lookup H x
-        val goalTy = makeSubType H (ty', l', k') (ty, l, k)
+        val AJ.TRUE (ty', l') = Hyps.lookup H x
+        val goalTy = makeSubTypeIfDifferentOrAtLowerLevel H ((ty', ty), l) l'
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -248,12 +248,12 @@ struct
 
     fun FromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "Equality.FromEq"
-        val H >> AJ.EQ ((m1, n1), (ty1, l1, k1)) = jdg
-        val AJ.EQ ((m0, n0), (ty0, l0, k0)) = Hyps.lookup H z
+        val _ = RedPrlLog.trace "NondetEquality.FromEq"
+        val H >> AJ.EQ ((m1, n1), (ty1, l1)) = jdg
+        val AJ.EQ ((m0, n0), (ty0, l0)) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
-        val goalTy = makeSubType H (ty0, l0, k0) (ty1, l1, k1)
+        val goalTy = makeSubTypeIfDifferentOrAtLowerLevel H ((ty0, ty1), l1) l0
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -261,8 +261,8 @@ struct
     fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "Equality.Symmetry"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
-        val goal = makeEq H ((n, m), (ty, l, k))
+        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
+        val goal = makeEq H ((n, m), (ty, l))
       in
         |>: goal #> (H, trivial)
       end
@@ -272,25 +272,25 @@ struct
         val _ = RedPrlLog.trace "Equality.RewriteTrueByEq"
         val H >> catjdg = jdg
 
-        val (currentTy, l, k) =
+        val (currentTy, l) =
           case Selector.lookup sel (H, catjdg) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
-        val AJ.EQ ((m, n), (ty, l', k')) = Hyps.lookup truncatedH z
+        val AJ.EQ ((m, n), (ty, l')) = Hyps.lookup truncatedH z
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l', k'))
+        val truncatedHx = truncatedH @> (x, AJ.TRUE (ty, l'))
         val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
-        val motiveWfGoal = makeType truncatedHx (motiveHole, l, k)
+        val motiveWfGoal = makeType truncatedHx (motiveHole, l, K.STABLE)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
 
         fun replace jdg = 
           case jdg of 
-             AJ.TRUE (_, l, k) => AJ.TRUE (motiven, l, k)
+             AJ.TRUE (_, l) => AJ.TRUE (motiven, l)
            | _ => jdg
 
         val (H', catjdg') = Selector.map sel replace (H, catjdg)
@@ -298,10 +298,10 @@ struct
 
         val motiveMatchesMainGoal =
           case sel of
-            O.IN_CONCL => makeSubType truncatedH (motivem, l, k) (currentTy, l, k)
-          | O.IN_HYP _ => makeSubType truncatedH (currentTy, l, k) (motivem, l, k)
+            O.IN_CONCL => makeSubType truncatedH ((motivem, currentTy), l)
+          | O.IN_HYP _ => makeSubType truncatedH ((currentTy, motivem), l)
       in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >:? motiveMatchesMainGoal
+        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
   end
@@ -480,7 +480,7 @@ struct
     and NormalizeDelegate (tac : abt -> tactic) sign =
       let
         fun go sel = matchGoalSel sel
-          (fn AJ.TRUE (ty, _, _) =>
+          (fn AJ.TRUE (ty, _) =>
             (case canonicity sign ty of
                 Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [sel] then_ go sel
               | Machine.NEUTRAL (Machine.VAR z') => (AutoElim sign z' then_ go sel) orelse_ tac ty
@@ -638,7 +638,7 @@ struct
          | (_, _, Syn.FCOM _) => Lcf.rule o FormalComposition.Eq
          | (_, _, Syn.V _) => Lcf.rule o V.Eq
          | (_, _, Syn.UNIVERSE _) => Lcf.rule o Universe.Eq
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", AJ.pretty (AJ.EQ ((m, n), (ty, NONE, K.top)))))
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", AJ.pretty (AJ.EQ ((m, n), (ty, NONE)))))
 
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
@@ -759,7 +759,7 @@ struct
              (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
            | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
            | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
-           | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", AJ.pretty @@ AJ.EQ ((m, n), (ty, NONE, K.top))))
+           | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", AJ.pretty @@ AJ.EQ ((m, n), (ty, NONE))))
 
       fun StepTrue sign ty =
         case Syn.out ty of
@@ -809,9 +809,9 @@ struct
 
       fun StepJdg sign = matchGoal
         (fn _ >> AJ.EQ_TYPE (tys, _, _) => StepEqType sign tys
-          | _ >> AJ.EQ ((m, n), (ty, _, _)) => StepEq sign ((m, n), ty)
-          | _ >> AJ.TRUE (ty, _, _) => StepTrue sign ty
-          | _ >> AJ.SYNTH (m, _, _) => StepSynth sign m
+          | _ >> AJ.EQ ((m, n), (ty, _)) => StepEq sign ((m, n), ty)
+          | _ >> AJ.TRUE (ty, _) => StepTrue sign ty
+          | _ >> AJ.SYNTH (m, _) => StepSynth sign m
           | _ >> AJ.SUB_UNIVERSE (univ, _, _) => StepSubUniverse sign univ
           | MATCH (_, _, m, _) => StepMatch sign m
           | MATCH_RECORD (_, m, _) => StepMatchRecord sign m
