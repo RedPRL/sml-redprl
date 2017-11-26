@@ -19,8 +19,8 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "Coe.Eq"
-        val H >> AJ.EQ ((lhs, rhs), (ty, l, k)) = jdg
-        val k = K.meet (k, K.COE)
+        val H >> AJ.EQ ((lhs, rhs), ty) = jdg
+
         val Syn.COE {dir=dir0, ty=(u, ty0u), coercee=m0} = Syn.out lhs
         val Syn.COE {dir=dir1, ty=(v, ty1v), coercee=m1} = Syn.out rhs
         val () = Assert.dirEq "Coe.Eq direction" (dir0, dir1)
@@ -29,36 +29,36 @@ struct
         val w = alpha 0
         val ty0w = substVar (VarKit.toDim w, u) ty0u
         val ty1w = substVar (VarKit.toDim w, v) ty1v
-        val goalTy = makeEqType (H @> (w, AJ.TERM O.DIM)) ((ty0w, ty1w), l, k)
+        val goalTy = makeEqType (H @> (w, AJ.TERM O.DIM)) (ty0w, ty1w)
         (* after proving the above goal, [ty0r'0] must be a type *)
         val ty0r'0 = substVar (#2 dir0, u) ty0u
-        val goalTy0 = makeSubType H (ty0r'0, l, k) (ty, l, k)
+        val goalTy0 = makeSubType H ty0r'0 ty
 
         (* coercee *)
         val ty0r0 = substVar (#1 dir0, u) ty0u
-        val goalCoercees = makeEq H ((m0, m1), (ty0r0, NONE, K.top))
+        val goalCoercees = makeEq H ((m0, m1), ty0r0)
       in
-        |>: goalCoercees >:? goalTy0 >: goalTy #> (H, trivial)
+        |>: goalCoercees >: goalTy0 >: goalTy #> (H, trivial)
       end
 
     fun EqCapL _ jdg =
       let
         val _ = RedPrlLog.trace "Coe.EqCapL"
-        val H >> AJ.EQ ((coe, other), (ty, l, k)) = jdg
-        val k = K.meet (k, K.COE)
+        val H >> AJ.EQ ((coe, other), ty) = jdg
+
         val Syn.COE {dir=(r, r'), ty=(u, ty0u), coercee=m} = Syn.out coe
         val () = Assert.alphaEq' "Coe.EqCapL source and target of direction" (r, r')
 
         (* type *)
-        val goalTy = makeType (H @> (u, AJ.TERM O.DIM)) (ty0u, l, k)
+        val goalTy = makeType (H @> (u, AJ.TERM O.DIM)) (ty0u, K.top) (* TODO: Favonia, is this right? - JMS *)
         (* after proving the above goal, [ty0r] must be a type *)
         val ty0r = substVar (r, u) ty0u
-        val goalTy0 = makeSubType H (ty0r, l, k) (ty, l, k)
+        val goalTy0 = makeSubType H ty0r ty
 
         (* eq *)
-        val goalEq = makeEq H ((m, other), (ty, NONE, K.top))
+        val goalEq = makeEq H ((m, other), ty)
       in
-        |>: goalEq >:? goalTy0 >: goalTy #> (H, trivial)
+        |>: goalEq >: goalTy0 >:+ goalTy #> (H, trivial)
       end
   end
 
@@ -156,12 +156,12 @@ struct
     fun Eq sign _ jdg =
       let
         val _ = RedPrlLog.trace "Custom.Eq"
-        val H >> AJ.EQ ((m, n), (ty, l, k)) = jdg
+        val H >> AJ.EQ ((m, n), ty) = jdg
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out m
         val _ = Assert.alphaEq (m, n)
 
-        val {spec = H' >> AJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
+        val {spec = H' >> AJ.TRUE specTy, state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ()) (* TODO: use alpha here??? *)
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val rho =
@@ -169,23 +169,23 @@ struct
             (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
             Metavar.Ctx.empty (metas, args)
         val specTy' = substMetaenv rho specTy
-        val specL' = L.map (substMetaenv rho) specL
+
         val _ = if Hyps.isEmpty H' then () else
           E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
         
-        val goalTy = makeSubType H (specTy', specL, specK) (ty, l, k)
+        val goalTy = makeSubType H specTy' ty
       in
-        |>:? goalTy #> (H, trivial)
+        |>: goalTy #> (H, trivial)
       end
 
     fun Synth sign _ jdg = 
       let
         val _ = RedPrlLog.trace "Custom.Synth"
-        val H >> AJ.SYNTH (tm, l, k) = jdg
+        val H >> AJ.SYNTH tm = jdg
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out tm
 
-        val {spec = H' >> AJ.TRUE (specTy, specL, specK), state, ...} = Sig.lookup sign name
+        val {spec = H' >> AJ.TRUE specTy, state, ...} = Sig.lookup sign name
         val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
         val metas = T.foldr (fn (x, jdg, r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
         val mrho =
@@ -195,13 +195,11 @@ struct
             (metas, args)
 
         val specTy' = substMetaenv mrho specTy
-        val specL' = L.map (substMetaenv mrho) specL
+
         val _ = if Hyps.isEmpty H' then () else
           E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
-
-        val goalKind = makeTypeUnlessSubUniv H (specTy', l, k) (specL', specK)
       in
-        |>:? goalKind #> (H, specTy')
+        Lcf.Tl.empty #> (H, specTy')
       end
   end
 end

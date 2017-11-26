@@ -17,36 +17,20 @@ struct
       *   was defined at some level but we do not care.
       *   The realizer is `TV` of sort `TRV`.
       *)
-       EQ of (abt * abt) * (abt * level * kind)
+       EQ of (abt * abt) * abt
 
      (* `TRUE (a, l, k)`:
       *   `EQ_TYPE ((a, a), l, k)` and there exists a term `m` such that
       *   `EQ ((m, m), (a, l, k))` is provable.
       *   The realizer is such an `m` of sort `EXP`.
       *)
-     | TRUE of abt * level * kind
-
-     (* `EQ_TYPE ((a, b), l, k)`:
-      *   `a` and `b` are equal types, even taking into the structures
-      *   specified by `k`. Both were already defined at the `l'`th iteration
-      *   if `l = SOME l'`. If `l = NONE` it means both will be defined
-      *   eventually but we do not care about when. For example,
-      *   `EQ_TYPE ((a, b), SOME 2, KAN)` means `a` and `b` are equally Kan
-      *   in the second iterated type theory.
-      *   The realizer is `TV` of sort `TRV`.
-      *)
-     | EQ_TYPE of (abt * abt) * level * kind
-
-     (* `SUB_UNIVERSE (u, l, k)`
-      *   `u` is a sub-universe of the universe specified by `l` and `k`.
-      *)
-     | SUB_UNIVERSE of abt * level * kind
+     | TRUE of abt
 
      (* `TERM tau`:
       *   There exists some `m` of sort `tau`.
       *   The realizer is such an `m` of sort `tau`.
       *)
-     | SYNTH of abt * level * kind
+     | SYNTH of abt
 
      (* `TERM tau`:
       *   There exists some `m` of sort `tau`.
@@ -63,8 +47,7 @@ sig
   type level = RedPrlLevel.t
   type kind = RedPrlKind.t
 
-  val MEM : abt * (abt * level * RedPrlKind.t) -> jdg
-  val TYPE : abt * level * RedPrlKind.t -> jdg
+  val MEM : abt * abt -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg
 

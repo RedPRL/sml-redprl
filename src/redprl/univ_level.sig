@@ -11,13 +11,11 @@ sig
   val succ : level -> level
   val join : level * level -> level
   val max : level list -> level
-  val omega : level
 
   val <= : level * level -> bool
   val < : level * level -> bool
   val eq : level * level -> bool
 
-  val top : level
   val residual : level * level -> level option
 
   val pretty : level -> Fpp.doc

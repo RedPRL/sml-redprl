@@ -121,7 +121,7 @@ struct
 
   fun |>: g = T.empty >: g
 
-  fun >:+ (tel, list) : 'a telescope =
+  fun >:+ (tel : 'a telescope, list : (label * 'a) list) : 'a telescope =
     List.foldl (fn (g, t) => t >: g) tel list
   infix 5 >:+
 
@@ -150,67 +150,57 @@ struct
     in
       ((x, jdg), hole)
     end
+
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
-  (* needing the realizer *)
-  fun makeTrueWith f H (ty, l, k) = makeGoal @@ Seq.map f @@ H >> AJ.TRUE (ty, l, k)
-  val makeTrue = makeTrueWith (fn j => j)
-  fun makeSynth H (m, l, k) = makeGoal @@ H >> AJ.SYNTH (m, l, k)
-  fun makeMatch part = makeGoal @@ MATCH part
-  fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
-  fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
+  fun makeTrueWith f H ty =
+    makeGoal @@ Seq.map f @@ H >> AJ.TRUE ty
 
-  (* ignoring the trivial realizer *)
-  fun makeType H (a, l, k) = makeGoal' @@ H >> AJ.TYPE (a, l, k)
-  fun makeEqTypeWith f H ((a, b), l, k) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), l, k)
-  val makeEqType = makeEqTypeWith (fn j => j)
-  fun makeEqWith f H ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l, k))
-  val makeEq = makeEqWith (fn j => j)
-  fun makeMem H (m, (ty, l, k)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l, k))
-  fun makeSubUniverse H (u, l, k) = makeGoal' @@ H >> AJ.SUB_UNIVERSE (u, l, k)
+  val makeTrue =
+    makeTrueWith (fn j => j)
+
+  fun makeSynth H m =
+    makeGoal @@ H >> AJ.SYNTH m
+
+  val makeMatch = makeGoal o MATCH
+  val makeMatchRecord = makeGoal o MATCH_RECORD
+
+  fun makeTerm H tau =
+    makeGoal @@ H >> AJ.TERM tau
+
+  (* TODO: add a kind parameter here! *)
+  fun makeType H (a : abt, k : K.kind) : (label * jdg) list =
+    raise Fail "TODO"
+
+  fun makeEqTypeWith f H (a:abt, b:abt) : (label * jdg) =
+    makeGoal' @@ Seq.map f @@ H >> (raise Fail "TODO")
+
+  val makeEqType : AJ.jdg Hyps.telescope -> abt * abt -> label * jdg =
+    makeEqTypeWith (fn j => j)
+
+  fun makeEqWith f H ((m, n), ty) =
+    makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
+
+  val makeEq : AJ.jdg Hyps.telescope -> (abt * abt) * abt -> label * jdg =
+    makeEqWith (fn j => j)
+
+  fun makeMem H (m, ty) =
+    makeGoal' @@ H >> AJ.MEM (m, ty)
 
   (* conditional goal making *)
 
-  fun makeEqTypeIfDifferent H ((m, n), l, k) =
+  fun makeEqTypeIfDifferent H (m, n) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType H ((m, n), l, k)
+    else SOME @@ makeEqType H (m, n)
 
-  fun makeEqTypeUnlessSubUniv H ((m, n), l, k) (l', k') =
-    Option.map
-      (fn (l, k) => makeEqType H ((m, n), l, k))
-      (L.WK.residual ((l, k), (l', k')))
-  
-  fun makeTypeUnlessSubUniv H (m, l, k) (l', k') =
-    makeEqTypeUnlessSubUniv H ((m, m), l, k) (l', k')
-
-  fun makeEqTypeIfDifferentOrNotSubUniv H ((m, n), l, k) (l', k') =
-    if Abt.eq (m, n) then makeTypeUnlessSubUniv H (m, l, k) (l', k')
-    else SOME @@ makeEqType H ((m, n), l, k)
-
-  fun makeEqIfDifferent H ((m, n), (ty, l, k)) =
+  fun makeEqIfDifferent H ((m, n), ty) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEq H ((m, n), (ty, l, k))
+    else SOME @@ makeEq H ((m, n), ty)
 
-  fun makeEqIfAllDifferent H ((m, n), (ty, l, k)) ns =
+  fun makeEqIfAllDifferent H ((m, n), ty) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent H ((m, n), (ty, l, k))
+    else makeEqIfDifferent H ((m, n), ty)
 
-  fun makeEqUnlessSubUniv H ((m, n), (ty, l, k)) (l', k') =
-    Option.map
-      (fn (l, k) => makeEq H ((m, n), (ty, l, k)))
-      (L.WK.residual ((l, k), (l', k')))
-
-  fun makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k') =
-    makeEqUnlessSubUniv H ((m, m), (ty, l, k)) (l', k')
-
-  fun makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k') =
-    if Abt.eq (m, n) then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
-    else SOME @@ makeEq H ((m, n), (ty, l, k))
-
-  fun makeEqIfAllDifferentOrNotSubUniv H ((m, n), (ty, l, k)) ns (l', k') =
-    if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
-    else makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k')
 
   fun ifAllNone l goal =
     if List.exists Option.isSome l then NONE else SOME goal
@@ -222,8 +212,8 @@ struct
 
   (* It is not clear how exactly the subtyping should be implemented;
    * therefore we have a dummy implementation here. *)
-  fun makeSubType H (ty1, l1, k1) (ty0, l0, k0) =
-    makeEqTypeIfDifferentOrNotSubUniv H ((ty1, ty0), l0, k0) (l1, k1)
+  fun makeSubType H ty1 ty0 =
+    makeEqType H (ty1, ty0)
 
   (* assertions *)
 
@@ -264,12 +254,6 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
-
-    fun levelNotOmega l =
-      if not (L.eq (l, L.omega)) then
-        ()
-      else
-        raise E.error [Fpp.text "Expected level", L.pretty l, Fpp.text "not to be", L.pretty L.omega]
 
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then

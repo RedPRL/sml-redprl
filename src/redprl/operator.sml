@@ -205,14 +205,12 @@ struct
    | LCONST of IntInf.int
    | LPLUS of IntInf.int
    | LMAX
-   | LOMEGA
 
    | KCONST of kind
 
    | JDG_EQ
    | JDG_TRUE
    | JDG_EQ_TYPE
-   | JDG_SUB_UNIVERSE
    | JDG_SYNTH
    | JDG_TERM of sort
 
@@ -361,16 +359,14 @@ struct
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] |: LVL] ->> LVL
      | LMAX => [[] |: VEC LVL] ->> LVL
-     | LOMEGA => [] ->> LVL
 
      | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_TRUE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
-     | JDG_EQ_TYPE => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
-     | JDG_SYNTH => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
+     | JDG_EQ => [[] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE => [[] |: EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SYNTH => [[] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -505,7 +501,6 @@ struct
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
      | LPLUS i => "{lplus " ^ IntInf.toString i ^ "}"
      | LMAX => "lmax"
-     | LOMEGA => "lomega"
 
      | KCONST k => RedPrlKind.toString k
 
@@ -565,7 +560,6 @@ struct
      | JDG_EQ => "eq"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
-     | JDG_SUB_UNIVERSE => "sub-universe"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | CUST (opid, _) => opid
