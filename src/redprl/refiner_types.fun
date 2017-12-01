@@ -1922,6 +1922,29 @@ struct
         |>: goalTyCoeq >: goalP >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalTy0 #> (H, trivial)
       end
 
+    fun BetaDom alpha jdg =
+      let
+	  val _ = RedPrlLog.trace "Coequalizer.BetaDom"
+	  val H >> AJ.EQ ((elim, s), (ty, l)) = jdg
+	  val Syn.COEQUALIZER_REC (_, m, ((b, nb), (v, a, qva))) = Syn.out elim
+	  val Syn.CEDOM (r, t, ft, gt) = Syn.out m
+
+	  val qrt = VarKit.substMany [(r, v), (t, a)] qva
+	  val goalRed = makeEq H ((qrt, s), (ty, l))
+
+	  (* left coherence *)
+	  val q0t = VarKit.substMany [(Syn.intoDim 0, v), (t, a)] qva
+	  val nft = substVar (ft, b) nb
+	  val goalCohL = Restriction.makeEqIfAllDifferent [(r, Syn.intoDim 0)] H ((nft, s), (ty, l)) [q0t]
+
+	  (* right coherence *)
+	  val q1t = VarKit.substMany [(Syn.intoDim 1, v), (t, a)] qva
+	  val ngt = substVar (gt, b) nb
+	  val goalCohR = Restriction.makeEqIfAllDifferent [(r, Syn.intoDim 1)] H ((ngt, s), (ty, l)) [q1t]
+      in
+	  |>: goalRed >:? goalCohL >:? goalCohR #> (H, trivial)
+      end
+
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "Coequalizer.SynthElim"
