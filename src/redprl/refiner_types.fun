@@ -26,6 +26,8 @@ struct
    * EqElim/EqX: structural equality for eliminators.
    *   We use EqX if the eliminator has a well-known name X.
    *   For example, we have EqApp for Fun and Path, and EqProj for Record.
+   * BetaX: the beta rule for the eliminator applied to a constructor X.
+   *   This is only necessary in cases where the reduction is unstable.
    * EqTypeElim/EqTypeX: similar to EqElim but for EQ_TYPE judgments.
    * SynthElim/SynthX: synthesizing the types of eliminators.
    * (others): other special rules for this type.
@@ -770,6 +772,48 @@ struct
         val goalCoh1 = makeEqIfAllDifferent H ((l01, b0), (cbase, l)) [l00, b1]
       in
         |>: goalC >: goalM >: goalB >: goalL >:? goalTy >:? goalCoh0 >:? goalCoh1
+        #> (H, trivial)
+      end
+
+    fun BetaLoop alpha jdg =
+      let
+	val _ = RedPrlLog.trace "S1.BetaLoop"
+        val H >> AJ.EQ ((elim, m), (ty, l)) = jdg
+        (* prescribed motive doesn't matter because we're not applying to fcom *)
+	val Syn.S1_REC (_, n, (b, (u, lu))) = Syn.out elim
+	val Syn.LOOP r = Syn.out n
+
+	val S1 = Syn.into Syn.S1
+
+        (* motive *)
+        val x = alpha 0
+        val Hx = H @> (x, AJ.TRUE (S1, inherentLevel))
+        val (goalTy, holeTy) = makeTerm Hx O.EXP
+	val goalTy' = makeType Hx (holeTy, l, K.top)
+
+	(* result type *)
+        val goalTy0 = makeSubType H ((substVar (n, x) holeTy, ty), l)
+
+	(* base branch is redundant with coherence *)
+
+	(* loop branch *)
+	val v = alpha 1
+	val lv = substVar (VarKit.toDim v, u) lu
+	val loopTy = substVar (Syn.into @@ Syn.LOOP (VarKit.toDim v), x) holeTy
+	val goalL = makeMem (H @> (v, AJ.TERM O.DIM)) (lv, (loopTy, l))
+
+        (* coherence *)
+        val l0 = substVar (Syn.into Syn.DIM0, u) lu
+	val l1 = substVar (Syn.into Syn.DIM1, u) lu
+	val baseTy = substVar (Syn.into Syn.BASE, x) holeTy
+	val goalCoh0 = makeEqIfDifferent H ((l0, b), (baseTy, l))
+	val goalCoh1 = makeEqIfAllDifferent H ((l1, b), (baseTy, l)) [l0]
+
+        (* reduced goal *)
+	val redElim = substVar (r, u) lu
+	val goalRed = makeEq H ((redElim, m), (ty, l))
+      in
+        |>: goalRed >: goalTy >: goalL >:? goalCoh0 >:? goalCoh1 >: goalTy' >: goalTy0
         #> (H, trivial)
       end
 
@@ -1708,6 +1752,74 @@ struct
         val goalCohR = makeEq (H @> (c, AJ.TRUE (holeTyC, l))) ((q01c, rgc), (dright holeG, l))
       in
         |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >: goalTy0 #> (H, trivial)
+      end
+
+    fun BetaGlue alpha jdg =
+      let
+	  val _ = RedPrlLog.trace "Pushout.BetaGlue"
+	  val H >> AJ.EQ ((elim, s), (ty, l)) = jdg
+	  (* prescribed motive doesn't matter because we're not applying to fcom *)
+	  val Syn.PUSHOUT_REC (_, m, ((a, na), (b, pb), (v, c, qvc))) = Syn.out elim
+	  val Syn.GLUE (r, t, ft, gt) = Syn.out m
+
+	  (* type of eliminated term *)
+	  val (goalTyPushout, holeTyPushout) = makeSynth H (m, l)
+
+	  (* motive *)
+	  val x = alpha 0
+	  val Hx = H @> (x, AJ.TRUE (holeTyPushout, l))
+	  val (goalTyMotive, holeTyMotive) = makeTerm Hx O.EXP
+	  val goalTyMotive' = makeType Hx (holeTyMotive, l, K.top)
+
+	  (* result type *)
+	  val goalTyMotive0 = makeSubType H ((substVar (m, x) holeTyMotive, ty), l)
+
+	  (* left branch *)
+	  val (goalTyA, holeTyA) = makeMatch (O.PUSHOUT, 0, holeTyPushout, [])
+	  val a' = alpha 1
+	  val atm' = VarKit.toExp a'
+	  val na' = VarKit.rename (a', a) na
+	  fun motiveLeft tm = substVar (Syn.into (Syn.LEFT tm), x) holeTyMotive
+	  val goalN = makeMem (H @> (a', AJ.TRUE (holeTyA, l))) (na', (motiveLeft atm', l))
+
+	  (* right branch *)
+	  val (goalTyB, holeTyB) = makeMatch (O.PUSHOUT, 1, holeTyPushout, [])
+	  val b' = alpha 2
+	  val btm' = VarKit.toExp b'
+	  val pb' = VarKit.rename (b', b) pb
+	  fun motiveRight tm = substVar (Syn.into (Syn.RIGHT tm), x) holeTyMotive
+	  val goalP = makeMem (H @> (b', AJ.TRUE (holeTyB, l))) (pb', (motiveRight btm', l))
+
+	  (* glue branch *)
+	  val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 2, holeTyPushout, [])
+	  val v' = alpha 3
+	  val vtm' = VarKit.toDim v'
+	  val c' = alpha 4
+	  val ctm' = VarKit.toExp c'
+	  val qvc' = VarKit.renameMany [(c', c), (v', v)] qvc
+	  val (goalF, holeF) = makeMatch (O.PUSHOUT, 3, holeTyPushout, [ctm'])
+	  val (goalG, holeG) = makeMatch (O.PUSHOUT, 4, holeTyPushout, [ctm'])
+	  val glue = Syn.into @@ Syn.GLUE (vtm', ctm', holeF, holeG)
+	  val motiveGlue = substVar (glue, x) holeTyMotive
+	  val Hglue = H @> (v', AJ.TERM O.DIM) @> (c', AJ.TRUE (holeTyC, l))
+	  val goalQ = makeMem Hglue (qvc', (motiveGlue, l))
+
+	  (* coherence *)
+	  val q0c' = substVar (Syn.intoDim 0, v') qvc'
+	  val lfc' = substVar (holeF, a') na'
+	  val goalCohL = makeEqIfDifferent (H @> (c', AJ.TRUE (holeTyC, l))) ((q0c', lfc'), (motiveLeft holeF, l))
+
+	  val q1c' = substVar (Syn.intoDim 1, v') qvc'
+	  val rgc' = substVar (holeG, b') pb'
+	  val goalCohR = makeEqIfDifferent (H @> (c', AJ.TRUE (holeTyC, l))) ((q1c', rgc'), (motiveRight holeG, l))
+
+	  (* reduced goal *)
+	  val redElim = VarKit.substMany [(r,v),(t,c)] qvc
+	  val goalRed = makeEq H ((redElim, s), (ty, l))
+      in
+	  |>: goalRed >: goalTyPushout >: goalTyMotive >: goalTyA >: goalN >: goalTyB >: goalP
+	      >: goalTyC >: goalF >: goalG >: goalQ >:? goalCohL >:? goalCohR >: goalTyMotive' >: goalTyMotive0
+	      #> (H, trivial)
       end
 
     fun SynthElim _ jdg =

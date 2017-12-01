@@ -381,6 +381,7 @@ struct
      | "s1/eq/loop" => Lcf.rule o S1.EqLoop
      | "s1/eq/fcom" => Lcf.rule o S1.EqFCom
      | "s1/eq/s1-rec" => Lcf.rule o S1.EqElim
+     | "s1/beta/loop" => Lcf.rule o S1.BetaLoop
      | "fun/eqtype" => Lcf.rule o Fun.EqType
      | "fun/eq/lam" => Lcf.rule o Fun.Eq
      | "fun/intro" => Lcf.rule o Fun.True
@@ -409,6 +410,7 @@ struct
      | "pushout/eq/glue" => Lcf.rule o Pushout.EqGlue
      | "pushout/eq/fcom" => Lcf.rule o Pushout.EqFCom
      | "pushout/eq/pushout-rec" => Lcf.rule o Pushout.EqElim
+     | "pushout/beta/glue" => Lcf.rule o Pushout.BetaGlue
      | "eq/eqtype" => Lcf.rule o InternalizedEquality.EqType
      | "eq/eq/ax" => Lcf.rule o InternalizedEquality.Eq
      | "eq/intro" => Lcf.rule o InternalizedEquality.True
