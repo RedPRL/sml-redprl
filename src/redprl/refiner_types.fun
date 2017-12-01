@@ -1685,9 +1685,9 @@ struct
 
         (* glue branch *)
         val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 2, holeTyPushout, [])
-        val v = alpha 2
+        val v = alpha 3
         val vtm = VarKit.toDim v
-        val c = alpha 3
+        val c = alpha 4
         val ctm = VarKit.toExp c
         val q0vc = VarKit.renameMany [(v, v0), (c, c0)] q0v0c0
         val q1vc = VarKit.renameMany [(v, v1), (c, c1)] q1v1c1
