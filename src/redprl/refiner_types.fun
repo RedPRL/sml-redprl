@@ -26,6 +26,8 @@ struct
    * EqElim/EqX: structural equality for eliminators.
    *   We use EqX if the eliminator has a well-known name X.
    *   For example, we have EqApp for Fun and Path, and EqProj for Record.
+   * BetaX: the beta rule for the eliminator applied to a constructor X.
+   *   This is only necessary in cases where the reduction is unstable.
    * EqTypeElim/EqTypeX: similar to EqElim but for EQ_TYPE judgments.
    * SynthElim/SynthX: synthesizing the types of eliminators.
    * (others): other special rules for this type.
@@ -770,6 +772,48 @@ struct
         val goalCoh1 = makeEqIfAllDifferent H ((l01, b0), (cbase, l)) [l00, b1]
       in
         |>: goalC >: goalM >: goalB >: goalL >:? goalTy >:? goalCoh0 >:? goalCoh1
+        #> (H, trivial)
+      end
+
+    fun BetaLoop alpha jdg =
+      let
+	val _ = RedPrlLog.trace "S1.BetaLoop"
+        val H >> AJ.EQ ((elim, m), (ty, l)) = jdg
+        (* prescribed motive doesn't matter because we're not applying to fcom *)
+	val Syn.S1_REC (_, n, (b, (u, lu))) = Syn.out elim
+	val Syn.LOOP r = Syn.out n
+
+	val S1 = Syn.into Syn.S1
+
+        (* motive *)
+        val x = alpha 0
+        val Hx = H @> (x, AJ.TRUE (S1, inherentLevel))
+        val (goalTy, holeTy) = makeTerm Hx O.EXP
+	val goalTy' = makeType Hx (holeTy, l, K.top)
+
+	(* result type *)
+        val goalTy0 = makeSubType H ((substVar (n, x) holeTy, ty), l)
+
+	(* base branch is redundant with coherence *)
+
+	(* loop branch *)
+	val v = alpha 1
+	val lv = substVar (VarKit.toDim v, u) lu
+	val loopTy = substVar (Syn.into @@ Syn.LOOP (VarKit.toDim v), x) holeTy
+	val goalL = makeMem (H @> (v, AJ.TERM O.DIM)) (lv, (loopTy, l))
+
+        (* coherence *)
+        val l0 = substVar (Syn.into Syn.DIM0, u) lu
+	val l1 = substVar (Syn.into Syn.DIM1, u) lu
+	val baseTy = substVar (Syn.into Syn.BASE, x) holeTy
+	val goalCoh0 = makeEqIfDifferent H ((l0, b), (baseTy, l))
+	val goalCoh1 = makeEqIfAllDifferent H ((l1, b), (baseTy, l)) [l0]
+
+        (* reduced goal *)
+	val redElim = substVar (r, u) lu
+	val goalRed = makeEq H ((redElim, m), (ty, l))
+      in
+        |>: goalRed >: goalTy >: goalL >:? goalCoh0 >:? goalCoh1 >: goalTy' >: goalTy0
         #> (H, trivial)
       end
 
