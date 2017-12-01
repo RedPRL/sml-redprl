@@ -1723,6 +1723,218 @@ struct
       end
   end
 
+  structure Coequalizer =
+  struct
+    val kindConstraintOnCodAndDom =
+      fn K.DISCRETE => E.raiseError @@
+           E.NOT_APPLICABLE (Fpp.text "Coequalizers", Fpp.text "discrete universes")
+       | K.KAN => (K.COE, K.COE)
+       | K.COE => (K.COE, K.COE)
+       | K.HCOM => (K.STABLE, K.STABLE)
+       | K.STABLE => (K.STABLE, K.STABLE)
+
+    fun EqType alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.EqType"
+        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val Syn.COEQUALIZER (a0, b0, (x0, f0x0), (y0, g0y0)) = Syn.out ty0
+        val Syn.COEQUALIZER (a1, b1, (x1, f1x1), (y1, g1y1)) = Syn.out ty1
+        val (kCod, kDom) = kindConstraintOnCodAndDom k
+
+        val goalA = makeEqType H ((a0, a1), l, kDom)
+        val goalB = makeEqType H ((b0, b1), l, kCod)
+
+        val z = alpha 0
+        val f0z = VarKit.rename (z, x0) f0x0
+        val f1z = VarKit.rename (z, x1) f1x1
+        val goalF = makeEq (H @> (z, AJ.TRUE (a0, l))) ((f0z, f1z), (b0, l))
+        val g0z = VarKit.rename (z, y0) g0y0
+        val g1z = VarKit.rename (z, y1) g1y1
+        val goalG = makeEq (H @> (z, AJ.TRUE (a0, l))) ((g0z, g1z), (b0, l))
+      in
+        |>: goalF >: goalG >: goalA >: goalB #> (H, trivial)
+      end
+
+    fun EqCod alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.EqCod"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l)) = jdg
+        val Syn.COEQUALIZER (a, b, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.CECOD m0 = Syn.out tm0
+        val Syn.CECOD m1 = Syn.out tm1
+
+        val goalB = makeEq H ((m0, m1), (b, l))
+
+        val goalA = makeType H (a, l, K.top)
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (a, l))) (VarKit.rename (z, x) fx, (b, l))
+        val goalG = makeMem (H @> (z, AJ.TRUE (a, l))) (VarKit.rename (z, y) gy, (b, l))
+      in
+        |>: goalB >: goalF >: goalG >: goalA #> (H, trivial)
+      end
+
+    fun EqDom alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqDom"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l)) = jdg
+        val Syn.COEQUALIZER (a, b, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.CEDOM (r0, m0, fm0, gm0) = Syn.out tm0
+        val Syn.CEDOM (r1, m1, fm1, gm1) = Syn.out tm1
+        val () = Assert.alphaEq' "Pushout.EqDom" (r0, r1)
+
+        val goalA = makeEq H ((m0, m1), (a, l))
+        val goalFM = makeEq H ((fm0, fm1), (b, l))
+        val goalGM = makeEq H ((gm0, gm1), (b, l))
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (a, l))) (VarKit.rename (z, x) fx, (b, l))
+        val goalG = makeMem (H @> (z, AJ.TRUE (a, l))) (VarKit.rename (z, y) gy, (b, l))
+
+        val goalCohF = makeEqIfDifferent H ((substVar (m0, x) fx, fm0), (b, l))
+        val goalCohG = makeEqIfDifferent H ((substVar (m0, y) gy, gm0), (b, l))
+      in
+        |>: goalA >: goalFM >: goalGM >:? goalCohF >:? goalCohG >: goalF >: goalG #> (H, trivial)
+      end
+
+    fun EqFCom alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.EqFCom"
+        val H >> AJ.EQ ((tm0, tm1), (ty, l)) = jdg
+        val Syn.COEQUALIZER (a, b, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.FCOM args0 = Syn.out tm0
+        val Syn.FCOM args1 = Syn.out tm1
+
+        val goalA = makeType H (a, l, K.top)
+        val goalB = makeType H (b, l, K.top)
+
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE (a, l))) (VarKit.rename (z, x) fx, (b, l))
+        val goalG = makeMem (H @> (z, AJ.TRUE (a, l))) (VarKit.rename (z, y) gy, (b, l))
+      in
+        |>: goalF >: goalG >: goalA >: goalB
+         >:+ ComKit.genEqFComGoals H z (args0, args1) (ty, l)
+        #> (H, trivial)
+      end
+
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.Elim"
+        val H >> AJ.TRUE (pz, l) = jdg
+        (* coeq-rec(FCOM) steps to COM *)
+        val k = K.COM
+        (* for now we ignore the kind in the context *)
+        val AJ.TRUE (ty, l') = Hyps.lookup H z
+        val Syn.COEQUALIZER (tyA, tyB, (x, fx), (y, gy)) = Syn.out ty
+
+        (* We need to kind-check pz because of FCOM
+         * This goal is made (explicitly) unconditional to simplify tactic writing
+         *)
+        val goalKind = makeType H (pz, l, k)
+
+        (* codomain branch *)
+        val b = alpha 0
+        val btm = VarKit.toExp b
+        fun pcod tm = substVar (Syn.into (Syn.CECOD tm), z) pz
+        val (goalC, holeC) = makeTrue (H @> (b, AJ.TRUE (tyB, l'))) (pcod btm, l)
+
+        (* domain branch *)
+        val v = alpha 1
+        val vtm = VarKit.toDim v
+        val a = alpha 2
+        val atm = VarKit.toExp a
+        val fa = substVar (atm, x) fx
+        val ga = substVar (atm, y) gy
+        val dom = Syn.into @@ Syn.CEDOM (vtm, atm, fa, ga)
+        val pdom = substVar (dom, z) pz
+        val Hdom = H @> (v, AJ.TERM O.DIM) @> (a, AJ.TRUE (tyA, l'))
+        val (goalD, holeD) = makeTrue Hdom (pdom, l)
+
+        (* coherence *)
+        val d0a = substVar (Syn.intoDim 0, v) holeD
+        val cfa = substVar (fa, b) holeC
+        val goalCohF = makeEq (H @> (a, AJ.TRUE (tyA, l'))) ((d0a, cfa), (pcod fa, l))
+
+        val d1a = substVar (Syn.intoDim 1, v) holeD
+        val cga = substVar (ga, b) holeC
+        val goalCohG = makeEq (H @> (a, AJ.TRUE (tyA, l'))) ((d1a, cga), (pcod ga, l))
+
+        val elim = Syn.into @@ Syn.COEQUALIZER_REC ((z, pz), VarKit.toExp z, ((b, holeC), (v, a, holeD)))
+      in
+        |>: goalC >: goalD >: goalCohF >: goalCohG >: goalKind #> (H, elim)
+      end
+
+    fun EqElim alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.EqElim"
+        val H >> AJ.EQ ((elim0, elim1), (ty, l)) = jdg
+        (* coeq-rec(FCOM) steps to COM *)
+        val k = K.COM
+        val Syn.COEQUALIZER_REC ((z0, p0z0), m0, ((b0, n0b0), (v0, a0, q0v0a0))) = Syn.out elim0
+        val Syn.COEQUALIZER_REC ((z1, p1z1), m1, ((b1, n1b1), (v1, a1, q1v1a1))) = Syn.out elim1
+
+        (* type of eliminated term *)
+        val (goalTyCoeq, holeTyCoeq) = makeSynth H (m0, l)
+
+        (* motive *)
+        val z = alpha 0
+        val p0z = VarKit.rename (z, z0) p0z0
+        val p1z = VarKit.rename (z, z1) p1z1
+        val goalP = makeEqType (H @> (z, AJ.TRUE (holeTyCoeq, l))) ((p0z, p1z), l, k)
+
+        (* eliminated term *)
+        val goalM = makeEqIfDifferent H ((m0, m1), (holeTyCoeq, l))
+
+        (* result type*)
+        val goalTy0 = makeSubType H ((substVar (m0, z0) p0z0, ty), l)
+
+        (* codomain branch *)
+        val (goalTyB, holeTyB) = makeMatch (O.COEQUALIZER, 1, holeTyCoeq, [])
+        val b = alpha 1
+        val btm = VarKit.toExp b
+        val n0b = VarKit.rename (b, b0) n0b0
+        val n1b = VarKit.rename (b, b1) n1b1
+        fun pcod tm = substVar (Syn.into (Syn.CECOD tm), z0) p0z0
+        val goalN = makeEq (H @> (b, AJ.TRUE (holeTyB, l))) ((n0b, n1b), (pcod btm, l))
+
+        (* glue branch *)
+        val (goalTyA, holeTyA) = makeMatch (O.COEQUALIZER, 0, holeTyCoeq, [])
+        val v = alpha 2
+        val vtm = VarKit.toDim v
+        val a = alpha 3
+        val atm = VarKit.toExp a
+        val q0va = VarKit.renameMany [(v, v0), (a, a0)] q0v0a0
+        val q1va = VarKit.renameMany [(v, v1), (a, a1)] q1v1a1
+        val (goalF, holeF) = makeMatch (O.COEQUALIZER, 2, holeTyCoeq, [atm])
+        val (goalG, holeG) = makeMatch (O.COEQUALIZER, 3, holeTyCoeq, [atm])
+        val dom = Syn.into @@ Syn.CEDOM (vtm, atm, holeF, holeG)
+        val pdom = substVar (dom, z0) p0z0
+        val Hdom = H @> (v, AJ.TERM O.DIM) @> (a, AJ.TRUE (holeTyA, l))
+        val goalQ = makeEq Hdom ((q0va, q1va), (pdom, l))
+
+        (* coherence *)
+        val q00a = substVar (Syn.intoDim 0, v) q0va
+        val cfa = substVar (holeF, b0) n0b0
+        val goalCohF = makeEq (H @> (a, AJ.TRUE (holeTyA, l))) ((q00a, cfa), (pcod holeF, l))
+
+        val q01a = substVar (Syn.intoDim 1, v) q0va
+        val cga = substVar (holeG, b0) n0b0
+        val goalCohG = makeEq (H @> (a, AJ.TRUE (holeTyA, l))) ((q01a, cga), (pcod holeG, l))
+      in
+        |>: goalTyCoeq >: goalP >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalTy0 #> (H, trivial)
+      end
+
+    fun SynthElim _ jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.SynthElim"
+        val H >> AJ.SYNTH (tm, l) = jdg
+        val Syn.COEQUALIZER_REC ((z,pz), m, _) = Syn.out tm
+
+        val pm = substVar (m, z) pz
+        val goal = makeMem H (tm, (pm, l))
+      in
+        |>: goal #> (H, pm)
+      end
+  end
+
   structure InternalizedEquality =
   struct
     val kindConstraintOnBase =
