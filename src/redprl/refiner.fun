@@ -413,7 +413,6 @@ struct
      | "coeq/eq/cod" => Lcf.rule o Coequalizer.EqCod
      | "coeq/eq/dom" => Lcf.rule o Coequalizer.EqDom
      | "coeq/eq/fcom" => Lcf.rule o Coequalizer.EqFCom
-     | "coeq/beta/dom" => Lcf.rule o Coequalizer.BetaDom
      | "coeq/eq/coeq-rec" => Lcf.rule o Coequalizer.EqElim
      | "eq/eqtype" => Lcf.rule o InternalizedEquality.EqType
      | "eq/eq/ax" => Lcf.rule o InternalizedEquality.Eq
