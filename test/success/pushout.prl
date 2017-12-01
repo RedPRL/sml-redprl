@@ -51,8 +51,6 @@ Thm PushoutBetaEasiest(#i:lvl) : [
   lam a b c d w => abs u => lam x y z =>
     refine eq/intro;
     refine pushout/beta/glue;
-    #1{`(pushout a b c [_] x [_] y)};
-    #1{`d};
     auto
 ].
 
@@ -60,34 +58,14 @@ Thm PushoutBetaEasier(#i:lvl) : [
   (-> [a b c : (U #i)] [f : (-> c a)] [g : (-> c b)]
       [d : (-> (pushout a b c [z] ($ f z) [z] ($ g z)) (U #i))]
       [wl : (-> [x : a] ($ d (left x)))] [wr : (-> [y : b] ($ d (right y)))]
-      [wg : (-> [v : dim] [z : c] ($ d (glue v z ($ f z) ($ g z))))]
-      [wcohl : (-> [z : c] (= ($ d (left ($ f z))) ($ (@ wg 0) z) ($ wl ($ f z))))]
-      [wcohr : (-> [z : c] (= ($ d (right ($ g z))) ($ (@ wg 1) z) ($ wr ($ g z))))]
+      [wg : (-> [z : c] (path [v] ($ d (glue v z ($ f z) ($ g z))) ($ wl ($ f z)) ($ wr ($ g z)))) ]
       [u : dim] [m : c]
       (= ($ d (glue u m ($ f m) ($ g m)))
-      	 (pushout-rec [p] ($ d p) (glue u m ($ f m) ($ g m)) [x] ($ wl x) [y] ($ wr y) [v z] ($ (@ wg v) z))
-	 ($ (@ wg u) m)))
+      	 (pushout-rec [p] ($ d p) (glue u m ($ f m) ($ g m)) [x] ($ wl x) [y] ($ wr y) [v z] (@ ($ wg z) v))
+	 (@ ($ wg m) u)))
 ] by [
-  lam a b c f g d wl wr wg wcohl wcohr => abs u => lam m =>
+  lam a b c f g d wl wr wg => abs u => lam m =>
     refine eq/intro;
-    fresh po x y v:dim z -> refine pushout/beta/glue;
-    [ refine fun/eq/app;
-      [ exact (-> [z : c] ($ d (glue u z ($ f z) ($ g z)))); refine line/eq/app; auto ];
-      auto
-    , `(pushout a b c [x] ($ f x) [y] ($ g y))
-    , `($ d po)
-    , auto
-    , auto
-    , auto
-    , auto
-    , auto
-    , auto
-    , auto
-    , refine fun/eq/app;
-      [ exact (-> [z : c] ($ d (glue v z ($ f z) ($ g z)))); refine line/eq/app; auto ];
-      auto
-    , refine eq/internalize; use wcohl [`z];
-    , refine eq/internalize; use wcohr [`z]
-    ];
+    refine pushout/beta/glue;
     auto
 ].
