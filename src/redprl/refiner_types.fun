@@ -1754,6 +1754,74 @@ struct
         |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >: goalTy0 #> (H, trivial)
       end
 
+    fun BetaGlue alpha jdg =
+      let
+	  val _ = RedPrlLog.trace "Pushout.BetaGlue"
+	  val H >> AJ.EQ ((elim, s), (ty, l)) = jdg
+	  (* prescribed motive doesn't matter because we're not applying to fcom *)
+	  val Syn.PUSHOUT_REC (_, m, ((a, na), (b, pb), (v, c, qvc))) = Syn.out elim
+	  val Syn.GLUE (r, t, ft, gt) = Syn.out m
+
+	  (* type of eliminated term *)
+	  val (goalTyPushout, holeTyPushout) = makeSynth H (m, l)
+
+	  (* motive *)
+	  val x = alpha 0
+	  val Hx = H @> (x, AJ.TRUE (holeTyPushout, l))
+	  val (goalTyMotive, holeTyMotive) = makeTerm Hx O.EXP
+	  val goalTyMotive' = makeType Hx (holeTyMotive, l, K.top)
+
+	  (* result type *)
+	  val goalTyMotive0 = makeSubType H ((substVar (m, x) holeTyMotive, ty), l)
+
+	  (* left branch *)
+	  val (goalTyA, holeTyA) = makeMatch (O.PUSHOUT, 0, holeTyPushout, [])
+	  val a' = alpha 1
+	  val atm' = VarKit.toExp a'
+	  val na' = VarKit.rename (a', a) na
+	  fun motiveLeft tm = substVar (Syn.into (Syn.LEFT tm), x) holeTyMotive
+	  val goalN = makeMem (H @> (a', AJ.TRUE (holeTyA, l))) (na', (motiveLeft atm', l))
+
+	  (* right branch *)
+	  val (goalTyB, holeTyB) = makeMatch (O.PUSHOUT, 1, holeTyPushout, [])
+	  val b' = alpha 2
+	  val btm' = VarKit.toExp b'
+	  val pb' = VarKit.rename (b', b) pb
+	  fun motiveRight tm = substVar (Syn.into (Syn.RIGHT tm), x) holeTyMotive
+	  val goalP = makeMem (H @> (b', AJ.TRUE (holeTyB, l))) (pb', (motiveRight btm', l))
+
+	  (* glue branch *)
+	  val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 2, holeTyPushout, [])
+	  val v' = alpha 3
+	  val vtm' = VarKit.toDim v'
+	  val c' = alpha 4
+	  val ctm' = VarKit.toExp c'
+	  val qvc' = VarKit.renameMany [(c', c), (v', v)] qvc
+	  val (goalF, holeF) = makeMatch (O.PUSHOUT, 3, holeTyPushout, [ctm'])
+	  val (goalG, holeG) = makeMatch (O.PUSHOUT, 4, holeTyPushout, [ctm'])
+	  val glue = Syn.into @@ Syn.GLUE (vtm', ctm', holeF, holeG)
+	  val motiveGlue = substVar (glue, x) holeTyMotive
+	  val Hglue = H @> (v', AJ.TERM O.DIM) @> (c', AJ.TRUE (holeTyC, l))
+	  val goalQ = makeMem Hglue (qvc', (motiveGlue, l))
+
+	  (* coherence *)
+	  val q0c' = substVar (Syn.intoDim 0, v') qvc'
+	  val lfc' = substVar (holeF, a') na'
+	  val goalCohL = makeEqIfDifferent (H @> (c', AJ.TRUE (holeTyC, l))) ((q0c', lfc'), (motiveLeft holeF, l))
+
+	  val q1c' = substVar (Syn.intoDim 1, v') qvc'
+	  val rgc' = substVar (holeG, b') pb'
+	  val goalCohR = makeEqIfDifferent (H @> (c', AJ.TRUE (holeTyC, l))) ((q1c', rgc'), (motiveRight holeG, l))
+
+	  (* reduced goal *)
+	  val redElim = VarKit.substMany [(r,v),(t,c)] qvc
+	  val goalRed = makeEq H ((redElim, s), (ty, l))
+      in
+	  |>: goalRed >: goalTyPushout >: goalTyMotive >: goalTyA >: goalN >: goalTyB >: goalP
+	      >: goalTyC >: goalF >: goalG >: goalQ >:? goalCohL >:? goalCohR >: goalTyMotive' >: goalTyMotive0
+	      #> (H, trivial)
+      end
+
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "Pushout.SynthElim"

@@ -410,6 +410,7 @@ struct
      | "pushout/eq/glue" => Lcf.rule o Pushout.EqGlue
      | "pushout/eq/fcom" => Lcf.rule o Pushout.EqFCom
      | "pushout/eq/pushout-rec" => Lcf.rule o Pushout.EqElim
+     | "pushout/beta/glue" => Lcf.rule o Pushout.BetaGlue
      | "eq/eqtype" => Lcf.rule o InternalizedEquality.EqType
      | "eq/eq/ax" => Lcf.rule o InternalizedEquality.Eq
      | "eq/intro" => Lcf.rule o InternalizedEquality.True
