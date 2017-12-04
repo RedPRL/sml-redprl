@@ -419,16 +419,11 @@ struct
       end
 
     fun elabDecl (sign : sign) opid (decl : src_decl, pos) : elab_sign =
-      let
-        val esign' = Telescope.truncateFrom (#elabSign sign) opid
-        val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
-      in
-        Telescope.snoc esign' opid (E.delay (fn _ =>
-          case processDecl sign decl of
-             DEF defn => elabDef sign' opid defn
-           | THM defn => elabThm sign' opid pos defn
-           | TAC defn => elabTac sign' opid defn))
-      end
+      Telescope.snoc (#elabSign sign) opid (E.delay (fn _ =>
+	case processDecl sign decl of
+	   DEF defn => elabDef sign opid defn
+	 | THM defn => elabThm sign opid pos defn
+	 | TAC defn => elabTac sign opid defn))
 
     fun elabPrint (sign : sign) (pos, opid : opid) =
       E.hush (Telescope.lookup (#elabSign sign) opid) >>= (fn edecl =>
@@ -474,11 +469,7 @@ struct
 
 
     fun insertAstDecl sign opid (decl, pos) =
-      let
-        val sign' = Telescope.truncateFrom sign opid
-      in
-        Telescope.snoc sign' opid (decl, pos)
-      end
+      Telescope.snoc sign opid (decl, pos)
       handle Telescope.Duplicate l => error pos [Fpp.text "Duplicate identitifier:", Fpp.text l]
 
   in

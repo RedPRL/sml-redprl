@@ -60,9 +60,8 @@ struct
 
     fun seq (mt1 : multitactic, (us : Sym.t list, mt2 : multitactic)) : multitactic = fn alpha => fn st =>
       let
-        val beta = Spr.prepend us alpha
-        val (beta', modulus) = Spr.probe (Spr.prepend us beta)
-        val st' = mt1 beta' st
+        val (beta, modulus) = Spr.probe (Spr.prepend us alpha)
+        val st' = mt1 beta st
         val l = Int.max (0, !modulus - List.length us)
       in
         Lcf.M.mul (Lcf.M.map (mt2 (Spr.bite l alpha) o Lcf.mul Lcf.isjdg) st')
