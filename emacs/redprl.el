@@ -121,6 +121,7 @@
     "record" "tuple"
     "path" "line" "abs"
     "pushout" "left" "right" "glue" "pushout-rec"
+    "coeq" "cecod" "cedom" "coeq-rec"
     "mem" "ni"
     "box" "cap"
     "V" "Vin" "Vproj"
