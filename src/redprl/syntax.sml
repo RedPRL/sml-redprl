@@ -64,6 +64,11 @@ struct
    | LEFT of 'a | RIGHT of 'a
    | GLUE of 'a * 'a * 'a * 'a
    | PUSHOUT_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * 'a) * (variable * variable * 'a))
+   (* coequalizers *)
+   | COEQUALIZER of 'a * 'a * (variable * 'a) * (variable * 'a)
+   | CECOD of 'a
+   | CEDOM of 'a * 'a * 'a * 'a
+   | COEQUALIZER_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * variable * 'a))
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
@@ -350,6 +355,13 @@ struct
        | PUSHOUT_REC ((x, cx), m, ((y, ly), (z, rz), (w1, w2, gw))) =>
            O.PUSHOUT_REC $$ [[x] \ cx, [] \ m, [y] \ ly, [z] \ rz, [w1, w2] \ gw]
 
+       | COEQUALIZER (a, b, (x, fx), (y, gy)) =>
+           O.COEQUALIZER $$ [[] \ a, [] \ b, [x] \ fx, [y] \ gy]
+       | CECOD m => O.CECOD $$ [[] \ m]
+       | CEDOM (r, m, fm, gm) => O.CEDOM $$ [[] \ r, [] \ m, [] \ fm, [] \ gm]
+       | COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw))) =>
+           O.COEQUALIZER_REC $$ [[x] \ px, [] \ m, [y] \ cy, [w1, w2] \ dw]
+
        | EQUALITY (a, m, n) => O.EQUALITY $$ [[] \ a, [] \ m, [] \ n]
 
        | BOX args => intoBox args
@@ -463,6 +475,13 @@ struct
        | O.GLUE $ [_ \ r, _ \ m, _ \ fm, _ \ gm] => GLUE (r, m, fm, gm)
        | O.PUSHOUT_REC $ [[x] \ cx, _ \ m, [y] \ ly, [z] \ rz, [w1, w2] \ gw] =>
            PUSHOUT_REC ((x, cx), m, ((y, ly), (z, rz), (w1, w2, gw)))
+
+       | O.COEQUALIZER $ [_ \ a, _ \ b, [x] \ fx, [y] \ gy] =>
+           COEQUALIZER (a, b, (x, fx), (y, gy))
+       | O.CECOD $ [_ \ m] => CECOD m
+       | O.CEDOM $ [_ \ r, _ \ m, _ \ fm, _ \ gm] => CEDOM (r, m, fm, gm)
+       | O.COEQUALIZER_REC $ [[x] \ px, _ \ m, [y] \ cy,  [w1, w2] \ dw] =>
+           COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw)))
 
        | O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 
