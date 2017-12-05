@@ -88,6 +88,7 @@ struct
 
       val top : t
       val <= : t * t -> bool
+      val eq : t * t -> bool
       val meet : t * t -> t
 
       (* residual (a, b)
@@ -131,6 +132,7 @@ struct
          | (STABLE, STABLE) => NONE
 
       fun op <= (a, b) = residual (b, a) = NONE
+      val eq = op=
     end
   in
     open Internal
@@ -212,6 +214,7 @@ struct
    | JDG_EQ
    | JDG_TRUE
    | JDG_EQ_TYPE
+   | JDG_SUB_TYPE
    | JDG_SUB_UNIVERSE
    | JDG_SYNTH
    | JDG_TERM of sort
@@ -366,11 +369,12 @@ struct
      | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ => [[] |: LVL, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_TRUE => [[] |: LVL, [] |: EXP] ->> JDG
-     | JDG_EQ_TYPE => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
-     | JDG_SYNTH => [[] |: LVL, [] |: EXP] ->> JDG
+     | JDG_EQ => [[] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE => [[] |: EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] |: KND, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_UNIVERSE => [[] |: KND, [] |: EXP] ->> JDG
+     | JDG_SYNTH => [[] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
