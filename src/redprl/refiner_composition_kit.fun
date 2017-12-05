@@ -198,8 +198,8 @@ struct
         val _ = Assert.tautologicalEquations "HCom.Eq tautology checking" eqs0
 
         (* type *)
-        val goalTy = makeEqType H ((ty0, ty1), k)
-        val goalTy0 = makeSubTypeIfDifferent H (ty0, ty) (* (ty0, l, k) is proved *)
+        val goalTy0 = makeType H (ty0, k)
+        val goalTy = makeSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
 
         (* cap *)
         val goalCap = makeEq H ((cap0, cap1), ty0)
@@ -209,7 +209,7 @@ struct
         |>: goalCap
          >:+ ComKit.genInterTubeGoals H w ((tubes0, tubes1), ty0)
          >:+ ComKit.genCapTubeGoalsIfDifferent H ((cap0, (#1 dir0, tubes0)), ty0)
-         >:? goalTy0 >: goalTy
+         >: goalTy0 >:? goalTy
         #> (H, trivial)
       end
 
@@ -226,7 +226,8 @@ struct
         val _ = Assert.tautologicalEquations "HCom.EqCapL tautology checking" (List.map #1 tubes)
 
         (* type *)
-        val goalTy0 = makeEqType H ((ty0, ty), k)
+        val goalTy0 = makeType H (ty0, k)
+        val goalTy = makeSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
 
         (* eq *)
         val goalEq = makeEq H ((cap, other), ty)
@@ -236,7 +237,7 @@ struct
         |>: goalEq
          >:+ ComKit.genInterTubeGoals H w ((tubes, tubes), ty0)
          >:+ ComKit.genCapTubeGoalsIfDifferent H ((cap, (r, tubes)), ty0)
-         >: goalTy0
+         >: goalTy0 >:? goalTy
         #> (H, trivial)
       end
 
@@ -253,7 +254,8 @@ struct
         val (_, (u, tube)) = Option.valOf (List.find (fn (eq, _) => Abt.eq eq) tubes)
 
         (* type *)
-        val goalTy0 = makeEqType H ((ty0, ty), k)
+        val goalTy0 = makeType H (ty0, k)
+        val goalTy = makeSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
 
         (* cap *)
         (* the cap-tube adjacency premise guarantees that [cap] is in [ty0],
@@ -269,7 +271,7 @@ struct
         |>:? goalEq
          >:+ ComKit.genInterTubeGoals H w ((tubes, tubes), ty0)
          >:+ ComKit.genCapTubeGoalsIfDifferent H ((cap, (r, tubes)), ty0)
-         >: goalTy0
+         >: goalTy0 >:? goalTy
         #> (H, trivial)
       end
   end
