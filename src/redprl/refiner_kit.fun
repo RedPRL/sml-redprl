@@ -207,6 +207,17 @@ struct
     if Abt.eq (a, b) then NONE
     else SOME @@ makeSubType H (a, b)
 
+  (* functions which blur the difference between EQ and EQ_TYPE *)
+  val viewAsEqType =
+    fn AJ.EQ_TYPE ((a, b), k) => ((a, b), NONE, k)
+     | AJ.EQ ((a, b), univ) =>
+         let
+           val Syn.UNIVERSE (l, k) = Syn.out univ
+         in
+           ((a, b), SOME l, k)
+         end
+     | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "viewAsEqType", AJ.pretty jdg)
+
   (* assertions *)
 
   structure Assert =
