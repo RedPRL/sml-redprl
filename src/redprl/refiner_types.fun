@@ -56,10 +56,10 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqType"
-        val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
+        val H >> ajdg = jdg
+        val ((a, b), _, k) = viewAsEqType ajdg
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
-        val _ = Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -70,9 +70,8 @@ struct
     fun EqTT _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqTT"
-        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
+        val H >> AJ.EQ ((m, n), ty) = jdg
         val Syn.BOOL = Syn.out ty
-        val _ = Assert.levelLeq (inherentLevel, l)
         val Syn.TT = Syn.out m
         val Syn.TT = Syn.out n
       in
@@ -82,9 +81,8 @@ struct
     fun EqFF _ jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqFF"
-        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
+        val H >> AJ.EQ ((m, n), ty) = jdg
         val Syn.BOOL = Syn.out ty
-        val _ = Assert.levelLeq (inherentLevel, l)
         val Syn.FF = Syn.out m
         val Syn.FF = Syn.out n
       in
@@ -95,8 +93,7 @@ struct
       let
         val _ = RedPrlLog.trace "Bool.Elim"
         val H >> catjdg = jdg
-        (* for now we ignore the level in the context *)
-        val AJ.TRUE (ty, _) = Hyps.lookup H z
+        val AJ.TRUE ty = Hyps.lookup H z
         val Syn.BOOL = Syn.out ty
 
         (* tt branch *)
@@ -125,27 +122,27 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqElim"
-        val H >> AJ.EQ ((if0, if1), (ty, l)) = jdg
+        val H >> AJ.EQ ((if0, if1), ty) = jdg
         val Syn.IF (m0, (t0, f0)) = Syn.out if0
         val Syn.IF (m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
         val x = alpha 0
-        val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL, inherentLevel))
+        val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL))
         val (goalTy, holeTy) = makeTerm Hx O.EXP
-        val goalTy' = makeType Hx (holeTy, l, K.top)
+        val goalTy' = makeType Hx (holeTy, K.top)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (Syn.into Syn.BOOL, l))
+        val goalM = makeEq H ((m0, m1), (Syn.into Syn.BOOL))
 
         (* result type*)
-        val goalTy0 = makeEqType H ((substVar (m0, x) holeTy, ty), l, K.top)
+        val goalTy0 = makeEqType H ((substVar (m0, x) holeTy, ty), K.top)
 
         (* tt branch *)
-        val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy, l))
+        val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy))
 
         (* ff branch *)
-        val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy, l))
+        val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy))
       in
         |>: goalTy >: goalM >: goalT >: goalF >: goalTy0 >: goalTy' #> (H, trivial)
       end
