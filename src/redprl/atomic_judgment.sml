@@ -48,7 +48,7 @@ struct
            [ TermPrinter.ppTerm u
            , text "<="
            , TermPrinter.ppKind k
-           , text "universes"
+           , text "universe"
            ]
        | SYNTH m => expr @@ hvsep
            [ TermPrinter.ppTerm m, text "synth"
