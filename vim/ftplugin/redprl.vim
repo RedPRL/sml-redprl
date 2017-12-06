@@ -22,12 +22,10 @@ function! CheckBuffer()
     call job_stop(s:job, 'int')
   endif
 
-  if (bufnr('RedPRL') == -1)
+  if (!bufexists('RedPRL') || (winbufnr(bufwinnr('RedPRL')) != bufnr('RedPRL')))
     belowright vsplit RedPRL
     set buftype=nofile
     set syntax=redprl
-  elseif (bufwinnr('RedPRL') == -1)
-    belowright vsplit RedPRL
   else
     execute bufwinnr('RedPRL') . 'wincmd w'
   endif
