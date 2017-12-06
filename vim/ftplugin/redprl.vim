@@ -42,9 +42,12 @@ endfunction
 function! CheckBufferExit(j,status)
   let errbuf = ch_getbufnr(a:j, 'err')
   if (errbuf != -1)
-    execute 'cbuffer ' . errbuf
+    execute 'cgetbuffer ' . errbuf
     execute 'bwipeout ' . errbuf
     call setqflist([], 'r', {'title': 'RedPRL Errors'})
+  endif
+  if (len(getqflist()) > 1)
+    cc
   endif
   if (exists('s:job'))
     unlet s:job
