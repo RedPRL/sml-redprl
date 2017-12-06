@@ -9,7 +9,7 @@ Move this directory to `~/.vim/pack/foo/start/vim-redprl`. (The names `foo` and
 
 If `redprl` is not in your `PATH`, add the following line to your `.vimrc`:
 
-    let g:redprl_path = '$HOME/path/to/redprl'
+    let g:redprl_path = '/path/to/redprl'
 
 If you want to recheck the current buffer with a short key combination, add the
 following line to your `.vimrc`, replacing `<F5>` as appropriate:
