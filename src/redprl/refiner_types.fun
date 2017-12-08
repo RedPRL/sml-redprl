@@ -57,9 +57,10 @@ struct
       let
         val _ = RedPrlLog.trace "Bool.EqType"
         val H >> ajdg = jdg
-        val ((a, b), _, k) = viewAsEqType ajdg
+        val ((a, b), l, k) = viewAsEqType ajdg
         val Syn.BOOL = Syn.out a
         val Syn.BOOL = Syn.out b
+        val _ = Assert.levelLeqOpt (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)

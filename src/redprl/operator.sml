@@ -207,7 +207,6 @@ struct
    | LCONST of IntInf.int
    | LPLUS of IntInf.int
    | LMAX
-   | LOMEGA
 
    | KCONST of kind
 
@@ -364,7 +363,6 @@ struct
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] |: LVL] ->> LVL
      | LMAX => [[] |: VEC LVL] ->> LVL
-     | LOMEGA => [] ->> LVL
 
      | KCONST _ => [] ->> KND
 
@@ -509,7 +507,6 @@ struct
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
      | LPLUS i => "{lplus " ^ IntInf.toString i ^ "}"
      | LMAX => "lmax"
-     | LOMEGA => "lomega"
 
      | KCONST k => RedPrlKind.toString k
 
