@@ -157,10 +157,11 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqType"
-        val H >> AJ.EQ_TYPE ((a, b), l, k) = jdg
+        val H >> ajdg = jdg
+        val ((a, b), l, k) = viewAsEqType ajdg
         val Syn.WBOOL = Syn.out a
         val Syn.WBOOL = Syn.out b
-        val _ = Assert.levelLeq (inherentLevel, l)
+        val _ = Assert.levelLeqOpt (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
         T.empty #> (H, trivial)
@@ -171,9 +172,8 @@ struct
     fun EqTT _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqTT"
-        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
+        val H >> AJ.EQ ((m, n), ty) = jdg
         val Syn.WBOOL = Syn.out ty
-        val _ = Assert.levelLeq (inherentLevel, l)
         val Syn.TT = Syn.out m
         val Syn.TT = Syn.out n
       in
@@ -183,9 +183,8 @@ struct
     fun EqFF _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqFF"
-        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
+        val H >> AJ.EQ ((m, n), ty) = jdg
         val Syn.WBOOL = Syn.out ty
-        val _ = Assert.levelLeq (inherentLevel, l)
         val Syn.FF = Syn.out m
         val Syn.FF = Syn.out n
       in
@@ -195,38 +194,36 @@ struct
     fun EqFCom alpha jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqFCom"
-        val H >> AJ.EQ ((lhs, rhs), (ty, l)) = jdg
+        val H >> AJ.EQ ((lhs, rhs), ty) = jdg
         val Syn.WBOOL = Syn.out ty
-        val _ = Assert.levelLeq (inherentLevel, l)
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
 
         val w = alpha 0
       in
-        |>:+ (ComKit.genEqFComGoals H w (args0, args1) (ty, l))
+        |>:+ (ComKit.genEqFComGoals H w (args0, args1) ty)
         #> (H, trivial)
       end
 
     fun Elim z _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.Elim"
-        val H >> AJ.TRUE (cz, l) = jdg
+        val H >> AJ.TRUE cz = jdg
         (* if(FCOM) steps to COM *)
         val k = K.COM
-        (* for now we ignore the level in the context *)
-        val AJ.TRUE (ty, _) = Hyps.lookup H z
+        val AJ.TRUE ty = Hyps.lookup H z
         val Syn.WBOOL = Syn.out ty
 
         (* We need to kind-check cz because of FCOM
          * This goal is made (explicitly) unconditional to simplify tactic writing
          *)
-        val goalKind = makeType H (cz, l, k)
+        val goalKind = makeType H (cz, k)
 
         (* tt branch *)
-        val (goalT, holeT) = makeTrue H (substVar (Syn.into Syn.TT, z) cz, l)
+        val (goalT, holeT) = makeTrue H (substVar (Syn.into Syn.TT, z) cz)
 
         (* ff branch *)
-        val (goalF, holeF) = makeTrue H (substVar (Syn.into Syn.FF, z) cz, l)
+        val (goalF, holeF) = makeTrue H (substVar (Syn.into Syn.FF, z) cz)
 
         (* realizer *)
         val if_ = Syn.into @@ Syn.WIF ((z, cz), VarKit.toExp z, (holeT, holeF))
@@ -239,7 +236,7 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqElim"
-        val H >> AJ.EQ ((if0, if1), (ty, l)) = jdg
+        val H >> AJ.EQ ((if0, if1), ty) = jdg
         (* if(FCOM) steps to COM *)
         val k = K.COM
         val Syn.WIF ((x, c0x), m0, (t0, f0)) = Syn.out if0
@@ -249,20 +246,20 @@ struct
         val z = alpha 0
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
-        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.WBOOL, inherentLevel))
-        val goalTy = makeEqType Hz ((c0z, c1z), l, k)
+        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.WBOOL))
+        val goalTy = makeEqType Hz ((c0z, c1z), k)
 
         (* eliminated term *)
-        val goalM = makeEq H ((m0, m1), (Syn.into Syn.WBOOL, l))
+        val goalM = makeEq H ((m0, m1), Syn.into Syn.WBOOL)
 
         (* result type*)
-        val goalTy0 = makeEqTypeIfDifferent H ((substVar (m0, x) c0x, ty), l, k)
+        val goalTy0 = makeSubTypeIfDifferent H (substVar (m0, x) c0x, ty)
 
         (* tt branch *)
-        val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x, l))
+        val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x))
 
         (* ff branch *)
-        val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x, l))
+        val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
         |>: goalM >: goalT >: goalF >:? goalTy0 >: goalTy #> (H, trivial)
       end
@@ -270,11 +267,11 @@ struct
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.SynthElim"
-        val H >> AJ.SYNTH (tm, l) = jdg
+        val H >> AJ.SYNTH tm = jdg
         val Syn.WIF ((x,cx), m, _) = Syn.out tm
 
         val cm = substVar (m, x) cx
-        val goal = makeMem H (tm, (cm, l))
+        val goal = makeMem H (tm, cm)
       in
         |>: goal #> (H, cm)
       end
