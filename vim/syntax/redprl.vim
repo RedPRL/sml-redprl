@@ -1,35 +1,34 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2017 December 5
+" Last Change:  2017 December 12
 
 if exists("b:current_syntax")
   finish
 endif
 
 setlocal iskeyword+=-
+setlocal iskeyword+=/
 
 syn keyword redDecl Def Extract Print Rule Tac Thm
-syn keyword redSort dim hyp exp lvl tac triv jdg knd
+syn keyword redSort dim hyp exp lvl tac trv jdg knd
 syn match   redHole '?\(\h\w*\)\?'
 syn match   redMeta '#'
 
-syn keyword redExpr bool-rec nat-rec int-rec S1-rec pushout-rec
-syn keyword redExpr tv ax fcom bool tt ff if wbool wool wif
-syn keyword redExpr nat zero succ int negsucc void
-syn keyword redExpr S1 base loop lam app record tuple path
-syn keyword redExpr line abs pushout left right glue
-syn keyword redExpr box cap V Vin Vproj universe U hcom ghcom coe
-syn keyword redExpr com gcom lmax
+syn keyword redExpr ax fcom bool tt ff if wbool wool wif wbool-rec wool-rec nat
+syn keyword redExpr zero succ nat-rec int negsucc int-rec void S1 base loop
+syn keyword redExpr S1-rec lam record tuple path line pushout left right glue
+syn keyword redExpr pushout-rec coeq cecod cedom coeq-rec mem ni box cap V VV WU
+syn keyword redExpr Vin Vproj U abs hcom com coe lmax omega
 syn match   redExpr '[$*!@=+]\|->\|\~>\|<\~'
 
 syn keyword redTac auto auto-step case cut-lemma elim else exact fresh goal
 syn keyword redTac hyp id lemma let claim match of print progress
 syn keyword redTac query rec reduce refine repeat rewrite rewrite-hyp symmetry
-syn keyword redTac then unfold use with
+syn keyword redTac then unfold use with fail inversion concl
 syn match   redTac '[;`]'
 
-syn keyword redSeq at by in true type synth discrete kan hcom coe cubical
+syn keyword redSeq at by in true type synth discrete kan hcom coe stable
 syn match   redSeq '>>'
 
 syn region  redComm start="//" end="$"
