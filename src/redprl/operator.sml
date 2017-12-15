@@ -70,6 +70,7 @@ struct
    *     the binary cases.
    *)
   datatype kind = DISCRETE | KAN | HCOM | COE | STABLE
+  type t = kind
 
   val COM = KAN
 

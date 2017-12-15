@@ -208,15 +208,36 @@ struct
     else SOME @@ makeSubType H (a, b)
 
   (* functions which blur the difference between EQ and EQ_TYPE *)
-  val viewAsEqType =
-    fn AJ.EQ_TYPE ((a, b), k) => ((a, b), NONE, k)
-     | AJ.EQ ((a, b), univ) =>
-         let
-           val Syn.UNIVERSE (l, k) = Syn.out univ
-         in
-           ((a, b), SOME l, k)
-         end
-     | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "viewAsEqType", AJ.pretty jdg)
+  structure View =
+  struct
+    type as_level = L.t option
+    val matchAsEqType =
+      fn AJ.EQ_TYPE ((a, b), k) => ((a, b), NONE, k)
+       | AJ.EQ ((a, b), univ) =>
+           let
+             val Syn.UNIVERSE (l, k) = Syn.out univ
+           in
+             ((a, b), SOME l, k)
+           end
+       | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEqType", AJ.pretty jdg)
+    fun makeAsEqType H =
+      fn ((a, b), NONE, k) => makeEqType H ((a, b), k)
+       | ((a, b), SOME l, k) => makeEq H ((a, b), Syn.intoU (l, k))
+    datatype as_type = TYPE of Abt.abt | OMEGA of K.kind
+    val matchAsEq =
+      fn AJ.EQ ((a, b), ty) => ((a, b), TYPE ty)
+       | AJ.EQ_TYPE ((a, b), k) => ((a, b), OMEGA k)
+       | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEq", AJ.pretty jdg)
+    fun makeAsEq H =
+      fn ((a, b), TYPE ty) => makeEq H ((a, b), ty)
+       | ((a, b), OMEGA k) => makeEqType H ((a, b), k)
+    fun makeAsSubType H =
+      fn (a, TYPE b) => makeSubType H (a, b)
+       | (a, OMEGA k) => makeSubUniverse H (a, k)
+    fun makeAsSubTypeIfDifferent H =
+      fn (a, TYPE b) => makeSubTypeIfDifferent H (a, b)
+       | (a, OMEGA k) => SOME @@ makeSubUniverse H (a, k)
+  end
 
   (* assertions *)
 
@@ -251,8 +272,6 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than or equal to", L.pretty l2]
-
-    fun levelLeqOpt (l1, l2) = Option.app (fn l2 => levelLeq (l1, l2)) l2
 
     fun levelEq (l1, l2) =
       if L.eq (l1, l2) then
@@ -367,5 +386,14 @@ struct
 
     fun labelsEq msg (l0, l1) =
       ListPair.appEq (labelEq msg) (l0, l1)
+  end
+
+  structure View =
+  struct
+    open View
+    structure Assert =
+    struct
+      fun levelLeq (l1, l2) = Option.app (fn l2 => Assert.levelLeq (l1, l2)) l2
+    end
   end
 end
