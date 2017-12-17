@@ -26,6 +26,8 @@ struct
    * EqElim/EqX: structural equality for eliminators.
    *   We use EqX if the eliminator has a well-known name X.
    *   For example, we have EqApp for Fun and Path, and EqProj for Record.
+   *
+   *   Rule ordering: eliminated, branches, coherence, well-typed, motive, subtyping
    * EqTypeElim/EqTypeX: similar to EqElim but for EQ_TYPE judgments.
    * SynthElim/SynthX: synthesizing the types of eliminators.
    * (others): other special rules for this type.
@@ -131,14 +133,13 @@ struct
         (* motive *)
         val x = alpha 0
         val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL))
-        val (goalTy, holeTy) = makeTerm Hx O.EXP
-        val goalTy' = makeType Hx (holeTy, K.STABLE)
+        val (goalC, holeTy) = makeTerm Hx O.EXP
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), (Syn.into Syn.BOOL))
 
         (* result type*)
-        val goalTy0 = View.makeAsSubType H (substVar (m0, x) holeTy, ty)
+        val goalTy = View.makeAsSubType H (substVar (m0, x) holeTy, ty)
 
         (* tt branch *)
         val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy))
@@ -146,7 +147,7 @@ struct
         (* ff branch *)
         val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy))
       in
-        |>: goalTy >: goalM >: goalT >: goalF >: goalTy0 >: goalTy' #> (H, trivial)
+        |>: goalC >: goalM >: goalT >: goalF >: goalTy #> (H, trivial)
       end
   end
 
@@ -249,13 +250,13 @@ struct
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
         val Hz = H @> (z, AJ.TRUE (Syn.into Syn.WBOOL))
-        val goalTy = makeEqType Hz ((c0z, c1z), k)
+        val goalC = makeEqType Hz ((c0z, c1z), k)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), Syn.into Syn.WBOOL)
 
         (* result type*)
-        val goalTy0 = View.makeAsSubTypeIfDifferent H (substVar (m0, x) c0x, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent H (substVar (m0, x) c0x, ty)
 
         (* tt branch *)
         val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x))
@@ -263,7 +264,7 @@ struct
         (* ff branch *)
         val goalF = makeEq H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
-        |>: goalM >: goalT >: goalF >:? goalTy0 >: goalTy #> (H, trivial)
+        |>: goalM >: goalT >: goalF >: goalC >:? goalTy #> (H, trivial)
       end
 
     fun SynthElim _ jdg =
@@ -367,7 +368,6 @@ struct
         val z = alpha 0
         val Hz = H @> (z, AJ.TRUE nat)
         val (goalC, holeC) = makeTerm Hz O.EXP
-        val goalC' = makeType Hz (holeC, K.STABLE)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), nat)
@@ -389,7 +389,7 @@ struct
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC))
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalC' >: goalTy #> (H, trivial)
+        |>: goalM >: goalZ >: goalS >: goalC >: goalTy #> (H, trivial)
       end
   end
 
@@ -506,7 +506,6 @@ struct
         val z = alpha 0
         val Hz = H @> (z, AJ.TRUE int)
         val (goalC, holeC) = makeTerm Hz O.EXP
-        val goalC' = makeType Hz (holeC, K.top)
 
         (* eliminated term *)
         val goalM = makeEq H ((m0, m1), int)
@@ -540,7 +539,7 @@ struct
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cnegsuccu))
             ((r0, r1), substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC)
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalC' >: goalTy #> (H, trivial)
+        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalTy #> (H, trivial)
       end
   end
 
@@ -721,7 +720,7 @@ struct
         val goalCoh0 = makeEqIfAllDifferent H ((l00, b0), cbase) [b1]
         val goalCoh1 = makeEqIfAllDifferent H ((l01, b0), cbase) [l00, b1]
       in
-        |>: goalC >: goalM >: goalB >: goalL >:? goalTy >:? goalCoh0 >:? goalCoh1
+        |>: goalM >: goalB >: goalL >:? goalCoh0 >:? goalCoh1 >: goalC >:? goalTy
         #> (H, trivial)
       end
 
@@ -1099,12 +1098,12 @@ struct
         val Syn.PROJ (lbl1, m1) = Syn.out proj1
         val () = Assert.labelEq "Record.EqProj" (lbl0, lbl1)
 
-        val (goalTy, holeTy) = makeSynth H m0
-        val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTy, m0)
-        val goalEq = makeEqIfDifferent H ((m0, m1), holeTy) (* m0 well-typed *)
-        val goalTy' = View.makeAsSubType H (holeTyP, ty)
+        val (goalTyR, holeTyR) = makeSynth H m0
+        val (goalTyP, holeTyP) = makeMatchRecord (lbl0, holeTyR, m0)
+        val goalEq = makeEqIfDifferent H ((m0, m1), holeTyR) (* m0 well-typed *)
+        val goalTy = View.makeAsSubType H (holeTyP, ty)
       in
-        |>: goalTy >: goalTyP >:? goalEq >: goalTy'
+        |>: goalTyR >: goalTyP >:? goalEq >: goalTy
         #> (H, trivial)
       end
 
@@ -1606,7 +1605,7 @@ struct
         val goalM = makeEqIfDifferent H ((m0, m1), holeTyPushout)
 
         (* result type*)
-        val goalTy0 = View.makeAsSubType H (substVar (m0, z0) d0z0, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent H (substVar (m0, z0) d0z0, ty)
 
         (* left branch *)
         val (goalTyA, holeTyA) = makeMatch (O.PUSHOUT, 0, holeTyPushout, [])
@@ -1628,9 +1627,9 @@ struct
 
         (* glue branch *)
         val (goalTyC, holeTyC) = makeMatch (O.PUSHOUT, 2, holeTyPushout, [])
-        val v = alpha 2
+        val v = alpha 3
         val vtm = VarKit.toDim v
-        val c = alpha 3
+        val c = alpha 4
         val ctm = VarKit.toExp c
         val q0vc = VarKit.renameMany [(v, v0), (c, c0)] q0v0c0
         val q1vc = VarKit.renameMany [(v, v1), (c, c1)] q1v1c1
@@ -1650,7 +1649,7 @@ struct
         val rgc = substVar (holeG, b0) p0b0
         val goalCohR = makeEq (H @> (c, AJ.TRUE holeTyC)) ((q01c, rgc), (dright holeG))
       in
-        |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >: goalTy0 #> (H, trivial)
+        |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy #> (H, trivial)
       end
 
     fun SynthElim _ jdg =
@@ -1663,6 +1662,219 @@ struct
         val goal = makeMem H (tm, dm)
       in
         |>: goal #> (H, dm)
+      end
+  end
+
+  structure Coequalizer =
+  struct
+    val kindConstraintOnCodAndDom =
+      fn K.DISCRETE => E.raiseError @@
+           E.NOT_APPLICABLE (Fpp.text "Coequalizers", Fpp.text "discrete universes")
+       | K.KAN => (K.COE, K.COE)
+       | K.COE => (K.COE, K.COE)
+       | K.HCOM => (K.STABLE, K.STABLE)
+       | K.STABLE => (K.STABLE, K.STABLE)
+
+    fun EqType alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.EqType"
+        val H >> ajdg = jdg
+        val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
+        val Syn.COEQUALIZER (a0, b0, (x0, f0x0), (y0, g0y0)) = Syn.out ty0
+        val Syn.COEQUALIZER (a1, b1, (x1, f1x1), (y1, g1y1)) = Syn.out ty1
+        val (kCod, kDom) = kindConstraintOnCodAndDom k
+
+        val goalA = View.makeAsEqType H ((a0, a1), l, kDom)
+        val goalB = View.makeAsEqType H ((b0, b1), l, kCod)
+
+        val z = alpha 0
+        val f0z = VarKit.rename (z, x0) f0x0
+        val f1z = VarKit.rename (z, x1) f1x1
+        val goalF = makeEq (H @> (z, AJ.TRUE a0)) ((f0z, f1z), b0)
+        val g0z = VarKit.rename (z, y0) g0y0
+        val g1z = VarKit.rename (z, y1) g1y1
+        val goalG = makeEq (H @> (z, AJ.TRUE a0)) ((g0z, g1z), b0)
+      in
+        |>: goalF >: goalG >: goalA >: goalB #> (H, trivial)
+      end
+
+    fun EqCod alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.EqCod"
+        val H >> AJ.EQ ((tm0, tm1), ty) = jdg
+        val Syn.COEQUALIZER (a, b, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.CECOD m0 = Syn.out tm0
+        val Syn.CECOD m1 = Syn.out tm1
+
+        val goalB = makeEq H ((m0, m1), b)
+
+        val goalA = makeType H (a, K.top)
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE a)) (VarKit.rename (z, x) fx, b)
+        val goalG = makeMem (H @> (z, AJ.TRUE a)) (VarKit.rename (z, y) gy, b)
+      in
+        |>: goalB >: goalF >: goalG >: goalA #> (H, trivial)
+      end
+
+    fun EqDom alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Pushout.EqDom"
+        val H >> AJ.EQ ((tm0, tm1), ty) = jdg
+        val Syn.COEQUALIZER (a, b, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.CEDOM (r0, m0, fm0, gm0) = Syn.out tm0
+        val Syn.CEDOM (r1, m1, fm1, gm1) = Syn.out tm1
+        val () = Assert.alphaEq' "Pushout.EqDom" (r0, r1)
+
+        val goalA = makeEq H ((m0, m1), a)
+        val goalFM = makeEq H ((fm0, fm1), b)
+        val goalGM = makeEq H ((gm0, gm1), b)
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE a)) (VarKit.rename (z, x) fx, b)
+        val goalG = makeMem (H @> (z, AJ.TRUE a)) (VarKit.rename (z, y) gy, b)
+
+        val goalCohF = makeEqIfDifferent H ((substVar (m0, x) fx, fm0), b)
+        val goalCohG = makeEqIfDifferent H ((substVar (m0, y) gy, gm0), b)
+      in
+        |>: goalA >: goalFM >: goalGM >:? goalCohF >:? goalCohG >: goalF >: goalG #> (H, trivial)
+      end
+
+    fun EqFCom alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.EqFCom"
+        val H >> AJ.EQ ((tm0, tm1), ty) = jdg
+        val Syn.COEQUALIZER (a, b, (x, fx), (y, gy)) = Syn.out ty
+        val Syn.FCOM args0 = Syn.out tm0
+        val Syn.FCOM args1 = Syn.out tm1
+
+        val goalA = makeType H (a, K.top)
+        val goalB = makeType H (b, K.top)
+
+        val z = alpha 0
+        val goalF = makeMem (H @> (z, AJ.TRUE a)) (VarKit.rename (z, x) fx, b)
+        val goalG = makeMem (H @> (z, AJ.TRUE a)) (VarKit.rename (z, y) gy, b)
+      in
+        |>: goalF >: goalG >: goalA >: goalB
+         >:+ ComKit.genEqFComGoals H z (args0, args1) ty
+        #> (H, trivial)
+      end
+
+    fun Elim z alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.Elim"
+        val H >> AJ.TRUE pz = jdg
+        (* coeq-rec(FCOM) steps to COM *)
+        val k = K.COM
+        val AJ.TRUE ty = Hyps.lookup H z
+        val Syn.COEQUALIZER (tyA, tyB, (x, fx), (y, gy)) = Syn.out ty
+
+        (* We need to kind-check pz because of FCOM
+         * This goal is made (explicitly) unconditional to simplify tactic writing
+         *)
+        val goalKind = makeType H (pz, k)
+
+        (* codomain branch *)
+        val b = alpha 0
+        val btm = VarKit.toExp b
+        fun pcod tm = substVar (Syn.into (Syn.CECOD tm), z) pz
+        val (goalC, holeC) = makeTrue (H @> (b, AJ.TRUE tyB)) (pcod btm)
+
+        (* domain branch *)
+        val v = alpha 1
+        val vtm = VarKit.toDim v
+        val a = alpha 2
+        val atm = VarKit.toExp a
+        val fa = substVar (atm, x) fx
+        val ga = substVar (atm, y) gy
+        val dom = Syn.into @@ Syn.CEDOM (vtm, atm, fa, ga)
+        val pdom = substVar (dom, z) pz
+        val Hdom = H @> (v, AJ.TERM O.DIM) @> (a, AJ.TRUE tyA)
+        val (goalD, holeD) = makeTrue Hdom pdom
+
+        (* coherence *)
+        val d0a = substVar (Syn.intoDim 0, v) holeD
+        val cfa = substVar (fa, b) holeC
+        val goalCohF = makeEq (H @> (a, AJ.TRUE tyA)) ((d0a, cfa), (pcod fa))
+
+        val d1a = substVar (Syn.intoDim 1, v) holeD
+        val cga = substVar (ga, b) holeC
+        val goalCohG = makeEq (H @> (a, AJ.TRUE tyA)) ((d1a, cga), (pcod ga))
+
+        val elim = Syn.into @@ Syn.COEQUALIZER_REC ((z, pz), VarKit.toExp z, ((b, holeC), (v, a, holeD)))
+      in
+        |>: goalC >: goalD >: goalCohF >: goalCohG >: goalKind #> (H, elim)
+      end
+
+    fun EqElim alpha jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.EqElim"
+        val H >> ajdg = jdg
+        val ((elim0, elim1), ty) = View.matchAsEq ajdg
+        (* coeq-rec(FCOM) steps to COM *)
+        val k = K.COM
+        val Syn.COEQUALIZER_REC ((z0, p0z0), m0, ((b0, n0b0), (v0, a0, q0v0a0))) = Syn.out elim0
+        val Syn.COEQUALIZER_REC ((z1, p1z1), m1, ((b1, n1b1), (v1, a1, q1v1a1))) = Syn.out elim1
+
+        (* type of eliminated term *)
+        val (goalTyCoeq, holeTyCoeq) = makeSynth H m0
+
+        (* motive *)
+        val z = alpha 0
+        val p0z = VarKit.rename (z, z0) p0z0
+        val p1z = VarKit.rename (z, z1) p1z1
+        val goalP = makeEqType (H @> (z, AJ.TRUE holeTyCoeq)) ((p0z, p1z), k)
+
+        (* eliminated term *)
+        val goalM = makeEqIfDifferent H ((m0, m1), holeTyCoeq)
+
+        (* result type*)
+        val goalTy = View.makeAsSubTypeIfDifferent H (substVar (m0, z0) p0z0, ty)
+
+        (* codomain branch *)
+        val (goalTyB, holeTyB) = makeMatch (O.COEQUALIZER, 1, holeTyCoeq, [])
+        val b = alpha 1
+        val btm = VarKit.toExp b
+        val n0b = VarKit.rename (b, b0) n0b0
+        val n1b = VarKit.rename (b, b1) n1b1
+        fun pcod tm = substVar (Syn.into (Syn.CECOD tm), z0) p0z0
+        val goalN = makeEq (H @> (b, AJ.TRUE holeTyB)) ((n0b, n1b), (pcod btm))
+
+        (* glue branch *)
+        val (goalTyA, holeTyA) = makeMatch (O.COEQUALIZER, 0, holeTyCoeq, [])
+        val v = alpha 2
+        val vtm = VarKit.toDim v
+        val a = alpha 3
+        val atm = VarKit.toExp a
+        val q0va = VarKit.renameMany [(v, v0), (a, a0)] q0v0a0
+        val q1va = VarKit.renameMany [(v, v1), (a, a1)] q1v1a1
+        val (goalF, holeF) = makeMatch (O.COEQUALIZER, 2, holeTyCoeq, [atm])
+        val (goalG, holeG) = makeMatch (O.COEQUALIZER, 3, holeTyCoeq, [atm])
+        val dom = Syn.into @@ Syn.CEDOM (vtm, atm, holeF, holeG)
+        val pdom = substVar (dom, z0) p0z0
+        val Hdom = H @> (v, AJ.TERM O.DIM) @> (a, AJ.TRUE holeTyA)
+        val goalQ = makeEq Hdom ((q0va, q1va), pdom)
+
+        (* coherence *)
+        val q00a = substVar (Syn.intoDim 0, v) q0va
+        val cfa = substVar (holeF, b0) n0b0
+        val goalCohF = makeEq (H @> (a, AJ.TRUE holeTyA)) ((q00a, cfa), (pcod holeF))
+
+        val q01a = substVar (Syn.intoDim 1, v) q0va
+        val cga = substVar (holeG, b0) n0b0
+        val goalCohG = makeEq (H @> (a, AJ.TRUE holeTyA)) ((q01a, cga), (pcod holeG))
+      in
+        |>: goalTyCoeq >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalP >:? goalTy #> (H, trivial)
+      end
+
+    fun SynthElim _ jdg =
+      let
+        val _ = RedPrlLog.trace "Coequalizer.SynthElim"
+        val H >> AJ.SYNTH tm = jdg
+        val Syn.COEQUALIZER_REC ((z,pz), m, _) = Syn.out tm
+
+        val pm = substVar (m, z) pz
+        val goal = makeMem H (tm, pm)
+      in
+        |>: goal #> (H, pm)
       end
   end
 

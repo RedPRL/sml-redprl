@@ -13,7 +13,7 @@ struct
         if i < n then
           List.nth (us, i)
         else
-          alpha (i + n)
+          alpha (i - n)
     end
 
   fun bite n alpha =

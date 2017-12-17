@@ -184,6 +184,8 @@ struct
    | LINE
    (* pushout *)
    | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
+   (* coequalizer *)
+   | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
    (* equality *)
    | EQUALITY
    (* universe *)
@@ -337,6 +339,11 @@ struct
      | GLUE => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | PUSHOUT_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
+     | COEQUALIZER => [[] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP] ->> EXP
+     | CECOD => [[] |: EXP] ->> EXP
+     | CEDOM => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | COEQUALIZER_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
+
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
      | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
@@ -489,6 +496,11 @@ struct
      | RIGHT => "right"
      | GLUE => "glue"
      | PUSHOUT_REC => "pushout-rec"
+
+     | COEQUALIZER => "coeq"
+     | CECOD => "cecod"
+     | CEDOM => "cedom"
+     | COEQUALIZER_REC => "coeq-rec"
 
      | UNIVERSE => "U"
      | V => "V"
