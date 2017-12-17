@@ -1,0 +1,27 @@
+Thm Loop : [
+  (path [_] S1 base base)
+] by [
+  abs u => `(loop u)
+].
+
+Thm LoopBetaEasiest(#i:lvl) : [
+  (-> [u : dim] [a : (U #i)] [x : a]
+      (= a (S1-rec [_] a (loop u) x [_] x) x))
+] by [
+  abs u => lam a x =>
+    refine eq/intro;
+    refine s1/beta/loop;
+    auto
+].
+
+Thm LoopBetaEasier(#i:lvl) : [
+  (-> [u : dim] [a : (-> S1 (U #i))]
+      [b : ($ a base)] [l : (path [v] ($ a (loop v)) b b)]
+      (= ($ a (loop u)) (S1-rec [x] a (loop u) b [v] (@ l v)) (@ l u)))
+] by [
+  abs u => lam a b l =>
+    refine eq/intro;
+    refine s1/beta/loop;
+    auto
+].
+

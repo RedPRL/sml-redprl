@@ -26,6 +26,8 @@ struct
    * EqElim/EqX: structural equality for eliminators.
    *   We use EqX if the eliminator has a well-known name X.
    *   For example, we have EqApp for Fun and Path, and EqProj for Record.
+   * BetaX: the beta rule for the eliminator applied to a constructor X.
+   *   This is only necessary in cases where the reduction is unstable.
    * EqTypeElim/EqTypeX: similar to EqElim but for EQ_TYPE judgments.
    * SynthElim/SynthX: synthesizing the types of eliminators.
    * (others): other special rules for this type.
@@ -771,6 +773,26 @@ struct
       in
         |>: goalC >: goalM >: goalB >: goalL >:? goalTy >:? goalCoh0 >:? goalCoh1
         #> (H, trivial)
+      end
+
+    fun BetaLoop alpha jdg =
+      let
+	val _ = RedPrlLog.trace "S1.BetaLoop"
+        val H >> AJ.EQ ((elim, m), (ty, l)) = jdg
+	val Syn.S1_REC (_, n, (b, (u, lu))) = Syn.out elim
+	val Syn.LOOP r = Syn.out n
+
+        (* reduced goal *)
+	val lr = substVar (r, u) lu
+	val goalRed = makeEq H ((lr, m), (ty, l))
+
+        (* coherence *)
+	val l0 = substVar (Syn.intoDim 0, u) lu
+	val goalCoh0 = Restriction.makeEqIfAllDifferent [(r, Syn.intoDim 0)] H ((b, m), (ty, l)) [l0]
+	val l1 = substVar (Syn.intoDim 1, u) lu
+	val goalCoh1 = Restriction.makeEqIfAllDifferent [(r, Syn.intoDim 1)] H ((b, m), (ty, l)) [l1]
+      in
+        |>: goalRed >:? goalCoh0 >:? goalCoh1 #> (H, trivial)
       end
 
     fun SynthElim _ jdg =
@@ -1710,6 +1732,30 @@ struct
         |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >: goalTy0 #> (H, trivial)
       end
 
+    fun BetaGlue alpha jdg =
+      let
+	  val _ = RedPrlLog.trace "Pushout.BetaGlue"
+	  val H >> AJ.EQ ((elim, s), (ty, l)) = jdg
+	  val Syn.PUSHOUT_REC (_, m, ((a, na), (b, pb), (v, c, qvc))) = Syn.out elim
+	  val Syn.GLUE (r, t, ft, gt) = Syn.out m
+
+	  (* reduced goal *)
+	  val qrt = VarKit.substMany [(r, v),(t, c)] qvc
+	  val goalRed = makeEq H ((qrt, s), (ty, l))
+
+	  (* left coherence *)
+	  val q0t = VarKit.substMany [(Syn.intoDim 0, v), (t, c)] qvc
+	  val nft = substVar (ft, a) na
+	  val goalCohL = Restriction.makeEqIfAllDifferent [(r, Syn.intoDim 0)] H ((nft, s), (ty, l)) [q0t]
+
+	  (* right coherence *)
+	  val q1t = VarKit.substMany [(Syn.intoDim 1, v), (t, c)] qvc
+	  val pgt = substVar (gt, b) pb
+	  val goalCohR = Restriction.makeEqIfAllDifferent [(r, Syn.intoDim 1)] H ((pgt, s), (ty, l)) [q1t]
+      in
+	  |>: goalRed >:? goalCohL >:? goalCohR #> (H, trivial)
+      end
+
     fun SynthElim _ jdg =
       let
         val _ = RedPrlLog.trace "Pushout.SynthElim"
@@ -1920,6 +1966,29 @@ struct
         val goalCohG = makeEq (H @> (a, AJ.TRUE (holeTyA, l))) ((q01a, cga), (pcod holeG, l))
       in
         |>: goalTyCoeq >: goalP >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalTy0 #> (H, trivial)
+      end
+
+    fun BetaDom alpha jdg =
+      let
+	  val _ = RedPrlLog.trace "Coequalizer.BetaDom"
+	  val H >> AJ.EQ ((elim, s), (ty, l)) = jdg
+	  val Syn.COEQUALIZER_REC (_, m, ((b, nb), (v, a, qva))) = Syn.out elim
+	  val Syn.CEDOM (r, t, ft, gt) = Syn.out m
+
+	  val qrt = VarKit.substMany [(r, v), (t, a)] qva
+	  val goalRed = makeEq H ((qrt, s), (ty, l))
+
+	  (* left coherence *)
+	  val q0t = VarKit.substMany [(Syn.intoDim 0, v), (t, a)] qva
+	  val nft = substVar (ft, b) nb
+	  val goalCohL = Restriction.makeEqIfAllDifferent [(r, Syn.intoDim 0)] H ((nft, s), (ty, l)) [q0t]
+
+	  (* right coherence *)
+	  val q1t = VarKit.substMany [(Syn.intoDim 1, v), (t, a)] qva
+	  val ngt = substVar (gt, b) nb
+	  val goalCohR = Restriction.makeEqIfAllDifferent [(r, Syn.intoDim 1)] H ((ngt, s), (ty, l)) [q1t]
+      in
+	  |>: goalRed >:? goalCohL >:? goalCohR #> (H, trivial)
       end
 
     fun SynthElim _ jdg =

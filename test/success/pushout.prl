@@ -42,3 +42,30 @@ Thm PushoutToS1/Test0 : [
   [ refine pushout/eq/pushout-rec ];
   auto
 ].
+
+Thm PushoutBetaEasiest(#i:lvl) : [
+  (-> [a b c d : (U #i)] [w : d]
+      [u : dim] [x : a] [y : b] [z : c]
+      (= d (pushout-rec [_] d (glue u z x y) [_] w [_] w [_ _] w) w))
+] by [
+  lam a b c d w => abs u => lam x y z =>
+    refine eq/intro;
+    refine pushout/beta/glue;
+    auto
+].
+
+Thm PushoutBetaEasier(#i:lvl) : [
+  (-> [a b c : (U #i)] [f : (-> c a)] [g : (-> c b)]
+      [d : (-> (pushout a b c [z] ($ f z) [z] ($ g z)) (U #i))]
+      [wl : (-> [x : a] ($ d (left x)))] [wr : (-> [y : b] ($ d (right y)))]
+      [wg : (-> [z : c] (path [v] ($ d (glue v z ($ f z) ($ g z))) ($ wl ($ f z)) ($ wr ($ g z)))) ]
+      [u : dim] [m : c]
+      (= ($ d (glue u m ($ f m) ($ g m)))
+      	 (pushout-rec [p] ($ d p) (glue u m ($ f m) ($ g m)) [x] ($ wl x) [y] ($ wr y) [v z] (@ ($ wg z) v))
+	 (@ ($ wg m) u)))
+] by [
+  lam a b c f g d wl wr wg => abs u => lam m =>
+    refine eq/intro;
+    refine pushout/beta/glue;
+    auto
+].

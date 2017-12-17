@@ -78,6 +78,13 @@ struct
           else SOME @@ makeEqWith f H ((m, n), (ty, l)))
         (restrict eqs)
 
+    fun makeEqIfAllDifferent eqs H ((m, n), (ty, l)) ns =
+      Option.mapPartial
+	(fn f =>
+	    if List.exists (fn n' => Abt.eq (f m, f n')) ns then NONE
+	    else makeEqIfDifferent eqs H ((m, n), (ty, l)))
+	(restrict eqs)
+
     fun makeMem eqs H (m, (ty, l)) =
       makeEq eqs H ((m, m), (ty, l))
 
