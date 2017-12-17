@@ -223,6 +223,9 @@ struct
     fun makeAsEqType H =
       fn ((a, b), NONE, k) => makeEqType H ((a, b), k)
        | ((a, b), SOME l, k) => makeEq H ((a, b), Syn.intoU (l, k))
+    fun makeAsEqTypeWith f H =
+      fn ((a, b), NONE, k) => makeEqTypeWith f H ((a, b), k)
+       | ((a, b), SOME l, k) => makeEqWith f H ((a, b), Syn.intoU (l, k))
     datatype as_type = TYPE of Abt.abt | OMEGA of K.kind
     val matchAsEq =
       fn AJ.EQ ((a, b), ty) => ((a, b), TYPE ty)

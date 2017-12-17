@@ -64,8 +64,6 @@ struct
   struct
     open Restriction
 
-    fun restrictJdg eqs jdg = Option.map (fn f => Seq.map f jdg) (restrict eqs)
-
     fun makeEq eqs H ((m, n), ty) =
       Option.map
         (fn f => makeEqWith f H ((m, n), ty))
@@ -102,6 +100,21 @@ struct
           in
             (SOME goal, hole)
           end
+
+    structure View =
+    struct
+      fun makeAsEqType eqs H ((a, b), l, k) =
+        Option.mapPartial
+          (fn f => SOME @@ View.makeAsEqTypeWith f H ((a, b), l, k))
+          (restrict eqs)
+
+      fun makeAsEqTypeIfDifferent eqs H ((a, b), l, k) =
+        Option.mapPartial
+          (fn f =>
+            if Abt.eq (f a, f b) then NONE
+            else SOME @@ View.makeAsEqTypeWith f H ((a, b), l, k))
+          (restrict eqs)
+    end
   end
 
   (* code shared by Com, HCom and FCom. *)

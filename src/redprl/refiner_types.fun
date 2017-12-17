@@ -1678,14 +1678,15 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.EqType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val H >> ajdg = jdg
+        val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
         val Syn.EQUALITY (a0, m0, n0) = Syn.out ty0
         val Syn.EQUALITY (a1, m1, n1) = Syn.out ty1
         val ka = kindConstraintOnBase k
 
-        val goalTy = makeEqType H ((a0, a1), l, ka)
-        val goalM = makeEq H ((m0, m1), (a0, l))
-        val goalN = makeEq H ((n0, n1), (a0, l))
+        val goalTy = View.makeAsEqType H ((a0, a1), l, ka)
+        val goalM = makeEq H ((m0, m1), a0)
+        val goalN = makeEq H ((n0, n1), a0)
       in
         |>: goalM >: goalN >: goalTy #> (H, trivial)
       end
@@ -1693,12 +1694,12 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eq"
-        val H >> AJ.EQ ((ax0, ax1), (ty, l)) = jdg
+        val H >> AJ.EQ ((ax0, ax1), ty) = jdg
         val Syn.EQUALITY (a, m, n) = Syn.out ty
         val Syn.AX = Syn.out ax0
         val Syn.AX = Syn.out ax1
 
-        val goal = makeEq H ((m, n), (a, l))
+        val goal = makeEq H ((m, n), a)
       in
         |>: goal #> (H, trivial)
       end
@@ -1706,10 +1707,10 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.True"
-        val H >> AJ.TRUE (ty, l) = jdg
+        val H >> AJ.TRUE ty = jdg
         val Syn.EQUALITY (a, m, n) = Syn.out ty
 
-        val goal = makeEq H ((m, n), (a, l))
+        val goal = makeEq H ((m, n), a)
       in
         |>: goal #> (H, Syn.into Syn.AX)
       end
@@ -1717,11 +1718,11 @@ struct
     fun Eta _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eta"
-        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
+        val H >> AJ.EQ ((m, n), ty) = jdg
         val Syn.EQUALITY _ = Syn.out ty
 
-        val goal1 = makeMem H (m, (ty, l))
-        val goal2 = makeEqIfDifferent H ((Syn.into Syn.AX, n), (ty, l))
+        val goal1 = makeMem H (m, ty)
+        val goal2 = makeEqIfDifferent H ((Syn.into Syn.AX, n), ty)
       in
         |>:? goal2 >: goal1 #> (H, trivial)
       end
@@ -1732,7 +1733,7 @@ struct
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Elim"
         val H >> ajdg = jdg
-        val AJ.TRUE (ty, l') = Hyps.lookup H z
+        val AJ.TRUE ty = Hyps.lookup H z
         val Syn.EQUALITY (a, m, n) = Syn.out ty
 
         (* Adding an equality judgment diverges from Nuprl, but this is currently
@@ -1742,7 +1743,7 @@ struct
         val ax = Syn.into Syn.AX
         val (goal, hole) =
           makeGoal
-            @@ (Hyps.interposeThenSubstAfter (z, |@> (u, AJ.EQ ((m, n), (a, l'))), ax) H)
+            @@ (Hyps.interposeThenSubstAfter (z, |@> (u, AJ.EQ ((m, n), a)), ax) H)
             >> AJ.map (substVar (ax, z)) ajdg
       in
         |>: goal #> (H, VarKit.subst (trivial, u) hole)
@@ -1753,15 +1754,14 @@ struct
     fun NondetEqFromTrueEq z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetEqFromTrueEq"
-        val H >> AJ.EQ ((m1, n1), (ty1, l1)) = jdg
-        val AJ.TRUE (ty0', l0) = Hyps.lookup H z
+        val H >> AJ.EQ ((m1, n1), ty1) = jdg
+        val AJ.TRUE ty0' = Hyps.lookup H z
         val Syn.EQUALITY (ty0, m0, n0) = Syn.out ty0'
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
         val _ = Assert.alphaEq (ty0, ty1)
-        val goalTy = makeTypeUnlessSubUniv H (ty1, l1, K.top) (l0, K.top)
       in
-        |>:? goalTy #> (H, trivial)
+        T.empty #> (H, trivial)
       end
 
     (* (= ty m n) at l >> ty = ty at l *)
@@ -1769,13 +1769,12 @@ struct
     fun NondetTypeFromTrueEqAtType z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetTypeFromTrueEqAtType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.TRUE (eq, l') = Hyps.lookup H z
+        val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
+        val AJ.TRUE eq = Hyps.lookup H z
         val Syn.EQUALITY (ty', _, _) = Syn.out eq
         val _ = Assert.alphaEq (ty0, ty1)
         val _ = Assert.alphaEq (ty', ty0)
-        val _ = Assert.inUsefulUniv (l', K.top) (l, k)
-        val goal = makeTypeUnlessSubUniv H (ty0, l, k) (l', K.top)
+        val _ = Assert.kindLeq (K.top, k)
       in
         T.empty #> (H, trivial)
       end
@@ -1783,10 +1782,10 @@ struct
     fun InternalizeEq _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.InternalizeEq"
-        val H >> AJ.EQ ((m, n), (ty, l)) = jdg
+        val H >> AJ.EQ ((m, n), ty) = jdg
 
         (* the realizer must be `AX` *)
-        val (goal, _) = makeTrue H (Syn.into (Syn.EQUALITY (ty, m, n)), l)
+        val (goal, _) = makeTrue H (Syn.into (Syn.EQUALITY (ty, m, n)))
       in
         |>: goal #> (H, trivial)
       end
@@ -1796,8 +1795,8 @@ struct
     fun NondetSynthFromTrueEq z _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetSynthFromTrueEq"
-        val H >> AJ.SYNTH (tm, l) = jdg
-        val AJ.TRUE (equal, l') = Hyps.lookup H z
+        val H >> AJ.SYNTH tm = jdg
+        val AJ.TRUE equal = Hyps.lookup H z
         val Syn.EQUALITY (ty, a, b) = Syn.out equal
         val _ = Assert.alphaEqEither ((a, b), tm)
       in
@@ -1809,29 +1808,29 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
         val H >> ajdg = jdg
 
-        val (currentTy, l) =
+        val currentTy =
           case Selector.lookup sel (H, ajdg) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
         val truncatedH = Selector.truncateFrom sel H
 
-        val (goalTyOfEq, holeTyOfEq) = makeSynth truncatedH (eqterm, l)
+        val (goalTyOfEq, holeTyOfEq) = makeSynth truncatedH eqterm
         val (goalTy, holeTy) = makeMatch (O.EQUALITY, 0, holeTyOfEq, [])
         val (goalM, holeM) = makeMatch (O.EQUALITY, 1, holeTyOfEq, [])
         val (goalN, holeN) = makeMatch (O.EQUALITY, 2, holeTyOfEq, [])
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, AJ.TRUE (holeTy, l))
+        val truncatedHx = truncatedH @> (x, AJ.TRUE holeTy)
         val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
-        val motiveWfGoal = makeType truncatedHx (motiveHole, l, K.top)
+        val motiveWfGoal = makeType truncatedHx (motiveHole, K.top)
 
         val motiven = substVar (holeN, x) motiveHole
         val motivem = substVar (holeM, x) motiveHole
 
         fun replace jdg = 
           case jdg of 
-             AJ.TRUE (_, l) => AJ.TRUE (motiven, l)
+             AJ.TRUE _ => AJ.TRUE motiven
            | _ => jdg
 
         val (H', ajdg') = Selector.map sel replace (H, ajdg)
@@ -1839,8 +1838,8 @@ struct
 
         val motiveMatchesMainGoal =
           case sel of
-            O.IN_CONCL => makeSubType truncatedH ((motivem, currentTy), l)
-          | O.IN_HYP _ => makeSubType truncatedH ((currentTy, motivem), l)
+            O.IN_CONCL => makeSubType truncatedH (motivem, currentTy)
+          | O.IN_HYP _ => makeSubType truncatedH (currentTy, motivem)
 
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
@@ -1855,9 +1854,9 @@ struct
     fun Symmetry _ jdg =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Symmetry"
-        val H >> AJ.TRUE (equal, l) = jdg
+        val H >> AJ.TRUE equal = jdg
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
-        val (goal, hole) = makeTrue H (Syn.into (Syn.EQUALITY (ty, n, m)), l)
+        val (goal, hole) = makeTrue H (Syn.into (Syn.EQUALITY (ty, n, m)))
       in
         |>: goal #> (H, Syn.into Syn.AX)
       end
@@ -1877,11 +1876,11 @@ struct
     local
       fun genTubeGoals' H ((tubes0, tubes1), l, k) =
         ListPairUtil.mapPartialEq
-          (fn ((eq, t0), (_, t1)) => Restriction.makeEqType [eq] H ((t0, t1), l, k))
+          (fn ((eq, t0), (_, t1)) => Restriction.View.makeAsEqType [eq] H ((t0, t1), l, k))
           (tubes0, tubes1)
       fun genInterTubeGoalsExceptDiag' H ((tubes0, tubes1), l, k) =
         ComKit.enumInterExceptDiag
-          (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqTypeIfDifferent [eq0, eq1] H ((t0, t1), l, k))
+          (fn ((eq0, t0), (eq1, t1)) => Restriction.View.makeAsEqTypeIfDifferent [eq0, eq1] H ((t0, t1), l, k))
           (tubes0, tubes1)
     in
       fun genInterTubeGoals H w ((tubes0, tubes1), l, k) =
@@ -1900,32 +1899,33 @@ struct
     fun genCapTubeGoalsIfDifferent H ((cap, (r, tubes)), l, k) =
       List.mapPartial
         (fn (eq, (u, tube)) =>
-          Restriction.makeEqTypeIfDifferent [eq] H ((cap, substVar (r, u) tube), l, k))
+          Restriction.View.makeAsEqTypeIfDifferent [eq] H ((cap, substVar (r, u) tube), l, k))
         tubes
 
-    fun genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) =
+    fun genBoundaryGoals H ((boundaries0, boundaries1), tubes) =
       ListPairUtil.mapPartialEq
-        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq [eq] H ((b0, b1), (t, l)))
+        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq [eq] H ((b0, b1), t))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
-    fun genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, l)) =
+    fun genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), tubes) =
       ComKit.enumInterExceptDiag
-        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent [eq0, eq1] H ((b0, b1), (t, l)))
+        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent [eq0, eq1] H ((b0, b1), t))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
-    fun genInterBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) =
-      genBoundaryGoals H ((boundaries0, boundaries1), (tubes, l)) @
-      genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), (tubes, l))
+    fun genInterBoundaryGoals H ((boundaries0, boundaries1), tubes) =
+      genBoundaryGoals H ((boundaries0, boundaries1), tubes) @
+      genInterBoundaryGoalsExceptDiag H ((boundaries0, boundaries1), tubes)
 
-    fun genCapBoundaryGoals H ((cap, ((r, r'), tyTubes, boundaries)), (tyCap, l)) =
+    fun genCapBoundaryGoals H ((cap, ((r, r'), tyTubes, boundaries)), tyCap) =
       ListPairUtil.mapPartialEq
         (fn ((eq, ty), boundary) =>
           Restriction.makeEqIfDifferent [eq] H
-            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), (tyCap, l)))
+            ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), tyCap))
         (tyTubes, boundaries)
 
     fun EqType alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.EqType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val H >> ajdg = jdg
+        val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
         val Syn.FCOM {dir=dir0, cap=cap0, tubes=tubes0} = Syn.out ty0
         val Syn.FCOM {dir=dir1, cap=cap1, tubes=tubes1} = Syn.out ty1
         val () = Assert.dirEq "FormalComposition.EqType direction" (dir0, dir1)
@@ -1936,7 +1936,7 @@ struct
 
         val (kCap, kTube) = kindConstraintOnCapAndTubes k
 
-        val goalCap = makeEqType H ((cap0, cap1), l, kCap)
+        val goalCap = View.makeAsEqType H ((cap0, cap1), l, kCap)
 
         val w = alpha 0
       in
@@ -1949,7 +1949,7 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.Eq"
-        val H >> AJ.EQ ((box0, box1), (ty, l)) = jdg
+        val H >> AJ.EQ ((box0, box1), ty) = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
         val Syn.BOX {dir=dir0, cap=cap0, boundaries=boundaries0} = Syn.out box0
         val Syn.BOX {dir=dir1, cap=cap1, boundaries=boundaries1} = Syn.out box1
@@ -1964,34 +1964,34 @@ struct
 
         val (kCap, kTube) = kindConstraintOnCapAndTubes K.STABLE
 
-        val goalCap = makeEq H ((cap0, cap1), (tyCap, l))
+        val goalCap = makeEq H ((cap0, cap1), tyCap)
 
         val tyBoundaries = List.map (fn (u, ty) => substVar (#2 dir, u) ty) tyTubes'
 
         val w = alpha 0
       in
         |>: goalCap
-         >:+ genInterBoundaryGoals H ((boundaries0, boundaries1), (tyBoundaries, l))
-         >:+ genCapBoundaryGoals H ((cap0, (dir, tyTubes, boundaries')), (tyCap, l))
-         >:+ genInterTubeGoals H w ((tyTubes, tyTubes), l, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), l, kCap)
+         >:+ genInterBoundaryGoals H ((boundaries0, boundaries1), tyBoundaries)
+         >:+ genCapBoundaryGoals H ((cap0, (dir, tyTubes, boundaries')), tyCap)
+         >:+ genInterTubeGoals H w ((tyTubes, tyTubes), NONE, kTube)
+         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), NONE, kCap)
         #> (H, trivial)
       end
 
     fun True alpha jdg =
       let
         val _ = RedPrlLog.trace "FormalComposition.True"
-        val H >> AJ.TRUE (ty, l) = jdg
+        val H >> AJ.TRUE ty = jdg
         val Syn.FCOM {dir, cap=tyCap, tubes=tyTubes} = Syn.out ty
         val (eqs, tyTubes') = ListPair.unzip tyTubes
         val _ = Assert.tautologicalEquations "FormalComposition.True tautology checking" eqs
 
         val (kCap, kTube) = kindConstraintOnCapAndTubes K.STABLE
 
-        val (goalCap, holeCap) = makeTrue H (tyCap, l)
+        val (goalCap, holeCap) = makeTrue H tyCap
 
         fun goTube (eq, (u, tyTube)) =
-          Restriction.makeTrue [eq] (Syn.into Syn.AX) H (substVar (#2 dir, u) tyTube, l)
+          Restriction.makeTrue [eq] (Syn.into Syn.AX) H (substVar (#2 dir, u) tyTube)
         val goalHoleBoundaries = List.map goTube tyTubes
         val goalBoundaries = List.mapPartial #1 goalHoleBoundaries
         val holeBoundaries = List.map #2 goalHoleBoundaries
@@ -2005,10 +2005,10 @@ struct
       in
         |>: goalCap
          >:+ goalBoundaries
-         >:+ genInterBoundaryGoalsExceptDiag H ((holeBoundaries', holeBoundaries'), (tyBoundaries, l))
-         >:+ genCapBoundaryGoals H ((holeCap, (dir, tyTubes, holeBoundaries)), (tyCap, l))
-         >:+ genInterTubeGoals H w ((tyTubes, tyTubes), l, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), l, kCap)
+         >:+ genInterBoundaryGoalsExceptDiag H ((holeBoundaries', holeBoundaries'), tyBoundaries)
+         >:+ genCapBoundaryGoals H ((holeCap, (dir, tyTubes, holeBoundaries)), tyCap)
+         >:+ genInterTubeGoals H w ((tyTubes, tyTubes), NONE, kTube)
+         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), NONE, kCap)
         #> (H, box)
       end
 
