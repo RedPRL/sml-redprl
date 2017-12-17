@@ -123,7 +123,8 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "Bool.EqElim"
-        val H >> AJ.EQ ((if0, if1), ty) = jdg
+        val H >> ajdg = jdg
+        val ((if0, if1), ty) = View.matchAsEq ajdg
         val Syn.IF (m0, (t0, f0)) = Syn.out if0
         val Syn.IF (m1, (t1, f1)) = Syn.out if1
 
@@ -137,7 +138,7 @@ struct
         val goalM = makeEq H ((m0, m1), (Syn.into Syn.BOOL))
 
         (* result type*)
-        val goalTy0 = makeSubType H (substVar (m0, x) holeTy, ty)
+        val goalTy0 = View.makeAsSubType H (substVar (m0, x) holeTy, ty)
 
         (* tt branch *)
         val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy))
@@ -236,7 +237,8 @@ struct
     fun EqElim alpha jdg =
       let
         val _ = RedPrlLog.trace "WBool.EqElim"
-        val H >> AJ.EQ ((if0, if1), ty) = jdg
+        val H >> ajdg = jdg
+        val ((if0, if1), ty) = View.matchAsEq ajdg
         (* if(FCOM) steps to COM *)
         val k = K.COM
         val Syn.WIF ((x, c0x), m0, (t0, f0)) = Syn.out if0
@@ -253,7 +255,7 @@ struct
         val goalM = makeEq H ((m0, m1), Syn.into Syn.WBOOL)
 
         (* result type*)
-        val goalTy0 = makeSubTypeIfDifferent H (substVar (m0, x) c0x, ty)
+        val goalTy0 = View.makeAsSubTypeIfDifferent H (substVar (m0, x) c0x, ty)
 
         (* tt branch *)
         val goalT = makeEq H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x))
