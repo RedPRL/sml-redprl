@@ -197,7 +197,8 @@ struct
     fun Eq alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.Eq"
-        val H >> AJ.EQ ((lhs, rhs), ty) = jdg
+        val H >> ajdg = jdg
+        val ((lhs, rhs), ty) = View.matchAsEq ajdg
         val k = K.HCOM
         (* these operations could be expensive *)
         val Syn.HCOM {dir=dir0, ty=ty0, cap=cap0, tubes=tubes0} = Syn.out lhs
@@ -212,7 +213,7 @@ struct
 
         (* type *)
         val goalTy0 = makeType H (ty0, k)
-        val goalTy = makeSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
+        val goalTy = View.makeAsSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
 
         (* cap *)
         val goalCap = makeEq H ((cap0, cap1), ty0)
@@ -229,7 +230,8 @@ struct
     fun EqCapL alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.EqCapL"
-        val H >> AJ.EQ ((hcom, other), ty) = jdg
+        val H >> ajdg = jdg
+        val ((hcom, other), ty) = View.matchAsEq ajdg
         val k = K.HCOM
         (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
@@ -240,10 +242,10 @@ struct
 
         (* type *)
         val goalTy0 = makeType H (ty0, k)
-        val goalTy = makeSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
+        val goalTy = View.makeAsSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
 
         (* eq *)
-        val goalEq = makeEq H ((cap, other), ty)
+        val goalEq = View.makeAsEq H ((cap, other), ty)
 
         val w = alpha 0
       in
@@ -258,7 +260,8 @@ struct
     fun EqTubeL alpha jdg =
       let
         val _ = RedPrlLog.trace "HCom.EqTubeL"
-        val H >> AJ.EQ ((hcom, other), ty) = jdg
+        val H >> ajdg = jdg
+        val ((hcom, other), ty) = View.matchAsEq ajdg
         val k = K.HCOM
         (* these operations could be expensive *)
         val Syn.HCOM {dir=(r, r'), ty=ty0, cap, tubes} = Syn.out hcom
@@ -268,7 +271,7 @@ struct
 
         (* type *)
         val goalTy0 = makeType H (ty0, k)
-        val goalTy = makeSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
+        val goalTy = View.makeAsSubTypeIfDifferent H (ty0, ty) (* (ty0, k) is proved *)
 
         (* cap *)
         (* the cap-tube adjacency premise guarantees that [cap] is in [ty0],
