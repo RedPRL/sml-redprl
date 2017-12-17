@@ -198,7 +198,7 @@ struct
 
   (* subtyping *)
 
-  fun isInUsefulUniv k' k =
+  fun isInUsefulUnivOmega (k', k) =
     not (OptionUtil.eq K.eq (K.residual (k, k'), SOME k))
 
   (* It is not clear how exactly the subtyping should be implemented;
@@ -295,11 +295,11 @@ struct
       else
         raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be equal to", TermPrinter.ppKind k2]
 
-    fun inUsefulUniv k' k =
-      if isInUsefulUniv k' k then
+    fun inUsefulUnivOmega (k', k) =
+      if isInUsefulUnivOmega (k', k) then
         ()
       else
-        E.raiseError @@ E.GENERIC [Fpp.text "Expected kind", TermPrinter.ppKind k, Fpp.text "to be useful"]
+        E.raiseError @@ E.GENERIC [Fpp.text "Expected kind", TermPrinter.ppKind k', Fpp.text "to be useful for kind", TermPrinter.ppKind k]
 
     fun dirEq msg ((r1, r1'), (r2, r2')) =
       if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then
