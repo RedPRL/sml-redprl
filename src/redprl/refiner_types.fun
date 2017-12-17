@@ -1962,7 +1962,7 @@ struct
         val _ = Assert.equationsEq "FormalComposition.Eq equations" (eqs0, eqs)
         val _ = Assert.tautologicalEquations "FormalComposition.Eq tautology checking" eqs
 
-        val (kCap, kTube) = kindConstraintOnCapAndTubes K.STABLE
+        val (kCap, kTube) = kindConstraintOnCapAndTubes K.top
 
         val goalCap = makeEq H ((cap0, cap1), tyCap)
 
@@ -1986,7 +1986,7 @@ struct
         val (eqs, tyTubes') = ListPair.unzip tyTubes
         val _ = Assert.tautologicalEquations "FormalComposition.True tautology checking" eqs
 
-        val (kCap, kTube) = kindConstraintOnCapAndTubes K.STABLE
+        val (kCap, kTube) = kindConstraintOnCapAndTubes K.top
 
         val (goalCap, holeCap) = makeTrue H tyCap
 
@@ -2071,17 +2071,18 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "V.EqType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val H >> ajdg = jdg
+        val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
         val Syn.V (r0, a0, b0, e0) = Syn.out ty0
         val Syn.V (r1, a1, b1, e1) = Syn.out ty1
         val () = Assert.alphaEq' "V.EqType" (r0, r1)
-        val (kA, kB) = kindConstraintOnEnds k
+        val (kA, kB) = kindConstraintOnEnds K.top
 
         val eq = (r0, Syn.into Syn.DIM0)
 
-        val goalA = Restriction.makeEqType [eq] H ((a0, a1), l, kA)
-        val goalB = makeEqType H ((b0, b1), l, kB)
-        val goalEquiv = Restriction.makeEq [eq] H ((e0, e1), (intoEquiv a0 b0, l))
+        val goalA = Restriction.View.makeAsEqType [eq] H ((a0, a1), l, kA)
+        val goalB = View.makeAsEqType H ((b0, b1), l, kB)
+        val goalEquiv = Restriction.makeEq [eq] H ((e0, e1), intoEquiv a0 b0)
       in
         |>:? goalEquiv >:? goalA >: goalB #> (H, trivial)
       end
@@ -2089,7 +2090,7 @@ struct
     fun Eq _ jdg =
       let
         val _ = RedPrlLog.trace "V.Eq"
-        val H >> AJ.EQ ((in0, in1), (ty, l)) = jdg
+        val H >> AJ.EQ ((in0, in1), ty) = jdg
         val Syn.V (r, a, b, e) = Syn.out ty
         val Syn.VIN (r0, m0, n0) = Syn.out in0
         val Syn.VIN (r1, m1, n1) = Syn.out in1
@@ -2098,11 +2099,11 @@ struct
 
         val eq = (r0, Syn.into Syn.DIM0)
 
-        val goalM = Restriction.makeEq [eq] H ((m0, m1), (a, l))
-        val goalN = makeEq H ((n0, n1), (b, l))
+        val goalM = Restriction.makeEq [eq] H ((m0, m1), a)
+        val goalN = makeEq H ((n0, n1), b)
         val goalCoh = Restriction.makeEqIfDifferent [eq] H
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), m0), n0), (b, l))
-        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, l))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), m0), n0), b)
+        val goalEquiv = Restriction.makeMem [eq] H (e, intoEquiv a b)
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (H, trivial)
       end
@@ -2110,16 +2111,16 @@ struct
     fun True _ jdg =
       let
         val _ = RedPrlLog.trace "V.True"
-        val H >> AJ.TRUE (ty, l) = jdg
+        val H >> AJ.TRUE ty = jdg
         val Syn.V (r, a, b, e) = Syn.out ty
 
         val eq = (r, Syn.into Syn.DIM0)
 
-        val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) H (a, l)
-        val (goalN, holeN) = makeTrue H (b, l)
+        val (goalM, holeM) = Restriction.makeTrue [eq] (Syn.into Syn.AX) H a
+        val (goalN, holeN) = makeTrue H b
         val goalCoh = Restriction.makeEq [eq] H
-          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), (b, l))
-        val goalEquiv = Restriction.makeMem [eq] H (e, (intoEquiv a b, l))
+          ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), b)
+        val goalEquiv = Restriction.makeMem [eq] H (e, intoEquiv a b)
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv
         #> (H, Syn.into @@ Syn.VIN (r, holeM, holeN))
