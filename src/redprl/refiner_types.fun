@@ -1973,8 +1973,8 @@ struct
         |>: goalCap
          >:+ genInterBoundaryGoals H ((boundaries0, boundaries1), tyBoundaries)
          >:+ genCapBoundaryGoals H ((cap0, (dir, tyTubes, boundaries')), tyCap)
-         >:+ genInterTubeGoals H w ((tyTubes, tyTubes), NONE, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), NONE, kCap)
+         >:+ genInterTubeGoals H w ((tyTubes, tyTubes), View.OMEGA, kTube)
+         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), View.OMEGA, kCap)
         #> (H, trivial)
       end
 
@@ -2007,8 +2007,8 @@ struct
          >:+ goalBoundaries
          >:+ genInterBoundaryGoalsExceptDiag H ((holeBoundaries', holeBoundaries'), tyBoundaries)
          >:+ genCapBoundaryGoals H ((holeCap, (dir, tyTubes, holeBoundaries)), tyCap)
-         >:+ genInterTubeGoals H w ((tyTubes, tyTubes), NONE, kTube)
-         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), NONE, kCap)
+         >:+ genInterTubeGoals H w ((tyTubes, tyTubes), View.OMEGA, kTube)
+         >:+ genCapTubeGoalsIfDifferent H ((tyCap, (#1 dir, tyTubes)), View.OMEGA, kCap)
         #> (H, box)
       end
 
@@ -2138,22 +2138,24 @@ struct
      *)
     fun member ((l', k'), (l, k)) = L.< (l', l) andalso K.<= (inherentKind k', k)
 
-    structure Assert =
+    structure View =
     struct
-      open Assert
+      open View
 
-      fun levelMem (l1, l2) =
-        if L.< (l1, l2) then
-          ()
-        else
-          E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than", L.pretty l2]
-
-      fun univMem ((l0,k0), (l1,k1)) =
-        if member ((l0,k0), (l1,k1)) then ()
-        else E.raiseError @@ E.GENERIC
-          [Fpp.hvsep
-            [Fpp.text "Expected universe", L.pretty l0, TermPrinter.ppKind k0,
-             Fpp.text "be at level", L.pretty l1, Fpp.text "with kind", TermPrinter.ppKind k1]]
+      structure Assert =
+      struct
+        open Assert
+        local
+          fun univMem' ((l0,k0), (l1,k1)) =
+            if member ((l0,k0), (l1,k1)) then ()
+            else E.raiseError @@ E.GENERIC
+              [Fpp.hvsep
+                [Fpp.text "Expected universe", L.pretty l0, TermPrinter.ppKind k0,
+                 Fpp.text "be at level", L.pretty l1, Fpp.text "with kind", TermPrinter.ppKind k1]]
+        in
+          fun univMem ((l0,k0), (l1,k1))  = Option.app (fn l1 => univMem' ((l0,k0), (l1,k1))) l1
+        end
+      end
     end
 
     (* XXX needs double-checking *)
@@ -2167,198 +2169,69 @@ struct
     fun EqType _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.EqType"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
+        val H >> ajdg = jdg
+        val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
         val Syn.UNIVERSE (l0, k0) = Syn.out ty0
         val Syn.UNIVERSE (l1, k1) = Syn.out ty1
         val _ = Assert.levelEq (l0, l1)
-        val _ = Assert.levelNotOmega l0
         val _ = Assert.kindEq (k0, k1)
-        val _ = Assert.univMem ((l0, k0), (l, k))
+        val _ = View.Assert.univMem ((l0, k0), (l, k))
       in
         T.empty #> (H, trivial)
       end
 
-    fun Eq _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.Eq"
-        val H >> AJ.EQ ((a, b), (ty, l)) = jdg
-        val Syn.UNIVERSE (l0, k0) = Syn.out ty
-        val _ = Assert.levelMem (l0, l)
-
-        (* l0 is not omega because of Assert.univMem *)
-        val goal = makeEqType H ((a, b), l0, k0)
-      in
-        |>: goal #> (H, trivial)
-      end
-
-    fun True _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.True"
-        val H >> AJ.TRUE (ty, l) = jdg
-        val Syn.UNIVERSE (l0, k0) = Syn.out ty
-        val _ = Assert.levelMem (l0, l)
-
-        val (goalTy, holeTy) = makeTerm H O.EXP
-        (* l0 is not omega because of Assert.univMem *)
-        val goalTy' = makeType H (holeTy, l0, k0)
-      in
-        |>: goalTy >: goalTy' #> (H, Syn.into Syn.AX)
-      end
-
-    (* This rule will be removed once every hypothesis
-     * is required to be `A true`. *)
-    fun ElimFromTrue z alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.ElimFromTrue"
-        val H >> ajdg = jdg
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.TRUE (ty, _) = Hyps.lookup H z
-        val Syn.UNIVERSE (l, k) = Syn.out ty
-
-        val u = alpha 0
-        val (goal, hole) =
-          makeGoal
-            @@ (Hyps.interposeAfter (z, |@> (u, AJ.TYPE (VarKit.toExp z, l, k))) H)
-            >> ajdg
-      in
-        |>: goal #> (H, VarKit.subst (trivial, u) hole)
-      end
-
-    (* This rule will also be removed once every hypothesis
-     * is required to be `A true`. *)
-    fun ElimFromEq z alpha jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.ElimFromEq"
-        val H >> ajdg = jdg
-        (* for now we ignore the kind and the level in the context *)
-        val AJ.EQ ((ty1, ty2), (univ, _)) = Hyps.lookup H z
-        val Syn.UNIVERSE (l, k) = Syn.out univ
-
-        val u = alpha 0
-        val (goal, hole) =
-          makeGoal
-            @@ (Hyps.interposeAfter (z, |@> (u, AJ.EQ_TYPE ((ty1, ty2), l, k))) H)
-            >> ajdg
-      in
-        |>: goal #> (H, VarKit.subst (trivial, u) hole)
-      end
-
-    fun Elim z = (Lcf.rule o ElimFromTrue z) orelse_ (Lcf.rule o ElimFromEq z)
-
     fun SubUniverse _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.SubUniverse"
-        val H >> AJ.SUB_UNIVERSE (univ, l, k) = jdg
-        val Syn.UNIVERSE (l0, k0) = Syn.out univ
-        val _ = Assert.levelLeq (l0, l)
-        val _ = Assert.levelNotOmega l0
+        val H >> AJ.SUB_UNIVERSE (univ, k) = jdg
+        val Syn.UNIVERSE (_, k0) = Syn.out univ
         val _ = Assert.kindLeq (k0, k)
       in
         T.empty #> (H, trivial)
       end
 
-    (* ty0 = ty1 in (U l k) >> ty0 = ty1 at l with k *)
+    (* ty0 = ty1 in (U l k) >> ty0 = ty1 with k *)
     (* this is for non-deterministic search *)
     fun NondetEqTypeFromEq z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.NondetEqTypeFromEq"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.EQ ((ty0', ty1'), (univ, _)) = Hyps.lookup H z
-        val Syn.UNIVERSE (l', k') = Syn.out univ
+        val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
+        val AJ.EQ ((ty0', ty1'), univ) = Hyps.lookup H z
+        val Syn.UNIVERSE (_, k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
-        val _ = Assert.levelLeq (l', l)
         val _ = Assert.kindLeq (k', k)
       in
         T.empty #> (H, trivial)
       end
 
-    (* (= (U l k) ty0 ty1) >> ty0 = ty1 at l with k *)
+    (* (= (U l k) ty0 ty1) >> ty0 = ty1 with k *)
     (* this is for non-deterministic search *)
     fun NondetEqTypeFromTrueEqType z _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.NondetEqTypeFromEq"
-        val H >> AJ.EQ_TYPE ((ty0, ty1), l, k) = jdg
-        val AJ.TRUE (eq, _) = Hyps.lookup H z
+        val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
+        val AJ.TRUE eq = Hyps.lookup H z
         val Syn.EQUALITY (univ, ty0', ty1') = Syn.out eq
         val Syn.UNIVERSE (l', k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
-        val _ = Assert.levelLeq (l', l)
         val _ = Assert.kindLeq (k', k)
       in
         T.empty #> (H, trivial)
-      end
-
-    (* ty0 = ty1 at l >> ty ~~> (U l) *)
-    (* this is for non-deterministic search *)
-    fun NondetSynthFromEqType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.NondetSynthFromEqType"
-        val H >> AJ.SYNTH (ty2, l2) = jdg
-        val AJ.EQ_TYPE ((ty0, ty1), l0, k0) = Hyps.lookup H z
-        val _ = Assert.alphaEqEither ((ty0, ty1), ty2)
-        val _ = Assert.levelMem (l0, l2)
-      in
-        (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.intoU (l0, k0))
-      end
-
-    (* (= ty m n) at l >> ty synth ~~> (U l) *)
-    (* this is for non-deterministic search *)
-    fun NondetSynthFromTrueEqAtType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueEqAtType"
-        val H >> AJ.SYNTH (ty1, l1) = jdg
-        val AJ.TRUE (eq, l0) = Hyps.lookup H z
-        val Syn.EQUALITY (ty0, _, _) = Syn.out eq
-        val _ = Assert.alphaEq (ty0, ty1)
-        val _ = Assert.levelMem (l0, l1)
-      in
-        (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.intoU (l0, K.top))
-      end
-
-    (* m = n in ty at l >> ty synth ~~> (U l) *)
-    (* this is for non-deterministic search *)
-    fun NondetSynthFromEqAtType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.NondetSynthFromEqAtType"
-        val H >> AJ.SYNTH (ty1, l1) = jdg
-        val AJ.EQ (_, (ty0, l0)) = Hyps.lookup H z
-        val _ = Assert.alphaEq (ty0, ty1)
-        val _ = Assert.levelMem (l0, l1)
-      in
-        (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.intoU (l0, K.top))
-      end
-
-    (* ty at l >> ty synth ~~> (U l) *)
-    (* this is for non-deterministic search *)
-    fun NondetSynthFromTrueAtType z _ jdg =
-      let
-        val _ = RedPrlLog.trace "Universe.NondetSynthFromTrueAtType"
-        val H >> AJ.SYNTH (ty1, l1) = jdg
-        val AJ.TRUE (ty0, l0) = Hyps.lookup H z
-        val _ = Assert.alphaEq (ty0, ty1)
-        (* TODO maybe generating a subgoal when it's not a member? *)
-        val _ = Assert.levelMem (l0, l1)
-      in
-        (* l0 is not omega because of univMem *)
-        T.empty #> (H, Syn.intoU (l0, K.top))
       end
 
     fun VarFromTrue _ jdg =
       let
         val _ = RedPrlLog.trace "Universe.VarFromTrue"
-        val H >> AJ.EQ_TYPE ((ty1, ty2), l1, k1) = jdg
+        val H >> AJ.EQ_TYPE ((ty1, ty2), k1) = jdg
         val Syn.VAR (x1, _) = Syn.out ty1
         val Syn.VAR (x2, _) = Syn.out ty2
         val _ = Assert.varEq (x1, x2)
-        val AJ.TRUE (univ0, _) = Hyps.lookup H x1
+        val AJ.TRUE univ0 = Hyps.lookup H x1
         val Syn.UNIVERSE (l0, k0) = Syn.out univ0
 
-        val goal = makeTypeUnlessSubUniv H (ty1, l1, k1) (l0, k0)
+        val goal = makeTypeUnlessSubUniv H (ty1, k1) k0
       in
         |>:? goal #> (H, trivial)
       end

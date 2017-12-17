@@ -211,6 +211,7 @@ struct
   structure View =
   struct
     type as_level = L.t option
+    val OMEGA = NONE : as_level
     val matchAsEqType =
       fn AJ.EQ_TYPE ((a, b), k) => ((a, b), NONE, k)
        | AJ.EQ ((a, b), univ) =>
@@ -226,20 +227,20 @@ struct
     fun makeAsEqTypeWith f H =
       fn ((a, b), NONE, k) => makeEqTypeWith f H ((a, b), k)
        | ((a, b), SOME l, k) => makeEqWith f H ((a, b), Syn.intoU (l, k))
-    datatype as_type = TYPE of Abt.abt | OMEGA of K.kind
+    datatype as_type = TYPE of Abt.abt | UNIV_OMEGA of K.kind
     val matchAsEq =
       fn AJ.EQ ((a, b), ty) => ((a, b), TYPE ty)
-       | AJ.EQ_TYPE ((a, b), k) => ((a, b), OMEGA k)
+       | AJ.EQ_TYPE ((a, b), k) => ((a, b), UNIV_OMEGA k)
        | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEq", AJ.pretty jdg)
     fun makeAsEq H =
       fn ((a, b), TYPE ty) => makeEq H ((a, b), ty)
-       | ((a, b), OMEGA k) => makeEqType H ((a, b), k)
+       | ((a, b), UNIV_OMEGA k) => makeEqType H ((a, b), k)
     fun makeAsSubType H =
       fn (a, TYPE b) => makeSubType H (a, b)
-       | (a, OMEGA k) => makeSubUniverse H (a, k)
+       | (a, UNIV_OMEGA k) => makeSubUniverse H (a, k)
     fun makeAsSubTypeIfDifferent H =
       fn (a, TYPE b) => makeSubTypeIfDifferent H (a, b)
-       | (a, OMEGA k) => SOME @@ makeSubUniverse H (a, k)
+       | (a, UNIV_OMEGA k) => SOME @@ makeSubUniverse H (a, k)
   end
 
   (* assertions *)
