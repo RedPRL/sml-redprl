@@ -1270,7 +1270,8 @@ struct
     fun EqAppConst _ jdg =
       let
         val _ = RedPrlLog.trace "Path.EqAppConst"
-        val H >> AJ.EQ ((ap, p), a) = jdg
+        val H >> ajdg = jdg
+        val ((ap, p), a) = View.matchAsEq ajdg
         val Syn.DIM_APP (m, r) = Syn.out ap
 
         val dimAddr = case Syn.out r of Syn.DIM0 => 1 | Syn.DIM1 => 2
@@ -1278,8 +1279,8 @@ struct
         val (goalSynth, holeSynth) = makeSynth H m
         val (goalLine, holeLine) = makeMatch (O.PATH, 0, holeSynth, [r])
         val (goalEndpoint, holeEndpoint) = makeMatch (O.PATH, dimAddr, holeSynth, [])
-        val goalTy = makeSubType H (holeLine, a)
-        val goalEq = makeEq H ((holeEndpoint, p), a)
+        val goalTy = View.makeAsSubType H (holeLine, a)
+        val goalEq = View.makeAsEq H ((holeEndpoint, p), a)
       in
         |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >: goalTy
         #> (H, trivial)
