@@ -144,6 +144,18 @@ struct
       end
   end
 
+  structure SubType =
+  struct
+    fun Eq _ jdg =
+      let
+        val _ = RedPrlLog.trace "SubType.Eq"
+        val H >> AJ.SUB_TYPE (a, b) = jdg
+        val goal = makeEqType H ((a, b), K.top)
+      in
+        |>: goal #> (H, trivial)
+      end
+  end
+
   structure True =
   struct
     fun Witness tm _ jdg =
@@ -425,6 +437,7 @@ struct
      | "hcom/eq/tube" => Lcf.rule o HCom.EqTubeL
      | "coe/eq" => Lcf.rule o Coe.Eq
      | "coe/eq/cap" => Lcf.rule o Coe.EqCapL
+     | "subtype/eq" => Lcf.rule o SubType.Eq
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
@@ -530,61 +543,73 @@ struct
          | (_, Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
-      fun StepEqTypeVal (ty1, ty2) =
+      fun StepNeuExpandUntyped sign tm =
+        fn Machine.VAR z => AutoElim sign z
+         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuExpandUntyped", TermPrinter.ppTerm tm)
+
+      structure Wrapper =
+      struct
+        datatype mode = EQ | SUB
+        fun applyEitherTac eqTac subTac =
+          fn EQ => eqTac
+           | SUB => subTac
+        fun applyEitherRule eqRule subRule =
+          applyEitherTac (Lcf.rule o eqRule) (Lcf.rule o subRule)
+        fun applyEqRule rule =
+          applyEitherTac (Lcf.rule o rule) ((Lcf.rule o SubType.Eq) then_ (Lcf.rule o rule))
+      end
+
+      fun StepEqSubTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
-           (Syn.BOOL, Syn.BOOL) => Lcf.rule o Bool.EqType
-         | (Syn.WBOOL, Syn.WBOOL) => Lcf.rule o WBool.EqType
-         | (Syn.NAT, Syn.NAT) => Lcf.rule o Nat.EqType
-         | (Syn.INT, Syn.INT) => Lcf.rule o Int.EqType
-         | (Syn.VOID, Syn.VOID) => Lcf.rule o Void.EqType
-         | (Syn.S1, Syn.S1) => Lcf.rule o S1.EqType
-         | (Syn.FUN _, Syn.FUN _) => Lcf.rule o Fun.EqType
-         | (Syn.RECORD _, Syn.RECORD _) => Lcf.rule o Record.EqType
-         | (Syn.PATH _, Syn.PATH _) => Lcf.rule o Path.EqType
-         | (Syn.LINE _, Syn.LINE _) => Lcf.rule o Line.EqType
-         | (Syn.PUSHOUT _, Syn.PUSHOUT _) => Lcf.rule o Pushout.EqType
-         | (Syn.COEQUALIZER _, Syn.COEQUALIZER _) => Lcf.rule o Coequalizer.EqType
-         | (Syn.EQUALITY _, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.EqType
-         | (Syn.FCOM _, Syn.FCOM _) => Lcf.rule o FormalComposition.EqType
-         | (Syn.V _, Syn.V _) => Lcf.rule o V.EqType
-         | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule o Universe.EqType
-         | _ => fail @@ E.GENERIC [Fpp.text "Could not find type equality rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
+           (Syn.BOOL, Syn.BOOL) => Wrapper.applyEqRule Bool.EqType
+         | (Syn.WBOOL, Syn.WBOOL) => Wrapper.applyEqRule WBool.EqType
+         | (Syn.NAT, Syn.NAT) => Wrapper.applyEqRule Nat.EqType
+         | (Syn.INT, Syn.INT) => Wrapper.applyEqRule Int.EqType
+         | (Syn.VOID, Syn.VOID) => Wrapper.applyEqRule Void.EqType
+         | (Syn.S1, Syn.S1) => Wrapper.applyEqRule S1.EqType
+         | (Syn.FUN _, Syn.FUN _) => Wrapper.applyEqRule Fun.EqType
+         | (Syn.RECORD _, Syn.RECORD _) => Wrapper.applyEqRule Record.EqType
+         | (Syn.PATH _, Syn.PATH _) => Wrapper.applyEqRule Path.EqType
+         | (Syn.LINE _, Syn.LINE _) => Wrapper.applyEqRule Line.EqType
+         | (Syn.PUSHOUT _, Syn.PUSHOUT _) => Wrapper.applyEqRule Pushout.EqType
+         | (Syn.COEQUALIZER _, Syn.COEQUALIZER _) => Wrapper.applyEqRule Coequalizer.EqType
+         | (Syn.EQUALITY _, Syn.EQUALITY _) => Wrapper.applyEqRule InternalizedEquality.EqType
+         | (Syn.FCOM _, Syn.FCOM _) => Wrapper.applyEqRule FormalComposition.EqType
+         | (Syn.V _, Syn.V _) => Wrapper.applyEqRule V.EqType
+         | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Wrapper.applyEitherRule Universe.EqType Universe.SubType
+         | _ => fn _ => fail @@ E.GENERIC [Fpp.text "Could not find type equality or subtyping rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
 
-      fun StepEqTypeNeuByStruct sign (m, n) =
+      fun StepEqSubTypeNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
-           (Syn.VAR _, Syn.VAR _) => Lcf.rule o Universe.VarFromTrue
-         | (Syn.WIF _, Syn.WIF _) => Lcf.rule o WBool.EqElim
-         | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule o S1.EqElim
-         | (Syn.APP (f, _), Syn.APP _) => Lcf.rule o Fun.EqApp
-         | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj
-         | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "EqType with `@`" (* pattern used to have a var for the dimension; needed? *)
-         | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Lcf.rule o Pushout.EqElim
-         | (Syn.COEQUALIZER_REC _, Syn.COEQUALIZER_REC _) => Lcf.rule o Coequalizer.EqElim
-         | (Syn.CUST, Syn.CUST) => Lcf.rule o Custom.Eq sign
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
+           (Syn.VAR _, Syn.VAR _) => Wrapper.applyEqRule Universe.VarFromTrue
+         | (Syn.WIF _, Syn.WIF _) => Wrapper.applyEqRule WBool.EqElim
+         | (Syn.S1_REC _, Syn.S1_REC _) => Wrapper.applyEqRule S1.EqElim
+         | (Syn.APP (f, _), Syn.APP _) => Wrapper.applyEqRule Fun.EqApp
+         | (Syn.PROJ _, Syn.PROJ _) => Wrapper.applyEqRule Record.EqProj
+         | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => Wrapper.applyEqRule Path.EqApp
+         | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Wrapper.applyEqRule Pushout.EqElim
+         | (Syn.COEQUALIZER_REC _, Syn.COEQUALIZER_REC _) => Wrapper.applyEqRule Coequalizer.EqElim
+         | (Syn.CUST, Syn.CUST) => Wrapper.applyEqRule (Custom.Eq sign)
+         | _ => fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
-      fun StepEqTypeNeu sign tys blockers =
+      fun StepEqSubTypeNeu sign tys blockers subMode =
         StepNeuByElim sign tys blockers
           orelse_
-        StepEqTypeNeuByStruct sign tys
+        StepEqSubTypeNeuByStruct sign tys subMode
           orelse_
         StepNeuByUnfold sign tys blockers
 
-      fun StepEqTypeNeuExpand sign ty =
-        fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuExpand", TermPrinter.ppTerm ty)
-
-      fun StepEqType sign (ty1, ty2) =
+      fun StepEqSubType sign (ty1, ty2) subMode =
         (Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]) then_ 
         (case (canonicity sign ty1, canonicity sign ty2) of
            (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqTypeVal (ty1, ty2)
-         | (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqTypeNeu sign (ty1, ty2) (blocker1, blocker2)
-         | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqTypeNeuExpand sign ty1 blocker
-         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqTypeNeuExpand sign ty2 blocker
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqType", AJ.pretty @@ AJ.EQ_TYPE ((ty1, ty2), K.top)))
+         | (Machine.CANONICAL, Machine.CANONICAL) => StepEqSubTypeVal (ty1, ty2) subMode
+         | (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqSubTypeNeu sign (ty1, ty2) (blocker1, blocker2) subMode
+         | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepNeuExpandUntyped sign ty1 blocker
+         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepNeuExpandUntyped sign ty2 blocker
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubType", AJ.pretty @@ AJ.EQ_TYPE ((ty1, ty2), K.top)))
 
       fun StepEqValAtType sign ty =
         case canonicity sign ty of
@@ -595,7 +620,9 @@ struct
 
       (* equality of canonical forms *)
       fun StepEqVal sign (m, n) ty =
-        case (Syn.out m, Syn.out n, Syn.out ty) of
+        StepEqValAtType sign ty
+          orelse_
+        (case (Syn.out m, Syn.out n, Syn.out ty) of
            (Syn.BOOL, Syn.BOOL, Syn.UNIVERSE _) => Lcf.rule o Bool.EqType
          | (Syn.TT, Syn.TT, Syn.BOOL) => Lcf.rule o Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Lcf.rule o Bool.EqFF
@@ -610,6 +637,7 @@ struct
          | (Syn.ZERO, Syn.ZERO, Syn.INT) => Lcf.rule o Int.EqZero
          | (Syn.SUCC _, Syn.SUCC _, Syn.INT) => Lcf.rule o Int.EqSucc
          | (Syn.NEGSUCC _, Syn.NEGSUCC _, Syn.INT) => Lcf.rule o Int.EqNegSucc
+         | (Syn.VOID, Syn.VOID, Syn.UNIVERSE _) => Lcf.rule o Void.EqType
          | (Syn.S1, Syn.S1, Syn.UNIVERSE _) => Lcf.rule o S1.EqType
          | (Syn.BASE, Syn.BASE, Syn.S1) => Lcf.rule o S1.EqBase
          | (Syn.LOOP _, Syn.LOOP _, Syn.S1) => Lcf.rule o S1.EqLoop
@@ -631,14 +659,14 @@ struct
          | (Syn.CECOD _, Syn.CECOD _, Syn.COEQUALIZER _) => Lcf.rule o Coequalizer.EqCod
          | (Syn.CEDOM _, Syn.CEDOM _, Syn.COEQUALIZER _) => Lcf.rule o Coequalizer.EqDom
          | (Syn.FCOM _, Syn.FCOM _, Syn.COEQUALIZER _) => Lcf.rule o Coequalizer.EqFCom
-         | (Syn.EQUALITY _, Syn.EQUALITY _, Syn.UNIVERSE _) => Lcf.rule o Pushout.EqType
+         | (Syn.EQUALITY _, Syn.EQUALITY _, Syn.UNIVERSE _) => Lcf.rule o InternalizedEquality.EqType
          | (Syn.AX, Syn.AX, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eq
          | (Syn.FCOM _, Syn.FCOM _, Syn.UNIVERSE _) => Lcf.rule o FormalComposition.EqType
          | (Syn.BOX _, Syn.BOX _, Syn.FCOM _) => Lcf.rule o FormalComposition.Eq
          | (Syn.V _, Syn.V _, Syn.UNIVERSE _) => Lcf.rule o V.EqType
          | (Syn.VIN _, Syn.VIN _, Syn.V _) => Lcf.rule o V.Eq
          | (Syn.UNIVERSE _, Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule o Universe.EqType
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", AJ.pretty (AJ.EQ ((m, n), ty)))
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", AJ.pretty (AJ.EQ ((m, n), ty))))
 
       (* equality for neutrals: variables and elimination forms;
        * this includes structural equality and typed computation principles *)
@@ -780,17 +808,12 @@ struct
          | Syn.CUST => Lcf.rule o Custom.Synth sign
          | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
 
-      fun StepSubUniverseNeuExpand sign u =
-        fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverseNeuExpand", TermPrinter.ppTerm u)
-
       fun StepSubUniverse sign u =
         case (Syn.out u, canonicity sign u) of
            (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.CANONICAL) => Lcf.rule o Universe.SubUniverse
-         | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with (@ p r)"
-         | (_, Machine.NEUTRAL blocker) => StepSubUniverseNeuExpand sign u blocker
+         | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubUniverse with dimension application"
+         | (_, Machine.NEUTRAL blocker) => StepNeuExpandUntyped sign u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubUniverse", TermPrinter.ppTerm u)
 
       fun StepMatch sign u =
@@ -808,10 +831,11 @@ struct
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
 
       fun StepJdg sign = matchGoal
-        (fn _ >> AJ.EQ_TYPE (tys, _) => StepEqType sign tys
+        (fn _ >> AJ.EQ_TYPE (tys, _) => StepEqSubType sign tys Wrapper.EQ
           | _ >> AJ.EQ ((m, n), ty) => StepEq sign ((m, n), ty)
           | _ >> AJ.TRUE ty => StepTrue sign ty
           | _ >> AJ.SYNTH m => StepSynth sign m
+          | _ >> AJ.SUB_TYPE tys => StepEqSubType sign tys Wrapper.SUB
           | _ >> AJ.SUB_UNIVERSE (univ, _) => StepSubUniverse sign univ
           | MATCH (_, _, m, _) => StepMatch sign m
           | MATCH_RECORD (_, m, _) => StepMatchRecord sign m

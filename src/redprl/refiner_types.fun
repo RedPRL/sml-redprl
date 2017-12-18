@@ -27,7 +27,13 @@ struct
    *   We use EqX if the eliminator has a well-known name X.
    *   For example, we have EqApp for Fun and Path, and EqProj for Record.
    *
-   *   Rule ordering: eliminated, branches, coherence, well-typed, motive, subtyping
+   *   Rule ordering:
+   *     well-typed of the eliminated terms
+   *     well-typed of the branches
+   *     coherence among branches
+   *     well-kinded of the type
+   *     well-kinded of the motive
+   *     subtyping for the resulting type
    * EqTypeElim/EqTypeX: similar to EqElim but for EQ_TYPE judgments.
    * SynthElim/SynthX: synthesizing the types of eliminators.
    * (others): other special rules for this type.
@@ -389,7 +395,7 @@ struct
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC))
       in
-        |>: goalM >: goalZ >: goalS >: goalC >: goalTy #> (H, trivial)
+        |>: goalC >: goalM >: goalZ >: goalS >: goalTy #> (H, trivial)
       end
   end
 
@@ -2388,6 +2394,18 @@ struct
         val _ = Assert.levelEq (l0, l1)
         val _ = Assert.kindEq (k0, k1)
         val _ = View.Assert.univMem ((l0, k0), (l, k))
+      in
+        T.empty #> (H, trivial)
+      end
+
+    fun SubType _ jdg =
+      let
+        val _ = RedPrlLog.trace "Universe.SubType"
+        val H >> AJ.SUB_TYPE (ty0, ty1) = jdg
+        val Syn.UNIVERSE (l0, k0) = Syn.out ty0
+        val Syn.UNIVERSE (l1, k1) = Syn.out ty1
+        val _ = Assert.levelLeq (l0, l1)
+        val _ = Assert.kindLeq (k0, k1)
       in
         T.empty #> (H, trivial)
       end
