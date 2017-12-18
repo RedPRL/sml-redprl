@@ -601,15 +601,14 @@ struct
         StepNeuByUnfold sign tys blockers
 
       fun StepEqSubType sign (ty1, ty2) subMode =
-        (Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]) then_ 
-        (case (canonicity sign ty1, canonicity sign ty2) of
+        case (canonicity sign ty1, canonicity sign ty2) of
            (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (Machine.CANONICAL, Machine.CANONICAL) => StepEqSubTypeVal (ty1, ty2) subMode
          | (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqSubTypeNeu sign (ty1, ty2) (blocker1, blocker2) subMode
          | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepNeuExpandUntyped sign ty1 blocker
          | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepNeuExpandUntyped sign ty2 blocker
-         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubType", AJ.pretty @@ AJ.EQ_TYPE ((ty1, ty2), K.top)))
+         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubType", AJ.pretty @@ AJ.EQ_TYPE ((ty1, ty2), K.top))
 
       fun StepEqValAtType sign ty =
         case canonicity sign ty of
@@ -760,30 +759,27 @@ struct
          | (_, Syn.COE _) => Coe.AutoEqR
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqKanStructural", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
 
-      (* This is really ugly; feel free to refactor, sorry. Wish we had 'backtracking case statements' in SML. *)
-      fun StepEqAux sign ((m, n), ty) kont = 
+      fun StepEqAux sign (m, n) valTac kont =
         case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
            (_, Machine.REDEX, _, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
          | (_, _, _, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => StepEqVal sign (m, n) ty
+         | (_, Machine.CANONICAL, _, Machine.CANONICAL) => valTac
          | (Syn.DIM_APP (_, r), _, _, _) =>
            (case Abt.out r of 
-              `_ => kont ((m, n), ty)
+              `_ => kont
              | _ => Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp)
          | (_, _, Syn.DIM_APP (_, r), _) =>
            (case Abt.out r of 
-              `_ => kont ((m, n), ty)
+              `_ => kont
              | _ => CatJdgSymmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp))
-         | _ => kont ((m, n), ty)
+         | _ => kont
 
       fun StepEq sign ((m, n), ty) =
-        (* XXX something is missing here!
-         * the handling of hcom/coe and `(@ x 1)` in `ty` should be here,
-         * between the above and the next lines. *)
         StepEqKanStruct sign (m, n)
           orelse_
-        StepEqAux sign ((m, n), ty) (fn ((m, n), ty) => 
-          case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
+        StepEqAux sign (m, n)
+          (StepEqVal sign (m, n) ty)
+          (case (Syn.out m, canonicity sign m, Syn.out n, canonicity sign n) of
              (_, Machine.NEUTRAL blocker1, _, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
            | (_, Machine.NEUTRAL blocker, _, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
            | (_, Machine.CANONICAL, _, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
