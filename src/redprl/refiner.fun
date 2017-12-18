@@ -637,6 +637,7 @@ struct
          | (Syn.BOX _, Syn.BOX _, Syn.FCOM _) => Lcf.rule o FormalComposition.Eq
          | (Syn.V _, Syn.V _, Syn.UNIVERSE _) => Lcf.rule o V.EqType
          | (Syn.VIN _, Syn.VIN _, Syn.V _) => Lcf.rule o V.Eq
+         | (Syn.UNIVERSE _, Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule o Universe.EqType
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqVal", AJ.pretty (AJ.EQ ((m, n), ty)))
 
       (* equality for neutrals: variables and elimination forms;
