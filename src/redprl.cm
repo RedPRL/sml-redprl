@@ -9,6 +9,7 @@ Library
   structure FinalPrinter
   structure Fpp
   functor RedPrlMachine
+  structure Config
 is
   $/basis.cm
   $/ml-yacc-lib.cm
@@ -40,6 +41,8 @@ is
   redprl/univ_level.sml
   redprl/syntax.sml
   redprl/variable_kit.sml
+
+  redprl/config.sml
 
   redprl/pretty.sml
 
