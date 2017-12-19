@@ -586,7 +586,7 @@ struct
            (Syn.VAR _, Syn.VAR _) => Wrapper.applyEqRule Universe.VarFromTrue
          | (Syn.WIF _, Syn.WIF _) => Wrapper.applyEqRule WBool.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => Wrapper.applyEqRule S1.EqElim
-         | (Syn.APP (f, _), Syn.APP _) => Wrapper.applyEqRule Fun.EqApp
+         | (Syn.APP _, Syn.APP _) => Wrapper.applyEqRule Fun.EqApp
          | (Syn.PROJ _, Syn.PROJ _) => Wrapper.applyEqRule Record.EqProj
          | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => Wrapper.applyEqRule Path.EqApp
          | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Wrapper.applyEqRule Pushout.EqElim
@@ -840,14 +840,14 @@ struct
         case canonicity sign u of
            Machine.REDEX => Lcf.rule o Computation.MatchReduce sign
          | Machine.CANONICAL => Lcf.rule o Misc.MatchOperator
-         | Machine.NEUTRAL (Machine.VAR x) => fail @@ E.NOT_APPLICABLE (Fpp.text "match", TermPrinter.ppTerm u)
+         | Machine.NEUTRAL (Machine.VAR _) => fail @@ E.NOT_APPLICABLE (Fpp.text "match", TermPrinter.ppTerm u)
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
 
       fun StepMatchRecord sign u =
         case canonicity sign u of
            Machine.REDEX => Lcf.rule o Computation.MatchRecordReduce sign
          | Machine.CANONICAL => Lcf.rule o Record.MatchRecord
-         | Machine.NEUTRAL (Machine.VAR x) => fail @@ E.NOT_APPLICABLE (Fpp.text "match-record", TermPrinter.ppTerm u)
+         | Machine.NEUTRAL (Machine.VAR _) => fail @@ E.NOT_APPLICABLE (Fpp.text "match-record", TermPrinter.ppTerm u)
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.UnfoldAll sign [theta]
 
       fun StepJdg sign = matchGoal

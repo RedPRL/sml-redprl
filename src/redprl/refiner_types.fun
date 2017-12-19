@@ -1341,8 +1341,6 @@ struct
         val _ = RedPrlLog.trace "Line.True"
         val H >> AJ.TRUE ty = jdg
         val Syn.LINE (u, au) = Syn.out ty
-        val a0 = substVar (Syn.into Syn.DIM0, u) au
-        val a1 = substVar (Syn.into Syn.DIM1, u) au
 
         val v = alpha 0
         val av = substVar (VarKit.toDim v, u) au
@@ -2077,7 +2075,7 @@ struct
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
         val (goal, hole) = makeTrue H (Syn.into (Syn.EQUALITY (ty, n, m)))
       in
-        |>: goal #> (H, Syn.into Syn.AX)
+        |>: goal #> (H, hole)
       end
   end
 
@@ -2295,7 +2293,7 @@ struct
         val Syn.V (r0, a0, b0, e0) = Syn.out ty0
         val Syn.V (r1, a1, b1, e1) = Syn.out ty1
         val () = Assert.alphaEq' "V.EqType" (r0, r1)
-        val (kA, kB) = kindConstraintOnEnds K.top
+        val (kA, kB) = kindConstraintOnEnds k
 
         val eq = (r0, Syn.into Syn.DIM0)
 
@@ -2444,7 +2442,7 @@ struct
         val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
         val AJ.TRUE eq = Hyps.lookup H z
         val Syn.EQUALITY (univ, ty0', ty1') = Syn.out eq
-        val Syn.UNIVERSE (l', k') = Syn.out univ
+        val Syn.UNIVERSE (_, k') = Syn.out univ
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty0)
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
         val _ = Assert.kindLeq (k', k)
@@ -2460,7 +2458,7 @@ struct
         val Syn.VAR (x2, _) = Syn.out ty2
         val _ = Assert.varEq (x1, x2)
         val AJ.TRUE univ0 = Hyps.lookup H x1
-        val Syn.UNIVERSE (l0, k0) = Syn.out univ0
+        val Syn.UNIVERSE (_, k0) = Syn.out univ0
 
         val goal = makeTypeUnlessSubUniv H (ty1, k1) k0
       in
