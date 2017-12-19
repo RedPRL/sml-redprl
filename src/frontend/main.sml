@@ -1,26 +1,27 @@
 structure Main =
 struct
   datatype mode =
-      PRINT_DEVELOPMENT
+      PRINT_DEVELOPMENT of string list
     | FROM_STDIN of string option
     | HELP
 
   local
-    fun go [] = PRINT_DEVELOPMENT
-      | go ("--help" :: _) = HELP
-      | go (x :: xs) =
+    fun extractArg n x =
+      case explode (String.extract (x, n, NONE)) of
+         #"=" :: rest => SOME (implode rest)
+       | _ => NONE
+    fun go [] mode = mode
+      | go ("--help" :: xs) _ = go xs (SOME HELP)
+      | go (x :: xs) mode =
         if String.isPrefix "--from-stdin" x
-        then let
-          val rest = String.extract (x, String.size "--from-stdin", NONE)
-          val fileName = case explode rest of
-                           #"=" :: rest => SOME (implode rest)
-                         | _ => NONE
-        in
-          FROM_STDIN fileName
-        end
-        else go xs
+        then go xs (SOME (FROM_STDIN (extractArg (String.size "--from-stdin") x)))
+        else
+          (case mode of
+              NONE => go xs (SOME (PRINT_DEVELOPMENT [x]))
+            | SOME (PRINT_DEVELOPMENT files) => go xs (SOME (PRINT_DEVELOPMENT (files @ [x])))
+            | SOME _ => go xs mode)
   in
-    fun getMode args = go args
+    fun getMode args = Option.getOpt (go args NONE, HELP)
   end
 
   val helpMessage =
@@ -46,16 +47,10 @@ struct
 
   fun main (_, args) =
     Debug.wrap (fn _ =>
-      let
-        val (opts, files) = List.partition (String.isPrefix "--") args
-        val redprlFiles = List.filter (fn x => String.isSuffix ".prl" x orelse String.isSuffix ".redprl" x) files
-        val mode = getMode opts
-      in
-        case mode of
-             PRINT_DEVELOPMENT => toExitStatus (List.all Frontend.processFile redprlFiles)
-           | FROM_STDIN ofile => toExitStatus (Frontend.processStream (Option.getOpt (ofile, "<stdin>")) TextIO.stdIn)
-           | HELP => (print helpMessage; OS.Process.success)
-      end)
+      case getMode args of
+         PRINT_DEVELOPMENT files => toExitStatus (List.all Frontend.processFile files)
+       | FROM_STDIN ofile => toExitStatus (Frontend.processStream (Option.getOpt (ofile, "<stdin>")) TextIO.stdIn)
+       | HELP => (print helpMessage; OS.Process.success))
     handle E =>
       (FppRenderPlainText.render TextIO.stdErr (FinalPrinter.execPP (RedPrlError.format E));
        OS.Process.failure)
