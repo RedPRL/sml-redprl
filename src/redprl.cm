@@ -41,6 +41,8 @@ is
   redprl/syntax.sml
   redprl/variable_kit.sml
 
+  redprl/config.sml
+
   redprl/pretty.sml
 
   redprl/error.sig
