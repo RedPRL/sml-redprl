@@ -954,6 +954,7 @@ struct
                  val env' = Var.Ctx.insert env var m0
                  val goals' = goals >: makeEq H ((m0, m1), ty')
                  val famGoals' = if isFirst then famGoals else famGoals >: makeType hyps (ty, K.top)
+                 (* FIXME this "var" is not accessible to the user! *)
                  val hyps' = hyps @> (var, AJ.TRUE ty)
                in
                  {goals = goals', famGoals = famGoals', env = env', hyps = hyps', isFirst = false}

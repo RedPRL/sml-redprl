@@ -36,8 +36,8 @@ Thm Pick/succ/0/succ/1 : [
      [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
 ] by [
   lam n m =>
-    claim aux0 : [($ Pick n m) type at 0] by [auto];
-    claim aux1 : [($ Pick (succ n) m) type at 0] by [auto];
+    claim aux0 : [($ Pick n m) in (U 0)] by [auto];
+    claim aux1 : [($ Pick (succ n) m) in (U 0)] by [auto];
     unfold Pick; reduce; auto
 ].
 
@@ -112,8 +112,9 @@ Thm Pick/compose/tt/4/0/tt/5/0 : [
       =  ($ Pick/compose a b c p0/t p1/t)
       in ($ Pick a c)
       ] by [auto];
-    claim aux1 : [ ($ Pick (succ a) c) type at 0 ] by [auto];
-      unfold Pick Pick/compose; reduce; auto
+    claim aux1 : [ ($ Pick (succ a) c) type ] by [auto];
+    claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
+      refine eq/intro; unfold Pick/compose Pick; reduce; auto
 ].
 
 Thm Pick/compose/tt/4/0/ff/5/0 : [
@@ -133,7 +134,8 @@ Thm Pick/compose/tt/4/0/ff/5/0 : [
       =  ($ Pick/compose (succ a) b c p0/t p1/t)
       in ($ Pick (succ a) c)
       ] by [auto];
-    claim aux1 : [ ($ Pick a c) type at 0 ] by [auto];
+    claim aux1 : [ ($ Pick a c) type ] by [auto];
+    claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
     unfold Pick Pick/compose; reduce; auto
 ].
 
@@ -154,6 +156,7 @@ Thm Pick/compose/ff/4/0 : [
       =  ($ Pick/compose (succ a) (succ b) c p0/t p1)
       in ($ Pick (succ a) c)
       ] by [auto];
-    claim aux1 : [ ($ Pick a c) type at 0 ] by [auto];
+    claim aux1 : [ ($ Pick a c) type ] by [auto];
+    claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
     unfold Pick Pick/compose; reduce; auto
 ].

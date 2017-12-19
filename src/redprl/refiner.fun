@@ -842,7 +842,7 @@ struct
        * because everything is subject to change now.
        *)
 
-      fun FromHypDelegate tac = matchGoal
+      fun NondetFromHypDelegate tac = matchGoal
         (fn H >> _ =>
               Hyps.foldr
                 (fn (z, jdg, accum) => tac (z, jdg) orelse_ accum)
@@ -850,7 +850,7 @@ struct
                 H
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
 
-      val EqTypeFromHyp = FromHypDelegate
+      val NondetEqTypeFromHyp = NondetFromHypDelegate
         (fn (z, AJ.EQ_TYPE _) => Lcf.rule o TypeEquality.NondetFromEqType z
           | (z, AJ.EQ _) =>
               Lcf.rule o TypeEquality.NondetFromEq z
@@ -864,20 +864,23 @@ struct
               Lcf.rule o Universe.NondetEqTypeFromTrueEqType z
           | (z, _)  => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
-      val EqFromHyp = FromHypDelegate
+      val NondetEqFromHyp = NondetFromHypDelegate
         (fn (z, AJ.EQ _) => Lcf.rule o Equality.FromEq z
           | (z, AJ.TRUE _) => Lcf.rule o InternalizedEquality.NondetEqFromTrueEq z
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "EqFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
-      val StepJdgFromHyp = matchGoal
-        (fn _ >> AJ.EQ_TYPE _ => EqTypeFromHyp
-          | _ >> AJ.EQ _ => EqFromHyp
+      val NondetSynthFromHyp = NondetFromHypDelegate (fn (z, _) => SynthFromHyp z)
+
+      val NondetStepJdgFromHyp = matchGoal
+        (fn _ >> AJ.EQ_TYPE _ => NondetEqTypeFromHyp
+          | _ >> AJ.EQ _ => NondetEqFromHyp
+          | _ >> AJ.SYNTH _ => NondetSynthFromHyp
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
     in
       fun AutoStep sign =
         StepJdg sign
           orelse_
-            StepJdgFromHyp
+            NondetStepJdgFromHyp
     end
 
     local
