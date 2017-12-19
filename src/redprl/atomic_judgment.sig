@@ -1,7 +1,6 @@
 structure RedPrlAtomicJudgmentData =
 struct
   type kind = RedPrlKind.t
-  type level = RedPrlLevel.t
 
   structure Tm = RedPrlAbt
 
@@ -10,46 +9,52 @@ struct
   in
     datatype jdg =
 
-     (* `EQ ((m, n), (a, l))`:
-      *   Already in the `l`th iteration of universe hierarchy construction,
-      *   the term `a` was associated with a PER and terms `m` and `n` were
+     (* `EQ ((m, n), a)`:
+      *   The term `a` was associated with a PER and terms `m` and `n` are
       *   related by that PER.
       *
       *   The realizer is `TV` of sort `TRV`.
       *)
-       EQ of (abt * abt) * (abt * level)
+       EQ of (abt * abt) * abt
 
-     (* `TRUE (a, l)`:
-      *   Already in the `l`th iteration of universe hierarchy construction,
-      *   the term `a` was associated with a PER and there existed a term `m`
-      *   such that `m` was related to itself in that PER.
+     (* `TRUE a`:
+      *   The term `a` is associated with a PER and there exists a term `m`
+      *   such that `m` is related to itself in that PER.
       *
       *   The realizer is such an `m` of sort `EXP`.
       *)
-     | TRUE of abt * level
+     | TRUE of abt
 
-     (* `EQ_TYPE ((a, b), l, k)`:
-      *   Already in the `l`th iteration of universe hierarchy construction,
-      *   `a` and `b` are equal types and have equal structures specified by `k`.
-      *   This implies they have the same PER.
+     (* `EQ_TYPE ((a, b), k)`:
+      *   The terms `a` and `b` are equal types and have equal structures
+      *   specified by `k`. This implies they have the same PER.
       *
       *   The realizer is `TV` of sort `TRV`.
       *)
-     | EQ_TYPE of (abt * abt) * level * kind
+     | EQ_TYPE of (abt * abt) * kind
 
-     (* `SUB_UNIVERSE (u, l, k)`
-      *   `u` is a sub-universe of the universe specified by `l` and `k`.
+     (* `SUB_TYPE (a, b)`:
+      *   The terms `a` and `b` are types and the PER associated with `a`
+      *   is a subrelation of the PER associated with `b`.
+      *
+      *   The realizer is `TV` of sort `TRV`.
       *)
-     | SUB_UNIVERSE of abt * level * kind
+     | SUB_TYPE of (abt * abt)
 
-     (* `SYNTH (m, l)`:
-      *   Already in the `l`th iteration of universe hierarchy construction,
-      *   there existed a term `a` associated with a PER and the term `m`
-      *   was related to itself in that PER.
+     (* `SUB_UNIVERSE (a, k)`
+      *   `a` is a sub-universe of U^`k`.
+      *
+      *   The realizer is `TV` of sort `TRV`.
+      *)
+     | SUB_UNIVERSE of abt * kind
+
+     (* `SYNTH m`:
+      *   There exists a term `a` associated with a PER and the term `m`
+      *   is related to itself by that PER.
       *
       *   The realizer is such an `a` of sort `exp`.
       *)
-     | SYNTH of abt * level
+     | SYNTH of abt
 
      (* `TERM tau`:
       *   There exists some term `m` of sort `tau`.
@@ -63,11 +68,10 @@ signature CATEGORICAL_JUDGMENT =
 sig
   datatype jdg = datatype RedPrlAtomicJudgmentData.jdg
   type abt = RedPrlAbt.abt
-  type level = RedPrlLevel.t
   type kind = RedPrlKind.t
 
-  val TYPE : abt * level * RedPrlKind.t -> jdg
-  val MEM : abt * (abt * level) -> jdg
+  val TYPE : abt * RedPrlKind.t -> jdg
+  val MEM : abt * abt -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg
 

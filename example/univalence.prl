@@ -12,24 +12,6 @@ Def IsSet (#C) = [(-> [c c' : #C] (IsProp (path [_] #C c c')))].
 
 Def Retract (#A,#f,#g) = [(-> [a : #A] (path [_] #A ($ #g ($ #f a)) a))].
 
-Tac ReflectUniv(#l:lvl, #k:knd, #t:tac) = [
-  query goal <- concl;
-  match goal {
-    [a b l k | #jdg{%a = %b type at %l with %[k:knd]} =>
-      claim aux : [%a = %b in (U #l #k)] by [#t]; auto
-    ]
-    [a b k | #jdg{%a = %b type with %[k:knd]} =>
-      claim aux : [%a = %b in (U #l #k)] by [#t]; auto
-    ]
-  }
-].
-
-Tac CrushTyEq(#l:lvl) = [
-  auto;
-  (ReflectUniv #l kan #tac{auto});
-  (ReflectUniv #l kan #tac{refine path/eq/app; auto})
-].
-
 Thm IdEquiv(#l:lvl) : [
   (-> [ty : (U #l hcom)] (Equiv ty ty))
 ] by [
@@ -80,8 +62,7 @@ Thm PathToEquiv(#l:lvl) : [
    (Equiv ty/a ty/b))
 ] by [
   lam ty/a ty/b p =>
-  `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a));
-  (CrushTyEq #l)
+  `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a))
 ].
 
 Thm LemPropF(#l:lvl) : [
@@ -256,8 +237,7 @@ Thm IsContrPath(#l:lvl) : [
    lam {ty/b,p} => abs x =>
      {`(hcom 0~>1 (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a]),
       abs y => `(hcom 0~>y (U #l kan) ty/a [x=0 [y] (@ p y)] [x=1 [_] ty/a])}
-  };
-  auto; (CrushTyEq #l)
+  }
 ].
 
 Thm RetIsContr(#l:lvl) : [

@@ -70,6 +70,7 @@ struct
    *     the binary cases.
    *)
   datatype kind = DISCRETE | KAN | HCOM | COE | STABLE
+  type t = kind
 
   val COM = KAN
 
@@ -88,6 +89,7 @@ struct
 
       val top : t
       val <= : t * t -> bool
+      val eq : t * t -> bool
       val meet : t * t -> t
 
       (* residual (a, b)
@@ -131,6 +133,7 @@ struct
          | (STABLE, STABLE) => NONE
 
       fun op <= (a, b) = residual (b, a) = NONE
+      val eq = op=
     end
   in
     open Internal
@@ -207,13 +210,13 @@ struct
    | LCONST of IntInf.int
    | LPLUS of IntInf.int
    | LMAX
-   | LOMEGA
 
    | KCONST of kind
 
    | JDG_EQ
    | JDG_TRUE
    | JDG_EQ_TYPE
+   | JDG_SUB_TYPE
    | JDG_SUB_UNIVERSE
    | JDG_SYNTH
    | JDG_TERM of sort
@@ -368,16 +371,16 @@ struct
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] |: LVL] ->> LVL
      | LMAX => [[] |: VEC LVL] ->> LVL
-     | LOMEGA => [] ->> LVL
 
      | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ => [[] |: LVL, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_TRUE => [[] |: LVL, [] |: EXP] ->> JDG
-     | JDG_EQ_TYPE => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
-     | JDG_SYNTH => [[] |: LVL, [] |: EXP] ->> JDG
+     | JDG_EQ => [[] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE => [[] |: EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] |: KND, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_UNIVERSE => [[] |: KND, [] |: EXP] ->> JDG
+     | JDG_SYNTH => [[] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -517,7 +520,6 @@ struct
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
      | LPLUS i => "{lplus " ^ IntInf.toString i ^ "}"
      | LMAX => "lmax"
-     | LOMEGA => "lomega"
 
      | KCONST k => RedPrlKind.toString k
 

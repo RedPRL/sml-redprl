@@ -146,7 +146,6 @@ whitespace = [\ \t];
 "knd"              => (Tokens.KND (posTuple (size yytext)));
 
 "lmax"             => (Tokens.LMAX (posTuple (size yytext)));
-"omega"            => (Tokens.LOMEGA (posTuple (size yytext)));
 
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
