@@ -3,6 +3,5 @@ Group is
   ../lib/sml-final-pretty-printer/final-pretty-printer.cm
   redprl.cm (bind:(anchor:libs value:../lib/))
   debug.cm
-  redprl/config.sml
   frontend/frontend.sml
   frontend/main.sml

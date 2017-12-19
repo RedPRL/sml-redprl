@@ -3,7 +3,6 @@ local
   $(LIBS)/sml-final-pretty-printer/final-pretty-printer.mlb
   redprl.mlb
   debug.mlb
-  redprl/config.sml
   frontend/frontend.sml
   frontend/main.sml
   frontend/main-mlton.sml

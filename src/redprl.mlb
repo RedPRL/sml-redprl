@@ -100,5 +100,6 @@ in
     structure RedPrlLrVals
     structure FinalPrinter
     structure Fpp
+    structure Config
   end
 end
