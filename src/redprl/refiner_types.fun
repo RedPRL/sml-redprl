@@ -2409,10 +2409,10 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun SubUniverse _ jdg =
+    fun SubKind _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.SubUniverse"
-        val H >> AJ.SUB_UNIVERSE (univ, k) = jdg
+        val _ = RedPrlLog.trace "Universe.SubKind"
+        val H >> AJ.SUB_KIND (univ, k) = jdg
         val Syn.UNIVERSE (_, k0) = Syn.out univ
         val _ = Assert.kindLeq (k0, k)
       in

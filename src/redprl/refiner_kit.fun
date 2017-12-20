@@ -168,7 +168,7 @@ struct
   fun makeEq H ((m, n), ty) = makeGoal' @@ H >> AJ.EQ ((m, n), ty)
   fun makeMem H (m, ty) = makeGoal' @@ H >> AJ.MEM (m, ty)
   fun makeSubType H (a, b) = makeGoal' @@ H >> AJ.SUB_TYPE (a, b)
-  fun makeSubUniverse H (u, k) = makeGoal' @@ H >> AJ.SUB_UNIVERSE (u, k)
+  fun makeSubKind H (u, k) = makeGoal' @@ H >> AJ.SUB_KIND (u, k)
 
   (* conditional goal making *)
 
@@ -237,10 +237,10 @@ struct
        | ((a, b), UNIV_OMEGA k) => makeEqType H ((a, b), k)
     fun makeAsSubType H =
       fn (a, TYPE b) => makeSubType H (a, b)
-       | (a, UNIV_OMEGA k) => makeSubUniverse H (a, k)
+       | (a, UNIV_OMEGA k) => makeSubKind H (a, k)
     fun makeAsSubTypeIfDifferent H =
       fn (a, TYPE b) => makeSubTypeIfDifferent H (a, b)
-       | (a, UNIV_OMEGA k) => SOME @@ makeSubUniverse H (a, k)
+       | (a, UNIV_OMEGA k) => SOME @@ makeSubKind H (a, k)
   end
 
   (* assertions *)

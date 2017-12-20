@@ -41,12 +41,12 @@ struct
       *)
      | SUB_TYPE of (abt * abt)
 
-     (* `SUB_UNIVERSE (a, k)`
-      *   `a` is a sub-universe of U^`k`.
+     (* `SUB_KIND (a, k)`
+      *   `a` is a sub-universe of the universe of `k` types at the omega level.
       *
       *   The realizer is `TV` of sort `TRV`.
       *)
-     | SUB_UNIVERSE of abt * kind
+     | SUB_KIND of abt * kind
 
      (* `SYNTH m`:
       *   There exists a term `a` associated with a PER and the term `m`
