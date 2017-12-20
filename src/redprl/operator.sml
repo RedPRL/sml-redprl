@@ -150,6 +150,13 @@ struct
 
   (* TODO: move elsewhere *)
   datatype 'a selector = IN_CONCL | IN_HYP of 'a
+  datatype accessor = AT_TOP | AT_TYPE | AT_LEFT | AT_RIGHT
+
+  val accessorToStrung =
+    fn AT_TOP => "top"
+     | AT_TYPE => "type"
+     | AT_LEFT => "left"
+     | AT_RIGHT => "right"
 
   datatype 'a dev_pattern = 
      PAT_VAR of 'a

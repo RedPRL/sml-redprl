@@ -74,6 +74,7 @@ sig
   val MEM : abt * abt -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg
+  val mapPart : RedPrlOpData.accessor -> (abt -> abt) -> jdg -> jdg
 
   val synthesis : jdg -> RedPrlAbt.sort
   val into : jdg -> abt
