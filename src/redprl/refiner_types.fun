@@ -2043,7 +2043,7 @@ struct
            | (AJ.EQ_TYPE ((_, n), k), O.PART_RIGHT) => (n, View.UNIV_OMEGA k)
            | (AJ.SUB_TYPE (m, _), O.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
            | (AJ.SUB_TYPE (_, n), O.PART_RIGHT) => (n, View.UNIV_OMEGA K.top)
-           | (AJ.SUB_UNIVERSE (m, _), O.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
+           | (AJ.SUB_KIND (m, _), O.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
            | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
                Fpp.hvsep [Fpp.hsep [Fpp.text (O.accessorToString acc), Fpp.text "of"], AJ.pretty currentAjdg])
 
@@ -2077,7 +2077,7 @@ struct
            | (AJ.EQ_TYPE ((m, _), k), O.PART_RIGHT) => AJ.EQ_TYPE ((m, motiven), k)
            | (AJ.SUB_TYPE (_, n), O.PART_LEFT) => AJ.SUB_TYPE (motiven, n)
            | (AJ.SUB_TYPE (m, _), O.PART_RIGHT) => AJ.SUB_TYPE (m, motiven)
-           | (AJ.SUB_UNIVERSE (_, k), O.PART_LEFT) => AJ.SUB_UNIVERSE (motiven, k)
+           | (AJ.SUB_KIND (_, k), O.PART_LEFT) => AJ.SUB_KIND (motiven, k)
 
         val (H', concl') = Selector.map sel (fn _ => replace) (H, concl)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
@@ -2444,10 +2444,10 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun SubUniverse _ jdg =
+    fun SubKind _ jdg =
       let
-        val _ = RedPrlLog.trace "Universe.SubUniverse"
-        val H >> AJ.SUB_UNIVERSE (univ, k) = jdg
+        val _ = RedPrlLog.trace "Universe.SubKind"
+        val H >> AJ.SUB_KIND (univ, k) = jdg
         val Syn.UNIVERSE (_, k0) = Syn.out univ
         val _ = Assert.kindLeq (k0, k)
       in

@@ -9,6 +9,15 @@ Thm Univ1(#i:lvl) : [
 ] by [
   auto
 ].
+
+Thm Univ2 : [
+  (->
+   [a : (U 0 discrete)]
+   (= (U 1 kan) a a))
+] by [
+  lam a => auto
+].
+
 Thm Monoid(#i:lvl) : [ (U (++ #i)) ] by [
   `(record
     [ob : (U #i)]

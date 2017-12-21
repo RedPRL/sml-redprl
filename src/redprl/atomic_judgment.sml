@@ -14,7 +14,7 @@ struct
      | TRUE a => TRUE (f a)
      | EQ_TYPE ((a, b), k) => EQ_TYPE ((f a, f b), k)
      | SUB_TYPE (a, b) => SUB_TYPE (f a, f b)
-     | SUB_UNIVERSE (u, k) => SUB_UNIVERSE (f u, k)
+     | SUB_KIND (u, k) => SUB_KIND (f u, k)
      | SYNTH a => SYNTH (f a)
      | TERM tau => TERM tau
 
@@ -44,7 +44,7 @@ struct
            , TermPrinter.ppTerm b
            , text "type"
            ]
-       | SUB_UNIVERSE (u, k) => expr @@ hvsep
+       | SUB_KIND (u, k) => expr @@ hvsep
            [ TermPrinter.ppTerm u
            , text "<="
            , TermPrinter.ppKind k
@@ -63,7 +63,7 @@ struct
      | TRUE _ => O.EXP
      | EQ_TYPE _ => O.TRV
      | SUB_TYPE _ => O.TRV
-     | SUB_UNIVERSE _ => O.TRV
+     | SUB_KIND _ => O.TRV
      | SYNTH _ => O.EXP
      | TERM tau => tau
 
@@ -81,7 +81,7 @@ struct
        | TRUE a => O.JDG_TRUE $$ [[] \ a]
        | EQ_TYPE ((a, b), k) => O.JDG_EQ_TYPE $$ [[] \ kconst k, [] \ a, [] \ b]
        | SUB_TYPE (a, b) => O.JDG_SUB_TYPE $$ [[] \ a, [] \ b]
-       | SUB_UNIVERSE (u, k) => O.JDG_SUB_UNIVERSE $$ [[] \ kconst k, [] \ u]
+       | SUB_KIND (u, k) => O.JDG_SUB_KIND $$ [[] \ kconst k, [] \ u]
        | SYNTH m => O.JDG_SYNTH $$ [[] \ m]
 
        | TERM tau => O.JDG_TERM tau $$ []
@@ -97,7 +97,7 @@ struct
        | O.JDG_TRUE $ [_ \ a] => TRUE a
        | O.JDG_EQ_TYPE $ [_ \ k, _ \ a, _ \ b] => EQ_TYPE ((a, b), outk k)
        | O.JDG_SUB_TYPE $ [_ \ a, _ \ b] => SUB_TYPE (a, b)
-       | O.JDG_SUB_UNIVERSE $ [_ \ k, _ \ u] => SUB_UNIVERSE (u, outk k)
+       | O.JDG_SUB_KIND $ [_ \ k, _ \ u] => SUB_KIND (u, outk k)
        | O.JDG_SYNTH $ [_ \ m] => SYNTH m
 
        | O.JDG_TERM tau $ [] => TERM tau
@@ -118,7 +118,7 @@ struct
      | (EQ_TYPE _, O.PART_RIGHT) => ANTIVAR
      | (SUB_TYPE _, O.PART_LEFT) => CONTRAVAR
      | (SUB_TYPE _, O.PART_RIGHT) => COVAR
-     | (SUB_UNIVERSE _, O.PART_LEFT) => CONTRAVAR
+     | (SUB_KIND _, O.PART_LEFT) => CONTRAVAR
      | (jdg, acc) => RedPrlError.raiseError (RedPrlError.NOT_APPLICABLE (Fpp.text "variant",
          Fpp.hvsep [Fpp.hsep [Fpp.text (O.accessorToString acc), Fpp.text "of"], pretty jdg]))
   val composeVariant =
