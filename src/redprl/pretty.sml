@@ -11,9 +11,9 @@ struct
   open FppBasis Fpp
 
   local
-    val initialEnv =
-      {maxWidth = 80,
-       maxRibbon = 60,
+    fun initialEnv () =
+      {maxWidth = !Config.maxWidth,
+       maxRibbon = !Config.maxWidth,
        layout = FppTypes.BREAK,
        failure = FppTypes.CANT_FAIL,
        nesting = 0,
@@ -21,7 +21,7 @@ struct
        formatAnn = fn _ => ()}
   in
     fun execPP (m : unit m)  =
-      #output (m emptyPrecEnv initialEnv {curLine = []})
+      #output (m emptyPrecEnv (initialEnv ()) {curLine = []})
   end
 end
 

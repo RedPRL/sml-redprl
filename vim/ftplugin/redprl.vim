@@ -1,7 +1,7 @@
 " vim-RedPRL ftplugin
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2017 December 12
+" Last Change:  2017 December 19
 
 if (exists("b:did_ftplugin") || !has('job'))
   finish
@@ -31,7 +31,9 @@ function! CheckBuffer()
   silent %d
   wincmd p
 
-  let s:job = job_start(g:redprl_path . ' --from-stdin=' . bufname('%'), {
+  let s:job = job_start(g:redprl_path .
+    \' --width=' . winwidth(bufwinnr('RedPRL')) .
+    \' --from-stdin=' . bufname('%'), {
     \'in_io': 'buffer', 'in_buf': bufnr('%'),
     \'out_io': 'buffer', 'out_name': 'RedPRL', 'out_msg': 0,
     \'err_io': 'buffer', 'err_msg': 0,

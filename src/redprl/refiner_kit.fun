@@ -235,6 +235,9 @@ struct
     fun makeAsEq H =
       fn ((a, b), TYPE ty) => makeEq H ((a, b), ty)
        | ((a, b), UNIV_OMEGA k) => makeEqType H ((a, b), k)
+    fun makeAsMem H =
+      fn (a, TYPE ty) => makeMem H (a, ty)
+       | (a, UNIV_OMEGA k) => makeType H (a, k)
     fun makeAsSubType H =
       fn (a, TYPE b) => makeSubType H (a, b)
        | (a, UNIV_OMEGA k) => makeSubKind H (a, k)
@@ -242,6 +245,13 @@ struct
       fn (a, TYPE b) => makeSubTypeIfDifferent H (a, b)
        | (a, UNIV_OMEGA k) => SOME @@ makeSubKind H (a, k)
   end
+
+  (* variants *)
+
+  val flipVariant =
+    fn AJ.COVAR => AJ.CONTRAVAR
+     | AJ.CONTRAVAR => AJ.COVAR
+     | AJ.ANTIVAR => AJ.ANTIVAR
 
   (* assertions *)
 

@@ -23,6 +23,8 @@ in
     redprl/list_util.sml
     redprl/option_util.sml
 
+    redprl/config.sml
+
     redprl/operator.sml
     redprl/abt.sml
     redprl/pretty.sml
@@ -98,5 +100,6 @@ in
     structure RedPrlLrVals
     structure FinalPrinter
     structure Fpp
+    structure Config
   end
 end

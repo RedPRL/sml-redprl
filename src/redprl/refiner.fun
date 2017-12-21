@@ -278,10 +278,10 @@ struct
     fun RewriteTrueByEq sel z alpha jdg =
       let
         val _ = RedPrlLog.trace "Equality.RewriteTrueByEq"
-        val H >> ajdg = jdg
+        val H >> concl = jdg
 
         val currentTy =
-          case Selector.lookup sel (H, ajdg) of
+          case Selector.lookup sel (H, concl) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
@@ -301,8 +301,8 @@ struct
              AJ.TRUE _ => AJ.TRUE motiven
            | _ => jdg
 
-        val (H', ajdg') = Selector.map sel replace (H, ajdg)
-        val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> ajdg'
+        val (H', concl') = Selector.map sel replace (H, concl)
+        val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
 
         val motiveMatchesMainGoal =
           case sel of
@@ -932,7 +932,7 @@ struct
       (fn AJ.EQ _ => Lcf.rule o Equality.RewriteTrueByEq sel z
         | AJ.TRUE _ => Lcf.rule o InternalizedEquality.RewriteTrueByTrue sel z
         | jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "rewrite-hyp tactic", AJ.pretty jdg))
-    fun Rewrite _ sel m = Lcf.rule o InternalizedEquality.RewriteTrue sel m
+    fun Rewrite _ sel m = Lcf.rule o InternalizedEquality.Rewrite sel m
 
     val Symmetry : tactic = matchGoal
       (fn _ >> AJ.EQ_TYPE _ => Lcf.rule o TypeEquality.Symmetry

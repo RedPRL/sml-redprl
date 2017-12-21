@@ -467,6 +467,7 @@ end
  | devMatchClauses of (string list * (ast * ast)) list
  | selector of ast
  | selectors of ast list
+ | accessor of ast
  | opnames of string list
 
  | declArgument of metavariable * Ar.valence
@@ -851,6 +852,11 @@ selector
   : CONCL (Ast.$$ (O.SEL_CONCL, []))
   | elimTargetAnySort (Ast.$$ (O.SEL_HYP, [Ast.\ ([], elimTargetAnySort)]))
 
+accessor
+  : TYPE (Ast.$$ (O.ACC_TYPE, []))
+  | LEFT (Ast.$$ (O.ACC_LEFT, []))
+  | RIGHT (Ast.$$ (O.ACC_RIGHT, []))
+
 selectors
   : selector selectors (selector :: selectors)
   | selector ([selector])
@@ -881,8 +887,11 @@ atomicRawTac
   | TAC_AUTO_STEP (Ast.$$ (O.TAC_AUTO_STEP, []))
   | TAC_SYMMETRY (Ast.$$ (O.TAC_SYMMETRY, []))
   | TAC_ELIM elimTargetAnySort (Ast.$$ (O.TAC_ELIM, [Ast.\ ([], elimTargetAnySort)]))
-  | TAC_REWRITE term (Ast.$$ (O.TAC_REWRITE, [Ast.\ ([], Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], term)]))
-  | TAC_REWRITE term IN selector (Ast.$$ (O.TAC_REWRITE, [Ast.\ ([], selector), Ast.\ ([], term)]))
+  | TAC_REWRITE term (Ast.$$ (O.TAC_REWRITE, [\\ (Ast.$$ (O.SEL_CONCL, [])), \\ (Ast.$$ (O.ACC_WHOLE, [])), \\ term]))
+  | TAC_REWRITE term AT accessor (Ast.$$ (O.TAC_REWRITE, [\\ (Ast.$$ (O.SEL_CONCL, [])), \\ accessor, \\ term]))
+  | TAC_REWRITE term IN selector (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ (Ast.$$ (O.ACC_WHOLE, [])), \\ term]))
+  | TAC_REWRITE term AT accessor IN selector (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ accessor, \\ term]))
+  | TAC_REWRITE term IN selector AT accessor (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ accessor, \\ term]))
   | TAC_REWRITE_HYP elimTargetAnySort (Ast.$$ (O.TAC_REWRITE_HYP, [Ast.\ ([], Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], elimTargetAnySort)]))
   | TAC_REWRITE_HYP elimTargetAnySort IN selector (Ast.$$ (O.TAC_REWRITE_HYP, [Ast.\ ([], selector), Ast.\ ([], elimTargetAnySort)]))
   | TAC_REDUCE (Ast.$$ (O.TAC_REDUCE_ALL, []))
