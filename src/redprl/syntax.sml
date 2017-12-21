@@ -128,6 +128,13 @@ struct
              `x => O.IN_HYP x
            | _ => raise Fail "Invalid selector")
 
+    fun outAccessor (s : abt) : O.accessor  =
+      case Tm.out s of
+         O.ACC_WHOLE $ _ => O.WHOLE
+       | O.ACC_TYPE $ _ => O.PART_TYPE
+       | O.ACC_LEFT $ _ => O.PART_LEFT
+       | O.ACC_RIGHT $ _ => O.PART_RIGHT
+
     fun outTube tube = 
       let
         val O.MK_TUBE $ [_ \ r1, _ \ r2, [u] \ mu] = Tm.out tube

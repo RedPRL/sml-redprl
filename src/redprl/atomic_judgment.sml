@@ -67,30 +67,6 @@ struct
      | SYNTH _ => O.EXP
      | TERM tau => tau
 
-  structure E = RedPrlError
-
-  val prettyAccessor = Fpp.text o O.accessorToStrung
-  fun mapPart acc f jdg =
-    case (jdg, acc) of
-       (EQ ((m, n), a), O.AT_LEFT) => EQ ((f m, n), a)
-     | (EQ ((m, n), a), O.AT_RIGHT) => EQ ((m, f n), a)
-     | (EQ ((m, n), a), O.AT_TYPE) => EQ ((m, n), f a)
-     | (EQ _, _) => E.raiseError (E.NOT_APPLICABLE (Fpp.text "mapPart", Fpp.hsep [pretty jdg, Fpp.text "at", prettyAccessor acc]))
-     | (TRUE a, O.AT_TOP) => TRUE (f a)
-     | (TRUE a, O.AT_TYPE) => TRUE (f a)
-     | (TRUE _, _) => E.raiseError (E.NOT_APPLICABLE (Fpp.text "mapPart", Fpp.hsep [pretty jdg, Fpp.text "at", prettyAccessor acc]))
-     | (EQ_TYPE ((a, b), k), O.AT_LEFT) => EQ_TYPE ((f a, b), k)
-     | (EQ_TYPE ((a, b), k), O.AT_RIGHT) => EQ_TYPE ((a, f b), k)
-     | (EQ_TYPE _, _) => E.raiseError (E.NOT_APPLICABLE (Fpp.text "mapPart", Fpp.hsep [pretty jdg, Fpp.text "at", prettyAccessor acc]))
-     | (SUB_TYPE (a, b), O.AT_LEFT) => SUB_TYPE (f a, b)
-     | (SUB_TYPE (a, b), O.AT_RIGHT) => SUB_TYPE (a, f b)
-     | (SUB_TYPE _, _) => E.raiseError (E.NOT_APPLICABLE (Fpp.text "mapPart", Fpp.hsep [pretty jdg, Fpp.text "at", prettyAccessor acc]))
-     | (SUB_UNIVERSE (u, k), O.AT_LEFT) => SUB_UNIVERSE (f u, k)
-     | (SUB_UNIVERSE _, _) => E.raiseError (E.NOT_APPLICABLE (Fpp.text "mapPart", Fpp.hsep [pretty jdg, Fpp.text "at", prettyAccessor acc]))
-     | (SYNTH a, O.AT_TOP) => SYNTH (f a)
-     | (SYNTH _, _) => E.raiseError (E.NOT_APPLICABLE (Fpp.text "mapPart", Fpp.hsep [pretty jdg, Fpp.text "at", prettyAccessor acc]))
-     | (TERM _, _) => E.raiseError (E.NOT_APPLICABLE (Fpp.text "mapPart", Fpp.hsep [pretty jdg, Fpp.text "at", prettyAccessor acc]))
-
   local
     open RedPrlAbt
     structure L = RedPrlLevel
@@ -129,4 +105,27 @@ struct
 
     val eq = fn (j1, j2) => eq (into j1, into j2)
   end
+
+  val variant =
+    fn (EQ _, O.PART_TYPE) => COVAR
+     | (EQ _, O.PART_LEFT) => ANTIVAR
+     | (EQ _, O.PART_RIGHT) => ANTIVAR
+     | (TRUE _, O.WHOLE) => COVAR
+     | (TRUE _, O.PART_TYPE) => COVAR
+     | (TRUE _, O.PART_LEFT) => ANTIVAR
+     | (TRUE _, O.PART_RIGHT) => ANTIVAR
+     | (EQ_TYPE _, O.PART_LEFT) => ANTIVAR
+     | (EQ_TYPE _, O.PART_RIGHT) => ANTIVAR
+     | (SUB_TYPE _, O.PART_LEFT) => CONTRAVAR
+     | (SUB_TYPE _, O.PART_RIGHT) => COVAR
+     | (SUB_UNIVERSE _, O.PART_LEFT) => CONTRAVAR
+     | (jdg, acc) => RedPrlError.raiseError (RedPrlError.NOT_APPLICABLE (Fpp.text "variant",
+         Fpp.hvsep [Fpp.hsep [Fpp.text (O.accessorToString acc), Fpp.text "of"], pretty jdg]))
+  val composeVariant =
+    fn (ANTIVAR, _) => ANTIVAR
+     | (_, ANTIVAR) => ANTIVAR
+     | (COVAR, COVAR) => COVAR
+     | (CONTRAVAR, CONTRAVAR) => COVAR
+     | (COVAR, CONTRAVAR) => CONTRAVAR
+     | (COTRAVAR, COVAR) => CONTRAVAR
 end
