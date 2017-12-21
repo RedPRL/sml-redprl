@@ -238,10 +238,6 @@ struct
     fun makeAsMem H =
       fn (a, TYPE ty) => makeMem H (a, ty)
        | (a, UNIV_OMEGA k) => makeType H (a, k)
-    val matchAsSubType =
-      fn AJ.SUB_TYPE (a, b) => (a, TYPE b)
-       | AJ.SUB_UNIVERSE (a, k) => (a, UNIV_OMEGA k)
-       | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEq", AJ.pretty jdg)
     fun makeAsSubType H =
       fn (a, TYPE b) => makeSubType H (a, b)
        | (a, UNIV_OMEGA k) => makeSubUniverse H (a, k)
