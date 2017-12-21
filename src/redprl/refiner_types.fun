@@ -216,7 +216,8 @@ struct
     fun Elim z _ jdg =
       let
         val _ = RedPrlLog.trace "WBool.Elim"
-        val H >> AJ.TRUE cz = jdg
+        val H >> concl = jdg
+        val cz = View.matchAsTrue concl
         (* if(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
@@ -332,7 +333,8 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Nat.Elim"
-        val H >> AJ.TRUE cz = jdg
+        val H >> concl = jdg
+        val cz = View.matchAsTrue concl
         val AJ.TRUE ty = Hyps.lookup H z
         val Syn.NAT = Syn.out ty
 
@@ -457,7 +459,8 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Int.Elim"
-        val H >> AJ.TRUE cz = jdg
+        val H >> concl = jdg
+        val cz = View.matchAsTrue concl
         val AJ.TRUE ty = Hyps.lookup H z
         val Syn.INT = Syn.out ty
 
@@ -650,7 +653,8 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "S1.Elim"
-        val H >> AJ.TRUE cz = jdg
+        val H >> concl = jdg
+        val cz = View.matchAsTrue concl
         (* S1-rec(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
@@ -1538,7 +1542,8 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Pushout.Elim"
-        val H >> AJ.TRUE dz = jdg
+        val H >> concl = jdg
+        val dz = View.matchAsTrue concl
         (* pushout-rec(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
@@ -1766,7 +1771,8 @@ struct
     fun Elim z alpha jdg =
       let
         val _ = RedPrlLog.trace "Coequalizer.Elim"
-        val H >> AJ.TRUE pz = jdg
+        val H >> concl = jdg
+        val pz = View.matchAsTrue concl
         (* coeq-rec(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
