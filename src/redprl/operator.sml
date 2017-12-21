@@ -12,6 +12,7 @@ struct
    | LVL
    | KND
    | SEL
+   | ACC
    | ANY
    | META_NAME
 
@@ -29,6 +30,7 @@ struct
      | LVL => "lvl"
      | KND => "knd"
      | SEL => "sel"
+     | ACC => "acc"
      | ANY => "any"
      | META_NAME => "meta-name"
 end
@@ -150,6 +152,13 @@ struct
 
   (* TODO: move elsewhere *)
   datatype 'a selector = IN_CONCL | IN_HYP of 'a
+  datatype accessor = WHOLE | PART_TYPE | PART_LEFT | PART_RIGHT
+
+  val accessorToString =
+    fn WHOLE => "whole"
+     | PART_TYPE => "type"
+     | PART_LEFT => "left"
+     | PART_RIGHT => "right"
 
   datatype 'a dev_pattern = 
      PAT_VAR of 'a
@@ -255,6 +264,11 @@ struct
 
    | SEL_CONCL
    | SEL_HYP
+   
+   | ACC_WHOLE
+   | ACC_TYPE
+   | ACC_LEFT
+   | ACC_RIGHT
 
    | PAT_META of sort
  
@@ -405,7 +419,7 @@ struct
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
      | TAC_ELIM => [[] |: ANY] ->> TAC
-     | TAC_REWRITE => [[] |: SEL, [] |: EXP] ->> TAC
+     | TAC_REWRITE => [[] |: SEL, [] |: ACC, [] |: EXP] ->> TAC
      | TAC_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
@@ -425,6 +439,11 @@ struct
 
      | SEL_HYP => [[] |: ANY] ->> SEL
      | SEL_CONCL => [] ->> SEL
+     
+     | ACC_WHOLE => [] ->> ACC
+     | ACC_TYPE => [] ->> ACC
+     | ACC_LEFT => [] ->> ACC
+     | ACC_RIGHT => [] ->> ACC
 
      | PAT_META tau => [[] |: META_NAME, [] |: VEC ANY] ->> tau
 
