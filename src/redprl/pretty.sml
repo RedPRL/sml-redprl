@@ -277,6 +277,20 @@ struct
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
           nest 1 @@ ppTerm m]
      | O.MK_ANY _ $ [_ \ m] => ppTerm m
+
+     | O.LCONST i $ _ => ppIntInf i
+     | O.LPLUS 0 $ [_ \ l] => ppTerm l
+     | O.LPLUS 1 $ [_ \ l] => Atomic.parens @@ expr @@ hvsep @@ [text "++", ppTerm l]
+     | O.LPLUS i $ [_ \ l] => Atomic.parens @@ expr @@ hvsep @@ [text "+", ppTerm l, ppIntInf i]
+     | O.LMAX $ [_ \ vec] =>
+         (case RedPrlAbt.out vec of
+             O.MK_VEC _ $ [] => ppIntInf 0
+           | O.MK_VEC _ $ [_ \ l] => ppTerm l
+           | O.MK_VEC _ $ ls =>
+               Atomic.parens @@ expr @@ hvsep @@
+                 (text "lmax" :: ListUtil.revMap (fn _ \ l => ppTerm l) ls)
+           | _ => raise Fail "invalid vector")
+
      | theta $ [] =>
         ppOperator theta
      | theta $ [[] \ arg] =>

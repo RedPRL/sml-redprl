@@ -43,42 +43,6 @@ struct
   (* augmented semi-lattice *)
   fun residual (l0, l1) = if l1 <= l0 then NONE else SOME l0
 
-  (* the code shared by the pretty printer and `into` *)
-  fun into' intoConst intoVarGap intoMax ((gap, gapmap) : level) =
-    let
-      val varGapList = List.map intoVarGap (D.toList gapmap)
-      val gapImpliedByMap = D.foldl (fn (_, a, b) => IntInf.max (a, b)) 0 gapmap
-      val args =
-        if gap > gapImpliedByMap
-        then intoConst gap :: varGapList
-        else varGapList
-    in
-      intoMax args
-    end
-
-  (* pretty printer *)
-
-  (* TODO
-   *   `pretty.sml` should adopt the following algorithm so that `pretty`
-   *   is the same as `ppParam o into`. *)
-  val prettyConst = Fpp.text o IntInf.toString
-  fun prettyVarGap (x, i) =
-    if i = 0 then
-      TermPrinter.ppVar x
-    else if i = 1 then
-      Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
-        [Fpp.text "++", TermPrinter.ppVar x]))
-    else
-      Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep
-        [Fpp.text "+", TermPrinter.ppVar x, prettyConst i]))
-
-  val prettyMax =
-    fn [] => prettyConst 0
-     | [arg] => arg
-     | args => Fpp.Atomic.braces (Fpp.expr (Fpp.hvsep (Fpp.text "lmax" :: args)))
-
-  val pretty = into' prettyConst prettyVarGap prettyMax
-
   local
     open RedPrlAbt
     structure O = RedPrlOpData
@@ -116,7 +80,17 @@ struct
        | [arg] => arg
        | args => O.LMAX $$ [[] \ makeVec args]
 
-    val into = into' constToTerm varGapToTerm maxToTerm
+    fun into ((gap, gapmap) : level) =
+      let
+        val varGapList = List.map varGapToTerm (D.toList gapmap)
+        val gapImpliedByMap = D.foldl (fn (_, a, b) => IntInf.max (a, b)) 0 gapmap
+        val args =
+          if gap > gapImpliedByMap
+          then constToTerm gap :: varGapList
+          else varGapList
+      in
+        maxToTerm args
+      end
 
     fun map f = out o f o into
   end

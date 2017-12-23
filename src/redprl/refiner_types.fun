@@ -2402,8 +2402,9 @@ struct
             if member ((l0,k0), (l1,k1)) then ()
             else E.raiseError @@ E.GENERIC
               [Fpp.hvsep
-                [Fpp.text "Expected universe", L.pretty l0, TermPrinter.ppKind k0,
-                 Fpp.text "be at level", L.pretty l1, Fpp.text "with kind", TermPrinter.ppKind k1]]
+                [Fpp.text "Expected universe", TermPrinter.ppTerm (L.into l0), TermPrinter.ppKind k0,
+                 Fpp.text "be at level", TermPrinter.ppTerm (L.into l1),
+                 Fpp.text "with kind", TermPrinter.ppKind k1]]
         in
           fun univMem ((l0,k0), (l1,k1))  = Option.app (fn l1 => univMem' ((l0,k0), (l1,k1))) l1
         end

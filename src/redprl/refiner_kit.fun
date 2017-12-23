@@ -285,13 +285,13 @@ struct
       if L.<= (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than or equal to", L.pretty l2]
+        raise E.error [Fpp.text "Expected level", TermPrinter.ppTerm (L.into l1), Fpp.text "to be less than or equal to", TermPrinter.ppTerm (L.into l2)]
 
     fun levelEq (l1, l2) =
       if L.eq (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
+        raise E.error [Fpp.text "Expected level", TermPrinter.ppTerm (L.into l1), Fpp.text "to be equal to", TermPrinter.ppTerm (L.into l2)]
 
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then

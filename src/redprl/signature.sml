@@ -22,8 +22,8 @@ struct
 
   fun prettyArgs args =
     Fpp.Atomic.parens @@ Fpp.grouped @@ Fpp.hvsep @@
-      intersperse (Fpp.text ";") @@
-        List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
+      intersperse (Fpp.text ",") @@
+        List.map (fn (x, vl) => Fpp.hsep [Fpp.text ("#" ^ Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
   fun prettyEntry (_ : sign) (opid : opid, entry as {spec, state,...} : entry) : Fpp.doc =
     let

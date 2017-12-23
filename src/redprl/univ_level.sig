@@ -18,8 +18,6 @@ sig
 
   val residual : level * level -> level option
 
-  val pretty : level -> Fpp.doc
-
   val into : level -> term
   val out : term -> level
   val map : (term -> term) -> level -> level
