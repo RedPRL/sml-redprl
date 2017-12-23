@@ -285,10 +285,10 @@ struct
      | O.LMAX $ [_ \ vec] =>
          (case RedPrlAbt.out vec of
              O.MK_VEC _ $ [] => ppIntInf 0
-           | O.MK_VEC _ $ [_ \ t] => ppTerm t
-           | O.MK_VEC _ $ ts =>
+           | O.MK_VEC _ $ [_ \ l] => ppTerm l
+           | O.MK_VEC _ $ ls =>
                Atomic.parens @@ expr @@ hvsep @@
-                 (text "lmax" :: List.rev (List.map (fn _ \ t => ppTerm t) ts))
+                 (text "lmax" :: ListUtil.revMap (fn _ \ l => ppTerm l) ls)
            | _ => raise Fail "invalid vector")
 
      | theta $ [] =>
