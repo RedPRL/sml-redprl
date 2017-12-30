@@ -8,15 +8,6 @@ struct
   structure K = RedPrlKind
   type kind = RedPrlKind.kind
 
-  (* TODO: move elsewhere *)
-  datatype 'a selector = IN_CONCL | IN_HYP of 'a
-  datatype accessor = WHOLE | PART_TYPE | PART_LEFT | PART_RIGHT
-
-  val accessorToString =
-    fn WHOLE => "whole"
-     | PART_TYPE => "type"
-     | PART_LEFT => "left"
-     | PART_RIGHT => "right"
 
   datatype 'a dev_pattern = 
      PAT_VAR of 'a
@@ -146,7 +137,52 @@ struct
   fun op->> (a, b) = (a, b) (* arity *)
 end
 
-structure RedPrlOperator : ABT_OPERATOR =
+signature ACCESSOR = 
+sig
+  datatype t = WHOLE | PART_TYPE | PART_LEFT | PART_RIGHT
+  val toString : t -> string
+end
+
+signature SELECTOR = 
+sig
+  datatype 'a t = IN_CONCL | IN_HYP of 'a
+  val variance : 'a t -> Variance.variance
+end
+
+structure Accessor :> ACCESSOR = 
+struct
+  datatype t = WHOLE | PART_TYPE | PART_LEFT | PART_RIGHT
+  val toString =
+    fn WHOLE => "whole"
+     | PART_TYPE => "type"
+     | PART_LEFT => "left"
+     | PART_RIGHT => "right"
+end
+
+structure Selector :> SELECTOR = 
+struct
+  datatype 'a t = IN_CONCL | IN_HYP of 'a
+
+  val variance =
+    fn IN_CONCL => Variance.COVAR
+     | IN_HYP _ => Variance.CONTRAVAR
+end
+
+signature REDPRL_OPERATOR = 
+sig
+  datatype sort = datatype RedPrlSort.sort
+  datatype operator = datatype RedPrlOpData.operator
+  datatype dev_pattern = datatype RedPrlOpData.dev_pattern
+  
+  include ABT_OPERATOR
+    where type t = operator
+    where type Ar.Vl.S.t = sort
+
+  (* TODO: where should this go? *)
+  val indexToLabel : int -> string
+end
+
+structure RedPrlOperator : REDPRL_OPERATOR =
 struct
   structure Ar = RedPrlArity
 

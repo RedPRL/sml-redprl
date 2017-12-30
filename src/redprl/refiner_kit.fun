@@ -5,7 +5,7 @@ struct
   open Tactical
   infix orelse_ then_
 
-  structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = SyntaxView and J = RedPrlJudgment
+  structure E = RedPrlError and O = RedPrlOperator and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = SyntaxView and J = RedPrlJudgment
   structure K = RedPrlKind
   structure L = RedPrlLevel
   structure AJ = RedPrlAtomicJudgment

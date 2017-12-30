@@ -380,7 +380,7 @@ struct
        (fn alpha => fn jdg as H >> concl =>
          let
            val sel = Syn.outSelector selTm
-           val atjdg = Selector.lookup sel (H, concl)
+           val atjdg = RedPrlSequent.lookupSelector sel (H, concl)
            val tm' = substVar (AJ.into atjdg, x) tm
          in
            tactic sign env tm' alpha jdg

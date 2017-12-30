@@ -15,7 +15,7 @@ struct
   infix 3 ||
 
   open Tm infix 7 $ $$ $# infix 6 \
-  structure O = RedPrlOpData
+  structure O = RedPrlOperator
   structure K = RedPrlKind
 
   type tube = Syn.equation * (variable * abt)

@@ -82,5 +82,5 @@ sig
   val eq : jdg * jdg -> bool
   val pretty : jdg -> Fpp.doc
 
-  val variance : jdg * RedPrlOpData.accessor -> Variance.variance
+  val variance : jdg * Accessor.t -> Variance.variance
 end
