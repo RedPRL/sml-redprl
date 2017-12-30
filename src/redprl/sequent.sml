@@ -114,7 +114,7 @@ struct
          O.IN_CONCL => H
        | O.IN_HYP x => Hyps.truncateFrom H x
 
-    val variant =
+    val variance =
       fn O.IN_CONCL => AJ.COVAR
        | O.IN_HYP _ => AJ.CONTRAVAR
   end
