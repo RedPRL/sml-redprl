@@ -106,7 +106,7 @@ struct
     val eq = fn (j1, j2) => eq (into j1, into j2)
   end
 
-  val variant =
+  val variance =
     fn (EQ _, O.PART_TYPE) => COVAR
      | (EQ _, O.PART_LEFT) => ANTIVAR
      | (EQ _, O.PART_RIGHT) => ANTIVAR
@@ -119,9 +119,10 @@ struct
      | (SUB_TYPE _, O.PART_LEFT) => CONTRAVAR
      | (SUB_TYPE _, O.PART_RIGHT) => COVAR
      | (SUB_KIND _, O.PART_LEFT) => CONTRAVAR
-     | (jdg, acc) => RedPrlError.raiseError (RedPrlError.NOT_APPLICABLE (Fpp.text "variant",
+     | (jdg, acc) => RedPrlError.raiseError (RedPrlError.NOT_APPLICABLE (Fpp.text "variance",
          Fpp.hvsep [Fpp.hsep [Fpp.text (O.accessorToString acc), Fpp.text "of"], pretty jdg]))
-  val composeVariant =
+
+  val composeVariance =
     fn (ANTIVAR, _) => ANTIVAR
      | (_, ANTIVAR) => ANTIVAR
      | (COVAR, COVAR) => COVAR

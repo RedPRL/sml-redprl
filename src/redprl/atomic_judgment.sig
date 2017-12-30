@@ -65,13 +65,13 @@ struct
 
   (* favonia: I do not like the current usage of "invariant" in many PLs,
    *          so I coined the word "anti-variant". *)
-  datatype variant = COVAR | CONTRAVAR | ANTIVAR
+  datatype variance = COVAR | CONTRAVAR | ANTIVAR
 end
 
 signature CATEGORICAL_JUDGMENT =
 sig
   datatype jdg = datatype RedPrlAtomicJudgmentData.jdg
-  datatype variant = datatype RedPrlAtomicJudgmentData.variant
+  datatype variance = datatype RedPrlAtomicJudgmentData.variance
   type abt = RedPrlAbt.abt
   type kind = RedPrlKind.t
 
@@ -86,7 +86,8 @@ sig
   val eq : jdg * jdg -> bool
   val pretty : jdg -> Fpp.doc
 
-  val variant : jdg * RedPrlOpData.accessor -> variant
-  (* TODO move composeVariant to somewhere else? *)
-  val composeVariant : variant * variant -> variant
+  val variance : jdg * RedPrlOpData.accessor -> variance
+
+  (* TODO move composeVariance to somewhere else? *)
+  val composeVariance : variance * variance -> variance
 end

@@ -2083,7 +2083,7 @@ struct
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
 
         val motiveMatchesMainGoal =
-          case AJ.composeVariant (Selector.variant sel, AJ.variant (currentAjdg, acc)) of
+          case AJ.composeVariance (Selector.variant sel, AJ.variance (currentAjdg, acc)) of
              AJ.COVAR =>
                (case ty of
                   View.UNIV_OMEGA K.STABLE => makeSubType truncatedH (motivem, currentTm)
