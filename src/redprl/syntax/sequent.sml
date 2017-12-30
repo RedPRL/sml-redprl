@@ -1,11 +1,13 @@
-structure RedPrlSequent : SEQUENT =
+structure Sequent : SEQUENT =
 struct
-  structure AJ = RedPrlAtomicJudgment
+  structure AJ = AtomicJudgment
   structure Tm = RedPrlAbt
   structure O = RedPrlOperator
   structure TP = TermPrinter
 
-  open RedPrlSequentData
+  datatype atjdg = datatype AJ.jdg
+
+  open SequentData
   infix >>
 
   fun map f =
@@ -87,35 +89,29 @@ struct
      | (MATCH_RECORD (lbl1, a1, m1), MATCH_RECORD (lbl2, a2, m2)) =>
           lbl1 = lbl2 andalso Tm.eq (a1, a2) andalso Tm.eq (m1, m2)
      | _ => false
-end
 
-structure Selector =
-struct
   local
-    structure AJ = RedPrlAtomicJudgment
+    structure AJ = AtomicJudgment
+    structure S = Selector
     structure O = RedPrlOpData (* TODO: we should move the selector crap out of there! *)
-    structure Hyps = RedPrlSequentData.Hyps
+    structure Hyps = SequentData.Hyps
   in
-    fun map sel f (H : AJ.jdg Hyps.telescope, catjdg) =
+    fun mapSelector sel f (H : AJ.jdg Hyps.telescope, catjdg) =
       case sel of
-         O.IN_CONCL => (H, f catjdg)
-       | O.IN_HYP x => (Hyps.modify x f H, catjdg)
+          S.IN_CONCL => (H, f catjdg)
+        | S.IN_HYP x => (Hyps.modify x f H, catjdg)
 
-    fun multiMap sels f (H, catjdg) =
-      List.foldl (fn (sel, state) => map sel f state) (H, catjdg) sels
+    fun multiMapSelector sels f (H, catjdg) =
+      List.foldl (fn (sel, state) => mapSelector sel f state) (H, catjdg) sels
 
-    fun lookup sel (H : AJ.jdg Hyps.telescope, catjdg : AJ.jdg) : AJ.jdg =
+    fun lookupSelector sel (H : AJ.jdg Hyps.telescope, catjdg : AJ.jdg) : AJ.jdg =
       case sel of
-         O.IN_CONCL => catjdg
-       | O.IN_HYP x => Hyps.lookup H x
+          S.IN_CONCL => catjdg
+        | S.IN_HYP x => Hyps.lookup H x
 
     fun truncateFrom sel H =
       case sel of
-         O.IN_CONCL => H
-       | O.IN_HYP x => Hyps.truncateFrom H x
-
-    val variant =
-      fn O.IN_CONCL => AJ.COVAR
-       | O.IN_HYP _ => AJ.CONTRAVAR
+          S.IN_CONCL => H
+        | S.IN_HYP x => Hyps.truncateFrom H x
   end
 end

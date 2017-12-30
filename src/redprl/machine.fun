@@ -2,7 +2,7 @@ functor RedPrlMachine (Sig : MINI_SIGNATURE) : REDPRL_MACHINE =
 struct
   structure E = RedPrlError
   structure Tm = RedPrlAbt
-  structure Syn = Syntax
+  structure Syn = SyntaxView
   structure SymSet = SplaySet (structure Elem = Sym.Ord)
   
   type sign = Sig.sign
@@ -15,7 +15,7 @@ struct
   infix 3 ||
 
   open Tm infix 7 $ $$ $# infix 6 \
-  structure O = RedPrlOpData
+  structure O = RedPrlOperator
   structure K = RedPrlKind
 
   type tube = Syn.equation * (variable * abt)
@@ -87,10 +87,10 @@ struct
     fun default sign opid = 
       let
         val {spec, ...} = Sig.lookup sign opid
-        open RedPrlSequent infix >>
+        open Sequent infix >>
       in
         case spec of
-          _ >> RedPrlAtomicJudgment.TRUE _ => false
+          _ >> AtomicJudgment.TRUE _ => false
         | _ => true
       end
 

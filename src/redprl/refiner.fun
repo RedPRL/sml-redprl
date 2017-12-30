@@ -167,7 +167,7 @@ struct
         |>: goal #> (H, tm)
       end
       handle Bind =>
-        raise E.error [Fpp.text "Expected truth sequent but got:", RedPrlSequent.pretty jdg]
+        raise E.error [Fpp.text "Expected truth sequent but got:", Sequent.pretty jdg]
   end
 
   structure Term = 
@@ -281,11 +281,11 @@ struct
         val H >> concl = jdg
 
         val currentTy =
-          case Selector.lookup sel (H, concl) of
+          case Sequent.lookupSelector sel (H, concl) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
-        val truncatedH = Selector.truncateFrom sel H
+        val truncatedH = Sequent.truncateFrom sel H
         val AJ.EQ ((m, n), ty) = Hyps.lookup truncatedH z
 
         val x = alpha 0
@@ -301,13 +301,13 @@ struct
              AJ.TRUE _ => AJ.TRUE motiven
            | _ => jdg
 
-        val (H', concl') = Selector.map sel replace (H, concl)
+        val (H', concl') = Sequent.mapSelector sel replace (H, concl)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
 
         val motiveMatchesMainGoal =
           case sel of
-            O.IN_CONCL => makeSubType truncatedH (motivem, currentTy)
-          | O.IN_HYP _ => makeSubType truncatedH (currentTy, motivem)
+            Selector.IN_CONCL => makeSubType truncatedH (motivem, currentTy)
+          | Selector.IN_HYP _ => makeSubType truncatedH (currentTy, motivem)
       in
         |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
@@ -461,14 +461,14 @@ struct
     fun matchGoal f alpha jdg =
       f jdg alpha jdg
 
-    fun matchGoalSel O.IN_CONCL f = matchGoal
+    fun matchGoalSel Selector.IN_CONCL f = matchGoal
         (fn _ >> ajdg => f ajdg
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchGoalSel", Seq.pretty seq))
-      | matchGoalSel (O.IN_HYP z) f = matchGoal
+      | matchGoalSel (Selector.IN_HYP z) f = matchGoal
         (fn H >> _ => f (Hyps.lookup H z)
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "matchGoalSel", Seq.pretty seq))
 
-    fun matchHyp z = matchGoalSel (O.IN_HYP z)
+    fun matchHyp z = matchGoalSel (Selector.IN_HYP z)
 
     fun canonicity sign =
       Machine.canonicity sign Machine.NOMINAL (Machine.Unfolding.default sign)
@@ -484,7 +484,7 @@ struct
 
     (* trying to normalize TRUE hypothesis `z` and then run `tac ty z` *)
     and NormalizeHypDelegate (tac : abt -> hyp -> tactic) sign z : tactic =
-      NormalizeDelegate (fn ty => tac ty z) sign (O.IN_HYP z)
+      NormalizeDelegate (fn ty => tac ty z) sign (Selector.IN_HYP z)
 
     (* trying to normalize TRUE hypothesis and then run `tac ty` *)
     and NormalizeDelegate (tac : abt -> tactic) sign =
@@ -502,7 +502,7 @@ struct
       end
 
     (* trying to normalize TRUE goal and then run `tac ty` *)
-    fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign O.IN_CONCL
+    fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign Selector.IN_CONCL
 
     fun autoSynthesizableNeu sign m =
       case Syn.out m of
@@ -539,13 +539,13 @@ struct
       fun StepNeuByUnfold sign (m, n) =
         fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
          | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
-         | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
-         | (_, Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
+         | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [Selector.IN_CONCL]
+         | (_, Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [Selector.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepNeuExpandUntyped sign tm =
         fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
+         | Machine.OPERATOR theta => Lcf.rule o Custom.Unfold sign [theta] [Selector.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuExpandUntyped", TermPrinter.ppTerm tm)
 
       structure Wrapper =
@@ -604,8 +604,8 @@ struct
       fun StepEqSubType sign (ty1, ty2) subMode =
         (fn kont =>
           case (canonicity sign ty1, canonicity sign ty2) of
-             (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-           | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+             (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
+           | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
            | (Machine.CANONICAL, Machine.CANONICAL) => StepEqSubTypeVal (ty1, ty2) subMode
            | _ => kont)
         @@
@@ -634,9 +634,9 @@ struct
 
       fun StepEqValAtType sign ty =
         case canonicity sign ty of
-           Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+           Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
-         | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL]
+         | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [Selector.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqValAtType", TermPrinter.ppTerm ty)
 
       (* equality of canonical forms *)
@@ -693,7 +693,7 @@ struct
        * this includes structural equality and typed computation principles *)
       fun StepEqNeuAtType sign ty =
         case canonicity sign ty of
-           Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+           Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuAtType", TermPrinter.ppTerm ty)
 
@@ -734,7 +734,7 @@ struct
          | (_, Syn.LINE _) => Lcf.rule o Line.Eta
          | (_, Syn.EQUALITY _) => Lcf.rule o InternalizedEquality.Eta
          | (Machine.VAR z, _) => AutoElim sign z
-         | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [O.IN_CONCL])
+         | (Machine.OPERATOR theta, _) => Lcf.rule o Custom.Unfold sign [theta] [Selector.IN_CONCL])
 
 
       structure HCom =
@@ -765,7 +765,7 @@ struct
       end
 
       fun ProgressCompute sign = 
-        Lcf.progress o (Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL])
+        Lcf.progress o (Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL])
       
       fun ComputeBefore sign tac =
         (ProgressCompute sign then_ tac) par tac
@@ -786,8 +786,8 @@ struct
           orelse_
         ((fn kont =>
           case (canonicity sign m, canonicity sign n) of
-             (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
-           | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+             (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
+           | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
            | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal sign (m, n) ty
            | _ => kont)
         @@
@@ -830,7 +830,7 @@ struct
 
       fun StepSubKind sign u =
         case (Syn.out u, canonicity sign u) of
-           (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [O.IN_CONCL]
+           (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
          | (_, Machine.CANONICAL) => Lcf.rule o Universe.SubKind
          | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubKind with dimension application"
          | (_, Machine.NEUTRAL blocker) => StepNeuExpandUntyped sign u blocker

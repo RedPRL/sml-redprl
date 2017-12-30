@@ -2,7 +2,7 @@ structure RedPrlErrorData =
 struct
   datatype error =
      IMPOSSIBLE of Fpp.doc
-   | INVALID_CATEGORICAL_JUDGMENT of Fpp.doc
+   | INVALID_ATOMIC_JUDGMENT of Fpp.doc
    | INVALID_DIMENSION of Fpp.doc
    | INVALID_LEVEL of Fpp.doc
    | NOT_APPLICABLE of Fpp.doc * Fpp.doc

@@ -1,6 +1,6 @@
-structure RedPrlAtomicJudgment : CATEGORICAL_JUDGMENT =
+structure AtomicJudgment : ATOMIC_JUDGMENT =
 struct
-  open RedPrlAtomicJudgmentData
+  open AtomicJudgmentData
   type abt = RedPrlAbt.abt
 
   fun MEM (m, a) =
@@ -106,26 +106,26 @@ struct
     val eq = fn (j1, j2) => eq (into j1, into j2)
   end
 
-  val variant =
-    fn (EQ _, O.PART_TYPE) => COVAR
-     | (EQ _, O.PART_LEFT) => ANTIVAR
-     | (EQ _, O.PART_RIGHT) => ANTIVAR
-     | (TRUE _, O.WHOLE) => COVAR
-     | (TRUE _, O.PART_TYPE) => COVAR
-     | (TRUE _, O.PART_LEFT) => ANTIVAR
-     | (TRUE _, O.PART_RIGHT) => ANTIVAR
-     | (EQ_TYPE _, O.PART_LEFT) => ANTIVAR
-     | (EQ_TYPE _, O.PART_RIGHT) => ANTIVAR
-     | (SUB_TYPE _, O.PART_LEFT) => CONTRAVAR
-     | (SUB_TYPE _, O.PART_RIGHT) => COVAR
-     | (SUB_KIND _, O.PART_LEFT) => CONTRAVAR
-     | (jdg, acc) => RedPrlError.raiseError (RedPrlError.NOT_APPLICABLE (Fpp.text "variant",
-         Fpp.hvsep [Fpp.hsep [Fpp.text (O.accessorToString acc), Fpp.text "of"], pretty jdg]))
-  val composeVariant =
-    fn (ANTIVAR, _) => ANTIVAR
-     | (_, ANTIVAR) => ANTIVAR
-     | (COVAR, COVAR) => COVAR
-     | (CONTRAVAR, CONTRAVAR) => COVAR
-     | (COVAR, CONTRAVAR) => CONTRAVAR
-     | (COTRAVAR, COVAR) => CONTRAVAR
+  local
+    structure V = Variance and A = Accessor
+  in
+    val variance =
+      fn (EQ _, A.PART_TYPE) => V.COVAR
+       | (EQ _, A.PART_LEFT) => V.ANTIVAR
+       | (EQ _, A.PART_RIGHT) => V.ANTIVAR
+       | (TRUE _, A.WHOLE) => V.COVAR
+       | (TRUE _, A.PART_TYPE) => V.COVAR
+       | (TRUE _, A.PART_LEFT) => V.ANTIVAR
+       | (TRUE _, A.PART_RIGHT) => V.ANTIVAR
+       | (EQ_TYPE _, A.PART_LEFT) => V.ANTIVAR
+       | (EQ_TYPE _, A.PART_RIGHT) => V.ANTIVAR
+       | (SUB_TYPE _, A.PART_LEFT) => V.CONTRAVAR
+       | (SUB_TYPE _, A.PART_RIGHT) => V.COVAR
+       | (SUB_KIND _, A.PART_LEFT) => V.CONTRAVAR
+       | (jdg, acc) =>
+           RedPrlError.raiseError
+             (RedPrlError.NOT_APPLICABLE
+               (Fpp.text "variance",
+                Fpp.hvsep [Fpp.hsep [A.pretty acc, Fpp.text "of"], pretty jdg]))
+  end
 end

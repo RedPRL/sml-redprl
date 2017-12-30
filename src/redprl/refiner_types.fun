@@ -2025,29 +2025,29 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
         val H >> concl = jdg
 
-        val currentAjdg = Selector.lookup sel (H, concl)
+        val currentAjdg = Sequent.lookupSelector sel (H, concl)
         val (currentTm, ty) =
           case (currentAjdg, acc) of
-             (AJ.EQ (_, ty), O.PART_TYPE) => (ty, View.UNIV_OMEGA K.top)
-           | (AJ.EQ ((m, _), ty), O.PART_LEFT) => (m, View.TYPE ty)
-           | (AJ.EQ ((_, n), ty), O.PART_RIGHT) => (n, View.TYPE ty)
-           | (AJ.TRUE ty, O.WHOLE) => (ty, View.UNIV_OMEGA K.top)
+             (AJ.EQ (_, ty), Accessor.PART_TYPE) => (ty, View.UNIV_OMEGA K.top)
+           | (AJ.EQ ((m, _), ty), Accessor.PART_LEFT) => (m, View.TYPE ty)
+           | (AJ.EQ ((_, n), ty), Accessor.PART_RIGHT) => (n, View.TYPE ty)
+           | (AJ.TRUE ty, Accessor.WHOLE) => (ty, View.UNIV_OMEGA K.top)
            | (AJ.TRUE ty, _) =>
                (case (Syn.out ty, acc) of
-                   (Syn.EQUALITY (ty, _, _), O.PART_TYPE) => (ty, View.UNIV_OMEGA K.top)
-                 | (Syn.EQUALITY (ty, m, _), O.PART_LEFT) => (m, View.TYPE ty)
-                 | (Syn.EQUALITY (ty, _, n), O.PART_RIGHT) => (n, View.TYPE ty)
+                   (Syn.EQUALITY (ty, _, _), Accessor.PART_TYPE) => (ty, View.UNIV_OMEGA K.top)
+                 | (Syn.EQUALITY (ty, m, _), Accessor.PART_LEFT) => (m, View.TYPE ty)
+                 | (Syn.EQUALITY (ty, _, n), Accessor.PART_RIGHT) => (n, View.TYPE ty)
                  | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
-                     Fpp.hvsep [Fpp.hsep [Fpp.text (O.accessorToString acc), Fpp.text "of"], AJ.pretty currentAjdg]))
-           | (AJ.EQ_TYPE ((m, _), k), O.PART_LEFT) => (m, View.UNIV_OMEGA k)
-           | (AJ.EQ_TYPE ((_, n), k), O.PART_RIGHT) => (n, View.UNIV_OMEGA k)
-           | (AJ.SUB_TYPE (m, _), O.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
-           | (AJ.SUB_TYPE (_, n), O.PART_RIGHT) => (n, View.UNIV_OMEGA K.top)
-           | (AJ.SUB_KIND (m, _), O.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
+                     Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg]))
+           | (AJ.EQ_TYPE ((m, _), k), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA k)
+           | (AJ.EQ_TYPE ((_, n), k), Accessor.PART_RIGHT) => (n, View.UNIV_OMEGA k)
+           | (AJ.SUB_TYPE (m, _), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
+           | (AJ.SUB_TYPE (_, n), Accessor.PART_RIGHT) => (n, View.UNIV_OMEGA K.top)
+           | (AJ.SUB_KIND (m, _), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
            | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
-               Fpp.hvsep [Fpp.hsep [Fpp.text (O.accessorToString acc), Fpp.text "of"], AJ.pretty currentAjdg])
+               Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg])
 
-        val truncatedH = Selector.truncateFrom sel H
+        val truncatedH = Sequent.truncateFrom sel H
 
         val (goalTyOfEq, holeTyOfEq) = makeSynth truncatedH eqterm
         val (goalTy, holeTy) = makeMatch (O.EQUALITY, 0, holeTyOfEq, [])
@@ -2064,35 +2064,35 @@ struct
 
         val replace =
           case (currentAjdg, acc) of
-             (AJ.EQ ((m, n), _), O.PART_TYPE) => AJ.EQ ((m, n), motiven)
-           | (AJ.EQ ((_, n), ty), O.PART_LEFT) => AJ.EQ ((motiven, n), ty)
-           | (AJ.EQ ((m, _), ty), O.PART_RIGHT) => AJ.EQ ((m, motiven), ty)
-           | (AJ.TRUE _, O.WHOLE) => AJ.TRUE motiven
+             (AJ.EQ ((m, n), _), Accessor.PART_TYPE) => AJ.EQ ((m, n), motiven)
+           | (AJ.EQ ((_, n), ty), Accessor.PART_LEFT) => AJ.EQ ((motiven, n), ty)
+           | (AJ.EQ ((m, _), ty), Accessor.PART_RIGHT) => AJ.EQ ((m, motiven), ty)
+           | (AJ.TRUE _, Accessor.WHOLE) => AJ.TRUE motiven
            | (AJ.TRUE ty, acc) =>
                (case (Syn.out ty, acc) of
-                   (Syn.EQUALITY (_, m, n), O.PART_TYPE) => AJ.TRUE (Syn.into (Syn.EQUALITY (motiven, m, n)))
-                 | (Syn.EQUALITY (ty, _, n), O.PART_LEFT) => AJ.TRUE (Syn.into (Syn.EQUALITY (ty, motiven, n)))
-                 | (Syn.EQUALITY (ty, m, _), O.PART_RIGHT) => AJ.TRUE (Syn.into (Syn.EQUALITY (ty, m, motiven))))
-           | (AJ.EQ_TYPE ((_, n), k), O.PART_LEFT) => AJ.EQ_TYPE ((motiven, n), k)
-           | (AJ.EQ_TYPE ((m, _), k), O.PART_RIGHT) => AJ.EQ_TYPE ((m, motiven), k)
-           | (AJ.SUB_TYPE (_, n), O.PART_LEFT) => AJ.SUB_TYPE (motiven, n)
-           | (AJ.SUB_TYPE (m, _), O.PART_RIGHT) => AJ.SUB_TYPE (m, motiven)
-           | (AJ.SUB_KIND (_, k), O.PART_LEFT) => AJ.SUB_KIND (motiven, k)
+                   (Syn.EQUALITY (_, m, n), Accessor.PART_TYPE) => AJ.TRUE (Syn.into (Syn.EQUALITY (motiven, m, n)))
+                 | (Syn.EQUALITY (ty, _, n), Accessor.PART_LEFT) => AJ.TRUE (Syn.into (Syn.EQUALITY (ty, motiven, n)))
+                 | (Syn.EQUALITY (ty, m, _), Accessor.PART_RIGHT) => AJ.TRUE (Syn.into (Syn.EQUALITY (ty, m, motiven))))
+           | (AJ.EQ_TYPE ((_, n), k), Accessor.PART_LEFT) => AJ.EQ_TYPE ((motiven, n), k)
+           | (AJ.EQ_TYPE ((m, _), k), Accessor.PART_RIGHT) => AJ.EQ_TYPE ((m, motiven), k)
+           | (AJ.SUB_TYPE (_, n), Accessor.PART_LEFT) => AJ.SUB_TYPE (motiven, n)
+           | (AJ.SUB_TYPE (m, _), Accessor.PART_RIGHT) => AJ.SUB_TYPE (m, motiven)
+           | (AJ.SUB_KIND (_, k), Accessor.PART_LEFT) => AJ.SUB_KIND (motiven, k)
 
-        val (H', concl') = Selector.map sel (fn _ => replace) (H, concl)
+        val (H', concl') = Sequent.mapSelector sel (fn _ => replace) (H, concl)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
 
         val motiveMatchesMainGoal =
-          case AJ.composeVariant (Selector.variant sel, AJ.variant (currentAjdg, acc)) of
-             AJ.COVAR =>
+          case Variance.compose (Selector.variance sel, AJ.variance (currentAjdg, acc)) of
+             Variance.COVAR =>
                (case ty of
                   View.UNIV_OMEGA K.STABLE => makeSubType truncatedH (motivem, currentTm)
                 | _ => RedPrlError.raiseError (RedPrlError.IMPOSSIBLE (Fpp.text "Non-type positions are not anti-variant.")))
-           | AJ.CONTRAVAR =>
+           | Variance.CONTRAVAR =>
                (case ty of
                   View.UNIV_OMEGA K.STABLE => makeSubType truncatedH (currentTm, motivem)
                 | _ => RedPrlError.raiseError (RedPrlError.IMPOSSIBLE (Fpp.text "Non-type positions are not anti-variant.")))
-           | AJ.ANTIVAR => View.makeAsEq truncatedH ((currentTm, motivem), ty)
+           | Variance.ANTIVAR => View.makeAsEq truncatedH ((currentTm, motivem), ty)
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
          >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal

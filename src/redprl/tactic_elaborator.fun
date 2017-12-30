@@ -18,6 +18,7 @@ struct
 
   structure Tm = RedPrlAbt
   structure Unify = AbtUnify (RedPrlAbt)
+  structure Syn = SyntaxView
 
   type sign = Sig.sign
   type script = Tm.abt
@@ -58,8 +59,8 @@ struct
     orelse_
       R.SynthFromHyp z
 
-  open RedPrlSequent infix >>
-  structure AJ = RedPrlAtomicJudgment and Syn = Syntax
+  open Sequent infix >>
+  structure AJ = AtomicJudgment and Syn = SyntaxView
 
   val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
@@ -254,7 +255,7 @@ struct
     end
     
   fun onAllHyps tac alpha (H >> jdg) =
-    (RedPrlSequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
+    (SequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
 
   val inversions = onAllHyps (T.try o R.Inversion)
 
@@ -280,17 +281,17 @@ struct
        O.TAC_MTAC $ [_ \ tm] => multitacToTac (multitactic sign env tm)
      | O.TAC_ID $ _ => idn
      | O.TAC_AUTO_STEP $ _ => R.AutoStep sign
-     | O.TAC_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
+     | O.TAC_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syn.unpackAny any))
      | O.TAC_REWRITE $ [_ \ sel, _ \ acc, _ \ tm] => R.Rewrite sign (Syn.outSelector sel, Syn.outAccessor acc) tm thenl' ([], [autoTacComplete sign, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign])
-     | O.TAC_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
-     | O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
+     | O.TAC_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syn.outSelector sel) (VarKit.fromTerm (Syn.unpackAny any))
+     | O.RULE_EXACT $ [_ \ any] => R.Exact (Syn.unpackAny any)
      | O.TAC_SYMMETRY $ _ => R.Symmetry
      | O.DEV_INVERSION $ _ => inversions
      | O.RULE_CUT $ [_ \ catjdg] => Lcf.rule o R.Cut (AJ.out catjdg)
      | O.TAC_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
-     | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
+     | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syn.outVec' Syn.outSelector sels)
      | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
-     | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syntax.outVec' Syntax.outSelector vec)
+     | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
      | O.RULE_PRIM ruleName $ _ => R.lookupRule ruleName
      | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule o R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
@@ -300,7 +301,7 @@ struct
      | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign]
      | O.DEV_APPLY_HYP pattern $ [_ \ var, _ \ vec, names \ tm'] =>
        let
-         val z = VarKit.fromTerm (Syntax.unpackAny var)
+         val z = VarKit.fromTerm (Syn.unpackAny var)
          val tacs = Syn.outVec' (tactic sign env) vec
          val tac = tactic sign env tm'
        in
@@ -308,8 +309,8 @@ struct
        end
      | O.DEV_USE_HYP $ [_ \ var, _ \ vec] => 
        let
-         val z = VarKit.fromTerm (Syntax.unpackAny var)
-         val tacs = Syntax.outVec' (tactic sign env) vec
+         val z = VarKit.fromTerm (Syn.unpackAny var)
+         val tacs = Syn.outVec' (tactic sign env) vec
          val z' = RedPrlSym.named (Sym.toString z ^ "'")
        in
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
@@ -379,7 +380,7 @@ struct
        (fn alpha => fn jdg as H >> concl =>
          let
            val sel = Syn.outSelector selTm
-           val atjdg = Selector.lookup sel (H, concl)
+           val atjdg = Sequent.lookupSelector sel (H, concl)
            val tm' = substVar (AJ.into atjdg, x) tm
          in
            tactic sign env tm' alpha jdg
@@ -393,7 +394,7 @@ struct
   and multitactic_ sign env tm =
     case Tm.out tm of 
        O.MTAC_ALL $ [_ \ tm] => T.all (tactic sign env tm)
-     | O.MTAC_EACH $ [_ \ vec] => T.each (Syntax.outVec' (tactic sign env) vec)
+     | O.MTAC_EACH $ [_ \ vec] => T.each (Syn.outVec' (tactic sign env) vec)
      | O.MTAC_FOCUS i $ [_ \ tm] => T.only (i, tactic sign env tm)
      | O.MTAC_PROGRESS $ [_ \ tm] => T.mprogress (multitactic sign env tm)
      | O.MTAC_REC $ [[x] \ tm] => T.mrec (fn mt => multitactic sign (Var.Ctx.insert env x mt) tm)

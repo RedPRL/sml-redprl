@@ -1,4 +1,4 @@
-structure Syntax =
+structure SyntaxView =
 struct
   structure Tm = RedPrlAbt
   structure K = RedPrlKind
@@ -101,7 +101,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData and E = RedPrlError
+    structure O = RedPrlOperator and E = RedPrlError
     infix $ $$ $# \
   in
     fun outVec' (f : abt -> 'a) (vec : abt) : 'a list =
@@ -120,20 +120,20 @@ struct
         m'
       end
 
-    fun outSelector (s : abt) : Tm.variable O.selector = 
+    fun outSelector (s : abt) : Tm.variable Selector.t =
       case Tm.out s of 
-         O.SEL_CONCL $ _ => O.IN_CONCL
+         O.SEL_CONCL $ _ => Selector.IN_CONCL
        | O.SEL_HYP $ [_ \ e] =>
          (case Tm.out (unpackAny e) of
-             `x => O.IN_HYP x
+             `x => Selector.IN_HYP x
            | _ => raise Fail "Invalid selector")
 
-    fun outAccessor (s : abt) : O.accessor  =
+    fun outAccessor (s : abt) : Accessor.t  =
       case Tm.out s of
-         O.ACC_WHOLE $ _ => O.WHOLE
-       | O.ACC_TYPE $ _ => O.PART_TYPE
-       | O.ACC_LEFT $ _ => O.PART_LEFT
-       | O.ACC_RIGHT $ _ => O.PART_RIGHT
+         O.ACC_WHOLE $ _ => Accessor.WHOLE
+       | O.ACC_TYPE $ _ => Accessor.PART_TYPE
+       | O.ACC_LEFT $ _ => Accessor.PART_LEFT
+       | O.ACC_RIGHT $ _ => Accessor.PART_RIGHT
 
     fun outTube tube = 
       let
@@ -196,7 +196,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData and E = RedPrlError
+    structure O = RedPrlOperator and E = RedPrlError
     infix $ $$ $# \
 
 
