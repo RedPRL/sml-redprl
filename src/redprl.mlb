@@ -73,7 +73,6 @@ in
 
 
     ann
-      "nonexhaustiveBind ignore"
       "nonexhaustiveMatch ignore"
     in
       redprl/machine.sig
