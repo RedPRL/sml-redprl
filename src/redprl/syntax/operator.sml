@@ -1,6 +1,5 @@
 structure RedPrlArity = ListAbtArity (structure S = RedPrlSort)
 
-
 structure RedPrlOpData =
 struct
   type opid = string (* TODO: structured representation to allow namespacing!! *)

@@ -28,6 +28,8 @@ in
     redprl/syntax/sort.sig
     redprl/syntax/sort.sml
     redprl/syntax/kind.sml
+    redprl/syntax/variance.sig
+    redprl/syntax/variance.sml
     redprl/syntax/operator.sml
     redprl/syntax/abt.sml
     redprl/pretty.sml

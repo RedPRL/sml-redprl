@@ -2083,16 +2083,16 @@ struct
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
 
         val motiveMatchesMainGoal =
-          case AJ.composeVariance (Selector.variance sel, AJ.variance (currentAjdg, acc)) of
-             AJ.COVAR =>
+          case Variance.compose (Selector.variance sel, AJ.variance (currentAjdg, acc)) of
+             Variance.COVAR =>
                (case ty of
                   View.UNIV_OMEGA K.STABLE => makeSubType truncatedH (motivem, currentTm)
                 | _ => RedPrlError.raiseError (RedPrlError.IMPOSSIBLE (Fpp.text "Non-type positions are not anti-variant.")))
-           | AJ.CONTRAVAR =>
+           | Variance.CONTRAVAR =>
                (case ty of
                   View.UNIV_OMEGA K.STABLE => makeSubType truncatedH (currentTm, motivem)
                 | _ => RedPrlError.raiseError (RedPrlError.IMPOSSIBLE (Fpp.text "Non-type positions are not anti-variant.")))
-           | AJ.ANTIVAR => View.makeAsEq truncatedH ((currentTm, motivem), ty)
+           | Variance.ANTIVAR => View.makeAsEq truncatedH ((currentTm, motivem), ty)
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
          >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal

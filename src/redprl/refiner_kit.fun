@@ -246,13 +246,6 @@ struct
        | (a, UNIV_OMEGA k) => SOME @@ makeSubKind H (a, k)
   end
 
-  (* variants *)
-
-  val flipVariant =
-    fn AJ.COVAR => AJ.CONTRAVAR
-     | AJ.CONTRAVAR => AJ.COVAR
-     | AJ.ANTIVAR => AJ.ANTIVAR
-
   (* assertions *)
 
   structure Assert =
