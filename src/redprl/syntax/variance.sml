@@ -1,6 +1,7 @@
 structure Variance :> VARIANCE = 
 struct
-  datatype variance = datatype VarianceData.variance
+  datatype t = datatype VarianceData.variance
+  
   val compose =
     fn (ANTIVAR, _) => ANTIVAR
      | (_, ANTIVAR) => ANTIVAR

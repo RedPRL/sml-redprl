@@ -35,11 +35,19 @@ is
   redprl/list_util.sml
   redprl/option_util.sml
 
+  redprl/fpp.sml
+
+  redprl/syntax/accessor.sig
+  redprl/syntax/accessor.sml
+  redprl/syntax/selector.sig
+  redprl/syntax/selector.sml
+
   redprl/syntax/sort.sig
   redprl/syntax/sort.sml
   redprl/syntax/kind.sml
   redprl/syntax/variance.sig
   redprl/syntax/variance.sml
+  redprl/syntax/operator.sig
   redprl/syntax/operator.sml
   redprl/syntax/abt.sml
   redprl/syntax/univ_level.sig

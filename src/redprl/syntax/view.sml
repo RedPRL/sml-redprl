@@ -101,7 +101,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData and E = RedPrlError
+    structure O = RedPrlOperator and E = RedPrlError
     infix $ $$ $# \
   in
     fun outVec' (f : abt -> 'a) (vec : abt) : 'a list =
@@ -196,7 +196,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData and E = RedPrlError
+    structure O = RedPrlOperator and E = RedPrlError
     infix $ $$ $# \
 
 

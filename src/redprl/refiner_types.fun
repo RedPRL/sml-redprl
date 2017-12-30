@@ -2038,14 +2038,14 @@ struct
                  | (Syn.EQUALITY (ty, m, _), Accessor.PART_LEFT) => (m, View.TYPE ty)
                  | (Syn.EQUALITY (ty, _, n), Accessor.PART_RIGHT) => (n, View.TYPE ty)
                  | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
-                     Fpp.hvsep [Fpp.hsep [Fpp.text (Accessor.toString acc), Fpp.text "of"], AJ.pretty currentAjdg]))
+                     Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg]))
            | (AJ.EQ_TYPE ((m, _), k), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA k)
            | (AJ.EQ_TYPE ((_, n), k), Accessor.PART_RIGHT) => (n, View.UNIV_OMEGA k)
            | (AJ.SUB_TYPE (m, _), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
            | (AJ.SUB_TYPE (_, n), Accessor.PART_RIGHT) => (n, View.UNIV_OMEGA K.top)
            | (AJ.SUB_KIND (m, _), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
            | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
-               Fpp.hvsep [Fpp.hsep [Fpp.text (Accessor.toString acc), Fpp.text "of"], AJ.pretty currentAjdg])
+               Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg])
 
         val truncatedH = RedPrlSequent.truncateFrom sel H
 

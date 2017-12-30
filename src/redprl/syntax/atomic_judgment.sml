@@ -107,22 +107,25 @@ struct
   end
 
   local
-    open Variance
+    structure V = Variance and A = Accessor
   in
     val variance =
-      fn (EQ _, Accessor.PART_TYPE) => COVAR
-       | (EQ _, Accessor.PART_LEFT) => ANTIVAR
-       | (EQ _, Accessor.PART_RIGHT) => ANTIVAR
-       | (TRUE _, Accessor.WHOLE) => COVAR
-       | (TRUE _, Accessor.PART_TYPE) => COVAR
-       | (TRUE _, Accessor.PART_LEFT) => ANTIVAR
-       | (TRUE _, Accessor.PART_RIGHT) => ANTIVAR
-       | (EQ_TYPE _, Accessor.PART_LEFT) => ANTIVAR
-       | (EQ_TYPE _, Accessor.PART_RIGHT) => ANTIVAR
-       | (SUB_TYPE _, Accessor.PART_LEFT) => CONTRAVAR
-       | (SUB_TYPE _, Accessor.PART_RIGHT) => COVAR
-       | (SUB_KIND _, Accessor.PART_LEFT) => CONTRAVAR
-       | (jdg, acc) => RedPrlError.raiseError (RedPrlError.NOT_APPLICABLE (Fpp.text "variance",
-           Fpp.hvsep [Fpp.hsep [Fpp.text (Accessor.toString acc), Fpp.text "of"], pretty jdg]))
+      fn (EQ _, A.PART_TYPE) => V.COVAR
+       | (EQ _, A.PART_LEFT) => V.ANTIVAR
+       | (EQ _, A.PART_RIGHT) => V.ANTIVAR
+       | (TRUE _, A.WHOLE) => V.COVAR
+       | (TRUE _, A.PART_TYPE) => V.COVAR
+       | (TRUE _, A.PART_LEFT) => V.ANTIVAR
+       | (TRUE _, A.PART_RIGHT) => V.ANTIVAR
+       | (EQ_TYPE _, A.PART_LEFT) => V.ANTIVAR
+       | (EQ_TYPE _, A.PART_RIGHT) => V.ANTIVAR
+       | (SUB_TYPE _, A.PART_LEFT) => V.CONTRAVAR
+       | (SUB_TYPE _, A.PART_RIGHT) => V.COVAR
+       | (SUB_KIND _, A.PART_LEFT) => V.CONTRAVAR
+       | (jdg, acc) =>
+           RedPrlError.raiseError
+             (RedPrlError.NOT_APPLICABLE
+               (Fpp.text "variance",
+                Fpp.hvsep [Fpp.hsep [A.pretty acc, Fpp.text "of"], pretty jdg]))
   end
 end

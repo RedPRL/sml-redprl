@@ -7,8 +7,8 @@ end
 
 signature VARIANCE = 
 sig
-  datatype variance = datatype VarianceData.variance
+  datatype t = datatype VarianceData.variance
 
-  val compose : variance * variance -> variance
-  val flip : variance -> variance
+  val compose : t * t -> t
+  val flip : t -> t
 end

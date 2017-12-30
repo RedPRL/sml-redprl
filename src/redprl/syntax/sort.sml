@@ -23,5 +23,6 @@ struct
      | ACC => "acc"
      | ANY => "any"
      | META_NAME => "meta-name"
-
 end
+
+structure RedPrlArity = ListAbtArity (structure S = RedPrlSort)
