@@ -111,10 +111,6 @@
   '("dim" "hyp" "exp" "lvl" "tac" "triv" "jdg")
   "RedPRL's built-in sorts.")
 
-(defconst redprl-parameter-keywords
-  '("+" "++" "lmax")
-  "RedPRL's parameter keywords.")
-
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
     "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec" "wif"
@@ -123,20 +119,24 @@
     "S1" "base" "loop" "S1-rec"
     "lam" "app"
     "record" "tuple"
-    "path" "abs"
+    "path" "line" "abs"
+    "pushout" "left" "right" "glue" "pushout-rec"
+    "coeq" "cecod" "cedom" "coeq-rec"
+    "mem" "ni"
     "box" "cap"
     "V" "Vin" "Vproj"
     "universe" "U"
-    "hcom" "ghcom" "coe" "com" "gcom")
+    "hcom" "ghcom" "coe" "com" "gcom"
+    "lmax")
   "RedPRL's expression keywords.")
 
 (defconst redprl-expression-symbols
-  '("->" "~>" "<~" "$" "*" "!" "@" "=")
+  '("->" "~>" "<~" "$" "*" "!" "@" "=" "+" "++" "=>")
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
-  '("auto" "auto-step" "case" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
-    "hyp" "id" "lemma" "let" "match" "of" "print" "progress"
+  '("auto" "auto-step" "case" "concl" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
+    "hyp" "id" "lemma" "let" "claim" "match" "of" "print" "progress"
     "query" "rec" "reduce" "refine" "repeat" "rewrite" "rewrite-hyp" "symmetry"
     "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")
@@ -162,18 +162,10 @@
 (defconst redprl-tac-name-regexp
   '(: "Tac" (+ whitespace) (group-n 1 (+ word)) not-wordchar))
 
-(defconst redprl-sym-name-regexp
-  '(: "Sym" (+ whitespace) (group-n 1 (+ word)) not-wordchar))
-
-(defconst redprl-record-name-regexp
-  '(: "Record" (+ whitespace) (group-n 1 (+ word)) not-wordchar))
-
 (defconst redprl-declaration-name-regexp
   `(or ,redprl-def-name-regexp
        ,redprl-thm-name-regexp
-       ,redprl-tac-name-regexp
-       ,redprl-sym-name-regexp
-       ,redprl-record-name-regexp))
+       ,redprl-tac-name-regexp))
 
 (defvar redprl-mode-font-lock-keywords
   `(
@@ -187,10 +179,7 @@
     (,(rx "#" (+ word)) 0 'redprl-metavar-face)
 
     ;; Numbers
-    (,(rx (? "-") (+ digit)) 0 'redprl-number-face)
-
-    ;; Built-in parameters
-    (,(regexp-opt redprl-parameter-keywords 'words) 0 'redprl-expression-keyword-face)
+    (,(rx word-start (? "-") (+ digit)) 0 'redprl-number-face)
 
     ;; Built-in expressions
     (,(regexp-opt redprl-expression-keywords 'words) 0 'redprl-expression-keyword-face)
@@ -224,8 +213,10 @@
            (end-pos (match-end 0))
            (candidates (cl-remove-if-not
                         (apply-partially #'string-prefix-p match)
-                        (append redprl-keywords
-                                redprl-builtin-sorts
+                        (append redprl-tactic-keywords
+                                redprl-expression-keywords
+                                redprl-sequent-keywords
+                                redprl-sort-keywords
                                 (redprl-defined-names)))))
       (if (null candidates)
           nil
@@ -285,9 +276,7 @@
   (set (make-local-variable 'imenu-generic-expression)
        `(("Def" ,(rx-to-string redprl-def-name-regexp) 1)
          ("Thm" ,(rx-to-string redprl-thm-name-regexp) 1)
-         ("Tac" ,(rx-to-string redprl-tac-name-regexp) 1)
-         ("Sym" ,(rx-to-string redprl-sym-name-regexp) 1)
-         ("Record" ,(rx-to-string redprl-record-name-regexp) 1)))
+         ("Tac" ,(rx-to-string redprl-tac-name-regexp) 1)))
 
   ;; Bind mode-specific commands to keys
   (define-key redprl-mode-map (kbd "C-c C-l") 'redprl-compile-buffer)

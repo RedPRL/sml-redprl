@@ -22,7 +22,7 @@ struct
     Fpp.nest 2 @@
       Fpp.vsep
         [Fpp.seq [Fpp.hsep [Fpp.text "Goal", TermPrinter.ppMeta x], Fpp.text "."],
-         RedPrlSequent.pretty jdg]
+         Sequent.pretty jdg]
 
   val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, ren : J.ren, idx : int} =
     let
@@ -35,7 +35,7 @@ struct
             val jdg' = J.ren ren jdg
             val ren' = Metavar.Ctx.insert ren x x'
           in
-            {doc = Fpp.seq [doc, prettyGoal (x, jdg'), Fpp.newline],
+            {doc = Fpp.seq [doc, prettyGoal (x', jdg'), Fpp.newline],
              ren = ren',
              idx = idx + 1}
           end)

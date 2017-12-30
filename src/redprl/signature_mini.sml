@@ -21,12 +21,10 @@ struct
      state : names -> Lcf.jdg Lcf.state}
 
   type src_catjdg = ast
-  type src_seqhyp = string * src_catjdg
-  type src_sequent = src_seqhyp list * src_catjdg
 
   datatype src_decl =
       DEF of {arguments : string arguments, sort : sort, definiens : ast}
-    | THM of {arguments : string arguments, goal : src_sequent, script : ast}
+    | THM of {arguments : string arguments, goal : src_catjdg, script : ast}
     | TAC of {arguments : string arguments, script : ast}
 
   datatype 'opid cmd =
@@ -73,9 +71,9 @@ struct
 
   fun entrySort (entry : entry) : sort = 
     let
-      val RedPrlSequent.>> (_, jdg) = #spec entry
+      val Sequent.>> (_, jdg) = #spec entry
     in
-      RedPrlAtomicJudgment.synthesis jdg
+      AtomicJudgment.synthesis jdg
     end
 
   fun unfoldCustomOperator (entry : entry) (es : abt Tm.bview list) : abt =

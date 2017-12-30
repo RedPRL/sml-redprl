@@ -8,6 +8,8 @@ in no particular order:
 - David Christiansen
 - Darin Morrison
 - Favonia
+- Evan Cavallo
+- Carlo Angiuli
 
 We also thank the following people for their contributions to previous versions
 of JonPRL:

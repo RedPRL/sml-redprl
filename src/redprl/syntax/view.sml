@@ -1,4 +1,4 @@
-structure Syntax =
+structure SyntaxView =
 struct
   structure Tm = RedPrlAbt
   structure K = RedPrlKind
@@ -57,7 +57,18 @@ struct
    | RECORD of ((string * variable) * 'a) list
    | TUPLE of (label * 'a) list | PROJ of string * 'a | TUPLE_UPDATE of (string * 'a) * 'a
    (* path: path abstraction and path application *)
-   | PATH_TY of (variable * 'a) * 'a * 'a | PATH_ABS of variable * 'a | PATH_APP of 'a * 'a
+   | PATH of (variable * 'a) * 'a * 'a | ABS of variable * 'a | DIM_APP of 'a * 'a
+   | LINE of variable * 'a
+   (* pushouts *)
+   | PUSHOUT of 'a * 'a * 'a * (variable * 'a) * (variable * 'a)
+   | LEFT of 'a | RIGHT of 'a
+   | GLUE of 'a * 'a * 'a * 'a
+   | PUSHOUT_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * 'a) * (variable * variable * 'a))
+   (* coequalizers *)
+   | COEQUALIZER of 'a * 'a * (variable * 'a) * (variable * 'a)
+   | CECOD of 'a
+   | CEDOM of 'a * 'a * 'a * 'a
+   | COEQUALIZER_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * variable * 'a))
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
@@ -90,7 +101,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData and E = RedPrlError
+    structure O = RedPrlOperator and E = RedPrlError
     infix $ $$ $# \
   in
     fun outVec' (f : abt -> 'a) (vec : abt) : 'a list =
@@ -109,13 +120,20 @@ struct
         m'
       end
 
-    fun outSelector (s : abt) : Tm.variable O.selector = 
+    fun outSelector (s : abt) : Tm.variable Selector.t =
       case Tm.out s of 
-         O.SEL_CONCL $ _ => O.IN_CONCL
+         O.SEL_CONCL $ _ => Selector.IN_CONCL
        | O.SEL_HYP $ [_ \ e] =>
          (case Tm.out (unpackAny e) of
-             `x => O.IN_HYP x
+             `x => Selector.IN_HYP x
            | _ => raise Fail "Invalid selector")
+
+    fun outAccessor (s : abt) : Accessor.t  =
+      case Tm.out s of
+         O.ACC_WHOLE $ _ => Accessor.WHOLE
+       | O.ACC_TYPE $ _ => Accessor.PART_TYPE
+       | O.ACC_LEFT $ _ => Accessor.PART_LEFT
+       | O.ACC_RIGHT $ _ => Accessor.PART_RIGHT
 
     fun outTube tube = 
       let
@@ -178,7 +196,7 @@ struct
 
   local
     open Tm
-    structure O = RedPrlOpData and E = RedPrlError
+    structure O = RedPrlOperator and E = RedPrlError
     infix $ $$ $# \
 
 
@@ -331,9 +349,25 @@ struct
        | PROJ (lbl, a) => O.PROJ lbl $$ [[] \ a]
        | TUPLE_UPDATE ((lbl, n), m) => O.TUPLE_UPDATE lbl $$ [[] \ n, [] \ m]
 
-       | PATH_TY ((u, a), m, n) => O.PATH_TY $$ [[u] \ a, [] \ m, [] \ n]
-       | PATH_ABS (u, m) => O.PATH_ABS $$ [[u] \ m]
-       | PATH_APP (m, r) => O.PATH_APP $$ [[] \ m, [] \ r]
+       | PATH ((u, a), m, n) => O.PATH $$ [[u] \ a, [] \ m, [] \ n]
+       | LINE (u, a) => O.LINE $$ [[u] \ a]
+       | ABS (u, m) => O.ABS $$ [[u] \ m]
+       | DIM_APP (m, r) => O.DIM_APP $$ [[] \ m, [] \ r]
+
+       | PUSHOUT (a, b, c, (x, fx), (y, gy)) =>
+           O.PUSHOUT $$ [[] \ a, [] \ b, [] \ c, [x] \ fx, [y] \ gy]
+       | LEFT m => O.LEFT $$ [[] \ m]
+       | RIGHT m => O.RIGHT $$ [[] \ m]
+       | GLUE (r, m, fm, gm) => O.GLUE $$ [[] \ r, [] \ m, [] \ fm, [] \ gm]
+       | PUSHOUT_REC ((x, cx), m, ((y, ly), (z, rz), (w1, w2, gw))) =>
+           O.PUSHOUT_REC $$ [[x] \ cx, [] \ m, [y] \ ly, [z] \ rz, [w1, w2] \ gw]
+
+       | COEQUALIZER (a, b, (x, fx), (y, gy)) =>
+           O.COEQUALIZER $$ [[] \ a, [] \ b, [x] \ fx, [y] \ gy]
+       | CECOD m => O.CECOD $$ [[] \ m]
+       | CEDOM (r, m, fm, gm) => O.CEDOM $$ [[] \ r, [] \ m, [] \ fm, [] \ gm]
+       | COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw))) =>
+           O.COEQUALIZER_REC $$ [[x] \ px, [] \ m, [y] \ cy, [w1, w2] \ dw]
 
        | EQUALITY (a, m, n) => O.EQUALITY $$ [[] \ a, [] \ m, [] \ n]
 
@@ -391,6 +425,8 @@ struct
         into (RECORD projs)
       end
 
+    val intoU = into o UNIVERSE
+
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
@@ -434,9 +470,25 @@ struct
        | O.PROJ lbl $ [_ \ m] => PROJ (lbl, m)
        | O.TUPLE_UPDATE lbl $ [_ \ n, _ \ m] => TUPLE_UPDATE ((lbl, n), m)
 
-       | O.PATH_TY $ [[u] \ a, _ \ m, _ \ n] => PATH_TY ((u, a), m, n)
-       | O.PATH_ABS $ [[u] \ m] => PATH_ABS (u, m)
-       | O.PATH_APP $ [_ \ m, _ \ r] => PATH_APP (m, r)
+       | O.PATH $ [[u] \ a, _ \ m, _ \ n] => PATH ((u, a), m, n)
+       | O.LINE $ [[u] \ a] => LINE (u, a)
+       | O.ABS $ [[u] \ m] => ABS (u, m)
+       | O.DIM_APP $ [_ \ m, _ \ r] => DIM_APP (m, r)
+
+       | O.PUSHOUT $ [_ \ a, _ \ b, _ \ c, [x] \ fx, [y] \ gy] =>
+           PUSHOUT (a, b, c, (x, fx), (y, gy))
+       | O.LEFT $ [_ \ m] => LEFT m
+       | O.RIGHT $ [_ \ m] => RIGHT m
+       | O.GLUE $ [_ \ r, _ \ m, _ \ fm, _ \ gm] => GLUE (r, m, fm, gm)
+       | O.PUSHOUT_REC $ [[x] \ cx, _ \ m, [y] \ ly, [z] \ rz, [w1, w2] \ gw] =>
+           PUSHOUT_REC ((x, cx), m, ((y, ly), (z, rz), (w1, w2, gw)))
+
+       | O.COEQUALIZER $ [_ \ a, _ \ b, [x] \ fx, [y] \ gy] =>
+           COEQUALIZER (a, b, (x, fx), (y, gy))
+       | O.CECOD $ [_ \ m] => CECOD m
+       | O.CEDOM $ [_ \ r, _ \ m, _ \ fm, _ \ gm] => CEDOM (r, m, fm, gm)
+       | O.COEQUALIZER_REC $ [[x] \ px, _ \ m, [y] \ cy,  [w1, w2] \ dw] =>
+           COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw)))
 
        | O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 

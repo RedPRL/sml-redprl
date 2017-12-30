@@ -1,5 +1,5 @@
 Thm Univ0(#i:lvl, #j:lvl) : [
-  (U #i) type at (++ (lmax #i #j))
+  (U #i) in (U (++ (lmax #i #j)))
 ] by [
   auto
 ].
@@ -11,11 +11,11 @@ Thm Univ1(#i:lvl) : [
 ].
 
 Thm Univ2 : [
-  x : (U 2)
-  >>
-  x type at 2
+  (->
+   [a : (U 0 discrete)]
+   (= (U 1 kan) a a))
 ] by [
-  auto
+  lam a => auto
 ].
 
 Thm Monoid(#i:lvl) : [ (U (++ #i)) ] by [

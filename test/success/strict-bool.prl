@@ -18,7 +18,7 @@ Thm SBool/Not-Not-Id-Path : [
     (Cmp Bool/Not Bool/Not)
     (lam [x] x))
 ] by [
-  <i> lam x. use x
+  abs i => lam x => use x
 ].
 
 Extract SBool/Not-Not-Id-Path.

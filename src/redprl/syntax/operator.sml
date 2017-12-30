@@ -1,270 +1,10 @@
-structure RedPrlSortData =
-struct
-  datatype sort =
-     EXP
-   | TAC
-   | MTAC
-   | JDG
-   | TRV
-   | MATCH_CLAUSE
-   | DIM | TUBE | BDRY
-   | VEC of sort
-   | LVL
-   | KND
-   | SEL
-   | ANY
-   | META_NAME
-
-  val rec sortToString = 
-    fn EXP => "exp"
-     | TAC => "tac"
-     | MTAC => "mtac"
-     | JDG => "jdg"
-     | TRV => "trv"
-     | MATCH_CLAUSE => "match-clause"
-     | DIM => "dim"
-     | TUBE => "tube"
-     | BDRY => "bdry"
-     | VEC tau => "vec{" ^ sortToString tau ^ "}"
-     | LVL => "lvl"
-     | KND => "knd"
-     | SEL => "sel"
-     | ANY => "any"
-     | META_NAME => "meta-name"
-end
-
-structure RedPrlSort : ABT_SORT =
-struct
-  open RedPrlSortData
-  type t = sort
-  val eq : t * t -> bool = op=
-  val toString = sortToString
-end
-
-structure RedPrlArity = ListAbtArity (structure S = RedPrlSort)
-
-structure RedPrlKind =
-struct
-  (*
-   * DISCRETE < KAN < HCOM < STABLE
-   *                < COE  <
-   *
-   * and KAN = meet (HCOM, COE)
-   *)
-
-  (* Please keep the following invariants when adding new kinds:
-   *
-   * (1) All judgments should still be closed under any substitution! In
-   *     particular, the property that a type A has kind K is closed under any
-   *     substitution.
-   * (2) If two types are related with respect to a stronger kind (like KAN),
-   *     then they are related with respect to a weaker kind (like STABLE).
-   *     A stronger kind might demand more things to be equal. For example,
-   *     the equality between two types with respect to KAN means that they
-   *     are equally Kan, while the equality with respect to STABLE only says
-   *     they are equal pretypes.
-   * (3) The PER associated with A should *never* depend on its kind. Kinds
-   *     should be properties of (the PER of) A.
-   * (4) We say KAN = meet (HCOM, COE) because if two types are equally "HCOM"
-   *     and equally "COE" then they are equally Kan. Always remember to check
-   *     the binary cases.
-   *)
-  datatype kind = DISCRETE | KAN | HCOM | COE | STABLE
-
-  val COM = KAN
-
-  val toString =
-    fn DISCRETE => "discrete"
-     | KAN => "kan"
-     | HCOM => "hcom"
-     | COE => "coe"
-     | STABLE => "stable"
-
-  local
-    structure Internal :
-    (* this could be the new meet semi-lattice *)
-    sig
-      type t = kind
-
-      val top : t
-      val <= : t * t -> bool
-      val meet : t * t -> t
-
-      (* residual (a, b)
-       *
-       * Let c be the greatest element such that `meet (b, c) <= a`.
-       * The return value is SOME c if c is not top, or NONE otherwise.
-       * *)
-      val residual : t * t -> t option
-    end
-    =
-    struct
-      type t = kind
-      val top = STABLE
-
-      val meet =
-        fn (DISCRETE, _) => DISCRETE
-         | (_, DISCRETE) => DISCRETE
-         | (KAN, _) => KAN
-         | (_, KAN) => KAN
-         | (HCOM, COE) => KAN
-         | (COE, HCOM) => KAN
-         | (HCOM, _) => HCOM
-         | (_, HCOM) => HCOM
-         | (COE, _) => COE
-         | (_, COE) => COE
-         | (STABLE, STABLE) => STABLE
-
-      val residual =
-        fn (_, DISCRETE) => NONE
-         | (DISCRETE, _) => SOME DISCRETE
-         | (_, KAN) => NONE
-         | (KAN, HCOM) => SOME COE
-         | (KAN, COE) => SOME HCOM
-         | (KAN, _) => SOME KAN
-         | (COE, HCOM) => SOME COE
-         | (HCOM, COE) => SOME HCOM
-         | (_, HCOM) => NONE
-         | (HCOM, _) => SOME HCOM
-         | (_, COE) => NONE
-         | (COE, _) => SOME COE
-         | (STABLE, STABLE) => NONE
-
-      fun op <= (a, b) = residual (b, a) = NONE
-    end
-  in
-    open Internal
-  end
-end
-
-structure RedPrlOpData =
-struct
-  type opid = string (* TODO: structured representation to allow namespacing!! *)
-
-  open RedPrlSortData
-  structure K = RedPrlKind
-  type kind = RedPrlKind.kind
-
-  (* TODO: move elsewhere *)
-  datatype 'a selector = IN_CONCL | IN_HYP of 'a
-
-  datatype 'a dev_pattern = 
-     PAT_VAR of 'a
-   | PAT_TUPLE of (string * 'a dev_pattern) list
-
-  datatype operator =
-   (* the trivial realizer of sort TRV for judgments lacking interesting
-    * computational content. *)
-     TV
-   (* the trivial realizer of sort EXP for types lacking interesting
-    * computational content. This is the "ax(iom)" in Nuprl. *)
-   | AX
-   (* strict bool *)
-   | BOOL | TT | FF | IF
-   (* week bool *)
-   | WBOOL | WIF
-   (* natural numbers *)
-   | NAT | ZERO | SUCC | NAT_REC
-   (* integers *)
-   | INT | NEGSUCC | INT_REC
-   (* empty type *)
-   | VOID
-   (* circle *)
-   | S1 | BASE | LOOP | S1_REC
-   (* function: lambda and app *)
-   | FUN | LAM | APP
-   (* record and tuple *)
-   | RECORD of string list | TUPLE of string list | PROJ of string | TUPLE_UPDATE of string
-   (* path: path abstraction and application *)
-   | PATH_TY | PATH_ABS | PATH_APP
-   (* equality *)
-   | EQUALITY
-   (* universe *)
-   | UNIVERSE
-   | V
-   | VIN
-   | VPROJ
-
-   | FCOM | BOX | CAP | HCOM | GHCOM | COE | COM | GCOM
-
-   | MK_ANY of sort option
-
-   (* dimension expressions *)
-
-   | DIM0
-   | DIM1
-   | MK_TUBE
-   | MK_BDRY
-   | MK_VEC of sort * int
-
-   (* level expressions *)
-   | LCONST of IntInf.int
-   | LPLUS of IntInf.int
-   | LMAX
-   | LOMEGA
-
-   | KCONST of kind
-
-   | JDG_EQ
-   | JDG_TRUE
-   | JDG_EQ_TYPE
-   | JDG_SUB_UNIVERSE
-   | JDG_SYNTH
-   | JDG_TERM of sort
-
-
-   (* primitive tacticals and multitacticals *)
-   | MTAC_SEQ of sort list | MTAC_ORELSE | MTAC_REC
-   | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
-   | MTAC_ALL | MTAC_EACH | MTAC_FOCUS of int
-   | MTAC_HOLE of string option
-   | TAC_MTAC
-
-   (* primitive rules *)
-   | RULE_ID | RULE_AUTO_STEP | RULE_SYMMETRY | RULE_EXACT | RULE_REDUCE_ALL
-   | RULE_CUT
-   | RULE_PRIM of string
-   | RULE_ELIM
-   | RULE_REWRITE
-   | RULE_REWRITE_HYP
-   | RULE_REDUCE
-
-   (* development calculus terms *)
-   | DEV_FUN_INTRO of unit dev_pattern list
-   | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
-   | DEV_LET of sort option
-   | DEV_MATCH of int list
-   | DEV_MATCH_CLAUSE
-   | DEV_QUERY
-   | DEV_PRINT
-   | DEV_BOOL_ELIM
-   | DEV_S1_ELIM
-   | DEV_APPLY_HYP of unit dev_pattern
-   | DEV_USE_HYP
-   | DEV_INVERSION
-
-   | SEL_CONCL
-   | SEL_HYP
-
-   | PAT_META of sort
- 
-   | CUST of opid * RedPrlArity.t option
-   | RULE_UNFOLD_ALL of opid list
-   | RULE_UNFOLD of opid list
-   | DEV_USE_LEMMA of opid * RedPrlArity.t option
-   | DEV_APPLY_LEMMA of opid * RedPrlArity.t option * unit dev_pattern
-
-   (* where should this function go? *)
-   fun indexToLabel i = "proj" ^ Int.toString (i + 1)
-end
-
 structure ArityNotation =
 struct
   fun op|: (a, b) = (a, b)
   fun op->> (a, b) = (a, b) (* arity *)
 end
 
-structure RedPrlOperator : ABT_OPERATOR =
+structure RedPrlOperator : REDPRL_OPERATOR =
 struct
   structure Ar = RedPrlArity
 
@@ -272,6 +12,9 @@ struct
   open ArityNotation infix <> ->> |:
 
   type t = operator
+
+  (* where should this function go? *)
+  fun indexToLabel i = "proj" ^ Int.toString (i + 1)  
 
   val rec devPatternValence = 
     fn PAT_VAR _ => [EXP]
@@ -318,9 +61,21 @@ struct
      | PROJ lbl => [[] |: EXP] ->> EXP
      | TUPLE_UPDATE lbl => [[] |: EXP, [] |: EXP] ->> EXP
 
-     | PATH_TY => [[DIM] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
-     | PATH_ABS => [[DIM] |: EXP] ->> EXP
-     | PATH_APP => [[] |: EXP, [] |: DIM] ->> EXP
+     | PATH => [[DIM] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | LINE => [[DIM] |: EXP] ->> EXP
+     | ABS => [[DIM] |: EXP] ->> EXP
+     | DIM_APP => [[] |: EXP, [] |: DIM] ->> EXP
+
+     | PUSHOUT => [[] |: EXP, [] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP] ->> EXP
+     | LEFT => [[] |: EXP] ->> EXP
+     | RIGHT => [[] |: EXP] ->> EXP
+     | GLUE => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | PUSHOUT_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
+
+     | COEQUALIZER => [[] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP] ->> EXP
+     | CECOD => [[] |: EXP] ->> EXP
+     | CEDOM => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | COEQUALIZER_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
@@ -349,16 +104,16 @@ struct
      | LCONST i => [] ->> LVL
      | LPLUS i => [[] |: LVL] ->> LVL
      | LMAX => [[] |: VEC LVL] ->> LVL
-     | LOMEGA => [] ->> LVL
 
      | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_TRUE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
-     | JDG_EQ_TYPE => [[] |: LVL, [] |: KND, [] |: EXP, [] |: EXP] ->> JDG
-     | JDG_SUB_UNIVERSE => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
-     | JDG_SYNTH => [[] |: LVL, [] |: KND, [] |: EXP] ->> JDG
+     | JDG_EQ => [[] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_TRUE => [[] |: EXP] ->> JDG
+     | JDG_EQ_TYPE => [[] |: KND, [] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
+     | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
+     | JDG_SYNTH => [[] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -370,20 +125,21 @@ struct
      | MTAC_EACH => [[] |: VEC TAC] ->> MTAC
      | MTAC_FOCUS _ => [[] |: TAC] ->> MTAC
      | MTAC_HOLE _ => [] ->> MTAC
+     | TAC_FAIL => [] ->> TAC
      | TAC_MTAC => [[] |: MTAC] ->> TAC
 
-     | RULE_ID => [] ->> TAC
-     | RULE_AUTO_STEP => [] ->> TAC
-     | RULE_SYMMETRY => [] ->> TAC
+     | TAC_ID => [] ->> TAC
+     | TAC_AUTO_STEP => [] ->> TAC
+     | TAC_SYMMETRY => [] ->> TAC
      | RULE_EXACT => [[] |: ANY] ->> TAC
-     | RULE_REDUCE_ALL => [] ->> TAC
-     | RULE_REDUCE => [[] |: VEC SEL] ->> TAC
+     | TAC_REDUCE_ALL => [] ->> TAC
+     | TAC_REDUCE => [[] |: VEC SEL] ->> TAC
 
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
-     | RULE_ELIM => [[] |: ANY] ->> TAC
-     | RULE_REWRITE => [[] |: SEL, [] |: EXP] ->> TAC
-     | RULE_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
+     | TAC_ELIM => [[] |: ANY] ->> TAC
+     | TAC_REWRITE => [[] |: SEL, [] |: ACC, [] |: EXP] ->> TAC
+     | TAC_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -402,13 +158,18 @@ struct
 
      | SEL_HYP => [[] |: ANY] ->> SEL
      | SEL_CONCL => [] ->> SEL
+     
+     | ACC_WHOLE => [] ->> ACC
+     | ACC_TYPE => [] ->> ACC
+     | ACC_LEFT => [] ->> ACC
+     | ACC_RIGHT => [] ->> ACC
 
      | PAT_META tau => [[] |: META_NAME, [] |: VEC ANY] ->> tau
 
      | JDG_TERM _ => [] ->> JDG
      | CUST (_, ar) => Option.valOf ar
-     | RULE_UNFOLD_ALL _ => [] ->> TAC
-     | RULE_UNFOLD _ => [[] |: VEC SEL] ->> TAC
+     | TAC_UNFOLD_ALL _ => [] ->> TAC
+     | TAC_UNFOLD _ => [[] |: VEC SEL] ->> TAC
      | DEV_APPLY_LEMMA (_, ar, pat) =>
        let
          val (vls, tau) = Option.valOf ar
@@ -463,9 +224,21 @@ struct
      | PROJ lbl => "proj{" ^ lbl ^ "}"
      | TUPLE_UPDATE lbl => "update{" ^ lbl ^ "}"
 
-     | PATH_TY => "path"
-     | PATH_ABS => "abs"
-     | PATH_APP => "path-app"
+     | PATH => "path"
+     | LINE => "line"
+     | ABS => "abs"
+     | DIM_APP => "path-app"
+
+     | PUSHOUT => "pushout"
+     | LEFT => "left"
+     | RIGHT => "right"
+     | GLUE => "glue"
+     | PUSHOUT_REC => "pushout-rec"
+
+     | COEQUALIZER => "coeq"
+     | CECOD => "cecod"
+     | CEDOM => "cedom"
+     | COEQUALIZER_REC => "coeq-rec"
 
      | UNIVERSE => "U"
      | V => "V"
@@ -485,7 +258,6 @@ struct
      | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
      | LPLUS i => "{lplus " ^ IntInf.toString i ^ "}"
      | LMAX => "lmax"
-     | LOMEGA => "lomega"
 
      | KCONST k => RedPrlKind.toString k
 
@@ -500,19 +272,20 @@ struct
      | MTAC_FOCUS i => "focus{" ^ Int.toString i ^ "}"
      | MTAC_HOLE (SOME x) => "?" ^ x
      | MTAC_HOLE NONE => "?"
+     | TAC_FAIL => "fail"
      | TAC_MTAC => "mtac"
 
-     | RULE_ID => "id"
-     | RULE_AUTO_STEP => "auto-step"
-     | RULE_SYMMETRY => "symmetry"
+     | TAC_ID => "id"
+     | TAC_AUTO_STEP => "auto-step"
+     | TAC_SYMMETRY => "symmetry"
      | RULE_EXACT => "exact"
-     | RULE_REDUCE_ALL => "reduce-all"
-     | RULE_REDUCE => "reduce"
+     | TAC_REDUCE_ALL => "reduce-all"
+     | TAC_REDUCE => "reduce"
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
-     | RULE_ELIM => "elim"
-     | RULE_REWRITE => "rewrite"
-     | RULE_REWRITE_HYP => "rewrite-hyp"
+     | TAC_ELIM => "elim"
+     | TAC_REWRITE => "rewrite"
+     | TAC_REWRITE_HYP => "rewrite-hyp"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
@@ -544,12 +317,13 @@ struct
      | JDG_EQ => "eq"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
-     | JDG_SUB_UNIVERSE => "sub-universe"
+     | JDG_SUB_TYPE => "sub-type"
+     | JDG_SUB_KIND => "sub-kind"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | CUST (opid, _) => opid
-     | RULE_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
-     | RULE_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
+     | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
+     | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
      | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ opid ^ "}"
      | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ opid ^ "}"
 end

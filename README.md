@@ -15,11 +15,11 @@ refinement.
 
 ### Literature and background on RedPRL
 
-RedPRL is (becoming) a proof assistant for Computational Cubical Type Theory,
-as described by Angiuli and Harper in [Computational Higher Type Theory II:
-Dependent Cubical Realizability](http://arxiv.org/abs/1606.09638).  The
-syntactic framework is inspired by second-order abstract syntax (relevant names include Aczel, Martin-Löf, Fiore, Plotkin, Turi, Harper, and many others).
-
+RedPRL is (becoming) a proof assistant for Computational Cubical Type Theory, as
+described by Angiuli, Favonia, and Harper in [Computational Higher Type Theory
+III: Univalent Universes and Exact Equality](https://arxiv.org/abs/1712.01800).
+The syntactic framework is inspired by second-order abstract syntax (relevant
+names include Aczel, Martin-Löf, Fiore, Plotkin, Turi, Harper, and many others).
 
 ### What is this repository?
 
@@ -47,7 +47,7 @@ ML installed. Then, simply run
 Then, a binary will be placed in `./bin/redprl`, which you may run as
 follows
 
-    ./bin/redprl test/examples.prl
+    ./bin/redprl example/README.prl
 
 
 ### Editor Support: Visual Studio Code

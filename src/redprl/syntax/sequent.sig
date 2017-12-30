@@ -1,6 +1,6 @@
-structure RedPrlSequentData =
+structure SequentData =
 struct
-  type catjdg = RedPrlAtomicJudgment.jdg
+  type catjdg = AtomicJudgment.jdg
   type abt = RedPrlAbt.abt
 
   structure Hyps : TELESCOPE = Telescope (Sym)
@@ -20,7 +20,10 @@ end
 
 signature SEQUENT =
 sig
-  datatype jdg = datatype RedPrlSequentData.jdg
+  datatype atjdg = datatype AtomicJudgment.jdg
+  datatype jdg = datatype SequentData.jdg
+  type 'a ctx = 'a SequentData.ctx
+
   type abt = RedPrlAbt.abt
 
   val map : (abt -> abt) -> jdg -> jdg
@@ -29,4 +32,11 @@ sig
   val pretty : jdg -> Fpp.doc
   val eq : jdg * jdg -> bool
   val relabel : Sym.t Sym.Ctx.dict -> jdg -> jdg
+
+  val lookupSelector : Sym.t Selector.t -> atjdg ctx * atjdg -> atjdg
+  val mapSelector : Sym.t Selector.t -> (atjdg -> atjdg) -> atjdg ctx * atjdg -> atjdg ctx * atjdg
+  val multiMapSelector : Sym.t Selector.t list -> (atjdg -> atjdg) -> atjdg ctx * atjdg -> atjdg ctx * atjdg
+
+  (* TODO: I don't like this function. *)
+  val truncateFrom : Sym.t Selector.t -> atjdg ctx -> atjdg ctx
 end

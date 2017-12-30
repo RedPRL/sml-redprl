@@ -18,6 +18,7 @@ struct
 
   structure Tm = RedPrlAbt
   structure Unify = AbtUnify (RedPrlAbt)
+  structure Syn = SyntaxView
 
   type sign = Sig.sign
   type script = Tm.abt
@@ -49,16 +50,21 @@ struct
         Lcf.all Lcf.idn state
       end
 
+  fun fail msg = 
+    fn alpha => fn state => 
+      RedPrlError.raiseError (RedPrlError.GENERIC [Fpp.text msg])
+
   fun hyp z =
     Lcf.rule o R.Hyp.Project z
     orelse_
       R.SynthFromHyp z
 
-  open RedPrlSequent infix >>
-  structure AJ = RedPrlAtomicJudgment and Syn = Syntax
+  open Sequent infix >>
+  structure AJ = AtomicJudgment and Syn = SyntaxView
 
   val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
+  fun autoTacComplete sign = try (autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal")
 
   fun unfoldCustomOperator sign (opid, args) = 
     Sig.unfoldCustomOperator (Sig.lookup sign opid) args
@@ -136,11 +142,12 @@ struct
   fun apply sign z names (appTac, contTac) alpha jdg = 
     let
       val H >> _ = jdg
-      val AJ.TRUE (ty, _, _) = RT.Hyps.lookup H z
+      val AJ.TRUE ty = RT.Hyps.lookup H z
     in
       case Syn.out ty of 
          Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.PATH_TY _ => (Lcf.rule o RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+       | Syn.PATH _ => (Lcf.rule o RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+       | Syn.LINE _ => (Lcf.rule o RT.Line.Elim z thenl' (names, [appTac, contTac])) alpha jdg
        | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
     end
 
@@ -168,7 +175,7 @@ struct
            | NONE => idn
 
         val fieldTactics = List.map (fn ((lbl, _), _) => tacticForLabel lbl) fields
-        val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTac sign)
+        val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTacComplete sign)
       in
         Lcf.rule o RT.Record.True thenl fieldTactics @ famTactics
       end
@@ -195,7 +202,7 @@ struct
              O.PAT_VAR _ => intros
            | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
       in
-        Lcf.rule o RT.Fun.True thenl' ([name], [continue, autoTac sign])
+        Lcf.rule o RT.Fun.True thenl' ([name], [continue, autoTacComplete sign])
       end
 
     and funIntros sign (pats, names) tac =
@@ -209,21 +216,27 @@ struct
   end
 
   local
-    fun pathIntrosBasis sign (u, us) tac _ =
-      Lcf.rule o RT.Path.True thenl' ([u], [pathIntros sign us tac, autoTac sign, autoTac sign])
+    fun lineIntrosBasis sign (u, us) tac _ = 
+      Lcf.rule o RT.Line.True
+        thenl' ([u], [pathIntros sign us tac])
+
+    and pathIntrosBasis sign (u, us) tac _ =
+      Lcf.rule o RT.Path.True
+        thenl' ([u], [pathIntros sign us tac, autoTacComplete sign, autoTacComplete sign])
 
     and pathIntros sign us tac =
       case us of
          [] => tac
        | u :: us =>
            R.Tactical.NormalizeGoalDelegate
-             (pathIntrosBasis sign (u, us) tac) sign
+             (fn alpha => pathIntrosBasis sign (u, us) tac alpha orelse_ lineIntrosBasis sign (u, us) tac alpha)
+             sign
   in
     val pathIntros = pathIntros
   end
 
   fun exactAuto sign m = 
-    R.Exact m thenl [autoTac sign]
+    R.Exact m thenl [autoTacComplete sign]
 
   fun cutLemma sign opid ar (args : abt bview list) (pattern, names) appTacs tac =
     let
@@ -242,7 +255,7 @@ struct
     end
     
   fun onAllHyps tac alpha (H >> jdg) =
-    (RedPrlSequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
+    (SequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
 
   val inversions = onAllHyps (T.try o R.Inversion)
 
@@ -266,29 +279,29 @@ struct
   and tactic_ sign env tm = 
     case Tm.out tm of 
        O.TAC_MTAC $ [_ \ tm] => multitacToTac (multitactic sign env tm)
-     | O.RULE_ID $ _ => idn
-     | O.RULE_AUTO_STEP $ _ => R.AutoStep sign
-     | O.RULE_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syntax.unpackAny any))
-     | O.RULE_REWRITE $ [_ \ sel, _ \ tm] => Lcf.rule o R.Rewrite sign (Syn.outSelector sel) tm thenl' ([], [autoTac sign, autoTac sign, autoTac sign, autoTac sign])
-     | O.RULE_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syntax.outSelector sel) (VarKit.fromTerm (Syntax.unpackAny any))
-     | O.RULE_EXACT $ [_ \ any] => R.Exact (Syntax.unpackAny any)
-     | O.RULE_SYMMETRY $ _ => R.Symmetry
+     | O.TAC_ID $ _ => idn
+     | O.TAC_AUTO_STEP $ _ => R.AutoStep sign
+     | O.TAC_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syn.unpackAny any))
+     | O.TAC_REWRITE $ [_ \ sel, _ \ acc, _ \ tm] => R.Rewrite sign (Syn.outSelector sel, Syn.outAccessor acc) tm thenl' ([], [autoTacComplete sign, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign])
+     | O.TAC_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syn.outSelector sel) (VarKit.fromTerm (Syn.unpackAny any))
+     | O.RULE_EXACT $ [_ \ any] => R.Exact (Syn.unpackAny any)
+     | O.TAC_SYMMETRY $ _ => R.Symmetry
      | O.DEV_INVERSION $ _ => inversions
      | O.RULE_CUT $ [_ \ catjdg] => Lcf.rule o R.Cut (AJ.out catjdg)
-     | O.RULE_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
-     | O.RULE_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syntax.outVec' Syntax.outSelector sels)
-     | O.RULE_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
-     | O.RULE_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syntax.outVec' Syntax.outSelector vec)
+     | O.TAC_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
+     | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syn.outVec' Syn.outSelector sels)
+     | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
+     | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
      | O.RULE_PRIM ruleName $ _ => R.lookupRule ruleName
      | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule o R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.DEV_RECORD_INTRO lbls $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.DEV_PATH_INTRO _ $ [us \ tm] => pathIntros sign us (tactic sign env tm)
      | O.DEV_BOOL_ELIM $ [_ \ var, _ \ tm1, _ \ tm2] => elimRule sign (VarKit.fromTerm var) [] [tactic sign env tm1, tactic sign env tm2]
-     | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTac sign, autoTac sign, autoTac sign]
+     | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign]
      | O.DEV_APPLY_HYP pattern $ [_ \ var, _ \ vec, names \ tm'] =>
        let
-         val z = VarKit.fromTerm (Syntax.unpackAny var)
+         val z = VarKit.fromTerm (Syn.unpackAny var)
          val tacs = Syn.outVec' (tactic sign env) vec
          val tac = tactic sign env tm'
        in
@@ -296,8 +309,8 @@ struct
        end
      | O.DEV_USE_HYP $ [_ \ var, _ \ vec] => 
        let
-         val z = VarKit.fromTerm (Syntax.unpackAny var)
-         val tacs = Syntax.outVec' (tactic sign env) vec
+         val z = VarKit.fromTerm (Syn.unpackAny var)
+         val tacs = Syn.outVec' (tactic sign env) vec
          val z' = RedPrlSym.named (Sym.toString z ^ "'")
        in
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
@@ -367,7 +380,7 @@ struct
        (fn alpha => fn jdg as H >> concl =>
          let
            val sel = Syn.outSelector selTm
-           val atjdg = Selector.lookup sel (H, concl)
+           val atjdg = Sequent.lookupSelector sel (H, concl)
            val tm' = substVar (AJ.into atjdg, x) tm
          in
            tactic sign env tm' alpha jdg
@@ -375,12 +388,13 @@ struct
      | O.DEV_PRINT $ [_ \ tm'] =>
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
         T.idn)
+     | O.TAC_FAIL $ _ => fail "fail"
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =
     case Tm.out tm of 
        O.MTAC_ALL $ [_ \ tm] => T.all (tactic sign env tm)
-     | O.MTAC_EACH $ [_ \ vec] => T.each (Syntax.outVec' (tactic sign env) vec)
+     | O.MTAC_EACH $ [_ \ vec] => T.each (Syn.outVec' (tactic sign env) vec)
      | O.MTAC_FOCUS i $ [_ \ tm] => T.only (i, tactic sign env tm)
      | O.MTAC_PROGRESS $ [_ \ tm] => T.mprogress (multitactic sign env tm)
      | O.MTAC_REC $ [[x] \ tm] => T.mrec (fn mt => multitactic sign (Var.Ctx.insert env x mt) tm)

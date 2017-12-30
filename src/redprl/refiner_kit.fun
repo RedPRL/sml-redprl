@@ -5,16 +5,16 @@ struct
   open Tactical
   infix orelse_ then_
 
-  structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and J = RedPrlJudgment
+  structure E = RedPrlError and O = RedPrlOperator and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = SyntaxView and J = RedPrlJudgment
   structure K = RedPrlKind
   structure L = RedPrlLevel
-  structure AJ = RedPrlAtomicJudgment
-  structure Seq = struct open RedPrlSequentData RedPrlSequent end
+  structure AJ = AtomicJudgment
+  structure Seq = struct open SequentData Sequent end
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = RedPrlMachine (Sig)
 
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
-  open RedPrlSequent
+  open Sequent
   infix 2 >: >>
 
   exception todo
@@ -125,7 +125,7 @@ struct
     List.foldl (fn (g, t) => t >: g) tel list
   infix 5 >:+
 
-  fun |>:+ g = g
+  fun |>:+ g = T.empty >:+ g
 
   fun >:? (tel, NONE) = tel
     | >:? (tel, SOME g) = tel >: g
@@ -153,77 +153,98 @@ struct
   fun makeGoal' jdg = #1 @@ makeGoal jdg
 
   (* needing the realizer *)
-  fun makeTrueWith f H (ty, l, k) = makeGoal @@ Seq.map f @@ H >> AJ.TRUE (ty, l, k)
-  val makeTrue = makeTrueWith (fn j => j)
-  fun makeSynth H (m, l, k) = makeGoal @@ H >> AJ.SYNTH (m, l, k)
+  fun makeTrueWith f H ty = makeGoal @@ Seq.map f @@ H >> AJ.TRUE ty
+  fun makeTrue H ty = makeGoal @@ H >> AJ.TRUE ty
+  fun makeSynth H m = makeGoal @@ H >> AJ.SYNTH m
   fun makeMatch part = makeGoal @@ MATCH part
   fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
   fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
 
   (* ignoring the trivial realizer *)
-  fun makeType H (a, l, k) = makeGoal' @@ H >> AJ.TYPE (a, l, k)
-  fun makeEqTypeWith f H ((a, b), l, k) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), l, k)
-  val makeEqType = makeEqTypeWith (fn j => j)
-  fun makeEqWith f H ((m, n), (ty, l, k)) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), (ty, l, k))
-  val makeEq = makeEqWith (fn j => j)
-  fun makeMem H (m, (ty, l, k)) = makeGoal' @@ H >> AJ.MEM (m, (ty, l, k))
-  fun makeSubUniverse H (u, l, k) = makeGoal' @@ H >> AJ.SUB_UNIVERSE (u, l, k)
+  fun makeType H (a, k) = makeGoal' @@ H >> AJ.TYPE (a, k)
+  fun makeEqTypeWith f H ((a, b), k) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), k)
+  fun makeEqType H ((a, b), k) = makeGoal' @@ H >> AJ.EQ_TYPE ((a, b), k)
+  fun makeEqWith f H ((m, n), ty) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
+  fun makeEq H ((m, n), ty) = makeGoal' @@ H >> AJ.EQ ((m, n), ty)
+  fun makeMem H (m, ty) = makeGoal' @@ H >> AJ.MEM (m, ty)
+  fun makeSubType H (a, b) = makeGoal' @@ H >> AJ.SUB_TYPE (a, b)
+  fun makeSubKind H (u, k) = makeGoal' @@ H >> AJ.SUB_KIND (u, k)
 
   (* conditional goal making *)
 
-  fun makeEqTypeIfDifferent H ((m, n), l, k) =
+  fun makeEqTypeIfDifferent H ((m, n), k) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType H ((m, n), l, k)
+    else SOME @@ makeEqType H ((m, n), k)
 
-  fun makeEqTypeUnlessSubUniv H ((m, n), l, k) (l', k') =
+  fun makeEqTypeUnlessSubUniv H ((m, n), k) k' =
     Option.map
-      (fn (l, k) => makeEqType H ((m, n), l, k))
-      (L.WK.residual ((l, k), (l', k')))
+      (fn k => makeEqType H ((m, n), k))
+      (K.residual (k, k'))
   
-  fun makeTypeUnlessSubUniv H (m, l, k) (l', k') =
-    makeEqTypeUnlessSubUniv H ((m, m), l, k) (l', k')
+  fun makeTypeUnlessSubUniv H (m, k) k' =
+    makeEqTypeUnlessSubUniv H ((m, m), k) k'
 
-  fun makeEqTypeIfDifferentOrNotSubUniv H ((m, n), l, k) (l', k') =
-    if Abt.eq (m, n) then makeTypeUnlessSubUniv H (m, l, k) (l', k')
-    else SOME @@ makeEqType H ((m, n), l, k)
+  fun makeEqTypeIfDifferentOrNotSubUniv H ((m, n), k) k' =
+    if Abt.eq (m, n) then makeTypeUnlessSubUniv H (m, k) k'
+    else SOME @@ makeEqType H ((m, n), k)
 
-  fun makeEqIfDifferent H ((m, n), (ty, l, k)) =
+  fun makeEqIfDifferent H ((m, n), ty) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEq H ((m, n), (ty, l, k))
+    else SOME @@ makeEq H ((m, n), ty)
 
-  fun makeEqIfAllDifferent H ((m, n), (ty, l, k)) ns =
+  fun makeEqIfAllDifferent H ((m, n), ty) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent H ((m, n), (ty, l, k))
-
-  fun makeEqUnlessSubUniv H ((m, n), (ty, l, k)) (l', k') =
-    Option.map
-      (fn (l, k) => makeEq H ((m, n), (ty, l, k)))
-      (L.WK.residual ((l, k), (l', k')))
-
-  fun makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k') =
-    makeEqUnlessSubUniv H ((m, m), (ty, l, k)) (l', k')
-
-  fun makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k') =
-    if Abt.eq (m, n) then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
-    else SOME @@ makeEq H ((m, n), (ty, l, k))
-
-  fun makeEqIfAllDifferentOrNotSubUniv H ((m, n), (ty, l, k)) ns (l', k') =
-    if List.exists (fn n' => Abt.eq (m, n')) ns
-    then makeMemUnlessSubUniv H (m, (ty, l, k)) (l', k')
-    else makeEqIfDifferentOrNotSubUniv H ((m, n), (ty, l, k)) (l', k')
-
-  fun ifAllNone l goal =
-    if List.exists Option.isSome l then NONE else SOME goal
+    else makeEqIfDifferent H ((m, n), ty)
 
   (* subtyping *)
 
-  fun isInUsefulUniv (l', k') (l, k) =
-    not (OptionUtil.eq L.WK.eq (L.WK.residual ((l, k), (l', k')), SOME (l, k)))
+  fun isInUsefulUnivOmega (k', k) =
+    not (OptionUtil.eq K.eq (K.residual (k, k'), SOME k))
 
   (* It is not clear how exactly the subtyping should be implemented;
    * therefore we have a dummy implementation here. *)
-  fun makeSubType H (ty1, l1, k1) (ty0, l0, k0) =
-    makeEqTypeIfDifferentOrNotSubUniv H ((ty1, ty0), l0, k0) (l1, k1)
+  fun makeSubTypeIfDifferent H (a, b) =
+    if Abt.eq (a, b) then NONE
+    else SOME @@ makeSubType H (a, b)
+
+  (* functions which blur the difference between EQ and EQ_TYPE *)
+  structure View =
+  struct
+    type as_level = L.t option
+    val OMEGA = NONE : as_level
+    val matchAsEqType =
+      fn AJ.EQ_TYPE ((a, b), k) => ((a, b), NONE, k)
+       | AJ.EQ ((a, b), univ) =>
+           let
+             val Syn.UNIVERSE (l, k) = Syn.out univ
+           in
+             ((a, b), SOME l, k)
+           end
+       | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEqType", AJ.pretty jdg)
+    fun makeAsEqType H =
+      fn ((a, b), NONE, k) => makeEqType H ((a, b), k)
+       | ((a, b), SOME l, k) => makeEq H ((a, b), Syn.intoU (l, k))
+    fun makeAsEqTypeWith f H =
+      fn ((a, b), NONE, k) => makeEqTypeWith f H ((a, b), k)
+       | ((a, b), SOME l, k) => makeEqWith f H ((a, b), Syn.intoU (l, k))
+    datatype as_type = TYPE of Abt.abt | UNIV_OMEGA of K.kind
+    val matchAsEq =
+      fn AJ.EQ ((a, b), ty) => ((a, b), TYPE ty)
+       | AJ.EQ_TYPE ((a, b), k) => ((a, b), UNIV_OMEGA k)
+       | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEq", AJ.pretty jdg)
+    fun makeAsEq H =
+      fn ((a, b), TYPE ty) => makeEq H ((a, b), ty)
+       | ((a, b), UNIV_OMEGA k) => makeEqType H ((a, b), k)
+    fun makeAsMem H =
+      fn (a, TYPE ty) => makeMem H (a, ty)
+       | (a, UNIV_OMEGA k) => makeType H (a, k)
+    fun makeAsSubType H =
+      fn (a, TYPE b) => makeSubType H (a, b)
+       | (a, UNIV_OMEGA k) => makeSubKind H (a, k)
+    fun makeAsSubTypeIfDifferent H =
+      fn (a, TYPE b) => makeSubTypeIfDifferent H (a, b)
+       | (a, UNIV_OMEGA k) => SOME @@ makeSubKind H (a, k)
+  end
 
   (* assertions *)
 
@@ -257,19 +278,13 @@ struct
       if L.<= (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than or equal to", L.pretty l2]
+        raise E.error [Fpp.text "Expected level", TermPrinter.ppTerm (L.into l1), Fpp.text "to be less than or equal to", TermPrinter.ppTerm (L.into l2)]
 
     fun levelEq (l1, l2) =
       if L.eq (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
-
-    fun levelNotOmega l =
-      if not (L.eq (l, L.omega)) then
-        ()
-      else
-        raise E.error [Fpp.text "Expected level", L.pretty l, Fpp.text "not to be", L.pretty L.omega]
+        raise E.error [Fpp.text "Expected level", TermPrinter.ppTerm (L.into l1), Fpp.text "to be equal to", TermPrinter.ppTerm (L.into l2)]
 
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then
@@ -283,11 +298,11 @@ struct
       else
         raise E.error [Fpp.text "Expected kind", TermPrinter.ppKind k1, Fpp.text "to be equal to", TermPrinter.ppKind k2]
 
-    fun inUsefulUniv (l', k') (l, k) =
-      if isInUsefulUniv (l', k') (l, k) then
+    fun inUsefulUnivOmega (k', k) =
+      if isInUsefulUnivOmega (k', k) then
         ()
       else
-        E.raiseError @@ E.GENERIC [Fpp.text "Expected level", L.pretty l', Fpp.text "and kind", TermPrinter.ppKind k, Fpp.text "to be useful"]
+        E.raiseError @@ E.GENERIC [Fpp.text "Expected kind", TermPrinter.ppKind k', Fpp.text "to be useful for kind", TermPrinter.ppKind k]
 
     fun dirEq msg ((r1, r1'), (r2, r2')) =
       if Abt.eq (r1, r2) andalso Abt.eq (r1', r2') then
@@ -378,5 +393,14 @@ struct
 
     fun labelsEq msg (l0, l1) =
       ListPair.appEq (labelEq msg) (l0, l1)
+  end
+
+  structure View =
+  struct
+    open View
+    structure Assert =
+    struct
+      fun levelLeq (l1, l2) = Option.app (fn l2 => Assert.levelLeq (l1, l2)) l2
+    end
   end
 end

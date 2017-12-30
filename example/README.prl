@@ -3,14 +3,14 @@ Thm BoolTest : [
 ] by [
   // A term/witness can be supplied to the refiner at any point in a tactic script
   // using the quotation operator `.
-  (lam x. if x then `tt else `ff); auto
+  (lam x => if x then `tt else `ff); auto
 ].
 
 
 Thm PathTest : [
   (path [_] S1 base base)
 ] by [
-  <x> `(loop x)
+  abs x => `(loop x)
 ].
 
 Thm LowLevel : [
@@ -19,7 +19,7 @@ Thm LowLevel : [
     wbool)
 ] by [
   fresh f -> refine fun/intro;
-  [fresh x, x/eq -> elim f;
+  [fresh x x/eq -> elim f;
   [`tt, use x],
   refine fun/eqtype;
   refine wbool/eqtype]
@@ -33,7 +33,7 @@ Thm LowLevel2 : [
     wbool)
 ] by [
   fresh f -> repeat {refine fun/intro; [id, auto]};
-  fresh x, x/eq -> elim f;
+  fresh x x/eq -> elim f;
   [`tt, use x]
 ].
 
@@ -44,11 +44,11 @@ Thm FunElimTest : [
    (-> wbool wbool)
    wbool)
 ] by [
-  lam f. use f [`tt]
+  lam f => use f [`tt]
 ].
 
 Thm S1ElimTest : [ (-> S1 S1) ] by [
-  lam s.
+  lam s =>
     case s of 
        base => `base
      | loop x => `(loop x)
@@ -67,23 +67,6 @@ Tac TryStep = [
   (Try #tac{auto-step})
 ].
 
-Thm ApEqTest : [
-  (->
-   [f : (-> wbool wbool)]
-   (path [_] wbool ($ f tt) ($ f tt)))
-] by [
-  // This is a good example of the difference between hypotheses and variables. A tactic script is
-  // a program, and itself may have variables in it---such as a variable ranging over a tactic, induced
-  // by the recursion tactical, etc.
-
-  // On the other hand, tactics like 'lam' introduce *hypothesis names*, which are not variables; they are
-  // *names* of object variables. The contradiction between hypotheses qua names and hypotheses qua object
-  // variables is mediated using an "unquotation" operator, written ','. When supplying a witness, the hypothesis
-  // name is "unquoted" using the comma operator, which causes it to become the appropriate object
-  // variable.
-  lam f. <_> `($ f tt)
-].
-
 // 'wif' stands for "weak if", which is the recursor for the weak booleans. It differs
 // from ordinary 'if' in that it must take the motive of induction as an argument;
 // this is computationally relevant in the case of hcoms.
@@ -99,7 +82,7 @@ Print BoolEta.
 Thm BoolEtaFunction : [
   (-> wbool wbool)
 ] by [
-  (lam b. if b then `tt else `ff); auto
+  (lam b => if b then `tt else `ff); auto
 ].
 
 Extract BoolEtaFunction.
@@ -120,14 +103,15 @@ Thm PathTest2 : [
     (lam [b] (BoolEta b)))
 ] by [
   // abstract a dimension
-  <x>
+  abs x =>
     // now, we are constructing a line of functions; so we use a
     // lambda.
-    (lam b.
+    (lam b =>
       // for our b:wbool, we will construct a path between b and
       // (BoolEta b).
-      let p : [(path [_] wbool b (BoolEta b))] =
-        if b then <y> `tt else <y> `ff.
+      claim p : [(path [_] wbool b (BoolEta b))] by [
+        if b then abs y => `tt else abs y => `ff
+      ];
 
       // Now, we will project the 'x'-side of our path. In the
       // interactive tactic environment, dimension expressions are
@@ -161,7 +145,7 @@ Thm PathTest3 : [
 Print PathTest3.
 
 Thm PairTest : [ (* [a : S1] (path [_] S1 a base)) ] by [
-  {`base, <x> `(loop x)}
+  {`base, abs x => `(loop x)}
 ].
 
 
@@ -181,7 +165,7 @@ Def Test = [
 Print Test.
 
 Thm SNot : [(-> bool bool)] by [
-  lam b. if b then `ff else `tt
+  lam b => if b then `ff else `tt
 ].
 
 Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by [
@@ -189,7 +173,7 @@ Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by 
 ].
 
 Thm Not : [(-> [_ : wbool] wbool)] by [
-  (lam x. if x then `ff else `tt); auto
+  (lam x => if x then `ff else `tt); auto
 ].
 
 Thm FunExt(#l:lvl) : [
@@ -199,16 +183,16 @@ Thm FunExt(#l:lvl) : [
    [p : (-> [y : a] (path [_] b ($ f y) ($ g y)))]
    (path [_] (-> a b) f g))
 ] by [
-  lam a, b, f, g, p.
-    <i> lam x. use p [use x, `i]
+  lam a b f g p =>
+    abs i => lam x => use p [use x, `i]
 ].
 
 Print FunExt.
 
 Tac FunExtTac(#l : lvl) = [
-  query gl <- concl.
+  query gl <- concl;
   match gl {
-    [a, b, f, g, k| #jdg{(path [_] (-> %a %b) %f %g) true with %[k:knd]} =>
+    [a b f g | #jdg{(path [_] (-> %a %b) %f %g) true} =>
       use (FunExt #l) [`%a, `%b, `%f, `%g, id]
     ]
   }
@@ -218,7 +202,7 @@ Print FunExtTac.
 
 Thm NotNotPath : [(path [_] (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac #lvl{0});
-  (lam x. if x then <_> `tt else <_> `ff);
+  (lam x => if x then abs _ => `tt else abs _ => `ff);
   auto
 ].
 
@@ -227,11 +211,11 @@ Print FunExtTac.
 Print NotNotPath.
 
 Thm Singleton : [(* [x : wbool] (path [_] wbool x tt))] by [
-  {`tt, <_> `tt}
+  {`tt, abs _ => `tt}
 ].
 
 Thm PathElimTest : [(-> (path [_] bool tt tt) bool)] by [
-  lam x. use x [`(dim 0)]
+  lam x => use x [`(dim 0)]
 ].
 
 Thm PathEta(#l:lvl) : [
@@ -241,7 +225,7 @@ Thm PathEta(#l:lvl) : [
    (path [_] a m n)
    (path [_] a m n))
 ] by [
-  lam a, m, n, p. <j> use p [`j]
+  lam a m n p => abs j => use p [`j]
 ].
 
 Print PathEta.

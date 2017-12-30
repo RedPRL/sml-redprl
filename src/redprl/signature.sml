@@ -1,10 +1,9 @@
 structure Signature :> SIGNATURE =
 struct
   structure Ar = RedPrlArity
-  structure P = RedPrlSortData
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
-  structure AJ = RedPrlAtomicJudgment and Sort = RedPrlOpData and Hyps = RedPrlSequentData.Hyps
+  structure AJ = AtomicJudgment and Hyps = SequentData.Hyps
 
   open ElabNotation infix >>= *> <*
 
@@ -22,8 +21,8 @@ struct
 
   fun prettyArgs args =
     Fpp.Atomic.parens @@ Fpp.grouped @@ Fpp.hvsep @@
-      intersperse (Fpp.text ";") @@
-        List.map (fn (x, vl) => Fpp.hsep [Fpp.text (Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
+      intersperse (Fpp.text ",") @@
+        List.map (fn (x, vl) => Fpp.hsep [Fpp.text ("#" ^ Metavar.toString x), Fpp.Atomic.colon, TermPrinter.ppValence vl]) args
 
   fun prettyEntry (_ : sign) (opid : opid, entry as {spec, state,...} : entry) : Fpp.doc =
     let
@@ -36,7 +35,7 @@ struct
           Fpp.seq [Fpp.text opid, prettyArgs arguments],
           Fpp.Atomic.colon,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
-            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty spec],
+            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, Sequent.pretty spec],
             Fpp.newline],
           Fpp.Atomic.equals,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
@@ -105,9 +104,15 @@ struct
            SOME ar => ar
          | NONE => error pos [Fpp.text "Encountered undefined custom operator:", Fpp.text opid]
 
-      fun guessSort sign varctx (tm : ast) : sort =
+      fun guessSort sign metactx varctx (tm : ast) : sort =
         case out tm of
            `x => (StringListDict.lookup varctx x handle _ => error (getAnnotation tm) [Fpp.text ("Could not resolve variable " ^ x)])
+         | x $# _ => 
+           let
+             val (_, tau) = StringListDict.lookup metactx x handle _ => error (getAnnotation tm) [Fpp.text ("Could not resolve metavariable " ^ x)]
+           in
+             tau
+           end
          | O.CUST (opid, _) $ _ => #2 (lookupArity sign (getAnnotation tm) opid)
          | th $ _ =>
            let
@@ -115,7 +120,6 @@ struct
            in
              tau
            end
-         | _ => O.EXP
 
       fun processOp pos sign varctx th  =
         case th of
@@ -124,72 +128,68 @@ struct
          | O.DEV_USE_LEMMA (opid, NONE) => O.DEV_USE_LEMMA (opid, SOME (lookupArity sign pos opid))
          | th => th
 
-      and processTerm' sign varctx m =
+      and processTerm' sign metactx varctx m =
         case out m of
            `x => ``x
          | O.MK_ANY NONE $ [_ \ m] => 
            let
-             val m' = processTerm sign varctx m
-             val tau = guessSort sign varctx m
+             val m' = processTerm sign metactx varctx m
+             val tau = guessSort sign metactx varctx m
            in
              O.MK_ANY (SOME tau) $$ [[] \ m']
            end
          | O.DEV_LET NONE $ [_ \ jdg, _ \ tac1, tac2] =>
            let
-             val jdg' = processTerm' sign varctx jdg
+             val jdg' = processTerm' sign metactx varctx jdg
              val tau = catjdgEvidence jdg
-             val tac1' = processTerm' sign varctx tac1
-             val tac2' = processBinder sign varctx ([tau], O.TAC) tac2
+             val tac1' = processTerm' sign metactx varctx tac1
+             val tac2' = processBinder sign metactx varctx ([tau], O.TAC) tac2
            in
              O.DEV_LET (SOME tau) $$ [[] \ jdg', [] \ tac1', tac2']
            end
          | th $ es =>
            let
-             val th' = processOp (getAnnotation m) sign varctx th
-             val (vls, _) = Tm.O.arity th'
-             val es' = ListPair.map (fn (e, vl) => processBinder sign varctx vl e) (es, vls)
+             val pos = getAnnotation m
+             val th' = processOp pos sign varctx th
+             val ar as (vls, _) = Tm.O.arity th'
            in
-             th' $$ es'
+             if List.length vls = List.length es then
+               th' $$ ListPair.map (fn (e, vl) => processBinder sign metactx varctx vl e) (es, vls)
+             else
+               RedPrlError.raiseAnnotatedError' (pos, RedPrlError.INCORRECT_ARITY (m, ar))
            end
-         | x $# ms => x $$# List.map (processTerm sign varctx) ms
+         | x $# ms => x $$# List.map (processTerm sign metactx varctx) ms
 
-      and processBinder sign varctx (taus, _) (xs \ m) = 
+      and processBinder sign metactx varctx (taus, _) (xs \ m) = 
         let
           val varctx' = ListPair.foldl (fn (x, tau, vars) => StringListDict.insert vars x tau) varctx (xs, taus)
         in
-          xs \ processTerm sign varctx' m
+          xs \ processTerm sign metactx varctx' m
         end
 
-      and processTerm sign varctx m =
-        inheritAnnotation m (processTerm' sign varctx m)
+      and processTerm sign metactx varctx m =
+        inheritAnnotation m (processTerm' sign metactx varctx m)
 
-      fun processSrcCatjdg sign = processTerm sign
-
-
-      fun processSrcHyps sign varctx hyps =
-        case hyps of
-           [] => ([], varctx)
-         | (x, hyp) :: hyps => 
-           let
-             val hyp' = processSrcCatjdg sign varctx hyp
-             val varctx' = StringListDict.insert varctx x (catjdgEvidence hyp')
-             val (hyps', varctx'') = processSrcHyps sign varctx' hyps
-           in
-             ((x, hyp') :: hyps', varctx'')
-           end
-
-      fun processSrcSeq sign varctx (hyps, concl) = 
-        let
-          val (hyps', varctx') = processSrcHyps sign varctx hyps
-        in
-          (hyps', processSrcCatjdg sign varctx' concl)
-        end
+      fun metasFromArgs arguments =
+        List.foldl (fn ((x, vl), metas) => StringListDict.insert metas x vl) StringListDict.empty arguments
 
     in
       fun processDecl sign =
-        fn DEF {arguments, sort, definiens} => DEF {arguments = arguments, sort = sort, definiens = processTerm sign StringListDict.empty definiens}
-         | THM {arguments, goal, script} => THM {arguments = arguments, goal = processSrcSeq sign StringListDict.empty goal, script = processTerm sign StringListDict.empty script}
-         | TAC {arguments, script} => TAC {arguments = arguments, script = processTerm sign StringListDict.empty script}
+        fn DEF {arguments, sort, definiens} =>
+           DEF {arguments = arguments,
+                sort = sort,
+                definiens = processTerm sign (metasFromArgs arguments) StringListDict.empty definiens}
+         | THM {arguments, goal, script} =>
+           let
+             val metactx = metasFromArgs arguments
+           in
+             THM {arguments = arguments,
+                  goal = processTerm sign metactx StringListDict.empty goal,
+                  script = processTerm sign metactx StringListDict.empty script}
+           end
+         | TAC {arguments, script} =>
+           TAC {arguments = arguments,
+                script = processTerm sign (metasFromArgs arguments) StringListDict.empty script}
     end
 
     structure MetaCtx = Tm.Metavar.Ctx
@@ -274,25 +274,6 @@ struct
           E.ret (varctx', env', x, catjdg)
         end)
 
-    fun elabSrcSeqHyps (metactx, varctx, env) : src_seqhyp list -> (Tm.varctx * variable NameEnv.dict * AJ.jdg Hyps.telescope) E.t =
-      let
-        fun go env vars H [] = E.ret (vars, env, H)
-          | go env vars H (hyp :: hyps) =
-              elabSrcSeqHyp (metactx, vars, env) hyp >>= (fn (vars', env', x, jdg) => 
-                go env' vars' (Hyps.snoc H x jdg) hyps)
-      in
-        go env varctx Hyps.empty
-      end
-
-    fun elabSrcSequent (metactx, varctx, env) (seq : src_sequent) : (variable NameEnv.dict * jdg) E.t =
-      let
-        val (hyps, concl) = seq
-      in
-        elabSrcSeqHyps (metactx, varctx, env) hyps >>= (fn (varctx', env', hyps') =>
-          elabSrcCatjdg (metactx, varctx', env') concl >>= (fn concl' =>
-            E.ret (env', RedPrlSequent.>> (hyps', concl'))))
-      end
-
     fun makeNamePopper alpha = 
       let
         val ix = ref 0
@@ -309,9 +290,9 @@ struct
 
     fun valenceToSequent alpha (taus, tau) =
       let
-        open RedPrlSequent AJ infix >>
+        open Sequent AJ infix >>
         val fresh = makeNamePopper alpha
-        val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ List.rev taus
+        val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ taus
       in
         H >> TERM tau
       end
@@ -348,14 +329,14 @@ struct
                 Lcf.|> (subgoals, checkb (binder, valence))
               end
 
-            val spec = RedPrlSequent.>> (Hyps.empty, AJ.TERM tau)
+            val spec = Sequent.>> (Hyps.empty, AJ.TERM tau)
           in
             E.ret (EDEF {sourceOpid = opid, spec = spec, state = state})
           end)
       end
 
     local
-      open RedPrlSequent Tm RedPrlOpData infix >> \ $$
+      open Sequent Tm RedPrlOpData infix >> \ $$
 
       fun elabRefine sign alpha (seqjdg, script) =
         let
@@ -375,9 +356,9 @@ struct
         let
           val Lcf.|> (subgoals, _) = state
           fun goalEqualTo goal1 goal2 =
-            if RedPrlSequent.eq (goal1, goal2) then true
+            if Sequent.eq (goal1, goal2) then true
             else
-              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty goal1, Fpp.text "not equal to", RedPrlSequent.pretty goal2]);
+              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [Sequent.pretty goal1, Fpp.text "not equal to", Sequent.pretty goal2]);
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true
@@ -395,32 +376,27 @@ struct
               *> E.ret state
         end
     in
-
       fun elabThm sign opid pos {arguments, goal, script} =
         let
           val (arguments', metactx) = elabDeclArguments arguments
           val env = initialEnv sign
         in
-          elabSrcSequent (metactx, Var.Ctx.empty, env) goal >>= (fn (_, seqjdg as hyps >> concl) =>
-            let
-              val seqjdg' = hyps >> concl
-            in
-              convertToAbt (metactx, Var.Ctx.empty, env) script TAC >>= 
-              (fn scriptTm => elabRefine sign globalNameSequence (seqjdg', scriptTm)) >>= 
-              checkProofState (pos, []) >>=
-              (fn Lcf.|> (subgoals, validation) => 
-                let
-                  fun state alpha =
-                    let
-                      val argSubgoals = argumentsToSubgoals alpha arguments'
-                      (* TODO: relabel ordinary subgoals using alpha too *)
-                    in
-                      Lcf.|> (Lcf.Tl.append argSubgoals subgoals, validation)
-                    end
-                in
-                  E.ret @@ EDEF {sourceOpid = opid, spec = seqjdg', state = state}
-                end)
-            end)
+          elabSrcCatjdg (metactx, Var.Ctx.empty, env) goal >>= (fn concl =>
+            convertToAbt (metactx, Var.Ctx.empty, env) script TAC >>= 
+            (fn scriptTm => elabRefine sign globalNameSequence (Hyps.empty >> concl, scriptTm)) >>= 
+            checkProofState (pos, []) >>=
+            (fn Lcf.|> (subgoals, validation) => 
+              let
+                fun state alpha =
+                  let
+                    val argSubgoals = argumentsToSubgoals alpha arguments'
+                    (* TODO: relabel ordinary subgoals using alpha too *)
+                  in
+                    Lcf.|> (Lcf.Tl.append argSubgoals subgoals, validation)
+                  end
+              in
+                E.ret @@ EDEF {sourceOpid = opid, spec = Hyps.empty >> concl, state = state}
+              end))
         end
       end
 
@@ -435,23 +411,18 @@ struct
             val binder = [] \ script'
             val valence = ([], TAC)
             fun state alpha = Lcf.|> (argumentsToSubgoals alpha arguments', checkb (binder, valence))
-            val spec = RedPrlSequent.>> (Hyps.empty, AJ.TERM TAC)
+            val spec = Sequent.>> (Hyps.empty, AJ.TERM TAC)
           in
             E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
           end)
       end
 
     fun elabDecl (sign : sign) opid (decl : src_decl, pos) : elab_sign =
-      let
-        val esign' = Telescope.truncateFrom (#elabSign sign) opid
-        val sign' = {sourceSign = #sourceSign sign, elabSign = esign', nameEnv = #nameEnv sign}
-      in
-        Telescope.snoc esign' opid (E.delay (fn _ =>
-          case processDecl sign decl of
-             DEF defn => elabDef sign' opid defn
-           | THM defn => elabThm sign' opid pos defn
-           | TAC defn => elabTac sign' opid defn))
-      end
+      Telescope.snoc (#elabSign sign) opid (E.delay (fn _ =>
+	case processDecl sign decl of
+	   DEF defn => elabDef sign opid defn
+	 | THM defn => elabThm sign opid pos defn
+	 | TAC defn => elabTac sign opid defn))
 
     fun elabPrint (sign : sign) (pos, opid : opid) =
       E.hush (Telescope.lookup (#elabSign sign) opid) >>= (fn edecl =>
@@ -497,11 +468,7 @@ struct
 
 
     fun insertAstDecl sign opid (decl, pos) =
-      let
-        val sign' = Telescope.truncateFrom sign opid
-      in
-        Telescope.snoc sign' opid (decl, pos)
-      end
+      Telescope.snoc sign opid (decl, pos)
       handle Telescope.Duplicate l => error pos [Fpp.text "Duplicate identitifier:", Fpp.text l]
 
   in
