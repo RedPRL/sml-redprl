@@ -7,7 +7,7 @@ open Ast
 structure E = RedPrlError
 structure K = RedPrlKind
 structure O = RedPrlOperator
-structure AJ = RedPrlAtomicJudgment
+structure AJ = AtomicJudgment
 
 structure TP = TermPrinter
 

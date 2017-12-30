@@ -1,6 +1,6 @@
-structure RedPrlAtomicJudgment : ATOMIC_JUDGMENT =
+structure AtomicJudgment : ATOMIC_JUDGMENT =
 struct
-  open RedPrlAtomicJudgmentData
+  open AtomicJudgmentData
   type abt = RedPrlAbt.abt
 
   fun MEM (m, a) =

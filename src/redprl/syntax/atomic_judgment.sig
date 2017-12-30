@@ -1,4 +1,4 @@
-structure RedPrlAtomicJudgmentData =
+structure AtomicJudgmentData =
 struct
   type kind = RedPrlKind.t
   type abt = RedPrlAbt.abt
@@ -62,7 +62,7 @@ end
 
 signature ATOMIC_JUDGMENT =
 sig
-  datatype jdg = datatype RedPrlAtomicJudgmentData.jdg
+  datatype jdg = datatype AtomicJudgmentData.jdg
   type abt = RedPrlAbt.abt
   type kind = RedPrlKind.t
 

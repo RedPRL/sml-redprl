@@ -2025,7 +2025,7 @@ struct
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
         val H >> concl = jdg
 
-        val currentAjdg = RedPrlSequent.lookupSelector sel (H, concl)
+        val currentAjdg = Sequent.lookupSelector sel (H, concl)
         val (currentTm, ty) =
           case (currentAjdg, acc) of
              (AJ.EQ (_, ty), Accessor.PART_TYPE) => (ty, View.UNIV_OMEGA K.top)
@@ -2047,7 +2047,7 @@ struct
            | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
                Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg])
 
-        val truncatedH = RedPrlSequent.truncateFrom sel H
+        val truncatedH = Sequent.truncateFrom sel H
 
         val (goalTyOfEq, holeTyOfEq) = makeSynth truncatedH eqterm
         val (goalTy, holeTy) = makeMatch (O.EQUALITY, 0, holeTyOfEq, [])
@@ -2079,7 +2079,7 @@ struct
            | (AJ.SUB_TYPE (m, _), Accessor.PART_RIGHT) => AJ.SUB_TYPE (m, motiven)
            | (AJ.SUB_KIND (_, k), Accessor.PART_LEFT) => AJ.SUB_KIND (motiven, k)
 
-        val (H', concl') = RedPrlSequent.mapSelector sel (fn _ => replace) (H, concl)
+        val (H', concl') = Sequent.mapSelector sel (fn _ => replace) (H, concl)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
 
         val motiveMatchesMainGoal =

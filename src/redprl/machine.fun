@@ -87,10 +87,10 @@ struct
     fun default sign opid = 
       let
         val {spec, ...} = Sig.lookup sign opid
-        open RedPrlSequent infix >>
+        open Sequent infix >>
       in
         case spec of
-          _ >> RedPrlAtomicJudgment.TRUE _ => false
+          _ >> AtomicJudgment.TRUE _ => false
         | _ => true
       end
 

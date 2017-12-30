@@ -8,13 +8,13 @@ struct
   structure E = RedPrlError and O = RedPrlOperator and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = SyntaxView and J = RedPrlJudgment
   structure K = RedPrlKind
   structure L = RedPrlLevel
-  structure AJ = RedPrlAtomicJudgment
-  structure Seq = struct open RedPrlSequentData RedPrlSequent end
+  structure AJ = AtomicJudgment
+  structure Seq = struct open SequentData Sequent end
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = RedPrlMachine (Sig)
 
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
-  open RedPrlSequent
+  open Sequent
   infix 2 >: >>
 
   exception todo

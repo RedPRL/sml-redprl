@@ -71,7 +71,7 @@ struct
       let
         val _ = RedPrlLog.trace "Computation.Reduce"
         val H >> ajdg = jdg
-        val (H', ajdg') = RedPrlSequent.multiMapSelector selectors (AJ.map (reduce sign)) (H, ajdg)
+        val (H', ajdg') = Sequent.multiMapSelector selectors (AJ.map (reduce sign)) (H, ajdg)
         val (goal, hole) = makeGoal @@ H' >> ajdg'
       in
         |>: goal #> (H, hole)
@@ -147,7 +147,7 @@ struct
       let
         val _ = RedPrlLog.trace "Custom.Unfold"
         val H >> ajdg = jdg
-        val (H', ajdg') = RedPrlSequent.multiMapSelector selectors (AJ.map (unfold sign opids)) (H, ajdg)
+        val (H', ajdg') = Sequent.multiMapSelector selectors (AJ.map (unfold sign opids)) (H, ajdg)
         val (goal, hole) = makeGoal @@ H' >> ajdg'
       in
         |>: goal #> (H, hole)

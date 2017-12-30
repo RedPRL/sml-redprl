@@ -59,8 +59,8 @@ struct
     orelse_
       R.SynthFromHyp z
 
-  open RedPrlSequent infix >>
-  structure AJ = RedPrlAtomicJudgment and Syn = SyntaxView
+  open Sequent infix >>
+  structure AJ = AtomicJudgment and Syn = SyntaxView
 
   val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
@@ -255,7 +255,7 @@ struct
     end
     
   fun onAllHyps tac alpha (H >> jdg) =
-    (RedPrlSequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
+    (SequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
 
   val inversions = onAllHyps (T.try o R.Inversion)
 
@@ -380,7 +380,7 @@ struct
        (fn alpha => fn jdg as H >> concl =>
          let
            val sel = Syn.outSelector selTm
-           val atjdg = RedPrlSequent.lookupSelector sel (H, concl)
+           val atjdg = Sequent.lookupSelector sel (H, concl)
            val tm' = substVar (AJ.into atjdg, x) tm
          in
            tactic sign env tm' alpha jdg

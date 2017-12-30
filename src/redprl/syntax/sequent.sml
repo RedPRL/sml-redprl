@@ -1,13 +1,13 @@
-structure RedPrlSequent : SEQUENT =
+structure Sequent : SEQUENT =
 struct
-  structure AJ = RedPrlAtomicJudgment
+  structure AJ = AtomicJudgment
   structure Tm = RedPrlAbt
   structure O = RedPrlOperator
   structure TP = TermPrinter
 
   datatype atjdg = datatype AJ.jdg
 
-  open RedPrlSequentData
+  open SequentData
   infix >>
 
   fun map f =
@@ -91,10 +91,10 @@ struct
      | _ => false
 
   local
-    structure AJ = RedPrlAtomicJudgment
+    structure AJ = AtomicJudgment
     structure S = Selector
     structure O = RedPrlOpData (* TODO: we should move the selector crap out of there! *)
-    structure Hyps = RedPrlSequentData.Hyps
+    structure Hyps = SequentData.Hyps
   in
     fun mapSelector sel f (H : AJ.jdg Hyps.telescope, catjdg) =
       case sel of

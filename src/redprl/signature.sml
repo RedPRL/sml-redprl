@@ -3,7 +3,7 @@ struct
   structure Ar = RedPrlArity
   structure E = ElabMonadUtil (ElabMonad)
   structure ElabNotation = MonadNotation (E)
-  structure AJ = RedPrlAtomicJudgment and Hyps = RedPrlSequentData.Hyps
+  structure AJ = AtomicJudgment and Hyps = SequentData.Hyps
 
   open ElabNotation infix >>= *> <*
 
@@ -35,7 +35,7 @@ struct
           Fpp.seq [Fpp.text opid, prettyArgs arguments],
           Fpp.Atomic.colon,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
-            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, RedPrlSequent.pretty spec],
+            [Fpp.nest 2 @@ Fpp.seq [Fpp.newline, Sequent.pretty spec],
             Fpp.newline],
           Fpp.Atomic.equals,
           Fpp.grouped @@ Fpp.Atomic.squares @@ Fpp.seq
@@ -290,7 +290,7 @@ struct
 
     fun valenceToSequent alpha (taus, tau) =
       let
-        open RedPrlSequent AJ infix >>
+        open Sequent AJ infix >>
         val fresh = makeNamePopper alpha
         val H = List.foldl (fn (tau, H) => Hyps.snoc H (fresh ()) (TERM tau)) Hyps.empty @@ taus
       in
@@ -329,14 +329,14 @@ struct
                 Lcf.|> (subgoals, checkb (binder, valence))
               end
 
-            val spec = RedPrlSequent.>> (Hyps.empty, AJ.TERM tau)
+            val spec = Sequent.>> (Hyps.empty, AJ.TERM tau)
           in
             E.ret (EDEF {sourceOpid = opid, spec = spec, state = state})
           end)
       end
 
     local
-      open RedPrlSequent Tm RedPrlOpData infix >> \ $$
+      open Sequent Tm RedPrlOpData infix >> \ $$
 
       fun elabRefine sign alpha (seqjdg, script) =
         let
@@ -356,9 +356,9 @@ struct
         let
           val Lcf.|> (subgoals, _) = state
           fun goalEqualTo goal1 goal2 =
-            if RedPrlSequent.eq (goal1, goal2) then true
+            if Sequent.eq (goal1, goal2) then true
             else
-              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [RedPrlSequent.pretty goal1, Fpp.text "not equal to", RedPrlSequent.pretty goal2]);
+              (RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hvsep [Sequent.pretty goal1, Fpp.text "not equal to", Sequent.pretty goal2]);
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true
@@ -411,7 +411,7 @@ struct
             val binder = [] \ script'
             val valence = ([], TAC)
             fun state alpha = Lcf.|> (argumentsToSubgoals alpha arguments', checkb (binder, valence))
-            val spec = RedPrlSequent.>> (Hyps.empty, AJ.TERM TAC)
+            val spec = Sequent.>> (Hyps.empty, AJ.TERM TAC)
           in
             E.ret @@ EDEF {sourceOpid = opid, spec = spec, state = state}
           end)

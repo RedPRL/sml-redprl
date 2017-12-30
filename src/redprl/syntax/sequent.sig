@@ -1,6 +1,6 @@
-structure RedPrlSequentData =
+structure SequentData =
 struct
-  type catjdg = RedPrlAtomicJudgment.jdg
+  type catjdg = AtomicJudgment.jdg
   type abt = RedPrlAbt.abt
 
   structure Hyps : TELESCOPE = Telescope (Sym)
@@ -20,9 +20,9 @@ end
 
 signature SEQUENT =
 sig
-  datatype atjdg = datatype RedPrlAtomicJudgment.jdg
-  datatype jdg = datatype RedPrlSequentData.jdg
-  type 'a ctx = 'a RedPrlSequentData.ctx
+  datatype atjdg = datatype AtomicJudgment.jdg
+  datatype jdg = datatype SequentData.jdg
+  type 'a ctx = 'a SequentData.ctx
 
   type abt = RedPrlAbt.abt
 

@@ -71,9 +71,9 @@ struct
 
   fun entrySort (entry : entry) : sort = 
     let
-      val RedPrlSequent.>> (_, jdg) = #spec entry
+      val Sequent.>> (_, jdg) = #spec entry
     in
-      RedPrlAtomicJudgment.synthesis jdg
+      AtomicJudgment.synthesis jdg
     end
 
   fun unfoldCustomOperator (entry : entry) (es : abt Tm.bview list) : abt =

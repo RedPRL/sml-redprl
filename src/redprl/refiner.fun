@@ -167,7 +167,7 @@ struct
         |>: goal #> (H, tm)
       end
       handle Bind =>
-        raise E.error [Fpp.text "Expected truth sequent but got:", RedPrlSequent.pretty jdg]
+        raise E.error [Fpp.text "Expected truth sequent but got:", Sequent.pretty jdg]
   end
 
   structure Term = 
@@ -281,11 +281,11 @@ struct
         val H >> concl = jdg
 
         val currentTy =
-          case RedPrlSequent.lookupSelector sel (H, concl) of
+          case Sequent.lookupSelector sel (H, concl) of
              AJ.TRUE params => params
            | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", AJ.pretty jdg)
 
-        val truncatedH = RedPrlSequent.truncateFrom sel H
+        val truncatedH = Sequent.truncateFrom sel H
         val AJ.EQ ((m, n), ty) = Hyps.lookup truncatedH z
 
         val x = alpha 0
@@ -301,7 +301,7 @@ struct
              AJ.TRUE _ => AJ.TRUE motiven
            | _ => jdg
 
-        val (H', concl') = RedPrlSequent.mapSelector sel replace (H, concl)
+        val (H', concl') = Sequent.mapSelector sel replace (H, concl)
         val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
 
         val motiveMatchesMainGoal =
