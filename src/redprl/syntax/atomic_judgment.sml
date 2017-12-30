@@ -1,4 +1,4 @@
-structure RedPrlAtomicJudgment : CATEGORICAL_JUDGMENT =
+structure RedPrlAtomicJudgment : ATOMIC_JUDGMENT =
 struct
   open RedPrlAtomicJudgmentData
   type abt = RedPrlAbt.abt

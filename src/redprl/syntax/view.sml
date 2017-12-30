@@ -1,4 +1,4 @@
-structure Syntax =
+structure SyntaxView =
 struct
   structure Tm = RedPrlAbt
   structure K = RedPrlKind

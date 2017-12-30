@@ -28,6 +28,6 @@ struct
            in
              ([], tau)
            end
-       | MATCH_RECORD _ => ([], RedPrlSortData.EXP)
+       | MATCH_RECORD _ => ([], RedPrlSort.EXP)
   end
 end

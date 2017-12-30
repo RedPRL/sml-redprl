@@ -2,7 +2,7 @@ functor RedPrlMachine (Sig : MINI_SIGNATURE) : REDPRL_MACHINE =
 struct
   structure E = RedPrlError
   structure Tm = RedPrlAbt
-  structure Syn = Syntax
+  structure Syn = SyntaxView
   structure SymSet = SplaySet (structure Elem = Sym.Ord)
   
   type sign = Sig.sign

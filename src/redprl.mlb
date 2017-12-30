@@ -25,23 +25,24 @@ in
 
     redprl/config.sml
 
-    redprl/operator.sml
-    redprl/abt.sml
+    redprl/syntax/sort.sig
+    redprl/syntax/sort.sml
+    redprl/syntax/kind.sml
+    redprl/syntax/operator.sml
+    redprl/syntax/abt.sml
     redprl/pretty.sml
 
   
     redprl/error.sig
     redprl/error.sml
-    redprl/univ_level.sig
-    redprl/univ_level.sml
-    redprl/syntax.sml
-    redprl/variable_kit.sml
-
-    redprl/atomic_judgment.sig
-    redprl/atomic_judgment.sml
-
-    redprl/sequent.sig
-    redprl/sequent.sml
+    redprl/syntax/univ_level.sig
+    redprl/syntax/univ_level.sml
+    redprl/syntax/view.sml
+    redprl/syntax/variable_kit.sml
+    redprl/syntax/atomic_judgment.sig
+    redprl/syntax/atomic_judgment.sml
+    redprl/syntax/sequent.sig
+    redprl/syntax/sequent.sml
 
     redprl/judgment.sml
 

@@ -68,7 +68,7 @@ struct
   datatype variance = COVAR | CONTRAVAR | ANTIVAR
 end
 
-signature CATEGORICAL_JUDGMENT =
+signature ATOMIC_JUDGMENT =
 sig
   datatype jdg = datatype RedPrlAtomicJudgmentData.jdg
   datatype variance = datatype RedPrlAtomicJudgmentData.variance

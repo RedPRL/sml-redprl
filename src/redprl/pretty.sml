@@ -41,7 +41,7 @@ sig
 end =
 struct
   structure Abt = RedPrlAbt
-  structure S = RedPrlSortData and Ar = Abt.O.Ar
+  structure S = RedPrlSort and Ar = Abt.O.Ar
 
   open FppBasis Fpp Abt
   structure O = RedPrlOpData
