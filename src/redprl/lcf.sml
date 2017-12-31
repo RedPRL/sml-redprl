@@ -6,7 +6,7 @@ sig
   val prettyState : jdg state -> Fpp.doc
 end =
 struct
-  structure Lcf = Lcf (LcfLanguage)
+  structure Lcf = PlainLcf (LcfLanguage)
   structure Def = LcfTactic (structure J = RedPrlJudgment and Lcf = Lcf and M = LcfMonadBT)
   open Def Lcf
   infix |> ||
