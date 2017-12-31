@@ -58,6 +58,9 @@ in
     redprl/elab_monad.sig
     redprl/elab_monad.sml
 
+    redprl/name_seq.sig
+    redprl/name_seq.sml
+
     redprl/tactic_monad.sml
     redprl/lcf.sml
 
@@ -68,8 +71,6 @@ in
     redprl/log.sml
     
 
-    redprl/name_seq.sig
-    redprl/name_seq.sml
     redprl/tactical.fun
 
 

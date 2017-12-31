@@ -33,14 +33,19 @@ struct
   open Tm infix $ $$ $# \
   structure O = RedPrlOpData
 
+  fun formatLog xs = 
+    Fpp.seq [Fpp.text "Trace: ", Fpp.hsep (List.map (fn (r, jdg) => Fpp.text r) xs)]
+
   fun hole (pos : Pos.t, name : string option) : multitactic = 
     fn state =>
       let
         val header = Fpp.seq [Fpp.text (Option.getOpt (name, "hole")), Fpp.char #"."]
         val message = Fpp.vsep [header, Lcf.prettyState state]
+        fun handler log = ()
+          (* RedPrlLog.print RedPrlLog.INFO (SOME pos, formatLog log) *)
       in
         RedPrlLog.print RedPrlLog.INFO (SOME pos, message);
-        Lcf.all Lcf.idn state
+        Lcf.all (Lcf.listen handler Lcf.idn) state
       end
 
   (* TODO: this should fail using the tactic monad *)

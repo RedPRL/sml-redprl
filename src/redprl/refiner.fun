@@ -390,7 +390,7 @@ struct
      | "s1/eq/s1-rec" => Lcf.rule S1.EqElim
      | "fun/eqtype" => Lcf.rule Fun.EqType
      | "fun/eq/lam" => Lcf.rule Fun.Eq
-     | "fun/intro" => Lcf.rule Fun.True
+     | "fun/intro" => Lcf.trace "fun/intro" (Lcf.rule Fun.True)
      | "fun/eq/eta" => Lcf.rule Fun.Eta
      | "fun/eq/app" => Lcf.rule Fun.EqApp
      | "record/eqtype" => Lcf.rule Record.EqType
