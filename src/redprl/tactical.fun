@@ -43,11 +43,18 @@ struct
 
     fun seq (mt1 : multitactic, (us : Sym.t list, mt2 : multitactic)) : multitactic =
       fn st => 
-        let
-          val st' = Lcf.M.mapEnv (Spr.prepend us) (mt1 st)
-        in
-          Lcf.M.bind (st', mt2 o Lcf.mul Lcf.isjdg)
-        end
+        Lcf.M.bind (Lcf.M.getEnv, fn alpha => 
+          let
+            val (beta, modulus) = Spr.probe (Spr.prepend us alpha)
+            val st' = Lcf.M.mapEnv (fn _ => beta) (mt1 st)
+          in
+            Lcf.M.bind (st', fn st'' => 
+              let
+                val l = Int.max (0, !modulus - List.length us)
+              in
+                Lcf.M.mapEnv (fn _ => Spr.bite l alpha) (mt2 (Lcf.mul Lcf.isjdg st''))              
+              end)
+          end)
 
     fun then_ (t1 : tactic, t2 : tactic) : tactic = 
       multitacToTac (seq (all t1, ([], all t2)))
