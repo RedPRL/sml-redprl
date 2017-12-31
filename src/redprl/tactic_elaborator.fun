@@ -3,14 +3,10 @@ sig
   type sign = Sig.sign
   type script = RedPrlAbt.abt
 
-  type 'a nominal = (int -> Sym.t) -> 'a
-  type tactic = Lcf.jdg Lcf.tactic nominal
-  type multitactic = Lcf.jdg Lcf.multitactic nominal
+  type env = Lcf.jdg Lcf.multitactic Var.Ctx.dict
 
-  type env = multitactic Var.Ctx.dict
-
-  val tactic : sign -> env -> script -> tactic
-  val multitactic : sign -> env -> script -> multitactic
+  val tactic : sign -> env -> script -> Lcf.jdg Lcf.tactic
+  val multitactic : sign -> env -> script -> Lcf.jdg Lcf.multitactic
 end = 
 struct
 
@@ -22,9 +18,6 @@ struct
 
   type sign = Sig.sign
   type script = Tm.abt
-  type 'a nominal = (int -> Sym.t) -> 'a
-  type tactic = Lcf.jdg Lcf.tactic nominal
-  type multitactic = Lcf.jdg Lcf.multitactic nominal
 
   structure R = Refiner (Sig)
   structure RT = RefinerTypeRules (Sig)
@@ -32,7 +25,7 @@ struct
 
   open T infix seq then_ thenl thenl' orelse_
 
-  type env = multitactic Var.Ctx.dict
+  type env = Lcf.jdg Lcf.multitactic Var.Ctx.dict
 
   fun ?e = raise e
   exception todo
@@ -40,22 +33,28 @@ struct
   open Tm infix $ $$ $# \
   structure O = RedPrlOpData
 
+  fun formatLog xs = 
+    Fpp.seq [Fpp.text "Trace: ", Fpp.hsep (List.map (fn (r, jdg) => Fpp.text r) xs)]
+
   fun hole (pos : Pos.t, name : string option) : multitactic = 
-    fn alpha => fn state =>
+    fn state =>
       let
         val header = Fpp.seq [Fpp.text (Option.getOpt (name, "hole")), Fpp.char #"."]
         val message = Fpp.vsep [header, Lcf.prettyState state]
+        fun handler log = ()
+          (* RedPrlLog.print RedPrlLog.INFO (SOME pos, formatLog log) *)
       in
         RedPrlLog.print RedPrlLog.INFO (SOME pos, message);
-        Lcf.all Lcf.idn state
+        Lcf.all (Lcf.listen handler Lcf.idn) state
       end
 
+  (* TODO: this should fail using the tactic monad *)
   fun fail msg = 
-    fn alpha => fn state => 
+    fn state => 
       RedPrlError.raiseError (RedPrlError.GENERIC [Fpp.text msg])
 
   fun hyp z =
-    Lcf.rule o R.Hyp.Project z
+    Lcf.rule (R.Hyp.Project z)
     orelse_
       R.SynthFromHyp z
 
@@ -82,7 +81,7 @@ struct
           handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
         val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
       in
-        Lcf.rule o RT.Record.Elim z thenl' (xs, [tac])
+        Lcf.rule (RT.Record.Elim z) thenl' (xs, [tac])
       end
   in
     fun recordElim (lbls, names) tac =
@@ -115,11 +114,11 @@ struct
 
   (* R.Hyp.Delete can fail if the hypothesis is mentioned. *)
   fun deleteHyp name = 
-    T.try (Lcf.rule o R.Hyp.Delete name)
+    T.try (Lcf.rule (R.Hyp.Delete name))
 
   fun decomposeStitched sign z (pattern : Sym.t O.dev_pattern) tac = 
     case pattern of 
-        O.PAT_VAR u => Lcf.rule o (R.Hyp.Rename z) thenl' ([u], [tac])
+        O.PAT_VAR u => Lcf.rule (R.Hyp.Rename z) thenl' ([u], [tac])
       | O.PAT_TUPLE labeledPatterns =>
         let
           val (lbls, pats) = ListPair.unzip labeledPatterns
@@ -139,15 +138,15 @@ struct
       o #1
       o stitchPattern
 
-  fun apply sign z names (appTac, contTac) alpha jdg = 
+  fun apply sign z names (appTac, contTac) jdg = 
     let
       val H >> _ = jdg
       val AJ.TRUE ty = RT.Hyps.lookup H z
     in
       case Syn.out ty of 
-         Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.PATH _ => (Lcf.rule o RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.LINE _ => (Lcf.rule o RT.Line.Elim z thenl' (names, [appTac, contTac])) alpha jdg
+         Syn.FUN _ => (Lcf.rule (RT.Fun.Elim z) thenl' (names, [appTac, contTac])) jdg
+       | Syn.PATH _ => (Lcf.rule (RT.Path.Elim z) thenl' (names, [appTac, contTac])) jdg
+       | Syn.LINE _ => (Lcf.rule (RT.Line.Elim z) thenl' (names, [appTac, contTac])) jdg
        | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
     end
 
@@ -177,7 +176,7 @@ struct
         val fieldTactics = List.map (fn ((lbl, _), _) => tacticForLabel lbl) fields
         val famTactics = List.tabulate (List.length fields - 1, fn _ => autoTacComplete sign)
       in
-        Lcf.rule o RT.Record.True thenl fieldTactics @ famTactics
+        Lcf.rule RT.Record.True thenl fieldTactics @ famTactics
       end
   in
     fun recordIntro sign lbls tacs =
@@ -202,7 +201,7 @@ struct
              O.PAT_VAR _ => intros
            | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
       in
-        Lcf.rule o RT.Fun.True thenl' ([name], [continue, autoTacComplete sign])
+        Lcf.rule RT.Fun.True thenl' ([name], [continue, autoTacComplete sign])
       end
 
     and funIntros sign (pats, names) tac =
@@ -216,12 +215,12 @@ struct
   end
 
   local
-    fun lineIntrosBasis sign (u, us) tac _ = 
-      Lcf.rule o RT.Line.True
+    fun lineIntrosBasis sign (u, us) tac : tactic = 
+      Lcf.rule RT.Line.True
         thenl' ([u], [pathIntros sign us tac])
 
-    and pathIntrosBasis sign (u, us) tac _ =
-      Lcf.rule o RT.Path.True
+    and pathIntrosBasis sign (u, us) tac : tactic =
+      Lcf.rule RT.Path.True
         thenl' ([u], [pathIntros sign us tac, autoTacComplete sign, autoTacComplete sign])
 
     and pathIntros sign us tac =
@@ -229,7 +228,7 @@ struct
          [] => tac
        | u :: us =>
            R.Tactical.NormalizeGoalDelegate
-             (fn alpha => pathIntrosBasis sign (u, us) tac alpha orelse_ lineIntrosBasis sign (u, us) tac alpha)
+             (fn _ => pathIntrosBasis sign (u, us) tac orelse_ lineIntrosBasis sign (u, us) tac)
              sign
   in
     val pathIntros = pathIntros
@@ -251,11 +250,11 @@ struct
       val z = RedPrlSym.new ()
       val continue = applications sign z (pattern, names) appTacs tac
     in
-      Lcf.rule o R.CutLemma sign opid thenl' (z :: subtermNames, subtermTacs @ [continue])
+      Lcf.rule (R.CutLemma sign opid) thenl' (z :: subtermNames, subtermTacs @ [continue])
     end
     
-  fun onAllHyps tac alpha (H >> jdg) =
-    (SequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
+  fun onAllHyps tac (H >> jdg) =
+    (SequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) (H >> jdg)
 
   val inversions = onAllHyps (T.try o R.Inversion)
 
@@ -266,15 +265,15 @@ struct
       RedPrlError.addPosition (pos, exn)
     end
 
-  fun tactic sign env tm alpha jdg = 
+  fun tactic sign env tm jdg = 
     Lcf.M.mapErr
       (addPosition tm)
-      (tactic_ sign env tm alpha jdg)
+      (tactic_ sign env tm jdg)
 
-  and multitactic sign env tm alpha jdg = 
+  and multitactic sign env tm jdg = 
     Lcf.M.mapErr
       (addPosition tm)
-      (multitactic_ sign env tm alpha jdg)
+      (multitactic_ sign env tm jdg)
 
   and tactic_ sign env tm = 
     case Tm.out tm of 
@@ -287,13 +286,13 @@ struct
      | O.RULE_EXACT $ [_ \ any] => R.Exact (Syn.unpackAny any)
      | O.TAC_SYMMETRY $ _ => R.Symmetry
      | O.DEV_INVERSION $ _ => inversions
-     | O.RULE_CUT $ [_ \ catjdg] => Lcf.rule o R.Cut (AJ.out catjdg)
+     | O.RULE_CUT $ [_ \ catjdg] => Lcf.rule (R.Cut (AJ.out catjdg))
      | O.TAC_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
-     | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syn.outVec' Syn.outSelector sels)
-     | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
-     | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
+     | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule (R.Computation.Reduce sign (Syn.outVec' Syn.outSelector sels))
+     | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule (R.Custom.UnfoldAll sign opids)
+     | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule (R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec))
      | O.RULE_PRIM ruleName $ _ => R.lookupRule ruleName
-     | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule o R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
+     | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.DEV_RECORD_INTRO lbls $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.DEV_PATH_INTRO _ $ [us \ tm] => pathIntros sign us (tactic sign env tm)
@@ -360,7 +359,7 @@ struct
              go o deepMapSubterms go
            end
 
-         fun reviveClause (pvars \ clause) alpha jdg =
+         fun reviveClause (pvars \ clause) jdg =
            let
              val O.DEV_MATCH_CLAUSE $ [_ \ pat, _ \ handler] = out clause
              val metas = Unify.Metas.fromList pvars
@@ -369,21 +368,21 @@ struct
              val rho = Unify.unify metas (Syn.unpackAny term, pat')
              val handler'' = substMetaenv rho handler'
            in
-             tactic sign env handler'' alpha jdg
+             tactic sign env handler'' jdg
            end
 
-         fun fail _ _ = Lcf.M.throw (RedPrlError.errorToExn (Tm.getAnnotation tm, RedPrlError.GENERIC [Fpp.text "No matching clause"]))
+         fun fail _ = Lcf.M.throw (RedPrlError.errorToExn (Tm.getAnnotation tm, RedPrlError.GENERIC [Fpp.text "No matching clause"]))
        in
          List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
        end
      | O.DEV_QUERY $ [_ \ selTm, [x] \ tm] =>
-       (fn alpha => fn jdg as H >> concl =>
+       (fn jdg as H >> concl =>
          let
            val sel = Syn.outSelector selTm
            val atjdg = Sequent.lookupSelector sel (H, concl)
            val tm' = substVar (AJ.into atjdg, x) tm
          in
-           tactic sign env tm' alpha jdg
+           tactic sign env tm' jdg
          end)
      | O.DEV_PRINT $ [_ \ tm'] =>
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');

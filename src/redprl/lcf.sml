@@ -7,7 +7,7 @@ sig
 end =
 struct
   structure Lcf = Lcf (LcfLanguage)
-  structure Def = LcfTactic (structure J = RedPrlJudgment and Lcf = Lcf and M = LcfMonadBT)
+  structure Def = LcfTactic (structure J = RedPrlJudgment and Lcf = Lcf and M = RedPrlTacticMonad)
   open Def Lcf
   infix |> ||
 

@@ -1,0 +1,1 @@
+structure RedPrlTacticMonad = LcfTacticMonad (type env = Sym.t NameSeq.seq type log = string * Sequent.jdg)

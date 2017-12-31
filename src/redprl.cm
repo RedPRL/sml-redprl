@@ -98,4 +98,5 @@ is
   redprl/refiner_misc.fun
   redprl/refiner.sig
   redprl/refiner.fun
+  redprl/tactic_monad.sml
   redprl/lcf.sml

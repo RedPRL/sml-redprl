@@ -341,11 +341,11 @@ struct
       fun elabRefine sign alpha (seqjdg, script) =
         let
           val pos = getAnnotation script
-          val results = TacticElaborator.tactic sign Var.Ctx.empty script alpha seqjdg
+          val results = TacticElaborator.tactic sign Var.Ctx.empty script seqjdg
           (* TODO: somehow show all the states! *)
           val result =
-            Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
-              handle _ => Lcf.M.run (results, fn _ => true)
+            Lcf.M.run alpha (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
+              handle _ => Lcf.M.run alpha (results, fn _ => true)
         in
           E.ret result
         end
