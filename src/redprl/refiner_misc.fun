@@ -16,7 +16,7 @@ struct
 
   structure Coe =
   struct
-    fun Eq alpha jdg =
+    fun Eq alpha jdg env =
       let
         val _ = RedPrlLog.trace "Coe.Eq"
         val H >> ajdg = jdg
@@ -41,7 +41,7 @@ struct
         |>: goalCoercees >: goalTy0 >:? goalTy #> (H, trivial)
       end
 
-    fun EqCapL _ jdg =
+    fun EqCapL _ jdg env =
       let
         val _ = RedPrlLog.trace "Coe.EqCapL"
         val H >> ajdg = jdg
@@ -67,7 +67,7 @@ struct
     fun reduce sign =
       Machine.eval sign Machine.STABLE (Machine.Unfolding.default sign)
 
-    fun SequentReduce sign selectors _ jdg =
+    fun SequentReduce sign selectors _ jdg env =
       let
         val _ = RedPrlLog.trace "Computation.Reduce"
         val H >> ajdg = jdg
@@ -77,7 +77,7 @@ struct
         |>: goal #> (H, hole)
       end
 
-    fun SequentReduceAll sign _ jdg =
+    fun SequentReduceAll sign _ jdg env =
       let
         val _ = RedPrlLog.trace "Computation.ReduceAll"
         val H >> _ = jdg
@@ -86,7 +86,7 @@ struct
         |>: goal #> (H, hole)
       end
 
-    fun MatchReduce sign _ jdg =
+    fun MatchReduce sign _ jdg env =
       let
         val _ = RedPrlLog.trace "Computation.MatchReduce"
         val MATCH (th, k, a, ms) = jdg
@@ -95,7 +95,7 @@ struct
         |>: goal #> (Hyps.empty, hole)
       end
 
-    fun MatchRecordReduce sign _ jdg = 
+    fun MatchRecordReduce sign _ jdg env =
       let
         val _ = RedPrlLog.trace "Computation.MatchRecordReduce"
         val MATCH_RECORD (lbl, tm, tuple) = jdg
@@ -130,7 +130,7 @@ struct
         deepUnfold m
       end
 
-    fun UnfoldAll sign opids _ jdg =
+    fun UnfoldAll sign opids _ jdg env =
       let
         val _ = RedPrlLog.trace "Custom.UnfoldAll"
         val H =
@@ -143,7 +143,7 @@ struct
         |>: goal #> (H, hole)
       end
 
-    fun Unfold sign opids selectors _ jdg =
+    fun Unfold sign opids selectors _ jdg env =
       let
         val _ = RedPrlLog.trace "Custom.Unfold"
         val H >> ajdg = jdg
@@ -153,7 +153,7 @@ struct
         |>: goal #> (H, hole)
       end
 
-    fun Eq sign _ jdg =
+    fun Eq sign _ jdg env =
       let
         val _ = RedPrlLog.trace "Custom.Eq"
         val H >> ajdg = jdg
@@ -178,7 +178,7 @@ struct
         |>:? goalTy #> (H, trivial)
       end
 
-    fun Synth sign _ jdg = 
+    fun Synth sign _ jdg env =
       let
         val _ = RedPrlLog.trace "Custom.Synth"
         val H >> AJ.SYNTH tm = jdg

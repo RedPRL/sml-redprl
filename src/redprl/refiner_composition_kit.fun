@@ -194,7 +194,7 @@ struct
 
   structure HCom =
   struct
-    fun Eq alpha jdg =
+    fun Eq alpha jdg env =
       let
         val _ = RedPrlLog.trace "HCom.Eq"
         val H >> ajdg = jdg
@@ -227,7 +227,7 @@ struct
         #> (H, trivial)
       end
 
-    fun EqCapL alpha jdg =
+    fun EqCapL alpha jdg env =
       let
         val _ = RedPrlLog.trace "HCom.EqCapL"
         val H >> ajdg = jdg
@@ -257,7 +257,7 @@ struct
       end
 
     (* Search for the first satisfied equation in an hcom. *)
-    fun EqTubeL alpha jdg =
+    fun EqTubeL alpha jdg env =
       let
         val _ = RedPrlLog.trace "HCom.EqTubeL"
         val H >> ajdg = jdg

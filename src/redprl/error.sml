@@ -45,8 +45,8 @@ struct
     fn Err err => formatError err
      | Pos (_, exn) => format exn
      | RedPrlAbt.SortError {description,...} => Fpp.text description
-     | LcfMonad.Refine [] => Fpp.text "No solution found"
-     | LcfMonad.Refine exns => Fpp.vsep (List.map format exns)
+     | LcfTacticMonad.Refine [] => Fpp.text "No solution found"
+     | LcfTacticMonad.Refine exns => Fpp.vsep (List.map format exns)
      | exn => Fpp.text (exnMessage exn)
 
    val rec annotation =
@@ -54,9 +54,10 @@ struct
         (case annotation exn of
             SOME pos' => SOME pos'
           | NONE => SOME pos)
-      | LcfMonad.Refine exns => annotationInExns exns
+      | LcfTacticMonad.Refine exns => annotationInExns exns
       | RedPrlAbt.SortError {annotation = ann,...} => ann
       | _ => NONE
+
   and annotationInExns = 
     fn [] => NONE
      | e::es => 

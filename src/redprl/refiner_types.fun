@@ -61,7 +61,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.DISCRETE
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "Bool.EqType"
         val H >> ajdg = jdg
@@ -76,7 +76,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqTT _ jdg =
+    fun EqTT _ jdg env =
       let
         val _ = RedPrlLog.trace "Bool.EqTT"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -87,7 +87,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun EqFF _ jdg =
+    fun EqFF _ jdg env =
       let
         val _ = RedPrlLog.trace "Bool.EqFF"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -98,7 +98,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun Elim z _ jdg =
+    fun Elim z _ jdg env =
       let
         val _ = RedPrlLog.trace "Bool.Elim"
         val H >> ajdg = jdg
@@ -128,7 +128,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
 
-    fun EqElim alpha jdg =
+    fun EqElim alpha jdg env =
       let
         val _ = RedPrlLog.trace "Bool.EqElim"
         val H >> ajdg = jdg
@@ -162,7 +162,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.KAN
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "WBool.EqType"
         val H >> ajdg = jdg
@@ -177,7 +177,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqTT _ jdg =
+    fun EqTT _ jdg env =
       let
         val _ = RedPrlLog.trace "WBool.EqTT"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -188,7 +188,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun EqFF _ jdg =
+    fun EqFF _ jdg env =
       let
         val _ = RedPrlLog.trace "WBool.EqFF"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -199,7 +199,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun EqFCom alpha jdg =
+    fun EqFCom alpha jdg env =
       let
         val _ = RedPrlLog.trace "WBool.EqFCom"
         val H >> AJ.EQ ((lhs, rhs), ty) = jdg
@@ -213,7 +213,7 @@ struct
         #> (H, trivial)
       end
 
-    fun Elim z _ jdg =
+    fun Elim z _ jdg env =
       let
         val _ = RedPrlLog.trace "WBool.Elim"
         val H >> AJ.TRUE cz = jdg
@@ -241,7 +241,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected bool elimination problem"]
 
-    fun EqElim alpha jdg =
+    fun EqElim alpha jdg env =
       let
         val _ = RedPrlLog.trace "WBool.EqElim"
         val H >> ajdg = jdg
@@ -273,7 +273,7 @@ struct
         |>: goalM >: goalT >: goalF >: goalC >:? goalTy #> (H, trivial)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim _ jdg env =
       let
         val _ = RedPrlLog.trace "WBool.SynthElim"
         val H >> AJ.SYNTH tm = jdg
@@ -291,7 +291,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.DISCRETE
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "Nat.EqType"
         val H >> ajdg = jdg
@@ -306,7 +306,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqZero _ jdg =
+    fun EqZero _ jdg env =
       let
         val _ = RedPrlLog.trace "Nat.EqZero"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -317,7 +317,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun EqSucc _ jdg =
+    fun EqSucc _ jdg env =
       let
         val _ = RedPrlLog.trace "Nat.EqSucc"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -329,7 +329,7 @@ struct
         |>: goal #> (H, trivial)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Nat.Elim"
         val H >> AJ.TRUE cz = jdg
@@ -358,7 +358,7 @@ struct
         |>: goalZ >: goalS #> (H, evidence)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim alpha jdg env =
       let
         val _ = RedPrlLog.trace "Nat.EqElim"
         val H >> ajdg = jdg
@@ -404,7 +404,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.DISCRETE
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "Int.EqType"
         val H >> ajdg = jdg
@@ -419,7 +419,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqZero _ jdg =
+    fun EqZero _ jdg env =
       let
         val _ = RedPrlLog.trace "Int.EqZero"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -430,7 +430,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun EqSucc _ jdg =
+    fun EqSucc _ jdg env =
       let
         val _ = RedPrlLog.trace "Int.EqSucc"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -442,7 +442,7 @@ struct
         |>: goal #> (H, trivial)
       end
 
-    fun EqNegSucc _ jdg =
+    fun EqNegSucc _ jdg env =
       let
         val _ = RedPrlLog.trace "Int.EqNegSucc"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -454,7 +454,7 @@ struct
         |>: goal #> (H, trivial)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Int.Elim"
         val H >> AJ.TRUE cz = jdg
@@ -494,7 +494,7 @@ struct
         |>: goalZ >: goalS >: goalNSZ >: goalNSS #> (H, evidence)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim alpha jdg env =
       let
         val _ = RedPrlLog.trace "Int.EqElim"
         val H >> ajdg = jdg
@@ -554,7 +554,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.DISCRETE
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "Void.EqType"
         val H >> ajdg = jdg
@@ -569,7 +569,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun Elim z _ jdg =
+    fun Elim z _ jdg env =
       let
         val _ = RedPrlLog.trace "Void.Elim"
         val H >> ajdg = jdg
@@ -595,7 +595,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.KAN
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "S1.EqType"
         val H >> ajdg = jdg
@@ -610,7 +610,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqBase _ jdg =
+    fun EqBase _ jdg env =
       let
         val _ = RedPrlLog.trace "S1.EqBase"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -621,7 +621,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun EqLoop _ jdg =
+    fun EqLoop _ jdg env =
       let
         val _ = RedPrlLog.trace "S1.EqLoop"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -633,7 +633,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun EqFCom alpha jdg =
+    fun EqFCom alpha jdg env =
       let
         val _ = RedPrlLog.trace "S1.EqFCom"
         val H >> AJ.EQ ((lhs, rhs), ty) = jdg
@@ -647,7 +647,7 @@ struct
         #> (H, trivial)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "S1.Elim"
         val H >> AJ.TRUE cz = jdg
@@ -685,7 +685,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected circle elimination problem"]
 
-    fun EqElim alpha jdg =
+    fun EqElim alpha jdg env =
       let
         val _ = RedPrlLog.trace "S1.EqElim"
         val H >> ajdg = jdg
@@ -730,7 +730,7 @@ struct
         #> (H, trivial)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim _ jdg env =
       let
         val _ = RedPrlLog.trace "S1.SynthElim"
         val H >> AJ.SYNTH tm = jdg
@@ -752,7 +752,7 @@ struct
        | K.COE => (K.COE, K.COE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType alpha jdg =
+    fun EqType alpha jdg env =
       let
         val _ = RedPrlLog.trace "Fun.EqType"
         val H >> ajdg = jdg
@@ -775,7 +775,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected fun typehood sequent"]
 
-    fun Eq alpha jdg =
+    fun Eq alpha jdg env =
       let
         val _ = RedPrlLog.trace "Fun.Eq"
         val H >> AJ.EQ ((lam0, lam1), ty) = jdg
@@ -796,7 +796,7 @@ struct
         |>: goalM >: goalA #> (H, trivial)
       end
 
-    fun True alpha jdg =
+    fun True alpha jdg env =
       let
         val _ = RedPrlLog.trace "Fun.True"
         val H >> AJ.TRUE ty = jdg
@@ -818,7 +818,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected fun truth sequent"]
 
-    fun Eta _ jdg =
+    fun Eta _ jdg env =
       let
         val _ = RedPrlLog.trace "Fun.Eta"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -831,7 +831,7 @@ struct
         |>:? goal2 >: goal1 #> (H, trivial)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Fun.Elim"
         val H >> ajdg = jdg
@@ -857,7 +857,7 @@ struct
         |>: goalA >: goalF #> (H, VarKit.substMany [(aptm, u), (trivial, v)] holeF)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp _ jdg env =
       let
         val _ = RedPrlLog.trace "Fun.EqApp"
         val H >> ajdg = jdg
@@ -876,7 +876,7 @@ struct
         #> (H, trivial)
       end
 
-    fun SynthApp _ jdg =
+    fun SynthApp _ jdg env =
       let
         val _ = RedPrlLog.trace "Fun.SynthApp"
         val H >> AJ.SYNTH tm = jdg
@@ -901,7 +901,7 @@ struct
        | K.COE => (K.COE, K.COE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType alpha jdg =
+    fun EqType alpha jdg env =
       let
         val _ = RedPrlLog.trace "Record.EqType"
         val H >> ajdg = jdg
@@ -934,7 +934,7 @@ struct
         goals #> (H, trivial)
       end
 
-    fun Eq _ jdg =
+    fun Eq _ jdg env =
       let
         val _ = RedPrlLog.trace "Record.Eq"
         val H >> AJ.EQ ((tuple0, tuple1), record) = jdg
@@ -965,7 +965,7 @@ struct
         T.append goals famGoals #> (H, trivial)
       end
 
-    fun EqInv z alpha jdg =
+    fun EqInv z alpha jdg env =
       let
         val H >> ajdg = jdg
         val _ = RedPrlLog.trace "Record.EqInv"
@@ -997,7 +997,7 @@ struct
         |>: goal #> (H, substVarenv extractEnv hole)
       end
 
-    fun True _ jdg =
+    fun True _ jdg env =
       let
         val _ = RedPrlLog.trace "Record.True"
         val H >> AJ.TRUE record = jdg
@@ -1025,7 +1025,7 @@ struct
         T.append goals famGoals #> (H, tuple)
       end
 
-    fun Eta _ jdg =
+    fun Eta _ jdg env =
       let
         val _ = RedPrlLog.trace "Record.Eta"
         val H >> AJ.EQ ((m, n), record) = jdg
@@ -1041,7 +1041,7 @@ struct
         |>:? goal2 >: goal1 #> (H, trivial)
       end
 
-    fun MatchRecord _ jdg =
+    fun MatchRecord _ jdg env =
       let
         val _ = RedPrlLog.trace "Record.MatchRecord"
         val MATCH_RECORD (lbl, tm, tuple) = jdg
@@ -1061,7 +1061,7 @@ struct
       handle _ =>
         raise E.error [Fpp.text "MATCH_RECORD judgment failed to unify"]
 
-    fun Elim z alpha jdg = 
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Record.Elim"
         val H >> ajdg = jdg
@@ -1096,7 +1096,7 @@ struct
       end
       handle _ => raise E.error [Fpp.text "Record.Elim"]
 
-    fun EqProj _ jdg =
+    fun EqProj _ jdg env =
       let
         val _ = RedPrlLog.trace "Record.EqProj"
         val H >> ajdg = jdg
@@ -1114,7 +1114,7 @@ struct
         #> (H, trivial)
       end
 
-    fun SynthProj _ jdg =
+    fun SynthProj _ jdg env =
       let
         val _ = RedPrlLog.trace "Record.SynthProj"
         val H >> AJ.SYNTH tm = jdg
@@ -1135,7 +1135,7 @@ struct
        | K.COE => K.KAN
        | K.STABLE => K.STABLE
 
-    fun EqType alpha jdg =
+    fun EqType alpha jdg env =
       let
         val _ = RedPrlLog.trace "Path.EqType"
         val H >> ajdg = jdg
@@ -1157,7 +1157,7 @@ struct
         |>: tyGoal >: goal0 >: goal1 #> (H, trivial)
       end
 
-    fun Eq alpha jdg =
+    fun Eq alpha jdg env =
       let
         val _ = RedPrlLog.trace "Path.Eq"
         val H >> AJ.EQ ((abs0, abs1), ty) = jdg
@@ -1182,7 +1182,7 @@ struct
         |>: goalM >:? goalCoh0 >:? goalCoh1 #> (H, trivial)
       end
 
-    fun True alpha jdg =
+    fun True alpha jdg env =
       let
         val _ = RedPrlLog.trace "Path.True"
         val H >> AJ.TRUE ty = jdg
@@ -1205,7 +1205,7 @@ struct
         |>: mainGoal >: goalCoh0 >: goalCoh1 #> (H, abstr)
       end
 
-    fun Eta _ jdg =
+    fun Eta _ jdg env =
       let
         val _ = RedPrlLog.trace "Path.Eta"
         val H >> AJ.EQ ((m, n), pathTy) = jdg
@@ -1218,7 +1218,7 @@ struct
         |>:? goal2 >: goal1 #> (H, trivial)
       end
 
-    fun Elim z alpha jdg = 
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Path.Elim"
         val H >> ajdg = jdg
@@ -1245,7 +1245,7 @@ struct
         #> (H, VarKit.substMany [(pathApp, x), (trivial, y)] mainHole)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp _ jdg env =
       let
         val _ = RedPrlLog.trace "Path.EqApp"
         val H >> ajdg = jdg
@@ -1262,7 +1262,7 @@ struct
         |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, trivial)
       end
 
-    fun SynthApp _ jdg =
+    fun SynthApp _ jdg env =
       let
         val _ = RedPrlLog.trace "Path.SynthApp"
         val H >> AJ.SYNTH tm = jdg
@@ -1273,7 +1273,7 @@ struct
         |>: goalPathTy >: goalPath #> (H, holePath)
       end
 
-    fun EqAppConst _ jdg =
+    fun EqAppConst _ jdg env =
       let
         val _ = RedPrlLog.trace "Path.EqAppConst"
         val H >> ajdg = jdg
@@ -1302,7 +1302,7 @@ struct
        | K.COE => K.COE
        | K.STABLE => K.STABLE
 
-    fun EqType alpha jdg =
+    fun EqType alpha jdg env =
       let
         val _ = RedPrlLog.trace "Line.EqType"
         val H >> ajdg = jdg
@@ -1319,7 +1319,7 @@ struct
         |>: tyGoal #> (H, trivial)
       end
 
-    fun Eq alpha jdg =
+    fun Eq alpha jdg env =
       let
         val _ = RedPrlLog.trace "Line.Eq"
         val H >> AJ.EQ ((abs0, abs1), ty) = jdg
@@ -1336,7 +1336,7 @@ struct
         |>: goalM #> (H, trivial)
       end
 
-    fun True alpha jdg =
+    fun True alpha jdg env =
       let
         val _ = RedPrlLog.trace "Line.True"
         val H >> AJ.TRUE ty = jdg
@@ -1351,7 +1351,7 @@ struct
         |>: mainGoal #> (H, abstr)
       end
 
-    fun Eta _ jdg =
+    fun Eta _ jdg env =
       let
         val _ = RedPrlLog.trace "Line.Eta"
         val H >> AJ.EQ ((m, n), lineTy) = jdg
@@ -1364,7 +1364,7 @@ struct
         |>:? goal2 >: goal1 #> (H, trivial)
       end
 
-    fun Elim z alpha jdg = 
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Line.Elim"
         val H >> ajdg = jdg
@@ -1391,7 +1391,7 @@ struct
         #> (H, VarKit.substMany [(lineApp, x), (trivial, y)] mainHole)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp _ jdg env =
       let
         val _ = RedPrlLog.trace "Line.EqApp"
         val H >> ajdg = jdg
@@ -1408,7 +1408,7 @@ struct
         |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (H, trivial)
       end
 
-    fun SynthApp _ jdg =
+    fun SynthApp _ jdg env =
       let
         val _ = RedPrlLog.trace "Line.SynthApp"
         val H >> AJ.SYNTH tm = jdg
@@ -1430,7 +1430,7 @@ struct
        | K.HCOM => (K.STABLE, K.STABLE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType alpha jdg =
+    fun EqType alpha jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.EqType"
         val H >> ajdg = jdg
@@ -1454,7 +1454,7 @@ struct
         |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, trivial)
       end
 
-    fun EqLeft alpha jdg =
+    fun EqLeft alpha jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.EqLeft"
         val H >> AJ.EQ ((tm0, tm1), ty) = jdg
@@ -1473,7 +1473,7 @@ struct
         |>: goalA >: goalF >: goalG >: goalB >: goalC #> (H, trivial)
       end
 
-    fun EqRight alpha jdg =
+    fun EqRight alpha jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.EqRight"
         val H >> AJ.EQ ((tm0, tm1), ty) = jdg
@@ -1492,7 +1492,7 @@ struct
         |>: goalB >: goalF >: goalG >: goalA >: goalC #> (H, trivial)
       end
 
-    fun EqGlue alpha jdg =
+    fun EqGlue alpha jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.EqGlue"
         val H >> AJ.EQ ((tm0, tm1), ty) = jdg
@@ -1514,7 +1514,7 @@ struct
         |>: goalC >: goalA >: goalB >:? goalCohF >:? goalCohG >: goalF >: goalG #> (H, trivial)
       end
 
-    fun EqFCom alpha jdg =
+    fun EqFCom alpha jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.EqFCom"
         val H >> AJ.EQ ((tm0, tm1), ty) = jdg
@@ -1535,7 +1535,7 @@ struct
         #> (H, trivial)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.Elim"
         val H >> AJ.TRUE dz = jdg
@@ -1587,7 +1587,7 @@ struct
         |>: goalL >: goalR >: goalG >: goalCohL >: goalCohR >: goalKind #> (H, elim)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim alpha jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.EqElim"
         val H >> ajdg = jdg
@@ -1657,7 +1657,7 @@ struct
         |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy #> (H, trivial)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim _ jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.SynthElim"
         val H >> AJ.SYNTH tm = jdg
@@ -1680,7 +1680,7 @@ struct
        | K.HCOM => (K.STABLE, K.STABLE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType alpha jdg =
+    fun EqType alpha jdg env =
       let
         val _ = RedPrlLog.trace "Coequalizer.EqType"
         val H >> ajdg = jdg
@@ -1703,7 +1703,7 @@ struct
         |>: goalF >: goalG >: goalA >: goalB #> (H, trivial)
       end
 
-    fun EqCod alpha jdg =
+    fun EqCod alpha jdg env =
       let
         val _ = RedPrlLog.trace "Coequalizer.EqCod"
         val H >> AJ.EQ ((tm0, tm1), ty) = jdg
@@ -1721,7 +1721,7 @@ struct
         |>: goalB >: goalF >: goalG >: goalA #> (H, trivial)
       end
 
-    fun EqDom alpha jdg =
+    fun EqDom alpha jdg env =
       let
         val _ = RedPrlLog.trace "Pushout.EqDom"
         val H >> AJ.EQ ((tm0, tm1), ty) = jdg
@@ -1743,7 +1743,7 @@ struct
         |>: goalA >: goalFM >: goalGM >:? goalCohF >:? goalCohG >: goalF >: goalG #> (H, trivial)
       end
 
-    fun EqFCom alpha jdg =
+    fun EqFCom alpha jdg env =
       let
         val _ = RedPrlLog.trace "Coequalizer.EqFCom"
         val H >> AJ.EQ ((tm0, tm1), ty) = jdg
@@ -1763,7 +1763,7 @@ struct
         #> (H, trivial)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Coequalizer.Elim"
         val H >> AJ.TRUE pz = jdg
@@ -1809,7 +1809,7 @@ struct
         |>: goalC >: goalD >: goalCohF >: goalCohG >: goalKind #> (H, elim)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim alpha jdg env =
       let
         val _ = RedPrlLog.trace "Coequalizer.EqElim"
         val H >> ajdg = jdg
@@ -1870,7 +1870,7 @@ struct
         |>: goalTyCoeq >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalP >:? goalTy #> (H, trivial)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim _ jdg env =
       let
         val _ = RedPrlLog.trace "Coequalizer.SynthElim"
         val H >> AJ.SYNTH tm = jdg
@@ -1892,7 +1892,7 @@ struct
        | K.COE => K.DISCRETE
        | K.STABLE => K.STABLE
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.EqType"
         val H >> ajdg = jdg
@@ -1908,7 +1908,7 @@ struct
         |>: goalM >: goalN >: goalTy #> (H, trivial)
       end
 
-    fun Eq _ jdg =
+    fun Eq _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eq"
         val H >> AJ.EQ ((ax0, ax1), ty) = jdg
@@ -1921,7 +1921,7 @@ struct
         |>: goal #> (H, trivial)
       end
 
-    fun True _ jdg =
+    fun True _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.True"
         val H >> AJ.TRUE ty = jdg
@@ -1932,7 +1932,7 @@ struct
         |>: goal #> (H, Syn.into Syn.AX)
       end
 
-    fun Eta _ jdg =
+    fun Eta _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Eta"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -1946,7 +1946,7 @@ struct
 
     (* This rule will be changed once every hypothesis
      * is required to be `A true`. *)
-    fun Elim z alpha jdg =
+    fun Elim z alpha jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Elim"
         val H >> ajdg = jdg
@@ -1968,7 +1968,7 @@ struct
 
     (* (= ty m n) at l >> m/n = m/n in ty at l *)
     (* this is for non-deterministic search *)
-    fun NondetEqFromTrueEq z _ jdg =
+    fun NondetEqFromTrueEq z _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetEqFromTrueEq"
         val H >> AJ.EQ ((m1, n1), ty1) = jdg
@@ -1983,7 +1983,7 @@ struct
 
     (* (= ty m n) at l >> ty = ty at l *)
     (* this is for non-deterministic search *)
-    fun NondetTypeFromTrueEqAtType z _ jdg =
+    fun NondetTypeFromTrueEqAtType z _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetTypeFromTrueEqAtType"
         val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
@@ -1996,7 +1996,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun InternalizeEq _ jdg =
+    fun InternalizeEq _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.InternalizeEq"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -2009,7 +2009,7 @@ struct
 
     (* (= ty a b) => a synth ~~> ty *)
     (* this is for non-deterministic search *)
-    fun NondetSynthFromTrueEq z _ jdg =
+    fun NondetSynthFromTrueEq z _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.NondetSynthFromTrueEq"
         val H >> AJ.SYNTH tm = jdg
@@ -2020,7 +2020,7 @@ struct
         T.empty #> (H, ty)
       end
 
-    fun Rewrite (sel, acc) eqterm alpha jdg =
+    fun Rewrite (sel, acc) eqterm alpha jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.RewriteTrue"
         val H >> concl = jdg
@@ -2100,10 +2100,10 @@ struct
       end
 
     (* XXX deprecated *)
-    fun RewriteTrueByTrue sel z alpha jdg =
+    fun RewriteTrueByTrue sel z alpha jdg env =
       E.raiseError @@ E.GENERIC [Fpp.text "Use rewrite instead."]
 
-    fun Symmetry _ jdg =
+    fun Symmetry _ jdg env =
       let
         val _ = RedPrlLog.trace "InternalizedEquality.Symmetry"
         val H >> AJ.TRUE equal = jdg
@@ -2173,7 +2173,7 @@ struct
             ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), tyCap))
         (tyTubes, boundaries)
 
-    fun EqType alpha jdg =
+    fun EqType alpha jdg env =
       let
         val _ = RedPrlLog.trace "FormalComposition.EqType"
         val H >> ajdg = jdg
@@ -2198,7 +2198,7 @@ struct
         #> (H, trivial)
       end
 
-    fun Eq alpha jdg =
+    fun Eq alpha jdg env =
       let
         val _ = RedPrlLog.trace "FormalComposition.Eq"
         val H >> AJ.EQ ((box0, box1), ty) = jdg
@@ -2230,7 +2230,7 @@ struct
         #> (H, trivial)
       end
 
-    fun True alpha jdg =
+    fun True alpha jdg env =
       let
         val _ = RedPrlLog.trace "FormalComposition.True"
         val H >> AJ.TRUE ty = jdg
@@ -2320,7 +2320,7 @@ struct
           intoIsEquiv A B (VarKit.toExp f)
       end
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "V.EqType"
         val H >> ajdg = jdg
@@ -2339,7 +2339,7 @@ struct
         |>:? goalEquiv >:? goalA >: goalB #> (H, trivial)
       end
 
-    fun Eq _ jdg =
+    fun Eq _ jdg env =
       let
         val _ = RedPrlLog.trace "V.Eq"
         val H >> AJ.EQ ((in0, in1), ty) = jdg
@@ -2360,7 +2360,7 @@ struct
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (H, trivial)
       end
 
-    fun True _ jdg =
+    fun True _ jdg env =
       let
         val _ = RedPrlLog.trace "V.True"
         val H >> AJ.TRUE ty = jdg
@@ -2419,7 +2419,7 @@ struct
        | K.COE => K.STABLE
        | K.STABLE => K.STABLE
 
-    fun EqType _ jdg =
+    fun EqType _ jdg env =
       let
         val _ = RedPrlLog.trace "Universe.EqType"
         val H >> ajdg = jdg
@@ -2433,7 +2433,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun SubType _ jdg =
+    fun SubType _ jdg env =
       let
         val _ = RedPrlLog.trace "Universe.SubType"
         val H >> AJ.SUB_TYPE (ty0, ty1) = jdg
@@ -2445,7 +2445,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun SubKind _ jdg =
+    fun SubKind _ jdg env =
       let
         val _ = RedPrlLog.trace "Universe.SubKind"
         val H >> AJ.SUB_KIND (univ, k) = jdg
@@ -2457,7 +2457,7 @@ struct
 
     (* ty0 = ty1 in (U l k) >> ty0 = ty1 with k *)
     (* this is for non-deterministic search *)
-    fun NondetEqTypeFromEq z _ jdg =
+    fun NondetEqTypeFromEq z _ jdg env =
       let
         val _ = RedPrlLog.trace "Universe.NondetEqTypeFromEq"
         val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
@@ -2472,7 +2472,7 @@ struct
 
     (* (= (U l k) ty0 ty1) >> ty0 = ty1 with k *)
     (* this is for non-deterministic search *)
-    fun NondetEqTypeFromTrueEqType z _ jdg =
+    fun NondetEqTypeFromTrueEqType z _ jdg env =
       let
         val _ = RedPrlLog.trace "Universe.NondetEqTypeFromEq"
         val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
@@ -2486,7 +2486,7 @@ struct
         T.empty #> (H, trivial)
       end
 
-    fun VarFromTrue _ jdg =
+    fun VarFromTrue _ jdg env =
       let
         val _ = RedPrlLog.trace "Universe.VarFromTrue"
         val H >> AJ.EQ_TYPE ((ty1, ty2), k1) = jdg

@@ -29,7 +29,7 @@ struct
 
   structure Hyp =
   struct
-    fun Project z _ jdg =
+    fun Project z _ jdg env =
       let
         val _ = RedPrlLog.trace "Hyp.Project"
         val H >> ajdg = jdg
@@ -47,7 +47,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected sequent judgment"]
 
-    fun Rename z alpha jdg = 
+    fun Rename z alpha jdg env = 
       let
         val _ = RedPrlLog.trace "Hyp.Rename"
         val H >> ajdg = jdg
@@ -66,7 +66,7 @@ struct
         |>: goal #> (H, extract)
       end
 
-    fun Delete z _ jdg = 
+    fun Delete z _ jdg env = 
       let
         val _ = RedPrlLog.trace "Hyp.Delete"
         val H >> ajdg = jdg
@@ -94,7 +94,7 @@ struct
 
   structure TypeEquality =
   struct
-    fun Symmetry _ jdg =
+    fun Symmetry _ jdg env =
       let
         val _ = RedPrlLog.trace "TypeEquality.Symmetry"
         val H >> AJ.EQ_TYPE ((ty1, ty2), k) = jdg
@@ -104,7 +104,7 @@ struct
       end
 
     (* this is for non-deterministic search *)
-    fun NondetFromEqType z _ jdg =
+    fun NondetFromEqType z _ jdg env =
       let
         val _ = RedPrlLog.trace "TypeEquality.NondetFromEqType"
         val H >> AJ.EQ_TYPE ((a, b), k) = jdg
@@ -118,7 +118,7 @@ struct
       end
 
     (* this is for non-deterministic search *)
-    fun NondetFromEq z _ jdg =
+    fun NondetFromEq z _ jdg env =
       let
         val _ = RedPrlLog.trace "TypeEquality.NondetFromEq"
         val H >> AJ.EQ_TYPE ((a, b), k) = jdg
@@ -131,7 +131,7 @@ struct
       end
 
     (* this is for non-deterministic search *)
-    fun NondetFromTrue z _ jdg =
+    fun NondetFromTrue z _ jdg env =
       let
         val _ = RedPrlLog.trace "TypeEquality.NondetFromTrue"
         val H >> AJ.EQ_TYPE ((a, b), k) = jdg
@@ -146,7 +146,7 @@ struct
 
   structure SubType =
   struct
-    fun Eq _ jdg =
+    fun Eq _ jdg env =
       let
         val _ = RedPrlLog.trace "SubType.Eq"
         val H >> AJ.SUB_TYPE (a, b) = jdg
@@ -158,7 +158,7 @@ struct
 
   structure True =
   struct
-    fun Witness tm _ jdg =
+    fun Witness tm _ jdg env =
       let
         val _ = RedPrlLog.trace "True.Witness"
         val H >> AJ.TRUE ty = jdg
@@ -172,7 +172,7 @@ struct
 
   structure Term = 
   struct
-    fun Exact tm _ jdg = 
+    fun Exact tm _ jdg env = 
       let
         val _ = RedPrlLog.trace "Term.Exact"
         val H >> AJ.TERM tau = jdg
@@ -185,7 +185,7 @@ struct
 
   structure Synth =
   struct
-    fun Witness ty _ jdg =
+    fun Witness ty _ jdg env =
       let
         val _ = RedPrlLog.trace "Synth.Witness"
         val H >> AJ.SYNTH tm = jdg
@@ -195,7 +195,7 @@ struct
       end
 
     (* this is for non-deterministic search *)
-    fun NondetFromEq z _ jdg =
+    fun NondetFromEq z _ jdg env =
       let
         val _ = RedPrlLog.trace "Synth.NondetFromEq"
         val H >> AJ.SYNTH tm = jdg
@@ -205,7 +205,7 @@ struct
         T.empty #> (H, ty)
       end
 
-    fun VarFromTrue _ jdg =
+    fun VarFromTrue _ jdg env =
       let
         val _ = RedPrlLog.trace "Synth.VarFromTrue"
         val H >> AJ.SYNTH tm = jdg
@@ -220,7 +220,7 @@ struct
 
   structure Misc =
   struct
-    fun MatchOperator _ jdg =
+    fun MatchOperator _ jdg env =
       let
         val _ = RedPrlLog.trace "Misc.MatchOperator"
         val MATCH (th, k, tm, ms) = jdg
@@ -239,7 +239,7 @@ struct
 
   structure Equality =
   struct
-    fun VarFromTrue _ jdg =
+    fun VarFromTrue _ jdg env =
       let
         val _ = RedPrlLog.trace "Equality.VarFromTrue"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -254,7 +254,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected variable-equality sequent"]
 
-    fun FromEq z _ jdg =
+    fun FromEq z _ jdg env =
       let
         val _ = RedPrlLog.trace "NondetEquality.FromEq"
         val H >> AJ.EQ ((m1, n1), ty1) = jdg
@@ -266,7 +266,7 @@ struct
         |>:? goalTy #> (H, trivial)
       end
 
-    fun Symmetry _ jdg =
+    fun Symmetry _ jdg env =
       let
         val _ = RedPrlLog.trace "Equality.Symmetry"
         val H >> AJ.EQ ((m, n), ty) = jdg
@@ -275,7 +275,7 @@ struct
         |>: goal #> (H, trivial)
       end
 
-    fun RewriteTrueByEq sel z alpha jdg =
+    fun RewriteTrueByEq sel z alpha jdg env =
       let
         val _ = RedPrlLog.trace "Equality.RewriteTrueByEq"
         val H >> concl = jdg
@@ -314,7 +314,7 @@ struct
       end
   end
 
-  fun Cut ajdg alpha jdg =
+  fun Cut ajdg alpha jdg env =
     let
       val _ = RedPrlLog.trace "Cut"
       val H >> ajdg' = jdg
@@ -325,7 +325,7 @@ struct
       |>: goal1 >: goal2 #> (H, substVar (hole1, z) hole2)
     end
 
-  fun CutLemma sign opid alpha jdg = 
+  fun CutLemma sign opid alpha jdg env = 
     let
       val z = alpha 0
       val H >> ajdg = jdg
