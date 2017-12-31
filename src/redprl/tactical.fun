@@ -34,7 +34,7 @@ struct
     val mprogress = Lcf.mprogress
 
     fun mrec (f : multitactic -> multitactic) : multitactic =
-      f (mrec f)
+      fn st => f (mrec f) st
 
 
     fun multitacToTac (mt : multitactic) : tactic =
