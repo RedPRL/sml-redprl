@@ -299,7 +299,7 @@ struct
 
     fun argumentsToSubgoals alpha arguments = 
       List.foldr
-        (fn ((x,vl), r) => Lcf.Tl.cons x (valenceToSequent alpha vl) r)
+        (fn ((x,vl), r) => Lcf.Tl.cons x (Lcf.I.ret (valenceToSequent alpha vl)) r)
         Lcf.Tl.empty
         arguments
 
@@ -362,7 +362,7 @@ struct
                false)
 
           fun go ([], Tl.ConsView.EMPTY) = true
-            | go (jdgSpec :: subgoalsSpec, Tl.ConsView.CONS (_, jdgReal, subgoalsReal)) =
+            | go (jdgSpec :: subgoalsSpec, Tl.ConsView.CONS (_, Lcf.::@ (_, jdgReal), subgoalsReal)) =
                 goalEqualTo jdgSpec jdgReal andalso go (subgoalsSpec, Tl.ConsView.out subgoalsReal)
             | go _ = false
 

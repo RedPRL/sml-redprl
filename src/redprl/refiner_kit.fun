@@ -135,7 +135,7 @@ struct
 
   (* making goals *)
 
-  fun makeGoal jdg =
+  fun makeGoal (tr : string list) (jdg : jdg) : (Lcf.L.var * jdg Lcf.I.t) * abt =
     let
       open Abt infix 1 $#
       val x = newMeta ""
@@ -148,53 +148,54 @@ struct
 
       val hole = check (x $# ms, tau)
     in
-      ((x, jdg), hole)
+      ((x, Lcf.::@ (tr, jdg)), hole)
     end
-  fun makeGoal' jdg = #1 @@ makeGoal jdg
+
+  fun makeGoal' tr jdg = #1 @@ makeGoal tr jdg
 
   (* needing the realizer *)
-  fun makeTrueWith f H ty = makeGoal @@ Seq.map f @@ H >> AJ.TRUE ty
-  fun makeTrue H ty = makeGoal @@ H >> AJ.TRUE ty
-  fun makeSynth H m = makeGoal @@ H >> AJ.SYNTH m
-  fun makeMatch part = makeGoal @@ MATCH part
-  fun makeMatchRecord part = makeGoal @@ MATCH_RECORD part
-  fun makeTerm H tau = makeGoal @@ H >> AJ.TERM tau
+  fun makeTrueWith tr f H ty = makeGoal tr @@ Seq.map f @@ H >> AJ.TRUE ty
+  fun makeTrue tr H ty = makeGoal tr @@ H >> AJ.TRUE ty
+  fun makeSynth tr H m = makeGoal tr @@ H >> AJ.SYNTH m
+  fun makeMatch tr part = makeGoal tr @@ MATCH part
+  fun makeMatchRecord tr part = makeGoal tr @@ MATCH_RECORD part
+  fun makeTerm tr H tau = makeGoal tr @@ H >> AJ.TERM tau
 
   (* ignoring the trivial realizer *)
-  fun makeType H (a, k) = makeGoal' @@ H >> AJ.TYPE (a, k)
-  fun makeEqTypeWith f H ((a, b), k) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), k)
-  fun makeEqType H ((a, b), k) = makeGoal' @@ H >> AJ.EQ_TYPE ((a, b), k)
-  fun makeEqWith f H ((m, n), ty) = makeGoal' @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
-  fun makeEq H ((m, n), ty) = makeGoal' @@ H >> AJ.EQ ((m, n), ty)
-  fun makeMem H (m, ty) = makeGoal' @@ H >> AJ.MEM (m, ty)
-  fun makeSubType H (a, b) = makeGoal' @@ H >> AJ.SUB_TYPE (a, b)
-  fun makeSubKind H (u, k) = makeGoal' @@ H >> AJ.SUB_KIND (u, k)
+  fun makeType tr H (a, k) = makeGoal' tr @@ H >> AJ.TYPE (a, k)
+  fun makeEqTypeWith tr f H ((a, b), k) = makeGoal' tr @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), k)
+  fun makeEqType tr H ((a, b), k) = makeGoal' tr @@ H >> AJ.EQ_TYPE ((a, b), k)
+  fun makeEqWith tr f H ((m, n), ty) = makeGoal' tr @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
+  fun makeEq tr H ((m, n), ty) = makeGoal' tr @@ H >> AJ.EQ ((m, n), ty)
+  fun makeMem tr H (m, ty) = makeGoal' tr @@ H >> AJ.MEM (m, ty)
+  fun makeSubType tr H (a, b) = makeGoal' tr @@ H >> AJ.SUB_TYPE (a, b)
+  fun makeSubKind tr H (u, k) = makeGoal' tr @@ H >> AJ.SUB_KIND (u, k)
 
   (* conditional goal making *)
 
-  fun makeEqTypeIfDifferent H ((m, n), k) =
+  fun makeEqTypeIfDifferent tr H ((m, n), k) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEqType H ((m, n), k)
+    else SOME @@ makeEqType tr H ((m, n), k)
 
-  fun makeEqTypeUnlessSubUniv H ((m, n), k) k' =
+  fun makeEqTypeUnlessSubUniv tr H ((m, n), k) k' =
     Option.map
-      (fn k => makeEqType H ((m, n), k))
+      (fn k => makeEqType tr H ((m, n), k))
       (K.residual (k, k'))
   
-  fun makeTypeUnlessSubUniv H (m, k) k' =
-    makeEqTypeUnlessSubUniv H ((m, m), k) k'
+  fun makeTypeUnlessSubUniv tr H (m, k) k' =
+    makeEqTypeUnlessSubUniv tr H ((m, m), k) k'
 
-  fun makeEqTypeIfDifferentOrNotSubUniv H ((m, n), k) k' =
-    if Abt.eq (m, n) then makeTypeUnlessSubUniv H (m, k) k'
-    else SOME @@ makeEqType H ((m, n), k)
+  fun makeEqTypeIfDifferentOrNotSubUniv tr H ((m, n), k) k' =
+    if Abt.eq (m, n) then makeTypeUnlessSubUniv tr H (m, k) k'
+    else SOME @@ makeEqType tr H ((m, n), k)
 
-  fun makeEqIfDifferent H ((m, n), ty) =
+  fun makeEqIfDifferent tr H ((m, n), ty) =
     if Abt.eq (m, n) then NONE
-    else SOME @@ makeEq H ((m, n), ty)
+    else SOME @@ makeEq tr H ((m, n), ty)
 
-  fun makeEqIfAllDifferent H ((m, n), ty) ns =
+  fun makeEqIfAllDifferent tr H ((m, n), ty) ns =
     if List.exists (fn n' => Abt.eq (m, n')) ns then NONE
-    else makeEqIfDifferent H ((m, n), ty)
+    else makeEqIfDifferent tr H ((m, n), ty)
 
   (* subtyping *)
 
@@ -203,15 +204,17 @@ struct
 
   (* It is not clear how exactly the subtyping should be implemented;
    * therefore we have a dummy implementation here. *)
-  fun makeSubTypeIfDifferent H (a, b) =
+  fun makeSubTypeIfDifferent tr H (a, b) =
     if Abt.eq (a, b) then NONE
-    else SOME @@ makeSubType H (a, b)
+    else SOME @@ makeSubType tr H (a, b)
 
   (* functions which blur the difference between EQ and EQ_TYPE *)
   structure View =
   struct
     type as_level = L.t option
+
     val OMEGA = NONE : as_level
+
     val matchAsEqType =
       fn AJ.EQ_TYPE ((a, b), k) => ((a, b), NONE, k)
        | AJ.EQ ((a, b), univ) =>
@@ -221,29 +224,37 @@ struct
              ((a, b), SOME l, k)
            end
        | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEqType", AJ.pretty jdg)
-    fun makeAsEqType H =
-      fn ((a, b), NONE, k) => makeEqType H ((a, b), k)
-       | ((a, b), SOME l, k) => makeEq H ((a, b), Syn.intoU (l, k))
-    fun makeAsEqTypeWith f H =
-      fn ((a, b), NONE, k) => makeEqTypeWith f H ((a, b), k)
-       | ((a, b), SOME l, k) => makeEqWith f H ((a, b), Syn.intoU (l, k))
+       
+    fun makeAsEqType tr H =
+      fn ((a, b), NONE, k) => makeEqType tr H ((a, b), k)
+       | ((a, b), SOME l, k) => makeEq tr H ((a, b), Syn.intoU (l, k))
+
+    fun makeAsEqTypeWith tr f H =
+      fn ((a, b), NONE, k) => makeEqTypeWith tr f H ((a, b), k)
+       | ((a, b), SOME l, k) => makeEqWith tr f H ((a, b), Syn.intoU (l, k))
+
     datatype as_type = TYPE of Abt.abt | UNIV_OMEGA of K.kind
+
     val matchAsEq =
       fn AJ.EQ ((a, b), ty) => ((a, b), TYPE ty)
        | AJ.EQ_TYPE ((a, b), k) => ((a, b), UNIV_OMEGA k)
        | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEq", AJ.pretty jdg)
-    fun makeAsEq H =
-      fn ((a, b), TYPE ty) => makeEq H ((a, b), ty)
-       | ((a, b), UNIV_OMEGA k) => makeEqType H ((a, b), k)
-    fun makeAsMem H =
-      fn (a, TYPE ty) => makeMem H (a, ty)
-       | (a, UNIV_OMEGA k) => makeType H (a, k)
-    fun makeAsSubType H =
-      fn (a, TYPE b) => makeSubType H (a, b)
-       | (a, UNIV_OMEGA k) => makeSubKind H (a, k)
-    fun makeAsSubTypeIfDifferent H =
-      fn (a, TYPE b) => makeSubTypeIfDifferent H (a, b)
-       | (a, UNIV_OMEGA k) => SOME @@ makeSubKind H (a, k)
+
+    fun makeAsEq tr H =
+      fn ((a, b), TYPE ty) => makeEq tr H ((a, b), ty)
+       | ((a, b), UNIV_OMEGA k) => makeEqType tr H ((a, b), k)
+
+    fun makeAsMem tr H =
+      fn (a, TYPE ty) => makeMem tr H (a, ty)
+       | (a, UNIV_OMEGA k) => makeType tr H (a, k)
+
+    fun makeAsSubType tr H =
+      fn (a, TYPE b) => makeSubType tr H (a, b)
+       | (a, UNIV_OMEGA k) => makeSubKind tr H (a, k)
+
+    fun makeAsSubTypeIfDifferent tr H =
+      fn (a, TYPE b) => makeSubTypeIfDifferent tr H (a, b)
+       | (a, UNIV_OMEGA k) => SOME @@ makeSubKind tr H (a, k)
   end
 
   (* assertions *)
