@@ -5,9 +5,9 @@ structure Vl = Ar.Vl
 open Ast
 
 structure E = RedPrlError
-
-structure O = RedPrlOpData
-structure AJ = RedPrlAtomicJudgment
+structure K = RedPrlKind
+structure O = RedPrlOperator
+structure AJ = AtomicJudgment
 
 structure TP = TermPrinter
 
@@ -428,7 +428,7 @@ end
  | term of ast
  | terms of ast list
 
- | kind of O.K.kind
+ | kind of K.kind
  | withKind of ast
 
  | rawJudgment of ast
@@ -778,15 +778,15 @@ terms
   | term terms (term :: terms)
 
 kind
-  : DISCRETE (O.K.DISCRETE)
-  | KAN (O.K.KAN)
-  | HCOM (O.K.HCOM)
-  | COE (O.K.COE)
-  | STABLE (O.K.STABLE)
+  : DISCRETE (K.DISCRETE)
+  | KAN (K.KAN)
+  | HCOM (K.HCOM)
+  | COE (K.COE)
+  | STABLE (K.STABLE)
 
 withKind
   : WITH term (term)
-  | (Ast.$$ (O.KCONST O.K.top, []))
+  | (Ast.$$ (O.KCONST K.top, []))
 
 rawJudgment
   : term EQUALS term IN term (Ast.$$ (O.JDG_EQ, [\\ term1, \\ term2, \\ term3]))

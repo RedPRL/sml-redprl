@@ -15,8 +15,8 @@ sig
   val AutoStep : sign -> tactic
   val Elim : sign -> hyp -> tactic
   val Exact : abt -> tactic
-  val Rewrite : sign -> hyp RedPrlOpData.selector * RedPrlOpData.accessor -> abt -> tactic
-  val RewriteHyp : sign -> hyp RedPrlOpData.selector -> hyp -> tactic
+  val Rewrite : sign -> hyp Selector.t * Accessor.t -> abt -> tactic
+  val RewriteHyp : sign -> hyp Selector.t -> hyp -> tactic
   val Symmetry : tactic
   val SynthFromHyp : hyp -> tactic
 
@@ -25,13 +25,13 @@ sig
   structure Custom :
   sig
     val UnfoldAll : sign -> opid list -> rule
-    val Unfold : sign -> opid list -> hyp RedPrlOpData.selector list -> rule
+    val Unfold : sign -> opid list -> hyp Selector.t list -> rule
   end
 
   structure Computation :
   sig
     val ReduceAll : sign -> tactic
-    val Reduce : sign -> hyp RedPrlOpData.selector list -> rule
+    val Reduce : sign -> hyp Selector.t list -> rule
   end
 
   structure Hyp :

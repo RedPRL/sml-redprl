@@ -5,16 +5,16 @@ struct
   open Tactical
   infix orelse_ then_
 
-  structure E = RedPrlError and O = RedPrlOpData and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = Syntax and J = RedPrlJudgment
+  structure E = RedPrlError and O = RedPrlOperator and T = TelescopeUtil (Lcf.Tl) and Abt = RedPrlAbt and Syn = SyntaxView and J = RedPrlJudgment
   structure K = RedPrlKind
   structure L = RedPrlLevel
-  structure AJ = RedPrlAtomicJudgment
-  structure Seq = struct open RedPrlSequentData RedPrlSequent end
+  structure AJ = AtomicJudgment
+  structure Seq = struct open SequentData Sequent end
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = RedPrlMachine (Sig)
 
   local structure TeleNotation = TelescopeNotation (T) in open TeleNotation end
-  open RedPrlSequent
+  open Sequent
   infix 2 >: >>
 
   exception todo
@@ -250,13 +250,6 @@ struct
        | (a, UNIV_OMEGA k) => SOME @@ makeSubKind H (a, k)
   end
 
-  (* variants *)
-
-  val flipVariant =
-    fn AJ.COVAR => AJ.CONTRAVAR
-     | AJ.CONTRAVAR => AJ.COVAR
-     | AJ.ANTIVAR => AJ.ANTIVAR
-
   (* assertions *)
 
   structure Assert =
@@ -289,13 +282,13 @@ struct
       if L.<= (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be less than or equal to", L.pretty l2]
+        raise E.error [Fpp.text "Expected level", TermPrinter.ppTerm (L.into l1), Fpp.text "to be less than or equal to", TermPrinter.ppTerm (L.into l2)]
 
     fun levelEq (l1, l2) =
       if L.eq (l1, l2) then
         ()
       else
-        raise E.error [Fpp.text "Expected level", L.pretty l1, Fpp.text "to be equal to", L.pretty l2]
+        raise E.error [Fpp.text "Expected level", TermPrinter.ppTerm (L.into l1), Fpp.text "to be equal to", TermPrinter.ppTerm (L.into l2)]
 
     fun kindLeq (k1, k2) =
       if K.<= (k1, k2) then

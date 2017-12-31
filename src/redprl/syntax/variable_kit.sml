@@ -7,12 +7,13 @@ struct
       (fn ((tm, x), dict) => Var.Ctx.insert dict x tm)
       Var.Ctx.empty l
 
-  fun toExp x = Syntax.into (Syntax.VAR (x, RedPrlSortData.EXP))
-  fun toDim x = Syntax.into (Syntax.VAR (x, RedPrlSortData.DIM))
-
+  structure Syn = SyntaxView
+  fun toExp x = Syn.into (Syn.VAR (x, RedPrlSort.EXP))
+  fun toDim x = Syn.into (Syn.VAR (x, RedPrlSort.DIM))
+  
   fun fromTerm e = 
     let
-      val Syntax.VAR (x, _) = Syntax.out e
+      val Syn.VAR (x, _) = Syn.out e
     in
       x
     end

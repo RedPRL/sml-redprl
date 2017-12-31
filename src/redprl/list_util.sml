@@ -28,6 +28,14 @@ struct
       go 0
     end
 
+  fun revMap f l =
+    let
+      fun go [] acc = acc
+        | go (x :: xs) acc = go xs (f x :: acc)
+    in
+      go l []
+    end
+
   (* From MLton: https://github.com/MLton/mlton/blob/master/lib/mlton/basic/list.sml *)
   fun splitAt (xs, i) = 
     let

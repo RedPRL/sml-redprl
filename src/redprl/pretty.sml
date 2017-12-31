@@ -1,30 +1,3 @@
-structure FppBasis = FppPrecedenceBasis (FppInitialBasis (FppPlainBasisTypes))
-structure Fpp = FinalPrettyPrinter (FppBasis)
-
-signature FINAL_PRINTER =
-sig
-  val execPP : Fpp.doc -> (int, unit) FppTypes.output
-end
-
-structure FinalPrinter :> FINAL_PRINTER =
-struct
-  open FppBasis Fpp
-
-  local
-    fun initialEnv () =
-      {maxWidth = !Config.maxWidth,
-       maxRibbon = !Config.maxWidth,
-       layout = FppTypes.BREAK,
-       failure = FppTypes.CANT_FAIL,
-       nesting = 0,
-       formatting = (),
-       formatAnn = fn _ => ()}
-  in
-    fun execPP (m : unit m)  =
-      #output (m emptyPrecEnv (initialEnv ()) {curLine = []})
-  end
-end
-
 structure TermPrinter :
 sig
   type t = RedPrlAbt.abt
@@ -41,7 +14,7 @@ sig
 end =
 struct
   structure Abt = RedPrlAbt
-  structure S = RedPrlSortData and Ar = Abt.O.Ar
+  structure S = RedPrlSort and Ar = Abt.O.Ar
 
   open FppBasis Fpp Abt
   structure O = RedPrlOpData
@@ -277,6 +250,20 @@ struct
          [seq [ppTerm r1, Atomic.equals, ppTerm r2],
           nest 1 @@ ppTerm m]
      | O.MK_ANY _ $ [_ \ m] => ppTerm m
+
+     | O.LCONST i $ _ => ppIntInf i
+     | O.LPLUS 0 $ [_ \ l] => ppTerm l
+     | O.LPLUS 1 $ [_ \ l] => Atomic.parens @@ expr @@ hvsep @@ [text "++", ppTerm l]
+     | O.LPLUS i $ [_ \ l] => Atomic.parens @@ expr @@ hvsep @@ [text "+", ppTerm l, ppIntInf i]
+     | O.LMAX $ [_ \ vec] =>
+         (case RedPrlAbt.out vec of
+             O.MK_VEC _ $ [] => ppIntInf 0
+           | O.MK_VEC _ $ [_ \ l] => ppTerm l
+           | O.MK_VEC _ $ ls =>
+               Atomic.parens @@ expr @@ hvsep @@
+                 (text "lmax" :: ListUtil.revMap (fn _ \ l => ppTerm l) ls)
+           | _ => raise Fail "invalid vector")
+
      | theta $ [] =>
         ppOperator theta
      | theta $ [[] \ arg] =>
