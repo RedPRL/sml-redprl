@@ -4,7 +4,7 @@ struct
   open RedPrlAbt Kit
 
   type sign = Sig.sign
-  type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
+  type rule = Lcf.jdg Lcf.rule
   type catjdg = AJ.jdg
   type opid = Sig.opid
 
@@ -194,7 +194,7 @@ struct
 
   structure HCom =
   struct
-    fun Eq alpha jdg env =
+    fun Eq jdg env =
       let
         val _ = RedPrlLog.trace "HCom.Eq"
         val H >> ajdg = jdg
@@ -217,8 +217,7 @@ struct
 
         (* cap *)
         val goalCap = makeEq H ((cap0, cap1), ty0)
-
-        val w = alpha 0
+        val w = env 0
       in
         |>: goalCap
          >:+ ComKit.genInterTubeGoals H w ((tubes0, tubes1), ty0)
@@ -227,7 +226,7 @@ struct
         #> (H, trivial)
       end
 
-    fun EqCapL alpha jdg env =
+    fun EqCapL jdg env =
       let
         val _ = RedPrlLog.trace "HCom.EqCapL"
         val H >> ajdg = jdg
@@ -247,7 +246,7 @@ struct
         (* eq *)
         val goalEq = View.makeAsEq H ((cap, other), ty)
 
-        val w = alpha 0
+        val w = env 0
       in
         |>: goalEq
          >:+ ComKit.genInterTubeGoals H w ((tubes, tubes), ty0)
@@ -257,7 +256,7 @@ struct
       end
 
     (* Search for the first satisfied equation in an hcom. *)
-    fun EqTubeL alpha jdg env =
+    fun EqTubeL jdg env =
       let
         val _ = RedPrlLog.trace "HCom.EqTubeL"
         val H >> ajdg = jdg
@@ -282,7 +281,7 @@ struct
          * is unconditionally in [ty], and thus alpha-equivalence is sufficient. *)
         val goalEq = makeEqIfDifferent H ((substVar (r', u) tube, other), ty0)
 
-        val w = alpha 0
+        val w = env 0
       in
         |>:? goalEq
          >:+ ComKit.genInterTubeGoals H w ((tubes, tubes), ty0)
