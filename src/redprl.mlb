@@ -58,6 +58,7 @@ in
     redprl/elab_monad.sig
     redprl/elab_monad.sml
 
+    redprl/tactic_monad.sml
     redprl/lcf.sml
 
     redprl/signature.sig
