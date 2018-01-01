@@ -22,10 +22,15 @@ struct
   fun @@ (f, x) = f x
   infixr 0 @@
 
-  fun prettyGoal (x, jdg) =
+  fun prettyTrace tr = 
+    Fpp.collection (Fpp.char #"[") (Fpp.char #"]") (Fpp.Atomic.comma) 
+      (List.map Fpp.text tr)
+
+  fun prettyGoal (x, tr ::@ jdg) =
     Fpp.nest 2 @@
       Fpp.vsep
         [Fpp.seq [Fpp.hsep [Fpp.text "Goal", TermPrinter.ppMeta x], Fpp.text "."],
+         Fpp.hsep [Fpp.text "Trace:", prettyTrace tr],
          Sequent.pretty jdg]
 
   val prettyGoals : jdg I.t Tl.telescope -> {doc : Fpp.doc, ren : J.ren, idx : int} =
@@ -33,13 +38,13 @@ struct
       open RedPrlAbt
     in
       Tl.foldl
-        (fn (x, _ ::@ jdg, {doc, ren, idx}) =>
+        (fn (x, tr ::@ jdg, {doc, ren, idx}) =>
           let
             val x' = Metavar.named (Int.toString idx)
             val jdg' = J.ren ren jdg
             val ren' = Metavar.Ctx.insert ren x x'
           in
-            {doc = Fpp.seq [doc, prettyGoal (x', jdg'), Fpp.newline],
+            {doc = Fpp.seq [doc, prettyGoal (x', tr ::@ jdg'), Fpp.newline],
              ren = ren',
              idx = idx + 1}
           end)
