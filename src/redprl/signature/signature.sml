@@ -501,3 +501,8 @@ struct
   fun check ({elabSign,...} : sign) =
     Telescope.foldl (fn (_, e, r) => E.fold checkAlg e andalso r) true elabSign
 end
+
+
+
+(* Just to get SML/NJ to actually typecheck the new modules. Obviously, please delete ;-) *)
+structure Fuck = SignatureNew

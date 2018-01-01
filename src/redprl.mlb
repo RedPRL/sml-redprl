@@ -86,6 +86,9 @@ in
       redprl/tactic_elaborator.fun
     end
 
+    redprl/signature/signature_new.sig
+    redprl/signature/signature_new.sml
+
     redprl/signature/signature.sml
 
     ann

@@ -76,6 +76,9 @@ is
   redprl/log.sig
   redprl/log.sml
 
+  redprl/signature/signature_new.sig
+  redprl/signature/signature_new.sml
+
   redprl/signature/signature.sig
   redprl/signature/signature_mini.sml
 
