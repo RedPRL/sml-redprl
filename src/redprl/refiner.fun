@@ -453,11 +453,6 @@ struct
   end
 
   local
-    val CatJdgSymmetry : tactic =
-      (Lcf.rule o Equality.Symmetry)
-        orelse_
-      (Lcf.rule o TypeEquality.Symmetry)
-
     fun fail err _ _ = Lcf.M.throw (E.errorToExn (NONE, err))
 
     fun matchGoal f alpha jdg =
@@ -519,6 +514,12 @@ struct
        | Syn.CUST => true (* XXX should check the signature *)
        | _ => false
   in
+    val Symmetry : tactic = matchGoal
+      (fn _ >> AJ.EQ_TYPE _ => Lcf.rule o TypeEquality.Symmetry
+        | _ >> AJ.EQ _ => Lcf.rule o Equality.Symmetry
+        | _ >> AJ.TRUE _ => Lcf.rule o InternalizedEquality.Symmetry
+        | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "symmetry tactic", Seq.pretty seq))
+
     fun SynthFromHyp z = matchHyp z
       (fn AJ.EQ _ =>
            Lcf.rule o Synth.NondetFromEq z
@@ -622,13 +623,13 @@ struct
              (case Abt.out r of
                 `_ => kont
                 (* XXX How about subtying? *)
-               | _ => Wrapper.applyEqTac (CatJdgSymmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp)) subMode)
+               | _ => Wrapper.applyEqTac (Symmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp)) subMode)
            | _ => kont)
         @@
         (case (canonicity sign ty1, canonicity sign ty2) of
            (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqSubTypeNeu sign (ty1, ty2) (blocker1, blocker2) subMode
          | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepNeuExpandUntyped sign ty1 blocker
-         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepNeuExpandUntyped sign ty2 blocker
+         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => Symmetry then_ StepNeuExpandUntyped sign ty2 blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubType",
            case subMode of
               Wrapper.EQ => AJ.pretty @@ AJ.EQ_TYPE ((ty1, ty2), K.top)
@@ -743,8 +744,8 @@ struct
       struct
         open HCom
 
-        val EqCapR = CatJdgSymmetry then_ Lcf.rule o EqCapL
-        val EqTubeR = CatJdgSymmetry then_ Lcf.rule o EqTubeL
+        val EqCapR = Symmetry then_ Lcf.rule o EqCapL
+        val EqTubeR = Symmetry then_ Lcf.rule o EqTubeL
         val AutoEqL = Lcf.rule o EqCapL orelse_ Lcf.rule o EqTubeL orelse_  Lcf.rule o Eq
         val AutoEqR = EqCapR orelse_ EqTubeR orelse_ Lcf.rule o Eq
 
@@ -760,7 +761,7 @@ struct
       struct
        open Coe
 
-       val EqCapR = CatJdgSymmetry then_ Lcf.rule o EqCapL
+       val EqCapR = Symmetry then_ Lcf.rule o EqCapL
        val AutoEqL = Lcf.rule o EqCapL orelse_ Lcf.rule o Eq
        val AutoEqR = EqCapR orelse_ Lcf.rule o Eq
        val AutoEqLR = Lcf.rule o EqCapL orelse_ EqCapR orelse_ Lcf.rule o Eq
@@ -802,13 +803,13 @@ struct
            | (_, Syn.DIM_APP (_, r)) =>
              (case Abt.out r of
                 `_ => kont
-               | _ => CatJdgSymmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp))
+               | _ => Symmetry then_ (Lcf.rule o Path.EqAppConst par Lcf.rule o Line.EqApp))
            | _ => kont)
         @@
         (case (canonicity sign m, canonicity sign n) of
             (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqNeu sign (m, n) (blocker1, blocker2) ty
           | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepEqNeuExpand sign m blocker ty
-          | (Machine.CANONICAL, Machine.NEUTRAL blocker) => CatJdgSymmetry then_ StepEqNeuExpand sign n blocker ty
+          | (Machine.CANONICAL, Machine.NEUTRAL blocker) => Symmetry then_ StepEqNeuExpand sign n blocker ty
           | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", AJ.pretty @@ AJ.EQ ((m, n), ty))))
 
       fun StepTrue sign ty =
@@ -935,12 +936,6 @@ struct
         | AJ.TRUE _ => Lcf.rule o InternalizedEquality.RewriteTrueByTrue sel z
         | jdg => fail @@ E.NOT_APPLICABLE (Fpp.text "rewrite-hyp tactic", AJ.pretty jdg))
     fun Rewrite _ sel m = Lcf.rule o InternalizedEquality.Rewrite sel m
-
-    val Symmetry : tactic = matchGoal
-      (fn _ >> AJ.EQ_TYPE _ => Lcf.rule o TypeEquality.Symmetry
-        | _ >> AJ.EQ _ => Lcf.rule o Equality.Symmetry
-        | _ >> AJ.TRUE _ => Lcf.rule o InternalizedEquality.Symmetry
-        | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "internalize tactic", Seq.pretty seq))
 
     fun Inversion z : tactic = Lcf.rule o Record.EqInv z
   end
