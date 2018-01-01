@@ -70,18 +70,18 @@ is
 
   redprl/judgment.sml
 
-  redprl/elab_monad.sig
-  redprl/elab_monad.sml
+  redprl/signature/elab_monad.sig
+  redprl/signature/elab_monad.sml
 
   redprl/log.sig
   redprl/log.sml
 
-  redprl/signature.sig
-  redprl/signature_mini.sml
+  redprl/signature/signature.sig
+  redprl/signature/signature_mini.sml
 
   redprl/tactic_elaborator.fun
 
-  redprl/signature.sml
+  redprl/signature/signature.sml
 
   redprl/redprl.lex
   redprl/redprl.grm
