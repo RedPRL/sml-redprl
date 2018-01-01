@@ -116,6 +116,7 @@ struct
   infix #>
 
   val trivial = Syn.into Syn.TV
+  val axiom = Syn.into Syn.AX
 
   (* telescope combinators *)
 
@@ -214,8 +215,9 @@ struct
     val OMEGA = NONE : as_level
     val matchAsEqType =
       fn AJ.EQ_TYPE ((a, b), k) => ((a, b), NONE, k)
-       | AJ.EQ ((a, b), univ) =>
+       | AJ.TRUE ty =>
            let
+             val Syn.EQUALITY (univ, a, b) = Syn.out ty
              val Syn.UNIVERSE (l, k) = Syn.out univ
            in
              ((a, b), SOME l, k)
@@ -229,16 +231,20 @@ struct
        | ((a, b), SOME l, k) => makeEqWith f H ((a, b), Syn.intoU (l, k))
     datatype as_type = TYPE of Abt.abt | UNIV_OMEGA of K.kind
     val matchAsTrue =
-      fn AJ.EQ ((m, n), ty) => Syn.into (Syn.EQUALITY (ty, m, n))
-       | AJ.TRUE ty => ty
+      fn AJ.TRUE ty => ty
+    val matchTrueAsEq =
+      fn AJ.TRUE ty => (case Syn.out ty of Syn.EQUALITY (ty, m, n) => ((m, n), ty))
+    val makeEqAsTrue = makeEq
     val matchAsEq =
-      fn AJ.EQ ((m, n), ty) => ((m, n), TYPE ty)
-       | AJ.TRUE ty => (case Syn.out ty of Syn.EQUALITY (ty, m, n) => ((m, n), TYPE ty))
+      fn AJ.TRUE ty => let val (tms, ty) = matchTrueAsEq (AJ.TRUE ty) in (tms, TYPE ty) end
        | AJ.EQ_TYPE ((a, b), k) => ((a, b), UNIV_OMEGA k)
        | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEq", AJ.pretty jdg)
     fun makeAsEq H =
       fn ((a, b), TYPE ty) => makeEq H ((a, b), ty)
        | ((a, b), UNIV_OMEGA k) => makeEqType H ((a, b), k)
+    val makeAsAxiom =
+      fn TYPE _ => axiom
+       | UNIV_OMEGA _ => trivial
     fun makeAsMem H =
       fn (a, TYPE ty) => makeMem H (a, ty)
        | (a, UNIV_OMEGA k) => makeType H (a, k)

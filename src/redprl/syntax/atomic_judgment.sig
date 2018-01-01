@@ -6,21 +6,13 @@ struct
   
   datatype jdg =
 
-    (* `EQ ((m, n), a)`:
-    *   The term `a` was associated with a PER and terms `m` and `n` are
-    *   related by that PER.
-    *
-    *   The realizer is `TV` of sort `TRV`.
-    *)
-      EQ of (abt * abt) * abt
-
     (* `TRUE a`:
     *   The term `a` is associated with a PER and there exists a term `m`
     *   such that `m` is related to itself in that PER.
     *
     *   The realizer is such an `m` of sort `EXP`.
     *)
-    | TRUE of abt
+      TRUE of abt
 
     (* `EQ_TYPE ((a, b), k)`:
     *   The terms `a` and `b` are equal types and have equal structures
@@ -67,6 +59,7 @@ sig
   type kind = RedPrlKind.t
 
   val TYPE : abt * RedPrlKind.t -> jdg
+  val EQ : (abt * abt) * abt -> jdg
   val MEM : abt * abt -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg

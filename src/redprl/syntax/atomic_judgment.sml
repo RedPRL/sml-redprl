@@ -3,6 +3,9 @@ struct
   open AtomicJudgmentData
   type abt = RedPrlAbt.abt
 
+  fun EQ ((m, n), a) =
+    TRUE (SyntaxView.into (SyntaxView.EQUALITY (a, m, n)))
+
   fun MEM (m, a) =
     EQ ((m, m), a)
 
@@ -10,8 +13,7 @@ struct
     EQ_TYPE ((a, a), k)
 
   fun map f =
-    fn EQ ((m, n), a) => EQ ((f m, f n), f a)
-     | TRUE a => TRUE (f a)
+    fn TRUE a => TRUE (f a)
      | EQ_TYPE ((a, b), k) => EQ_TYPE ((f a, f b), k)
      | SUB_TYPE (a, b) => SUB_TYPE (f a, f b)
      | SUB_KIND (u, k) => SUB_KIND (f u, k)
@@ -25,12 +27,7 @@ struct
     open Fpp
   in
     val pretty =
-      fn EQ ((m, n), a) => expr @@ hvsep @@ List.concat
-           [ if RedPrlAbt.eq (m, n) then [TermPrinter.ppTerm m]
-             else [TermPrinter.ppTerm m, Atomic.equals, TermPrinter.ppTerm n]
-           , [hsep [text "in", TermPrinter.ppTerm a]]
-           ]
-       | TRUE a => TermPrinter.ppTerm a
+      fn TRUE a => TermPrinter.ppTerm a
        | EQ_TYPE ((a, b), k) => expr @@ hvsep @@ List.concat
            [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm a]
              else [TermPrinter.ppTerm a, Atomic.equals, TermPrinter.ppTerm b]
@@ -59,8 +56,7 @@ struct
   structure O = RedPrlOpData
 
   val synthesis =
-    fn EQ _ => O.TRV
-     | TRUE _ => O.EXP
+    fn TRUE _ => O.EXP
      | EQ_TYPE _ => O.TRV
      | SUB_TYPE _ => O.TRV
      | SUB_KIND _ => O.TRV
@@ -77,8 +73,7 @@ struct
       O.KCONST k $$ []
 
     val into : jdg -> abt =
-      fn EQ ((m, n), a) => O.JDG_EQ $$ [[] \ m, [] \ n, [] \ a]
-       | TRUE a => O.JDG_TRUE $$ [[] \ a]
+      fn TRUE a => O.JDG_TRUE $$ [[] \ a]
        | EQ_TYPE ((a, b), k) => O.JDG_EQ_TYPE $$ [[] \ kconst k, [] \ a, [] \ b]
        | SUB_TYPE (a, b) => O.JDG_SUB_TYPE $$ [[] \ a, [] \ b]
        | SUB_KIND (u, k) => O.JDG_SUB_KIND $$ [[] \ kconst k, [] \ u]
@@ -93,8 +88,7 @@ struct
 
     fun out jdg =
       case RedPrlAbt.out jdg of
-         O.JDG_EQ $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), a)
-       | O.JDG_TRUE $ [_ \ a] => TRUE a
+         O.JDG_TRUE $ [_ \ a] => TRUE a
        | O.JDG_EQ_TYPE $ [_ \ k, _ \ a, _ \ b] => EQ_TYPE ((a, b), outk k)
        | O.JDG_SUB_TYPE $ [_ \ a, _ \ b] => SUB_TYPE (a, b)
        | O.JDG_SUB_KIND $ [_ \ k, _ \ u] => SUB_KIND (u, outk k)
@@ -110,10 +104,7 @@ struct
     structure V = Variance and A = Accessor
   in
     val variance =
-      fn (EQ _, A.PART_TYPE) => V.COVAR
-       | (EQ _, A.PART_LEFT) => V.ANTIVAR
-       | (EQ _, A.PART_RIGHT) => V.ANTIVAR
-       | (TRUE _, A.WHOLE) => V.COVAR
+      fn (TRUE _, A.WHOLE) => V.COVAR
        | (TRUE _, A.PART_TYPE) => V.COVAR
        | (TRUE _, A.PART_LEFT) => V.ANTIVAR
        | (TRUE _, A.PART_RIGHT) => V.ANTIVAR
