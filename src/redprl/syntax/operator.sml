@@ -138,7 +138,6 @@ struct
      | RULE_PRIM _ => [] ->> TAC
      | TAC_ELIM => [[] |: ANY] ->> TAC
      | TAC_REWRITE => [[] |: SEL, [] |: ACC, [] |: EXP] ->> TAC
-     | TAC_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -284,7 +283,6 @@ struct
      | RULE_PRIM name => "refine{" ^ name ^ "}"
      | TAC_ELIM => "elim"
      | TAC_REWRITE => "rewrite"
-     | TAC_REWRITE_HYP => "rewrite-hyp"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"

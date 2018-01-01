@@ -90,7 +90,6 @@ struct
    | RULE_PRIM of string
    | TAC_ELIM
    | TAC_REWRITE
-   | TAC_REWRITE_HYP
    | TAC_REDUCE
 
    (* development calculus terms *)
