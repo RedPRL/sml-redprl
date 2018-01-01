@@ -66,7 +66,7 @@ struct
     let
       val Lcf.|> (subgoals, _) = #state entry (fn _ => Sym.new ())
     in
-      Lcf.Tl.foldr (fn (x, jdg, args) => (x, RedPrlJudgment.sort jdg) :: args) [] subgoals
+      Lcf.Tl.foldr (fn (x, Lcf.::@ (_, jdg), args) => (x, RedPrlJudgment.sort jdg) :: args) [] subgoals
     end
 
   fun entrySort (entry : entry) : sort = 

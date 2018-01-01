@@ -2,14 +2,18 @@ structure LcfLanguage = LcfAbtLanguage (RedPrlAbt)
 
 structure Lcf :
 sig
-  include LCF_TACTIC
+  type trace = string list
+  datatype 'a traced = ::@ of trace * 'a
+
+  include LCF_TACTIC where type 'a I.t = 'a traced
   val prettyState : jdg state -> Fpp.doc
 end =
 struct
-  structure Lcf = Lcf (LcfLanguage)
+  structure Tr = LcfListTrace (type e = string)
+  structure Lcf = TracedLcf (structure L = LcfLanguage and Tr = Tr)
   structure Def = LcfTactic (structure J = RedPrlJudgment and Lcf = Lcf and M = LcfMonadBT)
   open Def Lcf
-  infix |> ||
+  infix |> ::@ ||
 
   (* TODO: clean up all this stuff with vsep *)
   (* TODO: also try to extend the printer with "concrete name" environments so that we can print without doing
@@ -18,24 +22,29 @@ struct
   fun @@ (f, x) = f x
   infixr 0 @@
 
-  fun prettyGoal (x, jdg) =
+  fun prettyTrace tr = 
+    Fpp.collection (Fpp.char #"[") (Fpp.char #"]") (Fpp.Atomic.comma) 
+      (List.map Fpp.text tr)
+
+  fun prettyGoal (x, tr ::@ jdg) =
     Fpp.nest 2 @@
       Fpp.vsep
         [Fpp.seq [Fpp.hsep [Fpp.text "Goal", TermPrinter.ppMeta x], Fpp.text "."],
+         Fpp.hsep [Fpp.text "Trace:", Fpp.align @@ prettyTrace tr],
          Sequent.pretty jdg]
 
-  val prettyGoals : jdg Tl.telescope -> {doc : Fpp.doc, ren : J.ren, idx : int} =
+  val prettyGoals : jdg I.t Tl.telescope -> {doc : Fpp.doc, ren : J.ren, idx : int} =
     let
       open RedPrlAbt
     in
       Tl.foldl
-        (fn (x, jdg, {doc, ren, idx}) =>
+        (fn (x, tr ::@ jdg, {doc, ren, idx}) =>
           let
             val x' = Metavar.named (Int.toString idx)
             val jdg' = J.ren ren jdg
             val ren' = Metavar.Ctx.insert ren x x'
           in
-            {doc = Fpp.seq [doc, prettyGoal (x', jdg'), Fpp.newline],
+            {doc = Fpp.seq [doc, prettyGoal (x', tr ::@ jdg'), Fpp.newline],
              ren = ren',
              idx = idx + 1}
           end)
