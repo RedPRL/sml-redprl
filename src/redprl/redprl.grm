@@ -789,8 +789,8 @@ withKind
   | (Ast.$$ (O.KCONST K.top, []))
 
 rawJudgment
-  : term EQUALS term IN term (Ast.$$ (O.JDG_EQ, [\\ term1, \\ term2, \\ term3]))
-  | term IN term (Ast.$$ (O.JDG_EQ, [\\ term1, \\ term1, \\ term2]))
+  : term EQUALS term IN term (Ast.$$ (O.JDG_TRUE, [\\ (Ast.$$ (O.EQUALITY, [\\ term1, \\ term2, \\ term3]))]))
+  | term IN term (Ast.$$ (O.JDG_TRUE, [\\ (Ast.$$ (O.EQUALITY, [\\ term1, \\ term1, \\ term2]))]))
   | term TRUE (Ast.$$ (O.JDG_TRUE, [\\ term]))
   | term (Ast.$$ (O.JDG_TRUE, [\\ term]))
   | term EQUALS term TYPE withKind (Ast.$$ (O.JDG_EQ_TYPE, [\\ withKind, \\ term1, \\ term2]))

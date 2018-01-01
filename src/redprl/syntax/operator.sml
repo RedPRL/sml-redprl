@@ -108,7 +108,6 @@ struct
      | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ => [[] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
      | JDG_TRUE => [[] |: EXP] ->> JDG
      | JDG_EQ_TYPE => [[] |: KND, [] |: EXP, [] |: EXP] ->> JDG
      | JDG_SUB_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
@@ -314,7 +313,6 @@ struct
      | SEL_CONCL => "select-goal"
      | PAT_META _ => "pat-meta"
 
-     | JDG_EQ => "eq"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
      | JDG_SUB_TYPE => "sub-type"

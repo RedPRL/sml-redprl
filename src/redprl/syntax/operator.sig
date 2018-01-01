@@ -68,7 +68,6 @@ struct
 
    | KCONST of kind
 
-   | JDG_EQ
    | JDG_TRUE
    | JDG_EQ_TYPE
    | JDG_SUB_TYPE
