@@ -1,4 +1,4 @@
-structure RedPrlLogBasis :> REDPRL_LOG =
+structure RedPrlLog :> REDPRL_LOG =
 struct
   datatype level =
      INFO
@@ -48,15 +48,3 @@ struct
       TextIO.flushOut stream
     end
 end
-
-
-functor RedPrlLogUtil (L : REDPRL_LOG) : REDPRL_LOG_UTIL=
-struct
-  open L
-
-  fun trace msg =
-    ()
-    (*print TRACE (NONE, msg)*)
-end
-
-structure RedPrlLog = RedPrlLogUtil (RedPrlLogBasis)

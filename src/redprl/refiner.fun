@@ -31,7 +31,7 @@ struct
   struct
     fun Project z _ jdg =
       let
-        val _ = RedPrlLog.trace "Hyp.Project"
+        val tr = ["Hyp.Project"]
         val H >> ajdg = jdg
         val ajdg' = Hyps.lookup H z
       in
@@ -49,7 +49,7 @@ struct
 
     fun Rename z alpha jdg = 
       let
-        val _ = RedPrlLog.trace "Hyp.Rename"
+        val tr = ["Hyp.Rename"]
         val H >> ajdg = jdg
         val zjdg = Hyps.lookup H z
         val z' = alpha 0
@@ -60,7 +60,7 @@ struct
         val H' = Hyps.splice H z (Hyps.singleton z' zjdg)
         val H'' = Hyps.modifyAfter z' (AJ.map renameIn) H'
 
-        val (goal, hole) = makeGoal @@ (H'') >> AJ.map renameIn ajdg
+        val (goal, hole) = makeGoal tr @@ (H'') >> AJ.map renameIn ajdg
         val extract = renameOut hole
       in
         |>: goal #> (H, extract)
@@ -68,7 +68,7 @@ struct
 
     fun Delete z _ jdg = 
       let
-        val _ = RedPrlLog.trace "Hyp.Delete"
+        val tr = ["Hyp.Delete"]
         val H >> ajdg = jdg
 
         fun checkAJ ajdg =
@@ -86,7 +86,7 @@ struct
         val _ = Hyps.foldr (fn (_, ajdg, _) => (checkAJ ajdg; ())) () H
 
         val H' = Hyps.remove z H
-        val (goal, hole) = makeGoal @@ H' >> ajdg
+        val (goal, hole) = makeGoal tr @@ H' >> ajdg
       in
         |>: goal #> (H, hole)
       end
@@ -96,9 +96,9 @@ struct
   struct
     fun Symmetry _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.Symmetry"
+        val tr = ["TypeEquality.Symmetry"]
         val H >> AJ.EQ_TYPE ((ty1, ty2), k) = jdg
-        val goal = makeEqType H ((ty2, ty1), k)
+        val goal = makeEqType tr H ((ty2, ty1), k)
       in
         |>: goal #> (H, trivial)
       end
@@ -106,13 +106,13 @@ struct
     (* this is for non-deterministic search *)
     fun NondetFromEqType z _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.NondetFromEqType"
+        val tr = ["TypeEquality.NondetFromEqType"]
         val H >> AJ.EQ_TYPE ((a, b), k) = jdg
         val AJ.EQ_TYPE ((a', b'), k') = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((a', b'), a)
         val _ = Assert.alphaEqEither ((a', b'), b)
         val _ = Assert.inUsefulUnivOmega (k', k)
-        val goal = makeEqTypeUnlessSubUniv H ((a, b), k) k'
+        val goal = makeEqTypeUnlessSubUniv tr H ((a, b), k) k'
       in
         |>:? goal #> (H, trivial)
       end
@@ -120,7 +120,7 @@ struct
     (* this is for non-deterministic search *)
     fun NondetFromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.NondetFromEq"
+        val tr = ["TypeEquality.NondetFromEq"]
         val H >> AJ.EQ_TYPE ((a, b), k) = jdg
         val AJ.EQ (_, a') = Hyps.lookup H z
         val _ = Assert.alphaEq (a, b)
@@ -133,7 +133,7 @@ struct
     (* this is for non-deterministic search *)
     fun NondetFromTrue z _ jdg =
       let
-        val _ = RedPrlLog.trace "TypeEquality.NondetFromTrue"
+        val tr = ["TypeEquality.NondetFromTrue"]
         val H >> AJ.EQ_TYPE ((a, b), k) = jdg
         val AJ.TRUE a' = Hyps.lookup H z
         val _ = Assert.alphaEq (a, b)
@@ -148,9 +148,9 @@ struct
   struct
     fun Eq _ jdg =
       let
-        val _ = RedPrlLog.trace "SubType.Eq"
+        val tr = ["SubType.Eq"]
         val H >> AJ.SUB_TYPE (a, b) = jdg
-        val goal = makeEqType H ((a, b), K.top)
+        val goal = makeEqType tr H ((a, b), K.top)
       in
         |>: goal #> (H, trivial)
       end
@@ -160,9 +160,9 @@ struct
   struct
     fun Witness tm _ jdg =
       let
-        val _ = RedPrlLog.trace "True.Witness"
+        val tr = ["True.Witness"]
         val H >> AJ.TRUE ty = jdg
-        val goal = makeMem H (tm, ty)
+        val goal = makeMem tr H (tm, ty)
       in
         |>: goal #> (H, tm)
       end
@@ -174,7 +174,7 @@ struct
   struct
     fun Exact tm _ jdg = 
       let
-        val _ = RedPrlLog.trace "Term.Exact"
+        val tr = ["Term.Exact"]
         val H >> AJ.TERM tau = jdg
         val tau' = Abt.sort tm
         val _ = Assert.sortEq (tau, tau')
@@ -187,9 +187,9 @@ struct
   struct
     fun Witness ty _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.Witness"
+        val tr = ["Synth.Witness"]
         val H >> AJ.SYNTH tm = jdg
-        val goal = makeMem H (tm, ty)
+        val goal = makeMem tr H (tm, ty)
       in
         |>: goal #> (H, ty)
       end
@@ -197,7 +197,7 @@ struct
     (* this is for non-deterministic search *)
     fun NondetFromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.NondetFromEq"
+        val tr = ["Synth.NondetFromEq"]
         val H >> AJ.SYNTH tm = jdg
         val AJ.EQ ((a, b), ty) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((a, b), tm)
@@ -207,7 +207,7 @@ struct
 
     fun VarFromTrue _ jdg =
       let
-        val _ = RedPrlLog.trace "Synth.VarFromTrue"
+        val tr = ["Synth.VarFromTrue"]
         val H >> AJ.SYNTH tm = jdg
         val Syn.VAR (z, O.EXP) = Syn.out tm
         val AJ.TRUE a = Hyps.lookup H z
@@ -222,7 +222,7 @@ struct
   struct
     fun MatchOperator _ jdg =
       let
-        val _ = RedPrlLog.trace "Misc.MatchOperator"
+        val tr = ["Misc.MatchOperator"]
         val MATCH (th, k, tm, ms) = jdg
         val Abt.$ (th', args) = Abt.out tm
         val true = Abt.O.eq (th, th')
@@ -241,13 +241,13 @@ struct
   struct
     fun VarFromTrue _ jdg =
       let
-        val _ = RedPrlLog.trace "Equality.VarFromTrue"
+        val tr = ["Equality.VarFromTrue"]
         val H >> AJ.EQ ((m, n), ty) = jdg
         val Syn.VAR (x, _) = Syn.out m
         val Syn.VAR (y, _) = Syn.out n
         val _ = Assert.varEq (x, y)
         val AJ.TRUE ty' = Hyps.lookup H x
-        val goalTy = makeSubTypeIfDifferent H (ty', ty)
+        val goalTy = makeSubTypeIfDifferent tr H (ty', ty)
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -256,28 +256,28 @@ struct
 
     fun FromEq z _ jdg =
       let
-        val _ = RedPrlLog.trace "NondetEquality.FromEq"
+        val tr = ["NondetEquality.FromEq"]
         val H >> AJ.EQ ((m1, n1), ty1) = jdg
         val AJ.EQ ((m0, n0), ty0) = Hyps.lookup H z
         val _ = Assert.alphaEqEither ((m0, n0), m1)
         val _ = Assert.alphaEqEither ((m0, n0), n1)
-        val goalTy = makeSubTypeIfDifferent H (ty0, ty1)
+        val goalTy = makeSubTypeIfDifferent tr H (ty0, ty1)
       in
         |>:? goalTy #> (H, trivial)
       end
 
     fun Symmetry _ jdg =
       let
-        val _ = RedPrlLog.trace "Equality.Symmetry"
+        val tr = ["Equality.Symmetry"]
         val H >> AJ.EQ ((m, n), ty) = jdg
-        val goal = makeEq H ((n, m), ty)
+        val goal = makeEq tr H ((n, m), ty)
       in
         |>: goal #> (H, trivial)
       end
 
     fun RewriteTrueByEq sel z alpha jdg =
       let
-        val _ = RedPrlLog.trace "Equality.RewriteTrueByEq"
+        val tr = ["Equality.RewriteTrueByEq"]
         val H >> concl = jdg
 
         val currentTy =
@@ -290,8 +290,8 @@ struct
 
         val x = alpha 0
         val truncatedHx = truncatedH @> (x, AJ.TRUE ty)
-        val (motiveGoal, motiveHole) = makeTerm truncatedHx O.EXP
-        val motiveWfGoal = makeType truncatedHx (motiveHole, K.STABLE)
+        val (motiveGoal, motiveHole) = makeTerm tr truncatedHx O.EXP
+        val motiveWfGoal = makeType tr truncatedHx (motiveHole, K.STABLE)
 
         val motiven = substVar (n, x) motiveHole
         val motivem = substVar (m, x) motiveHole
@@ -302,12 +302,12 @@ struct
            | _ => jdg
 
         val (H', concl') = Sequent.mapSelector sel replace (H, concl)
-        val (rewrittenGoal, rewrittenHole) = makeGoal @@ H' >> concl'
+        val (rewrittenGoal, rewrittenHole) = makeGoal tr @@ H' >> concl'
 
         val motiveMatchesMainGoal =
           case sel of
-            Selector.IN_CONCL => makeSubType truncatedH (motivem, currentTy)
-          | Selector.IN_HYP _ => makeSubType truncatedH (currentTy, motivem)
+            Selector.IN_CONCL => makeSubType tr truncatedH (motivem, currentTy)
+          | Selector.IN_HYP _ => makeSubType tr truncatedH (currentTy, motivem)
       in
         |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
@@ -316,17 +316,19 @@ struct
 
   fun Cut ajdg alpha jdg =
     let
-      val _ = RedPrlLog.trace "Cut"
+      val tr = ["Cut"]
       val H >> ajdg' = jdg
       val z = alpha 0
-      val (goal1, hole1) = makeGoal @@ H >> ajdg
-      val (goal2, hole2) = makeGoal @@ (H @> (z, ajdg)) >> ajdg'
+      val (goal1, hole1) = makeGoal tr @@ H >> ajdg
+      val (goal2, hole2) = makeGoal tr @@ (H @> (z, ajdg)) >> ajdg'
     in
       |>: goal1 >: goal2 #> (H, substVar (hole1, z) hole2)
     end
 
   fun CutLemma sign opid alpha jdg = 
     let
+      val tr = ["CutLemma"]
+
       val z = alpha 0
       val H >> ajdg = jdg
 
@@ -341,7 +343,7 @@ struct
       val lemmaExtract' =
         let
           val subgoalsList = T.foldr (fn (x, jdg, goals) => (x, jdg) :: goals) [] lemmaSubgoals
-          val valences = List.map (RedPrlJudgment.sort o #2) subgoalsList
+          val valences = List.map (RedPrlJudgment.sort o Lcf.I.run o #2) subgoalsList
           val arity = (valences, AJ.synthesis specjdg)
           fun argForSubgoal ((x, jdg), vl) = outb @@ Lcf.L.var x vl
         in
@@ -350,7 +352,7 @@ struct
 
 
       val H' = H @> (z, specjdg)
-      val (mainGoal, mainHole) = makeGoal @@ H' >> ajdg
+      val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
       val extract = substVar (lemmaExtract', z) mainHole
     in
       lemmaSubgoals >: mainGoal #> (H, extract)
