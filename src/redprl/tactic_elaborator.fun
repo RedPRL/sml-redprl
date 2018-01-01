@@ -30,7 +30,7 @@ struct
   structure RT = RefinerTypeRules (Sig)
   structure T = RedPrlTactical (Lcf)
 
-  open T infix seq then_ thenl thenl' orelse_
+  open T infix seq then_ thenl thenl' orelse_ par
 
   type env = multitactic Var.Ctx.dict
 
@@ -54,17 +54,20 @@ struct
     fn alpha => fn state => 
       RedPrlError.raiseError (RedPrlError.GENERIC [Fpp.text msg])
 
-  fun hyp z =
-    Lcf.rule o R.Hyp.Project z
-    orelse_
-      R.SynthFromHyp z
-
-  open Sequent infix >>
-  structure AJ = AtomicJudgment and Syn = SyntaxView
-
   val autoMtac = mrepeat o all o try o R.AutoStep
   val autoTac = multitacToTac o autoMtac
   fun autoTacComplete sign = try (autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal")
+
+  fun exactAuto sign m = 
+    R.Exact m thenl [autoTacComplete sign]
+
+  fun hyp sign z =
+    Lcf.rule o R.Hyp.Project z
+    par
+    exactAuto sign (VarKit.toExp z)
+
+  open Sequent infix >>
+  structure AJ = AtomicJudgment and Syn = SyntaxView
 
   fun unfoldCustomOperator sign (opid, args) = 
     Sig.unfoldCustomOperator (Sig.lookup sign opid) args
@@ -235,9 +238,6 @@ struct
     val pathIntros = pathIntros
   end
 
-  fun exactAuto sign m = 
-    R.Exact m thenl [autoTacComplete sign]
-
   fun cutLemma sign opid ar (args : abt bview list) (pattern, names) appTacs tac =
     let
       val (vls, _) = ar
@@ -313,7 +313,7 @@ struct
          val tacs = Syn.outVec' (tactic sign env) vec
          val z' = RedPrlSym.named (Sym.toString z ^ "'")
        in
-         applications sign z (O.PAT_VAR (), [z']) tacs (hyp z')
+         applications sign z (O.PAT_VAR (), [z']) tacs (hyp sign z')
        end
 
      | O.DEV_APPLY_LEMMA (opid, ar, pat) $ args =>
@@ -336,7 +336,7 @@ struct
          val z = RedPrlSym.named (opid ^ "'")
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
        in
-         cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp z)
+         cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp sign z)
        end
      | O.CUST (opid, _) $ args => tactic sign env (unfoldCustomOperator sign (opid, args))
      | O.DEV_MATCH ns $ (_ \ term) :: clauses =>
