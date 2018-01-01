@@ -3,28 +3,38 @@ struct
   structure EM = ElabMonad
   type 'a m = 'a EM.t
 
-  type src_name = string
   type name = Sym.t
   type ast = RedPrlAst.ast
   type arity = RedPrlArity.t
   type abt = RedPrlAbt.abt
   type ajdg = AtomicJudgment.jdg
 
-  type renv = unit (* resolver environment, TODO *)
-
   exception todo
   fun ?e = raise e  
 
-  structure Res :
+  structure Res :>
   sig
-    val resolveName : renv -> src_name -> name m
-    val extendSrcName : renv -> src_name -> (renv * name) m
+    type env
+
+    val lookupId : env -> string -> name m
+    val extendId : env -> string -> (env * name) m
   end = 
   struct
-    fun resolveName renv a = ?todo
-    fun extendSrcName renv a = ?todo
-  end
+    type env =
+      {ids : name StringListDict.dict}
+      
+    fun lookupId (env : env) nm =
+      case StringListDict.find (#ids env) nm of
+         SOME nm' => EM.ret nm'
+       | NONE => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not resolve name", Fpp.text nm])
 
+    fun extendId {ids} nm =
+      let
+        val nm' = Sym.named nm
+      in
+        EM.ret ({ids = StringListDict.insert ids nm nm'}, nm')
+      end
+  end
 
   structure Src =
   struct
@@ -62,14 +72,26 @@ struct
        THUNK of env * Syn.cmd
      | STATE of Lcf.jdg * Lcf.jdg Lcf.state
      | NIL
-    withtype env = (name * value) list
+
+    withtype env = value Sym.Ctx.dict
 
     datatype cmd = RET of value
 
-    fun lookup (env : env) (nm : name) : value m = ?todo
-    fun extend (env : env) (nm : name) (v : value) : env = ?todo
+    fun lookup (env : env) (nm : name) : value m =
+      case Sym.Ctx.find env nm of 
+         SOME v => EM.ret v
+       | NONE => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text (Sym.toString nm), Fpp.text "in environment"])
 
-    val printVal : value -> unit m = ?todo
+    fun extend (env : env) (nm : name) (v : value) : env =
+      Sym.Ctx.insert env nm v
+
+    val ppValue : value -> Fpp.doc = 
+      fn THUNK _ => Fpp.text "<thunk>"
+       | STATE _ => Fpp.text "<lcf-state>"
+       | NIL => Fpp.text "()"
+
+    fun printVal (v : value) : unit m =
+      EM.info (NONE, ppValue v)
   end
 
 
@@ -82,27 +104,27 @@ struct
   local
     structure Ast = RedPrlAst and Abt = RedPrlAbt
   in
-    fun resolveAjdg (env : renv) (ast : ast) : ajdg m =
+    fun resolveAjdg (env : Res.env) (ast : ast) : ajdg m =
       case Ast.out ast of 
          _ => ?todo
 
-    and resolveAst (env : renv) (ast : ast) : abt m =
+    and resolveAst (env : Res.env) (ast : ast) : abt m =
       case Ast.out ast of 
          _ => ?todo
   end
 
-  fun resolveVal (env : renv) : Src.value -> Syn.value m = 
+  fun resolveVal (env : Res.env) : Src.value -> Syn.value m = 
     fn Src.THUNK cmd =>
        resolveCmd env cmd >>= (fn cmd' => 
          EM.ret @@ Syn.THUNK cmd')
      | Src.VAR nm =>
-       Res.resolveName env nm >>= (fn nm' => 
+       Res.lookupId env nm >>= (fn nm' => 
          EM.ret @@ Syn.VAR nm')
 
-  and resolveCmd (env : renv) : Src.cmd -> Syn.cmd m = 
+  and resolveCmd (env : Res.env) : Src.cmd -> Syn.cmd m = 
     fn Src.BIND (cmd1, nm, cmd2) =>
        resolveCmd env cmd1 >>= (fn cmd1' =>
-         Res.extendSrcName env nm >>= (fn (env', nm') =>
+         Res.extendId env nm >>= (fn (env', nm') =>
            resolveCmd env' cmd2 >>= (fn cmd2' => 
              EM.ret @@ Syn.BIND (cmd1', nm', cmd2'))))
 
