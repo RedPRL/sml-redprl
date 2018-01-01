@@ -235,8 +235,13 @@ struct
 
     datatype as_type = TYPE of Abt.abt | UNIV_OMEGA of K.kind
 
+    val matchAsTrue =
+      fn AJ.EQ ((m, n), ty) => Syn.into (Syn.EQUALITY (ty, m, n))
+       | AJ.TRUE ty => ty
+
     val matchAsEq =
-      fn AJ.EQ ((a, b), ty) => ((a, b), TYPE ty)
+      fn AJ.EQ ((m, n), ty) => ((m, n), TYPE ty)
+       | AJ.TRUE ty => (case Syn.out ty of Syn.EQUALITY (ty, m, n) => ((m, n), TYPE ty))
        | AJ.EQ_TYPE ((a, b), k) => ((a, b), UNIV_OMEGA k)
        | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEq", AJ.pretty jdg)
 
