@@ -2011,7 +2011,7 @@ struct
         val _ = Assert.alphaEq (ty', ty0)
         val _ = Assert.kindLeq (K.top, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, axiom)
       end
 
     (* (= ty a b) => a synth ~~> ty *)
