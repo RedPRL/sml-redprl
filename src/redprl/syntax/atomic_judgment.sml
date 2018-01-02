@@ -154,7 +154,7 @@ struct
                 Fpp.hvsep [Fpp.hsep [A.pretty acc, Fpp.text "of"], pretty jdg]))
 
     fun multiMapAccessor accs f jdg =
-      List.foldl (fn (acc, state) => mapAccessor acc f jdg) jdg accs
+      List.foldl (fn (acc, state) => mapAccessor acc f state) jdg accs
 
     val variance =
       fn (TRUE _, A.WHOLE) => V.COVAR
