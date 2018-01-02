@@ -24,7 +24,7 @@ Thm IdIsEquiv(#l:lvl) : [
             [i=0 [j] (@ c' j)]
             [i=1 [j] a])
        }
-  }
+  }; auto
 ].
 
 Thm IdEquiv(#l:lvl) : [
@@ -73,7 +73,7 @@ Thm IdV/Test2(#l:lvl) : [
    (= ty (coe 0~>1 [x] (IdV x #l ty) a)
          (coe 0~>1 [_] ty a)))
 ] by [
-  lam ty a => auto
+  lam ty a => reduce at left; auto
 ].
 
 Print IdV/Test2.
