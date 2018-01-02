@@ -322,6 +322,7 @@ struct
      | "coe/eq/cap" => Lcf.rule o Coe.EqCapL
      | "subtype/eq" => Lcf.rule o SubType.Eq
      | "custom/synth" => Lcf.rule o Custom.Synth sign
+     | "universe/subtype" => Lcf.rule o Universe.SubType
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
