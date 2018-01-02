@@ -358,7 +358,7 @@ end
  | DISCRETE | KAN | STABLE
 
  (* commands and declarations *)
- | CMD_PRINT | CMD_EXTRACT
+ | CMD_PRINT | CMD_EXTRACT | CMD_QUIT
  | DCL_DEF | DCL_TAC | DCL_THM
  | BY | IN
 
@@ -1011,6 +1011,7 @@ decl
 rawCmd
   : CMD_PRINT OPNAME (SignatureNew.Src.PRINT OPNAME)
   | CMD_EXTRACT OPNAME (SignatureNew.Src.EXTRACT OPNAME)
+  | CMD_QUIT (SignatureNew.Src.QUIT)
 
 cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
 

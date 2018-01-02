@@ -43,13 +43,18 @@ struct
     val THM = RedPrlLrVals.Tokens.DCL_THM (Coord.init, Coord.init)
     val TAC = RedPrlLrVals.Tokens.DCL_TAC (Coord.init, Coord.init)
     val PRINT = RedPrlLrVals.Tokens.CMD_PRINT (Coord.init, Coord.init)
+    val EXTRACT = RedPrlLrVals.Tokens.CMD_EXTRACT (Coord.init, Coord.init)
+    val QUIT = RedPrlLrVals.Tokens.CMD_QUIT (Coord.init, Coord.init)    
     val DOT = RedPrlLrVals.Tokens.DOT (Coord.init, Coord.init)
 
     fun isBeginElt tok =
       RedPrlParser.Token.sameToken (tok, THM) orelse
       RedPrlParser.Token.sameToken (tok, DEF) orelse
       RedPrlParser.Token.sameToken (tok, TAC) orelse
-      RedPrlParser.Token.sameToken (tok, PRINT)
+      RedPrlParser.Token.sameToken (tok, PRINT) orelse
+      RedPrlParser.Token.sameToken (tok, EXTRACT) orelse
+      RedPrlParser.Token.sameToken (tok, QUIT)
+      
 
     fun isEof tok =
       RedPrlParser.Token.sameToken (tok, EOF)

@@ -128,6 +128,7 @@ struct
     datatype cmd =
        PRINT of string
      | EXTRACT of string
+     | QUIT
 
     datatype elt = 
        DECL of string * decl * Pos.t
@@ -153,10 +154,12 @@ struct
      | PRINT of Pos.t option * value
      | REFINE of ast * ast
      | NU of (string * Tm.valence) list * cmd
+     | ABORT
 
     fun compileSrcCmd pos : Src.cmd  -> cmd =
       fn Src.PRINT nm => PRINT (SOME pos, VAR nm)
        | Src.EXTRACT nm => PRINT (SOME pos, VAR nm) (* TODO *)
+       | Src.QUIT => ABORT
 
     fun compileSrcDecl (nm : string) : Src.decl -> cmd = 
       fn Src.DEF {arguments, sort, definiens} =>
@@ -196,6 +199,7 @@ struct
      | PRINT of Pos.t option * value
      | REFINE of ajdg * abt
      | NU of (Tm.metavariable * Tm.valence) list * cmd
+     | ABORT
   end
 
   (* semantic domain *)
@@ -436,6 +440,10 @@ struct
          (ISyn.NU (psi', cmd'), cty)
        end
 
+     | ESyn.ABORT =>
+       (ISyn.ABORT, Ty.UP Ty.ONE)
+       (* ? *)
+
 
   structure MiniSig : MINI_SIGNATURE = 
   struct
@@ -494,6 +502,9 @@ struct
     
      | ISyn.NU (psi, cmd) =>
        evalCmd (Sem.freshenMetas env psi) cmd
+
+     | ISyn.ABORT => 
+       fail (NONE, Fpp.text "Signature aborted")
 
   and evalVal (env : Sem.env) : ISyn.value -> Sem.value =
     fn ISyn.THUNK cmd => 
