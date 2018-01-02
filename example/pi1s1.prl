@@ -87,6 +87,12 @@ Thm S1UnivCover : [
   lam x => exact (S1-rec [_] (U 0 kan) x int [x] (@ IntSuccPath x)); refine s1/eq/s1-rec; auto
 ].
 
+Thm Loop : [
+  (path [_] S1 base base)
+] by [
+  abs i => `(loop i)
+].
+
 Thm S1LoopToInt : [
   (-> (path [_] S1 base base) int)
 ] by [
@@ -96,12 +102,6 @@ Thm S1LoopToInt : [
     [ fresh x -> rewrite eq at type; [`($ S1UnivCover x)]; auto
     , fresh x -> rewrite eq at left; [`($ S1UnivCover x)]; auto
     ]
-].
-
-Thm S1Loop : [
-  (path [_] S1 base base)
-] by [
-  abs x => `(loop x)
 ].
 
 Thm S1LoopConcat : [
@@ -126,8 +126,20 @@ Thm IntToS1Loop : [
 ] by [
   lam i => fresh n ih -> elim i;
     [ abs _ => `base
-    , `($ S1LoopConcat S1Loop ih)
-    , `($ S1LoopInv S1Loop)
-    , `($ S1LoopConcat ($ S1LoopInv S1Loop) ih)
+    , `($ S1LoopConcat Loop ih)
+    , `($ S1LoopInv Loop)
+    , `($ S1LoopConcat ($ S1LoopInv Loop) ih)
     ]
+].
+
+Thm Test0 : [
+  (= int ($ S1LoopToInt ($ IntToS1Loop 3)) 3)
+] by [
+  unfold IntToS1Loop Loop; auto
+].
+
+Thm Test1 : [
+  (= int ($ S1LoopToInt ($ IntToS1Loop -3)) -3)
+] by [
+  unfold IntToS1Loop S1LoopInv Loop; auto
 ].
