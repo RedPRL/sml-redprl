@@ -1,5 +1,5 @@
 Thm MalformedTube : [
   wbool true
 ] by [
-  `(hcom 0~>1 wbool tt); fail
+  `(hcom 0~>1 wbool tt)
 ].

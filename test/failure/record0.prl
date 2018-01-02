@@ -1,5 +1,5 @@
 Thm RecordTest : [
   tuple in (record [a : bool])
 ] by [
-  auto; fail
+  auto
 ].
