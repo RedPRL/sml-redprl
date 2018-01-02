@@ -97,8 +97,8 @@ struct
       in    
         EM.ret (gamma, env)
       end
-      handle _ =>
-        EM.fail (NONE, Fpp.text "extendVars: invalid arguments")
+      handle exn =>
+        EM.fail (NONE, Fpp.hsep [Fpp.text "extendVars: invalid arguments,", Fpp.text (exnMessage exn)])
 
     fun extendMetas {ids, vars, metas} (Xs, vls) =
       let
