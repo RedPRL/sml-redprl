@@ -523,7 +523,7 @@ struct
 
          val check = 
            if subgoalsCount = 0 then () else
-             fail (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
+             RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
 
           val mrho = #2 env
           val ajdg' = AJ.map (Tm.renameMetavars mrho) ajdg
