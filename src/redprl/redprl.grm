@@ -359,7 +359,7 @@ end
 
  (* commands and declarations *)
  | CMD_PRINT | CMD_EXTRACT
- | DCL_DEF | DCL_TAC | DCL_THM | DCL_RULE
+ | DCL_DEF | DCL_TAC | DCL_THM
  | BY | IN
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
