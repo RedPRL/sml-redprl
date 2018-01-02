@@ -485,16 +485,19 @@ struct
 
   structure TacticElaborator = TacticElaborator (MiniSig)
   
-  fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd =
+  type exit_code = bool
+
+  fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd * exit_code =
     fn ISyn.BIND (cmd1, x, cmd2) =>
        let
-         val Sem.RET s = evalCmd env cmd1
+         val (Sem.RET s1, ex1) = evalCmd env cmd1
+         val (s2, ex2) = evalCmd (Sem.extend env x s1) cmd2
        in
-         evalCmd (Sem.extend env x s) cmd2
+         (s2, ex1 andalso ex2)
        end
 
      | ISyn.RET v => 
-       Sem.RET @@ evalVal env v
+       (Sem.RET @@ evalVal env v, true)
 
      | ISyn.FORCE v =>
        (case evalVal env v of 
@@ -503,7 +506,7 @@ struct
 
      | ISyn.PRINT (pos, v) =>
        (Sem.printVal (pos, evalVal env v);
-        Sem.RET Sem.NIL)
+        (Sem.RET Sem.NIL, true))
 
      | ISyn.REFINE (ajdg, script) =>
        let
@@ -517,15 +520,16 @@ struct
 
          val Tm.\ (_, extract) = Tm.outb evd
          val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
-         val warning = 
+
+         val check = 
            if subgoalsCount = 0 then () else
-             RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
+             fail (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
 
           val mrho = #2 env
           val ajdg' = AJ.map (Tm.renameMetavars mrho) ajdg
           val extract' = Tm.renameMetavars mrho extract
         in
-          Sem.RET @@ Sem.THM (ajdg', extract')
+          (Sem.RET @@ Sem.THM (ajdg', extract'), subgoalsCount = 0)
         end
     
      | ISyn.NU (psi, cmd) =>
@@ -556,8 +560,8 @@ struct
     let
       val ecmd = ESyn.compileSrcSig sign
       val (icmd, _) = resolveCmd Res.init ecmd
-      val scmd = evalCmd Sem.initEnv icmd
+      val (scmd, exit) = evalCmd Sem.initEnv icmd
     in
-      true
+      exit
     end
 end
