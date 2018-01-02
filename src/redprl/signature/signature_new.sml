@@ -27,6 +27,12 @@ struct
        UP of vty
   end
 
+  fun @@ (f, x) = f x
+  infixr @@
+
+  fun >>= (m, k) = EM.bind k m
+  infix >>=  
+
   (* The resolver environment *)
   structure Res :>
   sig
@@ -201,7 +207,7 @@ struct
   struct
     datatype value = 
        THUNK of env * ISyn.cmd
-     | THM of Lcf.jdg * abt
+     | THM of ajdg * abt
      | TERM of abt
      | ABS of (Tm.metavariable * Tm.valence) list * value
      | NIL
@@ -229,23 +235,26 @@ struct
       end
 
     (* TODO *)
-    val ppValue : value -> Fpp.doc = 
+    val rec ppValue : value -> Fpp.doc = 
       fn THUNK _ => Fpp.text "<thunk>"
-       | THM _ => Fpp.text "<thm>"
-       | TERM _ => Fpp.text "<term>"
-       | ABS _ => Fpp.text "<abs>"
+       | THM (jdg, abt) => Fpp.text "<thm>"
+       | TERM abt => TermPrinter.ppTerm abt
+       | ABS (psi, v) =>
+         Fpp.hvsep
+           [Fpp.hsep
+            [Fpp.collection
+              (Fpp.char #"[")
+              (Fpp.char #"]")
+              Fpp.empty
+              (List.map (fn (X, vl) => Fpp.hsep [TermPrinter.ppMeta X, Fpp.Atomic.colon, TermPrinter.ppValence vl]) psi),
+             Fpp.text "=>"],
+            Fpp.nest 2 @@ Fpp.seq [Fpp.newline, ppValue v]]
        | NIL => Fpp.text "()"
 
     fun printVal (v : value) : unit m =
       EM.info (NONE, ppValue v)
   end
 
-
-  fun @@ (f, x) = f x
-  infixr @@
-
-  fun >>= (m, k) = EM.bind k m
-  infix >>=
 
   fun zipWithM (k : 'a * 'b -> 'c m) : 'a list * 'b list -> 'c list m =
     fn ([], []) =>
