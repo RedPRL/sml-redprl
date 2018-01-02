@@ -104,7 +104,7 @@
   "Syntax table for RedPRL.")
 
 (defconst redprl-declaration-keywords
-  '("Def" "Extract" "Print" "Rule" "Tac" "Thm")
+  '("Def" "Extract" "Print" "Quit" "Tac" "Thm")
   "RedPRL's keywords.")
 
 (defconst redprl-sort-keywords
