@@ -451,8 +451,32 @@ struct
     type abt = abt
     type sign = Sem.env
 
-    fun opidSpec env opid args = ?todo
-    fun unfoldOpid env opid args = ?todo
+    fun makeSubst (psi, args) = 
+      ListPair.foldl
+        (fn ((X, vl), bnd, rho) =>
+          Tm.Metavar.Ctx.insert rho X @@ Tm.checkb (bnd, vl)) 
+        Tm.Metavar.Ctx.empty
+        (psi, args)
+
+    fun opidSpec env opid args =
+      let
+        val Sem.ABS (psi, Sem.THM (jdg, _)) = Sem.lookup env opid
+        val rho = makeSubst (psi, args)
+      in
+        AJ.map (Tm.substMetaenv rho) jdg
+      end
+
+    fun unfoldOpid env opid args =
+      let
+        val Sem.ABS (psi, s) = Sem.lookup env opid
+        val rho = makeSubst (psi, args)
+        val abt = 
+          case s of 
+             Sem.TERM abt => abt
+           | Sem.THM (_, abt) => abt
+      in
+        Tm.substMetaenv rho abt
+      end
   end
 
   structure TacticElaborator = TacticElaborator (MiniSig)
