@@ -43,21 +43,44 @@ struct
   end = 
   struct
     type env =
-      {ids : Ty.vty StringListDict.dict}
+      {ids : Ty.vty StringListDict.dict,
+       vars : (Tm.variable * Tm.sort) StringListDict.dict,
+       metas : (Tm.metavariable * Tm.valence) StringListDict.dict}
+
+    fun lookup dict x = 
+      case StringListDict.find dict x of 
+         SOME r => EM.ret r
+       | NONE => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not resolve name", Fpp.text x])
       
-    fun lookupId (env : env) nm =
-      case StringListDict.find (#ids env) nm of
-         SOME nm' => EM.ret nm'
-       | NONE => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not resolve name", Fpp.text nm])
+    fun lookupId (env : env) =
+      lookup (#ids env)
+
+    fun lookupVar (env : env) =
+      lookup (#vars env)
+      
+    fun lookupMeta (env : env) =
+      lookup (#metas env)      
 
     (* TODO: ensure that this name is not already used *)
-    fun extendId {ids} nm vty =
-      EM.ret {ids = StringListDict.insert ids nm vty}
+    fun extendId {ids, vars, metas} nm vty =
+      EM.ret
+        {ids = StringListDict.insert ids nm vty,
+         vars = vars,
+         metas = metas}
 
-    fun lookupVar _ = ?todo
-    fun extendVars _ = ?todo
-    fun lookupMeta _ = ?todo
-    fun extendMetas _ = ?todo
+    fun extendVars {ids, vars, metas} gamma =
+      let
+        val env = ?todo
+      in    
+        EM.ret (?todo, env)
+      end
+
+    fun extendMetas {ids, vars, metas} psi =
+      let
+        val env = ?todo
+      in    
+        EM.ret (?todo, env)
+      end
   end
 
   (* external language *)
@@ -181,7 +204,7 @@ struct
          | Ty.ABS (vls, Ty.THM tau) => EM.ret @@ (vls, tau)
          | _ => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text opid]))
 
-    fun checkAbt (view, tau) : abt m = 
+    fun checkAbt (view, tau) : abt m =
       EM.ret @@ Tm.check (view, tau)
       handle exn => 
         EM.fail (NONE, Fpp.hsep [Fpp.text "Error resolving abt:", Fpp.text (exnMessage exn)])
