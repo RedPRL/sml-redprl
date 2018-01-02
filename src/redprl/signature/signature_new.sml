@@ -1,8 +1,5 @@
 structure SignatureNew = 
 struct
-  structure EM = ElabMonad
-  type 'a m = 'a EM.t
-
   structure Ast = RedPrlAst and Tm = RedPrlAbt and AJ = AtomicJudgment
 
   type ast = Ast.ast
@@ -30,8 +27,9 @@ struct
   fun @@ (f, x) = f x
   infixr @@
 
-  fun >>= (m, k) = EM.bind k m
-  infix >>=  
+  fun fail (pos, msg) = 
+    RedPrlError.raiseError @@
+      RedPrlError.GENERIC [msg]
 
   (* The resolver environment *)
   structure Res :>
@@ -40,14 +38,14 @@ struct
 
     val init : env
 
-    val lookupId : env -> Pos.t option -> string -> Ty.vty m
-    val extendId : env -> string -> Ty.vty -> env m
+    val lookupId : env -> Pos.t option -> string -> Ty.vty
+    val extendId : env -> string -> Ty.vty -> env
 
-    val lookupVar : env -> Pos.t option -> string -> (Tm.variable * Tm.sort) m
-    val lookupMeta : env -> Pos.t option -> string -> (Tm.metavariable * Tm.valence) m
+    val lookupVar : env -> Pos.t option -> string -> (Tm.variable * Tm.sort)
+    val lookupMeta : env -> Pos.t option -> string -> (Tm.metavariable * Tm.valence)
 
-    val extendVars : env -> string list * Tm.sort list -> ((Tm.variable * Tm.sort) list * env) m
-    val extendMetas : env -> string list * Tm.valence list -> ((Tm.metavariable * Tm.valence) list * env) m
+    val extendVars : env -> string list * Tm.sort list -> ((Tm.variable * Tm.sort) list * env)
+    val extendMetas : env -> string list * Tm.valence list -> ((Tm.metavariable * Tm.valence) list * env)
   end = 
   struct
     type env =
@@ -62,8 +60,8 @@ struct
 
     fun lookup dict pos x = 
       case StringListDict.find dict x of 
-         SOME r => EM.ret r
-       | NONE => EM.fail (pos, Fpp.hsep [Fpp.text "Could not resolve name", Fpp.text x])
+         SOME r => r
+       | NONE => fail (pos, Fpp.hsep [Fpp.text "Could not resolve name", Fpp.text x])
       
     fun lookupId (env : env) =
       lookup (#ids env)
@@ -76,10 +74,9 @@ struct
 
     (* TODO: ensure that this name is not already used *)
     fun extendId {ids, vars, metas} nm vty =
-      EM.ret
-        {ids = StringListDict.insert ids nm vty,
-         vars = vars,
-         metas = metas}
+      {ids = StringListDict.insert ids nm vty,
+       vars = vars,
+       metas = metas}
 
     fun extendVars {ids, vars, metas} (xs, taus) =
       let
@@ -95,10 +92,10 @@ struct
             (xs, taus)
         val env = {ids = ids, vars = vars', metas = metas}
       in    
-        EM.ret (gamma, env)
+        (gamma, env)
       end
       handle exn =>
-        EM.fail (NONE, Fpp.hsep [Fpp.text "extendVars: invalid arguments,", Fpp.text (exnMessage exn)])
+        fail (NONE, Fpp.hsep [Fpp.text "extendVars: invalid arguments,", Fpp.text (exnMessage exn)])
 
     fun extendMetas {ids, vars, metas} (Xs, vls) =
       let
@@ -114,10 +111,10 @@ struct
             (Xs, vls)
         val env = {ids = ids, vars = vars, metas = metas'}
       in
-        EM.ret (psi, env)
+        (psi, env)
       end
       handle _ =>
-        EM.fail (NONE, Fpp.text "extendMetas: invalid arguments")
+        fail (NONE, Fpp.text "extendMetas: invalid arguments")
   end
 
   structure Src =
@@ -218,10 +215,10 @@ struct
 
     val initEnv = (StringListDict.empty, Tm.Metavar.Ctx.empty)
 
-    fun lookup (env : env) (nm : string) : value m =
+    fun lookup (env : env) (nm : string) : value =
       case StringListDict.find (#1 env) nm of 
-         SOME v => EM.ret v
-       | NONE => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text nm, Fpp.text "in environment"])
+         SOME v => v
+       | NONE => fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text nm, Fpp.text "in environment"])
 
     fun extend (env : env) (nm : string) (v : value) : env =
       (StringListDict.insert (#1 env) nm v, #2 env)
@@ -261,182 +258,184 @@ struct
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, ppValue v]]
        | NIL => Fpp.text "()"
 
-    fun printVal (pos : Pos.t option, v : value) : unit m =
-      EM.info (pos, ppValue v)
+    fun printVal (pos : Pos.t option, v : value) : unit=
+      RedPrlLog.print RedPrlLog.INFO (pos, ppValue v)
   end
-
-
-  fun zipWithM (k : 'a * 'b -> 'c m) : 'a list * 'b list -> 'c list m =
-    fn ([], []) =>
-       EM.ret []
-     
-     | (x :: xs, y :: ys) =>
-       k (x, y) >>= (fn z =>
-         zipWithM k (xs, ys) >>= (fn zs =>
-           EM.ret @@ z :: zs))
-
-     | _ =>
-       EM.fail (NONE, Fpp.text "zipWithM: length mismatch")
 
   local
     structure O = RedPrlOperator and S = RedPrlSort
   in
-    fun lookupArity (renv : Res.env) (pos : Pos.t option) (opid : string) : arity m =
-      Res.lookupId renv pos opid >>= (fn vty =>
-        case vty of 
-           Ty.ABS (vls, Ty.TERM tau) => EM.ret @@ (vls, tau)
-         | Ty.ABS (vls, Ty.THM tau) => EM.ret @@ (vls, tau)
-         | _ => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text opid]))
+    fun lookupArity (renv : Res.env) (pos : Pos.t option) (opid : string) : arity =
+      case Res.lookupId renv pos opid of
+         Ty.ABS (vls, Ty.TERM tau) => (vls, tau)
+       | Ty.ABS (vls, Ty.THM tau) => (vls, tau)
+       | _ => fail (NONE, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text opid])
 
-    fun checkAbt (view, tau) : abt m =
-      EM.ret @@ Tm.check (view, tau)
+    fun checkAbt (view, tau) : abt =
+      Tm.check (view, tau)
       handle exn => 
-        EM.fail (NONE, Fpp.hsep [Fpp.text "Error resolving abt:", Fpp.text (exnMessage exn)])
+        fail (NONE, Fpp.hsep [Fpp.text "Error resolving abt:", Fpp.text (exnMessage exn)])
 
-    fun guessSort (renv : Res.env) (ast : ast) : sort m =
+    fun guessSort (renv : Res.env) (ast : ast) : sort =
       let
         val pos = Ast.getAnnotation ast
       in
         case Ast.out ast of 
            Ast.` x =>
-           Res.lookupVar renv pos x >>= (fn (_, tau) =>
-             EM.ret tau)
+           #2 @@ Res.lookupVar renv pos x
 
          | Ast.$# (X, _) =>
-           Res.lookupMeta renv pos X >>= (fn (_, (_, tau)) =>
-             EM.ret tau)
+           #2 o #2 @@ Res.lookupMeta renv pos X
 
          | Ast.$ (O.CUST (opid, _), _) =>
-           lookupArity renv pos opid >>= (fn (_, tau) =>
-             EM.ret tau)
+           #2 @@ lookupArity renv pos opid
 
          | Ast.$ (theta, _) =>
-           (EM.ret @@ #2 (O.arity theta)
-            handle _ => EM.fail (NONE, Fpp.text "Error guessing sort"))
+           (#2 @@ O.arity theta
+            handle _ => fail (NONE, Fpp.text "Error guessing sort"))
       end
 
-    fun resolveAjdg (renv : Res.env) (ast : ast) : ajdg m =
-      resolveAst renv (ast, S.JDG) >>= (fn abt =>
-        EM.ret @@ AJ.out abt
+    fun resolveAjdg (renv : Res.env) (ast : ast) : ajdg =
+      let
+        val abt = resolveAst renv (ast, S.JDG)
+      in
+        AJ.out abt
         handle _ =>
-          EM.fail (NONE, Fpp.hsep [Fpp.text "Expected atomic judgment but got", TermPrinter.ppTerm abt]))
+          fail (NONE, Fpp.hsep [Fpp.text "Expected atomic judgment but got", TermPrinter.ppTerm abt])
+      end
 
-    and resolveAst (renv : Res.env) (ast : ast, tau : sort) : abt m =
+    and resolveAst (renv : Res.env) (ast : ast, tau : sort) : abt =
       let
         val pos = Ast.getAnnotation ast
       in
+        Tm.setAnnotation pos
         (case Ast.out ast of 
            Ast.` x =>
-           Res.lookupVar renv pos x >>= (fn (x', _) => 
-             checkAbt (Tm.` x', tau))
+           checkAbt (Tm.` o #1 @@ Res.lookupVar renv pos x, tau)
 
          | Ast.$# (X, asts : ast list) =>
-           Res.lookupMeta renv pos X >>= (fn (X', (taus : sort list, _)) => 
-             zipWithM (resolveAst renv) (asts, taus) >>= (fn abts => 
-               checkAbt (Tm.$# (X', abts), tau)))
+           let
+             val (X', (taus, _)) = Res.lookupMeta renv pos X
+             val abts = ListPair.mapEq (resolveAst renv) (asts, taus)
+           in
+             checkAbt (Tm.$# (X', abts), tau)
+           end
 
          | Ast.$ (theta, bs) =>
-           resolveOpr renv pos theta bs >>= (fn theta' =>
-             let
-               val (vls, tau) = O.arity theta'
-             in
-               zipWithM (resolveBnd renv) (vls, bs) >>= (fn bs' =>
-                 checkAbt (Tm.$ (theta', bs'), tau))
-             end))
-        >>= (fn abt => EM.ret @@ Tm.setAnnotation pos abt)
+           let
+             val theta' = resolveOpr renv pos theta bs
+             val (vls, tau) = O.arity theta'
+             val bs' = ListPair.mapEq (resolveBnd renv) (vls, bs)
+           in
+             checkAbt (Tm.$ (theta', bs'), tau)
+           end)
       end
 
-    and resolveBnd (renv : Res.env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview m =
-      Res.extendVars renv (xs, taus) >>= (fn (xs', renv') =>
-        resolveAst renv' (ast, tau) >>= (fn abt =>
-          EM.ret @@ Tm.\ (List.map #1 xs', abt)))
+    and resolveBnd (renv : Res.env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview =
+      let
+        val (xs', renv') = Res.extendVars renv (xs, taus)
+      in
+        Tm.\ (List.map #1 xs', resolveAst renv' (ast, tau))
+      end
 
-    and resolveOpr (renv : Res.env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator m = 
+    and resolveOpr (renv : Res.env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator = 
       (case theta of 
          O.CUST (opid, NONE) =>
-         lookupArity renv pos opid >>= (fn ar =>
-           EM.ret @@ O.CUST (opid, SOME ar))
+         O.CUST (opid, SOME @@ lookupArity renv pos opid)
 
        | O.DEV_APPLY_LEMMA (opid, NONE, pat) => 
-         lookupArity renv pos opid >>= (fn ar =>
-           EM.ret @@ O.DEV_APPLY_LEMMA (opid, SOME ar, pat))
+         O.DEV_APPLY_LEMMA (opid, SOME @@ lookupArity renv pos opid, pat)
 
        | O.DEV_USE_LEMMA (opid, NONE) =>
-         lookupArity renv pos opid >>= (fn ar =>
-           EM.ret @@ O.DEV_USE_LEMMA (opid, SOME ar))
+         O.DEV_USE_LEMMA (opid, SOME @@ lookupArity renv pos opid)
 
        | O.MK_ANY NONE =>
          let
            val [Ast.\ (_, ast)] = bs
          in
-           guessSort renv ast >>= (fn tau =>
-             EM.ret @@ O.MK_ANY (SOME tau))
+           O.MK_ANY o SOME @@ guessSort renv ast
          end
 
        | O.DEV_LET NONE =>
          let
            val [Ast.\ (_, jdg), _, _] = bs
          in
-           resolveAjdg renv jdg >>= (fn ajdg =>
-             EM.ret @@ O.DEV_LET @@ SOME @@ AJ.synthesis ajdg)
+           O.DEV_LET o SOME o AJ.synthesis @@ resolveAjdg renv jdg
          end
 
-       | th => EM.ret th)
+       | th => th)
        handle _ => 
-         EM.fail (pos, Fpp.text "Error resolving operator")
+         fail (pos, Fpp.text "Error resolving operator")
   end
 
-  fun resolveVal (renv : Res.env) : ESyn.value -> (ISyn.value * Ty.vty) m = 
+  fun resolveVal (renv : Res.env) : ESyn.value -> ISyn.value * Ty.vty = 
     fn ESyn.THUNK cmd =>
-       resolveCmd renv cmd >>= (fn (cmd', cty) =>
-         EM.ret (ISyn.THUNK cmd', Ty.DOWN cty))
+       let
+         val (cmd', cty) = resolveCmd renv cmd
+       in
+         (ISyn.THUNK cmd', Ty.DOWN cty)
+       end
 
      | ESyn.VAR nm => 
-       Res.lookupId renv NONE nm >>= (fn vty =>
-         EM.ret (ISyn.VAR nm, vty))
+       (ISyn.VAR nm, Res.lookupId renv NONE nm)
 
      | ESyn.NIL =>
-       EM.ret (ISyn.NIL, Ty.ONE)
+       (ISyn.NIL, Ty.ONE)
 
      | ESyn.TERM (ast, tau) =>
-       resolveAst renv (ast, tau) >>= (fn abt =>
-         EM.ret (ISyn.TERM abt, Ty.TERM tau))
+       (ISyn.TERM @@ resolveAst renv (ast, tau), Ty.TERM tau)
 
      | ESyn.ABS (psi, v) =>
-       Res.extendMetas renv (ListPair.unzip psi) >>= (fn (psi', renv') =>
-         resolveVal renv' v >>= (fn (v', vty) =>
-           EM.ret (ISyn.ABS (psi', v'), Ty.ABS (List.map #2 psi', vty))))
+       let
+         val (psi', renv') = Res.extendMetas renv @@ ListPair.unzip psi
+         val (v', vty) = resolveVal renv' v
+       in
+         (ISyn.ABS (psi', v'), Ty.ABS (List.map #2 psi', vty))
+       end
 
-  and resolveCmd (renv : Res.env) : ESyn.cmd -> (ISyn.cmd * Ty.cty) m = 
+  and resolveCmd (renv : Res.env) : ESyn.cmd -> ISyn.cmd * Ty.cty = 
     fn ESyn.BIND (cmd1, nm, cmd2) =>
-       resolveCmd renv cmd1 >>= (fn (cmd1', Ty.UP vty1) =>
-         Res.extendId renv nm vty1 >>= (fn renv' =>
-           resolveCmd renv' cmd2 >>= (fn (cmd2', cty2) =>
-             EM.ret (ISyn.BIND (cmd1', nm, cmd2'), cty2))))
+       let
+         val (cmd1', Ty.UP vty1) = resolveCmd renv cmd1
+         val (cmd2', cty2) = resolveCmd (Res.extendId renv nm vty1) cmd2
+       in
+         (ISyn.BIND (cmd1', nm, cmd2'), cty2)
+       end
 
      | ESyn.RET v =>
-       resolveVal renv v >>= (fn (v', vty) =>
-         EM.ret (ISyn.RET v', Ty.UP vty))
+       let
+         val (v', vty) = resolveVal renv v
+       in
+         (ISyn.RET v', Ty.UP vty)
+       end
 
      | ESyn.FORCE v =>
-       resolveVal renv v >>= (fn (v', vty) =>
+       let
+         val (v', vty) = resolveVal renv v
+       in
          case vty of 
-            Ty.DOWN cty => EM.ret (ISyn.FORCE v', cty)
-          | _ => EM.fail (NONE, Fpp.text "Expected down-shifted type"))
+            Ty.DOWN cty => (ISyn.FORCE v', cty)
+          | _ => fail (NONE, Fpp.text "Expected down-shifted type")
+       end
 
      | ESyn.PRINT (pos, v) =>
-       resolveVal renv v >>= (fn (v', _) =>
-         EM.ret (ISyn.PRINT (pos, v'), Ty.UP Ty.ONE))
+       (ISyn.PRINT (pos, #1 @@ resolveVal renv v), Ty.UP Ty.ONE)
 
      | ESyn.REFINE (ajdg, script) =>
-       resolveAjdg renv ajdg >>= (fn ajdg' =>
-         resolveAst renv (script, RedPrlSort.TAC) >>= (fn script' =>
-           EM.ret (ISyn.REFINE (ajdg', script'), Ty.UP (Ty.THM (AJ.synthesis ajdg')))))
+       let
+         val ajdg' = resolveAjdg renv ajdg
+         val script' = resolveAst renv (script, RedPrlSort.TAC)
+       in
+         (ISyn.REFINE (ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
+       end
 
      | ESyn.NU (psi, cmd) =>
-       Res.extendMetas renv (ListPair.unzip psi) >>= (fn (psi', renv') =>
-         resolveCmd renv' cmd >>= (fn (cmd', cty) =>
-           EM.ret (ISyn.NU (psi', cmd'), cty)))
+       let
+         val (psi', renv') = Res.extendMetas renv @@ ListPair.unzip psi
+         val (cmd', cty) = resolveCmd renv' cmd
+       in
+         (ISyn.NU (psi', cmd'), cty)
+       end
 
 
   structure MiniSig : MINI_SIGNATURE = 
@@ -451,86 +450,76 @@ struct
 
   structure TacticElaborator = TacticElaborator (MiniSig)
   
-  fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd m =
+  fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd =
     fn ISyn.BIND (cmd1, x, cmd2) =>
-       evalCmd env cmd1 >>= (fn Sem.RET s =>
-         evalCmd (Sem.extend env x s) cmd2)
+       let
+         val Sem.RET s = evalCmd env cmd1
+       in
+         evalCmd (Sem.extend env x s) cmd2
+       end
 
      | ISyn.RET v => 
-       evalVal env v >>= (fn s =>
-         EM.ret @@ Sem.RET s)
+       Sem.RET @@ evalVal env v
 
-     | ISyn.FORCE v => 
-       evalVal env v >>= (fn s =>
-         case s of 
-            Sem.THUNK (env', cmd) => evalCmd env' cmd
-          | _ => EM.fail (NONE, Fpp.text "evalCmd/ISyn.FORCE expected Sem.THUNK"))
+     | ISyn.FORCE v =>
+       (case evalVal env v of 
+           Sem.THUNK (env', cmd) => evalCmd env' cmd
+         | _ => fail (NONE, Fpp.text "evalCmd/ISyn.FORCE expected Sem.THUNK"))
 
      | ISyn.PRINT (pos, v) =>
-       evalVal env v >>= (fn s => 
-         Sem.printVal (pos, s) >>= (fn _ => 
-           EM.ret @@ Sem.RET @@ Sem.NIL))
+       (Sem.printVal (pos, evalVal env v);
+        Sem.RET Sem.NIL)
 
      | ISyn.REFINE (ajdg, script) =>
-       (let
-          val pos = Tm.getAnnotation script
-          val seqjdg = Sequent.>> (SequentData.Hyps.empty, ajdg)
-          val results = TacticElaborator.tactic env Var.Ctx.empty script (fn _ => Sym.new ()) seqjdg
-          (* TODO: somehow show all the states! *)
-          val Lcf.|> (subgoals, evd) =
-            Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
-              handle _ => Lcf.M.run (results, fn _ => true)
+       let
+         val pos = Tm.getAnnotation script
+         val seqjdg = Sequent.>> (SequentData.Hyps.empty, ajdg)
+         val results = TacticElaborator.tactic env Var.Ctx.empty script (fn _ => Sym.new ()) seqjdg
+         (* TODO: somehow show all the states! *)
+         val Lcf.|> (subgoals, evd) =
+           Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
+           handle _ => Lcf.M.run (results, fn _ => true)
 
-          val Tm.\ (_, extract) = Tm.outb evd
-          val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
-          val warning = 
-            if subgoalsCount = 0 then 
-              EM.ret ()
-            else
-              EM.warn (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
+         val Tm.\ (_, extract) = Tm.outb evd
+         val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
+         val warning = 
+           if subgoalsCount = 0 then () else
+             RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
+
+          val mrho = #2 env
+          val ajdg' = AJ.map (Tm.renameMetavars mrho) ajdg
+          val extract' = Tm.renameMetavars mrho extract
         in
-          warning >>= (fn _ =>
-            EM.ret @@ Sem.RET @@ Sem.THM (ajdg, extract))
-        end)
+          Sem.RET @@ Sem.THM (ajdg', extract')
+        end
     
      | ISyn.NU (psi, cmd) =>
        evalCmd (Sem.freshenMetas env psi) cmd
 
-  and evalVal (env : Sem.env) : ISyn.value -> Sem.value m =
+  and evalVal (env : Sem.env) : ISyn.value -> Sem.value =
     fn ISyn.THUNK cmd => 
-       EM.ret @@ Sem.THUNK (env, cmd)
+       Sem.THUNK (env, cmd)
 
      | ISyn.VAR nm =>
        Sem.lookup env nm
 
      | ISyn.NIL =>
-       EM.ret Sem.NIL
+       Sem.NIL
 
      | ISyn.ABS (psi, v) =>
-       evalVal env v >>= (fn s =>
-         EM.ret @@ Sem.ABS (psi, s))
+       Sem.ABS (psi, evalVal env v)
 
      | ISyn.TERM abt =>
-       EM.ret @@ Sem.TERM (Tm.renameMetavars (#2 env) abt)
+       Sem.TERM (Tm.renameMetavars (#2 env) abt)
      
   structure L = RedPrlLog
 
-  val checkAlg : ('a, bool) EM.alg =
-    {warn = fn (msg, _) => (L.print L.WARN msg; false),
-     info = fn (msg, r) => (L.print L.INFO msg; r),
-     dump = fn (msg, r) => (L.print L.DUMP msg; r),
-     init = true,
-     succeed = fn (_, r) => r,
-     fail = fn (msg, _) => (L.print L.FAIL msg; false)}
-     
-
   fun check (sign : Src.sign) : bool = 
     let
-      val ecmd : ESyn.cmd = ESyn.compileSrcSig sign
-      val elab =
-        resolveCmd Res.init ecmd >>= (fn (cmd, _) =>
-          evalCmd Sem.initEnv cmd)
+      val ecmd = ESyn.compileSrcSig sign
+      val (icmd, _) = resolveCmd Res.init ecmd
+      val scmd = evalCmd Sem.initEnv icmd
     in
-      EM.fold checkAlg elab
+      true
     end
 end
