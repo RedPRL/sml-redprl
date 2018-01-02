@@ -5,7 +5,6 @@ struct
    | TAC
    | MTAC
    | JDG
-   | TRV
    | MATCH_CLAUSE
    | DIM | TUBE | BDRY
    | VEC of sort

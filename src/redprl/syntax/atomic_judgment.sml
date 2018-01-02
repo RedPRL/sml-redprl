@@ -57,9 +57,9 @@ struct
 
   val synthesis =
     fn TRUE _ => O.EXP
-     | EQ_TYPE _ => O.TRV
-     | SUB_TYPE _ => O.TRV
-     | SUB_KIND _ => O.TRV
+     | EQ_TYPE _ => O.EXP
+     | SUB_TYPE _ => O.EXP
+     | SUB_KIND _ => O.EXP
      | SYNTH _ => O.EXP
      | TERM tau => tau
 

@@ -115,7 +115,6 @@ struct
     Lcf.|> (psi, abstractEvidence H m)
   infix #>
 
-  val trivial = Syn.into Syn.TV
   val axiom = Syn.into Syn.AX
 
   (* telescope combinators *)
@@ -227,19 +226,11 @@ struct
 
     fun makeAsEqType tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEqType params
 
-    val asTrivialToEqType =
-      fn OMEGA => trivial
-       | FINITE _ => axiom
-
     fun makeAsEqTypeWith tr f H params = makeGoal'With tr f @@ H >> AJ.View.makeAsEqType params
 
     val matchAsEq = AJ.View.matchAsEq
 
     fun makeAsEq tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEq params
-
-    val asTrivialToEq =
-      fn INTERNAL_TYPE _ => axiom
-       | UNIV_OMEGA _ => trivial
 
     fun makeAsMem tr H params = makeGoal' tr @@ H >> AJ.View.makeAsMem params
 

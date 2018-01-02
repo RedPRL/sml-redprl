@@ -70,7 +70,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, View.asTrivialToEqType l)
+        T.empty #> (H, axiom)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -151,7 +151,7 @@ struct
         (* ff branch *)
         val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy))
       in
-        |>: goalC >: goalM >: goalT >: goalF >: goalTy #> (H, View.asTrivialToEq ty)
+        |>: goalC >: goalM >: goalT >: goalF >: goalTy #> (H, axiom)
       end
   end
 
@@ -170,7 +170,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, View.asTrivialToEqType l)
+        T.empty #> (H, axiom)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -272,7 +272,7 @@ struct
         (* ff branch *)
         val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
-        |>: goalM >: goalT >: goalF >: goalC >:? goalTy #> (H, View.asTrivialToEq ty)
+        |>: goalM >: goalT >: goalF >: goalC >:? goalTy #> (H, axiom)
       end
 
     fun SynthElim _ jdg =
@@ -303,7 +303,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, View.asTrivialToEqType l)
+        T.empty #> (H, axiom)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -402,7 +402,7 @@ struct
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC))
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalTy #> (H, View.asTrivialToEq ty)
+        |>: goalC >: goalM >: goalZ >: goalS >: goalTy #> (H, axiom)
       end
   end
 
@@ -421,7 +421,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, View.asTrivialToEqType l)
+        T.empty #> (H, axiom)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -560,7 +560,7 @@ struct
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cnegsuccu))
             ((r0, r1), substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC)
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalTy #> (H, View.asTrivialToEq ty)
+        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalTy #> (H, axiom)
       end
   end
 
@@ -579,7 +579,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, View.asTrivialToEqType l)
+        T.empty #> (H, axiom)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -594,7 +594,7 @@ struct
         val evidence =
           case ajdg of
              AJ.TRUE _ => axiom
-           | AJ.EQ_TYPE _ => trivial
+           | AJ.EQ_TYPE _ => axiom
            | AJ.SYNTH _ => axiom
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
       in
@@ -619,7 +619,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, View.asTrivialToEqType l)
+        T.empty #> (H, axiom)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -746,7 +746,7 @@ struct
         val goalCoh1 = makeEqIfAllDifferent tr H ((l01, b0), cbase) [l00, b1]
       in
         |>: goalM >: goalB >: goalL >:? goalCoh0 >:? goalCoh1 >: goalC >:? goalTy
-        #> (H, View.asTrivialToEq ty)
+        #> (H, axiom)
       end
 
     fun SynthElim _ jdg =
@@ -789,7 +789,7 @@ struct
         val b1z = VarKit.rename (z, y) b1y
         val goalB = View.makeAsEqType tr (H @> (z, AJ.TRUE a0)) ((b0z, b1z), l, kb)
       in
-        |>: goalA >: goalB #> (H, View.asTrivialToEqType l)
+        |>: goalA >: goalB #> (H, axiom)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected fun typehood sequent"]
@@ -894,7 +894,7 @@ struct
         val goalTy = View.makeAsSubType tr H (holeCod, ty)
       in
         |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >: goalTy
-        #> (H, View.asTrivialToEq ty)
+        #> (H, axiom)
       end
 
     fun SynthApp _ jdg =
@@ -952,7 +952,7 @@ struct
             {goals = T.empty, hyps = H, ren0 = Var.Ctx.empty, ren1 = Var.Ctx.empty, isFirst = true}
             (fields0, fields1)
       in
-        goals #> (H, View.asTrivialToEqType l)
+        goals #> (H, axiom)
       end
 
     fun Eq _ jdg =
@@ -1177,7 +1177,7 @@ struct
         val goal0 = makeEq tr H ((m0, m1), a00)
         val goal1 = makeEq tr H ((n0, n1), a01)
       in
-        |>: tyGoal >: goal0 >: goal1 #> (H, View.asTrivialToEqType l)
+        |>: tyGoal >: goal0 >: goal1 #> (H, axiom)
       end
 
     fun Eq alpha jdg =
@@ -1284,7 +1284,7 @@ struct
         val (goalPath, holePath) = makeMatch tr (O.PATH, 0, holeSynth, [r0])
         val goalTy = View.makeAsSubType tr H (holePath, ty) (* holePath type *)
       in
-        |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, View.asTrivialToEq ty)
+        |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, axiom)
       end
 
     fun SynthApp _ jdg =
@@ -1314,7 +1314,7 @@ struct
         val goalEq = View.makeAsEq tr H ((holeEndpoint, p), a)
       in
         |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >: goalTy
-        #> (H, View.asTrivialToEq a)
+        #> (H, axiom)
       end
   end
 
@@ -1341,7 +1341,7 @@ struct
         val a1w = substVar (VarKit.toDim w, v) a1v
         val tyGoal = View.makeAsEqType tr (H @> (w, AJ.TERM O.DIM)) ((a0w, a1w), l, ka)
       in
-        |>: tyGoal #> (H, View.asTrivialToEqType l)
+        |>: tyGoal #> (H, axiom)
       end
 
     fun Eq alpha jdg =
@@ -1432,7 +1432,7 @@ struct
         val (goalLine, holeLine) = makeMatch tr (O.LINE, 0, holeSynth, [r0])
         val goalTy = View.makeAsSubType tr H (holeLine, ty) (* holeLine type *)
       in
-        |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (H, View.asTrivialToEq ty)
+        |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (H, axiom)
       end
 
     fun SynthApp _ jdg =
@@ -1478,7 +1478,7 @@ struct
         val g1z = VarKit.rename (z, y1) g1y1
         val goalG = makeEq tr (H @> (z, AJ.TRUE c0)) ((g0z, g1z), b0)
       in
-        |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, View.asTrivialToEqType l)
+        |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, axiom)
       end
 
     fun EqLeft alpha jdg =
@@ -1686,7 +1686,7 @@ struct
         val rgc = substVar (holeG, b0) p0b0
         val goalCohR = makeEq tr (H @> (c, AJ.TRUE holeTyC)) ((q01c, rgc), (dright holeG))
       in
-        |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy #> (H, View.asTrivialToEq ty)
+        |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy #> (H, axiom)
       end
 
     fun SynthElim _ jdg =
@@ -1732,7 +1732,7 @@ struct
         val g1z = VarKit.rename (z, y1) g1y1
         val goalG = makeEq tr (H @> (z, AJ.TRUE a0)) ((g0z, g1z), b0)
       in
-        |>: goalF >: goalG >: goalA >: goalB #> (H, View.asTrivialToEqType l)
+        |>: goalF >: goalG >: goalA >: goalB #> (H, axiom)
       end
 
     fun EqCod alpha jdg =
@@ -1903,7 +1903,7 @@ struct
         val cga = substVar (holeG, b0) n0b0
         val goalCohG = makeEq tr (H @> (a, AJ.TRUE holeTyA)) ((q01a, cga), (pcod holeG))
       in
-        |>: goalTyCoeq >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalP >:? goalTy #> (H, View.asTrivialToEq ty)
+        |>: goalTyCoeq >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalP >:? goalTy #> (H, axiom)
       end
 
     fun SynthElim _ jdg =
@@ -1941,7 +1941,7 @@ struct
         val goalM = makeEq tr H ((m0, m1), a0)
         val goalN = makeEq tr H ((n0, n1), a0)
       in
-        |>: goalM >: goalN >: goalTy #> (H, View.asTrivialToEqType l)
+        |>: goalM >: goalN >: goalTy #> (H, axiom)
       end
 
     fun Eq _ jdg =
@@ -2191,7 +2191,7 @@ struct
         |>: goalCap
          >:+ genInterTubeGoals tr H w ((tubes0, tubes1), l, kTube)
          >:+ genCapTubeGoalsIfDifferent tr H ((cap0, (#1 dir0, tubes0)), l, kCap) (* kCap is less demanding *)
-        #> (H, View.asTrivialToEqType l)
+        #> (H, axiom)
       end
 
     fun Eq alpha jdg =
@@ -2333,7 +2333,7 @@ struct
         val goalB = View.makeAsEqType tr H ((b0, b1), l, kB)
         val goalEquiv = Restriction.makeEq tr [eq] H ((e0, e1), intoEquiv a0 b0)
       in
-        |>:? goalEquiv >:? goalA >: goalB #> (H, View.asTrivialToEqType l)
+        |>:? goalEquiv >:? goalA >: goalB #> (H, axiom)
       end
 
     fun Eq _ jdg =
@@ -2402,7 +2402,7 @@ struct
         val _ = Assert.kindEq (k0, k1)
         val _ = View.Assert.univMem ((l0, k0), (l, k))
       in
-        T.empty #> (H, View.asTrivialToEqType l)
+        T.empty #> (H, axiom)
       end
 
     fun SubType _ jdg =
@@ -2414,7 +2414,7 @@ struct
         val _ = Assert.levelLeq (l0, l1)
         val _ = Assert.kindLeq (k0, k1)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, axiom)
       end
 
     fun SubKind _ jdg =
@@ -2424,7 +2424,7 @@ struct
         val Syn.UNIVERSE (_, k0) = Syn.out univ
         val _ = Assert.kindLeq (k0, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, axiom)
       end
 
     (* (= (U l k) ty0 ty1) >> ty0 = ty1 with k *)
@@ -2439,7 +2439,7 @@ struct
         val _ = Assert.alphaEqEither ((ty0', ty1'), ty1)
         val _ = Assert.kindLeq (k', k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, axiom)
       end
 
     fun VarFromTrue _ jdg =
@@ -2454,7 +2454,7 @@ struct
 
         val goal = makeTypeUnlessSubUniv tr H (ty1, k1) k0
       in
-        |>:? goal #> (H, trivial)
+        |>:? goal #> (H, axiom)
       end
   end
 end

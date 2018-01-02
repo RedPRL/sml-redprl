@@ -310,7 +310,7 @@ end
  | PLUS | DOUBLE_PLUS
 
  (* sorts *)
- | DIM | EXP | TAC | TRV | JDG | LVL | KND
+ | DIM | EXP | TAC | JDG | LVL | KND
 
 
  (* keywords and variables in expressions *)
@@ -508,7 +508,6 @@ boundVars
 sort
   : EXP (O.EXP)
   | TAC (O.TAC)
-  | TRV (O.TRV)
   | JDG (O.JDG)
   | LVL (O.LVL)
   | KND (O.KND)

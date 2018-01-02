@@ -11,7 +11,7 @@ setlocal iskeyword+=-
 setlocal iskeyword+=/
 
 syn keyword redDecl Def Extract Print Rule Tac Thm
-syn keyword redSort dim hyp exp lvl tac trv jdg knd
+syn keyword redSort dim hyp exp lvl tac jdg knd
 syn match   redHole '?\(\h\w*\)\?'
 syn match   redMeta '#'
 

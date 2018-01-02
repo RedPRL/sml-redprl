@@ -108,7 +108,7 @@
   "RedPRL's keywords.")
 
 (defconst redprl-sort-keywords
-  '("dim" "hyp" "exp" "lvl" "tac" "triv" "jdg")
+  '("dim" "hyp" "exp" "lvl" "tac" "jdg")
   "RedPRL's built-in sorts.")
 
 (defconst redprl-expression-keywords
