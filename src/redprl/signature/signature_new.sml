@@ -157,7 +157,7 @@ struct
          RET (ABS (arguments, TERM (script, RedPrlSort.TAC)))
 
        | Src.THM {arguments, goal, script} =>
-         NU (arguments, BIND (REFINE (goal, script), nm, RET (ABS (arguments, VAR name))))
+         NU (arguments, BIND (REFINE (goal, script), nm, RET (ABS (arguments, VAR nm))))
 
     val rec compileSrcSig : Src.sign -> cmd = 
       fn [] => 
