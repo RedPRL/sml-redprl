@@ -29,7 +29,7 @@ struct
   struct
     val sym = Sym.DebugShow.toString
     val var = Var.DebugShow.toString
-    val meta = Metavar.toString
+    val meta = Metavar.DebugShow.toString
   end
 
   structure NormalPrintName = 
