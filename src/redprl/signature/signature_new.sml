@@ -40,11 +40,11 @@ struct
 
     val init : env
 
-    val lookupId : env -> string -> Ty.vty m
+    val lookupId : env -> Pos.t option -> string -> Ty.vty m
     val extendId : env -> string -> Ty.vty -> env m
 
-    val lookupVar : env -> string -> (Tm.variable * Tm.sort) m
-    val lookupMeta : env -> string -> (Tm.metavariable * Tm.valence) m
+    val lookupVar : env -> Pos.t option -> string -> (Tm.variable * Tm.sort) m
+    val lookupMeta : env -> Pos.t option -> string -> (Tm.metavariable * Tm.valence) m
 
     val extendVars : env -> string list * Tm.sort list -> ((Tm.variable * Tm.sort) list * env) m
     val extendMetas : env -> string list * Tm.valence list -> ((Tm.metavariable * Tm.valence) list * env) m
@@ -60,10 +60,10 @@ struct
        vars = StringListDict.empty,
        metas = StringListDict.empty}
 
-    fun lookup dict x = 
+    fun lookup dict pos x = 
       case StringListDict.find dict x of 
          SOME r => EM.ret r
-       | NONE => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not resolve name", Fpp.text x])
+       | NONE => EM.fail (pos, Fpp.hsep [Fpp.text "Could not resolve name", Fpp.text x])
       
     fun lookupId (env : env) =
       lookup (#ids env)
@@ -154,13 +154,13 @@ struct
        BIND of cmd * string * cmd
      | RET of value
      | FORCE of value
-     | PRINT of value
+     | PRINT of Pos.t option * value
      | REFINE of ast * ast
      | NU of (string * Tm.valence) list * cmd
 
-    val compileSrcCmd : Src.cmd -> cmd =
-      fn Src.PRINT nm => PRINT (VAR nm)
-       | Src.EXTRACT nm => PRINT (VAR nm) (* TODO *)
+    fun compileSrcCmd pos : Src.cmd  -> cmd =
+      fn Src.PRINT nm => PRINT (SOME pos, VAR nm)
+       | Src.EXTRACT nm => PRINT (SOME pos, VAR nm) (* TODO *)
 
     fun compileSrcDecl (nm : string) : Src.decl -> cmd = 
       fn Src.DEF {arguments, sort, definiens} =>
@@ -176,8 +176,8 @@ struct
       fn [] => 
          RET NIL
     
-       | Src.CMD (c, _) :: sign =>
-         BIND (compileSrcCmd c, "_", compileSrcSig sign)
+       | Src.CMD (c, pos) :: sign =>
+         BIND (compileSrcCmd pos c, "_", compileSrcSig sign)
         
        | Src.DECL (nm, decl, _) :: sign =>
          BIND (compileSrcDecl nm decl, nm, compileSrcSig sign)
@@ -197,7 +197,7 @@ struct
        BIND of cmd * string * cmd
      | RET of value
      | FORCE of value
-     | PRINT of value
+     | PRINT of Pos.t option * value
      | REFINE of ajdg * abt
      | NU of (Tm.metavariable * Tm.valence) list * cmd
   end
@@ -251,8 +251,8 @@ struct
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, ppValue v]]
        | NIL => Fpp.text "()"
 
-    fun printVal (v : value) : unit m =
-      EM.info (NONE, ppValue v)
+    fun printVal (pos : Pos.t option, v : value) : unit m =
+      EM.info (pos, ppValue v)
   end
 
 
@@ -271,8 +271,8 @@ struct
   local
     structure O = RedPrlOperator and S = RedPrlSort
   in
-    fun lookupArity (renv : Res.env) (opid : string) : arity m =
-      Res.lookupId renv opid >>= (fn vty =>
+    fun lookupArity (renv : Res.env) (pos : Pos.t option) (opid : string) : arity m =
+      Res.lookupId renv pos opid >>= (fn vty =>
         case vty of 
            Ty.ABS (vls, Ty.TERM tau) => EM.ret @@ (vls, tau)
          | Ty.ABS (vls, Ty.THM tau) => EM.ret @@ (vls, tau)
@@ -284,22 +284,26 @@ struct
         EM.fail (NONE, Fpp.hsep [Fpp.text "Error resolving abt:", Fpp.text (exnMessage exn)])
 
     fun guessSort (renv : Res.env) (ast : ast) : sort m =
-      case Ast.out ast of 
-         Ast.` x =>
-         Res.lookupVar renv x >>= (fn (_, tau) =>
-           EM.ret tau)
+      let
+        val pos = Ast.getAnnotation ast
+      in
+        case Ast.out ast of 
+           Ast.` x =>
+           Res.lookupVar renv pos x >>= (fn (_, tau) =>
+             EM.ret tau)
 
-       | Ast.$# (X, _) =>
-         Res.lookupMeta renv X >>= (fn (_, (_, tau)) =>
-           EM.ret tau)
+         | Ast.$# (X, _) =>
+           Res.lookupMeta renv pos X >>= (fn (_, (_, tau)) =>
+             EM.ret tau)
 
-       | Ast.$ (O.CUST (opid, _), _) =>
-         lookupArity renv opid >>= (fn (_, tau) =>
-           EM.ret tau)
+         | Ast.$ (O.CUST (opid, _), _) =>
+           lookupArity renv pos opid >>= (fn (_, tau) =>
+             EM.ret tau)
 
-       | Ast.$ (theta, _) =>
-         (EM.ret @@ #2 (O.arity theta)
-          handle _ => EM.fail (NONE, Fpp.text "Error guessing sort"))
+         | Ast.$ (theta, _) =>
+           (EM.ret @@ #2 (O.arity theta)
+            handle _ => EM.fail (NONE, Fpp.text "Error guessing sort"))
+      end
 
     fun resolveAjdg (renv : Res.env) (ast : ast) : ajdg m =
       resolveAst renv (ast, S.JDG) >>= (fn abt =>
@@ -308,42 +312,46 @@ struct
           EM.fail (NONE, Fpp.hsep [Fpp.text "Expected atomic judgment but got", TermPrinter.ppTerm abt]))
 
     and resolveAst (renv : Res.env) (ast : ast, tau : sort) : abt m =
-      case Ast.out ast of 
-         Ast.` x =>
-         Res.lookupVar renv x >>= (fn (x', _) => 
-           checkAbt (Tm.` x', tau))
+      let
+        val pos = Ast.getAnnotation ast
+      in
+        case Ast.out ast of 
+           Ast.` x =>
+           Res.lookupVar renv pos x >>= (fn (x', _) => 
+             checkAbt (Tm.` x', tau))
 
-       | Ast.$# (X, asts : ast list) =>
-         Res.lookupMeta renv X >>= (fn (X', (taus : sort list, _)) => 
-           zipWithM (resolveAst renv) (asts, taus) >>= (fn abts => 
-             checkAbt (Tm.$# (X', abts), tau)))
+         | Ast.$# (X, asts : ast list) =>
+           Res.lookupMeta renv pos X >>= (fn (X', (taus : sort list, _)) => 
+             zipWithM (resolveAst renv) (asts, taus) >>= (fn abts => 
+               checkAbt (Tm.$# (X', abts), tau)))
 
-       | Ast.$ (theta, bs) =>
-         resolveOpr renv theta bs >>= (fn theta' =>
-           let
-             val (vls, tau) = O.arity theta'
-           in
-             zipWithM (resolveBnd renv) (vls, bs) >>= (fn bs' =>
-               checkAbt (Tm.$ (theta', bs'), tau))
-           end)
+         | Ast.$ (theta, bs) =>
+           resolveOpr renv pos theta bs >>= (fn theta' =>
+             let
+               val (vls, tau) = O.arity theta'
+             in
+               zipWithM (resolveBnd renv) (vls, bs) >>= (fn bs' =>
+                 checkAbt (Tm.$ (theta', bs'), tau))
+             end)
+        end
 
     and resolveBnd (renv : Res.env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview m =
       Res.extendVars renv (xs, taus) >>= (fn (xs', renv') =>
         resolveAst renv' (ast, tau) >>= (fn abt =>
           EM.ret @@ Tm.\ (List.map #1 xs', abt)))
 
-    and resolveOpr (renv : Res.env) (theta : O.operator) (bs : ast Ast.abs list) : O.operator m = 
+    and resolveOpr (renv : Res.env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator m = 
       (case theta of 
          O.CUST (opid, NONE) =>
-         lookupArity renv opid >>= (fn ar =>
+         lookupArity renv pos opid >>= (fn ar =>
            EM.ret @@ O.CUST (opid, SOME ar))
 
        | O.DEV_APPLY_LEMMA (opid, NONE, pat) => 
-         lookupArity renv opid >>= (fn ar =>
+         lookupArity renv pos opid >>= (fn ar =>
            EM.ret @@ O.DEV_APPLY_LEMMA (opid, SOME ar, pat))
 
        | O.DEV_USE_LEMMA (opid, NONE) =>
-         lookupArity renv opid >>= (fn ar =>
+         lookupArity renv pos opid >>= (fn ar =>
            EM.ret @@ O.DEV_USE_LEMMA (opid, SOME ar))
 
        | O.MK_ANY NONE =>
@@ -364,7 +372,7 @@ struct
 
        | th => EM.ret th)
        handle _ => 
-         EM.fail (NONE, Fpp.text "Error resolving operator")
+         EM.fail (pos, Fpp.text "Error resolving operator")
   end
 
   fun resolveVal (renv : Res.env) : ESyn.value -> (ISyn.value * Ty.vty) m = 
@@ -373,7 +381,7 @@ struct
          EM.ret (ISyn.THUNK cmd', Ty.DOWN cty))
 
      | ESyn.VAR nm => 
-       Res.lookupId renv nm >>= (fn vty =>
+       Res.lookupId renv NONE nm >>= (fn vty =>
          EM.ret (ISyn.VAR nm, vty))
 
      | ESyn.NIL =>
@@ -405,9 +413,9 @@ struct
             Ty.DOWN cty => EM.ret (ISyn.FORCE v', cty)
           | _ => EM.fail (NONE, Fpp.text "Expected down-shifted type"))
 
-     | ESyn.PRINT v =>
+     | ESyn.PRINT (pos, v) =>
        resolveVal renv v >>= (fn (v', _) =>
-         EM.ret (ISyn.PRINT v', Ty.UP Ty.ONE))
+         EM.ret (ISyn.PRINT (pos, v'), Ty.UP Ty.ONE))
 
      | ESyn.REFINE (ajdg, script) =>
        resolveAjdg renv ajdg >>= (fn ajdg' =>
@@ -447,9 +455,9 @@ struct
             Sem.THUNK (env', cmd) => evalCmd env' cmd
           | _ => EM.fail (NONE, Fpp.text "evalCmd/ISyn.FORCE expected Sem.THUNK"))
 
-     | ISyn.PRINT v =>
+     | ISyn.PRINT (pos, v) =>
        evalVal env v >>= (fn s => 
-         Sem.printVal s >>= (fn _ => 
+         Sem.printVal (pos, s) >>= (fn _ => 
            EM.ret @@ Sem.RET @@ Sem.NIL))
 
      | ISyn.REFINE (ajdg, script) =>
