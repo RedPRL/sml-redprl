@@ -1,4 +1,4 @@
-structure SignatureNew : SIGNATURE_NEW = 
+structure SignatureNew = 
 struct
   structure EM = ElabMonad
   type 'a m = 'a EM.t
