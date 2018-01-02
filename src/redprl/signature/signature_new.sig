@@ -1,14 +1,3 @@
-signature SIGNATURE_SYN = 
-sig
-  type 'a m
-
-  type env
-  type src
-  type t
-
-  val resolve : env -> src -> t m
-end
-
 signature SIGNATURE_NEW = 
 sig
   type 'a m
