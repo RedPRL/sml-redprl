@@ -73,7 +73,7 @@ Thm IdV/Test2(#l:lvl) : [
    (= ty (coe 0~>1 [x] (IdV x #l ty) a)
          (coe 0~>1 [_] ty a)))
 ] by [
-  lam ty a => auto
+  lam ty a => reduce at left; auto
 ].
 
 Print IdV/Test2.
