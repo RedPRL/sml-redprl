@@ -245,7 +245,7 @@ struct
             [Fpp.collection
               (Fpp.char #"[")
               (Fpp.char #"]")
-              Fpp.empty
+              Fpp.Atomic.comma
               (List.map (fn (X, vl) => Fpp.hsep [TermPrinter.ppMeta X, Fpp.Atomic.colon, TermPrinter.ppValence vl]) psi),
              Fpp.text "=>"],
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, ppValue v]]
