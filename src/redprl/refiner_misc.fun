@@ -185,7 +185,7 @@ struct
 
         val goalTy = View.makeAsSubTypeIfDifferent tr H (specTy', ty)
       in
-        |>:? goalTy #> (H, trivial)
+        |>:? goalTy #> (H, View.asTrivialToEq ty)
       end
 
     fun Synth sign _ jdg = 
