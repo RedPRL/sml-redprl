@@ -85,6 +85,19 @@ struct
     in
       Tm.substMetaenv mrho term
     end
+
+  fun unfoldOpid sign opid es =
+    unfoldCustomOperator (lookup sign opid) es
+
+  fun opidSpec sign opid es = 
+    let
+      val entry as {spec = Sequent.>> (H, jdg),...} = lookup sign opid    
+      val arguments = entryArguments entry    
+      val mrho = ListPair.foldl  (fn ((x, vl), e, ctx) => Metavar.Ctx.insert ctx x (Tm.checkb (e, vl))) Metavar.Ctx.empty (arguments, es)
+    in
+      AtomicJudgment.map (Tm.substMetaenv mrho) jdg
+    end
+
 end
 
 structure MiniSig_ : MINI_SIGNATURE = MiniSig

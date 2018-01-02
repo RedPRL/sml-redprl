@@ -332,13 +332,8 @@ struct
       val z = alpha 0
       val H >> ajdg = jdg
 
-      val {spec, state, ...} = Sig.lookup sign opid
-      val Lcf.|> (lemmaSubgoals, _) = state @@ NameSeq.bite 1 alpha
-
-      val H_spec >> specjdg = spec
-      val _ = 
-        if Hyps.isEmpty H_spec then () else 
-          raise E.error [Fpp.text "Lemmas must have an atomic judgment as a conclusion"]
+      val specjdg = Sig.opidSpec sign opid []
+(*
 
       val lemmaExtract' =
         let
@@ -353,9 +348,10 @@ struct
 
       val H' = H @> (z, specjdg)
       val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
-      val extract = substVar (lemmaExtract', z) mainHole
+      val extract = substVar (lemmaExtract', z) mainHole*)
     in
-      lemmaSubgoals >: mainGoal #> (H, extract)
+      raise Fail "TODO: CutLemma"
+      (* lemmaSubgoals >: mainGoal #> (H, extract) *)
     end
 
   fun Exact tm =

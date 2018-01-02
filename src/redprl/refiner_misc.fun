@@ -162,18 +162,8 @@ struct
         val Abt.$ (O.CUST (name, _), args) = Abt.out m
         val _ = Assert.alphaEq (m, n)
 
-        val {spec = H' >> AJ.TRUE specTy, state, ...} = Sig.lookup sign name
-        val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ()) (* TODO: use alpha here??? *)
-        val metas = T.foldr (fn (x, Lcf.::@ (_, jdg), r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
-        val rho =
-          ListPair.foldl
-            (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
-            Metavar.Ctx.empty (metas, args)
-        val specTy' = substMetaenv rho specTy
-        val _ = if Hyps.isEmpty H' then () else
-          E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
-
-        val goalTy = View.makeAsSubTypeIfDifferent tr H (specTy', ty)
+        val AJ.TRUE specTy = Sig.opidSpec sign name args
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (specTy, ty)
       in
         |>:? goalTy #> (H, trivial)
       end
@@ -184,21 +174,9 @@ struct
         val H >> AJ.SYNTH tm = jdg
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out tm
-
-        val {spec = H' >> AJ.TRUE specTy, state, ...} = Sig.lookup sign name
-        val Lcf.|> (psi, _) = state (fn _ => RedPrlSym.new ())
-        val metas = T.foldr (fn (x, Lcf.::@ (_, jdg), r) => (x, RedPrlJudgment.sort jdg) :: r) [] psi
-        val mrho =
-          ListPair.foldlEq
-            (fn ((x, vl), arg, rho) => Metavar.Ctx.insert rho x (checkb (arg, vl)))
-            Metavar.Ctx.empty
-            (metas, args)
-
-        val specTy' = substMetaenv mrho specTy
-        val _ = if Hyps.isEmpty H' then () else
-          E.raiseError @@ E.IMPOSSIBLE (Fpp.text "Open judgments attached to custom operator.")
+        val AJ.TRUE specTy = Sig.opidSpec sign name args
       in
-        T.empty #> (H, specTy')
+        T.empty #> (H, specTy)
       end
   end
 end

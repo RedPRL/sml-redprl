@@ -66,9 +66,6 @@ struct
   val autoTac = multitacToTac o autoMtac
   fun autoTacComplete sign = try (autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal")
 
-  fun unfoldCustomOperator sign (opid, args) = 
-    Sig.unfoldCustomOperator (Sig.lookup sign opid) args
-
   fun elimRule sign z xs tacs = 
     R.Elim sign z thenl' (xs, tacs)
 
@@ -338,7 +335,7 @@ struct
        in
          cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp z)
        end
-     | O.CUST (opid, _) $ args => tactic sign env (unfoldCustomOperator sign (opid, args))
+     | O.CUST (opid, _) $ args => tactic sign env (Sig.unfoldOpid sign opid args)
      | O.DEV_MATCH ns $ (_ \ term) :: clauses =>
        let
          fun defrostMetas metas =
@@ -403,7 +400,7 @@ struct
      | O.MTAC_HOLE msg $ _ => hole (Option.valOf (Tm.getAnnotation tm), msg)
      | O.MTAC_REPEAT $ [_ \ tm] => T.mrepeat (multitactic sign env tm)
      | O.MTAC_AUTO $ _ => autoMtac sign
-     | O.CUST (opid, _) $ args => multitactic sign env (unfoldCustomOperator sign (opid, args))
+     | O.CUST (opid, _) $ args => multitactic sign env (Sig.unfoldOpid sign opid args)
      | `x => Var.Ctx.lookup env x
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized multitactic", TermPrinter.ppTerm tm]
 

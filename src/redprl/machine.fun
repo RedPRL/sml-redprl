@@ -84,15 +84,11 @@ struct
   struct
     type regime = opid -> bool
 
+
     fun default sign opid = 
-      let
-        val {spec, ...} = Sig.lookup sign opid
-        open Sequent infix >>
-      in
-        case spec of
-          _ >> AtomicJudgment.TRUE _ => false
-        | _ => true
-      end
+      case Sig.opidSpec sign opid [] of
+         AtomicJudgment.TRUE _ => false
+       | _ => true
 
     fun never _ = false
     fun always _ = true
@@ -433,10 +429,7 @@ struct
      | O.CUST (opid, _) $ args || (syms, stk) =>
        if not (unfolding opid) then raise Neutral (OPERATOR opid) else
        let
-         val entry as {state, ...} = Sig.lookup sign opid
-         val Lcf.|> (psi, evd) = state (fn _ => Sym.named "?")
-         val state = state (fn _ => RedPrlSym.new ())
-         val term = Sig.unfoldCustomOperator entry args
+         val term = Sig.unfoldOpid sign opid args
        in
          STEP @@ term || (syms, stk)
        end  

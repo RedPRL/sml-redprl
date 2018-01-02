@@ -1,35 +1,29 @@
 signature MINI_SIGNATURE =
 sig
-  type metavar = RedPrlAbt.metavariable
   type opid = RedPrlOpData.opid
   type abt = RedPrlAbt.abt
-  type valence = RedPrlAbt.valence
-  type sort = RedPrlAbt.sort
-  type variable = RedPrlAbt.variable
-  type src_opid = string
-  type jdg = RedPrlJudgment.jdg
-
-  type 'a arguments = ('a * valence) list
-  type names = int -> variable
-
+  
   type sign
-  type entry =
-    {sourceOpid : src_opid,
-     spec : jdg,
-     state : names -> Lcf.jdg Lcf.state}
-
-  val lookup : sign -> opid -> entry
-
-  val unfoldCustomOperator : entry -> abt RedPrlAbt.bview list -> abt
+  val opidSpec : sign -> opid -> abt RedPrlAbt.bview list -> AtomicJudgment.jdg
+  val unfoldOpid : sign -> opid -> abt RedPrlAbt.bview list -> abt
 end
 
 signature SIGNATURE =
 sig
   type ast = RedPrlAst.ast
+  type metavar = RedPrlAbt.metavariable  
+  type valence = RedPrlAbt.valence
+  type sort = RedPrlAbt.sort
+  type variable = RedPrlAbt.variable
+  type src_opid = string
+  type jdg = RedPrlJudgment.jdg
+  
 
   include MINI_SIGNATURE
 
   type src_catjdg = ast
+  type 'a arguments = ('a * valence) list
+  
 
   datatype src_decl =
      DEF of {arguments : string arguments, sort : sort, definiens : ast}
