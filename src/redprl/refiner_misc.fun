@@ -88,7 +88,7 @@ struct
 
     fun SequentReducePart sign (selector, accessors) _ jdg =
       let
-        val tr = ["Computation.Reduce"]
+        val tr = ["Computation.ReducePart"]
         val H >> ajdg = jdg
         val (H', ajdg') = Sequent.mapSelector selector (AJ.multiMapAccessor accessors (reduce sign)) (H, ajdg)
         val (goal, hole) = makeGoal tr @@ H' >> ajdg'
