@@ -17,14 +17,17 @@ struct
   structure Ty = 
   struct
     datatype vty =
-       TERM of arity
-     | ONE
+       ONE
      | DOWN of cty
+     | TERM of sort
+     | THM of sort
+     | ABS of Tm.valence list * vty
+
     and cty = 
        UP of vty
-     | THM of arity
   end
 
+  (* The resolver environment *)
   structure Res :>
   sig
     type env
@@ -35,7 +38,8 @@ struct
     val lookupVar : env -> string -> (Tm.variable * Tm.sort) m
     val lookupMeta : env -> string -> (Tm.metavariable * Tm.valence) m
 
-    val extendVars : env -> string list * Tm.sort list -> (Tm.variable list * env) m
+    val extendVars : env -> string list * Tm.sort list -> ((Tm.variable * Tm.sort) list * env) m
+    val extendMetas : env -> string list * Tm.valence list -> ((Tm.metavariable * Tm.valence) list * env) m
   end = 
   struct
     type env =
@@ -53,14 +57,18 @@ struct
     fun lookupVar _ = ?todo
     fun extendVars _ = ?todo
     fun lookupMeta _ = ?todo
+    fun extendMetas _ = ?todo
   end
 
+  (* external language *)
   structure ESyn =
   struct
     datatype value = 
        THUNK of cmd
      | VAR of string
      | NIL
+     | ABS of (string * Tm.valence) list * value
+     | TERM of ast * sort
 
     and cmd = 
        BIND of cmd * string * cmd
@@ -68,14 +76,30 @@ struct
      | FORCE of value
      | PRINT of value
      | REFINE of ast * ast
+     | FRESH of (string * Tm.valence) list * cmd
+
+    (* encoding a declaration of a definitional extension *)
+    fun declDefn (name : string, psi : (string * Tm.valence) list) (ast : ast, tau : sort) (rest : cmd) : cmd =
+      BIND (RET (TERM (ast, tau)), name, rest)
+
+    (* encoding a declaration of a theorem *)
+    fun declThm (name : string, psi : (string * Tm.valence) list) (jdg : ast, script : ast) (rest : cmd) : cmd =
+      let
+        val thm = FRESH (psi, BIND (REFINE (jdg, script), name, RET (ABS (psi, VAR name))))
+      in
+        BIND (thm, name, rest)
+      end
   end
 
+  (* internal language *)
   structure ISyn =
   struct
     datatype value = 
        THUNK of cmd
      | VAR of string
      | NIL
+     | ABS of (Tm.metavariable * Tm.valence) list * value
+     | TERM of abt
 
     and cmd = 
        BIND of cmd * string * cmd
@@ -83,13 +107,17 @@ struct
      | FORCE of value
      | PRINT of value
      | REFINE of ajdg * abt
+     | FRESH of (Tm.metavariable * Tm.valence) list * cmd
   end
 
+  (* semantic domain *)
   structure Sem = 
   struct
     datatype value = 
        THUNK of env * ISyn.cmd
-     | STATE of Lcf.jdg * Lcf.jdg Lcf.state
+     | THM of Lcf.jdg * abt
+     | TERM of abt
+     | ABS of (Tm.metavariable * Tm.valence) list * value
      | NIL
 
     withtype env = value StringListDict.dict
@@ -104,9 +132,12 @@ struct
     fun extend (env : env) (nm : string) (v : value) : env =
       StringListDict.insert env nm v
 
+    (* TODO *)
     val ppValue : value -> Fpp.doc = 
       fn THUNK _ => Fpp.text "<thunk>"
-       | STATE _ => Fpp.text "<lcf-state>"
+       | THM _ => Fpp.text "<thm>"
+       | TERM _ => Fpp.text "<term>"
+       | ABS _ => Fpp.text "<abs>"
        | NIL => Fpp.text "()"
 
     fun printVal (v : value) : unit m =
@@ -132,47 +163,14 @@ struct
      | _ =>
        EM.fail (NONE, Fpp.text "zipWithM: length mismatch")
 
-  fun inferVal (renv : Res.env) : ISyn.value -> Ty.vty m =
-    fn ISyn.THUNK cmd =>
-       inferCmd renv cmd >>= (fn cty =>
-         EM.ret @@ Ty.DOWN cty)
-
-     | ISyn.VAR nm =>
-       Res.lookupId renv nm >>= (fn vty =>
-         EM.ret vty)
-
-     | ISyn.NIL =>
-       EM.ret Ty.ONE
-
-  and inferCmd (renv : Res.env) : ISyn.cmd -> Ty.cty m =
-    fn ISyn.BIND (cmd1, nm, cmd2) =>
-       inferCmdAsThunk renv cmd1 >>= (fn vty1 =>
-         Res.extendId renv nm vty1 >>= (fn env' =>
-           inferCmd env' cmd2))
-
-     | ISyn.RET v =>
-       inferVal renv v >>= (fn vty => 
-         EM.ret @@ Ty.UP vty)
-
-     | ISyn.PRINT _ =>
-       EM.ret @@ Ty.UP Ty.ONE
-
-     | ISyn.REFINE _ => ?todo
-
-  and inferCmdAsThunk (renv : Res.env) (cmd : ISyn.cmd) : Ty.vty m =
-    inferCmd renv cmd >>= (fn cty =>
-      case cty of
-         Ty.UP vty => EM.ret vty
-       | _ => EM.fail (NONE, Fpp.text "Expected thunked value type"))  
-  
   local
     structure O = RedPrlOperator and S = RedPrlSort
   in
     fun lookupArity (renv : Res.env) (opid : string) : arity m =
       Res.lookupId renv opid >>= (fn vty =>
         case vty of 
-           Ty.TERM ar => EM.ret @@ ar
-         | Ty.DOWN (Ty.THM ar) => EM.ret @@ ar
+           Ty.ABS (vls, Ty.TERM tau) => EM.ret @@ (vls, tau)
+         | Ty.ABS (vls, Ty.THM tau) => EM.ret @@ (vls, tau)
          | _ => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text opid]))
 
     fun checkAbt (view, tau) : abt m = 
@@ -227,7 +225,7 @@ struct
     and resolveBnd (renv : Res.env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview m =
       Res.extendVars renv (xs, taus) >>= (fn (xs', renv') =>
         resolveAst renv' (ast, tau) >>= (fn abt =>
-          EM.ret @@ Tm.\ (xs', abt)))
+          EM.ret @@ Tm.\ (List.map #1 xs', abt)))
 
     and resolveOpr (renv : Res.env) (theta : O.operator) (bs : ast Ast.abs list) : O.operator m = 
       (case theta of 
@@ -264,36 +262,50 @@ struct
          EM.fail (NONE, Fpp.text "Error resolving operator")
   end
 
-  fun resolveVal (renv : Res.env) : ESyn.value -> ISyn.value m = 
+  fun resolveVal (renv : Res.env) : ESyn.value -> (ISyn.value * Ty.vty) m = 
     fn ESyn.THUNK cmd =>
-       resolveCmd renv cmd >>= (fn cmd' => 
-         EM.ret @@ ISyn.THUNK cmd')
-     | ESyn.VAR nm => EM.ret @@ ISyn.VAR nm
+       resolveCmd renv cmd >>= (fn (cmd', cty) =>
+         EM.ret (ISyn.THUNK cmd', Ty.DOWN cty))
 
-  and resolveCmd (renv : Res.env) : ESyn.cmd -> ISyn.cmd m = 
+     | ESyn.VAR nm => 
+       Res.lookupId renv nm >>= (fn vty =>
+         EM.ret (ISyn.VAR nm, vty))
+
+     | ESyn.TERM (ast, tau) =>
+       resolveAst renv (ast, tau) >>= (fn abt =>
+         EM.ret (ISyn.TERM abt, Ty.TERM tau))
+
+     | ESyn.ABS (psi, v) =>
+       Res.extendMetas renv (ListPair.unzip psi) >>= (fn (psi', renv') =>
+         resolveVal renv' v >>= (fn (v', vty) =>
+           EM.ret (ISyn.ABS (psi', v'), Ty.ABS (List.map #2 psi', vty))))
+
+  and resolveCmd (renv : Res.env) : ESyn.cmd -> (ISyn.cmd * Ty.cty) m = 
     fn ESyn.BIND (cmd1, nm, cmd2) =>
-       resolveCmd renv cmd1 >>= (fn cmd1' =>
-         inferCmdAsThunk renv cmd1' >>= (fn vty =>
-           Res.extendId renv nm vty >>= (fn renv' =>
-             resolveCmd renv' cmd2 >>= (fn cmd2' => 
-               EM.ret @@ ISyn.BIND (cmd1', nm, cmd2')))))
-
-     | ESyn.RET v =>
-       resolveVal renv v >>= (fn v' =>
-         EM.ret @@ ISyn.RET v')
+       resolveCmd renv cmd1 >>= (fn (cmd1', Ty.UP vty1) =>
+         Res.extendId renv nm vty1 >>= (fn renv' =>
+           resolveCmd renv' cmd2 >>= (fn (cmd2', cty2) =>
+             EM.ret (ISyn.BIND (cmd1', nm, cmd2'), cty2))))
 
      | ESyn.FORCE v =>
-       resolveVal renv v >>= (fn v' =>
-         EM.ret @@ ISyn.FORCE v')
+       resolveVal renv v >>= (fn (v', vty) =>
+         case vty of 
+            Ty.DOWN cty => EM.ret (ISyn.FORCE v', cty)
+          | _ => EM.fail (NONE, Fpp.text "Expected down-shifted type"))
 
      | ESyn.PRINT v =>
-       resolveVal renv v >>= (fn v' => 
-         EM.ret @@ ISyn.PRINT v')
+       resolveVal renv v >>= (fn (v', _) =>
+         EM.ret (ISyn.PRINT v', Ty.UP Ty.ONE))
 
      | ESyn.REFINE (ajdg, script) =>
-       resolveAjdg renv ajdg >>= (fn ajdg' => 
-         resolveAst renv (script, RedPrlSort.TAC) >>= (fn script' => 
-           EM.ret @@ ISyn.REFINE (ajdg', script')))
+       resolveAjdg renv ajdg >>= (fn ajdg' =>
+         resolveAst renv (script, RedPrlSort.TAC) >>= (fn script' =>
+           EM.ret (ISyn.REFINE (ajdg', script'), Ty.UP (Ty.THM (AJ.synthesis ajdg')))))
+
+     | ESyn.FRESH (psi, cmd) =>
+       Res.extendMetas renv (ListPair.unzip psi) >>= (fn (psi', renv') =>
+         resolveCmd renv' cmd >>= (fn (cmd', cty) =>
+           EM.ret (ISyn.FRESH (psi', cmd'), cty)))
 
 
   fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd m =
@@ -318,6 +330,9 @@ struct
 
      | ISyn.REFINE (ajdg, script) =>
        ?todo
+    
+     | ISyn.FRESH (psi, cmd) => 
+       evalCmd env cmd
 
   and evalVal (env : Sem.env) : ISyn.value -> Sem.value m =
     fn ISyn.THUNK cmd => 
@@ -328,4 +343,11 @@ struct
 
      | ISyn.NIL =>
        EM.ret Sem.NIL
+
+     | ISyn.ABS (psi, v) =>
+       evalVal env v >>= (fn s =>
+         EM.ret @@ Sem.ABS (psi, s))
+
+     | ISyn.TERM abt =>
+       EM.ret @@ Sem.TERM abt
 end
