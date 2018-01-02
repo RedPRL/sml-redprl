@@ -68,19 +68,44 @@ struct
          vars = vars,
          metas = metas}
 
-    fun extendVars {ids, vars, metas} gamma =
+    fun extendVars {ids, vars, metas} (xs, taus) =
       let
-        val env = ?todo
+        val (gamma, vars') =
+          ListPair.foldrEq
+            (fn (x, tau, (gamma, vars)) =>
+              let
+                val x' = Sym.named x
+              in
+                ((x',tau) :: gamma, StringListDict.insert vars x (x', tau))
+              end)
+            ([], vars)
+            (xs, taus)
+        val env = {ids = ids, vars = vars', metas = metas}
       in    
-        EM.ret (?todo, env)
+        EM.ret (gamma, env)
       end
+      handle _ =>
+        EM.fail (NONE, Fpp.text "extendVars: invalid arguments")
 
-    fun extendMetas {ids, vars, metas} psi =
+    fun extendMetas {ids, vars, metas} (Xs, vls) =
       let
-        val env = ?todo
-      in    
-        EM.ret (?todo, env)
+        val (psi, metas') =
+          ListPair.foldrEq
+            (fn (X, vl, (psi, metas)) =>
+              let
+                val X' = Metavar.named X
+              in
+                ((X',vl) :: psi, StringListDict.insert metas X (X', vl))
+              end)
+            ([], metas)
+            (Xs, vls)
+        val env = {ids = ids, vars = vars, metas = metas'}
+      in
+        EM.ret (psi, env)
       end
+      handle _ =>
+        EM.fail (NONE, Fpp.text "extendMetas: invalid arguments")
+      
   end
 
   (* external language *)
