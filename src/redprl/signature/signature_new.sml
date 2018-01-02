@@ -163,10 +163,10 @@ struct
 
     fun compileSrcDecl (nm : string) : Src.decl -> cmd = 
       fn Src.DEF {arguments, sort, definiens} =>
-         RET (ABS (arguments, TERM (definiens, sort)))
+         NU (arguments, RET (ABS (arguments, TERM (definiens, sort))))
 
        | Src.TAC {arguments, script} =>
-         RET (ABS (arguments, TERM (script, RedPrlSort.TAC)))
+         NU (arguments, RET (ABS (arguments, TERM (script, RedPrlSort.TAC))))
 
        | Src.THM {arguments, goal, script} =>
          NU (arguments, BIND (REFINE (goal, script), nm, RET (ABS (arguments, VAR nm))))
@@ -225,14 +225,6 @@ struct
 
     fun extend (env : env) (nm : string) (v : value) : env =
       (StringListDict.insert (#1 env) nm v, #2 env)
-
-    fun freshenMetas (env : env) (psi : (Tm.metavariable * Tm.valence) list) : env = 
-      let
-        val clone = Tm.Metavar.named o Tm.Metavar.toString
-        val rho = List.foldl (fn ((X, _), rho) => Tm.Metavar.Ctx.insert rho X (clone X)) (#2 env) psi      
-      in
-        (#1 env, rho)
-      end
 
     (* TODO *)
     val rec ppValue : value -> Fpp.doc = 
@@ -384,8 +376,8 @@ struct
 
      | ESyn.ABS (psi, v) =>
        let
-         val (psi', renv') = Res.extendMetas renv @@ ListPair.unzip psi
-         val (v', vty) = resolveVal renv' v
+         val psi' = List.map (fn (X, vl) => Res.lookupMeta renv NONE X) psi
+         val (v', vty) = resolveVal renv v
        in
          (ISyn.ABS (psi', v'), Ty.ABS (List.map #2 psi', vty))
        end
@@ -526,14 +518,12 @@ struct
              RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
 
           val mrho = #2 env
-          val ajdg' = AJ.map (Tm.renameMetavars mrho) ajdg
-          val extract' = Tm.renameMetavars mrho extract
         in
-          (Sem.RET @@ Sem.THM (ajdg', extract'), subgoalsCount = 0)
+          (Sem.RET @@ Sem.THM (ajdg, extract), subgoalsCount = 0)
         end
     
      | ISyn.NU (psi, cmd) =>
-       evalCmd (Sem.freshenMetas env psi) cmd
+       evalCmd env cmd
 
      | ISyn.ABORT => 
        fail (NONE, Fpp.text "Signature aborted")
