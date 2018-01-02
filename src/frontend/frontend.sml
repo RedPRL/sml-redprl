@@ -54,7 +54,6 @@ struct
       RedPrlParser.Token.sameToken (tok, PRINT) orelse
       RedPrlParser.Token.sameToken (tok, EXTRACT) orelse
       RedPrlParser.Token.sameToken (tok, QUIT)
-      
 
     fun isEof tok =
       RedPrlParser.Token.sameToken (tok, EOF)
@@ -117,7 +116,7 @@ struct
           let
             val (next_tok, _) = RedPrlParser.Stream.get lexer
           in
-            if RedPrlParser.Token.sameToken (next_tok, EOF)
+            if RedPrlParser.Token.sameToken (next_tok, EOF) orelse RedPrlParser.Token.sameToken (next_tok, QUIT)
             then (acc, sign)
             else
               let
