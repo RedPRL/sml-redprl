@@ -346,12 +346,6 @@ struct
          O.CUST (opid, NONE) =>
          O.CUST (opid, SOME @@ lookupArity renv pos opid)
 
-       | O.DEV_APPLY_LEMMA (opid, NONE, pat) => 
-         O.DEV_APPLY_LEMMA (opid, SOME @@ lookupArity renv pos opid, pat)
-
-       | O.DEV_USE_LEMMA (opid, NONE) =>
-         O.DEV_USE_LEMMA (opid, SOME @@ lookupArity renv pos opid)
-
        | O.MK_ANY NONE =>
          let
            val [Ast.\ (_, ast)] = bs

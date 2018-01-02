@@ -317,7 +317,8 @@ struct
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp sign z')
        end
 
-     | O.DEV_APPLY_LEMMA (opid, ar, pat) $ args =>
+     | O.DEV_APPLY_LEMMA pat $ args => ?todo
+(*      
        let
          val (names \ tac) :: (_ \ vec) :: revSubtermArgs = List.rev args
          val subtermArgs = List.rev revSubtermArgs
@@ -327,9 +328,10 @@ struct
          val tac = tactic sign env tac
        in
          cutLemma sign opid (Option.valOf ar) subtermArgs (pat, names) appTacs tac
-       end
-     | O.DEV_USE_LEMMA (opid, ar) $ args =>
-       let
+       end *)
+
+     | O.DEV_USE_LEMMA $ args => ?todo
+       (* let
          val (_ \ vec) :: revSubtermArgs = List.rev args
          val subtermArgs = List.rev revSubtermArgs
          val O.MK_VEC _ $ appArgs = Tm.out vec
@@ -338,7 +340,7 @@ struct
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
        in
          cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp sign z)
-       end
+       end *)
      | O.CUST (opid, _) $ args => tactic sign env (Sig.unfoldOpid sign opid args)
      | O.DEV_MATCH ns $ (_ \ term) :: clauses =>
        let

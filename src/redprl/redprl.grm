@@ -259,18 +259,19 @@ struct
     let
       val (pat, names) = unstitchPattern pat
       val vec = Multi.makeVec O.TAC tacs
-      val args = subtermArgs @ [[] \ vec, names \ tac]
+      val cust = O.CUST (opid, NONE) $$ subtermArgs
+      val args = [[] \ cust, [] \ vec, names \ tac]
     in
-      O.DEV_APPLY_LEMMA (opid, NONE, pat) $$ args
+      O.DEV_APPLY_LEMMA pat $$ args
     end
 
   fun makeUseLemma (opid, subtermArgs) tacs = 
     let
       val vec = Multi.makeVec O.TAC tacs
+      val cust = O.CUST (opid, NONE) $$ subtermArgs      
     in
-      O.DEV_USE_LEMMA (opid, NONE) $$ subtermArgs @ [[] \ vec]
+      O.DEV_USE_LEMMA $$ [[] \ cust, [] \ vec]
     end
-
 end
 
 %%

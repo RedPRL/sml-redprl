@@ -168,18 +168,8 @@ struct
      | CUST (_, ar) => Option.valOf ar
      | TAC_UNFOLD_ALL _ => [] ->> TAC
      | TAC_UNFOLD _ => [[] |: VEC SEL] ->> TAC
-     | DEV_APPLY_LEMMA (_, ar, pat) =>
-       let
-         val (vls, tau) = Option.valOf ar
-       in
-         vls @ [[] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
-       end
-     | DEV_USE_LEMMA (_, ar) => 
-       let
-         val (vls, tau) = Option.valOf ar
-       in
-         vls @ [[] |: VEC TAC] ->> TAC
-       end
+     | DEV_APPLY_LEMMA pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
+     | DEV_USE_LEMMA => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
   fun eq (th1, th2) = th1 = th2
 
@@ -320,6 +310,6 @@ struct
      | CUST (opid, _) => opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
      | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
-     | DEV_APPLY_LEMMA (opid, _, _) => "apply-lemma{" ^ opid ^ "}"
-     | DEV_USE_LEMMA (opid, _) => "use-lemma{" ^ opid ^ "}"
+     | DEV_APPLY_LEMMA _ => "apply-lemma"
+     | DEV_USE_LEMMA => "use-lemma"
 end
