@@ -105,7 +105,26 @@ struct
       end
       handle _ =>
         EM.fail (NONE, Fpp.text "extendMetas: invalid arguments")
-      
+  end
+
+  structure Src =
+  struct
+    type arguments = (string * Tm.valence) list
+
+    datatype decl =
+       DEF of {arguments : arguments, sort : sort, definiens : ast}
+     | THM of {arguments : arguments, goal : ast, script : ast}
+     | TAC of {arguments : arguments, script : ast}
+
+    datatype cmd =
+       PRINT of string
+     | EXTRACT of string
+
+    datatype elt = 
+       DECL of string * decl * Pos.t
+     | CMD of cmd * Pos.t
+
+    type sign = elt list
   end
 
   (* external language *)
@@ -126,17 +145,29 @@ struct
      | REFINE of ast * ast
      | NU of (string * Tm.valence) list * cmd
 
-    (* encoding a declaration of a definitional extension *)
-    fun declDefn (name : string, psi : (string * Tm.valence) list) (ast : ast, tau : sort) (rest : cmd) : cmd =
-      BIND (RET (TERM (ast, tau)), name, rest)
+    val compileSrcCmd : Src.cmd -> cmd =
+      fn Src.PRINT nm => PRINT (VAR nm)
+       | Src.EXTRACT nm => PRINT (VAR nm) (* TODO *)
 
-    (* encoding a declaration of a theorem *)
-    fun declThm (name : string, psi : (string * Tm.valence) list) (jdg : ast, script : ast) (rest : cmd) : cmd =
-      let
-        val thm = NU (psi, BIND (REFINE (jdg, script), name, RET (ABS (psi, VAR name))))
-      in
-        BIND (thm, name, rest)
-      end
+    fun compileSrcDecl (nm : string) : Src.decl -> cmd = 
+      fn Src.DEF {arguments, sort, definiens} =>
+         RET (ABS (arguments, TERM (definiens, sort)))
+
+       | Src.TAC {arguments, script} =>
+         RET (ABS (arguments, TERM (script, RedPrlSort.TAC)))
+
+       | Src.THM {arguments, goal, script} =>
+         NU (arguments, BIND (REFINE (goal, script), nm, RET (ABS (arguments, VAR name))))
+
+    val rec compileSrcSig : Src.sign -> cmd = 
+      fn [] => 
+         RET NIL
+    
+       | Src.CMD (c, _) :: sign =>
+         BIND (compileSrcCmd c, "_", compileSrcSig sign)
+        
+       | Src.DECL (nm, decl, _) :: sign =>
+         BIND (compileSrcDecl nm decl, nm, compileSrcSig sign)
   end
 
   (* internal language *)
