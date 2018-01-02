@@ -38,7 +38,7 @@ struct
         val ty0r0 = substVar (#1 dir0, u) ty0u
         val goalCoercees = makeEq tr H ((m0, m1), ty0r0)
       in
-        |>: goalCoercees >: goalTy0 >:? goalTy #> (H, trivial)
+        |>: goalCoercees >: goalTy0 >:? goalTy #> (H, View.asTrivialToEq ty)
       end
 
     fun EqCapL _ jdg =
@@ -58,7 +58,7 @@ struct
         (* eq *)
         val goalEq = View.makeAsEq tr H ((m, other), ty)
       in
-        |>: goalEq >: goalTy0 >:? goalTy #> (H, trivial)
+        |>: goalEq >: goalTy0 >:? goalTy #> (H, View.asTrivialToEq ty)
       end
   end
 
