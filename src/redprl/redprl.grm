@@ -899,7 +899,9 @@ atomicRawTac
   | TAC_REWRITE term IN selector AT accessor (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ accessor, \\ term]))
   | TAC_REDUCE (Ast.$$ (O.TAC_REDUCE_ALL, []))
   | TAC_REDUCE IN selectors (Ast.$$ (O.TAC_REDUCE, [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_REDUCE AT accessors (Ast.$$ (O.TAC_REDUCE_PART, [\\ (Ast.$$ (O.SEL_CONCL, [])), \\ (Multi.makeVec O.ACC accessors)]))
   | TAC_REDUCE IN selector AT accessors (Ast.$$ (O.TAC_REDUCE_PART, [\\ selector, \\ (Multi.makeVec O.ACC accessors)]))
+  | TAC_REDUCE AT accessors IN selector (Ast.$$ (O.TAC_REDUCE_PART, [\\ selector, \\ (Multi.makeVec O.ACC accessors)]))
   | TAC_UNFOLD opnames (Ast.$$ (O.TAC_UNFOLD_ALL opnames, []))
   | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD (opnames), [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
 
