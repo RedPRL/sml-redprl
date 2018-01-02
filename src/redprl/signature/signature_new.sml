@@ -237,7 +237,17 @@ struct
     (* TODO *)
     val rec ppValue : value -> Fpp.doc = 
       fn THUNK _ => Fpp.text "<thunk>"
-       | THM (jdg, abt) => Fpp.text "<thm>"
+       | THM (jdg, abt) =>
+         Fpp.seq
+           [Fpp.text "Theorem",
+            Fpp.newline,
+            Fpp.nest 2 @@ Fpp.seq [Fpp.newline, AJ.pretty jdg],
+            Fpp.newline,
+            Fpp.newline,
+            Fpp.text "ext",
+            Fpp.newline,
+            Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
+
        | TERM abt => TermPrinter.ppTerm abt
        | ABS (psi, v) =>
          Fpp.seq
@@ -315,7 +325,7 @@ struct
       let
         val pos = Ast.getAnnotation ast
       in
-        case Ast.out ast of 
+        (case Ast.out ast of 
            Ast.` x =>
            Res.lookupVar renv pos x >>= (fn (x', _) => 
              checkAbt (Tm.` x', tau))
@@ -332,8 +342,9 @@ struct
              in
                zipWithM (resolveBnd renv) (vls, bs) >>= (fn bs' =>
                  checkAbt (Tm.$ (theta', bs'), tau))
-             end)
-        end
+             end))
+        >>= (fn abt => EM.ret @@ Tm.setAnnotation pos abt)
+      end
 
     and resolveBnd (renv : Res.env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview m =
       Res.extendVars renv (xs, taus) >>= (fn (xs', renv') =>
@@ -438,8 +449,8 @@ struct
     fun unfoldOpid env opid args = ?todo
   end
 
-  structure Refiner = Refiner (MiniSig)
-
+  structure TacticElaborator = TacticElaborator (MiniSig)
+  
   fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd m =
     fn ISyn.BIND (cmd1, x, cmd2) =>
        evalCmd env cmd1 >>= (fn Sem.RET s =>
@@ -461,7 +472,26 @@ struct
            EM.ret @@ Sem.RET @@ Sem.NIL))
 
      | ISyn.REFINE (ajdg, script) =>
-       ?todo
+       (let
+          val pos = Tm.getAnnotation script
+          val seqjdg = Sequent.>> (SequentData.Hyps.empty, ajdg)
+          val results = TacticElaborator.tactic env Var.Ctx.empty script (fn _ => Sym.new ()) seqjdg
+          (* TODO: somehow show all the states! *)
+          val Lcf.|> (subgoals, evd) =
+            Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
+              handle _ => Lcf.M.run (results, fn _ => true)
+
+          val Tm.\ (_, extract) = Tm.outb evd
+          val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
+          val warning = 
+            if subgoalsCount = 0 then 
+              EM.ret ()
+            else
+              EM.warn (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
+        in
+          warning >>= (fn _ =>
+            EM.ret @@ Sem.RET @@ Sem.THM (ajdg, extract))
+        end)
     
      | ISyn.NU (psi, cmd) =>
        evalCmd (Sem.freshenMetas env psi) cmd
