@@ -240,7 +240,7 @@ struct
        | THM (jdg, abt) => Fpp.text "<thm>"
        | TERM abt => TermPrinter.ppTerm abt
        | ABS (psi, v) =>
-         Fpp.hvsep
+         Fpp.seq
            [Fpp.hsep
             [Fpp.collection
               (Fpp.char #"[")
