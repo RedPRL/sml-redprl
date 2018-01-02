@@ -13,12 +13,6 @@ signature SIGNATURE_NEW =
 sig
   type 'a m
 
-  type name
-  type ast
-  type ajdg
-  type abt
-  type arity
-
 (*
   type value
   type src_cmd
