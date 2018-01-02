@@ -1011,10 +1011,10 @@ struct
             (Hyps.empty, Var.Ctx.empty)
             fields
 
-        val H' = Hyps.remove z (Hyps.interposeThenSubstAfter (z, hyps, Syn.into Syn.TV) H)
-        val ajdg' = AJ.map (substVar (Syn.into Syn.TV, z)) ajdg
+        val H' = Hyps.remove z (Hyps.interposeThenSubstAfter (z, hyps, axiom) H)
+        val ajdg' = AJ.map (substVar (axiom, z)) ajdg
         val (goal, hole) = makeGoal tr @@ H' >> ajdg'
-        val extractEnv = Hyps.foldl (fn (x, _, rho) => Var.Ctx.insert rho x (Syn.into Syn.TV)) Var.Ctx.empty hyps
+        val extractEnv = Hyps.foldl (fn (x, _, rho) => Var.Ctx.insert rho x axiom) Var.Ctx.empty hyps
       in
         |>: goal #> (H, substVarenv extractEnv hole)
       end
