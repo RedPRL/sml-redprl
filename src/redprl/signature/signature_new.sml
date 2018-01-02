@@ -364,6 +364,18 @@ struct
            EM.ret (ISyn.NU (psi', cmd'), cty)))
 
 
+  structure MiniSig : MINI_SIGNATURE = 
+  struct
+    type opid = string
+    type abt = abt
+    type sign = Sem.env
+
+    fun opidSpec env opid args = ?todo
+    fun unfoldOpid env opid args = ?todo
+  end
+
+  structure Refiner = Refiner (MiniSig)
+
   fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd m =
     fn ISyn.BIND (cmd1, x, cmd2) =>
        evalCmd env cmd1 >>= (fn Sem.RET s =>
