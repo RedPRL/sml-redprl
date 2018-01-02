@@ -3,6 +3,9 @@ struct
   open AtomicJudgmentData
   type abt = RedPrlAbt.abt
 
+  fun EQ ((m, n), a) =
+    TRUE (SyntaxView.intoEq (a, m, n))
+
   fun MEM (m, a) =
     EQ ((m, m), a)
 
@@ -10,8 +13,7 @@ struct
     EQ_TYPE ((a, a), k)
 
   fun map f =
-    fn EQ ((m, n), a) => EQ ((f m, f n), f a)
-     | TRUE a => TRUE (f a)
+    fn TRUE a => TRUE (f a)
      | EQ_TYPE ((a, b), k) => EQ_TYPE ((f a, f b), k)
      | SUB_TYPE (a, b) => SUB_TYPE (f a, f b)
      | SUB_KIND (u, k) => SUB_KIND (f u, k)
@@ -25,12 +27,7 @@ struct
     open Fpp
   in
     val pretty =
-      fn EQ ((m, n), a) => expr @@ hvsep @@ List.concat
-           [ if RedPrlAbt.eq (m, n) then [TermPrinter.ppTerm m]
-             else [TermPrinter.ppTerm m, Atomic.equals, TermPrinter.ppTerm n]
-           , [hsep [text "in", TermPrinter.ppTerm a]]
-           ]
-       | TRUE a => TermPrinter.ppTerm a
+      fn TRUE a => TermPrinter.ppTerm a
        | EQ_TYPE ((a, b), k) => expr @@ hvsep @@ List.concat
            [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm a]
              else [TermPrinter.ppTerm a, Atomic.equals, TermPrinter.ppTerm b]
@@ -59,8 +56,7 @@ struct
   structure O = RedPrlOpData
 
   val synthesis =
-    fn EQ _ => O.TRV
-     | TRUE _ => O.EXP
+    fn TRUE _ => O.EXP
      | EQ_TYPE _ => O.TRV
      | SUB_TYPE _ => O.TRV
      | SUB_KIND _ => O.TRV
@@ -77,8 +73,7 @@ struct
       O.KCONST k $$ []
 
     val into : jdg -> abt =
-      fn EQ ((m, n), a) => O.JDG_EQ $$ [[] \ m, [] \ n, [] \ a]
-       | TRUE a => O.JDG_TRUE $$ [[] \ a]
+      fn TRUE a => O.JDG_TRUE $$ [[] \ a]
        | EQ_TYPE ((a, b), k) => O.JDG_EQ_TYPE $$ [[] \ kconst k, [] \ a, [] \ b]
        | SUB_TYPE (a, b) => O.JDG_SUB_TYPE $$ [[] \ a, [] \ b]
        | SUB_KIND (u, k) => O.JDG_SUB_KIND $$ [[] \ kconst k, [] \ u]
@@ -93,8 +88,7 @@ struct
 
     fun out jdg =
       case RedPrlAbt.out jdg of
-         O.JDG_EQ $ [_ \ m, _ \ n, _ \ a] => EQ ((m, n), a)
-       | O.JDG_TRUE $ [_ \ a] => TRUE a
+         O.JDG_TRUE $ [_ \ a] => TRUE a
        | O.JDG_EQ_TYPE $ [_ \ k, _ \ a, _ \ b] => EQ_TYPE ((a, b), outk k)
        | O.JDG_SUB_TYPE $ [_ \ a, _ \ b] => SUB_TYPE (a, b)
        | O.JDG_SUB_KIND $ [_ \ k, _ \ u] => SUB_KIND (u, outk k)
@@ -111,10 +105,7 @@ struct
   in
     fun lookupAccessor acc jdg =
       case (jdg, acc) of
-         (EQ (_, ty), A.PART_TYPE) => ty
-       | (EQ ((m, _), _), A.PART_LEFT) => m
-       | (EQ ((_, n), _), A.PART_RIGHT) => n
-       | (TRUE ty, A.WHOLE) => ty
+         (TRUE ty, A.WHOLE) => ty
        | (TRUE ty, _) =>
            (case (Syn.out ty, acc) of
               (Syn.EQUALITY (ty, _, _), A.PART_TYPE) => ty
@@ -139,10 +130,7 @@ struct
     
     fun mapAccessor acc f jdg =
       case (jdg, acc) of
-         (EQ (tms, ty), A.PART_TYPE) => EQ (tms, f ty)
-       | (EQ ((m, n), ty), A.PART_LEFT) => EQ ((f m, n), ty)
-       | (EQ ((m, n), ty), A.PART_RIGHT) => EQ ((m, f n), ty)
-       | (TRUE ty, A.WHOLE) => TRUE (f ty)
+         (TRUE ty, A.WHOLE) => TRUE (f ty)
        | (TRUE ty, _) =>
            (case (Syn.out ty, acc) of
               (Syn.EQUALITY (ty, m, n), A.PART_TYPE) => TRUE (Syn.intoEq (f ty, m, n))
@@ -166,13 +154,10 @@ struct
                 Fpp.hvsep [Fpp.hsep [A.pretty acc, Fpp.text "of"], pretty jdg]))
 
     fun multiMapAccessor accs f jdg =
-      List.foldl (fn (acc, state) => mapAccessor acc f jdg) jdg accs
+      List.foldl (fn (acc, state) => mapAccessor acc f state) jdg accs
 
     val variance =
-      fn (EQ _, A.PART_TYPE) => V.COVAR
-       | (EQ _, A.PART_LEFT) => V.ANTIVAR
-       | (EQ _, A.PART_RIGHT) => V.ANTIVAR
-       | (TRUE _, A.WHOLE) => V.COVAR
+      fn (TRUE _, A.WHOLE) => V.COVAR
        | (jdg as TRUE ty, acc) =>
            (case Syn.out ty of
               Syn.EQUALITY _ =>
@@ -201,19 +186,17 @@ struct
     structure View =
     struct
       val matchAsTrue =
-        fn EQ ((m, n), ty) => Syn.intoEq (ty, m, n)
-         | TRUE ty => ty
+        fn TRUE ty => ty
+
+      val matchTrueAsEq =
+        fn TRUE ty => (case Syn.out ty of Syn.EQUALITY (ty, m, n) => ((m, n), ty))
+      
+      val makeEqAsTrue = EQ
   
       datatype as_level = FINITE of RedPrlLevel.t | OMEGA
   
       val matchAsEqType =
-        fn EQ ((a, b), univ) =>
-             let
-               val Syn.UNIVERSE (l, k) = Syn.out univ
-             in
-               ((a, b), FINITE l, k)
-             end
-         | jdg as TRUE ty =>
+        fn jdg as TRUE ty =>
              (case Syn.out ty of
                 Syn.EQUALITY (univ, a, b) =>
                   let
@@ -232,8 +215,7 @@ struct
       datatype as_type = INTERNAL_TYPE of abt | UNIV_OMEGA of RedPrlKind.t
    
       val matchAsEq =
-        fn EQ ((m, n), ty) => ((m, n), INTERNAL_TYPE ty)
-         | TRUE ty => (case Syn.out ty of Syn.EQUALITY (ty, m, n) => ((m, n), INTERNAL_TYPE ty))
+        fn TRUE ty => (case Syn.out ty of Syn.EQUALITY (ty, m, n) => ((m, n), INTERNAL_TYPE ty))
          | EQ_TYPE ((a, b), k) => ((a, b), UNIV_OMEGA k)
          | jdg => RedPrlError.raiseError @@ RedPrlError.NOT_APPLICABLE (Fpp.text "matchAsEq", pretty jdg)
   
@@ -250,10 +232,7 @@ struct
          | (a, UNIV_OMEGA k) => SUB_KIND (a, k)
 
       val classifier =
-        fn (EQ _, A.PART_TYPE) => UNIV_OMEGA RedPrlKind.top
-         | (EQ (_, ty), A.PART_LEFT) => INTERNAL_TYPE ty
-         | (EQ (_, ty), A.PART_RIGHT) => INTERNAL_TYPE ty
-         | (TRUE _, A.WHOLE) => UNIV_OMEGA RedPrlKind.top
+        fn (TRUE _, A.WHOLE) => UNIV_OMEGA RedPrlKind.top
          | (jdg as TRUE ty, acc) =>
              (case Syn.out ty of
                 Syn.EQUALITY (ty, _, _) =>

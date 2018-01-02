@@ -116,6 +116,7 @@ struct
   infix #>
 
   val trivial = Syn.into Syn.TV
+  val axiom = Syn.into Syn.AX
 
   (* telescope combinators *)
 
@@ -216,17 +217,29 @@ struct
     datatype as_level = datatype AJ.View.as_level
     datatype as_type = datatype AJ.View.as_type
 
+    val matchAsTrue = AJ.View.matchAsTrue
+    
+    val matchTrueAsEq = AJ.View.matchTrueAsEq
+    
+    fun makeEqAsTrue tr H params = makeGoal' tr @@ H >> AJ.View.makeEqAsTrue params
+
     val matchAsEqType = AJ.View.matchAsEqType
 
     fun makeAsEqType tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEqType params
 
-    fun makeAsEqTypeWith tr f H params = makeGoal'With tr f @@ H >> AJ.View.makeAsEqType params
+    val asTrivialToEqType =
+      fn OMEGA => trivial
+       | FINITE _ => axiom
 
-    val matchAsTrue = AJ.View.matchAsTrue
+    fun makeAsEqTypeWith tr f H params = makeGoal'With tr f @@ H >> AJ.View.makeAsEqType params
 
     val matchAsEq = AJ.View.matchAsEq
 
     fun makeAsEq tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEq params
+
+    val asTrivialToEq =
+      fn INTERNAL_TYPE _ => axiom
+       | UNIV_OMEGA _ => trivial
 
     fun makeAsMem tr H params = makeGoal' tr @@ H >> AJ.View.makeAsMem params
 

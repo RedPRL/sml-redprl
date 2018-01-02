@@ -38,7 +38,7 @@ struct
         val ty0r0 = substVar (#1 dir0, u) ty0u
         val goalCoercees = makeEq tr H ((m0, m1), ty0r0)
       in
-        |>: goalCoercees >: goalTy0 >:? goalTy #> (H, trivial)
+        |>: goalCoercees >: goalTy0 >:? goalTy #> (H, View.asTrivialToEq ty)
       end
 
     fun EqCapL _ jdg =
@@ -58,7 +58,7 @@ struct
         (* eq *)
         val goalEq = View.makeAsEq tr H ((m, other), ty)
       in
-        |>: goalEq >: goalTy0 >:? goalTy #> (H, trivial)
+        |>: goalEq >: goalTy0 >:? goalTy #> (H, View.asTrivialToEq ty)
       end
   end
 
@@ -88,7 +88,7 @@ struct
 
     fun SequentReducePart sign (selector, accessors) _ jdg =
       let
-        val tr = ["Computation.Reduce"]
+        val tr = ["Computation.ReducePart"]
         val H >> ajdg = jdg
         val (H', ajdg') = Sequent.mapSelector selector (AJ.multiMapAccessor accessors (reduce sign)) (H, ajdg)
         val (goal, hole) = makeGoal tr @@ H' >> ajdg'
@@ -185,7 +185,7 @@ struct
 
         val goalTy = View.makeAsSubTypeIfDifferent tr H (specTy', ty)
       in
-        |>:? goalTy #> (H, trivial)
+        |>:? goalTy #> (H, View.asTrivialToEq ty)
       end
 
     fun Synth sign _ jdg = 

@@ -283,7 +283,6 @@ struct
      | O.TAC_AUTO_STEP $ _ => R.AutoStep sign
      | O.TAC_ELIM $ [_ \ any] => R.Elim sign (VarKit.fromTerm (Syn.unpackAny any))
      | O.TAC_REWRITE $ [_ \ sel, _ \ acc, _ \ tm] => R.Rewrite sign (Syn.outSelector sel, Syn.outAccessor acc) tm thenl' ([], [autoTacComplete sign, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign])
-     | O.TAC_REWRITE_HYP $ [_ \ sel, _ \ any] => R.RewriteHyp sign (Syn.outSelector sel) (VarKit.fromTerm (Syn.unpackAny any))
      | O.RULE_EXACT $ [_ \ any] => R.Exact (Syn.unpackAny any)
      | O.TAC_SYMMETRY $ _ => R.Symmetry
      | O.DEV_INVERSION $ _ => inversions

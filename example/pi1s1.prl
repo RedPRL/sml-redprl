@@ -50,7 +50,7 @@ Thm IntSuccIsEquiv : [
 ] by [
   lam i =>
     claim eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]];
-    fresh eq' -> elim eq; unfold IntSucc IntPred in eq'; reduce in eq';
+    unfold IntSucc IntPred in eq; reduce at left in eq;
     {
       {use IntPred [`i], abs _ => `i}
     , lam {i',p'} =>
@@ -64,8 +64,8 @@ Thm IntSuccIsEquiv : [
 
         (abs x =>
           {`($ IntPred i), abs y => `(hcom 1~>y int i [x=0 [y] (@ p' y)] [x=1 [_] i])});
-        
-        auto; fresh eq1' -> elim eq1; unfold IntPred in eq1'; reduce in eq1'; auto
+
+        auto; unfold IntPred in eq1; reduce at left in eq1; auto
     }
 ].
 
