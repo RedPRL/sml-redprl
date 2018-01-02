@@ -120,17 +120,25 @@ struct
      | ABS of (Tm.metavariable * Tm.valence) list * value
      | NIL
 
-    withtype env = value StringListDict.dict
+    withtype env = value StringListDict.dict * Tm.metavariable Tm.Metavar.Ctx.dict
 
     datatype cmd = RET of value
 
     fun lookup (env : env) (nm : string) : value m =
-      case StringListDict.find env nm of 
+      case StringListDict.find (#1 env) nm of 
          SOME v => EM.ret v
        | NONE => EM.fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text nm, Fpp.text "in environment"])
 
     fun extend (env : env) (nm : string) (v : value) : env =
-      StringListDict.insert env nm v
+      (StringListDict.insert (#1 env) nm v, #2 env)
+
+    fun freshenMetas (env : env) (psi : (Tm.metavariable * Tm.valence) list) : env = 
+      let
+        val clone = Tm.Metavar.named o Tm.Metavar.toString
+        val rho = List.foldl (fn ((X, _), rho) => Tm.Metavar.Ctx.insert rho X (clone X)) (#2 env) psi      
+      in
+        (#1 env, rho)
+      end
 
     (* TODO *)
     val ppValue : value -> Fpp.doc = 
@@ -331,8 +339,8 @@ struct
      | ISyn.REFINE (ajdg, script) =>
        ?todo
     
-     | ISyn.NU (psi, cmd) => 
-       evalCmd env cmd
+     | ISyn.NU (psi, cmd) =>
+       evalCmd (Sem.freshenMetas env psi) cmd
 
   and evalVal (env : Sem.env) : ISyn.value -> Sem.value m =
     fn ISyn.THUNK cmd => 
@@ -349,5 +357,6 @@ struct
          EM.ret @@ Sem.ABS (psi, s))
 
      | ISyn.TERM abt =>
-       EM.ret @@ Sem.TERM abt
+       EM.ret @@ Sem.TERM (Tm.renameMetavars (#2 env) abt)
+     
 end
