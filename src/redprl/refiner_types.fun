@@ -2104,7 +2104,7 @@ struct
         val AJ.TRUE ty' = Hyps.lookup H x
         val goalTy = makeSubTypeIfDifferent tr H (ty', ty)
       in
-        |>:? goalTy #> (H, trivial)
+        |>:? goalTy #> (H, axiom)
       end
   end
 
