@@ -151,11 +151,13 @@ struct
     in
       ((x, Lcf.::@ (tr, jdg)), hole)
     end
+  fun makeGoalWith tr f = makeGoal tr o Seq.map f
 
   fun makeGoal' tr jdg = #1 @@ makeGoal tr jdg
+  fun makeGoal'With tr f = makeGoal' tr o Seq.map f
 
   (* needing the realizer *)
-  fun makeTrueWith tr f H ty = makeGoal tr @@ Seq.map f @@ H >> AJ.TRUE ty
+  fun makeTrueWith tr f H ty = makeGoalWith tr f @@ H >> AJ.TRUE ty
   fun makeTrue tr H ty = makeGoal tr @@ H >> AJ.TRUE ty
   fun makeSynth tr H m = makeGoal tr @@ H >> AJ.SYNTH m
   fun makeMatch tr part = makeGoal tr @@ MATCH part
@@ -164,9 +166,9 @@ struct
 
   (* ignoring the trivial realizer *)
   fun makeType tr H (a, k) = makeGoal' tr @@ H >> AJ.TYPE (a, k)
-  fun makeEqTypeWith tr f H ((a, b), k) = makeGoal' tr @@ Seq.map f @@ H >> AJ.EQ_TYPE ((a, b), k)
+  fun makeEqTypeWith tr f H ((a, b), k) = makeGoal'With tr f @@ H >> AJ.EQ_TYPE ((a, b), k)
   fun makeEqType tr H ((a, b), k) = makeGoal' tr @@ H >> AJ.EQ_TYPE ((a, b), k)
-  fun makeEqWith tr f H ((m, n), ty) = makeGoal' tr @@ Seq.map f @@ H >> AJ.EQ ((m, n), ty)
+  fun makeEqWith tr f H ((m, n), ty) = makeGoal'With tr f @@ H >> AJ.EQ ((m, n), ty)
   fun makeEq tr H ((m, n), ty) = makeGoal' tr @@ H >> AJ.EQ ((m, n), ty)
   fun makeMem tr H (m, ty) = makeGoal' tr @@ H >> AJ.MEM (m, ty)
   fun makeSubType tr H (a, b) = makeGoal' tr @@ H >> AJ.SUB_TYPE (a, b)
@@ -212,62 +214,35 @@ struct
   (* functions which blur the difference between EQ and EQ_TYPE *)
   structure View =
   struct
-    type as_level = L.t option
+    datatype as_level = datatype AJ.View.as_level
+    datatype as_type = datatype AJ.View.as_type
 
-    val OMEGA = NONE : as_level
+    val matchAsTrue = AJ.View.matchAsTrue
+    
+    val matchTrueAsEq = AJ.View.matchTrueAsEq
+    
+    fun makeEqAsTrue tr H params = makeGoal' tr @@ H >> AJ.View.makeEqAsTrue params
 
-    val matchAsEqType =
-      fn AJ.EQ_TYPE ((a, b), k) => ((a, b), NONE, k)
-       | AJ.TRUE ty =>
-           let
-             val Syn.EQUALITY (univ, a, b) = Syn.out ty
-             val Syn.UNIVERSE (l, k) = Syn.out univ
-           in
-             ((a, b), SOME l, k)
-           end
-       | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEqType", AJ.pretty jdg)
-       
-    fun makeAsEqType tr H =
-      fn ((a, b), NONE, k) => makeEqType tr H ((a, b), k)
-       | ((a, b), SOME l, k) => makeEq tr H ((a, b), Syn.intoU (l, k))
+    val matchAsEqType = AJ.View.matchAsEqType
 
-    fun makeAsEqTypeWith tr f H =
-      fn ((a, b), NONE, k) => makeEqTypeWith tr f H ((a, b), k)
-       | ((a, b), SOME l, k) => makeEqWith tr f H ((a, b), Syn.intoU (l, k))
+    fun makeAsEqType tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEqType params
 
-    datatype as_type = TYPE of Abt.abt | UNIV_OMEGA of K.kind
+    fun makeAsEqTypeWith tr f H params = makeGoal'With tr f @@ H >> AJ.View.makeAsEqType params
 
-    val matchAsTrue =
-      fn AJ.TRUE ty => ty
+    val matchAsEq = AJ.View.matchAsEq
 
-    val matchTrueAsEq =
-      fn AJ.TRUE ty => (case Syn.out ty of Syn.EQUALITY (ty, m, n) => ((m, n), ty))
+    fun makeAsEq tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEq params
 
-    val makeEqAsTrue = makeEq
-
-    val matchAsEq =
-      fn AJ.TRUE ty => let val (tms, ty) = matchTrueAsEq (AJ.TRUE ty) in (tms, TYPE ty) end
-       | AJ.EQ_TYPE ((a, b), k) => ((a, b), UNIV_OMEGA k)
-       | jdg => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "matchAsEq", AJ.pretty jdg)
-
-    fun makeAsEq tr H =
-      fn ((a, b), TYPE ty) => makeEq tr H ((a, b), ty)
-       | ((a, b), UNIV_OMEGA k) => makeEqType tr H ((a, b), k)
-
-    val makeAsAxiom =
-      fn TYPE _ => axiom
+    val asTrivialToEq =
+      fn INTERNAL_TYPE _ => axiom
        | UNIV_OMEGA _ => trivial
 
-    fun makeAsMem tr H =
-      fn (a, TYPE ty) => makeMem tr H (a, ty)
-       | (a, UNIV_OMEGA k) => makeType tr H (a, k)
+    fun makeAsMem tr H params = makeGoal' tr @@ H >> AJ.View.makeAsMem params
 
-    fun makeAsSubType tr H =
-      fn (a, TYPE b) => makeSubType tr H (a, b)
-       | (a, UNIV_OMEGA k) => makeSubKind tr H (a, k)
+    fun makeAsSubType tr H params = makeGoal' tr @@ H >> AJ.View.makeAsSubType params
 
     fun makeAsSubTypeIfDifferent tr H =
-      fn (a, TYPE b) => makeSubTypeIfDifferent tr H (a, b)
+      fn (a, INTERNAL_TYPE b) => makeSubTypeIfDifferent tr H (a, b)
        | (a, UNIV_OMEGA k) => SOME @@ makeSubKind tr H (a, k)
   end
 
@@ -298,6 +273,12 @@ struct
         ()
       else
         raise E.error [Fpp.text "Expected", TermPrinter.ppTerm m0, Fpp.text "or", TermPrinter.ppTerm m1, Fpp.text "to be alpha-equivalent to", TermPrinter.ppTerm n]
+
+    fun levelLt (l1, l2) =
+      if L.< (l1, l2) then
+        ()
+      else
+        raise E.error [Fpp.text "Expected level", TermPrinter.ppTerm (L.into l1), Fpp.text "to be less than", TermPrinter.ppTerm (L.into l2)]
 
     fun levelLeq (l1, l2) =
       if L.<= (l1, l2) then
@@ -425,7 +406,13 @@ struct
     open View
     structure Assert =
     struct
-      fun levelLeq (l1, l2) = Option.app (fn l2 => Assert.levelLeq (l1, l2)) l2
+      val levelLeq =
+        fn (_, OMEGA) => ()
+         | (l0, FINITE l1) => Assert.levelLeq (l0, l1)
+      val levelLt =
+        fn (_, OMEGA) => ()
+         | (l0, FINITE l1) => Assert.levelLt (l0, l1)
+      fun univMem ((l0,k0), (l1,k1)) = (levelLt (l0,l1); Assert.kindLeq (k0,k1))
     end
   end
 end

@@ -2,7 +2,6 @@ structure Sequent : SEQUENT =
 struct
   structure AJ = AtomicJudgment
   structure Tm = RedPrlAbt
-  structure O = RedPrlOperator
   structure TP = TermPrinter
 
   datatype atjdg = datatype AJ.jdg
@@ -82,7 +81,7 @@ struct
        end
        handle _ => false)
      | (MATCH (th1, k1, a1, ms1), MATCH (th2, k2, a2, ms2)) =>
-          O.eq (th1, th2)
+          Tm.O.eq (th1, th2)
             andalso k1 = k2
             andalso Tm.eq (a1, a2)
             andalso ListPair.allEq Tm.eq (ms1, ms2)

@@ -86,6 +86,16 @@ struct
         |>: goal #> (H, hole)
       end
 
+    fun SequentReducePart sign (selector, accessors) _ jdg =
+      let
+        val tr = ["Computation.Reduce"]
+        val H >> ajdg = jdg
+        val (H', ajdg') = Sequent.mapSelector selector (AJ.multiMapAccessor accessors (reduce sign)) (H, ajdg)
+        val (goal, hole) = makeGoal tr @@ H' >> ajdg'
+      in
+        |>: goal #> (H, hole)
+      end
+
     fun MatchReduce sign _ jdg =
       let
         val tr = ["Computation.MatchReduce"]

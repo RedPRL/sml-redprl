@@ -70,5 +70,29 @@ sig
   val eq : jdg * jdg -> bool
   val pretty : jdg -> Fpp.doc
 
+  val lookupAccessor : Accessor.t -> jdg -> abt
+  val mapAccessor : Accessor.t -> (abt -> abt) -> (jdg -> jdg)
+  val multiMapAccessor : Accessor.t list -> (abt -> abt) -> (jdg -> jdg)
   val variance : jdg * Accessor.t -> Variance.t
+
+  structure View :
+  sig
+    val matchAsTrue : jdg -> abt
+    val matchTrueAsEq : jdg -> (abt * abt) * abt
+    val makeEqAsTrue : (abt * abt) * abt -> jdg
+
+    datatype as_level = FINITE of RedPrlLevel.t | OMEGA
+
+    val matchAsEqType : jdg -> (abt * abt) * as_level * RedPrlKind.t
+    val makeAsEqType : (abt * abt) * as_level * RedPrlKind.t -> jdg
+
+    datatype as_type = INTERNAL_TYPE of abt | UNIV_OMEGA of RedPrlKind.t
+
+    val matchAsEq : jdg -> (abt * abt) * as_type
+    val makeAsEq : (abt * abt) * as_type -> jdg
+    val makeAsMem : abt * as_type -> jdg
+    val makeAsSubType : abt * as_type -> jdg
+    
+    val classifier : jdg * Accessor.t -> as_type
+  end
 end

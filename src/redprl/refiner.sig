@@ -31,6 +31,7 @@ sig
   sig
     val ReduceAll : sign -> tactic
     val Reduce : sign -> hyp Selector.t list -> rule
+    val ReducePart : sign -> hyp Selector.t * Accessor.t list -> rule
   end
 
   structure Hyp :

@@ -133,6 +133,7 @@ struct
      | RULE_EXACT => [[] |: ANY] ->> TAC
      | TAC_REDUCE_ALL => [] ->> TAC
      | TAC_REDUCE => [[] |: VEC SEL] ->> TAC
+     | TAC_REDUCE_PART => [[] |: SEL, [] |: VEC ACC] ->> TAC
 
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
@@ -279,6 +280,7 @@ struct
      | RULE_EXACT => "exact"
      | TAC_REDUCE_ALL => "reduce-all"
      | TAC_REDUCE => "reduce"
+     | TAC_REDUCE_PART => "reduce-parts"
      | RULE_CUT => "cut"
      | RULE_PRIM name => "refine{" ^ name ^ "}"
      | TAC_ELIM => "elim"
