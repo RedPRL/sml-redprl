@@ -1,5 +1,5 @@
 Thm NegOne : [
   -1 in nat
 ] by [
-  auto
+  auto; fail
 ].
