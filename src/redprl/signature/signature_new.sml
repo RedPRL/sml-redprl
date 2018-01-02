@@ -452,13 +452,23 @@ struct
         Tm.Metavar.Ctx.empty
         (psi, args)
 
-    fun opidSpec env opid args =
+    fun isTheorem env opid = 
+      let
+        val Sem.ABS (psi, s) = Sem.lookup env opid
+      in
+        case s of 
+           Sem.THM _ => true
+         | _ => false
+      end
+
+    fun theoremSpec env opid args =
       let
         val Sem.ABS (psi, Sem.THM (jdg, _)) = Sem.lookup env opid
         val rho = makeSubst (psi, args)
       in
         AJ.map (Tm.substMetaenv rho) jdg
       end
+      handle Bind => fail (NONE, Fpp.text "internal error: theoremSpec caled on non-theorem")
 
     fun unfoldOpid env opid args =
       let

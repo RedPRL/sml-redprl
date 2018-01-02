@@ -172,7 +172,7 @@ struct
         val Abt.$ (O.CUST (name, _), args) = Abt.out m
         val _ = Assert.alphaEq (m, n)
 
-        val AJ.TRUE specTy = Sig.opidSpec sign name args
+        val AJ.TRUE specTy = Sig.theoremSpec sign name args
         val goalTy = View.makeAsSubTypeIfDifferent tr H (specTy, ty)
       in
         |>:? goalTy #> (H, axiom)
@@ -184,7 +184,7 @@ struct
         val H >> AJ.SYNTH tm = jdg
 
         val Abt.$ (O.CUST (name, _), args) = Abt.out tm
-        val AJ.TRUE specTy = Sig.opidSpec sign name args
+        val AJ.TRUE specTy = Sig.theoremSpec sign name args
       in
         T.empty #> (H, specTy)
       end

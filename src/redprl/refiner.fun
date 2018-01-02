@@ -232,7 +232,7 @@ struct
       val H >> ajdg = jdg
 
       val Abt.$ (O.CUST (opid, SOME ar), args) = Abt.out cust
-      val zjdg = Sig.opidSpec sign opid args
+      val zjdg = Sig.theoremSpec sign opid args
       val zextr = Sig.unfoldOpid sign opid args
 
       val H' = H @> (z, zjdg)
@@ -248,7 +248,7 @@ struct
       orelse_ Lcf.rule o Term.Exact tm
 
 
-  val lookupRule = 
+  fun lookupRule sign = 
     fn "bool/eqtype" => Lcf.rule o Bool.EqType
      | "bool/eq/tt" => Lcf.rule o Bool.EqTT
      | "bool/eq/ff" => Lcf.rule o Bool.EqFF
@@ -321,6 +321,7 @@ struct
      | "coe/eq" => Lcf.rule o Coe.Eq
      | "coe/eq/cap" => Lcf.rule o Coe.EqCapL
      | "subtype/eq" => Lcf.rule o SubType.Eq
+     | "custom/synth" => Lcf.rule o Custom.Synth sign
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 

@@ -83,12 +83,8 @@ struct
   structure Unfolding = 
   struct
     type regime = opid -> bool
-
-
     fun default sign opid = 
-      case Sig.opidSpec sign opid [] of
-         AtomicJudgment.TRUE _ => false
-       | _ => true
+      not (Sig.isTheorem sign opid)
 
     fun never _ = false
     fun always _ = true
