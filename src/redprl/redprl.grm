@@ -255,8 +255,10 @@ struct
       O.DEV_USE_HYP $$ [[] \ z, [] \ vec]
     end
 
-  fun makeApplyLemma pat any tacs tac =
+  fun makeApplyLemma pat (opid, args) tacs tac =
     let
+      val cust = O.CUST (opid, NONE) $$ args
+      val any = O.MK_ANY NONE $$ [[] \ cust]
       val (pat, names) = unstitchPattern pat
       val vec = Multi.makeVec O.TAC tacs
       val args = [[] \ any, [] \ vec, names \ tac]
@@ -264,8 +266,10 @@ struct
       O.DEV_APPLY_LEMMA pat $$ args
     end
 
-  fun makeUseLemma any tacs = 
+  fun makeUseLemma (opid, args) tacs = 
     let
+      val cust = O.CUST (opid, NONE) $$ args
+      val any = O.MK_ANY NONE $$ [[] \ cust]
       val vec = Multi.makeVec O.TAC tacs
     in
       O.DEV_USE_LEMMA $$ [[] \ any, [] \ vec]
@@ -924,10 +928,10 @@ atomicRawTac
   | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine SEMI tactic
       (Pattern.makeApplyHyp devDecompPattern elimTargetAnySort bracketedDevAppSpine tactic)
 
-  | LET devDecompPattern EQUALS termAnySort bracketedDevAppSpine SEMI tactic (Pattern.makeApplyLemma devDecompPattern termAnySort bracketedDevAppSpine tactic)
+  | LET devDecompPattern EQUALS customOpTerm bracketedDevAppSpine SEMI tactic (Pattern.makeApplyLemma devDecompPattern customOpTerm bracketedDevAppSpine tactic)
 
   | USE elimTargetAnySort bracketedDevAppSpine (Pattern.makeUseHyp elimTargetAnySort bracketedDevAppSpine)
-  | USE termAnySort bracketedDevAppSpine (Pattern.makeUseLemma termAnySort bracketedDevAppSpine)
+  | USE customOpTerm bracketedDevAppSpine (Pattern.makeUseLemma customOpTerm bracketedDevAppSpine)
 
   | CASE elimTarget OF BASE DOUBLE_RIGHT_ARROW tactic PIPE LOOP VARNAME DOUBLE_RIGHT_ARROW tactic
       (Ast.$$ (O.DEV_S1_ELIM, [\ ([], elimTarget), \ ([], tactic1), \([VARNAME], tactic2)]))

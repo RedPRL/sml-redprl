@@ -239,20 +239,12 @@ struct
     val pathIntros = pathIntros
   end
 
-  fun cutLemma sign opid ar (args : abt bview list) (pattern, names) appTacs tac =
+  fun cutLemma sign cust (pattern, names) appTacs tac =
     let
-      val (vls, _) = ar
-      fun processArg (xs \ m, (taus, _), {subtermNames, subtermTacs}) =
-        {subtermNames = xs @ subtermNames,
-         subtermTacs = exactAuto sign m :: subtermTacs}
-
-      val {subtermNames, subtermTacs} =
-        ListPair.foldr processArg {subtermNames = [], subtermTacs = []} (args, vls)
-
       val z = RedPrlSym.new ()
       val continue = applications sign z (pattern, names) appTacs tac
     in
-      Lcf.rule o R.CutLemma sign opid thenl' (z :: subtermNames, subtermTacs @ [continue])
+      Lcf.rule o R.CutLemma sign cust thenl' ([z], [continue])
     end
     
   fun onAllHyps tac alpha (H >> jdg) =
@@ -317,30 +309,26 @@ struct
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp sign z')
        end
 
-     | O.DEV_APPLY_LEMMA pat $ args => ?todo
-(*      
+     | O.DEV_APPLY_LEMMA pat $ [_ \ any, _ \ tacVec, names \ tac] =>
        let
-         val (names \ tac) :: (_ \ vec) :: revSubtermArgs = List.rev args
-         val subtermArgs = List.rev revSubtermArgs
-         val O.MK_VEC _ $ appArgs = Tm.out vec
-
-         val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
-         val tac = tactic sign env tac
+         val cust = Syn.unpackAny any
+         val O.MK_VEC _ $ appArgs = Tm.out tacVec
+         val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs         
+         val tac = tactic sign env tac         
        in
-         cutLemma sign opid (Option.valOf ar) subtermArgs (pat, names) appTacs tac
-       end *)
+         cutLemma sign cust (pat, names) appTacs tac
+       end
 
-     | O.DEV_USE_LEMMA $ args => ?todo
-       (* let
-         val (_ \ vec) :: revSubtermArgs = List.rev args
-         val subtermArgs = List.rev revSubtermArgs
-         val O.MK_VEC _ $ appArgs = Tm.out vec
-
-         val z = RedPrlSym.named (opid ^ "'")
+     | O.DEV_USE_LEMMA $ [_ \ any, _ \ tacVec] =>
+       (let
+         val cust = Syn.unpackAny any
+         val O.MK_VEC _ $ appArgs = Tm.out tacVec
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
+         val z = RedPrlSym.new ()
        in
-         cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp sign z)
-       end *)
+         cutLemma sign cust (O.PAT_VAR (), [z]) appTacs (hyp sign z)
+       end handle _ => raise Fail "ASDFASD")
+
      | O.CUST (opid, _) $ args => tactic sign env (Sig.unfoldOpid sign opid args)
      | O.DEV_MATCH ns $ (_ \ term) :: clauses =>
        let
