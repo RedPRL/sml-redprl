@@ -28,8 +28,7 @@ struct
   infixr @@
 
   fun fail (pos, msg) = 
-    RedPrlError.raiseError @@
-      RedPrlError.GENERIC [msg]
+    RedPrlError.raiseAnnotatedError' (pos, RedPrlError.GENERIC [msg])
 
   (* The resolver environment *)
   structure Res :>
