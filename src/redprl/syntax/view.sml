@@ -29,9 +29,6 @@ struct
 
   datatype 'a view =
      VAR of variable * sort
-   (* the trivial realizer of sort TRV for judgments lacking interesting
-    * computational content. *)
-   | TV
    (* the trivial realizer of sort EXP for types lacking interesting
     * computational content. This is the "ax(iom)" in Nuprl. *)
    | AX
@@ -292,7 +289,6 @@ struct
     val into =
       fn VAR (x, tau) => check (`x, tau)
 
-       | TV => O.TV $$ []
        | AX => O.AX $$ []
 
        | FCOM args => intoFcom args
@@ -431,7 +427,6 @@ struct
     fun out m =
       case Tm.out m of
          `x => VAR (x, Tm.sort m)
-       | O.TV $ _ => TV
        | O.AX $ _ => AX
 
        | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>

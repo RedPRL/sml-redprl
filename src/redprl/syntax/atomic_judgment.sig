@@ -18,7 +18,7 @@ struct
     *   The terms `a` and `b` are equal types and have equal structures
     *   specified by `k`. This implies they have the same PER.
     *
-    *   The realizer is `TV` of sort `TRV`.
+    *   The realizer is `AX` of sort `EXP`.
     *)
     | EQ_TYPE of (abt * abt) * kind
 
@@ -26,14 +26,14 @@ struct
     *   The terms `a` and `b` are types and the PER associated with `a`
     *   is a subrelation of the PER associated with `b`.
     *
-    *   The realizer is `TV` of sort `TRV`.
+    *   The realizer is `AX` of sort `EXP`.
     *)
     | SUB_TYPE of (abt * abt)
 
     (* `SUB_KIND (a, k)`
     *   `a` is a sub-universe of the universe of `k` types at the omega level.
     *
-    *   The realizer is `TV` of sort `TRV`.
+    *   The realizer is `AX` of sort `EXP`.
     *)
     | SUB_KIND of abt * kind
 

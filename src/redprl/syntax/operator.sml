@@ -21,8 +21,7 @@ struct
      | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
 
   val arity =
-    fn TV => [] ->> TRV
-     | AX => [] ->> EXP
+    fn AX => [] ->> EXP
 
      | BOOL => [] ->> EXP
      | TT => [] ->> EXP
@@ -188,8 +187,7 @@ struct
    ListUtil.joinWith (fn x => x) ","
 
   val toString =
-    fn TV => "tv"
-     | AX => "ax"
+    fn AX => "ax"
 
      | WBOOL => "wbool"
      | WIF => "wif"

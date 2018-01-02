@@ -100,7 +100,7 @@ struct
         val H >> AJ.EQ_TYPE ((ty1, ty2), k) = jdg
         val goal = makeEqType tr H ((ty2, ty1), k)
       in
-        |>: goal #> (H, trivial)
+        |>: goal #> (H, axiom)
       end
 
     (* this is for non-deterministic search *)
@@ -114,7 +114,7 @@ struct
         val _ = Assert.inUsefulUnivOmega (k', k)
         val goal = makeEqTypeUnlessSubUniv tr H ((a, b), k) k'
       in
-        |>:? goal #> (H, trivial)
+        |>:? goal #> (H, axiom)
       end
 
     (* this is for non-deterministic search *)
@@ -127,7 +127,7 @@ struct
         val _ = Assert.alphaEq (a', a)
         val _ = Assert.kindLeq (K.top, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, axiom)
       end
   end
 
@@ -139,7 +139,7 @@ struct
         val H >> AJ.SUB_TYPE (a, b) = jdg
         val goal = makeEqType tr H ((a, b), K.top)
       in
-        |>: goal #> (H, trivial)
+        |>: goal #> (H, axiom)
       end
   end
 
