@@ -27,10 +27,11 @@ struct
   end
 
   local
-    open Signature
+    open SignatureNew
   in
-    fun processElt sign (DECL (nm, d, pos)) = Signature.insert sign nm (d, SOME pos)
-      | processElt sign (CMD c) = Signature.command sign c
+    (* TODO: more efficient, lol *)
+    fun processElt sign elt = 
+      List.rev (elt :: List.rev sign)
   end
 
   fun logExn exn =
@@ -123,7 +124,7 @@ struct
 
         val lexer = RedPrlParser.makeLexer (stringreader buf) fileName
       in
-        loop true lexer Signature.empty
+        loop true lexer []
       end
   end
 
@@ -131,7 +132,7 @@ struct
     let
       val (noParseErrors, sign) = parseSig fileName buf
     in
-      Signature.check sign andalso noParseErrors
+      SignatureNew.check sign andalso noParseErrors
     end
     handle exn => (logExn exn; false)
 

@@ -371,7 +371,7 @@ end
 
 
 %nonterm
-   start of Signature.src_elt
+   start of SignatureNew.Src.elt
 
  | ident of string
  | boundVar of string option
@@ -434,7 +434,7 @@ end
  | rawJudgment of ast
  | judgment of ast
 
- | src_catjdg of Signature.src_catjdg
+ | src_atjdg of ast
 
  | termAnySort of ast
  | termsAnySort of ast list
@@ -472,15 +472,15 @@ end
  | opnames of string list
 
  | declArgument of metavariable * Ar.valence
- | declArguments of string Signature.arguments
- | declArgumentsParens of string Signature.arguments
+ | declArguments of SignatureNew.Src.arguments
+ | declArgumentsParens of SignatureNew.Src.arguments
 
    (* a declaration, annotated with source position *)
- | decl of string * Signature.src_decl * Pos.t
+ | decl of string * SignatureNew.Src.decl * Pos.t
    (* a RedPRL signature *)
- | rawCmd of Signature.src_cmd
- | cmd of Signature.src_cmd * Pos.t
- | elt of Signature.src_elt
+ | rawCmd of SignatureNew.Src.cmd
+ | cmd of SignatureNew.Src.cmd * Pos.t
+ | elt of SignatureNew.Src.elt
 
 %verbose
 %pos (string -> Coord.t)
@@ -799,7 +799,7 @@ rawJudgment
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
-src_catjdg : judgment (judgment)
+src_atjdg : judgment (judgment)
 
 recordFieldTactics
    : VARNAME EQUALS tactic COMMA recordFieldTactics ((VARNAME, tactic) :: recordFieldTactics)
@@ -1000,20 +1000,20 @@ declArgumentsParens
 
 decl
   : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
-      (OPNAME, Signature.DEF {arguments = declArgumentsParens, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+      (OPNAME, SignatureNew.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_DEF OPNAME declArgumentsParens EQUALS LSQUARE term RSQUARE
-      (OPNAME, Signature.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+      (OPNAME, SignatureNew.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
-      (OPNAME, Signature.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_catjdg RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.THM {arguments = declArgumentsParens, goal = src_catjdg, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+      (OPNAME, SignatureNew.Src.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_atjdg RSQUARE BY LSQUARE tactic RSQUARE
+      (OPNAME, SignatureNew.Src.THM {arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
 
 rawCmd
-  : CMD_PRINT OPNAME (Signature.PRINT OPNAME)
-  | CMD_EXTRACT OPNAME (Signature.EXTRACT OPNAME)
+  : CMD_PRINT OPNAME (SignatureNew.Src.PRINT OPNAME)
+  | CMD_EXTRACT OPNAME (SignatureNew.Src.EXTRACT OPNAME)
 
 cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
 
 elt
-  : cmd (Signature.CMD cmd)
-  | decl (Signature.DECL decl)
+  : cmd (SignatureNew.Src.CMD cmd)
+  | decl (SignatureNew.Src.DECL decl)

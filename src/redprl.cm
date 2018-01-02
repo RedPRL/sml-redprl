@@ -3,6 +3,7 @@ Library
   structure Coord
   structure Pos
   structure Signature
+  structure SignatureNew
   structure RedPrlLog
   structure RedPrlError
   structure RedPrlLrVals

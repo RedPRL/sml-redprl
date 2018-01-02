@@ -32,6 +32,8 @@ struct
   sig
     type env
 
+    val init : env
+
     val lookupId : env -> string -> Ty.vty m
     val extendId : env -> string -> Ty.vty -> env m
 
@@ -46,6 +48,11 @@ struct
       {ids : Ty.vty StringListDict.dict,
        vars : (Tm.variable * Tm.sort) StringListDict.dict,
        metas : (Tm.metavariable * Tm.valence) StringListDict.dict}
+
+    val init = 
+      {ids = StringListDict.empty,
+       vars = StringListDict.empty,
+       metas = StringListDict.empty}
 
     fun lookup dict x = 
       case StringListDict.find dict x of 
@@ -203,6 +210,8 @@ struct
 
     datatype cmd = RET of value
 
+    val initEnv = (StringListDict.empty, Tm.Metavar.Ctx.empty)
+
     fun lookup (env : env) (nm : string) : value m =
       case StringListDict.find (#1 env) nm of 
          SOME v => EM.ret v
@@ -358,6 +367,9 @@ struct
        Res.lookupId renv nm >>= (fn vty =>
          EM.ret (ISyn.VAR nm, vty))
 
+     | ESyn.NIL =>
+       EM.ret (ISyn.NIL, Ty.ONE)
+
      | ESyn.TERM (ast, tau) =>
        resolveAst renv (ast, tau) >>= (fn abt =>
          EM.ret (ISyn.TERM abt, Ty.TERM tau))
@@ -373,6 +385,10 @@ struct
          Res.extendId renv nm vty1 >>= (fn renv' =>
            resolveCmd renv' cmd2 >>= (fn (cmd2', cty2) =>
              EM.ret (ISyn.BIND (cmd1', nm, cmd2'), cty2))))
+
+     | ESyn.RET v =>
+       resolveVal renv v >>= (fn (v', vty) =>
+         EM.ret (ISyn.RET v', Ty.UP vty))
 
      | ESyn.FORCE v =>
        resolveVal renv v >>= (fn (v', vty) =>
@@ -450,4 +466,24 @@ struct
      | ISyn.TERM abt =>
        EM.ret @@ Sem.TERM (Tm.renameMetavars (#2 env) abt)
      
+  structure L = RedPrlLog
+
+  val checkAlg : ('a, bool) EM.alg =
+    {warn = fn (msg, _) => (L.print L.WARN msg; false),
+     info = fn (msg, r) => (L.print L.INFO msg; r),
+     dump = fn (msg, r) => (L.print L.DUMP msg; r),
+     init = true,
+     succeed = fn (_, r) => r,
+     fail = fn (msg, _) => (L.print L.FAIL msg; false)}
+     
+
+  fun check (sign : Src.sign) : bool = 
+    let
+      val ecmd : ESyn.cmd = ESyn.compileSrcSig sign
+      val elab =
+        resolveCmd Res.init ecmd >>= (fn (cmd, _) =>
+          evalCmd Sem.initEnv cmd)
+    in
+      EM.fold checkAlg elab
+    end
 end
