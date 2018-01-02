@@ -93,12 +93,12 @@ struct
       {result = FAILURE msg,
        messages = DList.empty})
 
-  fun wrap (pos, f) = ret (f ())
-    (* Debug.wrap (fn _ => ret (f ())) *)
-    (* handle exn => fail (case RedPrlError.annotation exn of
+  fun wrap (pos, f) =
+    Debug.wrap (fn _ => ret (f ()))
+    handle exn => fail (case RedPrlError.annotation exn of
                           NONE => pos
                         | SOME pos' => SOME pos',
-                        RedPrlError.format exn) *)
+                        RedPrlError.format exn)
 
   fun delay f =
     bind f (ret ())
@@ -116,7 +116,7 @@ struct
       val st = force susp
       val messages = DList.toList (#messages st)
       val b =
-        List.foldl
+        List.foldr
           (fn (INFO msg, b) => #info alg (msg, b)
             | (DUMP msg, b) => #dump alg (msg, b)
             | (WARN msg, b) => #warn alg (msg, b))
