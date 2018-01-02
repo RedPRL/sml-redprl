@@ -11,7 +11,7 @@ setlocal iskeyword+=-
 setlocal iskeyword+=/
 
 syn keyword redDecl Def Extract Print Rule Tac Thm
-syn keyword redSort dim hyp exp lvl tac trv jdg knd
+syn keyword redSort dim hyp exp lvl tac jdg knd
 syn match   redHole '?\(\h\w*\)\?'
 syn match   redMeta '#'
 
@@ -24,7 +24,7 @@ syn match   redExpr '[$*!@=+]\|->\|\~>\|<\~'
 
 syn keyword redTac auto auto-step case cut-lemma elim else exact fresh goal
 syn keyword redTac hyp id lemma let claim match of print progress
-syn keyword redTac query rec reduce refine repeat rewrite rewrite-hyp symmetry
+syn keyword redTac query rec reduce refine repeat rewrite symmetry
 syn keyword redTac then unfold use with fail inversion concl
 syn match   redTac '[;`]'
 

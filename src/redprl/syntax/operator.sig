@@ -11,12 +11,9 @@ struct
    | PAT_TUPLE of (string * 'a dev_pattern) list
 
   datatype operator =
-   (* the trivial realizer of sort TRV for judgments lacking interesting
-    * computational content. *)
-     TV
    (* the trivial realizer of sort EXP for types lacking interesting
     * computational content. This is the "ax(iom)" in Nuprl. *)
-   | AX
+     AX
    (* strict bool *)
    | BOOL | TT | FF | IF
    (* week bool *)
@@ -68,7 +65,6 @@ struct
 
    | KCONST of kind
 
-   | JDG_EQ
    | JDG_TRUE
    | JDG_EQ_TYPE
    | JDG_SUB_TYPE

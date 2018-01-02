@@ -11,7 +11,6 @@ struct
      | TAC => "tac"
      | MTAC => "mtac"
      | JDG => "jdg"
-     | TRV => "trv"
      | MATCH_CLAUSE => "match-clause"
      | DIM => "dim"
      | TUBE => "tube"

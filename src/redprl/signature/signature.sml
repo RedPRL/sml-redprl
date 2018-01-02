@@ -94,10 +94,8 @@ struct
 
       fun catjdgEvidence jdg = 
         case out jdg of 
-           O.JDG_TRUE $ _ => O.EXP
-         | O.JDG_SYNTH $ _ => O.EXP
-         | O.JDG_TERM tau $ _ => tau
-         | _ => O.TRV
+           O.JDG_TERM tau $ _ => tau
+         | _ => O.EXP
 
       fun lookupArity sign pos opid = 
         case arityOfOpid sign opid of

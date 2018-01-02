@@ -6,27 +6,19 @@ struct
   
   datatype jdg =
 
-    (* `EQ ((m, n), a)`:
-    *   The term `a` was associated with a PER and terms `m` and `n` are
-    *   related by that PER.
-    *
-    *   The realizer is `TV` of sort `TRV`.
-    *)
-      EQ of (abt * abt) * abt
-
     (* `TRUE a`:
     *   The term `a` is associated with a PER and there exists a term `m`
     *   such that `m` is related to itself in that PER.
     *
     *   The realizer is such an `m` of sort `EXP`.
     *)
-    | TRUE of abt
+      TRUE of abt
 
     (* `EQ_TYPE ((a, b), k)`:
     *   The terms `a` and `b` are equal types and have equal structures
     *   specified by `k`. This implies they have the same PER.
     *
-    *   The realizer is `TV` of sort `TRV`.
+    *   The realizer is `AX` of sort `EXP`.
     *)
     | EQ_TYPE of (abt * abt) * kind
 
@@ -34,14 +26,14 @@ struct
     *   The terms `a` and `b` are types and the PER associated with `a`
     *   is a subrelation of the PER associated with `b`.
     *
-    *   The realizer is `TV` of sort `TRV`.
+    *   The realizer is `AX` of sort `EXP`.
     *)
     | SUB_TYPE of (abt * abt)
 
     (* `SUB_KIND (a, k)`
     *   `a` is a sub-universe of the universe of `k` types at the omega level.
     *
-    *   The realizer is `TV` of sort `TRV`.
+    *   The realizer is `AX` of sort `EXP`.
     *)
     | SUB_KIND of abt * kind
 
@@ -67,6 +59,7 @@ sig
   type kind = RedPrlKind.t
 
   val TYPE : abt * RedPrlKind.t -> jdg
+  val EQ : (abt * abt) * abt -> jdg
   val MEM : abt * abt -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg
@@ -85,6 +78,8 @@ sig
   structure View :
   sig
     val matchAsTrue : jdg -> abt
+    val matchTrueAsEq : jdg -> (abt * abt) * abt
+    val makeEqAsTrue : (abt * abt) * abt -> jdg
 
     datatype as_level = FINITE of RedPrlLevel.t | OMEGA
 

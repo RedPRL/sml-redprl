@@ -38,7 +38,7 @@ Thm Pick/succ/0/succ/1 : [
   lam n m =>
     claim aux0 : [($ Pick n m) in (U 0)] by [auto];
     claim aux1 : [($ Pick (succ n) m) in (U 0)] by [auto];
-    unfold Pick; reduce; auto
+    unfold Pick; reduce at left in aux0; reduce at left in aux1; auto
 ].
 
 Tac Replace(#z, #A) = [
@@ -82,7 +82,7 @@ Thm Pick/compose : [
         ]
       ]
     ]
-  ]
+  ]; auto
 ].
 
 Thm Pick/compose/zero/0 : [
@@ -114,7 +114,11 @@ Thm Pick/compose/tt/4/0/tt/5/0 : [
       ] by [auto];
     claim aux1 : [ ($ Pick (succ a) c) type ] by [auto];
     claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
-      refine eq/intro; unfold Pick/compose Pick; reduce; auto
+    unfold Pick/compose Pick;
+    reduce at type left right in aux0;
+    reduce at left right in aux1;
+    reduce at left in aux2;
+    auto
 ].
 
 Thm Pick/compose/tt/4/0/ff/5/0 : [
@@ -136,7 +140,10 @@ Thm Pick/compose/tt/4/0/ff/5/0 : [
       ] by [auto];
     claim aux1 : [ ($ Pick a c) type ] by [auto];
     claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
-    unfold Pick Pick/compose; reduce; auto
+    unfold Pick Pick/compose;
+    reduce at type left right in aux0;
+    reduce at left in aux2;
+    auto
 ].
 
 Thm Pick/compose/ff/4/0 : [
@@ -158,5 +165,8 @@ Thm Pick/compose/ff/4/0 : [
       ] by [auto];
     claim aux1 : [ ($ Pick a c) type ] by [auto];
     claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
-    unfold Pick Pick/compose; reduce; auto
+    unfold Pick Pick/compose;
+    reduce at type left right in aux0;
+    reduce at left in aux2;
+    auto
 ].

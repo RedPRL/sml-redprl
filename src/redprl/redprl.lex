@@ -150,7 +150,6 @@ whitespace = [\ \t];
 "exp"              => (Tokens.EXP (posTuple (size yytext)));
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
 "jdg"              => (Tokens.JDG (posTuple (size yytext)));
-"trv"              => (Tokens.TRV (posTuple (size yytext)));
 
 "tactic"           => (Tokens.TACTIC (posTuple (size yytext)));
 
@@ -175,7 +174,6 @@ whitespace = [\ \t];
 "auto"             => (Tokens.MTAC_AUTO (posTuple (size yytext)));
 "elim"             => (Tokens.TAC_ELIM (posTuple (size yytext)));
 "rewrite"          => (Tokens.TAC_REWRITE (posTuple (size yytext)));
-"rewrite-hyp"      => (Tokens.TAC_REWRITE_HYP (posTuple (size yytext)));
 "reduce"           => (Tokens.TAC_REDUCE (posTuple (size yytext)));
 "unfold"           => (Tokens.TAC_UNFOLD (posTuple (size yytext)));
 "exact"            => (Tokens.RULE_EXACT (posTuple (size yytext)));

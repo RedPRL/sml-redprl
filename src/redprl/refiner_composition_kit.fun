@@ -228,7 +228,7 @@ struct
          >:+ ComKit.genInterTubeGoals tr H w ((tubes0, tubes1), ty0)
          >:+ ComKit.genCapTubeGoalsIfDifferent tr H ((cap0, (#1 dir0, tubes0)), ty0)
          >: goalTy0 >:? goalTy
-        #> (H, trivial)
+        #> (H, axiom)
       end
 
     fun EqCapL alpha jdg =
@@ -258,7 +258,7 @@ struct
          >:+ ComKit.genInterTubeGoals tr H w ((tubes, tubes), ty0)
          >:+ ComKit.genCapTubeGoalsIfDifferent tr H ((cap, (r, tubes)), ty0)
          >: goalTy0 >:? goalTy
-        #> (H, trivial)
+        #> (H, axiom)
       end
 
     (* Search for the first satisfied equation in an hcom. *)
@@ -294,7 +294,7 @@ struct
          >:+ ComKit.genInterTubeGoals tr H w ((tubes, tubes), ty0)
          >:+ ComKit.genCapTubeGoalsIfDifferent tr H ((cap, (r, tubes)), ty0)
          >: goalTy0 >:? goalTy
-        #> (H, trivial)
+        #> (H, axiom)
       end
   end
 end

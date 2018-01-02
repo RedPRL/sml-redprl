@@ -21,8 +21,7 @@ struct
      | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
 
   val arity =
-    fn TV => [] ->> TRV
-     | AX => [] ->> EXP
+    fn AX => [] ->> EXP
 
      | BOOL => [] ->> EXP
      | TT => [] ->> EXP
@@ -108,7 +107,6 @@ struct
      | KCONST _ => [] ->> KND
 
 
-     | JDG_EQ => [[] |: EXP, [] |: EXP, [] |: EXP] ->> JDG
      | JDG_TRUE => [[] |: EXP] ->> JDG
      | JDG_EQ_TYPE => [[] |: KND, [] |: EXP, [] |: EXP] ->> JDG
      | JDG_SUB_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
@@ -140,7 +138,6 @@ struct
      | RULE_PRIM _ => [] ->> TAC
      | TAC_ELIM => [[] |: ANY] ->> TAC
      | TAC_REWRITE => [[] |: SEL, [] |: ACC, [] |: EXP] ->> TAC
-     | TAC_REWRITE_HYP => [[] |: SEL, [] |: ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -190,8 +187,7 @@ struct
    ListUtil.joinWith (fn x => x) ","
 
   val toString =
-    fn TV => "tv"
-     | AX => "ax"
+    fn AX => "ax"
 
      | WBOOL => "wbool"
      | WIF => "wif"
@@ -287,7 +283,6 @@ struct
      | RULE_PRIM name => "refine{" ^ name ^ "}"
      | TAC_ELIM => "elim"
      | TAC_REWRITE => "rewrite"
-     | TAC_REWRITE_HYP => "rewrite-hyp"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
@@ -316,7 +311,6 @@ struct
      | SEL_CONCL => "select-goal"
      | PAT_META _ => "pat-meta"
 
-     | JDG_EQ => "eq"
      | JDG_TRUE => "true"
      | JDG_EQ_TYPE => "eq-type"
      | JDG_SUB_TYPE => "sub-type"
