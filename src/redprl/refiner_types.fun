@@ -70,7 +70,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, View.asTrivialToEqType l)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -170,7 +170,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, View.asTrivialToEqType l)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -303,7 +303,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, View.asTrivialToEqType l)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -421,7 +421,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, View.asTrivialToEqType l)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -579,7 +579,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, View.asTrivialToEqType l)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -619,7 +619,7 @@ struct
         val _ = View.Assert.levelLeq (inherentLevel, l)
         val _ = Assert.kindLeq (inherentKind, k)
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, View.asTrivialToEqType l)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
@@ -789,7 +789,7 @@ struct
         val b1z = VarKit.rename (z, y) b1y
         val goalB = View.makeAsEqType tr (H @> (z, AJ.TRUE a0)) ((b0z, b1z), l, kb)
       in
-        |>: goalA >: goalB #> (H, trivial)
+        |>: goalA >: goalB #> (H, View.asTrivialToEqType l)
       end
       handle Bind =>
         raise E.error [Fpp.text "Expected fun typehood sequent"]
@@ -952,7 +952,7 @@ struct
             {goals = T.empty, hyps = H, ren0 = Var.Ctx.empty, ren1 = Var.Ctx.empty, isFirst = true}
             (fields0, fields1)
       in
-        goals #> (H, trivial)
+        goals #> (H, View.asTrivialToEqType l)
       end
 
     fun Eq _ jdg =
@@ -1177,7 +1177,7 @@ struct
         val goal0 = makeEq tr H ((m0, m1), a00)
         val goal1 = makeEq tr H ((n0, n1), a01)
       in
-        |>: tyGoal >: goal0 >: goal1 #> (H, trivial)
+        |>: tyGoal >: goal0 >: goal1 #> (H, View.asTrivialToEqType l)
       end
 
     fun Eq alpha jdg =
@@ -1341,7 +1341,7 @@ struct
         val a1w = substVar (VarKit.toDim w, v) a1v
         val tyGoal = View.makeAsEqType tr (H @> (w, AJ.TERM O.DIM)) ((a0w, a1w), l, ka)
       in
-        |>: tyGoal #> (H, trivial)
+        |>: tyGoal #> (H, View.asTrivialToEqType l)
       end
 
     fun Eq alpha jdg =
@@ -1478,7 +1478,7 @@ struct
         val g1z = VarKit.rename (z, y1) g1y1
         val goalG = makeEq tr (H @> (z, AJ.TRUE c0)) ((g0z, g1z), b0)
       in
-        |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, trivial)
+        |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, View.asTrivialToEqType l)
       end
 
     fun EqLeft alpha jdg =
@@ -1732,7 +1732,7 @@ struct
         val g1z = VarKit.rename (z, y1) g1y1
         val goalG = makeEq tr (H @> (z, AJ.TRUE a0)) ((g0z, g1z), b0)
       in
-        |>: goalF >: goalG >: goalA >: goalB #> (H, trivial)
+        |>: goalF >: goalG >: goalA >: goalB #> (H, View.asTrivialToEqType l)
       end
 
     fun EqCod alpha jdg =
@@ -1941,7 +1941,7 @@ struct
         val goalM = makeEq tr H ((m0, m1), a0)
         val goalN = makeEq tr H ((n0, n1), a0)
       in
-        |>: goalM >: goalN >: goalTy #> (H, trivial)
+        |>: goalM >: goalN >: goalTy #> (H, View.asTrivialToEqType l)
       end
 
     fun Eq _ jdg =
@@ -2191,7 +2191,7 @@ struct
         |>: goalCap
          >:+ genInterTubeGoals tr H w ((tubes0, tubes1), l, kTube)
          >:+ genCapTubeGoalsIfDifferent tr H ((cap0, (#1 dir0, tubes0)), l, kCap) (* kCap is less demanding *)
-        #> (H, trivial)
+        #> (H, View.asTrivialToEqType l)
       end
 
     fun Eq alpha jdg =
@@ -2333,7 +2333,7 @@ struct
         val goalB = View.makeAsEqType tr H ((b0, b1), l, kB)
         val goalEquiv = Restriction.makeEq tr [eq] H ((e0, e1), intoEquiv a0 b0)
       in
-        |>:? goalEquiv >:? goalA >: goalB #> (H, trivial)
+        |>:? goalEquiv >:? goalA >: goalB #> (H, View.asTrivialToEqType l)
       end
 
     fun Eq _ jdg =
@@ -2402,7 +2402,7 @@ struct
         val _ = Assert.kindEq (k0, k1)
         val _ = View.Assert.univMem ((l0, k0), (l, k))
       in
-        T.empty #> (H, trivial)
+        T.empty #> (H, View.asTrivialToEqType l)
       end
 
     fun SubType _ jdg =

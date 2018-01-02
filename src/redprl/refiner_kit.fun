@@ -227,6 +227,10 @@ struct
 
     fun makeAsEqType tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEqType params
 
+    val asTrivialToEqType =
+      fn OMEGA => trivial
+       | FINITE _ => axiom
+
     fun makeAsEqTypeWith tr f H params = makeGoal'With tr f @@ H >> AJ.View.makeAsEqType params
 
     val matchAsEq = AJ.View.matchAsEq
