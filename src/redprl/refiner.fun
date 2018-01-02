@@ -502,8 +502,8 @@ struct
       fun StepEqSubType sign (ty1, ty2) subMode =
         (fn kont =>
           case (canonicity sign ty1, canonicity sign ty2) of
-             (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
-           | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
+             (Machine.REDEX, _) => Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_LEFT])
+           | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_RIGHT])
            | (Machine.CANONICAL, Machine.CANONICAL) => StepEqSubTypeVal (ty1, ty2) subMode
            | _ => kont)
         @@
@@ -532,7 +532,7 @@ struct
 
       fun StepEqValAtType sign ty =
         case canonicity sign ty of
-           Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
+           Machine.REDEX => Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_TYPE])
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule o Custom.Unfold sign [theta] [Selector.IN_CONCL]
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqValAtType", TermPrinter.ppTerm ty)
@@ -591,7 +591,7 @@ struct
        * this includes structural equality and typed computation principles *)
       fun StepEqNeuAtType sign ty =
         case canonicity sign ty of
-           Machine.REDEX => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
+           Machine.REDEX => Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_TYPE])
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuAtType", TermPrinter.ppTerm ty)
 
@@ -663,7 +663,7 @@ struct
       end
 
       fun ProgressCompute sign = 
-        Lcf.progress o (Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL])
+        Lcf.progress o (Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_TYPE, Accessor.PART_LEFT, Accessor.PART_RIGHT]))
       
       fun ComputeBefore sign tac =
         (ProgressCompute sign then_ tac) par tac
@@ -684,8 +684,8 @@ struct
           orelse_
         ((fn kont =>
           case (canonicity sign m, canonicity sign n) of
-             (Machine.REDEX, _) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
-           | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
+             (Machine.REDEX, _) => Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_LEFT])
+           | (_, Machine.REDEX) => Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_RIGHT])
            | (Machine.CANONICAL, Machine.CANONICAL) => StepEqVal sign (m, n) ty
            | _ => kont)
         @@
@@ -728,7 +728,7 @@ struct
 
       fun StepSubKind sign u =
         case (Syn.out u, canonicity sign u) of
-           (_, Machine.REDEX) => Lcf.rule o Computation.SequentReduce sign [Selector.IN_CONCL]
+           (_, Machine.REDEX) => Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_LEFT])
          | (_, Machine.CANONICAL) => Lcf.rule o Universe.SubKind
          | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubKind with dimension application"
          | (_, Machine.NEUTRAL blocker) => StepNeuExpandUntyped sign u blocker
