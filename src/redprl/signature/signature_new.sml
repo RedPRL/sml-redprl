@@ -76,7 +76,7 @@ struct
      | FORCE of value
      | PRINT of value
      | REFINE of ast * ast
-     | FRESH of (string * Tm.valence) list * cmd
+     | NU of (string * Tm.valence) list * cmd
 
     (* encoding a declaration of a definitional extension *)
     fun declDefn (name : string, psi : (string * Tm.valence) list) (ast : ast, tau : sort) (rest : cmd) : cmd =
@@ -85,7 +85,7 @@ struct
     (* encoding a declaration of a theorem *)
     fun declThm (name : string, psi : (string * Tm.valence) list) (jdg : ast, script : ast) (rest : cmd) : cmd =
       let
-        val thm = FRESH (psi, BIND (REFINE (jdg, script), name, RET (ABS (psi, VAR name))))
+        val thm = NU (psi, BIND (REFINE (jdg, script), name, RET (ABS (psi, VAR name))))
       in
         BIND (thm, name, rest)
       end
@@ -107,7 +107,7 @@ struct
      | FORCE of value
      | PRINT of value
      | REFINE of ajdg * abt
-     | FRESH of (Tm.metavariable * Tm.valence) list * cmd
+     | NU of (Tm.metavariable * Tm.valence) list * cmd
   end
 
   (* semantic domain *)
@@ -302,10 +302,10 @@ struct
          resolveAst renv (script, RedPrlSort.TAC) >>= (fn script' =>
            EM.ret (ISyn.REFINE (ajdg', script'), Ty.UP (Ty.THM (AJ.synthesis ajdg')))))
 
-     | ESyn.FRESH (psi, cmd) =>
+     | ESyn.NU (psi, cmd) =>
        Res.extendMetas renv (ListPair.unzip psi) >>= (fn (psi', renv') =>
          resolveCmd renv' cmd >>= (fn (cmd', cty) =>
-           EM.ret (ISyn.FRESH (psi', cmd'), cty)))
+           EM.ret (ISyn.NU (psi', cmd'), cty)))
 
 
   fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd m =
@@ -331,7 +331,7 @@ struct
      | ISyn.REFINE (ajdg, script) =>
        ?todo
     
-     | ISyn.FRESH (psi, cmd) => 
+     | ISyn.NU (psi, cmd) => 
        evalCmd env cmd
 
   and evalVal (env : Sem.env) : ISyn.value -> Sem.value m =
