@@ -86,13 +86,15 @@ struct
    | TAC_MTAC
 
    (* primitive rules *)
-   | TAC_ID | TAC_AUTO_STEP | TAC_SYMMETRY | RULE_EXACT | TAC_REDUCE_ALL
+   | TAC_ID | TAC_AUTO_STEP | TAC_SYMMETRY | RULE_EXACT
    | RULE_CUT
    | RULE_PRIM of string
    | TAC_ELIM
    | TAC_REWRITE
    | TAC_REWRITE_HYP
+   | TAC_REDUCE_ALL
    | TAC_REDUCE
+   | TAC_REDUCE_PART
 
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list

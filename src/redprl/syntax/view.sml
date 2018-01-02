@@ -425,6 +425,7 @@ struct
         into (RECORD projs)
       end
 
+    val intoEq = into o EQUALITY
     val intoU = into o UNIVERSE
 
     fun out m =

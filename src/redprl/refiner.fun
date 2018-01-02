@@ -450,6 +450,7 @@ struct
     fun ReduceAll sign = Lcf.rule o SequentReduceAll sign
       orelse_ Lcf.rule o MatchReduce sign
       orelse_ Lcf.rule o MatchRecordReduce sign
+    fun ReducePart sign = SequentReducePart sign
   end
 
   local

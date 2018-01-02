@@ -2012,7 +2012,7 @@ struct
         val H >> AJ.EQ ((m, n), ty) = jdg
 
         (* the realizer must be `AX` *)
-        val (goal, _) = makeTrue tr H (Syn.into (Syn.EQUALITY (ty, m, n)))
+        val (goal, _) = makeTrue tr H (Syn.intoEq (ty, m, n))
       in
         |>: goal #> (H, trivial)
       end
@@ -2036,26 +2036,30 @@ struct
         val H >> concl = jdg
 
         val currentAjdg = Sequent.lookupSelector sel (H, concl)
-        val (currentTm, ty) =
+        val allowed =
           case (currentAjdg, acc) of
-             (AJ.EQ (_, ty), Accessor.PART_TYPE) => (ty, View.UNIV_OMEGA K.top)
-           | (AJ.EQ ((m, _), ty), Accessor.PART_LEFT) => (m, View.TYPE ty)
-           | (AJ.EQ ((_, n), ty), Accessor.PART_RIGHT) => (n, View.TYPE ty)
-           | (AJ.TRUE ty, Accessor.WHOLE) => (ty, View.UNIV_OMEGA K.top)
+             (AJ.EQ (_, ty), Accessor.PART_TYPE) => true
+           | (AJ.EQ ((m, _), ty), Accessor.PART_LEFT) => true
+           | (AJ.EQ ((_, n), ty), Accessor.PART_RIGHT) => true
+           | (AJ.TRUE ty, Accessor.WHOLE) => true
            | (AJ.TRUE ty, _) =>
                (case (Syn.out ty, acc) of
-                   (Syn.EQUALITY (ty, _, _), Accessor.PART_TYPE) => (ty, View.UNIV_OMEGA K.top)
-                 | (Syn.EQUALITY (ty, m, _), Accessor.PART_LEFT) => (m, View.TYPE ty)
-                 | (Syn.EQUALITY (ty, _, n), Accessor.PART_RIGHT) => (n, View.TYPE ty)
-                 | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
-                     Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg]))
-           | (AJ.EQ_TYPE ((m, _), k), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA k)
-           | (AJ.EQ_TYPE ((_, n), k), Accessor.PART_RIGHT) => (n, View.UNIV_OMEGA k)
-           | (AJ.SUB_TYPE (m, _), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
-           | (AJ.SUB_TYPE (_, n), Accessor.PART_RIGHT) => (n, View.UNIV_OMEGA K.top)
-           | (AJ.SUB_KIND (m, _), Accessor.PART_LEFT) => (m, View.UNIV_OMEGA K.top)
-           | _ => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
-               Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg])
+                   (Syn.EQUALITY _, Accessor.PART_TYPE) => true
+                 | (Syn.EQUALITY _, Accessor.PART_LEFT) => true
+                 | (Syn.EQUALITY _, Accessor.PART_RIGHT) => true
+                 | _ => false)
+           | (AJ.EQ_TYPE _, Accessor.PART_LEFT) => true
+           | (AJ.EQ_TYPE _, Accessor.PART_RIGHT) => true
+           | (AJ.SUB_TYPE _, Accessor.PART_LEFT) => true
+           | (AJ.SUB_TYPE _, Accessor.PART_RIGHT) => true
+           | (AJ.SUB_KIND _, Accessor.PART_LEFT) => true
+           | _ => false
+        val () = if allowed then () else
+          E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
+            Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg])
+
+        val currentTm = AJ.lookupAccessor acc currentAjdg
+        val ty = AJ.View.classifier (currentAjdg, acc)
 
         val truncatedH = Sequent.truncateFrom sel H
 
@@ -2072,36 +2076,13 @@ struct
         val motiven = substVar (holeN, x) motiveHole
         val motivem = substVar (holeM, x) motiveHole
 
-        val replace =
-          case (currentAjdg, acc) of
-             (AJ.EQ ((m, n), _), Accessor.PART_TYPE) => AJ.EQ ((m, n), motiven)
-           | (AJ.EQ ((_, n), ty), Accessor.PART_LEFT) => AJ.EQ ((motiven, n), ty)
-           | (AJ.EQ ((m, _), ty), Accessor.PART_RIGHT) => AJ.EQ ((m, motiven), ty)
-           | (AJ.TRUE _, Accessor.WHOLE) => AJ.TRUE motiven
-           | (AJ.TRUE ty, acc) =>
-               (case (Syn.out ty, acc) of
-                   (Syn.EQUALITY (_, m, n), Accessor.PART_TYPE) => AJ.TRUE (Syn.into (Syn.EQUALITY (motiven, m, n)))
-                 | (Syn.EQUALITY (ty, _, n), Accessor.PART_LEFT) => AJ.TRUE (Syn.into (Syn.EQUALITY (ty, motiven, n)))
-                 | (Syn.EQUALITY (ty, m, _), Accessor.PART_RIGHT) => AJ.TRUE (Syn.into (Syn.EQUALITY (ty, m, motiven))))
-           | (AJ.EQ_TYPE ((_, n), k), Accessor.PART_LEFT) => AJ.EQ_TYPE ((motiven, n), k)
-           | (AJ.EQ_TYPE ((m, _), k), Accessor.PART_RIGHT) => AJ.EQ_TYPE ((m, motiven), k)
-           | (AJ.SUB_TYPE (_, n), Accessor.PART_LEFT) => AJ.SUB_TYPE (motiven, n)
-           | (AJ.SUB_TYPE (m, _), Accessor.PART_RIGHT) => AJ.SUB_TYPE (m, motiven)
-           | (AJ.SUB_KIND (_, k), Accessor.PART_LEFT) => AJ.SUB_KIND (motiven, k)
-
-        val (H', concl') = Sequent.mapSelector sel (fn _ => replace) (H, concl)
+        val (H', concl') = Sequent.mapSelector sel (AJ.mapAccessor acc (fn _ => motiven)) (H, concl)
         val (rewrittenGoal, rewrittenHole) = makeGoal tr @@ H' >> concl'
 
         val motiveMatchesMainGoal =
           case Variance.compose (Selector.variance sel, AJ.variance (currentAjdg, acc)) of
-             Variance.COVAR =>
-               (case ty of
-                  View.UNIV_OMEGA K.STABLE => makeSubType tr truncatedH (motivem, currentTm)
-                | _ => RedPrlError.raiseError (RedPrlError.IMPOSSIBLE (Fpp.text "Non-type positions are not anti-variant.")))
-           | Variance.CONTRAVAR =>
-               (case ty of
-                  View.UNIV_OMEGA K.STABLE => makeSubType tr truncatedH (currentTm, motivem)
-                | _ => RedPrlError.raiseError (RedPrlError.IMPOSSIBLE (Fpp.text "Non-type positions are not anti-variant.")))
+             Variance.COVAR => makeSubType tr truncatedH (motivem, currentTm)
+           | Variance.CONTRAVAR => makeSubType tr truncatedH (currentTm, motivem)
            | Variance.ANTIVAR => View.makeAsEq tr truncatedH ((currentTm, motivem), ty)
       in
         |>: goalTyOfEq >: goalTy >: goalM >: goalN
@@ -2118,7 +2099,7 @@ struct
         val tr = ["InternalizedEquality.Symmetry"]
         val H >> AJ.TRUE equal = jdg
         val Syn.EQUALITY (ty, m, n) = Syn.out equal
-        val (goal, hole) = makeTrue tr H (Syn.into (Syn.EQUALITY (ty, n, m)))
+        val (goal, hole) = makeTrue tr H (Syn.intoEq (ty, n, m))
       in
         |>: goal #> (H, hole)
       end
@@ -2396,32 +2377,6 @@ struct
   structure Universe =
   struct
     open Universe
-
-    (* The following should be equivalent to
-     * `L.<= (inherentLevel l', l) andalso K.<= (inherentKind k', k)`
-     *)
-    fun member ((l', k'), (l, k)) = L.< (l', l) andalso K.<= (inherentKind k', k)
-
-    structure View =
-    struct
-      open View
-
-      structure Assert =
-      struct
-        open Assert
-        local
-          fun univMem' ((l0,k0), (l1,k1)) =
-            if member ((l0,k0), (l1,k1)) then ()
-            else E.raiseError @@ E.GENERIC
-              [Fpp.hvsep
-                [Fpp.text "Expected universe", TermPrinter.ppTerm (L.into l0), TermPrinter.ppKind k0,
-                 Fpp.text "be at level", TermPrinter.ppTerm (L.into l1),
-                 Fpp.text "with kind", TermPrinter.ppKind k1]]
-        in
-          fun univMem ((l0,k0), (l1,k1))  = Option.app (fn l1 => univMem' ((l0,k0), (l1,k1))) l1
-        end
-      end
-    end
 
     (* XXX needs double-checking *)
     val kindConstraint =

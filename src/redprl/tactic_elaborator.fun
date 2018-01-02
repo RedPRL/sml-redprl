@@ -290,6 +290,7 @@ struct
      | O.RULE_CUT $ [_ \ catjdg] => Lcf.rule o R.Cut (AJ.out catjdg)
      | O.TAC_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
      | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule o R.Computation.Reduce sign (Syn.outVec' Syn.outSelector sels)
+     | O.TAC_REDUCE_PART $ [_ \ sel, _ \ accs] => Lcf.rule o R.Computation.ReducePart sign (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs)
      | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
      | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
      | O.RULE_PRIM ruleName $ _ => R.lookupRule ruleName
