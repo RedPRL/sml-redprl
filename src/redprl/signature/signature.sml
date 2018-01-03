@@ -68,10 +68,10 @@ struct
 
   fun compileSrcDecl (nm : string) : Src.decl -> ESyn.cmd =
     fn Src.DEF {arguments, sort, definiens} =>
-       ESyn.NU (arguments, ESyn.RET (ESyn.ABS (arguments, ESyn.TERM (definiens, sort))))
+       ESyn.NU (arguments, ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.TERM (definiens, sort))))
 
      | Src.TAC {arguments, script} =>
-       ESyn.NU (arguments, ESyn.RET (ESyn.ABS (arguments, ESyn.TERM (script, RedPrlSort.TAC))))
+       ESyn.NU (arguments, ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.TERM (script, RedPrlSort.TAC))))
 
      | Src.THM {arguments, goal, script} =>
        ESyn.NU
@@ -79,7 +79,7 @@ struct
           ESyn.BIND
             (ESyn.REFINE (goal, (script, RedPrlSort.TAC)),
              nm,
-             ESyn.RET (ESyn.ABS (arguments, ESyn.VAR nm))))
+             ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.VAR nm))))
 
 
   val rec compileSrcSig : Src.sign -> ESyn.cmd =
@@ -99,7 +99,8 @@ struct
        THUNK of env * ISyn.cmd
      | THM of ajdg * abt
      | TERM of abt
-     | ABS of (Tm.metavariable * Tm.valence) list * value
+     | ABS of value * value
+     | METAS of ISyn.bindings
      | NIL
 
     withtype env = value StringListDict.dict
@@ -131,14 +132,17 @@ struct
        | TERM abt =>
          TermPrinter.ppTerm abt
 
-       | ABS (psi, v) =>
+       | METAS psi =>
+         Fpp.collection
+           (Fpp.char #"[")
+           (Fpp.char #"]")
+           Fpp.Atomic.comma
+           (List.map (fn (X, vl) => Fpp.hsep [TermPrinter.ppMeta X, Fpp.Atomic.colon, TermPrinter.ppValence vl]) psi)
+
+       | ABS (vpsi, v) =>
          Fpp.seq
            [Fpp.hsep
-            [Fpp.collection
-              (Fpp.char #"[")
-              (Fpp.char #"]")
-              Fpp.Atomic.comma
-              (List.map (fn (X, vl) => Fpp.hsep [TermPrinter.ppMeta X, Fpp.Atomic.colon, TermPrinter.ppValence vl]) psi),
+            [ppValue vpsi,
              Fpp.text "=>"],
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, ppValue v]]
 
@@ -266,12 +270,20 @@ struct
      | ESyn.TERM (ast, tau) =>
        (ISyn.TERM @@ resolveAst renv (ast, tau), Ty.TERM tau)
 
-     | ESyn.ABS (psi, v) =>
+     | ESyn.METAS psi =>
        let
-         val psi' = List.map (fn (X, vl) => Res.lookupMeta renv NONE X) psi
+         val psi' = (List.map (fn (X, vl) => Res.lookupMeta renv NONE X) psi)
+         val vls = List.map #2 psi'
+       in
+         (ISyn.METAS psi', Ty.METAS vls)
+       end
+
+     | ESyn.ABS (vpsi, v) =>
+       let
+         val (vpsi', Ty.METAS vls) = resolveVal renv vpsi
          val (v', vty) = resolveVal renv v
        in
-         (ISyn.ABS (psi', v'), Ty.ABS (List.map #2 psi', vty))
+         (ISyn.ABS (vpsi', v'), Ty.ABS (vls, vty))
        end
 
   and resolveCmd (renv : Res.env) : ESyn.cmd -> ISyn.cmd * Ty.cty =
@@ -353,7 +365,7 @@ struct
 
     fun theoremSpec env opid args =
       let
-        val Sem.ABS (psi, Sem.THM (jdg, _)) = Sem.lookup env opid
+        val Sem.ABS (Sem.METAS psi, Sem.THM (jdg, _)) = Sem.lookup env opid
         val rho = makeSubst (psi, args)
       in
         AJ.map (Tm.substMetaenv rho) jdg
@@ -362,7 +374,7 @@ struct
 
     fun unfoldOpid env opid args =
       let
-        val Sem.ABS (psi, s) = Sem.lookup env opid
+        val Sem.ABS (Sem.METAS psi, s) = Sem.lookup env opid
         val rho = makeSubst (psi, args)
         val abt =
           case s of
@@ -438,7 +450,10 @@ struct
        Sem.NIL
 
      | ISyn.ABS (psi, v) =>
-       Sem.ABS (psi, evalVal env v)
+       Sem.ABS (evalVal env psi, evalVal env v)
+
+     | ISyn.METAS psi =>
+       Sem.METAS psi
 
      | ISyn.TERM abt =>
        Sem.TERM abt

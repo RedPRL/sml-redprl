@@ -9,6 +9,7 @@ struct
     | TERM of sort
     | THM of sort
     | ABS of valence list * vty
+    | METAS of valence list
 
   and cty =
       UP of vty

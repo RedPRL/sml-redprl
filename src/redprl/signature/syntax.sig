@@ -5,11 +5,14 @@ sig
   type jdg
   type term
 
+  type bindings = (metavariable * Tm.valence) list
+
   datatype value =
      THUNK of cmd
    | VAR of id
    | NIL
-   | ABS of (metavariable * Tm.valence) list * value
+   | ABS of value * value
+   | METAS of bindings
    | TERM of term
 
   and cmd =
@@ -18,7 +21,7 @@ sig
    | FORCE of value
    | PRINT of Pos.t option * value
    | REFINE of jdg * term
-   | NU of (metavariable * Tm.valence) list * cmd
+   | NU of bindings * cmd
    | EXTRACT of value
    | ABORT
 
