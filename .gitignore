@@ -15,5 +15,6 @@ test/test
 bin
 \#*
 .#*
+*.du
 
 doc/machine.pdf
