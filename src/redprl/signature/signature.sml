@@ -171,12 +171,12 @@ struct
       case Res.lookupId renv pos opid of
          Ty.ABS (vls, Ty.TERM tau) => (vls, tau)
        | Ty.ABS (vls, Ty.THM tau) => (vls, tau)
-       | _ => fail (NONE, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text opid])
+       | _ => fail (pos, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text opid])
 
-    fun checkAbt (view, tau) : abt =
-      Tm.check (view, tau)
+    fun checkAbt pos (view, tau) : abt =
+      Tm.setAnnotation pos @@ Tm.check (view, tau)
       handle exn =>
-        fail (NONE, Fpp.hsep [Fpp.text "Error resolving abt:", Fpp.text (exnMessage exn)])
+        fail (pos, Fpp.hsep [Fpp.text "Error resolving abt:", Fpp.text (exnMessage exn)])
 
     fun guessSort (renv : Res.env) (ast : ast) : sort =
       let
@@ -210,10 +210,9 @@ struct
       let
         val pos = Ast.getAnnotation ast
       in
-        Tm.setAnnotation pos
-        (case Ast.out ast of
+        case Ast.out ast of
            Ast.` x =>
-           checkAbt (Tm.` o #1 @@ Res.lookupVar renv pos x, tau)
+           checkAbt pos (Tm.` o #1 @@ Res.lookupVar renv pos x, tau)
 
          | Ast.$# (X, asts : ast list) =>
            let
@@ -223,7 +222,7 @@ struct
                  fail (pos, Fpp.hsep [Fpp.text "Incorrect valence for metavariable", Fpp.text X])
              val abts = ListPair.map (resolveAst renv) (asts, taus)
            in
-             checkAbt (Tm.$# (X', abts), tau)
+             checkAbt pos (Tm.$# (X', abts), tau)
            end
 
          | Ast.$ (theta, bs) =>
@@ -235,8 +234,8 @@ struct
                  Err.raiseAnnotatedError' (pos, Err.INCORRECT_ARITY theta')
              val bs' = ListPair.map (resolveBnd renv) (vls, bs)
            in
-             checkAbt (Tm.$ (theta', bs'), tau)
-           end)
+             checkAbt pos (Tm.$ (theta', bs'), tau)
+           end
       end
 
     and resolveBnd (renv : Res.env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview =
@@ -407,6 +406,7 @@ struct
           case s of
              Sem.TERM abt => abt
            | Sem.THM (_, abt) => abt
+           | _ => fail (NONE, Fpp.text "internal error: unfoldOpid called on something that cannot be unfolded")
       in
         Tm.substMetaenv rho abt
       end
