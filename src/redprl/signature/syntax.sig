@@ -22,6 +22,7 @@ sig
    | PRINT of Pos.t option * value
    | REFINE of jdg * term
    | NU of bindings * cmd
+   | MATCH_ABS of value * id * id * cmd
    | EXTRACT of value
    | ABORT
 

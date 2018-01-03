@@ -61,7 +61,18 @@ struct
        ESyn.PRINT (SOME pos, ESyn.VAR nm)
 
      | Src.EXTRACT nm =>
-       ESyn.BIND (ESyn.EXTRACT (ESyn.VAR nm), "x", ESyn.PRINT (SOME pos, ESyn.VAR "x"))
+       ESyn.MATCH_ABS
+         (ESyn.VAR nm,
+          "psi",
+          "thm",
+          ESyn.BIND
+            (ESyn.EXTRACT @@ ESyn.VAR "thm",
+             "tm",
+             ESyn.PRINT
+               (SOME pos,
+                ESyn.ABS
+                  (ESyn.VAR "psi",
+                   ESyn.VAR "tm"))))
 
      | Src.QUIT =>
        ESyn.ABORT
@@ -332,9 +343,19 @@ struct
 
      | ESyn.EXTRACT v =>
        let
-         val (v', Ty.ABS (psi, Ty.THM tau)) = resolveVal renv v
+         val (v', Ty.THM tau) = resolveVal renv v
        in
-         (ISyn.EXTRACT v', Ty.UP @@ Ty.ABS (psi, Ty.TERM tau))
+         (ISyn.EXTRACT v', Ty.UP @@ Ty.TERM tau)
+       end
+
+     | ESyn.MATCH_ABS (v, xpsi, xv, cmd) =>
+       let
+         val (v', Ty.ABS (vls, vty)) = resolveVal renv v
+         val renv' = Res.extendId renv xpsi @@ Ty.METAS vls
+         val renv'' = Res.extendId renv' xv vty
+         val (cmd', cty) = resolveCmd renv'' cmd
+       in
+         (ISyn.MATCH_ABS (v', xpsi, xv, cmd'), cty)
        end
 
      | ESyn.ABORT =>
@@ -428,13 +449,26 @@ struct
         in
           (Sem.RET @@ Sem.THM (ajdg, extract), subgoalsCount = 0)
         end
+
      | ISyn.NU (psi, cmd) =>
        evalCmd env cmd
 
      | ISyn.EXTRACT v =>
        (case evalVal env v of
-           Sem.ABS (psi, Sem.THM (_, abt)) => (Sem.RET @@ Sem.ABS (psi, Sem.TERM abt), true)
-         | _ => fail (NONE, Fpp.text "evalCmd/ISyn.EXTRACT expected Sem.ABS, Sem.THM"))
+           Sem.THM (_, abt) => (Sem.RET @@ Sem.TERM abt, true)
+         | _ => fail (NONE, Fpp.text "evalCmd/ISyn.EXTRACT expected Sem.THM"))
+
+     | ISyn.MATCH_ABS (vabs, xpsi, xv, cmd) =>
+       (case evalVal env vabs of
+           Sem.ABS (spsi, s) =>
+           let
+             val env' = Sem.extend env xpsi spsi
+             val env'' = Sem.extend env' xv s
+             (* TODO: this should freshen! *)
+           in
+             evalCmd env'' cmd
+           end
+         | _ => fail (NONE, Fpp.text "evalCmd/ISyn.MATCH_ABS expected Sem.ABS"))
 
      | ISyn.ABORT =>
        fail (NONE, Fpp.text "Signature aborted")
