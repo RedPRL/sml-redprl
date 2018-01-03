@@ -8,36 +8,117 @@ Thm Not : [
   if b then `ff else `tt
 ].
 
-Extract Not.
+// Print Not.
 
 Thm NotNot : [
   (->
    [b : bool]
    (= bool ($ Not ($ Not b)) b))
 ] by [
-  lam b => auto
+  lam b =>
+  // this can be done by auto
+  unfold Not;
+  if b then (reduce at right; auto) else (reduce at right; auto)
 ].
 
-// Extract NotNot.
+// Print NotNot.
 
-Thm NotNot' : [
+Thm RespectEquality : [
   (->
+   [family : (-> [b : bool] (U 0))]
    [b : bool]
-   (= bool ($ Not ($ Not b)) b))
+   ($ family b)
+   ($ family ($ Not ($ Not b))))
 ] by [
-  lam b => `ax
+  lam family b pf =>
+  rewrite ($ NotNot b);
+  [ `($ family b)
+  , use pf
+  , auto
+  , auto]
 ].
 
-Thm NotNotEqual : [
+// extract does not mention NotNot
+// Print RespectEquality.
+
+Thm EqualityIrrelevant : [
   (=
     (-> [b : bool] (= bool ($ Not ($ Not b)) b))
     NotNot
-    NotNot')
+    (lam [b] ax))
 ] by [
   auto
 ].
 
-// Print NotNotEqual.
+// Print EqualityIrrelevant.
+
+// {{{ Univalence
+
+Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
+Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
+Def Fiber (#A,#B,#f,#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
+Def IsEquiv (#A,#B,#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
+Def Equiv (#A,#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
+Def Not = [(lam [b] (if b ff tt))].
+
+Thm Bool/reflect : [
+ (->
+  [a b : bool]
+  [p : (path [_] bool a b)]
+  (= bool a b))
+] by [
+  lam a b p => `(coe 0~>1 [x] (= bool a (@ p x)) ax)
+].
+
+Tac Bool/contra/inverse (#p:exp) = [
+  query gl <- concl;
+  match gl {
+    [a b | #jdg{%a = %b in bool} =>
+      claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
+      symmetry; elim eq; auto
+    ]
+    [a | %[a:jdg] => id]
+  }
+].
+
+Thm NotIsEquiv : [
+  (IsEquiv bool bool Not)
+] by [
+  lam b =>
+  { {`($ Not b), abs _ => use b}
+  , lam {_,p'} =>
+     (abs i =>
+        { `($ Not (hcom 1~>0 bool b
+                    [i=0 [j] (@ p' j)]
+                    [i=1 [j] b]))
+        , abs j =>
+            `(hcom 1~>j bool b
+              [i=0 [j] (@ p' j)]
+              [i=1 [j] b])
+        }
+      );
+      auto; (Bool/contra/inverse p')
+  }
+].
+
+Thm NotPath : [
+  (path [_] (U 0 kan) bool bool)
+] by [
+  abs x => `(V x bool bool (tuple [proj1 Not] [proj2 NotIsEquiv]))
+].
+// }}}
+
+Print NotPath.
+
+Thm IdPath : [
+  (path [_] (U 0 kan) bool bool)
+] by [
+  abs _ => `bool
+].
+
+Print IdPath.
+
+// TODO example of transporting things across this equality
 
 // Shannon expansion for strict booleans.
 Thm Shannon : [
@@ -69,3 +150,5 @@ Thm WeakShannon : [
 ].
 
 // Extract WeakShannon.
+
+// winding number
