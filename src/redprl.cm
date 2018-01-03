@@ -2,7 +2,7 @@ Library
   structure RedPrlParser
   structure Coord
   structure Pos
-  structure SignatureNew
+  structure Signature
   structure RedPrlLog
   structure RedPrlError
   structure RedPrlLrVals
@@ -73,10 +73,9 @@ is
   redprl/log.sig
   redprl/log.sml
 
-  redprl/signature/signature_new.sig
-  redprl/signature/signature_new.sml
-
   redprl/signature/signature.sig
+  redprl/signature/signature.sml
+  redprl/signature/mini_signature.sig
   redprl/tactic_elaborator.fun
 
   redprl/redprl.lex

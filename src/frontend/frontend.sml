@@ -27,7 +27,7 @@ struct
   end
 
   local
-    open SignatureNew
+    open Signature
   in
     (* TODO: more efficient, lol *)
     fun processElt sign elt = 
@@ -136,7 +136,7 @@ struct
     let
       val (noParseErrors, sign) = parseSig fileName buf
     in
-      SignatureNew.check sign andalso noParseErrors
+      Signature.checkSrcSig sign andalso noParseErrors
     end
     handle exn => (logExn exn; false)
 

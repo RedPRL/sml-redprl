@@ -1,4 +1,4 @@
-structure SignatureNew = 
+structure Signature : SIGNATURE = 
 struct
   structure Ast = RedPrlAst and Tm = RedPrlAbt and AJ = AtomicJudgment
 
@@ -7,6 +7,8 @@ struct
   type arity = Tm.O.Ar.t
   type abt = Tm.abt
   type ajdg = AJ.jdg
+  type valence = Tm.valence
+  type metavariable = Tm.metavariable
 
   exception todo
   fun ?e = raise e
@@ -155,32 +157,34 @@ struct
      | REFINE of ast * ast
      | NU of (string * Tm.valence) list * cmd
      | ABORT
-
-    fun compileSrcCmd pos : Src.cmd  -> cmd =
-      fn Src.PRINT nm => PRINT (SOME pos, VAR nm)
-       | Src.EXTRACT nm => PRINT (SOME pos, VAR nm) (* TODO *)
-       | Src.QUIT => ABORT
-
-    fun compileSrcDecl (nm : string) : Src.decl -> cmd = 
-      fn Src.DEF {arguments, sort, definiens} =>
-         NU (arguments, RET (ABS (arguments, TERM (definiens, sort))))
-
-       | Src.TAC {arguments, script} =>
-         NU (arguments, RET (ABS (arguments, TERM (script, RedPrlSort.TAC))))
-
-       | Src.THM {arguments, goal, script} =>
-         NU (arguments, BIND (REFINE (goal, script), nm, RET (ABS (arguments, VAR nm))))
-
-    val rec compileSrcSig : Src.sign -> cmd = 
-      fn [] => 
-         RET NIL
-    
-       | Src.CMD (c, pos) :: sign =>
-         BIND (compileSrcCmd pos c, "_", compileSrcSig sign)
-        
-       | Src.DECL (nm, decl, _) :: sign =>
-         BIND (compileSrcDecl nm decl, nm, compileSrcSig sign)
   end
+
+  fun compileSrcCmd pos : Src.cmd  -> ESyn.cmd =
+    fn Src.PRINT nm => ESyn.PRINT (SOME pos, ESyn.VAR nm)
+     | Src.EXTRACT nm => ESyn.PRINT (SOME pos, ESyn.VAR nm) (* TODO *)
+     | Src.QUIT => ESyn.ABORT
+
+  fun compileSrcDecl (nm : string) : Src.decl -> ESyn.cmd = 
+    fn Src.DEF {arguments, sort, definiens} =>
+       ESyn.NU (arguments, ESyn.RET (ESyn.ABS (arguments, ESyn.TERM (definiens, sort))))
+
+     | Src.TAC {arguments, script} =>
+       ESyn.NU (arguments, ESyn.RET (ESyn.ABS (arguments, ESyn.TERM (script, RedPrlSort.TAC))))
+
+     | Src.THM {arguments, goal, script} =>
+       ESyn.NU (arguments, ESyn.BIND (ESyn.REFINE (goal, script), nm, ESyn.RET (ESyn.ABS (arguments, ESyn.VAR nm))))
+
+
+  val rec compileSrcSig : Src.sign -> ESyn.cmd = 
+    fn [] => 
+       ESyn.RET ESyn.NIL
+    
+     | Src.CMD (c, pos) :: sign =>
+       ESyn.BIND (compileSrcCmd pos c, "_", compileSrcSig sign)
+        
+     | Src.DECL (nm, decl, _) :: sign =>
+       ESyn.BIND (compileSrcDecl nm decl, nm, compileSrcSig sign)
+  
 
   (* internal language *)
   structure ISyn =
@@ -544,9 +548,9 @@ struct
      
   structure L = RedPrlLog
 
-  fun check (sign : Src.sign) : bool = 
+  fun checkSrcSig (sign : Src.sign) : bool = 
     let
-      val ecmd = ESyn.compileSrcSig sign
+      val ecmd = compileSrcSig sign
       val (icmd, _) = resolveCmd Res.init ecmd
       val (scmd, exit) = evalCmd Sem.initEnv icmd
     in
