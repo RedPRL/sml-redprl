@@ -44,7 +44,7 @@ struct
     fn alpha => fn state =>
       let
         val header = Fpp.seq [Fpp.text "?", Fpp.text (Option.getOpt (name, "")), Fpp.char #"."]
-        val message = Fpp.seq [header, Fpp.nest 2 (Fpp.seq [Fpp.newline, Lcf.prettyState state])]
+        val message = Fpp.vsep [header, Lcf.prettyState state]
       in
         RedPrlLog.print RedPrlLog.INFO (SOME pos, message);
         Lcf.all Lcf.idn state
