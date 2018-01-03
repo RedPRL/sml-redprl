@@ -231,13 +231,11 @@ struct
       fn THUNK _ => Fpp.text "<thunk>"
        | THM (jdg, abt) =>
          Fpp.seq
-           [Fpp.text "Theorem",
-            Fpp.newline,
+           [Fpp.text "Thm:",
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, AJ.pretty jdg],
             Fpp.newline,
             Fpp.newline,
-            Fpp.text "ext",
-            Fpp.newline,
+            Fpp.text "Extract:",
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
 
        | TERM abt => TermPrinter.ppTerm abt
