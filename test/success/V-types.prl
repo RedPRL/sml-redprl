@@ -94,7 +94,7 @@ Tac Bool/contra/inverse (#p:exp) = [
   match gl {
     [a b | #jdg{%a = %b in bool} =>
       claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
-      symmetry; elim eq; auto
+      symmetry; auto
     ]
     [a | %[a:jdg] => id]
   }
@@ -115,8 +115,7 @@ Thm NotIsEquiv : [
               [i=0 [j] (@ p' j)]
               [i=1 [j] b])
         }
-      );
-      auto; (Bool/contra/inverse p')
+      ); auto; (Bool/contra/inverse p')
   }
 ].
 
