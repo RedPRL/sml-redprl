@@ -884,18 +884,18 @@ opnames
   | OPNAME ([OPNAME])
 
 termAnySort
-  : term (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], term)]))
+  : term (Ast.setAnnotation (Ast.getAnnotation term) (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], term)])))
 
 termsAnySort
   : termAnySort ([termAnySort])
   | termAnySort termsAnySort (termAnySort :: termsAnySort)
 
 elimTarget
-  : VARNAME (``VARNAME)
-  | metavar (Ast.$$# (metavar, []))
+  : VARNAME (annotate (Pos.pos (VARNAMEleft fileName) (VARNAMEright fileName)) (``VARNAME))
+  | metavar (annotate (Pos.pos (metavarleft fileName) (metavarright fileName)) (Ast.$$# (metavar, [])))
 
 elimTargetAnySort
-  : elimTarget (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], elimTarget)]))
+  : elimTarget (Ast.setAnnotation (Ast.getAnnotation elimTarget) (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], elimTarget)])))
 
 
 atomicRawTac
