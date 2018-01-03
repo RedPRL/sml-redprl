@@ -119,8 +119,9 @@ struct
    | CUST of opid * RedPrlArity.t option
    | TAC_UNFOLD_ALL of opid list
    | TAC_UNFOLD of opid list
-   | DEV_USE_LEMMA of opid * RedPrlArity.t option
-   | DEV_APPLY_LEMMA of opid * RedPrlArity.t option * unit dev_pattern
+
+   | DEV_USE_LEMMA
+   | DEV_APPLY_LEMMA of unit dev_pattern
 end
 
 signature REDPRL_OPERATOR = 

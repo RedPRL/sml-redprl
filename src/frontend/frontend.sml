@@ -29,8 +29,9 @@ struct
   local
     open Signature
   in
-    fun processElt sign (DECL (nm, d, pos)) = Signature.insert sign nm (d, SOME pos)
-      | processElt sign (CMD c) = Signature.command sign c
+    (* TODO: more efficient, lol *)
+    fun processElt sign elt = 
+      List.rev (elt :: List.rev sign)
   end
 
   fun logExn exn =
@@ -42,6 +43,7 @@ struct
     val THM = RedPrlLrVals.Tokens.DCL_THM (Coord.init, Coord.init)
     val TAC = RedPrlLrVals.Tokens.DCL_TAC (Coord.init, Coord.init)
     val PRINT = RedPrlLrVals.Tokens.CMD_PRINT (Coord.init, Coord.init)
+    val EXTRACT = RedPrlLrVals.Tokens.CMD_EXTRACT (Coord.init, Coord.init)
     val QUIT = RedPrlLrVals.Tokens.CMD_QUIT (Coord.init, Coord.init)    
     val DOT = RedPrlLrVals.Tokens.DOT (Coord.init, Coord.init)
 
@@ -50,6 +52,7 @@ struct
       RedPrlParser.Token.sameToken (tok, DEF) orelse
       RedPrlParser.Token.sameToken (tok, TAC) orelse
       RedPrlParser.Token.sameToken (tok, PRINT) orelse
+      RedPrlParser.Token.sameToken (tok, EXTRACT) orelse
       RedPrlParser.Token.sameToken (tok, QUIT)
 
     fun isEof tok =
@@ -125,7 +128,7 @@ struct
 
         val lexer = RedPrlParser.makeLexer (stringreader buf) fileName
       in
-        loop true lexer Signature.empty
+        loop true lexer []
       end
   end
 
@@ -133,7 +136,7 @@ struct
     let
       val (noParseErrors, sign) = parseSig fileName buf
     in
-      Signature.check sign andalso noParseErrors
+      Signature.checkSrcSig sign andalso noParseErrors
     end
     handle exn => (logExn exn; false)
 
