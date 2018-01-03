@@ -205,8 +205,19 @@ struct
       O.DEV_RECORD_INTRO lbls $$ List.map (fn tac => [] \ tac) tacs
     end
 
-  fun makeVec tau xs = 
-    O.MK_VEC (tau, List.length xs) $$ List.map (fn x => [] \ x) xs
+  fun joinAnnotations (xs : ast list) : Pos.t option = 
+    case xs of
+       [] => NONE
+     | x :: xs => 
+       case (Ast.getAnnotation x, joinAnnotations xs) of
+          (SOME p1, SOME p2) => SOME (Pos.union p1 p2)
+        | (SOME p, NONE) => SOME p
+        | (NONE, SOME p) => SOME p
+        | _ => NONE
+ 
+
+  fun makeVec tau xs =
+    Ast.setAnnotation (joinAnnotations xs) (O.MK_VEC (tau, List.length xs) $$ List.map (fn x => [] \ x) xs)
 end
 
 structure Pattern =
@@ -873,18 +884,18 @@ opnames
   | OPNAME ([OPNAME])
 
 termAnySort
-  : term (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], term)]))
+  : term (Ast.setAnnotation (Ast.getAnnotation term) (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], term)])))
 
 termsAnySort
   : termAnySort ([termAnySort])
   | termAnySort termsAnySort (termAnySort :: termsAnySort)
 
 elimTarget
-  : VARNAME (``VARNAME)
-  | metavar (Ast.$$# (metavar, []))
+  : VARNAME (annotate (Pos.pos (VARNAMEleft fileName) (VARNAMEright fileName)) (``VARNAME))
+  | metavar (annotate (Pos.pos (metavarleft fileName) (metavarright fileName)) (Ast.$$# (metavar, [])))
 
 elimTargetAnySort
-  : elimTarget (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], elimTarget)]))
+  : elimTarget (Ast.setAnnotation (Ast.getAnnotation elimTarget) (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], elimTarget)])))
 
 
 atomicRawTac
@@ -941,7 +952,7 @@ atomicRawTac
   | PRINT termAnySort (Ast.$$ (O.DEV_PRINT, [\ ([], termAnySort)]))
 
   (* overlapping with term *)
-  | rawTermAndTac (rawTermAndTac)
+  | rawTermAndTac (annotate (Pos.pos (rawTermAndTacleft fileName) (rawTermAndTacright fileName)) rawTermAndTac)
 
 atomicTac : atomicRawTac (annotate (Pos.pos (atomicRawTac1left fileName) (atomicRawTac1right fileName)) atomicRawTac)
 

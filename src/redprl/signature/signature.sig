@@ -7,18 +7,6 @@ sig
   type metavariable
   type ajdg
 
-  structure Ty : 
-  sig
-    datatype vty =
-       ONE
-     | DOWN of cty
-     | TERM of sort
-     | THM of sort
-     | ABS of valence list * vty
-
-    and cty = 
-       UP of vty  
-  end
 
   (* source language: to be phased out *)
   structure Src :
@@ -42,33 +30,9 @@ sig
     type sign = elt list
   end
 
-  (* external language: before name resolution *)
-  structure ESyn :
-  sig
-    datatype value = 
-       THUNK of cmd
-     | VAR of string
-     | NIL
-     | ABS of (string * valence) list * value
-     | TERM of ast * sort
-
-    and cmd = 
-       BIND of cmd * string * cmd
-     | RET of value
-     | FORCE of value
-     | PRINT of Pos.t option * value
-     | REFINE of ast * ast
-     | NU of (string * valence) list * cmd
-     | EXTRACT of value
-     | ABORT
-  end
-
-  (* internal language *)
-  structure ISyn :
-  sig
-    type value
-    type cmd
-  end
+  structure Ty : ML_TYPE
+  structure ESyn : ML_SYNTAX (* before name resolution *)
+  structure ISyn : ML_SYNTAX (* after name resolution *)
 
   (* semantic domain *)
   structure Sem : 
@@ -84,7 +48,6 @@ sig
 
   (* resolver *)
   structure Res : sig type env end
-
   val resolveCmd : Res.env -> ESyn.cmd -> ISyn.cmd * Ty.cty
   val resolveVal : Res.env -> ESyn.value -> ISyn.value * Ty.vty
 
@@ -92,5 +55,5 @@ sig
   val evalCmd : Sem.env -> ISyn.cmd -> Sem.cmd * exit_code
   val evalVal : Sem.env -> ISyn.value -> Sem.value
 
-  val checkSrcSig : Src.sign -> bool
+  val checkSrcSig : Src.sign -> exit_code
 end

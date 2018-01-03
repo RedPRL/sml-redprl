@@ -232,7 +232,7 @@ struct
      | VIN => "Vin"
      | VPROJ => "Vproj"
 
-     | EQUALITY => "equality"
+     | EQUALITY => "="
 
      | MK_ANY _ => "any"
 

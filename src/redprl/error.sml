@@ -35,10 +35,10 @@ struct
         [tool, Fpp.text "is not applicable to:", Fpp.nest 2 obj]
      | UNIMPLEMENTED doc => Fpp.hsep
         [Fpp.text "Not implemented:", Fpp.nest 2 doc]
-     | INCORRECT_ARITY (ast, ar) =>
+     | INCORRECT_ARITY th =>
         Fpp.vsep
-          [Fpp.hsep [Fpp.text "Incorrect arity in term:", Fpp.text (RedPrlAst.toString ast)],
-           Fpp.hsep [Fpp.text "Expected: ", Fpp.text (RedPrlArity.toString ar)]]
+          [Fpp.hsep [Fpp.text "Operator", Fpp.seq [Fpp.char #"'", TermPrinter.ppOperator th, Fpp.char #"'"], Fpp.text "applied to an incorrect number of arguments"],
+           Fpp.hsep [Fpp.text "Expected arity: ", TermPrinter.ppArity (RedPrlOperator.arity th)]]
      | GENERIC doc => Fpp.hsep doc
 
   val rec format =
