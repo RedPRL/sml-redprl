@@ -8,7 +8,7 @@ struct
    | NOT_APPLICABLE of Fpp.doc * Fpp.doc
    | UNIMPLEMENTED of Fpp.doc
    | GENERIC of Fpp.doc list
-   | INCORRECT_ARITY of RedPrlAst.ast * RedPrlArity.t
+   | INCORRECT_ARITY of RedPrlOperator.t
 end
 
 signature REDPRL_ERROR =

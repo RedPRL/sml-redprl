@@ -29,7 +29,7 @@ Thm PropSet(#l:lvl) : [
    [h : (IsProp tyA)]
    (IsSet tyA))
 ] by [
-  lam tyA h a b p q => 
+  lam tyA h a b p q =>
   abs j i =>
     `(hcom 0~>1 tyA a
       [i=0 [k] (@ ($ h a a) k)]
@@ -46,11 +46,10 @@ Thm IsPropIsProp(#l:lvl) : [
   )
 ] by [
   lam tyA h1 h2 =>
-  (abs i => lam a b =>
+  abs i => lam a b =>
     let foo = (PropSet #l) [`tyA, `h1];
     unfold IsSet IsProp;
-    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]);
-  unfold PropSet; auto
+    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]
 ].
 
 Thm IsPropIsProp'(#l:lvl) : [
@@ -59,7 +58,8 @@ Thm IsPropIsProp'(#l:lvl) : [
    (IsProp (IsProp tyA))
   )
 ] by [
-  lam tyA h1 h2 => abs i => lam a b => `(@ ($ (PropSet #l) tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
+  lam tyA h1 h2 => abs i => lam a b =>
+    `(@ ($ (PropSet #l) tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
 ].
 
 // // This should be exactly like the one above:

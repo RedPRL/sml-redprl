@@ -224,37 +224,22 @@ struct
       |>: goal1 >: goal2 #> (H, substVar (hole1, z) hole2)
     end
 
-  fun CutLemma sign opid alpha jdg = 
+  fun CutLemma sign cust alpha jdg = 
     let
       val tr = ["CutLemma"]
 
       val z = alpha 0
       val H >> ajdg = jdg
 
-      val {spec, state, ...} = Sig.lookup sign opid
-      val Lcf.|> (lemmaSubgoals, _) = state @@ NameSeq.bite 1 alpha
+      val Abt.$ (O.CUST (opid, SOME ar), args) = Abt.out cust
+      val zjdg = Sig.theoremSpec sign opid args
+      val zextr = Sig.unfoldOpid sign opid args
 
-      val H_spec >> specjdg = spec
-      val _ = 
-        if Hyps.isEmpty H_spec then () else 
-          raise E.error [Fpp.text "Lemmas must have an atomic judgment as a conclusion"]
-
-      val lemmaExtract' =
-        let
-          val subgoalsList = T.foldr (fn (x, jdg, goals) => (x, jdg) :: goals) [] lemmaSubgoals
-          val valences = List.map (RedPrlJudgment.sort o Lcf.I.run o #2) subgoalsList
-          val arity = (valences, AJ.synthesis specjdg)
-          fun argForSubgoal ((x, jdg), vl) = outb @@ Lcf.L.var x vl
-        in
-          O.CUST (opid, SOME arity) $$ ListPair.mapEq argForSubgoal (subgoalsList, valences)
-        end
-
-
-      val H' = H @> (z, specjdg)
+      val H' = H @> (z, zjdg)
       val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
-      val extract = substVar (lemmaExtract', z) mainHole
+      val extr = substVar (zextr, z) mainHole
     in
-      lemmaSubgoals >: mainGoal #> (H, extract)
+      |>: mainGoal #> (H, extr)
     end
 
   fun Exact tm =
@@ -263,8 +248,7 @@ struct
       orelse_ Lcf.rule o Term.Exact tm
 
 
-
-  val lookupRule = 
+  fun lookupRule sign = 
     fn "bool/eqtype" => Lcf.rule o Bool.EqType
      | "bool/eq/tt" => Lcf.rule o Bool.EqTT
      | "bool/eq/ff" => Lcf.rule o Bool.EqFF
@@ -337,6 +321,8 @@ struct
      | "coe/eq" => Lcf.rule o Coe.Eq
      | "coe/eq/cap" => Lcf.rule o Coe.EqCapL
      | "subtype/eq" => Lcf.rule o SubType.Eq
+     | "custom/synth" => Lcf.rule o Custom.Synth sign
+     | "universe/subtype" => Lcf.rule o Universe.SubType
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 

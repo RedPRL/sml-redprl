@@ -10,7 +10,7 @@ sig
   type 'a bview
 
   val Cut : catjdg -> rule
-  val CutLemma : sign -> opid -> rule
+  val CutLemma : sign -> abt -> rule
 
   val AutoStep : sign -> tactic
   val Elim : sign -> hyp -> tactic
@@ -48,5 +48,5 @@ sig
   end
 
   type rule_name = string
-  val lookupRule : rule_name -> tactic
+  val lookupRule : sign -> rule_name -> tactic
 end

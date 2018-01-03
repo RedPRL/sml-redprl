@@ -3,7 +3,7 @@ Thm BoolTest : [
 ] by [
   // A term/witness can be supplied to the refiner at any point in a tactic script
   // using the quotation operator `.
-  (lam x => if x then `tt else `ff); auto
+  lam x => if x then `tt else `ff
 ].
 
 
@@ -49,7 +49,7 @@ Thm FunElimTest : [
 
 Thm S1ElimTest : [ (-> S1 S1) ] by [
   lam s =>
-    case s of 
+    case s of
        base => `base
      | loop x => `(loop x)
 ].
@@ -62,7 +62,7 @@ Tac Try(#t : tac) = [
 // what is being done.
 Tac TryStep = [
   // We can call our Try tactical. But tactics are parsed with a different grammar than terms,
-  // so to avoid ambiguity, when we need to provide a tactic expression as an argument to 
+  // so to avoid ambiguity, when we need to provide a tactic expression as an argument to
   // an operator, we wrap it in (tactic ....).
   (Try #tac{auto-step})
 ].
@@ -82,7 +82,7 @@ Print BoolEta.
 Thm BoolEtaFunction : [
   (-> wbool wbool)
 ] by [
-  (lam b => if b then `tt else `ff); auto
+  lam b => if b then `tt else `ff
 ].
 
 Extract BoolEtaFunction.
@@ -106,7 +106,7 @@ Thm PathTest2 : [
   abs x =>
     // now, we are constructing a line of functions; so we use a
     // lambda.
-    (lam b =>
+    lam b =>
       // for our b:wbool, we will construct a path between b and
       // (BoolEta b).
       claim p : [(path [_] wbool b (BoolEta b))] by [
@@ -117,9 +117,9 @@ Thm PathTest2 : [
       // interactive tactic environment, dimension expressions are
       // supplied to the refiner using the '@' "dimension quotation"
       // operator.
-      use p [`x]);
-     auto
+      use p [`x]
 ].
+
 
 // It turns out that it is just as good to figure out what the witness
 // program for this path is by hand, and then tell RedPRL to try and
@@ -173,7 +173,7 @@ Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by 
 ].
 
 Thm Not : [(-> [_ : wbool] wbool)] by [
-  (lam x => if x then `ff else `tt); auto
+  lam x => if x then `ff else `tt
 ].
 
 Thm FunExt(#l:lvl) : [
@@ -202,8 +202,7 @@ Print FunExtTac.
 
 Thm NotNotPath : [(path [_] (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac #lvl{0});
-  (lam x => if x then abs _ => `tt else abs _ => `ff);
-  auto
+  lam x => if x then abs _ => `tt else abs _ => `ff
 ].
 
 Extract NotNotPath.

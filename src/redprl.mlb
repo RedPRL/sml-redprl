@@ -55,13 +55,9 @@ in
 
     redprl/judgment.sml
 
-    redprl/elab_monad.sig
-    redprl/elab_monad.sml
-
     redprl/lcf.sml
 
-    redprl/signature.sig
-    redprl/signature_mini.sml
+    redprl/signature/mini_signature.sig
 
     redprl/log.sig
     redprl/log.sml
@@ -86,7 +82,16 @@ in
       redprl/tactic_elaborator.fun
     end
 
-    redprl/signature.sml
+
+    redprl/signature/type.sig
+    redprl/signature/resolver.sig
+    redprl/signature/syntax.sig
+    redprl/signature/signature.sig
+
+    redprl/signature/type.sml
+    redprl/signature/resolver.fun
+    redprl/signature/syntax.fun
+    redprl/signature/signature.sml
 
     ann
       "warnUnused false"

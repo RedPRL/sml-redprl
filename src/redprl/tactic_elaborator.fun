@@ -43,7 +43,7 @@ struct
   fun hole (pos : Pos.t, name : string option) : multitactic = 
     fn alpha => fn state =>
       let
-        val header = Fpp.seq [Fpp.text (Option.getOpt (name, "hole")), Fpp.char #"."]
+        val header = Fpp.seq [Fpp.text "?", Fpp.text (Option.getOpt (name, "")), Fpp.char #"."]
         val message = Fpp.vsep [header, Lcf.prettyState state]
       in
         RedPrlLog.print RedPrlLog.INFO (SOME pos, message);
@@ -69,8 +69,9 @@ struct
   open Sequent infix >>
   structure AJ = AtomicJudgment and Syn = SyntaxView
 
-  fun unfoldCustomOperator sign (opid, args) = 
-    Sig.unfoldCustomOperator (Sig.lookup sign opid) args
+  val autoMtac = mrepeat o all o try o R.AutoStep
+  val autoTac = multitacToTac o autoMtac
+  fun autoTacComplete sign = try (autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal")
 
   fun elimRule sign z xs tacs = 
     R.Elim sign z thenl' (xs, tacs)
@@ -238,20 +239,12 @@ struct
     val pathIntros = pathIntros
   end
 
-  fun cutLemma sign opid ar (args : abt bview list) (pattern, names) appTacs tac =
+  fun cutLemma sign cust (pattern, names) appTacs tac =
     let
-      val (vls, _) = ar
-      fun processArg (xs \ m, (taus, _), {subtermNames, subtermTacs}) =
-        {subtermNames = xs @ subtermNames,
-         subtermTacs = exactAuto sign m :: subtermTacs}
-
-      val {subtermNames, subtermTacs} =
-        ListPair.foldr processArg {subtermNames = [], subtermTacs = []} (args, vls)
-
       val z = RedPrlSym.new ()
       val continue = applications sign z (pattern, names) appTacs tac
     in
-      Lcf.rule o R.CutLemma sign opid thenl' (z :: subtermNames, subtermTacs @ [continue])
+      Lcf.rule o R.CutLemma sign cust thenl' ([z], [continue])
     end
     
   fun onAllHyps tac alpha (H >> jdg) =
@@ -292,12 +285,12 @@ struct
      | O.TAC_REDUCE_PART $ [_ \ sel, _ \ accs] => Lcf.rule o R.Computation.ReducePart sign (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs)
      | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
      | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
-     | O.RULE_PRIM ruleName $ _ => R.lookupRule ruleName
+     | O.RULE_PRIM ruleName $ _ => R.lookupRule sign ruleName
      | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule o R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.DEV_RECORD_INTRO lbls $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.DEV_PATH_INTRO _ $ [us \ tm] => pathIntros sign us (tactic sign env tm)
-     | O.DEV_BOOL_ELIM $ [_ \ var, _ \ tm1, _ \ tm2] => elimRule sign (VarKit.fromTerm var) [] [tactic sign env tm1, tactic sign env tm2]
+     | O.DEV_BOOL_ELIM $ [_ \ var, _ \ tm1, _ \ tm2] => elimRule sign (VarKit.fromTerm var) [] [tactic sign env tm1, tactic sign env tm2, autoTacComplete sign, autoTacComplete sign]
      | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [v] [tactic sign env tm1, tactic sign env tm2, autoTacComplete sign, autoTacComplete sign, autoTacComplete sign]
      | O.DEV_APPLY_HYP pattern $ [_ \ var, _ \ vec, names \ tm'] =>
        let
@@ -316,29 +309,27 @@ struct
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp sign z')
        end
 
-     | O.DEV_APPLY_LEMMA (opid, ar, pat) $ args =>
+     | O.DEV_APPLY_LEMMA pat $ [_ \ any, _ \ tacVec, names \ tac] =>
        let
-         val (names \ tac) :: (_ \ vec) :: revSubtermArgs = List.rev args
-         val subtermArgs = List.rev revSubtermArgs
-         val O.MK_VEC _ $ appArgs = Tm.out vec
-
-         val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
-         val tac = tactic sign env tac
+         val cust = Syn.unpackAny any
+         val O.MK_VEC _ $ appArgs = Tm.out tacVec
+         val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs         
+         val tac = tactic sign env tac         
        in
-         cutLemma sign opid (Option.valOf ar) subtermArgs (pat, names) appTacs tac
+         cutLemma sign cust (pat, names) appTacs tac
        end
-     | O.DEV_USE_LEMMA (opid, ar) $ args =>
+
+     | O.DEV_USE_LEMMA $ [_ \ any, _ \ tacVec] =>
        let
-         val (_ \ vec) :: revSubtermArgs = List.rev args
-         val subtermArgs = List.rev revSubtermArgs
-         val O.MK_VEC _ $ appArgs = Tm.out vec
-
-         val z = RedPrlSym.named (opid ^ "'")
+         val cust = Syn.unpackAny any
+         val O.MK_VEC _ $ appArgs = Tm.out tacVec
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
+         val z = RedPrlSym.new ()
        in
-         cutLemma sign opid (Option.valOf ar) subtermArgs (O.PAT_VAR (), [z]) appTacs (hyp sign z)
+         cutLemma sign cust (O.PAT_VAR (), [z]) appTacs (hyp sign z)
        end
-     | O.CUST (opid, _) $ args => tactic sign env (unfoldCustomOperator sign (opid, args))
+
+     | O.CUST (opid, _) $ args => tactic sign env (Sig.unfoldOpid sign opid args)
      | O.DEV_MATCH ns $ (_ \ term) :: clauses =>
        let
          fun defrostMetas metas =
@@ -403,7 +394,7 @@ struct
      | O.MTAC_HOLE msg $ _ => hole (Option.valOf (Tm.getAnnotation tm), msg)
      | O.MTAC_REPEAT $ [_ \ tm] => T.mrepeat (multitactic sign env tm)
      | O.MTAC_AUTO $ _ => autoMtac sign
-     | O.CUST (opid, _) $ args => multitactic sign env (unfoldCustomOperator sign (opid, args))
+     | O.CUST (opid, _) $ args => multitactic sign env (Sig.unfoldOpid sign opid args)
      | `x => Var.Ctx.lookup env x
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized multitactic", TermPrinter.ppTerm tm]
 
