@@ -24,6 +24,13 @@ struct
 
     and cty = 
        UP of vty
+
+    val rec toString =
+      fn ONE => "ONE"
+       | DOWN _ => "DOWN"
+       | TERM _ => "TERM"
+       | THM _ => "THM"
+       | ABS _ => "ABS"
   end
 
   fun @@ (f, x) = f x
@@ -156,13 +163,21 @@ struct
      | PRINT of Pos.t option * value
      | REFINE of ast * ast
      | NU of (string * Tm.valence) list * cmd
+     | EXTRACT of value
      | ABORT
+
+    (* TODO: program extract in terms of more general primitives for this language *)
   end
 
   fun compileSrcCmd pos : Src.cmd  -> ESyn.cmd =
-    fn Src.PRINT nm => ESyn.PRINT (SOME pos, ESyn.VAR nm)
-     | Src.EXTRACT nm => ESyn.PRINT (SOME pos, ESyn.VAR nm) (* TODO *)
-     | Src.QUIT => ESyn.ABORT
+    fn Src.PRINT nm =>
+       ESyn.PRINT (SOME pos, ESyn.VAR nm)
+
+     | Src.EXTRACT nm =>
+       ESyn.BIND (ESyn.EXTRACT (ESyn.VAR nm), "x", ESyn.PRINT (SOME pos, ESyn.VAR "x"))
+
+     | Src.QUIT =>
+       ESyn.ABORT
 
   fun compileSrcDecl (nm : string) : Src.decl -> ESyn.cmd = 
     fn Src.DEF {arguments, sort, definiens} =>
@@ -203,6 +218,7 @@ struct
      | PRINT of Pos.t option * value
      | REFINE of ajdg * abt
      | NU of (Tm.metavariable * Tm.valence) list * cmd
+     | EXTRACT of value
      | ABORT
   end
 
@@ -216,19 +232,19 @@ struct
      | ABS of (Tm.metavariable * Tm.valence) list * value
      | NIL
 
-    withtype env = value StringListDict.dict * Tm.metavariable Tm.Metavar.Ctx.dict
+    withtype env = value StringListDict.dict
 
     datatype cmd = RET of value
 
-    val initEnv = (StringListDict.empty, Tm.Metavar.Ctx.empty)
+    val initEnv = StringListDict.empty
 
     fun lookup (env : env) (nm : string) : value =
-      case StringListDict.find (#1 env) nm of 
+      case StringListDict.find env nm of 
          SOME v => v
        | NONE => fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text nm, Fpp.text "in environment"])
 
     fun extend (env : env) (nm : string) (v : value) : env =
-      (StringListDict.insert (#1 env) nm v, #2 env)
+      StringListDict.insert env nm v
 
     (* TODO *)
     val rec ppValue : value -> Fpp.doc = 
@@ -242,7 +258,9 @@ struct
             Fpp.text "Extract:",
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
 
-       | TERM abt => TermPrinter.ppTerm abt
+       | TERM abt =>
+         TermPrinter.ppTerm abt
+
        | ABS (psi, v) =>
          Fpp.seq
            [Fpp.hsep
@@ -253,7 +271,9 @@ struct
               (List.map (fn (X, vl) => Fpp.hsep [TermPrinter.ppMeta X, Fpp.Atomic.colon, TermPrinter.ppValence vl]) psi),
              Fpp.text "=>"],
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, ppValue v]]
-       | NIL => Fpp.text "()"
+
+       | NIL =>
+         Fpp.text "()"
 
     fun printVal (pos : Pos.t option, v : value) : unit=
       RedPrlLog.print RedPrlLog.INFO (pos, ppValue v)
@@ -428,10 +448,16 @@ struct
          (ISyn.NU (psi', cmd'), cty)
        end
 
+     | ESyn.EXTRACT v =>
+       let
+         val (v', Ty.ABS (psi, Ty.THM tau)) = resolveVal renv v
+       in
+         (ISyn.EXTRACT v', Ty.UP @@ Ty.ABS (psi, Ty.TERM tau))
+       end
+
      | ESyn.ABORT =>
        (ISyn.ABORT, Ty.UP Ty.ONE)
        (* ? *)
-
 
   structure MiniSig : MINI_SIGNATURE = 
   struct
@@ -518,14 +544,17 @@ struct
          val check = 
            if subgoalsCount = 0 then () else
              RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
-
-          val mrho = #2 env
         in
           (Sem.RET @@ Sem.THM (ajdg, extract), subgoalsCount = 0)
         end
     
      | ISyn.NU (psi, cmd) =>
        evalCmd env cmd
+
+     | ISyn.EXTRACT v =>
+       (case evalVal env v of
+           Sem.ABS (psi, Sem.THM (_, abt)) => (Sem.RET @@ Sem.ABS (psi, Sem.TERM abt), true)
+         | _ => fail (NONE, Fpp.text "evalCmd/ISyn.EXTRACT expected Sem.ABS, Sem.THM"))
 
      | ISyn.ABORT => 
        fail (NONE, Fpp.text "Signature aborted")
@@ -544,7 +573,7 @@ struct
        Sem.ABS (psi, evalVal env v)
 
      | ISyn.TERM abt =>
-       Sem.TERM (Tm.renameMetavars (#2 env) abt)
+       Sem.TERM abt
      
   structure L = RedPrlLog
 

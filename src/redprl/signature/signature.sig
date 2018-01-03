@@ -59,6 +59,7 @@ sig
      | PRINT of Pos.t option * value
      | REFINE of ast * ast
      | NU of (string * valence) list * cmd
+     | EXTRACT of value
      | ABORT
   end
 
