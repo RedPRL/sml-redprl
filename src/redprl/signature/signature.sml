@@ -1,4 +1,4 @@
-structure Signature : SIGNATURE = 
+structure Signature : SIGNATURE =
 struct
   structure Ast = RedPrlAst and Tm = RedPrlAbt and AJ = AtomicJudgment
 
@@ -13,117 +13,16 @@ struct
   exception todo
   fun ?e = raise e
 
-  structure Ty = 
-  struct
-    datatype vty =
-       ONE
-     | DOWN of cty
-     | TERM of sort
-     | THM of sort
-     | ABS of Tm.valence list * vty
-
-    and cty = 
-       UP of vty
-
-    val rec toString =
-      fn ONE => "ONE"
-       | DOWN _ => "DOWN"
-       | TERM _ => "TERM"
-       | THM _ => "THM"
-       | ABS _ => "ABS"
-  end
+  structure Ty = MlType
 
   fun @@ (f, x) = f x
   infixr @@
 
-  fun fail (pos, msg) = 
+  fun fail (pos, msg) =
     RedPrlError.raiseAnnotatedError' (pos, RedPrlError.GENERIC [msg])
 
   (* The resolver environment *)
-  structure Res :>
-  sig
-    type env
-
-    val init : env
-
-    val lookupId : env -> Pos.t option -> string -> Ty.vty
-    val extendId : env -> string -> Ty.vty -> env
-
-    val lookupVar : env -> Pos.t option -> string -> (Tm.variable * Tm.sort)
-    val lookupMeta : env -> Pos.t option -> string -> (Tm.metavariable * Tm.valence)
-
-    val extendVars : env -> string list * Tm.sort list -> ((Tm.variable * Tm.sort) list * env)
-    val extendMetas : env -> string list * Tm.valence list -> ((Tm.metavariable * Tm.valence) list * env)
-  end = 
-  struct
-    type env =
-      {ids : Ty.vty StringListDict.dict,
-       vars : (Tm.variable * Tm.sort) StringListDict.dict,
-       metas : (Tm.metavariable * Tm.valence) StringListDict.dict}
-
-    val init = 
-      {ids = StringListDict.empty,
-       vars = StringListDict.empty,
-       metas = StringListDict.empty}
-
-    fun lookup dict pos x = 
-      case StringListDict.find dict x of 
-         SOME r => r
-       | NONE => fail (pos, Fpp.hsep [Fpp.text "Could not resolve name", Fpp.text x])
-      
-    fun lookupId (env : env) =
-      lookup (#ids env)
-
-    fun lookupVar (env : env) =
-      lookup (#vars env)
-      
-    fun lookupMeta (env : env) =
-      lookup (#metas env)      
-
-    (* TODO: ensure that this name is not already used *)
-    fun extendId {ids, vars, metas} nm vty =
-      {ids = StringListDict.insert ids nm vty,
-       vars = vars,
-       metas = metas}
-
-    fun extendVars {ids, vars, metas} (xs, taus) =
-      let
-        val (gamma, vars') =
-          ListPair.foldrEq
-            (fn (x, tau, (gamma, vars)) =>
-              let
-                val x' = Sym.named x
-              in
-                ((x',tau) :: gamma, StringListDict.insert vars x (x', tau))
-              end)
-            ([], vars)
-            (xs, taus)
-        val env = {ids = ids, vars = vars', metas = metas}
-      in    
-        (gamma, env)
-      end
-      handle exn =>
-        fail (NONE, Fpp.hsep [Fpp.text "extendVars: invalid arguments,", Fpp.text (exnMessage exn)])
-
-    fun extendMetas {ids, vars, metas} (Xs, vls) =
-      let
-        val (psi, metas') =
-          ListPair.foldrEq
-            (fn (X, vl, (psi, metas)) =>
-              let
-                val X' = Metavar.named X
-              in
-                ((X',vl) :: psi, StringListDict.insert metas X (X', vl))
-              end)
-            ([], metas)
-            (Xs, vls)
-        val env = {ids = ids, vars = vars, metas = metas'}
-      in
-        (psi, env)
-      end
-      handle _ =>
-        fail (NONE, Fpp.text "extendMetas: invalid arguments")
-  end
+  structure Res = MlResolver (Ty)
 
   structure Src =
   struct
@@ -139,7 +38,7 @@ struct
      | EXTRACT of string
      | QUIT
 
-    datatype elt = 
+    datatype elt =
        DECL of string * decl * Pos.t
      | CMD of cmd * Pos.t
 
@@ -148,26 +47,14 @@ struct
 
   (* external language *)
   structure ESyn =
-  struct
-    datatype value = 
-       THUNK of cmd
-     | VAR of string
-     | NIL
-     | ABS of (string * Tm.valence) list * value
-     | TERM of ast * sort
+    MlSyntax
+      (type id = string type metavariable = string type jdg = ast type term = ast * sort)
 
-    and cmd = 
-       BIND of cmd * string * cmd
-     | RET of value
-     | FORCE of value
-     | PRINT of Pos.t option * value
-     | REFINE of ast * ast
-     | NU of (string * Tm.valence) list * cmd
-     | EXTRACT of value
-     | ABORT
 
-    (* TODO: program extract in terms of more general primitives for this language *)
-  end
+  (* internal language *)
+  structure ISyn =
+    MlSyntax
+      (type id = Res.id type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt)
 
   fun compileSrcCmd pos : Src.cmd  -> ESyn.cmd =
     fn Src.PRINT nm =>
@@ -179,7 +66,7 @@ struct
      | Src.QUIT =>
        ESyn.ABORT
 
-  fun compileSrcDecl (nm : string) : Src.decl -> ESyn.cmd = 
+  fun compileSrcDecl (nm : string) : Src.decl -> ESyn.cmd =
     fn Src.DEF {arguments, sort, definiens} =>
        ESyn.NU (arguments, ESyn.RET (ESyn.ABS (arguments, ESyn.TERM (definiens, sort))))
 
@@ -187,45 +74,28 @@ struct
        ESyn.NU (arguments, ESyn.RET (ESyn.ABS (arguments, ESyn.TERM (script, RedPrlSort.TAC))))
 
      | Src.THM {arguments, goal, script} =>
-       ESyn.NU (arguments, ESyn.BIND (ESyn.REFINE (goal, script), nm, ESyn.RET (ESyn.ABS (arguments, ESyn.VAR nm))))
+       ESyn.NU
+         (arguments,
+          ESyn.BIND
+            (ESyn.REFINE (goal, (script, RedPrlSort.TAC)),
+             nm,
+             ESyn.RET (ESyn.ABS (arguments, ESyn.VAR nm))))
 
 
-  val rec compileSrcSig : Src.sign -> ESyn.cmd = 
-    fn [] => 
+  val rec compileSrcSig : Src.sign -> ESyn.cmd =
+    fn [] =>
        ESyn.RET ESyn.NIL
-    
+
      | Src.CMD (c, pos) :: sign =>
        ESyn.BIND (compileSrcCmd pos c, "_", compileSrcSig sign)
-        
+
      | Src.DECL (nm, decl, _) :: sign =>
        ESyn.BIND (compileSrcDecl nm decl, nm, compileSrcSig sign)
   
-
-  (* internal language *)
-  structure ISyn =
-  struct
-    datatype value = 
-       THUNK of cmd
-     | VAR of string
-     | NIL
-     | ABS of (Tm.metavariable * Tm.valence) list * value
-     | TERM of abt
-
-    and cmd = 
-       BIND of cmd * string * cmd
-     | RET of value
-     | FORCE of value
-     | PRINT of Pos.t option * value
-     | REFINE of ajdg * abt
-     | NU of (Tm.metavariable * Tm.valence) list * cmd
-     | EXTRACT of value
-     | ABORT
-  end
-
   (* semantic domain *)
-  structure Sem = 
+  structure Sem =
   struct
-    datatype value = 
+    datatype value =
        THUNK of env * ISyn.cmd
      | THM of ajdg * abt
      | TERM of abt
@@ -239,7 +109,7 @@ struct
     val initEnv = StringListDict.empty
 
     fun lookup (env : env) (nm : string) : value =
-      case StringListDict.find env nm of 
+      case StringListDict.find env nm of
          SOME v => v
        | NONE => fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text nm, Fpp.text "in environment"])
 
@@ -247,7 +117,7 @@ struct
       StringListDict.insert env nm v
 
     (* TODO *)
-    val rec ppValue : value -> Fpp.doc = 
+    val rec ppValue : value -> Fpp.doc =
       fn THUNK _ => Fpp.text "<thunk>"
        | THM (jdg, abt) =>
          Fpp.seq
@@ -290,14 +160,14 @@ struct
 
     fun checkAbt (view, tau) : abt =
       Tm.check (view, tau)
-      handle exn => 
+      handle exn =>
         fail (NONE, Fpp.hsep [Fpp.text "Error resolving abt:", Fpp.text (exnMessage exn)])
 
     fun guessSort (renv : Res.env) (ast : ast) : sort =
       let
         val pos = Ast.getAnnotation ast
       in
-        case Ast.out ast of 
+        case Ast.out ast of
            Ast.` x =>
            #2 @@ Res.lookupVar renv pos x
 
@@ -326,7 +196,7 @@ struct
         val pos = Ast.getAnnotation ast
       in
         Tm.setAnnotation pos
-        (case Ast.out ast of 
+        (case Ast.out ast of
            Ast.` x =>
            checkAbt (Tm.` o #1 @@ Res.lookupVar renv pos x, tau)
 
@@ -355,8 +225,8 @@ struct
         Tm.\ (List.map #1 xs', resolveAst renv' (ast, tau))
       end
 
-    and resolveOpr (renv : Res.env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator = 
-      (case theta of 
+    and resolveOpr (renv : Res.env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator =
+      (case theta of
          O.CUST (opid, NONE) =>
          O.CUST (opid, SOME @@ lookupArity renv pos opid)
 
@@ -375,11 +245,11 @@ struct
          end
 
        | th => th)
-       handle _ => 
+       handle _ =>
          fail (pos, Fpp.text "Error resolving operator")
   end
 
-  fun resolveVal (renv : Res.env) : ESyn.value -> ISyn.value * Ty.vty = 
+  fun resolveVal (renv : Res.env) : ESyn.value -> ISyn.value * Ty.vty =
     fn ESyn.THUNK cmd =>
        let
          val (cmd', cty) = resolveCmd renv cmd
@@ -387,7 +257,7 @@ struct
          (ISyn.THUNK cmd', Ty.DOWN cty)
        end
 
-     | ESyn.VAR nm => 
+     | ESyn.VAR nm =>
        (ISyn.VAR nm, Res.lookupId renv NONE nm)
 
      | ESyn.NIL =>
@@ -404,7 +274,7 @@ struct
          (ISyn.ABS (psi', v'), Ty.ABS (List.map #2 psi', vty))
        end
 
-  and resolveCmd (renv : Res.env) : ESyn.cmd -> ISyn.cmd * Ty.cty = 
+  and resolveCmd (renv : Res.env) : ESyn.cmd -> ISyn.cmd * Ty.cty =
     fn ESyn.BIND (cmd1, nm, cmd2) =>
        let
          val (cmd1', Ty.UP vty1) = resolveCmd renv cmd1
@@ -424,7 +294,7 @@ struct
        let
          val (v', vty) = resolveVal renv v
        in
-         case vty of 
+         case vty of
             Ty.DOWN cty => (ISyn.FORCE v', cty)
           | _ => fail (NONE, Fpp.text "Expected down-shifted type")
        end
@@ -435,7 +305,7 @@ struct
      | ESyn.REFINE (ajdg, script) =>
        let
          val ajdg' = resolveAjdg renv ajdg
-         val script' = resolveAst renv (script, RedPrlSort.TAC)
+         val script' = resolveAst renv script
        in
          (ISyn.REFINE (ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
        end
@@ -459,24 +329,24 @@ struct
        (ISyn.ABORT, Ty.UP Ty.ONE)
        (* ? *)
 
-  structure MiniSig : MINI_SIGNATURE = 
+  structure MiniSig : MINI_SIGNATURE =
   struct
     type opid = string
     type abt = abt
     type sign = Sem.env
 
-    fun makeSubst (psi, args) = 
+    fun makeSubst (psi, args) =
       ListPair.foldl
         (fn ((X, vl), bnd, rho) =>
-          Tm.Metavar.Ctx.insert rho X @@ Tm.checkb (bnd, vl)) 
+          Tm.Metavar.Ctx.insert rho X @@ Tm.checkb (bnd, vl))
         Tm.Metavar.Ctx.empty
         (psi, args)
 
-    fun isTheorem env opid = 
+    fun isTheorem env opid =
       let
         val Sem.ABS (psi, s) = Sem.lookup env opid
       in
-        case s of 
+        case s of
            Sem.THM _ => true
          | _ => false
       end
@@ -494,8 +364,8 @@ struct
       let
         val Sem.ABS (psi, s) = Sem.lookup env opid
         val rho = makeSubst (psi, args)
-        val abt = 
-          case s of 
+        val abt =
+          case s of
              Sem.TERM abt => abt
            | Sem.THM (_, abt) => abt
       in
@@ -504,7 +374,6 @@ struct
   end
 
   structure TacticElaborator = TacticElaborator (MiniSig)
-  
   type exit_code = bool
 
   fun evalCmd (env : Sem.env) : ISyn.cmd -> Sem.cmd * exit_code =
@@ -516,11 +385,11 @@ struct
          (s2, ex1 andalso ex2)
        end
 
-     | ISyn.RET v => 
+     | ISyn.RET v =>
        (Sem.RET @@ evalVal env v, true)
 
      | ISyn.FORCE v =>
-       (case evalVal env v of 
+       (case evalVal env v of
            Sem.THUNK (env', cmd) => evalCmd env' cmd
          | _ => fail (NONE, Fpp.text "evalCmd/ISyn.FORCE expected Sem.THUNK"))
 
@@ -541,13 +410,12 @@ struct
          val Tm.\ (_, extract) = Tm.outb evd
          val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
 
-         val check = 
+         val check =
            if subgoalsCount = 0 then () else
              RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
         in
           (Sem.RET @@ Sem.THM (ajdg, extract), subgoalsCount = 0)
         end
-    
      | ISyn.NU (psi, cmd) =>
        evalCmd env cmd
 
@@ -556,11 +424,11 @@ struct
            Sem.ABS (psi, Sem.THM (_, abt)) => (Sem.RET @@ Sem.ABS (psi, Sem.TERM abt), true)
          | _ => fail (NONE, Fpp.text "evalCmd/ISyn.EXTRACT expected Sem.ABS, Sem.THM"))
 
-     | ISyn.ABORT => 
+     | ISyn.ABORT =>
        fail (NONE, Fpp.text "Signature aborted")
 
   and evalVal (env : Sem.env) : ISyn.value -> Sem.value =
-    fn ISyn.THUNK cmd => 
+    fn ISyn.THUNK cmd =>
        Sem.THUNK (env, cmd)
 
      | ISyn.VAR nm =>
@@ -574,10 +442,10 @@ struct
 
      | ISyn.TERM abt =>
        Sem.TERM abt
-     
+
   structure L = RedPrlLog
 
-  fun checkSrcSig (sign : Src.sign) : bool = 
+  fun checkSrcSig (sign : Src.sign) : bool =
     let
       val ecmd = compileSrcSig sign
       val (icmd, _) = resolveCmd Res.init ecmd
