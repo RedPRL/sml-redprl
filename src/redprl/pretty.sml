@@ -6,6 +6,7 @@ sig
   val ppBinder : t RedPrlAbt.bview -> Fpp.doc
   val ppSort : RedPrlAbt.sort -> Fpp.doc
   val ppValence : RedPrlAbt.valence -> Fpp.doc
+  val ppArity : RedPrlArity.t -> Fpp.doc
   val ppVar : RedPrlAbt.variable -> Fpp.doc
   val ppMeta : RedPrlAbt.metavariable -> Fpp.doc
   val ppOperator : RedPrlAbt.operator -> Fpp.doc
@@ -305,6 +306,18 @@ struct
          | _ => seq [varSorts taus, char #"."]
     in
       seq [prefix, ppSort tau]
+    end
+
+  and ppArity (vls, tau) =
+    let
+      val vls' = 
+        Fpp.collection
+          (Fpp.char #"[")
+          (Fpp.char #"]")
+          Fpp.Atomic.comma
+          (List.map ppValence vls)
+    in
+      Fpp.hsep [vls', Fpp.text "=>", ppSort tau]
     end
 
   and varSorts taus =

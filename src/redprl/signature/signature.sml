@@ -1,6 +1,6 @@
 structure Signature : SIGNATURE =
 struct
-  structure Ast = RedPrlAst and Tm = RedPrlAbt and AJ = AtomicJudgment
+  structure Ast = RedPrlAst and Tm = RedPrlAbt and AJ = AtomicJudgment and Err = RedPrlError
 
   type ast = Ast.ast
   type sort = RedPrlSort.t
@@ -19,7 +19,7 @@ struct
   infixr @@
 
   fun fail (pos, msg) =
-    RedPrlError.raiseAnnotatedError' (pos, RedPrlError.GENERIC [msg])
+    Err.raiseAnnotatedError' (pos, Err.GENERIC [msg])
 
   (* The resolver environment *)
   structure Res = MlResolver (Ty)
@@ -218,7 +218,10 @@ struct
          | Ast.$# (X, asts : ast list) =>
            let
              val (X', (taus, _)) = Res.lookupMeta renv pos X
-             val abts = ListPair.mapEq (resolveAst renv) (asts, taus)
+             val _ = 
+               if List.length asts = List.length taus then () else 
+                 fail (pos, Fpp.hsep [Fpp.text "Incorrect valence for metavariable", Fpp.text X])
+             val abts = ListPair.map (resolveAst renv) (asts, taus)
            in
              checkAbt (Tm.$# (X', abts), tau)
            end
@@ -226,8 +229,11 @@ struct
          | Ast.$ (theta, bs) =>
            let
              val theta' = resolveOpr renv pos theta bs
-             val (vls, tau) = O.arity theta'
-             val bs' = ListPair.mapEq (resolveBnd renv) (vls, bs)
+             val ar as (vls, tau) = O.arity theta'
+             val _ =
+               if List.length bs = List.length vls then () else
+                 Err.raiseAnnotatedError' (pos, Err.INCORRECT_ARITY theta')
+             val bs' = ListPair.map (resolveBnd renv) (vls, bs)
            in
              checkAbt (Tm.$ (theta', bs'), tau)
            end)
