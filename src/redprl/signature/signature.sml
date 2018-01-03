@@ -65,14 +65,15 @@ struct
          (ESyn.VAR nm,
           "psi",
           "thm",
-          ESyn.BIND
-            (ESyn.EXTRACT @@ ESyn.VAR "thm",
+          ESyn.MATCH_THM
+            (ESyn.VAR "thm",
+             "jdg",
              "tm",
-             ESyn.PRINT
-               (SOME pos,
-                ESyn.ABS
-                  (ESyn.VAR "psi",
-                   ESyn.VAR "tm"))))
+              ESyn.PRINT
+                (SOME pos,
+                 ESyn.ABS
+                   (ESyn.VAR "psi",
+                    ESyn.VAR "tm"))))
 
      | Src.QUIT =>
        ESyn.ABORT
@@ -346,11 +347,19 @@ struct
          (ISyn.NU (psi', cmd'), cty)
        end
 
-     | ESyn.EXTRACT v =>
+     | ESyn.MATCH_THM (v, xjdg, xtm, cmd) =>
        let
-         val (v', Ty.THM tau) = resolveVal renv v
+         val (v', ty) = resolveVal renv v
+         val tau =
+           case ty of
+              Ty.THM tau => tau
+            | _ => fail (NONE, Fpp.text "MATCH_THM applied to non-theorem")
+
+         val renv' = Res.extendId renv xjdg @@ Ty.TERM RedPrlSort.JDG
+         val renv'' = Res.extendId renv' xtm @@ Ty.TERM tau
+         val (cmd', cty) = resolveCmd renv'' cmd
        in
-         (ISyn.EXTRACT v', Ty.UP @@ Ty.TERM tau)
+         (ISyn.MATCH_THM (v', xjdg, xtm, cmd'), cty)
        end
 
      | ESyn.MATCH_ABS (v, xpsi, xv, cmd) =>
@@ -459,10 +468,16 @@ struct
      | ISyn.NU (psi, cmd) =>
        evalCmd env cmd
 
-     | ISyn.EXTRACT v =>
-       (case evalVal env v of
-           Sem.THM (_, abt) => (Sem.RET @@ Sem.TERM abt, true)
-         | _ => fail (NONE, Fpp.text "evalCmd/ISyn.EXTRACT expected Sem.THM"))
+     | ISyn.MATCH_THM (vthm, xjdg, xtm, cmd) =>
+       (case evalVal env vthm of
+           Sem.THM (jdg, abt) =>
+           let
+             val env' = Sem.extend env xjdg @@ Sem.TERM @@ AJ.into jdg
+             val env'' = Sem.extend env xtm @@ Sem.TERM abt
+           in
+             evalCmd env'' cmd
+           end
+         | _ => fail (NONE, Fpp.text "evalCmd/ISyn.MATCH_THM expected Sem.THM"))
 
      | ISyn.MATCH_ABS (vabs, xpsi, xv, cmd) =>
        (case evalVal env vabs of

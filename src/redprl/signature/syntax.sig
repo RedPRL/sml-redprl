@@ -23,7 +23,7 @@ sig
    | REFINE of jdg * term
    | NU of bindings * cmd
    | MATCH_ABS of value * id * id * cmd
-   | EXTRACT of value
+   | MATCH_THM of value * id * id * cmd
    | ABORT
 
   (* TODO: pretty printer *)
