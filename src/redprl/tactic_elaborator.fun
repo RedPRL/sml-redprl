@@ -320,14 +320,14 @@ struct
        end
 
      | O.DEV_USE_LEMMA $ [_ \ any, _ \ tacVec] =>
-       (let
+       let
          val cust = Syn.unpackAny any
          val O.MK_VEC _ $ appArgs = Tm.out tacVec
          val appTacs = List.map (fn _ \ tm => tactic sign env tm) appArgs
          val z = RedPrlSym.new ()
        in
          cutLemma sign cust (O.PAT_VAR (), [z]) appTacs (hyp sign z)
-       end handle _ => raise Fail "ASDFASD")
+       end
 
      | O.CUST (opid, _) $ args => tactic sign env (Sig.unfoldOpid sign opid args)
      | O.DEV_MATCH ns $ (_ \ term) :: clauses =>
