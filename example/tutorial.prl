@@ -1,0 +1,71 @@
+// POPL 2018 tutorial
+// January 8, 2018
+
+Thm Not : [
+  (-> bool bool)
+] by [
+  lam b =>
+  if b then `ff else `tt
+].
+
+Extract Not.
+
+Thm NotNot : [
+  (->
+   [b : bool]
+   (= bool ($ Not ($ Not b)) b))
+] by [
+  lam b => auto
+].
+
+// Extract NotNot.
+
+Thm NotNot' : [
+  (->
+   [b : bool]
+   (= bool ($ Not ($ Not b)) b))
+] by [
+  lam b => `ax
+].
+
+Thm NotNotEqual : [
+  (=
+    (-> [b : bool] (= bool ($ Not ($ Not b)) b))
+    NotNot
+    NotNot')
+] by [
+  auto
+].
+
+// Print NotNotEqual.
+
+// Shannon expansion for strict booleans.
+Thm Shannon : [
+  (->
+   [ty  : (-> bool (U 0))]
+   [elt : (-> [b : bool] ($ ty b))]
+   [b : bool]
+   (= ($ ty b) ($ elt b) (if b ($ elt tt) ($ elt ff))))
+] by [
+  lam ty elt b =>
+  elim b; auto
+].
+
+// Extract Shannon.
+
+// ``Shannon homotopy expansion'' for weak booleans.
+Thm WeakShannon : [
+  (->
+   [ty  : (-> wbool (U 0 kan))]
+   [elt : (-> [b : wbool] ($ ty b))]
+   [b : wbool]
+   (path [_] ($ ty b) ($ elt b) (wif [b'] ($ ty b') b ($ elt tt) ($ elt ff))))
+] by [
+  lam ty elt b =>
+  elim b; auto;
+  [ abs _ => `($ elt tt)
+  , abs _ => `($ elt ff)
+  , auto]
+].
+
+// Extract WeakShannon.
