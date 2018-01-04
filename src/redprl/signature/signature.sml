@@ -34,12 +34,12 @@ struct
      | TAC of {arguments : arguments, script : ast}
 
     datatype cmd =
-       PRINT of string
-     | EXTRACT of string
+       PRINT of MlId.t
+     | EXTRACT of MlId.t
      | QUIT
 
     datatype elt =
-       DECL of string * decl * Pos.t
+       DECL of MlId.t * decl * Pos.t
      | CMD of cmd * Pos.t
 
     type sign = elt list
@@ -48,13 +48,13 @@ struct
   (* external language *)
   structure ESyn =
     MlSyntax
-      (type id = string type metavariable = string type jdg = ast type term = ast * sort)
+      (type id = MlId.t type metavariable = string type jdg = ast type term = ast * sort)
 
 
   (* internal language *)
   structure ISyn =
     MlSyntax
-      (type id = Res.id type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt)
+      (type id = MlId.t type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt)
 
   fun compileSrcCmd pos : Src.cmd  -> ESyn.cmd =
     fn Src.PRINT nm =>
@@ -64,24 +64,31 @@ struct
        (* pm nm as [Ψ].thm in
           pm thm as (jdg, tm) in
           print [Ψ].tm *)
-       ESyn.MATCH_ABS
-         (ESyn.VAR nm,
-          "psi",
-          "thm",
-          ESyn.MATCH_THM
-            (ESyn.VAR "thm",
-             "jdg",
-             "tm",
-              ESyn.PRINT
-                (SOME pos,
-                 ESyn.ABS
-                   (ESyn.VAR "psi",
-                    ESyn.VAR "tm"))))
+       let
+         val psi = MlId.new ()
+         val thm = MlId.new ()
+         val jdg = MlId.new ()
+         val tm = MlId.new ()
+       in
+        ESyn.MATCH_ABS
+          (ESyn.VAR nm,
+            psi,
+            thm,
+            ESyn.MATCH_THM
+              (ESyn.VAR thm,
+              jdg,
+              tm,
+                ESyn.PRINT
+                  (SOME pos,
+                  ESyn.ABS
+                    (ESyn.VAR psi,
+                      ESyn.VAR tm))))
+       end
 
      | Src.QUIT =>
        ESyn.ABORT
 
-  fun compileSrcDecl (nm : string) : Src.decl -> ESyn.cmd =
+  val compileSrcDecl : Src.decl -> ESyn.cmd =
     fn Src.DEF {arguments, sort, definiens} =>
        (* ν arguments in ret [arguments].`definiens *)
        ESyn.NU (arguments, ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.TERM (definiens, sort))))
@@ -92,14 +99,18 @@ struct
 
      | Src.THM {arguments, goal, script} =>
        (* ν arguments in
-          let nm = refine goal script in
-          ret [arguments].nm *)     
-       ESyn.NU
-         (arguments,
-          ESyn.BIND
-            (ESyn.REFINE (goal, (script, RedPrlSort.TAC)),
-             nm,
-             ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.VAR nm))))
+          let x = refine goal script in
+          ret [arguments].x *)     
+       let
+         val x = MlId.new ()
+       in
+         ESyn.NU
+           (arguments,
+            ESyn.BIND
+              (ESyn.REFINE (goal, (script, RedPrlSort.TAC)),
+               x,
+               ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.VAR x))))
+        end
 
 
   val rec compileSrcSig : Src.sign -> ESyn.cmd =
@@ -107,14 +118,16 @@ struct
        ESyn.RET ESyn.NIL
 
      | Src.CMD (c, pos) :: sign =>
-       ESyn.BIND (compileSrcCmd pos c, "_", compileSrcSig sign)
+       ESyn.BIND (compileSrcCmd pos c, MlId.new (), compileSrcSig sign)
 
      | Src.DECL (nm, decl, _) :: sign =>
-       ESyn.BIND (compileSrcDecl nm decl, nm, compileSrcSig sign)
+       ESyn.BIND (compileSrcDecl decl, nm, compileSrcSig sign)
   
   (* semantic domain *)
   structure Sem =
   struct
+    structure Dict = SplayDict (structure Key = MlId)
+
     datatype value =
        THUNK of env * ISyn.cmd
      | THM of ajdg * abt
@@ -123,19 +136,19 @@ struct
      | METAS of ISyn.bindings
      | NIL
 
-    withtype env = value StringListDict.dict
+    withtype env = value Dict.dict
 
     datatype cmd = RET of value
 
-    val initEnv = StringListDict.empty
+    val initEnv = Dict.empty
 
-    fun lookup (env : env) (nm : string) : value =
-      case StringListDict.find env nm of
+    fun lookup (env : env) (nm : MlId.t) : value =
+      case Dict.find env nm of
          SOME v => v
-       | NONE => fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text nm, Fpp.text "in environment"])
+       | NONE => fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text (MlId.toString nm), Fpp.text "in environment"])
 
-    fun extend (env : env) (nm : string) (v : value) : env =
-      StringListDict.insert env nm v
+    fun extend (env : env) (nm : MlId.t) (v : value) : env =
+      Dict.insert env nm v
 
     (* TODO *)
     val rec ppValue : value -> Fpp.doc =
@@ -176,11 +189,11 @@ struct
   local
     structure O = RedPrlOperator and S = RedPrlSort
   in
-    fun lookupArity (renv : Res.env) (pos : Pos.t option) (opid : string) : arity =
+    fun lookupArity (renv : Res.env) (pos : Pos.t option) (opid : MlId.t) : arity =
       case Res.lookupId renv pos opid of
          Ty.ABS (vls, Ty.TERM tau) => (vls, tau)
        | Ty.ABS (vls, Ty.THM tau) => (vls, tau)
-       | _ => fail (pos, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text opid])
+       | _ => fail (pos, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text (MlId.toString opid)])
 
     fun checkAbt pos (view, tau) : abt =
       Tm.setAnnotation pos @@ Tm.check (view, tau)
@@ -386,7 +399,7 @@ struct
 
   structure MiniSig : MINI_SIGNATURE =
   struct
-    type opid = string
+    type opid = MlId.t
     type abt = abt
     type sign = Sem.env
 
@@ -397,7 +410,7 @@ struct
         Tm.Metavar.Ctx.empty
         (psi, args)
 
-    fun isTheorem env opid =
+    fun isTheorem env (opid : MlId.t) =
       let
         val Sem.ABS (psi, s) = Sem.lookup env opid
       in
@@ -406,7 +419,7 @@ struct
          | _ => false
       end
 
-    fun theoremSpec env opid args =
+    fun theoremSpec env (opid : MlId.t) args =
       let
         val Sem.ABS (Sem.METAS psi, Sem.THM (jdg, _)) = Sem.lookup env opid
         val rho = makeSubst (psi, args)
@@ -415,7 +428,7 @@ struct
       end
       handle Bind => fail (NONE, Fpp.text "internal error: theoremSpec caled on non-theorem")
 
-    fun unfoldOpid env opid args =
+    fun unfoldOpid env (opid : MlId.t) args =
       let
         val Sem.ABS (Sem.METAS psi, s) = Sem.lookup env opid
         val rho = makeSubst (psi, args)
