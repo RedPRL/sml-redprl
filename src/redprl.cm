@@ -37,6 +37,9 @@ is
 
   redprl/fpp.sml
 
+  redprl/ml_id.sig 
+  redprl/ml_id.sml
+
   redprl/syntax/accessor.sig
   redprl/syntax/accessor.sml
   redprl/syntax/selector.sig
