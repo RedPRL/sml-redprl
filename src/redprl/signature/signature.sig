@@ -19,12 +19,12 @@ sig
      | TAC of {arguments : arguments, script : ast}
 
     datatype cmd =
-       PRINT of string
-     | EXTRACT of string
+       PRINT of MlId.t
+     | EXTRACT of MlId.t
      | QUIT
 
     datatype elt = 
-       DECL of string * decl * Pos.t
+       DECL of MlId.t * decl * Pos.t
      | CMD of cmd * Pos.t
 
     type sign = elt list
