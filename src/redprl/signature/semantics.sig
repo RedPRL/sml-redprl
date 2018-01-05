@@ -1,3 +1,4 @@
+(* The semantic domain for metalanguage programs. *)
 signature ML_SEMANTICS = 
 sig
   type env

@@ -4,16 +4,16 @@ struct
   type valence = RedPrlArity.valence
 
   datatype vty =
-      ONE
-    | DOWN of cty
-    | TERM of sort
-    | THM of sort
-    | ABS of valence list * vty
-    | METAS of valence list
+     ONE
+   | DOWN of cty
+   | TERM of sort
+   | THM of sort
+   | ABS of valence list * vty
+   | METAS of valence list
 
   and cty =
-      UP of vty
-    | FUN of vty * cty
+     UP of vty
+   | FUN of vty * cty
 end
 
 signature ML_TYPE =
@@ -21,5 +21,10 @@ sig
   datatype vty = datatype MlTypeData.vty
   datatype cty = datatype MlTypeData.cty
 
-  (* TODO: pretty printer *)
+  (* TODO: 
+  
+  val ppVty : vty -> Fpp.doc
+  val ppCty : cty -> Fpp.doc
+
+  *)
 end

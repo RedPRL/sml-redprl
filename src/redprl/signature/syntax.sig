@@ -60,5 +60,10 @@ sig
      (* abort *)
    | ABORT
 
-  (* TODO: pretty printer *)
+  (* TODO:
+
+  val ppVal : value -> Fpp.doc
+  val ppCmd : cmd -> Fpp.doc
+
+  *)
 end
