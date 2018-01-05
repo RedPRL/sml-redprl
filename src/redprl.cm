@@ -76,23 +76,25 @@ is
   redprl/log.sig
   redprl/log.sml
 
-  redprl/signature/type.sig
-  redprl/signature/resolver.sig
-  redprl/signature/syntax.sig
-  redprl/signature/elaborate.sig
-  redprl/signature/semantics.sig
-  redprl/signature/evaluate.sig
-  redprl/signature/signature.sig
 
-  redprl/signature/type.sml
-  redprl/signature/resolver.fun
-  redprl/signature/syntax.fun
-  redprl/signature/elaborate.fun
-  redprl/signature/semantics.fun
-  redprl/signature/evaluate.fun
+  redprl/mini_signature.sig  
 
-  redprl/signature/signature.sml
-  redprl/signature/mini_signature.sig
+  redprl/metalanguage/type.sig
+  redprl/metalanguage/resolver.sig
+  redprl/metalanguage/syntax.sig
+  redprl/metalanguage/elaborate.sig
+  redprl/metalanguage/semantics.sig
+  redprl/metalanguage/evaluate.sig
+
+  redprl/metalanguage/type.sml
+  redprl/metalanguage/resolver.fun
+  redprl/metalanguage/syntax.fun
+  redprl/metalanguage/elaborate.fun
+  redprl/metalanguage/semantics.fun
+  redprl/metalanguage/evaluate.fun
+
+  redprl/signature.sig
+  redprl/signature.sml
   redprl/tactic_elaborator.fun
 
   redprl/redprl.lex
