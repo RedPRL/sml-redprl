@@ -10,10 +10,16 @@ struct
    | THM of sort
    | ABS of valence list * vty
    | METAS of valence list
+   (* TODO: 
+   | SUM of (string * vty) list
+   *)
 
   and cty =
      UP of vty
    | FUN of vty * cty
+   (* TODO:
+   | RECORD of (string * cty) list
+   *)
 end
 
 signature ML_TYPE =

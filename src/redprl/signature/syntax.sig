@@ -7,6 +7,8 @@ sig
 
   type metas = (metavariable * Tm.valence) list
 
+  (* TODO: add algebraic effects and handlers *)
+
   datatype value =
      (* thunk N *)
      THUNK of cmd
