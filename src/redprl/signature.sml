@@ -48,13 +48,15 @@ struct
   (* external language *)
   structure ESyn =
     MlSyntax
-      (type id = MlId.t type metavariable = string type jdg = ast type term = ast * sort type vty = Ty.vty)
+      (type id = MlId.t type metavariable = string type jdg = ast type term = ast * sort type vty = Ty.vty
+       fun metaToString X = X)
 
 
   (* internal language *)
   structure ISyn =
     MlSyntax
-      (type id = MlId.t type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt type vty = Ty.vty)
+      (type id = MlId.t type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt type vty = Ty.vty
+       val metaToString = Metavar.toString)
 
   fun compileSrcCmd pos : Src.cmd  -> ESyn.cmd =
     fn Src.PRINT nm =>

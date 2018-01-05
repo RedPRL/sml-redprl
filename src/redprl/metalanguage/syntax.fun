@@ -2,7 +2,8 @@ functor MlSyntax
   (type metavariable
    type jdg
    type term
-   type vty) : ML_SYNTAX = 
+   type vty
+   val metaToString : metavariable -> string) : ML_SYNTAX = 
 struct
   type id = MlId.t
   type metavariable = metavariable
@@ -28,7 +29,7 @@ struct
    | AP of cmd * value
    | PRINT of Pos.t option * value
    | REFINE of jdg * term
-   | FRESH of Tm.valence list
+   | FRESH of (string option * Tm.valence) list
    | MATCH_METAS of value * metavariable list * cmd
    | MATCH_ABS of value * id * id * cmd
    | MATCH_THM of value * id * id * cmd
@@ -37,8 +38,9 @@ struct
   fun NU (psi, cmd) =
     let
       val (Xs, vls) = ListPair.unzip psi
+      val hintedVls = ListPair.mapEq (fn (X, vl) => (SOME (metaToString X), vl)) (Xs, vls)
       val xpsi = MlId.new ()
     in
-      BIND (FRESH vls, xpsi, MATCH_METAS (VAR xpsi, Xs, cmd))
+      BIND (FRESH hintedVls, xpsi, MATCH_METAS (VAR xpsi, Xs, cmd))
     end
 end

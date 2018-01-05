@@ -244,7 +244,7 @@ struct
        end
 
      | ESyn.FRESH vls =>
-       (ISyn.FRESH vls, Ty.UP @@ Ty.METAS vls)
+       (ISyn.FRESH vls, Ty.UP @@ Ty.METAS @@ List.map #2 vls)
 
      | ESyn.MATCH_METAS (v, Xs, cmd) =>
        let

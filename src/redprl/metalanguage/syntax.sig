@@ -51,8 +51,8 @@ sig
      (* refine J e *)
    | REFINE of jdg * term
 
-     (* fresh [v...] *)
-   | FRESH of Tm.valence list
+     (* fresh [X:v...] *)
+   | FRESH of (string option * Tm.valence) list
 
      (* pm V as X... in N *)
    | MATCH_METAS of value * metavariable list * cmd

@@ -142,7 +142,7 @@ struct
 
      | Syn.FRESH vls => 
        let
-         val psi = List.map (fn vl => (Metavar.new (), vl)) vls
+         val psi = List.map (fn (SOME name, vl) => (Metavar.named name, vl) | (NONE, vl) => (Metavar.new (), vl)) vls
        in
          (Sem.RET @@ Sem.METAS psi, true)
        end
