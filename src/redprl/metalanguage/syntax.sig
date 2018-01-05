@@ -51,8 +51,11 @@ sig
      (* refine J e *)
    | REFINE of jdg * term
 
-     (* ν [X : v...] in N *)
-   | NU of metas * cmd
+     (* fresh [v...] *)
+   | FRESH of Tm.valence list
+
+     (* pm V as X... in N *)
+   | MATCH_METAS of value * metavariable list * cmd
 
      (* pm V as [Ψ].x in N *)
    | MATCH_ABS of value * id * id * cmd
@@ -62,6 +65,9 @@ sig
 
      (* abort *)
    | ABORT
+
+  (* ν [X : v...] in N *)
+  val NU : metas * cmd -> cmd
 
   (* TODO:
 

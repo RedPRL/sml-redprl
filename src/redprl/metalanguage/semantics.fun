@@ -6,6 +6,7 @@ functor MlSemantics
 struct
   type term = Syn.term
   type jdg = Syn.jdg
+  type metavariable = Syn.metavariable
   type metas = Syn.metas
   type syn_cmd = Syn.cmd
 
@@ -19,19 +20,19 @@ struct
    | METAS of metas
    | NIL
 
-  withtype env = value Dict.dict
+  withtype env = value Dict.dict * metavariable Metavar.Ctx.dict
 
   datatype cmd =
      RET of value
    | FN of env * MlId.t * syn_cmd
 
-  val initEnv = Dict.empty
+  val initEnv = (Dict.empty, Metavar.Ctx.empty)
 
   fun @@ (f, x) = f x
   infixr @@  
 
   fun lookup (env : env) (nm : MlId.t) : value =
-    case Dict.find env nm of
+    case Dict.find (#1 env) nm of
         SOME v => v
       | NONE =>
         RedPrlError.raiseError @@ 
@@ -41,7 +42,28 @@ struct
              Fpp.text "in environment"]
 
   fun extend (env : env) (nm : MlId.t) (v : value) : env =
-    Dict.insert env nm v
+    (Dict.insert (#1 env) nm v, #2 env)
+
+  fun rename (env : env) (Xs : metavariable list) (Ys : metavariable list) =
+    (#1 env,
+     ListPair.foldrEq
+       (fn (X, Y, rho) => Metavar.Ctx.insert rho X Y)
+       (#2 env)
+       (Xs, Ys))
+
+  fun lookupMeta (env : env) (X : metavariable) = 
+    case Metavar.Ctx.find (#2 env) X of 
+       SOME Y => Y
+     | NONE => 
+        RedPrlError.raiseError @@ 
+          RedPrlError.GENERIC
+            [Fpp.text "Could not find value of metavariable",
+             TermPrinter.ppMeta X,
+             Fpp.text "in environment"]
+     
+
+  fun term (env : env) m = 
+    Tm.renameMetavars (#2 env) m
 
   structure AJ = AtomicJudgment
 

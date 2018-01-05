@@ -243,12 +243,16 @@ struct
          (ISyn.REFINE (ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
        end
 
-     | ESyn.NU (psi, cmd) =>
+     | ESyn.FRESH vls =>
+       (ISyn.FRESH vls, Ty.UP @@ Ty.METAS vls)
+
+     | ESyn.MATCH_METAS (v, Xs, cmd) =>
        let
-         val (psi', env') = R.extendMetas env @@ ListPair.unzip psi
+         val (v', Ty.METAS vls) = elabValue env v
+         val (psi, env') = R.extendMetas env (Xs, vls)
          val (cmd', cty) = elabCmd env' cmd
        in
-         (ISyn.NU (psi', cmd'), cty)
+         (ISyn.MATCH_METAS (v', List.map #1 psi, cmd'), cty)
        end
 
      | ESyn.MATCH_THM (v, xjdg, xtm, cmd) =>

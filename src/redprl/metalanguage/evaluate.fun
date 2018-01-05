@@ -9,7 +9,7 @@ sig
   structure Sem : ML_SEMANTICS
     where type jdg = AtomicJudgment.jdg 
     where type term = Tm.abt
-    where type metas = (Tm.metavariable * Tm.valence) list
+    where type metavariable = Tm.metavariable
 
   sharing type Sem.syn_cmd = Syn.cmd
 end
@@ -137,11 +137,26 @@ struct
            if subgoalsCount = 0 then () else
              RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
         in
-          (Sem.RET @@ Sem.THM (ajdg, extract), subgoalsCount = 0)
+          (Sem.RET @@ Sem.THM (AJ.map (Sem.term env) ajdg, Sem.term env extract), subgoalsCount = 0)
         end
 
-     | Syn.NU (psi, cmd) =>
-       evalCmd env cmd
+     | Syn.FRESH vls => 
+       let
+         val psi = List.map (fn vl => (Metavar.new (), vl)) vls
+       in
+         (Sem.RET @@ Sem.METAS psi, true)
+       end
+
+     | Syn.MATCH_METAS (v, Xs, cmd) =>
+       (case evalVal env v of 
+           Sem.METAS psi =>
+           let
+             val env' = Sem.rename env Xs (List.map #1 psi)
+           in
+             evalCmd env' cmd
+           end
+         | _ =>
+           Err.raiseError @@ Err.GENERIC [Fpp.text "evalCmd/MATCH_METAS expected METAS"])      
 
      | Syn.MATCH_THM (vthm, xjdg, xtm, cmd) =>
        (case evalVal env vthm of
@@ -153,7 +168,7 @@ struct
              evalCmd env'' cmd
            end
          | _ =>
-           Err.raiseError @@ Err.GENERIC [Fpp.text "evalCmd/Syn.MATCH_THM expected Sem.THM"])
+           Err.raiseError @@ Err.GENERIC [Fpp.text "evalCmd/MATCH_THM expected THM"])
 
      | Syn.MATCH_ABS (vabs, xpsi, xv, cmd) =>
        (case evalVal env vabs of
@@ -161,7 +176,6 @@ struct
            let
              val env' = Sem.extend env xpsi spsi
              val env'' = Sem.extend env' xv s
-             (* TODO: this should freshen! *)
            in
              evalCmd env'' cmd
            end
@@ -185,9 +199,9 @@ struct
        Sem.ABS (evalVal env psi, evalVal env v)
 
      | Syn.METAS psi =>
-       Sem.METAS psi
+       Sem.METAS @@ List.map (fn (X, vl) => (Sem.lookupMeta env X, vl)) psi
 
      | Syn.TERM abt =>
-       Sem.TERM abt
+       Sem.TERM (Sem.term env abt)
 
 end
