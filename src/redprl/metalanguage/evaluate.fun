@@ -176,6 +176,7 @@ struct
            let
              val env' = Sem.extend env xpsi spsi
              val env'' = Sem.extend env' xv s
+             (* If we add the ability to compare names, to maintain soundness we would need to freshen here *)
            in
              evalCmd env'' cmd
            end
