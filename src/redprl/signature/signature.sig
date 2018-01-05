@@ -34,6 +34,5 @@ sig
     type sign = elt list
   end
 
-  type exit_code = bool
-  val checkSrcSig : Src.sign -> exit_code
+  val checkSrcSig : Src.sign -> bool
 end
