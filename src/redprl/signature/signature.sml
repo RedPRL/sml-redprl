@@ -138,7 +138,9 @@ struct
 
     withtype env = value Dict.dict
 
-    datatype cmd = RET of value
+    datatype cmd =
+       RET of value
+     | FN of env * MlId.t * ISyn.cmd
 
     val initEnv = Dict.empty
 
@@ -349,6 +351,31 @@ struct
           | _ => fail (NONE, Fpp.text "Expected down-shifted type")
        end
 
+     | ESyn.FN (x, vty, cmd) =>
+       let
+         val renv' = Res.extendId renv x vty
+         val (cmd', cty) = resolveCmd renv' cmd
+       in
+         (ISyn.FN (x, vty, cmd'), Ty.FUN (vty, cty))
+       end
+
+     | ESyn.AP (cmd, v) =>
+       let
+         val (cmd', cty) = resolveCmd renv cmd
+       in
+         case cty of
+            Ty.FUN (vty, cty') =>
+            let
+              val (v', vty') = resolveVal renv v
+            in
+              if vty = vty' then 
+                (ISyn.AP (cmd', v'), cty')
+              else
+                fail (NONE, Fpp.text "Argument type mismatch")
+            end
+          | _ => fail (NONE, Fpp.text "Expected function type")
+       end
+
      | ESyn.PRINT (pos, v) =>
        (ISyn.PRINT (pos, #1 @@ resolveVal renv v), Ty.UP Ty.ONE)
 
@@ -461,6 +488,20 @@ struct
        (case evalVal env v of
            Sem.THUNK (env', cmd) => evalCmd env' cmd
          | _ => fail (NONE, Fpp.text "evalCmd/ISyn.FORCE expected Sem.THUNK"))
+
+     | ISyn.FN (x, _, cmd) =>
+       (Sem.FN (env, x, cmd), true)
+
+     | ISyn.AP (cmd, v) =>
+       (case evalCmd env cmd of
+           (Sem.FN (env', x, cmd'), ex) => 
+           let
+             val sv = evalVal env v
+             val (s, ex') = evalCmd (Sem.extend env' x sv) cmd'
+           in
+             (s, ex andalso ex')
+           end
+         | _ => fail (NONE, Fpp.text "evalCmd/ISyn.AP expected Sem.FN"))
 
      | ISyn.PRINT (pos, v) =>
        (Sem.printVal (pos, evalVal env v);

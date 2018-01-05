@@ -23,6 +23,8 @@ struct
      BIND of cmd * id * cmd
    | RET of value
    | FORCE of value
+   | FN of id * MlType.vty * cmd
+   | AP of cmd * value
    | PRINT of Pos.t option * value
    | REFINE of jdg * term
    | NU of bindings * cmd

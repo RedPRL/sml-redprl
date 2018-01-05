@@ -35,6 +35,12 @@ sig
 
      (* force V *)
    | FORCE of value
+
+     (* fn x:A => N *)
+   | FN of id * MlType.vty * cmd
+
+     (* N(V) *)
+   | AP of cmd * value
   
      (* print V *)
    | PRINT of Pos.t option * value

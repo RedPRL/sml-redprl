@@ -13,6 +13,7 @@ struct
 
   and cty =
       UP of vty
+    | FUN of vty * cty
 end
 
 signature ML_TYPE =
