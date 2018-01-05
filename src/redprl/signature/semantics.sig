@@ -24,5 +24,6 @@ sig
   val extend : env -> MlId.t -> value -> env
   val ppValue : value -> Fpp.doc
 
+  (* TODO: move into evaluator *)
   val printVal : Pos.t option * value -> unit
 end

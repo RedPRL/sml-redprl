@@ -132,6 +132,9 @@ struct
 
   structure Elab = MlElaborate (ElabKit)
 
+
+  (* TODO: move what follows into a new module MlEvaluate : ML_EVALUATE *)
+  
   structure MiniSig : MINI_SIGNATURE =
   struct
     type opid = MlId.t
