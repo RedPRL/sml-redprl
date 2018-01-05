@@ -48,13 +48,13 @@ struct
   (* external language *)
   structure ESyn =
     MlSyntax
-      (type id = MlId.t type metavariable = string type jdg = ast type term = ast * sort)
+      (type id = MlId.t type metavariable = string type jdg = ast type term = ast * sort type vty = Ty.vty)
 
 
   (* internal language *)
   structure ISyn =
     MlSyntax
-      (type id = MlId.t type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt)
+      (type id = MlId.t type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt type vty = Ty.vty)
 
   fun compileSrcCmd pos : Src.cmd  -> ESyn.cmd =
     fn Src.PRINT nm =>
@@ -125,241 +125,12 @@ struct
   
   structure Sem = MlSemantics (ISyn)
 
-  local
-    structure O = RedPrlOperator and S = RedPrlSort
-  in
-    fun lookupArity (renv : Res.env) (pos : Pos.t option) (opid : MlId.t) : arity =
-      case Res.lookupId renv pos opid of
-         Ty.ABS (vls, Ty.TERM tau) => (vls, tau)
-       | Ty.ABS (vls, Ty.THM tau) => (vls, tau)
-       | _ => fail (pos, Fpp.hsep [Fpp.text "Could not infer arity for opid", Fpp.text (MlId.toString opid)])
-
-    fun checkAbt pos (view, tau) : abt =
-      Tm.setAnnotation pos @@ Tm.check (view, tau)
-      handle exn =>
-        fail (pos, Fpp.hsep [Fpp.text "Error resolving abt:", Fpp.text (exnMessage exn)])
-
-    fun guessSort (renv : Res.env) (ast : ast) : sort =
-      let
-        val pos = Ast.getAnnotation ast
-      in
-        case Ast.out ast of
-           Ast.` x =>
-           #2 @@ Res.lookupVar renv pos x
-
-         | Ast.$# (X, _) =>
-           #2 o #2 @@ Res.lookupMeta renv pos X
-
-         | Ast.$ (O.CUST (opid, _), _) =>
-           #2 @@ lookupArity renv pos opid
-
-         | Ast.$ (theta, _) =>
-           (#2 @@ O.arity theta
-            handle _ => fail (NONE, Fpp.text "Error guessing sort"))
-      end
-
-    fun resolveAjdg (renv : Res.env) (ast : ast) : ajdg =
-      let
-        val abt = resolveAst renv (ast, S.JDG)
-      in
-        AJ.out abt
-        handle _ =>
-          fail (NONE, Fpp.hsep [Fpp.text "Expected atomic judgment but got", TermPrinter.ppTerm abt])
-      end
-
-    and resolveAst (renv : Res.env) (ast : ast, tau : sort) : abt =
-      let
-        val pos = Ast.getAnnotation ast
-      in
-        case Ast.out ast of
-           Ast.` x =>
-           checkAbt pos (Tm.` o #1 @@ Res.lookupVar renv pos x, tau)
-
-         | Ast.$# (X, asts : ast list) =>
-           let
-             val (X', (taus, _)) = Res.lookupMeta renv pos X
-             val _ = 
-               if List.length asts = List.length taus then () else 
-                 fail (pos, Fpp.hsep [Fpp.text "Incorrect valence for metavariable", Fpp.text X])
-             val abts = ListPair.map (resolveAst renv) (asts, taus)
-           in
-             checkAbt pos (Tm.$# (X', abts), tau)
-           end
-
-         | Ast.$ (theta, bs) =>
-           let
-             val theta' = resolveOpr renv pos theta bs
-             val ar as (vls, tau) = O.arity theta'
-             val _ =
-               if List.length bs = List.length vls then () else
-                 Err.raiseAnnotatedError' (pos, Err.INCORRECT_ARITY theta')
-             val bs' = ListPair.map (resolveBnd renv) (vls, bs)
-           in
-             checkAbt pos (Tm.$ (theta', bs'), tau)
-           end
-      end
-
-    and resolveBnd (renv : Res.env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview =
-      let
-        val (xs', renv') = Res.extendVars renv (xs, taus)
-      in
-        Tm.\ (List.map #1 xs', resolveAst renv' (ast, tau))
-      end
-
-    and resolveOpr (renv : Res.env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator =
-      (case theta of
-         O.CUST (opid, NONE) =>
-         O.CUST (opid, SOME @@ lookupArity renv pos opid)
-
-       | O.MK_ANY NONE =>
-         let
-           val [Ast.\ (_, ast)] = bs
-         in
-           O.MK_ANY o SOME @@ guessSort renv ast
-         end
-
-       | O.DEV_LET NONE =>
-         let
-           val [Ast.\ (_, jdg), _, _] = bs
-         in
-           O.DEV_LET o SOME o AJ.synthesis @@ resolveAjdg renv jdg
-         end
-
-       | th => th)
-       handle _ =>
-         fail (pos, Fpp.text "Error resolving operator")
+  structure ElabKit = 
+  struct
+    structure R = Res and Ty = Ty and ESyn = ESyn and ISyn = ISyn
   end
 
-  fun resolveVal (renv : Res.env) : ESyn.value -> ISyn.value * Ty.vty =
-    fn ESyn.THUNK cmd =>
-       let
-         val (cmd', cty) = resolveCmd renv cmd
-       in
-         (ISyn.THUNK cmd', Ty.DOWN cty)
-       end
-
-     | ESyn.VAR nm =>
-       (ISyn.VAR nm, Res.lookupId renv NONE nm)
-
-     | ESyn.NIL =>
-       (ISyn.NIL, Ty.ONE)
-
-     | ESyn.TERM (ast, tau) =>
-       (ISyn.TERM @@ resolveAst renv (ast, tau), Ty.TERM tau)
-
-     | ESyn.METAS psi =>
-       let
-         val psi' = (List.map (fn (X, vl) => Res.lookupMeta renv NONE X) psi)
-         val vls = List.map #2 psi'
-       in
-         (ISyn.METAS psi', Ty.METAS vls)
-       end
-
-     | ESyn.ABS (vpsi, v) =>
-       let
-         val (vpsi', Ty.METAS vls) = resolveVal renv vpsi
-         val (v', vty) = resolveVal renv v
-       in
-         (ISyn.ABS (vpsi', v'), Ty.ABS (vls, vty))
-       end
-
-  and resolveCmd (renv : Res.env) : ESyn.cmd -> ISyn.cmd * Ty.cty =
-    fn ESyn.BIND (cmd1, nm, cmd2) =>
-       let
-         val (cmd1', Ty.UP vty1) = resolveCmd renv cmd1
-         val (cmd2', cty2) = resolveCmd (Res.extendId renv nm vty1) cmd2
-       in
-         (ISyn.BIND (cmd1', nm, cmd2'), cty2)
-       end
-
-     | ESyn.RET v =>
-       let
-         val (v', vty) = resolveVal renv v
-       in
-         (ISyn.RET v', Ty.UP vty)
-       end
-
-     | ESyn.FORCE v =>
-       let
-         val (v', vty) = resolveVal renv v
-       in
-         case vty of
-            Ty.DOWN cty => (ISyn.FORCE v', cty)
-          | _ => fail (NONE, Fpp.text "Expected down-shifted type")
-       end
-
-     | ESyn.FN (x, vty, cmd) =>
-       let
-         val renv' = Res.extendId renv x vty
-         val (cmd', cty) = resolveCmd renv' cmd
-       in
-         (ISyn.FN (x, vty, cmd'), Ty.FUN (vty, cty))
-       end
-
-     | ESyn.AP (cmd, v) =>
-       let
-         val (cmd', cty) = resolveCmd renv cmd
-       in
-         case cty of
-            Ty.FUN (vty, cty') =>
-            let
-              val (v', vty') = resolveVal renv v
-            in
-              if vty = vty' then 
-                (ISyn.AP (cmd', v'), cty')
-              else
-                fail (NONE, Fpp.text "Argument type mismatch")
-            end
-          | _ => fail (NONE, Fpp.text "Expected function type")
-       end
-
-     | ESyn.PRINT (pos, v) =>
-       (ISyn.PRINT (pos, #1 @@ resolveVal renv v), Ty.UP Ty.ONE)
-
-     | ESyn.REFINE (ajdg, script) =>
-       let
-         val ajdg' = resolveAjdg renv ajdg
-         val script' = resolveAst renv script
-       in
-         (ISyn.REFINE (ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
-       end
-
-     | ESyn.NU (psi, cmd) =>
-       let
-         val (psi', renv') = Res.extendMetas renv @@ ListPair.unzip psi
-         val (cmd', cty) = resolveCmd renv' cmd
-       in
-         (ISyn.NU (psi', cmd'), cty)
-       end
-
-     | ESyn.MATCH_THM (v, xjdg, xtm, cmd) =>
-       let
-         val (v', ty) = resolveVal renv v
-         val tau =
-           case ty of
-              Ty.THM tau => tau
-            | _ => fail (NONE, Fpp.text "MATCH_THM applied to non-theorem")
-
-         val renv' = Res.extendId renv xjdg @@ Ty.TERM RedPrlSort.JDG
-         val renv'' = Res.extendId renv' xtm @@ Ty.TERM tau
-         val (cmd', cty) = resolveCmd renv'' cmd
-       in
-         (ISyn.MATCH_THM (v', xjdg, xtm, cmd'), cty)
-       end
-
-     | ESyn.MATCH_ABS (v, xpsi, xv, cmd) =>
-       let
-         val (v', Ty.ABS (vls, vty)) = resolveVal renv v
-         val renv' = Res.extendId renv xpsi @@ Ty.METAS vls
-         val renv'' = Res.extendId renv' xv vty
-         val (cmd', cty) = resolveCmd renv'' cmd
-       in
-         (ISyn.MATCH_ABS (v', xpsi, xv, cmd'), cty)
-       end
-
-     | ESyn.ABORT =>
-       (ISyn.ABORT, Ty.UP Ty.ONE)
-       (* ? *)
+  structure Elab = MlElaborate (ElabKit)
 
   structure MiniSig : MINI_SIGNATURE =
   struct
@@ -517,7 +288,7 @@ struct
   fun checkSrcSig (sign : Src.sign) : bool =
     let
       val ecmd = compileSrcSig sign
-      val (icmd, _) = resolveCmd Res.init ecmd
+      val (icmd, _) = Elab.elabCmd Res.init ecmd
       val (scmd, exit) = evalCmd Sem.initEnv icmd
     in
       exit

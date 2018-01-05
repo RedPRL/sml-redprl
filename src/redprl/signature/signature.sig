@@ -34,17 +34,6 @@ sig
     type sign = elt list
   end
 
-
-  val compileSrcSig : Src.sign -> ESyn.cmd
-
-  (* resolver *)
-  structure Res : sig type env end
-  val resolveCmd : Res.env -> ESyn.cmd -> ISyn.cmd * Ty.cty
-  val resolveVal : Res.env -> ESyn.value -> ISyn.value * Ty.vty
-
   type exit_code = bool
-  val evalCmd : Sem.env -> ISyn.cmd -> Sem.cmd * exit_code
-  val evalVal : Sem.env -> ISyn.value -> Sem.value
-
   val checkSrcSig : Src.sign -> exit_code
 end

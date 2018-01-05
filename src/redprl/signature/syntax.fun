@@ -2,12 +2,14 @@ functor MlSyntax
   (type id
    type metavariable
    type jdg
-   type term) : ML_SYNTAX = 
+   type term
+   type vty) : ML_SYNTAX = 
 struct
   type id = id
   type metavariable = metavariable
   type jdg = jdg
   type term = term
+  type vty = vty
 
   type metas = (metavariable * Tm.valence) list
 
@@ -23,7 +25,7 @@ struct
      BIND of cmd * id * cmd
    | RET of value
    | FORCE of value
-   | FN of id * MlType.vty * cmd
+   | FN of id * vty * cmd
    | AP of cmd * value
    | PRINT of Pos.t option * value
    | REFINE of jdg * term

@@ -4,6 +4,7 @@ sig
   type metavariable
   type jdg
   type term
+  type vty
 
   type metas = (metavariable * Tm.valence) list
 
@@ -39,7 +40,7 @@ sig
    | FORCE of value
 
      (* fn x:A => N *)
-   | FN of id * MlType.vty * cmd
+   | FN of id * vty * cmd
 
      (* N(V) *)
    | AP of cmd * value
