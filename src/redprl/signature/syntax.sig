@@ -5,7 +5,7 @@ sig
   type jdg
   type term
 
-  type bindings = (metavariable * Tm.valence) list
+  type metas = (metavariable * Tm.valence) list
 
   datatype value =
      (* thunk N *)
@@ -21,7 +21,7 @@ sig
    | ABS of value * value
 
      (* [X : v...] *)
-   | METAS of bindings
+   | METAS of metas
   
      (* 'e *)
    | TERM of term
@@ -49,7 +49,7 @@ sig
    | REFINE of jdg * term
 
      (* ν [X : v...] in N *)
-   | NU of bindings * cmd
+   | NU of metas * cmd
 
      (* pm V as [Ψ].x in N *)
    | MATCH_ABS of value * id * id * cmd

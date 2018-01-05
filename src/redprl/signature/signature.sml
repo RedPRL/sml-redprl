@@ -112,7 +112,6 @@ struct
                ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.VAR x))))
         end
 
-
   val rec compileSrcSig : Src.sign -> ESyn.cmd =
     fn [] =>
        ESyn.RET ESyn.NIL
@@ -123,70 +122,8 @@ struct
      | Src.DECL (nm, decl, _) :: sign =>
        ESyn.BIND (compileSrcDecl decl, nm, compileSrcSig sign)
   
-  (* semantic domain *)
-  structure Sem =
-  struct
-    structure Dict = SplayDict (structure Key = MlId)
-
-    datatype value =
-       THUNK of env * ISyn.cmd
-     | THM of ajdg * abt
-     | TERM of abt
-     | ABS of value * value
-     | METAS of ISyn.bindings
-     | NIL
-
-    withtype env = value Dict.dict
-
-    datatype cmd =
-       RET of value
-     | FN of env * MlId.t * ISyn.cmd
-
-    val initEnv = Dict.empty
-
-    fun lookup (env : env) (nm : MlId.t) : value =
-      case Dict.find env nm of
-         SOME v => v
-       | NONE => fail (NONE, Fpp.hsep [Fpp.text "Could not find value of", Fpp.text (MlId.toString nm), Fpp.text "in environment"])
-
-    fun extend (env : env) (nm : MlId.t) (v : value) : env =
-      Dict.insert env nm v
-
-    (* TODO *)
-    val rec ppValue : value -> Fpp.doc =
-      fn THUNK _ => Fpp.text "<thunk>"
-       | THM (jdg, abt) =>
-         Fpp.seq
-           [Fpp.text "Thm:",
-            Fpp.nest 2 @@ Fpp.seq [Fpp.newline, AJ.pretty jdg],
-            Fpp.newline,
-            Fpp.newline,
-            Fpp.text "Extract:",
-            Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
-
-       | TERM abt =>
-         TermPrinter.ppTerm abt
-
-       | METAS psi =>
-         Fpp.collection
-           (Fpp.char #"[")
-           (Fpp.char #"]")
-           Fpp.Atomic.comma
-           (List.map (fn (X, vl) => Fpp.hsep [TermPrinter.ppMeta X, Fpp.Atomic.colon, TermPrinter.ppValence vl]) psi)
-
-       | ABS (vpsi, v) =>
-         Fpp.seq
-           [Fpp.hsep
-            [ppValue vpsi,
-             Fpp.text "=>"],
-            Fpp.nest 2 @@ Fpp.seq [Fpp.newline, ppValue v]]
-
-       | NIL =>
-         Fpp.text "()"
-
-    fun printVal (pos : Pos.t option, v : value) : unit=
-      RedPrlLog.print RedPrlLog.INFO (pos, ppValue v)
-  end
+  
+  structure Sem = MlSemantics (ISyn)
 
   local
     structure O = RedPrlOperator and S = RedPrlSort

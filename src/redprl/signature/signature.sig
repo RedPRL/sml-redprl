@@ -1,17 +1,21 @@
 signature SIGNATURE = 
 sig
   type sort
-  type valence
   type ast
-  type abt
-  type metavariable
-  type ajdg
 
+  structure Ty : ML_TYPE
+  structure ESyn : ML_SYNTAX (* before name resolution *)
+  structure ISyn : ML_SYNTAX (* after name resolution *)
+  structure Sem : ML_SEMANTICS (* semantic domain *)
+
+  sharing type Sem.jdg = ISyn.jdg
+  sharing type Sem.term = ISyn.term
+  sharing type Sem.syn_cmd = ISyn.cmd
 
   (* source language: to be phased out *)
   structure Src :
   sig
-    type arguments = (string * valence) list
+    type arguments = ESyn.metas
 
     datatype decl =
        DEF of {arguments : arguments, sort : sort, definiens : ast}
@@ -30,19 +34,6 @@ sig
     type sign = elt list
   end
 
-  structure Ty : ML_TYPE
-  structure ESyn : ML_SYNTAX (* before name resolution *)
-  structure ISyn : ML_SYNTAX (* after name resolution *)
-
-  (* semantic domain *)
-  structure Sem : 
-  sig
-    type value
-    type cmd
-    type env
-
-    val ppValue : value -> Fpp.doc
-  end
 
   val compileSrcSig : Src.sign -> ESyn.cmd
 

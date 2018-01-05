@@ -79,11 +79,13 @@ is
   redprl/signature/type.sig
   redprl/signature/resolver.sig
   redprl/signature/syntax.sig
+  redprl/signature/semantics.sig
   redprl/signature/signature.sig
 
   redprl/signature/type.sml
   redprl/signature/resolver.fun
   redprl/signature/syntax.fun
+  redprl/signature/semantics.fun  
 
   redprl/signature/signature.sml
   redprl/signature/mini_signature.sig

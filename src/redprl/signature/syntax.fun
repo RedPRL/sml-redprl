@@ -9,14 +9,14 @@ struct
   type jdg = jdg
   type term = term
 
-  type bindings = (metavariable * Tm.valence) list
+  type metas = (metavariable * Tm.valence) list
 
   datatype value =
      THUNK of cmd
    | VAR of id
    | NIL
    | ABS of value * value
-   | METAS of bindings
+   | METAS of metas
    | TERM of term
 
   and cmd =
@@ -27,7 +27,7 @@ struct
    | AP of cmd * value
    | PRINT of Pos.t option * value
    | REFINE of jdg * term
-   | NU of bindings * cmd
+   | NU of metas * cmd
    | MATCH_ABS of value * id * id * cmd
    | MATCH_THM of value * id * id * cmd
    | ABORT
