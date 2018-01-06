@@ -543,9 +543,9 @@ numAsDimension
   : NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
 
 dimension
-  : VARNAME (`` VARNAME)
-  | metavar (Ast.$$# (metavar, []))
-  | numAsDimension (numAsDimension)
+  : VARNAME (annotate (Pos.pos (VARNAMEleft fileName) (VARNAMEright fileName)) (`` VARNAME))
+  | metavar  (annotate (Pos.pos (metavarleft fileName) (metavarright fileName)) (Ast.$$# (metavar, [])))
+  | numAsDimension (annotate (Pos.pos (numAsDimensionleft fileName) (numAsDimensionright fileName)) numAsDimension)
 
 dimensions
   : dimension dimensions (dimension :: dimensions)
