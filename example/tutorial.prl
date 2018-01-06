@@ -8,7 +8,7 @@ Thm Not : [
   if b then `ff else `tt
 ].
 
-// Print Not.
+Print Not.
 
 Thm NotNot : [
   (->
@@ -21,7 +21,7 @@ Thm NotNot : [
   if b then (reduce at right; auto) else (reduce at right; auto)
 ].
 
-// Print NotNot.
+Print NotNot.
 
 Thm RespectEquality : [
   (->
@@ -39,7 +39,7 @@ Thm RespectEquality : [
 ].
 
 // extract does not mention NotNot
-// Print RespectEquality.
+Print RespectEquality.
 
 Thm EqualityIrrelevant : [
   (=
@@ -50,7 +50,17 @@ Thm EqualityIrrelevant : [
   auto
 ].
 
-// Print EqualityIrrelevant.
+Print EqualityIrrelevant.
+
+Thm FunToPair : [
+  (->
+   [ty : (U 0 kan)]
+   (-> bool ty)
+   (* ty ty))
+] by [
+  lam ty fun =>
+  {`($ fun tt), `($ fun ff)}
+].
 
 // {{{ Univalence
 
@@ -59,66 +69,88 @@ Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
 Def Fiber (#A,#B,#f,#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
 Def IsEquiv (#A,#B,#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
 Def Equiv (#A,#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
-Def Not = [(lam [b] (if b ff tt))].
 
-Thm Bool/reflect : [
- (->
-  [a b : bool]
-  [p : (path [_] bool a b)]
-  (= bool a b))
-] by [
-  lam a b p => `(coe 0~>1 [x] (= bool a (@ p x)) ax)
-].
+//Thm FunToPairIsEquiv : [
+//  (->
+//   [ty : (U 0 kan)]
+//   (IsEquiv (-> bool ty) (* ty ty) ($ FunToPair ty)))
+//] by [
+//  lam ty {t,f} =>
+//  { { lam b => if b then `t else `f
+//    , abs _ => {`t,`f} }
+//  , lam {fun,p} => abs x =>
+//    { `fun
+//    , use p
+//    }
+//  };
+//  unfold Fiber; refine record/eq/tuple;
+//  [?, ?, auto]
+//  //?rest
+//  //[unfold FunToPair; reduce at right; auto; ?, id, id]
+//].
 
-Tac Bool/contra/inverse (#p:exp) = [
-  query gl <- concl;
-  match gl {
-    [a b | #jdg{%a = %b in bool} =>
-      claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
-      symmetry; elim eq; auto
-    ]
-    [a | %[a:jdg] => id]
-  }
-].
-
-Thm NotIsEquiv : [
-  (IsEquiv bool bool Not)
-] by [
-  lam b =>
-  { {`($ Not b), abs _ => use b}
-  , lam {_,p'} =>
-     (abs i =>
-        { `($ Not (hcom 1~>0 bool b
-                    [i=0 [j] (@ p' j)]
-                    [i=1 [j] b]))
-        , abs j =>
-            `(hcom 1~>j bool b
-              [i=0 [j] (@ p' j)]
-              [i=1 [j] b])
-        }
-      );
-      auto; (Bool/contra/inverse p')
-  }
-].
-
-Thm NotPath : [
-  (path [_] (U 0 kan) bool bool)
-] by [
-  abs x => `(V x bool bool (tuple [proj1 Not] [proj2 NotIsEquiv]))
-].
+//Thm PathFunToPair : [
+//  (->
+//   [ty : (U 0 kan)]
+//   (path [_] (U 0 kan) (-> bool ty) (* ty ty)))
+//] by [
+//  lam ty => abs x =>
+//  `(V x (-> bool ty) (* ty ty) (tuple [proj1 FunToPair] [proj2 FunToPairIsEquiv]))
+//].
 // }}}
 
-Print NotPath.
-
-Thm IdPath : [
-  (path [_] (U 0 kan) bool bool)
-] by [
-  abs _ => `bool
-].
-
-Print IdPath.
+// Print PathFunToPair.
 
 // TODO example of transporting things across this equality
+
+// ---------------------------------------------------------
+// Part Two
+// ---------------------------------------------------------
+
+Thm PathInv : [
+  (->
+   [ty : (U 0 kan)]
+   [a b : ty]
+   [p : (path [_] ty a b)]
+   (path [_] ty b a))
+] by [
+  lam ty a b p =>
+  abs x =>
+  `(hcom 0~>1 ty a [x=0 [y] (@ p y)] [x=1 [_] a])
+].
+
+Thm PathConcat : [
+  (->
+   [ty : (U 0 kan)]
+   [a b c : ty]
+   [p : (path [_] ty a b)]
+   [q : (path [_] ty b c)]
+   (path [_] ty a c))
+] by [
+  lam ty a b c p q =>
+  abs x =>
+  `(hcom 0~>1 ty (@ p x) [x=0 [_] a] [x=1 [y] (@ q y)])
+].
+
+Thm InvRefl : [
+  (->
+   [ty : (U 0 kan)]
+   [a : ty]
+   (path
+     [_] (path [_] ty a a)
+     ($ PathInv ty a a (abs [_] a))
+     (abs [_] a)))
+] by [
+  lam ty a =>
+  abs x y =>
+  `(hcom 0~>1 ty a
+    [x=0 [z] (hcom 0~>z ty a [y=0 [_] a] [y=1 [_] a])]
+    [x=1 [_] a]
+    [y=0 [_] a]
+    [y=1 [_] a])
+].
+
+// TODO use J to prove inv or comp?
 
 // Shannon expansion for strict booleans.
 Thm Shannon : [
