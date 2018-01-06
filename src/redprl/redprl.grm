@@ -414,7 +414,7 @@ end
  | metavar of string
  | patvar of string * O.sort
  | patvarBindings of string list
- | customOpTerm of string * ast abs list
+ | customOpTerm of MlId.t * ast abs list
 
 
  | typedBinder of (string option list, ast) Multi.binder
@@ -483,14 +483,14 @@ end
  | selectors of ast list
  | accessor of ast
  | accessors of ast list
- | opnames of string list
+ | opnames of MlId.t list
 
  | declArgument of metavariable * Ar.valence
  | declArguments of Signature.Src.arguments
  | declArgumentsParens of Signature.Src.arguments
 
    (* a declaration, annotated with source position *)
- | decl of string * Signature.Src.decl * Pos.t
+ | decl of MlId.t * Signature.Src.decl * Pos.t
    (* a RedPRL signature *)
  | rawCmd of Signature.Src.cmd
  | cmd of Signature.Src.cmd * Pos.t
@@ -686,8 +686,8 @@ multinaryOperator
 
 
 customOpTerm
-  : OPNAME (OPNAME, [])
-  | LPAREN OPNAME bindings RPAREN (OPNAME, bindings)
+  : OPNAME (MlId.const OPNAME, [])
+  | LPAREN OPNAME bindings RPAREN (MlId.const OPNAME, bindings)
 
 patvar
   : PERCENT LSQUARE VARNAME COLON sort RSQUARE ((VARNAME, sort))
@@ -880,8 +880,8 @@ selectors
   | selector ([selector])
 
 opnames
-  : OPNAME opnames (OPNAME :: opnames)
-  | OPNAME ([OPNAME])
+  : OPNAME opnames (MlId.const OPNAME :: opnames)
+  | OPNAME ([MlId.const OPNAME])
 
 termAnySort
   : term (Ast.setAnnotation (Ast.getAnnotation term) (Ast.$$ (O.MK_ANY NONE, [Ast.\ ([], term)])))
@@ -1014,17 +1014,17 @@ declArgumentsParens
 
 decl
   : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
-      (OPNAME, Signature.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+      (MlId.const OPNAME, Signature.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_DEF OPNAME declArgumentsParens EQUALS LSQUARE term RSQUARE
-      (OPNAME, Signature.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+      (MlId.const OPNAME, Signature.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
-      (OPNAME, Signature.Src.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+      (MlId.const OPNAME, Signature.Src.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
   | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_atjdg RSQUARE BY LSQUARE tactic RSQUARE
-      (OPNAME, Signature.Src.THM {arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
+      (MlId.const OPNAME, Signature.Src.THM {arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
 
 rawCmd
-  : CMD_PRINT OPNAME (Signature.Src.PRINT OPNAME)
-  | CMD_EXTRACT OPNAME (Signature.Src.EXTRACT OPNAME)
+  : CMD_PRINT OPNAME (Signature.Src.PRINT (MlId.const OPNAME))
+  | CMD_EXTRACT OPNAME (Signature.Src.EXTRACT (MlId.const OPNAME))
   | CMD_QUIT (Signature.Src.QUIT)
 
 cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))

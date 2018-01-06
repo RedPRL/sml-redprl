@@ -1,10 +1,14 @@
 " vim-RedPRL ftplugin
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2017 December 19
+" Last Change:  2018 January 6
 
 if (exists("b:did_ftplugin") || !has('job'))
   finish
+endif
+
+if (!exists('g:redprl_trace'))
+  let g:redprl_trace = 0
 endif
 
 if (!exists('g:redprl_path'))
@@ -25,6 +29,7 @@ function! CheckBuffer()
     belowright vsplit RedPRL
     set buftype=nofile
     set syntax=redprl
+    setlocal noswapfile
   else
     execute bufwinnr('RedPRL') . 'wincmd w'
   endif
@@ -32,6 +37,7 @@ function! CheckBuffer()
   wincmd p
 
   let s:job = job_start(g:redprl_path .
+    \(g:redprl_trace ? ' --trace' : '') .
     \' --width=' . winwidth(bufwinnr('RedPRL')) .
     \' --from-stdin=' . bufname('%'), {
     \'in_io': 'buffer', 'in_buf': bufnr('%'),
@@ -48,7 +54,10 @@ function! CheckBufferExit(j,status)
     call setqflist([], 'r', {'title': 'RedPRL Errors'})
   endif
   if (len(getqflist()) > 1)
+    copen
     cc
+  else
+    cclose
   endif
   if (exists('s:job'))
     unlet s:job

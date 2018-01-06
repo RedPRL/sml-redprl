@@ -5,7 +5,6 @@ struct
    | WARN
    | DUMP
    | FAIL
-   | TRACE
 
   fun formatMessage lvl (pos, msg : Fpp.doc) : Fpp.doc =
     let
@@ -20,7 +19,6 @@ struct
          | DUMP => "Output"
          | WARN => "Warning"
          | FAIL => "Error"
-         | TRACE => "Trace"
 
       val header =
         Fpp.hsep
@@ -36,7 +34,6 @@ struct
      | DUMP => TextIO.stdOut
      | WARN => TextIO.stdOut
      | FAIL => TextIO.stdErr
-     | TRACE => TextIO.stdOut
 
   fun print lvl msg =
     let

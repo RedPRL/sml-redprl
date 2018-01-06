@@ -1,6 +1,6 @@
 structure RedPrlOpData =
 struct
-  type opid = string (* TODO: structured representation to allow namespacing!! *)
+  type opid = MlId.t
 
   open RedPrlSort
   structure K = RedPrlKind

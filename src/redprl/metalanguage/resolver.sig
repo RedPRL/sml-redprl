@@ -1,5 +1,6 @@
 structure Tm = RedPrlAbt
 
+(* This is the core of name resolution for the metalanguage and the object language. *)
 signature RESOLVER = 
 sig
   type env

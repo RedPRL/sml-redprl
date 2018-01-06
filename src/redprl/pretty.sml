@@ -56,8 +56,8 @@ struct
   val ppIntInf = text o IntInf.toString
 
   fun ppOperator theta =
-    case theta of 
-       O.CUST (opid, _) => text opid
+    case theta of
+       O.CUST (opid, _) => text @@ MlId.toString opid
      | _ => text @@ RedPrlOperator.toString theta
 
   val ppLabel = text

@@ -1,4 +1,4 @@
-functor MlResolver (Ty : ML_TYPE) :> RESOLVER where type mltype = Ty.vty and type id = string =
+functor MlResolver (Ty : ML_TYPE) :> RESOLVER where type mltype = Ty.vty and type id = MlId.t =
 struct
   structure E = RedPrlError
 
@@ -6,35 +6,38 @@ struct
   infixr @@
 
   type mltype = Ty.vty
-  type id = string
+  type id = MlId.t
+
+  structure Dict = SplayDict (structure Key = MlId)
 
   type env =
-    {ids : Ty.vty StringListDict.dict,
+    {ids : Ty.vty Dict.dict,
      vars : (Tm.variable * Tm.sort) StringListDict.dict,
      metas : (Tm.metavariable * Tm.valence) StringListDict.dict}
 
   val init =
-    {ids = StringListDict.empty,
+    {ids = Dict.empty,
      vars = StringListDict.empty,
      metas = StringListDict.empty}
 
-  fun lookup dict pos x =
-    case StringListDict.find dict x of
+  fun lookupId (env : env) pos (x : id) =
+    case Dict.find (#ids env) x of 
        SOME r => r
-     | NONE => E.raiseAnnotatedError' (pos, E.GENERIC [Fpp.text "Could not resolve name", Fpp.text x])
+     | NONE => E.raiseAnnotatedError' (pos, E.GENERIC [Fpp.text "Could not resolve id", Fpp.text (MlId.toString x)])
 
-  fun lookupId (env : env) =
-    lookup (#ids env)
-
-  fun lookupVar (env : env) =
-    lookup (#vars env)
-
-  fun lookupMeta (env : env) =
-    lookup (#metas env)
+  fun lookupVar (env : env) pos x = 
+    case StringListDict.find (#vars env) x of 
+       SOME r => r
+     | NONE => E.raiseAnnotatedError' (pos, E.GENERIC [Fpp.text "Could not resolve variable", Fpp.text x])
+  
+  fun lookupMeta (env : env) pos x =
+    case StringListDict.find (#metas env) x of 
+       SOME r => r
+     | NONE => E.raiseAnnotatedError' (pos, E.GENERIC [Fpp.text "Could not resolve metavariable", Fpp.text x])
 
   (* TODO: ensure that this name is not already used *)
   fun extendId {ids, vars, metas} nm vty =
-    {ids = StringListDict.insert ids nm vty,
+    {ids = Dict.insert ids nm vty,
      vars = vars,
      metas = metas}
 

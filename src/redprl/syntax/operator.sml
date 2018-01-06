@@ -174,7 +174,7 @@ struct
   fun eq (th1, th2) = th1 = th2
 
   val opidsToString =
-   ListUtil.joinWith (fn x => x) ","
+   ListUtil.joinWith MlId.toString ","
 
   val toString =
     fn AX => "ax"
@@ -307,7 +307,7 @@ struct
      | JDG_SUB_KIND => "sub-kind"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
-     | CUST (opid, _) => opid
+     | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
      | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
      | DEV_APPLY_LEMMA _ => "apply-lemma"
