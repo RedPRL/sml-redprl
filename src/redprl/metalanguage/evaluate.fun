@@ -7,10 +7,6 @@ sig
     where type id = MlId.t
   
   structure Sem : ML_SEMANTICS
-    where type jdg = AtomicJudgment.jdg 
-    where type term = Tm.abt
-    where type metavariable = Tm.metavariable
-
   sharing type Sem.syn_cmd = Syn.cmd
 end
 

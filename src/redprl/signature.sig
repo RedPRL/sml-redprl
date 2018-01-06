@@ -3,19 +3,10 @@ sig
   type sort
   type ast
 
-  structure Ty : ML_TYPE
-  structure ESyn : ML_SYNTAX (* before name resolution *)
-  structure ISyn : ML_SYNTAX (* after name resolution *)
-  structure Sem : ML_SEMANTICS (* semantic domain *)
-
-  sharing type Sem.jdg = ISyn.jdg
-  sharing type Sem.term = ISyn.term
-  sharing type Sem.syn_cmd = ISyn.cmd
-
   (* source language: to be phased out *)
   structure Src :
   sig
-    type arguments = ESyn.metas
+    type arguments = (string * Tm.valence) list
 
     datatype decl =
        DEF of {arguments : arguments, sort : sort, definiens : ast}

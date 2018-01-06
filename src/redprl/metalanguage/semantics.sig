@@ -3,10 +3,9 @@ signature ML_SEMANTICS =
 sig
   type env
   type syn_cmd
-  type jdg
-  type term
-  type metavariable
-  type metas = (metavariable * Tm.valence) list
+  type jdg = AtomicJudgment.jdg
+  type term = Tm.abt
+  type metas = (Tm.metavariable * Tm.valence) list
 
   datatype value =
      THUNK of env * syn_cmd
@@ -23,13 +22,13 @@ sig
 
   val initEnv : env
   val lookup : env -> MlId.t -> value
-  val lookupMeta : env -> metavariable -> metavariable  
+  val lookupMeta : env -> Tm.metavariable -> Tm.metavariable
   val term : env -> term -> term
 
   val extend : env -> MlId.t -> value -> env
-  val renameEnv : env -> (metavariable * metavariable) list -> env
+  val renameEnv : env -> (Tm.metavariable * Tm.metavariable) list -> env
 
-  val renameVal : value -> (metavariable * metavariable) list -> value
+  val renameVal : value -> (Tm.metavariable * Tm.metavariable) list -> value
   val ppValue : value -> Fpp.doc
 
   (* TODO: move into evaluator *)
