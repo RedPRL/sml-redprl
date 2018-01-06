@@ -35,7 +35,7 @@ struct
    | MATCH_THM of value * id * id * cmd
    | ABORT
 
-  fun NU (psi, cmd) =
+  fun nu (psi, cmd) =
     let
       val (Xs, vls) = ListPair.unzip psi
       val hintedVls = ListPair.mapEq (fn (X, vl) => (SOME (metaToString X), vl)) (Xs, vls)
@@ -43,4 +43,33 @@ struct
     in
       BIND (FRESH hintedVls, xpsi, MATCH_METAS (VAR xpsi, Xs, cmd))
     end
+
+  fun termAbs (psi, term) =
+    nu (psi, RET (ABS (METAS psi, TERM term)))
+
+  fun theoremAbs (psi, jdg, script) =
+    let
+      val x = MlId.new ()
+    in 
+      nu (psi, BIND (REFINE (jdg, script), x, RET (ABS (METAS psi, VAR x))))
+    end
+
+  fun extract v = 
+    let
+      val xjdg = MlId.new ()
+      val xtm = MlId.new ()
+    in
+      MATCH_THM (v, xjdg, xtm, RET (VAR xtm))
+    end
+
+  fun printExtractAbs (pos, v) = 
+    let
+      val xpsi = MlId.new ()
+      val xthm = MlId.new ()
+      val xjdg = MlId.new ()
+      val xtm = MlId.new ()
+    in
+      MATCH_ABS (v, xpsi, xthm, MATCH_THM (VAR xthm, xjdg, xtm, PRINT (pos, ABS (VAR xpsi, VAR xtm))))
+    end
+    
 end

@@ -67,7 +67,12 @@ sig
    | ABORT
 
   (* ν [X : v...] in N *)
-  val NU : metas * cmd -> cmd
+  val nu : metas * cmd -> cmd
+
+  (* some macros *)
+  val termAbs : metas * term -> cmd
+  val theoremAbs : metas * jdg * term -> cmd
+  val printExtractAbs : Pos.t option * value -> cmd
 
   (* TODO:
 

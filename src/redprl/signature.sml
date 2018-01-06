@@ -63,56 +63,20 @@ struct
        ESyn.PRINT (SOME pos, ESyn.VAR nm)
 
      | Src.EXTRACT nm =>
-       (* pm nm as [Ψ].thm in
-          pm thm as (jdg, tm) in
-          print [Ψ].tm *)
-       let
-         val psi = MlId.new ()
-         val thm = MlId.new ()
-         val jdg = MlId.new ()
-         val tm = MlId.new ()
-       in
-        ESyn.MATCH_ABS
-          (ESyn.VAR nm,
-            psi,
-            thm,
-            ESyn.MATCH_THM
-              (ESyn.VAR thm,
-              jdg,
-              tm,
-                ESyn.PRINT
-                  (SOME pos,
-                  ESyn.ABS
-                    (ESyn.VAR psi,
-                      ESyn.VAR tm))))
-       end
+       ESyn.printExtractAbs (SOME pos, ESyn.VAR nm)
 
      | Src.QUIT =>
        ESyn.ABORT
 
   val compileSrcDecl : Src.decl -> ESyn.cmd =
     fn Src.DEF {arguments, sort, definiens} =>
-       (* ν arguments in ret [arguments].`definiens *)
-       ESyn.NU (arguments, ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.TERM (definiens, sort))))
+       ESyn.termAbs (arguments, (definiens, sort))
 
      | Src.TAC {arguments, script} => 
-       (* ν arguments in ret [arguments].`script *)
-       ESyn.NU (arguments, ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.TERM (script, RedPrlSort.TAC))))
+       ESyn.termAbs (arguments, (script, RedPrlSort.TAC))
 
      | Src.THM {arguments, goal, script} =>
-       (* ν arguments in
-          let x = refine goal script in
-          ret [arguments].x *)     
-       let
-         val x = MlId.new ()
-       in
-         ESyn.NU
-           (arguments,
-            ESyn.BIND
-              (ESyn.REFINE (goal, (script, RedPrlSort.TAC)),
-               x,
-               ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.VAR x))))
-        end
+       ESyn.theoremAbs (arguments, goal, (script, RedPrlSort.TAC))
 
   val rec compileSrcSig : Src.sign -> ESyn.cmd =
     fn [] =>
