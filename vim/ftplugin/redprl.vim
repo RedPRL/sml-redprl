@@ -29,6 +29,7 @@ function! CheckBuffer()
     belowright vsplit RedPRL
     set buftype=nofile
     set syntax=redprl
+    setlocal noswapfile
   else
     execute bufwinnr('RedPRL') . 'wincmd w'
   endif
@@ -53,7 +54,10 @@ function! CheckBufferExit(j,status)
     call setqflist([], 'r', {'title': 'RedPRL Errors'})
   endif
   if (len(getqflist()) > 1)
+    copen
     cc
+  else
+    cclose
   endif
   if (exists('s:job'))
     unlet s:job
