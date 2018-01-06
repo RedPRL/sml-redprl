@@ -45,30 +45,18 @@ struct
     (Dict.insert (#1 env) nm v, #2 env)
 
   
-  fun renameEnv (env : env) ren =
+  fun renameEnv (env : env) rho =
     let
-      val rho = 
-       List.foldr
-         (fn ((X, Y), rho) => Metavar.Ctx.insert rho X Y)
-         Metavar.Ctx.empty
-         ren
-
       val rho' = Metavar.Ctx.map (fn X => Option.getOpt (Metavar.Ctx.find rho X, X)) (#2 env)
       val rho'' = Metavar.Ctx.union rho' rho (fn (_, X, _) => X)
     in
       (#1 env, rho'')
     end
 
-  fun renameVal s XYs =
+  fun renameVal s ren =
     let
-      val ren =
-        List.foldr
-          (fn ((X, Y), rho) => Metavar.Ctx.insert rho X Y)
-          Metavar.Ctx.empty
-          XYs
-
       fun go ren = 
-        fn THUNK (env, cmd) => THUNK (renameEnv env XYs, cmd)
+        fn THUNK (env, cmd) => THUNK (renameEnv env ren, cmd)
          | THM (jdg, term) => THM (AtomicJudgment.map (Tm.renameMetavars ren) jdg, Tm.renameMetavars ren term)
          | TERM term => TERM (Tm.renameMetavars ren term)
          | ABS (METAS psi, s) => ABS (METAS psi, go (List.foldr (fn ((X, _), ren) => Metavar.Ctx.remove ren X) ren psi) s)

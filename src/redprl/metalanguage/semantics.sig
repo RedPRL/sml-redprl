@@ -26,9 +26,9 @@ sig
   val term : env -> term -> term
 
   val extend : env -> MlId.t -> value -> env
-  val renameEnv : env -> (Tm.metavariable * Tm.metavariable) list -> env
+  val renameEnv : env -> Tm.metavariable Tm.Metavar.Ctx.dict -> env
+  val renameVal : value -> Tm.metavariable Tm.Metavar.Ctx.dict -> value
 
-  val renameVal : value -> (Tm.metavariable * Tm.metavariable) list -> value
   val ppValue : value -> Fpp.doc
 
   (* TODO: move into evaluator *)

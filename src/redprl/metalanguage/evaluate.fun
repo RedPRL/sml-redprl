@@ -150,7 +150,8 @@ struct
        (case evalVal env v of 
            Sem.METAS psi =>
            let
-             val env' = Sem.renameEnv env @@ ListPair.zip (Xs, List.map #1 psi)
+             val rho = ListPair.foldl (fn (X, (Y, _), rho) => Metavar.Ctx.insert rho X Y) Metavar.Ctx.empty (Xs, psi)
+             val env' = Sem.renameEnv env rho
            in
              evalCmd env' cmd
            end
@@ -174,9 +175,8 @@ struct
            Sem.ABS (Sem.METAS psi, s) =>
            let
              val psi' = List.map (fn (X, vl) => (Metavar.named (Metavar.toString X), vl)) psi
-             val ren = ListPair.mapEq (fn ((X, _), (Y, _)) => (X, Y)) (psi, psi')
-
-             val env' = Sem.extend env xpsi (Sem.METAS psi')
+             val ren = ListPair.foldlEq (fn ((X, _), (Y, _), rho) => Metavar.Ctx.insert rho X Y) Metavar.Ctx.empty (psi, psi')
+             val env' = Sem.extend env xpsi @@ Sem.METAS psi'
              val env'' = Sem.extend env' xv @@ Sem.renameVal s ren
            in
              evalCmd env'' cmd
