@@ -123,8 +123,11 @@ struct
      | Syn.REFINE (ajdg, script) =>
        let
          val pos = Tm.getAnnotation script
-         val seqjdg = Sequent.>> (SequentData.Hyps.empty, ajdg)
-         val results = TacticElaborator.tactic env Var.Ctx.empty script (fn _ => Sym.new ()) seqjdg
+         val ajdg' = AJ.map (Sem.term env) ajdg
+         val script' = Sem.term env script
+
+         val seqjdg = Sequent.>> (SequentData.Hyps.empty, ajdg')
+         val results = TacticElaborator.tactic env Var.Ctx.empty script' (fn _ => Sym.new ()) seqjdg
          (* TODO: somehow show all the states! *)
          val Lcf.|> (subgoals, evd) =
            Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
@@ -137,7 +140,7 @@ struct
            if subgoalsCount = 0 then () else
              RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
         in
-          (Sem.RET @@ Sem.THM (AJ.map (Sem.term env) ajdg, Sem.term env extract), subgoalsCount = 0)
+          (Sem.RET @@ Sem.THM (ajdg', extract), subgoalsCount = 0)
         end
 
      | Syn.FRESH vls => 
@@ -151,7 +154,7 @@ struct
        (case evalVal env v of 
            Sem.METAS psi =>
            let
-             val env' = Sem.rename env Xs (List.map #1 psi)
+             val env' = Sem.renameEnv env @@ ListPair.zip (Xs, List.map #1 psi)
            in
              evalCmd env' cmd
            end
@@ -162,8 +165,8 @@ struct
        (case evalVal env vthm of
            Sem.THM (jdg, abt) =>
            let
-             val env' = Sem.extend env xjdg @@ Sem.TERM @@ AJ.into jdg
-             val env'' = Sem.extend env xtm @@ Sem.TERM abt
+             val env' = Sem.extend env xjdg @@ Sem.TERM @@ Sem.term env @@ AJ.into jdg
+             val env'' = Sem.extend env xtm @@ Sem.TERM @@ Sem.term env abt
            in
              evalCmd env'' cmd
            end
@@ -172,16 +175,18 @@ struct
 
      | Syn.MATCH_ABS (vabs, xpsi, xv, cmd) =>
        (case evalVal env vabs of
-           Sem.ABS (spsi, s) =>
+           Sem.ABS (Sem.METAS psi, s) =>
            let
-             val env' = Sem.extend env xpsi spsi
-             val env'' = Sem.extend env' xv s
-             (* If we add the ability to compare names, to maintain soundness we would need to freshen here *)
+             val psi' = List.map (fn (X, vl) => (Metavar.named (Metavar.toString X), vl)) psi
+             val ren = ListPair.mapEq (fn ((X, _), (Y, _)) => (X, Y)) (psi, psi')
+
+             val env' = Sem.extend env xpsi (Sem.METAS psi')
+             val env'' = Sem.extend env' xv @@ Sem.renameVal s ren
            in
              evalCmd env'' cmd
            end
          | _ =>
-           Err.raiseError @@ Err.GENERIC [Fpp.text "evalCmd/Syn.MATCH_ABS expected Sem.ABS"])
+           Err.raiseError @@ Err.GENERIC [Fpp.text "evalCmd/MATCH_ABS expected ABS"])
 
      | Syn.ABORT =>
        Err.raiseError @@ Err.GENERIC [Fpp.text "Signature aborted"]
@@ -196,8 +201,8 @@ struct
      | Syn.NIL =>
        Sem.NIL
 
-     | Syn.ABS (psi, v) =>
-       Sem.ABS (evalVal env psi, evalVal env v)
+     | Syn.ABS (vpsi, v) =>
+       Sem.ABS (evalVal env vpsi, evalVal env v)
 
      | Syn.METAS psi =>
        Sem.METAS @@ List.map (fn (X, vl) => (Sem.lookupMeta env X, vl)) psi
