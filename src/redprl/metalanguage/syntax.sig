@@ -4,8 +4,11 @@ sig
   type metavariable
   type jdg
   type term
+  type vty
 
-  type bindings = (metavariable * Tm.valence) list
+  type metas = (metavariable * Tm.valence) list
+
+  (* TODO: add algebraic effects and handlers *)
 
   datatype value =
      (* thunk N *)
@@ -21,7 +24,7 @@ sig
    | ABS of value * value
 
      (* [X : v...] *)
-   | METAS of bindings
+   | METAS of metas
   
      (* 'e *)
    | TERM of term
@@ -35,6 +38,12 @@ sig
 
      (* force V *)
    | FORCE of value
+
+     (* fn x:A => N *)
+   | FN of id * vty * cmd
+
+     (* N(V) *)
+   | AP of cmd * value
   
      (* print V *)
    | PRINT of Pos.t option * value
@@ -42,8 +51,11 @@ sig
      (* refine J e *)
    | REFINE of jdg * term
 
-     (* ν [X : v...] in N *)
-   | NU of bindings * cmd
+     (* fresh [X:v...] *)
+   | FRESH of (string option * Tm.valence) list
+
+     (* pm V as X... in N *)
+   | MATCH_METAS of value * metavariable list * cmd
 
      (* pm V as [Ψ].x in N *)
    | MATCH_ABS of value * id * id * cmd
@@ -54,5 +66,18 @@ sig
      (* abort *)
    | ABORT
 
-  (* TODO: pretty printer *)
+  (* ν [X : v...] in N *)
+  val nu : metas * cmd -> cmd
+
+  (* some macros *)
+  val termAbs : metas * term -> cmd
+  val theoremAbs : metas * jdg * term -> cmd
+  val printExtractAbs : Pos.t option * value -> cmd
+
+  (* TODO:
+
+  val ppVal : value -> Fpp.doc
+  val ppCmd : cmd -> Fpp.doc
+
+  *)
 end
