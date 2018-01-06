@@ -113,7 +113,7 @@ struct
            Err.raiseError @@ Err.GENERIC [Fpp.text "evalCmd/AP expected FN"])
 
      | Syn.PRINT (pos, v) =>
-       (Sem.printVal (pos, evalVal env v);
+       (RedPrlLog.print RedPrlLog.INFO (pos, Sem.ppValue (evalVal env v));
         (Sem.RET Sem.NIL, true))
 
      | Syn.REFINE (ajdg, script) =>

@@ -30,7 +30,4 @@ sig
   val renameVal : value -> Tm.metavariable Tm.Metavar.Ctx.dict -> value
 
   val ppValue : value -> Fpp.doc
-
-  (* TODO: move into evaluator *)
-  val printVal : Pos.t option * value -> unit
 end

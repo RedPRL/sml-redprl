@@ -113,7 +113,4 @@ struct
 
       | NIL =>
         Fpp.text "()"
-
-  fun printVal (pos : Pos.t option, v : value) : unit=
-    RedPrlLog.print RedPrlLog.INFO (pos, ppValue v)  
 end
