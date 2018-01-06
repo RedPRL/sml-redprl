@@ -13,6 +13,7 @@ struct
     fun setWidth x = Option.app (fn n => Config.maxWidth := n) (Option.mapPartial Int.fromString x)
     fun go [] mode = mode
       | go ("--help" :: xs) _ = go xs (SOME HELP)
+      | go ("--trace" :: xs) mode = (Config.printTrace := true; go xs mode)
       | go (x :: xs) mode =
         if String.isPrefix "--from-stdin" x
         then go xs (SOME (FROM_STDIN (extractArg (String.size "--from-stdin") x)))
@@ -44,6 +45,7 @@ struct
     "  redprl --help\n" ^
     "Options\n" ^
     "  --help                    Print this message\n" ^
+    "  --trace                   Print proof traces with goals\n" ^
     "  --width=cols              Set output width to cols (default: 80)\n" ^
     "  --from-stdin[=filename]   Read signature from stdin with optional diagnostic filename\n"
 

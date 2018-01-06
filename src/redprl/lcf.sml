@@ -28,10 +28,11 @@ struct
 
   fun prettyGoal (x, tr ::@ jdg) =
     Fpp.nest 2 @@
-      Fpp.vsep
-        [Fpp.seq [Fpp.hsep [Fpp.text "Goal", TermPrinter.ppMeta x], Fpp.text "."],
-         Fpp.hsep [Fpp.text "Trace:", Fpp.align @@ prettyTrace tr],
-         Sequent.pretty jdg]
+      Fpp.vsep @@
+        (Fpp.seq [Fpp.hsep [Fpp.text "Goal", TermPrinter.ppMeta x], Fpp.text "."]) ::
+        (if !Config.printTrace
+         then [Fpp.hsep [Fpp.text "Trace:", Fpp.align @@ prettyTrace tr], Sequent.pretty jdg]
+         else [Sequent.pretty jdg])
 
   val prettyGoals : jdg I.t Tl.telescope -> {doc : Fpp.doc, ren : J.ren, idx : int} =
     let

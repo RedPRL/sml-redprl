@@ -11,6 +11,10 @@ If `redprl` is not in your `PATH`, add the following line to your `.vimrc`:
 
     let g:redprl_path = '/path/to/redprl'
 
+If you want to enable printing traces, add the following line to your `.vimrc`:
+
+    let g:redprl_trace = 1
+
 If you want to recheck the current buffer with a short key combination, add the
 following line to your `.vimrc`, replacing `<F5>` as appropriate:
 

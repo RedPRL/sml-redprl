@@ -1,7 +1,7 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2017 December 12
+" Last Change:  2018 January 6
 
 if exists("b:current_syntax")
   finish
@@ -33,7 +33,8 @@ syn match   redSeq '>>'
 
 syn region  redComm start="//" end="$"
 
-syn match   redMesg '\[\(Info\|Output\|Warning\|Error\|Trace\)\]'
+syn match   redMesg '\[\(Info\|Output\|Warning\|Error\)\]'
+syn keyword redMesg Trace
 
 hi def link redDecl Structure
 hi def link redSort Identifier
