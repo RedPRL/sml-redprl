@@ -169,6 +169,32 @@ Thm ComputeCoercion : [
 // Part Two
 // ---------------------------------------------------------
 
+Thm Refl : [
+  (->
+   [ty : (U 0)]
+   [a : ty]
+   (path [_] ty a a))
+] by [
+  lam ty a =>
+  abs _ => `a
+].
+
+// Path structure commutes with other type formers.
+Thm FunPath : [
+  (->
+   [a b : (U 0)]
+   [f g : (-> a b)]
+   (path [_] (-> a b) f g)
+   [arg : a]
+   (path [_] b ($ f arg) ($ g arg)))
+] by [
+  lam a b f g p =>
+  lam arg => abs x =>
+  `($ (@ p x) arg)
+].
+
+Print FunPath.
+
 Thm PathInv : [
   (->
    [ty : (U 0 kan)]
@@ -176,6 +202,13 @@ Thm PathInv : [
    [p : (path [_] ty a b)]
    (path [_] ty b a))
 ] by [
+//        a          -- x
+//     -------      |
+//    |      |      y
+//  p |      | a
+//    |      |
+//    b .... a
+
   lam ty a b p =>
   abs x =>
   `(hcom 0~>1 ty a [x=0 [y] (@ p y)] [x=1 [_] a])
@@ -189,6 +222,13 @@ Thm PathConcat : [
    [q : (path [_] ty b c)]
    (path [_] ty a c))
 ] by [
+//        p          -- x
+//     -------      |
+//    |      |      y
+//  a |      | q
+//    |      |
+//    a .... c
+
   lam ty a b c p q =>
   abs x =>
   `(hcom 0~>1 ty (@ p x) [x=0 [_] a] [x=1 [y] (@ q y)])
@@ -203,6 +243,7 @@ Thm InvRefl : [
      ($ PathInv ty a a (abs [_] a))
      (abs [_] a)))
 ] by [
+  // See diagram!
   lam ty a =>
   abs x y =>
   `(hcom 0~>1 ty a
@@ -212,9 +253,49 @@ Thm InvRefl : [
     [y=1 [_] a])
 ].
 
-// TODO use J to prove inv or comp?
+Thm J(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   [fam : (-> [x : ty] (path [_] ty a x) (U #l kan))]
+   [d : ($ fam a (abs [_] a))]
+   [x : ty]
+   [p : (path [_] ty a x)]
+   ($ fam x p))
+] by [
+  lam ty a fam d x p =>
+  `(coe 0~>1
+    [i] ($ fam
+           (hcom 0~>1 ty a [i=0 [_] a] [i=1 [j] (@ p j)])
+           (abs [j] (hcom 0~>j ty a [i=0 [_] a] [i=1 [j] (@ p j)]))) d)
+].
 
-// Shannon expansion for strict booleans.
+Thm JInv : [
+  (->
+   [ty : (U 0 kan)]
+   [a b : ty]
+   [p : (path [_] ty a b)]
+   (path [_] ty b a))
+] by [
+  lam ty a b p =>
+  exact
+    ($ (J #lvl{0}) ty a
+       (lam [b _] (path [_] ty b a))
+       (abs [_] a)
+       b
+       p)
+  ; auto
+  //; unfold J; reduce at right; ?
+].
+
+Print JInv.
+
+// Computing winding numbers in the circle.
+
+Quit.
+
+// Bonus material:
+
 Thm Shannon : [
   (->
    [ty  : (-> bool (U 0))]
@@ -226,9 +307,6 @@ Thm Shannon : [
   elim b; auto
 ].
 
-// Extract Shannon.
-
-// ``Shannon homotopy expansion'' for weak booleans.
 Thm WeakShannon : [
   (->
    [ty  : (-> wbool (U 0 kan))]
@@ -243,6 +321,6 @@ Thm WeakShannon : [
   , auto]
 ].
 
-// Extract WeakShannon.
-
-// winding number
+// TODO:
+// practice vim presentation
+// winding number -- Favonia's PR?
