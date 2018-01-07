@@ -70,24 +70,52 @@ Def Fiber (#A,#B,#f,#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
 Def IsEquiv (#A,#B,#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
 Def Equiv (#A,#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
 
-//Thm FunToPairIsEquiv : [
-//  (->
-//   [ty : (U 0 kan)]
-//   (IsEquiv (-> bool ty) (* ty ty) ($ FunToPair ty)))
-//] by [
-//  lam ty {t,f} =>
-//  { { lam b => if b then `t else `f
-//    , abs _ => {`t,`f} }
-//  , lam {fun,p} => abs x =>
-//    { `fun
-//    , use p
-//    }
-//  };
-//  unfold Fiber; refine record/eq/tuple;
-//  [?, ?, auto]
-//  //?rest
-//  //[unfold FunToPair; reduce at right; auto; ?, id, id]
-//].
+// OUCH
+// uncomment once WeakConnection is added
+// Thm FunToPairIsEquiv : [
+//   (->
+//    [ty : (U 0 kan)]
+//    (IsEquiv (-> bool ty) (* ty ty) ($ FunToPair ty)))
+// ] by [
+//   lam ty pair =>
+//   { { lam b => if b then `(!proj1 pair) else `(!proj2 pair)
+//     , abs _ => `pair }
+//   , unfold Fiber;
+//     lam {fun,p} =>
+//       fresh x:dim -> refine path/intro; [
+//         {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
+//          abs y =>
+//            `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
+//         }
+//       ];
+//
+//       [ symmetry; refine record/eq/tuple;
+//         [ refine fun/eq/eta; #1{auto}; auto; symmetry;
+//           claim p/0 : [(@ p 0) = ($ FunToPair ty fun) in (* ty ty)] by [ auto ];
+//           auto;
+//           [ fresh h -> rewrite p/0; [`(= ty (! proj1 h) ($ fun tt))]
+//           , fresh h -> rewrite p/0; [`(= ty (! proj2 h) ($ fun ff))]
+//           ]
+//         ]; auto
+//
+//        , refine record/eq/tuple;
+//          [ auto
+//          , refine path/eq/abs;
+//            [ symmetry; unfold WeakConnection;
+//              reduce at right;
+//              refine record/eq/eta; #1 {auto};
+//              refine record/eq/tuple; #2 {auto};
+//              [ symmetry; refine hcom/eq/tube; [auto, auto, auto, auto, auto, auto, auto, auto]
+//              , symmetry; refine hcom/eq/tube; [auto, auto, auto, auto, auto, auto, auto, auto]
+//              ]
+//            ]
+//          ];
+//          auto
+//       ]
+//   }
+// ].
+
+
 
 //Thm PathFunToPair : [
 //  (->
