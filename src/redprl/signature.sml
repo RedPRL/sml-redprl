@@ -113,6 +113,7 @@ struct
       val (icmd, _) = Elab.elabCmd Res.init ecmd
       val (scmd, exit) = Eval.evalCmd Sem.initEnv icmd
     in
+      (if exit then () else L.print L.WARN (NONE, Fpp.text "Document contains incomplete proofs"));
       exit
     end
 end
