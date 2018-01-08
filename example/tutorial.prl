@@ -10,19 +10,21 @@ Thm Not : [
 
 Print Not.
 
+// (not(not(b)) == b) because it holds for every closed boolean.
 Thm NotNot : [
   (->
    [b : bool]
    (= bool ($ Not ($ Not b)) b))
 ] by [
   lam b =>
-  // this can be done by auto
+  // The next two lines can be replaced by auto.
   unfold Not;
   if b then (reduce at right; auto) else (reduce at right; auto)
 ].
 
 Print NotNot.
 
+// Type families respect equality proofs.
 Thm RespectEquality : [
   (->
    [family : (-> [b : bool] (U 0))]
@@ -35,12 +37,14 @@ Thm RespectEquality : [
   [ `($ family b')
   , use pf
   , auto
-  , auto]
+  , auto ]
 ].
 
-// extract does not mention NotNot
+// Extract does not mention the equality proof!
+// (No need to ``transport'' at runtime.)
 Print RespectEquality.
 
+// In fact, all proofs of (not(not(b)) == b) are equal.
 Thm EqualityIrrelevant : [
   (=
     (-> [b : bool] (= bool ($ Not ($ Not b)) b))
@@ -52,6 +56,8 @@ Thm EqualityIrrelevant : [
 
 Print EqualityIrrelevant.
 
+// Paths (cf equalities), like those arising from
+// equivalences via univalence, do induce computation.
 Thm FunToPair : [
   (->
    [ty : (U 0 kan)]
@@ -143,6 +149,7 @@ Thm PathFunToPair : [
 
 Print PathFunToPair.
 
+// We can coerce elements of (bool -> ty) to (ty * ty).
 Thm RespectPaths : [
   (->
    [ty : (U 0 kan)]
@@ -155,7 +162,7 @@ Thm RespectPaths : [
 
 Print RespectPaths.
 
-// The choice of path matters, and affects the computation!
+// When coercing, the choice of PathFunToPair matters!
 Thm ComputeCoercion : [
   (=
    (* bool bool)
@@ -169,6 +176,7 @@ Thm ComputeCoercion : [
 // Part Two
 // ---------------------------------------------------------
 
+// A constant path does not depend on its dimension.
 Thm Refl : [
   (->
    [ty : (U 0)]
@@ -179,7 +187,8 @@ Thm Refl : [
   abs _ => `a
 ].
 
-// Path structure commutes with other type formers.
+// The path structure of each type is defined in terms of
+// its constituent types.
 Thm FunPath : [
   (->
    [a b : (U 0)]
@@ -253,6 +262,8 @@ Thm InvRefl : [
     [y=1 [_] a])
 ].
 
+// Although the path type is not defined by refl and J
+// (as in HoTT), we can still define J using hcom + coe.
 Thm J(#l:lvl) : [
   (->
    [ty : (U #l kan)]
@@ -320,7 +331,3 @@ Thm WeakShannon : [
   , abs _ => `($ elt ff)
   , auto]
 ].
-
-// TODO:
-// practice vim presentation
-// winding number -- Favonia's PR?
