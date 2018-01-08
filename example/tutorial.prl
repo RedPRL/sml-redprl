@@ -19,7 +19,9 @@ Thm NotNot : [
   lam b =>
   // The next two lines can be replaced by auto.
   unfold Not;
-  if b then (reduce at right; auto) else (reduce at right; auto)
+  if b
+  then (reduce at left; refine bool/eq/tt)
+  else (reduce at left; refine bool/eq/ff)
 ].
 
 Print NotNot.
