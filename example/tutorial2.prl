@@ -154,8 +154,13 @@ Thm InvRefl : [
      (abs [_] a)))
 ] by [
   // See diagram!
-
-  ?
+  lam ty a =>
+  abs x y =>
+  `(hcom 0~>1 ty a
+    [x=0 [z] (hcom 0~>z ty a [y=0 [_] a] [y=1 [_] a])]
+    [x=1 [_] a]
+    [y=0 [_] a]
+    [y=1 [_] a])
 ].
 
 
