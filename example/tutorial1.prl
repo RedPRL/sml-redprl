@@ -1,6 +1,8 @@
 // POPL 2018 tutorial, part one
 // January 8, 2018
 
+Quit.
+
 Thm Not : [
   (-> bool bool)
 ] by [

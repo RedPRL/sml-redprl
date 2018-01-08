@@ -266,6 +266,7 @@ Thm InvRefl : [
 
 // Although the path type is not defined by refl and J
 // (as in HoTT), we can still define J using hcom + coe.
+// The #l is an example of a parametrized definition.
 Thm J(#l:lvl) : [
   (->
    [ty : (U #l kan)]
@@ -292,13 +293,15 @@ Thm JInv : [
 ] by [
   lam ty a b p =>
   exact
-    ($ (J #lvl{0}) ty a
+    ($ (J #lvl{0})
+       ty
+       a
        (lam [b _] (path [_] ty b a))
        (abs [_] a)
        b
        p)
   ; auto
-  //; unfold J; reduce at right; ?
+  //; unfold J; reduce at left right; ?
 ].
 
 Print JInv.
