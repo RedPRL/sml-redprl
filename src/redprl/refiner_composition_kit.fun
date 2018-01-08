@@ -105,6 +105,13 @@ struct
 
     structure View =
     struct
+      fun makeAsEqIfAllDifferent tr eqs H ((m, n), a) ns = 
+        Option.mapPartial
+          (fn f =>
+            if List.exists (fn n' => Abt.eq (f m, f n')) ns then NONE
+            else SOME @@ View.makeAsEqWith tr f H ((m, n), a))
+          (restrict eqs)
+
       fun makeAsEqType tr eqs H ((a, b), l, k) =
         Option.mapPartial
           (fn f => SOME @@ View.makeAsEqTypeWith tr f H ((a, b), l, k))

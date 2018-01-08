@@ -231,6 +231,7 @@ struct
     val matchAsEq = AJ.View.matchAsEq
 
     fun makeAsEq tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEq params
+    fun makeAsEqWith tr f H params = makeGoal'With tr f @@ H >> AJ.View.makeAsEq params
 
     fun makeAsMem tr H params = makeGoal' tr @@ H >> AJ.View.makeAsMem params
 

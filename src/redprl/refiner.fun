@@ -47,7 +47,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected sequent judgment"]
 
-    fun Rename z alpha jdg = 
+    fun Rename z alpha jdg =
       let
         val tr = ["Hyp.Rename"]
         val H >> ajdg = jdg
@@ -66,7 +66,7 @@ struct
         |>: goal #> (H, extract)
       end
 
-    fun Delete z _ jdg = 
+    fun Delete z _ jdg =
       let
         val tr = ["Hyp.Delete"]
         val H >> ajdg = jdg
@@ -76,7 +76,7 @@ struct
             val tm = AJ.into ajdg
             val vars = varctx tm
           in
-            if Var.Ctx.member vars z then 
+            if Var.Ctx.member vars z then
               raise E.error [Fpp.text "Cannot delete hypothesis which is mentioned in sequent"]
             else
              ()
@@ -157,9 +157,9 @@ struct
         raise E.error [Fpp.text "Expected truth sequent but got:", Sequent.pretty jdg]
   end
 
-  structure Term = 
+  structure Term =
   struct
-    fun Exact tm _ jdg = 
+    fun Exact tm _ jdg =
       let
         val tr = ["Term.Exact"]
         val H >> AJ.TERM tau = jdg
@@ -224,7 +224,7 @@ struct
       |>: goal1 >: goal2 #> (H, substVar (hole1, z) hole2)
     end
 
-  fun CutLemma sign cust alpha jdg = 
+  fun CutLemma sign cust alpha jdg =
     let
       val tr = ["CutLemma"]
 
@@ -248,7 +248,7 @@ struct
       orelse_ Lcf.rule o Term.Exact tm
 
 
-  fun lookupRule sign = 
+  fun lookupRule sign =
     fn "bool/eqtype" => Lcf.rule o Bool.EqType
      | "bool/eq/tt" => Lcf.rule o Bool.EqTT
      | "bool/eq/ff" => Lcf.rule o Bool.EqFF
@@ -273,6 +273,7 @@ struct
      | "s1/eq/loop" => Lcf.rule o S1.EqLoop
      | "s1/eq/fcom" => Lcf.rule o S1.EqFCom
      | "s1/eq/s1-rec" => Lcf.rule o S1.EqElim
+     | "s1/beta/loop" => Lcf.rule o S1.BetaLoop
      | "fun/eqtype" => Lcf.rule o Fun.EqType
      | "fun/eq/lam" => Lcf.rule o Fun.Eq
      | "fun/intro" => Lcf.rule o Fun.True
@@ -300,10 +301,12 @@ struct
      | "pushout/eq/glue" => Lcf.rule o Pushout.EqGlue
      | "pushout/eq/fcom" => Lcf.rule o Pushout.EqFCom
      | "pushout/eq/pushout-rec" => Lcf.rule o Pushout.EqElim
+     | "pushout/beta/glue" => Lcf.rule o Pushout.BetaGlue
      | "coeq/eqtype" => Lcf.rule o Coequalizer.EqType
      | "coeq/eq/cod" => Lcf.rule o Coequalizer.EqCod
      | "coeq/eq/dom" => Lcf.rule o Coequalizer.EqDom
      | "coeq/eq/fcom" => Lcf.rule o Coequalizer.EqFCom
+     | "coeq/beta/dom" => Lcf.rule o Coequalizer.BetaDom
      | "coeq/eq/coeq-rec" => Lcf.rule o Coequalizer.EqElim
      | "eq/eqtype" => Lcf.rule o InternalizedEquality.EqType
      | "eq/eq/ax" => Lcf.rule o InternalizedEquality.Eq
@@ -590,7 +593,7 @@ struct
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj (* XXX should consult autoSynthesizableNeu *)
          | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>
-           (case (Abt.out r1, Abt.out r2) of 
+           (case (Abt.out r1, Abt.out r2) of
                (`_, `_) => Lcf.rule o Path.EqApp
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
               (* XXX should consult autoSynthesizableNeu *)
@@ -648,9 +651,9 @@ struct
        val AutoEqLR = Lcf.rule o EqCapL orelse_ EqCapR orelse_ Lcf.rule o Eq
       end
 
-      fun ProgressCompute sign = 
+      fun ProgressCompute sign =
         Lcf.progress o (Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_TYPE, Accessor.PART_LEFT, Accessor.PART_RIGHT]))
-      
+
       fun ComputeBefore sign tac =
         (ProgressCompute sign then_ tac) par tac
 
@@ -786,12 +789,12 @@ struct
     end
 
     local
-      fun ElimBasis ty z : tactic = 
+      fun ElimBasis ty z : tactic =
         case Syn.out ty of
            Syn.BOOL => Lcf.rule o Bool.Elim z
          | Syn.WBOOL => Lcf.rule o WBool.Elim z
          | Syn.NAT => Lcf.rule o Nat.Elim z
-         | Syn.INT => Lcf.rule o Int.Elim z 
+         | Syn.INT => Lcf.rule o Int.Elim z
          | Syn.VOID => Lcf.rule o Void.Elim z
          | Syn.S1 => Lcf.rule o S1.Elim z
          | Syn.FUN _ => Lcf.rule o Fun.Elim z
