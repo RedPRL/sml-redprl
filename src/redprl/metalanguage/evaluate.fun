@@ -134,7 +134,7 @@ struct
 
          val check =
            if subgoalsCount = 0 then () else
-             RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
+             RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text @@ "Remaining Obligation" ^ (if subgoalsCount = 1 then "" else "s")])
         in
           (Sem.RET @@ Sem.THM (ajdg', extract), subgoalsCount = 0)
         end
