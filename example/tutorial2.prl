@@ -163,6 +163,8 @@ Thm InvRefl : [
     [y=1 [_] a])
 ].
 
+Quit.
+
 
 
 
@@ -183,6 +185,7 @@ Thm InvRefl : [
 
 // Although the path type is not defined by refl and J
 // (as in HoTT), we can still define J using hcom + coe.
+// The #l is an example of a parametrized definition.
 Thm J(#l:lvl) : [
   (->
    [ty : (U #l kan)]
@@ -238,9 +241,3 @@ Thm JInv : [
        p);
   ?
 ].
-
-Quit.
-
-Print JInv.
-
-// Computing winding numbers in the circle.
