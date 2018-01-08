@@ -49,6 +49,9 @@ follows
 
     ./bin/redprl example/README.prl
 
+### Editor Support: Vim
+
+Our best-supported editor is currently Vim. See our [vim mode's README](https://github.com/RedPRL/sml-redprl/tree/master/vim) for instructions.
 
 ### Editor Support: Visual Studio Code
 
