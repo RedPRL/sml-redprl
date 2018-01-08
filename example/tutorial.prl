@@ -31,8 +31,8 @@ Thm RespectEquality : [
    ($ family ($ Not ($ Not b))))
 ] by [
   lam family b pf =>
-  rewrite ($ NotNot b);
-  [ `($ family b)
+  fresh b' -> rewrite ($ NotNot b);
+  [ `($ family b')
   , use pf
   , auto
   , auto]
