@@ -1,0 +1,243 @@
+// POPL 2018 tutorial, part two
+// January 8, 2018
+
+Quit.
+
+Thm Refl : [
+  (->
+   [ty : (U 0)]
+   [a : ty]
+   (path [_] ty a a))
+] by [
+  ?
+].
+
+Quit.
+
+Print Refl.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Thm FunPath : [
+  (->
+   [a b : (U 0)]
+   [f g : (-> a b)]
+   (path [_] (-> a b) f g)
+   [arg : a]
+   (path [_] b ($ f arg) ($ g arg)))
+] by [
+  ?
+].
+
+Quit.
+
+Print FunPath.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Thm PathInv : [
+  (->
+   [ty : (U 0 kan)]
+   [a b : ty]
+   [p : (path [_] ty a b)]
+   (path [_] ty b a))
+] by [
+//        a          -- x
+//     -------      |
+//    |      |      y
+//  p |      | a
+//    |      |
+//    b .... a
+
+  ?
+].
+
+Quit.
+
+Print PathInv.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Thm PathConcat : [
+  (->
+   [ty : (U 0 kan)]
+   [a b c : ty]
+   [p : (path [_] ty a b)]
+   [q : (path [_] ty b c)]
+   (path [_] ty a c))
+] by [
+//        p          -- x
+//     -------      |
+//    |      |      y
+//  a |      | q
+//    |      |
+//    a .... c
+
+  ?
+].
+
+Quit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Thm InvRefl : [
+  (->
+   [ty : (U 0 kan)]
+   [a : ty]
+   (path
+     [_] (path [_] ty a a)
+     ($ PathInv ty a a (abs [_] a))
+     (abs [_] a)))
+] by [
+  // See diagram!
+  lam ty a =>
+  abs x y =>
+  `(hcom 0~>1 ty a
+    [x=0 [z] (hcom 0~>z ty a [y=0 [_] a] [y=1 [_] a])]
+    [x=1 [_] a]
+    [y=0 [_] a]
+    [y=1 [_] a])
+].
+
+Quit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Although the path type is not defined by refl and J
+// (as in HoTT), we can still define J using hcom + coe.
+// The #l is an example of a parametrized definition.
+Thm J(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   [fam : (-> [x : ty] (path [_] ty a x) (U #l kan))]
+   [d : ($ fam a (abs [_] a))]
+   [x : ty]
+   [p : (path [_] ty a x)]
+   ($ fam x p))
+] by [
+  lam ty a fam d x p =>
+  `(coe 0~>1
+    [i] ($ fam
+           (hcom 0~>1 ty a [i=0 [_] a] [i=1 [j] (@ p j)])
+           (abs [j] (hcom 0~>j ty a [i=0 [_] a] [i=1 [j] (@ p j)]))) d)
+].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Thm JInv : [
+  (->
+   [ty : (U 0 kan)]
+   [a b : ty]
+   [p : (path [_] ty a b)]
+   (path [_] ty b a))
+] by [
+  lam ty a b p =>
+  exact
+    ($ (J #lvl{0})
+       ty
+       a
+       (lam [b _] (path [_] ty b a))
+       (abs [_] a)
+       b
+       p);
+  ?
+].
