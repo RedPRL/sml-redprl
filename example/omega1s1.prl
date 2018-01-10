@@ -52,7 +52,8 @@ Thm IntSuccIsEquiv : [
     claim eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]];
     unfold IntSucc IntPred in eq; reduce at left in eq;
     {
-      {use IntPred [`i], abs _ => `i}
+      {use IntPred [`i], abs _ => `i};
+       symmetry; unfold IntSucc; reduce at left; assumption
     , lam {i',p'} =>
         claim eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)];
         claim eq1 : [(= int ($ IntPred i) i')] by [
@@ -65,8 +66,10 @@ Thm IntSuccIsEquiv : [
         (abs x =>
           {`($ IntPred i), abs y => `(hcom 1~>y int i [x=0 [y] (@ p' y)] [x=1 [_] i])});
 
-        auto; unfold IntPred in eq1; reduce at left in eq1; auto
+        auto; unfold IntPred in eq1; reduce at left in eq1; auto; assumption
     }
+
+    // use eq; auto-step; auto-step; reduce at right; auto; ?
 ].
 
 Thm IntSuccEquiv : [
