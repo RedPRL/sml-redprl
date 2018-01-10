@@ -111,13 +111,13 @@ Thm Plus/test0 : [
 ] by [
   lam n m eq =>
     fresh x -> rewrite ($ Plus/zero/R n) in eq;
-    [ `(= nat x m) ]; auto
+    [ `(= nat x m) ]; auto; use eq
 ].
 
 Thm Eq/sym : [
   (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
 ] by [
-  lam ty a b eq => symmetry; auto
+  lam ty a b eq => symmetry; auto; use eq
 ].
 
 Thm Plus/comm : [
@@ -137,15 +137,16 @@ Thm Plus/comm : [
     auto
 ].
 
+
 Thm NatSymm : [
   (->
    [a b : nat]
    (path [_] nat a b)
    (path [_] nat b a))
 ] by [
-  lam a b pab => 
+  lam a b pab =>
   abs i =>
-    `(hcom 0~>1 nat a 
+    `(hcom 0~>1 nat a
       [i=0 [j] (@ pab j)]
       [i=1 [_] a])
 ].
