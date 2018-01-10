@@ -68,8 +68,6 @@ Thm IntSuccIsEquiv : [
 
         auto; unfold IntPred in eq1; reduce at left in eq1; auto; assumption
     }
-
-    // use eq; auto-step; auto-step; reduce at right; auto; ?
 ].
 
 Thm IntSuccEquiv : [
