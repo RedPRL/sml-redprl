@@ -784,8 +784,6 @@ struct
     in
       fun AutoStep sign =
         StepJdg sign
-          orelse_
-            NondetStepJdgFromHyp
     end
 
     local
