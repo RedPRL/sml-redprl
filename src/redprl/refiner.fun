@@ -643,12 +643,12 @@ struct
 
       structure Coe =
       struct
-       open Coe
+        open Coe
 
-       val EqCapR = Symmetry then_ Lcf.rule o EqCapL
-       val AutoEqL = Lcf.rule o EqCapL orelse_ Lcf.rule o Eq
-       val AutoEqR = EqCapR orelse_ Lcf.rule o Eq
-       val AutoEqLR = Lcf.rule o EqCapL orelse_ EqCapR orelse_ Lcf.rule o Eq
+        val EqCapR = Symmetry then_ Lcf.rule o EqCapL
+        val AutoEqL = Lcf.rule o EqCapL orelse_ Lcf.rule o Eq
+        val AutoEqR = EqCapR orelse_ Lcf.rule o Eq
+        val AutoEqLR = Lcf.rule o EqCapL orelse_ EqCapR orelse_ Lcf.rule o Eq
       end
 
       fun ProgressCompute sign =
