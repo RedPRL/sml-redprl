@@ -132,9 +132,12 @@ struct
          val Tm.\ (_, extract) = Tm.outb evd
          val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
 
-         val check =
-           if subgoalsCount = 0 then () else
-             RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text @@ "Remaining Obligation" ^ (if subgoalsCount = 1 then "" else "s")])
+         val warning =
+           Fpp.hsep
+             [Fpp.text @@ Int.toString subgoalsCount,
+              Fpp.text "Remaining",
+              Fpp.text (if subgoalsCount = 1 then "Obligation" else "Obligations")]
+         val _ = if subgoalsCount = 0 then () else RedPrlLog.print RedPrlLog.WARN (pos, warning)
         in
           (Sem.RET @@ Sem.THM (ajdg', extract), subgoalsCount = 0)
         end
