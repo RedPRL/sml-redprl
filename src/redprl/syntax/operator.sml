@@ -16,9 +16,17 @@ struct
   (* where should this function go? *)
   fun indexToLabel i = "proj" ^ Int.toString (i + 1)  
 
-  val rec devPatternValence = 
-    fn PAT_VAR _ => [EXP]
-     | PAT_TUPLE pats => List.concat (List.map (devPatternValence o #2) pats)
+  fun devPatternValence (pat : 'a dev_pattern) : sort list = 
+    let
+      fun go pats acc = 
+        case pats of 
+           [] => acc
+         | (_, p) :: pats => goPat p (go pats acc)
+      and goPat (PAT_VAR _) acc = EXP :: acc
+        | goPat (PAT_TUPLE ps) acc = go ps acc
+    in
+      goPat pat []
+    end
 
   val arity =
     fn AX => [] ->> EXP
