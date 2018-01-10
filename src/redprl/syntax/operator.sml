@@ -139,6 +139,8 @@ struct
      | TAC_ELIM => [[] |: ANY] ->> TAC
      | TAC_REWRITE => [[] |: SEL, [] |: ACC, [] |: EXP] ->> TAC
 
+     | TAC_ASSUMPTION => [] ->> TAC
+
      | DEV_FUN_INTRO pats => [List.concat (List.map devPatternValence pats) |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) |: TAC] ->> TAC

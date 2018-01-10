@@ -775,15 +775,16 @@ struct
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "TrueFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
       val NondetSynthFromHyp = NondetFromHypDelegate (fn (z, _) => SynthFromHyp z)
-
+    in
       val NondetStepJdgFromHyp = matchGoal
         (fn _ >> AJ.TRUE _ => NondetTrueFromHyp
           | _ >> AJ.EQ_TYPE _ => NondetEqTypeFromHyp
           | _ >> AJ.SYNTH _ => NondetSynthFromHyp
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
-    in
+
       fun AutoStep sign =
         StepJdg sign
+
     end
 
     local

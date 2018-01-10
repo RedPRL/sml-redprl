@@ -81,7 +81,6 @@ struct
    | TAC_FAIL
    | TAC_MTAC
 
-   (* primitive rules *)
    | TAC_ID | TAC_AUTO_STEP | TAC_SYMMETRY | RULE_EXACT
    | RULE_CUT
    | RULE_PRIM of string
@@ -91,6 +90,7 @@ struct
    | TAC_REDUCE_ALL
    | TAC_REDUCE
    | TAC_REDUCE_PART
+   | TAC_ASSUMPTION
 
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
