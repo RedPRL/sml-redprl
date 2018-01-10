@@ -36,6 +36,10 @@ struct
       go l []
     end
 
+  fun concatMap (f : 'a -> 'b list) : 'a list -> 'b list = 
+    fn [] => []
+     | x::xs => f x @ concatMap f xs
+
   (* From MLton: https://github.com/MLton/mlton/blob/master/lib/mlton/basic/list.sml *)
   fun splitAt (xs, i) = 
     let

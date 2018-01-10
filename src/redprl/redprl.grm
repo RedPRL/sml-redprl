@@ -114,7 +114,7 @@ struct
       fun expand (DIM vars) = List.map DIM vars
         | expand (TERM (vars, term)) = List.map (fn var => TERM (var, term)) vars
     in
-      List.concat (List.map expand quant)
+      ListUtil.concatMap expand quant
     end
 
   fun makeFunOrLineAux [] cod = cod
