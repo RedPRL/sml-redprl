@@ -795,10 +795,10 @@ struct
          | Syn.INT => Lcf.rule o Int.Elim z
          | Syn.VOID => Lcf.rule o Void.Elim z
          | Syn.S1 => Lcf.rule o S1.Elim z
-         | Syn.FUN _ => Lcf.rule o Fun.Elim sign z
+         | Syn.FUN _ => Lcf.rule o MultiArrow.Elim sign 1 z
          | Syn.RECORD _ => Lcf.rule o Record.Elim z
-         | Syn.PATH _ => Lcf.rule o Path.Elim sign z
-         | Syn.LINE _ => Lcf.rule o Line.Elim sign z
+         | Syn.PATH _ => Lcf.rule o MultiArrow.Elim sign 1 z
+         | Syn.LINE _ => Lcf.rule o MultiArrow.Elim sign 1 z
          | Syn.PUSHOUT _ => Lcf.rule o Pushout.Elim z
          | Syn.COEQUALIZER _ => Lcf.rule o Coequalizer.Elim z
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.Elim z

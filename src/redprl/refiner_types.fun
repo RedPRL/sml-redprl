@@ -786,7 +786,7 @@ struct
       end
   end
 
-  structure Multi = 
+  structure MultiArrow = 
   struct
     datatype arg =
        EXP_ARG of variable * abt
@@ -959,8 +959,6 @@ struct
       in
         |>:? goal2 >: goal1 #> (H, axiom)
       end
-
-    fun Elim sign = Multi.Elim sign 1
 
     fun EqApp _ jdg =
       let
@@ -1327,8 +1325,6 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun Elim sign = Multi.Elim sign 1
-
     fun EqApp _ jdg =
       let
         val tr = ["Path.EqApp"]
@@ -1449,8 +1445,6 @@ struct
       in
         |>:? goal2 >: goal1 #> (H, axiom)
       end
-
-    fun Elim sign = Multi.Elim sign 1
 
     fun EqApp _ jdg =
       let

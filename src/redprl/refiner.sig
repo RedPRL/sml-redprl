@@ -23,7 +23,8 @@ sig
 
   val Inversion : hyp -> tactic
 
-  structure Multi : 
+  (* synthetic elim rule for nested pi, path and line types *)
+  structure MultiArrow : 
   sig
     val Elim : sign -> int -> hyp -> rule
   end
