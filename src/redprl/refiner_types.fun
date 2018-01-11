@@ -955,33 +955,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun Elim z alpha jdg =
-      let
-        val tr = ["Fun.Elim"]
-        val H >> ajdg = jdg
-        val AJ.TRUE ty = Hyps.lookup H z
-        val Syn.FUN (a, x, bx) = Syn.out ty
-
-        (* argument *)
-        val (goalA, holeA) = makeTrue tr H a
-
-        (* new context *)
-        val b' = substVar (holeA, x) bx
-        val u = alpha 0
-        val v = alpha 1
-        val aptm = Syn.intoApp (VarKit.toExp z, holeA)
-        (* note: a and bx come from the telescope so they are types *)
-        val H' = Hyps.interposeAfter
-          (z, |@> (u, AJ.TRUE b')
-               @> (v, AJ.EQ ((VarKit.toExp u, aptm), b')))
-          H
-
-        val (goalF, holeF) = makeGoal tr @@ H' >> ajdg
-      in
-        |>: goalA >: goalF #> (H, VarKit.substMany [(aptm, u), (axiom, v)] holeF)
-      end
-
-    (* val Elim = Multi.MultiElim 1 *)
+    val Elim = Multi.Elim 1
 
     fun EqApp _ jdg =
       let
@@ -1348,32 +1322,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun Elim z alpha jdg = 
-      let
-        val tr = ["Path.Elim"]
-        val H >> ajdg = jdg
-        val AJ.TRUE ty = Hyps.lookup H z
-        val Syn.PATH ((u, a), _, _) = Syn.out ty
-
-        val x = alpha 0
-        val y = alpha 1
-        
-        val (dimGoal, dimHole) = makeTerm tr H @@ O.DIM
-        val ar = substVar (dimHole, u) a
-
-        val w = Sym.named "w"
-        val pathApp = substVar (dimHole, w) @@ Syn.into @@ Syn.DIM_APP (VarKit.toExp z, VarKit.toDim w)
-
-        val H' = Hyps.interposeAfter
-          (z, |@> (x, AJ.TRUE ar)
-               @> (y, AJ.EQ ((VarKit.toExp x, pathApp), ar)))
-          H
-
-        val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
-      in
-        |>: dimGoal >: mainGoal
-        #> (H, VarKit.substMany [(pathApp, x), (axiom, y)] mainHole)
-      end
+    val Elim = Multi.Elim 1
 
     fun EqApp _ jdg =
       let
@@ -1496,32 +1445,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun Elim z alpha jdg = 
-      let
-        val tr = ["Line.Elim"]
-        val H >> ajdg = jdg
-        val AJ.TRUE ty = Hyps.lookup H z
-        val Syn.LINE (u, a) = Syn.out ty
-
-        val x = alpha 0
-        val y = alpha 1
-        
-        val (dimGoal, dimHole) = makeTerm tr H @@ O.DIM
-        val ar = substVar (dimHole, u) a
-
-        val w = Sym.named "w"
-        val lineApp = substVar (dimHole, w) @@ Syn.into @@ Syn.DIM_APP (VarKit.toExp z, VarKit.toDim w)
-
-        val H' = Hyps.interposeAfter
-          (z, |@> (x, AJ.TRUE ar)
-               @> (y, AJ.EQ ((VarKit.toExp x, lineApp), ar)))
-          H
-
-        val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
-      in
-        |>: dimGoal >: mainGoal
-        #> (H, VarKit.substMany [(lineApp, x), (axiom, y)] mainHole)
-      end
+    val Elim = Multi.Elim 1
 
     fun EqApp _ jdg =
       let
