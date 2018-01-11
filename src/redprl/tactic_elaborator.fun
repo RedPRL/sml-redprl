@@ -55,7 +55,7 @@ struct
       RedPrlError.raiseError (RedPrlError.GENERIC [Fpp.text msg])
 
   val autoMtac = mrepeat o all o try o R.AutoStep
-  val autoTac = multitacToTac o autoMtac
+  val autoTac = repeat o try o R.AutoStep
   fun autoTacComplete sign = try (autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal")
 
   fun exactAuto sign m = 

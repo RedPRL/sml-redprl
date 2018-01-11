@@ -18,6 +18,7 @@ sig
   val par : tactic * tactic -> tactic
   val morelse : multitactic * multitactic -> multitactic
   val mrepeat : multitactic -> multitactic
+  val repeat : tactic -> tactic
   val try : tactic -> tactic
   val idn : tactic
 end = 
@@ -44,6 +45,10 @@ struct
       fn alpha => 
         Lcf.only (i, t alpha)
 
+    fun progress (t : tactic): tactic = 
+      fn alpha => 
+        Lcf.progress (t alpha)
+
     fun mprogress (mt : multitactic) : multitactic = 
       fn alpha => 
         Lcf.mprogress (mt alpha)
@@ -51,6 +56,11 @@ struct
     fun mrec (f : multitactic -> multitactic) : multitactic =
       fn alpha => 
         f (mrec f) alpha
+
+    fun trec (f : tactic -> tactic) : tactic =
+      fn alpha => 
+        f (trec f) alpha
+        
 
 
     fun multitacToTac (mt : multitactic) : tactic =
@@ -91,8 +101,14 @@ struct
     fun mtry (mt : multitactic) : multitactic = 
       morelse (mt, all idn)
 
+    fun try (t : tactic) : tactic = 
+      orelse_ (t, idn)
+
     fun mrepeat (mt : multitactic) : multitactic = 
       mrec (fn mt' => mtry (seq (mprogress mt, ([], mt'))))
+
+    fun repeat (t : tactic) : tactic = 
+      trec (fn t' => try (then_ (progress t, t')))
 
     fun try (t : tactic) : tactic = 
       orelse_ (t, idn)
