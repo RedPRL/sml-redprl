@@ -303,24 +303,12 @@ Thm Univalence(#l:lvl) : [
    (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))
 ] by [
   lam ty/a =>
-  let foo = (RetIsContr (++ #l));
-  fresh a b -> elim foo;
-  [ `(* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
-  , fresh c d -> elim a;
-    [ `(* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
-    , fresh e f -> elim c;
-      [ `($ (SigEquivToPath #l) ty/a)
-      , fresh g h -> elim e;
-        [ `($ (SigPathToEquiv #l) ty/a),
-          fresh i j -> elim g;
-          [ `($ (UARetSig #l) ty/a),
-            fresh k l -> elim i;
-            [ `($ (IsContrPath #l) ty/a),
-              use k
-            ]
-          ]
-        ]
-      ]
-    ]
-  ]
+  use (RetIsContr (++ #l))
+   [ `(* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
+   , `(* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
+   , `($ (SigEquivToPath #l) ty/a)
+   , `($ (SigPathToEquiv #l) ty/a)
+   , `($ (UARetSig #l) ty/a)
+   , `($ (IsContrPath #l) ty/a)
+   ]
 ].

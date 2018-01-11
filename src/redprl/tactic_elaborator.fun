@@ -139,28 +139,15 @@ struct
       o #1
       o stitchPattern
 
-  fun apply sign z names (appTac, contTac) alpha jdg = 
-    let
-      val H >> _ = jdg
-      val AJ.TRUE ty = RT.Hyps.lookup H z
-    in
-      case Syn.out ty of 
-         Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.PATH _ => (Lcf.rule o RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.LINE _ => (Lcf.rule o RT.Line.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
-    end
-
   fun applications sign z (pattern, names) tacs tac =
-    case tacs of 
-       [] => decompose sign z (pattern, names) tac
-     | appTac :: tacs =>
-       let
-         val z' = Sym.named (Sym.toString z ^ "'")
-         val p = Sym.named "_"
-       in
-         apply sign z [z',p] (appTac, applications sign z' (pattern, names) tacs tac)
-       end
+    let
+      val z' = Sym.named (Sym.toString z ^ "'")
+      val p = Sym.named "_"
+    in
+      Lcf.rule o RT.Fun.MultiElim (List.length tacs) z thenl'
+        ([z', p],
+         tacs @ [decompose sign z' (pattern, names) tac])
+    end
 
   local
     fun recordIntroBasis sign lbls tacs ty =

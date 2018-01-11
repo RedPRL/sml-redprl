@@ -23,6 +23,11 @@ sig
 
   val Inversion : hyp -> tactic
 
+  structure Fun : 
+  sig
+    val MultiElim : int -> hyp -> rule
+  end
+
   structure Custom :
   sig
     val UnfoldAll : sign -> opid list -> rule
