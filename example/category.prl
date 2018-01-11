@@ -8,18 +8,49 @@ Thm Category(#i:lvl) : [ (U (++ #i)) ] by [
       (->
        [a b : ob]
        [f : ($ hom a b)]
-       (=
-        ($ hom a b)
-        ($ cmp a b b ($ idn b) f)
-        f))]
+       (= ($ hom a b)
+          ($ cmp a b b ($ idn b) f)
+          f))]
      [idn/r :
       (->
        [a b : ob]
        [f : ($ hom a b)]
-       (=
-        ($ hom a b)
-        ($ cmp a a b f ($ idn a))
-        f))]) // fill in the rest, but this suffices as an example
+       (= ($ hom a b)
+          ($ cmp a a b f ($ idn a))
+          f))]
+     [assoc : 
+      (-> 
+       [a b c d : ob]
+       [f : ($ hom a b)]
+       [g : ($ hom b c)]
+       [h : ($ hom c d)]
+       (= ($ hom a d)
+          ($ cmp a c d h ($ cmp a b c g f))
+          ($ cmp a b d ($ cmp b c d h g) f)
+          ))])
 ].
 
-Print Category.
+Thm Test(#l:lvl) : [(Category (++#l))] by [
+  { ob = `(U #l)
+  , hom = lam ty/a ty/b => `(-> ty/a ty/b)
+  , idn = lam ty/a x => `x
+  , cmp = lam ty/a ty/b ty/a f g x => use f [use g [`x]]
+  , idn/l = lam _ _ _ => auto
+  , idn/r = lam _ _ _ => auto
+  , assoc = lam _ _ _ _ _ _ _ => auto
+  }
+].
+
+// Thm Op(#l:lvl) : [
+//   (-> (Category #l) (Category #l))
+// ] by [
+//   lam {ob = ob, hom = hom, idn = idn, cmp = cmp, idn/l = idn/l, idn/r = idn/r, assoc = assoc} => 
+//     { ob = `ob
+//     , hom = lam c d => use hom [`d, `c]
+//     , idn = `idn
+//     , cmp = lam a b c f g => use cmp [`c, `b, `a, `g, `f]
+//     , idn/l = lam a b f => use idn/r [`b, `a, `f]; auto; assumption
+//     , idn/r = lam a b f => use idn/l [`b, `a, `f]; auto; assumption
+//     , assoc = ?
+//     }
+// ].
