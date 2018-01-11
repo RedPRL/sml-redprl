@@ -23,9 +23,9 @@ sig
 
   val Inversion : hyp -> tactic
 
-  structure Fun : 
+  structure Multi : 
   sig
-    val MultiElim : int -> hyp -> rule
+    val Elim : int -> hyp -> rule
   end
 
   structure Custom :

@@ -144,7 +144,7 @@ struct
       val z' = Sym.named (Sym.toString z ^ "'")
       val p = Sym.named "_"
     in
-      Lcf.rule o RT.Fun.MultiElim (List.length tacs) z thenl'
+      Lcf.rule o RT.Multi.Elim (List.length tacs) z thenl'
         ([z', p],
          tacs @ [decompose sign z' (pattern, names) tac])
     end
