@@ -1,11 +1,13 @@
 #!/bin/bash
 
+# Requires 'chronic' and 'ts' from the 'moreutils' package.
+
 echo "Building RedPRL with MLton..."
 if [ -n "${TRAVIS}" ]; then
   ./script/mlton.sh || exit 1;
 else
-  ./script/mlton.sh >build.log 2>&1 || { echo "build failed!"; cat build.log; exit 1; };
+  chronic ./script/mlton.sh || { echo "Build failed!"; exit 1; };
 fi
-echo "done!"
+echo "Done!"
 
-exec ./script/test-no-build.sh
+exec ./script/run-tests.sh | ts -i "[%.ss]"

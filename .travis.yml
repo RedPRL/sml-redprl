@@ -1,7 +1,7 @@
 language: generic
 env:
-  - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex"
-  - COMPILER=mlton PACKAGES="mlton"
+  - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex moreutils"
+  - COMPILER=mlton PACKAGES="mlton moreutils"
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y --force-yes ${PACKAGES}
