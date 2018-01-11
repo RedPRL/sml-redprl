@@ -233,11 +233,10 @@ struct
 
       val Abt.$ (O.CUST (opid, SOME ar), args) = Abt.out cust
       val zjdg = Sig.theoremSpec sign opid args
-      val zextr = Sig.unfoldOpid sign opid args
 
       val H' = H @> (z, zjdg)
       val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
-      val extr = substVar (zextr, z) mainHole
+      val extr = substVar (cust, z) mainHole
     in
       |>: mainGoal #> (H, extr)
     end
