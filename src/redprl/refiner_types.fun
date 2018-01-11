@@ -792,38 +792,43 @@ struct
        EXP_ARG of variable * abt
      | DIM_ARG of variable
 
-    fun stripFunTy 0 ty : arg list * abt = ([], ty)
-      | stripFunTy n ty = 
-          case Syn.out ty of 
+    fun reduce sign =
+      Machine.eval sign Machine.STABLE (Machine.Unfolding.default sign)
+
+    fun stripFunTy sign n ty = 
+      case n of 
+         0 => ([], ty)
+       | _ =>
+         (case Syn.out (reduce sign ty) of 
              Syn.FUN (a, x, bx) =>
              let
-               val (args, rest) = stripFunTy (n - 1) bx
+               val (args, rest) = stripFunTy sign (n - 1) bx
              in
                (EXP_ARG (x,a) :: args, rest)
              end
 
            | Syn.PATH ((u, a), _, _) => 
              let
-               val (args, rest) = stripFunTy (n - 1) a
+               val (args, rest) = stripFunTy sign (n - 1) a
              in
                (DIM_ARG u :: args, rest)
              end
 
            | Syn.LINE (u, a) => 
              let
-               val (args, rest) = stripFunTy (n - 1) a
+               val (args, rest) = stripFunTy sign (n - 1) a
              in
                (DIM_ARG u :: args, rest)
              end             
 
-           | _ => raise Fail "stripFunTy"
+           | _ => raise Fail "stripFunTy")
 
-    fun Elim (n : int) z alpha jdg = 
+    fun Elim sign (n : int) z alpha jdg = 
       let
         val tr = ["Fun.MultiElim"]
         val H >> ajdg = jdg
         val AJ.TRUE ty = Hyps.lookup H z
-        val (args, rest) = stripFunTy n ty
+        val (args, rest) = stripFunTy sign n ty
 
         val {goals = argGoals, env, aptm} = 
           List.foldl
@@ -955,7 +960,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    val Elim = Multi.Elim 1
+    fun Elim sign = Multi.Elim sign 1
 
     fun EqApp _ jdg =
       let
@@ -1322,7 +1327,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    val Elim = Multi.Elim 1
+    fun Elim sign = Multi.Elim sign 1
 
     fun EqApp _ jdg =
       let
@@ -1445,7 +1450,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    val Elim = Multi.Elim 1
+    fun Elim sign = Multi.Elim sign 1
 
     fun EqApp _ jdg =
       let

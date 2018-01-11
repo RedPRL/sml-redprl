@@ -25,7 +25,7 @@ sig
 
   structure Multi : 
   sig
-    val Elim : int -> hyp -> rule
+    val Elim : sign -> int -> hyp -> rule
   end
 
   structure Custom :
