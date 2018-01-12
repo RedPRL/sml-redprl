@@ -1,7 +1,7 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 January 6
+" Last Change:  2018 January 12
 
 if exists("b:current_syntax")
   finish
@@ -12,7 +12,7 @@ setlocal iskeyword+=/
 
 syn keyword redDecl Def Extract Print Rule Tac Thm Quit
 syn keyword redSort dim hyp exp lvl tac jdg knd
-syn match   redHole '?\(\h\w*\)\?'
+syn match   redHole '?\(\a\|\d\|\'\|\/\|\-\)*'
 syn match   redMeta '#'
 
 syn keyword redExpr ax fcom bool tt ff if wbool wool wif wbool-rec wool-rec nat
