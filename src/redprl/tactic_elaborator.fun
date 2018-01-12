@@ -43,7 +43,7 @@ struct
   fun hole (pos : Pos.t, name : string option) : multitactic = 
     fn alpha => fn state =>
       let
-        val header = Fpp.seq [Fpp.text "?", Fpp.text (Option.getOpt (name, "")), Fpp.char #"."]
+        val header = Fpp.seq [Fpp.text (Option.getOpt (name, "")), Fpp.char #"."]
         val message = Fpp.vsep [header, Lcf.prettyState state]
       in
         RedPrlLog.print RedPrlLog.INFO (SOME pos, message);

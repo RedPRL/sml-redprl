@@ -300,6 +300,7 @@ end
  | OPNAME of string
  | UNDER
  | NUMERAL of IntInf.int
+ | HOLENAME of string
 
  | COLON
  (* delimiters *)
@@ -317,7 +318,6 @@ end
  | HASH
  | PERCENT
  | PIPE | DOUBLE_PIPE
- | QUESTION
  | SEMI
  (* arrows *)
  | SQUIGGLE_RIGHT_ARROW | SQUIGGLE_LEFT_ARROW
@@ -351,9 +351,6 @@ end
  | HCOM | COE | COM
 
  | LMAX
-
- (* parsing "coercions" *)
- | TACTIC
 
  (* keywords in tactics *)
  | CASE | OF
@@ -972,8 +969,7 @@ atomicRawMultitac
   | FRESH hypBindings RIGHT_ARROW atomicRawMultitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings (Tac.tacToMultitac (Ast.$$ (O.TAC_ID, []))))
   | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MTAC_ALL, [\ ([], atomicTac)]))
-  | QUESTION ident (Ast.$$ (O.MTAC_HOLE (SOME ident), []))
-  | QUESTION (Ast.$$ (O.MTAC_HOLE NONE, []))
+  | HOLENAME (Ast.$$ (O.MTAC_HOLE (SOME HOLENAME), []))
 
 atomicMultitac
   : atomicRawMultitac (annotate (Pos.pos (atomicRawMultitac1left fileName) (atomicRawMultitac1right fileName)) atomicRawMultitac)

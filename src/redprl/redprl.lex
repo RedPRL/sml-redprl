@@ -74,7 +74,6 @@ whitespace = [\ \t];
 "|"                => (Tokens.PIPE (posTuple (size yytext)));
 "%"                => (Tokens.PERCENT (posTuple (size yytext)));
 "_"                => (Tokens.UNDER (posTuple (size yytext)));
-"?"                => (Tokens.QUESTION (posTuple (size yytext)));
 "+"                => (Tokens.PLUS (posTuple (size yytext)));
 "++"               => (Tokens.DOUBLE_PLUS (posTuple (size yytext)));
 
@@ -151,10 +150,7 @@ whitespace = [\ \t];
 "tac"              => (Tokens.TAC (posTuple (size yytext)));
 "jdg"              => (Tokens.JDG (posTuple (size yytext)));
 
-"tactic"           => (Tokens.TACTIC (posTuple (size yytext)));
-
 "Print"            => (Tokens.CMD_PRINT (posTuple (size yytext)));
-"Quit"             => (Tokens.CMD_QUIT (posTuple (size yytext)));
 "Extract"          => (Tokens.CMD_EXTRACT (posTuple (size yytext)));
 "Quit"             => (Tokens.CMD_QUIT (posTuple (size yytext)));
 "Def"              => (Tokens.DCL_DEF (posTuple (size yytext)));
@@ -196,5 +192,6 @@ whitespace = [\ \t];
 
 {lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));
 {upper}{identChr}* => (Tokens.OPNAME (posTupleWith (size yytext) yytext));
+"?"{identChr}*     => (Tokens.HOLENAME (posTupleWith (size yytext) yytext));
 
 .                  => (RedPrlLog.print RedPrlLog.FAIL (SOME (Pos.pos (!pos yyarg) (!pos yyarg)), Fpp.text ("lexical error: skipping unrecognized character '" ^ yytext ^ "'")); continue ());
