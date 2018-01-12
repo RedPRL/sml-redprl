@@ -29,7 +29,6 @@ syn keyword redTac then unfold use with fail inversion concl assumption
 syn match   redTac '[;`]'
 
 syn keyword redSeq at by in true type synth discrete kan hcom coe stable
-syn match   redSeq '>>'
 
 syn region  redComm start="//" end="$"
 
