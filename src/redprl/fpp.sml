@@ -21,6 +21,6 @@ struct
        formatAnn = fn _ => ()}
   in
     fun execPP (m : unit m)  =
-      #output (m emptyPrecEnv (initialEnv ()) {curLine = []})
+      #output (m emptyPrecEnv (initialEnv ()) {curLine = [], maxWidthSeen = 0})
   end
 end

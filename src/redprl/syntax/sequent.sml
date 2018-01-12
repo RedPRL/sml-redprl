@@ -45,20 +45,36 @@ struct
      | jdg => map (Tm.renameVars srho) jdg
 
   fun prettyHyps f : 'a ctx -> Fpp.doc =
-    let
-      val comma =
-        fn [] => Fpp.empty
-         | _ => Fpp.Atomic.comma
-    in
-      Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.seq [Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, f a], comma r] :: r) []
-    end
+    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, f a] :: r) []
+
+  local
+    fun >>= (m, k) = Fpp.bind m k
+    infix >>=
+    open FppBasis FppBasis.Monad FppTypes
+  in
+    fun measureDoc m =
+      censor (fn _ => NULL)
+        (getState >>= (fn oldState =>
+          m >>= (fn _ =>
+            askEnv >>= (fn {nesting, ...} =>
+              getState >>= (fn {maxWidthSeen = w, ...} =>
+                modifyState (fn _ => oldState) >>= (fn _ => 
+                  ret (Space.sum (w, Space.neg nesting))))))))
+
+    fun ruleSep (m1 : Fpp.doc, m2 : Fpp.doc) : Fpp.doc =
+      measureDoc (Fpp.vsep [m1, m2]) >>= (fn w =>
+        Fpp.vsep
+          [m1,
+           Fpp.text (CharVector.tabulate (w, fn _ => #"-")),
+           m2])
+  end
 
   val pretty : jdg -> Fpp.doc =
-    fn H >> catjdg =>
+    fn H >> atjdg =>
        if Hyps.isEmpty H then
-         AJ.pretty catjdg 
+         AJ.pretty atjdg 
        else
-         Fpp.seq [prettyHyps AJ.pretty H, Fpp.newline, Fpp.hsep [Fpp.text ">>", AJ.pretty catjdg]]
+         ruleSep (prettyHyps AJ.pretty H, AJ.pretty atjdg)
      | MATCH (th, k, a, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
      | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match-record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
