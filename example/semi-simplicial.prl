@@ -15,6 +15,7 @@ Thm Pick : [
   auto
 ].
 
+
 Thm Pick/zero/L : [
   (-> [n : nat] (= (U 0) ($ Pick zero n) record))
 ] by [
@@ -38,12 +39,14 @@ Thm Pick/succ/0/succ/1 : [
   lam n m =>
     claim aux0 : [($ Pick n m) in (U 0)] by [auto];
     claim aux1 : [($ Pick (succ n) m) in (U 0)] by [auto];
-    unfold Pick; reduce at left in aux0; reduce at left in aux1; auto
+    unfold Pick; reduce at left in aux0; reduce at left in aux1; auto;
+    assumption
 ].
 
 Tac Replace(#z, #A) = [
   fresh ty -> rewrite #A in #z; [`ty]; auto
 ].
+
 
 Tac ReplaceGoal(#A:exp) = [
   fresh ty -> rewrite #A in concl; [`ty]; auto
@@ -118,7 +121,7 @@ Thm Pick/compose/tt/4/0/tt/5/0 : [
     reduce at type left right in aux0;
     reduce at left right in aux1;
     reduce at left in aux2;
-    auto
+    repeat {auto-step || assumption}
 ].
 
 Thm Pick/compose/tt/4/0/ff/5/0 : [
@@ -143,7 +146,7 @@ Thm Pick/compose/tt/4/0/ff/5/0 : [
     unfold Pick Pick/compose;
     reduce at type left right in aux0;
     reduce at left in aux2;
-    auto
+    repeat {auto-step || assumption}
 ].
 
 Thm Pick/compose/ff/4/0 : [
@@ -168,5 +171,5 @@ Thm Pick/compose/ff/4/0 : [
     unfold Pick Pick/compose;
     reduce at type left right in aux0;
     reduce at left in aux2;
-    auto
+    repeat {auto-step || assumption}
 ].

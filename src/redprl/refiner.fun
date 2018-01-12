@@ -233,11 +233,10 @@ struct
 
       val Abt.$ (O.CUST (opid, SOME ar), args) = Abt.out cust
       val zjdg = Sig.theoremSpec sign opid args
-      val zextr = Sig.unfoldOpid sign opid args
 
       val H' = H @> (z, zjdg)
       val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
-      val extr = substVar (zextr, z) mainHole
+      val extr = substVar (cust, z) mainHole
     in
       |>: mainGoal #> (H, extr)
     end
@@ -643,12 +642,12 @@ struct
 
       structure Coe =
       struct
-       open Coe
+        open Coe
 
-       val EqCapR = Symmetry then_ Lcf.rule o EqCapL
-       val AutoEqL = Lcf.rule o EqCapL orelse_ Lcf.rule o Eq
-       val AutoEqR = EqCapR orelse_ Lcf.rule o Eq
-       val AutoEqLR = Lcf.rule o EqCapL orelse_ EqCapR orelse_ Lcf.rule o Eq
+        val EqCapR = Symmetry then_ Lcf.rule o EqCapL
+        val AutoEqL = Lcf.rule o EqCapL orelse_ Lcf.rule o Eq
+        val AutoEqR = EqCapR orelse_ Lcf.rule o Eq
+        val AutoEqLR = Lcf.rule o EqCapL orelse_ EqCapR orelse_ Lcf.rule o Eq
       end
 
       fun ProgressCompute sign =
@@ -775,21 +774,20 @@ struct
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "TrueFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
       val NondetSynthFromHyp = NondetFromHypDelegate (fn (z, _) => SynthFromHyp z)
-
+    in
       val NondetStepJdgFromHyp = matchGoal
         (fn _ >> AJ.TRUE _ => NondetTrueFromHyp
           | _ >> AJ.EQ_TYPE _ => NondetEqTypeFromHyp
           | _ >> AJ.SYNTH _ => NondetSynthFromHyp
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
-    in
+
       fun AutoStep sign =
         StepJdg sign
-          orelse_
-            NondetStepJdgFromHyp
+
     end
 
     local
-      fun ElimBasis ty z : tactic =
+      fun ElimBasis sign ty z : tactic =
         case Syn.out ty of
            Syn.BOOL => Lcf.rule o Bool.Elim z
          | Syn.WBOOL => Lcf.rule o WBool.Elim z
@@ -797,16 +795,16 @@ struct
          | Syn.INT => Lcf.rule o Int.Elim z
          | Syn.VOID => Lcf.rule o Void.Elim z
          | Syn.S1 => Lcf.rule o S1.Elim z
-         | Syn.FUN _ => Lcf.rule o Fun.Elim z
+         | Syn.FUN _ => Lcf.rule o MultiArrow.Elim sign 1 z
          | Syn.RECORD _ => Lcf.rule o Record.Elim z
-         | Syn.PATH _ => Lcf.rule o Path.Elim z
-         | Syn.LINE _ => Lcf.rule o Line.Elim z
+         | Syn.PATH _ => Lcf.rule o MultiArrow.Elim sign 1 z
+         | Syn.LINE _ => Lcf.rule o MultiArrow.Elim sign 1 z
          | Syn.PUSHOUT _ => Lcf.rule o Pushout.Elim z
          | Syn.COEQUALIZER _ => Lcf.rule o Coequalizer.Elim z
          | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.Elim z
          | _ => fail @@ E.GENERIC [Fpp.text "elim tactic", TermPrinter.ppTerm ty]
     in
-      val Elim = NormalizeHypDelegate ElimBasis
+      fun Elim sign = NormalizeHypDelegate (ElimBasis sign) sign
     end
 
     fun Rewrite _ sel m = Lcf.rule o InternalizedEquality.Rewrite sel m

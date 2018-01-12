@@ -786,6 +786,90 @@ struct
       end
   end
 
+  structure MultiArrow = 
+  struct
+    datatype arg =
+       EXP_ARG of variable * abt
+     | DIM_ARG of variable
+
+    fun reduce sign =
+      Machine.eval sign Machine.STABLE (Machine.Unfolding.default sign)
+
+    fun stripFunTy sign n ty = 
+      case n of 
+         0 => ([], ty)
+       | _ =>
+         (case Syn.out (reduce sign ty) of 
+             Syn.FUN (a, x, bx) =>
+             let
+               val (args, rest) = stripFunTy sign (n - 1) bx
+             in
+               (EXP_ARG (x,a) :: args, rest)
+             end
+
+           | Syn.PATH ((u, a), _, _) => 
+             let
+               val (args, rest) = stripFunTy sign (n - 1) a
+             in
+               (DIM_ARG u :: args, rest)
+             end
+
+           | Syn.LINE (u, a) => 
+             let
+               val (args, rest) = stripFunTy sign (n - 1) a
+             in
+               (DIM_ARG u :: args, rest)
+             end             
+
+           | _ => raise Fail "stripFunTy")
+
+    fun Elim sign (n : int) z alpha jdg = 
+      let
+        val tr = ["Fun.MultiElim"]
+        val H >> ajdg = jdg
+        val AJ.TRUE ty = Hyps.lookup H z
+        val (args, rest) = stripFunTy sign n ty
+
+        val {goals = argGoals, env, aptm} = 
+          List.foldl
+            (fn (EXP_ARG (x, a), {goals, env, aptm}) =>
+                let
+                  val (goal, hole) = makeTrue tr H @@ substVarenv env a
+                  val goals' = goals >: goal
+                  val env' = Var.Ctx.insert env x hole
+                  val aptm' = Syn.into @@ Syn.APP (aptm, hole)                
+                in
+                  {goals = goals', env = env', aptm = aptm'}                
+                end
+              | (DIM_ARG u, {goals, env, aptm}) =>
+                let
+                  val (goal, hole) = makeTerm tr H O.DIM
+                  val goals' = goals >: goal
+                  val env' = Var.Ctx.insert env u hole
+                  val aptm' = Syn.into @@ Syn.DIM_APP (aptm, hole)
+                in
+                  {goals = goals', env = env', aptm = aptm'}
+                end)
+            {goals = T.empty, env = Var.Ctx.empty, aptm = VarKit.toExp z}
+            args
+
+        val rest' = substVarenv env rest
+
+        val u = alpha 0
+        val v = alpha 1
+
+        val H' = Hyps.interposeAfter
+          (z, |@> (u, AJ.TRUE rest')
+               @> (v, AJ.EQ ((VarKit.toExp u, aptm), rest')))
+          H
+
+        val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
+      in
+        argGoals >: mainGoal #> (H, VarKit.substMany [(aptm, u), (axiom, v)] mainHole)
+      end  
+  end
+
+
   structure Fun =
   struct
     val kindConstraintsOnDomAndCod =
@@ -874,32 +958,6 @@ struct
         val goal2 = makeEqIfDifferent tr H ((m', n), ty)
       in
         |>:? goal2 >: goal1 #> (H, axiom)
-      end
-
-    fun Elim z alpha jdg =
-      let
-        val tr = ["Fun.Elim"]
-        val H >> ajdg = jdg
-        val AJ.TRUE ty = Hyps.lookup H z
-        val Syn.FUN (a, x, bx) = Syn.out ty
-
-        (* argument *)
-        val (goalA, holeA) = makeTrue tr H a
-
-        (* new context *)
-        val b' = substVar (holeA, x) bx
-        val u = alpha 0
-        val v = alpha 1
-        val aptm = Syn.intoApp (VarKit.toExp z, holeA)
-        (* note: a and bx come from the telescope so they are types *)
-        val H' = Hyps.interposeAfter
-          (z, |@> (u, AJ.TRUE b')
-               @> (v, AJ.EQ ((VarKit.toExp u, aptm), b')))
-          H
-
-        val (goalF, holeF) = makeGoal tr @@ H' >> ajdg
-      in
-        |>: goalA >: goalF #> (H, VarKit.substMany [(aptm, u), (axiom, v)] holeF)
       end
 
     fun EqApp _ jdg =
@@ -1267,33 +1325,6 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun Elim z alpha jdg = 
-      let
-        val tr = ["Path.Elim"]
-        val H >> ajdg = jdg
-        val AJ.TRUE ty = Hyps.lookup H z
-        val Syn.PATH ((u, a), _, _) = Syn.out ty
-
-        val x = alpha 0
-        val y = alpha 1
-        
-        val (dimGoal, dimHole) = makeTerm tr H @@ O.DIM
-        val ar = substVar (dimHole, u) a
-
-        val w = Sym.named "w"
-        val pathApp = substVar (dimHole, w) @@ Syn.into @@ Syn.DIM_APP (VarKit.toExp z, VarKit.toDim w)
-
-        val H' = Hyps.interposeAfter
-          (z, |@> (x, AJ.TRUE ar)
-               @> (y, AJ.EQ ((VarKit.toExp x, pathApp), ar)))
-          H
-
-        val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
-      in
-        |>: dimGoal >: mainGoal
-        #> (H, VarKit.substMany [(pathApp, x), (axiom, y)] mainHole)
-      end
-
     fun EqApp _ jdg =
       let
         val tr = ["Path.EqApp"]
@@ -1413,33 +1444,6 @@ struct
         val goal2 = makeEqIfDifferent tr H ((m', n), lineTy) (* m' will-typed *)
       in
         |>:? goal2 >: goal1 #> (H, axiom)
-      end
-
-    fun Elim z alpha jdg = 
-      let
-        val tr = ["Line.Elim"]
-        val H >> ajdg = jdg
-        val AJ.TRUE ty = Hyps.lookup H z
-        val Syn.LINE (u, a) = Syn.out ty
-
-        val x = alpha 0
-        val y = alpha 1
-        
-        val (dimGoal, dimHole) = makeTerm tr H @@ O.DIM
-        val ar = substVar (dimHole, u) a
-
-        val w = Sym.named "w"
-        val lineApp = substVar (dimHole, w) @@ Syn.into @@ Syn.DIM_APP (VarKit.toExp z, VarKit.toDim w)
-
-        val H' = Hyps.interposeAfter
-          (z, |@> (x, AJ.TRUE ar)
-               @> (y, AJ.EQ ((VarKit.toExp x, lineApp), ar)))
-          H
-
-        val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
-      in
-        |>: dimGoal >: mainGoal
-        #> (H, VarKit.substMany [(lineApp, x), (axiom, y)] mainHole)
       end
 
     fun EqApp _ jdg =

@@ -55,7 +55,7 @@ struct
       RedPrlError.raiseError (RedPrlError.GENERIC [Fpp.text msg])
 
   val autoMtac = mrepeat o all o try o R.AutoStep
-  val autoTac = multitacToTac o autoMtac
+  val autoTac = repeat o try o R.AutoStep
   fun autoTacComplete sign = try (autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal")
 
   fun exactAuto sign m = 
@@ -68,10 +68,6 @@ struct
 
   open Sequent infix >>
   structure AJ = AtomicJudgment and Syn = SyntaxView
-
-  val autoMtac = mrepeat o all o try o R.AutoStep
-  val autoTac = multitacToTac o autoMtac
-  fun autoTacComplete sign = try (autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal")
 
   fun elimRule sign z xs tacs = 
     R.Elim sign z thenl' (xs, tacs)
@@ -143,28 +139,15 @@ struct
       o #1
       o stitchPattern
 
-  fun apply sign z names (appTac, contTac) alpha jdg = 
-    let
-      val H >> _ = jdg
-      val AJ.TRUE ty = RT.Hyps.lookup H z
-    in
-      case Syn.out ty of 
-         Syn.FUN _ => (Lcf.rule o RT.Fun.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.PATH _ => (Lcf.rule o RT.Path.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | Syn.LINE _ => (Lcf.rule o RT.Line.Elim z thenl' (names, [appTac, contTac])) alpha jdg
-       | _ => raise RedPrlError.error [Fpp.text "'apply' tactical does not apply"]
-    end
-
   fun applications sign z (pattern, names) tacs tac =
-    case tacs of 
-       [] => decompose sign z (pattern, names) tac
-     | appTac :: tacs =>
-       let
-         val z' = Sym.named (Sym.toString z ^ "'")
-         val p = Sym.named "_"
-       in
-         apply sign z [z',p] (appTac, applications sign z' (pattern, names) tacs tac)
-       end
+    let
+      val z' = Sym.named (Sym.toString z ^ "'")
+      val p = Sym.named "_"
+    in
+      Lcf.rule o RT.MultiArrow.Elim sign (List.length tacs) z thenl'
+        ([z', p],
+         tacs @ [decompose sign z' (pattern, names) tac])
+    end
 
   local
     fun recordIntroBasis sign lbls tacs ty =
@@ -285,6 +268,7 @@ struct
      | O.TAC_REDUCE_PART $ [_ \ sel, _ \ accs] => Lcf.rule o R.Computation.ReducePart sign (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs)
      | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
      | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
+     | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp
      | O.RULE_PRIM ruleName $ _ => R.lookupRule sign ruleName
      | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule o R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)

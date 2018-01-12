@@ -78,6 +78,9 @@ struct
   val inversion = 
     O.DEV_INVERSION $$ []
 
+  val assumption = 
+    O.TAC_ASSUMPTION $$ []
+
 end
 
 structure Multi =
@@ -111,7 +114,7 @@ struct
       fun expand (DIM vars) = List.map DIM vars
         | expand (TERM (vars, term)) = List.map (fn var => TERM (var, term)) vars
     in
-      List.concat (List.map expand quant)
+      ListUtil.concatMap expand quant
     end
 
   fun makeFunOrLineAux [] cod = cod
@@ -362,6 +365,7 @@ end
  | TAC_ID | TAC_FAIL | TAC_AUTO_STEP | TAC_SYMMETRY | TAC_ELIM | TAC_REWRITE | TAC_REDUCE | TAC_UNFOLD
  | RULE_EXACT
  | TAC_INVERSION
+ | TAC_ASSUMPTION
  | MATCH
  | QUERY | CONCL
  | PRINT
@@ -922,6 +926,7 @@ atomicRawTac
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
 
   | TAC_INVERSION (Tac.inversion)
+  | TAC_ASSUMPTION (Tac.assumption)
 
   | atomicTac DOUBLE_PIPE tactic %prec DOUBLE_PIPE (Tac.orElse (atomicTac, tactic))
 

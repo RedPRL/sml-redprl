@@ -115,7 +115,7 @@ Thm NotIsEquiv : [
               [i=0 [j] (@ p' j)]
               [i=1 [j] b])
         }
-      ); auto; (Bool/contra/inverse p')
+      ); auto; (Bool/contra/inverse p'); assumption
   }
 ].
 

@@ -13,6 +13,8 @@ sig
   val CutLemma : sign -> abt -> rule
 
   val AutoStep : sign -> tactic
+  val NondetStepJdgFromHyp : tactic
+  
   val Elim : sign -> hyp -> tactic
   val Exact : abt -> tactic
   val Rewrite : sign -> hyp Selector.t * Accessor.t -> abt -> tactic
@@ -20,6 +22,12 @@ sig
   val SynthFromHyp : hyp -> tactic
 
   val Inversion : hyp -> tactic
+
+  (* synthetic elim rule for nested pi, path and line types *)
+  structure MultiArrow : 
+  sig
+    val Elim : sign -> int -> hyp -> rule
+  end
 
   structure Custom :
   sig
