@@ -93,12 +93,26 @@ struct
       let
         val Syn.RECORD fields = Syn.out ty
         val nameMap = ListPair.zipEq (lbls, names)
+
         fun nameForLabel lbl =
-          Syn.Fields.lookup lbl nameMap
-          handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
-        val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
+          SOME @@ Syn.Fields.lookup lbl nameMap
+          handle Syn.Fields.Absent => NONE
+
+        val (xs, xs') =
+          List.foldl
+            (fn (((lbl, _), _), (xs, xs')) =>
+             case nameForLabel lbl of 
+                SOME x => (x::xs, xs')
+              | NONE => 
+                let
+                  val x = Sym.named lbl
+                in
+                  (x::xs, x :: xs')
+                end)
+            ([],[])
+            fields
       in
-        Lcf.rule (RT.Record.Elim z) thenl [popNamesIn [] tac]
+        Lcf.rule (RT.Record.Elim z) thenl [popNamesIn xs (pushNames xs' then_ tac)]
       end
   in
     fun recordElim (lbls, names) tac =
@@ -161,12 +175,13 @@ struct
     let
       val n = List.length tacs
       val z' = Sym.new ()
+      val p = Sym.named "_"
     in
       if n = 0 then 
         decompose sign z (pattern, names) tac
       else
         Lcf.rule (RT.MultiArrow.Elim sign (List.length tacs) z) thenl
-          (tacs @ [popNamesIn [z'] @@ decompose sign z' (pattern, names) tac])
+          (tacs @ [popNamesIn [p, z'] @@ decompose sign z' (pattern, names) tac])
     end
 
   local
