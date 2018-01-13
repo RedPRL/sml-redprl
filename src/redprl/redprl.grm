@@ -932,7 +932,7 @@ atomicRawTac
   | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
   | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
 
-  | PUSH termAnySort (Ast.$$ (O.TAC_PUSH, [\ ([], termAnySort)]))
+  | PUSH termsAnySort (Ast.$$ (O.TAC_PUSH, [\ ([], Multi.makeVec O.ANY termsAnySort)]))
   | POP hypBindings DOUBLE_RIGHT_ARROW tactic (Ast.$$ (O.TAC_POP (List.map #2 hypBindings), [\ (List.map #1 hypBindings, tactic)]))
   
   | IF elimTarget THEN tactic ELSE tactic

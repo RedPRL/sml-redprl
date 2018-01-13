@@ -200,10 +200,11 @@ struct
 
   fun push xs jdg =
     let
-      val rho = List.foldl (fn (x, rho) => Sym.Ctx.insert rho x (Sym.new ())) Sym.Ctx.empty xs
+      fun clone x = Sym.named ("$" ^ Sym.toString x)
+      val (xs', rho) = List.foldr (fn (x, (xs, rho)) => let val x' = clone x in (x' :: xs, Sym.Ctx.insert rho x x') end) ([], Sym.Ctx.empty) xs
       val {hyps, bound} >> ajdg = relabel rho jdg
     in
-      {hyps = hyps, bound = xs @ bound} >> ajdg
+      {hyps = hyps, bound = xs' @ bound} >> ajdg
     end
 
   fun popAs xs' jdg =

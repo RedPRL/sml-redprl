@@ -149,6 +149,7 @@ struct
 
      | TAC_ASSUMPTION => [] ->> TAC
      | TAC_POP sorts => [sorts |: TAC] ->> TAC
+     | TAC_PUSH => [[] |: VEC ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [ListUtil.concatMap devPatternValence pats |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC

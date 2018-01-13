@@ -378,8 +378,12 @@ struct
      | O.TAC_FAIL $ _ => fail "fail"
      | O.TAC_POP _ $ [xs \ tm] =>
        popNamesIn xs (tactic sign env tm)
-     | O.TAC_PUSH $ [_ \ any] => 
-       Lcf.rule (R.Names.Push [VarKit.fromTerm (Syn.unpackAny any)])
+     | O.TAC_PUSH $ [_ \ vec] => 
+       let
+         val xs = Syn.outVec' (VarKit.fromTerm o Syn.unpackAny) vec
+       in
+         Lcf.rule (R.Names.Push xs)
+       end
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =
