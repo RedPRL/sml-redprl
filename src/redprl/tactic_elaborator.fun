@@ -64,15 +64,18 @@ struct
   fun exactAuto sign m = 
     R.Exact m thenl [autoTacComplete sign]
 
+  fun pushNames xs = 
+    Lcf.rule (R.Names.Push xs)
+
   fun popNamesIn xs tac = 
     Lcf.rule (R.Names.PopAs xs)
       then_ tac
-      then_ Lcf.rule (R.Names.Push xs)
+      then_ pushNames xs
 
   fun popSpecificNamesIn xs tac = 
     Lcf.rule (R.Names.PopSpecific xs )
       then_ tac
-      then_ Lcf.rule (R.Names.Push xs)
+      then_ pushNames xs
 
   fun hyp sign z =
     Lcf.rule (R.Hyp.Project z)
@@ -95,7 +98,7 @@ struct
           handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
         val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
       in
-        Lcf.rule (RT.Record.Elim z) thenl [popNamesIn xs tac]
+        Lcf.rule (RT.Record.Elim z) thenl [popNamesIn [] tac]
       end
   in
     fun recordElim (lbls, names) tac =
@@ -132,8 +135,9 @@ struct
 
   fun decomposeStitched sign z (pattern : Sym.t O.dev_pattern) tac = 
     case pattern of 
-        O.PAT_VAR u => Lcf.rule (R.Names.PopSpecific []) thenl [popNamesIn [u] tac]
-        (* Lcf.rule o (R.Hyp.Rename z) thenl' ([u], [tac]) *)
+        O.PAT_VAR u => 
+        pushNames [z] thenl [popNamesIn [u] tac]
+
       | O.PAT_TUPLE labeledPatterns =>
         let
           val (lbls, pats) = ListPair.unzip labeledPatterns
@@ -155,10 +159,14 @@ struct
 
   fun applications sign z (pattern, names) tacs tac =
     let
+      val n = List.length tacs
       val z' = Sym.new ()
     in
-      Lcf.rule (RT.MultiArrow.Elim sign (List.length tacs) z) thenl
-         (tacs @ [popNamesIn [z'] @@ decompose sign z' (pattern, names) tac])
+      if n = 0 then 
+        decompose sign z (pattern, names) tac
+      else
+        Lcf.rule (RT.MultiArrow.Elim sign (List.length tacs) z) thenl
+          (tacs @ [popNamesIn [z'] @@ decompose sign z' (pattern, names) tac])
     end
 
   local
@@ -282,12 +290,12 @@ struct
      | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule (R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec))
      | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp
      | O.RULE_PRIM ruleName $ _ => R.lookupRule sign ruleName
-     | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl [tactic sign env tm1, popNamesIn [u] @@ tactic sign env tm2]
+     (* | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl [tactic sign env tm1, popNamesIn [u] @@ tactic sign env tm2] *)
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.DEV_RECORD_INTRO lbls $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.DEV_PATH_INTRO _ $ [us \ tm] => pathIntros sign us (tactic sign env tm)
      | O.DEV_BOOL_ELIM $ [_ \ var, _ \ tm1, _ \ tm2] => elimRule sign (VarKit.fromTerm var) [tactic sign env tm1, tactic sign env tm2, autoTacComplete sign, autoTacComplete sign]
-     | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [tactic sign env tm1, popNamesIn [v] (tactic sign env tm2), autoTacComplete sign, autoTacComplete sign, autoTacComplete sign]
+     (* | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [tactic sign env tm1, popNamesIn [v] (tactic sign env tm2), autoTacComplete sign, autoTacComplete sign, autoTacComplete sign] *)
      | O.DEV_APPLY_HYP pattern $ [_ \ var, _ \ vec, names \ tm'] =>
        let
          val z = VarKit.fromTerm (Syn.unpackAny var)

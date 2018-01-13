@@ -802,7 +802,8 @@ struct
 
            | _ => raise Fail "stripFunTy")
 
-    fun Elim sign (n : int) z jdg = 
+    fun Elim sign 0 z jdg = Lcf.ret Lcf.isjdg jdg
+      | Elim sign (n : int) z jdg = 
       let
         val tr = ["Fun.MultiElim"]
         val H >> ajdg = jdg
