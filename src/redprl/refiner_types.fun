@@ -45,19 +45,6 @@ struct
    * or new parameter variables.
    *)
 
-  (* Here is the function that will be used in other types *)
-  structure Universe =
-  struct
-    val inherentKind =
-      fn K.DISCRETE => K.DISCRETE
-       | K.KAN => K.KAN
-       | K.HCOM => K.COE
-       | K.COE => K.COE
-       | K.STABLE => K.COE
-
-    fun inherentLevel l = L.plus (l, 1)
-  end
-
   structure Bool =
   struct
     val inherentLevel = L.zero
@@ -2459,15 +2446,14 @@ struct
 
   structure Universe =
   struct
-    open Universe
-
-    (* XXX needs double-checking *)
-    val kindConstraint =
+    val inherentKind =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.KAN
-       | K.HCOM => K.KAN
-       | K.COE => K.STABLE
-       | K.STABLE => K.STABLE
+       | K.HCOM => K.COE
+       | K.COE => K.COE
+       | K.STABLE => K.COE
+
+    val inherentLevel = L.succ
 
     fun EqType _ jdg =
       let
