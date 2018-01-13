@@ -49,11 +49,14 @@ struct
       Lcf.M.mul (Lcf.M.map (mt2 o Lcf.mul Lcf.isjdg) st')
     end
 
+  val all = allSeq
+  val each = eachSeq
+
   fun then_ (t1 : tactic, t2 : tactic) : tactic = 
-    multitacToTac (seq (all t1, all t2))
+    multitacToTac (seq (allSeq t1, allSeq t2))
 
   fun thenl (t : tactic, ts : tactic list) : tactic = 
-    multitacToTac (seq (all t, each ts))
+    multitacToTac (seq (allSeq t, eachSeq ts))
 
   fun mtry (mt : multitactic) : multitactic = 
     morelse (mt, all idn)
