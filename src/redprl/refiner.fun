@@ -277,9 +277,12 @@ struct
                (|>: goal, ty)               
              end
 
-        and synthTerm H = 
-            synthNeutral H o
-              Machine.eval sign Machine.STABLE Machine.Unfolding.never
+           | O.NAT_REC $ _ => E.raiseAnnotatedError' (getAnnotation tm, E.NOT_APPLICABLE (Fpp.text "Synth.General", Fpp.text "nat-rec"))
+           | O.IF $ _ =>  E.raiseAnnotatedError' (getAnnotation tm, E.NOT_APPLICABLE (Fpp.text "Synth.General", Fpp.text "if"))
+
+        and synthTerm H tm = 
+            synthNeutral H @@
+              Machine.eval sign Machine.STABLE Machine.Unfolding.never tm
       in
         fn jdg => 
           let
