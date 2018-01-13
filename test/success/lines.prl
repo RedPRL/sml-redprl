@@ -6,3 +6,12 @@ Thm Line/Test0 : [
 ] by [
   lam a l => `ax
 ].
+
+Thm Line/Test1 : [
+  (->
+   [ty : (U 0 kan)]
+   [p : (line [_] ty)]
+   (path [_] ty (@ p 0) (@ p 1)))
+] by [
+  lam ty p => abs x => `(@ p x)
+].
