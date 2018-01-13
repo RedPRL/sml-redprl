@@ -54,9 +54,14 @@ struct
     fn alpha => fn state => 
       RedPrlError.raiseError (RedPrlError.GENERIC [Fpp.text msg])
 
-  val autoMtac = mrepeat o all o try o R.AutoStep
-  val autoTac = repeat o try o R.AutoStep
-  fun autoTacComplete sign = try (autoTac sign then_ fail "'auto' failed to discharge this auxiliary goal")
+  fun @@ (f, x) = f x
+  infixr @@
+
+  fun complete tac = 
+    tac then_ fail "incomplete"
+
+  fun autoTac sign = repeat (try @@ R.AutoStep sign)
+  fun autoTacComplete sign = try (complete (autoTac sign) orelse_ R.NondetStepJdgFromHyp)
 
   fun exactAuto sign m = 
     R.Exact m thenl [autoTacComplete sign]
@@ -377,7 +382,7 @@ struct
      | O.MTAC_ORELSE $ [_ \ tm1, _ \ tm2] => T.morelse (multitactic sign env tm1, multitactic sign env tm2)
      | O.MTAC_HOLE msg $ _ => hole (Option.valOf (Tm.getAnnotation tm), msg)
      | O.MTAC_REPEAT $ [_ \ tm] => T.mrepeat (multitactic sign env tm)
-     | O.MTAC_AUTO $ _ => autoMtac sign
+     | O.MTAC_AUTO $ _ => all (autoTac sign)
      | O.CUST (opid, _) $ args => multitactic sign env (Sig.unfoldOpid sign opid args)
      | `x => Var.Ctx.lookup env x
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized multitactic", TermPrinter.ppTerm tm]
