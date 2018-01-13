@@ -45,19 +45,6 @@ struct
    * or new parameter variables.
    *)
 
-  (* Here is the function that will be used in other types *)
-  structure Universe =
-  struct
-    val inherentKind =
-      fn K.DISCRETE => K.DISCRETE
-       | K.KAN => K.KAN
-       | K.HCOM => K.COE
-       | K.COE => K.COE
-       | K.STABLE => K.COE
-
-    fun inherentLevel l = L.plus (l, 1)
-  end
-
   structure Bool =
   struct
     val inherentLevel = L.zero
@@ -219,8 +206,7 @@ struct
     fun Elim z _ jdg =
       let
         val tr = ["WBool.Elim"]
-        val H >> concl = jdg
-        val cz = View.matchAsTrue concl
+        val H >> AJ.TRUE cz = jdg
         (* if(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
@@ -338,8 +324,7 @@ struct
     fun Elim z alpha jdg =
       let
         val tr = ["Nat.Elim"]      
-        val H >> concl = jdg
-        val cz = View.matchAsTrue concl
+        val H >> AJ.TRUE cz = jdg
         val AJ.TRUE ty = Hyps.lookup H z
         val Syn.NAT = Syn.out ty
 
@@ -469,8 +454,7 @@ struct
     fun Elim z alpha jdg =
       let
         val tr = ["Int.Elim"]
-        val H >> concl = jdg
-        val cz = View.matchAsTrue concl
+        val H >> AJ.TRUE cz = jdg
         val AJ.TRUE ty = Hyps.lookup H z
         val Syn.INT = Syn.out ty
 
@@ -669,8 +653,7 @@ struct
     fun Elim z alpha jdg =
       let
         val tr = ["S1.Elim"]
-        val H >> concl = jdg
-        val cz = View.matchAsTrue concl
+        val H >> AJ.TRUE cz = jdg
         (* S1-rec(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
@@ -1597,8 +1580,7 @@ struct
     fun Elim z alpha jdg =
       let
         val tr = ["Pushout.Elim"]
-        val H >> concl = jdg
-        val dz = View.matchAsTrue concl
+        val H >> AJ.TRUE dz = jdg
         (* pushout-rec(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
@@ -1854,8 +1836,7 @@ struct
     fun Elim z alpha jdg =
       let
         val tr = ["Coequalizer.Elim"]
-        val H >> concl = jdg
-        val pz = View.matchAsTrue concl
+        val H >> AJ.TRUE pz = jdg
         (* coeq-rec(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
@@ -2459,15 +2440,14 @@ struct
 
   structure Universe =
   struct
-    open Universe
-
-    (* XXX needs double-checking *)
-    val kindConstraint =
+    val inherentKind =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.KAN
-       | K.HCOM => K.KAN
-       | K.COE => K.STABLE
-       | K.STABLE => K.STABLE
+       | K.HCOM => K.COE
+       | K.COE => K.COE
+       | K.STABLE => K.COE
+
+    val inherentLevel = L.succ
 
     fun EqType _ jdg =
       let
