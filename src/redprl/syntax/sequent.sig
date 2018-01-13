@@ -47,5 +47,6 @@ sig
   val truncateFrom : Sym.t Selector.t -> hyps -> hyps
 
 
-  val push : Tm.variable -> jdg -> jdg
+  val push : Tm.variable list -> jdg -> jdg
+  val pop : Tm.variable list -> jdg -> jdg
 end

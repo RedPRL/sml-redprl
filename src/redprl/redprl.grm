@@ -366,6 +366,7 @@ end
  | MATCH
  | QUERY | CONCL
  | PRINT
+ | POP
 
  (* keywords in judgments *)
  | TRUE | TYPE | SYNTH | AT (* `WITH` is reused *)
@@ -931,6 +932,8 @@ atomicRawTac
   | ABS boundVars DOUBLE_RIGHT_ARROW tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (Multi.addUnderscores boundVars, tactic)]))
   | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
   | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
+
+  | POP hypBindings DOUBLE_RIGHT_ARROW tactic (Ast.$$ (O.TAC_POP (List.map #2 hypBindings), [\ (List.map #1 hypBindings, tactic)]))
   
   | IF elimTarget THEN tactic ELSE tactic
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))

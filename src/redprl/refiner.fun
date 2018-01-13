@@ -90,6 +90,27 @@ struct
       end
   end
 
+  structure Names = 
+  struct
+
+    fun Push xs _ jdg = 
+      let
+        val jdg' as H >> _ = Sequent.push xs jdg
+        val (goal, hole) = makeGoal [] jdg'
+      in
+        Lcf.|> (|>: goal, abstractEvidence H hole)
+      end
+
+    fun Pop xs _ jdg = 
+      let
+        val jdg' as H >> _ = Sequent.pop xs jdg
+        val (goal, hole) = makeGoal [] jdg'
+      in
+        Lcf.|> (|>: goal, abstractEvidence H hole)
+      end
+    
+  end
+
   structure TypeEquality =
   struct
     fun Symmetry _ jdg =

@@ -862,7 +862,7 @@ struct
        | K.COE => (K.COE, K.COE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType alpha jdg =
+    fun EqType _ jdg =
       let
         val tr = ["Fun.EqType"]
         val H >> ajdg = jdg
@@ -875,7 +875,7 @@ struct
         val goalA = View.makeAsEqType tr H ((a0, a1), l, ka)
 
         (* codomain *)
-        val z = alpha 0
+        val z = Sym.new ()
         val b0z = VarKit.rename (z, x) b0x
         val b1z = VarKit.rename (z, y) b1y
         val goalB = View.makeAsEqType tr (H @> (z, AJ.TRUE a0)) ((b0z, b1z), l, kb)
@@ -885,7 +885,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected fun typehood sequent"]
 
-    fun Eq alpha jdg =
+    fun Eq _ jdg =
       let
         val tr = ["Fun.Eq"]
         val H >> ajdg = jdg
@@ -898,7 +898,7 @@ struct
         val goalA = makeType tr H (a, K.top)
 
         (* function *)
-        val w = alpha 0
+        val w = Sym.new ()
         val m0w = VarKit.rename (w, x) m0x
         val m1w = VarKit.rename (w, y) m1y
         val bw = VarKit.rename (w, z) bz

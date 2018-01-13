@@ -66,6 +66,11 @@ struct
   fun exactAuto sign m = 
     R.Exact m thenl [autoTacComplete sign]
 
+  fun popNamesIn xs tac = 
+    Lcf.rule o R.Names.Pop xs
+      then_ tac
+      then_ Lcf.rule o R.Names.Push xs
+
   fun hyp sign z =
     Lcf.rule o R.Hyp.Project z
     par
@@ -369,6 +374,8 @@ struct
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
         T.idn)
      | O.TAC_FAIL $ _ => fail "fail"
+     | O.TAC_POP _ $ [xs \ tm] =>
+       popNamesIn xs (tactic sign env tm)
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =

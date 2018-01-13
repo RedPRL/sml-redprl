@@ -195,21 +195,22 @@ struct
      | _ => false
 
 
-  fun push x jdg =
+  fun push xs jdg =
     let
-      val x' = Sym.new ()
-      val rho = Sym.Ctx.singleton x x'
+      val rho = List.foldl (fn (x, rho) => Sym.Ctx.insert rho x (Sym.new ())) Sym.Ctx.empty xs
+      val {hyps, bound} >> ajdg = relabel rho jdg
     in
-      relabel rho jdg
+      {hyps = hyps, bound = xs @ bound} >> ajdg
     end
 
-  fun pop x' jdg =
+  fun pop xs' jdg =
     let
-      val H as {bound = x :: xs, ...} >> _ = jdg
-      val rho = Sym.Ctx.singleton x x'
+      val H as {bound, ...} >> _ = jdg
+      val (xs, bound') = ListUtil.splitAt (bound, List.length xs')
+      val rho = ListPair.foldl (fn (x, x', rho) => Sym.Ctx.insert rho x x') Sym.Ctx.empty (xs, xs')
       val {hyps, ...} >> ajdg = relabel rho H
     in
-      {bound = xs, hyps = hyps} >> ajdg
+      {bound = bound', hyps = hyps} >> ajdg
     end
 
   local
