@@ -132,7 +132,7 @@ struct
 
   fun decomposeStitched sign z (pattern : Sym.t O.dev_pattern) tac = 
     case pattern of 
-        O.PAT_VAR u => raise Fail "TODO" 
+        O.PAT_VAR u => Lcf.rule (R.Names.PopSpecific []) thenl [popNamesIn [u] tac]
         (* Lcf.rule o (R.Hyp.Rename z) thenl' ([u], [tac]) *)
       | O.PAT_TUPLE labeledPatterns =>
         let
@@ -155,13 +155,10 @@ struct
 
   fun applications sign z (pattern, names) tacs tac =
     let
-      val z' = Sym.named (Sym.toString z ^ "'")
-      val p = Sym.named "_"
+      val z' = Sym.new ()
     in
-      raise Fail "TODO"
-      (* Lcf.rule (RT.MultiArrow.Elim sign (List.length tacs) z) thenl
-        ([z', p],
-         tacs @ [decompose sign z' (pattern, names) tac]) *)
+      Lcf.rule (RT.MultiArrow.Elim sign (List.length tacs) z) thenl
+         (tacs @ [popNamesIn [z'] @@ decompose sign z' (pattern, names) tac])
     end
 
   local
@@ -381,6 +378,8 @@ struct
      | O.TAC_FAIL $ _ => fail "fail"
      | O.TAC_POP _ $ [xs \ tm] =>
        popNamesIn xs (tactic sign env tm)
+     | O.TAC_PUSH $ [_ \ any] => 
+       Lcf.rule (R.Names.Push [VarKit.fromTerm (Syn.unpackAny any)])
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =

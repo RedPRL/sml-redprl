@@ -155,6 +155,7 @@ whitespace = [\ \t];
 <INITIAL>"of"               => (Tokens.OF (posTuple (size yytext)));
 <INITIAL>"refine"           => (Tokens.REFINE (posTuple (size yytext)));
 <INITIAL>"pop"              => (Tokens.POP (posTuple (size yytext)));
+<INITIAL>"push"             => (Tokens.PUSH (posTuple (size yytext)));
 
 <INITIAL>"dim"              => (Tokens.DIM (posTuple (size yytext)));
 <INITIAL>"lvl"              => (Tokens.LVL (posTuple (size yytext)));

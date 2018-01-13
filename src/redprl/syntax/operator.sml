@@ -286,6 +286,7 @@ struct
      | TAC_REWRITE => "rewrite"
      | TAC_ASSUMPTION => "assumption"
      | TAC_POP _ => "pop"
+     | TAC_PUSH => "push"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"

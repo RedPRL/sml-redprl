@@ -91,6 +91,7 @@ struct
    | TAC_REDUCE_PART
    | TAC_ASSUMPTION
    | TAC_POP of sort list
+   | TAC_PUSH
 
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
