@@ -28,7 +28,7 @@ struct
    | FN of id * vty * cmd
    | AP of cmd * value
    | PRINT of Pos.t option * value
-   | REFINE of jdg * term
+   | REFINE of string option * jdg * term
    | FRESH of (string option * Tm.valence) list
    | MATCH_METAS of value * metavariable list * cmd
    | MATCH_ABS of value * id * id * cmd
@@ -47,11 +47,11 @@ struct
   fun termAbs (psi, term) =
     nu (psi, RET (ABS (METAS psi, TERM term)))
 
-  fun theoremAbs (psi, jdg, script) =
+  fun theoremAbs (name, psi, jdg, script) =
     let
       val x = MlId.new ()
     in 
-      nu (psi, BIND (REFINE (jdg, script), x, RET (ABS (METAS psi, VAR x))))
+      nu (psi, BIND (REFINE (name, jdg, script), x, RET (ABS (METAS psi, VAR x))))
     end
 
   fun extract v = 

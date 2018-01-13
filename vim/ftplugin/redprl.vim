@@ -38,7 +38,7 @@ function! CheckBuffer()
 
   let s:job = job_start(g:redprl_path .
     \(g:redprl_trace ? ' --trace' : '') .
-    \' --width=' . winwidth(bufwinnr('RedPRL')) .
+    \' --width=' . s:EditWidth() .
     \' --from-stdin=' . bufname('%'), {
     \'in_io': 'buffer', 'in_buf': bufnr('%'),
     \'out_io': 'buffer', 'out_name': 'RedPRL', 'out_msg': 0,
@@ -59,9 +59,29 @@ function! CheckBufferExit(j,status)
   else
     cclose
   endif
-  if (exists('s:job'))
-    unlet s:job
+endfunction
+
+function! s:EditWidth()
+  execute bufwinnr('RedPRL') . 'wincmd w'
+
+  let l:width = winwidth(winnr())
+  if (has('linebreak') && (&number || &relativenumber))
+    let l:width -= &numberwidth
   endif
+  if (has('folding'))
+    let l:width -= &foldcolumn
+  endif
+  if (has('signs'))
+    redir => l:signs
+    silent execute 'sign place buffer=' . bufnr('%')
+    redir END
+    if (&signcolumn == "yes" || len(split(l:signs, "\n")) > 2)
+      let l:width -= 2
+    endif
+  endif
+
+  wincmd p
+  return l:width
 endfunction
 
 let b:did_ftplugin = 1

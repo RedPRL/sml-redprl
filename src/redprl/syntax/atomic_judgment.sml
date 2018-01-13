@@ -185,9 +185,6 @@ struct
 
     structure View =
     struct
-      val matchAsTrue =
-        fn TRUE ty => ty
-
       val matchTrueAsEq =
         fn TRUE ty => (case Syn.out ty of Syn.EQUALITY (ty, m, n) => ((m, n), ty))
       

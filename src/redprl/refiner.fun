@@ -576,7 +576,7 @@ struct
          | (Syn.S1_REC _, Syn.S1_REC _) => Wrapper.applyEqRule S1.EqElim
          | (Syn.APP _, Syn.APP _) => Wrapper.applyEqRule Fun.EqApp
          | (Syn.PROJ _, Syn.PROJ _) => Wrapper.applyEqRule Record.EqProj
-         | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => Wrapper.applyEqRule Path.EqApp
+         | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => (fn mode => Wrapper.applyEqRule Path.EqApp mode par Wrapper.applyEqRule Line.EqApp mode)
          | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Wrapper.applyEqRule Pushout.EqElim
          | (Syn.COEQUALIZER_REC _, Syn.COEQUALIZER_REC _) => Wrapper.applyEqRule Coequalizer.EqElim
          | (Syn.CUST, Syn.CUST) => Wrapper.applyEqRule (Custom.Eq sign)
@@ -694,7 +694,7 @@ struct
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqApp else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>
            (case (Abt.out r1, Abt.out r2) of
-               (`_, `_) => Lcf.rule o Path.EqApp
+               (`_, `_) => Lcf.rule o Path.EqApp par Lcf.rule o Line.EqApp
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
               (* XXX should consult autoSynthesizableNeu *)
          | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Lcf.rule o Pushout.EqElim

@@ -68,7 +68,7 @@ struct
      | Src.QUIT =>
        ESyn.ABORT
 
-  val compileSrcDecl : Src.decl -> ESyn.cmd =
+  fun compileSrcDecl name : Src.decl -> ESyn.cmd =
     fn Src.DEF {arguments, sort, definiens} =>
        ESyn.termAbs (arguments, (definiens, sort))
 
@@ -76,7 +76,7 @@ struct
        ESyn.termAbs (arguments, (script, RedPrlSort.TAC))
 
      | Src.THM {arguments, goal, script} =>
-       ESyn.theoremAbs (arguments, goal, (script, RedPrlSort.TAC))
+       ESyn.theoremAbs (SOME name, arguments, goal, (script, RedPrlSort.TAC))
 
   val rec compileSrcSig : Src.sign -> ESyn.cmd =
     fn [] =>
@@ -86,7 +86,7 @@ struct
        ESyn.BIND (compileSrcCmd pos c, MlId.new (), compileSrcSig sign)
 
      | Src.DECL (nm, decl, _) :: sign =>
-       ESyn.BIND (compileSrcDecl decl, nm, compileSrcSig sign)
+       ESyn.BIND (compileSrcDecl (MlId.toString nm) decl, nm, compileSrcSig sign)
   
   
   structure Sem = MlSemantics (ISyn)

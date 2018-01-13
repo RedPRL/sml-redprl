@@ -8,7 +8,9 @@ sig
   val each : tactic list -> multitactic
   val only : int * tactic -> multitactic
   val mprogress: multitactic -> multitactic
+  val progress : tactic -> tactic
   val mrec : (multitactic -> multitactic) -> multitactic
+  val trec : (tactic -> tactic) -> tactic
   val multitacToTac : multitactic -> tactic
   val seq : multitactic * (Sym.t list * multitactic) -> multitactic
   val then_ : tactic * tactic -> tactic

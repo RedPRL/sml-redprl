@@ -235,12 +235,12 @@ struct
      | ESyn.PRINT (pos, v) =>
        (ISyn.PRINT (pos, #1 @@ elabValue env v), Ty.UP Ty.ONE)
 
-     | ESyn.REFINE (ajdg, script) =>
+     | ESyn.REFINE (name, ajdg, script) =>
        let
          val ajdg' = elabAtomicJdg env ajdg
          val script' = elabAst env script
        in
-         (ISyn.REFINE (ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
+         (ISyn.REFINE (name, ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
        end
 
      | ESyn.FRESH vls =>

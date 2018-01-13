@@ -220,9 +220,11 @@ struct
          printAbs @@ multiAbs [] m
      | O.DIM_APP $ _ =>
          printDimApp @@ multiDimApp m []
-     | O.EQUALITY $ args =>
-         Atomic.parens @@ expr @@ hvsep @@
-           char #"=" :: List.map ppBinder args
+     | O.EQUALITY $ [_ \ ty, _ \ m, _ \ n] =>
+         Atomic.parens @@ expr @@ hvsep
+           (if Abt.eq (m, n)
+            then [text "mem", ppTerm ty, ppTerm m]
+            else [char #"=", ppTerm ty, ppTerm m, ppTerm n])
      | O.BOX $ [_ \ r1, _ \ r2, cap, _ \ boundaries] =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [text "box", ppDir (r1, r2), ppBinder cap]
