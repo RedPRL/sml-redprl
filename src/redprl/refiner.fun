@@ -55,16 +55,13 @@ struct
         val zjdg = Hyps.lookup H z
         val z' = alpha 0
 
-        val renameIn = VarKit.rename (z', z)
-        val renameOut = VarKit.rename (z, z')
+        val rho = VarKit.rename (z', z)
 
         val H' = Hyps.splice H z (Hyps.singleton z' zjdg)
-        val H'' = Hyps.modifyAfter z' (AJ.map renameIn) H'
-
-        val (goal, hole) = makeGoal tr @@ (H'') >> AJ.map renameIn ajdg
-        val extract = renameOut hole
+        val H'' = Hyps.modifyAfter z' (AJ.map rho) H'
+        val (goal, hole) = makeGoal tr @@ H'' >> AJ.map rho ajdg
       in
-        |>: goal #> (H, extract)
+        Lcf.|> (|>: goal, abstractEvidence H'' hole)
       end
 
     fun Delete z _ jdg =
