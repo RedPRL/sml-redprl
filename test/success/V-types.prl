@@ -34,7 +34,7 @@ Thm IdEquiv(#l:lvl) : [
     {`Id, use (IdIsEquiv #l) [use ty]}
 ].
 
-Print IdEquiv.
+//Print IdEquiv.
 
 Def IdV(#i:dim, #l:lvl, #ty) = [
   (V #i #ty #ty ($ (IdEquiv #l) #ty))
@@ -76,7 +76,7 @@ Thm IdV/Test2(#l:lvl) : [
   lam ty a => auto
 ].
 
-Print IdV/Test2.
+//Print IdV/Test2.
 
 Def Not = [(lam [b] (if b ff tt))].
 
@@ -156,3 +156,49 @@ Thm NotV/Test2 : [
 ] by [
   lam a => auto
 ].
+
+Thm UA(#l:lvl) : [
+  (-> [ty/a ty/b : (U #l kan)]
+      [e : (Equiv ty/a ty/b)]
+      (path [_] (U #l kan) ty/a ty/b))
+] by [
+  lam ty/a, ty/b, e.
+    <x> `(V x ty/a ty/b e)
+].
+
+Thm UABeta(#l:lvl) : [
+  (->
+   [ty/a ty/b : (U #l kan)]
+   [e : (Equiv ty/a ty/b)]
+   [a : ty/a]
+   (path [_] ty/b
+    (coe 0~>1 [x] (@ ($ (UA #l) ty/a ty/b e) x) a)
+    ($ (!proj1 e) a)))
+] by [
+  unfold UA;
+  lam ty/a, ty/b, e, a.
+    <x> `(coe x~>1 [_] ty/b ($ (! proj1 e) a))
+].
+
+// Thm UAFromVProjEquiv(#l:lvl) : [
+//   (->
+//    [ty/a ty/b : (U #l kan)]
+//    [e : (Equiv ty/a ty/b)]
+//    (line [x]
+//     (IsEquiv
+//      (V x ty/a ty/b e)
+//      ty/b
+//      (lam [u]
+//       (Vproj x u (!proj1 e)))))
+//    (IsContr (* [ty/c : (U #l kan)] (Equiv ty/a ty/c))))
+// ] by [
+//   lam ty/a, ty/b, e, q.
+//     {{`ty/a, `($ (IdEquiv #l) ty/a)},
+//      lam {w1, w2}.
+//        <x>
+//          {`(V x ty/a w1 w2),
+//           {lam v. `(Vproj x v (!proj1 w2)),
+//            let qx = q [`x]. ?
+//            }}};
+//   ?
+// ].
