@@ -289,6 +289,7 @@ struct
      | "path/eq/eta" => Lcf.rule o Path.Eta
      | "path/eq/app" => Lcf.rule o Path.EqApp
      | "path/eq/app/const" => Lcf.rule o Path.EqAppConst
+     | "path/eq/from-line" => Lcf.rule o Path.EqFromLine
      | "line/eqtype" => Lcf.rule o Line.EqType
      | "line/eq/abs" => Lcf.rule o Line.Eq
      | "line/intro" => Lcf.rule o Line.True

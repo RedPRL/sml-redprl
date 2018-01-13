@@ -1,0 +1,74 @@
+// Homogeneous groupoid operations
+
+Thm Refl(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   (path [_] ty a a))
+] by [
+  lam ty a => abs _ => `a
+].
+
+Thm Symm(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [p : (line [_] ty)]
+   (path [_] ty (@ p 1) (@ p 0)))
+] by [
+  lam ty p => abs x =>
+  `(hcom 0~>1 ty (@ p 0)
+    [x=0 [y] (@ p y)]
+    [x=1 [_] (@ p 0)])
+].
+
+Thm Trans(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [p : (line [_] ty)]
+   [q : (line [_] ty)]
+   [eq : (= ty (@ p 1) (@ q 0))]
+   (path [_] ty (@ p 0) (@ q 1)))
+] by [
+  (lam ty p q eq => abs x =>
+  exact
+    (hcom 0~>1 ty (@ p x)
+      [x=0 [_] (@ p 0)]
+      [x=1 [z] (@ q z)]));
+  repeat {assumption || auto-step}
+].
+
+Thm Symm/Unit(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   (path [_]
+     (path [_] ty a a)
+     (abs [_] a)
+     ($ (Symm #l) ty (abs [_] a))))
+] by [
+  lam ty a =>
+  abs y x =>
+  `(hcom 0~>y ty a [x=0 [_] a] [x=1 [_] a])
+].
+
+Thm Trans/Unit/R(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [p : (line [_] ty)]
+   (path [_]
+     (path [_] ty (@ p 0) (@ p 1))
+     p
+     ($ (Trans #l) ty p (abs [_] (@ p 1)) ax)))
+] by [
+  lam ty p =>
+  fresh y:dim -> refine path/intro;
+  [ fresh x:dim -> refine path/intro; 
+    [ exact (hcom 0~>y ty (@ p x) [x=0 [_] (@ p 0)] [x=1 [_] (@ p 1)]); auto; fail
+    , auto; fail
+    , auto; fail ]
+  , refine path/eq/from-line;
+    [ symmetry; refine line/eq/eta; auto; fail 
+    , auto; fail
+    , auto; fail ]
+  , unfold Trans; reduce at right; auto; fail ]
+].
