@@ -377,7 +377,6 @@ struct
      | O.MTAC_EACH $ [_ \ vec] => T.each (Syn.outVec' (tactic sign env) vec)
      | O.MTAC_FOCUS i $ [_ \ tm] => T.only (i, tactic sign env tm)
      | O.MTAC_PROGRESS $ [_ \ tm] => T.mprogress (multitactic sign env tm)
-     | O.MTAC_REC $ [[x] \ tm] => T.mrec (fn mt => multitactic sign (Var.Ctx.insert env x mt) tm)
      | O.MTAC_SEQ _ $ [_ \ tm1, us \ tm2] => T.seq (multitactic sign env tm1, (us, multitactic sign env tm2))
      | O.MTAC_ORELSE $ [_ \ tm1, _ \ tm2] => T.morelse (multitactic sign env tm1, multitactic sign env tm2)
      | O.MTAC_HOLE msg $ _ => hole (Option.valOf (Tm.getAnnotation tm), msg)
