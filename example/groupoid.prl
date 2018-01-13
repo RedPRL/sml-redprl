@@ -72,3 +72,37 @@ Thm Trans/Unit/R(#l:lvl) : [
     , auto; fail ]
   , unfold Trans; reduce at right; auto; fail ]
 ].
+
+Quit.
+
+Thm Trans/Sym/R(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [p : (line [_] ty)]
+   (path [_]
+     (path [_] ty (@ p 0) (@ p 0))
+     (abs [_] (@ p 0))
+     ($ (Trans #l) ty p ($ (Symm #l) ty p) ax)))
+] by [
+  lam ty p =>
+  abs y x =>
+  ?
+].
+
+// Heterogeneous groupoid operations
+
+Thm DSymm(#l:lvl) : [
+  (->
+   [ty : (line [_] (U #l kan))]
+   [p : (line [x] (@ ty x))]
+   (path [x]
+     (@ ($ (Symm (++ #l)) (U #l kan) ty) x)
+     (@ p 1)
+     (@ p 0)))
+] by [
+  (lam ty p => abs x =>
+  `(com 0~>1 [x] (@ ($ (Symm (++ #l)) (U #l kan) ty) x) (@ p 0)
+    [x=0 [y] (@ p y)]
+    [x=1 [_] (@ p 0)]));
+  auto-step; [auto; ?]
+].
