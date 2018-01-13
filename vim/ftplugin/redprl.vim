@@ -59,9 +59,6 @@ function! CheckBufferExit(j,status)
   else
     cclose
   endif
-  if (exists('s:job'))
-    unlet s:job
-  endif
 endfunction
 
 function! s:EditWidth()
