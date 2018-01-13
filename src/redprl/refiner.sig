@@ -45,7 +45,6 @@ sig
   structure Hyp :
   sig
     val Project : hyp -> rule
-    val Rename : hyp -> rule
     val Delete : hyp -> rule
   end
 

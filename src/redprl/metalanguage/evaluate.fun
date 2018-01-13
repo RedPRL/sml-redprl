@@ -123,7 +123,7 @@ struct
          val script' = Sem.term env script
 
          val seqjdg = Sequent.>> (Sequent.Hyps.empty, ajdg')
-         val results = TacticElaborator.tactic env Var.Ctx.empty script' (fn _ => Sym.new ()) seqjdg
+         val results = TacticElaborator.tactic env Var.Ctx.empty script' seqjdg
 
          (* TODO: somehow show all the states! *)
          val Lcf.|> (subgoals, evd) =

@@ -29,11 +29,10 @@ structure Tac =
 struct
   infix $$ $ \
 
-  fun makeSeq mt (us : (string * O.sort) list) mt' =
+  fun makeSeq mt mt' =
     let
-      val (syms, sorts) = ListPair.unzip us
     in
-      O.MTAC_SEQ sorts $$ [[] \ mt, syms \ mt']
+      O.MTAC_SEQ $$ [[] \ mt, [] \ mt']
     end
 
   fun multitacToTac mt =
@@ -50,7 +49,7 @@ struct
     multitacToTac (O.MTAC_ORELSE $$ [[] \ tacToMultitac t1, [] \ tacToMultitac t2])
 
   fun then_ (t1, t2) =
-    multitacToTac (makeSeq (tacToMultitac t1) [] (tacToMultitac t2))
+    multitacToTac (makeSeq (tacToMultitac t1) (tacToMultitac t2))
 
   val autoMtac = O.MTAC_AUTO $$ []
   val autoTac = multitacToTac autoMtac
@@ -969,8 +968,6 @@ atomicRawMultitac
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_PROGRESS, [\ ([], multitac)]))
   | MTAC_REC VARNAME DOUBLE_RIGHT_ARROW LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_REC, [\ ([VARNAME], multitac)]))
   | LPAREN multitac RPAREN (multitac)
-  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings (Tac.tacToMultitac (Ast.$$ (O.TAC_ID, []))))
-  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MTAC_ALL, [\ ([], atomicTac)]))
   | HOLENAME (Ast.$$ (O.MTAC_HOLE (SOME HOLENAME), []))
 
@@ -978,7 +975,7 @@ atomicMultitac
   : atomicRawMultitac (annotate (Pos.pos (atomicRawMultitac1left fileName) (atomicRawMultitac1right fileName)) atomicRawMultitac)
 
 rawMultitac
-  : multitac SEMI atomicMultitac %prec SEMI (Tac.makeSeq multitac [] atomicMultitac)
+  : multitac SEMI atomicMultitac %prec SEMI (Tac.makeSeq multitac atomicMultitac)
   | multitac SEMI (multitac)
   | atomicMultitac %prec SEMI (atomicMultitac)
 

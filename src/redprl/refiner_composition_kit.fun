@@ -6,7 +6,7 @@ struct
   open Abt Kit
 
   type sign = Sig.sign
-  type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
+  type rule = Lcf.jdg Lcf.tactic
   type catjdg = AJ.jdg
   type opid = Sig.opid
 
@@ -138,6 +138,7 @@ struct
            N_i = P_j in A [Psi, y | r_i = r_i', r_j = r_j']
      *)
     fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substVar (VarKit.toDim w, u) tube))
+
     fun enumInterExceptDiag f =
       let
         fun enum ([], []) = []
@@ -204,7 +205,7 @@ struct
 
   structure HCom =
   struct
-    fun Eq _ jdg =
+    fun Eq jdg =
       let
         val tr = ["HCom.Eq"]
 
@@ -238,7 +239,7 @@ struct
         #> (H, axiom)
       end
 
-    fun EqCapL _ jdg =
+    fun EqCapL jdg =
       let
         val tr = ["HCom.EqCapL"]
 
@@ -269,7 +270,7 @@ struct
       end
 
     (* Search for the first satisfied equation in an hcom. *)
-    fun EqTubeL _ jdg =
+    fun EqTubeL jdg =
       let
         val tr = ["HCom.EqTubeL"]
 

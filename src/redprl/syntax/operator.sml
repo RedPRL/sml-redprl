@@ -121,7 +121,7 @@ struct
      | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: EXP] ->> JDG
 
-     | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
+     | MTAC_SEQ => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_REC => [[MTAC] |: MTAC] ->> MTAC
      | MTAC_REPEAT => [[] |: MTAC] ->> MTAC
@@ -259,7 +259,7 @@ struct
 
      | KCONST k => RedPrlKind.toString k
 
-     | MTAC_SEQ sorts => "seq{" ^ ListUtil.joinWith RedPrlSort.toString "," sorts ^ "}"
+     | MTAC_SEQ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REC => "rec"
      | MTAC_REPEAT => "repeat"

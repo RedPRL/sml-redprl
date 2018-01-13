@@ -6,7 +6,7 @@ struct
   open RedPrlAbt Kit ComRefinerKit
 
   type sign = Sig.sign
-  type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
+  type rule = Lcf.jdg Lcf.tactic
   type ajdg = AJ.jdg
   type opid = Sig.opid
 
@@ -41,16 +41,12 @@ struct
    * (others): other special rules for this type.
    *)
 
-  (* Remember to consult `alpha` whenever some goals introduce new hypotheses
-   * or new parameter variables.
-   *)
-
   structure Bool =
   struct
     val inherentLevel = L.zero
     val inherentKind = K.DISCRETE
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val H >> ajdg = jdg
         val ((a, b), l, k) = View.matchAsEqType ajdg
@@ -64,7 +60,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqTT _ jdg =
+    fun EqTT jdg =
       let
         val H >> ajdg = jdg
         val ((m, n), ty) = View.matchTrueAsEq ajdg
@@ -75,7 +71,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun EqFF _ jdg =
+    fun EqFF jdg =
       let
         val H >> ajdg = jdg
         val ((m, n), ty) = View.matchTrueAsEq ajdg
@@ -86,7 +82,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun Elim z _ jdg =
+    fun Elim z jdg =
       let
         val tr = ["Bool.Elim"]
         val H >> ajdg = jdg
@@ -115,7 +111,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
 
-    fun EqElim _ jdg =
+    fun EqElim jdg =
       let
         val tr = ["Bool.EqElim"]
         val H >> ajdg = jdg
@@ -149,7 +145,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.KAN
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["WBool.EqType"]
         val H >> ajdg = jdg
@@ -164,7 +160,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqTT _ jdg =
+    fun EqTT jdg =
       let
         val tr = ["WBool.EqTT"]
         val H >> ajdg = jdg
@@ -176,7 +172,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun EqFF _ jdg =
+    fun EqFF jdg =
       let
         val tr = ["WBool.EqFF"]
         val H >> ajdg = jdg
@@ -188,7 +184,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun EqFCom _ jdg =
+    fun EqFCom jdg =
       let
         val tr = ["WBool.EqFCom"]
         val H >> ajdg = jdg
@@ -203,7 +199,7 @@ struct
         #> (H, axiom)
       end
 
-    fun Elim z _ jdg =
+    fun Elim z jdg =
       let
         val tr = ["WBool.Elim"]
         val H >> AJ.TRUE cz = jdg
@@ -231,7 +227,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected bool elimination problem"]
 
-    fun EqElim _ jdg =
+    fun EqElim jdg =
       let
         val tr = ["WBool.EqElim"]
         val H >> ajdg = jdg
@@ -263,7 +259,7 @@ struct
         |>: goalM >: goalT >: goalF >: goalC >:? goalTy #> (H, axiom)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim jdg =
       let
         val tr = ["WBool.SynthElim"]
         val H >> AJ.SYNTH tm = jdg
@@ -281,7 +277,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.DISCRETE
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["Nat.EqType"]
         val H >> ajdg = jdg
@@ -296,7 +292,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqZero _ jdg =
+    fun EqZero jdg =
       let
         val tr = ["Nat.EqZero"]
         val H >> ajdg = jdg
@@ -308,7 +304,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun EqSucc _ jdg =
+    fun EqSucc jdg =
       let
         val tr = ["Nat.EqSucc"]
         val H >> ajdg = jdg
@@ -321,7 +317,7 @@ struct
         |>: goal #> (H, axiom)
       end
 
-    fun Elim z _ jdg =
+    fun Elim z jdg =
       let
         val tr = ["Nat.Elim"]      
         val H >> AJ.TRUE cz = jdg
@@ -351,7 +347,7 @@ struct
         |>: goalZ >: goalS #> (H, evidence)
       end
 
-    fun EqElim _ jdg =
+    fun EqElim jdg =
       let
         val tr = ["Nat.EqElim"]
         val H >> ajdg = jdg
@@ -398,7 +394,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.DISCRETE
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["Int.EqType"]
         val H >> ajdg = jdg
@@ -413,7 +409,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqZero _ jdg =
+    fun EqZero jdg =
       let
         val tr = ["Int.EqZero"]
         val H >> ajdg = jdg
@@ -425,7 +421,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun EqSucc _ jdg =
+    fun EqSucc jdg =
       let
         val tr = ["Int.EqSucc"]
         val H >> ajdg = jdg
@@ -438,7 +434,7 @@ struct
         |>: goal #> (H, axiom)
       end
 
-    fun EqNegSucc _ jdg =
+    fun EqNegSucc jdg =
       let
         val tr = ["Int.EqNegSucc"]
         val H >> ajdg = jdg
@@ -451,7 +447,7 @@ struct
         |>: goal #> (H, axiom)
       end
 
-    fun Elim z _ jdg =
+    fun Elim z jdg =
       let
         val tr = ["Int.Elim"]
         val H >> AJ.TRUE cz = jdg
@@ -493,7 +489,7 @@ struct
         |>: goalZ >: goalS >: goalNSZ >: goalNSS #> (H, evidence)
       end
 
-    fun EqElim _ jdg =
+    fun EqElim jdg =
       let
         val tr = ["Int.EqElim"]
         val H >> ajdg = jdg
@@ -555,7 +551,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.DISCRETE
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["Void.EqType"]
         val H >> ajdg = jdg
@@ -570,7 +566,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun Elim z _ jdg =
+    fun Elim z jdg =
       let
         val tr = ["Void.Elim"]
         val H >> ajdg = jdg
@@ -595,7 +591,7 @@ struct
     val inherentLevel = L.zero
     val inherentKind = K.KAN
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["S1.EqType"]
         val H >> ajdg = jdg
@@ -610,7 +606,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqBase _ jdg =
+    fun EqBase jdg =
       let
         val tr = ["S1.EqBase"]
         val H >> ajdg = jdg
@@ -622,7 +618,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun EqLoop _ jdg =
+    fun EqLoop jdg =
       let
         val tr = ["S1.EqLoop"]
         val H >> ajdg = jdg
@@ -635,7 +631,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun EqFCom alpha jdg =
+    fun EqFCom jdg =
       let
         val tr = ["S1.EqFCom"]
         val H >> ajdg = jdg
@@ -644,13 +640,13 @@ struct
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>:+ (ComKit.genEqFComGoals tr H w (args0, args1) ty)
         #> (H, axiom)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z jdg =
       let
         val tr = ["S1.Elim"]
         val H >> AJ.TRUE cz = jdg
@@ -669,7 +665,7 @@ struct
         val (goalB, holeB) = makeTrue tr H cbase
 
         (* loop branch *)
-        val u = alpha 0
+        val u = Sym.new ()
         val loop = Syn.into o Syn.LOOP @@ VarKit.toDim u
         val cloop = substVar (loop, z) cz
         val (goalL, holeL) = makeTrue tr (H @> (u, AJ.TERM O.DIM)) cloop
@@ -688,7 +684,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected circle elimination problem"]
 
-    fun EqElim alpha jdg =
+    fun EqElim jdg =
       let
         val tr = ["S1.EqElim"]
         val H >> ajdg = jdg
@@ -701,7 +697,7 @@ struct
         val S1 = Syn.into Syn.S1
 
         (* motive *)
-        val z = alpha 0
+        val z = Sym.new ()
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
 
@@ -718,7 +714,7 @@ struct
         val goalB = makeEq tr H ((b0, b1), cbase)
 
         (* loop branch*)
-        val w = alpha 1
+        val w = Sym.new ()
         val l0w = substVar (VarKit.toDim w, u) l0u
         val l1w = substVar (VarKit.toDim w, v) l1v
         val cloop = substVar (Syn.into @@ Syn.LOOP (VarKit.toDim w), x) c0x
@@ -734,7 +730,7 @@ struct
         #> (H, axiom)
       end
 
-    fun BetaLoop alpha jdg =
+    fun BetaLoop jdg =
       let
         val tr = ["S1.BetaLoop"]
         val H >> ajdg = jdg
@@ -756,7 +752,7 @@ struct
         |>: goalRed >:? goalCoh0 >:? goalCoh1 #> (H, axiom)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim jdg =
       let
         val tr = ["S1.SynthElim"]
         val H >> AJ.SYNTH tm = jdg
@@ -806,7 +802,7 @@ struct
 
            | _ => raise Fail "stripFunTy")
 
-    fun Elim sign (n : int) z alpha jdg = 
+    fun Elim sign (n : int) z jdg = 
       let
         val tr = ["Fun.MultiElim"]
         val H >> ajdg = jdg
@@ -838,8 +834,8 @@ struct
 
         val rest' = substVarenv env rest
 
-        val u = alpha 0
-        val v = alpha 1
+        val u = Sym.new ()
+        val v = Sym.new ()
 
         val H' = Hyps.interposeAfter
           (z, |@> (u, AJ.TRUE rest')
@@ -862,7 +858,7 @@ struct
        | K.COE => (K.COE, K.COE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["Fun.EqType"]
         val H >> ajdg = jdg
@@ -885,7 +881,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected fun typehood sequent"]
 
-    fun Eq _ jdg =
+    fun Eq jdg =
       let
         val tr = ["Fun.Eq"]
         val H >> ajdg = jdg
@@ -907,7 +903,7 @@ struct
         |>: goalM >: goalA #> (H, axiom)
       end
 
-    fun True _ jdg =
+    fun True jdg =
       let
         val tr = ["Fun.True"]
         val H >> AJ.TRUE ty = jdg
@@ -929,7 +925,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected fun truth sequent"]
 
-    fun Eta _ jdg =
+    fun Eta jdg =
       let
         val tr = ["Fun.Eta"]
         val H >> ajdg = jdg
@@ -943,7 +939,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp jdg =
       let
         val tr = ["Fun.EqApp"]
         val H >> ajdg = jdg
@@ -962,7 +958,7 @@ struct
         #> (H, axiom)
       end
 
-    fun SynthApp _ jdg =
+    fun SynthApp jdg =
       let
         val tr = ["Fun.SynthApp"]
         val H >> AJ.SYNTH tm = jdg
@@ -987,7 +983,7 @@ struct
        | K.COE => (K.COE, K.COE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["Record.EqType"]
         val H >> ajdg = jdg
@@ -1018,7 +1014,7 @@ struct
         goals #> (H, axiom)
       end
 
-    fun Eq _ jdg =
+    fun Eq jdg =
       let
         val tr = ["Record.Eq"]
         val H >> ajdg = jdg
@@ -1050,7 +1046,7 @@ struct
         T.append goals famGoals #> (H, axiom)
       end
 
-    fun EqInv z _ jdg =
+    fun EqInv z jdg =
       let
         val H >> ajdg = jdg
         val tr = ["Record.EqInv"]
@@ -1081,7 +1077,7 @@ struct
         |>: goal #> (H, substVarenv extractEnv hole)
       end
 
-    fun True _ jdg =
+    fun True jdg =
       let
         val tr = ["Record.True"]
         val H >> AJ.TRUE record = jdg
@@ -1109,7 +1105,7 @@ struct
         T.append goals famGoals #> (H, tuple)
       end
 
-    fun Eta _ jdg =
+    fun Eta jdg =
       let
         val tr = ["Record.Eta"]
         val H >> ajdg = jdg
@@ -1126,7 +1122,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun MatchRecord _ jdg =
+    fun MatchRecord jdg =
       let
         val tr = ["Record.MatchRecord"]
         val MATCH_RECORD (lbl, tm, tuple) = jdg
@@ -1146,7 +1142,7 @@ struct
       handle _ =>
         raise E.error [Fpp.text "MATCH_RECORD judgment failed to unify"]
 
-    fun Elim z _ jdg = 
+    fun Elim z jdg = 
       let
         val tr = ["Record.Elim"]
         val H >> ajdg = jdg
@@ -1182,7 +1178,7 @@ struct
       end
       handle _ => raise E.error [Fpp.text "Record.Elim"]
 
-    fun EqProj _ jdg =
+    fun EqProj jdg =
       let
         val tr = ["Record.EqProj"]
         val H >> ajdg = jdg
@@ -1200,7 +1196,7 @@ struct
         #> (H, axiom)
       end
 
-    fun SynthProj _ jdg =
+    fun SynthProj jdg =
       let
         val tr = ["Record.SynthProj"]
         val H >> AJ.SYNTH tm = jdg
@@ -1221,7 +1217,7 @@ struct
        | K.COE => K.KAN
        | K.STABLE => K.STABLE
 
-    fun EqType alpha jdg =
+    fun EqType jdg =
       let
         val tr = ["Path.EqType"]
         val H >> ajdg = jdg
@@ -1230,7 +1226,7 @@ struct
         val Syn.PATH ((v, a1v), m1, n1) = Syn.out ty1
         val ka = kindConstraintOnBase k
 
-        val w = alpha 0
+        val w = Sym.new ()
         val a0w = substVar (VarKit.toDim w, u) a0u
         val a1w = substVar (VarKit.toDim w, v) a1v
         val tyGoal = View.makeAsEqType tr (H @> (w, AJ.TERM O.DIM)) ((a0w, a1w), l, ka)
@@ -1243,7 +1239,7 @@ struct
         |>: tyGoal >: goal0 >: goal1 #> (H, axiom)
       end
 
-    fun Eq alpha jdg =
+    fun Eq jdg =
       let
         val tr = ["Path.Eq"]
         val H >> ajdg = jdg
@@ -1252,7 +1248,7 @@ struct
         val Syn.ABS (v, m0v) = Syn.out abs0
         val Syn.ABS (w, m1w) = Syn.out abs1
 
-        val z = alpha 0
+        val z = Sym.new ()
         val az = substVar (VarKit.toDim z, u) au
         val m0z = substVar (VarKit.toDim z, v) m0v
         val m1z = substVar (VarKit.toDim z, w) m1w
@@ -1269,7 +1265,7 @@ struct
         |>: goalM >:? goalCoh0 >:? goalCoh1 #> (H, axiom)
       end
 
-    fun True alpha jdg =
+    fun True jdg =
       let
         val tr = ["Path.True"]
         val H >> AJ.TRUE ty = jdg
@@ -1277,7 +1273,7 @@ struct
         val a0 = substVar (Syn.into Syn.DIM0, u) au
         val a1 = substVar (Syn.into Syn.DIM1, u) au
 
-        val v = alpha 0
+        val v = Sym.new ()
         val av = substVar (VarKit.toDim v, u) au
         val (mainGoal, mhole) = makeTrue tr (H @> (v, AJ.TERM O.DIM)) av
 
@@ -1292,7 +1288,7 @@ struct
         |>: mainGoal >: goalCoh0 >: goalCoh1 #> (H, abstr)
       end
 
-    fun Eta _ jdg =
+    fun Eta jdg =
       let
         val tr = ["Path.Eta"]
         val H >> ajdg = jdg
@@ -1306,7 +1302,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp jdg =
       let
         val tr = ["Path.EqApp"]
         val H >> ajdg = jdg
@@ -1323,7 +1319,7 @@ struct
         |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, axiom)
       end
 
-    fun SynthApp _ jdg =
+    fun SynthApp jdg =
       let
         val tr = ["Path.SynthApp"]
         val H >> AJ.SYNTH tm = jdg
@@ -1334,7 +1330,7 @@ struct
         |>: goalPathTy >: goalPath #> (H, holePath)
       end
 
-    fun EqAppConst _ jdg =
+    fun EqAppConst jdg =
       let
         val tr = ["Path.EqAppConst"]
         val H >> ajdg = jdg
@@ -1363,7 +1359,7 @@ struct
        | K.COE => K.COE
        | K.STABLE => K.STABLE
 
-    fun EqType alpha jdg =
+    fun EqType jdg =
       let
         val tr = ["Line.EqType"]
         val H >> ajdg = jdg
@@ -1372,7 +1368,7 @@ struct
         val Syn.LINE (v, a1v) = Syn.out ty1
         val ka = kindConstraintOnBase k
 
-        val w = alpha 0
+        val w = Sym.new ()
         val a0w = substVar (VarKit.toDim w, u) a0u
         val a1w = substVar (VarKit.toDim w, v) a1v
         val tyGoal = View.makeAsEqType tr (H @> (w, AJ.TERM O.DIM)) ((a0w, a1w), l, ka)
@@ -1380,7 +1376,7 @@ struct
         |>: tyGoal #> (H, axiom)
       end
 
-    fun Eq alpha jdg =
+    fun Eq jdg =
       let
         val tr = ["Line.Eq"]
         val H >> ajdg = jdg
@@ -1389,7 +1385,7 @@ struct
         val Syn.ABS (v, m0v) = Syn.out abs0
         val Syn.ABS (w, m1w) = Syn.out abs1
 
-        val z = alpha 0
+        val z = Sym.new ()
         val az = substVar (VarKit.toDim z, u) au
         val m0z = substVar (VarKit.toDim z, v) m0v
         val m1z = substVar (VarKit.toDim z, w) m1w
@@ -1398,13 +1394,13 @@ struct
         |>: goalM #> (H, axiom)
       end
 
-    fun True alpha jdg =
+    fun True jdg =
       let
         val tr = ["Line.True"]
         val H >> AJ.TRUE ty = jdg
         val Syn.LINE (u, au) = Syn.out ty
 
-        val v = alpha 0
+        val v = Sym.new ()
         val av = substVar (VarKit.toDim v, u) au
         val (mainGoal, mhole) = makeTrue tr (H @> (v, AJ.TERM O.DIM)) av
 
@@ -1413,7 +1409,7 @@ struct
         |>: mainGoal #> (H, abstr)
       end
 
-    fun Eta _ jdg =
+    fun Eta jdg =
       let
         val tr = ["Line.Eta"]
         val H >> ajdg = jdg
@@ -1427,7 +1423,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp jdg =
       let
         val tr = ["Line.EqApp"]
         val H >> ajdg = jdg
@@ -1444,7 +1440,7 @@ struct
         |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (H, axiom)
       end
 
-    fun SynthApp _ jdg =
+    fun SynthApp jdg =
       let
         val tr = ["Line.SynthApp"]
         val H >> AJ.SYNTH tm = jdg
@@ -1466,7 +1462,7 @@ struct
        | K.HCOM => (K.STABLE, K.STABLE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType alpha jdg =
+    fun EqType jdg =
       let
         val tr = ["Pushout.EqType"]
         val H >> ajdg = jdg
@@ -1479,7 +1475,7 @@ struct
         val goalB = View.makeAsEqType tr H ((b0, b1), l, kEnd)
         val goalC = View.makeAsEqType tr H ((c0, c1), l, kApex)
 
-        val z = alpha 0
+        val z = Sym.new ()
         val f0z = VarKit.rename (z, x0) f0x0
         val f1z = VarKit.rename (z, x1) f1x1
         val goalF = makeEq tr (H @> (z, AJ.TRUE c0)) ((f0z, f1z), a0)
@@ -1490,7 +1486,7 @@ struct
         |>: goalF >: goalG >: goalA >: goalB >: goalC #> (H, axiom)
       end
 
-    fun EqLeft alpha jdg =
+    fun EqLeft jdg =
       let
         val tr = ["Pushout.EqLeft"]
         val H >> ajdg = jdg
@@ -1503,14 +1499,14 @@ struct
 
         val goalB = makeType tr H (b, K.top)
         val goalC = makeType tr H (c, K.top)
-        val z = alpha 0
+        val z = Sym.new ()
         val goalF = makeMem tr (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem tr (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
       in
         |>: goalA >: goalF >: goalG >: goalB >: goalC #> (H, axiom)
       end
 
-    fun EqRight alpha jdg =
+    fun EqRight jdg =
       let
         val tr = ["Pushout.EqRight"]
         val H >> ajdg = jdg
@@ -1523,14 +1519,14 @@ struct
 
         val goalA = makeType tr H (a, K.top)
         val goalC = makeType tr H (c, K.top)
-        val z = alpha 0
+        val z = Sym.new ()
         val goalF = makeMem tr (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem tr (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
       in
         |>: goalB >: goalF >: goalG >: goalA >: goalC #> (H, axiom)
       end
 
-    fun EqGlue alpha jdg =
+    fun EqGlue jdg =
       let
         val tr = ["Pushout.EqGlue"]
         val H >> ajdg = jdg
@@ -1543,7 +1539,7 @@ struct
         val goalC = makeEq tr H ((m0, m1), c)
         val goalA = makeEq tr H ((fm0, fm1), a)
         val goalB = makeEq tr H ((gm0, gm1), b)
-        val z = alpha 0
+        val z = Sym.new ()
         val goalF = makeMem tr (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem tr (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
 
@@ -1553,7 +1549,7 @@ struct
         |>: goalC >: goalA >: goalB >:? goalCohF >:? goalCohG >: goalF >: goalG #> (H, axiom)
       end
 
-    fun EqFCom alpha jdg =
+    fun EqFCom jdg =
       let
         val tr = ["Pushout.EqFCom"]
         val H >> ajdg = jdg
@@ -1566,7 +1562,7 @@ struct
         val goalB = makeType tr H (b, K.top)
         val goalC = makeType tr H (c, K.top)
 
-        val z = alpha 0
+        val z = Sym.new ()
         val goalF = makeMem tr (H @> (z, AJ.TRUE c)) (VarKit.rename (z, x) fx, a)
         val goalG = makeMem tr (H @> (z, AJ.TRUE c)) (VarKit.rename (z, y) gy, b)
       in
@@ -1575,7 +1571,7 @@ struct
         #> (H, axiom)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z jdg =
       let
         val tr = ["Pushout.Elim"]
         val H >> AJ.TRUE dz = jdg
@@ -1590,21 +1586,21 @@ struct
         val goalKind = makeType tr H (dz, k)
 
         (* left branch *)
-        val a = alpha 0
+        val a = Sym.new ()
         val atm = VarKit.toExp a
         fun dleft tm = substVar (Syn.into (Syn.LEFT tm), z) dz
         val (goalL, holeL) = makeTrue tr (H @> (a, AJ.TRUE tyA)) (dleft atm)
 
         (* right branch *)
-        val b = alpha 1
+        val b = Sym.new ()
         val btm = VarKit.toExp b
         fun dright tm = substVar (Syn.into (Syn.RIGHT tm), z) dz
         val (goalR, holeR) = makeTrue tr (H @> (b, AJ.TRUE tyB)) (dright btm)
 
         (* glue branch *)
-        val v = alpha 2
+        val v = Sym.new ()
         val vtm = VarKit.toDim v
-        val c = alpha 3
+        val c = Sym.new ()
         val ctm = VarKit.toExp c
         val fc = substVar (ctm, x) fx
         val gc = substVar (ctm, y) gy
@@ -1627,7 +1623,7 @@ struct
         |>: goalL >: goalR >: goalG >: goalCohL >: goalCohR >: goalKind #> (H, elim)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim jdg =
       let
         val tr = ["Pushout.EqElim"]
         val H >> ajdg = jdg
@@ -1641,7 +1637,7 @@ struct
         val (goalTyPushout, holeTyPushout) = makeSynth tr H m0
 
         (* motive *)
-        val z = alpha 0
+        val z = Sym.new ()
         val d0z = VarKit.rename (z, z0) d0z0
         val d1z = VarKit.rename (z, z1) d1z1
         val goalD = makeEqType tr (H @> (z, AJ.TRUE holeTyPushout)) ((d0z, d1z), k)
@@ -1654,7 +1650,7 @@ struct
 
         (* left branch *)
         val (goalTyA, holeTyA) = makeMatch tr (O.PUSHOUT, 0, holeTyPushout, [])
-        val a = alpha 1
+        val a = Sym.new ()
         val atm = VarKit.toExp a
         val n0a = VarKit.rename (a, a0) n0a0
         val n1a = VarKit.rename (a, a1) n1a1
@@ -1663,7 +1659,7 @@ struct
 
         (* right branch *)
         val (goalTyB, holeTyB) = makeMatch tr (O.PUSHOUT, 1, holeTyPushout, [])
-        val b = alpha 2
+        val b = Sym.new ()
         val btm = VarKit.toExp b
         val p0b = VarKit.rename (b, b0) p0b0
         val p1b = VarKit.rename (b, b1) p1b1
@@ -1672,9 +1668,9 @@ struct
 
         (* glue branch *)
         val (goalTyC, holeTyC) = makeMatch tr (O.PUSHOUT, 2, holeTyPushout, [])
-        val v = alpha 3
+        val v = Sym.new ()
         val vtm = VarKit.toDim v
-        val c = alpha 4
+        val c = Sym.new ()
         val ctm = VarKit.toExp c
         val q0vc = VarKit.renameMany [(v, v0), (c, c0)] q0v0c0
         val q1vc = VarKit.renameMany [(v, v1), (c, c1)] q1v1c1
@@ -1697,7 +1693,7 @@ struct
         |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy #> (H, axiom)
       end
 
-    fun BetaGlue alpha jdg =
+    fun BetaGlue jdg =
       let
         val tr = ["Pushout.BetaGlue"]
         val H >> ajdg = jdg
@@ -1722,7 +1718,7 @@ struct
         |>: goalRed >:? goalCohL >:? goalCohR #> (H, axiom)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim jdg =
       let
         val tr = ["Pushout.SynthElim"]
         val H >> AJ.SYNTH tm = jdg
@@ -1745,7 +1741,7 @@ struct
        | K.HCOM => (K.STABLE, K.STABLE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType alpha jdg =
+    fun EqType jdg =
       let
         val tr = ["Coequalizer.EqType"]
         val H >> ajdg = jdg
@@ -1757,7 +1753,7 @@ struct
         val goalA = View.makeAsEqType tr H ((a0, a1), l, kDom)
         val goalB = View.makeAsEqType tr H ((b0, b1), l, kCod)
 
-        val z = alpha 0
+        val z = Sym.new ()
         val f0z = VarKit.rename (z, x0) f0x0
         val f1z = VarKit.rename (z, x1) f1x1
         val goalF = makeEq tr (H @> (z, AJ.TRUE a0)) ((f0z, f1z), b0)
@@ -1768,7 +1764,7 @@ struct
         |>: goalF >: goalG >: goalA >: goalB #> (H, axiom)
       end
 
-    fun EqCod alpha jdg =
+    fun EqCod jdg =
       let
         val tr = ["Coequalizer.EqCod"]
         val H >> ajdg = jdg
@@ -1780,14 +1776,14 @@ struct
         val goalB = makeEq tr H ((m0, m1), b)
 
         val goalA = makeType tr H (a, K.top)
-        val z = alpha 0
+        val z = Sym.new ()
         val goalF = makeMem tr (H @> (z, AJ.TRUE a)) (VarKit.rename (z, x) fx, b)
         val goalG = makeMem tr (H @> (z, AJ.TRUE a)) (VarKit.rename (z, y) gy, b)
       in
         |>: goalB >: goalF >: goalG >: goalA #> (H, axiom)
       end
 
-    fun EqDom alpha jdg =
+    fun EqDom jdg =
       let
         val tr = ["Pushout.EqDom"]
         val H >> ajdg = jdg
@@ -1800,7 +1796,7 @@ struct
         val goalA = makeEq tr H ((m0, m1), a)
         val goalFM = makeEq tr H ((fm0, fm1), b)
         val goalGM = makeEq tr H ((gm0, gm1), b)
-        val z = alpha 0
+        val z = Sym.new ()
         val goalF = makeMem tr (H @> (z, AJ.TRUE a)) (VarKit.rename (z, x) fx, b)
         val goalG = makeMem tr (H @> (z, AJ.TRUE a)) (VarKit.rename (z, y) gy, b)
 
@@ -1810,7 +1806,7 @@ struct
         |>: goalA >: goalFM >: goalGM >:? goalCohF >:? goalCohG >: goalF >: goalG #> (H, axiom)
       end
 
-    fun EqFCom alpha jdg =
+    fun EqFCom jdg =
       let
         val tr = ["Coequalizer.EqFCom"]
         val H >> ajdg = jdg
@@ -1822,7 +1818,7 @@ struct
         val goalA = makeType tr H (a, K.top)
         val goalB = makeType tr H (b, K.top)
 
-        val z = alpha 0
+        val z = Sym.new ()
         val goalF = makeMem tr (H @> (z, AJ.TRUE a)) (VarKit.rename (z, x) fx, b)
         val goalG = makeMem tr (H @> (z, AJ.TRUE a)) (VarKit.rename (z, y) gy, b)
       in
@@ -1831,7 +1827,7 @@ struct
         #> (H, axiom)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z jdg =
       let
         val tr = ["Coequalizer.Elim"]
         val H >> AJ.TRUE pz = jdg
@@ -1846,15 +1842,15 @@ struct
         val goalKind = makeType tr H (pz, k)
 
         (* codomain branch *)
-        val b = alpha 0
+        val b = Sym.new ()
         val btm = VarKit.toExp b
         fun pcod tm = substVar (Syn.into (Syn.CECOD tm), z) pz
         val (goalC, holeC) = makeTrue tr (H @> (b, AJ.TRUE tyB)) (pcod btm)
 
         (* domain branch *)
-        val v = alpha 1
+        val v = Sym.new ()
         val vtm = VarKit.toDim v
-        val a = alpha 2
+        val a = Sym.new ()
         val atm = VarKit.toExp a
         val fa = substVar (atm, x) fx
         val ga = substVar (atm, y) gy
@@ -1877,7 +1873,7 @@ struct
         |>: goalC >: goalD >: goalCohF >: goalCohG >: goalKind #> (H, elim)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim jdg =
       let
         val tr = ["Coequalizer.EqElim"]
         val H >> ajdg = jdg
@@ -1891,7 +1887,7 @@ struct
         val (goalTyCoeq, holeTyCoeq) = makeSynth tr H m0
 
         (* motive *)
-        val z = alpha 0
+        val z = Sym.new ()
         val p0z = VarKit.rename (z, z0) p0z0
         val p1z = VarKit.rename (z, z1) p1z1
         val goalP = makeEqType tr (H @> (z, AJ.TRUE holeTyCoeq)) ((p0z, p1z), k)
@@ -1904,7 +1900,7 @@ struct
 
         (* codomain branch *)
         val (goalTyB, holeTyB) = makeMatch tr (O.COEQUALIZER, 1, holeTyCoeq, [])
-        val b = alpha 1
+        val b = Sym.new ()
         val btm = VarKit.toExp b
         val n0b = VarKit.rename (b, b0) n0b0
         val n1b = VarKit.rename (b, b1) n1b1
@@ -1913,9 +1909,9 @@ struct
 
         (* glue branch *)
         val (goalTyA, holeTyA) = makeMatch tr (O.COEQUALIZER, 0, holeTyCoeq, [])
-        val v = alpha 2
+        val v = Sym.new ()
         val vtm = VarKit.toDim v
-        val a = alpha 3
+        val a = Sym.new ()
         val atm = VarKit.toExp a
         val q0va = VarKit.renameMany [(v, v0), (a, a0)] q0v0a0
         val q1va = VarKit.renameMany [(v, v1), (a, a1)] q1v1a1
@@ -1938,7 +1934,7 @@ struct
         |>: goalTyCoeq >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalP >:? goalTy #> (H, axiom)
       end
 
-    fun BetaDom alpha jdg =
+    fun BetaDom jdg =
       let
         val tr = ["Coequalizer.BetaDom"]
         val H >> ajdg = jdg
@@ -1963,7 +1959,7 @@ struct
         |>: goalRed >:? goalCohL >:? goalCohR #> (H, axiom)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim jdg =
       let
         val tr = ["Coequalizer.SynthElim"]
         val H >> AJ.SYNTH tm = jdg
@@ -1985,7 +1981,7 @@ struct
        | K.COE => K.DISCRETE
        | K.STABLE => K.STABLE
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["InternalizedEquality.EqType"]
         val H >> ajdg = jdg
@@ -2001,7 +1997,7 @@ struct
         |>: goalM >: goalN >: goalTy #> (H, axiom)
       end
 
-    fun Eq _ jdg =
+    fun Eq jdg =
       let
         val tr = ["InternalizedEquality.Eq"]
         val H >> ajdg = jdg
@@ -2015,7 +2011,7 @@ struct
         |>: goal #> (H, axiom)
       end
 
-    fun Eta _ jdg =
+    fun Eta jdg =
       let
         val tr = ["InternalizedEquality.Eta"]
         val H >> ajdg = jdg
@@ -2028,7 +2024,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun Elim z _ jdg =
+    fun Elim z jdg =
       let
         val tr = ["InternalizedEquality.Elim"]
         val H >> ajdg = jdg
@@ -2044,7 +2040,7 @@ struct
 
     (* (= ty m n) at l >> m/n = m/n in ty at l *)
     (* this is for non-deterministic search *)
-    fun NondetEqFromTrueEq z _ jdg =
+    fun NondetEqFromTrueEq z jdg =
       let
         val tr = ["InternalizedEquality.NondetEqFromTrueEq"]
         val H >> ajdg = jdg
@@ -2059,7 +2055,7 @@ struct
 
     (* (= ty m n) >> ty = ty at l *)
     (* this is for non-deterministic search *)
-    fun NondetTypeFromTrueEqAtType z _ jdg =
+    fun NondetTypeFromTrueEqAtType z jdg =
       let
         val tr = ["InternalizedEquality.NondetTypeFromTrueEqAtType"]
         val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
@@ -2073,7 +2069,7 @@ struct
 
     (* (= ty a b) => a synth ~~> ty *)
     (* this is for non-deterministic search *)
-    fun NondetSynthFromTrueEq z _ jdg =
+    fun NondetSynthFromTrueEq z jdg =
       let
         val tr = ["InternalizedEquality.NondetSynthFromTrueEq"]
         val H >> AJ.SYNTH tm = jdg
@@ -2083,7 +2079,7 @@ struct
         T.empty #> (H, ty)
       end
 
-    fun Rewrite (sel, acc) eqterm alpha jdg =
+    fun Rewrite (sel, acc) eqterm jdg =
       let
         val tr = ["InternalizedEquality.RewriteTrue"]
         val H >> concl = jdg
@@ -2118,7 +2114,7 @@ struct
         val (goalM, holeM) = makeMatch tr (O.EQUALITY, 1, holeTyOfEq, [])
         val (goalN, holeN) = makeMatch tr (O.EQUALITY, 2, holeTyOfEq, [])
 
-        val x = alpha 0
+        val x = Sym.new ()
         val truncatedHx = truncatedH @> (x, AJ.TRUE holeTy)
         val (motiveGoal, motiveHole) = makeTerm tr truncatedHx O.EXP
         val motiveWfGoal = View.makeAsMem tr truncatedHx (motiveHole, ty)
@@ -2140,7 +2136,7 @@ struct
          #> (H, rewrittenHole)
       end
 
-    fun Symmetry _ jdg =
+    fun Symmetry jdg =
       let
         val tr = ["InternalizedEquality.Symmetry"]
         val H >> ajdg = jdg
@@ -2150,7 +2146,7 @@ struct
         |>: goal #> (H, Syn.into Syn.AX)
       end
 
-    fun VarFromTrue _ jdg =
+    fun VarFromTrue jdg =
       let
         val tr = ["Equality.VarFromTrue"]
         val H >> ajdg = jdg
@@ -2226,7 +2222,7 @@ struct
             ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), tyCap))
         (tyTubes, boundaries)
 
-    fun EqType alpha jdg =
+    fun EqType jdg =
       let
         val tr = ["FormalComposition.EqType"]
         val H >> ajdg = jdg
@@ -2243,7 +2239,7 @@ struct
 
         val goalCap = View.makeAsEqType tr H ((cap0, cap1), l, kCap)
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>: goalCap
          >:+ genInterTubeGoals tr H w ((tubes0, tubes1), l, kTube)
@@ -2251,7 +2247,7 @@ struct
         #> (H, axiom)
       end
 
-    fun Eq alpha jdg =
+    fun Eq jdg =
       let
         val tr = ["FormalComposition.Eq"]
         val H >> ajdg = jdg
@@ -2274,7 +2270,7 @@ struct
 
         val tyBoundaries = List.map (fn (u, ty) => substVar (#2 dir, u) ty) tyTubes'
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>: goalCap
          >:+ genInterBoundaryGoals tr H ((boundaries0, boundaries1), tyBoundaries)
@@ -2284,7 +2280,7 @@ struct
         #> (H, axiom)
       end
 
-    fun True alpha jdg =
+    fun True jdg =
       let
         val tr = ["FormalComposition.True"]
         val H >> AJ.TRUE ty = jdg
@@ -2305,7 +2301,7 @@ struct
         val tyBoundaries = List.map (fn (u, ty) => substVar (#2 dir, u) ty) tyTubes'
         val holeBoundaries' = ListPair.zipEq (eqs, holeBoundaries)
 
-        val w = alpha 0
+        val w = Sym.new ()
 
         val box = Syn.into @@ Syn.BOX {dir=dir, cap=holeCap, boundaries=holeBoundaries'}
       in
@@ -2374,7 +2370,7 @@ struct
           intoIsEquiv A B (VarKit.toExp f)
       end
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["V.EqType"]
         val H >> ajdg = jdg
@@ -2393,7 +2389,7 @@ struct
         |>:? goalEquiv >:? goalA >: goalB #> (H, axiom)
       end
 
-    fun Eq _ jdg =
+    fun Eq jdg =
       let
         val tr = ["V.Eq"]
         val H >> ajdg = jdg
@@ -2415,7 +2411,7 @@ struct
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (H, axiom)
       end
 
-    fun True _ jdg =
+    fun True jdg =
       let
         val tr = ["V.True"]
         val H >> AJ.TRUE ty = jdg
@@ -2447,7 +2443,7 @@ struct
 
     val inherentLevel = L.succ
 
-    fun EqType _ jdg =
+    fun EqType jdg =
       let
         val tr = ["Universe.EqType"]
         val H >> ajdg = jdg
@@ -2461,7 +2457,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun SubType _ jdg =
+    fun SubType jdg =
       let
         val tr = ["Universe.SubType"]
         val H >> AJ.SUB_TYPE (ty0, ty1) = jdg
@@ -2473,7 +2469,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun SubKind _ jdg =
+    fun SubKind jdg =
       let
         val tr = ["Universe.SubKind"]
         val H >> AJ.SUB_KIND (univ, k) = jdg
@@ -2485,7 +2481,7 @@ struct
 
     (* (= (U l k) ty0 ty1) >> ty0 = ty1 with k *)
     (* this is for non-deterministic search *)
-    fun NondetEqTypeFromTrueEqType z _ jdg =
+    fun NondetEqTypeFromTrueEqType z jdg =
       let
         val tr = ["Universe.NondetEqTypeFromEq"]
         val H >> AJ.EQ_TYPE ((ty0, ty1), k) = jdg
@@ -2498,7 +2494,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun VarFromTrue _ jdg =
+    fun VarFromTrue jdg =
       let
         val tr = ["Universe.VarFromTrue"]
         val H >> AJ.EQ_TYPE ((ty1, ty2), k1) = jdg

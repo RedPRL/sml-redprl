@@ -4,7 +4,7 @@ Thm Decomposition : [
    bool)
 ] by [
   lam x =>
-    let {bar = bar, foo = foo} = x;
+    // let {bar = bar, foo = foo} = x;
     ?
 
     
