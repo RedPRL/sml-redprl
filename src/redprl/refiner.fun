@@ -483,6 +483,19 @@ struct
         go
       end
 
+    fun autoSynthesizableNeu sign m =
+      case Syn.out m of
+         Syn.VAR _ => true
+       | Syn.WIF _ => true
+       | Syn.S1_REC _ => true
+       | Syn.APP (f, _) => autoSynthesizableNeu sign f
+       | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
+       | Syn.DIM_APP (l, _) => autoSynthesizableNeu sign l
+       | Syn.PUSHOUT_REC _ => true
+       | Syn.COEQUALIZER_REC _ => true
+       | Syn.CUST => true (* XXX should check the signature *)
+       | _ => false
+
     (* trying to normalize TRUE goal and then run `tac ty` *)
     fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign Selector.IN_CONCL
   in
@@ -491,12 +504,10 @@ struct
         | _ >> AJ.TRUE _ => Lcf.rule o InternalizedEquality.Symmetry
         | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "symmetry tactic", Seq.pretty seq))
 
-(*
     fun SynthFromHyp z = matchHyp z
       (fn AJ.TRUE _ =>
             Lcf.rule o InternalizedEquality.NondetSynthFromTrueEq z
         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "SynthFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
-*)
 
     structure Tactical =
     struct
@@ -676,8 +687,8 @@ struct
            (Syn.VAR _, Syn.VAR _) => Lcf.rule o InternalizedEquality.VarFromTrue
          | (Syn.WIF _, Syn.WIF _) => Lcf.rule o WBool.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule o S1.EqElim
-         | (Syn.APP (f, _), Syn.APP _) =>  Lcf.rule o Fun.EqApp
          | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj (* XXX should consult autoSynthesizableNeu *)
+         | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqApp else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>
            (case (Abt.out r1, Abt.out r2) of
                (`_, `_) => Lcf.rule o Path.EqApp
@@ -847,12 +858,12 @@ struct
         (fn (z, AJ.TRUE _) => Lcf.rule o InternalizedEquality.NondetEqFromTrueEq z
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "TrueFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
-      (* val NondetSynthFromHyp = NondetFromHypDelegate (fn (z, _) => SynthFromHyp z) *)
+      val NondetSynthFromHyp = NondetFromHypDelegate (fn (z, _) => SynthFromHyp z)
     in
       val NondetStepJdgFromHyp = matchGoal
         (fn _ >> AJ.TRUE _ => NondetTrueFromHyp
           | _ >> AJ.EQ_TYPE _ => NondetEqTypeFromHyp
-          (* | _ >> AJ.SYNTH _ => NondetSynthFromHyp *)
+          | _ >> AJ.SYNTH _ => NondetSynthFromHyp
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
 
       fun AutoStep sign =

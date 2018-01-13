@@ -1998,7 +1998,6 @@ struct
         T.empty #> (H, axiom)
       end
 
-(*
     (* (= ty a b) => a synth ~~> ty *)
     (* this is for non-deterministic search *)
     fun NondetSynthFromTrueEq z _ jdg =
@@ -2010,7 +2009,6 @@ struct
       in
         T.empty #> (H, ty)
       end
-*)
 
     fun Rewrite (sel, acc) eqterm alpha jdg =
       let
