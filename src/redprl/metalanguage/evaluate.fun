@@ -122,8 +122,9 @@ struct
          val ajdg' = AJ.map (Sem.term env) ajdg
          val script' = Sem.term env script
 
-         val seqjdg = Sequent.>> (SequentData.Hyps.empty, ajdg')
+         val seqjdg = Sequent.>> (Sequent.Hyps.empty, ajdg')
          val results = TacticElaborator.tactic env Var.Ctx.empty script' (fn _ => Sym.new ()) seqjdg
+
          (* TODO: somehow show all the states! *)
          val Lcf.|> (subgoals, evd) =
            Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)

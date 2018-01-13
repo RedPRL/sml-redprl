@@ -236,7 +236,7 @@ struct
     end
     
   fun onAllHyps tac alpha (H >> jdg) =
-    (SequentData.Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
+    (Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) alpha (H >> jdg)
 
   val inversions = onAllHyps (T.try o R.Inversion)
 

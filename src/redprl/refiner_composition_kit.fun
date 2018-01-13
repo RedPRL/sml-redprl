@@ -149,17 +149,17 @@ struct
 
     local
       (* TODO: why do these have tick marks after them? - JMS *)
-      fun genTubeGoals' tr (H : AJ.jdg Hyps.telescope) ((tubes0, tubes1), ty) =
+      fun genTubeGoals' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
         ListPairUtil.mapPartialEq
           (fn ((eq, t0), (_, t1)) => Restriction.makeEq tr [eq] H ((t0, t1), ty))
           (tubes0, tubes1)
 
-      fun genInterTubeGoalsExceptDiag' tr (H : AJ.jdg Hyps.telescope) ((tubes0, tubes1), ty) =
+      fun genInterTubeGoalsExceptDiag' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
         enumInterExceptDiag
           (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent tr [eq0, eq1] H ((t0, t1), ty))
           (tubes0, tubes1)
     in
-      fun genInterTubeGoals tr (H : AJ.jdg Hyps.telescope) w ((tubes0, tubes1), ty) =
+      fun genInterTubeGoals tr (H : Sequent.hyps) w ((tubes0, tubes1), ty) =
         let
           val tubes0 = alphaRenameTubes w tubes0
           val tubes1 = alphaRenameTubes w tubes1

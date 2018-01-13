@@ -1,12 +1,54 @@
-structure Sequent : SEQUENT =
+structure Sequent :> SEQUENT =
 struct
   structure AJ = AtomicJudgment
   structure Tm = RedPrlAbt
   structure TP = TermPrinter
 
   datatype atjdg = datatype AJ.jdg
+  type abt = Tm.abt
 
-  open SequentData
+  structure Tl = 
+  struct
+    structure Tl = TelescopeUtil (Telescope (Sym))
+    open Tl
+
+    fun toList H =
+      Tl.foldr (fn (x, jdg, r) => Tm.check (Tm.`x, AJ.synthesis jdg) :: r) [] H
+
+    fun lookup H z =
+      Tl.lookup H z
+      handle _ =>
+        raise RedPrlError.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppVar z]
+
+    (* The telescope lib should be redesigned to make the following helper functions easier.
+     * At least the calling convention can be more consistent. *)
+
+    fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
+      Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) H
+
+    fun interposeAfter (z, H') H =
+      Tl.interposeAfter H z H'
+
+    fun interposeThenSubstAfter (z, H', term) H =
+      Tl.interposeAfter (Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) H) z H'
+  end
+
+  type hyps = atjdg Tl.telescope
+
+  structure Hyps = 
+  struct
+    open Tl
+  end  
+
+  datatype jdg =
+     (* sequents / formal hypothetical judgment *)
+     >> of hyps * atjdg
+     (* unify a term w/ a head operator and extract the kth subterm *)
+   | MATCH of RedPrlAbt.operator * int * Tm.abt * Tm.abt list
+     (* unify a term w/ RECORD and extract the type of the label;
+      * the third argument is the tuple. *)
+   | MATCH_RECORD of string * Tm.abt * Tm.abt
+
   infix >>
 
   fun map f =
@@ -44,8 +86,8 @@ struct
     fn H >> catjdg => relabelHyps H srho >> AJ.map (Tm.renameVars srho) catjdg
      | jdg => map (Tm.renameVars srho) jdg
 
-  fun prettyHyps f : 'a ctx -> Fpp.doc =
-    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, f a] :: r) []
+  val prettyHyps : hyps -> Fpp.doc =
+    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, AJ.pretty a] :: r) []
 
   local
     fun >>= (m, k) = Fpp.bind m k
@@ -74,7 +116,7 @@ struct
        if Hyps.isEmpty H then
          AJ.pretty atjdg 
        else
-         ruleSep (prettyHyps AJ.pretty H, AJ.pretty atjdg)
+         ruleSep (prettyHyps H, AJ.pretty atjdg)
      | MATCH (th, k, a, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
      | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match-record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
@@ -105,11 +147,12 @@ struct
           lbl1 = lbl2 andalso Tm.eq (a1, a2) andalso Tm.eq (m1, m2)
      | _ => false
 
+
+
   local
     structure AJ = AtomicJudgment
     structure S = Selector
     structure O = RedPrlOpData (* TODO: we should move the selector crap out of there! *)
-    structure Hyps = SequentData.Hyps
   in
     fun mapSelector sel f (H : AJ.jdg Hyps.telescope, catjdg) =
       case sel of
