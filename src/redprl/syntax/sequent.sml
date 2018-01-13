@@ -37,7 +37,7 @@ struct
 
     fun snoc {hyps, bound} x jdg =
       {hyps = Tl.snoc hyps x jdg,
-       bound = bound @ [x]}
+       bound = x :: bound}
 
     val empty = {hyps = Tl.empty, bound = []}
 
@@ -68,15 +68,15 @@ struct
 
     fun splice {hyps, bound} x (H : hyps) =
       {hyps = Tl.splice hyps x (#hyps H),
-       bound = bound @ #bound H}
+       bound = #bound H @ bound}
 
     fun interposeAfter (z, H' : hyps) {hyps, bound} =
       {hyps = Tl.interposeAfter hyps z (#hyps H'),
-       bound = bound @ #bound H'}
+       bound = #bound H' @ bound}
 
     fun interposeThenSubstAfter (z, H' : hyps, term) {hyps, bound} =
       {hyps = Tl.interposeAfter (Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) hyps) z (#hyps H'),
-       bound = bound @ #bound H'}
+       bound = #bound H' @ bound}
 
     fun pretty H : Fpp.doc =
       Fpp.vsep 
