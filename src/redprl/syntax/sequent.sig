@@ -32,10 +32,10 @@ sig
     val lookup : hyps -> Tm.variable -> atjdg
     val substAfter : Tm.variable * Tm.abt -> hyps -> hyps
     val remove : Tm.variable -> hyps -> hyps
-    val interposeAfter : Tm.variable * hyps -> hyps -> hyps
-    val interposeThenSubstAfter : Tm.variable * hyps * Tm.abt -> hyps -> hyps
     val splice : hyps -> Tm.variable -> hyps -> hyps
     val singleton : Tm.variable -> atjdg -> hyps
+    val interposeAfter : Tm.variable * hyps -> hyps -> hyps
+    val interposeThenSubstAfter : Tm.variable * hyps * Tm.abt -> hyps -> hyps
     val modifyAfter : Tm.variable -> (atjdg -> atjdg) -> hyps -> hyps
   end
 

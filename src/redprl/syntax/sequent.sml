@@ -4,41 +4,119 @@ struct
   structure Tm = RedPrlAbt
   structure TP = TermPrinter
 
+  structure Tl = TelescopeUtil (Telescope (Sym))  
+
   datatype atjdg = datatype AJ.jdg
   type abt = Tm.abt
 
-  structure Tl = 
+  type hyps = {hyps: atjdg Tl.telescope, bound: Tm.variable list}
+
+  exception todo fun ?e = raise e  
+
+  structure Hyps = 
   struct
-    structure Tl = TelescopeUtil (Telescope (Sym))
-    open Tl
 
-    fun toList H =
-      Tl.foldr (fn (x, jdg, r) => Tm.check (Tm.`x, AJ.synthesis jdg) :: r) [] H
+    fun toList {hyps, bound} =
+      Tl.foldr (fn (x, jdg, r) => Tm.check (Tm.`x, AJ.synthesis jdg) :: r) [] hyps
 
-    fun lookup H z =
-      Tl.lookup H z
+    fun lookup {hyps, bound} z =
+      Tl.lookup hyps z
       handle _ =>
         raise RedPrlError.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppVar z]
+
+    fun modifyAfter x f {hyps, bound} =
+      {hyps = Tl.modifyAfter x f hyps,
+       bound = bound}
+
+    fun remove x {hyps, bound} = 
+      {hyps = Tl.remove x hyps, 
+       bound = List.filter (fn y => not (Sym.eq (x, y))) bound}
+
+    fun foldl f z {hyps, bound} = Tl.foldl f z hyps
+    fun foldr f z {hyps, bound} = Tl.foldr f z hyps
+
+    fun snoc {hyps, bound} x jdg =
+      {hyps = Tl.snoc hyps x jdg,
+       bound = x :: bound}
+
+    val empty = {hyps = Tl.empty, bound = []}
+
+    fun singleton x jdg = 
+      {hyps = Tl.singleton x jdg,
+       bound = [x]}
+
+    fun isEmpty {hyps, bound} = Tl.isEmpty hyps
+
+    fun map f {hyps, bound} =
+      {hyps = Tl.map f hyps,
+       bound = bound}
+
+    fun modify x f {hyps, bound} =
+      {hyps = Tl.modify x f hyps,
+       bound = bound}
+
+    fun truncateFrom {hyps, bound} x =
+      {hyps = Tl.truncateFrom hyps x,
+       bound = bound}
 
     (* The telescope lib should be redesigned to make the following helper functions easier.
      * At least the calling convention can be more consistent. *)
 
-    fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
-      Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) H
+    fun substAfter (z, term) {hyps, bound} = 
+      {hyps = Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) hyps,
+       bound = bound}
 
-    fun interposeAfter (z, H') H =
-      Tl.interposeAfter H z H'
+    fun splice {hyps, bound} x (H : hyps) =
+      {hyps = Tl.splice hyps x (#hyps H),
+       bound = #bound H @ bound}
 
-    fun interposeThenSubstAfter (z, H', term) H =
-      Tl.interposeAfter (Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) H) z H'
+    fun interposeAfter (z, H' : hyps) {hyps, bound} =
+      {hyps = Tl.interposeAfter hyps z (#hyps H'),
+       bound = #bound H' @ bound}
+
+    fun interposeThenSubstAfter (z, H' : hyps, term) {hyps, bound} =
+      {hyps = Tl.interposeAfter (Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) hyps) z (#hyps H'),
+       bound = #bound H' @ bound}
+
+    val pretty : hyps -> Fpp.doc =
+      Fpp.vsep o foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, AJ.pretty a] :: r) []
+
+    local
+      open Tl.ConsView
+    in
+      fun telescopeEq (t1, t2) =
+        case (out t1, out t2) of
+          (EMPTY, EMPTY) => true
+        | (CONS (x, catjdg1, t1'), CONS (y, catjdg2, t2')) =>
+            Sym.eq (x, y)
+              andalso AJ.eq (catjdg1, catjdg2)
+              andalso telescopeEq (t1', t2')
+        | _ => false
+
+      fun relabelTl H rho =
+        case out H of
+            EMPTY => Tl.empty
+          | CONS (x, catjdg, Hx) =>
+            let
+              val catjdg' = AJ.map (Tm.renameVars rho) catjdg
+            in
+              case Var.Ctx.find rho x of
+                  NONE => Tl.cons x catjdg' (relabelTl Hx rho)
+                | SOME y => Tl.cons y catjdg' (relabelTl Hx rho)
+            end
+
+      fun relabel {hyps, bound} rho = 
+        {hyps = relabelTl hyps rho,
+         bound = List.map (fn x => Var.Ctx.lookup rho x handle _ => x) bound}
+      
+      fun eq (H1 : hyps, H2 : hyps) =
+        telescopeEq (#hyps H1, #hyps H2)
+          andalso ListPair.allEq Sym.eq (#bound H1, #bound H2) handle _ => false
+    end
+
+    fun push _ = ?todo
+    fun pop _ = ?todo
   end
-
-  type hyps = atjdg Tl.telescope
-
-  structure Hyps = 
-  struct
-    open Tl
-  end  
 
   datatype jdg =
      (* sequents / formal hypothetical judgment *)
@@ -56,38 +134,10 @@ struct
      | MATCH (th, k, a, ms) => MATCH (th, k, f a, List.map f ms)
      | MATCH_RECORD (lbl, tm, tuple) => MATCH_RECORD (lbl, f tm, f tuple)
 
-  local
-    open Hyps.ConsView
-  in
-    fun telescopeEq (t1, t2) =
-      case (out t1, out t2) of
-         (EMPTY, EMPTY) => true
-       | (CONS (x, catjdg1, t1'), CONS (y, catjdg2, t2')) =>
-           Sym.eq (x, y)
-             andalso AJ.eq (catjdg1, catjdg2)
-             andalso telescopeEq (t1', t2')
-       | _ => false
-
-    fun relabelHyps H rho =
-      case out H of
-          EMPTY => Hyps.empty
-        | CONS (x, catjdg, Hx) =>
-          let
-            val catjdg' = AJ.map (Tm.renameVars rho) catjdg
-          in
-            case Var.Ctx.find rho x of
-                NONE => Hyps.cons x catjdg' (relabelHyps Hx rho)
-              | SOME y => Hyps.cons y catjdg' (relabelHyps Hx rho)
-          end
-
-  end
 
   fun relabel srho =
-    fn H >> catjdg => relabelHyps H srho >> AJ.map (Tm.renameVars srho) catjdg
+    fn H >> catjdg => Hyps.relabel H srho >> AJ.map (Tm.renameVars srho) catjdg
      | jdg => map (Tm.renameVars srho) jdg
-
-  val prettyHyps : hyps -> Fpp.doc =
-    Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, AJ.pretty a] :: r) []
 
   local
     fun >>= (m, k) = Fpp.bind m k
@@ -116,7 +166,7 @@ struct
        if Hyps.isEmpty H then
          AJ.pretty atjdg 
        else
-         ruleSep (prettyHyps H, AJ.pretty atjdg)
+         ruleSep (Hyps.pretty H, AJ.pretty atjdg)
      | MATCH (th, k, a, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
      | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match-record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
@@ -129,12 +179,12 @@ struct
          val xrho1 = ListPair.foldr (fn (x1, x, rho) => Sym.Ctx.insert rho x1 x) Sym.Ctx.empty (xs1, xs)
          val xrho2 = ListPair.foldr (fn (x2, x, rho) => Sym.Ctx.insert rho x2 x) Sym.Ctx.empty (xs2, xs)
 
-         val H1' = relabelHyps H1 xrho1
-         val H2' = relabelHyps H2 xrho2
+         val H1' = Hyps.relabel H1 xrho1
+         val H2' = Hyps.relabel H2 xrho2
          val catjdg1' = AJ.map (Tm.renameVars xrho1) catjdg1
          val catjdg2' = AJ.map (Tm.renameVars xrho2) catjdg2
        in
-         telescopeEq (H1', H2')
+         Hyps.eq (H1', H2')
            andalso AJ.eq (catjdg1', catjdg2')
        end
        handle _ => false)
@@ -148,13 +198,15 @@ struct
      | _ => false
 
 
+  fun push _ = ?todo
+  fun pop _ = ?todo
 
   local
     structure AJ = AtomicJudgment
     structure S = Selector
     structure O = RedPrlOpData (* TODO: we should move the selector crap out of there! *)
   in
-    fun mapSelector sel f (H : AJ.jdg Hyps.telescope, catjdg) =
+    fun mapSelector sel f (H : hyps, catjdg) =
       case sel of
           S.IN_CONCL => (H, f catjdg)
         | S.IN_HYP x => (Hyps.modify x f H, catjdg)
@@ -162,7 +214,7 @@ struct
     fun multiMapSelector sels f (H, catjdg) =
       List.foldl (fn (sel, state) => mapSelector sel f state) (H, catjdg) sels
 
-    fun lookupSelector sel (H : AJ.jdg Hyps.telescope, catjdg : AJ.jdg) : AJ.jdg =
+    fun lookupSelector sel (H : hyps, catjdg : AJ.jdg) : AJ.jdg =
       case sel of
           S.IN_CONCL => catjdg
         | S.IN_HYP x => Hyps.lookup H x

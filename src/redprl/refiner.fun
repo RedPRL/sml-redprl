@@ -50,6 +50,7 @@ struct
     fun Rename z alpha jdg =
       let
         val tr = ["Hyp.Rename"]
+   
         val H >> ajdg = jdg
         val zjdg = Hyps.lookup H z
         val z' = alpha 0
