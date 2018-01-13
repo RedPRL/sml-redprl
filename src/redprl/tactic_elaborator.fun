@@ -305,12 +305,12 @@ struct
      | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule (R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec))
      | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp
      | O.RULE_PRIM ruleName $ _ => R.lookupRule sign ruleName
-     (* | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl [tactic sign env tm1, popNamesIn [u] @@ tactic sign env tm2] *)
+     | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl [tactic sign env tm1, popNamesIn [u] @@ tactic sign env tm2]
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.DEV_RECORD_INTRO lbls $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.DEV_PATH_INTRO _ $ [us \ tm] => pathIntros sign us (tactic sign env tm)
      | O.DEV_BOOL_ELIM $ [_ \ var, _ \ tm1, _ \ tm2] => elimRule sign (VarKit.fromTerm var) [tactic sign env tm1, tactic sign env tm2, autoTacComplete sign, autoTacComplete sign]
-     (* | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [tactic sign env tm1, popNamesIn [v] (tactic sign env tm2), autoTacComplete sign, autoTacComplete sign, autoTacComplete sign] *)
+     | O.DEV_S1_ELIM $ [_ \ var, _ \ tm1, [v] \ tm2] => elimRule sign (VarKit.fromTerm var) [tactic sign env tm1, popNamesIn [v] (tactic sign env tm2), autoTacComplete sign, autoTacComplete sign, autoTacComplete sign]
      | O.DEV_APPLY_HYP pattern $ [_ \ var, _ \ vec, names \ tm'] =>
        let
          val z = VarKit.fromTerm (Syn.unpackAny var)
