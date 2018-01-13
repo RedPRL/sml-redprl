@@ -116,7 +116,7 @@ struct
        (RedPrlLog.print RedPrlLog.INFO (pos, Sem.ppValue (evalVal env v));
         (Sem.RET Sem.NIL, true))
 
-     | Syn.REFINE (ajdg, script) =>
+     | Syn.REFINE (name, ajdg, script) =>
        let
          val pos = Tm.getAnnotation script
          val ajdg' = AJ.map (Sem.term env) ajdg
@@ -129,6 +129,21 @@ struct
            Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
            handle _ => Lcf.M.run (results, fn _ => true)
 
+         val {ren, ...} =
+          Lcf.Tl.foldl
+            (fn (x, Lcf.::@ (tr, jdg), {subgoals', ren, idx}) =>
+              let
+                val x' = Metavar.named (case name of SOME s => s ^ "/" ^ Int.toString idx | NONE => Int.toString idx)
+                val jdg' = Lcf.J.ren ren jdg
+                val ren' = Metavar.Ctx.insert ren x x'
+              in
+                {subgoals' = Lcf.Tl.snoc subgoals' x' jdg',
+                 ren = ren',
+                 idx = idx + 1}
+              end)
+            {subgoals' = Lcf.Tl.empty, ren = Metavar.Ctx.empty, idx = 0}          
+            subgoals
+
          val Tm.\ (_, extract) = Tm.outb evd
          val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
 
@@ -136,7 +151,7 @@ struct
            if subgoalsCount = 0 then () else
              RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
         in
-          (Sem.RET @@ Sem.THM (ajdg', extract), subgoalsCount = 0)
+          (Sem.RET @@ Sem.THM (ajdg', Tm.renameMetavars ren extract), subgoalsCount = 0)
         end
 
      | Syn.FRESH vls => 
