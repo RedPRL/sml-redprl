@@ -368,12 +368,18 @@ struct
      | O.DEV_PRINT $ [_ \ tm'] =>
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
         T.idn)
+
+     | O.TAC_TRACE str $ _ => 
+       Lcf.rule o R.LabelGoal str
      | O.TAC_FAIL $ _ => fail "fail"
      | _ => raise RedPrlError.error [Fpp.text "Unrecognized tactic", TermPrinter.ppTerm tm]
 
   and multitactic_ sign env tm =
     case Tm.out tm of 
-       O.MTAC_ALL $ [_ \ tm] => T.all (tactic sign env tm)
+       O.MTAC_ALL $ [_ \ tm] =>
+       (case Tm.out tm of 
+           O.TAC_MTAC $ [_ \ tm] => multitactic sign env tm
+         | _ => T.all (tactic sign env tm))
      | O.MTAC_EACH $ [_ \ vec] => T.each (Syn.outVec' (tactic sign env) vec)
      | O.MTAC_FOCUS i $ [_ \ tm] => T.only (i, tactic sign env tm)
      | O.MTAC_PROGRESS $ [_ \ tm] => T.mprogress (multitactic sign env tm)

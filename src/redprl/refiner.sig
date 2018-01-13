@@ -55,6 +55,8 @@ sig
     val NormalizeHypDelegate : (abt -> hyp -> tactic) -> sign -> hyp -> tactic
   end
 
+  val LabelGoal : string -> rule
+
   type rule_name = string
   val lookupRule : sign -> rule_name -> tactic
 end

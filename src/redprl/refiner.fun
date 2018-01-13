@@ -338,6 +338,14 @@ struct
     fun ReducePart sign = SequentReducePart sign
   end
 
+  fun LabelGoal (lbl : string) : rule = 
+    fn alpha => fn H >> jdg => 
+      let
+        val (goal, hole) = makeGoal [lbl] @@ H >> jdg
+      in
+        |>: goal #> (H, hole)
+      end  
+
   local
     fun fail err _ _ = Lcf.M.throw (E.errorToExn (NONE, err))
 

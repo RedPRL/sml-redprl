@@ -23,7 +23,7 @@ syn keyword redExpr Vin Vproj U abs hcom com coe lmax omega
 syn match   redExpr '[$*!@=+]\|->\|\~>\|<\~'
 
 syn keyword redTac auto auto-step case cut-lemma elim else exact fresh goal
-syn keyword redTac hyp id lemma let claim match of print progress
+syn keyword redTac hyp id lemma let claim match of print trace progress
 syn keyword redTac query rec reduce refine repeat rewrite symmetry
 syn keyword redTac then unfold use with fail inversion concl assumption
 syn match   redTac '[;`]'
