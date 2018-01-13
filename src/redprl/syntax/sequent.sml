@@ -113,9 +113,6 @@ struct
         telescopeEq (#hyps H1, #hyps H2)
           andalso ListPair.allEq Sym.eq (#bound H1, #bound H2) handle _ => false
     end
-
-    fun push _ = ?todo
-    fun pop _ = ?todo
   end
 
   datatype jdg =
@@ -198,8 +195,22 @@ struct
      | _ => false
 
 
-  fun push _ = ?todo
-  fun pop _ = ?todo
+  fun push x jdg =
+    let
+      val x' = Sym.new ()
+      val rho = Sym.Ctx.singleton x x'
+    in
+      relabel rho jdg
+    end
+
+  fun pop x' jdg =
+    let
+      val H as {bound = x :: xs, ...} >> _ = jdg
+      val rho = Sym.Ctx.singleton x x'
+      val {hyps, ...} >> ajdg = relabel rho H
+    in
+      {bound = xs, hyps = hyps} >> ajdg
+    end
 
   local
     structure AJ = AtomicJudgment

@@ -45,4 +45,7 @@ sig
 
   (* TODO: I don't like this function. *)
   val truncateFrom : Sym.t Selector.t -> hyps -> hyps
+
+
+  val push : Tm.variable -> jdg -> jdg
 end
