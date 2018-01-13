@@ -207,11 +207,14 @@ struct
       {hyps = hyps, bound = xs' @ bound} >> ajdg
     end
 
+  structure E = RedPrlError
+  fun @@ (f, x) = f x infixr @@
+
   fun popAs xs' jdg =
     let
       val H as {bound, ...} >> _ = jdg
       val n = List.length xs'
-      val (xs, bound') = (List.take (bound,n), List.drop (bound, n))
+      val (xs, bound') = (List.take (bound,n), List.drop (bound, n)) handle _ => E.raiseError @@ E.GENERIC [Fpp.text "Sequent.popAs: out of bounds"]
       val rho = ListPair.foldl (fn (x, x', rho) => Sym.Ctx.insert rho x x') Sym.Ctx.empty (xs, xs')
       val {hyps, ...} >> ajdg = relabel rho H
     in
