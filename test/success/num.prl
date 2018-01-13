@@ -26,9 +26,9 @@ Thm Pred : [
   (-> nat nat)
 ] by [
   lam a =>
-  fresh a' ind -> elim a;
+  elim a;
   [ `zero ];
-  [ `a' ]
+  [ pop a' ind => `a' ]
 ].
 
 // A tactic to infer and supply a simple (non-dependent) motive to the nat/eq/nat-rec rule.
@@ -40,15 +40,18 @@ Tac SimpleNatRecEq = [
   }
 ].
 
-Print SimpleNatRecEq.
+// Print SimpleNatRecEq.
 
 Thm Plus : [
   (-> nat nat nat)
 ] by [
   lam a =>
-  fresh a' ind -> elim a;
+  pop a =>
+  elim a;
   [ lam x => use x
-  , lam x => let ih/x = ind [use x]; `(succ ih/x)
+  , pop a' ind =>
+    lam x =>
+      let ih/x = ind [use x]; `(succ ih/x)
   ]
 ].
 
@@ -68,9 +71,11 @@ Thm Plus/zero/R : [
   (-> [n : nat] (= nat ($ Plus n 0) n))
 ] by [
   lam n =>
-    fresh n' ind -> elim n;
+    pop n =>
+    elim n;
     [ `ax
-    , fresh x -> rewrite ind;
+    , pop n' ind => 
+      fresh x -> rewrite ind;
       [ `(= nat (succ x) (succ n'))
       , auto
       , auto
@@ -89,9 +94,9 @@ Thm Plus/succ/L : [
 Thm Plus/succ/R : [
   (-> [n m : nat] (= nat ($ Plus n (succ m)) (succ ($ Plus n m))))
 ] by [
-  lam n m => fresh n' n'/ih -> elim n;
+  lam n m => pop n m => elim n;
     [ auto
-    , fresh x -> rewrite ($ Plus/succ/L n' (succ m));
+    , pop n' n'/ih => fresh x -> rewrite ($ Plus/succ/L n' (succ m));
       [ `(= nat x (succ ($ Plus (succ n') m)))
       , fresh x -> rewrite ($ Plus/succ/L n' m);
         [ `(= nat (succ ($ Plus n' (succ m))) (succ x))
@@ -123,9 +128,9 @@ Thm Eq/sym : [
 Thm Plus/comm : [
   (-> [n m : nat] (= nat ($ Plus n m) ($ Plus m n)))
 ] by [
-  lam n m => fresh n' n'/ih -> elim n;
+  lam n m => pop n m => elim n;
     [ symmetry; `($ Plus/zero/R  m)
-    , fresh x -> rewrite ($ Plus/succ/L n' m);
+    , pop n' n'/ih => fresh x -> rewrite ($ Plus/succ/L n' m);
       [ `(= nat x ($ Plus m (succ n')))
       , fresh x -> rewrite n'/ih;
         [ `(= nat (succ x) ($ Plus m (succ n')))
@@ -151,34 +156,37 @@ Thm NatSymm : [
       [i=1 [_] a])
 ].
 
-Print NatSymm.
-
 Thm IntPred : [
   (-> int int)
 ] by [
-  lam a => fresh a' _ -> elim a;
-  [ `-1, fresh n _ -> elim a'; [`0, `(succ n)]
-  , `-2, `(negsucc (succ (succ a')))
+  lam a => pop a => elim a;
+  [ `-1
+  , pop a' _ => 
+      elim a';
+      [`0, pop n _ => `(succ n)]
+  , `-2
+  , pop a' _ =>
+      `(negsucc (succ (succ a')))
   ]
 ].
 
 Thm IntSucc : [
   (-> int int)
 ] by [
-  lam a => fresh a' _ -> elim a;
-  [ `1, `(succ (succ a'))
-  , `0, `(negsucc a')
+  lam a => pop a => elim a;
+  [ `1, pop a' => `(succ (succ a'))
+  , `0, pop a' => `(negsucc a')
   ]
 ].
 
 Thm IntPlus : [
   (-> int int int)
 ] by [
-  lam a => fresh a' ind -> elim a;
+  lam a => pop a => elim a;
   [ lam b => use b
-  , lam b => `($ IntSucc ($ ind b))
+  , pop a' ind => lam b => `($ IntSucc ($ ind b))
   , lam b => `($ IntPred b)
-  , lam b => `($ IntPred ($ ind b))
+  , pop a' ind => lam b => `($ IntPred ($ ind b))
   ]
 ].
 

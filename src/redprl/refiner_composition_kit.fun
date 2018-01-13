@@ -204,7 +204,7 @@ struct
 
   structure HCom =
   struct
-    fun Eq alpha jdg =
+    fun Eq _ jdg =
       let
         val tr = ["HCom.Eq"]
 
@@ -229,7 +229,7 @@ struct
         (* cap *)
         val goalCap = makeEq tr H ((cap0, cap1), ty0)
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>: goalCap
          >:+ ComKit.genInterTubeGoals tr H w ((tubes0, tubes1), ty0)
@@ -238,7 +238,7 @@ struct
         #> (H, axiom)
       end
 
-    fun EqCapL alpha jdg =
+    fun EqCapL _ jdg =
       let
         val tr = ["HCom.EqCapL"]
 
@@ -259,7 +259,7 @@ struct
         (* eq *)
         val goalEq = View.makeAsEq tr H ((cap, other), ty)
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>: goalEq
          >:+ ComKit.genInterTubeGoals tr H w ((tubes, tubes), ty0)
@@ -269,7 +269,7 @@ struct
       end
 
     (* Search for the first satisfied equation in an hcom. *)
-    fun EqTubeL alpha jdg =
+    fun EqTubeL _ jdg =
       let
         val tr = ["HCom.EqTubeL"]
 
@@ -295,7 +295,7 @@ struct
          * is unconditionally in [ty], and thus alpha-equivalence is sufficient. *)
         val goalEq = makeEqIfDifferent tr H ((substVar (r', u) tube, other), ty0)
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>:? goalEq
          >:+ ComKit.genInterTubeGoals tr H w ((tubes, tubes), ty0)

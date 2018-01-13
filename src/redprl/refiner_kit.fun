@@ -35,20 +35,6 @@ struct
       end
   end
 
-  fun makeNamePopper alpha = 
-    let
-      val ix = ref 0
-    in
-      fn () => 
-        let
-          val i = !ix
-          val h = alpha i
-        in
-          ix := i + 1;
-          h
-        end
-    end
-
   (* assert that the term 'm' has only free variables 'us' and free variables 'xs' at most. *)
   fun assertWellScoped xs m = 
     let

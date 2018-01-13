@@ -115,7 +115,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
 
-    fun EqElim alpha jdg =
+    fun EqElim _ jdg =
       let
         val tr = ["Bool.EqElim"]
         val H >> ajdg = jdg
@@ -124,7 +124,7 @@ struct
         val Syn.IF (m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
-        val x = alpha 0
+        val x = Sym.new ()
         val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL))
         val (goalC, holeTy) = makeTerm tr Hx O.EXP
 
@@ -188,7 +188,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun EqFCom alpha jdg =
+    fun EqFCom _ jdg =
       let
         val tr = ["WBool.EqFCom"]
         val H >> ajdg = jdg
@@ -197,7 +197,7 @@ struct
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>:+ (ComKit.genEqFComGoals tr H w (args0, args1) ty)
         #> (H, axiom)
@@ -231,7 +231,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected bool elimination problem"]
 
-    fun EqElim alpha jdg =
+    fun EqElim _ jdg =
       let
         val tr = ["WBool.EqElim"]
         val H >> ajdg = jdg
@@ -242,7 +242,7 @@ struct
         val Syn.WIF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
-        val z = alpha 0
+        val z = Sym.new ()
         val c0z = VarKit.rename (z, x) c0x
         val c1z = VarKit.rename (z, y) c1y
         val Hz = H @> (z, AJ.TRUE (Syn.into Syn.WBOOL))
@@ -321,7 +321,7 @@ struct
         |>: goal #> (H, axiom)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z _ jdg =
       let
         val tr = ["Nat.Elim"]      
         val H >> AJ.TRUE cz = jdg
@@ -336,8 +336,8 @@ struct
         val (goalZ, holeZ) = makeTrue tr H (substVar (zero, z) cz)
 
         (* succ branch *)
-        val u = alpha 0
-        val v = alpha 1
+        val u = Sym.new ()
+        val v = Sym.new ()
         val cu = VarKit.rename (u, z) cz
         val (goalS, holeS) =
           makeTrue
@@ -351,7 +351,7 @@ struct
         |>: goalZ >: goalS #> (H, evidence)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim _ jdg =
       let
         val tr = ["Nat.EqElim"]
         val H >> ajdg = jdg
@@ -364,7 +364,7 @@ struct
         val succ = Syn.into o Syn.SUCC
 
         (* motive *)
-        val z = alpha 0
+        val z = Sym.new ()
         val Hz = H @> (z, AJ.TRUE nat)
         val (goalC, holeC) = makeTerm tr Hz O.EXP
 
@@ -378,8 +378,8 @@ struct
         val goalZ = makeEq tr H ((n0, n1), (substVar (zero, z) holeC))
 
         (* succ branch *)
-        val u = alpha 1
-        val v = alpha 2
+        val u = Sym.new ()
+        val v = Sym.new ()
         val cu = VarKit.rename (u, z) holeC
         val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
@@ -451,7 +451,7 @@ struct
         |>: goal #> (H, axiom)
       end
 
-    fun Elim z alpha jdg =
+    fun Elim z _ jdg =
       let
         val tr = ["Int.Elim"]
         val H >> AJ.TRUE cz = jdg
@@ -467,8 +467,8 @@ struct
         val (goalZ, holeZ) = makeTrue tr H (substVar (zero, z) cz)
 
         (* succ branch *)
-        val u = alpha 0
-        val v = alpha 1
+        val u = Sym.new ()
+        val v = Sym.new ()
         val cu = VarKit.rename (u, z) cz
         val (goalS, holeS) =
           makeTrue
@@ -493,7 +493,7 @@ struct
         |>: goalZ >: goalS >: goalNSZ >: goalNSS #> (H, evidence)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim _ jdg =
       let
         val tr = ["Int.EqElim"]
         val H >> ajdg = jdg
@@ -508,7 +508,7 @@ struct
         val negsucc = Syn.into o Syn.NEGSUCC
 
         (* motive *)
-        val z = alpha 0
+        val z = Sym.new ()
         val Hz = H @> (z, AJ.TRUE int)
         val (goalC, holeC) = makeTerm tr Hz O.EXP
 
@@ -522,8 +522,8 @@ struct
         val goalZ = makeEq tr H ((n0, n1), (substVar (zero, z) holeC))
 
         (* succ branch *)
-        val u = alpha 1
-        val v = alpha 2
+        val u = Sym.new ()
+        val v = Sym.new ()
         val cu = VarKit.rename (u, z) holeC
         val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
@@ -907,7 +907,7 @@ struct
         |>: goalM >: goalA #> (H, axiom)
       end
 
-    fun True alpha jdg =
+    fun True _ jdg =
       let
         val tr = ["Fun.True"]
         val H >> AJ.TRUE ty = jdg
@@ -917,7 +917,7 @@ struct
         val goalA = makeType tr H (a, K.top)
 
         (* function *)
-        val z = alpha 0
+        val z = Sym.new ()
         val bz = VarKit.rename (z, x) bx
         val (goalLam, hole) = makeTrue tr (H @> (z, AJ.TRUE a)) bz
 
@@ -987,7 +987,7 @@ struct
        | K.COE => (K.COE, K.COE)
        | K.STABLE => (K.STABLE, K.STABLE)
 
-    fun EqType alpha jdg =
+    fun EqType _ jdg =
       let
         val tr = ["Record.EqType"]
         val H >> ajdg = jdg
@@ -996,14 +996,12 @@ struct
         val Syn.RECORD fields1 = Syn.out record1
         val (headKind, tailKind) = kindConstraintsOnHeadAndTail k
 
-        val fresh = makeNamePopper alpha
-
         val {goals, ...} =
           ListPair.foldlEq
             (fn (((lbl0, var0), ty0), ((lbl1, var1), ty1), {goals, hyps, ren0, ren1, isFirst}) =>
                let
                  val () = Assert.labelEq "Record.EqType" (lbl0, lbl1)
-                 val var = fresh ()
+                 val var = Sym.new ()
                  val ty0' = renameVars ren0 ty0
                  val ty1' = renameVars ren1 ty1
                  val kind = if isFirst then headKind else tailKind
@@ -1052,13 +1050,12 @@ struct
         T.append goals famGoals #> (H, axiom)
       end
 
-    fun EqInv z alpha jdg =
+    fun EqInv z _ jdg =
       let
         val H >> ajdg = jdg
         val tr = ["Record.EqInv"]
         val ((m1, m2), record) = View.matchTrueAsEq (Hyps.lookup H z)
         val Syn.RECORD fields = Syn.out record
-        val fresh = makeNamePopper alpha
 
         val (hyps, _) =
           List.foldl
@@ -1067,7 +1064,7 @@ struct
                  val ((name, var), ty) = field
                  val proj1 = Syn.into @@ Syn.PROJ (name, m1)
                  val proj2 = Syn.into @@ Syn.PROJ (name, m2)
-                 val x = fresh ()
+                 val x = Sym.new ()
                  val eqjdg = AJ.EQ ((proj1, proj2), substVarenv env ty)
                  val env' = Var.Ctx.insert env var proj1
                in
@@ -1149,14 +1146,15 @@ struct
       handle _ =>
         raise E.error [Fpp.text "MATCH_RECORD judgment failed to unify"]
 
-    fun Elim z alpha jdg = 
+    fun Elim z _ jdg = 
       let
         val tr = ["Record.Elim"]
         val H >> ajdg = jdg
         val AJ.TRUE record = Hyps.lookup H z
         val Syn.RECORD fields = Syn.out record
 
-        val names = List.tabulate (List.length fields, alpha)
+        val names = List.tabulate (List.length fields, fn _ => Sym.new ())
+
         val {hyps, ...} =
           ListPair.foldlEq
             (fn (name, ((_, var), ty), {ren, hyps}) =>

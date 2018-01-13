@@ -67,7 +67,12 @@ struct
     R.Exact m thenl [autoTacComplete sign]
 
   fun popNamesIn xs tac = 
-    Lcf.rule o R.Names.Pop xs
+    Lcf.rule o R.Names.PopAs xs
+      then_ tac
+      then_ Lcf.rule o R.Names.Push xs
+
+  fun popSpecificNamesIn xs tac = 
+    Lcf.rule o R.Names.PopSpecific xs 
       then_ tac
       then_ Lcf.rule o R.Names.Push xs
 
@@ -92,7 +97,7 @@ struct
           handle Syn.Fields.Absent => Sym.named ("@" ^ lbl)
         val xs = List.map (fn ((lbl, _), _) => nameForLabel lbl) fields
       in
-        Lcf.rule o RT.Record.Elim z thenl' (xs, [tac])
+        Lcf.rule o RT.Record.Elim z thenl [popNamesIn xs tac]
       end
   in
     fun recordElim (lbls, names) tac =
@@ -199,7 +204,7 @@ struct
              O.PAT_VAR _ => intros
            | _ => decomposeStitched sign name pat' (deleteHyp name thenl [intros])
       in
-        Lcf.rule o RT.Fun.True thenl' ([name], [continue, autoTacComplete sign])
+        Lcf.rule o RT.Fun.True thenl [popNamesIn [name] continue, autoTacComplete sign]
       end
 
     and funIntros sign (pats, names) tac =

@@ -101,10 +101,20 @@ struct
         Lcf.|> (|>: goal, abstractEvidence H hole)
       end
 
-    fun Pop xs _ jdg = 
+    fun PopAs xs _ jdg = 
       let
-        val jdg' as H >> _ = Sequent.pop xs jdg
+        val jdg' as H >> _ = Sequent.popAs xs jdg
         val (goal, hole) = makeGoal [] jdg'
+      in
+        Lcf.|> (|>: goal, abstractEvidence H hole)
+      end
+
+
+    fun PopSpecific xs _ jdg = 
+      let
+        val jdg' as H >> _ = Sequent.popSpecific xs jdg
+        val (goal, hole) = makeGoal [] jdg'
+        
       in
         Lcf.|> (|>: goal, abstractEvidence H hole)
       end

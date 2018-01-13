@@ -16,7 +16,7 @@ struct
 
   structure Coe =
   struct
-    fun Eq alpha jdg =
+    fun Eq _ jdg =
       let
         val tr = ["Coe.Eq"]
         val H >> ajdg = jdg
@@ -26,7 +26,7 @@ struct
         val () = Assert.dirEq "Coe.Eq direction" (dir0, dir1)
 
         (* type *)
-        val w = alpha 0
+        val w = Sym.new ()
         val ty0w = substVar (VarKit.toDim w, u) ty0u
         val ty1w = substVar (VarKit.toDim w, v) ty1v
         val goalTy0 = makeEqType tr (H @> (w, AJ.TERM O.DIM)) ((ty0w, ty1w), K.COE)

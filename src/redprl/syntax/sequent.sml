@@ -4,7 +4,7 @@ struct
   structure Tm = RedPrlAbt
   structure TP = TermPrinter
 
-  structure Tl = TelescopeUtil (Telescope (Sym))  
+  structure Tl = TelescopeUtil (Telescope (Sym))
 
   datatype atjdg = datatype AJ.jdg
   type abt = Tm.abt
@@ -37,7 +37,7 @@ struct
 
     fun snoc {hyps, bound} x jdg =
       {hyps = Tl.snoc hyps x jdg,
-       bound = x :: bound}
+       bound = bound @ [x]}
 
     val empty = {hyps = Tl.empty, bound = []}
 
@@ -68,18 +68,21 @@ struct
 
     fun splice {hyps, bound} x (H : hyps) =
       {hyps = Tl.splice hyps x (#hyps H),
-       bound = #bound H @ bound}
+       bound = bound @ #bound H}
 
     fun interposeAfter (z, H' : hyps) {hyps, bound} =
       {hyps = Tl.interposeAfter hyps z (#hyps H'),
-       bound = #bound H' @ bound}
+       bound = bound @ #bound H'}
 
     fun interposeThenSubstAfter (z, H' : hyps, term) {hyps, bound} =
       {hyps = Tl.interposeAfter (Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) hyps) z (#hyps H'),
-       bound = #bound H' @ bound}
+       bound = bound @ #bound H'}
 
-    val pretty : hyps -> Fpp.doc =
-      Fpp.vsep o foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, AJ.pretty a] :: r) []
+    fun pretty H : Fpp.doc =
+      Fpp.vsep 
+        [Fpp.vsep (foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, AJ.pretty a] :: r) [] H),
+         Fpp.Atomic.squares
+           (Fpp.hsep (List.map TermPrinter.ppVar (#bound H)))]
 
     local
       open Tl.ConsView
@@ -203,14 +206,25 @@ struct
       {hyps = hyps, bound = xs @ bound} >> ajdg
     end
 
-  fun pop xs' jdg =
+  fun popAs xs' jdg =
     let
       val H as {bound, ...} >> _ = jdg
-      val (xs, bound') = ListUtil.splitAt (bound, List.length xs')
+      val n = List.length xs'
+      val (xs, bound') = (List.take (bound,n), List.drop (bound, n))
       val rho = ListPair.foldl (fn (x, x', rho) => Sym.Ctx.insert rho x x') Sym.Ctx.empty (xs, xs')
       val {hyps, ...} >> ajdg = relabel rho H
     in
       {bound = bound', hyps = hyps} >> ajdg
+    end
+
+  fun popSpecific xs jdg = 
+    let
+      val {hyps, bound} >> ajdg = jdg
+    
+      (* TODO: less ridiculous *)
+      val bound' = List.filter (fn y => not (List.exists (fn x => Sym.eq (x, y)) xs)) bound
+    in
+      {hyps = hyps, bound = bound'} >> ajdg
     end
 
   local

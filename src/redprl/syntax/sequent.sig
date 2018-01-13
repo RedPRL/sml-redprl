@@ -48,5 +48,7 @@ sig
 
 
   val push : Tm.variable list -> jdg -> jdg
-  val pop : Tm.variable list -> jdg -> jdg
+  val popAs : Tm.variable list -> jdg -> jdg
+
+  val popSpecific : Tm.variable list -> jdg -> jdg
 end
