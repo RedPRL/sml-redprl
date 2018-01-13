@@ -31,6 +31,7 @@ syn match   redTac '[;`]'
 syn keyword redSeq at by in true type synth discrete kan hcom coe stable
 
 syn region  redComm start="//" end="$"
+syn region  redBlockComm start="/\*" end="\*/" contains=redBlockComm
 
 syn match   redMesg '\[\(Info\|Output\|Warning\|Error\)\]'
 syn keyword redMesg Trace
@@ -43,6 +44,7 @@ hi def link redExpr Identifier
 hi def link redTac  Statement
 hi def link redSeq  Normal
 hi def link redComm Comment
+hi def link redBlockComm Comment
 hi def link redMesg Structure
 
 let b:current_syntax = "redprl"
