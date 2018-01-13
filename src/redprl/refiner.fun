@@ -174,6 +174,15 @@ struct
   struct
     infix $ $$ \
 
+    fun Witness ty _ jdg =
+      let
+        val tr = ["Synth.Witness"]
+        val H >> AJ.SYNTH tm = jdg
+        val goal = makeMem tr H (tm, ty)
+      in
+        |>: goal #> (H, ty)
+      end
+
     fun General sign _ =
       let
         val tr = ["Synth.General"]
@@ -333,6 +342,7 @@ struct
 
   fun Exact tm =
     Lcf.rule o True.Witness tm
+      orelse_ Lcf.rule o Synth.Witness tm
       orelse_ Lcf.rule o Term.Exact tm
 
 
