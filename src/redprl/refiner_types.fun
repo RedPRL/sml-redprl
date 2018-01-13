@@ -276,18 +276,6 @@ struct
       in
         |>: goalM >: goalT >: goalF >: goalC >:? goalTy #> (H, axiom)
       end
-
-    fun SynthElim _ jdg =
-      let
-        val tr = ["WBool.SynthElim"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.WIF ((x,cx), m, _) = Syn.out tm
-
-        val cm = substVar (m, x) cx
-        val goal = makeMem tr H (tm, cm)
-      in
-        |>: goal #> (H, cm)
-      end
   end
 
   structure Nat =
@@ -772,18 +760,6 @@ struct
       in
         |>: goalRed >:? goalCoh0 >:? goalCoh1 #> (H, axiom)
       end
-
-    fun SynthElim _ jdg =
-      let
-        val tr = ["S1.SynthElim"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.S1_REC ((x,cx), m, _) = Syn.out tm
-
-        val cm = substVar (m, x) cx
-        val goal = makeMem tr H (tm, cm)
-      in
-        |>: goal #> (H, cm)
-      end
   end
 
   structure MultiArrow = 
@@ -977,19 +953,6 @@ struct
       in
         |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >: goalTy
         #> (H, axiom)
-      end
-
-    fun SynthApp _ jdg =
-      let
-        val tr = ["Fun.SynthApp"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.APP (m, n) = Syn.out tm
-        val (goalFun, holeFun) = makeSynth tr H m
-        val (goalDom, holeDom) = makeMatch tr (O.FUN, 0, holeFun, [])
-        val (goalCod, holeCod) = makeMatch tr (O.FUN, 1, holeFun, [n])
-        val goalN = makeMem tr H (n, holeDom)
-      in
-        |>: goalFun >: goalDom >: goalCod >: goalN #> (H, holeCod)
       end
   end
 
@@ -1218,17 +1181,6 @@ struct
         |>: goalTyR >: goalTyP >:? goalEq >: goalTy
         #> (H, axiom)
       end
-
-    fun SynthProj _ jdg =
-      let
-        val tr = ["Record.SynthProj"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.PROJ (lbl, n) = Syn.out tm
-        val (goalRecord, holeRecord) = makeSynth tr H n
-        val (goalTy, holeTy) = makeMatchRecord tr (lbl, holeRecord, n)
-      in
-        |>: goalRecord >: goalTy #> (H, holeTy)
-      end
   end
 
   structure Path =
@@ -1342,17 +1294,6 @@ struct
         |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, axiom)
       end
 
-    fun SynthApp _ jdg =
-      let
-        val tr = ["Path.SynthApp"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.DIM_APP (m, r) = Syn.out tm
-        val (goalPathTy, holePathTy) = makeSynth tr H m
-        val (goalPath, holePath) = makeMatch tr (O.PATH, 0, holePathTy, [r])
-      in
-        |>: goalPathTy >: goalPath #> (H, holePath)
-      end
-
     fun EqAppConst _ jdg =
       let
         val tr = ["Path.EqAppConst"]
@@ -1461,17 +1402,6 @@ struct
         val goalTy = View.makeAsSubType tr H (holeLine, ty) (* holeLine type *)
       in
         |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (H, axiom)
-      end
-
-    fun SynthApp _ jdg =
-      let
-        val tr = ["Line.SynthApp"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.DIM_APP (m, r) = Syn.out tm
-        val (goalLineTy, holeLineTy) = makeSynth tr H m
-        val (goalLine, holeLine) = makeMatch tr (O.LINE, 0, holeLineTy, [r])
-      in
-        |>: goalLineTy >: goalLine #> (H, holeLine)
       end
   end
 
@@ -1741,18 +1671,6 @@ struct
       in
         |>: goalRed >:? goalCohL >:? goalCohR #> (H, axiom)
       end
-
-    fun SynthElim _ jdg =
-      let
-        val tr = ["Pushout.SynthElim"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.PUSHOUT_REC ((z,dz), m, _) = Syn.out tm
-
-        val dm = substVar (m, z) dz
-        val goal = makeMem tr H (tm, dm)
-      in
-        |>: goal #> (H, dm)
-      end
   end
 
   structure Coequalizer =
@@ -1983,18 +1901,6 @@ struct
       in
         |>: goalRed >:? goalCohL >:? goalCohR #> (H, axiom)
       end
-
-    fun SynthElim _ jdg =
-      let
-        val tr = ["Coequalizer.SynthElim"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.COEQUALIZER_REC ((z,pz), m, _) = Syn.out tm
-
-        val pm = substVar (m, z) pz
-        val goal = makeMem tr H (tm, pm)
-      in
-        |>: goal #> (H, pm)
-      end
   end
 
   structure InternalizedEquality =
@@ -2092,6 +1998,7 @@ struct
         T.empty #> (H, axiom)
       end
 
+(*
     (* (= ty a b) => a synth ~~> ty *)
     (* this is for non-deterministic search *)
     fun NondetSynthFromTrueEq z _ jdg =
@@ -2103,6 +2010,7 @@ struct
       in
         T.empty #> (H, ty)
       end
+*)
 
     fun Rewrite (sel, acc) eqterm alpha jdg =
       let

@@ -19,7 +19,8 @@ sig
   val Exact : abt -> tactic
   val Rewrite : sign -> hyp Selector.t * Accessor.t -> abt -> tactic
   val Symmetry : tactic
-  val SynthFromHyp : hyp -> tactic
+
+  val Synth : sign -> rule
 
   val Inversion : hyp -> tactic
 

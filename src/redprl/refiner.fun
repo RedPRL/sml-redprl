@@ -172,7 +172,7 @@ struct
 
   structure Synth =
   struct
-    infix $ \
+    infix $ $$ \
 
     fun General sign _ =
       let
@@ -181,8 +181,9 @@ struct
         fun eval sign = 
           Machine.eval sign Machine.STABLE Machine.Unfolding.always
 
-        fun synthNeutral H =
-          fn `x =>
+        fun synthNeutral H tm =
+          case out tm of 
+            `x =>
              let
                val AJ.TRUE ty = Hyps.lookup H x
              in
@@ -219,28 +220,6 @@ struct
                 | _ => raise Fail "synthNeutral"
              end
 
-           | O.S1_REC $ [[x] \ cx, _ \ m, _ \ b, [u] \ l] =>
-             let
-               val goalMotive = makeType tr (H @> (x, AJ.TRUE @@ Syn.into Syn.S1)) (cx, RedPrlKind.STABLE)
-               val goalS1 = makeMem tr H (m, Syn.into Syn.S1)
-               val goalBase = makeMem tr H (b, substVar (Syn.into Syn.BASE, x) cx)
-               val goalLoop = makeMem tr (H @> (u, AJ.TERM O.DIM)) (l, substVar (Syn.into @@ Syn.LOOP @@ VarKit.toDim u, x) cx)
-               val goalLoopL = makeEq tr H ((b, substVar (Syn.into Syn.DIM0, u) l), substVar (Syn.into Syn.BASE, x) cx)
-               val goalLoopR = makeEq tr H ((b, substVar (Syn.into Syn.DIM1, u) l), substVar (Syn.into Syn.BASE, x) cx)               
-             in
-               (T.empty >: goalMotive >: goalS1 >: goalBase >: goalLoop >: goalLoopL >: goalLoopR, substVar (m, x) cx)
-             end
-
-           | O.WIF $ [[x] \ cx, _ \ m, _ \ t, _ \ f] =>
-             let
-               val goalMotive = makeType tr (H @> (x, AJ.TRUE @@ Syn.into Syn.WBOOL)) (cx, RedPrlKind.STABLE)             
-               val goalWool = makeMem tr H (m, Syn.into Syn.WBOOL)
-               val goalT = makeMem tr H (t, substVar (Syn.into Syn.TT, x) cx)
-               val goalF = makeMem tr H (f, substVar (Syn.into Syn.FF, x) cx)
-             in
-               (T.empty >: goalMotive >: goalWool >: goalT >: goalF, substVar (m, x) cx)
-             end
-
            | O.PROJ lbl $ [_ \ m] =>
              let
                val (psi, rcdty) = synthTerm H m
@@ -257,52 +236,53 @@ struct
                (psi, ty)
              end
 
-           | O.PUSHOUT_REC $ [[x] \ cx, _ \ m, [xl] \ l, [xr] \ r, [ug, xg] \ g] =>
+           | O.S1_REC $ [[x] \ cx, _ \ m, _, _] =>
              let
-               val (psi, pushoutTy) = synthTerm H m
-               val Syn.PUSHOUT (lty, rty, gty, (xf, f), (xg, g)) = Syn.out pushoutTy
-               val goalMotive = makeType tr (H @> (x, AJ.TRUE @@ pushoutTy)) (cx, RedPrlKind.STABLE)
-
-               val goalLeft = makeMem tr (H @> (xl, AJ.TRUE lty)) (l, substVar (Syn.into @@ Syn.LEFT @@ VarKit.toExp xl, x) cx)
-               val goalRight = makeMem tr (H @> (xr, AJ.TRUE rty)) (r, substVar (Syn.into @@ Syn.RIGHT @@ VarKit.toExp xr, x) cx)
-               val goalGlue = 
-                 makeMem tr
-                   (H @> (ug, AJ.TERM O.DIM) @> (xg, AJ.TRUE gty))
-                   (g, substVar (Syn.into @@ Syn.GLUE (VarKit.toDim ug, VarKit.toExp xg, renameVars (Var.Ctx.singleton xf xg) f, g), x) cx)
+               val ty = substVar (m, x) cx
+               val goal = makeMem tr H (tm, ty)
              in
-               ?todo
+               (|>: goal, ty)
+             end
+
+           | O.WIF $ [[x] \ cx, _ \ m, _, _] =>
+             let
+               val ty = substVar (m, x) cx
+               val goal = makeMem tr H (tm, ty)
+             in
+               (|>: goal, ty)
+             end             
+
+           | O.PUSHOUT_REC $ [[x] \ cx, _ \ m, _, _, _] =>
+             let
+               val ty = substVar (m, x) cx
+               val goal = makeMem tr H (tm, ty)
+             in
+               (|>: goal, ty)               
+             end
+          
+           | O.COEQUALIZER_REC $ [[x] \ cx, _ \ m, _, _] =>
+             let
+               val ty = substVar (m, x) cx
+               val goal = makeMem tr H (tm, ty)
+             in
+               (|>: goal, ty)               
              end
 
         and synthTerm H = 
-            synthNeutral H o out o
+            synthNeutral H o
               Machine.eval sign Machine.STABLE Machine.Unfolding.never
       in
-        ?todo
-        (* val H >> AJ.SYNTH tm = jdg
-        val tm' = Machine.eval sign Machine.STABLE Machine.Unfolding.never tm
-      in
-        case out tm' of 
-           O.CUST _ $ _ =>
-           let
-             val Abt.$ (O.CUST (name, _), args) = Abt.out tm
-             val AJ.TRUE specTy = Sig.theoremSpec sign name args           
-           in
-           end
-            *)
+        fn jdg => 
+          let
+            val H >> AJ.SYNTH tm = jdg
+            val (psi, ty) = synthTerm H tm
+          in
+            psi #> (H, ty)
+          end
       end
-
-    fun VarFromTrue _ jdg =
-      let
-        val tr = ["Synth.VarFromTrue"]
-        val H >> AJ.SYNTH tm = jdg
-        val Syn.VAR (z, O.EXP) = Syn.out tm
-        val AJ.TRUE a = Hyps.lookup H z
-      in
-        T.empty #> (H, a)
-      end
-
-    val Var = VarFromTrue
   end
+
+  val Synth = Synth.General
 
   structure Misc =
   struct
@@ -432,7 +412,7 @@ struct
      | "coe/eq" => Lcf.rule o Coe.Eq
      | "coe/eq/cap" => Lcf.rule o Coe.EqCapL
      | "subtype/eq" => Lcf.rule o SubType.Eq
-     | "custom/synth" => Lcf.rule o Custom.Synth sign
+     | "synth" => Lcf.rule o Synth sign
      | "universe/subtype" => Lcf.rule o Universe.SubType
 
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
@@ -495,29 +475,18 @@ struct
 
     (* trying to normalize TRUE goal and then run `tac ty` *)
     fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign Selector.IN_CONCL
-
-    fun autoSynthesizableNeu sign m =
-      case Syn.out m of
-         Syn.VAR _ => true
-       | Syn.WIF _ => true
-       | Syn.S1_REC _ => true
-       | Syn.APP (f, _) => autoSynthesizableNeu sign f
-       | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
-       | Syn.DIM_APP (l, _) => autoSynthesizableNeu sign l
-       | Syn.PUSHOUT_REC _ => true
-       | Syn.COEQUALIZER_REC _ => true
-       | Syn.CUST => true (* XXX should check the signature *)
-       | _ => false
   in
     val Symmetry : tactic = matchGoal
       (fn _ >> AJ.EQ_TYPE _ => Lcf.rule o TypeEquality.Symmetry
         | _ >> AJ.TRUE _ => Lcf.rule o InternalizedEquality.Symmetry
         | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "symmetry tactic", Seq.pretty seq))
 
+(*
     fun SynthFromHyp z = matchHyp z
       (fn AJ.TRUE _ =>
             Lcf.rule o InternalizedEquality.NondetSynthFromTrueEq z
         | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "SynthFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
+*)
 
     structure Tactical =
     struct
@@ -697,8 +666,7 @@ struct
            (Syn.VAR _, Syn.VAR _) => Lcf.rule o InternalizedEquality.VarFromTrue
          | (Syn.WIF _, Syn.WIF _) => Lcf.rule o WBool.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule o S1.EqElim
-         | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqApp
-                                          else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
+         | (Syn.APP (f, _), Syn.APP _) =>  Lcf.rule o Fun.EqApp
          | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj (* XXX should consult autoSynthesizableNeu *)
          | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>
            (case (Abt.out r1, Abt.out r2) of
@@ -810,19 +778,6 @@ struct
          | Syn.EQUALITY (ty, m, n) => StepEq sign ((m, n), ty)
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepTrue", TermPrinter.ppTerm ty)
 
-      fun StepSynth sign m =
-        case Syn.out m of
-           Syn.VAR _ => Lcf.rule o Synth.Var
-         | Syn.WIF _ => Lcf.rule o WBool.SynthElim
-         | Syn.S1_REC _ => Lcf.rule o S1.SynthElim
-         | Syn.APP _ => Lcf.rule o Fun.SynthApp
-         | Syn.PROJ _ => Lcf.rule o Record.SynthProj
-         | Syn.DIM_APP _ => Lcf.rule o Path.SynthApp par Lcf.rule o Line.SynthApp
-         | Syn.PUSHOUT_REC _ => Lcf.rule o Pushout.SynthElim
-         | Syn.COEQUALIZER_REC _ => Lcf.rule o Coequalizer.SynthElim
-         | Syn.CUST => Lcf.rule o Custom.Synth sign
-         | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
-
       fun StepSubKind sign u =
         case (Syn.out u, canonicity sign u) of
            (_, Machine.REDEX) => Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_LEFT])
@@ -848,7 +803,7 @@ struct
       fun StepJdg sign = matchGoal
         (fn _ >> AJ.EQ_TYPE (tys, _) => StepEqSubType sign tys Wrapper.EQ
           | _ >> AJ.TRUE ty => StepTrue sign ty
-          | _ >> AJ.SYNTH m => StepSynth sign m
+          | _ >> AJ.SYNTH m => Lcf.rule o Synth sign
           | _ >> AJ.SUB_TYPE tys => StepEqSubType sign tys Wrapper.SUB
           | _ >> AJ.SUB_KIND (univ, _) => StepSubKind sign univ
           | MATCH (_, _, m, _) => StepMatch sign m
@@ -882,12 +837,12 @@ struct
         (fn (z, AJ.TRUE _) => Lcf.rule o InternalizedEquality.NondetEqFromTrueEq z
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "TrueFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
-      val NondetSynthFromHyp = NondetFromHypDelegate (fn (z, _) => SynthFromHyp z)
+      (* val NondetSynthFromHyp = NondetFromHypDelegate (fn (z, _) => SynthFromHyp z) *)
     in
       val NondetStepJdgFromHyp = matchGoal
         (fn _ >> AJ.TRUE _ => NondetTrueFromHyp
           | _ >> AJ.EQ_TYPE _ => NondetEqTypeFromHyp
-          | _ >> AJ.SYNTH _ => NondetSynthFromHyp
+          (* | _ >> AJ.SYNTH _ => NondetSynthFromHyp *)
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
 
       fun AutoStep sign =

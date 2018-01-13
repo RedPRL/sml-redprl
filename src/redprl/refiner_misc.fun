@@ -178,15 +178,5 @@ struct
         |>:? goalTy #> (H, axiom)
       end
 
-    fun Synth sign _ jdg = 
-      let
-        val tr = ["Custom.Synth"]
-        val H >> AJ.SYNTH tm = jdg
-
-        val Abt.$ (O.CUST (name, _), args) = Abt.out tm
-        val AJ.TRUE specTy = Sig.theoremSpec sign name args
-      in
-        T.empty #> (H, specTy)
-      end
   end
 end
