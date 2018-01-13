@@ -339,11 +339,16 @@ struct
   end
 
   fun LabelGoal (lbl : string) : rule = 
-    fn alpha => fn H >> jdg => 
+    fn alpha => fn jdg => 
       let
-        val (goal, hole) = makeGoal [lbl] @@ H >> jdg
+        val (goal, hole) = makeGoal [lbl] @@ jdg
+        val H = 
+          case jdg of 
+             H >> _ => H
+           | _ => Hyps.empty
+        val extract = abstractEvidence H hole
       in
-        |>: goal #> (H, hole)
+        Lcf.|> (|>: goal, extract)
       end  
 
   local
