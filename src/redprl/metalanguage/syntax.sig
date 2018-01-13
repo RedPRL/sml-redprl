@@ -49,7 +49,7 @@ sig
    | PRINT of Pos.t option * value
 
      (* refine J e *)
-   | REFINE of jdg * term
+   | REFINE of string option * jdg * term
 
      (* fresh [X:v...] *)
    | FRESH of (string option * Tm.valence) list
@@ -71,7 +71,7 @@ sig
 
   (* some macros *)
   val termAbs : metas * term -> cmd
-  val theoremAbs : metas * jdg * term -> cmd
+  val theoremAbs : string option * metas * jdg * term -> cmd
   val printExtractAbs : Pos.t option * value -> cmd
 
   (* TODO:
