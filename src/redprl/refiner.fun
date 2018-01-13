@@ -172,6 +172,125 @@ struct
 
   structure Synth =
   struct
+    infix $ \
+
+    fun General sign _ =
+      let
+        val tr = ["Synth.General"]
+
+        fun eval sign = 
+          Machine.eval sign Machine.STABLE Machine.Unfolding.always
+
+        fun synthNeutral H =
+          fn `x =>
+             let
+               val AJ.TRUE ty = Hyps.lookup H x
+             in
+               (T.empty, ty)
+             end
+
+           | O.CUST (opid, _) $ args =>
+             let
+               val AJ.TRUE ty = Sig.theoremSpec sign opid args
+             in
+               (T.empty, ty)
+             end
+
+           | O.APP $ [_ \ m1, _ \ m2] =>
+             let
+               val (psi, funty) = synthTerm H m1
+               val Syn.FUN (dom, x, cod) = Syn.out @@ eval sign funty
+               val memGoal = makeMem tr H (m2, dom)
+             in
+               (psi >: memGoal, substVar (m2, x) cod)
+             end
+
+           | O.DIM_APP $ [_ \ m, _ \ r] => 
+             let
+               val (psi, ty) = synthTerm H m
+             in
+               case Syn.out @@ eval sign ty of
+                  Syn.PATH ((x, a), _, _) =>
+                  (psi, substVar (r, x) a)
+
+                | Syn.LINE (x, a) =>
+                  (psi, substVar (r, x) a)
+
+                | _ => raise Fail "synthNeutral"
+             end
+
+           | O.S1_REC $ [[x] \ cx, _ \ m, _ \ b, [u] \ l] =>
+             let
+               val goalMotive = makeType tr (H @> (x, AJ.TRUE @@ Syn.into Syn.S1)) (cx, RedPrlKind.STABLE)
+               val goalS1 = makeMem tr H (m, Syn.into Syn.S1)
+               val goalBase = makeMem tr H (b, substVar (Syn.into Syn.BASE, x) cx)
+               val goalLoop = makeMem tr (H @> (u, AJ.TERM O.DIM)) (l, substVar (Syn.into @@ Syn.LOOP @@ VarKit.toDim u, x) cx)
+               val goalLoopL = makeEq tr H ((b, substVar (Syn.into Syn.DIM0, u) l), substVar (Syn.into Syn.BASE, x) cx)
+               val goalLoopR = makeEq tr H ((b, substVar (Syn.into Syn.DIM1, u) l), substVar (Syn.into Syn.BASE, x) cx)               
+             in
+               (T.empty >: goalMotive >: goalS1 >: goalBase >: goalLoop >: goalLoopL >: goalLoopR, substVar (m, x) cx)
+             end
+
+           | O.WIF $ [[x] \ cx, _ \ m, _ \ t, _ \ f] =>
+             let
+               val goalMotive = makeType tr (H @> (x, AJ.TRUE @@ Syn.into Syn.WBOOL)) (cx, RedPrlKind.STABLE)             
+               val goalWool = makeMem tr H (m, Syn.into Syn.WBOOL)
+               val goalT = makeMem tr H (t, substVar (Syn.into Syn.TT, x) cx)
+               val goalF = makeMem tr H (f, substVar (Syn.into Syn.FF, x) cx)
+             in
+               (T.empty >: goalMotive >: goalWool >: goalT >: goalF, substVar (m, x) cx)
+             end
+
+           | O.PROJ lbl $ [_ \ m] =>
+             let
+               val (psi, rcdty) = synthTerm H m
+               val Abt.$ (O.RECORD lbls, args) = out @@ eval sign rcdty
+
+               val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
+               val (us \ ty) = List.nth (args, i)
+
+               (* supply the dependencies *)
+               val lblPrefix = List.take (lbls, i)
+               val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m), u)) (lblPrefix, us)
+               val ty = VarKit.substMany rho ty
+             in
+               (psi, ty)
+             end
+
+           | O.PUSHOUT_REC $ [[x] \ cx, _ \ m, [xl] \ l, [xr] \ r, [ug, xg] \ g] =>
+             let
+               val (psi, pushoutTy) = synthTerm H m
+               val Syn.PUSHOUT (lty, rty, gty, (xf, f), (xg, g)) = Syn.out pushoutTy
+               val goalMotive = makeType tr (H @> (x, AJ.TRUE @@ pushoutTy)) (cx, RedPrlKind.STABLE)
+
+               val goalLeft = makeMem tr (H @> (xl, AJ.TRUE lty)) (l, substVar (Syn.into @@ Syn.LEFT @@ VarKit.toExp xl, x) cx)
+               val goalRight = makeMem tr (H @> (xr, AJ.TRUE rty)) (r, substVar (Syn.into @@ Syn.RIGHT @@ VarKit.toExp xr, x) cx)
+               val goalGlue = 
+                 makeMem tr
+                   (H @> (ug, AJ.TERM O.DIM) @> (xg, AJ.TRUE gty))
+                   (g, substVar (Syn.into @@ Syn.GLUE (VarKit.toDim ug, VarKit.toExp xg, renameVars (Var.Ctx.singleton xf xg) f, g), x) cx)
+             in
+               ?todo
+             end
+
+        and synthTerm H = 
+            synthNeutral H o out o
+              Machine.eval sign Machine.STABLE Machine.Unfolding.never
+      in
+        ?todo
+        (* val H >> AJ.SYNTH tm = jdg
+        val tm' = Machine.eval sign Machine.STABLE Machine.Unfolding.never tm
+      in
+        case out tm' of 
+           O.CUST _ $ _ =>
+           let
+             val Abt.$ (O.CUST (name, _), args) = Abt.out tm
+             val AJ.TRUE specTy = Sig.theoremSpec sign name args           
+           in
+           end
+            *)
+      end
+
     fun VarFromTrue _ jdg =
       let
         val tr = ["Synth.VarFromTrue"]
