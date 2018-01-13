@@ -216,8 +216,6 @@ struct
     datatype as_level = datatype AJ.View.as_level
     datatype as_type = datatype AJ.View.as_type
 
-    val matchAsTrue = AJ.View.matchAsTrue
-    
     val matchTrueAsEq = AJ.View.matchTrueAsEq
     
     fun makeEqAsTrue tr H params = makeGoal' tr @@ H >> AJ.View.makeEqAsTrue params

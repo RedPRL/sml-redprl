@@ -77,7 +77,6 @@ sig
 
   structure View :
   sig
-    val matchAsTrue : jdg -> abt
     val matchTrueAsEq : jdg -> (abt * abt) * abt
     val makeEqAsTrue : (abt * abt) * abt -> jdg
 
