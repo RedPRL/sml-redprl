@@ -74,7 +74,7 @@ struct
 
 
    (* primitive tacticals and multitacticals *)
-   | MTAC_SEQ | MTAC_ORELSE | MTAC_REC
+   | MTAC_SEQ | MTAC_ORELSE
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH | MTAC_FOCUS of int
    | MTAC_HOLE of string option

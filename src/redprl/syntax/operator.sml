@@ -123,7 +123,6 @@ struct
 
      | MTAC_SEQ => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
-     | MTAC_REC => [[MTAC] |: MTAC] ->> MTAC
      | MTAC_REPEAT => [[] |: MTAC] ->> MTAC
      | MTAC_AUTO => [] ->> MTAC
      | MTAC_PROGRESS => [[] |: MTAC] ->> MTAC
@@ -262,7 +261,6 @@ struct
 
      | MTAC_SEQ => "seq"
      | MTAC_ORELSE => "orelse"
-     | MTAC_REC => "rec"
      | MTAC_REPEAT => "repeat"
      | MTAC_AUTO => "auto"
      | MTAC_PROGRESS => "multi-progress"
