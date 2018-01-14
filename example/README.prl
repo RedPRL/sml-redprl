@@ -71,7 +71,7 @@ Tac TryStep = [
 // from ordinary 'if' in that it must take the motive of induction as an argument;
 // this is computationally relevant in the case of hcoms.
 Def BoolEta(#M) = [
-  (wif [a] wbool #M tt ff)
+  (if [a] wbool #M tt ff)
 ].
 
 Print BoolEta.
@@ -138,7 +138,7 @@ Thm PathTest3 : [
   // encouraging.
   `(abs [x]
     (lam [b]
-     (@ (wif [b] (path [_] wbool b (BoolEta b)) b (abs [_] tt) (abs [_] ff))
+     (@ (if [b] (path [_] wbool b (BoolEta b)) b (abs [_] tt) (abs [_] ff))
         x)))
 ].
 

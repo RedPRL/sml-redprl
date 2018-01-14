@@ -338,13 +338,14 @@ struct
     fun autoSynthesizableNeu sign m =
       case Syn.out m of
          Syn.VAR _ => true
-       | Syn.WIF _ => true
+       | Syn.IF _ => true
        | Syn.S1_REC _ => true
        | Syn.APP (f, _) => autoSynthesizableNeu sign f
        | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
        | Syn.DIM_APP (l, _) => autoSynthesizableNeu sign l
        | Syn.PUSHOUT_REC _ => true
        | Syn.COEQUALIZER_REC _ => true
+       | Syn.NAT_REC _ => true
        | Syn.CUST => true (* XXX should check the signature *)
        | _ => false
 
@@ -416,8 +417,9 @@ struct
       fun StepEqSubTypeNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Wrapper.applyEqRule Universe.VarFromTrue
-         | (Syn.WIF _, Syn.WIF _) => Wrapper.applyEqRule WBool.EqElim
+         | (Syn.IF _, Syn.IF _) => (fn mode => Wrapper.applyEqRule WBool.EqElim mode orelse_ Wrapper.applyEqRule Bool.EqElim mode)
          | (Syn.S1_REC _, Syn.S1_REC _) => Wrapper.applyEqRule S1.EqElim
+         | (Syn.NAT_REC _, Syn.NAT_REC _) => Wrapper.applyEqRule Nat.EqElim
          | (Syn.APP _, Syn.APP _) => Wrapper.applyEqRule (Fun.EqApp sign)
          | (Syn.PROJ _, Syn.PROJ _) => Wrapper.applyEqRule (Record.EqProj sign)
          | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => (fn mode => Wrapper.applyEqRule (Path.EqApp sign) mode orelse_ Wrapper.applyEqRule (Line.EqApp sign) mode)
@@ -532,8 +534,9 @@ struct
       fun StepEqNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Lcf.rule o InternalizedEquality.VarFromTrue
-         | (Syn.WIF _, Syn.WIF _) => Lcf.rule o WBool.EqElim
+         | (Syn.IF _, Syn.IF _) => Lcf.rule o WBool.EqElim orelse_ Lcf.rule o Bool.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule o S1.EqElim
+         | (Syn.NAT_REC _, Syn.NAT_REC _) => Lcf.rule o Nat.EqElim
          | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule o Record.EqProj sign (* XXX should consult autoSynthesizableNeu *)
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqApp sign else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
          | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>

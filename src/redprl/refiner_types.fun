@@ -115,7 +115,7 @@ struct
             (|>: goal, ty)
           end
 
-        | O.WIF $ [[x] \ cx, _ \ m, _, _] =>
+        | O.IF $ [[x] \ cx, _ \ m, _, _] =>
           let
             val ty = substVar (m, x) cx
             val goal = makeMem tr H (tm, ty)
@@ -139,8 +139,13 @@ struct
             (|>: goal, ty)               
           end
 
-        | O.NAT_REC $ _ => E.raiseAnnotatedError' (getAnnotation tm, E.NOT_APPLICABLE (Fpp.text "type synthesis", Fpp.text "nat-rec"))
-        | O.IF $ _ =>  E.raiseAnnotatedError' (getAnnotation tm, E.NOT_APPLICABLE (Fpp.text "type synthesis", Fpp.text "if"))
+        | O.NAT_REC $ [[x] \ cx, _ \ m, _, _] => 
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeMem tr H (tm, ty)
+          in
+            (|>: goal, ty)
+          end
 
     and synthTerm sign tr H tm = 
       let
@@ -210,7 +215,7 @@ struct
 
         val evidence =
           case ajdg of
-             AJ.TRUE _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
+             AJ.TRUE cz => Syn.into @@ Syn.IF ((z, cz), VarKit.toExp z, (holeT, holeF))
            | AJ.EQ_TYPE _ => axiom
            | _ => raise Fail "Bool.Elim cannot be called with this kind of goal"
       in
@@ -224,8 +229,8 @@ struct
         val tr = ["Bool.EqElim"]
         val H >> ajdg = jdg
         val ((if0, if1), ty) = View.matchAsEq ajdg
-        val Syn.IF (m0, (t0, f0)) = Syn.out if0
-        val Syn.IF (m1, (t1, f1)) = Syn.out if1
+        val Syn.IF (_, m0, (t0, f0)) = Syn.out if0
+        val Syn.IF (_, m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
         val x = alpha 0
@@ -328,7 +333,7 @@ struct
         val (goalF, holeF) = makeTrue tr H (substVar (Syn.into Syn.FF, z) cz)
 
         (* realizer *)
-        val if_ = Syn.into @@ Syn.WIF ((z, cz), VarKit.toExp z, (holeT, holeF))
+        val if_ = Syn.into @@ Syn.IF ((z, cz), VarKit.toExp z, (holeT, holeF))
       in
         |>: goalT >: goalF >: goalKind #> (H, if_)
       end
@@ -342,8 +347,8 @@ struct
         val ((if0, if1), ty) = View.matchAsEq ajdg
         (* if(FCOM) steps to COM *)
         val k = K.COM
-        val Syn.WIF ((x, c0x), m0, (t0, f0)) = Syn.out if0
-        val Syn.WIF ((y, c1y), m1, (t1, f1)) = Syn.out if1
+        val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
+        val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
         val z = alpha 0
@@ -438,7 +443,7 @@ struct
             (substVar (succ @@ VarKit.toExp u, z) cz)
 
         (* realizer *)
-        val evidence = Syn.into @@ Syn.NAT_REC (VarKit.toExp z, (holeZ, (u, v, holeS)))
+        val evidence = Syn.into @@ Syn.NAT_REC ((z, cz), VarKit.toExp z, (holeZ, (u, v, holeS)))
       in
         |>: goalZ >: goalS #> (H, evidence)
       end
@@ -448,40 +453,42 @@ struct
         val tr = ["Nat.EqElim"]
         val H >> ajdg = jdg
         val ((elim0, elim1), ty) = View.matchAsEq ajdg
-        val Syn.NAT_REC (m0, (n0, (a0, b0, p0))) = Syn.out elim0
-        val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
+        val Syn.NAT_REC ((z, cz), m0, (n0, (a0, b0, p0))) = Syn.out elim0
+        val Syn.NAT_REC (_, m1, (n1, (a1, b1, p1))) = Syn.out elim1
 
         val nat = Syn.into Syn.NAT
         val zero = Syn.into Syn.ZERO
         val succ = Syn.into o Syn.SUCC
 
-        (* motive *)
+        (* motive
         val z = alpha 0
         val Hz = H @> (z, AJ.TRUE nat)
-        val (goalC, holeC) = makeTerm tr Hz O.EXP
+        val (goalC, holeC) = makeTerm tr Hz O.EXP *)
+
+        val goalMotive = makeType tr (H @> (z, AJ.TRUE nat)) (cz, RedPrlKind.STABLE)
 
         (* eliminated term *)
         val goalM = makeEq tr H ((m0, m1), nat)
 
         (* result type *)
-        val goalTy = View.makeAsSubType tr H (substVar (m0, z) holeC, ty)
+        val goalTy = View.makeAsSubType tr H (substVar (m0, z) cz, ty)
 
         (* zero branch *)
-        val goalZ = makeEq tr H ((n0, n1), (substVar (zero, z) holeC))
+        val goalZ = makeEq tr H ((n0, n1), (substVar (zero, z) cz))
 
         (* succ branch *)
         val u = alpha 1
         val v = alpha 2
-        val cu = VarKit.rename (u, z) holeC
+        val cu = VarKit.rename (u, z) cz
         val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
             tr
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
-            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC))
+            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) cz))
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalTy #> (H, axiom)
+        |>: goalMotive >: goalM >: goalZ >: goalS >: goalTy #> (H, axiom)
       end
   end
 
@@ -580,7 +587,7 @@ struct
             (substVar (negsucc @@ succ @@ VarKit.toExp u, z) cz)
 
         (* realizer *)
-        val evidence = Syn.into @@ Syn.INT_REC (VarKit.toExp z, (holeZ, (u, v, holeS), holeNSZ, (u, v, holeNSS)))
+        val evidence = Syn.into @@ Syn.INT_REC ((z, cz), VarKit.toExp z, (holeZ, (u, v, holeS), holeNSZ, (u, v, holeNSS)))
       in
         |>: goalZ >: goalS >: goalNSZ >: goalNSS #> (H, evidence)
       end
@@ -590,8 +597,8 @@ struct
         val tr = ["Int.EqElim"]
         val H >> ajdg = jdg
         val ((elim0, elim1), ty) = View.matchAsEq ajdg
-        val Syn.INT_REC (m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
-        val Syn.INT_REC (m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
+        val Syn.INT_REC (_, m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
+        val Syn.INT_REC (_, m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
 
         val int = Syn.into Syn.INT
         val nat = Syn.into Syn.NAT

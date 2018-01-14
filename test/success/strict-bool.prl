@@ -3,7 +3,7 @@ Def Cmp(#m, #n) = [
 ].
 
 Def Bool/Not = [
-  (lam [x] (if x ff tt))
+  (lam [x] (if [_] bool x ff tt))
 ].
 
 Thm Bool/Not-Not-Id : [

@@ -34,20 +34,19 @@ struct
      | BOOL => [] ->> EXP
      | TT => [] ->> EXP
      | FF => [] ->> EXP
-     | IF => [[] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | WBOOL => [] ->> EXP
-     | WIF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | IF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | VOID => [] ->> EXP
 
      | NAT => [] ->> EXP
      | ZERO => [] ->> EXP
      | SUCC => [[] |: EXP] ->> EXP
-     | NAT_REC => [[] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
+     | NAT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
      | INT => [] ->> EXP
      | NEGSUCC => [[] |: EXP] ->> EXP
-     | INT_REC => [[] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
+     | INT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -188,8 +187,6 @@ struct
     fn AX => "ax"
 
      | WBOOL => "wbool"
-     | WIF => "wif"
-
      | BOOL => "bool"
      | TT => "tt"
      | FF => "ff"

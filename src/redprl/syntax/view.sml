@@ -35,15 +35,15 @@ struct
    (* formal composition *)
    | FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
    (* strict bool *)
-   | BOOL | TT | FF | IF of 'a * ('a * 'a)
+   | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
    (* weak bool *)
-   | WBOOL | WIF of (variable * 'a) * 'a * ('a * 'a)
+   | WBOOL
    (* natural numbers *)
    | NAT | ZERO | SUCC of 'a
-   | NAT_REC of 'a * ('a * (variable * variable * 'a))
+   | NAT_REC of (variable * 'a) * 'a * ('a * (variable * variable * 'a))
    (* integers, reusing natural numbers *)
    | INT | NEGSUCC of 'a
-   | INT_REC of 'a * ('a * (variable * variable * 'a) * 'a * (variable * variable * 'a))
+   | INT_REC of (variable * 'a) * 'a * ('a * (variable * variable * 'a) * 'a * (variable * variable * 'a))
    (* empty type *)
    | VOID
    (* circle *)
@@ -296,20 +296,19 @@ struct
        | BOOL => O.BOOL $$ []
        | TT => O.TT $$ []
        | FF => O.FF $$ []
-       | IF (m, (t, f)) => O.IF $$ [[] \ m, [] \ t, [] \ f]
-
+       
        | WBOOL => O.WBOOL $$ []
-       | WIF ((x, cx), m, (t, f)) => O.WIF $$ [[x] \ cx, [] \ m, [] \ t, [] \ f]
+       | IF ((x, cx), m, (t, f)) => O.IF $$ [[x] \ cx, [] \ m, [] \ t, [] \ f]
 
        | NAT => O.NAT $$ []
        | ZERO => O.ZERO $$ []
        | SUCC m => O.SUCC $$ [[] \ m]
-       | NAT_REC (m, (n, (a, b, p))) => O.NAT_REC $$ [[] \ m, [] \ n, [a,b] \ p]
+       | NAT_REC ((x, c), m, (n, (a, b, p))) => O.NAT_REC $$ [[x] \ c, [] \ m, [] \ n, [a,b] \ p]
 
        | INT => O.INT $$ []
        | NEGSUCC m => O.NEGSUCC $$ [[] \ m]
-       | INT_REC (m, (n, (a, b, p), q, (c, d, r))) =>
-           O.INT_REC $$ [[] \ m, [] \ n, [a,b] \ p, [] \ q, [c,d] \ r]
+       | INT_REC ((x, motive), m, (n, (a, b, p), q, (c, d, r))) =>
+           O.INT_REC $$ [[x] \ motive, [] \ m, [] \ n, [a,b] \ p, [] \ q, [c,d] \ r]
 
        | VOID => O.VOID $$ []
 
@@ -435,20 +434,19 @@ struct
        | O.BOOL $ _ => BOOL
        | O.TT $ _ => TT
        | O.FF $ _ => FF
-       | O.IF $ [_ \ m, _ \ t, _ \ f] => IF (m, (t, f))
 
        | O.WBOOL $ _ => WBOOL
-       | O.WIF $ [[x] \ cx, _ \ m, _ \ t, _ \ f] => WIF ((x, cx), m, (t, f))
+       | O.IF $ [[x] \ cx, _ \ m, _ \ t, _ \ f] => IF ((x, cx), m, (t, f))
 
        | O.NAT $ _ => NAT
        | O.ZERO $ _ => ZERO
        | O.SUCC $ [_ \ m] => SUCC m
-       | O.NAT_REC $ [_ \ m, _ \ n, [a,b] \ p] => NAT_REC (m, (n, (a, b, p)))
+       | O.NAT_REC $ [[x] \ c, _ \ m, _ \ n, [a,b] \ p] => NAT_REC ((x,c), m, (n, (a, b, p)))
 
        | O.INT $ _ => INT
        | O.NEGSUCC $ [_ \ m] => NEGSUCC m
-       | O.INT_REC $ [_ \ m, _ \ n, [a,b] \ p, _ \ q, [c,d] \ r] =>
-           INT_REC (m, (n, (a, b, p), q, (c, d, r)))
+       | O.INT_REC $ [[x] \ motive, _ \ m, _ \ n, [a,b] \ p, _ \ q, [c,d] \ r] =>
+           INT_REC ((x, motive), m, (n, (a, b, p), q, (c, d, r)))
 
        | O.VOID $ _ => VOID
 

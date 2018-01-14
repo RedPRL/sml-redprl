@@ -1,38 +1,42 @@
 Thm IntSucc : [
   (-> int int)
 ] by [
-  lam i => `(int-rec i 1 [n _] (succ (succ n)) 0 [n _] (negsucc n));
-    refine int/eq/int-rec; [ `int ]; auto
+  lam i =>
+    fresh n _ -> elim i;
+    [ `1
+    , `(succ (succ n))
+    , `0
+    , `(negsucc n)
+    ]
 ].
 
 Thm IntPred : [
   (-> int int)
 ] by [
-  lam i => `(int-rec i -1 [n _] (nat-rec n 0 [n _] (succ n)) -2 [n _] (negsucc (succ (succ n))));
-    refine int/eq/int-rec; [ `int ]; auto;
-    refine nat/eq/nat-rec; [ `int ]; auto
+  lam i => 
+    fresh n -> elim i;
+    [ `-1
+    , fresh n' -> elim n;
+      [ `0 
+      , `(succ n')
+      ]
+    , `-2
+    , `(negsucc (succ (succ n)))
+    ]
 ].
+
+
 
 Thm IntSuccIntPred : [
   (-> [i : int] (= int ($ IntSucc ($ IntPred i)) i))
 ] by [
-  lam i => fresh n -> elim i;
-    [ auto
-    , elim n; auto
-    , auto
-    , auto
-    ]
+  lam i => fresh n -> elim i; auto; elim n; auto
 ].
 
 Thm IntPredIntSucc : [
   (-> [i : int] (= int ($ IntPred ($ IntSucc i)) i))
 ] by [
-  lam i => fresh n -> elim i;
-    [ auto
-    , auto
-    , auto
-    , elim n; auto
-    ]
+  lam i => fresh n -> elim i; auto; elim n; auto
 ].
 
 Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
