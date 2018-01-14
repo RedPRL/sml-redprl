@@ -146,6 +146,13 @@ struct
           in
             (|>: goal, ty)
           end
+        | O.INT_REC $ [[x] \ cx, _ \ m, _, _, _, _] => 
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeMem tr H (tm, ty)
+          in
+            (|>: goal, ty)
+          end          
 
     and synthTerm sign tr H tm = 
       let
