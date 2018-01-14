@@ -602,7 +602,7 @@ struct
         Lcf.progress o (Lcf.rule o Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_TYPE, Accessor.PART_LEFT, Accessor.PART_RIGHT]))
 
       fun ComputeBefore sign tac =
-        (ProgressCompute sign then_ tac) par tac
+        (ProgressCompute sign then_ tac) orelse_ tac
 
       fun StepEqKanStruct sign (m, n) =
         ComputeBefore sign
