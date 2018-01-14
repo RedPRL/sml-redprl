@@ -143,9 +143,7 @@ struct
       val ms =
         case jdg of
            H >> _ => Hyps.toList H
-         | MATCH _ => []
-         | MATCH_RECORD _ => []
-
+         
       val hole = check (x $# ms, tau)
     in
       ((x, Lcf.::@ (tr, jdg)), hole)
@@ -158,9 +156,6 @@ struct
   (* needing the realizer *)
   fun makeTrueWith tr f H ty = makeGoalWith tr f @@ H >> AJ.TRUE ty
   fun makeTrue tr H ty = makeGoal tr @@ H >> AJ.TRUE ty
-  fun makeSynth tr H m = makeGoal tr @@ H >> AJ.SYNTH m
-  fun makeMatch tr part = makeGoal tr @@ MATCH part
-  fun makeMatchRecord tr part = makeGoal tr @@ MATCH_RECORD part
   fun makeTerm tr H tau = makeGoal tr @@ H >> AJ.TERM tau
 
   (* ignoring the trivial realizer *)

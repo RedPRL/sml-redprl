@@ -119,7 +119,6 @@ struct
      | JDG_EQ_TYPE => [[] |: KND, [] |: EXP, [] |: EXP] ->> JDG
      | JDG_SUB_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
      | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
-     | JDG_SYNTH => [[] |: EXP] ->> JDG
 
      | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -319,7 +318,6 @@ struct
      | JDG_EQ_TYPE => "eq-type"
      | JDG_SUB_TYPE => "sub-type"
      | JDG_SUB_KIND => "sub-kind"
-     | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
      | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"

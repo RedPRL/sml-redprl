@@ -368,7 +368,7 @@ end
  | PRINT
 
  (* keywords in judgments *)
- | TRUE | TYPE | SYNTH | AT (* `WITH` is reused *)
+ | TRUE | TYPE | AT (* `WITH` is reused *)
 
  | DISCRETE | KAN | STABLE
 
@@ -810,7 +810,6 @@ rawJudgment
   | term (Ast.$$ (O.JDG_TRUE, [\\ term]))
   | term EQUALS term TYPE withKind (Ast.$$ (O.JDG_EQ_TYPE, [\\ withKind, \\ term1, \\ term2]))
   | term TYPE withKind (Ast.$$ (O.JDG_EQ_TYPE, [\\ withKind, \\ term, \\ term]))
-  | term SYNTH (Ast.$$ (O.JDG_SYNTH, [\\ term]))
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 

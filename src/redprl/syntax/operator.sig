@@ -69,7 +69,6 @@ struct
    | JDG_EQ_TYPE
    | JDG_SUB_TYPE
    | JDG_SUB_KIND
-   | JDG_SYNTH
    | JDG_TERM of sort
 
 

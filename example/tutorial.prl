@@ -106,10 +106,9 @@ Thm FunToPairIsEquiv : [
     lam {fun,p} =>
       fresh x:dim -> refine path/intro; [
         {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
-         abs y =>
-           `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
+         abs y => `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
         }
-      ];
+      ]; 
 
       [ symmetry; refine record/eq/tuple;
         [ refine fun/eq/eta; #1{auto}; auto; symmetry;
@@ -120,19 +119,7 @@ Thm FunToPairIsEquiv : [
           ]
         ]; auto
 
-       , refine record/eq/tuple;
-         [ auto
-         , refine path/eq/abs;
-           [ symmetry; unfold WeakConnection;
-             reduce at right;
-             refine record/eq/eta; #1 {auto};
-             refine record/eq/tuple; #2 {auto};
-             [ symmetry; refine hcom/eq/tube; [auto, auto, auto, auto, auto, auto, auto, auto]
-             , symmetry; refine hcom/eq/tube; [auto, auto, auto, auto, auto, auto, auto, auto]
-             ]
-           ]
-         ];
-         auto
+      , auto
       ]
   }
 ].

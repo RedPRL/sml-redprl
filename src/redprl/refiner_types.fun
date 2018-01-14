@@ -45,6 +45,111 @@ struct
    * or new parameter variables.
    *)
 
+
+
+
+  structure Synth =
+  struct
+    infix $ $$ \
+
+    fun synthNeutral sign tr H tm =
+      case out tm of 
+        `x =>
+          let
+            val AJ.TRUE ty = Hyps.lookup H x
+          in
+            (T.empty, ty)
+          end
+
+        | O.CUST (opid, _) $ args =>
+          let
+            val AJ.TRUE ty = Sig.theoremSpec sign opid args
+          in
+            (T.empty, ty)
+          end
+
+        | O.APP $ [_ \ m1, _ \ m2] =>
+          let
+            val (psi, funty) = synthTerm sign tr H m1
+            val Syn.FUN (dom, x, cod) = Syn.out funty
+            val memGoal = makeMem tr H (m2, dom)
+          in
+            (psi >: memGoal, substVar (m2, x) cod)
+          end
+
+        | O.DIM_APP $ [_ \ m, _ \ r] => 
+          let
+            val (psi, ty) = synthTerm sign tr H m
+          in
+            case Syn.out ty of
+              Syn.PATH ((x, a), _, _) =>
+              (psi, substVar (r, x) a)
+
+            | Syn.LINE (x, a) =>
+              (psi, substVar (r, x) a)
+
+            | _ => raise Fail "synthNeutral"
+          end
+
+        | O.PROJ lbl $ [_ \ m] =>
+          let
+            val (psi, rcdty) = synthTerm sign tr H m
+            val Abt.$ (O.RECORD lbls, args) = out rcdty
+
+            val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
+            val (us \ ty) = List.nth (args, i)
+
+            (* supply the dependencies *)
+            val lblPrefix = List.take (lbls, i)
+            val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m), u)) (lblPrefix, us)
+            val ty = VarKit.substMany rho ty
+          in
+            (psi, ty)
+          end
+
+        | O.S1_REC $ [[x] \ cx, _ \ m, _, _] =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeMem tr H (tm, ty)
+          in
+            (|>: goal, ty)
+          end
+
+        | O.WIF $ [[x] \ cx, _ \ m, _, _] =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeMem tr H (tm, ty)
+          in
+            (|>: goal, ty)
+          end             
+
+        | O.PUSHOUT_REC $ [[x] \ cx, _ \ m, _, _, _] =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeMem tr H (tm, ty)
+          in
+            (|>: goal, ty)               
+          end
+      
+        | O.COEQUALIZER_REC $ [[x] \ cx, _ \ m, _, _] =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeMem tr H (tm, ty)
+          in
+            (|>: goal, ty)               
+          end
+
+        | O.NAT_REC $ _ => E.raiseAnnotatedError' (getAnnotation tm, E.NOT_APPLICABLE (Fpp.text "type synthesis", Fpp.text "nat-rec"))
+        | O.IF $ _ =>  E.raiseAnnotatedError' (getAnnotation tm, E.NOT_APPLICABLE (Fpp.text "type synthesis", Fpp.text "if"))
+
+    and synthTerm sign tr H tm = 
+      let
+        val (psi, ty) = synthNeutral sign tr H @@ Machine.eval sign Machine.STABLE Machine.Unfolding.never tm
+      in
+        (psi, Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
+      end
+  end
+
   structure Bool =
   struct
     val inherentLevel = L.zero
@@ -107,7 +212,6 @@ struct
           case ajdg of
              AJ.TRUE _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
            | AJ.EQ_TYPE _ => axiom
-           | AJ.SYNTH _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
            | _ => raise Fail "Bool.Elim cannot be called with this kind of goal"
       in
         |>: goalT >: goalF #> (H, evidence)
@@ -569,7 +673,6 @@ struct
           case ajdg of
              AJ.TRUE _ => axiom
            | AJ.EQ_TYPE _ => axiom
-           | AJ.SYNTH _ => axiom
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
       in
         T.empty #> (H, evidence)
@@ -919,22 +1022,21 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp sign _ jdg =
       let
         val tr = ["Fun.EqApp"]
         val H >> ajdg = jdg
         val ((ap0, ap1), ty) = View.matchAsEq ajdg
         val Syn.APP (m0, n0) = Syn.out ap0
         val Syn.APP (m1, n1) = Syn.out ap1
-
-        val (goalFun, holeFun) = makeSynth tr H m0
-        val (goalDom, holeDom) = makeMatch tr (O.FUN, 0, holeFun, [])
-        val (goalCod, holeCod) = makeMatch tr (O.FUN, 1, holeFun, [n0])
-        val goalFunEq = makeEqIfDifferent tr H ((m0, m1), holeFun)
-        val goalArgEq = makeEq tr H ((n0, n1), holeDom)
-        val goalTy = View.makeAsSubType tr H (holeCod, ty)
+        val (psi, funTy) = Synth.synthTerm sign tr H m0
+        val Syn.FUN (dom, x, codx) = Syn.out funTy
+        val cod = substVar (n0, x) codx
+        val goalMem = makeEqIfDifferent tr H ((m0, m1), funTy)
+        val goalArgEq = makeEq tr H ((n0, n1), dom)
+        val goalTy = View.makeAsSubType tr H (cod, ty)
       in
-        |>: goalFun >: goalDom >: goalCod >:? goalFunEq >: goalArgEq >: goalTy
+        psi >:? goalMem >: goalArgEq >: goalTy
         #> (H, axiom)
       end
   end
@@ -1092,26 +1194,6 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun MatchRecord _ jdg =
-      let
-        val tr = ["Record.MatchRecord"]
-        val MATCH_RECORD (lbl, tm, tuple) = jdg
-
-        val Abt.$ (O.RECORD lbls, args) = Abt.out tm
-
-        val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
-        val (us \ ty) = List.nth (args, i)
-
-        (* supply the dependencies *)
-        val lblPrefix = List.take (lbls, i)
-        val projs = List.map (fn lbl => Syn.into @@ Syn.PROJ (lbl, tuple)) lblPrefix
-        val ty = VarKit.substMany (ListPair.zipEq (projs, us)) ty
-      in
-        Lcf.|> (T.empty, abtToAbs ty)
-      end
-      handle _ =>
-        raise E.error [Fpp.text "MATCH_RECORD judgment failed to unify"]
-
     fun Elim z alpha jdg = 
       let
         val tr = ["Record.Elim"]
@@ -1147,7 +1229,7 @@ struct
       end
       handle _ => raise E.error [Fpp.text "Record.Elim"]
 
-    fun EqProj _ jdg =
+    fun EqProj sign _ jdg =
       let
         val tr = ["Record.EqProj"]
         val H >> ajdg = jdg
@@ -1156,12 +1238,21 @@ struct
         val Syn.PROJ (lbl1, m1) = Syn.out proj1
         val () = Assert.labelEq "Record.EqProj" (lbl0, lbl1)
 
-        val (goalTyR, holeTyR) = makeSynth tr H m0
-        val (goalTyP, holeTyP) = makeMatchRecord tr (lbl0, holeTyR, m0)
-        val goalEq = makeEqIfDifferent tr H ((m0, m1), holeTyR) (* m0 well-typed *)
-        val goalTy = View.makeAsSubType tr H (holeTyP, ty)
+        val (psi, rcdty) = Synth.synthTerm sign tr H m0
+        val Abt.$ (O.RECORD lbls, args) = out rcdty
+
+        val i = #1 (Option.valOf (ListUtil.findEqIndex lbl0 lbls))
+        val (us \ tyField) = List.nth (args, i)
+
+        (* supply the dependencies *)
+        val lblPrefix = List.take (lbls, i)
+        val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m0), u)) (lblPrefix, us)
+        val tyField = VarKit.substMany rho tyField
+        
+        val goalEq = makeEqIfDifferent tr H ((m0, m1), rcdty) (* m0 well-typed *)
+        val goalTy = View.makeAsSubType tr H (VarKit.substMany rho tyField, ty)
       in
-        |>: goalTyR >: goalTyP >:? goalEq >: goalTy
+        psi >:? goalEq >: goalTy
         #> (H, axiom)
       end
   end
@@ -1260,7 +1351,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp sign _ jdg =
       let
         val tr = ["Path.EqApp"]
         val H >> ajdg = jdg
@@ -1269,30 +1360,31 @@ struct
         val Syn.DIM_APP (m1, r1) = Syn.out ap1
         val () = Assert.alphaEq (r0, r1)
 
-        val (goalSynth, holeSynth) = makeSynth tr H m0
-        val goalMem = makeEqIfDifferent tr H ((m0, m1), holeSynth) (* m0 well-typed *)
-        val (goalPath, holePath) = makeMatch tr (O.PATH, 0, holeSynth, [r0])
-        val goalTy = View.makeAsSubType tr H (holePath, ty) (* holePath type *)
+        val (psi, pathty) = Synth.synthTerm sign tr H m0
+        val Syn.PATH ((x, tyx), _, _) = Syn.out pathty
+        val tyr = substVar (r0, x) tyx
+        val goalMem = makeEqIfDifferent tr H ((m0, m1), pathty) (* m0 well-typed *)
+        val goalTy = View.makeAsSubType tr H (tyr, ty) (* holePath type *)
       in
-        |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, axiom)
+        psi >:? goalMem >: goalTy #> (H, axiom)
       end
 
-    fun EqAppConst _ jdg =
+    fun EqAppConst sign _ jdg =
       let
         val tr = ["Path.EqAppConst"]
         val H >> ajdg = jdg
         val ((ap, p), a) = View.matchAsEq ajdg
         val Syn.DIM_APP (m, r) = Syn.out ap
 
-        val dimAddr = case Syn.out r of Syn.DIM0 => 1 | Syn.DIM1 => 2
+        val (psi, pathty) = Synth.synthTerm sign tr H m
+        val Syn.PATH ((x, tyx), p0, p1) = Syn.out pathty
+        val tyr = substVar (r, x) tyx
+        val pr = case Syn.out r of Syn.DIM0 => p0 | Syn.DIM1 => p1 
 
-        val (goalSynth, holeSynth) = makeSynth tr H m
-        val (goalLine, holeLine) = makeMatch tr (O.PATH, 0, holeSynth, [r])
-        val (goalEndpoint, holeEndpoint) = makeMatch tr (O.PATH, dimAddr, holeSynth, [])
-        val goalTy = View.makeAsSubType tr H (holeLine, a)
-        val goalEq = View.makeAsEq tr H ((holeEndpoint, p), a)
+        val goalTy = View.makeAsSubType tr H (tyr, a)
+        val goalEq = View.makeAsEq tr H ((pr, p), a)
       in
-        |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >: goalTy
+        psi >: goalEq >: goalTy
         #> (H, axiom)
       end
   end
@@ -1370,7 +1462,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun EqApp _ jdg =
+    fun EqApp sign _ jdg =
       let
         val tr = ["Line.EqApp"]
         val H >> ajdg = jdg
@@ -1379,12 +1471,14 @@ struct
         val Syn.DIM_APP (m1, r1) = Syn.out ap1
         val () = Assert.alphaEq (r0, r1)
 
-        val (goalSynth, holeSynth) = makeSynth tr H m0
-        val goalMem = makeEqIfDifferent tr H ((m0, m1), holeSynth) (* m0 well-typed *)
-        val (goalLine, holeLine) = makeMatch tr (O.LINE, 0, holeSynth, [r0])
-        val goalTy = View.makeAsSubType tr H (holeLine, ty) (* holeLine type *)
+        val (psi, linety) = Synth.synthTerm sign tr H m0
+        val Syn.LINE (x, tyx) = Syn.out linety
+        val goalMem = makeEqIfDifferent tr H ((m0, m1), linety)
+
+        val tyr = substVar (r0, x) tyx
+        val goalTy = View.makeAsSubType tr H (tyr, ty)
       in
-        |>: goalSynth >:? goalMem >: goalLine >: goalTy #> (H, axiom)
+        psi >:? goalMem >: goalTy #> (H, axiom)
       end
   end
 
@@ -1559,7 +1653,7 @@ struct
         |>: goalL >: goalR >: goalG >: goalCohL >: goalCohR >: goalKind #> (H, elim)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim sign alpha jdg =
       let
         val tr = ["Pushout.EqElim"]
         val H >> ajdg = jdg
@@ -1570,63 +1664,63 @@ struct
         val Syn.PUSHOUT_REC ((z1, d1z1), m1, ((a1, n1a1), (b1, p1b1), (v1, c1, q1v1c1))) = Syn.out elim1
 
         (* type of eliminated term *)
-        val (goalTyPushout, holeTyPushout) = makeSynth tr H m0
+        val (psi, pushoutTy) = Synth.synthTerm sign tr H m0
+        val Syn.PUSHOUT (tyA, tyB, tyC, (xf, f), (xg, g)) = Syn.out pushoutTy
 
         (* motive *)
         val z = alpha 0
         val d0z = VarKit.rename (z, z0) d0z0
         val d1z = VarKit.rename (z, z1) d1z1
-        val goalD = makeEqType tr (H @> (z, AJ.TRUE holeTyPushout)) ((d0z, d1z), k)
+        val goalD = makeEqType tr (H @> (z, AJ.TRUE pushoutTy)) ((d0z, d1z), k)
 
         (* eliminated term *)
-        val goalM = makeEqIfDifferent tr H ((m0, m1), holeTyPushout)
+        val goalM = makeEqIfDifferent tr H ((m0, m1), pushoutTy)
 
         (* result type*)
         val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, z0) d0z0, ty)
 
         (* left branch *)
-        val (goalTyA, holeTyA) = makeMatch tr (O.PUSHOUT, 0, holeTyPushout, [])
         val a = alpha 1
         val atm = VarKit.toExp a
         val n0a = VarKit.rename (a, a0) n0a0
         val n1a = VarKit.rename (a, a1) n1a1
         fun dleft tm = substVar (Syn.into (Syn.LEFT tm), z0) d0z0
-        val goalN = makeEq tr (H @> (a, AJ.TRUE holeTyA)) ((n0a, n1a), (dleft atm))
+        val goalN = makeEq tr (H @> (a, AJ.TRUE tyA)) ((n0a, n1a), (dleft atm))
 
         (* right branch *)
-        val (goalTyB, holeTyB) = makeMatch tr (O.PUSHOUT, 1, holeTyPushout, [])
         val b = alpha 2
         val btm = VarKit.toExp b
         val p0b = VarKit.rename (b, b0) p0b0
         val p1b = VarKit.rename (b, b1) p1b1
         fun dright tm = substVar (Syn.into (Syn.RIGHT tm), z0) d0z0
-        val goalP = makeEq tr (H @> (b, AJ.TRUE holeTyB)) ((p0b, p1b), (dright btm))
+        val goalP = makeEq tr (H @> (b, AJ.TRUE tyB)) ((p0b, p1b), (dright btm))
 
         (* glue branch *)
-        val (goalTyC, holeTyC) = makeMatch tr (O.PUSHOUT, 2, holeTyPushout, [])
         val v = alpha 3
         val vtm = VarKit.toDim v
         val c = alpha 4
         val ctm = VarKit.toExp c
         val q0vc = VarKit.renameMany [(v, v0), (c, c0)] q0v0c0
         val q1vc = VarKit.renameMany [(v, v1), (c, c1)] q1v1c1
-        val (goalF, holeF) = makeMatch tr (O.PUSHOUT, 3, holeTyPushout, [ctm])
-        val (goalG, holeG) = makeMatch tr (O.PUSHOUT, 4, holeTyPushout, [ctm])
-        val glue = Syn.into @@ Syn.GLUE (vtm, ctm, holeF, holeG)
+
+        val fc = substVar (ctm, xf) f
+        val gc = substVar (ctm, xg) g
+
+        val glue = Syn.into @@ Syn.GLUE (vtm, ctm, fc, gc)
         val dglue = substVar (glue, z0) d0z0
-        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE holeTyC)
+        val Hglue = H @> (v, AJ.TERM O.DIM) @> (c, AJ.TRUE tyC)
         val goalQ = makeEq tr Hglue ((q0vc, q1vc), dglue)
 
         (* coherence *)
         val q00c = substVar (Syn.intoDim 0, v) q0vc
-        val lfc = substVar (holeF, a0) n0a0
-        val goalCohL = makeEq tr (H @> (c, AJ.TRUE holeTyC)) ((q00c, lfc), (dleft holeF))
+        val lfc = substVar (fc, a0) n0a0
+        val goalCohL = makeEq tr (H @> (c, AJ.TRUE tyC)) ((q00c, lfc), (dleft fc))
 
         val q01c = substVar (Syn.intoDim 1, v) q0vc
-        val rgc = substVar (holeG, b0) p0b0
-        val goalCohR = makeEq tr (H @> (c, AJ.TRUE holeTyC)) ((q01c, rgc), (dright holeG))
+        val rgc = substVar (gc, b0) p0b0
+        val goalCohR = makeEq tr (H @> (c, AJ.TRUE tyC)) ((q01c, rgc), (dright gc))
       in
-        |>: goalTyPushout >: goalD >:? goalM >: goalTyA >: goalN >: goalTyB >: goalP >: goalTyC >: goalF >: goalG >: goalQ >: goalCohL >: goalCohR >:? goalTy #> (H, axiom)
+        psi >: goalD >:? goalM >: goalN >: goalP >: goalQ >: goalCohL >: goalCohR >:? goalTy #> (H, axiom)
       end
 
     fun BetaGlue alpha jdg =
@@ -1797,7 +1891,7 @@ struct
         |>: goalC >: goalD >: goalCohF >: goalCohG >: goalKind #> (H, elim)
       end
 
-    fun EqElim alpha jdg =
+    fun EqElim sign alpha jdg =
       let
         val tr = ["Coequalizer.EqElim"]
         val H >> ajdg = jdg
@@ -1808,54 +1902,55 @@ struct
         val Syn.COEQUALIZER_REC ((z1, p1z1), m1, ((b1, n1b1), (v1, a1, q1v1a1))) = Syn.out elim1
 
         (* type of eliminated term *)
-        val (goalTyCoeq, holeTyCoeq) = makeSynth tr H m0
+        val (psi, tyCoeq) = Synth.synthTerm sign tr H m0
+        val Syn.COEQUALIZER (tyA, tyB, (xf, f), (xg, g)) = Syn.out tyCoeq
 
         (* motive *)
         val z = alpha 0
         val p0z = VarKit.rename (z, z0) p0z0
         val p1z = VarKit.rename (z, z1) p1z1
-        val goalP = makeEqType tr (H @> (z, AJ.TRUE holeTyCoeq)) ((p0z, p1z), k)
+        val goalP = makeEqType tr (H @> (z, AJ.TRUE tyCoeq)) ((p0z, p1z), k)
 
         (* eliminated term *)
-        val goalM = makeEqIfDifferent tr H ((m0, m1), holeTyCoeq)
+        val goalM = makeEqIfDifferent tr H ((m0, m1), tyCoeq)
 
         (* result type*)
         val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, z0) p0z0, ty)
 
         (* codomain branch *)
-        val (goalTyB, holeTyB) = makeMatch tr (O.COEQUALIZER, 1, holeTyCoeq, [])
         val b = alpha 1
         val btm = VarKit.toExp b
         val n0b = VarKit.rename (b, b0) n0b0
         val n1b = VarKit.rename (b, b1) n1b1
         fun pcod tm = substVar (Syn.into (Syn.CECOD tm), z0) p0z0
-        val goalN = makeEq tr (H @> (b, AJ.TRUE holeTyB)) ((n0b, n1b), (pcod btm))
+        val goalN = makeEq tr (H @> (b, AJ.TRUE tyB)) ((n0b, n1b), (pcod btm))
 
         (* glue branch *)
-        val (goalTyA, holeTyA) = makeMatch tr (O.COEQUALIZER, 0, holeTyCoeq, [])
         val v = alpha 2
         val vtm = VarKit.toDim v
         val a = alpha 3
         val atm = VarKit.toExp a
         val q0va = VarKit.renameMany [(v, v0), (a, a0)] q0v0a0
         val q1va = VarKit.renameMany [(v, v1), (a, a1)] q1v1a1
-        val (goalF, holeF) = makeMatch tr (O.COEQUALIZER, 2, holeTyCoeq, [atm])
-        val (goalG, holeG) = makeMatch tr (O.COEQUALIZER, 3, holeTyCoeq, [atm])
-        val dom = Syn.into @@ Syn.CEDOM (vtm, atm, holeF, holeG)
+
+        val fa = substVar (atm, xf) f
+        val ga = substVar (atm, xg) g
+
+        val dom = Syn.into @@ Syn.CEDOM (vtm, atm, fa, ga)
         val pdom = substVar (dom, z0) p0z0
-        val Hdom = H @> (v, AJ.TERM O.DIM) @> (a, AJ.TRUE holeTyA)
+        val Hdom = H @> (v, AJ.TERM O.DIM) @> (a, AJ.TRUE tyA)
         val goalQ = makeEq tr Hdom ((q0va, q1va), pdom)
 
         (* coherence *)
         val q00a = substVar (Syn.intoDim 0, v) q0va
-        val cfa = substVar (holeF, b0) n0b0
-        val goalCohF = makeEq tr (H @> (a, AJ.TRUE holeTyA)) ((q00a, cfa), (pcod holeF))
+        val cfa = substVar (fa, b0) n0b0
+        val goalCohF = makeEq tr (H @> (a, AJ.TRUE tyA)) ((q00a, cfa), (pcod fa))
 
         val q01a = substVar (Syn.intoDim 1, v) q0va
-        val cga = substVar (holeG, b0) n0b0
-        val goalCohG = makeEq tr (H @> (a, AJ.TRUE holeTyA)) ((q01a, cga), (pcod holeG))
+        val cga = substVar (ga, b0) n0b0
+        val goalCohG = makeEq tr (H @> (a, AJ.TRUE tyA)) ((q01a, cga), (pcod ga))
       in
-        |>: goalTyCoeq >:? goalM >: goalTyB >: goalN >: goalTyA >: goalF >: goalG >: goalQ >: goalCohF >: goalCohG >: goalP >:? goalTy #> (H, axiom)
+        psi >:? goalM >: goalN >: goalQ >: goalCohF >: goalCohG >: goalP >:? goalTy #> (H, axiom)
       end
 
     fun BetaDom alpha jdg =
@@ -1979,19 +2074,7 @@ struct
         T.empty #> (H, axiom)
       end
 
-    (* (= ty a b) => a synth ~~> ty *)
-    (* this is for non-deterministic search *)
-    fun NondetSynthFromTrueEq z _ jdg =
-      let
-        val tr = ["InternalizedEquality.NondetSynthFromTrueEq"]
-        val H >> AJ.SYNTH tm = jdg
-        val ((a, b), ty) = View.matchTrueAsEq (Hyps.lookup H z)
-        val _ = Assert.alphaEqEither ((a, b), tm)
-      in
-        T.empty #> (H, ty)
-      end
-
-    fun Rewrite (sel, acc) eqterm alpha jdg =
+    fun Rewrite sign (sel, acc) eqterm alpha jdg =
       let
         val tr = ["InternalizedEquality.RewriteTrue"]
         val H >> concl = jdg
@@ -2021,30 +2104,27 @@ struct
 
         val truncatedH = Sequent.truncateFrom sel H
 
-        val (goalTyOfEq, holeTyOfEq) = makeSynth tr truncatedH eqterm
-        val (goalTy, holeTy) = makeMatch tr (O.EQUALITY, 0, holeTyOfEq, [])
-        val (goalM, holeM) = makeMatch tr (O.EQUALITY, 1, holeTyOfEq, [])
-        val (goalN, holeN) = makeMatch tr (O.EQUALITY, 2, holeTyOfEq, [])
+        val (psi, eqty) = Synth.synthTerm sign tr truncatedH eqterm
+        val Syn.EQUALITY (dom, equandL, equandR) = Syn.out eqty
 
         val x = alpha 0
-        val truncatedHx = truncatedH @> (x, AJ.TRUE holeTy)
+        val truncatedHx = truncatedH @> (x, AJ.TRUE dom)
         val (motiveGoal, motiveHole) = makeTerm tr truncatedHx O.EXP
         val motiveWfGoal = View.makeAsMem tr truncatedHx (motiveHole, ty)
 
-        val motiven = substVar (holeN, x) motiveHole
-        val motivem = substVar (holeM, x) motiveHole
+        val motiveR = substVar (equandR, x) motiveHole
+        val motiveL = substVar (equandL, x) motiveHole
 
-        val (H', concl') = Sequent.mapSelector sel (AJ.mapAccessor acc (fn _ => motiven)) (H, concl)
+        val (H', concl') = Sequent.mapSelector sel (AJ.mapAccessor acc (fn _ => motiveR)) (H, concl)
         val (rewrittenGoal, rewrittenHole) = makeGoal tr @@ H' >> concl'
 
         val motiveMatchesMainGoal =
           case Variance.compose (Selector.variance sel, AJ.variance (currentAjdg, acc)) of
-             Variance.COVAR => makeSubType tr truncatedH (motivem, currentTm)
-           | Variance.CONTRAVAR => makeSubType tr truncatedH (currentTm, motivem)
-           | Variance.ANTIVAR => View.makeAsEq tr truncatedH ((currentTm, motivem), ty)
+             Variance.COVAR => makeSubType tr truncatedH (motiveL, currentTm)
+           | Variance.CONTRAVAR => makeSubType tr truncatedH (currentTm, motiveL)
+           | Variance.ANTIVAR => View.makeAsEq tr truncatedH ((currentTm, motiveL), ty)
       in
-        |>: goalTyOfEq >: goalTy >: goalM >: goalN
-         >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
+        psi >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
       end
 

@@ -37,14 +37,6 @@ struct
     *)
     | SUB_KIND of abt * kind
 
-    (* `SYNTH m`:
-    *   There exists a term `a` associated with a PER and the term `m`
-    *   is related to itself by that PER.
-    *
-    *   The realizer is such an `a` of sort `exp`.
-    *)
-    | SYNTH of abt
-
     (* `TERM tau`:
     *   There exists some term `m` of sort `tau`.
     *   The realizer is such an `m` of sort `tau`.

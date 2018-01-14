@@ -17,7 +17,6 @@ struct
      | EQ_TYPE ((a, b), k) => EQ_TYPE ((f a, f b), k)
      | SUB_TYPE (a, b) => SUB_TYPE (f a, f b)
      | SUB_KIND (u, k) => SUB_KIND (f u, k)
-     | SYNTH a => SYNTH (f a)
      | TERM tau => TERM tau
 
   fun @@ (f, x) = f x
@@ -47,9 +46,6 @@ struct
            , TermPrinter.ppKind k
            , text "universe"
            ]
-       | SYNTH m => expr @@ hvsep
-           [ TermPrinter.ppTerm m, text "synth"
-           ]
        | TERM tau => TermPrinter.ppSort tau
   end
 
@@ -60,7 +56,6 @@ struct
      | EQ_TYPE _ => O.EXP
      | SUB_TYPE _ => O.EXP
      | SUB_KIND _ => O.EXP
-     | SYNTH _ => O.EXP
      | TERM tau => tau
 
   local
@@ -77,8 +72,6 @@ struct
        | EQ_TYPE ((a, b), k) => O.JDG_EQ_TYPE $$ [[] \ kconst k, [] \ a, [] \ b]
        | SUB_TYPE (a, b) => O.JDG_SUB_TYPE $$ [[] \ a, [] \ b]
        | SUB_KIND (u, k) => O.JDG_SUB_KIND $$ [[] \ kconst k, [] \ u]
-       | SYNTH m => O.JDG_SYNTH $$ [[] \ m]
-
        | TERM tau => O.JDG_TERM tau $$ []
 
     fun outk kexpr =
@@ -92,8 +85,6 @@ struct
        | O.JDG_EQ_TYPE $ [_ \ k, _ \ a, _ \ b] => EQ_TYPE ((a, b), outk k)
        | O.JDG_SUB_TYPE $ [_ \ a, _ \ b] => SUB_TYPE (a, b)
        | O.JDG_SUB_KIND $ [_ \ k, _ \ u] => SUB_KIND (u, outk k)
-       | O.JDG_SYNTH $ [_ \ m] => SYNTH m
-
        | O.JDG_TERM tau $ [] => TERM tau
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]
 
@@ -121,7 +112,6 @@ struct
        | (SUB_TYPE (m, _), A.PART_LEFT) => m
        | (SUB_TYPE (_, n), A.PART_RIGHT) => n
        | (SUB_KIND (m, _), A.PART_LEFT) => m
-       | (SYNTH m, A.WHOLE) => m
        | _ =>
            RedPrlError.raiseError
              (RedPrlError.NOT_APPLICABLE
@@ -146,7 +136,6 @@ struct
        | (SUB_TYPE (m, n), A.PART_LEFT) => SUB_TYPE (f m, n)
        | (SUB_TYPE (m, n), A.PART_RIGHT) => SUB_TYPE (m, f n)
        | (SUB_KIND (m, k), A.PART_LEFT) => SUB_KIND (f m, k)
-       | (SYNTH m, A.WHOLE) => SYNTH (f m)
        | _ =>
            RedPrlError.raiseError
              (RedPrlError.NOT_APPLICABLE
@@ -176,7 +165,6 @@ struct
        | (SUB_TYPE _, A.PART_LEFT) => V.CONTRAVAR
        | (SUB_TYPE _, A.PART_RIGHT) => V.COVAR
        | (SUB_KIND _, A.PART_LEFT) => V.CONTRAVAR
-       | (SYNTH _, A.WHOLE) => V.ANTIVAR
        | (jdg, acc) =>
            RedPrlError.raiseError
              (RedPrlError.NOT_APPLICABLE

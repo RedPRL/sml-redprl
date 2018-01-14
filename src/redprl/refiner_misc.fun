@@ -95,24 +95,6 @@ struct
       in
         |>: goal #> (H, hole)
       end
-
-    fun MatchReduce sign _ jdg =
-      let
-        val tr = ["Computation.MatchReduce"]
-        val MATCH (th, k, a, ms) = jdg
-        val (goal, hole) = makeGoal tr @@ MATCH (th, k, reduce sign a, ms)
-      in
-        |>: goal #> (Hyps.empty, hole)
-      end
-
-    fun MatchRecordReduce sign _ jdg = 
-      let
-        val tr = ["Computation.MatchRecordReduce"]
-        val MATCH_RECORD (lbl, tm, tuple) = jdg
-        val (goal, hole) = makeGoal tr @@ MATCH_RECORD (lbl, reduce sign tm, tuple)
-      in
-        |>: goal #> (Hyps.empty, hole)
-      end
   end
 
   (* everything with custom operators *)
@@ -146,8 +128,6 @@ struct
         val H =
           case jdg of
             H >> _ => H
-          | MATCH _ => Hyps.empty
-          | MATCH_RECORD _ => Hyps.empty
         val (goal, hole) = makeGoal tr @@ Seq.map (unfold sign opids) jdg
       in
         |>: goal #> (H, hole)

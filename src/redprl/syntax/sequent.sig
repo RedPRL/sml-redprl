@@ -11,11 +11,6 @@ struct
   datatype jdg =
      (* sequents / formal hypothetical judgment *)
      >> of catjdg ctx * catjdg
-     (* unify a term w/ a head operator and extract the kth subterm *)
-   | MATCH of RedPrlAbt.operator * int * abt * abt list
-     (* unify a term w/ RECORD and extract the type of the label;
-      * the third argument is the tuple. *)
-   | MATCH_RECORD of label * abt * abt
 end
 
 signature SEQUENT =

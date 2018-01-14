@@ -11,8 +11,6 @@ struct
 
   fun map f =
     fn H >> catjdg => Hyps.map (AJ.map f) H >> AJ.map f catjdg
-     | MATCH (th, k, a, ms) => MATCH (th, k, f a, List.map f ms)
-     | MATCH_RECORD (lbl, tm, tuple) => MATCH_RECORD (lbl, f tm, f tuple)
 
   local
     open Hyps.ConsView
@@ -42,7 +40,6 @@ struct
 
   fun relabel srho =
     fn H >> catjdg => relabelHyps H srho >> AJ.map (Tm.renameVars srho) catjdg
-     | jdg => map (Tm.renameVars srho) jdg
 
   fun prettyHyps f : 'a ctx -> Fpp.doc =
     Fpp.vsep o Hyps.foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, f a] :: r) []
@@ -75,8 +72,6 @@ struct
          AJ.pretty atjdg 
        else
          ruleSep (prettyHyps AJ.pretty H, AJ.pretty atjdg)
-     | MATCH (th, k, a, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
-     | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match-record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
   val rec eq =
     fn (H1 >> catjdg1, H2 >> catjdg2) =>
@@ -96,14 +91,6 @@ struct
            andalso AJ.eq (catjdg1', catjdg2')
        end
        handle _ => false)
-     | (MATCH (th1, k1, a1, ms1), MATCH (th2, k2, a2, ms2)) =>
-          Tm.O.eq (th1, th2)
-            andalso k1 = k2
-            andalso Tm.eq (a1, a2)
-            andalso ListPair.allEq Tm.eq (ms1, ms2)
-     | (MATCH_RECORD (lbl1, a1, m1), MATCH_RECORD (lbl2, a2, m2)) =>
-          lbl1 = lbl2 andalso Tm.eq (a1, a2) andalso Tm.eq (m1, m2)
-     | _ => false
 
   local
     structure AJ = AtomicJudgment

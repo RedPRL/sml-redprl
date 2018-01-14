@@ -25,12 +25,13 @@ Thm Line/Trans : [
    [eq : (= ty (@ p 1) (@ q 0))]
    (path [_] ty (@ p 0) (@ q 1)))
 ] by [
-  (lam ty p q eq => abs x =>
-  `(hcom 0~>1 ty (@ p x)
-    [x=0 [_] (@ p 0)]
-    [x=1 [y] (@ q y)])); 
+  lam ty p q eq => 
+  (abs x =>
+   `(hcom 0~>1 ty (@ p x)
+     [x=0 [_] (@ p 0)]
+     [x=1 [y] (@ q y)])); 
   
-  repeat {assumption || auto-step}
+  auto; assumption
 ].
 
 Thm Line/Symm : [

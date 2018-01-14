@@ -20,8 +20,6 @@ sig
   val Rewrite : sign -> hyp Selector.t * Accessor.t -> abt -> tactic
   val Symmetry : tactic
 
-  val Synth : sign -> rule
-
   val Inversion : hyp -> tactic
 
   (* synthetic elim rule for nested pi, path and line types *)
