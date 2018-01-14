@@ -76,14 +76,16 @@ struct
   structure Names = 
   struct
 
-    fun Push xs jdg = 
-      let
-        val jdg' as H >> _ = Sequent.push xs jdg
-        val (goal, hole) = makeGoal [] jdg'
-      in
-        Lcf.|> (|>: goal, abstractEvidence H hole)
-      end
-
+    fun Push xs = 
+      fn jdg as _ >> _ => 
+         let
+           val jdg' as H >> _ = Sequent.push xs jdg
+           val (goal, hole) = makeGoal [] jdg'
+         in
+           Lcf.|> (|>: goal, abstractEvidence H hole)
+         end
+       | jdg => Lcf.ret Lcf.isjdg jdg
+      
     fun PopAs xs jdg = 
       let
         val jdg' as H >> _ = Sequent.popAs xs jdg

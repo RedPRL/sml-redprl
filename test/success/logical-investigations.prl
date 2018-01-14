@@ -30,10 +30,15 @@ Thm Thm3/low-level : [
    (-> q r)
    (-> p r))
 ] by [
-  fresh p q r pq qr x -> repeat {refine fun/intro || id};
-  auto;
-  fresh z -> elim qr;
-  [fresh y -> elim pq; [use x, use y], use z]
+  // fresh p q r pq qr x -> 
+  repeat {refine fun/intro || id};
+  auto; pop x qr pq r q p => 
+  elim qr; elim pq;
+  [ use x
+  , pop _ y => use y
+  , use x
+  , pop _ _ _ z => use z
+  ]
 ].
 
 Extract Thm3/low-level.

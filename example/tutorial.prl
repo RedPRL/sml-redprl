@@ -35,8 +35,8 @@ Thm RespectEquality : [
    ($ family ($ Not ($ Not b))))
 ] by [
   lam family b pf =>
-  fresh b' -> rewrite ($ NotNot b);
-  [ `($ family b')
+  rewrite ($ NotNot b);
+  [ pop b' => `($ family b')
   , use pf
   , auto
   , auto ]
@@ -104,7 +104,7 @@ Thm FunToPairIsEquiv : [
     , abs _ => `pair }
   , unfold Fiber;
     lam {fun,p} =>
-      fresh x:dim -> refine path/intro; [
+      refine path/intro; [ pop x:dim =>
         {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
          abs y =>
            `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
@@ -115,8 +115,8 @@ Thm FunToPairIsEquiv : [
         [ refine fun/eq/eta; #1{auto}; auto; symmetry;
           claim p/0 : [(@ p 0) = ($ FunToPair ty fun) in (* ty ty)] by [ auto ];
           auto;
-          [ fresh h -> rewrite p/0; [`(= ty (! proj1 h) ($ fun tt))]
-          , fresh h -> rewrite p/0; [`(= ty (! proj2 h) ($ fun ff))]
+          [ rewrite p/0; [pop h => `(= ty (! proj1 h) ($ fun tt))]
+          , rewrite p/0; [pop h => `(= ty (! proj2 h) ($ fun ff))]
           ]
         ]; auto
 

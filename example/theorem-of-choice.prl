@@ -10,7 +10,8 @@ Thm Choice(#i:lvl) : [
   lam a b r f =>
     {lam x => let {y,_} = f [`x]; `y,
      lam x => let {_,z} = f [`x]; `z};
-    fresh aux0 _ -> inversion; reduce at left in aux0; auto; assumption
+  
+  inversion; pop _ aux0 => reduce at left in aux0; auto; assumption
 ].
 
-Print Choice.
+// Print Choice.

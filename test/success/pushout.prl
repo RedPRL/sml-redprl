@@ -22,10 +22,11 @@ Def S1' = [(pushout record record bool [_] tuple [_] tuple)].
 Thm PushoutToS1 : [
   (-> S1' S1)
 ] by [
-  lam p => fresh a b u:dim c -> elim p;
+  lam p => elim p;
     [ `base
     , `base
-    , elim c;
+    , pop c u:dim =>
+      elim c; 
       [ `(loop u)
       , `base
       ]
@@ -33,13 +34,15 @@ Thm PushoutToS1 : [
     auto
 ].
 
+
 Thm PushoutToS1/Test0 : [
   (= (-> S1' S1) PushoutToS1 PushoutToS1)
 ] by [
   unfold PushoutToS1; // otherwise too easy
-  fresh s1 -> refine fun/eq/lam;
-  [ refine pushout/eq/pushout-rec ];
-  auto
+  refine fun/eq/lam;
+  [ refine pushout/eq/pushout-rec; auto
+  , auto
+  ]
 ].
 
 Thm PushoutBetaEasiest(#i:lvl) : [

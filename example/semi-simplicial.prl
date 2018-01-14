@@ -2,14 +2,15 @@ Thm Pick : [
   // pick #(first argument) from #(second argument)
   (-> nat nat (U 0))
 ] by [
-  lam n => fresh n' n'/ih -> elim n;
+  lam n => elim n;
   [ lam n => `record
-  , lam m => fresh m' m'/ih -> elim m;
+  , pop n'/ih n' => 
+    lam m => elim m;
     [ `void
-    , `(record
+    , pop m'/ih m' => 
+      `(record
         [head : bool]
-        [tail : (if head ($ n'/ih m') m'/ih)]
-       )
+        [tail : (if head ($ n'/ih m') m'/ih)])
     ]
   ];
   auto
@@ -44,12 +45,12 @@ Thm Pick/succ/0/succ/1 : [
 ].
 
 Tac Replace(#z, #A) = [
-  fresh ty -> rewrite #A in #z; [`ty]; auto
+  rewrite #A in #z; [pop ty => `ty]; auto
 ].
 
 
 Tac ReplaceGoal(#A:exp) = [
-  fresh ty -> rewrite #A in concl; [`ty]; auto
+  rewrite #A in concl; [pop ty => `ty]; auto
 ].
 
 Thm Pick/compose : [
@@ -59,13 +60,16 @@ Thm Pick/compose : [
    ($ Pick a b)
    ($ Pick a c))
 ] by [
-  lam a => fresh a' a'/ih -> elim a;
+  lam a => elim a;
   [ lam b c p0 p1 => `tuple
-  , lam b => fresh b' b'/ih -> elim b;
+  , pop a'/ih a' =>
+    lam b => elim b;
     [ lam c p0 p1 => elim p1
-    , lam c => fresh c' c'/ih -> elim c;
+    , pop b'/ih b' =>
+      lam c => elim c;
       [ lam p0 => elim p0
-      , lam p0 => (Replace p0 ($ Pick/succ/0/succ/1 b' c'));
+      , pop c'/ih c' =>
+        lam p0 => (Replace p0 ($ Pick/succ/0/succ/1 b' c'));
         let {head = p0/h, tail = p0/t} = p0; elim p0/h;
         [ lam p1 => (Replace p1 ($ Pick/succ/0/succ/1 a' b'));
           let {head = p1/h, tail = p1/t} = p1; elim p1/h;
