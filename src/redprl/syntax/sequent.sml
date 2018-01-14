@@ -8,6 +8,7 @@ struct
 
   datatype atjdg = datatype AJ.jdg
   type abt = Tm.abt
+  type variable = Tm.variable
 
   type hyps = {hyps: atjdg Tl.telescope, bound: Tm.variable list}
 

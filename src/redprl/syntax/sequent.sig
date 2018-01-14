@@ -1,6 +1,8 @@
 signature SEQUENT =
 sig
   datatype atjdg = datatype AtomicJudgment.jdg
+  type abt = RedPrlAbt.abt
+  type variable = RedPrlAbt.variable
 
   type hyps
 
@@ -8,12 +10,10 @@ sig
      (* sequents / formal hypothetical judgment *)
      >> of hyps * atjdg
      (* unify a term w/ a head operator and extract the kth subterm *)
-   | MATCH of RedPrlAbt.operator * int * Tm.abt * Tm.abt list
+   | MATCH of RedPrlAbt.operator * int * abt * abt list
      (* unify a term w/ RECORD and extract the type of the label;
       * the third argument is the tuple. *)
-   | MATCH_RECORD of string * Tm.abt * Tm.abt
-
-  type abt = Tm.abt
+   | MATCH_RECORD of string * abt * abt
 
   val map : (abt -> abt) -> jdg -> jdg
 
@@ -25,18 +25,18 @@ sig
   structure Hyps : 
   sig
     val empty : hyps
-    val snoc : hyps -> Tm.variable -> atjdg -> hyps
-    val foldr : (Tm.variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b
-    val foldl : (Tm.variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b    
-    val toList : hyps -> Tm.abt list  
-    val lookup : hyps -> Tm.variable -> atjdg
-    val substAfter : Tm.variable * Tm.abt -> hyps -> hyps
-    val remove : Tm.variable -> hyps -> hyps
-    val splice : hyps -> Tm.variable -> hyps -> hyps
-    val singleton : Tm.variable -> atjdg -> hyps
-    val interposeAfter : Tm.variable * hyps -> hyps -> hyps
-    val interposeThenSubstAfter : Tm.variable * hyps * Tm.abt -> hyps -> hyps
-    val modifyAfter : Tm.variable -> (atjdg -> atjdg) -> hyps -> hyps
+    val snoc : hyps -> variable -> atjdg -> hyps
+    val foldr : (variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b
+    val foldl : (variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b    
+    val toList : hyps -> abt list  
+    val lookup : hyps -> variable -> atjdg
+    val substAfter : variable * abt -> hyps -> hyps
+    val remove : variable -> hyps -> hyps
+    val splice : hyps -> variable -> hyps -> hyps
+    val singleton : variable -> atjdg -> hyps
+    val interposeAfter : variable * hyps -> hyps -> hyps
+    val interposeThenSubstAfter : variable * hyps * abt -> hyps -> hyps
+    val modifyAfter : variable -> (atjdg -> atjdg) -> hyps -> hyps
   end
 
   val lookupSelector : Sym.t Selector.t -> hyps * atjdg -> atjdg
@@ -47,8 +47,8 @@ sig
   val truncateFrom : Sym.t Selector.t -> hyps -> hyps
 
 
-  val push : Tm.variable list -> jdg -> jdg
-  val popAs : Tm.variable list -> jdg -> jdg
+  val push : variable list -> jdg -> jdg
+  val popAs : variable list -> jdg -> jdg
 
-  val popSpecific : Tm.variable list -> jdg -> jdg
+  val popSpecific : variable list -> jdg -> jdg
 end
