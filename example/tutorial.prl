@@ -124,13 +124,17 @@ Thm FunToPairIsEquiv : [
            `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
         }); 
       [ unfold FunToPair in p/0; reduce in p/0 at right;
+        fresh q0 q1 q2 q3 -> inversion;
+        reduce at right in q2; reduce at right in q3;
         fresh b1 b2 -> auto;
-        (elim b1 || elim b2);
-        reduce at right; fresh q0 q1 q2 q3 -> inversion;
-        reduce at right in q2; reduce at right in q3; symmetry; assumption
+        (elim b1 || elim b2 || id);
+        reduce at right;
+        reduce at right in q0; reduce at right in q1;
+        assumption || symmetry; assumption
       , unfold FunToPair in p/1; reduce in p/1 at right;
         auto; fresh q0 q1 q2 q3 -> inversion;
-        reduce at right in q1; reduce at right in q0; assumption
+        reduce at right in q0; reduce at right in q1;
+        assumption
       ]
      })
   }
@@ -201,8 +205,9 @@ Thm FunPath : [
 ] by [
   lam a b f g p =>
   lam arg => abs x =>
-  `($ (@ p x) arg)
+    `($ (@ p x) arg)
 ].
+
 
 Print FunPath.
 
