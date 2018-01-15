@@ -8,12 +8,13 @@ Thm Pick : [
     [ `void
     , `(record
         [head : bool]
-        [tail : (if head ($ n'/ih m') m'/ih)]
+        [tail : (if [_] (U 0) head ($ n'/ih m') m'/ih)]
        )
     ]
   ];
   auto
 ].
+
 
 
 Thm Pick/zero/L : [
@@ -34,13 +35,9 @@ Thm Pick/succ/0/succ/1 : [
     ($ Pick (succ n) (succ m))
     (record
      [head : bool]
-     [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
+     [tail : (if [_] (U 0) head ($ Pick n m) ($ Pick (succ n) m))])))
 ] by [
-  lam n m =>
-    claim aux0 : [($ Pick n m) in (U 0)] by [auto];
-    claim aux1 : [($ Pick (succ n) m) in (U 0)] by [auto];
-    unfold Pick; reduce at left in aux0; reduce at left in aux1; auto;
-    assumption
+  lam n m => auto
 ].
 
 Tac Replace(#z, #A) = [
@@ -110,19 +107,10 @@ Thm Pick/compose/tt/4/0/tt/5/0 : [
     (tuple [head tt] [tail ($ Pick/compose a b c p0/t p1/t)])))
 ] by [
   lam a b c p0/t p1/t =>
-    claim aux0 :
-      [  ($ Pick/compose a b c (! tail (tuple [head tt] [tail p0/t])) (! tail (tuple [head tt] [tail p1/t])))
-      =  ($ Pick/compose a b c p0/t p1/t)
-      in ($ Pick a c)
-      ] by [auto];
-    claim aux1 : [ ($ Pick (succ a) c) type ] by [auto];
-    claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
-    unfold Pick/compose Pick;
-    reduce at type left right in aux0;
-    reduce at left right in aux1;
-    reduce at left in aux2;
-    repeat {auto-step || assumption}
+    auto;
+    unfold Pick; reduce; assumption
 ].
+
 
 Thm Pick/compose/tt/4/0/ff/5/0 : [
   (->
@@ -136,17 +124,8 @@ Thm Pick/compose/tt/4/0/ff/5/0 : [
     (tuple [head ff] [tail ($ Pick/compose (succ a) b c p0/t p1/t)])))
 ] by [
   lam a b c p0/t p1/t =>
-    claim aux0 :
-      [  ($ Pick/compose (succ a) b c (! tail (tuple [head tt] [tail p0/t])) (! tail (tuple [head ff] [tail p1/t])))
-      =  ($ Pick/compose (succ a) b c p0/t p1/t)
-      in ($ Pick (succ a) c)
-      ] by [auto];
-    claim aux1 : [ ($ Pick a c) type ] by [auto];
-    claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
-    unfold Pick Pick/compose;
-    reduce at type left right in aux0;
-    reduce at left in aux2;
-    repeat {auto-step || assumption}
+    auto;
+    unfold Pick; reduce; assumption
 ].
 
 Thm Pick/compose/ff/4/0 : [
@@ -161,15 +140,7 @@ Thm Pick/compose/ff/4/0 : [
     (tuple [head ff] [tail ($ Pick/compose (succ a) (succ b) c p0/t p1)])))
 ] by [
   lam a b c p0/t p1 =>
-    claim aux0 :
-      [  ($ Pick/compose (succ a) (succ b) c (! tail (tuple [head ff] [tail p0/t])) p1)
-      =  ($ Pick/compose (succ a) (succ b) c p0/t p1)
-      in ($ Pick (succ a) c)
-      ] by [auto];
-    claim aux1 : [ ($ Pick a c) type ] by [auto];
-    claim aux2 : [ ($ Pick a) in (-> nat (U 0)) ] by [auto];
-    unfold Pick Pick/compose;
-    reduce at type left right in aux0;
-    reduce at left in aux2;
-    repeat {auto-step || assumption}
+    auto; 
+    unfold Pick; reduce; assumption
 ].
+
