@@ -1,7 +1,7 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 January 12
+" Last Change:  2018 January 13
 
 if exists("b:current_syntax")
   finish
@@ -28,7 +28,7 @@ syn keyword redTac query reduce refine repeat rewrite symmetry
 syn keyword redTac then unfold use with fail inversion concl assumption
 syn match   redTac '[;`]'
 
-syn keyword redSeq at by in true type synth discrete kan hcom coe stable
+syn keyword redSeq at by in true type synth discrete kan stable
 
 syn region  redComm start="//" end="$"
 syn region  redBlockComm start="/\*" end="\*/" contains=redBlockComm
