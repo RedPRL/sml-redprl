@@ -34,11 +34,12 @@ Tac IdemTac(#car, #meet, #join, #ajm, #amj) = [
       use #amj [`a, use #meet [`a, `a]]
     ]; 
 
-    fresh h -> rewrite p at right; [`h, id, auto, auto];
-    let q = #ajm [`a, `a];
-
-    fresh h -> rewrite q at left; [`($ #meet a h)]; auto;
-    assumption
+    fresh h -> rewrite p at right;
+    [ `h
+    , let q = #ajm [`a, `a];
+      fresh h -> rewrite q at left; [`($ #meet a h)];
+      auto; assumption
+    ]; auto
 ].
 
 Thm Idem/meet(#l:lvl) : [
@@ -60,3 +61,5 @@ Thm Idem/join(#l:lvl) : [
   lam {car = car, meet = meet, join = join, absorb/join/meet = ajm, absorb/meet/join = amj} =>
     (IdemTac car join meet amj ajm)
 ].
+
+Print Idem/join.
