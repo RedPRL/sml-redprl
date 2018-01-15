@@ -224,6 +224,7 @@ struct
           case ajdg of
              AJ.TRUE cz => Syn.into @@ Syn.IF ((z, cz), VarKit.toExp z, (holeT, holeF))
            | AJ.EQ_TYPE _ => axiom
+           | AJ.SUB_TYPE _ => axiom
            | _ => raise Fail "Bool.Elim cannot be called with this kind of goal"
       in
         |>: goalT >: goalF #> (H, evidence)
@@ -231,32 +232,30 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected strict bool elimination problem"]
 
-    fun EqElim alpha jdg =
+    fun EqElim sign alpha jdg =
       let
         val tr = ["Bool.EqElim"]
         val H >> ajdg = jdg
         val ((if0, if1), ty) = View.matchAsEq ajdg
-        val Syn.IF (_, m0, (t0, f0)) = Syn.out if0
+        val Syn.IF ((z, motivez), m0, (t0, f0)) = Syn.out if0
         val Syn.IF (_, m1, (t1, f1)) = Syn.out if1
 
-        (* motive *)
-        val x = alpha 0
-        val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL))
-        val (goalC, holeTy) = makeTerm tr Hx O.EXP
+        val (psi, boolTy) = Synth.synthTerm sign tr H m0
+        val Syn.BOOL = Syn.out boolTy
 
         (* eliminated term *)
-        val goalM = makeEq tr H ((m0, m1), (Syn.into Syn.BOOL))
+        val goalM = makeEqIfDifferent tr H ((m0, m1), (Syn.into Syn.BOOL))
 
         (* result type*)
-        val goalTy = View.makeAsSubType tr H (substVar (m0, x) holeTy, ty)
+        val goalTy = View.makeAsSubType tr H (substVar (m0, z) motivez, ty)
 
         (* tt branch *)
-        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy))
+        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, z) motivez))
 
         (* ff branch *)
-        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy))
+        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, z) motivez))
       in
-        |>: goalC >: goalM >: goalT >: goalF >: goalTy #> (H, axiom)
+        psi >:? goalM >: goalT >: goalF >: goalTy #> (H, axiom)
       end
   end
 
@@ -347,7 +346,7 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected bool elimination problem"]
 
-    fun EqElim alpha jdg =
+    fun EqElim sign alpha jdg =
       let
         val tr = ["WBool.EqElim"]
         val H >> ajdg = jdg
@@ -357,6 +356,9 @@ struct
         val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
         val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
+        val (psi, wboolTy) = Synth.synthTerm sign tr H m0
+        val Syn.WBOOL = Syn.out wboolTy
+
         (* motive *)
         val z = alpha 0
         val c0z = VarKit.rename (z, x) c0x
@@ -365,7 +367,7 @@ struct
         val goalC = makeEqType tr Hz ((c0z, c1z), k)
 
         (* eliminated term *)
-        val goalM = makeEq tr H ((m0, m1), Syn.into Syn.WBOOL)
+        val goalM = makeEqIfDifferent tr H ((m0, m1), Syn.into Syn.WBOOL)
 
         (* result type*)
         val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) c0x, ty)
@@ -376,7 +378,7 @@ struct
         (* ff branch *)
         val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
-        |>: goalM >: goalT >: goalF >: goalC >:? goalTy #> (H, axiom)
+        psi >:? goalM >: goalT >: goalF >: goalC >:? goalTy #> (H, axiom)
       end
   end
 
@@ -687,6 +689,7 @@ struct
           case ajdg of
              AJ.TRUE _ => axiom
            | AJ.EQ_TYPE _ => axiom
+           | AJ.SUB_TYPE _ => axiom
            | _ => raise Fail "Void.Elim cannot be called with this kind of goal"
       in
         T.empty #> (H, evidence)

@@ -207,12 +207,12 @@ struct
     fn "bool/eqtype" => Lcf.rule o Bool.EqType
      | "bool/eq/tt" => Lcf.rule o Bool.EqTT
      | "bool/eq/ff" => Lcf.rule o Bool.EqFF
-     | "bool/eq/if" => Lcf.rule o Bool.EqElim
+     | "bool/eq/if" => Lcf.rule o Bool.EqElim sign
      | "wbool/eqtype" => Lcf.rule o WBool.EqType
      | "wbool/eq/tt" => Lcf.rule o WBool.EqTT
      | "wbool/eq/ff" => Lcf.rule o WBool.EqFF
      | "wbool/eq/fcom" => Lcf.rule o WBool.EqFCom
-     | "wbool/eq/wif" => Lcf.rule o WBool.EqElim
+     | "wbool/eq/wif" => Lcf.rule o WBool.EqElim sign
      | "nat/eqtype" => Lcf.rule o Nat.EqType
      | "nat/eq/zero" => Lcf.rule o Nat.EqZero
      | "nat/eq/succ" => Lcf.rule o Nat.EqSucc
@@ -312,6 +312,7 @@ struct
          Syn.BOOL => Lcf.rule o Bool.Elim z
        | Syn.VOID => Lcf.rule o Void.Elim z
        | Syn.EQUALITY _ => Lcf.rule o InternalizedEquality.Elim z
+       | Syn.RECORD _ => Lcf.rule o Record.Elim z
        | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoElim", TermPrinter.ppTerm ty)
 
     fun AutoElim sign = NormalizeHypDelegate AutoElimBasis sign
@@ -418,7 +419,7 @@ struct
       fun StepEqSubTypeNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Wrapper.applyEqRule Universe.VarFromTrue
-         | (Syn.IF _, Syn.IF _) => (fn mode => Wrapper.applyEqRule WBool.EqElim mode orelse_ Wrapper.applyEqRule Bool.EqElim mode)
+         | (Syn.IF _, Syn.IF _) => (fn mode => Wrapper.applyEqRule (Bool.EqElim sign) mode orelse_ Wrapper.applyEqRule (WBool.EqElim sign) mode)
          | (Syn.S1_REC _, Syn.S1_REC _) => Wrapper.applyEqRule S1.EqElim
          | (Syn.NAT_REC _, Syn.NAT_REC _) => Wrapper.applyEqRule Nat.EqElim
          | (Syn.INT_REC _, Syn.INT_REC _) => Wrapper.applyEqRule Int.EqElim
@@ -536,7 +537,7 @@ struct
       fun StepEqNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Lcf.rule o InternalizedEquality.VarFromTrue
-         | (Syn.IF _, Syn.IF _) => Lcf.rule o WBool.EqElim orelse_ Lcf.rule o Bool.EqElim
+         | (Syn.IF _, Syn.IF _) => Lcf.rule o Bool.EqElim sign orelse_ Lcf.rule o WBool.EqElim sign
          | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule o S1.EqElim
          | (Syn.NAT_REC _, Syn.NAT_REC _) => Lcf.rule o Nat.EqElim
          | (Syn.INT_REC _, Syn.INT_REC _) => Lcf.rule o Int.EqElim
@@ -672,16 +673,22 @@ struct
        * because everything is subject to change now.
        *)
 
-      fun NondetFromHypDelegate tac = matchGoal
+      fun reduceJdg sign =
+        fn AJ.TRUE ty => AJ.TRUE (Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
+         | jdg => jdg
+
+      fun NondetFromHypDelegate sign tac = matchGoal
         (fn H >> _ =>
               Hyps.foldr
-                (fn (z, jdg, accum) => tac (z, jdg) orelse_ accum)
+                (fn (z, jdg, accum) => tac (z, reduceJdg sign jdg) orelse_ accum)
                 (fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Fpp.text "empty context"))
                 H)
 
-      val NondetEqTypeFromHyp = NondetFromHypDelegate
+      fun NondetEqTypeFromHyp sign = NondetFromHypDelegate sign
         (fn (z, AJ.EQ_TYPE _) => Lcf.rule o TypeEquality.NondetFromEqType z
           | (z, AJ.TRUE _) =>
+              Lcf.rule o Void.Elim z
+                orelse_
               Lcf.rule o TypeEquality.NondetFromTrue z
                 orelse_
               Lcf.rule o InternalizedEquality.NondetTypeFromTrueEqAtType z
@@ -689,14 +696,14 @@ struct
               Lcf.rule o Universe.NondetEqTypeFromTrueEqType z
           | (z, _)  => fail @@ E.NOT_APPLICABLE (Fpp.text "EqTypeFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
-      val NondetTrueFromHyp = NondetFromHypDelegate
-        (fn (z, AJ.TRUE _) => Lcf.rule o InternalizedEquality.NondetEqFromTrueEq z
+      fun NondetTrueFromHyp sign = NondetFromHypDelegate sign
+        (fn (z, AJ.TRUE _) => Lcf.rule o InternalizedEquality.NondetEqFromTrueEq z orelse_ Lcf.rule o Void.Elim z
           | (z, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "TrueFromHyp", Fpp.hsep [Fpp.text "hyp", TermPrinter.ppVar z]))
 
     in
-      val NondetStepJdgFromHyp = matchGoal
-        (fn _ >> AJ.TRUE _ => NondetTrueFromHyp
-          | _ >> AJ.EQ_TYPE _ => NondetEqTypeFromHyp
+      fun NondetStepJdgFromHyp sign = matchGoal
+        (fn _ >> AJ.TRUE _ => NondetTrueFromHyp sign
+          | _ >> AJ.EQ_TYPE _ => NondetEqTypeFromHyp sign
           | seq => fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Seq.pretty seq))
 
       fun AutoStep sign =

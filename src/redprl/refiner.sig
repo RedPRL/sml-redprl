@@ -13,7 +13,7 @@ sig
   val CutLemma : sign -> abt -> rule
 
   val AutoStep : sign -> tactic
-  val NondetStepJdgFromHyp : tactic
+  val NondetStepJdgFromHyp : sign -> tactic
   
   val Elim : sign -> hyp -> tactic
   val Exact : abt -> tactic

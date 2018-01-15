@@ -61,7 +61,7 @@ struct
     tac then_ fail "incomplete"
 
   fun autoTac sign = repeat (try @@ R.AutoStep sign)
-  fun autoTacComplete sign = try (complete (autoTac sign) orelse_ R.NondetStepJdgFromHyp)
+  fun autoTacComplete sign = try (complete (autoTac sign) orelse_ R.NondetStepJdgFromHyp sign)
 
   fun exactAuto sign m = 
     R.Exact m thenl [autoTacComplete sign]
@@ -273,7 +273,7 @@ struct
      | O.TAC_REDUCE_PART $ [_ \ sel, _ \ accs] => Lcf.rule o R.Computation.ReducePart sign (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs)
      | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule o R.Custom.UnfoldAll sign opids
      | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule o R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
-     | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp
+     | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp sign
      | O.RULE_PRIM ruleName $ _ => R.lookupRule sign ruleName
      | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule o R.Cut (AJ.out jdg) thenl' ([u], [tactic sign env tm1, tactic sign env tm2])
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
