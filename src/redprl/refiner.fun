@@ -673,14 +673,10 @@ struct
        * because everything is subject to change now.
        *)
 
-      fun reduceJdg sign =
-        fn AJ.TRUE ty => AJ.TRUE (Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
-         | jdg => jdg
-
       fun NondetFromHypDelegate sign tac = matchGoal
         (fn H >> _ =>
               Hyps.foldr
-                (fn (z, jdg, accum) => tac (z, reduceJdg sign jdg) orelse_ accum)
+                (fn (z, jdg, accum) => tac (z, jdg) orelse_ accum)
                 (fail @@ E.NOT_APPLICABLE (Fpp.text "non-deterministic search", Fpp.text "empty context"))
                 H)
 
