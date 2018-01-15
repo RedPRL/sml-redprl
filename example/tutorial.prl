@@ -117,28 +117,22 @@ Thm FunToPairIsEquiv : [
     , abs _ => `pair }
   , unfold Fiber;
     lam {fun,p} =>
-      fresh x:dim -> refine path/intro; [
+     (GetEndpoints p [p/0 p/1] #tac{
+      (abs x => 
         {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
          abs y =>
            `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
-        }
-      , (GetEndpoints p [p/0 p/1] #tac{
-          unfold FunToPair in p/0; reduce in p/0 at right;
-          fresh b1 b2 -> auto;
-          (elim b1 || elim b2);
-          reduce at right; fresh q0 q1 q2 q3 -> inversion;
-          reduce at right in q2; reduce at right in q3; symmetry; assumption
-         })
-      , (GetEndpoints p [p/0 p/1] #tac{
-          unfold FunToPair in p/1; reduce in p/1 at right;
-          refine record/eq/tuple; 
-          [ auto
-          , fresh y:dim -> refine path/eq/abs; unfold WeakConnection; auto;
-            fresh q0 q1 q2 q3 -> inversion; reduce at right in q1; reduce at right in q0; assumption
-          , auto
-          ]
-         })
-      ];
+        }); 
+      [ unfold FunToPair in p/0; reduce in p/0 at right;
+        fresh b1 b2 -> auto;
+        (elim b1 || elim b2);
+        reduce at right; fresh q0 q1 q2 q3 -> inversion;
+        reduce at right in q2; reduce at right in q3; symmetry; assumption
+      , unfold FunToPair in p/1; reduce in p/1 at right;
+        auto; fresh q0 q1 q2 q3 -> inversion;
+        reduce at right in q1; reduce at right in q0; assumption
+      ]
+     })
   }
 ].
 
