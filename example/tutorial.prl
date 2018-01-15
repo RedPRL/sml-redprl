@@ -106,6 +106,7 @@ Tac GetEndpoints(#p, #t:[exp,exp].tac) = [
 ].
 
 Print WeakConnection.
+
 Thm FunToPairIsEquiv : [
   (->
    [ty : (U 0 kan)]
@@ -124,13 +125,9 @@ Thm FunToPairIsEquiv : [
       , (GetEndpoints p [p/0 p/1] #tac{
           unfold FunToPair in p/0; reduce in p/0 at right;
           fresh b1 b2 -> auto;
-          [ fresh h -> rewrite p/0 at right; [`(if [_] ty b1 (! proj1 h) (! proj2 h))]; auto;
-            elim b1; reduce at right; auto
-          , fresh h -> rewrite p/0 at right; [`(if [_] ty b2 (! proj1 h) (! proj2 h))]; auto;
-            elim b2; reduce at right; auto
-          , fresh h -> rewrite p/0 at right; [`(if [_] ty b2 (! proj1 h) (! proj2 h))]; auto; 
-            elim b2; reduce at right; auto
-          ]
+          (elim b1 || elim b2);
+          reduce at right; fresh q0 q1 q2 q3 -> inversion;
+          reduce at right in q2; reduce at right in q3; symmetry; assumption
          })
       , (GetEndpoints p [p/0 p/1] #tac{
           unfold FunToPair in p/1; reduce in p/1 at right;
