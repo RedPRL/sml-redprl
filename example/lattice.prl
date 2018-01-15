@@ -1,0 +1,69 @@
+Thm Lattice(#l:lvl) : [(U (++ #l))] by [
+  `(record
+    [car : (U #l)]
+    [meet join : (-> car car car)]
+    [meet/sym :
+     (-> [a b : car] 
+         (= car ($ meet a b) ($ meet b a)))]
+    [join/sym : 
+     (-> [a b : car]
+         (= car ($ join a b) ($ join b a)))]
+    [meet/assoc : 
+     (-> [a b c : car]
+         (= car 
+            ($ meet ($ meet a b) c)
+            ($ meet a ($ meet b c))))]
+    [join/assoc : 
+     (-> [a b c : car]
+         (= car 
+            ($ join ($ join a b) c)
+            ($ join a ($ join b c))))]
+    [absorb/join/meet :
+     (-> [a b : car]
+         (= car ($ join a ($ meet a b)) a))]
+    [absorb/meet/join :
+     (-> [a b : car]
+         (= car ($ meet a ($ join a b)) a))])
+].
+
+Thm Idem/join(#l:lvl) : [
+  (-> 
+   [l : (Lattice #l)]
+   [a : (!car l)]
+   (= (!car l) ($ (!join l) a a) a))
+] by [
+  lam {car = car, meet = meet, join = join, absorb/join/meet = ajm, absorb/meet/join = amj} a => 
+  reduce in a; reduce at type left; 
+
+  claim p : [ (= car a ($join a ($meet a ($join a a)))) ] by [
+    symmetry;
+    use ajm [`a, use join [`a, `a]]
+  ];
+
+  fresh h -> rewrite p at right; [`h, id, auto, auto];
+  let q = amj [`a, `a];
+
+  fresh h -> rewrite q at left; [`($ join a h)]; auto;
+  assumption
+].
+
+Thm Idem/meet(#l:lvl) : [
+  (-> 
+   [l : (Lattice #l)]
+   [a : (!car l)]
+   (= (!car l) ($ (!meet l) a a) a))
+] by [
+  lam {car = car, meet = meet, join = join, absorb/join/meet = ajm, absorb/meet/join = amj} a => 
+  reduce in a; reduce at type left; 
+
+  claim p : [ (= car a ($meet a ($join a ($meet a a)))) ] by [
+    symmetry;
+    use amj [`a, use meet [`a, `a]]
+  ];
+
+  fresh h -> rewrite p at right; [`h, id, auto, auto];
+  let q = ajm [`a, `a];
+
+  fresh h -> rewrite q at left; [`($ meet a h)]; auto;
+  assumption
+].
