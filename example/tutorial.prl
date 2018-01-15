@@ -94,6 +94,18 @@ Thm WeakConnection(#l:lvl) : [
         [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]))
 ].
 
+Tac GetEndpoints(#p, #t:[exp,exp].tac) = [
+  query pty <- #p;
+  match pty  {
+    [ty l r | #jdg{(path [_] %ty %l %r)} =>
+      claim p/0 : [(@ #p 0) = %l in %ty] by [auto; fail];
+      claim p/1 : [(@ #p 1) = %r in %ty] by [auto; fail];
+      (#t p/0 p/1)
+    ]
+  }
+].
+
+Print WeakConnection.
 Thm FunToPairIsEquiv : [
   (->
    [ty : (U 0 kan)]
@@ -106,21 +118,30 @@ Thm FunToPairIsEquiv : [
     lam {fun,p} =>
       fresh x:dim -> refine path/intro; [
         {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
-         abs y => `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
+         abs y =>
+           `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
         }
-      ]; 
-
-      [ symmetry; refine record/eq/tuple;
-        [ refine fun/eq/eta; #1{auto}; auto; symmetry;
-          claim p/0 : [(@ p 0) = ($ FunToPair ty fun) in (* ty ty)] by [ auto ];
-          auto;
-          [ fresh h -> rewrite p/0; [`(= ty (! proj1 h) ($ fun tt))]
-          , fresh h -> rewrite p/0; [`(= ty (! proj2 h) ($ fun ff))]
+      , (GetEndpoints p [p/0 p/1] #tac{
+          unfold FunToPair in p/0; reduce in p/0 at right;
+          fresh b1 b2 -> auto;
+          [ fresh h -> rewrite p/0 at right; [`(if [_] ty b1 (! proj1 h) (! proj2 h))]; auto;
+            elim b1; reduce at right; auto
+          , fresh h -> rewrite p/0 at right; [`(if [_] ty b2 (! proj1 h) (! proj2 h))]; auto;
+            elim b2; reduce at right; auto
+          , fresh h -> rewrite p/0 at right; [`(if [_] ty b2 (! proj1 h) (! proj2 h))]; auto; 
+            elim b2; reduce at right; auto
           ]
-        ]; auto
-
-      , auto
-      ]
+         })
+      , (GetEndpoints p [p/0 p/1] #tac{
+          unfold FunToPair in p/1; reduce in p/1 at right;
+          refine record/eq/tuple; 
+          [ auto
+          , fresh y:dim -> refine path/eq/abs; unfold WeakConnection; auto;
+            fresh q0 q1 q2 q3 -> inversion; reduce at right in q1; reduce at right in q0; assumption
+          , auto
+          ]
+         })
+      ];
   }
 ].
 
@@ -160,6 +181,7 @@ Thm ComputeCoercion : [
 ] by [
   auto
 ].
+
 
 // ---------------------------------------------------------
 // Part Two
@@ -295,8 +317,6 @@ Print JInv.
 
 // Computing winding numbers in the circle.
 
-Quit.
-
 // Bonus material:
 
 Thm Shannon : [
@@ -304,7 +324,7 @@ Thm Shannon : [
    [ty  : (-> bool (U 0))]
    [elt : (-> [b : bool] ($ ty b))]
    [b : bool]
-   (= ($ ty b) ($ elt b) (if b ($ elt tt) ($ elt ff))))
+   (= ($ ty b) ($ elt b) (if [b] ($ ty b) b ($ elt tt) ($ elt ff))))
 ] by [
   lam ty elt b =>
   elim b; auto
@@ -315,7 +335,7 @@ Thm WeakShannon : [
    [ty  : (-> wbool (U 0 kan))]
    [elt : (-> [b : wbool] ($ ty b))]
    [b : wbool]
-   (path [_] ($ ty b) ($ elt b) (wif [b'] ($ ty b') b ($ elt tt) ($ elt ff))))
+   (path [_] ($ ty b) ($ elt b) (if [b'] ($ ty b') b ($ elt tt) ($ elt ff))))
 ] by [
   lam ty elt b =>
   elim b; auto;
