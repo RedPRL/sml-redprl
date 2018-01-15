@@ -100,22 +100,24 @@ struct
   (* everything with custom operators *)
   structure Custom =
   struct
+    structure OpidSet = SplaySet (structure Elem = MlId)
+
     fun unfold sign opids m : abt =
       let
         infix $
+        val opidSet = List.foldl (fn (x, xs) => OpidSet.insert xs x) OpidSet.empty opids
         fun shallowUnfold m =
           case out m of
-             O.CUST (opid',_) $ _ =>
-               (case List.find (fn opid => opid = opid') opids of
-                   SOME _ =>
-                     let
-                       val m' = Machine.steps sign Machine.STABLE Machine.Unfolding.always 1 m
-                         handle exn => E.raiseError @@ E.IMPOSSIBLE @@ Fpp.hvsep
-                           [Fpp.text "unfolding", TermPrinter.ppTerm m, Fpp.text ":", E.format exn]
-                     in
-                       deepUnfold m'
-                     end
-                 | NONE => m)
+             O.CUST (opid,_) $ _ =>
+               if OpidSet.member opidSet opid then
+                 let
+                   val m' = Machine.steps sign Machine.STABLE Machine.Unfolding.always 1 m
+                     handle exn => E.raiseError @@ E.IMPOSSIBLE @@ Fpp.hvsep
+                       [Fpp.text "unfolding", TermPrinter.ppTerm m, Fpp.text ":", E.format exn]
+                 in
+                   deepUnfold m'
+                 end
+               else m 
            | _ => m
         and deepUnfold m = shallowUnfold (Abt.deepMapSubterms shallowUnfold m)
       in
