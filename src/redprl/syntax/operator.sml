@@ -291,6 +291,7 @@ struct
      | DEV_APPLY_HYP _ => "apply-hyp"
      | DEV_USE_HYP => "use-hyp"
      | DEV_INVERSION => "inversion"
+     | TAC_ASSUMPTION => "assumption"
 
      | FCOM => "fcom"
      | BOX => "box"
