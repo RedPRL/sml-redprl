@@ -284,7 +284,7 @@ struct
      | TAC_ELIM => "elim"
      | TAC_REWRITE => "rewrite"
      | TAC_ASSUMPTION => "assumption"
-     | TAC_POP _ => "pop"
+     | TAC_POP _ => "with"
      | TAC_PUSH => "push"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"

@@ -19,8 +19,8 @@ Thm LowLevel : [
     wbool)
 ] by [
   refine fun/intro;
-  [ pop f =>
-    elim f; [`tt, pop x/eq x => use x]
+  [ with f =>
+    elim f; [`tt, with x/eq x => use x]
   , refine fun/eqtype;
     refine wbool/eqtype
   ]
@@ -35,10 +35,10 @@ Thm LowLevel2 : [
     wbool)
 ] by [
   repeat {refine fun/intro; [id, auto]};
-  pop x f =>
+  with x f =>
     elim f; 
     [ use x
-    , pop y/eq y => use y
+    , with y/eq y => use y
     ]
 ].
 

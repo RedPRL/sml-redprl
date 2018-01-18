@@ -14,7 +14,7 @@ Thm MatchGoal : [ (-> bool bool bool bool bool bool) ] by [
     })
   };
   
-  pop _ _ y => use y
+  with _ _ y => use y
 ].
 
 Print MatchGoal.

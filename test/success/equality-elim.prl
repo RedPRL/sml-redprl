@@ -14,7 +14,7 @@ Tac Rewrite(#c : [exp].exp, #n, #a, #t : tac) = [
     // Use the elimination rule for equality. We bind a new hypothesis which will represent the location
     // in the goal #c which is being rewritten.
     rewrite p;
-    [pop x => `(#c x), id, auto, auto]
+    [with x => `(#c x), id, auto, auto]
   })
 ].
 

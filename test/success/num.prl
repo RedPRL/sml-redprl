@@ -28,7 +28,7 @@ Thm Pred : [
   lam a =>
   elim a;
   [ `zero ];
-  [ pop a' ind => `a' ]
+  [ with a' ind => `a' ]
 ].
 
 // A tactic to infer and supply a simple (non-dependent) motive to the nat/eq/nat-rec rule.
@@ -48,7 +48,7 @@ Thm Plus : [
   lam a =>
   elim a;
   [ lam x => use x
-  , pop ind a' =>
+  , with ind a' =>
     lam x =>
       let ih/x = ind [use x]; `(succ ih/x)
   ]
@@ -72,9 +72,9 @@ Thm Plus/zero/R : [
   lam n =>
     elim n;
     [ `ax
-    , pop ind n' => 
+    , with ind n' => 
       rewrite ind;
-      [ pop x => `(= nat (succ x) (succ n'))
+      [ with x => `(= nat (succ x) (succ n'))
       , auto
       , auto
       , auto; refine fun/eq/app; [`(-> nat nat)]; auto; SimpleNatRecEq
@@ -94,12 +94,12 @@ Thm Plus/succ/R : [
 ] by [
   lam n m => elim n;
     [ auto
-    , pop n'/ih n' => rewrite ($ Plus/succ/L n' (succ m));
-      [ pop x => `(= nat x (succ ($ Plus (succ n') m)))
+    , with n'/ih n' => rewrite ($ Plus/succ/L n' (succ m));
+      [ with x => `(= nat x (succ ($ Plus (succ n') m)))
       , rewrite ($ Plus/succ/L n' m);
-        [ pop x => `(= nat (succ ($ Plus n' (succ m))) (succ x))
+        [ with x => `(= nat (succ ($ Plus n' (succ m))) (succ x))
         , rewrite n'/ih;
-          [ pop x => `(= nat (succ x) (succ (succ ($ Plus n' m))))
+          [ with x => `(= nat (succ x) (succ (succ ($ Plus n' m))))
           , auto
           ]
         ]
@@ -114,7 +114,7 @@ Thm Plus/test0 : [
 ] by [
   lam n m eq =>
     rewrite ($ Plus/zero/R n) in eq;
-    [ pop x => `(= nat x m) ]; auto; use eq
+    [ with x => `(= nat x m) ]; auto; use eq
 ].
 
 Thm Eq/sym : [
@@ -128,10 +128,10 @@ Thm Plus/comm : [
 ] by [
   lam n m => elim n;
     [ symmetry; `($ Plus/zero/R  m)
-    , pop n'/ih n' => rewrite ($ Plus/succ/L n' m);
-      [ pop x => `(= nat x ($ Plus m (succ n')))
+    , with n'/ih n' => rewrite ($ Plus/succ/L n' m);
+      [ with x => `(= nat x ($ Plus m (succ n')))
       , rewrite n'/ih;
-        [ pop x => `(= nat (succ x) ($ Plus m (succ n')))
+        [ with x => `(= nat (succ x) ($ Plus m (succ n')))
         , symmetry; `($ Plus/succ/R m n')
         ]
       ]
@@ -159,11 +159,11 @@ Thm IntPred : [
 ] by [
   lam a => elim a;
   [ `-1
-  , pop _ a' => 
+  , with _ a' => 
       elim a';
-      [`0, pop _ n => `(succ n)]
+      [`0, with _ n => `(succ n)]
   , `-2
-  , pop _ a' =>
+  , with _ a' =>
       `(negsucc (succ (succ a')))
   ]
 ].
@@ -172,8 +172,8 @@ Thm IntSucc : [
   (-> int int)
 ] by [
   lam a => elim a;
-  [ `1, pop _ a' => `(succ (succ a'))
-  , `0, pop _ a' => `(negsucc a')
+  [ `1, with _ a' => `(succ (succ a'))
+  , `0, with _ a' => `(negsucc a')
   ]
 ].
 
@@ -182,9 +182,9 @@ Thm IntPlus : [
 ] by [
   lam a => elim a;
   [ lam b => use b
-  , pop ind a' => lam b => `($ IntSucc ($ ind b))
+  , with ind a' => lam b => `($ IntSucc ($ ind b))
   , lam b => `($ IntPred b)
-  , pop ind a' => lam b => `($ IntPred ($ ind b))
+  , with ind a' => lam b => `($ IntPred ($ ind b))
   ]
 ].
 

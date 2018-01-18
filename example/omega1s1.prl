@@ -19,7 +19,7 @@ Thm IntSuccIntPred : [
   lam i => 
   elim i;
   [ auto
-  , pop _ n => elim n; auto
+  , with _ n => elim n; auto
   , auto
   , auto
   ]
@@ -33,7 +33,7 @@ Thm IntPredIntSucc : [
     [ auto
     , auto
     , auto
-    , pop _ n => elim n; auto
+    , with _ n => elim n; auto
     ]
 ].
 
@@ -60,7 +60,7 @@ Thm IntSuccIsEquiv : [
         claim eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)];
         claim eq1 : [(= int ($ IntPred i) i')] by [
           rewrite eq0;
-          [pop i'' => `(= int ($ IntPred i'') i'), `($ IntPredIntSucc i')];
+          [with i'' => `(= int ($ IntPred i'') i'), `($ IntPredIntSucc i')];
           auto
         ];
 
@@ -101,8 +101,8 @@ Thm S1LoopToInt : [
   lam l => `(coe 0~>1 [x] ($ S1UnivCover (@ l x)) 0);
     claim eq : [(= S1 (@ l 1) base)] by [auto];
     refine coe/eq; auto;
-    [ rewrite eq at type; [pop x => `($ S1UnivCover x)]; auto
-    , rewrite eq at left; [pop x => `($ S1UnivCover x)]; auto
+    [ rewrite eq at type; [with x => `($ S1UnivCover x)]; auto
+    , rewrite eq at left; [with x => `($ S1UnivCover x)]; auto
     ]
 ].
 
@@ -128,9 +128,9 @@ Thm IntToS1Loop : [
 ] by [
   lam i => elim i;
     [ abs _ => `base
-    , pop ih => `($ S1LoopConcat Loop ih)
+    , with ih => `($ S1LoopConcat Loop ih)
     , `($ S1LoopInv Loop)
-    , pop ih => `($ S1LoopConcat ($ S1LoopInv Loop) ih)
+    , with ih => `($ S1LoopConcat ($ S1LoopInv Loop) ih)
     ]
 ].
 

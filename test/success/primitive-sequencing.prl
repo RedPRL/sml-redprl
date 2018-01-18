@@ -1,6 +1,6 @@
 Thm PrimitiveSequencingTest : [(-> bool bool bool bool)] by [
   repeat {refine fun/intro || id}; auto;
-  pop z y x => use y
+  with z y x => use y
 ].
 
 Extract PrimitiveSequencingTest.

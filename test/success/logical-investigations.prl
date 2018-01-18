@@ -32,12 +32,12 @@ Thm Thm3/low-level : [
 ] by [
   // fresh p q r pq qr x -> 
   repeat {refine fun/intro || id};
-  auto; pop x qr pq r q p => 
+  auto; with x qr pq r q p => 
   elim qr; elim pq;
   [ use x
-  , pop _ y => use y
+  , with _ y => use y
   , use x
-  , pop _ _ _ z => use z
+  , with _ _ _ z => use z
   ]
 ].
 

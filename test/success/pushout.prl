@@ -25,7 +25,7 @@ Thm PushoutToS1 : [
   lam p => elim p;
     [ `base
     , `base
-    , pop c u:dim =>
+    , with c u:dim =>
       elim c; 
       [ `(loop u)
       , `base
