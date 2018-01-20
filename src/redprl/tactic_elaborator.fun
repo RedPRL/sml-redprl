@@ -150,7 +150,7 @@ struct
       | O.PAT_TUPLE labeledPatterns =>
         let
           val (lbls, pats) = ListPair.unzip labeledPatterns
-          val names = List.map (fn lbl => Sym.named ("tmp/" ^ lbl)) lbls
+          val names = List.map (Sym.named) lbls
 
           val rec go = 
             fn [] => tac
@@ -170,7 +170,7 @@ struct
     let
       val n = List.length tacs
       val z' = Sym.new ()
-      val p = Sym.named "_"
+      val p = Sym.new ()
     in
       if n = 0 then 
         decompose sign z (pattern, names) tac
@@ -206,7 +206,7 @@ struct
   fun nameForPattern pat = 
     case pat of 
        O.PAT_VAR x => x
-     | O.PAT_TUPLE lpats => Sym.named (ListUtil.joinWith (Sym.toString o nameForPattern o #2) "-" lpats)
+     | O.PAT_TUPLE lpats => Sym.new ()
 
   local
     fun funIntrosBasis sign (pat, pats, names) tac _ =
@@ -318,7 +318,7 @@ struct
        let
          val z = VarKit.fromTerm (Syn.unpackAny var)
          val tacs = Syn.outVec' (tactic sign env) vec
-         val z' = RedPrlSym.named (Sym.toString z ^ "'")
+         val z' = RedPrlSym.new ()
        in
          applications sign z (O.PAT_VAR (), [z']) tacs (hyp sign z')
        end

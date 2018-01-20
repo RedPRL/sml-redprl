@@ -2330,8 +2330,8 @@ struct
 
     fun intoHasAllPathsTo C c =
       let
-        val c' = Var.named "c'"
-        val dummy = Sym.named "_"
+        val c' = Sym.new ()
+        val dummy = Sym.new ()
       in
         Syn.into @@ Syn.FUN (C, c',
           Syn.into @@ Syn.PATH ((dummy, C), VarKit.toExp c', c))

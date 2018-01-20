@@ -189,7 +189,7 @@ struct
              [] => raise Final
            | WIF ((x, tyx), HOLE, t, f) :: stk =>
              let
-               val u = Sym.named "u"
+               val u = Sym.new()
                val fcomu =
                  Syn.intoFcom
                    {dir = (r, VarKit.toDim u),
@@ -207,7 +207,7 @@ struct
              end
            | S1_REC ((x, tyx), HOLE, base, (v, loop)) :: stk => 
              let
-               val u = Sym.named "u"
+               val u = Sym.new ()
                val fcomu =
                  Syn.intoFcom
                    {dir = (r, VarKit.toDim u),
@@ -253,7 +253,7 @@ struct
                     tubes = hcomTubes}
                  fun recovery (v, b) recoverDim =
                    let
-                     val y = Sym.named "y"
+                     val y = Sym.new ()
                    in
                      Syn.intoHcom
                        {dir = hcomDir,
@@ -268,7 +268,7 @@ struct
                    end
                  val recovered =
                    let
-                     val dummy = Sym.named "_"
+                     val dummy = Sym.new ()
                    in
                      Syn.intoHcom
                        {dir = fcomDir,
@@ -365,7 +365,7 @@ struct
                    end
                  val coercedCap =
                    let
-                     val w = Sym.named "w"
+                     val w = Sym.new ()
                    in
                      Syn.intoHcom
                        {dir = fcomDir,
@@ -548,7 +548,7 @@ struct
      | O.PATH $ [[u] \ tyu, _ \ m0, _ \ m1] || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          fun apu m = Syn.into @@ Syn.DIM_APP (m, check (`u, O.DIM))
-         val v = Sym.named "_"
+         val v = Sym.new ()
          val hcomu =
            Syn.intoHcom
              {dir = dir,
@@ -725,7 +725,7 @@ struct
                fn (x :: xs) \ ty => xs \ substVar (head s, x) ty
                 | _ => raise Fail "Impossible field"
 
-             val u = Sym.named "u"
+             val u = Sym.new ()
              val ty'u = O.RECORD lbls $$ List.map (shiftField (VarKit.toDim u)) args
 
              val tail =
@@ -760,7 +760,7 @@ struct
                fn (x :: xs) \ ty => xs \ substVar (head s, x) ty
                 | _ => raise Fail "Impossible field"
 
-             val u = Sym.named "u"
+             val u = Sym.new ()
              val ty'u = O.RECORD lbls $$ List.map (shiftField (VarKit.toDim u)) args
 
              val tail =
@@ -812,7 +812,7 @@ struct
              fun m' dest = Syn.intoCoe {dir = (#1 dir, dest), ty = (u, c), coercee = m}
              fun fm' dest = substVar (m' dest, x) fx
              fun gm' dest = substVar (m' dest, y) gy
-             val z = Sym.named "y"
+             val z = Sym.new ()
              val ztm = VarKit.toDim y
              val vtm = VarKit.toDim v
            in
@@ -826,9 +826,9 @@ struct
            end
          val result =
            let
-             val dummy = Sym.named "_"
-             val v = Sym.named "v"
-             val m = Sym.named "m"
+             val dummy = Sym.new ()
+             val v = Sym.new ()
+             val m = Sym.new ()
            in
              Syn.into @@ Syn.PUSHOUT_REC
                ((dummy, substVar (#2 dir, u) (Syn.into @@ Syn.PUSHOUT (a, b, c, (x, fx), (y, gy)))),
@@ -876,7 +876,7 @@ struct
              fun m' dest = Syn.intoCoe {dir = (#1 dir, dest), ty = (u, a), coercee = m}
              fun fm' dest = substVar (m' dest, x) fx
              fun gm' dest = substVar (m' dest, y) gy
-             val z = Sym.named "y"
+             val z = Sym.new ()
              val ztm = VarKit.toDim y
              val vtm = VarKit.toDim v
            in
@@ -890,9 +890,9 @@ struct
            end
          val result =
            let
-             val dummy = Sym.named "_"
-             val v = Sym.named "v"
-             val m = Sym.named "m"
+             val dummy = Sym.new ()
+             val v = Sym.new ()
+             val m = Sym.new ()
            in
              Syn.into @@ Syn.COEQUALIZER_REC
                ((dummy, substVar (#2 dir, u) (Syn.into @@ Syn.COEQUALIZER (a, b, (x, fx), (y, gy)))),
@@ -918,7 +918,7 @@ struct
                [] => raise Final
              | HCOM (dir, HOLE, cap, tubes) :: stk =>
                  let
-                   val v = Sym.named "v"
+                   val v = Sym.new ()
                    val f = Syn.intoFst e
                    fun vproj m = Syn.into @@ Syn.VPROJ (r, m, f)
                    fun m' ty y = Syn.intoHcom
@@ -947,7 +947,7 @@ struct
                          fun fiberFromOne s = Syn.intoFst @@ Syn.intoApp (Syn.intoSnd (substVar (s, v) e), projFromOne s)
                          fun nFromOne s t = (* t is the dimension used in the hcom to fix the zero-end. *)
                            let
-                             val w = Sym.named "w"
+                             val w = Sym.new ()
                            in
                              Syn.intoHcom
                                {dir = (Syn.intoDim 1, t),
@@ -965,7 +965,7 @@ struct
                               let
                                 fun base x =
                                   let
-                                    val w = Sym.named "w"
+                                    val w = Sym.new ()
                                   in
                                     Syn.intoCom
                                       {dir = (#1 dir, x), ty = (v, b),
@@ -976,7 +976,7 @@ struct
                                   end
                                 val wallZero =
                                   let
-                                    val z = Sym.named "z"
+                                    val z = Sym.new ()
                                     val m = Syn.intoCoe
                                       {dir = (Syn.intoDim 0, VarKit.toDim y),
                                        ty = (y, substVar (Syn.intoDim 0, v) a),
@@ -1005,7 +1005,7 @@ struct
                                      wallZero)
                                 val n =
                                   let
-                                    val w = Sym.named "w"
+                                    val w = Sym.new ()
                                   in
                                     Syn.intoHcom
                                       {dir = (Syn.intoDim 0, Syn.intoDim 1),
