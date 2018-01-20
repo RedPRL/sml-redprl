@@ -1,7 +1,7 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 January 12
+" Last Change:  2018 January 20
 
 if exists("b:current_syntax")
   finish
@@ -36,6 +36,9 @@ syn region  redBlockComm start="/\*" end="\*/" contains=redBlockComm
 syn match   redMesg '\[\(Info\|Output\|Warning\|Error\)\]'
 syn keyword redMesg Trace
 
+syn match   redAnon '_\d\+'
+syn match   redAnon '_\d\+\/\(\a\|\d\|\'\|\/\|\-\)\+'
+
 hi def link redDecl Structure
 hi def link redSort Identifier
 hi def link redHole Error
@@ -46,5 +49,6 @@ hi def link redSeq  Normal
 hi def link redComm Comment
 hi def link redBlockComm Comment
 hi def link redMesg Structure
+hi def link redAnon NonText
 
 let b:current_syntax = "redprl"
