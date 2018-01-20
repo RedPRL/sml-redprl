@@ -10,80 +10,103 @@ struct
   type abt = Tm.abt
   type variable = Tm.variable
 
-  type hyps = {hyps: atjdg Tl.telescope, bound: Tm.variable list}
+  type hidden = Tm.variable * string option
+  type hyps = {hyps: atjdg Tl.telescope, hidden: hidden list}
 
   exception todo fun ?e = raise e  
 
   structure Hyps = 
   struct
 
-    fun toList {hyps, bound} =
+    fun toList {hyps, hidden} =
       Tl.foldr (fn (x, jdg, r) => Tm.check (Tm.`x, AJ.synthesis jdg) :: r) [] hyps
 
-    fun lookup {hyps, bound} z =
+    fun lookup {hyps, hidden} z =
       Tl.lookup hyps z
       handle _ =>
         raise RedPrlError.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppVar z]
 
-    fun modifyAfter x f {hyps, bound} =
+    fun modifyAfter x f {hyps, hidden} =
       {hyps = Tl.modifyAfter x f hyps,
-       bound = bound}
+       hidden = hidden}
 
-    fun remove x {hyps, bound} = 
+    fun remove x {hyps, hidden} = 
       {hyps = Tl.remove x hyps, 
-       bound = List.filter (fn y => not (Sym.eq (x, y))) bound}
+       hidden = List.filter (fn (y, _) => not (Sym.eq (x, y))) hidden}
 
-    fun foldl f z {hyps, bound} = Tl.foldl f z hyps
-    fun foldr f z {hyps, bound} = Tl.foldr f z hyps
+    fun foldl f z {hyps, hidden} = Tl.foldl f z hyps
+    fun foldr f z {hyps, hidden} = Tl.foldr f z hyps
 
-    fun snoc {hyps, bound} x jdg =
+    fun snoc {hyps, hidden} x jdg =
       {hyps = Tl.snoc hyps x jdg,
-       bound = x :: bound}
+       hidden = (x, Sym.name x) :: hidden}
 
-    val empty = {hyps = Tl.empty, bound = []}
+    val empty = {hyps = Tl.empty, hidden = []}
 
     fun singleton x jdg = 
       {hyps = Tl.singleton x jdg,
-       bound = [x]}
+       hidden = [(x, SOME (Sym.toString x))]}
 
-    fun isEmpty {hyps, bound} = Tl.isEmpty hyps
+    fun isEmpty {hyps, hidden} = Tl.isEmpty hyps
 
-    fun map f {hyps, bound} =
+    fun map f {hyps, hidden} =
       {hyps = Tl.map f hyps,
-       bound = bound}
+       hidden = hidden}
 
-    fun modify x f {hyps, bound} =
+    fun modify x f {hyps, hidden} =
       {hyps = Tl.modify x f hyps,
-       bound = bound}
+       hidden = hidden}
 
-    fun truncateFrom {hyps, bound} x =
+    fun truncateFrom {hyps, hidden} x =
       {hyps = Tl.truncateFrom hyps x,
-       bound = bound}
+       hidden = hidden}
 
     (* The telescope lib should be redesigned to make the following helper functions easier.
      * At least the calling convention can be more consistent. *)
 
-    fun substAfter (z, term) {hyps, bound} = 
+    fun substAfter (z, term) {hyps, hidden} = 
       {hyps = Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) hyps,
-       bound = bound}
+       hidden = hidden}
 
-    fun splice {hyps, bound} x (H : hyps) =
+    fun splice {hyps, hidden} x (H : hyps) =
       {hyps = Tl.splice hyps x (#hyps H),
-       bound = #bound H @ bound}
+       hidden = #hidden H @ hidden}
 
-    fun interposeAfter (z, H' : hyps) {hyps, bound} =
+    fun interposeAfter (z, H' : hyps) {hyps, hidden} =
       {hyps = Tl.interposeAfter hyps z (#hyps H'),
-       bound = #bound H' @ bound}
+       hidden = #hidden H' @ hidden}
 
-    fun interposeThenSubstAfter (z, H' : hyps, term) {hyps, bound} =
+    fun interposeThenSubstAfter (z, H' : hyps, term) {hyps, hidden} =
       {hyps = Tl.interposeAfter (Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) hyps) z (#hyps H'),
-       bound = #bound H' @ bound}
+       hidden = #hidden H' @ hidden}
 
-    fun pretty H : Fpp.doc =
-      Fpp.vsep 
-        [Fpp.vsep (foldr (fn (x, a, r) => Fpp.hsep [TP.ppVar x, Fpp.Atomic.colon, AJ.pretty a] :: r) [] H),
-         Fpp.Atomic.squares
-           (Fpp.hsep (List.map TermPrinter.ppVar (#bound H)))]
+    fun pretty (H : hyps) : Fpp.doc =
+      let
+        val ppProvenience = 
+          fn NONE => Fpp.empty
+           | SOME str => Fpp.seq [Fpp.char #"/", Fpp.text str]
+
+        fun ppHidden (i, nm) =
+          Fpp.seq
+            [Fpp.text "_", Fpp.text (Int.toString i),
+             ppProvenience nm]
+
+        val (varNames, _) =
+          List.foldr 
+            (fn ((x, nm), (rho, n)) => (Var.Ctx.insert rho x (ppHidden (n, nm)), n + 1))
+            (Var.Ctx.empty, 0)
+            (#hidden H)
+
+        fun ppVar x = 
+          Var.Ctx.lookup varNames x 
+          handle _ => TermPrinter.ppVar x
+
+        val env : TermPrinter.env =
+          {var = ppVar,
+           meta = TermPrinter.ppMeta}
+      in
+        Fpp.vsep (foldr (fn (x, a, r) => Fpp.hsep [#var env x, Fpp.Atomic.colon, AJ.pretty' env a] :: r) [] H)
+      end
 
     local
       open Tl.ConsView
@@ -109,13 +132,16 @@ struct
                 | SOME y => Tl.cons y catjdg' (relabelTl Hx rho)
             end
 
-      fun relabel {hyps, bound} rho = 
+      fun relabel {hyps, hidden} rho = 
         {hyps = relabelTl hyps rho,
-         bound = List.map (fn x => Var.Ctx.lookup rho x handle _ => x) bound}
+         hidden = List.map (fn (x, nm) => (Var.Ctx.lookup rho x handle _ => x, nm)) hidden}
       
+      fun *** (f, g) (x, y) = (f x, g y)
+      infix 5 ***
+
       fun eq (H1 : hyps, H2 : hyps) =
         telescopeEq (#hyps H1, #hyps H2)
-          andalso ListPair.allEq Sym.eq (#bound H1, #bound H2) handle _ => false
+          andalso ListPair.allEq (Sym.eq o #1 *** #1) (#hidden H1, #hidden H2) handle _ => false
     end
   end
 
@@ -201,11 +227,11 @@ struct
 
   fun push xs jdg =
     let
-      fun clone x = Sym.named ("$" ^ Sym.toString x)
-      val (xs', rho) = List.foldr (fn (x, (xs, rho)) => let val x' = clone x in (x' :: xs, Sym.Ctx.insert rho x x') end) ([], Sym.Ctx.empty) xs
-      val {hyps, bound} >> ajdg = relabel rho jdg
+      fun clone x = (Sym.new (), SOME (Sym.toString x))
+      val (xs', rho) = List.foldr (fn (x, (xs, rho)) => let val x' = clone x in (x' :: xs, Sym.Ctx.insert rho x (#1 x')) end) ([], Sym.Ctx.empty) xs
+      val {hyps, hidden} >> ajdg = relabel rho jdg
     in
-      {hyps = hyps, bound = xs' @ bound} >> ajdg
+      {hyps = hyps, hidden = xs' @ hidden} >> ajdg
     end
 
   structure E = RedPrlError
@@ -213,23 +239,13 @@ struct
 
   fun popAs xs' jdg =
     let
-      val H as {bound, ...} >> _ = jdg
+      val H as {hidden, ...} >> _ = jdg
       val n = List.length xs'
-      val (xs, bound') = (List.take (bound,n), List.drop (bound, n)) handle _ => E.raiseError @@ E.GENERIC [Fpp.text "Sequent.popAs: out of bounds"]
-      val rho = ListPair.foldl (fn (x, x', rho) => Sym.Ctx.insert rho x x') Sym.Ctx.empty (xs, xs')
+      val (xs, hidden') = (List.take (hidden,n), List.drop (hidden, n)) handle _ => E.raiseError @@ E.GENERIC [Fpp.text "Sequent.popAs: out of hiddens"]
+      val rho = ListPair.foldl (fn ((x, _), x', rho) => Sym.Ctx.insert rho x x') Sym.Ctx.empty (xs, xs')
       val {hyps, ...} >> ajdg = relabel rho H
     in
-      {bound = bound', hyps = hyps} >> ajdg
-    end
-
-  fun popSpecific xs jdg = 
-    let
-      val {hyps, bound} >> ajdg = jdg
-    
-      (* TODO: less ridiculous *)
-      val bound' = List.filter (fn y => not (List.exists (fn x => Sym.eq (x, y)) xs)) bound
-    in
-      {hyps = hyps, bound = bound'} >> ajdg
+      {hidden = hidden', hyps = hyps} >> ajdg
     end
 
   local

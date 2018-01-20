@@ -1,9 +1,20 @@
 structure TermPrinter :
 sig
   type t = RedPrlAbt.abt
-  val toString : t -> string
+
+  type env =
+    {var : RedPrlAbt.variable -> Fpp.doc,
+     meta : RedPrlAbt.metavariable -> Fpp.doc}
+
+  val basicEnv : env
+
+  val ppTerm' : env -> t -> Fpp.doc
+  val ppBinder' : env -> t RedPrlAbt.bview -> Fpp.doc
+
   val ppTerm : t -> Fpp.doc
   val ppBinder : t RedPrlAbt.bview -> Fpp.doc
+
+  val toString : t -> string
   val ppSort : RedPrlAbt.sort -> Fpp.doc
   val ppValence : RedPrlAbt.valence -> Fpp.doc
   val ppArity : RedPrlArity.t -> Fpp.doc
@@ -43,10 +54,19 @@ struct
   (* To debug scoping issues, switch below to DebugPrintName. *)
   structure PrintName = NormalPrintName
 
+  type env =
+    {var : RedPrlAbt.variable -> Fpp.doc,
+     meta : RedPrlAbt.metavariable -> Fpp.doc}
+  
+
   val ppVar = text o PrintName.sym
   val ppVar = text o PrintName.var
   val ppKind = text o RedPrlKind.toString
   fun ppMeta x = seq [char #"#", text @@ PrintName.meta x]
+
+  val basicEnv = 
+    {var = ppVar,
+     meta = ppMeta}
 
   fun unlessEmpty xs m =
     case xs of
@@ -117,73 +137,73 @@ struct
          multiDimApp m (r :: rs)
      | _ => (m, rs)
 
-  fun printFunOrLine (doms, cod) =
+  fun printFunOrLine env (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
       (text "->")
         :: List.map
-            (fn TERM (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm a]
-              | TERM (NONE, a) => ppTerm a
+            (fn TERM (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm' env a]
+              | TERM (NONE, a) => ppTerm' env a
               | DIM (SOME xs) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", text "dim"]
               | DIM NONE => text "dim")
             doms
-          @ [ppTerm cod]
+          @ [ppTerm' env cod]
 
-  and printLam (xs, m) =
+  and printLam env (xs, m) =
     Atomic.parens @@ expr @@ hvsep @@
-      [hvsep [text "lam", varBinding xs], align @@ ppTerm m]
+      [hvsep [text "lam", varBinding xs], align @@ ppTerm' env m]
 
-  and printApp (m, ns) =
+  and printApp env (m, ns) =
     Atomic.parens @@ expr @@ hvsep
-      (char #"$" :: ppTerm m :: List.map ppTerm ns)
+      (char #"$" :: ppTerm' env m :: List.map (ppTerm' env) ns)
 
-  and printAbs (us, m) =
+  and printAbs env (us, m) =
     Atomic.parens @@ expr @@ hvsep @@
-      [hvsep [text "abs", varBinding us], align @@ ppTerm m]
+      [hvsep [text "abs", varBinding us], align @@ ppTerm' env m]
 
-  and printDimApp (m, rs) =
+  and printDimApp env (m, rs) =
     Atomic.parens @@ expr @@ hvsep
-      (char #"@" :: ppTerm m :: List.map ppTerm rs)
+      (char #"@" :: ppTerm' env m :: List.map (ppTerm' env) rs)
 
-  and ppDir (r, r') = seq [ppTerm r, text "~>", ppTerm r']
+  and ppDir env (r, r') = seq [ppTerm' env r, text "~>", ppTerm' env r']
 
-  and ppBackwardDir (r, r') = seq [ppTerm r, text "<~", ppTerm r']
+  and ppBackwardDir env (r, r') = seq [ppTerm' env r, text "<~", ppTerm' env r']
 
-  and ppTerm m =
+  and ppTerm' env m =
     case Abt.out m of
        `x => ppVar x
      | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [text "fcom", ppDir (r1, r2), ppTerm cap]
-             :: [ppVector system]
+           hvsep [text "fcom", ppDir env (r1, r2), ppTerm' env cap]
+             :: [ppVector env system]
 
      | O.HCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [text "hcom", ppDir (r1, r2), ppTerm ty, ppTerm cap]
-             :: [ppVector system]
+           hvsep [text "hcom", ppDir env (r1, r2), ppTerm' env ty, ppTerm' env cap]
+             :: [ppVector env system]
      | O.GHCOM $ [_ \ r1, _ \ r2, _ \ ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [text "ghcom", ppDir (r1, r2), ppTerm ty, ppTerm cap]
-             :: [ppVector system]
+           hvsep [text "ghcom", ppDir env (r1, r2), ppTerm' env ty, ppTerm' env cap]
+             :: [ppVector env system]
      | O.COE $ [_ \ r1, _ \ r2, ty, _ \ coercee] =>
          Atomic.parens @@ expr @@ hvsep @@
-           [text "coe", ppDir (r1, r2), ppBinder ty, ppTerm coercee]
+           [text "coe", ppDir env (r1, r2), ppBinder' env ty, ppTerm' env coercee]
      | O.COM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [text "com", ppDir (r1, r2), ppBinder ty, ppTerm cap]
-             :: [ppVector system]
+           hvsep [text "com", ppDir env (r1, r2), ppBinder' env ty, ppTerm' env cap]
+             :: [ppVector env system]
      | O.GCOM $ [_ \ r1, _ \ r2, ty, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [text "gcom", ppDir (r1, r2), ppBinder ty, ppTerm cap]
-             :: [ppVector system]
+           hvsep [text "gcom", ppDir env (r1, r2), ppBinder' env ty, ppTerm' env cap]
+             :: [ppVector env system]
 
      | O.LOOP $ [_ \ r] =>
-         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppTerm r]
+         Atomic.parens @@ expr @@ hvsep @@ [text "loop", ppTerm' env r]
      | O.FUN $ _ =>
-         printFunOrLine @@ multiFunOrLine [] m
+         printFunOrLine env @@ multiFunOrLine [] m
      | O.LAM $ _ =>
-         printLam @@ multiLam [] m
+         printLam env @@ multiLam [] m
      | O.APP $ _ =>
-         printApp @@ multiApp m []
+         printApp env @@ multiApp m []
      | O.RECORD [] $ _ => text "record"
      | O.RECORD lbls $ args =>
          let
@@ -196,7 +216,7 @@ struct
                    val ty' = RedPrlAbt.renameVars ren ty
                    val var = Var.named lbl
                  in
-                   {fields = Atomic.squares (hsep [ppVar var, char #":", ppTerm ty']) :: fields,
+                   {fields = Atomic.squares (hsep [ppVar var, char #":", ppTerm' env ty']) :: fields,
                     vars = vars @ [var]}
                  end)
                init
@@ -207,90 +227,90 @@ struct
      | O.TUPLE [] $ [] => text "tuple"
      | O.TUPLE lbls $ data =>
          let
-           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, ppBinder a]
+           fun pp (lbl, a) = Atomic.squares @@ hsep [ppLabel lbl, ppBinder' env a]
          in
            Atomic.parens @@ expr @@ hvsep
              [text "tuple", expr @@ hvsep @@ ListPair.mapEq pp (lbls, data)]
          end
      | O.PROJ lbl $ [m] =>
-         Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder m]
+         Atomic.parens @@ expr @@ hvsep [char #"!", ppLabel lbl, ppBinder' env m]
      | O.LINE $ _ =>
-         printFunOrLine @@ multiFunOrLine [] m
+         printFunOrLine env @@ multiFunOrLine [] m
      | O.ABS $ _ =>
-         printAbs @@ multiAbs [] m
+         printAbs env @@ multiAbs [] m
      | O.DIM_APP $ _ =>
-         printDimApp @@ multiDimApp m []
+         printDimApp env @@ multiDimApp m []
      | O.EQUALITY $ [_ \ ty, _ \ m, _ \ n] =>
          Atomic.parens @@ expr @@ hvsep
            (if Abt.eq (m, n)
-            then [text "mem", ppTerm ty, ppTerm m]
-            else [char #"=", ppTerm ty, ppTerm m, ppTerm n])
+            then [text "mem", ppTerm' env ty, ppTerm' env m]
+            else [char #"=", ppTerm' env ty, ppTerm' env m, ppTerm' env n])
      | O.BOX $ [_ \ r1, _ \ r2, cap, _ \ boundaries] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [text "box", ppDir (r1, r2), ppBinder cap]
-             :: [ppVector boundaries]
+           hvsep [text "box", ppDir env (r1, r2), ppBinder' env cap]
+             :: [ppVector env boundaries]
      | O.CAP $ [_ \ r1, _ \ r2, coercee, _ \ tubes] =>
          Atomic.parens @@ expr @@ hvsep @@
-           hvsep [text "cap", ppBackwardDir (r1, r2), ppBinder coercee]
-             :: [ppVector tubes]
+           hvsep [text "cap", ppBackwardDir env (r1, r2), ppBinder' env coercee]
+             :: [ppVector env tubes]
      | O.V $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "V" :: List.map ppBinder args
+         Atomic.parens @@ expr @@ hvsep @@ text "V" :: List.map (ppBinder' env) args
      | O.VIN $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "Vin" :: List.map ppBinder args
+         Atomic.parens @@ expr @@ hvsep @@ text "Vin" :: List.map (ppBinder' env) args
      | O.VPROJ $ args =>
-         Atomic.parens @@ expr @@ hvsep @@ text "Vproj" :: List.map ppBinder args
+         Atomic.parens @@ expr @@ hvsep @@ text "Vproj" :: List.map (ppBinder' env) args
      | O.UNIVERSE $ [_ \ l, _ \ k] =>
-         Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm l, ppTerm k]
+         Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm' env l, ppTerm' env k]
 
      | O.DIM0 $ _ => char #"0"
      | O.DIM1 $ _ => char #"1"
      | O.MK_TUBE $ [_ \ r1, _ \ r2, tube]  =>
        Atomic.squares @@ hsep
-         [seq [ppTerm r1, Atomic.equals, ppTerm r2],
-          nest 1 @@ ppBinder tube]
+         [seq [ppTerm' env r1, Atomic.equals, ppTerm' env r2],
+          nest 1 @@ ppBinder' env tube]
      | O.MK_BDRY $ [_ \ r1, _ \ r2, _ \ m] =>
        Atomic.squares @@ hsep
-         [seq [ppTerm r1, Atomic.equals, ppTerm r2],
-          nest 1 @@ ppTerm m]
-     | O.MK_ANY _ $ [_ \ m] => ppTerm m
+         [seq [ppTerm' env r1, Atomic.equals, ppTerm' env r2],
+          nest 1 @@ ppTerm' env m]
+     | O.MK_ANY _ $ [_ \ m] => ppTerm' env m
 
      | O.LCONST i $ _ => ppIntInf i
-     | O.LPLUS 0 $ [_ \ l] => ppTerm l
-     | O.LPLUS 1 $ [_ \ l] => Atomic.parens @@ expr @@ hvsep @@ [text "++", ppTerm l]
-     | O.LPLUS i $ [_ \ l] => Atomic.parens @@ expr @@ hvsep @@ [text "+", ppTerm l, ppIntInf i]
+     | O.LPLUS 0 $ [_ \ l] => ppTerm' env l
+     | O.LPLUS 1 $ [_ \ l] => Atomic.parens @@ expr @@ hvsep @@ [text "++", ppTerm' env l]
+     | O.LPLUS i $ [_ \ l] => Atomic.parens @@ expr @@ hvsep @@ [text "+", ppTerm' env l, ppIntInf i]
      | O.LMAX $ [_ \ vec] =>
          (case RedPrlAbt.out vec of
              O.MK_VEC _ $ [] => ppIntInf 0
-           | O.MK_VEC _ $ [_ \ l] => ppTerm l
+           | O.MK_VEC _ $ [_ \ l] => ppTerm' env l
            | O.MK_VEC _ $ ls =>
                Atomic.parens @@ expr @@ hvsep @@
-                 (text "lmax" :: ListUtil.revMap (fn _ \ l => ppTerm l) ls)
+                 (text "lmax" :: ListUtil.revMap (fn _ \ l => ppTerm' env l) ls)
            | _ => raise Fail "invalid vector")
 
      | theta $ [] =>
         ppOperator theta
      | theta $ [[] \ arg] =>
-        Atomic.parens @@ expr @@ hvsep @@ [ppOperator theta, atLevel 10 @@ ppTerm arg]
+        Atomic.parens @@ expr @@ hvsep @@ [ppOperator theta, atLevel 10 @@ ppTerm' env arg]
      | theta $ [xs \ arg] =>
-        Atomic.parens @@ expr @@ hvsep [hvsep [ppOperator theta, varBinding xs], align @@ ppTerm arg]
+        Atomic.parens @@ expr @@ hvsep [hvsep [ppOperator theta, varBinding xs], align @@ ppTerm' env arg]
      | theta $ args =>
         Atomic.parens @@ expr @@
-          hvsep @@ ppOperator theta :: List.map ppBinder args
+          hvsep @@ ppOperator theta :: List.map (ppBinder' env) args
 
      | x $# [] => ppMeta x
-     | x $# ms => Atomic.parens @@ expr @@ hvsep @@ ppMeta x :: List.map ppTerm ms
+     | x $# ms => Atomic.parens @@ expr @@ hvsep @@ ppMeta x :: List.map (ppTerm' env) ms
 
-  and ppVector (vec : abt) : Fpp.doc =
+  and ppVector env (vec : abt) : Fpp.doc =
     case Abt.out vec of
        O.MK_VEC _ $ args => 
          expr @@ hvsep @@ 
-           List.map (fn _ \ t => ppTerm t) args
+           List.map (fn _ \ t => ppTerm' env t) args
      | _ => raise Fail "invalid vector"
 
-  and ppBinder (xs \ m) =
+  and ppBinder' env (xs \ m) =
     case xs of
-        [] => atLevel 10 @@ ppTerm m
-      | _ => grouped @@ hvsep [varBinding xs, align @@ ppTerm m]
+        [] => atLevel 10 @@ ppTerm' env m
+      | _ => grouped @@ hvsep [varBinding xs, align @@ ppTerm' env m]
 
   and varBinding xs =
     unlessEmpty xs @@
@@ -299,6 +319,9 @@ struct
 
 
   val ppSort = text o Ar.Vl.S.toString
+
+  val ppTerm = ppTerm' basicEnv
+  val ppBinder = ppBinder' basicEnv
 
   fun ppValence (taus, tau) =
     let

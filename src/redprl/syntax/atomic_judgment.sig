@@ -69,6 +69,7 @@ sig
   val out : abt -> jdg
   val eq : jdg * jdg -> bool
   val pretty : jdg -> Fpp.doc
+  val pretty' : TermPrinter.env -> jdg -> Fpp.doc
 
   val lookupAccessor : Accessor.t -> jdg -> abt
   val mapAccessor : Accessor.t -> (abt -> abt) -> (jdg -> jdg)
