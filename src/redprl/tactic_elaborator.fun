@@ -72,11 +72,6 @@ struct
       then_ tac
       then_ pushNames xs
 
-  fun popSpecificNamesIn xs tac = 
-    Lcf.rule (R.Names.PopSpecific xs )
-      then_ tac
-      then_ pushNames xs
-
   fun hyp sign z =
     Lcf.rule (R.Hyp.Project z)
     par

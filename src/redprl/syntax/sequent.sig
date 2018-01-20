@@ -49,6 +49,4 @@ sig
 
   val push : variable list -> jdg -> jdg
   val popAs : variable list -> jdg -> jdg
-
-  val popSpecific : variable list -> jdg -> jdg
 end

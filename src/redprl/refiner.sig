@@ -58,9 +58,6 @@ sig
   sig
     val Push : hyp list -> rule
     val PopAs : hyp list -> rule
-
-    (* internal use only *)
-    val PopSpecific : hyp list -> rule
   end
 
   type rule_name = string

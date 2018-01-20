@@ -93,16 +93,6 @@ struct
       in
         Lcf.|> (|>: goal, abstractEvidence H hole)
       end
-
-
-    fun PopSpecific xs jdg = 
-      let
-        val jdg' as H >> _ = Sequent.popSpecific xs jdg handle _ => jdg
-        val (goal, hole) = makeGoal [] jdg'
-        
-      in
-        Lcf.|> (|>: goal, abstractEvidence H hole)
-      end
     
   end
 
