@@ -227,8 +227,8 @@ struct
 
   fun push xs jdg =
     let
-      fun clone x = (Sym.new (), SOME (Sym.toString x))
       val (xs', rho) = List.foldr (fn (x, (xs, rho)) => let val x' = clone x in (x' :: xs, Sym.Ctx.insert rho x (#1 x')) end) ([], Sym.Ctx.empty) xs
+      fun clone x = (Sym.new (), Sym.name x)
       val {hyps, hidden} >> ajdg = relabel rho jdg
     in
       {hyps = hyps, hidden = xs' @ hidden} >> ajdg
