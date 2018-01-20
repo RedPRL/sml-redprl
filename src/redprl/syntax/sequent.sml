@@ -227,8 +227,24 @@ struct
 
   fun push xs jdg =
     let
-      val (xs', rho) = List.foldr (fn (x, (xs, rho)) => let val x' = clone x in (x' :: xs, Sym.Ctx.insert rho x (#1 x')) end) ([], Sym.Ctx.empty) xs
       fun clone x = (Sym.new (), Sym.name x)
+
+      val {hyps = hyps, ...} >> _ = jdg
+
+      fun hypIsActive x = 
+        case Tl.find hyps x of
+           SOME _ => true
+         | NONE => false
+
+      val (xs', rho) =
+        List.foldr
+          (fn (x, (xs, rho)) =>
+            if hypIsActive x then
+              let val x' = clone x in (x' :: xs, Sym.Ctx.insert rho x (#1 x')) end
+            else
+              (xs, rho))
+          ([], Sym.Ctx.empty)
+          xs
       val {hyps, hidden} >> ajdg = relabel rho jdg
     in
       {hyps = hyps, hidden = xs' @ hidden} >> ajdg
