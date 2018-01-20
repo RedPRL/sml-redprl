@@ -25,7 +25,7 @@ syn match   redExpr '[$*!@=+]\|->\|\~>\|<\~'
 syn keyword redTac auto auto-step case cut-lemma elim else exact fresh goal
 syn keyword redTac hyp id lemma let claim match of print trace progress
 syn keyword redTac query reduce refine repeat rewrite symmetry
-syn keyword redTac then unfold use with fail inversion concl assumption
+syn keyword redTac then unfold use with without fail inversion concl assumption
 syn match   redTac '[;`]'
 
 syn keyword redSeq at by in true type synth discrete kan hcom coe stable
