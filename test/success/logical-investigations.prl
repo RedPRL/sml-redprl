@@ -30,7 +30,6 @@ Thm Thm3/low-level : [
    (-> q r)
    (-> p r))
 ] by [
-  // fresh p q r pq qr x -> 
   repeat {refine fun/intro || id};
   auto; with x qr pq r q p => 
   elim qr; elim pq;
@@ -65,7 +64,6 @@ Thm Thm4 : [
   (-> [p q : (U 0)] (Not p) p q)
 ] by [
   lam p q r a =>
-  unfold Not;
   let boom = r [use a];
   elim boom
 ].
@@ -73,7 +71,7 @@ Thm Thm4 : [
 Thm Thm5 : [
   (-> [p : (U 0)] p (Not (Not p)))
 ] by [
-  lam p a => unfold Not; lam r =>
+  lam p a r =>
   use r [use a]
 ].
 
@@ -84,7 +82,7 @@ Print Thm5.
 Thm Thm6(#A,#B) : [
   (-> [p q : (U 0)] (-> p q) (Not q) (Not p))
 ] by [
-  lam p q f g => unfold Not; lam a =>
+  lam p q f g a =>
   use g [use f [use a]]
 ].
 
