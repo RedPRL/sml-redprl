@@ -1338,7 +1338,7 @@ struct
         val ((ap, p), a) = View.matchAsEq ajdg
         val Syn.DIM_APP (m, r) = Syn.out ap
 
-        val dimAddr = case Syn.out r of Syn.DIM0 => 1 | Syn.DIM1 => 2
+        val dimAddr = case Syn.out r of Syn.DIM0 => 1 | Syn.DIM1 => 2 | _ => raise Fail "EqAppConst: inavlid dim"
 
         val (goalSynth, holeSynth) = makeSynth tr H m
         val (goalLine, holeLine) = makeMatch tr (O.PATH, 0, holeSynth, [r])

@@ -624,7 +624,8 @@ struct
          | (_, Syn.LINE _) => Lcf.rule Line.Eta
          | (_, Syn.EQUALITY _) => Lcf.rule InternalizedEquality.Eta
          | (Machine.VAR z, _) => AutoElim sign z
-         | (Machine.OPERATOR theta, _) => Lcf.rule @@ Custom.Unfold sign [theta] [Selector.IN_CONCL])
+         | (Machine.OPERATOR theta, _) => Lcf.rule @@ Custom.Unfold sign [theta] [Selector.IN_CONCL]
+         | _ => raise Fail "StepEqNeuExpand: match")
 
 
       structure HCom =
@@ -732,6 +733,7 @@ struct
          | Machine.CANONICAL => Lcf.rule Misc.MatchOperator
          | Machine.NEUTRAL (Machine.VAR _) => fail @@ E.NOT_APPLICABLE (Fpp.text "match", TermPrinter.ppTerm u)
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule @@ Custom.UnfoldAll sign [theta]
+         | _ => raise Fail "StepMatch: match"
 
       fun StepMatchRecord sign u =
         case canonicity sign u of
@@ -739,6 +741,7 @@ struct
          | Machine.CANONICAL => Lcf.rule Record.MatchRecord
          | Machine.NEUTRAL (Machine.VAR _) => fail @@ E.NOT_APPLICABLE (Fpp.text "match-record", TermPrinter.ppTerm u)
          | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule @@ Custom.UnfoldAll sign [theta]
+         | _ => raise Fail "StepMatchRecord: match"
 
       fun StepJdg sign = matchGoal
         (fn _ >> AJ.EQ_TYPE (tys, _) => StepEqSubType sign tys Wrapper.EQ
