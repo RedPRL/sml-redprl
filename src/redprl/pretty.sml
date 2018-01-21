@@ -3,8 +3,9 @@ sig
   type t = RedPrlAbt.abt
 
   type env =
-    {var : RedPrlAbt.variable -> Fpp.doc,
-     meta : RedPrlAbt.metavariable -> Fpp.doc}
+    {var : Fpp.doc Var.Ctx.dict,
+     meta : Fpp.doc Var.Ctx.dict,
+     level: int}
 
   val basicEnv : env
 
@@ -39,15 +40,13 @@ struct
 
   structure DebugPrintName = 
   struct
-    val sym = Sym.DebugShow.toString
     val var = Var.DebugShow.toString
     val meta = Metavar.DebugShow.toString
   end
 
   structure NormalPrintName = 
   struct
-    val sym = Sym.toString
-    val var = Var.toString
+    fun var (x : variable) = "???"
     val meta = Metavar.toString
   end
 
@@ -55,18 +54,31 @@ struct
   structure PrintName = NormalPrintName
 
   type env =
-    {var : RedPrlAbt.variable -> Fpp.doc,
-     meta : RedPrlAbt.metavariable -> Fpp.doc}
-  
+    {var : Fpp.doc Var.Ctx.dict,
+     meta : Fpp.doc Var.Ctx.dict,
+     level : int}
 
-  val ppVar = text o PrintName.sym
   val ppVar = text o PrintName.var
   val ppKind = text o RedPrlKind.toString
   fun ppMeta x = seq [char #"#", text @@ PrintName.meta x]
 
+  fun bindVars xs ({var, meta, level} : env) : env = 
+    let
+      fun name x i = 
+        case Sym.name x of 
+           SOME s => text s
+         | NONE => seq [char #"_", text (Int.toString i)]
+      val (var', level') = List.foldl (fn (x, (rho, lvl)) => (Var.Ctx.insert rho x (name x lvl), lvl + 1)) (var, level) xs
+    in
+      {var = var',
+       meta = meta,
+       level = level'}
+    end
+
   val basicEnv = 
-    {var = ppVar,
-     meta = ppMeta}
+    {var = Var.Ctx.empty,
+     meta = Var.Ctx.empty,
+     level = 0}
 
   fun unlessEmpty xs m =
     case xs of
@@ -86,6 +98,14 @@ struct
     fn [] => []
      | [x] => [x]
      | x::xs => seq [x, s] :: intersperse s xs
+
+  fun ppVar' (env : env) x = 
+    Var.Ctx.lookup (#var env) x
+    handle _ => Fpp.text "<free-var>"
+
+  fun ppMeta' (env : env) x = 
+    Metavar.Ctx.lookup (#meta env) x
+    handle _ => Fpp.text "<free-meta>"
 
 
   (* This is still quite rudimentary; we can learn to more interesting things like alignment, etc. *)
@@ -137,20 +157,35 @@ struct
          multiDimApp m (r :: rs)
      | _ => (m, rs)
 
-  fun printFunOrLine env (doms, cod) =
+  fun ppFunOrLinesInterior env (doms, cod) = 
+    case doms of 
+       [] => [ppTerm' env cod]
+     | dom::doms =>
+       (case dom of 
+           TERM (SOME xs, a) =>
+           let
+             val env' = bindVars xs env
+           in
+             Atomic.squares (hsep (List.map (ppVar' env') xs @ [char #":", ppTerm' env a]))
+               :: ppFunOrLinesInterior env' (doms, cod)
+           end
+         | TERM (NONE, a) => ppTerm' env a :: ppFunOrLinesInterior env (doms, cod)
+         | DIM (SOME xs) =>
+           let
+             val env' = bindVars xs env
+           in
+             Atomic.squares (hsep (List.map (ppVar' env') xs @ [char #":", text "dim"]))
+               :: ppFunOrLinesInterior env' (doms, cod)
+           end
+         | DIM NONE => text "dim" :: ppFunOrLinesInterior env (doms, cod))
+
+  and printFunOrLine env (doms, cod) =
     Atomic.parens @@ expr @@ hvsep @@
-      (text "->")
-        :: List.map
-            (fn TERM (SOME xs, a) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", ppTerm' env a]
-              | TERM (NONE, a) => ppTerm' env a
-              | DIM (SOME xs) => Atomic.squares @@ hsep @@ List.map ppVar xs @ [char #":", text "dim"]
-              | DIM NONE => text "dim")
-            doms
-          @ [ppTerm' env cod]
+      text "->" :: ppFunOrLinesInterior env (doms, cod)
 
   and printLam env (xs, m) =
     Atomic.parens @@ expr @@ hvsep @@
-      [hvsep [text "lam", varBinding xs], align @@ ppTerm' env m]
+      [hvsep [text "lam", varBinding env xs], align @@ ppTerm' (bindVars xs env) m]
 
   and printApp env (m, ns) =
     Atomic.parens @@ expr @@ hvsep
@@ -158,7 +193,7 @@ struct
 
   and printAbs env (us, m) =
     Atomic.parens @@ expr @@ hvsep @@
-      [hvsep [text "abs", varBinding us], align @@ ppTerm' env m]
+      [hvsep [text "abs", varBinding env us], align @@ ppTerm' (bindVars us env) m]
 
   and printDimApp env (m, rs) =
     Atomic.parens @@ expr @@ hvsep
@@ -170,7 +205,7 @@ struct
 
   and ppTerm' env m =
     case Abt.out m of
-       `x => ppVar x
+       `x => ppVar' env x
      | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [text "fcom", ppDir env (r1, r2), ppTerm' env cap]
@@ -207,17 +242,19 @@ struct
      | O.RECORD [] $ _ => text "record"
      | O.RECORD lbls $ args =>
          let
-           val init = {fields = [], vars = []}
+           val init = {fields = [], vars = [], env = env}
            val {fields, ...} = 
              ListPair.foldlEq
-               (fn (lbl, xs \ ty, {fields, vars}) =>
+               (fn (lbl, xs \ ty, {fields, vars, env}) =>
                  let
                    val ren = ListPair.foldlEq (fn (x, var, ren) => Var.Ctx.insert ren x var) Var.Ctx.empty (xs, vars)
                    val ty' = RedPrlAbt.renameVars ren ty
                    val var = Var.named lbl
+                   val env' = bindVars [var] env
                  in
-                   {fields = Atomic.squares (hsep [ppVar var, char #":", ppTerm' env ty']) :: fields,
-                    vars = vars @ [var]}
+                   {fields = Atomic.squares (hsep [ppVar' env' var, char #":", ppTerm' env ty']) :: fields,
+                    vars = vars @ [var],
+                    env = env'}
                  end)
                init
                (lbls, args)
@@ -292,7 +329,7 @@ struct
      | theta $ [[] \ arg] =>
         Atomic.parens @@ expr @@ hvsep @@ [ppOperator theta, atLevel 10 @@ ppTerm' env arg]
      | theta $ [xs \ arg] =>
-        Atomic.parens @@ expr @@ hvsep [hvsep [ppOperator theta, varBinding xs], align @@ ppTerm' env arg]
+        Atomic.parens @@ expr @@ hvsep [hvsep [ppOperator theta, varBinding env xs], align @@ ppTerm' (bindVars xs env) arg]
      | theta $ args =>
         Atomic.parens @@ expr @@
           hvsep @@ ppOperator theta :: List.map (ppBinder' env) args
@@ -310,12 +347,12 @@ struct
   and ppBinder' env (xs \ m) =
     case xs of
         [] => atLevel 10 @@ ppTerm' env m
-      | _ => grouped @@ hvsep [varBinding xs, align @@ ppTerm' env m]
+      | _ => grouped @@ hvsep [varBinding env xs, align @@ ppTerm' (bindVars xs env) m]
 
-  and varBinding xs =
+  and varBinding env xs =
     unlessEmpty xs @@
       Atomic.squares @@
-        hsep @@ List.map ppVar xs
+        hsep @@ List.map (ppVar' (bindVars xs env)) xs
 
 
   val ppSort = text o Ar.Vl.S.toString

@@ -97,15 +97,17 @@ struct
             (Var.Ctx.empty, 0)
             (#hidden H)
 
-        fun ppVar x = 
-          Var.Ctx.lookup varNames x 
-          handle _ => TermPrinter.ppVar x
-
         val env : TermPrinter.env =
-          {var = ppVar,
-           meta = TermPrinter.ppMeta}
+          {var = varNames,
+           meta = Metavar.Ctx.empty,
+           level = 0}
+
+        fun ppHyp x = 
+          case Var.Ctx.find varNames x of 
+             SOME d => d
+           | NONE => TermPrinter.ppVar x
       in
-        Fpp.vsep (foldr (fn (x, a, r) => Fpp.hsep [#var env x, Fpp.Atomic.colon, AJ.pretty' env a] :: r) [] H)
+        Fpp.vsep (foldr (fn (x, a, r) => Fpp.hsep [ppHyp x, Fpp.Atomic.colon, AJ.pretty' env a] :: r) [] H)
       end
 
     local
