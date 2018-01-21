@@ -8,9 +8,13 @@ sig
      level: int}
 
   val basicEnv : env
+  val bindVars : RedPrlAbt.variable list -> env -> env
 
   val ppTerm' : env -> t -> Fpp.doc
   val ppBinder' : env -> t RedPrlAbt.bview -> Fpp.doc
+
+  val ppVar' : env -> RedPrlAbt.variable -> Fpp.doc
+  val ppMeta' : env -> RedPrlAbt.metavariable -> Fpp.doc
 
   val ppTerm : t -> Fpp.doc
   val ppBinder : t RedPrlAbt.bview -> Fpp.doc
@@ -46,7 +50,7 @@ struct
 
   structure NormalPrintName = 
   struct
-    fun var (x : variable) = "???"
+    val var = Var.toString
     val meta = Metavar.toString
   end
 

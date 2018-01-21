@@ -91,21 +91,24 @@ struct
             [Fpp.text "_", Fpp.text (Int.toString i),
              ppProvenience nm]
 
-        val (varNames, _) =
+        val (hiddenNames, _) =
           List.foldr 
             (fn ((x, nm), (rho, n)) => (Var.Ctx.insert rho x (ppHidden (n, nm)), n + 1))
             (Var.Ctx.empty, 0)
             (#hidden H)
+
+        val varNames = 
+          Tl.foldl
+            (fn (x, _, names) => Var.Ctx.insertMerge names x (TermPrinter.ppVar x) (fn d => d))
+            hiddenNames
+            (#hyps H)
 
         val env : TermPrinter.env =
           {var = varNames,
            meta = Metavar.Ctx.empty,
            level = 0}
 
-        fun ppHyp x = 
-          case Var.Ctx.find varNames x of 
-             SOME d => d
-           | NONE => TermPrinter.ppVar x
+        fun ppHyp x = TermPrinter.ppVar' env x
       in
         Fpp.vsep (foldr (fn (x, a, r) => Fpp.hsep [ppHyp x, Fpp.Atomic.colon, AJ.pretty' env a] :: r) [] H)
       end
