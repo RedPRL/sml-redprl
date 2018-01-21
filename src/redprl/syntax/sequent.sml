@@ -45,7 +45,7 @@ struct
 
     fun singleton x jdg = 
       {hyps = Tl.singleton x jdg,
-       hidden = [(x, SOME (Sym.toString x))]}
+       hidden = [(x, Sym.name x)]}
 
     fun isEmpty {hyps, hidden} = Tl.isEmpty hyps
 
