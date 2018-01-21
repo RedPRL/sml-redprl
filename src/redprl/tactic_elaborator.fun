@@ -124,6 +124,8 @@ struct
           in
             (O.PAT_TUPLE lpats', names')
           end
+        | go _ = raise Fail "stitchPattern: impossible"
+
       and goTuple ([], names) = ([], names)
         | goTuple ((lbl, pat) :: lpats, names) =
           let
@@ -260,8 +262,12 @@ struct
       Lcf.rule (R.CutLemma sign cust) thenl [popNamesIn [z] continue]
     end
     
-  fun onAllHyps tac (H >> jdg) =
-    (Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H) (H >> jdg)
+  fun onAllHyps tac jdg =
+    let
+      val H >> _ = jdg
+    in
+      Hyps.foldl (fn (x, _, tac') => tac x thenl [tac']) T.idn H jdg
+    end
 
   val inversions = onAllHyps (T.try o R.Inversion)
 
@@ -382,8 +388,9 @@ struct
          List.foldr (fn (clause, tac) => T.orelse_ (reviveClause clause, tac)) fail clauses
        end
      | O.DEV_QUERY $ [_ \ selTm, [x] \ tm] =>
-       (fn jdg as H >> concl =>
+       (fn jdg =>
          let
+           val H >> concl = jdg
            val sel = Syn.outSelector selTm
            val atjdg = Sequent.lookupSelector sel (H, concl)
            val tm' = substVar (AJ.into atjdg, x) tm
