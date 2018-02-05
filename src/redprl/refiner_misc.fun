@@ -173,7 +173,7 @@ struct
         |>: goal #> (H, hole)
       end
 
-    fun Eq sign _ jdg =
+    fun Eq sign jdg =
       let
         val tr = ["Custom.Eq"]
         val H >> ajdg = jdg

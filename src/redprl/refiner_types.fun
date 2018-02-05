@@ -136,7 +136,7 @@ struct
         |>: goalC >: goalM >: goalT >: goalF >:? goalTy #> (H, axiom)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim jdg =
       let
         val tr = ["Bool.SynthElim"]
         val H >> AJ.SYNTH tm = jdg
@@ -399,7 +399,7 @@ struct
         |>: goalC >: goalM >: goalZ >: goalS >:? goalTy #> (H, axiom)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim jdg =
       let
         val tr = ["Nat.SynthElim"]
         val H >> AJ.SYNTH tm = jdg
@@ -570,7 +570,7 @@ struct
         |>: goalE >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >:? goalTy #> (H, axiom)
       end
 
-    fun SynthElim _ jdg =
+    fun SynthElim jdg =
       let
         val tr = ["Int.SynthElim"]
         val H >> AJ.SYNTH tm = jdg
