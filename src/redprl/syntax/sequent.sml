@@ -80,7 +80,7 @@ struct
       {hyps = Tl.interposeAfter (Tl.modifyAfter z (AJ.map (Tm.substVar (term, z))) hyps) z (#hyps H'),
        hidden = #hidden H' @ hidden}
 
-    fun pretty (H : hyps) : Fpp.doc =
+    fun pretty (H : hyps) : TermPrinter.env * Fpp.doc =
       let
         val ppProvenience = 
           fn NONE => Fpp.empty
@@ -110,7 +110,7 @@ struct
 
         fun ppHyp x = TermPrinter.ppVar' env x
       in
-        Fpp.vsep (foldr (fn (x, a, r) => Fpp.hsep [ppHyp x, Fpp.Atomic.colon, AJ.pretty' env a] :: r) [] H)
+        (env, Fpp.vsep (foldr (fn (x, a, r) => Fpp.hsep [ppHyp x, Fpp.Atomic.colon, AJ.pretty' env a] :: r) [] H))
       end
 
     local
@@ -198,7 +198,11 @@ struct
        if Hyps.isEmpty H then
          AJ.pretty atjdg 
        else
-         ruleSep (Hyps.pretty H, AJ.pretty atjdg)
+         let
+           val (env, doc) = Hyps.pretty H
+         in         
+           ruleSep (doc, AJ.pretty' env atjdg)
+         end
      | MATCH (th, k, a, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
      | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match-record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
