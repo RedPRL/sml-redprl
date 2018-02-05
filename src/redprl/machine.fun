@@ -26,14 +26,13 @@ struct
      APP of hole * abt
    | HCOM of Syn.dir * hole * abt * tube list
    | COE of Syn.dir * (variable * hole) * abt
-   | WIF of (variable * abt) * hole * abt * abt
+   | IF of (variable * abt) * hole * abt * abt
    | S1_REC of (variable * abt) * hole * abt * (variable * abt)
    | PUSHOUT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt) * (variable * variable * abt)
    | COEQUALIZER_REC of (variable * abt) * hole * (variable * abt) * (variable * variable * abt)
-   | IF of hole * abt * abt
    | DIM_APP of hole * abt
-   | NAT_REC of hole * abt * (variable * variable * abt)
-   | INT_REC of hole * abt * (variable * variable * abt) * abt * (variable * variable * abt)
+   | NAT_REC of (variable * abt) * hole * abt * (variable * variable * abt)
+   | INT_REC of (variable * abt) * hole * abt * (variable * variable * abt) * abt * (variable * variable * abt)
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
    | CAP of Syn.dir * tube list * hole
@@ -52,12 +51,11 @@ struct
       fn APP (HOLE, n) => Syn.intoApp (m, n)
        | HCOM (dir, HOLE, cap, tubes) => Syn.intoHcom {dir = dir, ty = m, cap = cap, tubes = tubes}
        | COE (dir, (u, HOLE), coercee) => Syn.intoCoe {dir = dir, ty = (u, m), coercee = coercee}
-       | IF (HOLE, t, f) => Syn.into @@ Syn.IF (m, (t, f))
-       | WIF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
+       | IF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
        | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
        | DIM_APP (HOLE, r) => Syn.into @@ Syn.DIM_APP (m, r)
-       | NAT_REC (HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC (m, (zer, (x, y, succ)))
-       | INT_REC (HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC (m, (zer, (x,y,succ), negone, (x',y',negss)))
+       | NAT_REC ((z, tyz), HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC ((z, tyz), m, (zer, (x, y, succ)))
+       | INT_REC ((z, tyz), HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC ((z, tyz), m, (zer, (x,y,succ), negone, (x',y',negss)))
        | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
        | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
        | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
@@ -187,7 +185,7 @@ struct
        | NONE =>
          (case stk of
              [] => raise Final
-           | WIF ((x, tyx), HOLE, t, f) :: stk =>
+           | IF ((x, tyx), HOLE, t, f) :: stk =>
              let
                val u = Sym.named "u"
                val fcomu =
@@ -195,7 +193,7 @@ struct
                    {dir = (r, VarKit.toDim u),
                     cap = cap,
                     tubes = tubes}
-               fun if_ m = Syn.into @@ Syn.WIF ((x, tyx), m, (t, f))
+               fun if_ m = Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
                val com =
                  Syn.into @@ Syn.COM 
                    {dir = dir,
@@ -606,11 +604,11 @@ struct
      | O.NAT $ _ || (_, []) => raise Final
      | O.ZERO $ _ || (_, []) => raise Final
      | O.SUCC $ _ || (_, []) => raise Final
-     | O.NAT_REC $ [_ \ m, _ \ n, [x,y] \ p] || (syms, stk) => COMPAT @@ m || (syms, NAT_REC (HOLE, n, (x,y,p)) :: stk)
-     | O.ZERO $ _ || (syms, NAT_REC (HOLE, zer, _) :: stk) => CRITICAL @@ zer || (syms, stk)
-     | O.SUCC $ [_ \ n] || (syms, NAT_REC (HOLE, zer, (x,y, succ)) :: stk) =>
+     | O.NAT_REC $ [[z] \ tyz, _ \ m, _ \ n, [x,y] \ p] || (syms, stk) => COMPAT @@ m || (syms, NAT_REC ((z,tyz), HOLE, n, (x,y,p)) :: stk)
+     | O.ZERO $ _ || (syms, NAT_REC (_, HOLE, zer, _) :: stk) => CRITICAL @@ zer || (syms, stk)
+     | O.SUCC $ [_ \ n] || (syms, NAT_REC ((z,tyz), HOLE, zer, (x,y, succ)) :: stk) =>
        let
-         val rho = VarKit.ctxFromList [(n, x), (Syn.into @@ Syn.NAT_REC (n, (zer, (x,y,succ))), y)]
+         val rho = VarKit.ctxFromList [(n, x), (Syn.into @@ Syn.NAT_REC ((z,tyz), n, (zer, (x,y,succ))), y)]
        in
          CRITICAL @@ substVarenv rho succ || (syms, stk)
        end
@@ -619,16 +617,20 @@ struct
 
      | O.INT $ _ || (_, []) => raise Final
      | O.NEGSUCC $ _ || (_, []) => raise Final
-     | O.INT_REC $ [_ \ m, _ \ n, [x,y] \ p, _ \ q, [x',y'] \ r] || (syms, stk) => COMPAT @@ m || (syms, INT_REC (HOLE, n, (x,y,p), q, (x',y',r)) :: stk)
-     | O.ZERO $ _ || (syms, INT_REC (HOLE, n, _, _, _) :: stk) => CRITICAL @@ n || (syms, stk)
-     | O.SUCC $ [_ \ m] || (syms, INT_REC (HOLE, n, (x,y,p), _, _) :: stk) =>
+     | O.INT_REC $ [[z] \ tyz, _ \ m, _ \ n, [x,y] \ p, _ \ q, [x',y'] \ r] || (syms, stk) => COMPAT @@ m || (syms, INT_REC ((z,tyz), HOLE, n, (x,y,p), q, (x',y',r)) :: stk)
+     | O.ZERO $ _ || (syms, INT_REC (_, HOLE, n, _, _, _) :: stk) => CRITICAL @@ n || (syms, stk)
+     | O.SUCC $ [_ \ m] || (syms, INT_REC ((z,tyz), HOLE, n, (x,y,p), _, _) :: stk) =>
        let
-         val rho = VarKit.ctxFromList [(m, x), (Syn.into @@ Syn.NAT_REC (m, (n, (x,y,p))), y)]
+         val rho = VarKit.ctxFromList [(m, x), (Syn.into @@ Syn.NAT_REC ((z,tyz), m, (n, (x,y,p))), y)]
        in
          CRITICAL @@ substVarenv rho p || (syms, stk)
        end
-     | O.NEGSUCC $ [_ \ m] || (syms, INT_REC (HOLE, _, _, q, (x,y,r)) :: stk) =>
-       COMPAT @@ m || (syms, NAT_REC (HOLE, q, (x,y,r)) :: stk)
+     | O.NEGSUCC $ [_ \ m] || (syms, INT_REC ((z,tyz), HOLE, _, _, q, (x,y,r)) :: stk) =>
+       let
+         val tynegsuccz = substVar (Syn.into (Syn.NEGSUCC (VarKit.toExp z)), z) tyz
+       in
+         COMPAT @@ m || (syms, NAT_REC ((z, tynegsuccz), HOLE, q, (x,y,r)) :: stk)
+       end
      | O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
      | O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
@@ -639,12 +641,9 @@ struct
      | O.TT $ _ || (_, []) => raise Final
      | O.FF $ _ || (_, []) => raise Final
 
-     | O.IF $ [_ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, IF (HOLE, t, f) :: stk)
-     | O.WIF $ [[x] \ tyx, _ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, WIF ((x, tyx), HOLE, t, f) :: stk)
-     | O.TT $ _ || (syms, IF (HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
-     | O.TT $ _ || (syms, WIF (_, HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
-     | O.FF $ _ || (syms, IF (HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
-     | O.FF $ _ || (syms, WIF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
+     | O.IF $ [[x] \ tyx, _ \ m, _ \ t, _ \ f] || (syms, stk) => COMPAT @@ m || (syms, IF ((x, tyx), HOLE, t, f) :: stk)
+     | O.TT $ _ || (syms, IF (_, HOLE, t, _) :: stk) => CRITICAL @@ t || (syms, stk)
+     | O.FF $ _ || (syms, IF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
      | O.BOOL $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
      | O.BOOL $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
      | O.WBOOL $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>

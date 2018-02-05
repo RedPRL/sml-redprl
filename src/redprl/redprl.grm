@@ -334,7 +334,7 @@ end
  | AX
  | FCOM
  | BOOL | TT | FF | IF
- | WBOOL | WIF
+ | WBOOL
  | NAT | ZERO | SUCC | NAT_REC
  | INT | NEGSUCC | INT_REC
  | VOID
@@ -380,7 +380,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA AMPERSAND COLON
-%nonassoc FCOM BOOL TT FF IF WBOOL WIF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
+%nonassoc FCOM BOOL TT FF IF WBOOL NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
 
@@ -651,10 +651,8 @@ nullaryOperator
 
 (* built-in operators that do not have special form *)
 multinaryOperator
-  (* bools *)
+  (* bools and weak bools *)
   : IF (O.IF)
-  (* weak bools *)
-  | WIF (O.WIF)
   (* natural numbers *)
   | SUCC (O.SUCC)
   | NAT_REC (O.NAT_REC)
@@ -917,7 +915,10 @@ atomicRawTac
   | TAC_REDUCE IN selector AT accessors (Ast.$$ (O.TAC_REDUCE_PART, [\\ selector, \\ (Multi.makeVec O.ACC accessors)]))
   | TAC_REDUCE AT accessors IN selector (Ast.$$ (O.TAC_REDUCE_PART, [\\ selector, \\ (Multi.makeVec O.ACC accessors)]))
   | TAC_UNFOLD opnames (Ast.$$ (O.TAC_UNFOLD_ALL opnames, []))
-  | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD (opnames), [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD opnames, [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_UNFOLD opnames AT accessors (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ (Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], Multi.makeVec O.ACC accessors)]))
+  | TAC_UNFOLD opnames IN selector AT accessors (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ selector, Ast.\ ([], Multi.makeVec O.ACC accessors)]))
+  | TAC_UNFOLD opnames AT accessors IN selector (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ selector, Ast.\ ([], Multi.makeVec O.ACC accessors)]))
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)

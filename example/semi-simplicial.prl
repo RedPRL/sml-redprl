@@ -3,18 +3,16 @@ Thm Pick : [
   (-> nat nat (U 0))
 ] by [
   lam n => fresh n' n'/ih -> elim n;
-  [ lam n => `record
+  [ lam m => `record
   , lam m => fresh m' m'/ih -> elim m;
     [ `void
     , `(record
         [head : bool]
-        [tail : (if head ($ n'/ih m') m'/ih)]
+        [tail : (if [_] (U 0) head ($ n'/ih m') m'/ih)]
        )
     ]
-  ];
-  auto
+  ]
 ].
-
 
 Thm Pick/zero/L : [
   (-> [n : nat] (= (U 0) ($ Pick zero n) record))
@@ -34,22 +32,9 @@ Thm Pick/succ/0/succ/1 : [
     ($ Pick (succ n) (succ m))
     (record
      [head : bool]
-     [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
+     [tail : (if [_] (U 0) head ($ Pick n m) ($ Pick (succ n) m))])))
 ] by [
-  lam n m =>
-    claim aux0 : [($ Pick n m) in (U 0)] by [auto];
-    claim aux1 : [($ Pick (succ n) m) in (U 0)] by [auto];
-    unfold Pick; reduce at left in aux0; reduce at left in aux1; auto;
-    assumption
-].
-
-Tac Replace(#z, #A) = [
-  fresh ty -> rewrite #A in #z; [`ty]; auto
-].
-
-
-Tac ReplaceGoal(#A:exp) = [
-  fresh ty -> rewrite #A in concl; [`ty]; auto
+  lam n m => auto
 ].
 
 Thm Pick/compose : [
@@ -65,11 +50,8 @@ Thm Pick/compose : [
     [ lam c p0 p1 => elim p1
     , lam c => fresh c' c'/ih -> elim c;
       [ lam p0 => elim p0
-      , lam p0 => (Replace p0 ($ Pick/succ/0/succ/1 b' c'));
-        let {head = p0/h, tail = p0/t} = p0; elim p0/h;
-        [ lam p1 => (Replace p1 ($ Pick/succ/0/succ/1 a' b'));
-          let {head = p1/h, tail = p1/t} = p1; elim p1/h;
-          (ReplaceGoal ($ Pick/succ/0/succ/1 a' c'));
+      , lam {head = p0/h, tail = p0/t} => elim p0/h;
+        [ lam {head = p1/h, tail = p1/t} => elim p1/h;
           [ { head = `tt
             , tail = `($ a'/ih b' c' p0/t p1/t)
             }
@@ -78,14 +60,13 @@ Thm Pick/compose : [
             }
           ]
         , lam p1 =>
-          (ReplaceGoal ($ Pick/succ/0/succ/1 a' c'));
           { head = `ff
           , tail = `($ c'/ih p0/t p1)
           }
         ]
       ]
     ]
-  ]; auto
+  ]
 ].
 
 Thm Pick/compose/zero/0 : [
@@ -97,6 +78,8 @@ Thm Pick/compose/zero/0 : [
 ] by [
   lam a b p0 p1 => auto
 ].
+
+Quit. // the following will be restored once we are in a better shape
 
 Thm Pick/compose/tt/4/0/tt/5/0 : [
   (->

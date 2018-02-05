@@ -34,20 +34,19 @@ struct
      | BOOL => [] ->> EXP
      | TT => [] ->> EXP
      | FF => [] ->> EXP
-     | IF => [[] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | IF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | WBOOL => [] ->> EXP
-     | WIF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | VOID => [] ->> EXP
 
      | NAT => [] ->> EXP
      | ZERO => [] ->> EXP
      | SUCC => [[] |: EXP] ->> EXP
-     | NAT_REC => [[] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
+     | NAT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
      | INT => [] ->> EXP
      | NEGSUCC => [[] |: EXP] ->> EXP
-     | INT_REC => [[] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
+     | INT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -177,6 +176,7 @@ struct
      | CUST (_, ar) => Option.valOf ar
      | TAC_UNFOLD_ALL _ => [] ->> TAC
      | TAC_UNFOLD _ => [[] |: VEC SEL] ->> TAC
+     | TAC_UNFOLD_PART _ => [[] |: SEL, [] |: VEC ACC] ->> TAC
      | DEV_APPLY_LEMMA pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_LEMMA => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
@@ -189,7 +189,6 @@ struct
     fn AX => "ax"
 
      | WBOOL => "wbool"
-     | WIF => "wif"
 
      | BOOL => "bool"
      | TT => "tt"
@@ -324,6 +323,7 @@ struct
      | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
      | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
+     | TAC_UNFOLD_PART os => "unfold-part{" ^ opidsToString os ^ "}"
      | DEV_APPLY_LEMMA _ => "apply-lemma"
      | DEV_USE_LEMMA => "use-lemma"
 end

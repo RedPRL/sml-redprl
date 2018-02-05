@@ -89,26 +89,21 @@ struct
     fun Elim z _ jdg =
       let
         val tr = ["Bool.Elim"]
-        val H >> ajdg = jdg
+        val H >> AJ.TRUE cz = jdg
         val AJ.TRUE ty = Hyps.lookup H z
         val Syn.BOOL = Syn.out ty
 
         (* tt branch *)
         val tt = Syn.into Syn.TT
         val Htt = Hyps.substAfter (z, tt) H
-        val (goalT, holeT) = makeGoal tr @@ Htt >> AJ.map (substVar (tt, z)) ajdg
+        val (goalT, holeT) = makeTrue tr Htt (substVar (tt, z) cz)
 
         (* ff branch *)
         val ff = Syn.into Syn.FF
         val Hff = Hyps.substAfter (z, ff) H
-        val (goalF, holeF) = makeGoal tr @@ Hff >> AJ.map (substVar (ff, z)) ajdg
+        val (goalF, holeF) = makeTrue tr Hff (substVar (ff, z) cz)
 
-        val evidence =
-          case ajdg of
-             AJ.TRUE _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
-           | AJ.EQ_TYPE _ => axiom
-           | AJ.SYNTH _ => Syn.into @@ Syn.IF (VarKit.toExp z, (holeT, holeF))
-           | _ => raise Fail "Bool.Elim cannot be called with this kind of goal"
+        val evidence = Syn.into @@ Syn.IF ((z, cz), VarKit.toExp z, (holeT, holeF))
       in
         |>: goalT >: goalF #> (H, evidence)
       end
@@ -120,27 +115,29 @@ struct
         val tr = ["Bool.EqElim"]
         val H >> ajdg = jdg
         val ((if0, if1), ty) = View.matchAsEq ajdg
-        val Syn.IF (m0, (t0, f0)) = Syn.out if0
-        val Syn.IF (m1, (t1, f1)) = Syn.out if1
+        val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
+        val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
-        val x = alpha 0
-        val Hx = H @> (x, AJ.TRUE (Syn.into Syn.BOOL))
-        val (goalC, holeTy) = makeTerm tr Hx O.EXP
+        val z = alpha 0
+        val c0z = VarKit.rename (z, x) c0x
+        val c1z = VarKit.rename (z, y) c1y
+        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.BOOL))
+        val goalC = makeEqType tr Hz ((c0z, c1z), K.top)
 
         (* eliminated term *)
         val goalM = makeEq tr H ((m0, m1), (Syn.into Syn.BOOL))
 
         (* result type*)
-        val goalTy = View.makeAsSubType tr H (substVar (m0, x) holeTy, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) c0x, ty)
 
         (* tt branch *)
-        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, x) holeTy))
+        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x))
 
         (* ff branch *)
-        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) holeTy))
+        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
-        |>: goalC >: goalM >: goalT >: goalF >: goalTy #> (H, axiom)
+        |>: goalC >: goalM >: goalT >: goalF >:? goalTy #> (H, axiom)
       end
   end
 
@@ -224,7 +221,7 @@ struct
         val (goalF, holeF) = makeTrue tr H (substVar (Syn.into Syn.FF, z) cz)
 
         (* realizer *)
-        val if_ = Syn.into @@ Syn.WIF ((z, cz), VarKit.toExp z, (holeT, holeF))
+        val if_ = Syn.into @@ Syn.IF ((z, cz), VarKit.toExp z, (holeT, holeF))
       in
         |>: goalT >: goalF >: goalKind #> (H, if_)
       end
@@ -238,8 +235,8 @@ struct
         val ((if0, if1), ty) = View.matchAsEq ajdg
         (* if(FCOM) steps to COM *)
         val k = K.COM
-        val Syn.WIF ((x, c0x), m0, (t0, f0)) = Syn.out if0
-        val Syn.WIF ((y, c1y), m1, (t1, f1)) = Syn.out if1
+        val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
+        val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
         (* motive *)
         val z = alpha 0
@@ -334,7 +331,7 @@ struct
             (substVar (succ @@ VarKit.toExp u, z) cz)
 
         (* realizer *)
-        val evidence = Syn.into @@ Syn.NAT_REC (VarKit.toExp z, (holeZ, (u, v, holeS)))
+        val evidence = Syn.into @@ Syn.NAT_REC ((z, cz), VarKit.toExp z, (holeZ, (u, v, holeS)))
       in
         |>: goalZ >: goalS #> (H, evidence)
       end
@@ -344,8 +341,8 @@ struct
         val tr = ["Nat.EqElim"]
         val H >> ajdg = jdg
         val ((elim0, elim1), ty) = View.matchAsEq ajdg
-        val Syn.NAT_REC (m0, (n0, (a0, b0, p0))) = Syn.out elim0
-        val Syn.NAT_REC (m1, (n1, (a1, b1, p1))) = Syn.out elim1
+        val Syn.NAT_REC ((x, c0x), m0, (n0, (a0, b0, p0))) = Syn.out elim0
+        val Syn.NAT_REC ((y, c1y), m1, (n1, (a1, b1, p1))) = Syn.out elim1
 
         val nat = Syn.into Syn.NAT
         val zero = Syn.into Syn.ZERO
@@ -353,31 +350,33 @@ struct
 
         (* motive *)
         val z = alpha 0
+        val c0z = VarKit.rename (z, x) c0x
+        val c1z = VarKit.rename (z, y) c1y
         val Hz = H @> (z, AJ.TRUE nat)
-        val (goalC, holeC) = makeTerm tr Hz O.EXP
+        val goalC = makeEqType tr Hz ((c0z, c1z), K.top)
 
         (* eliminated term *)
         val goalM = makeEq tr H ((m0, m1), nat)
 
         (* result type *)
-        val goalTy = View.makeAsSubType tr H (substVar (m0, z) holeC, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) c0x, ty)
 
         (* zero branch *)
-        val goalZ = makeEq tr H ((n0, n1), (substVar (zero, z) holeC))
+        val goalZ = makeEq tr H ((n0, n1), (substVar (zero, x) c0x))
 
         (* succ branch *)
         val u = alpha 1
         val v = alpha 2
-        val cu = VarKit.rename (u, z) holeC
+        val cu = VarKit.rename (u, x) c0x
         val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
             tr
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
-            ((p0, p1), (substVar (succ @@ VarKit.toExp u, z) holeC))
+            ((p0, p1), (substVar (succ @@ VarKit.toExp u, x) c0x))
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalTy #> (H, axiom)
+        |>: goalC >: goalM >: goalZ >: goalS >:? goalTy #> (H, axiom)
       end
   end
 
@@ -476,7 +475,7 @@ struct
             (substVar (negsucc @@ succ @@ VarKit.toExp u, z) cz)
 
         (* realizer *)
-        val evidence = Syn.into @@ Syn.INT_REC (VarKit.toExp z, (holeZ, (u, v, holeS), holeNSZ, (u, v, holeNSS)))
+        val evidence = Syn.into @@ Syn.INT_REC ((z, cz), VarKit.toExp z, (holeZ, (u, v, holeS), holeNSZ, (u, v, holeNSS)))
       in
         |>: goalZ >: goalS >: goalNSZ >: goalNSS #> (H, evidence)
       end
@@ -486,8 +485,8 @@ struct
         val tr = ["Int.EqElim"]
         val H >> ajdg = jdg
         val ((elim0, elim1), ty) = View.matchAsEq ajdg
-        val Syn.INT_REC (m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
-        val Syn.INT_REC (m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
+        val Syn.INT_REC ((x, e0x), m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
+        val Syn.INT_REC ((y, e1y), m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
 
         val int = Syn.into Syn.INT
         val nat = Syn.into Syn.NAT
@@ -497,44 +496,46 @@ struct
 
         (* motive *)
         val z = alpha 0
+        val e0z = VarKit.rename (z, x) e0x
+        val e1z = VarKit.rename (z, y) e1y
         val Hz = H @> (z, AJ.TRUE int)
-        val (goalC, holeC) = makeTerm tr Hz O.EXP
+        val goalE = makeEqType tr Hz ((e0z, e1z), K.top)
 
         (* eliminated term *)
         val goalM = makeEq tr H ((m0, m1), int)
 
         (* result type *)
-        val goalTy = View.makeAsSubType tr H (substVar (m0, z) holeC, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) e0x, ty)
 
         (* zero branch *)
-        val goalZ = makeEq tr H ((n0, n1), (substVar (zero, z) holeC))
+        val goalZ = makeEq tr H ((n0, n1), (substVar (zero, x) e0x))
 
         (* succ branch *)
         val u = alpha 1
         val v = alpha 2
-        val cu = VarKit.rename (u, z) holeC
+        val cu = VarKit.rename (u, x) e0x
         val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
         val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
         val goalS =
           makeEq
             tr
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
-            ((p0, p1), substVar (succ @@ VarKit.toExp u, z) holeC)
+            ((p0, p1), substVar (succ @@ VarKit.toExp u, x) e0x)
 
         (* (negsucc zero) branch *)
-        val goalNSZ = makeEq tr H ((q0, q1), substVar (negsucc zero, z) holeC)
+        val goalNSZ = makeEq tr H ((q0, q1), substVar (negsucc zero, x) e0x)
 
         (* (negsucc succ) branch *)
-        val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) holeC
+        val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, x) e0x
         val r0 = VarKit.renameMany [(u, c0), (v, d0)] r0
         val r1 = VarKit.renameMany [(u, c1), (v, d1)] r1
         val goalNSS =
           makeEq
             tr
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cnegsuccu))
-            ((r0, r1), substVar (negsucc @@ succ @@ VarKit.toExp u, z) holeC)
+            ((r0, r1), substVar (negsucc @@ succ @@ VarKit.toExp u, x) e0x)
       in
-        |>: goalC >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalTy #> (H, axiom)
+        |>: goalE >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >:? goalTy #> (H, axiom)
       end
   end
 

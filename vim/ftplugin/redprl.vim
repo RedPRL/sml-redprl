@@ -1,7 +1,7 @@
 " vim-RedPRL ftplugin
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 January 6
+" Last Change:  2018 January 17
 
 if (exists("b:did_ftplugin") || !has('job'))
   finish
@@ -16,6 +16,7 @@ if (!exists('g:redprl_path'))
 endif
 
 command! RedPRL :call CheckBuffer()
+nnoremap <buffer> <LocalLeader>l :RedPRL<CR>
 
 set errorformat =%E%f:%l.%c-%*\\d.%*\\d\ [%trror]:
 set errorformat+=%Z%m
