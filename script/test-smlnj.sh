@@ -11,3 +11,4 @@ fi
 echo "Done!"
 
 exec ./script/run-tests.sh | ts -i "[%.ss]"
+exit "${PIPESTATUS[0]}"
