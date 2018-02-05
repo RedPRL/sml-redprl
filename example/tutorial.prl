@@ -17,7 +17,7 @@ Thm NotNot : [
    (= bool ($ Not ($ Not b)) b))
 ] by [
   lam b =>
-  // The next two lines can be replaced by auto.
+  // The next four lines can be replaced by auto.
   unfold Not;
   if b
   then (reduce at left; refine bool/eq/tt)
