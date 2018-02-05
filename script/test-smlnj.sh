@@ -2,6 +2,8 @@
 
 # Requires 'chronic' and 'ts' from the 'moreutils' package.
 
+set -o pipefail
+
 echo "Building RedPRL with SML/NJ..."
 if [ -n "${TRAVIS}" ]; then
   ./script/smlnj.sh || exit 1;
