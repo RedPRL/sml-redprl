@@ -71,7 +71,7 @@ struct
       fun name x i = 
         case Sym.name x of 
            SOME s => text s
-         | NONE => seq [char #"_", text (Int.toString i)]
+         | NONE => seq [char #"x", text (Int.toString i)]
       val (var', level') = List.foldl (fn (x, (rho, lvl)) => (Var.Ctx.insert rho x (name x lvl), lvl + 1)) (var, level) xs
     in
       {var = var',
