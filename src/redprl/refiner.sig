@@ -33,6 +33,7 @@ sig
   sig
     val UnfoldAll : sign -> opid list -> rule
     val Unfold : sign -> opid list -> hyp Selector.t list -> rule
+    val UnfoldPart : sign -> opid list -> hyp Selector.t * Accessor.t list -> rule
   end
 
   structure Computation :
