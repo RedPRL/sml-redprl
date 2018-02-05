@@ -79,6 +79,8 @@ Thm Pick/compose/zero/0 : [
   lam a b p0 p1 => auto
 ].
 
+Quit. // the following will be restored once we are in a better shape
+
 Thm Pick/compose/tt/4/0/tt/5/0 : [
   (->
    [a b c : nat]
