@@ -1386,6 +1386,21 @@ struct
         |>: goalSynth >: goalLine >: goalEndpoint >: goalEq >: goalTy
         #> (H, axiom)
       end
+
+    fun EqFromLine jdg =
+      let
+        val tr = ["Path.EqFromLine"]
+        val H >> ajdg = jdg
+        val ((m0, m1), pathTy) = View.matchTrueAsEq ajdg
+        val Syn.PATH ((x, ty), n0, n1) = Syn.out pathTy
+        val dim0 = Syn.into Syn.DIM0
+        val dim1 = Syn.into Syn.DIM1
+        val goalLine = makeEq tr H ((m0, m1), Syn.into (Syn.LINE (x,ty)))
+        val goalLeft = makeEq tr H ((n0, Syn.into (Syn.DIM_APP (m0, dim0))), substVar (dim0,x) ty)
+        val goalRight = makeEq tr H ((n1, Syn.into (Syn.DIM_APP (m1, dim1))), substVar (dim1,x) ty)
+      in
+        |>: goalLine >: goalLeft >: goalRight #> (H, axiom)
+      end
   end
 
   structure Line =

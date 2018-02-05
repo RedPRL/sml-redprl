@@ -293,6 +293,7 @@ struct
      | "path/eq/eta" => Lcf.rule Path.Eta
      | "path/eq/app" => Lcf.rule Path.EqApp
      | "path/eq/app/const" => Lcf.rule Path.EqAppConst
+     | "path/eq/from-line" => Lcf.rule Path.EqFromLine
      | "line/eqtype" => Lcf.rule Line.EqType
      | "line/eq/abs" => Lcf.rule Line.Eq
      | "line/intro" => Lcf.rule Line.True
@@ -329,7 +330,6 @@ struct
      | "subtype/eq" => Lcf.rule SubType.Eq
      | "custom/synth" => Lcf.rule (Custom.Synth sign)
      | "universe/subtype" => Lcf.rule Universe.SubType
-
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
   structure Computation =
