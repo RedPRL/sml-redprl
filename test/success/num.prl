@@ -31,17 +31,6 @@ Thm Pred : [
   [ `a' ]
 ].
 
-// A tactic to infer and supply a simple (non-dependent) motive to the nat/eq/nat-rec rule.
-Tac SimpleNatRecEq = [
-  query gl <- concl;
-  match gl {
-    [n z s ty | #jdg{(nat-rec %n %z [x y] (%s x y)) in %ty} =>
-      refine nat/eq/nat-rec; [`%ty]; auto]
-  }
-].
-
-Print SimpleNatRecEq.
-
 Thm Plus : [
   (-> nat nat nat)
 ] by [
@@ -74,7 +63,7 @@ Thm Plus/zero/R : [
       [ `(= nat (succ x) (succ n'))
       , auto
       , auto
-      , auto; refine fun/eq/app; [`(-> nat nat)]; auto; SimpleNatRecEq
+      , auto
       ]
     ]
 ].
@@ -82,7 +71,7 @@ Thm Plus/zero/R : [
 Thm Plus/succ/L : [
   (-> [n m : nat] (= nat ($ Plus (succ n) m) (succ ($ Plus n m))))
 ] by [
-  lam n m => auto; refine fun/eq/app; [`(-> nat nat)]; auto; SimpleNatRecEq
+  lam n m => auto
 ].
 
 
