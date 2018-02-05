@@ -238,7 +238,9 @@ Thm UARet(#l:lvl) : [
       , `e
       , abs x => lam a =>
           use (UABeta #l) [`ty/a, `ty/b, `e, `(coe 1~>x [_] ty/a a), `x]
-      ]
+      ];
+
+      unfold PathToEquiv at right in concl; auto
 ].
 
 Thm IsContrPath(#l:lvl) : [

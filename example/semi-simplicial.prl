@@ -10,7 +10,7 @@ Thm Pick : [
     , with m'/ih m' => 
       `(record
         [head : bool]
-        [tail : (if head ($ n'/ih m') m'/ih)])
+        [tail : (if [_] (U 0) head ($ n'/ih m') m'/ih)])
     ]
   ];
   auto
@@ -35,13 +35,10 @@ Thm Pick/succ/0/succ/1 : [
     ($ Pick (succ n) (succ m))
     (record
      [head : bool]
-     [tail : (if head ($ Pick n m) ($ Pick (succ n) m))])))
+     [tail : (if [_] (U 0) head ($ Pick n m) ($ Pick (succ n) m))])))
 ] by [
   lam n m =>
-    claim aux0 : [($ Pick n m) in (U 0)] by [auto];
-    claim aux1 : [($ Pick (succ n) m) in (U 0)] by [auto];
-    unfold Pick; reduce at left in aux0; reduce at left in aux1; auto;
-    assumption
+    auto
 ].
 
 Tac Replace(#z, #A) = [
@@ -101,6 +98,8 @@ Thm Pick/compose/zero/0 : [
 ] by [
   lam a b p0 p1 => auto
 ].
+
+Quit. // the following will be restored once we are in a better shape
 
 Thm Pick/compose/tt/4/0/tt/5/0 : [
   (->

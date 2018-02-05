@@ -1,7 +1,7 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 January 20
+" Last Change:  2018 February 5
 
 if exists("b:current_syntax")
   finish
@@ -15,7 +15,7 @@ syn keyword redSort dim hyp exp lvl tac jdg knd
 syn match   redHole '?\(\a\|\d\|\'\|\/\|\-\)*'
 syn match   redMeta '#'
 
-syn keyword redExpr ax fcom bool tt ff if wbool wool wif wbool-rec wool-rec nat
+syn keyword redExpr ax fcom bool tt ff if wbool wool nat
 syn keyword redExpr zero succ nat-rec int negsucc int-rec void S1 base loop
 syn keyword redExpr S1-rec lam record tuple path line pushout left right glue
 syn keyword redExpr pushout-rec coeq cecod cedom coeq-rec mem ni box cap V VV WU

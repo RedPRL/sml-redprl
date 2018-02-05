@@ -78,7 +78,7 @@ Thm IdV/Test2(#l:lvl) : [
 
 Print IdV/Test2.
 
-Def Not = [(lam [b] (if b ff tt))].
+Def Not = [(lam [b] (if [_] bool b ff tt))].
 
 Thm Bool/reflect : [
  (->

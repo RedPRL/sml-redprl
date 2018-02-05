@@ -300,10 +300,11 @@ struct
      | O.DEV_INVERSION $ _ => inversions
      | O.RULE_CUT $ [_ \ catjdg] => Lcf.rule (R.Cut (AJ.out catjdg))
      | O.TAC_REDUCE_ALL $ _ => R.Computation.ReduceAll sign
-     | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule (R.Computation.Reduce sign (Syn.outVec' Syn.outSelector sels))
-     | O.TAC_REDUCE_PART $ [_ \ sel, _ \ accs] => Lcf.rule (R.Computation.ReducePart sign (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs))
-     | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule (R.Custom.UnfoldAll sign opids)
-     | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule (R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec))
+     | O.TAC_REDUCE $ [_ \ sels] => Lcf.rule @@ R.Computation.Reduce sign (Syn.outVec' Syn.outSelector sels)
+     | O.TAC_REDUCE_PART $ [_ \ sel, _ \ accs] => Lcf.rule @@ R.Computation.ReducePart sign (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs)
+     | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule @@ R.Custom.UnfoldAll sign opids
+     | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule @@ R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
+     | O.TAC_UNFOLD_PART opids $ [_ \ sel, _ \ accs] => Lcf.rule @@ R.Custom.UnfoldPart sign opids (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs)
      | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp
      | O.RULE_PRIM ruleName $ _ => R.lookupRule sign ruleName
      | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl [tactic sign env tm1, popNamesIn [u] @@ tactic sign env tm2]

@@ -260,7 +260,7 @@ struct
      | "wbool/eq/tt" => Lcf.rule WBool.EqTT
      | "wbool/eq/ff" => Lcf.rule WBool.EqFF
      | "wbool/eq/fcom" => Lcf.rule WBool.EqFCom
-     | "wbool/eq/wif" => Lcf.rule WBool.EqElim
+     | "wbool/eq/if" => Lcf.rule WBool.EqElim
      | "nat/eqtype" => Lcf.rule Nat.EqType
      | "nat/eq/zero" => Lcf.rule Nat.EqZero
      | "nat/eq/succ" => Lcf.rule Nat.EqSucc
@@ -394,7 +394,9 @@ struct
     fun autoSynthesizableNeu sign m =
       case Syn.out m of
          Syn.VAR _ => true
-       | Syn.WIF _ => true
+       | Syn.IF _ => true
+       | Syn.NAT_REC _ => true
+       | Syn.INT_REC _ => true
        | Syn.S1_REC _ => true
        | Syn.APP (f, _) => autoSynthesizableNeu sign f
        | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
@@ -429,13 +431,13 @@ struct
       fun StepNeuByUnfold sign (m, n) =
         fn (Machine.METAVAR a, _) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
          | (_, Machine.METAVAR a) => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", TermPrinter.ppMeta a)
-         | (Machine.OPERATOR theta, _) => Lcf.rule @@ Custom.Unfold sign [theta] [Selector.IN_CONCL]
-         | (_, Machine.OPERATOR theta) => Lcf.rule @@ Custom.Unfold sign [theta] [Selector.IN_CONCL]
+         | (Machine.OPERATOR theta, _) => Lcf.rule @@ Custom.UnfoldPart sign [theta] (Selector.IN_CONCL, [Accessor.PART_LEFT])
+         | (_, Machine.OPERATOR theta) => Lcf.rule @@ Custom.UnfoldPart sign [theta] (Selector.IN_CONCL, [Accessor.PART_RIGHT])
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuByUnfold", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
-      fun StepNeuExpandUntyped sign tm =
+      fun StepNeuExpandUntyped sign part tm =
         fn Machine.VAR z => AutoElim sign z
-         | Machine.OPERATOR theta => Lcf.rule @@ Custom.Unfold sign [theta] [Selector.IN_CONCL]
+         | Machine.OPERATOR theta => Lcf.rule @@ Custom.UnfoldPart sign [theta] (Selector.IN_CONCL, [part])
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepNeuExpandUntyped", TermPrinter.ppTerm tm)
 
       structure Wrapper =
@@ -474,7 +476,9 @@ struct
       fun StepEqSubTypeNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Wrapper.applyEqRule Universe.VarFromTrue
-         | (Syn.WIF _, Syn.WIF _) => Wrapper.applyEqRule WBool.EqElim
+         | (Syn.IF _, Syn.IF _) => (fn mode => Wrapper.applyEqRule Bool.EqElim mode par Wrapper.applyEqRule WBool.EqElim mode)
+         | (Syn.NAT_REC _, Syn.NAT_REC _) => Wrapper.applyEqRule Nat.EqElim
+         | (Syn.INT_REC _, Syn.INT_REC _) => Wrapper.applyEqRule Int.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => Wrapper.applyEqRule S1.EqElim
          | (Syn.APP _, Syn.APP _) => Wrapper.applyEqRule Fun.EqApp
          | (Syn.PROJ _, Syn.PROJ _) => Wrapper.applyEqRule Record.EqProj
@@ -515,8 +519,8 @@ struct
         @@
         (case (canonicity sign ty1, canonicity sign ty2) of
            (Machine.NEUTRAL blocker1, Machine.NEUTRAL blocker2) => StepEqSubTypeNeu sign (ty1, ty2) (blocker1, blocker2) subMode
-         | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepNeuExpandUntyped sign ty1 blocker
-         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => Symmetry then_ StepNeuExpandUntyped sign ty2 blocker
+         | (Machine.NEUTRAL blocker, Machine.CANONICAL) => StepNeuExpandUntyped sign Accessor.PART_LEFT ty1 blocker
+         | (Machine.CANONICAL, Machine.NEUTRAL blocker) => StepNeuExpandUntyped sign Accessor.PART_RIGHT ty2 blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqSubType",
            case subMode of
               Wrapper.EQ => AJ.pretty @@ AJ.EQ_TYPE ((ty1, ty2), K.top)
@@ -526,7 +530,7 @@ struct
         case canonicity sign ty of
            Machine.REDEX => Lcf.rule @@ Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_TYPE])
          | Machine.NEUTRAL (Machine.VAR z) => AutoElim sign z
-         | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule @@ Custom.Unfold sign [theta] [Selector.IN_CONCL]
+         | Machine.NEUTRAL (Machine.OPERATOR theta) => Lcf.rule @@ Custom.UnfoldPart sign [theta] (Selector.IN_CONCL, [Accessor.PART_TYPE])
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqValAtType", TermPrinter.ppTerm ty)
 
       (* equality of canonical forms *)
@@ -589,8 +593,10 @@ struct
 
       fun StepEqNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
-           (Syn.VAR _, Syn.VAR _) => Lcf.rule InternalizedEquality.VarFromTrue
-         | (Syn.WIF _, Syn.WIF _) => Lcf.rule WBool.EqElim
+           (Syn.VAR _, Syn.VAR _) => Lcf.rule (InternalizedEquality.VarFromTrue)
+         | (Syn.IF _, Syn.IF _) => Lcf.rule Bool.EqElim par Lcf.rule WBool.EqElim
+         | (Syn.NAT_REC _, Syn.NAT_REC _) => Lcf.rule Nat.EqElim
+         | (Syn.INT_REC _, Syn.INT_REC _) => Lcf.rule Int.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule S1.EqElim
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule Fun.EqApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
@@ -624,8 +630,7 @@ struct
          | (_, Syn.LINE _) => Lcf.rule Line.Eta
          | (_, Syn.EQUALITY _) => Lcf.rule InternalizedEquality.Eta
          | (Machine.VAR z, _) => AutoElim sign z
-         | (Machine.OPERATOR theta, _) => Lcf.rule @@ Custom.Unfold sign [theta] [Selector.IN_CONCL]
-         | _ => raise Fail "StepEqNeuExpand: match")
+         | (Machine.OPERATOR theta, _) => Lcf.rule @@ Custom.UnfoldPart sign [theta] (Selector.IN_CONCL, [Accessor.PART_LEFT]))
 
 
       structure HCom =
@@ -709,8 +714,10 @@ struct
       fun StepSynth sign m =
         case Syn.out m of
            Syn.VAR _ => Lcf.rule Synth.Var
-         | Syn.WIF _ => Lcf.rule WBool.SynthElim
+         | Syn.IF _ => Lcf.rule Bool.SynthElim par Lcf.rule WBool.SynthElim
          | Syn.S1_REC _ => Lcf.rule S1.SynthElim
+         | Syn.NAT_REC _ => Lcf.rule Nat.SynthElim
+         | Syn.INT_REC _ => Lcf.rule Int.SynthElim
          | Syn.APP _ => Lcf.rule Fun.SynthApp
          | Syn.PROJ _ => Lcf.rule Record.SynthProj
          | Syn.DIM_APP _ => Lcf.rule Path.SynthApp par Lcf.rule Line.SynthApp
@@ -724,7 +731,7 @@ struct
            (_, Machine.REDEX) => Lcf.rule @@ Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_LEFT])
          | (_, Machine.CANONICAL) => Lcf.rule Universe.SubKind
          | (Syn.DIM_APP (_, r), _) => fail @@ E.UNIMPLEMENTED @@ Fpp.text "SubKind with dimension application"
-         | (_, Machine.NEUTRAL blocker) => StepNeuExpandUntyped sign u blocker
+         | (_, Machine.NEUTRAL blocker) => StepNeuExpandUntyped sign Accessor.PART_LEFT u blocker
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepSubKind", TermPrinter.ppTerm u)
 
       fun StepMatch sign u =
