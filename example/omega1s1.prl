@@ -1,14 +1,14 @@
 Thm IntSucc : [
   (-> int int)
 ] by [
-  lam i => `(int-rec i 1 [n _] (succ (succ n)) 0 [n _] (negsucc n));
+  lam i => `(int-rec [_] int i 1 [n _] (succ (succ n)) 0 [n _] (negsucc n));
     refine int/eq/int-rec; [ `int ]; auto
 ].
 
 Thm IntPred : [
   (-> int int)
 ] by [
-  lam i => `(int-rec i -1 [n _] (nat-rec n 0 [n _] (succ n)) -2 [n _] (negsucc (succ (succ n))));
+  lam i => `(int-rec [_] int i -1 [n _] (nat-rec [_] int n 0 [n _] (succ n)) -2 [n _] (negsucc (succ (succ n))));
     refine int/eq/int-rec; [ `int ]; auto;
     refine nat/eq/nat-rec; [ `int ]; auto
 ].

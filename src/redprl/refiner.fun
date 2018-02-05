@@ -256,7 +256,7 @@ struct
      | "wbool/eq/tt" => Lcf.rule o WBool.EqTT
      | "wbool/eq/ff" => Lcf.rule o WBool.EqFF
      | "wbool/eq/fcom" => Lcf.rule o WBool.EqFCom
-     | "wbool/eq/wif" => Lcf.rule o WBool.EqElim
+     | "wbool/eq/if" => Lcf.rule o WBool.EqElim
      | "nat/eqtype" => Lcf.rule o Nat.EqType
      | "nat/eq/zero" => Lcf.rule o Nat.EqZero
      | "nat/eq/succ" => Lcf.rule o Nat.EqSucc
@@ -390,7 +390,9 @@ struct
     fun autoSynthesizableNeu sign m =
       case Syn.out m of
          Syn.VAR _ => true
-       | Syn.WIF _ => true
+       | Syn.IF _ => true
+       | Syn.NAT_REC _ => true
+       | Syn.INT_REC _ => true
        | Syn.S1_REC _ => true
        | Syn.APP (f, _) => autoSynthesizableNeu sign f
        | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
@@ -470,7 +472,9 @@ struct
       fun StepEqSubTypeNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Wrapper.applyEqRule Universe.VarFromTrue
-         | (Syn.WIF _, Syn.WIF _) => Wrapper.applyEqRule WBool.EqElim
+         | (Syn.IF _, Syn.IF _) => (fn mode => Wrapper.applyEqRule Bool.EqElim mode par Wrapper.applyEqRule WBool.EqElim mode)
+         | (Syn.NAT_REC _, Syn.NAT_REC _) => Wrapper.applyEqRule Nat.EqElim
+         | (Syn.INT_REC _, Syn.INT_REC _) => Wrapper.applyEqRule Int.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => Wrapper.applyEqRule S1.EqElim
          | (Syn.APP _, Syn.APP _) => Wrapper.applyEqRule Fun.EqApp
          | (Syn.PROJ _, Syn.PROJ _) => Wrapper.applyEqRule Record.EqProj
@@ -586,7 +590,9 @@ struct
       fun StepEqNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Lcf.rule o InternalizedEquality.VarFromTrue
-         | (Syn.WIF _, Syn.WIF _) => Lcf.rule o WBool.EqElim
+         | (Syn.IF _, Syn.IF _) => Lcf.rule o Bool.EqElim par Lcf.rule o WBool.EqElim
+         | (Syn.NAT_REC _, Syn.NAT_REC _) => Lcf.rule o Nat.EqElim
+         | (Syn.INT_REC _, Syn.INT_REC _) => Lcf.rule o Int.EqElim
          | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule o S1.EqElim
          | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule o Fun.EqApp
                                           else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
@@ -704,8 +710,10 @@ struct
       fun StepSynth sign m =
         case Syn.out m of
            Syn.VAR _ => Lcf.rule o Synth.Var
-         | Syn.WIF _ => Lcf.rule o WBool.SynthElim
+         | Syn.IF _ => Lcf.rule o Bool.SynthElim par Lcf.rule o WBool.SynthElim
          | Syn.S1_REC _ => Lcf.rule o S1.SynthElim
+         | Syn.NAT_REC _ => Lcf.rule o Nat.SynthElim
+         | Syn.INT_REC _ => Lcf.rule o Int.SynthElim
          | Syn.APP _ => Lcf.rule o Fun.SynthApp
          | Syn.PROJ _ => Lcf.rule o Record.SynthProj
          | Syn.DIM_APP _ => Lcf.rule o Path.SynthApp par Lcf.rule o Line.SynthApp

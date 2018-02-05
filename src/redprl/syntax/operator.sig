@@ -17,7 +17,7 @@ struct
    (* strict bool *)
    | BOOL | TT | FF | IF
    (* week bool *)
-   | WBOOL | WIF
+   | WBOOL
    (* natural numbers *)
    | NAT | ZERO | SUCC | NAT_REC
    (* integers *)
