@@ -120,7 +120,7 @@ struct
      | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: EXP] ->> JDG
 
-     | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
+     | MTAC_SEQ => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_REPEAT => [[] |: MTAC] ->> MTAC
      | MTAC_AUTO => [] ->> MTAC
@@ -146,6 +146,8 @@ struct
      | TAC_REWRITE => [[] |: SEL, [] |: ACC, [] |: EXP] ->> TAC
 
      | TAC_ASSUMPTION => [] ->> TAC
+     | TAC_POP sorts => [sorts |: TAC] ->> TAC
+     | TAC_PUSH => [[] |: VEC ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [ListUtil.concatMap devPatternValence pats |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
@@ -256,7 +258,7 @@ struct
 
      | KCONST k => RedPrlKind.toString k
 
-     | MTAC_SEQ sorts => "seq{" ^ ListUtil.joinWith RedPrlSort.toString "," sorts ^ "}"
+     | MTAC_SEQ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REPEAT => "repeat"
      | MTAC_AUTO => "auto"
@@ -280,6 +282,9 @@ struct
      | RULE_PRIM name => "refine{" ^ name ^ "}"
      | TAC_ELIM => "elim"
      | TAC_REWRITE => "rewrite"
+     | TAC_ASSUMPTION => "assumption"
+     | TAC_POP _ => "with"
+     | TAC_PUSH => "push"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"

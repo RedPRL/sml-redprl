@@ -6,7 +6,7 @@ struct
   open Abt Kit
 
   type sign = Sig.sign
-  type rule = (int -> Sym.t) -> Lcf.jdg Lcf.tactic
+  type rule = Lcf.jdg Lcf.tactic
   type catjdg = AJ.jdg
   type opid = Sig.opid
 
@@ -138,6 +138,7 @@ struct
            N_i = P_j in A [Psi, y | r_i = r_i', r_j = r_j']
      *)
     fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substVar (VarKit.toDim w, u) tube))
+
     fun enumInterExceptDiag f =
       let
         fun enum ([], []) = []
@@ -149,17 +150,17 @@ struct
 
     local
       (* TODO: why do these have tick marks after them? - JMS *)
-      fun genTubeGoals' tr (H : AJ.jdg Hyps.telescope) ((tubes0, tubes1), ty) =
+      fun genTubeGoals' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
         ListPairUtil.mapPartialEq
           (fn ((eq, t0), (_, t1)) => Restriction.makeEq tr [eq] H ((t0, t1), ty))
           (tubes0, tubes1)
 
-      fun genInterTubeGoalsExceptDiag' tr (H : AJ.jdg Hyps.telescope) ((tubes0, tubes1), ty) =
+      fun genInterTubeGoalsExceptDiag' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
         enumInterExceptDiag
           (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent tr [eq0, eq1] H ((t0, t1), ty))
           (tubes0, tubes1)
     in
-      fun genInterTubeGoals tr (H : AJ.jdg Hyps.telescope) w ((tubes0, tubes1), ty) =
+      fun genInterTubeGoals tr (H : Sequent.hyps) w ((tubes0, tubes1), ty) =
         let
           val tubes0 = alphaRenameTubes w tubes0
           val tubes1 = alphaRenameTubes w tubes1
@@ -204,7 +205,7 @@ struct
 
   structure HCom =
   struct
-    fun Eq alpha jdg =
+    fun Eq jdg =
       let
         val tr = ["HCom.Eq"]
 
@@ -229,7 +230,7 @@ struct
         (* cap *)
         val goalCap = makeEq tr H ((cap0, cap1), ty0)
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>: goalCap
          >:+ ComKit.genInterTubeGoals tr H w ((tubes0, tubes1), ty0)
@@ -238,7 +239,7 @@ struct
         #> (H, axiom)
       end
 
-    fun EqCapL alpha jdg =
+    fun EqCapL jdg =
       let
         val tr = ["HCom.EqCapL"]
 
@@ -259,7 +260,7 @@ struct
         (* eq *)
         val goalEq = View.makeAsEq tr H ((cap, other), ty)
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>: goalEq
          >:+ ComKit.genInterTubeGoals tr H w ((tubes, tubes), ty0)
@@ -269,7 +270,7 @@ struct
       end
 
     (* Search for the first satisfied equation in an hcom. *)
-    fun EqTubeL alpha jdg =
+    fun EqTubeL jdg =
       let
         val tr = ["HCom.EqTubeL"]
 
@@ -295,7 +296,7 @@ struct
          * is unconditionally in [ty], and thus alpha-equivalence is sufficient. *)
         val goalEq = makeEqIfDifferent tr H ((substVar (r', u) tube, other), ty0)
 
-        val w = alpha 0
+        val w = Sym.new ()
       in
         |>:? goalEq
          >:+ ComKit.genInterTubeGoals tr H w ((tubes, tubes), ty0)

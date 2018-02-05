@@ -26,32 +26,34 @@ struct
   local
     open Fpp
   in
-    val pretty =
-      fn TRUE a => TermPrinter.ppTerm a
+    fun pretty' env =
+      fn TRUE a => TermPrinter.ppTerm' env a
        | EQ_TYPE ((a, b), k) => expr @@ hvsep @@ List.concat
-           [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm a]
-             else [TermPrinter.ppTerm a, Atomic.equals, TermPrinter.ppTerm b]
+           [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm' env a]
+             else [TermPrinter.ppTerm' env a, Atomic.equals, TermPrinter.ppTerm' env b]
            , if k = RedPrlKind.top
              then [hsep [text "type"]]
              else [hsep [TermPrinter.ppKind k, text "type"]]
            ]
        | SUB_TYPE (a, b) => expr @@ hvsep
-           [ TermPrinter.ppTerm a
+           [ TermPrinter.ppTerm' env a
            , text "<="
-           , TermPrinter.ppTerm b
+           , TermPrinter.ppTerm' env b
            , text "type"
            ]
        | SUB_KIND (u, k) => expr @@ hvsep
-           [ TermPrinter.ppTerm u
+           [ TermPrinter.ppTerm' env u
            , text "<="
            , TermPrinter.ppKind k
            , text "universe"
            ]
        | SYNTH m => expr @@ hvsep
-           [ TermPrinter.ppTerm m, text "synth"
+           [ TermPrinter.ppTerm' env m, text "synth"
            ]
        | TERM tau => TermPrinter.ppSort tau
   end
+
+  val pretty = pretty' TermPrinter.basicEnv
 
   structure O = RedPrlOpData
 

@@ -18,11 +18,12 @@ Thm LowLevel : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f -> refine fun/intro;
-  [fresh x x/eq -> elim f;
-  [`tt, use x],
-  refine fun/eqtype;
-  refine wbool/eqtype]
+  refine fun/intro;
+  [ with f =>
+    elim f; [`tt, with x/eq x => use x]
+  , refine fun/eqtype;
+    refine wbool/eqtype
+  ]
 ].
 
 Extract LowLevel.
@@ -30,12 +31,17 @@ Extract LowLevel.
 Thm LowLevel2 : [
   (->
     (-> wbool wbool)
+    wbool
     wbool)
 ] by [
-  fresh f -> repeat {refine fun/intro; [id, auto]};
-  fresh x x/eq -> elim f;
-  [`tt, use x]
+  repeat {refine fun/intro; [id, auto]};
+  with x f =>
+    elim f; 
+    [ use x
+    , with y/eq y => use y
+    ]
 ].
+
 
 Extract LowLevel2.
 

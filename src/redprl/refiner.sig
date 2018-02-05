@@ -46,7 +46,6 @@ sig
   structure Hyp :
   sig
     val Project : hyp -> rule
-    val Rename : hyp -> rule
     val Delete : hyp -> rule
   end
 
@@ -54,6 +53,12 @@ sig
   sig
     val NormalizeGoalDelegate : (abt -> tactic) -> sign -> tactic
     val NormalizeHypDelegate : (abt -> hyp -> tactic) -> sign -> hyp -> tactic
+  end
+
+  structure Names : 
+  sig
+    val Push : hyp list -> rule
+    val PopAs : hyp list -> rule
   end
 
   type rule_name = string

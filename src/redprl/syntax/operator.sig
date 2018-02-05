@@ -74,7 +74,7 @@ struct
 
 
    (* primitive tacticals and multitacticals *)
-   | MTAC_SEQ of sort list | MTAC_ORELSE
+   | MTAC_SEQ | MTAC_ORELSE
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH | MTAC_FOCUS of int
    | MTAC_HOLE of string option
@@ -90,6 +90,8 @@ struct
    | TAC_REDUCE
    | TAC_REDUCE_PART
    | TAC_ASSUMPTION
+   | TAC_POP of sort list
+   | TAC_PUSH
 
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
