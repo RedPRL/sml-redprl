@@ -9,11 +9,6 @@ sig
   datatype jdg =
      (* sequents / formal hypothetical judgment *)
      >> of hyps * atjdg
-     (* unify a term w/ a head operator and extract the kth subterm *)
-   | MATCH of RedPrlAbt.operator * int * abt * abt list
-     (* unify a term w/ RECORD and extract the type of the label;
-      * the third argument is the tuple. *)
-   | MATCH_RECORD of string * abt * abt
 
   val map : (abt -> abt) -> jdg -> jdg
 

@@ -21,13 +21,5 @@ struct
       fn H >> catjdg =>
            (Hyps.foldr (fn (_, jdg, r) => AJ.synthesis jdg :: r) [] H,
             AJ.synthesis catjdg)
-       | MATCH (th, k, _, _) =>
-           let
-             val (vls, _) = Tm.O.arity th
-             val (_, tau) = List.nth (vls, k)
-           in
-             ([], tau)
-           end
-       | MATCH_RECORD _ => ([], RedPrlSort.EXP)
   end
 end

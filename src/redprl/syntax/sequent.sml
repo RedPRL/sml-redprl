@@ -153,23 +153,14 @@ struct
   datatype jdg =
      (* sequents / formal hypothetical judgment *)
      >> of hyps * atjdg
-     (* unify a term w/ a head operator and extract the kth subterm *)
-   | MATCH of RedPrlAbt.operator * int * Tm.abt * Tm.abt list
-     (* unify a term w/ RECORD and extract the type of the label;
-      * the third argument is the tuple. *)
-   | MATCH_RECORD of string * Tm.abt * Tm.abt
 
   infix >>
 
   fun map f =
     fn H >> catjdg => Hyps.map (AJ.map f) H >> AJ.map f catjdg
-     | MATCH (th, k, a, ms) => MATCH (th, k, f a, List.map f ms)
-     | MATCH_RECORD (lbl, tm, tuple) => MATCH_RECORD (lbl, f tm, f tuple)
-
 
   fun relabel srho =
     fn H >> catjdg => Hyps.relabel H srho >> AJ.map (Tm.renameVars srho) catjdg
-     | jdg => map (Tm.renameVars srho) jdg
 
   local
     fun >>= (m, k) = Fpp.bind m k
@@ -203,8 +194,6 @@ struct
          in         
            ruleSep (doc, AJ.pretty' env atjdg)
          end
-     | MATCH (th, k, a, _) => Fpp.hsep [TP.ppTerm a, Fpp.text "match", TP.ppOperator th, Fpp.text "@", Fpp.text (Int.toString k)]
-     | MATCH_RECORD (lbl, a, m) => Fpp.hsep [TP.ppTerm a, Fpp.text "match-record", Fpp.text lbl, Fpp.text "with tuple", TP.ppTerm m]
 
   val rec eq =
     fn (H1 >> catjdg1, H2 >> catjdg2) =>
@@ -224,14 +213,6 @@ struct
            andalso AJ.eq (catjdg1', catjdg2')
        end
        handle _ => false)
-     | (MATCH (th1, k1, a1, ms1), MATCH (th2, k2, a2, ms2)) =>
-          Tm.O.eq (th1, th2)
-            andalso k1 = k2
-            andalso Tm.eq (a1, a2)
-            andalso ListPair.allEq Tm.eq (ms1, ms2)
-     | (MATCH_RECORD (lbl1, a1, m1), MATCH_RECORD (lbl2, a2, m2)) =>
-          lbl1 = lbl2 andalso Tm.eq (a1, a2) andalso Tm.eq (m1, m2)
-     | _ => false
 
 
   fun push xs jdg =
