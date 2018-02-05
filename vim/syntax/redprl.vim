@@ -25,16 +25,19 @@ syn match   redExpr '[$*!@=+]\|->\|\~>\|<\~'
 syn keyword redTac auto auto-step case cut-lemma elim else exact fresh goal
 syn keyword redTac hyp id lemma let claim match of print trace progress
 syn keyword redTac query reduce refine repeat rewrite symmetry
-syn keyword redTac then unfold use with fail inversion concl assumption
+syn keyword redTac then unfold use with without fail inversion concl assumption
 syn match   redTac '[;`]'
 
-syn keyword redSeq at by in true type synth discrete kan hcom coe stable
+syn keyword redSeq at by in true type synth discrete kan stable
 
 syn region  redComm start="//" end="$"
 syn region  redBlockComm start="/\*" end="\*/" contains=redBlockComm
 
 syn match   redMesg '\[\(Info\|Output\|Warning\|Error\)\]'
 syn keyword redMesg Trace
+
+syn match   redAnon '_\d\+'
+syn match   redAnon '_\d\+\/\(\a\|\d\|\'\|\/\|\-\)\+'
 
 hi def link redDecl Structure
 hi def link redSort Identifier
@@ -46,5 +49,6 @@ hi def link redSeq  Normal
 hi def link redComm Comment
 hi def link redBlockComm Comment
 hi def link redMesg Structure
+hi def link redAnon NonText
 
 let b:current_syntax = "redprl"

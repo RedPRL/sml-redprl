@@ -16,22 +16,24 @@ Thm IntPred : [
 Thm IntSuccIntPred : [
   (-> [i : int] (= int ($ IntSucc ($ IntPred i)) i))
 ] by [
-  lam i => fresh n -> elim i;
-    [ auto
-    , elim n; auto
-    , auto
-    , auto
-    ]
+  lam i => 
+  elim i;
+  [ auto
+  , with _ n => elim n; auto
+  , auto
+  , auto
+  ]
 ].
+
 
 Thm IntPredIntSucc : [
   (-> [i : int] (= int ($ IntPred ($ IntSucc i)) i))
 ] by [
-  lam i => fresh n -> elim i;
+  lam i => elim i;
     [ auto
     , auto
     , auto
-    , elim n; auto
+    , with _ n => elim n; auto
     ]
 ].
 
@@ -57,10 +59,9 @@ Thm IntSuccIsEquiv : [
     , lam {i',p'} =>
         claim eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)];
         claim eq1 : [(= int ($ IntPred i) i')] by [
-          fresh i'' ->
-            rewrite eq0;
-            [`(= int ($ IntPred i'') i'), `($ IntPredIntSucc i')];
-            auto
+          rewrite eq0;
+          [with i'' => `(= int ($ IntPred i'') i'), `($ IntPredIntSucc i')];
+          auto
         ];
 
         (abs x =>
@@ -100,8 +101,8 @@ Thm S1LoopToInt : [
   lam l => `(coe 0~>1 [x] ($ S1UnivCover (@ l x)) 0);
     claim eq : [(= S1 (@ l 1) base)] by [auto];
     refine coe/eq; auto;
-    [ fresh x -> rewrite eq at type; [`($ S1UnivCover x)]; auto
-    , fresh x -> rewrite eq at left; [`($ S1UnivCover x)]; auto
+    [ rewrite eq at type; [with x => `($ S1UnivCover x)]; auto
+    , rewrite eq at left; [with x => `($ S1UnivCover x)]; auto
     ]
 ].
 
@@ -125,11 +126,11 @@ Thm S1LoopInv : [
 Thm IntToS1Loop : [
   (-> int (path [_] S1 base base))
 ] by [
-  lam i => fresh n ih -> elim i;
+  lam i => elim i;
     [ abs _ => `base
-    , `($ S1LoopConcat Loop ih)
+    , with ih => `($ S1LoopConcat Loop ih)
     , `($ S1LoopInv Loop)
-    , `($ S1LoopConcat ($ S1LoopInv Loop) ih)
+    , with ih => `($ S1LoopConcat ($ S1LoopInv Loop) ih)
     ]
 ].
 

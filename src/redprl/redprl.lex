@@ -148,6 +148,7 @@ whitespace = [\ \t];
 <INITIAL>"claim"            => (Tokens.CLAIM (posTuple (size yytext)));
 <INITIAL>"use"              => (Tokens.USE (posTuple (size yytext)));
 <INITIAL>"with"             => (Tokens.WITH (posTuple (size yytext)));
+<INITIAL>"without"          => (Tokens.WITHOUT (posTuple (size yytext)));
 <INITIAL>"case"             => (Tokens.CASE (posTuple (size yytext)));
 <INITIAL>"of"               => (Tokens.OF (posTuple (size yytext)));
 <INITIAL>"refine"           => (Tokens.REFINE (posTuple (size yytext)));
