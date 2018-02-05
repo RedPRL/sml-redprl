@@ -10,5 +10,5 @@ else
 fi
 echo "Done!"
 
+set -o pipefail
 exec ./script/run-tests.sh | ts -i "[%.ss]"
-exit "${PIPESTATUS[0]}"
