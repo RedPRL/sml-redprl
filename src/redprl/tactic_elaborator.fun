@@ -28,7 +28,7 @@ struct
   structure RT = RefinerTypeRules (Sig)
   structure T = RedPrlTactical (Lcf)
 
-  open T infix seq then_ thenl thenl' orelse_ par
+  open T infix seq then_ thenl thenl' orelse_
 
   type env = multitactic Var.Ctx.dict
 
@@ -74,7 +74,7 @@ struct
 
   fun hyp sign z =
     Lcf.rule (R.Hyp.Project z)
-    par
+    orelse_
     exactAuto sign (VarKit.toExp z)
 
   open Sequent infix >>

@@ -25,7 +25,7 @@ struct
   infixr @@
   infix 1 || #>
   infix 2 >> >: >:? >:+ $$ $# // \ @>
-  infix par orelse_ then_ thenl
+  infix orelse_ then_ thenl
 
   structure Hyp =
   struct
