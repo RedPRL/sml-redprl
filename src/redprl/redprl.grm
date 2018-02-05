@@ -29,11 +29,10 @@ structure Tac =
 struct
   infix $$ $ \
 
-  fun makeSeq mt (us : (string * O.sort) list) mt' =
+  fun makeSeq mt mt' =
     let
-      val (syms, sorts) = ListPair.unzip us
     in
-      O.MTAC_SEQ sorts $$ [[] \ mt, syms \ mt']
+      O.MTAC_SEQ $$ [[] \ mt, [] \ mt']
     end
 
   fun multitacToTac mt =
@@ -50,7 +49,7 @@ struct
     multitacToTac (O.MTAC_ORELSE $$ [[] \ tacToMultitac t1, [] \ tacToMultitac t2])
 
   fun then_ (t1, t2) =
-    multitacToTac (makeSeq (tacToMultitac t1) [] (tacToMultitac t2))
+    multitacToTac (makeSeq (tacToMultitac t1) (tacToMultitac t2))
 
   val autoMtac = O.MTAC_AUTO $$ []
   val autoTac = multitacToTac autoMtac
@@ -334,7 +333,7 @@ end
  | AX
  | FCOM
  | BOOL | TT | FF | IF
- | WBOOL | WIF
+ | WBOOL
  | NAT | ZERO | SUCC | NAT_REC
  | INT | NEGSUCC | INT_REC
  | VOID
@@ -355,7 +354,7 @@ end
  (* keywords in tactics *)
  | CASE | OF
  | FRESH
- | LET | CLAIM | USE | WITH
+ | LET | CLAIM | USE | WITH | WITHOUT
  | THEN | ELSE
  | REFINE
  | MTAC_PROGRESS | MTAC_REPEAT | MTAC_AUTO | MTAC_HOLE
@@ -380,7 +379,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA AMPERSAND COLON
-%nonassoc FCOM BOOL TT FF IF WBOOL WIF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
+%nonassoc FCOM BOOL TT FF IF WBOOL NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
 
@@ -651,10 +650,8 @@ nullaryOperator
 
 (* built-in operators that do not have special form *)
 multinaryOperator
-  (* bools *)
+  (* bools and weak bools *)
   : IF (O.IF)
-  (* weak bools *)
-  | WIF (O.WIF)
   (* natural numbers *)
   | SUCC (O.SUCC)
   | NAT_REC (O.NAT_REC)
@@ -917,7 +914,10 @@ atomicRawTac
   | TAC_REDUCE IN selector AT accessors (Ast.$$ (O.TAC_REDUCE_PART, [\\ selector, \\ (Multi.makeVec O.ACC accessors)]))
   | TAC_REDUCE AT accessors IN selector (Ast.$$ (O.TAC_REDUCE_PART, [\\ selector, \\ (Multi.makeVec O.ACC accessors)]))
   | TAC_UNFOLD opnames (Ast.$$ (O.TAC_UNFOLD_ALL opnames, []))
-  | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD (opnames), [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD opnames, [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_UNFOLD opnames AT accessors (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ (Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], Multi.makeVec O.ACC accessors)]))
+  | TAC_UNFOLD opnames IN selector AT accessors (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ selector, Ast.\ ([], Multi.makeVec O.ACC accessors)]))
+  | TAC_UNFOLD opnames AT accessors IN selector (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ selector, Ast.\ ([], Multi.makeVec O.ACC accessors)]))
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
@@ -931,6 +931,9 @@ atomicRawTac
   | ABS boundVars DOUBLE_RIGHT_ARROW tactic (Ast.$$ (O.DEV_PATH_INTRO (List.length boundVars), [\ (Multi.addUnderscores boundVars, tactic)]))
   | LBRACKET recordFieldTactics RBRACKET (Multi.recordIntro (Pos.pos (LBRACKET1left fileName) (RBRACKET1right fileName)) recordFieldTactics)
   | LBRACKET tactics RBRACKET (Multi.sigmaIntro tactics)
+
+  | WITHOUT termsAnySort (Ast.$$ (O.TAC_PUSH, [\ ([], Multi.makeVec O.ANY termsAnySort)]))
+  | WITH hypBindings DOUBLE_RIGHT_ARROW tactic (Ast.$$ (O.TAC_POP (List.map #2 hypBindings), [\ (List.map #1 hypBindings, tactic)]))
   
   | IF elimTarget THEN tactic ELSE tactic
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))
@@ -965,8 +968,6 @@ atomicRawMultitac
   | MTAC_AUTO (Tac.autoMtac)
   | MTAC_PROGRESS LBRACKET multitac RBRACKET (Ast.$$ (O.MTAC_PROGRESS, [\ ([], multitac)]))
   | LPAREN multitac RPAREN (multitac)
-  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings (Tac.tacToMultitac (Ast.$$ (O.TAC_ID, []))))
-  | FRESH hypBindings RIGHT_ARROW atomicRawMultitac SEMI multitac %prec RIGHT_ARROW (Tac.makeSeq atomicRawMultitac hypBindings multitac)
   | atomicTac %prec SEMI (Ast.$$ (O.MTAC_ALL, [\ ([], atomicTac)]))
   | HOLENAME (Ast.$$ (O.MTAC_HOLE (SOME HOLENAME), []))
 
@@ -974,7 +975,7 @@ atomicMultitac
   : atomicRawMultitac (annotate (Pos.pos (atomicRawMultitac1left fileName) (atomicRawMultitac1right fileName)) atomicRawMultitac)
 
 rawMultitac
-  : multitac SEMI atomicMultitac %prec SEMI (Tac.makeSeq multitac [] atomicMultitac)
+  : multitac SEMI atomicMultitac %prec SEMI (Tac.makeSeq multitac atomicMultitac)
   | multitac SEMI (multitac)
   | atomicMultitac %prec SEMI (atomicMultitac)
 

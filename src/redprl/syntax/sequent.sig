@@ -1,30 +1,19 @@
-structure SequentData =
-struct
-  type catjdg = AtomicJudgment.jdg
+signature SEQUENT =
+sig
+  datatype atjdg = datatype AtomicJudgment.jdg
   type abt = RedPrlAbt.abt
+  type variable = RedPrlAbt.variable
 
-  structure Hyps : TELESCOPE = Telescope (Sym)
-  type 'a ctx = 'a Hyps.telescope
-
-  type label = string
+  type hyps
 
   datatype jdg =
      (* sequents / formal hypothetical judgment *)
-     >> of catjdg ctx * catjdg
+     >> of hyps * atjdg
      (* unify a term w/ a head operator and extract the kth subterm *)
    | MATCH of RedPrlAbt.operator * int * abt * abt list
      (* unify a term w/ RECORD and extract the type of the label;
       * the third argument is the tuple. *)
-   | MATCH_RECORD of label * abt * abt
-end
-
-signature SEQUENT =
-sig
-  datatype atjdg = datatype AtomicJudgment.jdg
-  datatype jdg = datatype SequentData.jdg
-  type 'a ctx = 'a SequentData.ctx
-
-  type abt = RedPrlAbt.abt
+   | MATCH_RECORD of string * abt * abt
 
   val map : (abt -> abt) -> jdg -> jdg
 
@@ -33,10 +22,31 @@ sig
   val eq : jdg * jdg -> bool
   val relabel : Sym.t Sym.Ctx.dict -> jdg -> jdg
 
-  val lookupSelector : Sym.t Selector.t -> atjdg ctx * atjdg -> atjdg
-  val mapSelector : Sym.t Selector.t -> (atjdg -> atjdg) -> atjdg ctx * atjdg -> atjdg ctx * atjdg
-  val multiMapSelector : Sym.t Selector.t list -> (atjdg -> atjdg) -> atjdg ctx * atjdg -> atjdg ctx * atjdg
+  structure Hyps : 
+  sig
+    val empty : hyps
+    val snoc : hyps -> variable -> atjdg -> hyps
+    val foldr : (variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b
+    val foldl : (variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b    
+    val toList : hyps -> abt list  
+    val lookup : hyps -> variable -> atjdg
+    val substAfter : variable * abt -> hyps -> hyps
+    val remove : variable -> hyps -> hyps
+    val splice : hyps -> variable -> hyps -> hyps
+    val singleton : variable -> atjdg -> hyps
+    val interposeAfter : variable * hyps -> hyps -> hyps
+    val interposeThenSubstAfter : variable * hyps * abt -> hyps -> hyps
+    val modifyAfter : variable -> (atjdg -> atjdg) -> hyps -> hyps
+  end
+
+  val lookupSelector : Sym.t Selector.t -> hyps * atjdg -> atjdg
+  val mapSelector : Sym.t Selector.t -> (atjdg -> atjdg) -> hyps * atjdg -> hyps * atjdg
+  val multiMapSelector : Sym.t Selector.t list -> (atjdg -> atjdg) -> hyps * atjdg -> hyps * atjdg
 
   (* TODO: I don't like this function. *)
-  val truncateFrom : Sym.t Selector.t -> atjdg ctx -> atjdg ctx
+  val truncateFrom : Sym.t Selector.t -> hyps -> hyps
+
+
+  val push : variable list -> jdg -> jdg
+  val popAs : variable list -> jdg -> jdg
 end

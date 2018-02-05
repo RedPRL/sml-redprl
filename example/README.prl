@@ -18,11 +18,12 @@ Thm LowLevel : [
     (-> wbool wbool)
     wbool)
 ] by [
-  fresh f -> refine fun/intro;
-  [fresh x x/eq -> elim f;
-  [`tt, use x],
-  refine fun/eqtype;
-  refine wbool/eqtype]
+  refine fun/intro;
+  [ with f =>
+    elim f; [`tt, with x/eq x => use x]
+  , refine fun/eqtype;
+    refine wbool/eqtype
+  ]
 ].
 
 Extract LowLevel.
@@ -30,12 +31,17 @@ Extract LowLevel.
 Thm LowLevel2 : [
   (->
     (-> wbool wbool)
+    wbool
     wbool)
 ] by [
-  fresh f -> repeat {refine fun/intro; [id, auto]};
-  fresh x x/eq -> elim f;
-  [`tt, use x]
+  repeat {refine fun/intro; [id, auto]};
+  with x f =>
+    elim f; 
+    [ use x
+    , with y/eq y => use y
+    ]
 ].
+
 
 Extract LowLevel2.
 
@@ -67,18 +73,18 @@ Tac TryStep = [
   (Try #tac{auto-step})
 ].
 
-// 'wif' stands for "weak if", which is the recursor for the weak booleans. It differs
-// from ordinary 'if' in that it must take the motive of induction as an argument;
-// this is computationally relevant in the case of hcoms.
+// 'if' is the recursor for both weak booleans and ordinary (strict) booleans.
+// It takes the motive of induction as an argument, which is computationally
+// relevant for hcoms in weak booleans.
 Def BoolEta(#M) = [
-  (wif [a] wbool #M tt ff)
+  (if [a] wbool #M tt ff)
 ].
 
 Print BoolEta.
 
-// But note that if we define such a function in the refiner using tactics, we can use the
-// built-in 'if x then t1 else t2' tactical, and the extracted witness will be a 'wif' form
-// with the motive already filled in.
+// If we define such a function in the refiner using tactics, we can use the
+// built-in 'if x then t1 else t2' tactical, and the extracted witness will be
+// an 'if' form with the motive already filled in.
 Thm BoolEtaFunction : [
   (-> wbool wbool)
 ] by [
@@ -138,7 +144,7 @@ Thm PathTest3 : [
   // encouraging.
   `(abs [x]
     (lam [b]
-     (@ (wif [b] (path [_] wbool b (BoolEta b)) b (abs [_] tt) (abs [_] ff))
+     (@ (if [b] (path [_] wbool b (BoolEta b)) b (abs [_] tt) (abs [_] ff))
         x)))
 ].
 

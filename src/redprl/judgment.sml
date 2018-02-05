@@ -1,7 +1,7 @@
 structure RedPrlJudgment : LCF_JUDGMENT  =
 struct
   structure AJ = AtomicJudgment
-  structure S = struct open SequentData Sequent end
+  structure S = Sequent
   structure Tm = RedPrlAbt
   type sort = Tm.valence
   type env = Tm.metaenv
