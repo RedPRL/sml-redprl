@@ -163,6 +163,16 @@ struct
         |>: goal #> (H, hole)
       end
 
+    fun UnfoldPart sign opids (selector, accessors) _ jdg =
+      let
+        val tr = ["Custom.UnfoldPart"]
+        val H >> ajdg = jdg
+        val (H', ajdg') = Sequent.mapSelector selector (AJ.multiMapAccessor accessors (unfold sign opids)) (H, ajdg)
+        val (goal, hole) = makeGoal tr @@ H' >> ajdg'
+      in
+        |>: goal #> (H, hole)
+      end
+
     fun Eq sign _ jdg =
       let
         val tr = ["Custom.Eq"]

@@ -177,6 +177,7 @@ struct
      | CUST (_, ar) => Option.valOf ar
      | TAC_UNFOLD_ALL _ => [] ->> TAC
      | TAC_UNFOLD _ => [[] |: VEC SEL] ->> TAC
+     | TAC_UNFOLD_PART _ => [[] |: SEL, [] |: VEC ACC] ->> TAC
      | DEV_APPLY_LEMMA pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_LEMMA => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
@@ -324,6 +325,7 @@ struct
      | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
      | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
+     | TAC_UNFOLD_PART os => "unfold-part{" ^ opidsToString os ^ "}"
      | DEV_APPLY_LEMMA _ => "apply-lemma"
      | DEV_USE_LEMMA => "use-lemma"
 end

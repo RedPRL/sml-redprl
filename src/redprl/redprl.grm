@@ -917,7 +917,10 @@ atomicRawTac
   | TAC_REDUCE IN selector AT accessors (Ast.$$ (O.TAC_REDUCE_PART, [\\ selector, \\ (Multi.makeVec O.ACC accessors)]))
   | TAC_REDUCE AT accessors IN selector (Ast.$$ (O.TAC_REDUCE_PART, [\\ selector, \\ (Multi.makeVec O.ACC accessors)]))
   | TAC_UNFOLD opnames (Ast.$$ (O.TAC_UNFOLD_ALL opnames, []))
-  | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD (opnames), [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_UNFOLD opnames IN selectors (Ast.$$ (O.TAC_UNFOLD opnames, [Ast.\ ([], Multi.makeVec O.SEL selectors)]))
+  | TAC_UNFOLD opnames AT accessors (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ (Ast.$$ (O.SEL_CONCL, [])), Ast.\ ([], Multi.makeVec O.ACC accessors)]))
+  | TAC_UNFOLD opnames IN selector AT accessors (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ selector, Ast.\ ([], Multi.makeVec O.ACC accessors)]))
+  | TAC_UNFOLD opnames AT accessors IN selector (Ast.$$ (O.TAC_UNFOLD_PART opnames, [\\ selector, Ast.\ ([], Multi.makeVec O.ACC accessors)]))
 
   | BACK_TICK termAnySort (Tac.exactAuto termAnySort)
   | RULE_EXACT termAnySort (Tac.exact termAnySort)
