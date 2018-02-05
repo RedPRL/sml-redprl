@@ -66,8 +66,7 @@ in
     redprl/log.sml
     
 
-    redprl/name_seq.sig
-    redprl/name_seq.sml
+
     redprl/tactical.fun
 
     redprl/mini_signature.sig
