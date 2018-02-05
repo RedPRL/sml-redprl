@@ -61,20 +61,22 @@ Thm Trans/Unit/R(#l:lvl) : [
      ($ (Trans #l) ty p (abs [_] (@ p 1)) ax)))
 ] by [
   lam ty p =>
-  fresh y:dim -> refine path/intro;
-  [ fresh x:dim -> refine path/intro; 
-    [ exact (hcom 0~>y ty (@ p x) [x=0 [_] (@ p 0)] [x=1 [_] (@ p 1)]); auto; fail
-    , auto; fail
-    , auto; fail ]
+  refine path/intro;
+  [ with y:dim =>
+    (abs x =>
+      `(hcom 0~>y ty (@ p x) [x=0 [_] (@ p 0)] [x=1 [_] (@ p 1)]));
+    fail
   , refine path/eq/from-line;
     [ symmetry; refine line/eq/eta; auto; fail 
     , auto; fail
     , auto; fail ]
-  , unfold Trans; reduce at right; auto; fail ]
+  , unfold Trans; reduce at right; auto; fail
+  ]
 ].
 
-Quit.
 
+/* TODO
+ 
 Thm Trans/Sym/R(#l:lvl) : [
   (->
    [ty : (U #l kan)]
@@ -106,3 +108,4 @@ Thm DSymm(#l:lvl) : [
     [x=1 [_] (@ p 0)]));
   auto-step; [auto; ?]
 ].
+*/

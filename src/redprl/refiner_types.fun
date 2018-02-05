@@ -1387,7 +1387,7 @@ struct
         #> (H, axiom)
       end
 
-    fun EqFromLine _ jdg =
+    fun EqFromLine jdg =
       let
         val tr = ["Path.EqFromLine"]
         val H >> ajdg = jdg
