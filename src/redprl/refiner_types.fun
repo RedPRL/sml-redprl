@@ -1273,7 +1273,7 @@ struct
         |>: goalSynth >:? goalMem >: goalPath >: goalTy #> (H, axiom)
       end
 
-    fun EqAppConst _ jdg =
+    fun EqAppConst jdg =
       let
         val tr = ["Path.EqAppConst"]
         val H >> ajdg = jdg

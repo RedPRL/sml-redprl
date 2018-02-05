@@ -189,6 +189,8 @@ struct
       let
         val tr = ["Synth.General"]
 
+        infix $
+
         fun eval sign = 
           Machine.eval sign Machine.STABLE Machine.Unfolding.always
 
@@ -441,7 +443,6 @@ struct
      | "coe/eq" => Lcf.rule Coe.Eq
      | "coe/eq/cap" => Lcf.rule Coe.EqCapL
      | "subtype/eq" => Lcf.rule SubType.Eq
-     | "custom/synth" => Lcf.rule (Custom.Synth sign)
      | "universe/subtype" => Lcf.rule Universe.SubType
      | r => raise E.error [Fpp.text "No rule registered with name", Fpp.text r]
 
@@ -824,21 +825,6 @@ struct
          | Syn.EQUALITY (ty, m, n) => StepEq sign ((m, n), ty)
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepTrue", TermPrinter.ppTerm ty)
 
-      fun StepSynth sign m =
-        case Syn.out m of
-           Syn.VAR _ => Lcf.rule Synth.Var
-         | Syn.IF _ => Lcf.rule Bool.SynthElim par Lcf.rule WBool.SynthElim
-         | Syn.S1_REC _ => Lcf.rule S1.SynthElim
-         | Syn.NAT_REC _ => Lcf.rule Nat.SynthElim
-         | Syn.INT_REC _ => Lcf.rule Int.SynthElim
-         | Syn.APP _ => Lcf.rule Fun.SynthApp
-         | Syn.PROJ _ => Lcf.rule Record.SynthProj
-         | Syn.DIM_APP _ => Lcf.rule Path.SynthApp par Lcf.rule Line.SynthApp
-         | Syn.PUSHOUT_REC _ => Lcf.rule Pushout.SynthElim
-         | Syn.COEQUALIZER_REC _ => Lcf.rule Coequalizer.SynthElim
-         | Syn.CUST => Lcf.rule @@ Custom.Synth sign
-         | _ => fail @@ E.GENERIC [Fpp.text "Could not find suitable type synthesis rule for", TermPrinter.ppTerm m]
-
       fun StepSubKind sign u =
         case (Syn.out u, canonicity sign u) of
            (_, Machine.REDEX) => Lcf.rule @@ Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_LEFT])
@@ -866,7 +852,6 @@ struct
       fun StepJdg sign = matchGoal
         (fn _ >> AJ.EQ_TYPE (tys, _) => StepEqSubType sign tys Wrapper.EQ
           | _ >> AJ.TRUE ty => StepTrue sign ty
-          | _ >> AJ.SYNTH m => Lcf.rule o Synth sign
           | _ >> AJ.SUB_TYPE tys => StepEqSubType sign tys Wrapper.SUB
           | _ >> AJ.SUB_KIND (univ, _) => StepSubKind sign univ
           | MATCH (_, _, m, _) => StepMatch sign m
