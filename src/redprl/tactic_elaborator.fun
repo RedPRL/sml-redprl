@@ -28,7 +28,7 @@ struct
   structure RT = RefinerTypeRules (Sig)
   structure T = RedPrlTactical (Lcf)
 
-  open T infix seq then_ thenl thenl' orelse_ par
+  open T infix seq then_ thenl thenl' orelse_
 
   type env = multitactic Var.Ctx.dict
 
@@ -59,7 +59,7 @@ struct
     tac then_ fail "incomplete"
 
   fun autoTac sign = repeat (try @@ R.AutoStep sign)
-  fun autoTacComplete sign = try (complete (autoTac sign) orelse_ R.NondetStepJdgFromHyp)
+  fun autoTacComplete sign = try (complete (autoTac sign) orelse_ R.NondetStepJdgFromHyp sign)
 
   fun exactAuto sign m = 
     R.Exact m thenl [autoTacComplete sign]
@@ -74,7 +74,7 @@ struct
 
   fun hyp sign z =
     Lcf.rule (R.Hyp.Project z)
-    par
+    orelse_
     exactAuto sign (VarKit.toExp z)
 
   open Sequent infix >>
@@ -305,7 +305,7 @@ struct
      | O.TAC_UNFOLD_ALL opids $ _ => Lcf.rule @@ R.Custom.UnfoldAll sign opids
      | O.TAC_UNFOLD opids $ [_ \ vec] => Lcf.rule @@ R.Custom.Unfold sign opids (Syn.outVec' Syn.outSelector vec)
      | O.TAC_UNFOLD_PART opids $ [_ \ sel, _ \ accs] => Lcf.rule @@ R.Custom.UnfoldPart sign opids (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs)
-     | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp
+     | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp sign
      | O.RULE_PRIM ruleName $ _ => R.lookupRule sign ruleName
      | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl [tactic sign env tm1, popNamesIn [u] @@ tactic sign env tm2]
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)

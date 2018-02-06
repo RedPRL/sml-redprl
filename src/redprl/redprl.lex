@@ -196,7 +196,6 @@ whitespace = [\ \t];
 
 <INITIAL>"true"             => (Tokens.TRUE (posTuple (size yytext)));
 <INITIAL>"type"             => (Tokens.TYPE (posTuple (size yytext)));
-<INITIAL>"synth"            => (Tokens.SYNTH (posTuple (size yytext)));
 <INITIAL>"discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
 <INITIAL>"kan"              => (Tokens.KAN (posTuple (size yytext)));
 <INITIAL>"stable"           => (Tokens.STABLE (posTuple (size yytext)));
