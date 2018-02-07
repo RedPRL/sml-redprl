@@ -5,7 +5,7 @@ Def IsSet (#A) = [(-> [a b : #A] (IsProp (path [_] #A a b)))].
 
 Thm InhPropIsContr(#l:lvl) : [
  (->
-  [ty : (U #l kan)] // can I use pre here?
+  [ty : (U #l kan)]
   [h : (IsProp ty)]
   [a : ty]
   (IsContr ty))
@@ -38,36 +38,22 @@ Thm PropSet(#l:lvl) : [
       [j=1 [k] (@ ($ h a (@ q i)) k)])
 ].
 
-// This proof should be easy, but it is not...
 Thm IsPropIsProp(#l:lvl) : [
   (->
    [tyA : (U #l kan)]
-   (IsProp (IsProp tyA))
-  )
+   (IsProp (IsProp tyA)))
 ] by [
   lam tyA h1 h2 =>
   abs i => lam a b =>
-    let foo = (PropSet #l) [`tyA, `h1];
-    unfold IsSet IsProp;
-    use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]
+  use (PropSet #l) [`tyA, `h1, `a, `b, `($ h1 a b), `($ h2 a b), `i]
 ].
 
-Thm IsPropIsProp'(#l:lvl) : [
+Thm IsPropIsSet(#l:lvl) : [
   (->
    [tyA : (U #l kan)]
-   (IsProp (IsProp tyA))
-  )
+   (IsProp (IsSet tyA)))
 ] by [
-  lam tyA h1 h2 => abs i => lam a b =>
-    `(@ ($ (PropSet #l) tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
+  lam tyA h1 h2 =>
+  abs i => lam a b =>
+  use (IsPropIsProp #l) [`(path [_] tyA a b), `($ h1 a b), `($ h2 a b), `i]
 ].
-
-// // This should be exactly like the one above:
-// Thm IsPropIsSet(#l:lvl) : [
-//   (->
-//    [tyA : (U #l kan)]
-//    (IsProp (IsSet tyA))
-//   )
-//  ] by [
-//   ?hole
-// ].
