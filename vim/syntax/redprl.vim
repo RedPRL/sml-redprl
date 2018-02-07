@@ -1,7 +1,7 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 February 5
+" Last Change:  2018 February 7
 
 if exists("b:current_syntax")
   finish
@@ -22,7 +22,7 @@ syn keyword redExpr pushout-rec coeq cecod cedom coeq-rec mem ni box cap V VV WU
 syn keyword redExpr Vin Vproj U abs hcom com coe lmax omega
 syn match   redExpr '[$*!@=+]\|->\|\~>\|<\~'
 
-syn keyword redTac auto auto-step case cut-lemma elim else exact fresh goal
+syn keyword redTac auto auto-step case cut-lemma elim else exact goal
 syn keyword redTac hyp id lemma let claim match of print trace progress
 syn keyword redTac query reduce refine repeat rewrite symmetry
 syn keyword redTac then unfold use with without fail inversion concl assumption
