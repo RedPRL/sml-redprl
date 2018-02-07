@@ -353,7 +353,6 @@ end
 
  (* keywords in tactics *)
  | CASE | OF
- | FRESH
  | LET | CLAIM | USE | WITH | WITHOUT
  | THEN | ELSE
  | REFINE
