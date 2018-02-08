@@ -169,17 +169,16 @@ struct
       o stitchPattern
 
   fun applications sign z (pattern, names) tacs tac =
-    let
-      val n = List.length tacs
-      val z' = Sym.new ()
-      val p = Sym.new ()
-    in
-      if n = 0 then 
-        decompose sign z (pattern, names) tac
-      else
+    if null tacs then
+      decompose sign z (pattern, names) tac
+    else
+      let
+        val z' = Sym.new ()
+        val p = Sym.new ()
+      in
         Lcf.rule (RT.MultiArrow.Elim sign (List.length tacs) z) thenl
           (tacs @ [popNamesIn [p, z'] @@ decompose sign z' (pattern, names) tac])
-    end
+      end
 
   local
     fun recordIntroBasis sign lbls tacs ty =
@@ -307,7 +306,7 @@ struct
      | O.TAC_UNFOLD_PART opids $ [_ \ sel, _ \ accs] => Lcf.rule @@ R.Custom.UnfoldPart sign opids (Syn.outSelector sel, Syn.outVec' Syn.outAccessor accs)
      | O.TAC_ASSUMPTION $ _ => R.NondetStepJdgFromHyp sign
      | O.RULE_PRIM ruleName $ _ => R.lookupRule sign ruleName
-     | O.DEV_LET _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl [tactic sign env tm1, popNamesIn [u] @@ tactic sign env tm2]
+     | O.DEV_CLAIM _ $ [_ \ jdg, _ \ tm1, [u] \ tm2] => Lcf.rule (R.Cut (AJ.out jdg)) thenl [tactic sign env tm1, popNamesIn [u] @@ tactic sign env tm2]
      | O.DEV_FUN_INTRO pats $ [us \ tm] => funIntros sign (pats, us) (tactic sign env tm)
      | O.DEV_RECORD_INTRO lbls $ args => recordIntro sign lbls (List.map (fn _ \ tm => tactic sign env tm) args)
      | O.DEV_PATH_INTRO _ $ [us \ tm] => pathIntros sign us (tactic sign env tm)

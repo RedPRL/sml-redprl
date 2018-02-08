@@ -152,7 +152,7 @@ struct
      | DEV_FUN_INTRO pats => [ListUtil.concatMap devPatternValence pats |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) |: TAC] ->> TAC
-     | DEV_LET tau => [[] |: JDG, [] |: TAC, [Option.valOf tau] |: TAC] ->> TAC
+     | DEV_CLAIM tau => [[] |: JDG, [] |: TAC, [Option.valOf tau] |: TAC] ->> TAC
 
      | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) |: MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
@@ -289,7 +289,7 @@ struct
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListUtil.joinWith (fn x => x) "," lbls ^ "}"
-     | DEV_LET _ => "let"
+     | DEV_CLAIM _ => "claim"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE => "dev-match-clause"
      | DEV_QUERY => "dev-query"
