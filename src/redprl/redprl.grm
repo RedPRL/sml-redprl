@@ -938,7 +938,7 @@ atomicRawTac
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))
 
   | CLAIM VARNAME COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE SEMI tactic
-      (Ast.$$ (O.DEV_LET NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
+      (Ast.$$ (O.DEV_CLAIM NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
 
   | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine SEMI tactic
       (Pattern.makeApplyHyp devDecompPattern elimTargetAnySort bracketedDevAppSpine tactic)

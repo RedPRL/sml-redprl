@@ -96,7 +96,7 @@ struct
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
-   | DEV_LET of sort option
+   | DEV_CLAIM of sort option
    | DEV_MATCH of int list
    | DEV_MATCH_CLAUSE
    | DEV_QUERY

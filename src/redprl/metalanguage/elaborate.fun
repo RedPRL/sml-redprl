@@ -137,11 +137,11 @@ struct
           O.MK_ANY o SOME @@ guessSort env ast
         end
 
-      | O.DEV_LET NONE =>
+      | O.DEV_CLAIM NONE =>
         let
           val [Ast.\ (_, jdg), _, _] = bs
         in
-          O.DEV_LET o SOME o AJ.synthesis @@ elabAtomicJdg env jdg
+          O.DEV_CLAIM o SOME o AJ.synthesis @@ elabAtomicJdg env jdg
         end
 
       | th => th)
