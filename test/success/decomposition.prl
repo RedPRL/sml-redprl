@@ -1,10 +1,11 @@
 Thm Decomposition : [
   (->
-   (record [foo : (record [a : bool] [b : (* bool bool)])] [bar : S1])
+   (record [rcd : (record [a : bool] [b : (* bool int)])] [circ : S1])
    bool)
 ] by [
-  lam {foo = {a = a, b = {welp}}} =>
-  use welp
+  lam x =>
+    let {rcd = {a = a, b = {welp}}, circ = circ} = x;
+    use welp
 ].
 
 Extract Decomposition.
@@ -24,6 +25,8 @@ Thm Apply : [
     let {a = a} = f [`tt, `ff, `(dim 0)];
     use a
 ].
+
+
 
 Extract Apply.
 

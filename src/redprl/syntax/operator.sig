@@ -17,7 +17,7 @@ struct
    (* strict bool *)
    | BOOL | TT | FF | IF
    (* week bool *)
-   | WBOOL | WIF
+   | WBOOL
    (* natural numbers *)
    | NAT | ZERO | SUCC | NAT_REC
    (* integers *)
@@ -74,7 +74,7 @@ struct
 
 
    (* primitive tacticals and multitacticals *)
-   | MTAC_SEQ of sort list | MTAC_ORELSE
+   | MTAC_SEQ | MTAC_ORELSE
    | MTAC_REPEAT | MTAC_AUTO | MTAC_PROGRESS
    | MTAC_ALL | MTAC_EACH | MTAC_FOCUS of int
    | MTAC_HOLE of string option
@@ -91,11 +91,13 @@ struct
    | TAC_REDUCE_PART
    | TAC_ASSUMPTION
    | TAC_TRACE of string
+   | TAC_POP of sort list
+   | TAC_PUSH
 
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
-   | DEV_LET of sort option
+   | DEV_CLAIM of sort option
    | DEV_MATCH of int list
    | DEV_MATCH_CLAUSE
    | DEV_QUERY
@@ -119,6 +121,7 @@ struct
    | CUST of opid * RedPrlArity.t option
    | TAC_UNFOLD_ALL of opid list
    | TAC_UNFOLD of opid list
+   | TAC_UNFOLD_PART of opid list
 
    | DEV_USE_LEMMA
    | DEV_APPLY_LEMMA of unit dev_pattern

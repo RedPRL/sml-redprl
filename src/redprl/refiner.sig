@@ -13,13 +13,12 @@ sig
   val CutLemma : sign -> abt -> rule
 
   val AutoStep : sign -> tactic
-  val NondetStepJdgFromHyp : tactic
+  val NondetStepJdgFromHyp : sign -> tactic
   
   val Elim : sign -> hyp -> tactic
   val Exact : abt -> tactic
   val Rewrite : sign -> hyp Selector.t * Accessor.t -> abt -> tactic
   val Symmetry : tactic
-  val SynthFromHyp : hyp -> tactic
 
   val Inversion : hyp -> tactic
 
@@ -33,6 +32,7 @@ sig
   sig
     val UnfoldAll : sign -> opid list -> rule
     val Unfold : sign -> opid list -> hyp Selector.t list -> rule
+    val UnfoldPart : sign -> opid list -> hyp Selector.t * Accessor.t list -> rule
   end
 
   structure Computation :
@@ -45,7 +45,6 @@ sig
   structure Hyp :
   sig
     val Project : hyp -> rule
-    val Rename : hyp -> rule
     val Delete : hyp -> rule
   end
 
@@ -56,6 +55,12 @@ sig
   end
 
   val LabelGoal : string -> rule
+
+  structure Names : 
+  sig
+    val Push : hyp list -> rule
+    val PopAs : hyp list -> rule
+  end
 
   type rule_name = string
   val lookupRule : sign -> rule_name -> tactic

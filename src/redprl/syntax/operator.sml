@@ -34,20 +34,19 @@ struct
      | BOOL => [] ->> EXP
      | TT => [] ->> EXP
      | FF => [] ->> EXP
-     | IF => [[] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
+     | IF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | WBOOL => [] ->> EXP
-     | WIF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
      | VOID => [] ->> EXP
 
      | NAT => [] ->> EXP
      | ZERO => [] ->> EXP
      | SUCC => [[] |: EXP] ->> EXP
-     | NAT_REC => [[] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
+     | NAT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
      | INT => [] ->> EXP
      | NEGSUCC => [[] |: EXP] ->> EXP
-     | INT_REC => [[] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
+     | INT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -121,7 +120,7 @@ struct
      | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: EXP] ->> JDG
 
-     | MTAC_SEQ sorts => [[] |: MTAC, sorts |: MTAC] ->> MTAC
+     | MTAC_SEQ => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_REPEAT => [[] |: MTAC] ->> MTAC
      | MTAC_AUTO => [] ->> MTAC
@@ -148,11 +147,13 @@ struct
 
      | TAC_ASSUMPTION => [] ->> TAC
      | TAC_TRACE _ => [] ->> TAC
+     | TAC_POP sorts => [sorts |: TAC] ->> TAC
+     | TAC_PUSH => [[] |: VEC ANY] ->> TAC
 
      | DEV_FUN_INTRO pats => [ListUtil.concatMap devPatternValence pats |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) |: TAC] ->> TAC
-     | DEV_LET tau => [[] |: JDG, [] |: TAC, [Option.valOf tau] |: TAC] ->> TAC
+     | DEV_CLAIM tau => [[] |: JDG, [] |: TAC, [Option.valOf tau] |: TAC] ->> TAC
 
      | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) |: MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
@@ -178,6 +179,7 @@ struct
      | CUST (_, ar) => Option.valOf ar
      | TAC_UNFOLD_ALL _ => [] ->> TAC
      | TAC_UNFOLD _ => [[] |: VEC SEL] ->> TAC
+     | TAC_UNFOLD_PART _ => [[] |: SEL, [] |: VEC ACC] ->> TAC
      | DEV_APPLY_LEMMA pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_LEMMA => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
@@ -190,7 +192,6 @@ struct
     fn AX => "ax"
 
      | WBOOL => "wbool"
-     | WIF => "wif"
 
      | BOOL => "bool"
      | TT => "tt"
@@ -258,7 +259,7 @@ struct
 
      | KCONST k => RedPrlKind.toString k
 
-     | MTAC_SEQ sorts => "seq{" ^ ListUtil.joinWith RedPrlSort.toString "," sorts ^ "}"
+     | MTAC_SEQ => "seq"
      | MTAC_ORELSE => "orelse"
      | MTAC_REPEAT => "repeat"
      | MTAC_AUTO => "auto"
@@ -284,11 +285,13 @@ struct
      | TAC_REWRITE => "rewrite"
      | TAC_ASSUMPTION => "assumption"
      | TAC_TRACE str => "trace{" ^ str ^ "}"
+     | TAC_POP _ => "with"
+     | TAC_PUSH => "push"
 
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListUtil.joinWith (fn x => x) "," lbls ^ "}"
-     | DEV_LET _ => "let"
+     | DEV_CLAIM _ => "claim"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE => "dev-match-clause"
      | DEV_QUERY => "dev-query"
@@ -327,6 +330,7 @@ struct
      | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
      | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"
+     | TAC_UNFOLD_PART os => "unfold-part{" ^ opidsToString os ^ "}"
      | DEV_APPLY_LEMMA _ => "apply-lemma"
      | DEV_USE_LEMMA => "use-lemma"
 end

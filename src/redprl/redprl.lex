@@ -101,9 +101,6 @@ whitespace = [\ \t];
 <INITIAL>"if"               => (Tokens.IF (posTuple (size yytext)));
 <INITIAL>"wbool"            => (Tokens.WBOOL (posTuple (size yytext)));
 <INITIAL>"wool"             => (Tokens.WBOOL (posTuple (size yytext)));
-<INITIAL>"wif"              => (Tokens.WIF (posTuple (size yytext)));
-<INITIAL>"wbool-rec"        => (Tokens.WIF (posTuple (size yytext)));
-<INITIAL>"wool-rec"         => (Tokens.WIF (posTuple (size yytext)));
 <INITIAL>"nat"              => (Tokens.NAT (posTuple (size yytext)));
 <INITIAL>"zero"             => (Tokens.ZERO (posTuple (size yytext)));
 <INITIAL>"succ"             => (Tokens.SUCC (posTuple (size yytext)));
@@ -151,6 +148,7 @@ whitespace = [\ \t];
 <INITIAL>"claim"            => (Tokens.CLAIM (posTuple (size yytext)));
 <INITIAL>"use"              => (Tokens.USE (posTuple (size yytext)));
 <INITIAL>"with"             => (Tokens.WITH (posTuple (size yytext)));
+<INITIAL>"without"          => (Tokens.WITHOUT (posTuple (size yytext)));
 <INITIAL>"case"             => (Tokens.CASE (posTuple (size yytext)));
 <INITIAL>"of"               => (Tokens.OF (posTuple (size yytext)));
 <INITIAL>"refine"           => (Tokens.REFINE (posTuple (size yytext)));
@@ -173,8 +171,6 @@ whitespace = [\ \t];
 <INITIAL>"Thm"              => (Tokens.DCL_THM (posTuple (size yytext)));
 <INITIAL>"by"               => (Tokens.BY (posTuple (size yytext)));
 <INITIAL>"in"               => (Tokens.IN (posTuple (size yytext)));
-
-<INITIAL>"fresh"            => (Tokens.FRESH (posTuple (size yytext)));
 
 <INITIAL>"repeat"           => (Tokens.MTAC_REPEAT (posTuple (size yytext)));
 <INITIAL>"progress"         => (Tokens.MTAC_PROGRESS (posTuple (size yytext)));
@@ -199,7 +195,6 @@ whitespace = [\ \t];
 
 <INITIAL>"true"             => (Tokens.TRUE (posTuple (size yytext)));
 <INITIAL>"type"             => (Tokens.TYPE (posTuple (size yytext)));
-<INITIAL>"synth"            => (Tokens.SYNTH (posTuple (size yytext)));
 <INITIAL>"discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
 <INITIAL>"kan"              => (Tokens.KAN (posTuple (size yytext)));
 <INITIAL>"stable"           => (Tokens.STABLE (posTuple (size yytext)));

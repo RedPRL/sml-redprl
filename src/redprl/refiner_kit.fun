@@ -9,7 +9,7 @@ struct
   structure K = RedPrlKind
   structure L = RedPrlLevel
   structure AJ = AtomicJudgment
-  structure Seq = struct open SequentData Sequent end
+  structure Seq = Sequent
   structure Env = RedPrlAbt.Metavar.Ctx
   structure Machine = RedPrlMachine (Sig)
 
@@ -35,20 +35,6 @@ struct
       end
   end
 
-  fun makeNamePopper alpha = 
-    let
-      val ix = ref 0
-    in
-      fn () => 
-        let
-          val i = !ix
-          val h = alpha i
-        in
-          ix := i + 1;
-          h
-        end
-    end
-
   (* assert that the term 'm' has only free variables 'us' and free variables 'xs' at most. *)
   fun assertWellScoped xs m = 
     let
@@ -70,32 +56,6 @@ struct
     end
 
   (* hypotheses *)
-
-  structure Hyps = (* favonia: not sure about the organization *)
-  struct
-    structure HypsUtil = TelescopeUtil (Seq.Hyps)
-    open HypsUtil
-
-    fun toList H =
-      Seq.Hyps.foldr (fn (x, jdg, r) => Abt.check (Abt.`x, AJ.synthesis jdg) :: r) [] H
-
-    fun lookup H z =
-      Seq.Hyps.lookup H z
-      handle _ =>
-        raise E.error [Fpp.text "Found nothing in context for hypothesis", TermPrinter.ppVar z]
-
-    (* The telescope lib should be redesigned to make the following helper functions easier.
-     * At least the calling convention can be more consistent. *)
-
-    fun substAfter (z, term) H = (* favonia: or maybe (term, z)? I do not know. *)
-      Seq.Hyps.modifyAfter z (AJ.map (Abt.substVar (term, z))) H
-
-    fun interposeAfter (z, H') H =
-      Seq.Hyps.interposeAfter H z H'
-
-    fun interposeThenSubstAfter (z, H', term) H =
-      Seq.Hyps.interposeAfter (Seq.Hyps.modifyAfter z (AJ.map (Abt.substVar (term, z))) H) z H'
-  end
 
   fun @> (H, (x, j)) = Hyps.snoc H x j
   infix @>
@@ -143,13 +103,12 @@ struct
       val ms =
         case jdg of
            H >> _ => Hyps.toList H
-         | MATCH _ => []
-         | MATCH_RECORD _ => []
 
       val hole = check (x $# ms, tau)
     in
       ((x, Lcf.::@ (tr, jdg)), hole)
     end
+
   fun makeGoalWith tr f = makeGoal tr o Seq.map f
 
   fun makeGoal' tr jdg = #1 @@ makeGoal tr jdg
@@ -158,9 +117,6 @@ struct
   (* needing the realizer *)
   fun makeTrueWith tr f H ty = makeGoalWith tr f @@ H >> AJ.TRUE ty
   fun makeTrue tr H ty = makeGoal tr @@ H >> AJ.TRUE ty
-  fun makeSynth tr H m = makeGoal tr @@ H >> AJ.SYNTH m
-  fun makeMatch tr part = makeGoal tr @@ MATCH part
-  fun makeMatchRecord tr part = makeGoal tr @@ MATCH_RECORD part
   fun makeTerm tr H tau = makeGoal tr @@ H >> AJ.TERM tau
 
   (* ignoring the trivial realizer *)

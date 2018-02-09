@@ -51,7 +51,8 @@ follows
 
 ### Editor Support: Vim
 
-Our best-supported editor is currently Vim. See our [vim mode's README](https://github.com/RedPRL/sml-redprl/tree/master/vim) for instructions.
+Our best-supported editor is currently Vim.
+See the RedPRL plugin under [vim/](vim/).
 
 ### Editor Support: Visual Studio Code
 

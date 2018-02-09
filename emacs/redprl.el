@@ -113,7 +113,7 @@
 
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
-    "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec" "wif"
+    "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec"
     "nat" "zero" "succ" "nat-rec" "int" "negsucc" "int-rec"
     "void"
     "S1" "base" "loop" "S1-rec"
@@ -135,7 +135,7 @@
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
-  '("auto" "auto-step" "case" "concl" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
+  '("auto" "auto-step" "case" "concl" "cut-lemma" "elim" "else" "exact" "goal"
     "hyp" "id" "lemma" "let" "claim" "match" "of" "print" "progress"
     "query" "rec" "reduce" "refine" "repeat" "rewrite" "symmetry" "inversion" "assumption"
     "then" "unfold" "use" "with")

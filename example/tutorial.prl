@@ -17,7 +17,7 @@ Thm NotNot : [
    (= bool ($ Not ($ Not b)) b))
 ] by [
   lam b =>
-  // The next two lines can be replaced by auto.
+  // The next four lines can be replaced by auto.
   unfold Not;
   if b
   then (reduce at left; refine bool/eq/tt)
@@ -35,12 +35,13 @@ Thm RespectEquality : [
    ($ family ($ Not ($ Not b))))
 ] by [
   lam family b pf =>
-  fresh b' -> rewrite ($ NotNot b);
-  [ `($ family b')
+  rewrite ($ NotNot b);
+  [ with b' => `($ family b')
   , use pf
   , auto
   , auto ]
 ].
+
 
 // Extract does not mention the equality proof!
 // (No need to ``transport'' at runtime.)
@@ -94,6 +95,20 @@ Thm WeakConnection(#l:lvl) : [
         [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]))
 ].
 
+Tac GetEndpoints(#p, #t:[exp,exp].tac) = [
+  query pty <- #p;
+  match pty  {
+    [ty l r | #jdg{(path [_] %ty %l %r)} =>
+      claim p/0 : [(@ #p 0) = %l in %ty] by [auto];
+      claim p/1 : [(@ #p 1) = %r in %ty] by [auto];
+      (#t p/0 p/1)
+    ]
+  }
+].
+
+
+Print WeakConnection.
+
 Thm FunToPairIsEquiv : [
   (->
    [ty : (U 0 kan)]
@@ -104,36 +119,24 @@ Thm FunToPairIsEquiv : [
     , abs _ => `pair }
   , unfold Fiber;
     lam {fun,p} =>
-      fresh x:dim -> refine path/intro; [
+     (GetEndpoints p [p/0 p/1] #tac{
+      (abs x => 
         {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
          abs y =>
            `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
-        }
-      ];
-
-      [ symmetry; refine record/eq/tuple;
-        [ refine fun/eq/eta; #1{auto}; auto; symmetry;
-          claim p/0 : [(@ p 0) = ($ FunToPair ty fun) in (* ty ty)] by [ auto ];
-          auto;
-          [ fresh h -> rewrite p/0; [`(= ty (! proj1 h) ($ fun tt))]
-          , fresh h -> rewrite p/0; [`(= ty (! proj2 h) ($ fun ff))]
-          ]
-        ]; auto
-
-       , refine record/eq/tuple;
-         [ auto
-         , refine path/eq/abs;
-           [ symmetry; unfold WeakConnection;
-             reduce at right;
-             refine record/eq/eta; #1 {auto};
-             refine record/eq/tuple; #2 {auto};
-             [ symmetry; refine hcom/eq/tube; [auto, auto, auto, auto, auto, auto, auto, auto]
-             , symmetry; refine hcom/eq/tube; [auto, auto, auto, auto, auto, auto, auto, auto]
-             ]
-           ]
-         ];
-         auto
+        }); 
+      [ unfold FunToPair in p/0; reduce in p/0 at right;
+        inversion; with q3 q2 q1 q0 => 
+          reduce at right in q2;
+          reduce at right in q3;
+          auto; with b =>
+            elim b; reduce at right; symmetry; assumption
+      , unfold FunToPair in p/1; reduce in p/1 at right;
+        inversion; with q3 q2 q1 q0 => elim pair; 
+        reduce at right in q0; reduce at right in q1; 
+        auto; assumption
       ]
+     })
   }
 ].
 
@@ -174,6 +177,7 @@ Thm ComputeCoercion : [
   auto
 ].
 
+
 // ---------------------------------------------------------
 // Part Two
 // ---------------------------------------------------------
@@ -201,8 +205,9 @@ Thm FunPath : [
 ] by [
   lam a b f g p =>
   lam arg => abs x =>
-  `($ (@ p x) arg)
+    `($ (@ p x) arg)
 ].
+
 
 Print FunPath.
 
@@ -308,8 +313,6 @@ Print JInv.
 
 // Computing winding numbers in the circle.
 
-Quit.
-
 // Bonus material:
 
 Thm Shannon : [
@@ -317,7 +320,7 @@ Thm Shannon : [
    [ty  : (-> bool (U 0))]
    [elt : (-> [b : bool] ($ ty b))]
    [b : bool]
-   (= ($ ty b) ($ elt b) (if b ($ elt tt) ($ elt ff))))
+   (= ($ ty b) ($ elt b) (if [b] ($ ty b) b ($ elt tt) ($ elt ff))))
 ] by [
   lam ty elt b =>
   elim b; auto
@@ -328,7 +331,7 @@ Thm WeakShannon : [
    [ty  : (-> wbool (U 0 kan))]
    [elt : (-> [b : wbool] ($ ty b))]
    [b : wbool]
-   (path [_] ($ ty b) ($ elt b) (wif [b'] ($ ty b') b ($ elt tt) ($ elt ff))))
+   (path [_] ($ ty b) ($ elt b) (if [b'] ($ ty b') b ($ elt tt) ($ elt ff))))
 ] by [
   lam ty elt b =>
   elim b; auto;
