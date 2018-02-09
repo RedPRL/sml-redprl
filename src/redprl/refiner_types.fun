@@ -2112,7 +2112,7 @@ structure Synth =
 
     fun Rewrite sign (sel, acc) eqterm jdg =
       let
-        val tr = ["InternalizedEquality.RewriteTrue"]
+        val tr = ["InternalizedEquality.Rewrite"]
         val H >> concl = jdg
 
         val currentAjdg = Sequent.lookupSelector sel (H, concl)
