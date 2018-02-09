@@ -146,3 +146,111 @@ Thm Pick/compose/ff/4/0 : [
     auto; 
     unfold Pick; reduce; assumption
 ].
+
+Thm Pick/compose/assoc : [
+  (->
+   [a b c d : nat]
+   [p0 : ($ Pick c d)]
+   [p1 : ($ Pick b c)]
+   [p2 : ($ Pick a b)]
+   (=
+    ($ Pick a d)
+    ($ Pick/compose a b d ($ Pick/compose b c d p0 p1) p2)
+    ($ Pick/compose a c d p0 ($ Pick/compose a b c p1 p2))))
+] by [
+  lam a => elim a;
+  [ lam b c d p0 p1 p2 => unfold Pick/compose; auto ]; // a = 0
+  with a'/ind a' => lam b => elim b;
+  [ lam c d p0 p1 p2 => elim p2 ]; // b = 0
+  with b'/ind b' => lam c => elim c;
+  [ lam d p0 p1 => elim p1 ]; // c = 0
+  with c'/ind c' => lam d => elim d;
+  [ lam p0 => elim p0 ]; // d = 0
+  with d'/ind d' => lam p0 =>
+  let {head = p0/h, tail = p0/t} = p0; elim p0/h;
+  [ lam p1 => let {head = p1/h, tail = p1/t} = p1; elim p1/h;
+    [ lam p2 => let {head = p2/h, tail = p2/t} = p2; elim p2/h;
+      [ rewrite ($ Pick/compose/tt/4/0/tt/5/0 b' c' d' p0/t p1/t) at left;
+        [ auto
+        , with x => `($ Pick/compose (succ a') (succ b') (succ d') x (tuple [head tt] [tail p2/t]))
+        , rewrite ($ Pick/compose/tt/4/0/tt/5/0 a' b' d' ($ Pick/compose b' c' d' p0/t p1/t) p2/t) at left;
+          [ auto
+          , with x => `x
+          , rewrite ($ a'/ind b' c' d' p0/t p1/t p2/t) at left;
+            [ auto
+            , auto
+            , with x => `(tuple [head tt] [tail x])
+            , rewrite ($ Pick/compose/tt/4/0/tt/5/0 a' b' c' p1/t p2/t) at right;
+              [ auto
+              , with x => `($ Pick/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
+              , rewrite ($ Pick/compose/tt/4/0/tt/5/0 a' c' d' p0/t ($ Pick/compose a' b' c' p1/t p2/t)) at right;
+                [ auto
+                , with x => `x
+                ]
+              ]
+            ]
+          ]
+        ];
+        auto
+      , rewrite ($ Pick/compose/tt/4/0/tt/5/0 b' c' d' p0/t p1/t) at left;
+        [ auto
+        , with x => `($ Pick/compose (succ a') (succ b') (succ d') x (tuple [head ff] [tail p2/t]))
+        , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' b' d' ($ Pick/compose b' c' d' p0/t p1/t) p2/t) at left;
+          [ auto
+          , with x => `x
+          , rewrite ($ b'/ind c' d' p0/t p1/t p2/t) at left;
+            [ auto
+            , with x => `(tuple [head ff] [tail x])
+            , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' b' c' p1/t p2/t) at right;
+              [ auto
+              , with x => `($ Pick/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
+              , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' c' d' p0/t ($ Pick/compose (succ a') b' c' p1/t p2/t)) at right;
+                [ auto
+                , with x => `x
+                ]
+              ]
+            ]
+          ]
+        ];
+        auto
+      ]
+    , lam p2 => rewrite ($ Pick/compose/tt/4/0/ff/5/0 b' c' d' p0/t p1/t) at left;
+      [ auto
+      , with x => `($ Pick/compose (succ a') (succ b') (succ d') x p2)
+      , rewrite ($ Pick/compose/ff/4/0 a' b' d' ($ Pick/compose (succ b') c' d' p0/t p1/t) p2) at left;
+        [ auto
+        , with x => `x
+        , rewrite ($ c'/ind d' p0/t p1/t p2) at left;
+          [ with x => `(tuple [head ff] [tail x])
+          , rewrite ($ Pick/compose/ff/4/0 a' b' c' p1/t p2) at right;
+            [ auto
+            , with x => `($ Pick/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
+            , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' c' d' p0/t ($ Pick/compose (succ a') (succ b') c' p1/t p2)) at right;
+              [ auto
+              , with x => `x
+              ]
+            ]
+          ]
+        ]
+      ];
+      auto
+    ]
+  , lam p1 p2 => rewrite ($ Pick/compose/ff/4/0 b' c' d' p0/t p1) at left;
+    [ auto
+    , with x => `($ Pick/compose (succ a') (succ b') (succ d') x p2)
+    , rewrite ($ Pick/compose/ff/4/0 a' b' d' ($ Pick/compose (succ b') (succ c') d' p0/t p1) p2) at left;
+      [ auto
+      , with x => `x
+      , rewrite ($ Pick/compose/ff/4/0 a' c' d' p0/t ($ Pick/compose (succ a') (succ b') (succ c') p1 p2)) at right;
+        [ auto
+        , with x => `x
+        , rewrite ($ d'/ind p0/t p1 p2) at left;
+          [ with x => `(tuple [head ff] [tail x])
+          , auto
+          ]
+        ]
+      ]
+    ];
+    auto
+  ]
+].
