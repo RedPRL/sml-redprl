@@ -416,10 +416,7 @@ struct
 
   and multitactic_ sign env tm =
     case Tm.out tm of 
-       O.MTAC_ALL $ [_ \ tm] =>
-       (case Tm.out tm of 
-           O.TAC_MTAC $ [_ \ tm] => multitactic sign env tm
-         | _ => T.all (tactic sign env tm))
+       O.MTAC_ALL $ [_ \ tm] => T.all (tactic sign env tm)
      | O.MTAC_EACH $ [_ \ vec] => T.each (Syn.outVec' (tactic sign env) vec)
      | O.MTAC_FOCUS i $ [_ \ tm] => T.only (i, tactic sign env tm)
      | O.MTAC_PROGRESS $ [_ \ tm] => T.mprogress (multitactic sign env tm)
