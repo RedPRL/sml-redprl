@@ -904,7 +904,6 @@ atomicRawTac
   | TAC_REWRITE term (Ast.$$ (O.TAC_REWRITE, [\\ (Ast.$$ (O.SEL_CONCL, [])), \\ (Ast.$$ (O.ACC_WHOLE, [])), \\ term]))
   | TAC_REWRITE term AT accessor (Ast.$$ (O.TAC_REWRITE, [\\ (Ast.$$ (O.SEL_CONCL, [])), \\ accessor, \\ term]))
   | TAC_REWRITE term AT TYPE LEFT RIGHT (Ast.$$ (O.TAC_DEP_REWRITE, [\\ term]))
-  | TAC_REWRITE term IN CONCL AT TYPE LEFT RIGHT (Ast.$$ (O.TAC_DEP_REWRITE, [\\ term]))
   | TAC_REWRITE term AT TYPE LEFT RIGHT IN CONCL (Ast.$$ (O.TAC_DEP_REWRITE, [\\ term]))
   | TAC_REWRITE term IN selector (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ (Ast.$$ (O.ACC_WHOLE, [])), \\ term]))
   | TAC_REWRITE term AT accessor IN selector (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ accessor, \\ term]))
