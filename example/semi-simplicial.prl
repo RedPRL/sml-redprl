@@ -1,3 +1,15 @@
+/*
+  favonia:
+
+  This formulation is strongly influenced by my own previous
+  attempt in Agda (sadly not available anymore) and Hugo Herbelin's
+  paper "A dependently-typed construction of semi-simplicial types".
+
+  The most significant differences from Hugo's formulation are
+  (1) the usage of `Pick` denoting the choice of subcomplex,
+  and (2) the reformulation based on it to avoid additions.
+*/
+
 Thm Pick : [
   // pick #(first argument) from #(second argument)
   (-> nat nat (U 0))
