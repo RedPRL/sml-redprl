@@ -86,6 +86,7 @@ struct
    | RULE_PRIM of string
    | TAC_ELIM
    | TAC_REWRITE
+   | TAC_DEP_REWRITE
    | TAC_REDUCE_ALL
    | TAC_REDUCE
    | TAC_REDUCE_PART

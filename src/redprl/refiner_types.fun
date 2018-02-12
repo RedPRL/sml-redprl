@@ -2112,7 +2112,7 @@ structure Synth =
 
     fun Rewrite sign (sel, acc) eqterm jdg =
       let
-        val tr = ["InternalizedEquality.RewriteTrue"]
+        val tr = ["InternalizedEquality.Rewrite"]
         val H >> concl = jdg
 
         val currentAjdg = Sequent.lookupSelector sel (H, concl)
@@ -2162,6 +2162,49 @@ structure Synth =
       in
         psi >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
          #> (H, rewrittenHole)
+      end
+
+    (* This is a hacky up version that needs some UI-polishing. *)
+    fun DepRewrite sign eqterm jdg =
+      let
+        val tr = ["InternalizedEquality.DepRewrite"]
+        val H >> concl = jdg
+
+        val allowed =
+          case concl of
+             AJ.TRUE ty =>
+               (case Syn.out ty of
+                   Syn.EQUALITY _ => true
+                 | _ => false)
+           | _ => false
+        val () = if allowed then () else
+          E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "dependant rewrite tactic",
+            AJ.pretty concl)
+
+        val currentType = AJ.lookupAccessor Accessor.PART_TYPE concl
+        val currentLeft = AJ.lookupAccessor Accessor.PART_LEFT concl
+        val currentRight = AJ.lookupAccessor Accessor.PART_RIGHT concl
+
+        val (psi, eqty) = Synth.synthTerm sign tr H (eqterm, eqterm)
+        val Syn.EQUALITY (dom, equandL, equandR) = Syn.out eqty
+
+        val x = Sym.new ()
+        val Hx = H @> (x, AJ.TRUE dom)
+        val (motiveTypeGoal, motiveTypeHole) = makeTerm tr Hx O.EXP
+        val (motiveLeftGoal, motiveLeftHole) = makeTerm tr Hx O.EXP
+        val (motiveRightGoal, motiveRightHole) = makeTerm tr Hx O.EXP
+        val motiveWfGoal = makeEq tr Hx ((motiveLeftHole, motiveRightHole), motiveTypeHole)
+
+        val motiveMatchTypeGoal = makeSubType tr H (substVar (equandL, x) motiveTypeHole, currentType)
+        val motiveMatchLeftGoal = makeEq tr H ((currentLeft, substVar (equandL, x) motiveLeftHole), substVar (equandL, x) motiveTypeHole)
+        val motiveMatchRightGoal = makeEq tr H ((currentRight, substVar (equandR, x) motiveRightHole), substVar (equandR, x) motiveTypeHole)
+      in
+        psi
+         >: motiveTypeGoal >: motiveLeftGoal >: motiveRightGoal >: motiveWfGoal
+         >: motiveMatchTypeGoal
+         >: motiveMatchLeftGoal
+         >: motiveMatchRightGoal
+         #> (H, axiom)
       end
 
     fun Symmetry jdg =
