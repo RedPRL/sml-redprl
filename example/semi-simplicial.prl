@@ -100,6 +100,13 @@ Thm Pick/compose/ff/4/0 : [
     unfold Pick; reduce; assumption
 ].
 
+Thm Eq/inv : [
+  (-> [a : (U 0)] [x y : a]
+    (= a x y) (= a y x))
+] by [
+  lam a x y eq => assumption
+].
+
 Thm Pick/compose/assoc : [
   (->
    [a b c d : nat]
@@ -124,20 +131,20 @@ Thm Pick/compose/assoc : [
   [ lam p1 => let {head = p1/h, tail = p1/t} = p1; elim p1/h;
     [ lam p2 => let {head = p2/h, tail = p2/t} = p2; elim p2/h;
       [ rewrite ($ Pick/compose/tt/4/0/tt/5/0 b' c' d' p0/t p1/t) at left;
-        [ auto
+        [ auto // XXX unpredictable aux goals
         , with x => `($ Pick/compose (succ a') (succ b') (succ d') x (tuple [head tt] [tail p2/t]))
         , rewrite ($ Pick/compose/tt/4/0/tt/5/0 a' b' d' ($ Pick/compose b' c' d' p0/t p1/t) p2/t) at left;
-          [ auto
+          [ auto // XXX unpredictable aux goals
           , with x => `x
           , rewrite ($ a'/ind b' c' d' p0/t p1/t p2/t) at left;
-            [ auto
-            , auto
+            [ auto // XXX unpredictable aux goals
+            , auto // XXX unpredictable aux goals
             , with x => `(tuple [head tt] [tail x])
             , rewrite ($ Pick/compose/tt/4/0/tt/5/0 a' b' c' p1/t p2/t) at right;
-              [ auto
+              [ auto // XXX unpredictable aux goals
               , with x => `($ Pick/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
               , rewrite ($ Pick/compose/tt/4/0/tt/5/0 a' c' d' p0/t ($ Pick/compose a' b' c' p1/t p2/t)) at right;
-                [ auto
+                [ auto // XXX unpredictable aux goals
                 , with x => `x
                 ]
               ]
@@ -146,19 +153,19 @@ Thm Pick/compose/assoc : [
         ];
         auto
       , rewrite ($ Pick/compose/tt/4/0/tt/5/0 b' c' d' p0/t p1/t) at left;
-        [ auto
+        [ auto // XXX unpredictable aux goals
         , with x => `($ Pick/compose (succ a') (succ b') (succ d') x (tuple [head ff] [tail p2/t]))
         , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' b' d' ($ Pick/compose b' c' d' p0/t p1/t) p2/t) at left;
-          [ auto
+          [ auto // XXX unpredictable aux goals
           , with x => `x
           , rewrite ($ b'/ind c' d' p0/t p1/t p2/t) at left;
-            [ auto
+            [ auto // XXX unpredictable aux goals
             , with x => `(tuple [head ff] [tail x])
             , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' b' c' p1/t p2/t) at right;
-              [ auto
+              [ auto // XXX unpredictable aux goals
               , with x => `($ Pick/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
               , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' c' d' p0/t ($ Pick/compose (succ a') b' c' p1/t p2/t)) at right;
-                [ auto
+                [ auto // XXX unpredictable aux goals
                 , with x => `x
                 ]
               ]
@@ -168,18 +175,18 @@ Thm Pick/compose/assoc : [
         auto
       ]
     , lam p2 => rewrite ($ Pick/compose/tt/4/0/ff/5/0 b' c' d' p0/t p1/t) at left;
-      [ auto
+      [ auto // XXX unpredictable aux goals
       , with x => `($ Pick/compose (succ a') (succ b') (succ d') x p2)
       , rewrite ($ Pick/compose/ff/4/0 a' b' d' ($ Pick/compose (succ b') c' d' p0/t p1/t) p2) at left;
-        [ auto
+        [ auto // XXX unpredictable aux goals
         , with x => `x
         , rewrite ($ c'/ind d' p0/t p1/t p2) at left;
           [ with x => `(tuple [head ff] [tail x])
           , rewrite ($ Pick/compose/ff/4/0 a' b' c' p1/t p2) at right;
-            [ auto
+            [ auto // XXX unpredictable aux goals
             , with x => `($ Pick/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
             , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' c' d' p0/t ($ Pick/compose (succ a') (succ b') c' p1/t p2)) at right;
-              [ auto
+              [ auto // XXX unpredictable aux goals
               , with x => `x
               ]
             ]
@@ -189,21 +196,105 @@ Thm Pick/compose/assoc : [
       auto
     ]
   , lam p1 p2 => rewrite ($ Pick/compose/ff/4/0 b' c' d' p0/t p1) at left;
-    [ auto
+    [ auto // XXX unpredictable aux goals
     , with x => `($ Pick/compose (succ a') (succ b') (succ d') x p2)
     , rewrite ($ Pick/compose/ff/4/0 a' b' d' ($ Pick/compose (succ b') (succ c') d' p0/t p1) p2) at left;
-      [ auto
+      [ auto // XXX unpredictable aux goals
       , with x => `x
       , rewrite ($ Pick/compose/ff/4/0 a' c' d' p0/t ($ Pick/compose (succ a') (succ b') (succ c') p1 p2)) at right;
-        [ auto
+        [ auto // XXX unpredictable aux goals
         , with x => `x
         , rewrite ($ d'/ind p0/t p1 p2) at left;
           [ with x => `(tuple [head ff] [tail x])
-          , auto
+          , auto // XXX unpredictable aux goals
           ]
         ]
       ]
     ];
     auto
   ]
+].
+
+Thm MegaMutualDefs : [
+  (-> nat
+    (record
+      [sst : (U 1)]
+      [folder : (-> sst nat (U 0))]
+      [proj : (-> [x : sst]
+        [n m : nat] ($ Pick n m)
+        ($ folder x n)
+        ($ folder x m))]
+      [projCoh : (-> [x : sst] [n m o : nat]
+        [c1 : ($ Pick m o)]
+        [c2 : ($ Pick n m)] [f : ($ folder x n)]
+        (= ($ folder x o)
+          ($ proj x m o c1 ($ proj x n m c2 f))
+          ($ proj x n o ($ Pick/compose n m o c1 c2) f)))]))
+] by [
+  lam p => elim p;
+  [
+    { sst = `record
+    , folder = lam x n => `record
+    , proj = lam x n m c f => `tuple
+    , projCoh = lam x n m o c1 c2 f => `ax
+    };
+  , with p'/ind p' =>
+    let {sst=sst', folder=folder', proj=proj', projCoh=projCoh'}
+      = p'/ind;
+    { sst = `(* [x : sst'] (-> ($ folder' x p') (U 0)))
+    , folder = lam {proj1=x, proj2=y} n =>
+        `(* [f : ($ folder' x n)]
+          (->
+            [c : ($ Pick n p')]
+            ($ y ($ proj' x n p' c f))))
+    , proj = lam {proj1=x, proj2=y} n m c2 {proj1=f, proj2=g} =>
+        { proj1 = `($ proj' x n m c2 f)
+        , proj2 = lam c1 =>
+          rewrite ($ projCoh' x n m p' c1 c2 f);
+          [ auto // XXX unpredictable aux goals
+          , auto // XXX unpredictable aux goals
+          , auto // XXX unpredictable aux goals
+          , with z => `($ y z)
+          , `($ g ($ Pick/compose n m p' c1 c2))
+          , auto
+          , auto
+          ]
+        }
+    , projCoh = lam {proj1=x, proj2=y} n m o c1 c2 {proj1=f, proj2=g} =>
+        reduce at type left right;
+        refine record/eq/tuple;
+        [ `($ projCoh' x n m o c1 c2 f)
+        , refine fun/eq/lam;
+          [ with c0 => rewrite ($ projCoh' x n m o c1 c2 f) at type;
+            [ auto // XXX unpredictable aux goals
+            , auto // XXX unpredictable aux goals
+            , auto // XXX unpredictable aux goals
+            , with z => `($ y ($ proj' x o p' c0 z))
+            , rewrite ($ projCoh' x n o p' c0 ($ Pick/compose n m o c1 c2) f) at type;
+              [ auto // XXX unpredictable aux goals
+              , auto // XXX unpredictable aux goals
+              , auto // XXX unpredictable aux goals
+              , with z => `($ y z)
+              , symmetry;
+                rewrite ($ Eq/inv ($ Pick n p')
+                  ($ Pick/compose n m p' ($ Pick/compose m o p' c0 c1) c2)
+                  ($ Pick/compose n o p' c0 ($ Pick/compose n m o c1 c2))
+                  ($ Pick/compose/assoc n m o p' c0 c1 c2)) at type left right;
+                [ with z => `($ y ($ proj' x n p' z f))
+                , with z => `($ g z)
+                , with z => `($ g z)
+                ]
+              ]
+            ]
+          ]
+        ]
+    }
+  ];
+  auto
+].
+
+Thm SemiSimplicial : [
+  (-> nat (U 1))
+] by [
+  lam n => `(! sst ($ MegaMutualDefs n))
 ].
