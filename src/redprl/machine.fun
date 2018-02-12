@@ -46,28 +46,26 @@ struct
   val todo = Fail "TODO"
   fun ?e = raise e
 
-  local
-    fun plug m = 
-      fn APP (HOLE, n) => Syn.intoApp (m, n)
-       | HCOM (dir, HOLE, cap, tubes) => Syn.intoHcom {dir = dir, ty = m, cap = cap, tubes = tubes}
-       | COE (dir, (u, HOLE), coercee) => Syn.intoCoe {dir = dir, ty = (u, m), coercee = coercee}
-       | IF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
-       | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
-       | DIM_APP (HOLE, r) => Syn.into @@ Syn.DIM_APP (m, r)
-       | NAT_REC ((z, tyz), HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC ((z, tyz), m, (zer, (x, y, succ)))
-       | INT_REC ((z, tyz), HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC ((z, tyz), m, (zer, (x,y,succ), negone, (x',y',negss)))
-       | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
-       | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
-       | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
-       | COEQUALIZER_REC ((x, tyx), HOLE, (y, cod), (u, w, dom)) => Syn.into @@ Syn.COEQUALIZER_REC ((x, tyx), m, ((y, cod), (u, w, dom)))
-       | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
-       | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
-  in
-    fun unload (m || (syms, stk)) = 
-      case stk of
-         [] => m
-       | k :: stk => unload @@ plug m k || (syms, stk)
-  end
+  fun plug m =
+    fn APP (HOLE, n) => Syn.intoApp (m, n)
+     | HCOM (dir, HOLE, cap, tubes) => Syn.intoHcom {dir = dir, ty = m, cap = cap, tubes = tubes}
+     | COE (dir, (u, HOLE), coercee) => Syn.intoCoe {dir = dir, ty = (u, m), coercee = coercee}
+     | IF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
+     | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
+     | DIM_APP (HOLE, r) => Syn.into @@ Syn.DIM_APP (m, r)
+     | NAT_REC ((z, tyz), HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC ((z, tyz), m, (zer, (x, y, succ)))
+     | INT_REC ((z, tyz), HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC ((z, tyz), m, (zer, (x,y,succ), negone, (x',y',negss)))
+     | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
+     | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
+     | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
+     | COEQUALIZER_REC ((x, tyx), HOLE, (y, cod), (u, w, dom)) => Syn.into @@ Syn.COEQUALIZER_REC ((x, tyx), m, ((y, cod), (u, w, dom)))
+     | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
+     | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
+
+  fun unload (m || (syms, stk)) =
+    case stk of
+       [] => m
+     | k :: stk => unload @@ plug m k || (syms, stk)
 
   datatype stability = 
      STABLE
@@ -606,9 +604,9 @@ struct
      | O.SUCC $ _ || (_, []) => raise Final
      | O.NAT_REC $ [[z] \ tyz, _ \ m, _ \ n, [x,y] \ p] || (syms, stk) => COMPAT @@ m || (syms, NAT_REC ((z,tyz), HOLE, n, (x,y,p)) :: stk)
      | O.ZERO $ _ || (syms, NAT_REC (_, HOLE, zer, _) :: stk) => CRITICAL @@ zer || (syms, stk)
-     | O.SUCC $ [_ \ n] || (syms, NAT_REC ((z,tyz), HOLE, zer, (x,y, succ)) :: stk) =>
+     | O.SUCC $ [_ \ n] || (syms, (frm as NAT_REC (_, HOLE, _, (x,y, succ))) :: stk) =>
        let
-         val rho = VarKit.ctxFromList [(n, x), (Syn.into @@ Syn.NAT_REC ((z,tyz), n, (zer, (x,y,succ))), y)]
+         val rho = VarKit.ctxFromList [(n, x), (plug n frm, y)]
        in
          CRITICAL @@ substVarenv rho succ || (syms, stk)
        end
@@ -619,9 +617,9 @@ struct
      | O.NEGSUCC $ _ || (_, []) => raise Final
      | O.INT_REC $ [[z] \ tyz, _ \ m, _ \ n, [x,y] \ p, _ \ q, [x',y'] \ r] || (syms, stk) => COMPAT @@ m || (syms, INT_REC ((z,tyz), HOLE, n, (x,y,p), q, (x',y',r)) :: stk)
      | O.ZERO $ _ || (syms, INT_REC (_, HOLE, n, _, _, _) :: stk) => CRITICAL @@ n || (syms, stk)
-     | O.SUCC $ [_ \ m] || (syms, INT_REC ((z,tyz), HOLE, n, (x,y,p), _, _) :: stk) =>
+     | O.SUCC $ [_ \ m] || (syms, (frm as INT_REC (_, HOLE, _, (x0,y0,p), _, _)) :: stk) =>
        let
-         val rho = VarKit.ctxFromList [(m, x), (Syn.into @@ Syn.NAT_REC ((z,tyz), m, (n, (x,y,p))), y)]
+         val rho = VarKit.ctxFromList [(m, x0), (plug m frm, y0)]
        in
          CRITICAL @@ substVarenv rho p || (syms, stk)
        end
