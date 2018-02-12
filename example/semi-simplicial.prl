@@ -15,29 +15,6 @@ Thm Pick : [
   ]
 ].
 
-Thm Pick/zero/L : [
-  (-> [n : nat] (= (U 0) ($ Pick zero n) record))
-] by [
-  lam n => auto
-].
-
-Thm Pick/succ/0/zero/1 : [
-  (-> [n : nat] (= (U 0) ($ Pick (succ n) zero) void))
-] by [
-  lam n => auto
-].
-
-Thm Pick/succ/0/succ/1 : [
-  (-> [n m : nat]
-   (= (U 0)
-    ($ Pick (succ n) (succ m))
-    (record
-     [head : bool]
-     [tail : (if [_] (U 0) head ($ Pick n m) ($ Pick (succ n) m))])))
-] by [
-  lam n m => auto
-].
-
 Thm Pick/compose : [
   (->
    [a b c : nat]
@@ -73,16 +50,6 @@ Thm Pick/compose : [
       ]
     ]
   ]
-].
-
-Thm Pick/compose/zero/0 : [
-  (->
-   [b c : nat]
-   [p0 : ($ Pick b c)]
-   [p1 : ($ Pick 0 b)]
-   (= ($ Pick 0 c) ($ Pick/compose 0 b c p0 p1) tuple))
-] by [
-  lam a b p0 p1 => auto
 ].
 
 Thm Pick/compose/tt/4/0/tt/5/0 : [
