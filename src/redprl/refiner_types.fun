@@ -37,154 +37,183 @@ struct
    * BetaX: the beta rule for the eliminator applied to a constructor X.
    *   This is only necessary in cases where the reduction is unstable.
    * EqTypeElim/EqTypeX: similar to EqElim but for EQ_TYPE judgments.
-   * SynthElim/SynthX: synthesizing the types of eliminators.
    * (others): other special rules for this type.
+   *)
+
+  (* The order of aux goals:
+   *
+   * 1. Well-typedness of interesting parts.
+   *   1a. Eliminated term
+   *   1b. Branches
+   *   1c. Coherence for 1a and 1b.
+   * 2. Motives.
+   *   2a. Types.
+   *   2b. Coherence for 2a.
+   * 3. Rules for synthesizing the types.
+   * 4. Subtyping for the final type.
    *)
 
 structure Synth =
   struct
     infix $ $$ \
 
-    fun synthNeutral sign tr H (tm1, tm2) =
-      case (out tm1, out tm2) of 
-        (`x, `y) =>
-          let
-            val true = Var.eq (x, y)
-            val AJ.TRUE ty = Hyps.lookup H x
-          in
-            (T.empty, ty)
-          end
+    local
+      fun synthNeutral' sign tr H (tm1, tm2) =
+        case (out tm1, out tm2) of
+          (`x, `y) =>
+            let
+              val true = Var.eq (x, y)
+              val AJ.TRUE ty = Hyps.lookup H x
+            in
+              ([], ty)
+            end
 
-        | (O.CUST (opid, _) $ args, O.CUST (opid', _) $ args') =>
-          let
-            val true = Abt.eq (tm1, tm2)
-            val AJ.TRUE ty = Sig.theoremSpec sign opid args
-          in
-            (T.empty, ty)
-          end
+          | (O.CUST (opid, _) $ args, O.CUST (opid', _) $ args') =>
+            let
+              val true = Abt.eq (tm1, tm2)
+              val AJ.TRUE ty = Sig.theoremSpec sign opid args
+            in
+              ([], ty)
+            end
 
-        | (O.APP $ [_ \ m1, _ \ m2], O.APP $ [_ \ n1, _ \ n2]) =>
-          let
-            val (psi, funty) = synthTerm sign tr H (m1, n1)
-            val Syn.FUN (dom, x, cod) = Syn.out funty
-            val memGoal = makeEq tr H ((m2, n2), dom)
-          in
-            (psi >: memGoal, substVar (m2, x) cod)
-          end
+          | (O.APP $ [_ \ m1, _ \ m2], O.APP $ [_ \ n1, _ \ n2]) =>
+            let
+              val (psi, funty) = synthTerm' sign tr H (m1, n1)
+              val Syn.FUN (dom, x, cod) = Syn.out funty
+              val memGoal = makeEq tr H ((m2, n2), dom)
+            in
+              (memGoal :: psi, substVar (m2, x) cod)
+            end
 
-        | (O.DIM_APP $ [_ \ m, _ \ r], O.DIM_APP $ [_ \ n, _ \ s]) => 
-          let
-            val true = Abt.eq (r, s)
-            val (psi, ty) = synthTerm sign tr H (m, n)
-          in
-            case Syn.out ty of
-              Syn.PATH ((x, a), _, _) =>
-              (psi, substVar (r, x) a)
+          | (O.DIM_APP $ [_ \ m, _ \ r], O.DIM_APP $ [_ \ n, _ \ s]) =>
+            let
+              val true = Abt.eq (r, s)
+              val (psi, ty) = synthTerm' sign tr H (m, n)
+            in
+              case Syn.out ty of
+                Syn.PATH ((x, a), _, _) =>
+                (psi, substVar (r, x) a)
 
-            | Syn.LINE (x, a) =>
-              (psi, substVar (r, x) a)
+              | Syn.LINE (x, a) =>
+                (psi, substVar (r, x) a)
 
-            | _ => raise Fail "synthNeutral"
-          end
+              | _ => raise Fail "synthNeutral"
+            end
 
-        | (O.DIM_APP $ [_ \ m, _ \ r], _) => 
-          let
-            val (psi, pathty) = synthTerm sign tr H (m, m)
-            val Syn.PATH ((x, a), left, right) = Syn.out pathty
-            val n =
-              case Syn.out r of 
-                 Syn.DIM0 => left
-               | Syn.DIM1 => right
-            val ty = substVar (r, x) a
-            val goal = makeEq tr H ((n, tm2), ty)
-          in
-            (psi >: goal, ty)
-          end
+          | (O.DIM_APP $ [_ \ m, _ \ r], _) =>
+            let
+              val (psi, pathty) = synthTerm' sign tr H (m, m)
+              val Syn.PATH ((x, a), left, right) = Syn.out pathty
+              val n =
+                case Syn.out r of
+                   Syn.DIM0 => left
+                 | Syn.DIM1 => right
+              val ty = substVar (r, x) a
+              val goal = makeEq tr H ((n, tm2), ty)
+            in
+              (goal :: psi, ty)
+            end
 
-        | (_, O.DIM_APP $ [_ \ m, _ \ r]) =>
-          let
-            val (psi, pathty) = synthTerm sign tr H (m, m)
-            val Syn.PATH ((x, a), left, right) = Syn.out pathty
-            val n =
-              case Syn.out r of 
-                 Syn.DIM0 => left
-               | Syn.DIM1 => right
-            val ty = substVar (r, x) a
-            val goal = makeEq tr H ((tm1, n), ty)
-          in
-            (psi >: goal, ty)
-          end        
+          | (_, O.DIM_APP $ [_ \ m, _ \ r]) =>
+            let
+              val (psi, pathty) = synthTerm' sign tr H (m, m)
+              val Syn.PATH ((x, a), left, right) = Syn.out pathty
+              val n =
+                case Syn.out r of
+                   Syn.DIM0 => left
+                 | Syn.DIM1 => right
+              val ty = substVar (r, x) a
+              val goal = makeEq tr H ((tm1, n), ty)
+            in
+              (goal :: psi, ty)
+            end
 
-        | (O.PROJ lbl $ [_ \ m], O.PROJ lbl' $ [_ \ n]) =>
-          let
-            val true = lbl = lbl'
-            val (psi, rcdty) = synthTerm sign tr H (m, n)
-            val Abt.$ (O.RECORD lbls, args) = out rcdty
+          | (O.PROJ lbl $ [_ \ m], O.PROJ lbl' $ [_ \ n]) =>
+            let
+              val true = lbl = lbl'
+              val (psi, rcdty) = synthTerm' sign tr H (m, n)
+              val Abt.$ (O.RECORD lbls, args) = out rcdty
 
-            val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
-            val (us \ ty) = List.nth (args, i)
+              val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
+              val (us \ ty) = List.nth (args, i)
 
-            (* supply the dependencies *)
-            val lblPrefix = List.take (lbls, i)
-            val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m), u)) (lblPrefix, us)
-            val ty = VarKit.substMany rho ty
-          in
-            (psi, ty)
-          end
+              (* supply the dependencies *)
+              val lblPrefix = List.take (lbls, i)
+              val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m), u)) (lblPrefix, us)
+              val ty = VarKit.substMany rho ty
+            in
+              (psi, ty)
+            end
 
-        | (O.S1_REC $ [[x] \ cx, _ \ m, _, _], O.S1_REC $ _) =>
-          let
-            val ty = substVar (m, x) cx
-            val goal = makeEq tr H ((tm1, tm2), ty)
-          in
-            (|>: goal, ty)
-          end
+          | (O.S1_REC $ [[x] \ cx, _ \ m, _, _], O.S1_REC $ _) =>
+            let
+              val ty = substVar (m, x) cx
+              val goal = makeEq tr H ((tm1, tm2), ty)
+            in
+              ([goal], ty)
+            end
 
-        | (O.IF $ [[x] \ cx, _ \ m, _, _], O.IF $ _) =>
-          let
-            val ty = substVar (m, x) cx
-            val goal = makeEq tr H ((tm1, tm2), ty)
-          in
-            (|>: goal, ty)
-          end             
+          | (O.IF $ [[x] \ cx, _ \ m, _, _], O.IF $ _) =>
+            let
+              val ty = substVar (m, x) cx
+              val goal = makeEq tr H ((tm1, tm2), ty)
+            in
+              ([goal], ty)
+            end
 
-        | (O.PUSHOUT_REC $ [[x] \ cx, _ \ m, _, _, _], O.PUSHOUT_REC $ _) =>
-          let
-            val ty = substVar (m, x) cx
-            val goal = makeEq tr H ((tm1, tm2), ty)
-          in
-            (|>: goal, ty)               
-          end
+          | (O.PUSHOUT_REC $ [[x] \ cx, _ \ m, _, _, _], O.PUSHOUT_REC $ _) =>
+            let
+              val ty = substVar (m, x) cx
+              val goal = makeEq tr H ((tm1, tm2), ty)
+            in
+              ([goal], ty)
+            end
+
+          | (O.COEQUALIZER_REC $ [[x] \ cx, _ \ m, _, _], O.COEQUALIZER_REC $ _) =>
+            let
+              val ty = substVar (m, x) cx
+              val goal = makeEq tr H ((tm1, tm2), ty)
+            in
+              ([goal], ty)
+            end
+
+          | (O.NAT_REC $ [[x] \ cx, _ \ m, _, _], O.NAT_REC $ _) =>
+            let
+              val ty = substVar (m, x) cx
+              val goal = makeEq tr H ((tm1, tm2), ty)
+            in
+              ([goal], ty)
+            end
+          | (O.INT_REC $ [[x] \ cx, _ \ m, _, _, _, _], O.INT_REC $ _) =>
+            let
+              val ty = substVar (m, x) cx
+              val goal = makeEq tr H ((tm1, tm2), ty)
+            in
+              ([goal], ty)
+            end
+
+      and synthTerm' sign tr H (tm1, tm2) =
+        let
+          val (psi, ty) = synthNeutral' sign tr H (Machine.eval sign Machine.STABLE Machine.Unfolding.never tm1, Machine.eval sign Machine.STABLE Machine.Unfolding.never tm2)
+        in
+          (psi, Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
+        end
+
+    in
+      fun synthNeutral sign tr H (tm1, tm2) =
+        let
+          val (psi, ty) = synthNeutral' sign tr H (tm1, tm2)
+        in
+          (List.rev psi, ty)
+        end
       
-        | (O.COEQUALIZER_REC $ [[x] \ cx, _ \ m, _, _], O.COEQUALIZER_REC $ _) =>
-          let
-            val ty = substVar (m, x) cx
-            val goal = makeEq tr H ((tm1, tm2), ty)
-          in
-            (|>: goal, ty)               
-          end
-
-        | (O.NAT_REC $ [[x] \ cx, _ \ m, _, _], O.NAT_REC $ _) => 
-          let
-            val ty = substVar (m, x) cx
-            val goal = makeEq tr H ((tm1, tm2), ty)
-          in
-            (|>: goal, ty)
-          end
-        | (O.INT_REC $ [[x] \ cx, _ \ m, _, _, _, _], O.INT_REC $ _) => 
-          let
-            val ty = substVar (m, x) cx
-            val goal = makeEq tr H ((tm1, tm2), ty)
-          in
-            (|>: goal, ty)
-          end          
-
-    and synthTerm sign tr H (tm1, tm2) = 
-      let
-        val (psi, ty) = synthNeutral sign tr H (Machine.eval sign Machine.STABLE Machine.Unfolding.never tm1, Machine.eval sign Machine.STABLE Machine.Unfolding.never tm2)
-      in
-        (psi, Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
-      end
+      fun synthTerm sign tr H (tm1, tm2) =
+        let
+          val (psi, ty) = synthTerm' sign tr H (tm1, tm2)
+        in
+          (List.rev psi, ty)
+        end
+    end
   end
 
   structure Bool =
@@ -272,7 +301,7 @@ structure Synth =
         (* ff branch *)
         val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, z) motivez))
       in
-        psi >: goalT >: goalF >: goalTy #> (H, axiom)
+        |>: goalT >: goalF >:+ psi >: goalTy #> (H, axiom)
       end
   end
 
@@ -392,7 +421,7 @@ structure Synth =
         (* ff branch *)
         val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
-        psi >: goalT >: goalF >: goalC >:? goalTy #> (H, axiom)
+        |>: goalT >: goalF >: goalC >:+ psi >:? goalTy #> (H, axiom)
       end
   end
 
@@ -511,7 +540,7 @@ structure Synth =
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
             ((p0, p1), (substVar (succ @@ VarKit.toExp u, x) c0x))
       in
-        |>: goalC >: goalM >: goalZ >: goalS >:? goalTy #> (H, axiom)
+        |>: goalM >: goalZ >: goalS >: goalC >:? goalTy #> (H, axiom)
       end
   end
 
@@ -670,7 +699,7 @@ structure Synth =
             (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cnegsuccu))
             ((r0, r1), substVar (negsucc @@ succ @@ VarKit.toExp u, x) e0x)
       in
-        |>: goalE >: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >:? goalTy #> (H, axiom)
+        |>: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalE >:? goalTy #> (H, axiom)
       end
   end
 
@@ -1068,7 +1097,7 @@ structure Synth =
         val goalArgEq = makeEq tr H ((n0, n1), dom)
         val goalTy = View.makeAsSubType tr H (cod, ty)
       in
-        psi >: goalArgEq >: goalTy
+        |>: goalArgEq >:+ psi >: goalTy
         #> (H, axiom)
       end
   end
@@ -1281,7 +1310,7 @@ structure Synth =
         
         val goalTy = View.makeAsSubType tr H (VarKit.substMany rho tyField, ty)
       in
-        psi >: goalTy
+        |>:+ psi >: goalTy
         #> (H, axiom)
       end
   end
@@ -1394,7 +1423,7 @@ structure Synth =
         val tyr = substVar (r0, x) tyx
         val goalTy = View.makeAsSubType tr H (tyr, ty) (* holePath type *)
       in
-        psi >: goalTy #> (H, axiom)
+        |>:+ psi >: goalTy #> (H, axiom)
       end
 
  fun EqAppConst sign jdg =
@@ -1412,7 +1441,7 @@ structure Synth =
         val goalTy = View.makeAsSubType tr H (tyr, a)
         val goalEq = View.makeAsEq tr H ((pr, p), a)
       in
-        psi >: goalEq >: goalTy
+        |>: goalEq >:+ psi >: goalTy
         #> (H, axiom)
       end
 
@@ -1519,7 +1548,7 @@ structure Synth =
         val tyr = substVar (r0, x) tyx
         val goalTy = View.makeAsSubType tr H (tyr, ty)
       in
-        psi >: goalTy #> (H, axiom)
+        |>:+ psi >: goalTy #> (H, axiom)
       end
   end
 
@@ -1758,7 +1787,7 @@ structure Synth =
         val rgc = substVar (gc, b0) p0b0
         val goalCohR = makeEq tr (H @> (c, AJ.TRUE tyC)) ((q01c, rgc), (dright gc))
       in
-        psi >: goalD >: goalN >: goalP >: goalQ >: goalCohL >: goalCohR >:? goalTy #> (H, axiom)
+        |>: goalN >: goalP >: goalQ >: goalCohL >: goalCohR >: goalD >:+ psi >:? goalTy #> (H, axiom)
       end
 
     fun BetaGlue jdg =
@@ -1985,7 +2014,7 @@ structure Synth =
         val cga = substVar (ga, b0) n0b0
         val goalCohG = makeEq tr (H @> (a, AJ.TRUE tyA)) ((q01a, cga), (pcod ga))
       in
-        psi >: goalN >: goalQ >: goalCohF >: goalCohG >: goalP >:? goalTy #> (H, axiom)
+        |>: goalN >: goalQ >: goalCohF >: goalCohG >: goalP >:+ psi >:? goalTy #> (H, axiom)
       end
 
 
@@ -2160,7 +2189,7 @@ structure Synth =
            | Variance.CONTRAVAR => makeSubType tr truncatedH (currentTm, motiveL)
            | Variance.ANTIVAR => View.makeAsEq tr truncatedH ((currentTm, motiveL), ty)
       in
-        psi >: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal
+        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal >:+ psi
          #> (H, rewrittenHole)
       end
 
@@ -2199,11 +2228,11 @@ structure Synth =
         val motiveMatchLeftGoal = makeEq tr H ((currentLeft, substVar (equandL, x) motiveLeftHole), substVar (equandL, x) motiveTypeHole)
         val motiveMatchRightGoal = makeEq tr H ((currentRight, substVar (equandR, x) motiveRightHole), substVar (equandR, x) motiveTypeHole)
       in
-        psi
-         >: motiveTypeGoal >: motiveLeftGoal >: motiveRightGoal >: motiveWfGoal
+        |>: motiveTypeGoal >: motiveLeftGoal >: motiveRightGoal >: motiveWfGoal
          >: motiveMatchTypeGoal
          >: motiveMatchLeftGoal
          >: motiveMatchRightGoal
+         >:+ psi
          #> (H, axiom)
       end
 
