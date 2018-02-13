@@ -196,7 +196,7 @@ whitespace = [\ \t];
 <INITIAL>"type"             => (Tokens.TYPE (posTuple (size yytext)));
 <INITIAL>"discrete"         => (Tokens.DISCRETE (posTuple (size yytext)));
 <INITIAL>"kan"              => (Tokens.KAN (posTuple (size yytext)));
-<INITIAL>"stable"           => (Tokens.STABLE (posTuple (size yytext)));
+<INITIAL>"pre"              => (Tokens.PRE (posTuple (size yytext)));
 <INITIAL>"at"               => (Tokens.AT (posTuple (size yytext)));
 
 <INITIAL>{lower}{identChr}* => (Tokens.VARNAME (posTupleWith (size yytext) yytext));
