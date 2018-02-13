@@ -970,9 +970,9 @@ structure Synth =
     val kindConstraintsOnDomAndCod =
       fn K.DISCRETE => (K.DISCRETE, K.DISCRETE)
        | K.KAN => (K.COE, K.KAN)
-       | K.HCOM => (K.STABLE, K.HCOM)
+       | K.HCOM => (K.PRE, K.HCOM)
        | K.COE => (K.COE, K.COE)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun EqType jdg =
       let
@@ -1082,7 +1082,7 @@ structure Synth =
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN)
        | K.COE => (K.COE, K.COE)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun EqType jdg =
       let
@@ -1293,7 +1293,7 @@ structure Synth =
        | K.KAN => K.KAN
        | K.HCOM => K.HCOM
        | K.COE => K.KAN
-       | K.STABLE => K.STABLE
+       | K.PRE => K.PRE
 
     fun EqType jdg =
       let
@@ -1439,7 +1439,7 @@ structure Synth =
        | K.KAN => K.KAN
        | K.HCOM => K.HCOM
        | K.COE => K.COE
-       | K.STABLE => K.STABLE
+       | K.PRE => K.PRE
 
     fun EqType jdg =
       let
@@ -1530,8 +1530,8 @@ structure Synth =
            E.NOT_APPLICABLE (Fpp.text "Pushouts", Fpp.text "discrete universes")
        | K.KAN => (K.COE, K.COE)
        | K.COE => (K.COE, K.COE)
-       | K.HCOM => (K.STABLE, K.STABLE)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.HCOM => (K.PRE, K.PRE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun EqType jdg =
       let
@@ -1794,8 +1794,8 @@ structure Synth =
            E.NOT_APPLICABLE (Fpp.text "Coequalizers", Fpp.text "discrete universes")
        | K.KAN => (K.COE, K.COE)
        | K.COE => (K.COE, K.COE)
-       | K.HCOM => (K.STABLE, K.STABLE)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.HCOM => (K.PRE, K.PRE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun EqType jdg =
       let
@@ -2020,9 +2020,9 @@ structure Synth =
     val kindConstraintOnBase =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.DISCRETE
-       | K.HCOM => K.STABLE
+       | K.HCOM => K.PRE
        | K.COE => K.DISCRETE
-       | K.STABLE => K.STABLE
+       | K.PRE => K.PRE
 
     fun EqType jdg =
       let
@@ -2112,7 +2112,7 @@ structure Synth =
 
     fun Rewrite sign (sel, acc) eqterm jdg =
       let
-        val tr = ["InternalizedEquality.RewriteTrue"]
+        val tr = ["InternalizedEquality.Rewrite"]
         val H >> concl = jdg
 
         val currentAjdg = Sequent.lookupSelector sel (H, concl)
@@ -2164,6 +2164,49 @@ structure Synth =
          #> (H, rewrittenHole)
       end
 
+    (* This is a hacky up version that needs some UI-polishing. *)
+    fun DepRewrite sign eqterm jdg =
+      let
+        val tr = ["InternalizedEquality.DepRewrite"]
+        val H >> concl = jdg
+
+        val allowed =
+          case concl of
+             AJ.TRUE ty =>
+               (case Syn.out ty of
+                   Syn.EQUALITY _ => true
+                 | _ => false)
+           | _ => false
+        val () = if allowed then () else
+          E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "dependant rewrite tactic",
+            AJ.pretty concl)
+
+        val currentType = AJ.lookupAccessor Accessor.PART_TYPE concl
+        val currentLeft = AJ.lookupAccessor Accessor.PART_LEFT concl
+        val currentRight = AJ.lookupAccessor Accessor.PART_RIGHT concl
+
+        val (psi, eqty) = Synth.synthTerm sign tr H (eqterm, eqterm)
+        val Syn.EQUALITY (dom, equandL, equandR) = Syn.out eqty
+
+        val x = Sym.new ()
+        val Hx = H @> (x, AJ.TRUE dom)
+        val (motiveTypeGoal, motiveTypeHole) = makeTerm tr Hx O.EXP
+        val (motiveLeftGoal, motiveLeftHole) = makeTerm tr Hx O.EXP
+        val (motiveRightGoal, motiveRightHole) = makeTerm tr Hx O.EXP
+        val motiveWfGoal = makeEq tr Hx ((motiveLeftHole, motiveRightHole), motiveTypeHole)
+
+        val motiveMatchTypeGoal = makeSubType tr H (substVar (equandL, x) motiveTypeHole, currentType)
+        val motiveMatchLeftGoal = makeEq tr H ((currentLeft, substVar (equandL, x) motiveLeftHole), substVar (equandL, x) motiveTypeHole)
+        val motiveMatchRightGoal = makeEq tr H ((currentRight, substVar (equandR, x) motiveRightHole), substVar (equandR, x) motiveTypeHole)
+      in
+        psi
+         >: motiveTypeGoal >: motiveLeftGoal >: motiveRightGoal >: motiveWfGoal
+         >: motiveMatchTypeGoal
+         >: motiveMatchLeftGoal
+         >: motiveMatchRightGoal
+         #> (H, axiom)
+      end
+
     fun Symmetry jdg =
       let
         val tr = ["InternalizedEquality.Symmetry"]
@@ -2197,7 +2240,7 @@ structure Synth =
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
-       | K.STABLE => (K.STABLE, K.COE) (* XXX more research needed *)
+       | K.PRE => (K.PRE, K.COE) (* XXX more research needed *)
 
     (* see the function of th same name in `ComKit` *)
     local
@@ -2353,7 +2396,7 @@ structure Synth =
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.HCOM) (* XXX more research needed *)
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun intoHasAllPathsTo C c =
       let
@@ -2467,7 +2510,7 @@ structure Synth =
        | K.KAN => K.KAN
        | K.HCOM => K.COE
        | K.COE => K.COE
-       | K.STABLE => K.COE
+       | K.PRE => K.COE
 
     val inherentLevel = L.succ
 

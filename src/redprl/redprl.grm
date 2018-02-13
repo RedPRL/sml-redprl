@@ -368,7 +368,7 @@ end
  (* keywords in judgments *)
  | TRUE | TYPE | AT (* `WITH` is reused *)
 
- | DISCRETE | KAN | STABLE
+ | DISCRETE | KAN | PRE
 
  (* commands and declarations *)
  | CMD_PRINT | CMD_EXTRACT | CMD_QUIT
@@ -793,7 +793,7 @@ kind
   | KAN (K.KAN)
   | HCOM (K.HCOM)
   | COE (K.COE)
-  | STABLE (K.STABLE)
+  | PRE (K.PRE)
 
 withKind
   : WITH term (term)
@@ -903,6 +903,8 @@ atomicRawTac
   | TAC_ELIM elimTargetAnySort (Ast.$$ (O.TAC_ELIM, [Ast.\ ([], elimTargetAnySort)]))
   | TAC_REWRITE term (Ast.$$ (O.TAC_REWRITE, [\\ (Ast.$$ (O.SEL_CONCL, [])), \\ (Ast.$$ (O.ACC_WHOLE, [])), \\ term]))
   | TAC_REWRITE term AT accessor (Ast.$$ (O.TAC_REWRITE, [\\ (Ast.$$ (O.SEL_CONCL, [])), \\ accessor, \\ term]))
+  | TAC_REWRITE term AT TYPE LEFT RIGHT (Ast.$$ (O.TAC_DEP_REWRITE, [\\ term]))
+  | TAC_REWRITE term AT TYPE LEFT RIGHT IN CONCL (Ast.$$ (O.TAC_DEP_REWRITE, [\\ term]))
   | TAC_REWRITE term IN selector (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ (Ast.$$ (O.ACC_WHOLE, [])), \\ term]))
   | TAC_REWRITE term AT accessor IN selector (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ accessor, \\ term]))
   | TAC_REWRITE term IN selector AT accessor (Ast.$$ (O.TAC_REWRITE, [\\ selector, \\ accessor, \\ term]))
