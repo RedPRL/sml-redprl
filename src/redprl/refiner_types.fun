@@ -970,9 +970,9 @@ structure Synth =
     val kindConstraintsOnDomAndCod =
       fn K.DISCRETE => (K.DISCRETE, K.DISCRETE)
        | K.KAN => (K.COE, K.KAN)
-       | K.HCOM => (K.STABLE, K.HCOM)
+       | K.HCOM => (K.PRE, K.HCOM)
        | K.COE => (K.COE, K.COE)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun EqType jdg =
       let
@@ -1082,7 +1082,7 @@ structure Synth =
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN)
        | K.COE => (K.COE, K.COE)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun EqType jdg =
       let
@@ -1293,7 +1293,7 @@ structure Synth =
        | K.KAN => K.KAN
        | K.HCOM => K.HCOM
        | K.COE => K.KAN
-       | K.STABLE => K.STABLE
+       | K.PRE => K.PRE
 
     fun EqType jdg =
       let
@@ -1439,7 +1439,7 @@ structure Synth =
        | K.KAN => K.KAN
        | K.HCOM => K.HCOM
        | K.COE => K.COE
-       | K.STABLE => K.STABLE
+       | K.PRE => K.PRE
 
     fun EqType jdg =
       let
@@ -1530,8 +1530,8 @@ structure Synth =
            E.NOT_APPLICABLE (Fpp.text "Pushouts", Fpp.text "discrete universes")
        | K.KAN => (K.COE, K.COE)
        | K.COE => (K.COE, K.COE)
-       | K.HCOM => (K.STABLE, K.STABLE)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.HCOM => (K.PRE, K.PRE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun EqType jdg =
       let
@@ -1794,8 +1794,8 @@ structure Synth =
            E.NOT_APPLICABLE (Fpp.text "Coequalizers", Fpp.text "discrete universes")
        | K.KAN => (K.COE, K.COE)
        | K.COE => (K.COE, K.COE)
-       | K.HCOM => (K.STABLE, K.STABLE)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.HCOM => (K.PRE, K.PRE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun EqType jdg =
       let
@@ -2020,9 +2020,9 @@ structure Synth =
     val kindConstraintOnBase =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.DISCRETE
-       | K.HCOM => K.STABLE
+       | K.HCOM => K.PRE
        | K.COE => K.DISCRETE
-       | K.STABLE => K.STABLE
+       | K.PRE => K.PRE
 
     fun EqType jdg =
       let
@@ -2240,7 +2240,7 @@ structure Synth =
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.KAN) (* XXX more research needed *)
        | K.COE => (K.COM, K.KAN) (* XXX more research needed *)
-       | K.STABLE => (K.STABLE, K.COE) (* XXX more research needed *)
+       | K.PRE => (K.PRE, K.COE) (* XXX more research needed *)
 
     (* see the function of th same name in `ComKit` *)
     local
@@ -2396,7 +2396,7 @@ structure Synth =
        | K.KAN => (K.KAN, K.KAN)
        | K.HCOM => (K.HCOM, K.HCOM) (* XXX more research needed *)
        | K.COE => (K.COE, K.COM) (* XXX more research needed *)
-       | K.STABLE => (K.STABLE, K.STABLE)
+       | K.PRE => (K.PRE, K.PRE)
 
     fun intoHasAllPathsTo C c =
       let
@@ -2510,7 +2510,7 @@ structure Synth =
        | K.KAN => K.KAN
        | K.HCOM => K.COE
        | K.COE => K.COE
-       | K.STABLE => K.COE
+       | K.PRE => K.COE
 
     val inherentLevel = L.succ
 

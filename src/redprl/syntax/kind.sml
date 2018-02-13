@@ -1,7 +1,7 @@
 structure RedPrlKind =
 struct
   (*
-   * DISCRETE < KAN < HCOM < STABLE
+   * DISCRETE < KAN < HCOM < PRE
    *                < COE  <
    *
    * and KAN = meet (HCOM, COE)
@@ -13,10 +13,10 @@ struct
    *     particular, the property that a type A has kind K is closed under any
    *     substitution.
    * (2) If two types are related with respect to a stronger kind (like KAN),
-   *     then they are related with respect to a weaker kind (like STABLE).
+   *     then they are related with respect to a weaker kind (like PRE).
    *     A stronger kind might demand more things to be equal. For example,
    *     the equality between two types with respect to KAN means that they
-   *     are equally Kan, while the equality with respect to STABLE only says
+   *     are equally Kan, while the equality with respect to PRE only says
    *     they are equal pretypes.
    * (3) The PER associated with A should *never* depend on its kind. Kinds
    *     should be properties of (the PER of) A.
@@ -24,7 +24,7 @@ struct
    *     and equally "COE" then they are equally Kan. Always remember to check
    *     the binary cases.
    *)
-  datatype kind = DISCRETE | KAN | HCOM | COE | STABLE
+  datatype kind = DISCRETE | KAN | HCOM | COE | PRE
   type t = kind
 
   val COM = KAN
@@ -34,7 +34,7 @@ struct
      | KAN => "kan"
      | HCOM => "hcom"
      | COE => "coe"
-     | STABLE => "stable"
+     | PRE => "pre"
 
   local
     structure Internal :
@@ -57,7 +57,7 @@ struct
     =
     struct
       type t = kind
-      val top = STABLE
+      val top = PRE
 
       val meet =
         fn (DISCRETE, _) => DISCRETE
@@ -70,7 +70,7 @@ struct
          | (_, HCOM) => HCOM
          | (COE, _) => COE
          | (_, COE) => COE
-         | (STABLE, STABLE) => STABLE
+         | (PRE, PRE) => PRE
 
       val residual =
         fn (_, DISCRETE) => NONE
@@ -85,7 +85,7 @@ struct
          | (HCOM, _) => SOME HCOM
          | (_, COE) => NONE
          | (COE, _) => SOME COE
-         | (STABLE, STABLE) => NONE
+         | (PRE, PRE) => NONE
 
       fun op <= (a, b) = residual (b, a) = NONE
       val eq = op=
