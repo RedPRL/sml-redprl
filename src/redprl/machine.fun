@@ -1080,7 +1080,7 @@ struct
                 | K.KAN => CRITICAL @@ fcom || (syms, stk)
                 | K.HCOM => CRITICAL @@ fcom || (syms, stk)
                 | K.COE => raise Stuck
-                | K.STABLE => raise Stuck)
+                | K.PRE => raise Stuck)
            | _ => raise Stuck
          end
      | O.UNIVERSE $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
