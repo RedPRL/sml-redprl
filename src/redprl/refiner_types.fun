@@ -53,168 +53,169 @@ struct
    * 4. Subtyping for the final type.
    *)
 
-structure Synth =
+  structure Synth : 
+  sig
+    type subgoals = (LcfLanguage.var * Lcf.jdg Lcf.I.t) list
+    val synthTerm : sign -> Lcf.trace -> hyps -> abt * abt -> subgoals * abt
+  end =
   struct
+    type subgoals = (LcfLanguage.var * Lcf.jdg Lcf.I.t) list
+
     infix $ $$ \
 
-    local
-      fun synthNeutral' sign tr H (tm1, tm2) =
-        case (out tm1, out tm2) of
-          (`x, `y) =>
-            let
-              val true = Var.eq (x, y)
-              val AJ.TRUE ty = Hyps.lookup H x
-            in
-              ([], ty)
-            end
+    fun synthNeutral' sign tr H (tm1, tm2) =
+      case (out tm1, out tm2) of
+        (`x, `y) =>
+          let
+            val true = Var.eq (x, y)
+            val AJ.TRUE ty = Hyps.lookup H x
+          in
+            ([], ty)
+          end
 
-          | (O.CUST (opid, _) $ args, O.CUST (opid', _) $ args') =>
-            let
-              val true = Abt.eq (tm1, tm2)
-              val AJ.TRUE ty = Sig.theoremSpec sign opid args
-            in
-              ([], ty)
-            end
+        | (O.CUST (opid, _) $ args, O.CUST (opid', _) $ args') =>
+          let
+            val true = Abt.eq (tm1, tm2)
+            val AJ.TRUE ty = Sig.theoremSpec sign opid args
+          in
+            ([], ty)
+          end
 
-          | (O.APP $ [_ \ m1, _ \ m2], O.APP $ [_ \ n1, _ \ n2]) =>
-            let
-              val (psi, funty) = synthTerm' sign tr H (m1, n1)
-              val Syn.FUN (dom, x, cod) = Syn.out funty
-              val memGoal = makeEq tr H ((m2, n2), dom)
-            in
-              (memGoal :: psi, substVar (m2, x) cod)
-            end
+        | (O.APP $ [_ \ m1, _ \ m2], O.APP $ [_ \ n1, _ \ n2]) =>
+          let
+            val (psi, funty) = synthTerm' sign tr H (m1, n1)
+            val Syn.FUN (dom, x, cod) = Syn.out funty
+            val memGoal = makeEq tr H ((m2, n2), dom)
+          in
+            (memGoal :: psi, substVar (m2, x) cod)
+          end
 
-          | (O.DIM_APP $ [_ \ m, _ \ r], O.DIM_APP $ [_ \ n, _ \ s]) =>
-            let
-              val true = Abt.eq (r, s)
-              val (psi, ty) = synthTerm' sign tr H (m, n)
-            in
-              case Syn.out ty of
-                Syn.PATH ((x, a), _, _) =>
-                (psi, substVar (r, x) a)
+        | (O.DIM_APP $ [_ \ m, _ \ r], O.DIM_APP $ [_ \ n, _ \ s]) =>
+          let
+            val true = Abt.eq (r, s)
+            val (psi, ty) = synthTerm' sign tr H (m, n)
+          in
+            case Syn.out ty of
+              Syn.PATH ((x, a), _, _) =>
+              (psi, substVar (r, x) a)
 
-              | Syn.LINE (x, a) =>
-                (psi, substVar (r, x) a)
+            | Syn.LINE (x, a) =>
+              (psi, substVar (r, x) a)
 
-              | _ => raise Fail "synthNeutral"
-            end
+            | _ => raise Fail "synthNeutral"
+          end
 
-          | (O.DIM_APP $ [_ \ m, _ \ r], _) =>
-            let
-              val (psi, pathty) = synthTerm' sign tr H (m, m)
-              val Syn.PATH ((x, a), left, right) = Syn.out pathty
-              val n =
-                case Syn.out r of
-                   Syn.DIM0 => left
-                 | Syn.DIM1 => right
-              val ty = substVar (r, x) a
-              val goal = makeEq tr H ((n, tm2), ty)
-            in
-              (goal :: psi, ty)
-            end
+        | (O.DIM_APP $ [_ \ m, _ \ r], _) =>
+          let
+            val (psi, pathty) = synthTerm' sign tr H (m, m)
+            val Syn.PATH ((x, a), left, right) = Syn.out pathty
+            val n =
+              case Syn.out r of
+                 Syn.DIM0 => left
+               | Syn.DIM1 => right
+            val ty = substVar (r, x) a
+            val goal = makeEq tr H ((n, tm2), ty)
+          in
+            (goal :: psi, ty)
+          end
 
-          | (_, O.DIM_APP $ [_ \ m, _ \ r]) =>
-            let
-              val (psi, pathty) = synthTerm' sign tr H (m, m)
-              val Syn.PATH ((x, a), left, right) = Syn.out pathty
-              val n =
-                case Syn.out r of
-                   Syn.DIM0 => left
-                 | Syn.DIM1 => right
-              val ty = substVar (r, x) a
-              val goal = makeEq tr H ((tm1, n), ty)
-            in
-              (goal :: psi, ty)
-            end
+        | (_, O.DIM_APP $ [_ \ m, _ \ r]) =>
+          let
+            val (psi, pathty) = synthTerm' sign tr H (m, m)
+            val Syn.PATH ((x, a), left, right) = Syn.out pathty
+            val n =
+              case Syn.out r of
+                 Syn.DIM0 => left
+               | Syn.DIM1 => right
+            val ty = substVar (r, x) a
+            val goal = makeEq tr H ((tm1, n), ty)
+          in
+            (goal :: psi, ty)
+          end
 
-          | (O.PROJ lbl $ [_ \ m], O.PROJ lbl' $ [_ \ n]) =>
-            let
-              val true = lbl = lbl'
-              val (psi, rcdty) = synthTerm' sign tr H (m, n)
-              val Abt.$ (O.RECORD lbls, args) = out rcdty
+        | (O.PROJ lbl $ [_ \ m], O.PROJ lbl' $ [_ \ n]) =>
+          let
+            val true = lbl = lbl'
+            val (psi, rcdty) = synthTerm' sign tr H (m, n)
+            val Abt.$ (O.RECORD lbls, args) = out rcdty
 
-              val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
-              val (us \ ty) = List.nth (args, i)
+            val i = #1 (Option.valOf (ListUtil.findEqIndex lbl lbls))
+            val (us \ ty) = List.nth (args, i)
 
-              (* supply the dependencies *)
-              val lblPrefix = List.take (lbls, i)
-              val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m), u)) (lblPrefix, us)
-              val ty = VarKit.substMany rho ty
-            in
-              (psi, ty)
-            end
+            (* supply the dependencies *)
+            val lblPrefix = List.take (lbls, i)
+            val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m), u)) (lblPrefix, us)
+            val ty = VarKit.substMany rho ty
+          in
+            (psi, ty)
+          end
 
-          | (O.S1_REC $ [[x] \ cx, _ \ m, _, _], O.S1_REC $ _) =>
-            let
-              val ty = substVar (m, x) cx
-              val goal = makeEq tr H ((tm1, tm2), ty)
-            in
-              ([goal], ty)
-            end
+        | (O.S1_REC $ [[x] \ cx, _ \ m, _, _], O.S1_REC $ _) =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeEq tr H ((tm1, tm2), ty)
+          in
+            ([goal], ty)
+          end
 
-          | (O.IF $ [[x] \ cx, _ \ m, _, _], O.IF $ _) =>
-            let
-              val ty = substVar (m, x) cx
-              val goal = makeEq tr H ((tm1, tm2), ty)
-            in
-              ([goal], ty)
-            end
+        | (O.IF $ [[x] \ cx, _ \ m, _, _], O.IF $ _) =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeEq tr H ((tm1, tm2), ty)
+          in
+            ([goal], ty)
+          end
 
-          | (O.PUSHOUT_REC $ [[x] \ cx, _ \ m, _, _, _], O.PUSHOUT_REC $ _) =>
-            let
-              val ty = substVar (m, x) cx
-              val goal = makeEq tr H ((tm1, tm2), ty)
-            in
-              ([goal], ty)
-            end
+        | (O.PUSHOUT_REC $ [[x] \ cx, _ \ m, _, _, _], O.PUSHOUT_REC $ _) =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeEq tr H ((tm1, tm2), ty)
+          in
+            ([goal], ty)
+          end
 
-          | (O.COEQUALIZER_REC $ [[x] \ cx, _ \ m, _, _], O.COEQUALIZER_REC $ _) =>
-            let
-              val ty = substVar (m, x) cx
-              val goal = makeEq tr H ((tm1, tm2), ty)
-            in
-              ([goal], ty)
-            end
+        | (O.COEQUALIZER_REC $ [[x] \ cx, _ \ m, _, _], O.COEQUALIZER_REC $ _) =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeEq tr H ((tm1, tm2), ty)
+          in
+            ([goal], ty)
+          end
 
-          | (O.NAT_REC $ [[x] \ cx, _ \ m, _, _], O.NAT_REC $ _) =>
-            let
-              val ty = substVar (m, x) cx
-              val goal = makeEq tr H ((tm1, tm2), ty)
-            in
-              ([goal], ty)
-            end
-          | (O.INT_REC $ [[x] \ cx, _ \ m, _, _, _, _], O.INT_REC $ _) =>
-            let
-              val ty = substVar (m, x) cx
-              val goal = makeEq tr H ((tm1, tm2), ty)
-            in
-              ([goal], ty)
-            end
+        | (O.NAT_REC $ [[x] \ cx, _ \ m, _, _], O.NAT_REC $ _) =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeEq tr H ((tm1, tm2), ty)
+          in
+            ([goal], ty)
+          end
+        | (O.INT_REC $ [[x] \ cx, _ \ m, _, _, _, _], O.INT_REC $ _) =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeEq tr H ((tm1, tm2), ty)
+          in
+            ([goal], ty)
+          end
 
-      and synthTerm' sign tr H (tm1, tm2) =
-        let
-          val (psi, ty) = synthNeutral' sign tr H (Machine.eval sign Machine.STABLE Machine.Unfolding.never tm1, Machine.eval sign Machine.STABLE Machine.Unfolding.never tm2)
-        in
-          (psi, Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
-        end
+    and synthTerm' sign tr H (tm1, tm2) =
+      let
+        val (psi, ty) = synthNeutral' sign tr H (Machine.eval sign Machine.STABLE Machine.Unfolding.never tm1, Machine.eval sign Machine.STABLE Machine.Unfolding.never tm2)
+      in
+        (psi, Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
+      end
 
-    in
-      fun synthNeutral sign tr H (tm1, tm2) =
-        let
-          val (psi, ty) = synthNeutral' sign tr H (tm1, tm2)
-        in
-          (List.rev psi, ty)
-        end
-      
-      fun synthTerm sign tr H (tm1, tm2) =
-        let
-          val (psi, ty) = synthTerm' sign tr H (tm1, tm2)
-        in
-          (List.rev psi, ty)
-        end
-    end
+    fun synthTerm sign tr H (tm1, tm2) =
+      let
+        val (psi, ty) = synthTerm' sign tr H (tm1, tm2)
+      in
+        (List.rev psi, ty)
+      end
   end
+
+
+
+
+
 
   structure Bool =
   struct
