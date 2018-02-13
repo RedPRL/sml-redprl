@@ -38,8 +38,8 @@ Thm RespectEquality : [
   rewrite ($ NotNot b);
   [ with b' => `($ family b')
   , use pf
-  , auto
-  , auto ]
+  ];
+  auto
 ].
 
 
