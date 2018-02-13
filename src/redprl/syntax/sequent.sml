@@ -195,25 +195,8 @@ struct
            ruleSep (doc, AJ.pretty' env atjdg)
          end
 
-  val rec eq =
-    fn (H1 >> catjdg1, H2 >> catjdg2) =>
-       (let
-         val xs1 = Hyps.foldr (fn (x, _, xs) => x :: xs) [] H1
-         val xs2 = Hyps.foldr (fn (x, _, xs) => x :: xs) [] H2
-         val xs = ListPair.mapEq (fn _ => Sym.new ()) (xs1, xs2)
-         val xrho1 = ListPair.foldr (fn (x1, x, rho) => Sym.Ctx.insert rho x1 x) Sym.Ctx.empty (xs1, xs)
-         val xrho2 = ListPair.foldr (fn (x2, x, rho) => Sym.Ctx.insert rho x2 x) Sym.Ctx.empty (xs2, xs)
-
-         val H1' = Hyps.relabel H1 xrho1
-         val H2' = Hyps.relabel H2 xrho2
-         val catjdg1' = AJ.map (Tm.renameVars xrho1) catjdg1
-         val catjdg2' = AJ.map (Tm.renameVars xrho2) catjdg2
-       in
-         Hyps.eq (H1', H2')
-           andalso AJ.eq (catjdg1', catjdg2')
-       end
-       handle _ => false)
-
+  fun eq (H1 >> atjdg1, H2 >> atjdg2) =
+    Hyps.eq (H1, H2) andalso AJ.eq (atjdg1, atjdg2)
 
   fun push xs jdg =
     let
