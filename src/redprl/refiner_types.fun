@@ -213,10 +213,6 @@ struct
   end
 
 
-
-
-
-
   structure Bool =
   struct
     val inherentLevel = L.zero
