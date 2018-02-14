@@ -1,4 +1,4 @@
-functor RedPrlTactical (Lcf : LCF_TACTIC ) :
+functor RedPrlTactical (Lcf : LCF_TACTIC) :
 sig
   type multitactic = Lcf.jdg Lcf.multitactic
   type tactic = Lcf.jdg Lcf.tactic
@@ -52,24 +52,12 @@ struct
   val all = allSeq
   val each = eachSeq
 
-  fun then_ (t1 : tactic, t2 : tactic) : tactic = 
-    multitacToTac (seq (allSeq t1, allSeq t2))
-
-  fun thenl (t : tactic, ts : tactic list) : tactic = 
-    multitacToTac (seq (allSeq t, eachSeq ts))
-
   fun mtry (mt : multitactic) : multitactic = 
     morelse (mt, all idn)
-
-  fun try (t : tactic) : tactic = 
-    orelse_ (t, idn)
 
   fun mrepeat (mt : multitactic) : multitactic = 
     mrec (fn mt' => mtry (seq (mprogress mt, mt')))
 
   fun repeat (t : tactic) : tactic = 
     trec (fn t' => try (then_ (progress t, t')))
-
-  fun try (t : tactic) : tactic = 
-    orelse_ (t, idn)
 end
