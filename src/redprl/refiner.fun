@@ -718,9 +718,7 @@ struct
       fun Elim sign = NormalizeHypDelegate (ElimBasis sign) sign
     end
 
-    fun Rewrite sign (sel, acc) m = Lcf.rule @@ InternalizedEquality.Rewrite sign (sel, acc) m
-
-    fun DepRewrite sign m = Lcf.rule @@ InternalizedEquality.DepRewrite sign m
+    fun Rewrite sign (sel, accs) m = Lcf.rule @@ InternalizedEquality.Rewrite sign (sel, accs) m
 
     fun Inversion z : tactic = Lcf.rule @@ Record.EqInv z
   end

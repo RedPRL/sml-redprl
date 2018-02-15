@@ -303,22 +303,29 @@ struct
         val tr = ["Bool.EqElim"]
         val H >> ajdg = jdg
         val ((if0, if1), ty) = View.matchAsEq ajdg
-        val Syn.IF ((z, motivez), m0, (t0, f0)) = Syn.out if0
-        val Syn.IF (_, m1, (t1, f1)) = Syn.out if1
+        val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
+        val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
         val (psi, boolTy) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.BOOL = Syn.out boolTy
+        
+        (* motive *)
+        val z = Sym.new ()
+        val c0z = VarKit.rename (z, x) c0x
+        val c1z = VarKit.rename (z, y) c1y
+        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.BOOL))
+        val goalC = makeEqType tr Hz ((c0z, c1z), K.top)
 
         (* result type*)
-        val goalTy = View.makeAsSubType tr H (substVar (m0, z) motivez, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) c0x, ty)
 
         (* tt branch *)
-        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, z) motivez))
+        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x))
 
         (* ff branch *)
-        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, z) motivez))
+        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
-        |>: goalT >: goalF >:+ psi >: goalTy #> (H, axiom)
+        |>: goalT >: goalF >: goalC >:+ psi >:? goalTy #> (H, axiom)
       end
   end
 
@@ -1112,9 +1119,9 @@ struct
         val Syn.FUN (dom, x, codx) = Syn.out funTy
         val cod = substVar (n0, x) codx
         val goalArgEq = makeEq tr H ((n0, n1), dom)
-        val goalTy = View.makeAsSubType tr H (cod, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (cod, ty)
       in
-        |>: goalArgEq >:+ psi >: goalTy
+        |>: goalArgEq >:+ psi >:? goalTy
         #> (H, axiom)
       end
   end
@@ -1325,9 +1332,9 @@ struct
         val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m0), u)) (lblPrefix, us)
         val tyField = VarKit.substMany rho tyField
         
-        val goalTy = View.makeAsSubType tr H (VarKit.substMany rho tyField, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (VarKit.substMany rho tyField, ty)
       in
-        |>:+ psi >: goalTy
+        |>:+ psi >:? goalTy
         #> (H, axiom)
       end
   end
@@ -1438,12 +1445,12 @@ struct
         val (psi, pathty) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.PATH ((x, tyx), _, _) = Syn.out pathty
         val tyr = substVar (r0, x) tyx
-        val goalTy = View.makeAsSubType tr H (tyr, ty) (* holePath type *)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (tyr, ty)
       in
-        |>:+ psi >: goalTy #> (H, axiom)
+        |>:+ psi >:? goalTy #> (H, axiom)
       end
 
- fun EqAppConst sign jdg =
+    fun EqAppConst sign jdg =
       let
         val tr = ["Path.EqAppConst"]
         val H >> ajdg = jdg
@@ -1455,10 +1462,10 @@ struct
         val tyr = substVar (r, x) tyx
         val pr = case Syn.out r of Syn.DIM0 => p0 | Syn.DIM1 => p1 
 
-        val goalTy = View.makeAsSubType tr H (tyr, a)
-        val goalEq = View.makeAsEq tr H ((pr, p), a)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (tyr, a)
+        val goalEq = View.makeAsEqIfDifferent tr H ((pr, p), a)
       in
-        |>: goalEq >:+ psi >: goalTy
+        |>:? goalEq >:+ psi >:? goalTy
         #> (H, axiom)
       end
 
@@ -1563,9 +1570,9 @@ struct
         val (psi, linety) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.LINE (x, tyx) = Syn.out linety
         val tyr = substVar (r0, x) tyx
-        val goalTy = View.makeAsSubType tr H (tyr, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (tyr, ty)
       in
-        |>:+ psi >: goalTy #> (H, axiom)
+        |>:+ psi >:? goalTy #> (H, axiom)
       end
   end
 
@@ -2156,101 +2163,105 @@ struct
         T.empty #> (H, axiom)
       end
 
-    fun Rewrite sign (sel, acc) eqterm jdg =
+    fun Rewrite sign (sel, accs) eqterm jdg =
       let
         val tr = ["InternalizedEquality.Rewrite"]
         val H >> concl = jdg
 
         val currentAjdg = Sequent.lookupSelector sel (H, concl)
+
+        datatype state = INTACT | REWRITE
+        datatype normalized = PARTS of (state * state) * state | WHOLE
+
+        fun incompatError () =
+          E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
+            Fpp.hvsep [Fpp.text "duplicate or incompatible accessors", Fpp.hsep (List.map Accessor.pretty accs)])
+        val join =
+          fn (Accessor.WHOLE, NONE) => SOME WHOLE
+           | (Accessor.WHOLE, _) => incompatError ()
+           | (Accessor.PART_TYPE, NONE) => SOME @@ PARTS ((INTACT, INTACT), REWRITE)
+           | (Accessor.PART_TYPE, SOME (PARTS (tms, INTACT))) => SOME @@ PARTS (tms, REWRITE)
+           | (Accessor.PART_TYPE, _) => incompatError ()
+           | (Accessor.PART_LEFT, NONE) => SOME @@ PARTS ((REWRITE, INTACT), INTACT)
+           | (Accessor.PART_LEFT, SOME (PARTS ((INTACT, tm), ty))) => SOME @@ PARTS ((REWRITE, tm), ty)
+           | (Accessor.PART_LEFT, _) => incompatError ()
+           | (Accessor.PART_RIGHT, NONE) => SOME @@ PARTS ((INTACT, REWRITE), INTACT)
+           | (Accessor.PART_RIGHT, SOME (PARTS ((tm, INTACT), ty))) => SOME @@ PARTS ((tm, REWRITE), ty)
+           | (Accessor.PART_RIGHT, _) => incompatError ()
+        val normalizedAccs =
+          case foldr join NONE accs of
+             NONE => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic", Fpp.text "empty list of accessors")
+           | SOME st => st
+
         val allowed =
-          case (currentAjdg, acc) of
-             (AJ.TRUE ty, Accessor.WHOLE) => true
-           | (AJ.TRUE ty, _) =>
-               (case (Syn.out ty, acc) of
-                   (Syn.EQUALITY _, Accessor.PART_TYPE) => true
-                 | (Syn.EQUALITY _, Accessor.PART_LEFT) => true
-                 | (Syn.EQUALITY _, Accessor.PART_RIGHT) => true
+          case (currentAjdg, normalizedAccs) of
+             (AJ.TRUE ty, WHOLE) => true
+           | (AJ.TRUE ty, PARTS _) =>
+               (case Syn.out ty of
+                   Syn.EQUALITY _ => true
                  | _ => false)
-           | (AJ.EQ_TYPE _, Accessor.PART_LEFT) => true
-           | (AJ.EQ_TYPE _, Accessor.PART_RIGHT) => true
-           | (AJ.SUB_TYPE _, Accessor.PART_LEFT) => true
-           | (AJ.SUB_TYPE _, Accessor.PART_RIGHT) => true
-           | (AJ.SUB_KIND _, Accessor.PART_LEFT) => true
+           | (AJ.EQ_TYPE _, PARTS (_, INTACT)) => true
+           | (AJ.SUB_TYPE _, PARTS (_, INTACT)) => true
+           | (AJ.SUB_KIND _, PARTS ((_, INTACT), INTACT)) => true
            | _ => false
         val () = if allowed then () else
-          E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "rewrite tactic",
-            Fpp.hvsep [Fpp.hsep [Accessor.pretty acc, Fpp.text "of"], AJ.pretty currentAjdg])
-
-        val currentTm = AJ.lookupAccessor acc currentAjdg
-        val ty = AJ.View.classifier (currentAjdg, acc)
+          E.raiseError @@ E.NOT_APPLICABLE
+            (Fpp.hvsep [Fpp.text "rewrite tactic with accessors", Fpp.hsep (List.map Accessor.pretty accs)], AJ.pretty currentAjdg)
 
         val truncatedH = Sequent.truncateFrom sel H
-
         val (psi, eqty) = Synth.synthTerm sign tr truncatedH (eqterm, eqterm)
         val Syn.EQUALITY (dom, equandL, equandR) = Syn.out eqty
 
         val x = Sym.new ()
         val truncatedHx = truncatedH @> (x, AJ.TRUE dom)
-        val (motiveGoal, motiveHole) = makeTerm tr truncatedHx O.EXP
-        val motiveWfGoal = View.makeAsMem tr truncatedHx (motiveHole, ty)
 
-        val motiveR = substVar (equandR, x) motiveHole
-        val motiveL = substVar (equandL, x) motiveHole
+        val (motiveGoals, motive) = foldr
+          (fn (acc, (motiveGoals, motive)) =>
+            let
+              val (goal, hole) = makeTerm tr truncatedHx O.EXP
+            in
+              (goal :: motiveGoals, AJ.mapAccessor acc (fn _ => hole) motive)
+            end)
+          ([], currentAjdg) accs
 
-        val (H', concl') = Sequent.mapSelector sel (AJ.mapAccessor acc (fn _ => motiveR)) (H, concl)
+        fun motiveWfGoal acc =
+          View.makeAsMem tr truncatedHx
+            (AJ.lookupAccessor acc motive,
+             AJ.View.classifier (motive, acc))
+        val motiveWfGoals =
+          case normalizedAccs of
+              PARTS ((REWRITE, INTACT), _) => [motiveWfGoal Accessor.PART_LEFT]
+            | PARTS ((INTACT, REWRITE), _) => [motiveWfGoal Accessor.PART_RIGHT]
+            | PARTS ((REWRITE, REWRITE), _) =>
+                (* XXX Perhaps we should check `accs` to see the order of `left`
+                 * and `right` in the input? I (favonia) feel it's too much trouble. *)
+                [ motiveWfGoal Accessor.PART_LEFT
+                , motiveWfGoal Accessor.PART_RIGHT
+                ]
+            | PARTS ((INTACT, INTACT), _) => [motiveWfGoal Accessor.PART_TYPE]
+            | WHOLE => [motiveWfGoal Accessor.WHOLE]
+
+        val motiveR = AJ.map (substVar (equandR, x)) motive
+        val (H', concl') = Sequent.mapSelector sel (fn _ => motiveR) (H, concl)
         val (rewrittenGoal, rewrittenHole) = makeGoal tr @@ H' >> concl'
 
-        val motiveMatchesMainGoal =
-          case Variance.compose (Selector.variance sel, AJ.variance (currentAjdg, acc)) of
-             Variance.COVAR => makeSubType tr truncatedH (motiveL, currentTm)
-           | Variance.CONTRAVAR => makeSubType tr truncatedH (currentTm, motiveL)
-           | Variance.ANTIVAR => View.makeAsEq tr truncatedH ((currentTm, motiveL), ty)
+        val motiveL = AJ.map (substVar (equandL, x)) motive
+        fun matchGoal acc =
+          let
+            val partCurrent = AJ.lookupAccessor acc currentAjdg
+            val partL = AJ.lookupAccessor acc motiveL
+          in
+            case Variance.compose (Selector.variance sel, AJ.variance (currentAjdg, acc)) of
+               Variance.COVAR => makeSubType tr truncatedH (partL, partCurrent)
+             | Variance.CONTRAVAR => makeSubType tr truncatedH (partCurrent, partL)
+             | Variance.ANTIVAR => View.makeAsEq tr truncatedH
+                 ((partCurrent, partL), AJ.View.classifier (currentAjdg, acc))
+          end
+        val matchGoals = List.map matchGoal accs
+
       in
-        |>: motiveGoal >: rewrittenGoal >: motiveWfGoal >: motiveMatchesMainGoal >:+ psi
+        |>:+ motiveGoals >: rewrittenGoal >:+ motiveWfGoals >:+ psi >:+ matchGoals
          #> (H, rewrittenHole)
-      end
-
-    (* This is a hacky up version that needs some UI-polishing. *)
-    fun DepRewrite sign eqterm jdg =
-      let
-        val tr = ["InternalizedEquality.DepRewrite"]
-        val H >> concl = jdg
-
-        val allowed =
-          case concl of
-             AJ.TRUE ty =>
-               (case Syn.out ty of
-                   Syn.EQUALITY _ => true
-                 | _ => false)
-           | _ => false
-        val () = if allowed then () else
-          E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "dependant rewrite tactic",
-            AJ.pretty concl)
-
-        val currentType = AJ.lookupAccessor Accessor.PART_TYPE concl
-        val currentLeft = AJ.lookupAccessor Accessor.PART_LEFT concl
-        val currentRight = AJ.lookupAccessor Accessor.PART_RIGHT concl
-
-        val (psi, eqty) = Synth.synthTerm sign tr H (eqterm, eqterm)
-        val Syn.EQUALITY (dom, equandL, equandR) = Syn.out eqty
-
-        val x = Sym.new ()
-        val Hx = H @> (x, AJ.TRUE dom)
-        val (motiveTypeGoal, motiveTypeHole) = makeTerm tr Hx O.EXP
-        val (motiveLeftGoal, motiveLeftHole) = makeTerm tr Hx O.EXP
-        val (motiveRightGoal, motiveRightHole) = makeTerm tr Hx O.EXP
-        val motiveWfGoal = makeEq tr Hx ((motiveLeftHole, motiveRightHole), motiveTypeHole)
-
-        val motiveMatchTypeGoal = makeSubType tr H (substVar (equandL, x) motiveTypeHole, currentType)
-        val motiveMatchLeftGoal = makeEq tr H ((currentLeft, substVar (equandL, x) motiveLeftHole), substVar (equandL, x) motiveTypeHole)
-        val motiveMatchRightGoal = makeEq tr H ((currentRight, substVar (equandR, x) motiveRightHole), substVar (equandR, x) motiveTypeHole)
-      in
-        |>: motiveTypeGoal >: motiveLeftGoal >: motiveRightGoal >: motiveWfGoal
-         >: motiveMatchTypeGoal
-         >: motiveMatchLeftGoal
-         >: motiveMatchRightGoal
-         >:+ psi
-         #> (H, axiom)
       end
 
     fun Symmetry jdg =
