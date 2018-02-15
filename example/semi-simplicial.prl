@@ -205,6 +205,35 @@ Thm Pick/compose/assoc : [
   auto
 ].
 
+/*
+
+The following is the RedPRL implementation of the 4 mutually recursive
+definitions (if we had implicit arguments)
+
+sst in (-> nat (U 1))
+($ sst 0)        ~ record
+($ sst (succ p)) ~ (* [X : (sst p)] (-> ($ folder p X p) (U 0)))
+
+folder in (-> [p : nat] [X : (sst p)] [n : nat] (U 0))
+($ folder 0 _ _)             ~ record
+($ folder (succ p) {X, Y} n) ~
+  (* [f : ($ folder p X n)] (-> [c : ($ Pick n p)] ($ Y ($ proj p X c f))))
+
+proj in (-> [p : nat] [X : sst p] {n m : nat} ($ Pick n m) ($ folder p X n) ($ folder p X m))
+($ proj 0        _ _  _     ) ~ tuple
+($ proj (succ p) X c2 {f, g}) ~
+  { ($ proj p X c2 f) , lam c1 => ($ g ($ Pick/compose c1 c2)) }
+
+// well-typedness of proj requires proj-coh, which uses exact equality.
+
+proj-coh : (-> [p : nat] [X : sst p] {n m o : nat}
+  [c1 : ($ Pick m o)]
+  [c2 : ($ Pick n m)] [f : ($ folder p X n)]
+    (= ($ folder p X o)
+      ($ proj p X c1 ($ proj p X c2 f))
+      ($ proj p X ($ Pick/compose c1 c2) f)))
+*/
+
 Thm MegaMutualDefs : [
   (-> nat
     (record
