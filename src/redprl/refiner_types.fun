@@ -63,6 +63,8 @@ struct
 
     infix $ $$ \
 
+    (* XXX the cases should be reordered according to the order of constructors
+     * in the syntax view. *)
     fun synthNeutral' sign tr H (tm1, tm2) =
       case (out tm1, out tm2) of
         (`x, `y) =>
@@ -195,6 +197,24 @@ struct
             val goal = makeEq tr H ((tm1, tm2), ty)
           in
             ([goal], ty)
+          end
+        | (O.VPROJ $ [_ \ r1, _ \ m, _ \ f1], O.VPROJ $ [_ \ r2, _ \ n, _ \ f2]) =>
+          let
+            (* invariant: [r1] and [r2] must be variables or meta variables. *)
+
+            val (psi, vty) = synthTerm' sign tr H (m, n)
+            val Syn.V (r, a, b, e) = Syn.out vty
+        
+            val () = Assert.alphaEq' "V.EqProj" (r1, r2)
+            val () = Assert.alphaEq' "V.EqProj" (r1, r)
+        
+            val eq = (r, Syn.into Syn.DIM0)
+            val funTy = Syn.into (Syn.FUN (a, Var.named "_", b))
+
+            val goalF = Restriction.makeEq tr [eq] H ((f1, f2), funTy)
+            val goalCohF = Restriction.makeEqIfDifferent tr [eq] H ((f1, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy) 
+          in
+            (goalF ?:: goalCohF ?:: psi, b)
           end
 
     and synthTerm' sign tr H (tm1, tm2) =
@@ -2526,7 +2546,39 @@ struct
         #> (H, Syn.into @@ Syn.VIN (r, holeM, holeN))
       end
 
-    (* TODO Add the Elim, EqProj and Eta rules. *)
+    fun EqProj sign jdg =
+      let
+        val tr = ["V.EqProj"]
+        val H >> ajdg = jdg
+        val ((proj0, proj1), ty) = View.matchAsEq ajdg
+        val Syn.VPROJ (r0, m0, f0) = Syn.out proj0
+        val Syn.VPROJ (r1, m1, f1) = Syn.out proj1
+
+        val () =
+          case Syn.out r0 of
+             Syn.DIM0 => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "V.EqProj", Fpp.text "dimension constants")
+           | Syn.DIM1 => E.raiseError @@ E.NOT_APPLICABLE (Fpp.text "V.EqProj", Fpp.text "dimension constants")
+           | _ => ()
+
+        val (psi, vty) = Synth.synthTerm sign tr H (m0, m1)
+        val Syn.V (r, a, b, e) = Syn.out vty
+
+        val () = Assert.alphaEq' "V.EqProj" (r0, r1)
+        val () = Assert.alphaEq' "V.EqProj" (r0, r)
+        
+        val eq = (r, Syn.into Syn.DIM0)
+        val funTy = Syn.into (Syn.FUN (a, Var.named "_", b))
+
+        val goalF = Restriction.makeEq tr [eq] H ((f0, f1), funTy)
+        val goalCohF = Restriction.makeEqIfDifferent tr [eq] H ((f0, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy)
+ 
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (b, ty)
+      in
+        |>:? goalF >:? goalCohF >:+ psi >:? goalTy
+        #> (H, axiom)
+      end
+
+    (* TODO Add the Elim and Eta rules. *)
   end
 
   structure Universe =
