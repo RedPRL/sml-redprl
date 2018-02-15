@@ -283,22 +283,29 @@ struct
         val tr = ["Bool.EqElim"]
         val H >> ajdg = jdg
         val ((if0, if1), ty) = View.matchAsEq ajdg
-        val Syn.IF ((z, motivez), m0, (t0, f0)) = Syn.out if0
-        val Syn.IF (_, m1, (t1, f1)) = Syn.out if1
+        val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
+        val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
         val (psi, boolTy) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.BOOL = Syn.out boolTy
+        
+        (* motive *)
+        val z = Sym.new ()
+        val c0z = VarKit.rename (z, x) c0x
+        val c1z = VarKit.rename (z, y) c1y
+        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.BOOL))
+        val goalC = makeEqType tr Hz ((c0z, c1z), K.top)
 
         (* result type*)
-        val goalTy = View.makeAsSubType tr H (substVar (m0, z) motivez, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) c0x, ty)
 
         (* tt branch *)
-        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, z) motivez))
+        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x))
 
         (* ff branch *)
-        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, z) motivez))
+        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
-        |>: goalT >: goalF >:+ psi >: goalTy #> (H, axiom)
+        |>: goalT >: goalF >: goalC >:+ psi >:? goalTy #> (H, axiom)
       end
   end
 
