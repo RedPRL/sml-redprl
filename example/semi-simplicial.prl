@@ -227,8 +227,8 @@ proj in (-> [p : nat] [X : sst p] {n m : nat} ($ Pick n m) ($ folder p X n) ($ f
 // well-typedness of proj requires proj-coh, which uses exact equality.
 
 proj-coh : (-> [p : nat] [X : sst p] {n m o : nat}
-  [c1 : ($ Pick m o)]
-  [c2 : ($ Pick n m)] [f : ($ folder p X n)]
+  [c1 : ($ Pick m o)] [c2 : ($ Pick n m)]
+  [f : ($ folder p X n)]
     (= ($ folder p X o)
       ($ proj p X c1 ($ proj p X c2 f))
       ($ proj p X ($ Pick/compose c1 c2) f)))
@@ -245,7 +245,8 @@ Thm MegaMutualDefs : [
         ($ folder x m))]
       [proj-coh : (-> [x : sst] [n m o : nat]
         [c1 : ($ Pick m o)]
-        [c2 : ($ Pick n m)] [f : ($ folder x n)]
+        [c2 : ($ Pick n m)]
+        [f : ($ folder x n)]
         (= ($ folder x o)
           ($ proj x m o c1 ($ proj x n m c2 f))
           ($ proj x n o ($ Pick/compose n m o c1 c2) f)))]))
