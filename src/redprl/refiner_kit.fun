@@ -187,6 +187,10 @@ struct
     fun makeAsEq tr H params = makeGoal' tr @@ H >> AJ.View.makeAsEq params
     fun makeAsEqWith tr f H params = makeGoal'With tr f @@ H >> AJ.View.makeAsEq params
 
+    fun makeAsEqIfDifferent tr H =
+      fn ((a, b), INTERNAL_TYPE ty) => makeEqIfDifferent tr H ((a, b), ty)
+       | ((a, b), UNIV_OMEGA k) => makeEqTypeIfDifferent tr H ((a, b), k)
+
     fun makeAsMem tr H params = makeGoal' tr @@ H >> AJ.View.makeAsMem params
 
     fun makeAsSubType tr H params = makeGoal' tr @@ H >> AJ.View.makeAsSubType params

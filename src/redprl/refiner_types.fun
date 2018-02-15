@@ -283,22 +283,29 @@ struct
         val tr = ["Bool.EqElim"]
         val H >> ajdg = jdg
         val ((if0, if1), ty) = View.matchAsEq ajdg
-        val Syn.IF ((z, motivez), m0, (t0, f0)) = Syn.out if0
-        val Syn.IF (_, m1, (t1, f1)) = Syn.out if1
+        val Syn.IF ((x, c0x), m0, (t0, f0)) = Syn.out if0
+        val Syn.IF ((y, c1y), m1, (t1, f1)) = Syn.out if1
 
         val (psi, boolTy) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.BOOL = Syn.out boolTy
+        
+        (* motive *)
+        val z = Sym.new ()
+        val c0z = VarKit.rename (z, x) c0x
+        val c1z = VarKit.rename (z, y) c1y
+        val Hz = H @> (z, AJ.TRUE (Syn.into Syn.BOOL))
+        val goalC = makeEqType tr Hz ((c0z, c1z), K.top)
 
         (* result type*)
-        val goalTy = View.makeAsSubType tr H (substVar (m0, z) motivez, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) c0x, ty)
 
         (* tt branch *)
-        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, z) motivez))
+        val goalT = makeEq tr H ((t0, t1), (substVar (Syn.into Syn.TT, x) c0x))
 
         (* ff branch *)
-        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, z) motivez))
+        val goalF = makeEq tr H ((f0, f1), (substVar (Syn.into Syn.FF, x) c0x))
       in
-        |>: goalT >: goalF >:+ psi >: goalTy #> (H, axiom)
+        |>: goalT >: goalF >: goalC >:+ psi >:? goalTy #> (H, axiom)
       end
   end
 
@@ -1092,9 +1099,9 @@ struct
         val Syn.FUN (dom, x, codx) = Syn.out funTy
         val cod = substVar (n0, x) codx
         val goalArgEq = makeEq tr H ((n0, n1), dom)
-        val goalTy = View.makeAsSubType tr H (cod, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (cod, ty)
       in
-        |>: goalArgEq >:+ psi >: goalTy
+        |>: goalArgEq >:+ psi >:? goalTy
         #> (H, axiom)
       end
   end
@@ -1305,9 +1312,9 @@ struct
         val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m0), u)) (lblPrefix, us)
         val tyField = VarKit.substMany rho tyField
         
-        val goalTy = View.makeAsSubType tr H (VarKit.substMany rho tyField, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (VarKit.substMany rho tyField, ty)
       in
-        |>:+ psi >: goalTy
+        |>:+ psi >:? goalTy
         #> (H, axiom)
       end
   end
@@ -1418,12 +1425,12 @@ struct
         val (psi, pathty) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.PATH ((x, tyx), _, _) = Syn.out pathty
         val tyr = substVar (r0, x) tyx
-        val goalTy = View.makeAsSubType tr H (tyr, ty) (* holePath type *)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (tyr, ty)
       in
-        |>:+ psi >: goalTy #> (H, axiom)
+        |>:+ psi >:? goalTy #> (H, axiom)
       end
 
- fun EqAppConst sign jdg =
+    fun EqAppConst sign jdg =
       let
         val tr = ["Path.EqAppConst"]
         val H >> ajdg = jdg
@@ -1435,10 +1442,10 @@ struct
         val tyr = substVar (r, x) tyx
         val pr = case Syn.out r of Syn.DIM0 => p0 | Syn.DIM1 => p1 
 
-        val goalTy = View.makeAsSubType tr H (tyr, a)
-        val goalEq = View.makeAsEq tr H ((pr, p), a)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (tyr, a)
+        val goalEq = View.makeAsEqIfDifferent tr H ((pr, p), a)
       in
-        |>: goalEq >:+ psi >: goalTy
+        |>:? goalEq >:+ psi >:? goalTy
         #> (H, axiom)
       end
 
@@ -1543,9 +1550,9 @@ struct
         val (psi, linety) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.LINE (x, tyx) = Syn.out linety
         val tyr = substVar (r0, x) tyx
-        val goalTy = View.makeAsSubType tr H (tyr, ty)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (tyr, ty)
       in
-        |>:+ psi >: goalTy #> (H, axiom)
+        |>:+ psi >:? goalTy #> (H, axiom)
       end
   end
 
