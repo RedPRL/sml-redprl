@@ -156,8 +156,7 @@ Thm Pick/compose/assoc : [
               ]
             ]
           ]
-        ];
-        auto
+        ]
       , rewrite ($ Pick/compose/tt/4/0/tt/5/0 b' c' d' p0/t p1/t) at left;
         [ with x => `($ Pick/compose (succ a') (succ b') (succ d') x (tuple [head ff] [tail p2/t]))
         , rewrite ($ Pick/compose/tt/4/0/ff/5/0 a' b' d' ($ Pick/compose b' c' d' p0/t p1/t) p2/t) at left;
@@ -215,7 +214,7 @@ Thm MegaMutualDefs : [
         [n m : nat] ($ Pick n m)
         ($ folder x n)
         ($ folder x m))]
-      [projCoh : (-> [x : sst] [n m o : nat]
+      [proj-coh : (-> [x : sst] [n m o : nat]
         [c1 : ($ Pick m o)]
         [c2 : ($ Pick n m)] [f : ($ folder x n)]
         (= ($ folder x o)
@@ -227,10 +226,10 @@ Thm MegaMutualDefs : [
     { sst = `record
     , folder = lam x n => `record
     , proj = lam x n m c f => `tuple
-    , projCoh = lam x n m o c1 c2 f => `ax
+    , proj-coh = lam x n m o c1 c2 f => `ax
     };
   , with p'/ind p' =>
-    let {sst=sst', folder=folder', proj=proj', projCoh=projCoh'}
+    let {sst=sst', folder=folder', proj=proj', proj-coh=proj-coh'}
       = p'/ind;
     { sst = `(* [x : sst'] (-> ($ folder' x p') (U 0)))
     , folder = lam {proj1=x, proj2=y} n =>
@@ -241,21 +240,19 @@ Thm MegaMutualDefs : [
     , proj = lam {proj1=x, proj2=y} n m c2 {proj1=f, proj2=g} =>
         { proj1 = `($ proj' x n m c2 f)
         , proj2 = lam c1 =>
-          rewrite ($ projCoh' x n m p' c1 c2 f);
+          rewrite ($ proj-coh' x n m p' c1 c2 f);
           [ with z => `($ y z)
           , `($ g ($ Pick/compose n m p' c1 c2))
-          , auto
-          , auto
           ]
         }
-    , projCoh = lam {proj1=x, proj2=y} n m o c1 c2 {proj1=f, proj2=g} =>
+    , proj-coh = lam {proj1=x, proj2=y} n m o c1 c2 {proj1=f, proj2=g} =>
         reduce at type left right;
         refine record/eq/tuple;
-        [ `($ projCoh' x n m o c1 c2 f)
+        [ `($ proj-coh' x n m o c1 c2 f)
         , refine fun/eq/lam;
-          [ with c0 => rewrite ($ projCoh' x n m o c1 c2 f) at type;
+          [ with c0 => rewrite ($ proj-coh' x n m o c1 c2 f) at type;
             [ with z => `($ y ($ proj' x o p' c0 z))
-            , rewrite ($ projCoh' x n o p' c0 ($ Pick/compose n m o c1 c2) f) at type;
+            , rewrite ($ proj-coh' x n o p' c0 ($ Pick/compose n m o c1 c2) f) at type;
               [ with z => `($ y z)
               , rewrite ($ Eq/inv ($ Pick n p')
                   ($ Pick/compose n m p' ($ Pick/compose m o p' c0 c1) c2)
