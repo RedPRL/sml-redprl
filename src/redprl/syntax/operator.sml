@@ -143,8 +143,7 @@ struct
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
      | TAC_ELIM => [[] |: ANY] ->> TAC
-     | TAC_REWRITE => [[] |: SEL, [] |: ACC, [] |: EXP] ->> TAC
-     | TAC_DEP_REWRITE => [[] |: EXP] ->> TAC
+     | TAC_REWRITE => [[] |: SEL, [] |: VEC ACC, [] |: EXP] ->> TAC
 
      | TAC_ASSUMPTION => [] ->> TAC
      | TAC_POP sorts => [sorts |: TAC] ->> TAC
@@ -283,7 +282,6 @@ struct
      | RULE_PRIM name => "refine{" ^ name ^ "}"
      | TAC_ELIM => "elim"
      | TAC_REWRITE => "rewrite"
-     | TAC_DEP_REWRITE => "dep-rewrite"
      | TAC_ASSUMPTION => "assumption"
      | TAC_POP _ => "with"
      | TAC_PUSH => "push"
