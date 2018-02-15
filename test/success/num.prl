@@ -62,12 +62,9 @@ Thm Plus/zero/R : [
     elim n;
     [ `ax
     , with ind n' => 
-      rewrite ind;
-      [ with x => `(= nat (succ x) (succ n'))
-      , auto
-      , auto
-      , auto
-      ]
+      rewrite ind at left;
+      [ with x => `(succ x) ];
+      auto
     ]
 ].
 
@@ -83,14 +80,12 @@ Thm Plus/succ/R : [
 ] by [
   lam n m => elim n;
     [ auto
-    , with n'/ih n' => rewrite ($ Plus/succ/L n' (succ m));
-      [ with x => `(= nat x (succ ($ Plus (succ n') m)))
-      , rewrite ($ Plus/succ/L n' m);
-        [ with x => `(= nat (succ ($ Plus n' (succ m))) (succ x))
-        , rewrite n'/ih;
-          [ with x => `(= nat (succ x) (succ (succ ($ Plus n' m))))
-          , auto
-          ]
+    , with n'/ih n' => rewrite ($ Plus/succ/L n' (succ m)) at left;
+      [ with x => `x
+      , rewrite ($ Plus/succ/L n' m) at right;
+        [ with x => `(succ x)
+        , rewrite n'/ih at left;
+          [ with x => `(succ x) ]
         ]
       ]
     ];
@@ -102,8 +97,8 @@ Thm Plus/test0 : [
   (-> [n m : nat] [eq : (= nat ($ Plus n zero) m)] (= nat n m))
 ] by [
   lam n m eq =>
-    rewrite ($ Plus/zero/R n) in eq;
-    [ with x => `(= nat x m) ]; auto; use eq
+    rewrite ($ Plus/zero/R n) in eq at left;
+    [ with x => `x ]; auto; use eq
 ].
 
 Thm Eq/sym : [
@@ -117,10 +112,10 @@ Thm Plus/comm : [
 ] by [
   lam n m => elim n;
     [ symmetry; `($ Plus/zero/R  m)
-    , with n'/ih n' => rewrite ($ Plus/succ/L n' m);
-      [ with x => `(= nat x ($ Plus m (succ n')))
-      , rewrite n'/ih;
-        [ with x => `(= nat (succ x) ($ Plus m (succ n')))
+    , with n'/ih n' => rewrite ($ Plus/succ/L n' m) at left;
+      [ with x => `x
+      , rewrite n'/ih at left;
+        [ with x => `(succ x)
         , symmetry; `($ Plus/succ/R m n')
         ]
       ]
