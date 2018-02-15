@@ -276,6 +276,7 @@ struct
      | "V/eqtype" => Lcf.rule V.EqType
      | "V/eq/uain" => Lcf.rule V.Eq
      | "V/intro" => Lcf.rule V.True
+     | "V/eq/proj" => Lcf.rule @@ V.EqProj sign
      | "universe/eqtype" => Lcf.rule Universe.EqType
      | "hcom/eq" => Lcf.rule HCom.Eq
      | "hcom/eq/cap" => Lcf.rule HCom.EqCapL
@@ -338,21 +339,6 @@ struct
       in
         go
       end
-
-    fun autoSynthesizableNeu sign m =
-      case Syn.out m of
-         Syn.VAR _ => true
-       | Syn.IF _ => true
-       | Syn.S1_REC _ => true
-       | Syn.APP (f, _) => autoSynthesizableNeu sign f
-       | Syn.PROJ (_, t) => autoSynthesizableNeu sign t
-       | Syn.DIM_APP (l, _) => autoSynthesizableNeu sign l
-       | Syn.PUSHOUT_REC _ => true
-       | Syn.COEQUALIZER_REC _ => true
-       | Syn.NAT_REC _ => true
-       | Syn.INT_REC _ => true
-       | Syn.CUST => true (* XXX should check the signature *)
-       | _ => false
 
     (* trying to normalize TRUE goal and then run `tac ty` *)
     fun NormalizeGoalDelegate tac sign = NormalizeDelegate tac sign Selector.IN_CONCL
@@ -431,6 +417,7 @@ struct
          | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => (fn mode => Wrapper.applyEqRule (Path.EqApp sign) mode orelse_ Wrapper.applyEqRule (Line.EqApp sign) mode)
          | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Wrapper.applyEqRule @@ Pushout.EqElim sign
          | (Syn.COEQUALIZER_REC _, Syn.COEQUALIZER_REC _) => Wrapper.applyEqRule @@ Coequalizer.EqElim sign
+         | (Syn.VPROJ _, Syn.VPROJ _) => Wrapper.applyEqRule @@ V.EqProj sign
          | (Syn.CUST, Syn.CUST) => Wrapper.applyEqRule (Custom.Eq sign)
          | _ => fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
@@ -544,16 +531,16 @@ struct
          | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule S1.EqElim
          | (Syn.NAT_REC _, Syn.NAT_REC _) => Lcf.rule Nat.EqElim
          | (Syn.INT_REC _, Syn.INT_REC _) => Lcf.rule Int.EqElim
-         | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule @@ Record.EqProj sign (* XXX should consult autoSynthesizableNeu *)
-         | (Syn.APP (f, _), Syn.APP _) => if autoSynthesizableNeu sign f then Lcf.rule (Fun.EqApp sign) else fail @@ E.NOT_APPLICABLE (Fpp.text "StepEq", Fpp.text "unresolved synth")
+         | (Syn.PROJ _, Syn.PROJ _) => Lcf.rule @@ Record.EqProj sign
+         | (Syn.APP (f, _), Syn.APP _) => Lcf.rule @@ Fun.EqApp sign
          | (Syn.DIM_APP (_, r1), Syn.DIM_APP (_, r2)) =>
            (case (Abt.out r1, Abt.out r2) of
                (`_, `_) => Lcf.rule (Path.EqApp sign) orelse_ Lcf.rule (Line.EqApp sign)
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
-              (* XXX should consult autoSynthesizableNeu *)
          | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Lcf.rule @@ Pushout.EqElim sign
          | (Syn.COEQUALIZER_REC _, Syn.COEQUALIZER_REC _) => Lcf.rule @@ Coequalizer.EqElim sign
-         | (Syn.CUST, Syn.CUST) => Lcf.rule @@ Custom.Eq sign (* XXX should consult autoSynthesizableNeu *)
+         | (Syn.VPROJ _, Syn.VPROJ _) => Lcf.rule @@ V.EqProj sign
+         | (Syn.CUST, Syn.CUST) => Lcf.rule @@ Custom.Eq sign
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
 
       fun StepEqNeu sign tms blockers ty =

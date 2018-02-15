@@ -60,6 +60,11 @@ struct
   end
 end
 
+infixr 5 ?::
+val op ?:: =
+  fn (NONE, l) => l
+   | (SOME x, l) => x :: l
+
 structure ListPairUtil =
 struct
   fun mapPartialEq f =
