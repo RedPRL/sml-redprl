@@ -245,13 +245,11 @@ Thm MegaMutualDefs : [
             [ with z => `($ y ($ proj' x o p' c0 z))
             , rewrite ($ projCoh' x n o p' c0 ($ Pick/compose n m o c1 c2) f) at type;
               [ with z => `($ y z)
-              , symmetry;
-                rewrite ($ Eq/inv ($ Pick n p')
+              , rewrite ($ Eq/inv ($ Pick n p')
                   ($ Pick/compose n m p' ($ Pick/compose m o p' c0 c1) c2)
                   ($ Pick/compose n o p' c0 ($ Pick/compose n m o c1 c2))
-                  ($ Pick/compose/assoc n m o p' c0 c1 c2)) at type left right;
+                  ($ Pick/compose/assoc n m o p' c0 c1 c2)) at type right;
                 [ with z => `($ y ($ proj' x n p' z f))
-                , with z => `($ g z)
                 , with z => `($ g z)
                 ]
               ]

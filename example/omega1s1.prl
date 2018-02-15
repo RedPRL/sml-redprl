@@ -73,8 +73,8 @@ Thm IntSuccIsEquiv : [
     , lam {i',p'} =>
         claim eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)];
         claim eq1 : [(= int ($ IntPred i) i')] by [
-          rewrite eq0;
-          [with i'' => `(= int ($ IntPred i'') i'), `($ IntPredIntSucc i')];
+          rewrite eq0 at left;
+          [ with i'' => `($ IntPred i''), `($ IntPredIntSucc i') ];
           auto
         ];
 
