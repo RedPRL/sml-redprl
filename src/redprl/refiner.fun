@@ -667,7 +667,7 @@ struct
         (fn H >> _ =>
               Hyps.foldr
                 (fn (z, jdg, accum) => tac (z, jdg) orelse_ accum)
-                (fail @@ E.GENERIC [Fpp.text "non-deterministic search failed"])
+                (fail @@ E.GENERIC [Fpp.text "We searched the context but found nothing that worked."])
                 H)
 
       fun NondetEqTypeFromHyp sign = NondetFromHypDelegate sign
