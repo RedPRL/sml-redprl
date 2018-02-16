@@ -333,7 +333,6 @@ end
  | AX
  | FCOM
  | BOOL | TT | FF | IF
- | WBOOL
  | NAT | ZERO | SUCC | NAT_REC
  | INT | NEGSUCC | INT_REC
  | VOID
@@ -378,7 +377,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA AMPERSAND COLON
-%nonassoc FCOM BOOL TT FF IF WBOOL NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
+%nonassoc FCOM BOOL TT FF IF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
 
@@ -631,8 +630,6 @@ nullaryOperator
   | BOOL (O.BOOL)
   | TT (O.TT)
   | FF (O.FF)
-  (* weak bools *)
-  | WBOOL (O.WBOOL)
   (* natural numbers *)
   | NAT (O.NAT)
   | ZERO (O.ZERO)
@@ -649,7 +646,7 @@ nullaryOperator
 
 (* built-in operators that do not have special form *)
 multinaryOperator
-  (* bools and weak bools *)
+  (* bools *)
   : IF (O.IF)
   (* natural numbers *)
   | SUCC (O.SUCC)
