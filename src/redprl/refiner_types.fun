@@ -296,7 +296,7 @@ struct
         |>: goalT >: goalF #> (H, evidence)
       end
       handle Bind =>
-        raise E.error [Fpp.text "Expected strict bool elimination problem"]
+        raise E.error [Fpp.text "Expected bool elimination problem"]
 
     fun EqElim sign jdg =
       let
