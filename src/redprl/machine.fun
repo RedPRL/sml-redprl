@@ -634,7 +634,6 @@ struct
 
      | O.VOID $ _ || (_, []) => raise Final
 
-     | O.WBOOL $ _ || (_, []) => raise Final
      | O.BOOL $ _ || (_, []) => raise Final
      | O.TT $ _ || (_, []) => raise Final
      | O.FF $ _ || (_, []) => raise Final
@@ -644,17 +643,6 @@ struct
      | O.FF $ _ || (syms, IF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
      | O.BOOL $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
      | O.BOOL $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
-     | O.WBOOL $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-       let
-         val fcom =
-           Syn.intoFcom
-             {dir = dir,
-              cap = cap,
-              tubes = tubes}
-       in
-         CRITICAL @@ fcom || (syms, stk)
-       end
-     | O.WBOOL $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | O.S1 $ _ || (_, []) => raise Final
      | O.BASE $ _ || (_, []) => raise Final

@@ -211,11 +211,6 @@ struct
      | "bool/eq/tt" => Lcf.rule Bool.EqTT
      | "bool/eq/ff" => Lcf.rule Bool.EqFF
      | "bool/eq/if" => Lcf.rule @@ Bool.EqElim sign
-     | "wbool/eqtype" => Lcf.rule WBool.EqType
-     | "wbool/eq/tt" => Lcf.rule WBool.EqTT
-     | "wbool/eq/ff" => Lcf.rule WBool.EqFF
-     | "wbool/eq/fcom" => Lcf.rule WBool.EqFCom
-     | "wbool/eq/if" => Lcf.rule @@ WBool.EqElim sign
      | "nat/eqtype" => Lcf.rule Nat.EqType
      | "nat/eq/zero" => Lcf.rule Nat.EqZero
      | "nat/eq/succ" => Lcf.rule Nat.EqSucc
@@ -388,7 +383,6 @@ struct
       fun StepEqSubTypeVal (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Wrapper.applyEqRule Bool.EqType
-         | (Syn.WBOOL, Syn.WBOOL) => Wrapper.applyEqRule WBool.EqType
          | (Syn.NAT, Syn.NAT) => Wrapper.applyEqRule Nat.EqType
          | (Syn.INT, Syn.INT) => Wrapper.applyEqRule Int.EqType
          | (Syn.VOID, Syn.VOID) => Wrapper.applyEqRule Void.EqType
@@ -408,7 +402,7 @@ struct
       fun StepEqSubTypeNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Wrapper.applyEqRule Universe.VarFromTrue
-         | (Syn.IF _, Syn.IF _) => (fn mode => Wrapper.applyEqRule (Bool.EqElim sign) mode orelse_ Wrapper.applyEqRule (WBool.EqElim sign) mode)
+         | (Syn.IF _, Syn.IF _) => Wrapper.applyEqRule (Bool.EqElim sign)
          | (Syn.S1_REC _, Syn.S1_REC _) => Wrapper.applyEqRule S1.EqElim
          | (Syn.NAT_REC _, Syn.NAT_REC _) => Wrapper.applyEqRule Nat.EqElim
          | (Syn.INT_REC _, Syn.INT_REC _) => Wrapper.applyEqRule Int.EqElim
@@ -474,10 +468,6 @@ struct
            (Syn.BOOL, Syn.BOOL, Syn.UNIVERSE _) => Lcf.rule Bool.EqType
          | (Syn.TT, Syn.TT, Syn.BOOL) => Lcf.rule Bool.EqTT
          | (Syn.FF, Syn.FF, Syn.BOOL) => Lcf.rule Bool.EqFF
-         | (Syn.WBOOL, Syn.WBOOL, Syn.UNIVERSE _) => Lcf.rule WBool.EqType
-         | (Syn.TT, Syn.TT, Syn.WBOOL) => Lcf.rule WBool.EqTT
-         | (Syn.FF, Syn.FF, Syn.WBOOL) => Lcf.rule WBool.EqFF
-         | (Syn.FCOM _, Syn.FCOM _, Syn.WBOOL) => Lcf.rule WBool.EqFCom
          | (Syn.NAT, Syn.NAT, Syn.UNIVERSE _) => Lcf.rule Nat.EqType
          | (Syn.ZERO, Syn.ZERO, Syn.NAT) => Lcf.rule Nat.EqZero
          | (Syn.SUCC _, Syn.SUCC _, Syn.NAT) => Lcf.rule Nat.EqSucc
@@ -527,7 +517,7 @@ struct
       fun StepEqNeuByStruct sign (m, n) =
         case (Syn.out m, Syn.out n) of
            (Syn.VAR _, Syn.VAR _) => Lcf.rule InternalizedEquality.VarFromTrue
-         | (Syn.IF _, Syn.IF _) => Lcf.rule (Bool.EqElim sign) orelse_ Lcf.rule (WBool.EqElim sign)
+         | (Syn.IF _, Syn.IF _) => Lcf.rule @@ Bool.EqElim sign
          | (Syn.S1_REC _, Syn.S1_REC _) => Lcf.rule S1.EqElim
          | (Syn.NAT_REC _, Syn.NAT_REC _) => Lcf.rule Nat.EqElim
          | (Syn.INT_REC _, Syn.INT_REC _) => Lcf.rule Int.EqElim
@@ -701,7 +691,6 @@ struct
       fun ElimBasis sign ty z : tactic =
         case Syn.out ty of
            Syn.BOOL => Lcf.rule @@ Bool.Elim z
-         | Syn.WBOOL => Lcf.rule @@ WBool.Elim z
          | Syn.NAT => Lcf.rule @@ Nat.Elim z
          | Syn.INT => Lcf.rule @@ Int.Elim z
          | Syn.VOID => Lcf.rule @@ Void.Elim z

@@ -36,8 +36,6 @@ struct
      | FF => [] ->> EXP
      | IF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
-     | WBOOL => [] ->> EXP
-
      | VOID => [] ->> EXP
 
      | NAT => [] ->> EXP
@@ -189,8 +187,6 @@ struct
 
   val toString =
     fn AX => "ax"
-
-     | WBOOL => "wbool"
 
      | BOOL => "bool"
      | TT => "tt"

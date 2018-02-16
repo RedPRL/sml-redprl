@@ -325,17 +325,3 @@ Thm Shannon : [
   lam ty elt b =>
   elim b; auto
 ].
-
-Thm WeakShannon : [
-  (->
-   [ty  : (-> wbool (U 0 kan))]
-   [elt : (-> [b : wbool] ($ ty b))]
-   [b : wbool]
-   (path [_] ($ ty b) ($ elt b) (if [b'] ($ ty b') b ($ elt tt) ($ elt ff))))
-] by [
-  lam ty elt b =>
-  elim b; auto;
-  [ abs _ => `($ elt tt)
-  , abs _ => `($ elt ff)
-  , auto]
-].
