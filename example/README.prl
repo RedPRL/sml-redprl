@@ -73,9 +73,8 @@ Tac TryStep = [
   (Try #tac{auto-step})
 ].
 
-// 'if' is the recursor for both weak booleans and ordinary (strict) booleans.
-// It takes the motive of induction as an argument, which is computationally
-// relevant for hcoms in weak booleans.
+// 'if' is the recursor for booleans.  It takes the motive of induction as an argument
+// in order to facilitate type synthesizing.
 Def BoolEta(#M) = [
   (if [a] bool #M tt ff)
 ].
