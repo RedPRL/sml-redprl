@@ -14,10 +14,8 @@ struct
    (* the trivial realizer of sort EXP for types lacking interesting
     * computational content. This is the "ax(iom)" in Nuprl. *)
      AX
-   (* strict bool *)
+   (* bool *)
    | BOOL | TT | FF | IF
-   (* week bool *)
-   | WBOOL
    (* natural numbers *)
    | NAT | ZERO | SUCC | NAT_REC
    (* integers *)

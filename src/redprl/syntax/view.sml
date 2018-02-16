@@ -34,10 +34,8 @@ struct
    | AX
    (* formal composition *)
    | FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
-   (* strict bool *)
+   (* bools *)
    | BOOL | TT | FF | IF of (variable * 'a) * 'a * ('a * 'a)
-   (* weak bool *)
-   | WBOOL
    (* natural numbers *)
    | NAT | ZERO | SUCC of 'a
    | NAT_REC of (variable * 'a) * 'a * ('a * (variable * variable * 'a))
@@ -298,8 +296,6 @@ struct
        | FF => O.FF $$ []
        | IF ((x, cx), m, (t, f)) => O.IF $$ [[x] \ cx, [] \ m, [] \ t, [] \ f]
 
-       | WBOOL => O.WBOOL $$ []
-
        | NAT => O.NAT $$ []
        | ZERO => O.ZERO $$ []
        | SUCC m => O.SUCC $$ [[] \ m]
@@ -435,8 +431,6 @@ struct
        | O.TT $ _ => TT
        | O.FF $ _ => FF
        | O.IF $ [[x] \ cx, _ \ m, _ \ t, _ \ f] => IF ((x, cx), m, (t, f))
-
-       | O.WBOOL $ _ => WBOOL
 
        | O.NAT $ _ => NAT
        | O.ZERO $ _ => ZERO

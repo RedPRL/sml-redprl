@@ -1,5 +1,5 @@
 Thm BoolTest : [
-  (-> wbool wbool)
+  (-> bool bool)
 ] by [
   // A term/witness can be supplied to the refiner at any point in a tactic script
   // using the quotation operator `.
@@ -15,14 +15,14 @@ Thm PathTest : [
 
 Thm LowLevel : [
   (->
-    (-> wbool wbool)
-    wbool)
+    (-> bool bool)
+    bool)
 ] by [
   refine fun/intro;
   [ with f =>
     elim f; [`tt, with x/eq x => use x]
   , refine fun/eqtype;
-    refine wbool/eqtype
+    refine bool/eqtype
   ]
 ].
 
@@ -30,9 +30,9 @@ Extract LowLevel.
 
 Thm LowLevel2 : [
   (->
-    (-> wbool wbool)
-    wbool
-    wbool)
+    (-> bool bool)
+    bool
+    bool)
 ] by [
   repeat {refine fun/intro; [id, auto]};
   with x f =>
@@ -47,8 +47,8 @@ Extract LowLevel2.
 
 Thm FunElimTest : [
   (->
-   (-> wbool wbool)
-   wbool)
+   (-> bool bool)
+   bool)
 ] by [
   lam f => use f [`tt]
 ].
@@ -73,11 +73,10 @@ Tac TryStep = [
   (Try #tac{auto-step})
 ].
 
-// 'if' is the recursor for both weak booleans and ordinary (strict) booleans.
-// It takes the motive of induction as an argument, which is computationally
-// relevant for hcoms in weak booleans.
+// 'if' is the recursor for booleans.  It takes the motive of induction as an argument
+// in order to facilitate type synthesizing.
 Def BoolEta(#M) = [
-  (if [a] wbool #M tt ff)
+  (if [a] bool #M tt ff)
 ].
 
 Print BoolEta.
@@ -86,7 +85,7 @@ Print BoolEta.
 // built-in 'if x then t1 else t2' tactical, and the extracted witness will be
 // an 'if' form with the motive already filled in.
 Thm BoolEtaFunction : [
-  (-> wbool wbool)
+  (-> bool bool)
 ] by [
   lam b => if b then `tt else `ff
 ].
@@ -104,7 +103,7 @@ Extract BoolEtaFunction.
 //
 Thm PathTest2 : [
   (path
-    [_] (-> wbool wbool)
+    [_] (-> bool bool)
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
@@ -113,9 +112,9 @@ Thm PathTest2 : [
     // now, we are constructing a line of functions; so we use a
     // lambda.
     lam b =>
-      // for our b:wbool, we will construct a path between b and
+      // for our b:bool, we will construct a path between b and
       // (BoolEta b).
-      claim p : [(path [_] wbool b (BoolEta b))] by [
+      claim p : [(path [_] bool b (BoolEta b))] by [
         if b then abs y => `tt else abs y => `ff
       ];
 
@@ -136,7 +135,7 @@ Thm PathTest2 : [
 // of it.
 Thm PathTest3 : [
   (path
-    [_] (-> wbool wbool)
+    [_] (-> bool bool)
     (lam [b] b)
     (lam [b] (BoolEta b)))
 ] by [
@@ -144,7 +143,7 @@ Thm PathTest3 : [
   // encouraging.
   `(abs [x]
     (lam [b]
-     (@ (if [b] (path [_] wbool b (BoolEta b)) b (abs [_] tt) (abs [_] ff))
+     (@ (if [b] (path [_] bool b (BoolEta b)) b (abs [_] tt) (abs [_] ff))
         x)))
 ].
 
@@ -178,7 +177,7 @@ Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by 
   auto
 ].
 
-Thm Not : [(-> [_ : wbool] wbool)] by [
+Thm Not : [(-> [_ : bool] bool)] by [
   lam x => if x then `ff else `tt
 ].
 
@@ -206,7 +205,7 @@ Tac FunExtTac(#l : lvl) = [
 
 Print FunExtTac.
 
-Thm NotNotPath : [(path [_] (-> wbool wbool) (Cmp Not Not) (lam [x] x))] by [
+Thm NotNotPath : [(path [_] (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
   (FunExtTac #lvl{0});
   lam x => if x then abs _ => `tt else abs _ => `ff
 ].
@@ -215,7 +214,7 @@ Extract NotNotPath.
 Print FunExtTac.
 Print NotNotPath.
 
-Thm Singleton : [(* [x : wbool] (path [_] wbool x tt))] by [
+Thm Singleton : [(* [x : bool] (path [_] bool x tt))] by [
   {`tt, abs _ => `tt}
 ].
 
