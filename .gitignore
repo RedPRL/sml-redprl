@@ -17,4 +17,5 @@ bin
 .#*
 *.du
 
-doc/machine.pdf
+doc/tex/machine.pdf
+doc/build
