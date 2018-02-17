@@ -105,10 +105,6 @@ htmlhelp_basename = 'RedPRLdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #
-    # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
@@ -126,7 +122,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'RedPRL.tex', u'RedPRL Documentation',
+    (master_doc, 'redprl.tex', u'RedPRL Documentation',
      u'The RedPRL Development Team', 'manual'),
 ]
 
