@@ -1,0 +1,70 @@
+.wy-nav-side {
+  background-color: #edf0f2;
+}
+
+.wy-nav-content-wrap {
+  background-color: #fcfcfc;
+}
+
+.wy-side-nav-search {
+  background-color: #e84644;
+}
+
+.wy-side-nav-search input[type=text] {
+  border-radius: 0;
+  border-color: #404040;
+}
+
+.wy-menu-vertical a {
+  color: black;
+}
+
+.wy-menu-vertical a:hover {
+  background-color: #ee7977;
+  color: white;
+}
+
+body, h1, h2 {
+  font-family: 'PragmataPro';
+}
+
+.wy-nav-side {
+  border-right: 1px solid #c9c9c9;
+}
+
+.wy-menu-vertical li.current a {
+  color: #333;
+}
+
+.wy-menu-vertical li a {
+  padding: 1em 2.427em 0.5em 2.427em !important;
+  font-weight: normal !important;
+  line-height: 1em;
+}
+
+.wy-menu-vertical li.on a span.toctree-expand, .wy-menu-vertical li.current>a span.toctree-expand {
+  display: inline;
+}
+
+.wy-menu-vertical li span.toctree-expand {
+  float: none;
+}
+
+.wy-menu-vertical li.on a span.toctree-expand:before, .wy-menu-vertical li>a span.toctree-expand:before {
+  padding-right: 0.3em;
+}
+
+.headerlink {
+  font-family: 'PragmataPro' !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+.fa-home:before, .icon-home:before {
+  font-family: 'PragmataPro';
+  content: "\2605";
+}
+
+.wy-nav-content a:visited {
+  color: #e94c49;
+}
