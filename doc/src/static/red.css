@@ -24,6 +24,12 @@
   color: white;
 }
 
+.wy-menu-vertical li a:hover {
+  background-color: #ee7977 !important;
+  color: white !important;
+}
+
+
 body, h1, h2, h3, h4, h5, h6, pre {
   font-family: 'PragmataPro' !important;
 }
