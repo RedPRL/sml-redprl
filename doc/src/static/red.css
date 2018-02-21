@@ -24,8 +24,8 @@
   color: white;
 }
 
-body, h1, h2, h3, h4, h5, h6 {
-  font-family: 'PragmataPro';
+body, h1, h2, h3, h4, h5, h6, pre {
+  font-family: 'PragmataPro' !important;
 }
 
 .wy-nav-side {
