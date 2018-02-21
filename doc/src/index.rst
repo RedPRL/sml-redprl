@@ -5,6 +5,8 @@ RedPRL User Guide
    :maxdepth: 2
 
    overview
+   tutorial
+   refine
 
 
 Indices
