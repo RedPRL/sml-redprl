@@ -3,14 +3,16 @@ Atomic Judgments
 
 |RedPRL| currently has five forms of atomic (non-hypothetical) judgments that may appear in subgoals.
 
-1. `Truth`_ asserts that a type is inhabited.
-2. `Type equality`_ asserts an equality between two types.
-3. `Subtyping`_ asserts a subtyping relation.
-4. `Subkinding`_ asserts that some type is actually a universe in which
+1. :ref:`Truth <jdg-true>` asserts that a type is inhabited.
+2. :ref:`Type equality <jdg-eqtype>` asserts an equality between two types.
+3. :ref:`Subtyping <jdg-subtype>` asserts a subtyping relation.
+4. :ref:`Subkinding <jdg-subkind>` asserts that some type is actually a universe in which
    all types has a particular kind.
-5. `Term`_ lets the user give an expression.
+5. :ref:`Term <jdg-term>` lets the user give an expression.
 
 Note that these judgment forms differ from our semantic presentations in papers.
+
+.. _jdg-true:
 
 Truth
 -----
@@ -31,7 +33,9 @@ means ``a`` is an inhabited type.
 Any inhabitant can realize this judgment.
 This is commonly used
 to state a theorem or specify the type of the program to be implemented.
-In fact, all top-level statements must be in this judgmental form.
+In fact, all top-level theorems (see :ref:`def-theorem`) must be in this judgmental form.
+
+.. _jdg-eqtype:
 
 Type Equality
 -------------
@@ -71,6 +75,8 @@ One may intuitively treat the judgment
 
 as ``(= (U omega) a b) true`` except that we cannot talk about ``(U omega)`` internally.
 
+.. _jdg-subtype:
+
 Subtyping
 ---------
 
@@ -90,8 +96,10 @@ This is currently used whenever we only need a subtyping relationship
 rather than type equality. For example, if a function ``f`` is in type ``(-> a b)``,
 the rule to determine whether the function application ``($ f x)`` is in type ``b'``
 will only demand ``b <= b' type`` rather than ``b = b' type``.
-That said, the only subtyping relation one can prove in |RedPRL| now
+That said, the only non-trivial subtyping relation one can prove in |RedPRL| now
 is the one induced by cumulativity of universes.
+
+.. _jdg-subkind:
 
 Subkinding
 ----------
@@ -107,12 +115,13 @@ Subkinding
     a <= pre universe
 
 assert that ``a`` is a subuniverse of the universe of the specified kind at the omega level.
-Intuitively, ``a <= k universe`` would mean
-the type ``a`` in question is a subtype of ``(U omega k)``
+Intuitively, ``a <= k universe`` would mean ``a <= (U omega k) type``
 if we could internalize universes at the omega level.
 The realizer must be ``ax``.
 These judgments are similar to the subtyping judgments
 except that the right hand side is some omega-level universe.
+
+.. _jdg-term:
 
 Term
 ----

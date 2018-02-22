@@ -92,6 +92,7 @@ A tactic can be defined using the special ``Tac`` command:
 This desugars to an instance of the ``Def`` command, and differs only in that the
 body of the definiens is here parsed using the grammar of tactic expressions.
 
+.. _def-theorem:
 
 Defining theorems
 ^^^^^^^^^^^^^^^^^
