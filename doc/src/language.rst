@@ -14,6 +14,8 @@ new theorems and tactics; the top-level vernacular can also be used to print
 out an object from the signature. This is the language that one writes in a
 ``.prl`` file.
 
+.. _def-theorem:
+
 Defining theorems
 ^^^^^^^^^^^^^^^^^
 
@@ -82,8 +84,6 @@ A tactic can be defined using the special ``Tac`` command:
 
 This desugars to an instance of the ``Def`` command, and differs only in that the
 body of the definiens is here parsed using the grammar of tactic expressions.
-
-.. _def-theorem:
 
 
 Printing objects
