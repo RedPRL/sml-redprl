@@ -24,7 +24,7 @@ programming constructs inspired by cubical sets:
 
 - dimension expressions ``i``, ``0``, ``1``
 - dimension abstraction ``(abs [i] m)``
-- dimension application ``m @ r``
+- dimension application ``(@ m r)``
 - coercion: ``(coe r~>s [i] ty n)``, where ``[i] ty`` is a line of types
 - homogeneous composition: ``(hcom r~>s ty cap [i=0 [j] tube0] ...)``
 - heterogeneous composition: ``(com r~>s [j] ty cap [i=0 [j] tube0] ..)``
