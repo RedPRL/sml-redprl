@@ -100,3 +100,15 @@ signature.
     // script here (tactic expression)
   ].
 
+
+Printing objects
+^^^^^^^^^^^^^^^^
+
+To print a previously-defined object from the signature, one can write the
+following command:
+
+::
+
+  Print OpName.
+
+
