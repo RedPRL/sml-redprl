@@ -6,6 +6,7 @@ RedPRL User Guide
 
    overview
    tutorial
+   atomic-judgment
    refine
 
 
