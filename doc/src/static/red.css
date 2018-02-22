@@ -29,7 +29,7 @@
   color: white !important;
 }
 
-p a {
+.wy-nav-content a:not(.btn) {
   text-decoration: underline;
   text-decoration-style: dotted;
 }
