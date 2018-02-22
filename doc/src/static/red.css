@@ -24,8 +24,28 @@
   color: white;
 }
 
-body, h1, h2 {
-  font-family: 'PragmataPro';
+.wy-menu-vertical li a:hover {
+  background-color: #ee7977 !important;
+  color: white !important;
+}
+
+.wy-nav-content a.reference {
+  text-decoration: underline;
+}
+
+body, h1, h2, h3, h4, h5, h6, pre, code {
+  font-family: 'PragmataPro' !important;
+}
+
+pre {
+  padding: 12px 12px 0px 12px !important;
+}
+
+code {
+  border: none !important;
+  background: none !important;
+  padding: 0 0 0 0 !important;
+  font-size: 100% !important;
 }
 
 .wy-nav-side {
@@ -34,6 +54,7 @@ body, h1, h2 {
 
 .wy-menu-vertical li.current a {
   color: #333;
+  border:none !important;
 }
 
 .wy-menu-vertical li a {
@@ -66,5 +87,14 @@ body, h1, h2 {
 }
 
 .wy-nav-content a:visited {
-  color: #e94c49;
+  color: #2980B9;
+}
+
+div[class^='highlight'] pre {
+  font-size: 14px;
+}
+
+.revolutionary {
+  color: #e84644;
+  font-weight: 700;
 }

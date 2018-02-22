@@ -30,7 +30,7 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # extensions = ['sphinx.ext.imgmath']
-extensions = []
+extensions = ['sphinx.ext.todo']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['templates']
@@ -65,6 +65,8 @@ release = u''
 # Usually you set "language" from the command line for these cases.
 language = None
 
+highlight_language = 'none'
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
@@ -74,8 +76,12 @@ exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+todo_include_todos = True
 
+rst_prolog = """
+.. role:: revolutionary
+.. |RedPRL| replace:: :revolutionary:`Red`\ **PRL**
+"""
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -148,7 +154,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'RedPRL', u'RedPRL Documentation',
-     author, 'RedPRL', 'One line description of project.',
+     author, 'RedPRL', u'The People\'s Refinement Logic',
      'Miscellaneous'),
 ]
 

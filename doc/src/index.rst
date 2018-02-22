@@ -5,6 +5,10 @@ RedPRL User Guide
    :maxdepth: 2
 
    overview
+   tutorial
+   language
+   atomic-judgment
+   refine
 
 
 Indices

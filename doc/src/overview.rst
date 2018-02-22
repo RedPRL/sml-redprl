@@ -4,7 +4,7 @@ Overview
 What is RedPRL?
 ---------------
 
-*RedPRL* is the *People's Refinement Logic*,
+|RedPRL| is the *People's Refinement Logic*,
 an experimental proof assistant based on cubical computational type theory,
 which extends the Nuprl_ semantics by higher-dimensional features inspired by homotopy type theory.
 
@@ -13,7 +13,7 @@ which extends the Nuprl_ semantics by higher-dimensional features inspired by ho
 Who made RedPRL?
 ----------------
 
-RedPRL is created and maintained by the `RedPRL Development Team`_.
+|RedPRL| is created and maintained by the `RedPRL Development Team`_.
 
 .. _RedPRL Development Team: https://github.com/RedPRL/sml-redprl/blob/master/CONTRIBUTORS.md
 
