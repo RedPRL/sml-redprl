@@ -2,7 +2,7 @@ language: generic
 env:
   - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex moreutils"
   - COMPILER=mlton PACKAGES="mlton moreutils"
-  - COMPILER=sphinx PACKAGES="python-sphinx"
+  - COMPILER=sphinx PACKAGES="python-sphinx python-sphinx-rtd-theme"
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y --force-yes ${PACKAGES}
