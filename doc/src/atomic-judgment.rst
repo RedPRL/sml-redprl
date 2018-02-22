@@ -1,7 +1,7 @@
 Atomic Judgments
 ================
 
-RedPRL currently have five forms of atomic (non-hypothetical) judgments that may appear in subgoals.
+|RedPRL| currently has five forms of atomic (non-hypothetical) judgments that may appear in subgoals.
 
 1. `Truth`_ asserts that a type is inhabited.
 2. `Type equality`_ asserts an equality between two types.
@@ -10,7 +10,7 @@ RedPRL currently have five forms of atomic (non-hypothetical) judgments that may
    all types has a particular kind.
 5. `Term`_ lets the user give an expression.
 
-Note that these forms are very different from the presentation on papers.
+Note that these judgment forms differ from our semantic presentations in papers.
 
 Truth
 -----
@@ -80,7 +80,7 @@ This is currently used whenever we only need a subtyping relationship
 rather than type equality. For example, if a function ``f`` is in type ``(-> a b)``,
 the rule to determine whether the function application ``($ f x)`` is in type ``b'``
 will only demand ``b <= b' type`` rather than ``b = b' type``.
-That said, the only subtyping relation one can prove in RedPRL now
+That said, the only subtyping relation one can prove in |RedPRL| now
 is the one induced by cumulativity of universes.
 
 Subkinding

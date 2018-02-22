@@ -83,3 +83,7 @@ pre {
 div[class^='highlight'] pre {
   font-size: 14px;
 }
+
+.revolutionary {
+  color: #e84644;
+}

@@ -1,4 +1,4 @@
-Refinement rules
+Refinement Rules
 ==================================
 
 Booleans
