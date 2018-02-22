@@ -9,6 +9,7 @@ before_install:
 install:
   - git submodule init
   - git submodule update --init --recursive
+  - pip install sphinx-rtd-theme
 script:
   - ./script/test-${COMPILER}.sh
 
