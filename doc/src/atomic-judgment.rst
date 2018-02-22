@@ -74,12 +74,12 @@ associated with ``a`` is a subrelation of the one associated with ``b``.
 The realizer must be ``ax``.
 There is no support of kind markers because the subtyping relation
 never takes additional structures into consideration.
-   
+
 This is currently used whenever we only need a subtyping relationship
 rather than type equality. For example, if a function ``f`` is in type ``(-> a b)``,
 the rule to determine whether the function application ``($ f x)`` is in type ``b'``
 will only demand ``b <= b' type`` rather than ``b = b' type``.
-That said, the only subtyping relation one can prove in RedPRL now 
+That said, the only subtyping relation one can prove in RedPRL now
 is the one induced by cumulativity of universes.
 
 Subkinding
