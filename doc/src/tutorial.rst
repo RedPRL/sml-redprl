@@ -2,7 +2,7 @@ Tutorial
 ==================================
 
 We will walk through parts of ``examples/tutorial.prl``, which was the live demo
-of RedPRL in our `POPL 2018 tutorial`_ on Computational (Higher) Type Theory.
+of |RedPRL| in our `POPL 2018 tutorial`_ on Computational (Higher) Type Theory.
 For further guidance, we recommend that new users consult the many other proofs
 in the ``examples/`` subdirectory.
 
