@@ -46,7 +46,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'RedPRL'
-copyright = u'2018, The RedPRL Development Team'
+copyright = u'2015–2018, The RedPRL Development Team'
 author = u'The RedPRL Development Team'
 
 # The version info for the project you're documenting, acts as replacement for
