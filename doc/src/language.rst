@@ -1,15 +1,15 @@
 Language Reference
 ==================
 
-RedPRL documents contain expressions written in multiple languages: the
+|RedPRL| documents contain expressions written in multiple languages: the
 top-level vernacular, the object language, and the tactic language.
 
 Object language
 ---------------
 
-RedPRL's object language and tactic language share a common syntactic framework
+|RedPRL|'s object language and tactic language share a common syntactic framework
 based on multi-sorted second-order abstract syntax, which provides a uniform
-treatment of binding with syntactic sorts. RedPRL has three main sorts: ``exp``
+treatment of binding with syntactic sorts. |RedPRL| has three main sorts: ``exp``
 (the sort of expressions), ``dim`` (the sort of dimension expressions) and ``tac``
 (the sort of tactic expressions).
 
@@ -51,7 +51,7 @@ out an object from the signature. This is the language that one writes in a
 Defining new operators
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The most basic way to define a new operator in RedPRL is to use the ``Def``
+The most basic way to define a new operator in |RedPRL| is to use the ``Def``
 command. A definition is specified by giving an operator name (which must be
 capitalized), together with a (possibly empty) sequence of parameters together
 with their valences, and an object-language term which shall be the definiens:
@@ -96,7 +96,7 @@ body of the definiens is here parsed using the grammar of tactic expressions.
 Defining theorems
 ^^^^^^^^^^^^^^^^^
 
-A *theorem* in RedPRL is a definition that comes with a goal and a tactic
+A *theorem* in |RedPRL| is a definition that comes with a goal and a tactic
 script; when a theorem is declared, the tactic script is executed against the
 goal, and if the result is successful, the generated evidence is added to the
 signature.
