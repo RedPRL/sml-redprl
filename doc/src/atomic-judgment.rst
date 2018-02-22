@@ -3,12 +3,12 @@ Atomic Judgments
 
 RedPRL currently have five forms of atomic (non-hypothetical) judgments that may appear in subgoals.
 
-1. `Truth`_ is demanding a witness of a type.
-2. `Type equality`_ states the equality between two types.
+1. `Truth`_ asserts that a type is inhabited.
+2. `Type equality`_ asserts an equality between two types.
 3. `Subtyping`_ asserts a subtyping relation.
 4. `Subkinding`_ asserts that some type is actually a universe in which
    all types has a particular kind.
-5. `Term`_ lets the user to give an expression.
+5. `Term`_ lets the user give an expression.
 
 Note that these forms are very different from the presentation on papers.
 
@@ -23,7 +23,7 @@ or simply::
 
     a
 
-means ``a`` is an inhabit type.
+means ``a`` is an inhabited type.
 Any inhabitant can realize this judgment.
 This is commonly used
 to state a theorem or specify the type of the program to be implemented.
@@ -36,8 +36,8 @@ A *type equality* judgment::
 
     a = b type
 
-means ``a`` are ``b`` are equal types (at the omega level),
-and its realizer must be ``ax``, the same realizer of equality types.
+means ``a`` are ``b`` are equal types (without regard to universe level),
+and its realizer must be ``ax``, the same as the realizer of equality types.
 Multiverses are supported through kind markers such as ``kan`` or ``discrete``. For example::
 
     a = b discrete type
@@ -60,7 +60,7 @@ One may intuitively treat the judgment::
 
     a = b type
 
-as ``((U omega) a b) true`` except that we cannot talk about ``(U omega)`` internally.
+as ``(= (U omega) a b) true`` except that we cannot talk about ``(U omega)`` internally.
 
 Subtyping
 ---------
@@ -69,7 +69,7 @@ A *subtype* judgment::
 
     a <= b type
 
-states ``a`` is a subtype of ``b``. More precisely, the partial equivalence relation
+states that ``a`` is a subtype of ``b``. More precisely, the partial equivalence relation
 associated with ``a`` is a subrelation of the one associated with ``b``.
 The realizer must be ``ax``.
 There is no support of kind markers because the subtyping relation
@@ -79,8 +79,8 @@ This is currently used whenever we only need a subtyping relationship
 rather than type equality. For example, if a function ``f`` is in type ``(-> a b)``,
 the rule to determine whether the function application ``($ f x)`` is in type ``b'``
 will only demand ``b <= b' type`` rather than ``b = b' type``.
-That said, the only subtyping relation one can prove in RedPRL now
-is the accumulativity between universes.
+That said, the only subtyping relation one can prove in RedPRL now 
+is the one induced by cumulativity of universes.
 
 Subkinding
 ----------
