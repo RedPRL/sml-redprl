@@ -4,6 +4,141 @@ Language Reference
 |RedPRL| documents contain expressions written in multiple languages: the
 top-level vernacular, the object language, and the tactic language.
 
+
+Top-level vernacular
+--------------------
+
+The top-level vernacular is a very simple language of commands that interact
+with the *signature*: this language is for declaring definitional extensions,
+new theorems and tactics; the top-level vernacular can also be used to print
+out an object from the signature. This is the language that one writes in a
+``.prl`` file.
+
+Defining theorems
+^^^^^^^^^^^^^^^^^
+
+A *theorem* in |RedPRL| is given by a type (an object language expression)
+together with a tactic script which establishes that the given type is
+inhabited; when a theorem is declared, the tactic script is executed against
+the goal, and if the result is successful, the generated evidence is added to
+the signature.
+
+::
+
+  Thm OpName(#p : ...) : [
+    // goal here (object language expression)
+  ] by [
+    // script here (tactic expression)
+  ].
+
+
+Most definitions in a RedPRL signature will take the form of theorems. 
+
+
+Defining new operators
+^^^^^^^^^^^^^^^^^^^^^^
+
+The most primitive way to define a new operator in |RedPRL| is to use the ``Def``
+command. A definition is specified by giving an operator name (which must be
+capitalized), together with a (possibly empty) sequence of parameters together
+with their valences, and an object-language term which shall be the definiens:
+
+::
+
+  Def OpName(#p : [dim].exp, ...) : exp = [
+    // object language expression here
+  ].
+
+A parameter is referenced using a *metavariable* (which is
+distinguished syntactically using the ``#`` sigil); the valence of a parameter
+specifies binding structure, with ``[tau1,tau2].tau`` being the valence of a
+binder of sort ``tau`` that binds a variable of sort ``tau1`` and a variable of
+sort ``tau2``.
+
+A simple definition of sort ``exp`` without parameters can be abbreviated as follows:
+
+::
+
+  Def OpName = [
+    // object language expression here
+  ].
+
+Definitions of this kind are not subject to any typing conditions in CHTT;
+instead, if you use a primitive definition within a proof, you will have to
+prove that it is well-typed. 
+
+
+Defining tactics
+^^^^^^^^^^^^^^^^
+
+A tactic can be defined using the special ``Tac`` command:
+
+::
+
+  Tac OpName(#p : ...) = [
+    // tactic expression here
+  ].
+
+
+This desugars to an instance of the ``Def`` command, and differs only in that the
+body of the definiens is here parsed using the grammar of tactic expressions.
+
+.. _def-theorem:
+
+
+Printing objects
+^^^^^^^^^^^^^^^^
+
+To print a previously-defined object from the signature, one can write the
+following command:
+
+::
+
+  Print OpName.
+
+
+When to use theorems or definitions?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As a rule of thumb, in most cases it is simpler to interactively construct an
+element of a type using a ``Thm`` declaration than it is to define a code for
+an element, and then prove that it has the intended type. This is why theorems
+are usually preferred to definitions in RedPRL.
+
+However, definitions may be preferable in some cases; consider the definition
+of an abbreviation for the type family ``(lam [ty] (-> nat ty))`` of sequences.
+As a theorem, this definition must take a universe level as a parameter
+
+::
+
+  Thm Sequence(#l : lvl) : [
+    (-> [ty : (U #l)] (U #l))
+  ] by [
+    // apply function introduction rule in the tactic language
+    lam ty =>
+      // explicitly give the body of the function in the object language
+      `(-> nat ty)
+  ].
+
+Later, when using this definition, one would have to explicitly provide the
+universe level, even though it does not play a part in the actual defined
+object: for instance, ``(Sequence #lvl{0})``. The parameter was present only in
+order to express the type of the type family. On the other hand, with a
+definition, we can write the following:
+
+
+::
+
+  Def Sequence = [
+    (lam [ty] (-> nat ty))
+  ].
+
+
+One advantage of theorems over definitions is that RedPRL knows their type
+intriniscally; whereas definitions must be unfolded and proved to be well-typed
+at each use-site.
+
+
 Object language
 ---------------
 
@@ -37,89 +172,9 @@ programming constructs inspired by cubical sets:
 Tactic language
 ---------------
 
+
+
 .. todo::
   Summarize tactic language
-
-Top-level vernacular
---------------------
-
-The top-level vernacular is a very simple language of commands that interact
-with the *signature*: this language is for declaring definitional extensions,
-new theorems and tactics; the top-level vernacular can also be used to print
-out an object from the signature. This is the language that one writes in a
-``.prl`` file.
-
-Defining new operators
-^^^^^^^^^^^^^^^^^^^^^^
-
-The most basic way to define a new operator in |RedPRL| is to use the ``Def``
-command. A definition is specified by giving an operator name (which must be
-capitalized), together with a (possibly empty) sequence of parameters together
-with their valences, and an object-language term which shall be the definiens:
-
-::
-
-  Def OpName(#p : [dim].exp, ...) : exp = [
-    // object language expression here
-  ].
-
-A parameter is referenced using a *metavariable* (which is
-distinguished syntactically using the ``#`` sigil); the valence of a parameter
-specifies binding structure, with ``[tau1,tau2].tau`` being the valence of a
-binder of sort ``tau`` that binds a variable of sort ``tau1`` and a variable of
-sort ``tau2``.
-
-A simple definition of sort ``exp`` without parameters can be abbreviated as follows:
-
-::
-
-  Def OpName = [
-    // object language expression here
-  ].
-
-
-Defining tactics
-^^^^^^^^^^^^^^^^
-
-A tactic can be defined using the special ``Tac`` command:
-
-::
-
-  Tac OpName(#p : ...) = [
-    // tactic expression here
-  ].
-
-
-This desugars to an instance of the ``Def`` command, and differs only in that the
-body of the definiens is here parsed using the grammar of tactic expressions.
-
-.. _def-theorem:
-
-Defining theorems
-^^^^^^^^^^^^^^^^^
-
-A *theorem* in |RedPRL| is a definition that comes with a goal and a tactic
-script; when a theorem is declared, the tactic script is executed against the
-goal, and if the result is successful, the generated evidence is added to the
-signature.
-
-::
-
-  Thm OpName(#p : ...) : [
-    // goal here (object language expression)
-  ] by [
-    // script here (tactic expression)
-  ].
-
-
-Printing objects
-^^^^^^^^^^^^^^^^
-
-To print a previously-defined object from the signature, one can write the
-following command:
-
-::
-
-  Print OpName.
 
 
