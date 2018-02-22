@@ -34,6 +34,10 @@ body, h1, h2, h3, h4, h5, h6, pre {
   font-family: 'PragmataPro' !important;
 }
 
+pre {
+  padding: 12px 12px 0px 12px !important;
+}
+
 .wy-nav-side {
   border-right: 1px solid #c9c9c9;
 }
