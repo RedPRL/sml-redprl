@@ -80,7 +80,7 @@ todo_include_todos = True
 
 rst_prolog = """
 .. role:: revolutionary
-.. |RedPRL| replace:: :revolutionary:`Red`\PRL
+.. |RedPRL| replace:: :revolutionary:`Red`\ **PRL**
 """
 
 # -- Options for HTML output ----------------------------------------------
