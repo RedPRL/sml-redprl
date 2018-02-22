@@ -36,7 +36,8 @@ Top-level vernacular
 The top-level vernacular is a very simple language of commands that interact
 with the *signature*: this language is for declaring definitional extensions,
 new theorems and tactics; the top-level vernacular can also be used to print
-out an object from the signature.
+out an object from the signature. This is the language that one writes in a
+`.prl` file.
 
 Defining new operators
 ^^^^^^^^^^^^^^^^^^^^^^
