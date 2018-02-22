@@ -59,21 +59,24 @@ Multiverses are supported through kind markers such as ``kan`` or ``discrete``. 
 where ``a = b kan type`` means ``a`` and ``b`` are equal Kan types.
 (The judgment ``a = b type`` is really an abbreviation of ``a = b pre type``
 because ``pre`` is the default kind.)
-To save some typing, ``a type`` stands for ``a = a type``
+Following the PRL family of proof assistants
+which use partial equivalence relations,
+well-typedness is defined as the equality of the type and itself;
+to save some typing, ``a type`` stands for ``a = a type``
 and ``a kan type`` stands for ``a = a kan type``.
 
 In the presence of universes and equality types,
 one might wonder why we still have a dedicated judgmental form for type equality.
-It turns out to be very convenient to state type equality without specifying the universe levels;
-with this, we can survive without a universe level synthesizer as the one in Nuprl,
-which was created to alleviate the burden of guessing universe levels.
-One may intuitively treat the judgment
+That is, one may intuitively treat the judgment
 
 ::
 
     a = b type
 
-as ``(= (U omega) a b) true`` except that we cannot talk about ``(U omega)`` internally.
+as ``(= (U l) a b) true`` for some unknown universe level ``l``.
+It turns out to be very convenient to state type equality without specifying the universe levels;
+with this, we survived without a universe level synthesizer as the one in Nuprl,
+which was created to alleviate the burden of guessing universe levels.
 
 .. _jdg-subtype:
 
@@ -118,7 +121,7 @@ assert that ``a`` is a subuniverse of the universe of the specified kind at the 
 Intuitively, ``a <= k universe`` would mean ``a <= (U omega k) type``
 if we could internalize universes at the omega level.
 The realizer must be ``ax``.
-These judgments are similar to the subtyping judgments
+These judgments are similar to the :ref:`subtyping judgments <jdg-subtype>`
 except that the right hand side is some omega-level universe.
 
 .. _jdg-term:
@@ -127,9 +130,7 @@ Term
 ----
 
 A *term* judgment is displayed in the sort of the expression
-it is asking for, for example
-
-::
+it is asking for, for example::
 
     dim
     exp
