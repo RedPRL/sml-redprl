@@ -154,7 +154,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'RedPRL', u'RedPRL Documentation',
-     author, 'RedPRL', 'One line description of project.',
+     author, 'RedPRL', u'The People\'s Refinement Logic',
      'Miscellaneous'),
 ]
 
