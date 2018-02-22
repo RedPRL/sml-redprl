@@ -154,7 +154,7 @@ expression in the object language is an *untyped program* or *realizer* in the
 language of Computational Higher Type Theory (CHTT).
 
 These expressions include ordinary programming constructs like lambda
-abstraction and application, records, projectsion, etc., as well as exotic
+abstraction and application, records, projection, etc., as well as exotic
 programming constructs inspired by cubical sets:
 
 - dimension expressions ``i``, ``0``, ``1``

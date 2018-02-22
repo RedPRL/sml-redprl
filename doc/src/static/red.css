@@ -29,9 +29,8 @@
   color: white !important;
 }
 
-.wy-nav-content a:not(.btn) {
+.wy-nav-content a.reference {
   text-decoration: underline;
-  text-decoration-style: dotted;
 }
 
 body, h1, h2, h3, h4, h5, h6, pre, code {
@@ -88,7 +87,7 @@ code {
 }
 
 .wy-nav-content a:visited {
-  color: #e94c49;
+  color: #2980B9;
 }
 
 div[class^='highlight'] pre {
