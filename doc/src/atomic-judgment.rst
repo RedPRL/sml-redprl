@@ -15,11 +15,15 @@ Note that these forms are very different from the presentation on papers.
 Truth
 -----
 
-A *truth* judgment::
+A *truth* judgment
+
+::
 
     a true
 
-or simply::
+or simply
+
+::
 
     a
 
@@ -32,7 +36,9 @@ In fact, all top-level statements must be in this judgmental form.
 Type Equality
 -------------
 
-A *type equality* judgment::
+A *type equality* judgment
+
+::
 
     a = b type
 
@@ -57,7 +63,9 @@ one might wonder why we still have a dedicated judgmental form for type equality
 It turns out to be very convenient to state type equality without specifying the universe levels;
 with this, we can survive without a universe level synthesizer as the one in Nuprl,
 which was created to alleviate the burden of guessing universe levels.
-One may intuitively treat the judgment::
+One may intuitively treat the judgment
+
+::
 
     a = b type
 
@@ -66,7 +74,9 @@ as ``(= (U omega) a b) true`` except that we cannot talk about ``(U omega)`` int
 Subtyping
 ---------
 
-A *subtype* judgment::
+A *subtype* judgment
+
+::
 
     a <= b type
 
@@ -86,7 +96,9 @@ is the one induced by cumulativity of universes.
 Subkinding
 ----------
 
-*Subkind* judgments::
+*Subkind* judgments
+
+::
 
     a <= discrete universe
     a <= kan universe
@@ -106,7 +118,9 @@ Term
 ----
 
 A *term* judgment is displayed in the sort of the expression
-it is asking for, for example::
+it is asking for, for example
+
+::
 
     dim
     exp
