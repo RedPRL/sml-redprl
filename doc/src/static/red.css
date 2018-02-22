@@ -30,12 +30,19 @@
 }
 
 
-body, h1, h2, h3, h4, h5, h6, pre {
+body, h1, h2, h3, h4, h5, h6, pre, code {
   font-family: 'PragmataPro' !important;
 }
 
 pre {
   padding: 12px 12px 0px 12px !important;
+}
+
+code {
+  border: none !important;
+  background: none !important;
+  padding: 0 0 0 0 !important;
+  font-size: 100% !important;
 }
 
 .wy-nav-side {

@@ -29,6 +29,15 @@ programming constructs inspired by cubical sets:
 - heterogeneous composition: ``(com r~>s [j] ty cap [i=0 [j] tube0] ..)``
 - many other constructs, such as lines of types induced by equivalences (univalence)
 
+.. todo::
+  Give systematic summary of object language terms.
+
+
+Tactic language
+---------------
+
+.. todo::
+  Summarize tactic language
 
 Top-level vernacular
 --------------------
@@ -99,4 +108,16 @@ signature.
   ] by [
     // script here (tactic expression)
   ].
+
+
+Printing objects
+^^^^^^^^^^^^^^^^
+
+To print a previously-defined object from the signature, one can write the
+following command:
+
+::
+
+  Print OpName.
+
 
