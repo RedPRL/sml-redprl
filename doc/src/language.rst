@@ -176,8 +176,38 @@ programming constructs inspired by cubical sets:
 - heterogeneous composition: ``(com r~>s [j] ty cap [i=0 [k] tube0] ..)``
 - many other constructs, such as lines of types induced by equivalences (univalence)
 
+Below are summarized many common forms of object language expression.
+
++-----------------------------+--------------------------------+
+| Operation                   | Expression                     |
++=============================+================================+
+| dependent function type     | ``(-> [x y... : A]... C)``     |
++-----------------------------+--------------------------------+
+| lambda abstraction          | ``(lam [x y...] e)``           |
++-----------------------------+--------------------------------+
+| function application        | ``($ f e1 e2...)``             |
++-----------------------------+--------------------------------+
+| path type                   | ``(path [i] A e0 e1)``         |
++-----------------------------+--------------------------------+
+| line type                   | ``(-> [i : dim]... C)``        |
++-----------------------------+--------------------------------+
+| path/line abstraction       | ``(abs [i j...] e)``           |
++-----------------------------+--------------------------------+
+| path/line application       | ``(@ e r1 r2...)``             |
++-----------------------------+--------------------------------+
+| dependent record type       | ``(record [lbl... : A]... C)`` |
++-----------------------------+--------------------------------+
+| tuple (record element)      | ``(tuple [lbl e]...)``         |
++-----------------------------+--------------------------------+
+| record projection           | ``(!lbl e)``                   |
++-----------------------------+--------------------------------+
+| ...                         |                                |
++-----------------------------+--------------------------------+
+
+
 .. todo::
-  Give systematic summary of object language terms.
+  Finish summary of object language terms.
+
 
 
 .. _tactic-language:
@@ -189,5 +219,3 @@ Tactic language
 
 .. todo::
   Summarize tactic language
-
-
