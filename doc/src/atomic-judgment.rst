@@ -118,14 +118,15 @@ Subkinding
     a <= pre universe
 
 assert that ``a`` is a subuniverse of the universe of the specified kind at the omega level.
-Intuitively, ``a <= k universe`` would be the :ref:`subtyping judgment <jdg-subtype>` ``a <= (U k omega) type``
+Intuitively, ``a <= k universe`` would be the :ref:`subtyping judgment <jdg-subtype>` ``a <= (U omega k) type``
 if we could internalize universes at the omega level.
 The realizer must be ``ax``.
 These judgments play the same role as :ref:`subtyping judgments <jdg-subtype>`
 except that they handle the cases where the right hand side is some omega-level universe.
 Suppose a function ``f`` is in type ``(-> a b)``.
 The rule to determine whether the function application ``($ f x)`` is a type
-will demand ``b <= pre universe`` rather than ``b = (U l) type`` for some universe level ``l``.
+will demand ``b <= pre universe`` rather than ``b = (U omega) type``
+(or ``b = (U l) type`` for some universe level ``l``).
 
 .. _jdg-term:
 
