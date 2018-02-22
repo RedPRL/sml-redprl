@@ -10,11 +10,11 @@ BUILDDIR      = build
 
 # Put it first so that "make" without argument is like "make help".
 help:
-	@$(SPHINXBUILD) $(SPHINXOPTS) $(O) -M help "$(SOURCEDIR)" "$(BUILDDIR)"
+	@$(SPHINXBUILD) -M help $(SPHINXOPTS) $(O) "$(SOURCEDIR)" "$(BUILDDIR)"
 
 .PHONY: help Makefile
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
-	@$(SPHINXBUILD) $(SPHINXOPTS) $(O) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)"
+	@$(SPHINXBUILD) -M $@ $(SPHINXOPTS) $(O) "$(SOURCEDIR)" "$(BUILDDIR)"
