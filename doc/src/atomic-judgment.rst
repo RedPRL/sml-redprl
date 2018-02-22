@@ -47,7 +47,8 @@ Multiverses are supported through kind markers such as ``kan`` or ``discrete``. 
     a = b pre type
 
 where ``a = b kan type`` means ``a`` and ``b`` are equal Kan types.
-(The judgment ``a = b type`` is really an abbreviation to be ``a = b pre type``.)
+(The judgment ``a = b type`` is really an abbreviation of ``a = b pre type``
+because ``pre`` is the default kind.)
 To save some typing, ``a type`` stands for ``a = a type``
 and ``a kan type`` stands for ``a = a kan type``.
 
