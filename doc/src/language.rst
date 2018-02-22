@@ -13,7 +13,7 @@ treatment of binding with syntactic sorts. |RedPRL| has three main sorts: ``exp`
 (the sort of expressions), ``dim`` (the sort of dimension expressions) and ``tac``
 (the sort of tactic expressions).
 
-The object language is written in a variant of s-expression notation, where
+The object language is written in a variant of s-expression notation, with
 binding operators written systematically in the style of ``(lam [x] x)``. An
 expression in the object language is an *untyped program* or *realizer* in the
 language of Computational Higher Type Theory (CHTT).
