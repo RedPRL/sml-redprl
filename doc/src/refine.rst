@@ -1,6 +1,9 @@
 Refinement Rules
 ==================================
 
+.. todo::
+  Fill in the refinement rules listed below.
+
 Booleans
 --------
 
