@@ -172,7 +172,7 @@ Below are summarized common forms overlapping with other calculi.
 +-----------------------------+----------------------------------+
 | Ordinary Operation          | Expression                       |
 +=============================+==================================+
-| dependent function type     | ``(-> [x y ... : ty] ... ty)``     |
+| dependent function type     | ``(-> [x y ... : ty] ... ty)``   |
 +-----------------------------+----------------------------------+
 | lambda abstraction          | ``(lam [x y ...] e)``            |
 +-----------------------------+----------------------------------+
