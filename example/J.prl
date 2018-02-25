@@ -43,12 +43,11 @@ Thm J/comp(#l:lvl) : [
     ($ (J #l) ty a fam d a (abs [_] a))
     d))
 ] by [
-  lam ty a fam d =>
-    `(abs [k]
-      (com 0~>1
-       [i] ($ fam (J/comp/cube i (dim 1) k ty a)
-            (abs [j] (J/comp/cube i j k ty a)))
-       d
-       [k=0 [i] (J/coe i ty a fam d (abs [_] a))]
-       [k=1 [_] d]));
+  lam ty a fam d => abs k =>
+    `(com 0~>1
+      [i] ($ fam (J/comp/cube i (dim 1) k ty a)
+           (abs [j] (J/comp/cube i j k ty a)))
+      d
+      [k=0 [i] (J/coe i ty a fam d (abs [_] a))]
+      [k=1 [_] d])
 ].
