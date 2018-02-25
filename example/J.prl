@@ -4,6 +4,14 @@ Def J/square(#i:dim,#j:dim, #ty, #a, #p) = [
    [#i=1 [j] (@ #p j)])
 ].
 
+Def J/coe(#j:dim, #ty, #a, #fam, #d, #p) = [
+  (coe 0~>#j
+   [i] ($ #fam
+        (J/square i (dim 1) #ty #a #p)
+        (abs [j] (J/square i j #ty #a #p)))
+   #d)
+].
+
 Thm J(#l:lvl) : [
   (->
    [ty : (U #l kan)]
@@ -14,13 +22,32 @@ Thm J(#l:lvl) : [
    [p : (path [_] ty a x)]
    ($ fam x p))
 ] by [
-  lam ty a fam d x p =>
-    `(coe 0~>1
-      [i] ($ fam
-             (J/square i (dim 1) ty a p)
-             (abs [j] (J/square i j ty a p)))
-      d)
+  lam ty a fam d x p => `(J/coe (dim 1) ty a fam d p)
 ].
 
+Def J/comp/cube(#i:dim,#j:dim,#k:dim, #ty, #a) = [
+  (hcom 0~>#j #ty #a
+   [#k=0 [j] (J/square #i j #ty #a (abs [_] #a))]
+   [#k=1 [_] #a]
+   [#i=0 [_] #a]
+   [#i=1 [_] #a])
+].
 
-Print J.
+Thm J/comp(#l:lvl) : [
+  (->
+   [ty : (U #l kan)]
+   [a : ty]
+   [fam : (-> [x : ty] (path [_] ty a x) (U #l kan))]
+   [d : ($ fam a (abs [_] a))]
+   (path [_] ($ fam a (abs [_] a))
+    ($ (J #l) ty a fam d a (abs [_] a))
+    d))
+] by [
+  lam ty a fam d => abs k =>
+    `(com 0~>1
+      [i] ($ fam (J/comp/cube i (dim 1) k ty a)
+           (abs [j] (J/comp/cube i j k ty a)))
+      d
+      [k=0 [i] (J/coe i ty a fam d (abs [_] a))]
+      [k=1 [_] d])
+].
