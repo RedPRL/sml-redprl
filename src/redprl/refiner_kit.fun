@@ -35,24 +35,21 @@ struct
       end
   end
 
-  (* assert that the term 'm' has only free variables 'us' and free variables 'xs' at most. *)
-  fun assertWellScoped xs m = 
+  (* assert that the term 'm' has only free variables from 'H' at most. *)
+  fun assertWellScoped H m = 
     let
-      val vars = List.foldl (fn (x, vars) => Var.Ctx.remove vars x) (Abt.varctx m) xs
-      fun ppVars us = Fpp.Atomic.squares @@ Fpp.hsep @@ List.map TermPrinter.ppVar us
+      val vars = Hyps.foldl (fn (x, tau, vars) => Var.Ctx.remove vars x) (Abt.varctx m) H
+      fun ppVars xs = Fpp.Atomic.squares @@ Fpp.hsep @@ List.map TermPrinter.ppVar xs
       val varsOk = Var.Ctx.isEmpty vars
     in
       if varsOk then
         ()
       else
         raise E.error
-          [Fpp.text "Internal Error:",
-           Fpp.text "Validation term",
+          [Fpp.text "Term",
            TermPrinter.ppTerm m,
            Fpp.text "had unbound variables",
-           ppVars (Var.Ctx.domain vars),
-           Fpp.text "whereas we expected only",
-           ppVars xs]
+           ppVars (Var.Ctx.domain vars)]
     end
 
   (* hypotheses *)
@@ -67,7 +64,6 @@ struct
     let
       val (xs, taus) = Hyps.foldr (fn (x, jdg, (xs, taus)) => (x::xs, AJ.synthesis jdg::taus)) ([],[]) H
     in
-      assertWellScoped xs m;
       Abt.checkb (Abt.\ (xs, m), (taus, Abt.sort m))
     end
 
