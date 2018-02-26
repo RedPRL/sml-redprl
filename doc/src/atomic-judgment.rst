@@ -31,13 +31,20 @@ or simply
 
 means ``a`` is an inhabited type.
 Any inhabitant can realize this judgment.
+For example, the expression ``1`` realizes
+
+::
+
+    int
+
+because ``1`` is in the type ``int``.
 This is commonly used
 to state a theorem or specify the type of the program to be implemented.
 In fact, all top-level theorems (see :ref:`def-theorem`) must be in this judgmental form.
 
 .. _jdg-eqtype:
 
-Type Equality
+Type equality
 -------------
 
 A *type equality* judgment
@@ -48,7 +55,14 @@ A *type equality* judgment
 
 means ``a`` are ``b`` are equal types (without regard to universe level),
 and its realizer must be ``ax``, the same as the realizer of equality types.
-Multiverses are supported through kind markers such as ``kan`` or ``discrete``. For example::
+For example, we have
+
+::
+
+    int = int type
+
+realized by ``ax``.
+Multiverses are supported through kind markers such as ``kan`` or ``discrete``::
 
     a = b discrete type
     a = b kan type
@@ -100,16 +114,20 @@ rather than type equality. For example, if a function ``f`` is in type ``(-> a b
 the rule to determine whether the function application ``($ f x)`` is in type ``b'``
 will only demand ``b <= b' type`` rather than ``b = b' type``.
 That said, the only non-trivial subtyping relation one can prove in |RedPRL| now
-is the one induced by cumulativity of universes.
+is the cumulativity of universes. One instance would be
+
+::
+
+    (U 0 discrete) <= (U 1 kan)
+
+realized by ``ax``.
 
 .. _jdg-subkind:
 
 Subkinding
 ----------
 
-*Subkind* judgments
-
-::
+The following are *subkind* judgments::
 
     a <= discrete universe
     a <= kan universe
@@ -117,7 +135,7 @@ Subkinding
     a <= hcom universe
     a <= pre universe
 
-assert that ``a`` is a subuniverse of the universe of the specified kind at the omega level.
+They assert that ``a`` is a subuniverse of the universe of the specified kind at the omega level.
 Intuitively, ``a <= k universe`` would be the :ref:`subtyping judgment <jdg-subtype>` ``a <= (U omega k) type``
 if we could internalize universes at the omega level.
 The realizer must be ``ax``.

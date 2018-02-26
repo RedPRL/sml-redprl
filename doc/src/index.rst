@@ -8,6 +8,7 @@ RedPRL User Guide
    tutorial
    language
    atomic-judgment
+   multiverse
    refine
 
 

@@ -2,17 +2,20 @@ Language Reference
 ==================
 
 |RedPRL| documents contain expressions written in multiple languages: the
-top-level vernacular, the object language, and the tactic language.
+:ref:`top-level vernacular <top-level-vernacular>`, the :ref:`object language
+<object-language>`, and the :ref:`tactic language <tactic-language>`.
 
+
+.. _top-level-vernacular:
 
 Top-level vernacular
 --------------------
 
 The top-level vernacular is a very simple language of commands that interact
-with the *signature*: this language is for declaring definitional extensions,
-new theorems and tactics; the top-level vernacular can also be used to print
-out an object from the signature. This is the language that one writes in a
-``.prl`` file.
+with the *signature*: this language is for declaring :ref:`new theorems
+<def-theorem>`, :ref:`definitional extensions <def-operator>` and :ref:`tactics
+<def-tactic>`; the top-level vernacular can also be used to print out an object
+from the signature. This is the language that one writes in a ``.prl`` file.
 
 .. _def-theorem:
 
@@ -34,8 +37,11 @@ the signature.
   ].
 
 
-Most definitions in a RedPRL signature will take the form of theorems. 
+Most definitions in a RedPRL signature will take the form of theorems; but
+other forms of definition may be preferable, :ref:`depending on circumstances
+<thm-vs-def>`.
 
+.. _def-operator:
 
 Defining new operators
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -67,8 +73,10 @@ A simple definition of sort ``exp`` without parameters can be abbreviated as fol
 
 Definitions of this kind are not subject to any typing conditions in CHTT;
 instead, if you use a primitive definition within a proof, you will have to
-prove that it is well-typed. 
+prove that it is well-typed.
 
+
+.. _def-tactic:
 
 Defining tactics
 ^^^^^^^^^^^^^^^^
@@ -96,6 +104,8 @@ following command:
 
   Print OpName.
 
+
+.. _thm-vs-def:
 
 When to use theorems or definitions?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -138,6 +148,7 @@ One advantage of theorems over definitions is that RedPRL knows their type
 intriniscally; whereas definitions must be unfolded and proved to be well-typed
 at each use-site.
 
+.. _object-language:
 
 Object language
 ---------------
@@ -154,20 +165,55 @@ expression in the object language is an *untyped program* or *realizer* in the
 language of Computational Higher Type Theory (CHTT).
 
 These expressions include ordinary programming constructs like lambda
-abstraction and application, records, projection, etc., as well as exotic
-programming constructs inspired by cubical sets:
+abstraction and application, records, projection, etc., as well as
+cubical programming constructs inspired by cubical sets.
+Below are summarized common forms overlapping with other calculi.
 
-- dimension expressions ``i``, ``0``, ``1``
-- dimension abstraction ``(abs [i] m)``
-- dimension application ``(@ m r)``
-- coercion: ``(coe r~>s [i] ty n)``, where ``[i] ty`` is a line of types
-- homogeneous composition: ``(hcom r~>s ty cap [i=0 [j] tube0] ...)``
-- heterogeneous composition: ``(com r~>s [j] ty cap [i=0 [k] tube0] ..)``
-- many other constructs, such as lines of types induced by equivalences (univalence)
++-----------------------------+----------------------------------+
+| Ordinary Operation          | Expression                       |
++=============================+==================================+
+| dependent function type     | ``(-> [x y ... : ty] ... ty)``   |
++-----------------------------+----------------------------------+
+| lambda abstraction          | ``(lam [x y ...] e)``            |
++-----------------------------+----------------------------------+
+| function application        | ``($ f e1 e2 ...)``              |
++-----------------------------+----------------------------------+
+| dependent record type       | ``(record [lbl ... : ty] ..)``   |
++-----------------------------+----------------------------------+
+| tuple (record element)      | ``(tuple [lbl e] ...)``          |
++-----------------------------+----------------------------------+
+| record projection           | ``(! lbl e)``                    |
++-----------------------------+----------------------------------+
+
+The cubical extension is characterized by a new sort of expressions,
+*dimension expressions* along with many new operations.
+A dimension expression can be a dimension variable ``i``, representing an interval,
+or a dimension constant ``0`` or ``1``, representing one of its end point.
+
++-----------------------------+--------------------------------------------+
+| Cubical Operation           | Expression                                 |
++=============================+============================================+
+| coercion                    | ``(coe r~>s [i] ty e)``                    |
++-----------------------------+--------------------------------------------+
+| homogeneous composition     | ``(hcom r~>s ty cap [i=0 [j] tube0] ...)`` |
++-----------------------------+--------------------------------------------+
+| path type                   | ``(path [i] ty e0 e1)``                    |
++-----------------------------+--------------------------------------------+
+| line type                   | ``(-> [i : dim] ... ty)``                  |
++-----------------------------+--------------------------------------------+
+| path/line abstraction       | ``(abs [i j ...] e)``                      |
++-----------------------------+--------------------------------------------+
+| path/line application       | ``(@ e r1 r2 ...)``                        |
++-----------------------------+--------------------------------------------+
+| univalence                  | ``(V a b e)``                              |
++-----------------------------+--------------------------------------------+
 
 .. todo::
-  Give systematic summary of object language terms.
+  Finish summary of object language terms.
 
+
+
+.. _tactic-language:
 
 Tactic language
 ---------------
@@ -176,5 +222,3 @@ Tactic language
 
 .. todo::
   Summarize tactic language
-
-
