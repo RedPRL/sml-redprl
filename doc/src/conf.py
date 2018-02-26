@@ -14,10 +14,10 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
+sys.path.insert(0, os.path.abspath('.'))
 
 
 # -- General configuration ------------------------------------------------
@@ -65,7 +65,7 @@ release = u''
 # Usually you set "language" from the command line for these cases.
 language = None
 
-highlight_language = 'none'
+highlight_language = 'redprl'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -104,7 +104,8 @@ html_static_path = ['static']
 def setup(app):
     app.add_stylesheet('fonts/PragmataPro.css')
     app.add_stylesheet('red.css')
-
+    from redprl import RedPRLLexer
+    app.add_lexer('redprl', RedPRLLexer())
 
 # -- Options for HTMLHelp output ------------------------------------------
 
@@ -157,6 +158,3 @@ texinfo_documents = [
      author, 'RedPRL', u'The People\'s Refinement Logic',
      'Miscellaneous'),
 ]
-
-
-
