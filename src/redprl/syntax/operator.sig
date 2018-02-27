@@ -19,7 +19,7 @@ struct
    (* natural numbers *)
    | NAT | ZERO | SUCC | NAT_REC
    (* integers *)
-   | INT | NEGSUCC | INT_REC
+   | INT | POS | NEGSUCC | INT_REC
    (* empty type *)
    | VOID
    (* circle *)

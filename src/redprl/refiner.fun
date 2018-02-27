@@ -216,8 +216,7 @@ struct
      | "nat/eq/succ" => Lcf.rule Nat.EqSucc
      | "nat/eq/nat-rec" => Lcf.rule Nat.EqElim
      | "int/eqtype" => Lcf.rule Int.EqType
-     | "int/eq/zero" => Lcf.rule Int.EqZero
-     | "int/eq/succ" => Lcf.rule Int.EqSucc
+     | "int/eq/pos" => Lcf.rule Int.EqPos
      | "int/eq/negsucc" => Lcf.rule Int.EqNegSucc
      | "int/eq/int-rec" => Lcf.rule Int.EqElim
      | "void/eqtype" => Lcf.rule Void.EqType
@@ -472,8 +471,7 @@ struct
          | (Syn.ZERO, Syn.ZERO, Syn.NAT) => Lcf.rule Nat.EqZero
          | (Syn.SUCC _, Syn.SUCC _, Syn.NAT) => Lcf.rule Nat.EqSucc
          | (Syn.INT, Syn.INT, Syn.UNIVERSE _) => Lcf.rule Int.EqType
-         | (Syn.ZERO, Syn.ZERO, Syn.INT) => Lcf.rule Int.EqZero
-         | (Syn.SUCC _, Syn.SUCC _, Syn.INT) => Lcf.rule Int.EqSucc
+         | (Syn.POS _, Syn.POS _, Syn.INT) => Lcf.rule Int.EqPos
          | (Syn.NEGSUCC _, Syn.NEGSUCC _, Syn.INT) => Lcf.rule Int.EqNegSucc
          | (Syn.VOID, Syn.VOID, Syn.UNIVERSE _) => Lcf.rule Void.EqType
          | (Syn.S1, Syn.S1, Syn.UNIVERSE _) => Lcf.rule S1.EqType

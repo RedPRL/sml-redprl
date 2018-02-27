@@ -43,8 +43,9 @@ struct
      | SUCC => [[] |: EXP] ->> EXP
      | NAT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
      | INT => [] ->> EXP
+     | POS => [[] |: EXP] ->> EXP
      | NEGSUCC => [[] |: EXP] ->> EXP
-     | INT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
+     | INT_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -198,6 +199,7 @@ struct
      | ZERO => "zero"
      | SUCC => "succ"
      | INT => "int"
+     | POS => "pos"
      | NEGSUCC => "negsucc"
      | INT_REC => "int-rec"
 

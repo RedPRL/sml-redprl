@@ -27,6 +27,8 @@ struct
          Fpp.text "Please report this bug."]
      | INVALID_ATOMIC_JUDGMENT doc => Fpp.hvsep
         [Fpp.text "Not a valid atomic judgment:", Fpp.nest 2 doc]
+     | INVALID_NATURAL_NUMBER doc => Fpp.hsep
+        [Fpp.text "Not a valid natural number:", Fpp.nest 2 doc]
      | INVALID_DIMENSION doc => Fpp.hsep
         [Fpp.text "Not a valid dimension:", Fpp.nest 2 doc]
      | INVALID_LEVEL doc => Fpp.hsep

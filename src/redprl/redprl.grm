@@ -100,11 +100,16 @@ struct
   fun makeDimApp m ns =
     List.foldl (fn (r, app) => O.DIM_APP $$ [[] \ app, [] \ r]) m ns
 
-  fun makeNum i =
+  fun makeNat pos i =
     case IntInf.compare (i, 0) of
-      GREATER => O.SUCC $$ [[] \ makeNum (i - 1)]
+      GREATER => O.SUCC $$ [[] \ makeNat pos (i - 1)]
     | EQUAL => O.ZERO $$ []
-    | LESS => O.NEGSUCC $$ [[] \ makeNum ((~ i) - 1)]
+    | LESS => E.raiseAnnotatedError (pos, E.INVALID_NATURAL_NUMBER (ppIntInf i))
+
+  fun makeInt pos i =
+    case IntInf.compare (i, 0) of
+      LESS => O.NEGSUCC $$ [[] \ makeNat pos ((~ i) - 1)]
+    | _ => O.POS $$ [[] \ makeNat pos i]
 
   datatype ('a, 'b) binder = DIM of 'a | TERM of ('a * 'b)
 
@@ -334,7 +339,7 @@ end
  | FCOM
  | BOOL | TT | FF | IF
  | NAT | ZERO | SUCC | NAT_REC
- | INT | NEGSUCC | INT_REC
+ | INT | POS | NEGSUCC | INT_REC
  | VOID
  | S1 | BASE | LOOP | S1_REC
  | LAMBDA | DOLLAR_SIGN
@@ -377,7 +382,7 @@ end
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
 %nonassoc COMMA AMPERSAND COLON
-%nonassoc FCOM BOOL TT FF IF NAT ZERO SUCC NAT_REC INT NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
+%nonassoc FCOM BOOL TT FF IF NAT ZERO SUCC NAT_REC INT POS NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
 
 
@@ -652,6 +657,7 @@ multinaryOperator
   | SUCC (O.SUCC)
   | NAT_REC (O.NAT_REC)
   (* integers *)
+  | POS (O.POS)
   | NEGSUCC (O.NEGSUCC)
   | INT_REC (O.INT_REC)
   (* S1 *)
@@ -728,9 +734,11 @@ rawTermAndTac
   | LPAREN CAP backDir binding tubeVec RPAREN
     (Ast.$$ (O.CAP, [\ ([], #1 backDir), \([], #2 backDir), binding, \([], tubeVec)]))
 
-  (* numbers and dimensions *)
-  | NUMERAL (Multi.makeNum NUMERAL)
-  | LPAREN DIM dimension RPAREN (dimension)
+  (* numbers *)
+  | NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+  | LPAREN DIM NUMERAL RPAREN (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+  | LPAREN NAT NUMERAL RPAREN (Multi.makeNat (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
+  | LPAREN INT NUMERAL RPAREN (Multi.makeInt (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
 
   (* function types *)
   | LPAREN RIGHT_ARROW arrowQuantifierData RPAREN (Multi.makeFunOrLine (#1 arrowQuantifierData) (#2 arrowQuantifierData))
