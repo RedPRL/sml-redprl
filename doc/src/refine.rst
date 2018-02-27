@@ -2,15 +2,7 @@ Refinement Rules
 ==================================
 
 .. todo::
-  Fill in the refinement rules listed below. Syntax example:
-
-::
-
-  H >> J
-  | H >> foo bar
-  | H >> baz
-  | (ax (fcom
-  | (auto (case
+  Fill in the refinement rules listed below.
 
 Booleans
 --------
@@ -35,6 +27,15 @@ Booleans
 
 :index:`bool/eq/if`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+  H >> (if [x] c0 m0 t0 f0) = (if [x] c1 m1 t1 f1) in ty
+  | H >> t0 = t1 in (c0 tt)
+  | H >> f0 = f1 in (c0 ff)
+  | H, x:bool >> c0 = c1 type
+  | H >> ty <= (c0 m0) type
+  | H >> m0 = m1 synth ~> bool // ...
 
 Natural numbers and integers
 ----------------------------
