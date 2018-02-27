@@ -48,7 +48,7 @@ class RedPRLLexer(RegexLexer):
 
             ('|\\b'.join(misc), Name.Builtin),
 
-            (r'\#', Name.Builtin),
+            (r'\#', Comment), # hack
 
             (r'\(|\)|\[|\]|\.|:|,|\{|\}|_', Punctuation),
             (r'\b\d+', Number),
@@ -56,6 +56,7 @@ class RedPRLLexer(RegexLexer):
             # for typesetting rules:
             (r'^\|', Generic.Traceback),
             (r'>>', Name.Keyword),
+            (r'ext', Name.Keyword),
 
             (r'[A-Z][a-zA-Z0-9\'/-]*', Name.Function),
             (r'[a-z][a-zA-Z0-9\'/-]*', Name.Variable),

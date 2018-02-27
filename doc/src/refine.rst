@@ -30,12 +30,12 @@ Booleans
 
 ::
 
-  H >> (if [x] c0 m0 t0 f0) = (if [x] c1 m1 t1 f1) in ty
-  | H >> t0 = t1 in (c0 tt)
-  | H >> f0 = f1 in (c0 ff)
-  | H, x:bool >> c0 = c1 type
-  | H >> ty <= (c0 m0) type
-  | H >> m0 = m1 synth ~> bool // ...
+  H >> (if [x] (#c0 x) #m0 #t0 #f0) = (if [x] (#c1 x) #m1 #t1 #f1) in #ty
+  | H >> #t0 = #t1 in (#c0 tt)
+  | H >> #f0 = #f1 in (#c0 ff)
+  | H, x:bool >> #c0 = #c1 type
+  | H >> #ty <= (#c0 #m0) type
+  | H >> #m0 = #m1 synth ext #bool // ...
 
 Natural numbers and integers
 ----------------------------
@@ -105,6 +105,12 @@ Dependent functions
 
 :index:`fun/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+  H >> (-> [x : #a] (#b x)) ext (lam [x] (#e x))
+  | H, x:#a >> (#b x) ext (#e x)
+  | H >> #a type
 
 :index:`fun/eq/eta`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
