@@ -1,25 +1,25 @@
 Thm One : [
-  1 in int
+  (int 1) in int
 ] by [
   auto
 ].
 
 Thm NegOne : [
-  -1 in int
+  (int -1) in int
 ] by [
   auto
 ].
 
 Thm NatOne : [
-  1 in nat
+  (nat 1) in nat
 ] by [
   auto
 ].
 
 Thm NatIsInt : [
-  (-> [x : nat] (= int x x))
+  (-> [x : nat] (mem int (pos x)))
 ] by [
-  lam x => elim x; auto
+  lam x => auto
 ].
 
 Thm Pred : [
@@ -50,13 +50,13 @@ Thm Plus/wf : [
 ].
 
 Thm Plus/zeroL : [
-  (-> [n : nat] (= nat ($ Plus 0 n) n))
+  (-> [n : nat] (= nat ($ Plus (nat 0) n) n))
 ] by [
   lam n => auto
 ].
 
 Thm Plus/zero/R : [
-  (-> [n : nat] (= nat ($ Plus n 0) n))
+  (-> [n : nat] (= nat ($ Plus n (nat 0)) n))
 ] by [
   lam n =>
     elim n;
@@ -73,7 +73,6 @@ Thm Plus/succ/L : [
 ] by [
   lam n m => auto
 ].
-
 
 Thm Plus/succ/R : [
   (-> [n m : nat] (= nat ($ Plus n (succ m)) (succ ($ Plus n m))))
@@ -104,7 +103,7 @@ Thm Plus/test0 : [
 Thm Eq/sym : [
   (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
 ] by [
-  lam ty a b eq => symmetry; auto; use eq
+  lam ty a b eq => symmetry; use eq
 ].
 
 Thm Plus/comm : [
@@ -124,7 +123,6 @@ Thm Plus/comm : [
     auto
 ].
 
-
 Thm NatSymm : [
   (->
    [a b : nat]
@@ -142,22 +140,23 @@ Thm IntPred : [
   (-> int int)
 ] by [
   lam a => elim a;
-  [ `-1
-  , with _ a' => 
-      elim a';
-      [`0, with _ n => `(succ n)]
-  , `-2
-  , with _ a' =>
-      `(negsucc (succ (succ a')))
-  ]
+  [ with n => elim n;
+    [ `(int -1)
+    , with _ n' => `(pos n')
+    ]
+  , with n => `(negsucc (succ n))
+  ];
 ].
 
 Thm IntSucc : [
   (-> int int)
 ] by [
   lam a => elim a;
-  [ `1, with _ a' => `(succ (succ a'))
-  , `0, with _ a' => `(negsucc a')
+  [ with n => `(pos (succ n))
+  , with n => elim n;
+    [ `(int 0)
+    , with _ n' => `(negsucc n')
+    ]
   ]
 ].
 
@@ -165,21 +164,25 @@ Thm IntPlus : [
   (-> int int int)
 ] by [
   lam a => elim a;
-  [ lam b => use b
-  , with ind a' => lam b => `($ IntSucc ($ ind b))
-  , lam b => `($ IntPred b)
-  , with ind a' => lam b => `($ IntPred ($ ind b))
+  [ with n => elim n;
+    [ lam b => use b
+    , with ind a' => lam b => `($ IntSucc ($ ind b))
+    ]
+  , with n => elim n;
+    [ lam b => `($ IntPred b)
+    , with ind a' => lam b => `($ IntPred ($ ind b))
+    ]
   ]
 ].
 
 Thm Int4Plus3 : [
-  ($ IntPlus 4 3) = 7 in int
+  ($ IntPlus (int 4) (int 3)) = (int 7) in int
 ] by [ auto ].
 
 Thm Int-6Plus10 : [
-  ($ IntPlus -6 10) = 4 in int
+  ($ IntPlus (int -6) (int 10)) = (int 4) in int
 ] by [ auto ].
 
 Thm Int-1Plus-9 : [
-  ($ IntPlus -1 -9) = -10 in int
+  ($ IntPlus (int -1) (int -9)) = (int -10) in int
 ] by [ auto ].
