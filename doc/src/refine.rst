@@ -11,7 +11,7 @@ Booleans
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> bool = bool k type at l
+  H >> bool = bool #k type at #l
 
 :index:`bool/eq/tt`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
