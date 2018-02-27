@@ -56,7 +56,9 @@ class RedPRLLexer(RegexLexer):
             # for typesetting rules:
             (r'^\|', Generic.Traceback),
             (r'>>', Name.Keyword),
+            (r'<-', Name.Keyword),
             (r'ext', Name.Keyword),
+            (r'where', Name.Keyword),
 
             (r'[A-Z][a-zA-Z0-9\'/-]*', Name.Function),
             (r'[a-z][a-zA-Z0-9\'/-]*', Name.Variable),

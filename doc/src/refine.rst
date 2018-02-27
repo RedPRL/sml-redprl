@@ -31,11 +31,13 @@ Booleans
 ::
 
   H >> (if [x] (#c0 x) #m0 #t0 #f0) = (if [x] (#c1 x) #m1 #t1 #f1) in #ty
+  where bool, psi... <- #m0 = #m1 synth
   | H >> #t0 = #t1 in (#c0 tt)
   | H >> #f0 = #f1 in (#c0 ff)
   | H, x:bool >> #c0 = #c1 type
   | H >> #ty <= (#c0 #m0) type
-  | H >> #m0 = #m1 synth ext #bool // ...
+  | psi...
+
 
 Natural numbers and integers
 ----------------------------
@@ -115,8 +117,29 @@ Dependent functions
 :index:`fun/eq/eta`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+::
+
+  H >> #e = #f in (-> [x : #a] (#b x))
+  | H >> (lam [x] ($ #e x)) = #f in (-> [x : #a] (#b x))
+  | H >> #e = #e in (-> [x : #a] (#b x))
+
+.. todo::
+
+  In the current rule, the first subgoal is omitted if #e and #f are the same term.
+  Another option would be to make the first subgoal unconditional, but then omit the second
+  subgoal.
+
+
 :index:`fun/eq/app`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+  H >> ($ #f0 #e0) = ($ #f1 #e1) in #ty
+  where (-> [x : #a] (#b x)), psi... <- #f0 = #f1 synth
+  | H >> #e0 = #e1 in #a
+  | psi...
+  | H >> #ty <= (#cod #e0) type
 
 Records
 -------
