@@ -144,7 +144,7 @@ Dependent functions
 
 .. todo::
 
-  In the current rule, the first subgoal is omitted if #e and #f are the same term.
+  In the current rule, the first subgoal is omitted if ``#e`` and ``#f`` are the same term.
   Another option would be to make the first subgoal unconditional, but then omit the second
   subgoal.
 
