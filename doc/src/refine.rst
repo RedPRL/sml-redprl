@@ -57,10 +57,7 @@ Natural numbers and integers
 :index:`int/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:index:`int/eq/zero`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:index:`int/eq/succ`
+:index:`int/eq/pos`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :index:`int/eq/negsucc`

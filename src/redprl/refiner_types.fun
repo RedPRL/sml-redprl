@@ -468,26 +468,14 @@ struct
       handle Bind =>
         raise E.error [Fpp.text "Expected typehood sequent"]
 
-    fun EqZero jdg =
+    fun EqPos jdg =
       let
-        val tr = ["Int.EqZero"]
+        val tr = ["Int.EqPos"]
         val H >> ajdg = jdg
         val ((m, n), ty) = View.matchTrueAsEq ajdg
         val Syn.INT = Syn.out ty
-        val Syn.ZERO = Syn.out m
-        val Syn.ZERO = Syn.out n
-      in
-        T.empty #> (H, axiom)
-      end
-
-    fun EqSucc jdg =
-      let
-        val tr = ["Int.EqSucc"]
-        val H >> ajdg = jdg
-        val ((m, n), ty) = View.matchTrueAsEq ajdg
-        val Syn.INT = Syn.out ty
-        val Syn.SUCC m' = Syn.out m
-        val Syn.SUCC n' = Syn.out n
+        val Syn.POS m' = Syn.out m
+        val Syn.POS n' = Syn.out n
         val goal = makeEq tr H ((m', n'), Syn.into Syn.NAT)
       in
         |>: goal #> (H, axiom)
@@ -515,37 +503,29 @@ struct
 
         val nat = Syn.into Syn.NAT
         val zero = Syn.into Syn.ZERO
-        val succ = Syn.into o Syn.SUCC
+        val pos = Syn.into o Syn.POS
         val negsucc = Syn.into o Syn.NEGSUCC
 
-        (* zero branch *)
-        val (goalZ, holeZ) = makeTrue tr H (substVar (zero, z) cz)
-
-        (* succ branch *)
+        (* pos branch *)
         val u = Sym.new ()
+        val (goalP, holeP) =
+          makeTrue
+            tr
+            (H @> (u, AJ.TRUE nat))
+            (substVar (pos @@ VarKit.toExp u, z) cz)
+
+        (* negsucc branch *)
         val v = Sym.new ()
-        val cu = VarKit.rename (u, z) cz
-        val (goalS, holeS) =
+        val (goalN, holeN) =
           makeTrue
             tr
-            (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
-            (substVar (succ @@ VarKit.toExp u, z) cz)
-
-        (* (negsucc zero) branch *)
-        val (goalNSZ, holeNSZ) = makeTrue tr H (substVar (negsucc zero, z) cz)
-
-        (* (negsucc succ) branch *)
-        val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, z) cz
-        val (goalNSS, holeNSS) =
-          makeTrue
-            tr
-            (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cnegsuccu))
-            (substVar (negsucc @@ succ @@ VarKit.toExp u, z) cz)
+            (H @> (v, AJ.TRUE nat))
+            (substVar (negsucc @@ VarKit.toExp v, z) cz)
 
         (* realizer *)
-        val evidence = Syn.into @@ Syn.INT_REC ((z, cz), VarKit.toExp z, (holeZ, (u, v, holeS), holeNSZ, (u, v, holeNSS)))
+        val evidence = Syn.into @@ Syn.INT_REC ((z, cz), VarKit.toExp z, ((u, holeP), (v, holeN)))
       in
-        |>: goalZ >: goalS >: goalNSZ >: goalNSS #> (H, evidence)
+        |>: goalP >: goalN #> (H, evidence)
       end
 
     fun EqElim jdg =
@@ -553,13 +533,12 @@ struct
         val tr = ["Int.EqElim"]
         val H >> ajdg = jdg
         val ((elim0, elim1), ty) = View.matchAsEq ajdg
-        val Syn.INT_REC ((x, e0x), m0, (n0, (a0, b0, p0), q0, (c0, d0, r0))) = Syn.out elim0
-        val Syn.INT_REC ((y, e1y), m1, (n1, (a1, b1, p1), q1, (c1, d1, r1))) = Syn.out elim1
+        val Syn.INT_REC ((x, e0x), m0, ((a0, n0), (b0, p0))) = Syn.out elim0
+        val Syn.INT_REC ((y, e1y), m1, ((a1, n1), (b1, p1))) = Syn.out elim1
 
         val int = Syn.into Syn.INT
         val nat = Syn.into Syn.NAT
-        val zero = Syn.into Syn.ZERO
-        val succ = Syn.into o Syn.SUCC
+        val pos = Syn.into o Syn.POS
         val negsucc = Syn.into o Syn.NEGSUCC
 
         (* motive *)
@@ -575,35 +554,27 @@ struct
         (* result type *)
         val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) e0x, ty)
 
-        (* zero branch *)
-        val goalZ = makeEq tr H ((n0, n1), (substVar (zero, x) e0x))
-
-        (* succ branch *)
+        (* pos branch *)
         val u = Sym.new ()
+        val n0 = VarKit.rename (u, a0) n0
+        val n1 = VarKit.rename (u, a1) n1
+        val goalP =
+          makeEq
+            tr
+            (H @> (u, AJ.TRUE nat))
+            ((p0, p1), substVar (pos @@ VarKit.toExp u, x) e0x)
+
+        (* negsucc branch *)
         val v = Sym.new ()
-        val cu = VarKit.rename (u, x) e0x
-        val p0 = VarKit.renameMany [(u, a0), (v, b0)] p0
-        val p1 = VarKit.renameMany [(u, a1), (v, b1)] p1
-        val goalS =
+        val p0 = VarKit.rename (v, b0) p0
+        val p1 = VarKit.rename (v, b1) p1
+        val goalN =
           makeEq
             tr
-            (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cu))
-            ((p0, p1), substVar (succ @@ VarKit.toExp u, x) e0x)
-
-        (* (negsucc zero) branch *)
-        val goalNSZ = makeEq tr H ((q0, q1), substVar (negsucc zero, x) e0x)
-
-        (* (negsucc succ) branch *)
-        val cnegsuccu = Abt.substVar (negsucc @@ VarKit.toExp u, x) e0x
-        val r0 = VarKit.renameMany [(u, c0), (v, d0)] r0
-        val r1 = VarKit.renameMany [(u, c1), (v, d1)] r1
-        val goalNSS =
-          makeEq
-            tr
-            (H @> (u, AJ.TRUE nat) @> (v, AJ.TRUE cnegsuccu))
-            ((r0, r1), substVar (negsucc @@ succ @@ VarKit.toExp u, x) e0x)
+            (H @> (v, AJ.TRUE nat))
+            ((n0, n1), substVar (negsucc @@ VarKit.toExp v, x) e0x)
       in
-        |>: goalM >: goalZ >: goalS >: goalNSZ >: goalNSS >: goalE >:? goalTy #> (H, axiom)
+        |>: goalM >: goalP >: goalN >: goalE >:? goalTy #> (H, axiom)
       end
   end
 

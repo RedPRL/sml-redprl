@@ -16,7 +16,7 @@ syn match   redHole '?\(\a\|\d\|\'\|\/\|\-\)*'
 syn match   redMeta '#'
 
 syn keyword redExpr ax fcom bool tt ff if nat
-syn keyword redExpr zero succ nat-rec int negsucc int-rec void S1 base loop
+syn keyword redExpr zero succ nat-rec int pos negsucc int-rec void S1 base loop
 syn keyword redExpr S1-rec lam record tuple path line pushout left right glue
 syn keyword redExpr pushout-rec coeq cecod cedom coeq-rec mem ni box cap V VV WU
 syn keyword redExpr Vin Vproj U abs hcom com coe lmax omega

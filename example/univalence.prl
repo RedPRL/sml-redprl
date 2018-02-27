@@ -78,10 +78,10 @@ Thm LemPropF(#l:lvl) : [
 ] by [
   lam ty/a ty/b prop/b a0 a1 p b0 b1 => abs x =>
     use prop/b
-      [ use p [`(dim x)]
+      [ use p [`x]
       , `(coe 0~>x [i] ($ ty/b (@ p i)) b0)
       , `(coe 1~>x [i] ($ ty/b (@ p i)) b1)
-      , `(dim x)
+      , `x
       ]
 ].
 
@@ -95,8 +95,8 @@ Thm LemSig(#l:lvl) : [
    (path [_] (* [a : ty/a] ($ ty/b a)) u v))
 ] by [
   lam ty/a ty/b prop/b {u1, u2} {v1, v2} p => abs x =>
-    { use p [`(dim x)]
-    , use (LemPropF #l) [`ty/a, `ty/b, `prop/b, `u1, `v1, `p, `u2, `v2, `(dim x)]
+    { use p [`x]
+    , use (LemPropF #l) [`ty/a, `ty/b, `prop/b, `u1, `v1, `p, `u2, `v2, `x]
     }
 ].
 
@@ -130,7 +130,7 @@ Thm PropPi(#l:lvl) : [
 ] by [
   lam ty/a ty/b prop/b f g =>
   abs x => lam a => 
-    use prop/b [`a, use f [`a], use g [`a], `(dim x)];
+    use prop/b [`a, use f [`a], use g [`a], `x];
 ].
 
 
@@ -203,7 +203,7 @@ Thm PropIsEquiv(#l:lvl) : [
       [ `(Fiber ty/a ty/b f b)
       , use e0 [`b]
       , use e1 [`b]
-      , `(dim x)
+      , `x
       ]
 ].
 
@@ -311,7 +311,7 @@ Thm UARetSig(#l:lvl) : [
   unfold SigPathToEquiv SigEquivToPath;
   abs x =>
     { use ty/b
-    , use (UARet #l) [`ty/a, `ty/b, `equiv, `(dim x)]
+    , use (UARet #l) [`ty/a, `ty/b, `equiv, `x]
     }
 ].
 

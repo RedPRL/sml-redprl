@@ -40,8 +40,8 @@ struct
    | NAT | ZERO | SUCC of 'a
    | NAT_REC of (variable * 'a) * 'a * ('a * (variable * variable * 'a))
    (* integers, reusing natural numbers *)
-   | INT | NEGSUCC of 'a
-   | INT_REC of (variable * 'a) * 'a * ('a * (variable * variable * 'a) * 'a * (variable * variable * 'a))
+   | INT | POS of 'a | NEGSUCC of 'a
+   | INT_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * 'a))
    (* empty type *)
    | VOID
    (* circle *)
@@ -302,9 +302,10 @@ struct
        | NAT_REC ((x, cx), m, (n, (a, b, p))) => O.NAT_REC $$ [[x] \ cx, [] \ m, [] \ n, [a,b] \ p]
 
        | INT => O.INT $$ []
+       | POS m => O.POS $$ [[] \ m]
        | NEGSUCC m => O.NEGSUCC $$ [[] \ m]
-       | INT_REC ((x, cx), m, (n, (a, b, p), q, (c, d, r))) =>
-           O.INT_REC $$ [[x] \ cx, [] \ m, [] \ n, [a,b] \ p, [] \ q, [c,d] \ r]
+       | INT_REC ((x, cx), m, ((a, n), (b, p))) =>
+           O.INT_REC $$ [[x] \ cx, [] \ m, [a] \ n, [b] \ p]
 
        | VOID => O.VOID $$ []
 
@@ -438,9 +439,10 @@ struct
        | O.NAT_REC $ [[x] \ cx, _ \ m, _ \ n, [a,b] \ p] => NAT_REC ((x, cx), m, (n, (a, b, p)))
 
        | O.INT $ _ => INT
+       | O.POS $ [_ \ m] => POS m
        | O.NEGSUCC $ [_ \ m] => NEGSUCC m
-       | O.INT_REC $ [[x] \ cx, _ \ m, _ \ n, [a,b] \ p, _ \ q, [c,d] \ r] =>
-           INT_REC ((x, cx), m, (n, (a, b, p), q, (c, d, r)))
+       | O.INT_REC $ [[x] \ cx, _ \ m, [a] \ n, [b] \ p] =>
+           INT_REC ((x, cx), m, ((a, n), (b, p)))
 
        | O.VOID $ _ => VOID
 
