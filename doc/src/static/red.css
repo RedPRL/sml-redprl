@@ -98,3 +98,8 @@ div[class^='highlight'] pre {
   color: #e84644;
   font-weight: 700;
 }
+
+pre .gt {
+  background-color: #f7bcbb;
+  color: #f7bcbb;
+}

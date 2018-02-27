@@ -2,19 +2,36 @@ Refinement Rules
 ==================================
 
 .. todo::
-  Fill in the refinement rules listed below.
+  Fill in the refinement rules listed below. Syntax example:
+
+::
+
+  H >> J
+  | H >> foo bar
+  | H >> baz
+  | (ax (fcom
+  | (auto (case
 
 Booleans
 --------
 
 :index:`bool/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> bool = bool k type at l
 
 :index:`bool/eq/tt`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> tt = tt in bool
 
 :index:`bool/eq/ff`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> ff = ff in bool
 
 :index:`bool/eq/if`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
