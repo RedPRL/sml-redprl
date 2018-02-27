@@ -102,8 +102,27 @@ Dependent functions
 :index:`fun/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+::
+
+  H >> (-> [x : #a0] (#b0 x)) = (-> [x : #a1] (#b1 x)) #k type at #l
+  where
+    (#k/dom, #k/cod) <-
+      (discrete, discrete) if #k == discrete
+      (coe, kan) if #k == kan
+      (pre, hcom) if #k == hcom
+      (coe, coe) if #k == coe
+      (pre, pre) if #k == pre
+  | H >> #a0 = #a1 #k/dom type at #l
+  | H, x:#a0 >> (#b0 x) = (#b1 x) #k/cod type at #l
+
 :index:`fun/eq/lam`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+  H >> (lam [x] (#e0 x)) = (lam [x] (#e1 x)) in (-> [x : #a] (#b x))
+  | H, x:#a >> (#e0 x) = (#e1 x) in (#b x)
+  | H >> #a type
 
 :index:`fun/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
