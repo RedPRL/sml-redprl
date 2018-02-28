@@ -159,7 +159,8 @@ Records
 
 ::
 
-  H >> (record [lbl/a : #a0] ... [lbl/b : (#b0 lbl/a ...)]) = (record [lbl/a : #a1] ... [lbl/b : (#b1 lbl/a ...)]) #k type at #l
+  H >> (record [lbl/a : #a0] ... [lbl/b : (#b0 lbl/a ...)])
+     = (record [lbl/a : #a1] ... [lbl/b : (#b1 lbl/a ...)]) #k type at #l
   where
     (#k/hd, #kltl) <-
       (discrete, discrete) if #k == discrete
@@ -183,7 +184,8 @@ Records
 
 ::
 
-  H >> (tuple [lbl/a #p0] ... [lbl/b #q0]) = (tuple [lbl/a #p1] ... [lbl/b #q1]) in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
+  H >> (tuple [lbl/a #p0] ... [lbl/b #q0])
+     = (tuple [lbl/a #p1] ... [lbl/b #q1]) in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
   | H >> #p0 = #p1 in #a
   | ...
   | H >> #q0 = #q1 in (#b #p0 ...)
@@ -196,7 +198,8 @@ Records
 ::
 
   H >> #e0 = #e1 in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
-  | H >> (tuple [lbl/a (! lbl/a #e0)] ... [lbl/b (! lbl/b #e0)]) = #e1 in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
+  | H >> (tuple [lbl/a (! lbl/a #e0)] ... [lbl/b (! lbl/b #e0)])
+  |    = #e1 in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
   | H >> #e0 in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
 
 
