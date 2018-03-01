@@ -31,12 +31,12 @@ Booleans
 ::
 
   H >> (if [x] (#c0 x) #m0 #t0 #f0) = (if [x] (#c1 x) #m1 #t1 #f1) in #ty
-  where bool, psi... <- #m0 = #m1 synth
+  where H >> #m0 = #m1 synth ~> bool, psi
   | H >> #t0 = #t1 in (#c0 tt)
   | H >> #f0 = #f1 in (#c0 ff)
   | H, x:bool >> #c0 = #c1 type
-  | H >> #ty <= (#c0 #m0) type
-  | psi...
+  | psi
+  | H >> (#c0 #m0) <= #ty type
 
 
 Natural numbers and integers
@@ -146,10 +146,10 @@ Dependent functions
 ::
 
   H >> ($ #f0 #e0) = ($ #f1 #e1) in #ty
-  where (-> [x : #a] (#b x)), psi... <- #f0 = #f1 synth
+  where H >> #f0 = #f1 synth ~> (-> [x : #a] (#b x)), psi
   | H >> #e0 = #e1 in #a
-  | psi...
-  | H >> #ty <= (#cod #e0) type
+  | psi
+  | H >> (#cod #e0) <= #ty type
 
 Records
 -------
@@ -211,9 +211,9 @@ Records
 ::
 
   H >> (! lbl #e0) = (! lbl #e1) in #ty
-  where (record [lbl0 : #a0] ... [lbl : (#a ...)] ...), psi <- #e0 = #e1 synth
-  | psi...
-  | H >> #ty = (#a (! lbl0  #e0) ...) type
+  where H >> #e0 = #e1 synth ~> (record [lbl0 : #a0] ... [lbl : (#a ...)] ...), psi
+  | psi
+  | H >> (#a (! lbl0  #e0) ...) <= #ty type
 
 :index:`record/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
