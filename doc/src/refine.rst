@@ -1,4 +1,4 @@
-Refinement Rules
+Refinement rules
 ==================================
 
 .. todo::
@@ -11,7 +11,7 @@ Booleans
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> bool = bool #k type at #l
+  H >> bool = bool in (U #l #k)
 
 :index:`bool/eq/tt`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -101,7 +101,7 @@ Dependent functions
 
 ::
 
-  H >> (-> [x : #a0] (#b0 x)) = (-> [x : #a1] (#b1 x)) #k type at #l
+  H >> (-> [x : #a0] (#b0 x)) = (-> [x : #a1] (#b1 x)) in (U #l #k)
   where
     (#k/dom, #k/cod) <-
       (discrete, discrete) if #k == discrete
@@ -109,8 +109,8 @@ Dependent functions
       (pre, hcom) if #k == hcom
       (coe, coe) if #k == coe
       (pre, pre) if #k == pre
-  | H >> #a0 = #a1 #k/dom type at #l
-  | H, x:#a0 >> (#b0 x) = (#b1 x) #k/cod type at #l
+  | H >> #a0 = #a1 in (U #l #k/dom)
+  | H, x:#a0 >> (#b0 x) = (#b1 x) in (U #l #k/cod)
 
 :index:`fun/eq/lam`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -159,8 +159,9 @@ Records
 
 ::
 
-  H >> (record [lbl/a : #a0] ... [lbl/b : (#b0 lbl/a ...)])
-     = (record [lbl/a : #a1] ... [lbl/b : (#b1 lbl/a ...)]) #k type at #l
+  H >>   (record [lbl/a : #a0] ... [lbl/b : (#b0 lbl/a ...)])
+       = (record [lbl/a : #a1] ... [lbl/b : (#b1 lbl/a ...)])
+       in (U #l #k)
   where
     (#k/hd, #kltl) <-
       (discrete, discrete) if #k == discrete
@@ -168,9 +169,9 @@ Records
       (hcom, kan) if #k == hcom
       (coe, coe) if #k == coe
       (pre, pre) if #k == pre
-  | H >> #a0 = #a1 #k/hd type at #l
+  | H >> #a0 = #a1 in (U #l #k/hd)
   | ...
-  | H, x : #a0, ... >> (#b0 x ...) = (#b1 x ...) #k/tl type at #l
+  | H, x : #a0, ... >> (#b0 x ...) = (#b1 x ...) in (U #l #k/tl)
 
 .. todo::
 
@@ -184,8 +185,9 @@ Records
 
 ::
 
-  H >> (tuple [lbl/a #p0] ... [lbl/b #q0])
-     = (tuple [lbl/a #p1] ... [lbl/b #q1]) in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
+  H >>   (tuple [lbl/a #p0] ... [lbl/b #q0])
+       = (tuple [lbl/a #p1] ... [lbl/b #q1])
+       in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
   | H >> #p0 = #p1 in #a
   | ...
   | H >> #q0 = #q1 in (#b #p0 ...)
@@ -218,7 +220,8 @@ Records
 
 ::
 
-  H >> (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)]) ext (tuple [lbl/a #p/a] ... [lbl/b #p/b])
+  H >> (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
+       ext (tuple [lbl/a #p/a] ... [lbl/b #p/b])
   | H >> #a ext #p/a
   | ...
   | H >> (#b #p/a ...) ext #p/b

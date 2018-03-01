@@ -1,4 +1,4 @@
-Language Reference
+Language reference
 ==================
 
 |RedPRL| documents contain expressions written in multiple languages: the
@@ -37,7 +37,7 @@ the signature.
   ].
 
 
-Most definitions in a RedPRL signature will take the form of theorems; but
+Most definitions in a |RedPRL| signature will take the form of theorems; but
 other forms of definition may be preferable, :ref:`depending on circumstances
 <thm-vs-def>`.
 
@@ -113,7 +113,7 @@ When to use theorems or definitions?
 As a rule of thumb, in most cases it is simpler to interactively construct an
 element of a type using a ``Thm`` declaration than it is to define a code for
 an element, and then prove that it has the intended type. This is why theorems
-are usually preferred to definitions in RedPRL.
+are usually preferred to definitions in |RedPRL|.
 
 However, definitions may be preferable in some cases; consider the definition
 of an abbreviation for the type family ``(lam [ty] (-> nat ty))`` of sequences.
@@ -144,8 +144,8 @@ definition, we can write the following:
   ].
 
 
-One advantage of theorems over definitions is that RedPRL knows their type
-intriniscally; whereas definitions must be unfolded and proved to be well-typed
+One advantage of theorems over definitions is that |RedPRL| knows their type
+intrinsically; whereas definitions must be unfolded and proved to be well-typed
 at each use-site.
 
 .. _object-language:
