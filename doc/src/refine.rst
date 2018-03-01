@@ -159,7 +159,7 @@ Records
 
 ::
 
-  H >>   (record [lbl/a : #a0] ... [lbl/b : (#b0 lbl/a ...)])
+  H >> (record [lbl/a : #a0] ... [lbl/b : (#b0 lbl/a ...)])
        = (record [lbl/a : #a1] ... [lbl/b : (#b1 lbl/a ...)])
        in (U #l #k)
   where
@@ -185,7 +185,7 @@ Records
 
 ::
 
-  H >>   (tuple [lbl/a #p0] ... [lbl/b #q0])
+  H >> (tuple [lbl/a #p0] ... [lbl/b #q0])
        = (tuple [lbl/a #p1] ... [lbl/b #q1])
        in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
   | H >> #p0 = #p1 in #a
@@ -201,7 +201,7 @@ Records
 
   H >> #e0 = #e1 in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
   | H >> (tuple [lbl/a (! lbl/a #e0)] ... [lbl/b (! lbl/b #e0)])
-  |    = #e1 in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
+  |      = #e1 in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
   | H >> #e0 in (record [lbl/a : #a] ... [lbl/b : (#b lbl/a ...)])
 
 
