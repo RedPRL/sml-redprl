@@ -26,13 +26,13 @@ Features
 Papers & Talks
 --------------
 
-* Favonia. `Computational Higher-Dimensional Type Theory & RedPRL`_. 2018.
+* Favonia. `Cubical Computational Type Theory & RedPRL`_. 2018.
 * Harper, Angiuli. `Computational (Higher) Type Theory`_. ACM POPL Tutorial Session 2018.
 * Angiuli, Harper, Wilson. `Computational Higher-Dimensional Type Theory`_. POPL 2017.
 * Sterling, Harper. `Algebraic Foundations of Proof Refinement`_. Draft, 2016.
 
 .. _Computational (Higher) Type Theory: https://www.cs.cmu.edu/~rwh/talks/POPL18-Tutorial.pdf
-.. _Computational Higher-Dimensional Type Theory & RedPRL: http://favonia.org/files/chtt-penn2018-slides.pdf
+.. _Cubical Computational Type Theory & RedPRL: http://favonia.org/files/chtt-penn2018-slides.pdf
 .. _Computational Higher-Dimensional Type Theory: http://www.cs.cmu.edu/~rwh/papers/chitt/popl17.pdf
 .. _Algebraic Foundations of Proof Refinement: http://www.redprl.org/pdfs/afpr.pdf
 
