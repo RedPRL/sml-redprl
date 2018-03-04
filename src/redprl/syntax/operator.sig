@@ -38,6 +38,7 @@ struct
    | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
 
    (* inductive types *)
+   | IND_TYPE of opid
    | IND_RECTYPE_SELF | IND_RECTYPE_FUN
    | IND_RECTERM_INTRO of opid
    | IND_RECTERM_FCOM | IND_RECTERM_LAM | IND_RECTERM_APP

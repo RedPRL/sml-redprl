@@ -82,6 +82,7 @@ struct
      | CEDOM => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | COEQUALIZER_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
+     | IND_TYPE _ => [] ->> EXP
      | IND_RECTYPE_SELF => [] ->> IND_RECTYPE
      | IND_RECTYPE_FUN => [[] |: EXP, [EXP] |: IND_RECTYPE] ->> IND_RECTYPE
      | IND_RECTERM_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC IND_RECTERM] ->> IND_RECTERM
@@ -265,6 +266,7 @@ struct
      | CEDOM => "cedom"
      | COEQUALIZER_REC => "coeq-rec"
 
+     | IND_TYPE _ => "ind-type"
      | IND_RECTYPE_SELF => "ind-rec-self"
      | IND_RECTYPE_FUN => "ind-rec-fun"
      | IND_RECTERM_INTRO _ => "ind-rec-intro" (* FIXME *)
