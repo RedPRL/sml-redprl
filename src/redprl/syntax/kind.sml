@@ -88,7 +88,7 @@ struct
          | (PRE, PRE) => NONE
 
       fun op <= (a, b) = residual (b, a) = NONE
-      val eq = op=
+      val eq : t * t -> bool = op=
     end
   in
     open Internal

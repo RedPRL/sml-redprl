@@ -181,7 +181,7 @@ struct
      | DEV_APPLY_LEMMA pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_LEMMA => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
-  fun eq (th1, th2) = th1 = th2
+  fun eq (th1 : operator, th2) = th1 = th2
 
   val opidsToString =
    ListUtil.joinWith MlId.toString ","
