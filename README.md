@@ -7,7 +7,7 @@
 *RedPRL* is the People's Refinement Logic, a next-generation homage
 to [Nuprl](http://www.nuprl.org); RedPRL was preceeded by
 [JonPRL](http://www.github.com/jonsterling/jonprl), written by Jon Sterling,
-Danny Gratzer and Vincent Rahli.
+Daniel Gratzer and Vincent Rahli.
 
 The purpose of RedPRL is to provide a practical implementation of Computational
 Cubical Type Theory in the Nuprl style, integrating modern advances in proof
