@@ -36,6 +36,16 @@ struct
    | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
    (* coequalizer *)
    | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
+
+   (* inductive types *)
+   | IND_RECTYPE_SELF | IND_RECTYPE_FUN
+   | IND_RECTERM_INTRO of opid
+   | IND_RECTERM_FCOM | IND_RECTERM_LAM | IND_RECTERM_APP
+   | IND_CONSTRUCTOR of {label : opid, ndim : int, nnonrecvar : int, nrecvar : int}
+   | IND_ELIM_MK_CASE of {label : opid, ndim : int, nnonrecvar : int, nrecvar : int}
+   | IND_INTRO of {indtype : opid, label : opid}
+   | IND_ELIM of {indtype : opid}
+
    (* equality *)
    | EQUALITY
    (* universe *)
@@ -52,8 +62,8 @@ struct
 
    | DIM0
    | DIM1
-   | MK_TUBE
-   | MK_BDRY
+   | MK_TUBE of sort
+   | MK_BDRY of sort
    | MK_VEC of sort * int
 
    (* level expressions *)

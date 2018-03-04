@@ -82,14 +82,44 @@ struct
      | CEDOM => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | COEQUALIZER_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
-     | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
-     | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | HCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | GHCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | IND_RECTYPE_SELF => [] ->> IND_RECTYPE
+     | IND_RECTYPE_FUN => [[] |: EXP, [EXP] |: IND_RECTYPE] ->> IND_RECTYPE
+     | IND_RECTERM_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC IND_RECTERM] ->> IND_RECTERM
+     | IND_RECTERM_FCOM => [[] |: DIM, [] |: DIM, [] |: IND_RECTERM, [] |: VEC (TUBE IND_RECTERM)] ->> IND_RECTERM
+     | IND_RECTERM_LAM => [[EXP] |: IND_RECTERM] ->> IND_RECTERM
+     | IND_RECTERM_APP => [[] |: IND_RECTERM, [] |: EXP] ->> IND_RECTERM
+     | IND_CONSTRUCTOR {ndim, nnonrecvar, nrecvar, ...} =>
+         let
+           val dimBinders = List.tabulate (ndim, fn _ => DIM)
+           val nonrecTypes = List.tabulate (nnonrecvar, fn _ => [] |: EXP)
+           val nonrecBinders = List.tabulate (nnonrecvar, fn _ => EXP)
+           val recTypes = List.tabulate (nrecvar, fn _ => nonrecBinders |: IND_RECTYPE)
+           val recBinders = List.tabulate (nrecvar, fn _ => IND_RECTERM)
+           val allBinders = List.concat [dimBinders, nonrecBinders, recBinders]
+         in
+           (nonrecTypes @ recTypes @ [allBinders |: VEC (BDRY IND_RECTYPE)]) ->> IND_CONSTR
+         end
+     | IND_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC EXP] ->> EXP
+     | IND_ELIM_MK_CASE {ndim, nnonrecvar, nrecvar, ...} =>
+         let
+           val dimBinders = List.tabulate (ndim, fn _ => DIM)
+           val nonrecBinders = List.tabulate (nnonrecvar, fn _ => EXP)
+           val recBinders = List.tabulate (nrecvar, fn _ => EXP)
+           val recResultBinders = List.tabulate (nrecvar, fn _ => EXP)
+           val allBinders = List.concat [dimBinders, nonrecBinders, recBinders, recResultBinders]
+         in
+           [allBinders |: EXP] ->> IND_ELIM_CASE
+         end
+     | IND_ELIM _ => [[EXP] |: EXP, [] |: EXP, [] |: VEC IND_ELIM_CASE] ->> EXP
+
+     | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (BDRY EXP)] ->> EXP
+     | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | HCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | GHCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
      | COE => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP] ->> EXP
-     | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | GCOM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | GCOM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
 
      | UNIVERSE => [[] |: LVL, [] |: KND] ->> EXP
      | V => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
@@ -102,8 +132,8 @@ struct
 
      | DIM0 => [] ->> DIM
      | DIM1 => [] ->> DIM
-     | MK_TUBE => [[] |: DIM, [] |: DIM, [DIM] |: EXP] ->> TUBE
-     | MK_BDRY => [[] |: DIM, [] |: DIM, [] |: EXP] ->> BDRY
+     | MK_TUBE tau => [[] |: DIM, [] |: DIM, [DIM] |: tau] ->> TUBE tau
+     | MK_BDRY tau => [[] |: DIM, [] |: DIM, [] |: tau] ->> BDRY tau
      | MK_VEC (tau, n) => List.tabulate (n, fn _ => [] |: tau) ->> VEC tau
 
      | LCONST i => [] ->> LVL
@@ -235,6 +265,17 @@ struct
      | CEDOM => "cedom"
      | COEQUALIZER_REC => "coeq-rec"
 
+     | IND_RECTYPE_SELF => "ind-rec-self"
+     | IND_RECTYPE_FUN => "ind-rec-fun"
+     | IND_RECTERM_INTRO _ => "ind-rec-intro" (* FIXME *)
+     | IND_RECTERM_FCOM => "ind-rec-fcom"
+     | IND_RECTERM_LAM => "ind-rec-lam"
+     | IND_RECTERM_APP => "ind-rec-app"
+     | IND_CONSTRUCTOR _ => "ind-constructor" (* FIXME *)
+     | IND_ELIM_MK_CASE _ => "ind-elim-case" (* FIXME *)
+     | IND_INTRO _ => "ind-intro" (* FIXME *)
+     | IND_ELIM _ => "ind-elim" (* FIXME *)
+
      | UNIVERSE => "U"
      | V => "V"
      | VIN => "Vin"
@@ -246,12 +287,12 @@ struct
 
      | DIM0 => "dim0"
      | DIM1 => "dim1"
-     | MK_TUBE => "tube"
-     | MK_BDRY => "bdry"
+     | MK_TUBE tau => "tube{" ^ RedPrlSort.toString tau ^ "}"
+     | MK_BDRY tau => "bdry{" ^ RedPrlSort.toString tau ^ "}"
      | MK_VEC _ => "vec" 
 
-     | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
-     | LPLUS i => "{lplus " ^ IntInf.toString i ^ "}"
+     | LCONST i => "lconst{" ^ IntInf.toString i  ^ "}"
+     | LPLUS i => "lplus{" ^ IntInf.toString i ^ "}"
      | LMAX => "lmax"
 
      | KCONST k => RedPrlKind.toString k

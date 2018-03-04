@@ -132,14 +132,14 @@ struct
 
     fun outTube tube = 
       let
-        val O.MK_TUBE $ [_ \ r1, _ \ r2, [u] \ mu] = Tm.out tube
+        val O.MK_TUBE _ $ [_ \ r1, _ \ r2, [u] \ mu] = Tm.out tube
       in
         ((r1, r2), (u, mu))
       end
 
     fun outBoundary boundary = 
       let
-        val O.MK_BDRY $ [_ \ r1, _ \ r2, _ \ m] = Tm.out boundary
+        val O.MK_BDRY _ $ [_ \ r1, _ \ r2, _ \ m] = Tm.out boundary
       in
         ((r1, r2), m)
       end
@@ -159,33 +159,33 @@ struct
         List.map (fn _ \ b => outBoundary b) args
       end
 
-    fun intoTube ((r1, r2), (u, e)) = 
-      O.MK_TUBE $$ 
+    fun intoTube tau ((r1, r2), (u, e)) =
+      O.MK_TUBE tau $$
         [[] \ r1,
          [] \ r2,
          [u] \ e]
 
-    fun intoBoundary ((r1, r2), e) = 
-      O.MK_BDRY $$
+    fun intoBoundary tau ((r1, r2), e) =
+      O.MK_BDRY tau $$
         [[] \ r1,
          [] \ r2,
          [] \ e]
 
 
-    fun intoTubes tubes = 
+    fun intoTubes tau tubes =
       let
         val n = List.length tubes
       in
-        O.MK_VEC (O.TUBE, n) $$
-          List.map (fn t => [] \ intoTube t) tubes
+        O.MK_VEC (O.TUBE tau, n) $$
+          List.map (fn t => [] \ intoTube tau t) tubes
       end
 
-    fun intoBoundaries boundaries = 
+    fun intoBoundaries tau boundaries =
       let
         val n = List.length boundaries
       in
-        O.MK_VEC (O.BDRY, n) $$
-          List.map (fn b => [] \ intoBoundary b) boundaries
+        O.MK_VEC (O.BDRY tau, n) $$
+          List.map (fn b => [] \ intoBoundary tau b) boundaries
       end
   end
 
@@ -200,7 +200,7 @@ struct
         [[] \ r1,
          [] \ r2,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun intoHcom {dir = (r1, r2), ty, cap, tubes} =
       O.HCOM $$ 
@@ -208,7 +208,7 @@ struct
          [] \ r2,
          [] \ ty,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun intoGhcom {dir = (r1, r2), ty, cap, tubes} =
       O.GHCOM $$
@@ -216,7 +216,7 @@ struct
          [] \ r2,
          [] \ ty,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun intoCom {dir = (r1, r2), ty=(u,a), cap, tubes} =
       O.COM $$ 
@@ -224,7 +224,7 @@ struct
          [] \ r2,
          [u] \ a,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun intoGcom {dir = (r1, r2), ty=(u,a), cap, tubes} =
       O.GCOM $$
@@ -232,7 +232,7 @@ struct
          [] \ r2,
          [u] \ a,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
 
     (* fun outBoudaries (eqs, boundaries) =
@@ -243,14 +243,14 @@ struct
         [[] \ r1,
          [] \ r2,
          [] \ cap,
-         [] \ intoBoundaries boundaries]
+         [] \ intoBoundaries O.EXP boundaries]
 
     fun intoCap {dir = (r1, r2), coercee, tubes} =
       O.CAP $$ 
         [[] \ r1,
          [] \ r2,
          [] \ coercee,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun outRecordFields (lbls, args) =
       let

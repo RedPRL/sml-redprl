@@ -6,7 +6,9 @@ struct
    | MTAC
    | JDG
    | MATCH_CLAUSE
-   | DIM | TUBE | BDRY
+   | DIM
+   | TUBE of sort
+   | BDRY of sort
    | VEC of sort
    | LVL
    | KND
@@ -14,6 +16,10 @@ struct
    | ACC
    | ANY
    | META_NAME
+   | IND_RECTYPE (* argument types in Part IV *)
+   | IND_RECTERM (* boundary terms in Part IV *)
+   | IND_CONSTR (* the data associated with a constructor in Part IV *)
+   | IND_ELIM_CASE (* the elimination data associated with a constructor in Part IV *)
 end
 
 signature REDPRL_SORT = 

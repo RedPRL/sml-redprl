@@ -564,10 +564,10 @@ equation
   : dimension EQUALS dimension (dimension1, dimension2)
 
 tube
-  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_TUBE, [\ ([], #1 equation), \ ([], #2 equation), binding]))
+  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_TUBE O.EXP, [\ ([], #1 equation), \ ([], #2 equation), binding]))
 
 boundary
-  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_BDRY, [\ ([], #1 equation), \ ([], #2 equation), binding]))
+  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_BDRY O.EXP, [\ ([], #1 equation), \ ([], #2 equation), binding]))
 
 tubes
   : tube tubes (tube :: tubes)
@@ -578,10 +578,10 @@ boundaries
   | ([])
 
 tubeVec
-  : tubes (Multi.makeVec O.TUBE tubes)
+  : tubes (Multi.makeVec (O.TUBE O.EXP) tubes)
 
 boundaryVec
-  : boundaries (Multi.makeVec O.BDRY boundaries)
+  : boundaries (Multi.makeVec (O.BDRY O.EXP) boundaries)
 
 metavar
   : HASH ident (ident)
