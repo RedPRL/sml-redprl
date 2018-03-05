@@ -7,8 +7,9 @@ struct
   type sort = Tm.sort
   type kind = K.t
 
-  type equation = Tm.abt * Tm.abt
-  type dir = Tm.abt * Tm.abt
+  type dim = Tm.abt
+  type equation = dim * dim
+  type dir = dim * dim
   type 'a tube = equation * (variable * 'a)
 
   type label = string
@@ -64,6 +65,16 @@ struct
    | CECOD of 'a
    | CEDOM of 'a * 'a * 'a * 'a
    | COEQUALIZER_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * variable * 'a))
+   (* inductive types *)
+   | IND_TYPE of MlId.t
+   | IND_RECTYPE_SELF
+   | IND_RECTYPE_FUN of 'a * variable * 'a
+   | IND_RECTERM_INTRO of {label: MlId.t, dims: dim list, nonRecParams : 'a list, recParams: 'a list}
+   | IND_RECTERM_FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
+   | IND_RECTERM_LAM of variable * 'a
+   | IND_RECTERM_APP of 'a * 'a
+   | IND_INTRO of {indtype: MlId.t, label: MlId.t, dims : dim list, nonRecParams: 'a list, recParams: 'a list}
+   | IND_REC of MlId.t * (variable * 'a) * 'a * (MlId.t * variable list * variable list * variable list * variable list * 'a) list
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
@@ -144,20 +155,23 @@ struct
         ((r1, r2), m)
       end
 
-    (* TODO: use outVec' *)
-    fun outTubes system =
+    fun outIndRecCase branch =
       let
-        val O.MK_VEC _ $ args = Tm.out system
+        val O.IND_REC_MK_CASE {label, numDim, numNonRecVar, numRecVar} $
+          [vars \ m] = Tm.out branch
+        val dims = List.take (vars, numDim)
+        val vars = List.drop (vars, numDim)
+        val nonRecVars = List.take (vars, numNonRecVar)
+        val vars = List.drop (vars, numNonRecVar)
+        val recVars = List.take (vars, numRecVar)
+        val recResultVars = List.drop (vars, numRecVar)
       in
-        List.map (fn _ \ t => outTube t) args
+        (label, dims, nonRecVars, recVars, recResultVars, m)
       end
 
-    fun outBoundaries boundaries =
-      let
-        val O.MK_VEC _ $ args = Tm.out boundaries
-      in
-        List.map (fn _ \ b => outBoundary b) args
-      end
+    val outTubes = outVec' outTube
+
+    val outBoundaries = outVec' outBoundary
 
     fun intoTube tau ((r1, r2), (u, e)) =
       O.MK_TUBE tau $$
@@ -171,22 +185,26 @@ struct
          [] \ r2,
          [] \ e]
 
+    fun intoIndRecCase (label, dims, nonRecVars, recVars, recResultVars, m) =
+      O.IND_REC_MK_CASE
+        { label = label
+        , numDim = List.length dims
+        , numNonRecVar = List.length nonRecVars
+        , numRecVar = List.length recVars
+        } $$ [ dims @ nonRecVars @ recVars @ recResultVars \ m ]
 
-    fun intoTubes tau tubes =
+    fun intoVec' tau f list =
       let
-        val n = List.length tubes
+        val n = List.length list
       in
-        O.MK_VEC (O.TUBE tau, n) $$
-          List.map (fn t => [] \ intoTube tau t) tubes
+        O.MK_VEC (tau, n) $$ List.map (fn t => [] \ f t) list
       end
 
-    fun intoBoundaries tau boundaries =
-      let
-        val n = List.length boundaries
-      in
-        O.MK_VEC (O.BDRY tau, n) $$
-          List.map (fn b => [] \ intoBoundary tau b) boundaries
-      end
+    fun intoVec tau = intoVec' tau (fn x => x)
+
+    fun intoTubes tau = intoVec' (O.TUBE tau) (intoTube tau)
+
+    fun intoBoundaries tau = intoVec' (O.BDRY tau) (intoBoundary tau)
   end
 
   local
@@ -361,6 +379,35 @@ struct
        | COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw))) =>
            O.COEQUALIZER_REC $$ [[x] \ px, [] \ m, [y] \ cy, [w1, w2] \ dw]
 
+       | IND_TYPE indtype => O.IND_TYPE indtype $$ []
+       | IND_RECTYPE_SELF => O.IND_RECTYPE_SELF $$ []
+       | IND_RECTYPE_FUN (a, x, bx) => O.IND_RECTYPE_FUN $$ [[] \ a, [x] \ bx]
+       | IND_RECTERM_INTRO {label, dims, nonRecParams, recParams} =>
+           O.IND_RECTERM_INTRO label $$
+             [ [] \ intoVec O.DIM dims
+             , [] \ intoVec O.EXP nonRecParams
+             , [] \ intoVec O.IND_RECTERM recParams
+             ]
+       | IND_RECTERM_FCOM {dir = (r1, r2): dir, cap, tubes} =>
+           O.IND_RECTERM_FCOM $$
+             [ [] \ r1
+             , [] \ r2
+             , [] \ cap
+             , [] \ intoTubes O.IND_RECTERM tubes]
+       | IND_RECTERM_LAM (x, mx) =>
+           O.IND_RECTERM_LAM $$ [[x] \ mx]
+       | IND_RECTERM_APP (m, n) =>
+           O.IND_RECTERM_APP $$ [[] \ m, [] \ n]
+       | IND_INTRO {indtype, label, dims, nonRecParams, recParams} =>
+           O.IND_INTRO {indtype = indtype, label = label} $$
+             [ [] \ intoVec O.DIM dims
+             , [] \ intoVec O.EXP nonRecParams
+             , [] \ intoVec O.EXP recParams
+             ]
+       | IND_REC (indtype, (x, cx), m, bs) =>
+           O.IND_REC indtype $$
+             [[x] \ cx, [] \ m, [] \ intoVec' O.IND_REC_CASE intoIndRecCase bs]
+
        | EQUALITY (a, m, n) => O.EQUALITY $$ [[] \ a, [] \ m, [] \ n]
 
        | BOX args => intoBox args
@@ -479,6 +526,35 @@ struct
        | O.CEDOM $ [_ \ r, _ \ m, _ \ fm, _ \ gm] => CEDOM (r, m, fm, gm)
        | O.COEQUALIZER_REC $ [[x] \ px, _ \ m, [y] \ cy,  [w1, w2] \ dw] =>
            COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw)))
+
+       | O.IND_TYPE indtype $ _ => IND_TYPE indtype
+       | O.IND_RECTYPE_SELF $ _ => IND_RECTYPE_SELF
+       | O.IND_RECTYPE_FUN $ [_ \ a, [x] \ bx] => IND_RECTYPE_FUN (a, x, bx)
+       | O.IND_RECTERM_INTRO label $ [_ \ dims, _ \ nonRecParams, _ \ recParams] =>
+           IND_RECTERM_INTRO
+             { label = label
+             , dims = outVec dims
+             , nonRecParams = outVec nonRecParams
+             , recParams = outVec recParams
+             }
+       | O.IND_RECTERM_FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>
+           IND_RECTERM_FCOM
+             { dir = (r1, r2)
+             , cap = cap
+             , tubes = outTubes tubes
+             }
+       | O.IND_RECTERM_LAM $ [[x] \ mx] => IND_RECTERM_LAM (x, mx)
+       | O.IND_RECTERM_APP $ [_ \ m, _ \ n] => IND_RECTERM_APP (m, n)
+       | O.IND_INTRO {indtype, label} $ [_ \ dims, _ \ nonRecParams, _ \ recParams] =>
+           IND_INTRO
+             { indtype = indtype
+             , label = label
+             , dims = outVec dims
+             , nonRecParams = outVec nonRecParams
+             , recParams = outVec recParams
+             }
+       | O.IND_REC indtype $ [[x] \ cx, _ \ m, _ \ bs] =>
+           IND_REC (indtype, (x, cx), m, outVec' outIndRecCase bs)
 
        | O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 

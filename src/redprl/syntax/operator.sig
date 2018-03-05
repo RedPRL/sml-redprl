@@ -42,10 +42,10 @@ struct
    | IND_RECTYPE_SELF | IND_RECTYPE_FUN
    | IND_RECTERM_INTRO of opid
    | IND_RECTERM_FCOM | IND_RECTERM_LAM | IND_RECTERM_APP
-   | IND_CONSTRUCTOR of {label : opid, ndim : int, nnonrecvar : int, nrecvar : int}
-   | IND_ELIM_MK_CASE of {label : opid, ndim : int, nnonrecvar : int, nrecvar : int}
-   | IND_INTRO of {indtype : opid, label : opid}
-   | IND_ELIM of {indtype : opid}
+   | IND_CONSTRUCTOR of {label: opid, numDim: int, numNonRecVar: int, numRecVar: int}
+   | IND_REC_MK_CASE of {label: opid, numDim: int, numNonRecVar: int, numRecVar: int}
+   | IND_INTRO of {indtype: opid, label: opid}
+   | IND_REC of opid
 
    (* equality *)
    | EQUALITY

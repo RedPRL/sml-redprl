@@ -89,29 +89,29 @@ struct
      | IND_RECTERM_FCOM => [[] |: DIM, [] |: DIM, [] |: IND_RECTERM, [] |: VEC (TUBE IND_RECTERM)] ->> IND_RECTERM
      | IND_RECTERM_LAM => [[EXP] |: IND_RECTERM] ->> IND_RECTERM
      | IND_RECTERM_APP => [[] |: IND_RECTERM, [] |: EXP] ->> IND_RECTERM
-     | IND_CONSTRUCTOR {ndim, nnonrecvar, nrecvar, ...} =>
+     | IND_CONSTRUCTOR {numDim, numNonRecVar, numRecVar, ...} =>
          let
-           val dimBinders = List.tabulate (ndim, fn _ => DIM)
-           val nonrecTypes = List.tabulate (nnonrecvar, fn _ => [] |: EXP)
-           val nonrecBinders = List.tabulate (nnonrecvar, fn _ => EXP)
-           val recTypes = List.tabulate (nrecvar, fn _ => nonrecBinders |: IND_RECTYPE)
-           val recBinders = List.tabulate (nrecvar, fn _ => IND_RECTERM)
-           val allBinders = List.concat [dimBinders, nonrecBinders, recBinders]
+           val dimBinders = List.tabulate (numDim, fn _ => DIM)
+           val nonRecTypes = List.tabulate (numNonRecVar, fn _ => [] |: EXP)
+           val nonRecBinders = List.tabulate (numNonRecVar, fn _ => EXP)
+           val recTypes = List.tabulate (numRecVar, fn _ => nonRecBinders |: IND_RECTYPE)
+           val recBinders = List.tabulate (numRecVar, fn _ => IND_RECTERM)
+           val allBinders = List.concat [dimBinders, nonRecBinders, recBinders]
          in
-           (nonrecTypes @ recTypes @ [allBinders |: VEC (BDRY IND_RECTYPE)]) ->> IND_CONSTR
+           (nonRecTypes @ recTypes @ [allBinders |: VEC (BDRY IND_RECTYPE)]) ->> IND_CONSTR
          end
      | IND_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC EXP] ->> EXP
-     | IND_ELIM_MK_CASE {ndim, nnonrecvar, nrecvar, ...} =>
+     | IND_REC_MK_CASE {numDim, numNonRecVar, numRecVar, ...} =>
          let
-           val dimBinders = List.tabulate (ndim, fn _ => DIM)
-           val nonrecBinders = List.tabulate (nnonrecvar, fn _ => EXP)
-           val recBinders = List.tabulate (nrecvar, fn _ => EXP)
-           val recResultBinders = List.tabulate (nrecvar, fn _ => EXP)
-           val allBinders = List.concat [dimBinders, nonrecBinders, recBinders, recResultBinders]
+           val dimBinders = List.tabulate (numDim, fn _ => DIM)
+           val nonRecBinders = List.tabulate (numNonRecVar, fn _ => EXP)
+           val recBinders = List.tabulate (numRecVar, fn _ => EXP)
+           val recResultBinders = List.tabulate (numRecVar, fn _ => EXP)
+           val allBinders = List.concat [dimBinders, nonRecBinders, recBinders, recResultBinders]
          in
-           [allBinders |: EXP] ->> IND_ELIM_CASE
+           [allBinders |: EXP] ->> IND_REC_CASE
          end
-     | IND_ELIM _ => [[EXP] |: EXP, [] |: EXP, [] |: VEC IND_ELIM_CASE] ->> EXP
+     | IND_REC _ => [[EXP] |: EXP, [] |: EXP, [] |: VEC IND_REC_CASE] ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (BDRY EXP)] ->> EXP
@@ -274,9 +274,9 @@ struct
      | IND_RECTERM_LAM => "ind-rec-lam"
      | IND_RECTERM_APP => "ind-rec-app"
      | IND_CONSTRUCTOR _ => "ind-constructor" (* FIXME *)
-     | IND_ELIM_MK_CASE _ => "ind-elim-case" (* FIXME *)
+     | IND_REC_MK_CASE _ => "ind-rec-case" (* FIXME *)
      | IND_INTRO _ => "ind-intro" (* FIXME *)
-     | IND_ELIM _ => "ind-elim" (* FIXME *)
+     | IND_REC _ => "ind-rec" (* FIXME *)
 
      | UNIVERSE => "U"
      | V => "V"
