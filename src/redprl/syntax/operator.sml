@@ -149,6 +149,9 @@ struct
      | JDG_SUB_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
      | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: EXP] ->> JDG
+     | JDG_TERM _ => [] ->> JDG
+     | JDG_EQ_IND_RECTYPE => [[] |: IND_RECTYPE, [] |: IND_RECTYPE] ->> JDG
+     | JDG_EQ_IND_RECTERM => [[] |: IND_RECTERM, [] |: IND_RECTERM, [] |: IND_RECTYPE] ->> JDG
 
      | MTAC_SEQ => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -204,7 +207,6 @@ struct
 
      | PAT_META tau => [[] |: META_NAME, [] |: VEC ANY] ->> tau
 
-     | JDG_TERM _ => [] ->> JDG
      | CUST (_, ar) => Option.valOf ar
      | TAC_UNFOLD_ALL _ => [] ->> TAC
      | TAC_UNFOLD _ => [[] |: VEC SEL] ->> TAC
@@ -366,6 +368,7 @@ struct
      | JDG_SUB_KIND => "sub-kind"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
+     | JDG_EQ_IND_RECTERM => "eq-ind-recterm"
      | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
      | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"

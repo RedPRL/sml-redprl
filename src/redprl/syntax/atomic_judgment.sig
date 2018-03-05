@@ -42,6 +42,17 @@ struct
     *   The realizer is such an `m` of sort `tau`.
     *)
     | TERM of sort
+
+    (* `EQ_IND_RECTYPE (a, b)`:
+     *  Two recursive types `a` and `b` are the same.
+     *)
+    | EQ_IND_RECTYPE of abt * abt
+
+    (* `EQ_IND_RECTERM ((m, n), a)`:
+     *  Two recursive terms `m` and `n` are the same
+     *  with respect to the recursive type `a`.
+     *)
+    | EQ_IND_RECTERM of (abt * abt) * abt
 end
 
 signature ATOMIC_JUDGMENT =
@@ -53,6 +64,8 @@ sig
   val TYPE : abt * RedPrlKind.t -> jdg
   val EQ : (abt * abt) * abt -> jdg
   val MEM : abt * abt -> jdg
+  val IND_RECTYPE : abt -> jdg
+  val IND_RECTERM : abt * abt -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg
 

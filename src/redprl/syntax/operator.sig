@@ -80,7 +80,8 @@ struct
    | JDG_SUB_KIND
    | JDG_SYNTH
    | JDG_TERM of sort
-
+   | JDG_EQ_IND_RECTYPE
+   | JDG_EQ_IND_RECTERM
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ | MTAC_ORELSE
