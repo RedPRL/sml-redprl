@@ -388,7 +388,7 @@ struct
              , [] \ intoVec O.EXP nonRecParams
              , [] \ intoVec O.IND_RECTERM recParams
              ]
-       | IND_RECTERM_FCOM {dir = (r1, r2): dir, cap, tubes} =>
+       | IND_RECTERM_FCOM {dir = (r1, r2), cap, tubes} =>
            O.IND_RECTERM_FCOM $$
              [ [] \ r1
              , [] \ r2
