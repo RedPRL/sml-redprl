@@ -12,11 +12,11 @@ struct
   fun TYPE (a, k) =
     EQ_TYPE ((a, a), k)
 
-  fun IND_RECTYPE a =
-    EQ_IND_RECTYPE (a, a)
+  fun IND_SPECTYPE a =
+    EQ_IND_SPECTYPE (a, a)
 
-  fun IND_RECTERM (m, a) =
-    EQ_IND_RECTERM ((m, m), a)
+  fun MEM_IND_SPEC (m, a) =
+    EQ_IND_SPEC ((m, m), a)
 
   fun map f =
     fn TRUE a => TRUE (f a)
@@ -24,8 +24,9 @@ struct
      | SUB_TYPE (a, b) => SUB_TYPE (f a, f b)
      | SUB_KIND (u, k) => SUB_KIND (f u, k)
      | TERM tau => TERM tau
-     | EQ_IND_RECTYPE (a, b) => EQ_IND_RECTYPE (f a, f b)
-     | EQ_IND_RECTERM ((m, n), a) => EQ_IND_RECTERM ((f m, f n), f a)
+     | IND_SPEC a => IND_SPEC (f a)
+     | EQ_IND_SPECTYPE (a, b) => EQ_IND_SPECTYPE (f a, f b)
+     | EQ_IND_SPEC ((m, n), a) => EQ_IND_SPEC ((f m, f n), f a)
 
   fun @@ (f, x) = f x
   infixr @@
@@ -55,12 +56,13 @@ struct
            , text "universe"
            ]
        | TERM tau => TermPrinter.ppSort tau
-       | EQ_IND_RECTYPE (a, b) => expr @@ hvsep @@ List.concat
+       | IND_SPEC a => TermPrinter.ppTerm' env a
+       | EQ_IND_SPECTYPE (a, b) => expr @@ hvsep @@ List.concat
            [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm' env a]
              else [TermPrinter.ppTerm' env a, Atomic.equals, TermPrinter.ppTerm' env b]
            , [text "rectype"]
            ]
-       | EQ_IND_RECTERM ((m, n), a) => expr @@ hvsep @@ List.concat
+       | EQ_IND_SPEC ((m, n), a) => expr @@ hvsep @@ List.concat
            [ if RedPrlAbt.eq (m, n) then [TermPrinter.ppTerm' env m]
              else [TermPrinter.ppTerm' env m, Atomic.equals, TermPrinter.ppTerm' env n]
            , [Atomic.colon, TermPrinter.ppTerm' env a]
@@ -77,8 +79,9 @@ struct
      | SUB_TYPE _ => O.EXP
      | SUB_KIND _ => O.EXP
      | TERM tau => tau
-     | EQ_IND_RECTYPE _ => O.EXP
-     | EQ_IND_RECTERM _ => O.EXP
+     | IND_SPEC _ => O.IND_SPEC
+     | EQ_IND_SPECTYPE _ => O.EXP
+     | EQ_IND_SPEC _ => O.EXP
 
   local
     open RedPrlAbt
@@ -95,8 +98,9 @@ struct
        | SUB_TYPE (a, b) => O.JDG_SUB_TYPE $$ [[] \ a, [] \ b]
        | SUB_KIND (u, k) => O.JDG_SUB_KIND $$ [[] \ kconst k, [] \ u]
        | TERM tau => O.JDG_TERM tau $$ []
-       | EQ_IND_RECTYPE (a, b) => O.JDG_EQ_IND_RECTYPE $$ [[] \ a, [] \ b]
-       | EQ_IND_RECTERM ((m, n), a) => O.JDG_EQ_IND_RECTERM $$ [[] \ m, [] \ n, [] \ a]
+       | IND_SPEC a => O.JDG_IND_SPEC $$ [[] \ a]
+       | EQ_IND_SPECTYPE (a, b) => O.JDG_EQ_IND_SPECTYPE $$ [[] \ a, [] \ b]
+       | EQ_IND_SPEC ((m, n), a) => O.JDG_EQ_IND_SPEC $$ [[] \ m, [] \ n, [] \ a]
 
     fun outk kexpr =
       case RedPrlAbt.out kexpr of
@@ -110,8 +114,9 @@ struct
        | O.JDG_SUB_TYPE $ [_ \ a, _ \ b] => SUB_TYPE (a, b)
        | O.JDG_SUB_KIND $ [_ \ k, _ \ u] => SUB_KIND (u, outk k)
        | O.JDG_TERM tau $ [] => TERM tau
-       | O.JDG_EQ_IND_RECTYPE $ [_ \ a, _ \ b] => EQ_IND_RECTYPE (a, b)
-       | O.JDG_EQ_IND_RECTERM $ [_ \ m, _ \ n, _ \ a] => EQ_IND_RECTERM ((m, n), a)
+       | O.JDG_IND_SPEC $ [_ \ a] => IND_SPEC a
+       | O.JDG_EQ_IND_SPECTYPE $ [_ \ a, _ \ b] => EQ_IND_SPECTYPE (a, b)
+       | O.JDG_EQ_IND_SPEC $ [_ \ m, _ \ n, _ \ a] => EQ_IND_SPEC ((m, n), a)
        | _ => raise RedPrlError.error [Fpp.text "Invalid judgment:", TermPrinter.ppTerm jdg]
 
     val eq = fn (j1, j2) => eq (into j1, into j2)
@@ -138,11 +143,11 @@ struct
        | (SUB_TYPE (m, _), A.PART_LEFT) => m
        | (SUB_TYPE (_, n), A.PART_RIGHT) => n
        | (SUB_KIND (m, _), A.PART_LEFT) => m
-       | (EQ_IND_RECTYPE (m, _), A.PART_LEFT) => m
-       | (EQ_IND_RECTYPE (_, n), A.PART_RIGHT) => n
-       | (EQ_IND_RECTERM ((m, _), _), A.PART_LEFT) => m
-       | (EQ_IND_RECTERM ((_, n), _), A.PART_RIGHT) => n
-       | (EQ_IND_RECTERM ((_, _), a), A.PART_TYPE) => a
+       | (EQ_IND_SPECTYPE (m, _), A.PART_LEFT) => m
+       | (EQ_IND_SPECTYPE (_, n), A.PART_RIGHT) => n
+       | (EQ_IND_SPEC ((m, _), _), A.PART_LEFT) => m
+       | (EQ_IND_SPEC ((_, n), _), A.PART_RIGHT) => n
+       | (EQ_IND_SPEC ((_, _), a), A.PART_TYPE) => a
        | _ =>
            RedPrlError.raiseError
              (RedPrlError.NOT_APPLICABLE
@@ -167,11 +172,11 @@ struct
        | (SUB_TYPE (m, n), A.PART_LEFT) => SUB_TYPE (f m, n)
        | (SUB_TYPE (m, n), A.PART_RIGHT) => SUB_TYPE (m, f n)
        | (SUB_KIND (m, k), A.PART_LEFT) => SUB_KIND (f m, k)
-       | (EQ_IND_RECTYPE (a, b), A.PART_LEFT) => EQ_IND_RECTYPE (f a, b)
-       | (EQ_IND_RECTYPE (a, b), A.PART_RIGHT) => EQ_IND_RECTYPE (a, f b)
-       | (EQ_IND_RECTERM ((m, n), a), A.PART_LEFT) => EQ_IND_RECTERM ((f m, n), a)
-       | (EQ_IND_RECTERM ((m, n), a), A.PART_RIGHT) => EQ_IND_RECTERM ((m, f n), a)
-       | (EQ_IND_RECTERM ((m, n), a), A.PART_TYPE) => EQ_IND_RECTERM ((m, n), f a)
+       | (EQ_IND_SPECTYPE (a, b), A.PART_LEFT) => EQ_IND_SPECTYPE (f a, b)
+       | (EQ_IND_SPECTYPE (a, b), A.PART_RIGHT) => EQ_IND_SPECTYPE (a, f b)
+       | (EQ_IND_SPEC ((m, n), a), A.PART_LEFT) => EQ_IND_SPEC ((f m, n), a)
+       | (EQ_IND_SPEC ((m, n), a), A.PART_RIGHT) => EQ_IND_SPEC ((m, f n), a)
+       | (EQ_IND_SPEC ((m, n), a), A.PART_TYPE) => EQ_IND_SPEC ((m, n), f a)
        | _ =>
            RedPrlError.raiseError
              (RedPrlError.NOT_APPLICABLE
@@ -201,11 +206,11 @@ struct
        | (SUB_TYPE _, A.PART_LEFT) => V.CONTRAVAR
        | (SUB_TYPE _, A.PART_RIGHT) => V.COVAR
        | (SUB_KIND _, A.PART_LEFT) => V.CONTRAVAR
-       | (EQ_IND_RECTYPE _, A.PART_LEFT) => V.ANTIVAR
-       | (EQ_IND_RECTYPE _, A.PART_RIGHT) => V.ANTIVAR
-       | (EQ_IND_RECTERM _, A.PART_LEFT) => V.ANTIVAR
-       | (EQ_IND_RECTERM _, A.PART_RIGHT) => V.ANTIVAR
-       | (EQ_IND_RECTERM _, A.PART_TYPE) => V.COVAR
+       | (EQ_IND_SPECTYPE _, A.PART_LEFT) => V.ANTIVAR
+       | (EQ_IND_SPECTYPE _, A.PART_RIGHT) => V.ANTIVAR
+       | (EQ_IND_SPEC _, A.PART_LEFT) => V.ANTIVAR
+       | (EQ_IND_SPEC _, A.PART_RIGHT) => V.ANTIVAR
+       | (EQ_IND_SPEC _, A.PART_TYPE) => V.COVAR
        | (jdg, acc) =>
            RedPrlError.raiseError
              (RedPrlError.NOT_APPLICABLE

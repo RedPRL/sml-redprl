@@ -83,22 +83,22 @@ struct
      | COEQUALIZER_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
      | IND_TYPE _ => [] ->> EXP
-     | IND_RECTYPE_SELF => [] ->> IND_RECTYPE
-     | IND_RECTYPE_FUN => [[] |: EXP, [EXP] |: IND_RECTYPE] ->> IND_RECTYPE
-     | IND_RECTERM_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC IND_RECTERM] ->> IND_RECTERM
-     | IND_RECTERM_FCOM => [[] |: DIM, [] |: DIM, [] |: IND_RECTERM, [] |: VEC (TUBE IND_RECTERM)] ->> IND_RECTERM
-     | IND_RECTERM_LAM => [[EXP] |: IND_RECTERM] ->> IND_RECTERM
-     | IND_RECTERM_APP => [[] |: IND_RECTERM, [] |: EXP] ->> IND_RECTERM
+     | IND_SPECTYPE_SELF => [] ->> IND_SPECTYPE
+     | IND_SPECTYPE_FUN => [[] |: EXP, [EXP] |: IND_SPECTYPE] ->> IND_SPECTYPE
+     | IND_SPEC_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC IND_SPEC] ->> IND_SPEC
+     | IND_SPEC_FCOM => [[] |: DIM, [] |: DIM, [] |: IND_SPEC, [] |: VEC (TUBE IND_SPEC)] ->> IND_SPEC
+     | IND_SPEC_LAM => [[EXP] |: IND_SPEC] ->> IND_SPEC
+     | IND_SPEC_APP => [[] |: IND_SPEC, [] |: EXP] ->> IND_SPEC
      | IND_CONSTRUCTOR {numDim, numNonRecVar, numRecVar, ...} =>
          let
            val dimBinders = List.tabulate (numDim, fn _ => DIM)
            val nonRecTypes = List.tabulate (numNonRecVar, fn _ => [] |: EXP)
            val nonRecBinders = List.tabulate (numNonRecVar, fn _ => EXP)
-           val recTypes = List.tabulate (numRecVar, fn _ => nonRecBinders |: IND_RECTYPE)
-           val recBinders = List.tabulate (numRecVar, fn _ => IND_RECTERM)
+           val recTypes = List.tabulate (numRecVar, fn _ => nonRecBinders |: IND_SPECTYPE)
+           val recBinders = List.tabulate (numRecVar, fn _ => IND_SPEC)
            val allBinders = List.concat [dimBinders, nonRecBinders, recBinders]
          in
-           (nonRecTypes @ recTypes @ [allBinders |: VEC (BDRY IND_RECTYPE)]) ->> IND_CONSTR
+           (nonRecTypes @ recTypes @ [allBinders |: VEC (BDRY IND_SPECTYPE)]) ->> IND_CONSTR
          end
      | IND_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC EXP] ->> EXP
      | IND_REC_MK_CASE {numDim, numNonRecVar, numRecVar, ...} =>
@@ -150,8 +150,8 @@ struct
      | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: EXP] ->> JDG
      | JDG_TERM _ => [] ->> JDG
-     | JDG_EQ_IND_RECTYPE => [[] |: IND_RECTYPE, [] |: IND_RECTYPE] ->> JDG
-     | JDG_EQ_IND_RECTERM => [[] |: IND_RECTERM, [] |: IND_RECTERM, [] |: IND_RECTYPE] ->> JDG
+     | JDG_EQ_IND_SPECTYPE => [[] |: IND_SPECTYPE, [] |: IND_SPECTYPE] ->> JDG
+     | JDG_EQ_IND_SPEC => [[] |: IND_SPEC, [] |: IND_SPEC, [] |: IND_SPECTYPE] ->> JDG
 
      | MTAC_SEQ => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -269,12 +269,12 @@ struct
      | COEQUALIZER_REC => "coeq-rec"
 
      | IND_TYPE _ => "ind-type"
-     | IND_RECTYPE_SELF => "ind-rec-self"
-     | IND_RECTYPE_FUN => "ind-rec-fun"
-     | IND_RECTERM_INTRO _ => "ind-rec-intro" (* FIXME *)
-     | IND_RECTERM_FCOM => "ind-rec-fcom"
-     | IND_RECTERM_LAM => "ind-rec-lam"
-     | IND_RECTERM_APP => "ind-rec-app"
+     | IND_SPECTYPE_SELF => "ind-rec-self"
+     | IND_SPECTYPE_FUN => "ind-rec-fun"
+     | IND_SPEC_INTRO _ => "ind-rec-intro" (* FIXME *)
+     | IND_SPEC_FCOM => "ind-rec-fcom"
+     | IND_SPEC_LAM => "ind-rec-lam"
+     | IND_SPEC_APP => "ind-rec-app"
      | IND_CONSTRUCTOR _ => "ind-constructor" (* FIXME *)
      | IND_REC_MK_CASE _ => "ind-rec-case" (* FIXME *)
      | IND_INTRO _ => "ind-intro" (* FIXME *)
@@ -368,7 +368,10 @@ struct
      | JDG_SUB_KIND => "sub-kind"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
-     | JDG_EQ_IND_RECTERM => "eq-ind-recterm"
+     | JDG_IND_SPEC => "ind-spec"
+     | JDG_EQ_IND_SPEC => "eq-ind-spec"
+     | JDG_EQ_IND_SPECTYPE => "eq-ind-spectype"
+
      | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
      | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"

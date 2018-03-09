@@ -67,12 +67,12 @@ struct
    | COEQUALIZER_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * variable * 'a))
    (* inductive types *)
    | IND_TYPE of MlId.t
-   | IND_RECTYPE_SELF
-   | IND_RECTYPE_FUN of 'a * variable * 'a
-   | IND_RECTERM_INTRO of {label: MlId.t, dims: dim list, nonRecParams : 'a list, recParams: 'a list}
-   | IND_RECTERM_FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
-   | IND_RECTERM_LAM of variable * 'a
-   | IND_RECTERM_APP of 'a * 'a
+   | IND_SPECTYPE_SELF
+   | IND_SPECTYPE_FUN of 'a * variable * 'a
+   | IND_SPEC_INTRO of {label: MlId.t, dims: dim list, nonRecParams : 'a list, recParams: 'a list}
+   | IND_SPEC_FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
+   | IND_SPEC_LAM of variable * 'a
+   | IND_SPEC_APP of 'a * 'a
    | IND_INTRO of {indtype: MlId.t, label: MlId.t, dims : dim list, nonRecParams: 'a list, recParams: 'a list}
    | IND_REC of MlId.t * (variable * 'a) * 'a * (MlId.t * variable list * variable list * variable list * variable list * 'a) list
    (* equality *)
@@ -380,24 +380,24 @@ struct
            O.COEQUALIZER_REC $$ [[x] \ px, [] \ m, [y] \ cy, [w1, w2] \ dw]
 
        | IND_TYPE indtype => O.IND_TYPE indtype $$ []
-       | IND_RECTYPE_SELF => O.IND_RECTYPE_SELF $$ []
-       | IND_RECTYPE_FUN (a, x, bx) => O.IND_RECTYPE_FUN $$ [[] \ a, [x] \ bx]
-       | IND_RECTERM_INTRO {label, dims, nonRecParams, recParams} =>
-           O.IND_RECTERM_INTRO label $$
+       | IND_SPECTYPE_SELF => O.IND_SPECTYPE_SELF $$ []
+       | IND_SPECTYPE_FUN (a, x, bx) => O.IND_SPECTYPE_FUN $$ [[] \ a, [x] \ bx]
+       | IND_SPEC_INTRO {label, dims, nonRecParams, recParams} =>
+           O.IND_SPEC_INTRO label $$
              [ [] \ intoVec O.DIM dims
              , [] \ intoVec O.EXP nonRecParams
-             , [] \ intoVec O.IND_RECTERM recParams
+             , [] \ intoVec O.IND_SPEC recParams
              ]
-       | IND_RECTERM_FCOM {dir = (r1, r2), cap, tubes} =>
-           O.IND_RECTERM_FCOM $$
+       | IND_SPEC_FCOM {dir = (r1, r2), cap, tubes} =>
+           O.IND_SPEC_FCOM $$
              [ [] \ r1
              , [] \ r2
              , [] \ cap
-             , [] \ intoTubes O.IND_RECTERM tubes]
-       | IND_RECTERM_LAM (x, mx) =>
-           O.IND_RECTERM_LAM $$ [[x] \ mx]
-       | IND_RECTERM_APP (m, n) =>
-           O.IND_RECTERM_APP $$ [[] \ m, [] \ n]
+             , [] \ intoTubes O.IND_SPEC tubes]
+       | IND_SPEC_LAM (x, mx) =>
+           O.IND_SPEC_LAM $$ [[x] \ mx]
+       | IND_SPEC_APP (m, n) =>
+           O.IND_SPEC_APP $$ [[] \ m, [] \ n]
        | IND_INTRO {indtype, label, dims, nonRecParams, recParams} =>
            O.IND_INTRO {indtype = indtype, label = label} $$
              [ [] \ intoVec O.DIM dims
@@ -528,23 +528,23 @@ struct
            COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw)))
 
        | O.IND_TYPE indtype $ _ => IND_TYPE indtype
-       | O.IND_RECTYPE_SELF $ _ => IND_RECTYPE_SELF
-       | O.IND_RECTYPE_FUN $ [_ \ a, [x] \ bx] => IND_RECTYPE_FUN (a, x, bx)
-       | O.IND_RECTERM_INTRO label $ [_ \ dims, _ \ nonRecParams, _ \ recParams] =>
-           IND_RECTERM_INTRO
+       | O.IND_SPECTYPE_SELF $ _ => IND_SPECTYPE_SELF
+       | O.IND_SPECTYPE_FUN $ [_ \ a, [x] \ bx] => IND_SPECTYPE_FUN (a, x, bx)
+       | O.IND_SPEC_INTRO label $ [_ \ dims, _ \ nonRecParams, _ \ recParams] =>
+           IND_SPEC_INTRO
              { label = label
              , dims = outVec dims
              , nonRecParams = outVec nonRecParams
              , recParams = outVec recParams
              }
-       | O.IND_RECTERM_FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>
-           IND_RECTERM_FCOM
+       | O.IND_SPEC_FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>
+           IND_SPEC_FCOM
              { dir = (r1, r2)
              , cap = cap
              , tubes = outTubes tubes
              }
-       | O.IND_RECTERM_LAM $ [[x] \ mx] => IND_RECTERM_LAM (x, mx)
-       | O.IND_RECTERM_APP $ [_ \ m, _ \ n] => IND_RECTERM_APP (m, n)
+       | O.IND_SPEC_LAM $ [[x] \ mx] => IND_SPEC_LAM (x, mx)
+       | O.IND_SPEC_APP $ [_ \ m, _ \ n] => IND_SPEC_APP (m, n)
        | O.IND_INTRO {indtype, label} $ [_ \ dims, _ \ nonRecParams, _ \ recParams] =>
            IND_INTRO
              { indtype = indtype

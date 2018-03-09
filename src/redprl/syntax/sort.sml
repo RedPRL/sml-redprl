@@ -22,8 +22,8 @@ struct
      | ACC => "acc"
      | ANY => "any"
      | META_NAME => "meta-name"
-     | IND_RECTYPE => "ind_rectype"
-     | IND_RECTERM => "ind_recterm"
+     | IND_SPECTYPE => "ind-spectype"
+     | IND_SPEC => "ind-spec"
      | IND_CONSTR => "ind-constr"
      | IND_ELIM_CASE => "ind-elim-case"
 end

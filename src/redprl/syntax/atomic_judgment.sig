@@ -43,16 +43,23 @@ struct
     *)
     | TERM of sort
 
-    (* `EQ_IND_RECTYPE (a, b)`:
-     *  Two recursive types `a` and `b` are the same.
+    (* `IND_SPEC a`:
+     *  Just like `TRUE` except that it is for the specification language of
+     *  inductive types.
      *)
-    | EQ_IND_RECTYPE of abt * abt
+    | IND_SPEC of abt
 
-    (* `EQ_IND_RECTERM ((m, n), a)`:
-     *  Two recursive terms `m` and `n` are the same
-     *  with respect to the recursive type `a`.
+    (* `EQ_IND_SPECTYPE (a, b)`:
+     *  Just like `EQ_TYPE` except that it is for the specification language of
+     *  inductive types.
      *)
-    | EQ_IND_RECTERM of (abt * abt) * abt
+    | EQ_IND_SPECTYPE of abt * abt
+
+    (* `EQ_IND_SPEC ((m, n), a)`:
+     *  Just like `EQ` except that it is for the specification language of
+     *  inductive types.
+     *)
+    | EQ_IND_SPEC of (abt * abt) * abt
 end
 
 signature ATOMIC_JUDGMENT =
@@ -64,8 +71,8 @@ sig
   val TYPE : abt * RedPrlKind.t -> jdg
   val EQ : (abt * abt) * abt -> jdg
   val MEM : abt * abt -> jdg
-  val IND_RECTYPE : abt -> jdg
-  val IND_RECTERM : abt * abt -> jdg
+  val IND_SPECTYPE : abt -> jdg
+  val MEM_IND_SPEC : abt * abt -> jdg
 
   val map : (abt -> abt) -> jdg -> jdg
 

@@ -16,8 +16,8 @@ struct
    | ACC
    | ANY
    | META_NAME
-   | IND_RECTYPE (* argument types in Part IV *)
-   | IND_RECTERM (* boundary terms in Part IV *)
+   | IND_SPECTYPE (* argument types in Part IV *)
+   | IND_SPEC (* boundary terms in Part IV *)
    | IND_CONSTR (* the data associated with a constructor in Part IV *)
    | IND_REC_CASE (* the elimination data associated with a constructor in Part IV *)
 end

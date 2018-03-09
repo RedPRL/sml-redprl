@@ -39,9 +39,8 @@ struct
 
    (* inductive types *)
    | IND_TYPE of opid
-   | IND_RECTYPE_SELF | IND_RECTYPE_FUN
-   | IND_RECTERM_INTRO of opid
-   | IND_RECTERM_FCOM | IND_RECTERM_LAM | IND_RECTERM_APP
+   | IND_SPECTYPE_SELF | IND_SPECTYPE_FUN
+   | IND_SPEC_INTRO of opid | IND_SPEC_FCOM | IND_SPEC_LAM | IND_SPEC_APP
    | IND_CONSTRUCTOR of {label: opid, numDim: int, numNonRecVar: int, numRecVar: int}
    | IND_REC_MK_CASE of {label: opid, numDim: int, numNonRecVar: int, numRecVar: int}
    | IND_INTRO of {indtype: opid, label: opid}
@@ -80,8 +79,9 @@ struct
    | JDG_SUB_KIND
    | JDG_SYNTH
    | JDG_TERM of sort
-   | JDG_EQ_IND_RECTYPE
-   | JDG_EQ_IND_RECTERM
+   | JDG_IND_SPEC
+   | JDG_EQ_IND_SPECTYPE
+   | JDG_EQ_IND_SPEC
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ | MTAC_ORELSE
