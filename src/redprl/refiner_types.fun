@@ -1919,6 +1919,91 @@ struct
       end
   end
 
+  structure InductiveSpec =
+  struct
+
+    exception Unfinished
+
+    (* TODO tail recursion *)
+
+    fun EqType tr H (ty0, ty1) =
+      case (Syn.out ty0, Syn.out ty1) of
+         (Syn.IND_SPECTYPE_SELF, Syn.IND_SPECTYPE_SELF) => []
+       | (Syn.IND_SPECTYPE_FUN (a0, x, b0x), Syn.IND_SPECTYPE_FUN (a1, y, b1y)) =>
+           let
+             val z = Sym.new ()
+             val b0z = VarKit.rename (z, x) b0x
+             val b1z = VarKit.rename (z, y) b1y
+             (* favonia: more research needed for other kinds *)
+             val goalA = makeEqType tr H ((a0, a1), K.KAN)
+           in
+             goalA :: EqType tr (H @> (z, AJ.TRUE a0)) (b0z, b1z)
+           end
+
+    (* The following checker type-checks more expressions than the rules
+     * on paper because `($ (lam [_] S1.base) junk)` is allowed
+     * (assuming `S1.base` is a constructor). The difficulty is to
+     * generate a valid type for `junk`, and one easy solution is to
+     * allow junk and and beta-reduce everything first.
+     *
+     * Note that `appReduce` only takes care of function application,
+     * and stops at any `fcom` or `intro`.
+     *
+     * -favonia
+     *)
+
+    fun appReduce tm : abt =
+      case Syn.out tm of
+         Syn.IND_SPEC_INTRO params => tm
+       | Syn.IND_SPEC_FCOM params => tm
+       | Syn.IND_SPEC_LAM (x, ax) =>
+           Syn.into (Syn.IND_SPEC_LAM (x, appReduce ax))
+       | Syn.IND_SPEC_APP (a, b) =>
+           case Syn.out (appReduce a) of
+              Syn.IND_SPEC_LAM (x, ax) => appReduce (Abt.substVar (b, x) ax)
+            | a => Syn.into (Syn.IND_SPEC_APP (Syn.into a, b))
+
+    (* TODO variable, intro, fcom *)
+    fun SynthReducedSpine tr H (tm0, tm1) =
+      case (Syn.out tm0, Syn.out tm1) of
+         (Syn.IND_SPEC_APP (m0, n0), Syn.IND_SPEC_APP (m1, n1)) =>
+           let
+             val (ty, goalsM) = SynthReducedSpine tr H (m0, m1)
+             val Syn.IND_SPECTYPE_FUN (a0, x, b0x) = Syn.out ty
+             val goalN = makeEq tr H ((n0, n1), a0)
+           in
+             (Abt.substVar (n0, x) b0x, goalN :: goalsM)
+           end
+       | (Syn.IND_SPEC_FCOM _, _) => (Syn.into Syn.IND_SPECTYPE_SELF, []) (* todo *)
+       | (_, Syn.IND_SPEC_FCOM _) => (Syn.into Syn.IND_SPECTYPE_SELF, []) (* todo *)
+       | (Syn.IND_SPEC_INTRO _, _) => (Syn.into Syn.IND_SPECTYPE_SELF, []) (* todo *)
+       | (_, Syn.IND_SPEC_INTRO _) => (Syn.into Syn.IND_SPECTYPE_SELF, []) (* todo *)
+
+    and SynthSpine tr H (tm0, tm1) =
+      SynthReducedSpine tr H (appReduce tm0, appReduce tm1)
+
+    (* TODO eta expansion *)
+    and EqRecTerm tr H ((tm0, tm1), ty) =
+      case Syn.out ty of
+        Syn.IND_SPECTYPE_FUN (a, z, bz) =>
+          (case (Syn.out tm0, Syn.out tm1) of
+            (Syn.IND_SPEC_LAM (x, m0x), Syn.IND_SPEC_LAM (y, m1y)) =>
+              let
+                val w = Sym.new ()
+                val m0w = VarKit.rename (w, x) m0x
+                val m1w = VarKit.rename (w, y) m1y
+                val bw = VarKit.rename (w, z) bz
+              in
+                EqRecTerm tr (H @> (w, AJ.TRUE a)) ((m0w, m1w), bw)
+              end)
+      | Syn.IND_SPECTYPE_SELF =>
+          let
+            val (ty, goals) = SynthSpine tr H (tm0, tm1)
+          in
+            case Syn.out ty of Syn.IND_SPECTYPE_SELF => goals
+          end
+  end
+
   structure InternalizedEquality =
   struct
     val kindConstraintOnBase =
