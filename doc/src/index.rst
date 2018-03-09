@@ -1,5 +1,5 @@
-The RedPRL Proof Assistant
-==========================
+The |RedPRL| Proof Assistant
+============================
 
 |RedPRL| is an experimental proof assistant based on cubical computational type
 theory, which extends the Nuprl_ semantics by higher-dimensional features
