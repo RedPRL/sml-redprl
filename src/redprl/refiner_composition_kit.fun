@@ -149,7 +149,8 @@ struct
       end
 
     local
-      (* TODO: why do these have tick marks after them? - JMS *)
+      (* These functions have ticks because their correctness depends on the code in
+       * genInterTubeGoals. -favonia *)
       fun genTubeGoals' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
         ListPairUtil.mapPartialEq
           (fn ((eq, t0), (_, t1)) => Restriction.makeEq tr [eq] H ((t0, t1), ty))
