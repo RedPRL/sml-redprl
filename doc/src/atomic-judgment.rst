@@ -1,4 +1,4 @@
-Atomic Judgments
+Atomic judgments
 ================
 
 |RedPRL| currently has five forms of atomic (non-hypothetical) judgments that may appear in subgoals.
