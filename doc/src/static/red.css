@@ -99,3 +99,14 @@ pre .gt {
   color: #f7bcbb;
   padding: 3px 0;
 }
+
+.rst-content .section ul li {
+  list-style: none !important;
+  margin-left: 12px;
+}
+
+.rst-content .section ul li:before {
+  content: '\2605';
+  color: #e84644;
+  margin-right: 12px;
+}

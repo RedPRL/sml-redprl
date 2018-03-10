@@ -1,6 +1,9 @@
 The |RedPRL| Proof Assistant
 ============================
 
+.. image:: static/luminaries.png
+  :alt: Luminaries.
+
 |RedPRL| is an experimental proof assistant based on cubical computational type
 theory, which extends the Nuprl_ semantics by higher-dimensional features
 inspired by homotopy type theory. |RedPRL| is created and maintained by the
