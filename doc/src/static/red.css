@@ -110,3 +110,8 @@ pre .gt {
   color: #e84644;
   margin-right: 12px;
 }
+
+.rst-content .section ul li.toctree-l2:before {
+  color: #404040;
+  margin-right: 12px;
+}
