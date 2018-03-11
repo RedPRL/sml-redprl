@@ -37,7 +37,7 @@ Papers & Talks
 .. _Computational (Higher) Type Theory: https://www.cs.cmu.edu/~rwh/talks/POPL18-Tutorial.pdf
 .. _Cubical Computational Type Theory & RedPRL: http://favonia.org/files/chtt-penn2018-slides.pdf
 .. _Computational Higher-Dimensional Type Theory: http://www.cs.cmu.edu/~rwh/papers/chitt/popl17.pdf
-.. _Algebraic Foundations of Proof Refinement: http://www.redprl.org/pdfs/afpr.pdf
+.. _Algebraic Foundations of Proof Refinement: http://www.cs.cmu.edu/~redprl/afpr.pdf
 
 RedPRL User Guide
 =================
