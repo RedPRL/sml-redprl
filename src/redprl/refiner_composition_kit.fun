@@ -139,10 +139,19 @@ struct
      *)
     fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substVar (VarKit.toDim w, u) tube))
 
-    fun enumInterExceptDiag f =
+    fun enumPartialInterExceptDiag f =
       let
         fun enum ([], []) = []
           | enum ((t0 :: ts0), (_ :: ts1)) = List.mapPartial (fn t1 => f (t0, t1)) ts1 :: enum (ts0, ts1)
+          | enum _ = E.raiseError @@ E.IMPOSSIBLE @@ Fpp.text "enumPartialInterExceptDiag: inputs are of different lengths"
+      in
+        List.concat o enum
+      end
+
+    fun enumInterExceptDiag f =
+      let
+        fun enum ([], []) = []
+          | enum ((t0 :: ts0), (_ :: ts1)) = List.map (fn t1 => f (t0, t1)) ts1 :: enum (ts0, ts1)
           | enum _ = E.raiseError @@ E.IMPOSSIBLE @@ Fpp.text "enumInterExceptDiag: inputs are of different lengths"
       in
         List.concat o enum
@@ -157,7 +166,7 @@ struct
           (tubes0, tubes1)
 
       fun genInterTubeGoalsExceptDiag' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
-        enumInterExceptDiag
+        enumPartialInterExceptDiag
           (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent tr [eq0, eq1] H ((t0, t1), ty))
           (tubes0, tubes1)
     in

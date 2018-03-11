@@ -1924,6 +1924,8 @@ struct
 
     exception Unfinished
 
+    val IND_SPECTYPE_SELF = Syn.into Syn.IND_SPECTYPE_SELF
+
     (* TODO tail recursion *)
 
     fun EqType tr H (ty0, ty1) =
@@ -1946,62 +1948,159 @@ struct
      * generate a valid type for `junk`, and one easy solution is to
      * allow junk and and beta-reduce everything first.
      *
-     * Note that `appReduce` only takes care of function application,
+     * Note that `reduceApp` only takes care of function application,
      * and stops at any `fcom` or `intro`.
      *
      * -favonia
      *)
 
-    fun appReduce tm : abt =
+    fun untypedReduce tm : abt =
       case Syn.out tm of
          Syn.IND_SPEC_INTRO params => tm
-       | Syn.IND_SPEC_FCOM params => tm
+       | Syn.IND_SPEC_FCOM {dir, cap, ...} =>
+           if Abt.eq dir then cap else tm
        | Syn.IND_SPEC_LAM (x, ax) =>
-           Syn.into (Syn.IND_SPEC_LAM (x, appReduce ax))
+           Syn.into (Syn.IND_SPEC_LAM (x, untypedReduce ax))
        | Syn.IND_SPEC_APP (a, b) =>
-           case Syn.out (appReduce a) of
-              Syn.IND_SPEC_LAM (x, ax) => appReduce (Abt.substVar (b, x) ax)
+           case Syn.out (untypedReduce a) of
+              Syn.IND_SPEC_LAM (x, ax) => untypedReduce (Abt.substVar (b, x) ax)
             | a => Syn.into (Syn.IND_SPEC_APP (Syn.into a, b))
 
-    (* TODO variable, intro, fcom *)
-    fun SynthReducedSpine tr H (tm0, tm1) =
+    fun SynthReduced sign tr H (tm0, tm1) =
       case (Syn.out tm0, Syn.out tm1) of
-         (Syn.IND_SPEC_APP (m0, n0), Syn.IND_SPEC_APP (m1, n1)) =>
+         (Syn.VAR (x, _), Syn.VAR (y, _)) =>
            let
-             val (ty, goalsM) = SynthReducedSpine tr H (m0, m1)
+             val _ = Assert.varEq (x, y)
+             val AJ.IND_SPEC ty = Hyps.lookup H x
+           in
+             (ty, [])
+           end
+       | (Syn.IND_SPEC_APP (m0, n0), Syn.IND_SPEC_APP (m1, n1)) =>
+           let
+             val (ty, goalsM) = SynthReduced sign tr H (m0, m1)
              val Syn.IND_SPECTYPE_FUN (a0, x, b0x) = Syn.out ty
              val goalN = makeEq tr H ((n0, n1), a0)
            in
-             (Abt.substVar (n0, x) b0x, goalN :: goalsM)
+             (Abt.substVar (n0, x) b0x, goalsM @ [goalN])
            end
-       | (Syn.IND_SPEC_FCOM _, _) => (Syn.into Syn.IND_SPECTYPE_SELF, []) (* todo *)
-       | (_, Syn.IND_SPEC_FCOM _) => (Syn.into Syn.IND_SPECTYPE_SELF, []) (* todo *)
-       | (Syn.IND_SPEC_INTRO _, _) => (Syn.into Syn.IND_SPECTYPE_SELF, []) (* todo *)
-       | (_, Syn.IND_SPEC_INTRO _) => (Syn.into Syn.IND_SPECTYPE_SELF, []) (* todo *)
+       | (tm0', tm1') =>
+           (case (simplifyConstr sign tr H tm0', simplifyConstr sign tr H tm1') of
+              (SOME (tm0, goals0), SOME (tm1, goals1)) =>
+                (IND_SPECTYPE_SELF, goals0 @ goals1 @ EqSpec sign tr H ((tm0, tm1), IND_SPECTYPE_SELF))
+            | (SOME (tm0, goals0), NONE) =>
+                (IND_SPECTYPE_SELF, goals0 @ EqSpec sign tr H ((tm0, tm1), IND_SPECTYPE_SELF))
+            | (NONE, SOME (tm1, goals1)) =>
+                (IND_SPECTYPE_SELF, goals1 @ EqSpec sign tr H ((tm0, tm1), IND_SPECTYPE_SELF))
+            | (NONE, NONE) =>
+                (case (tm0', tm1') of
+                   (Syn.IND_SPEC_FCOM params0, Syn.IND_SPEC_FCOM params1) =>
+                     (IND_SPECTYPE_SELF, EqSpecFCom sign tr H (params0, params1))
+                 | (Syn.IND_SPEC_INTRO params0, Syn.IND_SPEC_INTRO params1) =>
+                     (IND_SPECTYPE_SELF, EqSpecIntro sign tr H (params0, params1))))
 
-    and SynthSpine tr H (tm0, tm1) =
-      SynthReducedSpine tr H (appReduce tm0, appReduce tm1)
-
-    (* TODO eta expansion *)
-    and EqRecTerm tr H ((tm0, tm1), ty) =
+    and EqSpec sign tr H (((tm0, tm1), ty) : (abt * abt) * abt)=
       case Syn.out ty of
-        Syn.IND_SPECTYPE_FUN (a, z, bz) =>
-          (case (Syn.out tm0, Syn.out tm1) of
-            (Syn.IND_SPEC_LAM (x, m0x), Syn.IND_SPEC_LAM (y, m1y)) =>
-              let
-                val w = Sym.new ()
-                val m0w = VarKit.rename (w, x) m0x
-                val m1w = VarKit.rename (w, y) m1y
-                val bw = VarKit.rename (w, z) bz
-              in
-                EqRecTerm tr (H @> (w, AJ.TRUE a)) ((m0w, m1w), bw)
-              end)
-      | Syn.IND_SPECTYPE_SELF =>
+         Syn.IND_SPECTYPE_FUN (a, z, bz) =>
+           let
+             val w = Sym.new ()
+             val bw = VarKit.rename (w, z) bz
+           in
+             EqSpec sign tr (H @> (w, AJ.TRUE a))
+               ((Syn.into (Syn.IND_SPEC_APP (tm0, VarKit.toExp w)),
+                 Syn.into (Syn.IND_SPEC_APP (tm1, VarKit.toExp w))), bw)
+           end
+       | Syn.IND_SPECTYPE_SELF =>
+           let
+             val (ty, goals) = SynthReduced sign tr H
+               (untypedReduce tm0, untypedReduce tm1)
+           in
+             case Syn.out ty of Syn.IND_SPECTYPE_SELF => goals
+           end
+
+    and EqSpecIfDifferent sign tr H ((tm0, tm1), ty) =
+      if Abt.eq (tm0, tm1) then [] else EqSpec sign tr H ((tm0, tm1), ty)
+
+    and restrictedEqSpec sign tr eqs H ((tm0, tm1), ty) =
+      case Restriction.restrict eqs of
+         SOME f => EqSpec sign tr (Hyps.map (AJ.map f) H) ((f tm0, f tm1), f ty)
+       | NONE => []
+
+    and restrictedEqSpecIfDifferent sign tr eqs H ((tm0, tm1), ty) =
+      case Restriction.restrict eqs of
+         SOME f => EqSpecIfDifferent sign tr (Hyps.map (AJ.map f) H) ((f tm0, f tm1), f ty)
+       | NONE => []
+
+    and EqSpecInterTube sign tr (H : Sequent.hyps) w (tubes0, tubes1) =
+      let
+        val tubes0 = ComKit.alphaRenameTubes w tubes0
+        val tubes1 = ComKit.alphaRenameTubes w tubes1
+
+        val goalsOnDiag = List.concat @@
+          ListPair.mapEq
+            (fn ((eq, t0), (_, t1)) =>
+              restrictedEqSpec sign tr [eq]
+                (H @> (w, AJ.TERM O.DIM)) ((t0, t1), IND_SPECTYPE_SELF))
+            (tubes0, tubes1)
+
+        val goalsNotOnDiag = List.concat @@
+          ComKit.enumInterExceptDiag
+            (fn ((eq0, t0), (eq1, t1)) =>
+              restrictedEqSpecIfDifferent sign tr [eq0, eq1]
+                (H @> (w, AJ.TERM O.DIM)) ((t0, t1), IND_SPECTYPE_SELF))
+            (tubes0, tubes1)
+      in
+        goalsOnDiag @ goalsNotOnDiag
+      end
+
+    and EqSpecCapTubeIfDifferent sign tr H (cap, (r, tubes)) = List.concat @@
+      List.map
+        (fn (eq, (u, tube)) =>
+          restrictedEqSpecIfDifferent sign tr [eq]
+            H ((cap, substVar (r, u) tube), IND_SPECTYPE_SELF))
+        tubes
+
+    and EqSpecFCom sign tr H
+      ({dir=dir0, cap=cap0, tubes=tubes0},
+       {dir=dir1, cap=cap1, tubes=tubes1}) =
+      let
+        val _ = Assert.dirEq "EqSpecFCom direction" (dir0, dir1)
+
+        val eqs0 = List.map #1 tubes0
+        val eqs1 = List.map #1 tubes1
+        val _ = Assert.equationsEq "EqSpecFCom equations" (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "EqSpecFCom tautology checking" eqs0
+
+        val goalsCap = EqSpec sign tr H ((cap0, cap1), IND_SPECTYPE_SELF)
+        val w = Sym.new ()
+        val goalsInterTube = EqSpecInterTube sign tr H w (tubes0, tubes1)
+        val goalsCapTube = EqSpecCapTubeIfDifferent sign tr H (cap0, (#1 dir0, tubes0))
+      in
+        goalsCap @ goalsInterTube @ goalsCapTube
+      end
+
+    and simplifyFComTube sign tr H {dir, cap, tubes} =
+      Option.map
+        (fn (_, (u, tube)) =>
           let
-            val (ty, goals) = SynthSpine tr H (tm0, tm1)
+            val w = Sym.new ()
+            val goalsInterTube = EqSpecInterTube sign tr H w (tubes, tubes)
+            val goalsCapTube = EqSpecCapTubeIfDifferent sign tr H (cap, (#1 dir, tubes))
           in
-            case Syn.out ty of Syn.IND_SPECTYPE_SELF => goals
-          end
+            (substVar (#2 dir, u) tube, goalsInterTube @ goalsCapTube)
+          end)
+      (List.find (fn (eq, _) => Abt.eq eq) tubes)
+
+    and EqSpecIntro sign tr H
+      ({label=label0, dims=dims0, nonRecParams=nonRecParams0, recParams=recParams0},
+       {label=label1, dims=dims1, nonRecParams=nonRecParams1, recParams=recParams1}) =
+      raise Unfinished
+
+    and simplifyIntro sign tr H {label, dims, nonRecParams, recParams} =
+      raise Unfinished
+
+    and simplifyConstr sign tr H =
+      fn Syn.IND_SPEC_INTRO params => simplifyIntro sign tr H params
+       | Syn.IND_SPEC_FCOM params => simplifyFComTube sign tr H params
   end
 
   structure InternalizedEquality =
@@ -2242,7 +2341,7 @@ struct
           (fn ((eq, t0), (_, t1)) => Restriction.View.makeAsEqType tr [eq] H ((t0, t1), l, k))
           (tubes0, tubes1)
       fun genInterTubeGoalsExceptDiag' tr H ((tubes0, tubes1), l, k) =
-        ComKit.enumInterExceptDiag
+        ComKit.enumPartialInterExceptDiag
           (fn ((eq0, t0), (eq1, t1)) => Restriction.View.makeAsEqTypeIfDifferent tr [eq0, eq1] H ((t0, t1), l, k))
           (tubes0, tubes1)
     in
@@ -2271,7 +2370,7 @@ struct
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
 
     fun genInterBoundaryGoalsExceptDiag tr H ((boundaries0, boundaries1), tubes) =
-      ComKit.enumInterExceptDiag
+      ComKit.enumPartialInterExceptDiag
         (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent tr [eq0, eq1] H ((b0, b1), t))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
 
