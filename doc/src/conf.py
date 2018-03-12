@@ -102,7 +102,7 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['static']
 
 def setup(app):
-    app.add_stylesheet('https://cs.cmu.edu/~jmsterli/fonts/PragmataPro.css')
+    app.add_stylesheet('https://cs.cmu.edu/~redprl/fonts/PragmataPro.css')
     app.add_stylesheet('red.css')
     from redprl import RedPRLLexer
     app.add_lexer('redprl', RedPRLLexer())
