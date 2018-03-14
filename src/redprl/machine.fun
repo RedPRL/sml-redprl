@@ -929,8 +929,8 @@ struct
                                 ty = substVar (s, v) b,
                                 cap = projFromOne s,
                                 tubes =
-                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.DIM_APP (Syn.intoSnd (fiberFromOne s), VarKit.toDim w)))
-                                  , ((s, Syn.intoDim 1), (w, projFromOne s)) ]}
+                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.DIM_APP (Syn.intoSnd (fiberFromOne (Syn.intoDim 0)), VarKit.toDim w)))
+                                  , ((s, Syn.intoDim 1), (w, coercee)) ]}
                            end
                        in
                          branchOnDim stability syms' (#1 dir)
