@@ -152,6 +152,7 @@ struct
       let
         val tr = ["True.Witness"]
         val H >> AJ.TRUE ty = jdg
+        val () = assertWellScoped H tm
         val goal = makeMem tr H (tm, ty)
       in
         |>: goal #> (H, tm)
@@ -166,6 +167,7 @@ struct
       let
         val tr = ["Term.Exact"]
         val H >> AJ.TERM tau = jdg
+        val () = assertWellScoped H tm
         val tau' = Abt.sort tm
         val _ = Assert.sortEq (tau, tau')
       in
