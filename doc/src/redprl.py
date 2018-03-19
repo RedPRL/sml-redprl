@@ -33,30 +33,37 @@ class RedPRLLexer(RegexLexer):
     # earlier rules take precedence
     tokens = {
         'root': [
-            (r'\s+', Whitespace),
+            (r'\s+', Text),
 
             (r'//.*?$', Comment.Singleline),
             (r'/\*', Comment.Multiline, 'comment'),
 
             ('/[\w/]+|\\b'.join(types), Name.Builtin),
             ('|\\b'.join(exprs), Name.Builtin),
-            ('\$|\*|!|@|=(?!>)|\+|->|~>|<~', Name.Builtin),
+            (r'\$|\*|!|@|=(?!>)|\+|->|~>|<~', Name.Builtin),
 
             ('|\\b'.join(tacs), Keyword),
-            (';|`|=>|<=', Keyword),
+            (r';|`|=>|<=', Keyword),
 
             ('|\\b'.join(cmds), Keyword.Declaration),
 
             ('|\\b'.join(misc), Name.Builtin),
 
-            ('\#', Name.Builtin),
+            (r'\#', Comment), # hack
 
             (r'\(|\)|\[|\]|\.|:|,|\{|\}|_', Punctuation),
             (r'\b\d+', Number),
 
-            ('[A-Z][a-zA-Z0-9\'/-]*', Name.Function),
-            ('[a-z][a-zA-Z0-9\'/-]*', Name.Variable),
-            ('\?[a-zA-Z0-9\'/-]*', Name.Exception),
+            # for typesetting rules:
+            (r'^\|', Generic.Traceback),
+            (r'>>', Name.Keyword),
+            (r'<-', Name.Keyword),
+            (r'ext', Name.Keyword),
+            (r'where', Name.Keyword),
+
+            (r'[A-Z][a-zA-Z0-9\'/-]*', Name.Function),
+            (r'[a-z][a-zA-Z0-9\'/-]*', Name.Variable),
+            (r'\?[a-zA-Z0-9\'/-]*', Name.Exception),
         ],
 
         'comment': [

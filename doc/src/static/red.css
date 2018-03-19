@@ -6,7 +6,7 @@
   background-color: #fcfcfc;
 }
 
-.wy-side-nav-search {
+.wy-side-nav-search, .wy-nav-top {
   background-color: #e84644;
 }
 
@@ -37,10 +37,6 @@ body, h1, h2, h3, h4, h5, h6, pre, code {
   font-family: 'PragmataPro' !important;
 }
 
-pre {
-  padding: 12px 12px 0px 12px !important;
-}
-
 code {
   border: none !important;
   background: none !important;
@@ -58,9 +54,7 @@ code {
 }
 
 .wy-menu-vertical li a {
-  padding: 1em 2.427em 0.5em 2.427em !important;
-  font-weight: normal !important;
-  line-height: 1em;
+  padding: 0.5em 2.427em !important;
 }
 
 .wy-menu-vertical li.on a span.toctree-expand, .wy-menu-vertical li.current>a span.toctree-expand {
@@ -75,12 +69,6 @@ code {
   padding-right: 0.3em;
 }
 
-.headerlink {
-  font-family: 'PragmataPro' !important;
-  font-size: 14px !important;
-  font-weight: 700 !important;
-}
-
 .fa-home:before, .icon-home:before {
   font-family: 'PragmataPro';
   content: "\2605";
@@ -92,9 +80,38 @@ code {
 
 div[class^='highlight'] pre {
   font-size: 14px;
+  line-height: 1.5 !important;
+  padding: 12px 20px;
+}
+
+div[class^='highlight'] {
+  border: none;
+  background: initial;
 }
 
 .revolutionary {
   color: #e84644;
   font-weight: 700;
+}
+
+pre .gt {
+  background-color: #f7bcbb;
+  color: #f7bcbb;
+  padding: 3px 0;
+}
+
+.rst-content .section ul li {
+  list-style: none !important;
+  margin-left: 12px;
+}
+
+.rst-content .section ul li:before {
+  content: '\2605';
+  color: #e84644;
+  margin-right: 12px;
+}
+
+.rst-content .section ul li.toctree-l2:before {
+  color: #404040;
+  margin-right: 12px;
 }

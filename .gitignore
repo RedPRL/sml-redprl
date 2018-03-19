@@ -19,3 +19,4 @@ bin
 
 doc/old/machine.pdf
 doc/build
+*.pyc
