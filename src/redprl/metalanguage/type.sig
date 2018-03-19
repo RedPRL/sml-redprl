@@ -10,6 +10,7 @@ struct
    | THM of sort
    | ABS of valence list * vty
    | METAS of valence list
+   | DATA_INFO
    (* TODO: 
    | SUM of (string * vty) list
    *)

@@ -41,7 +41,7 @@ struct
     let
       val emp = ESyn.RET ESyn.NIL
       val ecmd = List.foldr (fn (frame, sign) => frame sign) emp sign
-      val (icmd, _) = Elab.elabCmd Res.init ecmd
+      val (icmd, _) = Elab.elabCmd ecmd Res.init
       val (scmd, exit) = Eval.evalCmd MlSemantics.initEnv icmd
     in
       exit

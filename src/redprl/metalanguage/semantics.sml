@@ -9,12 +9,10 @@ struct
 
   structure Dict = SplayDict (structure Key = MlId)
 
-  type data_decl = unit
-
   datatype value =
      THUNK of env * syn_cmd
    | THM of jdg * Tm.abs
-   | DATA_DECL of data_decl
+   | DATA_INFO of {foo : unit}
    | TERM of term
    | ABS of value * value
    | METAS of metas
@@ -62,6 +60,7 @@ struct
          | ABS (METAS psi, s) => ABS (METAS psi, go (List.foldr (fn ((X, _), ren) => Metavar.Ctx.remove ren X) ren psi) s)
          | METAS psi => METAS (List.map (fn (X, vl) => (Option.getOpt (Metavar.Ctx.find ren X, X), vl)) psi)
          | NIL => NIL
+         | DATA_INFO foo => DATA_INFO foo (* TODO *)
     in
       go ren s
     end    
@@ -98,7 +97,7 @@ struct
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
         end
 
-      | DATA_DECL decl => 
+      | DATA_INFO _ => 
         Fpp.text "<data decl>"
 
       | TERM abt =>
