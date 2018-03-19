@@ -196,7 +196,7 @@ struct
       (ISyn.RET v, Ty.UP vty)
     end
 
-  fun refineSequent (name, sequent : Sequent.jdg, script : RedPrlAbt.abt) : icmd * cty = 
+  fun refineSequent (name, sequent : Sequent.jdg, script : RedPrlAbt.abt) : icmd * cty =
     let
       val Sequent.>> (_, ajdg) = sequent
     in
@@ -215,7 +215,7 @@ struct
   fun elabDef (psi, definiens) : elab_cmd =
     elabNu (psi, elabRet (elabAbs (elabMetas psi, elabTerm definiens)))
 
-  fun elabThm (name, psi, goal, script) : elab_cmd = 
+  fun elabThm (name, psi, goal, script) : elab_cmd =
     let
       val x = MlId.new ()
     in

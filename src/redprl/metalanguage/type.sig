@@ -11,7 +11,7 @@ struct
    | ABS of valence list * vty
    | METAS of valence list
    | DATA_INFO
-   (* TODO: 
+   (* TODO:
    | SUM of (string * vty) list
    *)
 
@@ -28,8 +28,8 @@ sig
   datatype vty = datatype MlTypeData.vty
   datatype cty = datatype MlTypeData.cty
 
-  (* TODO: 
-  
+  (* TODO:
+
   val ppVty : vty -> Fpp.doc
   val ppCty : cty -> Fpp.doc
 

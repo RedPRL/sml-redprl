@@ -1,10 +1,10 @@
-structure MlEvaluate : ML_EVALUATE = 
+structure MlEvaluate : ML_EVALUATE =
 struct
   structure Sem = MlSemantics
   structure Syn = MlIntSyntax
 
   structure AJ = AtomicJudgment and Err = RedPrlError
-  
+
   type env = Sem.env
   type syn_value = Syn.value
   type syn_cmd = Syn.cmd
@@ -56,7 +56,7 @@ struct
           Err.GENERIC [Fpp.text "internal error: theoremSpec caled on non-theorem"]
 
     (* TODO *)
-    fun dataDeclInfo env (opid : MlId.t) = 
+    fun dataDeclInfo env (opid : MlId.t) =
       ()
 
     fun unfoldOpid env (opid : MlId.t) args =
@@ -70,8 +70,8 @@ struct
              let
                val Tm.\ (xs, abt) = Tm.outb abs
              in
-               case xs of 
-                  [] => abt 
+               case xs of
+                  [] => abt
                 | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "internal error: unfoldOpid called on non-atomic judgment"]
              end
            | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "internal error: unfoldOpid called on something that cannot be unfolded"]
@@ -104,7 +104,7 @@ struct
 
      | Syn.AP (cmd, v) =>
        (case evalCmd env cmd of
-           (Sem.FN (env', x, cmd'), ex) => 
+           (Sem.FN (env', x, cmd'), ex) =>
            let
              val sv = evalVal env v
              val (s, ex') = evalCmd (Sem.extend env' x sv) cmd'
@@ -143,7 +143,7 @@ struct
                  ren = ren',
                  idx = idx + 1}
               end)
-            {subgoals' = Lcf.Tl.empty, ren = Metavar.Ctx.empty, idx = 0}          
+            {subgoals' = Lcf.Tl.empty, ren = Metavar.Ctx.empty, idx = 0}
             subgoals
 
          val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
@@ -154,7 +154,7 @@ struct
           (Sem.RET @@ Sem.THM (sequent', Tm.mapAbs (Tm.renameMetavars ren) evd), subgoalsCount = 0)
         end
 
-     | Syn.FRESH vls => 
+     | Syn.FRESH vls =>
        let
          val psi = List.map (fn (SOME name, vl) => (Metavar.named name, vl) | (NONE, vl) => (Metavar.new (), vl)) vls
        in
@@ -162,7 +162,7 @@ struct
        end
 
      | Syn.MATCH_METAS (v, Xs, cmd) =>
-       (case evalVal env v of 
+       (case evalVal env v of
            Sem.METAS psi =>
            let
              val rho = ListPair.foldl (fn (X, (Y, _), rho) => Metavar.Ctx.insert rho X Y) Metavar.Ctx.empty (Xs, psi)
@@ -171,7 +171,7 @@ struct
              evalCmd env' cmd
            end
          | _ =>
-           Err.raiseError @@ Err.GENERIC [Fpp.text "evalCmd/MATCH_METAS expected METAS"])      
+           Err.raiseError @@ Err.GENERIC [Fpp.text "evalCmd/MATCH_METAS expected METAS"])
 
      | Syn.MATCH_THM (vthm, xjdg, xtm, cmd) =>
        (case evalVal env vthm of

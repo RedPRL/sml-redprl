@@ -1,4 +1,4 @@
-structure MlSemantics : ML_SEMANTICS = 
+structure MlSemantics : ML_SEMANTICS =
 struct
   structure Syn = MlIntSyntax
   type term = Syn.term
@@ -27,13 +27,13 @@ struct
   val initEnv = (Dict.empty, Metavar.Ctx.empty)
 
   fun @@ (f, x) = f x
-  infixr @@  
+  infixr @@
 
   fun lookup (env : env) (nm : MlId.t) : value =
     case Dict.find (#1 env) nm of
         SOME v => v
       | NONE =>
-        RedPrlError.raiseError @@ 
+        RedPrlError.raiseError @@
           RedPrlError.GENERIC
             [Fpp.text "Could not find value of",
              Fpp.text (MlId.toString nm),
@@ -42,7 +42,7 @@ struct
   fun extend (env : env) (nm : MlId.t) (v : value) : env =
     (Dict.insert (#1 env) nm v, #2 env)
 
-  
+
   fun renameEnv (env : env) rho =
     let
       val rho' = Metavar.Ctx.map (fn X => Option.getOpt (Metavar.Ctx.find rho X, X)) (#2 env)
@@ -53,7 +53,7 @@ struct
 
   fun renameVal s ren =
     let
-      fun go ren = 
+      fun go ren =
         fn THUNK (env, cmd) => THUNK (renameEnv env ren, cmd)
          | THM (jdg, abs) => THM (Sequent.map (Tm.renameMetavars ren) jdg, Tm.mapAbs (Tm.renameMetavars ren) abs)
          | TERM term => TERM (Tm.renameMetavars ren term)
@@ -63,20 +63,20 @@ struct
          | DATA_INFO foo => DATA_INFO foo (* TODO *)
     in
       go ren s
-    end    
+    end
 
-  fun lookupMeta (env : env) (X : metavariable) = 
-    case Metavar.Ctx.find (#2 env) X of 
+  fun lookupMeta (env : env) (X : metavariable) =
+    case Metavar.Ctx.find (#2 env) X of
        SOME Y => Y
-     | NONE => 
-        RedPrlError.raiseError @@ 
+     | NONE =>
+        RedPrlError.raiseError @@
           RedPrlError.GENERIC
             [Fpp.text "Could not find value of metavariable",
              TermPrinter.ppMeta X,
              Fpp.text "in environment"]
-     
 
-  fun term (env : env) m = 
+
+  fun term (env : env) m =
     Tm.renameMetavars (#2 env) m
 
   structure AJ = AtomicJudgment
@@ -97,7 +97,7 @@ struct
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
         end
 
-      | DATA_INFO _ => 
+      | DATA_INFO _ =>
         Fpp.text "<data decl>"
 
       | TERM abt =>

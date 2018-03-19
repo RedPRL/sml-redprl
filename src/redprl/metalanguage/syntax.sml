@@ -1,4 +1,4 @@
-structure MlExtSyntax = 
+structure MlExtSyntax =
 struct
   type sort = RedPrlSort.t
   type valence = RedPrlAbt.valence
@@ -44,7 +44,7 @@ struct
    | TERM of term
 end
 
-structure MlIntSyntax = 
+structure MlIntSyntax =
 struct
   type id = MlId.t
   type valence = RedPrlAbt.valence

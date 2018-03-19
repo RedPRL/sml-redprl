@@ -1,5 +1,5 @@
 (* The semantic domain for metalanguage programs. *)
-signature ML_SEMANTICS = 
+signature ML_SEMANTICS =
 sig
   type env
   type syn_cmd
@@ -16,7 +16,7 @@ sig
    | METAS of metas
    | NIL
 
-  datatype cmd = 
+  datatype cmd =
      RET of value
    | FN of env * MlId.t * syn_cmd
 
