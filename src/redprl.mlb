@@ -79,6 +79,7 @@ in
       redprl/machine.fun
       redprl/refiner_kit.fun
       redprl/refiner_composition_kit.fun
+      redprl/refiner_inductive_spec.fun
       redprl/refiner_types.fun
       redprl/refiner_misc.fun
       redprl/refiner.sig

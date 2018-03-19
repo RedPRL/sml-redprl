@@ -24,8 +24,8 @@ struct
      | META_NAME => "meta-name"
      | IND_SPECTYPE => "ind-spectype"
      | IND_SPEC => "ind-spec"
+     | IND_FAM => "ind-fam"
      | IND_CONSTR => "ind-constr"
-     | IND_ELIM_CASE => "ind-elim-case"
 end
 
 structure RedPrlArity = ListAbtArity (structure S = RedPrlSort)

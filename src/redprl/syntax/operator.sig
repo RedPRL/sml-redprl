@@ -1,6 +1,7 @@
 structure RedPrlOpData =
 struct
   type opid = MlId.t
+  type conid = string
 
   open RedPrlSort
   structure K = RedPrlKind
@@ -38,13 +39,22 @@ struct
    | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
 
    (* inductive types *)
-   | IND_TYPE of opid
-   | IND_SPECTYPE_SELF | IND_SPECTYPE_FUN
-   | IND_SPEC_INTRO of opid | IND_SPEC_FCOM | IND_SPEC_LAM | IND_SPEC_APP
-   | IND_CONSTRUCTOR of {label: opid, numDim: int, numNonRecVar: int, numRecVar: int}
-   | IND_REC_MK_CASE of {label: opid, numDim: int, numNonRecVar: int, numRecVar: int}
-   | IND_INTRO of {indtype: opid, label: opid}
-   | IND_REC of opid
+   | IND_FAM_BASE of conid list
+   | IND_FAM_LAM
+   | IND_FAM_LINE
+
+   | IND_SPECTYPE_SELF
+   | IND_SPECTYPE_FUN
+
+   | IND_SPEC_INTRO of conid
+   | IND_SPEC_FCOM | IND_SPEC_LAM | IND_SPEC_APP
+
+   | IND_CONSTR_LAM | IND_CONSTR_SPEC_LAM | IND_CONSTR_LINE
+   | IND_CONSTR_BDRY_VEC | IND_CONSTR_DISCRETE
+
+   | IND_TYPE of opid * RedPrlArity.valence list option
+   | IND_INTRO of (opid * RedPrlArity.valence list option) * conid
+   | IND_REC of (opid * RedPrlArity.valence list option) * RedPrlArity.Vl.bindings list option
 
    (* equality *)
    | EQUALITY

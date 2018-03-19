@@ -82,36 +82,27 @@ struct
      | CEDOM => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | COEQUALIZER_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
-     | IND_TYPE _ => [] ->> EXP
+     | IND_FAM_BASE l => List.map (fn _ => [] |: IND_CONSTR) l ->> IND_FAM
+     | IND_FAM_LAM => [[] |: EXP, [EXP] |: IND_FAM] ->> IND_FAM
+     | IND_FAM_LINE => [[DIM] |: IND_FAM] ->> IND_FAM
+
      | IND_SPECTYPE_SELF => [] ->> IND_SPECTYPE
      | IND_SPECTYPE_FUN => [[] |: EXP, [EXP] |: IND_SPECTYPE] ->> IND_SPECTYPE
-     | IND_SPEC_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC IND_SPEC] ->> IND_SPEC
+
+     | IND_SPEC_INTRO _ => [[] |: VEC ANY] ->> IND_SPEC
      | IND_SPEC_FCOM => [[] |: DIM, [] |: DIM, [] |: IND_SPEC, [] |: VEC (TUBE IND_SPEC)] ->> IND_SPEC
      | IND_SPEC_LAM => [[EXP] |: IND_SPEC] ->> IND_SPEC
      | IND_SPEC_APP => [[] |: IND_SPEC, [] |: EXP] ->> IND_SPEC
-     | IND_CONSTRUCTOR {numDim, numNonRecVar, numRecVar, ...} =>
-         let
-           val dimBinders = List.tabulate (numDim, fn _ => DIM)
-           val nonRecTypes = List.tabulate (numNonRecVar, fn _ => [] |: EXP)
-           val nonRecBinders = List.tabulate (numNonRecVar, fn _ => EXP)
-           val recTypes = List.tabulate (numRecVar, fn _ => nonRecBinders |: IND_SPECTYPE)
-           val recBinders = List.tabulate (numRecVar, fn _ => IND_SPEC)
-           val allBinders = List.concat [dimBinders, nonRecBinders, recBinders]
-         in
-           (nonRecTypes @ recTypes @ [allBinders |: VEC (BDRY IND_SPECTYPE)]) ->> IND_CONSTR
-         end
-     | IND_INTRO _ => [[] |: VEC DIM, [] |: VEC EXP, [] |: VEC EXP] ->> EXP
-     | IND_REC_MK_CASE {numDim, numNonRecVar, numRecVar, ...} =>
-         let
-           val dimBinders = List.tabulate (numDim, fn _ => DIM)
-           val nonRecBinders = List.tabulate (numNonRecVar, fn _ => EXP)
-           val recBinders = List.tabulate (numRecVar, fn _ => EXP)
-           val recResultBinders = List.tabulate (numRecVar, fn _ => EXP)
-           val allBinders = List.concat [dimBinders, nonRecBinders, recBinders, recResultBinders]
-         in
-           [allBinders |: EXP] ->> IND_REC_CASE
-         end
-     | IND_REC _ => [[EXP] |: EXP, [] |: EXP, [] |: VEC IND_REC_CASE] ->> EXP
+
+     | IND_CONSTR_LAM => [[] |: EXP, [EXP] |: IND_CONSTR] ->> IND_CONSTR
+     | IND_CONSTR_SPEC_LAM => [[] |: IND_SPECTYPE, [IND_SPEC] |: IND_CONSTR] ->> IND_CONSTR
+     | IND_CONSTR_LINE => [[] |: DIM, [DIM] |: IND_CONSTR] ->> IND_CONSTR
+     | IND_CONSTR_BDRY_VEC => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
+     | IND_CONSTR_DISCRETE => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
+
+     | IND_TYPE (_, valence) => Option.valOf valence ->> EXP
+     | IND_INTRO ((_, valence), _) => Option.valOf valence @ [[] |: VEC ANY] ->> EXP
+     | IND_REC ((_, valence), bindings) => Option.valOf valence @ [[EXP] |: EXP, [] |: EXP] @ List.map (fn bs => bs |: EXP) (Option.valOf bindings) ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (BDRY EXP)] ->> EXP
@@ -268,15 +259,21 @@ struct
      | CEDOM => "cedom"
      | COEQUALIZER_REC => "coeq-rec"
 
-     | IND_TYPE _ => "ind-type"
+     | IND_FAM_BASE _ => "ind-fam-base" (* FIXME *)
+     | IND_FAM_LAM => "ind-fam-lam"
+     | IND_FAM_LINE => "ind-fam-line"
      | IND_SPECTYPE_SELF => "ind-rec-self"
      | IND_SPECTYPE_FUN => "ind-rec-fun"
      | IND_SPEC_INTRO _ => "ind-rec-intro" (* FIXME *)
      | IND_SPEC_FCOM => "ind-rec-fcom"
      | IND_SPEC_LAM => "ind-rec-lam"
      | IND_SPEC_APP => "ind-rec-app"
-     | IND_CONSTRUCTOR _ => "ind-constructor" (* FIXME *)
-     | IND_REC_MK_CASE _ => "ind-rec-case" (* FIXME *)
+     | IND_CONSTR_LAM => "ind-constr-lam"
+     | IND_CONSTR_SPEC_LAM => "ind-constr-spec-lam"
+     | IND_CONSTR_LINE => "ind-constr-line"
+     | IND_CONSTR_BDRY_VEC => "ind-constr-bdry-vec"
+     | IND_CONSTR_DISCRETE => "ind-constr-discrete"
+     | IND_TYPE _ => "ind-type" (* FIXME *)
      | IND_INTRO _ => "ind-intro" (* FIXME *)
      | IND_REC _ => "ind-rec" (* FIXME *)
 

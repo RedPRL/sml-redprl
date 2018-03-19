@@ -18,8 +18,8 @@ struct
    | META_NAME
    | IND_SPECTYPE (* argument types in Part IV *)
    | IND_SPEC (* boundary terms in Part IV *)
+   | IND_FAM (* the data associated with an inductive type *)
    | IND_CONSTR (* the data associated with a constructor in Part IV *)
-   | IND_REC_CASE (* the elimination data associated with a constructor in Part IV *)
 end
 
 signature REDPRL_SORT = 
