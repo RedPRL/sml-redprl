@@ -17,6 +17,7 @@ endif
 
 command! RedPRL :call CheckBuffer()
 nnoremap <buffer> <LocalLeader>l :RedPRL<CR>
+autocmd QuitPre <buffer> call s:CloseBuffer()
 
 set errorformat =%E%f:%l.%c-%*\\d.%*\\d\ [%trror]:
 set errorformat+=%Z%m
@@ -92,6 +93,13 @@ function! s:EditWidth()
 
   wincmd p
   return l:width
+endfunction
+
+function! s:CloseBuffer()
+  cclose
+  if (bufexists('RedPRL') && !getbufvar('RedPRL', '&modified'))
+    bdelete RedPRL
+  endif
 endfunction
 
 let b:did_ftplugin = 1
