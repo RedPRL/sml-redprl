@@ -1,0 +1,117 @@
+.wy-nav-side {
+  background-color: #edf0f2;
+}
+
+.wy-nav-content-wrap {
+  background-color: #fcfcfc;
+}
+
+.wy-side-nav-search, .wy-nav-top {
+  background-color: #e84644;
+}
+
+.wy-side-nav-search input[type=text] {
+  border-radius: 0;
+  border-color: #404040;
+}
+
+.wy-menu-vertical a {
+  color: black;
+}
+
+.wy-menu-vertical a:hover {
+  background-color: #ee7977;
+  color: white;
+}
+
+.wy-menu-vertical li a:hover {
+  background-color: #ee7977 !important;
+  color: white !important;
+}
+
+.wy-nav-content a.reference {
+  text-decoration: underline;
+}
+
+body, h1, h2, h3, h4, h5, h6, pre, code {
+  font-family: 'PragmataPro' !important;
+}
+
+code {
+  border: none !important;
+  background: none !important;
+  padding: 0 0 0 0 !important;
+  font-size: 100% !important;
+}
+
+.wy-nav-side {
+  border-right: 1px solid #c9c9c9;
+}
+
+.wy-menu-vertical li.current a {
+  color: #333;
+  border:none !important;
+}
+
+.wy-menu-vertical li a {
+  padding: 0.5em 2.427em !important;
+}
+
+.wy-menu-vertical li.on a span.toctree-expand, .wy-menu-vertical li.current>a span.toctree-expand {
+  display: inline;
+}
+
+.wy-menu-vertical li span.toctree-expand {
+  float: none;
+}
+
+.wy-menu-vertical li.on a span.toctree-expand:before, .wy-menu-vertical li>a span.toctree-expand:before {
+  padding-right: 0.3em;
+}
+
+.fa-home:before, .icon-home:before {
+  font-family: 'PragmataPro';
+  content: "\2605";
+}
+
+.wy-nav-content a:visited {
+  color: #2980B9;
+}
+
+div[class^='highlight'] pre {
+  font-size: 14px;
+  line-height: 1.5 !important;
+  padding: 12px 20px;
+}
+
+div[class^='highlight'] {
+  border: none;
+  background: initial;
+}
+
+.revolutionary {
+  color: #e84644;
+  font-weight: 700;
+}
+
+pre .gt {
+  background-color: #f7bcbb;
+  color: #f7bcbb;
+  padding: 3px 0;
+}
+
+.rst-content .section ul li {
+  list-style: none !important;
+  margin-left: 12px;
+}
+
+.rst-content .section ul li:before {
+  content: '\2605';
+  color: #e84644;
+  margin-right: 12px;
+}
+
+.rst-content .section ul li.toctree-l2:before {
+  color: #404040;
+  margin-right: 12px;
+}

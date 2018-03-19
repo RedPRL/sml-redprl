@@ -114,7 +114,7 @@
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
     "bool" "tt" "ff" "if"
-    "nat" "zero" "succ" "nat-rec" "int" "negsucc" "int-rec"
+    "nat" "zero" "succ" "nat-rec" "int" "pos" "negsucc" "int-rec"
     "void"
     "S1" "base" "loop" "S1-rec"
     "lam" "app"

@@ -2,7 +2,7 @@ The following people have contributed to RedPRL and its theoretical underpinning
 in no particular order:
 
 - Jon Sterling
-- Danny Gratzer
+- Daniel Gratzer
 - Eugene Akentyev
 - James Wilcox
 - David Christiansen
@@ -14,7 +14,7 @@ in no particular order:
 We also thank the following people for their contributions to previous versions
 of JonPRL:
 
-- Danny Gratzer
+- Daniel Gratzer
 - Vincent Rahli
 - David Christiansen
 - Darin Morrison

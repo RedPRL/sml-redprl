@@ -1,55 +1,43 @@
-Thm IntSucc : [
-  (-> int int)
-] by [
-  lam i => 
-    elim i; 
-    [ `1
-    , with _ n => `(succ (succ n))
-    , `0
-    , with _ n => `(negsucc n)
-    ]
-].
-
 Thm IntPred : [
   (-> int int)
 ] by [
-  lam i => 
-    elim i;
-    [ `-1
-    , with _ n =>
-      elim n;
-      [ `0
-      , with _ m => `(succ m)
-      ]
-    , `-2
-    , with _ n => 
-      `(negsucc (succ (succ n)))
+  lam a => elim a;
+  [ with n => elim n;
+    [ `(int -1)
+    , with _ n' => `(pos n')
     ]
+  , with n => `(negsucc (succ n))
+  ];
 ].
 
+Thm IntSucc : [
+  (-> int int)
+] by [
+  lam a => elim a;
+  [ with n => `(pos (succ n))
+  , with n => elim n;
+    [ `(int 0)
+    , with _ n' => `(negsucc n')
+    ]
+  ]
+].
 
 Thm IntSuccIntPred : [
   (-> [i : int] (= int ($ IntSucc ($ IntPred i)) i))
 ] by [
-  lam i => 
-  elim i;
-  [ auto
-  , with _ n => elim n; auto
-  , auto
+  lam i => elim i;
+  [ with n => elim n; auto
   , auto
   ]
 ].
-
 
 Thm IntPredIntSucc : [
   (-> [i : int] (= int ($ IntPred ($ IntSucc i)) i))
 ] by [
   lam i => elim i;
-    [ auto
-    , auto
-    , auto
-    , with _ n => elim n; auto
-    ]
+  [ auto
+  , with n => elim n; auto
+  ]
 ].
 
 Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
@@ -112,7 +100,7 @@ Thm Loop : [
 Thm S1LoopToInt : [
   (-> (path [_] S1 base base) int)
 ] by [
-  lam l => `(coe 0~>1 [x] ($ S1UnivCover (@ l x)) 0);
+  lam l => `(coe 0~>1 [x] ($ S1UnivCover (@ l x)) (int 0));
     claim eq : [(= S1 (@ l 1) base)] by [auto];
     auto;
     [ rewrite eq at type; [with x => `($ S1UnivCover x)]; auto
@@ -141,21 +129,25 @@ Thm IntToS1Loop : [
   (-> int (path [_] S1 base base))
 ] by [
   lam i => elim i;
+  [ with n => elim n;
     [ abs _ => `base
     , with ih => `($ S1LoopConcat Loop ih)
-    , `($ S1LoopInv Loop)
+    ]
+  , with n => elim n;
+    [ `($ S1LoopInv Loop)
     , with ih => `($ S1LoopConcat ($ S1LoopInv Loop) ih)
     ]
+  ]
 ].
 
 Thm Test0 : [
-  (= int ($ S1LoopToInt ($ IntToS1Loop 3)) 3)
+  (= int ($ S1LoopToInt ($ IntToS1Loop (int 3))) (int 3))
 ] by [
   unfold IntToS1Loop Loop; auto
 ].
 
 Thm Test1 : [
-  (= int ($ S1LoopToInt ($ IntToS1Loop -3)) -3)
+  (= int ($ S1LoopToInt ($ IntToS1Loop (int -3))) (int -3))
 ] by [
   unfold IntToS1Loop S1LoopInv Loop; auto
 ].

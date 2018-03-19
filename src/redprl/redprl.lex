@@ -104,6 +104,7 @@ whitespace = [\ \t];
 <INITIAL>"succ"             => (Tokens.SUCC (posTuple (size yytext)));
 <INITIAL>"nat-rec"          => (Tokens.NAT_REC (posTuple (size yytext)));
 <INITIAL>"int"              => (Tokens.INT (posTuple (size yytext)));
+<INITIAL>"pos"              => (Tokens.POS (posTuple (size yytext)));
 <INITIAL>"negsucc"          => (Tokens.NEGSUCC (posTuple (size yytext)));
 <INITIAL>"int-rec"          => (Tokens.INT_REC (posTuple (size yytext)));
 <INITIAL>"void"             => (Tokens.VOID (posTuple (size yytext)));

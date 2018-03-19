@@ -32,7 +32,7 @@ struct
    | COEQUALIZER_REC of (variable * abt) * hole * (variable * abt) * (variable * variable * abt)
    | DIM_APP of hole * abt
    | NAT_REC of (variable * abt) * hole * abt * (variable * variable * abt)
-   | INT_REC of (variable * abt) * hole * abt * (variable * variable * abt) * abt * (variable * variable * abt)
+   | INT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt)
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
    | CAP of Syn.dir * tube list * hole
@@ -54,7 +54,7 @@ struct
      | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
      | DIM_APP (HOLE, r) => Syn.into @@ Syn.DIM_APP (m, r)
      | NAT_REC ((z, tyz), HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC ((z, tyz), m, (zer, (x, y, succ)))
-     | INT_REC ((z, tyz), HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC ((z, tyz), m, (zer, (x,y,succ), negone, (x',y',negss)))
+     | INT_REC ((z, tyz), HOLE, (x,pos), (y,neg)) => Syn.into @@ Syn.INT_REC ((z, tyz), m, ((x, pos), (y, neg)))
      | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
      | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
      | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
@@ -614,21 +614,11 @@ struct
      | O.NAT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | O.INT $ _ || (_, []) => raise Final
+     | O.POS $ _ || (_, []) => raise Final
      | O.NEGSUCC $ _ || (_, []) => raise Final
-     | O.INT_REC $ [[z] \ tyz, _ \ m, _ \ n, [x,y] \ p, _ \ q, [x',y'] \ r] || (syms, stk) => COMPAT @@ m || (syms, INT_REC ((z,tyz), HOLE, n, (x,y,p), q, (x',y',r)) :: stk)
-     | O.ZERO $ _ || (syms, INT_REC (_, HOLE, n, _, _, _) :: stk) => CRITICAL @@ n || (syms, stk)
-     | O.SUCC $ [_ \ m] || (syms, (frm as INT_REC (_, HOLE, _, (x0,y0,p), _, _)) :: stk) =>
-       let
-         val rho = VarKit.ctxFromList [(m, x0), (plug m frm, y0)]
-       in
-         CRITICAL @@ substVarenv rho p || (syms, stk)
-       end
-     | O.NEGSUCC $ [_ \ m] || (syms, INT_REC ((z,tyz), HOLE, _, _, q, (x,y,r)) :: stk) =>
-       let
-         val tynegsuccz = substVar (Syn.into (Syn.NEGSUCC (VarKit.toExp z)), z) tyz
-       in
-         COMPAT @@ m || (syms, NAT_REC ((z, tynegsuccz), HOLE, q, (x,y,r)) :: stk)
-       end
+     | O.INT_REC $ [[z] \ tyz, _ \ m, [x] \ n, [y] \ p] || (syms, stk) => COMPAT @@ m || (syms, INT_REC ((z,tyz), HOLE, (x,n), (y,p)) :: stk)
+     | O.POS $ [_ \ m] || (syms, (frm as INT_REC (_, HOLE, (x,n), _)) :: stk) => CRITICAL @@ substVar (m, x) n || (syms, stk)
+     | O.NEGSUCC $ [_ \ m] || (syms, (frm as INT_REC (_, HOLE, _, (y,p))) :: stk) => CRITICAL @@ substVar (m, y) p || (syms, stk)
      | O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
      | O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
@@ -939,8 +929,8 @@ struct
                                 ty = substVar (s, v) b,
                                 cap = projFromOne s,
                                 tubes =
-                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.DIM_APP (Syn.intoSnd (fiberFromOne s), VarKit.toDim w)))
-                                  , ((s, Syn.intoDim 1), (w, projFromOne s)) ]}
+                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.DIM_APP (Syn.intoSnd (fiberFromOne (Syn.intoDim 0)), VarKit.toDim w)))
+                                  , ((s, Syn.intoDim 1), (w, coercee)) ]}
                            end
                        in
                          branchOnDim stability syms' (#1 dir)
