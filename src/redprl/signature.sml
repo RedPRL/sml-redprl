@@ -63,13 +63,13 @@ struct
 
   fun compileSrcDecl name : Src.decl -> ESyn.cmd =
     fn Src.DEF {arguments, sort, definiens} =>
-       ESyn.TERM_ABS (arguments, (definiens, sort))
+       ESyn.DEF {arguments = arguments, definiens = (definiens, sort)}
 
      | Src.TAC {arguments, script} => 
-       ESyn.TERM_ABS (arguments, (script, RedPrlSort.TAC))
+       ESyn.TAC {arguments = arguments, script = script}
 
      | Src.THM {arguments, goal, script} =>
-       ESyn.THM_ABS (SOME name, arguments, goal, (script, RedPrlSort.TAC))
+       ESyn.THM {name = name, arguments = arguments, goal = goal, script = script}
 
   val rec compileSrcSig : Src.sign -> ESyn.cmd =
     fn [] =>

@@ -170,7 +170,6 @@ struct
          (ISyn.ABS (vpsi', v'), Ty.ABS (vls, vty))
        end
 
-
   and elabCmd (env : env) : ESyn.cmd -> ISyn.cmd * Ty.cty =
     fn ESyn.NU (psi, cmd) => 
        let
@@ -182,17 +181,24 @@ struct
          elabCmd env ecmd'
        end
 
-     | ESyn.TERM_ABS (psi, term) => 
+     | ESyn.DEF {arguments, definiens} =>
        let
-         val ecmd' = ESyn.NU (psi, ESyn.RET (ESyn.ABS (ESyn.METAS psi, ESyn.TERM term)))
+         val ecmd' = ESyn.NU (arguments, ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.TERM definiens)))
        in
          elabCmd env ecmd'
        end
 
-     | ESyn.THM_ABS (name, psi, jdg, script) => 
+     | ESyn.TAC {arguments, script} => 
+       let
+         val ecmd' = ESyn.NU (arguments, ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.TERM (script, RedPrlSort.TAC))))
+       in
+         elabCmd env ecmd'
+       end
+
+     | ESyn.THM {name, arguments, goal, script} =>
        let
          val x = MlId.new ()
-         val ecmd' = ESyn.NU (psi, ESyn.BIND (ESyn.REFINE (name, jdg, script), x, ESyn.RET (ESyn.ABS (ESyn.METAS psi, ESyn.VAR x))))
+         val ecmd' = ESyn.NU (arguments, ESyn.BIND (ESyn.REFINE (SOME name, goal, script), x, ESyn.RET (ESyn.ABS (ESyn.METAS arguments, ESyn.VAR x))))
        in
          elabCmd env ecmd'
        end
@@ -273,7 +279,7 @@ struct
      | ESyn.REFINE (name, ajdg, script) =>
        let
          val ajdg' = elabAtomicJdg env ajdg
-         val script' = elabAst env script
+         val script' = elabAst env (script, RedPrlSort.TAC)
        in
          (ISyn.REFINE (name, ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
        end
