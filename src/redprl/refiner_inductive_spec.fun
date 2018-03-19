@@ -211,6 +211,7 @@ struct
               end
           | goals' ((arg0::args0, arg1::args1), Syn.IND_CONSTR_LINE (x,bx)) =
               let
+                (* XXX no sort-checking *)
                 val _ = Assert.alphaEq (arg0, arg1)
               in
                 goals ((args0, args1), Abt.substVar (arg0, x) bx)
@@ -221,7 +222,38 @@ struct
       end
 
     and simplifyIntro H (constrs, specctx) (label, args) =
-      raise Bind
+      let
+        fun trySimplify' ([], Syn.IND_CONSTR_DISCRETE boundaries) =
+              Option.map (fn (_, boundary) => (boundary, []))
+                (List.find (fn (eq, _) => Abt.eq eq) boundaries)
+          | trySimplify' ([], Syn.IND_CONSTR_KAN boundaries) =
+              Option.map (fn (_, boundary) => (boundary, []))
+                (List.find (fn (eq, _) => Abt.eq eq) boundaries)
+          | trySimplify' (arg::args, Syn.IND_CONSTR_LAM (a,x,bx)) =
+              Option.map
+                (fn (boundary, goals) =>
+                  let
+                    val goal = makeMem trace H (arg, a)
+                  in
+                    (boundary, goal :: goals)
+                  end)
+                (trySimplify (args, Abt.substVar (arg, x) bx))
+          | trySimplify' (arg::args, Syn.IND_CONSTR_SPEC_LAM (a,x,bx)) =
+              Option.map
+                (fn (boundary, goals) =>
+                  let
+                    val goalsSpec = EqSpec H (constrs, specctx) ((arg, arg), a)
+                  in
+                    (boundary, goalsSpec @ goals)
+                  end)
+                (trySimplify (args, Abt.substVar (arg, x) bx))
+          | trySimplify' (arg::args, Syn.IND_CONSTR_LINE (x,bx)) =
+              (* XXX no sort-checking *)
+              trySimplify (args, Abt.substVar (arg, x) bx)
+        and trySimplify (args, spec) = trySimplify' (args, Syn.out spec)
+      in
+        trySimplify (args, ConstrDict.lookup constrs label)
+      end
 
     and simplifyConstr H (constrs, specctx) =
       fn Syn.IND_SPEC_INTRO args => simplifyIntro H (constrs, specctx) args
