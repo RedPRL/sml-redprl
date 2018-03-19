@@ -9,9 +9,12 @@ struct
 
   structure Dict = SplayDict (structure Key = MlId)
 
+  type data_decl = unit
+
   datatype value =
      THUNK of env * syn_cmd
    | THM of jdg * Tm.abs
+   | DATA_DECL of data_decl
    | TERM of term
    | ABS of value * value
    | METAS of metas
@@ -94,6 +97,9 @@ struct
             Fpp.text "Extract:",
             Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
         end
+
+      | DATA_DECL decl => 
+        Fpp.text "<data decl>"
 
       | TERM abt =>
         TermPrinter.ppTerm abt

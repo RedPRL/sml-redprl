@@ -13,4 +13,7 @@ sig
   val unfoldOpid : sign -> opid -> abt RedPrlAbt.bview list -> abt
 
   val isTheorem : sign -> opid -> bool
+
+  (* For Favonia - jms *)
+  val dataDeclInfo : sign -> opid -> unit
 end

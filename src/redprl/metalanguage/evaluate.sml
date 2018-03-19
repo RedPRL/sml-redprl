@@ -55,6 +55,10 @@ struct
         Err.raiseError @@
           Err.GENERIC [Fpp.text "internal error: theoremSpec caled on non-theorem"]
 
+    (* TODO *)
+    fun dataDeclInfo env (opid : MlId.t) = 
+      ()
+
     fun unfoldOpid env (opid : MlId.t) args =
       let
         val Sem.ABS (Sem.METAS psi, s) = Sem.lookup env opid

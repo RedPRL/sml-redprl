@@ -7,9 +7,13 @@ sig
   type term = Tm.abt
   type metas = (Tm.metavariable * Tm.valence) list
 
+  (* For Favonia - jms *)
+  type data_decl = unit
+
   datatype value =
      THUNK of env * syn_cmd
    | THM of jdg * Tm.abs
+   | DATA_DECL of data_decl (* For Favonia: This should be the info associated with the *instances* of the data declaration; so it would not include its parameters. Those would be kept in an ABS. *)
    | TERM of term
    | ABS of value * value
    | METAS of metas
