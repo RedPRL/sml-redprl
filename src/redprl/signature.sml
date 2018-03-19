@@ -46,37 +46,30 @@ struct
   end
 
   (* external language *)
-  structure ESyn =
-    MlSyntax
-      (type id = MlId.t type metavariable = string type jdg = ast type term = ast * sort type vty = Ty.vty
-       fun metaToString X = X)
-
+  structure ESyn = MlExtSyntax
 
   (* internal language *)
-  structure ISyn =
-    MlSyntax
-      (type id = MlId.t type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt type vty = Ty.vty
-       val metaToString = Metavar.toString)
+  structure ISyn = MlIntSyntax
 
-  fun compileSrcCmd pos : Src.cmd  -> ESyn.cmd =
+  fun compileSrcCmd pos : Src.cmd -> ESyn.cmd =
     fn Src.PRINT nm =>
        ESyn.PRINT (SOME pos, ESyn.VAR nm)
 
      | Src.EXTRACT nm =>
-       ESyn.printExtractAbs (SOME pos, ESyn.VAR nm)
+       ESyn.PRINT_EXTRACT (SOME pos, ESyn.VAR nm)
 
      | Src.QUIT =>
        ESyn.ABORT
 
   fun compileSrcDecl name : Src.decl -> ESyn.cmd =
     fn Src.DEF {arguments, sort, definiens} =>
-       ESyn.termAbs (arguments, (definiens, sort))
+       ESyn.TERM_ABS (arguments, (definiens, sort))
 
      | Src.TAC {arguments, script} => 
-       ESyn.termAbs (arguments, (script, RedPrlSort.TAC))
+       ESyn.TERM_ABS (arguments, (script, RedPrlSort.TAC))
 
      | Src.THM {arguments, goal, script} =>
-       ESyn.theoremAbs (SOME name, arguments, goal, (script, RedPrlSort.TAC))
+       ESyn.THM_ABS (SOME name, arguments, goal, (script, RedPrlSort.TAC))
 
   val rec compileSrcSig : Src.sign -> ESyn.cmd =
     fn [] =>
@@ -89,21 +82,13 @@ struct
        ESyn.BIND (compileSrcDecl (MlId.toString nm) decl, nm, compileSrcSig sign)
   
   
-  structure Sem = MlSemantics (ISyn)
-
-  structure ElabKit = 
-  struct
-    structure R = Res and Ty = Ty and ESyn = ESyn and ISyn = ISyn
-  end
-
   structure EvalKit = 
   struct
-    structure Syn = ISyn and Sem = Sem
+    structure Syn = ISyn and Sem = MlSemantics
   end
 
-
-  structure Elab = MlElaborate (ElabKit)
-  structure Eval = MlEvaluate (EvalKit)
+  structure Elab = MlElaborate (structure R = Res)
+  structure Eval = MlEvaluate
 
   structure L = RedPrlLog
 
@@ -111,7 +96,7 @@ struct
     let
       val ecmd = compileSrcSig sign
       val (icmd, _) = Elab.elabCmd Res.init ecmd
-      val (scmd, exit) = Eval.evalCmd Sem.initEnv icmd
+      val (scmd, exit) = Eval.evalCmd MlSemantics.initEnv icmd
     in
       exit
     end

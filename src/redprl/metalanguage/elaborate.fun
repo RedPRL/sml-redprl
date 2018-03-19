@@ -1,29 +1,17 @@
 signature ML_ELAB_KIT = 
 sig
-  structure Ty : ML_TYPE
-
   structure R : RESOLVER
     where type id = MlId.t
-    where type mltype = Ty.vty
-
-  structure ESyn : ML_SYNTAX
-    where type term = RedPrlAst.ast * Tm.sort
-    where type vty = Ty.vty
-    where type id = MlId.t
-    where type metavariable = string
-    where type jdg = RedPrlAst.ast
-  
-  structure ISyn : ML_SYNTAX
-    where type term = Tm.abt
-    where type vty = Ty.vty
-    where type id = MlId.t
-    where type metavariable = Tm.metavariable
-    where type jdg = AtomicJudgment.jdg
+    where type mltype = MlType.vty
 end
 
 functor MlElaborate (Kit : ML_ELAB_KIT) : ML_ELABORATE = 
 struct
   open Kit
+
+  structure Ty = MlType
+  structure ESyn = MlExtSyntax
+  structure ISyn = MlIntSyntax
   
   type env = R.env
   type ivalue = ISyn.value
@@ -182,8 +170,54 @@ struct
          (ISyn.ABS (vpsi', v'), Ty.ABS (vls, vty))
        end
 
+
   and elabCmd (env : env) : ESyn.cmd -> ISyn.cmd * Ty.cty =
-    fn ESyn.BIND (cmd1, nm, cmd2) =>
+    fn ESyn.NU (psi, cmd) => 
+       let
+         val (Xs, vls) = ListPair.unzip psi
+         val hintedVls = ListPair.mapEq (fn (X, vl) => (SOME X, vl)) (Xs, vls)
+         val xpsi = MlId.new ()
+         val ecmd' = ESyn.BIND (ESyn.FRESH hintedVls, xpsi, ESyn.MATCH_METAS (ESyn.VAR xpsi, Xs, cmd))
+       in
+         elabCmd env ecmd'
+       end
+
+     | ESyn.TERM_ABS (psi, term) => 
+       let
+         val ecmd' = ESyn.NU (psi, ESyn.RET (ESyn.ABS (ESyn.METAS psi, ESyn.TERM term)))
+       in
+         elabCmd env ecmd'
+       end
+
+     | ESyn.THM_ABS (name, psi, jdg, script) => 
+       let
+         val x = MlId.new ()
+         val ecmd' = ESyn.NU (psi, ESyn.BIND (ESyn.REFINE (name, jdg, script), x, ESyn.RET (ESyn.ABS (ESyn.METAS psi, ESyn.VAR x))))
+       in
+         elabCmd env ecmd'
+       end
+
+     | ESyn.PRINT_EXTRACT (pos, v) =>
+       let
+         val xpsi = MlId.new ()
+         val xthm = MlId.new ()
+         val xjdg = MlId.new ()
+         val xtm = MlId.new ()
+         val ecmd' = ESyn.MATCH_ABS (v, xpsi, xthm, ESyn.MATCH_THM (ESyn.VAR xthm, xjdg, xtm, ESyn.PRINT (pos, ESyn.ABS (ESyn.VAR xpsi, ESyn.VAR xtm))))
+       in
+         elabCmd env ecmd'
+       end
+
+     | ESyn.EXTRACT v => 
+       let
+         val xjdg = MlId.new ()
+         val xtm = MlId.new ()
+         val ecmd' = ESyn.MATCH_THM (v, xjdg, xtm, ESyn.RET (ESyn.VAR xtm))
+       in
+         elabCmd env ecmd'
+       end
+
+     | ESyn.BIND (cmd1, nm, cmd2) =>
        let
          val (cmd1', Ty.UP vty1) = elabCmd env cmd1
          val (cmd2', cty2) = elabCmd (R.extendId env nm vty1) cmd2
@@ -234,6 +268,7 @@ struct
 
      | ESyn.PRINT (pos, v) =>
        (ISyn.PRINT (pos, #1 @@ elabValue env v), Ty.UP Ty.ONE)
+
 
      | ESyn.REFINE (name, ajdg, script) =>
        let

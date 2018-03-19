@@ -1,18 +1,7 @@
-signature ML_EVALUATE_KIT = 
-sig
-  structure Syn : ML_SYNTAX
-    where type term = Tm.abt
-    where type metavariable = Tm.metavariable
-    where type jdg = AtomicJudgment.jdg
-    where type id = MlId.t
-  
-  structure Sem : ML_SEMANTICS
-  sharing type Sem.syn_cmd = Syn.cmd
-end
-
-functor MlEvaluate (Kit : ML_EVALUATE_KIT) : ML_EVALUATE = 
+structure MlEvaluate : ML_EVALUATE = 
 struct
-  open Kit
+  structure Sem = MlSemantics
+  structure Syn = MlIntSyntax
 
   structure AJ = AtomicJudgment and Err = RedPrlError
   

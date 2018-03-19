@@ -1,9 +1,6 @@
-functor MlSemantics
-  (Syn : ML_SYNTAX
-    where type jdg = AtomicJudgment.jdg
-      and type term = RedPrlAbt.abt
-      and type metavariable = RedPrlAbt.metavariable) : ML_SEMANTICS = 
+structure MlSemantics : ML_SEMANTICS = 
 struct
+  structure Syn = MlIntSyntax
   type term = Syn.term
   type jdg = Syn.jdg
   type metavariable = Syn.metavariable
