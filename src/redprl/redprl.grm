@@ -8,8 +8,8 @@ structure E = RedPrlError
 structure K = RedPrlKind
 structure O = RedPrlOperator
 structure AJ = AtomicJudgment
-
 structure TP = TermPrinter
+structure ML = MlExtSyntax
 
 val ppIntInf = Fpp.text o IntInf.toString
 
@@ -493,10 +493,10 @@ end
  | declArgumentsParens of Signature.Src.arguments
 
    (* a declaration, annotated with source position *)
- | decl of MlId.t * Signature.Src.decl * Pos.t
+ (* | decl of MlId.t * Signature.Src.decl * Pos.t *)
    (* a RedPRL signature *)
- | rawCmd of Signature.Src.cmd
- | cmd of Signature.Src.cmd * Pos.t
+ (* | rawCmd of Signature.Src.cmd *)
+ (* | cmd of Signature.Src.cmd * Pos.t *)
  | elt of Signature.Src.elt
 
 %verbose
@@ -1016,23 +1016,32 @@ declArgumentsParens
   : LPAREN declArguments RPAREN (declArguments)
   | ([])
 
-decl
-  : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
-      (MlId.const OPNAME, Signature.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_DEF OPNAME declArgumentsParens EQUALS LSQUARE term RSQUARE
-      (MlId.const OPNAME, Signature.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
-      (MlId.const OPNAME, Signature.Src.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_atjdg RSQUARE BY LSQUARE tactic RSQUARE
-      (MlId.const OPNAME, Signature.Src.THM {arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
 
-rawCmd
-  : CMD_PRINT OPNAME (Signature.Src.PRINT (MlId.const OPNAME))
-  | CMD_EXTRACT OPNAME (Signature.Src.EXTRACT (MlId.const OPNAME))
-  | CMD_QUIT (Signature.Src.QUIT)
-
-cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
 
 elt
-  : cmd (Signature.Src.CMD cmd)
-  | decl (Signature.Src.DECL decl)
+  : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
+    (fn kont => 
+       ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, sort)}, MlId.const OPNAME, kont))
+  | DCL_DEF OPNAME declArgumentsParens EQUALS LSQUARE term RSQUARE
+    (fn kont => 
+       ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, O.EXP)}, MlId.const OPNAME, kont))
+  | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
+    (fn kont => 
+       ML.BIND (ML.TAC {arguments = declArgumentsParens, script = tactic}, MlId.const OPNAME, kont))
+  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_atjdg RSQUARE BY LSQUARE tactic RSQUARE
+    (fn kont => 
+       ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, MlId.const OPNAME, kont))
+
+  | CMD_PRINT OPNAME
+    (fn kont => 
+       ML.BIND (ML.PRINT (SOME (Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName)), ML.VAR (MlId.const OPNAME)), MlId.fresh "_", kont))
+  | CMD_EXTRACT OPNAME
+    (fn kont => 
+       ML.BIND (ML.PRINT_EXTRACT (SOME (Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName)), ML.VAR (MlId.const OPNAME)), MlId.fresh "_", kont))
+  | CMD_QUIT
+    (fn kont =>
+       ML.BIND (ML.ABORT, MlId.fresh "_", kont))
+
+
+
+

@@ -27,66 +27,20 @@ struct
   structure Src =
   struct
     type arguments = (string * Tm.valence) list
-
-    datatype decl =
-       DEF of {arguments : arguments, sort : sort, definiens : ast}
-     | THM of {arguments : arguments, goal : ast, script : ast}
-     | TAC of {arguments : arguments, script : ast}
-
-    datatype cmd =
-       PRINT of MlId.t
-     | EXTRACT of MlId.t
-     | QUIT
-
-    datatype elt =
-       DECL of MlId.t * decl * Pos.t
-     | CMD of cmd * Pos.t
-
+    type elt = MlExtSyntax.cmd -> MlExtSyntax.cmd
     type sign = elt list
   end
 
   (* external language *)
   structure ESyn = MlExtSyntax
 
-  fun compileSrcCmd pos : Src.cmd -> ESyn.cmd =
-    fn Src.PRINT nm =>
-       ESyn.PRINT (SOME pos, ESyn.VAR nm)
-
-     | Src.EXTRACT nm =>
-       ESyn.PRINT_EXTRACT (SOME pos, ESyn.VAR nm)
-
-     | Src.QUIT =>
-       ESyn.ABORT
-
-  fun compileSrcDecl name : Src.decl -> ESyn.cmd =
-    fn Src.DEF {arguments, sort, definiens} =>
-       ESyn.DEF {arguments = arguments, definiens = (definiens, sort)}
-
-     | Src.TAC {arguments, script} => 
-       ESyn.TAC {arguments = arguments, script = script}
-
-     | Src.THM {arguments, goal, script} =>
-       ESyn.THM {name = name, arguments = arguments, goal = goal, script = script}
-
-  val rec compileSrcSig : Src.sign -> ESyn.cmd =
-    fn [] =>
-       ESyn.RET ESyn.NIL
-
-     | Src.CMD (c, pos) :: sign =>
-       ESyn.BIND (compileSrcCmd pos c, MlId.new (), compileSrcSig sign)
-
-     | Src.DECL (nm, decl, _) :: sign =>
-       ESyn.BIND (compileSrcDecl (MlId.toString nm) decl, nm, compileSrcSig sign)
-  
-
   structure Elab = MlElaborate (Res)
   structure Eval = MlEvaluate
 
-  structure L = RedPrlLog
-
   fun checkSrcSig (sign : Src.sign) : bool =
     let
-      val ecmd = compileSrcSig sign
+      val emp = ESyn.RET ESyn.NIL
+      val ecmd = List.foldr (fn (frame, sign) => frame sign) emp sign
       val (icmd, _) = Elab.elabCmd Res.init ecmd
       val (scmd, exit) = Eval.evalCmd MlSemantics.initEnv icmd
     in
