@@ -50,7 +50,7 @@ struct
    | IND_SPEC_FCOM | IND_SPEC_LAM | IND_SPEC_APP
 
    | IND_CONSTR_LAM | IND_CONSTR_SPEC_LAM | IND_CONSTR_LINE
-   | IND_CONSTR_BDRY_VEC | IND_CONSTR_DISCRETE
+   | IND_CONSTR_KAN | IND_CONSTR_DISCRETE
 
    | IND_TYPE of opid * RedPrlArity.valence list option
    | IND_INTRO of (opid * RedPrlArity.valence list option) * conid

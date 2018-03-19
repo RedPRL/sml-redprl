@@ -97,7 +97,7 @@ struct
      | IND_CONSTR_LAM => [[] |: EXP, [EXP] |: IND_CONSTR] ->> IND_CONSTR
      | IND_CONSTR_SPEC_LAM => [[] |: IND_SPECTYPE, [IND_SPEC] |: IND_CONSTR] ->> IND_CONSTR
      | IND_CONSTR_LINE => [[] |: DIM, [DIM] |: IND_CONSTR] ->> IND_CONSTR
-     | IND_CONSTR_BDRY_VEC => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
+     | IND_CONSTR_KAN => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
      | IND_CONSTR_DISCRETE => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
 
      | IND_TYPE (_, valence) => Option.valOf valence ->> EXP
@@ -271,7 +271,7 @@ struct
      | IND_CONSTR_LAM => "ind-constr-lam"
      | IND_CONSTR_SPEC_LAM => "ind-constr-spec-lam"
      | IND_CONSTR_LINE => "ind-constr-line"
-     | IND_CONSTR_BDRY_VEC => "ind-constr-bdry-vec"
+     | IND_CONSTR_KAN => "ind-constr-kan"
      | IND_CONSTR_DISCRETE => "ind-constr-discrete"
      | IND_TYPE _ => "ind-type" (* FIXME *)
      | IND_INTRO _ => "ind-intro" (* FIXME *)

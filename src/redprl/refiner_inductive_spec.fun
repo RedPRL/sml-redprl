@@ -18,9 +18,11 @@ struct
     type constrs = abt ConstrDict.dict
     type specctx = abt SpecCtx.dict
 
+    val trace = ["InductiveSpec"]
+
     (* TODO tail recursion *)
 
-    fun EqType tr H (ty0, ty1) =
+    fun EqType H (ty0, ty1) =
       case (Syn.out ty0, Syn.out ty1) of
          (Syn.IND_SPECTYPE_SELF, Syn.IND_SPECTYPE_SELF) => []
        | (Syn.IND_SPECTYPE_FUN (a0, x, b0x), Syn.IND_SPECTYPE_FUN (a1, y, b1y)) =>
@@ -29,9 +31,9 @@ struct
              val b0z = VarKit.rename (z, x) b0x
              val b1z = VarKit.rename (z, y) b1y
              (* favonia: more research needed for other kinds *)
-             val goalA = makeEqType tr H ((a0, a1), K.KAN)
+             val goalA = makeEqType trace H ((a0, a1), K.KAN)
            in
-             goalA :: EqType tr (H @> (z, AJ.TRUE a0)) (b0z, b1z)
+             goalA :: EqType (H @> (z, AJ.TRUE a0)) (b0z, b1z)
            end
 
     (* The following checker type-checks more expressions than the rules
@@ -55,8 +57,6 @@ struct
            case Syn.out (untypedReduce a) of
               Syn.IND_SPEC_LAM (x, ax) => untypedReduce (Abt.substVar (b, x) ax)
             | a => Syn.into (Syn.IND_SPEC_APP (Syn.into a, b))
-
-    val trace = ["InductiveSpec"]
 
     fun SynthReduced H (constrs, specctx) (tm0, tm1) =
       case (Syn.out tm0, Syn.out tm1) of
@@ -193,7 +193,32 @@ struct
       (List.find (fn (eq, _) => Abt.eq eq) tubes)
 
     and EqSpecIntro H (constrs, specctx) ((label0, args0), (label1, args1)) =
-      raise Bind
+      let
+        val true = label0 = label1
+        fun goals' (([], []), Syn.IND_CONSTR_DISCRETE _) = []
+          | goals' (([], []), Syn.IND_CONSTR_KAN _) = []
+          | goals' ((arg0::args0, arg1::args1), Syn.IND_CONSTR_LAM (a,x,bx)) =
+              let
+                val goal = makeEq trace H ((arg0, arg1), a)
+              in
+                goal :: goals ((args0, args1), Abt.substVar (arg0, x) bx)
+              end
+          | goals' ((arg0::args0, arg1::args1), Syn.IND_CONSTR_SPEC_LAM (a,x,bx)) =
+              let
+                val goalsSpec = EqSpec H (constrs, specctx) ((arg0, arg1), a)
+              in
+                goalsSpec @ goals ((args0, args1), Abt.substVar (arg0, x) bx)
+              end
+          | goals' ((arg0::args0, arg1::args1), Syn.IND_CONSTR_LINE (x,bx)) =
+              let
+                val _ = Assert.alphaEq (arg0, arg1)
+              in
+                goals ((args0, args1), Abt.substVar (arg0, x) bx)
+              end
+        and goals (argsPair, spec) = goals' (argsPair, Syn.out spec)
+      in
+        goals ((args0, args1), ConstrDict.lookup constrs label0)
+      end
 
     and simplifyIntro H (constrs, specctx) (label, args) =
       raise Bind

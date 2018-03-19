@@ -69,10 +69,15 @@ struct
    (* inductive types *)
    | IND_SPECTYPE_SELF
    | IND_SPECTYPE_FUN of 'a * variable * 'a
-   | IND_SPEC_INTRO of conid * ('a * sort option) list
+   | IND_SPEC_INTRO of conid * 'a list
    | IND_SPEC_FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
    | IND_SPEC_LAM of variable * 'a
    | IND_SPEC_APP of 'a * 'a
+   | IND_CONSTR_LAM of ('a * variable * 'a)
+   | IND_CONSTR_SPEC_LAM of ('a * variable * 'a)
+   | IND_CONSTR_LINE of (variable * 'a)
+   | IND_CONSTR_KAN of (equation * 'a) list
+   | IND_CONSTR_DISCRETE of (equation * 'a) list
    | IND_TYPE
    | IND_INTRO
    | IND_REC
@@ -120,14 +125,12 @@ struct
 
     val outVec = outVec' (fn x => x)
 
-    fun unpackAny' m =
+    fun unpackAny m =
       let
         val O.MK_ANY s $ [_ \ m'] = Tm.out m
       in
-        (m', s)
+        m'
       end
-
-    val unpackAny = #1 o unpackAny'
 
     fun outSelector (s : abt) : Tm.variable Selector.t =
       case Tm.out s of 
@@ -494,7 +497,7 @@ struct
 
        | O.IND_SPECTYPE_SELF $ _ => IND_SPECTYPE_SELF
        | O.IND_SPECTYPE_FUN $ [_ \ a, [x] \ bx] => IND_SPECTYPE_FUN (a, x, bx)
-       | O.IND_SPEC_INTRO label $ [_ \ args] => IND_SPEC_INTRO (label, outVec' unpackAny' args)
+       | O.IND_SPEC_INTRO label $ [_ \ args] => IND_SPEC_INTRO (label, outVec' unpackAny args)
        | O.IND_SPEC_FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>
            IND_SPEC_FCOM
              { dir = (r1, r2)
