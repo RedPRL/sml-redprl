@@ -6,7 +6,7 @@ struct
   structure K = RedPrlKind
   type kind = RedPrlKind.kind
 
-  datatype 'a dev_pattern = 
+  datatype 'a dev_pattern =
      PAT_VAR of 'a
    | PAT_TUPLE of (string * 'a dev_pattern) list
 
@@ -107,14 +107,14 @@ struct
 
    | SEL_CONCL
    | SEL_HYP
-   
+
    | ACC_WHOLE
    | ACC_TYPE
    | ACC_LEFT
    | ACC_RIGHT
 
    | PAT_META of sort
- 
+
    | CUST of opid * RedPrlArity.t option
    | TAC_UNFOLD_ALL of opid list
    | TAC_UNFOLD of opid list
@@ -124,12 +124,12 @@ struct
    | DEV_APPLY_LEMMA of unit dev_pattern
 end
 
-signature REDPRL_OPERATOR = 
+signature REDPRL_OPERATOR =
 sig
   datatype sort = datatype RedPrlSort.sort
   datatype operator = datatype RedPrlOpData.operator
   datatype dev_pattern = datatype RedPrlOpData.dev_pattern
-  
+
   include ABT_OPERATOR
     where type t = operator
     where type Ar.Vl.S.t = sort

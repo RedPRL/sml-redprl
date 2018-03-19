@@ -27,91 +27,22 @@ struct
   structure Src =
   struct
     type arguments = (string * Tm.valence) list
-
-    datatype decl =
-       DEF of {arguments : arguments, sort : sort, definiens : ast}
-     | THM of {arguments : arguments, goal : ast, script : ast}
-     | TAC of {arguments : arguments, script : ast}
-
-    datatype cmd =
-       PRINT of MlId.t
-     | EXTRACT of MlId.t
-     | QUIT
-
-    datatype elt =
-       DECL of MlId.t * decl * Pos.t
-     | CMD of cmd * Pos.t
-
+    type elt = MlExtSyntax.cmd -> MlExtSyntax.cmd
     type sign = elt list
   end
 
   (* external language *)
-  structure ESyn =
-    MlSyntax
-      (type id = MlId.t type metavariable = string type jdg = ast type term = ast * sort type vty = Ty.vty
-       fun metaToString X = X)
+  structure ESyn = MlExtSyntax
 
-
-  (* internal language *)
-  structure ISyn =
-    MlSyntax
-      (type id = MlId.t type metavariable = metavariable type jdg = AJ.jdg type term = Tm.abt type vty = Ty.vty
-       val metaToString = Metavar.toString)
-
-  fun compileSrcCmd pos : Src.cmd  -> ESyn.cmd =
-    fn Src.PRINT nm =>
-       ESyn.PRINT (SOME pos, ESyn.VAR nm)
-
-     | Src.EXTRACT nm =>
-       ESyn.printExtractAbs (SOME pos, ESyn.VAR nm)
-
-     | Src.QUIT =>
-       ESyn.ABORT
-
-  fun compileSrcDecl name : Src.decl -> ESyn.cmd =
-    fn Src.DEF {arguments, sort, definiens} =>
-       ESyn.termAbs (arguments, (definiens, sort))
-
-     | Src.TAC {arguments, script} => 
-       ESyn.termAbs (arguments, (script, RedPrlSort.TAC))
-
-     | Src.THM {arguments, goal, script} =>
-       ESyn.theoremAbs (SOME name, arguments, goal, (script, RedPrlSort.TAC))
-
-  val rec compileSrcSig : Src.sign -> ESyn.cmd =
-    fn [] =>
-       ESyn.RET ESyn.NIL
-
-     | Src.CMD (c, pos) :: sign =>
-       ESyn.BIND (compileSrcCmd pos c, MlId.new (), compileSrcSig sign)
-
-     | Src.DECL (nm, decl, _) :: sign =>
-       ESyn.BIND (compileSrcDecl (MlId.toString nm) decl, nm, compileSrcSig sign)
-  
-  
-  structure Sem = MlSemantics (ISyn)
-
-  structure ElabKit = 
-  struct
-    structure R = Res and Ty = Ty and ESyn = ESyn and ISyn = ISyn
-  end
-
-  structure EvalKit = 
-  struct
-    structure Syn = ISyn and Sem = Sem
-  end
-
-
-  structure Elab = MlElaborate (ElabKit)
-  structure Eval = MlEvaluate (EvalKit)
-
-  structure L = RedPrlLog
+  structure Elab = MlElaborate (Res)
+  structure Eval = MlEvaluate
 
   fun checkSrcSig (sign : Src.sign) : bool =
     let
-      val ecmd = compileSrcSig sign
-      val (icmd, _) = Elab.elabCmd Res.init ecmd
-      val (scmd, exit) = Eval.evalCmd Sem.initEnv icmd
+      val emp = ESyn.RET ESyn.NIL
+      val ecmd = List.foldr (fn (frame, sign) => frame sign) emp sign
+      val (icmd, _) = Elab.elabCmd ecmd Res.init
+      val (scmd, exit) = Eval.evalCmd MlSemantics.initEnv icmd
     in
       exit
     end

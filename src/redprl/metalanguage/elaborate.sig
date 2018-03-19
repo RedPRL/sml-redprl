@@ -8,6 +8,6 @@ sig
   type vty
   type cty
 
-  val elabValue : env -> evalue -> ivalue * vty
-  val elabCmd : env -> ecmd -> icmd * cty
+  val elabValue : evalue -> env -> ivalue * vty
+  val elabCmd : ecmd -> env -> icmd * cty
 end

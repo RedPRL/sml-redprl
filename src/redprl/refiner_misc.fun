@@ -167,6 +167,5 @@ struct
       in
         |>:? goalTy #> (H, axiom)
       end
-
   end
 end
