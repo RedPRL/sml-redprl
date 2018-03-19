@@ -1,14 +1,13 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 February 16
+" Last Change:  2018 March 19
 
 if exists("b:current_syntax")
   finish
 endif
 
-setlocal iskeyword+=-
-setlocal iskeyword+=/
+setlocal iskeyword=@,48-57,-,',/
 
 syn sync minlines=50
 
@@ -20,7 +19,7 @@ syn region  redprlEncl transparent start="\[" end="\]" contains=ALLBUT,redprlBra
 
 syn keyword redprlDecl Def Extract Print Rule Tac Thm Quit
 syn keyword redprlSort dim hyp exp lvl tac jdg knd
-syn match   redprlHole '?\(\a\|\d\|\'\|\/\|\-\)*'
+syn match   redprlHole '?\k*'
 syn match   redprlMeta '#'
 
 syn keyword redprlExpr ax fcom bool tt ff if nat
@@ -38,14 +37,14 @@ syn match   redprlTac '[;`]'
 
 syn keyword redprlSeq at by in true type synth discrete kan pre
 
-syn region  redprlComm start="//" end="$"
+syn region  redprlComm start="\k\@1<!//" end="$"
 syn region  redprlBlockComm start="/\*" end="\*/" contains=redprlBlockComm
 
 syn match   redprlMesg '\[\(Info\|Output\|Warning\|Error\)\]'
 syn keyword redprlMesg Trace
 
 syn match   redprlAnon '_\d\+'
-syn match   redprlAnon '_\d\+\/\(\a\|\d\|\'\|\/\|\-\)\+'
+syn match   redprlAnon '_\d\+\/\k\+'
 
 hi def link redprlParenErr Error
 hi def link redprlBrackErr Error
