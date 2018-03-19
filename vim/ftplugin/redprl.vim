@@ -22,7 +22,8 @@ autocmd QuitPre <buffer> call s:CloseBuffer()
 set errorformat =%E%f:%l.%c-%*\\d.%*\\d\ [%trror]:
 set errorformat+=%Z%m
 
-function! CheckBuffer()
+" Optional argument: the last line to send to RedPRL (default: all).
+function! CheckBuffer(...)
   if (exists('s:job'))
     call job_stop(s:job, 'int')
   endif
@@ -41,9 +42,14 @@ function! CheckBuffer()
     \' --width=' . s:EditWidth() .
     \' --from-stdin=' . bufname('%'), {
     \'in_io': 'buffer', 'in_buf': bufnr('%'),
+    \'in_bot': exists('a:1') ? a:1 : line('$'),
     \'out_io': 'buffer', 'out_name': 'RedPRL', 'out_msg': 0,
     \'err_io': 'buffer', 'err_msg': 0,
     \'exit_cb': 'CheckBufferExit'})
+endfunction
+
+function! CheckBufferToCursor()
+  call CheckBuffer(line('.'))
 endfunction
 
 function! CheckBufferExit(j,status)
