@@ -48,9 +48,6 @@ struct
   (* external language *)
   structure ESyn = MlExtSyntax
 
-  (* internal language *)
-  structure ISyn = MlIntSyntax
-
   fun compileSrcCmd pos : Src.cmd -> ESyn.cmd =
     fn Src.PRINT nm =>
        ESyn.PRINT (SOME pos, ESyn.VAR nm)
@@ -81,13 +78,8 @@ struct
      | Src.DECL (nm, decl, _) :: sign =>
        ESyn.BIND (compileSrcDecl (MlId.toString nm) decl, nm, compileSrcSig sign)
   
-  
-  structure EvalKit = 
-  struct
-    structure Syn = ISyn and Sem = MlSemantics
-  end
 
-  structure Elab = MlElaborate (structure R = Res)
+  structure Elab = MlElaborate (Res)
   structure Eval = MlEvaluate
 
   structure L = RedPrlLog

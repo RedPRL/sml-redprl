@@ -1,14 +1,5 @@
-signature ML_ELAB_KIT = 
-sig
-  structure R : RESOLVER
-    where type id = MlId.t
-    where type mltype = MlType.vty
-end
-
-functor MlElaborate (Kit : ML_ELAB_KIT) : ML_ELABORATE = 
+functor MlElaborate (R : RESOLVER where type id = MlId.t where type mltype = MlType.vty) : ML_ELABORATE = 
 struct
-  open Kit
-
   structure Ty = MlType
   structure ESyn = MlExtSyntax
   structure ISyn = MlIntSyntax
