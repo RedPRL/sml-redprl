@@ -1,7 +1,7 @@
 " vim-RedPRL ftplugin
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 January 17
+" Last Change:  2018 March 19
 
 if (exists("b:did_ftplugin") || !has('job'))
   finish
@@ -28,9 +28,7 @@ function! CheckBuffer()
 
   if (!bufexists('RedPRL') || (winbufnr(bufwinnr('RedPRL')) != bufnr('RedPRL')))
     belowright vsplit RedPRL
-    set buftype=nofile
-    set syntax=redprl
-    setlocal noswapfile
+    call s:InitBuffer()
   else
     execute bufwinnr('RedPRL') . 'wincmd w'
   endif
@@ -59,6 +57,17 @@ function! CheckBufferExit(j,status)
     cc
   else
     cclose
+  endif
+endfunction
+
+function! s:InitBuffer()
+  set buftype=nofile
+  set syntax=redprl
+  set noswapfile
+  if (has('folding'))
+    set foldmethod=expr
+    set foldexpr=getline(v:lnum)=~'^$'?0:1
+    set foldlevel=1
   endif
 endfunction
 
