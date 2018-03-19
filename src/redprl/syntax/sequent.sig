@@ -20,6 +20,7 @@ sig
   structure Hyps : 
   sig
     val empty : hyps
+    val isEmpty : hyps -> bool
     val snoc : hyps -> variable -> atjdg -> hyps
     val foldr : (variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b
     val foldl : (variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b    

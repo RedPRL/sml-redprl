@@ -492,11 +492,6 @@ end
  | declArguments of Signature.Src.arguments
  | declArgumentsParens of Signature.Src.arguments
 
-   (* a declaration, annotated with source position *)
- (* | decl of MlId.t * Signature.Src.decl * Pos.t *)
-   (* a RedPRL signature *)
- (* | rawCmd of Signature.Src.cmd *)
- (* | cmd of Signature.Src.cmd * Pos.t *)
  | elt of Signature.Src.elt
 
 %verbose

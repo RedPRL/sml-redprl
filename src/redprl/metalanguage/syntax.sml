@@ -48,7 +48,7 @@ struct
   type id = MlId.t
   type valence = RedPrlAbt.valence
   type metavariable = RedPrlAbt.metavariable
-  type jdg = AtomicJudgment.jdg
+  type jdg = Sequent.jdg
   type term = RedPrlAbt.abt
   type vty = MlType.vty
 

@@ -11,7 +11,7 @@ struct
 
   datatype value =
      THUNK of env * syn_cmd
-   | THM of jdg * term
+   | THM of jdg * Tm.abs
    | TERM of term
    | ABS of value * value
    | METAS of metas
@@ -54,7 +54,7 @@ struct
     let
       fun go ren = 
         fn THUNK (env, cmd) => THUNK (renameEnv env ren, cmd)
-         | THM (jdg, term) => THM (AtomicJudgment.map (Tm.renameMetavars ren) jdg, Tm.renameMetavars ren term)
+         | THM (jdg, abs) => THM (Sequent.map (Tm.renameMetavars ren) jdg, Tm.mapAbs (Tm.renameMetavars ren) abs)
          | TERM term => TERM (Tm.renameMetavars ren term)
          | ABS (METAS psi, s) => ABS (METAS psi, go (List.foldr (fn ((X, _), ren) => Metavar.Ctx.remove ren X) ren psi) s)
          | METAS psi => METAS (List.map (fn (X, vl) => (Option.getOpt (Metavar.Ctx.find ren X, X), vl)) psi)
@@ -82,14 +82,18 @@ struct
   (* TODO *)
   val rec ppValue : value -> Fpp.doc =
     fn THUNK _ => Fpp.text "<thunk>"
-      | THM (jdg, abt) =>
-        Fpp.seq
-          [Fpp.text "Thm:",
-          Fpp.nest 2 @@ Fpp.seq [Fpp.newline, AJ.pretty jdg],
-          Fpp.newline,
-          Fpp.newline,
-          Fpp.text "Extract:",
-          Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
+      | THM (jdg, abs) =>
+        let
+          val Tm.\ (_, abt) = Tm.outb abs
+        in
+          Fpp.seq
+            [Fpp.text "Thm:",
+            Fpp.nest 2 @@ Fpp.seq [Fpp.newline, Sequent.pretty jdg],
+            Fpp.newline,
+            Fpp.newline,
+            Fpp.text "Extract:",
+            Fpp.nest 2 @@ Fpp.seq [Fpp.newline, TermPrinter.ppTerm abt]]
+        end
 
       | TERM abt =>
         TermPrinter.ppTerm abt

@@ -270,9 +270,10 @@ struct
      | ESyn.REFINE (name, ajdg, script) =>
        let
          val ajdg' = elabAtomicJdg env ajdg
+         val sequent = Sequent.>> (Sequent.Hyps.empty, ajdg')
          val script' = elabAst env (script, RedPrlSort.TAC)
        in
-         (ISyn.REFINE (name, ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
+         (ISyn.REFINE (name, sequent, script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
        end
 
      | ESyn.FRESH vls =>
