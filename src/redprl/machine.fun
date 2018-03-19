@@ -1088,14 +1088,50 @@ struct
      | STEP cfg => cfg
      | CRITICAL cfg => cfg
 
+  val ppFrame : frame -> Fpp.doc =
+    fn APP _ => Fpp.text "app"
+     | HCOM _ => Fpp.text "hcom"
+     | COE _ => Fpp.text "coe"
+     | IF _ => Fpp.text "if"
+     | S1_REC _ => Fpp.text "s1-rec"
+     | PUSHOUT_REC _ => Fpp.text "pushout-rec"
+     | COEQUALIZER_REC _ => Fpp.text "coequalizer-rec"
+     | DIM_APP _ => Fpp.text "dim-app"
+     | NAT_REC _ => Fpp.text "nat-rec"
+     | INT_REC _ => Fpp.text "int-rec"
+     | PROJ _ => Fpp.text "proj"
+     | TUPLE_UPDATE _ => Fpp.text "tuple-update"
+     | CAP _ => Fpp.text "cap"
+     | VPROJ _ => Fpp.text "vproj"
+
+  val ppStack : stack -> Fpp.doc = 
+    Fpp.collection (Fpp.text "[") (Fpp.text "]") (Fpp.text ",") o
+      List.map ppFrame
+
+  fun ppCfg (cfg : abt machine) = 
+    let
+      val tm || (_, stk) = cfg
+    in
+      Fpp.grouped @@ Fpp.vsep [TermPrinter.ppTerm tm, Fpp.text "||", ppStack stk]
+    end
+
   fun eval sign stability unfolding = 
     let
       fun go cfg =
         go (unwrapAction (step sign stability unfolding cfg))
-        handle Stuck => cfg
-             | Final => cfg
-             | Neutral _ => cfg 
-             | Unstable => cfg
+        handle Stuck => 
+          let
+            val msg = 
+              Fpp.hvsep
+                [Fpp.text "evaluation got stuck:",
+                 Fpp.align @@ ppCfg cfg]
+          in
+           RedPrlLog.print RedPrlLog.WARN (NONE, msg);
+           cfg
+          end
+          | Final => cfg
+          | Neutral _ => cfg
+          | Unstable => cfg
     in
       unload o go o init
     end
