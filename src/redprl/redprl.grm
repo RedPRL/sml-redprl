@@ -374,10 +374,10 @@ end
 
  | DISCRETE | KAN | PRE
 
- (* commands and declarations *)
+ (* metalanguage *)
  | CMD_PRINT | CMD_EXTRACT | CMD_QUIT
  | DCL_DEF | DCL_TAC | DCL_THM
- | BY | IN | VAL
+ | BY | IN | VAL | DO | CAROT
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
@@ -495,6 +495,7 @@ end
 
  | mlValue of ML.value
  | mlCmd of ML.cmd
+ | mlAtomicCmd of ML.cmd
  | mlDecl of ML.cmd -> ML.cmd
 
 %verbose
@@ -1018,12 +1019,28 @@ declArgumentsParens
 mlValue
   : OPNAME
     (ML.VAR (MlId.const OPNAME))
+  | LBRACKET mlCmd RBRACKET
+    (ML.THUNK mlCmd)
+  | LPAREN RPAREN
+    (ML.NIL)
+
+mlAtomicCmd
+  : CMD_PRINT mlValue
+    (ML.PRINT (SOME (Pos.pos (mlValueleft fileName) (mlValueright fileName)), mlValue))
+  | CMD_QUIT
+    (ML.ABORT)
+  | CMD_EXTRACT mlValue
+    (ML.EXTRACT mlValue)
+  | CAROT mlValue
+    (ML.RET mlValue)
+  | BANG mlValue
+    (ML.FORCE mlValue)
 
 mlCmd
   : LET mlDecl SEMI mlCmd
     (mlDecl mlCmd)
-  | CMD_PRINT mlValue
-    (ML.PRINT (SOME (Pos.pos (mlValueleft fileName) (mlValueright fileName)), mlValue))
+  | mlAtomicCmd
+    (mlAtomicCmd)
 
 mlDecl
   : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
@@ -1040,19 +1057,13 @@ mlDecl
        ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, MlId.const OPNAME, kont))
 
   | VAL OPNAME EQUALS mlCmd
-   (fn kont => 
-      ML.BIND (mlCmd, MlId.const OPNAME, kont)) 
+   (fn kont =>
+      ML.BIND (mlCmd, MlId.const OPNAME, kont))
 
-  | CMD_PRINT OPNAME
+  | mlAtomicCmd
     (fn kont =>
-       ML.BIND (ML.PRINT (SOME (Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName)), ML.VAR (MlId.const OPNAME)), MlId.fresh "_", kont))
-  | CMD_EXTRACT OPNAME
+       ML.BIND (mlAtomicCmd, MlId.fresh "_", kont))
+
+  | DO mlCmd
     (fn kont =>
-       ML.BIND (ML.PRINT_EXTRACT (SOME (Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName)), ML.VAR (MlId.const OPNAME)), MlId.fresh "_", kont))
-  | CMD_QUIT
-    (fn kont =>
-       ML.BIND (ML.ABORT, MlId.fresh "_", kont))
-
-
-
-
+       ML.BIND (mlCmd, MlId.fresh "_", kont))

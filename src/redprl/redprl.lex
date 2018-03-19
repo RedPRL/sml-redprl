@@ -171,6 +171,9 @@ whitespace = [\ \t];
 <INITIAL>"by"               => (Tokens.BY (posTuple (size yytext)));
 <INITIAL>"in"               => (Tokens.IN (posTuple (size yytext)));
 <INITIAL>"val"              => (Tokens.VAL (posTuple (size yytext)));
+<INITIAL>"do"               => (Tokens.DO (posTuple (size yytext)));
+<INITIAL>"^"                => (Tokens.CAROT (posTuple (size yytext)));
+
 
 <INITIAL>"repeat"           => (Tokens.MTAC_REPEAT (posTuple (size yytext)));
 <INITIAL>"progress"         => (Tokens.MTAC_PROGRESS (posTuple (size yytext)));
