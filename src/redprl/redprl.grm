@@ -377,7 +377,7 @@ end
  (* commands and declarations *)
  | CMD_PRINT | CMD_EXTRACT | CMD_QUIT
  | DCL_DEF | DCL_TAC | DCL_THM
- | BY | IN
+ | BY | IN | VAL
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
@@ -388,7 +388,7 @@ end
 
 
 %nonterm
-   start of Signature.Src.elt
+   start of ML.cmd -> ML.cmd
 
  | ident of string
  | boundVar of string option
@@ -492,7 +492,10 @@ end
  | declArguments of Signature.Src.arguments
  | declArgumentsParens of Signature.Src.arguments
 
- | elt of Signature.Src.elt
+
+ | mlValue of ML.value
+ | mlCmd of ML.cmd
+ | mlDecl of ML.cmd -> ML.cmd
 
 %verbose
 %pos (string -> Coord.t)
@@ -503,7 +506,7 @@ end
 %arg (fileName) : string
 %%
 
-start : elt (elt)
+start : mlDecl (mlDecl)
 
 ident
   : OPNAME (OPNAME)
@@ -1012,8 +1015,17 @@ declArgumentsParens
   | ([])
 
 
+mlValue
+  : OPNAME
+    (ML.VAR (MlId.const OPNAME))
 
-elt
+mlCmd
+  : LET mlDecl SEMI mlCmd
+    (mlDecl mlCmd)
+  | CMD_PRINT mlValue
+    (ML.PRINT (SOME (Pos.pos (mlValueleft fileName) (mlValueright fileName)), mlValue))
+
+mlDecl
   : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
     (fn kont =>
        ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, sort)}, MlId.const OPNAME, kont))
@@ -1026,6 +1038,10 @@ elt
   | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_atjdg RSQUARE BY LSQUARE tactic RSQUARE
     (fn kont =>
        ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, MlId.const OPNAME, kont))
+
+  | VAL OPNAME EQUALS mlCmd
+   (fn kont => 
+      ML.BIND (mlCmd, MlId.const OPNAME, kont)) 
 
   | CMD_PRINT OPNAME
     (fn kont =>
