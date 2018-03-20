@@ -10,7 +10,7 @@ endif
 setlocal iskeyword+=-
 setlocal iskeyword+=/
 
-syn keyword redDecl Def Extract Print Rule Tac Thm Quit
+syn keyword redDecl define print theorem tactic quit extract
 syn keyword redSort dim hyp exp lvl tac jdg knd
 syn match   redHole '?\(\a\|\d\|\'\|\/\|\-\)*'
 syn match   redMeta '#'
