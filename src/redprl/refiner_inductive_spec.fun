@@ -356,5 +356,48 @@ struct
              checkFam' (H @> (w, AJ.TERM O.DIM)) (VarKit.rename (w, x) bx)
            end
     val checkFam = checkFam' Hyps.empty
+
+    open ArityNotation infix ->> |:
+
+    local
+      fun collectConstrBindingsForElimCase constr =
+        case Syn.out constr of
+           Syn.IND_CONSTR_DISCRETE _ => []
+         | Syn.IND_CONSTR_KAN _ => []
+         | Syn.IND_CONSTR_FUN (_, _, bx) => O.EXP :: collectConstrBindingsForElimCase bx
+         | Syn.IND_CONSTR_SPEC_FUN (_, _, bx) => O.EXP :: O.EXP :: collectConstrBindingsForElimCase bx
+         | Syn.IND_CONSTR_LINE (_, bx) => O.DIM :: collectConstrBindingsForElimCase bx
+
+      fun collectConstrValenceForIntro constr =
+        case Syn.out constr of
+           Syn.IND_CONSTR_DISCRETE _ => []
+         | Syn.IND_CONSTR_KAN _ => []
+         | Syn.IND_CONSTR_FUN (_, _, bx) => ([] |: O.EXP) :: collectConstrValenceForIntro bx
+         | Syn.IND_CONSTR_SPEC_FUN (_, _, bx) => ([] |: O.EXP) :: collectConstrValenceForIntro bx
+         | Syn.IND_CONSTR_LINE (_, bx) => ([] |: O.DIM) :: collectConstrValenceForIntro bx
+
+      fun collectFamValence desc cont =
+        case Syn.out desc of
+           Syn.IND_FAM_BASE (_, l) => cont l
+         | Syn.IND_FAM_FUN (_, _, bx) => ([] |: O.EXP) :: collectFamValence bx cont
+         | Syn.IND_FAM_LINE (_, bx) => ([] |: O.DIM) :: collectFamValence bx cont
+    in
+      fun collectValenceForIntro desc conid =
+        collectFamValence desc
+          (fn conlist =>
+            let
+              val (_, constr) = Option.valOf (List.find (fn (l, _) => conid = l) conlist)
+            in
+              collectConstrValenceForIntro constr
+            end)
+
+      fun collectValenceForType desc =
+        collectFamValence desc (fn _ => [])
+
+      fun collectValenceForElim desc =
+        collectFamValence desc
+          (fn l => ([O.EXP] |: O.EXP) :: ([] |: O.EXP)
+            :: List.map (fn (_, constr) => collectConstrBindingsForElimCase constr |: O.EXP) l)
+    end
   end
 end

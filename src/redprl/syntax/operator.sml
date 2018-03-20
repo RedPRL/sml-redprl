@@ -100,9 +100,9 @@ struct
      | IND_FAM_FUN => [[] |: EXP, [EXP] |: IND_FAM] ->> IND_FAM
      | IND_FAM_LINE => [[DIM] |: IND_FAM] ->> IND_FAM
 
-     | IND_TYPE (_, tyVl) => Option.valOf tyVl ->> EXP
-     | IND_INTRO ((_, tyVl), (_, conVl)) => Option.valOf tyVl @ Option.valOf conVl ->> EXP
-     | IND_REC ((_, tyVl), bindings) => Option.valOf tyVl @ [[EXP] |: EXP, [] |: EXP] @ List.map (fn bs => bs |: EXP) (Option.valOf bindings) ->> EXP
+     | IND_TYPE (_, valence) => Option.valOf valence ->> EXP
+     | IND_INTRO (_, _, valence) => Option.valOf valence ->> EXP
+     | IND_REC (_, valence) => Option.valOf valence ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (BDRY EXP)] ->> EXP
