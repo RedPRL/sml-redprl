@@ -33,7 +33,7 @@ struct
              val b0z = VarKit.rename (z, x) b0x
              val b1z = VarKit.rename (z, y) b1y
              (* favonia: more research needed for other kinds *)
-             val goalA = makeEq trace H ((a0, a1), Syn.intoU (level, K.KAN))
+             val goalA = makeEq trace H ((a0, a1), Syn.intoU (level, K.COE))
            in
              goalA :: EqSpecType (H @> (z, AJ.TRUE a0)) ((b0z, b1z), level)
            end
