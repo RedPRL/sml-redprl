@@ -76,7 +76,7 @@ is
 
 
   redprl/mini_signature.sig  
-
+  redprl/metalanguage/redexpr.sml
   redprl/metalanguage/type.sig
   redprl/metalanguage/syntax.sml
 

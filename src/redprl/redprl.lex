@@ -81,7 +81,7 @@ whitespace = [\ \t];
 <INITIAL>"=>"               => (Tokens.DOUBLE_RIGHT_ARROW (posTuple (size yytext)));
 <INITIAL>"==>"              => (Tokens.LONG_RIGHT_ARROW (posTuple (size yytext)));
 <INITIAL>"`"                => (Tokens.BACK_TICK (posTuple (size yytext)));
-<INITIAL>"*"                => (Tokens.TIMES (posTuple (size yytext)));
+<INITIAL>"*"                => (Tokens.ASTERISK (posTuple (size yytext)));
 <INITIAL>"!"                => (Tokens.BANG (posTuple (size yytext)));
 <INITIAL>"@"                => (Tokens.AT_SIGN (posTuple (size yytext)));
 <INITIAL>"$"                => (Tokens.DOLLAR_SIGN (posTuple (size yytext)));
