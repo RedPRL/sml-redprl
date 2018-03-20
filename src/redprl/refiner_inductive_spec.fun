@@ -304,7 +304,7 @@ struct
        | Syn.IND_CONSTR_FUN (a,x,bx) =>
            let
              val w = Sym.new () (* is it possible to save this? *)
-             val goal = makeMem trace H (a, Syn.intoU (level, K.KAN))
+             val goal = makeMem trace H (a, Syn.intoU (level, K.COE))
              val rest = checkConstr' (H @> (w, AJ.TRUE a), dimset) (constrs, specctx) (VarKit.rename (w, x) bx) level
            in
              goal :: rest
