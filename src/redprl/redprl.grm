@@ -377,7 +377,7 @@ end
  (* metalanguage *)
  | EXTRACT | QUIT
  | DEFINE | TACTIC | THEOREM
- | BY | IN | VAL | DO | CARET | END
+ | BY | IN | VAL | DO | CARET | END | FN
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
@@ -492,7 +492,8 @@ end
  | declArguments of Signature.Src.arguments
  | declArgumentsParens of Signature.Src.arguments
 
-
+ | mlVty of MlType.vty
+ | mlCty of MlType.cty
  | mlValue of ML.value
  | mlCmd of ML.cmd
  | mlAtomicCmd of ML.cmd
@@ -1016,6 +1017,18 @@ declArgumentsParens
   | ([])
 
 
+mlVty
+  : LPAREN RPAREN
+    (MlType.ONE)
+  | LBRACKET mlCty RBRACKET
+    (MlType.DOWN mlCty)
+  
+mlCty 
+  : CARET mlVty
+    (MlType.UP mlVty)
+  | mlVty RIGHT_ARROW mlCty
+    (MlType.FUN (mlVty, mlCty))
+
 mlValue
   : OPNAME
     (ML.VAR (MlId.const OPNAME))
@@ -1039,6 +1052,10 @@ mlAtomicCmd
 mlCmd
   : LET mlDecl SEMI mlCmd
     (mlDecl mlCmd)
+  | FN OPNAME COLON mlVty DOUBLE_RIGHT_ARROW mlCmd
+    (ML.FN (MlId.const OPNAME, mlVty, mlCmd))
+  | mlValue RANGLE mlCmd
+    (ML.AP (mlCmd, mlValue))
   | mlAtomicCmd
     (mlAtomicCmd)
 
