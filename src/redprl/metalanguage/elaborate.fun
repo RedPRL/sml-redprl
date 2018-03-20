@@ -1,30 +1,9 @@
-signature ML_ELAB_KIT = 
-sig
-  structure Ty : ML_TYPE
-
-  structure R : RESOLVER
-    where type id = MlId.t
-    where type mltype = Ty.vty
-
-  structure ESyn : ML_SYNTAX
-    where type term = RedPrlAst.ast * Tm.sort
-    where type vty = Ty.vty
-    where type id = MlId.t
-    where type metavariable = string
-    where type jdg = RedPrlAst.ast
-  
-  structure ISyn : ML_SYNTAX
-    where type term = Tm.abt
-    where type vty = Ty.vty
-    where type id = MlId.t
-    where type metavariable = Tm.metavariable
-    where type jdg = AtomicJudgment.jdg
-end
-
-functor MlElaborate (Kit : ML_ELAB_KIT) : ML_ELABORATE = 
+functor MlElaborate (R : RESOLVER where type id = MlId.t where type mltype = MlType.vty) : ML_ELABORATE =
 struct
-  open Kit
-  
+  structure Ty = MlType
+  structure ESyn = MlExtSyntax
+  structure ISyn = MlIntSyntax
+
   type env = R.env
   type ivalue = ISyn.value
   type icmd = ISyn.cmd
@@ -97,8 +76,8 @@ struct
         | Ast.$# (X, asts : ast list) =>
           let
             val (X', (taus, _)) = R.lookupMeta env pos X
-            val _ = 
-              if List.length asts = List.length taus then () else 
+            val _ =
+              if List.length asts = List.length taus then () else
                 Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Incorrect valence for metavariable", Fpp.text X])
             val abts = ListPair.map (elabAst env) (asts, taus)
           in
@@ -148,59 +127,184 @@ struct
       handle _ =>
         Err.raiseAnnotatedError' (pos, Err.GENERIC @@ [Fpp.text "Error resolving operator"])
 
+  type elab_cmd = env -> icmd * cty
+  type elab_val = env -> ivalue * vty
 
-  fun elabValue (env : R.env) : ESyn.value -> ISyn.value * Ty.vty =
-    fn ESyn.THUNK cmd =>
-       let
-         val (cmd', cty) = elabCmd env cmd
-       in
-         (ISyn.THUNK cmd', Ty.DOWN cty)
-       end
+  fun elabBind (elab1 : elab_cmd, nm, elab2 : elab_cmd) : elab_cmd = fn env =>
+    let
+      val (cmd1, Ty.UP vty1) = elab1 env
+      val (cmd2, cty2) = elab2 (R.extendId env nm vty1)
+    in
+      (ISyn.BIND (cmd1, nm, cmd2), cty2)
+    end
+
+  fun elabMatchMetas (elabv, Xs, elabc) env =
+    let
+      val (v', Ty.METAS vls) = elabv env
+      val (psi, env') = R.extendMetas env (Xs, vls)
+      val (cmd', cty) = elabc env'
+    in
+      (ISyn.MATCH_METAS (v', List.map #1 psi, cmd'), cty)
+    end
+
+  fun elabFresh vls : elab_cmd = fn env =>
+    (ISyn.FRESH vls, Ty.UP @@ Ty.METAS @@ List.map #2 vls)
+
+
+  fun elabVar (nm : MlId.t) : elab_val = fn env =>
+    (ISyn.VAR nm, R.lookupId env NONE nm)
+
+  fun elabNu (psi, elabc : elab_cmd) : elab_cmd =
+    let
+      val (Xs, vls) = ListPair.unzip psi
+      val hintedVls = ListPair.mapEq (fn (X, vl) => (SOME X, vl)) (Xs, vls)
+      val xpsi = MlId.new ()
+    in
+      elabBind (elabFresh hintedVls, xpsi, elabMatchMetas (elabVar xpsi, Xs, elabc))
+    end
+
+  fun elabThunk (elabc : elab_cmd) : elab_val = fn env =>
+    let
+      val (cmd, cty) = elabc env
+    in
+      (ISyn.THUNK cmd, Ty.DOWN cty)
+    end
+
+  fun elabTerm (ast, tau) : elab_val = fn env =>
+    (ISyn.TERM @@ elabAst env (ast, tau), Ty.TERM tau)
+
+  fun elabMetas psi : elab_val = fn env =>
+    let
+      val psi' = (List.map (fn (X, vl) => R.lookupMeta env NONE X) psi)
+      val vls = List.map #2 psi'
+    in
+      (ISyn.METAS psi', Ty.METAS vls)
+    end
+
+  fun elabAbs (elabvpsi : elab_val, elabv : elab_val) : elab_val = fn env =>
+    let
+      val (vpsi, Ty.METAS vls) = elabvpsi env
+      val (v, vty) = elabv env
+    in
+      (ISyn.ABS (vpsi, v), Ty.ABS (vls, vty))
+    end
+
+  fun elabRet (elabv : elab_val) : elab_cmd = fn env =>
+    let
+      val (v, vty) = elabv env
+    in
+      (ISyn.RET v, Ty.UP vty)
+    end
+
+  fun refineSequent (name, sequent : Sequent.jdg, script : RedPrlAbt.abt) : icmd * cty =
+    let
+      val Sequent.>> (_, ajdg) = sequent
+    in
+      (ISyn.REFINE (name, sequent, script), Ty.UP o Ty.THM @@ AJ.synthesis ajdg)
+    end
+
+  fun elabRefine (name, ajdg, script) : elab_cmd = fn env =>
+    let
+      val ajdg' = elabAtomicJdg env ajdg
+      val sequent = Sequent.>> (Sequent.Hyps.empty, ajdg')
+      val script' = elabAst env (script, RedPrlSort.TAC)
+    in
+      refineSequent (name, sequent, script')
+    end
+
+  fun elabDef (psi, definiens) : elab_cmd =
+    elabNu (psi, elabRet (elabAbs (elabMetas psi, elabTerm definiens)))
+
+  fun elabThm (name, psi, goal, script) : elab_cmd =
+    let
+      val x = MlId.new ()
+    in
+      elabNu (psi, elabBind (elabRefine (SOME name, goal, script), x, elabRet @@ elabAbs (elabMetas psi, elabVar x)))
+    end
+
+  fun elabDataDecl (name, psi, foo) : elab_cmd =
+    let
+      (* TODO *)
+      val result : elab_val = fn env => (ISyn.DATA_INFO {foo = ()}, Ty.DATA_INFO)
+      val resultAbs =
+        (* To insert a check of a sequent against a script, use:
+            elabBind (fn env => refineSequent (name, sequent, elabAst env (script, RedPrlSort.TAC)), MlId.fresh "_", .....)
+
+            To check multiple sequents, just do nest this multiple times.
+            - jms
+         *)
+        elabRet (elabAbs (elabMetas psi, result))
+    in
+      elabNu (psi, resultAbs)
+    end
+
+  fun elabValue value : elab_val =
+    case value of
+       ESyn.THUNK cmd =>
+       elabThunk (elabCmd cmd)
 
      | ESyn.VAR nm =>
-       (ISyn.VAR nm, R.lookupId env NONE nm)
+       elabVar nm
 
      | ESyn.NIL =>
-       (ISyn.NIL, Ty.ONE)
+       (fn _ => (ISyn.NIL, Ty.ONE))
 
      | ESyn.TERM (ast, tau) =>
-       (ISyn.TERM @@ elabAst env (ast, tau), Ty.TERM tau)
+       elabTerm (ast, tau)
 
      | ESyn.METAS psi =>
-       let
-         val psi' = (List.map (fn (X, vl) => R.lookupMeta env NONE X) psi)
-         val vls = List.map #2 psi'
-       in
-         (ISyn.METAS psi', Ty.METAS vls)
-       end
+       elabMetas psi
 
      | ESyn.ABS (vpsi, v) =>
+       elabAbs (elabValue vpsi, elabValue v)
+
+
+  and elabCmd cmd env : ISyn.cmd * Ty.cty =
+    case cmd of
+       ESyn.NU (psi, cmd) =>
+       elabNu (psi, elabCmd cmd) env
+
+     | ESyn.DEF {arguments, definiens} =>
+       elabDef (arguments, definiens) env
+
+     | ESyn.TAC {arguments, script} =>
+       elabDef (arguments, (script, RedPrlSort.TAC)) env
+
+     | ESyn.THM {name, arguments, goal, script} =>
+       elabThm (name, arguments, goal, script) env
+
+     | ESyn.DATA_DECL {name, arguments, foo} =>
+       elabDataDecl (name, arguments, foo) env
+
+     | ESyn.PRINT_EXTRACT (pos, v) =>
        let
-         val (vpsi', Ty.METAS vls) = elabValue env vpsi
-         val (v', vty) = elabValue env v
+         val xpsi = MlId.new ()
+         val xthm = MlId.new ()
+         val xjdg = MlId.new ()
+         val xtm = MlId.new ()
+         val ecmd' = ESyn.MATCH_ABS (v, xpsi, xthm, ESyn.MATCH_THM (ESyn.VAR xthm, xjdg, xtm, ESyn.PRINT (pos, ESyn.ABS (ESyn.VAR xpsi, ESyn.VAR xtm))))
        in
-         (ISyn.ABS (vpsi', v'), Ty.ABS (vls, vty))
+         elabCmd ecmd' env
        end
 
-  and elabCmd (env : env) : ESyn.cmd -> ISyn.cmd * Ty.cty =
-    fn ESyn.BIND (cmd1, nm, cmd2) =>
+     | ESyn.EXTRACT v =>
        let
-         val (cmd1', Ty.UP vty1) = elabCmd env cmd1
-         val (cmd2', cty2) = elabCmd (R.extendId env nm vty1) cmd2
+         val xjdg = MlId.new ()
+         val xtm = MlId.new ()
+         val ecmd' = ESyn.MATCH_THM (v, xjdg, xtm, ESyn.RET (ESyn.VAR xtm))
        in
-         (ISyn.BIND (cmd1', nm, cmd2'), cty2)
+         elabCmd ecmd' env
        end
+
+     | ESyn.BIND (cmd1, nm, cmd2) =>
+       elabBind (elabCmd cmd1, nm, elabCmd cmd2) env
 
      | ESyn.RET v =>
-       let
-         val (v', vty) = elabValue env v
-       in
-         (ISyn.RET v', Ty.UP vty)
-       end
+       elabRet (elabValue v) env
 
      | ESyn.FORCE v =>
        let
-         val (v', vty) = elabValue env v
+         val (v', vty) = elabValue v env
        in
          case vty of
             Ty.DOWN cty => (ISyn.FORCE v', cty)
@@ -210,21 +314,21 @@ struct
      | ESyn.FN (x, vty, cmd) =>
        let
          val env' = R.extendId env x vty
-         val (cmd', cty) = elabCmd env' cmd
+         val (cmd', cty) = elabCmd cmd env'
        in
          (ISyn.FN (x, vty, cmd'), Ty.FUN (vty, cty))
        end
 
      | ESyn.AP (cmd, v) =>
        let
-         val (cmd', cty) = elabCmd env cmd
+         val (cmd', cty) = elabCmd cmd env
        in
          case cty of
             Ty.FUN (vty, cty') =>
             let
-              val (v', vty') = elabValue env v
+              val (v', vty') = elabValue v env
             in
-              if vty = vty' then 
+              if vty = vty' then
                 (ISyn.AP (cmd', v'), cty')
               else
                 Err.raiseError @@ Err.GENERIC [Fpp.text "Argument type mismatch"]
@@ -233,31 +337,21 @@ struct
        end
 
      | ESyn.PRINT (pos, v) =>
-       (ISyn.PRINT (pos, #1 @@ elabValue env v), Ty.UP Ty.ONE)
+       (ISyn.PRINT (pos, #1 @@ elabValue v env), Ty.UP Ty.ONE)
+
 
      | ESyn.REFINE (name, ajdg, script) =>
-       let
-         val ajdg' = elabAtomicJdg env ajdg
-         val script' = elabAst env script
-       in
-         (ISyn.REFINE (name, ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
-       end
+       elabRefine (name, ajdg, script) env
 
      | ESyn.FRESH vls =>
-       (ISyn.FRESH vls, Ty.UP @@ Ty.METAS @@ List.map #2 vls)
+       elabFresh vls env
 
      | ESyn.MATCH_METAS (v, Xs, cmd) =>
-       let
-         val (v', Ty.METAS vls) = elabValue env v
-         val (psi, env') = R.extendMetas env (Xs, vls)
-         val (cmd', cty) = elabCmd env' cmd
-       in
-         (ISyn.MATCH_METAS (v', List.map #1 psi, cmd'), cty)
-       end
+       elabMatchMetas (elabValue v, Xs, elabCmd cmd) env
 
      | ESyn.MATCH_THM (v, xjdg, xtm, cmd) =>
        let
-         val (v', ty) = elabValue env v
+         val (v', ty) = elabValue v env
          val tau =
            case ty of
               Ty.THM tau => tau
@@ -265,17 +359,17 @@ struct
 
          val env' = R.extendId env xjdg @@ Ty.TERM RedPrlSort.JDG
          val env'' = R.extendId env' xtm @@ Ty.TERM tau
-         val (cmd', cty) = elabCmd env'' cmd
+         val (cmd', cty) = elabCmd cmd env''
        in
          (ISyn.MATCH_THM (v', xjdg, xtm, cmd'), cty)
        end
 
      | ESyn.MATCH_ABS (v, xpsi, xv, cmd) =>
        let
-         val (v', Ty.ABS (vls, vty)) = elabValue env v
+         val (v', Ty.ABS (vls, vty)) = elabValue v env
          val env' = R.extendId env xpsi @@ Ty.METAS vls
          val env'' = R.extendId env' xv vty
-         val (cmd', cty) = elabCmd env'' cmd
+         val (cmd', cty) = elabCmd cmd env''
        in
          (ISyn.MATCH_ABS (v', xpsi, xv, cmd'), cty)
        end

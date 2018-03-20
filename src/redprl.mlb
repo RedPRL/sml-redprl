@@ -88,18 +88,18 @@ in
 
 
     redprl/metalanguage/type.sig
+    redprl/metalanguage/type.sml
+    redprl/metalanguage/syntax.sml
+
     redprl/metalanguage/resolver.sig
-    redprl/metalanguage/syntax.sig
     redprl/metalanguage/elaborate.sig
     redprl/metalanguage/semantics.sig
     redprl/metalanguage/evaluate.sig
 
-    redprl/metalanguage/type.sml
     redprl/metalanguage/resolver.fun
-    redprl/metalanguage/syntax.fun
     redprl/metalanguage/elaborate.fun
-    redprl/metalanguage/semantics.fun
-    redprl/metalanguage/evaluate.fun
+    redprl/metalanguage/semantics.sml
+    redprl/metalanguage/evaluate.sml
     
     redprl/signature.sig
     redprl/signature.sml

@@ -73,26 +73,26 @@ struct
       end
   end
 
-  structure Names = 
+  structure Names =
   struct
 
-    fun Push xs = 
-      fn jdg as _ >> _ => 
+    fun Push xs =
+      fn jdg as _ >> _ =>
          let
            val jdg' as H >> _ = Sequent.push xs jdg handle _ => jdg
            val (goal, hole) = makeGoal [] jdg'
          in
            Lcf.|> (|>: goal, abstractEvidence H hole)
          end
-      
-    fun PopAs xs jdg = 
+
+    fun PopAs xs jdg =
       let
         val jdg' as H >> _ = Sequent.popAs xs jdg handle _ => jdg
         val (goal, hole) = makeGoal [] jdg'
       in
         Lcf.|> (|>: goal, abstractEvidence H hole)
       end
-    
+
   end
 
   structure TypeEquality =

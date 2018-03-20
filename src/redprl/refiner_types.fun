@@ -53,7 +53,7 @@ struct
    * 4. Subtyping for the final type.
    *)
 
-  structure Synth : 
+  structure Synth :
   sig
     type subgoals = (LcfLanguage.var * Lcf.jdg Lcf.I.t) list
     val synthTerm : sign -> Lcf.trace -> hyps -> abt * abt -> subgoals * abt
@@ -204,15 +204,15 @@ struct
 
             val (psi, vty) = synthTerm' sign tr H (m, n)
             val Syn.V (r, a, b, e) = Syn.out vty
-        
+
             val () = Assert.alphaEq' "V.EqProj" (r1, r2)
             val () = Assert.alphaEq' "V.EqProj" (r1, r)
-        
+
             val eq = (r, Syn.into Syn.DIM0)
             val funTy = Syn.into (Syn.FUN (a, Var.named "_", b))
 
             val goalF = Restriction.makeEq tr [eq] H ((f1, f2), funTy)
-            val goalCohF = Restriction.makeEqIfDifferent tr [eq] H ((f1, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy) 
+            val goalCohF = Restriction.makeEqIfDifferent tr [eq] H ((f1, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy)
           in
             (goalF ?:: goalCohF ?:: psi, b)
           end
@@ -308,7 +308,7 @@ struct
 
         val (psi, boolTy) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.BOOL = Syn.out boolTy
-        
+
         (* motive *)
         val z = Sym.new ()
         val c0z = VarKit.rename (z, x) c0x
@@ -376,7 +376,7 @@ struct
 
     fun Elim z jdg =
       let
-        val tr = ["Nat.Elim"]      
+        val tr = ["Nat.Elim"]
         val H >> AJ.TRUE cz = jdg
         val AJ.TRUE ty = Hyps.lookup H z
         val Syn.NAT = Syn.out ty
@@ -784,7 +784,7 @@ struct
       end
   end
 
-  structure MultiArrow = 
+  structure MultiArrow =
   struct
     datatype arg =
        EXP_ARG of variable * abt
@@ -793,11 +793,11 @@ struct
     fun reduce sign =
       Machine.eval sign Machine.STABLE (Machine.Unfolding.default sign)
 
-    fun stripFunTy sign n ty = 
-      case n of 
+    fun stripFunTy sign n ty =
+      case n of
          0 => ([], ty)
        | _ =>
-         (case Syn.out (reduce sign ty) of 
+         (case Syn.out (reduce sign ty) of
              Syn.FUN (a, x, bx) =>
              let
                val (args, rest) = stripFunTy sign (n - 1) bx
@@ -805,40 +805,40 @@ struct
                (EXP_ARG (x,a) :: args, rest)
              end
 
-           | Syn.PATH ((u, a), _, _) => 
+           | Syn.PATH ((u, a), _, _) =>
              let
                val (args, rest) = stripFunTy sign (n - 1) a
              in
                (DIM_ARG u :: args, rest)
              end
 
-           | Syn.LINE (u, a) => 
+           | Syn.LINE (u, a) =>
              let
                val (args, rest) = stripFunTy sign (n - 1) a
              in
                (DIM_ARG u :: args, rest)
-             end             
+             end
 
            | _ => raise Fail "stripFunTy")
 
     fun Elim sign 0 z jdg = Lcf.ret Lcf.isjdg jdg
-      | Elim sign (n : int) z jdg = 
+      | Elim sign (n : int) z jdg =
       let
         val tr = ["Fun.MultiElim"]
         val H >> ajdg = jdg
         val AJ.TRUE ty = Hyps.lookup H z
         val (args, rest) = stripFunTy sign n ty
 
-        val {goals = argGoals, env, aptm} = 
+        val {goals = argGoals, env, aptm} =
           List.foldl
             (fn (EXP_ARG (x, a), {goals, env, aptm}) =>
                 let
                   val (goal, hole) = makeTrue tr H @@ substVarenv env a
                   val goals' = goals >: goal
                   val env' = Var.Ctx.insert env x hole
-                  val aptm' = Syn.into @@ Syn.APP (aptm, hole)                
+                  val aptm' = Syn.into @@ Syn.APP (aptm, hole)
                 in
-                  {goals = goals', env = env', aptm = aptm'}                
+                  {goals = goals', env = env', aptm = aptm'}
                 end
               | (DIM_ARG u, {goals, env, aptm}) =>
                 let
@@ -865,7 +865,7 @@ struct
         val (mainGoal, mainHole) = makeGoal tr @@ H' >> ajdg
       in
         argGoals >: mainGoal #> (H, VarKit.substMany [(aptm, u), (axiom, v)] mainHole)
-      end  
+      end
   end
 
 
@@ -1030,7 +1030,7 @@ struct
         val Syn.TUPLE map0 = Syn.out tuple0
         val Syn.TUPLE map1 = Syn.out tuple1
 
-        val {goals, famGoals, ...} = 
+        val {goals, famGoals, ...} =
           List.foldl
             (fn (((lbl, var), ty), {goals, famGoals, env, hyps, isFirst}) =>
                let
@@ -1127,7 +1127,7 @@ struct
         |>:? goal2 >: goal1 #> (H, axiom)
       end
 
-    fun Elim z jdg = 
+    fun Elim z jdg =
       let
         val tr = ["Record.Elim"]
         val H >> ajdg = jdg
@@ -1182,7 +1182,7 @@ struct
         val lblPrefix = List.take (lbls, i)
         val rho = ListPair.mapEq (fn (lbl, u) => (Syn.into @@ Syn.PROJ (lbl, m0), u)) (lblPrefix, us)
         val tyField = VarKit.substMany rho tyField
-        
+
         val goalTy = View.makeAsSubTypeIfDifferent tr H (VarKit.substMany rho tyField, ty)
       in
         |>:+ psi >:? goalTy
@@ -1311,7 +1311,7 @@ struct
         val (psi, pathty) = Synth.synthTerm sign tr H (m, m)
         val Syn.PATH ((x, tyx), p0, p1) = Syn.out pathty
         val tyr = substVar (r, x) tyx
-        val pr = case Syn.out r of Syn.DIM0 => p0 | Syn.DIM1 => p1 
+        val pr = case Syn.out r of Syn.DIM0 => p0 | Syn.DIM1 => p1
 
         val goalTy = View.makeAsSubTypeIfDifferent tr H (tyr, a)
         val goalEq = View.makeAsEqIfDifferent tr H ((pr, p), a)
@@ -1898,7 +1898,7 @@ struct
         val tr = ["Coequalizer.BetaDom"]
         val H >> ajdg = jdg
         val ((elim, s), ty) = View.matchAsEq ajdg
-      
+
         val Syn.COEQUALIZER_REC (_, m, ((b, nb), (v, a, qva))) = Syn.out elim
         val Syn.CEDOM (r, t, ft, gt) = Syn.out m
 
@@ -2427,13 +2427,13 @@ struct
 
         val () = Assert.alphaEq' "V.EqProj" (r0, r1)
         val () = Assert.alphaEq' "V.EqProj" (r0, r)
-        
+
         val eq = (r, Syn.into Syn.DIM0)
         val funTy = Syn.into (Syn.FUN (a, Var.named "_", b))
 
         val goalF = Restriction.makeEq tr [eq] H ((f0, f1), funTy)
         val goalCohF = Restriction.makeEqIfDifferent tr [eq] H ((f0, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy)
- 
+
         val goalTy = View.makeAsSubTypeIfDifferent tr H (b, ty)
       in
         |>:? goalF >:? goalCohF >:+ psi >:? goalTy
