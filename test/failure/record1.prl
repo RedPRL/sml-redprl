@@ -1,5 +1,5 @@
-theorem RecordTest :
+theorem RecordTest : 
   (! a tuple) in bool
-by
+by {
   auto
-.
+}.

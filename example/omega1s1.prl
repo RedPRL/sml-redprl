@@ -1,6 +1,6 @@
-theorem IntPred :
+theorem IntPred : 
   (-> int int)
-by
+by {
   lam a => elim a;
   [ with n => elim n;
     [ `(int -1)
@@ -8,11 +8,11 @@ by
     ]
   , with n => `(negsucc (succ n))
   ];
-.
+}.
 
-theorem IntSucc :
+theorem IntSucc : 
   (-> int int)
-by
+by {
   lam a => elim a;
   [ with n => `(pos (succ n))
   , with n => elim n;
@@ -20,25 +20,25 @@ by
     , with _ n' => `(negsucc n')
     ]
   ]
-.
+}.
 
-theorem IntSuccIntPred :
+theorem IntSuccIntPred : 
   (-> [i : int] (= int ($ IntSucc ($ IntPred i)) i))
-by
+by {
   lam i => elim i;
   [ with n => elim n; auto
   , auto
   ]
-.
+}.
 
-theorem IntPredIntSucc :
+theorem IntPredIntSucc : 
   (-> [i : int] (= int ($ IntPred ($ IntSucc i)) i))
-by
+by {
   lam i => elim i;
   [ auto
   , with n => elim n; auto
   ]
-.
+}.
 
 define HasAllPathsTo (#C,#c) = (-> [c' : #C] (path [_] #C c' #c)).
 
@@ -50,9 +50,9 @@ define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
 
 define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
 
-theorem IntSuccIsEquiv :
+theorem IntSuccIsEquiv : 
   (IsEquiv int int IntSucc)
-by
+by {
   lam i =>
     claim eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]];
     unfold IntSucc IntPred in eq; reduce at left in eq;
@@ -71,63 +71,63 @@ by
 
         auto; unfold IntPred in eq1; reduce at left in eq1; auto; assumption
     }
-.
+}.
 
-theorem IntSuccEquiv :
+theorem IntSuccEquiv : 
   (Equiv int int)
-by
+by {
   {`IntSucc, `IntSuccIsEquiv}
-.
+}.
 
-theorem IntSuccPath :
+theorem IntSuccPath : 
   (path [_] (U 0 kan) int int)
-by
+by {
   abs x => `(V x int int IntSuccEquiv)
-.
+}.
 
-theorem S1UnivCover :
+theorem S1UnivCover : 
   (-> S1 (U 0 kan))
-by
+by {
   lam x => `(S1-rec [_] (U 0 kan) x int [x] (@ IntSuccPath x)); 
-.
+}.
 
-theorem Loop :
+theorem Loop : 
   (path [_] S1 base base)
-by
+by {
   abs i => `(loop i)
-.
+}.
 
-theorem S1LoopToInt :
+theorem S1LoopToInt : 
   (-> (path [_] S1 base base) int)
-by
+by {
   lam l => `(coe 0~>1 [x] ($ S1UnivCover (@ l x)) (int 0));
     claim eq : [(= S1 (@ l 1) base)] by [auto];
     auto;
     [ rewrite eq at type; [with x => `($ S1UnivCover x)]; auto
     , rewrite eq at left; [with x => `($ S1UnivCover x)]; auto
     ]
-.
+}.
 
-theorem S1LoopConcat :
+theorem S1LoopConcat : 
   (->
    (path [_] S1 base base)
    (path [_] S1 base base)
    (path [_] S1 base base))
-by
+by {
   lam p q => abs x => `(hcom 0~>1 S1 (@ p x) [x=0 [_] base] [x=1 [y] (@ q y)])
-.
+}.
 
-theorem S1LoopInv :
+theorem S1LoopInv : 
   (->
    (path [_] S1 base base)
    (path [_] S1 base base))
-by
+by {
   lam p => abs x => `(hcom 0~>1 S1 base [x=0 [y] (@ p y)] [x=1 [_] base])
-.
+}.
 
-theorem IntToS1Loop :
+theorem IntToS1Loop : 
   (-> int (path [_] S1 base base))
-by
+by {
   lam i => elim i;
   [ with n => elim n;
     [ abs _ => `base
@@ -138,16 +138,16 @@ by
     , with ih => `($ S1LoopConcat ($ S1LoopInv Loop) ih)
     ]
   ]
-.
+}.
 
-theorem Test0 :
+theorem Test0 : 
   (= int ($ S1LoopToInt ($ IntToS1Loop (int 3))) (int 3))
-by
+by {
   unfold IntToS1Loop Loop; auto
-.
+}.
 
-theorem Test1 :
+theorem Test1 : 
   (= int ($ S1LoopToInt ($ IntToS1Loop (int -3))) (int -3))
-by
+by {
   unfold IntToS1Loop S1LoopInv Loop; auto
-.
+}.

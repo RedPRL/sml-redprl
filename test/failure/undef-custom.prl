@@ -7,6 +7,6 @@ print Not.
 // [Not] should still be printed, even though the
 // following theorem is malformed.
 
-theorem Foo : Bar = Bar in bool  by
+theorem Foo :  Bar = Bar in bool by {
   auto
-.
+}.

@@ -1,5 +1,5 @@
 define Foo(#a : exp, #b : exp) : exp =  (-> #a #b) .
 
-theorem Foo-bool-type : (Foo bool) type by
+theorem Foo-bool-type : (Foo bool) typeby {
   auto
-.
+}.

@@ -377,7 +377,7 @@ end
  (* metalanguage *)
  | EXTRACT | QUIT
  | DEFINE | TACTIC | THEOREM
- | BY | IN | VAL | DO | CAROT
+ | BY | IN | VAL | DO | CAROT | END
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
@@ -1051,11 +1051,11 @@ mlDecl
     (fn kont =>
        ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, O.EXP)}, MlId.const OPNAME, kont))
 
-  | TACTIC OPNAME declArgumentsParens EQUALS tactic
+  | TACTIC OPNAME declArgumentsParens EQUALS LBRACKET tactic RBRACKET
     (fn kont =>
        ML.BIND (ML.TAC {arguments = declArgumentsParens, script = tactic}, MlId.const OPNAME, kont))
 
-  | THEOREM OPNAME declArgumentsParens COLON src_atjdg BY tactic
+  | THEOREM OPNAME declArgumentsParens COLON src_atjdg BY LBRACKET tactic RBRACKET
     (fn kont =>
        ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, MlId.const OPNAME, kont))
 

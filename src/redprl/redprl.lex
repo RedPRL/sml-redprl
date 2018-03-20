@@ -171,6 +171,7 @@ whitespace = [\ \t];
 <INITIAL>"in"               => (Tokens.IN (posTuple (size yytext)));
 <INITIAL>"val"              => (Tokens.VAL (posTuple (size yytext)));
 <INITIAL>"do"               => (Tokens.DO (posTuple (size yytext)));
+<INITIAL>"end"              => (Tokens.END (posTuple (size yytext)));
 <INITIAL>"^"                => (Tokens.CAROT (posTuple (size yytext)));
 
 

@@ -1,6 +1,6 @@
-theorem Bool :
+theorem Bool : 
   wbool true
-by
+by {
   `(hcom 0~>1 wbool tt [0=1 [_] tt]);
   auto
-.
+}.

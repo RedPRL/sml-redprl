@@ -2,20 +2,20 @@ define Times(#A, #B) =
   (* #A #B)
 .
 
-tactic Proj1(#z) = 
+tactic Proj1(#z) = {
   let {x} = #z;
   use x
-.
+}.
 
-tactic Proj2(#z) = 
+tactic Proj2(#z) = {
   let {welp, x} = #z;
   use x
-.
+}.
 
-theorem Times/Proj :
+theorem Times/Proj : 
   (-> [ty : (U 0)] (Times bool ty) ty)
-by
+by {
   lam ty x => (Proj2 x)
-.
+}.
 
 print Times/Proj.

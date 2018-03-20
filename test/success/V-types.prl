@@ -12,7 +12,7 @@ define Id = (lam [a] a).
 
 theorem IdIsEquiv(#l:lvl) :
   (-> [ty : (U #l hcom)] (IsEquiv ty ty Id))
-by
+by {
   lam ty a =>
   { {use a, abs _ => use a}
   , lam {_,c'} => abs i =>
@@ -25,14 +25,14 @@ by
             [i=1 [j] a])
        }
   }
-.
+}.
 
 theorem IdEquiv(#l:lvl) :
   (-> [ty : (U #l hcom)] (Equiv ty ty))
-by
+by {
   lam ty =>
     {`Id, use (IdIsEquiv #l) [use ty]}
-.
+}.
 
 print IdEquiv.
 
@@ -45,9 +45,9 @@ theorem IdV/Wf(#l:lvl) :
    [i : dim]
    [ty : (U #l hcom)]
    (mem (U #l) (IdV i #l ty)))
-by
+by {
   abs i => lam ty => auto
-.
+}.
 
 theorem IdV/Test0(#l:lvl) :
   (->
@@ -55,18 +55,18 @@ theorem IdV/Test0(#l:lvl) :
    [ty : (U #l hcom)]
    [a : ty]
    (mem (IdV i #l ty) (Vin i a a)))
-by
+by {
   abs i => lam ty a => auto
-.
+}.
 
 theorem IdV/Test1(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a : ty]
    (= ty (Vproj (dim 0) (Vin (dim 0) a a) Id) a))
-by
+by {
   lam ty a => auto
-.
+}.
 
 theorem IdV/Test2(#l:lvl) :
   (->
@@ -74,9 +74,9 @@ theorem IdV/Test2(#l:lvl) :
    [a : ty]
    (= ty (coe 0~>1 [x] (IdV x #l ty) a)
          (coe 0~>1 [_] ty a)))
-by
+by {
   lam ty a => auto
-.
+}.
 
 print IdV/Test2.
 
@@ -87,24 +87,24 @@ theorem Bool/reflect :
   [a b : bool]
   [p : (path [_] bool a b)]
   (= bool a b))
-by
+by {
   lam a b p => `(coe 0~>1 [x] (= bool a (@ p x)) ax)
-.
+}.
 
-tactic Bool/contra/inverse (#p:exp) =
+tactic Bool/contra/inverse (#p:exp) = {
   query gl <- concl;
   match gl {
     [a b | #jdg{%a = %b in bool} =>
-      claim eq : [ (= bool %b %a) ] by [ use Bool/reflect [`%b, `%a, `#p]; auto];
+      claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
       symmetry; auto
     ]
     [a | %[a:jdg] => id]
   }
-.
+}.
 
 theorem NotIsEquiv :
   (IsEquiv bool bool Not)
-by
+by {
   lam b =>
   { {`($ Not b), abs _ => use b}
   , lam {_,p'} =>
@@ -119,43 +119,43 @@ by
         }
       ); auto; (Bool/contra/inverse p'); assumption
   }
-.
+}.
 
 theorem NotEquiv :
   (Equiv bool bool)
-by
+by {
   {`Not, `NotIsEquiv}
-.
+}.
 
 define NotV(#i:dim) = (V #i bool bool NotEquiv).
 
 theorem NotV/Wf :
   (-> [i : dim] (mem (U 0 kan) (NotV i)))
-by
+by {
   abs i => auto
-.
+}.
 
 theorem NotV/Test0 :
   (->
    [i : dim]
    [a : bool]
    (mem (NotV i) (Vin i ($ Not a) a)))
-by
+by {
   abs i => lam a => auto
-.
+}.
 
 theorem NotV/Test1 :
   (->
    [a : bool]
    (= bool (coe 0~>1 [x] (NotV x) a) ($ Not a)))
-by
+by {
   lam a => auto
-.
+}.
 
 theorem NotV/Test2 :
   (->
    [a : bool]
    (= bool (coe 1~>0 [x] (NotV x) a) ($ Not a)))
-by
+by {
   lam a => auto
-.
+}.

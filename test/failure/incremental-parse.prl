@@ -3,16 +3,16 @@
 // last ones are just fine, and should be processed by RedPRL despite
 // the error in the middle.
 
-theorem Foo : tt = tt in bool  by
-  auto
-.
-
-theorem Bar : tt = tt in bool ] by {
+theorem Foo :  tt = tt in bool by {
   auto
 }.
 
-theorem Baz : tt = tt in bool  by
+theorem Bar :  tt = tt in bool ] by {
   auto
-.
+}.
+
+Thm Baz : [ tt = tt in bool by {
+  auto
+}.
 
 print Foo.

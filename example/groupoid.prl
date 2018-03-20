@@ -1,42 +1,42 @@
 // Homogeneous groupoid operations
 
-theorem Refl(#l:lvl) :
+theorem Refl(#l:lvl) : 
   (->
    [ty : (U #l kan)]
    [a : ty]
    (path [_] ty a a))
-by
+by {
   lam ty a => abs _ => `a
-.
+}.
 
-theorem Symm(#l:lvl) :
+theorem Symm(#l:lvl) : 
   (->
    [ty : (U #l kan)]
    [p : (line [_] ty)]
    (path [_] ty (@ p 1) (@ p 0)))
-by
+by {
   lam ty p => abs x =>
   `(hcom 0~>1 ty (@ p 0)
     [x=0 [y] (@ p y)]
     [x=1 [_] (@ p 0)])
-.
+}.
 
-theorem Trans(#l:lvl) :
+theorem Trans(#l:lvl) : 
   (->
    [ty : (U #l kan)]
    [p : (line [_] ty)]
    [q : (line [_] ty)]
    [eq : (= ty (@ p 1) (@ q 0))]
    (path [_] ty (@ p 0) (@ q 1)))
-by
+by {
   lam ty p q eq => (abs x =>
     `(hcom 0~>1 ty (@ p x)
       [x=0 [_] (@ p 0)]
       [x=1 [z] (@ q z)]));
     auto; assumption
-.
+}.
 
-theorem Symm/Unit(#l:lvl) :
+theorem Symm/Unit(#l:lvl) : 
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -44,13 +44,13 @@ theorem Symm/Unit(#l:lvl) :
      (path [_] ty a a)
      (abs [_] a)
      ($ (Symm #l) ty (abs [_] a))))
-by
+by {
   lam ty a =>
   abs y x =>
   `(hcom 0~>y ty a [x=0 [_] a] [x=1 [_] a])
-.
+}.
 
-theorem Trans/Unit/R(#l:lvl) :
+theorem Trans/Unit/R(#l:lvl) : 
   (->
    [ty : (U #l kan)]
    [p : (line [_] ty)]
@@ -58,16 +58,16 @@ theorem Trans/Unit/R(#l:lvl) :
      (path [_] ty (@ p 0) (@ p 1))
      p
      ($ (Trans #l) ty p (abs [_] (@ p 1)) ax)))
-by
+by {
   lam ty p =>
   (abs y x => 
     `(hcom 0~>y ty (@ p x) [x=0 [_] (@ p 0)] [x=1 [_] (@ p 1)]));
   
   refine path/eq/from-line; auto
-.
+}.
 
 // Thanks to Bruno Bentzen for already doing this and drawing a picture! -Carlo
-theorem Trans/Sym/R(#l:lvl) :
+theorem Trans/Sym/R(#l:lvl) : 
   (->
    [ty : (U #l kan)]
    [p : (line [_] ty)]
@@ -75,7 +75,7 @@ theorem Trans/Sym/R(#l:lvl) :
      (path [_] ty (@ p 0) (@ p 0))
      (abs [_] (@ p 0))
      ($ (Trans #l) ty p ($ (Symm #l) ty p) ax)))
-by
+by {
   lam ty p =>
   (abs z x =>
     `(hcom 0~>1 ty (@ p x)
@@ -87,11 +87,11 @@ by
           [x=0 [_] (@ p 0)]
           [x=1 [y] (@ ($ (Symm #l) ty p) y)])]));
   unfold Symm; auto
-.
+}.
 
 // Heterogeneous groupoid operations
 
-theorem DSymm(#l:lvl) :
+theorem DSymm(#l:lvl) : 
   (->
    [ty : (line [_] (U #l kan))]
    [p : (line [x] (@ ty x))]
@@ -99,7 +99,7 @@ theorem DSymm(#l:lvl) :
      (@ ($ (Symm (++ #l)) (U #l kan) ty) x)
      (@ p 1)
      (@ p 0)))
-by
+by {
   lam ty p =>
   (abs x =>
   `(com 0~>1
@@ -108,4 +108,4 @@ by
     [x=0 [y] (@ p y)]
     [x=1 [_] (@ p 0)]));
   unfold Symm; auto
-.
+}.

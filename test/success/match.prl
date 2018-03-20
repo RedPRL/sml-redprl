@@ -1,11 +1,11 @@
-tactic QueryGoalType(#t : [exp].tac) = 
+tactic QueryGoalType(#t : [exp].tac) = {
   query gl <- concl;
   match gl {
     [a | #jdg{%a true} => (#t %a)]
   }
-.
+}.
 
-theorem MatchGoal : (-> bool bool bool bool bool bool)  by
+theorem MatchGoal :  (-> bool bool bool bool bool bool) by {
   repeat {
     (QueryGoalType [ty] #tac{
       match ty {
@@ -15,6 +15,6 @@ theorem MatchGoal : (-> bool bool bool bool bool bool)  by
   };
   
   with _ _ y => use y
-.
+}.
 
 print MatchGoal.

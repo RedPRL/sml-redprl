@@ -6,19 +6,19 @@ define Bool/Not =
   (lam [x] (if [_] bool x ff tt))
 .
 
-theorem Bool/Not-Not-Id :
+theorem Bool/Not-Not-Id : 
   (Cmp Bool/Not Bool/Not) = (lam [x] x) in (-> bool bool)
-by
+by {
   auto
-.
+}.
 
-theorem SBool/Not-Not-Id-Path :
+theorem SBool/Not-Not-Id-Path : 
   (path
     [_] (-> bool bool)
     (Cmp Bool/Not Bool/Not)
     (lam [x] x))
-by
+by {
   abs i => lam x => use x
-.
+}.
 
 print SBool/Not-Not-Id-Path.

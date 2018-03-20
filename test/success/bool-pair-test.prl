@@ -1,5 +1,5 @@
-theorem Test : (* bool bool) = (* bool bool) type  by
+theorem Test :  (* bool bool) = (* bool bool) type by {
   auto
-.
+}.
 
 print Test.

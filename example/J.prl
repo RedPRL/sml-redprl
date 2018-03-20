@@ -12,7 +12,7 @@ define J/coe(#j:dim, #ty, #a, #fam, #d, #p) =
    #d)
 .
 
-theorem J(#l:lvl) :
+theorem J(#l:lvl) : 
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -21,9 +21,9 @@ theorem J(#l:lvl) :
    [x : ty]
    [p : (path [_] ty a x)]
    ($ fam x p))
-by
+by {
   lam ty a fam d x p => `(J/coe (dim 1) ty a fam d p)
-.
+}.
 
 define J/comp/cube(#i:dim,#j:dim,#k:dim, #ty, #a) = 
   (hcom 0~>#j #ty #a
@@ -33,7 +33,7 @@ define J/comp/cube(#i:dim,#j:dim,#k:dim, #ty, #a) =
    [#i=1 [_] #a])
 .
 
-theorem J/comp(#l:lvl) :
+theorem J/comp(#l:lvl) : 
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -42,7 +42,7 @@ theorem J/comp(#l:lvl) :
    (path [_] ($ fam a (abs [_] a))
     ($ (J #l) ty a fam d a (abs [_] a))
     d))
-by
+by {
   lam ty a fam d => abs k =>
     `(com 0~>1
       [i] ($ fam (J/comp/cube i (dim 1) k ty a)
@@ -50,4 +50,4 @@ by
       d
       [k=0 [i] (J/coe i ty a fam d (abs [_] a))]
       [k=1 [_] d])
-.
+}.
