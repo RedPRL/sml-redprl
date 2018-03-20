@@ -8,6 +8,7 @@ struct
   infix 1 || #>
   infix 2 >> >: >:? >:+ $$ $# // \ @>
 
+  (* XXX impose a signature on `InductiveSpec`! *)
   structure InductiveSpec =
   struct
 
