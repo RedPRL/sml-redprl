@@ -374,10 +374,10 @@ end
 
  | DISCRETE | KAN | PRE
 
- (* commands and declarations *)
- | CMD_PRINT | CMD_EXTRACT | CMD_QUIT
- | DCL_DEF | DCL_TAC | DCL_THM
- | BY | IN
+ (* metalanguage *)
+ | EXTRACT | QUIT
+ | DEFINE | TACTIC | THEOREM
+ | BY | IN | VAL | DO | CARET | END | FN
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
@@ -388,7 +388,7 @@ end
 
 
 %nonterm
-   start of Signature.Src.elt
+   start of ML.cmd -> ML.cmd
 
  | ident of string
  | boundVar of string option
@@ -492,7 +492,12 @@ end
  | declArguments of Signature.Src.arguments
  | declArgumentsParens of Signature.Src.arguments
 
- | elt of Signature.Src.elt
+ | mlVty of MlType.vty
+ | mlCty of MlType.cty
+ | mlValue of ML.value
+ | mlCmd of ML.cmd
+ | mlAtomicCmd of ML.cmd
+ | mlDecl of ML.cmd -> ML.cmd
 
 %verbose
 %pos (string -> Coord.t)
@@ -503,7 +508,7 @@ end
 %arg (fileName) : string
 %%
 
-start : elt (elt)
+start : mlDecl (mlDecl)
 
 ident
   : OPNAME (OPNAME)
@@ -936,7 +941,7 @@ atomicRawTac
   | IF elimTarget THEN tactic ELSE tactic
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))
 
-  | CLAIM VARNAME COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE SEMI tactic
+  | CLAIM VARNAME COLON judgment BY LBRACKET tactic RBRACKET SEMI tactic
       (Ast.$$ (O.DEV_CLAIM NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
 
   | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine SEMI tactic
@@ -1012,31 +1017,69 @@ declArgumentsParens
   | ([])
 
 
+mlVty
+  : LPAREN RPAREN
+    (MlType.ONE)
+  | LBRACKET mlCty RBRACKET
+    (MlType.DOWN mlCty)
+  
+mlCty 
+  : CARET mlVty
+    (MlType.UP mlVty)
+  | mlVty RIGHT_ARROW mlCty
+    (MlType.FUN (mlVty, mlCty))
 
-elt
-  : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
+mlValue
+  : OPNAME
+    (ML.VAR (MlId.const OPNAME))
+  | LBRACKET mlCmd RBRACKET
+    (ML.THUNK mlCmd)
+  | LPAREN RPAREN
+    (ML.NIL)
+
+mlAtomicCmd
+  : PRINT mlValue
+    (ML.PRINT (SOME (Pos.pos (mlValueleft fileName) (mlValueright fileName)), mlValue))
+  | QUIT
+    (ML.ABORT)
+  | EXTRACT mlValue
+    (ML.EXTRACT mlValue)
+  | CARET mlValue
+    (ML.RET mlValue)
+  | BANG mlValue
+    (ML.FORCE mlValue)
+
+mlCmd
+  : LET mlDecl SEMI mlCmd
+    (mlDecl mlCmd)
+  | FN OPNAME COLON mlVty DOUBLE_RIGHT_ARROW mlCmd
+    (ML.FN (MlId.const OPNAME, mlVty, mlCmd))
+  | mlValue RANGLE mlCmd
+    (ML.AP (mlCmd, mlValue))
+  | mlAtomicCmd
+    (mlAtomicCmd)
+
+mlDecl
+  : DEFINE OPNAME declArgumentsParens COLON sort EQUALS term
     (fn kont =>
        ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, sort)}, MlId.const OPNAME, kont))
-  | DCL_DEF OPNAME declArgumentsParens EQUALS LSQUARE term RSQUARE
+
+  | DEFINE OPNAME declArgumentsParens EQUALS term
     (fn kont =>
        ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, O.EXP)}, MlId.const OPNAME, kont))
-  | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
+
+  | TACTIC OPNAME declArgumentsParens EQUALS LBRACKET tactic RBRACKET
     (fn kont =>
        ML.BIND (ML.TAC {arguments = declArgumentsParens, script = tactic}, MlId.const OPNAME, kont))
-  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_atjdg RSQUARE BY LSQUARE tactic RSQUARE
+
+  | THEOREM OPNAME declArgumentsParens COLON src_atjdg BY LBRACKET tactic RBRACKET
     (fn kont =>
        ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, MlId.const OPNAME, kont))
 
-  | CMD_PRINT OPNAME
+  | VAL OPNAME EQUALS mlCmd
+   (fn kont =>
+      ML.BIND (mlCmd, MlId.const OPNAME, kont))
+
+  | mlCmd
     (fn kont =>
-       ML.BIND (ML.PRINT (SOME (Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName)), ML.VAR (MlId.const OPNAME)), MlId.fresh "_", kont))
-  | CMD_EXTRACT OPNAME
-    (fn kont =>
-       ML.BIND (ML.PRINT_EXTRACT (SOME (Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName)), ML.VAR (MlId.const OPNAME)), MlId.fresh "_", kont))
-  | CMD_QUIT
-    (fn kont =>
-       ML.BIND (ML.ABORT, MlId.fresh "_", kont))
-
-
-
-
+       ML.BIND (mlCmd, MlId.fresh "_", kont))
