@@ -15,14 +15,16 @@ struct
 
     structure ConstrDict = StringListDict
     structure SpecCtx = Var.Ctx
+    structure DimSet = ListSet (structure Elem = Sym.Ord)
     type constrs = abt ConstrDict.dict
     type specctx = abt SpecCtx.dict
+    type dimset = DimSet.set
 
     val trace = ["InductiveSpec"]
 
     (* TODO tail recursion *)
 
-    fun EqType H (ty0, ty1) =
+    fun EqSpecType H ((ty0, ty1), level) =
       case (Syn.out ty0, Syn.out ty1) of
          (Syn.IND_SPECTYPE_SELF, Syn.IND_SPECTYPE_SELF) => []
        | (Syn.IND_SPECTYPE_FUN (a0, x, b0x), Syn.IND_SPECTYPE_FUN (a1, y, b1y)) =>
@@ -31,10 +33,12 @@ struct
              val b0z = VarKit.rename (z, x) b0x
              val b1z = VarKit.rename (z, y) b1y
              (* favonia: more research needed for other kinds *)
-             val goalA = makeEqType trace H ((a0, a1), K.KAN)
+             val goalA = makeEq trace H ((a0, a1), Syn.intoU (level, K.KAN))
            in
-             goalA :: EqType (H @> (z, AJ.TRUE a0)) (b0z, b1z)
+             goalA :: EqSpecType (H @> (z, AJ.TRUE a0)) ((b0z, b1z), level)
            end
+
+    fun SpecType H (ty, level) = EqSpecType H ((ty, ty), level)
 
     (* The following checker type-checks more expressions than the rules
      * on paper because `($ (lam [_] foo) junk)` and `(fcom 0~>0 m [... junk])` are allowed.
@@ -258,5 +262,82 @@ struct
     and simplifyConstr H (constrs, specctx) =
       fn Syn.IND_SPEC_INTRO args => simplifyIntro H (constrs, specctx) args
        | Syn.IND_SPEC_FCOM args => simplifyFComTube H (constrs, specctx) args
+
+    fun EqSpecInterBoundary H (constrs, specctx) boundaries =
+      let
+        val goalsOnDiag = List.concat @@
+          List.map
+            (fn (eq, b) =>
+              restrictedEqSpec [eq] H (constrs, specctx)
+                ((b, b), IND_SPECTYPE_SELF))
+            boundaries
+
+        val goalsNotOnDiag = List.concat @@
+          ComKit.enumInterExceptDiag
+            (fn ((eq0, b0), (eq1, b1)) =>
+              restrictedEqSpecIfDifferent [eq0, eq1] H (constrs, specctx)
+                ((b0, b1), IND_SPECTYPE_SELF))
+            (boundaries, boundaries)
+      in
+        goalsOnDiag @ goalsNotOnDiag
+      end
+
+    (* Is it okay to move dimensions upfront? It is banned in Part IV,
+     * and the parser disallows it, but the checker here allows this.
+     *)
+    fun checkConstr' (H, dimset) (constrs, specctx) constr level =
+      case Syn.out constr of
+         Syn.IND_CONSTR_DISCRETE [] => [] (* XXX more refined criterion *)
+       | Syn.IND_CONSTR_KAN boundaries =>
+           let
+             val eqs = List.map #1 boundaries
+             fun inSet dim =
+               case Syn.out dim of
+                  Syn.DIM0 => true
+                | Syn.DIM1 => true
+                | Syn.VAR (v, _) => DimSet.member dimset v
+             val true = List.all (fn (r0, r1) => inSet r0 andalso inSet r1) eqs
+             val _ = Assert.tautologicalEquations "checkConstr' tautology checking" eqs
+           in
+             EqSpecInterBoundary H (constrs, specctx) boundaries
+           end
+       | Syn.IND_CONSTR_LAM (a,x,bx) =>
+           let
+             val w = Sym.new () (* is it possible to save this? *)
+             val goal = makeMem trace H (a, Syn.intoU (level, K.KAN))
+             val rest = checkConstr' (H @> (w, AJ.TRUE a), dimset) (constrs, specctx) (VarKit.rename (w, x) bx) level
+           in
+             goal :: rest
+           end
+       | Syn.IND_CONSTR_SPEC_LAM (a,x,bx) =>
+           let
+             val w = Sym.new () (* is it possible to save this? *)
+             val goals = SpecType H (a, level)
+             val rest = checkConstr' (H, dimset) (constrs, SpecCtx.insert specctx w a) (VarKit.rename (w, x) bx) level
+           in
+             goals @ rest
+           end
+       | Syn.IND_CONSTR_LINE (x,bx) =>
+           let
+             val w = Sym.new () (* is it possible to save this? *)
+           in
+             checkConstr' (H @> (w, AJ.TERM O.DIM), DimSet.insert dimset w) (constrs, specctx) (VarKit.rename (w, x) bx) level
+           end
+
+    fun checkConstr H constrs constr level =
+      checkConstr' (H, DimSet.empty) (constrs, SpecCtx.empty) constr level
+
+    fun checkConstrs H constrs level = List.concat @@ List.rev @@ #2 @@
+      List.foldl
+        (fn ((label, constr), (prefix, accumulatedGoals)) =>
+          let
+            val newgoals = checkConstr H prefix constr level
+            val (prefix, present) = ConstrDict.insert' prefix label constr
+            val _ = if present then E.raiseError (E.GENERIC [Fpp.text "Duplicate constructors"]) else ()
+          in
+            (prefix, newgoals :: accumulatedGoals)
+          end)
+        (ConstrDict.empty, [])
+        constrs
   end
 end
