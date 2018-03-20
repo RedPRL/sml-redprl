@@ -196,6 +196,16 @@ struct
       (ISyn.RET v, Ty.UP vty)
     end
 
+  (* Expects a multitactic in 'script' *)
+  fun refineSequents (name, sequents : Sequent.jdg list, script : RedPrlAbt.abt) : icmd * cty = 
+    let
+      val tele = List.foldl (fn (jdg,psi) => Lcf.Tl.snoc psi (Metavar.new ()) (Lcf.I.ret jdg)) Lcf.Tl.empty sequents
+      val evd = Tm.checkb (Tm.\ ([], Tm.$$ (O.AX, [])), ([], O.EXP))
+      val state = Lcf.|> (tele, evd)
+    in
+      (ISyn.REFINE_MULTI (name, state, script), Ty.UP Ty.ONE)
+    end
+
   fun refineSequent (name, sequent : Sequent.jdg, script : RedPrlAbt.abt) : icmd * cty =
     let
       val Sequent.>> (_, ajdg) = sequent
@@ -227,10 +237,10 @@ struct
       (* TODO *)
       val result : elab_val = fn env => (ISyn.DATA_INFO {foo = ()}, Ty.DATA_INFO)
       val resultAbs =
-        (* To insert a check of a sequent against a script, use:
-            elabBind (fn env => refineSequent (name, sequent, elabAst env (script, RedPrlSort.TAC)), MlId.fresh "_", .....)
+        (* To insert a check a list of sequents against a multitactic, use
+            elabBind (fn env => refineSequents (name, sequents, elabAst env (script, RedPrlSort.MTAC)), MlId.fresh "_", ....)
 
-            To check multiple sequents, just do nest this multiple times.
+           note that currently you don't have access to the extracts or anything
             - jms
          *)
         elabRet (elabAbs (elabMetas psi, result))
