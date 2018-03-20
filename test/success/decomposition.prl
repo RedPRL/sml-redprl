@@ -1,16 +1,16 @@
-Thm Decomposition : [
+theorem Decomposition :
   (->
    (record [rcd : (record [a : bool] [b : (* bool int)])] [circ : S1])
    bool)
-] by [
+by
   lam x =>
     let {rcd = {a = a, b = {welp}}, circ = circ} = x;
     use welp
-].
+.
 
-Extract Decomposition.
+do let val M = extract Decomposition; print M.
 
-Thm Apply : [
+theorem Apply :
   (-> 
    (->
     bool
@@ -20,29 +20,29 @@ Thm Apply : [
      (tuple [a base])
      (tuple [a base])))
    S1)
-] by [
+by
   lam f =>
     let {a = a} = f [`tt, `ff, `(dim 0)];
     use a
-].
+.
 
 
 
-Extract Apply.
+do let val M = extract Apply; print M.
 
-Thm UseHypTest : [
+theorem UseHypTest :
   (-> bool bool)
-] by [
+by
   lam x =>
   claim p : [(-> bool S1 bool)] by [lam b c => use b];
   use p [use x, `(loop 0)]
-].
+.
 
-Print UseHypTest.
+print UseHypTest.
 
-Thm UseLemmaTest : [
+theorem UseLemmaTest :
   (-> bool bool)
-] by [
+by
   lam x =>
   use UseHypTest [use x]
-].
+.

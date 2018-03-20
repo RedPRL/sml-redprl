@@ -375,8 +375,8 @@ end
  | DISCRETE | KAN | PRE
 
  (* metalanguage *)
- | CMD_PRINT | CMD_EXTRACT | CMD_QUIT
- | DCL_DEF | DCL_TAC | DCL_THM
+ | EXTRACT | QUIT
+ | DEFINE | TACTIC | THEOREM
  | BY | IN | VAL | DO | CAROT
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
@@ -1025,11 +1025,11 @@ mlValue
     (ML.NIL)
 
 mlAtomicCmd
-  : CMD_PRINT mlValue
+  : PRINT mlValue
     (ML.PRINT (SOME (Pos.pos (mlValueleft fileName) (mlValueright fileName)), mlValue))
-  | CMD_QUIT
+  | QUIT
     (ML.ABORT)
-  | CMD_EXTRACT mlValue
+  | EXTRACT mlValue
     (ML.EXTRACT mlValue)
   | CAROT mlValue
     (ML.RET mlValue)
@@ -1043,16 +1043,19 @@ mlCmd
     (mlAtomicCmd)
 
 mlDecl
-  : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
+  : DEFINE OPNAME declArgumentsParens COLON sort EQUALS term
     (fn kont =>
        ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, sort)}, MlId.const OPNAME, kont))
-  | DCL_DEF OPNAME declArgumentsParens EQUALS LSQUARE term RSQUARE
+
+  | DEFINE OPNAME declArgumentsParens EQUALS term
     (fn kont =>
        ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, O.EXP)}, MlId.const OPNAME, kont))
-  | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
+
+  | TACTIC OPNAME declArgumentsParens EQUALS tactic
     (fn kont =>
        ML.BIND (ML.TAC {arguments = declArgumentsParens, script = tactic}, MlId.const OPNAME, kont))
-  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_atjdg RSQUARE BY LSQUARE tactic RSQUARE
+
+  | THEOREM OPNAME declArgumentsParens COLON src_atjdg BY tactic
     (fn kont =>
        ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, MlId.const OPNAME, kont))
 

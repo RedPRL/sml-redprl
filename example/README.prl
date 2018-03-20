@@ -1,96 +1,96 @@
-Thm BoolTest : [
+theorem BoolTest :
   (-> bool bool)
-] by [
+by
   // A term/witness can be supplied to the refiner at any point in a tactic script
   // using the quotation operator `.
   lam x => if x then `tt else `ff
-].
+.
 
 
-Thm PathTest : [
+theorem PathTest :
   (path [_] S1 base base)
-] by [
+by
   abs x => `(loop x)
-].
+.
 
-Thm LowLevel : [
+theorem LowLevel :
   (->
     (-> bool bool)
     bool)
-] by [
+by
   refine fun/intro;
   [ with f =>
     elim f; [`tt, with x/eq x => use x]
   , refine fun/eqtype;
     refine bool/eqtype
   ]
-].
+.
 
-Extract LowLevel.
+do let val M = extract LowLevel; print M.
 
-Thm LowLevel2 : [
+theorem LowLevel2 :
   (->
     (-> bool bool)
     bool
     bool)
-] by [
+by
   repeat {refine fun/intro; [id, auto]};
   with x f =>
     elim f; 
     [ use x
     , with y/eq y => use y
     ]
-].
+.
 
 
-Extract LowLevel2.
+do let val M = extract LowLevel2; print M.
 
-Thm FunElimTest : [
+theorem FunElimTest :
   (->
    (-> bool bool)
    bool)
-] by [
+by
   lam f => use f [`tt]
-].
+.
 
-Thm S1ElimTest : [ (-> S1 S1) ] by [
+theorem S1ElimTest : (-> S1 S1)  by
   lam s =>
     case s of
        base => `base
      | loop x => `(loop x)
-].
+.
 
-Tac Try(#t : tac) = [
+tactic Try(#t : tac) = 
   #t || id
-].
+.
 
 // Useful for stepping through a proof RedPRL completes automatically, to see
 // what is being done.
-Tac TryStep = [
+tactic TryStep = 
   // We can call our Try tactical. But tactics are parsed with a different grammar than terms,
   // so to avoid ambiguity, when we need to provide a tactic expression as an argument to
   // an operator, we wrap it in (tactic ....).
   (Try #tac{auto-step})
-].
+.
 
 // 'if' is the recursor for booleans.  It takes the motive of induction as an argument
 // in order to facilitate type synthesizing.
-Def BoolEta(#M) = [
+define BoolEta(#M) = 
   (if [a] bool #M tt ff)
-].
+.
 
-Print BoolEta.
+print BoolEta.
 
 // If we define such a function in the refiner using tactics, we can use the
 // built-in 'if x then t1 else t2' tactical, and the extracted witness will be
 // an 'if' form with the motive already filled in.
-Thm BoolEtaFunction : [
+theorem BoolEtaFunction :
   (-> bool bool)
-] by [
+by
   lam b => if b then `tt else `ff
-].
+.
 
-Extract BoolEtaFunction.
+print BoolEtaFunction.
 
 // Let's prove the existence of a path between the identity function
 // on booleans, and the function that takes a boolean to a vacuous if
@@ -101,12 +101,12 @@ Extract BoolEtaFunction.
 // proof is that we can leave holes, and interactively figure out what
 // we need to do.
 //
-Thm PathTest2 : [
+theorem PathTest2 :
   (path
     [_] (-> bool bool)
     (lam [b] b)
     (lam [b] (BoolEta b)))
-] by [
+by
   // abstract a dimension
   abs x =>
     // now, we are constructing a line of functions; so we use a
@@ -123,7 +123,7 @@ Thm PathTest2 : [
       // supplied to the refiner using the '@' "dimension quotation"
       // operator.
       use p [`x]
-].
+.
 
 
 // It turns out that it is just as good to figure out what the witness
@@ -133,105 +133,105 @@ Thm PathTest2 : [
 // time the entirety of the program, and cannot take advantage of
 // types in order to guide its construction, or even synthesize part
 // of it.
-Thm PathTest3 : [
+theorem PathTest3 :
   (path
     [_] (-> bool bool)
     (lam [b] b)
     (lam [b] (BoolEta b)))
-] by [
+by
   // I'm surprised that RedPRL can typecheck this properly! Quite
   // encouraging.
   `(abs [x]
     (lam [b]
      (@ (if [b] (path [_] bool b (BoolEta b)) b (abs [_] tt) (abs [_] ff))
         x)))
-].
+.
 
-Print PathTest3.
+print PathTest3.
 
-Thm PairTest : [ (* [a : S1] (path [_] S1 a base)) ] by [
+theorem PairTest : (* [a : S1] (path [_] S1 a base))  by
   {`base, abs x => `(loop x)}
-].
+.
 
 
-Def Cmp(#f, #g) = [
+define Cmp(#f, #g) = 
   (lam [x] ($ #f ($ #g x)))
-].
+.
 
 
-Def MyLoop(#x:dim, #m) = [
+define MyLoop(#x:dim, #m) = 
   (tuple [proj1 #m] [proj2 (loop #x)])
-].
+.
 
-Def Test = [
+define Test = 
   (MyLoop (dim 0) (loop 1))
-].
+.
 
-Print Test.
+print Test.
 
-Thm SNot : [(-> bool bool)] by [
+theorem SNot : (-> bool bool) by
   lam b => if b then `ff else `tt
-].
+.
 
-Thm StrictBoolTest : [ SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) ] by [
+theorem StrictBoolTest : SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool)  by
   auto
-].
+.
 
-Thm Not : [(-> [_ : bool] bool)] by [
+theorem Not : (-> [_ : bool] bool) by
   lam x => if x then `ff else `tt
-].
+.
 
-Thm FunExt(#l:lvl) : [
+theorem FunExt(#l:lvl) :
   (->
    [a b : (U #l)]
    [f g : (-> a b)]
    [p : (-> [y : a] (path [_] b ($ f y) ($ g y)))]
    (path [_] (-> a b) f g))
-] by [
+by
   lam a b f g p =>
     abs i => lam x => use p [use x, `i]
-].
+.
 
-Print FunExt.
+print FunExt.
 
-Tac FunExtTac(#l : lvl) = [
+tactic FunExtTac(#l : lvl) = 
   query gl <- concl;
   match gl {
     [a b f g | #jdg{(path [_] (-> %a %b) %f %g) true} =>
       use (FunExt #l) [`%a, `%b, `%f, `%g, id]
     ]
   }
-].
+.
 
-Print FunExtTac.
+print FunExtTac.
 
-Thm NotNotPath : [(path [_] (-> bool bool) (Cmp Not Not) (lam [x] x))] by [
+theorem NotNotPath : (path [_] (-> bool bool) (Cmp Not Not) (lam [x] x)) by
   (FunExtTac #lvl{0});
   lam x => if x then abs _ => `tt else abs _ => `ff
-].
+.
 
-Extract NotNotPath.
-Print FunExtTac.
-Print NotNotPath.
+print NotNotPath.
+print FunExtTac.
+print NotNotPath.
 
-Thm Singleton : [(* [x : bool] (path [_] bool x tt))] by [
+theorem Singleton : (* [x : bool] (path [_] bool x tt)) by
   {`tt, abs _ => `tt}
-].
+.
 
-Thm PathElimTest : [(-> (path [_] bool tt tt) bool)] by [
+theorem PathElimTest : (-> (path [_] bool tt tt) bool) by
   lam x => use x [`(dim 0)]
-].
+.
 
-Thm PathEta(#l:lvl) : [
+theorem PathEta(#l:lvl) :
   (->
    [a : (U #l)]
    [m n : a]
    (path [_] a m n)
    (path [_] a m n))
-] by [
+by
   lam a m n p => abs j => use p [`j]
-].
+.
 
-Print PathEta.
+print PathEta.
 
-Print PathElimTest.
+print PathElimTest.

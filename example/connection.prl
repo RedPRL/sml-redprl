@@ -1,10 +1,10 @@
-Thm Connection/And(#l:lvl) : [
+theorem Connection/And(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b : ty]
    [p : (path [_] ty a b)]
    (path [i] (path [_] ty a (@ p i)) (abs [_] a) p))
-] by [
+by
   lam ty a b p =>
     abs i j =>
       `(hcom 0~>1 ty a
@@ -13,25 +13,27 @@ Thm Connection/And(#l:lvl) : [
         [j=0 [k] (hcom 1~>0 ty (@ p k) [k=0 [_] a] [k=1 [l] (@ p l)])]
         [j=1 [k] (hcom 1~>i ty (@ p k) [k=0 [_] a] [k=1 [l] (@ p l)])]
         [i=j [k] (hcom 1~>i ty (@ p k) [k=0 [_] a] [k=1 [l] (@ p l)])])
-].
+.
 
-Thm Connection/And/Diagonal (#l:lvl) : [
+theorem Connection/And/Diagonal (#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b : ty]
    [p : (path [_] ty a b)]
    (= (path [_] ty a b) (abs [i] (@ ($ (Connection/And #l) ty a b p) i i)) p))
-] by [
+by
   lam ty a b p => unfold Connection/And; auto
-].
+.
 
-Thm Connection/Or(#l:lvl) : [
+do let val M = extract Connection/And/Diagonal; print M.
+
+theorem Connection/Or(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b : ty]
    [p : (path [_] ty a b)]
    (path [i] (path [_] ty (@ p i) b) p (abs [_] b)))
-] by [
+by
   lam ty a b p =>
    abs i j =>
      `(hcom 1~>0 ty b
@@ -40,14 +42,14 @@ Thm Connection/Or(#l:lvl) : [
        [j=0 [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
        [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
        [i=j [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])])
-].
+.
 
-Thm Connection/Or/Diagonal (#l:lvl) : [
+theorem Connection/Or/Diagonal (#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b : ty]
    [p : (path [_] ty a b)]
    (= (path [_] ty a b) (abs [i] (@ ($ (Connection/Or #l) ty a b p) i i)) p))
-] by [
+by
   lam ty a b p => unfold Connection/Or; auto
-].
+.

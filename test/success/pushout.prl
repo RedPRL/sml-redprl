@@ -1,27 +1,27 @@
-Thm Pushout/Test0 : [
+theorem Pushout/Test0 :
   (pushout record record bool [_] tuple [_] tuple)
-] by [
+by
   `(left tuple)
-].
+.
 
-Thm Pushout/Test1 : [
+theorem Pushout/Test1 :
   (pushout bool bool bool [x] x [x] x)
-] by [
+by
   `(right tt)
-].
+.
 
-Thm Pushout/Test2 : [
+theorem Pushout/Test2 :
   (-> dim (pushout bool bool bool [x] x [x] x))
-] by [
+by
   abs u => `(glue u tt tt tt)
-].
+.
 
-Def S1' = [(pushout record record bool [_] tuple [_] tuple)].
+define S1' = (pushout record record bool [_] tuple [_] tuple).
 
 // Someone told me the following is an equivalence
-Thm PushoutToS1 : [
+theorem PushoutToS1 :
   (-> S1' S1)
-] by [
+by
   lam p => elim p;
     [ `base
     , `base
@@ -32,30 +32,30 @@ Thm PushoutToS1 : [
       ]
     ];
     auto
-].
+.
 
 
-Thm PushoutToS1/Test0 : [
+theorem PushoutToS1/Test0 :
   (= (-> S1' S1) PushoutToS1 PushoutToS1)
-] by [
+by
   unfold PushoutToS1; // otherwise too easy
   refine fun/eq/lam;
   [ refine pushout/eq/pushout-rec; auto
   , auto
   ]
-].
+.
 
-Thm PushoutBetaEasiest(#i:lvl) : [
+theorem PushoutBetaEasiest(#i:lvl) :
   (-> [a b c d : (U #i)] [w : d]
       [u : dim] [x : a] [y : b] [z : c]
       (= d (pushout-rec [_] d (glue u z x y) [_] w [_] w [_ _] w) w))
-] by [
+by
   lam a b c d w => abs u => lam x y z =>
     refine pushout/beta/glue;
     auto
-].
+.
 
-Thm PushoutBetaEasier(#i:lvl) : [
+theorem PushoutBetaEasier(#i:lvl) :
   (-> [a b c : (U #i)] [f : (-> c a)] [g : (-> c b)]
       [d : (-> (pushout a b c [z] ($ f z) [z] ($ g z)) (U #i))]
       [wl : (-> [x : a] ($ d (left x)))] [wr : (-> [y : b] ($ d (right y)))]
@@ -64,8 +64,8 @@ Thm PushoutBetaEasier(#i:lvl) : [
       (= ($ d (glue u m ($ f m) ($ g m)))
       	 (pushout-rec [p] ($ d p) (glue u m ($ f m) ($ g m)) [x] ($ wl x) [y] ($ wr y) [v z] (@ ($ wg z) v))
 	 (@ ($ wg m) u)))
-] by [
+by
   lam a b c f g d wl wr wg => abs u => lam m =>
     refine pushout/beta/glue;
     auto
-].
+.

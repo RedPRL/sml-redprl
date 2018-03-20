@@ -1,7 +1,7 @@
-Thm PathApConst : [
+theorem PathApConst :
   (-> (path [_] bool tt tt) bool)
-] by [
+by
   lam p => use p [`(dim 0)]
-].
+.
 
-Print PathApConst.
+print PathApConst.

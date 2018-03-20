@@ -10,11 +10,11 @@
   and (2) the reformulation based on it to avoid additions.
 */
 
-Thm Choice : [
+theorem Choice :
   // a choice of #(first argument) elements from #(second argument) elemnts.
   // `tt` means "take", and `ff` means "drop".
   (-> nat nat (U 0))
-] by [
+by
   lam n => elim n;
   [ lam n => `record ]; // n = 0
   with n'/ih n' =>  lam m => elim m;
@@ -23,15 +23,15 @@ Thm Choice : [
     `(record
       [head : bool]
       [tail : (if [_] (U 0) head ($ n'/ih m') m'/ih)])
-].
+.
 
-Thm Choice/compose : [
+theorem Choice/compose :
   (->
    [a b c : nat]
    ($ Choice b c)
    ($ Choice a b)
    ($ Choice a c))
-] by [
+by
   lam a => elim a;
   [ lam b c p0 p1 => `tuple ]; // a = 0
   with a'/ih a' => lam b => elim b;
@@ -53,9 +53,9 @@ Thm Choice/compose : [
     , tail = `($ c'/ih p0/t p1)
     }
   ]
-].
+.
 
-Thm Choice/compose/tt/tt : [
+theorem Choice/compose/tt/tt :
   (->
    [a b c : nat]
    [p0/t : ($ Choice b c)]
@@ -65,13 +65,13 @@ Thm Choice/compose/tt/tt : [
     ($ Choice/compose (succ a) (succ b) (succ c)
        (tuple [head tt] [tail p0/t]) (tuple [head tt] [tail p1/t]))
     (tuple [head tt] [tail ($ Choice/compose a b c p0/t p1/t)])))
-] by [
+by
   lam a b c p0/t p1/t =>
     auto;
     unfold Choice; reduce; assumption
-].
+.
 
-Thm Choice/compose/tt/ff : [
+theorem Choice/compose/tt/ff :
   (->
    [a b c : nat]
    [p0/t : ($ Choice b c)]
@@ -81,13 +81,13 @@ Thm Choice/compose/tt/ff : [
     ($ Choice/compose (succ a) (succ b) (succ c)
        (tuple [head tt] [tail p0/t]) (tuple [head ff] [tail p1/t]))
     (tuple [head ff] [tail ($ Choice/compose (succ a) b c p0/t p1/t)])))
-] by [
+by
   lam a b c p0/t p1/t =>
     auto;
     unfold Choice; reduce; assumption
-].
+.
 
-Thm Choice/compose/ff : [
+theorem Choice/compose/ff :
   (->
    [a b c : nat]
    [p0/t : ($ Choice (succ b) c)]
@@ -97,20 +97,20 @@ Thm Choice/compose/ff : [
     ($ Choice/compose (succ a) (succ b) (succ c)
        (tuple [head ff] [tail p0/t]) p1)
     (tuple [head ff] [tail ($ Choice/compose (succ a) (succ b) c p0/t p1)])))
-] by [
+by
   lam a b c p0/t p1 =>
     auto; 
     unfold Choice; reduce; assumption
-].
+.
 
-Thm Eq/inv : [
+theorem Eq/inv :
   (-> [a : (U 0)] [x y : a]
     (= a x y) (= a y x))
-] by [
+by
   lam a x y eq => assumption
-].
+.
 
-Thm Choice/compose/assoc : [
+theorem Choice/compose/assoc :
   (->
    [a b c d : nat]
    [p0 : ($ Choice c d)]
@@ -120,7 +120,7 @@ Thm Choice/compose/assoc : [
     ($ Choice a d)
     ($ Choice/compose a b d ($ Choice/compose b c d p0 p1) p2)
     ($ Choice/compose a c d p0 ($ Choice/compose a b c p1 p2))))
-] by [
+by
   lam a => elim a;
   [ lam b c d p0 p1 p2 => unfold Choice/compose; auto ]; // a = 0
   with a'/ind a' => lam b => elim b;
@@ -194,7 +194,7 @@ Thm Choice/compose/assoc : [
     ]
   ];
   auto
-].
+.
 
 /*
 
@@ -225,7 +225,7 @@ pick-coh : (-> [p : nat] [X : sst p] {n m o : nat}
       ($ pick p X ($ Choice/compose c1 c2) f)))
 */
 
-Thm MegaMutualDefs : [
+theorem MegaMutualDefs :
   (-> nat
     (record
       [sst : (U 1)]
@@ -241,7 +241,7 @@ Thm MegaMutualDefs : [
         (= ($ folder x o)
           ($ pick x m o c1 ($ pick x n m c2 f))
           ($ pick x n o ($ Choice/compose n m o c1 c2) f)))]))
-] by [
+by
   lam p => elim p;
   [
     { sst = `record
@@ -289,10 +289,10 @@ Thm MegaMutualDefs : [
     }
   ];
   auto
-].
+.
 
-Thm SemiSimplicial : [
+theorem SemiSimplicial :
   (-> nat (U 1))
-] by [
+by
   lam n => `(! sst ($ MegaMutualDefs n))
-].
+.

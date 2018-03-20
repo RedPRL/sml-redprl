@@ -1,34 +1,34 @@
-Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
-Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
-Def IsProp (#A) = [(-> [a b : #A] (path [_] #A a b))].
-Def IsSet (#A) = [(-> [a b : #A] (IsProp (path [_] #A a b)))].
+define HasAllPathsTo (#C,#c) = (-> [c' : #C] (path [_] #C c' #c)).
+define IsContr (#C) = (* [c : #C] (HasAllPathsTo #C c)).
+define IsProp (#A) = (-> [a b : #A] (path [_] #A a b)).
+define IsSet (#A) = (-> [a b : #A] (IsProp (path [_] #A a b))).
 
-Thm InhPropIsContr(#l:lvl) : [
+theorem InhPropIsContr(#l:lvl) :
  (->
   [ty : (U #l kan)] // can I use pre here?
   [h : (IsProp ty)]
   [a : ty]
   (IsContr ty))
-] by [
+by
   lam ty h a => {use a, lam x => `($ h x a)}
-].
+.
 
-Thm PropPi(#l:lvl) : [
+theorem PropPi(#l:lvl) :
  (->
   [tyA : (U #l kan)]
   [tyB : (-> tyA (U #l kan))]
   [h : (-> [x : tyA] (IsProp ($ tyB x)))]
   (IsProp (-> [x : tyA] ($ tyB x))))
-] by [
+by
   lam tyA tyB h f g => abs i => lam x => `(@ ($ h x ($ f x) ($ g x)) i)
-].
+.
 
-Thm PropSet(#l:lvl) : [
+theorem PropSet(#l:lvl) :
   (->
    [tyA : (U #l kan)]
    [h : (IsProp tyA)]
    (IsSet tyA))
-] by [
+by
   lam tyA h a b p q =>
   abs j i =>
     `(hcom 0~>1 tyA a
@@ -36,38 +36,38 @@ Thm PropSet(#l:lvl) : [
       [i=1 [k] (@ ($ h a b) k)]
       [j=0 [k] (@ ($ h a (@ p i)) k)]
       [j=1 [k] (@ ($ h a (@ q i)) k)])
-].
+.
 
 // This proof should be easy, but it is not...
-Thm IsPropIsProp(#l:lvl) : [
+theorem IsPropIsProp(#l:lvl) :
   (->
    [tyA : (U #l kan)]
    (IsProp (IsProp tyA))
   )
-] by [
+by
   lam tyA h1 h2 =>
   abs i => lam a b =>
     let foo = (PropSet #l) [`tyA, `h1];
     unfold IsSet IsProp;
     use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]
-].
+.
 
-Thm IsPropIsProp'(#l:lvl) : [
+theorem IsPropIsProp'(#l:lvl) :
   (->
    [tyA : (U #l kan)]
    (IsProp (IsProp tyA))
   )
-] by [
+by
   lam tyA h1 h2 => abs i => lam a b =>
     `(@ ($ (PropSet #l) tyA h1 a b ($ h1 a b) ($ h2 a b)) i)
-].
+.
 
 // // This should be exactly like the one above:
-// Thm IsPropIsSet(#l:lvl) : [
+// theorem IsPropIsSet(#l:lvl) :
 //   (->
 //    [tyA : (U #l kan)]
 //    (IsProp (IsSet tyA))
 //   )
-//  ] by [
+//  by
 //   ?hole
-// ].
+// .

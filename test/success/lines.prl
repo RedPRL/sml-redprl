@@ -1,48 +1,48 @@
-Thm Line/Test0 : [
+theorem Line/Test0 :
   (->
    [a : (U 0 kan)]
    [l : (-> dim a)]
    (= a (coe 0~>1 [_] a (@ l 0)) (@ (coe 0~>1 [_] (-> dim a) l) 0)))
-] by [
+by
   lam a l => `ax
-].
+.
 
-Thm Line/Test1 : [
+theorem Line/Test1 :
   (->
    [ty : (U 0 kan)]
    [p : (line [_] ty)]
    (path [_] ty (@ p 0) (@ p 1)))
-] by [
+by
   lam ty p => abs x => `(@ p x)
-].
+.
 
 
-Thm Line/Trans : [
+theorem Line/Trans :
   (->
    [ty : (U 0 kan)]
    [p : (line [_] ty)]
    [q : (line [_] ty)]
    [eq : (= ty (@ p 1) (@ q 0))]
    (path [_] ty (@ p 0) (@ q 1)))
-] by [
+by
   (lam ty p q eq => abs x =>
   `(hcom 0~>1 ty (@ p x)
     [x=0 [_] (@ p 0)]
     [x=1 [y] (@ q y)])); 
   
   repeat {assumption || auto-step}
-].
+.
 
-Thm Line/Symm : [
+theorem Line/Symm :
   (->
    [ty : (U 0 kan)]
    [p : (line [_] ty)]
    (path [_] ty (@ p 1) (@ p 0)))
-] by [
+by
   lam ty p => abs x =>
   `(hcom 0~>1 ty (@ p 0)
     [x=0 [y] (@ p y)]
     [x=1 [_] (@ p 0)])
-].
+.
 
-Print Line/Trans.
+print Line/Trans.

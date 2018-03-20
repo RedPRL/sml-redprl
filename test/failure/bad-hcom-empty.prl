@@ -1,5 +1,5 @@
-Thm MalformedTube : [
+theorem MalformedTube :
   wbool true
-] by [
+by
   `(hcom 0~>1 wbool tt)
-].
+.

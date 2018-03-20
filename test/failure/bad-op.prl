@@ -1,5 +1,5 @@
-Def Foo(#a : exp, #b : exp) : exp = [ (-> #a #b) ].
+define Foo(#a : exp, #b : exp) : exp =  (-> #a #b) .
 
-Thm Foo-bool-type : [(Foo bool) type] by [
+theorem Foo-bool-type : (Foo bool) type by
   auto
-].
+.

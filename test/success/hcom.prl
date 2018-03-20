@@ -1,4 +1,4 @@
-Thm Hcom/Poly(#l:lvl) : [
+theorem Hcom/Poly(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b c d : ty]
@@ -6,76 +6,76 @@ Thm Hcom/Poly(#l:lvl) : [
    (path [_] ty a c)
    (path [_] ty b d)
    (path [_] ty c d))
-] by [
+by
   lam ty a b c d pab pac pbd =>
     abs i =>
       `(hcom 0~>1 ty (@ pab i)
         [i=0 [j] (@ pac j)]
         [i=1 [j] (@ pbd j)])
-].
+.
 
-Extract Hcom/Poly.
+print Hcom/Poly.
 
-Thm Hcom/trans(#l:lvl) : [
+theorem Hcom/trans(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b c : ty]
    (path [_] ty a b)
    (path [_] ty b c)
    (path [_] ty a c))
-] by [
+by
   lam ty a b c pab pbc =>
     abs i =>
       `(hcom 0 ~> 1 ty (@ pab i)
         [i=0 [_] a]
         [i=1 [j] (@ pbc j)])
-].
+.
 
-Extract Hcom/trans.
+print Hcom/trans.
 
-Thm Hcom/symm(#l:lvl) : [
+theorem Hcom/symm(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b : ty]
    (path [_] ty a b)
    (path [_] ty b a))
-] by [
+by
   lam ty a b pab =>
     abs i =>
       `(hcom 0~>1 ty a
         [i=0 [j] (@ pab j)]
         [i=1 [_] a])
-].
+.
 
-Extract Hcom/symm.
+print Hcom/symm.
 
 // An example of using the internalized exact equality type.
-Thm Cap(#i:dim, #l:lvl) : [
+theorem Cap(#i:dim, #l:lvl) :
   (->
    [ty : (U #l hcom)]
    [x : ty]
    (= ty
       (hcom 0~>0 ty x [#i=0 [_] x] [#i=1 [_] x])
       x))
-] by [
+by
   lam ty x => auto
-].
+.
 
 
 
-Thm Tube(#l:lvl) : [
+theorem Tube(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [x : ty]
    (= ty
       (hcom 0~>1 ty x [1=1 [_] x] [0=0 [_] x])
       x))
-] by [
+by
   lam ty x => auto
-].
+.
 
-Thm TrueByEvaluation : [
+theorem TrueByEvaluation :
   (hcom 0~>0 bool tt) in bool
-] by [
+by
   auto
-].
+.

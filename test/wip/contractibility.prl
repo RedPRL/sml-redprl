@@ -1,20 +1,20 @@
-Def IsProp(#A) = [
+define IsProp(#A) = 
   (-> [x y : #A] (path [_] #A x y))
-].
+.
 
-Def IsContr(#A) = [
+define IsContr(#A) = 
   (* [x : #A] (-> [y : #A] (path [_] #A x y)))
-].
+.
 
 
-Thm Prop/IsContr : [
+theorem Prop/IsContr :
   (-> [ty : (U 0 kan)] (IsProp (IsContr ty)))
-] by [
+by
   lam ty, {b1,r1}, {b2,r2}.
 
-  let r1r2 : [(path [i] (-> [y:ty] (path [_] ty (@ ($ r1 b2) i) y)) r1 r2)] =
+  let r1r2 :(path [i] (-> [y:ty] (path [_] ty (@ ($ r1 b2) i) y)) r1 r2)] =
     <i> lam y. ?what-do-i-do.
 
   <i> {use r1 [use b2, use i],
        lam x. use r1r2 [use i, use x]}
-].
+.

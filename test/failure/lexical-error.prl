@@ -1,3 +1,3 @@
-Thm LexicalError : [ (-> bool bool) true ] by [
+theorem LexicalError : (-> bool bool) true  by
   (lam x => `_tt); auto
-].
+.
