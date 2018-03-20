@@ -169,7 +169,7 @@ define Test =
 
 print Test.
 
-theorem SNot : (-> bool bool)by {
+theorem SNot : (-> bool bool) by {
   lam b => if b then `ff else `tt
 }.
 
@@ -177,7 +177,7 @@ theorem StrictBoolTest :  SNot = (Cmp SNot (Cmp SNot SNot)) in (-> bool bool) by
   auto
 }.
 
-theorem Not : (-> [_ : bool] bool)by {
+theorem Not : (-> [_ : bool] bool) by {
   lam x => if x then `ff else `tt
 }.
 
@@ -205,7 +205,7 @@ tactic FunExtTac(#l : lvl) = {
 
 print FunExtTac.
 
-theorem NotNotPath : (path [_] (-> bool bool) (Cmp Not Not) (lam [x] x))by {
+theorem NotNotPath : (path [_] (-> bool bool) (Cmp Not Not) (lam [x] x)) by {
   (FunExtTac #lvl{0});
   lam x => if x then abs _ => `tt else abs _ => `ff
 }.
@@ -214,11 +214,11 @@ print NotNotPath.
 print FunExtTac.
 print NotNotPath.
 
-theorem Singleton : (* [x : bool] (path [_] bool x tt))by {
+theorem Singleton : (* [x : bool] (path [_] bool x tt)) by {
   {`tt, abs _ => `tt}
 }.
 
-theorem PathElimTest : (-> (path [_] bool tt tt) bool)by {
+theorem PathElimTest : (-> (path [_] bool tt tt) bool) by {
   lam x => use x [`(dim 0)]
 }.
 

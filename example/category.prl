@@ -30,7 +30,7 @@ theorem Category(#i:lvl) :  (U (++ #i)) by {
           ))])
 }.
 
-theorem Test(#l:lvl) : (Category (++#l))by {
+theorem Test(#l:lvl) : (Category (++#l)) by {
   { ob = `(U #l)
   , hom = lam ty/a ty/b => `(-> ty/a ty/b)
   , idn = lam ty/a x => `x
