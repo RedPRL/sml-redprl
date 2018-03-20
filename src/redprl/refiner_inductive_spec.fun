@@ -201,13 +201,13 @@ struct
         val true = label0 = label1
         fun goals' (([], []), Syn.IND_CONSTR_DISCRETE _) = []
           | goals' (([], []), Syn.IND_CONSTR_KAN _) = []
-          | goals' ((arg0::args0, arg1::args1), Syn.IND_CONSTR_LAM (a,x,bx)) =
+          | goals' ((arg0::args0, arg1::args1), Syn.IND_CONSTR_FUN (a,x,bx)) =
               let
                 val goal = makeEq trace H ((arg0, arg1), a)
               in
                 goal :: goals ((args0, args1), Abt.substVar (arg0, x) bx)
               end
-          | goals' ((arg0::args0, arg1::args1), Syn.IND_CONSTR_SPEC_LAM (a,x,bx)) =
+          | goals' ((arg0::args0, arg1::args1), Syn.IND_CONSTR_SPEC_FUN (a,x,bx)) =
               let
                 val goalsSpec = EqSpec H (constrs, specctx) ((arg0, arg1), a)
               in
@@ -233,7 +233,7 @@ struct
           | trySimplify' ([], Syn.IND_CONSTR_KAN boundaries) =
               Option.map (fn (_, boundary) => (boundary, []))
                 (List.find (fn (eq, _) => Abt.eq eq) boundaries)
-          | trySimplify' (arg::args, Syn.IND_CONSTR_LAM (a,x,bx)) =
+          | trySimplify' (arg::args, Syn.IND_CONSTR_FUN (a,x,bx)) =
               Option.map
                 (fn (boundary, goals) =>
                   let
@@ -242,7 +242,7 @@ struct
                     (boundary, goal :: goals)
                   end)
                 (trySimplify (args, Abt.substVar (arg, x) bx))
-          | trySimplify' (arg::args, Syn.IND_CONSTR_SPEC_LAM (a,x,bx)) =
+          | trySimplify' (arg::args, Syn.IND_CONSTR_SPEC_FUN (a,x,bx)) =
               Option.map
                 (fn (boundary, goals) =>
                   let
@@ -301,7 +301,7 @@ struct
            in
              EqSpecInterBoundary H (constrs, specctx) boundaries
            end
-       | Syn.IND_CONSTR_LAM (a,x,bx) =>
+       | Syn.IND_CONSTR_FUN (a,x,bx) =>
            let
              val w = Sym.new () (* is it possible to save this? *)
              val goal = makeMem trace H (a, Syn.intoU (level, K.KAN))
@@ -309,7 +309,7 @@ struct
            in
              goal :: rest
            end
-       | Syn.IND_CONSTR_SPEC_LAM (a,x,bx) =>
+       | Syn.IND_CONSTR_SPEC_FUN (a,x,bx) =>
            let
              val w = Sym.new () (* is it possible to save this? *)
              val goals = SpecType H (a, level)
@@ -323,7 +323,6 @@ struct
            in
              checkConstr' (H @> (w, AJ.TERM O.DIM), DimSet.insert dimset w) (constrs, specctx) (VarKit.rename (w, x) bx) level
            end
-
     fun checkConstr H constrs constr level =
       checkConstr' (H, DimSet.empty) (constrs, SpecCtx.empty) constr level
 
@@ -339,5 +338,23 @@ struct
           end)
         (ConstrDict.empty, [])
         constrs
+
+    fun checkFam' H desc =
+      case Syn.out desc of
+         Syn.IND_FAM_BASE (level, constrs) => checkConstrs H constrs level
+       | Syn.IND_FAM_FUN (a,x,bx) =>
+           let
+             val w = Sym.new () (* can we avoid this? *)
+             val goal = makeType trace H (a, K.top)
+           in
+             goal :: checkFam' (H @> (w, AJ.TRUE a)) (VarKit.rename (w, x) bx)
+           end
+       | Syn.IND_FAM_LINE (x,bx) =>
+           let
+             val w = Sym.new () (* can we avoid this? *)
+           in
+             checkFam' (H @> (w, AJ.TERM O.DIM)) (VarKit.rename (w, x) bx)
+           end
+    val checkFam = checkFam' Hyps.empty
   end
 end

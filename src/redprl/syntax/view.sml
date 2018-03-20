@@ -73,11 +73,14 @@ struct
    | IND_SPEC_FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
    | IND_SPEC_LAM of variable * 'a
    | IND_SPEC_APP of 'a * 'a
-   | IND_CONSTR_LAM of ('a * variable * 'a)
-   | IND_CONSTR_SPEC_LAM of ('a * variable * 'a)
+   | IND_CONSTR_FUN of ('a * variable * 'a)
+   | IND_CONSTR_SPEC_FUN of ('a * variable * 'a)
    | IND_CONSTR_LINE of (variable * 'a)
    | IND_CONSTR_KAN of (equation * 'a) list
    | IND_CONSTR_DISCRETE of (equation * 'a) list
+   | IND_FAM_FUN of ('a * variable * 'a)
+   | IND_FAM_LINE of (variable * 'a)
+   | IND_FAM_BASE of L.level * (conid * 'a) list
    | IND_TYPE
    | IND_INTRO
    | IND_REC
@@ -506,6 +509,15 @@ struct
              }
        | O.IND_SPEC_LAM $ [[x] \ mx] => IND_SPEC_LAM (x, mx)
        | O.IND_SPEC_APP $ [_ \ m, _ \ n] => IND_SPEC_APP (m, n)
+       | O.IND_CONSTR_FUN $ [_ \ a, [x] \ bx] => IND_CONSTR_FUN (a, x, bx)
+       | O.IND_CONSTR_SPEC_FUN $ [_ \ a, [x] \ bx] => IND_CONSTR_SPEC_FUN (a, x, bx)
+       | O.IND_CONSTR_LINE $ [[x] \ bx] => IND_CONSTR_LINE (x, bx)
+       | O.IND_CONSTR_KAN $ [_ \ boundaries] => IND_CONSTR_KAN (outBoundaries boundaries)
+       | O.IND_CONSTR_DISCRETE $ [_ \ boundaries] => IND_CONSTR_DISCRETE (outBoundaries boundaries)
+       | O.IND_FAM_FUN $ [_ \ a, [x] \ bx] => IND_FAM_FUN (a, x, bx)
+       | O.IND_FAM_LINE $ [[x] \ bx] => IND_FAM_LINE (x, bx)
+       | O.IND_FAM_BASE conids $ (_ \ l) :: rest => IND_FAM_BASE
+           (L.out l, ListPair.mapEq (fn (id, (_ \ datum)) => (id, datum)) (conids, rest))
        | O.IND_TYPE _ $ _ => IND_TYPE
        | O.IND_INTRO _ $ _ => IND_INTRO
        | O.IND_REC _ $ _ => IND_REC

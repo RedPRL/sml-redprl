@@ -82,10 +82,6 @@ struct
      | CEDOM => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | COEQUALIZER_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
-     | IND_FAM_BASE l => List.map (fn _ => [] |: IND_CONSTR) l ->> IND_FAM
-     | IND_FAM_LAM => [[] |: EXP, [EXP] |: IND_FAM] ->> IND_FAM
-     | IND_FAM_LINE => [[DIM] |: IND_FAM] ->> IND_FAM
-
      | IND_SPECTYPE_SELF => [] ->> IND_SPECTYPE
      | IND_SPECTYPE_FUN => [[] |: EXP, [EXP] |: IND_SPECTYPE] ->> IND_SPECTYPE
 
@@ -94,11 +90,15 @@ struct
      | IND_SPEC_LAM => [[EXP] |: IND_SPEC] ->> IND_SPEC
      | IND_SPEC_APP => [[] |: IND_SPEC, [] |: EXP] ->> IND_SPEC
 
-     | IND_CONSTR_LAM => [[] |: EXP, [EXP] |: IND_CONSTR] ->> IND_CONSTR
-     | IND_CONSTR_SPEC_LAM => [[] |: IND_SPECTYPE, [IND_SPEC] |: IND_CONSTR] ->> IND_CONSTR
+     | IND_CONSTR_FUN => [[] |: EXP, [EXP] |: IND_CONSTR] ->> IND_CONSTR
+     | IND_CONSTR_SPEC_FUN => [[] |: IND_SPECTYPE, [IND_SPEC] |: IND_CONSTR] ->> IND_CONSTR
      | IND_CONSTR_LINE => [[] |: DIM, [DIM] |: IND_CONSTR] ->> IND_CONSTR
      | IND_CONSTR_KAN => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
      | IND_CONSTR_DISCRETE => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
+
+     | IND_FAM_BASE l => ([] |: LVL) :: List.map (fn _ => [] |: IND_CONSTR) l ->> IND_FAM
+     | IND_FAM_FUN => [[] |: EXP, [EXP] |: IND_FAM] ->> IND_FAM
+     | IND_FAM_LINE => [[DIM] |: IND_FAM] ->> IND_FAM
 
      | IND_TYPE (_, valence) => Option.valOf valence ->> EXP
      | IND_INTRO ((_, valence), _) => Option.valOf valence @ [[] |: VEC ANY] ->> EXP
@@ -259,20 +259,20 @@ struct
      | CEDOM => "cedom"
      | COEQUALIZER_REC => "coeq-rec"
 
-     | IND_FAM_BASE _ => "ind-fam-base" (* FIXME *)
-     | IND_FAM_LAM => "ind-fam-lam"
-     | IND_FAM_LINE => "ind-fam-line"
      | IND_SPECTYPE_SELF => "ind-rec-self"
      | IND_SPECTYPE_FUN => "ind-rec-fun"
      | IND_SPEC_INTRO _ => "ind-rec-intro" (* FIXME *)
      | IND_SPEC_FCOM => "ind-rec-fcom"
      | IND_SPEC_LAM => "ind-rec-lam"
      | IND_SPEC_APP => "ind-rec-app"
-     | IND_CONSTR_LAM => "ind-constr-lam"
-     | IND_CONSTR_SPEC_LAM => "ind-constr-spec-lam"
+     | IND_CONSTR_FUN => "ind-constr-fun"
+     | IND_CONSTR_SPEC_FUN => "ind-constr-spec-fun"
      | IND_CONSTR_LINE => "ind-constr-line"
      | IND_CONSTR_KAN => "ind-constr-kan"
      | IND_CONSTR_DISCRETE => "ind-constr-discrete"
+     | IND_FAM_BASE _ => "ind-fam-base" (* FIXME *)
+     | IND_FAM_FUN => "ind-fam-fun"
+     | IND_FAM_LINE => "ind-fam-line"
      | IND_TYPE _ => "ind-type" (* FIXME *)
      | IND_INTRO _ => "ind-intro" (* FIXME *)
      | IND_REC _ => "ind-rec" (* FIXME *)
