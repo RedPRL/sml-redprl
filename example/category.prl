@@ -1,4 +1,4 @@
-Thm Category(#i:lvl) : [ (U (++ #i)) ] by [
+theorem Category(#i:lvl) :  (U (++ #i)) by {
    `(record
      [ob : (U #i)]
      [hom : (-> ob ob (U #i))]
@@ -18,8 +18,8 @@ Thm Category(#i:lvl) : [ (U (++ #i)) ] by [
        (= ($ hom a b)
           ($ cmp a a b f ($ idn a))
           f))]
-     [assoc : 
-      (-> 
+     [assoc :
+      (->
        [a b c d : ob]
        [f : ($ hom a b)]
        [g : ($ hom b c)]
@@ -28,9 +28,9 @@ Thm Category(#i:lvl) : [ (U (++ #i)) ] by [
           ($ cmp a c d h ($ cmp a b c g f))
           ($ cmp a b d ($ cmp b c d h g) f)
           ))])
-].
+}.
 
-Thm Test(#l:lvl) : [(Category (++#l))] by [
+theorem Test(#l:lvl) : (Category (++#l)) by {
   { ob = `(U #l)
   , hom = lam ty/a ty/b => `(-> ty/a ty/b)
   , idn = lam ty/a x => `x
@@ -39,12 +39,12 @@ Thm Test(#l:lvl) : [(Category (++#l))] by [
   , idn/r = lam _ _ _ => auto
   , assoc = lam _ _ _ _ _ _ _ => auto
   }
-].
+}.
 
-// Thm Op(#l:lvl) : [
+// theorem Op(#l:lvl) :
 //   (-> (Category #l) (Category #l))
-// ] by [
-//   lam {ob = ob, hom = hom, idn = idn, cmp = cmp, idn/l = idn/l, idn/r = idn/r, assoc = assoc} => 
+// by {
+//   lam {ob = ob, hom = hom, idn = idn, cmp = cmp, idn/l = idn/l, idn/r = idn/r, assoc = assoc} =>
 //     { ob = `ob
 //     , hom = lam c d => use hom [`d, `c]
 //     , idn = `idn
@@ -53,4 +53,4 @@ Thm Test(#l:lvl) : [(Category (++#l))] by [
 //     , idn/r = lam a b f => use idn/l [`b, `a, `f]; auto; assumption
 //     , assoc = ?
 //     }
-// ].
+// }.

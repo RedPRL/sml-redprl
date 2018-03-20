@@ -1,18 +1,18 @@
-Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
+define HasAllPathsTo (#C,#c) = (-> [c' : #C] (path [_] #C c' #c)).
 
-Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
+define IsContr (#C) = (* [c : #C] (HasAllPathsTo #C c)).
 
-Def Fiber (#A,#B,#f,#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
+define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
 
-Def IsEquiv (#A,#B,#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
+define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
 
-Def Equiv (#A,#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
+define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
 
-Def Id = [(lam [a] a)].
+define Id = (lam [a] a).
 
-Thm IdIsEquiv(#l:lvl) : [
+theorem IdIsEquiv(#l:lvl) :
   (-> [ty : (U #l hcom)] (IsEquiv ty ty Id))
-] by [
+by {
   lam ty a =>
   { {use a, abs _ => use a}
   , lam {_,c'} => abs i =>
@@ -25,86 +25,86 @@ Thm IdIsEquiv(#l:lvl) : [
             [i=1 [j] a])
        }
   }
-].
+}.
 
-Thm IdEquiv(#l:lvl) : [
+theorem IdEquiv(#l:lvl) :
   (-> [ty : (U #l hcom)] (Equiv ty ty))
-] by [
+by {
   lam ty =>
     {`Id, use (IdIsEquiv #l) [use ty]}
-].
+}.
 
-Print IdEquiv.
+print IdEquiv.
 
-Def IdV(#i:dim, #l:lvl, #ty) = [
+define IdV(#i:dim, #l:lvl, #ty) =
   (V #i #ty #ty ($ (IdEquiv #l) #ty))
-].
+.
 
-Thm IdV/Wf(#l:lvl) : [
+theorem IdV/Wf(#l:lvl) :
   (->
    [i : dim]
    [ty : (U #l hcom)]
    (mem (U #l) (IdV i #l ty)))
-] by [
+by {
   abs i => lam ty => auto
-].
+}.
 
-Thm IdV/Test0(#l:lvl) : [
+theorem IdV/Test0(#l:lvl) :
   (->
    [i : dim]
    [ty : (U #l hcom)]
    [a : ty]
    (mem (IdV i #l ty) (Vin i a a)))
-] by [
+by {
   abs i => lam ty a => auto
-].
+}.
 
-Thm IdV/Test1(#l:lvl) : [
+theorem IdV/Test1(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a : ty]
    (= ty (Vproj (dim 0) (Vin (dim 0) a a) Id) a))
-] by [
+by {
   lam ty a => auto
-].
+}.
 
-Thm IdV/Test2(#l:lvl) : [
+theorem IdV/Test2(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [a : ty]
    (= ty (coe 0~>1 [x] (IdV x #l ty) a)
          (coe 0~>1 [_] ty a)))
-] by [
+by {
   lam ty a => auto
-].
+}.
 
-Print IdV/Test2.
+print IdV/Test2.
 
-Def Not = [(lam [b] (if [_] bool b ff tt))].
+define Not = (lam [b] (if [_] bool b ff tt)).
 
-Thm Bool/reflect : [
+theorem Bool/reflect :
  (->
   [a b : bool]
   [p : (path [_] bool a b)]
   (= bool a b))
-] by [
+by {
   lam a b p => `(coe 0~>1 [x] (= bool a (@ p x)) ax)
-].
+}.
 
-Tac Bool/contra/inverse (#p:exp) = [
+tactic Bool/contra/inverse (#p:exp) = {
   query gl <- concl;
   match gl {
     [a b | #jdg{%a = %b in bool} =>
-      claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
+      claim eq : (= bool %b %a) by {use Bool/reflect [`%b, `%a, `#p]; auto};
       symmetry; auto
     ]
     [a | %[a:jdg] => id]
   }
-].
+}.
 
-Thm NotIsEquiv : [
+theorem NotIsEquiv :
   (IsEquiv bool bool Not)
-] by [
+by {
   lam b =>
   { {`($ Not b), abs _ => use b}
   , lam {_,p'} =>
@@ -119,43 +119,43 @@ Thm NotIsEquiv : [
         }
       ); auto; (Bool/contra/inverse p'); assumption
   }
-].
+}.
 
-Thm NotEquiv : [
+theorem NotEquiv :
   (Equiv bool bool)
-] by [
+by {
   {`Not, `NotIsEquiv}
-].
+}.
 
-Def NotV(#i:dim) = [(V #i bool bool NotEquiv)].
+define NotV(#i:dim) = (V #i bool bool NotEquiv).
 
-Thm NotV/Wf : [
+theorem NotV/Wf :
   (-> [i : dim] (mem (U 0 kan) (NotV i)))
-] by [
+by {
   abs i => auto
-].
+}.
 
-Thm NotV/Test0 : [
+theorem NotV/Test0 :
   (->
    [i : dim]
    [a : bool]
    (mem (NotV i) (Vin i ($ Not a) a)))
-] by [
+by {
   abs i => lam a => auto
-].
+}.
 
-Thm NotV/Test1 : [
+theorem NotV/Test1 :
   (->
    [a : bool]
    (= bool (coe 0~>1 [x] (NotV x) a) ($ Not a)))
-] by [
+by {
   lam a => auto
-].
+}.
 
-Thm NotV/Test2 : [
+theorem NotV/Test2 :
   (->
    [a : bool]
    (= bool (coe 1~>0 [x] (NotV x) a) ($ Not a)))
-] by [
+by {
   lam a => auto
-].
+}.

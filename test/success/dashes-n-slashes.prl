@@ -1,4 +1,4 @@
 // Identifiers can contain hyphens and slashes
-Thm Ident-test/ : [ bool ] by [
+theorem Ident-test/ :  bool by {
   `tt
-].
+}.

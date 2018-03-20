@@ -154,6 +154,23 @@ struct
           (Sem.RET @@ Sem.THM (sequent', Tm.mapAbs (Tm.renameMetavars ren) evd), subgoalsCount = 0)
         end
 
+     | Syn.REFINE_MULTI (name, state, script) =>
+       let
+         val pos = Tm.getAnnotation script
+         val script' = Sem.term env script
+         val state' = Lcf.map (Sequent.map (Sem.term env)) state
+         val results = Lcf.M.map (Lcf.mul Lcf.isjdg) @@ TacticElaborator.multitactic env Var.Ctx.empty script' state'
+         val Lcf.|> (subgoals, evd) = 
+           Lcf.M.run (results, fn Lcf.|> (psi, _) => Lcf.Tl.isEmpty psi)
+           handle _ => Lcf.M.run (results, fn _ => true)
+         val subgoalsCount = Lcf.Tl.foldl (fn (_, _, n) => n + 1) 0 subgoals
+         val check =
+           if subgoalsCount = 0 then () else
+             RedPrlLog.print RedPrlLog.WARN (pos, Fpp.hsep [Fpp.text @@ Int.toString subgoalsCount, Fpp.text "Remaining Obligations"])
+       in
+         (Sem.RET Sem.NIL, subgoalsCount = 0)
+       end
+
      | Syn.FRESH vls =>
        let
          val psi = List.map (fn (SOME name, vl) => (Metavar.named name, vl) | (NONE, vl) => (Metavar.new (), vl)) vls

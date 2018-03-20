@@ -13,116 +13,223 @@ in the ``examples/`` subdirectory.
 
 ::
 
-  Thm Not : [
+  theorem Not :
     (-> bool bool)
-  ] by [
+  by {
     lam b =>
     if b then `ff else `tt
-  ].
+  }.
 
-  Print Not.
+  print Not.
 
   // (not(not(b)) == b) because it holds for every closed boolean.
-  Thm NotNot : [
+  theorem NotNot :
     (->
      [b : bool]
      (= bool ($ Not ($ Not b)) b))
-  ] by [
+  by {
     lam b =>
     // The next four lines can be replaced by auto.
     unfold Not;
     if b
     then (reduce at left; refine bool/eq/tt)
     else (reduce at left; refine bool/eq/ff)
-  ].
+  }.
 
-  Print NotNot.
+  print NotNot.
 
   // Type families respect equality proofs.
-  Thm RespectEquality : [
+  theorem RespectEquality :
     (->
      [family : (-> [b : bool] (U 0))]
      [b : bool]
      ($ family b)
      ($ family ($ Not ($ Not b))))
-  ] by [
+  by {
     lam family b pf =>
     rewrite ($ NotNot b);
     [ with b' => `($ family b')
     , use pf
     ];
     auto
-  ].
+  }.
 
 
-  // Extract does not mention the equality proof!
+  // print does not mention the equality proof!
   // (No need to ``transport'' at runtime.)
-  Print RespectEquality.
+  print RespectEquality.
 
   // In fact, all proofs of (not(not(b)) == b) are equal.
-  Thm EqualityIrrelevant : [
+  theorem EqualityIrrelevant :
     (=
       (-> [b : bool] (= bool ($ Not ($ Not b)) b))
       NotNot
       (lam [b] ax))
-  ] by [
+  by {
     auto
-  ].
+  }.
 
-  Print EqualityIrrelevant.
+  print EqualityIrrelevant.
 
   // Paths (cf equalities), like those arising from
   // equivalences via univalence, do induce computation.
-  Thm FunToPair : [
+  theorem FunToPair :
     (->
      [ty : (U 0 kan)]
      (-> bool ty)
      (* ty ty))
-  ] by [
+  by {
     lam ty fun =>
     {`($ fun tt), `($ fun ff)}
-  ].
+  }.
+
+  // {{{ Univalence
+
+  define HasAllPathsTo (#C,#c) = (-> [c' : #C] (path [_] #C c' #c)).
+  define IsContr (#C) = (* [c : #C] (HasAllPathsTo #C c)).
+  define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
+  define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
+  define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
+
+  theorem WeakConnection(#l:lvl) :
+    (->
+     [ty : (U #l hcom)]
+     [a b : ty]
+     [p : (path [_] ty a b)]
+     (path [i] (path [_] ty (@ p i) b) p (abs [_] b)))
+  by {
+    (lam ty a b p =>
+      abs i j =>
+        `(hcom 1~>0 ty b
+          [i=0 [k] (hcom 0~>j ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+          [i=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+          [j=0 [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+          [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]))
+  }.
+
+  tactic GetEndpoints(#p, #t:[exp,exp].tac) = {
+    query pty <- #p;
+    match pty  {
+      [ty l r | #jdg{(path [_] %ty %l %r)} =>
+        claim p/0 : (@ #p 0) = %l in %ty by {auto};
+        claim p/1 : (@ #p 1) = %r in %ty by {auto};
+        (#t p/0 p/1)
+      ]
+    }
+  }.
+
+
+  print WeakConnection.
+
+  theorem FunToPairIsEquiv :
+    (->
+     [ty : (U 0 kan)]
+     (IsEquiv (-> bool ty) (* ty ty) ($ FunToPair ty)))
+  by {
+    lam ty pair =>
+    { { lam b => if b then `(!proj1 pair) else `(!proj2 pair)
+      , abs _ => `pair }
+    , unfold Fiber;
+      lam {fun,p} =>
+       (GetEndpoints p [p/0 p/1] #tac{
+        (abs x =>
+          {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
+           abs y =>
+             `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
+          });
+        [ unfold FunToPair in p/0; reduce in p/0 at right;
+          inversion; with q3 q2 q1 q0 =>
+            reduce at right in q2;
+            reduce at right in q3;
+            auto; with b =>
+              elim b; reduce at right; symmetry; assumption
+        , unfold FunToPair in p/1; reduce in p/1 at right;
+          inversion; with q3 q2 q1 q0 => elim pair;
+          reduce at right in q0; reduce at right in q1;
+          auto; assumption
+        ]
+       })
+    }
+  }.
+
+  theorem PathFunToPair :
+    (->
+     [ty : (U 0 kan)]
+     (path [_] (U 0 kan) (-> bool ty) (* ty ty)))
+  by {
+    lam ty => abs x =>
+    `(V x (-> bool ty) (* ty ty)
+      (tuple [proj1 ($ FunToPair ty)] [proj2 ($ FunToPairIsEquiv ty)]))
+  }.
+
+  // }}}
+
+  print PathFunToPair.
+
+  // We can coerce elements of (bool -> ty) to (ty * ty).
+  theorem RespectPaths :
+    (->
+     [ty : (U 0 kan)]
+     (-> bool ty)
+     (* ty ty))
+  by {
+    lam ty fun =>
+    `(coe 0~>1 [x] (@ ($ PathFunToPair ty) x) fun)
+  }.
+
+  print RespectPaths.
+
+  // When coercing, the choice of PathFunToPair matters!
+  theorem ComputeCoercion :
+    (=
+     (* bool bool)
+     ($ RespectPaths bool (lam [b] b))
+     (tuple [proj1 tt] [proj2 ff]))
+  by {
+    auto
+  }.
+
 
   // ---------------------------------------------------------
   // Part Two
   // ---------------------------------------------------------
 
   // A constant path does not depend on its dimension.
-  Thm Refl : [
+  theorem Refl :
     (->
      [ty : (U 0)]
      [a : ty]
      (path [_] ty a a))
-  ] by [
+  by {
     lam ty a =>
     abs _ => `a
-  ].
+  }.
 
   // The path structure of each type is defined in terms of
   // its constituent types.
-  Thm FunPath : [
+  theorem FunPath :
     (->
      [a b : (U 0)]
      [f g : (-> a b)]
      (path [_] (-> a b) f g)
      [arg : a]
      (path [_] b ($ f arg) ($ g arg)))
-  ] by [
+  by {
     lam a b f g p =>
     lam arg => abs x =>
       `($ (@ p x) arg)
-  ].
+  }.
 
 
-  Print FunPath.
+  print FunPath.
 
-  Thm PathInv : [
+  theorem PathInv :
     (->
      [ty : (U 0 kan)]
      [a b : ty]
      [p : (path [_] ty a b)]
      (path [_] ty b a))
-  ] by [
+  by {
   //        a          -- x
   //     -------      |
   //    |      |      y
@@ -133,16 +240,16 @@ in the ``examples/`` subdirectory.
     lam ty a b p =>
     abs x =>
     `(hcom 0~>1 ty a [x=0 [y] (@ p y)] [x=1 [_] a])
-  ].
+  }.
 
-  Thm PathConcat : [
+  theorem PathConcat :
     (->
      [ty : (U 0 kan)]
      [a b c : ty]
      [p : (path [_] ty a b)]
      [q : (path [_] ty b c)]
      (path [_] ty a c))
-  ] by [
+  by {
   //        p          -- x
   //     -------      |
   //    |      |      y
@@ -153,9 +260,9 @@ in the ``examples/`` subdirectory.
     lam ty a b c p q =>
     abs x =>
     `(hcom 0~>1 ty (@ p x) [x=0 [_] a] [x=1 [y] (@ q y)])
-  ].
+  }.
 
-  Thm InvRefl : [
+  theorem InvRefl :
     (->
      [ty : (U 0 kan)]
      [a : ty]
@@ -163,7 +270,7 @@ in the ``examples/`` subdirectory.
        [_] (path [_] ty a a)
        ($ PathInv ty a a (abs [_] a))
        (abs [_] a)))
-  ] by [
+  by {
     // See diagram!
     lam ty a =>
     abs x y =>
@@ -172,12 +279,12 @@ in the ``examples/`` subdirectory.
       [x=1 [_] a]
       [y=0 [_] a]
       [y=1 [_] a])
-  ].
+  }.
 
   // Although the path type is not defined by refl and J
   // (as in HoTT), we can still define J using hcom + coe.
   // The #l is an example of a parametrized definition.
-  Thm J(#l:lvl) : [
+  theorem J(#l:lvl) :
     (->
      [ty : (U #l kan)]
      [a : ty]
@@ -186,21 +293,21 @@ in the ``examples/`` subdirectory.
      [x : ty]
      [p : (path [_] ty a x)]
      ($ fam x p))
-  ] by [
+  by {
     lam ty a fam d x p =>
     `(coe 0~>1
       [i] ($ fam
              (hcom 0~>1 ty a [i=0 [_] a] [i=1 [j] (@ p j)])
              (abs [j] (hcom 0~>j ty a [i=0 [_] a] [i=1 [j] (@ p j)]))) d)
-  ].
+  }.
 
-  Thm JInv : [
+  theorem JInv :
     (->
      [ty : (U 0 kan)]
      [a b : ty]
      [p : (path [_] ty a b)]
      (path [_] ty b a))
-  ] by [
+  by {
     lam ty a b p =>
     exact
       ($ (J #lvl{0})
@@ -212,6 +319,21 @@ in the ``examples/`` subdirectory.
          p)
     ; auto
     //; unfold J; reduce at left right; ?
-  ].
+  }.
 
-  Print JInv.
+  print JInv.
+
+  // Computing winding numbers in the circle.
+
+  // Bonus material:
+
+  theorem Shannon :
+    (->
+     [ty  : (-> bool (U 0))]
+     [elt : (-> [b : bool] ($ ty b))]
+     [b : bool]
+     (= ($ ty b) ($ elt b) (if [b] ($ ty b) b ($ elt tt) ($ elt ff))))
+  by {
+    lam ty elt b =>
+    elim b; auto
+  }.

@@ -1,22 +1,20 @@
 // POPL 2018 tutorial, part two
 // January 8, 2018
 
-Quit.
+quit.
 
-Thm Refl : [
+theorem Refl :
   (->
    [ty : (U 0)]
    [a : ty]
    (path [_] ty a a))
-] by [
+by {
   ?
-].
+}.
 
-Quit.
+quit.
 
-Print Refl.
-
-
+print Refl.
 
 
 
@@ -34,22 +32,22 @@ Print Refl.
 
 
 
-Thm FunPath : [
+
+
+theorem FunPath :
   (->
    [a b : (U 0)]
    [f g : (-> a b)]
    (path [_] (-> a b) f g)
    [arg : a]
    (path [_] b ($ f arg) ($ g arg)))
-] by [
+by {
   ?
-].
+}.
 
-Quit.
+quit.
 
-Print FunPath.
-
-
+print FunPath.
 
 
 
@@ -67,13 +65,15 @@ Print FunPath.
 
 
 
-Thm PathInv : [
+
+
+theorem PathInv :
   (->
    [ty : (U 0 kan)]
    [a b : ty]
    [p : (path [_] ty a b)]
    (path [_] ty b a))
-] by [
+by {
 //        a          -- x
 //     -------      |
 //    |      |      y
@@ -82,13 +82,11 @@ Thm PathInv : [
 //    b .... a
 
   ?
-].
+}.
 
-Quit.
+quit.
 
-Print PathInv.
-
-
+print PathInv.
 
 
 
@@ -106,14 +104,16 @@ Print PathInv.
 
 
 
-Thm PathConcat : [
+
+
+theorem PathConcat :
   (->
    [ty : (U 0 kan)]
    [a b c : ty]
    [p : (path [_] ty a b)]
    [q : (path [_] ty b c)]
    (path [_] ty a c))
-] by [
+by {
 //        p          -- x
 //     -------      |
 //    |      |      y
@@ -122,11 +122,9 @@ Thm PathConcat : [
 //    a .... c
 
   ?
-].
+}.
 
-Quit.
-
-
+quit.
 
 
 
@@ -144,7 +142,9 @@ Quit.
 
 
 
-Thm InvRefl : [
+
+
+theorem InvRefl :
   (->
    [ty : (U 0 kan)]
    [a : ty]
@@ -152,7 +152,7 @@ Thm InvRefl : [
      [_] (path [_] ty a a)
      ($ PathInv ty a a (abs [_] a))
      (abs [_] a)))
-] by [
+by {
   // See diagram!
   lam ty a =>
   abs x y =>
@@ -161,9 +161,9 @@ Thm InvRefl : [
     [x=1 [_] a]
     [y=0 [_] a]
     [y=1 [_] a])
-].
+}.
 
-Quit.
+quit.
 
 
 
@@ -186,7 +186,7 @@ Quit.
 // Although the path type is not defined by refl and J
 // (as in HoTT), we can still define J using hcom + coe.
 // The #l is an example of a parametrized definition.
-Thm J(#l:lvl) : [
+theorem J(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -195,13 +195,13 @@ Thm J(#l:lvl) : [
    [x : ty]
    [p : (path [_] ty a x)]
    ($ fam x p))
-] by [
+by {
   lam ty a fam d x p =>
   `(coe 0~>1
     [i] ($ fam
            (hcom 0~>1 ty a [i=0 [_] a] [i=1 [j] (@ p j)])
            (abs [j] (hcom 0~>j ty a [i=0 [_] a] [i=1 [j] (@ p j)]))) d)
-].
+}.
 
 
 
@@ -223,13 +223,13 @@ Thm J(#l:lvl) : [
 
 
 
-Thm JInv : [
+theorem JInv :
   (->
    [ty : (U 0 kan)]
    [a b : ty]
    [p : (path [_] ty a b)]
    (path [_] ty b a))
-] by [
+by {
   lam ty a b p =>
   exact
     ($ (J #lvl{0})
@@ -240,4 +240,4 @@ Thm JInv : [
        b
        p);
   ?
-].
+}.

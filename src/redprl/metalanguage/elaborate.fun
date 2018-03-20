@@ -196,6 +196,16 @@ struct
       (ISyn.RET v, Ty.UP vty)
     end
 
+  (* Expects a multitactic in 'script' *)
+  fun refineSequents (name, sequents : Sequent.jdg list, script : RedPrlAbt.abt) : icmd * cty = 
+    let
+      val tele = List.foldl (fn (jdg,psi) => Lcf.Tl.snoc psi (Metavar.new ()) (Lcf.I.ret jdg)) Lcf.Tl.empty sequents
+      val evd = Tm.checkb (Tm.\ ([], Tm.$$ (O.AX, [])), ([], O.EXP))
+      val state = Lcf.|> (tele, evd)
+    in
+      (ISyn.REFINE_MULTI (name, state, script), Ty.UP Ty.ONE)
+    end
+
   fun refineSequent (name, sequent : Sequent.jdg, script : RedPrlAbt.abt) : icmd * cty =
     let
       val Sequent.>> (_, ajdg) = sequent
@@ -227,15 +237,98 @@ struct
       (* TODO *)
       val result : elab_val = fn env => (ISyn.DATA_INFO {foo = ()}, Ty.DATA_INFO)
       val resultAbs =
-        (* To insert a check of a sequent against a script, use:
-            elabBind (fn env => refineSequent (name, sequent, elabAst env (script, RedPrlSort.TAC)), MlId.fresh "_", .....)
+        (* To insert a check a list of sequents against a multitactic, use
+            elabBind (fn env => refineSequents (name, sequents, elabAst env (script, RedPrlSort.MTAC)), MlId.fresh "_", ....)
 
-            To check multiple sequents, just do nest this multiple times.
+           note that currently you don't have access to the extracts or anything
             - jms
          *)
         elabRet (elabAbs (elabMetas psi, result))
     in
       elabNu (psi, resultAbs)
+    end
+  
+  fun elabMatchThm (elabv : elab_val, xjdg, xtm, elabc : elab_cmd) : elab_cmd = fn env => 
+    let
+      val (v', ty) = elabv env
+      val tau =
+        case ty of
+          Ty.THM tau => tau
+        | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "MATCH_THM applied to non-theorem"]
+
+      val env' = R.extendId env xjdg @@ Ty.TERM RedPrlSort.JDG
+      val env'' = R.extendId env' xtm @@ Ty.TERM tau
+      val (cmd', cty) = elabc env''
+    in
+      (ISyn.MATCH_THM (v', xjdg, xtm, cmd'), cty)
+    end
+
+  fun elabMatchAbs (elabv : elab_val, xpsi, xv, elabc : elab_cmd) : elab_cmd = fn env =>
+    let
+      val (v, Ty.ABS (vls, vty)) = elabv env
+      val env' = R.extendId env xpsi @@ Ty.METAS vls
+      val env'' = R.extendId env' xv vty
+      val (cmd, cty) = elabc env''
+    in
+      (ISyn.MATCH_ABS (v, xpsi, xv, cmd), cty)
+    end
+
+  fun elabPrint (pos, elabv : elab_val) : elab_cmd = fn env =>
+    (ISyn.PRINT (pos, #1 @@ elabv env), Ty.UP Ty.ONE)
+
+
+  fun elabExtract (elabv : elab_val) : elab_cmd = 
+    let
+      val xpsi = MlId.new ()
+      val xthm = MlId.new ()
+      val xjdg = MlId.new ()
+      val xtm = MlId.new ()
+    in
+      elabMatchAbs (elabv, xpsi, xthm, elabMatchThm (elabVar xthm, xjdg, xtm, elabRet @@ elabAbs (elabVar xpsi, elabVar xtm)))
+    end
+
+  fun elabPrintExtract (pos, elabv : elab_val) : elab_cmd =
+    let
+      val xtm = MlId.new ()
+    in
+      elabBind (elabExtract elabv, xtm, elabPrint (pos, elabVar xtm))
+    end
+
+  val elabAbort : elab_cmd = fn _ => 
+    (ISyn.ABORT, Ty.UP Ty.ONE)
+
+  fun elabForce (elabv : elab_val) : elab_cmd = fn env => 
+    let
+      val (v', vty) = elabv env
+    in
+      case vty of
+         Ty.DOWN cty => (ISyn.FORCE v', cty)
+       | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Expected down-shifted type"]
+    end
+
+  fun elabFn (x, vty, elabc : elab_cmd) : elab_cmd = fn env =>
+    let
+      val env' = R.extendId env x vty
+      val (cmd', cty) = elabc env'
+    in
+      (ISyn.FN (x, vty, cmd'), Ty.FUN (vty, cty))
+    end
+
+  fun elabAp (elabc : elab_cmd, elabv : elab_val) : elab_cmd = fn env => 
+    let
+      val (cmd', cty) = elabc env
+    in
+      case cty of
+         Ty.FUN (vty, cty') =>
+         let
+           val (v', vty') = elabv env
+         in
+           if vty = vty' then
+             (ISyn.AP (cmd', v'), cty')
+           else
+             Err.raiseError @@ Err.GENERIC [Fpp.text "Argument type mismatch"]
+         end
+       | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Expected function type"]
     end
 
   fun elabValue value : elab_val =
@@ -259,123 +352,63 @@ struct
        elabAbs (elabValue vpsi, elabValue v)
 
 
-  and elabCmd cmd env : ISyn.cmd * Ty.cty =
+  and elabCmd cmd : elab_cmd =
     case cmd of
        ESyn.NU (psi, cmd) =>
-       elabNu (psi, elabCmd cmd) env
+       elabNu (psi, elabCmd cmd)
 
      | ESyn.DEF {arguments, definiens} =>
-       elabDef (arguments, definiens) env
+       elabDef (arguments, definiens)
 
      | ESyn.TAC {arguments, script} =>
-       elabDef (arguments, (script, RedPrlSort.TAC)) env
+       elabDef (arguments, (script, RedPrlSort.TAC))
 
      | ESyn.THM {name, arguments, goal, script} =>
-       elabThm (name, arguments, goal, script) env
+       elabThm (name, arguments, goal, script)
 
      | ESyn.DATA_DECL {name, arguments, foo} =>
-       elabDataDecl (name, arguments, foo) env
+       elabDataDecl (name, arguments, foo)
 
      | ESyn.PRINT_EXTRACT (pos, v) =>
-       let
-         val xpsi = MlId.new ()
-         val xthm = MlId.new ()
-         val xjdg = MlId.new ()
-         val xtm = MlId.new ()
-         val ecmd' = ESyn.MATCH_ABS (v, xpsi, xthm, ESyn.MATCH_THM (ESyn.VAR xthm, xjdg, xtm, ESyn.PRINT (pos, ESyn.ABS (ESyn.VAR xpsi, ESyn.VAR xtm))))
-       in
-         elabCmd ecmd' env
-       end
+       elabPrintExtract (pos, elabValue v)
 
      | ESyn.EXTRACT v =>
-       let
-         val xjdg = MlId.new ()
-         val xtm = MlId.new ()
-         val ecmd' = ESyn.MATCH_THM (v, xjdg, xtm, ESyn.RET (ESyn.VAR xtm))
-       in
-         elabCmd ecmd' env
-       end
+       elabExtract (elabValue v)
 
      | ESyn.BIND (cmd1, nm, cmd2) =>
-       elabBind (elabCmd cmd1, nm, elabCmd cmd2) env
+       elabBind (elabCmd cmd1, nm, elabCmd cmd2)
 
      | ESyn.RET v =>
-       elabRet (elabValue v) env
+       elabRet (elabValue v)
 
      | ESyn.FORCE v =>
-       let
-         val (v', vty) = elabValue v env
-       in
-         case vty of
-            Ty.DOWN cty => (ISyn.FORCE v', cty)
-          | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Expected down-shifted type"]
-       end
+       elabForce (elabValue v)
 
      | ESyn.FN (x, vty, cmd) =>
-       let
-         val env' = R.extendId env x vty
-         val (cmd', cty) = elabCmd cmd env'
-       in
-         (ISyn.FN (x, vty, cmd'), Ty.FUN (vty, cty))
-       end
+       elabFn (x, vty, elabCmd cmd)
 
      | ESyn.AP (cmd, v) =>
-       let
-         val (cmd', cty) = elabCmd cmd env
-       in
-         case cty of
-            Ty.FUN (vty, cty') =>
-            let
-              val (v', vty') = elabValue v env
-            in
-              if vty = vty' then
-                (ISyn.AP (cmd', v'), cty')
-              else
-                Err.raiseError @@ Err.GENERIC [Fpp.text "Argument type mismatch"]
-            end
-          | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Expected function type"]
-       end
+       elabAp (elabCmd cmd, elabValue v)
 
      | ESyn.PRINT (pos, v) =>
-       (ISyn.PRINT (pos, #1 @@ elabValue v env), Ty.UP Ty.ONE)
-
+       elabPrint (pos, elabValue v)
 
      | ESyn.REFINE (name, ajdg, script) =>
-       elabRefine (name, ajdg, script) env
+       elabRefine (name, ajdg, script)
 
      | ESyn.FRESH vls =>
-       elabFresh vls env
+       elabFresh vls
 
      | ESyn.MATCH_METAS (v, Xs, cmd) =>
-       elabMatchMetas (elabValue v, Xs, elabCmd cmd) env
+       elabMatchMetas (elabValue v, Xs, elabCmd cmd)
 
      | ESyn.MATCH_THM (v, xjdg, xtm, cmd) =>
-       let
-         val (v', ty) = elabValue v env
-         val tau =
-           case ty of
-              Ty.THM tau => tau
-            | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "MATCH_THM applied to non-theorem"]
-
-         val env' = R.extendId env xjdg @@ Ty.TERM RedPrlSort.JDG
-         val env'' = R.extendId env' xtm @@ Ty.TERM tau
-         val (cmd', cty) = elabCmd cmd env''
-       in
-         (ISyn.MATCH_THM (v', xjdg, xtm, cmd'), cty)
-       end
+       elabMatchThm (elabValue v, xjdg, xtm, elabCmd cmd)
 
      | ESyn.MATCH_ABS (v, xpsi, xv, cmd) =>
-       let
-         val (v', Ty.ABS (vls, vty)) = elabValue v env
-         val env' = R.extendId env xpsi @@ Ty.METAS vls
-         val env'' = R.extendId env' xv vty
-         val (cmd', cty) = elabCmd cmd env''
-       in
-         (ISyn.MATCH_ABS (v', xpsi, xv, cmd'), cty)
-       end
+       elabMatchAbs (elabValue v, xpsi, xv, elabCmd cmd)
 
      | ESyn.ABORT =>
-       (ISyn.ABORT, Ty.UP Ty.ONE)
-       (* ? *)
+       elabAbort
 
 end
