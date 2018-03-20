@@ -3,7 +3,8 @@ functor RefinerTypeRules (Sig : MINI_SIGNATURE) =
 struct
   structure Kit = RefinerKit (Sig)
   structure ComRefinerKit = RefinerCompositionKit (Sig)
-  open RedPrlAbt Kit ComRefinerKit
+  structure IndSpec = RefinerIndSpec (Sig)
+  open RedPrlAbt Kit ComRefinerKit IndSpec
 
   type sign = Sig.sign
   type rule = Lcf.jdg Lcf.tactic
@@ -1917,6 +1918,63 @@ struct
       in
         |>: goalRed >:? goalCohL >:? goalCohR #> (H, axiom)
       end
+  end
+
+  structure Inductive =
+  struct
+    exception FavoniaIsLazy
+
+    fun EqType sign jdg =
+      let
+        val tr = ["Inductive.EqType"]
+        val H >> ajdg = jdg
+        val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
+        val Abt.$ (O.IND_TYPE (id0, _), args0) = Abt.out ty0
+        val Abt.$ (O.IND_TYPE (id1, _), args1) = Abt.out ty1
+        val true = id0 = id1
+        val constr = raise FavoniaIsLazy (* Sig.dataDeclInfo ... *)
+        val goals = raise FavoniaIsLazy (* InductiveSpec.EqTyArg ((args0, args1), constr) *)
+      in
+        |>:+ goals #> (H, axiom)
+      end
+
+    fun EqIntro sign jdg =
+      let
+        val tr = ["Inductive.EqIntro"]
+        val H >> ajdg = jdg
+        val ((m, n), ty) = View.matchTrueAsEq ajdg
+        val Abt.$ (O.IND_TYPE (id, _), tyargs) = Abt.out ty
+        val Abt.$ (O.IND_INTRO (id0, con0, _), args0) = Abt.out m
+        val Abt.$ (O.IND_INTRO (id1, con1, _), args0) = Abt.out n
+        val true = id0 = id1 andalso id0 = id
+        val true = con0 = con1
+        val constr = raise FavoniaIsLazy
+        val goals = raise FavoniaIsLazy
+      in
+        |>:+ goals #> (H, axiom)
+      end
+
+    fun EqFCom sign jdg =
+      let
+        val tr = ["Inductive.EqFCom"]
+        val H >> ajdg = jdg
+        val ((lhs, rhs), ty) = View.matchTrueAsEq ajdg
+        val Abt.$ (O.IND_TYPE (id, _), tyargs) = Abt.out ty
+        val Syn.FCOM args0 = Syn.out lhs
+        val Syn.FCOM args1 = Syn.out rhs
+        val constr = raise FavoniaIsLazy (* Sig.dataDeclInfo ... *)
+        val goalsTy = raise FavoniaIsLazy (* InductiveSpec.EqTyArg ((args0, args1), constr) *)
+
+        val w = Sym.new ()
+      in
+        |>:+ goalsTy
+         >:+ ComKit.genEqFComGoals tr H w (args0, args1) ty
+        #> (H, axiom)
+      end
+
+    fun EqIntroTubeL sign jdg = raise FavoniaIsLazy
+
+    fun Elim sign z jdg = raise FavoniaIsLazy
   end
 
   structure InternalizedEquality =
