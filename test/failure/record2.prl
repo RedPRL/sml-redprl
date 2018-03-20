@@ -1,4 +1,4 @@
-theorem RecordTest : 
+theorem RecordTest :
   (! a (tuple [b tt])) in bool
 by {
   auto

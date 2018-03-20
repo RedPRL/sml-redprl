@@ -3,7 +3,7 @@
 
 quit.
 
-theorem Not : 
+theorem Not :
   (-> bool bool)
 by {
   ?
@@ -31,7 +31,7 @@ print Not.
 
 
 
-theorem NotNot : 
+theorem NotNot :
   (->
    [b : bool]
    (= bool ($ Not ($ Not b)) b))
@@ -61,7 +61,7 @@ print NotNot.
 
 
 
-theorem RespectEquality : 
+theorem RespectEquality :
   (->
    [family : (-> [b : bool] (U 0))]
    [b : bool]
@@ -93,7 +93,7 @@ print RespectEquality.
 
 
 
-theorem EqualityIrrelevant : 
+theorem EqualityIrrelevant :
   (=
     (-> [b : bool] (= bool ($ Not ($ Not b)) b))
     NotNot
@@ -124,7 +124,7 @@ print EqualityIrrelevant.
 
 
 
-theorem FunToPair : 
+theorem FunToPair :
   (->
    [ty : (U 0 kan)]
    (-> bool ty)
@@ -142,7 +142,7 @@ define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
 define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
 define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
 
-theorem WeakConnection(#l:lvl) : 
+theorem WeakConnection(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b : ty]
@@ -158,7 +158,7 @@ by {
         [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]))
 }.
 
-theorem FunToPairIsEquiv : 
+theorem FunToPairIsEquiv :
   (->
    [ty : (U 0 kan)]
    (IsEquiv (-> bool ty) (* ty ty) ($ FunToPair ty)))
@@ -201,7 +201,7 @@ by {
   }
 }.
 
-theorem PathFunToPair : 
+theorem PathFunToPair :
   (->
    [ty : (U 0 kan)]
    (path [_] (U 0 kan) (-> bool ty) (* ty ty)))
@@ -235,7 +235,7 @@ print PathFunToPair.
 
 
 
-theorem RespectPaths : 
+theorem RespectPaths :
   (->
    [ty : (U 0 kan)]
    (-> bool ty)
@@ -267,7 +267,7 @@ print RespectPaths.
 
 
 
-theorem ComputeCoercion : 
+theorem ComputeCoercion :
   (=
    (* bool bool)
    ($ RespectPaths bool (lam [b] b))

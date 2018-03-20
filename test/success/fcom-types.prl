@@ -1,4 +1,4 @@
-theorem Fcom/bool(#i:dim) : 
+theorem Fcom/bool(#i:dim) :
   (fcom 0~>1 bool [#i=0 [j] bool] [#i=1 [j] bool]) type
 by {
   auto
@@ -6,7 +6,7 @@ by {
 
 print Fcom/bool.
 
-theorem Fcom/Box(#i:dim) : 
+theorem Fcom/Box(#i:dim) :
   (box 0~>1 tt [#i=0 tt] [#i=1 tt]) in
   (fcom 0~>1 bool [#i=0 [j] bool] [#i=1 [j] bool])
 by {
@@ -15,19 +15,19 @@ by {
 
 print Fcom/Box.
 
-theorem Fcom/Reduce : 
+theorem Fcom/Reduce :
   (fcom 0~>1 bool [0=0 [j] bool]) = bool type
 by {
   auto
 }.
 
-theorem Fcom/Cap1 : 
+theorem Fcom/Cap1 :
   tt in (fcom 0~>1 bool [0=0 [j] bool])
 by {
   auto
 }.
 
-theorem Fcom/Cap2 : 
+theorem Fcom/Cap2 :
   (cap 0<~1 (box 0~>1 tt [0=0 tt]) [0=0 [j] bool]) in bool
 by {
   auto

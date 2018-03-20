@@ -1,4 +1,4 @@
-theorem BoolTest : 
+theorem BoolTest :
   (-> bool bool)
 by {
   // A term/witness can be supplied to the refiner at any point in a tactic script
@@ -7,13 +7,13 @@ by {
 }.
 
 
-theorem PathTest : 
+theorem PathTest :
   (path [_] S1 base base)
 by {
   abs x => `(loop x)
 }.
 
-theorem LowLevel : 
+theorem LowLevel :
   (->
     (-> bool bool)
     bool)
@@ -28,7 +28,7 @@ by {
 
 print LowLevel.
 
-theorem LowLevel2 : 
+theorem LowLevel2 :
   (->
     (-> bool bool)
     bool
@@ -36,7 +36,7 @@ theorem LowLevel2 :
 by {
   repeat {refine fun/intro; [id, auto]};
   with x f =>
-    elim f; 
+    elim f;
     [ use x
     , with y/eq y => use y
     ]
@@ -45,7 +45,7 @@ by {
 
 print LowLevel2.
 
-theorem FunElimTest : 
+theorem FunElimTest :
   (->
    (-> bool bool)
    bool)
@@ -75,7 +75,7 @@ tactic TryStep = {
 
 // 'if' is the recursor for booleans.  It takes the motive of induction as an argument
 // in order to facilitate type synthesizing.
-define BoolEta(#M) = 
+define BoolEta(#M) =
   (if [a] bool #M tt ff)
 .
 
@@ -84,7 +84,7 @@ print BoolEta.
 // If we define such a function in the refiner using tactics, we can use the
 // built-in 'if x then t1 else t2' tactical, and the extracted witness will be
 // an 'if' form with the motive already filled in.
-theorem BoolEtaFunction : 
+theorem BoolEtaFunction :
   (-> bool bool)
 by {
   lam b => if b then `tt else `ff
@@ -101,7 +101,7 @@ print BoolEtaFunction.
 // proof is that we can leave holes, and interactively figure out what
 // we need to do.
 //
-theorem PathTest2 : 
+theorem PathTest2 :
   (path
     [_] (-> bool bool)
     (lam [b] b)
@@ -133,7 +133,7 @@ by {
 // time the entirety of the program, and cannot take advantage of
 // types in order to guide its construction, or even synthesize part
 // of it.
-theorem PathTest3 : 
+theorem PathTest3 :
   (path
     [_] (-> bool bool)
     (lam [b] b)
@@ -154,16 +154,16 @@ theorem PairTest :  (* [a : S1] (path [_] S1 a base)) by {
 }.
 
 
-define Cmp(#f, #g) = 
+define Cmp(#f, #g) =
   (lam [x] ($ #f ($ #g x)))
 .
 
 
-define MyLoop(#x:dim, #m) = 
+define MyLoop(#x:dim, #m) =
   (tuple [proj1 #m] [proj2 (loop #x)])
 .
 
-define Test = 
+define Test =
   (MyLoop (dim 0) (loop 1))
 .
 
@@ -181,7 +181,7 @@ theorem Not : (-> [_ : bool] bool)by {
   lam x => if x then `ff else `tt
 }.
 
-theorem FunExt(#l:lvl) : 
+theorem FunExt(#l:lvl) :
   (->
    [a b : (U #l)]
    [f g : (-> a b)]
@@ -222,7 +222,7 @@ theorem PathElimTest : (-> (path [_] bool tt tt) bool)by {
   lam x => use x [`(dim 0)]
 }.
 
-theorem PathEta(#l:lvl) : 
+theorem PathEta(#l:lvl) :
   (->
    [a : (U #l)]
    [m n : a]

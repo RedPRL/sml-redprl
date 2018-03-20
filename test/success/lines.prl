@@ -1,4 +1,4 @@
-theorem Line/Test0 : 
+theorem Line/Test0 :
   (->
    [a : (U 0 kan)]
    [l : (-> dim a)]
@@ -7,7 +7,7 @@ by {
   lam a l => `ax
 }.
 
-theorem Line/Test1 : 
+theorem Line/Test1 :
   (->
    [ty : (U 0 kan)]
    [p : (line [_] ty)]
@@ -17,7 +17,7 @@ by {
 }.
 
 
-theorem Line/Trans : 
+theorem Line/Trans :
   (->
    [ty : (U 0 kan)]
    [p : (line [_] ty)]
@@ -28,12 +28,12 @@ by {
   (lam ty p q eq => abs x =>
   `(hcom 0~>1 ty (@ p x)
     [x=0 [_] (@ p 0)]
-    [x=1 [y] (@ q y)])); 
-  
+    [x=1 [y] (@ q y)]));
+
   repeat {assumption || auto-step}
 }.
 
-theorem Line/Symm : 
+theorem Line/Symm :
   (->
    [ty : (U 0 kan)]
    [p : (line [_] ty)]

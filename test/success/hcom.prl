@@ -1,4 +1,4 @@
-theorem Hcom/Poly(#l:lvl) : 
+theorem Hcom/Poly(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b c d : ty]
@@ -16,7 +16,7 @@ by {
 
 print Hcom/Poly.
 
-theorem Hcom/trans(#l:lvl) : 
+theorem Hcom/trans(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b c : ty]
@@ -33,7 +33,7 @@ by {
 
 print Hcom/trans.
 
-theorem Hcom/symm(#l:lvl) : 
+theorem Hcom/symm(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b : ty]
@@ -50,7 +50,7 @@ by {
 print Hcom/symm.
 
 // An example of using the internalized exact equality type.
-theorem Cap(#i:dim, #l:lvl) : 
+theorem Cap(#i:dim, #l:lvl) :
   (->
    [ty : (U #l hcom)]
    [x : ty]
@@ -63,7 +63,7 @@ by {
 
 
 
-theorem Tube(#l:lvl) : 
+theorem Tube(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [x : ty]
@@ -74,7 +74,7 @@ by {
   lam ty x => auto
 }.
 
-theorem TrueByEvaluation : 
+theorem TrueByEvaluation :
   (hcom 0~>0 bool tt) in bool
 by {
   auto

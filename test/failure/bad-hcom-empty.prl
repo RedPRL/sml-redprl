@@ -1,4 +1,4 @@
-theorem MalformedTube : 
+theorem MalformedTube :
   wbool true
 by {
   `(hcom 0~>1 wbool tt)

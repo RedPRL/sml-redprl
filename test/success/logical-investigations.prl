@@ -1,14 +1,14 @@
 // Some theorems from http://www.nuprl.org/MathLibrary/LogicalInvestigations/.
 
-theorem Thm1 : 
-  (-> 
+theorem Thm1 :
+  (->
    [p q : (U 0)]
    p q p)
 by {
   lam p q a b => use a
 }.
 
-theorem Thm2 : 
+theorem Thm2 :
   (->
    [p q r : (U 0)]
    (-> p q)
@@ -23,16 +23,16 @@ by {
 print Thm2.
 
 // here's a proof using lower-level scripting
-theorem Thm3/low-level : 
+theorem Thm3/low-level :
   (->
    [p q r : (U 0)]
    (-> p q)
    (-> q r)
    (-> p r))
 by {
-  // fresh p q r pq qr x -> 
+  // fresh p q r pq qr x ->
   repeat {refine fun/intro || id};
-  auto; with x qr pq r q p => 
+  auto; with x qr pq r q p =>
   elim qr; elim pq;
   [ use x
   , with _ y => use y
@@ -43,10 +43,10 @@ by {
 
 print Thm3/low-level.
 
-// here's a high-level version of the above proof. proofs using the high-level 
-// programming calculus may be longer, but they are often easier to engineer, 
+// here's a high-level version of the above proof. proofs using the high-level
+// programming calculus may be longer, but they are often easier to engineer,
 // and nicely segregate main goals from auxiliary goals.
-theorem Thm3/high-level : 
+theorem Thm3/high-level :
   (->
    [p q r : (U 0)]
    (-> p q)
@@ -61,7 +61,7 @@ print Thm3/high-level.
 
 define Not(#A) =  (-> #A void) .
 
-theorem Thm4 : 
+theorem Thm4 :
   (-> [p q : (U 0)] (Not p) p q)
 by {
   lam p q r a =>
@@ -70,7 +70,7 @@ by {
   elim boom
 }.
 
-theorem Thm5 : 
+theorem Thm5 :
   (-> [p : (U 0)] p (Not (Not p)))
 by {
   lam p a => unfold Not; lam r =>
@@ -81,7 +81,7 @@ print Thm4.
 print Thm5.
 
 
-theorem Thm6(#A,#B) : 
+theorem Thm6(#A,#B) :
   (-> [p q : (U 0)] (-> p q) (Not q) (Not p))
 by {
   lam p q f g => unfold Not; lam a =>

@@ -1,6 +1,6 @@
 // Homogeneous groupoid operations
 
-theorem Refl(#l:lvl) : 
+theorem Refl(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -9,7 +9,7 @@ by {
   lam ty a => abs _ => `a
 }.
 
-theorem Symm(#l:lvl) : 
+theorem Symm(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [p : (line [_] ty)]
@@ -21,7 +21,7 @@ by {
     [x=1 [_] (@ p 0)])
 }.
 
-theorem Trans(#l:lvl) : 
+theorem Trans(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [p : (line [_] ty)]
@@ -36,7 +36,7 @@ by {
     auto; assumption
 }.
 
-theorem Symm/Unit(#l:lvl) : 
+theorem Symm/Unit(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -50,7 +50,7 @@ by {
   `(hcom 0~>y ty a [x=0 [_] a] [x=1 [_] a])
 }.
 
-theorem Trans/Unit/R(#l:lvl) : 
+theorem Trans/Unit/R(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [p : (line [_] ty)]
@@ -60,14 +60,14 @@ theorem Trans/Unit/R(#l:lvl) :
      ($ (Trans #l) ty p (abs [_] (@ p 1)) ax)))
 by {
   lam ty p =>
-  (abs y x => 
+  (abs y x =>
     `(hcom 0~>y ty (@ p x) [x=0 [_] (@ p 0)] [x=1 [_] (@ p 1)]));
-  
+
   refine path/eq/from-line; auto
 }.
 
 // Thanks to Bruno Bentzen for already doing this and drawing a picture! -Carlo
-theorem Trans/Sym/R(#l:lvl) : 
+theorem Trans/Sym/R(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [p : (line [_] ty)]
@@ -91,7 +91,7 @@ by {
 
 // Heterogeneous groupoid operations
 
-theorem DSymm(#l:lvl) : 
+theorem DSymm(#l:lvl) :
   (->
    [ty : (line [_] (U #l kan))]
    [p : (line [x] (@ ty x))]

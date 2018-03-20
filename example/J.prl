@@ -1,10 +1,10 @@
-define J/square(#i:dim,#j:dim, #ty, #a, #p) = 
+define J/square(#i:dim,#j:dim, #ty, #a, #p) =
   (hcom 0~>#j #ty #a
    [#i=0 [_] #a]
    [#i=1 [j] (@ #p j)])
 .
 
-define J/coe(#j:dim, #ty, #a, #fam, #d, #p) = 
+define J/coe(#j:dim, #ty, #a, #fam, #d, #p) =
   (coe 0~>#j
    [i] ($ #fam
         (J/square i (dim 1) #ty #a #p)
@@ -12,7 +12,7 @@ define J/coe(#j:dim, #ty, #a, #fam, #d, #p) =
    #d)
 .
 
-theorem J(#l:lvl) : 
+theorem J(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -25,7 +25,7 @@ by {
   lam ty a fam d x p => `(J/coe (dim 1) ty a fam d p)
 }.
 
-define J/comp/cube(#i:dim,#j:dim,#k:dim, #ty, #a) = 
+define J/comp/cube(#i:dim,#j:dim,#k:dim, #ty, #a) =
   (hcom 0~>#j #ty #a
    [#k=0 [j] (J/square #i j #ty #a (abs [_] #a))]
    [#k=1 [_] #a]
@@ -33,7 +33,7 @@ define J/comp/cube(#i:dim,#j:dim,#k:dim, #ty, #a) =
    [#i=1 [_] #a])
 .
 
-theorem J/comp(#l:lvl) : 
+theorem J/comp(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [a : ty]

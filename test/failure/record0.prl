@@ -1,4 +1,4 @@
-theorem RecordTest : 
+theorem RecordTest :
   tuple in (record [a : bool])
 by {
   auto

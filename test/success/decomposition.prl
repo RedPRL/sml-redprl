@@ -1,4 +1,4 @@
-theorem Decomposition : 
+theorem Decomposition :
   (->
    (record [rcd : (record [a : bool] [b : (* bool int)])] [circ : S1])
    bool)
@@ -10,8 +10,8 @@ by {
 
 print Decomposition.
 
-theorem Apply : 
-  (-> 
+theorem Apply :
+  (->
    (->
     bool
     bool
@@ -30,7 +30,7 @@ by {
 
 print Apply.
 
-theorem UseHypTest : 
+theorem UseHypTest :
   (-> bool bool)
 by {
   lam x =>
@@ -40,7 +40,7 @@ by {
 
 print UseHypTest.
 
-theorem UseLemmaTest : 
+theorem UseLemmaTest :
   (-> bool bool)
 by {
   lam x =>

@@ -1,4 +1,4 @@
-define Times(#A, #B) = 
+define Times(#A, #B) =
   (* #A #B)
 .
 
@@ -12,7 +12,7 @@ tactic Proj2(#z) = {
   use x
 }.
 
-theorem Times/Proj : 
+theorem Times/Proj :
   (-> [ty : (U 0)] (Times bool ty) ty)
 by {
   lam ty x => (Proj2 x)

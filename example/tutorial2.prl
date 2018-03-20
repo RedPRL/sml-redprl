@@ -3,7 +3,7 @@
 
 quit.
 
-theorem Refl : 
+theorem Refl :
   (->
    [ty : (U 0)]
    [a : ty]
@@ -34,7 +34,7 @@ print Refl.
 
 
 
-theorem FunPath : 
+theorem FunPath :
   (->
    [a b : (U 0)]
    [f g : (-> a b)]
@@ -67,7 +67,7 @@ print FunPath.
 
 
 
-theorem PathInv : 
+theorem PathInv :
   (->
    [ty : (U 0 kan)]
    [a b : ty]
@@ -106,7 +106,7 @@ print PathInv.
 
 
 
-theorem PathConcat : 
+theorem PathConcat :
   (->
    [ty : (U 0 kan)]
    [a b c : ty]
@@ -144,7 +144,7 @@ quit.
 
 
 
-theorem InvRefl : 
+theorem InvRefl :
   (->
    [ty : (U 0 kan)]
    [a : ty]
@@ -186,7 +186,7 @@ quit.
 // Although the path type is not defined by refl and J
 // (as in HoTT), we can still define J using hcom + coe.
 // The #l is an example of a parametrized definition.
-theorem J(#l:lvl) : 
+theorem J(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [a : ty]
@@ -223,7 +223,7 @@ by {
 
 
 
-theorem JInv : 
+theorem JInv :
   (->
    [ty : (U 0 kan)]
    [a b : ty]

@@ -1,4 +1,4 @@
-theorem Path/Symm(#l:lvl) : 
+theorem Path/Symm(#l:lvl) :
   ty : (U #l)
   >>
   ty type with hcom

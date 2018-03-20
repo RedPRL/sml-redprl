@@ -1,35 +1,35 @@
-define HasAllPaths(#C) = 
+define HasAllPaths(#C) =
   (->
    [c c' : #C]
    (path [_] #C c c'))
 .
 
-define IsContr(#C) = 
+define IsContr(#C) =
   (record
    [point : #C]
    [rays : (HasAllPaths #C)])
 .
 
-define Fiber(#A,#B,#f,#b) = 
+define Fiber(#A,#B,#f,#b) =
   (record
    [point : #A]
    [ray : (path [_] #B ($ #f point) #b)])
 .
 
-define IsEquiv(#A,#B,#f) = 
+define IsEquiv(#A,#B,#f) =
   (->
    [b : #B]
    (IsContr (Fiber #A #B #f b)))
 .
 
-define Equiv(#A,#B) = 
+define Equiv(#A,#B) =
   (record
    [to : (-> #A #B)]
    [to/equiv : (IsEquiv #A #B to)])
 .
 
 
-define Iso(#A, #B) = 
+define Iso(#A, #B) =
   (record
    [to : (-> #A #B)]
    [from : (-> #B #A)]
@@ -37,7 +37,7 @@ define Iso(#A, #B) =
    [coh2 : (-> [a : #A] (path [_] #A ($ from ($ to a)) a))])
 .
 
-theorem Path/Symm(#l:lvl) : 
+theorem Path/Symm(#l:lvl) :
  (->
   [ty : (U #l kan)]
   [a b : ty]
@@ -51,7 +51,7 @@ by {
        [i=1 [_] a])
 }.
 
-theorem Adointify(#l:lvl) : 
+theorem Adointify(#l:lvl) :
   (->
    [ty1 : (U #l kan)]
    [ty2 : (U #l kan)]

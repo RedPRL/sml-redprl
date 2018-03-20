@@ -1,16 +1,16 @@
-theorem Univ0(#i:lvl, #j:lvl) : 
+theorem Univ0(#i:lvl, #j:lvl) :
   (U #i) in (U (++ (lmax #i #j)))
 by {
   auto
 }.
 
-theorem Univ1(#i:lvl) : 
+theorem Univ1(#i:lvl) :
   nat in (U #i discrete)
 by {
   auto
 }.
 
-theorem Univ2 : 
+theorem Univ2 :
   (->
    [a : (U 0 discrete)]
    (= (U 1 kan) a a))

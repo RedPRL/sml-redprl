@@ -1,4 +1,4 @@
-theorem IntPred : 
+theorem IntPred :
   (-> int int)
 by {
   lam a => elim a;
@@ -10,7 +10,7 @@ by {
   ];
 }.
 
-theorem IntSucc : 
+theorem IntSucc :
   (-> int int)
 by {
   lam a => elim a;
@@ -22,7 +22,7 @@ by {
   ]
 }.
 
-theorem IntSuccIntPred : 
+theorem IntSuccIntPred :
   (-> [i : int] (= int ($ IntSucc ($ IntPred i)) i))
 by {
   lam i => elim i;
@@ -31,7 +31,7 @@ by {
   ]
 }.
 
-theorem IntPredIntSucc : 
+theorem IntPredIntSucc :
   (-> [i : int] (= int ($ IntPred ($ IntSucc i)) i))
 by {
   lam i => elim i;
@@ -50,7 +50,7 @@ define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
 
 define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
 
-theorem IntSuccIsEquiv : 
+theorem IntSuccIsEquiv :
   (IsEquiv int int IntSucc)
 by {
   lam i =>
@@ -73,31 +73,31 @@ by {
     }
 }.
 
-theorem IntSuccEquiv : 
+theorem IntSuccEquiv :
   (Equiv int int)
 by {
   {`IntSucc, `IntSuccIsEquiv}
 }.
 
-theorem IntSuccPath : 
+theorem IntSuccPath :
   (path [_] (U 0 kan) int int)
 by {
   abs x => `(V x int int IntSuccEquiv)
 }.
 
-theorem S1UnivCover : 
+theorem S1UnivCover :
   (-> S1 (U 0 kan))
 by {
-  lam x => `(S1-rec [_] (U 0 kan) x int [x] (@ IntSuccPath x)); 
+  lam x => `(S1-rec [_] (U 0 kan) x int [x] (@ IntSuccPath x));
 }.
 
-theorem Loop : 
+theorem Loop :
   (path [_] S1 base base)
 by {
   abs i => `(loop i)
 }.
 
-theorem S1LoopToInt : 
+theorem S1LoopToInt :
   (-> (path [_] S1 base base) int)
 by {
   lam l => `(coe 0~>1 [x] ($ S1UnivCover (@ l x)) (int 0));
@@ -108,7 +108,7 @@ by {
     ]
 }.
 
-theorem S1LoopConcat : 
+theorem S1LoopConcat :
   (->
    (path [_] S1 base base)
    (path [_] S1 base base)
@@ -117,7 +117,7 @@ by {
   lam p q => abs x => `(hcom 0~>1 S1 (@ p x) [x=0 [_] base] [x=1 [y] (@ q y)])
 }.
 
-theorem S1LoopInv : 
+theorem S1LoopInv :
   (->
    (path [_] S1 base base)
    (path [_] S1 base base))
@@ -125,7 +125,7 @@ by {
   lam p => abs x => `(hcom 0~>1 S1 base [x=0 [y] (@ p y)] [x=1 [_] base])
 }.
 
-theorem IntToS1Loop : 
+theorem IntToS1Loop :
   (-> int (path [_] S1 base base))
 by {
   lam i => elim i;
@@ -140,13 +140,13 @@ by {
   ]
 }.
 
-theorem Test0 : 
+theorem Test0 :
   (= int ($ S1LoopToInt ($ IntToS1Loop (int 3))) (int 3))
 by {
   unfold IntToS1Loop Loop; auto
 }.
 
-theorem Test1 : 
+theorem Test1 :
   (= int ($ S1LoopToInt ($ IntToS1Loop (int -3))) (int -3))
 by {
   unfold IntToS1Loop S1LoopInv Loop; auto

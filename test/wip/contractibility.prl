@@ -1,13 +1,13 @@
-define IsProp(#A) = 
+define IsProp(#A) =
   (-> [x y : #A] (path [_] #A x y))
 .
 
-define IsContr(#A) = 
+define IsContr(#A) =
   (* [x : #A] (-> [y : #A] (path [_] #A x y)))
 .
 
 
-theorem Prop/IsContr : 
+theorem Prop/IsContr :
   (-> [ty : (U 0 kan)] (IsProp (IsContr ty)))
 by {
   lam ty, {b1,r1}, {b2,r2}.

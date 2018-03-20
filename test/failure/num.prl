@@ -1,4 +1,4 @@
-theorem NegOne : 
+theorem NegOne :
   -1 in nat
 by {
   auto

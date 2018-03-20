@@ -3,7 +3,7 @@ define IsContr (#C) = (* [c : #C] (HasAllPathsTo #C c)).
 define IsProp (#A) = (-> [a b : #A] (path [_] #A a b)).
 define IsSet (#A) = (-> [a b : #A] (IsProp (path [_] #A a b))).
 
-theorem InhPropIsContr(#l:lvl) : 
+theorem InhPropIsContr(#l:lvl) :
  (->
   [ty : (U #l kan)] // can I use pre here?
   [h : (IsProp ty)]
@@ -13,7 +13,7 @@ by {
   lam ty h a => {use a, lam x => `($ h x a)}
 }.
 
-theorem PropPi(#l:lvl) : 
+theorem PropPi(#l:lvl) :
  (->
   [tyA : (U #l kan)]
   [tyB : (-> tyA (U #l kan))]
@@ -23,7 +23,7 @@ by {
   lam tyA tyB h f g => abs i => lam x => `(@ ($ h x ($ f x) ($ g x)) i)
 }.
 
-theorem PropSet(#l:lvl) : 
+theorem PropSet(#l:lvl) :
   (->
    [tyA : (U #l kan)]
    [h : (IsProp tyA)]
@@ -39,7 +39,7 @@ by {
 }.
 
 // This proof should be easy, but it is not...
-theorem IsPropIsProp(#l:lvl) : 
+theorem IsPropIsProp(#l:lvl) :
   (->
    [tyA : (U #l kan)]
    (IsProp (IsProp tyA))
@@ -52,7 +52,7 @@ by {
     use foo [`a, `b, use h1 [`a, `b], use h2 [`a, `b], `i]
 }.
 
-theorem IsPropIsProp'(#l:lvl) : 
+theorem IsPropIsProp'(#l:lvl) :
   (->
    [tyA : (U #l kan)]
    (IsProp (IsProp tyA))
@@ -63,7 +63,7 @@ by {
 }.
 
 // // This should be exactly like the one above:
-// theorem IsPropIsSet(#l:lvl) : 
+// theorem IsPropIsSet(#l:lvl) :
 //   (->
 //    [tyA : (U #l kan)]
 //    (IsProp (IsSet tyA))

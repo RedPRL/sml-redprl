@@ -1,28 +1,28 @@
-theorem One : 
+theorem One :
   (int 1) in int
 by {
   auto
 }.
 
-theorem NegOne : 
+theorem NegOne :
   (int -1) in int
 by {
   auto
 }.
 
-theorem NatOne : 
+theorem NatOne :
   (nat 1) in nat
 by {
   auto
 }.
 
-theorem NatIsInt : 
+theorem NatIsInt :
   (-> [x : nat] (mem int (pos x)))
 by {
   lam x => auto
 }.
 
-theorem Pred : 
+theorem Pred :
   (-> nat nat)
 by {
   lam a =>
@@ -31,7 +31,7 @@ by {
   [ with a' ind => `a' ]
 }.
 
-theorem Plus : 
+theorem Plus :
   (-> nat nat nat)
 by {
   lam a =>
@@ -43,38 +43,38 @@ by {
   ]
 }.
 
-theorem Plus/wf : 
+theorem Plus/wf :
   Plus in (-> nat nat nat)
 by {
   auto
 }.
 
-theorem Plus/zeroL : 
+theorem Plus/zeroL :
   (-> [n : nat] (= nat ($ Plus (nat 0) n) n))
 by {
   lam n => auto
 }.
 
-theorem Plus/zero/R : 
+theorem Plus/zero/R :
   (-> [n : nat] (= nat ($ Plus n (nat 0)) n))
 by {
   lam n =>
     elim n;
     [ `ax
-    , with ind n' => 
+    , with ind n' =>
       rewrite ind at left;
       [ with x => `(succ x) ];
       auto
     ]
 }.
 
-theorem Plus/succ/L : 
+theorem Plus/succ/L :
   (-> [n m : nat] (= nat ($ Plus (succ n) m) (succ ($ Plus n m))))
 by {
   lam n m => auto
 }.
 
-theorem Plus/succ/R : 
+theorem Plus/succ/R :
   (-> [n m : nat] (= nat ($ Plus n (succ m)) (succ ($ Plus n m))))
 by {
   lam n m => elim n;
@@ -92,7 +92,7 @@ by {
     auto
 }.
 
-theorem Plus/test0 : 
+theorem Plus/test0 :
   (-> [n m : nat] [eq : (= nat ($ Plus n zero) m)] (= nat n m))
 by {
   lam n m eq =>
@@ -100,13 +100,13 @@ by {
     [ with x => `x ]; auto; use eq
 }.
 
-theorem Eq/sym : 
+theorem Eq/sym :
   (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
 by {
   lam ty a b eq => symmetry; use eq
 }.
 
-theorem Plus/comm : 
+theorem Plus/comm :
   (-> [n m : nat] (= nat ($ Plus n m) ($ Plus m n)))
 by {
   lam n m => elim n;
@@ -123,7 +123,7 @@ by {
     auto
 }.
 
-theorem NatSymm : 
+theorem NatSymm :
   (->
    [a b : nat]
    (path [_] nat a b)
@@ -136,7 +136,7 @@ by {
       [i=1 [_] a])
 }.
 
-theorem IntPred : 
+theorem IntPred :
   (-> int int)
 by {
   lam a => elim a;
@@ -148,7 +148,7 @@ by {
   ];
 }.
 
-theorem IntSucc : 
+theorem IntSucc :
   (-> int int)
 by {
   lam a => elim a;
@@ -160,7 +160,7 @@ by {
   ]
 }.
 
-theorem IntPlus : 
+theorem IntPlus :
   (-> int int int)
 by {
   lam a => elim a;
@@ -175,14 +175,14 @@ by {
   ]
 }.
 
-theorem Int4Plus3 : 
+theorem Int4Plus3 :
   ($ IntPlus (int 4) (int 3)) = (int 7) in int
 by { auto }.
 
-theorem Int-6Plus10 : 
+theorem Int-6Plus10 :
   ($ IntPlus (int -6) (int 10)) = (int 4) in int
 by { auto }.
 
-theorem Int-1Plus-9 : 
+theorem Int-1Plus-9 :
   ($ IntPlus (int -1) (int -9)) = (int -10) in int
 by { auto }.

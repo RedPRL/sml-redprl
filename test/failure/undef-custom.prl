@@ -1,4 +1,4 @@
-define Not : exp = 
+define Not : exp =
   (lam [x] (if x ff tt))
 .
 

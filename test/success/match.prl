@@ -13,7 +13,7 @@ theorem MatchGoal :  (-> bool bool bool bool bool bool) by {
       }
     })
   };
-  
+
   with _ _ y => use y
 }.
 

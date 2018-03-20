@@ -18,8 +18,8 @@ theorem Category(#i:lvl) :  (U (++ #i)) by {
        (= ($ hom a b)
           ($ cmp a a b f ($ idn a))
           f))]
-     [assoc : 
-      (-> 
+     [assoc :
+      (->
        [a b c d : ob]
        [f : ($ hom a b)]
        [g : ($ hom b c)]
@@ -41,10 +41,10 @@ theorem Test(#l:lvl) : (Category (++#l))by {
   }
 }.
 
-// theorem Op(#l:lvl) : 
+// theorem Op(#l:lvl) :
 //   (-> (Category #l) (Category #l))
 // by {
-//   lam {ob = ob, hom = hom, idn = idn, cmp = cmp, idn/l = idn/l, idn/r = idn/r, assoc = assoc} => 
+//   lam {ob = ob, hom = hom, idn = idn, cmp = cmp, idn/l = idn/l, idn/r = idn/r, assoc = assoc} =>
 //     { ob = `ob
 //     , hom = lam c d => use hom [`d, `c]
 //     , idn = `idn

@@ -1,4 +1,4 @@
-theorem DuplicateLabel : 
+theorem DuplicateLabel :
   (tuple [a tt]) in (record [a a : bool])
 by {
   auto

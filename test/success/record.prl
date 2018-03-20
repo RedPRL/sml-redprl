@@ -1,4 +1,4 @@
-theorem RecordTypeTest : 
+theorem RecordTypeTest :
   (record [a : bool] [b : (path [_] bool a a)] [c : bool] [d : S1]) type
 by {
   auto
@@ -6,43 +6,43 @@ by {
 
 print RecordTypeTest.
 
-theorem RecordTest0 : 
+theorem RecordTest0 :
   tuple in record
 by {
   auto
 }.
 
-theorem RecordTest1 : 
+theorem RecordTest1 :
   (tuple [a tt]) in (record [a : bool])
 by {
   auto
 }.
 
-theorem RecordTest2 : 
+theorem RecordTest2 :
   (tuple [a tt] [b tuple]) in (record [b : record] [a : bool])
 by {
   auto
 }.
 
-theorem RecordTest3 : 
+theorem RecordTest3 :
   (tuple [a tt] [b ff]) in (record [b a : bool])
 by {
   auto
 }.
 
-theorem RecordTest4 : 
+theorem RecordTest4 :
   (! a (tuple [a tt] [b ff])) = tt in bool
 by {
   auto
 }.
 
-theorem RecordTest5(#p) : 
+theorem RecordTest5(#p) :
   (-> [p : record] (= record p tuple))
 by {
   lam _ => auto
 }.
 
-theorem RecordTest6 : 
+theorem RecordTest6 :
   (->
     [p : (record [a : bool] [b c : record])]
     bool)
@@ -50,7 +50,7 @@ by {
   lam {a = a} => use a
 }.
 
-theorem RecordTest7 : 
+theorem RecordTest7 :
   (record
    [a : S1]
    [b : (path [_] S1 a a)])
@@ -58,8 +58,8 @@ by {
   {a = `base, b = abs i => `(loop i)}
 }.
 
-theorem RecordElimTest : 
-  (-> 
+theorem RecordElimTest :
+  (->
    (record
     [b : bool]
     [c : S1]

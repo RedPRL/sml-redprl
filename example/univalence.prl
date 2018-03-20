@@ -12,7 +12,7 @@ define IsSet (#C) = (-> [c c' : #C] (IsProp (path [_] #C c c'))).
 
 define Retract (#A,#f,#g) = (-> [a : #A] (path [_] #A ($ #g ($ #f a)) a)).
 
-theorem IdEquiv(#l:lvl) : 
+theorem IdEquiv(#l:lvl) :
   (-> [ty : (U #l hcom)] (Equiv ty ty))
 by {
   lam ty =>
@@ -29,7 +29,7 @@ by {
 // per Dan Licata, UA and UABeta suffice for full univalence:
 // https://groups.google.com/forum/#!topic/homotopytypetheory/j2KBIvDw53s
 
-theorem UA(#l:lvl) : 
+theorem UA(#l:lvl) :
   (-> [ty/a ty/b : (U #l kan)]
       [e : (Equiv ty/a ty/b)]
       (path [_] (U #l kan) ty/a ty/b))
@@ -38,7 +38,7 @@ by {
     abs x => `(V x ty/a ty/b e)
 }.
 
-theorem UABeta(#l:lvl) : 
+theorem UABeta(#l:lvl) :
   (->
    [ty/a ty/b : (U #l kan)]
    [e : (Equiv ty/a ty/b)]
@@ -55,7 +55,7 @@ by {
 // To prove univalence from UA and UABeta, we need some basic results.
 // (What follows is adapted from the cubicaltt prelude.)
 
-theorem PathToEquiv(#l:lvl) : 
+theorem PathToEquiv(#l:lvl) :
   (->
    [ty/a ty/b : (U #l kan)]
    [p : (path [_] (U #l kan) ty/a ty/b)]
@@ -65,7 +65,7 @@ by {
   `(coe 0~>1 [x] (Equiv ty/a (@ p x)) ($ (IdEquiv #l) ty/a))
 }.
 
-theorem LemPropF(#l:lvl) : 
+theorem LemPropF(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -85,7 +85,7 @@ by {
       ]
 }.
 
-theorem LemSig(#l:lvl) : 
+theorem LemSig(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -100,7 +100,7 @@ by {
     }
 }.
 
-theorem PropSig(#l:lvl) : 
+theorem PropSig(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -120,7 +120,7 @@ by {
       ]
 }.
 
-theorem PropPi(#l:lvl) : 
+theorem PropPi(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
@@ -129,12 +129,12 @@ theorem PropPi(#l:lvl) :
    (path [_] (-> [a : ty/a] ($ ty/b a)) f g))
 by {
   lam ty/a ty/b prop/b f g =>
-  abs x => lam a => 
+  abs x => lam a =>
     use prop/b [`a, use f [`a], use g [`a], `x];
 }.
 
 
-theorem LemProp(#l:lvl) : 
+theorem LemProp(#l:lvl) :
  (->
   [ty/a : (U #l kan)]
   [prop/a : (IsProp ty/a)]
@@ -145,7 +145,7 @@ by {
   {`a , lam a' => use prop/a [`a', `a]}
 }.
 
-theorem PropSet(#l:lvl) : 
+theorem PropSet(#l:lvl) :
   (->
    [ty : (U #l kan)]
    [prop : (IsProp ty)]
@@ -160,7 +160,7 @@ by {
       [x=1 [z] (@ ($ prop a (@ q y)) z)])
 }.
 
-theorem PropIsContr(#l:lvl) : 
+theorem PropIsContr(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    (IsProp (IsContr ty/a)))
@@ -179,7 +179,7 @@ by {
         [ `ty/a
         , lam a => `(-> [a' : ty/a] (path [_] ty/a a' a))
         , `prop/a
-        , lam a => 
+        , lam a =>
             use (PropPi #l)
               [ `ty/a
               , lam a' => `(path [_] ty/a a' a)
@@ -191,7 +191,7 @@ by {
     use contr/a/prop [`isContr]
 }.
 
-theorem PropIsEquiv(#l:lvl) : 
+theorem PropIsEquiv(#l:lvl) :
   (->
    [ty/a ty/b : (U #l kan)]
    [f : (-> ty/a ty/b)]
@@ -207,7 +207,7 @@ by {
       ]
 }.
 
-theorem EquivLemma(#l:lvl) : 
+theorem EquivLemma(#l:lvl) :
   (->
    [ty/a ty/b : (U #l kan)]
    [e1 e2 : (Equiv ty/a ty/b)]
@@ -222,7 +222,7 @@ by {
       ]
 }.
 
-theorem UARet(#l:lvl) : 
+theorem UARet(#l:lvl) :
   (->
    [ty/a ty/b : (U #l kan)]
    (Retract
@@ -243,7 +243,7 @@ by {
       unfold PathToEquiv at right in concl; auto
 }.
 
-theorem IsContrPath(#l:lvl) : 
+theorem IsContrPath(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    (IsContr (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))))
@@ -258,7 +258,7 @@ by {
   }
 }.
 
-theorem RetIsContr(#l:lvl) : 
+theorem RetIsContr(#l:lvl) :
   (->
    [ty/a ty/b : (U #l kan)]
    [f : (-> ty/a ty/b)]
@@ -275,7 +275,7 @@ by {
         [x=1 [_] ($ g b)])}
 }.
 
-theorem SigEquivToPath(#l:lvl) : 
+theorem SigEquivToPath(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))
@@ -287,7 +287,7 @@ by {
   }
 }.
 
-theorem SigPathToEquiv(#l:lvl) : 
+theorem SigPathToEquiv(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    (* [ty/b : (U #l kan)] (path [_] (U #l kan) ty/a ty/b))
@@ -299,7 +299,7 @@ by {
   }
 }.
 
-theorem UARetSig(#l:lvl) : 
+theorem UARetSig(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    (Retract
@@ -321,7 +321,7 @@ by {
 // https://groups.google.com/forum/#!msg/homotopytypetheory/HfCB_b-PNEU/Ibb48LvUMeUJ
 // See also Theorem 5.8.4 of the HoTT Book.
 
-theorem Univalence(#l:lvl) : 
+theorem Univalence(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    (IsContr (* [ty/b : (U #l kan)] (Equiv ty/a ty/b))))
