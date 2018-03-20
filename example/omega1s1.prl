@@ -54,17 +54,17 @@ theorem IntSuccIsEquiv :
   (IsEquiv int int IntSucc)
 by {
   lam i =>
-    claim eq : [(= int ($ IntSucc ($ IntPred i)) i)] by [use IntSuccIntPred [`i]];
+    claim eq : (= int ($ IntSucc ($ IntPred i)) i) by {use IntSuccIntPred [`i]};
     unfold IntSucc IntPred in eq; reduce at left in eq;
     { {use IntPred [`i], abs _ => `i};
       auto; assumption
     , lam {i',p'} =>
-        claim eq0 : [(= int i ($ IntSucc i'))] by [`(coe 1~>0 [x] (= int i (@ p' x)) ax)];
-        claim eq1 : [(= int ($ IntPred i) i')] by [
+        claim eq0 : (= int i ($ IntSucc i')) by {`(coe 1~>0 [x] (= int i (@ p' x)) ax)};
+        claim eq1 : (= int ($ IntPred i) i') by {
           rewrite eq0 at left;
           [ with i'' => `($ IntPred i''), `($ IntPredIntSucc i') ];
           auto
-        ];
+        };
 
         (abs x =>
           {`($ IntPred i), abs y => `(hcom 1~>y int i [x=0 [y] (@ p' y)] [x=1 [_] i])});
@@ -101,7 +101,7 @@ theorem S1LoopToInt :
   (-> (path [_] S1 base base) int)
 by {
   lam l => `(coe 0~>1 [x] ($ S1UnivCover (@ l x)) (int 0));
-    claim eq : [(= S1 (@ l 1) base)] by [auto];
+    claim eq : (= S1 (@ l 1) base) by {auto};
     auto;
     [ rewrite eq at type; [with x => `($ S1UnivCover x)]; auto
     , rewrite eq at left; [with x => `($ S1UnivCover x)]; auto

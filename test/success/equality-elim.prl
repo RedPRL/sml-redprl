@@ -10,7 +10,7 @@ tactic GetHole(#c : [exp].exp, #t : [exp].tac) = {
 // the equality [_ = n in a].
 tactic Rewrite(#c : [exp].exp, #n, #a, #t : tac) = {
   (GetHole [x] (#c x) [hole] #tac{
-    claim p : [hole = #n in #a] by [#t];
+    claim p : hole = #n in #a by {#t};
     // Use the elimination rule for equality. We bind a new hypothesis which will represent the location
     // in the goal #c which is being rewritten.
     rewrite p;
@@ -22,7 +22,7 @@ theorem EqualityElimTest :
   (-> [b : bool] (path [_] bool tt (if [_] bool tt tt ff)))
 by {
   // We're going to prove this in a silly way to illustrate equality elimination.
-  // We'll rewrite the goal by claiming [(if tt tt ff) = tt in bool}.
+  // We'll rewrite the goal by claiming (if tt tt ff) = tt in bool.
   (Rewrite
     [x] (-> bool (path [_] bool tt x))
     tt bool #tac{auto});

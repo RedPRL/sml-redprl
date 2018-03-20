@@ -95,7 +95,7 @@ tactic Bool/contra/inverse (#p:exp) = {
   query gl <- concl;
   match gl {
     [a b | #jdg{%a = %b in bool} =>
-      claim eq : [(= bool %b %a)] by [use Bool/reflect [`%b, `%a, `#p]; auto];
+      claim eq : (= bool %b %a) by {use Bool/reflect [`%b, `%a, `#p]; auto};
       symmetry; auto
     ]
     [a | %[a:jdg] => id]

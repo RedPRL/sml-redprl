@@ -166,14 +166,14 @@ theorem PropIsContr(#l:lvl) :
    (IsProp (IsContr ty/a)))
 by {
   lam ty/a isContr =>
-    claim contr/a/prop : [(IsProp (IsContr ty/a))] by [
+    claim contr/a/prop : (IsProp (IsContr ty/a)) by {
       let {_,contr} = isContr;
-      claim prop/a : [(IsProp ty/a)] by [
+      claim prop/a : (IsProp ty/a) by {
         lam a a' => abs x =>
           `(hcom 1~>0 ty/a (@ ($ contr a) x)
             [x=0 [_] a]
             [x=1 [y] (@ ($ contr a') y)])
-      ];
+      };
 
       use (PropSig #l)
         [ `ty/a
@@ -186,7 +186,7 @@ by {
               , lam a' => use (PropSet #l) [`ty/a, `prop/a, `a', `a]
               ]
         ]
-    ];
+    };
 
     use contr/a/prop [`isContr]
 }.

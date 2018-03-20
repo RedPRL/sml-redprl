@@ -114,9 +114,9 @@ by {
     lam b =>
       // for our b:bool, we will construct a path between b and
       // (BoolEta b).
-      claim p : [(path [_] bool b (BoolEta b))] by [
+      claim p : (path [_] bool b (BoolEta b)) by {
         if b then abs y => `tt else abs y => `ff
-      ];
+      };
 
       // Now, we will project the 'x'-side of our path. In the
       // interactive tactic environment, dimension expressions are

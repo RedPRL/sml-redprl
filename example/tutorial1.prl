@@ -177,7 +177,7 @@ by {
 
       [ symmetry; refine record/eq/tuple;
         [ refine fun/eq/eta; #1{auto}; auto; symmetry;
-          claim p/0 : [(@ p 0) = ($ FunToPair ty fun) in (* ty ty)] by [ auto ];
+          claim p/0 : (@ p 0) = ($ FunToPair ty fun) in (* ty ty) by { auto };
           auto;
           [ fresh h -> rewrite p/0; [`(= ty (! proj1 h) ($ fun tt))]
           , fresh h -> rewrite p/0; [`(= ty (! proj2 h) ($ fun ff))]
