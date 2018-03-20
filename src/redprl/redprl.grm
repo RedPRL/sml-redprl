@@ -377,7 +377,7 @@ end
  (* metalanguage *)
  | EXTRACT | QUIT
  | DEFINE | TACTIC | THEOREM
- | BY | IN | VAL | DO | CAROT | END
+ | BY | IN | VAL | DO | CARET | END
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
@@ -1031,7 +1031,7 @@ mlAtomicCmd
     (ML.ABORT)
   | EXTRACT mlValue
     (ML.EXTRACT mlValue)
-  | CAROT mlValue
+  | CARET mlValue
     (ML.RET mlValue)
   | BANG mlValue
     (ML.FORCE mlValue)
