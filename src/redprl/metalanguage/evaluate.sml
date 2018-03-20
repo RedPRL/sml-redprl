@@ -55,9 +55,9 @@ struct
         Err.raiseError @@
           Err.GENERIC [Fpp.text "internal error: theoremSpec caled on non-theorem"]
 
-    (* TODO *)
-    fun dataDeclInfo env (opid : MlId.t) =
-      ()
+    fun dataDeclArgumentLen env (opid : MlId.t) = ?todo
+
+    fun dataDeclInfo env (opid : MlId.t) args = ?todo
 
     fun unfoldOpid env (opid : MlId.t) args =
       let

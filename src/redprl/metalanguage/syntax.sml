@@ -16,7 +16,7 @@ struct
      DEF of {arguments : arguments, definiens : term}
    | THM of {name : string, arguments : arguments, goal : jdg, script : RedPrlAst.ast}
    | TAC of {arguments : arguments, script : RedPrlAst.ast}
-   | DATA_DECL of {name : string, arguments : arguments, foo : unit}
+   | DATA_DECL of {name : string, arguments : arguments, decl : RedPrlAst.ast, script : RedPrlAst.ast}
 
    | PRINT_EXTRACT of Pos.t option * value
    | EXTRACT of value
@@ -63,7 +63,7 @@ struct
    | ABS of value * value
    | METAS of metas
    | TERM of term
-   | DATA_INFO of {foo : unit}
+   | DATA_INFO of term 
 
   and cmd =
      BIND of cmd * id * cmd

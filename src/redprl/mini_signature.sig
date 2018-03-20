@@ -14,6 +14,8 @@ sig
 
   val isTheorem : sign -> opid -> bool
 
-  (* For Favonia - jms *)
-  val dataDeclInfo : sign -> opid -> unit
+  (* the length function is needed because we allow the user to write
+   * the arguments to the type and the ones to the constructors in the same list. *)
+  val dataDeclArgumentLen : sign -> opid -> int
+  val dataDeclInfo : sign -> opid -> abt RedPrlAbt.bview list -> abt
 end

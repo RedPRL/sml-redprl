@@ -232,10 +232,10 @@ struct
       elabNu (psi, elabBind (elabRefine (SOME name, goal, script), x, elabRet @@ elabAbs (elabMetas psi, elabVar x)))
     end
 
-  fun elabDataDecl (name, psi, foo) : elab_cmd =
+  fun elabDataDecl (name, psi, decl, script) : elab_cmd =
     let
       (* TODO *)
-      val result : elab_val = fn env => (ISyn.DATA_INFO {foo = ()}, Ty.DATA_INFO)
+      val result : elab_val = fn env => (ISyn.DATA_INFO (?todo), Ty.DATA_INFO)
       val resultAbs =
         (* To insert a check a list of sequents against a multitactic, use
             elabBind (fn env => refineSequents (name, sequents, elabAst env (script, RedPrlSort.MTAC)), MlId.fresh "_", ....)
@@ -366,8 +366,8 @@ struct
      | ESyn.THM {name, arguments, goal, script} =>
        elabThm (name, arguments, goal, script)
 
-     | ESyn.DATA_DECL {name, arguments, foo} =>
-       elabDataDecl (name, arguments, foo)
+     | ESyn.DATA_DECL {name, arguments, decl, script} =>
+       elabDataDecl (name, arguments, decl, script)
 
      | ESyn.PRINT_EXTRACT (pos, v) =>
        elabPrintExtract (pos, elabValue v)

@@ -12,7 +12,7 @@ struct
   datatype value =
      THUNK of env * syn_cmd
    | THM of jdg * Tm.abs
-   | DATA_INFO of {foo : unit}
+   | DATA_INFO of term
    | TERM of term
    | ABS of value * value
    | METAS of metas
