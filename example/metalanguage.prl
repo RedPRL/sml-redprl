@@ -1,0 +1,22 @@
+// RedPRL's metalanguage is called RedML. RedPRL documents are really sequences of RedML declarations!
+// RedML is like "CBPV with nominal characteristics"; later it will develop to a full ML.
+
+define Op = (lam [x] x).
+
+// we can suspend a command to execute later. "{ cmd }" turns a command into a value (thunk),
+// and "^ val" is the command that returns a value.
+val MyCmd = ^ { print Op }.
+
+let
+  theorem Bar(#l:lvl) : (-> [ty : (U #l kan)] ty ty) by {
+    lam ty x => use x
+  };
+  let val M = extract Bar;
+  print M.
+
+// Bar no longer in scope
+
+
+// now let's go ahead and run our command
+!MyCmd.
+

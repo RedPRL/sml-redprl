@@ -23,7 +23,7 @@ class RedPRLLexer(RegexLexer):
             'print', 'trace', 'progress', 'query', 'reduce', 'refine', 'repeat',
             'rewrite', 'symmetry', 'then', 'unfold', 'use', 'with', 'without',
             'fail', 'inversion', 'concl', 'assumption', '\;']
-    cmds = ['Print', 'Extract', 'Quit', 'Def', 'Tac', 'Thm']
+    cmds = ['print', 'extract', 'quit', 'define', 'tactic', 'theorem']
     misc = ['at', 'by', 'in', 'true', 'type', 'synth', 'discrete', 'kan', 'pre',
             'dim', 'hyp', 'exp', 'lvl', 'tac', 'jdg', 'knd']
     types = ['bool', 'nat', 'int', 'void', 's1', 'fun', 'record', 'path',

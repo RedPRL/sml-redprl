@@ -52,6 +52,7 @@ struct
   type jdg = Sequent.jdg
   type term = RedPrlAbt.abt
   type vty = MlType.vty
+  type proof_state = Sequent.jdg Lcf.state
 
   type metas = (metavariable * valence) list
 
@@ -72,6 +73,7 @@ struct
    | AP of cmd * value
    | PRINT of Pos.t option * value
    | REFINE of string option * jdg * term
+   | REFINE_MULTI of string option * proof_state * term
    | FRESH of (string option * valence) list
    | MATCH_METAS of value * metavariable list * cmd
    | MATCH_ABS of value * id * id * cmd

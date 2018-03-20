@@ -1,19 +1,17 @@
 // POPL 2018 tutorial, part one
 // January 8, 2018
 
-Quit.
+quit.
 
-Thm Not : [
+theorem Not :
   (-> bool bool)
-] by [
+by {
   ?
-].
+}.
 
-Quit.
+quit.
 
-Print Not.
-
-
+print Not.
 
 
 
@@ -31,19 +29,19 @@ Print Not.
 
 
 
-Thm NotNot : [
+
+
+theorem NotNot :
   (->
    [b : bool]
    (= bool ($ Not ($ Not b)) b))
-] by [
+by {
   ?
-].
+}.
 
-Quit.
+quit.
 
-Print NotNot.
-
-
+print NotNot.
 
 
 
@@ -61,21 +59,21 @@ Print NotNot.
 
 
 
-Thm RespectEquality : [
+
+
+theorem RespectEquality :
   (->
    [family : (-> [b : bool] (U 0))]
    [b : bool]
    ($ family b)
    ($ family ($ Not ($ Not b))))
-] by [
+by {
   ?
-].
+}.
 
-Quit.
+quit.
 
-Print RespectEquality.
-
-
+print RespectEquality.
 
 
 
@@ -93,20 +91,20 @@ Print RespectEquality.
 
 
 
-Thm EqualityIrrelevant : [
+
+
+theorem EqualityIrrelevant :
   (=
     (-> [b : bool] (= bool ($ Not ($ Not b)) b))
     NotNot
     (lam [b] ax))
-] by [
+by {
   ?
-].
+}.
 
-Quit.
+quit.
 
-Print EqualityIrrelevant.
-
-
+print EqualityIrrelevant.
 
 
 
@@ -124,31 +122,33 @@ Print EqualityIrrelevant.
 
 
 
-Thm FunToPair : [
+
+
+theorem FunToPair :
   (->
    [ty : (U 0 kan)]
    (-> bool ty)
    (* ty ty))
-] by [
+by {
   lam ty fun =>
   {`($ fun tt), `($ fun ff)}
-].
+}.
 
 // {{{ Univalence
 
-Def HasAllPathsTo (#C,#c) = [(-> [c' : #C] (path [_] #C c' #c))].
-Def IsContr (#C) = [(* [c : #C] (HasAllPathsTo #C c))].
-Def Fiber (#A,#B,#f,#b) = [(* [a : #A] (path [_] #B ($ #f a) #b))].
-Def IsEquiv (#A,#B,#f) = [(-> [b : #B] (IsContr (Fiber #A #B #f b)))].
-Def Equiv (#A,#B) = [(* [f : (-> #A #B)] (IsEquiv #A #B f))].
+define HasAllPathsTo (#C,#c) = (-> [c' : #C] (path [_] #C c' #c)).
+define IsContr (#C) = (* [c : #C] (HasAllPathsTo #C c)).
+define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
+define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
+define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
 
-Thm WeakConnection(#l:lvl) : [
+theorem WeakConnection(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [a b : ty]
    [p : (path [_] ty a b)]
    (path [i] (path [_] ty (@ p i) b) p (abs [_] b)))
-] by [
+by {
   (lam ty a b p =>
     abs i j =>
       `(hcom 1~>0 ty b
@@ -156,13 +156,13 @@ Thm WeakConnection(#l:lvl) : [
         [i=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
         [j=0 [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
         [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]))
-].
+}.
 
-Thm FunToPairIsEquiv : [
+theorem FunToPairIsEquiv :
   (->
    [ty : (U 0 kan)]
    (IsEquiv (-> bool ty) (* ty ty) ($ FunToPair ty)))
-] by [
+by {
   lam ty pair =>
   { { lam b => if b then `(!proj1 pair) else `(!proj2 pair)
     , abs _ => `pair }
@@ -177,7 +177,7 @@ Thm FunToPairIsEquiv : [
 
       [ symmetry; refine record/eq/tuple;
         [ refine fun/eq/eta; #1{auto}; auto; symmetry;
-          claim p/0 : [(@ p 0) = ($ FunToPair ty fun) in (* ty ty)] by [ auto ];
+          claim p/0 : (@ p 0) = ($ FunToPair ty fun) in (* ty ty) by { auto };
           auto;
           [ fresh h -> rewrite p/0; [`(= ty (! proj1 h) ($ fun tt))]
           , fresh h -> rewrite p/0; [`(= ty (! proj2 h) ($ fun ff))]
@@ -199,25 +199,23 @@ Thm FunToPairIsEquiv : [
          auto
       ]
   }
-].
+}.
 
-Thm PathFunToPair : [
+theorem PathFunToPair :
   (->
    [ty : (U 0 kan)]
    (path [_] (U 0 kan) (-> bool ty) (* ty ty)))
-] by [
+by {
   lam ty => abs x =>
   `(V x (-> bool ty) (* ty ty)
     (tuple [proj1 ($ FunToPair ty)] [proj2 ($ FunToPairIsEquiv ty)]))
-].
+}.
 
 // }}}
 
-Quit.
+quit.
 
-Print PathFunToPair.
-
-
+print PathFunToPair.
 
 
 
@@ -235,21 +233,21 @@ Print PathFunToPair.
 
 
 
-Thm RespectPaths : [
+
+
+theorem RespectPaths :
   (->
    [ty : (U 0 kan)]
    (-> bool ty)
    (* ty ty))
-] by [
+by {
   lam ty fun =>
   `(coe 0~>1 [x] (@ ($ PathFunToPair ty) x) fun)
-].
+}.
 
-Quit.
+quit.
 
-Print RespectPaths.
-
-
+print RespectPaths.
 
 
 
@@ -267,11 +265,13 @@ Print RespectPaths.
 
 
 
-Thm ComputeCoercion : [
+
+
+theorem ComputeCoercion :
   (=
    (* bool bool)
    ($ RespectPaths bool (lam [b] b))
    (tuple [proj1 tt] [proj2 ff]))
-] by [
+by {
   auto
-].
+}.

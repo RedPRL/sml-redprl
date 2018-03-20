@@ -1,5 +1,5 @@
-Thm RecordTest : [
+theorem RecordTest :
   (! a (tuple [b tt])) in bool
-] by [
+by {
   auto
-].
+}.
