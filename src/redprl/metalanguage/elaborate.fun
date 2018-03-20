@@ -127,6 +127,107 @@ struct
       handle _ =>
         Err.raiseAnnotatedError' (pos, Err.GENERIC @@ [Fpp.text "Error resolving operator"])
 
+
+
+
+
+  type 'a elab = env -> 'a
+
+  structure ElabRx = 
+  struct
+    structure Rx = RedExpr
+
+    datatype opr = 
+       CUST of MlId.t * arity
+     | BUILTIN of string
+
+    datatype head = 
+       VAR of Tm.variable * Tm.sort
+     | META of Tm.metavariable * Tm.valence
+     | OPR of opr
+    
+    val <+> : 'a elab * 'a elab -> 'a elab =
+      fn (el1, el2) => 
+        fn env =>
+          el1 env
+          handle _ => el2 env
+
+    infixr <+>
+
+    val ret : 'a -> 'a elab = 
+      fn a => fn _ => a
+
+    val <$> : ('a -> 'b) * 'a elab -> 'b elab = 
+      fn (f, x) => fn env => 
+        f (x env)
+
+    infix <$>
+
+    fun nodeAsAtom node : string Rx.info elab = fn _ =>
+      let
+        val Rx.NODE {con = Rx.ATOM str, pos} = node
+      in
+        {con = str, pos = pos}
+      end
+
+    fun elabVar node : head elab = fn env =>
+      let
+        val {pos, con = atom} = nodeAsAtom node env
+        val (var, tau) = R.lookupVar env pos atom
+      in
+        VAR (var, tau)
+      end
+
+    fun elabMeta node : head elab = fn env =>
+      let
+        val {pos, con = atom} = nodeAsAtom node env      
+        val (mvar, vl) = R.lookupMeta env pos atom
+      in
+        META (mvar, vl)
+      end
+
+    fun elabCust pos atom : head elab = fn env => 
+      let
+        val opid = MlId.const atom
+      in
+        OPR (CUST (opid, lookupArity env pos opid))
+      end
+
+    fun elabHead pos node = 
+      elabVar node
+        <+> elabMeta pos node
+        <+> elabCust pos node
+
+    val headAsAbt : head -> abt = 
+      fn VAR (x, tau) =>
+         Tm.check (Tm.` x, tau)
+
+       | META (x, (_, tau)) =>
+         Tm.check (Tm.$# (x, []), tau)
+
+       | OPR (CUST (th, ar)) =>
+         Tm.$$ (O.CUST (th, SOME ar), [])
+
+    fun elabAbt (node as Rx.NODE {pos, con}) : abt elab = 
+      case con of 
+         Rx.ATOM atom =>
+         headAsAbt <$> elabHead pos atom
+
+       | Rx.LIST (rxhead :: rxtail) =>
+         ?todo
+
+       | _ =>
+        Err.raiseAnnotatedError'
+          (pos,
+           Err.GENERIC @@ [Fpp.text "Error reading rexpr"])
+  end
+
+
+
+
+
+
+
   type elab_cmd = env -> icmd * cty
   type elab_val = env -> ivalue * vty
 
