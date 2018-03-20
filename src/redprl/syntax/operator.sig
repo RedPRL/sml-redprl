@@ -53,7 +53,7 @@ struct
    | IND_FAM_LINE
 
    | IND_TYPE of opid * RedPrlArity.valence list option
-   | IND_INTRO of (opid * RedPrlArity.valence list option) * conid
+   | IND_INTRO of (opid * RedPrlArity.valence list option) * (conid * RedPrlArity.valence list option)
    | IND_REC of (opid * RedPrlArity.valence list option) * RedPrlArity.Vl.bindings list option
 
    (* equality *)
