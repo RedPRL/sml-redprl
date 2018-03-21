@@ -253,7 +253,6 @@ struct
           (pos,
            Err.GENERIC @@ [Fpp.text "Error reading rexpr"])
 
-    and elabProductType _ = ?todo
     and elabRecordType _ = ?todo
 
     and elabTuple rxs =
@@ -295,9 +294,35 @@ struct
            | (_ :: vls, rx :: rxs) =>
              elabBinder ([], []) rx >>= (fn bnd =>
                go (bnd :: acc) (vls, rxs))
+           | _ => throw @@ Fail "elabOpApp"
       in
         go [] (vls, rxtail)
       end
+
+    and elabProductType rxtail =       
+      let
+        fun go rxs : abt elab = 
+          case rxs of 
+             [] =>
+             throw @@ Fail "elabProductType"
+           | [rx] =>
+             elabAbt rx
+           | Rx.NODE {con = Rx.TYPED_CELL (xs, rxty), ...} :: rxs =>
+             elabAbt rxty >>= (fn ty => 
+               goVars rxs ty xs)
+           | rxty :: rxs =>
+             elabAbt rxty >>= (fn ty =>
+               goVars rxs ty ["_"])
+
+        and goVars rxs ty = 
+          fn [] => go rxs
+           | x::xs => 
+             bindVar (x, O.EXP) (fn x' =>
+               goVars rxs ty xs >>= (fn tm => 
+                 ret @@ O.RECORD ["proj1", "proj2"] $$ [[] \ ty, [x'] \ tm]))
+      in
+        go rxtail
+      end      
 
     and elabFunctionType rxtail =       
       let
@@ -309,7 +334,8 @@ struct
              elabAbt rx
            | Rx.NODE {con = Rx.TYPED_CELL (xs, rxty), ...} :: rxs =>
              goPiVars rxs (?todo) xs
-           | rxty :: rxs => ?todo
+           | rxty :: rxs =>
+             goVars rxs rxty ["_"]
 
         and goVars rxs rxty xs = 
           case rxty of 
@@ -340,11 +366,11 @@ struct
       let
         fun go rxs : abt elab = 
           case rxs of 
-             [] => throw @@ Fail "elabLambda"
-           | [rx] =>
+             [rx] =>
              elabAbt rx                          
            | Rx.NODE {con = Rx.BIND_CELL xs,...} :: rxs => 
              goVars rxs xs
+           | _ => throw @@ Fail "elabLambda"
 
         and goVars rxs : string list -> abt elab = 
           fn [] => go rxs
