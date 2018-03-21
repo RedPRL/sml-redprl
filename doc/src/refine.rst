@@ -311,7 +311,7 @@ Paths
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (abs v => #m0 v) = (abs v => #m1 v) in (path [v] (#a v) #p0 #p1)
+  H >> (abs [v] (#m0 v)) = (abs [v] (#m1 v)) in (path [v] (#a v) #p0 #p1)
   | H, v:dim >> #m0 v = #m1 v in (#a v)
   | H >> #m0 0 = #p0 in (#a 0)
   | H >> #m0 1 = #p1 in (#a 1)
@@ -320,8 +320,8 @@ Paths
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (path [u] (#a u) #p0 #p1) true
-  | H, u:dim >> (#a u) true ~> #m
+  H >> (path [u] (#a u) #p0 #p1) ext (abs [u] (#m u)
+  | H, u:dim >> (#a u) ext (#m u)
   | H >> #m[0/u] = #p0 in (#a 0)
   | H >> #m[1/u] = #p1 in (#a 1)
 
@@ -330,7 +330,7 @@ Paths
 ::
 
   H >> #m = #n in (path [u] (#a u) #p0 #p1)
-  | H >> (abs u => #m u) = #n in (path [u] (#a u) #p0 #p1)
+  | H >> (abs [u] (#m u)) = #n in (path [u] (#a u) #p0 #p1)
   | H >> #m = #m in (path [u] (#a u) #p0 #p1)
 
 :index:`path/eq/app`
