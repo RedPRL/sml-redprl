@@ -232,12 +232,11 @@ struct
       elabNu (psi, elabBind (elabRefine (SOME name, goal, script), x, elabRet @@ elabAbs (elabMetas psi, elabVar x)))
     end
 
-  exception OhFavoniaPlease
   fun elabDataDecl (name, psi, decl, script) : elab_cmd =
     let
       val x = MlId.fresh "_"
-      val decl' = fn env => raise OhFavoniaPlease (* InductiveSpec.elabTerm decl env *)
-      val sequents' = fn env => raise OhFavoniaPlease (* InductiveSpec.elabTerm decl env *)
+      val decl' = fn env => elabAst env (decl, RedPrlSort.IND_FAM)
+      val sequents' = fn env => InductiveSpec.checkFam (decl' env)
       val script' = fn env => elabAst env (script, RedPrlSort.MTAC)
       val cmd = fn env => refineSequents (SOME name, sequents' env, script' env)
       val result : elab_val = fn env => (ISyn.DATA_INFO (decl' env), Ty.DATA_INFO)
