@@ -35,7 +35,7 @@ struct
       end
   end
 
-  (* assert that the term 'm' has only free variables 'us' and free variables 'xs' at most. *)
+  (* assert that the term 'm' has only free variables 'xs' at most. *)
   fun assertWellScoped xs m = 
     let
       val vars = List.foldl (fn (x, vars) => Var.Ctx.remove vars x) (Abt.varctx m) xs
