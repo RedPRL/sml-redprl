@@ -157,8 +157,8 @@ Circle
 
   H >> (S1-rec [x] (#c x) (loop #r) #b [u] (#l u)) = #m in #ty
   | H >> (#l #r) = #m in #ty
-  | H >> #b[0/#r] = #m[0/#r] in #ty[0/#r]
-  | H >> #b[1/#r] = #m[1/#r] in #ty[1/#r]
+  | H, #r=0 >> #b = #m in #ty
+  | H, #r=1 >> #b = #m in #ty
 
 Dependent functions
 -------------------
@@ -501,8 +501,8 @@ Pushouts
 
   H >> (pushout-rec [p] (#d p) (glue #r #t #ft #gt) [a] (#n a) [b] (#p b) [v x] (#q v x)) = #s in #ty
   | H >> (#q #r #t) = #s in #ty
-  | TODO: left coherence
-  | TODO: right coherence
+  | H, #r=0 >> (#n #ft) = #s in #ty
+  | H, #r=1 >> (#p #gt) = #s in #ty
 
 Coequalizers
 ------------
