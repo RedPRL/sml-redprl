@@ -78,7 +78,7 @@ struct
 
   fun elabAtomicJdg (env : env) (ast : ast) : AJ.jdg =
     let
-      val abt = elabAst env R.spec_init (ast, S.JDG)
+      val abt = elabAst env R.dummy_spec_env (ast, S.JDG)
     in
       AJ.out abt
       handle _ =>
@@ -203,7 +203,7 @@ struct
     end
 
   fun elabTerm (ast, tau) : elab_val = fn env =>
-    (ISyn.TERM @@ elabAst env R.spec_init (ast, tau), Ty.TERM tau)
+    (ISyn.TERM @@ elabAst env R.dummy_spec_env (ast, tau), Ty.TERM tau)
 
   fun elabMetas psi : elab_val = fn env =>
     let
@@ -249,7 +249,7 @@ struct
     let
       val ajdg' = elabAtomicJdg env ajdg
       val sequent = Sequent.>> (Sequent.Hyps.empty, ajdg')
-      val script' = elabAst env R.spec_init (script, RedPrlSort.TAC)
+      val script' = elabAst env R.dummy_spec_env (script, RedPrlSort.TAC)
     in
       refineSequent (name, sequent, script')
     end
@@ -271,7 +271,7 @@ struct
       val specEnv = R.makeSpecEnv (InductiveSpec.computeAllSpecIntroValences decl)
       val decl' = fn env => elabAst env specEnv (decl, RedPrlSort.IND_FAM)
       val sequents' = fn env => InductiveSpec.checkDecl (decl' env)
-      val script' = fn env => elabAst env R.spec_init (script, RedPrlSort.MTAC)
+      val script' = fn env => elabAst env R.dummy_spec_env (script, RedPrlSort.MTAC)
       val cmd = fn env => refineSequents (SOME name, sequents' env, script' env)
       val result : elab_val = fn env => (ISyn.DATA_INFO (decl' env), Ty.DATA_INFO arity)
       val resultAbs = elabBind (cmd, x, elabRet (elabAbs (elabMetas psi, result)))

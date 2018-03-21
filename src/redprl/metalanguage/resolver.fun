@@ -23,7 +23,7 @@ struct
      vars = StringListDict.empty,
      metas = StringListDict.empty}
 
-  val spec_init =
+  val dummy_spec_env =
     {intros = InductiveSpec.ConstrDict.empty}
 
   fun lookupId (env : env) pos (x : id) =

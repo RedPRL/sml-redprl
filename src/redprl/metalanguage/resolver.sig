@@ -10,7 +10,7 @@ sig
   type id
   
   val init : env
-  val spec_init : spec_env
+  val dummy_spec_env : spec_env
 
   val lookupId : env -> Pos.t option -> id -> mltype
   val extendId : env -> id -> mltype -> env
