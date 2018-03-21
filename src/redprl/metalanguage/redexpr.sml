@@ -9,6 +9,7 @@ struct
    | LIST of 'a list
    | BIND_CELL of atom list   
    | TYPED_CELL of atom list * 'a
+   | LABEL_CELL of string * 'a
    | TUBE_CELL of 'a eqn * string * 'a
 
   type 'a info = {pos : Pos.t option, con : 'a}
