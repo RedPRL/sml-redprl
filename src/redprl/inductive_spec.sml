@@ -1,5 +1,23 @@
-(* XXX impose a signature on `InductiveSpec`! *)
-structure InductiveSpec =
+structure InductiveSpec :
+sig
+  type conid = string
+  type decl = RedPrlAbt.abt (* XXX *)
+  type constr = RedPrlAbt.abt (* XXX *)
+  type args = RedPrlAbt.abt list
+
+  (* Valence collectors. *)
+  val collectValenceForType : decl -> RedPrlArity.valence list
+  val collectValenceForIntro : decl -> conid -> RedPrlArity.valence list
+  val collectValenceForElim : decl -> RedPrlArity.valence list
+
+  (* Given a data declaration, generate a list of sequents for type-checking. *)
+  val checkDecl : decl -> Sequent.jdg list
+
+  (* Used by the refiner. *)
+  (* val EqArgsForType : decl -> args * args -> Sequent.jdg list *)
+  (* val EqArgsForIntro : decl -> conid -> (args * args) * args -> Sequent.jdg list *)
+end
+=
 struct
   structure Abt = RedPrlAbt
   structure Syn = SyntaxView
@@ -13,6 +31,11 @@ struct
   infixr @@
   fun @> (H, (x, j)) = Sequent.Hyps.snoc H x j
   infix @>
+
+  type conid = string
+  type decl = RedPrlAbt.abt (* XXX *)
+  type constr = RedPrlAbt.abt (* XXX *)
+  type args = RedPrlAbt.abt list
 
   val IND_SPECTYPE_SELF = Syn.into Syn.IND_SPECTYPE_SELF
 
@@ -356,18 +379,16 @@ struct
          in
            checkFam' (H @> (w, AJ.TERM O.DIM)) (VarKit.rename (w, x) bx)
          end
-  val checkFam = checkFam' Sequent.Hyps.empty
+  val checkDecl = checkFam' Sequent.Hyps.empty
 
   open ArityNotation infix ->> |:
 
   local
-    fun collectConstrBindingsForElimCase constr =
-      case Syn.out constr of
-         Syn.IND_CONSTR_DISCRETE _ => []
-       | Syn.IND_CONSTR_KAN _ => []
-       | Syn.IND_CONSTR_FUN (_, _, bx) => O.EXP :: collectConstrBindingsForElimCase bx
-       | Syn.IND_CONSTR_SPEC_FUN (_, _, bx) => O.EXP :: O.EXP :: collectConstrBindingsForElimCase bx
-       | Syn.IND_CONSTR_LINE (_, bx) => O.DIM :: collectConstrBindingsForElimCase bx
+    fun collectFamValence desc cont =
+      case Syn.out desc of
+         Syn.IND_FAM_BASE (_, l) => cont l
+       | Syn.IND_FAM_FUN (_, _, bx) => ([] |: O.EXP) :: collectFamValence bx cont
+       | Syn.IND_FAM_LINE (_, bx) => ([] |: O.DIM) :: collectFamValence bx cont
 
     fun collectConstrValenceForIntro constr =
       case Syn.out constr of
@@ -377,12 +398,17 @@ struct
        | Syn.IND_CONSTR_SPEC_FUN (_, _, bx) => ([] |: O.EXP) :: collectConstrValenceForIntro bx
        | Syn.IND_CONSTR_LINE (_, bx) => ([] |: O.DIM) :: collectConstrValenceForIntro bx
 
-    fun collectFamValence desc cont =
-      case Syn.out desc of
-         Syn.IND_FAM_BASE (_, l) => cont l
-       | Syn.IND_FAM_FUN (_, _, bx) => ([] |: O.EXP) :: collectFamValence bx cont
-       | Syn.IND_FAM_LINE (_, bx) => ([] |: O.DIM) :: collectFamValence bx cont
+    fun collectConstrBindingsForElimCase constr =
+      case Syn.out constr of
+         Syn.IND_CONSTR_DISCRETE _ => []
+       | Syn.IND_CONSTR_KAN _ => []
+       | Syn.IND_CONSTR_FUN (_, _, bx) => O.EXP :: collectConstrBindingsForElimCase bx
+       | Syn.IND_CONSTR_SPEC_FUN (_, _, bx) => O.EXP :: O.EXP :: collectConstrBindingsForElimCase bx
+       | Syn.IND_CONSTR_LINE (_, bx) => O.DIM :: collectConstrBindingsForElimCase bx
   in
+    fun collectValenceForType desc =
+      collectFamValence desc (fn _ => [])
+
     fun collectValenceForIntro desc conid =
       collectFamValence desc
         (fn conlist =>
@@ -391,9 +417,6 @@ struct
           in
             collectConstrValenceForIntro constr
           end)
-
-    fun collectValenceForType desc =
-      collectFamValence desc (fn _ => [])
 
     fun collectValenceForElim desc =
       collectFamValence desc
