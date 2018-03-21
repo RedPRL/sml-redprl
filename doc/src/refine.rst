@@ -75,15 +75,34 @@ Natural numbers and integers
 
 :index:`int/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> int = int in (U #l #k)
 
 :index:`int/eq/pos`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (pos #m) = (pos #n) in int
+  | H >> #m = #n in nat
 
 :index:`int/eq/negsucc`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (negsucc #m) = (negsucc #n) in int
+  | H >> #m = #n in nat
 
 :index:`int/eq/int-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (int-rec [x] (#e0 x) #m0 [a] (#n0 a) [b] (#p0 b)) = (int-rec [x] (#e1 x) #m1 [a] (#n1 a) [b] (#p1 b)) in #ty
+  | H >> #m0 = #m1 in int
+  | H, b:nat >> (#p0 b) = (#p1 b) in #e0 (pos b)
+  | H, a:nat >> (#n0 a) = (#n1 a) in #e0 (negsucc a)
+  | H, x:int >> (#e0 x) = (#e1 x) type
+  | H >> (#e0 m0) <= #ty type
 
 Void
 ----
