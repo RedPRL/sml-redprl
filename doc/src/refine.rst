@@ -335,12 +335,36 @@ Paths
 
 :index:`path/eq/app`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (@ #m0 #r) = (@ #m1 #r) in #ty
+  where H >> #m0 = #m1 synth ~> (path [u] (#a u) #p0 #p1), psi
+  | psi
+  | H >> (#a #r) = #ty type
 
 :index:`path/eq/app/const`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (@ #m #r) = #p in #a
+  where
+    H >> #m = #m synth ~> (path [x] (#ty x) #p0 #p1), psi
+    #pr <-
+      #p0 if #r == 0
+      #p1 if #r == 1
+  | H >> #pr = #p in #a
+  | psi
+  | H >> #ty #r <= #a type
+
 
 :index:`path/eq/from-line`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> #m0 = #m1 in (path [x] (#ty x) #n0 #n1)
+  | H >> #m0 = #m1 in (line [x] (#ty x))
+  | H >> #n0 = (@ #m0 0) in (#ty 0)
+  | H >> #n1 = (@ #m1 1) in (#ty 1)
 
 Lines
 -----
