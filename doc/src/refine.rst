@@ -427,24 +427,82 @@ Pushouts
 
 :index:`pushout/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (pushout #a0 #b0 #c0 [x] (#f0 x) [x] (#g0 x)) = (pushout #a1 #b1 #c1 [x] (#f1 x) [x] (#g1 x)) in (U #l #k)
+  where
+    (#k/end, #k/apex) <-
+      (coe, coe) if #k == kan
+      (coe, coe) if #k == coe
+      (pre, pre) if #k == hcom
+      (pre, pre) if #k == pre
+  | H, x:#c0 >> (#f0 x) = (#f1 x) in #a0
+  | H, x:#c0 >> (#g0 x) = (#g1 x) in #b0
+  | H >> #a0 = #a1 in (U #l #k/end)
+  | H >> #b0 = #b1 in (U #l #k/end)
+  | H >> #c0 = #c1 in (U #l #k/apex)
 
 :index:`pushout/eq/left`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (left #m0) = (left #m1) in (pushout #a #b #c [x] (#f x) [x] (#g x))
+  | H >> #m0 = #m1 in #a
+  | H, x:#c >> (#f x) in #a
+  | H, x:#c >> (#g x) in #b
+  | H >> #b type
+  | H >> #c type
 
 :index:`pushout/eq/right`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (right #m0) = (right #m1) in (pushout #a #b #c [x] (#f x) [x] (#g x))
+  | H >> #m0 = #m1 in #b
+  | H, x:#c >> (#f x) in #a
+  | H, x:#c >> (#g x) in #b
+  | H >> #a type
+  | H >> #c type
 
 :index:`pushout/eq/glue`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (glue #r #m0 #fm0 #gm0) = (glue #r #m1 #fm1 #gm1) in (pushout #a #b #c [x] (#f x) [x] (#g x))
+  | H >> #m0 = #m1 in #c
+  | H >> #fm0 = #fm1 in #a
+  | H >> #gm0 = #gm1 in #b
+  | H >> (#f #m0) = #fm0 in #a
+  | H >> (#g #m0) = #gm0 in #b
+  | H, x:#c >> (#f x) in #a
+  | H, x:#c >> (#g x) in #b
 
 :index:`pushout/eq/fcom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :index:`pushout/eq/pushout-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (pushout-rec [p] (#d0 p) #m0 [a] (#n0 a) [b] (#p0 b) [v x] (#q0 v x)) = (pushout-rec [x] (#d1 x) #m1 [a] (#n1 a) [b] (#p1 b) [v x] (#q1 v x)) in #ty
+  where H >> #m0 = #m1 synth ~> (pushout #a #b #c [x] (#f x) [x] (#g x)), psi
+  | H, a:#a >> (#n0 a) = (#n1 a) in (#d0 (left a))
+  | H, b:#b >> (#p0 b) = (#p1 b) in (#d1 (right b))
+  | H, v:dim, x:#c >> (#q0 v x) = (#q1 v x) in (#d0 (glue v x (#f x) (#g x)))
+  | H, x:#c >> (#q0 0 x) = (#n0 (#f x)) in (#d0 (left (#f x)))
+  | H, x:#c >> (#q0 1 x) = (#p0 (#g x)) in (#d0 (right (#g x)))
+  | H, p:(pushout #a #b #c [x] (#f x) [x] (#g x)) >> (#d0 p) = (#d1 p) kan type
+  | psi
+  | H >> (#d0 #m0) <= #ty type
 
 :index:`pushout/beta/glue`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (pushout-rec [p] (#d p) (glue #r #t #ft #gt) [a] (#n a) [b] (#p b) [v x] (#q v x)) = #s in #ty
+  | H >> (#q #r #t) = #s in #ty
+  | TODO: left coherence
+  | TODO: right coherence
 
 Coequalizers
 ------------
