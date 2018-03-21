@@ -34,7 +34,7 @@ Booleans
   where H >> #m0 = #m1 synth ~> bool, psi
   | H >> #t0 = #t1 in (#c0 tt)
   | H >> #f0 = #f1 in (#c0 ff)
-  | H, x:bool >> #c0 = #c1 type
+  | H, x:bool >> (#c0 x) = (#c1 x) type
   | psi
   | H >> (#c0 #m0) <= #ty type
 
@@ -44,15 +44,34 @@ Natural numbers and integers
 
 :index:`nat/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> nat = nat in (U #l #k)
 
 :index:`nat/eq/zero`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (nat 0) = (nat 0) in nat
 
 :index:`nat/eq/succ`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (succ #n) = (succ #m) in nat
+  | H >> #n = #m in nat
 
 :index:`nat/eq/nat-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+  H >> (nat-rec [x] (#c0 x) #m0 #n0 [a b] (#p0 a b)) = (nat-rec [x] (#c1 x) #m1 #n1 [a b] (#p1 a b)) in #ty
+  | H >> #m0 = #m1 in nat
+  | H >> #n0 = #n1 in (#c0 (nat 0))
+  | H, a:nat, b:(#c0 a) >> #p0 a b = #p1 a b in (#c0 (succ a))
+  | H, x:nat >> (#c0 x) = (#c1 x) type
+  | H >> (#c0 #m0) <= #ty type
 
 :index:`int/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -71,6 +90,9 @@ Void
 
 :index:`void/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> void = void in (U #l #k)
 
 Circle
 ------
