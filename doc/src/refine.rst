@@ -300,15 +300,38 @@ Paths
 
 :index:`path/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (path [u] (#a0 u) #m0 #n0) = (path [u] (#a1 u) #m1 #n1) type
+  | H, u:dim >> (#a0 u) = (#a1 u) type
+  | H >> #m0 = #m1 in (#a0 0)
+  | H >> #n0 = #n1 in (#a0 1)
 
 :index:`path/eq/abs`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (abs v => #m0 v) = (abs v => #m1 v) in (path [v] (#a v) #p0 #p1)
+  | H, v:dim >> #m0 v = #m1 v in (#a v)
+  | H >> #m0 0 = #p0 in (#a 0)
+  | H >> #m0 1 = #p1 in (#a 1)
 
 :index:`path/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (path [u] (#a u) #p0 #p1) true
+  | H, u:dim >> (#a u) true ~> #m
+  | H >> #m[0/u] = #p0 in (#a 0)
+  | H >> #m[1/u] = #p1 in (#a 1)
 
 :index:`path/eq/eta`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> #m = #n in (path [u] (#a u) #p0 #p1)
+  | H >> (abs u => #m u) = #n in (path [u] (#a u) #p0 #p1)
+  | H >> #m = #m in (path [u] (#a u) #p0 #p1)
 
 :index:`path/eq/app`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
