@@ -55,6 +55,7 @@ is
   redprl/syntax/univ_level.sml
   redprl/syntax/view.sml
   redprl/syntax/variable_kit.sml
+  redprl/syntax/restriction.sml
 
   redprl/config.sml
 
@@ -74,7 +75,8 @@ is
   redprl/log.sig
   redprl/log.sml
 
-
+  redprl/syntax/assert.sml
+  redprl/inductive_spec.sml
   redprl/mini_signature.sig  
 
   redprl/metalanguage/type.sig
@@ -106,7 +108,6 @@ is
 
   redprl/refiner_kit.fun
   redprl/refiner_composition_kit.fun
-  redprl/refiner_inductive_spec.fun
   redprl/refiner_types.fun
   redprl/refiner_misc.fun
   redprl/refiner.sig

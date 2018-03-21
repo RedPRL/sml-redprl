@@ -232,18 +232,16 @@ struct
       elabNu (psi, elabBind (elabRefine (SOME name, goal, script), x, elabRet @@ elabAbs (elabMetas psi, elabVar x)))
     end
 
+  exception OhFavoniaPlease
   fun elabDataDecl (name, psi, decl, script) : elab_cmd =
     let
-      (* TODO *)
-      val result : elab_val = fn env => (ISyn.DATA_INFO (?todo), Ty.DATA_INFO)
-      val resultAbs =
-        (* To insert a check a list of sequents against a multitactic, use
-            elabBind (fn env => refineSequents (name, sequents, elabAst env (script, RedPrlSort.MTAC)), MlId.fresh "_", ....)
-
-           note that currently you don't have access to the extracts or anything
-            - jms
-         *)
-        elabRet (elabAbs (elabMetas psi, result))
+      val x = MlId.fresh "_"
+      val decl' = fn env => raise OhFavoniaPlease (* InductiveSpec.elabTerm decl env *)
+      val sequents' = fn env => raise OhFavoniaPlease (* InductiveSpec.elabTerm decl env *)
+      val script' = fn env => elabAst env (script, RedPrlSort.MTAC)
+      val cmd = fn env => refineSequents (SOME name, sequents' env, script' env)
+      val result : elab_val = fn env => (ISyn.DATA_INFO (decl' env), Ty.DATA_INFO)
+      val resultAbs = elabBind (cmd, x, elabRet (elabAbs (elabMetas psi, result)))
     in
       elabNu (psi, resultAbs)
     end

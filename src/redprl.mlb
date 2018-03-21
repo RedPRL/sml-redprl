@@ -53,6 +53,7 @@ in
     redprl/syntax/univ_level.sml
     redprl/syntax/view.sml
     redprl/syntax/variable_kit.sml
+    redprl/syntax/restriction.sml
     redprl/syntax/atomic_judgment.sig
     redprl/syntax/atomic_judgment.sml
     redprl/syntax/sequent.sig
@@ -69,8 +70,9 @@ in
 
     redprl/tactical.fun
 
+    redprl/syntax/assert.sml
+    redprl/inductive_spec.sml
     redprl/mini_signature.sig
-
 
     ann
       "nonexhaustiveMatch ignore"
@@ -79,7 +81,6 @@ in
       redprl/machine.fun
       redprl/refiner_kit.fun
       redprl/refiner_composition_kit.fun
-      redprl/refiner_inductive_spec.fun
       redprl/refiner_types.fun
       redprl/refiner_misc.fun
       redprl/refiner.sig
