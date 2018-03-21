@@ -148,7 +148,7 @@ Circle
   | H, u:dim >> (#l0 u) = (#l1 u) in (#c0 (loop u))
   | H >> (#l0 0) = #b0 in (#c0 base)
   | H >> (#l0 1) = #b0 in (#c0 base)
-  | H, x:S1 >> (#c0 x) = (#c1 x) type
+  | H, x:S1 >> (#c0 x) = (#c1 x) kan type
   | H >> (#c0 #m0) <= #ty type
 
 :index:`s1/beta/loop`
