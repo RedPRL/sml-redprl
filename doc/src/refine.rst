@@ -302,8 +302,15 @@ Paths
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (path [u] (#a0 u) #m0 #n0) = (path [u] (#a1 u) #m1 #n1) type
-  | H, u:dim >> (#a0 u) = (#a1 u) type
+  H >> (path [u] (#a0 u) #m0 #n0) = (path [u] (#a1 u) #m1 #n1) in (U #l #k)
+  where
+    #ka <-
+      discrete if #k == discrete
+      kan if #k == kan
+      hcom if #k == hcom
+      kan if #k == coe
+      pre if #k == pre
+  | H, u:dim >> (#a0 u) = (#a1 u) in (U #l #ka)
   | H >> #m0 = #m1 in (#a0 0)
   | H >> #n0 = #n1 in (#a0 1)
 
