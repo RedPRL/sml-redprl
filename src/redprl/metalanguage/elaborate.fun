@@ -176,6 +176,15 @@ struct
        | x::xs =>
          f x >>= (fn y => traverse f xs >>= (fn ys => ret @@ y :: ys))
 
+
+    fun bindVars (xs, taus) (k : Tm.variable list -> 'a elab) : 'a elab =
+      fn env => 
+        let
+          val (vars, env') = R.extendVars env (xs, taus)
+        in
+          k (List.map #1 vars) env'
+        end
+
     fun bindVar (x, tau) (k : Tm.variable -> 'a elab) : 'a elab =
       fn env => 
         let
@@ -276,9 +285,18 @@ struct
 
     and elabOpApp theta rxtail =
       let
-        val ar = O.arity theta
+        val (vls, _) = O.arity theta
+        fun go acc = 
+          fn ([], []) =>
+             ret @@ theta $$ List.rev acc
+           | ((taus, _) :: vls, Rx.NODE {con = Rx.BIND_CELL xs,...} :: rx :: rxs) =>
+             elabBinder (xs, taus) rx >>= (fn bnd => 
+               go (bnd :: acc) (vls, rxs))
+           | (_ :: vls, rx :: rxs) =>
+             elabBinder ([], []) rx >>= (fn bnd =>
+               go (bnd :: acc) (vls, rxs))
       in
-        ?todo
+        go [] (vls, rxtail)
       end
 
     and elabFunctionType rxtail =       
@@ -338,17 +356,17 @@ struct
         go rxtail
       end
 
-    and elabBinder (x, tau) rx = 
-      bindVar (x, tau) (fn x' =>
+    and elabBinder (xs, taus) rx = 
+      bindVars (xs, taus) (fn xs' =>
         elabAbt rx >>= (fn tm =>
-          ret @@ [x'] \ tm))
+          ret @@ xs' \ tm))
 
     and elabCoe rxtail = 
       case rxtail of 
          [rxdim0, Rx.NODE {con = Rx.ATOM "~>",...}, rxdim1, Rx.NODE {con = Rx.BIND_CELL [x],...}, rxty, rxtm] =>
          elabAbt rxdim0 >>= (fn dim0 => 
            elabAbt rxdim1 >>= (fn dim1 =>
-             elabBinder (x, O.EXP) rxty >>= (fn ty => 
+             elabBinder ([x], [O.EXP]) rxty >>= (fn ty => 
                elabAbt rxtm >>= (fn tm => 
                  ret @@ O.COE $$ [[] \ dim0, [] \ dim1, ty, [] \ tm]))))
        | _ => throw @@ Fail "elabCoe"
