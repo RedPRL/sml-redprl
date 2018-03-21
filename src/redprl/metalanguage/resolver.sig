@@ -4,11 +4,13 @@ structure Tm = RedPrlAbt
 signature RESOLVER = 
 sig
   type env
+  type spec_env
   type mltype
 
   type id
   
   val init : env
+  val spec_init : spec_env
 
   val lookupId : env -> Pos.t option -> id -> mltype
   val extendId : env -> id -> mltype -> env
@@ -18,4 +20,7 @@ sig
 
   val extendVars : env -> string list * Tm.sort list -> (Tm.variable * Tm.sort) list * env
   val extendMetas : env -> string list * Tm.valence list -> (Tm.metavariable * Tm.valence) list * env
+
+  val lookupSpecIntro : spec_env -> Pos.t option -> InductiveSpec.conid -> Tm.valence list
+  val makeSpecEnv : Tm.valence list InductiveSpec.ConstrDict.dict -> spec_env
 end

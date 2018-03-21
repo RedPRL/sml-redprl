@@ -5,6 +5,7 @@ struct
   structure ISyn = MlIntSyntax
 
   type env = R.env
+  type spec_env = R.spec_env
   type ivalue = ISyn.value
   type icmd = ISyn.cmd
   type evalue = ESyn.value
@@ -24,6 +25,7 @@ struct
 
   structure O = RedPrlOperator and S = RedPrlSort and Err = RedPrlError
   type arity = O.Ar.t
+  type valence = O.Ar.valence
 
 
   fun lookupArity (env : env) (pos : Pos.t option) (opid : MlId.t) : arity =
@@ -31,6 +33,24 @@ struct
         Ty.ABS (vls, Ty.TERM tau) => (vls, tau)
       | Ty.ABS (vls, Ty.THM tau) => (vls, tau)
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for opid", Fpp.text (MlId.toString opid)])
+
+  fun lookupDataTypeValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
+    case R.lookupId env pos opid of
+        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getTypeValences arity
+      | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data type", Fpp.text (MlId.toString opid)])
+
+  fun lookupDataIntroValences (env : env) (pos : Pos.t option) (opid : MlId.t) (conid : InductiveSpec.conid) : valence list =
+    case R.lookupId env pos opid of
+        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getIntroValences arity conid
+      | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data constructor", Fpp.text (MlId.toString opid), Fpp.text conid])
+
+  fun lookupDataElimValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
+    case R.lookupId env pos opid of
+        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getElimValences arity
+      | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data eliminator", Fpp.text (MlId.toString opid)])
+
+  fun lookupSpecIntroValences (specEnv : spec_env) (pos : Pos.t option) (conid : InductiveSpec.conid) : valence list =
+    R.lookupSpecIntro specEnv pos conid
 
   fun checkAbt pos (view, tau) : abt =
     Tm.setAnnotation pos @@ Tm.check (view, tau)
@@ -58,14 +78,14 @@ struct
 
   fun elabAtomicJdg (env : env) (ast : ast) : AJ.jdg =
     let
-      val abt = elabAst env (ast, S.JDG)
+      val abt = elabAst env R.spec_init (ast, S.JDG)
     in
       AJ.out abt
       handle _ =>
         Err.raiseError @@ Err.GENERIC [Fpp.text "Expected atomic judgment but got", TermPrinter.ppTerm abt]
     end
 
-  and elabAst (env : env) (ast : ast, tau : sort) : abt =
+  and elabAst (env : env) (specEnv : spec_env) (ast : ast, tau : sort) : abt =
     let
       val pos = Ast.getAnnotation ast
     in
@@ -79,35 +99,47 @@ struct
             val _ =
               if List.length asts = List.length taus then () else
                 Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Incorrect valence for metavariable", Fpp.text X])
-            val abts = ListPair.map (elabAst env) (asts, taus)
+            val abts = ListPair.map (elabAst env specEnv) (asts, taus)
           in
             checkAbt pos (Tm.$# (X', abts), tau)
           end
 
         | Ast.$ (theta, bs) =>
           let
-            val theta' = elabOpr env pos theta bs
+            val theta' = elabOpr env specEnv pos theta bs
             val ar as (vls, tau) = O.arity theta'
             val _ =
               if List.length bs = List.length vls then () else
                 Err.raiseAnnotatedError' (pos, Err.INCORRECT_ARITY theta')
-            val bs' = ListPair.map (elabBnd env) (vls, bs)
+            val bs' = ListPair.map (elabBnd env specEnv) (vls, bs)
           in
             checkAbt pos (Tm.$ (theta', bs'), tau)
           end
     end
 
-  and elabBnd (env : env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview =
+  and elabBnd (env : env) (specEnv : spec_env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview =
     let
       val (xs', env') = R.extendVars env (xs, taus)
     in
-      Tm.\ (List.map #1 xs', elabAst env' (ast, tau))
+      Tm.\ (List.map #1 xs', elabAst env' specEnv (ast, tau))
     end
 
-  and elabOpr (env : env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator =
+  and elabOpr (env : env) (specEnv : spec_env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator =
     (case theta of
         O.CUST (opid, NONE) =>
         O.CUST (opid, SOME @@ lookupArity env pos opid)
+
+      | O.IND_TYPE (opid, NONE) =>
+        O.IND_TYPE (opid, SOME @@ lookupDataTypeValences env pos opid)
+
+      | O.IND_INTRO (opid, conid, NONE) =>
+        O.IND_INTRO (opid, conid, SOME @@ lookupDataIntroValences env pos opid conid)
+
+      | O.IND_REC (opid, NONE) =>
+        O.IND_REC (opid, SOME @@ lookupDataElimValences env pos opid)
+
+      | O.IND_SPEC_INTRO (conid, NONE) =>
+        O.IND_SPEC_INTRO (conid, SOME @@ lookupSpecIntroValences specEnv pos conid)
 
       | O.MK_ANY NONE =>
         let
@@ -171,7 +203,7 @@ struct
     end
 
   fun elabTerm (ast, tau) : elab_val = fn env =>
-    (ISyn.TERM @@ elabAst env (ast, tau), Ty.TERM tau)
+    (ISyn.TERM @@ elabAst env R.spec_init (ast, tau), Ty.TERM tau)
 
   fun elabMetas psi : elab_val = fn env =>
     let
@@ -217,7 +249,7 @@ struct
     let
       val ajdg' = elabAtomicJdg env ajdg
       val sequent = Sequent.>> (Sequent.Hyps.empty, ajdg')
-      val script' = elabAst env (script, RedPrlSort.TAC)
+      val script' = elabAst env R.spec_init (script, RedPrlSort.TAC)
     in
       refineSequent (name, sequent, script')
     end
@@ -235,11 +267,13 @@ struct
   fun elabDataDecl (name, psi, decl, script) : elab_cmd =
     let
       val x = MlId.new ()
-      val decl' = fn env => elabAst env (decl, RedPrlSort.IND_FAM)
+      val arity = InductiveSpec.computeValences decl
+      val specEnv = R.makeSpecEnv (InductiveSpec.computeAllSpecIntroValences decl)
+      val decl' = fn env => elabAst env specEnv (decl, RedPrlSort.IND_FAM)
       val sequents' = fn env => InductiveSpec.checkDecl (decl' env)
-      val script' = fn env => elabAst env (script, RedPrlSort.MTAC)
+      val script' = fn env => elabAst env R.spec_init (script, RedPrlSort.MTAC)
       val cmd = fn env => refineSequents (SOME name, sequents' env, script' env)
-      val result : elab_val = fn env => (ISyn.DATA_INFO (decl' env), Ty.DATA_INFO)
+      val result : elab_val = fn env => (ISyn.DATA_INFO (decl' env), Ty.DATA_INFO arity)
       val resultAbs = elabBind (cmd, x, elabRet (elabAbs (elabMetas psi, result)))
     in
       elabNu (psi, resultAbs)
@@ -320,7 +354,7 @@ struct
          let
            val (v', vty') = elabv env
          in
-           if vty = vty' then
+           if Ty.eqVty (vty, vty') then
              (ISyn.AP (cmd', v'), cty')
            else
              Err.raiseError @@ Err.GENERIC [Fpp.text "Argument type mismatch"]

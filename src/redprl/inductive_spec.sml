@@ -1,14 +1,19 @@
 structure InductiveSpec :
 sig
   type conid = string
+  structure ConstrDict : DICT where type key = conid
   type decl = RedPrlAbt.abt (* XXX *)
   type constr = RedPrlAbt.abt (* XXX *)
   type args = RedPrlAbt.abt list
+  type precomputedArity
+  val eqPrecomputedArity : precomputedArity * precomputedArity -> bool
 
   (* Valence collectors. *)
-  val collectValenceForType : decl -> RedPrlArity.valence list
-  val collectValenceForIntro : decl -> conid -> RedPrlArity.valence list
-  val collectValenceForElim : decl -> RedPrlArity.valence list
+  val computeValences : RedPrlAst.ast -> precomputedArity
+  val getTypeValences : precomputedArity -> RedPrlArity.valence list
+  val getIntroValences : precomputedArity -> conid -> RedPrlArity.valence list
+  val getElimValences : precomputedArity -> RedPrlArity.valence list
+  val computeAllSpecIntroValences : RedPrlAst.ast -> RedPrlArity.valence list ConstrDict.dict
 
   (* Given a data declaration, generate a list of sequents for type-checking. *)
   val checkDecl : decl -> Sequent.jdg list
@@ -19,12 +24,9 @@ sig
 end
 =
 struct
-  structure Abt = RedPrlAbt
-  structure Syn = SyntaxView
+  structure Abt = RedPrlAbt and Ast = RedPrlAst and Syn = SyntaxView
   structure AJ = AtomicJudgment
-  structure E = RedPrlError
-  structure K = RedPrlKind
-  structure O = RedPrlOpData
+  structure E = RedPrlError and K = RedPrlKind and O = RedPrlOpData
   val >> = Sequent.>>
   infix >>
   fun @@ (f, x) = f x
@@ -363,64 +365,131 @@ struct
       (ConstrDict.empty, [])
       constrs
 
-  fun checkFam' H desc =
-    case Syn.out desc of
+  fun checkDecl' H decl =
+    case Syn.out decl of
        Syn.IND_FAM_BASE (level, constrs) => checkConstrs H constrs level
      | Syn.IND_FAM_FUN (a,x,bx) =>
          let
            val w = Sym.new () (* can we avoid this? *)
            val seq = H >> AJ.TYPE (a, K.top)
          in
-           seq :: checkFam' (H @> (w, AJ.TRUE a)) (VarKit.rename (w, x) bx)
+           seq :: checkDecl' (H @> (w, AJ.TRUE a)) (VarKit.rename (w, x) bx)
          end
      | Syn.IND_FAM_LINE (x,bx) =>
          let
            val w = Sym.new () (* can we avoid this? *)
          in
-           checkFam' (H @> (w, AJ.TERM O.DIM)) (VarKit.rename (w, x) bx)
+           checkDecl' (H @> (w, AJ.TERM O.DIM)) (VarKit.rename (w, x) bx)
          end
-  val checkDecl = checkFam' Sequent.Hyps.empty
+  val checkDecl = checkDecl' Sequent.Hyps.empty
 
   open ArityNotation infix ->> |:
 
+  type precomputedArity =
+    {tyVls: RedPrlArity.valence list,
+     introExtraVls: RedPrlArity.valence list ConstrDict.dict,
+     elimExtraVls: RedPrlArity.valence list}
+
+  fun eqPrecomputedArity
+    ({tyVls=tyVls0, introExtraVls=introExtraVls0, elimExtraVls=elimExtraVls0},
+     {tyVls=tyVls1, introExtraVls=introExtraVls1, elimExtraVls=elimExtraVls1})
+    = tyVls0 = tyVls1 andalso
+      ConstrDict.toList introExtraVls0 = ConstrDict.toList introExtraVls1 andalso
+      elimExtraVls0 = elimExtraVls1
+
+
   local
-    fun collectFamValence desc cont =
-      case Syn.out desc of
-         Syn.IND_FAM_BASE (_, l) => cont l
-       | Syn.IND_FAM_FUN (_, _, bx) => ([] |: O.EXP) :: collectFamValence bx cont
-       | Syn.IND_FAM_LINE (_, bx) => ([] |: O.DIM) :: collectFamValence bx cont
-
-    fun collectConstrValenceForIntro constr =
-      case Syn.out constr of
-         Syn.IND_CONSTR_DISCRETE _ => []
-       | Syn.IND_CONSTR_KAN _ => []
-       | Syn.IND_CONSTR_FUN (_, _, bx) => ([] |: O.EXP) :: collectConstrValenceForIntro bx
-       | Syn.IND_CONSTR_SPEC_FUN (_, _, bx) => ([] |: O.EXP) :: collectConstrValenceForIntro bx
-       | Syn.IND_CONSTR_LINE (_, bx) => ([] |: O.DIM) :: collectConstrValenceForIntro bx
-
-    fun collectConstrBindingsForElimCase constr =
-      case Syn.out constr of
-         Syn.IND_CONSTR_DISCRETE _ => []
-       | Syn.IND_CONSTR_KAN _ => []
-       | Syn.IND_CONSTR_FUN (_, _, bx) => O.EXP :: collectConstrBindingsForElimCase bx
-       | Syn.IND_CONSTR_SPEC_FUN (_, _, bx) => O.EXP :: O.EXP :: collectConstrBindingsForElimCase bx
-       | Syn.IND_CONSTR_LINE (_, bx) => O.DIM :: collectConstrBindingsForElimCase bx
+    fun computeIntroAndElimCase constr =
+      case Ast.out constr of
+         Ast.$ (O.IND_CONSTR_DISCRETE, _) => ([], [])
+       | Ast.$ (O.IND_CONSTR_KAN, _) => ([], [])
+       | Ast.$ (O.IND_CONSTR_FUN, [_, Ast.\ (_, bx)]) =>
+           let
+             val (introVls, caseBindings) = computeIntroAndElimCase bx
+           in
+             (([] |: O.EXP) :: introVls, O.EXP :: caseBindings)
+           end
+       | Ast.$ (O.IND_CONSTR_SPEC_FUN, [_, Ast.\ (_, bx)]) =>
+           let
+             val (introVls, caseBindings) = computeIntroAndElimCase bx
+           in
+             (([] |: O.EXP) :: introVls, O.EXP :: O.EXP :: caseBindings)
+           end
+       | Ast.$ (O.IND_CONSTR_LINE, [Ast.\ (_, bx)]) =>
+           let
+             val (introVls, caseBindings) = computeIntroAndElimCase bx
+           in
+             (([] |: O.DIM) :: introVls, O.DIM :: caseBindings)
+           end
   in
-    fun collectValenceForType desc =
-      collectFamValence desc (fn _ => [])
+    fun computeValences decl =
+      case Ast.out decl of
+         Ast.$ (O.IND_FAM_BASE conids, lvl :: constrs) =>
+           let
+             val (introVls, elimCasesVls) =
+               ListPair.foldlEq
+                 (fn (conid, Ast.\ (_, constr), (dict, elimCasesVls)) =>
+                   let
+                     val (introVls, binding) = computeIntroAndElimCase constr
+                     val (dict, false) = ConstrDict.insert' dict conid introVls
+                   in
+                     (dict, (binding |: O.EXP) :: elimCasesVls)
+                   end)
+                 (ConstrDict.empty, [])
+                 (conids, constrs)
+           in
+             {tyVls=[],
+              introExtraVls=introVls,
+              elimExtraVls=[[O.EXP] |: O.EXP, [] |: O.EXP] @ elimCasesVls}
+           end
+       | Ast.$ (O.IND_FAM_FUN, [_, Ast.\ (_, bx)]) =>
+           let
+             val {tyVls, introExtraVls, elimExtraVls} = computeValences bx
+           in
+             {tyVls=([] |: O.EXP) :: tyVls,
+              introExtraVls=introExtraVls,
+              elimExtraVls=elimExtraVls}
+           end
+       | Ast.$ (O.IND_FAM_LINE, [Ast.\ (_, bx)]) =>
+           let
+             val {tyVls, introExtraVls, elimExtraVls} = computeValences bx
+           in
+             {tyVls=([] |: O.DIM) :: tyVls,
+              introExtraVls=introExtraVls,
+              elimExtraVls=elimExtraVls}
+           end
 
-    fun collectValenceForIntro desc conid =
-      collectFamValence desc
-        (fn conlist =>
-          let
-            val (_, constr) = Option.valOf (List.find (fn (l, _) => conid = l) conlist)
-          in
-            collectConstrValenceForIntro constr
-          end)
+    fun getTypeValences {tyVls, introExtraVls, elimExtraVls} = tyVls
 
-    fun collectValenceForElim desc =
-      collectFamValence desc
-        (fn l => ([O.EXP] |: O.EXP) :: ([] |: O.EXP)
-          :: List.map (fn (_, constr) => collectConstrBindingsForElimCase constr |: O.EXP) l)
+    fun getIntroValences {tyVls, introExtraVls, elimExtraVls} conid =
+      tyVls @ ConstrDict.lookup introExtraVls conid
+
+    fun getElimValences {tyVls, introExtraVls, elimExtraVls} = tyVls @ elimExtraVls
   end
+
+  local
+    fun computeSpecIntroValences constr =
+      case Ast.out constr of
+         Ast.$ (O.IND_CONSTR_DISCRETE, _) => []
+       | Ast.$ (O.IND_CONSTR_KAN, _) => []
+       | Ast.$ (O.IND_CONSTR_FUN, [_, Ast.\ (_, bx)]) => ([] |: O.EXP) :: computeSpecIntroValences bx
+       | Ast.$ (O.IND_CONSTR_SPEC_FUN, [_, Ast.\ (_, bx)]) => ([] |: O.IND_SPEC) :: computeSpecIntroValences bx
+       | Ast.$ (O.IND_CONSTR_LINE, [Ast.\ (_, bx)]) => ([] |: O.DIM) :: computeSpecIntroValences bx
+  in
+    fun computeAllSpecIntroValences decl =
+      case Ast.out decl of
+         Ast.$ (O.IND_FAM_BASE conids, lvl :: constrs) =>
+           ListPair.foldlEq
+             (fn (conid, Ast.\ (_, constr), dict) =>
+               let
+                 val (dict, false) = ConstrDict.insert' dict conid (computeSpecIntroValences constr)
+               in
+                 dict
+               end)
+             ConstrDict.empty
+             (conids, constrs)
+       | Ast.$ (O.IND_FAM_FUN, [_, Ast.\ (_, bx)]) => computeAllSpecIntroValences bx
+       | Ast.$ (O.IND_FAM_LINE, [Ast.\ (_, bx)]) => computeAllSpecIntroValences bx
+  end
+
 end

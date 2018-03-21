@@ -42,7 +42,7 @@ struct
    | IND_SPECTYPE_SELF
    | IND_SPECTYPE_FUN
 
-   | IND_SPEC_INTRO of conid
+   | IND_SPEC_INTRO of conid * RedPrlArity.valence list option (* actually, sort list is enough *)
    | IND_SPEC_FCOM | IND_SPEC_LAM | IND_SPEC_APP
 
    | IND_CONSTR_FUN | IND_CONSTR_SPEC_FUN | IND_CONSTR_LINE

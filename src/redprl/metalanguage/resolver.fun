@@ -15,10 +15,16 @@ struct
      vars : (Tm.variable * Tm.sort) StringListDict.dict,
      metas : (Tm.metavariable * Tm.valence) StringListDict.dict}
 
+  type spec_env =
+    {intros: Tm.valence list InductiveSpec.ConstrDict.dict}
+
   val init =
     {ids = Dict.empty,
      vars = StringListDict.empty,
      metas = StringListDict.empty}
+
+  val spec_init =
+    {intros = InductiveSpec.ConstrDict.empty}
 
   fun lookupId (env : env) pos (x : id) =
     case Dict.find (#ids env) x of 
@@ -35,11 +41,20 @@ struct
        SOME r => r
      | NONE => E.raiseAnnotatedError' (pos, E.GENERIC [Fpp.text "Could not resolve metavariable", Fpp.text x])
 
-  (* TODO: ensure that this name is not already used *)
+  fun lookupSpecIntro (env : spec_env) pos x =
+    case InductiveSpec.ConstrDict.find (#intros env) x of
+       SOME r => r
+     | NONE => E.raiseAnnotatedError' (pos, E.GENERIC [Fpp.text "Could not resolve constructor id", Fpp.text x])
+
+  (* TODO: proper error message when the name is already used *)
   fun extendId {ids, vars, metas} nm vty =
-    {ids = Dict.insert ids nm vty,
-     vars = vars,
-     metas = metas}
+    let
+      val (ids', false) = Dict.insert' ids nm vty
+    in
+      {ids = ids',
+       vars = vars,
+       metas = metas}
+    end
 
   fun extendVars {ids, vars, metas} (xs, taus) =
     let
@@ -80,6 +95,8 @@ struct
     handle _ =>
       E.raiseError @@ 
         E.GENERIC [Fpp.text "extendMetas: invalid arguments"]
+
+  fun makeSpecEnv intros = {intros = intros}
 end
 
 

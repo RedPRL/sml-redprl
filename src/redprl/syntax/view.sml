@@ -500,7 +500,7 @@ struct
 
        | O.IND_SPECTYPE_SELF $ _ => IND_SPECTYPE_SELF
        | O.IND_SPECTYPE_FUN $ [_ \ a, [x] \ bx] => IND_SPECTYPE_FUN (a, x, bx)
-       | O.IND_SPEC_INTRO label $ [_ \ args] => IND_SPEC_INTRO (label, outVec' unpackAny args)
+       | O.IND_SPEC_INTRO (label, _) $ args => IND_SPEC_INTRO (label, List.map (fn _ \ m => m) args)
        | O.IND_SPEC_FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>
            IND_SPEC_FCOM
              { dir = (r1, r2)

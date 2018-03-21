@@ -85,7 +85,7 @@ struct
      | IND_SPECTYPE_SELF => [] ->> IND_SPECTYPE
      | IND_SPECTYPE_FUN => [[] |: EXP, [EXP] |: IND_SPECTYPE] ->> IND_SPECTYPE
 
-     | IND_SPEC_INTRO _ => [[] |: VEC ANY] ->> IND_SPEC
+     | IND_SPEC_INTRO (_, valences) => Option.valOf valences ->> IND_SPEC
      | IND_SPEC_FCOM => [[] |: DIM, [] |: DIM, [] |: IND_SPEC, [] |: VEC (TUBE IND_SPEC)] ->> IND_SPEC
      | IND_SPEC_LAM => [[EXP] |: IND_SPEC] ->> IND_SPEC
      | IND_SPEC_APP => [[] |: IND_SPEC, [] |: EXP] ->> IND_SPEC
@@ -100,9 +100,9 @@ struct
      | IND_FAM_FUN => [[] |: EXP, [EXP] |: IND_FAM] ->> IND_FAM
      | IND_FAM_LINE => [[DIM] |: IND_FAM] ->> IND_FAM
 
-     | IND_TYPE (_, valence) => Option.valOf valence ->> EXP
-     | IND_INTRO (_, _, valence) => Option.valOf valence ->> EXP
-     | IND_REC (_, valence) => Option.valOf valence ->> EXP
+     | IND_TYPE (_, valences) => Option.valOf valences ->> EXP
+     | IND_INTRO (_, _, valences) => Option.valOf valences ->> EXP
+     | IND_REC (_, valences) => Option.valOf valences ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (BDRY EXP)] ->> EXP
