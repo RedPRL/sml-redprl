@@ -111,23 +111,48 @@ struct
       LESS => O.NEGSUCC $$ [[] \ makeNat pos ((~ i) - 1)]
     | _ => O.POS $$ [[] \ makeNat pos i]
 
-  datatype ('a, 'b) binder = DIM of 'a | TERM of ('a * 'b)
+  datatype 'a typing = DIM | TERM of 'a | SPEC of 'a
 
-  fun flatten (quant : ('a list,'b) binder list) : ('a,'b) binder list =
+  fun flatten (quant : ('a list * 'b typing) list) : ('a * 'b typing) list =
     let
-      fun expand (DIM vars) = List.map DIM vars
-        | expand (TERM (vars, term)) = List.map (fn var => TERM (var, term)) vars
+      fun expand (vars, DIM) = List.map (fn v => (v, DIM)) vars
+        | expand (vars, TERM term) = List.map (fn v => (v, TERM term)) vars
+        | expand (vars, SPEC term) = List.map (fn v => (v, SPEC term)) vars
     in
       ListUtil.concatMap expand quant
     end
 
-  fun makeFunOrLineAux [] cod = cod
-    | makeFunOrLineAux (TERM (x, a) :: doms) cod =
-       O.FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ makeFunOrLineAux doms cod]
-    | makeFunOrLineAux (DIM x :: doms) cod =
-       O.LINE $$ [[Option.getOpt (x, "_")] \ makeFunOrLineAux doms cod]
+  fun makeFunOrLine (x, TERM a) cod =
+        O.FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ cod]
+    | makeFunOrLine (x, DIM) cod =
+        O.LINE $$ [[Option.getOpt (x, "_")] \ cod]
 
-  val makeFunOrLine = makeFunOrLineAux o flatten
+  fun makeFunOrLines (xs, ty) cod =
+    List.foldr (fn (x, tm) => makeFunOrLine (x, ty) tm) cod xs
+
+  fun makeIndFamFunOrLine (x, TERM a) cod =
+        O.IND_FAM_FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ cod]
+    | makeIndFamFunOrLine (x, DIM) cod =
+        O.IND_FAM_LINE $$ [[Option.getOpt (x, "_")] \ cod]
+
+  fun makeIndFamFunOrLines (xs, ty) cod =
+    List.foldr (fn (x, tm) => makeIndFamFunOrLine (x, ty) tm) cod xs
+
+  fun makeSpecFunOrLine (x, TERM a) cod =
+    O.IND_SPECTYPE_FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ cod]
+
+  fun makeSpecFunOrLines (xs, ty) cod =
+    List.foldr (fn (x, tm) => makeSpecFunOrLine (x, ty) tm) cod xs
+
+  fun makeConstrFunOrLine (x, TERM a) cod =
+        O.IND_CONSTR_FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ cod]
+    | makeConstrFunOrLine (x, DIM) cod =
+        O.IND_CONSTR_LINE $$ [[Option.getOpt (x, "_")] \ cod]
+    | makeConstrFunOrLine (x, SPEC a) cod =
+        O.IND_CONSTR_SPEC_FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ cod]
+
+  fun makeConstrFunOrLines (xs, ty) cod =
+    List.foldr (fn (x, tm) => makeConstrFunOrLine (x, ty) tm) cod xs
 
   structure LabelSet = SplaySet (structure Elem = StringOrdered)
 
@@ -147,9 +172,10 @@ struct
   fun makeRecordAux pos tbs =
     let
       val fields = ListUtil.mapWithIndex
-        (fn (_, TERM (SOME x, ty)) => (x, ty)
-          | (i, TERM (NONE, ty)) => (O.indexToLabel i, ty)
-          | (_, DIM _) => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "No dimension binders in record types."]))
+        (fn (_, (SOME x, TERM ty)) => (x, ty)
+          | (i, (NONE, TERM ty)) => (O.indexToLabel i, ty)
+          | (_, (_, DIM)) => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "No dimension binders in record types."])
+          | (_, (_, SPEC _)) => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "No specification binders in record types."]))
         (flatten tbs)
       val init = {labels = [], args = []}
       val {labels, args} =
@@ -166,9 +192,9 @@ struct
       (lbls, List.rev args)
     end
 
-  fun makeProd pos (tbs, ty) =
+  fun makeProd pos tbs =
     let
-      val (_, args) = makeRecordAux pos (tbs @ [TERM ([NONE], ty)])
+      val (_, args) = makeRecordAux pos tbs
       val lbls = ListUtil.mapWithIndex (O.indexToLabel o #1) args
     in
       O.RECORD lbls $$ args
@@ -376,7 +402,7 @@ end
 
  (* metalanguage *)
  | EXTRACT | QUIT
- | DEFINE | TACTIC | THEOREM
+ | DEFINE | TACTIC | THEOREM | DATA
  | BY | IN | VAL | DO | CARET | END | FN
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
@@ -420,11 +446,11 @@ end
  | customOpTerm of MlId.t * ast abs list
 
 
- | typedBinder of (string option list, ast) Multi.binder
- | typedBinders of (string option list, ast) Multi.binder list
- | dimBinder of (string option list, ast) Multi.binder
- | arrowQuantifierData of (string option list, ast) Multi.binder list * ast
- | timesQuantifierData of (string option list, ast) Multi.binder list * ast
+ | typedBinder of (string option list * ast Multi.typing)
+ | typedBinders of (string option list * ast Multi.typing) list
+ | dimBinder of (string option list * ast Multi.typing)
+ | arrowQuantifierData of ast
+ | timesQuantifierData of (string option list * ast Multi.typing) list
  | field of string * ast
  | fields of (string * ast) list
 
@@ -450,8 +476,6 @@ end
 
  | rawJudgment of ast
  | judgment of ast
-
- | src_atjdg of ast
 
  | termAnySort of ast
  | termsAnySort of ast list
@@ -587,26 +611,26 @@ metavar
   : HASH ident (ident)
 
 typedBinder
-  : LSQUARE boundVars COLON term RSQUARE (Multi.TERM (boundVars, term))
+  : LSQUARE boundVars COLON term RSQUARE (boundVars, Multi.TERM term)
 
 typedBinders
   : typedBinder ([typedBinder])
   | typedBinder typedBinders (typedBinder :: typedBinders)
 
 dimBinder
-  : LSQUARE boundVars COLON DIM RSQUARE (Multi.DIM boundVars)
+  : LSQUARE boundVars COLON DIM RSQUARE (boundVars, Multi.DIM)
 
 arrowQuantifierData
-  : typedBinder arrowQuantifierData ((typedBinder :: #1 arrowQuantifierData), #2 arrowQuantifierData)
-  | dimBinder arrowQuantifierData ((dimBinder :: #1 arrowQuantifierData), #2 arrowQuantifierData)
-  | term arrowQuantifierData ((Multi.TERM ([NONE], term) :: #1 arrowQuantifierData), #2 arrowQuantifierData)
-  | DIM arrowQuantifierData ((Multi.DIM [NONE] :: #1 arrowQuantifierData), #2 arrowQuantifierData)
-  | term ([], term)
+  : typedBinder arrowQuantifierData (Multi.makeFunOrLines typedBinder arrowQuantifierData)
+  | dimBinder arrowQuantifierData (Multi.makeFunOrLines dimBinder arrowQuantifierData)
+  | term arrowQuantifierData (Multi.makeFunOrLine (NONE, Multi.TERM term) arrowQuantifierData)
+  | DIM arrowQuantifierData (Multi.makeFunOrLine (NONE, Multi.DIM) arrowQuantifierData)
+  | term (term)
 
 timesQuantifierData
-  : typedBinder timesQuantifierData ((typedBinder :: #1 timesQuantifierData), #2 timesQuantifierData)
-  | term timesQuantifierData ((Multi.TERM ([NONE], term) :: #1 timesQuantifierData), #2 timesQuantifierData)
-  | term ([], term)
+  : typedBinder timesQuantifierData (typedBinder :: timesQuantifierData)
+  | term timesQuantifierData (([NONE], Multi.TERM term) :: timesQuantifierData)
+  | term ([([NONE], Multi.TERM term)])
 
 field
   : LSQUARE ident term RSQUARE (ident, term)
@@ -741,7 +765,7 @@ rawTermAndTac
   | LPAREN INT NUMERAL RPAREN (Multi.makeInt (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
 
   (* function types *)
-  | LPAREN RIGHT_ARROW arrowQuantifierData RPAREN (Multi.makeFunOrLine (#1 arrowQuantifierData) (#2 arrowQuantifierData))
+  | LPAREN RIGHT_ARROW arrowQuantifierData RPAREN (arrowQuantifierData)
   | LPAREN LAMBDA LSQUARE boundVars RSQUARE term RPAREN (Multi.makeLam boundVars term)
   | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 
@@ -814,7 +838,6 @@ rawJudgment
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
-src_atjdg : judgment (judgment)
 
 recordFieldTactics
    : VARNAME EQUALS tactic COMMA recordFieldTactics ((VARNAME, tactic) :: recordFieldTactics)
@@ -1072,9 +1095,9 @@ mlDecl
     (fn kont =>
        ML.BIND (ML.TAC {arguments = declArgumentsParens, script = tactic}, MlId.const OPNAME, kont))
 
-  | THEOREM OPNAME declArgumentsParens COLON src_atjdg BY LBRACKET tactic RBRACKET
+  | THEOREM OPNAME declArgumentsParens COLON judgment BY LBRACKET tactic RBRACKET
     (fn kont =>
-       ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, MlId.const OPNAME, kont))
+       ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = judgment, script = tactic}, MlId.const OPNAME, kont))
 
   | VAL OPNAME EQUALS mlCmd
    (fn kont =>
