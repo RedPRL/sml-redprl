@@ -99,21 +99,47 @@ Circle
 
 :index:`s1/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> S1 = S1 in (U #l #k)
+  where kan <= #k universe
 
 :index:`s1/eq/base`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> base = base in S1
 
 :index:`s1/eq/loop`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> loop #r = loop #r in S1
 
 :index:`s1/eq/fcom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :index:`s1/eq/s1-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (S1-rec [x] (#c0 x) #m0 #b0 [u] #l0) = (S1-rec [x] (#c1 x) #m1 #b1 [u] #l1) in #ty
+  | H >> #m0 = #m1 in S1
+  | H >> #b0 = #b1 in (#c0 base)
+  | H, u:dim >> (#l0 u) = (#l1 u) in (#c0 (loop u))
+  | H >> (#l0 0) = #b0 in (#c0 base)
+  | H >> (#l0 1) = #b0 in (#c0 base)
+  | H, x:S1 >> (#c0 x) = (#c1 x) type
+  | H >> (#c0 #m0) <= #ty type
 
 :index:`s1/beta/loop`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (S1-rec [x] (#c x) (loop #r) #b [u] (#l u)) = #m in #ty
+  | H >> (#l #r) = #m in #ty
+  | H >> #b[0/#r] = #m[0/#r] in #ty[0/#r]
+  | H >> #b[1/#r] = #m[1/#r] in #ty[1/#r]
 
 Dependent functions
 -------------------
