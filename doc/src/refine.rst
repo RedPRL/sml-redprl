@@ -320,17 +320,17 @@ Paths
 
   H >> (abs [v] (#m0 v)) = (abs [v] (#m1 v)) in (path [v] (#a v) #p0 #p1)
   | H, v:dim >> #m0 v = #m1 v in (#a v)
-  | H >> #m0 0 = #p0 in (#a 0)
-  | H >> #m0 1 = #p1 in (#a 1)
+  | H >> (#m0 0) = #p0 in (#a 0)
+  | H >> (#m0 1) = #p1 in (#a 1)
 
 :index:`path/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (path [u] (#a u) #p0 #p1) ext (abs [u] (#m u)
+  H >> (path [u] (#a u) #p0 #p1) ext (abs [u] (#m u))
   | H, u:dim >> (#a u) ext (#m u)
-  | H >> #m[0/u] = #p0 in (#a 0)
-  | H >> #m[1/u] = #p1 in (#a 1)
+  | H >> (#m 0) = #p0 in (#a 0)
+  | H >> (#m 1) = #p1 in (#a 1)
 
 :index:`path/eq/eta`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
