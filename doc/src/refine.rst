@@ -378,18 +378,49 @@ Lines
 
 :index:`line/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (line [u] (#a0 u)) = (line [u] (#a1 u)) in (U #l #k)
+  where
+    #ka <-
+      discrete if #k == discrete
+      kan if #k == kan
+      hcom if #k == hcom
+      kan if #k == coe
+      pre if #k == pre
+  | H, u:dim >> (#a0 u) = (#a1 u) in (U #l #ka)
+
 
 :index:`line/eq/abs`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (abs [u] (#m0 u)) = (abs [u] (#m1 u)) in (line [u] (#a u))
+  | H, u:dim >> #m0 u = #m1 u in (#a u)
 
 :index:`line/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (line [u] (#a u)) ext (abs [u] (#m u))
+  | H, u:dim >> (#a u) ext (#m u)
 
 :index:`line/eq/eta`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> #m = #n in (line [u] (#a u))
+  | H >> #m in (line [u] (#a u))
+  | H >> (abs [u] (@m u)) = #n in (line [u] (#a u))
 
 :index:`line/eq/app`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (@ #m0 #r) = (@ #m0 #r) in #ty
+  where H >> #m0 = #m1 synth ~> (line [u] (#a u)), psi
+  | psi
+  | H >> (#a #r) <= #ty type
 
 Pushouts
 --------
