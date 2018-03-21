@@ -27,7 +27,7 @@ struct
     type sign = Sem.env
 
     fun makeSubst (psi, args) =
-      ListPair.foldl
+      ListPair.foldlEq
         (fn ((X, vl), bnd, rho) =>
           Tm.Metavar.Ctx.insert rho X @@ Tm.checkb (bnd, vl))
         Tm.Metavar.Ctx.empty
