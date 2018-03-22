@@ -30,6 +30,7 @@ sig
     val remove : variable -> hyps -> hyps
     val splice : hyps -> variable -> hyps -> hyps
     val singleton : variable -> atjdg -> hyps
+    val map : (atjdg -> atjdg) -> (hyps -> hyps)
     val interposeAfter : variable * hyps -> hyps -> hyps
     val interposeThenSubstAfter : variable * hyps * abt -> hyps -> hyps
     val modifyAfter : variable -> (atjdg -> atjdg) -> hyps -> hyps

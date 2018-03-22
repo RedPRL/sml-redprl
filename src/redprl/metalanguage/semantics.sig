@@ -10,7 +10,7 @@ sig
   datatype value =
      THUNK of env * syn_cmd
    | THM of jdg * Tm.abs
-   | DATA_INFO of {foo : unit} (* For Favonia: This should be the info associated with the *instances* of the data declaration; so it would not include its parameters. Those would be kept in an ABS. *)
+   | DATA_INFO of term (* XXX Seriously, we should have something better. -favonia *)
    | TERM of term
    | ABS of value * value
    | METAS of metas

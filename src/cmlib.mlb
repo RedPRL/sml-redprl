@@ -10,6 +10,7 @@ in
   structure StringOrdered
   structure IntHashable
   structure StringListDict
+  functor ListSet
   structure Sum
   structure Susp
   structure Pos
