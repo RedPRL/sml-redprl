@@ -627,9 +627,6 @@ where ``Equiv`` is defined by
   | psi
   | H >> #b <= #ty type
 
-:index:`universe/eqtype`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 Kan operations
 --------------
 
@@ -653,8 +650,25 @@ Universes
 
 :index:`subtype/eq`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> #a <= #b type
+  | H >> #a = #b type
+
+:index:`universe/eqtype`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (U #l #k) = (U #l #k) in (U #l' #k')
+  where
+    #l <= #l'
+    #k <= #k'
 
 :index:`universe/subtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
 
-
+  H >> (U #l0 #k0) <= (U #l1 #k1) type
+  where
+    #l0 <= #l1
+    #k0 <= #k1
