@@ -111,13 +111,13 @@ struct
       LESS => O.NEGSUCC $$ [[] \ makeNat pos ((~ i) - 1)]
     | _ => O.POS $$ [[] \ makeNat pos i]
 
-  datatype 'a typing = DIM | TERM of 'a | SPEC of 'a
+  datatype 'a typing = DIM | TERM of 'a | IND_SPEC of 'a
 
   fun flatten (quant : ('a list * 'b typing) list) : ('a * 'b typing) list =
     let
       fun expand (vars, DIM) = List.map (fn v => (v, DIM)) vars
         | expand (vars, TERM term) = List.map (fn v => (v, TERM term)) vars
-        | expand (vars, SPEC term) = List.map (fn v => (v, SPEC term)) vars
+        | expand (vars, IND_SPEC term) = List.map (fn v => (v, IND_SPEC term)) vars
     in
       ListUtil.concatMap expand quant
     end
@@ -148,7 +148,7 @@ struct
         O.IND_CONSTR_FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ cod]
     | makeConstrFunOrLine (x, DIM) cod =
         O.IND_CONSTR_LINE $$ [[Option.getOpt (x, "_")] \ cod]
-    | makeConstrFunOrLine (x, SPEC a) cod =
+    | makeConstrFunOrLine (x, IND_SPEC a) cod =
         O.IND_CONSTR_SPEC_FUN $$ [[] \ a, [Option.getOpt (x, "_")] \ cod]
 
   fun makeConstrFunOrLines (xs, ty) cod =
@@ -175,7 +175,7 @@ struct
         (fn (_, (SOME x, TERM ty)) => (x, ty)
           | (i, (NONE, TERM ty)) => (O.indexToLabel i, ty)
           | (_, (_, DIM)) => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "No dimension binders in record types."])
-          | (_, (_, SPEC _)) => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "No specification binders in record types."]))
+          | (_, (_, IND_SPEC _)) => E.raiseAnnotatedError (pos, E.GENERIC [Fpp.text "No specification binders in record types."]))
         (flatten tbs)
       val init = {labels = [], args = []}
       val {labels, args} =
@@ -373,6 +373,7 @@ end
  | PATH | LINE | ABS | AT_SIGN
  | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
  | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
+ | SELF
  | MEM
  | BOX | CAP
  | V | VIN | VPROJ
@@ -446,7 +447,7 @@ end
  | customOpTerm of MlId.t * ast abs list
 
 
- | typedBinder of (string option list * ast Multi.typing)
+ | typedBinder of string option list * ast Multi.typing
  | typedBinders of (string option list * ast Multi.typing) list
  | dimBinder of (string option list * ast Multi.typing)
  | arrowQuantifierData of ast
@@ -476,6 +477,23 @@ end
 
  | rawJudgment of ast
  | judgment of ast
+
+   (* spec language *)
+ | specTube of ast
+ | specTubes of ast list
+ | specBoundary of ast
+ | specBoundaries of ast list
+ | specTubeVec of ast
+ | specBoundaryVec of ast
+ | specArrowQuantifierData of ast
+ | specType of ast
+ | specTypedBinder of string option list * ast Multi.typing
+ | specBinding of ast abs
+ | specBindings of ast abs list
+ | specTerm of ast
+ | dataConstructor of ast
+ | dataConstructors of string list * ast list
+ | dataDecl of ast
 
  | termAnySort of ast
  | termsAnySort of ast list
@@ -591,7 +609,7 @@ tube
   : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_TUBE O.EXP, [\ ([], #1 equation), \ ([], #2 equation), binding]))
 
 boundary
-  : LSQUARE equation binding RSQUARE (Ast.$$ (O.MK_BDRY O.EXP, [\ ([], #1 equation), \ ([], #2 equation), binding]))
+  : LSQUARE equation term RSQUARE (Ast.$$ (O.MK_BDRY O.EXP, [\ ([], #1 equation), \ ([], #2 equation), \ ([], term)]))
 
 tubes
   : tube tubes (tube :: tubes)
@@ -746,17 +764,17 @@ rawTermAndTac
 
   (* Kan operators *)
   | LPAREN COE dir binding term RPAREN
-    (Ast.$$ (O.COE, [Ast.\ ([], #1 dir), Ast.\ ([], #2 dir), binding, Ast.\ ([], term)]))
-  | LPAREN FCOM dir binding tubeVec RPAREN
-    (Ast.$$ (O.FCOM, [\ ([], #1 dir), \([], #2 dir), binding, \([], tubeVec)]))
-  | LPAREN HCOM dir binding binding tubeVec RPAREN
-    (Ast.$$ (O.HCOM, [\ ([], #1 dir), \([], #2 dir), binding1, binding2, \([], tubeVec)]))
-  | LPAREN COM dir binding binding tubeVec RPAREN
-    (Ast.$$ (O.COM, [\ ([], #1 dir), \([], #2 dir), binding1, binding2, \([], tubeVec)]))
-  | LPAREN BOX dir binding boundaryVec RPAREN
-    (Ast.$$ (O.BOX, [\ ([], #1 dir), \([], #2 dir), binding, \([], boundaryVec)]))
-  | LPAREN CAP backDir binding tubeVec RPAREN
-    (Ast.$$ (O.CAP, [\ ([], #1 backDir), \([], #2 backDir), binding, \([], tubeVec)]))
+    (Ast.$$ (O.COE, [\([], #1 dir), \([], #2 dir), binding, \([], term)]))
+  | LPAREN FCOM dir term tubeVec RPAREN
+    (Ast.$$ (O.FCOM, [\([], #1 dir), \([], #2 dir), \([], term), \([], tubeVec)]))
+  | LPAREN HCOM dir binding term tubeVec RPAREN
+    (Ast.$$ (O.HCOM, [\([], #1 dir), \([], #2 dir), binding, \([], term), \([], tubeVec)]))
+  | LPAREN COM dir binding term tubeVec RPAREN
+    (Ast.$$ (O.COM, [\([], #1 dir), \([], #2 dir), binding, \([], term), \([], tubeVec)]))
+  | LPAREN BOX dir term boundaryVec RPAREN
+    (Ast.$$ (O.BOX, [\([], #1 dir), \([], #2 dir), \([], term), \([], boundaryVec)]))
+  | LPAREN CAP backDir term tubeVec RPAREN
+    (Ast.$$ (O.CAP, [\([], #1 backDir), \([], #2 backDir), \([], term), \([], tubeVec)]))
 
   (* numbers *)
   | NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
@@ -838,6 +856,71 @@ rawJudgment
 
 judgment : rawJudgment (annotate (Pos.pos (rawJudgment1left fileName) (rawJudgment1right fileName)) rawJudgment)
 
+specTube
+  : LSQUARE equation specBinding RSQUARE (Ast.$$ (O.MK_BDRY O.IND_SPEC, [\\ (#1 equation), \\ (#2 equation), specBinding]))
+
+specTubes
+  : specTube specTubes (specTube :: specTubes)
+
+specBoundary
+  : LSQUARE equation specTerm RSQUARE (Ast.$$ (O.MK_BDRY O.IND_SPEC, [\\ (#1 equation), \\ (#2 equation), \\ specTerm]))
+
+specBoundaries
+  : specBoundary specBoundaries (specBoundary :: specBoundaries)
+  | specBoundary ([specBoundary])
+
+specTubeVec
+  : specTubes (Multi.makeVec (O.BDRY O.IND_SPEC) specTubes)
+
+specBoundaryVec
+  : specBoundaries (Multi.makeVec (O.BDRY O.IND_SPEC) specBoundaries)
+
+specArrowQuantifierData
+  : typedBinder specArrowQuantifierData (Multi.makeSpecFunOrLines typedBinder specArrowQuantifierData)
+  | term specArrowQuantifierData (Multi.makeSpecFunOrLine (NONE, Multi.TERM term) specArrowQuantifierData)
+  | specType (specType)
+
+specType
+  : SELF (Ast.$$ (O.IND_SPECTYPE_SELF, []))
+  | LPAREN DOUBLE_RIGHT_ARROW specArrowQuantifierData RPAREN (specArrowQuantifierData)
+
+specTypedBinder
+  : LSQUARE boundVars COLON specType RSQUARE (boundVars, Multi.IND_SPEC specType)
+
+specBinding
+  : binder specTerm (\ (binder, specTerm))
+  | specTerm (\ ([], specTerm))
+
+specBindings
+  : specBinding specBindings (specBinding :: specBindings)
+  | specBinding ([specBinding])
+
+specTerm
+  : LPAREN SELF DOT ident specBindings RPAREN (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), specBindings))
+  | SELF DOT ident (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), []))
+  | LPAREN FCOM dir specTerm specTubeVec RPAREN
+      (Ast.$$ (O.IND_SPEC_FCOM, [\\ (#1 dir), \\ (#2 dir), \\ specTerm, \\ specTubeVec]))
+
+dataConstructor
+  : typedBinder dataConstructor (Multi.makeConstrFunOrLines typedBinder dataConstructor)
+  | dimBinder dataConstructor (Multi.makeConstrFunOrLines dimBinder dataConstructor)
+  | specTypedBinder dataConstructor (Multi.makeConstrFunOrLines specTypedBinder dataConstructor)
+  | term dataConstructor (Multi.makeConstrFunOrLine (NONE, Multi.TERM term) dataConstructor)
+  | DIM dataConstructor (Multi.makeConstrFunOrLine (NONE, Multi.DIM) dataConstructor)
+  | specType dataConstructor (Multi.makeConstrFunOrLine (NONE, Multi.IND_SPEC specType) dataConstructor)
+  | specBoundaryVec (Ast.$$ (O.IND_CONSTR_KAN, [\\ specBoundaryVec]))
+  | (Ast.$$ (O.IND_CONSTR_DISCRETE, [\\ (Multi.makeVec (O.BDRY O.IND_SPEC) [])]))
+
+dataConstructors
+  : ident dataConstructor COMMA dataConstructors (ident :: #1 dataConstructors, dataConstructor :: #2 dataConstructors)
+  | ident dataConstructor ([ident], [dataConstructor])
+  | ([],[])
+
+dataDecl
+  : typedBinder dataDecl (Multi.makeIndFamFunOrLines typedBinder dataDecl)
+  | dimBinder dataDecl (Multi.makeIndFamFunOrLines dimBinder dataDecl)
+  | COLON LPAREN UNIVERSE level KAN RPAREN LBRACKET dataConstructors RBRACKET
+      (Ast.$$ (O.IND_FAM_BASE (#1 dataConstructors), \\ level :: List.map \\ (#2 dataConstructors)))
 
 recordFieldTactics
    : VARNAME EQUALS tactic COMMA recordFieldTactics ((VARNAME, tactic) :: recordFieldTactics)
@@ -1090,6 +1173,10 @@ mlDecl
   | DEFINE OPNAME declArgumentsParens EQUALS term
     (fn kont =>
        ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, O.EXP)}, MlId.const OPNAME, kont))
+
+  | DATA OPNAME declArgumentsParens dataDecl BY LBRACKET multitac RBRACKET
+    (fn kont =>
+       ML.BIND (ML.DATA_DECL {name = OPNAME, arguments = declArgumentsParens, decl = dataDecl, script = multitac}, MlId.const OPNAME, kont))
 
   | TACTIC OPNAME declArgumentsParens EQUALS LBRACKET tactic RBRACKET
     (fn kont =>
