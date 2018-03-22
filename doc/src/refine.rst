@@ -509,21 +509,69 @@ Coequalizers
 
 :index:`coeq/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (coeq #a0 #b0 [x] (#f0 x) [x] (#g0 x)) = (coeq #a1 #b1 [x] (#f1 x) [x] (#g1 x)) in (U #l #k)
+  where
+    (#k/cod, #k/dom) <-
+      (coe, coe) if #k == kan
+      (coe, coe) if #k == coe
+      (pre, pre) if #k == hcom
+      (pre, pre) if #k == pre
+  | H, x:#a0 >> (#f0 x) = (#f1 x) in #b0
+  | H, x:#a0 >> (#g0 x) = (#g1 x) in #b0
+  | H >> #a0 = #a1 in (U #l #k/dom)
+  | H >> #b0 = #b1 in (U #l #k/cod)
 
 :index:`coeq/eq/cod`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (cecod #m0) = (cecod #m1) in (coeq #a #b [x] (#f x) [x] (#g x))
+  | H >> #m0 = #m1 in #b
+  | H, x:#a >> (#f x) in #b
+  | H, x:#a >> (#g x) in #b
+  | H >> #a type
 
 :index:`coeq/eq/dom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (cedom #r #m0 #fm0 #gm0) = (cedom #r #m0 #fm0 #gm0) in (coeq #a #b [x] (#f x) [x] (#g x))
+  | H >> #m0 = #m1 in #a
+  | H >> #fm0 = #fm1 in #b
+  | H >> #gm0 = #gm1 in #b
+  | H >> (#f #m0) = #fm0 in #b
+  | H >> (#g #m0) = #gm0 in #b
+  | H, x:#a >> (#f x) in #b
+  | H, x:#a >> (#g x) in #b
 
 :index:`coeq/eq/fcom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :index:`coeq/beta/dom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (coeq-rec [c] (#p c) (cedom #r #t #ft #gt) [b] (#n b) [v a] (#q v a)) = #s in #ty
+  | H >> (#q #r #t) = #s in #ty
+  | H, #r=0 >> (#n #ft) = #s in #ty
+  | H, #r=1 >> (#n #gt) = #s in #ty
 
 :index:`coeq/eq/coeq-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (coeq-rec [c] (#p0 c) #m0 [b] (#n0 b) [v a] (#q0 v a)) = (coeq-rec [c] (#p1 c) #m1 [b] (#n1 b) [v a] (#q1 v a)) in #ty
+  where H >> #m0 = #m1 synth (coeq #a #b [x] (#f x) [x] (#g x)), psi
+  | H, b:#b >> (#n0 b) = (#n1 b) in (#p0 (cecod b))
+  | H, v:dim, a:#a >> (#q0 v a) = (#q1 v a) in (#p0 (cedom v a (#f a) (#g a))
+  | H, a:#a >> (#q0 0 a) = (#n0 (#f a)) in (#p0 (cecod (#f a)))
+  | H, a:#a >> (#q0 1 a) = (#n0 (#g a)) in (#p0 (cecod (#g a)))
+  | H, c:(coeq #a #b [x] (#f x) [x] (#g x)) >> (#p0 c) = (#p1 c) kan type
+  | psi
+  | H >> (#p0 #m0) <= #ty type
+
 
 Exact equalities
 ----------------
