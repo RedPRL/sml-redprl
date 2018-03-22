@@ -11,7 +11,7 @@ class RedPRLLexer(RegexLexer):
     aliases = ['redprl']
     filenames = ['*.prl']
 
-    exprs = ['ax', 'fcom', 'bool', 'tt', 'ff', 'if', 'nat', 'zero', 'succ',
+    exprs = ['ax', 'fcom', 'bool', 'tt', 'ff', 'if', 'nat-rec', 'nat', 'zero', 'succ',
              'nat-rec', 'int', 'negsucc', 'int-rec', 'void', 'S1', 'base',
              'loop', 'S1-rec', 'lam', 'record', 'tuple', 'path', 'line',
              'pushout', 'left', 'right', 'glue', 'pushout-rec', 'coeq', 'cecod',
