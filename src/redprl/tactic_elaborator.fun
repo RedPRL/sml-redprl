@@ -177,7 +177,7 @@ struct
         val p = Sym.new ()
       in
         Lcf.rule (RT.MultiArrow.Elim sign (List.length tacs) z) thenl
-          (tacs @ [popNamesIn [p, z'] @@ decompose sign z' (pattern, names) tac])
+          (tacs @ [popNamesIn [p, z'] @@ decompose sign z' (pattern, names) (pushNames [p] then_ tac)])
       end
 
   local
