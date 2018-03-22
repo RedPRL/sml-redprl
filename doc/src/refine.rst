@@ -530,12 +530,35 @@ Exact equalities
 
 :index:`eq/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (= #a0 #m0 #n0) = (= #a1 #m1 #n1) in (U #l #k)
+  where
+    #ka <-
+      discrete if #k == discrete
+      discrete if #k == kan
+      pre if #k == hcom
+      discrete if #k == coe
+      pre if #k == pre
+  | H >> #m0 = #m1 in #a0
+  | H >> #n0 = #n1 in #a0
+  | H >> #a0 = #a1 in (U #l #ka)
+
 
 :index:`eq/eq/ax`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> ax = ax in (= #a #m #n)
+  | H >> #m = #n in #a
 
 :index:`eq/eta`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> #x = #y in (= #a #m #n)
+  | H >> ax = #y in (= #a #m #n)
+  | H >> #x in (= #a #m #n)
 
 Composite types
 ---------------
