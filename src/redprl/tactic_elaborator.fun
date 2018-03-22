@@ -177,7 +177,7 @@ struct
         val p = Sym.new ()
       in
         Lcf.rule (RT.MultiArrow.Elim sign (List.length tacs) z) thenl
-          (tacs @ [popNamesIn [p, z'] @@ decompose sign z' (pattern, names) tac])
+          (tacs @ [popNamesIn [p, z'] @@ decompose sign z' (pattern, names) (pushNames [p] then_ tac)])
       end
 
   local
@@ -256,7 +256,8 @@ struct
   fun cutLemma sign cust (pattern, names) appTacs tac =
     let
       val z = RedPrlSym.new ()
-      val continue = applications sign z (pattern, names) appTacs tac
+      fun pushz tac = pushNames [z] then_ tac
+      val continue = applications sign z (pattern, names) (List.map pushz appTacs) (pushz tac)
     in
       Lcf.rule (R.CutLemma sign cust) thenl [popNamesIn [z] continue]
     end
