@@ -91,8 +91,14 @@ struct
   fun makeLam [] m = m
     | makeLam (x::xs) m = O.LAM $$ [[Option.getOpt (x, "_")] \ makeLam xs m]
 
+  fun makeSpecLam [] m = m
+    | makeSpecLam (x::xs) m = O.IND_SPEC_LAM $$ [[Option.getOpt (x, "_")] \ makeSpecLam xs m]
+
   fun makeApp m ns =
     List.foldl (fn (n, app) => O.APP $$ [[] \ app, [] \ n]) m ns
+
+  fun makeSpecApp m ns =
+    List.foldl (fn (n, app) => O.IND_SPEC_APP $$ [[] \ app, [] \ n]) m ns
 
   fun makeAbs [] m = m
     | makeAbs (u::us) m = O.ABS $$ [[Option.getOpt (u, "_")] \ makeAbs us m]
@@ -490,6 +496,7 @@ end
  | specTypedBinder of string option list * ast Multi.typing
  | specBinding of ast abs
  | specBindings of ast abs list
+ | rawSpecTerm of ast
  | specTerm of ast
  | dataConstructor of ast
  | dataConstructors of string list * ast list
@@ -889,17 +896,28 @@ specTypedBinder
 
 specBinding
   : binder specTerm (\ (binder, specTerm))
-  | specTerm (\ ([], specTerm))
+  | specTerm (\\ specTerm)
 
 specBindings
   : specBinding specBindings (specBinding :: specBindings)
   | specBinding ([specBinding])
 
-specTerm
-  : LPAREN SELF DOT ident specBindings RPAREN (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), specBindings))
-  | SELF DOT ident (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), []))
-  | LPAREN FCOM dir specTerm specTubeVec RPAREN
+rawSpecTerm
+  : rawTerm (rawTerm)
+
+  (* intro *)
+  | LPAREN DOT ident specBindings RPAREN (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), specBindings))
+  | DOT ident (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), []))
+
+  (* fcom *)
+  | LPAREN DOT FCOM dir specTerm specTubeVec RPAREN
       (Ast.$$ (O.IND_SPEC_FCOM, [\\ (#1 dir), \\ (#2 dir), \\ specTerm, \\ specTubeVec]))
+
+  (* lambda and applications *)
+  | LPAREN DOT LAMBDA LSQUARE boundVars RSQUARE specTerm RPAREN (Multi.makeSpecLam boundVars specTerm)
+  | LPAREN DOT DOLLAR_SIGN specTerm terms RPAREN (Multi.makeSpecApp specTerm terms)
+
+specTerm : rawSpecTerm (annotate (Pos.pos (rawSpecTerm1left fileName) (rawSpecTerm1right fileName)) rawSpecTerm)
 
 dataConstructor
   : typedBinder dataConstructor (Multi.makeConstrFunOrLines typedBinder dataConstructor)

@@ -257,12 +257,12 @@ struct
      | CEDOM => "cedom"
      | COEQUALIZER_REC => "coeq-rec"
 
-     | IND_SPECTYPE_SELF => "ind-rec-self"
-     | IND_SPECTYPE_FUN => "ind-rec-fun"
-     | IND_SPEC_INTRO _ => "ind-rec-intro" (* FIXME *)
-     | IND_SPEC_FCOM => "ind-rec-fcom"
-     | IND_SPEC_LAM => "ind-rec-lam"
-     | IND_SPEC_APP => "ind-rec-app"
+     | IND_SPECTYPE_SELF => "ind-spec-self"
+     | IND_SPECTYPE_FUN => "ind-spec-fun"
+     | IND_SPEC_INTRO _ => "ind-spec-intro" (* FIXME *)
+     | IND_SPEC_FCOM => "ind-spec-fcom"
+     | IND_SPEC_LAM => "ind-spec-lam"
+     | IND_SPEC_APP => "ind-spec-app"
      | IND_CONSTR_FUN => "ind-constr-fun"
      | IND_CONSTR_SPEC_FUN => "ind-constr-spec-fun"
      | IND_CONSTR_LINE => "ind-constr-line"
