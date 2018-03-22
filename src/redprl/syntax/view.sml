@@ -11,6 +11,7 @@ struct
   type equation = dim * dim
   type dir = dim * dim
   type 'a tube = equation * (variable * 'a)
+  type 'a boundary = equation * 'a
 
   type label = string
   type conid = string
@@ -76,8 +77,8 @@ struct
    | IND_CONSTR_FUN of ('a * variable * 'a)
    | IND_CONSTR_SPEC_FUN of ('a * variable * 'a)
    | IND_CONSTR_LINE of (variable * 'a)
-   | IND_CONSTR_KAN of (equation * 'a) list
-   | IND_CONSTR_DISCRETE of (equation * 'a) list
+   | IND_CONSTR_KAN of 'a boundary list
+   | IND_CONSTR_DISCRETE of 'a boundary list
    | IND_FAM_FUN of ('a * variable * 'a)
    | IND_FAM_LINE of (variable * 'a)
    | IND_FAM_BASE of L.level * (conid * 'a) list
@@ -87,23 +88,23 @@ struct
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
-   | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
-   | CAP of {dir: dir, tubes: (equation * (variable * 'a)) list, coercee: 'a}
+   | BOX of {dir: dir, cap: 'a, boundaries: 'a boundary list}
+   | CAP of {dir: dir, tubes: 'a tube list, coercee: 'a}
    (* V *)
    | V of 'a * 'a * 'a * 'a
    | VIN of 'a * 'a * 'a | VPROJ of 'a * 'a * 'a
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
-   | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (variable * 'a)) list}
+   | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: 'a tube list}
    (* ghcom operator *)
-   | GHCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (variable * 'a)) list}
+   | GHCOM of {dir: dir, ty: 'a, cap: 'a, tubes: 'a tube list}
    (* coe operator *)
    | COE of {dir: dir, ty: (variable * 'a), coercee: 'a}
    (* com operator *)
-   | COM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: (equation * (variable * 'a)) list}
+   | COM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: 'a tube list}
    (* gcom operator *)
-   | GCOM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: (equation * (variable * 'a)) list}
+   | GCOM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: 'a tube list}
 
    | DIM0 | DIM1
 

@@ -4,6 +4,7 @@ sig
   structure ConstrDict : DICT where type key = conid
   type decl = RedPrlAbt.abt (* XXX *)
   type constr = RedPrlAbt.abt (* XXX *)
+  type decl_args = RedPrlAbt.abt RedPrlAbt.bview list
   type args = RedPrlAbt.abt list
   type precomputedArity
   val eqPrecomputedArity : precomputedArity * precomputedArity -> bool
@@ -20,7 +21,7 @@ sig
 
   (* Used by the machine. *)
   val realizeIntroBoundaries : MlId.t * precomputedArity * conid ->
-    RedPrlAbt.abt RedPrlAbt.bview list -> decl -> args -> (SyntaxView.equation * RedPrlAbt.abt) list
+    decl_args -> decl -> args -> RedPrlAbt.abt SyntaxView.boundary list
 
   (* Used by the refiner. *)
   (* val EqArgsForType : decl -> args * args -> Sequent.jdg list *)

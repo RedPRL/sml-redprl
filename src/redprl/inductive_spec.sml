@@ -13,6 +13,7 @@ struct
   type conid = string
   type decl = RedPrlAbt.abt (* XXX *)
   type constr = RedPrlAbt.abt (* XXX *)
+  type decl_args = RedPrlAbt.abt RedPrlAbt.bview list
   type args = RedPrlAbt.abt list
 
   val IND_SPECTYPE_SELF = Syn.into Syn.IND_SPECTYPE_SELF
@@ -517,8 +518,8 @@ struct
        | (Syn.IND_FAM_LINE (x,bx), arg::args) =>
            realizeIntroBoundaries' (opid, arity, conid) (Abt.\ ([], arg) :: revPrefix) (Var.Ctx.insert varenv x arg) bx args
   in
-    fun realizeIntroBoundaries (opid, arity, conid) prefix decl args =
-      realizeIntroBoundaries' (opid, arity, conid) (List.rev prefix) Var.Ctx.empty decl args
+    fun realizeIntroBoundaries (opid, arity, conid) declArgs decl args =
+      realizeIntroBoundaries' (opid, arity, conid) (List.rev declArgs) Var.Ctx.empty decl args
   end
 
 end
