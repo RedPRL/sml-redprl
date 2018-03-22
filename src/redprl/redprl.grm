@@ -8,8 +8,8 @@ structure E = RedPrlError
 structure K = RedPrlKind
 structure O = RedPrlOperator
 structure AJ = AtomicJudgment
-
 structure TP = TermPrinter
+structure ML = MlExtSyntax
 
 val ppIntInf = Fpp.text o IntInf.toString
 
@@ -59,13 +59,13 @@ struct
 
   val fail = O.TAC_FAIL $$ []
 
-  fun try t = 
+  fun try t =
     orElse (t, O.TAC_ID $$ [])
 
   fun exactAuto m =
     then_ (exact m, try (then_ (autoTac, fail)))
 
-  fun makeMatch term clauses = 
+  fun makeMatch term clauses =
     let
       fun makeClause t1 t2 = O.DEV_MATCH_CLAUSE $$ [[] \ t1, [] \ t2]
       val clauseArgs = List.map (fn (xs, (t1, t2)) => xs \ makeClause t1 t2) clauses
@@ -74,10 +74,10 @@ struct
       O.DEV_MATCH ns $$ ([] \ term) :: clauseArgs
     end
 
-  val inversion = 
+  val inversion =
     O.DEV_INVERSION $$ []
 
-  val assumption = 
+  val assumption =
     O.TAC_ASSUMPTION $$ []
 
 end
@@ -212,16 +212,16 @@ struct
       O.DEV_RECORD_INTRO lbls $$ List.map (fn tac => [] \ tac) tacs
     end
 
-  fun joinAnnotations (xs : ast list) : Pos.t option = 
+  fun joinAnnotations (xs : ast list) : Pos.t option =
     case xs of
        [] => NONE
-     | x :: xs => 
+     | x :: xs =>
        case (Ast.getAnnotation x, joinAnnotations xs) of
           (SOME p1, SOME p2) => SOME (Pos.union p1 p2)
         | (SOME p, NONE) => SOME p
         | (NONE, SOME p) => SOME p
         | _ => NONE
- 
+
 
   fun makeVec tau xs =
     Ast.setAnnotation (joinAnnotations xs) (O.MK_VEC (tau, List.length xs) $$ List.map (fn x => [] \ x) xs)
@@ -231,7 +231,7 @@ structure Pattern =
 struct
   infix $$ $ \
 
-  fun labelAnonTuplePattern pats = 
+  fun labelAnonTuplePattern pats =
     let
       val lbls = List.tabulate (List.length pats, O.indexToLabel)
     in
@@ -266,7 +266,7 @@ struct
       O.DEV_APPLY_HYP pat $$ [[] \ z, [] \ vec, names \ tac]
     end
 
-  fun makeUseHyp z tacs = 
+  fun makeUseHyp z tacs =
     let
       val vec = Multi.makeVec O.TAC tacs
     in
@@ -284,7 +284,7 @@ struct
       O.DEV_APPLY_LEMMA pat $$ args
     end
 
-  fun makeUseLemma (opid, args) tacs = 
+  fun makeUseLemma (opid, args) tacs =
     let
       val cust = O.CUST (opid, NONE) $$ args
       val any = O.MK_ANY NONE $$ [[] \ cust]
@@ -374,10 +374,10 @@ end
 
  | DISCRETE | KAN | PRE
 
- (* commands and declarations *)
- | CMD_PRINT | CMD_EXTRACT | CMD_QUIT
- | DCL_DEF | DCL_TAC | DCL_THM
- | BY | IN
+ (* metalanguage *)
+ | EXTRACT | QUIT
+ | DEFINE | TACTIC | THEOREM
+ | BY | IN | VAL | DO | CARET | END | FN
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
 %right TIMES
@@ -388,7 +388,7 @@ end
 
 
 %nonterm
-   start of Signature.Src.elt
+   start of ML.cmd -> ML.cmd
 
  | ident of string
  | boundVar of string option
@@ -492,12 +492,12 @@ end
  | declArguments of Signature.Src.arguments
  | declArgumentsParens of Signature.Src.arguments
 
-   (* a declaration, annotated with source position *)
- | decl of MlId.t * Signature.Src.decl * Pos.t
-   (* a RedPRL signature *)
- | rawCmd of Signature.Src.cmd
- | cmd of Signature.Src.cmd * Pos.t
- | elt of Signature.Src.elt
+ | mlVty of MlType.vty
+ | mlCty of MlType.cty
+ | mlValue of ML.value
+ | mlCmd of ML.cmd
+ | mlAtomicCmd of ML.cmd
+ | mlDecl of ML.cmd -> ML.cmd
 
 %verbose
 %pos (string -> Coord.t)
@@ -508,7 +508,7 @@ end
 %arg (fileName) : string
 %%
 
-start : elt (elt)
+start : mlDecl (mlDecl)
 
 ident
   : OPNAME (OPNAME)
@@ -937,11 +937,11 @@ atomicRawTac
 
   | WITHOUT termsAnySort (Ast.$$ (O.TAC_PUSH, [\ ([], Multi.makeVec O.ANY termsAnySort)]))
   | WITH hypBindings DOUBLE_RIGHT_ARROW tactic (Ast.$$ (O.TAC_POP (List.map #2 hypBindings), [\ (List.map #1 hypBindings, tactic)]))
-  
+
   | IF elimTarget THEN tactic ELSE tactic
       (Ast.$$ (O.DEV_BOOL_ELIM, [\ ([], elimTarget), \ ([], tactic1), \ ([], tactic2)]))
 
-  | CLAIM VARNAME COLON LSQUARE judgment RSQUARE BY LSQUARE tactic RSQUARE SEMI tactic
+  | CLAIM VARNAME COLON judgment BY LBRACKET tactic RBRACKET SEMI tactic
       (Ast.$$ (O.DEV_CLAIM NONE, [\ ([], judgment), \ ([], tactic1), \([VARNAME], tactic2)]))
 
   | LET devDecompPattern EQUALS elimTargetAnySort bracketedDevAppSpine SEMI tactic
@@ -1016,23 +1016,70 @@ declArgumentsParens
   : LPAREN declArguments RPAREN (declArguments)
   | ([])
 
-decl
-  : DCL_DEF OPNAME declArgumentsParens COLON sort EQUALS LSQUARE term RSQUARE
-      (MlId.const OPNAME, Signature.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = sort}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_DEF OPNAME declArgumentsParens EQUALS LSQUARE term RSQUARE
-      (MlId.const OPNAME, Signature.Src.DEF {arguments = declArgumentsParens, definiens = term, sort = O.EXP}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_TAC OPNAME declArgumentsParens EQUALS LSQUARE tactic RSQUARE
-      (MlId.const OPNAME, Signature.Src.TAC {arguments = declArgumentsParens, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
-  | DCL_THM OPNAME declArgumentsParens COLON LSQUARE src_atjdg RSQUARE BY LSQUARE tactic RSQUARE
-      (MlId.const OPNAME, Signature.Src.THM {arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, Pos.pos (OPNAMEleft fileName) (OPNAMEright fileName))
 
-rawCmd
-  : CMD_PRINT OPNAME (Signature.Src.PRINT (MlId.const OPNAME))
-  | CMD_EXTRACT OPNAME (Signature.Src.EXTRACT (MlId.const OPNAME))
-  | CMD_QUIT (Signature.Src.QUIT)
+mlVty
+  : LPAREN RPAREN
+    (MlType.ONE)
+  | LBRACKET mlCty RBRACKET
+    (MlType.DOWN mlCty)
+  
+mlCty 
+  : CARET mlVty
+    (MlType.UP mlVty)
+  | mlVty RIGHT_ARROW mlCty
+    (MlType.FUN (mlVty, mlCty))
 
-cmd : rawCmd (rawCmd, (Pos.pos (rawCmd1left fileName) (rawCmd1right fileName)))
+mlValue
+  : OPNAME
+    (ML.VAR (MlId.const OPNAME))
+  | LBRACKET mlCmd RBRACKET
+    (ML.THUNK mlCmd)
+  | LPAREN RPAREN
+    (ML.NIL)
 
-elt
-  : cmd (Signature.Src.CMD cmd)
-  | decl (Signature.Src.DECL decl)
+mlAtomicCmd
+  : PRINT mlValue
+    (ML.PRINT (SOME (Pos.pos (mlValueleft fileName) (mlValueright fileName)), mlValue))
+  | QUIT
+    (ML.ABORT)
+  | EXTRACT mlValue
+    (ML.EXTRACT mlValue)
+  | CARET mlValue
+    (ML.RET mlValue)
+  | BANG mlValue
+    (ML.FORCE mlValue)
+
+mlCmd
+  : LET mlDecl SEMI mlCmd
+    (mlDecl mlCmd)
+  | FN OPNAME COLON mlVty DOUBLE_RIGHT_ARROW mlCmd
+    (ML.FN (MlId.const OPNAME, mlVty, mlCmd))
+  | mlValue RANGLE mlCmd
+    (ML.AP (mlCmd, mlValue))
+  | mlAtomicCmd
+    (mlAtomicCmd)
+
+mlDecl
+  : DEFINE OPNAME declArgumentsParens COLON sort EQUALS term
+    (fn kont =>
+       ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, sort)}, MlId.const OPNAME, kont))
+
+  | DEFINE OPNAME declArgumentsParens EQUALS term
+    (fn kont =>
+       ML.BIND (ML.DEF {arguments = declArgumentsParens, definiens = (term, O.EXP)}, MlId.const OPNAME, kont))
+
+  | TACTIC OPNAME declArgumentsParens EQUALS LBRACKET tactic RBRACKET
+    (fn kont =>
+       ML.BIND (ML.TAC {arguments = declArgumentsParens, script = tactic}, MlId.const OPNAME, kont))
+
+  | THEOREM OPNAME declArgumentsParens COLON src_atjdg BY LBRACKET tactic RBRACKET
+    (fn kont =>
+       ML.BIND (ML.THM {name = OPNAME, arguments = declArgumentsParens, goal = src_atjdg, script = tactic}, MlId.const OPNAME, kont))
+
+  | VAL OPNAME EQUALS mlCmd
+   (fn kont =>
+      ML.BIND (mlCmd, MlId.const OPNAME, kont))
+
+  | mlCmd
+    (fn kont =>
+       ML.BIND (mlCmd, MlId.fresh "_", kont))

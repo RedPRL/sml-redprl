@@ -1,7 +1,7 @@
 " vim-RedPRL syntax
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 March 19
+" Last Change:  2018 March 21
 
 if exists("b:current_syntax")
   finish
@@ -17,7 +17,7 @@ syn match   redprlBrackErr ']'
 syn region  redprlEncl transparent start="(" end=")" contains=ALLBUT,redprlParenErr
 syn region  redprlEncl transparent start="\[" end="\]" contains=ALLBUT,redprlBrackErr
 
-syn keyword redprlDecl Def Extract Print Rule Tac Thm Quit
+syn keyword redprlDecl define print theorem tactic quit extract
 syn keyword redprlSort dim hyp exp lvl tac jdg knd
 syn match   redprlHole '?\k*'
 syn match   redprlMeta '#'

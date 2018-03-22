@@ -1,91 +1,91 @@
 // Some theorems from http://www.nuprl.org/MathLibrary/LogicalInvestigations/.
 
-Thm Thm1 : [
-  (-> 
+theorem Thm1 :
+  (->
    [p q : (U 0)]
    p q p)
-] by [
+by {
   lam p q a b => use a
-].
+}.
 
-Thm Thm2 : [
+theorem Thm2 :
   (->
    [p q r : (U 0)]
    (-> p q)
    (-> p q r)
    p r)
-] by [
+by {
   lam p q r f g a =>
   use g [use a, use f [use a]]
-].
+}.
 
 // It is worthwhile to print out the extract program / evidence for Thm2.
-Extract Thm2.
+print Thm2.
 
 // here's a proof using lower-level scripting
-Thm Thm3/low-level : [
+theorem Thm3/low-level :
   (->
    [p q r : (U 0)]
    (-> p q)
    (-> q r)
    (-> p r))
-] by [
-  // fresh p q r pq qr x -> 
+by {
+  // fresh p q r pq qr x ->
   repeat {refine fun/intro || id};
-  auto; with x qr pq r q p => 
+  auto; with x qr pq r q p =>
   elim qr; elim pq;
   [ use x
   , with _ y => use y
   , use x
   , with _ _ _ z => use z
   ]
-].
+}.
 
-Extract Thm3/low-level.
+print Thm3/low-level.
 
-// here's a high-level version of the above proof. proofs using the high-level 
-// programming calculus may be longer, but they are often easier to engineer, 
+// here's a high-level version of the above proof. proofs using the high-level
+// programming calculus may be longer, but they are often easier to engineer,
 // and nicely segregate main goals from auxiliary goals.
-Thm Thm3/high-level : [
+theorem Thm3/high-level :
   (->
    [p q r : (U 0)]
    (-> p q)
    (-> q r)
    (-> p r))
-] by [
+by {
   lam p q r f g x =>
   use g [use f [use x]]
-].
+}.
 
-Extract Thm3/high-level.
+print Thm3/high-level.
 
-Def Not(#A) = [ (-> #A void) ].
+define Not(#A) =  (-> #A void) .
 
-Thm Thm4 : [
+theorem Thm4 :
   (-> [p q : (U 0)] (Not p) p q)
-] by [
+by {
   lam p q r a =>
   unfold Not;
   let boom = r [use a];
   elim boom
-].
+}.
 
-Thm Thm5 : [
+theorem Thm5 :
   (-> [p : (U 0)] p (Not (Not p)))
-] by [
+by {
   lam p a => unfold Not; lam r =>
   use r [use a]
-].
+}.
 
-Print Thm4.
-Print Thm5.
+print Thm4.
+print Thm5.
 
 
-Thm Thm6(#A,#B) : [
+theorem Thm6(#A,#B) :
   (-> [p q : (U 0)] (-> p q) (Not q) (Not p))
-] by [
+by {
   lam p q f g => unfold Not; lam a =>
   use g [use f [use a]]
-].
+}.
 
-Print Thm6.
+print Thm6.

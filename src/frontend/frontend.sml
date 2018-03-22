@@ -39,12 +39,12 @@ struct
 
   local
     val EOF = RedPrlLrVals.Tokens.EOF (Coord.init, Coord.init)
-    val DEF = RedPrlLrVals.Tokens.DCL_DEF (Coord.init, Coord.init)
-    val THM = RedPrlLrVals.Tokens.DCL_THM (Coord.init, Coord.init)
-    val TAC = RedPrlLrVals.Tokens.DCL_TAC (Coord.init, Coord.init)
-    val PRINT = RedPrlLrVals.Tokens.CMD_PRINT (Coord.init, Coord.init)
-    val EXTRACT = RedPrlLrVals.Tokens.CMD_EXTRACT (Coord.init, Coord.init)
-    val QUIT = RedPrlLrVals.Tokens.CMD_QUIT (Coord.init, Coord.init)    
+    val DEF = RedPrlLrVals.Tokens.DEFINE (Coord.init, Coord.init)
+    val THM = RedPrlLrVals.Tokens.THEOREM (Coord.init, Coord.init)
+    val TAC = RedPrlLrVals.Tokens.TACTIC (Coord.init, Coord.init)
+    val PRINT = RedPrlLrVals.Tokens.PRINT (Coord.init, Coord.init)
+    val EXTRACT = RedPrlLrVals.Tokens.EXTRACT (Coord.init, Coord.init)
+    val QUIT = RedPrlLrVals.Tokens.QUIT (Coord.init, Coord.init)    
     val DOT = RedPrlLrVals.Tokens.DOT (Coord.init, Coord.init)
 
     fun isBeginElt tok =

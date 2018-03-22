@@ -30,11 +30,11 @@ the signature.
 
 ::
 
-  Thm OpName(#p : ...) : [
+  theorem OpName(#p : ...) :
     // goal here (object language expression)
-  ] by [
+  by {
     // script here (tactic expression)
-  ].
+  }.
 
 
 Most definitions in a |RedPRL| signature will take the form of theorems; but
@@ -46,16 +46,16 @@ other forms of definition may be preferable, :ref:`depending on circumstances
 Defining new operators
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The most primitive way to define a new operator in |RedPRL| is to use the ``Def``
+The most primitive way to define a new operator in |RedPRL| is to use the ``define``
 command. A definition is specified by giving an operator name (which must be
 capitalized), together with a (possibly empty) sequence of parameters together
 with their valences, and an object-language term which shall be the definiens:
 
 ::
 
-  Def OpName(#p : [dim].exp, ...) : exp = [
+  define OpName(#p : [dim].exp, ...) : exp =
     // object language expression here
-  ].
+  .
 
 A parameter is referenced using a *metavariable* (which is
 distinguished syntactically using the ``#`` sigil); the valence of a parameter
@@ -67,9 +67,9 @@ A simple definition of sort ``exp`` without parameters can be abbreviated as fol
 
 ::
 
-  Def OpName = [
+  define OpName =
     // object language expression here
-  ].
+  .
 
 Definitions of this kind are not subject to any typing conditions in CHTT;
 instead, if you use a primitive definition within a proof, you will have to
@@ -81,16 +81,16 @@ prove that it is well-typed.
 Defining tactics
 ^^^^^^^^^^^^^^^^
 
-A tactic can be defined using the special ``Tac`` command:
+A tactic can be defined using the special ``tactic`` command:
 
 ::
 
-  Tac OpName(#p : ...) = [
+  tactic OpName(#p : ...) =
     // tactic expression here
-  ].
+  .
 
 
-This desugars to an instance of the ``Def`` command, and differs only in that the
+This desugars to an instance of the ``define`` command, and differs only in that the
 body of the definiens is here parsed using the grammar of tactic expressions.
 
 
@@ -111,7 +111,7 @@ When to use theorems or definitions?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As a rule of thumb, in most cases it is simpler to interactively construct an
-element of a type using a ``Thm`` declaration than it is to define a code for
+element of a type using a ``theorem`` declaration than it is to define a code for
 an element, and then prove that it has the intended type. This is why theorems
 are usually preferred to definitions in |RedPRL|.
 
@@ -121,14 +121,14 @@ As a theorem, this definition must take a universe level as a parameter
 
 ::
 
-  Thm Sequence(#l : lvl) : [
+  define Sequence(#l : lvl) :
     (-> [ty : (U #l)] (U #l))
-  ] by [
+  by {
     // apply function introduction rule in the tactic language
     lam ty =>
       // explicitly give the body of the function in the object language
       `(-> nat ty)
-  ].
+  }.
 
 Later, when using this definition, one would have to explicitly provide the
 universe level, even though it does not play a part in the actual defined
@@ -139,9 +139,9 @@ definition, we can write the following:
 
 ::
 
-  Def Sequence = [
+  define Sequence =
     (lam [ty] (-> nat ty))
-  ].
+  .
 
 
 One advantage of theorems over definitions is that |RedPRL| knows their type

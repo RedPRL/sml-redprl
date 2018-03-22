@@ -162,14 +162,19 @@ whitespace = [\ \t];
 <INITIAL>"tac"              => (Tokens.TAC (posTuple (size yytext)));
 <INITIAL>"jdg"              => (Tokens.JDG (posTuple (size yytext)));
 
-<INITIAL>"Print"            => (Tokens.CMD_PRINT (posTuple (size yytext)));
-<INITIAL>"Extract"          => (Tokens.CMD_EXTRACT (posTuple (size yytext)));
-<INITIAL>"Quit"             => (Tokens.CMD_QUIT (posTuple (size yytext)));
-<INITIAL>"Def"              => (Tokens.DCL_DEF (posTuple (size yytext)));
-<INITIAL>"Tac"              => (Tokens.DCL_TAC (posTuple (size yytext)));
-<INITIAL>"Thm"              => (Tokens.DCL_THM (posTuple (size yytext)));
+<INITIAL>"extract"          => (Tokens.EXTRACT (posTuple (size yytext)));
+<INITIAL>"quit"             => (Tokens.QUIT (posTuple (size yytext)));
+<INITIAL>"define"           => (Tokens.DEFINE (posTuple (size yytext)));
+<INITIAL>"tactic"           => (Tokens.TACTIC (posTuple (size yytext)));
+<INITIAL>"theorem"          => (Tokens.THEOREM (posTuple (size yytext)));
 <INITIAL>"by"               => (Tokens.BY (posTuple (size yytext)));
 <INITIAL>"in"               => (Tokens.IN (posTuple (size yytext)));
+<INITIAL>"val"              => (Tokens.VAL (posTuple (size yytext)));
+<INITIAL>"do"               => (Tokens.DO (posTuple (size yytext)));
+<INITIAL>"end"              => (Tokens.END (posTuple (size yytext)));
+<INITIAL>"fn"               => (Tokens.FN (posTuple (size yytext)));
+<INITIAL>"^"                => (Tokens.CARET (posTuple (size yytext)));
+
 
 <INITIAL>"repeat"           => (Tokens.MTAC_REPEAT (posTuple (size yytext)));
 <INITIAL>"progress"         => (Tokens.MTAC_PROGRESS (posTuple (size yytext)));
