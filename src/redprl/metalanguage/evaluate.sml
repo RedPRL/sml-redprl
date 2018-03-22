@@ -252,4 +252,7 @@ struct
      | Syn.TERM abt =>
        Sem.TERM (Sem.term env abt)
 
+     | Syn.DATA_INFO abt =>
+       Sem.DATA_INFO (Sem.term env abt)
+
 end
