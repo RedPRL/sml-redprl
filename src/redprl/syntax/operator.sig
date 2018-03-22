@@ -89,9 +89,6 @@ struct
    | JDG_SUB_KIND
    | JDG_SYNTH
    | JDG_TERM of sort
-   | JDG_IND_SPEC
-   | JDG_EQ_IND_SPECTYPE
-   | JDG_EQ_IND_SPEC
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ | MTAC_ORELSE

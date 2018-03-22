@@ -141,8 +141,6 @@ struct
      | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: EXP] ->> JDG
      | JDG_TERM _ => [] ->> JDG
-     | JDG_EQ_IND_SPECTYPE => [[] |: IND_SPECTYPE, [] |: IND_SPECTYPE] ->> JDG
-     | JDG_EQ_IND_SPEC => [[] |: IND_SPEC, [] |: IND_SPEC, [] |: IND_SPECTYPE] ->> JDG
 
      | MTAC_SEQ => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -365,9 +363,6 @@ struct
      | JDG_SUB_KIND => "sub-kind"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
-     | JDG_IND_SPEC => "ind-spec"
-     | JDG_EQ_IND_SPEC => "eq-ind-spec"
-     | JDG_EQ_IND_SPECTYPE => "eq-ind-spectype"
 
      | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
