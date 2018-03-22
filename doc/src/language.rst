@@ -102,7 +102,7 @@ following command:
 
 ::
 
-  Print OpName.
+  print OpName.
 
 
 .. _thm-vs-def:
