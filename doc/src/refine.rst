@@ -641,9 +641,21 @@ Kan operations
 
 :index:`coe/eq`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (coe #i~>#j [u] (#a0 u) #m0) = (coe #i~>#j [u] (#a1 u) #m1) in #ty
+  | H >> #m0 = #m1 in (#a0 #i)
+  | H, u:dim >> #a0 = #a1 coe type
+  | H >> (#a0 #j) <= #ty type
 
 :index:`coe/eq/cap`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (coe #i~>#i [u] (#a u) #m) = #n in #ty
+  | H >> #m = #n in #ty
+  | H, u:dim >> (#a u) coe type
+  | H >> (#a #i) <= #ty type
 
 Universes
 ---------
