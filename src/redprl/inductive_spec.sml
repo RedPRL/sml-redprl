@@ -1,28 +1,4 @@
-structure InductiveSpec :
-sig
-  type conid = string
-  structure ConstrDict : DICT where type key = conid
-  type decl = RedPrlAbt.abt (* XXX *)
-  type constr = RedPrlAbt.abt (* XXX *)
-  type args = RedPrlAbt.abt list
-  type precomputedArity
-  val eqPrecomputedArity : precomputedArity * precomputedArity -> bool
-
-  (* Valence collectors. *)
-  val computeValences : RedPrlAst.ast -> precomputedArity
-  val getTypeValences : precomputedArity -> RedPrlArity.valence list
-  val getIntroValences : precomputedArity -> conid -> RedPrlArity.valence list
-  val getElimValences : precomputedArity -> RedPrlArity.valence list
-  val computeAllSpecIntroValences : RedPrlAst.ast -> RedPrlArity.valence list ConstrDict.dict
-
-  (* Given a data declaration, generate a list of sequents for type-checking. *)
-  val checkDecl : decl -> Sequent.jdg list
-
-  (* Used by the refiner. *)
-  (* val EqArgsForType : decl -> args * args -> Sequent.jdg list *)
-  (* val EqArgsForIntro : decl -> conid -> (args * args) * args -> Sequent.jdg list *)
-end
-=
+structure InductiveSpec : INDUCTIVE_SPEC =
 struct
   structure Abt = RedPrlAbt and Ast = RedPrlAst and Syn = SyntaxView
   structure AJ = AtomicJudgment
@@ -310,6 +286,8 @@ struct
 
   (* Is it okay to move dimensions upfront? It is banned in Part IV,
    * and the parser disallows it, but the checker here allows this.
+   *
+   * (Oops, the parser has not banned it yet.)
    *)
   fun checkConstr' (H, dimset) (constrs, specctx) constr level =
     case Syn.out constr of
@@ -490,6 +468,57 @@ struct
              (conids, constrs)
        | Ast.$ (O.IND_FAM_FUN, [_, Ast.\ (_, bx)]) => computeAllSpecIntroValences bx
        | Ast.$ (O.IND_FAM_LINE, [Ast.\ (_, bx)]) => computeAllSpecIntroValences bx
+  end
+
+  local
+    (* XXX Maybe `opid` should be `tyid`? *)
+
+    fun realizeSpecSpan varenv (r0, r1) = (Abt.substVarenv varenv r0, Abt.substVarenv varenv r1)
+
+    fun realizeSpecTerm (opid, arity, revPrefix) varenv term =
+      case Syn.out term of
+         Syn.META _ => term
+       | Syn.VAR (x, _) => Option.getOpt (Var.Ctx.find varenv x, term)
+       | Syn.IND_SPEC_INTRO (conid, args) => Abt.$$
+           (O.IND_INTRO (opid, conid, SOME (getIntroValences arity conid)),
+            List.revAppend (revPrefix, List.map (fn t => Abt.\ ([], realizeSpecTerm (opid, arity, revPrefix) varenv t)) args))
+       | Syn.IND_SPEC_FCOM {dir, cap, tubes} =>
+           Syn.intoFcom
+             {dir = realizeSpecSpan varenv dir,
+              cap = realizeSpecTerm (opid, arity, revPrefix) varenv cap,
+              tubes = List.map (realizeTube (opid, arity, revPrefix) varenv) tubes}
+
+    and realizeTube (opid, arity, revPrefix) varenv (eq, (u, term)) =
+      (realizeSpecSpan varenv eq, (u, realizeSpecTerm (opid, arity, revPrefix) varenv term))
+
+    fun realizeSpecBoundary (opid, arity, revPrefix) varenv (eq, term) =
+      (realizeSpecSpan varenv eq, realizeSpecTerm (opid, arity, revPrefix) varenv term)
+
+    fun realizeInternalIntroBoundaries (opid, arity, revPrefix) varenv constr args =
+      case (Syn.out constr, args) of
+         (Syn.IND_CONSTR_DISCRETE boundaries, []) =>
+           List.map (realizeSpecBoundary (opid, arity, revPrefix) varenv) boundaries
+       | (Syn.IND_CONSTR_KAN boundaries, []) =>
+           List.map (realizeSpecBoundary (opid, arity, revPrefix) varenv) boundaries
+       | (Syn.IND_CONSTR_FUN (_,x,bx), arg::args) =>
+           realizeInternalIntroBoundaries (opid, arity, revPrefix) (Var.Ctx.insert varenv x arg) bx args
+       | (Syn.IND_CONSTR_SPEC_FUN (_,x,bx), arg::args) =>
+           realizeInternalIntroBoundaries (opid, arity, revPrefix) (Var.Ctx.insert varenv x arg) bx args
+       | (Syn.IND_CONSTR_LINE (x,bx), arg::args) =>
+           realizeInternalIntroBoundaries (opid, arity, revPrefix) (Var.Ctx.insert varenv x arg) bx args
+
+    fun realizeIntroBoundaries' (opid, arity, conid) revPrefix varenv decl args =
+      case (Syn.out decl, args) of
+         (Syn.IND_FAM_BASE (_, l), _) =>
+            realizeInternalIntroBoundaries (opid, arity, revPrefix) varenv
+              (#2 (Option.valOf (List.find (fn (id, _) => id = conid) l))) args
+       | (Syn.IND_FAM_FUN (_,x,bx), arg::args) =>
+           realizeIntroBoundaries' (opid, arity, conid) (Abt.\ ([], arg) :: revPrefix) (Var.Ctx.insert varenv x arg) bx args
+       | (Syn.IND_FAM_LINE (x,bx), arg::args) =>
+           realizeIntroBoundaries' (opid, arity, conid) (Abt.\ ([], arg) :: revPrefix) (Var.Ctx.insert varenv x arg) bx args
+  in
+    fun realizeIntroBoundaries (opid, arity, conid) prefix decl args =
+      realizeIntroBoundaries' (opid, arity, conid) (List.rev prefix) Var.Ctx.empty decl args
   end
 
 end

@@ -71,6 +71,7 @@ in
     redprl/tactical.fun
 
     redprl/syntax/assert.sml
+    redprl/inductive_spec.sig
     redprl/inductive_spec.sml
     redprl/mini_signature.sig
 
