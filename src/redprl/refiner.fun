@@ -309,7 +309,6 @@ struct
       case Syn.out ty of
          Syn.BOOL => Lcf.rule @@ Bool.Elim z
        | Syn.VOID => Lcf.rule @@ Void.Elim z
-       | Syn.EQUALITY _ => Lcf.rule @@ InternalizedEquality.Elim z
        | Syn.RECORD _ => Lcf.rule @@ Record.Elim z
        | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "AutoElim", TermPrinter.ppTerm ty)
 
@@ -548,7 +547,6 @@ struct
          | (_, Syn.RECORD _) => Lcf.rule Record.Eta
          | (_, Syn.PATH _) => Lcf.rule Path.Eta
          | (_, Syn.LINE _) => Lcf.rule Line.Eta
-         | (_, Syn.EQUALITY _) => Lcf.rule InternalizedEquality.Eta
          | (Machine.VAR z, _) => AutoElim sign z
          | (Machine.OPERATOR theta, _) => Lcf.rule @@ Custom.UnfoldPart sign [theta] (Selector.IN_CONCL, [Accessor.PART_LEFT]))
 
