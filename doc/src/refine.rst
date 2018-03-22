@@ -577,15 +577,55 @@ V types
 
 :index:`V/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (V #r #a0 #b0 #e0) = (V #r #a1 #b1 #e1) in (U #l #k)
+  where
+    (#ka, #kb) <-
+      (kan, kan) if #k == kan
+      (hcom, hcom) if #k == hcom
+      (coe, com) if #k == coe
+      (pre, pre) if #k == pre
+    #isEquiv f =
+  | H >> #e0 = #e1 in (Equiv #a0 #b0)
+  | H >> #a0 = #a1 in (U #l #ka)
+  | H >> #b0 = #b1 in (U #l #kb)
+
+where ``Equiv`` is defined by
+
+::
+
+  define HasAllPathsTo (#C,#c) = (-> [center : #C] (path [_] #C center #c)).
+  define IsContr (#C) = (* [c : #C] (HasAllPathsTo #C c)).
+  define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
+  define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
+  define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
 
 :index:`V/eq/uain`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :index:`V/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (V #r #a #b #e) ext (vin #r #m #n)
+  | H, #r=0 >> #a ext #m
+  | H >> #b ext #n
+  | H, #r=0 >> ($ (! f #e) #m) = #n in #b
+  | H, #r=0 >> #e in (Equiv #a #b)
 
 :index:`V/eq/proj`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (vproj #r #m0 #f0) = (vproj #r #m1 #f1) in #ty
+  where
+    #r /= 0 and #r /= 1
+    H >> #m0 = #m1 synth ~> (v #r #a #b #e), psi
+  | H, #r=0 >> #f0 = #f1 in (-> #a #b)
+  | H, #r=0 >> #f0 = (! f #e) in (-> #a #b)
+  | psi
+  | H >> #b <= #ty type
 
 :index:`universe/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
