@@ -256,7 +256,8 @@ struct
   fun cutLemma sign cust (pattern, names) appTacs tac =
     let
       val z = RedPrlSym.new ()
-      val continue = applications sign z (pattern, names) appTacs tac
+      fun pushz tac = pushNames [z] then_ tac
+      val continue = applications sign z (pattern, names) (List.map pushz appTacs) (pushz tac)
     in
       Lcf.rule (R.CutLemma sign cust) thenl [popNamesIn [z] continue]
     end
