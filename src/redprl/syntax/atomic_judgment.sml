@@ -31,7 +31,7 @@ struct
            [ if RedPrlAbt.eq (a, b) then [TermPrinter.ppTerm' env a]
              else [TermPrinter.ppTerm' env a, Atomic.equals, TermPrinter.ppTerm' env b]
            , if k = RedPrlKind.top
-             then [hsep [text "type"]]
+             then [text "type"]
              else [hsep [TermPrinter.ppKind k, text "type"]]
            ]
        | SUB_TYPE (a, b) => expr @@ hvsep

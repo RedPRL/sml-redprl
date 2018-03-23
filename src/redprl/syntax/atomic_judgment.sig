@@ -3,7 +3,7 @@ struct
   type kind = RedPrlKind.t
   type abt = RedPrlAbt.abt
   type sort = RedPrlSort.sort
-  
+
   datatype jdg =
 
     (* `TRUE a`:

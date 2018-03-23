@@ -7,6 +7,7 @@ Library
   functor HashTable
   structure StringOrdered
   structure StringListDict
+  functor ListSet
   structure IntHashable
   structure Sum
   structure Susp

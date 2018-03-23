@@ -15,52 +15,6 @@ struct
   infix 2 >> >: >:? >:+ $$ $# // \ @>
   infix orelse_
 
-  structure Restriction :
-  sig
-    (* This structure used to provide functions that automate the
-       restriction judgement rules given in "Dependent Cubical
-       Realizability", page 46.
-
-       On 2017/06/14, favonia implemented a function to handle
-       all cases.
-     *)
-
-    (* Restrict a judgement (as the goal) by a list of equations.
-     * Returns NONE if the resulting judgement is vacuously true.
-     *)
-    val restrict : (abt * abt) list -> (abt -> abt) option
-  end
-  =
-  struct
-    (* precondition: all term in equations are of sort `DIM` *)
-    fun restrict' [] (f : abt -> abt) = SOME f
-      | restrict' ((r1, r2) :: eqs) (f : abt -> abt) = 
-          (case (Syn.out r1, Syn.out r2) of
-              (Syn.DIM0, Syn.DIM0) => restrict' eqs f
-            | (Syn.DIM0, Syn.DIM1) => NONE
-            | (Syn.DIM1, Syn.DIM1) => restrict' eqs f
-            | (Syn.DIM1, Syn.DIM0) => NONE
-            | (Syn.VAR (v1, _), _) => if Abt.eq (r1, r2) then restrict' eqs f else substAndRestrict' (r2, v1) eqs f
-            | (Syn.META (v1, _), _) => if Abt.eq (r1, r2) then restrict' eqs f else substMetaAndRestrict' (r2, v1) eqs f
-            | (_, Syn.VAR (v2, _)) => substAndRestrict' (r1, v2) eqs f
-            | (_, Syn.META (v2, _)) => substMetaAndRestrict' (r1, v2) eqs f)
-
-    and substMetaAndRestrict' (r, v) eqs f =
-        let
-          val abs = abtToAbs r
-        in
-          restrict'
-            (List.map (fn (r1, r2) => (substMetavar (abs, v) r1, substMetavar (abs, v) r2)) eqs)
-            (substMetavar (abs, v) o f)
-        end
-
-    and substAndRestrict' rv eqs f =
-          restrict'
-            (List.map (fn (r, r') => (substVar rv r, substVar rv r')) eqs)
-            (substVar rv o f)
-
-    fun restrict eqs = restrict' eqs (fn x => x)
-  end
   (* adding some helper functions *)
   structure Restriction =
   struct
@@ -137,33 +91,23 @@ struct
          forall i <= j.
            N_i = P_j in A [Psi, y | r_i = r_i', r_j = r_j']
      *)
-    fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, substVar (VarKit.toDim w, u) tube))
-
-    fun enumInterExceptDiag f =
-      let
-        fun enum ([], []) = []
-          | enum ((t0 :: ts0), (_ :: ts1)) = List.mapPartial (fn t1 => f (t0, t1)) ts1 :: enum (ts0, ts1)
-          | enum _ = E.raiseError @@ E.IMPOSSIBLE @@ Fpp.text "enumInterExceptDiag: inputs are of different lengths"
-      in
-        List.concat o enum
-      end
-
     local
-      (* TODO: why do these have tick marks after them? - JMS *)
+      (* These functions have ticks because their correctness depends on the code in
+       * genInterTubeGoals. -favonia *)
       fun genTubeGoals' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
         ListPairUtil.mapPartialEq
           (fn ((eq, t0), (_, t1)) => Restriction.makeEq tr [eq] H ((t0, t1), ty))
           (tubes0, tubes1)
 
       fun genInterTubeGoalsExceptDiag' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
-        enumInterExceptDiag
+        ListPairUtil.enumPartialInterExceptDiag
           (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent tr [eq0, eq1] H ((t0, t1), ty))
           (tubes0, tubes1)
     in
       fun genInterTubeGoals tr (H : Sequent.hyps) w ((tubes0, tubes1), ty) =
         let
-          val tubes0 = alphaRenameTubes w tubes0
-          val tubes1 = alphaRenameTubes w tubes1
+          val tubes0 = VarKit.alphaRenameTubes w tubes0
+          val tubes1 = VarKit.alphaRenameTubes w tubes1
 
           val goalsOnDiag = genTubeGoals' tr (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), ty)
           val goalsNotOnDiag = genInterTubeGoalsExceptDiag' tr (H @> (w, AJ.TERM O.DIM)) ((tubes0, tubes1), ty)

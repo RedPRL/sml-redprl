@@ -12,7 +12,7 @@ struct
   datatype value =
      THUNK of env * syn_cmd
    | THM of jdg * Tm.abs
-   | DATA_INFO of {foo : unit}
+   | DATA_INFO of term
    | TERM of term
    | ABS of value * value
    | METAS of metas
@@ -60,7 +60,7 @@ struct
          | ABS (METAS psi, s) => ABS (METAS psi, go (List.foldr (fn ((X, _), ren) => Metavar.Ctx.remove ren X) ren psi) s)
          | METAS psi => METAS (List.map (fn (X, vl) => (Option.getOpt (Metavar.Ctx.find ren X, X), vl)) psi)
          | NIL => NIL
-         | DATA_INFO foo => DATA_INFO foo (* TODO *)
+         | DATA_INFO info => DATA_INFO (Tm.renameMetavars ren info)
     in
       go ren s
     end

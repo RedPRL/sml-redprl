@@ -7,11 +7,14 @@ struct
   type sort = Tm.sort
   type kind = K.t
 
-  type equation = Tm.abt * Tm.abt
-  type dir = Tm.abt * Tm.abt
+  type dim = Tm.abt
+  type equation = dim * dim
+  type dir = dim * dim
   type 'a tube = equation * (variable * 'a)
+  type 'a boundary = equation * 'a
 
   type label = string
+  type conid = string
   structure Fields =
   struct
     val empty = []
@@ -64,26 +67,44 @@ struct
    | CECOD of 'a
    | CEDOM of 'a * 'a * 'a * 'a
    | COEQUALIZER_REC of (variable * 'a) * 'a * ((variable * 'a) * (variable * variable * 'a))
+   (* inductive types *)
+   | IND_SPECTYPE_SELF
+   | IND_SPECTYPE_FUN of 'a * variable * 'a
+   | IND_SPEC_INTRO of conid * 'a list
+   | IND_SPEC_FCOM of {dir: dir, cap: 'a, tubes: 'a tube list}
+   | IND_SPEC_LAM of variable * 'a
+   | IND_SPEC_APP of 'a * 'a
+   | IND_CONSTR_FUN of ('a * variable * 'a)
+   | IND_CONSTR_SPEC_FUN of ('a * variable * 'a)
+   | IND_CONSTR_LINE of (variable * 'a)
+   | IND_CONSTR_KAN of 'a boundary list
+   | IND_CONSTR_DISCRETE of 'a boundary list
+   | IND_FAM_FUN of ('a * variable * 'a)
+   | IND_FAM_LINE of (variable * 'a)
+   | IND_FAM_BASE of L.level * (conid * 'a) list
+   | IND_TYPE
+   | IND_INTRO
+   | IND_REC
    (* equality *)
    | EQUALITY of 'a * 'a * 'a
    (* fcom types *)
-   | BOX of {dir: dir, cap: 'a, boundaries: (equation * 'a) list}
-   | CAP of {dir: dir, tubes: (equation * (variable * 'a)) list, coercee: 'a}
+   | BOX of {dir: dir, cap: 'a, boundaries: 'a boundary list}
+   | CAP of {dir: dir, tubes: 'a tube list, coercee: 'a}
    (* V *)
    | V of 'a * 'a * 'a * 'a
    | VIN of 'a * 'a * 'a | VPROJ of 'a * 'a * 'a
    (* universes *)
    | UNIVERSE of L.level * kind
    (* hcom operator *)
-   | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (variable * 'a)) list}
+   | HCOM of {dir: dir, ty: 'a, cap: 'a, tubes: 'a tube list}
    (* ghcom operator *)
-   | GHCOM of {dir: dir, ty: 'a, cap: 'a, tubes: (equation * (variable * 'a)) list}
+   | GHCOM of {dir: dir, ty: 'a, cap: 'a, tubes: 'a tube list}
    (* coe operator *)
    | COE of {dir: dir, ty: (variable * 'a), coercee: 'a}
    (* com operator *)
-   | COM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: (equation * (variable * 'a)) list}
+   | COM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: 'a tube list}
    (* gcom operator *)
-   | GCOM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: (equation * (variable * 'a)) list}
+   | GCOM of {dir: dir, ty: (variable * 'a), cap: 'a, tubes: 'a tube list}
 
    | DIM0 | DIM1
 
@@ -110,7 +131,7 @@ struct
 
     fun unpackAny m =
       let
-        val O.MK_ANY _ $ [_ \ m'] = Tm.out m
+        val O.MK_ANY s $ [_ \ m'] = Tm.out m
       in
         m'
       end
@@ -132,61 +153,46 @@ struct
 
     fun outTube tube = 
       let
-        val O.MK_TUBE $ [_ \ r1, _ \ r2, [u] \ mu] = Tm.out tube
+        val O.MK_TUBE _ $ [_ \ r1, _ \ r2, [u] \ mu] = Tm.out tube
       in
         ((r1, r2), (u, mu))
       end
 
     fun outBoundary boundary = 
       let
-        val O.MK_BDRY $ [_ \ r1, _ \ r2, _ \ m] = Tm.out boundary
+        val O.MK_BDRY _ $ [_ \ r1, _ \ r2, _ \ m] = Tm.out boundary
       in
         ((r1, r2), m)
       end
 
-    (* TODO: use outVec' *)
-    fun outTubes system =
-      let
-        val O.MK_VEC _ $ args = Tm.out system
-      in
-        List.map (fn _ \ t => outTube t) args
-      end
+    val outTubes = outVec' outTube
 
-    fun outBoundaries boundaries =
-      let
-        val O.MK_VEC _ $ args = Tm.out boundaries
-      in
-        List.map (fn _ \ b => outBoundary b) args
-      end
+    val outBoundaries = outVec' outBoundary
 
-    fun intoTube ((r1, r2), (u, e)) = 
-      O.MK_TUBE $$ 
+    fun intoTube tau ((r1, r2), (u, e)) =
+      O.MK_TUBE tau $$
         [[] \ r1,
          [] \ r2,
          [u] \ e]
 
-    fun intoBoundary ((r1, r2), e) = 
-      O.MK_BDRY $$
+    fun intoBoundary tau ((r1, r2), e) =
+      O.MK_BDRY tau $$
         [[] \ r1,
          [] \ r2,
          [] \ e]
 
-
-    fun intoTubes tubes = 
+    fun intoVec' tau f list =
       let
-        val n = List.length tubes
+        val n = List.length list
       in
-        O.MK_VEC (O.TUBE, n) $$
-          List.map (fn t => [] \ intoTube t) tubes
+        O.MK_VEC (tau, n) $$ List.map (fn t => [] \ f t) list
       end
 
-    fun intoBoundaries boundaries = 
-      let
-        val n = List.length boundaries
-      in
-        O.MK_VEC (O.BDRY, n) $$
-          List.map (fn b => [] \ intoBoundary b) boundaries
-      end
+    fun intoVec tau = intoVec' tau (fn x => x)
+
+    fun intoTubes tau = intoVec' (O.TUBE tau) (intoTube tau)
+
+    fun intoBoundaries tau = intoVec' (O.BDRY tau) (intoBoundary tau)
   end
 
   local
@@ -200,7 +206,7 @@ struct
         [[] \ r1,
          [] \ r2,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun intoHcom {dir = (r1, r2), ty, cap, tubes} =
       O.HCOM $$ 
@@ -208,7 +214,7 @@ struct
          [] \ r2,
          [] \ ty,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun intoGhcom {dir = (r1, r2), ty, cap, tubes} =
       O.GHCOM $$
@@ -216,7 +222,7 @@ struct
          [] \ r2,
          [] \ ty,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun intoCom {dir = (r1, r2), ty=(u,a), cap, tubes} =
       O.COM $$ 
@@ -224,7 +230,7 @@ struct
          [] \ r2,
          [u] \ a,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun intoGcom {dir = (r1, r2), ty=(u,a), cap, tubes} =
       O.GCOM $$
@@ -232,7 +238,7 @@ struct
          [] \ r2,
          [u] \ a,
          [] \ cap,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
 
     (* fun outBoudaries (eqs, boundaries) =
@@ -243,14 +249,14 @@ struct
         [[] \ r1,
          [] \ r2,
          [] \ cap,
-         [] \ intoBoundaries boundaries]
+         [] \ intoBoundaries O.EXP boundaries]
 
     fun intoCap {dir = (r1, r2), coercee, tubes} =
       O.CAP $$ 
         [[] \ r1,
          [] \ r2,
          [] \ coercee,
-         [] \ intoTubes tubes]
+         [] \ intoTubes O.EXP tubes]
 
     fun outRecordFields (lbls, args) =
       let
@@ -360,6 +366,19 @@ struct
        | CEDOM (r, m, fm, gm) => O.CEDOM $$ [[] \ r, [] \ m, [] \ fm, [] \ gm]
        | COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw))) =>
            O.COEQUALIZER_REC $$ [[x] \ px, [] \ m, [y] \ cy, [w1, w2] \ dw]
+
+       | IND_SPECTYPE_SELF => O.IND_SPECTYPE_SELF $$ []
+       | IND_SPECTYPE_FUN (a, x, bx) => O.IND_SPECTYPE_FUN $$ [[] \ a, [x] \ bx]
+       | IND_SPEC_FCOM {dir = (r1, r2), cap, tubes} =>
+           O.IND_SPEC_FCOM $$
+             [ [] \ r1
+             , [] \ r2
+             , [] \ cap
+             , [] \ intoTubes O.IND_SPEC tubes]
+       | IND_SPEC_LAM (x, mx) =>
+           O.IND_SPEC_LAM $$ [[x] \ mx]
+       | IND_SPEC_APP (m, n) =>
+           O.IND_SPEC_APP $$ [[] \ m, [] \ n]
 
        | EQUALITY (a, m, n) => O.EQUALITY $$ [[] \ a, [] \ m, [] \ n]
 
@@ -479,6 +498,30 @@ struct
        | O.CEDOM $ [_ \ r, _ \ m, _ \ fm, _ \ gm] => CEDOM (r, m, fm, gm)
        | O.COEQUALIZER_REC $ [[x] \ px, _ \ m, [y] \ cy,  [w1, w2] \ dw] =>
            COEQUALIZER_REC ((x, px), m, ((y, cy), (w1, w2, dw)))
+
+       | O.IND_SPECTYPE_SELF $ _ => IND_SPECTYPE_SELF
+       | O.IND_SPECTYPE_FUN $ [_ \ a, [x] \ bx] => IND_SPECTYPE_FUN (a, x, bx)
+       | O.IND_SPEC_INTRO (label, _) $ args => IND_SPEC_INTRO (label, List.map (fn _ \ m => m) args)
+       | O.IND_SPEC_FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>
+           IND_SPEC_FCOM
+             { dir = (r1, r2)
+             , cap = cap
+             , tubes = outTubes tubes
+             }
+       | O.IND_SPEC_LAM $ [[x] \ mx] => IND_SPEC_LAM (x, mx)
+       | O.IND_SPEC_APP $ [_ \ m, _ \ n] => IND_SPEC_APP (m, n)
+       | O.IND_CONSTR_FUN $ [_ \ a, [x] \ bx] => IND_CONSTR_FUN (a, x, bx)
+       | O.IND_CONSTR_SPEC_FUN $ [_ \ a, [x] \ bx] => IND_CONSTR_SPEC_FUN (a, x, bx)
+       | O.IND_CONSTR_LINE $ [[x] \ bx] => IND_CONSTR_LINE (x, bx)
+       | O.IND_CONSTR_KAN $ [_ \ boundaries] => IND_CONSTR_KAN (outBoundaries boundaries)
+       | O.IND_CONSTR_DISCRETE $ [_ \ boundaries] => IND_CONSTR_DISCRETE (outBoundaries boundaries)
+       | O.IND_FAM_FUN $ [_ \ a, [x] \ bx] => IND_FAM_FUN (a, x, bx)
+       | O.IND_FAM_LINE $ [[x] \ bx] => IND_FAM_LINE (x, bx)
+       | O.IND_FAM_BASE conids $ (_ \ l) :: rest => IND_FAM_BASE
+           (L.out l, ListPair.mapEq (fn (id, (_ \ datum)) => (id, datum)) (conids, rest))
+       | O.IND_TYPE _ $ _ => IND_TYPE
+       | O.IND_INTRO _ $ _ => IND_INTRO
+       | O.IND_REC _ $ _ => IND_REC
 
        | O.EQUALITY $ [_ \ a, _ \ m, _ \ n] => EQUALITY (a, m, n)
 
