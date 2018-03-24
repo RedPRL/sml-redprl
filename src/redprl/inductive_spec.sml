@@ -55,7 +55,7 @@ struct
 
   fun untypedReduce tm : Abt.abt =
     case Syn.out tm of
-     | Syn.VAR _ => tm
+       Syn.VAR _ => tm
      | Syn.IND_SPEC_INTRO params => tm
      | Syn.IND_SPEC_FCOM {dir, cap, ...} =>
          if Abt.eq dir then cap else tm
