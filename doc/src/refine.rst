@@ -680,6 +680,22 @@ Kan operations
 
 :index:`hcom/eq`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (hcom #i~>#j #ty0 #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)]) = (hcom #i~>#j #ty1 #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)]) in #ty
+  | H >> #cap0 = #cap1 in #ty0
+  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in #ty0
+  | ...
+  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in #ty0
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in #ty0
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in #ty0
+  | ...
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in #ty0
+  | H, #r0=#s0 >> #cap0 = (#t00 #i) in #ty0
+  | ...
+  | H, #rn=#sn >> #cap0 = (#t0n #i) in #ty0
+  | H >> #ty0 hcom type
+  | H >> #ty0 <= #ty type
 
 :index:`hcom/eq/cap`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
