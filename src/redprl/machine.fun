@@ -174,7 +174,26 @@ struct
    | CRITICAL of 'a
    | STEP of 'a
 
-  fun stepFCom stability ({dir = dir as (r, r'), cap, tubes} || (syms, stk)) =
+  fun pushFrameIntoFCom ((((x, tyx), frame), {dir = dir as (r, _), cap, tubes}) || (syms, stk)) =
+    let
+      val u = Sym.new()
+      val fcomu =
+        Syn.intoFcom
+          {dir = (r, VarKit.toDim u),
+           cap = cap,
+           tubes = tubes}
+      fun elim_ m = plug m frame
+      val com =
+        Syn.into @@ Syn.COM
+          {dir = dir,
+           ty = (u, substVar (fcomu, x) tyx),
+           cap = elim_ cap,
+           tubes = mapTubes_ elim_ tubes}
+    in
+      CRITICAL @@ com || (syms, stk)
+    end
+
+  fun stepFCom stability ((params as {dir = dir as (r, r'), cap, tubes}) || (syms, stk)) =
     if dimensionsEqual stability syms dir then 
       STEP @@ cap || (syms, stk)
     else
@@ -183,42 +202,14 @@ struct
        | NONE =>
          (case stk of
              [] => raise Final
-           | IF ((x, tyx), HOLE, t, f) :: stk =>
-             let
-               val u = Sym.new()
-               val fcomu =
-                 Syn.intoFcom
-                   {dir = (r, VarKit.toDim u),
-                    cap = cap,
-                    tubes = tubes}
-               fun if_ m = Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
-               val com =
-                 Syn.into @@ Syn.COM 
-                   {dir = dir,
-                    ty = (u, substVar (fcomu, x) tyx),
-                    cap = if_ cap,
-                    tubes = mapTubes_ if_ tubes}
-             in
-               CRITICAL @@ com || (syms, stk)
-             end
-           | S1_REC ((x, tyx), HOLE, base, (v, loop)) :: stk => 
-             let
-               val u = Sym.new ()
-               val fcomu =
-                 Syn.intoFcom
-                   {dir = (r, VarKit.toDim u),
-                    cap = cap,
-                    tubes = tubes}
-               fun s1rec m = Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (v, loop)))
-               val com =
-                 Syn.into @@ Syn.COM 
-                   {dir = dir,
-                    ty = (u, substVar (fcomu, x) tyx),
-                    cap = s1rec cap,
-                    tubes = mapTubes_ s1rec tubes}
-             in
-               CRITICAL @@ com || (syms, stk)
-             end
+           | (frame as IF (motive, HOLE, _, _)) :: stk =>
+             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+           | (frame as S1_REC (motive, HOLE, _, _)) :: stk =>
+             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+           | (frame as PUSHOUT_REC (motive, HOLE, _, _, _)) :: stk =>
+             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+           | (frame as COEQUALIZER_REC (motive, HOLE, _, _)) :: stk =>
+             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
            | HCOM (hcomDir, HOLE, hcomCap, hcomTubes) :: stk =>
                (* favonia: the version implemented below is different from the one
                 *          in CHTT Part III. I do not know which one is better. *)
