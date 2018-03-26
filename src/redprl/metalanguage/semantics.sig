@@ -10,7 +10,7 @@ sig
   datatype value =
      THUNK of env * syn_cmd
    | THM of jdg * Tm.abs
-   | DATA_INFO of term (* XXX Seriously, we should have something better. -favonia *)
+   | DATA_INFO of term * InductiveSpec.precomputed_valences (* XXX Seriously, we should have something better. -favonia *)
    | TERM of term
    | ABS of value * value
    | METAS of metas

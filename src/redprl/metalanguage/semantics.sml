@@ -12,7 +12,7 @@ struct
   datatype value =
      THUNK of env * syn_cmd
    | THM of jdg * Tm.abs
-   | DATA_INFO of term
+   | DATA_INFO of term * InductiveSpec.precomputed_valences
    | TERM of term
    | ABS of value * value
    | METAS of metas
@@ -60,7 +60,7 @@ struct
          | ABS (METAS psi, s) => ABS (METAS psi, go (List.foldr (fn ((X, _), ren) => Metavar.Ctx.remove ren X) ren psi) s)
          | METAS psi => METAS (List.map (fn (X, vl) => (Option.getOpt (Metavar.Ctx.find ren X, X), vl)) psi)
          | NIL => NIL
-         | DATA_INFO info => DATA_INFO (Tm.renameMetavars ren info)
+         | DATA_INFO (info, arity) => DATA_INFO (Tm.renameMetavars ren info, arity)
     in
       go ren s
     end

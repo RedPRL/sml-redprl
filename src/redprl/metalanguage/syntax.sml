@@ -63,7 +63,7 @@ struct
    | ABS of value * value
    | METAS of metas
    | TERM of term
-   | DATA_INFO of term
+   | DATA_INFO of term * InductiveSpec.precomputed_valences
 
   and cmd =
      BIND of cmd * id * cmd

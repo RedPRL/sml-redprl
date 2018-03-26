@@ -16,7 +16,7 @@ struct
      | (ABS _, _) => false
      | (METAS vls0, METAS vls1) => vls0 = vls1
      | (METAS _, _) => false
-     | (DATA_INFO ar0, DATA_INFO ar1) => InductiveSpec.eqPrecomputedArity (ar0, ar1)
+     | (DATA_INFO vls0, DATA_INFO vls1) => InductiveSpec.eqPrecomputedValences (vls0, vls1)
      | (DATA_INFO _, _) => false
 
   and eqCty =

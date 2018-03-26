@@ -30,6 +30,8 @@ struct
    | S1_REC of (variable * abt) * hole * abt * (variable * abt)
    | PUSHOUT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt) * (variable * variable * abt)
    | COEQUALIZER_REC of (variable * abt) * hole * (variable * abt) * (variable * variable * abt)
+   | IND_REC of (opid * RedPrlArity.valence list) * abt RedPrlAbt.bview list * abt list * (variable * abt) * hole * (variable list * abt) list
+   | COE_IND of Syn.dir * (variable * (opid * RedPrlArity.valence list * abt RedPrlAbt.bview list)) * hole
    | DIM_APP of hole * abt
    | NAT_REC of (variable * abt) * hole * abt * (variable * variable * abt)
    | INT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt)
@@ -59,6 +61,9 @@ struct
      | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
      | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
      | COEQUALIZER_REC ((x, tyx), HOLE, (y, cod), (u, w, dom)) => Syn.into @@ Syn.COEQUALIZER_REC ((x, tyx), m, ((y, cod), (u, w, dom)))
+     | IND_REC ((opid, vls), declArgs, tyArgs, (x, tyx), HOLE, branches) =>
+         Tm.$$ (O.IND_REC (opid, SOME vls), declArgs @ List.map (fn t => [] \ t) tyArgs @ [[x] \ tyx] @ [[] \ m] @ List.map (fn (vars, t) => vars \ t) branches)
+     | COE_IND (dir, (x, (opid, vls, args)), HOLE) => Syn.intoCoe {dir = dir, ty = (x, Tm.$$ (O.IND_TYPE (opid, SOME vls), args)), coercee = m}
      | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
      | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
 
@@ -381,6 +386,42 @@ struct
                  CRITICAL @@ result || (SymSet.remove syms u, stk)
                end
            | _ => raise Stuck)
+
+  fun stepIntro sign stability ((opid, conid, vls, args) || (syms, stk)) =
+    let
+      val (declArgs, (decl, precomputedVls), nonDeclArgs) = Sig.dataDeclInfo sign opid args
+      val nonDeclArgs = List.map (fn _ \ t => t) nonDeclArgs
+      val (tyArgs, constrs, introArgs) = InductiveSpec.fillInFamily decl nonDeclArgs
+      val (conIndex, (_, constr)) = Option.valOf (ListUtil.findIndex (fn (id, _) => id = conid) constrs)
+      val declVls = List.take (vls, List.length declArgs)
+      val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
+      val boundaries = InductiveSpec.realizeIntroBoundaries meta constr introArgs
+    in
+      case findFirstWithTrueEquation stability syms boundaries of
+         SOME b => STEP @@ b || (syms, stk)
+       | NONE =>
+         (case stk of
+             [] => raise Final
+           | (frame as IND_REC ((opid', _), _, _, _, HOLE, branches)) :: stk =>
+               let
+                 val () = if opid' = opid then () else raise Stuck
+                 val branch = List.nth (branches, conIndex)
+               in
+                 CRITICAL @@ InductiveSpec.fillInBranch (fn m => plug m frame) constr branch introArgs || (syms, stk)
+               end
+           | COE_IND (dir, (z, (opid', _, args')), HOLE) :: stk =>
+               let
+                 val () = if opid' = opid then () else raise Stuck
+                 val (declArgs', (decl', _), nonDeclArgs') = Sig.dataDeclInfo sign opid args'
+                 val nonDeclArgs' = List.map (fn _ \ t => t) nonDeclArgs'
+                 val (tyArgs', constrs', []) = InductiveSpec.fillInFamily decl' nonDeclArgs'
+                 val meta' = (opid, (declVls, precomputedVls), (declArgs', tyArgs'))
+                 val (_, constr') = List.nth (constrs', conIndex)
+               in
+                 CRITICAL @@ InductiveSpec.stepCoeIntro dir (z, (meta', conid, constr')) introArgs || (syms, stk)
+               end
+           | _ => raise Stuck)
+    end
 
   fun stepBox stability ({dir, cap, boundaries} || (syms, stk)) =
     if dimensionsEqual stability syms dir then
@@ -869,6 +910,10 @@ struct
        in
          CRITICAL @@ result || (SymSet.remove syms u, stk)
        end
+
+     | O.IND_TYPE _ $ _ || (_, []) => raise Final
+     | O.IND_INTRO (opid, conid, SOME vls) $ args || (syms, stk) =>
+       stepIntro sign stability ((opid, conid, vls, args) || (syms, stk))
 
      | O.BOX $ [_ \ r1, _ \ r2, _ \ cap, _ \ boundaries] || (syms, stk) => 
        stepBox stability ({dir = (r1, r2), cap = cap, boundaries = Syn.outBoundaries boundaries} || (syms, stk))

@@ -273,7 +273,7 @@ struct
       val sequents' = fn env => InductiveSpec.checkDecl (decl' env)
       val script' = fn env => elabAst env R.dummy_spec_env (script, RedPrlSort.MTAC)
       val cmd = fn env => refineSequents (SOME name, sequents' env, script' env)
-      val result : elab_val = fn env => (ISyn.DATA_INFO (decl' env), Ty.DATA_INFO arity)
+      val result : elab_val = fn env => (ISyn.DATA_INFO (decl' env, arity), Ty.DATA_INFO arity)
       val resultAbs = elabBind (cmd, x, elabRet (elabAbs (elabMetas psi, result)))
     in
       elabNu (psi, resultAbs)
