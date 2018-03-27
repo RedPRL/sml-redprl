@@ -1,12 +1,13 @@
 structure RedPrlOpData =
 struct
   type opid = MlId.t
+  type conid = string
 
   open RedPrlSort
   structure K = RedPrlKind
   type kind = RedPrlKind.kind
 
-  datatype 'a dev_pattern = 
+  datatype 'a dev_pattern =
      PAT_VAR of 'a
    | PAT_TUPLE of (string * 'a dev_pattern) list
 
@@ -14,14 +15,12 @@ struct
    (* the trivial realizer of sort EXP for types lacking interesting
     * computational content. This is the "ax(iom)" in Nuprl. *)
      AX
-   (* strict bool *)
+   (* bool *)
    | BOOL | TT | FF | IF
-   (* week bool *)
-   | WBOOL
    (* natural numbers *)
    | NAT | ZERO | SUCC | NAT_REC
    (* integers *)
-   | INT | NEGSUCC | INT_REC
+   | INT | POS | NEGSUCC | INT_REC
    (* empty type *)
    | VOID
    (* circle *)
@@ -38,6 +37,25 @@ struct
    | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
    (* coequalizer *)
    | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
+
+   (* inductive types *)
+   | IND_SPECTYPE_SELF
+   | IND_SPECTYPE_FUN
+
+   | IND_SPEC_INTRO of conid * RedPrlArity.valence list option (* actually, sort list is enough *)
+   | IND_SPEC_FCOM | IND_SPEC_LAM | IND_SPEC_APP
+
+   | IND_CONSTR_FUN | IND_CONSTR_SPEC_FUN | IND_CONSTR_LINE
+   | IND_CONSTR_KAN | IND_CONSTR_DISCRETE
+
+   | IND_FAM_BASE of conid list
+   | IND_FAM_FUN
+   | IND_FAM_LINE
+
+   | IND_TYPE of opid * RedPrlArity.valence list option
+   | IND_INTRO of opid * conid * RedPrlArity.valence list option
+   | IND_REC of opid * RedPrlArity.valence list option
+
    (* equality *)
    | EQUALITY
    (* universe *)
@@ -54,8 +72,8 @@ struct
 
    | DIM0
    | DIM1
-   | MK_TUBE
-   | MK_BDRY
+   | MK_TUBE of sort
+   | MK_BDRY of sort
    | MK_VEC of sort * int
 
    (* level expressions *)
@@ -71,7 +89,6 @@ struct
    | JDG_SUB_KIND
    | JDG_SYNTH
    | JDG_TERM of sort
-
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ | MTAC_ORELSE
@@ -96,7 +113,7 @@ struct
    (* development calculus terms *)
    | DEV_FUN_INTRO of unit dev_pattern list
    | DEV_PATH_INTRO of int | DEV_RECORD_INTRO of string list
-   | DEV_LET of sort option
+   | DEV_CLAIM of sort option
    | DEV_MATCH of int list
    | DEV_MATCH_CLAUSE
    | DEV_QUERY
@@ -109,14 +126,14 @@ struct
 
    | SEL_CONCL
    | SEL_HYP
-   
+
    | ACC_WHOLE
    | ACC_TYPE
    | ACC_LEFT
    | ACC_RIGHT
 
    | PAT_META of sort
- 
+
    | CUST of opid * RedPrlArity.t option
    | TAC_UNFOLD_ALL of opid list
    | TAC_UNFOLD of opid list
@@ -126,12 +143,12 @@ struct
    | DEV_APPLY_LEMMA of unit dev_pattern
 end
 
-signature REDPRL_OPERATOR = 
+signature REDPRL_OPERATOR =
 sig
   datatype sort = datatype RedPrlSort.sort
   datatype operator = datatype RedPrlOpData.operator
   datatype dev_pattern = datatype RedPrlOpData.dev_pattern
-  
+
   include ABT_OPERATOR
     where type t = operator
     where type Ar.Vl.S.t = sort

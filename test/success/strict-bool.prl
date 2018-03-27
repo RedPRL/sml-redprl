@@ -1,24 +1,24 @@
-Def Cmp(#m, #n) = [
+define Cmp(#m, #n) =
   (lam [x] ($ #m ($ #n x)))
-].
+.
 
-Def Bool/Not = [
+define Bool/Not =
   (lam [x] (if [_] bool x ff tt))
-].
+.
 
-Thm Bool/Not-Not-Id : [
+theorem Bool/Not-Not-Id :
   (Cmp Bool/Not Bool/Not) = (lam [x] x) in (-> bool bool)
-] by [
+by {
   auto
-].
+}.
 
-Thm SBool/Not-Not-Id-Path : [
+theorem SBool/Not-Not-Id-Path :
   (path
     [_] (-> bool bool)
     (Cmp Bool/Not Bool/Not)
     (lam [x] x))
-] by [
+by {
   abs i => lam x => use x
-].
+}.
 
-Extract SBool/Not-Not-Id-Path.
+print SBool/Not-Not-Id-Path.

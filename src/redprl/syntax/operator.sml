@@ -36,8 +36,6 @@ struct
      | FF => [] ->> EXP
      | IF => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
 
-     | WBOOL => [] ->> EXP
-
      | VOID => [] ->> EXP
 
      | NAT => [] ->> EXP
@@ -45,8 +43,9 @@ struct
      | SUCC => [[] |: EXP] ->> EXP
      | NAT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
      | INT => [] ->> EXP
+     | POS => [[] |: EXP] ->> EXP
      | NEGSUCC => [[] |: EXP] ->> EXP
-     | INT_REC => [[EXP] |: EXP, [] |: EXP, [] |: EXP, [EXP, EXP] |: EXP, [] |: EXP, [EXP, EXP] |: EXP] ->> EXP
+     | INT_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [EXP] |: EXP] ->> EXP
 
      | S1 => [] ->> EXP
      | BASE => [] ->> EXP
@@ -83,14 +82,36 @@ struct
      | CEDOM => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
      | COEQUALIZER_REC => [[EXP] |: EXP, [] |: EXP, [EXP] |: EXP, [DIM, EXP] |: EXP] ->> EXP
 
-     | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC BDRY] ->> EXP
-     | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | HCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | GHCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | IND_SPECTYPE_SELF => [] ->> IND_SPECTYPE
+     | IND_SPECTYPE_FUN => [[] |: EXP, [EXP] |: IND_SPECTYPE] ->> IND_SPECTYPE
+
+     | IND_SPEC_INTRO (_, valences) => Option.valOf valences ->> IND_SPEC
+     | IND_SPEC_FCOM => [[] |: DIM, [] |: DIM, [] |: IND_SPEC, [] |: VEC (TUBE IND_SPEC)] ->> IND_SPEC
+     | IND_SPEC_LAM => [[EXP] |: IND_SPEC] ->> IND_SPEC
+     | IND_SPEC_APP => [[] |: IND_SPEC, [] |: EXP] ->> IND_SPEC
+
+     | IND_CONSTR_FUN => [[] |: EXP, [EXP] |: IND_CONSTR] ->> IND_CONSTR
+     | IND_CONSTR_SPEC_FUN => [[] |: IND_SPECTYPE, [IND_SPEC] |: IND_CONSTR] ->> IND_CONSTR
+     | IND_CONSTR_LINE => [[DIM] |: IND_CONSTR] ->> IND_CONSTR
+     | IND_CONSTR_KAN => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
+     | IND_CONSTR_DISCRETE => [[] |: VEC (BDRY IND_SPEC)] ->> IND_CONSTR
+
+     | IND_FAM_BASE l => ([] |: LVL) :: List.map (fn _ => [] |: IND_CONSTR) l ->> IND_FAM
+     | IND_FAM_FUN => [[] |: EXP, [EXP] |: IND_FAM] ->> IND_FAM
+     | IND_FAM_LINE => [[DIM] |: IND_FAM] ->> IND_FAM
+
+     | IND_TYPE (_, valences) => Option.valOf valences ->> EXP
+     | IND_INTRO (_, _, valences) => Option.valOf valences ->> EXP
+     | IND_REC (_, valences) => Option.valOf valences ->> EXP
+
+     | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (BDRY EXP)] ->> EXP
+     | CAP => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | HCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | GHCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
      | COE => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP] ->> EXP
-     | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
-     | GCOM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC TUBE] ->> EXP
+     | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | GCOM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
 
      | UNIVERSE => [[] |: LVL, [] |: KND] ->> EXP
      | V => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
@@ -103,8 +124,8 @@ struct
 
      | DIM0 => [] ->> DIM
      | DIM1 => [] ->> DIM
-     | MK_TUBE => [[] |: DIM, [] |: DIM, [DIM] |: EXP] ->> TUBE
-     | MK_BDRY => [[] |: DIM, [] |: DIM, [] |: EXP] ->> BDRY
+     | MK_TUBE tau => [[] |: DIM, [] |: DIM, [DIM] |: tau] ->> TUBE tau
+     | MK_BDRY tau => [[] |: DIM, [] |: DIM, [] |: tau] ->> BDRY tau
      | MK_VEC (tau, n) => List.tabulate (n, fn _ => [] |: tau) ->> VEC tau
 
      | LCONST i => [] ->> LVL
@@ -119,6 +140,7 @@ struct
      | JDG_SUB_TYPE => [[] |: EXP, [] |: EXP] ->> JDG
      | JDG_SUB_KIND => [[] |: KND, [] |: EXP] ->> JDG
      | JDG_SYNTH => [[] |: EXP] ->> JDG
+     | JDG_TERM _ => [] ->> JDG
 
      | MTAC_SEQ => [[] |: MTAC, [] |: MTAC] ->> MTAC
      | MTAC_ORELSE => [[] |: MTAC, [] |: MTAC] ->> MTAC
@@ -143,7 +165,7 @@ struct
      | RULE_CUT => [[] |: JDG] ->> TAC
      | RULE_PRIM _ => [] ->> TAC
      | TAC_ELIM => [[] |: ANY] ->> TAC
-     | TAC_REWRITE => [[] |: SEL, [] |: ACC, [] |: EXP] ->> TAC
+     | TAC_REWRITE => [[] |: SEL, [] |: VEC ACC, [] |: EXP] ->> TAC
 
      | TAC_ASSUMPTION => [] ->> TAC
      | TAC_POP sorts => [sorts |: TAC] ->> TAC
@@ -152,7 +174,7 @@ struct
      | DEV_FUN_INTRO pats => [ListUtil.concatMap devPatternValence pats |: TAC] ->> TAC
      | DEV_RECORD_INTRO lbls => List.map (fn _ => [] |: TAC) lbls ->> TAC
      | DEV_PATH_INTRO n => [List.tabulate (n, fn _ => DIM) |: TAC] ->> TAC
-     | DEV_LET tau => [[] |: JDG, [] |: TAC, [Option.valOf tau] |: TAC] ->> TAC
+     | DEV_CLAIM tau => [[] |: JDG, [] |: TAC, [Option.valOf tau] |: TAC] ->> TAC
 
      | DEV_MATCH ns => ([] |: ANY) :: List.map (fn n => List.tabulate (n, fn _ => META_NAME) |: MATCH_CLAUSE) ns ->> TAC
      | DEV_MATCH_CLAUSE => [[] |: ANY, [] |: TAC] ->> MATCH_CLAUSE
@@ -174,7 +196,6 @@ struct
 
      | PAT_META tau => [[] |: META_NAME, [] |: VEC ANY] ->> tau
 
-     | JDG_TERM _ => [] ->> JDG
      | CUST (_, ar) => Option.valOf ar
      | TAC_UNFOLD_ALL _ => [] ->> TAC
      | TAC_UNFOLD _ => [[] |: VEC SEL] ->> TAC
@@ -182,15 +203,13 @@ struct
      | DEV_APPLY_LEMMA pat => [[] |: ANY, [] |: VEC TAC, devPatternValence pat |: TAC] ->> TAC
      | DEV_USE_LEMMA => [[] |: ANY, [] |: VEC TAC] ->> TAC
 
-  fun eq (th1, th2) = th1 = th2
+  fun eq (th1 : operator, th2) = th1 = th2
 
   val opidsToString =
    ListUtil.joinWith MlId.toString ","
 
   val toString =
     fn AX => "ax"
-
-     | WBOOL => "wbool"
 
      | BOOL => "bool"
      | TT => "tt"
@@ -202,6 +221,7 @@ struct
      | ZERO => "zero"
      | SUCC => "succ"
      | INT => "int"
+     | POS => "pos"
      | NEGSUCC => "negsucc"
      | INT_REC => "int-rec"
 
@@ -237,6 +257,24 @@ struct
      | CEDOM => "cedom"
      | COEQUALIZER_REC => "coeq-rec"
 
+     | IND_SPECTYPE_SELF => "ind-spec-self"
+     | IND_SPECTYPE_FUN => "ind-spec-fun"
+     | IND_SPEC_INTRO _ => "ind-spec-intro" (* FIXME *)
+     | IND_SPEC_FCOM => "ind-spec-fcom"
+     | IND_SPEC_LAM => "ind-spec-lam"
+     | IND_SPEC_APP => "ind-spec-app"
+     | IND_CONSTR_FUN => "ind-constr-fun"
+     | IND_CONSTR_SPEC_FUN => "ind-constr-spec-fun"
+     | IND_CONSTR_LINE => "ind-constr-line"
+     | IND_CONSTR_KAN => "ind-constr-kan"
+     | IND_CONSTR_DISCRETE => "ind-constr-discrete"
+     | IND_FAM_BASE _ => "ind-fam-base" (* FIXME *)
+     | IND_FAM_FUN => "ind-fam-fun"
+     | IND_FAM_LINE => "ind-fam-line"
+     | IND_TYPE _ => "ind-type" (* FIXME *)
+     | IND_INTRO _ => "ind-intro" (* FIXME *)
+     | IND_REC _ => "ind-rec" (* FIXME *)
+
      | UNIVERSE => "U"
      | V => "V"
      | VIN => "Vin"
@@ -248,12 +286,12 @@ struct
 
      | DIM0 => "dim0"
      | DIM1 => "dim1"
-     | MK_TUBE => "tube"
-     | MK_BDRY => "bdry"
+     | MK_TUBE tau => "tube{" ^ RedPrlSort.toString tau ^ "}"
+     | MK_BDRY tau => "bdry{" ^ RedPrlSort.toString tau ^ "}"
      | MK_VEC _ => "vec" 
 
-     | LCONST i => "{lconst " ^ IntInf.toString i  ^ "}"
-     | LPLUS i => "{lplus " ^ IntInf.toString i ^ "}"
+     | LCONST i => "lconst{" ^ IntInf.toString i  ^ "}"
+     | LPLUS i => "lplus{" ^ IntInf.toString i ^ "}"
      | LMAX => "lmax"
 
      | KCONST k => RedPrlKind.toString k
@@ -289,7 +327,7 @@ struct
      | DEV_PATH_INTRO n => "path-intro{" ^ Int.toString n ^ "}"
      | DEV_FUN_INTRO pats => "fun-intro"
      | DEV_RECORD_INTRO lbls => "record-intro{" ^ ListUtil.joinWith (fn x => x) "," lbls ^ "}"
-     | DEV_LET _ => "let"
+     | DEV_CLAIM _ => "claim"
      | DEV_MATCH _ => "dev-match"
      | DEV_MATCH_CLAUSE => "dev-match-clause"
      | DEV_QUERY => "dev-query"
@@ -325,6 +363,7 @@ struct
      | JDG_SUB_KIND => "sub-kind"
      | JDG_SYNTH => "synth"
      | JDG_TERM tau => RedPrlSort.toString tau
+
      | CUST (opid, _) => MlId.toString opid
      | TAC_UNFOLD_ALL os => "unfold-all{" ^ opidsToString os ^ "}"
      | TAC_UNFOLD os => "unfold{" ^ opidsToString os ^ "}"

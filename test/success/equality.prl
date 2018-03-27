@@ -1,17 +1,17 @@
-Thm EqualityKind0(#A) : [
+theorem EqualityKind0(#A) :
   (->
-   [ty : (U 0 stable)]
+   [ty : (U 0 pre)]
    [a b : ty]
    (= (U 0 hcom) (= ty a b) (= ty a b)))
-] by [ 
+by {
   lam ty a b => auto
-].
+}.
 
-Thm EqualityKind1(#A) : [
+theorem EqualityKind1(#A) :
   (->
    [ty : (U 0 discrete)]
    [a b : ty]
    (= (U 0 kan) (= ty a b) (= ty a b)))
-] by [ 
+by {
   lam ty a b => auto
-].
+}.

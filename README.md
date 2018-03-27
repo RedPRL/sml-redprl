@@ -7,7 +7,7 @@
 *RedPRL* is the People's Refinement Logic, a next-generation homage
 to [Nuprl](http://www.nuprl.org); RedPRL was preceeded by
 [JonPRL](http://www.github.com/jonsterling/jonprl), written by Jon Sterling,
-Danny Gratzer and Vincent Rahli.
+Daniel Gratzer and Vincent Rahli.
 
 The purpose of RedPRL is to provide a practical implementation of Computational
 Cubical Type Theory in the Nuprl style, integrating modern advances in proof
@@ -54,44 +54,6 @@ follows
 Our best-supported editor is currently Vim.
 See the RedPRL plugin under [vim/](vim/).
 
-### Editor Support: Visual Studio Code
-
-The easiest/most user-friendly way to get started is with [Visual Studio
-Code](https://code.visualstudio.com); the [RedPRL
-mode](https://marketplace.visualstudio.com/items?itemName=freebroccolo.redprl)
-can be downloaded from the Marketplace.
-
-### Editor Support: Emacs
-
-We have support for interactive RedPRL development in Emacs.
-
-[![MELPA](https://melpa.org/packages/redprl-badge.svg)](https://melpa.org/#/redprl)
-
-The Emacs mode is a part of this repository. Additionally, it is available in
-[MELPA](https://melpa.org/#/redprl).
-
-The easiest way to install the package is from MELPA, using their [getting
-started](https://melpa.org/#/getting-started) instructions. The package is named
-`redprl`. It will probably be necessary to set the customization variable
-`redprl-command` to the path to the `redprl` binary.
-
-When `redprl-mode` is installed, files ending in `.prl` will automatically open
-in the mode. If they do not, run `M-x redprl-mode`. The mode supports the
-following features:
-
-
- * Press `C-c C-l` to send the current development to RedPRL.
-
- * Imenu (or wrappers such as `helm-imenu`) can be used to jump to definitions
-   in the buffer.
-
- * Completion is supported for names of declarations in the current buffer.
-
- * Flycheck is also supported, and can be used in lieu of `C-c C-l` if you like.
-   Be sure that either the `redprl` executable is in your path, or set
-   `flycheck-redprl-executable` in your own Emacs configuration.
-
-
 ### Contributing
 
 If you'd like to help, the best place to start are issues with the following labels:
@@ -107,3 +69,15 @@ can coordinate their efforts with you. Also, please don't hesitate to open a new
 issue if you have feedback of any kind.
 
 *The above text is stolen from [Yggdrasil](https://github.com/freebroccolo/yggdrasil/blob/master/README.md).*
+
+### Acknowledgments
+
+This research was sponsored by the Air Force Office of Scientific Research under
+grant number FA9550-15-1-0053 and the National Science Foundation under grant
+number DMS-1638352. We also thank the Isaac Newton Institute for Mathematical
+Sciences for its support and hospitality during the program "Big Proof" when
+part of this work was undertaken; the program was supported by the Engineering
+and Physical Sciences Research Council under grant number EP/K032208/1. The
+views and conclusions contained here are those of the authors and should not be
+interpreted as representing the official policies, either expressed or implied,
+of any sponsoring institution, government or any other entity.

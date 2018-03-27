@@ -104,7 +104,7 @@
   "Syntax table for RedPRL.")
 
 (defconst redprl-declaration-keywords
-  '("Def" "Extract" "Print" "Quit" "Tac" "Thm")
+  '("define" "extract" "print" "quit" "tactic" "theorem")
   "RedPRL's keywords.")
 
 (defconst redprl-sort-keywords
@@ -113,8 +113,8 @@
 
 (defconst redprl-expression-keywords
   '("tv" "ax" "fcom"
-    "bool" "tt" "ff" "if" "wbool" "wool" "bool-rec"
-    "nat" "zero" "succ" "nat-rec" "int" "negsucc" "int-rec"
+    "bool" "tt" "ff" "if"
+    "nat" "zero" "succ" "nat-rec" "int" "pos" "negsucc" "int-rec"
     "void"
     "S1" "base" "loop" "S1-rec"
     "lam" "app"
@@ -135,8 +135,8 @@
   "RedPRL's expression symbols.")
 
 (defconst redprl-tactic-keywords
-  '("auto" "auto-step" "case" "concl" "cut-lemma" "elim" "else" "exact" "fresh" "goal"
-    "hyp" "id" "lemma" "let" "claim" "match" "of" "print" "progress"
+  '("auto" "auto-step" "case" "concl" "cut-lemma" "elim" "else" "exact" "goal"
+    "hyp" "id" "lemma" "let" "claim" "match" "of" "progress"
     "query" "rec" "reduce" "refine" "repeat" "rewrite" "symmetry" "inversion" "assumption"
     "then" "unfold" "use" "with")
   "RedPRL's tactic keywords.")
@@ -146,7 +146,7 @@
   "RedPRL's tactic symbols.")
 
 (defconst redprl-sequent-keywords
-  '("at" "by" "in" "true" "type" "synth" "discrete" "kan" "hcom" "coe" "cubical")
+  '("at" "by" "in" "true" "type" "synth" "discrete" "kan" "hcom" "coe" "pre")
   "RedPRL's sequent keywords.")
 
 (defconst redprl-sequent-symbols

@@ -7,21 +7,7 @@ sig
   structure Src :
   sig
     type arguments = (string * Tm.valence) list
-
-    datatype decl =
-       DEF of {arguments : arguments, sort : sort, definiens : ast}
-     | THM of {arguments : arguments, goal : ast, script : ast}
-     | TAC of {arguments : arguments, script : ast}
-
-    datatype cmd =
-       PRINT of MlId.t
-     | EXTRACT of MlId.t
-     | QUIT
-
-    datatype elt = 
-       DECL of MlId.t * decl * Pos.t
-     | CMD of cmd * Pos.t
-
+    type elt = MlExtSyntax.cmd -> MlExtSyntax.cmd
     type sign = elt list
   end
 

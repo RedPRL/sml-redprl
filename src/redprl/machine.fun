@@ -32,7 +32,7 @@ struct
    | COEQUALIZER_REC of (variable * abt) * hole * (variable * abt) * (variable * variable * abt)
    | DIM_APP of hole * abt
    | NAT_REC of (variable * abt) * hole * abt * (variable * variable * abt)
-   | INT_REC of (variable * abt) * hole * abt * (variable * variable * abt) * abt * (variable * variable * abt)
+   | INT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt)
    | PROJ of string * hole
    | TUPLE_UPDATE of string * abt * hole
    | CAP of Syn.dir * tube list * hole
@@ -46,28 +46,26 @@ struct
   val todo = Fail "TODO"
   fun ?e = raise e
 
-  local
-    fun plug m = 
-      fn APP (HOLE, n) => Syn.intoApp (m, n)
-       | HCOM (dir, HOLE, cap, tubes) => Syn.intoHcom {dir = dir, ty = m, cap = cap, tubes = tubes}
-       | COE (dir, (u, HOLE), coercee) => Syn.intoCoe {dir = dir, ty = (u, m), coercee = coercee}
-       | IF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
-       | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
-       | DIM_APP (HOLE, r) => Syn.into @@ Syn.DIM_APP (m, r)
-       | NAT_REC ((z, tyz), HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC ((z, tyz), m, (zer, (x, y, succ)))
-       | INT_REC ((z, tyz), HOLE, zer, (x,y,succ), negone, (x',y',negss)) => Syn.into @@ Syn.INT_REC ((z, tyz), m, (zer, (x,y,succ), negone, (x',y',negss)))
-       | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
-       | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
-       | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
-       | COEQUALIZER_REC ((x, tyx), HOLE, (y, cod), (u, w, dom)) => Syn.into @@ Syn.COEQUALIZER_REC ((x, tyx), m, ((y, cod), (u, w, dom)))
-       | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
-       | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
-  in
-    fun unload (m || (syms, stk)) = 
-      case stk of
-         [] => m
-       | k :: stk => unload @@ plug m k || (syms, stk)
-  end
+  fun plug m =
+    fn APP (HOLE, n) => Syn.intoApp (m, n)
+     | HCOM (dir, HOLE, cap, tubes) => Syn.intoHcom {dir = dir, ty = m, cap = cap, tubes = tubes}
+     | COE (dir, (u, HOLE), coercee) => Syn.intoCoe {dir = dir, ty = (u, m), coercee = coercee}
+     | IF ((x, tyx), HOLE, t, f) => Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
+     | S1_REC ((x, tyx), HOLE, base, (u, loop)) => Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (u, loop)))
+     | DIM_APP (HOLE, r) => Syn.into @@ Syn.DIM_APP (m, r)
+     | NAT_REC ((z, tyz), HOLE, zer, (x, y, succ)) => Syn.into @@ Syn.NAT_REC ((z, tyz), m, (zer, (x, y, succ)))
+     | INT_REC ((z, tyz), HOLE, (x,pos), (y,neg)) => Syn.into @@ Syn.INT_REC ((z, tyz), m, ((x, pos), (y, neg)))
+     | PROJ (lbl, HOLE) => Syn.into @@ Syn.PROJ (lbl, m)
+     | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
+     | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
+     | COEQUALIZER_REC ((x, tyx), HOLE, (y, cod), (u, w, dom)) => Syn.into @@ Syn.COEQUALIZER_REC ((x, tyx), m, ((y, cod), (u, w, dom)))
+     | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
+     | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
+
+  fun unload (m || (syms, stk)) =
+    case stk of
+       [] => m
+     | k :: stk => unload @@ plug m k || (syms, stk)
 
   datatype stability = 
      STABLE
@@ -106,7 +104,7 @@ struct
          Syn.DIM0 => f0
        | Syn.DIM1 => f1
        | Syn.VAR (u, _) => (assertVariable stability syms u; fu u)
-       | Syn.META (u, _) => (assertVariable stability syms u; fu u)
+       | Syn.META (u, _) => raise Neutral (METAVAR u)
   end
 
   fun dimensionsEqual stability syms (r1, r2) = 
@@ -606,9 +604,9 @@ struct
      | O.SUCC $ _ || (_, []) => raise Final
      | O.NAT_REC $ [[z] \ tyz, _ \ m, _ \ n, [x,y] \ p] || (syms, stk) => COMPAT @@ m || (syms, NAT_REC ((z,tyz), HOLE, n, (x,y,p)) :: stk)
      | O.ZERO $ _ || (syms, NAT_REC (_, HOLE, zer, _) :: stk) => CRITICAL @@ zer || (syms, stk)
-     | O.SUCC $ [_ \ n] || (syms, NAT_REC ((z,tyz), HOLE, zer, (x,y, succ)) :: stk) =>
+     | O.SUCC $ [_ \ n] || (syms, (frm as NAT_REC (_, HOLE, _, (x,y, succ))) :: stk) =>
        let
-         val rho = VarKit.ctxFromList [(n, x), (Syn.into @@ Syn.NAT_REC ((z,tyz), n, (zer, (x,y,succ))), y)]
+         val rho = VarKit.ctxFromList [(n, x), (plug n frm, y)]
        in
          CRITICAL @@ substVarenv rho succ || (syms, stk)
        end
@@ -616,27 +614,16 @@ struct
      | O.NAT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | O.INT $ _ || (_, []) => raise Final
+     | O.POS $ _ || (_, []) => raise Final
      | O.NEGSUCC $ _ || (_, []) => raise Final
-     | O.INT_REC $ [[z] \ tyz, _ \ m, _ \ n, [x,y] \ p, _ \ q, [x',y'] \ r] || (syms, stk) => COMPAT @@ m || (syms, INT_REC ((z,tyz), HOLE, n, (x,y,p), q, (x',y',r)) :: stk)
-     | O.ZERO $ _ || (syms, INT_REC (_, HOLE, n, _, _, _) :: stk) => CRITICAL @@ n || (syms, stk)
-     | O.SUCC $ [_ \ m] || (syms, INT_REC ((z,tyz), HOLE, n, (x,y,p), _, _) :: stk) =>
-       let
-         val rho = VarKit.ctxFromList [(m, x), (Syn.into @@ Syn.NAT_REC ((z,tyz), m, (n, (x,y,p))), y)]
-       in
-         CRITICAL @@ substVarenv rho p || (syms, stk)
-       end
-     | O.NEGSUCC $ [_ \ m] || (syms, INT_REC ((z,tyz), HOLE, _, _, q, (x,y,r)) :: stk) =>
-       let
-         val tynegsuccz = substVar (Syn.into (Syn.NEGSUCC (VarKit.toExp z)), z) tyz
-       in
-         COMPAT @@ m || (syms, NAT_REC ((z, tynegsuccz), HOLE, q, (x,y,r)) :: stk)
-       end
+     | O.INT_REC $ [[z] \ tyz, _ \ m, [x] \ n, [y] \ p] || (syms, stk) => COMPAT @@ m || (syms, INT_REC ((z,tyz), HOLE, (x,n), (y,p)) :: stk)
+     | O.POS $ [_ \ m] || (syms, (frm as INT_REC (_, HOLE, (x,n), _)) :: stk) => CRITICAL @@ substVar (m, x) n || (syms, stk)
+     | O.NEGSUCC $ [_ \ m] || (syms, (frm as INT_REC (_, HOLE, _, (y,p))) :: stk) => CRITICAL @@ substVar (m, y) p || (syms, stk)
      | O.INT $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
      | O.INT $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | O.VOID $ _ || (_, []) => raise Final
 
-     | O.WBOOL $ _ || (_, []) => raise Final
      | O.BOOL $ _ || (_, []) => raise Final
      | O.TT $ _ || (_, []) => raise Final
      | O.FF $ _ || (_, []) => raise Final
@@ -646,17 +633,6 @@ struct
      | O.FF $ _ || (syms, IF (_, HOLE, _, f) :: stk) => CRITICAL @@ f || (syms, stk)
      | O.BOOL $ _ || (syms, HCOM (_, _, cap, _) :: stk) => CRITICAL @@ cap || (syms, stk)
      | O.BOOL $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
-     | O.WBOOL $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
-       let
-         val fcom =
-           Syn.intoFcom
-             {dir = dir,
-              cap = cap,
-              tubes = tubes}
-       in
-         CRITICAL @@ fcom || (syms, stk)
-       end
-     | O.WBOOL $ _ || (syms, COE (_, (u, HOLE), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
 
      | O.S1 $ _ || (_, []) => raise Final
      | O.BASE $ _ || (_, []) => raise Final
@@ -953,8 +929,8 @@ struct
                                 ty = substVar (s, v) b,
                                 cap = projFromOne s,
                                 tubes =
-                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.DIM_APP (Syn.intoSnd (fiberFromOne s), VarKit.toDim w)))
-                                  , ((s, Syn.intoDim 1), (w, projFromOne s)) ]}
+                                  [ ((s, Syn.intoDim 0), (w, Syn.into @@ Syn.DIM_APP (Syn.intoSnd (fiberFromOne (Syn.intoDim 0)), VarKit.toDim w)))
+                                  , ((s, Syn.intoDim 1), (w, coercee)) ]}
                            end
                        in
                          branchOnDim stability syms' (#1 dir)
@@ -1082,7 +1058,7 @@ struct
                 | K.KAN => CRITICAL @@ fcom || (syms, stk)
                 | K.HCOM => CRITICAL @@ fcom || (syms, stk)
                 | K.COE => raise Stuck
-                | K.STABLE => raise Stuck)
+                | K.PRE => raise Stuck)
            | _ => raise Stuck
          end
      | O.UNIVERSE $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)
@@ -1112,14 +1088,50 @@ struct
      | STEP cfg => cfg
      | CRITICAL cfg => cfg
 
+  val ppFrame : frame -> Fpp.doc =
+    fn APP _ => Fpp.text "app"
+     | HCOM _ => Fpp.text "hcom"
+     | COE _ => Fpp.text "coe"
+     | IF _ => Fpp.text "if"
+     | S1_REC _ => Fpp.text "s1-rec"
+     | PUSHOUT_REC _ => Fpp.text "pushout-rec"
+     | COEQUALIZER_REC _ => Fpp.text "coequalizer-rec"
+     | DIM_APP _ => Fpp.text "dim-app"
+     | NAT_REC _ => Fpp.text "nat-rec"
+     | INT_REC _ => Fpp.text "int-rec"
+     | PROJ _ => Fpp.text "proj"
+     | TUPLE_UPDATE _ => Fpp.text "tuple-update"
+     | CAP _ => Fpp.text "cap"
+     | VPROJ _ => Fpp.text "vproj"
+
+  val ppStack : stack -> Fpp.doc = 
+    Fpp.collection (Fpp.text "[") (Fpp.text "]") (Fpp.text ",") o
+      List.map ppFrame
+
+  fun ppCfg (cfg : abt machine) = 
+    let
+      val tm || (_, stk) = cfg
+    in
+      Fpp.grouped @@ Fpp.vsep [TermPrinter.ppTerm tm, Fpp.text "||", ppStack stk]
+    end
+
   fun eval sign stability unfolding = 
     let
       fun go cfg =
         go (unwrapAction (step sign stability unfolding cfg))
-        handle Stuck => cfg
-             | Final => cfg
-             | Neutral _ => cfg 
-             | Unstable => cfg
+        handle Stuck => 
+          let
+            val msg = 
+              Fpp.hvsep
+                [Fpp.text "evaluation got stuck:",
+                 Fpp.align @@ ppCfg cfg]
+          in
+           RedPrlLog.print RedPrlLog.WARN (NONE, msg);
+           cfg
+          end
+          | Final => cfg
+          | Neutral _ => cfg
+          | Unstable => cfg
     in
       unload o go o init
     end

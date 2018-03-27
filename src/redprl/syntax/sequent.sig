@@ -20,6 +20,7 @@ sig
   structure Hyps : 
   sig
     val empty : hyps
+    val isEmpty : hyps -> bool
     val snoc : hyps -> variable -> atjdg -> hyps
     val foldr : (variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b
     val foldl : (variable * atjdg * 'b -> 'b) -> 'b -> hyps -> 'b    
@@ -29,6 +30,7 @@ sig
     val remove : variable -> hyps -> hyps
     val splice : hyps -> variable -> hyps -> hyps
     val singleton : variable -> atjdg -> hyps
+    val map : (atjdg -> atjdg) -> (hyps -> hyps)
     val interposeAfter : variable * hyps -> hyps -> hyps
     val interposeThenSubstAfter : variable * hyps * abt -> hyps -> hyps
     val modifyAfter : variable -> (atjdg -> atjdg) -> hyps -> hyps

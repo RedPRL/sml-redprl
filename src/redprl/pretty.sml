@@ -301,15 +301,22 @@ struct
      | O.VPROJ $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "Vproj" :: List.map (ppBinder' env) args
      | O.UNIVERSE $ [_ \ l, _ \ k] =>
-         Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm' env l, ppTerm' env k]
+         let
+           val O.KCONST k' $ _ = Abt.out k
+         in
+           if RedPrlKind.eq (k', RedPrlKind.top) then
+             Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm' env l]
+           else
+             Atomic.parens @@ expr @@ hvsep @@ [text "U", ppTerm' env l, ppTerm' env k]
+         end
 
      | O.DIM0 $ _ => char #"0"
      | O.DIM1 $ _ => char #"1"
-     | O.MK_TUBE $ [_ \ r1, _ \ r2, tube]  =>
+     | O.MK_TUBE S.EXP $ [_ \ r1, _ \ r2, tube]  =>
        Atomic.squares @@ hsep
          [seq [ppTerm' env r1, Atomic.equals, ppTerm' env r2],
           nest 1 @@ ppBinder' env tube]
-     | O.MK_BDRY $ [_ \ r1, _ \ r2, _ \ m] =>
+     | O.MK_BDRY S.EXP $ [_ \ r1, _ \ r2, _ \ m] =>
        Atomic.squares @@ hsep
          [seq [ppTerm' env r1, Atomic.equals, ppTerm' env r2],
           nest 1 @@ ppTerm' env m]

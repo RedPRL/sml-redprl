@@ -10,7 +10,8 @@ struct
    | THM of sort
    | ABS of valence list * vty
    | METAS of valence list
-   (* TODO: 
+   | DATA_INFO of InductiveSpec.precomputedArity
+   (* TODO:
    | SUM of (string * vty) list
    *)
 
@@ -27,8 +28,11 @@ sig
   datatype vty = datatype MlTypeData.vty
   datatype cty = datatype MlTypeData.cty
 
-  (* TODO: 
-  
+  val eqVty : vty * vty -> bool
+  val eqCty : cty * cty -> bool
+
+  (* TODO:
+
   val ppVty : vty -> Fpp.doc
   val ppCty : cty -> Fpp.doc
 

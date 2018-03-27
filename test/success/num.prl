@@ -1,39 +1,39 @@
-Thm One : [
-  1 in int
-] by [
+theorem One :
+  (int 1) in int
+by {
   auto
-].
+}.
 
-Thm NegOne : [
-  -1 in int
-] by [
+theorem NegOne :
+  (int -1) in int
+by {
   auto
-].
+}.
 
-Thm NatOne : [
-  1 in nat
-] by [
+theorem NatOne :
+  (nat 1) in nat
+by {
   auto
-].
+}.
 
-Thm NatIsInt : [
-  (-> [x : nat] (= int x x))
-] by [
-  lam x => elim x; auto
-].
+theorem NatIsInt :
+  (-> [x : nat] (mem int (pos x)))
+by {
+  lam x => auto
+}.
 
-Thm Pred : [
+theorem Pred :
   (-> nat nat)
-] by [
+by {
   lam a =>
   elim a;
   [ `zero ];
   [ with a' ind => `a' ]
-].
+}.
 
-Thm Plus : [
+theorem Plus :
   (-> nat nat nat)
-] by [
+by {
   lam a =>
   elim a;
   [ lam x => use x
@@ -41,150 +41,148 @@ Thm Plus : [
     lam x =>
       let ih/x = ind [use x]; `(succ ih/x)
   ]
-].
+}.
 
-Thm Plus/wf : [
+theorem Plus/wf :
   Plus in (-> nat nat nat)
-] by [
+by {
   auto
-].
+}.
 
-Thm Plus/zeroL : [
-  (-> [n : nat] (= nat ($ Plus 0 n) n))
-] by [
+theorem Plus/zeroL :
+  (-> [n : nat] (= nat ($ Plus (nat 0) n) n))
+by {
   lam n => auto
-].
+}.
 
-Thm Plus/zero/R : [
-  (-> [n : nat] (= nat ($ Plus n 0) n))
-] by [
+theorem Plus/zero/R :
+  (-> [n : nat] (= nat ($ Plus n (nat 0)) n))
+by {
   lam n =>
     elim n;
     [ `ax
-    , with ind n' => 
-      rewrite ind;
-      [ with x => `(= nat (succ x) (succ n'))
-      , auto
-      , auto
-      , auto
-      ]
+    , with ind n' =>
+      rewrite ind at left;
+      [ with x => `(succ x) ];
+      auto
     ]
-].
+}.
 
-Thm Plus/succ/L : [
+theorem Plus/succ/L :
   (-> [n m : nat] (= nat ($ Plus (succ n) m) (succ ($ Plus n m))))
-] by [
+by {
   lam n m => auto
-].
+}.
 
-
-Thm Plus/succ/R : [
+theorem Plus/succ/R :
   (-> [n m : nat] (= nat ($ Plus n (succ m)) (succ ($ Plus n m))))
-] by [
+by {
   lam n m => elim n;
     [ auto
-    , with n'/ih n' => rewrite ($ Plus/succ/L n' (succ m));
-      [ with x => `(= nat x (succ ($ Plus (succ n') m)))
-      , rewrite ($ Plus/succ/L n' m);
-        [ with x => `(= nat (succ ($ Plus n' (succ m))) (succ x))
-        , rewrite n'/ih;
-          [ with x => `(= nat (succ x) (succ (succ ($ Plus n' m))))
-          , auto
-          ]
+    , with n'/ih n' => rewrite ($ Plus/succ/L n' (succ m)) at left;
+      [ with x => `x
+      , rewrite ($ Plus/succ/L n' m) at right;
+        [ with x => `(succ x)
+        , rewrite n'/ih at left;
+          [ with x => `(succ x) ]
         ]
       ]
     ];
 
     auto
-].
+}.
 
-Thm Plus/test0 : [
+theorem Plus/test0 :
   (-> [n m : nat] [eq : (= nat ($ Plus n zero) m)] (= nat n m))
-] by [
+by {
   lam n m eq =>
-    rewrite ($ Plus/zero/R n) in eq;
-    [ with x => `(= nat x m) ]; auto; use eq
-].
+    rewrite ($ Plus/zero/R n) in eq at left;
+    [ with x => `x ]; auto; use eq
+}.
 
-Thm Eq/sym : [
+theorem Eq/sym :
   (-> [ty : (U 0)] [a b : ty] (= ty a b) (= ty b a))
-] by [
-  lam ty a b eq => symmetry; auto; use eq
-].
+by {
+  lam ty a b eq => symmetry; use eq
+}.
 
-Thm Plus/comm : [
+theorem Plus/comm :
   (-> [n m : nat] (= nat ($ Plus n m) ($ Plus m n)))
-] by [
+by {
   lam n m => elim n;
     [ symmetry; `($ Plus/zero/R  m)
-    , with n'/ih n' => rewrite ($ Plus/succ/L n' m);
-      [ with x => `(= nat x ($ Plus m (succ n')))
-      , rewrite n'/ih;
-        [ with x => `(= nat (succ x) ($ Plus m (succ n')))
+    , with n'/ih n' => rewrite ($ Plus/succ/L n' m) at left;
+      [ with x => `x
+      , rewrite n'/ih at left;
+        [ with x => `(succ x)
         , symmetry; `($ Plus/succ/R m n')
         ]
       ]
     ];
 
     auto
-].
+}.
 
-
-Thm NatSymm : [
+theorem NatSymm :
   (->
    [a b : nat]
    (path [_] nat a b)
    (path [_] nat b a))
-] by [
+by {
   lam a b pab =>
   abs i =>
     `(hcom 0~>1 nat a
       [i=0 [j] (@ pab j)]
       [i=1 [_] a])
-].
+}.
 
-Thm IntPred : [
+theorem IntPred :
   (-> int int)
-] by [
+by {
   lam a => elim a;
-  [ `-1
-  , with _ a' => 
-      elim a';
-      [`0, with _ n => `(succ n)]
-  , `-2
-  , with _ a' =>
-      `(negsucc (succ (succ a')))
-  ]
-].
+  [ with n => elim n;
+    [ `(int -1)
+    , with _ n' => `(pos n')
+    ]
+  , with n => `(negsucc (succ n))
+  ];
+}.
 
-Thm IntSucc : [
+theorem IntSucc :
   (-> int int)
-] by [
+by {
   lam a => elim a;
-  [ `1, with _ a' => `(succ (succ a'))
-  , `0, with _ a' => `(negsucc a')
+  [ with n => `(pos (succ n))
+  , with n => elim n;
+    [ `(int 0)
+    , with _ n' => `(negsucc n')
+    ]
   ]
-].
+}.
 
-Thm IntPlus : [
+theorem IntPlus :
   (-> int int int)
-] by [
+by {
   lam a => elim a;
-  [ lam b => use b
-  , with ind a' => lam b => `($ IntSucc ($ ind b))
-  , lam b => `($ IntPred b)
-  , with ind a' => lam b => `($ IntPred ($ ind b))
+  [ with n => elim n;
+    [ lam b => use b
+    , with ind a' => lam b => `($ IntSucc ($ ind b))
+    ]
+  , with n => elim n;
+    [ lam b => `($ IntPred b)
+    , with ind a' => lam b => `($ IntPred ($ ind b))
+    ]
   ]
-].
+}.
 
-Thm Int4Plus3 : [
-  ($ IntPlus 4 3) = 7 in int
-] by [ auto ].
+theorem Int4Plus3 :
+  ($ IntPlus (int 4) (int 3)) = (int 7) in int
+by { auto }.
 
-Thm Int-6Plus10 : [
-  ($ IntPlus -6 10) = 4 in int
-] by [ auto ].
+theorem Int-6Plus10 :
+  ($ IntPlus (int -6) (int 10)) = (int 4) in int
+by { auto }.
 
-Thm Int-1Plus-9 : [
-  ($ IntPlus -1 -9) = -10 in int
-] by [ auto ].
+theorem Int-1Plus-9 :
+  ($ IntPlus (int -1) (int -9)) = (int -10) in int
+by { auto }.

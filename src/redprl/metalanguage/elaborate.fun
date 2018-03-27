@@ -1,31 +1,11 @@
-signature ML_ELAB_KIT = 
-sig
-  structure Ty : ML_TYPE
-
-  structure R : RESOLVER
-    where type id = MlId.t
-    where type mltype = Ty.vty
-
-  structure ESyn : ML_SYNTAX
-    where type term = RedPrlAst.ast * Tm.sort
-    where type vty = Ty.vty
-    where type id = MlId.t
-    where type metavariable = string
-    where type jdg = RedPrlAst.ast
-  
-  structure ISyn : ML_SYNTAX
-    where type term = Tm.abt
-    where type vty = Ty.vty
-    where type id = MlId.t
-    where type metavariable = Tm.metavariable
-    where type jdg = AtomicJudgment.jdg
-end
-
-functor MlElaborate (Kit : ML_ELAB_KIT) : ML_ELABORATE = 
+functor MlElaborate (R : RESOLVER where type id = MlId.t where type mltype = MlType.vty) : ML_ELABORATE =
 struct
-  open Kit
-  
+  structure Ty = MlType
+  structure ESyn = MlExtSyntax
+  structure ISyn = MlIntSyntax
+
   type env = R.env
+  type spec_env = R.spec_env
   type ivalue = ISyn.value
   type icmd = ISyn.cmd
   type evalue = ESyn.value
@@ -45,6 +25,7 @@ struct
 
   structure O = RedPrlOperator and S = RedPrlSort and Err = RedPrlError
   type arity = O.Ar.t
+  type valence = O.Ar.valence
 
 
   fun lookupArity (env : env) (pos : Pos.t option) (opid : MlId.t) : arity =
@@ -52,6 +33,24 @@ struct
         Ty.ABS (vls, Ty.TERM tau) => (vls, tau)
       | Ty.ABS (vls, Ty.THM tau) => (vls, tau)
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for opid", Fpp.text (MlId.toString opid)])
+
+  fun lookupDataTypeValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
+    case R.lookupId env pos opid of
+        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getTypeValences arity
+      | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data type", Fpp.text (MlId.toString opid)])
+
+  fun lookupDataIntroValences (env : env) (pos : Pos.t option) (opid : MlId.t) (conid : InductiveSpec.conid) : valence list =
+    case R.lookupId env pos opid of
+        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getIntroValences arity conid
+      | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data constructor", Fpp.text (MlId.toString opid), Fpp.text conid])
+
+  fun lookupDataElimValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
+    case R.lookupId env pos opid of
+        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getElimValences arity
+      | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data eliminator", Fpp.text (MlId.toString opid)])
+
+  fun lookupSpecIntroValences (specEnv : spec_env) (pos : Pos.t option) (conid : InductiveSpec.conid) : valence list =
+    R.lookupSpecIntro specEnv pos conid
 
   fun checkAbt pos (view, tau) : abt =
     Tm.setAnnotation pos @@ Tm.check (view, tau)
@@ -79,14 +78,14 @@ struct
 
   fun elabAtomicJdg (env : env) (ast : ast) : AJ.jdg =
     let
-      val abt = elabAst env (ast, S.JDG)
+      val abt = elabAst env R.dummy_spec_env (ast, S.JDG)
     in
       AJ.out abt
       handle _ =>
         Err.raiseError @@ Err.GENERIC [Fpp.text "Expected atomic judgment but got", TermPrinter.ppTerm abt]
     end
 
-  and elabAst (env : env) (ast : ast, tau : sort) : abt =
+  and elabAst (env : env) (specEnv : spec_env) (ast : ast, tau : sort) : abt =
     let
       val pos = Ast.getAnnotation ast
     in
@@ -97,38 +96,50 @@ struct
         | Ast.$# (X, asts : ast list) =>
           let
             val (X', (taus, _)) = R.lookupMeta env pos X
-            val _ = 
-              if List.length asts = List.length taus then () else 
+            val _ =
+              if List.length asts = List.length taus then () else
                 Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Incorrect valence for metavariable", Fpp.text X])
-            val abts = ListPair.map (elabAst env) (asts, taus)
+            val abts = ListPair.map (elabAst env specEnv) (asts, taus)
           in
             checkAbt pos (Tm.$# (X', abts), tau)
           end
 
         | Ast.$ (theta, bs) =>
           let
-            val theta' = elabOpr env pos theta bs
+            val theta' = elabOpr env specEnv pos theta bs
             val ar as (vls, tau) = O.arity theta'
             val _ =
               if List.length bs = List.length vls then () else
                 Err.raiseAnnotatedError' (pos, Err.INCORRECT_ARITY theta')
-            val bs' = ListPair.map (elabBnd env) (vls, bs)
+            val bs' = ListPair.map (elabBnd env specEnv) (vls, bs)
           in
             checkAbt pos (Tm.$ (theta', bs'), tau)
           end
     end
 
-  and elabBnd (env : env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview =
+  and elabBnd (env : env) (specEnv : spec_env) ((taus, tau), Ast.\ (xs, ast)) : abt Tm.bview =
     let
       val (xs', env') = R.extendVars env (xs, taus)
     in
-      Tm.\ (List.map #1 xs', elabAst env' (ast, tau))
+      Tm.\ (List.map #1 xs', elabAst env' specEnv (ast, tau))
     end
 
-  and elabOpr (env : env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator =
+  and elabOpr (env : env) (specEnv : spec_env) (pos : Pos.t option) (theta : O.operator) (bs : ast Ast.abs list) : O.operator =
     (case theta of
         O.CUST (opid, NONE) =>
         O.CUST (opid, SOME @@ lookupArity env pos opid)
+
+      | O.IND_TYPE (opid, NONE) =>
+        O.IND_TYPE (opid, SOME @@ lookupDataTypeValences env pos opid)
+
+      | O.IND_INTRO (opid, conid, NONE) =>
+        O.IND_INTRO (opid, conid, SOME @@ lookupDataIntroValences env pos opid conid)
+
+      | O.IND_REC (opid, NONE) =>
+        O.IND_REC (opid, SOME @@ lookupDataElimValences env pos opid)
+
+      | O.IND_SPEC_INTRO (conid, NONE) =>
+        O.IND_SPEC_INTRO (conid, SOME @@ lookupSpecIntroValences specEnv pos conid)
 
       | O.MK_ANY NONE =>
         let
@@ -137,151 +148,298 @@ struct
           O.MK_ANY o SOME @@ guessSort env ast
         end
 
-      | O.DEV_LET NONE =>
+      | O.DEV_CLAIM NONE =>
         let
           val [Ast.\ (_, jdg), _, _] = bs
         in
-          O.DEV_LET o SOME o AJ.synthesis @@ elabAtomicJdg env jdg
+          O.DEV_CLAIM o SOME o AJ.synthesis @@ elabAtomicJdg env jdg
         end
 
       | th => th)
       handle _ =>
         Err.raiseAnnotatedError' (pos, Err.GENERIC @@ [Fpp.text "Error resolving operator"])
 
+  type elab_cmd = env -> icmd * cty
+  type elab_val = env -> ivalue * vty
 
-  fun elabValue (env : R.env) : ESyn.value -> ISyn.value * Ty.vty =
-    fn ESyn.THUNK cmd =>
-       let
-         val (cmd', cty) = elabCmd env cmd
-       in
-         (ISyn.THUNK cmd', Ty.DOWN cty)
-       end
+  fun elabBind (elab1 : elab_cmd, nm, elab2 : elab_cmd) : elab_cmd = fn env =>
+    let
+      val (cmd1, Ty.UP vty1) = elab1 env
+      val (cmd2, cty2) = elab2 (R.extendId env nm vty1)
+    in
+      (ISyn.BIND (cmd1, nm, cmd2), cty2)
+    end
+
+  fun elabMatchMetas (elabv, Xs, elabc) env =
+    let
+      val (v', Ty.METAS vls) = elabv env
+      val (psi, env') = R.extendMetas env (Xs, vls)
+      val (cmd', cty) = elabc env'
+    in
+      (ISyn.MATCH_METAS (v', List.map #1 psi, cmd'), cty)
+    end
+
+  fun elabFresh vls : elab_cmd = fn env =>
+    (ISyn.FRESH vls, Ty.UP @@ Ty.METAS @@ List.map #2 vls)
+
+
+  fun elabVar (nm : MlId.t) : elab_val = fn env =>
+    (ISyn.VAR nm, R.lookupId env NONE nm)
+
+  fun elabNu (psi, elabc : elab_cmd) : elab_cmd =
+    let
+      val (Xs, vls) = ListPair.unzip psi
+      val hintedVls = ListPair.mapEq (fn (X, vl) => (SOME X, vl)) (Xs, vls)
+      val xpsi = MlId.new ()
+    in
+      elabBind (elabFresh hintedVls, xpsi, elabMatchMetas (elabVar xpsi, Xs, elabc))
+    end
+
+  fun elabThunk (elabc : elab_cmd) : elab_val = fn env =>
+    let
+      val (cmd, cty) = elabc env
+    in
+      (ISyn.THUNK cmd, Ty.DOWN cty)
+    end
+
+  fun elabTerm (ast, tau) : elab_val = fn env =>
+    (ISyn.TERM @@ elabAst env R.dummy_spec_env (ast, tau), Ty.TERM tau)
+
+  fun elabMetas psi : elab_val = fn env =>
+    let
+      val psi' = (List.map (fn (X, vl) => R.lookupMeta env NONE X) psi)
+      val vls = List.map #2 psi'
+    in
+      (ISyn.METAS psi', Ty.METAS vls)
+    end
+
+  fun elabAbs (elabvpsi : elab_val, elabv : elab_val) : elab_val = fn env =>
+    let
+      val (vpsi, Ty.METAS vls) = elabvpsi env
+      val (v, vty) = elabv env
+    in
+      (ISyn.ABS (vpsi, v), Ty.ABS (vls, vty))
+    end
+
+  fun elabRet (elabv : elab_val) : elab_cmd = fn env =>
+    let
+      val (v, vty) = elabv env
+    in
+      (ISyn.RET v, Ty.UP vty)
+    end
+
+  (* Expects a multitactic in 'script' *)
+  fun refineSequents (name, sequents : Sequent.jdg list, script : RedPrlAbt.abt) : icmd * cty = 
+    let
+      val tele = List.foldl (fn (jdg,psi) => Lcf.Tl.snoc psi (Metavar.new ()) (Lcf.I.ret jdg)) Lcf.Tl.empty sequents
+      val evd = Tm.checkb (Tm.\ ([], Tm.$$ (O.AX, [])), ([], O.EXP))
+      val state = Lcf.|> (tele, evd)
+    in
+      (ISyn.REFINE_MULTI (name, state, script), Ty.UP Ty.ONE)
+    end
+
+  fun refineSequent (name, sequent : Sequent.jdg, script : RedPrlAbt.abt) : icmd * cty =
+    let
+      val Sequent.>> (_, ajdg) = sequent
+    in
+      (ISyn.REFINE (name, sequent, script), Ty.UP o Ty.THM @@ AJ.synthesis ajdg)
+    end
+
+  fun elabRefine (name, ajdg, script) : elab_cmd = fn env =>
+    let
+      val ajdg' = elabAtomicJdg env ajdg
+      val sequent = Sequent.>> (Sequent.Hyps.empty, ajdg')
+      val script' = elabAst env R.dummy_spec_env (script, RedPrlSort.TAC)
+    in
+      refineSequent (name, sequent, script')
+    end
+
+  fun elabDef (psi, definiens) : elab_cmd =
+    elabNu (psi, elabRet (elabAbs (elabMetas psi, elabTerm definiens)))
+
+  fun elabThm (name, psi, goal, script) : elab_cmd =
+    let
+      val x = MlId.new ()
+    in
+      elabNu (psi, elabBind (elabRefine (SOME name, goal, script), x, elabRet @@ elabAbs (elabMetas psi, elabVar x)))
+    end
+
+  fun elabDataDecl (name, psi, decl, script) : elab_cmd =
+    let
+      val x = MlId.new ()
+      val arity = InductiveSpec.computeValences decl
+      val specEnv = R.makeSpecEnv (InductiveSpec.computeAllSpecIntroValences decl)
+      val decl' = fn env => elabAst env specEnv (decl, RedPrlSort.IND_FAM)
+      val sequents' = fn env => InductiveSpec.checkDecl (decl' env)
+      val script' = fn env => elabAst env R.dummy_spec_env (script, RedPrlSort.MTAC)
+      val cmd = fn env => refineSequents (SOME name, sequents' env, script' env)
+      val result : elab_val = fn env => (ISyn.DATA_INFO (decl' env), Ty.DATA_INFO arity)
+      val resultAbs = elabBind (cmd, x, elabRet (elabAbs (elabMetas psi, result)))
+    in
+      elabNu (psi, resultAbs)
+    end
+  
+  fun elabMatchThm (elabv : elab_val, xjdg, xtm, elabc : elab_cmd) : elab_cmd = fn env => 
+    let
+      val (v', ty) = elabv env
+      val tau =
+        case ty of
+          Ty.THM tau => tau
+        | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "MATCH_THM applied to non-theorem"]
+
+      val env' = R.extendId env xjdg @@ Ty.TERM RedPrlSort.JDG
+      val env'' = R.extendId env' xtm @@ Ty.TERM tau
+      val (cmd', cty) = elabc env''
+    in
+      (ISyn.MATCH_THM (v', xjdg, xtm, cmd'), cty)
+    end
+
+  fun elabMatchAbs (elabv : elab_val, xpsi, xv, elabc : elab_cmd) : elab_cmd = fn env =>
+    let
+      val (v, Ty.ABS (vls, vty)) = elabv env
+      val env' = R.extendId env xpsi @@ Ty.METAS vls
+      val env'' = R.extendId env' xv vty
+      val (cmd, cty) = elabc env''
+    in
+      (ISyn.MATCH_ABS (v, xpsi, xv, cmd), cty)
+    end
+
+  fun elabPrint (pos, elabv : elab_val) : elab_cmd = fn env =>
+    (ISyn.PRINT (pos, #1 @@ elabv env), Ty.UP Ty.ONE)
+
+
+  fun elabExtract (elabv : elab_val) : elab_cmd = 
+    let
+      val xpsi = MlId.new ()
+      val xthm = MlId.new ()
+      val xjdg = MlId.new ()
+      val xtm = MlId.new ()
+    in
+      elabMatchAbs (elabv, xpsi, xthm, elabMatchThm (elabVar xthm, xjdg, xtm, elabRet @@ elabAbs (elabVar xpsi, elabVar xtm)))
+    end
+
+  fun elabPrintExtract (pos, elabv : elab_val) : elab_cmd =
+    let
+      val xtm = MlId.new ()
+    in
+      elabBind (elabExtract elabv, xtm, elabPrint (pos, elabVar xtm))
+    end
+
+  val elabAbort : elab_cmd = fn _ => 
+    (ISyn.ABORT, Ty.UP Ty.ONE)
+
+  fun elabForce (elabv : elab_val) : elab_cmd = fn env => 
+    let
+      val (v', vty) = elabv env
+    in
+      case vty of
+         Ty.DOWN cty => (ISyn.FORCE v', cty)
+       | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Expected down-shifted type"]
+    end
+
+  fun elabFn (x, vty, elabc : elab_cmd) : elab_cmd = fn env =>
+    let
+      val env' = R.extendId env x vty
+      val (cmd', cty) = elabc env'
+    in
+      (ISyn.FN (x, vty, cmd'), Ty.FUN (vty, cty))
+    end
+
+  fun elabAp (elabc : elab_cmd, elabv : elab_val) : elab_cmd = fn env => 
+    let
+      val (cmd', cty) = elabc env
+    in
+      case cty of
+         Ty.FUN (vty, cty') =>
+         let
+           val (v', vty') = elabv env
+         in
+           if Ty.eqVty (vty, vty') then
+             (ISyn.AP (cmd', v'), cty')
+           else
+             Err.raiseError @@ Err.GENERIC [Fpp.text "Argument type mismatch"]
+         end
+       | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Expected function type"]
+    end
+
+  fun elabValue value : elab_val =
+    case value of
+       ESyn.THUNK cmd =>
+       elabThunk (elabCmd cmd)
 
      | ESyn.VAR nm =>
-       (ISyn.VAR nm, R.lookupId env NONE nm)
+       elabVar nm
 
      | ESyn.NIL =>
-       (ISyn.NIL, Ty.ONE)
+       (fn _ => (ISyn.NIL, Ty.ONE))
 
      | ESyn.TERM (ast, tau) =>
-       (ISyn.TERM @@ elabAst env (ast, tau), Ty.TERM tau)
+       elabTerm (ast, tau)
 
      | ESyn.METAS psi =>
-       let
-         val psi' = (List.map (fn (X, vl) => R.lookupMeta env NONE X) psi)
-         val vls = List.map #2 psi'
-       in
-         (ISyn.METAS psi', Ty.METAS vls)
-       end
+       elabMetas psi
 
      | ESyn.ABS (vpsi, v) =>
-       let
-         val (vpsi', Ty.METAS vls) = elabValue env vpsi
-         val (v', vty) = elabValue env v
-       in
-         (ISyn.ABS (vpsi', v'), Ty.ABS (vls, vty))
-       end
+       elabAbs (elabValue vpsi, elabValue v)
 
-  and elabCmd (env : env) : ESyn.cmd -> ISyn.cmd * Ty.cty =
-    fn ESyn.BIND (cmd1, nm, cmd2) =>
-       let
-         val (cmd1', Ty.UP vty1) = elabCmd env cmd1
-         val (cmd2', cty2) = elabCmd (R.extendId env nm vty1) cmd2
-       in
-         (ISyn.BIND (cmd1', nm, cmd2'), cty2)
-       end
+
+  and elabCmd cmd : elab_cmd =
+    case cmd of
+       ESyn.NU (psi, cmd) =>
+       elabNu (psi, elabCmd cmd)
+
+     | ESyn.DEF {arguments, definiens} =>
+       elabDef (arguments, definiens)
+
+     | ESyn.TAC {arguments, script} =>
+       elabDef (arguments, (script, RedPrlSort.TAC))
+
+     | ESyn.THM {name, arguments, goal, script} =>
+       elabThm (name, arguments, goal, script)
+
+     | ESyn.DATA_DECL {name, arguments, decl, script} =>
+       elabDataDecl (name, arguments, decl, script)
+
+     | ESyn.PRINT_EXTRACT (pos, v) =>
+       elabPrintExtract (pos, elabValue v)
+
+     | ESyn.EXTRACT v =>
+       elabExtract (elabValue v)
+
+     | ESyn.BIND (cmd1, nm, cmd2) =>
+       elabBind (elabCmd cmd1, nm, elabCmd cmd2)
 
      | ESyn.RET v =>
-       let
-         val (v', vty) = elabValue env v
-       in
-         (ISyn.RET v', Ty.UP vty)
-       end
+       elabRet (elabValue v)
 
      | ESyn.FORCE v =>
-       let
-         val (v', vty) = elabValue env v
-       in
-         case vty of
-            Ty.DOWN cty => (ISyn.FORCE v', cty)
-          | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Expected down-shifted type"]
-       end
+       elabForce (elabValue v)
 
      | ESyn.FN (x, vty, cmd) =>
-       let
-         val env' = R.extendId env x vty
-         val (cmd', cty) = elabCmd env' cmd
-       in
-         (ISyn.FN (x, vty, cmd'), Ty.FUN (vty, cty))
-       end
+       elabFn (x, vty, elabCmd cmd)
 
      | ESyn.AP (cmd, v) =>
-       let
-         val (cmd', cty) = elabCmd env cmd
-       in
-         case cty of
-            Ty.FUN (vty, cty') =>
-            let
-              val (v', vty') = elabValue env v
-            in
-              if vty = vty' then 
-                (ISyn.AP (cmd', v'), cty')
-              else
-                Err.raiseError @@ Err.GENERIC [Fpp.text "Argument type mismatch"]
-            end
-          | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Expected function type"]
-       end
+       elabAp (elabCmd cmd, elabValue v)
 
      | ESyn.PRINT (pos, v) =>
-       (ISyn.PRINT (pos, #1 @@ elabValue env v), Ty.UP Ty.ONE)
+       elabPrint (pos, elabValue v)
 
      | ESyn.REFINE (name, ajdg, script) =>
-       let
-         val ajdg' = elabAtomicJdg env ajdg
-         val script' = elabAst env script
-       in
-         (ISyn.REFINE (name, ajdg', script'), Ty.UP o Ty.THM @@ AJ.synthesis ajdg')
-       end
+       elabRefine (name, ajdg, script)
 
      | ESyn.FRESH vls =>
-       (ISyn.FRESH vls, Ty.UP @@ Ty.METAS @@ List.map #2 vls)
+       elabFresh vls
 
      | ESyn.MATCH_METAS (v, Xs, cmd) =>
-       let
-         val (v', Ty.METAS vls) = elabValue env v
-         val (psi, env') = R.extendMetas env (Xs, vls)
-         val (cmd', cty) = elabCmd env' cmd
-       in
-         (ISyn.MATCH_METAS (v', List.map #1 psi, cmd'), cty)
-       end
+       elabMatchMetas (elabValue v, Xs, elabCmd cmd)
 
      | ESyn.MATCH_THM (v, xjdg, xtm, cmd) =>
-       let
-         val (v', ty) = elabValue env v
-         val tau =
-           case ty of
-              Ty.THM tau => tau
-            | _ => Err.raiseError @@ Err.GENERIC [Fpp.text "MATCH_THM applied to non-theorem"]
-
-         val env' = R.extendId env xjdg @@ Ty.TERM RedPrlSort.JDG
-         val env'' = R.extendId env' xtm @@ Ty.TERM tau
-         val (cmd', cty) = elabCmd env'' cmd
-       in
-         (ISyn.MATCH_THM (v', xjdg, xtm, cmd'), cty)
-       end
+       elabMatchThm (elabValue v, xjdg, xtm, elabCmd cmd)
 
      | ESyn.MATCH_ABS (v, xpsi, xv, cmd) =>
-       let
-         val (v', Ty.ABS (vls, vty)) = elabValue env v
-         val env' = R.extendId env xpsi @@ Ty.METAS vls
-         val env'' = R.extendId env' xv vty
-         val (cmd', cty) = elabCmd env'' cmd
-       in
-         (ISyn.MATCH_ABS (v', xpsi, xv, cmd'), cty)
-       end
+       elabMatchAbs (elabValue v, xpsi, xv, elabCmd cmd)
 
      | ESyn.ABORT =>
-       (ISyn.ABORT, Ty.UP Ty.ONE)
-       (* ? *)
+       elabAbort
 
 end

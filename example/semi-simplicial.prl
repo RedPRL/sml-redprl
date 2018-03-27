@@ -1,148 +1,298 @@
-Thm Pick : [
-  // pick #(first argument) from #(second argument)
+/*
+  favonia:
+
+  This formulation is strongly influenced by my own previous
+  attempt in Agda (sadly not available anymore) and Hugo Herbelin's
+  paper "A dependently-typed construction of semi-simplicial types".
+
+  The most significant differences from Hugo's formulation are
+  (1) the usage of `Choice` denoting the choice of subcomplex,
+  and (2) the reformulation based on it to avoid additions.
+*/
+
+theorem Choice :
+  // a choice of #(first argument) elements from #(second argument) elemnts.
+  // `tt` means "take", and `ff` means "drop".
   (-> nat nat (U 0))
-] by [
+by {
   lam n => elim n;
-  [ lam n => `record
-  , with n'/ih n' => 
-    lam m => elim m;
-    [ `void
-    , with m'/ih m' => 
-      `(record
-        [head : bool]
-        [tail : (if [_] (U 0) head ($ n'/ih m') m'/ih)])
-    ]
-  ];
-  auto
-].
+  [ lam n => `record ]; // n = 0
+  with n'/ih n' =>  lam m => elim m;
+  [ `void ]; // m = 0
+  with m'/ih m' =>
+    `(record
+      [head : bool]
+      [tail : (if [_] (U 0) head ($ n'/ih m') m'/ih)])
+}.
 
-
-Thm Pick/zero/L : [
-  (-> [n : nat] (= (U 0) ($ Pick zero n) record))
-] by [
-  lam n => auto
-].
-
-Thm Pick/succ/0/zero/1 : [
-  (-> [n : nat] (= (U 0) ($ Pick (succ n) zero) void))
-] by [
-  lam n => auto
-].
-
-Thm Pick/succ/0/succ/1 : [
-  (-> [n m : nat]
-   (= (U 0)
-    ($ Pick (succ n) (succ m))
-    (record
-     [head : bool]
-     [tail : (if [_] (U 0) head ($ Pick n m) ($ Pick (succ n) m))])))
-] by [
-  lam n m =>
-    auto
-].
-
-Tac Replace(#z, #A) = [
-  rewrite #A in #z; [with ty => `ty]; auto
-].
-
-
-Tac ReplaceGoal(#A:exp) = [
-  rewrite #A in concl; [with ty => `ty]; auto
-].
-
-Thm Pick/compose : [
+theorem Choice/compose :
   (->
    [a b c : nat]
-   ($ Pick b c)
-   ($ Pick a b)
-   ($ Pick a c))
-] by [
+   ($ Choice b c)
+   ($ Choice a b)
+   ($ Choice a c))
+by {
   lam a => elim a;
-  [ lam b c p0 p1 => `tuple
-  , with a'/ih a' =>
-    lam b => elim b;
-    [ lam c p0 p1 => elim p1
-    , with b'/ih b' =>
-      lam c => elim c;
-      [ lam p0 => elim p0
-      , with c'/ih c' =>
-        lam p0 => (Replace p0 ($ Pick/succ/0/succ/1 b' c'));
-        let {head = p0/h, tail = p0/t} = p0; elim p0/h;
-        [ lam p1 => (Replace p1 ($ Pick/succ/0/succ/1 a' b'));
-          let {head = p1/h, tail = p1/t} = p1; elim p1/h;
-          (ReplaceGoal ($ Pick/succ/0/succ/1 a' c'));
-          [ { head = `tt
-            , tail = `($ a'/ih b' c' p0/t p1/t)
-            }
-          , { head = `ff
-            , tail = `($ b'/ih c' p0/t p1/t)
-            }
+  [ lam b c p0 p1 => `tuple ]; // a = 0
+  with a'/ih a' => lam b => elim b;
+  [ lam c p0 p1 => elim p1 ]; // b = 0
+  with b'/ih b' => lam c => elim c;
+  [ lam p0 => elim p0 ]; // c = 0
+  with c'/ih c' =>
+  lam p0 => let {head = p0/h, tail = p0/t} = p0; elim p0/h;
+  [ lam p1 => let {head = p1/h, tail = p1/t} = p1; elim p1/h;
+    [ { head = `tt
+      , tail = `($ a'/ih b' c' p0/t p1/t)
+      }
+    , { head = `ff
+      , tail = `($ b'/ih c' p0/t p1/t)
+      }
+    ]
+  , lam p1 =>
+    { head = `ff
+    , tail = `($ c'/ih p0/t p1)
+    }
+  ]
+}.
+
+theorem Choice/compose/tt/tt :
+  (->
+   [a b c : nat]
+   [p0/t : ($ Choice b c)]
+   [p1/t : ($ Choice a b)]
+   (=
+    ($ Choice (succ a) (succ c))
+    ($ Choice/compose (succ a) (succ b) (succ c)
+       (tuple [head tt] [tail p0/t]) (tuple [head tt] [tail p1/t]))
+    (tuple [head tt] [tail ($ Choice/compose a b c p0/t p1/t)])))
+by {
+  lam a b c p0/t p1/t =>
+    auto;
+    unfold Choice; reduce; assumption
+}.
+
+theorem Choice/compose/tt/ff :
+  (->
+   [a b c : nat]
+   [p0/t : ($ Choice b c)]
+   [p1/t : ($ Choice (succ a) b)]
+   (=
+    ($ Choice (succ a) (succ c))
+    ($ Choice/compose (succ a) (succ b) (succ c)
+       (tuple [head tt] [tail p0/t]) (tuple [head ff] [tail p1/t]))
+    (tuple [head ff] [tail ($ Choice/compose (succ a) b c p0/t p1/t)])))
+by {
+  lam a b c p0/t p1/t =>
+    auto;
+    unfold Choice; reduce; assumption
+}.
+
+theorem Choice/compose/ff :
+  (->
+   [a b c : nat]
+   [p0/t : ($ Choice (succ b) c)]
+   [p1 : ($ Choice (succ a) (succ b))]
+   (=
+    ($ Choice (succ a) (succ c))
+    ($ Choice/compose (succ a) (succ b) (succ c)
+       (tuple [head ff] [tail p0/t]) p1)
+    (tuple [head ff] [tail ($ Choice/compose (succ a) (succ b) c p0/t p1)])))
+by {
+  lam a b c p0/t p1 =>
+    auto;
+    unfold Choice; reduce; assumption
+}.
+
+theorem Eq/inv :
+  (-> [a : (U 0)] [x y : a]
+    (= a x y) (= a y x))
+by {
+  lam a x y eq => assumption
+}.
+
+theorem Choice/compose/assoc :
+  (->
+   [a b c d : nat]
+   [p0 : ($ Choice c d)]
+   [p1 : ($ Choice b c)]
+   [p2 : ($ Choice a b)]
+   (=
+    ($ Choice a d)
+    ($ Choice/compose a b d ($ Choice/compose b c d p0 p1) p2)
+    ($ Choice/compose a c d p0 ($ Choice/compose a b c p1 p2))))
+by {
+  lam a => elim a;
+  [ lam b c d p0 p1 p2 => unfold Choice/compose; auto ]; // a = 0
+  with a'/ind a' => lam b => elim b;
+  [ lam c d p0 p1 p2 => elim p2 ]; // b = 0
+  with b'/ind b' => lam c => elim c;
+  [ lam d p0 p1 => elim p1 ]; // c = 0
+  with c'/ind c' => lam d => elim d;
+  [ lam p0 => elim p0 ]; // d = 0
+  with d'/ind d' => lam p0 =>
+  let {head = p0/h, tail = p0/t} = p0; elim p0/h;
+  [ lam p1 => let {head = p1/h, tail = p1/t} = p1; elim p1/h;
+    [ lam p2 => let {head = p2/h, tail = p2/t} = p2; elim p2/h;
+      [ rewrite ($ Choice/compose/tt/tt b' c' d' p0/t p1/t) at left;
+        [ with x => `($ Choice/compose (succ a') (succ b') (succ d') x (tuple [head tt] [tail p2/t]))
+        , rewrite ($ Choice/compose/tt/tt a' b' d' ($ Choice/compose b' c' d' p0/t p1/t) p2/t) at left;
+          [ with x => `x
+          , rewrite ($ a'/ind b' c' d' p0/t p1/t p2/t) at left;
+            [ with x => `(tuple [head tt] [tail x])
+            , rewrite ($ Choice/compose/tt/tt a' b' c' p1/t p2/t) at right;
+              [ with x => `($ Choice/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
+              , rewrite ($ Choice/compose/tt/tt a' c' d' p0/t ($ Choice/compose a' b' c' p1/t p2/t)) at right;
+                [ with x => `x
+                ]
+              ]
+            ]
           ]
-        , lam p1 =>
-          (ReplaceGoal ($ Pick/succ/0/succ/1 a' c'));
-          { head = `ff
-          , tail = `($ c'/ih p0/t p1)
-          }
+        ]
+      , rewrite ($ Choice/compose/tt/tt b' c' d' p0/t p1/t) at left;
+        [ with x => `($ Choice/compose (succ a') (succ b') (succ d') x (tuple [head ff] [tail p2/t]))
+        , rewrite ($ Choice/compose/tt/ff a' b' d' ($ Choice/compose b' c' d' p0/t p1/t) p2/t) at left;
+          [ with x => `x
+          , rewrite ($ b'/ind c' d' p0/t p1/t p2/t) at left;
+            [ with x => `(tuple [head ff] [tail x])
+            , rewrite ($ Choice/compose/tt/ff a' b' c' p1/t p2/t) at right;
+              [ with x => `($ Choice/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
+              , rewrite ($ Choice/compose/tt/ff a' c' d' p0/t ($ Choice/compose (succ a') b' c' p1/t p2/t)) at right;
+                [ with x => `x
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    , lam p2 => rewrite ($ Choice/compose/tt/ff b' c' d' p0/t p1/t) at left;
+      [ with x => `($ Choice/compose (succ a') (succ b') (succ d') x p2)
+      , rewrite ($ Choice/compose/ff a' b' d' ($ Choice/compose (succ b') c' d' p0/t p1/t) p2) at left;
+        [ with x => `x
+        , rewrite ($ c'/ind d' p0/t p1/t p2) at left;
+          [ with x => `(tuple [head ff] [tail x])
+          , rewrite ($ Choice/compose/ff a' b' c' p1/t p2) at right;
+            [ with x => `($ Choice/compose (succ a') (succ c') (succ d') (tuple [head tt] [tail p0/t]) x)
+            , rewrite ($ Choice/compose/tt/ff a' c' d' p0/t ($ Choice/compose (succ a') (succ b') c' p1/t p2)) at right;
+              [ with x => `x
+              ]
+            ]
+          ]
         ]
       ]
     ]
-  ]; auto
-].
+  , lam p1 p2 => rewrite ($ Choice/compose/ff b' c' d' p0/t p1) at left;
+    [ with x => `($ Choice/compose (succ a') (succ b') (succ d') x p2)
+    , rewrite ($ Choice/compose/ff a' b' d' ($ Choice/compose (succ b') (succ c') d' p0/t p1) p2) at left;
+      [ with x => `x
+      , rewrite ($ Choice/compose/ff a' c' d' p0/t ($ Choice/compose (succ a') (succ b') (succ c') p1 p2)) at right;
+        [ with x => `x
+        , rewrite ($ d'/ind p0/t p1 p2) at left;
+          [ with x => `(tuple [head ff] [tail x])
+          ]
+        ]
+      ]
+    ]
+  ];
+  auto
+}.
 
-Thm Pick/compose/zero/0 : [
-  (->
-   [b c : nat]
-   [p0 : ($ Pick b c)]
-   [p1 : ($ Pick 0 b)]
-   (= ($ Pick 0 c) ($ Pick/compose 0 b c p0 p1) tuple))
-] by [
-  lam a b p0 p1 => auto
-].
+/*
 
-Thm Pick/compose/tt/4/0/tt/5/0 : [
-  (->
-   [a b c : nat]
-   [p0/t : ($ Pick b c)]
-   [p1/t : ($ Pick a b)]
-   (=
-    ($ Pick (succ a) (succ c))
-    ($ Pick/compose (succ a) (succ b) (succ c)
-       (tuple [head tt] [tail p0/t]) (tuple [head tt] [tail p1/t]))
-    (tuple [head tt] [tail ($ Pick/compose a b c p0/t p1/t)])))
-] by [
-  lam a b c p0/t p1/t =>
-    auto;
-    unfold Pick; reduce; assumption
-].
+The following is the RedPRL implementation of the 4 mutually recursive
+definitions (if we had implicit arguments)
 
-Thm Pick/compose/tt/4/0/ff/5/0 : [
-  (->
-   [a b c : nat]
-   [p0/t : ($ Pick b c)]
-   [p1/t : ($ Pick (succ a) b)]
-   (=
-    ($ Pick (succ a) (succ c))
-    ($ Pick/compose (succ a) (succ b) (succ c)
-       (tuple [head tt] [tail p0/t]) (tuple [head ff] [tail p1/t]))
-    (tuple [head ff] [tail ($ Pick/compose (succ a) b c p0/t p1/t)])))
-] by [
-  lam a b c p0/t p1/t =>
-    auto;
-    unfold Pick; reduce; assumption
-].
+sst in (-> nat (U 1))
+($ sst 0)        ~ record
+($ sst (succ p)) ~ (* [X : (sst p)] (-> ($ folder p X p) (U 0)))
 
-Thm Pick/compose/ff/4/0 : [
-  (->
-   [a b c : nat]
-   [p0/t : ($ Pick (succ b) c)]
-   [p1 : ($ Pick (succ a) (succ b))]
-   (=
-    ($ Pick (succ a) (succ c))
-    ($ Pick/compose (succ a) (succ b) (succ c)
-       (tuple [head ff] [tail p0/t]) p1)
-    (tuple [head ff] [tail ($ Pick/compose (succ a) (succ b) c p0/t p1)])))
-] by [
-  lam a b c p0/t p1 =>
-    auto; 
-    unfold Pick; reduce; assumption
-].
+folder in (-> [p : nat] [X : (sst p)] [n : nat] (U 0))
+($ folder 0 _ _)             ~ record
+($ folder (succ p) {X, Y} n) ~
+  (* [f : ($ folder p X n)] (-> [c : ($ Choice n p)] ($ Y ($ pick p X c f))))
+
+pick in (-> [p : nat] [X : sst p] {n m : nat} ($ Choice n m) ($ folder p X n) ($ folder p X m))
+($ pick 0        _ _  _     ) ~ tuple
+($ pick (succ p) X c2 {f, g}) ~
+  { ($ pick p X c2 f) , lam c1 => ($ g ($ Choice/compose c1 c2)) }
+
+// well-typedness of pick requires pick-coh, which uses exact equality.
+
+pick-coh : (-> [p : nat] [X : sst p] {n m o : nat}
+  [c1 : ($ Choice m o)] [c2 : ($ Choice n m)]
+  [f : ($ folder p X n)]
+    (= ($ folder p X o)
+      ($ pick p X c1 ($ pick p X c2 f))
+      ($ pick p X ($ Choice/compose c1 c2) f)))
+*/
+
+theorem MegaMutualDefs :
+  (-> nat
+    (record
+      [sst : (U 1)]
+      [folder : (-> sst nat (U 0))]
+      [pick : (-> [x : sst]
+        [n m : nat] ($ Choice n m)
+        ($ folder x n)
+        ($ folder x m))]
+      [pick-coh : (-> [x : sst] [n m o : nat]
+        [c1 : ($ Choice m o)]
+        [c2 : ($ Choice n m)]
+        [f : ($ folder x n)]
+        (= ($ folder x o)
+          ($ pick x m o c1 ($ pick x n m c2 f))
+          ($ pick x n o ($ Choice/compose n m o c1 c2) f)))]))
+by {
+  lam p => elim p;
+  [
+    { sst = `record
+    , folder = lam x n => `record
+    , pick = lam x n m c f => `tuple
+    , pick-coh = lam x n m o c1 c2 f => `ax
+    };
+  , with p'/ind p' =>
+    let {sst=sst', folder=folder', pick=pick', pick-coh=pick-coh'}
+      = p'/ind;
+    { sst = `(* [x : sst'] (-> ($ folder' x p') (U 0)))
+    , folder = lam {proj1=x, proj2=y} n =>
+        `(* [f : ($ folder' x n)]
+          (->
+            [c : ($ Choice n p')]
+            ($ y ($ pick' x n p' c f))))
+    , pick = lam {proj1=x, proj2=y} n m c2 {proj1=f, proj2=g} =>
+        { proj1 = `($ pick' x n m c2 f)
+        , proj2 = lam c1 =>
+          rewrite ($ pick-coh' x n m p' c1 c2 f);
+          [ with z => `($ y z)
+          , `($ g ($ Choice/compose n m p' c1 c2))
+          ]
+        }
+    , pick-coh = lam {proj1=x, proj2=y} n m o c1 c2 {proj1=f, proj2=g} =>
+        reduce at type left right;
+        refine record/eq/tuple;
+        [ `($ pick-coh' x n m o c1 c2 f)
+        , refine fun/eq/lam;
+          [ with c0 => rewrite ($ pick-coh' x n m o c1 c2 f) at type;
+            [ with z => `($ y ($ pick' x o p' c0 z))
+            , rewrite ($ pick-coh' x n o p' c0 ($ Choice/compose n m o c1 c2) f) at type;
+              [ with z => `($ y z)
+              , rewrite ($ Eq/inv ($ Choice n p')
+                  ($ Choice/compose n m p' ($ Choice/compose m o p' c0 c1) c2)
+                  ($ Choice/compose n o p' c0 ($ Choice/compose n m o c1 c2))
+                  ($ Choice/compose/assoc n m o p' c0 c1 c2)) at type right;
+                [ with z => `($ y ($ pick' x n p' z f))
+                , with z => `($ g z)
+                ]
+              ]
+            ]
+          ]
+        ]
+    }
+  ];
+  auto
+}.
+
+theorem SemiSimplicial :
+  (-> nat (U 1))
+by {
+  lam n => `(! sst ($ MegaMutualDefs n))
+}.

@@ -17,9 +17,8 @@ struct
     open S
     infix >>
   in
-    val rec sort =
-      fn H >> catjdg =>
-           (Hyps.foldr (fn (_, jdg, r) => AJ.synthesis jdg :: r) [] H,
-            AJ.synthesis catjdg)
+    fun sort (H >> atjdg) =
+      (Hyps.foldr (fn (_, jdg, r) => AJ.synthesis jdg :: r) [] H,
+       AJ.synthesis atjdg)
   end
 end

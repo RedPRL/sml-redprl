@@ -60,6 +60,11 @@ struct
   end
 end
 
+infixr 5 ?::
+val op ?:: =
+  fn (NONE, l) => l
+   | (SOME x, l) => x :: l
+
 structure ListPairUtil =
 struct
   fun mapPartialEq f =
@@ -69,4 +74,22 @@ struct
           NONE => ys
         | SOME y => y :: ys)
       []
+
+  fun enumPartialInterExceptDiag f =
+    let
+      fun enum ([], []) = []
+        | enum ((t0 :: ts0), (_ :: ts1)) = List.mapPartial (fn t1 => f (t0, t1)) ts1 :: enum (ts0, ts1)
+        | enum _ = raise ListPair.UnequalLengths
+    in
+      List.concat o enum
+    end
+
+  fun enumInterExceptDiag f =
+    let
+      fun enum ([], []) = []
+        | enum ((t0 :: ts0), (_ :: ts1)) = List.map (fn t1 => f (t0, t1)) ts1 :: enum (ts0, ts1)
+        | enum _ = raise ListPair.UnequalLengths
+    in
+      List.concat o enum
+    end
 end
