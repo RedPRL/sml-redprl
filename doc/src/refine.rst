@@ -411,7 +411,7 @@ Lines
 
   H >> #m = #n in (line [u] (#a u))
   | H >> #m in (line [u] (#a u))
-  | H >> (abs [u] (@m u)) = #n in (line [u] (#a u))
+  | H >> (abs [u] (@ m u)) = #n in (line [u] (#a u))
 
 :index:`line/eq/app`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -484,7 +484,8 @@ Pushouts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (pushout-rec [p] (#d0 p) #m0 [a] (#n0 a) [b] (#p0 b) [v x] (#q0 v x)) = (pushout-rec [x] (#d1 x) #m1 [a] (#n1 a) [b] (#p1 b) [v x] (#q1 v x)) in #ty
+  H >> (pushout-rec [p] (#d0 p) #m0 [a] (#n0 a) [b] (#p0 b) [v x] (#q0 v x))
+       = (pushout-rec [x] (#d1 x) #m1 [a] (#n1 a) [b] (#p1 b) [v x] (#q1 v x)) in #ty
   where H >> #m0 = #m1 synth ~> (pushout #a #b #c [x] (#f x) [x] (#g x)), psi
   | H, a:#a >> (#n0 a) = (#n1 a) in (#d0 (left a))
   | H, b:#b >> (#p0 b) = (#p1 b) in (#d1 (right b))
@@ -562,7 +563,8 @@ Coequalizers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (coeq-rec [c] (#p0 c) #m0 [b] (#n0 b) [v a] (#q0 v a)) = (coeq-rec [c] (#p1 c) #m1 [b] (#n1 b) [v a] (#q1 v a)) in #ty
+  H >> (coeq-rec [c] (#p0 c) #m0 [b] (#n0 b) [v a] (#q0 v a))
+       = (coeq-rec [c] (#p1 c) #m1 [b] (#n1 b) [v a] (#q1 v a)) in #ty
   where H >> #m0 = #m1 synth (coeq #a #b [x] (#f x) [x] (#g x)), psi
   | H, b:#b >> (#n0 b) = (#n1 b) in (#p0 (cecod b))
   | H, v:dim, a:#a >> (#q0 v a) = (#q1 v a) in (#p0 (cedom v a (#f a) (#g a))
@@ -682,7 +684,8 @@ Kan operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (hcom #i~>#j #ty0 #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)]) = (hcom #i~>#j #ty1 #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)]) in #ty
+  H >> (hcom #i~>#j #ty0 #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
+       = (hcom #i~>#j #ty1 #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)]) in #ty
   | H >> #cap0 = #cap1 in #ty0
   | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in #ty0
   | ...
