@@ -189,7 +189,7 @@ struct
            tubes = tubes}
       fun elim_ m = plug m frame
       val com =
-        Syn.into @@ Syn.COM
+        Syn.intoCom
           {dir = dir,
            ty = (u, substVar (fcomu, x) tyx),
            cap = elim_ cap,
@@ -215,6 +215,15 @@ struct
              pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
            | (frame as COEQUALIZER_REC (motive, HOLE, _, _)) :: stk =>
              pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+           | (frame as COE_IND _) :: stk =>
+             let
+               val fcom = Syn.intoFcom
+                 {dir = dir,
+                  cap = plug cap frame,
+                  tubes = mapTubes_ (fn m => plug m frame) tubes}
+             in
+               CRITICAL @@ fcom || (syms, stk)
+             end
            | HCOM (hcomDir, HOLE, hcomCap, hcomTubes) :: stk =>
                (* favonia: the version implemented below is different from the one
                 *          in CHTT Part III. I do not know which one is better. *)
@@ -914,6 +923,18 @@ struct
      | O.IND_TYPE _ $ _ || (_, []) => raise Final
      | O.IND_INTRO (opid, conid, SOME vls) $ args || (syms, stk) =>
        stepIntro sign stability ((opid, conid, vls, args) || (syms, stk))
+     | O.IND_TYPE _ $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val fcom =
+           Syn.intoFcom
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         CRITICAL @@ fcom || (syms, stk)
+       end
+     | O.IND_TYPE (opid, SOME vls) $ args || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+       CRITICAL @@ coercee || (SymSet.remove syms u, COE_IND (dir, (u, (opid, vls, args)), HOLE) :: stk)
 
      | O.BOX $ [_ \ r1, _ \ r2, _ \ cap, _ \ boundaries] || (syms, stk) => 
        stepBox stability ({dir = (r1, r2), cap = cap, boundaries = Syn.outBoundaries boundaries} || (syms, stk))
