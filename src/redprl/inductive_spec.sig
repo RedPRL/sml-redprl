@@ -21,7 +21,7 @@ sig
   val computeAllSpecIntroValences : RedPrlAst.ast -> RedPrlArity.valence list ConstrDict.dict
 
   (* Used by the machine. *)
-  val fillInFamily : decl -> args -> args * constrs * args
+  val fillInFamily : decl -> RedPrlAbt.abt RedPrlAbt.bview list -> args * constrs * RedPrlAbt.abt RedPrlAbt.bview list
   val realizeIntroBoundaries : MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)
     -> constr -> args -> RedPrlAbt.abt SyntaxView.boundary list
   val fillInBranch : (RedPrlAbt.abt -> RedPrlAbt.abt)

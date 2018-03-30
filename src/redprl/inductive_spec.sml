@@ -477,9 +477,9 @@ struct
     fun fillInFamily' varenv revTyArgs decl args =
       case (Syn.out decl, args) of
          (Syn.IND_FAM_BASE (_, l), _) => (List.rev revTyArgs, List.map (fn (conid, constr) => (conid, Abt.substVarenv varenv constr)) l, args)
-       | (Syn.IND_FAM_FUN (_,x,bx), arg::args) =>
+       | (Syn.IND_FAM_FUN (_,x,bx), Abt.\([],arg)::args) =>
             fillInFamily' (Var.Ctx.insert varenv x arg) (arg::revTyArgs) bx args
-       | (Syn.IND_FAM_LINE (x,bx), arg::args) =>
+       | (Syn.IND_FAM_LINE (x,bx), Abt.\([],arg)::args) =>
             fillInFamily' (Var.Ctx.insert varenv x arg) (arg::revTyArgs) bx args
   in
     fun fillInFamily decl args = fillInFamily' Var.Ctx.empty [] decl args
