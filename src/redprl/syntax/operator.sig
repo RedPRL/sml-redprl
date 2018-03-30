@@ -1,6 +1,7 @@
 structure RedPrlOpData =
 struct
   type opid = MlId.t
+  type conid = string
 
   open RedPrlSort
   structure K = RedPrlKind
@@ -36,6 +37,25 @@ struct
    | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
    (* coequalizer *)
    | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
+
+   (* inductive types *)
+   | IND_SPECTYPE_SELF
+   | IND_SPECTYPE_FUN
+
+   | IND_SPEC_INTRO of conid * RedPrlArity.valence list option (* actually, sort list is enough *)
+   | IND_SPEC_FCOM | IND_SPEC_LAM | IND_SPEC_APP
+
+   | IND_CONSTR_FUN | IND_CONSTR_SPEC_FUN | IND_CONSTR_LINE
+   | IND_CONSTR_KAN | IND_CONSTR_DISCRETE
+
+   | IND_FAM_BASE of conid list
+   | IND_FAM_FUN
+   | IND_FAM_LINE
+
+   | IND_TYPE of opid * RedPrlArity.valence list option
+   | IND_INTRO of opid * conid * RedPrlArity.valence list option
+   | IND_REC of opid * RedPrlArity.valence list option
+
    (* equality *)
    | EQUALITY
    (* universe *)
@@ -52,8 +72,8 @@ struct
 
    | DIM0
    | DIM1
-   | MK_TUBE
-   | MK_BDRY
+   | MK_TUBE of sort
+   | MK_BDRY of sort
    | MK_VEC of sort * int
 
    (* level expressions *)
@@ -69,7 +89,6 @@ struct
    | JDG_SUB_KIND
    | JDG_SYNTH
    | JDG_TERM of sort
-
 
    (* primitive tacticals and multitacticals *)
    | MTAC_SEQ | MTAC_ORELSE

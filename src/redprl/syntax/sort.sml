@@ -13,8 +13,8 @@ struct
      | JDG => "jdg"
      | MATCH_CLAUSE => "match-clause"
      | DIM => "dim"
-     | TUBE => "tube"
-     | BDRY => "bdry"
+     | TUBE tau => "tube{" ^ toString tau ^ "}"
+     | BDRY tau => "bdry{" ^ toString tau ^ "}"
      | VEC tau => "vec{" ^ toString tau ^ "}"
      | LVL => "lvl"
      | KND => "knd"
@@ -22,6 +22,10 @@ struct
      | ACC => "acc"
      | ANY => "any"
      | META_NAME => "meta-name"
+     | IND_SPECTYPE => "ind-spectype"
+     | IND_SPEC => "ind-spec"
+     | IND_FAM => "ind-fam"
+     | IND_CONSTR => "ind-constr"
 end
 
 structure RedPrlArity = ListAbtArity (structure S = RedPrlSort)

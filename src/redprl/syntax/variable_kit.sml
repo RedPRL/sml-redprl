@@ -23,4 +23,6 @@ struct
 
   val substMany = RedPrlAbt.substVarenv o ctxFromList
   fun subst s = substMany [s]
+
+  fun alphaRenameTubes w = List.map (fn (eq, (u, tube)) => (eq, rename (w, u) tube))  
 end

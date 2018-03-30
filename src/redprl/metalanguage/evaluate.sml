@@ -27,7 +27,7 @@ struct
     type sign = Sem.env
 
     fun makeSubst (psi, args) =
-      ListPair.foldl
+      ListPair.foldlEq
         (fn ((X, vl), bnd, rho) =>
           Tm.Metavar.Ctx.insert rho X @@ Tm.checkb (bnd, vl))
         Tm.Metavar.Ctx.empty
@@ -55,9 +55,20 @@ struct
         Err.raiseError @@
           Err.GENERIC [Fpp.text "internal error: theoremSpec caled on non-theorem"]
 
-    (* TODO *)
-    fun dataDeclInfo env (opid : MlId.t) =
-      ()
+    fun dataDeclArgumentLen env (opid : MlId.t) =
+      let
+        val Sem.ABS (Sem.METAS psi, Sem.DATA_INFO _) = Sem.lookup env opid
+      in
+        List.length psi
+      end
+
+    fun dataDeclInfo env (opid : MlId.t) args =
+      let
+        val Sem.ABS (Sem.METAS psi, Sem.DATA_INFO info) = Sem.lookup env opid
+        val rho = makeSubst (psi, args)
+      in
+        Tm.substMetaenv rho info
+      end
 
     fun unfoldOpid env (opid : MlId.t) args =
       let
@@ -240,5 +251,8 @@ struct
 
      | Syn.TERM abt =>
        Sem.TERM (Sem.term env abt)
+
+     | Syn.DATA_INFO abt =>
+       Sem.DATA_INFO (Sem.term env abt)
 
 end

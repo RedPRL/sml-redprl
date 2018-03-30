@@ -1,0 +1,25 @@
+data S1' : (U 0 kan)
+  { base'
+  , loop' [x : dim] [x=0 .base'] [x=1 .base']
+  }
+by {
+  auto
+}.
+
+data Pushout' (#l:lvl)
+  [a b c : (U #l coe)]
+  [f : (-> c a)]
+  [g : (-> c b)]
+  : (U #l kan)
+  { left' a
+  , right' b
+  , glue' [x : c] [y : dim] [y=0 (.left' ($ f x))] [y=1 (.right' ($ g x))]
+  }
+by {
+  auto
+}.
+
+data PropTrunc (#l:lvl) [a : (U 0 coe)] : (U 0 kan) {
+  pt a,
+  sq [x y : self] [z : dim] [z=0 x] [z=1 y]
+} by { auto }.

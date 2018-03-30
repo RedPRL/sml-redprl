@@ -54,44 +54,6 @@ follows
 Our best-supported editor is currently Vim.
 See the RedPRL plugin under [vim/](vim/).
 
-### Editor Support: Visual Studio Code
-
-The easiest/most user-friendly way to get started is with [Visual Studio
-Code](https://code.visualstudio.com); the [RedPRL
-mode](https://marketplace.visualstudio.com/items?itemName=freebroccolo.redprl)
-can be downloaded from the Marketplace.
-
-### Editor Support: Emacs
-
-We have support for interactive RedPRL development in Emacs.
-
-[![MELPA](https://melpa.org/packages/redprl-badge.svg)](https://melpa.org/#/redprl)
-
-The Emacs mode is a part of this repository. Additionally, it is available in
-[MELPA](https://melpa.org/#/redprl).
-
-The easiest way to install the package is from MELPA, using their [getting
-started](https://melpa.org/#/getting-started) instructions. The package is named
-`redprl`. It will probably be necessary to set the customization variable
-`redprl-command` to the path to the `redprl` binary.
-
-When `redprl-mode` is installed, files ending in `.prl` will automatically open
-in the mode. If they do not, run `M-x redprl-mode`. The mode supports the
-following features:
-
-
- * Press `C-c C-l` to send the current development to RedPRL.
-
- * Imenu (or wrappers such as `helm-imenu`) can be used to jump to definitions
-   in the buffer.
-
- * Completion is supported for names of declarations in the current buffer.
-
- * Flycheck is also supported, and can be used in lieu of `C-c C-l` if you like.
-   Be sure that either the `redprl` executable is in your path, or set
-   `flycheck-redprl-executable` in your own Emacs configuration.
-
-
 ### Contributing
 
 If you'd like to help, the best place to start are issues with the following labels:

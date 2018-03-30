@@ -6,7 +6,9 @@ struct
    | MTAC
    | JDG
    | MATCH_CLAUSE
-   | DIM | TUBE | BDRY
+   | DIM
+   | TUBE of sort
+   | BDRY of sort
    | VEC of sort
    | LVL
    | KND
@@ -14,6 +16,10 @@ struct
    | ACC
    | ANY
    | META_NAME
+   | IND_SPECTYPE (* argument types in Part IV *)
+   | IND_SPEC (* boundary terms in Part IV *)
+   | IND_FAM (* the data associated with an inductive type *)
+   | IND_CONSTR (* the data associated with a constructor in Part IV *)
 end
 
 signature REDPRL_SORT = 
