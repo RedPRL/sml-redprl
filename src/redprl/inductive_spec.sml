@@ -499,10 +499,10 @@ struct
       (O.IND_INTRO (opid, conid, SOME (declVls @ getIntroValences precomputedVls conid)),
        declArgs @ List.map \\ tyArgs @ List.map \\ introArgs)
 
-  fun realizeSpecType meta ty =
+  fun realizeSpecType meta varenv ty =
     case Syn.out ty of
        Syn.IND_SPECTYPE_SELF => intoType meta
-     | Syn.IND_SPECTYPE_FUN (a, x, bx) => Syn.into (Syn.FUN (a, x, realizeSpecType meta bx))
+     | Syn.IND_SPECTYPE_FUN (a, x, bx) => Syn.into (Syn.FUN (Abt.substVarenv varenv a, x, realizeSpecType meta varenv bx))
 
   fun realizeSpecTerm (meta as (opid, (declVls, precomputedVls), (declArgs, tyArgs))) varenv term =
     case Syn.out term of
@@ -601,7 +601,7 @@ struct
             let
               fun coe r' = Syn.intoCoe
                 {dir = (#1 dir, r'),
-                 ty = (z, realizeSpecType meta (Abt.substVarenv varenv a)),
+                 ty = (z, realizeSpecType meta varenv a),
                  coercee = arg}
               val varenv' = Var.Ctx.insert varenv x (coe (VarKit.toDim z))
               val revCoercedArgs' = coe r' :: revCoercedArgs
