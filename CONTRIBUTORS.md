@@ -10,6 +10,7 @@ in no particular order:
 - Favonia
 - Evan Cavallo
 - Carlo Angiuli
+- Tim Baumann
 
 We also thank the following people for their contributions to previous versions
 of JonPRL:
