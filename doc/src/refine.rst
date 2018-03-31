@@ -677,8 +677,8 @@ Composite types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (fcom #i~>#j #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
-       = (fcom #i~>#j #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)])
+  H >> (fcom #i~>#j #Cap0 [#r0=#s0 [k] (#T00 k)] ... [#rn=#sn [k] (#T0n k)])
+       = (fcom #i~>#j #Cap1 [#r0=#s0 [k] (#T10 k)] ... [#rn=#sn [k] (#T1n k)])
        in (U #l #k)
   where
     (#k/cap, #k/tube) <-
@@ -686,24 +686,75 @@ Composite types
       (hcom, kan) if #k == hcom
       (kan, kan) if #k == coe
       (pre, coe) if #k == pre
-  | H >> #cap0 = #cap1 in (U #l #k/cap)
-  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in (U #l #k/tube)
+  | H >> #Cap0 = #Cap1 in (U #l #k/cap)
+  | H, k:dim, #r0=#s0 >> (#T00 k) = (#T10 k) in (U #l #k/tube)
   | ...
-  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in (U #l #k/tube)
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in (U #l #k/tube)
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in (U #l #k/tube)
+  | H, k:dim, #rn=#sn >> (#T0n k) = (#T1n k) in (U #l #k/tube)
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#T00 k) = (#T11 k) in (U #l #k/tube)
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#T00 k) = (#T12 k) in (U #l #k/tube)
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in (U #l #k/tube)
-  | H, #r0=#s0 >> #cap0 = (#t00 #i) in (U #l #k/cap)
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#T0(n-1) k) = (#T1n k) in (U #l #k/tube)
+  | H, #r0=#s0 >> #Cap0 = (#T00 #i) in (U #l #k/cap)
   | ...
-  | H, #rn=#sn >> #cap0 = (#t0n #i) in (U #l #k/cap)
+  | H, #rn=#sn >> #Cap0 = (#T0n #i) in (U #l #k/cap)
 
 
 :index:`fcom/eq/box`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (box #i~>#j #cap0 [#r0=#s0 #b00] ... [#rn=#sn #b0n])
+       = (box #i~>#j #cap1 [#r0=#s0 #b10] ... [#rn=#sn #b1n])
+       in (fcom #i~>#j #Cap [#r0=#s0 [k] (#T0 k)] ... [#rn=#sn [k] (#Tn k)])
+  | H >> #cap0 = #cap1 in #Cap
+  | H, #r0=#s0 >> #b00 = #b10 in (#T0 #j)
+  | ...
+  | H, #rn=#sn >> #b0n = #b1n in (#Tn #j)
+  | H, #r0=#s0, #r1=#s1 >> #b00 = #b11 in (#T0 #j)
+  | H, #r0=#s0, #r2=#s2 >> #b00 = #b12 in (#T0 #j)
+  | ...
+  | H, #r(n-1)=#s(n-1), #rn=#sn >> #b0(n-1) = #b1n in (#T(n-1) #j)
+  | H, #r0=#s0 >> #cap0 = (coe #j~>#i #T0 #b00) in #Cap
+  | ...
+  | H, #rn=#sn >> #cap0 = (coe #j~>#i #Tn #b0n) in #Cap
+  | H, k:dim, #r0=#s0 >> (#T00 k) = (#T10 k) coe type
+  | ...
+  | H, k:dim, #rn=#sn >> (#T0n k) = (#T1n k) coe type
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#T00 k) = (#T11 k) coe type
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#T00 k) = (#T12 k) coe type
+  | ...
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#T0(n-1) k) = (#T1n k) coe type
+  | H, #r0=#s0 >> #Cap = (#T0 #i) type
+  | ...
+  | H, #rn=#sn >> #Cap = (#Tn #i) type
 
 :index:`fcom/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (fcom #i~>#j #Cap [#r0=#s0 [k] (#T0 k)] ... [#rn=#sn [k] (#Tn k)])
+       ext (box #i~>#j #cap [#r0=#s0 #b0] ... [#rn=#sn #bn])
+  | H >> #Cap ext #cap
+  | H, #r0=#s0 >> (#T0 #j) ext #b0
+  | ...
+  | H, #rn=#sn >> (#Tn #j) ext #bn
+  | H, #r0=#s0, #r1=#s1 >> #b0 = #b1 in (#T0 #j)
+  | H, #r0=#s0, #r2=#s2 >> #b0 = #b2 in (#T0 #j)
+  | ...
+  | H, #r(n-1)=#s(n-1), #rn=#sn >> #b(n-1) = #bn in (#T(n-1) #j)
+  | H, #r0=#s0 >> #cap = (coe #j~>#i #T0 #b0) in #Cap
+  | ...
+  | H, #rn=#sn >> #cap = (coe #j~>#i #Tn #bn) in #Cap
+  | H, k:dim, #r0=#s0 >> (#T0 k) coe type
+  | ...
+  | H, k:dim, #rn=#sn >> (#Tn k) coe type
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#T0 k) = (#T1 k) coe type
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#T0 k) = (#T2 k) coe type
+  | ...
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#T(n-1) k) = (#Tn k) coe type
+  | H, #r0=#s0 >> #Cap = (#T0 #i) type
+  | ...
+  | H, #rn=#sn >> #Cap = (#Tn #i) type
 
 V types
 -------
