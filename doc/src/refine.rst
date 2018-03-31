@@ -137,6 +137,21 @@ Circle
 
 :index:`s1/eq/fcom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (fcom #i~>#j #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
+       = (fcom #i~>#j #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)]) in S1
+  | H >> #cap0 = #cap1 in S1
+  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in S1
+  | ...
+  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in S1
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in S1
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in S1
+  | ...
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in S1
+  | H, #r0=#s0 >> #cap0 = (#t00 #i) in S1
+  | ...
+  | H, #rn=#sn >> #cap0 = (#t0n #i) in S1
 
 :index:`s1/eq/s1-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -479,6 +494,29 @@ Pushouts
 
 :index:`pushout/eq/fcom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (fcom #i~>#j #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
+       = (fcom #i~>#j #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)])
+       in (pushout #a #b #c [x] (#f x) [x] (#g x))
+  where
+    #ty <- (pushout #a #b #c [x] (#f x) [x] (#g x))
+  | H, x:#c >> (#f x) in #a
+  | H, x:#c >> (#g x) in #b
+  | H >> #a type
+  | H >> #b type
+  | H >> #c type
+  | H >> #cap0 = #cap1 in #ty
+  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in #ty
+  | ...
+  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in #ty
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in #ty
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in #ty
+  | ...
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in #ty
+  | H, #r0=#s0 >> #cap0 = (#t00 #i) in #ty
+  | ...
+  | H, #rn=#sn >> #cap0 = (#t0n #i) in #ty
 
 :index:`pushout/eq/pushout-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -549,6 +587,28 @@ Coequalizers
 
 :index:`coeq/eq/fcom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (fcom #i~>#j #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
+       = (fcom #i~>#j #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)])
+       in (coeq #a #b [x] (#f x) [x] [x] (#g x))
+  where
+    #ty <- (coeq #a #b [x] (#f x) [x] [x] (#g x))
+  | H, x:#a >> (#f x) in #b
+  | H, x:#a >> (#g x) in #b
+  | H >> #a type
+  | H >> #b type
+  | H >> #cap0 = #cap1 in #ty
+  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in #ty
+  | ...
+  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in #ty
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in #ty
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in #ty
+  | ...
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in #ty
+  | H, #r0=#s0 >> #cap0 = (#t00 #i) in #ty
+  | ...
+  | H, #rn=#sn >> #cap0 = (#t0n #i) in #ty
 
 :index:`coeq/beta/dom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
