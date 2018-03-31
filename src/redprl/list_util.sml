@@ -92,4 +92,9 @@ struct
     in
       List.concat o enum
     end
+
+  fun find p =
+    fn (nil, _) => NONE
+     | (_, nil) => NONE
+     | (x::xs, y::ys) => if p (x, y) then SOME (x, y) else find p (xs, ys)
 end

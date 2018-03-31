@@ -14,8 +14,7 @@ sig
 
   val isTheorem : sign -> opid -> bool
 
-  (* the length function is needed because we allow the user to write
-   * the arguments to the type and the ones to the constructors in the same list. *)
-  val dataDeclArgumentLen : sign -> opid -> int
-  val dataDeclInfo : sign -> opid -> abt RedPrlAbt.bview list -> abt
+  (* TODO explain the following function to someone other than favonia. *)
+  val dataDeclInfo : sign -> opid -> abt RedPrlAbt.bview list ->
+     abt RedPrlAbt.bview list * (abt * InductiveSpec.precomputed_valences) * abt RedPrlAbt.bview list
 end

@@ -10,7 +10,7 @@ struct
    | THM of sort
    | ABS of valence list * vty
    | METAS of valence list
-   | DATA_INFO of InductiveSpec.precomputedArity
+   | DATA_INFO of InductiveSpec.precomputed_valences
    (* TODO:
    | SUM of (string * vty) list
    *)
