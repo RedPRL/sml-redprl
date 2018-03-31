@@ -652,6 +652,13 @@ where ``Equiv`` is defined by
 
 :index:`V/eq/uain`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (vin #r #m0 #n0) = (vin #r #m1 #n1) in (V #r #a #b #e)
+  | H, #r=0 >> #m0 = #m1 in #a
+  | H >> #n0 = #n1 in #b
+  | H, #r=0 >> ($ (! f #e) #m0) = #n0 in #b
+  | H, #r=0 >> #e in (Equiv #a #b)
 
 :index:`V/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
