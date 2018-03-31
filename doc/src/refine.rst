@@ -675,6 +675,29 @@ Composite types
 
 :index:`fcom/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (fcom #i~>#j #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
+       = (fcom #i~>#j #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)])
+       in (U #l #k)
+  where
+    (#k/cap, #k/tube) <-
+      (kan, kan) if #k == kan
+      (hcom, kan) if #k == hcom
+      (kan, kan) if #k == coe
+      (pre, coe) if #k == pre
+  | H >> #cap0 = #cap1 in (U #l #k/cap)
+  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in (U #l #k/tube)
+  | ...
+  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in (U #l #k/tube)
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in (U #l #k/tube)
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in (U #l #k/tube)
+  | ...
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in (U #l #k/tube)
+  | H, #r0=#s0 >> #cap0 = (#t00 #i) in (U #l #k/cap)
+  | ...
+  | H, #rn=#sn >> #cap0 = (#t0n #i) in (U #l #k/cap)
+
 
 :index:`fcom/eq/box`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
