@@ -636,9 +636,8 @@ V types
       (hcom, hcom) if #k == hcom
       (coe, com) if #k == coe
       (pre, pre) if #k == pre
-    #isEquiv f =
-  | H >> #e0 = #e1 in (Equiv #a0 #b0)
-  | H >> #a0 = #a1 in (U #l #ka)
+  | H, #r=0 >> #e0 = #e1 in (Equiv #a0 #b0)
+  | H, #r=0 >> #a0 = #a1 in (U #l #ka)
   | H >> #b0 = #b1 in (U #l #kb)
 
 where ``Equiv`` is defined by
