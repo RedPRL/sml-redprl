@@ -697,7 +697,7 @@ Kan operations
   | H, #r0=#s0 >> #cap0 = (#t00 #i) in #ty0
   | ...
   | H, #rn=#sn >> #cap0 = (#t0n #i) in #ty0
-  | H >> #ty0 hcom type
+  | H >> #ty0 = #ty1 hcom type
   | H >> #ty0 <= #ty type
 
 :index:`hcom/eq/cap`
