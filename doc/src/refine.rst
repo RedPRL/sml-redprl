@@ -727,6 +727,24 @@ Kan operations
 
 :index:`hcom/eq/tube`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+::
+
+  H >> (hcom #i~>#j #ty' #cap [#r0=#s0 [k] (#t0 k)] ... [#rn=#sn [k] (#tn k)]) = #m in #ty
+  where
+    #r0/=#s0, ..., #r(l-1)/=#s(l-1) and #rl=#sl
+  | H >> (#tl #j) = #m in #ty'
+  | H, k:dim, #r0=#s0 >> (#t0 k) in #ty'
+  | ...
+  | H, k:dim, #rn=#sn >> (#tn k) in #ty'
+  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t0 k) = (#t1 k) in #ty'
+  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t0 k) = (#t2 k) in #ty'
+  | ...
+  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t(n-1) k) = (#tn k) in #ty'
+  | H, #r0=#s0 >> #cap = (#t0 #i) in #ty'
+  | ...
+  | H, #rn=#sn >> #cap = (#tn #i) in #ty'
+  | H >> #ty' hcom type
+  | H >> #ty' <= #ty type
 
 :index:`coe/eq`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
