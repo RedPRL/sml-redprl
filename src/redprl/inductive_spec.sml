@@ -621,10 +621,15 @@ struct
   end
 
   local
-    fun EqTyArgs' H varenv decl (args0, args1) univ =
+    fun EqTyArgs' H varenv decl (args0, args1) (univ as (level, kind)) =
       case (Syn.out decl, args0, args1) of
          (Syn.IND_FAM_BASE (l, _), [], []) =>
-            [H >> AJ.View.makeAsSubType (Syn.intoU (l, K.KAN), univ)]
+            let
+              val () = Assert.View.levelLeq (l, level)
+              val () = Assert.kindLeq (K.KAN, kind)
+            in
+              []
+            end
        | (Syn.IND_FAM_FUN (a, x, bx), arg0::args0, arg1::args1) =>
             (H >> AJ.EQ ((arg0, arg1), Abt.substVarenv varenv a))
             :: EqTyArgs' H (Var.Ctx.insert varenv x arg0) bx (args0, args1) univ

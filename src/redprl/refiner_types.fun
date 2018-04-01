@@ -1986,11 +1986,24 @@ struct
         val tr = ["Inductive.EqType"]
         val H >> ajdg = jdg
         val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
-        val Abt.$ (O.IND_TYPE (id0, _), args0) = Abt.out ty0
-        val Abt.$ (O.IND_TYPE (id1, _), args1) = Abt.out ty1
-        val true = id0 = id1
-        val constr = raise FavoniaIsLazy (* Sig.dataDeclInfo ... *)
-        val goals = raise FavoniaIsLazy (* InductiveSpec.EqTyArg ((args0, args1), constr) *)
+        val Abt.$ (O.IND_TYPE (opid0, SOME vls0), args0) = Abt.out ty0
+        val Abt.$ (O.IND_TYPE (opid1, _), args1) = Abt.out ty1
+        val true = opid0 = opid1
+        val (declArgs0, (decl, precomputedVls), tyArgs0) = Sig.dataDeclInfo sign opid0 args0
+
+        (* check the meta variable part *)
+        val nDeclArgs = List.length declArgs0
+        val declVls = List.take (vls0, nDeclArgs)
+        val (declArgs1, tyArgs1) = ListUtil.splitAt (args1, nDeclArgs)
+        val declAbsArgs0 = ListPair.mapEq Abt.checkb (declArgs0, declVls)
+        val declAbsArgs1 = ListPair.mapEq Abt.checkb (declArgs1, declVls)
+        val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs1)
+
+        (* check the type argumant part *)
+        val tyArgs0 = List.map (fn _ \ t => t) tyArgs0
+        val tyArgs1 = List.map (fn _ \ t => t) tyArgs1
+        val seqs = InductiveSpec.EqType H decl (tyArgs0, tyArgs1) (l, k)
+        val goals = List.map (makeGoal' tr) seqs
       in
         |>:+ goals #> (H, axiom)
       end

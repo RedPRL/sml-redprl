@@ -31,7 +31,7 @@ sig
     -> args -> RedPrlAbt.abt
 
   (* Used by the refiner. *)
-  val EqType : Sequent.hyps -> decl -> args * args -> AtomicJudgment.View.as_type -> Sequent.jdg list
+  val EqType : Sequent.hyps -> decl -> args * args -> AtomicJudgment.View.as_level * RedPrlKind.t -> Sequent.jdg list
   val EqIntro : MlId.t * (RedPrlArity.valence list * precomputed_valences) * decl_args
     -> Sequent.hyps -> decl -> conid -> (args * args) * args -> Sequent.jdg list
 end
