@@ -621,15 +621,16 @@ struct
   end
 
   local
-    fun EqTyArgs' H varenv decl (args0, args1) =
+    fun EqTyArgs' H varenv decl (args0, args1) univ =
       case (Syn.out decl, args0, args1) of
-         (Syn.IND_FAM_BASE _, [], []) => []
+         (Syn.IND_FAM_BASE (l, _), [], []) =>
+            [H >> AJ.View.makeAsSubType (Syn.intoU (l, K.KAN), univ)]
        | (Syn.IND_FAM_FUN (a, x, bx), arg0::args0, arg1::args1) =>
             (H >> AJ.EQ ((arg0, arg1), Abt.substVarenv varenv a))
-            :: EqTyArgs' H (Var.Ctx.insert varenv x arg0) bx (args0, args1)
+            :: EqTyArgs' H (Var.Ctx.insert varenv x arg0) bx (args0, args1) univ
        | (Syn.IND_FAM_LINE (x, bx), arg0::args0, arg1::args1) =>
             let val true = Abt.eq (arg0, arg1)
-            in EqTyArgs' H (Var.Ctx.insert varenv x arg0) bx (args0, args1)
+            in EqTyArgs' H (Var.Ctx.insert varenv x arg0) bx (args0, args1) univ
             end
   in
     fun EqType H = EqTyArgs' H Var.Ctx.empty
