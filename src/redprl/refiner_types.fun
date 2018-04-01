@@ -2029,11 +2029,15 @@ struct
         val tr = ["Inductive.EqFCom"]
         val H >> ajdg = jdg
         val ((lhs, rhs), ty) = View.matchTrueAsEq ajdg
-        val Abt.$ (O.IND_TYPE (id, _), tyargs) = Abt.out ty
+        val Abt.$ (O.IND_TYPE (opid, SOME vls), args) = Abt.out ty
+        val (_, (decl, _), tyArgs) = Sig.dataDeclInfo sign opid args
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
-        val constr = raise FavoniaIsLazy (* Sig.dataDeclInfo ... *)
-        val goalsTy = raise FavoniaIsLazy (* InductiveSpec.EqTyArg ((args0, args1), constr) *)
+
+        (* check the type argumant part *)
+        val tyArgs = List.map (fn _ \ t => t) tyArgs
+        val seqsTy = InductiveSpec.EqType H decl (tyArgs, tyArgs) (AJ.View.OMEGA, K.top)
+        val goalsTy = List.map (makeGoal' tr) seqsTy
 
         val w = Sym.new ()
       in
