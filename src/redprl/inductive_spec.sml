@@ -620,4 +620,19 @@ struct
       stepCoeIntro' dir (z, (meta, Var.Ctx.empty, conid, constr)) [] introArgs
   end
 
+  local
+    fun EqTyArgs' H varenv decl (args0, args1) =
+      case (Syn.out decl, args0, args1) of
+         (Syn.IND_FAM_BASE _, [], []) => []
+       | (Syn.IND_FAM_FUN (a, x, bx), arg0::args0, arg1::args1) =>
+            (H >> AJ.EQ ((arg0, arg1), Abt.substVarenv varenv a))
+            :: EqTyArgs' H (Var.Ctx.insert varenv x arg0) bx (args0, args1)
+       | (Syn.IND_FAM_LINE (x, bx), arg0::args0, arg1::args1) =>
+            let val true = Abt.eq (arg0, arg1)
+            in EqTyArgs' H (Var.Ctx.insert varenv x arg0) bx (args0, args1)
+            end
+  in
+    fun EqType H = EqTyArgs' H Var.Ctx.empty
+  end
+
 end

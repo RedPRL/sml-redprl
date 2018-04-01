@@ -31,6 +31,6 @@ sig
     -> args -> RedPrlAbt.abt
 
   (* Used by the refiner. *)
-  (* val EqArgsForType : decl -> args * args -> Sequent.jdg list *)
-  (* val EqArgsForIntro : decl -> conid -> (args * args) * args -> Sequent.jdg list *)
+  val EqType : Sequent.hyps -> decl -> args * args -> Sequent.jdg list
+  (* val EqIntro : Sequent.hyps -> decl -> conid -> (args * args) * args -> Sequent.jdg list *)
 end
