@@ -2013,13 +2013,31 @@ struct
         val tr = ["Inductive.EqIntro"]
         val H >> ajdg = jdg
         val ((m, n), ty) = View.matchTrueAsEq ajdg
-        val Abt.$ (O.IND_TYPE (id, _), tyargs) = Abt.out ty
-        val Abt.$ (O.IND_INTRO (id0, con0, _), args0) = Abt.out m
-        val Abt.$ (O.IND_INTRO (id1, con1, _), args0) = Abt.out n
-        val true = id0 = id1 andalso id0 = id
-        val true = con0 = con1
-        val constr = raise FavoniaIsLazy
-        val goals = raise FavoniaIsLazy
+        val Abt.$ (O.IND_TYPE (opid, SOME vls), args) = Abt.out ty
+        val Abt.$ (O.IND_INTRO (opid0, conid0, _), args0) = Abt.out m
+        val Abt.$ (O.IND_INTRO (opid1, conid1, _), args1) = Abt.out n
+        val true = opid0 = opid1 andalso opid0 = opid
+        val true = conid0 = conid1
+
+        val (declArgs, (decl, precomputedVls), tyArgs) = Sig.dataDeclInfo sign opid args
+
+        (* check the meta variable part *)
+        val nDeclArgs = List.length declArgs
+        val declVls = List.take (vls, nDeclArgs)
+        val (declArgs0, tyArgs0) = ListUtil.splitAt (args0, nDeclArgs)
+        val (declArgs1, tyArgs1) = ListUtil.splitAt (args1, nDeclArgs)
+        val declAbsArgs = ListPair.mapEq Abt.checkb (declArgs, declVls)
+        val declAbsArgs0 = ListPair.mapEq Abt.checkb (declArgs0, declVls)
+        val declAbsArgs1 = ListPair.mapEq Abt.checkb (declArgs1, declVls)
+        val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs1)
+        val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs)
+
+        (* check the type and intro argumant part *)
+        val tyArgs = List.map (fn _ \ t => t) tyArgs
+        val tyArgs0 = List.map (fn _ \ t => t) tyArgs0
+        val tyArgs1 = List.map (fn _ \ t => t) tyArgs1
+        val seqs = InductiveSpec.EqIntro (opid, (declVls, precomputedVls), declArgs0) H decl conid0 ((tyArgs0, tyArgs1), tyArgs)
+        val goals = List.map (makeGoal' tr) seqs
       in
         |>:+ goals #> (H, axiom)
       end
@@ -2030,9 +2048,10 @@ struct
         val H >> ajdg = jdg
         val ((lhs, rhs), ty) = View.matchTrueAsEq ajdg
         val Abt.$ (O.IND_TYPE (opid, SOME vls), args) = Abt.out ty
-        val (_, (decl, _), tyArgs) = Sig.dataDeclInfo sign opid args
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
+
+        val (_, (decl, _), tyArgs) = Sig.dataDeclInfo sign opid args
 
         (* check the type argumant part *)
         val tyArgs = List.map (fn _ \ t => t) tyArgs
