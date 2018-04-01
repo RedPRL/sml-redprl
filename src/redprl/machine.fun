@@ -30,7 +30,7 @@ struct
    | S1_REC of (variable * abt) * hole * abt * (variable * abt)
    | PUSHOUT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt) * (variable * variable * abt)
    | COEQUALIZER_REC of (variable * abt) * hole * (variable * abt) * (variable * variable * abt)
-   | IND_REC of (opid * RedPrlArity.valence list) * abt RedPrlAbt.bview list * abt list * (variable * abt) * hole * abt RedPrlAbt.bview list
+   | IND_REC of (opid * RedPrlArity.valence list) * (variable * abt) * hole * abt RedPrlAbt.bview list
    | COE_IND of Syn.dir * (variable * (opid * RedPrlArity.valence list * abt RedPrlAbt.bview list)) * hole
    | DIM_APP of hole * abt
    | NAT_REC of (variable * abt) * hole * abt * (variable * variable * abt)
@@ -61,8 +61,8 @@ struct
      | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
      | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
      | COEQUALIZER_REC ((x, tyx), HOLE, (y, cod), (u, w, dom)) => Syn.into @@ Syn.COEQUALIZER_REC ((x, tyx), m, ((y, cod), (u, w, dom)))
-     | IND_REC ((opid, vls), declArgs, tyArgs, (x, tyx), HOLE, branches) =>
-         Tm.$$ (O.IND_REC (opid, SOME vls), declArgs @ List.map (fn t => [] \ t) tyArgs @ [[x] \ tyx] @ [[] \ m] @ branches)
+     | IND_REC ((opid, vls), (x, tyx), HOLE, branches) =>
+         Tm.$$ (O.IND_REC (opid, SOME vls), [[x] \ tyx] @ [[] \ m] @ branches)
      | COE_IND (dir, (x, (opid, vls, args)), HOLE) => Syn.intoCoe {dir = dir, ty = (x, Tm.$$ (O.IND_TYPE (opid, SOME vls), args)), coercee = m}
      | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
      | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
@@ -402,7 +402,6 @@ struct
       val (tyArgs, constrs, introArgs) = InductiveSpec.fillInFamily decl nonDeclArgs
       val declVls = List.take (vls, List.length declArgs)
       val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
-      val introArgs = List.map (fn _ \ t => t) introArgs
 
       val (conIndex, (_, constr)) = Option.valOf (ListUtil.findIndex (fn (id, _) => id = conid) constrs)
       val boundaries = InductiveSpec.realizeIntroBoundaries meta constr introArgs
@@ -412,7 +411,7 @@ struct
        | NONE =>
          (case stk of
              [] => raise Final
-           | (frame as IND_REC ((opid', _), _, _, _, HOLE, branches)) :: stk =>
+           | (frame as IND_REC ((opid', _), _, HOLE, branches)) :: stk =>
                let
                  val () = if opid' = opid then () else raise Stuck
                  val Tm.\ branch = List.nth (branches, conIndex)
@@ -923,13 +922,8 @@ struct
      | O.IND_TYPE _ $ _ || (_, []) => raise Final
      | O.IND_INTRO (opid, conid, SOME vls) $ args || (syms, stk) =>
        stepIntro sign stability ((opid, conid, vls, args) || (syms, stk))
-     | O.IND_REC (opid, vls) $ args || (syms, stk) =>
-       let
-         val (declArgs, (decl, _), nonDeclArgs) = Sig.dataDeclInfo sign opid args
-         val (tyArgs, _, ([x] \ cx :: [] \ m :: branches)) = InductiveSpec.fillInFamily decl nonDeclArgs
-       in
-         COMPAT @@ m || (syms, IND_REC ((opid, Option.valOf vls), declArgs, tyArgs, (x, cx), HOLE, branches) :: stk)
-       end
+     | O.IND_REC (opid, vls) $ ([x] \ cx :: [] \ m :: branches) || (syms, stk) =>
+       COMPAT @@ m || (syms, IND_REC ((opid, Option.valOf vls), (x, cx), HOLE, branches) :: stk)
      | O.IND_TYPE _ $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val fcom =

@@ -59,6 +59,7 @@ struct
       let
         val Sem.ABS (Sem.METAS psi, Sem.DATA_INFO (info, precomputedVls)) = Sem.lookup env opid
         val (declArgs, otherArgs) = ListUtil.splitAt (args, List.length psi)
+        val otherArgs = List.map (fn Tm.\ ([], t) => t) otherArgs
         val rho = makeSubst (psi, declArgs)
       in
         (declArgs, (Tm.substMetaenv rho info, precomputedVls), otherArgs)

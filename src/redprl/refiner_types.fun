@@ -1995,13 +1995,12 @@ struct
         val nDeclArgs = List.length declArgs0
         val declVls = List.take (vls0, nDeclArgs)
         val (declArgs1, tyArgs1) = ListUtil.splitAt (args1, nDeclArgs)
+        val tyArgs1 = List.map (fn _ \ t => t) tyArgs1
         val declAbsArgs0 = ListPair.mapEq Abt.checkb (declArgs0, declVls)
         val declAbsArgs1 = ListPair.mapEq Abt.checkb (declArgs1, declVls)
         val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs1)
 
         (* check the type argumant part *)
-        val tyArgs0 = List.map (fn _ \ t => t) tyArgs0
-        val tyArgs1 = List.map (fn _ \ t => t) tyArgs1
         val seqs = InductiveSpec.EqType H decl (tyArgs0, tyArgs1) (l, k)
         val goals = List.map (makeGoal' tr) seqs
       in
@@ -2026,6 +2025,8 @@ struct
         val declVls = List.take (vls, nDeclArgs)
         val (declArgs0, tyArgs0) = ListUtil.splitAt (args0, nDeclArgs)
         val (declArgs1, tyArgs1) = ListUtil.splitAt (args1, nDeclArgs)
+        val tyArgs0 = List.map (fn _ \ t => t) tyArgs0
+        val tyArgs1 = List.map (fn _ \ t => t) tyArgs1
         val declAbsArgs = ListPair.mapEq Abt.checkb (declArgs, declVls)
         val declAbsArgs0 = ListPair.mapEq Abt.checkb (declArgs0, declVls)
         val declAbsArgs1 = ListPair.mapEq Abt.checkb (declArgs1, declVls)
@@ -2033,9 +2034,6 @@ struct
         val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs)
 
         (* check the type and intro argumant part *)
-        val tyArgs = List.map (fn _ \ t => t) tyArgs
-        val tyArgs0 = List.map (fn _ \ t => t) tyArgs0
-        val tyArgs1 = List.map (fn _ \ t => t) tyArgs1
         val seqs = InductiveSpec.EqIntro (opid, (declVls, precomputedVls), declArgs0) H decl conid0 ((tyArgs0, tyArgs1), tyArgs)
         val goals = List.map (makeGoal' tr) seqs
       in
@@ -2054,7 +2052,6 @@ struct
         val (_, (decl, _), tyArgs) = Sig.dataDeclInfo sign opid args
 
         (* check the type argumant part *)
-        val tyArgs = List.map (fn _ \ t => t) tyArgs
         val seqsTy = InductiveSpec.EqType H decl (tyArgs, tyArgs) (AJ.View.OMEGA, K.top)
         val goalsTy = List.map (makeGoal' tr) seqsTy
 

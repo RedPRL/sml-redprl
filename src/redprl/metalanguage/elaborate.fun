@@ -44,9 +44,9 @@ struct
         Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getIntroValences arity conid
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data constructor", Fpp.text (MlId.toString opid), Fpp.text conid])
 
-  fun lookupDataElimValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
+  fun lookupDataElimCasesValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
     case R.lookupId env pos opid of
-        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getElimValences arity
+        Ty.ABS (_, Ty.DATA_INFO arity) => InductiveSpec.getElimCasesValences arity
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data eliminator", Fpp.text (MlId.toString opid)])
 
   fun lookupSpecIntroValences (specEnv : spec_env) (pos : Pos.t option) (conid : InductiveSpec.conid) : valence list =
@@ -136,7 +136,7 @@ struct
         O.IND_INTRO (opid, conid, SOME @@ lookupDataIntroValences env pos opid conid)
 
       | O.IND_REC (opid, NONE) =>
-        O.IND_REC (opid, SOME @@ lookupDataElimValences env pos opid)
+        O.IND_REC (opid, SOME @@ lookupDataElimCasesValences env pos opid)
 
       | O.IND_SPEC_INTRO (conid, NONE) =>
         O.IND_SPEC_INTRO (conid, SOME @@ lookupSpecIntroValences specEnv pos conid)

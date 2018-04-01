@@ -368,14 +368,14 @@ struct
   type precomputed_valences =
     {tyVls: RedPrlArity.valence list,
      introExtraVls: RedPrlArity.valence list ConstrDict.dict,
-     elimExtraVls: RedPrlArity.valence list}
+     elimCasesVls: RedPrlArity.valence list}
 
   fun eqPrecomputedValences
-    ({tyVls=tyVls0, introExtraVls=introExtraVls0, elimExtraVls=elimExtraVls0},
-     {tyVls=tyVls1, introExtraVls=introExtraVls1, elimExtraVls=elimExtraVls1})
+    ({tyVls=tyVls0, introExtraVls=introExtraVls0, elimCasesVls=elimCasesVls0},
+     {tyVls=tyVls1, introExtraVls=introExtraVls1, elimCasesVls=elimCasesVls1})
     = tyVls0 = tyVls1 andalso
       ConstrDict.toList introExtraVls0 = ConstrDict.toList introExtraVls1 andalso
-      elimExtraVls0 = elimExtraVls1
+      elimCasesVls0 = elimCasesVls1
 
 
   local
@@ -420,31 +420,31 @@ struct
            in
              {tyVls=[],
               introExtraVls=introVls,
-              elimExtraVls=[[O.EXP] |: O.EXP, [] |: O.EXP] @ elimCasesVls}
+              elimCasesVls=elimCasesVls}
            end
        | Ast.$ (O.IND_FAM_FUN, [_, Ast.\ (_, bx)]) =>
            let
-             val {tyVls, introExtraVls, elimExtraVls} = computeValences bx
+             val {tyVls, introExtraVls, elimCasesVls} = computeValences bx
            in
              {tyVls=([] |: O.EXP) :: tyVls,
               introExtraVls=introExtraVls,
-              elimExtraVls=elimExtraVls}
+              elimCasesVls=elimCasesVls}
            end
        | Ast.$ (O.IND_FAM_LINE, [Ast.\ (_, bx)]) =>
            let
-             val {tyVls, introExtraVls, elimExtraVls} = computeValences bx
+             val {tyVls, introExtraVls, elimCasesVls} = computeValences bx
            in
              {tyVls=([] |: O.DIM) :: tyVls,
               introExtraVls=introExtraVls,
-              elimExtraVls=elimExtraVls}
+              elimCasesVls=elimCasesVls}
            end
 
-    fun getTypeValences {tyVls, introExtraVls, elimExtraVls} = tyVls
+    fun getTypeValences {tyVls, introExtraVls, elimCasesVls} = tyVls
 
-    fun getIntroValences {tyVls, introExtraVls, elimExtraVls} conid =
+    fun getIntroValences {tyVls, introExtraVls, elimCasesVls} conid =
       tyVls @ ConstrDict.lookup introExtraVls conid
 
-    fun getElimValences {tyVls, introExtraVls, elimExtraVls} = tyVls @ elimExtraVls
+    fun getElimCasesValences {tyVls, introExtraVls, elimCasesVls} = elimCasesVls
   end
 
   local
@@ -478,9 +478,9 @@ struct
     fun fillInFamily' varenv revTyArgs decl args =
       case (Syn.out decl, args) of
          (Syn.IND_FAM_BASE (_, l), _) => (List.rev revTyArgs, List.map (fn (conid, constr) => (conid, Abt.substVarenv varenv constr)) l, args)
-       | (Syn.IND_FAM_FUN (_,x,bx), Abt.\([],arg)::args) =>
+       | (Syn.IND_FAM_FUN (_,x,bx), arg::args) =>
             fillInFamily' (Var.Ctx.insert varenv x arg) (arg::revTyArgs) bx args
-       | (Syn.IND_FAM_LINE (x,bx), Abt.\([],arg)::args) =>
+       | (Syn.IND_FAM_LINE (x,bx), arg::args) =>
             fillInFamily' (Var.Ctx.insert varenv x arg) (arg::revTyArgs) bx args
   in
     fun fillInFamily decl args = fillInFamily' Var.Ctx.empty [] decl args
