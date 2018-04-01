@@ -636,4 +636,43 @@ struct
     fun EqType H = EqTyArgs' H Var.Ctx.empty
   end
 
+  local
+    fun EqIntroArgs' meta H varenv constr (args0, args1) =
+      case (Syn.out constr, args0, args1) of
+         (Syn.IND_CONSTR_DISCRETE _, [], []) => []
+       | (Syn.IND_CONSTR_KAN _, [], []) => []
+       | (Syn.IND_CONSTR_FUN (a, x, bx), arg0::args0, arg1::args1) =>
+            (H >> AJ.EQ ((arg0, arg1), Abt.substVarenv varenv a))
+            :: EqIntroArgs' meta H (Var.Ctx.insert varenv x arg0) bx (args0, args1)
+       | (Syn.IND_CONSTR_SPEC_FUN (a, x, bx), arg0::args0, arg1::args1) =>
+            (H >> AJ.EQ ((arg0, arg1), realizeSpecType meta varenv a))
+            :: EqIntroArgs' meta H (Var.Ctx.insert varenv x arg0) bx (args0, args1)
+       | (Syn.IND_FAM_LINE (x, bx), arg0::args0, arg1::args1) =>
+            let val true = Abt.eq (arg0, arg1)
+            in EqIntroArgs' meta H (Var.Ctx.insert varenv x arg0) bx (args0, args1)
+            end
+
+    fun EqTyIntroArgs' (meta as (opid, vlData, declArgs)) revTyArgs H varenv decl conid ((args0, args1), args) =
+      case (Syn.out decl, args0, args1, args) of
+         (Syn.IND_FAM_BASE (l, constrs), _, _, []) =>
+            let
+              val (_, constr) = Option.valOf (List.find (fn (id, _) => id = conid) constrs)
+            in
+              EqIntroArgs' (opid, vlData, (declArgs, List.rev revTyArgs)) H varenv constr (args0, args1)
+            end
+       | (Syn.IND_FAM_FUN (a, x, bx), arg0::args0, arg1::args1, arg::args) =>
+            (H >> AJ.EQ ((arg0, arg1), Abt.substVarenv varenv a))
+            :: (H >> AJ.EQ ((arg0, arg), Abt.substVarenv varenv a))
+            :: EqTyIntroArgs' meta (arg::revTyArgs) H (Var.Ctx.insert varenv x arg) bx conid ((args0, args1), args)
+       | (Syn.IND_FAM_LINE (x, bx), arg0::args0, arg1::args1, arg::args) =>
+            let
+              val true = Abt.eq (arg0, arg1)
+              val true = Abt.eq (arg0, arg)
+            in
+              EqTyIntroArgs' meta (arg::revTyArgs) H (Var.Ctx.insert varenv x arg) bx conid ((args0, args1), args)
+            end
+  in
+    fun EqIntro meta H = EqTyIntroArgs' meta [] H Var.Ctx.empty
+  end
+
 end
