@@ -788,7 +788,7 @@ where ``Equiv`` is defined by
   H >> (vin #r #m0 #n0) = (vin #r #m1 #n1) in (V #r #a #b #e)
   | H, #r=0 >> #m0 = #m1 in #a
   | H >> #n0 = #n1 in #b
-  | H, #r=0 >> ($ (! f #e) #m0) = #n0 in #b
+  | H, #r=0 >> ($ (! proj1 #e) #m0) = #n0 in #b
   | H, #r=0 >> #e in (Equiv #a #b)
 
 :index:`V/intro`
@@ -798,7 +798,7 @@ where ``Equiv`` is defined by
   H >> (V #r #a #b #e) ext (vin #r #m #n)
   | H, #r=0 >> #a ext #m
   | H >> #b ext #n
-  | H, #r=0 >> ($ (! f #e) #m) = #n in #b
+  | H, #r=0 >> ($ (! proj1 #e) #m) = #n in #b
   | H, #r=0 >> #e in (Equiv #a #b)
 
 :index:`V/eq/proj`
@@ -810,7 +810,7 @@ where ``Equiv`` is defined by
     #r /= 0 and #r /= 1
     H >> #m0 = #m1 synth ~> (v #r #a #b #e), psi
   | H, #r=0 >> #f0 = #f1 in (-> #a #b)
-  | H, #r=0 >> #f0 = (! f #e) in (-> #a #b)
+  | H, #r=0 >> #f0 = (! proj1 #e) in (-> #a #b)
   | psi
   | H >> #b <= #ty type
 
