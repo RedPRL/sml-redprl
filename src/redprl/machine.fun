@@ -370,7 +370,7 @@ struct
   fun stepIntro sign stability ((opid, conid, vls, args) || (syms, stk)) =
     let
       val (declArgs, (decl, precomputedVls), nonDeclArgs) = Sig.dataDeclInfo sign opid args
-      val (tyArgs, constrs, introArgs) = InductiveSpec.fillInFamily decl nonDeclArgs
+      val (tyArgs, constrs, introArgs) = InductiveSpec.fillFamily decl nonDeclArgs
       val declVls = List.take (vls, List.length declArgs)
       val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
 
@@ -387,13 +387,13 @@ struct
                  val () = if opid' = opid then () else raise Stuck
                  val Tm.\ branch = List.nth (branches, conIndex)
                in
-                 CRITICAL @@ InductiveSpec.fillInBranch (fn m => plug m frame) constr branch introArgs || (syms, stk)
+                 CRITICAL @@ InductiveSpec.fillBranch (fn m => plug m frame) constr branch introArgs || (syms, stk)
                end
            | COE_IND (dir, (z, (opid', _, args')), HOLE) :: stk =>
                let
                  val () = if opid' = opid then () else raise Stuck
                  val (declArgs', (decl', _), nonDeclArgs') = Sig.dataDeclInfo sign opid args'
-                 val (tyArgs', constrs', []) = InductiveSpec.fillInFamily decl' nonDeclArgs'
+                 val (tyArgs', constrs', []) = InductiveSpec.fillFamily decl' nonDeclArgs'
                  val meta' = (opid, (declVls, precomputedVls), (declArgs', tyArgs'))
                  val (_, constr') = List.nth (constrs', conIndex)
                in

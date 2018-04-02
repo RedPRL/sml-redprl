@@ -21,10 +21,10 @@ sig
   val computeAllSpecIntroValences : RedPrlAst.ast -> RedPrlArity.valence list ConstrDict.dict
 
   (* Used by the machine. *)
-  val fillInFamily : decl -> args -> args * constrs * args
+  val fillFamily : decl -> args -> args * constrs * args
   val realizeIntroBoundaries : MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)
     -> constr -> args -> RedPrlAbt.abt SyntaxView.boundary list
-  val fillInBranch : (RedPrlAbt.abt -> RedPrlAbt.abt)
+  val fillBranch : (RedPrlAbt.abt -> RedPrlAbt.abt)
     -> constr -> Sym.t list * RedPrlAbt.abt -> args -> RedPrlAbt.abt
   val stepCoeIntro : RedPrlAbt.abt * RedPrlAbt.abt
     -> Sym.t * ((MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)) * conid * constr)
@@ -32,6 +32,7 @@ sig
 
   (* Used by the refiner. *)
   val EqType : Sequent.hyps -> decl -> args * args -> AtomicJudgment.View.as_level * RedPrlKind.t -> Sequent.jdg list
-  val EqIntro : MlId.t * (RedPrlArity.valence list * precomputed_valences) * decl_args
-    -> Sequent.hyps -> decl -> conid -> (args * args) * args -> Sequent.jdg list
+  val EqIntro : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * decl_args
+    -> decl -> conid -> (args * args) * args -> Sequent.jdg list
+  (* val EqElim : *)
 end

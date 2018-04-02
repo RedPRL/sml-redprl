@@ -2034,7 +2034,7 @@ struct
         val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs)
 
         (* check the type and intro argumant part *)
-        val seqs = InductiveSpec.EqIntro (opid, (declVls, precomputedVls), declArgs0) H decl conid0 ((tyArgs0, tyArgs1), tyArgs)
+        val seqs = InductiveSpec.EqIntro H (opid, (declVls, precomputedVls), declArgs0) decl conid0 ((tyArgs0, tyArgs1), tyArgs)
         val goals = List.map (makeGoal' tr) seqs
       in
         |>:+ goals #> (H, axiom)
@@ -2061,8 +2061,6 @@ struct
          >:+ ComKit.genEqFComGoals tr H w (args0, args1) ty
         #> (H, axiom)
       end
-
-    fun EqIntroTubeL sign jdg = raise FavoniaIsLazy
 
     fun Elim sign z jdg = raise FavoniaIsLazy
   end
