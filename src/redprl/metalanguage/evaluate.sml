@@ -55,19 +55,13 @@ struct
         Err.raiseError @@
           Err.GENERIC [Fpp.text "internal error: theoremSpec caled on non-theorem"]
 
-    fun dataDeclArgumentLen env (opid : MlId.t) =
-      let
-        val Sem.ABS (Sem.METAS psi, Sem.DATA_INFO _) = Sem.lookup env opid
-      in
-        List.length psi
-      end
-
     fun dataDeclInfo env (opid : MlId.t) args =
       let
-        val Sem.ABS (Sem.METAS psi, Sem.DATA_INFO info) = Sem.lookup env opid
-        val rho = makeSubst (psi, args)
+        val Sem.ABS (Sem.METAS psi, Sem.DATA_INFO (info, precomputedVls)) = Sem.lookup env opid
+        val (declArgs, otherArgs) = ListUtil.splitAt (args, List.length psi)
+        val rho = makeSubst (psi, declArgs)
       in
-        Tm.substMetaenv rho info
+        (declArgs, (Tm.substMetaenv rho info, precomputedVls), otherArgs)
       end
 
     fun unfoldOpid env (opid : MlId.t) args =
@@ -252,7 +246,7 @@ struct
      | Syn.TERM abt =>
        Sem.TERM (Sem.term env abt)
 
-     | Syn.DATA_INFO abt =>
-       Sem.DATA_INFO (Sem.term env abt)
+     | Syn.DATA_INFO (abt, arity) =>
+       Sem.DATA_INFO (Sem.term env abt, arity)
 
 end

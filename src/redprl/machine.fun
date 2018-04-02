@@ -30,6 +30,8 @@ struct
    | S1_REC of (variable * abt) * hole * abt * (variable * abt)
    | PUSHOUT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt) * (variable * variable * abt)
    | COEQUALIZER_REC of (variable * abt) * hole * (variable * abt) * (variable * variable * abt)
+   | IND_REC of (opid * RedPrlArity.valence list) * abt RedPrlAbt.bview list * abt list * (variable * abt) * hole * abt RedPrlAbt.bview list
+   | COE_IND of Syn.dir * (variable * (opid * RedPrlArity.valence list * abt RedPrlAbt.bview list)) * hole
    | DIM_APP of hole * abt
    | NAT_REC of (variable * abt) * hole * abt * (variable * variable * abt)
    | INT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt)
@@ -59,6 +61,9 @@ struct
      | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
      | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
      | COEQUALIZER_REC ((x, tyx), HOLE, (y, cod), (u, w, dom)) => Syn.into @@ Syn.COEQUALIZER_REC ((x, tyx), m, ((y, cod), (u, w, dom)))
+     | IND_REC ((opid, vls), declArgs, tyArgs, (x, tyx), HOLE, branches) =>
+         Tm.$$ (O.IND_REC (opid, SOME vls), declArgs @ List.map (fn t => [] \ t) tyArgs @ [[x] \ tyx] @ [[] \ m] @ branches)
+     | COE_IND (dir, (x, (opid, vls, args)), HOLE) => Syn.intoCoe {dir = dir, ty = (x, Tm.$$ (O.IND_TYPE (opid, SOME vls), args)), coercee = m}
      | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
      | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
 
@@ -174,7 +179,26 @@ struct
    | CRITICAL of 'a
    | STEP of 'a
 
-  fun stepFCom stability ({dir = dir as (r, r'), cap, tubes} || (syms, stk)) =
+  fun pushFrameIntoFCom ((((x, tyx), frame), {dir = dir as (r, _), cap, tubes}) || (syms, stk)) =
+    let
+      val u = Sym.new()
+      val fcomu =
+        Syn.intoFcom
+          {dir = (r, VarKit.toDim u),
+           cap = cap,
+           tubes = tubes}
+      fun elim_ m = plug m frame
+      val com =
+        Syn.intoCom
+          {dir = dir,
+           ty = (u, substVar (fcomu, x) tyx),
+           cap = elim_ cap,
+           tubes = mapTubes_ elim_ tubes}
+    in
+      CRITICAL @@ com || (syms, stk)
+    end
+
+  fun stepFCom stability ((params as {dir = dir as (r, r'), cap, tubes}) || (syms, stk)) =
     if dimensionsEqual stability syms dir then 
       STEP @@ cap || (syms, stk)
     else
@@ -183,41 +207,22 @@ struct
        | NONE =>
          (case stk of
              [] => raise Final
-           | IF ((x, tyx), HOLE, t, f) :: stk =>
+           | (frame as IF (motive, HOLE, _, _)) :: stk =>
+             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+           | (frame as S1_REC (motive, HOLE, _, _)) :: stk =>
+             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+           | (frame as PUSHOUT_REC (motive, HOLE, _, _, _)) :: stk =>
+             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+           | (frame as COEQUALIZER_REC (motive, HOLE, _, _)) :: stk =>
+             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+           | (frame as COE_IND _) :: stk =>
              let
-               val u = Sym.new()
-               val fcomu =
-                 Syn.intoFcom
-                   {dir = (r, VarKit.toDim u),
-                    cap = cap,
-                    tubes = tubes}
-               fun if_ m = Syn.into @@ Syn.IF ((x, tyx), m, (t, f))
-               val com =
-                 Syn.into @@ Syn.COM 
-                   {dir = dir,
-                    ty = (u, substVar (fcomu, x) tyx),
-                    cap = if_ cap,
-                    tubes = mapTubes_ if_ tubes}
+               val fcom = Syn.intoFcom
+                 {dir = dir,
+                  cap = plug cap frame,
+                  tubes = mapTubes_ (fn m => plug m frame) tubes}
              in
-               CRITICAL @@ com || (syms, stk)
-             end
-           | S1_REC ((x, tyx), HOLE, base, (v, loop)) :: stk => 
-             let
-               val u = Sym.new ()
-               val fcomu =
-                 Syn.intoFcom
-                   {dir = (r, VarKit.toDim u),
-                    cap = cap,
-                    tubes = tubes}
-               fun s1rec m = Syn.into @@ Syn.S1_REC ((x, tyx), m, (base, (v, loop)))
-               val com =
-                 Syn.into @@ Syn.COM 
-                   {dir = dir,
-                    ty = (u, substVar (fcomu, x) tyx),
-                    cap = s1rec cap,
-                    tubes = mapTubes_ s1rec tubes}
-             in
-               CRITICAL @@ com || (syms, stk)
+               CRITICAL @@ fcom || (syms, stk)
              end
            | HCOM (hcomDir, HOLE, hcomCap, hcomTubes) :: stk =>
                (* favonia: the version implemented below is different from the one
@@ -390,6 +395,42 @@ struct
                  CRITICAL @@ result || (SymSet.remove syms u, stk)
                end
            | _ => raise Stuck)
+
+  fun stepIntro sign stability ((opid, conid, vls, args) || (syms, stk)) =
+    let
+      val (declArgs, (decl, precomputedVls), nonDeclArgs) = Sig.dataDeclInfo sign opid args
+      val (tyArgs, constrs, introArgs) = InductiveSpec.fillInFamily decl nonDeclArgs
+      val declVls = List.take (vls, List.length declArgs)
+      val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
+      val introArgs = List.map (fn _ \ t => t) introArgs
+
+      val (conIndex, (_, constr)) = Option.valOf (ListUtil.findIndex (fn (id, _) => id = conid) constrs)
+      val boundaries = InductiveSpec.realizeIntroBoundaries meta constr introArgs
+    in
+      case findFirstWithTrueEquation stability syms boundaries of
+         SOME b => STEP @@ b || (syms, stk)
+       | NONE =>
+         (case stk of
+             [] => raise Final
+           | (frame as IND_REC ((opid', _), _, _, _, HOLE, branches)) :: stk =>
+               let
+                 val () = if opid' = opid then () else raise Stuck
+                 val Tm.\ branch = List.nth (branches, conIndex)
+               in
+                 CRITICAL @@ InductiveSpec.fillInBranch (fn m => plug m frame) constr branch introArgs || (syms, stk)
+               end
+           | COE_IND (dir, (z, (opid', _, args')), HOLE) :: stk =>
+               let
+                 val () = if opid' = opid then () else raise Stuck
+                 val (declArgs', (decl', _), nonDeclArgs') = Sig.dataDeclInfo sign opid args'
+                 val (tyArgs', constrs', []) = InductiveSpec.fillInFamily decl' nonDeclArgs'
+                 val meta' = (opid, (declVls, precomputedVls), (declArgs', tyArgs'))
+                 val (_, constr') = List.nth (constrs', conIndex)
+               in
+                 CRITICAL @@ InductiveSpec.stepCoeIntro dir (z, (meta', conid, constr')) introArgs || (syms, stk)
+               end
+           | _ => raise Stuck)
+    end
 
   fun stepBox stability ({dir, cap, boundaries} || (syms, stk)) =
     if dimensionsEqual stability syms dir then
@@ -878,6 +919,29 @@ struct
        in
          CRITICAL @@ result || (SymSet.remove syms u, stk)
        end
+
+     | O.IND_TYPE _ $ _ || (_, []) => raise Final
+     | O.IND_INTRO (opid, conid, SOME vls) $ args || (syms, stk) =>
+       stepIntro sign stability ((opid, conid, vls, args) || (syms, stk))
+     | O.IND_REC (opid, vls) $ args || (syms, stk) =>
+       let
+         val (declArgs, (decl, _), nonDeclArgs) = Sig.dataDeclInfo sign opid args
+         val (tyArgs, _, ([x] \ cx :: [] \ m :: branches)) = InductiveSpec.fillInFamily decl nonDeclArgs
+       in
+         COMPAT @@ m || (syms, IND_REC ((opid, Option.valOf vls), declArgs, tyArgs, (x, cx), HOLE, branches) :: stk)
+       end
+     | O.IND_TYPE _ $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
+       let
+         val fcom =
+           Syn.intoFcom
+             {dir = dir,
+              cap = cap,
+              tubes = tubes}
+       in
+         CRITICAL @@ fcom || (syms, stk)
+       end
+     | O.IND_TYPE (opid, vls) $ args || (syms, COE (dir, (u, HOLE), coercee) :: stk) =>
+       CRITICAL @@ coercee || (SymSet.remove syms u, COE_IND (dir, (u, (opid, Option.valOf vls, args)), HOLE) :: stk)
 
      | O.BOX $ [_ \ r1, _ \ r2, _ \ cap, _ \ boundaries] || (syms, stk) => 
        stepBox stability ({dir = (r1, r2), cap = cap, boundaries = Syn.outBoundaries boundaries} || (syms, stk))
