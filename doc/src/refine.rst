@@ -136,19 +136,19 @@ Circle
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (fcom #i~>#j #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
-       = (fcom #i~>#j #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)]) in S1
+  H >> (fcom #i~>#j #cap0 [#r/0=#s/0 [k] (#t0/0 k)] ... [#r/n=#s/n [k] (#t0/n k)])
+       = (fcom #i~>#j #cap1 [#r/0=#s/0 [k] (#t1/0 k)] ... [#r/n=#s/n [k] (#t1/n k)]) in S1
   | H >> #cap0 = #cap1 in S1
-  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in S1
+  | H, k:dim, #r/0=#s/0 >> (#t0/0 k) = (#t1/0 k) in S1
   | ...
-  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in S1
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in S1
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in S1
+  | H, k:dim, #r/n=#s/n >> (#t0/n k) = (#t1/n k) in S1
+  | H, k:dim, #r/0=#s/0, #r/1=#s/1 >> (#t0/0 k) = (#t1/1 k) in S1
+  | H, k:dim, #r/0=#s/0, #r/2=#s/2 >> (#t0/0 k) = (#t1/2 k) in S1
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in S1
-  | H, #r0=#s0 >> #cap0 = (#t00 #i) in S1
+  | H, k:dim, #r/n-1=#s/n-1, #r/n=#s/n >> (#t0/n-1 k) = (#t1/n k) in S1
+  | H, #r/0=#s/0 >> #cap0 = (#t0/0 #i) in S1
   | ...
-  | H, #rn=#sn >> #cap0 = (#t0n #i) in S1
+  | H, #r/n=#s/n >> #cap0 = (#t0/n #i) in S1
 
 :index:`s1/eq/s1-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -493,8 +493,8 @@ Pushouts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (fcom #i~>#j #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
-       = (fcom #i~>#j #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)])
+  H >> (fcom #i~>#j #cap0 [#r/0=#s/0 [k] (#t0/0 k)] ... [#r/n=#s/n [k] (#t0/n k)])
+       = (fcom #i~>#j #cap1 [#r/0=#s/0 [k] (#t1/0 k)] ... [#r/n=#s/n [k] (#t1/n k)])
        in (pushout #a #b #c [x] (#f x) [x] (#g x))
   where
     #ty <- (pushout #a #b #c [x] (#f x) [x] (#g x))
@@ -504,16 +504,16 @@ Pushouts
   | H >> #b type
   | H >> #c type
   | H >> #cap0 = #cap1 in #ty
-  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in #ty
+  | H, k:dim, #r/0=#s/0 >> (#t0/0 k) = (#t1/0 k) in #ty
   | ...
-  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in #ty
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in #ty
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in #ty
+  | H, k:dim, #r/n=#s/n >> (#t0/n k) = (#t1/n k) in #ty
+  | H, k:dim, #r/0=#s/0, #r/1=#s/1 >> (#t0/0 k) = (#t1/1 k) in #ty
+  | H, k:dim, #r/0=#s/0, #r/2=#s/2 >> (#t0/0 k) = (#t1/2 k) in #ty
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in #ty
-  | H, #r0=#s0 >> #cap0 = (#t00 #i) in #ty
+  | H, k:dim, #r/n-1=#s/n-1, #r/n=#s/n >> (#t0/n-1 k) = (#t1/n k) in #ty
+  | H, #r/0=#s/0 >> #cap0 = (#t0/0 #i) in #ty
   | ...
-  | H, #rn=#sn >> #cap0 = (#t0n #i) in #ty
+  | H, #r/n=#s/n >> #cap0 = (#t0/n #i) in #ty
 
 :index:`pushout/eq/pushout-rec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -586,8 +586,8 @@ Coequalizers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (fcom #i~>#j #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
-       = (fcom #i~>#j #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)])
+  H >> (fcom #i~>#j #cap0 [#r/0=#s/0 [k] (#t0/0 k)] ... [#r/n=#s/n [k] (#t0/n k)])
+       = (fcom #i~>#j #cap1 [#r/0=#s/0 [k] (#t1/0 k)] ... [#r/n=#s/n [k] (#t1/n k)])
        in (coeq #a #b [x] (#f x) [x] [x] (#g x))
   where
     #ty <- (coeq #a #b [x] (#f x) [x] [x] (#g x))
@@ -596,16 +596,16 @@ Coequalizers
   | H >> #a type
   | H >> #b type
   | H >> #cap0 = #cap1 in #ty
-  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in #ty
+  | H, k:dim, #r/0=#s/0 >> (#t0/0 k) = (#t1/0 k) in #ty
   | ...
-  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in #ty
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in #ty
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in #ty
+  | H, k:dim, #r/n=#s/n >> (#t0/n k) = (#t1/n k) in #ty
+  | H, k:dim, #r/0=#s/0, #r/1=#s/1 >> (#t0/0 k) = (#t1/1 k) in #ty
+  | H, k:dim, #r/0=#s/0, #r/2=#s/2 >> (#t0/0 k) = (#t1/2 k) in #ty
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in #ty
-  | H, #r0=#s0 >> #cap0 = (#t00 #i) in #ty
+  | H, k:dim, #r/n-1=#s/n-1, #r/n=#s/n >> (#t0/n-1 k) = (#t1/n k) in #ty
+  | H, #r/0=#s/0 >> #cap0 = (#t0/0 #i) in #ty
   | ...
-  | H, #rn=#sn >> #cap0 = (#t0n #i) in #ty
+  | H, #r/n=#s/n >> #cap0 = (#t0/n #i) in #ty
 
 :index:`coeq/beta/dom`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -674,8 +674,8 @@ Composite types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (fcom #i~>#j #Cap0 [#r0=#s0 [k] (#T00 k)] ... [#rn=#sn [k] (#T0n k)])
-       = (fcom #i~>#j #Cap1 [#r0=#s0 [k] (#T10 k)] ... [#rn=#sn [k] (#T1n k)])
+  H >> (fcom #i~>#j #Cap0 [#r/0=#s/0 [k] (#T0/0 k)] ... [#r/n=#s/n [k] (#T0/n k)])
+       = (fcom #i~>#j #Cap1 [#r/0=#s/0 [k] (#T1/0 k)] ... [#r/n=#s/n [k] (#T1/n k)])
        in (U #l #k)
   where
     (#k/cap, #k/tube) <-
@@ -684,74 +684,74 @@ Composite types
       (kan, kan) if #k == coe
       (pre, coe) if #k == pre
   | H >> #Cap0 = #Cap1 in (U #l #k/cap)
-  | H, k:dim, #r0=#s0 >> (#T00 k) = (#T10 k) in (U #l #k/tube)
+  | H, k:dim, #r/0=#s/0 >> (#T0/0 k) = (#T1/0 k) in (U #l #k/tube)
   | ...
-  | H, k:dim, #rn=#sn >> (#T0n k) = (#T1n k) in (U #l #k/tube)
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#T00 k) = (#T11 k) in (U #l #k/tube)
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#T00 k) = (#T12 k) in (U #l #k/tube)
+  | H, k:dim, #r/n=#s/n >> (#T0/n k) = (#T1/n k) in (U #l #k/tube)
+  | H, k:dim, #r/0=#s/0, #r/1=#s/1 >> (#T0/0 k) = (#T1/1 k) in (U #l #k/tube)
+  | H, k:dim, #r/0=#s/0, #r/2=#s/2 >> (#T0/0 k) = (#T1/2 k) in (U #l #k/tube)
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#T0(n-1) k) = (#T1n k) in (U #l #k/tube)
-  | H, #r0=#s0 >> #Cap0 = (#T00 #i) in (U #l #k/cap)
+  | H, k:dim, #r/n-1=#s/n-1, #r/n=#s/n >> (#T0/n-1 k) = (#T1/n k) in (U #l #k/tube)
+  | H, #r/0=#s/0 >> #Cap0 = (#T0/0 #i) in (U #l #k/cap)
   | ...
-  | H, #rn=#sn >> #Cap0 = (#T0n #i) in (U #l #k/cap)
+  | H, #r/n=#s/n >> #Cap0 = (#T0/n #i) in (U #l #k/cap)
 
 
 :index:`fcom/eq/box`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (box #i~>#j #cap0 [#r0=#s0 #b00] ... [#rn=#sn #b0n])
-       = (box #i~>#j #cap1 [#r0=#s0 #b10] ... [#rn=#sn #b1n])
-       in (fcom #i~>#j #Cap [#r0=#s0 [k] (#T0 k)] ... [#rn=#sn [k] (#Tn k)])
+  H >> (box #i~>#j #cap0 [#r/0=#s/0 #b0/0] ... [#r/n=#s/n #b0/n])
+       = (box #i~>#j #cap1 [#r/0=#s/0 #b1/0] ... [#r/n=#s/n #b1/n])
+       in (fcom #i~>#j #Cap [#r/0=#s/0 [k] (#T/0 k)] ... [#r/n=#s/n [k] (#T/n k)])
   | H >> #cap0 = #cap1 in #Cap
-  | H, #r0=#s0 >> #b00 = #b10 in (#T0 #j)
+  | H, #r/0=#s/0 >> #b0/0 = #b1/0 in (#T/0 #j)
   | ...
-  | H, #rn=#sn >> #b0n = #b1n in (#Tn #j)
-  | H, #r0=#s0, #r1=#s1 >> #b00 = #b11 in (#T0 #j)
-  | H, #r0=#s0, #r2=#s2 >> #b00 = #b12 in (#T0 #j)
+  | H, #r/n=#s/n >> #b0/n = #b1/n in (#T/n #j)
+  | H, #r/0=#s/0, #r/1=#s/1 >> #b0/0 = #b1/1 in (#T/0 #j)
+  | H, #r/0=#s/0, #r/2=#s/2 >> #b0/0 = #b1/2 in (#T/0 #j)
   | ...
-  | H, #r(n-1)=#s(n-1), #rn=#sn >> #b0(n-1) = #b1n in (#T(n-1) #j)
-  | H, #r0=#s0 >> #cap0 = (coe #j~>#i #T0 #b00) in #Cap
+  | H, #r/n-1=#s/n-1, #r/n=#s/n >> #b0/n-1 = #b1/n in (#T/n-1 #j)
+  | H, #r/0=#s/0 >> #cap0 = (coe #j~>#i #T/0 #b0/0) in #Cap
   | ...
-  | H, #rn=#sn >> #cap0 = (coe #j~>#i #Tn #b0n) in #Cap
-  | H, k:dim, #r0=#s0 >> (#T00 k) = (#T10 k) coe type
+  | H, #r/n=#s/n >> #cap0 = (coe #j~>#i #T/n #b0/n) in #Cap
+  | H, k:dim, #r/0=#s/0 >> (#T/0 k) coe type
   | ...
-  | H, k:dim, #rn=#sn >> (#T0n k) = (#T1n k) coe type
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#T00 k) = (#T11 k) coe type
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#T00 k) = (#T12 k) coe type
+  | H, k:dim, #r/n=#s/n >> (#T/n k) coe type
+  | H, k:dim, #r/0=#s/0, #r/1=#s/1 >> (#T/0 k) = (#T/1 k) coe type
+  | H, k:dim, #r/0=#s/0, #r/2=#s/2 >> (#T/0 k) = (#T/2 k) coe type
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#T0(n-1) k) = (#T1n k) coe type
-  | H, #r0=#s0 >> #Cap = (#T0 #i) type
+  | H, k:dim, #r/n-1=#s/n-1, #r/n=#s/n >> (#T/n-1 k) = (#T/n k) coe type
+  | H, #r/0=#s/0 >> #Cap = (#T/0 #i) type
   | ...
-  | H, #rn=#sn >> #Cap = (#Tn #i) type
+  | H, #r/n=#s/n >> #Cap = (#T/n #i) type
 
 :index:`fcom/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (fcom #i~>#j #Cap [#r0=#s0 [k] (#T0 k)] ... [#rn=#sn [k] (#Tn k)])
-       ext (box #i~>#j #cap [#r0=#s0 #b0] ... [#rn=#sn #bn])
+  H >> (fcom #i~>#j #Cap [#r/0=#s/0 [k] (#T/0 k)] ... [#r/n=#s/n [k] (#T/n k)])
+       ext (box #i~>#j #cap [#r/0=#s/0 #b/0] ... [#r/n=#s/n #b/n])
   | H >> #Cap ext #cap
-  | H, #r0=#s0 >> (#T0 #j) ext #b0
+  | H, #r/0=#s/0 >> (#T/0 #j) ext #b/0
   | ...
-  | H, #rn=#sn >> (#Tn #j) ext #bn
-  | H, #r0=#s0, #r1=#s1 >> #b0 = #b1 in (#T0 #j)
-  | H, #r0=#s0, #r2=#s2 >> #b0 = #b2 in (#T0 #j)
+  | H, #r/n=#s/n >> (#T/n #j) ext #b/n
+  | H, #r/0=#s/0, #r/1=#s/1 >> #b/0 = #b/1 in (#T/0 #j)
+  | H, #r/0=#s/0, #r/2=#s/2 >> #b/0 = #b/2 in (#T/0 #j)
   | ...
-  | H, #r(n-1)=#s(n-1), #rn=#sn >> #b(n-1) = #bn in (#T(n-1) #j)
-  | H, #r0=#s0 >> #cap = (coe #j~>#i #T0 #b0) in #Cap
+  | H, #r/n-1=#s/n-1, #r/n=#s/n >> #b/n-1 = #b/n in (#T/n-1 #j)
+  | H, #r/0=#s/0 >> #cap = (coe #j~>#i #T/0 #b/0) in #Cap
   | ...
-  | H, #rn=#sn >> #cap = (coe #j~>#i #Tn #bn) in #Cap
-  | H, k:dim, #r0=#s0 >> (#T0 k) coe type
+  | H, #r/n=#s/n >> #cap = (coe #j~>#i #T/n #b/n) in #Cap
+  | H, k:dim, #r/0=#s/0 >> (#T/0 k) coe type
   | ...
-  | H, k:dim, #rn=#sn >> (#Tn k) coe type
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#T0 k) = (#T1 k) coe type
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#T0 k) = (#T2 k) coe type
+  | H, k:dim, #r/n=#s/n >> (#T/n k) coe type
+  | H, k:dim, #r/0=#s/0, #r/1=#s/1 >> (#T/0 k) = (#T/1 k) coe type
+  | H, k:dim, #r/0=#s/0, #r/2=#s/2 >> (#T/0 k) = (#T/2 k) coe type
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#T(n-1) k) = (#Tn k) coe type
-  | H, #r0=#s0 >> #Cap = (#T0 #i) type
+  | H, k:dim, #r/n-1=#s/n-1, #r/n=#s/n >> (#T/n-1 k) = (#T/n k) coe type
+  | H, #r/0=#s/0 >> #Cap = (#T/0 #i) type
   | ...
-  | H, #rn=#sn >> #Cap = (#Tn #i) type
+  | H, #r/n=#s/n >> #Cap = (#T/n #i) type
 
 V types
 -------
@@ -821,19 +821,19 @@ Kan operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (hcom #i~>#j #ty0 #cap0 [#r0=#s0 [k] (#t00 k)] ... [#rn=#sn [k] (#t0n k)])
-       = (hcom #i~>#j #ty1 #cap1 [#r0=#s0 [k] (#t10 k)] ... [#rn=#sn [k] (#t1n k)]) in #ty
+  H >> (hcom #i~>#j #ty0 #cap0 [#r/0=#s/0 [k] (#t0/0 k)] ... [#r/n=#s/n [k] (#t0/n k)])
+       = (hcom #i~>#j #ty1 #cap1 [#r/0=#s/0 [k] (#t1/0 k)] ... [#r/n=#s/n [k] (#t1/n k)]) in #ty
   | H >> #cap0 = #cap1 in #ty0
-  | H, k:dim, #r0=#s0 >> (#t00 k) = (#t10 k) in #ty0
+  | H, k:dim, #r/0=#s/0 >> (#t0/0 k) = (#t1/0 k) in #ty0
   | ...
-  | H, k:dim, #rn=#sn >> (#t0n k) = (#t1n k) in #ty0
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t00 k) = (#t11 k) in #ty0
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t00 k) = (#t12 k) in #ty0
+  | H, k:dim, #r/n=#s/n >> (#t0/n k) = (#t1/n k) in #ty0
+  | H, k:dim, #r/0=#s/0, #r/1=#s/1 >> (#t0/0 k) = (#t1/1 k) in #ty0
+  | H, k:dim, #r/0=#s/0, #r/2=#s/2 >> (#t0/0 k) = (#t1/2 k) in #ty0
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t0(n-1) k) = (#t1n k) in #ty0
-  | H, #r0=#s0 >> #cap0 = (#t00 #i) in #ty0
+  | H, k:dim, #r/n-1=#s/n-1, #r/n=#s/n >> (#t0/n-1 k) = (#t1/n k) in #ty0
+  | H, #r/0=#s/0 >> #cap0 = (#t0/0 #i) in #ty0
   | ...
-  | H, #rn=#sn >> #cap0 = (#t0n #i) in #ty0
+  | H, #r/n=#s/n >> #cap0 = (#t0/n #i) in #ty0
   | H >> #ty0 = #ty1 hcom type
   | H >> #ty0 <= #ty type
 
@@ -841,18 +841,18 @@ Kan operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
-  H >> (hcom #i~>#i #ty' #cap [#r0=#s0 [k] (#t0 k)] ... [#rn=#sn [k] (#tn k)]) = #m in #ty
+  H >> (hcom #i~>#i #ty' #cap [#r/0=#s/0 [k] (#t/0 k)] ... [#r/n=#s/n [k] (#t/n k)]) = #m in #ty
   | H >> #cap = #m in #ty
-  | H, k:dim, #r0=#s0 >> (#t0 k) in #ty'
+  | H, k:dim, #r/0=#s/0 >> (#t/0 k) in #ty'
   | ...
-  | H, k:dim, #rn=#sn >> (#tn k) in #ty'
-  | H, k:dim, #r0=#s0, #r1=#s1 >> (#t0 k) = (#t1 k) in #ty'
-  | H, k:dim, #r0=#s0, #r2=#s2 >> (#t0 k) = (#t2 k) in #ty'
+  | H, k:dim, #r/n=#s/n >> (#t/n k) in #ty'
+  | H, k:dim, #r/0=#s/0, #r/1=#s/1 >> (#t0 k) = (#t1 k) in #ty'
+  | H, k:dim, #r/0=#s/0, #r/2=#s/2 >> (#t0 k) = (#t2 k) in #ty'
   | ...
-  | H, k:dim, #r(n-1)=#s(n-1), #rn=#sn >> (#t(n-1) k) = (#tn k) in #ty'
-  | H, #r0=#s0 >> #cap = (#t0 #i) in #ty'
+  | H, k:dim, #r/n-1=#s/n-1, #r/n=#s/n >> (#t/n-1 k) = (#t/n k) in #ty'
+  | H, #r/0=#s/0 >> #cap = (#t/0 #i) in #ty'
   | ...
-  | H, #rn=#sn >> #cap = (#tn #i) in #ty'
+  | H, #r/n=#s/n >> #cap = (#t/n #i) in #ty'
   | H >> #ty' hcom type
   | H >> #ty' <= #ty type
 
