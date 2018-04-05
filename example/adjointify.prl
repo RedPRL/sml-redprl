@@ -1,0 +1,67 @@
+define IsContr (#C) = (* [c : #C] (-> [c' : #C] (path [_] #C c' c))).
+
+define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
+
+define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
+
+define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
+
+define Iso(#A, #B) =
+  (record
+   [f : (-> #A #B)]
+   [g : (-> #B #A)]
+   [fg : (-> [b : #B] (path [_] #B ($ f ($ g b)) b))]
+   [gf : (-> [a : #A] (path [_] #A ($ g ($ f a)) a))])
+.
+
+theorem Path/Symm(#l:lvl) :
+ (->
+  [ty : (U #l kan)]
+  [a b : ty]
+  (path [_] ty a b)
+  (path [_] ty b a))
+by {
+ lam ty a b pab =>
+   abs i =>
+     `(hcom 0~>1 ty a
+       [i=0 [j] (@ pab j)]
+       [i=1 [_] a])
+}.
+
+theorem Adjointify(#l:lvl) :
+  (->
+   [ty/a : (U #l kan)]
+   [ty/b : (U #l kan)]
+   (Iso ty/a ty/b)
+   (Equiv ty/a ty/b))
+by {
+  lam ty/a ty/b {f=f,g=g,fg=fg,gf=gf} =>
+  {use f, id};
+  lam b =>
+  {{`($ g b), `($ fg b)}, id};
+  lam {a,fab} =>
+  claim top : (path [i] (path [k] ty/b ($ f ($ g (@ fab i))) b)
+                        (abs [k] (@ ($ fg (@ fab k)) k))
+                        ($ fg b)) by {
+     id
+  };
+  claim back : (path [j] (path [k] ty/b ($ f (@ ($ gf a) j)) b)
+                         (abs [k] (@ ($ fg (@ fab k)) k))
+                         fab) by {
+    id
+  };
+  claim front : (path [j] (path [k] ty/b ($ f ($ g b)) b)
+                          ($ fg b)
+                          ($ fg b)) by {
+    id
+  };
+  (abs i =>
+  {`(hcom 0~>1 ty/a ($ g (@ fab i)) [i=0 [j] (@ ($ gf a) j)] [i=1 [_] ($ g b)]),
+   abs k =>
+   `(hcom 0~>1 ty/b (@ top i k)
+      [k=0 [j] ($ f (hcom 0~>j ty/a ($ g (@ fab i)) [i=0 [j] (@ ($ gf a) j)] [i=1 [_] ($ g b)]))]
+      [k=1 [_] b]
+      [i=0 [j] (@ back j k)]
+      [i=1 [j] (@ front j k)])
+   }); ?
+}.
