@@ -43,16 +43,11 @@ by {
   claim top : (path [i] (path [k] ty/b ($ f ($ g (@ fab i))) b)
                         (abs [k] (@ ($ fg (@ fab k)) k))
                         ($ fg b)) by {
-     id
+    id
   };
   claim back : (path [j] (path [k] ty/b ($ f (@ ($ gf a) j)) b)
                          (abs [k] (@ ($ fg (@ fab k)) k))
                          fab) by {
-    id
-  };
-  claim front : (path [j] (path [k] ty/b ($ f ($ g b)) b)
-                          ($ fg b)
-                          ($ fg b)) by {
     id
   };
   (abs i =>
@@ -62,6 +57,6 @@ by {
       [k=0 [j] ($ f (hcom 0~>j ty/a ($ g (@ fab i)) [i=0 [j] (@ ($ gf a) j)] [i=1 [_] ($ g b)]))]
       [k=1 [_] b]
       [i=0 [j] (@ back j k)]
-      [i=1 [j] (@ front j k)])
-   }); ?
+      [i=1 [_] (@ ($ fg b) k)])
+   }); auto
 }.
