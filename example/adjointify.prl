@@ -41,13 +41,13 @@ by {
   {{`($ g b), `($ fg b)}, id};
   lam {a,fab} =>
   claim top : (path [i] (path [k] ty/b ($ f ($ g (@ fab i))) b)
-                        (abs [k] (@ ($ fg (@ fab k)) k))
-                        ($ fg b)) by {
+                    (abs [k] (@ ($ fg (@ fab k)) k))
+                    ($ fg b)) by {
     id
   };
   claim back : (path [j] (path [k] ty/b ($ f (@ ($ gf a) j)) b)
-                         (abs [k] (@ ($ fg (@ fab k)) k))
-                         fab) by {
+                     (abs [k] (@ ($ fg (@ fab k)) k))
+                     fab) by {
     id
   };
   (abs i =>
