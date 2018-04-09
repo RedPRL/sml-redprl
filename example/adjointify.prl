@@ -13,43 +13,58 @@ define Iso(#A, #B) =
    [fg : (-> [b : #B] (path [_] #B ($ f ($ g b)) b))]
    [gf : (-> [a : #A] (path [_] #A ($ g ($ f a)) a))]).
 
-// not needed?
-theorem WhiskerLeft(#l:lvl) :
+theorem LemIso(#l:lvl) :
   (->
-   [ty : (U #l kan)]
-   [a b c d : ty]
-   [pab : (path [_] ty a b)]
-   [pac : (path [_] ty a c)]
-   [pbd : (path [_] ty b d)]
-   [pcd : (path [_] ty c d)]
-   [sq : (path [i] (path [j] ty (@ pab i) (@ pcd i)) pac pbd)]
-   [pac' : (path [_] ty a c)]
-   [h : (path [_] (path [_] ty a c) pac' pac)]
-   (path [i] (path [j] ty (@ pab i) (@ pcd i)) pac' pbd))
+   [ty/a : (U #l kan)]
+   [ty/b : (U #l kan)]
+   [iso : (Iso ty/a ty/b)]
+   [b : ty/b]
+   [f0 f1 : (Fiber ty/a ty/b (!f iso) b)]
+   (path [_] (Fiber ty/a ty/b (!f iso) b) f0 f1))
 by {
-  lam ty a b c d pab pac pbd pcd sq pac' h =>
-  (abs i j =>
-  `(hcom 1~>0 ty (@ sq i j)
-     [i=0 [k] (@ h k j)]
-     [i=1 [_] (@ pbd j)]
-     [j=0 [_] (@ pab i)]
-     [j=1 [_] (@ pcd i)]))
-}.
-
-theorem Connection/Or/Weak(#l:lvl) :
-  (->
-   [ty : (U #l hcom)]
-   [a b : ty]
-   [p : (path [_] ty a b)]
-   (path [i] (path [_] ty (@ p i) b) p (abs [_] b)))
-by {
-  lam ty a b p =>
-   abs i j =>
-     `(hcom 1~>0 ty b
-       [i=0 [k] (hcom 0~>j ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
-       [i=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
-       [j=0 [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
-       [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])])
+  lam ty/a ty/b {f=f,g=g,fg=fg,gf=gf} b {x0,p0} {x1,p1} =>
+  claim sq0 : (path [i] (path [j] ty/a ($ g (@ p0 i)) 
+                                       (hcom 0~>1 ty/a ($ g (@ p0 i))
+                                          [i=0 [j] (@ ($ gf x0) j)]
+                                          [i=1 [_] ($ g b)]))
+                 (abs [_] ($ g b)) ($ gf x0)) by {
+    abs i j =>
+    `(hcom 0~>j ty/a ($ g (@ p0 i))
+        [i=0 [j] (@ ($ gf x0) j)]
+        [i=1 [_] ($ g b)])
+  };
+  claim sq0i1 : (path [i] ty/a x0 ($ g b)) by { abs i => `(@ sq0 i 1) };
+  claim sq1 : (path [i] (path [j] ty/a ($ g (@ p1 i))
+                                       (hcom 0~>1 ty/a ($ g (@ p1 i))
+                                          [i=0 [j] (@ ($ gf x1) j)]
+                                          [i=1 [_] ($ g b)]))
+                 (abs [_] ($ g b)) ($ gf x1)) by {
+    abs i j =>
+    `(hcom 0~>j ty/a ($ g (@ p1 i))
+        [i=0 [j] (@ ($ gf x1) j)]
+        [i=1 [_] ($ g b)])
+  };
+  claim sq1i1 : (path [i] ty/a x1 ($ g b)) by { abs i => `(@ sq1 i 1) };
+  claim sq2 : (path [i] (path [j] ty/a (hcom 1~>0 ty/a ($ g b)
+                                          [i=0 [j] (@ sq0i1 j)]
+                                          [i=1 [j] (@ sq1i1 j)])
+                                       ($ g b))
+                 sq0i1 sq1i1) by {
+    abs i j =>
+    `(hcom 1~>j ty/a ($ g b)
+        [i=0 [j] (@ sq0i1 j)]
+        [i=1 [j] (@ sq1i1 j)])
+  };
+  claim sq2i1 : (path [i] ty/a x0 x1) by { abs i => `(@ sq2 i 0) };
+  claim goalsq : (path [i] (path [j] ty/b ($ f (@ sq2i1 i)) b)
+                       p0
+                       p1) by {
+    id
+  };
+  abs i =>
+  {`(@ sq2i1 i), id};
+  abs j =>
+  `(@ goalsq i j)
 }.
 
 theorem Adjointify(#l:lvl) :
@@ -63,56 +78,12 @@ by {
   {use f, id};
   lam b =>
   {{`($ g b), `($ fg b)}, id};
-  lam {a,fab} =>
-  claim back : (path [j] (path [k] ty/b
-                               (hcom 1~>0 ty/b b
-                                  [j=0 [k] (@ ($ fg (@ fab k)) k)]
-                                  [j=1 [k] (@ fab k)])
-                               b)
-                     (abs [k] (@ ($ fg (@ fab k)) k))
-                     fab) by {
-    abs j k =>
-    `(hcom 1~>k ty/b b [j=0 [k] (@ ($ fg (@ fab k)) k)] [j=1 [k] (@ fab k)])
-  };
-  claim top : (path [i] (path [k] ty/b ($ f ($ g (@ fab i))) b)
-                    (abs [k] (@ ($ fg (@ fab k)) k))
-                    ($ fg b)) by {
-    // fg (fab @ k \/ i) @ k
-    abs i k =>
-    `(@ ($ fg (@ ($ (Connection/Or/Weak #l) ty/b ($ f a) b fab) i k)) k)
-  };
-  claim back' : (path [j] (path [k] ty/b ($ f a) b)
-                      (abs [k] (@ ($ fg (@ fab k)) k))
-                      fab) by {
-    id
-  };
-  claim foo : (path [i] (path [j] ty/b
-                              ($ f ($ g (@ fab i)))
-                              ($ f (hcom 0~>1 ty/a ($ g (@ fab i))
-                                      [i=0 [j] (hcom 0~>1 ty/a ($ g (@ back j 0))
-                                                  [j=0 [k] (@ ($ gf ($ g ($ f a))) k)]
-                                                  [j=1 [k] (@ ($ gf a) k)])]
-                                      [i=1 [_] ($ g b)])))
-                        ($ f a) // ??
-                        ($ fg b)) by {
-    id
-  };
-  (abs i =>
-  {`(hcom 0~>1 ty/a ($ g (@ fab i))
-      [i=0 [j] (hcom 0~>1 ty/a ($ g (@ back j 0))
-                  [j=0 [k] (@ ($ gf ($ g ($ f a))) k)]
-                  [j=1 [k] (@ ($ gf a) k)])]
-      [i=1 [_] ($ g b)]),
-   abs k =>
-   `(hcom 0~>1 ty/b (@ top i k)
-      [k=0 [j] (@ foo i j)]
-               //($ f (hcom 0~>1 ty/a ($ g (@ fab i))
-               //        [i=0 [j] (hcom 0~>1 ty/a ($ g (@ back j 0))
-               //                    [j=0 [k] (@ ($ gf ($ g ($ f a))) k)]
-               //                    [j=1 [k] (@ ($ gf a) k)])]
-               //        [i=1 [_] ($ g b)]))]
-      [k=1 [_] b]
-      [i=0 [j] (@ back' j k)]
-      [i=1 [_] (@ ($ fg b) k)])
-  }); auto; ?
+  lam fib =>
+  use (LemIso #l)
+    [`ty/a,
+     `ty/b,
+     `(tuple [f f] [g g] [fg fg] [gf gf]),
+     `b,
+     `fib,
+     {`($ g b), `($ fg b)}]
 }.
