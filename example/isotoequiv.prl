@@ -70,7 +70,7 @@ by {
         [j=1 [k] (@ ($ fg b) k)])
 }.
 
-theorem Adjointify(#l:lvl) :
+theorem IsoToEquiv(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
    [ty/b : (U #l kan)]
