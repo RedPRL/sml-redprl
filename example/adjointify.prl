@@ -13,6 +13,11 @@ define Iso(#A, #B) =
    [fg : (-> [b : #B] (path [_] #B ($ f ($ g b)) b))]
    [gf : (-> [a : #A] (path [_] #A ($ g ($ f a)) a))]).
 
+define Rem/Sq(#A,#g,#gf,#b,#x,#p,#i:dim,#j:dim) =
+  (hcom 0~>#j #A ($ #g (@ #p #i))
+     [#i=0 [k] (@ ($ #gf #x) k)]
+     [#i=1 [_] ($ #g #b)]).
+
 theorem LemIso(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
@@ -23,37 +28,26 @@ theorem LemIso(#l:lvl) :
    (path [_] (Fiber ty/a ty/b (!f iso) b) f0 f1))
 by {
   lam ty/a ty/b {f=f,g=g,fg=fg,gf=gf} b {x0,p0} {x1,p1} =>
-  claim sq0 : (path [i] (path [j] ty/a ($ g (@ p0 i)) 
-                                       (hcom 0~>1 ty/a ($ g (@ p0 i))
-                                          [i=0 [j] (@ ($ gf x0) j)]
-                                          [i=1 [_] ($ g b)]))
-                 (abs [_] ($ g b)) ($ gf x0)) by {
-    abs i j =>
-    `(hcom 0~>j ty/a ($ g (@ p0 i))
-        [i=0 [j] (@ ($ gf x0) j)]
-        [i=1 [_] ($ g b)])
+  claim sq0 : (path [i] (path [j] ty/a ($ g (@ p0 i))
+                                       (Rem/Sq ty/a g gf b x0 p0 i 1))
+                    ($ gf x0) (abs [_] ($ g b))) by {
+    abs i j => `(Rem/Sq ty/a g gf b x0 p0 i j)
   };
-  claim sq0i1 : (path [i] ty/a x0 ($ g b)) by { abs i => `(@ sq0 i 1) };
   claim sq1 : (path [i] (path [j] ty/a ($ g (@ p1 i))
-                                       (hcom 0~>1 ty/a ($ g (@ p1 i))
-                                          [i=0 [j] (@ ($ gf x1) j)]
-                                          [i=1 [_] ($ g b)]))
-                 (abs [_] ($ g b)) ($ gf x1)) by {
-    abs i j =>
-    `(hcom 0~>j ty/a ($ g (@ p1 i))
-        [i=0 [j] (@ ($ gf x1) j)]
-        [i=1 [_] ($ g b)])
+                                       (Rem/Sq ty/a g gf b x1 p1 i 1))
+                    ($ gf x1) (abs [_] ($ g b))) by {
+    abs i j => `(Rem/Sq ty/a g gf b x1 p1 i j)
   };
-  claim sq1i1 : (path [i] ty/a x1 ($ g b)) by { abs i => `(@ sq1 i 1) };
   claim sq2 : (path [i] (path [j] ty/a (hcom 1~>0 ty/a ($ g b)
-                                          [i=0 [j] (@ sq0i1 j)]
-                                          [i=1 [j] (@ sq1i1 j)])
+                                          [i=0 [j] (@ sq0 j 1)]
+                                          [i=1 [j] (@ sq1 j 1)])
                                        ($ g b))
-                 sq0i1 sq1i1) by {
+                    (abs [i] (@ sq0 i 1))
+                    (abs [i] (@ sq1 i 1))) by {
     abs i j =>
     `(hcom 1~>j ty/a ($ g b)
-        [i=0 [j] (@ sq0i1 j)]
-        [i=1 [j] (@ sq1i1 j)])
+        [i=0 [j] (@ sq0 j 1)]
+        [i=1 [j] (@ sq1 j 1)])
   };
   claim sq2i1 : (path [i] ty/a x0 x1) by { abs i => `(@ sq2 i 0) };
   claim goalsq : (path [i] (path [j] ty/b ($ f (@ sq2i1 i)) b)
