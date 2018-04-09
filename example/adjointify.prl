@@ -42,21 +42,42 @@ by {
                                           [i=0 [j] (@ sq0 j 1)]
                                           [i=1 [j] (@ sq1 j 1)])
                                        ($ g b))
-                    (abs [i] (@ sq0 i 1))
-                    (abs [i] (@ sq1 i 1))) by {
+                    (abs [j] (@ sq0 j 1))
+                    (abs [j] (@ sq1 j 1))) by {
     abs i j =>
     `(hcom 1~>j ty/a ($ g b)
         [i=0 [j] (@ sq0 j 1)]
         [i=1 [j] (@ sq1 j 1)])
   };
-  claim sq2i1 : (path [i] ty/a x0 x1) by { abs i => `(@ sq2 i 0) };
-  claim goalsq : (path [i] (path [j] ty/b ($ f (@ sq2i1 i)) b)
+  //claim p : (path [i] ty/a x0 x1) by { abs i => `(@ sq2 i 0) };
+  /*
+  claim subgoal : (path [i] (path [j] ty/a ($ g ($ f (@ sq2 i 0))) ($ g b))
+                        (abs [j] ($ g (@ p0 j)))
+                        (abs [j] ($ g (@ p1 j)))) by {
+    (abs i j =>
+    `(hcom 1~>0 ty/a (@ sq2 i j)
+       [i=0 [k] (@ sq0 j k)]
+       [i=1 [k] (@ sq1 j k)]
+       [j=0 [k] (@ ($ gf (@ sq2 i 0)) k)]
+       [j=1 [_] ($ g b)]))
+  };
+  */
+  claim goalsq : (path [i] (path [j] ty/b ($ f (@ sq2 i 0)) b)
                        p0
                        p1) by {
-    id
+    abs i j =>
+    `(hcom 0~>1 ty/b ($ f (hcom 1~>0 ty/a (@ sq2 i j)
+       [i=0 [k] (@ sq0 j k)]
+       [i=1 [k] (@ sq1 j k)]
+       [j=0 [k] (@ ($ gf (@ sq2 i 0)) k)]
+       [j=1 [_] ($ g b)]))
+        [i=0 [k] (@ ($ fg (@ p0 j)) k)]
+        [i=1 [k] (@ ($ fg (@ p1 j)) k)]
+        [j=0 [k] (@ ($ fg ($ f (@ sq2 i 0))) k)]
+        [j=1 [k] (@ ($ fg b) k)]); auto; ?
   };
   abs i =>
-  {`(@ sq2i1 i), id};
+  {`(@ sq2 i 0), id};
   abs j =>
   `(@ goalsq i j)
 }.
