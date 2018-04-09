@@ -18,6 +18,11 @@ define Rem/Sq(#A,#g,#gf,#b,#x,#p,#i:dim,#j:dim) =
      [#i=0 [k] (@ ($ #gf #x) k)]
      [#i=1 [_] ($ #g #b)]).
 
+define P/Sq(#A,#g,#b,#sq0,#sq1,#i:dim,#j:dim) =
+  (hcom 1~>#j #A ($ #g #b)
+     [#i=0 [k] (@ #sq0 k 1)]
+     [#i=1 [k] (@ #sq1 k 1)]).
+
 theorem LemIso(#l:lvl) :
   (->
    [ty/a : (U #l kan)]
@@ -38,16 +43,11 @@ by {
                     ($ gf x1) (abs [_] ($ g b))) by {
     abs i j => `(Rem/Sq ty/a g gf b x1 p1 i j)
   };
-  claim sq2 : (path [i] (path [j] ty/a (hcom 1~>0 ty/a ($ g b)
-                                          [i=0 [j] (@ sq0 j 1)]
-                                          [i=1 [j] (@ sq1 j 1)])
+  claim sq2 : (path [i] (path [j] ty/a (P/Sq ty/a g b sq0 sq1 i 0)
                                        ($ g b))
                     (abs [j] (@ sq0 j 1))
                     (abs [j] (@ sq1 j 1))) by {
-    abs i j =>
-    `(hcom 1~>j ty/a ($ g b)
-        [i=0 [j] (@ sq0 j 1)]
-        [i=1 [j] (@ sq1 j 1)])
+    abs i j => `(P/Sq ty/a g b sq0 sq1 i j)
   };
   //claim p : (path [i] ty/a x0 x1) by { abs i => `(@ sq2 i 0) };
   /*
@@ -62,24 +62,32 @@ by {
        [j=1 [_] ($ g b)]))
   };
   */
-  claim goalsq : (path [i] (path [j] ty/b ($ f (@ sq2 i 0)) b)
+  claim goalsq : (path [i] (path [j] ty/b ($ f (P/Sq ty/a g b sq0 sq1 i 0)) b)
                        p0
                        p1) by {
     abs i j =>
-    `(hcom 0~>1 ty/b ($ f (hcom 1~>0 ty/a (@ sq2 i j)
-       [i=0 [k] (@ sq0 j k)]
-       [i=1 [k] (@ sq1 j k)]
-       [j=0 [k] (@ ($ gf (@ sq2 i 0)) k)]
+    `(hcom 0~>1 ty/b ($ f (hcom 1~>0 ty/a (P/Sq ty/a g b sq0 sq1 i j)
+       [i=0 [k] (Rem/Sq ty/a g gf b x0 p0 j k)]
+       [i=1 [k] (Rem/Sq ty/a g gf b x1 p1 j k)]
+       [j=0 [k] (@ ($ gf (P/Sq ty/a g b sq0 sq1 i 0)) k)]
        [j=1 [_] ($ g b)]))
         [i=0 [k] (@ ($ fg (@ p0 j)) k)]
         [i=1 [k] (@ ($ fg (@ p1 j)) k)]
-        [j=0 [k] (@ ($ fg ($ f (@ sq2 i 0))) k)]
-        [j=1 [k] (@ ($ fg b) k)]); auto; ?
+        [j=0 [k] (@ ($ fg ($ f (P/Sq ty/a g b sq0 sq1 i 0))) k)]
+        [j=1 [k] (@ ($ fg b) k)])
   };
   abs i =>
-  {`(@ sq2 i 0), id};
+  {`(P/Sq ty/a g b sq0 sq1 i 0), id};
   abs j =>
-  `(@ goalsq i j)
+    `(hcom 0~>1 ty/b ($ f (hcom 1~>0 ty/a (P/Sq ty/a g b sq0 sq1 i j)
+       [i=0 [k] (Rem/Sq ty/a g gf b x0 p0 j k)]
+       [i=1 [k] (Rem/Sq ty/a g gf b x1 p1 j k)]
+       [j=0 [k] (@ ($ gf (P/Sq ty/a g b sq0 sq1 i 0)) k)]
+       [j=1 [_] ($ g b)]))
+        [i=0 [k] (@ ($ fg (@ p0 j)) k)]
+        [i=1 [k] (@ ($ fg (@ p1 j)) k)]
+        [j=0 [k] (@ ($ fg ($ f (P/Sq ty/a g b sq0 sq1 i 0))) k)]
+        [j=1 [k] (@ ($ fg b) k)])
 }.
 
 theorem Adjointify(#l:lvl) :
@@ -102,3 +110,5 @@ by {
      `fib,
      {`($ g b), `($ fg b)}]
 }.
+
+print Adjointify.
