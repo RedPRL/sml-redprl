@@ -61,6 +61,10 @@ struct
   struct
     type subgoals = (LcfLanguage.var * Lcf.jdg Lcf.I.t) list
 
+    datatype eval_result =
+       EVAL_NEU of abt
+     | EVAL_CAN of {ty : abt, tm : abt}
+
     infix $ $$ \
 
     (* XXX the cases should be reordered according to the order of constructors
@@ -106,7 +110,6 @@ struct
 
             | _ => raise Fail "synthNeutral"
           end
-
         | (O.DIM_APP $ [_ \ m, _ \ r], _) =>
           let
             val (psi, pathty) = synthTerm' sign tr H (m, m)
@@ -219,9 +222,65 @@ struct
 
     and synthTerm' sign tr H (tm1, tm2) =
       let
-        val (psi, ty) = synthNeutral' sign tr H (Machine.eval sign Machine.STABLE Machine.Unfolding.never tm1, Machine.eval sign Machine.STABLE Machine.Unfolding.never tm2)
+        val (psi1, res1) = typedEval sign tr H tm1
+        val (psi2, res2) = typedEval sign tr H tm2
       in
-        (psi, Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
+        case (res1, res2) of 
+           (EVAL_NEU tm1', EVAL_NEU tm2') =>
+           let
+             val (psi3, ty) = synthNeutral' sign tr H (tm1', tm2')
+           in
+             (psi1 @ psi2 @ psi3, Machine.eval sign Machine.STABLE Machine.Unfolding.always ty)
+           end
+         | (EVAL_NEU tm1', EVAL_CAN {ty = ty2, tm = tm2'}) =>
+           let
+             val goal = makeEq tr H ((tm1', tm2'), ty2)
+           in
+             (goal :: psi1 @ psi2, ty2)
+           end
+         | (EVAL_CAN {ty = ty1, tm = tm1'}, EVAL_NEU tm2') =>
+           let
+             val goal = makeEq tr H ((tm1', tm2'), ty1)
+           in
+             (goal :: psi1 @ psi2, ty1)
+           end
+         | (EVAL_CAN {ty = ty1, tm = tm1'}, EVAL_CAN {ty = ty2, tm = tm2'}) =>
+           let
+             val goalTy = makeEqType tr H ((ty1, ty2), K.top)
+             val goalTm = makeEq tr H ((tm1', tm2'), ty1)
+           in
+             (goalTy :: goalTm :: psi1 @ psi2, ty1)
+           end
+      end
+
+
+    and typedEval sign tr H tm = 
+      let
+        val tm0 = Machine.eval sign Machine.STABLE Machine.Unfolding.never tm
+      in
+        case Syn.out tm0 of 
+           Syn.DIM_APP (m, r) =>
+           (case Syn.out r of 
+               Syn.DIM0 =>
+               let
+                 val (psi, pathOrLineTy) = synthTerm' sign tr H (m, m)
+               in
+                 case Syn.out pathOrLineTy of
+                    Syn.PATH ((u, tyu), m0, _) =>
+                    (psi, EVAL_CAN {ty = substVar (Syn.into Syn.DIM0, u) tyu, tm = m0})
+                  | _ => (psi, EVAL_NEU tm0)
+               end
+             | Syn.DIM1 => 
+               let
+                 val (psi, pathOrLineTy) = synthTerm' sign tr H (m, m)
+               in
+                 case Syn.out pathOrLineTy of
+                    Syn.PATH ((u, tyu), _, m1) =>
+                    (psi, EVAL_CAN {ty = substVar (Syn.into Syn.DIM1, u) tyu, tm = m1})
+                  | _ => (psi, EVAL_NEU tm0)
+               end
+             | _ => ([], EVAL_NEU tm0))
+         | _ => ([], EVAL_NEU tm0)
       end
 
     fun synthTerm sign tr H (tm1, tm2) =
@@ -1292,7 +1351,6 @@ struct
         val Syn.DIM_APP (m0, r0) = Syn.out ap0
         val Syn.DIM_APP (m1, r1) = Syn.out ap1
         val () = Assert.alphaEq (r0, r1)
-
         val (psi, pathty) = Synth.synthTerm sign tr H (m0, m1)
         val Syn.PATH ((x, tyx), _, _) = Syn.out pathty
         val tyr = substVar (r0, x) tyx

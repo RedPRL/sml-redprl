@@ -1,0 +1,92 @@
+define IsContr (#C) = (* [c : #C] (-> [c' : #C] (path [_] #C c' c))).
+
+define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
+
+define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
+
+define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
+
+define Iso(#A, #B) =
+  (record
+   [f : (-> #A #B)]
+   [g : (-> #B #A)]
+   [fg : (-> [b : #B] (path [_] #B ($ f ($ g b)) b))]
+   [gf : (-> [a : #A] (path [_] #A ($ g ($ f a)) a))]).
+
+define Rem/Sq(#A,#g,#gf,#b,#x,#p,#i:dim,#j:dim) =
+  (hcom 0~>#j #A ($ #g (@ #p #i))
+     [#i=0 [k] (@ ($ #gf #x) k)]
+     [#i=1 [_] ($ #g #b)]).
+
+define P/Sq(#A,#g,#b,#sq0,#sq1,#i:dim,#j:dim) =
+  (hcom 1~>#j #A ($ #g #b)
+     [#i=0 [k] (@ #sq0 k 1)]
+     [#i=1 [k] (@ #sq1 k 1)]).
+
+theorem LemIso(#l:lvl) :
+  (->
+   [ty/a : (U #l kan)]
+   [ty/b : (U #l kan)]
+   [iso : (Iso ty/a ty/b)]
+   [b : ty/b]
+   [f0 f1 : (Fiber ty/a ty/b (!f iso) b)]
+   (path [_] (Fiber ty/a ty/b (!f iso) b) f0 f1))
+by {
+  lam ty/a ty/b {f=f,g=g,fg=fg,gf=gf} b {x0,p0} {x1,p1} =>
+  claim sq0 : (path [i] (path [j] ty/a
+                              ($ g (@ p0 i))
+                              (Rem/Sq ty/a g gf b x0 p0 i 1))
+                    ($ gf x0)
+                    (abs [_] ($ g b))) by {
+    abs i j => `(Rem/Sq ty/a g gf b x0 p0 i j)
+  };
+  claim sq1 : (path [i] (path [j] ty/a
+                              ($ g (@ p1 i))
+                              (Rem/Sq ty/a g gf b x1 p1 i 1))
+                    ($ gf x1)
+                    (abs [_] ($ g b))) by {
+    abs i j => `(Rem/Sq ty/a g gf b x1 p1 i j)
+  };
+  /*
+  claim sq2 : (path [i] (path [j] ty/a (P/Sq ty/a g b sq0 sq1 i 0)
+                                       ($ g b))
+                    (abs [j] (@ sq0 j 1))
+                    (abs [j] (@ sq1 j 1))) by {
+    abs i j => `(P/Sq ty/a g b sq0 sq1 i j)
+  };
+  */
+  abs i =>
+  {`(P/Sq ty/a g b sq0 sq1 i 0), id};
+  abs j =>
+    `(hcom 0~>1 ty/b
+        ($ f (hcom 1~>0 ty/a (P/Sq ty/a g b sq0 sq1 i j)
+                [i=0 [k] (Rem/Sq ty/a g gf b x0 p0 j k)]
+                [i=1 [k] (Rem/Sq ty/a g gf b x1 p1 j k)]
+                [j=0 [k] (@ ($ gf (P/Sq ty/a g b sq0 sq1 i 0)) k)]
+                [j=1 [_] ($ g b)]))
+        [i=0 [k] (@ ($ fg (@ p0 j)) k)]
+        [i=1 [k] (@ ($ fg (@ p1 j)) k)]
+        [j=0 [k] (@ ($ fg ($ f (P/Sq ty/a g b sq0 sq1 i 0))) k)]
+        [j=1 [k] (@ ($ fg b) k)])
+}.
+
+theorem IsoToEquiv(#l:lvl) :
+  (->
+   [ty/a : (U #l kan)]
+   [ty/b : (U #l kan)]
+   (Iso ty/a ty/b)
+   (Equiv ty/a ty/b))
+by {
+  lam ty/a ty/b {f=f,g=g,fg=fg,gf=gf} =>
+  {use f, id};
+  lam b =>
+  {{`($ g b), `($ fg b)}, id};
+  lam fib =>
+  use (LemIso #l)
+    [`ty/a,
+     `ty/b,
+     `(tuple [f f] [g g] [fg fg] [gf gf]),
+     `b,
+     `fib,
+     {`($ g b), `($ fg b)}]
+}.
