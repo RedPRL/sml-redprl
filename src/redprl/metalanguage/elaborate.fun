@@ -36,17 +36,17 @@ struct
 
   fun lookupDataTypeValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
     case R.lookupId env pos opid of
-        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getTypeValences arity
+        Ty.ABS (vls, Ty.DATA_INFO precomputedVls) => vls @ InductiveSpec.getTypeValences precomputedVls
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data type", Fpp.text (MlId.toString opid)])
 
   fun lookupDataIntroValences (env : env) (pos : Pos.t option) (opid : MlId.t) (conid : InductiveSpec.conid) : valence list =
     case R.lookupId env pos opid of
-        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getIntroValences arity conid
+        Ty.ABS (vls, Ty.DATA_INFO precomputedVls) => vls @ InductiveSpec.getIntroValences precomputedVls conid
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data constructor", Fpp.text (MlId.toString opid), Fpp.text conid])
 
   fun lookupDataElimCasesValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
     case R.lookupId env pos opid of
-        Ty.ABS (_, Ty.DATA_INFO arity) => InductiveSpec.getElimCasesValences arity
+        Ty.ABS (_, Ty.DATA_INFO precomputedVls) => InductiveSpec.getElimCasesValences precomputedVls
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data eliminator", Fpp.text (MlId.toString opid)])
 
   fun lookupSpecIntroValences (specEnv : spec_env) (pos : Pos.t option) (conid : InductiveSpec.conid) : valence list =

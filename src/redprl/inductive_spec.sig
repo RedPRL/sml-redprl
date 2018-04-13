@@ -34,5 +34,6 @@ sig
   val EqType : Sequent.hyps -> decl -> args * args -> AtomicJudgment.View.as_level * RedPrlKind.t -> Sequent.jdg list
   val EqIntro : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * decl_args
     -> decl -> conid -> (args * args) * args -> Sequent.jdg list
-  (* val EqElim : *)
+  val Elim : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)
+    -> Sym.t * RedPrlAbt.abt -> constrs -> Sequent.jdg list * Sym.t list list * (RedPrlAbt.abt list -> Sequent.jdg list)
 end

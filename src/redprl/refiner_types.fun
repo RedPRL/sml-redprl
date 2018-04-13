@@ -2018,15 +2018,15 @@ struct
         val true = opid0 = opid1 andalso opid0 = opid
         val true = conid0 = conid1
 
-        val (declArgs, (decl, precomputedVls), tyArgs) = Sig.dataDeclInfo sign opid args
+        val (declArgs, (decl, precomputedVls), args) = Sig.dataDeclInfo sign opid args
 
-        (* check the meta variable part *)
+        (* partition the argments *)
         val nDeclArgs = List.length declArgs
         val declVls = List.take (vls, nDeclArgs)
-        val (declArgs0, tyArgs0) = ListUtil.splitAt (args0, nDeclArgs)
-        val (declArgs1, tyArgs1) = ListUtil.splitAt (args1, nDeclArgs)
-        val tyArgs0 = List.map (fn _ \ t => t) tyArgs0
-        val tyArgs1 = List.map (fn _ \ t => t) tyArgs1
+        val (declArgs0, args0) = ListUtil.splitAt (args0, nDeclArgs)
+        val (declArgs1, args1) = ListUtil.splitAt (args1, nDeclArgs)
+
+        (* check the decl argumant part *)
         val declAbsArgs = ListPair.mapEq Abt.checkb (declArgs, declVls)
         val declAbsArgs0 = ListPair.mapEq Abt.checkb (declArgs0, declVls)
         val declAbsArgs1 = ListPair.mapEq Abt.checkb (declArgs1, declVls)
@@ -2034,7 +2034,9 @@ struct
         val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs)
 
         (* check the type and intro argumant part *)
-        val seqs = InductiveSpec.EqIntro H (opid, (declVls, precomputedVls), declArgs0) decl conid0 ((tyArgs0, tyArgs1), tyArgs)
+        val args0 = List.map (fn _ \ t => t) args0
+        val args1 = List.map (fn _ \ t => t) args1
+        val seqs = InductiveSpec.EqIntro H (opid, (declVls, precomputedVls), declArgs0) decl conid0 ((args0, args1), args)
         val goals = List.map (makeGoal' tr) seqs
       in
         |>:+ goals #> (H, axiom)
@@ -2062,7 +2064,38 @@ struct
         #> (H, axiom)
       end
 
-    fun Elim sign z jdg = raise FavoniaIsLazy
+    fun Elim sign z jdg =
+      let
+        val tr = ["Inductive.Elim"]
+        val H >> AJ.TRUE cz = jdg
+        (* ind-rec(FCOM) steps to COM *)
+        val k = K.COM
+        val AJ.TRUE ty = Hyps.lookup H z
+        val Abt.$ (O.IND_TYPE (opid, SOME declVls), args) = Abt.out ty
+
+        (* We need to kind-check cz because of FCOM
+         * This goal is made (explicitly) unconditional to simplify tactic writing
+         *)
+        val goalKind = makeType tr H (cz, k)
+
+        (* getting the metadata *)
+        val (declArgs, (decl, precomputedVls), tyArgs) = Sig.dataDeclInfo sign opid args
+        val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
+        val (_, constrs, []) = InductiveSpec.fillFamily decl tyArgs
+
+        (* generating all the goals *)
+        val (trueJdgs, branchesVars, cohRealizer) = InductiveSpec.Elim H meta (z,cz) constrs
+        val (goalBranches, holeBranches) = ListPair.unzip @@ List.map (makeGoal tr) trueJdgs
+        val goalCoh = List.map (makeGoal' tr) @@ cohRealizer holeBranches
+
+        (* generating the realizer *)
+        val elim = Abt.$$
+          (O.IND_REC (opid, SOME (InductiveSpec.getElimCasesValences precomputedVls)),
+           (Abt.\ ([z], cz) :: Abt.\ ([], VarKit.toExp z) ::
+            ListPair.mapEq Abt.\ (branchesVars, holeBranches)))
+      in
+        |>:+ goalBranches >:+ goalCoh >: goalKind #> (H, elim)
+      end
   end
 
   structure InternalizedEquality =
