@@ -127,6 +127,7 @@ whitespace = [\ \t];
 <INITIAL>"cedom"            => (Tokens.CEDOM (posTuple (size yytext)));
 <INITIAL>"coeq-rec"         => (Tokens.COEQUALIZER_REC (posTuple (size yytext)));
 <INITIAL>"self"             => (Tokens.SELF (posTuple (size yytext)));
+<INITIAL>"rec"              => (Tokens.REC (posTuple (size yytext)));
 <INITIAL>"mem"              => (Tokens.MEM (posTuple (size yytext)));
 <INITIAL>"ni"               => (Tokens.MEM (posTuple (size yytext)));
 <INITIAL>"box"              => (Tokens.BOX (posTuple (size yytext)));
