@@ -696,7 +696,7 @@ nullaryOperator
   | BASE (O.BASE)
   (* inductive types *)
   | OPNAME DOT TYPE (O.IND_TYPE (MlId.const OPNAME, NONE))
-  | OPNAME DOT OPNAME (O.IND_INTRO (MlId.const OPNAME1, OPNAME2, NONE))
+  | OPNAME DOT ident (O.IND_INTRO (MlId.const OPNAME1, ident, NONE))
 
   | kind (O.KCONST kind)
 
@@ -731,7 +731,7 @@ multinaryOperator
   | COEQUALIZER_REC (O.COEQUALIZER_REC)
   (* inductive types *)
   | OPNAME DOT TYPE (O.IND_TYPE (MlId.const OPNAME, NONE))
-  | OPNAME DOT OPNAME (O.IND_INTRO (MlId.const OPNAME1, OPNAME2, NONE))
+  | OPNAME DOT ident (O.IND_INTRO (MlId.const OPNAME1, ident, NONE))
   | OPNAME DOT REC (O.IND_REC (MlId.const OPNAME, NONE)) (* maybe this should be S1.rec, not S1.elim? *)
   (* equality *)
   | EQUALS (O.EQUALITY)
