@@ -71,9 +71,14 @@ struct
         | Ast.$ (O.CUST (opid, _), _) =>
           #2 @@ lookupArity env pos opid
 
+        (* XXX ugly hacks *)
+        | Ast.$ (O.IND_TYPE _, _) => O.EXP
+        | Ast.$ (O.IND_INTRO _, _) => O.EXP
+        | Ast.$ (O.IND_REC _, _) => O.EXP
+
         | Ast.$ (theta, _) =>
           (#2 @@ O.arity theta
-          handle _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Error guessing sort"])
+          handle _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Error guessing sort of", Fpp.text (O.toString theta)]))
     end
 
   fun elabAtomicJdg (env : env) (ast : ast) : AJ.jdg =
@@ -156,8 +161,6 @@ struct
         end
 
       | th => th)
-      handle _ =>
-        Err.raiseAnnotatedError' (pos, Err.GENERIC @@ [Fpp.text "Error resolving operator"])
 
   type elab_cmd = env -> icmd * cty
   type elab_val = env -> ivalue * vty
