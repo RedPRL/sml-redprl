@@ -1,13 +1,13 @@
 data S1' : (U 0 kan)
   { base'
-  , loop' [x : dim] [x=0 .base'] [x=1 .base']
+  , loop' [x : dim] [x=0 (self base')] [x=1 (self base')]
   }
 by {
   auto
 }.
 
 theorem Loop' :
-  (path [_] S1'.type S1'.base' S1'.base')
+  (path [_] (. S1' type) (. S1' base') (. S1' base'))
 by {
-  abs u => `(S1'.loop' u)
+  abs u => `(. S1' loop' u)
 }.

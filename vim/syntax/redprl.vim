@@ -27,7 +27,7 @@ syn keyword redprlExpr zero succ nat-rec int pos negsucc int-rec void S1 base lo
 syn keyword redprlExpr S1-rec lam record tuple path line pushout left right glue
 syn keyword redprlExpr pushout-rec coeq cecod cedom coeq-rec self rec mem ni box cap V VV WU
 syn keyword redprlExpr Vin Vproj U abs hcom com ghcom gcom coe lmax omega
-syn match   redprlExpr '[$*!@=+]\|->\|\~>\|<\~'
+syn match   redprlExpr '[&$*!@=+]\|->\|\~>\|<\~'
 
 syn keyword redprlTac auto auto-step case cut-lemma elim else exact goal
 syn keyword redprlTac hyp id lemma let claim match of print trace progress

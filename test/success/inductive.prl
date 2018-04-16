@@ -1,6 +1,6 @@
 data S1' : (U 0 kan)
   { base'
-  , loop' [x : dim] [x=0 .base'] [x=1 .base']
+  , loop' [x : dim] [x=0 (self base')] [x=1 (self base')]
   }
 by {
   auto
@@ -13,7 +13,7 @@ data Pushout' (#l:lvl)
   : (U #l kan)
   { left' a
   , right' b
-  , glue' [x : c] [y : dim] [y=0 (.left' ($ f x))] [y=1 (.right' ($ g x))]
+  , glue' [x : c] [y : dim] [y=0 (self left' ($ f x))] [y=1 (self right' ($ g x))]
   }
 by {
   auto
