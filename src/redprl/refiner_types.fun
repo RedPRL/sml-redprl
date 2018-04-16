@@ -187,6 +187,14 @@ struct
             ([goal], ty)
           end
 
+        | (O.IND_REC _ $ [[x] \ cx, _ \ m, _, _], O.IND_REC _ $ _) =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeEq tr H ((tm1, tm2), ty)
+          in
+            ([goal], ty)
+          end
+
         | (O.NAT_REC $ [[x] \ cx, _ \ m, _, _], O.NAT_REC $ _) =>
           let
             val ty = substVar (m, x) cx
@@ -194,6 +202,7 @@ struct
           in
             ([goal], ty)
           end
+
         | (O.INT_REC $ [[x] \ cx, _ \ m, _, _, _, _], O.INT_REC $ _) =>
           let
             val ty = substVar (m, x) cx
@@ -201,6 +210,7 @@ struct
           in
             ([goal], ty)
           end
+
         | (O.VPROJ $ [_ \ r1, _ \ m, _ \ f1], O.VPROJ $ [_ \ r2, _ \ n, _ \ f2]) =>
           let
             (* invariant: [r1] and [r2] must be variables or meta variables. *)
@@ -2097,7 +2107,7 @@ struct
         |>:+ goalBranches >:+ goalCoh >: goalKind #> (H, elim)
       end
 
-    fun EqElim sign z jdg =
+    fun EqElim sign jdg =
       let
         val tr = ["Inductive.EqElim"]
         val H >> ajdg = jdg
