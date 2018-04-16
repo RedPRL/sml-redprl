@@ -1989,8 +1989,6 @@ struct
 
   structure Inductive =
   struct
-    exception FavoniaIsLazy
-
     fun EqType sign jdg =
       let
         val tr = ["Inductive.EqType"]
