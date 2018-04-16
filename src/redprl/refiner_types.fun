@@ -2096,6 +2096,42 @@ struct
       in
         |>:+ goalBranches >:+ goalCoh >: goalKind #> (H, elim)
       end
+
+    fun EqElim sign z jdg =
+      let
+        val tr = ["Inductive.EqElim"]
+        val H >> ajdg = jdg
+        val ((elim0, elim1), ty) = View.matchAsEq ajdg
+        (* ind-rec(FCOM) steps to COM *)
+        val k = K.COM
+        val Abt.$ (O.IND_REC (opid0, _), ([x] \ c0x) :: (_ \ m0) :: branches0) = Abt.out elim0
+        val Abt.$ (O.IND_REC (opid1, _), ([y] \ c1y) :: (_ \ m1) :: branches1) = Abt.out elim1
+        val true = opid0 = opid1
+
+        (* type of eliminated term *)
+        val (psi, indTy) = Synth.synthTerm sign tr H (m0, m1)
+        val Abt.$ (O.IND_TYPE (opid, SOME declVls), args) = Abt.out indTy
+        val true = opid = opid0
+
+        (* motive *)
+        val z = Sym.new ()
+        val c0z = VarKit.rename (z, x) c0x
+        val c1z = VarKit.rename (z, y) c1y
+        val goalMotive = makeEqType tr (H @> (z, AJ.TRUE indTy)) ((c0z, c1z), k)
+
+        (* result type*)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) c0x, ty)
+
+        (* getting the metadata *)
+        val (declArgs, (decl, precomputedVls), tyArgs) = Sig.dataDeclInfo sign opid args
+        val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
+        val (_, constrs, []) = InductiveSpec.fillFamily decl tyArgs
+
+        (* branches and coherence *)
+        val goalBranches = List.map (makeGoal' tr) @@ InductiveSpec.EqElimBranches H meta (x, c0x) constrs (branches0, branches1)
+      in
+        |>:+ goalBranches >: goalMotive >:+ psi >:? goalTy #> (H, axiom)
+      end
   end
 
   structure InternalizedEquality =

@@ -36,4 +36,7 @@ sig
     -> decl -> conid -> (args * args) * args -> Sequent.jdg list
   val Elim : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)
     -> Sym.t * RedPrlAbt.abt -> constrs -> Sequent.jdg list * Sym.t list list * (RedPrlAbt.abt list -> Sequent.jdg list)
+  val EqElimBranches : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)
+    -> Sym.t * RedPrlAbt.abt -> constrs -> RedPrlAbt.abt RedPrlAbt.bview list * RedPrlAbt.abt RedPrlAbt.bview list
+    -> Sequent.jdg list
 end
