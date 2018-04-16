@@ -662,7 +662,7 @@ struct
        | (Syn.IND_CONSTR_SPEC_FUN (a, x, bx), arg0::args0, arg1::args1) =>
             (H >> AJ.EQ ((arg0, arg1), realizeSpecType meta varenv a))
             :: EqIntroArgs' H meta (Var.Ctx.insert varenv x arg0) bx (args0, args1)
-       | (Syn.IND_FAM_LINE (x, bx), arg0::args0, arg1::args1) =>
+       | (Syn.IND_CONSTR_LINE (x, bx), arg0::args0, arg1::args1) =>
             let val true = Abt.eq (arg0, arg1)
             in EqIntroArgs' H meta (Var.Ctx.insert varenv x arg0) bx (args0, args1)
             end
