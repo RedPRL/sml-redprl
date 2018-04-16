@@ -11,3 +11,5 @@ theorem Loop' :
 by {
   abs u => `(. S1' loop' u)
 }.
+
+print Loop'.

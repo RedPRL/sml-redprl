@@ -335,6 +335,13 @@ struct
                  (text "lmax" :: ListUtil.revMap (fn _ \ l => ppTerm' env l) ls)
            | _ => raise Fail "invalid vector")
 
+     | O.IND_TYPE (opid, _) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ hsep [text ".", text @@ MlId.toString opid, text "type"] :: List.map (ppBinder' env) args
+     | O.IND_INTRO (opid, conid, _) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ hsep [text ".", text @@ MlId.toString opid, text conid] :: List.map (ppBinder' env) args
+     | O.IND_REC (opid, _) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ hsep [text ".", text @@ MlId.toString opid, text "rec"] :: List.map (ppBinder' env) args
+
      | theta $ [] =>
         ppOperator theta
      | theta $ [[] \ arg] =>
