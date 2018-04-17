@@ -1,0 +1,158 @@
+// Computing with cubes (demo)
+// April 23, 2018
+
+theorem FunToPair :
+  (->
+   [ty : (U 0 kan)]
+   (-> bool ty)
+   (* ty ty))
+by {
+  lam ty fun =>
+  {`($ fun tt), `($ fun ff)}
+}.
+
+// {{{ Univalence
+
+define HasAllPathsTo (#C,#c) = (-> [c' : #C] (path [_] #C c' #c)).
+define IsContr (#C) = (* [c : #C] (HasAllPathsTo #C c)).
+define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
+define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
+define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
+
+theorem WeakConnection(#l:lvl) :
+  (->
+   [ty : (U #l hcom)]
+   [a b : ty]
+   [p : (path [_] ty a b)]
+   (path [i] (path [_] ty (@ p i) b) p (abs [_] b)))
+by {
+  (lam ty a b p =>
+    abs i j =>
+      `(hcom 1~>0 ty b
+        [i=0 [k] (hcom 0~>j ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+        [i=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+        [j=0 [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+        [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]))
+}.
+
+tactic GetEndpoints(#p, #t:[exp,exp].tac) = {
+  query pty <- #p;
+  match pty  {
+    [ty l r | #jdg{(path [_] %ty %l %r)} =>
+      claim p/0 : (@ #p 0) = %l in %ty by {auto};
+      claim p/1 : (@ #p 1) = %r in %ty by {auto};
+      (#t p/0 p/1)
+    ]
+  }
+}.
+
+theorem FunToPairIsEquiv :
+  (->
+   [ty : (U 0 kan)]
+   (IsEquiv (-> bool ty) (* ty ty) ($ FunToPair ty)))
+by {
+  lam ty pair =>
+  { { lam b => if b then `(!proj1 pair) else `(!proj2 pair)
+    , abs _ => `pair }
+  , unfold Fiber;
+    lam {fun,p} =>
+     (GetEndpoints p [p/0 p/1] #tac{
+      (abs x =>
+        {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
+         abs y =>
+           `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
+        });
+      [ unfold FunToPair in p/0; reduce in p/0 at right;
+        inversion; with q3 q2 q1 q0 =>
+          reduce at right in q2;
+          reduce at right in q3;
+          auto; with b =>
+            elim b; reduce at right; symmetry; assumption
+      , unfold FunToPair in p/1; reduce in p/1 at right;
+        inversion; with q3 q2 q1 q0 => elim pair;
+        reduce at right in q0; reduce at right in q1;
+        auto; assumption
+      ]
+     })
+  }
+}.
+
+// }}}
+
+define PathFunToPair(#ty,#r:dim) =
+  (V #r (-> bool #ty) (* #ty #ty)
+    (tuple [proj1 ($ FunToPair #ty)] [proj2 ($ FunToPairIsEquiv #ty)])).
+
+theorem ThmPathFunToPair :
+  (->
+   [ty : (U 0 kan)]
+   (path [_] (U 0 kan) (-> bool ty) (* ty ty)))
+by {
+  lam ty => abs x => `(PathFunToPair ty x)
+}.
+
+theorem RespectPaths :
+  (->
+   [ty : (U 0 kan)]
+   (-> bool ty)
+   (* ty ty))
+by {
+  lam ty fun =>
+  `(coe 0~>1 [x] (@ ($ ThmPathFunToPair ty) x) fun)
+}.
+
+theorem ComputeCoercion :
+  (=
+   (* bool bool)
+   ($ RespectPaths bool (lam [b] b))
+   (tuple [proj1 tt] [proj2 ff]))
+by {
+  auto
+}.
+
+theorem SwapPair :
+  (->
+    [ty : (U 0 kan)]
+    (* ty ty)
+    (* ty ty))
+by {
+  lam ty {p1,p2} => {`p2,`p1}
+}.
+
+theorem SwapSwapPair :
+  (->
+    [ty : (U 0 kan)]
+    [pair : (* ty ty)]
+    (path [_] (* ty ty) ($ SwapPair ty ($ SwapPair ty pair)) pair))
+by {
+  lam ty pair => abs x => `pair
+}.
+
+define SwapCoe (#ty,#r:dim) =
+  (coe 1~>#r
+    [x] (-> (@ ($ ThmPathFunToPair #ty) x) (@ ($ ThmPathFunToPair #ty) x))
+    ($ SwapPair #ty)).
+
+theorem SwapFun :
+  (->
+    [ty : (U 0 kan)]
+    (-> bool ty)
+    (-> bool ty))
+by {
+  lam ty => `(SwapCoe ty 0)
+}.
+
+theorem SwapSwapFun :
+  (->
+    [ty : (U 0 kan)]
+    [fun : (-> bool ty)]
+    (path [_] (-> bool ty) ($ SwapFun ty ($ SwapFun ty fun)) fun))
+by {
+  lam ty =>
+  `(coe 1~>0
+      [x] (-> [elt : (@ ($ ThmPathFunToPair ty) x)]
+              (path [_] (@ ($ ThmPathFunToPair ty) x) ($ (SwapCoe ty x) ($ (SwapCoe ty x) elt)) elt))
+      ($ SwapSwapPair ty))
+}.
+
+print SwapSwapFun.
