@@ -179,7 +179,7 @@ struct
    | CRITICAL of 'a
    | STEP of 'a
 
-  fun pushFrameIntoFCom ((((x, tyx), frame), {dir = dir as (r, _), cap, tubes}) || (syms, stk)) =
+  fun pushFrameIntoFcom ((((x, tyx), frame), {dir = dir as (r, _), cap, tubes}) || (syms, stk)) =
     let
       val u = Sym.new()
       val fcomu =
@@ -198,7 +198,7 @@ struct
       CRITICAL @@ com || (syms, stk)
     end
 
-  fun stepFCom stability ((params as {dir = dir as (r, r'), cap, tubes}) || (syms, stk)) =
+  fun stepFcom stability ((params as {dir = dir as (r, r'), cap, tubes}) || (syms, stk)) =
     if dimensionsEqual stability syms dir then 
       STEP @@ cap || (syms, stk)
     else
@@ -208,13 +208,13 @@ struct
          (case stk of
              [] => raise Final
            | (frame as IF (motive, HOLE, _, _)) :: stk =>
-             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+             pushFrameIntoFcom (((motive, frame), params) || (syms, stk))
            | (frame as S1_REC (motive, HOLE, _, _)) :: stk =>
-             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+             pushFrameIntoFcom (((motive, frame), params) || (syms, stk))
            | (frame as PUSHOUT_REC (motive, HOLE, _, _, _)) :: stk =>
-             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+             pushFrameIntoFcom (((motive, frame), params) || (syms, stk))
            | (frame as COEQUALIZER_REC (motive, HOLE, _, _)) :: stk =>
-             pushFrameIntoFCom (((motive, frame), params) || (syms, stk))
+             pushFrameIntoFcom (((motive, frame), params) || (syms, stk))
            | (frame as COE_IND _) :: stk =>
              let
                val fcom = Syn.intoFcom
@@ -453,6 +453,17 @@ struct
          SOME (u, a) => STEP @@ (Syn.intoCoe {dir = (r', r), ty = (u, a), coercee = coercee}) || (syms, stk)
        | NONE => COMPAT @@ coercee || (syms, CAP (dir, tubes, HOLE) :: stk)
 
+  fun stepEcom stability ((params as {dir = dir as (r, r'), cap, tubes}) || (syms, stk)) =
+    if dimensionsEqual stability syms dir then
+      STEP @@ cap || (syms, stk)
+    else
+      case findFirstWithTrueEquation stability syms tubes of
+         SOME (u, n) => STEP @@ substVar (r', u) n || (syms, stk)
+       | NONE =>
+         (case stk of
+             [] => raise Final
+           | _ => raise Stuck)
+
   fun stepView sign stability unfolding tau =
     fn `x || _ => raise Neutral (VAR x)
      | x $# _ || _ => raise Neutral (METAVAR x)
@@ -535,7 +546,7 @@ struct
        end
 
      | O.FCOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] || (syms, stk) => 
-       stepFCom stability ({dir = (r1,r2), cap = cap, tubes = Syn.outTubes tubes} || (syms, stk))
+       stepFcom stability ({dir = (r1,r2), cap = cap, tubes = Syn.outTubes tubes} || (syms, stk))
 
      | O.LAM $ _ || (_, []) => raise Final
      | O.FUN $ _ || (_, []) => raise Final
@@ -948,6 +959,9 @@ struct
      | O.CAP $ [_ \ r1, _ \ r2, _ \ coercee, _ \ tubes] || (syms, stk) => 
        stepCap stability ({dir = (r1, r2), coercee = coercee, tubes = Syn.outTubes tubes} || (syms, stk))
 
+     | O.ECOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] || (syms, stk) =>
+       stepEcom stability ({dir = (r1,r2), cap = cap, tubes = Syn.outTubes tubes} || (syms, stk))
+
      | O.V $ [_ \ r, _ \ a, _ \ b, _ \ e] || (syms, stk) =>
          branchOnDim stability syms r
            (STEP @@ a || (syms, stk))
@@ -1114,6 +1128,11 @@ struct
                {dir = dir,
                 cap = cap,
                 tubes = tubes}
+           val ecom =
+             Syn.intoEcom
+               {dir = dir,
+                cap = cap,
+                tubes = tubes}
          in
            case Tm.out k of
              O.KCONST k $ _ =>
@@ -1121,8 +1140,8 @@ struct
                   K.DISCRETE => CRITICAL @@ cap || (syms, stk)
                 | K.KAN => CRITICAL @@ fcom || (syms, stk)
                 | K.HCOM => CRITICAL @@ fcom || (syms, stk)
-                | K.COE => raise Stuck
-                | K.PRE => raise Stuck)
+                | K.COE => CRITICAL @@ ecom || (syms, stk)
+                | K.PRE => CRITICAL @@ ecom || (syms, stk))
            | _ => raise Stuck
          end
      | O.UNIVERSE $ _ || (syms, COE (_, (u, _), coercee) :: stk) => CRITICAL @@ coercee || (SymSet.remove syms u, stk)

@@ -131,6 +131,7 @@ whitespace = [\ \t];
 <INITIAL>"ni"               => (Tokens.MEM (posTuple (size yytext)));
 <INITIAL>"box"              => (Tokens.BOX (posTuple (size yytext)));
 <INITIAL>"cap"              => (Tokens.CAP (posTuple (size yytext)));
+<INITIAL>"ecom"             => (Tokens.ECOM (posTuple (size yytext)));
 <INITIAL>"V"                => (Tokens.V (posTuple (size yytext)));
 <INITIAL>"VV"               => (Tokens.V (posTuple (size yytext)));
 <INITIAL>"WU"               => (Tokens.V (posTuple (size yytext)));

@@ -267,6 +267,7 @@ struct
      | "fcom/eqtype" => Lcf.rule FormalComposition.EqType
      | "fcom/eq/box" => Lcf.rule FormalComposition.Eq
      | "fcom/intro" => Lcf.rule FormalComposition.True
+     | "ecom/eqtype" => Lcf.rule EmptyComposition.EqType
      | "V/eqtype" => Lcf.rule V.EqType
      | "V/eq/uain" => Lcf.rule V.Eq
      | "V/intro" => Lcf.rule V.True
@@ -393,6 +394,7 @@ struct
          | (Syn.COEQUALIZER _, Syn.COEQUALIZER _) => Wrapper.applyEqRule Coequalizer.EqType
          | (Syn.EQUALITY _, Syn.EQUALITY _) => Wrapper.applyEqRule InternalizedEquality.EqType
          | (Syn.FCOM _, Syn.FCOM _) => Wrapper.applyEqRule FormalComposition.EqType
+         | (Syn.ECOM _, Syn.ECOM _) => Wrapper.applyEqRule EmptyComposition.EqType
          | (Syn.V _, Syn.V _) => Wrapper.applyEqRule V.EqType
          | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Wrapper.applyEitherRule Universe.EqType Universe.SubType
          | _ => fn _ => fail @@ E.GENERIC [Fpp.text "Could not find type equality or subtyping rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
@@ -498,6 +500,7 @@ struct
          | (Syn.AX, Syn.AX, Syn.EQUALITY _) => Lcf.rule InternalizedEquality.Eq
          | (Syn.FCOM _, Syn.FCOM _, Syn.UNIVERSE _) => Lcf.rule FormalComposition.EqType
          | (Syn.BOX _, Syn.BOX _, Syn.FCOM _) => Lcf.rule FormalComposition.Eq
+         | (Syn.ECOM _, Syn.ECOM _, Syn.UNIVERSE _) => Lcf.rule EmptyComposition.EqType
          | (Syn.V _, Syn.V _, Syn.UNIVERSE _) => Lcf.rule V.EqType
          | (Syn.VIN _, Syn.VIN _, Syn.V _) => Lcf.rule V.Eq
          | (Syn.UNIVERSE _, Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule Universe.EqType

@@ -124,6 +124,7 @@
     "coeq" "cecod" "cedom" "coeq-rec"
     "mem" "ni"
     "box" "cap"
+    "ecom"
     "V" "Vin" "Vproj"
     "universe" "U"
     "hcom" "ghcom" "coe" "com" "gcom"

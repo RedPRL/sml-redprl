@@ -382,6 +382,7 @@ end
  | SELF
  | MEM
  | BOX | CAP
+ | ECOM
  | V | VIN | VPROJ
  | UNIVERSE
  | HCOM | COE | COM
@@ -782,6 +783,8 @@ rawTermAndTac
     (Ast.$$ (O.BOX, [\([], #1 dir), \([], #2 dir), \([], term), \([], boundaryVec)]))
   | LPAREN CAP backDir term tubeVec RPAREN
     (Ast.$$ (O.CAP, [\([], #1 backDir), \([], #2 backDir), \([], term), \([], tubeVec)]))
+  | LPAREN ECOM dir term tubeVec RPAREN
+    (Ast.$$ (O.ECOM, [\([], #1 dir), \([], #2 dir), \([], term), \([], tubeVec)]))
 
   (* numbers *)
   | NUMERAL (makeDim (Pos.pos (NUMERAL1left fileName) (NUMERAL1right fileName)) NUMERAL)
