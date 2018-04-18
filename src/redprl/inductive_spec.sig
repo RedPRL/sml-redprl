@@ -2,11 +2,10 @@ signature INDUCTIVE_SPEC =
 sig
   type conid = string
   structure ConstrDict : DICT where type key = conid
-  type decl = RedPrlAbt.abt (* XXX *)
-  type constr = RedPrlAbt.abt (* XXX *)
+  type decl
+  type constr
   type constrs = (conid * constr) list
-  type decl_args = RedPrlAbt.abt RedPrlAbt.bview list
-  type args = RedPrlAbt.abt list
+
   type precomputed_valences
   val eqPrecomputedValences : precomputed_valences * precomputed_valences -> bool
 
@@ -21,22 +20,22 @@ sig
   val computeAllSpecIntroValences : RedPrlAst.ast -> RedPrlArity.valence list ConstrDict.dict
 
   (* Used by the machine. *)
-  val fillFamily : decl -> args -> args * constrs * args
-  val realizeIntroBoundaries : MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)
-    -> constr -> args -> RedPrlAbt.abt SyntaxView.boundary list
+  val fillFamily : decl -> RedPrlAbt.abt list -> RedPrlAbt.abt list * constrs * RedPrlAbt.abt list
+  val realizeIntroBoundaries : MlId.t * (RedPrlArity.valence list * precomputed_valences) * (RedPrlAbt.abt RedPrlAbt.bview list * RedPrlAbt.abt list)
+    -> constr -> RedPrlAbt.abt list -> RedPrlAbt.abt SyntaxView.boundary list
   val fillBranch : (RedPrlAbt.abt -> RedPrlAbt.abt)
-    -> constr -> Sym.t list * RedPrlAbt.abt -> args -> RedPrlAbt.abt
+    -> constr -> Sym.t list * RedPrlAbt.abt -> RedPrlAbt.abt list -> RedPrlAbt.abt
   val stepCoeIntro : RedPrlAbt.abt * RedPrlAbt.abt
-    -> Sym.t * ((MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)) * conid * constr)
-    -> args -> RedPrlAbt.abt
+    -> Sym.t * ((MlId.t * (RedPrlArity.valence list * precomputed_valences) * (RedPrlAbt.abt RedPrlAbt.bview list * RedPrlAbt.abt list)) * conid * constr)
+    -> RedPrlAbt.abt list -> RedPrlAbt.abt
 
   (* Used by the refiner. *)
-  val EqType : Sequent.hyps -> decl -> args * args -> AtomicJudgment.View.as_level * RedPrlKind.t -> Sequent.jdg list
-  val EqIntro : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * decl_args
-    -> decl -> conid -> (args * args) * args -> Sequent.jdg list
-  val Elim : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)
+  val EqType : Sequent.hyps -> decl -> RedPrlAbt.abt list * RedPrlAbt.abt list -> AtomicJudgment.View.as_level * RedPrlKind.t -> Sequent.jdg list
+  val EqIntro : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * RedPrlAbt.abt RedPrlAbt.bview list
+    -> decl -> conid -> (RedPrlAbt.abt list * RedPrlAbt.abt list) * RedPrlAbt.abt list -> Sequent.jdg list
+  val Elim : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * (RedPrlAbt.abt RedPrlAbt.bview list * RedPrlAbt.abt list)
     -> Sym.t * RedPrlAbt.abt -> constrs -> Sequent.jdg list * Sym.t list list * (RedPrlAbt.abt list -> Sequent.jdg list)
-  val EqElimBranches : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * (decl_args * args)
+  val EqElimBranches : Sequent.hyps -> MlId.t * (RedPrlArity.valence list * precomputed_valences) * (RedPrlAbt.abt RedPrlAbt.bview list * RedPrlAbt.abt list)
     -> Sym.t * RedPrlAbt.abt -> constrs -> RedPrlAbt.abt RedPrlAbt.bview list * RedPrlAbt.abt RedPrlAbt.bview list
     -> Sequent.jdg list
 end
