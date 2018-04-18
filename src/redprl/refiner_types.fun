@@ -2553,7 +2553,7 @@ struct
       in
         |>: goalCap
          >:+ FormalComposition.genInterTubeGoals tr H w ((tubes0, tubes1), l, kPart)
-         >:+ FormalComposition.genCapTubeGoalsIfDifferent tr H ((cap0, (#1 dir0, tubes0)), l, kPart) (* kCap is less demanding *)
+         >:+ FormalComposition.genCapTubeGoalsIfDifferent tr H ((cap0, (#1 dir0, tubes0)), l, kPart)
         #> (H, axiom)
       end
   end
