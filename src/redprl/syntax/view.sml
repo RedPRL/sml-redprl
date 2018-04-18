@@ -13,6 +13,9 @@ struct
   type 'a tube = equation * (variable * 'a)
   type 'a boundary = equation * 'a
 
+  fun mapTubes f : 'a tube list -> 'a tube list = List.map (fn (eq, (u, n)) => (eq, f (u, n)))
+  fun mapTubes_ f = mapTubes (fn (v, tm) => (v, f tm))
+
   type label = string
   type conid = string
   structure Fields =
@@ -438,6 +441,21 @@ struct
 
     val intoEq = into o EQUALITY
     val intoU = into o UNIVERSE
+
+    fun elimFCom ((x, tyx), plug) {dir = dir as (r, _), cap, tubes} =
+      let
+        val u = Sym.new ()
+        val fcomu = intoFcom
+          {dir = (r, into (VAR (u, O.DIM))),
+           cap = cap,
+           tubes = tubes}
+      in
+        intoCom
+          {dir = dir,
+           ty = (u, substVar (fcomu, x) tyx),
+           cap = plug cap,
+           tubes = mapTubes_ plug tubes}
+      end
 
     fun out m =
       case Tm.out m of

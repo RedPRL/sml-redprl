@@ -104,7 +104,7 @@
   "Syntax table for RedPRL.")
 
 (defconst redprl-declaration-keywords
-  '("define" "extract" "print" "quit" "tactic" "theorem")
+  '("data" "define" "extract" "print" "quit" "tactic" "theorem")
   "RedPRL's keywords.")
 
 (defconst redprl-sort-keywords
@@ -122,6 +122,7 @@
     "path" "line" "abs"
     "pushout" "left" "right" "glue" "pushout-rec"
     "coeq" "cecod" "cedom" "coeq-rec"
+    "self" "rec"
     "mem" "ni"
     "box" "cap"
     "V" "Vin" "Vproj"
