@@ -2602,9 +2602,9 @@ struct
     val inherentKind =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.KAN
-       | K.HCOM => K.COE
+       | K.HCOM => K.KAN
        | K.COE => K.COE
-       | K.PRE => K.COE
+       | K.PRE => K.KAN
 
     val inherentLevel = L.succ
 
