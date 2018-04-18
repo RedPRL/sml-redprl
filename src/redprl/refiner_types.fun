@@ -2519,6 +2519,45 @@ struct
     (* TODO Add the Elim, EqCap and Eta rules. *)
   end
 
+  (* FormalComposition's evil twin *)
+  structure EmptyComposition =
+  struct
+    val kindConstraintOnParts =
+      fn K.DISCRETE => E.raiseError @@
+          E.NOT_APPLICABLE (Fpp.text "ecom types", Fpp.text "discrete universes")
+       | K.KAN => E.raiseError @@
+          E.NOT_APPLICABLE (Fpp.text "ecom types", Fpp.text "Kan universes")
+       | K.HCOM => K.HCOM (* XXX more research needed *)
+       | K.COE => E.raiseError @@
+          E.NOT_APPLICABLE (Fpp.text "ecom types", Fpp.text "Kan universes")
+       | K.PRE => K.PRE (* XXX more research needed *)
+
+    fun EqType jdg =
+      let
+        val tr = ["EmptyComposition.EqType"]
+        val H >> ajdg = jdg
+        val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
+        val Syn.ECOM {dir=dir0, cap=cap0, tubes=tubes0} = Syn.out ty0
+        val Syn.ECOM {dir=dir1, cap=cap1, tubes=tubes1} = Syn.out ty1
+        val () = Assert.dirEq "EmptyComposition.EqType direction" (dir0, dir1)
+        val eqs0 = List.map #1 tubes0
+        val eqs1 = List.map #1 tubes1
+        val _ = Assert.equationsEq "EmptyComposition.EqType equations" (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "EmptyComposition.EqType tautology checking" eqs0
+
+        val kPart = kindConstraintOnParts k
+
+        val goalCap = View.makeAsEqType tr H ((cap0, cap1), l, kPart)
+
+        val w = Sym.new ()
+      in
+        |>: goalCap
+         >:+ FormalComposition.genInterTubeGoals tr H w ((tubes0, tubes1), l, kPart)
+         >:+ FormalComposition.genCapTubeGoalsIfDifferent tr H ((cap0, (#1 dir0, tubes0)), l, kPart)
+        #> (H, axiom)
+      end
+  end
+
   structure V =
   struct
     val kindConstraintOnEnds =
@@ -2671,9 +2710,9 @@ struct
     val inherentKind =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.KAN
-       | K.HCOM => K.COE
+       | K.HCOM => K.KAN
        | K.COE => K.COE
-       | K.PRE => K.COE
+       | K.PRE => K.KAN
 
     val inherentLevel = L.succ
 
