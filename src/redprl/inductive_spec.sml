@@ -573,7 +573,7 @@ struct
             end
        | (Syn.IND_CONSTR_LINE (_,bx), var::vars, arg::introArgs) =>
             createVarenvForBranch plug (Var.Ctx.insert acc var arg) (bx, vars, introArgs)
-       | _ => E.raiseError (E.IMPOSSIBLE (Fpp.text "fillBranch.createVarenvForBranch"))
+       | _ => E.raiseError (E.IMPOSSIBLE (Fpp.text "InductiveSpec.fillBranch/createVarenvForBranch"))
   in
     fun fillBranch plug constr (vars, branch) introArgs =
       Abt.substVarenv (createVarenvForBranch plug Var.Ctx.empty (constr, vars, introArgs)) branch
@@ -717,7 +717,7 @@ struct
             end
        | (Syn.IND_CONSTR_LINE (_,bx), var::vars, arg::introArgs) =>
             createVarenvForBranch meta constrs elimData env (Var.Ctx.insert acc var arg) (bx, vars, introArgs)
-       | _ => E.raiseError (E.IMPOSSIBLE (Fpp.text "Elim.createVarenvForBranch"))
+       | _ => E.raiseError (E.IMPOSSIBLE (Fpp.text "InductiveSpec.Elim/createVarenvForBranch"))
 
     and elimSpecIntro meta constrs (elimData as (_, branches)) env (conid, introArgs) =
       let
