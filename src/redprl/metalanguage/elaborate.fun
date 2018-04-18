@@ -36,17 +36,17 @@ struct
 
   fun lookupDataTypeValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
     case R.lookupId env pos opid of
-        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getTypeValences arity
+        Ty.ABS (vls, Ty.DATA_INFO precomputedVls) => vls @ InductiveSpec.getTypeValences precomputedVls
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data type", Fpp.text (MlId.toString opid)])
 
   fun lookupDataIntroValences (env : env) (pos : Pos.t option) (opid : MlId.t) (conid : InductiveSpec.conid) : valence list =
     case R.lookupId env pos opid of
-        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getIntroValences arity conid
+        Ty.ABS (vls, Ty.DATA_INFO precomputedVls) => vls @ InductiveSpec.getIntroValences precomputedVls conid
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data constructor", Fpp.text (MlId.toString opid), Fpp.text conid])
 
-  fun lookupDataElimValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
+  fun lookupDataElimCasesValences (env : env) (pos : Pos.t option) (opid : MlId.t) : valence list =
     case R.lookupId env pos opid of
-        Ty.ABS (vls, Ty.DATA_INFO arity) => vls @ InductiveSpec.getElimValences arity
+        Ty.ABS (_, Ty.DATA_INFO precomputedVls) => InductiveSpec.getElimCasesValences precomputedVls
       | _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Could not infer arity for data eliminator", Fpp.text (MlId.toString opid)])
 
   fun lookupSpecIntroValences (specEnv : spec_env) (pos : Pos.t option) (conid : InductiveSpec.conid) : valence list =
@@ -71,9 +71,14 @@ struct
         | Ast.$ (O.CUST (opid, _), _) =>
           #2 @@ lookupArity env pos opid
 
+        (* XXX ugly hacks *)
+        | Ast.$ (O.IND_TYPE _, _) => O.EXP
+        | Ast.$ (O.IND_INTRO _, _) => O.EXP
+        | Ast.$ (O.IND_REC _, _) => O.EXP
+
         | Ast.$ (theta, _) =>
           (#2 @@ O.arity theta
-          handle _ => Err.raiseError @@ Err.GENERIC [Fpp.text "Error guessing sort"])
+          handle _ => Err.raiseAnnotatedError' (pos, Err.GENERIC [Fpp.text "Error guessing sort of", Fpp.text (O.toString theta)]))
     end
 
   fun elabAtomicJdg (env : env) (ast : ast) : AJ.jdg =
@@ -136,7 +141,7 @@ struct
         O.IND_INTRO (opid, conid, SOME @@ lookupDataIntroValences env pos opid conid)
 
       | O.IND_REC (opid, NONE) =>
-        O.IND_REC (opid, SOME @@ lookupDataElimValences env pos opid)
+        O.IND_REC (opid, SOME @@ lookupDataElimCasesValences env pos opid)
 
       | O.IND_SPEC_INTRO (conid, NONE) =>
         O.IND_SPEC_INTRO (conid, SOME @@ lookupSpecIntroValences specEnv pos conid)
@@ -156,8 +161,6 @@ struct
         end
 
       | th => th)
-      handle _ =>
-        Err.raiseAnnotatedError' (pos, Err.GENERIC @@ [Fpp.text "Error resolving operator"])
 
   type elab_cmd = env -> icmd * cty
   type elab_val = env -> ivalue * vty

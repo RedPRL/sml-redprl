@@ -30,7 +30,7 @@ struct
    | S1_REC of (variable * abt) * hole * abt * (variable * abt)
    | PUSHOUT_REC of (variable * abt) * hole * (variable * abt) * (variable * abt) * (variable * variable * abt)
    | COEQUALIZER_REC of (variable * abt) * hole * (variable * abt) * (variable * variable * abt)
-   | IND_REC of (opid * RedPrlArity.valence list) * abt RedPrlAbt.bview list * abt list * (variable * abt) * hole * abt RedPrlAbt.bview list
+   | IND_REC of (opid * RedPrlArity.valence list) * (variable * abt) * hole * abt RedPrlAbt.bview list
    | COE_IND of Syn.dir * (variable * (opid * RedPrlArity.valence list * abt RedPrlAbt.bview list)) * hole
    | DIM_APP of hole * abt
    | NAT_REC of (variable * abt) * hole * abt * (variable * variable * abt)
@@ -61,8 +61,8 @@ struct
      | TUPLE_UPDATE (lbl, n, HOLE) => Syn.into @@ Syn.TUPLE_UPDATE ((lbl, m), m)
      | PUSHOUT_REC ((x, tyx), HOLE, (y, left), (z, right), (u, w, glue)) => Syn.into @@ Syn.PUSHOUT_REC ((x, tyx), m, ((y, left), (z, right), (u, w, glue)))
      | COEQUALIZER_REC ((x, tyx), HOLE, (y, cod), (u, w, dom)) => Syn.into @@ Syn.COEQUALIZER_REC ((x, tyx), m, ((y, cod), (u, w, dom)))
-     | IND_REC ((opid, vls), declArgs, tyArgs, (x, tyx), HOLE, branches) =>
-         Tm.$$ (O.IND_REC (opid, SOME vls), declArgs @ List.map (fn t => [] \ t) tyArgs @ [[x] \ tyx] @ [[] \ m] @ branches)
+     | IND_REC ((opid, vls), (x, tyx), HOLE, branches) =>
+         Tm.$$ (O.IND_REC (opid, SOME vls), [[x] \ tyx] @ [[] \ m] @ branches)
      | COE_IND (dir, (x, (opid, vls, args)), HOLE) => Syn.intoCoe {dir = dir, ty = (x, Tm.$$ (O.IND_TYPE (opid, SOME vls), args)), coercee = m}
      | CAP (dir, tubes, HOLE) => Syn.into @@ Syn.CAP {dir = dir, tubes = tubes, coercee = m}
      | VPROJ (x, HOLE, f) => Syn.into @@ Syn.VPROJ (VarKit.toDim x, m, f)
@@ -153,18 +153,6 @@ struct
       aux
     end
 
-  fun mapTubes f : tube list -> tube list = List.map (fn (eq, (u, n)) => (eq, f (u, n)))
-  fun mapTubes_ f = mapTubes (fn (v, tm) => (v, f tm))
-
-  fun zipTubesWith f : Syn.equation list * abt bview list -> tube list =
-    ListPair.mapEq (fn (eq, [u] \ n) => (eq, (u, f (u, n))))
-
-  fun zipBoundariesWith f : Syn.equation list * abt bview list -> boundary list =
-    ListPair.mapEq (fn (eq, _ \ n) => (eq, f n))
-
-  val zipTubes = zipTubesWith #2
-  val zipBoundaries = zipBoundariesWith (fn n => n)
-
   (* assuming u is bound and so the comparison is stable,
    * which is the case in its usage (Kan operations of fcom). *)
   fun keepApartTubes u : tube list -> tube list =
@@ -179,25 +167,6 @@ struct
    | CRITICAL of 'a
    | STEP of 'a
 
-  fun pushFrameIntoFcom ((((x, tyx), frame), {dir = dir as (r, _), cap, tubes}) || (syms, stk)) =
-    let
-      val u = Sym.new()
-      val fcomu =
-        Syn.intoFcom
-          {dir = (r, VarKit.toDim u),
-           cap = cap,
-           tubes = tubes}
-      fun elim_ m = plug m frame
-      val com =
-        Syn.intoCom
-          {dir = dir,
-           ty = (u, substVar (fcomu, x) tyx),
-           cap = elim_ cap,
-           tubes = mapTubes_ elim_ tubes}
-    in
-      CRITICAL @@ com || (syms, stk)
-    end
-
   fun stepFcom stability ((params as {dir = dir as (r, r'), cap, tubes}) || (syms, stk)) =
     if dimensionsEqual stability syms dir then 
       STEP @@ cap || (syms, stk)
@@ -208,19 +177,21 @@ struct
          (case stk of
              [] => raise Final
            | (frame as IF (motive, HOLE, _, _)) :: stk =>
-             pushFrameIntoFcom (((motive, frame), params) || (syms, stk))
+             CRITICAL @@ Syn.elimFcom (motive, fn m => plug m frame) params || (syms, stk)
            | (frame as S1_REC (motive, HOLE, _, _)) :: stk =>
-             pushFrameIntoFcom (((motive, frame), params) || (syms, stk))
+             CRITICAL @@ Syn.elimFcom (motive, fn m => plug m frame) params || (syms, stk)
            | (frame as PUSHOUT_REC (motive, HOLE, _, _, _)) :: stk =>
-             pushFrameIntoFcom (((motive, frame), params) || (syms, stk))
+             CRITICAL @@ Syn.elimFcom (motive, fn m => plug m frame) params || (syms, stk)
            | (frame as COEQUALIZER_REC (motive, HOLE, _, _)) :: stk =>
-             pushFrameIntoFcom (((motive, frame), params) || (syms, stk))
+             CRITICAL @@ Syn.elimFcom (motive, fn m => plug m frame) params || (syms, stk)
+           | (frame as IND_REC (_, motive, HOLE, _)) :: stk =>
+             CRITICAL @@ Syn.elimFcom (motive, fn m => plug m frame) params || (syms, stk)
            | (frame as COE_IND _) :: stk =>
              let
                val fcom = Syn.intoFcom
                  {dir = dir,
                   cap = plug cap frame,
-                  tubes = mapTubes_ (fn m => plug m frame) tubes}
+                  tubes = Syn.mapTubes_ (fn m => plug m frame) tubes}
              in
                CRITICAL @@ fcom || (syms, stk)
              end
@@ -245,7 +216,7 @@ struct
                    {dir = (#1 hcomDir, dest),
                     ty = a,
                     cap = capOfInTube (v, b) hcomCap,
-                    tubes = mapTubes_ (capOfInTube (v, b)) hcomTubes
+                    tubes = Syn.mapTubes_ (capOfInTube (v, b)) hcomTubes
                     (* here the bound variable is reused *)}
                  fun coeHcom (v, b) dest = capOfInTube (v, b) @@ Syn.intoHcom
                    {dir = (#1 hcomDir, dest),
@@ -265,7 +236,7 @@ struct
                           ::
                           ((recoverDim, #2 fcomDir), (y, coeHcom (v, b) (VarKit.toDim y)))
                           ::
-                          mapTubes_ (capOfInTube (v, b)) hcomTubes}
+                          Syn.mapTubes_ (capOfInTube (v, b)) hcomTubes}
                    end
                  val recovered =
                    let
@@ -278,13 +249,13 @@ struct
                           {dir = hcomDir,
                            ty = a,
                            cap = capOf hcomCap,
-                           tubes = mapTubes_ capOf hcomTubes},
+                           tubes = Syn.mapTubes_ capOf hcomTubes},
                         tubes =
                           ((#1 hcomDir, #2 hcomDir), (dummy, capOf hcomCap))
                           ::
-                          mapTubes (fn (y, tm) => (dummy, substVar (#2 hcomDir, y) tm)) hcomTubes
+                          Syn.mapTubes (fn (y, tm) => (dummy, substVar (#2 hcomDir, y) tm)) hcomTubes
                           @
-                          mapTubes (fn (v, b) => (v, recovery (v, b) (VarKit.toDim v))) fcomTubes}
+                          Syn.mapTubes (fn (v, b) => (v, recovery (v, b) (VarKit.toDim v))) fcomTubes}
                    end
                  val result = Syn.into @@ Syn.BOX
                    {dir = fcomDir,
@@ -307,7 +278,7 @@ struct
                    Syn.intoHcom
                      {dir = (#2 fcomDir, z), ty = a,
                       cap = Syn.into @@ Syn.CAP {dir = fcomDir, coercee = coercee, tubes = tubes},
-                      tubes = mapTubes
+                      tubes = Syn.mapTubes
                         (fn (v, b) =>
                           (v, Syn.intoCoe
                             {dir = (VarKit.toDim v, #1 fcomDir),
@@ -329,7 +300,7 @@ struct
                              ty = (u, a),
                              coercee = coercee}))]
                       @
-                      mapTubes
+                      Syn.mapTubes
                         (fn (v, b) =>
                           (u, Syn.intoCoe
                             {dir = (#2 fcomDir, #1 fcomDir),
@@ -353,7 +324,7 @@ struct
                                 {dir = (coeDestSubst (#2 fcomDir), VarKit.toDim v),
                                  ty = (v, coeDestSubst b),
                                  coercee = coercee}))
-                          :: mapTubes
+                          :: Syn.mapTubes
                             (fn (v, b) =>
                               (v, Syn.intoCoe
                                 {dir = (#2 fcomDir, VarKit.toDim v),
@@ -375,7 +346,7 @@ struct
                         tubes =
                           ((#1 coeDir, #2 coeDir),(w, origin (VarKit.toDim w)))
                           ::
-                          mapTubes
+                          Syn.mapTubes
                             (fn (v, b) =>
                               (w, Syn.intoCoe
                                 {dir = (VarKit.toDim w, #2 fcomDir),
@@ -399,10 +370,9 @@ struct
   fun stepIntro sign stability ((opid, conid, vls, args) || (syms, stk)) =
     let
       val (declArgs, (decl, precomputedVls), nonDeclArgs) = Sig.dataDeclInfo sign opid args
-      val (tyArgs, constrs, introArgs) = InductiveSpec.fillInFamily decl nonDeclArgs
+      val (tyArgs, constrs, introArgs) = InductiveSpec.fillFamily decl nonDeclArgs
       val declVls = List.take (vls, List.length declArgs)
       val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
-      val introArgs = List.map (fn _ \ t => t) introArgs
 
       val (conIndex, (_, constr)) = Option.valOf (ListUtil.findIndex (fn (id, _) => id = conid) constrs)
       val boundaries = InductiveSpec.realizeIntroBoundaries meta constr introArgs
@@ -412,18 +382,18 @@ struct
        | NONE =>
          (case stk of
              [] => raise Final
-           | (frame as IND_REC ((opid', _), _, _, _, HOLE, branches)) :: stk =>
+           | (frame as IND_REC ((opid', _), _, HOLE, branches)) :: stk =>
                let
                  val () = if opid' = opid then () else raise Stuck
                  val Tm.\ branch = List.nth (branches, conIndex)
                in
-                 CRITICAL @@ InductiveSpec.fillInBranch (fn m => plug m frame) constr branch introArgs || (syms, stk)
+                 CRITICAL @@ InductiveSpec.fillBranch (fn m => plug m frame) constr branch introArgs || (syms, stk)
                end
            | COE_IND (dir, (z, (opid', _, args')), HOLE) :: stk =>
                let
                  val () = if opid' = opid then () else raise Stuck
                  val (declArgs', (decl', _), nonDeclArgs') = Sig.dataDeclInfo sign opid args'
-                 val (tyArgs', constrs', []) = InductiveSpec.fillInFamily decl' nonDeclArgs'
+                 val (tyArgs', constrs', []) = InductiveSpec.fillFamily decl' nonDeclArgs'
                  val meta' = (opid, (declVls, precomputedVls), (declArgs', tyArgs'))
                  val (_, constr') = List.nth (constrs', conIndex)
                in
@@ -562,7 +532,7 @@ struct
              {dir = dir,
               ty = tyBx,
               cap = apx cap,
-              tubes = mapTubes_ apx tubes}
+              tubes = Syn.mapTubes_ apx tubes}
          val lambda = Syn.into @@ Syn.LAM (x, hcomx)
        in
          CRITICAL @@ lambda || (syms, stk)
@@ -602,7 +572,7 @@ struct
              {dir = dir,
               ty = tyu,
               cap = apu cap,
-              tubes = ((VarKit.toDim u, Syn.into Syn.DIM0), (v, m0)) :: ((VarKit.toDim u, Syn.into Syn.DIM1), (v, m1)) :: mapTubes_ apu tubes}
+              tubes = ((VarKit.toDim u, Syn.into Syn.DIM0), (v, m0)) :: ((VarKit.toDim u, Syn.into Syn.DIM1), (v, m1)) :: Syn.mapTubes_ apu tubes}
          val abs = Syn.into @@ Syn.ABS (u, hcomu)
        in
          CRITICAL @@ abs || (syms, stk)
@@ -629,7 +599,7 @@ struct
              {dir = dir,
               ty = tyu,
               cap = apu cap,
-              tubes = mapTubes_ apu tubes}
+              tubes = Syn.mapTubes_ apu tubes}
          val abs = Syn.into @@ Syn.ABS (u, hcomu)
        in
          CRITICAL @@ abs || (syms, stk)
@@ -746,7 +716,7 @@ struct
                  {dir = (r, s),
                   ty = ty,
                   cap = proj cap,
-                  tubes = mapTubes_ proj tubes}
+                  tubes = Syn.mapTubes_ proj tubes}
 
              fun shiftField s = 
                fn (x :: xs) \ ty => xs \ substVar (head s, x) ty
@@ -934,13 +904,8 @@ struct
      | O.IND_TYPE _ $ _ || (_, []) => raise Final
      | O.IND_INTRO (opid, conid, SOME vls) $ args || (syms, stk) =>
        stepIntro sign stability ((opid, conid, vls, args) || (syms, stk))
-     | O.IND_REC (opid, vls) $ args || (syms, stk) =>
-       let
-         val (declArgs, (decl, _), nonDeclArgs) = Sig.dataDeclInfo sign opid args
-         val (tyArgs, _, ([x] \ cx :: [] \ m :: branches)) = InductiveSpec.fillInFamily decl nonDeclArgs
-       in
-         COMPAT @@ m || (syms, IND_REC ((opid, Option.valOf vls), declArgs, tyArgs, (x, cx), HOLE, branches) :: stk)
-       end
+     | O.IND_REC (opid, vls) $ ([x] \ cx :: [] \ m :: branches) || (syms, stk) =>
+       COMPAT @@ m || (syms, IND_REC ((opid, Option.valOf vls), (x, cx), HOLE, branches) :: stk)
      | O.IND_TYPE _ $ _ || (syms, HCOM (dir, HOLE, cap, tubes) :: stk) =>
        let
          val fcom =
@@ -982,7 +947,7 @@ struct
                       tubes =
                            ((VarKit.toDim u, Syn.intoDim 0), (v, Syn.intoApp (f, m' a (VarKit.toDim v))))
                         :: ((VarKit.toDim u, Syn.intoDim 1), (v, m' b (VarKit.toDim v)))
-                        :: mapTubes_ vproj tubes}
+                        :: Syn.mapTubes_ vproj tubes}
                  in
                    CRITICAL @@ Syn.into (Syn.VIN (r, m' a (#2 dir), n)) || (syms, stk)
                  end

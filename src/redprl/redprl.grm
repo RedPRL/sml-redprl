@@ -379,7 +379,7 @@ end
  | PATH | LINE | ABS | AT_SIGN
  | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
  | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
- | SELF
+ | SELF | REC
  | MEM
  | BOX | CAP
  | ECOM
@@ -452,6 +452,7 @@ end
  | patvar of string * O.sort
  | patvarBindings of string list
  | customOpTerm of MlId.t * ast abs list
+ | inductiveTerm of ast
 
 
  | typedBinder of string option list * ast Multi.typing
@@ -739,6 +740,13 @@ customOpTerm
   : OPNAME (MlId.const OPNAME, [])
   | LPAREN OPNAME bindings RPAREN (MlId.const OPNAME, bindings)
 
+inductiveTerm
+  : LPAREN DOT OPNAME TYPE RPAREN (Ast.$$ (O.IND_TYPE (MlId.const OPNAME, NONE), []))
+  | LPAREN DOT OPNAME TYPE bindings RPAREN (Ast.$$ (O.IND_TYPE (MlId.const OPNAME, NONE), bindings))
+  | LPAREN DOT OPNAME ident RPAREN (Ast.$$ (O.IND_INTRO (MlId.const OPNAME1, ident, NONE), []))
+  | LPAREN DOT OPNAME ident bindings RPAREN (Ast.$$ (O.IND_INTRO (MlId.const OPNAME1, ident, NONE), bindings))
+  | LPAREN DOT OPNAME REC bindings RPAREN (Ast.$$ (O.IND_REC (MlId.const OPNAME, NONE), bindings))
+
 patvar
   : PERCENT LSQUARE VARNAME COLON sort RSQUARE ((VARNAME, sort))
   | PERCENT VARNAME ((VARNAME, O.EXP))
@@ -760,6 +768,9 @@ rawTermAndTac
 
   (* custom operators *)
   | customOpTerm (makeCustom customOpTerm)
+
+  (* inductive types *)
+  | inductiveTerm (inductiveTerm)
 
   (* built-in operators that can be handled uniformly *)
   | nullaryOperator (Ast.$$ (nullaryOperator, []))
@@ -892,7 +903,7 @@ specArrowQuantifierData
 
 specType
   : SELF (Ast.$$ (O.IND_SPECTYPE_SELF, []))
-  | LPAREN DOUBLE_RIGHT_ARROW specArrowQuantifierData RPAREN (specArrowQuantifierData)
+  | LPAREN SELF RIGHT_ARROW specArrowQuantifierData RPAREN (specArrowQuantifierData)
 
 specTypedBinder
   : LSQUARE boundVars COLON specType RSQUARE (boundVars, Multi.IND_SPEC specType)
@@ -909,16 +920,16 @@ rawSpecTerm
   : rawTerm (rawTerm)
 
   (* intro *)
-  | LPAREN DOT ident specBindings RPAREN (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), specBindings))
-  | DOT ident (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), []))
+  | LPAREN SELF ident RPAREN (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), []))
+  | LPAREN SELF ident specBindings RPAREN (Ast.$$ (O.IND_SPEC_INTRO (ident, NONE), specBindings))
 
   (* fcom *)
-  | LPAREN DOT FCOM dir specTerm specTubeVec RPAREN
+  | LPAREN SELF FCOM dir specTerm specTubeVec RPAREN
       (Ast.$$ (O.IND_SPEC_FCOM, [\\ (#1 dir), \\ (#2 dir), \\ specTerm, \\ specTubeVec]))
 
   (* lambda and applications *)
-  | LPAREN DOT LAMBDA LSQUARE boundVars RSQUARE specTerm RPAREN (Multi.makeSpecLam boundVars specTerm)
-  | LPAREN DOT DOLLAR_SIGN specTerm terms RPAREN (Multi.makeSpecApp specTerm terms)
+  | LPAREN SELF LAMBDA LSQUARE boundVars RSQUARE specTerm RPAREN (Multi.makeSpecLam boundVars specTerm)
+  | LPAREN SELF DOLLAR_SIGN specTerm terms RPAREN (Multi.makeSpecApp specTerm terms)
 
 specTerm : rawSpecTerm (annotate (Pos.pos (rawSpecTerm1left fileName) (rawSpecTerm1right fileName)) rawSpecTerm)
 

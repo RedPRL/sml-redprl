@@ -67,6 +67,11 @@ val op ?:: =
 
 structure ListPairUtil =
 struct
+  fun concatMapEq (f : 'a * 'b -> 'c list) : 'a list * 'b list -> 'c list =
+    fn ([], []) => []
+     | (x::xs, y::ys) => f (x, y) @ concatMapEq f (xs, ys)
+     | _ => raise ListPair.UnequalLengths
+
   fun mapPartialEq f =
     ListPair.foldrEq
       (fn (x1, x2, ys) =>
@@ -97,4 +102,15 @@ struct
     fn (nil, _) => NONE
      | (_, nil) => NONE
      | (x::xs, y::ys) => if p (x, y) then SOME (x, y) else find p (xs, ys)
+end
+
+structure ListTripleUtil =
+struct
+  fun unzip [] = ([], [], [])
+    | unzip ((x, y, z) :: l) =
+      let
+        val (xs, ys, zs) = unzip l
+      in
+        (x::xs, y::ys, z::zs)
+      end
 end

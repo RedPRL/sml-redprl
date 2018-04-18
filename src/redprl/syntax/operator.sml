@@ -102,7 +102,7 @@ struct
 
      | IND_TYPE (_, valences) => Option.valOf valences ->> EXP
      | IND_INTRO (_, _, valences) => Option.valOf valences ->> EXP
-     | IND_REC (_, valences) => Option.valOf valences ->> EXP
+     | IND_REC (_, valences) => [[EXP] |: EXP, [] |: EXP] @ Option.valOf valences ->> EXP
 
      | FCOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
      | BOX => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (BDRY EXP)] ->> EXP
