@@ -64,7 +64,7 @@ struct
    | VIN
    | VPROJ
 
-   | FCOM | BOX | CAP | HCOM | GHCOM | COE | COM | GCOM
+   | FCOM | BOX | CAP | HCOM | GHCOM | COE | COM | GCOM | ECOM
 
    | MK_ANY of sort option
 

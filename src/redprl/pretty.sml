@@ -294,6 +294,10 @@ struct
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [text "cap", ppBackwardDir env (r1, r2), ppBinder' env coercee]
              :: [ppVector env tubes]
+     | O.ECOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [text "ecom", ppDir env (r1, r2), ppTerm' env cap]
+             :: [ppVector env system]
      | O.V $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "V" :: List.map (ppBinder' env) args
      | O.VIN $ args =>

@@ -93,6 +93,8 @@ struct
    (* fcom types *)
    | BOX of {dir: dir, cap: 'a, boundaries: 'a boundary list}
    | CAP of {dir: dir, tubes: 'a tube list, coercee: 'a}
+   (* formal empty composition *)
+   | ECOM of {dir: dir, cap: 'a, tubes: 'a tube list}
    (* V *)
    | V of 'a * 'a * 'a * 'a
    | VIN of 'a * 'a * 'a | VPROJ of 'a * 'a * 'a
@@ -206,6 +208,13 @@ struct
 
     fun intoFcom {dir = (r1, r2), cap, tubes} =
       O.FCOM $$
+        [[] \ r1,
+         [] \ r2,
+         [] \ cap,
+         [] \ intoTubes O.EXP tubes]
+
+    fun intoEcom {dir = (r1, r2), cap, tubes} =
+      O.ECOM $$
         [[] \ r1,
          [] \ r2,
          [] \ cap,
@@ -388,6 +397,8 @@ struct
        | BOX args => intoBox args
        | CAP args => intoCap args
 
+       | ECOM args => intoEcom args
+
        | V (r, a, b, e) => O.V $$ [[] \ r, [] \ a, [] \ b, [] \ e]
        | VIN (r, m, n) => O.VIN $$ [[] \ r, [] \ m, [] \ n]
        | VPROJ (r, m, f) => O.VPROJ $$ [[] \ r, [] \ m, [] \ f]
@@ -440,9 +451,10 @@ struct
       end
 
     val intoEq = into o EQUALITY
+    val intoEcom = into o ECOM
     val intoU = into o UNIVERSE
 
-    fun elimFCom ((x, tyx), plug) {dir = dir as (r, _), cap, tubes} =
+    fun elimFcom ((x, tyx), plug) {dir = dir as (r, _), cap, tubes} =
       let
         val u = Sym.new ()
         val fcomu = intoFcom
@@ -547,6 +559,9 @@ struct
            BOX {dir = (r1, r2), cap = cap, boundaries = outBoundaries boundaries}
        | O.CAP $ [_ \ r1, _ \ r2, _ \ coercee, _ \ tubes] =>
            CAP {dir = (r1, r2), coercee = coercee, tubes = outTubes tubes}
+
+       | O.ECOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ tubes] =>
+           ECOM {dir = (r1, r2), cap = cap, tubes = outTubes tubes}
 
        | O.V $ [_ \ r, _ \ a, _ \ b, _ \ e] => V (r, a, b, e)
        | O.VIN $ [_ \ r, _ \ m, _ \ n] => VIN (r, m, n)

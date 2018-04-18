@@ -112,6 +112,7 @@ struct
      | COE => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP] ->> EXP
      | COM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
      | GCOM => [[] |: DIM, [] |: DIM, [DIM] |: EXP, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
+     | ECOM => [[] |: DIM, [] |: DIM, [] |: EXP, [] |: VEC (TUBE EXP)] ->> EXP
 
      | UNIVERSE => [[] |: LVL, [] |: KND] ->> EXP
      | V => [[] |: DIM, [] |: EXP, [] |: EXP, [] |: EXP] ->> EXP
@@ -346,6 +347,7 @@ struct
      | COE => "coe"
      | COM => "com"
      | GCOM => "com"
+     | ECOM => "ecom"
 
      | SEL_HYP => "select-hyp"
      | SEL_CONCL => "select-goal"
