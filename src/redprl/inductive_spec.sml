@@ -409,7 +409,7 @@ struct
          Ast.$ (O.IND_FAM_BASE conids, lvl :: constrs) =>
            let
              val (introVls, elimCasesVls) =
-               ListPair.foldlEq
+               ListPair.foldrEq
                  (fn (conid, Ast.\ (_, constr), (dict, elimCasesVls)) =>
                    let
                      val (introVls, binding) = computeIntroAndElimCase constr
@@ -767,7 +767,7 @@ struct
        | Syn.IND_CONSTR_LINE (y,by) =>
            let
              val z = Sym.new ()
-             val ztm = VarKit.toExp z
+             val ztm = VarKit.toDim z
              val varenv' = Var.Ctx.insert varenv y ztm
            in
              createVarenvsAndIntroArgs' (H @> (z, AJ.TERM O.DIM))
