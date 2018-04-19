@@ -409,7 +409,7 @@ struct
          Ast.$ (O.IND_FAM_BASE conids, lvl :: constrs) =>
            let
              val (introVls, elimCasesVls) =
-               ListPair.foldlEq
+               ListPair.foldrEq
                  (fn (conid, Ast.\ (_, constr), (dict, elimCasesVls)) =>
                    let
                      val (introVls, binding) = computeIntroAndElimCase constr
@@ -571,7 +571,9 @@ struct
             in
               createVarenvForBranch plug acc (bx, vars, introArgs)
             end
-       | _ => E.raiseError (E.IMPOSSIBLE (Fpp.text "createVarenv"))
+       | (Syn.IND_CONSTR_LINE (_,bx), var::vars, arg::introArgs) =>
+            createVarenvForBranch plug (Var.Ctx.insert acc var arg) (bx, vars, introArgs)
+       | _ => E.raiseError (E.IMPOSSIBLE (Fpp.text "InductiveSpec.fillBranch/createVarenvForBranch"))
   in
     fun fillBranch plug constr (vars, branch) introArgs =
       Abt.substVarenv (createVarenvForBranch plug Var.Ctx.empty (constr, vars, introArgs)) branch
@@ -713,7 +715,9 @@ struct
             in
               createVarenvForBranch meta constrs elimData env acc (bx, vars, introArgs)
             end
-       | _ => E.raiseError (E.IMPOSSIBLE (Fpp.text "createVarenv"))
+       | (Syn.IND_CONSTR_LINE (_,bx), var::vars, arg::introArgs) =>
+            createVarenvForBranch meta constrs elimData env (Var.Ctx.insert acc var arg) (bx, vars, introArgs)
+       | _ => E.raiseError (E.IMPOSSIBLE (Fpp.text "InductiveSpec.Elim/createVarenvForBranch"))
 
     and elimSpecIntro meta constrs (elimData as (_, branches)) env (conid, introArgs) =
       let
@@ -767,7 +771,7 @@ struct
        | Syn.IND_CONSTR_LINE (y,by) =>
            let
              val z = Sym.new ()
-             val ztm = VarKit.toExp z
+             val ztm = VarKit.toDim z
              val varenv' = Var.Ctx.insert varenv y ztm
            in
              createVarenvsAndIntroArgs' (H @> (z, AJ.TERM O.DIM))
