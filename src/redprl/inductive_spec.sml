@@ -122,8 +122,8 @@ struct
   and EqSpecIfDifferent H (constrs, specctx) ((tm0, tm1), ty) =
     if Abt.eq (tm0, tm1) then [] else EqSpec H (constrs, specctx) ((tm0, tm1), ty)
 
-  and restrictedEqSpec eqs H (constrs, specctx) ((tm0, tm1), ty) =
-    case Restriction.restrict eqs of
+  and restrictedEqSpec H eqs (constrs, specctx) ((tm0, tm1), ty) =
+    case Restriction.restrict H eqs of
        SOME f => EqSpec
          (Sequent.Hyps.map (AJ.map f) H)
          (ConstrDict.map f constrs, SpecCtx.map f specctx)
@@ -131,7 +131,7 @@ struct
      | NONE => []
 
   and restrictedEqSpecIfDifferent eqs H (constrs, specctx) ((tm0, tm1), ty) =
-    case Restriction.restrict eqs of
+    case Restriction.restrict H eqs of
        SOME f => EqSpecIfDifferent
          (Sequent.Hyps.map (AJ.map f) H)
          (ConstrDict.map f constrs, SpecCtx.map f specctx)
@@ -146,8 +146,9 @@ struct
       val goalsOnDiag = List.concat @@
         ListPair.mapEq
           (fn ((eq, t0), (_, t1)) =>
-            restrictedEqSpec [eq]
+            restrictedEqSpec
               (H @> (w, AJ.TERM O.DIM))
+              [eq]
               (constrs, specctx)
               ((t0, t1), IND_SPECTYPE_SELF))
           (tubes0, tubes1)
@@ -274,7 +275,7 @@ struct
       val seqsOnDiag = List.concat @@
         List.map
           (fn (eq, b) =>
-            restrictedEqSpec [eq] H (constrs, specctx)
+            restrictedEqSpec H [eq] (constrs, specctx)
               ((b, b), IND_SPECTYPE_SELF))
           boundaries
 
@@ -794,10 +795,10 @@ struct
     fun createVarenvsAndIntroArgs H meta motive =
       createVarenvsAndIntroArgs' H meta motive (Var.Ctx.empty, Var.Ctx.empty, [], [])
 
-    fun restrictedEq eqs H params =
+    fun restrictedEq H eqs params =
       Option.map
         (fn f => Sequent.map f (H >> AJ.EQ params))
-        (Restriction.restrict eqs)
+        (Restriction.restrict H eqs)
 
     fun restrictedEqIfDifferent eqs H (params as ((tm0, tm1), ty)) =
       if Abt.eq (tm0, tm1) then NONE else restrictedEq eqs H params
@@ -825,7 +826,7 @@ struct
                     let
                       val (eq, term) = elimSpecBoundary meta constrs elimData (recren, varenv) boundary
                     in
-                      restrictedEqIfDifferent [eq] H ((branch, term), ty)
+                      restrictedEqIfDifferent H [eq] ((branch, term), ty)
                     end)
                   boundaries)
               (branches, cohParams)
@@ -850,7 +851,7 @@ struct
                   let
                     val (eq, term) = elimSpecBoundary meta constrs (motive, branches0) (recren, varenv) boundary
                   in
-                    restrictedEqIfDifferent [eq] H ((branch0, term), cintro)
+                    restrictedEqIfDifferent H [eq] ((branch0, term), cintro)
                   end)
                 boundaries
             in

@@ -224,8 +224,8 @@ struct
             val eq = (r, Syn.into Syn.DIM0)
             val funTy = Syn.into (Syn.FUN (a, Var.named "_", b))
 
-            val goalF = Restriction.makeEq tr [eq] H ((f1, f2), funTy)
-            val goalCohF = Restriction.makeEqIfDifferent tr [eq] H ((f1, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy)
+            val goalF = Restriction.makeEq tr H [eq] ((f1, f2), funTy)
+            val goalCohF = Restriction.makeEqIfDifferent tr H [eq] ((f1, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy)
           in
             (goalF ?:: goalCohF ?:: psi, b)
           end
@@ -845,9 +845,9 @@ struct
 
         (* coherence *)
         val l0 = substVar (Syn.intoDim 0, u) lu
-        val goalCoh0 = Restriction.View.makeAsEqIfAllDifferent tr [(r, Syn.intoDim 0)] H ((b, m), ty) [l0]
+        val goalCoh0 = Restriction.View.makeAsEqIfAllDifferent tr H [(r, Syn.intoDim 0)] ((b, m), ty) [l0]
         val l1 = substVar (Syn.intoDim 1, u) lu
-        val goalCoh1 = Restriction.View.makeAsEqIfAllDifferent tr [(r, Syn.intoDim 1)] H ((b, m), ty) [l1]
+        val goalCoh1 = Restriction.View.makeAsEqIfAllDifferent tr H [(r, Syn.intoDim 1)] ((b, m), ty) [l1]
       in
         |>: goalRed >:? goalCoh0 >:? goalCoh1 #> (H, axiom)
       end
@@ -1748,12 +1748,12 @@ struct
         (* left coherence *)
         val q0t = VarKit.substMany [(Syn.intoDim 0, v), (t, c)] qvc
         val nft = substVar (ft, a) na
-        val goalCohL = Restriction.View.makeAsEqIfAllDifferent tr [(r, Syn.intoDim 0)] H ((nft, s), ty) [q0t]
+        val goalCohL = Restriction.View.makeAsEqIfAllDifferent tr H [(r, Syn.intoDim 0)] ((nft, s), ty) [q0t]
 
         (* right coherence *)
         val q1t = VarKit.substMany [(Syn.intoDim 1, v), (t, c)] qvc
         val pgt = substVar (gt, b) pb
-        val goalCohR = Restriction.View.makeAsEqIfAllDifferent tr [(r, Syn.intoDim 1)] H ((pgt, s), ty) [q1t]
+        val goalCohR = Restriction.View.makeAsEqIfAllDifferent tr H [(r, Syn.intoDim 1)] ((pgt, s), ty) [q1t]
       in
         |>: goalRed >:? goalCohL >:? goalCohR #> (H, axiom)
       end
@@ -1976,12 +1976,12 @@ struct
         (* left coherence *)
         val q0t = VarKit.substMany [(Syn.intoDim 0, v), (t, a)] qva
         val nft = substVar (ft, b) nb
-        val goalCohL = Restriction.View.makeAsEqIfAllDifferent tr [(r, Syn.intoDim 0)] H ((nft, s), ty) [q0t]
+        val goalCohL = Restriction.View.makeAsEqIfAllDifferent tr H [(r, Syn.intoDim 0)] ((nft, s), ty) [q0t]
 
         (* right coherence *)
         val q1t = VarKit.substMany [(Syn.intoDim 1, v), (t, a)] qva
         val ngt = substVar (gt, b) nb
-        val goalCohR = Restriction.View.makeAsEqIfAllDifferent tr [(r, Syn.intoDim 1)] H ((ngt, s), ty) [q1t]
+        val goalCohR = Restriction.View.makeAsEqIfAllDifferent tr H [(r, Syn.intoDim 1)] ((ngt, s), ty) [q1t]
       in
         |>: goalRed >:? goalCohL >:? goalCohR #> (H, axiom)
       end
@@ -2377,11 +2377,11 @@ struct
     local
       fun genTubeGoals' tr H ((tubes0, tubes1), l, k) =
         ListPairUtil.mapPartialEq
-          (fn ((eq, t0), (_, t1)) => Restriction.View.makeAsEqType tr [eq] H ((t0, t1), l, k))
+          (fn ((eq, t0), (_, t1)) => Restriction.View.makeAsEqType tr H [eq] ((t0, t1), l, k))
           (tubes0, tubes1)
       fun genInterTubeGoalsExceptDiag' tr H ((tubes0, tubes1), l, k) =
         ListPairUtil.enumPartialInterExceptDiag
-          (fn ((eq0, t0), (eq1, t1)) => Restriction.View.makeAsEqTypeIfDifferent tr [eq0, eq1] H ((t0, t1), l, k))
+          (fn ((eq0, t0), (eq1, t1)) => Restriction.View.makeAsEqTypeIfDifferent tr H [eq0, eq1] ((t0, t1), l, k))
           (tubes0, tubes1)
     in
       fun genInterTubeGoals tr H w ((tubes0, tubes1), l, k) =
@@ -2400,17 +2400,17 @@ struct
     fun genCapTubeGoalsIfDifferent tr H ((cap, (r, tubes)), l, k) =
       List.mapPartial
         (fn (eq, (u, tube)) =>
-          Restriction.View.makeAsEqTypeIfDifferent tr [eq] H ((cap, substVar (r, u) tube), l, k))
+          Restriction.View.makeAsEqTypeIfDifferent tr H [eq] ((cap, substVar (r, u) tube), l, k))
         tubes
 
     fun genBoundaryGoals tr H ((boundaries0, boundaries1), tubes) =
       ListPairUtil.mapPartialEq
-        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq tr [eq] H ((b0, b1), t))
+        (fn (((eq, b0), t), (_, b1)) => Restriction.makeEq tr H [eq] ((b0, b1), t))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
 
     fun genInterBoundaryGoalsExceptDiag tr H ((boundaries0, boundaries1), tubes) =
       ListPairUtil.enumPartialInterExceptDiag
-        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent tr [eq0, eq1] H ((b0, b1), t))
+        (fn (((eq0, b0), t), (eq1, b1)) => Restriction.makeEqIfDifferent tr H [eq0, eq1] ((b0, b1), t))
         (ListPair.zipEq (boundaries0, tubes), boundaries1)
 
     fun genInterBoundaryGoals tr H ((boundaries0, boundaries1), tubes) =
@@ -2420,7 +2420,7 @@ struct
     fun genCapBoundaryGoals tr H ((cap, ((r, r'), tyTubes, boundaries)), tyCap) =
       ListPairUtil.mapPartialEq
         (fn ((eq, ty), boundary) =>
-          Restriction.makeEqIfDifferent tr [eq] H
+          Restriction.makeEqIfDifferent tr H [eq]
             ((cap, Syn.into (Syn.COE {dir=(r', r), ty=ty, coercee=boundary})), tyCap))
         (tyTubes, boundaries)
 
@@ -2495,7 +2495,7 @@ struct
         val (goalCap, holeCap) = makeTrue tr H tyCap
 
         fun goTube (eq, (u, tyTube)) =
-          Restriction.makeTrue tr [eq] (Syn.into Syn.AX) H (substVar (#2 dir, u) tyTube)
+          Restriction.makeTrue tr H [eq] (Syn.into Syn.AX) (substVar (#2 dir, u) tyTube)
         val goalHoleBoundaries = List.map goTube tyTubes
         val goalBoundaries = List.mapPartial #1 goalHoleBoundaries
         val holeBoundaries = List.map #2 goalHoleBoundaries
@@ -2623,9 +2623,9 @@ struct
 
         val eq = (r0, Syn.into Syn.DIM0)
 
-        val goalA = Restriction.View.makeAsEqType tr [eq] H ((a0, a1), l, kA)
+        val goalA = Restriction.View.makeAsEqType tr H [eq] ((a0, a1), l, kA)
         val goalB = View.makeAsEqType tr H ((b0, b1), l, kB)
-        val goalEquiv = Restriction.makeEq tr [eq] H ((e0, e1), intoEquiv a0 b0)
+        val goalEquiv = Restriction.makeEq tr H [eq] ((e0, e1), intoEquiv a0 b0)
       in
         |>:? goalEquiv >:? goalA >: goalB #> (H, axiom)
       end
@@ -2643,11 +2643,11 @@ struct
 
         val eq = (r0, Syn.into Syn.DIM0)
 
-        val goalM = Restriction.makeEq tr [eq] H ((m0, m1), a)
+        val goalM = Restriction.makeEq tr H [eq] ((m0, m1), a)
         val goalN = makeEq tr H ((n0, n1), b)
-        val goalCoh = Restriction.makeEqIfDifferent tr [eq] H
+        val goalCoh = Restriction.makeEqIfDifferent tr H [eq]
           ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), m0), n0), b)
-        val goalEquiv = Restriction.makeMem tr [eq] H (e, intoEquiv a b)
+        val goalEquiv = Restriction.makeMem tr H [eq] (e, intoEquiv a b)
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv #> (H, axiom)
       end
@@ -2660,11 +2660,11 @@ struct
 
         val eq = (r, Syn.into Syn.DIM0)
 
-        val (goalM, holeM) = Restriction.makeTrue tr [eq] (Syn.into Syn.AX) H a
+        val (goalM, holeM) = Restriction.makeTrue tr H [eq] (Syn.into Syn.AX) a
         val (goalN, holeN) = makeTrue tr H b
-        val goalCoh = Restriction.makeEq tr [eq] H
+        val goalCoh = Restriction.makeEq tr H [eq]
           ((Syn.intoApp (Syn.into @@ Syn.PROJ (O.indexToLabel 0, e), holeM), holeN), b)
-        val goalEquiv = Restriction.makeMem tr [eq] H (e, intoEquiv a b)
+        val goalEquiv = Restriction.makeMem tr H [eq] (e, intoEquiv a b)
       in
         |>:? goalM >: goalN >:? goalCoh >:? goalEquiv
         #> (H, Syn.into @@ Syn.VIN (r, holeM, holeN))
@@ -2693,8 +2693,8 @@ struct
         val eq = (r, Syn.into Syn.DIM0)
         val funTy = Syn.into (Syn.FUN (a, Var.named "_", b))
 
-        val goalF = Restriction.makeEq tr [eq] H ((f0, f1), funTy)
-        val goalCohF = Restriction.makeEqIfDifferent tr [eq] H ((f0, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy)
+        val goalF = Restriction.makeEq tr H [eq] ((f0, f1), funTy)
+        val goalCohF = Restriction.makeEqIfDifferent tr H [eq] ((f0, Syn.into @@ Syn.PROJ (O.indexToLabel 0, e)), funTy)
 
         val goalTy = View.makeAsSubTypeIfDifferent tr H (b, ty)
       in
