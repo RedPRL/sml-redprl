@@ -25,6 +25,9 @@ sig
   val restrict : Sequent.hyps
     -> (RedPrlAbt.abt * RedPrlAbt.abt) list
     -> (RedPrlAbt.abt -> RedPrlAbt.abt) option
+  (* This variant gives the caller an opportunity to pre-compute the ordering.
+   * The numbers associated with the variables in the context should be strictly
+   * increasing from left to right. *)
   val restrictWithOrder : int Sym.Ctx.dict
     -> (RedPrlAbt.abt * RedPrlAbt.abt) list
     -> (RedPrlAbt.abt -> RedPrlAbt.abt) option
