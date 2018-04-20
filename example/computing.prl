@@ -83,7 +83,7 @@ define PathFunToPair(#ty,#r:dim) =
   (V #r (-> bool #ty) (* #ty #ty)
     (tuple [proj1 ($ FunToPair #ty)] [proj2 ($ FunToPairIsEquiv #ty)])).
 
-theorem ThmPathFunToPair :
+theorem FunEqPair :
   (->
    [ty : (U 0 kan)]
    (path [_] (U 0 kan) (-> bool ty) (* ty ty)))
@@ -91,20 +91,20 @@ by {
   lam ty => abs x => `(PathFunToPair ty x)
 }.
 
-theorem RespectPaths :
+theorem CoerceFunToPair :
   (->
    [ty : (U 0 kan)]
    (-> bool ty)
    (* ty ty))
 by {
   lam ty fun =>
-  `(coe 0~>1 [x] (@ ($ ThmPathFunToPair ty) x) fun)
+  `(coe 0~>1 [x] (@ ($ FunEqPair ty) x) fun)
 }.
 
 theorem ComputeCoercion :
   (=
    (* bool bool)
-   ($ RespectPaths bool (lam [b] b))
+   ($ CoerceFunToPair bool (lam [b] b))
    (tuple [proj1 tt] [proj2 ff]))
 by {
   auto
@@ -119,7 +119,7 @@ by {
   lam ty {p1,p2} => {`p2,`p1}
 }.
 
-theorem SwapSwapPair :
+theorem SwapPairEqn :
   (->
     [ty : (U 0 kan)]
     [pair : (* ty ty)]
@@ -128,10 +128,8 @@ by {
   lam ty pair => abs x => `pair
 }.
 
-define SwapCoe (#ty,#r:dim) =
-  (coe 1~>#r
-    [x] (-> (@ ($ ThmPathFunToPair #ty) x) (@ ($ ThmPathFunToPair #ty) x))
-    ($ SwapPair #ty)).
+define SwapCoe(#ty,#r:dim) =
+  (coe 1~>#r [x] (-> (@ ($ FunEqPair #ty) x) (@ ($ FunEqPair #ty) x)) ($ SwapPair #ty)).
 
 theorem SwapFun :
   (->
@@ -142,7 +140,7 @@ by {
   lam ty => `(SwapCoe ty 0)
 }.
 
-theorem SwapSwapFun :
+theorem SwapFunEqn :
   (->
     [ty : (U 0 kan)]
     [fun : (-> bool ty)]
@@ -150,9 +148,11 @@ theorem SwapSwapFun :
 by {
   lam ty =>
   `(coe 1~>0
-      [x] (-> [elt : (@ ($ ThmPathFunToPair ty) x)]
-              (path [_] (@ ($ ThmPathFunToPair ty) x) ($ (SwapCoe ty x) ($ (SwapCoe ty x) elt)) elt))
-      ($ SwapSwapPair ty))
+      [x] (-> [elt : (@ ($ FunEqPair ty) x)]
+              (path [_] (@ ($ FunEqPair ty) x)
+                    ($ (SwapCoe ty x) ($ (SwapCoe ty x) elt))
+                    elt))
+      ($ SwapPairEqn ty))
 }.
 
-print SwapSwapFun.
+print SwapFunEqn.
