@@ -49,20 +49,9 @@ struct
           | (Syn.DIM0, Syn.DIM1) => NONE
           | (Syn.DIM1, Syn.DIM1) => restrict' order eqs f
           | (Syn.DIM1, Syn.DIM0) => NONE
-          | (Syn.META (v1, _), _) => if Abt.eq (r1, r2) then restrict' order eqs f else substMetaAndRestrict' order (r2, v1) eqs f
-          | (_, Syn.META (v2, _)) => substMetaAndRestrict' order (r1, v2) eqs f
           | (Syn.VAR (v1, _), Syn.VAR (v2, _)) => if Abt.eq (r1, r2) then restrict' order eqs f else mergeVarsAndRestrict' order (v1, v2) eqs f
           | (Syn.VAR (v1, _), _) => if Abt.eq (r1, r2) then restrict' order eqs f else substAndRestrict' order (r2, v1) eqs f
           | (_, Syn.VAR (v2, _)) => substAndRestrict' order (r1, v2) eqs f)
-
-  and substMetaAndRestrict' order (r, v) eqs f =
-      let
-        val abs = abtToAbs r
-      in
-        restrict' order
-          (List.map (fn (r1, r2) => (substMetavar (abs, v) r1, substMetavar (abs, v) r2)) eqs)
-          (substMetavar (abs, v) o f)
-      end
 
   and mergeVarsAndRestrict' order (v1, v2) eqs f =
       let

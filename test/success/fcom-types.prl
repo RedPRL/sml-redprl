@@ -1,16 +1,19 @@
-theorem Fcom/bool(#i:dim) :
-  (fcom 0~>1 bool [#i=0 [j] bool] [#i=1 [j] bool]) type
+theorem Fcom/bool :
+  (-> [i : dim]
+   (mem (U 0) (fcom 0~>1 bool [i=0 [j] bool] [i=1 [j] bool])))
 by {
-  auto
+  abs i => auto
 }.
 
 print Fcom/bool.
 
-theorem Fcom/Box(#i:dim) :
-  (box 0~>1 tt [#i=0 tt] [#i=1 tt]) in
-  (fcom 0~>1 bool [#i=0 [j] bool] [#i=1 [j] bool])
+theorem Fcom/Box :
+  (-> [i : dim]
+   (mem
+    (fcom 0~>1 bool [i=0 [j] bool] [i=1 [j] bool])
+    (box 0~>1 tt [i=0 tt] [i=1 tt])))
 by {
-  auto
+  abs i => auto
 }.
 
 print Fcom/Box.
