@@ -756,7 +756,7 @@ Composite types
 V types
 -------
 
-:index:`V/eqtype`
+:index:`v/eqtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
@@ -781,7 +781,7 @@ where ``Equiv`` is defined by
   define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
   define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
 
-:index:`V/eq/uain`
+:index:`v/eq/vin`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
@@ -791,7 +791,7 @@ where ``Equiv`` is defined by
   | H, #r=0 >> ($ (! proj1 #e) #m0) = #n0 in #b
   | H, #r=0 >> #e in (Equiv #a #b)
 
-:index:`V/intro`
+:index:`v/intro`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 
@@ -801,7 +801,7 @@ where ``Equiv`` is defined by
   | H, #r=0 >> ($ (! proj1 #e) #m) = #n in #b
   | H, #r=0 >> #e in (Equiv #a #b)
 
-:index:`V/eq/proj`
+:index:`v/eq/proj`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::
 

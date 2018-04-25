@@ -272,10 +272,10 @@ struct
      | "fcom/eq/box" => Lcf.rule FormalComposition.Eq
      | "fcom/intro" => Lcf.rule FormalComposition.True
      | "ecom/eqtype" => Lcf.rule EmptyComposition.EqType
-     | "V/eqtype" => Lcf.rule V.EqType
-     | "V/eq/uain" => Lcf.rule V.Eq
-     | "V/intro" => Lcf.rule V.True
-     | "V/eq/proj" => Lcf.rule @@ V.EqProj sign
+     | "v/eqtype" => Lcf.rule V.EqType
+     | "v/eq/vin" => Lcf.rule V.Eq
+     | "v/intro" => Lcf.rule V.True
+     | "v/eq/proj" => Lcf.rule @@ V.EqProj sign
      | "universe/eqtype" => Lcf.rule Universe.EqType
      | "hcom/eq" => Lcf.rule HCom.Eq
      | "hcom/eq/cap" => Lcf.rule HCom.EqCapL
