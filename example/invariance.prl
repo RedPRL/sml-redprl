@@ -1,6 +1,11 @@
-// Computing with cubes (demo)
-// April 23, 2018
+// Representation independence via univalence.
 
+// (-> bool ty) and (* ty ty) are equivalent by f |-> (f tt, f ff).
+// We use this fact to transport
+// (1) functions to tuples;
+// (2) `swap` on tuples to `swap` on functions; and
+// (3) a law about `swap` on tuples to the corresponding law
+// about `swap` on functions.
 theorem FunToPair :
   (->
    [ty : (U 0 kan)]
@@ -79,18 +84,18 @@ by {
 
 // }}}
 
-define PathFunToPair(#ty,#r:dim) =
-  (V #r (-> bool #ty) (* #ty #ty)
-    (tuple [proj1 ($ FunToPair #ty)] [proj2 ($ FunToPairIsEquiv #ty)])).
-
+// By univalence, there is a path between these two types.
 theorem FunEqPair :
   (->
    [ty : (U 0 kan)]
    (path [_] (U 0 kan) (-> bool ty) (* ty ty)))
 by {
-  lam ty => abs x => `(PathFunToPair ty x)
+  lam ty => abs x =>
+  `(V x (-> bool ty) (* ty ty)
+    (tuple [proj1 ($ FunToPair ty)] [proj2 ($ FunToPairIsEquiv ty)]))
 }.
 
+// We can coerce functions to pairs, and this coercion will compute.
 theorem CoerceFunToPair :
   (->
    [ty : (U 0 kan)]
@@ -110,6 +115,8 @@ by {
   auto
 }.
 
+// We can define a function on pairs, coerce it to a function on functions, and
+// this coercion will compute.
 theorem SwapPair :
   (->
     [ty : (U 0 kan)]
@@ -117,15 +124,6 @@ theorem SwapPair :
     (* ty ty))
 by {
   lam ty {p1,p2} => {`p2,`p1}
-}.
-
-theorem SwapPairEqn :
-  (->
-    [ty : (U 0 kan)]
-    [pair : (* ty ty)]
-    (path [_] (* ty ty) ($ SwapPair ty ($ SwapPair ty pair)) pair))
-by {
-  lam ty pair => abs x => `pair
 }.
 
 define SwapCoe(#ty,#r:dim) =
@@ -140,6 +138,26 @@ by {
   lam ty => `(SwapCoe ty 0)
 }.
 
+theorem ComputeSwap :
+  (=
+    bool
+    ($ SwapFun bool (lam [b] b) tt)
+    ff)
+by {
+  auto
+}.
+
+// We can prove that SwapPair o SwapPair = id, and coerce this to the same
+// equation on SwapFun.
+theorem SwapPairEqn :
+  (->
+    [ty : (U 0 kan)]
+    [pair : (* ty ty)]
+    (path [_] (* ty ty) ($ SwapPair ty ($ SwapPair ty pair)) pair))
+by {
+  lam ty pair => abs x => `pair
+}.
+
 theorem SwapFunEqn :
   (->
     [ty : (U 0 kan)]
@@ -152,7 +170,15 @@ by {
               (path [_] (@ ($ FunEqPair ty) x)
                     ($ (SwapCoe ty x) ($ (SwapCoe ty x) elt))
                     elt))
-      ($ SwapPairEqn ty))
+      ($ SwapPairEqn ty));
+  refine coe/eq;
+  #2 {
+    refine subtype/eq; refine fun/eqtype;
+    #1 {
+      refine path/eqtype; unfold FunEqPair;
+      #1 {
+        reduce at type; unfold SwapCoe SwapFun
+      }
+    }
+  }; auto
 }.
-
-print SwapFunEqn.
