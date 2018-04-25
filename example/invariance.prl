@@ -168,8 +168,8 @@ by {
   `(coe 1~>0
       [x] (-> [elt : (@ ($ FunEqPair ty) x)]
               (path [_] (@ ($ FunEqPair ty) x)
-                    ($ (SwapCoe ty x) ($ (SwapCoe ty x) elt))
-                    elt))
+                ($ (SwapCoe ty x) ($ (SwapCoe ty x) elt))
+                elt))
       ($ SwapPairEqn ty));
   refine coe/eq;
   #2 {
