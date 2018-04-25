@@ -1,0 +1,76 @@
+// prove that vproj is an equivalence.
+
+theorem Connection/Or(#l:lvl) :
+  (->
+   [ty : (U #l hcom)]
+   [a b : ty]
+   [p : (path [_] ty a b)]
+   (path [i] (path [_] ty (@ p i) b) p (abs [_] b)))
+by {
+  lam ty a b p =>
+   abs i j =>
+     `(hcom 1~>0 ty b
+       [i=0 [k] (hcom 0~>j ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+       [i=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+       [j=0 [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+       [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
+       [i=j [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])])
+}.
+
+define IsContr (#C) = (* [c : #C] (-> [c' : #C] (path [_] #C c' c))).
+
+define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
+
+define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
+
+define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
+
+theorem IdEquiv(#l:lvl) :
+  (-> [ty : (U #l hcom)] (Equiv ty ty))
+by {
+  lam ty =>
+  { lam a => use a
+  , lam a =>
+     { {use a, abs _ => use a}
+     , lam {_,c'} => abs i =>
+        {`(hcom 1~>0 ty a [i=0 [j] (@ c' j)] [i=1 [j] a]),
+         abs j => `(hcom 1~>j ty a [i=0 [j] (@ c' j)] [i=1 [j] a])}
+     }
+  }
+}.
+
+theorem Univalence(#l:lvl) :
+  (->
+    [ty/b : (U #l kan)]
+    (IsContr (* [ty/x : (U #l kan)] (Equiv ty/x ty/b))))
+by {
+  lam ty/b =>
+  {{`ty/b,`($ (IdEquiv #l) ty/b)}, id};
+  lam {ty/x,w} =>
+  (abs i =>
+  {`(V i ty/x ty/b w), {lam g => `(Vproj i g (! proj1 w)), id}};
+  lam b =>
+  { { `(Vin i (!proj1 (!proj1 ($ (!proj2 w) b)))
+         (hcom 1~>0 ty/b b [i=0 [j] (@ (!proj2 (!proj1 ($ (!proj2 w) b))) j)]
+                           [i=1 [_] b]))
+    , (abs j => `(hcom 1~>j ty/b b [i=0 [j] (@ (!proj2 (!proj1 ($ (!proj2 w) b))) j)]
+                                   [i=1 [_] b])); // this should be true by computation
+    }
+  , lam v => abs j =>
+    { `(Vin i (!proj1 (@ ($ (!proj2 ($ (!proj2 w) b)) v) j))
+         (hcom 1~>0 ty/b b [i=0 [k] (@ (!proj2 (@ ($ (!proj2 ($ (!proj2 w) b)) v) j)) k)]
+                           [i=1 [k] (@ ($ (Connection/Or #l) ty/b (!proj1 v) b (!proj2 v)) j k)]
+                           [j=0 [k] (@ (!proj2 v) k)]
+                           [j=1 [k] (hcom 1~>k ty/b b
+                                      [i=0 [l] (@ (!proj2 (!proj1 ($ (!proj2 w) b))) l)]
+                                      [i=1 [_] b])]))
+    , abs m =>
+      `(hcom 1~>m ty/b b [i=0 [k] (@ (!proj2 (@ ($ (!proj2 ($ (!proj2 w) b)) v) j)) k)]
+                         [i=1 [k] (@ ($ (Connection/Or #l) ty/b (!proj1 v) b (!proj2 v)) j k)]
+                         [j=0 [k] (@ (!proj2 v) k)]
+                         [j=1 [k] (hcom 1~>k ty/b b
+                                    [i=0 [l] (@ (!proj2 (!proj1 ($ (!proj2 w) b))) l)]
+                                    [i=1 [_] b])])
+    }
+  })
+}.
