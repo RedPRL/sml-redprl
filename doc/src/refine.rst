@@ -911,8 +911,14 @@ Universes
 
   H >> (U #l #k) = (U #l #k) in (U #l' #k')
   where
-    #l <= #l'
-    #k <= #k'
+    #k/univ <-
+      discrete if #k == discrete
+      kan if #k == kan
+      kan if #k == hcom
+      coe if #k == coe
+      kan if #k == pre
+    #l < #l'
+    #k/univ <= #k'
 
 :index:`universe/subtype`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

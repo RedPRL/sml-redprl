@@ -261,12 +261,17 @@ struct
      | "coeq/eq/fcom" => Lcf.rule Coequalizer.EqFCom
      | "coeq/beta/dom" => Lcf.rule Coequalizer.BetaDom
      | "coeq/eq/coeq-rec" => Lcf.rule @@ Coequalizer.EqElim sign
+     | "ind/eqtype" => Lcf.rule @@ Inductive.EqType sign
+     | "ind/eq/intro" => Lcf.rule @@ Inductive.EqIntro sign
+     | "ind/eq/fcom" => Lcf.rule @@ Inductive.EqFCom sign
+     | "ind/eq/ind-rec" => Lcf.rule @@ Inductive.EqElim sign
      | "eq/eqtype" => Lcf.rule InternalizedEquality.EqType
      | "eq/eq/ax" => Lcf.rule InternalizedEquality.Eq
      | "eq/eta" => Lcf.rule InternalizedEquality.Eta
      | "fcom/eqtype" => Lcf.rule FormalComposition.EqType
      | "fcom/eq/box" => Lcf.rule FormalComposition.Eq
      | "fcom/intro" => Lcf.rule FormalComposition.True
+     | "ecom/eqtype" => Lcf.rule EmptyComposition.EqType
      | "V/eqtype" => Lcf.rule V.EqType
      | "V/eq/uain" => Lcf.rule V.Eq
      | "V/intro" => Lcf.rule V.True
@@ -378,7 +383,7 @@ struct
         fun applyEqRule rule = applyEqTac (Lcf.rule rule)
       end
 
-      fun StepEqSubTypeVal (ty1, ty2) =
+      fun StepEqSubTypeVal sign (ty1, ty2) =
         case (Syn.out ty1, Syn.out ty2) of
            (Syn.BOOL, Syn.BOOL) => Wrapper.applyEqRule Bool.EqType
          | (Syn.NAT, Syn.NAT) => Wrapper.applyEqRule Nat.EqType
@@ -391,8 +396,10 @@ struct
          | (Syn.LINE _, Syn.LINE _) => Wrapper.applyEqRule Line.EqType
          | (Syn.PUSHOUT _, Syn.PUSHOUT _) => Wrapper.applyEqRule Pushout.EqType
          | (Syn.COEQUALIZER _, Syn.COEQUALIZER _) => Wrapper.applyEqRule Coequalizer.EqType
+         | (Syn.IND_TYPE, Syn.IND_TYPE) => Wrapper.applyEqRule @@ Inductive.EqType sign
          | (Syn.EQUALITY _, Syn.EQUALITY _) => Wrapper.applyEqRule InternalizedEquality.EqType
          | (Syn.FCOM _, Syn.FCOM _) => Wrapper.applyEqRule FormalComposition.EqType
+         | (Syn.ECOM _, Syn.ECOM _) => Wrapper.applyEqRule EmptyComposition.EqType
          | (Syn.V _, Syn.V _) => Wrapper.applyEqRule V.EqType
          | (Syn.UNIVERSE _, Syn.UNIVERSE _) => Wrapper.applyEitherRule Universe.EqType Universe.SubType
          | _ => fn _ => fail @@ E.GENERIC [Fpp.text "Could not find type equality or subtyping rule for", TermPrinter.ppTerm ty1, Fpp.text "and", TermPrinter.ppTerm ty2]
@@ -409,6 +416,7 @@ struct
          | (Syn.DIM_APP (_, _), Syn.DIM_APP (_, _)) => (fn mode => Wrapper.applyEqRule (Path.EqApp sign) mode orelse_ Wrapper.applyEqRule (Line.EqApp sign) mode)
          | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Wrapper.applyEqRule @@ Pushout.EqElim sign
          | (Syn.COEQUALIZER_REC _, Syn.COEQUALIZER_REC _) => Wrapper.applyEqRule @@ Coequalizer.EqElim sign
+         | (Syn.IND_REC, Syn.IND_REC) => Wrapper.applyEqRule @@ Inductive.EqElim sign
          | (Syn.VPROJ _, Syn.VPROJ _) => Wrapper.applyEqRule @@ V.EqProj sign
          | (Syn.CUST, Syn.CUST) => Wrapper.applyEqRule (Custom.Eq sign)
          | _ => fn _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqTypeNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
@@ -425,7 +433,7 @@ struct
           case (canonicity sign ty1, canonicity sign ty2) of
              (Machine.REDEX, _) => Lcf.rule @@ Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_LEFT])
            | (_, Machine.REDEX) => Lcf.rule @@ Computation.SequentReducePart sign (Selector.IN_CONCL, [Accessor.PART_RIGHT])
-           | (Machine.CANONICAL, Machine.CANONICAL) => StepEqSubTypeVal (ty1, ty2) subMode
+           | (Machine.CANONICAL, Machine.CANONICAL) => StepEqSubTypeVal sign (ty1, ty2) subMode
            | _ => kont)
         @@
         (fn kont =>
@@ -494,10 +502,14 @@ struct
          | (Syn.CECOD _, Syn.CECOD _, Syn.COEQUALIZER _) => Lcf.rule Coequalizer.EqCod
          | (Syn.CEDOM _, Syn.CEDOM _, Syn.COEQUALIZER _) => Lcf.rule Coequalizer.EqDom
          | (Syn.FCOM _, Syn.FCOM _, Syn.COEQUALIZER _) => Lcf.rule Coequalizer.EqFCom
+         | (Syn.IND_TYPE, Syn.IND_TYPE, Syn.UNIVERSE _) => Lcf.rule @@ Inductive.EqType sign
+         | (Syn.IND_INTRO, Syn.IND_INTRO, Syn.IND_TYPE) => Lcf.rule @@ Inductive.EqIntro sign
+         | (Syn.FCOM _, Syn.FCOM _, Syn.IND_TYPE) => Lcf.rule @@ Inductive.EqFCom sign
          | (Syn.EQUALITY _, Syn.EQUALITY _, Syn.UNIVERSE _) => Lcf.rule InternalizedEquality.EqType
          | (Syn.AX, Syn.AX, Syn.EQUALITY _) => Lcf.rule InternalizedEquality.Eq
          | (Syn.FCOM _, Syn.FCOM _, Syn.UNIVERSE _) => Lcf.rule FormalComposition.EqType
          | (Syn.BOX _, Syn.BOX _, Syn.FCOM _) => Lcf.rule FormalComposition.Eq
+         | (Syn.ECOM _, Syn.ECOM _, Syn.UNIVERSE _) => Lcf.rule EmptyComposition.EqType
          | (Syn.V _, Syn.V _, Syn.UNIVERSE _) => Lcf.rule V.EqType
          | (Syn.VIN _, Syn.VIN _, Syn.V _) => Lcf.rule V.Eq
          | (Syn.UNIVERSE _, Syn.UNIVERSE _, Syn.UNIVERSE _) => Lcf.rule Universe.EqType
@@ -526,6 +538,7 @@ struct
              | _ =>  fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n]))
          | (Syn.PUSHOUT_REC _, Syn.PUSHOUT_REC _) => Lcf.rule @@ Pushout.EqElim sign
          | (Syn.COEQUALIZER_REC _, Syn.COEQUALIZER_REC _) => Lcf.rule @@ Coequalizer.EqElim sign
+         | (Syn.IND_REC, Syn.IND_REC) => Lcf.rule @@ Inductive.EqElim sign
          | (Syn.VPROJ _, Syn.VPROJ _) => Lcf.rule @@ V.EqProj sign
          | (Syn.CUST, Syn.CUST) => Lcf.rule @@ Custom.Eq sign
          | _ => fail @@ E.NOT_APPLICABLE (Fpp.text "StepEqNeuByStruct", Fpp.hvsep [TermPrinter.ppTerm m, Fpp.text "and", TermPrinter.ppTerm n])
@@ -697,6 +710,7 @@ struct
          | Syn.LINE _ => Lcf.rule @@ MultiArrow.Elim sign 1 z
          | Syn.PUSHOUT _ => Lcf.rule @@ Pushout.Elim z
          | Syn.COEQUALIZER _ => Lcf.rule @@ Coequalizer.Elim z
+         | Syn.IND_TYPE => Lcf.rule @@ Inductive.Elim sign z
          | Syn.EQUALITY _ => Lcf.rule @@ InternalizedEquality.Elim z
          | _ => fail @@ E.GENERIC [Fpp.text "elim tactic", TermPrinter.ppTerm ty]
     in

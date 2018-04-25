@@ -16,5 +16,5 @@ sig
 
   (* TODO explain the following function to someone other than favonia. *)
   val dataDeclInfo : sign -> opid -> abt RedPrlAbt.bview list ->
-     abt RedPrlAbt.bview list * (abt * InductiveSpec.precomputed_valences) * abt RedPrlAbt.bview list
+     abt RedPrlAbt.bview list * (abt * InductiveSpec.precomputed_valences) * abt list
 end

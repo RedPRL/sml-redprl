@@ -294,6 +294,10 @@ struct
          Atomic.parens @@ expr @@ hvsep @@
            hvsep [text "cap", ppBackwardDir env (r1, r2), ppBinder' env coercee]
              :: [ppVector env tubes]
+     | O.ECOM $ [_ \ r1, _ \ r2, _ \ cap, _ \ system] =>
+         Atomic.parens @@ expr @@ hvsep @@
+           hvsep [text "ecom", ppDir env (r1, r2), ppTerm' env cap]
+             :: [ppVector env system]
      | O.V $ args =>
          Atomic.parens @@ expr @@ hvsep @@ text "V" :: List.map (ppBinder' env) args
      | O.VIN $ args =>
@@ -334,6 +338,13 @@ struct
                Atomic.parens @@ expr @@ hvsep @@
                  (text "lmax" :: ListUtil.revMap (fn _ \ l => ppTerm' env l) ls)
            | _ => raise Fail "invalid vector")
+
+     | O.IND_TYPE (opid, _) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ hsep [text ".", text @@ MlId.toString opid, text "type"] :: List.map (ppBinder' env) args
+     | O.IND_INTRO (opid, conid, _) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ hsep [text ".", text @@ MlId.toString opid, text conid] :: List.map (ppBinder' env) args
+     | O.IND_REC (opid, _) $ args =>
+         Atomic.parens @@ expr @@ hvsep @@ hsep [text ".", text @@ MlId.toString opid, text "rec"] :: List.map (ppBinder' env) args
 
      | theta $ [] =>
         ppOperator theta

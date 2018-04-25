@@ -187,6 +187,14 @@ struct
             ([goal], ty)
           end
 
+        | (O.IND_REC _ $ [[x] \ cx, _ \ m, _, _], O.IND_REC _ $ _) =>
+          let
+            val ty = substVar (m, x) cx
+            val goal = makeEq tr H ((tm1, tm2), ty)
+          in
+            ([goal], ty)
+          end
+
         | (O.NAT_REC $ [[x] \ cx, _ \ m, _, _], O.NAT_REC $ _) =>
           let
             val ty = substVar (m, x) cx
@@ -194,6 +202,7 @@ struct
           in
             ([goal], ty)
           end
+
         | (O.INT_REC $ [[x] \ cx, _ \ m, _, _, _, _], O.INT_REC $ _) =>
           let
             val ty = substVar (m, x) cx
@@ -201,6 +210,7 @@ struct
           in
             ([goal], ty)
           end
+
         | (O.VPROJ $ [_ \ r1, _ \ m, _ \ f1], O.VPROJ $ [_ \ r2, _ \ n, _ \ f2]) =>
           let
             (* invariant: [r1] and [r2] must be variables or meta variables. *)
@@ -1979,18 +1989,28 @@ struct
 
   structure Inductive =
   struct
-    exception FavoniaIsLazy
-
     fun EqType sign jdg =
       let
         val tr = ["Inductive.EqType"]
         val H >> ajdg = jdg
         val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
-        val Abt.$ (O.IND_TYPE (id0, _), args0) = Abt.out ty0
-        val Abt.$ (O.IND_TYPE (id1, _), args1) = Abt.out ty1
-        val true = id0 = id1
-        val constr = raise FavoniaIsLazy (* Sig.dataDeclInfo ... *)
-        val goals = raise FavoniaIsLazy (* InductiveSpec.EqTyArg ((args0, args1), constr) *)
+        val Abt.$ (O.IND_TYPE (opid0, SOME vls0), args0) = Abt.out ty0
+        val Abt.$ (O.IND_TYPE (opid1, _), args1) = Abt.out ty1
+        val true = opid0 = opid1
+        val (declArgs0, (decl, precomputedVls), tyArgs0) = Sig.dataDeclInfo sign opid0 args0
+
+        (* check the meta variable part *)
+        val nDeclArgs = List.length declArgs0
+        val declVls = List.take (vls0, nDeclArgs)
+        val (declArgs1, tyArgs1) = ListUtil.splitAt (args1, nDeclArgs)
+        val tyArgs1 = List.map (fn _ \ t => t) tyArgs1
+        val declAbsArgs0 = ListPair.mapEq Abt.checkb (declArgs0, declVls)
+        val declAbsArgs1 = ListPair.mapEq Abt.checkb (declArgs1, declVls)
+        val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs1)
+
+        (* check the type argumant part *)
+        val seqs = InductiveSpec.EqType H decl (tyArgs0, tyArgs1) (l, k)
+        val goals = List.map (makeGoal' tr) seqs
       in
         |>:+ goals #> (H, axiom)
       end
@@ -2000,13 +2020,32 @@ struct
         val tr = ["Inductive.EqIntro"]
         val H >> ajdg = jdg
         val ((m, n), ty) = View.matchTrueAsEq ajdg
-        val Abt.$ (O.IND_TYPE (id, _), tyargs) = Abt.out ty
-        val Abt.$ (O.IND_INTRO (id0, con0, _), args0) = Abt.out m
-        val Abt.$ (O.IND_INTRO (id1, con1, _), args0) = Abt.out n
-        val true = id0 = id1 andalso id0 = id
-        val true = con0 = con1
-        val constr = raise FavoniaIsLazy
-        val goals = raise FavoniaIsLazy
+        val Abt.$ (O.IND_TYPE (opid, SOME vls), args) = Abt.out ty
+        val Abt.$ (O.IND_INTRO (opid0, conid0, _), args0) = Abt.out m
+        val Abt.$ (O.IND_INTRO (opid1, conid1, _), args1) = Abt.out n
+        val true = opid0 = opid1 andalso opid0 = opid
+        val true = conid0 = conid1
+
+        val (declArgs, (decl, precomputedVls), args) = Sig.dataDeclInfo sign opid args
+
+        (* partition the argments *)
+        val nDeclArgs = List.length declArgs
+        val declVls = List.take (vls, nDeclArgs)
+        val (declArgs0, args0) = ListUtil.splitAt (args0, nDeclArgs)
+        val (declArgs1, args1) = ListUtil.splitAt (args1, nDeclArgs)
+
+        (* check the decl argumant part *)
+        val declAbsArgs = ListPair.mapEq Abt.checkb (declArgs, declVls)
+        val declAbsArgs0 = ListPair.mapEq Abt.checkb (declArgs0, declVls)
+        val declAbsArgs1 = ListPair.mapEq Abt.checkb (declArgs1, declVls)
+        val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs1)
+        val true = ListPair.allEq Abt.eqAbs (declAbsArgs0, declAbsArgs)
+
+        (* check the type and intro argumant part *)
+        val args0 = List.map (fn _ \ t => t) args0
+        val args1 = List.map (fn _ \ t => t) args1
+        val seqs = InductiveSpec.EqIntro H (opid, (declVls, precomputedVls), declArgs0) decl conid0 ((args0, args1), args)
+        val goals = List.map (makeGoal' tr) seqs
       in
         |>:+ goals #> (H, axiom)
       end
@@ -2016,11 +2055,15 @@ struct
         val tr = ["Inductive.EqFCom"]
         val H >> ajdg = jdg
         val ((lhs, rhs), ty) = View.matchTrueAsEq ajdg
-        val Abt.$ (O.IND_TYPE (id, _), tyargs) = Abt.out ty
+        val Abt.$ (O.IND_TYPE (opid, SOME vls), args) = Abt.out ty
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
-        val constr = raise FavoniaIsLazy (* Sig.dataDeclInfo ... *)
-        val goalsTy = raise FavoniaIsLazy (* InductiveSpec.EqTyArg ((args0, args1), constr) *)
+
+        val (_, (decl, _), tyArgs) = Sig.dataDeclInfo sign opid args
+
+        (* check the type argumant part *)
+        val seqsTy = InductiveSpec.EqType H decl (tyArgs, tyArgs) (AJ.View.OMEGA, K.top)
+        val goalsTy = List.map (makeGoal' tr) seqsTy
 
         val w = Sym.new ()
       in
@@ -2029,9 +2072,74 @@ struct
         #> (H, axiom)
       end
 
-    fun EqIntroTubeL sign jdg = raise FavoniaIsLazy
+    fun Elim sign z jdg =
+      let
+        val tr = ["Inductive.Elim"]
+        val H >> AJ.TRUE cz = jdg
+        (* ind-rec(FCOM) steps to COM *)
+        val k = K.COM
+        val AJ.TRUE ty = Hyps.lookup H z
+        val Abt.$ (O.IND_TYPE (opid, SOME declVls), args) = Abt.out ty
 
-    fun Elim sign z jdg = raise FavoniaIsLazy
+        (* We need to kind-check cz because of FCOM
+         * This goal is made (explicitly) unconditional to simplify tactic writing
+         *)
+        val goalKind = makeType tr H (cz, k)
+
+        (* getting the metadata *)
+        val (declArgs, (decl, precomputedVls), tyArgs) = Sig.dataDeclInfo sign opid args
+        val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
+        val (_, constrs, []) = InductiveSpec.fillFamily decl tyArgs
+
+        (* generating all the goals *)
+        val (trueJdgs, branchesVars, cohRealizer) = InductiveSpec.Elim H meta (z,cz) constrs
+        val (goalBranches, holeBranches) = ListPair.unzip @@ List.map (makeGoal tr) trueJdgs
+        val goalCoh = List.map (makeGoal' tr) @@ cohRealizer holeBranches
+
+        (* generating the realizer *)
+        val elim = Abt.$$
+          (O.IND_REC (opid, SOME (InductiveSpec.getElimCasesValences precomputedVls)),
+           (Abt.\ ([z], cz) :: Abt.\ ([], VarKit.toExp z) ::
+            ListPair.mapEq Abt.\ (branchesVars, holeBranches)))
+      in
+        |>:+ goalBranches >:+ goalCoh >: goalKind #> (H, elim)
+      end
+
+    fun EqElim sign jdg =
+      let
+        val tr = ["Inductive.EqElim"]
+        val H >> ajdg = jdg
+        val ((elim0, elim1), ty) = View.matchAsEq ajdg
+        (* ind-rec(FCOM) steps to COM *)
+        val k = K.COM
+        val Abt.$ (O.IND_REC (opid0, _), ([x] \ c0x) :: (_ \ m0) :: branches0) = Abt.out elim0
+        val Abt.$ (O.IND_REC (opid1, _), ([y] \ c1y) :: (_ \ m1) :: branches1) = Abt.out elim1
+        val true = opid0 = opid1
+
+        (* type of eliminated term *)
+        val (psi, indTy) = Synth.synthTerm sign tr H (m0, m1)
+        val Abt.$ (O.IND_TYPE (opid, SOME declVls), args) = Abt.out indTy
+        val true = opid = opid0
+
+        (* motive *)
+        val z = Sym.new ()
+        val c0z = VarKit.rename (z, x) c0x
+        val c1z = VarKit.rename (z, y) c1y
+        val goalMotive = makeEqType tr (H @> (z, AJ.TRUE indTy)) ((c0z, c1z), k)
+
+        (* result type*)
+        val goalTy = View.makeAsSubTypeIfDifferent tr H (substVar (m0, x) c0x, ty)
+
+        (* getting the metadata *)
+        val (declArgs, (decl, precomputedVls), tyArgs) = Sig.dataDeclInfo sign opid args
+        val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
+        val (_, constrs, []) = InductiveSpec.fillFamily decl tyArgs
+
+        (* branches and coherence *)
+        val goalBranches = List.map (makeGoal' tr) @@ InductiveSpec.EqElimBranches H meta (x, c0x) constrs (branches0, branches1)
+      in
+        |>:+ goalBranches >: goalMotive >:+ psi >:? goalTy #> (H, axiom)
+      end
   end
 
   structure InternalizedEquality =
@@ -2411,6 +2519,45 @@ struct
     (* TODO Add the Elim, EqCap and Eta rules. *)
   end
 
+  (* FormalComposition's evil twin *)
+  structure EmptyComposition =
+  struct
+    val kindConstraintOnParts =
+      fn K.DISCRETE => E.raiseError @@
+          E.NOT_APPLICABLE (Fpp.text "ecom types", Fpp.text "discrete universes")
+       | K.KAN => E.raiseError @@
+          E.NOT_APPLICABLE (Fpp.text "ecom types", Fpp.text "Kan universes")
+       | K.HCOM => K.HCOM (* XXX more research needed *)
+       | K.COE => E.raiseError @@
+          E.NOT_APPLICABLE (Fpp.text "ecom types", Fpp.text "Kan universes")
+       | K.PRE => K.PRE (* XXX more research needed *)
+
+    fun EqType jdg =
+      let
+        val tr = ["EmptyComposition.EqType"]
+        val H >> ajdg = jdg
+        val ((ty0, ty1), l, k) = View.matchAsEqType ajdg
+        val Syn.ECOM {dir=dir0, cap=cap0, tubes=tubes0} = Syn.out ty0
+        val Syn.ECOM {dir=dir1, cap=cap1, tubes=tubes1} = Syn.out ty1
+        val () = Assert.dirEq "EmptyComposition.EqType direction" (dir0, dir1)
+        val eqs0 = List.map #1 tubes0
+        val eqs1 = List.map #1 tubes1
+        val _ = Assert.equationsEq "EmptyComposition.EqType equations" (eqs0, eqs1)
+        val _ = Assert.tautologicalEquations "EmptyComposition.EqType tautology checking" eqs0
+
+        val kPart = kindConstraintOnParts k
+
+        val goalCap = View.makeAsEqType tr H ((cap0, cap1), l, kPart)
+
+        val w = Sym.new ()
+      in
+        |>: goalCap
+         >:+ FormalComposition.genInterTubeGoals tr H w ((tubes0, tubes1), l, kPart)
+         >:+ FormalComposition.genCapTubeGoalsIfDifferent tr H ((cap0, (#1 dir0, tubes0)), l, kPart)
+        #> (H, axiom)
+      end
+  end
+
   structure V =
   struct
     val kindConstraintOnEnds =
@@ -2563,9 +2710,9 @@ struct
     val inherentKind =
       fn K.DISCRETE => K.DISCRETE
        | K.KAN => K.KAN
-       | K.HCOM => K.COE
+       | K.HCOM => K.KAN
        | K.COE => K.COE
-       | K.PRE => K.COE
+       | K.PRE => K.KAN
 
     val inherentLevel = L.succ
 

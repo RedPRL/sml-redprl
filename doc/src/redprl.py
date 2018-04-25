@@ -15,15 +15,15 @@ class RedPRLLexer(RegexLexer):
              'succ', 'int-rec', 'int', 'negsucc', 'void', 'S1-rec', 'S1',
              'base', 'loop', 'lam', 'record', 'tuple', 'path', 'line',
              'pushout-rec', 'pushout', 'left', 'right', 'glue', 'coeq-rec',
-             'coeq', 'cecod', 'cedom', 'mem', 'ni', 'box', 'cap', 'V', 'VV',
-             'WU', 'Vin', 'Vproj', 'U', 'abs', 'hcom', 'com', 'ghcom', 'gcom',
-             'coe', 'lmax', 'omega']
+             'self', 'rec', 'coeq', 'cecod', 'cedom', 'mem', 'ni', 'box', 'cap',
+             'V', 'Vin', 'Vproj', 'U', 'abs', 'hcom', 'com',
+             'ghcom', 'gcom', 'ecom', 'coe', 'lmax', 'omega']
     tacs = ['auto', 'auto-step', 'case', 'cut-lemma', 'elim', 'else', 'exact',
             'goal', 'hyp', 'id', 'lemma', 'let', 'claim', 'match', 'of',
             'print', 'trace', 'progress', 'query', 'reduce', 'refine', 'repeat',
             'rewrite', 'symmetry', 'then', 'unfold', 'use', 'with', 'without',
             'fail', 'inversion', 'concl', 'assumption', '\;']
-    cmds = ['print', 'extract', 'quit', 'define', 'tactic', 'theorem']
+    cmds = ['data', 'print', 'extract', 'quit', 'define', 'tactic', 'theorem']
     misc = ['at', 'by', 'in', 'true', 'type', 'synth', 'discrete', 'kan', 'pre',
             'dim', 'hyp', 'exp', 'lvl', 'tac', 'jdg', 'knd']
     types = ['bool', 'nat', 'int', 'void', 's1', 'fun', 'record', 'path',
