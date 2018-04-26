@@ -50,15 +50,16 @@ by {
 print Hcom/symm.
 
 // An example of using the internalized exact equality type.
-theorem Cap(#i:dim, #l:lvl) :
+theorem Cap(#l:lvl) :
   (->
    [ty : (U #l hcom)]
    [x : ty]
+   [i : dim]
    (= ty
-      (hcom 0~>0 ty x [#i=0 [_] x] [#i=1 [_] x])
+      (hcom 0~>0 ty x [i=0 [_] x] [i=1 [_] x])
       x))
 by {
-  lam ty x => auto
+  lam ty x => abs i => auto
 }.
 
 
