@@ -153,14 +153,12 @@ struct
       aux
     end
 
-  (* assuming u is bound and so the comparison is stable,
-   * which is the case in its usage (Kan operations of fcom). *)
+  (* The following three functions assume u is bound and so the comparison is stable,
+   * which is the case in their usages (Kan operations of fcom). *)
+  fun isApart u r = branchOnDim NOMINAL SymSet.empty r true true (fn v => not (Sym.eq (u, v)))
+  fun isApartEq u (r1, r2) = isApart u r1 andalso isApart u r2
   fun keepApartTubes u : tube list -> tube list =
-    let
-      fun apart r = branchOnDim NOMINAL SymSet.empty r true true (fn v => not (Sym.eq (u, v)))
-    in
-      List.filter (fn ((r1, r2), _) => apart r1 andalso apart r2)
-    end
+    List.filter (fn (eq, _) => isApartEq u eq)
 
   datatype 'a action = 
      COMPAT of 'a
@@ -310,7 +308,15 @@ struct
                                 ty = (u, substVar (#2 fcomDir, v) b),
                                 coercee = coercee}}))
                         (keepApartTubes u tubes)}
-                 fun recovery (v, b) dest =
+                 fun apartRecovery (v, b) dest =
+                   Syn.intoCoe
+                     {dir = (#2 fcomDir, dest),
+                      ty = (v, b),
+                      coercee = Syn.intoCoe
+                        {dir = coeDir,
+                         ty = (u, substVar (#2 fcomDir, v) b),
+                         coercee = coercee}}
+                 fun generalRecovery (v, b) dest =
                    let
                      val coeDestSubst = substVar (#2 coeDir, u)
                    in
@@ -325,15 +331,8 @@ struct
                                  ty = (v, coeDestSubst b),
                                  coercee = coercee}))
                           :: Syn.mapTubes
-                            (fn (v, b) =>
-                              (v, Syn.intoCoe
-                                {dir = (#2 fcomDir, VarKit.toDim v),
-                                 ty = (v, b),
-                                 coercee = Syn.intoCoe
-                                   {dir = coeDir,
-                                    ty = (u, substVar (#2 fcomDir, v) b),
-                                    coercee = coercee}}))
-                            (keepApartTubes u tubes)}
+                               (fn (v, b) => (v, apartRecovery (v, b) (VarKit.toDim v)))
+                               (keepApartTubes u tubes)}
                    end
                  val coercedCap =
                    let
@@ -346,12 +345,17 @@ struct
                         tubes =
                           ((#1 coeDir, #2 coeDir),(w, origin (VarKit.toDim w)))
                           ::
-                          Syn.mapTubes
-                            (fn (v, b) =>
-                              (w, Syn.intoCoe
-                                {dir = (VarKit.toDim w, #2 fcomDir),
-                                   ty = (v, b),
-                                   coercee = recovery (v, b) (VarKit.toDim w)}))
+                          List.map
+                            (fn (eq, (v, b)) =>
+                              (eq,
+                               (w, Syn.intoCoe
+                                 {dir = (VarKit.toDim w, #2 fcomDir),
+                                  ty = (v, b),
+                                  coercee =
+                                    if isApartEq u eq then
+                                      apartRecovery (v, b) (VarKit.toDim w)
+                                    else
+                                      generalRecovery (v, b) (VarKit.toDim w)})))
                           tubes}
                    end
                  val result =
@@ -360,7 +364,14 @@ struct
                         cap = coercedCap,
                         boundaries = List.map
                           (fn (eq, (v, b)) =>
-                            (eq, recovery (v, b) (#2 fcomDir)))
+                            (eq,
+                             if isApartEq u eq then
+                               Syn.intoCoe
+                                 {dir = coeDir,
+                                  ty = (u, substVar (#2 fcomDir, v) b),
+                                  coercee = coercee}
+                             else
+                               generalRecovery (v, b) (#2 fcomDir)))
                           tubes}
                in
                  CRITICAL @@ result || (SymSet.remove syms u, stk)

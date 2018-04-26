@@ -20,35 +20,35 @@ struct
   struct
     open Restriction
 
-    fun makeEq tr eqs H ((m, n), ty) =
+    fun makeEq tr H eqs ((m, n), ty) =
       Option.map
         (fn f => makeEqWith tr f H ((m, n), ty))
-        (restrict eqs)
+        (restrict H eqs)
 
-    fun makeEqIfDifferent tr eqs H ((m, n), ty) =
+    fun makeEqIfDifferent tr H eqs ((m, n), ty) =
       Option.mapPartial
         (fn f =>
           if Abt.eq (f m, f n) then NONE
           else SOME @@ makeEqWith tr f H ((m, n), ty))
-        (restrict eqs)
+        (restrict H eqs)
 
     fun makeMem tr eqs H (m, ty) =
       makeEq tr eqs H ((m, m), ty)
 
-    fun makeEqType tr eqs H ((a, b), k) =
+    fun makeEqType tr H eqs ((a, b), k) =
       Option.map
         (fn f => makeEqTypeWith tr f H ((a, b), k))
-        (restrict eqs)
+        (restrict H eqs)
 
-    fun makeEqTypeIfDifferent tr eqs H ((a, b), k) =
+    fun makeEqTypeIfDifferent tr H eqs ((a, b), k) =
       Option.mapPartial
         (fn f =>
           if Abt.eq (f a, f b) then NONE
           else SOME @@ makeEqTypeWith tr f H ((a, b), k))
-        (restrict eqs)
+        (restrict H eqs)
 
-    fun makeTrue tr eqs default H a =
-      case restrict eqs of
+    fun makeTrue tr H eqs default a =
+      case restrict H eqs of
         NONE => (NONE, default)
       | SOME f =>
           let
@@ -59,24 +59,24 @@ struct
 
     structure View =
     struct
-      fun makeAsEqIfAllDifferent tr eqs H ((m, n), a) ns = 
+      fun makeAsEqIfAllDifferent tr H eqs ((m, n), a) ns =
         Option.mapPartial
           (fn f =>
             if List.exists (fn n' => Abt.eq (f m, f n')) ns then NONE
             else SOME @@ View.makeAsEqWith tr f H ((m, n), a))
-          (restrict eqs)
+          (restrict H eqs)
 
-      fun makeAsEqType tr eqs H ((a, b), l, k) =
+      fun makeAsEqType tr H eqs ((a, b), l, k) =
         Option.mapPartial
           (fn f => SOME @@ View.makeAsEqTypeWith tr f H ((a, b), l, k))
-          (restrict eqs)
+          (restrict H eqs)
 
-      fun makeAsEqTypeIfDifferent tr eqs H ((a, b), l, k) =
+      fun makeAsEqTypeIfDifferent tr H eqs ((a, b), l, k) =
         Option.mapPartial
           (fn f =>
             if Abt.eq (f a, f b) then NONE
             else SOME @@ View.makeAsEqTypeWith tr f H ((a, b), l, k))
-          (restrict eqs)
+          (restrict H eqs)
     end
   end
 
@@ -96,12 +96,12 @@ struct
        * genInterTubeGoals. -favonia *)
       fun genTubeGoals' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
         ListPairUtil.mapPartialEq
-          (fn ((eq, t0), (_, t1)) => Restriction.makeEq tr [eq] H ((t0, t1), ty))
+          (fn ((eq, t0), (_, t1)) => Restriction.makeEq tr H [eq] ((t0, t1), ty))
           (tubes0, tubes1)
 
       fun genInterTubeGoalsExceptDiag' tr (H : Sequent.hyps) ((tubes0, tubes1), ty) =
         ListPairUtil.enumPartialInterExceptDiag
-          (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent tr [eq0, eq1] H ((t0, t1), ty))
+          (fn ((eq0, t0), (eq1, t1)) => Restriction.makeEqIfDifferent tr H [eq0, eq1] ((t0, t1), ty))
           (tubes0, tubes1)
     in
       fun genInterTubeGoals tr (H : Sequent.hyps) w ((tubes0, tubes1), ty) =
@@ -123,7 +123,7 @@ struct
     fun genCapTubeGoalsIfDifferent tr H ((cap, (r, tubes)), ty) =
       List.mapPartial
         (fn (eq, (u, tube)) =>
-          Restriction.makeEqIfDifferent tr [eq] H ((cap, substVar (r, u) tube), ty))
+          Restriction.makeEqIfDifferent tr H [eq] ((cap, substVar (r, u) tube), ty))
         tubes
 
     (* Note that this does not check whether the 'ty' is a base type.
