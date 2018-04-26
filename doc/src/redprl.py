@@ -16,7 +16,7 @@ class RedPRLLexer(RegexLexer):
              'base', 'loop', 'lam', 'record', 'tuple', 'path', 'line',
              'pushout-rec', 'pushout', 'left', 'right', 'glue', 'coeq-rec',
              'self', 'rec', 'coeq', 'cecod', 'cedom', 'mem', 'ni', 'box', 'cap',
-             'V', 'VV', 'WU', 'Vin', 'Vproj', 'U', 'abs', 'hcom', 'com',
+             'V', 'Vin', 'Vproj', 'U', 'abs', 'hcom', 'com',
              'ghcom', 'gcom', 'ecom', 'coe', 'lmax', 'omega']
     tacs = ['auto', 'auto-step', 'case', 'cut-lemma', 'elim', 'else', 'exact',
             'goal', 'hyp', 'id', 'lemma', 'let', 'claim', 'match', 'of',

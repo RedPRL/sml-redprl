@@ -55,7 +55,6 @@ is
   redprl/syntax/univ_level.sml
   redprl/syntax/view.sml
   redprl/syntax/variable_kit.sml
-  redprl/syntax/restriction.sml
 
   redprl/config.sml
 
@@ -69,6 +68,7 @@ is
 
   redprl/syntax/sequent.sig
   redprl/syntax/sequent.sml
+  redprl/syntax/restriction.sml
 
   redprl/judgment.sml
 

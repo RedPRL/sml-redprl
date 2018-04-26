@@ -53,11 +53,11 @@ in
     redprl/syntax/univ_level.sml
     redprl/syntax/view.sml
     redprl/syntax/variable_kit.sml
-    redprl/syntax/restriction.sml
     redprl/syntax/atomic_judgment.sig
     redprl/syntax/atomic_judgment.sml
     redprl/syntax/sequent.sig
     redprl/syntax/sequent.sml
+    redprl/syntax/restriction.sml
 
     redprl/judgment.sml
 

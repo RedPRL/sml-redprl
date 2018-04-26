@@ -25,7 +25,7 @@ syn match   redprlMeta '#'
 syn keyword redprlExpr ax fcom bool tt ff if nat
 syn keyword redprlExpr zero succ nat-rec int pos negsucc int-rec void S1 base loop
 syn keyword redprlExpr S1-rec lam record tuple path line pushout left right glue
-syn keyword redprlExpr pushout-rec coeq cecod cedom coeq-rec self rec mem ni box cap ecom V VV WU
+syn keyword redprlExpr pushout-rec coeq cecod cedom coeq-rec self rec mem ni box cap ecom V
 syn keyword redprlExpr Vin Vproj U abs hcom com ghcom gcom coe lmax omega
 syn match   redprlExpr '[$*!@=+]\|->\|\~>\|<\~'
 
