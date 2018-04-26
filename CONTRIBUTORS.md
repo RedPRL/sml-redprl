@@ -11,6 +11,8 @@ in no particular order:
 - Evan Cavallo
 - Carlo Angiuli
 - Tim Baumann
+- Anders Mörtberg
+
 
 We also thank the following people for their contributions to previous versions
 of JonPRL:
