@@ -25,16 +25,16 @@ define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
 
 define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
 
-theorem IdEquiv(#l:lvl) :
+theorem IdEquivConnOr(#l:lvl) :
   (-> [ty : (U #l hcom)] (Equiv ty ty))
 by {
   lam ty =>
   { lam a => use a
   , lam a =>
      { {use a, abs _ => use a}
-     , lam {_,c'} => abs i =>
-        {`(hcom 1~>0 ty a [i=0 [j] (@ c' j)] [i=1 [j] a]),
-         abs j => `(hcom 1~>j ty a [i=0 [j] (@ c' j)] [i=1 [j] a])}
+     , lam {c,c'} => abs i =>
+        {`(@ c' i),
+         abs j => `(@ ($ (Connection/Or #l) ty c a c') i j)}
      }
   }
 }.
@@ -45,7 +45,7 @@ theorem Univalence(#l:lvl) :
     (IsContr (* [ty/x : (U #l kan)] (Equiv ty/x ty/b))))
 by {
   lam ty/b =>
-  {{`ty/b,`($ (IdEquiv #l) ty/b)}, id};
+  {{`ty/b,`($ (IdEquivConnOr #l) ty/b)}, id};
   lam {ty/x,w} =>
   (abs i =>
   {`(V i ty/x ty/b w), {lam g => `(Vproj i g (! proj1 w)), id}};
