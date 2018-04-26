@@ -168,7 +168,7 @@ struct
         val _ = Assert.tautologicalEquations "HCom.Eq tautology checking" eqs0
 
         (* type *)
-        val goalTy0 = makeType tr H (ty0, k)
+        val goalTy0 = makeEqType tr H ((ty0, ty1), k)
         val goalTy = View.makeAsSubTypeIfDifferent tr H (ty0, ty) (* (ty0, k) is proved *)
 
         (* cap *)
