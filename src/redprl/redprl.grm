@@ -10,6 +10,7 @@ structure O = RedPrlOperator
 structure AJ = AtomicJudgment
 structure TP = TermPrinter
 structure ML = MlExtSyntax
+structure Rx = RedExpr
 
 val ppIntInf = Fpp.text o IntInf.toString
 
@@ -375,7 +376,7 @@ end
  | VOID
  | S1 | BASE | LOOP | S1_REC
  | LAMBDA | DOLLAR_SIGN
- | RECORD | TIMES | TUPLE | BANG
+ | RECORD | ASTERISK | TUPLE | BANG
  | PATH | LINE | ABS | AT_SIGN
  | PUSHOUT | LEFT | RIGHT | GLUE | PUSHOUT_REC
  | COEQUALIZER | CECOD | CEDOM | COEQUALIZER_REC
@@ -414,7 +415,7 @@ end
  | BY | IN | VAL | DO | CARET | END | FN
 
 %right LEFT_ARROW RIGHT_ARROW DOUBLE_PIPE SEMI
-%right TIMES
+%right ASTERISK
 %nonassoc COMMA AMPERSAND COLON
 %nonassoc FCOM BOOL TT FF IF NAT ZERO SUCC NAT_REC INT POS NEGSUCC INT_REC VOID S1 BASE LOOP LAMBDA DOLLAR_SIGN PATH ABS AT_SIGN AX HCOM COE
 %nonassoc HASH LANGLE LPAREN VARNAME OPNAME
@@ -542,6 +543,12 @@ end
  | declArgument of metavariable * Ar.valence
  | declArguments of Signature.Src.arguments
  | declArgumentsParens of Signature.Src.arguments
+
+ | rxAtom of string
+ | rxAtoms of string list
+ | rxEqn of Rx.node Rx.eqn
+ | rexpr of Rx.node
+ | rexprs of Rx.node list
 
  | mlVty of MlType.vty
  | mlCty of MlType.cty
@@ -809,7 +816,7 @@ rawTermAndTac
   | LPAREN DOLLAR_SIGN term terms RPAREN (Multi.makeApp term terms)
 
   (* pair types *)
-  | LPAREN TIMES timesQuantifierData RPAREN (Multi.makeProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) timesQuantifierData)
+  | LPAREN ASTERISK timesQuantifierData RPAREN (Multi.makeProd (Pos.pos (LPAREN1left fileName) (RPAREN1right fileName)) timesQuantifierData)
 
   (* dependent record types *)
   | RECORD (Multi.makeRecord (Pos.pos (RECORD1left fileName) (RECORD1right fileName)) [])
@@ -1153,6 +1160,58 @@ declArguments
 declArgumentsParens
   : LPAREN declArguments RPAREN (declArguments)
   | ([])
+
+
+
+
+rxAtom
+  : ident 
+    (ident)
+  | RIGHT_ARROW
+    ("->")
+  | ASTERISK
+    ("*")
+  | SQUIGGLE_RIGHT_ARROW
+    ("~>")
+  | SQUIGGLE_LEFT_ARROW
+    ("<~")
+
+rxAtoms 
+  : rxAtom
+    ([rxAtom])
+  | rxAtom rxAtoms
+    (rxAtom :: rxAtoms)
+  | ([])
+
+rxEqn
+  : rexpr EQUALS rexpr
+    ({lhs = rexpr1, rhs = rexpr2})
+
+rexpr
+  : rxAtom
+    (Rx.makeNode (rxAtomleft fileName, rxAtomright fileName, Rx.ATOM rxAtom))
+  | LPAREN rexprs RPAREN
+    (Rx.makeNode (LPARENleft fileName, RPARENright fileName, Rx.LIST rexprs))
+  | LSQUARE rxAtoms RSQUARE
+    (Rx.makeNode (LSQUAREleft fileName, RSQUAREright fileName, Rx.BIND_CELL rxAtoms))
+  | LSQUARE rxAtom rexpr RSQUARE
+    (Rx.makeNode (LSQUAREleft fileName, RSQUAREright fileName, Rx.LABEL_CELL (rxAtom, rexpr)))
+  | LSQUARE rxAtoms COLON rexpr RSQUARE
+    (Rx.makeNode (LSQUAREleft fileName, RSQUAREright fileName, Rx.TYPED_CELL (rxAtoms, rexpr)))
+  | LSQUARE rxEqn LSQUARE rxAtom RSQUARE rexpr RSQUARE
+    (Rx.makeNode (LSQUARE1left fileName, RSQUARE2right fileName, Rx.TUBE_CELL (rxEqn, rxAtom, rexpr)))
+    
+
+rexprs
+  : rexpr
+    ([rexpr])
+  | rexpr rexprs
+    (rexpr::rexprs)
+  | ([])
+
+
+
+
 
 
 mlVty

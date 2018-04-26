@@ -162,6 +162,334 @@ struct
 
       | th => th)
 
+
+
+
+
+  type 'a elab = env -> 'a
+
+  structure ElabRx = 
+  struct
+    structure Rx = RedExpr
+
+    datatype head = 
+       VAR of Tm.variable * Tm.sort
+     | META of Tm.metavariable * Tm.valence
+     | CUST of MlId.t * arity
+    
+    val <+> : 'a elab * 'a elab -> 'a elab =
+      fn (el1, el2) => 
+        fn env =>
+          el1 env
+          handle _ => el2 env
+
+    infixr <+>
+
+    val ret : 'a -> 'a elab = 
+      fn a => fn _ => a
+
+    val <$> : ('a -> 'b) * 'a elab -> 'b elab = 
+      fn (f, x) => fn env => 
+        f (x env)
+
+    val >>= : 'a elab * ('a -> 'b elab) -> 'b elab = 
+      fn (m, k) => fn env =>
+        k (m env) env
+
+    fun throw exn = 
+      fn _ => 
+        raise exn
+
+    infix <$> >>=
+
+    open Tm infix 4 $$ \ $ $#
+    structure O = RedPrlOperator
+
+    fun traverse (f : 'a -> 'b elab) (xs : 'a list) : 'b list elab = 
+      case xs of 
+         [] => ret []
+       | x::xs =>
+         f x >>= (fn y => traverse f xs >>= (fn ys => ret @@ y :: ys))
+
+
+    fun bindVars (xs, taus) (k : Tm.variable list -> 'a elab) : 'a elab =
+      fn env => 
+        let
+          val (vars, env') = R.extendVars env (xs, taus)
+        in
+          k (List.map #1 vars) env'
+        end
+
+    fun bindVar (x, tau) (k : Tm.variable -> 'a elab) : 'a elab =
+      fn env => 
+        let
+          val ([(x', _)], env') = R.extendVars env ([x], [tau])
+        in
+          k x' env'
+        end
+
+    fun nodeAsAtom node : string Rx.info elab = fn _ =>
+      let
+        val Rx.NODE {con = Rx.ATOM str, pos} = node
+      in
+        {con = str, pos = pos}
+      end
+
+    fun elabVar node : head elab = fn env =>
+      let
+        val {pos, con = atom} = nodeAsAtom node env
+        val (var, tau) = R.lookupVar env pos atom
+      in
+        VAR (var, tau)
+      end
+
+    fun elabMeta node : head elab = fn env =>
+      let
+        val {pos, con = atom} = nodeAsAtom node env      
+        val (mvar, vl) = R.lookupMeta env pos atom
+      in
+        META (mvar, vl)
+      end
+
+    fun elabCust node : head elab = fn env => 
+      let
+        val {pos, con = atom} = nodeAsAtom node env
+        val opid = MlId.const atom
+      in
+        CUST (opid, lookupArity env pos opid)
+      end
+
+    fun elabHead node = 
+      elabVar node
+        <+> elabMeta node
+        <+> elabCust node
+
+    val headAsAbt : head -> abt = 
+      fn VAR (x, tau) =>
+         Tm.check (` x, tau)
+
+       | META (x, (_, tau)) =>
+         Tm.check (x $# [], tau)
+
+       | CUST (th, ar) =>
+         Tm.$$ (O.CUST (th, SOME ar), [])
+
+
+    fun elabAbt (node as Rx.NODE {pos, con}) : abt elab = 
+      case con of 
+         Rx.ATOM atom =>
+         headAsAbt <$> elabHead node
+
+       | Rx.LIST (rxhead :: rxtail) =>
+         elabList rxhead rxtail
+
+       | _ =>
+        Err.raiseAnnotatedError'
+          (pos,
+           Err.GENERIC @@ [Fpp.text "Error reading rexpr"])
+
+    and elabRecordType _ = ?todo
+
+    and elabTuple rxs =
+      traverse elabLabelCell rxs >>= (fn cells =>
+        let
+          val (lbls, abts) = ListPair.unzip cells
+          val bs = List.map (fn abt => Tm.\ ([], abt)) abts
+        in
+          ret @@ Tm.$$ (O.TUPLE lbls, bs)
+        end)
+
+    and elabLabelCell node : (string * abt) elab = fn env =>
+      let
+        val Rx.NODE {con = Rx.LABEL_CELL (lbl, node'), ...} = node
+      in
+        (lbl, elabAbt node' env)
+      end
+
+    and elabOperator pos atom = fn env =>
+      case atom of 
+         _ =>
+         let 
+           val opid = MlId.const atom
+           val ar = lookupArity env pos opid
+         in
+           O.CUST (opid, SOME ar)
+         end
+
+
+    and elabOpApp theta rxtail =
+      let
+        val (vls, _) = O.arity theta
+        fun go acc = 
+          fn ([], []) =>
+             ret @@ theta $$ List.rev acc
+           | ((taus, _) :: vls, Rx.NODE {con = Rx.BIND_CELL xs,...} :: rx :: rxs) =>
+             elabBinder (xs, taus) rx >>= (fn bnd => 
+               go (bnd :: acc) (vls, rxs))
+           | (_ :: vls, rx :: rxs) =>
+             elabBinder ([], []) rx >>= (fn bnd =>
+               go (bnd :: acc) (vls, rxs))
+           | _ => throw @@ Fail "elabOpApp"
+      in
+        go [] (vls, rxtail)
+      end
+
+    and elabProductType rxtail =       
+      let
+        fun go rxs : abt elab = 
+          case rxs of 
+             [] =>
+             throw @@ Fail "elabProductType"
+           | [rx] =>
+             elabAbt rx
+           | Rx.NODE {con = Rx.TYPED_CELL (xs, rxty), ...} :: rxs =>
+             elabAbt rxty >>= (fn ty => 
+               goVars rxs ty xs)
+           | rxty :: rxs =>
+             elabAbt rxty >>= (fn ty =>
+               goVars rxs ty ["_"])
+
+        and goVars rxs ty = 
+          fn [] => go rxs
+           | x::xs => 
+             bindVar (x, O.EXP) (fn x' =>
+               goVars rxs ty xs >>= (fn tm => 
+                 ret @@ O.RECORD ["proj1", "proj2"] $$ [[] \ ty, [x'] \ tm]))
+      in
+        go rxtail
+      end      
+
+    and elabFunctionType rxtail =       
+      let
+        fun go rxs : abt elab = 
+          case rxs of 
+             [] =>
+             throw @@ Fail "elabFunctionType"
+           | [rx] =>
+             elabAbt rx
+           | Rx.NODE {con = Rx.TYPED_CELL (xs, rxty), ...} :: rxs =>
+             goPiVars rxs (?todo) xs
+           | rxty :: rxs =>
+             goVars rxs rxty ["_"]
+
+        and goVars rxs rxty xs = 
+          case rxty of 
+             Rx.NODE {con = Rx.ATOM "dim", ...} =>
+             goLineVars rxs xs
+           | _ =>
+             elabAbt rxty >>= (fn ty => 
+               goPiVars rxs ty xs)
+
+        and goLineVars rxs = 
+          fn [] => go rxs
+           | x::xs =>
+             bindVar (x, O.EXP) (fn x' => 
+               goLineVars rxs xs >>= (fn tm => 
+                 ret @@ O.LINE $$ [[x'] \ tm]))
+
+        and goPiVars rxs ty = 
+          fn [] => go rxs
+           | x::xs => 
+             bindVar (x, O.EXP) (fn x' =>
+               goPiVars rxs ty xs >>= (fn tm => 
+                 ret @@ O.FUN $$ [[] \ ty, [x'] \ tm]))
+      in
+        go rxtail
+      end
+
+    and elabLambda rxtail =
+      let
+        fun go rxs : abt elab = 
+          case rxs of 
+             [rx] =>
+             elabAbt rx                          
+           | Rx.NODE {con = Rx.BIND_CELL xs,...} :: rxs => 
+             goVars rxs xs
+           | _ => throw @@ Fail "elabLambda"
+
+        and goVars rxs : string list -> abt elab = 
+          fn [] => go rxs
+           | x::xs =>
+             bindVar (x, O.EXP) (fn x' => 
+               goVars rxs xs >>= (fn tm => 
+                 ret @@ O.LAM $$ [[x'] \ tm]))
+      in
+        go rxtail
+      end
+
+    and elabBinder (xs, taus) rx = 
+      bindVars (xs, taus) (fn xs' =>
+        elabAbt rx >>= (fn tm =>
+          ret @@ xs' \ tm))
+
+    and elabCoe rxtail = 
+      case rxtail of 
+         [rxdim0, Rx.NODE {con = Rx.ATOM "~>",...}, rxdim1, Rx.NODE {con = Rx.BIND_CELL [x],...}, rxty, rxtm] =>
+         elabAbt rxdim0 >>= (fn dim0 => 
+           elabAbt rxdim1 >>= (fn dim1 =>
+             elabBinder ([x], [O.EXP]) rxty >>= (fn ty => 
+               elabAbt rxtm >>= (fn tm => 
+                 ret @@ O.COE $$ [[] \ dim0, [] \ dim1, ty, [] \ tm]))))
+       | _ => throw @@ Fail "elabCoe"
+
+    and elabFunApp rxtail =
+      let
+        fun go hd =
+          fn [] => ret hd
+           | rx::rxs =>
+             elabAbt rx >>= (fn tm =>
+               go (O.APP $$ [[] \ hd, [] \ tm]) rxs)
+      in
+        case rxtail of 
+           [] => throw @@ Fail "elabFunApp"
+         | rx::rxs =>
+           elabAbt rx >>= (fn hd =>
+             go hd rxs)
+      end
+
+    and elabDimApp rxtail =
+      let
+        fun go hd =
+          fn [] => ret hd
+           | rx::rxs =>
+             elabAbt rx >>= (fn tm =>
+               go (O.DIM_APP $$ [[] \ hd, [] \ tm]) rxs)
+      in
+        case rxtail of 
+           [] => throw @@ Fail "elabDimApp"
+         | rx::rxs =>
+           elabAbt rx >>= (fn hd =>
+             go hd rxs)
+      end      
+
+
+    and elabList rxhead rxtail =
+      let
+        val Rx.NODE {con = conHead, pos} = rxhead
+      in
+        case conHead of 
+           Rx.ATOM "->" => elabFunctionType rxtail
+         | Rx.ATOM "*" => elabProductType rxtail
+         | Rx.ATOM "record" => elabRecordType rxtail
+         | Rx.ATOM "tuple" => elabTuple rxtail
+         | Rx.ATOM "lam" => elabLambda rxtail
+         | Rx.ATOM "coe" => elabCoe rxtail
+         | Rx.ATOM "$" => elabFunApp rxtail
+         | Rx.ATOM "@" => elabDimApp rxtail         
+         | Rx.ATOM opid =>
+           elabOperator pos opid >>= (fn theta => 
+             elabOpApp theta rxtail)
+         | _ => ?todo
+      end
+           
+  end
+
+
+
+
+
+
+
   type elab_cmd = env -> icmd * cty
   type elab_val = env -> ivalue * vty
 
