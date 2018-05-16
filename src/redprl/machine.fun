@@ -996,12 +996,9 @@ struct
                                   let
                                     val w = Sym.new ()
                                   in
-                                    Syn.intoCom
+                                    Syn.intoCoe
                                       {dir = (#1 dir, x), ty = (v, b),
-                                       cap = Syn.into @@ Syn.VPROJ (#1 dir, coercee, Syn.intoFst @@ substVar (#1 dir, v) e),
-                                       tubes =
-                                         [ ((#1 dir, Syn.intoDim 0), (w, nFromZero (VarKit.toDim w)))
-                                         , ((#1 dir, Syn.intoDim 1), (w, projFromOne (VarKit.toDim w))) ]}
+                                       coercee = Syn.into @@ Syn.VPROJ (#1 dir, coercee, Syn.intoFst @@ substVar (#1 dir, v) e)}
                                   end
                                 val wallZero =
                                   let
