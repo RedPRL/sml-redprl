@@ -989,19 +989,16 @@ struct
                        in
                          branchOnDim stability syms' (#1 dir)
                            (Syn.into @@ Syn.VIN (#2 dir, coercee, nFromZero (#2 dir)))
-                           (Syn.into @@ Syn.VIN (#2 dir, Syn.intoFst (fiberFromOne (#2 dir)), nFromOne (#2 dir) (Syn.intoDim 1)))
+                           (Syn.into @@ Syn.VIN (#2 dir, Syn.intoFst (fiberFromOne (#2 dir)), projFromOne (#2 dir)))
                            (fn y =>
                               let
                                 fun base x =
                                   let
                                     val w = Sym.new ()
                                   in
-                                    Syn.intoCom
+                                    Syn.intoCoe
                                       {dir = (#1 dir, x), ty = (v, b),
-                                       cap = Syn.into @@ Syn.VPROJ (#1 dir, coercee, Syn.intoFst @@ substVar (#1 dir, v) e),
-                                       tubes =
-                                         [ ((#1 dir, Syn.intoDim 0), (w, nFromZero (VarKit.toDim w)))
-                                         , ((#1 dir, Syn.intoDim 0), (w, projFromOne (VarKit.toDim w))) ]}
+                                       coercee = Syn.into @@ Syn.VPROJ (#1 dir, coercee, Syn.intoFst @@ substVar (#1 dir, v) e)}
                                   end
                                 val wallZero =
                                   let
@@ -1017,7 +1014,7 @@ struct
                                           Syn.intoCom
                                             {dir = (Syn.intoDim 0, VarKit.toDim y),
                                              ty = (y, substVar (Syn.intoDim 0, v) b),
-                                             cap = coercee,
+                                             cap = Syn.intoApp (Syn.intoFst (substVar (Syn.intoDim 0, v) e), substVar (Syn.intoDim 0, y) coercee),
                                              tubes =
                                                [ ((VarKit.toDim z, Syn.intoDim 0),
                                                   (y, Syn.intoApp
