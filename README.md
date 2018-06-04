@@ -70,6 +70,8 @@ issue if you have feedback of any kind.
 
 *The above text is stolen from [Yggdrasil](https://github.com/freebroccolo/yggdrasil/blob/master/README.md).*
 
+Please see `CONTRIBUTING.md` for copyright assignment.
+
 ### Acknowledgments
 
 This research was sponsored by the Air Force Office of Scientific Research under
