@@ -79,13 +79,13 @@ code {
 }
 
 div[class^='highlight'] pre {
-  font-size: 14px;
+  font-size: 14px !important;
   line-height: 1.5 !important;
   padding: 12px 20px;
 }
 
 div[class^='highlight'] {
-  border: none;
+  border: none !important;
   background: initial;
 }
 
@@ -94,7 +94,7 @@ div[class^='highlight'] {
   font-weight: 700;
 }
 
-pre .gt {
+.highlight .gt {
   background-color: #f7bcbb;
   color: #f7bcbb;
   padding: 3px 0;
