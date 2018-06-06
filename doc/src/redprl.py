@@ -30,6 +30,9 @@ class RedPRLLexer(RegexLexer):
              'line', 'pushout', 'coeq', 'eq', 'fcom', 'V', 'universe', 'hcom',
              'coe', 'subtype', 'universe']
 
+    def joiner(arr):
+        return '|'.join(map(lambda str: '\\b' + str + '\\b', arr))
+
     # earlier rules take precedence
     tokens = {
         'root': [
@@ -38,18 +41,20 @@ class RedPRLLexer(RegexLexer):
             (r'//.*?$', Comment.Singleline),
             (r'/\*', Comment.Multiline, 'comment'),
 
-            ('/[\w/]+|\\b'.join(types), Name.Builtin),
-            ('|\\b'.join(exprs), Name.Builtin),
+            (joiner(map(lambda str: str + '/[\w/]+', types)), Name.Builtin),
+            (joiner(exprs), Name.Builtin),
+            (joiner(types), Name.Builtin),
             (r'\$|\*|!|@|=(?!>)|\+|->|~>|<~', Name.Builtin),
 
-            ('|\\b'.join(tacs), Keyword),
+            (joiner(tacs), Keyword),
             (r';|`|=>|<=', Keyword),
 
-            ('|\\b'.join(cmds), Keyword.Declaration),
+            (joiner(cmds), Keyword.Declaration),
 
-            ('|\\b'.join(misc), Name.Builtin),
+            (joiner(misc), Name.Builtin),
 
             (r'\#[a-zA-Z0-9\'/-]*', Name.Variable),
+            (r'\%[a-zA-Z0-9\'/-]*', Name.Variable),
 
             (r'\(|\)|\[|\]|\.|:|,|\{|\}|_', Punctuation),
             (r'\b\d+', Number),
@@ -58,9 +63,12 @@ class RedPRLLexer(RegexLexer):
             (r'^\|', Generic.Traceback),
             (r'>>', Name.Keyword),
             (r'<-', Name.Keyword),
+            (r'/=', Name.Keyword),
+            (r'<', Name.Keyword),
             (r'ext', Name.Keyword),
             (r'where', Name.Keyword),
 
+            (r'\|', Punctuation),
             (r'[A-Z][a-zA-Z0-9\'/-]*', Name.Function),
             (r'[a-z][a-zA-Z0-9\'/-]*', Name.Variable),
             (r'\?[a-zA-Z0-9\'/-]*', Name.Exception),
