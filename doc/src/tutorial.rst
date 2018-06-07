@@ -116,13 +116,82 @@ so there's no need for a coercion.
 Cubical reasoning
 -----------------
 
-.. todo::
-  This part isn't written yet!
+|RedPRL| also includes a notion of *path* similar to the *identity type* of
+homotopy type theory. Like equations, paths are respected by the constructs of
+type theory. However, while respect for equations is silent, respect for paths
+affects the runtime behavior of programs.
+
+In |RedPRL|, paths are mediated by *dimension variables* abstractly representing
+how the path varies over an interval. Nested paths of paths are indexed by
+multiple dimension variables, and therefore trace out squares, cubes,
+hypercubes, etc., hence the name *cubical type theory*. A reflexive path depends
+degenerately on a dimension variable:
 
 ::
 
-  // Paths (cf equalities), like those arising from
-  // equivalences via univalence, do induce computation.
+  theorem Refl :
+    (->
+     [ty : (U 0)]
+     [a : ty]
+     (path [_] ty a a))
+  by {
+    lam ty a =>
+    abs _ => `a
+  }.
+
+The ``abs _ =>`` tactic is analogous to ``lam a =>`` but introduces dimension
+variables rather than ordinary variables.
+
+Paths form a groupoid: they can be composed and reversed; composition is
+associative (up to a path) and has ``Refl`` as unit (up to a path); etc. These
+operations all follow from a single operation, *homogeneous Kan composition*
+(``hcom``), which produces the fourth side of a square given the other three, or
+the sixth side of a cube given the other five, etc. The details of this
+operation are beyond the scope of this tutorial, but the following illustration
+demonstrates how to compose paths ``p`` and ``q`` using ``hcom``:
+
+.. highlight:: none
+
+::
+
+   --- x         p
+  |          ---------
+  y         |         |
+          a |         | q
+            |         |
+            a.........c
+
+That is, if ``p`` goes from ``a`` to ``b``, and ``q`` goes from ``b`` to ``c``,
+then we can form a square with ``p`` on top, ``q`` on the right, and the
+constantly-``a`` path on the left; the bottom must therefore be a path from
+``a`` to ``c``. The concrete notation is given below (where ``(@ p x)`` applies
+the path ``p`` to the dimension variable ``x`` as argument).
+
+.. highlight:: redprl
+
+::
+
+  theorem PathConcat :
+    (->
+     [ty : (U 0 kan)]
+     [a b c : ty]
+     [p : (path [_] ty a b)]
+     [q : (path [_] ty b c)]
+     (path [_] ty a c))
+  by {
+    lam ty a b c p q =>
+    abs x =>
+    `(hcom 0~>1 ty (@ p x) [x=0 [_] a] [x=1 [y] (@ q y)])
+  }.
+
+Another source of paths is Voevodsky's *univalence principle*, stating that any
+equivalence (isomorphism-up-to-paths) between types gives rise to a path between
+those types. We apply this principle to the isomorphism between ``(-> bool ty)``
+and ``(* ty ty)`` sending a function to the pair (``{ , }``) of its output on
+``tt`` and ``ff``.
+
+::
+
   theorem FunToPair :
     (->
      [ty : (U 0 kan)]
@@ -139,11 +208,15 @@ Cubical reasoning
      (path [_] (U 0 kan) (-> bool ty) (* ty ty)))
   by {
     lam ty => abs x =>
-    `(V x (-> bool ty) (* ty ty)
-      (tuple [proj1 ($ FunToPair ty)] [proj2 ($ FunToPairIsEquiv ty)]))
+    // see tutorial.prl for omitted proofs
   }.
 
-  // We can coerce elements of (bool -> ty) to (ty * ty).
+Respect for paths follows from an explicit *coercion* operation (``coe``). We
+can coerce along the path ``($ PathFunToPair ty)`` from left to right
+(``0~>1``), taking an element of ``(bool -> ty)`` to ``(ty * ty)``.
+
+::
+
   theorem RespectPaths :
     (->
      [ty : (U 0 kan)]
@@ -154,9 +227,15 @@ Cubical reasoning
     `(coe 0~>1 [x] (@ ($ PathFunToPair ty) x) fun)
   }.
 
-  print RespectPaths.
+Unlike ``rewrite``, uses of ``coe`` are reflected in the extract, because they
+affect computation. Indeed, an element of ``(bool -> ty)`` is not literally an
+element of ``(ty * ty)``, and there is more than one isomorphism between these
+types! A major benefit of cubical type theory over homotopy type theory is that
+coercions actually *compute*: if we apply ``RespectPaths`` to the identity
+function, we get exactly the pair ``{`tt,`ff}``.
 
-  // When coercing, the choice of PathFunToPair matters!
+::
+
   theorem ComputeCoercion :
     (=
      (* bool bool)
@@ -166,45 +245,14 @@ Cubical reasoning
     auto
   }.
 
-foo
+**Experts:** though paths in |RedPRL| are defined by dimension variables rather
+than the ``refl`` and ``J`` operators of homotopy type theory, ``J`` is
+definable using coercion and homogeneous Kan composition (but will not compute
+to ``d`` on ``refl``).
 
 ::
 
-  // A constant path does not depend on its dimension.
-  theorem Refl :
-    (->
-     [ty : (U 0)]
-     [a : ty]
-     (path [_] ty a a))
-  by {
-    lam ty a =>
-    abs _ => `a
-  }.
-
-  theorem PathConcat :
-    (->
-     [ty : (U 0 kan)]
-     [a b c : ty]
-     [p : (path [_] ty a b)]
-     [q : (path [_] ty b c)]
-     (path [_] ty a c))
-  by {
-  //        p          -- x
-  //     -------      |
-  //    |      |      y
-  //  a |      | q
-  //    |      |
-  //    a .... c
-
-    lam ty a b c p q =>
-    abs x =>
-    `(hcom 0~>1 ty (@ p x) [x=0 [_] a] [x=1 [y] (@ q y)])
-  }.
-
-  // Although the path type is not defined by refl and J
-  // (as in HoTT), we can still define J using hcom + coe.
-  // The #l is an example of a parametrized definition.
-  theorem J(#l:lvl) :
+  theorem J(#l:lvl) : // parametrized over any universe level #l
     (->
      [ty : (U #l kan)]
      [a : ty]
@@ -221,26 +269,3 @@ foo
              (abs [j] (hcom 0~>j ty a [i=0 [_] a] [i=1 [j] (@ p j)]))) d)
   }.
 
-  theorem JInv :
-    (->
-     [ty : (U 0 kan)]
-     [a b : ty]
-     [p : (path [_] ty a b)]
-     (path [_] ty b a))
-  by {
-    lam ty a b p =>
-    exact
-      ($ (J #lvl{0})
-         ty
-         a
-         (lam [b _] (path [_] ty b a))
-         (abs [_] a)
-         b
-         p)
-    ; auto
-    //; unfold J; reduce at left right; ?
-  }.
-
-  print JInv.
-
-foo
