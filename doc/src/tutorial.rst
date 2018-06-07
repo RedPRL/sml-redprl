@@ -8,8 +8,15 @@ in the ``examples/`` subdirectory.
 
 .. _POPL 2018 tutorial: https://existentialtype.wordpress.com/2018/01/15/popl-2018-tutorial/
 
-.. todo::
-  Write the tutorial.
+|RedPRL| is a program logic for a functional programming language extended with
+constructs for higher-dimensional reasoning. A proof in |RedPRL| is a tactic
+script that constructs a program (or *extract*) and demonstrates that it
+inhabits the specified type.
+
+Getting started
+---------------
+
+Let's start by defining the function that negates a boolean:
 
 ::
 
@@ -20,25 +27,67 @@ in the ``examples/`` subdirectory.
     if b then `ff else `tt
   }.
 
+The ``lam b =>`` tactic introduces a variable ``b : bool`` in the context,
+``if then else`` performs a case split, and each branch is resolved by a boolean
+literal (```ff`` and ```tt``). We can inspect the proof state at any point using
+a *hole*. Replace ```ff`` with ``?the-tt-case``, and run |RedPRL| again:
+
+::
+
+  ?the-tt-case.
+  Goal #0.
+    b : bool
+    ---------
+    bool
+
+That is, the current subgoal has type ``bool``, and ``b : bool`` is in scope.
+Replace ``?the-tt-case`` with ```ff`` once again, and follow this theorem by:
+
+::
+
   print Not.
 
-  // (not(not(b)) == b) because it holds for every closed boolean.
+The ``print`` command displays the theorem statement and its extract. In this
+case, we can prove ``Not`` with the extract directly:
+
+::
+
+  theorem NotDirect :
+    (-> bool bool)
+  by {
+    `(lam [b] (if [_] bool b ff tt))
+  }.
+
+In general, we might not have a particular extract in mind, or establishing the
+type of that extract may require non-trivial reasoning, so we typically choose
+(or are forced) to use interactive tactics rather than specifying extracts.
+
+|RedPRL| has a notion of exact, extensional equality of programs, written ``=``.
+For example, applying ``Not`` twice is equal to the identity function.
+(Function application is written ``$``.)
+
+::
+
   theorem NotNot :
     (->
      [b : bool]
      (= bool ($ Not ($ Not b)) b))
   by {
-    lam b =>
-    // The next four lines can be replaced by auto.
-    unfold Not;
-    if b
-    then (reduce at left; refine bool/eq/tt)
-    else (reduce at left; refine bool/eq/ff)
+    lam b => auto
   }.
 
-  print NotNot.
+This instance of ``auto`` cases on ``b``, and in each case simplifies the
+left-hand side and supplies a reflexive equality.  (For example, the subgoal
+``(= bool tt tt)`` is handled by the :ref:`refinement rule <bool/eq/tt>`
+``refine bool/eq/tt``.)
 
-  // Type families respect equality proofs.
+Families of types respect equality of indices. For example, suppose we have a
+boolean-indexed family of types ``family``. By virtue of the equation we just
+proved, an element of the type ``($ family b)`` is also an element of the type
+``($ family ($ Not ($ Not b)))``:
+
+::
+
   theorem RespectEquality :
     (->
      [family : (-> [b : bool] (U 0))]
@@ -47,29 +96,30 @@ in the ``examples/`` subdirectory.
      ($ family ($ Not ($ Not b))))
   by {
     lam family b pf =>
-    rewrite ($ NotNot b);
-    [ with b' => `($ family b')
+    rewrite ($ NotNot b);       // equation to rewrite along
+    [ with b' => `($ family b') // what to rewrite (i.e., b')
     , use pf
     ];
     auto
   }.
 
+Here, ``(U 0)`` is a universe (the "type of small types"). The ``rewrite``
+tactic rewrites the argument to ``family`` along the equality
+``(= bool ($ Not ($ Not b)) b)`` given by ``($ NotNot b)``, taking
+``pf : ($ family b)`` to a proof of ``($ family ($ Not ($ Not b))))``.
 
-  // print does not mention the equality proof!
-  // (No need to ``transport'' at runtime.)
-  print RespectEquality.
+Surprisingly, the extract is just a constant function: ``(lam [x0 x1 x2] x2)``!
+The reason is that at runtime, for any particular ``b``, the types
+``($ family b)`` and ``($ family ($ Not ($ Not b))))`` will be exactly the same,
+so there's no need for a coercion.
 
-  // In fact, all proofs of (not(not(b)) == b) are equal.
-  theorem EqualityIrrelevant :
-    (=
-      (-> [b : bool] (= bool ($ Not ($ Not b)) b))
-      NotNot
-      (lam [b] ax))
-  by {
-    auto
-  }.
+Cubical reasoning
+-----------------
 
-  print EqualityIrrelevant.
+.. todo::
+  This part isn't written yet!
+
+::
 
   // Paths (cf equalities), like those arising from
   // equivalences via univalence, do induce computation.
@@ -83,75 +133,6 @@ in the ``examples/`` subdirectory.
     {`($ fun tt), `($ fun ff)}
   }.
 
-  // {{{ Univalence
-
-  define HasAllPathsTo (#C,#c) = (-> [c' : #C] (path [_] #C c' #c)).
-  define IsContr (#C) = (* [c : #C] (HasAllPathsTo #C c)).
-  define Fiber (#A,#B,#f,#b) = (* [a : #A] (path [_] #B ($ #f a) #b)).
-  define IsEquiv (#A,#B,#f) = (-> [b : #B] (IsContr (Fiber #A #B #f b))).
-  define Equiv (#A,#B) = (* [f : (-> #A #B)] (IsEquiv #A #B f)).
-
-  theorem WeakConnection(#l:lvl) :
-    (->
-     [ty : (U #l hcom)]
-     [a b : ty]
-     [p : (path [_] ty a b)]
-     (path [i] (path [_] ty (@ p i) b) p (abs [_] b)))
-  by {
-    (lam ty a b p =>
-      abs i j =>
-        `(hcom 1~>0 ty b
-          [i=0 [k] (hcom 0~>j ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
-          [i=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
-          [j=0 [k] (hcom 0~>i ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]
-          [j=1 [k] (hcom 0~>1 ty (@ p k) [k=0 [w] (@ p w)] [k=1 [_] b])]))
-  }.
-
-  tactic GetEndpoints(#p, #t:[exp,exp].tac) = {
-    query pty <- #p;
-    match pty  {
-      [ty l r | #jdg{(path [_] %ty %l %r)} =>
-        claim p/0 : (@ #p 0) = %l in %ty by {auto};
-        claim p/1 : (@ #p 1) = %r in %ty by {auto};
-        (#t p/0 p/1)
-      ]
-    }
-  }.
-
-
-  print WeakConnection.
-
-  theorem FunToPairIsEquiv :
-    (->
-     [ty : (U 0 kan)]
-     (IsEquiv (-> bool ty) (* ty ty) ($ FunToPair ty)))
-  by {
-    lam ty pair =>
-    { { lam b => if b then `(!proj1 pair) else `(!proj2 pair)
-      , abs _ => `pair }
-    , unfold Fiber;
-      lam {fun,p} =>
-       (GetEndpoints p [p/0 p/1] #tac{
-        (abs x =>
-          {lam b => if b then `(!proj1 (@ p x)) else `(!proj2 (@ p x)),
-           abs y =>
-             `(@ ($ (WeakConnection #lvl{0}) (* ty ty) ($ FunToPair ty fun) pair p) x y)
-          });
-        [ unfold FunToPair in p/0; reduce in p/0 at right;
-          inversion; with q3 q2 q1 q0 =>
-            reduce at right in q2;
-            reduce at right in q3;
-            auto; with b =>
-              elim b; reduce at right; symmetry; assumption
-        , unfold FunToPair in p/1; reduce in p/1 at right;
-          inversion; with q3 q2 q1 q0 => elim pair;
-          reduce at right in q0; reduce at right in q1;
-          auto; assumption
-        ]
-       })
-    }
-  }.
-
   theorem PathFunToPair :
     (->
      [ty : (U 0 kan)]
@@ -161,10 +142,6 @@ in the ``examples/`` subdirectory.
     `(V x (-> bool ty) (* ty ty)
       (tuple [proj1 ($ FunToPair ty)] [proj2 ($ FunToPairIsEquiv ty)]))
   }.
-
-  // }}}
-
-  print PathFunToPair.
 
   // We can coerce elements of (bool -> ty) to (ty * ty).
   theorem RespectPaths :
@@ -189,10 +166,9 @@ in the ``examples/`` subdirectory.
     auto
   }.
 
+foo
 
-  // ---------------------------------------------------------
-  // Part Two
-  // ---------------------------------------------------------
+::
 
   // A constant path does not depend on its dimension.
   theorem Refl :
@@ -203,43 +179,6 @@ in the ``examples/`` subdirectory.
   by {
     lam ty a =>
     abs _ => `a
-  }.
-
-  // The path structure of each type is defined in terms of
-  // its constituent types.
-  theorem FunPath :
-    (->
-     [a b : (U 0)]
-     [f g : (-> a b)]
-     (path [_] (-> a b) f g)
-     [arg : a]
-     (path [_] b ($ f arg) ($ g arg)))
-  by {
-    lam a b f g p =>
-    lam arg => abs x =>
-      `($ (@ p x) arg)
-  }.
-
-
-  print FunPath.
-
-  theorem PathInv :
-    (->
-     [ty : (U 0 kan)]
-     [a b : ty]
-     [p : (path [_] ty a b)]
-     (path [_] ty b a))
-  by {
-  //        a          -- x
-  //     -------      |
-  //    |      |      y
-  //  p |      | a
-  //    |      |
-  //    b .... a
-
-    lam ty a b p =>
-    abs x =>
-    `(hcom 0~>1 ty a [x=0 [y] (@ p y)] [x=1 [_] a])
   }.
 
   theorem PathConcat :
@@ -260,25 +199,6 @@ in the ``examples/`` subdirectory.
     lam ty a b c p q =>
     abs x =>
     `(hcom 0~>1 ty (@ p x) [x=0 [_] a] [x=1 [y] (@ q y)])
-  }.
-
-  theorem InvRefl :
-    (->
-     [ty : (U 0 kan)]
-     [a : ty]
-     (path
-       [_] (path [_] ty a a)
-       ($ PathInv ty a a (abs [_] a))
-       (abs [_] a)))
-  by {
-    // See diagram!
-    lam ty a =>
-    abs x y =>
-    `(hcom 0~>1 ty a
-      [x=0 [z] (hcom 0~>z ty a [y=0 [_] a] [y=1 [_] a])]
-      [x=1 [_] a]
-      [y=0 [_] a]
-      [y=1 [_] a])
   }.
 
   // Although the path type is not defined by refl and J
@@ -323,17 +243,4 @@ in the ``examples/`` subdirectory.
 
   print JInv.
 
-  // Computing winding numbers in the circle.
-
-  // Bonus material:
-
-  theorem Shannon :
-    (->
-     [ty  : (-> bool (U 0))]
-     [elt : (-> [b : bool] ($ ty b))]
-     [b : bool]
-     (= ($ ty b) ($ elt b) (if [b] ($ ty b) b ($ elt tt) ($ elt ff))))
-  by {
-    lam ty elt b =>
-    elim b; auto
-  }.
+foo

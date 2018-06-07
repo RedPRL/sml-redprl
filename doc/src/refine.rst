@@ -10,6 +10,8 @@ Booleans
 
   H >> bool = bool in (U #l #k)
 
+.. _bool/eq/tt:
+
 :index:`bool/eq/tt`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ::

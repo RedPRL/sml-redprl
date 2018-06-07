@@ -72,6 +72,7 @@ class RedPRLLexer(RegexLexer):
             (r'[A-Z][a-zA-Z0-9\'/-]*', Name.Function),
             (r'[a-z][a-zA-Z0-9\'/-]*', Name.Variable),
             (r'\?[a-zA-Z0-9\'/-]*', Name.Exception),
+            (r'-+$', Punctuation),
         ],
 
         'comment': [
