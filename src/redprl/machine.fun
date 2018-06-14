@@ -349,7 +349,7 @@ struct
                             (fn (eq, (v, b)) =>
                               (eq,
                                (w, Syn.intoCoe
-                                 {dir = (VarKit.toDim w, #2 fcomDir),
+                                 {dir = (VarKit.toDim w, #1 fcomDir),
                                   ty = (v, b),
                                   coercee =
                                     if isApartEq u eq then
