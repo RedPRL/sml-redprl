@@ -310,8 +310,8 @@ struct
                         (keepApartTubes u tubes)}
                  fun apartRecovery (v, b) dest =
                    Syn.intoCoe
-                     {dir = (#2 fcomDir, dest),
-                      ty = (v, b),
+                     {dir = (substVar (#2 coeDir, u) (#2 fcomDir), dest),
+                      ty = (v, substVar (#2 coeDir, u) b),
                       coercee = Syn.intoCoe
                         {dir = coeDir,
                          ty = (u, substVar (#2 fcomDir, v) b),
