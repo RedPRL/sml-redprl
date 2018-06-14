@@ -288,7 +288,7 @@ struct
                         tubes}
                  (* this is the coerced term *)
                  val naivelyCoercedCap = Syn.intoGcom
-                   {dir = fcomDir, ty = (u, a),
+                   {dir = coeDir, ty = (u, a),
                     cap = origin (#1 fcomDir),
                     tubes =
                       keepApartTubes u
