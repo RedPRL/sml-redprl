@@ -258,7 +258,7 @@ struct
                  val result = Syn.into @@ Syn.BOX
                    {dir = fcomDir,
                     cap = recovered,
-                    boundaries = List.map (fn (eq, (v, b)) => (eq, coeHcom (v, b) (#2 hcomDir))) hcomTubes}
+                    boundaries = List.map (fn (eq, (v, b)) => (eq, coeHcom (v, b) (#2 hcomDir))) fcomTubes}
                in
                  CRITICAL @@ result || (syms, stk)
                end
