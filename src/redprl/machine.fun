@@ -258,7 +258,7 @@ struct
                  val result = Syn.into @@ Syn.BOX
                    {dir = fcomDir,
                     cap = recovered,
-                    boundaries = List.map (fn (eq, (v, b)) => (eq, coeHcom (v, b) (#2 hcomDir))) hcomTubes}
+                    boundaries = List.map (fn (eq, (v, b)) => (eq, coeHcom (v, b) (#2 hcomDir))) fcomTubes}
                in
                  CRITICAL @@ result || (syms, stk)
                end
@@ -310,8 +310,8 @@ struct
                         (keepApartTubes u tubes)}
                  fun apartRecovery (v, b) dest =
                    Syn.intoCoe
-                     {dir = (#2 fcomDir, dest),
-                      ty = (v, b),
+                     {dir = (substVar (#2 coeDir, u) (#2 fcomDir), dest),
+                      ty = (v, substVar (#2 coeDir, u) b),
                       coercee = Syn.intoCoe
                         {dir = coeDir,
                          ty = (u, substVar (#2 fcomDir, v) b),
@@ -349,7 +349,7 @@ struct
                             (fn (eq, (v, b)) =>
                               (eq,
                                (w, Syn.intoCoe
-                                 {dir = (VarKit.toDim w, #2 fcomDir),
+                                 {dir = (VarKit.toDim w, #1 fcomDir),
                                   ty = (v, b),
                                   coercee =
                                     if isApartEq u eq then
