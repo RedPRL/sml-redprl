@@ -70,13 +70,12 @@ theorem LemPropF(#l:lvl) :
    [ty/a : (U #l kan)]
    [ty/b : (-> ty/a (U #l kan))]
    [prop/b : (-> [a : ty/a] (IsProp ($ ty/b a)))]
-   [a0 a1 : ty/a]
-   [p : (path [_] ty/a a0 a1)]
-   [b0 : ($ ty/b a0)]
-   [b1 : ($ ty/b a1)]
+   [p : (-> dim ty/a)]
+   [b0 : ($ ty/b (@ p 0))]
+   [b1 : ($ ty/b (@ p 1))]
    (path [x] ($ ty/b (@ p x)) b0 b1))
 by {
-  lam ty/a ty/b prop/b a0 a1 p b0 b1 => abs x =>
+  lam ty/a ty/b prop/b p b0 b1 => abs x =>
     use prop/b
       [ use p [`x]
       , `(coe 0~>x [i] ($ ty/b (@ p i)) b0)
@@ -96,7 +95,7 @@ theorem LemSig(#l:lvl) :
 by {
   lam ty/a ty/b prop/b {u1, u2} {v1, v2} p => abs x =>
     { use p [`x]
-    , use (LemPropF #l) [`ty/a, `ty/b, `prop/b, `u1, `v1, `p, `u2, `v2, `x]
+    , use (LemPropF #l) [`ty/a, `ty/b, `prop/b, abs i => use p [`i], `u2, `v2, `x]
     }
 }.
 
