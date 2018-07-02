@@ -28,7 +28,8 @@ Features
 
 Papers & Talks
 --------------
-
+* Angiuli, Cavallo, Favonia, Harper, Sterling. `The RedPRL Proof Assistant`_.
+  LFMTP 2018 (Invited Paper).
 * Favonia. `Cubical Computational Type Theory & RedPRL`_. 2018.
 * Harper, Angiuli. `Computational (Higher) Type Theory`_. ACM POPL Tutorial Session 2018.
 * Angiuli, Harper, Wilson. `Computational Higher-Dimensional Type Theory`_. POPL 2017.
@@ -38,6 +39,7 @@ Papers & Talks
 .. _Cubical Computational Type Theory & RedPRL: http://favonia.org/files/chtt-penn2018-slides.pdf
 .. _Computational Higher-Dimensional Type Theory: https://www.cs.cmu.edu/~rwh/papers/chitt/popl17.pdf
 .. _Algebraic Foundations of Proof Refinement: https://www.cs.cmu.edu/~redprl/afpr.pdf
+.. _The RedPRL Proof Assistant: https://www.cs.cmu.edu/~rwh/papers/redprl/lfmtp18.pdf
 
 RedPRL User Guide
 =================
