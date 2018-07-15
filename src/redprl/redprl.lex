@@ -197,6 +197,7 @@ whitespace = [\ \t];
 <INITIAL>"query"            => (Tokens.QUERY (posTuple (size yytext)));
 <INITIAL>"concl"            => (Tokens.CONCL (posTuple (size yytext)));
 <INITIAL>"print"            => (Tokens.PRINT (posTuple (size yytext)));
+<INITIAL>"trace"            => (Tokens.TRACE (posTuple (size yytext)));
 
 <INITIAL>"true"             => (Tokens.TRUE (posTuple (size yytext)));
 <INITIAL>"type"             => (Tokens.TYPE (posTuple (size yytext)));

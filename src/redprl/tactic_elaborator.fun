@@ -401,6 +401,9 @@ struct
      | O.DEV_PRINT $ [_ \ tm'] =>
        (RedPrlLog.print RedPrlLog.INFO (getAnnotation tm, TermPrinter.ppTerm tm');
         T.idn)
+
+     | O.TAC_TRACE str $ _ => 
+       Lcf.rule @@ R.LabelGoal str
      | O.TAC_FAIL $ _ => fail "fail"
      | O.TAC_POP _ $ [xs \ tm] =>
        popNamesIn xs (tactic sign env tm)

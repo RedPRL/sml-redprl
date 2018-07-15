@@ -294,6 +294,15 @@ struct
     fun ReducePart sign = SequentReducePart sign
   end
 
+  fun LabelGoal (lbl : string) : rule = 
+    fn jdg as H >> _ =>
+      let
+        val (goal, hole) = makeGoal [lbl] @@ jdg
+        val extract = abstractEvidence H hole
+      in
+        Lcf.|> (|>: goal, extract)
+      end  
+
   local
     fun fail err _ = Lcf.M.throw (E.errorToExn (NONE, err))
 

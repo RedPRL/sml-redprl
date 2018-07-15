@@ -169,6 +169,7 @@ struct
      | TAC_REWRITE => [[] |: SEL, [] |: VEC ACC, [] |: EXP] ->> TAC
 
      | TAC_ASSUMPTION => [] ->> TAC
+     | TAC_TRACE _ => [] ->> TAC
      | TAC_POP sorts => [sorts |: TAC] ->> TAC
      | TAC_PUSH => [[] |: VEC ANY] ->> TAC
 
@@ -322,6 +323,7 @@ struct
      | TAC_ELIM => "elim"
      | TAC_REWRITE => "rewrite"
      | TAC_ASSUMPTION => "assumption"
+     | TAC_TRACE str => "trace{" ^ str ^ "}"
      | TAC_POP _ => "with"
      | TAC_PUSH => "push"
 

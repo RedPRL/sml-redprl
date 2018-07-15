@@ -107,6 +107,7 @@ struct
    | TAC_REDUCE
    | TAC_REDUCE_PART
    | TAC_ASSUMPTION
+   | TAC_TRACE of string
    | TAC_POP of sort list
    | TAC_PUSH
 

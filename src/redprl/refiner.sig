@@ -54,6 +54,8 @@ sig
     val NormalizeHypDelegate : (abt -> hyp -> tactic) -> sign -> hyp -> tactic
   end
 
+  val LabelGoal : string -> rule
+
   structure Names : 
   sig
     val Push : hyp list -> rule

@@ -401,7 +401,7 @@ end
  | TAC_ASSUMPTION
  | MATCH
  | QUERY | CONCL
- | PRINT
+ | PRINT | TRACE
 
  (* keywords in judgments *)
  | TRUE | TYPE | AT (* `WITH` is reused *)
@@ -1096,6 +1096,7 @@ atomicRawTac
   | MATCH termAnySort LBRACKET devMatchClauses RBRACKET (Tac.makeMatch termAnySort devMatchClauses)
   | QUERY VARNAME LEFT_ARROW selector SEMI tactic (Ast.$$ (O.DEV_QUERY, [\ ([], selector), \ ([VARNAME], tactic)]))
   | PRINT termAnySort (Ast.$$ (O.DEV_PRINT, [\ ([], termAnySort)]))
+  | TRACE VARNAME (Ast.$$ (O.TAC_TRACE VARNAME, []))
 
   (* overlapping with term *)
   | rawTermAndTac (annotate (Pos.pos (rawTermAndTacleft fileName) (rawTermAndTacright fileName)) rawTermAndTac)
