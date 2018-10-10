@@ -1,7 +1,7 @@
 " vim-RedPRL ftplugin
 " Language:     RedPRL
 " Author:       Carlo Angiuli
-" Last Change:  2018 March 19
+" Last Change:  2018 October 9
 
 if (exists("b:did_ftplugin") || !has('job'))
   finish
@@ -17,6 +17,7 @@ endif
 
 command! RedPRL :call CheckBuffer()
 nnoremap <buffer> <LocalLeader>l :RedPRL<CR>
+nnoremap <buffer> <LocalLeader>p :call CheckBufferToCursor()<CR>
 autocmd QuitPre <buffer> call s:CloseBuffer()
 
 set errorformat =%E%f:%l.%c-%*\\d.%*\\d\ [%trror]:
