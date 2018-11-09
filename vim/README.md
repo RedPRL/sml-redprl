@@ -6,14 +6,19 @@ This vim plugin requires Vim 8 (released September 2016).
 
 While editing a .prl file, run `:RedPRL` or `<LocalLeader>l` (`l` for `load`)
 in the command (normal) mode to check the current buffer and display the output
-in a separate buffer.
+in a separate buffer. Run `<LocalLeader>p` (`p` for `partial`) to check the current
+buffer, ignoring lines below the cursor's current position.
 
 If there are any syntax errors, the cursor will jump to the first one.
 
 ## Setup
 
-Move this directory to `~/.vim/pack/foo/start/vim-redprl`. (The names `foo` and
-`vim-redprl` don't matter.)
+This plugin is compatible with Vim 8's package system. You can (re)install it by
+running the following shell command from the current directory:
+
+    DEST=~/.vim/pack/redprl-org/start ;
+    [ -d $DEST/vim-redprl ] && rm -r $DEST/vim-redprl ;
+    mkdir -p $DEST && cp -r . $DEST/vim-redprl
 
 If `redprl` is not in your `PATH`, add the following line to your `.vimrc`:
 
@@ -22,8 +27,3 @@ If `redprl` is not in your `PATH`, add the following line to your `.vimrc`:
 If you want to enable printing traces, add the following line to your `.vimrc`:
 
     let g:redprl_trace = 1
-
-If you want to recheck the current buffer with another key combination, add the
-following line to your `.vimrc`, replacing `<F5>` as appropriate:
-
-    au FileType redprl nnoremap <F5> :RedPRL<CR>
