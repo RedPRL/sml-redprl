@@ -2055,7 +2055,7 @@ struct
         val tr = ["Inductive.EqFCom"]
         val H >> ajdg = jdg
         val ((lhs, rhs), ty) = View.matchTrueAsEq ajdg
-        val Abt.$ (O.IND_TYPE (opid, SOME vls), args) = Abt.out ty
+        val Abt.$ (O.IND_TYPE (opid, SOME _), args) = Abt.out ty
         val Syn.FCOM args0 = Syn.out lhs
         val Syn.FCOM args1 = Syn.out rhs
 
@@ -2079,7 +2079,7 @@ struct
         (* ind-rec(FCOM) steps to COM *)
         val k = K.COM
         val AJ.TRUE ty = Hyps.lookup H z
-        val Abt.$ (O.IND_TYPE (opid, SOME declVls), args) = Abt.out ty
+        val Abt.$ (O.IND_TYPE (opid, SOME vls), args) = Abt.out ty
 
         (* We need to kind-check cz because of FCOM
          * This goal is made (explicitly) unconditional to simplify tactic writing
@@ -2088,6 +2088,8 @@ struct
 
         (* getting the metadata *)
         val (declArgs, (decl, precomputedVls), tyArgs) = Sig.dataDeclInfo sign opid args
+        val nDeclArgs = List.length declArgs
+        val declVls = List.take (vls, nDeclArgs)
         val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
         val (_, constrs, []) = InductiveSpec.fillFamily decl tyArgs
 
@@ -2118,7 +2120,7 @@ struct
 
         (* type of eliminated term *)
         val (psi, indTy) = Synth.synthTerm sign tr H (m0, m1)
-        val Abt.$ (O.IND_TYPE (opid, SOME declVls), args) = Abt.out indTy
+        val Abt.$ (O.IND_TYPE (opid, SOME vls), args) = Abt.out indTy
         val true = opid = opid0
 
         (* motive *)
@@ -2132,6 +2134,8 @@ struct
 
         (* getting the metadata *)
         val (declArgs, (decl, precomputedVls), tyArgs) = Sig.dataDeclInfo sign opid args
+        val nDeclArgs = List.length declArgs
+        val declVls = List.take (vls, nDeclArgs)
         val meta = (opid, (declVls, precomputedVls), (declArgs, tyArgs))
         val (_, constrs, []) = InductiveSpec.fillFamily decl tyArgs
 
