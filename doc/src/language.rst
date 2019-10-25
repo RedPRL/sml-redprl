@@ -121,7 +121,7 @@ As a theorem, this definition must take a universe level as a parameter
 
 ::
 
-  define Sequence(#l : lvl) :
+  theorem Sequence(#l : lvl) :
     (-> [ty : (U #l)] (U #l))
   by {
     // apply function introduction rule in the tactic language
