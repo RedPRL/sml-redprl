@@ -1,8 +1,8 @@
 language: generic
 env:
-  - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex moreutils"
+  - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex moreutils libsmlnj-smlnj"
   - COMPILER=mlton PACKAGES="mlton moreutils"
-  - COMPILER=sphinx PACKAGES="python-pip"
+  - COMPILER=sphinx PACKAGES="python3-sphinx"
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y --force-yes ${PACKAGES}
