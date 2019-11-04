@@ -1,6 +1,6 @@
 language: generic
 env:
-  - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex moreutils"
+  - COMPILER=smlnj PACKAGES="smlnj ml-yacc ml-ulex moreutils libsmlnj-smlnj"
   - COMPILER=mlton PACKAGES="mlton moreutils"
   - COMPILER=sphinx PACKAGES="python-pip"
 before_install:
